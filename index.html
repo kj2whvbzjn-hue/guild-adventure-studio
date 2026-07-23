@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>Guild Adventure Studio V4.4</title>
+<title>Guild Adventure Studio V4.5</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -60,6 +60,29 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .update-banner.show{display:flex}
 .update-banner .message{flex:1}
 @media(min-width:901px){.update-banner{left:auto;right:20px;bottom:20px;max-width:520px}}
+
+.story-editor-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:14px;min-height:560px}
+.story-tree{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;overflow:auto}
+.story-editor-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto}
+.tree-row{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;user-select:none}
+.tree-row:hover{background:#f3f4f6}
+.tree-row.active{background:var(--accent2);color:#1d4ed8;font-weight:700}
+.tree-row.level-1{padding-left:8px}
+.tree-row.level-2{padding-left:24px}
+.tree-row.level-3{padding-left:40px}
+.tree-row.level-4{padding-left:56px}
+.tree-row .tree-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tree-actions{display:flex;gap:4px}
+.tree-actions button{padding:4px 7px;font-size:11px}
+.story-empty{padding:24px;text-align:center;color:var(--muted)}
+.dialogue-row{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fff}
+.dialogue-row .speaker{font-weight:700}
+.order-buttons{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:900px){
+ .story-editor-layout{grid-template-columns:1fr;min-height:auto}
+ .story-tree{max-height:320px}
+}
+
 @media(max-width:900px){
   .main{grid-template-columns:1fr}
   .sidebar,.inspector{display:none}
@@ -77,7 +100,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <header>
   <div>
     <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4.4 Update Stable v0.7.0 / Build 070</div>
+    <div class="version">Version 4.5 Visual Story Editor v0.8.0 / Build 080</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -93,6 +116,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button data-view="projects">Projects</button>
     <button data-view="project">Project</button>
     <button data-view="story">Story</button>
+    <button data-view="storyeditor">Visual Story Editor</button>
     <button data-view="characters">Characters</button>
     <button data-view="decisions">DecisionLog</button>
     <button data-view="entities">Data / ID Manager</button>
@@ -178,6 +202,75 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button class="primary" onclick="addChapter()">章を登録</button>
   </div>
   <div id="chapterList" class="list"></div>
+</section>
+
+
+<section id="view-storyeditor" class="view hidden">
+  <h1>Visual Story Editor</h1>
+  <div class="toolbar">
+    <button class="primary" onclick="storyCreateChapter()">章を追加</button>
+    <button onclick="storyExpandAll()">すべて展開</button>
+    <button onclick="storyCollapseAll()">すべて折りたたむ</button>
+  </div>
+
+  <div class="story-editor-layout">
+    <div class="story-tree">
+      <div class="pane-title">Story Tree</div>
+      <div id="storyTree"></div>
+    </div>
+
+    <div class="story-editor-panel">
+      <div id="storyEditorEmpty" class="story-empty">
+        左のツリーから章・節・シーン・会話を選択してください。
+      </div>
+
+      <div id="storyEditorForm" class="hidden">
+        <div class="field"><label>種類</label><input id="storyNodeType" readonly></div>
+        <div class="field"><label>ID</label><input id="storyNodeId" readonly></div>
+
+        <div id="storyNoField" class="field">
+          <label>番号</label>
+          <input id="storyNodeNo" type="number" min="1">
+        </div>
+
+        <div id="storyTitleField" class="field">
+          <label>タイトル</label>
+          <input id="storyNodeTitle">
+        </div>
+
+        <div id="storySpeakerField" class="field hidden">
+          <label>話者</label>
+          <input id="storyNodeSpeaker" placeholder="主人公、レオン、ナレーションなど">
+        </div>
+
+        <div id="storyTextField" class="field">
+          <label id="storyTextLabel">内容</label>
+          <textarea id="storyNodeText"></textarea>
+        </div>
+
+        <div id="storyThemeField" class="field hidden">
+          <label>テーマ</label>
+          <input id="storyNodeTheme">
+        </div>
+
+        <div id="storyStageField" class="field hidden">
+          <label>演出・舞台指示</label>
+          <textarea id="storyNodeStage"></textarea>
+        </div>
+
+        <div class="toolbar">
+          <button class="primary" onclick="saveStoryNode()">変更を保存</button>
+          <button onclick="addChildStoryNode()">子要素を追加</button>
+          <button class="danger" onclick="deleteSelectedStoryNode()">削除</button>
+        </div>
+
+        <div class="order-buttons">
+          <button onclick="moveSelectedStoryNode(-1)">上へ移動</button>
+          <button onclick="moveSelectedStoryNode(1)">下へ移動</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section id="view-characters" class="view hidden">
@@ -346,13 +439,13 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
-const APP_VERSION='0.7.0';
+const APP_VERSION='0.8.0';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
 const BKEY_PREFIX='gas_v4_backups_v060_';
 const PROJECT_KEY_PREFIX='gas_v4_project_v060_';
-const prefixes={Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP'};
+const prefixes={Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG'};
 function now(){return new Date().toISOString()}
 function initial(){
  return {schema_version:'4.0.0-draft',project:{id:'PRJ-GAS-V4',name:'Guild Adventure Studio',product_version:'4.0.0',status:'development',description:'AIと人間が共同でゲーム開発する統合開発環境',updated_at:now()},decisions:[
@@ -390,6 +483,24 @@ function loadProject(id){
 function normalizeData(){
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
+ data.chapters.forEach((chapter,chapterIndex)=>{
+  chapter.no=chapter.no||chapterIndex+1;
+  chapter.sections=chapter.sections||[];
+  chapter.sections.forEach((section,sectionIndex)=>{
+   section.no=section.no||sectionIndex+1;
+   section.scenes=section.scenes||[];
+   section.scenes.forEach((scene,sceneIndex)=>{
+    scene.no=scene.no||sceneIndex+1;
+    scene.dialogues=scene.dialogues||[];
+    scene.dialogues.forEach((dialogue,dialogueIndex)=>{
+     dialogue.no=dialogue.no||dialogueIndex+1;
+     dialogue.speaker=dialogue.speaker||'';
+     dialogue.text=dialogue.text||'';
+     dialogue.stage_direction=dialogue.stage_direction||'';
+    });
+   });
+  });
+ });
  data.characters=data.characters||[];
  data.entities=data.entities||[];
  data.decisions=data.decisions||[];
@@ -495,7 +606,7 @@ function deleteProject(id){
 function exportAllProjects(){
  const packageData={
   format:'guild-adventure-studio-multi-project',
-  version:'0.7.0',
+  version:'0.8.0',
   exported_at:now(),
   current_project_id:currentProjectId,
   projects:getProjectRegistry().map(meta=>({meta,data:loadProject(meta.id)}))
@@ -537,7 +648,7 @@ function addSection(chapterId){
  let title=prompt('節タイトルを入力してください。');if(!title)return;
  let id=nextId('Section');
  chapter.sections=chapter.sections||[];
- chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',status:'draft',created_at:now(),updated_at:now()});
+ chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',scenes:[],status:'draft',created_at:now(),updated_at:now()});
  persist('section added')
 }
 function deleteChapter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.chapters=data.chapters.filter(x=>x.id!==id);persist('chapter deleted')}}
@@ -567,7 +678,12 @@ function addDecision(){
 function deleteDecision(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.decisions=data.decisions.filter(x=>x.id!==id);persist('decision deleted')}}
 function nextId(type){
  let p=prefixes[type]||'DAT', max=0;
- data.entities.filter(e=>e.type===type).forEach(e=>{let m=e.id.match(/(\d+)$/);if(m)max=Math.max(max,+m[1])});
+ allIds().forEach(id=>{
+  if(String(id).startsWith(p+'-')){
+   const m=String(id).match(/(\d+)$/);
+   if(m)max=Math.max(max,+m[1]);
+  }
+ });
  return p+'-'+String(max+1).padStart(4,'0')
 }
 function addEntity(){
@@ -579,14 +695,26 @@ function addEntity(){
  persist('entity added')
 }
 function deleteEntity(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.entities=data.entities.filter(x=>x.id!==id);persist('entity deleted')}}
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).map(s=>s.id)]),...data.characters.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
  if(!data.project.id)validation.push({level:'ERROR',message:'Project IDが未設定'});
  if(!data.project.name)validation.push({level:'ERROR',message:'Project Nameが未設定'});
  data.decisions.forEach(d=>{if(!d.text)validation.push({level:'ERROR',message:d.id+' の決定内容が未設定'})});
- data.chapters.forEach(c=>{if(!c.title)validation.push({level:'ERROR',message:c.id+' の章タイトルが未設定'});(c.sections||[]).forEach(s=>{if(!s.title)validation.push({level:'ERROR',message:s.id+' の節タイトルが未設定'})})});
+ data.chapters.forEach(c=>{
+  if(!c.title)validation.push({level:'ERROR',message:c.id+' の章タイトルが未設定'});
+  (c.sections||[]).forEach(s=>{
+   if(!s.title)validation.push({level:'ERROR',message:s.id+' の節タイトルが未設定'});
+   (s.scenes||[]).forEach(sc=>{
+    if(!sc.title)validation.push({level:'ERROR',message:sc.id+' のシーンタイトルが未設定'});
+    (sc.dialogues||[]).forEach(d=>{
+     if(!d.speaker)validation.push({level:'INFO',message:d.id+' の話者が未設定'});
+     if(!d.text)validation.push({level:'WARNING',message:d.id+' の台詞が未設定'});
+    });
+   });
+  });
+ });
  data.characters.forEach(c=>{if(!c.name)validation.push({level:'ERROR',message:c.id+' の名前が未設定'})});
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  if(!validation.length)validation.push({level:'OK',message:'重大な問題は見つかりませんでした。'});
@@ -764,6 +892,248 @@ async function pullFromGitHub(){
 }
 
 
+
+let storySelection=null;
+let collapsedStoryNodes=new Set();
+
+function storyKey(type,chapterId,sectionId='',sceneId='',dialogueId=''){
+ return [type,chapterId,sectionId,sceneId,dialogueId].join('|');
+}
+
+function selectStoryNode(type,chapterId,sectionId='',sceneId='',dialogueId=''){
+ storySelection={type,chapterId,sectionId,sceneId,dialogueId};
+ renderStoryTree();
+ renderStoryEditor();
+}
+
+function getStorySelectionObject(){
+ if(!storySelection)return null;
+ const chapter=data.chapters.find(x=>x.id===storySelection.chapterId);
+ if(!chapter)return null;
+ if(storySelection.type==='chapter')return {object:chapter,parent:data.chapters,parentObject:null};
+ const section=(chapter.sections||[]).find(x=>x.id===storySelection.sectionId);
+ if(!section)return null;
+ if(storySelection.type==='section')return {object:section,parent:chapter.sections,parentObject:chapter};
+ const scene=(section.scenes||[]).find(x=>x.id===storySelection.sceneId);
+ if(!scene)return null;
+ if(storySelection.type==='scene')return {object:scene,parent:section.scenes,parentObject:section};
+ const dialogue=(scene.dialogues||[]).find(x=>x.id===storySelection.dialogueId);
+ if(!dialogue)return null;
+ return {object:dialogue,parent:scene.dialogues,parentObject:scene};
+}
+
+function toggleStoryCollapse(key,event){
+ if(event)event.stopPropagation();
+ if(collapsedStoryNodes.has(key))collapsedStoryNodes.delete(key);else collapsedStoryNodes.add(key);
+ renderStoryTree();
+}
+
+function storyExpandAll(){collapsedStoryNodes.clear();renderStoryTree()}
+function storyCollapseAll(){
+ data.chapters.forEach(c=>{
+  collapsedStoryNodes.add(storyKey('chapter',c.id));
+  (c.sections||[]).forEach(s=>{
+   collapsedStoryNodes.add(storyKey('section',c.id,s.id));
+   (s.scenes||[]).forEach(sc=>collapsedStoryNodes.add(storyKey('scene',c.id,s.id,sc.id)));
+  });
+ });
+ renderStoryTree();
+}
+
+function storyNodeActive(type,chapterId,sectionId='',sceneId='',dialogueId=''){
+ return !!storySelection &&
+  storySelection.type===type &&
+  storySelection.chapterId===chapterId &&
+  storySelection.sectionId===sectionId &&
+  storySelection.sceneId===sceneId &&
+  storySelection.dialogueId===dialogueId;
+}
+
+function renderStoryTree(){
+ if(!window.storyTree)return;
+ const chapters=[...data.chapters].sort((a,b)=>(a.no||0)-(b.no||0));
+ if(!chapters.length){
+  storyTree.innerHTML='<div class="story-empty">章はまだありません。</div>';
+  return;
+ }
+ let out='';
+ chapters.forEach(chapter=>{
+  const ckey=storyKey('chapter',chapter.id);
+  const ccollapsed=collapsedStoryNodes.has(ckey);
+  out+=`<div class="tree-row level-1 ${storyNodeActive('chapter',chapter.id)?'active':''}" onclick="selectStoryNode('chapter','${escAttr(chapter.id)}')">
+   <button onclick="toggleStoryCollapse('${escAttr(ckey)}',event)">${ccollapsed?'▶':'▼'}</button>
+   <span class="tree-label">第${esc(chapter.no)}章 ${esc(chapter.title||'無題')}</span>
+  </div>`;
+  if(ccollapsed)return;
+
+  (chapter.sections||[]).sort((a,b)=>(a.no||0)-(b.no||0)).forEach(section=>{
+   const skey=storyKey('section',chapter.id,section.id);
+   const scollapsed=collapsedStoryNodes.has(skey);
+   out+=`<div class="tree-row level-2 ${storyNodeActive('section',chapter.id,section.id)?'active':''}" onclick="selectStoryNode('section','${escAttr(chapter.id)}','${escAttr(section.id)}')">
+    <button onclick="toggleStoryCollapse('${escAttr(skey)}',event)">${scollapsed?'▶':'▼'}</button>
+    <span class="tree-label">${esc(section.no)}節 ${esc(section.title||'無題')}</span>
+   </div>`;
+   if(scollapsed)return;
+
+   (section.scenes||[]).sort((a,b)=>(a.no||0)-(b.no||0)).forEach(scene=>{
+    const sceneKey=storyKey('scene',chapter.id,section.id,scene.id);
+    const sceneCollapsed=collapsedStoryNodes.has(sceneKey);
+    out+=`<div class="tree-row level-3 ${storyNodeActive('scene',chapter.id,section.id,scene.id)?'active':''}" onclick="selectStoryNode('scene','${escAttr(chapter.id)}','${escAttr(section.id)}','${escAttr(scene.id)}')">
+     <button onclick="toggleStoryCollapse('${escAttr(sceneKey)}',event)">${sceneCollapsed?'▶':'▼'}</button>
+     <span class="tree-label">Scene ${esc(scene.no)} ${esc(scene.title||'無題')}</span>
+    </div>`;
+    if(sceneCollapsed)return;
+
+    (scene.dialogues||[]).sort((a,b)=>(a.no||0)-(b.no||0)).forEach(dialogue=>{
+     const preview=(dialogue.text||'').slice(0,24);
+     out+=`<div class="tree-row level-4 ${storyNodeActive('dialogue',chapter.id,section.id,scene.id,dialogue.id)?'active':''}" onclick="selectStoryNode('dialogue','${escAttr(chapter.id)}','${escAttr(section.id)}','${escAttr(scene.id)}','${escAttr(dialogue.id)}')">
+      <span>💬</span>
+      <span class="tree-label">${esc(dialogue.speaker||'話者未設定')}: ${esc(preview||'台詞未設定')}</span>
+     </div>`;
+    });
+   });
+  });
+ });
+ storyTree.innerHTML=out;
+}
+
+function renderStoryEditor(){
+ const empty=document.getElementById('storyEditorEmpty');
+ const form=document.getElementById('storyEditorForm');
+ const selected=getStorySelectionObject();
+ if(!selected){
+  empty.classList.remove('hidden');
+  form.classList.add('hidden');
+  return;
+ }
+ empty.classList.add('hidden');
+ form.classList.remove('hidden');
+
+ const type=storySelection.type;
+ const obj=selected.object;
+ storyNodeType.value={chapter:'章',section:'節',scene:'シーン',dialogue:'会話'}[type];
+ storyNodeId.value=obj.id||'';
+ storyNodeNo.value=obj.no||1;
+ storyNodeTitle.value=obj.title||'';
+ storyNodeSpeaker.value=obj.speaker||'';
+ storyNodeText.value=type==='dialogue'?(obj.text||''):(obj.summary||'');
+ storyNodeTheme.value=obj.theme||'';
+ storyNodeStage.value=obj.stage_direction||'';
+
+ storyNoField.classList.toggle('hidden',false);
+ storyTitleField.classList.toggle('hidden',type==='dialogue');
+ storySpeakerField.classList.toggle('hidden',type!=='dialogue');
+ storyThemeField.classList.toggle('hidden',type!=='chapter');
+ storyStageField.classList.toggle('hidden',type!=='dialogue');
+ storyTextLabel.textContent=type==='dialogue'?'台詞':'あらすじ・内容';
+}
+
+function saveStoryNode(){
+ const selected=getStorySelectionObject();
+ if(!selected)return;
+ const obj=selected.object;
+ const type=storySelection.type;
+ obj.no=Math.max(1,+storyNodeNo.value||1);
+ if(type!=='dialogue')obj.title=storyNodeTitle.value.trim();
+ if(type==='chapter')obj.theme=storyNodeTheme.value.trim();
+ if(type==='dialogue'){
+  obj.speaker=storyNodeSpeaker.value.trim();
+  obj.text=storyNodeText.value;
+  obj.stage_direction=storyNodeStage.value;
+ }else{
+  obj.summary=storyNodeText.value;
+ }
+ obj.updated_at=now();
+ renumberStorySiblings(selected.parent);
+ persist('story node updated');
+ renderStoryEditor();
+}
+
+function renumberStorySiblings(list){
+ if(!Array.isArray(list))return;
+ list.sort((a,b)=>(a.no||0)-(b.no||0));
+ list.forEach((item,index)=>item.no=index+1);
+}
+
+function storyCreateChapter(){
+ const title=prompt('章タイトルを入力してください。');
+ if(!title)return;
+ const chapter={
+  id:nextId('Chapter'),
+  no:data.chapters.length+1,
+  title,
+  theme:'',
+  summary:'',
+  sections:[],
+  status:'draft',
+  created_at:now(),
+  updated_at:now()
+ };
+ data.chapters.push(chapter);
+ persist('chapter added from visual editor');
+ selectStoryNode('chapter',chapter.id);
+}
+
+function addChildStoryNode(){
+ const selected=getStorySelectionObject();
+ if(!selected)return;
+ const type=storySelection.type;
+ if(type==='chapter'){
+  const title=prompt('節タイトルを入力してください。');
+  if(!title)return;
+  const section={id:nextId('Section'),no:(selected.object.sections||[]).length+1,title,summary:'',scenes:[],status:'draft',created_at:now(),updated_at:now()};
+  selected.object.sections=selected.object.sections||[];
+  selected.object.sections.push(section);
+  persist('section added from visual editor');
+  selectStoryNode('section',selected.object.id,section.id);
+ }else if(type==='section'){
+  const title=prompt('シーンタイトルを入力してください。');
+  if(!title)return;
+  const scene={id:nextId('Scene'),no:(selected.object.scenes||[]).length+1,title,summary:'',dialogues:[],status:'draft',created_at:now(),updated_at:now()};
+  selected.object.scenes=selected.object.scenes||[];
+  selected.object.scenes.push(scene);
+  persist('scene added');
+  selectStoryNode('scene',storySelection.chapterId,selected.object.id,scene.id);
+ }else if(type==='scene'){
+  const dialogue={id:nextId('Dialogue'),no:(selected.object.dialogues||[]).length+1,speaker:'',text:'',stage_direction:'',created_at:now(),updated_at:now()};
+  selected.object.dialogues=selected.object.dialogues||[];
+  selected.object.dialogues.push(dialogue);
+  persist('dialogue added');
+  selectStoryNode('dialogue',storySelection.chapterId,storySelection.sectionId,selected.object.id,dialogue.id);
+ }else{
+  alert('会話には子要素を追加できません。');
+ }
+}
+
+function deleteSelectedStoryNode(){
+ const selected=getStorySelectionObject();
+ if(!selected)return;
+ const label={chapter:'章',section:'節',scene:'シーン',dialogue:'会話'}[storySelection.type];
+ if(!confirm(label+'を削除しますか？配下のデータも削除されます。'))return;
+ createBackup('before-story-delete');
+ const index=selected.parent.findIndex(x=>x.id===selected.object.id);
+ if(index>=0)selected.parent.splice(index,1);
+ renumberStorySiblings(selected.parent);
+ storySelection=null;
+ persist('story node deleted');
+ renderStoryTree();
+ renderStoryEditor();
+}
+
+function moveSelectedStoryNode(direction){
+ const selected=getStorySelectionObject();
+ if(!selected)return;
+ const list=selected.parent;
+ const index=list.findIndex(x=>x.id===selected.object.id);
+ const target=index+direction;
+ if(index<0||target<0||target>=list.length)return;
+ [list[index],list[target]]=[list[target],list[index]];
+ list.forEach((item,i)=>item.no=i+1);
+ persist('story node reordered');
+ renderStoryTree();
+ renderStoryEditor();
+}
+
 function renderProjects(){
  const list=getProjectRegistry().sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
  projectList.innerHTML=list.map(p=>`<div class="item"><b>${esc(p.name||p.id)}</b> <span class="badge ${p.id===currentProjectId?'ok':''}">${esc(p.id===currentProjectId?'使用中':p.id)}</span><div class="meta">最終更新: ${esc(p.updated_at||'')}</div><div class="toolbar"><button onclick="switchProject('${escAttr(p.id)}')">${p.id===currentProjectId?'開いています':'開く'}</button><button class="danger" onclick="deleteProject('${escAttr(p.id)}')">削除</button></div></div>`).join('');
@@ -797,7 +1167,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
 }
-function render(){renderProjects();renderProject();renderChapters();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
@@ -824,7 +1194,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','070');
+    url.searchParams.set('appv','080');
     location.replace(url.toString());
    }
  }
@@ -833,7 +1203,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=070',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=080',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -852,7 +1222,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','070');
+    url.searchParams.set('appv','080');
     location.replace(url.toString());
    }
   });
