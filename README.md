@@ -1,33 +1,43 @@
-# Guild Adventure Studio V4.5 Visual Story Editor v0.8.0
+# Guild Adventure Studio V4.6 Quest & Event Linker v0.9.0
 
 ## 新機能
 
-章 → 節 → シーン → 会話をツリー形式で管理するVisual Story Editorを追加しました。
+- クエストデータベース
+- イベントデータベース
+- 章・節・シーンとのリンク
+- クエストとイベントのリンク
+- キャラクターとの複数リンク
+- イベントフラグ管理
+- Reference Map
+- 孤立データの確認
+- 参照切れValidation
+- 検索・種別・Statusフィルター
 
-### 対応内容
+## クエスト項目
 
-- 章の追加・編集・削除
-- 節の追加・編集・削除
-- シーンの追加・編集・削除
-- 会話の追加・編集・削除
-- 話者、台詞、演出・舞台指示
-- 上下移動による並び替え
-- ツリーの展開・折りたたみ
-- 既存Storyデータとの共通管理
-- Validationでシーン・会話を検証
-- 既存LocalStorageデータの自動補完
-- Version 4.4のGitHub Sync、複数プロジェクト、PWA更新方式を維持
+- ID、名称、種別、Status
+- 概要
+- 受注条件
+- 達成条件
+- 報酬
+- 関連章・節・シーン
+- 関連キャラクター
 
-## 表示確認
+## イベント項目
 
-Version 4.5 Visual Story Editor v0.8.0 / Build 080
+- ID、名称、種別、Status
+- 内容
+- 発生条件
+- 結果・フラグ変更
+- 発生章・節・シーン
+- 関連クエスト
+- 登場キャラクター
+- 必要フラグ、設定フラグ
 
-## 公開確認URL
+## 更新確認
 
-https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=080
+表示:
+Version 4.6 Quest & Event Linker v0.9.0 / Build 090
 
-## Service Worker確認
-
-一行目:
-
-const CACHE_NAME='ga-studio-v080-build080';
+URL:
+https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=090

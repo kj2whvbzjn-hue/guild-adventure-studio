@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>Guild Adventure Studio V4.5</title>
+<title>Guild Adventure Studio V4.6</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -48,7 +48,7 @@ textarea{min-height:110px;resize:vertical}
 .item .meta{font-size:12px;color:var(--muted)}
 .badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;font-size:12px}
 .badge.ok{background:#d1fae5;color:var(--ok)}.badge.warn{background:#fef3c7;color:var(--warn)}.badge.err{background:#fee2e2;color:var(--danger)}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.kpi b{font-size:22px;display:block}
 pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;border-radius:10px;padding:12px;overflow:auto}
 .hidden{display:none!important}
@@ -78,6 +78,22 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .dialogue-row{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fff}
 .dialogue-row .speaker{font-weight:700}
 .order-buttons{display:flex;gap:6px;flex-wrap:wrap}
+
+.link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.link-panel{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fafafa}
+.link-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.link-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 9px;font-size:12px}
+.link-chip button{border:0;padding:0 2px;color:var(--danger);background:transparent}
+.reference-card{border-left:4px solid var(--accent);padding-left:12px}
+.filter-bar{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.compact-table{width:100%;border-collapse:collapse}
+.compact-table th,.compact-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.compact-table th{font-size:12px;color:var(--muted)}
+@media(max-width:900px){
+ .link-grid,.filter-bar{grid-template-columns:1fr}
+ .compact-table{display:block;overflow:auto}
+}
+
 @media(max-width:900px){
  .story-editor-layout{grid-template-columns:1fr;min-height:auto}
  .story-tree{max-height:320px}
@@ -100,7 +116,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <header>
   <div>
     <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4.5 Visual Story Editor v0.8.0 / Build 080</div>
+    <div class="version">Version 4.6 Quest & Event Linker v0.9.0 / Build 090</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -117,6 +133,9 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button data-view="project">Project</button>
     <button data-view="story">Story</button>
     <button data-view="storyeditor">Visual Story Editor</button>
+    <button data-view="quests">Quests</button>
+    <button data-view="events">Events</button>
+    <button data-view="references">Reference Map</button>
     <button data-view="characters">Characters</button>
     <button data-view="decisions">DecisionLog</button>
     <button data-view="entities">Data / ID Manager</button>
@@ -134,6 +153,8 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <div class="kpi"><span class="small">章</span><b id="kpiChapters">0</b></div>
     <div class="kpi"><span class="small">キャラクター</span><b id="kpiCharacters">0</b></div>
     <div class="kpi"><span class="small">決定事項</span><b id="kpiDecisions">0</b></div>
+    <div class="kpi"><span class="small">クエスト</span><b id="kpiQuests">0</b></div>
+    <div class="kpi"><span class="small">イベント</span><b id="kpiEvents">0</b></div>
     <div class="kpi"><span class="small">Validation</span><b id="kpiErrors">0</b></div>
   </div>
   <div class="card">
@@ -271,6 +292,184 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
       </div>
     </div>
   </div>
+</section>
+
+
+<section id="view-quests" class="view hidden">
+  <h1>Quest Database</h1>
+
+  <div class="card">
+    <h2>クエスト登録</h2>
+    <div class="grid">
+      <div class="field"><label>Quest ID</label><input id="questId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>クエスト名</label><input id="questName"></div>
+      <div class="field"><label>種別</label>
+        <select id="questType">
+          <option value="main">メイン</option>
+          <option value="sub">サブ</option>
+          <option value="guild">ギルド依頼</option>
+          <option value="character">キャラクター</option>
+        </select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="questStatus">
+          <option value="draft">draft</option>
+          <option value="review">review</option>
+          <option value="approved">approved</option>
+          <option value="archived">archived</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field"><label>概要</label><textarea id="questSummary"></textarea></div>
+    <div class="field"><label>受注条件</label><textarea id="questConditions"></textarea></div>
+    <div class="field"><label>達成条件</label><textarea id="questCompletion"></textarea></div>
+    <div class="field"><label>報酬</label><textarea id="questRewards"></textarea></div>
+
+    <div class="link-grid">
+      <div class="link-panel">
+        <b>関連シナリオ</b>
+        <div class="grid">
+          <div class="field"><label>章</label><select id="questChapterLink"></select></div>
+          <div class="field"><label>節</label><select id="questSectionLink"></select></div>
+          <div class="field"><label>シーン</label><select id="questSceneLink"></select></div>
+        </div>
+      </div>
+      <div class="link-panel">
+        <b>関連キャラクター</b>
+        <div class="field"><label>キャラクター</label><select id="questCharacterLink"></select></div>
+        <div id="questCharacterLinks" class="link-list"></div>
+        <button onclick="addQuestCharacterDraft()">関連キャラを追加</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="primary" onclick="saveQuest()">登録・更新</button>
+      <button onclick="clearQuestForm()">入力をクリア</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="filter-bar">
+      <input id="questSearch" placeholder="ID・名称・概要を検索" oninput="renderQuests()">
+      <select id="questTypeFilter" onchange="renderQuests()">
+        <option value="">全種別</option>
+        <option value="main">メイン</option>
+        <option value="sub">サブ</option>
+        <option value="guild">ギルド依頼</option>
+        <option value="character">キャラクター</option>
+      </select>
+      <select id="questStatusFilter" onchange="renderQuests()">
+        <option value="">全Status</option>
+        <option value="draft">draft</option>
+        <option value="review">review</option>
+        <option value="approved">approved</option>
+        <option value="archived">archived</option>
+      </select>
+    </div>
+  </div>
+  <div id="questList" class="list"></div>
+</section>
+
+<section id="view-events" class="view hidden">
+  <h1>Event Database</h1>
+
+  <div class="card">
+    <h2>イベント登録</h2>
+    <div class="grid">
+      <div class="field"><label>Event ID</label><input id="eventId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>イベント名</label><input id="eventName"></div>
+      <div class="field"><label>種別</label>
+        <select id="eventType">
+          <option value="story">ストーリー</option>
+          <option value="battle">戦闘</option>
+          <option value="choice">選択肢</option>
+          <option value="reward">報酬</option>
+          <option value="system">システム</option>
+        </select>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="eventStatus">
+          <option value="draft">draft</option>
+          <option value="review">review</option>
+          <option value="approved">approved</option>
+          <option value="archived">archived</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field"><label>内容</label><textarea id="eventSummary"></textarea></div>
+    <div class="field"><label>発生条件</label><textarea id="eventConditions"></textarea></div>
+    <div class="field"><label>結果・フラグ変更</label><textarea id="eventResults"></textarea></div>
+
+    <div class="link-grid">
+      <div class="link-panel">
+        <b>発生シーン</b>
+        <div class="grid">
+          <div class="field"><label>章</label><select id="eventChapterLink"></select></div>
+          <div class="field"><label>節</label><select id="eventSectionLink"></select></div>
+          <div class="field"><label>シーン</label><select id="eventSceneLink"></select></div>
+        </div>
+      </div>
+
+      <div class="link-panel">
+        <b>関連クエスト</b>
+        <div class="field"><label>クエスト</label><select id="eventQuestLink"></select></div>
+      </div>
+
+      <div class="link-panel">
+        <b>登場キャラクター</b>
+        <div class="field"><label>キャラクター</label><select id="eventCharacterLink"></select></div>
+        <div id="eventCharacterLinks" class="link-list"></div>
+        <button onclick="addEventCharacterDraft()">関連キャラを追加</button>
+      </div>
+
+      <div class="link-panel">
+        <b>フラグ</b>
+        <div class="field"><label>必要フラグ</label><input id="eventRequiredFlags" placeholder="FLAG-001, FLAG-002"></div>
+        <div class="field"><label>設定フラグ</label><input id="eventSetFlags" placeholder="FLAG-003"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="primary" onclick="saveEvent()">登録・更新</button>
+      <button onclick="clearEventForm()">入力をクリア</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="filter-bar">
+      <input id="eventSearch" placeholder="ID・名称・内容を検索" oninput="renderEvents()">
+      <select id="eventTypeFilter" onchange="renderEvents()">
+        <option value="">全種別</option>
+        <option value="story">ストーリー</option>
+        <option value="battle">戦闘</option>
+        <option value="choice">選択肢</option>
+        <option value="reward">報酬</option>
+        <option value="system">システム</option>
+      </select>
+      <select id="eventStatusFilter" onchange="renderEvents()">
+        <option value="">全Status</option>
+        <option value="draft">draft</option>
+        <option value="review">review</option>
+        <option value="approved">approved</option>
+        <option value="archived">archived</option>
+      </select>
+    </div>
+  </div>
+  <div id="eventList" class="list"></div>
+</section>
+
+<section id="view-references" class="view hidden">
+  <h1>Reference Map</h1>
+  <div class="card">
+    <p>シナリオ、クエスト、イベント、キャラクターの参照関係を確認します。</p>
+    <div class="toolbar">
+      <button class="primary" onclick="renderReferenceMap()">再集計</button>
+    </div>
+  </div>
+  <div id="referenceSummary" class="kpis"></div>
+  <div id="referenceList" class="list"></div>
 </section>
 
 <section id="view-characters" class="view hidden">
@@ -439,20 +638,20 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
-const APP_VERSION='0.8.0';
+const APP_VERSION='0.9.0';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
 const BKEY_PREFIX='gas_v4_backups_v060_';
 const PROJECT_KEY_PREFIX='gas_v4_project_v060_';
-const prefixes={Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG'};
+const prefixes={Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG',Quest:'QST',Event:'EVT'};
 function now(){return new Date().toISOString()}
 function initial(){
  return {schema_version:'4.0.0-draft',project:{id:'PRJ-GAS-V4',name:'Guild Adventure Studio',product_version:'4.0.0',status:'development',description:'AIと人間が共同でゲーム開発する統合開発環境',updated_at:now()},decisions:[
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],quests:[],events:[],entities:[],id_counters:{},history:[]}
 }
 migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
@@ -502,6 +701,29 @@ function normalizeData(){
   });
  });
  data.characters=data.characters||[];
+ data.quests=data.quests||[];
+ data.events=data.events||[];
+ data.quests.forEach(q=>{
+  q.type=q.type||'sub';
+  q.status=q.status||'draft';
+  q.summary=q.summary||'';
+  q.conditions=q.conditions||'';
+  q.completion=q.completion||'';
+  q.rewards=q.rewards||'';
+  q.links=q.links||{};
+  q.links.character_ids=q.links.character_ids||[];
+ });
+ data.events.forEach(e=>{
+  e.type=e.type||'story';
+  e.status=e.status||'draft';
+  e.summary=e.summary||'';
+  e.conditions=e.conditions||'';
+  e.results=e.results||'';
+  e.links=e.links||{};
+  e.links.character_ids=e.links.character_ids||[];
+  e.required_flags=e.required_flags||[];
+  e.set_flags=e.set_flags||[];
+ });
  data.entities=data.entities||[];
  data.decisions=data.decisions||[];
  data.history=data.history||[];
@@ -606,7 +828,7 @@ function deleteProject(id){
 function exportAllProjects(){
  const packageData={
   format:'guild-adventure-studio-multi-project',
-  version:'0.8.0',
+  version:'0.9.0',
   exported_at:now(),
   current_project_id:currentProjectId,
   projects:getProjectRegistry().map(meta=>({meta,data:loadProject(meta.id)}))
@@ -695,7 +917,7 @@ function addEntity(){
  persist('entity added')
 }
 function deleteEntity(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.entities=data.entities.filter(x=>x.id!==id);persist('entity deleted')}}
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
@@ -716,6 +938,21 @@ function runValidation(){
   });
  });
  data.characters.forEach(c=>{if(!c.name)validation.push({level:'ERROR',message:c.id+' の名前が未設定'})});
+ data.quests.forEach(q=>{
+  if(!q.name)validation.push({level:'ERROR',message:q.id+' のクエスト名が未設定'});
+  (q.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:q.id+' の関連キャラクターが存在しません: '+id})});
+  if(q.links?.chapter_id&&!getChapter(q.links.chapter_id))validation.push({level:'ERROR',message:q.id+' の関連章が存在しません'});
+  if(q.links?.section_id&&!getSection(q.links.chapter_id,q.links.section_id))validation.push({level:'ERROR',message:q.id+' の関連節が存在しません'});
+  if(q.links?.scene_id&&!getScene(q.links.chapter_id,q.links.section_id,q.links.scene_id))validation.push({level:'ERROR',message:q.id+' の関連シーンが存在しません'});
+ });
+ data.events.forEach(e=>{
+  if(!e.name)validation.push({level:'ERROR',message:e.id+' のイベント名が未設定'});
+  if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'ERROR',message:e.id+' の関連クエストが存在しません'});
+  (e.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:e.id+' の関連キャラクターが存在しません: '+id})});
+  if(e.links?.chapter_id&&!getChapter(e.links.chapter_id))validation.push({level:'ERROR',message:e.id+' の関連章が存在しません'});
+  if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'ERROR',message:e.id+' の関連節が存在しません'});
+  if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'ERROR',message:e.id+' の関連シーンが存在しません'});
+ });
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  if(!validation.length)validation.push({level:'OK',message:'重大な問題は見つかりませんでした。'});
  renderValidation();renderDashboard()
@@ -728,7 +965,7 @@ function exportProject(){
 }
 function importProject(){
  const f=document.getElementById('importFile').files[0];if(!f)return alert('JSONファイルを選択してください。');
- const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
+ const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.quests=obj.quests||[];obj.events=obj.events||[];createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
 
@@ -1134,6 +1371,330 @@ function moveSelectedStoryNode(direction){
  renderStoryEditor();
 }
 
+
+let questDraftCharacterIds=[];
+let eventDraftCharacterIds=[];
+
+function splitCsv(value){
+ return String(value||'').split(',').map(x=>x.trim()).filter(Boolean);
+}
+
+function getChapter(id){return data.chapters.find(x=>x.id===id)}
+function getSection(chapterId,sectionId){return (getChapter(chapterId)?.sections||[]).find(x=>x.id===sectionId)}
+function getScene(chapterId,sectionId,sceneId){return (getSection(chapterId,sectionId)?.scenes||[]).find(x=>x.id===sceneId)}
+
+function storyPath(link={}){
+ const chapter=getChapter(link.chapter_id);
+ const section=getSection(link.chapter_id,link.section_id);
+ const scene=getScene(link.chapter_id,link.section_id,link.scene_id);
+ return [chapter?`第${chapter.no}章 ${chapter.title}`:'',section?`${section.no}節 ${section.title}`:'',scene?`Scene ${scene.no} ${scene.title}`:''].filter(Boolean).join(' / ')||'未設定';
+}
+
+function refreshLinkSelectors(prefix,link={}){
+ const chapterSelect=document.getElementById(prefix+'ChapterLink');
+ const sectionSelect=document.getElementById(prefix+'SectionLink');
+ const sceneSelect=document.getElementById(prefix+'SceneLink');
+ if(!chapterSelect||!sectionSelect||!sceneSelect)return;
+
+ chapterSelect.innerHTML='<option value="">未設定</option>'+[...data.chapters]
+  .sort((a,b)=>(a.no||0)-(b.no||0))
+  .map(c=>`<option value="${escAttr(c.id)}">第${esc(c.no)}章 ${esc(c.title)}</option>`).join('');
+ chapterSelect.value=link.chapter_id||'';
+
+ const chapter=getChapter(chapterSelect.value);
+ sectionSelect.innerHTML='<option value="">未設定</option>'+((chapter?.sections||[])
+  .sort((a,b)=>(a.no||0)-(b.no||0))
+  .map(s=>`<option value="${escAttr(s.id)}">${esc(s.no)}節 ${esc(s.title)}</option>`).join(''));
+ sectionSelect.value=link.section_id||'';
+
+ const section=getSection(chapterSelect.value,sectionSelect.value);
+ sceneSelect.innerHTML='<option value="">未設定</option>'+((section?.scenes||[])
+  .sort((a,b)=>(a.no||0)-(b.no||0))
+  .map(sc=>`<option value="${escAttr(sc.id)}">Scene ${esc(sc.no)} ${esc(sc.title)}</option>`).join(''));
+ sceneSelect.value=link.scene_id||'';
+}
+
+function bindLinkSelectors(prefix){
+ const c=document.getElementById(prefix+'ChapterLink');
+ const s=document.getElementById(prefix+'SectionLink');
+ if(c&&!c.dataset.bound){
+  c.dataset.bound='1';
+  c.addEventListener('change',()=>refreshLinkSelectors(prefix,{chapter_id:c.value}));
+ }
+ if(s&&!s.dataset.bound){
+  s.dataset.bound='1';
+  s.addEventListener('change',()=>refreshLinkSelectors(prefix,{chapter_id:c.value,section_id:s.value}));
+ }
+}
+
+function renderCharacterSelect(selectId){
+ const el=document.getElementById(selectId);
+ if(!el)return;
+ el.innerHTML='<option value="">選択してください</option>'+data.characters
+  .map(c=>`<option value="${escAttr(c.id)}">${esc(c.name)} (${esc(c.id)})</option>`).join('');
+}
+
+function renderQuestSelect(selectId){
+ const el=document.getElementById(selectId);
+ if(!el)return;
+ el.innerHTML='<option value="">未設定</option>'+data.quests
+  .map(q=>`<option value="${escAttr(q.id)}">${esc(q.name)} (${esc(q.id)})</option>`).join('');
+}
+
+function characterName(id){return data.characters.find(x=>x.id===id)?.name||id}
+function questName(id){return data.quests.find(x=>x.id===id)?.name||id}
+
+function renderDraftCharacterChips(targetId,ids,removeFn){
+ const el=document.getElementById(targetId);
+ if(!el)return;
+ el.innerHTML=ids.map(id=>`<span class="link-chip">${esc(characterName(id))}<button onclick="${removeFn}('${escAttr(id)}')">×</button></span>`).join('')||'<span class="small">未設定</span>';
+}
+
+function addQuestCharacterDraft(){
+ const id=questCharacterLink.value;
+ if(id&&!questDraftCharacterIds.includes(id))questDraftCharacterIds.push(id);
+ renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+}
+function removeQuestCharacterDraft(id){
+ questDraftCharacterIds=questDraftCharacterIds.filter(x=>x!==id);
+ renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+}
+
+function addEventCharacterDraft(){
+ const id=eventCharacterLink.value;
+ if(id&&!eventDraftCharacterIds.includes(id))eventDraftCharacterIds.push(id);
+ renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
+}
+function removeEventCharacterDraft(id){
+ eventDraftCharacterIds=eventDraftCharacterIds.filter(x=>x!==id);
+ renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
+}
+
+function clearQuestForm(){
+ questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
+ questSummary.value='';questConditions.value='';questCompletion.value='';questRewards.value='';
+ questDraftCharacterIds=[];
+ refreshLinkSelectors('quest',{});
+ renderCharacterSelect('questCharacterLink');
+ renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+}
+
+function saveQuest(){
+ const id=questId.value.trim()||nextId('Quest');
+ const name=questName.value.trim();
+ if(!name)return alert('クエスト名を入力してください。');
+ const duplicate=allIds().includes(id)&&!data.quests.some(x=>x.id===id);
+ if(duplicate)return alert('そのIDは別データで使用されています。');
+
+ const record={
+  id,
+  name,
+  type:questType.value,
+  status:questStatus.value,
+  summary:questSummary.value,
+  conditions:questConditions.value,
+  completion:questCompletion.value,
+  rewards:questRewards.value,
+  links:{
+   chapter_id:questChapterLink.value||'',
+   section_id:questSectionLink.value||'',
+   scene_id:questSceneLink.value||'',
+   character_ids:[...questDraftCharacterIds]
+  },
+  updated_at:now()
+ };
+ const existing=data.quests.findIndex(x=>x.id===id);
+ if(existing>=0){
+  record.created_at=data.quests[existing].created_at||now();
+  data.quests[existing]=record;
+ }else{
+  record.created_at=now();
+  data.quests.push(record);
+ }
+ persist('quest saved');
+ clearQuestForm();
+ renderQuests();
+}
+
+function editQuest(id){
+ const q=data.quests.find(x=>x.id===id);if(!q)return;
+ questId.value=q.id;questName.value=q.name;questType.value=q.type;questStatus.value=q.status;
+ questSummary.value=q.summary||'';questConditions.value=q.conditions||'';questCompletion.value=q.completion||'';questRewards.value=q.rewards||'';
+ questDraftCharacterIds=[...(q.links?.character_ids||[])];
+ refreshLinkSelectors('quest',q.links||{});
+ renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+ showView('quests');
+}
+
+function deleteQuest(id){
+ const eventRefs=data.events.filter(e=>e.links?.quest_id===id);
+ if(eventRefs.length)return alert('関連イベントがあるため削除できません。先にイベントのクエストリンクを解除してください。');
+ if(!confirm(id+'を削除しますか？'))return;
+ createBackup('before-quest-delete');
+ data.quests=data.quests.filter(x=>x.id!==id);
+ persist('quest deleted');
+}
+
+function renderQuests(){
+ if(!window.questList)return;
+ const keyword=(questSearch?.value||'').trim().toLowerCase();
+ const type=questTypeFilter?.value||'';
+ const status=questStatusFilter?.value||'';
+ const list=data.quests.filter(q=>{
+  const hay=[q.id,q.name,q.summary,q.conditions,q.completion,q.rewards].join(' ').toLowerCase();
+  return (!keyword||hay.includes(keyword))&&(!type||q.type===type)&&(!status||q.status===status);
+ });
+ questList.innerHTML=list.map(q=>{
+  const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id);
+  return `<div class="item">
+   <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
+   <span class="badge">${esc(q.type)}</span> <span class="badge">${esc(q.status)}</span>
+   <p>${esc(q.summary||'')}</p>
+   <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
+   <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
+   <div class="meta">関連イベント: ${esc(linkedEvents.map(x=>x.name).join(', ')||'なし')}</div>
+   <div class="toolbar"><button onclick="editQuest('${escAttr(q.id)}')">編集</button><button class="danger" onclick="deleteQuest('${escAttr(q.id)}')">削除</button></div>
+  </div>`;
+ }).join('')||'<div class="card">クエストはまだありません。</div>';
+}
+
+function clearEventForm(){
+ eventId.value='';eventName.value='';eventType.value='story';eventStatus.value='draft';
+ eventSummary.value='';eventConditions.value='';eventResults.value='';
+ eventQuestLink.value='';eventRequiredFlags.value='';eventSetFlags.value='';
+ eventDraftCharacterIds=[];
+ refreshLinkSelectors('event',{});
+ renderCharacterSelect('eventCharacterLink');
+ renderQuestSelect('eventQuestLink');
+ renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
+}
+
+function saveEvent(){
+ const id=eventId.value.trim()||nextId('Event');
+ const name=eventName.value.trim();
+ if(!name)return alert('イベント名を入力してください。');
+ const duplicate=allIds().includes(id)&&!data.events.some(x=>x.id===id);
+ if(duplicate)return alert('そのIDは別データで使用されています。');
+
+ const record={
+  id,
+  name,
+  type:eventType.value,
+  status:eventStatus.value,
+  summary:eventSummary.value,
+  conditions:eventConditions.value,
+  results:eventResults.value,
+  required_flags:splitCsv(eventRequiredFlags.value),
+  set_flags:splitCsv(eventSetFlags.value),
+  links:{
+   chapter_id:eventChapterLink.value||'',
+   section_id:eventSectionLink.value||'',
+   scene_id:eventSceneLink.value||'',
+   quest_id:eventQuestLink.value||'',
+   character_ids:[...eventDraftCharacterIds]
+  },
+  updated_at:now()
+ };
+ const existing=data.events.findIndex(x=>x.id===id);
+ if(existing>=0){
+  record.created_at=data.events[existing].created_at||now();
+  data.events[existing]=record;
+ }else{
+  record.created_at=now();
+  data.events.push(record);
+ }
+ persist('event saved');
+ clearEventForm();
+ renderEvents();
+}
+
+function editEvent(id){
+ const e=data.events.find(x=>x.id===id);if(!e)return;
+ eventId.value=e.id;eventName.value=e.name;eventType.value=e.type;eventStatus.value=e.status;
+ eventSummary.value=e.summary||'';eventConditions.value=e.conditions||'';eventResults.value=e.results||'';
+ eventRequiredFlags.value=(e.required_flags||[]).join(', ');
+ eventSetFlags.value=(e.set_flags||[]).join(', ');
+ eventDraftCharacterIds=[...(e.links?.character_ids||[])];
+ refreshLinkSelectors('event',e.links||{});
+ renderQuestSelect('eventQuestLink');
+ eventQuestLink.value=e.links?.quest_id||'';
+ renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
+ showView('events');
+}
+
+function deleteEvent(id){
+ if(!confirm(id+'を削除しますか？'))return;
+ createBackup('before-event-delete');
+ data.events=data.events.filter(x=>x.id!==id);
+ persist('event deleted');
+}
+
+function renderEvents(){
+ if(!window.eventList)return;
+ const keyword=(eventSearch?.value||'').trim().toLowerCase();
+ const type=eventTypeFilter?.value||'';
+ const status=eventStatusFilter?.value||'';
+ const list=data.events.filter(e=>{
+  const hay=[e.id,e.name,e.summary,e.conditions,e.results,(e.required_flags||[]).join(' '),(e.set_flags||[]).join(' ')].join(' ').toLowerCase();
+  return (!keyword||hay.includes(keyword))&&(!type||e.type===type)&&(!status||e.status===status);
+ });
+ eventList.innerHTML=list.map(e=>`<div class="item">
+  <b>${esc(e.name)}</b> <span class="badge">${esc(e.id)}</span>
+  <span class="badge">${esc(e.type)}</span> <span class="badge">${esc(e.status)}</span>
+  <p>${esc(e.summary||'')}</p>
+  <div class="meta">シナリオ: ${esc(storyPath(e.links||{}))}</div>
+  <div class="meta">関連クエスト: ${esc(e.links?.quest_id?questName(e.links.quest_id):'なし')}</div>
+  <div class="meta">登場キャラ: ${esc((e.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
+  <div class="meta">必要フラグ: ${esc((e.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((e.set_flags||[]).join(', ')||'なし')}</div>
+  <div class="toolbar"><button onclick="editEvent('${escAttr(e.id)}')">編集</button><button class="danger" onclick="deleteEvent('${escAttr(e.id)}')">削除</button></div>
+ </div>`).join('')||'<div class="card">イベントはまだありません。</div>';
+}
+
+function renderReferenceMap(){
+ if(!window.referenceSummary||!window.referenceList)return;
+ const linkedQuests=data.quests.filter(q=>q.links?.chapter_id||q.links?.section_id||q.links?.scene_id).length;
+ const linkedEvents=data.events.filter(e=>e.links?.chapter_id||e.links?.section_id||e.links?.scene_id).length;
+ const orphanQuests=data.quests.filter(q=>!q.links?.chapter_id&&!data.events.some(e=>e.links?.quest_id===q.id)).length;
+ const orphanEvents=data.events.filter(e=>!e.links?.chapter_id&&!e.links?.quest_id).length;
+
+ referenceSummary.innerHTML=`
+  <div class="kpi"><span class="small">クエスト</span><b>${data.quests.length}</b></div>
+  <div class="kpi"><span class="small">イベント</span><b>${data.events.length}</b></div>
+  <div class="kpi"><span class="small">孤立クエスト</span><b>${orphanQuests}</b></div>
+  <div class="kpi"><span class="small">孤立イベント</span><b>${orphanEvents}</b></div>`;
+
+ const rows=[];
+ data.quests.forEach(q=>{
+  const events=data.events.filter(e=>e.links?.quest_id===q.id);
+  rows.push(`<div class="item reference-card">
+   <b>Quest: ${esc(q.name)} (${esc(q.id)})</b>
+   <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
+   <div class="meta">イベント: ${esc(events.map(e=>e.name+' ('+e.id+')').join(', ')||'なし')}</div>
+   <div class="meta">キャラクター: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
+  </div>`);
+ });
+ data.events.filter(e=>!e.links?.quest_id).forEach(e=>{
+  rows.push(`<div class="item reference-card">
+   <b>Standalone Event: ${esc(e.name)} (${esc(e.id)})</b>
+   <div class="meta">シナリオ: ${esc(storyPath(e.links||{}))}</div>
+   <div class="meta">キャラクター: ${esc((e.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
+  </div>`);
+ });
+ referenceList.innerHTML=rows.join('')||'<div class="card">参照データはまだありません。</div>';
+}
+
+function initializeQuestEventUI(){
+ refreshLinkSelectors('quest',{});
+ refreshLinkSelectors('event',{});
+ bindLinkSelectors('quest');
+ bindLinkSelectors('event');
+ renderCharacterSelect('questCharacterLink');
+ renderCharacterSelect('eventCharacterLink');
+ renderQuestSelect('eventQuestLink');
+ renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+ renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
+}
+
 function renderProjects(){
  const list=getProjectRegistry().sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
  projectList.innerHTML=list.map(p=>`<div class="item"><b>${esc(p.name||p.id)}</b> <span class="badge ${p.id===currentProjectId?'ok':''}">${esc(p.id===currentProjectId?'使用中':p.id)}</span><div class="meta">最終更新: ${esc(p.updated_at||'')}</div><div class="toolbar"><button onclick="switchProject('${escAttr(p.id)}')">${p.id===currentProjectId?'開いています':'開く'}</button><button class="danger" onclick="deleteProject('${escAttr(p.id)}')">削除</button></div></div>`).join('');
@@ -1165,9 +1726,9 @@ function renderBackups(){
  backupList.innerHTML=backups().map(b=>`<div class="item"><b>${esc(b.id)}</b><div class="meta">${esc(b.at)} / ${esc(b.reason)}</div><button onclick="restoreBackup('${escAttr(b.id)}')">復元</button></div>`).join('')||'<div class="card">バックアップなし</div>'
 }
 function renderDashboard(){
- kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
+ kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
 }
-function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderReferenceMap();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
@@ -1194,7 +1755,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','080');
+    url.searchParams.set('appv','090');
     location.replace(url.toString());
    }
  }
@@ -1203,7 +1764,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=080',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=090',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -1222,7 +1783,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','080');
+    url.searchParams.set('appv','090');
     location.replace(url.toString());
    }
   });
@@ -1236,7 +1797,7 @@ async function registerAppServiceWorker(){
 }
 
 window.addEventListener('load',registerAppServiceWorker);
-loadGitHubSettings();render();runValidation();
+loadGitHubSettings();initializeQuestEventUI();render();runValidation();
 </script>
 </body>
 </html>

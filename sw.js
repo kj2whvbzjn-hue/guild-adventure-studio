@@ -1,11 +1,11 @@
-const CACHE_NAME='ga-studio-v080-build080';
-const OFFLINE_URL='./index.html?appv=080';
+const CACHE_NAME='ga-studio-v090-build090';
+const OFFLINE_URL='./index.html?appv=090';
 const APP_SHELL=[
   './',
-  './index.html?appv=080',
-  './manifest.webmanifest?v=080',
-  './icon-192.png?v=080',
-  './icon-512.png?v=080'
+  './index.html?appv=090',
+  './manifest.webmanifest?v=090',
+  './icon-192.png?v=090',
+  './icon-512.png?v=090'
 ];
 
 self.addEventListener('install',event=>{
