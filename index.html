@@ -73,10 +73,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <header>
   <div>
     <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4.2 GitHub Sync v0.5.0</div>
+    <div class="version">Version 4.3 Multi Project v0.6.0</div>
   </div>
   <div class="spacer"></div>
-  <span id="saveStatus" class="status">未保存</span>
+  <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
   <button class="desktop-only" onclick="saveLocal()">端末保存</button>
   <button id="installBtn" class="desktop-only hidden">アプリをインストール</button><button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
 </header>
@@ -86,6 +86,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   <div class="pane-title">Explorer</div>
   <div class="nav" id="nav">
     <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="projects">Projects</button>
     <button data-view="project">Project</button>
     <button data-view="story">Story</button>
     <button data-view="characters">Characters</button>
@@ -120,6 +121,28 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
       <button onclick="runValidation();showView('validation')">検証する</button>
       <button onclick="exportProject()">JSON出力</button>
     </div>
+  </div>
+</section>
+
+
+<section id="view-projects" class="view hidden">
+  <h1>Projects</h1>
+
+  <div class="card">
+    <h2>新規プロジェクト</h2>
+    <div class="grid">
+      <div class="field"><label>Project ID</label><input id="newProjectId" placeholder="PRJ-MY-GAME"></div>
+      <div class="field"><label>Project Name</label><input id="newProjectName" placeholder="新しいゲーム企画"></div>
+    </div>
+    <div class="toolbar">
+      <button class="primary" onclick="createNewProject()">新規作成</button>
+      <button onclick="duplicateCurrentProject()">現在のプロジェクトを複製</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>登録プロジェクト</h2>
+    <div id="projectList" class="list"></div>
   </div>
 </section>
 
@@ -275,7 +298,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   <div class="card">
     <h2>JSON出力</h2>
     <p>現在の正本データをUTF-8 JSONとして保存します。</p>
-    <button class="primary" onclick="exportProject()">JSONを保存</button>
+    <button class="primary" onclick="exportProject()">現在のJSONを保存</button> <button onclick="exportAllProjects()">全プロジェクトを一括出力</button>
   </div>
   <div class="card">
     <h2>JSON読込</h2>
@@ -309,7 +332,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
-const KEY='gas_v4_project_v030', BKEY='gas_v4_backups_v030';
+const LEGACY_KEY='gas_v4_project_v030';
+const REGISTRY_KEY='gas_v4_project_registry_v060';
+const CURRENT_KEY='gas_v4_current_project_v060';
+const BKEY_PREFIX='gas_v4_backups_v060_';
+const PROJECT_KEY_PREFIX='gas_v4_project_v060_';
 const prefixes={Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP'};
 function now(){return new Date().toISOString()}
 function initial(){
@@ -319,16 +346,54 @@ function initial(){
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
  ],chapters:[],characters:[],entities:[],id_counters:{},history:[]}
 }
-let data=load()||initial(), validation=[];
-data.chapters=data.chapters||[];
-data.characters=data.characters||[];
-data.entities=data.entities||[];
-data.decisions=data.decisions||[];
-data.history=data.history||[];
-function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
-function backups(){try{return JSON.parse(localStorage.getItem(BKEY))||[]}catch(e){return []}}
+migrateLegacyProject();
+let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
+localStorage.setItem(CURRENT_KEY,currentProjectId);
+let data=loadProject(currentProjectId)||initial(), validation=[];
+normalizeData();
+function projectStorageKey(id){return PROJECT_KEY_PREFIX+id}
+function backupStorageKey(id){return BKEY_PREFIX+id}
+function getProjectRegistry(){
+ try{return JSON.parse(localStorage.getItem(REGISTRY_KEY))||[]}catch(e){return []}
+}
+function saveProjectRegistry(list){
+ localStorage.setItem(REGISTRY_KEY,JSON.stringify(list))
+}
+function migrateLegacyProject(){
+ if(getProjectRegistry().length)return;
+ let legacy=null;
+ try{legacy=JSON.parse(localStorage.getItem(LEGACY_KEY))}catch(e){}
+ const seed=legacy||initial();
+ const id=seed.project?.id||'PRJ-GAS-V4';
+ localStorage.setItem(projectStorageKey(id),JSON.stringify(seed));
+ saveProjectRegistry([{id,name:seed.project?.name||id,updated_at:seed.project?.updated_at||now()}]);
+ localStorage.setItem(CURRENT_KEY,id);
+}
+function loadProject(id){
+ try{return JSON.parse(localStorage.getItem(projectStorageKey(id)))}catch(e){return null}
+}
+function normalizeData(){
+ data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
+ data.chapters=data.chapters||[];
+ data.characters=data.characters||[];
+ data.entities=data.entities||[];
+ data.decisions=data.decisions||[];
+ data.history=data.history||[];
+}
+function backups(){
+ try{return JSON.parse(localStorage.getItem(backupStorageKey(currentProjectId)))||[]}catch(e){return []}
+}
+function updateRegistryFromData(){
+ let list=getProjectRegistry();
+ const entry={id:data.project.id,name:data.project.name||data.project.id,updated_at:data.project.updated_at||now()};
+ const idx=list.findIndex(x=>x.id===currentProjectId);
+ if(idx>=0)list[idx]=entry;else list.push(entry);
+ saveProjectRegistry(list);
+}
 function persist(message='端末保存'){
- data.project.updated_at=now(); localStorage.setItem(KEY,JSON.stringify(data));
+ data.project.updated_at=now();
+ localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data));
+ updateRegistryFromData();
  document.getElementById('saveStatus').textContent='保存済み';
  data.history=data.history||[]; data.history.push({at:now(),message});
  if(data.history.length>100)data.history.shift();
@@ -337,14 +402,14 @@ function persist(message='端末保存'){
 function saveLocal(){createBackup('save');persist()}
 function createBackup(reason){
  let list=backups(); list.unshift({id:'BKP-'+Date.now(),at:now(),reason,data:structuredClone(data)});
- list=list.slice(0,30);localStorage.setItem(BKEY,JSON.stringify(list));renderBackups();renderDashboard()
+ list=list.slice(0,30);localStorage.setItem(backupStorageKey(currentProjectId),JSON.stringify(list));renderBackups();renderDashboard()
 }
 function restoreBackup(id){
  let b=backups().find(x=>x.id===id);if(!b)return;
  if(!confirm('このバックアップへ復元しますか？'))return;
  createBackup('before-restore');data=structuredClone(b.data);persist('backup restore')
 }
-function clearBackups(){if(confirm('全バックアップを削除しますか？')){localStorage.removeItem(BKEY);render()}}
+function clearBackups(){if(confirm('全バックアップを削除しますか？')){localStorage.removeItem(backupStorageKey(currentProjectId));render()}}
 function showView(name){
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
  document.getElementById('view-'+name).classList.remove('hidden');
@@ -352,8 +417,90 @@ function showView(name){
  document.getElementById('selectedLabel').value=name; closeMobile(); render()
 }
 document.getElementById('nav').addEventListener('click',e=>{if(e.target.dataset.view)showView(e.target.dataset.view)})
+
+function sanitizeProjectId(value){
+ return value.trim().replace(/\s+/g,'-').replace(/[^A-Za-z0-9_-]/g,'').toUpperCase()
+}
+function createNewProject(){
+ let id=sanitizeProjectId(newProjectId.value);
+ let name=newProjectName.value.trim();
+ if(!id||!name)return alert('Project IDとProject Nameを入力してください。');
+ if(getProjectRegistry().some(x=>x.id===id))return alert('同じProject IDが既に存在します。');
+ createBackup('before-project-create');
+ let fresh=initial();
+ fresh.project.id=id;
+ fresh.project.name=name;
+ fresh.project.description='';
+ fresh.project.updated_at=now();
+ localStorage.setItem(projectStorageKey(id),JSON.stringify(fresh));
+ let list=getProjectRegistry();list.push({id,name,updated_at:fresh.project.updated_at});saveProjectRegistry(list);
+ switchProject(id);
+}
+function switchProject(id){
+ if(id===currentProjectId)return showView('dashboard');
+ localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data));
+ currentProjectId=id;
+ localStorage.setItem(CURRENT_KEY,id);
+ data=loadProject(id)||initial();
+ normalizeData();
+ validation=[];
+ runValidation();
+ showView('dashboard');
+}
+function duplicateCurrentProject(){
+ const name=prompt('複製後のProject Nameを入力してください。',(data.project.name||'Project')+' Copy');
+ if(!name)return;
+ const idInput=prompt('複製後のProject IDを入力してください。',(data.project.id||'PRJ')+'-COPY');
+ if(!idInput)return;
+ const id=sanitizeProjectId(idInput);
+ if(!id)return alert('有効なProject IDではありません。');
+ if(getProjectRegistry().some(x=>x.id===id))return alert('同じProject IDが既に存在します。');
+ const copy=structuredClone(data);
+ copy.project.id=id;
+ copy.project.name=name.trim();
+ copy.project.updated_at=now();
+ copy.history=copy.history||[];
+ copy.history.push({at:now(),message:'project duplicated from '+currentProjectId});
+ localStorage.setItem(projectStorageKey(id),JSON.stringify(copy));
+ let list=getProjectRegistry();list.push({id,name:copy.project.name,updated_at:copy.project.updated_at});saveProjectRegistry(list);
+ switchProject(id);
+}
+function deleteProject(id){
+ const list=getProjectRegistry();
+ if(list.length<=1)return alert('最後のプロジェクトは削除できません。');
+ if(!confirm(id+' を端末から削除しますか？この操作は元に戻せません。'))return;
+ localStorage.removeItem(projectStorageKey(id));
+ localStorage.removeItem(backupStorageKey(id));
+ saveProjectRegistry(list.filter(x=>x.id!==id));
+ if(id===currentProjectId){
+  const next=getProjectRegistry()[0].id;
+  switchProject(next);
+ }else renderProjects();
+}
+function exportAllProjects(){
+ const packageData={
+  format:'guild-adventure-studio-multi-project',
+  version:'0.6.0',
+  exported_at:now(),
+  current_project_id:currentProjectId,
+  projects:getProjectRegistry().map(meta=>({meta,data:loadProject(meta.id)}))
+ };
+ const blob=new Blob([JSON.stringify(packageData,null,2)],{type:'application/json;charset=utf-8'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='guild-adventure-studio-all-projects.json';a.click();URL.revokeObjectURL(a.href)
+}
+
 function applyProject(){
- data.project.id=document.getElementById('projectId').value.trim();
+ const requestedId=sanitizeProjectId(document.getElementById('projectId').value);
+ if(!requestedId)return alert('Project IDを入力してください。');
+ if(requestedId!==currentProjectId){
+  if(getProjectRegistry().some(x=>x.id===requestedId))return alert('変更後のProject IDは既に使用されています。');
+  localStorage.removeItem(projectStorageKey(currentProjectId));
+  const list=getProjectRegistry().map(x=>x.id===currentProjectId?{...x,id:requestedId}:x);
+  saveProjectRegistry(list);
+  currentProjectId=requestedId;
+  localStorage.setItem(CURRENT_KEY,currentProjectId);
+ }
+ data.project.id=currentProjectId;
  data.project.product_version=document.getElementById('projectVersion').value.trim();
  data.project.name=document.getElementById('projectName').value.trim();
  data.project.status=document.getElementById('projectStatus').value;
@@ -551,6 +698,17 @@ async function pushToGitHub(){
    pushed_at:now()
   };
   const remote=await getRemoteFile(c);
+  if(remote?.content){
+   try{
+    const remoteObj=JSON.parse(base64ToUtf8(remote.content));
+    const remoteTime=Date.parse(remoteObj?.project?.updated_at||0);
+    const lastPull=Date.parse(data?.sync_meta?.pulled_at||0);
+    if(remoteTime>lastPull){
+     const proceed=confirm('GitHub側に、この端末が最後に読み込んだ後の更新があります。上書きすると他端末の変更が失われる可能性があります。上書きしますか？');
+     if(!proceed){setGhStatus('保存を中止しました。先にGitHubから読込してください。','WARNING');return;}
+    }
+   }catch(e){}
+  }
   const payload={
    message:`Update Guild Adventure Studio project ${new Date().toISOString()}`,
    content:utf8ToBase64(JSON.stringify(data,null,2)),
@@ -581,11 +739,19 @@ async function pullFromGitHub(){
   obj.characters=obj.characters||[];
   obj.history=obj.history||[];
   data=obj;
+  data.sync_meta=data.sync_meta||{};
+  data.sync_meta.pulled_at=now();
   persist('github pull');
   setGhStatus('GitHubからの読込が完了しました。','OK');
  }catch(e){
   setGhStatus('読込失敗: '+e.message,'ERROR');
  }finally{setGhBusy(false)}
+}
+
+
+function renderProjects(){
+ const list=getProjectRegistry().sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
+ projectList.innerHTML=list.map(p=>`<div class="item"><b>${esc(p.name||p.id)}</b> <span class="badge ${p.id===currentProjectId?'ok':''}">${esc(p.id===currentProjectId?'使用中':p.id)}</span><div class="meta">最終更新: ${esc(p.updated_at||'')}</div><div class="toolbar"><button onclick="switchProject('${escAttr(p.id)}')">${p.id===currentProjectId?'開いています':'開く'}</button><button class="danger" onclick="deleteProject('${escAttr(p.id)}')">削除</button></div></div>`).join('');
 }
 
 function renderProject(){
@@ -616,12 +782,12 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
 }
-function render(){renderProject();renderChapters();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||''}
+function render(){renderProjects();renderProject();renderChapters();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
 function closeMobile(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('inspector').classList.remove('mobile-open')}
-window.addEventListener('beforeunload',()=>localStorage.setItem(KEY,JSON.stringify(data)));
+window.addEventListener('beforeunload',()=>localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data)));
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
 installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.classList.add('hidden')});
