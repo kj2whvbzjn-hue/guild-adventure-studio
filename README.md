@@ -1,45 +1,44 @@
-# Guild Adventure Studio V4.3 Multi Project v0.6.0
+# Guild Adventure Studio V4.3.1 Cache Update v0.6.1
 
-## 今回の正式追加
+## この版の目的
 
-- 複数プロジェクト管理
-- 新規プロジェクト作成
-- プロジェクト切替
-- 現在プロジェクトの複製
-- プロジェクト削除
-- プロジェクトごとの端末保存
-- プロジェクトごとの30世代バックアップ
-- 全プロジェクト一括JSON出力
-- 旧単一プロジェクトデータの自動移行
-- GitHub同期時の更新競合警告
-- Version 4.2までのPWA、Story、Character、Validation、GitHub Syncを継続
+Version 4.3の機能は維持したまま、GitHub Pages更新後も古い画面が残る問題を改善した修正版です。
 
-## GitHub Pages更新
+## 修正内容
+
+- Service WorkerをNetwork First方式へ変更
+- `index.html`、`sw.js`、`manifest.webmanifest`は常にネットワーク優先
+- Service Worker更新時のキャッシュ利用を抑制
+- 古いキャッシュの自動削除
+- 新しいService Worker検出時に更新通知を表示
+- 「今すぐ更新」で新しい版へ切替
+- 起動時に最新版を確認
+- 起動中は15分ごとに更新確認
+- PC・iPhone両対応
+- Version 4.3の複数プロジェクト、GitHub Sync、Story、Character、Validationを継続
+
+## GitHub Pages更新手順
 
 1. ZIPを展開
 2. GitHubの `guild-adventure-studio` リポジトリを開く
 3. Add file → Upload files
 4. 展開した全ファイルをアップロード
 5. Commit changes
-6. 1～2分待つ
-7. GitHub Pagesを再読み込み
+6. GitHub Pagesのデプロイ完了を待つ
+7. ページを一度再読み込み
 
-## データ移行
+## 初回だけ古い画面が残る場合
 
-同じGitHub Pages URLで開けば、旧Version 4.2の端末保存データを最初のプロジェクトとして自動移行します。
+旧Service Worker自体が古い更新方式で動いているため、Version 4.3.1へ移る最初の一度だけ、旧ブラウザでは次のいずれかが必要になる場合があります。
 
-念のため、更新前に旧画面からJSON出力してください。
+- 別ブラウザで開く
+- サイトデータを削除
+- Service WorkerをUnregister
+- iPhoneのホーム画面アイコンを削除して再追加
 
-## 推奨運用
+Version 4.3.1が一度読み込まれた後は、以後の更新を検出しやすくなります。
 
-- 作品ごとにProjectを分ける
-- 大きな変更前に手動バックアップ
-- 重要な作業後に現在のJSONを出力
-- 定期的に全プロジェクト一括出力
-- PCとiPhoneの切替時はGitHubから読込
-- 作業終了時はGitHubへ保存
+## データについて
 
-## 制限
-
-複数端末で同時に編集しないでください。
-GitHub側に新しい更新がある場合は警告しますが、自動マージはまだ行いません。
+同じGitHub Pages URLで開く限り、端末内のLocalStorageデータは原則として維持されます。
+念のため、更新前に重要なプロジェクトをJSON出力してください。

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>Guild Adventure Studio V4</title>
+<title>Guild Adventure Studio V4.3.1</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -56,6 +56,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .inspector-body{padding:12px}
 .small{font-size:12px;color:var(--muted)}
 .sync-working{opacity:.65;pointer-events:none}
+.update-banner{display:none;position:fixed;left:16px;right:16px;bottom:72px;z-index:100;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.16);padding:14px;align-items:center;gap:12px}
+.update-banner.show{display:flex}
+.update-banner .message{flex:1}
+@media(min-width:901px){.update-banner{left:auto;right:20px;bottom:20px;max-width:520px}}
 @media(max-width:900px){
   .main{grid-template-columns:1fr}
   .sidebar,.inspector{display:none}
@@ -73,7 +77,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <header>
   <div>
     <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4.3 Multi Project v0.6.0</div>
+    <div class="version">Version 4.3.1 Cache Update v0.6.1</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -324,6 +328,16 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </aside>
 </div>
 
+
+<div id="updateBanner" class="update-banner" role="status" aria-live="polite">
+  <div class="message">
+    <b>新しいバージョンがあります</b>
+    <div class="small">最新版を反映するため、ページを更新してください。</div>
+  </div>
+  <button class="primary" onclick="applyAppUpdate()">今すぐ更新</button>
+  <button onclick="dismissAppUpdate()">後で</button>
+</div>
+
 <div class="mobile-tabs">
   <button onclick="toggleMobile('sidebar')">Explorer</button>
   <button onclick="closeMobile()">Editor</button>
@@ -332,6 +346,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
+const APP_VERSION='0.6.1';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -791,7 +806,58 @@ window.addEventListener('beforeunload',()=>localStorage.setItem(projectStorageKe
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
 installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.classList.add('hidden')});
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+
+let pendingServiceWorker=null;
+
+function showAppUpdate(worker){
+ pendingServiceWorker=worker||null;
+ document.getElementById('updateBanner').classList.add('show');
+}
+
+function dismissAppUpdate(){
+ document.getElementById('updateBanner').classList.remove('show');
+}
+
+function applyAppUpdate(){
+ if(pendingServiceWorker){
+  pendingServiceWorker.postMessage({type:'SKIP_WAITING'});
+ }else{
+  location.reload();
+ }
+}
+
+async function registerAppServiceWorker(){
+ if(!('serviceWorker' in navigator))return;
+ try{
+  const registration=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+
+  if(registration.waiting){
+   showAppUpdate(registration.waiting);
+  }
+
+  registration.addEventListener('updatefound',()=>{
+   const worker=registration.installing;
+   if(!worker)return;
+   worker.addEventListener('statechange',()=>{
+    if(worker.state==='installed' && navigator.serviceWorker.controller){
+     showAppUpdate(worker);
+    }
+   });
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+   location.reload();
+  });
+
+  // 起動時と定期的に最新版を確認
+  await registration.update();
+  setInterval(()=>registration.update().catch(()=>{}),15*60*1000);
+ }catch(e){
+  console.warn('Service Worker registration failed:',e);
+ }
+}
+
+window.addEventListener('load',registerAppServiceWorker);
 loadGitHubSettings();render();runValidation();
 </script>
 </body>
