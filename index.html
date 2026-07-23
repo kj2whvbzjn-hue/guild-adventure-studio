@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f4f6">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="GA Studio">
 <title>Guild Adventure Studio V4</title>
 <style>
 :root{
@@ -50,6 +55,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .mobile-tabs{display:none}
 .inspector-body{padding:12px}
 .small{font-size:12px;color:var(--muted)}
+.sync-working{opacity:.65;pointer-events:none}
 @media(max-width:900px){
   .main{grid-template-columns:1fr}
   .sidebar,.inspector{display:none}
@@ -67,12 +73,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <header>
   <div>
     <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4 Browser Standalone v0.3.0</div>
+    <div class="version">Version 4.2 GitHub Sync v0.5.0</div>
   </div>
   <div class="spacer"></div>
   <span id="saveStatus" class="status">未保存</span>
   <button class="desktop-only" onclick="saveLocal()">端末保存</button>
-  <button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
+  <button id="installBtn" class="desktop-only hidden">アプリをインストール</button><button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
 </header>
 
 <div class="main">
@@ -81,10 +87,13 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   <div class="nav" id="nav">
     <button data-view="dashboard" class="active">Dashboard</button>
     <button data-view="project">Project</button>
+    <button data-view="story">Story</button>
+    <button data-view="characters">Characters</button>
     <button data-view="decisions">DecisionLog</button>
     <button data-view="entities">Data / ID Manager</button>
     <button data-view="validation">Validation</button>
     <button data-view="backup">Backup</button>
+    <button data-view="githubsync">GitHub Sync</button>
     <button data-view="importexport">Import / Export</button>
   </div>
 </aside>
@@ -93,10 +102,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <section id="view-dashboard" class="view">
   <h1>Dashboard</h1>
   <div class="kpis">
+    <div class="kpi"><span class="small">章</span><b id="kpiChapters">0</b></div>
+    <div class="kpi"><span class="small">キャラクター</span><b id="kpiCharacters">0</b></div>
     <div class="kpi"><span class="small">決定事項</span><b id="kpiDecisions">0</b></div>
-    <div class="kpi"><span class="small">登録データ</span><b id="kpiEntities">0</b></div>
     <div class="kpi"><span class="small">Validation</span><b id="kpiErrors">0</b></div>
-    <div class="kpi"><span class="small">Backup</span><b id="kpiBackups">0</b></div>
   </div>
   <div class="card">
     <h2>現在の開発フェーズ</h2>
@@ -126,6 +135,37 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <div class="field"><label>Description</label><textarea id="projectDescription"></textarea></div>
     <button class="primary" onclick="applyProject()">変更を反映</button>
   </div>
+</section>
+
+<section id="view-story" class="view hidden">
+  <h1>Story</h1>
+  <div class="card">
+    <h2>章の追加</h2>
+    <div class="grid">
+      <div class="field"><label>Chapter ID</label><input id="chapterId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>章番号</label><input id="chapterNo" type="number" min="1" value="1"></div>
+      <div class="field"><label>章タイトル</label><input id="chapterTitle"></div>
+      <div class="field"><label>テーマ</label><input id="chapterTheme"></div>
+    </div>
+    <div class="field"><label>あらすじ</label><textarea id="chapterSummary"></textarea></div>
+    <button class="primary" onclick="addChapter()">章を登録</button>
+  </div>
+  <div id="chapterList" class="list"></div>
+</section>
+
+<section id="view-characters" class="view hidden">
+  <h1>Characters</h1>
+  <div class="card">
+    <div class="grid">
+      <div class="field"><label>Character ID</label><input id="characterId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>名前</label><input id="characterName"></div>
+      <div class="field"><label>役割</label><input id="characterRole" placeholder="主人公、仲間、協力者など"></div>
+      <div class="field"><label>職業</label><input id="characterJob"></div>
+    </div>
+    <div class="field"><label>性格・設定</label><textarea id="characterProfile"></textarea></div>
+    <button class="primary" onclick="addCharacter()">キャラクター登録</button>
+  </div>
+  <div id="characterList" class="list"></div>
 </section>
 
 <section id="view-decisions" class="view hidden">
@@ -170,6 +210,64 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button class="danger" onclick="clearBackups()">全バックアップ削除</button>
   </div>
   <div id="backupList" class="list"></div>
+</section>
+
+
+<section id="view-githubsync" class="view hidden">
+  <h1>GitHub Sync <span class="badge warn">試験機能</span></h1>
+
+  <div class="card">
+    <h2>概要</h2>
+    <p>プロジェクトJSONをGitHubリポジトリ内のファイルとして保存し、PCとiPhoneで共有します。</p>
+    <p class="small"><strong>推奨:</strong> ゲーム内容を公開したくない場合は、データ保存専用の非公開リポジトリを使用してください。GitHub Pages用の公開リポジトリに保存すると、JSONも公開されます。</p>
+  </div>
+
+  <div class="card">
+    <h2>接続設定</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Owner</label>
+        <input id="ghOwner" placeholder="GitHubユーザー名">
+      </div>
+      <div class="field">
+        <label>Repository</label>
+        <input id="ghRepo" placeholder="データ保存先リポジトリ名">
+      </div>
+      <div class="field">
+        <label>Branch</label>
+        <input id="ghBranch" value="main">
+      </div>
+      <div class="field">
+        <label>保存ファイル</label>
+        <input id="ghPath" value="project-data.json">
+      </div>
+    </div>
+    <div class="field">
+      <label>Fine-grained Personal Access Token</label>
+      <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_...">
+      <div class="small">トークンは保存されず、現在開いているタブのメモリ内だけで使用します。</div>
+    </div>
+    <div class="toolbar">
+      <button onclick="saveGitHubSettings()">接続先だけ保存</button>
+      <button onclick="testGitHubConnection()">接続テスト</button>
+    </div>
+    <div id="ghStatus" class="item">未接続</div>
+  </div>
+
+  <div class="card">
+    <h2>同期操作</h2>
+    <div class="toolbar">
+      <button class="primary" onclick="pushToGitHub()">GitHubへ保存</button>
+      <button onclick="pullFromGitHub()">GitHubから読込</button>
+    </div>
+    <p class="small">GitHubからの読込前には、現在の端末データを自動バックアップします。</p>
+  </div>
+
+  <div class="card">
+    <h2>競合防止</h2>
+    <p>別端末で更新した可能性がある場合は、先に「GitHubから読込」を実行してから編集してください。</p>
+    <p class="small">本試験版は自動マージを行いません。GitHubへ保存すると、保存先JSONを現在の端末データで更新します。</p>
+  </div>
 </section>
 
 <section id="view-importexport" class="view hidden">
@@ -219,9 +317,14 @@ function initial(){
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],entities:[],id_counters:{},history:[]}
 }
 let data=load()||initial(), validation=[];
+data.chapters=data.chapters||[];
+data.characters=data.characters||[];
+data.entities=data.entities||[];
+data.decisions=data.decisions||[];
+data.history=data.history||[];
 function load(){try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null}}
 function backups(){try{return JSON.parse(localStorage.getItem(BKEY))||[]}catch(e){return []}}
 function persist(message='端末保存'){
@@ -257,6 +360,40 @@ function applyProject(){
  data.project.description=document.getElementById('projectDescription').value;
  persist('project updated')
 }
+
+function addChapter(){
+ let id=document.getElementById('chapterId').value.trim()||nextId('Chapter');
+ let title=document.getElementById('chapterTitle').value.trim();
+ if(!title)return alert('章タイトルを入力してください。');
+ if(allIds().includes(id))return alert('そのIDは既に使用されています。');
+ data.chapters.push({id,no:+document.getElementById('chapterNo').value||1,title,theme:document.getElementById('chapterTheme').value.trim(),summary:document.getElementById('chapterSummary').value.trim(),sections:[],status:'draft',created_at:now(),updated_at:now()});
+ chapterId.value='';chapterTitle.value='';chapterTheme.value='';chapterSummary.value='';
+ persist('chapter added')
+}
+function addSection(chapterId){
+ let chapter=data.chapters.find(c=>c.id===chapterId);if(!chapter)return;
+ let title=prompt('節タイトルを入力してください。');if(!title)return;
+ let id=nextId('Section');
+ chapter.sections=chapter.sections||[];
+ chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',status:'draft',created_at:now(),updated_at:now()});
+ persist('section added')
+}
+function deleteChapter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.chapters=data.chapters.filter(x=>x.id!==id);persist('chapter deleted')}}
+function deleteSection(chapterId,sectionId){
+ let c=data.chapters.find(x=>x.id===chapterId);if(!c)return;
+ if(confirm(sectionId+'を削除しますか？')){c.sections=(c.sections||[]).filter(x=>x.id!==sectionId);persist('section deleted')}
+}
+function addCharacter(){
+ let id=document.getElementById('characterId').value.trim()||nextId('Character');
+ let name=document.getElementById('characterName').value.trim();
+ if(!name)return alert('名前を入力してください。');
+ if(allIds().includes(id))return alert('そのIDは既に使用されています。');
+ data.characters.push({id,name,role:characterRole.value.trim(),job:characterJob.value.trim(),profile:characterProfile.value.trim(),status:'draft',created_at:now(),updated_at:now()});
+ characterId.value='';characterName.value='';characterRole.value='';characterJob.value='';characterProfile.value='';
+ persist('character added')
+}
+function deleteCharacter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.characters=data.characters.filter(x=>x.id!==id);persist('character deleted')}}
+
 function addDecision(){
  let id=document.getElementById('decisionId').value.trim(), text=document.getElementById('decisionText').value.trim();
  if(!id||!text)return alert('Decision IDと決定内容を入力してください。');
@@ -280,13 +417,15 @@ function addEntity(){
  persist('entity added')
 }
 function deleteEntity(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.entities=data.entities.filter(x=>x.id!==id);persist('entity deleted')}}
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).map(s=>s.id)]),...data.characters.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
  if(!data.project.id)validation.push({level:'ERROR',message:'Project IDが未設定'});
  if(!data.project.name)validation.push({level:'ERROR',message:'Project Nameが未設定'});
  data.decisions.forEach(d=>{if(!d.text)validation.push({level:'ERROR',message:d.id+' の決定内容が未設定'})});
+ data.chapters.forEach(c=>{if(!c.title)validation.push({level:'ERROR',message:c.id+' の章タイトルが未設定'});(c.sections||[]).forEach(s=>{if(!s.title)validation.push({level:'ERROR',message:s.id+' の節タイトルが未設定'})})});
+ data.characters.forEach(c=>{if(!c.name)validation.push({level:'ERROR',message:c.id+' の名前が未設定'})});
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  if(!validation.length)validation.push({level:'OK',message:'重大な問題は見つかりませんでした。'});
  renderValidation();renderDashboard()
@@ -299,9 +438,156 @@ function exportProject(){
 }
 function importProject(){
  const f=document.getElementById('importFile').files[0];if(!f)return alert('JSONファイルを選択してください。');
- const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
+ const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
+
+const GH_SETTINGS_KEY='gas_v4_github_settings_v050';
+let ghBusy=false;
+
+function loadGitHubSettings(){
+ try{
+  const s=JSON.parse(localStorage.getItem(GH_SETTINGS_KEY)||'{}');
+  ghOwner.value=s.owner||'';
+  ghRepo.value=s.repo||'';
+  ghBranch.value=s.branch||'main';
+  ghPath.value=s.path||'project-data.json';
+ }catch(e){}
+}
+function saveGitHubSettings(){
+ const s={
+  owner:ghOwner.value.trim(),
+  repo:ghRepo.value.trim(),
+  branch:ghBranch.value.trim()||'main',
+  path:ghPath.value.trim()||'project-data.json'
+ };
+ localStorage.setItem(GH_SETTINGS_KEY,JSON.stringify(s));
+ setGhStatus('接続先を端末へ保存しました。トークンは保存していません。','OK');
+}
+function getGhConfig(){
+ const c={
+  owner:ghOwner.value.trim(),
+  repo:ghRepo.value.trim(),
+  branch:ghBranch.value.trim()||'main',
+  path:ghPath.value.trim()||'project-data.json',
+  token:ghToken.value.trim()
+ };
+ if(!c.owner||!c.repo||!c.path||!c.token)throw new Error('Owner、Repository、保存ファイル、Tokenを入力してください。');
+ return c;
+}
+function setGhStatus(message,level='INFO'){
+ ghStatus.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(level)}</span> ${esc(message)}`;
+}
+function setGhBusy(value){
+ ghBusy=value;
+ document.getElementById('view-githubsync').classList.toggle('sync-working',value);
+}
+function utf8ToBase64(text){
+ const bytes=new TextEncoder().encode(text);
+ let binary='';
+ const chunk=0x8000;
+ for(let i=0;i<bytes.length;i+=chunk){
+  binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+ }
+ return btoa(binary);
+}
+function base64ToUtf8(encoded){
+ const clean=encoded.replace(/\s/g,'');
+ const binary=atob(clean);
+ const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+ return new TextDecoder('utf-8').decode(bytes);
+}
+async function ghRequest(url,options={}){
+ const c=getGhConfig();
+ const headers={
+  'Accept':'application/vnd.github+json',
+  'Authorization':'Bearer '+c.token,
+  'X-GitHub-Api-Version':'2022-11-28',
+  ...(options.headers||{})
+ };
+ const response=await fetch(url,{...options,headers});
+ let body=null;
+ const text=await response.text();
+ try{body=text?JSON.parse(text):null}catch(e){body={message:text}}
+ if(!response.ok){
+  const msg=body?.message||('HTTP '+response.status);
+  throw new Error(msg);
+ }
+ return body;
+}
+async function testGitHubConnection(){
+ if(ghBusy)return;
+ try{
+  setGhBusy(true);setGhStatus('接続確認中…');
+  const c=getGhConfig();
+  await ghRequest(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`);
+  saveGitHubSettings();
+  setGhStatus('リポジトリへ接続できました。','OK');
+ }catch(e){
+  setGhStatus('接続失敗: '+e.message,'ERROR');
+ }finally{setGhBusy(false)}
+}
+async function getRemoteFile(c){
+ const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(c.branch)}`;
+ try{
+  return await ghRequest(url);
+ }catch(e){
+  if(String(e.message).includes('Not Found'))return null;
+  throw e;
+ }
+}
+async function pushToGitHub(){
+ if(ghBusy)return;
+ try{
+  setGhBusy(true);setGhStatus('GitHubへ保存中…');
+  const c=getGhConfig();
+  saveGitHubSettings();
+  data.project.updated_at=now();
+  data.sync_meta={
+   provider:'github',
+   repository:`${c.owner}/${c.repo}`,
+   branch:c.branch,
+   path:c.path,
+   pushed_at:now()
+  };
+  const remote=await getRemoteFile(c);
+  const payload={
+   message:`Update Guild Adventure Studio project ${new Date().toISOString()}`,
+   content:utf8ToBase64(JSON.stringify(data,null,2)),
+   branch:c.branch
+  };
+  if(remote?.sha)payload.sha=remote.sha;
+  const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
+  const result=await ghRequest(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  persist('github push');
+  setGhStatus('GitHubへの保存が完了しました。Commit: '+(result?.commit?.sha||'').slice(0,7),'OK');
+ }catch(e){
+  setGhStatus('保存失敗: '+e.message,'ERROR');
+ }finally{setGhBusy(false)}
+}
+async function pullFromGitHub(){
+ if(ghBusy)return;
+ try{
+  setGhBusy(true);setGhStatus('GitHubから読込中…');
+  const c=getGhConfig();
+  saveGitHubSettings();
+  const remote=await getRemoteFile(c);
+  if(!remote?.content)throw new Error('保存先JSONがまだ存在しません。先にGitHubへ保存してください。');
+  const obj=JSON.parse(base64ToUtf8(remote.content));
+  if(!obj.project||!Array.isArray(obj.decisions)||!Array.isArray(obj.entities))throw new Error('Guild Adventure Studioの正本JSONとして認識できません。');
+  if(!confirm('現在の端末データをバックアップして、GitHub版へ置き換えますか？'))return;
+  createBackup('before-github-pull');
+  obj.chapters=obj.chapters||[];
+  obj.characters=obj.characters||[];
+  obj.history=obj.history||[];
+  data=obj;
+  persist('github pull');
+  setGhStatus('GitHubからの読込が完了しました。','OK');
+ }catch(e){
+  setGhStatus('読込失敗: '+e.message,'ERROR');
+ }finally{setGhBusy(false)}
+}
+
 function renderProject(){
  projectId.value=data.project.id||'';projectVersion.value=data.project.product_version||'';projectName.value=data.project.name||'';projectStatus.value=data.project.status||'development';projectDescription.value=data.project.description||''
 }
@@ -311,6 +597,14 @@ function renderDecisions(){
 function renderEntities(){
  entityList.innerHTML=[...data.entities].reverse().map(e=>`<div class="item"><b>${esc(e.id)} / ${esc(e.name)}</b> <span class="badge">${esc(e.type)}</span><p>${esc(e.notes||'')}</p><button class="danger" onclick="deleteEntity('${escAttr(e.id)}')">削除</button></div>`).join('')||'<div class="card">登録なし</div>'
 }
+
+function renderChapters(){
+ chapterList.innerHTML=[...data.chapters].sort((a,b)=>(a.no||0)-(b.no||0)).map(c=>`<div class="item"><b>第${esc(c.no)}章 ${esc(c.title)}</b> <span class="badge">${esc(c.id)}</span><p><strong>テーマ:</strong> ${esc(c.theme||'')}</p><p>${esc(c.summary||'')}</p><div class="toolbar"><button onclick="addSection('${escAttr(c.id)}')">節を追加</button><button class="danger" onclick="deleteChapter('${escAttr(c.id)}')">章を削除</button></div><div class="list">${(c.sections||[]).map(s=>`<div class="item"><b>${esc(s.no)}節 ${esc(s.title)}</b> <span class="badge">${esc(s.id)}</span> <button class="danger" onclick="deleteSection('${escAttr(c.id)}','${escAttr(s.id)}')">削除</button></div>`).join('')||'<div class="small">節はまだありません。</div>'}</div></div>`).join('')||'<div class="card">章はまだありません。</div>'
+}
+function renderCharacters(){
+ characterList.innerHTML=[...data.characters].map(c=>`<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')}</div><p>${esc(c.profile||'')}</p><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`).join('')||'<div class="card">キャラクターはまだありません。</div>'
+}
+
 function renderValidation(){
  let counts={ERROR:0,WARNING:0,INFO:0,OK:0};validation.forEach(v=>counts[v.level]=(counts[v.level]||0)+1);
  validationSummary.innerHTML=`<b>ERROR ${counts.ERROR}</b> / WARNING ${counts.WARNING} / INFO ${counts.INFO}`;
@@ -320,15 +614,19 @@ function renderBackups(){
  backupList.innerHTML=backups().map(b=>`<div class="item"><b>${esc(b.id)}</b><div class="meta">${esc(b.at)} / ${esc(b.reason)}</div><button onclick="restoreBackup('${escAttr(b.id)}')">復元</button></div>`).join('')||'<div class="card">バックアップなし</div>'
 }
 function renderDashboard(){
- kpiDecisions.textContent=data.decisions.length;kpiEntities.textContent=data.entities.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;kpiBackups.textContent=backups().length
+ kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
 }
-function render(){renderProject();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||''}
+function render(){renderProject();renderChapters();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||''}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
 function closeMobile(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('inspector').classList.remove('mobile-open')}
 window.addEventListener('beforeunload',()=>localStorage.setItem(KEY,JSON.stringify(data)));
-render();runValidation();
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
+installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.classList.add('hidden')});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+loadGitHubSettings();render();runValidation();
 </script>
 </body>
 </html>

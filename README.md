@@ -1,61 +1,55 @@
-# Guild Adventure Studio V4 Browser Standalone v0.3.0
+# Guild Adventure Studio V4.2 GitHub Sync v0.5.0
 
-## 概要
+## 追加機能
 
-PHPを使用せず、HTML・CSS・JavaScriptだけで動作するVersion 4の開発基盤です。
+- GitHub Sync試験版
+- PCとiPhone間でプロジェクトJSONを共有
+- GitHubへ保存
+- GitHubから読込
+- 読込前自動バックアップ
+- 接続テスト
+- 認証トークンを永続保存しない設計
+- Version 4.1のPWA、Story、Chapter、Section、Character機能を継続
 
-## Windowsでの起動
+## 重要な安全事項
 
-1. ZIPを「すべて展開」する
-2. `index.html` をダブルクリックする
-3. ChromeまたはEdgeで開く
+GitHub Pages用リポジトリは公開リポジトリです。
+同じリポジトリへ `project-data.json` を保存すると、ゲーム設定やシナリオも公開されます。
 
-追加インストールは不要です。
+非公開にしたいデータは、別途「Private」のデータ保存専用リポジトリを作成し、GitHub SyncのRepository欄に指定してください。
 
-## iPhoneでの利用
+Personal Access Tokenは、StudioのソースコードやJSONへ記録されません。
+現在開いているブラウザタブ内だけで使用されます。ページを閉じると再入力が必要です。
 
-UIはiPhone向けレスポンシブ表示に対応しています。
+## GitHub更新手順
 
-ただし、iPhoneの「ファイル」アプリからローカルHTMLを直接開く方法は、iOSやアプリの状態によって動作が不安定です。
-安定運用する場合は、`index.html` を静的Webサーバーへ配置してSafariで開いてください。
+1. ZIPを展開
+2. GitHubの `guild-adventure-studio` リポジトリを開く
+3. Add file → Upload files
+4. 展開した全ファイルをアップロード
+5. Commit changes
+6. 1～2分待つ
+7. GitHub Pagesを再読み込み
 
-候補:
-- GitHub Pages
-- Cloudflare Pages
-- Netlify
-- 自宅PCのローカルWebサーバー
+## Fine-grained token推奨設定
 
-Safariで開いた後、「共有」→「ホーム画面に追加」でアプリ風に起動できます。
+- Resource owner: 自分
+- Repository access: データ保存先だけ
+- Repository permissions:
+  - Contents: Read and write
+  - Metadata: Read-only（通常は自動付与）
 
-## 保存方式
+有効期限を設定し、不要になったトークンはGitHub側で削除してください。
 
-- 通常保存: ブラウザのLocalStorage
-- 正本の持ち出し: JSON出力
-- 他端末への移動: JSON読込
-- バックアップ: ブラウザ内30世代
+## 推奨運用
 
-重要な作業後は必ずJSON出力してください。
-ブラウザ履歴やサイトデータを削除するとLocalStorageが消える場合があります。
+作業開始:
+GitHubから読込
 
-## 実装済み
+編集中:
+端末へ自動保存
 
-- プロジェクト管理
-- JSON正本
-- DecisionLog
-- ID自動採番
-- ID重複防止
-- Validation
-- 最大30世代バックアップ
-- JSON Import / Export
-- PC / iPhone向けレスポンシブUI
-- Explorer / Editor / Inspector
+作業終了:
+GitHubへ保存
 
-## 次工程
-
-Phase 2 Validation Engineの拡張:
-- 参照整合性
-- 孤立データ
-- 章・節・シーン階層
-- Character Relation
-- Quest前提条件
-- Export可否判定
+同時に複数端末で編集しないでください。本版には自動マージ機能はありません。
