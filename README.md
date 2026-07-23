@@ -1,43 +1,34 @@
-# Guild Adventure Studio V4.6 Quest & Event Linker v0.9.0
+# Guild Adventure Studio V4.7 Studio Auto Deploy v1.0.0
 
-## 新機能
+## 最優先機能
 
-- クエストデータベース
-- イベントデータベース
-- 章・節・シーンとのリンク
-- クエストとイベントのリンク
-- キャラクターとの複数リンク
-- イベントフラグ管理
-- Reference Map
-- 孤立データの確認
-- 参照切れValidation
-- 検索・種別・Statusフィルター
+Studio本体の更新ファイルをGitHub Pages用リポジトリへ一括配置します。
 
-## クエスト項目
+### 利用手順
 
-- ID、名称、種別、Status
-- 概要
-- 受注条件
-- 達成条件
-- 報酬
-- 関連章・節・シーン
-- 関連キャラクター
+1. GitHub SyncでOwner、Repository、Branch、Tokenを入力
+2. Studio Update Deployを開く
+3. 新しいStudio更新ZIPを選択
+4. パッケージ確認
+5. 「更新をGitHubへ配置」
+6. 公開ページを確認
 
-## イベント項目
+### 自動化される作業
 
-- ID、名称、種別、Status
-- 内容
-- 発生条件
-- 結果・フラグ変更
-- 発生章・節・シーン
-- 関連クエスト
-- 登場キャラクター
-- 必要フラグ、設定フラグ
+- ZIP展開
+- 共通ルートフォルダ除去
+- 配置対象一覧作成
+- 既存ファイルSHA確認
+- 新規作成・上書き判定
+- Base64変換
+- GitHub APIへの順次アップロード
+- GitHub Pages確認URL生成
 
-## 更新確認
+### 安全対策
 
-表示:
-Version 4.6 Quest & Event Linker v0.9.0 / Build 090
-
-URL:
-https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=090
+- project-data.jsonを既定で保護
+- .git、.github、隠しファイルを除外
+- index.htmlがないパッケージは拒否
+- 100ファイル上限
+- テスト実行
+- 逐次更新による競合低減

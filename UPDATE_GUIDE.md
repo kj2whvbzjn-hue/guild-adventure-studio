@@ -1,18 +1,12 @@
-# Version 4.6 アップロード手順
+# Version 4.7 初回のみ手動アップロード
 
-1. 現在のプロジェクトをJSON出力
-2. ZIPを展開
-3. GitHubリポジトリ直下へ中の全ファイルを上書き
-4. Commit changes
-5. Deploymentsの成功を確認
-6. 次のURLを開く
+Version 4.7をGitHubへ配置する作業だけは、従来どおりGitHub画面から行ってください。
 
-https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=090
+初回反映後は、Version 4.8以降の更新ZIPをStudio内の
+「Studio Update Deploy」から選択して、一括配置できます。
 
-7. 次の表示を確認
+確認URL:
+https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=100
 
-Version 4.6 Quest & Event Linker v0.9.0 / Build 090
-
-8. ExplorerからQuests、Events、Reference Mapを確認
-
-既存データは自動で引き継がれ、questsとeventsの空配列が補完されます。
+成功表示:
+Version 4.7 Studio Auto Deploy v1.0.0 / Build 100

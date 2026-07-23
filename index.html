@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>Guild Adventure Studio V4.6</title>
+<title>ギルド冒険物語 開発スタジオ V4.7</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -89,6 +89,16 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .compact-table{width:100%;border-collapse:collapse}
 .compact-table th,.compact-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .compact-table th{font-size:12px;color:var(--muted)}
+
+.deploy-drop{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;background:#fafafa}
+.deploy-drop.drag{border-color:var(--accent);background:var(--accent2)}
+.deploy-progress{height:14px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+.deploy-progress>div{height:100%;width:0%;background:var(--accent);transition:width .2s}
+.deploy-file-list{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.deploy-file-row{display:grid;grid-template-columns:1fr 100px 90px;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.deploy-file-row:last-child{border-bottom:0}
+.deploy-log{max-height:260px;overflow:auto;background:#111827;color:#e5e7eb;border-radius:10px;padding:10px;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap}
+
 @media(max-width:900px){
  .link-grid,.filter-bar{grid-template-columns:1fr}
  .compact-table{display:block;overflow:auto}
@@ -110,13 +120,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   header .desktop-only{display:none}
 }
 </style>
+  <script src="jszip.min.js?v=100"></script>
 </head>
 <body>
 <div class="app">
 <header>
   <div>
-    <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4.6 Quest & Event Linker v0.9.0 / Build 090</div>
+    <div class="brand">ギルド冒険物語 開発スタジオ</div>
+    <div class="version">バージョン 4.7 / スタジオ自動配置 v1.0.0 / ビルド 100</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -126,40 +137,41 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
 <div class="main">
 <aside id="sidebar" class="sidebar">
-  <div class="pane-title">Explorer</div>
+  <div class="pane-title">機能一覧</div>
   <div class="nav" id="nav">
-    <button data-view="dashboard" class="active">Dashboard</button>
-    <button data-view="projects">Projects</button>
-    <button data-view="project">Project</button>
-    <button data-view="story">Story</button>
-    <button data-view="storyeditor">Visual Story Editor</button>
-    <button data-view="quests">Quests</button>
-    <button data-view="events">Events</button>
-    <button data-view="references">Reference Map</button>
-    <button data-view="characters">Characters</button>
-    <button data-view="decisions">DecisionLog</button>
-    <button data-view="entities">Data / ID Manager</button>
-    <button data-view="validation">Validation</button>
-    <button data-view="backup">Backup</button>
-    <button data-view="githubsync">GitHub Sync</button>
-    <button data-view="importexport">Import / Export</button>
+    <button data-view="dashboard" class="active">ダッシュボード</button>
+    <button data-view="projects">プロジェクト一覧</button>
+    <button data-view="project">プロジェクト設定</button>
+    <button data-view="story">シナリオ</button>
+    <button data-view="storyeditor">シナリオ構成エディター</button>
+    <button data-view="quests">クエスト</button>
+    <button data-view="events">イベント</button>
+    <button data-view="references">参照関係マップ</button>
+    <button data-view="characters">キャラクター</button>
+    <button data-view="decisions">決定事項ログ</button>
+    <button data-view="entities">データ・ID管理</button>
+    <button data-view="validation">データ検証</button>
+    <button data-view="backup">バックアップ</button>
+    <button data-view="githubsync">GitHub同期</button>
+    <button data-view="studiodeploy">スタジオ更新配置</button>
+    <button data-view="importexport">読込・出力</button>
   </div>
 </aside>
 
 <main class="workspace">
 <section id="view-dashboard" class="view">
-  <h1>Dashboard</h1>
+  <h1>ダッシュボード</h1>
   <div class="kpis">
     <div class="kpi"><span class="small">章</span><b id="kpiChapters">0</b></div>
     <div class="kpi"><span class="small">キャラクター</span><b id="kpiCharacters">0</b></div>
     <div class="kpi"><span class="small">決定事項</span><b id="kpiDecisions">0</b></div>
     <div class="kpi"><span class="small">クエスト</span><b id="kpiQuests">0</b></div>
     <div class="kpi"><span class="small">イベント</span><b id="kpiEvents">0</b></div>
-    <div class="kpi"><span class="small">Validation</span><b id="kpiErrors">0</b></div>
+    <div class="kpi"><span class="small">検証結果</span><b id="kpiErrors">0</b></div>
   </div>
   <div class="card">
     <h2>現在の開発フェーズ</h2>
-    <p><strong>Phase 1：Core Foundation</strong></p>
+    <p><strong>フェーズ1：基盤機能</strong></p>
     <p>ブラウザ単体で、JSON正本・ID管理・DecisionLog・Validation・バックアップを運用します。</p>
   </div>
   <div class="card">
@@ -175,13 +187,13 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
 
 <section id="view-projects" class="view hidden">
-  <h1>Projects</h1>
+  <h1>プロジェクト一覧</h1>
 
   <div class="card">
     <h2>新規プロジェクト</h2>
     <div class="grid">
-      <div class="field"><label>Project ID</label><input id="newProjectId" placeholder="PRJ-MY-GAME"></div>
-      <div class="field"><label>Project Name</label><input id="newProjectName" placeholder="新しいゲーム企画"></div>
+      <div class="field"><label>プロジェクトID</label><input id="newProjectId" placeholder="PRJ-MY-GAME"></div>
+      <div class="field"><label>プロジェクト名</label><input id="newProjectName" placeholder="新しいゲーム企画"></div>
     </div>
     <div class="toolbar">
       <button class="primary" onclick="createNewProject()">新規作成</button>
@@ -196,25 +208,25 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 <section id="view-project" class="view hidden">
-  <h1>Project</h1>
+  <h1>プロジェクト設定</h1>
   <div class="card">
     <div class="grid">
-      <div class="field"><label>Project ID</label><input id="projectId"></div>
-      <div class="field"><label>Version</label><input id="projectVersion"></div>
-      <div class="field"><label>Project Name</label><input id="projectName"></div>
-      <div class="field"><label>Status</label><select id="projectStatus"><option>development</option><option>review</option><option>approved</option><option>archived</option></select></div>
+      <div class="field"><label>プロジェクトID</label><input id="projectId"></div>
+      <div class="field"><label>バージョン</label><input id="projectVersion"></div>
+      <div class="field"><label>プロジェクト名</label><input id="projectName"></div>
+      <div class="field"><label>状態</label><select id="projectStatus"><option value="development">開発中</option><option value="review">確認中</option><option value="approved">承認済み</option><option value="archived">保管済み</option></select></div>
     </div>
-    <div class="field"><label>Description</label><textarea id="projectDescription"></textarea></div>
+    <div class="field"><label>説明</label><textarea id="projectDescription"></textarea></div>
     <button class="primary" onclick="applyProject()">変更を反映</button>
   </div>
 </section>
 
 <section id="view-story" class="view hidden">
-  <h1>Story</h1>
+  <h1>シナリオ</h1>
   <div class="card">
     <h2>章の追加</h2>
     <div class="grid">
-      <div class="field"><label>Chapter ID</label><input id="chapterId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>章ID</label><input id="chapterId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>章番号</label><input id="chapterNo" type="number" min="1" value="1"></div>
       <div class="field"><label>章タイトル</label><input id="chapterTitle"></div>
       <div class="field"><label>テーマ</label><input id="chapterTheme"></div>
@@ -227,7 +239,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
 
 <section id="view-storyeditor" class="view hidden">
-  <h1>Visual Story Editor</h1>
+  <h1>シナリオ構成エディター</h1>
   <div class="toolbar">
     <button class="primary" onclick="storyCreateChapter()">章を追加</button>
     <button onclick="storyExpandAll()">すべて展開</button>
@@ -236,7 +248,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
   <div class="story-editor-layout">
     <div class="story-tree">
-      <div class="pane-title">Story Tree</div>
+      <div class="pane-title">シナリオツリー</div>
       <div id="storyTree"></div>
     </div>
 
@@ -296,12 +308,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
 
 <section id="view-quests" class="view hidden">
-  <h1>Quest Database</h1>
+  <h1>クエストデータベース</h1>
 
   <div class="card">
     <h2>クエスト登録</h2>
     <div class="grid">
-      <div class="field"><label>Quest ID</label><input id="questId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>クエストID</label><input id="questId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>クエスト名</label><input id="questName"></div>
       <div class="field"><label>種別</label>
         <select id="questType">
@@ -311,12 +323,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
           <option value="character">キャラクター</option>
         </select>
       </div>
-      <div class="field"><label>Status</label>
+      <div class="field"><label>状態</label>
         <select id="questStatus">
-          <option value="draft">draft</option>
-          <option value="review">review</option>
-          <option value="approved">approved</option>
-          <option value="archived">archived</option>
+          <option value="draft">下書き</option>
+          <option value="review">確認中</option>
+          <option value="approved">承認済み</option>
+          <option value="archived">保管済み</option>
         </select>
       </div>
     </div>
@@ -360,11 +372,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
         <option value="character">キャラクター</option>
       </select>
       <select id="questStatusFilter" onchange="renderQuests()">
-        <option value="">全Status</option>
-        <option value="draft">draft</option>
-        <option value="review">review</option>
-        <option value="approved">approved</option>
-        <option value="archived">archived</option>
+        <option value="">すべての状態</option>
+        <option value="draft">下書き</option>
+        <option value="review">確認中</option>
+        <option value="approved">承認済み</option>
+        <option value="archived">保管済み</option>
       </select>
     </div>
   </div>
@@ -372,12 +384,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 <section id="view-events" class="view hidden">
-  <h1>Event Database</h1>
+  <h1>イベントデータベース</h1>
 
   <div class="card">
     <h2>イベント登録</h2>
     <div class="grid">
-      <div class="field"><label>Event ID</label><input id="eventId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>イベントID</label><input id="eventId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>イベント名</label><input id="eventName"></div>
       <div class="field"><label>種別</label>
         <select id="eventType">
@@ -388,12 +400,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
           <option value="system">システム</option>
         </select>
       </div>
-      <div class="field"><label>Status</label>
+      <div class="field"><label>状態</label>
         <select id="eventStatus">
-          <option value="draft">draft</option>
-          <option value="review">review</option>
-          <option value="approved">approved</option>
-          <option value="archived">archived</option>
+          <option value="draft">下書き</option>
+          <option value="review">確認中</option>
+          <option value="approved">承認済み</option>
+          <option value="archived">保管済み</option>
         </select>
       </div>
     </div>
@@ -449,11 +461,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
         <option value="system">システム</option>
       </select>
       <select id="eventStatusFilter" onchange="renderEvents()">
-        <option value="">全Status</option>
-        <option value="draft">draft</option>
-        <option value="review">review</option>
-        <option value="approved">approved</option>
-        <option value="archived">archived</option>
+        <option value="">すべての状態</option>
+        <option value="draft">下書き</option>
+        <option value="review">確認中</option>
+        <option value="approved">承認済み</option>
+        <option value="archived">保管済み</option>
       </select>
     </div>
   </div>
@@ -461,7 +473,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 <section id="view-references" class="view hidden">
-  <h1>Reference Map</h1>
+  <h1>参照関係マップ</h1>
   <div class="card">
     <p>シナリオ、クエスト、イベント、キャラクターの参照関係を確認します。</p>
     <div class="toolbar">
@@ -473,10 +485,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 <section id="view-characters" class="view hidden">
-  <h1>Characters</h1>
+  <h1>キャラクター</h1>
   <div class="card">
     <div class="grid">
-      <div class="field"><label>Character ID</label><input id="characterId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>キャラクターID</label><input id="characterId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>名前</label><input id="characterName"></div>
       <div class="field"><label>役割</label><input id="characterRole" placeholder="主人公、仲間、協力者など"></div>
       <div class="field"><label>職業</label><input id="characterJob"></div>
@@ -488,24 +500,24 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 <section id="view-decisions" class="view hidden">
-  <h1>DecisionLog</h1>
+  <h1>決定事項ログ</h1>
   <div class="card">
     <div class="grid">
-      <div class="field"><label>Decision ID</label><input id="decisionId" placeholder="DEC-V4-012"></div>
-      <div class="field"><label>Status</label><select id="decisionStatus"><option>Proposed</option><option selected>Approved</option><option>Rejected</option><option>Superseded</option></select></div>
+      <div class="field"><label>決定ID</label><input id="decisionId" placeholder="DEC-V4-012"></div>
+      <div class="field"><label>状態</label><select id="decisionStatus"><option value="Proposed">提案中</option><option value="Approved" selected>承認済み</option><option value="Rejected">却下</option><option value="Superseded">置換済み</option></select></div>
     </div>
     <div class="field"><label>決定内容</label><textarea id="decisionText"></textarea></div>
     <div class="field"><label>関連仕様ID</label><input id="decisionRefs" placeholder="SPEC-001, UI-001"></div>
-    <button class="primary" onclick="addDecision()">Decision登録</button>
+    <button class="primary" onclick="addDecision()">決定事項を登録</button>
   </div>
   <div id="decisionList" class="list"></div>
 </section>
 
 <section id="view-entities" class="view hidden">
-  <h1>Data / ID Manager</h1>
+  <h1>データ・ID管理</h1>
   <div class="card">
     <div class="grid">
-      <div class="field"><label>種類</label><select id="entityType"><option>Character</option><option>Chapter</option><option>Section</option><option>Scene</option><option>Quest</option><option>Event</option><option>Map</option><option>Monster</option><option>Item</option><option>Skill</option><option>AIProfile</option></select></div>
+      <div class="field"><label>種類</label><select id="entityType"><option value="Character">キャラクター</option><option value="Chapter">章</option><option value="Section">節</option><option value="Scene">シーン</option><option value="Quest">クエスト</option><option value="Event">イベント</option><option value="Map">マップ</option><option value="Monster">モンスター</option><option value="Item">アイテム</option><option value="Skill">スキル</option><option value="AIProfile">AI設定</option></select></div>
       <div class="field"><label>ID</label><input id="entityId" placeholder="空欄で自動採番"></div>
     </div>
     <div class="field"><label>名前</label><input id="entityName"></div>
@@ -516,14 +528,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 <section id="view-validation" class="view hidden">
-  <h1>Validation</h1>
+  <h1>データ検証</h1>
   <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button></div>
   <div id="validationSummary" class="card"></div>
   <div id="validationList" class="list"></div>
 </section>
 
 <section id="view-backup" class="view hidden">
-  <h1>Backup</h1>
+  <h1>バックアップ</h1>
   <div class="toolbar">
     <button class="primary" onclick="createBackup('manual')">手動バックアップ</button>
     <button class="danger" onclick="clearBackups()">全バックアップ削除</button>
@@ -533,7 +545,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
 
 <section id="view-githubsync" class="view hidden">
-  <h1>GitHub Sync <span class="badge warn">試験機能</span></h1>
+  <h1>GitHub同期 <span class="badge warn">試験機能</span></h1>
 
   <div class="card">
     <h2>概要</h2>
@@ -545,15 +557,15 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <h2>接続設定</h2>
     <div class="grid">
       <div class="field">
-        <label>Owner</label>
+        <label>所有者（Owner）</label>
         <input id="ghOwner" placeholder="GitHubユーザー名">
       </div>
       <div class="field">
-        <label>Repository</label>
+        <label>リポジトリ</label>
         <input id="ghRepo" placeholder="データ保存先リポジトリ名">
       </div>
       <div class="field">
-        <label>Branch</label>
+        <label>ブランチ</label>
         <input id="ghBranch" value="main">
       </div>
       <div class="field">
@@ -562,7 +574,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
       </div>
     </div>
     <div class="field">
-      <label>Fine-grained Personal Access Token</label>
+      <label>詳細設定済み個人アクセストークン</label>
       <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_...">
       <div class="small">トークンは保存されず、現在開いているタブのメモリ内だけで使用します。</div>
     </div>
@@ -589,8 +601,78 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   </div>
 </section>
 
+
+<section id="view-studiodeploy" class="view hidden">
+  <h1>スタジオ更新配置 <span class="badge ok">正式機能</span></h1>
+
+  <div class="card">
+    <h2>スタジオ本体をGitHub Pagesへ配置</h2>
+    <p>新しいGuild Adventure Studioの更新ZIPを選択し、GitHubリポジトリの公開ブランチへ一括配置します。</p>
+    <p class="small">GitHub同期と同じ所有者、リポジトリ、ブランチ、トークンを使用します。GitHub Pagesは公開元をBranchのルートに設定してください。</p>
+  </div>
+
+  <div class="card">
+    <h2>1. 更新ZIPを選択</h2>
+    <div id="deployDrop" class="deploy-drop">
+      <input id="studioUpdateZip" type="file" accept=".zip,application/zip">
+      <p><b>更新ZIPを選択、またはここへドロップ</b></p>
+      <p class="small">ZIP内にフォルダが1つだけある場合は、自動的にそのフォルダを公開ルートとして扱います。</p>
+    </div>
+    <div class="toolbar">
+      <button onclick="inspectStudioPackage()">パッケージ確認</button>
+      <button onclick="clearStudioPackage()">選択解除</button>
+    </div>
+    <div id="deployPackageStatus" class="item">更新パッケージ未選択</div>
+  </div>
+
+  <div class="card">
+    <h2>2. 配置設定</h2>
+    <div class="grid">
+      <div class="field">
+        <label>配置先フォルダ</label>
+        <input id="deployBasePath" value="" placeholder="空欄＝リポジトリ直下">
+      </div>
+      <div class="field">
+        <label>コミットメッセージ</label>
+        <input id="deployCommitMessage" value="Deploy Guild Adventure Studio update">
+      </div>
+    </div>
+    <div class="field">
+      <label>保護するファイル（カンマ区切り）</label>
+      <input id="deployProtectedPaths" value="project-data.json">
+      <div class="small">同名ファイルがZIPに含まれていてもアップロードしません。</div>
+    </div>
+    <label><input id="deployDryRun" type="checkbox"> テスト実行（GitHubへ書き込まない）</label>
+  </div>
+
+  <div class="card">
+    <h2>3. 配置対象</h2>
+    <div id="deploySummary" class="small">パッケージ確認後に表示します。</div>
+    <div id="deployFileList" class="deploy-file-list"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. GitHubへ一括配置</h2>
+    <div class="toolbar">
+      <button class="primary" onclick="deployStudioPackage()">更新をGitHubへ配置</button>
+      <button onclick="openPagesAfterDeploy()">公開ページを確認</button>
+    </div>
+    <div class="deploy-progress"><div id="deployProgressBar"></div></div>
+    <div id="deployProgressText" class="small">待機中</div>
+    <div id="deployLog" class="deploy-log">更新ログ</div>
+  </div>
+
+  <div class="card">
+    <h2>安全対策</h2>
+    <p class="small">
+      ファイルは1件ずつ順番に更新します。<code>.git</code>、<code>.github</code>、隠しファイル、
+      保護対象ファイルは除外します。更新ZIP内に<code>index.html</code>がない場合は配置を開始しません。
+    </p>
+  </div>
+</section>
+
 <section id="view-importexport" class="view hidden">
-  <h1>Import / Export</h1>
+  <h1>読込・出力</h1>
   <div class="card">
     <h2>JSON出力</h2>
     <p>現在の正本データをUTF-8 JSONとして保存します。</p>
@@ -610,7 +692,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </main>
 
 <aside id="inspector" class="inspector">
-  <div class="pane-title">Inspector</div>
+  <div class="pane-title">詳細情報</div>
   <div class="inspector-body">
     <div class="field"><label>現在の選択</label><input id="selectedLabel" readonly value="Dashboard"></div>
     <div class="field"><label>最終更新</label><input id="lastUpdated" readonly></div>
@@ -631,14 +713,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <div class="mobile-tabs">
-  <button onclick="toggleMobile('sidebar')">Explorer</button>
-  <button onclick="closeMobile()">Editor</button>
-  <button onclick="toggleMobile('inspector')">Inspector</button>
+  <button onclick="toggleMobile('sidebar')">機能一覧</button>
+  <button onclick="closeMobile()">編集画面</button>
+  <button onclick="toggleMobile('inspector')">詳細情報</button>
 </div>
 </div>
 
 <script>
-const APP_VERSION='0.9.0';
+const APP_VERSION='1.0.0';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -772,8 +854,8 @@ function sanitizeProjectId(value){
 function createNewProject(){
  let id=sanitizeProjectId(newProjectId.value);
  let name=newProjectName.value.trim();
- if(!id||!name)return alert('Project IDとProject Nameを入力してください。');
- if(getProjectRegistry().some(x=>x.id===id))return alert('同じProject IDが既に存在します。');
+ if(!id||!name)return alert('プロジェクトIDとプロジェクト名を入力してください。');
+ if(getProjectRegistry().some(x=>x.id===id))return alert('同じプロジェクトIDが既に存在します。');
  createBackup('before-project-create');
  let fresh=initial();
  fresh.project.id=id;
@@ -801,8 +883,8 @@ function duplicateCurrentProject(){
  const idInput=prompt('複製後のProject IDを入力してください。',(data.project.id||'PRJ')+'-COPY');
  if(!idInput)return;
  const id=sanitizeProjectId(idInput);
- if(!id)return alert('有効なProject IDではありません。');
- if(getProjectRegistry().some(x=>x.id===id))return alert('同じProject IDが既に存在します。');
+ if(!id)return alert('有効なプロジェクトIDではありません。');
+ if(getProjectRegistry().some(x=>x.id===id))return alert('同じプロジェクトIDが既に存在します。');
  const copy=structuredClone(data);
  copy.project.id=id;
  copy.project.name=name.trim();
@@ -828,7 +910,7 @@ function deleteProject(id){
 function exportAllProjects(){
  const packageData={
   format:'guild-adventure-studio-multi-project',
-  version:'0.9.0',
+  version:'1.0.0',
   exported_at:now(),
   current_project_id:currentProjectId,
   projects:getProjectRegistry().map(meta=>({meta,data:loadProject(meta.id)}))
@@ -839,9 +921,9 @@ function exportAllProjects(){
 
 function applyProject(){
  const requestedId=sanitizeProjectId(document.getElementById('projectId').value);
- if(!requestedId)return alert('Project IDを入力してください。');
+ if(!requestedId)return alert('プロジェクトIDを入力してください。');
  if(requestedId!==currentProjectId){
-  if(getProjectRegistry().some(x=>x.id===requestedId))return alert('変更後のProject IDは既に使用されています。');
+  if(getProjectRegistry().some(x=>x.id===requestedId))return alert('変更後のプロジェクトIDは既に使用されています。');
   localStorage.removeItem(projectStorageKey(currentProjectId));
   const list=getProjectRegistry().map(x=>x.id===currentProjectId?{...x,id:requestedId}:x);
   saveProjectRegistry(list);
@@ -891,7 +973,7 @@ function deleteCharacter(id){if(confirm(id+'を削除しますか？')){createBa
 
 function addDecision(){
  let id=document.getElementById('decisionId').value.trim(), text=document.getElementById('decisionText').value.trim();
- if(!id||!text)return alert('Decision IDと決定内容を入力してください。');
+ if(!id||!text)return alert('決定IDと決定内容を入力してください。');
  if(allIds().includes(id))return alert('そのIDは既に使用されています。');
  data.decisions.push({id,status:document.getElementById('decisionStatus').value,text,refs:document.getElementById('decisionRefs').value.split(',').map(x=>x.trim()).filter(Boolean),created_at:now()});
  document.getElementById('decisionId').value='';document.getElementById('decisionText').value='';document.getElementById('decisionRefs').value='';
@@ -959,7 +1041,7 @@ function runValidation(){
 }
 function exportProject(){
  runValidation();let errors=validation.filter(x=>x.level==='ERROR');
- if(errors.length&&!confirm('ERRORがあります。下書きとして出力しますか？'))return;
+ if(errors.length&&!confirm('エラーがあります。下書きとして出力しますか？'))return;
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.project.id||'project')+'.json';a.click();URL.revokeObjectURL(a.href)
 }
@@ -1003,7 +1085,7 @@ function getGhConfig(){
  return c;
 }
 function setGhStatus(message,level='INFO'){
- ghStatus.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(level)}</span> ${esc(message)}`;
+ ghStatus.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(jpLevel(level))}</span> ${esc(message)}`;
 }
 function setGhBusy(value){
  ghBusy=value;
@@ -1130,6 +1212,199 @@ async function pullFromGitHub(){
 
 
 
+
+let studioDeployFiles=[];
+let studioDeployMeta=null;
+let studioDeployBusy=false;
+
+function deployLog(message){
+ const stamp=new Date().toLocaleTimeString();
+ deployLog.textContent+=(deployLog.textContent==='更新ログ'?'':'\n')+`[${stamp}] ${message}`;
+ deployLog.scrollTop=deployLog.scrollHeight;
+}
+function resetDeployLog(){deployLog.textContent='更新ログ'}
+function formatBytes(size){
+ if(size<1024)return size+' B';
+ if(size<1024*1024)return (size/1024).toFixed(1)+' KB';
+ return (size/1024/1024).toFixed(1)+' MB';
+}
+function normalizeDeployPath(path){
+ return String(path||'').replace(/\\/g,'/').replace(/^\/+/,'').replace(/\/+/g,'/');
+}
+function joinDeployPath(base,path){
+ const a=normalizeDeployPath(base).replace(/\/$/,'');
+ const b=normalizeDeployPath(path);
+ return a?`${a}/${b}`:b;
+}
+function isUnsafeDeployPath(path){
+ const parts=normalizeDeployPath(path).split('/');
+ return parts.some(p=>!p||p==='.'||p==='..'||p.startsWith('.')) ||
+  parts.includes('.git') || parts.includes('.github') ||
+  path==='studio-update.json';
+}
+function protectedDeploySet(){
+ return new Set(splitCsv(deployProtectedPaths.value).map(normalizeDeployPath));
+}
+function bytesToBase64(bytes){
+ let binary='';
+ const chunk=0x8000;
+ for(let i=0;i<bytes.length;i+=chunk){
+  binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+ }
+ return btoa(binary);
+}
+function commonZipRoot(paths){
+ const valid=paths.filter(Boolean).map(normalizeDeployPath);
+ if(!valid.length)return '';
+ const first=valid[0].split('/')[0];
+ return valid.every(p=>p.includes('/')&&p.split('/')[0]===first)?first+'/':'';
+}
+async function inspectStudioPackage(){
+ const file=studioUpdateZip.files?.[0];
+ if(!file)return alert('更新ZIPを選択してください。');
+ if(typeof JSZip==='undefined')return alert('ZIP読込ライブラリを読み込めませんでした。再読み込みしてください。');
+ try{
+  deployPackageStatus.textContent='ZIPを解析中…';
+  const zip=await JSZip.loadAsync(file);
+  const entries=Object.values(zip.files).filter(x=>!x.dir);
+  const root=commonZipRoot(entries.map(x=>x.name));
+  const protectedSet=protectedDeploySet();
+  const files=[];
+  let meta=null;
+
+  for(const entry of entries){
+   let relative=normalizeDeployPath(entry.name);
+   if(root&&relative.startsWith(root))relative=relative.slice(root.length);
+   if(!relative)continue;
+   if(relative==='studio-update.json'){
+    try{meta=JSON.parse(await entry.async('text'))}catch(e){}
+    continue;
+   }
+   const excluded=isUnsafeDeployPath(relative)||protectedSet.has(relative);
+   const bytes=await entry.async('uint8array');
+   files.push({path:relative,size:bytes.length,bytes,excluded,reason:excluded?'保護・除外':''});
+  }
+
+  const uploadable=files.filter(x=>!x.excluded);
+  if(!uploadable.some(x=>x.path==='index.html'))throw new Error('ZIP内に公開ルートのindex.htmlがありません。');
+  if(uploadable.length>100)throw new Error('1回の配置上限は100ファイルです。');
+
+  studioDeployFiles=files;
+  studioDeployMeta=meta;
+  renderDeployPackage();
+  const version=meta?.display_version||meta?.version||'バージョン情報なし';
+  deployPackageStatus.innerHTML=`<span class="badge ok">正常</span> ${esc(file.name)} / ${esc(version)}`;
+  resetDeployLog();
+  deployLog(`パッケージ確認完了: ${uploadable.length}ファイル`);
+ }catch(e){
+  studioDeployFiles=[];studioDeployMeta=null;
+  deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
+  renderDeployPackage();
+ }
+}
+function renderDeployPackage(){
+ if(!window.deployFileList)return;
+ const included=studioDeployFiles.filter(x=>!x.excluded);
+ const excluded=studioDeployFiles.filter(x=>x.excluded);
+ const total=included.reduce((n,x)=>n+x.size,0);
+ deploySummary.textContent=studioDeployFiles.length
+  ?`配置対象 ${included.length}件 / 除外 ${excluded.length}件 / 合計 ${formatBytes(total)}`
+  :'パッケージ確認後に表示します。';
+ deployFileList.innerHTML=studioDeployFiles.map(f=>`
+  <div class="deploy-file-row">
+   <span>${esc(f.path)}</span>
+   <span>${esc(formatBytes(f.size))}</span>
+   <span class="badge ${f.excluded?'warn':'ok'}">${f.excluded?'除外':'配置'}</span>
+  </div>`).join('');
+}
+function clearStudioPackage(){
+ studioUpdateZip.value='';
+ studioDeployFiles=[];studioDeployMeta=null;
+ deployPackageStatus.textContent='更新パッケージ未選択';
+ deployProgressBar.style.width='0%';
+ deployProgressText.textContent='待機中';
+ resetDeployLog();renderDeployPackage();
+}
+async function getRemoteFileAtPath(c,path){
+ const encoded=normalizeDeployPath(path).split('/').map(encodeURIComponent).join('/');
+ const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encoded}?ref=${encodeURIComponent(c.branch)}`;
+ try{return await ghRequest(url)}
+ catch(e){if(String(e.message).includes('Not Found'))return null;throw e}
+}
+async function putRemoteFile(c,path,bytes,message){
+ const remote=await getRemoteFileAtPath(c,path);
+ const encoded=normalizeDeployPath(path).split('/').map(encodeURIComponent).join('/');
+ const payload={message,content:bytesToBase64(bytes),branch:c.branch};
+ if(remote?.sha)payload.sha=remote.sha;
+ return await ghRequest(
+  `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encoded}`,
+  {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}
+ );
+}
+async function deployStudioPackage(){
+ if(studioDeployBusy||ghBusy)return;
+ const files=studioDeployFiles.filter(x=>!x.excluded);
+ if(!files.length)return alert('先に更新ZIPを確認してください。');
+ const c=getGhConfig();
+ const base=normalizeDeployPath(deployBasePath.value);
+ const message=(deployCommitMessage.value.trim()||'Deploy Guild Adventure Studio update')+
+  (studioDeployMeta?.version?` ${studioDeployMeta.version}`:'');
+ const dry=deployDryRun.checked;
+ const targetPreview=files.slice(0,5).map(f=>joinDeployPath(base,f.path)).join('\n');
+ if(!confirm(`${dry?'テスト実行します':'GitHubへ配置します'}。\n\n対象: ${files.length}ファイル\nBranch: ${c.branch}\n先頭ファイル:\n${targetPreview}\n\n続行しますか？`))return;
+
+ try{
+  studioDeployBusy=true;setGhBusy(true);
+  resetDeployLog();
+  deployLog(`${dry?'テスト':'配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
+  saveGitHubSettings();
+  let success=0;
+  for(let i=0;i<files.length;i++){
+   const file=files[i];
+   const target=joinDeployPath(base,file.path);
+   const pct=Math.round((i/files.length)*100);
+   deployProgressBar.style.width=pct+'%';
+   deployProgressText.textContent=`${i}/${files.length} ${target}`;
+   deployLog(`${dry?'確認':'更新'}: ${target}`);
+   if(!dry)await putRemoteFile(c,target,file.bytes,message);
+   success++;
+  }
+  deployProgressBar.style.width='100%';
+  deployProgressText.textContent=`完了 ${success}/${files.length}`;
+  deployLog(`${dry?'テスト':'配置'}完了: ${success}ファイル`);
+  deployPackageStatus.innerHTML=`<span class="badge ok">正常</span> ${dry?'テスト完了':'GitHub配置完了。GitHub Pagesの反映を待ってください。'}`;
+ }catch(e){
+  deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
+  deployLog('失敗: '+e.message);
+  deployProgressText.textContent='途中で停止しました';
+ }finally{
+  studioDeployBusy=false;setGhBusy(false);
+ }
+}
+function openPagesAfterDeploy(){
+ const owner=ghOwner.value.trim();
+ const repo=ghRepo.value.trim();
+ if(!owner||!repo)return alert('GitHub SyncでOwnerとRepositoryを入力してください。');
+ const base=normalizeDeployPath(deployBasePath.value);
+ const suffix=studioDeployMeta?.cache_query||('appv='+String(Date.now()));
+ const path=base?'/'+base:'';
+ window.open(`https://${owner}.github.io/${repo}${path}/index.html?${suffix}`,'_blank','noopener');
+}
+function initializeStudioDeploy(){
+ const drop=document.getElementById('deployDrop');
+ if(!drop||drop.dataset.bound)return;
+ drop.dataset.bound='1';
+ ['dragenter','dragover'].forEach(name=>drop.addEventListener(name,e=>{e.preventDefault();drop.classList.add('drag')}));
+ ['dragleave','drop'].forEach(name=>drop.addEventListener(name,e=>{e.preventDefault();drop.classList.remove('drag')}));
+ drop.addEventListener('drop',e=>{
+  const file=[...(e.dataTransfer?.files||[])].find(f=>f.name.toLowerCase().endsWith('.zip'));
+  if(!file)return;
+  const dt=new DataTransfer();dt.items.add(file);studioUpdateZip.files=dt.files;
+  inspectStudioPackage();
+ });
+ studioUpdateZip.addEventListener('change',()=>inspectStudioPackage());
+}
+
 let storySelection=null;
 let collapsedStoryNodes=new Set();
 
@@ -1217,7 +1492,7 @@ function renderStoryTree(){
     const sceneCollapsed=collapsedStoryNodes.has(sceneKey);
     out+=`<div class="tree-row level-3 ${storyNodeActive('scene',chapter.id,section.id,scene.id)?'active':''}" onclick="selectStoryNode('scene','${escAttr(chapter.id)}','${escAttr(section.id)}','${escAttr(scene.id)}')">
      <button onclick="toggleStoryCollapse('${escAttr(sceneKey)}',event)">${sceneCollapsed?'▶':'▼'}</button>
-     <span class="tree-label">Scene ${esc(scene.no)} ${esc(scene.title||'無題')}</span>
+     <span class="tree-label">シーン ${esc(scene.no)} ${esc(scene.title||'無題')}</span>
     </div>`;
     if(sceneCollapsed)return;
 
@@ -1410,7 +1685,7 @@ function refreshLinkSelectors(prefix,link={}){
  const section=getSection(chapterSelect.value,sectionSelect.value);
  sceneSelect.innerHTML='<option value="">未設定</option>'+((section?.scenes||[])
   .sort((a,b)=>(a.no||0)-(b.no||0))
-  .map(sc=>`<option value="${escAttr(sc.id)}">Scene ${esc(sc.no)} ${esc(sc.title)}</option>`).join(''));
+  .map(sc=>`<option value="${escAttr(sc.id)}">シーン ${esc(sc.no)} ${esc(sc.title)}</option>`).join(''));
  sceneSelect.value=link.scene_id||'';
 }
 
@@ -1548,7 +1823,7 @@ function renderQuests(){
   const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id);
   return `<div class="item">
    <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
-   <span class="badge">${esc(q.type)}</span> <span class="badge">${esc(q.status)}</span>
+   <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span>
    <p>${esc(q.summary||'')}</p>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
@@ -1640,7 +1915,7 @@ function renderEvents(){
  });
  eventList.innerHTML=list.map(e=>`<div class="item">
   <b>${esc(e.name)}</b> <span class="badge">${esc(e.id)}</span>
-  <span class="badge">${esc(e.type)}</span> <span class="badge">${esc(e.status)}</span>
+  <span class="badge">${esc(jpType(e.type))}</span> <span class="badge">${esc(jpStatus(e.status))}</span>
   <p>${esc(e.summary||'')}</p>
   <div class="meta">シナリオ: ${esc(storyPath(e.links||{}))}</div>
   <div class="meta">関連クエスト: ${esc(e.links?.quest_id?questName(e.links.quest_id):'なし')}</div>
@@ -1667,7 +1942,7 @@ function renderReferenceMap(){
  data.quests.forEach(q=>{
   const events=data.events.filter(e=>e.links?.quest_id===q.id);
   rows.push(`<div class="item reference-card">
-   <b>Quest: ${esc(q.name)} (${esc(q.id)})</b>
+   <b>クエスト: ${esc(q.name)} (${esc(q.id)})</b>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
    <div class="meta">イベント: ${esc(events.map(e=>e.name+' ('+e.id+')').join(', ')||'なし')}</div>
    <div class="meta">キャラクター: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
@@ -1675,7 +1950,7 @@ function renderReferenceMap(){
  });
  data.events.filter(e=>!e.links?.quest_id).forEach(e=>{
   rows.push(`<div class="item reference-card">
-   <b>Standalone Event: ${esc(e.name)} (${esc(e.id)})</b>
+   <b>単独イベント: ${esc(e.name)} (${esc(e.id)})</b>
    <div class="meta">シナリオ: ${esc(storyPath(e.links||{}))}</div>
    <div class="meta">キャラクター: ${esc((e.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
   </div>`);
@@ -1704,10 +1979,10 @@ function renderProject(){
  projectId.value=data.project.id||'';projectVersion.value=data.project.product_version||'';projectName.value=data.project.name||'';projectStatus.value=data.project.status||'development';projectDescription.value=data.project.description||''
 }
 function renderDecisions(){
- decisionList.innerHTML=[...data.decisions].reverse().map(d=>`<div class="item"><b>${esc(d.id)}</b> <span class="badge">${esc(d.status)}</span><p>${esc(d.text)}</p><div class="meta">${esc((d.refs||[]).join(', '))} ${esc(d.created_at||'')}</div><button class="danger" onclick="deleteDecision('${escAttr(d.id)}')">削除</button></div>`).join('')||'<div class="card">登録なし</div>'
+ decisionList.innerHTML=[...data.decisions].reverse().map(d=>`<div class="item"><b>${esc(d.id)}</b> <span class="badge">${esc(jpStatus(d.status))}</span><p>${esc(d.text)}</p><div class="meta">${esc((d.refs||[]).join(', '))} ${esc(d.created_at||'')}</div><button class="danger" onclick="deleteDecision('${escAttr(d.id)}')">削除</button></div>`).join('')||'<div class="card">登録なし</div>'
 }
 function renderEntities(){
- entityList.innerHTML=[...data.entities].reverse().map(e=>`<div class="item"><b>${esc(e.id)} / ${esc(e.name)}</b> <span class="badge">${esc(e.type)}</span><p>${esc(e.notes||'')}</p><button class="danger" onclick="deleteEntity('${escAttr(e.id)}')">削除</button></div>`).join('')||'<div class="card">登録なし</div>'
+ entityList.innerHTML=[...data.entities].reverse().map(e=>`<div class="item"><b>${esc(e.id)} / ${esc(e.name)}</b> <span class="badge">${esc(jpType(e.type))}</span><p>${esc(e.notes||'')}</p><button class="danger" onclick="deleteEntity('${escAttr(e.id)}')">削除</button></div>`).join('')||'<div class="card">登録なし</div>'
 }
 
 function renderChapters(){
@@ -1719,8 +1994,8 @@ function renderCharacters(){
 
 function renderValidation(){
  let counts={ERROR:0,WARNING:0,INFO:0,OK:0};validation.forEach(v=>counts[v.level]=(counts[v.level]||0)+1);
- validationSummary.innerHTML=`<b>ERROR ${counts.ERROR}</b> / WARNING ${counts.WARNING} / INFO ${counts.INFO}`;
- validationList.innerHTML=validation.map(v=>`<div class="item"><span class="badge ${v.level==='ERROR'?'err':v.level==='WARNING'?'warn':v.level==='OK'?'ok':''}">${v.level}</span> ${esc(v.message)}</div>`).join('')
+ validationSummary.innerHTML=`<b>エラー ${counts.ERROR}</b> / 警告 ${counts.WARNING} / 情報 ${counts.INFO}`;
+ validationList.innerHTML=validation.map(v=>`<div class="item"><span class="badge ${v.level==='ERROR'?'err':v.level==='WARNING'?'warn':v.level==='OK'?'ok':''}">${jpLevel(v.level)}</span> ${esc(v.message)}</div>`).join('')
 }
 function renderBackups(){
  backupList.innerHTML=backups().map(b=>`<div class="item"><b>${esc(b.id)}</b><div class="meta">${esc(b.at)} / ${esc(b.reason)}</div><button onclick="restoreBackup('${escAttr(b.id)}')">復元</button></div>`).join('')||'<div class="card">バックアップなし</div>'
@@ -1729,6 +2004,11 @@ function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
 }
 function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderReferenceMap();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+
+function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
+function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
+function jpLevel(value){return ({ERROR:'エラー',WARNING:'警告',INFO:'情報',OK:'正常'})[value]||value}
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
@@ -1755,7 +2035,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','090');
+    url.searchParams.set('appv','100');
     location.replace(url.toString());
    }
  }
@@ -1764,7 +2044,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=090',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=100',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -1783,7 +2063,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','090');
+    url.searchParams.set('appv','100');
     location.replace(url.toString());
    }
   });
@@ -1797,7 +2077,7 @@ async function registerAppServiceWorker(){
 }
 
 window.addEventListener('load',registerAppServiceWorker);
-loadGitHubSettings();initializeQuestEventUI();render();runValidation();
+loadGitHubSettings();initializeQuestEventUI();initializeStudioDeploy();render();runValidation();
 </script>
 </body>
 </html>
