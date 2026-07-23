@@ -1,44 +1,50 @@
-# Guild Adventure Studio V4.3.1 Cache Update v0.6.1
+# Guild Adventure Studio V4.4 Update Stable v0.7.0
 
-## この版の目的
+## 目的
 
-Version 4.3の機能は維持したまま、GitHub Pages更新後も古い画面が残る問題を改善した修正版です。
+Version 4.3系から完全に識別子を切り替え、GitHub PagesとiPhone PWAで旧キャッシュが残る問題を回避するための新規リリースです。
 
-## 修正内容
+## 表示確認
 
-- Service WorkerをNetwork First方式へ変更
-- `index.html`、`sw.js`、`manifest.webmanifest`は常にネットワーク優先
-- Service Worker更新時のキャッシュ利用を抑制
-- 古いキャッシュの自動削除
-- 新しいService Worker検出時に更新通知を表示
-- 「今すぐ更新」で新しい版へ切替
-- 起動時に最新版を確認
-- 起動中は15分ごとに更新確認
-- PC・iPhone両対応
-- Version 4.3の複数プロジェクト、GitHub Sync、Story、Character、Validationを継続
+正しく更新されると、画面上部に次が表示されます。
 
-## GitHub Pages更新手順
+Version 4.4 Update Stable v0.7.0 / Build 070
 
-1. ZIPを展開
-2. GitHubの `guild-adventure-studio` リポジトリを開く
-3. Add file → Upload files
-4. 展開した全ファイルをアップロード
-5. Commit changes
-6. GitHub Pagesのデプロイ完了を待つ
-7. ページを一度再読み込み
+## 主な変更
 
-## 初回だけ古い画面が残る場合
+- アプリ版を Version 4.4 / v0.7.0 に更新
+- Service Worker URLを `sw.js?v=070` に変更
+- キャッシュ名を `ga-studio-v070-build070` に変更
+- manifestのstart_urlへ `?appv=070` を追加
+- PWA IDをVersion 4.4用に変更
+- インストール時に即時skipWaiting
+- activate時に旧キャッシュを全削除
+- HTML・Service Worker・manifestはNetwork First
+- 更新時は`?appv=070`付きURLへ再読み込み
+- 既存の複数プロジェクト管理、GitHub Sync、Story、Character、Validationを維持
 
-旧Service Worker自体が古い更新方式で動いているため、Version 4.3.1へ移る最初の一度だけ、旧ブラウザでは次のいずれかが必要になる場合があります。
+## GitHubへのアップロード
 
-- 別ブラウザで開く
-- サイトデータを削除
-- Service WorkerをUnregister
-- iPhoneのホーム画面アイコンを削除して再追加
+ZIPを展開し、リポジトリ直下へ全ファイルを上書きアップロードしてください。
 
-Version 4.3.1が一度読み込まれた後は、以後の更新を検出しやすくなります。
+必須ファイル:
+- index.html
+- sw.js
+- manifest.webmanifest
+- icon-192.png
+- icon-512.png
 
-## データについて
+## 公開確認URL
 
-同じGitHub Pages URLで開く限り、端末内のLocalStorageデータは原則として維持されます。
-念のため、更新前に重要なプロジェクトをJSON出力してください。
+通常URL:
+https://kj2whvbzjn-hue.github.io/guild-adventure-studio/
+
+強制確認URL:
+https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=070
+
+Service Worker確認URL:
+https://kj2whvbzjn-hue.github.io/guild-adventure-studio/sw.js?v=070
+
+## iPhoneでの初回移行
+
+旧ホーム画面アイコンは削除し、Safariで強制確認URLを開いてVersion 4.4表示を確認後、ホーム画面へ再追加してください。

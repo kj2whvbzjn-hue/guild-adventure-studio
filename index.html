@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>Guild Adventure Studio V4.3.1</title>
+<title>Guild Adventure Studio V4.4</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -77,7 +77,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 <header>
   <div>
     <div class="brand">Guild Adventure Studio</div>
-    <div class="version">Version 4.3.1 Cache Update v0.6.1</div>
+    <div class="version">Version 4.4 Update Stable v0.7.0 / Build 070</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -346,7 +346,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
-const APP_VERSION='0.6.1';
+const APP_VERSION='0.7.0';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -495,7 +495,7 @@ function deleteProject(id){
 function exportAllProjects(){
  const packageData={
   format:'guild-adventure-studio-multi-project',
-  version:'0.6.0',
+  version:'0.7.0',
   exported_at:now(),
   current_project_id:currentProjectId,
   projects:getProjectRegistry().map(meta=>({meta,data:loadProject(meta.id)}))
@@ -822,14 +822,18 @@ function applyAppUpdate(){
  if(pendingServiceWorker){
   pendingServiceWorker.postMessage({type:'SKIP_WAITING'});
  }else{
-  location.reload();
+  {
+    const url=new URL(location.href);
+    url.searchParams.set('appv','070');
+    location.replace(url.toString());
+   }
  }
 }
 
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=070',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -846,7 +850,11 @@ async function registerAppServiceWorker(){
   });
 
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
-   location.reload();
+   {
+    const url=new URL(location.href);
+    url.searchParams.set('appv','070');
+    location.replace(url.toString());
+   }
   });
 
   // 起動時と定期的に最新版を確認

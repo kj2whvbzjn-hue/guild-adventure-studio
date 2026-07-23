@@ -1,44 +1,28 @@
-# Version 4.3.1 更新手順
+# Version 4.4 アップロード手順
 
-## 1. 念のためJSON出力
+1. 現在のプロジェクトをJSON出力
+2. ZIPを展開
+3. GitHubのリポジトリ直下へ中の全ファイルをアップロード
+4. Commit changes
+5. ActionsまたはDeploymentsで成功を確認
+6. 次のURLを開く
 
-現在のStudioで重要なプロジェクトをJSON出力してください。
+https://kj2whvbzjn-hue.github.io/guild-adventure-studio/index.html?appv=070
 
-## 2. ZIPを展開
+7. 画面上部が次なら成功
 
-ZIPそのものではなく、展開したファイルを使用します。
+Version 4.4 Update Stable v0.7.0 / Build 070
 
-## 3. GitHubへアップロード
+8. iPhoneでは旧ホーム画面アイコンを削除
+9. Safariで上記URLを開く
+10. Version 4.4確認後にホーム画面へ追加
 
-リポジトリ直下へ以下をアップロードします。
+## GitHub上の確認
 
-- index.html
-- manifest.webmanifest
-- sw.js
-- icon-192.png
-- icon-512.png
-- README.md
-- UPDATE_GUIDE.md
-- GITHUB_SYNC_SETUP.md
+GitHubのindex.htmlを開き、次の文字列があることを確認してください。
 
-## 4. Commit changes
+Version 4.4 Update Stable v0.7.0 / Build 070
 
-GitHub Pagesのデプロイが緑色になるまで待ちます。
+GitHubのsw.jsを開き、一行目が次であることを確認してください。
 
-## 5. 初回確認
-
-公開ページで次の表示を確認します。
-
-Version 4.3.1 Cache Update v0.6.1
-
-## 古い画面が出る場合
-
-Version 4.3.1へ移行する最初の一度だけ、旧Service Workerを削除してください。
-
-PC:
-ブラウザのサイト設定 → サイトデータを削除 → 再読込
-
-iPhone:
-SafariのWebサイトデータ削除、またはホーム画面アイコンを削除してSafariから再追加
-
-移行後は、更新通知とNetwork First方式が有効になります。
+const CACHE_NAME='ga-studio-v070-build070';

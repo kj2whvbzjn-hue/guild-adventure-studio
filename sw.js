@@ -1,13 +1,15 @@
-const CACHE_NAME='ga-studio-v061';
+const CACHE_NAME='ga-studio-v070-build070';
+const OFFLINE_URL='./index.html?appv=070';
 const APP_SHELL=[
   './',
-  './index.html',
-  './manifest.webmanifest',
-  './icon-192.png',
-  './icon-512.png'
+  './index.html?appv=070',
+  './manifest.webmanifest?v=070',
+  './icon-192.png?v=070',
+  './icon-512.png?v=070'
 ];
 
 self.addEventListener('install',event=>{
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))
   );
@@ -39,7 +41,7 @@ async function networkFirst(request){
     const cached=await caches.match(request);
     if(cached)return cached;
     if(request.mode==='navigate'){
-      return caches.match('./index.html');
+      return caches.match(OFFLINE_URL);
     }
     throw error;
   }
@@ -48,7 +50,7 @@ async function networkFirst(request){
 async function cacheFirst(request){
   const cached=await caches.match(request);
   if(cached)return cached;
-  const response=await fetch(request);
+  const response=await fetch(request,{cache:'no-cache'});
   if(response && response.ok){
     const cache=await caches.open(CACHE_NAME);
     cache.put(request,response.clone());
@@ -62,7 +64,12 @@ self.addEventListener('fetch',event=>{
 
   const url=new URL(request.url);
 
-  if(request.mode==='navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/sw.js') || url.pathname.endsWith('/manifest.webmanifest')){
+  if(
+    request.mode==='navigate' ||
+    url.pathname.endsWith('/index.html') ||
+    url.pathname.endsWith('/sw.js') ||
+    url.pathname.endsWith('/manifest.webmanifest')
+  ){
     event.respondWith(networkFirst(request));
     return;
   }
