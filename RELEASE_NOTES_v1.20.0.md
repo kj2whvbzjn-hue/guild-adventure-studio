@@ -1,21 +1,16 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.20.0 Release Notes
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
+## GVF-003 Scenario Validation
+- `ScenarioValidator`を追加
+- `scenario-validation-rules.json`を追加
+- `gvf-scenario.php` CLIを追加
+- 章・節・シーン・クエスト順序検査を追加
+- ボス配置検査を追加
+- イベントフラグ進行検査を追加
+- 物語マイルストーン検査を追加
+- 制作時Warning／リリース時Criticalの切替に対応
 
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+Build 300
 
 
 ## 提出物配布ルール（統一運用）

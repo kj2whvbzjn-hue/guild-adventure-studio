@@ -1,21 +1,19 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.22.2
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
+## CPF v1.0 Specification Freeze
 
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+- CPF v1.0仕様を正式採用・凍結
+- Node統一モデル追加
+- Generator Registry追加
+- Rule Version管理を必須化
+- Manual Override追加
+- Workflow Graph追加
+- Story Milestone追加
+- GUI/API準備仕様追加
+- 次期実装をCPF-001に維持
+
+RuntimeおよびGVF実行コードの変更なし。
+Build: 322
 
 
 ## 提出物配布ルール（統一運用）

@@ -1,21 +1,13 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.8.0
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
-
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+## 戦闘検証機能
+- ダメージ耐性（0～75%）
+- 状態異常耐性（0～75%）
+- スキルクールダウン
+- AIノード最大20件の入力検査
+- 敵HP最高・防御最低ターゲット
+- 抵抗ログと再現可能な戦闘結果
+- PWA Build 180
 
 
 ## 提出物配布ルール（統一運用）

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>ギルド冒険物語 開発スタジオ V4.7</title>
+<title>GK Studio v1.16.0</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -78,6 +78,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .dialogue-row{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fff}
 .dialogue-row .speaker{font-weight:700}
 .order-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.story-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.story-progress .kpi{padding:10px}
+.story-progress .kpi b{font-size:18px}
+.story-status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto}.story-status-dot.draft{background:#9ca3af}.story-status-dot.review{background:#f59e0b}.story-status-dot.approved{background:#10b981}
+.story-search{margin-bottom:10px}
+@media(max-width:900px){.story-progress{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .link-panel{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fafafa}
@@ -120,14 +126,15 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   header .desktop-only{display:none}
 }
 </style>
-  <script src="jszip.min.js?v=100"></script>
+  <script src="jszip.min.js?v=240"></script>
+  <script src="export-core.js?v=240"></script>
 </head>
 <body>
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">バージョン 4.7 / スタジオ自動配置 v1.0.0 / ビルド 100</div>
+    <div class="version">GK Studio v1.16.0 / Production Readiness版 / ビルド 260</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -146,8 +153,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button data-view="storyeditor">シナリオ構成エディター</button>
     <button data-view="quests">クエスト</button>
     <button data-view="events">イベント</button>
+    <button data-view="flags">フラグ</button>
     <button data-view="references">参照関係マップ</button>
     <button data-view="characters">キャラクター</button>
+    <button data-view="masters">マスターデータ</button>
+    <button data-view="battle">戦闘テスト</button>
     <button data-view="decisions">決定事項ログ</button>
     <button data-view="entities">データ・ID管理</button>
     <button data-view="validation">データ検証</button>
@@ -171,8 +181,10 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   </div>
   <div class="card">
     <h2>現在の開発フェーズ</h2>
-    <p><strong>フェーズ1：基盤機能</strong></p>
-    <p>ブラウザ単体で、JSON正本・ID管理・DecisionLog・Validation・バックアップを運用します。</p>
+    <p><strong>フェーズ9：編成スナップショット・比較検証</strong></p>
+    <p>ゲーム仕様マスターを戦闘テストへ接続し、装備・MOD・スキル・AI・状態異常の動作を検証する段階です。</p>
+    <div id="implementationStatus" class="small"></div>
+    <div class="toolbar"><button onclick="exportImplementationReport()">実装状況レポート出力</button></div>
   </div>
   <div class="card">
     <h2>クイック操作</h2>
@@ -245,10 +257,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button onclick="storyExpandAll()">すべて展開</button>
     <button onclick="storyCollapseAll()">すべて折りたたむ</button>
   </div>
+  <div id="storyProgress" class="story-progress"></div>
 
   <div class="story-editor-layout">
     <div class="story-tree">
       <div class="pane-title">シナリオツリー</div>
+      <input id="storySearch" class="story-search" placeholder="章・節・シーン・会話を検索" oninput="renderStoryTree()">
       <div id="storyTree"></div>
     </div>
 
@@ -281,9 +295,105 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
           <textarea id="storyNodeText"></textarea>
         </div>
 
+        <div class="grid">
+          <div id="storyStatusField" class="field">
+            <label>制作状態</label>
+            <select id="storyNodeStatus">
+              <option value="draft">下書き</option>
+              <option value="review">確認中</option>
+              <option value="approved">確定</option>
+            </select>
+          </div>
+          <div id="storyPurposeField" class="field hidden">
+            <label>節の目的</label>
+            <input id="storyNodePurpose" placeholder="この節で達成すること">
+          </div>
+        </div>
+
         <div id="storyThemeField" class="field hidden">
           <label>テーマ</label>
           <input id="storyNodeTheme">
+        </div>
+
+        <div id="storyDesignFields" class="hidden">
+          <h2>SSF-001 シナリオ設計</h2>
+          <div class="grid">
+            <div class="field"><label>執筆目標</label><textarea id="storyDesignGoal" placeholder="この章・節で読者に伝え、物語上達成すること"></textarea></div>
+            <div class="field"><label>登場人物・状態</label><textarea id="storyDesignCharacters" placeholder="登場人物、感情、関係、所持情報、加入・離脱状態"></textarea></div>
+          </div>
+          <div class="grid">
+            <div class="field"><label>必須イベント</label><textarea id="storyDesignRequired" placeholder="必ず含める出来事を1行ずつ入力"></textarea></div>
+            <div class="field"><label>禁止イベント・変更禁止事項</label><textarea id="storyDesignProhibited" placeholder="発生させない出来事、変更してはいけない設定"></textarea></div>
+          </div>
+          <div class="grid">
+            <div class="field"><label>時系列・直前直後の接続</label><textarea id="storyDesignTimeline" placeholder="直前の状態、時間経過、次節へ渡す条件"></textarea></div>
+            <div class="field"><label>舞台・雰囲気・演出条件</label><textarea id="storyDesignDirection" placeholder="場所、時間帯、雰囲気、視点、演出上の制約"></textarea></div>
+          </div>
+          <div class="grid">
+            <div class="field"><label>出力形式</label><select id="storyDesignOutputFormat"><option value="structured">構造化（見出し付き）</option><option value="prose">本文</option><option value="outline">詳細プロット</option><option value="dialogue">会話中心</option></select></div>
+            <div class="field"><label>目標文字量</label><input id="storyDesignLength" type="number" min="0" step="100" placeholder="例: 2000"></div>
+          </div>
+          <div class="toolbar">
+            <button onclick="buildStoryPrompt()">プロンプトを組み立て</button>
+            <button onclick="copyStoryPrompt()">プロンプトをコピー</button>
+          </div>
+          <div class="field"><label>コピー用プロンプト</label><textarea id="storyPromptOutput" rows="16" readonly></textarea></div>
+          <div id="storyPromptMeta" class="small"></div>
+
+          <h2>SSF-003 貼り付け取込</h2>
+          <p class="small">外部AIまたは人間が作成した文章を候補版として受け付けます。現在の正本本文は変更されません。</p>
+          <div class="field"><label>貼り付け本文</label><textarea id="storyPasteInput" rows="14" placeholder="外部で作成した章・節の文章を貼り付けてください。"></textarea></div>
+          <div class="grid">
+            <div class="field"><label>作成者・生成元</label><input id="storyPasteAuthor" placeholder="例: human / ChatGPT / editor-name"></div>
+            <div class="field"><label>入力メモ</label><input id="storyPasteNote" placeholder="修正方針、依頼番号、確認事項など"></div>
+          </div>
+          <div class="toolbar">
+            <button onclick="validateStoryPasteIntake()">貼り付け内容を検証</button>
+            <button class="primary" onclick="createStoryCandidateRevision()">候補Revisionとして保存</button>
+          </div>
+          <div id="storyPasteValidation" class="item">未検証</div>
+          <div class="field"><label>候補Revision履歴</label><div id="storyCandidateList" class="list"></div></div>
+
+          <h2>SSF-004 正本／候補プレビュー比較</h2>
+          <p class="small">候補を選択して正本との差分と設計条件への適合を確認します。この画面から承認・統合・Exportは行いません。</p>
+          <div class="grid">
+            <div class="field"><label>比較対象候補</label><select id="storyCompareCandidate" onchange="renderStoryCandidateComparison()"><option value="">候補を選択</option></select></div>
+            <div class="field"><label>比較モード</label><select id="storyCompareMode" onchange="renderStoryCandidateComparison()"><option value="side">左右全文</option><option value="diff">行単位差分</option></select></div>
+          </div>
+          <div class="toolbar">
+            <button onclick="renderStoryCandidateComparison()">比較を更新</button>
+            <button onclick="runStoryCandidateConsistencyValidation()">整合性を検証</button>
+          </div>
+          <div id="storyCompareMeta" class="item">候補を選択してください。</div>
+          <div id="storyCompareSide" class="grid hidden">
+            <div class="field"><label>現在の正本</label><textarea id="storyCurrentPreview" rows="18" readonly></textarea></div>
+            <div class="field"><label>候補Revision</label><textarea id="storyCandidatePreview" rows="18" readonly></textarea></div>
+          </div>
+          <div id="storyCompareDiff" class="field hidden"><label>行単位差分（- 正本 / + 候補）</label><pre id="storyDiffPreview" class="item" style="white-space:pre-wrap;max-height:34rem;overflow:auto"></pre></div>
+          <div class="field"><label>整合性検証結果</label><div id="storyConsistencyResult" class="list"><div class="story-empty">未検証</div></div></div>
+
+          <h2>SSF-005 保護フィールド・明示承認・Export連携</h2>
+          <p class="small">候補本文だけを正本summaryへ昇格します。ID、章節番号、タイトル、設計条件、子要素、状態などの保護フィールドは変更しません。</p>
+          <div class="grid">
+            <div class="field"><label>許可する変更</label><div id="storyAllowedChangeList" class="item">本文（summary）のみ</div></div>
+            <div class="field"><label>保護フィールド</label><div id="storyProtectedFieldList" class="item">候補を選択してください。</div></div>
+          </div>
+          <div class="field"><label>承認コメント</label><input id="storyApprovalNote" placeholder="確認者、判断理由、関連チケットなど"></div>
+          <div class="field"><label><input id="storyApprovalConfirm" type="checkbox"> 差分・整合性・保護フィールドを確認し、この候補本文を正本へ昇格します。</label></div>
+          <div class="toolbar">
+            <button onclick="rejectStoryCandidateRevision()">候補を却下</button>
+            <button class="primary" onclick="approveStoryCandidateRevision()">明示承認して正本へ昇格</button>
+            <button onclick="markStoryNodeExportReady()">Export準備済みにする</button>
+          </div>
+          <div id="storyApprovalResult" class="item">未操作</div>
+        </div>
+
+        <div id="storySectionDetailFields" class="hidden">
+          <div class="grid">
+            <div class="field"><label>開始状態</label><textarea id="storyNodeStartState"></textarea></div>
+            <div class="field"><label>終了状態</label><textarea id="storyNodeEndState"></textarea></div>
+          </div>
+          <div class="field"><label>重要事項・設定フラグ</label><textarea id="storyNodeKeyPoints" placeholder="加入、離脱、入手物、伏線、フラグ変更など"></textarea></div>
         </div>
 
         <div id="storyStageField" class="field hidden">
@@ -336,7 +446,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <div class="field"><label>概要</label><textarea id="questSummary"></textarea></div>
     <div class="field"><label>受注条件</label><textarea id="questConditions"></textarea></div>
     <div class="field"><label>達成条件</label><textarea id="questCompletion"></textarea></div>
+    <div class="field"><label>失敗条件</label><textarea id="questFailure"></textarea></div>
     <div class="field"><label>報酬</label><textarea id="questRewards"></textarea></div>
+    <div class="grid">
+      <div class="field"><label>前提クエストID</label><input id="questPrerequisites" placeholder="QUEST-001, QUEST-002"></div>
+      <div class="field"><label>後続クエストID</label><input id="questNextQuests" placeholder="QUEST-004"></div>
+      <div class="field"><label>必要フラグ</label><input id="questRequiredFlags" placeholder="FLAG-001"></div>
+      <div class="field"><label>設定フラグ</label><input id="questSetFlags" placeholder="FLAG-002"></div>
+    </div>
 
     <div class="link-grid">
       <div class="link-panel">
@@ -472,6 +589,24 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   <div id="eventList" class="list"></div>
 </section>
 
+
+<section id="view-flags" class="view hidden">
+  <h1>フラグデータベース</h1>
+  <div class="card">
+    <h2>フラグ登録</h2>
+    <div class="grid">
+      <div class="field"><label>フラグID</label><input id="flagId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>フラグ名</label><input id="flagName"></div>
+      <div class="field"><label>分類</label><select id="flagCategory"><option value="story">ストーリー</option><option value="quest">クエスト</option><option value="character">キャラクター</option><option value="world">世界</option><option value="system">システム</option></select></div>
+      <div class="field"><label>初期値</label><select id="flagDefault"><option value="false">OFF</option><option value="true">ON</option></select></div>
+    </div>
+    <div class="field"><label>説明</label><textarea id="flagDescription"></textarea></div>
+    <div class="toolbar"><button class="primary" onclick="saveFlag()">登録・更新</button><button onclick="clearFlagForm()">入力をクリア</button></div>
+  </div>
+  <div class="card"><div class="filter-bar"><input id="flagSearch" placeholder="ID・名称・説明を検索" oninput="renderFlags()"><select id="flagCategoryFilter" onchange="renderFlags()"><option value="">全分類</option><option value="story">ストーリー</option><option value="quest">クエスト</option><option value="character">キャラクター</option><option value="world">世界</option><option value="system">システム</option></select></div></div>
+  <div id="flagList" class="list"></div>
+</section>
+
 <section id="view-references" class="view hidden">
   <h1>参照関係マップ</h1>
   <div class="card">
@@ -493,10 +628,104 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
       <div class="field"><label>役割</label><input id="characterRole" placeholder="主人公、仲間、協力者など"></div>
       <div class="field"><label>職業</label><input id="characterJob"></div>
     </div>
+    <div class="grid">
+      <div class="field"><label>種族</label><input id="characterRace"></div>
+      <div class="field"><label>年齢</label><input id="characterAge"></div>
+      <div class="field"><label>口調</label><input id="characterSpeech"></div>
+      <div class="field"><label>所属組織ID</label><input id="characterOrganization" placeholder="ORG-0001"></div>
+      <div class="field"><label>初登場</label><input id="characterFirstAppearance" placeholder="第1章1節"></div>
+      <div class="field"><label>加入</label><input id="characterJoinPoint" placeholder="第3章"></div>
+      <div class="field"><label>離脱</label><input id="characterLeavePoint"></div>
+      <div class="field"><label>覚醒</label><input id="characterAwakenPoint"></div>
+    </div>
     <div class="field"><label>性格・設定</label><textarea id="characterProfile"></textarea></div>
+    <div class="grid">
+      <div class="field"><label>第一目的</label><input id="characterGoal1"></div>
+      <div class="field"><label>第二目的</label><input id="characterGoal2"></div>
+      <div class="field"><label>第三目的</label><input id="characterGoal3"></div>
+    </div>
     <button class="primary" onclick="addCharacter()">キャラクター登録</button>
   </div>
   <div id="characterList" class="list"></div>
+  <h2>組織管理</h2>
+  <div class="card"><div class="grid"><div class="field"><label>組織ID</label><input id="organizationId" placeholder="空欄で自動採番"></div><div class="field"><label>組織名</label><input id="organizationName"></div><div class="field"><label>種類</label><input id="organizationType" placeholder="王国、騎士団、商会など"></div></div><div class="field"><label>説明</label><textarea id="organizationNotes"></textarea></div><button class="primary" onclick="addOrganization()">組織登録</button></div><div id="organizationList" class="list"></div>
+  <h2>用語辞典</h2>
+  <div class="card"><div class="grid"><div class="field"><label>用語ID</label><input id="termId" placeholder="空欄で自動採番"></div><div class="field"><label>用語</label><input id="termName"></div><div class="field"><label>分類</label><input id="termCategory"></div></div><div class="field"><label>定義</label><textarea id="termDescription"></textarea></div><button class="primary" onclick="addTerm()">用語登録</button></div><div id="termList" class="list"></div>
+  <h2>人間関係</h2>
+  <div class="card"><div class="grid"><div class="field"><label>関係ID</label><input id="relationshipId" placeholder="空欄で自動採番"></div><div class="field"><label>主体キャラクターID</label><input id="relationshipFrom"></div><div class="field"><label>対象キャラクターID</label><input id="relationshipTo"></div><div class="field"><label>関係</label><input id="relationshipType" placeholder="信頼、尊敬、敵対など"></div></div><div class="field"><label>補足</label><textarea id="relationshipNotes"></textarea></div><button class="primary" onclick="addRelationship()">関係登録</button></div><div id="relationshipList" class="list"></div>
+  <h2>時系列管理</h2>
+  <div class="card"><div class="grid"><div class="field"><label>時系列ID</label><input id="timelineId" placeholder="空欄で自動採番"></div><div class="field"><label>章</label><input id="timelineChapter" placeholder="7"></div><div class="field"><label>節</label><input id="timelineSection" placeholder="1"></div><div class="field"><label>対象ID</label><input id="timelineTarget" placeholder="CHR-0001"></div></div><div class="field"><label>出来事・状態変化</label><textarea id="timelineEvent"></textarea></div><button class="primary" onclick="addTimeline()">時系列登録</button></div><div id="timelineList" class="list"></div>
+</section>
+
+
+<section id="view-masters" class="view hidden">
+  <h1>ゲーム仕様マスターデータ</h1>
+  <div class="card">
+    <h2>マスター登録</h2>
+    <div class="grid">
+      <div class="field"><label>分類</label><select id="masterCategory" onchange="renderMasters()">
+        <option value="stats">能力値</option><option value="jobs">職業</option><option value="skills">スキル</option>
+        <option value="equipment">装備</option><option value="mods">MOD</option><option value="monsters">モンスター</option>
+        <option value="status_effects">状態異常</option><option value="tablets">石板</option><option value="ai_conditions">AI条件</option>
+        <option value="ai_targets">AI対象</option><option value="ai_actions">AI行動</option>
+      </select></div>
+      <div class="field"><label>ID</label><input id="masterId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>名称</label><input id="masterName"></div>
+      <div class="field"><label>状態</label><select id="masterStatus"><option value="draft">下書き</option><option value="review">確認中</option><option value="approved">承認済み</option><option value="archived">保管済み</option></select></div>
+    </div>
+    <div class="grid">
+      <div class="field"><label>タグ（カンマ区切り）</label><input id="masterTags"></div>
+      <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
+    </div>
+    <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
+    <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
+  </div>
+  <div class="card">
+    <h2>CSV入出力</h2>
+    <div class="toolbar"><button onclick="exportMasterCsv()">選択分類をCSV出力</button><button onclick="exportAllMastersCsv()">全分類をCSV一括出力</button></div>
+    <p class="small">UTF-8 BOM付きCSVです。Excel・Googleスプレッドシートで読み込めます。</p>
+  </div>
+  <div class="card"><div class="filter-bar"><input id="masterSearch" placeholder="ID・名称・タグを検索" oninput="renderMasters()"></div></div>
+  <div id="masterList" class="list"></div>
+</section>
+
+
+<section id="view-battle" class="view hidden">
+  <h1>戦闘プロトタイプ</h1>
+  <div class="card">
+    <h2>戦闘条件</h2>
+    <div class="grid">
+      <div class="field"><label>乱数シード</label><input id="battleSeed" type="number" value="12345"></div>
+      <div class="field"><label>最大Tick</label><input id="battleMaxTicks" type="number" min="1" max="1000" value="1000"></div>
+      <div class="field"><label>ログ上限</label><input id="battleLogLimit" type="number" min="10" max="2000" value="500"></div>
+    </div>
+    <p class="small">スキル・MP・回復・状態異常・DOT・耐性・クールダウン・優先順位AIに対応します。AIは上から最大20ノードを評価し、500Tick以降は回復量50%、800Tick以降は20%、1000Tickで引き分けです。</p>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>味方（最大6人・JSON）</h2><textarea id="battleAllies" style="min-height:360px"></textarea></div>
+    <div class="card"><h2>敵（JSON）</h2><textarea id="battleEnemies" style="min-height:360px"></textarea></div>
+  </div>
+  <div class="toolbar"><button class="primary" onclick="runBattleTest()">戦闘開始</button><button onclick="resetBattleSample()">拡張サンプルへ戻す</button><button onclick="seedEquipmentBattleSample()">装備連携サンプル</button><button onclick="exportBattleResult()">結果JSON出力</button><button onclick="exportBattleHistoryCsv()">履歴CSV出力</button></div>
+  <div class="card"><h2>複数シード一括テスト</h2><div class="grid"><div class="field"><label>試行回数</label><input id="battleBatchCount" type="number" min="2" max="100" value="20"></div><div class="field"><label>開始シード</label><input id="battleBatchStart" type="number" value="1000"></div><div class="field"><label>シード増分</label><input id="battleBatchStep" type="number" min="1" value="1"></div></div><div class="toolbar"><button class="primary" onclick="runBattleBatch()">一括テスト開始</button><button onclick="exportBattleBatchCsv()">一括結果CSV出力</button></div><div id="battleBatchSummary" class="small">同一編成を複数シードで実行し、勝率・平均値・最良／最悪結果・ばらつきを集計します。</div></div>
+
+  <div class="card">
+    <h2>編成スナップショット</h2>
+    <div class="grid">
+      <div class="field"><label>スナップショット名</label><input id="battleSnapshotName" placeholder="例：攻撃型A"></div>
+      <div class="field"><label>保存済み編成</label><select id="battleSnapshotSelect"></select></div>
+    </div>
+    <div class="toolbar"><button class="primary" onclick="saveBattleSnapshot()">現在編成を保存</button><button onclick="loadBattleSnapshot()">選択編成を読込</button><button class="danger" onclick="deleteBattleSnapshot()">選択編成を削除</button><button onclick="exportBattleSnapshotsJson()">編成JSON出力</button></div>
+    <div class="grid">
+      <div class="field"><label>比較編成A</label><select id="battleSnapshotCompareA"></select></div>
+      <div class="field"><label>比較編成B</label><select id="battleSnapshotCompareB"></select></div>
+    </div>
+    <div class="toolbar"><button class="primary" onclick="compareBattleSnapshots()">同一シード条件で比較</button><button onclick="exportSnapshotComparisonCsv()">比較CSV出力</button></div>
+    <div id="battleSnapshotSummary" class="small">味方・敵・最大Tick・ログ上限を名前付きで保存し、同じシード範囲で比較できます。</div>
+  </div>
+  <div class="card small">ユニットJSONに <code>equipment_ids</code> と <code>mod_ids</code> を指定すると、マスターデータの装備・MODからHP、MP、攻撃、防御、AGI、命中、クリティカル、耐性、MP回復を加算します。</div><div id="battleSummary" class="card">未実行</div>
+  <div class="card"><h2>ユニット別集計</h2><div id="battleMetrics" class="small">戦闘実行後に表示します。</div></div>
+  <div class="card"><h2>戦闘履歴・比較</h2><p class="small">比較A・比較Bを1件ずつ選ぶと差分を表示します。履歴は最大50件です。</p><div id="battleHistory"></div><div id="battleCompare" class="small"></div></div>
+  <div class="card"><h2>戦闘ログ</h2><pre id="battleLog" style="white-space:pre-wrap;max-height:560px;overflow:auto"></pre></div>
 </section>
 
 <section id="view-decisions" class="view hidden">
@@ -679,6 +908,19 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button class="primary" onclick="exportProject()">現在のJSONを保存</button> <button onclick="exportAllProjects()">全プロジェクトを一括出力</button>
   </div>
   <div class="card">
+    <h2>PHP受渡し Export</h2>
+    <p>DEC-0002に従い、PHP実ゲームへ渡す22個のJSONとSHA-256 manifestをZIPで生成します。</p>
+    <div class="grid">
+      <div class="field"><label>Data Version</label><input id="phpExportDataVersion" value="0.1.0-draft"></div>
+      <div class="field"><label>Schema Version</label><input value="1.0.0" readonly></div>
+    </div>
+    <div class="toolbar">
+      <button onclick="validatePhpExport()">Export検証</button>
+      <button class="primary" onclick="exportPhpPackage()">Export ZIP生成</button>
+    </div>
+    <div id="phpExportStatus" class="small">未検証</div>
+  </div>
+  <div class="card">
     <h2>JSON読込</h2>
     <input type="file" id="importFile" accept=".json,application/json">
     <button onclick="importProject()">選択したJSONを読込</button>
@@ -720,20 +962,21 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
-const APP_VERSION='1.0.0';
+const APP_VERSION='1.14.0';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
 const BKEY_PREFIX='gas_v4_backups_v060_';
 const PROJECT_KEY_PREFIX='gas_v4_project_v060_';
-const prefixes={Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG',Quest:'QST',Event:'EVT'};
+const AUTO_BACKUP_KEY_PREFIX='gas_v4_auto_backup_at_v110_';
+const prefixes={Master:'MST',Organization:'ORG',Term:'TRM',Relationship:'REL',Timeline:'TML',Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG',Quest:'QST',Event:'EVT'};
 function now(){return new Date().toISOString()}
 function initial(){
  return {schema_version:'4.0.0-draft',project:{id:'PRJ-GAS-V4',name:'Guild Adventure Studio',product_version:'4.0.0',status:'development',description:'AIと人間が共同でゲーム開発する統合開発環境',updated_at:now()},decisions:[
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],quests:[],events:[],entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
 }
 migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
@@ -745,8 +988,22 @@ function backupStorageKey(id){return BKEY_PREFIX+id}
 function getProjectRegistry(){
  try{return JSON.parse(localStorage.getItem(REGISTRY_KEY))||[]}catch(e){return []}
 }
+function safeStorageSet(key,value,label='データ'){
+ try{
+  localStorage.setItem(key,value);
+  return true;
+ }catch(e){
+  console.error(e);
+  const message=e?.name==='QuotaExceededError'
+   ? label+'を保存できませんでした。端末の保存容量が不足しています。不要なバックアップを削除し、JSON出力で退避してください。'
+   : label+'の保存に失敗しました: '+(e?.message||e);
+  alert(message);
+  document.getElementById('saveStatus').textContent='保存失敗';
+  return false;
+ }
+}
 function saveProjectRegistry(list){
- localStorage.setItem(REGISTRY_KEY,JSON.stringify(list))
+ return safeStorageSet(REGISTRY_KEY,JSON.stringify(list),'プロジェクト一覧')
 }
 function migrateLegacyProject(){
  if(getProjectRegistry().length)return;
@@ -754,27 +1011,79 @@ function migrateLegacyProject(){
  try{legacy=JSON.parse(localStorage.getItem(LEGACY_KEY))}catch(e){}
  const seed=legacy||initial();
  const id=seed.project?.id||'PRJ-GAS-V4';
- localStorage.setItem(projectStorageKey(id),JSON.stringify(seed));
+ safeStorageSet(projectStorageKey(id),JSON.stringify(seed),'初期プロジェクト');
  saveProjectRegistry([{id,name:seed.project?.name||id,updated_at:seed.project?.updated_at||now()}]);
  localStorage.setItem(CURRENT_KEY,id);
 }
 function loadProject(id){
  try{return JSON.parse(localStorage.getItem(projectStorageKey(id)))}catch(e){return null}
 }
+function normalizeStoryDesign(value){
+ const d=(value&&typeof value==='object')?value:{};
+ return {
+  goal:d.goal||'', characters:d.characters||'', required_events:d.required_events||'',
+  prohibited_events:d.prohibited_events||'', timeline:d.timeline||'', direction:d.direction||'',
+  output_format:d.output_format||'structured', target_length:Number(d.target_length)||0,
+  source_version:Number(d.source_version)||1, updated_at:d.updated_at||''
+ };
+}
+function normalizeStoryCandidate(value){
+ const c=(value&&typeof value==='object')?value:{};
+ return {
+  id:c.id||'', status:['candidate','approved','rejected','superseded'].includes(c.status)?c.status:'candidate',
+  text:typeof c.text==='string'?c.text:'', author:c.author||'', note:c.note||'',
+  target_type:c.target_type||'', target_id:c.target_id||'', project_id:c.project_id||'',
+  source_design_version:Number(c.source_design_version)||1, source_updated_at:c.source_updated_at||'',
+  content_hash:c.content_hash||'', created_at:c.created_at||'', approved_at:c.approved_at||'', rejected_at:c.rejected_at||'',
+  approval_note:c.approval_note||'', rejection_note:c.rejection_note||'', promoted_from_hash:c.promoted_from_hash||'',
+  promoted_to_hash:c.promoted_to_hash||'', export_linked_at:c.export_linked_at||''
+ };
+}
+function storyTextHash(text){
+ let h=2166136261;
+ for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}
+ return ('00000000'+(h>>>0).toString(16)).slice(-8);
+}
+function normalizeStoryExportControl(value){
+ const x=(value&&typeof value==='object')?value:{};
+ return {ready:Boolean(x.ready),approved_revision_id:x.approved_revision_id||'',canonical_hash:x.canonical_hash||'',marked_at:x.marked_at||'',marked_by:x.marked_by||''};
+}
+const STORY_PROMOTABLE_FIELDS=['summary'];
+const STORY_PROTECTED_FIELDS=['id','no','title','theme','purpose','status','design','sections','scenes','dialogues','start_state','end_state','key_points','updated_at'];
+function storyProtectedSnapshot(obj){
+ const out={};STORY_PROTECTED_FIELDS.forEach(k=>{if(Object.prototype.hasOwnProperty.call(obj,k))out[k]=JSON.stringify(obj[k]);});return out;
+}
+function verifyStoryProtectedSnapshot(before,obj){
+ const changed=[];Object.keys(before).forEach(k=>{if(JSON.stringify(obj[k])!==before[k])changed.push(k);});return changed;
+}
 function normalizeData(){
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
  data.chapters.forEach((chapter,chapterIndex)=>{
   chapter.no=chapter.no||chapterIndex+1;
+  chapter.status=chapter.status||'draft';
+  chapter.design=normalizeStoryDesign(chapter.design);
+  chapter.candidate_revisions=(chapter.candidate_revisions||[]).map(normalizeStoryCandidate);
+  chapter.export_control=normalizeStoryExportControl(chapter.export_control);
   chapter.sections=chapter.sections||[];
   chapter.sections.forEach((section,sectionIndex)=>{
    section.no=section.no||sectionIndex+1;
+   section.status=section.status||'draft';
+   section.purpose=section.purpose||'';
+   section.start_state=section.start_state||'';
+   section.end_state=section.end_state||'';
+   section.key_points=section.key_points||'';
+   section.design=normalizeStoryDesign(section.design);
+   section.candidate_revisions=(section.candidate_revisions||[]).map(normalizeStoryCandidate);
+   section.export_control=normalizeStoryExportControl(section.export_control);
    section.scenes=section.scenes||[];
    section.scenes.forEach((scene,sceneIndex)=>{
     scene.no=scene.no||sceneIndex+1;
+    scene.status=scene.status||'draft';
     scene.dialogues=scene.dialogues||[];
     scene.dialogues.forEach((dialogue,dialogueIndex)=>{
      dialogue.no=dialogue.no||dialogueIndex+1;
+     dialogue.status=dialogue.status||'draft';
      dialogue.speaker=dialogue.speaker||'';
      dialogue.text=dialogue.text||'';
      dialogue.stage_direction=dialogue.stage_direction||'';
@@ -783,8 +1092,19 @@ function normalizeData(){
   });
  });
  data.characters=data.characters||[];
+ data.organizations=data.organizations||[];
+ data.terms=data.terms||[];
+ data.relationships=data.relationships||[];
+ data.timeline=data.timeline||[];
+ data.characters.forEach(c=>{c.race=c.race||'';c.age=c.age||'';c.speech=c.speech||'';c.organization_id=c.organization_id||'';c.first_appearance=c.first_appearance||'';c.join_point=c.join_point||'';c.leave_point=c.leave_point||'';c.awaken_point=c.awaken_point||'';c.goals=c.goals||['','',''];});
  data.quests=data.quests||[];
  data.events=data.events||[];
+ data.flags=data.flags||[];
+ data.battle_tests=data.battle_tests||[];
+ data.battle_snapshots=data.battle_snapshots||[];
+ data.battle_tests=data.battle_tests||[];
+ data.masters=data.masters||{};
+ ['stats','jobs','skills','equipment','mods','monsters','status_effects','tablets','ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});
  data.quests.forEach(q=>{
   q.type=q.type||'sub';
   q.status=q.status||'draft';
@@ -792,6 +1112,11 @@ function normalizeData(){
   q.conditions=q.conditions||'';
   q.completion=q.completion||'';
   q.rewards=q.rewards||'';
+  q.failure=q.failure||'';
+  q.prerequisite_ids=q.prerequisite_ids||[];
+  q.next_quest_ids=q.next_quest_ids||[];
+  q.required_flags=q.required_flags||[];
+  q.set_flags=q.set_flags||[];
   q.links=q.links||{};
   q.links.character_ids=q.links.character_ids||[];
  });
@@ -806,6 +1131,7 @@ function normalizeData(){
   e.required_flags=e.required_flags||[];
   e.set_flags=e.set_flags||[];
  });
+ data.flags.forEach(f=>{f.name=f.name||f.id;f.category=f.category||'story';f.default_value=!!f.default_value;f.description=f.description||'';});
  data.entities=data.entities||[];
  data.decisions=data.decisions||[];
  data.history=data.history||[];
@@ -822,17 +1148,33 @@ function updateRegistryFromData(){
 }
 function persist(message='端末保存'){
  data.project.updated_at=now();
- localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data));
+ data.history=data.history||[];
+ data.history.push({at:now(),message});
+ if(data.history.length>100)data.history.shift();
+ if(!safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'プロジェクト'))return false;
  updateRegistryFromData();
  document.getElementById('saveStatus').textContent='保存済み';
- data.history=data.history||[]; data.history.push({at:now(),message});
- if(data.history.length>100)data.history.shift();
+ maybeCreateAutoBackup();
  render();
+ return true;
 }
 function saveLocal(){createBackup('save');persist()}
-function createBackup(reason){
- let list=backups(); list.unshift({id:'BKP-'+Date.now(),at:now(),reason,data:structuredClone(data)});
- list=list.slice(0,30);localStorage.setItem(backupStorageKey(currentProjectId),JSON.stringify(list));renderBackups();renderDashboard()
+function createBackup(reason,{silent=false}={}){
+ let list=backups();
+ list.unshift({id:'BKP-'+Date.now(),at:now(),reason,data:structuredClone(data)});
+ list=list.slice(0,30);
+ const ok=safeStorageSet(backupStorageKey(currentProjectId),JSON.stringify(list),'バックアップ');
+ if(ok&&!silent){renderBackups();renderDashboard()}
+ return ok;
+}
+function maybeCreateAutoBackup(){
+ const key=AUTO_BACKUP_KEY_PREFIX+currentProjectId;
+ const last=Number(localStorage.getItem(key)||0);
+ const interval=24*60*60*1000;
+ if(Date.now()-last<interval)return;
+ if(createBackup('自動バックアップ（24時間ごと）',{silent:true})){
+  safeStorageSet(key,String(Date.now()),'自動バックアップ日時');
+ }
 }
 function restoreBackup(id){
  let b=backups().find(x=>x.id===id);if(!b)return;
@@ -862,13 +1204,13 @@ function createNewProject(){
  fresh.project.name=name;
  fresh.project.description='';
  fresh.project.updated_at=now();
- localStorage.setItem(projectStorageKey(id),JSON.stringify(fresh));
+ safeStorageSet(projectStorageKey(id),JSON.stringify(fresh),'新規プロジェクト');
  let list=getProjectRegistry();list.push({id,name,updated_at:fresh.project.updated_at});saveProjectRegistry(list);
  switchProject(id);
 }
 function switchProject(id){
  if(id===currentProjectId)return showView('dashboard');
- localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data));
+ safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'切替前プロジェクト');
  currentProjectId=id;
  localStorage.setItem(CURRENT_KEY,id);
  data=loadProject(id)||initial();
@@ -891,7 +1233,7 @@ function duplicateCurrentProject(){
  copy.project.updated_at=now();
  copy.history=copy.history||[];
  copy.history.push({at:now(),message:'project duplicated from '+currentProjectId});
- localStorage.setItem(projectStorageKey(id),JSON.stringify(copy));
+ safeStorageSet(projectStorageKey(id),JSON.stringify(copy),'複製プロジェクト');
  let list=getProjectRegistry();list.push({id,name:copy.project.name,updated_at:copy.project.updated_at});saveProjectRegistry(list);
  switchProject(id);
 }
@@ -910,7 +1252,7 @@ function deleteProject(id){
 function exportAllProjects(){
  const packageData={
   format:'guild-adventure-studio-multi-project',
-  version:'1.0.0',
+  version:'1.1.0',
   exported_at:now(),
   current_project_id:currentProjectId,
   projects:getProjectRegistry().map(meta=>({meta,data:loadProject(meta.id)}))
@@ -949,27 +1291,38 @@ function addChapter(){
 }
 function addSection(chapterId){
  let chapter=data.chapters.find(c=>c.id===chapterId);if(!chapter)return;
+ chapter.sections=chapter.sections||[];
+ if(chapter.sections.length>=20)return alert('1章に登録できる節は最大20節です。');
  let title=prompt('節タイトルを入力してください。');if(!title)return;
  let id=nextId('Section');
- chapter.sections=chapter.sections||[];
- chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',scenes:[],status:'draft',created_at:now(),updated_at:now()});
+ chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()});
  persist('section added')
 }
 function deleteChapter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.chapters=data.chapters.filter(x=>x.id!==id);persist('chapter deleted')}}
 function deleteSection(chapterId,sectionId){
  let c=data.chapters.find(x=>x.id===chapterId);if(!c)return;
- if(confirm(sectionId+'を削除しますか？')){c.sections=(c.sections||[]).filter(x=>x.id!==sectionId);persist('section deleted')}
+ if(confirm(sectionId+'を削除しますか？')){createBackup('before-delete-section');c.sections=(c.sections||[]).filter(x=>x.id!==sectionId);persist('section deleted')}
 }
 function addCharacter(){
  let id=document.getElementById('characterId').value.trim()||nextId('Character');
  let name=document.getElementById('characterName').value.trim();
  if(!name)return alert('名前を入力してください。');
  if(allIds().includes(id))return alert('そのIDは既に使用されています。');
- data.characters.push({id,name,role:characterRole.value.trim(),job:characterJob.value.trim(),profile:characterProfile.value.trim(),status:'draft',created_at:now(),updated_at:now()});
- characterId.value='';characterName.value='';characterRole.value='';characterJob.value='';characterProfile.value='';
+ data.characters.push({id,name,role:characterRole.value.trim(),job:characterJob.value.trim(),race:characterRace.value.trim(),age:characterAge.value.trim(),speech:characterSpeech.value.trim(),organization_id:characterOrganization.value.trim(),first_appearance:characterFirstAppearance.value.trim(),join_point:characterJoinPoint.value.trim(),leave_point:characterLeavePoint.value.trim(),awaken_point:characterAwakenPoint.value.trim(),goals:[characterGoal1.value.trim(),characterGoal2.value.trim(),characterGoal3.value.trim()],profile:characterProfile.value.trim(),status:'draft',created_at:now(),updated_at:now()});
+ ['characterId','characterName','characterRole','characterJob','characterRace','characterAge','characterSpeech','characterOrganization','characterFirstAppearance','characterJoinPoint','characterLeavePoint','characterAwakenPoint','characterGoal1','characterGoal2','characterGoal3','characterProfile'].forEach(x=>document.getElementById(x).value='');
  persist('character added')
 }
 function deleteCharacter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.characters=data.characters.filter(x=>x.id!==id);persist('character deleted')}}
+
+
+function addOrganization(){let id=organizationId.value.trim()||nextId('Organization'),name=organizationName.value.trim();if(!name)return alert('組織名を入力してください。');if(allIds().includes(id))return alert('そのIDは既に使用されています。');data.organizations.push({id,name,type:organizationType.value.trim(),notes:organizationNotes.value.trim(),created_at:now()});organizationId.value=organizationName.value=organizationType.value=organizationNotes.value='';persist('organization added')}
+function deleteOrganization(id){if(confirm(id+'を削除しますか？')){data.organizations=data.organizations.filter(x=>x.id!==id);persist('organization deleted')}}
+function addTerm(){let id=termId.value.trim()||nextId('Term'),name=termName.value.trim();if(!name)return alert('用語を入力してください。');if(allIds().includes(id))return alert('そのIDは既に使用されています。');data.terms.push({id,name,category:termCategory.value.trim(),description:termDescription.value.trim(),created_at:now()});termId.value=termName.value=termCategory.value=termDescription.value='';persist('term added')}
+function deleteTerm(id){if(confirm(id+'を削除しますか？')){data.terms=data.terms.filter(x=>x.id!==id);persist('term deleted')}}
+function addRelationship(){let id=relationshipId.value.trim()||nextId('Relationship'),from=relationshipFrom.value.trim(),to=relationshipTo.value.trim(),type=relationshipType.value.trim();if(!from||!to||!type)return alert('主体・対象・関係を入力してください。');if(allIds().includes(id))return alert('そのIDは既に使用されています。');data.relationships.push({id,from_character_id:from,to_character_id:to,type,notes:relationshipNotes.value.trim(),created_at:now()});relationshipId.value=relationshipFrom.value=relationshipTo.value=relationshipType.value=relationshipNotes.value='';persist('relationship added')}
+function deleteRelationship(id){if(confirm(id+'を削除しますか？')){data.relationships=data.relationships.filter(x=>x.id!==id);persist('relationship deleted')}}
+function addTimeline(){let id=timelineId.value.trim()||nextId('Timeline'),event=timelineEvent.value.trim();if(!event)return alert('出来事を入力してください。');if(allIds().includes(id))return alert('そのIDは既に使用されています。');data.timeline.push({id,chapter_no:Number(timelineChapter.value)||0,section_no:Number(timelineSection.value)||0,target_id:timelineTarget.value.trim(),event,created_at:now()});timelineId.value=timelineChapter.value=timelineSection.value=timelineTarget.value=timelineEvent.value='';persist('timeline added')}
+function deleteTimeline(id){if(confirm(id+'を削除しますか？')){data.timeline=data.timeline.filter(x=>x.id!==id);persist('timeline deleted')}}
 
 function addDecision(){
  let id=document.getElementById('decisionId').value.trim(), text=document.getElementById('decisionText').value.trim();
@@ -990,6 +1343,22 @@ function nextId(type){
  });
  return p+'-'+String(max+1).padStart(4,'0')
 }
+
+const MASTER_LABELS={stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
+let editingMasterId='';
+function masterPrefix(category){return ({stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
+function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.masters[category]||[]).forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(String(x.id||'').startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')}
+function editMaster(category,id){const m=(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(', ');masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';window.scrollTo({top:0,behavior:'smooth'})}
+function deleteMaster(category,id){if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
+function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';masterParams.value='';masterDescription.value=''}
+function renderMasters(){if(!document.getElementById('masterList'))return;const c=masterCategory.value||'stats',q=(masterSearch.value||'').toLowerCase();const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'}
+function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
+function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')));return '\ufeff'+lines.join('\r\n')}
+function exportMasterCsv(){const c=masterCategory.value;downloadText('GK_'+c+'_v'+APP_VERSION+'.csv',masterCsv(c),'text/csv;charset=utf-8')}
+function exportAllMastersCsv(){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];Object.keys(MASTER_LABELS).forEach(c=>(data.masters[c]||[]).forEach(m=>lines.push([c,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(','))));downloadText('GK_MasterDB_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
+
 function addEntity(){
  let type=document.getElementById('entityType').value,id=document.getElementById('entityId').value.trim()||nextId(type),name=document.getElementById('entityName').value.trim();
  if(!name)return alert('名前を入力してください。');
@@ -999,7 +1368,95 @@ function addEntity(){
  persist('entity added')
 }
 function deleteEntity(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.entities=data.entities.filter(x=>x.id!==id);persist('entity deleted')}}
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+
+const BATTLE_SAMPLE_ALLIES=[
+ {"id":"ALLY-01","name":"主人公","hp":420,"mp":80,"mp_regen":3,"agi":12,"attack":55,"defense":18,"accuracy":90,"crit":10,"damage_resist":10,"status_resist":15,
+  "skills":[{"id":"SKL-SLASH","name":"強撃","type":"attack","mp_cost":10,"power":1.65,"accuracy":92,"target":"enemy_lowest","cooldown":120}],
+  "ai":[{"condition":"mp_at_least:10","action":"skill:SKL-SLASH","target":"enemy_lowest"},{"condition":"always","action":"attack","target":"enemy_random"}]},
+ {"id":"ALLY-02","name":"エリシア","hp":330,"mp":130,"mp_regen":5,"agi":11,"attack":32,"defense":12,"accuracy":92,"crit":6,"damage_resist":5,"status_resist":25,
+  "skills":[{"id":"SKL-HEAL","name":"ヒール","type":"heal","mp_cost":18,"power":95,"target":"ally_lowest","cooldown":80},{"id":"SKL-REGEN","name":"再生の祈り","type":"status","mp_cost":22,"target":"ally_lowest","effect":{"type":"regen","duration":180,"potency":12,"chance":100}}],
+  "ai":[{"condition":"ally_hp_below:35","action":"skill:SKL-HEAL","target":"ally_lowest"},{"condition":"ally_hp_below:70","action":"skill:SKL-REGEN","target":"ally_lowest"},{"condition":"always","action":"attack","target":"enemy_random"}]}
+];
+const BATTLE_SAMPLE_ENEMIES=[
+ {"id":"ENEMY-01","name":"オーク呪術師","hp":520,"mp":90,"mp_regen":2,"agi":9,"attack":44,"defense":14,"accuracy":84,"crit":5,"damage_resist":15,"status_resist":10,
+  "skills":[{"id":"SKL-POISON","name":"毒霧","type":"status","mp_cost":16,"target":"enemy_random","effect":{"type":"poison","duration":300,"interval":100,"potency":24,"chance":80}}],
+  "ai":[{"condition":"mp_at_least:16","action":"skill:SKL-POISON","target":"enemy_random"},{"condition":"always","action":"attack","target":"enemy_random"}]},
+ {"id":"ENEMY-02","name":"ゴブリン術士","hp":230,"mp":70,"mp_regen":3,"agi":15,"attack":28,"defense":7,"accuracy":87,"crit":8,"damage_resist":0,"status_resist":5,
+  "skills":[{"id":"SKL-FIRE","name":"火炎弾","type":"attack","mp_cost":14,"power":1.25,"accuracy":90,"target":"enemy_lowest","effect":{"type":"burn","duration":200,"interval":100,"potency":16,"chance":55}},{"id":"SKL-STUN","name":"衝撃","type":"status","mp_cost":20,"target":"enemy_random","effect":{"type":"stun","duration":90,"chance":35}}],
+  "ai":[{"condition":"mp_at_least:20","action":"skill:SKL-STUN","target":"enemy_random"},{"condition":"mp_at_least:14","action":"skill:SKL-FIRE","target":"enemy_lowest"},{"condition":"always","action":"attack","target":"enemy_random"}]}
+];
+let lastBattleResult=null;
+let lastBattleBatch=[];
+let lastSnapshotComparison=[];
+function resetBattleSample(){battleAllies.value=JSON.stringify(BATTLE_SAMPLE_ALLIES,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);battleSummary.innerHTML='拡張サンプルを読み込みました。';battleLog.textContent='';battleMetrics.innerHTML='戦闘実行後に表示します。'}
+function seededRandom(seed){let x=(Number(seed)||1)>>>0;return ()=>{x=(x+0x6D2B79F5)|0;let t=Math.imul(x^x>>>15,1|x);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+function battleMasterById(category,id){return (data.masters&&data.masters[category]||[]).find(x=>x.id===id)||null}
+function battleStatBlock(rec){const p=rec&&rec.params&&typeof rec.params==='object'?rec.params:{};return p.stats&&typeof p.stats==='object'?p.stats:p}
+function resolveBattleLoadout(u){const totals={hp:0,mp:0,mp_regen:0,agi:0,attack:0,defense:0,accuracy:0,crit:0,damage_resist:0,status_resist:0},sources=[],missing=[];const add=(rec,kind)=>{if(!rec)return;const st=battleStatBlock(rec);Object.keys(totals).forEach(k=>totals[k]+=Number(st[k])||0);sources.push({id:rec.id,name:rec.name,kind});const nested=Array.isArray(rec.params&&rec.params.mod_ids)?rec.params.mod_ids:[];nested.forEach(id=>{const m=battleMasterById('mods',id);if(m)add(m,'mod');else missing.push(id)})};(Array.isArray(u.equipment_ids)?u.equipment_ids:[]).forEach(id=>{const rec=battleMasterById('equipment',id);if(rec)add(rec,'equipment');else missing.push(id)});(Array.isArray(u.mod_ids)?u.mod_ids:[]).forEach(id=>{const rec=battleMasterById('mods',id);if(rec)add(rec,'mod');else missing.push(id)});return {totals,sources,missing}}
+function normalizeBattleUnits(rows,side){if(!Array.isArray(rows))throw new Error(side+'は配列で入力してください。');if(side==='味方'&&rows.length>6)throw new Error('味方は最大6人です。');return rows.map((u,i)=>{const loadout=resolveBattleLoadout(u),b=loadout.totals,hp=Math.max(1,(Number(u.hp)||100)+b.hp),mp=Math.max(0,(Number(u.mp)||0)+b.mp),ai=Array.isArray(u.ai)&&u.ai.length?u.ai:[{condition:'always',action:'attack',target:'enemy_random'}];if(loadout.missing.length)throw new Error((u.name||u.id||side+(i+1))+'の装備・MOD参照が見つかりません: '+loadout.missing.join(', '));if(ai.length>20)throw new Error((u.name||u.id||side+(i+1))+'のAIノードは最大20件です。');return {id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),attack:Math.max(1,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy:Math.max(1,Math.min(100,(Number(u.accuracy)||85)+b.accuracy)),crit:Math.max(0,Math.min(100,(Number(u.crit)||5)+b.crit)),damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist:Math.max(0,Math.min(75,(Number(u.status_resist)||0)+b.status_resist)),skills:Array.isArray(u.skills)?u.skills:[],ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,statuses:[],cooldowns:{},ag:0,actions:0,alive:true,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0}})}
+function seedEquipmentBattleSample(){data.masters.equipment=data.masters.equipment||[];data.masters.mods=data.masters.mods||[];const upsert=(c,r)=>{const i=data.masters[c].findIndex(x=>x.id===r.id);if(i>=0)data.masters[c][i]=r;else data.masters[c].push(r)};upsert('mods',{id:'MOD-BTL-ATK',name:'攻撃強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{attack:12,crit:3}},description:'装備連携確認用',updated_at:now()});upsert('mods',{id:'MOD-BTL-RES',name:'守護強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{hp:60,defense:6,damage_resist:5}},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-SWORD',name:'試作騎士剣',status:'approved',tags:['武器','戦闘サンプル'],params:{stats:{attack:18,accuracy:3},mod_ids:['MOD-BTL-ATK']},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-ARMOR',name:'試作騎士鎧',status:'approved',tags:['鎧','戦闘サンプル'],params:{stats:{hp:80,defense:10,status_resist:5},mod_ids:['MOD-BTL-RES']},description:'装備連携確認用',updated_at:now()});const allies=JSON.parse(JSON.stringify(BATTLE_SAMPLE_ALLIES));allies[0].equipment_ids=['EQP-BTL-SWORD','EQP-BTL-ARMOR'];battleAllies.value=JSON.stringify(allies,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);persist('battle equipment sample');battleSummary.innerHTML='装備・MODマスターと連携するサンプルを登録しました。'}
+function battleConditionOk(rule,u,units){const c=String(rule.condition||'always');if(c==='always')return true;if(c.startsWith('mp_at_least:'))return u.mp>=Number(c.split(':')[1]||0);if(c.startsWith('hp_below:'))return u.hp/u.maxHp*100<Number(c.split(':')[1]||0);if(c.startsWith('ally_hp_below:'))return units.some(x=>x.side===u.side&&x.alive&&x.hp/x.maxHp*100<Number(c.split(':')[1]||0));if(c.startsWith('enemy_count_at_most:'))return units.filter(x=>x.side!==u.side&&x.alive).length<=Number(c.split(':')[1]||0);return false}
+function battleTargets(kind,u,units,rnd){const allies=units.filter(x=>x.side===u.side&&x.alive),enemies=units.filter(x=>x.side!==u.side&&x.alive);const pool=String(kind||'enemy_random').startsWith('ally')||kind==='self'?allies:enemies;if(!pool.length)return[];if(kind==='self')return[u];if(kind==='ally_lowest'||kind==='enemy_lowest')return[pool.slice().sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0]];if(kind==='enemy_highest')return[pool.slice().sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0]];if(kind==='enemy_defense_lowest')return[pool.slice().sort((a,b)=>a.defense-b.defense)[0]];if(kind==='ally_all'||kind==='enemy_all')return pool;return[pool[Math.floor(rnd()*pool.length)]]}
+function recoveryScale(tick){return tick>=800?.2:tick>=500?.5:1}
+function battleLogPush(logs,limit,text){if(logs.length<limit)logs.push(text)}
+function applyBattleStatus(target,effect,tick,rnd,logs,limit,source){const baseChance=Math.max(0,Math.min(100,Number((effect&&effect.chance)??100))),finalChance=baseChance*(1-target.statusResist/100);if(!effect||rnd()*100>finalChance){if(effect&&effect.type)battleLogPush(logs,limit,`[${tick}] ${target.name}は状態異常に抵抗`);return false;}const type=String(effect.type||'');if(!type)return false;const status={type,remaining:Math.max(1,Number(effect.duration)||100),interval:Math.max(1,Number(effect.interval)||100),nextTick:tick+Math.max(1,Number(effect.interval)||100),potency:Math.max(0,Number(effect.potency)||0),source:source.name};target.statuses=target.statuses.filter(x=>x.type!==type);target.statuses.push(status);if(source)source.statusApplied=(source.statusApplied||0)+1;battleLogPush(logs,limit,`[${tick}] ${target.name}に${({poison:'毒',burn:'火傷',regen:'再生',stun:'スタン'})[type]||type}付与`);return true}
+function processBattleStatuses(u,tick,logs,limit){for(const st of u.statuses){st.remaining--;if((st.type==='poison'||st.type==='burn'||st.type==='regen')&&tick>=st.nextTick){st.nextTick+=st.interval;if(st.type==='regen'){const heal=Math.max(1,Math.floor(st.potency*recoveryScale(tick)));u.hp=Math.min(u.maxHp,u.hp+heal);battleLogPush(logs,limit,`[${tick}] ${u.name}の再生 ${heal}回復 残HP ${u.hp}`)}else{u.hp=Math.max(0,u.hp-st.potency);battleLogPush(logs,limit,`[${tick}] ${u.name}は${st.type==='poison'?'毒':'火傷'}で${st.potency}ダメージ 残HP ${u.hp}`);if(u.hp<=0){u.alive=false;battleLogPush(logs,limit,`[${tick}] ${u.name}は戦闘不能`)}}}}u.statuses=u.statuses.filter(st=>st.remaining>0);return u.statuses.some(st=>st.type==='stun')}
+function performBasicAttack(u,target,tick,rnd,logs,limit,power=1,accuracy=u.accuracy,label='通常攻撃',effect=null){if(rnd()*100>=accuracy){u.misses++;battleLogPush(logs,limit,`[${tick}] ${u.name}の${label} → ${target.name}に外れ`);return}u.hits++;const critical=rnd()*100<u.crit,variance=.9+rnd()*.2,raw=Math.max(1,Math.floor((u.attack*power-target.defense)*variance)),damage=Math.max(1,Math.floor((critical?Math.floor(raw*1.5):raw)*(1-target.damageResist/100)));if(critical)u.crits++;u.damageDealt+=damage;target.damageTaken+=damage;target.hp=Math.max(0,target.hp-damage);battleLogPush(logs,limit,`[${tick}] ${u.name}の${label} → ${target.name} ${damage}ダメージ${critical?'（クリティカル）':''} 残HP ${target.hp}`);if(effect&&target.alive)applyBattleStatus(target,effect,tick,rnd,logs,limit,u);if(target.hp<=0){target.alive=false;battleLogPush(logs,limit,`[${tick}] ${target.name}は戦闘不能`)}}
+function performSkill(u,skill,target,tick,rnd,logs,limit){const cost=Math.max(0,Number(skill.mp_cost)||0),id=String(skill.id||skill.name||'skill'),readyAt=Number(u.cooldowns[id]||0);if(u.mp<cost||tick<readyAt)return false;u.mp-=cost;u.skillUses++;const cooldown=Math.max(0,Number(skill.cooldown)||0);if(cooldown)u.cooldowns[id]=tick+cooldown;const type=String(skill.type||'attack'),name=String(skill.name||skill.id||'スキル');if(type==='heal'){const amount=Math.max(1,Math.floor((Number(skill.power)||50)*recoveryScale(tick)));const before=target.hp;target.hp=Math.min(target.maxHp,target.hp+amount);u.healingDone+=target.hp-before;battleLogPush(logs,limit,`[${tick}] ${u.name}の${name} → ${target.name} ${amount}回復 残HP ${target.hp}`)}else if(type==='status'){applyBattleStatus(target,skill.effect||{},tick,rnd,logs,limit,u)}else{performBasicAttack(u,target,tick,rnd,logs,limit,Math.max(.1,Number(skill.power)||1),Math.max(1,Math.min(100,Number(skill.accuracy)||u.accuracy)),name,skill.effect||null)}return true}
+function battleUnitMetrics(u){return {id:u.id,name:u.name,side:u.side,alive:u.alive,hp:u.hp,maxHp:u.maxHp,mp:u.mp,maxMp:u.maxMp,actions:u.actions,damage_dealt:u.damageDealt,damage_taken:u.damageTaken,healing_done:u.healingDone,hits:u.hits,misses:u.misses,crits:u.crits,skill_uses:u.skillUses,status_applied:u.statusApplied}}
+function battleTotals(units,side){const rows=units.filter(u=>u.side===side),sum=k=>rows.reduce((n,u)=>n+Number(u[k]||0),0);return {survivors:rows.filter(u=>u.alive).length,units:rows.length,actions:sum('actions'),damage_dealt:sum('damageDealt'),damage_taken:sum('damageTaken'),healing_done:sum('healingDone'),hits:sum('hits'),misses:sum('misses'),crits:sum('crits'),skill_uses:sum('skillUses'),status_applied:sum('statusApplied')}}
+function renderBattleMetrics(result){if(!result||!result.metrics)return battleMetrics.innerHTML='戦闘実行後に表示します。';const rows=[...(result.metrics.units||[])];battleMetrics.innerHTML=`<div style="overflow:auto"><table><thead><tr><th>陣営</th><th>ユニット</th><th>生存</th><th>行動</th><th>与ダメ</th><th>被ダメ</th><th>回復</th><th>命中/外れ</th><th>クリ</th><th>スキル</th><th>状態付与</th></tr></thead><tbody>${rows.map(u=>`<tr><td>${esc(u.side)}</td><td>${esc(u.name)}</td><td>${u.alive?'○':'×'}</td><td>${u.actions}</td><td>${u.damage_dealt}</td><td>${u.damage_taken}</td><td>${u.healing_done}</td><td>${u.hits}/${u.misses}</td><td>${u.crits}</td><td>${u.skill_uses}</td><td>${u.status_applied}</td></tr>`).join('')}</tbody></table></div>`}
+function runBattleTest(){try{const maxTicks=Math.max(1,Math.min(1000,Number(battleMaxTicks.value)||1000)),logLimit=Math.max(10,Math.min(2000,Number(battleLogLimit.value)||500)),rnd=seededRandom(battleSeed.value),allies=normalizeBattleUnits(JSON.parse(battleAllies.value),'味方'),enemies=normalizeBattleUnits(JSON.parse(battleEnemies.value),'敵');if(!allies.length||!enemies.length)throw new Error('味方と敵を1体以上登録してください。');const units=[...allies,...enemies],logs=[];let tick=0,result='引き分け';const living=s=>units.filter(u=>u.side===s&&u.alive);for(tick=1;tick<=maxTicks;tick++){for(const u of units){if(!u.alive)continue;const stunned=processBattleStatuses(u,tick,logs,logLimit);if(!u.alive)continue;u.ag+=u.agi;let guard=0;while(u.ag>=100&&u.alive&&guard++<20){u.ag-=100;u.actions++;if(stunned){battleLogPush(logs,logLimit,`[${tick}] ${u.name}はスタンで行動不能`);break}let acted=false;for(const rule of u.ai){if(!battleConditionOk(rule,u,units))continue;const action=String(rule.action||'attack'),skillId=action.startsWith('skill:')?action.slice(6):'',skill=u.skills.find(x=>x.id===skillId),targetKind=rule.target||(skill&&skill.target)||'enemy_random',targets=battleTargets(targetKind,u,units,rnd);if(!targets.length)continue;if(skillId){if(!skill||u.mp<Math.max(0,Number(skill.mp_cost)||0)||tick<Number(u.cooldowns[String(skill.id||skill.name||'skill')]||0))continue;for(const target of targets)performSkill(u,skill,target,tick,rnd,logs,logLimit);acted=true}else{performBasicAttack(u,targets[0],tick,rnd,logs,logLimit);acted=true}break}if(!acted){const targets=battleTargets('enemy_random',u,units,rnd);if(targets.length)performBasicAttack(u,targets[0],tick,rnd,logs,logLimit)}u.mp=Math.min(u.maxMp,u.mp+u.mpRegen)}}if(!living('敵').length){result='味方勝利';break}if(!living('味方').length){result='敵勝利';break}}if(tick>maxTicks)tick=maxTicks;const metrics={allies:battleTotals(units,'味方'),enemies:battleTotals(units,'敵'),units:units.map(battleUnitMetrics)};lastBattleResult={version:APP_VERSION,seed:Number(battleSeed.value)||0,result,ticks:tick,finished_at:now(),metrics,allies:allies.map(({ag,...u})=>u),enemies:enemies.map(({ag,...u})=>u),logs};data.battle_tests.unshift({id:'BTL-'+Date.now(),version:APP_VERSION,seed:lastBattleResult.seed,result,ticks:tick,created_at:now(),metrics});data.battle_tests=data.battle_tests.slice(0,50);persist('battle test');battleSummary.innerHTML=`<b>${esc(result)}</b> / ${tick} Tick / 味方生存 ${living('味方').length} / 敵生存 ${living('敵').length}<div class="small">味方与ダメ ${metrics.allies.damage_dealt} / 敵与ダメ ${metrics.enemies.damage_dealt} / 味方回復 ${metrics.allies.healing_done}</div>`;renderBattleMetrics(lastBattleResult);renderBattleHistory();battleLog.textContent=logs.join('\n')+(logs.length>=logLimit?'\n…ログ上限に達しました。':'')}catch(e){alert('戦闘テストを開始できません: '+e.message)}}
+function exportBattleResult(){if(!lastBattleResult)return alert('先に戦闘を実行してください。');downloadText('GK_BattleResult_v'+APP_VERSION+'.json',JSON.stringify(lastBattleResult,null,2),'application/json;charset=utf-8')}
+function battleHistoryTotals(t,side){return t&&t.metrics&&t.metrics[side]||{survivors:0,damage_dealt:0,healing_done:0,actions:0}}
+function renderBattleHistory(){const el=document.getElementById('battleHistory');if(!el)return;const rows=data.battle_tests||[];if(!rows.length){el.innerHTML='<p class="small">履歴はありません。</p>';battleCompare.innerHTML='';return}el.innerHTML=`<div style="overflow:auto"><table><thead><tr><th>A</th><th>B</th><th>日時</th><th>結果</th><th>Seed</th><th>Tick</th><th>味方与ダメ</th><th>味方回復</th><th>味方生存</th></tr></thead><tbody>${rows.map((t,i)=>{const a=battleHistoryTotals(t,'allies');return `<tr><td><input type="radio" name="battleCompareA" value="${i}" onchange="renderBattleComparison()"></td><td><input type="radio" name="battleCompareB" value="${i}" onchange="renderBattleComparison()"></td><td>${esc(t.created_at||'')}</td><td>${esc(t.result||'')}</td><td>${t.seed??''}</td><td>${t.ticks??''}</td><td>${a.damage_dealt||0}</td><td>${a.healing_done||0}</td><td>${a.survivors||0}</td></tr>`}).join('')}</tbody></table></div>`}
+function renderBattleComparison(){const a=document.querySelector('input[name="battleCompareA"]:checked'),b=document.querySelector('input[name="battleCompareB"]:checked');if(!a||!b){battleCompare.innerHTML='<p>比較Aと比較Bを選択してください。</p>';return}const A=data.battle_tests[Number(a.value)],B=data.battle_tests[Number(b.value)],ta=battleHistoryTotals(A,'allies'),tb=battleHistoryTotals(B,'allies'),d=(x,y)=>Number(y||0)-Number(x||0);battleCompare.innerHTML=`<h3>比較結果（B − A）</h3><p>Tick ${d(A.ticks,B.ticks)>=0?'+':''}${d(A.ticks,B.ticks)} / 与ダメ ${d(ta.damage_dealt,tb.damage_dealt)>=0?'+':''}${d(ta.damage_dealt,tb.damage_dealt)} / 回復 ${d(ta.healing_done,tb.healing_done)>=0?'+':''}${d(ta.healing_done,tb.healing_done)} / 行動 ${d(ta.actions,tb.actions)>=0?'+':''}${d(ta.actions,tb.actions)} / 生存 ${d(ta.survivors,tb.survivors)>=0?'+':''}${d(ta.survivors,tb.survivors)}</p>`}
+function exportBattleHistoryCsv(){const head=['id','version','created_at','result','seed','ticks','ally_survivors','ally_actions','ally_damage','ally_healing','enemy_survivors','enemy_actions','enemy_damage','enemy_healing'];const lines=[head.map(csvCell).join(',')];(data.battle_tests||[]).forEach(t=>{const a=battleHistoryTotals(t,'allies'),e=battleHistoryTotals(t,'enemies');lines.push([t.id,t.version||'',t.created_at,t.result,t.seed,t.ticks,a.survivors,a.actions,a.damage_dealt,a.healing_done,e.survivors,e.actions,e.damage_dealt,e.healing_done].map(csvCell).join(','))});downloadText('GK_BattleHistory_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
+function battleAverage(rows,getter){return rows.length?rows.reduce((sum,row)=>sum+Number(getter(row)||0),0)/rows.length:0}
+function battleStdDev(rows,getter){if(!rows.length)return 0;const avg=battleAverage(rows,getter);return Math.sqrt(rows.reduce((sum,row)=>sum+Math.pow(Number(getter(row)||0)-avg,2),0)/rows.length)}
+function runBattleBatch(){const count=Math.max(2,Math.min(100,Number(battleBatchCount.value)||20)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1),originalSeed=battleSeed.value,originalLog=battleLogLimit.value,results=[];battleLogLimit.value=10;for(let i=0;i<count;i++){battleSeed.value=start+i*step;runBattleTest();if(lastBattleResult)results.push(JSON.parse(JSON.stringify(lastBattleResult)))}battleSeed.value=originalSeed;battleLogLimit.value=originalLog;lastBattleBatch=results;if(!results.length){battleBatchSummary.innerHTML='一括テストを実行できませんでした。';return}const wins=results.filter(r=>r.result==='味方勝利').length,losses=results.filter(r=>r.result==='敵勝利').length,draws=results.length-wins-losses,ally=r=>battleHistoryTotals(r,'allies'),avgTicks=battleAverage(results,r=>r.ticks),avgDamage=battleAverage(results,r=>ally(r).damage_dealt),avgHealing=battleAverage(results,r=>ally(r).healing_done),avgSurvivors=battleAverage(results,r=>ally(r).survivors),stdTicks=battleStdDev(results,r=>r.ticks),best=results.slice().sort((a,b)=>(battleHistoryTotals(b,'allies').survivors-battleHistoryTotals(a,'allies').survivors)||(a.ticks-b.ticks))[0],worst=results.slice().sort((a,b)=>(battleHistoryTotals(a,'allies').survivors-battleHistoryTotals(b,'allies').survivors)||(b.ticks-a.ticks))[0];battleBatchSummary.innerHTML=`<b>${results.length}試行 / 勝率 ${(wins/results.length*100).toFixed(1)}%</b><br>勝利 ${wins} / 敗北 ${losses} / 引分 ${draws}<br>平均Tick ${avgTicks.toFixed(1)}（標準偏差 ${stdTicks.toFixed(1)}） / 平均与ダメ ${avgDamage.toFixed(1)} / 平均回復 ${avgHealing.toFixed(1)} / 平均生存 ${avgSurvivors.toFixed(2)}<br>最良 Seed ${best.seed}：${esc(best.result)}・${best.ticks} Tick・生存 ${ally(best).survivors}<br>最悪 Seed ${worst.seed}：${esc(worst.result)}・${worst.ticks} Tick・生存 ${ally(worst).survivors}`;}
+function exportBattleBatchCsv(){if(!lastBattleBatch.length)return alert('先に一括テストを実行してください。');const head=['version','seed','result','ticks','ally_survivors','ally_actions','ally_damage','ally_healing','enemy_survivors','enemy_actions','enemy_damage','enemy_healing'];const lines=[head.map(csvCell).join(',')];lastBattleBatch.forEach(r=>{const a=battleHistoryTotals(r,'allies'),e=battleHistoryTotals(r,'enemies');lines.push([r.version||APP_VERSION,r.seed,r.result,r.ticks,a.survivors,a.actions,a.damage_dealt,a.healing_done,e.survivors,e.actions,e.damage_dealt,e.healing_done].map(csvCell).join(','))});downloadText('GK_BattleBatch_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
+
+
+function snapshotPayload(){
+ return {allies:battleAllies.value,enemies:battleEnemies.value,max_ticks:Number(battleMaxTicks.value)||1000,log_limit:Number(battleLogLimit.value)||500,updated_at:now()};
+}
+function renderBattleSnapshots(){
+ const list=data.battle_snapshots||[],options='<option value="">選択してください</option>'+list.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+ ['battleSnapshotSelect','battleSnapshotCompareA','battleSnapshotCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const old=el.value;el.innerHTML=options;if(list.some(x=>x.id===old))el.value=old;});
+}
+function saveBattleSnapshot(){
+ const name=(battleSnapshotName.value||'').trim();if(!name)return alert('スナップショット名を入力してください。');
+ try{JSON.parse(battleAllies.value);JSON.parse(battleEnemies.value)}catch(e){return alert('味方または敵JSONが不正です: '+e.message)}
+ const existing=(data.battle_snapshots||[]).find(x=>x.name===name),rec={id:existing?.id||'BSS-'+Date.now(),name,...snapshotPayload(),created_at:existing?.created_at||now()};
+ if(existing)Object.assign(existing,rec);else data.battle_snapshots.unshift(rec);
+ persist('battle snapshot');renderBattleSnapshots();battleSnapshotSelect.value=rec.id;battleSnapshotSummary.innerHTML=`保存しました：<b>${esc(name)}</b>`;
+}
+function loadBattleSnapshot(){
+ const rec=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotSelect.value);if(!rec)return alert('読込む編成を選択してください。');
+ battleAllies.value=rec.allies||'[]';battleEnemies.value=rec.enemies||'[]';battleMaxTicks.value=rec.max_ticks||1000;battleLogLimit.value=rec.log_limit||500;battleSnapshotName.value=rec.name||'';battleSnapshotSummary.innerHTML=`読込済み：<b>${esc(rec.name)}</b>`;
+}
+function deleteBattleSnapshot(){
+ const id=battleSnapshotSelect.value,rec=(data.battle_snapshots||[]).find(x=>x.id===id);if(!rec)return alert('削除する編成を選択してください。');if(!confirm('「'+rec.name+'」を削除しますか？'))return;
+ data.battle_snapshots=data.battle_snapshots.filter(x=>x.id!==id);persist('delete battle snapshot');renderBattleSnapshots();battleSnapshotSummary.textContent='削除しました。';
+}
+function exportBattleSnapshotsJson(){downloadText('GK_BattleSnapshots_v'+APP_VERSION+'.json',JSON.stringify({version:APP_VERSION,exported_at:now(),snapshots:data.battle_snapshots||[]},null,2),'application/json;charset=utf-8')}
+function runSnapshotBatch(rec,seeds){
+ const original={allies:battleAllies.value,enemies:battleEnemies.value,max:battleMaxTicks.value,log:battleLogLimit.value,seed:battleSeed.value};const out=[];
+ try{battleAllies.value=rec.allies;battleEnemies.value=rec.enemies;battleMaxTicks.value=rec.max_ticks||1000;battleLogLimit.value=10;for(const seed of seeds){battleSeed.value=seed;runBattleTest();if(lastBattleResult)out.push(JSON.parse(JSON.stringify(lastBattleResult)));}}finally{battleAllies.value=original.allies;battleEnemies.value=original.enemies;battleMaxTicks.value=original.max;battleLogLimit.value=original.log;battleSeed.value=original.seed;}
+ return out;
+}
+function snapshotSummary(name,results){const wins=results.filter(r=>r.result==='味方勝利').length,ally=r=>battleHistoryTotals(r,'allies');return {name,trials:results.length,wins,win_rate:results.length?wins/results.length*100:0,avg_ticks:battleAverage(results,r=>r.ticks),avg_damage:battleAverage(results,r=>ally(r).damage_dealt),avg_healing:battleAverage(results,r=>ally(r).healing_done),avg_survivors:battleAverage(results,r=>ally(r).survivors),std_ticks:battleStdDev(results,r=>r.ticks)};}
+function compareBattleSnapshots(){
+ const A=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotCompareA.value),B=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotCompareB.value);if(!A||!B)return alert('比較編成AとBを選択してください。');if(A.id===B.id)return alert('異なる編成を選択してください。');
+ const count=Math.max(2,Math.min(100,Number(battleBatchCount.value)||20)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1),seeds=Array.from({length:count},(_,i)=>start+i*step),ra=runSnapshotBatch(A,seeds),rb=runSnapshotBatch(B,seeds),sa=snapshotSummary(A.name,ra),sb=snapshotSummary(B.name,rb);lastSnapshotComparison=[{summary:sa,results:ra},{summary:sb,results:rb}];
+ const d=(x,y)=>(Number(y||0)-Number(x||0));battleSnapshotSummary.innerHTML=`<h3>比較結果（B − A）</h3><table><thead><tr><th>編成</th><th>勝率</th><th>平均Tick</th><th>標準偏差</th><th>平均与ダメ</th><th>平均回復</th><th>平均生存</th></tr></thead><tbody><tr><td>${esc(sa.name)}</td><td>${sa.win_rate.toFixed(1)}%</td><td>${sa.avg_ticks.toFixed(1)}</td><td>${sa.std_ticks.toFixed(1)}</td><td>${sa.avg_damage.toFixed(1)}</td><td>${sa.avg_healing.toFixed(1)}</td><td>${sa.avg_survivors.toFixed(2)}</td></tr><tr><td>${esc(sb.name)}</td><td>${sb.win_rate.toFixed(1)}%</td><td>${sb.avg_ticks.toFixed(1)}</td><td>${sb.std_ticks.toFixed(1)}</td><td>${sb.avg_damage.toFixed(1)}</td><td>${sb.avg_healing.toFixed(1)}</td><td>${sb.avg_survivors.toFixed(2)}</td></tr></tbody></table><p>差分：勝率 ${d(sa.win_rate,sb.win_rate)>=0?'+':''}${d(sa.win_rate,sb.win_rate).toFixed(1)}pt / 平均Tick ${d(sa.avg_ticks,sb.avg_ticks)>=0?'+':''}${d(sa.avg_ticks,sb.avg_ticks).toFixed(1)} / 与ダメ ${d(sa.avg_damage,sb.avg_damage)>=0?'+':''}${d(sa.avg_damage,sb.avg_damage).toFixed(1)} / 生存 ${d(sa.avg_survivors,sb.avg_survivors)>=0?'+':''}${d(sa.avg_survivors,sb.avg_survivors).toFixed(2)}</p>`;
+}
+function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)return alert('先に編成比較を実行してください。');const head=['formation','seed','result','ticks','ally_survivors','ally_actions','ally_damage','ally_healing'];const lines=[head.map(csvCell).join(',')];lastSnapshotComparison.forEach(group=>group.results.forEach(r=>{const a=battleHistoryTotals(r,'allies');lines.push([group.summary.name,r.seed,r.result,r.ticks,a.survivors,a.actions,a.damage_dealt,a.healing_done].map(csvCell).join(','))}));downloadText('GK_FormationComparison_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
+
+function renderBattle(){if(!document.getElementById('battleAllies'))return;if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
+
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
@@ -1019,9 +1476,14 @@ function runValidation(){
    });
   });
  });
- data.characters.forEach(c=>{if(!c.name)validation.push({level:'ERROR',message:c.id+' の名前が未設定'})});
+ data.characters.forEach(c=>{if(!c.name)validation.push({level:'ERROR',message:c.id+' の名前が未設定'});if(c.organization_id&&!data.organizations.some(o=>o.id===c.organization_id))validation.push({level:'ERROR',message:c.id+' の所属組織が存在しません: '+c.organization_id})});
+ data.relationships.forEach(r=>{if(!data.characters.some(c=>c.id===r.from_character_id))validation.push({level:'ERROR',message:r.id+' の主体キャラクターが存在しません'});if(!data.characters.some(c=>c.id===r.to_character_id))validation.push({level:'ERROR',message:r.id+' の対象キャラクターが存在しません'})});
+ data.timeline.forEach(t=>{if(t.target_id&&!allIds().includes(t.target_id))validation.push({level:'WARNING',message:t.id+' の対象IDが存在しません: '+t.target_id})});
  data.quests.forEach(q=>{
   if(!q.name)validation.push({level:'ERROR',message:q.id+' のクエスト名が未設定'});
+  (q.prerequisite_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の前提クエスト '+id+' が存在しません'});});
+  (q.next_quest_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の後続クエスト '+id+' が存在しません'});});
+  [...(q.required_flags||[]),...(q.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:q.id+' が未登録フラグ '+id+' を参照しています'});});
   (q.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:q.id+' の関連キャラクターが存在しません: '+id})});
   if(q.links?.chapter_id&&!getChapter(q.links.chapter_id))validation.push({level:'ERROR',message:q.id+' の関連章が存在しません'});
   if(q.links?.section_id&&!getSection(q.links.chapter_id,q.links.section_id))validation.push({level:'ERROR',message:q.id+' の関連節が存在しません'});
@@ -1030,15 +1492,120 @@ function runValidation(){
  data.events.forEach(e=>{
   if(!e.name)validation.push({level:'ERROR',message:e.id+' のイベント名が未設定'});
   if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'ERROR',message:e.id+' の関連クエストが存在しません'});
+  [...(e.required_flags||[]),...(e.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:e.id+' が未登録フラグ '+id+' を参照しています'});});
   (e.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:e.id+' の関連キャラクターが存在しません: '+id})});
   if(e.links?.chapter_id&&!getChapter(e.links.chapter_id))validation.push({level:'ERROR',message:e.id+' の関連章が存在しません'});
   if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'ERROR',message:e.id+' の関連節が存在しません'});
   if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'ERROR',message:e.id+' の関連シーンが存在しません'});
  });
+ Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
+ detectQuestCycles().forEach(path=>validation.push({level:'ERROR',message:'クエスト前提関係が循環しています: '+path}));
  if(!validation.length)validation.push({level:'OK',message:'重大な問題は見つかりませんでした。'});
  renderValidation();renderDashboard()
 }
+function implementationSnapshot(){
+ const masterCounts=Object.fromEntries(Object.entries(data.masters||{}).map(([k,v])=>[k,(v||[]).length]));
+ const sectionCount=data.chapters.reduce((n,c)=>n+(c.sections||[]).length,0);
+ const sceneCount=data.chapters.reduce((n,c)=>n+(c.sections||[]).reduce((m,sec)=>m+(sec.scenes||[]).length,0),0);
+ return {
+  app_version:APP_VERSION,
+  phase:{number:9,name:'編成スナップショット・比較検証',status:'進行中'},
+  completed:['複数プロジェクト管理と端末保存','章・節・シーン・台詞の階層型シナリオ管理','キャラクター・組織・用語・関係・時系列管理','クエスト・イベント・フラグ・参照関係管理','ゲーム仕様マスターデータ管理とCSV出力','AGIアクティブターン式の戦闘テスト','スキル・MP・回復・DOT・状態異常・耐性・クールダウン','最大20ノードAIと装備・MODマスター連携','戦闘結果のユニット別集計・履歴比較・CSV出力','複数シード一括テストと勝率・標準偏差集計','編成スナップショット保存・読込・同条件比較','JSON入出力・バックアップ・データ検証','DEC-0002 PHP受渡しExport ZIP・SHA-256 manifest生成','GitHub同期・Studio更新ZIP配置・PWA対応'],
+  in_progress:['編成比較レポートの運用検証','戦闘計算式と各マスター項目の正式仕様への固定','装備条件・スキル習得条件・石板効果の実戦闘統合'],
+  next:['戦闘テスト結果からの自動バランス警告','マスター間参照の強化検証','PHP側Export読込・manifest検証ローダーの実装'],
+  data_counts:{chapters:data.chapters.length,sections:sectionCount,scenes:sceneCount,characters:data.characters.length,quests:data.quests.length,events:data.events.length,flags:data.flags.length,battle_tests:data.battle_tests.length,battle_snapshots:data.battle_snapshots.length,masters:masterCounts},
+  generated_at:now()
+ };
+}
+function renderImplementationStatus(){
+ const el=document.getElementById('implementationStatus');if(!el)return;
+ const r=implementationSnapshot(),total=Object.values(r.data_counts.masters).reduce((a,b)=>a+b,0);
+ el.innerHTML=`完了機能 ${r.completed.length}項目 / マスター登録 ${total}件 / 戦闘テスト履歴 ${r.data_counts.battle_tests}件<br>次段階：${esc(r.next[0])}`;
+}
+function exportImplementationReport(){
+ const r=implementationSnapshot(),m=r.data_counts.masters;
+ const lines=[`GK Studio 実装状況レポート v${r.app_version}`,'',`現在フェーズ: フェーズ${r.phase.number} ${r.phase.name}（${r.phase.status}）`,'','【完了済み実装】',...r.completed.map((x,i)=>`${i+1}. ${x}`),'','【進行中】',...r.in_progress.map((x,i)=>`${i+1}. ${x}`),'','【次の実装候補】',...r.next.map((x,i)=>`${i+1}. ${x}`),'','【登録データ件数】',`章 ${r.data_counts.chapters} / 節 ${r.data_counts.sections} / シーン ${r.data_counts.scenes}`,`キャラクター ${r.data_counts.characters} / クエスト ${r.data_counts.quests} / イベント ${r.data_counts.events} / フラグ ${r.data_counts.flags}`,`戦闘テスト履歴 ${r.data_counts.battle_tests} / 編成スナップショット ${r.data_counts.battle_snapshots}`,...Object.entries(m).map(([k,v])=>`${MASTER_LABELS[k]||k}: ${v}`),'',`出力日時: ${r.generated_at}`];
+ downloadText(`GK_Implementation_Report_v${APP_VERSION}.txt`,'\ufeff'+lines.join('\r\n'),'text/plain;charset=utf-8');
+}
+
+
+const PHP_EXPORT_SCHEMA_VERSION=GKExportCore.SCHEMA_VERSION;
+const PHP_EXPORT_PATHS=GKExportCore.EXPORT_PATHS;
+function buildPhpExportData(){return GKExportCore.buildData(data);}
+function phpExportEnvelope(payload,dataVersion,generatedAt){return GKExportCore.envelope(payload,dataVersion,generatedAt,APP_VERSION);}
+function validateExportIds(path,payload,issues){
+ if(!Array.isArray(payload))return;
+ const ids=new Set();
+ payload.forEach((row,index)=>{
+  if(!row||typeof row!=='object')return;
+  if(!row.id)return;
+  if(ids.has(row.id))issues.push({level:'ERROR',message:path+' にID重複: '+row.id});
+  ids.add(row.id);
+ });
+}
+function collectPhpExportIssues(){
+ runValidation();
+ const issues=validation.filter(x=>x.level==='ERROR').map(x=>({...x,source:'Studio'}));
+ const scenarioIssues=GKExportCore.collectScenarioExportIssues(data);
+ scenarioIssues.forEach(x=>issues.push({...x,source:'SSF-005'}));
+ const files=buildPhpExportData();
+ PHP_EXPORT_PATHS.forEach(path=>{
+  if(!(path in files))issues.push({level:'ERROR',message:'必須Export定義がありません: '+path});
+  else validateExportIds(path,files[path],issues);
+ });
+ return {files,issues};
+}
+function renderPhpExportStatus(issues){
+ const el=document.getElementById('phpExportStatus');if(!el)return;
+ const errors=issues.filter(x=>x.level==='ERROR');
+ if(!errors.length){
+  el.innerHTML='<span class="badge ok">合格</span> 22ファイル生成可能。ID重複・Studio検証エラーなし。';
+ }else{
+  el.innerHTML='<span class="badge err">不合格</span> '+errors.length+'件<br>'+errors.slice(0,8).map(x=>esc(x.message)).join('<br>');
+ }
+}
+function validatePhpExport(){
+ const result=collectPhpExportIssues();
+ renderPhpExportStatus(result.issues);
+ return result;
+}
+async function sha256Hex(text){return GKExportCore.sha256Hex(text);}
+async function exportPhpPackage(){
+ if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。再読み込みしてください。');
+ const result=validatePhpExport();
+ const errors=result.issues.filter(x=>x.level==='ERROR');
+ if(errors.length)return alert('Export検証エラーを修正してから生成してください。');
+ const dataVersion=(document.getElementById('phpExportDataVersion')?.value||'0.1.0-draft').trim();
+ if(!dataVersion)return alert('Data Versionを入力してください。');
+ const generatedAt=now();
+ const zip=new JSZip();
+ const exportRoot=zip.folder('Export');
+ const manifestFiles=[];
+ for(const path of PHP_EXPORT_PATHS){
+  const envelope=phpExportEnvelope(result.files[path],dataVersion,generatedAt);
+  const text=JSON.stringify(envelope,null,2)+'\n';
+  exportRoot.file(path,text);
+  manifestFiles.push({path,sha256:await sha256Hex(text),required:true});
+ }
+ const manifest={
+  schema_version:PHP_EXPORT_SCHEMA_VERSION,
+  data_version:dataVersion,
+  generated_at:generatedAt,
+  generated_by:'GK Studio v'+APP_VERSION,
+  files:manifestFiles
+ };
+ exportRoot.file('manifest.json',JSON.stringify(manifest,null,2)+'\n');
+ const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(blob);
+ a.download=`GK_Export_${(data.project.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_')}_${dataVersion}.zip`;
+ a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+ const el=document.getElementById('phpExportStatus');
+ if(el)el.innerHTML='<span class="badge ok">生成完了</span> 22 JSON + manifest / SHA-256作成済み';
+}
+
 function exportProject(){
  runValidation();let errors=validation.filter(x=>x.level==='ERROR');
  if(errors.length&&!confirm('エラーがあります。下書きとして出力しますか？'))return;
@@ -1047,7 +1614,7 @@ function exportProject(){
 }
 function importProject(){
  const f=document.getElementById('importFile').files[0];if(!f)return alert('JSONファイルを選択してください。');
- const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.quests=obj.quests||[];obj.events=obj.events||[];createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
+ const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.organizations=obj.organizations||[];obj.terms=obj.terms||[];obj.relationships=obj.relationships||[];obj.timeline=obj.timeline||[];obj.quests=obj.quests||[];obj.events=obj.events||[];obj.flags=obj.flags||[];obj.battle_tests=obj.battle_tests||[];obj.masters=obj.masters||{};createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
 
@@ -1461,8 +2028,24 @@ function storyNodeActive(type,chapterId,sectionId='',sceneId='',dialogueId=''){
   storySelection.dialogueId===dialogueId;
 }
 
+function storyMatchesQuery(obj,query){
+ if(!query)return true;
+ const text=[obj.id,obj.title,obj.theme,obj.summary,obj.purpose,obj.start_state,obj.end_state,obj.key_points,obj.speaker,obj.text,obj.stage_direction].filter(Boolean).join(' ').toLowerCase();
+ return text.includes(query);
+}
+function renderStoryProgress(){
+ if(!window.storyProgress)return;
+ const chapters=data.chapters||[];
+ const sections=chapters.flatMap(c=>c.sections||[]);
+ const scenes=sections.flatMap(s=>s.scenes||[]);
+ const approved=sections.filter(s=>s.status==='approved').length;
+ const percent=sections.length?Math.round(approved/sections.length*100):0;
+ storyProgress.innerHTML=`<div class="kpi"><span class="small">章</span><b>${chapters.length}</b></div><div class="kpi"><span class="small">節</span><b>${sections.length} / ${chapters.length*20}</b></div><div class="kpi"><span class="small">シーン</span><b>${scenes.length}</b></div><div class="kpi"><span class="small">節の確定率</span><b>${percent}%</b></div>`;
+}
 function renderStoryTree(){
  if(!window.storyTree)return;
+ renderStoryProgress();
+ const query=(document.getElementById('storySearch')?.value||'').trim().toLowerCase();
  const chapters=[...data.chapters].sort((a,b)=>(a.no||0)-(b.no||0));
  if(!chapters.length){
   storyTree.innerHTML='<div class="story-empty">章はまだありません。</div>';
@@ -1470,33 +2053,40 @@ function renderStoryTree(){
  }
  let out='';
  chapters.forEach(chapter=>{
+  const chapterHasMatch=storyMatchesQuery(chapter,query)||(chapter.sections||[]).some(sec=>storyMatchesQuery(sec,query)||(sec.scenes||[]).some(sc=>storyMatchesQuery(sc,query)||(sc.dialogues||[]).some(d=>storyMatchesQuery(d,query))));
+  if(query&&!chapterHasMatch)return;
   const ckey=storyKey('chapter',chapter.id);
   const ccollapsed=collapsedStoryNodes.has(ckey);
   out+=`<div class="tree-row level-1 ${storyNodeActive('chapter',chapter.id)?'active':''}" onclick="selectStoryNode('chapter','${escAttr(chapter.id)}')">
    <button onclick="toggleStoryCollapse('${escAttr(ckey)}',event)">${ccollapsed?'▶':'▼'}</button>
-   <span class="tree-label">第${esc(chapter.no)}章 ${esc(chapter.title||'無題')}</span>
+   <span class="story-status-dot ${escAttr(chapter.status||'draft')}"></span><span class="tree-label">第${esc(chapter.no)}章 ${esc(chapter.title||'無題')}</span>
   </div>`;
   if(ccollapsed)return;
 
   (chapter.sections||[]).sort((a,b)=>(a.no||0)-(b.no||0)).forEach(section=>{
+   const sectionHasMatch=storyMatchesQuery(section,query)||(section.scenes||[]).some(sc=>storyMatchesQuery(sc,query)||(sc.dialogues||[]).some(d=>storyMatchesQuery(d,query)));
+   if(query&&!sectionHasMatch)return;
    const skey=storyKey('section',chapter.id,section.id);
    const scollapsed=collapsedStoryNodes.has(skey);
    out+=`<div class="tree-row level-2 ${storyNodeActive('section',chapter.id,section.id)?'active':''}" onclick="selectStoryNode('section','${escAttr(chapter.id)}','${escAttr(section.id)}')">
     <button onclick="toggleStoryCollapse('${escAttr(skey)}',event)">${scollapsed?'▶':'▼'}</button>
-    <span class="tree-label">${esc(section.no)}節 ${esc(section.title||'無題')}</span>
+    <span class="story-status-dot ${escAttr(section.status||'draft')}"></span><span class="tree-label">${esc(section.no)}節 ${esc(section.title||'無題')}</span>
    </div>`;
    if(scollapsed)return;
 
    (section.scenes||[]).sort((a,b)=>(a.no||0)-(b.no||0)).forEach(scene=>{
+    const sceneHasMatch=storyMatchesQuery(scene,query)||(scene.dialogues||[]).some(d=>storyMatchesQuery(d,query));
+    if(query&&!sceneHasMatch)return;
     const sceneKey=storyKey('scene',chapter.id,section.id,scene.id);
     const sceneCollapsed=collapsedStoryNodes.has(sceneKey);
     out+=`<div class="tree-row level-3 ${storyNodeActive('scene',chapter.id,section.id,scene.id)?'active':''}" onclick="selectStoryNode('scene','${escAttr(chapter.id)}','${escAttr(section.id)}','${escAttr(scene.id)}')">
      <button onclick="toggleStoryCollapse('${escAttr(sceneKey)}',event)">${sceneCollapsed?'▶':'▼'}</button>
-     <span class="tree-label">シーン ${esc(scene.no)} ${esc(scene.title||'無題')}</span>
+     <span class="story-status-dot ${escAttr(scene.status||'draft')}"></span><span class="tree-label">シーン ${esc(scene.no)} ${esc(scene.title||'無題')}</span>
     </div>`;
     if(sceneCollapsed)return;
 
     (scene.dialogues||[]).sort((a,b)=>(a.no||0)-(b.no||0)).forEach(dialogue=>{
+     if(query&&!storyMatchesQuery(dialogue,query))return;
      const preview=(dialogue.text||'').slice(0,24);
      out+=`<div class="tree-row level-4 ${storyNodeActive('dialogue',chapter.id,section.id,scene.id,dialogue.id)?'active':''}" onclick="selectStoryNode('dialogue','${escAttr(chapter.id)}','${escAttr(section.id)}','${escAttr(scene.id)}','${escAttr(dialogue.id)}')">
       <span>💬</span>
@@ -1530,14 +2120,250 @@ function renderStoryEditor(){
  storyNodeSpeaker.value=obj.speaker||'';
  storyNodeText.value=type==='dialogue'?(obj.text||''):(obj.summary||'');
  storyNodeTheme.value=obj.theme||'';
+ storyNodeStatus.value=obj.status||'draft';
+ storyNodePurpose.value=obj.purpose||'';
+ storyNodeStartState.value=obj.start_state||'';
+ storyNodeEndState.value=obj.end_state||'';
+ storyNodeKeyPoints.value=obj.key_points||'';
  storyNodeStage.value=obj.stage_direction||'';
+ const design=normalizeStoryDesign(obj.design);
+ storyDesignGoal.value=design.goal;
+ storyDesignCharacters.value=design.characters;
+ storyDesignRequired.value=design.required_events;
+ storyDesignProhibited.value=design.prohibited_events;
+ storyDesignTimeline.value=design.timeline;
+ storyDesignDirection.value=design.direction;
+ storyDesignOutputFormat.value=design.output_format;
+ storyDesignLength.value=design.target_length||'';
+ storyPromptOutput.value='';
+ storyPromptMeta.textContent='';
+ storyPasteInput.value='';
+ storyPasteAuthor.value='';
+ storyPasteNote.value='';
+ storyPasteValidation.textContent='未検証';
+ storyConsistencyResult.innerHTML='<div class="story-empty">未検証</div>';
+ storyCompareMeta.textContent='候補を選択してください。';
+ renderStoryCandidateList(obj);
+ populateStoryCompareCandidates(obj);
 
  storyNoField.classList.toggle('hidden',false);
  storyTitleField.classList.toggle('hidden',type==='dialogue');
  storySpeakerField.classList.toggle('hidden',type!=='dialogue');
  storyThemeField.classList.toggle('hidden',type!=='chapter');
+ storyPurposeField.classList.toggle('hidden',type!=='section');
+ storySectionDetailFields.classList.toggle('hidden',type!=='section');
+ storyDesignFields.classList.toggle('hidden',!['chapter','section'].includes(type));
  storyStageField.classList.toggle('hidden',type!=='dialogue');
  storyTextLabel.textContent=type==='dialogue'?'台詞':'あらすじ・内容';
+}
+
+function storyPromptLine(label,value){return value?`## ${label}\n${value}\n`:''}
+function buildStoryPrompt(){
+ const selected=getStorySelectionObject();
+ if(!selected||!['chapter','section'].includes(storySelection.type))return alert('章または節を選択してください。');
+ const obj=selected.object;
+ const d={goal:storyDesignGoal.value.trim(),characters:storyDesignCharacters.value.trim(),required_events:storyDesignRequired.value.trim(),prohibited_events:storyDesignProhibited.value.trim(),timeline:storyDesignTimeline.value.trim(),direction:storyDesignDirection.value.trim(),output_format:storyDesignOutputFormat.value,target_length:Math.max(0,+storyDesignLength.value||0)};
+ const chapter=data.chapters.find(x=>x.id===storySelection.chapterId);
+ const scope=storySelection.type==='chapter'?`第${chapter.no}章 ${chapter.title}`:`第${chapter.no}章 ${chapter.title} / 第${obj.no}節 ${obj.title}`;
+ const snapshot={project_id:data.project.id,target_type:storySelection.type,target_id:obj.id,source_updated_at:obj.updated_at||'',source_design_version:normalizeStoryDesign(obj.design).source_version,generated_at:now()};
+ const formatLabels={structured:'構造化（見出し付き）',prose:'本文',outline:'詳細プロット',dialogue:'会話中心'};
+ const context=storySelection.type==='chapter'
+  ?storyPromptLine('章テーマ',obj.theme)+storyPromptLine('既存あらすじ',obj.summary)
+  :storyPromptLine('節の目的',obj.purpose)+storyPromptLine('開始状態',obj.start_state)+storyPromptLine('終了状態',obj.end_state)+storyPromptLine('重要事項・設定フラグ',obj.key_points)+storyPromptLine('既存あらすじ',obj.summary);
+ const prompt=[
+  '# シナリオ執筆指示',
+  `対象: ${scope}`,
+  `対象ID: ${obj.id}`,
+  `プロジェクト: ${data.project.name} (${data.project.id})`,
+  '',
+  'あなたは既存設定を保持してシナリオ案を作成してください。明示されていない確定設定を勝手に変更せず、不明点は「要確認」として分離してください。',
+  '',context,
+  storyPromptLine('執筆目標',d.goal),storyPromptLine('登場人物・状態',d.characters),
+  storyPromptLine('必須イベント',d.required_events),storyPromptLine('禁止イベント・変更禁止事項',d.prohibited_events),
+  storyPromptLine('時系列・接続条件',d.timeline),storyPromptLine('舞台・雰囲気・演出条件',d.direction),
+  '## 出力条件',`形式: ${formatLabels[d.output_format]||d.output_format}`,d.target_length?`目標文字量: 約${d.target_length}字`:'目標文字量: 指定なし',
+  '出力末尾に「設定変更候補」「未解決事項」「次節へ渡す状態」を分けて記載してください。',
+  '', '## SOURCE_SNAPSHOT', JSON.stringify(snapshot,null,2)
+ ].filter(x=>x!==undefined).join('\n').replace(/\n{3,}/g,'\n\n');
+ storyPromptOutput.value=prompt;
+ storyPromptMeta.textContent=`対象 ${obj.id} / Design v${snapshot.source_design_version} / ${snapshot.generated_at}`;
+ return prompt;
+}
+async function copyStoryPrompt(){
+ const text=storyPromptOutput.value||buildStoryPrompt();
+ if(!text)return;
+ try{await navigator.clipboard.writeText(text);alert('プロンプトをコピーしました。')}
+ catch(e){storyPromptOutput.focus();storyPromptOutput.select();document.execCommand('copy');alert('プロンプトをコピーしました。')}
+}
+
+function storyPasteIntakePayload(){
+ const selected=getStorySelectionObject();
+ if(!selected||!['chapter','section'].includes(storySelection.type))return null;
+ const obj=selected.object;
+ const text=storyPasteInput.value.replace(/\r\n?/g,'\n').trim();
+ return {selected,obj,text,author:storyPasteAuthor.value.trim(),note:storyPasteNote.value.trim()};
+}
+function validateStoryPasteIntake(){
+ const payload=storyPasteIntakePayload();
+ const errors=[],warnings=[];
+ if(!payload){errors.push('章または節を選択してください。')}
+ else{
+  if(!payload.text)errors.push('貼り付け本文が空です。');
+  if(payload.text.length<20)warnings.push('本文が20文字未満です。');
+  if(payload.text.length>200000)errors.push('本文が200,000文字を超えています。');
+  if(/<script[\s>]/i.test(payload.text))errors.push('script要素は受け付けられません。');
+  if(/\u0000/.test(payload.text))errors.push('NUL文字は受け付けられません。');
+  const list=(payload.obj.candidate_revisions||[]).map(normalizeStoryCandidate);
+  const hash=storyTextHash(payload.text);
+  if(list.some(x=>x.content_hash===hash&&x.text===payload.text))warnings.push('同一内容の候補Revisionが既に存在します。');
+ }
+ const ok=!errors.length;
+ storyPasteValidation.textContent=ok?`PASS: 受入可能${warnings.length?' / WARNING: '+warnings.join(' '):''}`:`FAIL: ${errors.join(' ')}`;
+ storyPasteValidation.dataset.result=ok?'PASS':'FAIL';
+ return {ok,errors,warnings,payload};
+}
+function createStoryCandidateRevision(){
+ const result=validateStoryPasteIntake();
+ if(!result.ok)return alert('貼り付け内容の検証に失敗しました。');
+ const {obj,text,author,note}=result.payload;
+ obj.candidate_revisions=(obj.candidate_revisions||[]).map(normalizeStoryCandidate);
+ const hash=storyTextHash(text);
+ const duplicate=obj.candidate_revisions.find(x=>x.content_hash===hash&&x.text===text);
+ if(duplicate){storyPasteValidation.textContent=`IDEMPOTENT: 既存候補 ${duplicate.id} を再利用しました。`;renderStoryCandidateList(obj);return duplicate;}
+ const created=now();
+ const revision={
+  id:`REV-${obj.id}-${String(obj.candidate_revisions.length+1).padStart(3,'0')}`,
+  status:'candidate', text, author, note,
+  target_type:storySelection.type,target_id:obj.id,project_id:data.project.id,
+  source_design_version:normalizeStoryDesign(obj.design).source_version,
+  source_updated_at:obj.updated_at||'',content_hash:hash,created_at:created,
+  approved_at:'',rejected_at:''
+ };
+ obj.candidate_revisions.push(revision);
+ obj.updated_at=created;
+ persist('ssf-003 candidate revision created');
+ storyPasteInput.value='';storyPasteNote.value='';
+ storyPasteValidation.textContent=`SAVED: ${revision.id} を候補Revisionとして保存しました。正本は未変更です。`;
+ renderStoryCandidateList(obj);
+ return revision;
+}
+function renderStoryCandidateList(obj){
+ if(!window.storyCandidateList)return;
+ const list=(obj?.candidate_revisions||[]).map(normalizeStoryCandidate).slice().reverse();
+ if(!list.length){storyCandidateList.innerHTML='<div class="story-empty">候補Revisionはありません。</div>';populateStoryCompareCandidates(obj);return;}
+ storyCandidateList.innerHTML=list.map(x=>`<div class="item"><b>${esc(x.id)}</b> <span class="badge ${x.status==='candidate'?'warn':x.status==='approved'?'ok':''}">${esc(x.status)}</span><div class="small">${esc(x.created_at)} / ${esc(x.author||'作成者未設定')} / hash ${esc(x.content_hash)}</div><div>${esc(x.text.slice(0,160))}${x.text.length>160?'…':''}</div><div class="toolbar"><button onclick="selectStoryCandidateForComparison('${esc(x.id)}')">比較する</button></div>${x.approval_note?`<div class="small">承認: ${esc(x.approval_note)}</div>`:''}${x.rejection_note?`<div class="small">却下: ${esc(x.rejection_note)}</div>`:''}</div>`).join('');
+ populateStoryCompareCandidates(obj);
+}
+function storyCurrentCanonicalText(obj){return typeof obj?.summary==='string'?obj.summary:''}
+function populateStoryCompareCandidates(obj){
+ if(!window.storyCompareCandidate)return;
+ const previous=storyCompareCandidate.value;
+ const list=(obj?.candidate_revisions||[]).map(normalizeStoryCandidate);
+ storyCompareCandidate.innerHTML='<option value="">候補を選択</option>'+list.slice().reverse().map(x=>`<option value="${esc(x.id)}">${esc(x.id)} [${esc(x.status)}]</option>`).join('');
+ if(list.some(x=>x.id===previous))storyCompareCandidate.value=previous;
+}
+function selectStoryCandidateForComparison(id){storyCompareCandidate.value=id;renderStoryCandidateComparison();}
+function selectedStoryCandidate(){
+ const selected=getStorySelectionObject();if(!selected)return null;
+ return (selected.object.candidate_revisions||[]).map(normalizeStoryCandidate).find(x=>x.id===storyCompareCandidate.value)||null;
+}
+function storyLineDiff(current,candidate){
+ const a=String(current||'').replace(/\r\n?/g,'\n').split('\n');
+ const b=String(candidate||'').replace(/\r\n?/g,'\n').split('\n');
+ const dp=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));
+ for(let i=a.length-1;i>=0;i--)for(let j=b.length-1;j>=0;j--)dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+ const out=[];let i=0,j=0;
+ while(i<a.length||j<b.length){
+  if(i<a.length&&j<b.length&&a[i]===b[j]){out.push('  '+a[i]);i++;j++;}
+  else if(j<b.length&&(i===a.length||dp[i][j+1]>=dp[i+1][j])){out.push('+ '+b[j]);j++;}
+  else{out.push('- '+a[i]);i++;}
+ }
+ return out.join('\n');
+}
+function renderStoryCandidateComparison(){
+ const selected=getStorySelectionObject();
+ const candidate=selectedStoryCandidate();
+ if(!selected||!candidate){storyCompareMeta.textContent='候補を選択してください。';storyCompareSide.classList.add('hidden');storyCompareDiff.classList.add('hidden');return null;}
+ const obj=selected.object,current=storyCurrentCanonicalText(obj),design=normalizeStoryDesign(obj.design);
+ storyCurrentPreview.value=current;storyCandidatePreview.value=candidate.text;
+ storyDiffPreview.textContent=storyLineDiff(current,candidate);
+ const stale=candidate.source_design_version!==design.source_version||Boolean(candidate.source_updated_at&&obj.updated_at&&candidate.source_updated_at!==obj.updated_at);
+ storyCompareMeta.textContent=`${candidate.id} / 正本 ${current.length}文字 / 候補 ${candidate.text.length}文字 / Design v${candidate.source_design_version}→v${design.source_version}${stale?' / WARNING: 作成元スナップショットが現在より古い可能性があります。':''}`;
+ const side=storyCompareMode.value==='side';storyCompareSide.classList.toggle('hidden',!side);storyCompareDiff.classList.toggle('hidden',side);
+ if(window.storyProtectedFieldList)storyProtectedFieldList.textContent=STORY_PROTECTED_FIELDS.filter(k=>Object.prototype.hasOwnProperty.call(obj,k)).join(', ');
+ if(window.storyAllowedChangeList)storyAllowedChangeList.textContent=STORY_PROMOTABLE_FIELDS.join(', ')+'（候補本文→summary）';
+ return {selected,obj,candidate,current,design,stale};
+}
+function storyRequirementLines(value){return String(value||'').split(/\n+/).map(x=>x.replace(/^[-*・\s]+/,'').trim()).filter(Boolean)}
+function runStoryCandidateConsistencyValidation(){
+ const comparison=renderStoryCandidateComparison();
+ if(!comparison){storyConsistencyResult.innerHTML='<div class="item"><b>FAIL</b> 比較対象候補がありません。</div>';return {ok:false,errors:['候補未選択'],warnings:[]};}
+ const {candidate,current,design,stale}=comparison,errors=[],warnings=[],passes=[];
+ if(!candidate.text.trim())errors.push('候補本文が空です。');else passes.push('候補本文が存在します。');
+ if(candidate.text.length>200000)errors.push('候補本文が200,000文字を超えています。');
+ if(/<script[\s>]/i.test(candidate.text))errors.push('script要素が含まれています。');
+ if(/\x00/.test(candidate.text))errors.push('NUL文字が含まれています。');
+ if(candidate.text===current)warnings.push('候補本文は現在の正本と同一です。');
+ if(stale)warnings.push('候補のDesign世代または更新時点が現在の対象と一致しません。');
+ const required=storyRequirementLines(design.required_events),prohibited=storyRequirementLines(design.prohibited_events);
+ required.forEach(x=>candidate.text.includes(x)?passes.push(`必須条件を確認: ${x}`):warnings.push(`必須条件の文字列を確認できません: ${x}`));
+ prohibited.forEach(x=>candidate.text.includes(x)?warnings.push(`禁止・変更禁止条件の文字列が候補に含まれます: ${x}`):passes.push(`禁止条件の直接出現なし: ${x}`));
+ if(design.target_length){const low=Math.floor(design.target_length*.7),high=Math.ceil(design.target_length*1.3);if(candidate.text.length<low||candidate.text.length>high)warnings.push(`目標文字量 ${design.target_length}字に対し候補は${candidate.text.length}字です。`);else passes.push('目標文字量の許容範囲内です。');}
+ const rows=[...errors.map(x=>`<div class="item"><b>FAIL</b> ${esc(x)}</div>`),...warnings.map(x=>`<div class="item"><b>WARNING</b> ${esc(x)}</div>`),...passes.map(x=>`<div class="item"><b>PASS</b> ${esc(x)}</div>`)];
+ storyConsistencyResult.innerHTML=rows.join('')||'<div class="item"><b>PASS</b> 検出事項はありません。</div>';
+ return {ok:!errors.length,errors,warnings,passes};
+}
+
+function storyApprovalActor(){return (window.storyPasteAuthor?.value||'human-reviewer').trim()||'human-reviewer'}
+function rejectStoryCandidateRevision(){
+ const comparison=renderStoryCandidateComparison();
+ if(!comparison)return alert('候補を選択してください。');
+ const {obj,candidate}=comparison;
+ if(candidate.status!=='candidate'){storyApprovalResult.textContent='FAIL: candidate状態の候補だけを却下できます。';return null;}
+ const note=(window.storyApprovalNote?.value||'').trim();
+ if(!note){storyApprovalResult.textContent='FAIL: 却下理由を入力してください。';return null;}
+ const stored=(obj.candidate_revisions||[]).find(x=>x.id===candidate.id);if(!stored)return null;
+ stored.status='rejected';stored.rejected_at=now();stored.rejection_note=note;
+ persist('ssf-005 candidate rejected');
+ storyApprovalResult.textContent=`REJECTED: ${stored.id}。正本は未変更です。`;
+ renderStoryCandidateList(obj);renderStoryCandidateComparison();return stored;
+}
+function approveStoryCandidateRevision(){
+ const comparison=renderStoryCandidateComparison();
+ if(!comparison)return alert('候補を選択してください。');
+ const {obj,candidate,current}=comparison;
+ const validation=runStoryCandidateConsistencyValidation();
+ if(!validation.ok){storyApprovalResult.textContent='FAIL: 整合性検証エラーがあるため昇格できません。';return null;}
+ if(candidate.status!=='candidate'){storyApprovalResult.textContent='FAIL: candidate状態の候補だけを承認できます。';return null;}
+ if(!window.storyApprovalConfirm?.checked){storyApprovalResult.textContent='FAIL: 明示承認チェックが必要です。';return null;}
+ const note=(window.storyApprovalNote?.value||'').trim();
+ if(!note){storyApprovalResult.textContent='FAIL: 承認コメントを入力してください。';return null;}
+ if(candidate.text===current){storyApprovalResult.textContent='FAIL: 正本と同一内容の候補は昇格できません。';return null;}
+ const before=storyProtectedSnapshot(obj),beforeHash=storyTextHash(current),approvedAt=now();
+ const stored=(obj.candidate_revisions||[]).find(x=>x.id===candidate.id);if(!stored)return null;
+ (obj.candidate_revisions||[]).forEach(x=>{if(x.id!==stored.id&&x.status==='approved')x.status='superseded';});
+ obj.summary=stored.text;
+ const changed=verifyStoryProtectedSnapshot(before,obj);
+ if(changed.length){obj.summary=current;storyApprovalResult.textContent=`FAIL: 保護フィールド変更を検出: ${changed.join(', ')}`;return null;}
+ stored.status='approved';stored.approved_at=approvedAt;stored.approval_note=note;stored.promoted_from_hash=beforeHash;stored.promoted_to_hash=storyTextHash(obj.summary);
+ obj.export_control={ready:false,approved_revision_id:stored.id,canonical_hash:stored.promoted_to_hash,marked_at:'',marked_by:''};
+ persist('ssf-005 candidate explicitly approved and promoted');
+ storyApprovalConfirm.checked=false;
+ storyApprovalResult.textContent=`APPROVED: ${stored.id} を正本summaryへ昇格しました。Exportは未準備です。`;
+ renderStoryEditor();storyCompareCandidate.value=stored.id;renderStoryCandidateComparison();return stored;
+}
+function markStoryNodeExportReady(){
+ const selected=getStorySelectionObject();if(!selected)return alert('章または節を選択してください。');
+ const obj=selected.object,candidate=selectedStoryCandidate();
+ if(!candidate||candidate.status!=='approved'){storyApprovalResult.textContent='FAIL: 承認済みRevisionを選択してください。';return null;}
+ if(obj.summary!==candidate.text){storyApprovalResult.textContent='FAIL: 選択候補と現在の正本が一致しません。';return null;}
+ const control=normalizeStoryExportControl(obj.export_control);
+ if(control.approved_revision_id!==candidate.id||control.canonical_hash!==storyTextHash(obj.summary)){storyApprovalResult.textContent='FAIL: 承認記録と正本ハッシュが一致しません。';return null;}
+ control.ready=true;control.marked_at=now();control.marked_by=storyApprovalActor();obj.export_control=control;
+ const stored=(obj.candidate_revisions||[]).find(x=>x.id===candidate.id);if(stored)stored.export_linked_at=control.marked_at;
+ persist('ssf-005 export readiness linked');
+ storyApprovalResult.textContent=`EXPORT READY: ${candidate.id} をExport対象として明示連携しました。自動Exportは実行していません。`;
+ return control;
 }
 
 function saveStoryNode(){
@@ -1546,8 +2372,25 @@ function saveStoryNode(){
  const obj=selected.object;
  const type=storySelection.type;
  obj.no=Math.max(1,+storyNodeNo.value||1);
+ obj.status=storyNodeStatus.value||'draft';
  if(type!=='dialogue')obj.title=storyNodeTitle.value.trim();
  if(type==='chapter')obj.theme=storyNodeTheme.value.trim();
+ if(type==='section'){
+  obj.purpose=storyNodePurpose.value.trim();
+  obj.start_state=storyNodeStartState.value;
+  obj.end_state=storyNodeEndState.value;
+  obj.key_points=storyNodeKeyPoints.value;
+ }
+ if(['chapter','section'].includes(type)){
+  const previous=normalizeStoryDesign(obj.design);
+  obj.design={
+   goal:storyDesignGoal.value.trim(), characters:storyDesignCharacters.value.trim(),
+   required_events:storyDesignRequired.value.trim(), prohibited_events:storyDesignProhibited.value.trim(),
+   timeline:storyDesignTimeline.value.trim(), direction:storyDesignDirection.value.trim(),
+   output_format:storyDesignOutputFormat.value, target_length:Math.max(0,+storyDesignLength.value||0),
+   source_version:previous.source_version+1, updated_at:now()
+  };
+ }
  if(type==='dialogue'){
   obj.speaker=storyNodeSpeaker.value.trim();
   obj.text=storyNodeText.value;
@@ -1576,6 +2419,7 @@ function storyCreateChapter(){
   title,
   theme:'',
   summary:'',
+  design:normalizeStoryDesign(null),
   sections:[],
   status:'draft',
   created_at:now(),
@@ -1591,10 +2435,11 @@ function addChildStoryNode(){
  if(!selected)return;
  const type=storySelection.type;
  if(type==='chapter'){
+  selected.object.sections=selected.object.sections||[];
+  if(selected.object.sections.length>=20)return alert('1章に登録できる節は最大20節です。');
   const title=prompt('節タイトルを入力してください。');
   if(!title)return;
-  const section={id:nextId('Section'),no:(selected.object.sections||[]).length+1,title,summary:'',scenes:[],status:'draft',created_at:now(),updated_at:now()};
-  selected.object.sections=selected.object.sections||[];
+  const section={id:nextId('Section'),no:selected.object.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()};
   selected.object.sections.push(section);
   persist('section added from visual editor');
   selectStoryNode('section',selected.object.id,section.id);
@@ -1607,7 +2452,7 @@ function addChildStoryNode(){
   persist('scene added');
   selectStoryNode('scene',storySelection.chapterId,selected.object.id,scene.id);
  }else if(type==='scene'){
-  const dialogue={id:nextId('Dialogue'),no:(selected.object.dialogues||[]).length+1,speaker:'',text:'',stage_direction:'',created_at:now(),updated_at:now()};
+  const dialogue={id:nextId('Dialogue'),no:(selected.object.dialogues||[]).length+1,speaker:'',text:'',stage_direction:'',status:'draft',created_at:now(),updated_at:now()};
   selected.object.dialogues=selected.object.dialogues||[];
   selected.object.dialogues.push(dialogue);
   persist('dialogue added');
@@ -1747,7 +2592,8 @@ function removeEventCharacterDraft(id){
 
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
- questSummary.value='';questConditions.value='';questCompletion.value='';questRewards.value='';
+ questSummary.value='';questConditions.value='';questCompletion.value='';questFailure.value='';questRewards.value='';
+ questPrerequisites.value='';questNextQuests.value='';questRequiredFlags.value='';questSetFlags.value='';
  questDraftCharacterIds=[];
  refreshLinkSelectors('quest',{});
  renderCharacterSelect('questCharacterLink');
@@ -1769,7 +2615,12 @@ function saveQuest(){
   summary:questSummary.value,
   conditions:questConditions.value,
   completion:questCompletion.value,
+  failure:questFailure.value,
   rewards:questRewards.value,
+  prerequisite_ids:splitCsv(questPrerequisites.value),
+  next_quest_ids:splitCsv(questNextQuests.value),
+  required_flags:splitCsv(questRequiredFlags.value),
+  set_flags:splitCsv(questSetFlags.value),
   links:{
    chapter_id:questChapterLink.value||'',
    section_id:questSectionLink.value||'',
@@ -1794,7 +2645,8 @@ function saveQuest(){
 function editQuest(id){
  const q=data.quests.find(x=>x.id===id);if(!q)return;
  questId.value=q.id;questName.value=q.name;questType.value=q.type;questStatus.value=q.status;
- questSummary.value=q.summary||'';questConditions.value=q.conditions||'';questCompletion.value=q.completion||'';questRewards.value=q.rewards||'';
+ questSummary.value=q.summary||'';questConditions.value=q.conditions||'';questCompletion.value=q.completion||'';questFailure.value=q.failure||'';questRewards.value=q.rewards||'';
+ questPrerequisites.value=(q.prerequisite_ids||[]).join(', ');questNextQuests.value=(q.next_quest_ids||[]).join(', ');questRequiredFlags.value=(q.required_flags||[]).join(', ');questSetFlags.value=(q.set_flags||[]).join(', ');
  questDraftCharacterIds=[...(q.links?.character_ids||[])];
  refreshLinkSelectors('quest',q.links||{});
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
@@ -1816,7 +2668,7 @@ function renderQuests(){
  const type=questTypeFilter?.value||'';
  const status=questStatusFilter?.value||'';
  const list=data.quests.filter(q=>{
-  const hay=[q.id,q.name,q.summary,q.conditions,q.completion,q.rewards].join(' ').toLowerCase();
+  const hay=[q.id,q.name,q.summary,q.conditions,q.completion,q.failure,q.rewards,(q.prerequisite_ids||[]).join(' '),(q.next_quest_ids||[]).join(' '),(q.required_flags||[]).join(' '),(q.set_flags||[]).join(' ')].join(' ').toLowerCase();
   return (!keyword||hay.includes(keyword))&&(!type||q.type===type)&&(!status||q.status===status);
  });
  questList.innerHTML=list.map(q=>{
@@ -1827,6 +2679,8 @@ function renderQuests(){
    <p>${esc(q.summary||'')}</p>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
+   <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questName).join(', ')||'なし')}</div>
+   <div class="meta">必要フラグ: ${esc((q.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((q.set_flags||[]).join(', ')||'なし')}</div>
    <div class="meta">関連イベント: ${esc(linkedEvents.map(x=>x.name).join(', ')||'なし')}</div>
    <div class="toolbar"><button onclick="editQuest('${escAttr(q.id)}')">編集</button><button class="danger" onclick="deleteQuest('${escAttr(q.id)}')">削除</button></div>
   </div>`;
@@ -1925,6 +2779,47 @@ function renderEvents(){
  </div>`).join('')||'<div class="card">イベントはまだありません。</div>';
 }
 
+function clearFlagForm(){
+ flagId.value='';flagName.value='';flagCategory.value='story';flagDefault.value='false';flagDescription.value='';
+}
+function saveFlag(){
+ const id=flagId.value.trim()||nextId('Flag');
+ const name=flagName.value.trim();
+ if(!name)return alert('フラグ名を入力してください。');
+ const duplicate=allIds().includes(id)&&!data.flags.some(x=>x.id===id);
+ if(duplicate)return alert('そのIDは別データで使用されています。');
+ const record={id,name,category:flagCategory.value,default_value:flagDefault.value==='true',description:flagDescription.value,updated_at:now()};
+ const i=data.flags.findIndex(x=>x.id===id);
+ if(i>=0){record.created_at=data.flags[i].created_at||now();data.flags[i]=record}else{record.created_at=now();data.flags.push(record)}
+ persist('flag saved');clearFlagForm();renderFlags();
+}
+function editFlag(id){
+ const f=data.flags.find(x=>x.id===id);if(!f)return;
+ flagId.value=f.id;flagName.value=f.name;flagCategory.value=f.category||'story';flagDefault.value=f.default_value?'true':'false';flagDescription.value=f.description||'';showView('flags');
+}
+function flagReferences(id){
+ const refs=[];
+ data.quests.forEach(q=>{if((q.required_flags||[]).includes(id)||(q.set_flags||[]).includes(id))refs.push('クエスト '+q.id)});
+ data.events.forEach(e=>{if((e.required_flags||[]).includes(id)||(e.set_flags||[]).includes(id))refs.push('イベント '+e.id)});
+ return refs;
+}
+function deleteFlag(id){
+ const refs=flagReferences(id);if(refs.length)return alert('使用中のため削除できません: '+refs.join(', '));
+ if(!confirm(id+'を削除しますか？'))return;createBackup('before-flag-delete');data.flags=data.flags.filter(x=>x.id!==id);persist('flag deleted');
+}
+function jpFlagCategory(v){return ({story:'ストーリー',quest:'クエスト',character:'キャラクター',world:'世界',system:'システム'})[v]||v}
+function renderFlags(){
+ if(!window.flagList)return;
+ const keyword=(flagSearch?.value||'').trim().toLowerCase(),category=flagCategoryFilter?.value||'';
+ const list=data.flags.filter(f=>(!category||f.category===category)&&(!keyword||[f.id,f.name,f.description].join(' ').toLowerCase().includes(keyword)));
+ flagList.innerHTML=list.map(f=>`<div class="item"><b>${esc(f.name)}</b> <span class="badge">${esc(f.id)}</span> <span class="badge">${esc(jpFlagCategory(f.category))}</span> <span class="badge ${f.default_value?'ok':''}">初期 ${f.default_value?'ON':'OFF'}</span><p>${esc(f.description||'')}</p><div class="meta">参照元: ${esc(flagReferences(f.id).join(', ')||'なし')}</div><div class="toolbar"><button onclick="editFlag('${escAttr(f.id)}')">編集</button><button class="danger" onclick="deleteFlag('${escAttr(f.id)}')">削除</button></div></div>`).join('')||'<div class="card">フラグはまだありません。</div>';
+}
+function detectQuestCycles(){
+ const graph=new Map(data.quests.map(q=>[q.id,q.prerequisite_ids||[]]));const visiting=new Set(),done=new Set(),cycles=[];
+ function walk(id,path){if(visiting.has(id)){cycles.push([...path,id].join(' → '));return}if(done.has(id))return;visiting.add(id);for(const n of graph.get(id)||[])if(graph.has(n))walk(n,[...path,id]);visiting.delete(id);done.add(id)}
+ for(const id of graph.keys())walk(id,[]);return [...new Set(cycles)];
+}
+
 function renderReferenceMap(){
  if(!window.referenceSummary||!window.referenceList)return;
  const linkedQuests=data.quests.filter(q=>q.links?.chapter_id||q.links?.section_id||q.links?.scene_id).length;
@@ -1989,7 +2884,11 @@ function renderChapters(){
  chapterList.innerHTML=[...data.chapters].sort((a,b)=>(a.no||0)-(b.no||0)).map(c=>`<div class="item"><b>第${esc(c.no)}章 ${esc(c.title)}</b> <span class="badge">${esc(c.id)}</span><p><strong>テーマ:</strong> ${esc(c.theme||'')}</p><p>${esc(c.summary||'')}</p><div class="toolbar"><button onclick="addSection('${escAttr(c.id)}')">節を追加</button><button class="danger" onclick="deleteChapter('${escAttr(c.id)}')">章を削除</button></div><div class="list">${(c.sections||[]).map(s=>`<div class="item"><b>${esc(s.no)}節 ${esc(s.title)}</b> <span class="badge">${esc(s.id)}</span> <button class="danger" onclick="deleteSection('${escAttr(c.id)}','${escAttr(s.id)}')">削除</button></div>`).join('')||'<div class="small">節はまだありません。</div>'}</div></div>`).join('')||'<div class="card">章はまだありません。</div>'
 }
 function renderCharacters(){
- characterList.innerHTML=[...data.characters].map(c=>`<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')}</div><p>${esc(c.profile||'')}</p><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`).join('')||'<div class="card">キャラクターはまだありません。</div>'
+ characterList.innerHTML=[...data.characters].map(c=>`<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')} / ${esc(c.race||'')} / 所属 ${esc(c.organization_id||'なし')}</div><p>${esc(c.profile||'')}</p><div class="meta">目的: ${esc((c.goals||[]).filter(Boolean).join(' → ')||'未設定')} / 初登場 ${esc(c.first_appearance||'未設定')} / 加入 ${esc(c.join_point||'未設定')} / 覚醒 ${esc(c.awaken_point||'未設定')}</div><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`).join('')||'<div class="card">キャラクターはまだありません。</div>';
+ organizationList.innerHTML=data.organizations.map(o=>`<div class="item"><b>${esc(o.name)}</b> <span class="badge">${esc(o.id)}</span><div class="meta">${esc(o.type||'')}</div><p>${esc(o.notes||'')}</p><button class="danger" onclick="deleteOrganization('${escAttr(o.id)}')">削除</button></div>`).join('')||'<div class="card">組織はまだありません。</div>';
+ termList.innerHTML=data.terms.map(t=>`<div class="item"><b>${esc(t.name)}</b> <span class="badge">${esc(t.id)}</span><div class="meta">${esc(t.category||'')}</div><p>${esc(t.description||'')}</p><button class="danger" onclick="deleteTerm('${escAttr(t.id)}')">削除</button></div>`).join('')||'<div class="card">用語はまだありません。</div>';
+ relationshipList.innerHTML=data.relationships.map(r=>`<div class="item"><b>${esc(characterName(r.from_character_id))} → ${esc(characterName(r.to_character_id))}</b> <span class="badge">${esc(r.type)}</span><p>${esc(r.notes||'')}</p><button class="danger" onclick="deleteRelationship('${escAttr(r.id)}')">削除</button></div>`).join('')||'<div class="card">関係はまだありません。</div>';
+ timelineList.innerHTML=[...data.timeline].sort((a,b)=>(a.chapter_no-b.chapter_no)||(a.section_no-b.section_no)).map(t=>`<div class="item"><b>第${esc(t.chapter_no||'?')}章 ${esc(t.section_no? t.section_no+'節':'')}</b> <span class="badge">${esc(t.target_id||'全体')}</span><p>${esc(t.event)}</p><button class="danger" onclick="deleteTimeline('${escAttr(t.id)}')">削除</button></div>`).join('')||'<div class="card">時系列はまだありません。</div>'
 }
 
 function renderValidation(){
@@ -2001,9 +2900,9 @@ function renderBackups(){
  backupList.innerHTML=backups().map(b=>`<div class="item"><b>${esc(b.id)}</b><div class="meta">${esc(b.at)} / ${esc(b.reason)}</div><button onclick="restoreBackup('${escAttr(b.id)}')">復元</button></div>`).join('')||'<div class="card">バックアップなし</div>'
 }
 function renderDashboard(){
- kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length
+ kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderReferenceMap();renderCharacters();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
@@ -2013,7 +2912,7 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
 function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
 function closeMobile(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('inspector').classList.remove('mobile-open')}
-window.addEventListener('beforeunload',()=>localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data)));
+window.addEventListener('beforeunload',()=>{try{localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data))}catch(e){console.error(e)}});
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
 installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.classList.add('hidden')});
@@ -2035,7 +2934,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','100');
+    url.searchParams.set('appv','150');
     location.replace(url.toString());
    }
  }
@@ -2044,7 +2943,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=100',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=230',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -2063,7 +2962,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','100');
+    url.searchParams.set('appv','150');
     location.replace(url.toString());
    }
   });

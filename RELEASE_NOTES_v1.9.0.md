@@ -1,21 +1,15 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.9.0
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
-
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+## 追加
+- 戦闘ユニットと装備・MODマスターの連携
+- equipment_ids / mod_ids による参照
+- 装備内 mod_ids の自動展開
+- HP、MP、MP回復、AGI、攻撃、防御、命中、クリティカル、各耐性の加算
+- 耐性上限75%の維持
+- 参照切れ装備・MODの実行前検出
+- 装備連携サンプル自動登録
+- 戦闘結果JSONへの装備適用元保存
+- PWA Build 190
 
 
 ## 提出物配布ルール（統一運用）

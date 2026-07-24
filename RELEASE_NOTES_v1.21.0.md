@@ -1,21 +1,11 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.21.0
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
-
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+## GVF-004 AI / Battle Simulation
+- 決定論的戦闘シミュレーターを追加
+- 固定seed、最大1000Tick、AGIゲージ制に対応
+- 勝率、平均Tick、行動回数、スキル使用回数を集計
+- 引き分け率・勝率・行動・スキル偏重を自動検出
+- `php-runtime/bin/gvf-simulate.php` を追加
 
 
 ## 提出物配布ルール（統一運用）

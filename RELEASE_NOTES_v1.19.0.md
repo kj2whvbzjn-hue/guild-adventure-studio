@@ -1,21 +1,13 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.19.0 Release Notes
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
+## GVF-002 Game Balance Validation
+- 設定駆動型バランス検査を追加
+- 数値レンジ、ドロップ率、重複、単調増加、比較制約に対応
+- Critical / Warning / InfoとBalance Scoreを出力
+- JSON / HTMLレポートCLIを追加
+- GVF-002回帰試験を追加
 
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+次工程: GVF-003 Scenario Validation
 
 
 ## 提出物配布ルール（統一運用）

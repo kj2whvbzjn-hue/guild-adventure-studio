@@ -1,21 +1,13 @@
-# RELEASE NOTES v1.0.0
+# GK Studio v1.18.0 リリースノート
 
-追加:
-- Studio Update Deploy
-- ZIP直接読込
-- GitHub Pagesリポジトリへの一括配置
-- 既存ファイルSHA自動取得
-- 新規・更新ファイルの自動判定
-- 配置ログと進捗表示
-- テスト実行
-- 公開ページ確認
-- project-data.json保護
-- studio-update.jsonメタデータ
+## GVF-001 Data Integrity Validation
+- Game Validation Frameworkフェーズへ移行
+- 既存の重複ID・参照切れ検査をGVF-001として正式化
+- 孤立データ警告レポートを追加
+- `--strict-orphans`による厳格検査を追加
+- GVF専用CLIと自動試験を追加
 
-キャッシュ:
-- ga-studio-v100-build100
-- sw.js?v=100
-- index.html?appv=100
+次工程はGVF-002 Game Balance Validationです。
 
 
 ## 提出物配布ルール（統一運用）
