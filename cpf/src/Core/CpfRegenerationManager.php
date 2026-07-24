@@ -1,0 +1,3 @@
+<?php
+declare(strict_types=1); namespace GK\CPF\Core;
+final class CpfRegenerationManager {public function __construct(private JsonStore$s=new JsonStore(),private CpfNodeManager$n=new CpfNodeManager()){} public function request(string$d,string$id,string$reason):array{$node=$this->n->get($d,$id);if($node['locked'])throw new CpfException('NODE_LOCKED','Locked node',3);$list=$this->s->read("$d/regeneration/requests.json",[]);$r=['request_id'=>sprintf('REGEN_%06d',count($list)+1),'node_id'=>$id,'base_version'=>$node['version'],'status'=>'REQUESTED','reason'=>$reason,'created_at'=>date(DATE_ATOM)];$list[]=$r;$this->s->write("$d/regeneration/requests.json",$list);return$r;}}
