@@ -1,0 +1,3 @@
+<?php
+declare(strict_types=1); namespace GK\CPF\Diff;
+final class CpfDiffService {public function diff(array$a,array$b,string$path=''):array{$out=[];$keys=array_unique(array_merge(array_keys($a),array_keys($b)));foreach($keys as$k){$p=$path===''?(string)$k:"$path.$k";$av=$a[$k]??null;$bv=$b[$k]??null;if(is_array($av)&&is_array($bv))$out=array_merge($out,$this->diff($av,$bv,$p));elseif($av!==$bv)$out[]=['path'=>$p,'before'=>$av,'after'=>$bv];}return$out;}}
