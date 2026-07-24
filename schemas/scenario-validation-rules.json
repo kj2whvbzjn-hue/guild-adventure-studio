@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "sequence_rules": [
+    {"path":"scenario/chapters.json","order_fields":["order","chapter_no","number"],"severity":"critical","code":"SCENARIO_CHAPTER_ORDER"},
+    {"path":"scenario/sections.json","group_field":"chapter_id","order_fields":["order","section_no","number"],"severity":"critical","code":"SCENARIO_SECTION_ORDER"},
+    {"path":"scenario/scenes.json","group_field":"section_id","order_fields":["order","scene_no","number"],"severity":"critical","code":"SCENARIO_SCENE_ORDER"},
+    {"path":"quest/main_quests.json","group_field":"section_id","order_fields":["order","quest_no","number"],"severity":"warning","code":"SCENARIO_MAIN_QUEST_ORDER"}
+  ],
+  "parent_order_rules": [
+    {"child_path":"scenario/sections.json","parent_path":"scenario/chapters.json","parent_field":"chapter_id","child_order_fields":["chapter_order","chapter_no"],"parent_order_fields":["order","chapter_no","number"],"severity":"critical"},
+    {"child_path":"scenario/scenes.json","parent_path":"scenario/sections.json","parent_field":"section_id","child_order_fields":["section_order","section_no"],"parent_order_fields":["order","section_no","number"],"severity":"critical"}
+  ],
+  "terminal_marker_rules": [
+    {"path":"scenario/sections.json","group_field":"chapter_id","order_fields":["order","section_no","number"],"marker_field":"boss_flag","marker_value":true,"severity":"warning","code":"SCENARIO_BOSS_NOT_TERMINAL"}
+  ],
+  "flag_flow": {
+    "event_path":"event/events.json",
+    "flag_path":"event/flags.json",
+    "set_fields":["set_flag_ids","set_flags"],
+    "require_fields":["required_flag_ids","requires_flags"],
+    "order_fields":["global_order","order"],
+    "severity":"critical"
+  },
+  "milestones": [
+    {"key":"ELICIA_JOIN","expected_chapter":3,"severity":"warning","description":"エリシア加入"},
+    {"key":"MIASMA_PURIFY_UNLOCK","expected_chapter":7,"severity":"warning","description":"瘴気解除能力の解放"},
+    {"key":"QUEEN_RESCUE","expected_chapter":9,"severity":"warning","description":"王妃救出"},
+    {"key":"CHANCELLOR_FINAL_BATTLE","expected_chapter":10,"severity":"warning","description":"宰相との最終決戦"}
+  ]
+}
