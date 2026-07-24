@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.16.0</title>
+<title>GK Studio v1.23.0-dev</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -127,14 +127,14 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 }
 </style>
   <script src="jszip.min.js?v=240"></script>
-  <script src="export-core.js?v=240"></script>
+  <script src="export-core.js?v=333"></script>
 </head>
 <body>
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.16.0 / Production Readiness版 / ビルド 260</div>
+    <div class="version">GK Studio v1.23.0-dev / 開発運用負荷軽減版 / Formal Build 335</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -163,7 +163,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button data-view="validation">データ検証</button>
     <button data-view="backup">バックアップ</button>
     <button data-view="githubsync">GitHub同期</button>
-    <button data-view="studiodeploy">スタジオ更新配置</button>
+    <button data-view="studiodeploy">GitHub配置・更新</button>
     <button data-view="importexport">読込・出力</button>
   </div>
 </aside>
@@ -836,8 +836,46 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
   <div class="card">
     <h2>スタジオ本体をGitHub Pagesへ配置</h2>
-    <p>新しいGuild Adventure Studioの更新ZIPを選択し、GitHubリポジトリの公開ブランチへ一括配置します。</p>
-    <p class="small">GitHub同期と同じ所有者、リポジトリ、ブランチ、トークンを使用します。GitHub Pagesは公開元をBranchのルートに設定してください。</p>
+    <p>新しいGuild Adventure Studioの更新ZIPを選択し、GitHubリポジトリの公開ブランチへ単一Commitで配置します。</p>
+    <p class="small">接続設定、差分解析、最終承認、配置をこの画面だけで完了できます。GitHubへの書込みは最後の「配置実行（人間承認）」押下後だけ開始されます。</p>
+  </div>
+
+  <div class="card">
+    <h2>開発運用負荷軽減 <span class="badge ok">P0実装継続</span></h2>
+    <p>GitHub連携画面は実装済みです。現在は開発側の反復作業を減らすため、GitHub読取APIの一時障害を自動再試行し、失敗時にはHTTP状態・Request ID・Rate Limit情報を表示します。書込みAPIは重複Commit防止のため自動再試行しません。</p>
+    <div id="deployReadinessStatus" class="item">
+      <b>初回操作:</b> ① Owner・Repository・Branch入力 → ② PAT入力 → ③ 接続テスト → ④ 更新ZIP選択 → ⑤ 差分確認 → ⑥ 配置実行（人間承認）
+    </div>
+    <p class="small">実Repositoryへの書込み試験と実GitHub Pages反映試験は、利用者の認証情報と公開環境で実施する受入試験です。Tokenは成果物・ログ・監査ZIPへ保存しません。</p>
+  </div>
+
+  <div class="card">
+    <h2>0. GitHub接続設定</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Owner</label>
+        <input id="deployGhOwner" placeholder="例: kj2whvbzjn-hue" oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+      </div>
+      <div class="field">
+        <label>Repository</label>
+        <input id="deployGhRepo" placeholder="例: guild-adventure-studio" oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+      </div>
+      <div class="field">
+        <label>Branch</label>
+        <input id="deployGhBranch" value="main" oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+      </div>
+    </div>
+    <div class="field">
+      <label>Fine-grained Personal Access Token</label>
+      <input id="deployGhToken" type="password" autocomplete="off" placeholder="github_pat_..." oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+      <div class="small">必要権限: Contents = Read and write、Metadata = Read-only。トークンは保存せず、現在のタブのメモリ内だけで使用します。</div>
+    </div>
+    <label><input type="checkbox" checked disabled> トークンを保存しない（固定）</label>
+    <div class="toolbar">
+      <button onclick="saveDeployConnectionSettings()">接続先だけ保存</button>
+      <button class="primary" onclick="testDeployGitHubConnection()">接続テスト</button>
+    </div>
+    <div id="deployGhStatus" class="item">未接続</div>
   </div>
 
   <div class="card">
@@ -848,7 +886,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
       <p class="small">ZIP内にフォルダが1つだけある場合は、自動的にそのフォルダを公開ルートとして扱います。</p>
     </div>
     <div class="toolbar">
-      <button onclick="inspectStudioPackage()">パッケージ確認</button>
+      <button onclick="inspectStudioPackage()">再解析・差分更新</button>
       <button onclick="clearStudioPackage()">選択解除</button>
     </div>
     <div id="deployPackageStatus" class="item">更新パッケージ未選択</div>
@@ -875,7 +913,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   </div>
 
   <div class="card">
-    <h2>3. 配置対象</h2>
+    <h2>3. GitHub差分確認</h2>
     <div id="deploySummary" class="small">パッケージ確認後に表示します。</div>
     <div id="deployFileList" class="deploy-file-list"></div>
   </div>
@@ -883,7 +921,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   <div class="card">
     <h2>4. GitHubへ一括配置</h2>
     <div class="toolbar">
-      <button class="primary" onclick="deployStudioPackage()">更新をGitHubへ配置</button>
+      <button id="deployExecuteButton" class="primary" onclick="deployStudioPackage()" disabled>配置実行（人間承認）</button>
       <button onclick="openPagesAfterDeploy()">公開ページを確認</button>
     </div>
     <div class="deploy-progress"><div id="deployProgressBar"></div></div>
@@ -892,10 +930,31 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   </div>
 
   <div class="card">
+    <h2>5. 公開確認・監査証跡</h2>
+    <p class="small">配置完了後、GitHub Pagesの公開HTMLを一定間隔で確認します。確認処理は公開URLへの読取りのみで、GitHubへの書込みは行いません。</p>
+    <div class="grid">
+      <div class="field">
+        <label>確認間隔（秒）</label>
+        <input id="deployPagesInterval" type="number" min="3" max="60" value="5">
+      </div>
+      <div class="field">
+        <label>最大待機時間（秒）</label>
+        <input id="deployPagesTimeout" type="number" min="15" max="600" value="180">
+      </div>
+    </div>
+    <div class="toolbar">
+      <button onclick="confirmPagesDeployment()">Pages反映を自動確認</button>
+      <button onclick="downloadDeployAuditZip()">配置監査ZIPを保存</button>
+    </div>
+    <div id="deployPagesStatus" class="item">未確認</div>
+  </div>
+
+  <div class="card">
     <h2>安全対策</h2>
     <p class="small">
-      ファイルは1件ずつ順番に更新します。<code>.git</code>、<code>.github</code>、隠しファイル、
-      保護対象ファイルは除外します。更新ZIP内に<code>index.html</code>がない場合は配置を開始しません。
+      変更ファイルだけをGit Data APIでBlob化し、Tree・Commitを作成した後、Branch参照を最後に1回だけ更新します。
+      <code>.git</code>、<code>.github</code>、隠しファイル、保護対象ファイルは除外し、削除は実行しません。
+      GitHubへの書込みは「配置実行（人間承認）」を押した場合だけ行います。
     </p>
   </div>
 </section>
@@ -962,7 +1021,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </div>
 
 <script>
-const APP_VERSION='1.14.0';
+const APP_VERSION='1.23.0-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -1673,23 +1732,57 @@ function base64ToUtf8(encoded){
  const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
  return new TextDecoder('utf-8').decode(bytes);
 }
+const GH_RETRYABLE_STATUS=new Set([429,502,503,504]);
+const GH_READ_RETRY_LIMIT=3;
+function sleepMs(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
+function githubRequestError(response,body,attempt){
+ const requestId=response.headers.get('x-github-request-id')||'unknown';
+ const remaining=response.headers.get('x-ratelimit-remaining');
+ const reset=response.headers.get('x-ratelimit-reset');
+ const message=body?.message||('HTTP '+response.status);
+ const details=[`HTTP ${response.status}`,message,`request-id=${requestId}`,`attempt=${attempt}`];
+ if(remaining!==null)details.push(`rate-remaining=${remaining}`);
+ if(reset)details.push(`rate-reset=${reset}`);
+ const error=new Error(details.join(' / '));
+ error.status=response.status;error.requestId=requestId;error.retryAfter=response.headers.get('retry-after');
+ return error;
+}
 async function ghRequest(url,options={}){
  const c=getGhConfig();
- const headers={
-  'Accept':'application/vnd.github+json',
-  'Authorization':'Bearer '+c.token,
-  'X-GitHub-Api-Version':'2022-11-28',
-  ...(options.headers||{})
- };
- const response=await fetch(url,{...options,headers});
- let body=null;
- const text=await response.text();
- try{body=text?JSON.parse(text):null}catch(e){body={message:text}}
- if(!response.ok){
-  const msg=body?.message||('HTTP '+response.status);
-  throw new Error(msg);
+ const method=String(options.method||'GET').toUpperCase();
+ const retryableMethod=method==='GET'||method==='HEAD';
+ const maxAttempts=retryableMethod?GH_READ_RETRY_LIMIT:1;
+ let lastError=null;
+ for(let attempt=1;attempt<=maxAttempts;attempt++){
+  const headers={
+   'Accept':'application/vnd.github+json',
+   'Authorization':'Bearer '+c.token,
+   'X-GitHub-Api-Version':'2022-11-28',
+   ...(options.headers||{})
+  };
+  try{
+   const response=await fetch(url,{...options,method,headers});
+   let body=null;
+   const text=await response.text();
+   try{body=text?JSON.parse(text):null}catch(e){body={message:text}}
+   if(response.ok)return body;
+   const error=githubRequestError(response,body,attempt);
+   lastError=error;
+   if(!retryableMethod||!GH_RETRYABLE_STATUS.has(response.status)||attempt>=maxAttempts)throw error;
+   const retryAfter=Number(error.retryAfter);
+   const waitMs=Number.isFinite(retryAfter)&&retryAfter>0?Math.min(retryAfter*1000,15000):Math.min(1000*(2**(attempt-1)),8000);
+   deployLogMessage?.(`GitHub読取を自動再試行: HTTP ${response.status} / ${attempt}/${maxAttempts} / ${waitMs}ms待機`);
+   await sleepMs(waitMs);
+  }catch(error){
+   lastError=error;
+   const isNetwork=!(error&&typeof error.status==='number');
+   if(!retryableMethod||(!isNetwork&&!GH_RETRYABLE_STATUS.has(error.status))||attempt>=maxAttempts)throw error;
+   const waitMs=Math.min(1000*(2**(attempt-1)),8000);
+   deployLogMessage?.(`GitHub読取通信を自動再試行: ${attempt}/${maxAttempts} / ${waitMs}ms待機`);
+   await sleepMs(waitMs);
+  }
  }
- return body;
+ throw lastError||new Error('GitHub API request failed');
 }
 async function testGitHubConnection(){
  if(ghBusy)return;
@@ -1783,20 +1876,26 @@ async function pullFromGitHub(){
 let studioDeployFiles=[];
 let studioDeployMeta=null;
 let studioDeployBusy=false;
+let studioDeployPlan=null;
+let studioDeployLastResult=null;
+const STUDIO_DEPLOY_MAX_FILES=5000;
+const STUDIO_DEPLOY_MAX_FILE_BYTES=20*1024*1024;
+const STUDIO_DEPLOY_MAX_TOTAL_BYTES=100*1024*1024;
 
-function deployLog(message){
+function deployLogMessage(message){
  const stamp=new Date().toLocaleTimeString();
- deployLog.textContent+=(deployLog.textContent==='更新ログ'?'':'\n')+`[${stamp}] ${message}`;
- deployLog.scrollTop=deployLog.scrollHeight;
+ const el=document.getElementById('deployLog');
+ el.textContent+=(el.textContent==='更新ログ'?'':'\n')+`[${stamp}] ${message}`;
+ el.scrollTop=el.scrollHeight;
 }
-function resetDeployLog(){deployLog.textContent='更新ログ'}
+function resetDeployLog(){document.getElementById('deployLog').textContent='更新ログ'}
 function formatBytes(size){
  if(size<1024)return size+' B';
  if(size<1024*1024)return (size/1024).toFixed(1)+' KB';
  return (size/1024/1024).toFixed(1)+' MB';
 }
 function normalizeDeployPath(path){
- return String(path||'').replace(/\\/g,'/').replace(/^\/+/,'').replace(/\/+/g,'/');
+ return String(path||'').replace(/\\/g,'/').replace(/^\/+/, '').replace(/\/+/g,'/');
 }
 function joinDeployPath(base,path){
  const a=normalizeDeployPath(base).replace(/\/$/,'');
@@ -1804,10 +1903,14 @@ function joinDeployPath(base,path){
  return a?`${a}/${b}`:b;
 }
 function isUnsafeDeployPath(path){
- const parts=normalizeDeployPath(path).split('/');
+ const normalized=normalizeDeployPath(path);
+ const parts=normalized.split('/');
+ const lower=normalized.toLowerCase();
  return parts.some(p=>!p||p==='.'||p==='..'||p.startsWith('.')) ||
   parts.includes('.git') || parts.includes('.github') ||
-  path==='studio-update.json';
+  normalized==='studio-update.json' ||
+  /(^|\/)(\.env|id_rsa|id_ed25519|.*\.(pem|key|p12|pfx))$/i.test(normalized) ||
+  /(token|secret|credential|private[-_ ]?key)/i.test(lower);
 }
 function protectedDeploySet(){
  return new Set(splitCsv(deployProtectedPaths.value).map(normalizeDeployPath));
@@ -1815,9 +1918,7 @@ function protectedDeploySet(){
 function bytesToBase64(bytes){
  let binary='';
  const chunk=0x8000;
- for(let i=0;i<bytes.length;i+=chunk){
-  binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
- }
+ for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
  return btoa(binary);
 }
 function commonZipRoot(paths){
@@ -1826,128 +1927,276 @@ function commonZipRoot(paths){
  const first=valid[0].split('/')[0];
  return valid.every(p=>p.includes('/')&&p.split('/')[0]===first)?first+'/':'';
 }
+async function gitBlobSha(bytes){
+ const header=new TextEncoder().encode(`blob ${bytes.length}\0`);
+ const joined=new Uint8Array(header.length+bytes.length);
+ joined.set(header);joined.set(bytes,header.length);
+ const digest=await crypto.subtle.digest('SHA-1',joined);
+ return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function sha256Hex(bytes){
+ const digest=await crypto.subtle.digest('SHA-256',bytes);
+ return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+}
+function setDeployExecuteEnabled(enabled){
+ const button=document.getElementById('deployExecuteButton');
+ if(button)button.disabled=!enabled;
+}
 async function inspectStudioPackage(){
  const file=studioUpdateZip.files?.[0];
  if(!file)return alert('更新ZIPを選択してください。');
  if(typeof JSZip==='undefined')return alert('ZIP読込ライブラリを読み込めませんでした。再読み込みしてください。');
  try{
+  studioDeployPlan=null;studioDeployLastResult=null;setDeployExecuteEnabled(false);setDeployPagesStatus('未確認');
   deployPackageStatus.textContent='ZIPを解析中…';
   const zip=await JSZip.loadAsync(file);
   const entries=Object.values(zip.files).filter(x=>!x.dir);
+  if(entries.length>STUDIO_DEPLOY_MAX_FILES)throw new Error(`ZIP内ファイル数が上限${STUDIO_DEPLOY_MAX_FILES}件を超えています。`);
   const root=commonZipRoot(entries.map(x=>x.name));
   const protectedSet=protectedDeploySet();
-  const files=[];
-  let meta=null;
-
+  const files=[];let meta=null;let totalBytes=0;
+  const normalizedSeen=new Set();
   for(const entry of entries){
    let relative=normalizeDeployPath(entry.name);
    if(root&&relative.startsWith(root))relative=relative.slice(root.length);
    if(!relative)continue;
+   if(normalizedSeen.has(relative))throw new Error(`重複正規化パスを検出しました: ${relative}`);
+   normalizedSeen.add(relative);
    if(relative==='studio-update.json'){
-    try{meta=JSON.parse(await entry.async('text'))}catch(e){}
+    try{meta=JSON.parse(await entry.async('text'))}catch(e){throw new Error('studio-update.jsonを解析できません。')}
     continue;
    }
    const excluded=isUnsafeDeployPath(relative)||protectedSet.has(relative);
    const bytes=await entry.async('uint8array');
-   files.push({path:relative,size:bytes.length,bytes,excluded,reason:excluded?'保護・除外':''});
+   if(bytes.length>STUDIO_DEPLOY_MAX_FILE_BYTES)throw new Error(`単体ファイル上限超過: ${relative}`);
+   totalBytes+=bytes.length;
+   if(totalBytes>STUDIO_DEPLOY_MAX_TOTAL_BYTES)throw new Error('ZIP展開後の合計容量が100MBを超えています。');
+   files.push({path:relative,size:bytes.length,bytes,excluded,reason:excluded?'保護・除外':'未比較',status:excluded?'PROTECTED':'PENDING'});
   }
-
   const uploadable=files.filter(x=>!x.excluded);
   if(!uploadable.some(x=>x.path==='index.html'))throw new Error('ZIP内に公開ルートのindex.htmlがありません。');
-  if(uploadable.length>100)throw new Error('1回の配置上限は100ファイルです。');
-
-  studioDeployFiles=files;
-  studioDeployMeta=meta;
+  studioDeployFiles=files;studioDeployMeta=meta;
   renderDeployPackage();
   const version=meta?.display_version||meta?.version||'バージョン情報なし';
-  deployPackageStatus.innerHTML=`<span class="badge ok">正常</span> ${esc(file.name)} / ${esc(version)}`;
-  resetDeployLog();
-  deployLog(`パッケージ確認完了: ${uploadable.length}ファイル`);
+  deployPackageStatus.innerHTML=`<span class="badge ok">ZIP正常</span> ${esc(file.name)} / ${esc(version)}`;
+  resetDeployLog();deployLogMessage(`ローカル検査完了: ${uploadable.length}ファイル。GitHub差分を取得します。`);
+  await prepareStudioDeployDiff();
  }catch(e){
-  studioDeployFiles=[];studioDeployMeta=null;
+  studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;setDeployExecuteEnabled(false);
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
   renderDeployPackage();
  }
+}
+async function getGitHead(c){
+ const repo=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`;
+ const ref=await ghRequest(`${repo}/git/ref/heads/${c.branch.split('/').map(encodeURIComponent).join('/')}`);
+ const commit=await ghRequest(`${repo}/git/commits/${encodeURIComponent(ref.object.sha)}`);
+ const tree=await ghRequest(`${repo}/git/trees/${encodeURIComponent(commit.tree.sha)}?recursive=1`);
+ if(tree.truncated)throw new Error('GitHub Tree応答がtruncatedです。配置を停止しました。');
+ return {repo,headSha:ref.object.sha,baseTreeSha:commit.tree.sha,tree};
+}
+async function prepareStudioDeployDiff(){
+ const files=studioDeployFiles.filter(x=>!x.excluded);
+ if(!files.length)throw new Error('配置可能なファイルがありません。');
+ const c=getGhConfig();
+ const base=normalizeDeployPath(deployBasePath.value);
+ studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);
+ try{
+  saveGitHubSettings();
+  const remote=await getGitHead(c);
+  const map=new Map((remote.tree.tree||[]).filter(x=>x.type==='blob').map(x=>[x.path,x.sha]));
+  let add=0,modify=0,unchanged=0;
+  for(let i=0;i<files.length;i++){
+   const file=files[i];
+   file.target=joinDeployPath(base,file.path);
+   file.gitSha=await gitBlobSha(file.bytes);
+   file.sha256=await sha256Hex(file.bytes);
+   const remoteSha=map.get(file.target);
+   file.remoteSha=remoteSha||null;
+   file.status=!remoteSha?'ADD':remoteSha===file.gitSha?'UNCHANGED':'MODIFY';
+   file.reason=file.status;
+   if(file.status==='ADD')add++; else if(file.status==='MODIFY')modify++; else unchanged++;
+   deployProgressBar.style.width=Math.round(((i+1)/files.length)*100)+'%';
+   deployProgressText.textContent=`差分解析 ${i+1}/${files.length}`;
+  }
+  const changes=files.filter(x=>x.status==='ADD'||x.status==='MODIFY');
+  studioDeployPlan={...remote,owner:c.owner,repoName:c.repo,branch:c.branch,base,changes,preparedAt:new Date().toISOString()};
+  renderDeployPackage();
+  deployPackageStatus.innerHTML=`<span class="badge ok">配置準備完了</span> ADD ${add} / MODIFY ${modify} / UNCHANGED ${unchanged}`;
+  deployLogMessage(`GitHub差分取得完了: ADD ${add}, MODIFY ${modify}, UNCHANGED ${unchanged}`);
+  deployProgressText.textContent=changes.length?`配置待機: ${changes.length}件（人間承認が必要）`:'差分なし';
+  setDeployExecuteEnabled(changes.length>0);
+ }finally{studioDeployBusy=false;setGhBusy(false)}
 }
 function renderDeployPackage(){
  if(!window.deployFileList)return;
  const included=studioDeployFiles.filter(x=>!x.excluded);
  const excluded=studioDeployFiles.filter(x=>x.excluded);
- const total=included.reduce((n,x)=>n+x.size,0);
+ const changes=included.filter(x=>x.status==='ADD'||x.status==='MODIFY');
+ const unchanged=included.filter(x=>x.status==='UNCHANGED');
+ const total=changes.reduce((n,x)=>n+x.size,0);
  deploySummary.textContent=studioDeployFiles.length
-  ?`配置対象 ${included.length}件 / 除外 ${excluded.length}件 / 合計 ${formatBytes(total)}`
+  ?`変更 ${changes.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
   :'パッケージ確認後に表示します。';
- deployFileList.innerHTML=studioDeployFiles.map(f=>`
-  <div class="deploy-file-row">
-   <span>${esc(f.path)}</span>
-   <span>${esc(formatBytes(f.size))}</span>
-   <span class="badge ${f.excluded?'warn':'ok'}">${f.excluded?'除外':'配置'}</span>
-  </div>`).join('');
+ deployFileList.innerHTML=studioDeployFiles.map(f=>{
+  const status=f.excluded?'PROTECTED':f.status||'PENDING';
+  const cls=status==='ADD'||status==='MODIFY'?'warn':status==='UNCHANGED'?'ok':'warn';
+  return `<div class="deploy-file-row"><span>${esc(f.target||f.path)}</span><span>${esc(formatBytes(f.size))}</span><span class="badge ${cls}">${esc(status)}</span></div>`;
+ }).join('');
 }
 function clearStudioPackage(){
- studioUpdateZip.value='';
- studioDeployFiles=[];studioDeployMeta=null;
- deployPackageStatus.textContent='更新パッケージ未選択';
- deployProgressBar.style.width='0%';
- deployProgressText.textContent='待機中';
- resetDeployLog();renderDeployPackage();
+ studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;setDeployPagesStatus('未確認');
+ deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
+ deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
-async function getRemoteFileAtPath(c,path){
- const encoded=normalizeDeployPath(path).split('/').map(encodeURIComponent).join('/');
- const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encoded}?ref=${encodeURIComponent(c.branch)}`;
- try{return await ghRequest(url)}
- catch(e){if(String(e.message).includes('Not Found'))return null;throw e}
-}
-async function putRemoteFile(c,path,bytes,message){
- const remote=await getRemoteFileAtPath(c,path);
- const encoded=normalizeDeployPath(path).split('/').map(encodeURIComponent).join('/');
- const payload={message,content:bytesToBase64(bytes),branch:c.branch};
- if(remote?.sha)payload.sha=remote.sha;
- return await ghRequest(
-  `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${encoded}`,
-  {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}
- );
+async function createGitBlob(repo,file){
+ return ghRequest(`${repo}/git/blobs`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:bytesToBase64(file.bytes),encoding:'base64'})});
 }
 async function deployStudioPackage(){
  if(studioDeployBusy||ghBusy)return;
- const files=studioDeployFiles.filter(x=>!x.excluded);
- if(!files.length)return alert('先に更新ZIPを確認してください。');
+ if(!studioDeployPlan)return alert('先にZIPを選択し、GitHub差分解析を完了してください。');
+ const changes=studioDeployPlan.changes||[];
+ if(!changes.length)return alert('配置する差分はありません。');
  const c=getGhConfig();
- const base=normalizeDeployPath(deployBasePath.value);
- const message=(deployCommitMessage.value.trim()||'Deploy Guild Adventure Studio update')+
-  (studioDeployMeta?.version?` ${studioDeployMeta.version}`:'');
+ if(c.owner!==studioDeployPlan.owner||c.repo!==studioDeployPlan.repoName||c.branch!==studioDeployPlan.branch)return alert('接続先が差分解析時から変更されています。再解析してください。');
+ const message=(deployCommitMessage.value.trim()||'Deploy Guild Adventure Studio update')+(studioDeployMeta?.version?` ${studioDeployMeta.version}`:'');
  const dry=deployDryRun.checked;
- const targetPreview=files.slice(0,5).map(f=>joinDeployPath(base,f.path)).join('\n');
- if(!confirm(`${dry?'テスト実行します':'GitHubへ配置します'}。\n\n対象: ${files.length}ファイル\nBranch: ${c.branch}\n先頭ファイル:\n${targetPreview}\n\n続行しますか？`))return;
-
+ const add=changes.filter(x=>x.status==='ADD').length,modify=changes.filter(x=>x.status==='MODIFY').length;
+ if(!confirm(`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\n削除: 0\nCommit: ${message}\n\nGitHubへの書込みはこの承認後にだけ開始されます。続行しますか？`))return;
  try{
-  studioDeployBusy=true;setGhBusy(true);
-  resetDeployLog();
-  deployLog(`${dry?'テスト':'配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
-  saveGitHubSettings();
-  let success=0;
-  for(let i=0;i<files.length;i++){
-   const file=files[i];
-   const target=joinDeployPath(base,file.path);
-   const pct=Math.round((i/files.length)*100);
-   deployProgressBar.style.width=pct+'%';
-   deployProgressText.textContent=`${i}/${files.length} ${target}`;
-   deployLog(`${dry?'確認':'更新'}: ${target}`);
-   if(!dry)await putRemoteFile(c,target,file.bytes,message);
-   success++;
+  studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);resetDeployLog();
+  deployLogMessage(`${dry?'テスト':'単一Commit配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
+  const current=await getGitHead(c);
+  if(current.headSha!==studioDeployPlan.headSha)throw new Error('差分解析後にBranchが更新されました。競合防止のため停止しました。再解析してください。');
+  if(dry){
+   deployProgressBar.style.width='100%';deployProgressText.textContent=`テスト完了 ${changes.length}件`;
+   deployLogMessage(`テスト完了: ref更新なし / 対象 ${changes.length}件`);
+   deployPackageStatus.innerHTML='<span class="badge ok">テスト完了</span> GitHubへの書込みはありません。';
+   setDeployExecuteEnabled(true);return;
   }
-  deployProgressBar.style.width='100%';
-  deployProgressText.textContent=`完了 ${success}/${files.length}`;
-  deployLog(`${dry?'テスト':'配置'}完了: ${success}ファイル`);
-  deployPackageStatus.innerHTML=`<span class="badge ok">正常</span> ${dry?'テスト完了':'GitHub配置完了。GitHub Pagesの反映を待ってください。'}`;
+  const treeEntries=[];
+  for(let i=0;i<changes.length;i++){
+   const file=changes[i];
+   deployProgressBar.style.width=Math.round((i/changes.length)*75)+'%';
+   deployProgressText.textContent=`Blob作成 ${i+1}/${changes.length} ${file.target}`;
+   const blob=await createGitBlob(studioDeployPlan.repo,file);
+   treeEntries.push({path:file.target,mode:'100644',type:'blob',sha:blob.sha});
+   deployLogMessage(`Blob: ${file.status} ${file.target}`);
+  }
+  deployProgressText.textContent='Tree作成';
+  const tree=await ghRequest(`${studioDeployPlan.repo}/git/trees`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:studioDeployPlan.baseTreeSha,tree:treeEntries})});
+  deployProgressBar.style.width='85%';deployProgressText.textContent='Commit作成';
+  const commit=await ghRequest(`${studioDeployPlan.repo}/git/commits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,tree:tree.sha,parents:[studioDeployPlan.headSha]})});
+  deployProgressBar.style.width='95%';deployProgressText.textContent='Branch参照更新';
+  await ghRequest(`${studioDeployPlan.repo}/git/refs/heads/${c.branch.split('/').map(encodeURIComponent).join('/')}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:commit.sha,force:false})});
+  deployProgressBar.style.width='100%';deployProgressText.textContent=`完了 ${changes.length}件 / 1 Commit`;
+  deployLogMessage(`配置完了: old=${studioDeployPlan.headSha} new=${commit.sha}`);
+  studioDeployLastResult={
+   status:'COMMIT_SUCCEEDED_PAGES_PENDING',
+   owner:c.owner,repo:c.repo,branch:c.branch,base:studioDeployPlan.base,
+   oldCommitSha:studioDeployPlan.headSha,newCommitSha:commit.sha,treeSha:tree.sha,
+   commitMessage:message,preparedAt:studioDeployPlan.preparedAt,committedAt:new Date().toISOString(),
+   packageVersion:studioDeployMeta?.display_version||studioDeployMeta?.version||null,
+   cacheQuery:studioDeployMeta?.cache_query||null,
+   changes:changes.map(f=>({path:f.target,status:f.status,size:f.size,sha256:f.sha256,gitBlobSha:f.gitSha}))
+  };
+  deployPackageStatus.innerHTML=`<span class="badge ok">GitHub配置完了</span> 単一Commit ${esc(commit.sha.slice(0,12))} / Pages反映確認待ち。`;
+  setDeployPagesStatus('Commit成功。Pages反映確認待ちです。','WARNING');
+  studioDeployPlan=null;
+  confirmPagesDeployment();
  }catch(e){
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
-  deployLog('失敗: '+e.message);
-  deployProgressText.textContent='途中で停止しました';
- }finally{
-  studioDeployBusy=false;setGhBusy(false);
- }
+  deployLogMessage('失敗: '+e.message);deployProgressText.textContent='停止しました（Branch参照未更新なら公開状態は不変）';
+  setDeployExecuteEnabled(Boolean(studioDeployPlan));
+ }finally{studioDeployBusy=false;setGhBusy(false)}
 }
+function setDeployPagesStatus(message,level='INFO'){
+ const el=document.getElementById('deployPagesStatus');
+ if(!el)return;
+ el.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(jpLevel(level))}</span> ${esc(message)}`;
+}
+function deployPagesUrl(){
+ const c=getGhConfig();
+ const base=normalizeDeployPath(deployBasePath.value);
+ const path=base?'/'+base:'';
+ const suffix=studioDeployMeta?.cache_query||studioDeployLastResult?.cacheQuery||('appv='+String(Date.now()));
+ return `https://${c.owner}.github.io/${c.repo}${path}/index.html?${suffix}&deploycheck=${Date.now()}`;
+}
+function expectedDeployMarker(){
+ return studioDeployMeta?.display_version||studioDeployMeta?.version||studioDeployLastResult?.packageVersion||'';
+}
+async function confirmPagesDeployment(){
+ if(studioDeployBusy)return;
+ const expected=expectedDeployMarker();
+ if(!expected)return alert('先に更新ZIPを解析してください。');
+ const interval=Math.max(3,Math.min(60,Number(deployPagesInterval.value)||5))*1000;
+ const timeout=Math.max(15,Math.min(600,Number(deployPagesTimeout.value)||180))*1000;
+ const started=Date.now();let attempts=0,lastError='';
+ setDeployPagesStatus(`公開反映を確認中: ${expected}`,'WARNING');
+ deployLogMessage(`Pages確認開始: ${deployPagesUrl()}`);
+ while(Date.now()-started<=timeout){
+  attempts++;
+  try{
+   const url=deployPagesUrl();
+   const response=await fetch(url,{method:'GET',cache:'no-store',credentials:'omit'});
+   if(!response.ok)throw new Error(`HTTP ${response.status}`);
+   const text=await response.text();
+   if(text.includes(expected)){
+    const confirmedAt=new Date().toISOString();
+    if(studioDeployLastResult){
+     studioDeployLastResult.status='PAGES_CONFIRMED';studioDeployLastResult.pagesUrl=url;
+     studioDeployLastResult.pagesConfirmedAt=confirmedAt;studioDeployLastResult.pagesAttempts=attempts;
+    }
+    setDeployPagesStatus(`反映確認成功: ${attempts}回 / ${expected}`,'OK');
+    deployLogMessage(`Pages反映確認成功: attempts=${attempts}`);
+    return true;
+   }
+   lastError='期待するバージョン識別子が公開HTMLにありません。';
+  }catch(e){lastError=e.message||String(e)}
+  setDeployPagesStatus(`確認中 ${attempts}回目: ${lastError}`,'WARNING');
+  await new Promise(resolve=>setTimeout(resolve,interval));
+ }
+ const failedAt=new Date().toISOString();
+ if(studioDeployLastResult){
+  studioDeployLastResult.status='COMMIT_SUCCEEDED_PAGES_NOT_CONFIRMED';
+  studioDeployLastResult.pagesCheckFailedAt=failedAt;studioDeployLastResult.pagesAttempts=attempts;
+  studioDeployLastResult.pagesError=lastError;
+ }
+ setDeployPagesStatus(`Commitとは分離して記録: Pagesを${attempts}回確認しましたが未確認です。${lastError}`,'ERROR');
+ deployLogMessage(`Pages未確認: attempts=${attempts} error=${lastError}`);
+ return false;
+}
+function safeAuditTimestamp(){return new Date().toISOString().replace(/[:.]/g,'-')}
+async function downloadDeployAuditZip(){
+ if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めません。');
+ const result=studioDeployLastResult||{
+  status:'PREPARED_NOT_COMMITTED',
+  owner:studioDeployPlan?.owner||getGhConfig().owner,repo:studioDeployPlan?.repoName||getGhConfig().repo,
+  branch:studioDeployPlan?.branch||getGhConfig().branch,oldCommitSha:studioDeployPlan?.headSha||null,
+  preparedAt:studioDeployPlan?.preparedAt||null,packageVersion:expectedDeployMarker()||null,
+  changes:(studioDeployPlan?.changes||[]).map(f=>({path:f.target,status:f.status,size:f.size,sha256:f.sha256,gitBlobSha:f.gitSha}))
+ };
+ const payload={schema_version:'1.0',generated_at:new Date().toISOString(),generated_by:`GK Studio v${APP_VERSION}`,token_saved:false,deletion_count:0,force_update:false,...result};
+ const shaLines=(payload.changes||[]).map(x=>`${x.sha256||'-'}  ${x.path}`).join('\n')+'\n';
+ const log=document.getElementById('deployLog')?.textContent||'';
+ const summary=[
+  '# GK Studio GitHub配置監査記録','',`- Status: ${payload.status}`,`- Repository: ${payload.owner}/${payload.repo}`,
+  `- Branch: ${payload.branch}`,`- Package: ${payload.packageVersion||'unknown'}`,`- Old Commit: ${payload.oldCommitSha||'not-created'}`,
+  `- New Commit: ${payload.newCommitSha||'not-created'}`,`- Pages: ${payload.pagesConfirmedAt?'CONFIRMED':'NOT CONFIRMED'}`,
+  `- Token saved: NO`,`- Delete: 0`,`- Force update: NO`,`- Changes: ${(payload.changes||[]).length}`
+ ].join('\n')+'\n';
+ const zip=new JSZip();
+ zip.file('DEPLOY_AUDIT_RECORD.json',JSON.stringify(payload,null,2));
+ zip.file('DEPLOY_AUDIT_SUMMARY.md',summary);
+ zip.file('DEPLOY_LOG.txt',log+'\n');
+ zip.file('DEPLOY_FILE_SHA256.txt',shaLines);
+ const manifest={schema_version:'1.0',generated_at:payload.generated_at,files:['DEPLOY_AUDIT_RECORD.json','DEPLOY_AUDIT_SUMMARY.md','DEPLOY_LOG.txt','DEPLOY_FILE_SHA256.txt']};
+ zip.file('manifest.json',JSON.stringify(manifest,null,2));
+ const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+ downloadBlob(blob,`GK_Studio_Deploy_Audit_${safeAuditTimestamp()}.zip`);
+ deployLogMessage('配置監査ZIPを生成しました（Token非収録）。');
+}
+
 function openPagesAfterDeploy(){
  const owner=ghOwner.value.trim();
  const repo=ghRepo.value.trim();
@@ -1957,6 +2206,63 @@ function openPagesAfterDeploy(){
  const path=base?'/'+base:'';
  window.open(`https://${owner}.github.io/${repo}${path}/index.html?${suffix}`,'_blank','noopener');
 }
+
+function syncDeployGitHubSettings(source='deploy'){
+ const dOwner=document.getElementById('deployGhOwner');
+ const dRepo=document.getElementById('deployGhRepo');
+ const dBranch=document.getElementById('deployGhBranch');
+ const dToken=document.getElementById('deployGhToken');
+ if(!dOwner)return;
+ if(source==='legacy'){
+  dOwner.value=ghOwner.value||'';
+  dRepo.value=ghRepo.value||'';
+  dBranch.value=ghBranch.value||'main';
+  dToken.value=ghToken.value||'';
+ }else{
+  ghOwner.value=dOwner.value.trim();
+  ghRepo.value=dRepo.value.trim();
+  ghBranch.value=dBranch.value.trim()||'main';
+  ghToken.value=dToken.value.trim();
+ }
+}
+function updateDeployReadiness(){
+ const owner=document.getElementById('deployGhOwner')?.value.trim()||'';
+ const repo=document.getElementById('deployGhRepo')?.value.trim()||'';
+ const branch=document.getElementById('deployGhBranch')?.value.trim()||'';
+ const token=document.getElementById('deployGhToken')?.value.trim()||'';
+ const zip=document.getElementById('studioUpdateZip')?.files?.length||0;
+ const el=document.getElementById('deployReadinessStatus');
+ if(!el)return;
+ const ready=owner&&repo&&branch&&token;
+ el.innerHTML=`<b>接続準備:</b> Owner ${owner?'✓':'未入力'} / Repository ${repo?'✓':'未入力'} / Branch ${branch?'✓':'未入力'} / PAT ${token?'✓（非保存）':'未入力'} / 更新ZIP ${zip?'✓':'未選択'}${ready?' — 接続テストを実行できます。':' — 必須項目を入力してください。'}`;
+}
+
+function setDeployGhStatus(message,level='INFO'){
+ const el=document.getElementById('deployGhStatus');
+ if(!el)return;
+ el.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(jpLevel(level))}</span> ${esc(message)}`;
+}
+function saveDeployConnectionSettings(){
+ syncDeployGitHubSettings();
+ saveGitHubSettings();
+ setDeployGhStatus('Owner、Repository、Branchを端末へ保存しました。Tokenは保存していません。','OK');
+}
+async function testDeployGitHubConnection(){
+ try{
+  syncDeployGitHubSettings();
+  const c=getGhConfig();
+  setDeployGhStatus('RepositoryとBranchを確認しています…');
+  const repo=await ghRequest(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`);
+  const ref=await ghRequest(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/git/ref/heads/${encodeURIComponent(c.branch)}`);
+  saveGitHubSettings();
+  setDeployGhStatus(`接続成功: ${repo.full_name} / ${c.branch} / HEAD ${(ref.object?.sha||'').slice(0,12)}。Tokenは保存していません。`,'OK');
+  updateDeployReadiness();
+ }catch(e){
+  setDeployGhStatus('接続失敗: '+e.message,'ERROR');
+  updateDeployReadiness();
+ }
+}
+
 function initializeStudioDeploy(){
  const drop=document.getElementById('deployDrop');
  if(!drop||drop.dataset.bound)return;
@@ -1969,7 +2275,8 @@ function initializeStudioDeploy(){
   const dt=new DataTransfer();dt.items.add(file);studioUpdateZip.files=dt.files;
   inspectStudioPackage();
  });
- studioUpdateZip.addEventListener('change',()=>inspectStudioPackage());
+ studioUpdateZip.addEventListener('change',()=>{updateDeployReadiness();inspectStudioPackage();});
+ updateDeployReadiness();
 }
 
 let storySelection=null;

@@ -115,3 +115,85 @@ Production Readiness B: completed
 - 単体ファイルのみで正式提出してはならない。
 - ZIPには関連ログ、SHA-256一覧、マニフェスト等を含める。
 - リリースチェックではZIP作成・CRC・展開確認・SHA確認を実施する。
+
+## DEC-0027 GitHub差分配置・公開自動化 — 採用済み計画
+
+### Phase 0
+- [ ] Repository、Branch、配置先確定
+- [ ] 公開StudioとPrivate Data Repository分離
+- [ ] Fine-grained Token作成
+
+### Phase 1〜3
+- [x] ZIP安全解析
+- [x] GitHub Tree差分比較
+- [x] 明示承認UI
+- [x] 監査manifest生成
+
+### Phase 4〜5
+- [x] Git Data API単一Commit
+- [x] 競合検出とFast-forward制御
+- [x] Pages公開確認
+- [x] 復旧・ロールバック情報保存
+
+### Phase 6
+- [ ] GitHub Actionsによる試験、Pages、Studio ZIP、Audit ZIP自動生成
+
+### 完了条件
+- [ ] `GITHUB_DEPLOY_ACCEPTANCE_CHECKLIST.md`全必須項目PASS
+
+
+## 最優先課題 — GitHub連携画面統合（DEC-0029 / DEC-0031 実装完了）
+- [x] 更新配置画面へOwner入力を統合
+- [x] Repository入力を統合
+- [x] Branch入力を統合
+- [x] Fine-grained PAT入力を統合
+- [x] Token非保存を固定
+- [x] Repository・Branch HEAD接続テスト
+- [x] 最終「配置実行（人間承認）」を維持
+- [ ] 実Repositoryへの書込み試験（認証情報が必要）
+- [x] GitHub Pages反映確認機能の実装
+- [x] Token非収録の配置監査ZIP生成
+- [ ] 実GitHub Pages環境での反映完了試験（認証・公開環境が必要）
+
+
+### Build333判定
+- GUI実装: 完了
+- 静的受入検査: PASS
+- 実Repository書込み: 利用者認証環境で未実施
+- 実Pages反映: 利用者公開環境で未実施
+
+
+## DEC-0032 開発側運用負荷軽減 — 新優先順位
+
+### P0 開発運用負荷軽減
+- [x] GitHub連携GUI統合
+- [x] ZIP投入後の自動差分解析
+- [x] 単一Commit配置
+- [x] Pages確認・監査ZIP自動生成
+- [x] GitHub読取API一時障害の自動再試行（Build334）
+- [x] GitHub Request ID・Rate Limitを含む障害診断（Build334）
+- [ ] 実Repositoryでの配置受入試験
+- [ ] 100件超・1,000件規模の実Repository性能試験
+- [ ] 書込み失敗時の状態判定・安全な再開手順の自動化
+
+### P1 安定性・性能
+- [ ] Blob作成並列度の安全な最適化
+- [ ] Rate Limit事前検査
+- [ ] 大容量ZIPのメモリ使用量計測
+
+### P2 後順位
+- [ ] 初回セットアップウィザード
+- [ ] 一般利用者向け導入チュートリアル
+- [ ] 初心者向けサポート画面
+
+P2はP0/P1の開発負荷軽減と安定化完了後に再評価する。
+
+
+## Build335 / DEC-0033 ローカル事前検査
+- [x] Build334の現行フェーズとP0/P1/P2を再確認
+- [x] Python bytecode・一時ファイルを配布対象から除外
+- [x] Project Auditへ配布物衛生検査を追加
+- [x] READMEとstudio-updateのBuild同期検査を追加
+- [ ] 実Repository配置受入試験（外部PAT・Repositoryが必要）
+- [ ] 100件超・1,000件規模の実Repository性能試験
+- [ ] 書込み失敗時の安全な再開設計・実装

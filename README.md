@@ -1,6 +1,6 @@
 # GK計画 開発スタジオ
 
-現在のバージョン: v1.23.0-dev / Formal Build 328 / Build 329 Integration Gate
+現在のバージョン: v1.23.0-dev / Formal Build 335 / Local Preflight Automation
 
 章・節・シーン管理に加え、キャラクター、組織、用語、人間関係、時系列を管理できます。
 
@@ -169,3 +169,43 @@ Node統一モデル、Generator Registry、Rule Version、Manual Override、Work
 - 単体ファイルのみで正式提出してはならない。
 - ZIPには関連ログ、SHA-256一覧、マニフェスト等を含める。
 - リリースチェックではZIP作成・CRC・展開確認・SHA確認を実施する。
+
+## DEC-0027 GitHub差分配置・公開自動化計画 正式採用
+
+- 手動大量アップロードを廃止する計画を正式採用
+- 更新ZIPを安全検査し、追加・変更・同一・保護・拒否へ分類
+- 明示承認後、Git Data APIで単一Commit配置
+- 初期版では削除、`.github`更新、Token永続保存、自動マージを禁止
+- 詳細は `GITHUB_DEPLOY_IMPLEMENTATION_PLAN.md` と `GITHUB_DEPLOY_OPERATION_PROCEDURE.md` を参照
+
+
+## Build 330 — Git Data API単一Commit配置
+
+更新ZIPを選択すると安全検査とGitHub差分解析を自動実行します。GitHubへの書込みは「配置実行（人間承認）」を押した場合だけ開始します。変更ファイルはGit Data APIで1つのCommitにまとめ、BranchはFast-forwardで最後に1回だけ更新します。100ファイル制限、Contents API逐次Commit、削除処理は使用しません。
+
+
+## Build 331 — GitHub連携画面統合
+
+DEC-0029により、GitHub配置・更新画面内で接続設定、接続テスト、ZIP差分解析、最終承認、単一Commit配置を実行できる。PATは保存しない。
+
+
+## Build 332 — GitHub Pages確認・配置監査証跡
+
+DEC-0030により、Commit成功後のPages自動確認と、Tokenを含まない配置監査ZIP出力を実装。Commit成功とPages未確認は分離して記録する。
+
+
+## Build 333 — GitHub連携画面 最優先課題完了
+
+- Owner、Repository、Branch、Fine-grained PAT入力を更新配置画面へ統合。
+- 接続準備状態と初回操作順を画面上に明示。
+- Repository／Branch HEAD接続テスト、ZIP差分解析、人間承認、単一Commit配置、Pages確認、監査ZIP保存を一画面で実行。
+- Token非保存、削除禁止、force禁止、`.github`除外を継続。
+- 実Repository書込みと実Pages反映は認証環境での受入試験として残す。
+
+
+## Build334 / DEC-0032
+開発側の手動更新・障害調査負荷を最優先で削減する方針へ変更しました。GitHub連携UIは維持し、読取APIの一時障害自動再試行とRequest ID／Rate Limit診断を追加しています。利用者向け初回導入支援は後順位です。
+
+
+## Build335 / DEC-0033
+Build334の開発フェーズを再監査し、外部認証なしで進められるP0作業としてローカル事前検査を強化しました。配布物への `__pycache__`、`.pyc`、`.tmp` 混入とREADME・更新メタデータのBuild不一致を監査で拒否します。実Repository配置、100件超・1,000件規模性能試験、書込み失敗時の安全な再開は外部環境または追加設計が必要な継続項目です。
