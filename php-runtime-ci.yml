@@ -1,0 +1,59 @@
+name: PHP Runtime CI
+
+on:
+  push:
+    paths:
+      - 'php-runtime/**'
+      - 'cpf/**'
+      - 'Export/**'
+      - '.github/workflows/php-runtime-ci.yml'
+  pull_request:
+    paths:
+      - 'php-runtime/**'
+      - 'cpf/**'
+      - 'Export/**'
+      - '.github/workflows/php-runtime-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-tests:
+    name: PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3', '8.4']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+
+      - name: Show PHP version
+        run: php --version
+
+      - name: Syntax check
+        run: find php-runtime -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run runtime tests
+        run: php php-runtime/tests/run.php
+
+      - name: Syntax check CPF
+        run: find cpf -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run CPF tests
+        run: php cpf/tests/run.php
+
+      - name: Validate CPF workflow
+        run: php cpf/bin/cpf.php workflow:validate cpf/config/workflow-graph.json
+
+      - name: Validate packaged Export
+        run: php php-runtime/bin/validate-export.php Export
