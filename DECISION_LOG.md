@@ -133,3 +133,55 @@
 - Build: 328
 - Summary: Built-in AI/API generation is frozen. Prompt Builder, design forms, paste/import, Story Preview, consistency validation, candidate Revision, approval, and Export remain active as the Scenario Support Framework.
 - Reactivation: 新規Decisionおよび再監査を必須とする。
+
+## DEC-0027 — GitHub差分配置・公開自動化計画
+- 状態: 決定済・計画採用
+- 判断: 採用
+- 決定日: 2026-07-24
+- 方針: 更新ZIPを安全検査し、GitHub Treeとの差分を提示し、人間の明示承認後にGit Data APIで単一Commit配置する。
+- 初期制限: 削除禁止、`.github`更新禁止、Token永続保存禁止、自動マージ禁止。
+- 正本: `GITHUB_DEPLOY_IMPLEMENTATION_PLAN.md`、`GITHUB_DEPLOY_OPERATION_PROCEDURE.md`、`GITHUB_DEPLOY_SECURITY_SPECIFICATION.md`、`GITHUB_DEPLOY_ACCEPTANCE_CHECKLIST.md`。
+
+
+## DEC-0028 — Git Data API単一Commit配置と最終人間承認
+- Status: APPROVED / IMPLEMENTED
+- Build: 330
+- GitHub書込みは「配置実行（人間承認）」押下後のみ。差分解析は自動。削除・force更新は禁止。
+
+
+## DEC-0029 — GitHub接続画面統合を最優先課題として採用
+- 状態: 決定済・実装済
+- 判断: 採用
+- 決定日: 2026-07-24
+- Build: 331
+- 方針: Studio更新配置画面内にOwner、Repository、Branch、PAT、接続テストを統合し、最終の配置実行だけを人間承認とする。Tokenは保存しない。
+
+
+## DEC-0030 GitHub Pages自動確認・配置監査証跡ZIP
+- Status: APPROVED / IMPLEMENTED
+- Build: 332
+- Decision: Commit成功後のPages確認とToken非収録監査ZIPを実装。CommitとPages結果は分離記録する。
+
+
+## DEC-0031 — GitHub連携画面 最優先課題完了判定
+- 状態: 決定済・実装済
+- 判断: 採用
+- 決定日: 2026-07-24
+- Build: 333
+- 方針: GitHub接続設定から差分解析、最終人間承認、単一Commit、Pages確認、監査ZIPまでを一画面へ統合。実環境試験は受入試験として分離する。
+
+
+## DEC-0032 — 開発側運用負荷軽減を最優先へ変更
+- 状態: 決定済・実装開始
+- 判断: 採用
+- 決定日: 2026-07-24
+- Build: 334
+- 方針: ユーザー導入支援は後順位とし、GitHub更新、差分検査、再試行、障害診断、監査自動化による開発負荷軽減をP0とする。Build334では読取APIの安全な自動再試行と診断情報強化を実装。書込みAPIは自動再試行しない。
+
+
+## DEC-0033 — ローカル事前検査自動化
+- 状態: 決定済・実装済
+- 判断: 採用
+- 決定日: 2026-07-24
+- 方針: 配布ZIP作成前に生成物混入とBuildメタデータ不一致を自動拒否し、開発側の再監査・再梱包負荷を削減する。
+- Build: 335
