@@ -29,6 +29,16 @@ for p in [root/'manifest.webmanifest',root/'sw.js']:
     for x in re.findall(r'(?:appv=|\?v=|build)(\d+)',txt,re.I):
         if x!=build: errors.append(f'PWA_BUILD_MISMATCH {p.name}: {x}!={build}')
 
+
+# distribution hygiene
+for p in root.rglob('*'):
+    if p.is_file() and (p.suffix in {'.pyc','.tmp'} or p.name=='.DS_Store' or '__pycache__' in p.parts):
+        errors.append(f'PACKAGE_GENERATED_ARTIFACT {p.relative_to(root)}')
+# README build consistency
+readme=(root/'README.md').read_text(encoding='utf-8')
+rm=re.search(r'Formal Build\s+(\d+)',readme)
+if not rm or rm.group(1)!=build: errors.append('README_BUILD_MISMATCH')
+
 # formal release manifest consistency
 fm=root/'CPF_FORMAL_RELEASE_MANIFEST.json'
 if fm.exists():
