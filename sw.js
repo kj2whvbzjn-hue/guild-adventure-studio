@@ -1,4 +1,4 @@
-const CACHE_NAME='gk-studio-v335-dev-build335';
+const CACHE_NAME='gk-studio-v335-ai-gateway-060';
 const OFFLINE_URL='./index.html?appv=335';
 const APP_SHELL=[
   './',
