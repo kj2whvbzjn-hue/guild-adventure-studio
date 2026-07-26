@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const GATEWAY_VERSION='0.7.0';
+const GATEWAY_VERSION='0.8.0';
 const MANIFEST_URL='./ai-gateway-manifest.json';
 let manifestCache=null;
 let sourceIndexCache=null;
@@ -103,6 +103,16 @@ async function getFile(path){
   return {path:normalized,bytes:new Blob([content]).size,content};
 }
 
+
+async function getFileRange(path,start,end){
+  const item=await getFile(path);
+  const lines=item.content.split(/\r?\n/);
+  const from=Math.max(1,Number(start)||1);
+  const to=Math.min(lines.length,Math.max(from,Number(end)||from+199));
+  if(to-from>499)throw new Error('AI Gateway line range is limited to 500 lines.');
+  return {path:item.path,start:from,end:to,totalLines:lines.length,content:lines.slice(from-1,to).join('\n')};
+}
+
 function classify(path){
   if(path.endsWith('.php'))return 'source';
   if(path.endsWith('.json'))return 'data';
@@ -202,6 +212,8 @@ async function request(route){
     case '/ai/files':return buildSourceIndex(url.searchParams.get('refresh')==='1');
     case '/ai/search':return searchFiles(url.searchParams.get('q')||'',url.searchParams.get('limit'));
     case '/ai/file':return getFile(url.searchParams.get('path')||'');
+    case '/ai/file-range':return getFileRange(url.searchParams.get('path')||'',url.searchParams.get('start'),url.searchParams.get('end'));
+    case '/ai/status':return {ok:true,gatewayVersion:GATEWAY_VERSION,build:(await loadManifest()).build,mode:'read-only',snapshot:'browser-live'};
     default:throw new Error('Unknown AI Gateway route: '+url.pathname);
   }
 }
@@ -256,7 +268,7 @@ async function renderPanel(){
   }catch(error){status.textContent='エラー';output.textContent=error.stack||error.message;}
 }
 
-window.GKStudioAIGateway={version:GATEWAY_VERSION,request,buildContext,getFile,getHandover,buildSourceIndex,searchFiles,exportContext,exportBundle,renderPanel,bridgeSettings,saveBridgeSettings,bridgeRequest,bridgeHealth,syncBridgeSnapshot};
+window.GKStudioAIGateway={version:GATEWAY_VERSION,request,buildContext,getFile,getFileRange,getHandover,buildSourceIndex,searchFiles,exportContext,exportBundle,renderPanel,bridgeSettings,saveBridgeSettings,bridgeRequest,bridgeHealth,syncBridgeSnapshot};
 window.aiGatewayRefresh=renderPanel;
 window.aiGatewayExportContext=async()=>{try{await exportContext();}catch(e){alert(e.message);}};
 window.aiGatewayExportBundle=async()=>{try{const r=await exportBundle();alert('AI取得用パッケージを出力しました。取得失敗: '+r.failures.length+'件');}catch(e){alert(e.message);}};
