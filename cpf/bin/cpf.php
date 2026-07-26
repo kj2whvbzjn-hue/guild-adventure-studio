@@ -12,6 +12,8 @@ use GK\CPF\Revision\CpfRevisionRepository;
 use GK\CPF\Validation\CpfValidator;
 use GK\CPF\Workflow\CpfWorkflowManager;
 use GK\CPF\Story\{CpfStoryImporter, CpfStoryStructureAnalyzer};
+use GK\CPF\Demo\{CpfDemoReadinessGate, CpfDemoCandidateGenerator};
+use GK\CPF\Export\CpfDemoRuntimeExporter;
 
 function out(mixed $value): void { echo json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"; }
 function jsonArg(string $value): array {
@@ -50,9 +52,12 @@ try {
         case 'migration:run': out((new CpfMigrationManager())->migrate($args[0], (int)$args[1])); break;
         case 'story:import': out((new CpfStoryImporter())->importFile($args[0], $args[1], ($args[2] ?? '') === '--replace-drafts')); break;
         case 'story:analyze': $result = (new CpfStoryStructureAnalyzer())->analyze($args[0], $args[1]); out($result); exit($result['ok'] ? 0 : 2);
+        case 'demo:readiness': $result = (new CpfDemoReadinessGate())->evaluate($args[0]); out($result); exit($result['ok'] ? 0 : 2);
+        case 'demo:generate-candidates': out((new CpfDemoCandidateGenerator())->generate($args[0], $args[1] ?? null)); break;
+        case 'demo:export-runtime': out((new CpfDemoRuntimeExporter())->export($args[0], $args[1], $args[2], $args[3] ?? '0.1.0-demo')); break;
         case 'validate': $result = (new CpfValidator())->validate($args[0]); out($result); exit($result['ok'] ? 0 : 1);
         default:
-            echo "CPF CLI commands: project:create, node:create, node:update, node:get, node:list, approve, reject, lock, unlock, dependency:add, impact, regenerate:request, revision:create, revision:list, revision:approve, revision:reject, workflow:validate, generator:list, generator:register, generator:unregister, generator:resolve, migration:status, migration:run, story:import, story:analyze, validate\n";
+            echo "CPF CLI commands: project:create, node:create, node:update, node:get, node:list, approve, reject, lock, unlock, dependency:add, impact, regenerate:request, revision:create, revision:list, revision:approve, revision:reject, workflow:validate, generator:list, generator:register, generator:unregister, generator:resolve, migration:status, migration:run, story:import, story:analyze, demo:readiness, demo:generate-candidates, demo:export-runtime, validate\n";
     }
 } catch (CpfException $e) {
     fwrite(STDERR, json_encode(['ok' => false, 'error_code' => $e->errorCode, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE) . "\n");

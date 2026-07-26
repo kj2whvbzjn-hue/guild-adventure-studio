@@ -11,6 +11,7 @@ $map = [
     'cpf-regenerate.php' => 'regenerate:request',
     'cpf-story-import.php' => 'story:import',
     'cpf-story-analyze.php' => 'story:analyze',
+    'cpf-demo-readiness.php' => 'demo:readiness',
 ];
 $name = basename($_SERVER['SCRIPT_FILENAME'] ?? '');
 $command = $map[$name] ?? null;

@@ -45,3 +45,35 @@
 - 部分的に修正する
 - 自動検査する
 - 安全にExportする
+
+## Build 335 Demo Foundation 正式承認
+
+承認日: 2026-07-26  
+承認者区分: Human Authority  
+対象Build: GK Studio v1.23.0-dev / Formal Build 335  
+状態: APPROVED / 正式採用
+
+### 承認対象
+
+- Fix01 Export / Manifest境界修正
+- Fix02 Node / History原子処理および排他制御
+- Fix03 Revision / Node / History原子処理
+- Fix04 Demo Readiness Gate
+- Fix05 Candidate Revision生成
+
+### 承認条件
+
+- 自動承認、自動昇格、自動本番反映を禁止する。
+- Repository書込みおよび正式リリース判断は人間のみが行う。
+- Candidate Revisionは人間による差分確認と承認を必要とする。
+- 本承認はDemo Foundation基盤に限定する。
+
+### 承認対象外・継続課題
+
+- GK Studio画面でのCandidate一覧、差分、承認・却下・昇格操作
+- 承認済みCPFデータからRuntime Exportへの変換
+- 実ゲームデモの開始から終了までのブラウザE2E
+- ゲームデモ版そのもののリリース承認
+
+本承認により、`CPF_FORMAL_RELEASE_MANIFEST.json`の正式Buildを328から335へ更新する。
+Build 328は直前のCPF正式基準Buildとして保持する。

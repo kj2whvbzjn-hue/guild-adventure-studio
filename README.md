@@ -1,6 +1,6 @@
 # GK計画 開発スタジオ
 
-現在のバージョン: v1.23.0-dev / Formal Build 337 / Bootstrap Foundation Integration
+現在のバージョン: v1.23.0-dev / Formal Build 335 / Local Preflight Automation
 
 章・節・シーン管理に加え、キャラクター、組織、用語、人間関係、時系列を管理できます。
 

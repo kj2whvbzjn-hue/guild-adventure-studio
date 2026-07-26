@@ -21,7 +21,7 @@ final class CpfHistoryRepository
         $path = $projectDir . '/history/history.json';
         $history = $this->store->read($path, []);
         $record = [
-            'history_id' => sprintf('HIST_%06d', count($history) + 1),
+            'history_id' => sprintf('HIST_%06d', $this->nextNumber($history)),
             'node_id' => $nodeId,
             'operation' => $operation,
             'from_version' => $fromVersion,
@@ -34,6 +34,17 @@ final class CpfHistoryRepository
         $history[] = $record;
         $this->store->write($path, $history);
         return $record;
+    }
+
+    private function nextNumber(array $history): int
+    {
+        $max = 0;
+        foreach ($history as $record) {
+            if (preg_match('/^HIST_(\d+)$/', (string)($record['history_id'] ?? ''), $match)) {
+                $max = max($max, (int)$match[1]);
+            }
+        }
+        return $max + 1;
     }
 
     public function all(string $projectDir): array

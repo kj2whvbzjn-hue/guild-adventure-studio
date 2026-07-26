@@ -128,17 +128,13 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </style>
   <script src="jszip.min.js?v=240"></script>
   <script src="export-core.js?v=333"></script>
-  <script src="ai-gateway.js?v=080"></script>
-  <script src="bootstrap-core.js?v=337"></script>
-  <script src="bootstrap-ui.js?v=337"></script>
-  <link rel="stylesheet" href="bootstrap-ui.css?v=337">
 </head>
 <body>
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.23.0-dev / AI・人間承認分離版 v0.9 / Formal Build 337</div>
+    <div class="version">GK Studio v1.23.0-dev / 開発運用負荷軽減版 / Formal Build 335</div>
   </div>
   <div class="spacer"></div>
   <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -166,12 +162,9 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <button data-view="entities">データ・ID管理</button>
     <button data-view="validation">データ検証</button>
     <button data-view="backup">バックアップ</button>
-    <button data-view="aiwork">AI作業</button>
-    <button data-view="approval">人間承認</button>
-    <button data-view="githubsync">GitHub接続・作業保存</button>
-    <button data-view="studiodeploy">公開配置（詳細）</button>
+    <button data-view="githubsync">GitHub同期</button>
+    <button data-view="studiodeploy">GitHub配置・更新</button>
     <button data-view="importexport">読込・出力</button>
-    <button data-view="aigateway">AI Gateway（詳細）</button>
   </div>
 </aside>
 
@@ -780,142 +773,84 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 </section>
 
 
-
-<section id="view-aiwork" class="view hidden">
-  <h1>AI作業 <span class="badge ok">提案専用</span></h1>
-  <div class="card">
-    <h2>AIの役割</h2>
-    <p>AIは解析、検索、変更案の作成、検証までを行います。GitHubへの書込み、基準データの更新、公開配置は実行できません。</p>
-    <div class="item"><b>権限:</b> 読み取り・提案のみ / 最終反映には人間承認が必要</div>
-  </div>
-  <div class="card">
-    <h2>現在の作業対象</h2>
-    <div class="grid">
-      <div class="field"><label>プロジェクトID</label><input id="aiProjectId" readonly></div>
-      <div class="field"><label>Workspace</label><input id="aiWorkspaceName" readonly></div>
-    </div>
-    <div id="aiWorkspacePath" class="item">保存先未設定</div>
-  </div>
-  <div class="card">
-    <h2>AI解析・提案</h2>
-    <div class="toolbar">
-      <button onclick="showView('aigateway')">AI Gatewayを開く</button>
-      <button onclick="showView('validation')">検証結果を確認</button>
-      <button onclick="createAiChangeSetDraft()">現在状態から変更提案を作成</button>
-    </div>
-    <p class="small">変更提案は承認待ちキューへ送るまで、GitHubや基準データへ反映されません。</p>
-  </div>
-  <div class="card">
-    <h2>AI変更提案</h2>
-    <div id="aiChangeSetList" class="list"></div>
-  </div>
-</section>
-
-<section id="view-approval" class="view hidden">
-  <h1>人間承認 <span class="badge warn">書込み権限</span></h1>
-  <div class="card">
-    <h2>承認の役割</h2>
-    <p>AI提案、作業データ、GitHub反映、公開配置を人間が確認して実行します。この画面から先に進まない限り、外部への書込みは行われません。</p>
-  </div>
-  <div class="card">
-    <h2>承認待ちChangeSet</h2>
-    <div id="approvalQueueList" class="list"></div>
-  </div>
-  <div class="card">
-    <h2>承認後の操作</h2>
-    <div class="toolbar">
-      <button onclick="showView('githubsync')">作業データの保存・復元</button>
-      <button class="primary" onclick="showView('studiodeploy')">更新ZIPをGitHubへ一括配置</button>
-    </div>
-    <p class="small">作業データのバックアップとStudio本体の公開配置は別処理です。</p>
-  </div>
-</section>
-
 <section id="view-githubsync" class="view hidden">
-  <h1>GitHub接続・作業保存</h1>
+  <h1>GitHub同期 <span class="badge warn">試験機能</span></h1>
 
   <div class="card">
-    <h2>1. GitHub接続</h2>
-    <p>この設定は接続先を指定するだけです。作業データの保存先は次の「Workspace管理」で決まります。</p>
+    <h2>概要</h2>
+    <p>プロジェクトJSONをGitHubリポジトリ内のファイルとして保存し、PCとiPhoneで共有します。</p>
+    <p class="small"><strong>推奨:</strong> ゲーム内容を公開したくない場合は、データ保存専用の非公開リポジトリを使用してください。GitHub Pages用の公開リポジトリに保存すると、JSONも公開されます。</p>
+  </div>
+
+  <div class="card">
+    <h2>接続設定</h2>
     <div class="grid">
-      <div class="field"><label>Owner</label><input id="ghOwner" placeholder="GitHubユーザー名"></div>
-      <div class="field"><label>Repository</label><input id="ghRepo" placeholder="リポジトリ名"></div>
-      <div class="field"><label>Branch</label><input id="ghBranch" value="main"></div>
+      <div class="field">
+        <label>所有者（Owner）</label>
+        <input id="ghOwner" placeholder="GitHubユーザー名">
+      </div>
+      <div class="field">
+        <label>リポジトリ</label>
+        <input id="ghRepo" placeholder="データ保存先リポジトリ名">
+      </div>
+      <div class="field">
+        <label>ブランチ</label>
+        <input id="ghBranch" value="main">
+      </div>
+      <div class="field">
+        <label>保存ファイル</label>
+        <input id="ghPath" value="project-data.json">
+      </div>
     </div>
     <div class="field">
-      <label>Fine-grained Personal Access Token</label>
+      <label>詳細設定済み個人アクセストークン</label>
       <input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_...">
-      <div class="small">トークンは保存せず、現在のタブのメモリ内だけで使用します。</div>
+      <div class="small">トークンは保存されず、現在開いているタブのメモリ内だけで使用します。</div>
     </div>
     <div class="toolbar">
-      <button onclick="saveGitHubSettings()">接続先を保存</button>
-      <button class="primary" onclick="testGitHubConnection()">接続確認</button>
+      <button onclick="saveGitHubSettings()">接続先だけ保存</button>
+      <button onclick="testGitHubConnection()">接続テスト</button>
     </div>
     <div id="ghStatus" class="item">未接続</div>
   </div>
 
   <div class="card">
-    <h2>2. Workspace管理</h2>
-    <p>作業中データを名前付きWorkspaceとして分けて管理します。複数作業を同じファイルへ上書きしません。</p>
-    <div class="grid">
-      <div class="field">
-        <label>プロジェクトID</label>
-        <input id="workspaceProjectId" placeholder="guild-adventure" oninput="updateWorkspacePathPreview()">
-      </div>
-      <div class="field">
-        <label>Workspace名</label>
-        <input id="workspaceName" placeholder="main / quest-rework / map-development" oninput="updateWorkspacePathPreview()">
-      </div>
-    </div>
-    <div class="field">
-      <label>GitHub内の保存先パス</label>
-      <input id="ghPath" readonly value="">
-      <div class="small">形式: studio-data/projects/{project}/workspaces/{workspace}.json</div>
-    </div>
+    <h2>同期操作</h2>
     <div class="toolbar">
-      <button onclick="createOrSelectWorkspace()">Workspaceを作成・選択</button>
-      <button onclick="deleteSelectedWorkspace()">選択中Workspaceを一覧から削除</button>
+      <button class="primary" onclick="pushToGitHub()">GitHubへ保存</button>
+      <button onclick="pullFromGitHub()">GitHubから読込</button>
     </div>
-    <div id="workspaceList" class="list"></div>
+    <p class="small">GitHubからの読込前には、現在の端末データを自動バックアップします。</p>
   </div>
 
   <div class="card">
-    <h2>3. 作業データの保存・復元</h2>
-    <div class="toolbar">
-      <button class="primary" onclick="pushToGitHub()">現在の作業をバックアップ</button>
-      <button onclick="pullFromGitHub()">保存済み作業を復元</button>
-    </div>
-    <p class="small">復元前には現在の端末データを自動バックアップします。これはStudio本体の更新ZIP配置とは別処理です。</p>
-  </div>
-
-  <div class="card">
-    <h2>4. 基準データと公開配置</h2>
-    <p>Workspaceは作業途中の保存先です。承認済み変更のCommitやStudio本体の更新は「人間承認」から実行します。</p>
-    <div class="toolbar"><button onclick="showView('approval')">人間承認へ戻る</button></div>
+    <h2>競合防止</h2>
+    <p>別端末で更新した可能性がある場合は、先に「GitHubから読込」を実行してから編集してください。</p>
+    <p class="small">本試験版は自動マージを行いません。GitHubへ保存すると、保存先JSONを現在の端末データで更新します。</p>
   </div>
 </section>
 
 
 <section id="view-studiodeploy" class="view hidden">
-  <h1>公開配置（人間承認） <span class="badge ok">正式機能</span></h1>
+  <h1>スタジオ更新配置 <span class="badge ok">正式機能</span></h1>
 
   <div class="card">
     <h2>スタジオ本体をGitHub Pagesへ配置</h2>
     <p>新しいGuild Adventure Studioの更新ZIPを選択し、GitHubリポジトリの公開ブランチへ単一Commitで配置します。</p>
-    <p class="small">接続設定、差分解析、最終承認、配置をこの画面だけで完了できます。GitHubへの書込みは最後の「承認して更新ZIPを一括配置」押下後だけ開始されます。</p>
+    <p class="small">接続設定、差分解析、最終承認、配置をこの画面だけで完了できます。GitHubへの書込みは最後の「配置実行（人間承認）」押下後だけ開始されます。</p>
   </div>
 
   <div class="card">
     <h2>開発運用負荷軽減 <span class="badge ok">P0実装継続</span></h2>
     <p>GitHub連携画面は実装済みです。現在は開発側の反復作業を減らすため、GitHub読取APIの一時障害を自動再試行し、失敗時にはHTTP状態・Request ID・Rate Limit情報を表示します。書込みAPIは重複Commit防止のため自動再試行しません。</p>
     <div id="deployReadinessStatus" class="item">
-      <b>初回操作:</b> ① Owner・Repository・Branch入力 → ② PAT入力 → ③ 接続テスト → ④ 更新ZIP選択 → ⑤ 差分確認 → ⑥ 承認して更新ZIPを一括配置
+      <b>初回操作:</b> ① Owner・Repository・Branch入力 → ② PAT入力 → ③ 接続テスト → ④ 更新ZIP選択 → ⑤ 差分確認 → ⑥ 配置実行（人間承認）
     </div>
     <p class="small">実Repositoryへの書込み試験と実GitHub Pages反映試験は、利用者の認証情報と公開環境で実施する受入試験です。Tokenは成果物・ログ・監査ZIPへ保存しません。</p>
   </div>
 
   <div class="card">
-    <h2>0. 配置先接続の確認</h2>
+    <h2>0. GitHub接続設定</h2>
     <div class="grid">
       <div class="field">
         <label>Owner</label>
@@ -986,7 +921,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   <div class="card">
     <h2>4. GitHubへ一括配置</h2>
     <div class="toolbar">
-      <button id="deployExecuteButton" class="primary" onclick="deployStudioPackage()" disabled>承認して更新ZIPを一括配置</button>
+      <button id="deployExecuteButton" class="primary" onclick="deployStudioPackage()" disabled>配置実行（人間承認）</button>
       <button onclick="openPagesAfterDeploy()">公開ページを確認</button>
     </div>
     <div class="deploy-progress"><div id="deployProgressBar"></div></div>
@@ -1019,7 +954,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <p class="small">
       変更ファイルだけをGit Data APIでBlob化し、Tree・Commitを作成した後、Branch参照を最後に1回だけ更新します。
       <code>.git</code>、<code>.github</code>、隠しファイル、保護対象ファイルは除外し、削除は実行しません。
-      GitHubへの書込みは「承認して更新ZIPを一括配置」を押した場合だけ行います。
+      GitHubへの書込みは「配置実行（人間承認）」を押した場合だけ行います。
     </p>
   </div>
 </section>
@@ -1053,45 +988,6 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
     <h2>全データ初期化</h2>
     <p class="small">実行前に自動バックアップを作成します。</p>
     <button class="danger" onclick="resetProject()">初期化</button>
-  </div>
-</section>
-<section id="view-aigateway" class="view hidden">
-  <h1>AI Gateway</h1>
-  <div class="card">
-    <h2>AI取得窓口</h2>
-    <p id="aiGatewayStatus" class="small">初期化中...</p>
-    <div class="toolbar">
-      <button class="primary" onclick="aiGatewayRefresh()">コンテキスト更新</button>
-      <button onclick="aiGatewayExportContext()">AI Context JSON出力</button>
-      <button onclick="aiGatewayExportBundle()">AI取得用パッケージ出力</button>
-      <input id="aiGatewaySearchInput" placeholder="ソース・基本方針を検索" style="min-width:240px">
-      <button onclick="aiGatewaySearch()">検索</button>
-    </div>
-    <p class="small">人間の最終承認を維持したまま、プロジェクト概要・検証結果・基本方針・許可済みソースをAI向けにまとめます。</p>
-  </div>
-  <div class="card">
-    <h2>現在のAI Context</h2>
-    <pre id="aiGatewayOutput">読み込み中...</pre>
-  </div>
-  <div class="card">
-    <h2>外部AI接続（ローカル・明示接続）</h2>
-    <p class="small">AI向けHTTP窓口はBearerトークンで保護されます。現在状態の同期はボタン操作時だけ実行され、外部送信は行いません。</p>
-    <div class="grid">
-      <div class="field"><label>Bridge URL</label><input id="aiGatewayBridgeUrl" value="http://127.0.0.1:8765"></div>
-      <div class="field"><label>Read-only Token</label><input id="aiGatewayBridgeToken" type="password" autocomplete="off"></div>
-    </div>
-    <div class="toolbar">
-      <button onclick="aiGatewayBridgeSave()">接続設定を保存</button>
-      <button onclick="aiGatewayBridgeHealth()">接続確認</button>
-      <button class="primary" onclick="aiGatewayBridgeSync()">現在状態を同期</button>
-    </div>
-    <pre id="aiGatewayBridgeOutput">未接続</pre>
-  </div>
-  <div class="card">
-    <h2>ブラウザAPI</h2>
-    <pre>await GKStudioAIGateway.request('/ai/context')
-await GKStudioAIGateway.request('/ai/handover')
-await GKStudioAIGateway.request('/ai/file?path=CPF_BASIC_SPECIFICATION.md')</pre>
   </div>
 </section>
 </main>
@@ -1781,123 +1677,6 @@ function importProject(){
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
 
-
-const WORKSPACE_SETTINGS_KEY='gk_studio_workspace_settings_v090';
-const AI_CHANGESETS_KEY='gk_studio_ai_changesets_v090';
-
-function safeWorkspacePart(value,fallback){
- return (String(value||'').trim().toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||fallback);
-}
-function loadWorkspaceSettings(){
- let s={};
- try{s=JSON.parse(localStorage.getItem(WORKSPACE_SETTINGS_KEY)||'{}')}catch(e){}
- const project=s.project||safeWorkspacePart(data?.project?.id,'guild-adventure');
- const workspace=s.workspace||'main';
- if(window.workspaceProjectId)workspaceProjectId.value=project;
- if(window.workspaceName)workspaceName.value=workspace;
- updateWorkspacePathPreview();
- renderWorkspaceList();
- syncWorkspaceLabels();
-}
-function workspacePath(project,workspace){
- return `studio-data/projects/${safeWorkspacePart(project,'project')}/workspaces/${safeWorkspacePart(workspace,'main')}.json`;
-}
-function updateWorkspacePathPreview(){
- if(!window.workspaceProjectId||!window.workspaceName||!window.ghPath)return;
- ghPath.value=workspacePath(workspaceProjectId.value,workspaceName.value);
- syncWorkspaceLabels();
-}
-function getWorkspaceRegistry(){
- try{return JSON.parse(localStorage.getItem(WORKSPACE_SETTINGS_KEY)||'{}')}catch(e){return {}}
-}
-function saveWorkspaceRegistry(registry){
- localStorage.setItem(WORKSPACE_SETTINGS_KEY,JSON.stringify(registry));
-}
-function createOrSelectWorkspace(){
- const project=safeWorkspacePart(workspaceProjectId.value,'guild-adventure');
- const workspace=safeWorkspacePart(workspaceName.value,'main');
- const registry=getWorkspaceRegistry();
- const list=Array.isArray(registry.list)?registry.list:[];
- const key=`${project}/${workspace}`;
- if(!list.some(x=>x.key===key))list.push({key,project,workspace,createdAt:new Date().toISOString()});
- saveWorkspaceRegistry({project,workspace,list});
- workspaceProjectId.value=project;workspaceName.value=workspace;
- updateWorkspacePathPreview();renderWorkspaceList();saveGitHubSettings();
- setGhStatus(`Workspaceを選択しました: ${project} / ${workspace}`,'OK');
-}
-function selectWorkspace(project,workspace){
- workspaceProjectId.value=project;workspaceName.value=workspace;
- const registry=getWorkspaceRegistry();
- saveWorkspaceRegistry({...registry,project,workspace});
- updateWorkspacePathPreview();renderWorkspaceList();saveGitHubSettings();
-}
-function deleteSelectedWorkspace(){
- const project=safeWorkspacePart(workspaceProjectId.value,'guild-adventure');
- const workspace=safeWorkspacePart(workspaceName.value,'main');
- if(workspace==='main')return alert('main Workspaceは一覧から削除できません。');
- if(!confirm(`${project}/${workspace} を端末のWorkspace一覧から削除しますか？\nGitHub上のファイルは削除しません。`))return;
- const registry=getWorkspaceRegistry();
- const list=(registry.list||[]).filter(x=>x.key!==`${project}/${workspace}`);
- saveWorkspaceRegistry({project,workspace:'main',list});
- workspaceName.value='main';updateWorkspacePathPreview();renderWorkspaceList();
-}
-function renderWorkspaceList(){
- if(!window.workspaceList)return;
- const registry=getWorkspaceRegistry();
- let list=Array.isArray(registry.list)?registry.list:[];
- const project=safeWorkspacePart(workspaceProjectId?.value||registry.project,'guild-adventure');
- if(!list.some(x=>x.key===`${project}/main`))list=[{key:`${project}/main`,project,workspace:'main',createdAt:null},...list];
- workspaceList.innerHTML=list.map(x=>`<div class="item"><b>${esc(x.project)} / ${esc(x.workspace)}</b><br><span class="small">${esc(workspacePath(x.project,x.workspace))}</span><div class="toolbar"><button onclick="selectWorkspace('${esc(x.project)}','${esc(x.workspace)}')">選択</button></div></div>`).join('');
-}
-function syncWorkspaceLabels(){
- const project=safeWorkspacePart(window.workspaceProjectId?.value||data?.project?.id,'guild-adventure');
- const workspace=safeWorkspacePart(window.workspaceName?.value,'main');
- if(window.aiProjectId)aiProjectId.value=project;
- if(window.aiWorkspaceName)aiWorkspaceName.value=workspace;
- if(window.aiWorkspacePath)aiWorkspacePath.textContent=`作業保存先: ${workspacePath(project,workspace)}`;
-}
-function getAiChangeSets(){
- try{return JSON.parse(localStorage.getItem(AI_CHANGESETS_KEY)||'[]')}catch(e){return []}
-}
-function saveAiChangeSets(items){
- localStorage.setItem(AI_CHANGESETS_KEY,JSON.stringify(items));
- renderAiChangeSets();
-}
-function createAiChangeSetDraft(){
- const project=safeWorkspacePart(window.workspaceProjectId?.value||data?.project?.id,'guild-adventure');
- const workspace=safeWorkspacePart(window.workspaceName?.value,'main');
- const items=getAiChangeSets();
- items.unshift({
-  id:`AI-${Date.now()}`,
-  project,workspace,status:'DRAFT',
-  title:`${workspace} の変更提案`,
-  createdAt:new Date().toISOString(),
-  validationErrors:Array.isArray(validation)?validation.filter(x=>x.level==='ERROR').length:0
- });
- saveAiChangeSets(items);
-}
-function sendChangeSetForApproval(id){
- const items=getAiChangeSets().map(x=>x.id===id?{...x,status:'PENDING_APPROVAL',submittedAt:new Date().toISOString()}:x);
- saveAiChangeSets(items);
-}
-function rejectChangeSet(id){
- const items=getAiChangeSets().map(x=>x.id===id?{...x,status:'REJECTED',reviewedAt:new Date().toISOString()}:x);
- saveAiChangeSets(items);
-}
-function approveChangeSet(id){
- const item=getAiChangeSets().find(x=>x.id===id);
- if(!item)return;
- if(!confirm(`${item.title} を人間承認済みにしますか？\nこの操作だけではGitHubへ書き込みません。`))return;
- const items=getAiChangeSets().map(x=>x.id===id?{...x,status:'APPROVED',reviewedAt:new Date().toISOString()}:x);
- saveAiChangeSets(items);
-}
-function renderAiChangeSets(){
- const items=getAiChangeSets();
- if(window.aiChangeSetList)aiChangeSetList.innerHTML=items.length?items.map(x=>`<div class="item"><b>${esc(x.title)}</b> <span class="badge ${x.status==='APPROVED'?'ok':x.status==='REJECTED'?'err':'warn'}">${esc(x.status)}</span><br><span class="small">${esc(x.project)} / ${esc(x.workspace)} / ${esc(x.createdAt)}</span><div class="toolbar">${x.status==='DRAFT'?`<button onclick="sendChangeSetForApproval('${x.id}')">人間承認へ送る</button>`:''}</div></div>`).join(''):'<div class="item">変更提案はありません。</div>';
- const pending=items.filter(x=>x.status==='PENDING_APPROVAL');
- if(window.approvalQueueList)approvalQueueList.innerHTML=pending.length?pending.map(x=>`<div class="item"><b>${esc(x.title)}</b><br><span class="small">${esc(x.project)} / ${esc(x.workspace)} / 検証エラー ${x.validationErrors}</span><div class="toolbar"><button class="primary" onclick="approveChangeSet('${x.id}')">承認</button><button onclick="showView('aiwork')">内容確認</button><button class="danger" onclick="rejectChangeSet('${x.id}')">却下</button></div></div>`).join(''):'<div class="item">承認待ちはありません。</div>';
-}
-
 const GH_SETTINGS_KEY='gas_v4_github_settings_v050';
 let ghBusy=false;
 
@@ -1907,7 +1686,7 @@ function loadGitHubSettings(){
   ghOwner.value=s.owner||'';
   ghRepo.value=s.repo||'';
   ghBranch.value=s.branch||'main';
-  ghPath.value=s.path||workspacePath(s.project||data?.project?.id,'main');
+  ghPath.value=s.path||'project-data.json';
  }catch(e){}
 }
 function saveGitHubSettings(){
@@ -1915,7 +1694,7 @@ function saveGitHubSettings(){
   owner:ghOwner.value.trim(),
   repo:ghRepo.value.trim(),
   branch:ghBranch.value.trim()||'main',
-  path:ghPath.value.trim()||workspacePath(workspaceProjectId?.value||data?.project?.id,workspaceName?.value||'main')
+  path:ghPath.value.trim()||'project-data.json'
  };
  localStorage.setItem(GH_SETTINGS_KEY,JSON.stringify(s));
  setGhStatus('接続先を端末へ保存しました。トークンは保存していません。','OK');
@@ -1925,10 +1704,10 @@ function getGhConfig(){
   owner:ghOwner.value.trim(),
   repo:ghRepo.value.trim(),
   branch:ghBranch.value.trim()||'main',
-  path:ghPath.value.trim()||workspacePath(workspaceProjectId?.value||data?.project?.id,workspaceName?.value||'main'),
+  path:ghPath.value.trim()||'project-data.json',
   token:ghToken.value.trim()
  };
- if(!c.owner||!c.repo||!c.path||!c.token)throw new Error('Owner、Repository、Workspace、Tokenを入力してください。');
+ if(!c.owner||!c.repo||!c.path||!c.token)throw new Error('Owner、Repository、保存ファイル、Tokenを入力してください。');
  return c;
 }
 function setGhStatus(message,level='INFO'){
@@ -2029,7 +1808,7 @@ async function getRemoteFile(c){
 async function pushToGitHub(){
  if(ghBusy)return;
  try{
-  setGhBusy(true);setGhStatus('現在のWorkspaceをバックアップ中…');
+  setGhBusy(true);setGhStatus('GitHubへ保存中…');
   const c=getGhConfig();
   saveGitHubSettings();
   data.project.updated_at=now();
@@ -2061,7 +1840,7 @@ async function pushToGitHub(){
   const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${c.path.split('/').map(encodeURIComponent).join('/')}`;
   const result=await ghRequest(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   persist('github push');
-  setGhStatus('Workspaceのバックアップが完了しました。Commit: '+(result?.commit?.sha||'').slice(0,7),'OK');
+  setGhStatus('GitHubへの保存が完了しました。Commit: '+(result?.commit?.sha||'').slice(0,7),'OK');
  }catch(e){
   setGhStatus('保存失敗: '+e.message,'ERROR');
  }finally{setGhBusy(false)}
@@ -2069,7 +1848,7 @@ async function pushToGitHub(){
 async function pullFromGitHub(){
  if(ghBusy)return;
  try{
-  setGhBusy(true);setGhStatus('保存済みWorkspaceを復元中…');
+  setGhBusy(true);setGhStatus('GitHubから読込中…');
   const c=getGhConfig();
   saveGitHubSettings();
   const remote=await getRemoteFile(c);
@@ -2085,7 +1864,7 @@ async function pullFromGitHub(){
   data.sync_meta=data.sync_meta||{};
   data.sync_meta.pulled_at=now();
   persist('github pull');
-  setGhStatus('Workspaceの復元が完了しました。','OK');
+  setGhStatus('GitHubからの読込が完了しました。','OK');
  }catch(e){
   setGhStatus('読込失敗: '+e.message,'ERROR');
  }finally{setGhBusy(false)}
@@ -3462,7 +3241,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','336');
+    url.searchParams.set('appv','150');
     location.replace(url.toString());
    }
  }
@@ -3471,7 +3250,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=337',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=230',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -3490,7 +3269,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','336');
+    url.searchParams.set('appv','150');
     location.replace(url.toString());
    }
   });
@@ -3504,7 +3283,7 @@ async function registerAppServiceWorker(){
 }
 
 window.addEventListener('load',registerAppServiceWorker);
-loadGitHubSettings();loadWorkspaceSettings();renderAiChangeSets();initializeQuestEventUI();initializeStudioDeploy();render();runValidation();
+loadGitHubSettings();initializeQuestEventUI();initializeStudioDeploy();render();runValidation();
 </script>
 </body>
 </html>

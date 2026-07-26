@@ -1,14 +1,11 @@
-const CACHE_NAME='gk-studio-v337-bootstrap-foundation';
-const OFFLINE_URL='./index.html?appv=337';
+const CACHE_NAME='gk-studio-v335-dev-build335';
+const OFFLINE_URL='./index.html?appv=335';
 const APP_SHELL=[
   './',
-  './index.html?appv=337',
-  './manifest.webmanifest?v=337',
-  './icon-192.png?v=337',
-  './icon-512.png?v=337',
-  './bootstrap-core.js?v=337',
-  './bootstrap-ui.js?v=337',
-  './bootstrap-ui.css?v=337'
+  './index.html?appv=335',
+  './manifest.webmanifest?v=335',
+  './icon-192.png?v=335',
+  './icon-512.png?v=335'
 ];
 
 self.addEventListener('install',event=>{
