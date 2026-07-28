@@ -9,7 +9,7 @@
 </style>
 </head>
 <body>
-<header><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Build 337 Hotfix 1 — Phase A + Battle Core 1（Tick / Action Gauge / AGI行動順）</div></header>
+<header><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Build 337 Hotfix 2 — Phase A + Battle Core 1（Tick / Action Gauge / AGI行動順）</div></header>
 <div class="wrap">
 <section class="card"><h2>新規キャラクター</h2><div class="row"><label>名前<input id="newName" maxlength="24" placeholder="例：アルト"></label><label>初期職業<select id="newJob"></select></label><button class="primary" id="createBtn">作成する</button></div><p class="small">能力値は全項目10、レベル1で作成します。職業適性値はV9正本の職業別固定値を使用します。</p><div id="notice"></div></section>
 <section class="card"><h2>冒険者名簿</h2><div id="roster" class="grid"></div><p id="empty" class="small">まだ冒険者がいません。</p></section>
@@ -44,7 +44,7 @@ const JOBS={
  '神官':{STR:8,VIT:7,AGI:9,DEX:11,INT:12,MND:13,LUK:10},
  '冒険家':{STR:12,VIT:11,AGI:10,DEX:7,INT:8,MND:9,LUK:13}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 337 Hotfix 1',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 337 Hotfix 2',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 function aptitudeExpected(v){return (v/10).toFixed(2)}
 function rollGrowth(v){
@@ -90,33 +90,57 @@ $('saveBtn').onclick=()=>{persist();notify('ブラウザへ保存しました。
 $('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 337 Hotfix 1',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 337 Hotfix 2',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const GAUGE_MAX=100;
-let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false};
+let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0};
 function makeBattleUnits(){
  const allies=data.characters.slice(0,4).map((c,i)=>({id:`A${i}`,name:c.name,side:'味方',agi:c.stats.AGI,gauge:0,actions:0,order:i,lastActionTick:null}));
  if(!allies.length)allies.push({id:'A0',name:'検証剣士',side:'味方',agi:11,gauge:0,actions:0,order:0,lastActionTick:null},{id:'A1',name:'検証盗賊',side:'味方',agi:13,gauge:0,actions:0,order:1,lastActionTick:null});
  const enemies=[{id:'E0',name:'訓練スライム',side:'敵',agi:7,gauge:0,actions:0,order:100,lastActionTick:null},{id:'E1',name:'訓練ウルフ',side:'敵',agi:12,gauge:0,actions:0,order:101,lastActionTick:null}];
  return [...allies,...enemies];
 }
-function resetBattle(){pauseBattle();battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false};renderBattle()}
+function resetBattle(){pauseBattle();battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0};renderBattle()}
 function renderBattle(){
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.running?'オート進行中':'待機'}`;
  $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil((GAUGE_MAX-u.gauge)/u.agi);const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">行動 ${u.actions}回</span><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.agi}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small">次回行動まで約 ${until} Tick ／ 最終行動 ${last}</div></div>`}).join('');
  $('battleLog').textContent=battle.log.length?battle.log.slice(-80).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;
 }
-function advanceTicks(count){
+function processTicks(count){
  for(let n=0;n<count;n++){
   battle.tick++;
   battle.units.forEach(u=>u.gauge+=u.agi);
   const ready=battle.units.filter(u=>u.gauge>=GAUGE_MAX).sort((a,b)=>(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
   ready.forEach(u=>{u.gauge-=GAUGE_MAX;u.actions++;u.lastActionTick=battle.tick;battle.actions++;battle.log.push(`[Tick ${battle.tick}] ${u.name}（${u.side} / AGI ${u.agi}）が行動 — 残Gauge ${u.gauge}`)});
  }
- renderBattle();
 }
-function pauseBattle(){if(battle.timer)clearInterval(battle.timer);battle.timer=null;battle.running=false;renderBattle()}
-function startBattle(){pauseBattle();battle.running=true;const run=()=>advanceTicks(Number($('battleStep').value));battle.timer=setInterval(run,Number($('battleInterval').value));renderBattle()}
+function advanceTicks(count){processTicks(Math.max(0,Number(count)||0));renderBattle()}
+function pauseBattle(){
+ battle.runToken++;
+ if(battle.timer)cancelAnimationFrame(battle.timer);
+ battle.timer=null;battle.running=false;battle.lastFrameAt=0;battle.tickAccumulator=0;renderBattle();
+}
+function startBattle(){
+ pauseBattle();
+ battle.running=true;
+ const token=++battle.runToken;
+ battle.lastFrameAt=performance.now();
+ battle.tickAccumulator=0;
+ const frame=(now)=>{
+  if(!battle.running||token!==battle.runToken)return;
+  const interval=Math.max(1,Number($('battleInterval').value));
+  const step=Math.max(1,Number($('battleStep').value));
+  const elapsed=Math.min(250,Math.max(0,now-battle.lastFrameAt));
+  battle.lastFrameAt=now;
+  battle.tickAccumulator+=elapsed*(step/interval);
+  const due=Math.floor(battle.tickAccumulator);
+  if(due>0){battle.tickAccumulator-=due;processTicks(due)}
+  renderBattle();
+  battle.timer=requestAnimationFrame(frame);
+ };
+ renderBattle();
+ battle.timer=requestAnimationFrame(frame);
+}
 $('tick1').onclick=()=>advanceTicks(1);$('tick10').onclick=()=>advanceTicks(10);$('tick100').onclick=()=>advanceTicks(100);$('battleAuto').onclick=startBattle;$('battlePause').onclick=pauseBattle;$('battleReset').onclick=resetBattle;$('battleInterval').onchange=()=>{if(battle.running)startBattle()};$('battleStep').onchange=()=>{};
 
 try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null}}catch(e){notify(`自動読込失敗: ${e.message}`,'bad')}render();resetBattle();
