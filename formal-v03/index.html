@@ -2,68 +2,81 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ギルド冒険物語 V9 正式戦闘コア V0.3</title>
+<title>ギルド冒険物語 V9 正式版 Phase A 修正版</title>
 <style>
-:root{--bg:#0d1828;--panel:#1a2a40;--line:#36506f;--text:#f3f6fa;--muted:#b8c4d3;--accent:#f5b942;--good:#59d18a;--bad:#ff7b7b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}header{position:sticky;top:0;background:#13233a;border-bottom:1px solid var(--line);padding:14px;z-index:3}h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px}.wrap{max-width:1050px;margin:auto;padding:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}@media(min-width:800px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}button,select{font:inherit;border-radius:11px;border:1px solid var(--line);padding:11px 13px;background:#263b58;color:var(--text)}button.primary{background:var(--accent);color:#251900;font-weight:700}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.unit{border:1px solid var(--line);border-radius:12px;padding:10px}.name{font-weight:700}.bar{height:10px;background:#0b1422;border-radius:8px;overflow:hidden;margin:5px 0}.fill{height:100%;background:var(--good)}.mp .fill{background:#5ea3ff}.gauge .fill{background:var(--accent)}.bad .fill{background:var(--bad)}.small{font-size:12px;color:var(--muted)}#log{height:260px;overflow:auto;background:#08111e;border-radius:12px;padding:10px;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap}.tag{display:inline-block;padding:3px 8px;border-radius:999px;background:#2d4463;color:#dbe8f8;font-size:11px;margin:2px}.ok{color:var(--good)}.warn{color:var(--accent)}
+:root{--bg:#0d1828;--panel:#182940;--panel2:#213650;--line:#3a5677;--text:#f4f7fb;--muted:#b8c6d6;--accent:#f2ba49;--good:#61d595;--bad:#ff8585}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}header{background:#13243b;border-bottom:1px solid var(--line);padding:16px;position:sticky;top:0;z-index:3}.wrap{max-width:1180px;margin:auto;padding:14px}h1{font-size:21px;margin:0 0 4px}h2{font-size:18px;margin:0 0 12px}.sub,.small{color:var(--muted);font-size:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}.row{display:flex;gap:9px;flex-wrap:wrap;align-items:end}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}label{display:grid;gap:5px;font-size:13px;color:var(--muted)}input,select,button{font:inherit;border-radius:10px;border:1px solid var(--line);padding:10px 12px;background:#263c59;color:var(--text)}button{cursor:pointer}button.primary{background:var(--accent);color:#2d2005;font-weight:700}button.good{background:#245c47}button.danger{background:#60383e}.unit{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:12px}.unit.selected{outline:2px solid var(--accent)}.name{font-weight:750;font-size:17px}.tag{display:inline-block;padding:3px 8px;border-radius:999px;background:#2e4767;font-size:11px;margin:3px 3px 0 0}.stats{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}.stat{text-align:center;background:#13243a;border-radius:8px;padding:7px 3px}.stat b{display:block;font-size:17px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:9px;font-size:13px}th{color:var(--muted)}#notice{min-height:22px;margin-top:9px}.ok{color:var(--good)}.warn{color:var(--accent)}.bad{color:var(--bad)}.hidden{display:none}.aptitude{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px}.aptitude label{background:#13243a;padding:8px;border-radius:10px}.aptitude input{width:100%}
 </style>
 </head>
 <body>
-<header><h1>ギルド冒険物語</h1><div class="sub">V9正式戦闘コア検証 V0.3.2 — Tick / Action Gauge / MP / Cooldown / 疲弊 / AI / 状態異常</div></header>
+<header><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Phase A 修正版 1.0.1 — 7能力値 / 7基本職 / Lv50 / 適性値7～13 / 転職維持 / Save Data Version 1</div></header>
 <div class="wrap">
-<div class="card"><div class="row"><button class="primary" id="start">オート開始</button><button id="pause">一時停止</button><button id="step1">+1 Tick</button><button id="step10">+10 Tick</button><button id="step100">+100 Tick</button><button id="step1000">+1000 Tick</button><button id="reset">リセット</button></div><div class="row" style="margin-top:12px"><label>オート増加量 <select id="autoBatch"><option value="1">1 Tick</option><option value="10">10 Tick</option><option value="100">100 Tick</option><option value="1000">1000 Tick</option></select></label><label>実行間隔 <select id="autoInterval"><option value="1000">1秒</option><option value="500">0.5秒</option><option value="250">0.25秒</option><option value="100" selected>0.1秒</option><option value="50">0.05秒</option></select></label></div><p class="small">オート進行は、指定した間隔ごとに指定Tick数をまとめて進めます。例：100 Tick / 0.1秒。検証用の固定編成で、係数は仮値です。</p></div>
-<div class="card"><div class="row"><span class="tag">Tick: <b id="tick">0</b></span><span class="tag">状態: <b id="state">待機</b></span><span class="tag">行動回数: <b id="actions">0</b></span><span class="tag">直前実行: <b id="lastRun">0 / 0</b></span></div></div>
-<div class="card"><h2>味方</h2><div id="allies" class="grid"></div></div>
-<div class="card"><h2>敵</h2><div id="enemies" class="grid"></div></div>
-<div class="card"><h2>戦闘ログ</h2><div id="log"></div></div>
-<div class="card"><h2>Phase B 実装範囲</h2><div class="small">Action GaugeはAGIに応じて毎Tick増加し、1000以上で行動します。MP消費、Cooldown、疲弊、CONDITION / TARGET / ACTION形式AI、BUFF・DEBUFF・毒DOT・スタック・耐性を共通状態として処理します。</div></div>
+<section class="card"><h2>新規キャラクター</h2><div class="row"><label>名前<input id="newName" maxlength="24" placeholder="例：アルト"></label><label>初期職業<select id="newJob"></select></label><button class="primary" id="createBtn">作成する</button></div><p class="small">能力値は全項目10、レベル1で作成します。職業適性値はV9正本の職業別固定値を使用します。</p><div id="notice"></div></section>
+<section class="card"><h2>冒険者名簿</h2><div id="roster" class="grid"></div><p id="empty" class="small">まだ冒険者がいません。</p></section>
+<section id="detailCard" class="card hidden"><h2>選択中の冒険者</h2><div id="detail"></div><div class="row" style="margin-top:12px"><button class="good" id="levelBtn">1レベル上げる</button><label>転職先<select id="changeJob"></select></label><button id="changeBtn">転職する</button><button class="danger" id="deleteBtn">削除する</button></div><p class="small">レベルアップ時、適性7～9は70～90%で+1、適性10は確定+1、適性11～13は確定+1に加えて10～30%で追加+1されます。転職してもレベル・能力値・習得スキル・過去の履歴は維持され、次回以降の成長判定だけが新職業基準になります。</p></section>
+<section class="card"><h2>職業適性一覧</h2><div class="table-wrap"><table><thead><tr><th>職業</th><th>STR</th><th>VIT</th><th>AGI</th><th>DEX</th><th>INT</th><th>MND</th><th>LUK</th></tr></thead><tbody id="jobTable"></tbody></table></div><p class="small">適性値は期待値0.70～1.30に対応します。全職業の適性値合計は70です。</p></section>
+<section class="card"><h2>セーブデータ Version 1</h2><div class="row"><button id="saveBtn">ブラウザへ保存</button><button id="loadBtn">ブラウザから読込</button><button id="exportBtn">JSONを書き出す</button><label>JSONを読み込む<input type="file" id="importFile" accept="application/json,.json"></label><button class="danger" id="clearBtn">全データ初期化</button></div><p class="small">通常操作のたび自動保存します。別PCへの移動や更新前のバックアップには「JSONを書き出す」を使用してください。</p></section>
 </div>
 <script>
-const MAX_GAUGE=1000;
-let tick=0, actions=0, timer=null, running=false;
-const clone=o=>JSON.parse(JSON.stringify(o));
-const base={
- allies:[
-  {id:'A1',name:'剣士',hp:540,maxHp:540,mp:80,maxMp:80,agi:12,atk:45,def:24,resist:10,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[
-   {condition:'enemy_count>=2',target:'enemy_all',action:'sweep'},
-   {condition:'always',target:'enemy_lowest_hp',action:'slash'}]},
-  {id:'A2',name:'神官',hp:410,maxHp:410,mp:150,maxMp:150,agi:9,atk:25,def:20,resist:20,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[
-   {condition:'ally_hp<45',target:'ally_lowest_hp',action:'heal'},
-   {condition:'always',target:'enemy_lowest_hp',action:'smite'}]}
- ],
- enemies:[
-  {id:'E1',name:'ゴブリン兵',hp:430,maxHp:430,mp:40,maxMp:40,agi:10,atk:35,def:16,resist:8,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[{condition:'always',target:'ally_lowest_hp',action:'attack'}]},
-  {id:'E2',name:'毒胞子',hp:330,maxHp:330,mp:90,maxMp:90,agi:8,atk:24,def:12,resist:15,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[{condition:'target_not_poisoned',target:'ally_highest_hp',action:'poison'},{condition:'always',target:'ally_lowest_hp',action:'attack'}]}
- ]};
-let battle=clone(base);
-const skill={
- slash:{name:'斬撃',mp:0,cd:0,fatigue:8,power:1.15},
- sweep:{name:'薙ぎ払い',mp:18,cd:80,fatigue:15,power:.78,all:true},
- heal:{name:'治癒',mp:20,cd:60,fatigue:10,heal:105},
- smite:{name:'聖撃',mp:8,cd:30,fatigue:8,power:1.05},
- attack:{name:'通常攻撃',mp:0,cd:0,fatigue:7,power:1},
- poison:{name:'毒胞子',mp:16,cd:90,fatigue:12,power:.55,status:{type:'poison',duration:160,interval:40,potency:16,stacks:1,maxStacks:3}}
+'use strict';
+const SAVE_KEY='guildAdventureV9.save.v1', SAVE_VERSION=1;
+const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
+const JOBS={
+ '剣士':{STR:13,VIT:12,AGI:8,DEX:11,INT:9,MND:10,LUK:7},
+ '騎士':{STR:11,VIT:13,AGI:7,DEX:9,INT:10,MND:12,LUK:8},
+ '盗賊':{STR:9,VIT:10,AGI:13,DEX:12,INT:7,MND:8,LUK:11},
+ '弓兵':{STR:10,VIT:9,AGI:7,DEX:13,INT:8,MND:11,LUK:12},
+ '魔術師':{STR:7,VIT:8,AGI:11,DEX:10,INT:13,MND:12,LUK:9},
+ '神官':{STR:8,VIT:7,AGI:9,DEX:11,INT:12,MND:13,LUK:10},
+ '冒険家':{STR:12,VIT:11,AGI:10,DEX:7,INT:8,MND:9,LUK:13}
 };
-function alive(team){return team.filter(x=>x.hp>0)}
-function pct(v,m){return Math.max(0,Math.min(100,100*v/m))}
-function renderTeam(id,team){document.getElementById(id).innerHTML=team.map(u=>`<div class="unit ${u.hp<=0?'bad':''}"><div class="name">${u.name}</div><div class="small">HP ${Math.max(0,u.hp)}/${u.maxHp}</div><div class="bar"><div class="fill" style="width:${pct(u.hp,u.maxHp)}%"></div></div><div class="small">MP ${u.mp}/${u.maxMp}</div><div class="bar mp"><div class="fill" style="width:${pct(u.mp,u.maxMp)}%"></div></div><div class="small">Gauge ${Math.floor(u.gauge)}/${MAX_GAUGE}・疲弊 ${u.fatigue}</div><div class="bar gauge"><div class="fill" style="width:${pct(u.gauge,MAX_GAUGE)}%"></div></div><div>${u.states.map(s=>`<span class="tag">${s.type} x${s.stacks||1}</span>`).join('')}</div></div>`).join('')}
-function render(){renderTeam('allies',battle.allies);renderTeam('enemies',battle.enemies);tickEl.textContent=tick;actionsEl.textContent=actions}
-const tickEl=document.getElementById('tick'),actionsEl=document.getElementById('actions'),lastRunEl=document.getElementById('lastRun'),stateEl=document.getElementById('state'),logEl=document.getElementById('log');
-function log(s){logEl.textContent+=`[${tick}] ${s}\n`;logEl.scrollTop=logEl.scrollHeight}
-function chooseTarget(rule,actor,own,opp){const pool=rule.startsWith('ally')?alive(own):alive(opp); if(!pool.length)return null;if(rule.endsWith('lowest_hp'))return [...pool].sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];if(rule.endsWith('highest_hp'))return [...pool].sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0];return pool[0]}
-function cond(c,actor,own,opp){if(c==='always')return true;if(c==='enemy_count>=2')return alive(opp).length>=2;if(c==='ally_hp<45')return alive(own).some(x=>x.hp/x.maxHp<.45);if(c==='target_not_poisoned')return alive(opp).some(x=>!x.states.some(s=>s.type==='poison'));return false}
-function usable(actor,key){const s=skill[key];return actor.mp>=s.mp && (actor.cooldowns[key]||0)<=0}
-function decide(actor,own,opp){for(const node of actor.ai){if(cond(node.condition,actor,own,opp)&&usable(actor,node.action)){return {...node,target:chooseTarget(node.target,actor,own,opp)}}}return {action:'attack',target:chooseTarget('enemy_lowest_hp',actor,own,opp)}}
-function damage(actor,target,s){const raw=Math.max(1,Math.floor(actor.atk*s.power-target.def*.45));const fatiguePenalty=Math.max(.55,1-actor.fatigue/180);return Math.max(1,Math.floor(raw*fatiguePenalty))}
-function act(actor,own,opp){const d=decide(actor,own,opp),s=skill[d.action];if(!d.target)return;actor.mp-=s.mp;actor.cooldowns[d.action]=s.cd;actor.fatigue=Math.min(100,actor.fatigue+s.fatigue);if(s.heal){const amount=Math.min(s.heal,d.target.maxHp-d.target.hp);d.target.hp+=amount;log(`${actor.name}の${s.name} → ${d.target.name}を${amount}回復`)}else{const targets=s.all?alive(opp):[d.target];for(const t of targets){const val=damage(actor,t,s);t.hp-=val;log(`${actor.name}の${s.name} → ${t.name}に${val}ダメージ`);if(s.status&&t.hp>0){const resisted=Math.random()*100<t.resist;if(resisted)log(`${t.name}は${s.status.type}に抵抗`);else{let st=t.states.find(x=>x.type===s.status.type);if(st){st.stacks=Math.min(s.status.maxStacks,st.stacks+1);st.duration=s.status.duration}else t.states.push(clone(s.status));log(`${t.name}に${s.status.type}付与`)}}if(t.hp<=0)log(`${t.name}は戦闘不能`)}}actor.gauge-=MAX_GAUGE;actions++}
-function processStates(u){for(const st of [...u.states]){st.duration--;if(st.type==='poison'&&tick%st.interval===0&&u.hp>0){const v=st.potency*(st.stacks||1);u.hp-=v;log(`${u.name}は毒で${v}ダメージ`)}if(st.duration<=0)u.states.splice(u.states.indexOf(st),1)}}
-function oneTick(renderNow=true){if(alive(battle.allies).length===0||alive(battle.enemies).length===0){finish();return}tick++;for(const u of [...battle.allies,...battle.enemies]){if(u.hp<=0)continue;processStates(u);for(const k in u.cooldowns)u.cooldowns[k]=Math.max(0,u.cooldowns[k]-1);u.mp=Math.min(u.maxMp,u.mp+.12);u.fatigue=Math.max(0,u.fatigue-.05);u.gauge+=Math.max(1,u.agi*(1-u.fatigue/200));}
- let guard=0;while(guard++<20){const ready=[...alive(battle.allies),...alive(battle.enemies)].filter(u=>u.gauge>=MAX_GAUGE).sort((a,b)=>b.gauge-a.gauge)[0];if(!ready)break;const own=battle.allies.includes(ready)?battle.allies:battle.enemies;const opp=own===battle.allies?battle.enemies:battle.allies;act(ready,own,opp);if(!alive(opp).length)break}if(renderNow)render();if(!alive(battle.allies).length||!alive(battle.enemies).length)finish()}
-function finish(){stop();const win=alive(battle.allies).length>0;stateEl.textContent=win?'味方勝利':'味方敗北';stateEl.className=win?'ok':'warn';log(win?'戦闘終了：味方勝利':'戦闘終了：味方敗北')}
-function advanceTicks(count){stop();const requested=Math.max(1,Math.floor(Number(count)||1));const before=tick;for(let i=0;i<requested;i++){if(!alive(battle.allies).length||!alive(battle.enemies).length)break;oneTick(false)}const actual=tick-before;lastRunEl.textContent=`${actual} / ${requested}`;render();if(actual<requested)log(`Tick一括実行は戦闘終了により ${actual}/${requested} で停止`) }
-function start(){if(running)return;running=true;stateEl.textContent='オート進行中';const runAuto=()=>{const requested=Math.max(1,Math.floor(Number(autoBatch.value)||1));const before=tick;for(let i=0;i<requested;i++){if(!running||!alive(battle.allies).length||!alive(battle.enemies).length)break;oneTick(false)}const actual=tick-before;lastRunEl.textContent=`${actual} / ${requested}`;render();if(actual<requested){stop();log(`オート進行は戦闘終了により ${actual}/${requested} で停止`)}};runAuto();if(running)timer=setInterval(runAuto,Math.max(25,Number(autoInterval.value)||100))}function restartAutoIfRunning(){if(!running)return;clearInterval(timer);running=false;start()}
-function stop(){running=false;if(timer)clearInterval(timer);timer=null;if(stateEl.textContent==='戦闘中')stateEl.textContent='一時停止'}
-function reset(){stop();tick=0;actions=0;battle=clone(base);logEl.textContent='';lastRunEl.textContent='0 / 0';stateEl.textContent='待機';render()}
-document.getElementById('start').onclick=start;document.getElementById('pause').onclick=stop;document.getElementById('step1').onclick=()=>advanceTicks(1);document.getElementById('step10').onclick=()=>advanceTicks(10);document.getElementById('step100').onclick=()=>advanceTicks(100);document.getElementById('step1000').onclick=()=>advanceTicks(1000);document.getElementById('reset').onclick=reset;autoBatch.onchange=restartAutoIfRunning;autoInterval.onchange=restartAutoIfRunning;reset();
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.0.1',gameVersion:'V9 Phase A',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};let selectedId=null;
+const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+function aptitudeExpected(v){return (v/10).toFixed(2)}
+function rollGrowth(v){
+ if(v<7||v>13)throw new Error('適性値は7～13である必要があります。');
+ if(v<10)return Math.random()*100<v*10?1:0;
+ if(v===10)return 1;
+ return 1+(Math.random()*100<(v-10)*10?1:0);
+}
+function notify(text,type='ok'){const n=$('notice');n.textContent=text;n.className=type}
+function jobOptions(){return Object.keys(JOBS).map(j=>`<option value="${j}">${j}</option>`).join('')}
+$('newJob').innerHTML=jobOptions();$('changeJob').innerHTML=jobOptions();
+$('jobTable').innerHTML=Object.entries(JOBS).map(([job,a])=>`<tr><td><b>${job}</b></td>${STATS.map(s=>`<td>${a[s]} <span class="small">(期待値 ${aptitudeExpected(a[s])})</span></td>`).join('')}</tr>`).join('');
+function makeCharacter(name,job){return{id:uid(),name,level:1,job,stats:Object.fromEntries(STATS.map(s=>[s,10])),skills:[],jobHistory:[{job,level:1,at:new Date().toISOString()}],growthHistory:[],createdAt:new Date().toISOString()}}
+function normalize(raw){
+ if(!raw||raw.saveVersion!==1||!Array.isArray(raw.characters))throw new Error('Save Data Version 1ではありません。');
+ raw.characters.forEach(c=>{
+  if(!c.id||typeof c.name!=='string'||!c.name.trim()||!JOBS[c.job]||!Number.isInteger(c.level)||c.level<1||c.level>50)throw new Error('キャラクターデータが不正です。');
+  if(!c.stats||typeof c.stats!=='object')throw new Error(`${c.name}の能力値が不正です。`);
+  STATS.forEach(s=>{if(!Number.isInteger(c.stats[s])||c.stats[s]<0)throw new Error(`${c.name}の${s}が不正です。`)});
+  c.skills=Array.isArray(c.skills)?c.skills:[];
+  c.jobHistory=Array.isArray(c.jobHistory)?c.jobHistory:[];
+  c.growthHistory=Array.isArray(c.growthHistory)?c.growthHistory:[];
+  delete c.aptitudes;
+ });
+ raw.schemaRevision='1.0.1';raw.gameVersion='V9 Phase A';
+ return raw;
+}
+function persist(){data.updatedAt=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
+function render(){
+ const roster=$('roster');$('empty').classList.toggle('hidden',data.characters.length>0);roster.innerHTML=data.characters.map(c=>`<div class="unit ${c.id===selectedId?'selected':''}" data-id="${c.id}"><div class="name">${escapeHtml(c.name)}</div><span class="tag">Lv ${c.level}</span><span class="tag">${c.job}</span><div class="stats">${STATS.map(s=>`<div class="stat"><span class="small">${s}</span><b>${c.stats[s]}</b></div>`).join('')}</div></div>`).join('');
+ roster.querySelectorAll('.unit').forEach(el=>el.onclick=()=>{selectedId=el.dataset.id;render()});
+ const c=data.characters.find(x=>x.id===selectedId);$('detailCard').classList.toggle('hidden',!c);if(!c)return;
+ $('changeJob').value=c.job;const currentA=JOBS[c.job];
+ $('detail').innerHTML=`<div class="row"><div><div class="name">${escapeHtml(c.name)}</div><span class="tag">Lv ${c.level} / 50</span><span class="tag">現在職：${c.job}</span><span class="tag">転職回数：${Math.max(0,c.jobHistory.length-1)}</span></div></div><div class="stats">${STATS.map(s=>`<div class="stat"><span class="small">${s}</span><b>${c.stats[s]}</b><span class="small">適性 ${currentA[s]} / 期待値 ${aptitudeExpected(currentA[s])}</span></div>`).join('')}</div><h3>転職履歴</h3><div class="small">${c.jobHistory.map(h=>`Lv${h.level} ${h.job}`).join(' → ')}</div><h3>直近の成長</h3><div class="small">${c.growthHistory.slice(-5).reverse().map(g=>`Lv${g.toLevel}: ${g.gained.length?g.gained.join(', '):'能力上昇なし'}`).join('<br>')||'まだレベルアップしていません。'}</div>`;
+ $('levelBtn').disabled=c.level>=50;
+}
+function escapeHtml(s){return String(s).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
+$('createBtn').onclick=()=>{const name=$('newName').value.trim();if(!name){notify('名前を入力してください。','bad');return}const c=makeCharacter(name,$('newJob').value);data.characters.push(c);selectedId=c.id;$('newName').value='';persist();render();notify(`${name}を作成しました。`)};
+$('levelBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c||c.level>=50)return;const a=JOBS[c.job],gained=[],growth={};STATS.forEach(s=>{const amount=rollGrowth(a[s]);growth[s]=amount;if(amount>0){c.stats[s]+=amount;gained.push(`${s} +${amount}`)}});const from=c.level;c.level++;c.growthHistory.push({fromLevel:from,toLevel:c.level,job:c.job,growth,gained,ruleRevision:'V9-1.0.1',at:new Date().toISOString()});persist();render();notify(`${c.name}がLv${c.level}になりました。${gained.length?' 上昇: '+gained.join(', '):' 能力値上昇なし'}`)};
+$('changeBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c)return;const next=$('changeJob').value;if(next===c.job){notify('現在と同じ職業です。','warn');return}const old=c.job;c.job=next;c.jobHistory.push({job:next,level:c.level,from:old,at:new Date().toISOString()});persist();render();notify(`${c.name}は${old}から${next}へ転職しました。能力値とレベルは維持されています。`)};
+$('deleteBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c)return;if(!confirm(`${c.name}を削除しますか？`))return;data.characters=data.characters.filter(x=>x.id!==selectedId);selectedId=null;persist();render();notify('キャラクターを削除しました。','warn')};
+$('saveBtn').onclick=()=>{persist();notify('ブラウザへ保存しました。')};
+$('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
+$('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
+$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.0.1',gameVersion:'V9 Phase A',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null}}catch(e){notify(`自動読込失敗: ${e.message}`,'bad')}render();
 </script>
 </body></html>
