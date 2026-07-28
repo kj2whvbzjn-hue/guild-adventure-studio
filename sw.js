@@ -1,11 +1,11 @@
-const CACHE_NAME='gk-studio-v335-dev-build335';
-const OFFLINE_URL='./index.html?appv=335';
+const CACHE_NAME='guild-adventure-v002-public-split';
+const OFFLINE_URL='./index.html?appv=402';
 const APP_SHELL=[
   './',
-  './index.html?appv=335',
-  './manifest.webmanifest?v=335',
-  './icon-192.png?v=335',
-  './icon-512.png?v=335'
+  './index.html?appv=402',
+  './manifest.webmanifest?v=402',
+  './icon-192.png?v=402',
+  './icon-512.png?v=402'
 ];
 
 self.addEventListener('install',event=>{
