@@ -18,21 +18,58 @@ button{font:inherit;border:1px solid var(--line);border-radius:12px;padding:12px
 </style>
 </head>
 <body><div class="app">
-<header class="top"><div><div class="brand">ギルド冒険物語</div><div class="small">最小プレイ版 0.1</div></div><button onclick="location.href='../'">Studioへ戻る</button></header>
+<header class="top"><div><div class="brand">ギルド冒険物語</div><div class="small">最小プレイ版 0.2</div></div><button onclick="location.href='../'">Studioへ戻る</button></header>
 <main>
 <section id="title" class="screen active"><div class="card title"><h1>ギルド冒険物語</h1><p>6人の冒険者と、最初の依頼へ。</p><div id="loadNotice"></div><div class="actions"><button class="primary" onclick="startGame()">ゲーム開始</button><button onclick="resetSave()">セーブ削除</button></div></div></section>
 <section id="guild" class="screen"><div class="card"><h2>冒険者ギルド</h2><p id="guildText"></p><h3>パーティー</h3><div id="party" class="grid"></div><div class="actions"><button class="primary" onclick="showQuest()">依頼を見る</button></div></div></section>
 <section id="quest" class="screen"><div class="card"><h2>クエスト確認</h2><div class="quest"><h3 id="questTitle"></h3><p id="questSummary"></p><p><b>報酬：</b><span id="questReward"></span></p></div><div class="actions"><button onclick="show('guild')">戻る</button><button class="primary" onclick="beginBattle()">出発する</button></div></div></section>
 <section id="battle" class="screen"><div class="card"><h2 id="battleTitle">自動戦闘</h2><div class="battle"><div><h3>味方</h3><div id="allies" class="grid"></div></div><div><h3>敵</h3><div id="enemies" class="grid"></div></div></div><h3>戦闘ログ</h3><div id="battleLog" class="log"></div><div class="actions"><button id="speedBtn" onclick="toggleSpeed()">速度：標準</button></div></div></section>
 <section id="result" class="screen"><div class="card result"><h2 id="resultTitle"></h2><p id="resultMessage"></p><div id="reward" class="reward"></div><div class="actions"><button class="primary" onclick="returnGuild()">ギルドへ戻る</button></div></div></section>
-</main><div class="footer">Studioに読み込まれたデータを使用します</div></div>
+</main><div class="footer">Studioデータがない端末では内蔵データを使用します</div></div>
 <script>
+
+const BUILTIN_PROJECT={
+  project:{id:'PRJ-GUILD-ADVENTURE-BUILTIN',name:'ギルド冒険物語 内蔵版'},
+  characters:[
+    {id:'CHR-0001',name:'レオン',job_id:'JOB-0001',job:'騎士'},
+    {id:'CHR-0002',name:'ガルド',job_id:'JOB-0002',job:'戦士'},
+    {id:'CHR-0003',name:'ミリア',job_id:'JOB-0003',job:'僧侶'},
+    {id:'CHR-0004',name:'セラ',job_id:'JOB-0004',job:'魔法使い'},
+    {id:'CHR-0005',name:'フィン',job_id:'JOB-0005',job:'弓使い'},
+    {id:'CHR-0006',name:'リオ',job_id:'JOB-0006',job:'盗賊'}
+  ],
+  quests:[{
+    id:'QST-0001',title:'薬草の森と迷子の冒険者',
+    summary:'薬草採取に向かった新人冒険者を救出し、森の魔物を討伐する。',
+    rewards:'金貨100、回復薬2、初心者の剣1',
+    battle_sequence:[{wave:1,monster_ids:['MON-0001','MON-0001','MON-0002']},{wave:2,monster_ids:['MON-0003','MON-0004']},{wave:3,monster_ids:['MON-0006']}]
+  }],
+  masters:{
+    jobs:[
+      {id:'JOB-0001',name:'騎士',params:{base_stats:{hp:520,attack:42,defense:34,agi:8}}},
+      {id:'JOB-0002',name:'戦士',params:{base_stats:{hp:470,attack:62,defense:22,agi:10}}},
+      {id:'JOB-0003',name:'僧侶',params:{base_stats:{hp:340,attack:28,defense:16,agi:9}}},
+      {id:'JOB-0004',name:'魔法使い',params:{base_stats:{hp:300,attack:52,defense:12,agi:11}}},
+      {id:'JOB-0005',name:'弓使い',params:{base_stats:{hp:370,attack:48,defense:17,agi:14}}},
+      {id:'JOB-0006',name:'盗賊',params:{base_stats:{hp:350,attack:44,defense:15,agi:18}}}
+    ],
+    monsters:[
+      {id:'MON-0001',name:'森スライム',params:{stats:{hp:120,attack:18,defense:5,agi:7}}},
+      {id:'MON-0002',name:'森オオカミ',params:{stats:{hp:180,attack:28,defense:8,agi:15}}},
+      {id:'MON-0003',name:'ゴブリン',params:{stats:{hp:210,attack:31,defense:10,agi:11}}},
+      {id:'MON-0004',name:'ゴブリン弓兵',params:{stats:{hp:170,attack:29,defense:7,agi:13}}},
+      {id:'MON-0005',name:'毒キノコ',params:{stats:{hp:150,attack:20,defense:12,agi:6}}},
+      {id:'MON-0006',name:'ゴブリンリーダー',params:{stats:{hp:980,attack:48,defense:20,agi:12}}}
+    ]
+  }
+};
+
 const CURRENT_KEY='gas_v4_current_project_v060', PREFIX='gas_v4_project_v060_', SAVE_KEY='guild_adventure_game_save_v001';
 let project=null, save={gold:0,completed:[],plays:0}, party=[], enemies=[], timer=null, speed=650, quest=null;
 const $=id=>document.getElementById(id); const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 function loadProject(){try{const id=localStorage.getItem(CURRENT_KEY);if(id)project=JSON.parse(localStorage.getItem(PREFIX+id)||'null')}catch(e){}try{save=JSON.parse(localStorage.getItem(SAVE_KEY))||save}catch(e){} }
 function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active')}
-function startGame(){loadProject();if(!project||!(project.characters||[]).length){$('loadNotice').innerHTML='<div class="notice">Studioのデータが見つかりません。Studioで一括JSONを読み込んでから、もう一度開いてください。</div>';return}renderGuild();show('guild')}
+function startGame(){loadProject();let usingBuiltin=false;if(!project||!(project.characters||[]).length){project=BUILTIN_PROJECT;usingBuiltin=true}$('loadNotice').innerHTML=usingBuiltin?'<div class="notice" style="border-color:#385f55;background:#16362f;color:#d9fff2">スマートフォン用の内蔵データで開始します。</div>':'';renderGuild();show('guild')}
 function resetSave(){if(confirm('ゲームのセーブデータを削除しますか？')){localStorage.removeItem(SAVE_KEY);save={gold:0,completed:[],plays:0};alert('削除しました')}}
 function jobById(id){return (project.masters?.jobs||[]).find(x=>x.id===id)}
 function renderGuild(){$('guildText').textContent=`所持金 ${save.gold}G　冒険回数 ${save.plays}回`;const chars=(project.characters||[]).slice(0,6);$('party').innerHTML=chars.map(c=>{const j=jobById(c.job_id);return `<div class="unit"><b>${esc(c.name)}</b><span>${esc(j?.name||c.job||'冒険者')}</span></div>`}).join('')}
