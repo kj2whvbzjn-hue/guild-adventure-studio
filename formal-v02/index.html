@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ギルド冒険物語 V9 正式戦闘コア V0.2</title>
+<style>
+:root{--bg:#0d1828;--panel:#1a2a40;--line:#36506f;--text:#f3f6fa;--muted:#b8c4d3;--accent:#f5b942;--good:#59d18a;--bad:#ff7b7b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}header{position:sticky;top:0;background:#13233a;border-bottom:1px solid var(--line);padding:14px;z-index:3}h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px}.wrap{max-width:1050px;margin:auto;padding:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}@media(min-width:800px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}button,select{font:inherit;border-radius:11px;border:1px solid var(--line);padding:11px 13px;background:#263b58;color:var(--text)}button.primary{background:var(--accent);color:#251900;font-weight:700}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.unit{border:1px solid var(--line);border-radius:12px;padding:10px}.name{font-weight:700}.bar{height:10px;background:#0b1422;border-radius:8px;overflow:hidden;margin:5px 0}.fill{height:100%;background:var(--good)}.mp .fill{background:#5ea3ff}.gauge .fill{background:var(--accent)}.bad .fill{background:var(--bad)}.small{font-size:12px;color:var(--muted)}#log{height:260px;overflow:auto;background:#08111e;border-radius:12px;padding:10px;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap}.tag{display:inline-block;padding:3px 8px;border-radius:999px;background:#2d4463;color:#dbe8f8;font-size:11px;margin:2px}.ok{color:var(--good)}.warn{color:var(--accent)}
+</style>
+</head>
+<body>
+<header><h1>ギルド冒険物語</h1><div class="sub">V9正式戦闘コア検証 V0.2 — Tick / Action Gauge / MP / Cooldown / 疲弊 / AI / 状態異常</div></header>
+<div class="wrap">
+<div class="card"><div class="row"><button class="primary" id="start">戦闘開始</button><button id="pause">一時停止</button><button id="step">1 Tick進める</button><select id="speed"><option value="1">1倍</option><option value="2">2倍</option><option value="4">4倍</option></select><button id="reset">リセット</button></div><p class="small">検証用の固定編成です。正式仕様の数値確定前なので、係数は仮値です。処理構造のみを検証します。</p></div>
+<div class="card"><div class="row"><span class="tag">Tick: <b id="tick">0</b></span><span class="tag">状態: <b id="state">待機</b></span><span class="tag">行動回数: <b id="actions">0</b></span></div></div>
+<div class="card"><h2>味方</h2><div id="allies" class="grid"></div></div>
+<div class="card"><h2>敵</h2><div id="enemies" class="grid"></div></div>
+<div class="card"><h2>戦闘ログ</h2><div id="log"></div></div>
+<div class="card"><h2>Phase B 実装範囲</h2><div class="small">Action GaugeはAGIに応じて毎Tick増加し、1000以上で行動します。MP消費、Cooldown、疲弊、CONDITION / TARGET / ACTION形式AI、BUFF・DEBUFF・毒DOT・スタック・耐性を共通状態として処理します。</div></div>
+</div>
+<script>
+const MAX_GAUGE=1000;
+let tick=0, actions=0, timer=null, running=false;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const base={
+ allies:[
+  {id:'A1',name:'剣士',hp:540,maxHp:540,mp:80,maxMp:80,agi:12,atk:45,def:24,resist:10,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[
+   {condition:'enemy_count>=2',target:'enemy_all',action:'sweep'},
+   {condition:'always',target:'enemy_lowest_hp',action:'slash'}]},
+  {id:'A2',name:'神官',hp:410,maxHp:410,mp:150,maxMp:150,agi:9,atk:25,def:20,resist:20,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[
+   {condition:'ally_hp<45',target:'ally_lowest_hp',action:'heal'},
+   {condition:'always',target:'enemy_lowest_hp',action:'smite'}]}
+ ],
+ enemies:[
+  {id:'E1',name:'ゴブリン兵',hp:430,maxHp:430,mp:40,maxMp:40,agi:10,atk:35,def:16,resist:8,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[{condition:'always',target:'ally_lowest_hp',action:'attack'}]},
+  {id:'E2',name:'毒胞子',hp:330,maxHp:330,mp:90,maxMp:90,agi:8,atk:24,def:12,resist:15,gauge:0,fatigue:0,cooldowns:{},states:[],ai:[{condition:'target_not_poisoned',target:'ally_highest_hp',action:'poison'},{condition:'always',target:'ally_lowest_hp',action:'attack'}]}
+ ]};
+let battle=clone(base);
+const skill={
+ slash:{name:'斬撃',mp:0,cd:0,fatigue:8,power:1.15},
+ sweep:{name:'薙ぎ払い',mp:18,cd:80,fatigue:15,power:.78,all:true},
+ heal:{name:'治癒',mp:20,cd:60,fatigue:10,heal:105},
+ smite:{name:'聖撃',mp:8,cd:30,fatigue:8,power:1.05},
+ attack:{name:'通常攻撃',mp:0,cd:0,fatigue:7,power:1},
+ poison:{name:'毒胞子',mp:16,cd:90,fatigue:12,power:.55,status:{type:'poison',duration:160,interval:40,potency:16,stacks:1,maxStacks:3}}
+};
+function alive(team){return team.filter(x=>x.hp>0)}
+function pct(v,m){return Math.max(0,Math.min(100,100*v/m))}
+function renderTeam(id,team){document.getElementById(id).innerHTML=team.map(u=>`<div class="unit ${u.hp<=0?'bad':''}"><div class="name">${u.name}</div><div class="small">HP ${Math.max(0,u.hp)}/${u.maxHp}</div><div class="bar"><div class="fill" style="width:${pct(u.hp,u.maxHp)}%"></div></div><div class="small">MP ${u.mp}/${u.maxMp}</div><div class="bar mp"><div class="fill" style="width:${pct(u.mp,u.maxMp)}%"></div></div><div class="small">Gauge ${Math.floor(u.gauge)}/${MAX_GAUGE}・疲弊 ${u.fatigue}</div><div class="bar gauge"><div class="fill" style="width:${pct(u.gauge,MAX_GAUGE)}%"></div></div><div>${u.states.map(s=>`<span class="tag">${s.type} x${s.stacks||1}</span>`).join('')}</div></div>`).join('')}
+function render(){renderTeam('allies',battle.allies);renderTeam('enemies',battle.enemies);tickEl.textContent=tick;actionsEl.textContent=actions}
+const tickEl=document.getElementById('tick'),actionsEl=document.getElementById('actions'),stateEl=document.getElementById('state'),logEl=document.getElementById('log');
+function log(s){logEl.textContent+=`[${tick}] ${s}\n`;logEl.scrollTop=logEl.scrollHeight}
+function chooseTarget(rule,actor,own,opp){const pool=rule.startsWith('ally')?alive(own):alive(opp); if(!pool.length)return null;if(rule.endsWith('lowest_hp'))return [...pool].sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];if(rule.endsWith('highest_hp'))return [...pool].sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0];return pool[0]}
+function cond(c,actor,own,opp){if(c==='always')return true;if(c==='enemy_count>=2')return alive(opp).length>=2;if(c==='ally_hp<45')return alive(own).some(x=>x.hp/x.maxHp<.45);if(c==='target_not_poisoned')return alive(opp).some(x=>!x.states.some(s=>s.type==='poison'));return false}
+function usable(actor,key){const s=skill[key];return actor.mp>=s.mp && (actor.cooldowns[key]||0)<=0}
+function decide(actor,own,opp){for(const node of actor.ai){if(cond(node.condition,actor,own,opp)&&usable(actor,node.action)){return {...node,target:chooseTarget(node.target,actor,own,opp)}}}return {action:'attack',target:chooseTarget('enemy_lowest_hp',actor,own,opp)}}
+function damage(actor,target,s){const raw=Math.max(1,Math.floor(actor.atk*s.power-target.def*.45));const fatiguePenalty=Math.max(.55,1-actor.fatigue/180);return Math.max(1,Math.floor(raw*fatiguePenalty))}
+function act(actor,own,opp){const d=decide(actor,own,opp),s=skill[d.action];if(!d.target)return;actor.mp-=s.mp;actor.cooldowns[d.action]=s.cd;actor.fatigue=Math.min(100,actor.fatigue+s.fatigue);if(s.heal){const amount=Math.min(s.heal,d.target.maxHp-d.target.hp);d.target.hp+=amount;log(`${actor.name}の${s.name} → ${d.target.name}を${amount}回復`)}else{const targets=s.all?alive(opp):[d.target];for(const t of targets){const val=damage(actor,t,s);t.hp-=val;log(`${actor.name}の${s.name} → ${t.name}に${val}ダメージ`);if(s.status&&t.hp>0){const resisted=Math.random()*100<t.resist;if(resisted)log(`${t.name}は${s.status.type}に抵抗`);else{let st=t.states.find(x=>x.type===s.status.type);if(st){st.stacks=Math.min(s.status.maxStacks,st.stacks+1);st.duration=s.status.duration}else t.states.push(clone(s.status));log(`${t.name}に${s.status.type}付与`)}}if(t.hp<=0)log(`${t.name}は戦闘不能`)}}actor.gauge-=MAX_GAUGE;actions++}
+function processStates(u){for(const st of [...u.states]){st.duration--;if(st.type==='poison'&&tick%st.interval===0&&u.hp>0){const v=st.potency*(st.stacks||1);u.hp-=v;log(`${u.name}は毒で${v}ダメージ`)}if(st.duration<=0)u.states.splice(u.states.indexOf(st),1)}}
+function oneTick(){if(alive(battle.allies).length===0||alive(battle.enemies).length===0){finish();return}tick++;for(const u of [...battle.allies,...battle.enemies]){if(u.hp<=0)continue;processStates(u);for(const k in u.cooldowns)u.cooldowns[k]=Math.max(0,u.cooldowns[k]-1);u.mp=Math.min(u.maxMp,u.mp+.12);u.fatigue=Math.max(0,u.fatigue-.05);u.gauge+=Math.max(1,u.agi*(1-u.fatigue/200));}
+ let guard=0;while(guard++<20){const ready=[...alive(battle.allies),...alive(battle.enemies)].filter(u=>u.gauge>=MAX_GAUGE).sort((a,b)=>b.gauge-a.gauge)[0];if(!ready)break;const own=battle.allies.includes(ready)?battle.allies:battle.enemies;const opp=own===battle.allies?battle.enemies:battle.allies;act(ready,own,opp);if(!alive(opp).length)break}render();if(!alive(battle.allies).length||!alive(battle.enemies).length)finish()}
+function finish(){stop();const win=alive(battle.allies).length>0;stateEl.textContent=win?'味方勝利':'味方敗北';stateEl.className=win?'ok':'warn';log(win?'戦闘終了：味方勝利':'戦闘終了：味方敗北')}
+function start(){if(running)return;running=true;stateEl.textContent='戦闘中';timer=setInterval(()=>{const n=Number(speed.value);for(let i=0;i<n;i++)oneTick()},60)}
+function stop(){running=false;if(timer)clearInterval(timer);timer=null;if(stateEl.textContent==='戦闘中')stateEl.textContent='一時停止'}
+function reset(){stop();tick=0;actions=0;battle=clone(base);logEl.textContent='';stateEl.textContent='待機';render()}
+document.getElementById('start').onclick=start;document.getElementById('pause').onclick=stop;document.getElementById('step').onclick=()=>{stop();oneTick()};document.getElementById('reset').onclick=reset;reset();
+</script>
+</body></html>
