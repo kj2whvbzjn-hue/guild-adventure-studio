@@ -10,14 +10,14 @@
 </head>
 <body>
 <a class="studio-back" href="../studio/" aria-label="GK Studioへ戻る">GK Studioへ戻る</a>
-<header><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Build 340 — Phase A + Battle Core 3（スキル / MP / Cooldown / 命中・回避・Critical）</div></header>
+<header><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Build 341 — Battle Core 4（ジョブ固有スキル / 回復AI / ターゲットAI）</div></header>
 <div class="wrap">
 <section class="card"><h2>新規キャラクター</h2><div class="row"><label>名前<input id="newName" maxlength="24" placeholder="例：アルト"></label><label>初期職業<select id="newJob"></select></label><button class="primary" id="createBtn">作成する</button></div><p class="small">能力値は全項目10、レベル1で作成します。職業適性値はV9正本の職業別固定値を使用します。</p><div id="notice"></div></section>
 <section class="card"><h2>冒険者名簿</h2><div id="roster" class="grid"></div><p id="empty" class="small">まだ冒険者がいません。</p></section>
 <section id="detailCard" class="card hidden"><h2>選択中の冒険者</h2><div id="detail"></div><div class="row" style="margin-top:12px"><button class="good" id="levelBtn">1レベル上げる</button><label>転職先<select id="changeJob"></select></label><button id="changeBtn">転職する</button><button class="danger" id="deleteBtn">削除する</button></div><p class="small">レベルアップ時、適性7～9は70～90%で+1、適性10は確定+1、適性11～13は確定+1に加えて10～30%で追加+1されます。転職してもレベル・能力値・習得スキル・過去の履歴は維持され、次回以降の成長判定だけが新職業基準になります。</p></section>
 <section class="card"><h2>職業適性一覧</h2><div class="table-wrap"><table><thead><tr><th>職業</th><th>STR</th><th>VIT</th><th>AGI</th><th>DEX</th><th>INT</th><th>MND</th><th>LUK</th></tr></thead><tbody id="jobTable"></tbody></table></div><p class="small">適性値は期待値0.70～1.30に対応します。全職業の適性値合計は70です。</p></section>
 
-<section class="card"><h2>正式戦闘コア検証 — Battle Core 3</h2>
+<section class="card"><h2>正式戦闘コア検証 — Battle Core 4</h2>
 <div class="small">V9正本に従い、各Tickで <b>Action Gauge += AGI</b>、Gaugeが100以上になったユニットが行動します。行動時はスキル条件を判定し、使用できなければ通常攻撃を行います。MP・Cooldown・命中・回避・Criticalを検証し、HPが0になると戦闘不能、片方が全滅すると戦闘終了です。疲弊は次ビルド以降です。</div>
 <div class="row" style="margin-top:12px">
 <button class="primary" id="battleAuto">オート開始</button><button id="battlePause">一時停止</button><button id="tick1">+1 Tick</button><button id="tick10">+10 Tick</button><button id="tick100">+100 Tick</button><button id="battleReset">リセット</button>
@@ -27,7 +27,7 @@
 <div class="battle-summary" id="battleSummary"><span class="metric" id="battleTick">Tick: 0</span><span class="metric" id="battleStatus">状態: 待機</span><span class="metric" id="battleActions">行動回数: 0</span><span class="metric" id="battleResult">勝敗: 未決着</span><span class="metric" id="battleAlive">生存: 味方 0 / 敵 0</span><div class="last-action" id="battleLastAction">最後の行動: まだありません。</div></div>
 <h3>参加ユニット</h3><div id="battleUnits" class="battle-grid"></div>
 <h3>行動ログ</h3><div id="battleLog" class="battle-log">まだ行動はありません。</div>
-<p class="small"><b>Battle Core 3のHP・攻撃力・MP・命中・回避・スキル倍率は正式生成式がV9監査上未確定のため、検証用の暫定値です。</b> 味方は能力値とレベルから、敵は固定検証値から生成します。正式式が採用されるまでセーブデータへ戦闘値は保存しません。</p><p class="small"><b>Gaugeが0でも停止ではありません。</b> 行動直後に100を減算した結果、ちょうど0になることがあります。「行動回数」「毎Tick加算」「最終行動」で稼働を確認できます。</p>
+<p class="small"><b>Battle Core 4のHP・攻撃力・MP・命中・回避・回復量は、V9の採用仕様に沿った検証実装です。未確定の生成式は暫定値としてセーブ対象外です。</b> 味方は能力値とレベルから、敵は固定検証値から生成します。正式式が採用されるまでセーブデータへ戦闘値は保存しません。</p><p class="small"><b>Gaugeが0でも停止ではありません。</b> 行動直後に100を減算した結果、ちょうど0になることがあります。「行動回数」「毎Tick加算」「最終行動」で稼働を確認できます。</p>
 <p class="small">味方は冒険者名簿の先頭から最大4名を使用します。冒険者がいない場合は検証用ユニットを使用します。敵は固定検証ユニットです。同一Tickで複数が行動可能になった場合は、暫定的に「余剰Gaugeが高い順 → AGIが高い順 → 登録順」で処理します。この同時行動規則は正式追補で確定するまで仮置きです。</p>
 </section>
 <section class="card"><h2>セーブデータ Version 1</h2><div class="row"><button id="saveBtn">ブラウザへ保存</button><button id="loadBtn">ブラウザから読込</button><button id="exportBtn">JSONを書き出す</button><label>JSONを読み込む<input type="file" id="importFile" accept="application/json,.json"></label><button class="danger" id="clearBtn">全データ初期化</button></div><p class="small">通常操作のたび自動保存します。別PCへの移動や更新前のバックアップには「JSONを書き出す」を使用してください。</p></section>
@@ -45,7 +45,7 @@ const JOBS={
  '神官':{STR:8,VIT:7,AGI:9,DEX:11,INT:12,MND:13,LUK:10},
  '冒険家':{STR:12,VIT:11,AGI:10,DEX:7,INT:8,MND:9,LUK:13}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 340',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 341',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 function aptitudeExpected(v){return (v/10).toFixed(2)}
 function rollGrowth(v){
@@ -91,16 +91,24 @@ $('saveBtn').onclick=()=>{persist();notify('ブラウザへ保存しました。
 $('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 340',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 341',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[]};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const GAUGE_MAX=100;
-const SKILL={name:'パワーストライク',mpCost:12,cooldown:4,multiplier:1.65};
+const JOB_SKILLS={
+ '剣士':{name:'強撃',type:'attack',mpCost:10,cooldown:4,multiplier:1.55},
+ '騎士':{name:'シールドバッシュ',type:'attack',mpCost:11,cooldown:5,multiplier:1.30,accuracyBonus:10},
+ '盗賊':{name:'急所突き',type:'attack',mpCost:10,cooldown:4,multiplier:1.25,critBonus:30},
+ '弓兵':{name:'狙撃',type:'attack',mpCost:12,cooldown:5,multiplier:1.45,accuracyBonus:18},
+ '魔術師':{name:'ファイアボルト',type:'attack',mpCost:14,cooldown:5,multiplier:1.75},
+ '神官':{name:'ヒール',type:'heal',mpCost:12,cooldown:4,healMultiplier:1.35},
+ '冒険家':{name:'アダプトストライク',type:'attack',mpCost:10,cooldown:3,multiplier:1.35}
+};
 let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,lastAction:'まだありません。',actingId:null,highlightUntil:0};
-function makeCombatant(base){return {...base,hp:base.maxHp,mp:base.maxMp,alive:true,damageDealt:0,damageTaken:0,cooldown:0,hits:0,misses:0,criticalHits:0}}
+function makeCombatant(base){return {...base,hp:base.maxHp,mp:base.maxMp,alive:true,damageDealt:0,damageTaken:0,healingDone:0,cooldown:0,hits:0,misses:0,criticalHits:0}}
 function makeBattleUnits(){
- const allies=data.characters.slice(0,4).map((c,i)=>makeCombatant({id:`A${i}`,name:c.name,side:'味方',agi:c.stats.AGI,attack:10+c.stats.STR*3+c.level*2,maxHp:100+c.stats.VIT*20+c.level*10,maxMp:20+c.stats.INT*3+c.stats.MND*2,accuracy:78+c.stats.DEX,evasion:Math.floor(c.stats.AGI*.7+c.stats.LUK*.3),crit:5+Math.floor(c.stats.LUK*.65),gauge:0,actions:0,order:i,lastActionTick:null}));
- if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',agi:11,attack:48,maxHp:360,maxMp:70,accuracy:88,evasion:10,crit:11,gauge:0,actions:0,order:0,lastActionTick:null}),makeCombatant({id:'A1',name:'検証盗賊',side:'味方',agi:13,attack:42,maxHp:290,maxMp:78,accuracy:91,evasion:16,crit:15,gauge:0,actions:0,order:1,lastActionTick:null}));
- const enemies=[makeCombatant({id:'E0',name:'訓練スライム',side:'敵',agi:7,attack:24,maxHp:300,maxMp:48,accuracy:82,evasion:5,crit:6,gauge:0,actions:0,order:100,lastActionTick:null}),makeCombatant({id:'E1',name:'訓練ウルフ',side:'敵',agi:12,attack:32,maxHp:380,maxMp:60,accuracy:87,evasion:13,crit:10,gauge:0,actions:0,order:101,lastActionTick:null})];
+ const allies=data.characters.slice(0,4).map((c,i)=>makeCombatant({id:`A${i}`,name:c.name,job:c.job,side:'味方',agi:c.stats.AGI,attack:10+c.stats.STR*3+c.level*2,magic:10+c.stats.INT*3+c.stats.MND,maxHp:100+c.stats.VIT*20+c.level*10,maxMp:20+c.stats.INT*3+c.stats.MND*2,accuracy:78+c.stats.DEX,evasion:Math.floor(c.stats.AGI*.7+c.stats.LUK*.3),crit:5+Math.floor(c.stats.LUK*.65),gauge:0,actions:0,order:i,lastActionTick:null}));
+ if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',job:'剣士',side:'味方',agi:11,attack:48,magic:30,maxHp:360,maxMp:70,accuracy:88,evasion:10,crit:11,gauge:0,actions:0,order:0,lastActionTick:null}),makeCombatant({id:'A1',name:'検証神官',job:'神官',side:'味方',agi:9,attack:30,magic:48,maxHp:300,maxMp:95,accuracy:86,evasion:10,crit:8,gauge:0,actions:0,order:1,lastActionTick:null}));
+ const enemies=[makeCombatant({id:'E0',name:'訓練スライム',job:'冒険家',side:'敵',agi:7,attack:24,magic:20,maxHp:300,maxMp:48,accuracy:82,evasion:5,crit:6,gauge:0,actions:0,order:100,lastActionTick:null}),makeCombatant({id:'E1',name:'訓練ウルフ',job:'盗賊',side:'敵',agi:12,attack:32,magic:18,maxHp:380,maxMp:60,accuracy:87,evasion:13,crit:10,gauge:0,actions:0,order:101,lastActionTick:null})];
  return [...allies,...enemies];
 }
 function resetBattle(){pauseBattle();battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,lastAction:'まだありません。',actingId:null,highlightUntil:0};renderBattle()}
@@ -108,40 +116,31 @@ function renderBattle(){
  const now=performance.now();if(battle.actingId&&now>battle.highlightUntil)battle.actingId=null;
  const allyAlive=battle.units.filter(u=>u.alive&&u.side==='味方').length,enemyAlive=battle.units.filter(u=>u.alive&&u.side==='敵').length;
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;$('battleAlive').textContent=`生存: 味方 ${allyAlive} / 敵 ${enemyAlive}`;$('battleLastAction').textContent=`最後の行動: ${battle.lastAction}`;
- $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil((GAUGE_MAX-u.gauge)/u.agi)):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100)),mpPct=Math.max(0,Math.min(100,u.mp/u.maxMp*100));return `<div class="battle-unit ${u.id===battle.actingId?'acting':''}"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">命中 ${u.accuracy}</span><span class="tag">回避 ${u.evasion}</span><span class="tag">Critical ${u.crit}%</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">MP ${u.mp} / ${u.maxMp} ${u.cooldown?`／ <span class="cooldown">${SKILL.name} CD ${u.cooldown}</span>`:'／ Skill使用可'}</div><div class="bar mpbar"><i style="width:${mpPct}%"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small">次回行動まで約 ${until} Tick ／ 最終行動 ${last}<br>与ダメージ ${u.damageDealt} ／ 命中 ${u.hits} ／ 回避・外れ ${u.misses} ／ Critical ${u.criticalHits}</div></div>`}).join('');
- $('battleLog').textContent=battle.log.length?battle.log.slice(-20).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;
+ $('battleUnits').innerHTML=battle.units.map(u=>{const skill=JOB_SKILLS[u.job]||JOB_SKILLS['冒険家'];const until=u.alive?(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil((GAUGE_MAX-u.gauge)/u.agi)):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100)),mpPct=Math.max(0,Math.min(100,u.mp/u.maxMp*100));return `<div class="battle-unit ${u.id===battle.actingId?'acting':''}"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">${u.job}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">命中 ${u.accuracy}</span><span class="tag">回避 ${u.evasion}</span><span class="tag">Critical ${u.crit}%</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">MP ${u.mp} / ${u.maxMp} ／ ${skill.name}${u.cooldown?` <span class="cooldown">CD ${u.cooldown}</span>`:' 使用可'}</div><div class="bar mpbar"><i style="width:${mpPct}%"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small">次回行動まで約 ${until} Tick ／ 最終行動 ${last}<br>与ダメージ ${u.damageDealt} ／ 回復 ${u.healingDone} ／ 命中 ${u.hits} ／ 回避・外れ ${u.misses} ／ Critical ${u.criticalHits}</div></div>`}).join('');
+ $('battleLog').textContent=battle.log.length?battle.log.slice(-24).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;
 }
-function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]||null}
+function chooseEnemy(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]||null}
+function chooseHealTarget(attacker){const allies=battle.units.filter(u=>u.alive&&u.side===attacker.side&&u.hp<u.maxHp);return allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]||null}
 function finishIfNeeded(){const allyAlive=battle.units.some(u=>u.alive&&u.side==='味方'),enemyAlive=battle.units.some(u=>u.alive&&u.side==='敵');if(allyAlive&&enemyAlive)return false;battle.result=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';battle.lastAction=`戦闘終了 — ${battle.result}`;battle.log.push(`[Tick ${battle.tick}] ${battle.lastAction}`);battle.running=false;battle.runToken++;if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;return true}
-function hitChance(attacker,target){return Math.max(10,Math.min(95,attacker.accuracy-target.evasion))}
-function performAttack(attacker){
- const target=chooseTarget(attacker);if(!target)return;
- const useSkill=attacker.mp>=SKILL.mpCost&&attacker.cooldown===0;
- const actionName=useSkill?SKILL.name:'通常攻撃';
- if(useSkill){attacker.mp-=SKILL.mpCost;attacker.cooldown=SKILL.cooldown}
- const chance=hitChance(attacker,target);
+function hitChance(attacker,target,bonus=0){return Math.max(10,Math.min(95,attacker.accuracy+bonus-target.evasion))}
+function performAction(attacker){
+ const skill=JOB_SKILLS[attacker.job]||JOB_SKILLS['冒険家'];
+ const healTarget=skill.type==='heal'?chooseHealTarget(attacker):null;
+ const shouldHeal=healTarget&&healTarget.hp/healTarget.maxHp<=0.70&&attacker.mp>=skill.mpCost&&attacker.cooldown===0;
+ if(shouldHeal){attacker.mp-=skill.mpCost;attacker.cooldown=skill.cooldown;const amount=Math.max(1,Math.round(attacker.magic*skill.healMultiplier));const actual=Math.min(amount,healTarget.maxHp-healTarget.hp);healTarget.hp+=actual;attacker.healingDone+=actual;battle.lastAction=`${attacker.name}の${skill.name} → ${healTarget.name}を${actual}回復`;battle.log.push(`[Tick ${battle.tick}] ${battle.lastAction}（HP ${healTarget.hp}/${healTarget.maxHp}）`);return}
+ const target=chooseEnemy(attacker);if(!target)return;
+ const useSkill=skill.type==='attack'&&attacker.mp>=skill.mpCost&&attacker.cooldown===0;
+ const actionName=useSkill?skill.name:'通常攻撃';if(useSkill){attacker.mp-=skill.mpCost;attacker.cooldown=skill.cooldown}
+ const chance=hitChance(attacker,target,useSkill?(skill.accuracyBonus||0):0);
  if(Math.random()*100>=chance){attacker.misses++;battle.lastAction=`${attacker.name}の${actionName} → ${target.name}が回避`;battle.log.push(`[Tick ${battle.tick}] ${battle.lastAction}（命中率 ${chance}%）`);return}
- let damage=Math.max(1,Math.round(attacker.attack*(useSkill?SKILL.multiplier:1)));
- const critical=Math.random()*100<attacker.crit;if(critical){damage=Math.round(damage*1.5);attacker.criticalHits++}
- target.hp=Math.max(0,target.hp-damage);attacker.damageDealt+=damage;target.damageTaken+=damage;attacker.hits++;
- battle.lastAction=`${attacker.name}の${actionName} → ${target.name}に${damage}ダメージ${critical?'（Critical）':''}`;battle.log.push(`[Tick ${battle.tick}] ${battle.lastAction}（残HP ${target.hp}/${target.maxHp}）`);
+ let damage=Math.max(1,Math.round(attacker.attack*(useSkill?(skill.multiplier||1):1)));const critRate=attacker.crit+(useSkill?(skill.critBonus||0):0);const critical=Math.random()*100<critRate;if(critical){damage=Math.round(damage*1.5);attacker.criticalHits++}
+ target.hp=Math.max(0,target.hp-damage);attacker.damageDealt+=damage;target.damageTaken+=damage;attacker.hits++;battle.lastAction=`${attacker.name}の${actionName} → ${target.name}に${damage}ダメージ${critical?'（Critical）':''}`;battle.log.push(`[Tick ${battle.tick}] ${battle.lastAction}（残HP ${target.hp}/${target.maxHp}）`);
  if(target.hp<=0){target.alive=false;target.gauge=0;battle.lastAction=`${target.name}は戦闘不能`;battle.log.push(`[Tick ${battle.tick}] ${battle.lastAction}`)}finishIfNeeded()
 }
-function processTicks(count){
- for(let n=0;n<count&&!battle.result;n++){
-  battle.tick++;
-  battle.units.filter(u=>u.alive).forEach(u=>{u.gauge+=u.agi;if(u.cooldown>0)u.cooldown--;u.mp=Math.min(u.maxMp,u.mp+1)});
-  const ready=battle.units.filter(u=>u.alive&&u.gauge>=GAUGE_MAX).sort((a,b)=>(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
-  for(const u of ready){if(!u.alive||battle.result)continue;u.gauge-=GAUGE_MAX;u.actions++;u.lastActionTick=battle.tick;battle.actions++;battle.actingId=u.id;battle.highlightUntil=performance.now()+420;performAttack(u)}
- }
-}
+function processTicks(count){for(let n=0;n<count&&!battle.result;n++){battle.tick++;battle.units.filter(u=>u.alive).forEach(u=>{u.gauge+=u.agi;if(u.cooldown>0)u.cooldown--;u.mp=Math.min(u.maxMp,u.mp+1)});const ready=battle.units.filter(u=>u.alive&&u.gauge>=GAUGE_MAX).sort((a,b)=>(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);for(const u of ready){if(!u.alive||battle.result)continue;u.gauge-=GAUGE_MAX;u.actions++;u.lastActionTick=battle.tick;battle.actions++;battle.actingId=u.id;battle.highlightUntil=performance.now()+420;performAction(u)}}}
 function advanceTicks(count){if(battle.result)return;processTicks(Math.max(0,Number(count)||0));renderBattle()}
 function pauseBattle(){battle.runToken++;if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;battle.running=false;battle.lastFrameAt=0;battle.tickAccumulator=0;renderBattle()}
-function startBattle(){
- pauseBattle();if(battle.result)return;battle.running=true;const token=++battle.runToken;battle.lastFrameAt=performance.now();battle.tickAccumulator=0;
- const frame=(now)=>{if(!battle.running||token!==battle.runToken)return;const interval=Math.max(1,Number($('battleInterval').value));const step=Math.max(1,Number($('battleStep').value));const elapsed=Math.min(250,Math.max(0,now-battle.lastFrameAt));battle.lastFrameAt=now;battle.tickAccumulator+=elapsed*(step/interval);const due=Math.floor(battle.tickAccumulator);if(due>0){battle.tickAccumulator-=due;processTicks(due)}renderBattle();battle.timer=requestAnimationFrame(frame)};
- renderBattle();battle.timer=requestAnimationFrame(frame);
-}
+function startBattle(){pauseBattle();if(battle.result)return;battle.running=true;const token=++battle.runToken;battle.lastFrameAt=performance.now();battle.tickAccumulator=0;const frame=(now)=>{if(!battle.running||token!==battle.runToken)return;const interval=Math.max(1,Number($('battleInterval').value));const step=Math.max(1,Number($('battleStep').value));const elapsed=Math.min(250,Math.max(0,now-battle.lastFrameAt));battle.lastFrameAt=now;battle.tickAccumulator+=elapsed*(step/interval);const due=Math.floor(battle.tickAccumulator);if(due>0){battle.tickAccumulator-=due;processTicks(due)}renderBattle();battle.timer=requestAnimationFrame(frame)};renderBattle();battle.timer=requestAnimationFrame(frame)}
 $('tick1').onclick=()=>advanceTicks(1);$('tick10').onclick=()=>advanceTicks(10);$('tick100').onclick=()=>advanceTicks(100);$('battleAuto').onclick=startBattle;$('battlePause').onclick=pauseBattle;$('battleReset').onclick=resetBattle;$('battleInterval').onchange=()=>{if(battle.running)startBattle()};$('battleStep').onchange=()=>{};
 
 try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null}}catch(e){notify(`自動読込失敗: ${e.message}`,'bad')}render();resetBattle();
