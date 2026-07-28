@@ -9,10 +9,10 @@
 </style>
 </head>
 <body>
-<header><h1>ギルド冒険物語</h1><div class="sub">V9正式戦闘コア検証 V0.3 — Tick / Action Gauge / MP / Cooldown / 疲弊 / AI / 状態異常</div></header>
+<header><h1>ギルド冒険物語</h1><div class="sub">V9正式戦闘コア検証 V0.3.1 — Tick / Action Gauge / MP / Cooldown / 疲弊 / AI / 状態異常</div></header>
 <div class="wrap">
 <div class="card"><div class="row"><button class="primary" id="start">戦闘開始</button><button id="pause">一時停止</button><button id="step1">+1 Tick</button><button id="step10">+10 Tick</button><button id="step100">+100 Tick</button><button id="step1000">+1000 Tick</button><select id="speed"><option value="1">1倍</option><option value="5">5倍</option><option value="10">10倍</option><option value="30">30倍</option><option value="100">100倍</option></select><button id="reset">リセット</button></div><p class="small">検証用の固定編成です。正式仕様の数値確定前なので、係数は仮値です。処理構造のみを検証します。</p></div>
-<div class="card"><div class="row"><span class="tag">Tick: <b id="tick">0</b></span><span class="tag">状態: <b id="state">待機</b></span><span class="tag">行動回数: <b id="actions">0</b></span></div></div>
+<div class="card"><div class="row"><span class="tag">Tick: <b id="tick">0</b></span><span class="tag">状態: <b id="state">待機</b></span><span class="tag">行動回数: <b id="actions">0</b></span><span class="tag">直前実行: <b id="lastRun">0 / 0</b></span></div></div>
 <div class="card"><h2>味方</h2><div id="allies" class="grid"></div></div>
 <div class="card"><h2>敵</h2><div id="enemies" class="grid"></div></div>
 <div class="card"><h2>戦闘ログ</h2><div id="log"></div></div>
@@ -48,7 +48,7 @@ function alive(team){return team.filter(x=>x.hp>0)}
 function pct(v,m){return Math.max(0,Math.min(100,100*v/m))}
 function renderTeam(id,team){document.getElementById(id).innerHTML=team.map(u=>`<div class="unit ${u.hp<=0?'bad':''}"><div class="name">${u.name}</div><div class="small">HP ${Math.max(0,u.hp)}/${u.maxHp}</div><div class="bar"><div class="fill" style="width:${pct(u.hp,u.maxHp)}%"></div></div><div class="small">MP ${u.mp}/${u.maxMp}</div><div class="bar mp"><div class="fill" style="width:${pct(u.mp,u.maxMp)}%"></div></div><div class="small">Gauge ${Math.floor(u.gauge)}/${MAX_GAUGE}・疲弊 ${u.fatigue}</div><div class="bar gauge"><div class="fill" style="width:${pct(u.gauge,MAX_GAUGE)}%"></div></div><div>${u.states.map(s=>`<span class="tag">${s.type} x${s.stacks||1}</span>`).join('')}</div></div>`).join('')}
 function render(){renderTeam('allies',battle.allies);renderTeam('enemies',battle.enemies);tickEl.textContent=tick;actionsEl.textContent=actions}
-const tickEl=document.getElementById('tick'),actionsEl=document.getElementById('actions'),stateEl=document.getElementById('state'),logEl=document.getElementById('log');
+const tickEl=document.getElementById('tick'),actionsEl=document.getElementById('actions'),lastRunEl=document.getElementById('lastRun'),stateEl=document.getElementById('state'),logEl=document.getElementById('log');
 function log(s){logEl.textContent+=`[${tick}] ${s}\n`;logEl.scrollTop=logEl.scrollHeight}
 function chooseTarget(rule,actor,own,opp){const pool=rule.startsWith('ally')?alive(own):alive(opp); if(!pool.length)return null;if(rule.endsWith('lowest_hp'))return [...pool].sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];if(rule.endsWith('highest_hp'))return [...pool].sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0];return pool[0]}
 function cond(c,actor,own,opp){if(c==='always')return true;if(c==='enemy_count>=2')return alive(opp).length>=2;if(c==='ally_hp<45')return alive(own).some(x=>x.hp/x.maxHp<.45);if(c==='target_not_poisoned')return alive(opp).some(x=>!x.states.some(s=>s.type==='poison'));return false}
@@ -60,10 +60,10 @@ function processStates(u){for(const st of [...u.states]){st.duration--;if(st.typ
 function oneTick(renderNow=true){if(alive(battle.allies).length===0||alive(battle.enemies).length===0){finish();return}tick++;for(const u of [...battle.allies,...battle.enemies]){if(u.hp<=0)continue;processStates(u);for(const k in u.cooldowns)u.cooldowns[k]=Math.max(0,u.cooldowns[k]-1);u.mp=Math.min(u.maxMp,u.mp+.12);u.fatigue=Math.max(0,u.fatigue-.05);u.gauge+=Math.max(1,u.agi*(1-u.fatigue/200));}
  let guard=0;while(guard++<20){const ready=[...alive(battle.allies),...alive(battle.enemies)].filter(u=>u.gauge>=MAX_GAUGE).sort((a,b)=>b.gauge-a.gauge)[0];if(!ready)break;const own=battle.allies.includes(ready)?battle.allies:battle.enemies;const opp=own===battle.allies?battle.enemies:battle.allies;act(ready,own,opp);if(!alive(opp).length)break}if(renderNow)render();if(!alive(battle.allies).length||!alive(battle.enemies).length)finish()}
 function finish(){stop();const win=alive(battle.allies).length>0;stateEl.textContent=win?'味方勝利':'味方敗北';stateEl.className=win?'ok':'warn';log(win?'戦闘終了：味方勝利':'戦闘終了：味方敗北')}
-function advanceTicks(count){stop();const n=Math.max(1,Math.floor(Number(count)||1));for(let i=0;i<n;i++){if(!alive(battle.allies).length||!alive(battle.enemies).length)break;oneTick(i===n-1)}render()}
+function advanceTicks(count){stop();const requested=Math.max(1,Math.floor(Number(count)||1));const before=tick;for(let i=0;i<requested;i++){if(!alive(battle.allies).length||!alive(battle.enemies).length)break;oneTick(false)}const actual=tick-before;lastRunEl.textContent=`${actual} / ${requested}`;render();if(actual<requested)log(`Tick一括実行は戦闘終了により ${actual}/${requested} で停止`) }
 function start(){if(running)return;running=true;stateEl.textContent='戦闘中';timer=setInterval(()=>{const n=Number(speed.value);for(let i=0;i<n;i++){if(!running)break;oneTick(i===n-1)}render()},60)}
 function stop(){running=false;if(timer)clearInterval(timer);timer=null;if(stateEl.textContent==='戦闘中')stateEl.textContent='一時停止'}
-function reset(){stop();tick=0;actions=0;battle=clone(base);logEl.textContent='';stateEl.textContent='待機';render()}
+function reset(){stop();tick=0;actions=0;battle=clone(base);logEl.textContent='';lastRunEl.textContent='0 / 0';stateEl.textContent='待機';render()}
 document.getElementById('start').onclick=start;document.getElementById('pause').onclick=stop;document.getElementById('step1').onclick=()=>advanceTicks(1);document.getElementById('step10').onclick=()=>advanceTicks(10);document.getElementById('step100').onclick=()=>advanceTicks(100);document.getElementById('step1000').onclick=()=>advanceTicks(1000);document.getElementById('reset').onclick=reset;reset();
 </script>
 </body></html>
