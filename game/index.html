@@ -6,86 +6,78 @@
 <meta name="theme-color" content="#172033">
 <title>ギルド冒険物語 最小プレイ版</title>
 <style>
-:root{--bg:#101827;--panel:#1b263b;--line:#33445f;--text:#f5f7fb;--muted:#aab6c8;--accent:#f0b84b;--good:#56c596;--bad:#ef7373}
+:root{--bg:#101827;--panel:#1b263b;--line:#33445f;--text:#f5f7fb;--muted:#aab6c8;--accent:#f0b84b;--good:#56c596;--bad:#ef7373;--mp:#70a7ff;--flash:#fff1a8}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:var(--bg);color:var(--text)}
 body{min-height:100vh}.app{min-height:100vh;display:flex;flex-direction:column}.top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);background:#141f32}.brand{font-weight:800}.small{font-size:12px;color:var(--muted)}
 main{flex:1;display:grid;place-items:center;padding:16px}.screen{display:none;width:min(100%,980px)}.screen.active{display:block}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 10px 30px #0005}.title{text-align:center;padding:36px 18px}.title h1{font-size:clamp(28px,6vw,52px);margin:0 0 10px;color:var(--accent)}
 button{font:inherit;border:1px solid var(--line);border-radius:12px;padding:12px 18px;background:#263650;color:var(--text);cursor:pointer}button.primary{background:var(--accent);border-color:var(--accent);color:#241b0a;font-weight:800}button:disabled{opacity:.45}.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.unit{padding:12px;border:1px solid var(--line);border-radius:12px;background:#152238}.unit b{display:block}.bar{height:8px;background:#0c1422;border-radius:99px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:var(--good)}
-.quest{padding:16px;border:1px solid var(--accent);border-radius:14px;background:#1c2940}.battle{display:grid;grid-template-columns:1fr 1fr;gap:12px}.log{height:230px;overflow:auto;white-space:pre-wrap;background:#09111f;border-radius:12px;padding:12px;font-size:13px;line-height:1.55}.result{text-align:center}.reward{font-size:20px;color:var(--accent);font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.unit{padding:12px;border:1px solid var(--line);border-radius:12px;background:#152238}.unit{position:relative;transition:transform .18s,opacity .18s}.unit.hit{transform:translateX(4px);filter:brightness(1.5)}.unit.down{opacity:.42}.unit b{display:block}.unit .meta{font-size:12px;color:var(--muted)}.bar{height:8px;background:#0c1422;border-radius:99px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:var(--good);transition:width .2s}.bar.mp i{background:var(--mp)}
+.quest{padding:16px;border:1px solid var(--accent);border-radius:14px;background:#1c2940}.battle{display:grid;grid-template-columns:1fr 1fr;gap:12px}.log{height:230px;overflow:auto;white-space:pre-wrap;background:#09111f;border-radius:12px;padding:12px;font-size:13px;line-height:1.55}.result{text-align:center}.result.win{animation:winPulse .65s ease}.result.lose{animation:loseShake .45s ease}.reward{font-size:20px;color:var(--accent);font-weight:800}.reward-list{margin:14px auto 0;max-width:430px;text-align:left;display:grid;gap:8px}.reward-item{display:flex;justify-content:space-between;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#152238}.wave{display:inline-block;padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:12px}.skill-pop{min-height:24px;text-align:center;color:var(--flash);font-weight:800;margin:8px 0}@keyframes winPulse{50%{transform:scale(1.025);filter:brightness(1.3)}}@keyframes loseShake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .notice{padding:10px 12px;border:1px solid #735;border-radius:10px;background:#321b28;color:#ffd8df;margin-bottom:12px}.footer{text-align:center;padding:8px;color:var(--muted);font-size:12px}@media(max-width:700px){main{padding:8px}.card{padding:12px;border-radius:12px}.grid{grid-template-columns:repeat(2,1fr)}.battle{grid-template-columns:1fr}.log{height:180px}.top{padding:7px 10px}}
 @media(orientation:portrait) and (max-width:700px){body:before{content:"横画面にすると遊びやすくなります";display:block;text-align:center;background:#6a4b17;padding:5px;font-size:12px}}
 </style>
 </head>
 <body><div class="app">
-<header class="top"><div><div class="brand">ギルド冒険物語</div><div class="small">最小プレイ版 0.2</div></div><button onclick="location.href='../studio/'">開発Studio</button></header>
+<header class="top"><div><div class="brand">ギルド冒険物語</div><div class="small">最小プレイ版 0.4</div></div><button onclick="location.href='../studio/'">開発Studio</button></header>
 <main>
 <section id="title" class="screen active"><div class="card title"><h1>ギルド冒険物語</h1><p>6人の冒険者と、最初の依頼へ。</p><div id="loadNotice"></div><div class="actions"><button class="primary" onclick="startGame()">ゲーム開始</button><button onclick="resetSave()">セーブ削除</button></div></div></section>
 <section id="guild" class="screen"><div class="card"><h2>冒険者ギルド</h2><p id="guildText"></p><h3>パーティー</h3><div id="party" class="grid"></div><div class="actions"><button class="primary" onclick="showQuest()">依頼を見る</button></div></div></section>
 <section id="quest" class="screen"><div class="card"><h2>クエスト確認</h2><div class="quest"><h3 id="questTitle"></h3><p id="questSummary"></p><p><b>報酬：</b><span id="questReward"></span></p></div><div class="actions"><button onclick="show('guild')">戻る</button><button class="primary" onclick="beginBattle()">出発する</button></div></div></section>
-<section id="battle" class="screen"><div class="card"><h2 id="battleTitle">自動戦闘</h2><div class="battle"><div><h3>味方</h3><div id="allies" class="grid"></div></div><div><h3>敵</h3><div id="enemies" class="grid"></div></div></div><h3>戦闘ログ</h3><div id="battleLog" class="log"></div><div class="actions"><button id="speedBtn" onclick="toggleSpeed()">速度：標準</button></div></div></section>
-<section id="result" class="screen"><div class="card result"><h2 id="resultTitle"></h2><p id="resultMessage"></p><div id="reward" class="reward"></div><div class="actions"><button class="primary" onclick="returnGuild()">ギルドへ戻る</button></div></div></section>
+<section id="battle" class="screen"><div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 id="battleTitle">自動戦闘</h2><span id="waveLabel" class="wave">Wave 1 / 3</span></div><div class="battle"><div><h3>味方</h3><div id="allies" class="grid"></div></div><div><h3>敵</h3><div id="enemies" class="grid"></div></div></div><div id="skillPop" class="skill-pop"></div><h3>戦闘ログ</h3><div id="battleLog" class="log"></div><div class="actions"><button id="speedBtn" onclick="toggleSpeed()">速度：1倍</button><button id="pauseBtn" onclick="togglePause()">一時停止</button></div></div></section>
+<section id="result" class="screen"><div class="card result"><h2 id="resultTitle"></h2><p id="resultMessage"></p><div id="reward" class="reward"></div><div id="rewardList" class="reward-list"></div><div class="actions"><button class="primary" onclick="returnGuild()">ギルドへ戻る</button></div></div></section>
 </main><div class="footer">Studioデータがない端末では内蔵データを使用します</div></div>
 <script>
-
 const BUILTIN_PROJECT={
-  project:{id:'PRJ-GUILD-ADVENTURE-BUILTIN',name:'ギルド冒険物語 内蔵版'},
-  characters:[
-    {id:'CHR-0001',name:'レオン',job_id:'JOB-0001',job:'騎士'},
-    {id:'CHR-0002',name:'ガルド',job_id:'JOB-0002',job:'戦士'},
-    {id:'CHR-0003',name:'ミリア',job_id:'JOB-0003',job:'僧侶'},
-    {id:'CHR-0004',name:'セラ',job_id:'JOB-0004',job:'魔法使い'},
-    {id:'CHR-0005',name:'フィン',job_id:'JOB-0005',job:'弓使い'},
-    {id:'CHR-0006',name:'リオ',job_id:'JOB-0006',job:'盗賊'}
-  ],
-  quests:[{
-    id:'QST-0001',title:'薬草の森と迷子の冒険者',
-    summary:'薬草採取に向かった新人冒険者を救出し、森の魔物を討伐する。',
-    rewards:'金貨100、回復薬2、初心者の剣1',
-    battle_sequence:[{wave:1,monster_ids:['MON-0001','MON-0001','MON-0002']},{wave:2,monster_ids:['MON-0003','MON-0004']},{wave:3,monster_ids:['MON-0006']}]
-  }],
-  masters:{
-    jobs:[
-      {id:'JOB-0001',name:'騎士',params:{base_stats:{hp:520,attack:42,defense:34,agi:8}}},
-      {id:'JOB-0002',name:'戦士',params:{base_stats:{hp:470,attack:62,defense:22,agi:10}}},
-      {id:'JOB-0003',name:'僧侶',params:{base_stats:{hp:340,attack:28,defense:16,agi:9}}},
-      {id:'JOB-0004',name:'魔法使い',params:{base_stats:{hp:300,attack:52,defense:12,agi:11}}},
-      {id:'JOB-0005',name:'弓使い',params:{base_stats:{hp:370,attack:48,defense:17,agi:14}}},
-      {id:'JOB-0006',name:'盗賊',params:{base_stats:{hp:350,attack:44,defense:15,agi:18}}}
-    ],
-    monsters:[
-      {id:'MON-0001',name:'森スライム',params:{stats:{hp:120,attack:18,defense:5,agi:7}}},
-      {id:'MON-0002',name:'森オオカミ',params:{stats:{hp:180,attack:28,defense:8,agi:15}}},
-      {id:'MON-0003',name:'ゴブリン',params:{stats:{hp:210,attack:31,defense:10,agi:11}}},
-      {id:'MON-0004',name:'ゴブリン弓兵',params:{stats:{hp:170,attack:29,defense:7,agi:13}}},
-      {id:'MON-0005',name:'毒キノコ',params:{stats:{hp:150,attack:20,defense:12,agi:6}}},
-      {id:'MON-0006',name:'ゴブリンリーダー',params:{stats:{hp:980,attack:48,defense:20,agi:12}}}
-    ]
-  }
+ project:{id:'PRJ-GUILD-ADVENTURE-BUILTIN',name:'ギルド冒険物語 内蔵版'},
+ characters:[
+  {id:'CHR-0001',name:'レオン',job_id:'JOB-0001',job:'騎士'},{id:'CHR-0002',name:'ガルド',job_id:'JOB-0002',job:'戦士'},
+  {id:'CHR-0003',name:'ミリア',job_id:'JOB-0003',job:'僧侶'},{id:'CHR-0004',name:'セラ',job_id:'JOB-0004',job:'魔法使い'},
+  {id:'CHR-0005',name:'フィン',job_id:'JOB-0005',job:'弓使い'},{id:'CHR-0006',name:'リオ',job_id:'JOB-0006',job:'盗賊'}],
+ quests:[{id:'QST-0001',title:'薬草の森と迷子の冒険者',summary:'薬草採取に向かった新人冒険者を救出し、森の魔物を討伐する。',rewards:'金貨100、回復薬2、初心者の剣1',battle_sequence:[{wave:1,monster_ids:['MON-0001','MON-0001','MON-0002']},{wave:2,monster_ids:['MON-0003','MON-0004']},{wave:3,monster_ids:['MON-0006']}]}],
+ masters:{jobs:[
+  {id:'JOB-0001',name:'騎士',params:{base_stats:{hp:520,mp:45,attack:42,defense:34,agi:8},battle_skill:{name:'シールドバッシュ',type:'attack',power:1.35,cost:12}}},
+  {id:'JOB-0002',name:'戦士',params:{base_stats:{hp:470,mp:40,attack:62,defense:22,agi:10},battle_skill:{name:'強撃',type:'attack',power:1.65,cost:12}}},
+  {id:'JOB-0003',name:'僧侶',params:{base_stats:{hp:340,mp:130,attack:28,defense:16,agi:9},battle_skill:{name:'ヒール',type:'heal',power:105,cost:18}}},
+  {id:'JOB-0004',name:'魔法使い',params:{base_stats:{hp:300,mp:150,attack:52,defense:12,agi:11},battle_skill:{name:'火炎波',type:'aoe',power:.72,cost:24}}},
+  {id:'JOB-0005',name:'弓使い',params:{base_stats:{hp:370,mp:70,attack:48,defense:17,agi:14},battle_skill:{name:'狙い撃ち',type:'attack',power:1.45,cost:14}}},
+  {id:'JOB-0006',name:'盗賊',params:{base_stats:{hp:350,mp:65,attack:44,defense:15,agi:18},battle_skill:{name:'急所突き',type:'attack',power:1.35,cost:12,crit:30}}}],
+ monsters:[
+  {id:'MON-0001',name:'森スライム',params:{stats:{hp:120,attack:18,defense:5,agi:7}}},{id:'MON-0002',name:'森オオカミ',params:{stats:{hp:180,attack:28,defense:8,agi:15}}},
+  {id:'MON-0003',name:'ゴブリン',params:{stats:{hp:210,attack:31,defense:10,agi:11}}},{id:'MON-0004',name:'ゴブリン弓兵',params:{stats:{hp:170,attack:29,defense:7,agi:13}}},
+  {id:'MON-0005',name:'毒キノコ',params:{stats:{hp:150,attack:20,defense:12,agi:6}}},{id:'MON-0006',name:'ゴブリンリーダー',params:{stats:{hp:980,attack:48,defense:20,agi:12}}}]}
 };
-
-const CURRENT_KEY='gas_v4_current_project_v060', PREFIX='gas_v4_project_v060_', SAVE_KEY='guild_adventure_game_save_v001';
-let project=null, save={gold:0,completed:[],plays:0}, party=[], enemies=[], timer=null, speed=650, quest=null;
-const $=id=>document.getElementById(id); const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-function loadProject(){try{const id=localStorage.getItem(CURRENT_KEY);if(id)project=JSON.parse(localStorage.getItem(PREFIX+id)||'null')}catch(e){}try{save=JSON.parse(localStorage.getItem(SAVE_KEY))||save}catch(e){} }
+const CURRENT_KEY='gas_v4_current_project_v060', PREFIX='gas_v4_project_v060_', SAVE_KEY='guild_adventure_game_save_v002';
+let project=null,save={gold:0,potions:0,equipment:[],completed:[],plays:0},party=[],enemies=[],timer=null,speedIndex=0,speeds=[650,300,130],paused=false,quest=null,waveIndex=0;
+const $=id=>document.getElementById(id),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function loadProject(){try{const id=localStorage.getItem(CURRENT_KEY);if(id)project=JSON.parse(localStorage.getItem(PREFIX+id)||'null')}catch(e){}try{save={...save,...(JSON.parse(localStorage.getItem(SAVE_KEY))||{})}}catch(e){}}
 function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active')}
-function startGame(){loadProject();let usingBuiltin=false;if(!project||!(project.characters||[]).length){project=BUILTIN_PROJECT;usingBuiltin=true}$('loadNotice').innerHTML=usingBuiltin?'<div class="notice" style="border-color:#385f55;background:#16362f;color:#d9fff2">スマートフォン用の内蔵データで開始します。</div>':'';renderGuild();show('guild')}
-function resetSave(){if(confirm('ゲームのセーブデータを削除しますか？')){localStorage.removeItem(SAVE_KEY);save={gold:0,completed:[],plays:0};alert('削除しました')}}
-function jobById(id){return (project.masters?.jobs||[]).find(x=>x.id===id)}
-function renderGuild(){$('guildText').textContent=`所持金 ${save.gold}G　冒険回数 ${save.plays}回`;const chars=(project.characters||[]).slice(0,6);$('party').innerHTML=chars.map(c=>{const j=jobById(c.job_id);return `<div class="unit"><b>${esc(c.name)}</b><span>${esc(j?.name||c.job||'冒険者')}</span></div>`}).join('')}
+function hasPlayableData(p){return !!(p&&(p.characters||[]).length>0&&(p.quests||[]).length>0&&(p.masters?.jobs||[]).length>0&&(p.masters?.monsters||[]).length>0)}
+function startGame(){loadProject();let usingBuiltin=false;if(!hasPlayableData(project)){project=structuredClone(BUILTIN_PROJECT);usingBuiltin=true}$('loadNotice').innerHTML=usingBuiltin?'<div class="notice" style="border-color:#385f55;background:#16362f;color:#d9fff2">端末内のStudioデータが不完全なため、内蔵ゲームデータで開始します。</div>':'';renderGuild();show('guild')}
+function resetSave(){if(confirm('ゲームのセーブデータを削除しますか？')){localStorage.removeItem(SAVE_KEY);save={gold:0,potions:0,equipment:[],completed:[],plays:0};alert('削除しました')}}
+function jobById(id){return(project.masters?.jobs||[]).find(x=>x.id===id)}
+function renderGuild(){$('guildText').textContent=`所持金 ${save.gold}G　回復薬 ${save.potions||0}個　冒険回数 ${save.plays}回`;const chars=(project.characters||[]).slice(0,6);$('party').innerHTML=chars.map(c=>{const j=jobById(c.job_id);return`<div class="unit"><b>${esc(c.name)}</b><span>${esc(j?.name||c.job||'冒険者')}</span><div class="meta">${esc(j?.params?.battle_skill?.name||'通常攻撃')}</div></div>`}).join('')}
 function showQuest(){quest=(project.quests||[])[0];if(!quest){alert('クエストデータがありません');return}$('questTitle').textContent=quest.title;$('questSummary').textContent=quest.summary||'';$('questReward').textContent=quest.rewards||'報酬あり';show('quest')}
-function buildParty(){return (project.characters||[]).slice(0,6).map(c=>{const j=jobById(c.job_id),s=j?.params?.base_stats||{};return{id:c.id,name:c.name,maxHp:+s.hp||350,hp:+s.hp||350,attack:+s.attack||35,defense:+s.defense||12,agi:+s.agi||10,alive:true}})}
-function monsterById(id){return (project.masters?.monsters||[]).find(x=>x.id===id)}
-function buildEnemies(){let ids=quest?.battle_sequence?.[0]?.monster_ids||[];let list=ids.map(monsterById).filter(Boolean);if(!list.length)list=(project.masters?.monsters||[]).slice(0,3);return list.map((m,i)=>{const s=m.params?.stats||{};return{id:m.id+'-'+i,name:m.name,maxHp:+s.hp||120,hp:+s.hp||120,attack:+s.attack||18,defense:+s.defense||5,agi:+s.agi||7,alive:true}})}
-function beginBattle(){party=buildParty();enemies=buildEnemies();if(!enemies.length){alert('モンスターデータがありません');return}show('battle');renderBattle();$('battleLog').textContent='戦闘開始！\n';clearInterval(timer);timer=setInterval(tick,speed)}
-function renderUnits(list,id){$(id).innerHTML=list.map(u=>`<div class="unit"><b>${esc(u.name)}</b><span>HP ${Math.max(0,u.hp)} / ${u.maxHp}</span><div class="bar"><i style="width:${clamp(u.hp/u.maxHp*100,0,100)}%"></i></div></div>`).join('')}
+function buildParty(){return(project.characters||[]).slice(0,6).map(c=>{const j=jobById(c.job_id),s=j?.params?.base_stats||{},skill=j?.params?.battle_skill||{name:'通常攻撃',type:'attack',power:1,cost:0};return{id:c.id,name:c.name,job:j?.name||c.job,maxHp:+s.hp||350,hp:+s.hp||350,maxMp:+s.mp||50,mp:+s.mp||50,attack:+s.attack||35,defense:+s.defense||12,agi:+s.agi||10,skill,alive:true}})}
+function monsterById(id){return(project.masters?.monsters||[]).find(x=>x.id===id)}
+function buildWave(i){let ids=quest?.battle_sequence?.[i]?.monster_ids||[];let list=ids.map(monsterById).filter(Boolean);if(!list.length&&i===0)list=(project.masters?.monsters||[]).slice(0,3);return list.map((m,n)=>{const s=m.params?.stats||{};return{id:m.id+'-'+i+'-'+n,name:m.name,maxHp:+s.hp||120,hp:+s.hp||120,attack:+s.attack||18,defense:+s.defense||5,agi:+s.agi||7,alive:true}})}
+function beginBattle(){party=buildParty();waveIndex=0;enemies=buildWave(waveIndex);if(!enemies.length){alert('モンスターデータがありません');return}show('battle');$('battleLog').textContent='戦闘開始！\n';paused=false;$('pauseBtn').textContent='一時停止';startWave()}
+function startWave(){enemies=buildWave(waveIndex);$('waveLabel').textContent=`Wave ${waveIndex+1} / ${quest?.battle_sequence?.length||1}`;log(`--- Wave ${waveIndex+1} 開始 ---`);renderBattle();restartTimer()}
+function renderUnits(list,id){$(id).innerHTML=list.map(u=>`<div class="unit ${u.hp<=0?'down':''}" data-unit="${esc(u.id)}"><b>${esc(u.name)}</b><div class="meta">${esc(u.job||'敵')}</div><span>HP ${Math.max(0,u.hp)} / ${u.maxHp}</span><div class="bar"><i style="width:${clamp(u.hp/u.maxHp*100,0,100)}%"></i></div>${u.maxMp?`<span class="meta">MP ${u.mp} / ${u.maxMp}</span><div class="bar mp"><i style="width:${clamp(u.mp/u.maxMp*100,0,100)}%"></i></div>`:''}</div>`).join('')}
 function renderBattle(){renderUnits(party,'allies');renderUnits(enemies,'enemies')}
 function living(a){return a.filter(x=>x.hp>0)}
-function hit(attacker,target){const variance=.85+Math.random()*.3;const dmg=Math.max(1,Math.round((attacker.attack-target.defense*.45)*variance));target.hp=Math.max(0,target.hp-dmg);log(`${attacker.name}の攻撃 → ${target.name}に${dmg}ダメージ${target.hp<=0?'　撃破！':''}`)}
-function tick(){const actors=[...living(party).map(x=>({side:'a',u:x})),...living(enemies).map(x=>({side:'e',u:x}))].sort((a,b)=>b.u.agi-a.u.agi);for(const a of actors){if(a.u.hp<=0)continue;const targets=a.side==='a'?living(enemies):living(party);if(!targets.length)break;hit(a.u,targets[Math.floor(Math.random()*targets.length)])}renderBattle();if(!living(enemies).length)finish(true);else if(!living(party).length)finish(false)}
+function damage(attacker,target,power=1,critBonus=0){const variance=.88+Math.random()*.24;const crit=Math.random()<(0.08+critBonus/100);let dmg=Math.max(1,Math.round((attacker.attack*power-target.defense*.45)*variance*(crit?1.6:1)));target.hp=Math.max(0,target.hp-dmg);flashUnit(target.id);return{dmg,crit}}
+function allyAct(a){const skill=a.skill||{};const useSkill=a.mp>=(skill.cost||0)&&Math.random()<.48;if(useSkill&&skill.type==='heal'){const target=living(party).sort((x,y)=>x.hp/x.maxHp-y.hp/y.maxHp)[0];if(target&&target.hp<target.maxHp*.82){a.mp-=skill.cost;const amount=Math.min(target.maxHp-target.hp,Math.round(skill.power+a.attack*.35));target.hp+=amount;announce(`${a.name}「${skill.name}」`);log(`${a.name}の${skill.name} → ${target.name}のHPを${amount}回復`);return}}
+ if(useSkill&&skill.type==='aoe'){a.mp-=skill.cost;announce(`${a.name}「${skill.name}」`);for(const t of living(enemies)){const r=damage(a,t,skill.power||.7);log(`${skill.name} → ${t.name}に${r.dmg}ダメージ${t.hp<=0?'　撃破！':''}`)}return}
+ const target=living(enemies)[Math.floor(Math.random()*living(enemies).length)];if(!target)return;if(useSkill){a.mp-=skill.cost;announce(`${a.name}「${skill.name}」`);const r=damage(a,target,skill.power||1,skill.crit||0);log(`${a.name}の${skill.name} → ${target.name}に${r.dmg}ダメージ${r.crit?'（会心）':''}${target.hp<=0?'　撃破！':''}`)}else{const r=damage(a,target);log(`${a.name}の通常攻撃 → ${target.name}に${r.dmg}ダメージ${r.crit?'（会心）':''}${target.hp<=0?'　撃破！':''}`)}a.mp=Math.min(a.maxMp,a.mp+3)}
+function enemyAct(a){const targets=living(party);if(!targets.length)return;const target=targets[Math.floor(Math.random()*targets.length)],r=damage(a,target);log(`${a.name}の攻撃 → ${target.name}に${r.dmg}ダメージ${target.hp<=0?'　戦闘不能！':''}`)}
+function tick(){if(paused)return;const actors=[...living(party).map(x=>({side:'a',u:x})),...living(enemies).map(x=>({side:'e',u:x}))].sort((a,b)=>b.u.agi-a.u.agi);for(const a of actors){if(a.u.hp<=0)continue;if(a.side==='a')allyAct(a.u);else enemyAct(a.u);if(!living(enemies).length||!living(party).length)break}renderBattle();if(!living(enemies).length){clearInterval(timer);if(waveIndex<(quest?.battle_sequence?.length||1)-1){waveIndex++;log('敵を退けた。次の敵が現れた！');setTimeout(startWave,700)}else finish(true)}else if(!living(party).length)finish(false)}
+function announce(s){$('skillPop').textContent=s;setTimeout(()=>{if($('skillPop').textContent===s)$('skillPop').textContent=''},700)}
+function flashUnit(id){requestAnimationFrame(()=>{const el=document.querySelector(`[data-unit="${CSS.escape(id)}"]`);if(el){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),180)}})}
 function log(s){const el=$('battleLog');el.textContent+=s+'\n';el.scrollTop=el.scrollHeight}
-function finish(win){clearInterval(timer);timer=null;save.plays++;if(win){const gold=100;save.gold+=gold;if(quest&&!save.completed.includes(quest.id))save.completed.push(quest.id);$('resultTitle').textContent='クエスト成功';$('resultMessage').textContent='迷子の冒険者を救出し、無事に帰還しました。';$('reward').textContent=`金貨 ${gold}G を獲得` }else{$('resultTitle').textContent='クエスト失敗';$('resultMessage').textContent='パーティーはギルドへ撤退しました。';$('reward').textContent='報酬なし'}localStorage.setItem(SAVE_KEY,JSON.stringify(save));setTimeout(()=>show('result'),450)}
-function toggleSpeed(){speed=speed===650?180:650;$('speedBtn').textContent=speed===650?'速度：標準':'速度：高速';if(timer){clearInterval(timer);timer=setInterval(tick,speed)}}
+function finish(win){clearInterval(timer);timer=null;save.plays++;const card=$('result').querySelector('.card');card.classList.remove('win','lose');card.classList.add(win?'win':'lose');if(win){save.gold+=100;save.potions=(save.potions||0)+2;if(!save.equipment.includes('初心者の剣'))save.equipment.push('初心者の剣');if(quest&&!save.completed.includes(quest.id))save.completed.push(quest.id);$('resultTitle').textContent='クエスト成功！';$('resultMessage').textContent='迷子の冒険者を救出し、無事に帰還しました。';$('reward').textContent='報酬を獲得しました';$('rewardList').innerHTML='<div class="reward-item"><span>金貨</span><b>100G</b></div><div class="reward-item"><span>回復薬</span><b>2個</b></div><div class="reward-item"><span>装備</span><b>初心者の剣</b></div>'}else{$('resultTitle').textContent='クエスト失敗';$('resultMessage').textContent='パーティーはギルドへ撤退しました。';$('reward').textContent='報酬なし';$('rewardList').innerHTML=''}localStorage.setItem(SAVE_KEY,JSON.stringify(save));setTimeout(()=>show('result'),450)}
+function toggleSpeed(){speedIndex=(speedIndex+1)%speeds.length;$('speedBtn').textContent=`速度：${[1,2,4][speedIndex]}倍`;restartTimer()}
+function togglePause(){paused=!paused;$('pauseBtn').textContent=paused?'再開':'一時停止';announce(paused?'一時停止中':'戦闘再開')}
+function restartTimer(){if(timer)clearInterval(timer);timer=setInterval(tick,speeds[speedIndex])}
 function returnGuild(){renderGuild();show('guild')}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 loadProject();
