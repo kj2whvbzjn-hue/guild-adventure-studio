@@ -904,6 +904,17 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
         <label>コミットメッセージ</label>
         <input id="deployCommitMessage" value="Deploy Guild Adventure Studio update">
       </div>
+      <div class="field">
+        <label>公開確認先</label>
+        <select id="deployPublicTarget">
+          <option value="">公開ゲーム（リポジトリ直下）</option>
+          <option value="formal-v01">正式版V0.1</option>
+          <option value="formal-v02">正式版V0.2</option>
+          <option value="formal-v03" selected>正式版V0.3（最新）</option>
+          <option value="studio">開発Studio</option>
+        </select>
+        <div class="small">「公開ページを確認」とPages自動確認で開く場所です。</div>
+      </div>
     </div>
     <div class="field">
       <label>保護するファイル（カンマ区切り）</label>
@@ -2116,10 +2127,15 @@ function setDeployPagesStatus(message,level='INFO'){
  if(!el)return;
  el.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(jpLevel(level))}</span> ${esc(message)}`;
 }
+function selectedPublicTargetPath(){
+ const selected=normalizeDeployPath(document.getElementById('deployPublicTarget')?.value||'');
+ if(selected)return selected;
+ return normalizeDeployPath(deployBasePath.value);
+}
 function deployPagesUrl(){
  const c=getGhConfig();
- const base=normalizeDeployPath(deployBasePath.value);
- const path=base?'/'+base:'';
+ const target=selectedPublicTargetPath();
+ const path=target?'/'+target:'';
  const suffix=studioDeployMeta?.cache_query||studioDeployLastResult?.cacheQuery||('appv='+String(Date.now()));
  return `https://${c.owner}.github.io/${c.repo}${path}/index.html?${suffix}&deploycheck=${Date.now()}`;
 }
@@ -2202,9 +2218,9 @@ function openPagesAfterDeploy(){
  const owner=ghOwner.value.trim();
  const repo=ghRepo.value.trim();
  if(!owner||!repo)return alert('GitHub SyncでOwnerとRepositoryを入力してください。');
- const base=normalizeDeployPath(deployBasePath.value);
+ const target=selectedPublicTargetPath();
  const suffix=studioDeployMeta?.cache_query||('appv='+String(Date.now()));
- const path=base?'/'+base:'';
+ const path=target?'/'+target:'';
  window.open(`https://${owner}.github.io/${repo}${path}/index.html?${suffix}`,'_blank','noopener');
 }
 
@@ -3290,14 +3306,18 @@ loadGitHubSettings();initializeQuestEventUI();initializeStudioDeploy();render();
 <script>
 window.addEventListener('DOMContentLoaded',()=>{
  const wrap=document.createElement('div');
- wrap.style.cssText='position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:8px;align-items:center';
- const prev=document.createElement('button'); prev.textContent='V0.1'; prev.title='Phase A キャラクター基盤を開く';
- prev.style.cssText='padding:10px 12px;border-radius:12px;border:1px solid #38506f;background:#263b58;color:#fff;font-weight:700';
- prev.onclick=()=>location.href='../formal-v01/';
- const latest=document.createElement('button'); latest.textContent='正式版V0.2'; latest.title='Phase B 正式戦闘コアを開く';
- latest.style.cssText='padding:10px 14px;border-radius:12px;border:1px solid #38506f;background:#f6b93b;color:#211a08;font-weight:700';
- latest.onclick=()=>location.href='../formal-v02/';
- wrap.append(prev,latest); document.body.appendChild(wrap);
+ wrap.style.cssText='position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 28px);overflow-x:auto';
+ const make=(text,path,title,latest=false)=>{
+  const b=document.createElement('button');b.textContent=text;b.title=title;
+  b.style.cssText=`padding:10px 12px;border-radius:12px;border:1px solid #38506f;background:${latest?'#f6b93b':'#263b58'};color:${latest?'#211a08':'#fff'};font-weight:700;white-space:nowrap`;
+  b.onclick=()=>location.href=`../${path}/?v=${Date.now()}`;return b;
+ };
+ wrap.append(
+  make('V0.1','formal-v01','Phase A キャラクター基盤を開く'),
+  make('V0.2','formal-v02','Phase B 戦闘コア初期版を開く'),
+  make('正式版V0.3','formal-v03','Phase B Tick検証強化版を開く',true)
+ );
+ document.body.appendChild(wrap);
 });
 </script>
 </body>
