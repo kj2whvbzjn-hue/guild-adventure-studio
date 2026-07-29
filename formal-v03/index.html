@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ギルド冒険物語 V9 正式版 Build 380</title>
+<title>ギルド冒険物語 V9 正式版 Build 381</title>
 <script>
 /* Build 362: Entry Orientation Guard Removal
    Portrait phones enter the development workspace before the legacy landscape guard can paint. */
@@ -318,7 +318,7 @@ body[data-ui-mode="official-landscape"] #fixedCanvasHost{display:block}
 <div class="global-orientation"><div><strong>端末を横向きにしてください</strong><span>タイトルを含むすべてのフェーズは横画面で表示します。</span></div></div>
 <div id="fixedCanvasHost"><div id="fixedCanvas">
 <a class="studio-back" id="studioBackLink" href="/guild-adventure-studio/studio/" aria-label="GK Studioへ戻る">GK Studioへ戻る</a>
-<header><div class="header-line"><div><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Build 380 — Silence Skill Restriction Verification</div><div class="phase-dev-nav" id="phaseDevNav"><button data-phase="title">タイトル</button><button data-phase="base">拠点</button><button data-phase="event">イベント</button><button data-phase="battle">戦闘</button><button data-phase="result">リザルト</button></div></div><button id="developerModeBtn" class="developer-toggle" aria-pressed="false">開発者モード</button></div></header>
+<header><div class="header-line"><div><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">Build 381 — Blind Accuracy Reduction Verification</div><div class="phase-dev-nav" id="phaseDevNav"><button data-phase="title">タイトル</button><button data-phase="base">拠点</button><button data-phase="event">イベント</button><button data-phase="battle">戦闘</button><button data-phase="result">リザルト</button></div></div><button id="developerModeBtn" class="developer-toggle" aria-pressed="false">開発者モード</button></div></header>
 <div class="wrap">
 <main id="phaseRoot">
 <section class="phase-screen dev-workspace" id="phase-devhome" data-phase="devhome"><div class="phase-shell">
@@ -372,7 +372,7 @@ body[data-ui-mode="official-landscape"] #fixedCanvasHost{display:block}
 <div class="small">検証用デモとして、各Tickで <b>Action Gauge += AGI</b>、Gaugeが100以上になったユニットが行動します。行動後はGaugeを100減算し、余剰Gaugeを保持します。行動可能になったユニットは敵陣の生存者を通常攻撃します。HPが0になると戦闘不能になり、片方が全滅すると戦闘を終了します。MP・Cooldown・BUFF管理を実装済みです。状態異常検証基盤とAI検証シナリオエンジンを実装済みです。</div>
 <div class="row" style="margin-top:12px">
 <button class="primary" id="battleAuto">オート開始</button><button id="battlePause">一時停止</button><button id="tick1">+1 Tick</button><button id="tick10">+10 Tick</button><button id="tick100">+100 Tick</button><button id="applyBless">先頭の味方へブレス</button><button id="applySleep">先頭の敵へ睡眠</button><button id="removeStatuses">状態異常解除</button><button id="battleReset">リセット</button><label>AI検証シナリオ<select id="verificationScenario"></select></label><button class="primary" id="runVerificationScenario">個別実行</button><button class="primary" id="runAllVerificationScenarios">全シナリオ実行</button>
-<label>検証プリセット<select id="verificationPreset"><option value="normal">通常戦闘</option><option value="sleep">睡眠検証</option><option value="stun">スタン検証</option><option value="poison">毒検証</option><option value="burn">燃焼検証</option><option value="bleed">出血検証</option><option value="silence">沈黙検証</option><option value="buff">BUFF検証</option><option value="ai">AI検証</option></select></label>
+<label>検証プリセット<select id="verificationPreset"><option value="normal">通常戦闘</option><option value="sleep">睡眠検証</option><option value="stun">スタン検証</option><option value="poison">毒検証</option><option value="burn">燃焼検証</option><option value="bleed">出血検証</option><option value="silence">沈黙検証</option><option value="blind">暗闇検証</option><option value="buff">BUFF検証</option><option value="ai">AI検証</option></select></label>
 <label>敵HP倍率<select id="enemyHpMultiplier"><option value="1">×1</option><option value="5">×5</option><option value="10" selected>×10</option><option value="50">×50</option></select></label>
 <label>実行間隔<select id="battleInterval"><option value="1000">1秒</option><option value="500">0.5秒</option><option value="250">0.25秒</option><option value="100" selected>0.1秒</option></select></label>
 <label>オート増加量<select id="battleStep"><option value="1">1 Tick</option><option value="10" selected>10 Tick</option><option value="100">100 Tick</option></select></label>
@@ -483,7 +483,7 @@ const JOBS={
  '神官':{STR:8,VIT:7,AGI:9,DEX:11,INT:12,MND:13,LUK:10},
  '冒険家':{STR:12,VIT:11,AGI:10,DEX:7,INT:8,MND:9,LUK:13}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 380',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 381',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','settings','result'];
 let currentPhase='title';
@@ -639,7 +639,7 @@ function normalize(raw){
  raw.guild.victories=Math.max(0,Number(raw.guild.victories)||0);
  raw.guild.defeats=Math.max(0,Number(raw.guild.defeats)||0);
  raw.guild.lastBattle=raw.guild.lastBattle&&typeof raw.guild.lastBattle==='object'?raw.guild.lastBattle:null;
- raw.schemaRevision='1.1.0';raw.gameVersion='V9 Build 380';
+ raw.schemaRevision='1.1.0';raw.gameVersion='V9 Build 381';
  return raw;
 }
 function persist(){data.updatedAt=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
@@ -663,12 +663,12 @@ $('loadBtn').onclick=()=>{
 try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 380',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 381',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const GAUGE_MAX=100;
 const POWER_STRIKE={id:'powerStrike',name:'パワーストライク',mpCost:12,cooldown:4,multiplier:1.65,target:'enemy'};
 const NORMAL_ATTACK={id:'normalAttack',name:'通常攻撃',mpCost:0,cooldown:0,multiplier:1,target:'enemy'};
-const DEV_STATUS_VALUES={sleep:{id:'sleep',name:'睡眠',duration:3000},stun:{id:'stun',name:'スタン',duration:3000},poison:{id:'poison',name:'毒',duration:300,damage:1000,interval:1,maxStacks:99},burn:{id:'burn',name:'燃焼',duration:300,damage:2000,interval:1,maxStacks:99},bleed:{id:'bleed',name:'出血',duration:300,damage:1500,interval:1,maxStacks:99},silence:{id:'silence',name:'沈黙',duration:3000}};
+const DEV_STATUS_VALUES={sleep:{id:'sleep',name:'睡眠',duration:3000},stun:{id:'stun',name:'スタン',duration:3000},poison:{id:'poison',name:'毒',duration:300,damage:1000,interval:1,maxStacks:99},burn:{id:'burn',name:'燃焼',duration:300,damage:2000,interval:1,maxStacks:99},bleed:{id:'bleed',name:'出血',duration:300,damage:1500,interval:1,maxStacks:99},silence:{id:'silence',name:'沈黙',duration:3000},blind:{id:'blind',name:'暗闇',duration:3000,missChance:0.95}};
 const DOT_STATUS_IDS=new Set(['poison','burn','bleed']);
 const DEFAULT_BUFF_SKILLS={bless:{id:'bless',name:'ブレス',stat:'outgoingDamage',power:12,duration:3,target:'single'}};
 let buffSkills={...DEFAULT_BUFF_SKILLS};
@@ -678,7 +678,7 @@ async function loadExportBuffSkills(){
 }
 let battle={tick:0,actions:0,units:[],log:[],structuredLog:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,reward:null,rewardApplied:false,preset:'normal',sessionId:'',scenarioReport:null};
 function makeCombatant(base){return {...base,hp:base.maxHp,mp:base.maxMp,alive:true,cooldowns:{powerStrike:0},buffs:[],statuses:[],damageDealt:0,damageTaken:0}}
-function logEvent(type,payload={}){const row={schema:'ga-battle-log/1.0',build:380,sessionId:battle.sessionId,preset:battle.preset,tick:battle.tick,sequence:battle.structuredLog.length,type,...payload};battle.structuredLog.push(row);return row}
+function logEvent(type,payload={}){const row={schema:'ga-battle-log/1.0',build:381,sessionId:battle.sessionId,preset:battle.preset,tick:battle.tick,sequence:battle.structuredLog.length,type,...payload};battle.structuredLog.push(row);return row}
 function pushBattleLog(text,type='TEXT',payload={}){battle.log.push(text);logEvent(type,{message:text,...payload})}
 const BattleStatusManager={
  normalizeUnit(unit){
@@ -842,7 +842,7 @@ function impactAt(el){const p=scenePoint(el),ring=document.createElement('div');
 function damageAt(el,value,miss=false){const p=scenePoint(el),pop=document.createElement('div');pop.className='damage-pop'+(miss?' miss':'');pop.textContent=miss?'MISS':`-${value}`;pop.style.left=p.x+'px';pop.style.top=(p.y-20)+'px';$('battleStage').appendChild(pop);pop.animate([{transform:'translate(-50%,-20%) scale(.7)',opacity:0},{transform:'translate(-50%,-70%) scale(1.15)',opacity:1,offset:.25},{transform:'translate(-50%,-135%) scale(1)',opacity:0}],{duration:760,easing:'ease-out'});setTimeout(()=>pop.remove(),800)}
 function queueSceneEvent(evt){if(sceneBusy)sceneQueue.push(evt);else playSceneEvent(evt)}
 
-function resetBattle(){pauseBattle();const multiplier=getEnemyHpMultiplier(),preset=$('verificationPreset')?.value||'normal';battle={tick:0,actions:0,units:makeBattleUnits(),log:[],structuredLog:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,reward:null,rewardApplied:false,preset,sessionId:`b380-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,statusSequence:0,scenarioReport:null,batchReport:null};applyVerificationPreset(preset);pushBattleLog(`[開発設定] プリセット ${preset} / 敵HP倍率 ×${multiplier}`,'SESSION_START',{enemyHpMultiplier:multiplier,units:battle.units.map(u=>({id:u.id,name:u.name,side:u.side,maxHp:u.maxHp,maxMp:u.maxMp,attack:u.attack,agi:u.agi}))});renderBattle();ensureSceneUnits(true)}
+function resetBattle(){pauseBattle();const multiplier=getEnemyHpMultiplier(),preset=$('verificationPreset')?.value||'normal';battle={tick:0,actions:0,units:makeBattleUnits(),log:[],structuredLog:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,reward:null,rewardApplied:false,preset,sessionId:`b381-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,statusSequence:0,scenarioReport:null,batchReport:null};applyVerificationPreset(preset);pushBattleLog(`[開発設定] プリセット ${preset} / 敵HP倍率 ×${multiplier}`,'SESSION_START',{enemyHpMultiplier:multiplier,units:battle.units.map(u=>({id:u.id,name:u.name,side:u.side,maxHp:u.maxHp,maxMp:u.maxMp,attack:u.attack,agi:u.agi}))});renderBattle();ensureSceneUnits(true)}
 function applyVerificationPreset(preset){
  const all=battle.units,allies=all.filter(u=>u.side==='味方'),enemies=all.filter(u=>u.side==='敵');
  if(preset==='normal')return;
@@ -853,6 +853,7 @@ function applyVerificationPreset(preset){
  if(preset==='burn'&&enemies[0])BattleStatusManager.addStatus(enemies[0],DEV_STATUS_VALUES.burn,allies[0]);
  if(preset==='bleed'&&enemies[0])BattleStatusManager.addStatus(enemies[0],DEV_STATUS_VALUES.bleed,allies[0]);
  if(preset==='silence'&&enemies[0])BattleStatusManager.addStatus(enemies[0],DEV_STATUS_VALUES.silence,allies[0]);
+ if(preset==='blind'&&enemies[0])BattleStatusManager.addStatus(enemies[0],DEV_STATUS_VALUES.blind,allies[0]);
 }
 
 function renderBattle(){
@@ -864,22 +865,24 @@ function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&
 function finishIfNeeded(){const allyAlive=battle.units.some(u=>u.alive&&u.side==='味方'),enemyAlive=battle.units.some(u=>u.alive&&u.side==='敵');if(allyAlive&&enemyAlive)return false;battle.result=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';pushBattleLog(`[Tick ${battle.tick}] 戦闘終了 — ${battle.result}`,'BATTLE_END',{result:battle.result});battle.running=false;battle.runToken++;if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;setTimeout(()=>{if(currentPhase==='battle'&&battle.result){renderBattleResult();setPhase('result',{keepBattle:true})}},950);return true}
 const SkillExecutor={
  usableSkills(actor){const silenced=actor.statuses.some(x=>x.id==='silence');return [POWER_STRIKE,NORMAL_ATTACK].filter(skill=>(!silenced||skill.id==='normalAttack')&&actor.mp>=skill.mpCost&&(actor.cooldowns[skill.id]||0)<=0)},
- execute(actor,skill,target){
+ execute(actor,skill,target,options={}){
   if(!actor||!target||!skill)return {ok:false,reason:'INVALID_ARGUMENT'};
   if(actor.statuses.some(x=>x.id==='silence')&&skill.id!=='normalAttack'){logEvent('SKILL_REJECTED',{actorId:actor.id,targetId:target.id,skillId:skill.id,reason:'SILENCED'});return {ok:false,reason:'SILENCED'};}
   if(actor.mp<skill.mpCost)return {ok:false,reason:'INSUFFICIENT_MP'};
   if((actor.cooldowns[skill.id]||0)>0)return {ok:false,reason:'COOLDOWN'};
   BattleStatusManager.spendMP(actor,skill.mpCost);if(skill.cooldown)BattleStatusManager.addCooldown(actor,skill.id,skill.cooldown);
+  const blind=actor.statuses.find(x=>x.id==='blind'),missChance=blind?Math.max(0,Math.min(1,Number(blind.missChance??DEV_STATUS_VALUES.blind.missChance)||0)):0,hitRoll=Number.isFinite(options.hitRoll)?options.hitRoll:Math.random();
+  if(blind&&hitRoll<missChance){logEvent('SKILL_MISSED',{actorId:actor.id,targetId:target.id,skillId:skill.id,statusId:'blind',hitRoll,missChance,mpCost:skill.mpCost,cooldown:skill.cooldown});return {ok:true,miss:true,damage:0,defeated:false,multiplier:1,hitRoll,missChance};}
   const multiplier=BattleStatusManager.outgoingDamageMultiplier(actor),requested=Math.max(0,Math.floor(actor.attack*skill.multiplier*multiplier)),result=BattleStatusManager.applyDamage(target,requested,{sourceId:actor.id,cause:'SKILL'});
-  if(result.removedStatuses.length)pushBattleLog(`[Tick ${battle.tick}] ${target.name}の睡眠が被ダメージで解除`,'STATUS_WAKE',{targetId:target.id,sourceId:actor.id,reason:'DAMAGE_RECEIVED'});actor.damageDealt+=result.applied;logEvent('SKILL_EXECUTED',{actorId:actor.id,targetId:target.id,skillId:skill.id,mpCost:skill.mpCost,cooldown:skill.cooldown,requestedDamage:requested,appliedDamage:result.applied,buffMultiplier:multiplier});
-  return {ok:true,damage:result.applied,defeated:result.defeated,multiplier};
+  if(result.removedStatuses.length)pushBattleLog(`[Tick ${battle.tick}] ${target.name}の睡眠が被ダメージで解除`,'STATUS_WAKE',{targetId:target.id,sourceId:actor.id,reason:'DAMAGE_RECEIVED'});actor.damageDealt+=result.applied;logEvent('SKILL_EXECUTED',{actorId:actor.id,targetId:target.id,skillId:skill.id,mpCost:skill.mpCost,cooldown:skill.cooldown,requestedDamage:requested,appliedDamage:result.applied,buffMultiplier:multiplier,hitRoll,missChance});
+  return {ok:true,miss:false,damage:result.applied,defeated:result.defeated,multiplier,hitRoll,missChance};
  }
 };
 function performBattleAction(attacker){
  const block=BattleStatusManager.actionBlockReason(attacker);if(block.blocked){pushBattleLog(`[Tick ${battle.tick}] ${attacker.name}は${block.status.name}により行動不能（残${block.status.remaining}Tick）`,'ACTION_BLOCKED',{actorId:attacker.id,statusId:block.status.id,remaining:block.status.remaining});return}
  const target=chooseTarget(attacker);if(!target)return;const candidates=SkillExecutor.usableSkills(attacker),skill=candidates.find(x=>x.id==='powerStrike')||NORMAL_ATTACK;logEvent('AI_DECISION',{actorId:attacker.id,candidates:candidates.map(x=>x.id),selectedSkillId:skill.id,reason:skill.id==='powerStrike'?'HIGHEST_AVAILABLE_DAMAGE':'FALLBACK_NORMAL_ATTACK'});
  const result=SkillExecutor.execute(attacker,skill,target);if(!result.ok){pushBattleLog(`[Tick ${battle.tick}] ${attacker.name}の行動失敗: ${result.reason}`,'SKILL_REJECTED',{actorId:attacker.id,skillId:skill.id,reason:result.reason});return}
- queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage:result.damage});const buffText=result.multiplier>1?` / BUFF x${result.multiplier.toFixed(2)}`:'';pushBattleLog(`[Tick ${battle.tick}] ${attacker.name}の${skill.name} → ${target.name}に${result.damage}ダメージ（残HP ${target.hp}/${target.maxHp}）${skill.id==='powerStrike'?` / MP ${attacker.mp} / CD ${attacker.cooldowns.powerStrike}`:''}${buffText}`,'ACTION_RESOLVED',{actorId:attacker.id,targetId:target.id,skillId:skill.id,damage:result.damage});if(result.defeated)pushBattleLog(`[Tick ${battle.tick}] ${target.name}は戦闘不能`,'UNIT_DEFEATED',{targetId:target.id});finishIfNeeded()
+ queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:Boolean(result.miss),damage:result.damage});const buffText=result.multiplier>1?` / BUFF x${result.multiplier.toFixed(2)}`:'';if(result.miss)pushBattleLog(`[Tick ${battle.tick}] ${attacker.name}の${skill.name} → ${target.name}への攻撃は暗闇によりMISS`,'ACTION_MISSED',{actorId:attacker.id,targetId:target.id,skillId:skill.id,statusId:'blind',hitRoll:result.hitRoll,missChance:result.missChance});else pushBattleLog(`[Tick ${battle.tick}] ${attacker.name}の${skill.name} → ${target.name}に${result.damage}ダメージ（残HP ${target.hp}/${target.maxHp}）${skill.id==='powerStrike'?` / MP ${attacker.mp} / CD ${attacker.cooldowns.powerStrike}`:''}${buffText}`,'ACTION_RESOLVED',{actorId:attacker.id,targetId:target.id,skillId:skill.id,damage:result.damage});if(result.defeated)pushBattleLog(`[Tick ${battle.tick}] ${target.name}は戦闘不能`,'UNIT_DEFEATED',{targetId:target.id});finishIfNeeded()
 }
 function processTicks(count){
  for(let n=0;n<count&&!battle.result;n++){
@@ -952,6 +955,9 @@ const VERIFICATION_SCENARIOS={
  bleed_stack_independent:{id:'bleed_stack_independent',name:'出血スタック→個別タイマー',preset:'bleed',run(ctx){
   const {source,target,expect}=ctx;processTicks(1);const secondResult=BattleStatusManager.addStatus(target,DEV_STATUS_VALUES.bleed,source);const stacks=target.statuses.filter(x=>x.id==='bleed');expect('BLEED_SECOND_STACK_APPLIED',()=>secondResult.applied&&secondResult.mode==='stack'&&stacks.length===2,{stackCount:stacks.length,mode:secondResult.mode});expect('BLEED_STACK_TIMERS_INDEPENDENT',()=>stacks.some(x=>x.remaining===DEV_STATUS_VALUES.bleed.duration-1)&&stacks.some(x=>x.remaining===DEV_STATUS_VALUES.bleed.duration),{remaining:stacks.map(x=>x.remaining),instanceIds:stacks.map(x=>x.instanceId)});const before=target.hp;processTicks(1);expect('BLEED_STACK_DAMAGE_ADDITIVE',()=>target.hp===before-(DEV_STATUS_VALUES.bleed.damage*2),{beforeHp:before,afterHp:target.hp,expectedDamage:DEV_STATUS_VALUES.bleed.damage*2});
  }},
+ blind_accuracy_reduction:{id:'blind_accuracy_reduction',name:'暗闇→命中率低下',preset:'blind',run(ctx){
+  const {target,expect}=ctx,opponent=chooseTarget(target);expect('BLIND_APPLIED',()=>target.statuses.some(x=>x.id==='blind'),{});const beforeMiss=opponent.hp,miss=SkillExecutor.execute(target,NORMAL_ATTACK,opponent,{hitRoll:0.50});expect('BLIND_FORCED_MISS',()=>miss.ok&&miss.miss&&miss.damage===0&&opponent.hp===beforeMiss,{result:miss,beforeHp:beforeMiss,afterHp:opponent.hp});const hit=SkillExecutor.execute(target,NORMAL_ATTACK,opponent,{hitRoll:0.99});expect('BLIND_THRESHOLD_ALLOWS_HIT',()=>hit.ok&&!hit.miss,{result:hit});processTicks(1);expect('BLIND_TIMER_DECREMENTED',()=>target.statuses.find(x=>x.id==='blind')?.remaining===DEV_STATUS_VALUES.blind.duration-1,{remaining:target.statuses.find(x=>x.id==='blind')?.remaining});
+ }},
  silence_skill_restriction:{id:'silence_skill_restriction',name:'沈黙→スキル禁止・通常攻撃許可',preset:'silence',run(ctx){
   const {target,expect}=ctx;expect('SILENCE_APPLIED',()=>target.statuses.some(x=>x.id==='silence'),{});const usable=SkillExecutor.usableSkills(target).map(x=>x.id);expect('SILENCE_EXCLUDES_POWER_STRIKE',()=>!usable.includes('powerStrike'),{usable});expect('SILENCE_ALLOWS_NORMAL_ATTACK',()=>usable.includes('normalAttack'),{usable});const opponent=chooseTarget(target),mpBefore=target.mp,rejected=SkillExecutor.execute(target,POWER_STRIKE,opponent);expect('SILENCED_SKILL_REJECTED',()=>!rejected.ok&&rejected.reason==='SILENCED'&&target.mp===mpBefore,{reason:rejected.reason,mpBefore,mpAfter:target.mp});const normal=SkillExecutor.execute(target,NORMAL_ATTACK,opponent);expect('NORMAL_ATTACK_EXECUTES_WHILE_SILENCED',()=>normal.ok,{result:normal});processTicks(1);expect('SILENCE_TIMER_DECREMENTED',()=>target.statuses.find(x=>x.id==='silence')?.remaining===DEV_STATUS_VALUES.silence.duration-1,{remaining:target.statuses.find(x=>x.id==='silence')?.remaining});
  }}
@@ -969,11 +975,11 @@ function executeVerificationScenario(id){
 }
 function runVerificationScenario(){const id=$('verificationScenario')?.value||VERIFICATION_SCENARIO_LIBRARY[0]?.id;executeVerificationScenario(id)}
 function runAllVerificationScenarios(){
- const batchId=`batch-b380-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,startedAt=new Date().toISOString(),results=[],combined=[];
+ const batchId=`batch-b381-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,startedAt=new Date().toISOString(),results=[],combined=[];
  for(const item of VERIFICATION_SCENARIO_LIBRARY){const result=executeVerificationScenario(item.id);if(!result)continue;results.push(result.report);combined.push(...result.log.map(row=>({...row,batchId})));}
  const passedScenarios=results.filter(r=>r.status==='PASS').length,failedScenarios=results.length-passedScenarios,passedAssertions=results.reduce((n,r)=>n+r.passed,0),failedAssertions=results.reduce((n,r)=>n+r.failed,0);
- const report={batchId,build:380,startedAt,completedAt:new Date().toISOString(),status:failedScenarios?'FAIL':'PASS',totalScenarios:results.length,passedScenarios,failedScenarios,passedAssertions,failedAssertions,failedScenarioIds:results.filter(r=>r.status!=='PASS').map(r=>r.scenarioId),results};
- const batchStart={schema:'guild-adventure-verification-log/v1',type:'BATCH_START',timestamp:startedAt,batchId,build:380,scenarioIds:VERIFICATION_SCENARIO_LIBRARY.map(x=>x.id)};
+ const report={batchId,build:381,startedAt,completedAt:new Date().toISOString(),status:failedScenarios?'FAIL':'PASS',totalScenarios:results.length,passedScenarios,failedScenarios,passedAssertions,failedAssertions,failedScenarioIds:results.filter(r=>r.status!=='PASS').map(r=>r.scenarioId),results};
+ const batchStart={schema:'guild-adventure-verification-log/v1',type:'BATCH_START',timestamp:startedAt,batchId,build:381,scenarioIds:VERIFICATION_SCENARIO_LIBRARY.map(x=>x.id)};
  const batchComplete={schema:'guild-adventure-verification-log/v1',type:'BATCH_COMPLETE',timestamp:report.completedAt,...report};
  battle.structuredLog=[batchStart,...combined,batchComplete];battle.batchReport=report;battle.scenarioReport=null;pushBattleLog(`[AI一括検証] ${report.status} / PASS ${passedScenarios} / FAIL ${failedScenarios} / ${results.length}件`,'BATCH_SUMMARY',report);renderBattle();
 }
