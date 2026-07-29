@@ -366,19 +366,20 @@ body[data-ui-mode="official-landscape"] #fixedCanvasHost{display:block}
  </div>
  <div class="settings-actions"><button class="primary" id="settingsSave">設定を保存</button><button id="settingsCancel">変更せず戻る</button></div><div class="settings-status" id="settingsStatus" aria-live="polite"></div>
 </div></div></section>
-<section class="phase-screen" id="phase-result" data-phase="result"><div class="phase-shell result-stage"><div class="result-box"><div class="result-heading" id="resultHeading">戦闘結果</div><p id="resultSummary">戦闘結果を集計しています。</p><div id="resultReward" class="card" style="margin:16px 0;text-align:left"></div><div class="row" style="justify-content:center"><button id="resultToEvent">イベントへ戻る</button><button class="primary" id="resultToBase">拠点へ帰還</button></div><p class="small">このBuildではギルド資金と戦績を保存します。経験値・装備ドロップは正式仕様へ接続する後続Buildで実装します。</p></div></div></section>
+<section class="phase-screen" id="phase-result" data-phase="result"><div class="phase-shell result-stage"><div class="result-box"><div class="result-heading" id="resultHeading">戦闘結果</div><p id="resultSummary">戦闘結果を集計しています。</p><div id="resultReward" class="card" style="margin:16px 0;text-align:left"></div><div class="row" style="justify-content:center"><button class="developer-only" id="resultRematch">同じ条件で再戦闘</button><button id="resultToEvent">イベントへ戻る</button><button class="primary" id="resultToBase">拠点へ帰還</button></div><p class="small">このBuildではギルド資金と戦績を保存します。経験値・装備ドロップは正式仕様へ接続する後続Buildで実装します。</p></div></div></section>
 </main>
 <details class="card debug-details developer-only hidden" id="developerPanel"><summary>開発・検証用 Battle Core 数値画面</summary><section class="card"><h2>Battle Core 開発コンソール</h2>
 <div class="small">検証用デモとして、各Tickで <b>Action Gauge += AGI</b>、Gaugeが100以上になったユニットが行動します。行動後はGaugeを100減算し、余剰Gaugeを保持します。行動可能になったユニットは敵陣の生存者を通常攻撃します。HPが0になると戦闘不能になり、片方が全滅すると戦闘を終了します。MP・Cooldown・BUFF管理を実装済みです。疲弊・状態異常・高度AIは次段階です。</div>
 <div class="row" style="margin-top:12px">
 <button class="primary" id="battleAuto">オート開始</button><button id="battlePause">一時停止</button><button id="tick1">+1 Tick</button><button id="tick10">+10 Tick</button><button id="tick100">+100 Tick</button><button id="applyBless">先頭の味方へブレス</button><button id="battleReset">リセット</button>
+<label>敵HP倍率<select id="enemyHpMultiplier"><option value="1">×1</option><option value="5">×5</option><option value="10" selected>×10</option><option value="50">×50</option></select></label>
 <label>実行間隔<select id="battleInterval"><option value="1000">1秒</option><option value="500">0.5秒</option><option value="250">0.25秒</option><option value="100" selected>0.1秒</option></select></label>
 <label>オート増加量<select id="battleStep"><option value="1">1 Tick</option><option value="10" selected>10 Tick</option><option value="100">100 Tick</option></select></label>
 </div>
 <div style="margin:10px 0"><span class="metric" id="battleTick">Tick: 0</span><span class="metric" id="battleStatus">状態: 待機</span><span class="metric" id="battleActions">行動回数: 0</span><span class="metric" id="battleResult">勝敗: 未決着</span></div>
 <h3>参加ユニット</h3><div id="battleUnits" class="battle-grid"></div>
 <h3>行動ログ</h3><div id="battleLog" class="battle-log">まだ行動はありません。</div>
-<p class="small"><b>Battle Core 2のHP・攻撃力は正式生成式がV9監査上未確定のため、検証用の暫定値です。</b> 味方は能力値とレベルから、敵は固定検証値から生成します。正式式が採用されるまでセーブデータへ戦闘値は保存しません。</p><p class="small"><b>Gaugeが0でも停止ではありません。</b> 行動直後に100を減算した結果、ちょうど0になることがあります。「行動回数」「毎Tick加算」「最終行動」で稼働を確認できます。</p>
+<p class="small"><b>敵HP倍率と再戦闘は開発検証専用です。</b> 正式版の敵データ・報酬・セーブデータには反映しません。</p><p class="small"><b>Battle Core 2のHP・攻撃力は正式生成式がV9監査上未確定のため、検証用の暫定値です。</b> 味方は能力値とレベルから、敵は固定検証値から生成します。正式式が採用されるまでセーブデータへ戦闘値は保存しません。</p><p class="small"><b>Gaugeが0でも停止ではありません。</b> 行動直後に100を減算した結果、ちょうど0になることがあります。「行動回数」「毎Tick加算」「最終行動」で稼働を確認できます。</p>
 <p class="small">味方は冒険者名簿の先頭から最大4名を使用します。冒険者がいない場合は検証用ユニットを使用します。敵は固定検証ユニットです。同一Tickで複数が行動可能になった場合は、暫定的に「余剰Gaugeが高い順 → AGIが高い順 → 登録順」で処理します。この同時行動規則は正式追補で確定するまで仮置きです。</p>
 </section></details>
 </div>
@@ -481,7 +482,7 @@ const JOBS={
  '神官':{STR:8,VIT:7,AGI:9,DEX:11,INT:12,MND:13,LUK:10},
  '冒険家':{STR:12,VIT:11,AGI:10,DEX:7,INT:8,MND:9,LUK:13}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 372',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 373',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','settings','result'];
 let currentPhase='title';
@@ -559,6 +560,7 @@ function bindPrimaryNavigation(){
  $('eventObserve').onclick=()=>{$('eventNotice').textContent='足跡を発見しました。魔物との遭遇は避けられそうにありません。'};
  $('eventBattle').onclick=()=>{resetBattle();setPhase('battle')};
  $('battleAbort').onclick=()=>setPhase('event');
+ $('resultRematch').onclick=()=>{resetBattle();setPhase('battle',{keepBattle:true})};
  $('resultToEvent').onclick=()=>setPhase('event',{keepBattle:true});
  $('resultToBase').onclick=()=>setPhase('base',{keepBattle:true});
  document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
@@ -636,7 +638,7 @@ function normalize(raw){
  raw.guild.victories=Math.max(0,Number(raw.guild.victories)||0);
  raw.guild.defeats=Math.max(0,Number(raw.guild.defeats)||0);
  raw.guild.lastBattle=raw.guild.lastBattle&&typeof raw.guild.lastBattle==='object'?raw.guild.lastBattle:null;
- raw.schemaRevision='1.1.0';raw.gameVersion='V9 Build 372';
+ raw.schemaRevision='1.1.0';raw.gameVersion='V9 Build 373';
  return raw;
 }
 function persist(){data.updatedAt=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
@@ -660,7 +662,7 @@ $('loadBtn').onclick=()=>{
 try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 372',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 373',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const GAUGE_MAX=100;
 const POWER_STRIKE={name:'パワーストライク',mpCost:12,cooldown:4,multiplier:1.65};
@@ -749,10 +751,13 @@ const BattleStatusManager={
 function applyBuff(target,buff){return BattleStatusManager.addBuff(target,buff)}
 function updateBuffsAtTickStart(unit){return BattleStatusManager.updateAtTickStart(unit).expiredBuffs}
 function outgoingDamageMultiplier(unit){return BattleStatusManager.outgoingDamageMultiplier(unit)}
+const ENEMY_HP_MULTIPLIER_KEY='ga_dev_enemy_hp_multiplier';
+function getEnemyHpMultiplier(){const el=$('enemyHpMultiplier');const value=Number(el?.value||localStorage.getItem(ENEMY_HP_MULTIPLIER_KEY)||10);return [1,5,10,50].includes(value)?value:10}
 function makeBattleUnits(){
  const allies=data.characters.slice(0,4).map((c,i)=>makeCombatant({id:`A${i}`,name:c.name,side:'味方',agi:c.stats.AGI,attack:10+c.stats.STR*3+c.level*2,maxHp:100+c.stats.VIT*20+c.level*10,maxMp:36+Math.max(0,c.stats.INT||0)*4,gauge:0,actions:0,order:i,lastActionTick:null}));
  if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',agi:11,attack:48,maxHp:360,maxMp:48,gauge:0,actions:0,order:0,lastActionTick:null}),makeCombatant({id:'A1',name:'検証盗賊',side:'味方',agi:13,attack:42,maxHp:290,maxMp:42,gauge:0,actions:0,order:1,lastActionTick:null}));
- const enemies=[makeCombatant({id:'E0',name:'訓練スライム',side:'敵',agi:7,attack:24,maxHp:300,maxMp:30,gauge:0,actions:0,order:100,lastActionTick:null}),makeCombatant({id:'E1',name:'訓練ウルフ',side:'敵',agi:12,attack:32,maxHp:380,maxMp:36,gauge:0,actions:0,order:101,lastActionTick:null})];
+ const enemyHpMultiplier=getEnemyHpMultiplier();
+ const enemies=[makeCombatant({id:'E0',name:'訓練スライム',side:'敵',agi:7,attack:24,maxHp:300*enemyHpMultiplier,maxMp:30,gauge:0,actions:0,order:100,lastActionTick:null}),makeCombatant({id:'E1',name:'訓練ウルフ',side:'敵',agi:12,attack:32,maxHp:380*enemyHpMultiplier,maxMp:36,gauge:0,actions:0,order:101,lastActionTick:null})];
  return [...allies,...enemies];
 }
 
@@ -796,7 +801,7 @@ function impactAt(el){const p=scenePoint(el),ring=document.createElement('div');
 function damageAt(el,value,miss=false){const p=scenePoint(el),pop=document.createElement('div');pop.className='damage-pop'+(miss?' miss':'');pop.textContent=miss?'MISS':`-${value}`;pop.style.left=p.x+'px';pop.style.top=(p.y-20)+'px';$('battleStage').appendChild(pop);pop.animate([{transform:'translate(-50%,-20%) scale(.7)',opacity:0},{transform:'translate(-50%,-70%) scale(1.15)',opacity:1,offset:.25},{transform:'translate(-50%,-135%) scale(1)',opacity:0}],{duration:760,easing:'ease-out'});setTimeout(()=>pop.remove(),800)}
 function queueSceneEvent(evt){if(sceneBusy)sceneQueue.push(evt);else playSceneEvent(evt)}
 
-function resetBattle(){pauseBattle();battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,reward:null,rewardApplied:false};renderBattle();ensureSceneUnits(true)}
+function resetBattle(){pauseBattle();const multiplier=getEnemyHpMultiplier();battle={tick:0,actions:0,units:makeBattleUnits(),log:[`[開発設定] 敵HP倍率 ×${multiplier}`],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,reward:null,rewardApplied:false};renderBattle();ensureSceneUnits(true)}
 function renderBattle(){
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;
  $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil((GAUGE_MAX-u.gauge)/u.agi)):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const mpPct=Math.max(0,Math.min(100,u.mp/u.maxMp*100));const cd=u.cooldowns.powerStrike||0;const buffs=u.buffs.length?u.buffs.map(b=>`<span class="tag">${escapeHtml(b.name)} +${b.power}% / 残${b.remaining}Tick</span>`).join(''):'<span class="tag">BUFFなし</span>';return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">行動 ${u.actions}回</span><div class="small">BUFF ${buffs}</div><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">MP ${u.mp} / ${u.maxMp}（毎Tick +1）</div><div class="bar"><i style="width:${mpPct}%;background:#5ea3ff"></i></div><div class="small">${POWER_STRIKE.name}: MP ${POWER_STRIKE.mpCost} ／ Cooldown ${cd}</div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small">次回行動まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
@@ -842,7 +847,7 @@ function startBattle(){
  battle.timer=requestAnimationFrame(frame);
 }
 $('tick1').onclick=()=>advanceTicks(1);$('tick10').onclick=()=>advanceTicks(10);$('tick100').onclick=()=>advanceTicks(100);$('battleAuto').onclick=startBattle;$('battlePause').onclick=pauseBattle;$('applyBless').onclick=()=>{const target=battle.units.find(u=>u.alive&&u.side==='味方');if(!target)return;const result=applyBuff(target,buffSkills.bless);battle.log.push(`[Tick ${battle.tick}] ${target.name}へ${result.buff.name}を付与（与ダメージ +${result.buff.power}% / ${result.buff.remaining} Tick）${result.mode==='stronger'?'［強い効果へ更新］':result.mode==='duration'?'［持続時間更新］':''}`);renderBattle()};
-$('battleReset').onclick=resetBattle;$('battleInterval').onchange=()=>{if(battle.running)startBattle()};$('battleStep').onchange=()=>{};
+$('battleReset').onclick=resetBattle;$('enemyHpMultiplier').value=localStorage.getItem(ENEMY_HP_MULTIPLIER_KEY)||'10';$('enemyHpMultiplier').onchange=()=>{localStorage.setItem(ENEMY_HP_MULTIPLIER_KEY,String(getEnemyHpMultiplier()));resetBattle()};$('battleInterval').onchange=()=>{if(battle.running)startBattle()};$('battleStep').onchange=()=>{};
 
 
 $('sceneAuto').onclick=startBattle;$('scenePause').onclick=pauseBattle;$('sceneReset').onclick=resetBattle;
