@@ -900,6 +900,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
       <button onclick="clearStudioPackage()">選択解除</button>
     </div>
     <div id="deployPackageStatus" class="item">更新パッケージ未選択</div>
+    <div id="deployPackageSummary" class="item" style="display:none;margin-top:10px"></div>
   </div>
 
   <div class="card">
@@ -2004,9 +2005,18 @@ async function inspectStudioPackage(){
   studioDeployPackageKind=packageKind;
   studioDeployFiles=files;studioDeployMeta=meta;
   renderDeployPackage();
-  const version=meta?.display_version||meta?.version||'バージョン情報なし';
+  const version=meta?.display_version||meta?.version||meta?.build||'バージョン情報なし';
   const kindLabel=packageKind==='patch'?'AI差分ZIP':'公開ZIP';
   deployPackageStatus.innerHTML=`<span class="badge ok">${esc(kindLabel)}</span> ${esc(file.name)} / ${esc(version)}`;
+  const summaryBox=document.getElementById('deployPackageSummary');
+  if(summaryBox){
+   const title=meta?.title||meta?.name||`${kindLabel} 更新`;
+   const summary=meta?.summary||meta?.description||'説明情報はありません。GitHub差分確認で対象ファイルを確認してください。';
+   const changeItems=Array.isArray(meta?.changes)?meta.changes.filter(Boolean).slice(0,8):[];
+   const changeHtml=changeItems.length?`<ul style="margin:8px 0 0 20px">${changeItems.map(x=>`<li>${esc(String(x))}</li>`).join('')}</ul>`:'';
+   summaryBox.style.display='block';
+   summaryBox.innerHTML=`<b>${esc(title)}</b><div class="small" style="margin-top:6px">${esc(summary)}</div><div class="small" style="margin-top:6px">種類: ${esc(kindLabel)} / 配置対象: ${uploadable.length}件 / 展開容量: ${formatBytes(totalBytes)}</div>${changeHtml}`;
+  }
   resetDeployLog();deployLogMessage(`ローカル検査完了: ${uploadable.length}ファイル。GitHub差分を取得します。`);
   await prepareStudioDeployDiff();
  }catch(e){
@@ -2074,6 +2084,7 @@ function renderDeployPackage(){
 }
 function clearStudioPackage(){
  studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;setDeployPagesStatus('未確認');
+ const summaryBox=document.getElementById('deployPackageSummary');if(summaryBox){summaryBox.style.display='none';summaryBox.innerHTML='';}
  deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
  deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
