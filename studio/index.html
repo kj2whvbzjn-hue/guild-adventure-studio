@@ -127,9 +127,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
   header .desktop-only{display:none}
 }
 </style>
-  <script src="jszip.min.js?v=240">
-window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
-</script>
+  <script src="jszip.min.js?v=240"></script>
   <script src="export-core.js?v=333"></script>
 </head>
 <body>
@@ -140,7 +138,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="version">GK Studio v1.23.0-dev / 開発運用負荷軽減版 / Formal Build 335</div>
   </div>
   <div class="spacer"></div>
-  <button onclick="window.location.href='../?entry=studio&amp;phase=title&amp;build=356'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
+  <button onclick="window.open('../formal-v03/?from=studio&amp;v=3371','_blank')">正式版を起動</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
   <button class="desktop-only" onclick="saveLocal()">端末保存</button>
   <button id="installBtn" class="desktop-only hidden">アプリをインストール</button><button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
 </header>
@@ -883,15 +881,6 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
   <div class="card">
     <h2>1. 更新ZIPを選択</h2>
-    <div class="field">
-      <label>ZIPの種類</label>
-      <select id="deployPackageMode" onchange="clearStudioPackage()">
-        <option value="auto" selected>自動判定（推奨）</option>
-        <option value="public">公開ZIP（index.html必須）</option>
-        <option value="patch">AI差分ZIP（index.html不要）</option>
-      </select>
-      <div class="small">自動判定では、公開ルートにindex.htmlがあれば公開ZIP、なければAI差分ZIPとして扱います。</div>
-    </div>
     <div id="deployDrop" class="deploy-drop">
       <input id="studioUpdateZip" type="file" accept=".zip,application/zip">
       <p><b>更新ZIPを選択、またはここへドロップ</b></p>
@@ -970,17 +959,6 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <button onclick="downloadDeployAuditZip()">配置監査ZIPを保存</button>
     </div>
     <div id="deployPagesStatus" class="item">未確認</div>
-  </div>
-
-
-  <div class="card">
-    <h2>6. 直前の配置を元に戻す</h2>
-    <p class="small">GK Studioから行った直前の配置だけを対象にします。配置後に別のCommitがある場合は、安全のため自動停止します。復元も人間承認後に1 Commitで実行します。</p>
-    <div id="deployRollbackStatus" class="item">復元可能な配置履歴はありません。</div>
-    <div class="toolbar">
-      <button id="deployRollbackButton" class="danger" onclick="rollbackLastStudioDeploy()" disabled>直前の配置を元に戻す（人間承認）</button>
-      <button onclick="renderDeployRollbackStatus()">履歴を再確認</button>
-    </div>
   </div>
 
   <div class="card">
@@ -1912,68 +1890,9 @@ let studioDeployMeta=null;
 let studioDeployBusy=false;
 let studioDeployPlan=null;
 let studioDeployLastResult=null;
-let studioDeployPackageKind=null;
-const STUDIO_DEPLOY_HISTORY_KEY='gk_studio_deploy_history_v1';
 const STUDIO_DEPLOY_MAX_FILES=5000;
 const STUDIO_DEPLOY_MAX_FILE_BYTES=20*1024*1024;
 const STUDIO_DEPLOY_MAX_TOTAL_BYTES=100*1024*1024;
-
-
-function loadStudioDeployHistory(){
- try{
-  const value=JSON.parse(localStorage.getItem(STUDIO_DEPLOY_HISTORY_KEY)||'[]');
-  return Array.isArray(value)?value:[];
- }catch(e){return []}
-}
-function saveStudioDeployHistory(entry){
- const history=loadStudioDeployHistory();
- history.unshift(entry);
- localStorage.setItem(STUDIO_DEPLOY_HISTORY_KEY,JSON.stringify(history.slice(0,10)));
- renderDeployRollbackStatus();
-}
-function renderDeployRollbackStatus(){
- const status=document.getElementById('deployRollbackStatus');
- const button=document.getElementById('deployRollbackButton');
- if(!status||!button)return;
- const last=loadStudioDeployHistory().find(x=>x&&x.status==='COMMIT_SUCCEEDED_PAGES_PENDING'&&!x.rolledBackAt);
- if(!last){
-  status.textContent='復元可能な配置履歴はありません。';button.disabled=true;return;
- }
- const when=last.committedAt?new Date(last.committedAt).toLocaleString():'日時不明';
- status.innerHTML=`<b>${esc(last.commitMessage||'Studio配置')}</b><br><span class="small">${esc(when)} / ${esc(last.owner+'/'+last.repo+'@'+last.branch)} / ${esc((last.changes||[]).length+'ファイル')}<br>現在Commitが ${esc(String(last.newCommitSha||'').slice(0,12))} の場合だけ復元できます。</span>`;
- button.disabled=false;
-}
-async function rollbackLastStudioDeploy(){
- if(studioDeployBusy||ghBusy)return;
- const history=loadStudioDeployHistory();
- const index=history.findIndex(x=>x&&x.status==='COMMIT_SUCCEEDED_PAGES_PENDING'&&!x.rolledBackAt);
- if(index<0)return alert('復元可能な配置履歴がありません。');
- const last=history[index];
- const c=getGhConfig();
- if(c.owner!==last.owner||c.repo!==last.repo||c.branch!==last.branch){
-  return alert(`接続先が配置履歴と異なります。\n履歴: ${last.owner}/${last.repo}@${last.branch}`);
- }
- const fileList=(last.changes||[]).map(x=>'・'+x.path).join('\n');
- if(!confirm(`直前のStudio配置を元に戻します。\n\nCommit: ${last.commitMessage||''}\n変更ファイル: ${(last.changes||[]).length}件\n${fileList}\n\n現在のBranchに別のCommitがある場合は実行しません。続行しますか？`))return;
- try{
-  studioDeployBusy=true;setGhBusy(true);
-  const current=await getGitHead(c);
-  if(current.headSha!==last.newCommitSha)throw new Error('配置後に別のCommitがあります。他の変更を守るため自動停止しました。');
-  const oldCommit=await ghRequest(`${current.repo}/git/commits/${encodeURIComponent(last.oldCommitSha)}`);
-  const rollbackMessage=`Rollback: ${last.commitMessage||'Guild Adventure Studio update'}`;
-  if(!confirm(`復元Commitを作成します。\n\n戻す先: ${String(last.oldCommitSha).slice(0,12)}\n新しいCommit名: ${rollbackMessage}\n\nGitHubへ書き込みますか？`))return;
-  const rollbackCommit=await ghRequest(`${current.repo}/git/commits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:rollbackMessage,tree:oldCommit.tree.sha,parents:[current.headSha]})});
-  await ghRequest(`${current.repo}/git/refs/heads/${c.branch.split('/').map(encodeURIComponent).join('/')}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:rollbackCommit.sha,force:false})});
-  history[index].rolledBackAt=new Date().toISOString();
-  history[index].rollbackCommitSha=rollbackCommit.sha;
-  localStorage.setItem(STUDIO_DEPLOY_HISTORY_KEY,JSON.stringify(history));
-  renderDeployRollbackStatus();
-  setDeployPagesStatus(`ロールバックCommit ${rollbackCommit.sha.slice(0,12)} を作成しました。Pages反映を確認してください。`,'WARNING');
-  alert('直前の配置を元に戻しました。GitHub Pagesの反映を確認してください。');
- }catch(e){
-  alert('ロールバック停止: '+e.message);
- }finally{studioDeployBusy=false;setGhBusy(false)}
-}
 
 function deployLogMessage(message){
  const stamp=new Date().toLocaleTimeString();
@@ -2067,21 +1986,15 @@ async function inspectStudioPackage(){
    files.push({path:relative,size:bytes.length,bytes,excluded,reason:excluded?'保護・除外':'未比較',status:excluded?'PROTECTED':'PENDING'});
   }
   const uploadable=files.filter(x=>!x.excluded);
-  if(!uploadable.length)throw new Error('ZIP内に配置可能なファイルがありません。');
-  const selectedMode=document.getElementById('deployPackageMode')?.value||'auto';
-  const hasRootIndex=uploadable.some(x=>x.path==='index.html');
-  const packageKind=selectedMode==='auto'?(hasRootIndex?'public':'patch'):selectedMode;
-  if(packageKind==='public'&&!hasRootIndex)throw new Error('公開ZIPには公開ルートのindex.htmlが必要です。AI差分ZIPを選ぶか、自動判定を使用してください。');
-  studioDeployPackageKind=packageKind;
+  if(!uploadable.some(x=>x.path==='index.html'))throw new Error('ZIP内に公開ルートのindex.htmlがありません。');
   studioDeployFiles=files;studioDeployMeta=meta;
   renderDeployPackage();
   const version=meta?.display_version||meta?.version||'バージョン情報なし';
-  const kindLabel=packageKind==='patch'?'AI差分ZIP':'公開ZIP';
-  deployPackageStatus.innerHTML=`<span class="badge ok">${esc(kindLabel)}</span> ${esc(file.name)} / ${esc(version)}`;
+  deployPackageStatus.innerHTML=`<span class="badge ok">ZIP正常</span> ${esc(file.name)} / ${esc(version)}`;
   resetDeployLog();deployLogMessage(`ローカル検査完了: ${uploadable.length}ファイル。GitHub差分を取得します。`);
   await prepareStudioDeployDiff();
  }catch(e){
-  studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;setDeployExecuteEnabled(false);
+  studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;setDeployExecuteEnabled(false);
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
   renderDeployPackage();
  }
@@ -2144,7 +2057,7 @@ function renderDeployPackage(){
  }).join('');
 }
 function clearStudioPackage(){
- studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;setDeployPagesStatus('未確認');
+ studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;setDeployPagesStatus('未確認');
  deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
  deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
@@ -2199,7 +2112,6 @@ async function deployStudioPackage(){
    cacheQuery:studioDeployMeta?.cache_query||null,
    changes:changes.map(f=>({path:f.target,status:f.status,size:f.size,sha256:f.sha256,gitBlobSha:f.gitSha}))
   };
-  saveStudioDeployHistory(studioDeployLastResult);
   deployPackageStatus.innerHTML=`<span class="badge ok">GitHub配置完了</span> 単一Commit ${esc(commit.sha.slice(0,12))} / Pages反映確認待ち。`;
   setDeployPagesStatus('Commit成功。Pages反映確認待ちです。','WARNING');
   studioDeployPlan=null;
@@ -3398,10 +3310,10 @@ window.addEventListener('DOMContentLoaded',()=>{
  const make=(text,path,title,latest=false)=>{
   const b=document.createElement('button');b.textContent=text;b.title=title;
   b.style.cssText=`padding:10px 12px;border-radius:12px;border:1px solid #38506f;background:${latest?'#f6b93b':'#263b58'};color:${latest?'#211a08':'#fff'};font-weight:700;white-space:nowrap`;
-  b.onclick=()=>{ location.href=`/guild-adventure-studio/${path}/?v=${Date.now()}`; };return b;
+  b.onclick=()=>location.href=`../${path}/?v=${Date.now()}`;return b;
  };
  wrap.append(
-  make('公開ページ','formal-v03','公開中のゲームページを開く',false)
+  make('V9正式版','formal-v03','現在公開中のV9正式版を開く',true)
  );
  document.body.appendChild(wrap);
 });
