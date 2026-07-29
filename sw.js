@@ -1,8 +1,8 @@
-const CACHE_NAME='guild-adventure-v003-build382';
-const OFFLINE_URL='./index.html?appv=382';
+const CACHE_NAME='guild-adventure-v003-build383';
+const OFFLINE_URL='./index.html?appv=383';
 const APP_SHELL=[
   './',
-  './index.html?appv=382',
+  './index.html?appv=383',
   './manifest.webmanifest?v=380',
   './icon-192.png?v=380',
   './icon-512.png?v=380'
