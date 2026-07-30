@@ -790,7 +790,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   <div id="validationSummary" class="card"></div>
   <div id="validationList" class="list"></div>
   <div class="card">
-    <h2>タグ参照インスペクター <span class="badge ok">BUILD409</span></h2>
+    <h2>タグ参照インスペクター <span class="badge ok">BUILD411</span></h2>
     <p class="small">タグの使用箇所、子タグ、廃止時の推奨置換先を確認します。置換は実行直前にバックアップを作成し、キャラクターと全マスターデータの tags 配列だけを変更します。</p>
     <div class="grid">
       <div class="field"><label>検索</label><input id="tagInspectorSearch" placeholder="ID・名称・エイリアス" oninput="renderTagReferenceInspector()"></div>
@@ -1503,7 +1503,7 @@ class TagIndexService{
  constructor(){this.reset()}
  reset(){
   this.tagById=new Map();this.categoryById=new Map();this.usageByTagId=new Map();
-  this.referencesByTagId=new Map();this.childrenByTagId=new Map();this.lookupByText=new Map();
+  this.referencesByTagId=new Map();this.childrenByTagId=new Map();this.replacementSourcesByTagId=new Map();this.lookupByText=new Map();
   this.rebuiltAt='';return this;
  }
  normalizeId(value){return String(value??'').trim()}
@@ -1528,6 +1528,8 @@ class TagIndexService{
   this.tagById.forEach((tag,id)=>{
    const parentId=this.normalizeId(tag?.parent_id);
    if(parentId){const children=this.childrenByTagId.get(parentId)||[];if(!children.includes(id))children.push(id);this.childrenByTagId.set(parentId,children)}
+   const replacementId=this.normalizeId(tag?.replacement_tag_id||tag?.recommended_replacement_tag_id);
+   if(replacementId){const sources=this.replacementSourcesByTagId.get(replacementId)||[];if(!sources.includes(id))sources.push(id);this.replacementSourcesByTagId.set(replacementId,sources)}
   });
   collectTagReferencesFrom(root).forEach(reference=>{
    const id=this.normalizeId(reference.tag_id);
@@ -1542,6 +1544,7 @@ class TagIndexService{
  getUsage(id){return this.usageByTagId.get(this.normalizeId(id))||0}
  getReferences(id){return (this.referencesByTagId.get(this.normalizeId(id))||[]).map(x=>({...x}))}
  getChildren(id){return (this.childrenByTagId.get(this.normalizeId(id))||[]).slice()}
+ getReplacementSources(id){return (this.replacementSourcesByTagId.get(this.normalizeId(id))||[]).slice()}
  getReplacement(id){const tag=this.getTag(id);return this.normalizeId(tag?.replacement_tag_id||tag?.recommended_replacement_tag_id)}
  resolveReplacementChain(id,maxDepth=64){
   const start=this.normalizeId(id),chain=[],visited=new Set();let current=start;
@@ -1563,9 +1566,9 @@ class TagIndexService{
  }
  resolve(query){return (this.lookupByText.get(this.normalizeId(query).toLocaleLowerCase('ja-JP'))||[]).slice()}
  canDelete(id){
-  const tagId=this.normalizeId(id),exists=this.tagById.has(tagId),usage=this.getUsage(tagId),children=this.getChildren(tagId);
-  const reasons=[];if(!exists)reasons.push('タグが存在しません');if(usage>0)reasons.push(`参照中です (${usage}件)`);if(children.length)reasons.push(`子タグがあります (${children.length}件)`);
-  return {allowed:exists&&reasons.length===0,id:tagId,usage,children,reasons,references:this.getReferences(tagId)};
+  const tagId=this.normalizeId(id),tag=this.getTag(tagId),exists=!!tag,usage=this.getUsage(tagId),children=this.getChildren(tagId),replacementSources=this.getReplacementSources(tagId);
+  const reasons=[];if(!exists)reasons.push('タグが存在しません');if(tag?.locked===true)reasons.push('ロックされています');if(usage>0)reasons.push(`参照中です (${usage}件)`);if(children.length)reasons.push(`子タグがあります (${children.length}件)`);if(replacementSources.length)reasons.push(`置換先として参照されています (${replacementSources.length}件)`);
+  return {allowed:exists&&reasons.length===0,id:tagId,usage,children,replacement_sources:replacementSources,reasons,references:this.getReferences(tagId)};
  }
  snapshot(){return {rebuilt_at:this.rebuiltAt,tags:this.tagById.size,categories:this.categoryById.size,referenced_tags:this.usageByTagId.size,references:[...this.usageByTagId.values()].reduce((a,b)=>a+b,0)}}
 }
@@ -1581,6 +1584,7 @@ function rebuildTagIndex(){return tagIndexService.rebuild(data)}
 function getTagUsage(id){return tagIndexService.getUsage(id)}
 function getTagReferences(id){return tagIndexService.getReferences(id)}
 function getChildTags(id){return tagIndexService.getChildren(id)}
+function getTagReplacementSources(id){return tagIndexService.getReplacementSources(id)}
 function canDeleteTag(id){return tagIndexService.canDelete(id)}
 function resolveTag(query){return tagIndexService.resolve(query)}
 function resolveTagReplacementChain(id){return tagIndexService.resolveReplacementChain(id)}
@@ -1603,11 +1607,12 @@ function renderTagInspectorDetail(id){
  const refs=getTagReferences(id),children=getChildTags(id),decision=canDeleteTag(id),replacement=tagReplacementId(tag);
  const replacementOptions=tagDefinitions().filter(t=>t.id!==id&&t.enabled!==false&&t.deprecated!==true).sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
  root.innerHTML=`<h3>${esc(tag.name||tag.id)} <span class="small">${esc(tag.id)}</span></h3>
- <p>使用数 <b>${refs.length}</b> / 子タグ <b>${children.length}</b> / 物理削除 <b>${decision.allowed?'可能':'不可'}</b></p>
+ <p>使用数 <b>${refs.length}</b> / 子タグ <b>${children.length}</b> / 置換元 <b>${decision.replacement_sources.length}</b> / 物理削除 <b>${decision.allowed?'可能':'不可'}</b></p>
  ${decision.reasons.length?`<p class="small">削除不可理由: ${esc(decision.reasons.join('、'))}</p>`:''}
+ ${decision.replacement_sources.length?`<p class="small">このタグを置換先にしているタグ: ${esc(decision.replacement_sources.join('、'))}</p>`:''}
  ${replacement?`<p class="small">現在の置換経路: ${esc(resolveTagReplacementChain(id).chain.join(' → '))}</p>`:''}
  <div class="field"><label>置換先</label><select id="tagInspectorReplacement"><option value="">選択してください</option>${replacementOptions.map(t=>`<option value="${escAttr(t.id)}" ${t.id===replacement?'selected':''}>${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('')}</select></div>
- <div class="toolbar"><button onclick="previewTagReplacement('${escAttr(id)}')">置換内容を確認</button><button onclick="previewTagReplacementChain('${escAttr(id)}')">置換経路を確認</button><button class="danger" ${refs.length?'':'disabled'} onclick="applyTagReplacement('${escAttr(id)}')">参照を一括置換</button></div>
+ <div class="toolbar"><button onclick="previewTagReplacement('${escAttr(id)}')">置換内容を確認</button><button onclick="previewTagReplacementChain('${escAttr(id)}')">置換経路を確認</button><button class="danger" ${refs.length?'':'disabled'} onclick="applyTagReplacement('${escAttr(id)}')">参照を一括置換</button><button class="danger" ${decision.allowed?'':'disabled'} onclick="deleteTagSafely('${escAttr(id)}')">安全に物理削除</button></div>
  <h4>参照元</h4>${refs.length?refs.map(r=>`<div class="item"><b>${esc(r.owner_name||r.owner_id||r.owner_type)}</b> <span class="small">${esc(r.owner_type)}</span><div class="tag-reference-path">${esc(r.path)}</div></div>`).join(''):'<p class="small">参照はありません。</p>'}
  <h4>子タグ</h4>${children.length?children.map(c=>`<span class="tag-chip">${esc(c.name||c.id)} <span class="small">${esc(c.id)}</span></span>`).join(' '):'<p class="small">子タグはありません。</p>'}`;
 }
@@ -1631,6 +1636,18 @@ function applyTagReplacement(oldId){
  const oldTag=tagIndexService.getTag(oldId);if(oldTag){oldTag.deprecated=true;oldTag.replacement_tag_id=next}
  save();rebuildTagIndex();runValidation();renderTagReferenceInspector();renderAll();alert(`タグ参照を ${changed} 件置換しました。`)
 }
+// BUILD411_TAG_SAFE_DELETE_BEGIN
+function deleteTagSafely(id){
+ rebuildTagIndex();const decision=canDeleteTag(id),tag=tagIndexService.getTag(id);
+ if(!decision.allowed){alert('このタグは物理削除できません。\n・'+decision.reasons.join('\n・'));return}
+ const typed=prompt(`タグ「${tag?.name||id}」(${id}) を物理削除します。\nこの操作はバックアップ後に実行されます。確認のためタグIDを入力してください。`, '');
+ if(typed===null)return;if(String(typed).trim()!==id){alert('タグIDが一致しないため中止しました。');return}
+ createBackup('before-tag-physical-delete-'+id);
+ const before=(data.tags||[]).length;data.tags=(data.tags||[]).filter(t=>String(t?.id||'').trim()!==id);
+ if(data.tags.length===before){alert('対象タグが見つからないため中止しました。');return}
+ selectedInspectorTagId='';save();rebuildTagIndex();runValidation();renderTagReferenceInspector();renderAll();alert(`タグ ${id} を物理削除しました。`)
+}
+// BUILD411_TAG_SAFE_DELETE_END
 // BUILD408_TAG_INDEX_SERVICE_END
 function collectTagReferences(){return collectTagReferencesFrom(data)}
 function validateTagSystem(){
