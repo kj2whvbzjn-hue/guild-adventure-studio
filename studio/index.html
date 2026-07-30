@@ -1274,6 +1274,7 @@ function updateRegistryFromData(){
  saveProjectRegistry(list);
 }
 function persist(message='端末保存'){
+ rebuildTagIndex();
  data.project.updated_at=now();
  data.history=data.history||[];
  data.history.push({at:now(),message});
@@ -1479,13 +1480,74 @@ function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.m
 let tagPickerSelection=[];
 function tagDefinitions(){return Array.isArray(data.tags)?data.tags:[]}
 function tagCategoryDefinitions(){return Array.isArray(data.tag_categories)?data.tag_categories:[]}
-function collectTagReferences(){
+// BUILD408_TAG_INDEX_SERVICE_BEGIN
+class TagIndexService{
+ constructor(){this.reset()}
+ reset(){
+  this.tagById=new Map();this.categoryById=new Map();this.usageByTagId=new Map();
+  this.referencesByTagId=new Map();this.childrenByTagId=new Map();this.lookupByText=new Map();
+  this.rebuiltAt='';return this;
+ }
+ normalizeId(value){return String(value??'').trim()}
+ addLookup(value,id){
+  const key=this.normalizeId(value).toLocaleLowerCase('ja-JP');
+  if(!key||!id)return;
+  const ids=this.lookupByText.get(key)||[];
+  if(!ids.includes(id))ids.push(id);
+  this.lookupByText.set(key,ids);
+ }
+ rebuild(source){
+  this.reset();
+  const root=source||{};
+  const categories=Array.isArray(root.tag_categories)?root.tag_categories:[];
+  const tags=Array.isArray(root.tags)?root.tags:[];
+  categories.forEach(category=>{const id=this.normalizeId(category?.id);if(id&&!this.categoryById.has(id))this.categoryById.set(id,category)});
+  tags.forEach(tag=>{
+   const id=this.normalizeId(tag?.id);if(!id||this.tagById.has(id))return;
+   this.tagById.set(id,tag);this.addLookup(id,id);this.addLookup(tag?.name,id);
+   (Array.isArray(tag?.aliases)?tag.aliases:[]).forEach(alias=>this.addLookup(alias,id));
+  });
+  this.tagById.forEach((tag,id)=>{
+   const parentId=this.normalizeId(tag?.parent_id);
+   if(parentId){const children=this.childrenByTagId.get(parentId)||[];if(!children.includes(id))children.push(id);this.childrenByTagId.set(parentId,children)}
+  });
+  collectTagReferencesFrom(root).forEach(reference=>{
+   const id=this.normalizeId(reference.tag_id);
+   if(!id)return;
+   const refs=this.referencesByTagId.get(id)||[];refs.push(reference);this.referencesByTagId.set(id,refs);
+   this.usageByTagId.set(id,(this.usageByTagId.get(id)||0)+1);
+  });
+  this.rebuiltAt=new Date().toISOString();return this;
+ }
+ getTag(id){return this.tagById.get(this.normalizeId(id))||null}
+ getCategory(id){return this.categoryById.get(this.normalizeId(id))||null}
+ getUsage(id){return this.usageByTagId.get(this.normalizeId(id))||0}
+ getReferences(id){return (this.referencesByTagId.get(this.normalizeId(id))||[]).map(x=>({...x}))}
+ getChildren(id){return (this.childrenByTagId.get(this.normalizeId(id))||[]).slice()}
+ resolve(query){return (this.lookupByText.get(this.normalizeId(query).toLocaleLowerCase('ja-JP'))||[]).slice()}
+ canDelete(id){
+  const tagId=this.normalizeId(id),exists=this.tagById.has(tagId),usage=this.getUsage(tagId),children=this.getChildren(tagId);
+  const reasons=[];if(!exists)reasons.push('タグが存在しません');if(usage>0)reasons.push(`参照中です (${usage}件)`);if(children.length)reasons.push(`子タグがあります (${children.length}件)`);
+  return {allowed:exists&&reasons.length===0,id:tagId,usage,children,reasons,references:this.getReferences(tagId)};
+ }
+ snapshot(){return {rebuilt_at:this.rebuiltAt,tags:this.tagById.size,categories:this.categoryById.size,referenced_tags:this.usageByTagId.size,references:[...this.usageByTagId.values()].reduce((a,b)=>a+b,0)}}
+}
+function collectTagReferencesFrom(root){
  const refs=[];
- const push=(ownerType,ownerId,ownerName,path,tags)=>{(Array.isArray(tags)?tags:[]).forEach(tagId=>refs.push({tag_id:String(tagId||''),owner_type:ownerType,owner_id:ownerId||'',owner_name:ownerName||'',path}));};
- (data.characters||[]).forEach((x,i)=>push('character',x.id,x.name,`characters[${i}].tags`,x.tags));
- Object.entries(data.masters||{}).forEach(([category,rows])=>(rows||[]).forEach((x,i)=>push('master:'+category,x.id,x.name,`masters.${category}[${i}].tags`,x.tags)));
+ const push=(ownerType,ownerId,ownerName,path,tags)=>{(Array.isArray(tags)?tags:[]).forEach(tagId=>refs.push({tag_id:String(tagId??'').trim(),owner_type:ownerType,owner_id:ownerId||'',owner_name:ownerName||'',path}));};
+ (root?.characters||[]).forEach((x,i)=>push('character',x.id,x.name,`characters[${i}].tags`,x.tags));
+ Object.entries(root?.masters||{}).forEach(([category,rows])=>(Array.isArray(rows)?rows:[]).forEach((x,i)=>push('master:'+category,x.id,x.name,`masters.${category}[${i}].tags`,x.tags)));
  return refs;
 }
+const tagIndexService=new TagIndexService();
+function rebuildTagIndex(){return tagIndexService.rebuild(data)}
+function getTagUsage(id){return tagIndexService.getUsage(id)}
+function getTagReferences(id){return tagIndexService.getReferences(id)}
+function getChildTags(id){return tagIndexService.getChildren(id)}
+function canDeleteTag(id){return tagIndexService.canDelete(id)}
+function resolveTag(query){return tagIndexService.resolve(query)}
+// BUILD408_TAG_INDEX_SERVICE_END
+function collectTagReferences(){return collectTagReferencesFrom(data)}
 function validateTagSystem(){
  const issues=[],categories=tagCategoryDefinitions(),tags=tagDefinitions();
  const categoryIds=new Set(),tagIds=new Set(),tagById=new Map();
@@ -3421,7 +3483,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
