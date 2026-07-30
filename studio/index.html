@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.23.0-dev</title>
+<title>GK Studio v1.24.0-dev</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -97,6 +97,17 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .compact-table th,.compact-table td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 .compact-table th{font-size:12px;color:var(--muted)}
 
+.tag-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px}
+.tag-tree,.tag-editor{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.tag-tree-row{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;cursor:pointer}
+.tag-tree-row:hover{background:#f3f4f6}.tag-tree-row.active{background:var(--accent2);font-weight:700}
+.tag-swatch{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.18);display:inline-block;flex:0 0 auto}
+.tag-node-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag-indent-1{padding-left:24px}.tag-indent-2{padding-left:40px}.tag-indent-3{padding-left:56px}.tag-indent-4{padding-left:72px}.tag-indent-5{padding-left:88px}
+.tag-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px;margin:2px;background:#fff}
+.tag-warning{border-left:4px solid var(--warn);padding-left:10px}
+@media(max-width:900px){.tag-layout{grid-template-columns:1fr}}
+
 .deploy-drop{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;background:#fafafa}
 .deploy-drop.drag{border-color:var(--accent);background:var(--accent2)}
 .deploy-progress{height:14px;background:#e5e7eb;border-radius:999px;overflow:hidden}
@@ -137,7 +148,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.23.0-dev / 開発運用負荷軽減版 / Formal Build 335</div>
+    <div class="version">GK Studio v1.24.0-dev / タグシステム Phase 1 / Formal Build 404</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../?entry=studio&amp;phase=title&amp;build=356'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -160,6 +171,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <button data-view="references">参照関係マップ</button>
     <button data-view="characters">キャラクター</button>
     <button data-view="masters">マスターデータ</button>
+    <button data-view="tags">タグ管理</button>
     <button data-view="battle">戦闘テスト</button>
     <button data-view="decisions">決定事項ログ</button>
     <button data-view="entities">データ・ID管理</button>
@@ -693,6 +705,46 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 
+
+<section id="view-tags" class="view hidden">
+  <h1>タグ管理</h1>
+  <div class="tag-layout">
+    <div class="tag-tree">
+      <div class="toolbar"><button class="primary" onclick="newTag()">タグ追加</button><button onclick="newTagCategory()">カテゴリ追加</button></div>
+      <div class="field"><label>検索</label><input id="tagSearch" placeholder="ID・名称・エイリアス" oninput="renderTags()"></div>
+      <div class="field"><label>カテゴリ</label><select id="tagCategoryFilter" onchange="renderTags()"><option value="">すべて</option></select></div>
+      <div id="tagTree"></div>
+    </div>
+    <div class="tag-editor">
+      <div id="tagEditorEmpty" class="story-empty">左からタグまたはカテゴリを選択してください。</div>
+      <div id="tagCategoryEditor" class="hidden">
+        <h2>タグカテゴリ</h2>
+        <div class="grid"><div class="field"><label>ID</label><input id="tagCatId"></div><div class="field"><label>名称</label><input id="tagCatName"></div></div>
+        <div class="grid"><div class="field"><label>色</label><input id="tagCatColor" type="color" value="#6b7280"></div><div class="field"><label>表示順</label><input id="tagCatOrder" type="number" value="0"></div></div>
+        <div class="field"><label>説明</label><textarea id="tagCatDescription"></textarea></div>
+        <div class="field"><label><input id="tagCatEnabled" type="checkbox" checked style="width:auto"> 有効</label></div>
+        <div class="toolbar"><button class="primary" onclick="saveTagCategory()">保存</button><button onclick="copyTagCategory()">コピー</button><button class="danger" onclick="deleteTagCategory()">削除</button></div>
+      </div>
+      <div id="tagEditor" class="hidden">
+        <h2>タグ</h2>
+        <div class="grid"><div class="field"><label>ID</label><input id="tagId"></div><div class="field"><label>名称</label><input id="tagName"></div></div>
+        <div class="grid"><div class="field"><label>カテゴリ</label><select id="tagCategoryId"></select></div><div class="field"><label>親タグ</label><select id="tagParentId"><option value="">なし</option></select></div></div>
+        <div class="grid"><div class="field"><label>色（未指定ならカテゴリ色）</label><input id="tagColor" placeholder="#ff0000"></div><div class="field"><label>表示順</label><input id="tagOrder" type="number" value="0"></div></div>
+        <div class="field"><label>エイリアス（1行1件）</label><textarea id="tagAliases" style="min-height:90px"></textarea></div>
+        <div class="field"><label>説明</label><textarea id="tagDescription"></textarea></div>
+        <div class="grid">
+          <div class="field"><label><input id="tagEnabled" type="checkbox" checked style="width:auto"> 有効</label></div>
+          <div class="field"><label><input id="tagLocked" type="checkbox" style="width:auto"> ロック</label></div>
+          <div class="field"><label><input id="tagDeprecated" type="checkbox" style="width:auto" onchange="updateTagReplacementState()"> 廃止</label></div>
+          <div class="field"><label>推奨タグ</label><select id="tagReplacementId"><option value="">なし</option></select></div>
+        </div>
+        <div id="tagUsageInfo" class="card" style="box-shadow:none"></div>
+        <div class="toolbar"><button class="primary" onclick="saveTag()">保存</button><button onclick="copyTag()">コピー</button><button class="danger" onclick="deleteTag()">削除</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="view-battle" class="view hidden">
   <h1>戦闘プロトタイプ</h1>
   <div class="card">
@@ -1055,7 +1107,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <script>
-const APP_VERSION='1.23.0-dev';
+const APP_VERSION='1.24.0-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -1069,7 +1121,7 @@ function initial(){
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[{"id":"devHeal","name":"検証ヒール","kind":"heal","environment":"development","mpCost":10,"cooldown":2,"multiplier":1.5,"target":"ally"},{"id":"devPoison","name":"検証ポイズン","kind":"status","environment":"development","mpCost":8,"cooldown":0,"target":"enemy","statusId":"poison"},{"id":"devBurn","name":"検証バーン","kind":"status","environment":"development","mpCost":9,"cooldown":0,"target":"enemy","statusId":"burn"},{"id":"devBleed","name":"検証ブリード","kind":"status","environment":"development","mpCost":10,"cooldown":0,"target":"enemy","statusId":"bleed"},{"id":"devSleep","name":"検証スリープ","kind":"status","environment":"development","mpCost":11,"cooldown":0,"target":"enemy","statusId":"sleep"},{"id":"devStun","name":"検証スタン","kind":"status","environment":"development","mpCost":12,"cooldown":0,"target":"enemy","statusId":"stun"},{"id":"devFreeze","name":"検証フリーズ","kind":"status","environment":"development","mpCost":13,"cooldown":0,"target":"enemy","statusId":"freeze"},{"id":"devBattleBless","name":"検証バトルブレス","kind":"buff","environment":"development","mpCost":6,"cooldown":0,"target":"ally","buff":{"id":"devBattleBless","name":"検証バトルブレス","stat":"outgoingDamage","power":40,"duration":300}},{"id":"devAddFireTag","name":"検証・炎タグ付与","kind":"tag","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","tag":{"id":"FIRE","name":"炎"}},{"id":"devRemoveFireTag","name":"検証・炎タグ削除","kind":"tag","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","tagId":"FIRE"},{"id":"devAddRefrigerationStack","name":"検証・冷却スタック付与","kind":"stack","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","stack":{"id":"REFRIGERATION","name":"Refrigeration／冷却"},"amount":1},{"id":"devRemoveRefrigerationStack","name":"検証・冷却スタック減少","kind":"stack","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":1},{"id":"devConsumeRefrigerationStack","name":"検証・冷却スタック消費","kind":"stack","environment":"development","operation":"consume","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":2},{"id":"devTagDrivenInteraction","name":"検証・タグ駆動相互作用","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"add_tag","tag":{"id":"DEV_INTERACTION_RESULT","name":"検証・相互作用結果"}}]}},{"id":"devBattleBlessWeak","name":"検証弱ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessWeak","name":"検証弱ブレス","stat":"outgoingDamage","power":20,"duration":600}},{"id":"devBattleBlessStrong","name":"検証強ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessStrong","name":"検証強ブレス","stat":"outgoingDamage","power":80,"duration":200}},{"id":"devTagDrivenRollback","name":"検証・タグ駆動ロールバック","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"unknown_operation"}]}}],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[{"id":"devHeal","name":"検証ヒール","kind":"heal","environment":"development","mpCost":10,"cooldown":2,"multiplier":1.5,"target":"ally"},{"id":"devPoison","name":"検証ポイズン","kind":"status","environment":"development","mpCost":8,"cooldown":0,"target":"enemy","statusId":"poison"},{"id":"devBurn","name":"検証バーン","kind":"status","environment":"development","mpCost":9,"cooldown":0,"target":"enemy","statusId":"burn"},{"id":"devBleed","name":"検証ブリード","kind":"status","environment":"development","mpCost":10,"cooldown":0,"target":"enemy","statusId":"bleed"},{"id":"devSleep","name":"検証スリープ","kind":"status","environment":"development","mpCost":11,"cooldown":0,"target":"enemy","statusId":"sleep"},{"id":"devStun","name":"検証スタン","kind":"status","environment":"development","mpCost":12,"cooldown":0,"target":"enemy","statusId":"stun"},{"id":"devFreeze","name":"検証フリーズ","kind":"status","environment":"development","mpCost":13,"cooldown":0,"target":"enemy","statusId":"freeze"},{"id":"devBattleBless","name":"検証バトルブレス","kind":"buff","environment":"development","mpCost":6,"cooldown":0,"target":"ally","buff":{"id":"devBattleBless","name":"検証バトルブレス","stat":"outgoingDamage","power":40,"duration":300}},{"id":"devAddFireTag","name":"検証・炎タグ付与","kind":"tag","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","tag":{"id":"FIRE","name":"炎"}},{"id":"devRemoveFireTag","name":"検証・炎タグ削除","kind":"tag","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","tagId":"FIRE"},{"id":"devAddRefrigerationStack","name":"検証・冷却スタック付与","kind":"stack","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","stack":{"id":"REFRIGERATION","name":"Refrigeration／冷却"},"amount":1},{"id":"devRemoveRefrigerationStack","name":"検証・冷却スタック減少","kind":"stack","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":1},{"id":"devConsumeRefrigerationStack","name":"検証・冷却スタック消費","kind":"stack","environment":"development","operation":"consume","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":2},{"id":"devTagDrivenInteraction","name":"検証・タグ駆動相互作用","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"add_tag","tag":{"id":"DEV_INTERACTION_RESULT","name":"検証・相互作用結果"}}]}},{"id":"devBattleBlessWeak","name":"検証弱ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessWeak","name":"検証弱ブレス","stat":"outgoingDamage","power":20,"duration":600}},{"id":"devBattleBlessStrong","name":"検証強ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessStrong","name":"検証強ブレス","stat":"outgoingDamage","power":80,"duration":200}},{"id":"devTagDrivenRollback","name":"検証・タグ駆動ロールバック","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"unknown_operation"}]}}],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},tag_categories:[],tags:[],entities:[],id_counters:{},history:[]}
 }
 migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
@@ -1197,6 +1249,10 @@ function normalizeData(){
  data.battle_snapshots=data.battle_snapshots||[];
  data.battle_tests=data.battle_tests||[];
  data.masters=data.masters||{};
+ data.tag_categories=data.tag_categories||[];
+ data.tags=data.tags||[];
+ data.tag_categories.forEach((c,i)=>{c.id=c.id||('TAGCAT-'+String(i+1).padStart(4,'0'));c.name=c.name||c.id;c.color=c.color||'#6b7280';c.description=c.description||'';c.sort_order=Number(c.sort_order)||0;c.enabled=c.enabled!==false;});
+ data.tags.forEach((t,i)=>{t.id=t.id||('TAG-'+String(i+1).padStart(4,'0'));t.name=t.name||t.id;t.aliases=Array.isArray(t.aliases)?t.aliases:[];t.parent_id=t.parent_id||'';t.category_id=t.category_id||'';t.color=t.color||'';t.description=t.description||'';t.sort_order=Number(t.sort_order)||0;t.enabled=t.enabled!==false;t.locked=!!t.locked;t.deprecated=!!t.deprecated;t.replacement_tag_id=t.replacement_tag_id||'';});
  ['stats','jobs','skills','equipment','mods','monsters','status_effects','tablets','ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});
  data.quests.forEach(q=>{
   q.type=q.type||'sub';
@@ -1452,6 +1508,52 @@ function masterCsv(category){const head=['category','id','name','status','tags',
 function exportMasterCsv(){const c=masterCategory.value;downloadText('GK_'+c+'_v'+APP_VERSION+'.csv',masterCsv(c),'text/csv;charset=utf-8')}
 function exportAllMastersCsv(){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];Object.keys(MASTER_LABELS).forEach(c=>(data.masters[c]||[]).forEach(m=>lines.push([c,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(','))));downloadText('GK_MasterDB_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
+
+let selectedTagId='';
+let selectedTagCategoryId='';
+function tagCategoryById(id){return (data.tag_categories||[]).find(x=>x.id===id)||null}
+function tagById(id){return (data.tags||[]).find(x=>x.id===id)||null}
+function nextTagCategoryId(){let n=1;while((data.tag_categories||[]).some(x=>x.id==='TAGCAT-'+String(n).padStart(4,'0')))n++;return 'TAGCAT-'+String(n).padStart(4,'0')}
+function nextTagId(){let n=1;while((data.tags||[]).some(x=>x.id==='TAG-'+String(n).padStart(4,'0')))n++;return 'TAG-'+String(n).padStart(4,'0')}
+function effectiveTagColor(t){const c=tagCategoryById(t.category_id);return t.color||c&&c.color||'#6b7280'}
+function tagUsageDetails(tagId){
+ const out=[];const scan=(value,path,seen)=>{if(value===null||value===undefined)return;if(typeof value==='object'){if(seen.has(value))return;seen.add(value);if(Array.isArray(value)){value.forEach((v,i)=>scan(v,path+'['+i+']',seen));return}Object.entries(value).forEach(([k,v])=>{if((k==='tag_id'||k==='tagId')&&v===tagId)out.push(path+'.'+k);else if((k==='tags'||k==='tag_ids'||k==='tagIds')&&Array.isArray(v)&&v.includes(tagId))out.push(path+'.'+k);else scan(v,path+'.'+k,seen)});}};
+ const roots={characters:data.characters,quests:data.quests,events:data.events,masters:data.masters,battle_tests:data.battle_tests,entities:data.entities};Object.entries(roots).forEach(([k,v])=>scan(v,k,new WeakSet()));return [...new Set(out)]
+}
+function tagUsageCount(id){return tagUsageDetails(id).length}
+function refreshTagSelects(){
+ const currentFilter=document.getElementById('tagCategoryFilter')?tagCategoryFilter.value:'';
+ const cats=[...(data.tag_categories||[])].sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja'));
+ const tags=[...(data.tags||[])].sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja'));
+ const catOptions=cats.map(c=>`<option value="${escAttr(c.id)}">${esc(c.name)}</option>`).join('');
+ if(document.getElementById('tagCategoryFilter')){tagCategoryFilter.innerHTML='<option value="">すべて</option>'+catOptions;tagCategoryFilter.value=currentFilter;}
+ if(document.getElementById('tagCategoryId'))tagCategoryId.innerHTML=catOptions;
+ const tagOptions=tags.map(t=>`<option value="${escAttr(t.id)}">${esc(t.name)} (${esc(t.id)})</option>`).join('');
+ if(document.getElementById('tagParentId'))tagParentId.innerHTML='<option value="">なし</option>'+tagOptions;
+ if(document.getElementById('tagReplacementId'))tagReplacementId.innerHTML='<option value="">なし</option>'+tagOptions;
+}
+function renderTags(){
+ if(!document.getElementById('tagTree'))return;refreshTagSelects();const q=(tagSearch.value||'').trim().toLowerCase(),cf=tagCategoryFilter.value;
+ const cats=[...(data.tag_categories||[])].sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja'));
+ const tags=data.tags||[];const matches=t=>!cf||t.category_id===cf;const text=t=>[t.id,t.name,...(t.aliases||[])].join(' ').toLowerCase();
+ const row=(t,depth)=>`<div class="tag-tree-row tag-indent-${Math.min(depth,5)} ${selectedTagId===t.id?'active':''}" onclick="selectTag('${escAttr(t.id)}')"><span class="tag-swatch" style="background:${escAttr(effectiveTagColor(t))}"></span><span class="tag-node-name">${esc(t.name)}</span>${t.locked?'<span class="badge">ロック</span>':''}${t.deprecated?'<span class="badge warn">廃止</span>':''}<span class="small">${tagUsageCount(t.id)}</span></div>`;
+ const descendants=(parent,depth,categoryId,visited=new Set())=>tags.filter(t=>t.parent_id===parent&&t.category_id===categoryId&&matches(t)).sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja')).map(t=>{if(visited.has(t.id))return '';const v=new Set(visited);v.add(t.id);return row(t,depth)+descendants(t.id,depth+1,categoryId,v)}).join('');
+ let html='';cats.filter(c=>!cf||c.id===cf).forEach(c=>{const ct=tags.filter(t=>t.category_id===c.id);const visible=ct.filter(t=>!q||text(t).includes(q));if(q&&!visible.length)return;html+=`<div class="tag-tree-row ${selectedTagCategoryId===c.id?'active':''}" onclick="selectTagCategory('${escAttr(c.id)}')"><span class="tag-swatch" style="background:${escAttr(c.color)}"></span><span class="tag-node-name"><b>${esc(c.name)}</b></span><span class="small">${ct.length}</span></div>`;if(q)html+=visible.map(t=>row(t,1)).join('');else html+=descendants('',1,c.id)});tagTree.innerHTML=html||'<div class="story-empty">タグはありません。</div>'
+}
+function hideTagEditors(){tagEditorEmpty.classList.add('hidden');tagCategoryEditor.classList.add('hidden');tagEditor.classList.add('hidden')}
+function newTagCategory(){hideTagEditors();selectedTagCategoryId='';selectedTagId='';tagCategoryEditor.classList.remove('hidden');tagCatId.value=nextTagCategoryId();tagCatId.disabled=false;tagCatName.value='';tagCatColor.value='#6b7280';tagCatOrder.value=(data.tag_categories||[]).length;tagCatDescription.value='';tagCatEnabled.checked=true}
+function selectTagCategory(id){const c=tagCategoryById(id);if(!c)return;hideTagEditors();selectedTagCategoryId=id;selectedTagId='';tagCategoryEditor.classList.remove('hidden');tagCatId.value=c.id;tagCatId.disabled=true;tagCatName.value=c.name;tagCatColor.value=c.color||'#6b7280';tagCatOrder.value=c.sort_order||0;tagCatDescription.value=c.description||'';tagCatEnabled.checked=c.enabled!==false;renderTags()}
+function saveTagCategory(){const old=selectedTagCategoryId,id=tagCatId.value.trim(),name=tagCatName.value.trim();if(!id||!name)return alert('IDと名称を入力してください。');if(allIds().includes(id)&&id!==old)return alert('そのIDは既に使用されています。');const rec={id,name,color:tagCatColor.value||'#6b7280',description:tagCatDescription.value.trim(),sort_order:Number(tagCatOrder.value)||0,enabled:tagCatEnabled.checked};const i=(data.tag_categories||[]).findIndex(x=>x.id===old);if(i>=0)data.tag_categories[i]=rec;else data.tag_categories.push(rec);selectedTagCategoryId=id;persist('tag category saved')}
+function copyTagCategory(){if(!selectedTagCategoryId)return;const c=tagCategoryById(selectedTagCategoryId);newTagCategory();tagCatName.value=c.name+' コピー';tagCatColor.value=c.color;tagCatOrder.value=c.sort_order;tagCatDescription.value=c.description;tagCatEnabled.checked=c.enabled}
+function deleteTagCategory(){const id=selectedTagCategoryId;if(!id)return;const count=(data.tags||[]).filter(t=>t.category_id===id).length;if(count)return alert('このカテゴリにはタグがあるため削除できません。');if(!confirm(id+'を削除しますか？'))return;data.tag_categories=data.tag_categories.filter(x=>x.id!==id);selectedTagCategoryId='';hideTagEditors();tagEditorEmpty.classList.remove('hidden');persist('tag category deleted')}
+function newTag(){if(!(data.tag_categories||[]).length)return alert('先にタグカテゴリを作成してください。');hideTagEditors();selectedTagId='';selectedTagCategoryId='';tagEditor.classList.remove('hidden');refreshTagSelects();tagId.value=nextTagId();tagId.disabled=false;tagName.value='';tagCategoryId.value=(data.tag_categories[0]||{}).id||'';tagParentId.value='';tagColor.value='';tagOrder.value=(data.tags||[]).length;tagAliases.value='';tagDescription.value='';tagEnabled.checked=true;tagLocked.checked=false;tagDeprecated.checked=false;tagReplacementId.value='';updateTagReplacementState();tagUsageInfo.innerHTML='<b>使用数</b> 0'}
+function selectTag(id){const t=tagById(id);if(!t)return;hideTagEditors();selectedTagId=id;selectedTagCategoryId='';tagEditor.classList.remove('hidden');refreshTagSelects();tagId.value=t.id;tagId.disabled=true;tagName.value=t.name;tagCategoryId.value=t.category_id||'';tagParentId.value=t.parent_id||'';tagColor.value=t.color||'';tagOrder.value=t.sort_order||0;tagAliases.value=(t.aliases||[]).join('\n');tagDescription.value=t.description||'';tagEnabled.checked=t.enabled!==false;tagLocked.checked=!!t.locked;tagDeprecated.checked=!!t.deprecated;tagReplacementId.value=t.replacement_tag_id||'';const locked=!!t.locked;[tagName,tagCategoryId,tagParentId,tagColor,tagOrder,tagAliases,tagDescription,tagEnabled,tagDeprecated,tagReplacementId].forEach(el=>el.disabled=locked);tagLocked.disabled=false;updateTagReplacementState();const refs=tagUsageDetails(id);tagUsageInfo.innerHTML='<b>使用数</b> '+refs.length+(refs.length?'<div class="small">'+refs.slice(0,20).map(esc).join('<br>')+(refs.length>20?'<br>ほか '+(refs.length-20)+' 件':'')+'</div>':'');renderTags()}
+function updateTagReplacementState(){if(document.getElementById('tagReplacementId'))tagReplacementId.disabled=tagLocked.checked||!tagDeprecated.checked}
+function createsTagCycle(id,parent){let cur=parent,seen=new Set();while(cur){if(cur===id||seen.has(cur))return true;seen.add(cur);const t=tagById(cur);cur=t?t.parent_id:''}return false}
+function saveTag(){const old=selectedTagId,id=tagId.value.trim(),name=tagName.value.trim();if(!id||!name)return alert('IDと名称を入力してください。');const existing=tagById(old);if(existing&&existing.locked&&tagLocked.checked)return alert('ロックされたタグは編集できません。ロック解除のみ可能です。');if(allIds().includes(id)&&id!==old)return alert('そのIDは既に使用されています。');const parent=tagParentId.value;if(parent===id||createsTagCycle(id,parent))return alert('親子関係が循環するため保存できません。');const aliases=[...new Set(tagAliases.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];const replacement=tagDeprecated.checked?tagReplacementId.value:'';if(replacement===id)return alert('推奨タグに自分自身は指定できません。');const rec={id,name,aliases,parent_id:parent,category_id:tagCategoryId.value,color:tagColor.value.trim(),description:tagDescription.value.trim(),sort_order:Number(tagOrder.value)||0,enabled:tagEnabled.checked,locked:tagLocked.checked,deprecated:tagDeprecated.checked,replacement_tag_id:replacement,updated_at:now()};const i=(data.tags||[]).findIndex(x=>x.id===old);if(i>=0)data.tags[i]=rec;else data.tags.push(rec);selectedTagId=id;persist('tag saved')}
+function copyTag(){if(!selectedTagId)return;const t=tagById(selectedTagId);newTag();tagName.value=t.name+' コピー';tagCategoryId.value=t.category_id;tagParentId.value=t.parent_id;tagColor.value=t.color;tagOrder.value=t.sort_order;tagAliases.value=(t.aliases||[]).join('\n');tagDescription.value=t.description;tagEnabled.checked=t.enabled;tagLocked.checked=false;tagDeprecated.checked=t.deprecated;tagReplacementId.value=t.replacement_tag_id;updateTagReplacementState()}
+function deleteTag(){const id=selectedTagId,t=tagById(id);if(!t)return;if(t.locked)return alert('ロックされたタグは削除できません。');if((data.tags||[]).some(x=>x.parent_id===id))return alert('子タグがあるため削除できません。');const count=tagUsageCount(id);if(count)return alert('使用中のため削除できません。使用数: '+count);if(!confirm(id+'を削除しますか？'))return;data.tags=data.tags.filter(x=>x.id!==id);selectedTagId='';hideTagEditors();tagEditorEmpty.classList.remove('hidden');persist('tag deleted')}
+
 function addEntity(){
  let type=document.getElementById('entityType').value,id=document.getElementById('entityId').value.trim()||nextId(type),name=document.getElementById('entityName').value.trim();
  if(!name)return alert('名前を入力してください。');
@@ -1549,7 +1651,7 @@ function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)retu
 
 function renderBattle(){if(!document.getElementById('battleAllies'))return;if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
 
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...(data.tag_categories||[]).map(x=>x.id),...(data.tags||[]).map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
@@ -1591,6 +1693,8 @@ function runValidation(){
   if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'ERROR',message:e.id+' の関連節が存在しません'});
   if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'ERROR',message:e.id+' の関連シーンが存在しません'});
  });
+ (data.tag_categories||[]).forEach(c=>{if(!c.id||!c.name)validation.push({level:'ERROR',message:'タグカテゴリにIDまたは名称の未設定があります'});});
+ (data.tags||[]).forEach(t=>{if(!t.id||!t.name)validation.push({level:'ERROR',message:'タグにIDまたは名称の未設定があります'});if(t.category_id&&!tagCategoryById(t.category_id))validation.push({level:'ERROR',message:t.id+' のカテゴリ参照が無効です'});if(t.parent_id&&!tagById(t.parent_id))validation.push({level:'ERROR',message:t.id+' の親タグ参照が無効です'});if(createsTagCycle(t.id,t.parent_id))validation.push({level:'ERROR',message:t.id+' の親子関係が循環しています'});if(t.replacement_tag_id&&!tagById(t.replacement_tag_id))validation.push({level:'ERROR',message:t.id+' の推奨タグ参照が無効です'});});
  Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  detectQuestCycles().forEach(path=>validation.push({level:'ERROR',message:'クエスト前提関係が循環しています: '+path}));
@@ -3314,7 +3418,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderTags();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
