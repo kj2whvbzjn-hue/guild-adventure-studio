@@ -786,7 +786,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-validation" class="view hidden">
   <h1>データ検証</h1>
-  <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button><button onclick="renderTagReferenceInspector();renderTagCategoryInspector()">タグ参照を再集計</button></div>
+  <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button><button onclick="renderTagReferenceInspector();renderTagCategoryInspector()">タグ参照を再集計</button><button onclick="exportTagGovernanceReport()">タグ監査JSON出力</button><button onclick="exportTagMigrationPlanCsv()">置換計画CSV出力</button></div>
   <div id="validationSummary" class="card"></div>
   <div id="validationList" class="list"></div>
   <div class="card">
@@ -1744,6 +1744,60 @@ function validateTagSystem(){
  rebuildTagIndex();tags.forEach(t=>{const id=String(t?.id||'').trim(),chain=resolveTagReplacementChain(id);if(chain.cycle)issues.push({level:'ERROR',message:`タグ置換経路が循環しています: ${chain.chain.join(' → ')} → ${chain.cycle_at}`});});
  return issues;
 }
+// BUILD413_TAG_GOVERNANCE_EXPORT_BEGIN
+function buildTagGovernanceReport(){
+ rebuildTagIndex();
+ const tags=tagDefinitions(),categories=tagCategoryDefinitions(),references=collectTagReferences();
+ const tagRows=tags.map(tag=>{
+  const id=String(tag?.id||'').trim(),chain=resolveTagReplacementChain(id),usage=getTagUsage(id),children=getChildTags(id),sources=getTagReplacementSources(id);
+  const deleteDecision=canDeleteTag(id);
+  return {
+   id,name:tag?.name||'',category_id:tag?.category_id||'',parent_id:tag?.parent_id||'',enabled:tag?.enabled!==false,
+   deprecated:tag?.deprecated===true,locked:tag?.locked===true,usage_count:usage,child_count:children.length,
+   replacement_tag_id:String(tag?.replacement_tag_id||tag?.recommended_replacement_tag_id||'').trim(),
+   replacement_chain:chain.chain||[],replacement_chain_valid:chain.valid===true,replacement_chain_reason:chain.reason||'',
+   replacement_source_count:sources.length,physical_delete_allowed:deleteDecision.allowed===true,
+   physical_delete_blockers:deleteDecision.reasons||[]
+  };
+ });
+ const categoryRows=categories.map(category=>{const decision=canDeleteTagCategory(String(category?.id||'').trim());return {
+  id:category?.id||'',name:category?.name||'',enabled:category?.enabled!==false,locked:category?.locked===true,
+  tag_count:decision.tags.length,physical_delete_allowed:decision.allowed===true,physical_delete_blockers:decision.reasons||[]
+ }});
+ const unknownReferences=references.filter(r=>!tagIndexService.getTag(r.tag_id));
+ const deprecatedReferences=references.filter(r=>tagIndexService.getTag(r.tag_id)?.deprecated===true);
+ const disabledReferences=references.filter(r=>tagIndexService.getTag(r.tag_id)?.enabled===false);
+ const cycles=tagRows.filter(r=>r.replacement_chain_reason==='replacement-cycle');
+ const missingReplacement=tagRows.filter(r=>r.deprecated&&!r.replacement_tag_id);
+ const migrationCandidates=tagRows.filter(r=>r.deprecated&&r.usage_count>0).map(r=>({
+  source_tag_id:r.id,source_name:r.name,usage_count:r.usage_count,replacement_tag_id:r.replacement_tag_id,
+  replacement_name:tagIndexService.getTag(r.replacement_tag_id)?.name||'',ready:Boolean(r.replacement_tag_id&&r.replacement_chain_valid),
+  blockers:[...(!r.replacement_tag_id?['置換先未設定']:[]),...(!r.replacement_chain_valid?[r.replacement_chain_reason||'置換経路不正']:[])]
+ }));
+ return {
+  schema:'gk.tag-governance-report.v1',generated_at:now(),project_id:currentProjectId,project_name:data.project?.name||'',app_version:APP_VERSION,
+  summary:{category_count:categories.length,tag_count:tags.length,reference_count:references.length,used_tag_count:tagRows.filter(r=>r.usage_count>0).length,
+   unused_tag_count:tagRows.filter(r=>r.usage_count===0).length,deprecated_tag_count:tagRows.filter(r=>r.deprecated).length,
+   unknown_reference_count:unknownReferences.length,deprecated_reference_count:deprecatedReferences.length,disabled_reference_count:disabledReferences.length,
+   replacement_cycle_count:cycles.length,deprecated_without_replacement_count:missingReplacement.length,migration_candidate_count:migrationCandidates.length},
+  acceptance:{pass:unknownReferences.length===0&&disabledReferences.length===0&&cycles.length===0,
+   blockers:[...(unknownReferences.length?[`未登録タグ参照 ${unknownReferences.length}件`]:[]),...(disabledReferences.length?[`無効タグ参照 ${disabledReferences.length}件`]:[]),...(cycles.length?[`置換循環 ${cycles.length}件`]:[])]},
+  migration_candidates:migrationCandidates,tags:tagRows,categories:categoryRows,
+  unknown_references:unknownReferences,deprecated_references:deprecatedReferences,disabled_references:disabledReferences
+ };
+}
+function exportTagGovernanceReport(){
+ const report=buildTagGovernanceReport(),stamp=String(now()).replace(/[:.]/g,'-');
+ downloadText(`GK_TagGovernance_${currentProjectId}_${stamp}.json`,JSON.stringify(report,null,2),'application/json;charset=utf-8');
+}
+function exportTagMigrationPlanCsv(){
+ const report=buildTagGovernanceReport();
+ const head=['source_tag_id','source_name','usage_count','replacement_tag_id','replacement_name','ready','blockers'];
+ const lines=[head.map(csvCell).join(',')];
+ report.migration_candidates.forEach(row=>lines.push([row.source_tag_id,row.source_name,row.usage_count,row.replacement_tag_id,row.replacement_name,row.ready?'YES':'NO',(row.blockers||[]).join(' / ')].map(csvCell).join(',')));
+ downloadText(`GK_TagMigrationPlan_${currentProjectId}.csv`,'\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8');
+}
+// BUILD413_TAG_GOVERNANCE_EXPORT_END
 function tagLabel(id){const t=tagDefinitions().find(x=>x.id===id);return t?(t.name||t.id):id}
 function masterTagIds(){return masterTags.value?masterTags.value.split(',').map(x=>x.trim()).filter(Boolean):[]}
 function setMasterTagIds(ids){masterTags.value=[...new Set((ids||[]).filter(Boolean))].join(',');renderMasterTagChips()}
