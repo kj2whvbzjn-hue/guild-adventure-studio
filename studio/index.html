@@ -129,6 +129,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .tag-picker-row.disabled{opacity:.55}
 .tag-picker-row input{width:auto;margin-top:3px}
 .tag-picker-empty{padding:24px;text-align:center;color:var(--muted)}
+.tag-inspector-grid{display:grid;grid-template-columns:minmax(220px,1fr) minmax(280px,2fr);gap:14px}
+.tag-inspector-list{max-height:520px;overflow:auto;display:flex;flex-direction:column;gap:7px}
+.tag-inspector-tag{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px}
+.tag-inspector-tag.active{outline:2px solid var(--accent)}
+.tag-reference-path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow-wrap:anywhere}
+@media(max-width:720px){.tag-inspector-grid{grid-template-columns:1fr}.tag-inspector-list{max-height:260px}}
 
 @media(max-width:900px){
   .main{grid-template-columns:1fr}
@@ -780,9 +786,21 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-validation" class="view hidden">
   <h1>データ検証</h1>
-  <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button></div>
+  <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button><button onclick="renderTagReferenceInspector()">タグ参照を再集計</button></div>
   <div id="validationSummary" class="card"></div>
   <div id="validationList" class="list"></div>
+  <div class="card">
+    <h2>タグ参照インスペクター <span class="badge ok">BUILD409</span></h2>
+    <p class="small">タグの使用箇所、子タグ、廃止時の推奨置換先を確認します。置換は実行直前にバックアップを作成し、キャラクターと全マスターデータの tags 配列だけを変更します。</p>
+    <div class="grid">
+      <div class="field"><label>検索</label><input id="tagInspectorSearch" placeholder="ID・名称・エイリアス" oninput="renderTagReferenceInspector()"></div>
+      <div class="field"><label>表示</label><select id="tagInspectorFilter" onchange="renderTagReferenceInspector()"><option value="all">すべて</option><option value="used">使用中のみ</option><option value="unused">未使用のみ</option><option value="deprecated">廃止タグのみ</option></select></div>
+    </div>
+    <div class="tag-inspector-grid">
+      <div id="tagInspectorList" class="tag-inspector-list"></div>
+      <div id="tagInspectorDetail" class="item">タグを選択してください。</div>
+    </div>
+  </div>
 </section>
 
 <section id="view-backup" class="view hidden">
@@ -1546,6 +1564,42 @@ function getTagReferences(id){return tagIndexService.getReferences(id)}
 function getChildTags(id){return tagIndexService.getChildren(id)}
 function canDeleteTag(id){return tagIndexService.canDelete(id)}
 function resolveTag(query){return tagIndexService.resolve(query)}
+let selectedInspectorTagId='';
+function tagReplacementId(tag){return String(tag?.replacement_tag_id||tag?.recommended_replacement_tag_id||'').trim()}
+function renderTagReferenceInspector(){
+ rebuildTagIndex();
+ const list=document.getElementById('tagInspectorList'),detail=document.getElementById('tagInspectorDetail');if(!list||!detail)return;
+ const q=String(document.getElementById('tagInspectorSearch')?.value||'').trim().toLowerCase();
+ const filter=document.getElementById('tagInspectorFilter')?.value||'all';
+ const rows=tagDefinitions().filter(t=>{const id=String(t.id||'');const usage=getTagUsage(id);const hay=[id,t.name,...(t.aliases||[])].join(' ').toLowerCase();if(q&&!hay.includes(q))return false;if(filter==='used'&&!usage)return false;if(filter==='unused'&&usage)return false;if(filter==='deprecated'&&t.deprecated!==true)return false;return true;}).sort((a,b)=>getTagUsage(b.id)-getTagUsage(a.id)||String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
+ if(selectedInspectorTagId&&!rows.some(t=>t.id===selectedInspectorTagId))selectedInspectorTagId='';
+ list.innerHTML=rows.length?rows.map(t=>`<button type="button" class="tag-inspector-tag ${t.id===selectedInspectorTagId?'active':''}" onclick="selectInspectorTag('${escAttr(t.id)}')"><b>${esc(t.name||t.id)}</b> <span class="small">${esc(t.id)}</span><br><span class="small">使用 ${getTagUsage(t.id)} / 子 ${getChildTags(t.id).length}${t.deprecated===true?' / 廃止':''}</span></button>`).join(''):'<div class="tag-picker-empty">該当するタグがありません。</div>';
+ if(selectedInspectorTagId)renderTagInspectorDetail(selectedInspectorTagId);else detail.innerHTML='タグを選択してください。';
+}
+function selectInspectorTag(id){selectedInspectorTagId=id;renderTagReferenceInspector()}
+function renderTagInspectorDetail(id){
+ const root=document.getElementById('tagInspectorDetail'),tag=tagIndexService.getTag(id);if(!root||!tag)return;
+ const refs=getTagReferences(id),children=getChildTags(id),decision=canDeleteTag(id),replacement=tagReplacementId(tag);
+ const replacementOptions=tagDefinitions().filter(t=>t.id!==id&&t.enabled!==false&&t.deprecated!==true).sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
+ root.innerHTML=`<h3>${esc(tag.name||tag.id)} <span class="small">${esc(tag.id)}</span></h3>
+ <p>使用数 <b>${refs.length}</b> / 子タグ <b>${children.length}</b> / 物理削除 <b>${decision.allowed?'可能':'不可'}</b></p>
+ ${decision.reasons.length?`<p class="small">削除不可理由: ${esc(decision.reasons.join('、'))}</p>`:''}
+ <div class="field"><label>置換先</label><select id="tagInspectorReplacement"><option value="">選択してください</option>${replacementOptions.map(t=>`<option value="${escAttr(t.id)}" ${t.id===replacement?'selected':''}>${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('')}</select></div>
+ <div class="toolbar"><button onclick="previewTagReplacement('${escAttr(id)}')">置換内容を確認</button><button class="danger" ${refs.length?'':'disabled'} onclick="applyTagReplacement('${escAttr(id)}')">参照を一括置換</button></div>
+ <h4>参照元</h4>${refs.length?refs.map(r=>`<div class="item"><b>${esc(r.owner_name||r.owner_id||r.owner_type)}</b> <span class="small">${esc(r.owner_type)}</span><div class="tag-reference-path">${esc(r.path)}</div></div>`).join(''):'<p class="small">参照はありません。</p>'}
+ <h4>子タグ</h4>${children.length?children.map(c=>`<span class="tag-chip">${esc(c.name||c.id)} <span class="small">${esc(c.id)}</span></span>`).join(' '):'<p class="small">子タグはありません。</p>'}`;
+}
+function selectedTagReplacement(oldId){const next=String(document.getElementById('tagInspectorReplacement')?.value||'').trim();if(!next){alert('置換先タグを選択してください。');return ''}if(next===oldId||!tagIndexService.getTag(next)){alert('有効な別タグを選択してください。');return ''}return next}
+function previewTagReplacement(oldId){const next=selectedTagReplacement(oldId);if(!next)return;const refs=getTagReferences(oldId);alert(`${oldId} → ${next}\n置換対象: ${refs.length}件\n\n`+refs.map(r=>`${r.owner_type}: ${r.owner_name||r.owner_id} (${r.path})`).join('\n'))}
+function applyTagReplacement(oldId){
+ const next=selectedTagReplacement(oldId);if(!next)return;const refs=getTagReferences(oldId);if(!refs.length){alert('置換対象がありません。');return}
+ if(!confirm(`${oldId} を ${next} に ${refs.length}件置換します。実行前バックアップを作成します。よろしいですか？`))return;
+ createBackup('before-tag-replacement-'+oldId+'-to-'+next);
+ let changed=0;const replace=arr=>{if(!Array.isArray(arr))return arr;const out=[];arr.forEach(v=>{const value=String(v??'').trim();const mapped=value===oldId?next:value;if(mapped!==value)changed++;if(mapped&&!out.includes(mapped))out.push(mapped)});return out};
+ (data.characters||[]).forEach(x=>x.tags=replace(x.tags));Object.values(data.masters||{}).forEach(rows=>(rows||[]).forEach(x=>x.tags=replace(x.tags)));
+ const oldTag=tagIndexService.getTag(oldId);if(oldTag){oldTag.deprecated=true;oldTag.replacement_tag_id=next}
+ save();rebuildTagIndex();runValidation();renderTagReferenceInspector();renderAll();alert(`タグ参照を ${changed} 件置換しました。`)
+}
 // BUILD408_TAG_INDEX_SERVICE_END
 function collectTagReferences(){return collectTagReferencesFrom(data)}
 function validateTagSystem(){
