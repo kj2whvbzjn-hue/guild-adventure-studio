@@ -5,6 +5,8 @@ require_once __DIR__ . '/src/ExportLoadException.php';
 require_once __DIR__ . '/src/RuntimeErrorReporter.php';
 require_once __DIR__ . '/src/ExportPackage.php';
 require_once __DIR__ . '/src/RecordCollection.php';
+require_once __DIR__ . '/src/RuntimeTagRegistry.php';
+require_once __DIR__ . '/src/RuntimeTagReferenceValidator.php';
 require_once __DIR__ . '/src/GameMasterRepository.php';
 require_once __DIR__ . '/src/SimpleSchemaValidator.php';
 require_once __DIR__ . '/src/DataIntegrityValidator.php';
