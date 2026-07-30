@@ -106,6 +106,12 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .tag-indent-1{padding-left:24px}.tag-indent-2{padding-left:40px}.tag-indent-3{padding-left:56px}.tag-indent-4{padding-left:72px}.tag-indent-5{padding-left:88px}
 .tag-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px;margin:2px;background:#fff}
 .tag-warning{border-left:4px solid var(--warn);padding-left:10px}
+.tag-picker-value{min-height:42px;border:1px solid #374151;border-radius:8px;padding:7px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#111827}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid #4b5563;border-radius:999px;padding:3px 8px;font-size:12px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-panel{background:#111827;border:1px solid #4b5563;border-radius:12px;width:min(900px,96vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 70px #000}
+.modal-head,.modal-foot{padding:14px;border-bottom:1px solid #374151}.modal-foot{border-top:1px solid #374151;border-bottom:0}
+.modal-body{padding:14px;overflow:auto}.tag-picker-category{margin:12px 0}.tag-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px}.tag-picker-option{display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid #374151;border-radius:8px}.tag-picker-option input{width:auto;margin-top:3px}
 @media(max-width:900px){.tag-layout{grid-template-columns:1fr}}
 
 .deploy-drop{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;background:#fafafa}
@@ -653,6 +659,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div class="field"><label>離脱</label><input id="characterLeavePoint"></div>
       <div class="field"><label>覚醒</label><input id="characterAwakenPoint"></div>
     </div>
+    <div class="field"><label>タグ</label><input id="characterTags" type="hidden"><div id="characterTagsDisplay" class="tag-picker-value"></div><button type="button" onclick="openTagSelector('characterTags','characterTagsDisplay')">タグを選択</button></div>
     <div class="field"><label>性格・設定</label><textarea id="characterProfile"></textarea></div>
     <div class="grid">
       <div class="field"><label>第一目的</label><input id="characterGoal1"></div>
@@ -689,7 +696,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div class="field"><label>状態</label><select id="masterStatus"><option value="draft">下書き</option><option value="review">確認中</option><option value="approved">承認済み</option><option value="archived">保管済み</option></select></div>
     </div>
     <div class="grid">
-      <div class="field"><label>タグ（カンマ区切り）</label><input id="masterTags"></div>
+      <div class="field"><label>タグ</label><input id="masterTags" type="hidden"><div id="masterTagsDisplay" class="tag-picker-value"></div><button type="button" onclick="openTagSelector('masterTags','masterTagsDisplay')">タグを選択</button></div>
       <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
     </div>
     <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
@@ -744,6 +751,15 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
   </div>
 </section>
+
+
+<div id="tagSelectorModal" class="modal-backdrop hidden" onclick="if(event.target===this)closeTagSelector()">
+  <div class="modal-panel">
+    <div class="modal-head"><h2 style="margin:0 0 10px">タグ選択</h2><input id="tagSelectorSearch" placeholder="ID・名称・説明・エイリアスを検索" oninput="renderTagSelector()"></div>
+    <div id="tagSelectorBody" class="modal-body"></div>
+    <div class="modal-foot toolbar"><button class="primary" onclick="applyTagSelector()">選択を適用</button><button onclick="closeTagSelector()">キャンセル</button></div>
+  </div>
+</div>
 
 <section id="view-battle" class="view hidden">
   <h1>戦闘プロトタイプ</h1>
@@ -1253,6 +1269,7 @@ function normalizeData(){
  data.tags=data.tags||[];
  data.tag_categories.forEach((c,i)=>{c.id=c.id||('TAGCAT-'+String(i+1).padStart(4,'0'));c.name=c.name||c.id;c.color=c.color||'#6b7280';c.description=c.description||'';c.sort_order=Number(c.sort_order)||0;c.enabled=c.enabled!==false;});
  data.tags.forEach((t,i)=>{t.id=t.id||('TAG-'+String(i+1).padStart(4,'0'));t.name=t.name||t.id;t.aliases=Array.isArray(t.aliases)?t.aliases:[];t.parent_id=t.parent_id||'';t.category_id=t.category_id||'';t.color=t.color||'';t.description=t.description||'';t.sort_order=Number(t.sort_order)||0;t.enabled=t.enabled!==false;t.locked=!!t.locked;t.deprecated=!!t.deprecated;t.replacement_tag_id=t.replacement_tag_id||'';});
+ (data.characters||[]).forEach(c=>c.tags=Array.isArray(c.tags)?c.tags:[]);
  ['stats','jobs','skills','equipment','mods','monsters','status_effects','tablets','ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});
  data.quests.forEach(q=>{
   q.type=q.type||'sub';
@@ -1457,8 +1474,8 @@ function addCharacter(){
  let name=document.getElementById('characterName').value.trim();
  if(!name)return alert('名前を入力してください。');
  if(allIds().includes(id))return alert('そのIDは既に使用されています。');
- data.characters.push({id,name,role:characterRole.value.trim(),job:characterJob.value.trim(),race:characterRace.value.trim(),age:characterAge.value.trim(),speech:characterSpeech.value.trim(),organization_id:characterOrganization.value.trim(),first_appearance:characterFirstAppearance.value.trim(),join_point:characterJoinPoint.value.trim(),leave_point:characterLeavePoint.value.trim(),awaken_point:characterAwakenPoint.value.trim(),goals:[characterGoal1.value.trim(),characterGoal2.value.trim(),characterGoal3.value.trim()],profile:characterProfile.value.trim(),status:'draft',created_at:now(),updated_at:now()});
- ['characterId','characterName','characterRole','characterJob','characterRace','characterAge','characterSpeech','characterOrganization','characterFirstAppearance','characterJoinPoint','characterLeavePoint','characterAwakenPoint','characterGoal1','characterGoal2','characterGoal3','characterProfile'].forEach(x=>document.getElementById(x).value='');
+ data.characters.push({id,name,role:characterRole.value.trim(),job:characterJob.value.trim(),race:characterRace.value.trim(),age:characterAge.value.trim(),speech:characterSpeech.value.trim(),organization_id:characterOrganization.value.trim(),first_appearance:characterFirstAppearance.value.trim(),join_point:characterJoinPoint.value.trim(),leave_point:characterLeavePoint.value.trim(),awaken_point:characterAwakenPoint.value.trim(),goals:[characterGoal1.value.trim(),characterGoal2.value.trim(),characterGoal3.value.trim()],tags:readTagField('characterTags'),profile:characterProfile.value.trim(),status:'draft',created_at:now(),updated_at:now()});
+ ['characterId','characterName','characterRole','characterJob','characterRace','characterAge','characterSpeech','characterOrganization','characterFirstAppearance','characterJoinPoint','characterLeavePoint','characterAwakenPoint','characterGoal1','characterGoal2','characterGoal3','characterProfile'].forEach(x=>document.getElementById(x).value='');writeTagField('characterTags','characterTagsDisplay',[]);
  persist('character added')
 }
 function deleteCharacter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.characters=data.characters.filter(x=>x.id!==id);persist('character deleted')}}
@@ -1497,10 +1514,10 @@ const MASTER_LABELS={stats:'能力値',jobs:'職業',skills:'スキル',equipmen
 let editingMasterId='';
 function masterPrefix(category){return ({stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
 function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.masters[category]||[]).forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(String(x.id||'').startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
-function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')}
-function editMaster(category,id){const m=(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(', ');masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';window.scrollTo({top:0,behavior:'smooth'})}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');const rec={id,name,status:masterStatus.value,tags:readTagField('masterTags'),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')}
+function editMaster(category,id){const m=(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';writeTagField('masterTags','masterTagsDisplay',m.tags||[]);masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';window.scrollTo({top:0,behavior:'smooth'})}
 function deleteMaster(category,id){if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
-function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';masterParams.value='';masterDescription.value=''}
+function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';writeTagField('masterTags','masterTagsDisplay',[]);masterParams.value='';masterDescription.value=''}
 function renderMasters(){if(!document.getElementById('masterList'))return;const c=masterCategory.value||'stats',q=(masterSearch.value||'').toLowerCase();const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'}
 function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
@@ -1508,6 +1525,17 @@ function masterCsv(category){const head=['category','id','name','status','tags',
 function exportMasterCsv(){const c=masterCategory.value;downloadText('GK_'+c+'_v'+APP_VERSION+'.csv',masterCsv(c),'text/csv;charset=utf-8')}
 function exportAllMastersCsv(){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];Object.keys(MASTER_LABELS).forEach(c=>(data.masters[c]||[]).forEach(m=>lines.push([c,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(','))));downloadText('GK_MasterDB_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
+
+
+let activeTagFieldId='',activeTagDisplayId='',tagSelectorDraft=[];
+function readTagField(fieldId){const el=document.getElementById(fieldId);if(!el||!el.value)return[];return [...new Set(el.value.split(',').map(x=>x.trim()).filter(Boolean))]}
+function renderTagChips(ids){if(!ids||!ids.length)return '<span class="small">未設定</span>';return '<div class="tag-picker-value">'+ids.map(id=>{const t=tagById(id);return t?`<span class="tag-chip" style="border-color:${escAttr(effectiveTagColor(t))}"><span class="tag-swatch" style="background:${escAttr(effectiveTagColor(t))}"></span>${esc(t.name)}</span>`:`<span class="tag-chip warn">不明: ${esc(id)}</span>`}).join('')+'</div>'}
+function writeTagField(fieldId,displayId,ids){const el=document.getElementById(fieldId),display=document.getElementById(displayId);if(el)el.value=[...new Set((ids||[]).filter(Boolean))].join(',');if(display)display.innerHTML=renderTagChips(readTagField(fieldId))}
+function openTagSelector(fieldId,displayId){activeTagFieldId=fieldId;activeTagDisplayId=displayId;tagSelectorDraft=readTagField(fieldId);tagSelectorSearch.value='';tagSelectorModal.classList.remove('hidden');renderTagSelector()}
+function closeTagSelector(){tagSelectorModal.classList.add('hidden');activeTagFieldId='';activeTagDisplayId='';tagSelectorDraft=[]}
+function toggleTagSelector(id,checked){if(checked&&!tagSelectorDraft.includes(id))tagSelectorDraft.push(id);if(!checked)tagSelectorDraft=tagSelectorDraft.filter(x=>x!==id)}
+function renderTagSelector(){const q=(tagSelectorSearch.value||'').trim().toLowerCase(),cats=[...(data.tag_categories||[])].filter(c=>c.enabled!==false).sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja'));let html='';cats.forEach(c=>{const tags=(data.tags||[]).filter(t=>t.category_id===c.id&&t.enabled!==false&&(!t.deprecated||tagSelectorDraft.includes(t.id))).filter(t=>!q||[t.id,t.name,t.description,...(t.aliases||[])].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja'));if(!tags.length)return;html+=`<div class="tag-picker-category"><h3><span class="tag-swatch" style="background:${escAttr(c.color||'#6b7280')}"></span> ${esc(c.name)}</h3><div class="tag-picker-grid">`+tags.map(t=>`<label class="tag-picker-option"><input type="checkbox" ${tagSelectorDraft.includes(t.id)?'checked':''} onchange="toggleTagSelector('${escAttr(t.id)}',this.checked)"><span><b>${esc(t.name)}</b> <span class="small">${esc(t.id)}</span>${t.deprecated?'<br><span class="badge warn">廃止・解除のみ</span>':''}${t.description?'<br><span class="small">'+esc(t.description)+'</span>':''}</span></label>`).join('')+'</div></div>'});tagSelectorBody.innerHTML=html||'<div class="story-empty">選択可能なタグがありません。</div>'}
+function applyTagSelector(){writeTagField(activeTagFieldId,activeTagDisplayId,tagSelectorDraft);closeTagSelector()}
 
 let selectedTagId='';
 let selectedTagCategoryId='';
@@ -3400,7 +3428,7 @@ function renderChapters(){
  chapterList.innerHTML=[...data.chapters].sort((a,b)=>(a.no||0)-(b.no||0)).map(c=>`<div class="item"><b>第${esc(c.no)}章 ${esc(c.title)}</b> <span class="badge">${esc(c.id)}</span><p><strong>テーマ:</strong> ${esc(c.theme||'')}</p><p>${esc(c.summary||'')}</p><div class="toolbar"><button onclick="addSection('${escAttr(c.id)}')">節を追加</button><button class="danger" onclick="deleteChapter('${escAttr(c.id)}')">章を削除</button></div><div class="list">${(c.sections||[]).map(s=>`<div class="item"><b>${esc(s.no)}節 ${esc(s.title)}</b> <span class="badge">${esc(s.id)}</span> <button class="danger" onclick="deleteSection('${escAttr(c.id)}','${escAttr(s.id)}')">削除</button></div>`).join('')||'<div class="small">節はまだありません。</div>'}</div></div>`).join('')||'<div class="card">章はまだありません。</div>'
 }
 function renderCharacters(){
- characterList.innerHTML=[...data.characters].map(c=>`<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')} / ${esc(c.race||'')} / 所属 ${esc(c.organization_id||'なし')}</div><p>${esc(c.profile||'')}</p><div class="meta">目的: ${esc((c.goals||[]).filter(Boolean).join(' → ')||'未設定')} / 初登場 ${esc(c.first_appearance||'未設定')} / 加入 ${esc(c.join_point||'未設定')} / 覚醒 ${esc(c.awaken_point||'未設定')}</div><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`).join('')||'<div class="card">キャラクターはまだありません。</div>';
+ characterList.innerHTML=[...data.characters].map(c=>`<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')} / ${esc(c.race||'')} / 所属 ${esc(c.organization_id||'なし')}</div><p>${esc(c.profile||'')}</p>${renderTagChips(c.tags||[])}<div class="meta">目的: ${esc((c.goals||[]).filter(Boolean).join(' → ')||'未設定')} / 初登場 ${esc(c.first_appearance||'未設定')} / 加入 ${esc(c.join_point||'未設定')} / 覚醒 ${esc(c.awaken_point||'未設定')}</div><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`).join('')||'<div class="card">キャラクターはまだありません。</div>';
  organizationList.innerHTML=data.organizations.map(o=>`<div class="item"><b>${esc(o.name)}</b> <span class="badge">${esc(o.id)}</span><div class="meta">${esc(o.type||'')}</div><p>${esc(o.notes||'')}</p><button class="danger" onclick="deleteOrganization('${escAttr(o.id)}')">削除</button></div>`).join('')||'<div class="card">組織はまだありません。</div>';
  termList.innerHTML=data.terms.map(t=>`<div class="item"><b>${esc(t.name)}</b> <span class="badge">${esc(t.id)}</span><div class="meta">${esc(t.category||'')}</div><p>${esc(t.description||'')}</p><button class="danger" onclick="deleteTerm('${escAttr(t.id)}')">削除</button></div>`).join('')||'<div class="card">用語はまだありません。</div>';
  relationshipList.innerHTML=data.relationships.map(r=>`<div class="item"><b>${esc(characterName(r.from_character_id))} → ${esc(characterName(r.to_character_id))}</b> <span class="badge">${esc(r.type)}</span><p>${esc(r.notes||'')}</p><button class="danger" onclick="deleteRelationship('${escAttr(r.id)}')">削除</button></div>`).join('')||'<div class="card">関係はまだありません。</div>';
