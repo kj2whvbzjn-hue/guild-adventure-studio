@@ -786,11 +786,11 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-validation" class="view hidden">
   <h1>データ検証</h1>
-  <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button><button onclick="renderTagReferenceInspector()">タグ参照を再集計</button></div>
+  <div class="toolbar"><button class="primary" onclick="runValidation()">検証実行</button><button onclick="renderTagReferenceInspector();renderTagCategoryInspector()">タグ参照を再集計</button></div>
   <div id="validationSummary" class="card"></div>
   <div id="validationList" class="list"></div>
   <div class="card">
-    <h2>タグ参照インスペクター <span class="badge ok">BUILD411</span></h2>
+    <h2>タグ参照インスペクター <span class="badge ok">BUILD412</span></h2>
     <p class="small">タグの使用箇所、子タグ、廃止時の推奨置換先を確認します。置換は実行直前にバックアップを作成し、キャラクターと全マスターデータの tags 配列だけを変更します。</p>
     <div class="grid">
       <div class="field"><label>検索</label><input id="tagInspectorSearch" placeholder="ID・名称・エイリアス" oninput="renderTagReferenceInspector()"></div>
@@ -799,6 +799,15 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="tag-inspector-grid">
       <div id="tagInspectorList" class="tag-inspector-list"></div>
       <div id="tagInspectorDetail" class="item">タグを選択してください。</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>タグカテゴリ・インスペクター <span class="badge ok">BUILD412</span></h2>
+    <p class="small">カテゴリの使用数を確認し、所属タグを別カテゴリへ安全に移動できます。物理削除は未使用・未ロックのカテゴリだけが対象です。</p>
+    <div class="field"><label>カテゴリ検索</label><input id="tagCategoryInspectorSearch" placeholder="ID・名称" oninput="renderTagCategoryInspector()"></div>
+    <div class="tag-inspector-grid">
+      <div id="tagCategoryInspectorList" class="tag-inspector-list"></div>
+      <div id="tagCategoryInspectorDetail" class="item">カテゴリを選択してください。</div>
     </div>
   </div>
 </section>
@@ -1648,6 +1657,52 @@ function deleteTagSafely(id){
  selectedInspectorTagId='';save();rebuildTagIndex();runValidation();renderTagReferenceInspector();renderAll();alert(`タグ ${id} を物理削除しました。`)
 }
 // BUILD411_TAG_SAFE_DELETE_END
+// BUILD412_TAG_CATEGORY_LIFECYCLE_BEGIN
+let selectedInspectorTagCategoryId='';
+function getTagsByCategory(categoryId){return tagDefinitions().filter(t=>String(t?.category_id||'').trim()===String(categoryId||'').trim())}
+function canDeleteTagCategory(categoryId){
+ const category=tagCategoryDefinitions().find(c=>String(c?.id||'').trim()===String(categoryId||'').trim());
+ const reasons=[];if(!category)reasons.push('カテゴリが存在しません');
+ const tags=getTagsByCategory(categoryId);if(tags.length)reasons.push(`所属タグが ${tags.length} 件あります`);
+ if(category?.locked===true)reasons.push('カテゴリがロックされています');
+ return {allowed:reasons.length===0,reasons,tags,category};
+}
+function renderTagCategoryInspector(){
+ const list=document.getElementById('tagCategoryInspectorList'),detail=document.getElementById('tagCategoryInspectorDetail');if(!list||!detail)return;
+ const q=String(document.getElementById('tagCategoryInspectorSearch')?.value||'').trim().toLowerCase();
+ const rows=tagCategoryDefinitions().filter(c=>!q||[c.id,c.name,c.description].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0)||String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
+ list.innerHTML=rows.map(c=>{const count=getTagsByCategory(c.id).length;return `<button class="tag-inspector-row ${selectedInspectorTagCategoryId===c.id?'active':''}" onclick="selectInspectorTagCategory('${escAttr(c.id)}')"><b>${esc(c.name||c.id)}</b><span>${esc(c.id)} / ${count}件${c.locked===true?' / LOCK':''}</span></button>`}).join('')||'<div class="tag-picker-empty">該当するカテゴリがありません。</div>';
+ if(selectedInspectorTagCategoryId)renderTagCategoryInspectorDetail(selectedInspectorTagCategoryId);else detail.innerHTML='カテゴリを選択してください。';
+}
+function selectInspectorTagCategory(id){selectedInspectorTagCategoryId=id;renderTagCategoryInspector()}
+function renderTagCategoryInspectorDetail(id){
+ const root=document.getElementById('tagCategoryInspectorDetail'),decision=canDeleteTagCategory(id),category=decision.category;if(!root||!category)return;
+ const options=tagCategoryDefinitions().filter(c=>c.id!==id&&c.enabled!==false).sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0)).map(c=>`<option value="${escAttr(c.id)}">${esc(c.name||c.id)} (${esc(c.id)})</option>`).join('');
+ root.innerHTML=`<h3>${esc(category.name||category.id)} <span class="small">${esc(category.id)}</span></h3>
+ <p>所属タグ <b>${decision.tags.length}</b> / 物理削除 <b>${decision.allowed?'可能':'不可'}</b></p>
+ ${decision.reasons.length?`<p class="small">削除不可理由: ${esc(decision.reasons.join('、'))}</p>`:''}
+ <div class="field"><label>移動先カテゴリ</label><select id="tagCategoryMoveTarget"><option value="">選択してください</option>${options}</select></div>
+ <div class="toolbar"><button ${decision.tags.length?'':'disabled'} onclick="previewTagCategoryMove('${escAttr(id)}')">移動内容を確認</button><button class="danger" ${decision.tags.length?'':'disabled'} onclick="applyTagCategoryMove('${escAttr(id)}')">所属タグを一括移動</button><button class="danger" ${decision.allowed?'':'disabled'} onclick="deleteTagCategorySafely('${escAttr(id)}')">安全に物理削除</button></div>
+ <h4>所属タグ</h4>${decision.tags.length?decision.tags.map(t=>`<span class="tag-chip">${esc(t.name||t.id)} <span class="small">${esc(t.id)}</span></span>`).join(' '):'<p class="small">所属タグはありません。</p>'}`;
+}
+function selectedTagCategoryMoveTarget(oldId){
+ const next=String(document.getElementById('tagCategoryMoveTarget')?.value||'').trim();if(!next){alert('移動先カテゴリを選択してください。');return ''}
+ if(next===oldId){alert('同じカテゴリには移動できません。');return ''}
+ const target=tagCategoryDefinitions().find(c=>String(c?.id||'').trim()===next);if(!target||target.enabled===false){alert('有効な移動先カテゴリを選択してください。');return ''}return next;
+}
+function previewTagCategoryMove(oldId){const next=selectedTagCategoryMoveTarget(oldId);if(!next)return;const tags=getTagsByCategory(oldId);alert(`${oldId} → ${next}\n移動対象: ${tags.length}件\n\n`+tags.map(t=>`${t.name||t.id} (${t.id})`).join('\n'))}
+function applyTagCategoryMove(oldId){
+ const next=selectedTagCategoryMoveTarget(oldId);if(!next)return;const tags=getTagsByCategory(oldId);if(!tags.length){alert('移動対象がありません。');return}
+ if(!confirm(`${oldId} の所属タグ ${tags.length}件を ${next} へ移動します。実行前バックアップを作成します。よろしいですか？`))return;
+ createBackup('before-tag-category-move-'+oldId+'-to-'+next);tags.forEach(t=>t.category_id=next);save();rebuildTagIndex();runValidation();renderTagCategoryInspector();renderTagReferenceInspector();renderAll();alert(`所属タグを ${tags.length} 件移動しました。`)
+}
+function deleteTagCategorySafely(id){
+ const decision=canDeleteTagCategory(id);if(!decision.allowed){alert('このカテゴリは物理削除できません。\n・'+decision.reasons.join('\n・'));return}
+ const typed=prompt(`タグカテゴリ「${decision.category?.name||id}」(${id}) を物理削除します。\n確認のためカテゴリIDを入力してください。`,'');if(typed===null)return;if(String(typed).trim()!==id){alert('カテゴリIDが一致しないため中止しました。');return}
+ createBackup('before-tag-category-physical-delete-'+id);const before=tagCategoryDefinitions().length;data.tag_categories=tagCategoryDefinitions().filter(c=>String(c?.id||'').trim()!==id);if(data.tag_categories.length===before){alert('対象カテゴリが見つからないため中止しました。');return}
+ selectedInspectorTagCategoryId='';save();rebuildTagIndex();runValidation();renderTagCategoryInspector();renderTagReferenceInspector();renderAll();alert(`タグカテゴリ ${id} を物理削除しました。`)
+}
+// BUILD412_TAG_CATEGORY_LIFECYCLE_END
 // BUILD408_TAG_INDEX_SERVICE_END
 function collectTagReferences(){return collectTagReferencesFrom(data)}
 function validateTagSystem(){
@@ -3592,7 +3647,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
