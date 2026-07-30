@@ -724,6 +724,24 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
   </div>
+  <div id="tagManagementCenter" class="card hidden">
+    <h2>タグ管理センター <span class="badge ok">GKS-B001</span></h2>
+    <p class="small">タグの登録・利用状況・監査・修復をこの画面からまとめて操作できます。修復の適用前にはBUILD415の安全確認とバックアップが実行されます。</p>
+    <div id="tagManagementSummary" class="grid"></div>
+    <div class="toolbar">
+      <button class="primary" onclick="runTagCenterValidation()">タグ検証を実行</button>
+      <button onclick="exportTagGovernanceReport()">監査JSON出力</button>
+      <button onclick="openTagRepairCenter()">修復プランナー</button>
+      <button onclick="openTagBaselineCenter()">ベースライン比較</button>
+      <button onclick="addTagCategoryFromMaster()">カテゴリ追加</button>
+      <button onclick="openTagCategoryCenter()">カテゴリ管理</button>
+    </div>
+    <div id="tagManagementValidation" class="small"></div>
+    <div class="grid">
+      <div class="field"><label>参照を確認するタグ</label><select id="tagManagementSelectedTag" onchange="renderTagManagementCenter()"></select></div>
+      <div id="tagManagementReferenceDetail" class="item">タグを選択してください。</div>
+    </div>
+  </div>
   <div class="card">
     <h2>CSV入出力</h2>
     <div class="toolbar"><button onclick="exportMasterCsv()">選択分類をCSV出力</button><button onclick="exportAllMastersCsv()">全分類をCSV一括出力</button></div>
@@ -1996,8 +2014,43 @@ function populateTagMasterSelectors(current={}){
 function handleMasterCategoryChange(){clearMasterForm();renderMasters()}
 function syncMasterFormMode(){
  const isTag=masterCategory.value==='tags';document.getElementById('standardMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);
- document.getElementById('masterStatus')?.closest('.field')?.classList.toggle('hidden',isTag);if(isTag)populateTagMasterSelectors();
+ document.getElementById('tagManagementCenter')?.classList.toggle('hidden',!isTag);
+ document.getElementById('masterStatus')?.closest('.field')?.classList.toggle('hidden',isTag);if(isTag){populateTagMasterSelectors();renderTagManagementCenter()}
 }
+
+// GKS-B001_TAG_MANAGEMENT_CENTER_BEGIN
+function tagCenterStat(label,value,detail=''){return `<div class="item"><b>${esc(label)}</b><div style="font-size:1.45rem;font-weight:700">${esc(value)}</div>${detail?`<div class="small">${esc(detail)}</div>`:''}</div>`}
+function renderTagManagementCenter(){
+ const root=document.getElementById('tagManagementSummary');if(!root||masterCategory.value!=='tags')return;
+ rebuildTagIndex();const report=buildTagGovernanceReport();const summary=report.summary||{};
+ root.innerHTML=[
+  tagCenterStat('登録タグ',summary.tag_count??tagDefinitions().length,'共通タグ辞書'),
+  tagCenterStat('使用中',summary.used_tag_count??0,'1件以上参照'),
+  tagCenterStat('未使用',summary.unused_tag_count??0,'安全削除候補を含む'),
+  tagCenterStat('廃止済み',summary.deprecated_tag_count??0,'置換先の確認が必要'),
+  tagCenterStat('参照総数',summary.reference_count??0,'キャラクター・マスター'),
+  tagCenterStat('受入判定',report.acceptance?.pass?'PASS':'BLOCKED',(report.acceptance?.blockers||[]).join(' / ')||'重大阻害なし')
+ ].join('');
+ const select=document.getElementById('tagManagementSelectedTag');const previous=select.value;
+ select.innerHTML='<option value="">選択してください</option>'+tagDefinitions().slice().sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')).map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('');
+ if(tagDefinitions().some(t=>t.id===previous))select.value=previous;
+ const detail=document.getElementById('tagManagementReferenceDetail'),id=select.value;if(!id){detail.innerHTML='タグを選択してください。';return}
+ const tag=tagDefinitions().find(t=>t.id===id)||{};const refs=getTagReferences(id)||[];const children=getChildTags(id)||[];const replacement=resolveTagReplacementChain(id);const deletion=canDeleteTag(id);
+ detail.innerHTML=`<b>${esc(tag.name||id)}</b> <span class="badge">${esc(id)}</span><div class="small">使用 ${refs.length}件 / 子タグ ${children.length}件 / 削除 ${deletion.allowed?'可能':'不可'}</div><div class="small">置換経路: ${esc((replacement.chain||[]).join(' → ')||'なし')} ${replacement.valid?'':'（無効）'}</div><hr><b>参照箇所</b>${refs.length?'<ul>'+refs.slice(0,50).map(r=>`<li><code>${esc(r.path||String(r))}</code></li>`).join('')+'</ul>':'<div class="small">参照はありません。</div>'}${refs.length>50?`<div class="small">ほか ${refs.length-50}件</div>`:''}`;
+ const v=document.getElementById('tagManagementValidation');const errors=validation.filter(x=>x.level==='ERROR'&&String(x.message||'').includes('タグ')).length,warnings=validation.filter(x=>x.level==='WARNING'&&String(x.message||'').includes('タグ')).length;v.textContent=`直近のタグ検証: エラー ${errors} / 警告 ${warnings}`;
+}
+function runTagCenterValidation(){runValidation();renderTagManagementCenter();alert('タグ検証を実行しました。結果はタグ管理センターとデータ検証画面で確認できます。')}
+function openTagRepairCenter(){showView('validation');setTimeout(()=>document.getElementById('tagRepairSummary')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
+function openTagBaselineCenter(){showView('validation');setTimeout(()=>document.getElementById('tagGovernanceBaselineSummary')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
+function openTagCategoryCenter(){showView('validation');setTimeout(()=>document.getElementById('tagCategoryInspectorList')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
+function addTagCategoryFromMaster(){
+ const name=prompt('新しいタグカテゴリ名を入力してください。');if(!name||!name.trim())return;
+ const idInput=prompt('カテゴリIDを入力してください（空欄なら自動採番）。','');
+ let id=String(idInput||'').trim();if(!id){let max=0;tagCategoryDefinitions().forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(m)max=Math.max(max,+m[1])});id='TAGCAT-'+String(max+1).padStart(4,'0')}
+ if(tagCategoryDefinitions().some(x=>x.id===id))return alert('同じカテゴリIDが既に存在します。');
+ createBackup('before-tag-category-add');data.tag_categories.push({id,name:name.trim(),enabled:true,locked:false,order:tagCategoryDefinitions().length+1,created_at:now(),updated_at:now()});persist('tag category added');masterCategory.value='tags';renderMasters();alert(`タグカテゴリ「${name.trim()}」を追加しました。`)
+}
+// GKS-B001_TAG_MANAGEMENT_CENTER_END
 function saveMaster(){
  const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');
  if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');
