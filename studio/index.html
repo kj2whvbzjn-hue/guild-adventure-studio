@@ -1123,7 +1123,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <script>
-const APP_VERSION='1.24.0-dev';
+const APP_VERSION='1.24.1-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -1144,6 +1144,7 @@ let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?
 localStorage.setItem(CURRENT_KEY,currentProjectId);
 let data=loadProject(currentProjectId)||initial(), validation=[];
 normalizeData();
+
 function projectStorageKey(id){return PROJECT_KEY_PREFIX+id}
 function backupStorageKey(id){return BKEY_PREFIX+id}
 function getProjectRegistry(){
@@ -1313,6 +1314,7 @@ function updateRegistryFromData(){
  saveProjectRegistry(list);
 }
 function persist(message='端末保存'){
+ rebuildTagIndex();
  data.project.updated_at=now();
  data.history=data.history||[];
  data.history.push({at:now(),message});
@@ -1539,16 +1541,31 @@ function applyTagSelector(){writeTagField(activeTagFieldId,activeTagDisplayId,ta
 
 let selectedTagId='';
 let selectedTagCategoryId='';
-function tagCategoryById(id){return (data.tag_categories||[]).find(x=>x.id===id)||null}
-function tagById(id){return (data.tags||[]).find(x=>x.id===id)||null}
+const TagIndexService=(()=>{
+ let tagMap=new Map(),categoryMap=new Map(),usageMap=new Map(),referenceMap=new Map(),childMap=new Map(),nameMap=new Map(),aliasMap=new Map();
+ const addReference=(tagId,ref)=>{if(!tagId)return;const key=String(tagId);if(!referenceMap.has(key))referenceMap.set(key,[]);const list=referenceMap.get(key);if(!list.some(x=>x.path===ref.path))list.push(ref)};
+ const ownerInfo=(rootType,owner,path)=>({type:rootType,id:String(owner&&owner.id||''),name:String(owner&&(owner.name||owner.title)||owner&&owner.id||''),path});
+ const scan=(value,path,rootType,owner,seen)=>{if(value===null||value===undefined||typeof value!=='object')return;if(seen.has(value))return;seen.add(value);if(Array.isArray(value)){value.forEach((v,i)=>scan(v,path+'['+i+']',rootType,owner||v,seen));return}const currentOwner=value.id&&(value.name||value.title)?value:owner;Object.entries(value).forEach(([k,v])=>{if((k==='tag_id'||k==='tagId')&&typeof v==='string')addReference(v,ownerInfo(rootType,currentOwner,path+'.'+k));else if((k==='tags'||k==='tag_ids'||k==='tagIds')&&Array.isArray(v))v.forEach((id,i)=>{if(typeof id==='string')addReference(id,ownerInfo(rootType,currentOwner,path+'.'+k+'['+i+']'))});else scan(v,path+'.'+k,rootType,currentOwner,seen)});};
+ const rebuild=()=>{tagMap=new Map();categoryMap=new Map();usageMap=new Map();referenceMap=new Map();childMap=new Map();nameMap=new Map();aliasMap=new Map();(data.tag_categories||[]).forEach(c=>categoryMap.set(c.id,c));(data.tags||[]).forEach(t=>{tagMap.set(t.id,t);const n=String(t.name||'').trim().toLowerCase();if(n&&!nameMap.has(n))nameMap.set(n,t.id);(t.aliases||[]).forEach(a=>{const key=String(a||'').trim().toLowerCase();if(key&&!aliasMap.has(key))aliasMap.set(key,t.id)});if(t.parent_id){if(!childMap.has(t.parent_id))childMap.set(t.parent_id,[]);childMap.get(t.parent_id).push(t.id)}});const roots=[['Character',data.characters||[]],['Quest',data.quests||[]],['Event',data.events||[]],['BattleTest',data.battle_tests||[]],['Entity',data.entities||[]]];Object.entries(data.masters||{}).forEach(([key,value])=>roots.push([key,value||[]]));roots.forEach(([type,value])=>scan(value,String(type).toLowerCase(),type,null,new WeakSet()));tagMap.forEach((_,id)=>usageMap.set(id,(referenceMap.get(id)||[]).length));return api};
+ const getUsage=id=>usageMap.get(id)||0;
+ const getReferences=id=>[...(referenceMap.get(id)||[])];
+ const getChildren=id=>[...(childMap.get(id)||[])];
+ const canDelete=id=>{const t=tagMap.get(id);if(!t)return{ok:false,reason:'タグが存在しません。'};if(t.locked)return{ok:false,reason:'ロックされたタグは削除できません。'};if(getChildren(id).length)return{ok:false,reason:'子タグがあるため削除できません。'};if(getUsage(id))return{ok:false,reason:'使用中のため削除できません。使用数: '+getUsage(id)};return{ok:true,reason:''}};
+ const find=idOrName=>tagMap.get(idOrName)||tagMap.get(nameMap.get(String(idOrName||'').toLowerCase()))||tagMap.get(aliasMap.get(String(idOrName||'').toLowerCase()))||null;
+ const api={rebuild,getUsage,getReferences,getChildren,canDelete,find,getTag:id=>tagMap.get(id)||null,getCategory:id=>categoryMap.get(id)||null};return api;
+})();
+function rebuildTagIndex(){TagIndexService.rebuild()}
+function tagCategoryById(id){return TagIndexService.getCategory(id)}
+function tagById(id){return TagIndexService.getTag(id)}
 function nextTagCategoryId(){let n=1;while((data.tag_categories||[]).some(x=>x.id==='TAGCAT-'+String(n).padStart(4,'0')))n++;return 'TAGCAT-'+String(n).padStart(4,'0')}
 function nextTagId(){let n=1;while((data.tags||[]).some(x=>x.id==='TAG-'+String(n).padStart(4,'0')))n++;return 'TAG-'+String(n).padStart(4,'0')}
 function effectiveTagColor(t){const c=tagCategoryById(t.category_id);return t.color||c&&c.color||'#6b7280'}
-function tagUsageDetails(tagId){
- const out=[];const scan=(value,path,seen)=>{if(value===null||value===undefined)return;if(typeof value==='object'){if(seen.has(value))return;seen.add(value);if(Array.isArray(value)){value.forEach((v,i)=>scan(v,path+'['+i+']',seen));return}Object.entries(value).forEach(([k,v])=>{if((k==='tag_id'||k==='tagId')&&v===tagId)out.push(path+'.'+k);else if((k==='tags'||k==='tag_ids'||k==='tagIds')&&Array.isArray(v)&&v.includes(tagId))out.push(path+'.'+k);else scan(v,path+'.'+k,seen)});}};
- const roots={characters:data.characters,quests:data.quests,events:data.events,masters:data.masters,battle_tests:data.battle_tests,entities:data.entities};Object.entries(roots).forEach(([k,v])=>scan(v,k,new WeakSet()));return [...new Set(out)]
-}
-function tagUsageCount(id){return tagUsageDetails(id).length}
+function tagUsageDetails(tagId){return TagIndexService.getReferences(tagId)}
+function tagUsageCount(id){return TagIndexService.getUsage(id)}
+function getTagUsage(id){return TagIndexService.getUsage(id)}
+function getTagReferences(id){return TagIndexService.getReferences(id)}
+function getChildTags(id){return TagIndexService.getChildren(id)}
+function canDeleteTag(id){return TagIndexService.canDelete(id)}
 function refreshTagSelects(){
  const currentFilter=document.getElementById('tagCategoryFilter')?tagCategoryFilter.value:'';
  const cats=[...(data.tag_categories||[])].sort((a,b)=>a.sort_order-b.sort_order||a.name.localeCompare(b.name,'ja'));
@@ -1575,12 +1592,12 @@ function saveTagCategory(){const old=selectedTagCategoryId,id=tagCatId.value.tri
 function copyTagCategory(){if(!selectedTagCategoryId)return;const c=tagCategoryById(selectedTagCategoryId);newTagCategory();tagCatName.value=c.name+' コピー';tagCatColor.value=c.color;tagCatOrder.value=c.sort_order;tagCatDescription.value=c.description;tagCatEnabled.checked=c.enabled}
 function deleteTagCategory(){const id=selectedTagCategoryId;if(!id)return;const count=(data.tags||[]).filter(t=>t.category_id===id).length;if(count)return alert('このカテゴリにはタグがあるため削除できません。');if(!confirm(id+'を削除しますか？'))return;data.tag_categories=data.tag_categories.filter(x=>x.id!==id);selectedTagCategoryId='';hideTagEditors();tagEditorEmpty.classList.remove('hidden');persist('tag category deleted')}
 function newTag(){if(!(data.tag_categories||[]).length)return alert('先にタグカテゴリを作成してください。');hideTagEditors();selectedTagId='';selectedTagCategoryId='';tagEditor.classList.remove('hidden');refreshTagSelects();tagId.value=nextTagId();tagId.disabled=false;tagName.value='';tagCategoryId.value=(data.tag_categories[0]||{}).id||'';tagParentId.value='';tagColor.value='';tagOrder.value=(data.tags||[]).length;tagAliases.value='';tagDescription.value='';tagEnabled.checked=true;tagLocked.checked=false;tagDeprecated.checked=false;tagReplacementId.value='';updateTagReplacementState();tagUsageInfo.innerHTML='<b>使用数</b> 0'}
-function selectTag(id){const t=tagById(id);if(!t)return;hideTagEditors();selectedTagId=id;selectedTagCategoryId='';tagEditor.classList.remove('hidden');refreshTagSelects();tagId.value=t.id;tagId.disabled=true;tagName.value=t.name;tagCategoryId.value=t.category_id||'';tagParentId.value=t.parent_id||'';tagColor.value=t.color||'';tagOrder.value=t.sort_order||0;tagAliases.value=(t.aliases||[]).join('\n');tagDescription.value=t.description||'';tagEnabled.checked=t.enabled!==false;tagLocked.checked=!!t.locked;tagDeprecated.checked=!!t.deprecated;tagReplacementId.value=t.replacement_tag_id||'';const locked=!!t.locked;[tagName,tagCategoryId,tagParentId,tagColor,tagOrder,tagAliases,tagDescription,tagEnabled,tagDeprecated,tagReplacementId].forEach(el=>el.disabled=locked);tagLocked.disabled=false;updateTagReplacementState();const refs=tagUsageDetails(id);tagUsageInfo.innerHTML='<b>使用数</b> '+refs.length+(refs.length?'<div class="small">'+refs.slice(0,20).map(esc).join('<br>')+(refs.length>20?'<br>ほか '+(refs.length-20)+' 件':'')+'</div>':'');renderTags()}
+function selectTag(id){rebuildTagIndex();const t=tagById(id);if(!t)return;hideTagEditors();selectedTagId=id;selectedTagCategoryId='';tagEditor.classList.remove('hidden');refreshTagSelects();tagId.value=t.id;tagId.disabled=true;tagName.value=t.name;tagCategoryId.value=t.category_id||'';tagParentId.value=t.parent_id||'';tagColor.value=t.color||'';tagOrder.value=t.sort_order||0;tagAliases.value=(t.aliases||[]).join('\n');tagDescription.value=t.description||'';tagEnabled.checked=t.enabled!==false;tagLocked.checked=!!t.locked;tagDeprecated.checked=!!t.deprecated;tagReplacementId.value=t.replacement_tag_id||'';const locked=!!t.locked;[tagName,tagCategoryId,tagParentId,tagColor,tagOrder,tagAliases,tagDescription,tagEnabled,tagDeprecated,tagReplacementId].forEach(el=>el.disabled=locked);tagLocked.disabled=false;updateTagReplacementState();const refs=tagUsageDetails(id);tagUsageInfo.innerHTML='<b>使用数</b> '+refs.length+(refs.length?'<div class="small">'+refs.slice(0,20).map(r=>esc((r.type||'Data')+(r.name?' / '+r.name:'')+' / '+r.path)).join('<br>')+(refs.length>20?'<br>ほか '+(refs.length-20)+' 件':'')+'</div>':'');renderTags()}
 function updateTagReplacementState(){if(document.getElementById('tagReplacementId'))tagReplacementId.disabled=tagLocked.checked||!tagDeprecated.checked}
 function createsTagCycle(id,parent){let cur=parent,seen=new Set();while(cur){if(cur===id||seen.has(cur))return true;seen.add(cur);const t=tagById(cur);cur=t?t.parent_id:''}return false}
 function saveTag(){const old=selectedTagId,id=tagId.value.trim(),name=tagName.value.trim();if(!id||!name)return alert('IDと名称を入力してください。');const existing=tagById(old);if(existing&&existing.locked&&tagLocked.checked)return alert('ロックされたタグは編集できません。ロック解除のみ可能です。');if(allIds().includes(id)&&id!==old)return alert('そのIDは既に使用されています。');const parent=tagParentId.value;if(parent===id||createsTagCycle(id,parent))return alert('親子関係が循環するため保存できません。');const aliases=[...new Set(tagAliases.value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];const replacement=tagDeprecated.checked?tagReplacementId.value:'';if(replacement===id)return alert('推奨タグに自分自身は指定できません。');const rec={id,name,aliases,parent_id:parent,category_id:tagCategoryId.value,color:tagColor.value.trim(),description:tagDescription.value.trim(),sort_order:Number(tagOrder.value)||0,enabled:tagEnabled.checked,locked:tagLocked.checked,deprecated:tagDeprecated.checked,replacement_tag_id:replacement,updated_at:now()};const i=(data.tags||[]).findIndex(x=>x.id===old);if(i>=0)data.tags[i]=rec;else data.tags.push(rec);selectedTagId=id;persist('tag saved')}
 function copyTag(){if(!selectedTagId)return;const t=tagById(selectedTagId);newTag();tagName.value=t.name+' コピー';tagCategoryId.value=t.category_id;tagParentId.value=t.parent_id;tagColor.value=t.color;tagOrder.value=t.sort_order;tagAliases.value=(t.aliases||[]).join('\n');tagDescription.value=t.description;tagEnabled.checked=t.enabled;tagLocked.checked=false;tagDeprecated.checked=t.deprecated;tagReplacementId.value=t.replacement_tag_id;updateTagReplacementState()}
-function deleteTag(){const id=selectedTagId,t=tagById(id);if(!t)return;if(t.locked)return alert('ロックされたタグは削除できません。');if((data.tags||[]).some(x=>x.parent_id===id))return alert('子タグがあるため削除できません。');const count=tagUsageCount(id);if(count)return alert('使用中のため削除できません。使用数: '+count);if(!confirm(id+'を削除しますか？'))return;data.tags=data.tags.filter(x=>x.id!==id);selectedTagId='';hideTagEditors();tagEditorEmpty.classList.remove('hidden');persist('tag deleted')}
+function deleteTag(){const id=selectedTagId,t=tagById(id);if(!t)return;rebuildTagIndex();const verdict=canDeleteTag(id);if(!verdict.ok)return alert(verdict.reason);if(!confirm(id+'を削除しますか？'))return;data.tags=data.tags.filter(x=>x.id!==id);selectedTagId='';hideTagEditors();tagEditorEmpty.classList.remove('hidden');persist('tag deleted')}
 
 function addEntity(){
  let type=document.getElementById('entityType').value,id=document.getElementById('entityId').value.trim()||nextId(type),name=document.getElementById('entityName').value.trim();
@@ -3446,7 +3463,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderTags();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderTags();renderBattle();renderDecisions();renderEntities();renderValidation();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
