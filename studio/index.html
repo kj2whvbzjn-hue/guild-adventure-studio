@@ -1542,6 +1542,25 @@ class TagIndexService{
  getUsage(id){return this.usageByTagId.get(this.normalizeId(id))||0}
  getReferences(id){return (this.referencesByTagId.get(this.normalizeId(id))||[]).map(x=>({...x}))}
  getChildren(id){return (this.childrenByTagId.get(this.normalizeId(id))||[]).slice()}
+ getReplacement(id){const tag=this.getTag(id);return this.normalizeId(tag?.replacement_tag_id||tag?.recommended_replacement_tag_id)}
+ resolveReplacementChain(id,maxDepth=64){
+  const start=this.normalizeId(id),chain=[],visited=new Set();let current=start;
+  while(current){
+   if(visited.has(current))return {start,chain,terminal:'',cycle:true,cycle_at:current,valid:false,reason:'replacement-cycle'};
+   visited.add(current);chain.push(current);const tag=this.getTag(current);
+   if(!tag)return {start,chain,terminal:'',cycle:false,valid:false,reason:'missing-tag'};
+   const next=this.getReplacement(current);if(!next)return {start,chain,terminal:current,cycle:false,valid:true,reason:'terminal'};
+   current=next;if(chain.length>=maxDepth)return {start,chain,terminal:'',cycle:false,valid:false,reason:'depth-limit'};
+  }
+  return {start,chain,terminal:'',cycle:false,valid:false,reason:'empty'};
+ }
+ canReplace(fromId,toId){
+  const from=this.normalizeId(fromId),to=this.normalizeId(toId),reasons=[];const target=this.getTag(to);
+  if(!this.getTag(from))reasons.push('置換元タグが存在しません');if(!target)reasons.push('置換先タグが存在しません');
+  if(from===to)reasons.push('同じタグには置換できません');if(target?.enabled===false)reasons.push('置換先タグが無効です');if(target?.deprecated===true)reasons.push('置換先タグが廃止済みです');
+  const targetChain=this.resolveReplacementChain(to);if(targetChain.chain.includes(from))reasons.push('置換参照が循環します');
+  return {allowed:reasons.length===0,from,to,reasons,target_chain:targetChain};
+ }
  resolve(query){return (this.lookupByText.get(this.normalizeId(query).toLocaleLowerCase('ja-JP'))||[]).slice()}
  canDelete(id){
   const tagId=this.normalizeId(id),exists=this.tagById.has(tagId),usage=this.getUsage(tagId),children=this.getChildren(tagId);
@@ -1564,6 +1583,8 @@ function getTagReferences(id){return tagIndexService.getReferences(id)}
 function getChildTags(id){return tagIndexService.getChildren(id)}
 function canDeleteTag(id){return tagIndexService.canDelete(id)}
 function resolveTag(query){return tagIndexService.resolve(query)}
+function resolveTagReplacementChain(id){return tagIndexService.resolveReplacementChain(id)}
+function canReplaceTag(fromId,toId){return tagIndexService.canReplace(fromId,toId)}
 let selectedInspectorTagId='';
 function tagReplacementId(tag){return String(tag?.replacement_tag_id||tag?.recommended_replacement_tag_id||'').trim()}
 function renderTagReferenceInspector(){
@@ -1584,12 +1605,22 @@ function renderTagInspectorDetail(id){
  root.innerHTML=`<h3>${esc(tag.name||tag.id)} <span class="small">${esc(tag.id)}</span></h3>
  <p>使用数 <b>${refs.length}</b> / 子タグ <b>${children.length}</b> / 物理削除 <b>${decision.allowed?'可能':'不可'}</b></p>
  ${decision.reasons.length?`<p class="small">削除不可理由: ${esc(decision.reasons.join('、'))}</p>`:''}
+ ${replacement?`<p class="small">現在の置換経路: ${esc(resolveTagReplacementChain(id).chain.join(' → '))}</p>`:''}
  <div class="field"><label>置換先</label><select id="tagInspectorReplacement"><option value="">選択してください</option>${replacementOptions.map(t=>`<option value="${escAttr(t.id)}" ${t.id===replacement?'selected':''}>${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('')}</select></div>
- <div class="toolbar"><button onclick="previewTagReplacement('${escAttr(id)}')">置換内容を確認</button><button class="danger" ${refs.length?'':'disabled'} onclick="applyTagReplacement('${escAttr(id)}')">参照を一括置換</button></div>
+ <div class="toolbar"><button onclick="previewTagReplacement('${escAttr(id)}')">置換内容を確認</button><button onclick="previewTagReplacementChain('${escAttr(id)}')">置換経路を確認</button><button class="danger" ${refs.length?'':'disabled'} onclick="applyTagReplacement('${escAttr(id)}')">参照を一括置換</button></div>
  <h4>参照元</h4>${refs.length?refs.map(r=>`<div class="item"><b>${esc(r.owner_name||r.owner_id||r.owner_type)}</b> <span class="small">${esc(r.owner_type)}</span><div class="tag-reference-path">${esc(r.path)}</div></div>`).join(''):'<p class="small">参照はありません。</p>'}
  <h4>子タグ</h4>${children.length?children.map(c=>`<span class="tag-chip">${esc(c.name||c.id)} <span class="small">${esc(c.id)}</span></span>`).join(' '):'<p class="small">子タグはありません。</p>'}`;
 }
-function selectedTagReplacement(oldId){const next=String(document.getElementById('tagInspectorReplacement')?.value||'').trim();if(!next){alert('置換先タグを選択してください。');return ''}if(next===oldId||!tagIndexService.getTag(next)){alert('有効な別タグを選択してください。');return ''}return next}
+function selectedTagReplacement(oldId){
+ const next=String(document.getElementById('tagInspectorReplacement')?.value||'').trim();if(!next){alert('置換先タグを選択してください。');return ''}
+ const decision=canReplaceTag(oldId,next);if(!decision.allowed){alert('この置換は実行できません。\n・'+decision.reasons.join('\n・'));return ''}return next;
+}
+function previewTagReplacementChain(oldId){
+ const configured=resolveTagReplacementChain(oldId),selected=String(document.getElementById('tagInspectorReplacement')?.value||'').trim();
+ let message=`現在: ${configured.chain.join(' → ')}`+(configured.cycle?'\n循環を検出しました。':'');
+ if(selected){const decision=canReplaceTag(oldId,selected);message+=`\n\n候補: ${oldId} → ${decision.target_chain.chain.join(' → ')}`+(decision.allowed?'\n実行可能です。':'\n実行不可: '+decision.reasons.join('、'));}
+ alert(message);
+}
 function previewTagReplacement(oldId){const next=selectedTagReplacement(oldId);if(!next)return;const refs=getTagReferences(oldId);alert(`${oldId} → ${next}\n置換対象: ${refs.length}件\n\n`+refs.map(r=>`${r.owner_type}: ${r.owner_name||r.owner_id} (${r.path})`).join('\n'))}
 function applyTagReplacement(oldId){
  const next=selectedTagReplacement(oldId);if(!next)return;const refs=getTagReferences(oldId);if(!refs.length){alert('置換対象がありません。');return}
@@ -1632,6 +1663,13 @@ function validateTagSystem(){
   else if(!tagIds.has(r.tag_id))issues.push({level:'ERROR',message:`${r.owner_id||r.owner_name} が未登録タグ ${r.tag_id} を参照しています (${r.path})`});
   else{const t=tagById.get(r.tag_id);if(t?.enabled===false)issues.push({level:'WARNING',message:`${r.owner_id||r.owner_name} が無効タグ ${r.tag_id} を参照しています`});if(t?.deprecated===true)issues.push({level:'WARNING',message:`${r.owner_id||r.owner_name} が廃止タグ ${r.tag_id} を参照しています`});}
  });
+ tags.forEach(t=>{
+  const id=String(t?.id||'').trim(),next=String(t?.replacement_tag_id||t?.recommended_replacement_tag_id||'').trim();
+  if(t?.deprecated===true&&!next)issues.push({level:'WARNING',message:`廃止タグ ${id} に置換先が設定されていません`});
+  if(!next)return;if(next===id)issues.push({level:'ERROR',message:`タグ ${id} の置換先が自己参照しています`});
+  else if(!tagIds.has(next))issues.push({level:'ERROR',message:`タグ ${id} の置換先が存在しません: ${next}`});
+ });
+ rebuildTagIndex();tags.forEach(t=>{const id=String(t?.id||'').trim(),chain=resolveTagReplacementChain(id);if(chain.cycle)issues.push({level:'ERROR',message:`タグ置換経路が循環しています: ${chain.chain.join(' → ')} → ${chain.cycle_at}`});});
  return issues;
 }
 function tagLabel(id){const t=tagDefinitions().find(x=>x.id===id);return t?(t.name||t.id):id}
