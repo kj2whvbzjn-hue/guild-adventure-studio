@@ -822,6 +822,22 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div id="tagGovernanceBaselineSummary" class="small">基準監査JSONは未読込です。</div>
     <div id="tagGovernanceDriftResult" class="list"></div>
   </div>
+  <div class="card">
+    <h2>タグ修復プランナー <span class="badge warn">BUILD415</span></h2>
+    <p class="small">監査結果から安全に実行可能な修復候補を生成します。置換は既存の tags 配列だけを対象とし、実行前バックアップとセッション内ロールバックを提供します。物理削除候補は初期状態では未選択です。</p>
+    <div class="toolbar">
+      <button class="primary" onclick="generateTagRepairPlan()">修復計画を生成</button>
+      <button onclick="selectAllTagRepairActions(true)">すべて選択</button>
+      <button onclick="selectAllTagRepairActions(false)">選択解除</button>
+      <button onclick="exportTagRepairPlan()">計画JSON出力</button>
+      <button class="danger" onclick="applySelectedTagRepairs()">選択した修復を適用</button>
+      <button onclick="rollbackLastTagRepair()" id="tagRepairRollbackButton" disabled>直前の修復を戻す</button>
+    </div>
+    <div id="tagRepairSummary" class="small">修復計画は未生成です。</div>
+    <div id="tagRepairPlanList" class="list"></div>
+    <div id="tagRepairExecutionLog" class="list"></div>
+  </div>
+
 </section>
 
 <section id="view-backup" class="view hidden">
@@ -1860,6 +1876,66 @@ function renderTagGovernanceDrift(){
 }
 function exportTagGovernanceDriftReport(){if(!tagGovernanceBaseline)return alert('先に基準監査JSONを読み込んでください。');const drift=compareTagGovernanceBaseline();if(!drift)return;downloadText(`GK_TagGovernanceDrift_${currentProjectId}.json`,JSON.stringify(drift,null,2),'application/json;charset=utf-8')}
 // BUILD414_TAG_GOVERNANCE_BASELINE_DRIFT_END
+
+// BUILD415_TAG_REPAIR_PLANNER_BEGIN
+let tagRepairPlan=null;
+let tagRepairLastSnapshot=null;
+let tagRepairExecutionLog=[];
+function tagRepairActionId(type,source,target=''){return `${type}:${source}:${target}`}
+function buildTagRepairPlan(){
+ rebuildTagIndex();
+ const governance=buildTagGovernanceReport(),actions=[];
+ governance.migration_candidates.forEach(row=>{
+  const source=String(row.source_tag_id||''),configured=String(row.replacement_tag_id||'');
+  if(!row.ready||!configured)return;
+  const chain=resolveTagReplacementChain(source),target=String(chain.chain?.[chain.chain.length-1]||configured);
+  const decision=canReplaceTag(source,target);
+  if(!decision.allowed||!target||target===source)return;
+  actions.push({id:tagRepairActionId('replace-references',source,target),type:'replace-references',selected:true,safety:'safe',source_tag_id:source,source_name:row.source_name||'',target_tag_id:target,target_name:tagIndexService.getTag(target)?.name||'',reference_count:getTagUsage(source),references:getTagReferences(source),description:`${source} の参照を ${target} へ置換`});
+ });
+ tagDefinitions().forEach(tag=>{
+  const id=String(tag?.id||'').trim(),decision=canDeleteTag(id);
+  if(tag?.deprecated===true&&decision.allowed){
+   actions.push({id:tagRepairActionId('delete-unused-tag',id),type:'delete-unused-tag',selected:false,safety:'destructive',source_tag_id:id,source_name:tag?.name||'',target_tag_id:'',target_name:'',reference_count:0,references:[],description:`未使用の廃止タグ ${id} を物理削除`});
+  }
+ });
+ return {schema:'gk.tag-repair-plan.v1',generated_at:now(),project_id:currentProjectId,project_name:data.project?.name||'',app_version:APP_VERSION,governance_acceptance:governance.acceptance,summary:{action_count:actions.length,replacement_count:actions.filter(a=>a.type==='replace-references').length,delete_count:actions.filter(a=>a.type==='delete-unused-tag').length,selected_count:actions.filter(a=>a.selected).length},actions};
+}
+function generateTagRepairPlan(){tagRepairPlan=buildTagRepairPlan();renderTagRepairPlanner();return tagRepairPlan}
+function setTagRepairActionSelected(id,selected){if(!tagRepairPlan)return;const action=tagRepairPlan.actions.find(a=>a.id===id);if(action)action.selected=!!selected;tagRepairPlan.summary.selected_count=tagRepairPlan.actions.filter(a=>a.selected).length;renderTagRepairPlanner()}
+function selectAllTagRepairActions(selected){if(!tagRepairPlan)generateTagRepairPlan();tagRepairPlan.actions.forEach(a=>a.selected=!!selected);tagRepairPlan.summary.selected_count=tagRepairPlan.actions.filter(a=>a.selected).length;renderTagRepairPlanner()}
+function renderTagRepairPlanner(){
+ const summary=document.getElementById('tagRepairSummary'),root=document.getElementById('tagRepairPlanList'),log=document.getElementById('tagRepairExecutionLog'),rollback=document.getElementById('tagRepairRollbackButton');if(!summary||!root)return;
+ if(rollback)rollback.disabled=!tagRepairLastSnapshot;
+ if(!tagRepairPlan){summary.textContent='修復計画は未生成です。';root.innerHTML='';if(log)log.innerHTML='';return}
+ const p=tagRepairPlan;summary.innerHTML=`候補 <b>${p.summary.action_count}</b> / 参照置換 <b>${p.summary.replacement_count}</b> / 物理削除 <b>${p.summary.delete_count}</b> / 選択 <b>${p.actions.filter(a=>a.selected).length}</b>`;
+ root.innerHTML=p.actions.map(a=>`<div class="item"><label><input type="checkbox" ${a.selected?'checked':''} onchange="setTagRepairActionSelected('${escAttr(a.id)}',this.checked)"> <b>${esc(a.description)}</b></label> <span class="badge ${a.safety==='safe'?'ok':'warn'}">${a.safety==='safe'?'安全置換':'破壊的操作'}</span><div class="small">種類: ${esc(a.type)} / 参照: ${a.reference_count}${a.target_tag_id?` / ${esc(a.source_tag_id)} → ${esc(a.target_tag_id)}`:''}</div>${a.references?.length?`<details><summary>影響箇所 ${a.references.length}件</summary>${a.references.map(r=>`<div class="tag-reference-path">${esc(r.path)} — ${esc(r.owner_name||r.owner_id||r.owner_type)}</div>`).join('')}</details>`:''}</div>`).join('')||'<div class="item">現在、自動修復可能な候補はありません。</div>';
+ if(log)log.innerHTML=tagRepairExecutionLog.length?`<div class="item"><b>実行ログ</b><div class="small">${tagRepairExecutionLog.map(x=>`${esc(x.at)} — ${esc(x.message)}`).join('<br>')}</div></div>`:'';
+}
+function exportTagRepairPlan(){const plan=tagRepairPlan||generateTagRepairPlan();const clean=structuredClone(plan);clean.summary.selected_count=clean.actions.filter(a=>a.selected).length;downloadText(`GK_TagRepairPlan_${currentProjectId}.json`,JSON.stringify(clean,null,2),'application/json;charset=utf-8')}
+function replaceTagReferencesInData(source,target){
+ let changed=0;const replace=arr=>{if(!Array.isArray(arr))return arr;const out=[];arr.forEach(v=>{const id=String(v??'').trim(),mapped=id===source?target:id;if(mapped!==id)changed++;if(mapped&&!out.includes(mapped))out.push(mapped)});return out};
+ (data.characters||[]).forEach(x=>x.tags=replace(x.tags));Object.values(data.masters||{}).forEach(rows=>(Array.isArray(rows)?rows:[]).forEach(x=>x.tags=replace(x.tags)));return changed;
+}
+function applySelectedTagRepairs(){
+ if(!tagRepairPlan)generateTagRepairPlan();const selected=tagRepairPlan.actions.filter(a=>a.selected);if(!selected.length)return alert('適用する修復を選択してください。');
+ const destructive=selected.filter(a=>a.safety==='destructive').length;
+ if(!confirm(`選択した ${selected.length} 件の修復を適用します。${destructive?`\n物理削除 ${destructive} 件を含みます。`:''}\n実行前バックアップを作成します。よろしいですか？`))return;
+ rebuildTagIndex();
+ for(const a of selected){if(a.type==='replace-references'){const decision=canReplaceTag(a.source_tag_id,a.target_tag_id);if(!decision.allowed)return alert(`計画が古くなっています: ${a.source_tag_id}\n${decision.reasons.join('、')}`)}else if(a.type==='delete-unused-tag'){const decision=canDeleteTag(a.source_tag_id);if(!decision.allowed)return alert(`削除条件が変化しました: ${a.source_tag_id}\n${decision.reasons.join('、')}`)}}
+ tagRepairLastSnapshot={at:now(),project_id:currentProjectId,data:structuredClone(data)};createBackup('before-build415-tag-repair');
+ let replacements=0,deletions=0;
+ selected.filter(a=>a.type==='replace-references').forEach(a=>{replacements+=replaceTagReferencesInData(a.source_tag_id,a.target_tag_id);const tag=tagDefinitions().find(t=>String(t?.id||'').trim()===a.source_tag_id);if(tag){tag.deprecated=true;tag.replacement_tag_id=a.target_tag_id}});
+ const deleteIds=new Set(selected.filter(a=>a.type==='delete-unused-tag').map(a=>a.source_tag_id));if(deleteIds.size){const before=tagDefinitions().length;data.tags=tagDefinitions().filter(t=>!deleteIds.has(String(t?.id||'').trim()));deletions=before-data.tags.length}
+ const ok=persist(`BUILD415 tag repair: ${replacements} replacements, ${deletions} deletions`);if(!ok){data=structuredClone(tagRepairLastSnapshot.data);tagRepairLastSnapshot=null;return alert('保存に失敗したため修復を取り消しました。')}
+ rebuildTagIndex();runValidation();tagRepairExecutionLog.unshift({at:now(),message:`適用完了: 参照置換 ${replacements}件 / タグ削除 ${deletions}件 / 検証 ${Array.isArray(validation)?validation.length:0}件`});tagRepairPlan=buildTagRepairPlan();renderTagRepairPlanner();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();alert(`修復を適用しました。\n参照置換: ${replacements}件\nタグ削除: ${deletions}件`);
+}
+function rollbackLastTagRepair(){
+ if(!tagRepairLastSnapshot)return alert('このセッションで戻せる修復はありません。');if(tagRepairLastSnapshot.project_id!==currentProjectId)return alert('別プロジェクトの修復スナップショットのため復元できません。');if(!confirm(`直前のBUILD415修復（${tagRepairLastSnapshot.at}）を戻しますか？\n現在状態もバックアップします。`))return;
+ createBackup('before-build415-tag-repair-rollback');data=structuredClone(tagRepairLastSnapshot.data);tagRepairLastSnapshot=null;persist('BUILD415 tag repair rollback');rebuildTagIndex();runValidation();tagRepairExecutionLog.unshift({at:now(),message:'直前のBUILD415修復をロールバックしました'});tagRepairPlan=buildTagRepairPlan();renderTagRepairPlanner();alert('直前の修復をロールバックしました。');
+}
+// BUILD415_TAG_REPAIR_PLANNER_END
+
 
 function tagLabel(id){const t=tagDefinitions().find(x=>x.id===id);return t?(t.name||t.id):id}
 function masterTagIds(){return masterTags.value?masterTags.value.split(',').map(x=>x.trim()).filter(Boolean):[]}
@@ -3764,7 +3840,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderTagRepairPlanner();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
