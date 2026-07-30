@@ -1479,6 +1479,45 @@ function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.m
 let tagPickerSelection=[];
 function tagDefinitions(){return Array.isArray(data.tags)?data.tags:[]}
 function tagCategoryDefinitions(){return Array.isArray(data.tag_categories)?data.tag_categories:[]}
+function collectTagReferences(){
+ const refs=[];
+ const push=(ownerType,ownerId,ownerName,path,tags)=>{(Array.isArray(tags)?tags:[]).forEach(tagId=>refs.push({tag_id:String(tagId||''),owner_type:ownerType,owner_id:ownerId||'',owner_name:ownerName||'',path}));};
+ (data.characters||[]).forEach((x,i)=>push('character',x.id,x.name,`characters[${i}].tags`,x.tags));
+ Object.entries(data.masters||{}).forEach(([category,rows])=>(rows||[]).forEach((x,i)=>push('master:'+category,x.id,x.name,`masters.${category}[${i}].tags`,x.tags)));
+ return refs;
+}
+function validateTagSystem(){
+ const issues=[],categories=tagCategoryDefinitions(),tags=tagDefinitions();
+ const categoryIds=new Set(),tagIds=new Set(),tagById=new Map();
+ categories.forEach((c,i)=>{
+  const id=String(c?.id||'').trim();
+  if(!id)issues.push({level:'ERROR',message:`タグカテゴリ[${i}]のIDが未設定`});
+  else if(categoryIds.has(id))issues.push({level:'ERROR',message:'タグカテゴリID重複: '+id});
+  else categoryIds.add(id);
+  if(!String(c?.name||'').trim())issues.push({level:'ERROR',message:`タグカテゴリ ${id||'['+i+']'} の名称が未設定`});
+ });
+ tags.forEach((t,i)=>{
+  const id=String(t?.id||'').trim();
+  if(!id)issues.push({level:'ERROR',message:`タグ[${i}]のIDが未設定`});
+  else if(tagIds.has(id))issues.push({level:'ERROR',message:'タグID重複: '+id});
+  else{tagIds.add(id);tagById.set(id,t);}
+  if(!String(t?.name||'').trim())issues.push({level:'ERROR',message:`タグ ${id||'['+i+']'} の名称が未設定`});
+  if(t?.category_id&&!categoryIds.has(String(t.category_id)))issues.push({level:'ERROR',message:`タグ ${id} のカテゴリが存在しません: ${t.category_id}`});
+  if(t?.parent_id&&String(t.parent_id)===id)issues.push({level:'ERROR',message:`タグ ${id} が自己参照しています`});
+  const aliases=Array.isArray(t?.aliases)?t.aliases:[];
+  if(new Set(aliases.map(x=>String(x).trim()).filter(Boolean)).size!==aliases.map(x=>String(x).trim()).filter(Boolean).length)issues.push({level:'WARNING',message:`タグ ${id} に重複エイリアスがあります`});
+ });
+ tags.forEach(t=>{if(t?.parent_id&&!tagIds.has(String(t.parent_id)))issues.push({level:'ERROR',message:`タグ ${t.id} の親タグが存在しません: ${t.parent_id}`});});
+ const visiting=new Set(),done=new Set();
+ const visit=id=>{if(done.has(id))return;if(visiting.has(id)){issues.push({level:'ERROR',message:'タグ親子関係が循環しています: '+id});return;}visiting.add(id);const p=tagById.get(id)?.parent_id;if(p&&tagById.has(String(p)))visit(String(p));visiting.delete(id);done.add(id);};
+ tagIds.forEach(visit);
+ collectTagReferences().forEach(r=>{
+  if(!r.tag_id)issues.push({level:'ERROR',message:`${r.owner_id||r.owner_name} に空のタグIDがあります (${r.path})`});
+  else if(!tagIds.has(r.tag_id))issues.push({level:'ERROR',message:`${r.owner_id||r.owner_name} が未登録タグ ${r.tag_id} を参照しています (${r.path})`});
+  else{const t=tagById.get(r.tag_id);if(t?.enabled===false)issues.push({level:'WARNING',message:`${r.owner_id||r.owner_name} が無効タグ ${r.tag_id} を参照しています`});if(t?.deprecated===true)issues.push({level:'WARNING',message:`${r.owner_id||r.owner_name} が廃止タグ ${r.tag_id} を参照しています`});}
+ });
+ return issues;
+}
 function tagLabel(id){const t=tagDefinitions().find(x=>x.id===id);return t?(t.name||t.id):id}
 function masterTagIds(){return masterTags.value?masterTags.value.split(',').map(x=>x.trim()).filter(Boolean):[]}
 function setMasterTagIds(ids){masterTags.value=[...new Set((ids||[]).filter(Boolean))].join(',');renderMasterTagChips()}
@@ -1659,6 +1698,7 @@ function runValidation(){
   if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'ERROR',message:e.id+' の関連シーンが存在しません'});
  });
  Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
+ validateTagSystem().forEach(issue=>validation.push(issue));
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  detectQuestCycles().forEach(path=>validation.push({level:'ERROR',message:'クエスト前提関係が循環しています: '+path}));
  if(!validation.length)validation.push({level:'OK',message:'重大な問題は見つかりませんでした。'});
