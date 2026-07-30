@@ -810,6 +810,18 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div id="tagCategoryInspectorDetail" class="item">カテゴリを選択してください。</div>
     </div>
   </div>
+  <div class="card">
+    <h2>タグ監査ベースライン比較 <span class="badge ok">BUILD414</span></h2>
+    <p class="small">BUILD413で出力した監査JSONを基準として読み込み、現在のタグ定義・カテゴリ・参照数・受け入れ状態との差分を読み取り専用で検出します。</p>
+    <div class="toolbar">
+      <button onclick="document.getElementById('tagGovernanceBaselineFile').click()">基準JSONを読込</button><input id="tagGovernanceBaselineFile" type="file" accept="application/json,.json" hidden onchange="loadTagGovernanceBaselineFile(this)">
+      <button onclick="compareTagGovernanceBaseline()">現在状態と比較</button>
+      <button onclick="exportTagGovernanceDriftReport()">差分JSON出力</button>
+      <button class="danger" onclick="clearTagGovernanceBaseline()">基準を解除</button>
+    </div>
+    <div id="tagGovernanceBaselineSummary" class="small">基準監査JSONは未読込です。</div>
+    <div id="tagGovernanceDriftResult" class="list"></div>
+  </div>
 </section>
 
 <section id="view-backup" class="view hidden">
@@ -1798,6 +1810,57 @@ function exportTagMigrationPlanCsv(){
  downloadText(`GK_TagMigrationPlan_${currentProjectId}.csv`,'\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8');
 }
 // BUILD413_TAG_GOVERNANCE_EXPORT_END
+// BUILD414_TAG_GOVERNANCE_BASELINE_DRIFT_BEGIN
+let tagGovernanceBaseline=null;
+let tagGovernanceDrift=null;
+function normalizeGovernanceReport(report){
+ if(!report||report.schema!=='gk.tag-governance-report.v1'||!Array.isArray(report.tags)||!Array.isArray(report.categories))throw new Error('gk.tag-governance-report.v1 形式ではありません');
+ return report;
+}
+function governanceIndex(rows){const map=new Map();(Array.isArray(rows)?rows:[]).forEach(row=>{const id=String(row?.id||'').trim();if(id)map.set(id,row)});return map}
+function comparableTagRow(row){return {
+ name:row?.name||'',category_id:row?.category_id||'',parent_id:row?.parent_id||'',enabled:row?.enabled!==false,
+ deprecated:row?.deprecated===true,locked:row?.locked===true,usage_count:Number(row?.usage_count||0),child_count:Number(row?.child_count||0),
+ replacement_tag_id:row?.replacement_tag_id||'',replacement_chain_valid:row?.replacement_chain_valid===true,
+ replacement_source_count:Number(row?.replacement_source_count||0),physical_delete_allowed:row?.physical_delete_allowed===true
+}}
+function comparableCategoryRow(row){return {name:row?.name||'',enabled:row?.enabled!==false,locked:row?.locked===true,tag_count:Number(row?.tag_count||0),physical_delete_allowed:row?.physical_delete_allowed===true}}
+function diffGovernanceRows(beforeRows,afterRows,normalizer){
+ const before=governanceIndex(beforeRows),after=governanceIndex(afterRows),added=[],removed=[],changed=[];
+ after.forEach((row,id)=>{if(!before.has(id))added.push(id);else{const a=normalizer(before.get(id)),b=normalizer(row),fields=[];Object.keys(b).forEach(key=>{if(JSON.stringify(a[key])!==JSON.stringify(b[key]))fields.push({field:key,before:a[key],after:b[key]})});if(fields.length)changed.push({id,fields})}});
+ before.forEach((row,id)=>{if(!after.has(id))removed.push(id)});
+ return {added,removed,changed};
+}
+function compareTagGovernanceReports(baseline,current){
+ const before=normalizeGovernanceReport(baseline),after=normalizeGovernanceReport(current),summaryKeys=[
+  'category_count','tag_count','reference_count','used_tag_count','unused_tag_count','deprecated_tag_count','unknown_reference_count','deprecated_reference_count','disabled_reference_count','replacement_cycle_count','deprecated_without_replacement_count','migration_candidate_count'
+ ];
+ const summary_delta={};summaryKeys.forEach(key=>{const a=Number(before.summary?.[key]||0),b=Number(after.summary?.[key]||0);summary_delta[key]={before:a,after:b,delta:b-a}});
+ const tags=diffGovernanceRows(before.tags,after.tags,comparableTagRow),categories=diffGovernanceRows(before.categories,after.categories,comparableCategoryRow);
+ const acceptance={before_pass:before.acceptance?.pass===true,after_pass:after.acceptance?.pass===true,regressed:before.acceptance?.pass===true&&after.acceptance?.pass!==true,improved:before.acceptance?.pass!==true&&after.acceptance?.pass===true,before_blockers:before.acceptance?.blockers||[],after_blockers:after.acceptance?.blockers||[]};
+ const has_drift=tags.added.length>0||tags.removed.length>0||tags.changed.length>0||categories.added.length>0||categories.removed.length>0||categories.changed.length>0||summaryKeys.some(k=>summary_delta[k].delta!==0)||acceptance.before_pass!==acceptance.after_pass;
+ return {schema:'gk.tag-governance-drift.v1',generated_at:now(),baseline:{generated_at:before.generated_at||'',project_id:before.project_id||'',app_version:before.app_version||''},current:{generated_at:after.generated_at||'',project_id:after.project_id||'',app_version:after.app_version||''},has_drift,acceptance,summary_delta,tags,categories};
+}
+function loadTagGovernanceBaselineFile(input){
+ const file=input?.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{tagGovernanceBaseline=normalizeGovernanceReport(JSON.parse(String(reader.result||'')));tagGovernanceDrift=null;renderTagGovernanceDrift();compareTagGovernanceBaseline()}catch(e){tagGovernanceBaseline=null;tagGovernanceDrift=null;renderTagGovernanceDrift();alert('監査JSONを読み込めません: '+e.message)}finally{input.value=''}};reader.onerror=()=>alert('監査JSONの読込に失敗しました。');reader.readAsText(file,'utf-8');
+}
+function compareTagGovernanceBaseline(){if(!tagGovernanceBaseline)return alert('先に基準監査JSONを読み込んでください。');tagGovernanceDrift=compareTagGovernanceReports(tagGovernanceBaseline,buildTagGovernanceReport());renderTagGovernanceDrift();return tagGovernanceDrift}
+function clearTagGovernanceBaseline(){tagGovernanceBaseline=null;tagGovernanceDrift=null;renderTagGovernanceDrift()}
+function renderGovernanceChangeList(title,rows){if(!rows.length)return '';return `<div class="item"><b>${esc(title)} (${rows.length})</b><div class="small">${rows.map(row=>typeof row==='string'?esc(row):`<div><code>${esc(row.id)}</code>: ${row.fields.map(f=>`${esc(f.field)} ${esc(JSON.stringify(f.before))} → ${esc(JSON.stringify(f.after))}`).join(' / ')}</div>`).join('')}</div></div>`}
+function renderTagGovernanceDrift(){
+ const summary=document.getElementById('tagGovernanceBaselineSummary'),root=document.getElementById('tagGovernanceDriftResult');if(!summary||!root)return;
+ if(!tagGovernanceBaseline){summary.textContent='基準監査JSONは未読込です。';root.innerHTML='';return}
+ summary.innerHTML=`基準: <b>${esc(tagGovernanceBaseline.project_name||tagGovernanceBaseline.project_id||'不明')}</b> / ${esc(tagGovernanceBaseline.generated_at||'日時不明')} / ${esc(tagGovernanceBaseline.app_version||'版不明')}`;
+ if(!tagGovernanceDrift){root.innerHTML='<div class="item">「現在状態と比較」を実行してください。</div>';return}
+ const d=tagGovernanceDrift,deltaRows=Object.entries(d.summary_delta).filter(([,v])=>v.delta!==0);
+ root.innerHTML=`<div class="item"><span class="badge ${d.acceptance.regressed?'err':d.has_drift?'warn':'ok'}">${d.acceptance.regressed?'受け入れ退行':d.has_drift?'差分あり':'差分なし'}</span> 基準 ${d.acceptance.before_pass?'PASS':'BLOCKED'} → 現在 ${d.acceptance.after_pass?'PASS':'BLOCKED'}</div>`+
+  renderGovernanceChangeList('追加タグ',d.tags.added)+renderGovernanceChangeList('削除タグ',d.tags.removed)+renderGovernanceChangeList('変更タグ',d.tags.changed)+
+  renderGovernanceChangeList('追加カテゴリ',d.categories.added)+renderGovernanceChangeList('削除カテゴリ',d.categories.removed)+renderGovernanceChangeList('変更カテゴリ',d.categories.changed)+
+  (deltaRows.length?`<div class="item"><b>集計差分 (${deltaRows.length})</b><div class="small">${deltaRows.map(([k,v])=>`${esc(k)}: ${v.before} → ${v.after} (${v.delta>=0?'+':''}${v.delta})`).join('<br>')}</div></div>`:'');
+}
+function exportTagGovernanceDriftReport(){if(!tagGovernanceBaseline)return alert('先に基準監査JSONを読み込んでください。');const drift=compareTagGovernanceBaseline();if(!drift)return;downloadText(`GK_TagGovernanceDrift_${currentProjectId}.json`,JSON.stringify(drift,null,2),'application/json;charset=utf-8')}
+// BUILD414_TAG_GOVERNANCE_BASELINE_DRIFT_END
+
 function tagLabel(id){const t=tagDefinitions().find(x=>x.id===id);return t?(t.name||t.id):id}
 function masterTagIds(){return masterTags.value?masterTags.value.split(',').map(x=>x.trim()).filter(Boolean):[]}
 function setMasterTagIds(ids){masterTags.value=[...new Set((ids||[]).filter(Boolean))].join(',');renderMasterTagChips()}
@@ -3701,7 +3764,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
