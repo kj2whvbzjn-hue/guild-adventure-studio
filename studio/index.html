@@ -154,6 +154,21 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 
 /* BUILD418 searchable rule tag picker */
 .combo-search{position:relative}.combo-search input[type="search"]{width:100%}.combo-selected{margin-top:6px;min-height:32px;padding:7px 9px;border:1px solid #d7dde7;border-radius:7px;background:#f8fafc;font-size:13px}.combo-panel{position:absolute;z-index:80;left:0;right:0;top:100%;margin-top:4px;max-height:310px;overflow:auto;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 10px 28px rgba(15,23,42,.18);display:none}.combo-panel.open{display:block}.combo-section-title{padding:7px 10px 4px;font-size:11px;font-weight:700;color:#64748b;background:#f8fafc;position:sticky;top:0}.combo-option{display:flex;justify-content:space-between;gap:12px;padding:9px 10px;cursor:pointer;border-top:1px solid #eef2f7}.combo-option:first-of-type{border-top:0}.combo-option:hover,.combo-option.active{background:#e8f1ff}.combo-option-main{min-width:0}.combo-option-name{font-weight:700}.combo-option-meta{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.combo-option-id{font-size:11px;color:#475569;white-space:nowrap}.combo-empty{padding:14px;color:#64748b;font-size:12px}.combo-help{margin-top:5px;font-size:11px;color:#64748b}
+.rule-tag-picker{position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.48);display:flex;align-items:stretch;justify-content:center;padding:0}
+.rule-tag-picker.hidden{display:none}
+.rule-tag-picker-sheet{width:min(760px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+.rule-tag-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
+.rule-tag-picker-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.rule-tag-picker-title h2{margin:0;font-size:18px}
+.rule-tag-picker-search{width:100%;min-height:44px;font-size:16px}
+.rule-tag-picker-tools{display:flex;gap:8px;align-items:center;margin-top:8px}.rule-tag-picker-tools button{min-height:40px}.rule-tag-picker-count{margin-left:auto;font-size:12px;color:#64748b}
+.rule-tag-picker-list{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:8px 10px 120px}
+.rule-tag-row{position:relative;min-height:60px;padding:10px 44px 10px 12px;border:1px solid #dbe2ea;border-radius:10px;margin-bottom:8px;background:#fff;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
+.rule-tag-row.selected{background:#e8f1ff;border-color:#4f86d9;box-shadow:0 0 0 1px #4f86d9 inset}.rule-tag-row.selected:after{content:'✓';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:800;color:#245fae}
+.rule-tag-row-name{font-weight:750;font-size:15px}.rule-tag-row-sub{margin-top:3px;font-size:12px;color:#64748b;line-height:1.35}.rule-tag-row-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.rule-tag-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.5fr;gap:10px}.rule-tag-picker-foot button{min-height:48px;font-size:15px}.rule-tag-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}
+body.rule-picker-open{overflow:hidden}
+@media(min-width:801px){.rule-tag-picker{padding:24px}.rule-tag-picker-sheet{height:min(820px,100%);border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.3)}}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -732,7 +747,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 
 <section id="view-rules" class="view hidden">
-  <h1>ルールエディター <span class="badge ok">BUILD418</span></h1>
+  <h1>ルールエディター <span class="badge ok">BUILD419</span></h1>
   <p class="small">使用場所・発生タイミング・対象・条件・アクション・設定をすべて通常タグで配置します。数値タグは配置時に「親タグ・比較演算子・値」を指定します。</p>
   <div class="rule-builder-grid">
     <div>
@@ -742,16 +757,8 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
         <div class="field"><label>名称</label><input id="ruleName" placeholder="燃焼5スタックで爆発"></div>
         <p class="small">使用場所・発生タイミングを含む全項目を通常タグで構成します。</p>
         <div class="field"><label>通常タグ配置先</label><select id="ruleTagSection"><option value="context">使用場所</option><option value="timing">発生タイミング</option><option value="target">対象タグ</option><option value="condition">追加条件</option><option value="action">実行アクション</option><option value="setting">実行設定</option></select></div>
-        <div class="field"><label>通常タグ検索</label>
-          <div class="combo-search" id="ruleTagCombo">
-            <input id="ruleTagSearch" type="search" autocomplete="off" placeholder="タグ名・ID・カテゴリ・説明を検索" oninput="updateRuleTagSearch()" onfocus="openRuleTagSearch()" onkeydown="handleRuleTagKey(event)">
-            <input id="ruleTagSelect" type="hidden">
-            <div id="ruleTagSelected" class="combo-selected">未選択</div>
-            <div id="ruleTagResults" class="combo-panel" role="listbox"></div>
-          </div>
-          <div class="combo-help">空欄時は最近使用したタグを表示します。候補は最大50件です。</div>
-        </div>
-        <button onclick="addRuleTagNode()">通常タグを配置</button>
+        <button class="primary" type="button" onclick="openRuleTagPicker()">＋ タグを選択</button>
+        <div class="combo-help">行全体をタップして複数選択できます。検索結果の全選択にも対応しています。</div>
       </div>
       <div class="card">
         <h2>数値タグ配置</h2>
@@ -775,6 +782,18 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
   </div>
 </section>
+
+<div id="ruleTagPicker" class="rule-tag-picker hidden" aria-hidden="true">
+  <div class="rule-tag-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="ruleTagPickerTitle">
+    <div class="rule-tag-picker-head">
+      <div class="rule-tag-picker-title"><h2 id="ruleTagPickerTitle">タグを選択</h2><button type="button" onclick="closeRuleTagPicker()">閉じる</button></div>
+      <input id="ruleTagPickerSearch" class="rule-tag-picker-search" type="search" autocomplete="off" placeholder="タグ名・ID・カテゴリ・親・説明を検索" oninput="renderRuleTagPicker()" onkeydown="handleRuleTagPickerKey(event)">
+      <div class="rule-tag-picker-tools"><button type="button" onclick="selectAllVisibleRuleTags()">全選択</button><button type="button" onclick="clearRuleTagSelection()">選択解除</button><span id="ruleTagPickerResultCount" class="rule-tag-picker-count"></span></div>
+    </div>
+    <div id="ruleTagPickerList" class="rule-tag-picker-list"></div>
+    <div class="rule-tag-picker-foot"><button type="button" onclick="closeRuleTagPicker()">キャンセル</button><button id="ruleTagPickerConfirm" class="primary" type="button" onclick="confirmRuleTagPicker()" disabled>追加（0件）</button></div>
+  </div>
+</div>
 
 <section id="view-battle" class="view hidden">
   <h1>戦闘プロトタイプ</h1>
@@ -2006,7 +2025,8 @@ function ensureRuleData(){if(!Array.isArray(data.rules))data.rules=[];if(!Array.
 function ruleNodeId(){return 'RN-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)}
 function ruleTagLabel(id){const t=tagDefinitions().find(x=>String(x.id)===String(id));return t?(t.name||t.id):id}
 function syncRuleDraftFromForm(){ruleDraft.name=String(document.getElementById('ruleName')?.value||'').trim()}
-let ruleTagSearchState={items:[],active:-1};
+let ruleTagPickerSelected=new Set();
+let ruleTagPickerRows=[];
 let ruleParentSearchState={items:[],active:-1};
 function ruleRecentTagIds(){try{return JSON.parse(localStorage.getItem('gk.rule.recentTags')||'[]').filter(Boolean)}catch{return []}}
 function rememberRuleTag(id){const ids=[String(id),...ruleRecentTagIds().filter(x=>String(x)!==String(id))].slice(0,12);localStorage.setItem('gk.rule.recentTags',JSON.stringify(ids))}
@@ -2014,33 +2034,36 @@ function tagSearchText(t){const category=(data.tag_categories||[]).find(c=>Strin
 function ruleTagScore(t,q){let score=0;const name=String(t.name||'').toLowerCase(),id=String(t.id||'').toLowerCase(),text=tagSearchText(t);if(q){if(name===q)score+=100;if(id===q)score+=95;if(name.startsWith(q))score+=60;if(id.startsWith(q))score+=55;if(text.includes(q))score+=20}else{const i=ruleRecentTagIds().indexOf(String(t.id));if(i>=0)score+=100-i;}const sec=RULE_SECTIONS[document.getElementById('ruleTagSection')?.value]||'';if(sec&&text.includes(sec.toLowerCase()))score+=15;return score}
 function ruleTagMeta(t){const category=(data.tag_categories||[]).find(c=>String(c.id)===String(t.category_id));const parent=tagDefinitions().find(x=>String(x.id)===String(t.parent_id));return [category?.name,parent?('親: '+(parent.name||parent.id)):'',t.description||''].filter(Boolean).join(' / ')}
 function renderCombo(panel,items,state,selectFn,emptyText,showRecent){state.items=items;state.active=items.length?Math.min(Math.max(state.active,0),items.length-1):-1;panel.innerHTML=(showRecent&&items.length?'<div class="combo-section-title">最近使用・優先候補</div>':'')+(items.length?items.map((x,i)=>`<div class="combo-option ${i===state.active?'active':''}" role="option" data-index="${i}" onmousedown="event.preventDefault();${selectFn}(${i})"><div class="combo-option-main"><div class="combo-option-name">${esc(x.label)}</div>${x.meta?`<div class="combo-option-meta">${esc(x.meta)}</div>`:''}</div><div class="combo-option-id">${esc(x.idLabel||'')}</div></div>`).join(''):`<div class="combo-empty">${esc(emptyText)}</div>`);panel.classList.add('open')}
-function updateRuleTagSearch(){const input=document.getElementById('ruleTagSearch'),q=String(input?.value||'').trim().toLowerCase();const tags=tagDefinitions().filter(t=>t.enabled!==false);let rows=tags.filter(t=>!q||tagSearchText(t).includes(q)).map(t=>({tag:t,score:ruleTagScore(t,q)})).sort((a,b)=>b.score-a.score||String(a.tag.name||a.tag.id).localeCompare(String(b.tag.name||b.tag.id),'ja')).slice(0,50).map(({tag})=>({value:String(tag.id),label:String(tag.name||tag.id),idLabel:String(tag.id),meta:ruleTagMeta(tag)}));ruleTagSearchState.active=rows.length?0:-1;renderCombo(document.getElementById('ruleTagResults'),rows,ruleTagSearchState,'selectRuleTagResult','該当するタグがありません',!q)}
-function openRuleTagSearch(){updateRuleTagSearch()}
-function selectRuleTagResult(i){const row=ruleTagSearchState.items[i];if(!row)return;document.getElementById('ruleTagSelect').value=row.value;document.getElementById('ruleTagSearch').value=row.label;document.getElementById('ruleTagSelected').textContent=`${row.label} (${row.idLabel})`;document.getElementById('ruleTagResults').classList.remove('open');ruleTagSearchState.active=-1}
+function openRuleTagPicker(){syncRuleDraftFromForm();ruleTagPickerSelected=new Set();const modal=document.getElementById('ruleTagPicker');const input=document.getElementById('ruleTagPickerSearch');document.getElementById('ruleTagPickerTitle').textContent=`${RULE_SECTIONS[ruleTagSection.value]||'通常タグ'}を選択`;input.value='';modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');document.body.classList.add('rule-picker-open');renderRuleTagPicker();setTimeout(()=>input.focus(),30)}
+function closeRuleTagPicker(){const modal=document.getElementById('ruleTagPicker');modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');document.body.classList.remove('rule-picker-open');ruleTagPickerSelected.clear()}
+function renderRuleTagPicker(){const q=String(document.getElementById('ruleTagPickerSearch')?.value||'').trim().toLowerCase();ruleTagPickerRows=tagDefinitions().filter(t=>t.enabled!==false&&(!q||tagSearchText(t).includes(q))).map(t=>({tag:t,score:ruleTagScore(t,q)})).sort((a,b)=>b.score-a.score||String(a.tag.name||a.tag.id).localeCompare(String(b.tag.name||b.tag.id),'ja')).slice(0,50).map(x=>x.tag);const list=document.getElementById('ruleTagPickerList');list.innerHTML=ruleTagPickerRows.length?ruleTagPickerRows.map(t=>{const id=String(t.id),selected=ruleTagPickerSelected.has(id);return `<div class="rule-tag-row ${selected?'selected':''}" role="option" aria-selected="${selected}" tabindex="0" data-tag-id="${escAttr(id)}" onclick="toggleRuleTagPicker('${escAttr(id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRuleTagPicker('${escAttr(id)}')}"><div class="rule-tag-row-name">${esc(t.name||t.id)}</div><div class="rule-tag-row-sub"><span class="rule-tag-row-id">${esc(t.id)}</span>${ruleTagMeta(t)?'　'+esc(ruleTagMeta(t)):''}</div></div>`}).join(''):'<div class="combo-empty">該当するタグがありません。</div>';updateRuleTagPickerFooter()}
+function toggleRuleTagPicker(id){id=String(id);if(ruleTagPickerSelected.has(id))ruleTagPickerSelected.delete(id);else ruleTagPickerSelected.add(id);renderRuleTagPicker()}
+function selectAllVisibleRuleTags(){ruleTagPickerRows.forEach(t=>ruleTagPickerSelected.add(String(t.id)));renderRuleTagPicker()}
+function clearRuleTagSelection(){ruleTagPickerSelected.clear();renderRuleTagPicker()}
+function updateRuleTagPickerFooter(){const n=ruleTagPickerSelected.size,button=document.getElementById('ruleTagPickerConfirm');button.textContent=`追加（${n}件）`;button.disabled=n===0;document.getElementById('ruleTagPickerResultCount').textContent=`表示 ${ruleTagPickerRows.length}件 / 選択 ${n}件`}
+function confirmRuleTagPicker(){if(!ruleTagPickerSelected.size)return;syncRuleDraftFromForm();const section=ruleTagSection.value;for(const tagId of ruleTagPickerSelected){if(!ruleDraft.nodes.some(n=>n.type==='tag'&&n.section===section&&String(n.tag_id)===String(tagId)))ruleDraft.nodes.push({node_id:ruleNodeId(),type:'tag',section,tag_id:String(tagId)});rememberRuleTag(tagId)}closeRuleTagPicker();renderRules()}
+function handleRuleTagPickerKey(e){if(e.key==='Escape'){e.preventDefault();closeRuleTagPicker()}else if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();confirmRuleTagPicker()}}
 function handleComboKey(e,state,renderFn,selectFn,panel){if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!state.items.length)return;state.active=(state.active+(e.key==='ArrowDown'?1:-1)+state.items.length)%state.items.length;renderFn();panel.querySelector('.combo-option.active')?.scrollIntoView({block:'nearest'})}else if(e.key==='Enter'){e.preventDefault();if(state.active>=0)selectFn(state.active)}else if(e.key==='Escape'){panel.classList.remove('open')}}
-function handleRuleTagKey(e){handleComboKey(e,ruleTagSearchState,updateRuleTagSearch,selectRuleTagResult,document.getElementById('ruleTagResults'))}
 function parentRows(){return ruleDraft.nodes.filter(n=>n.type==='tag').map(n=>({value:String(n.node_id),label:ruleTagLabel(n.tag_id),idLabel:RULE_SECTIONS[n.section]||n.section,meta:`${RULE_SECTIONS[n.section]||n.section} / ${n.tag_id}`}))}
 function updateRuleParentSearch(){const q=String(document.getElementById('ruleParentSearch')?.value||'').trim().toLowerCase();const rows=parentRows().filter(x=>!q||[x.label,x.idLabel,x.meta].join(' ').toLowerCase().includes(q)).slice(0,50);ruleParentSearchState.active=rows.length?0:-1;renderCombo(document.getElementById('ruleParentResults'),rows,ruleParentSearchState,'selectRuleParentResult','配置済みの親候補がありません',false)}
 function openRuleParentSearch(){updateRuleParentSearch()}
 function selectRuleParentResult(i){const row=ruleParentSearchState.items[i];if(!row)return;document.getElementById('ruleNumberParent').value=row.value;document.getElementById('ruleParentSearch').value=row.label;document.getElementById('ruleParentSelected').textContent=`${row.idLabel} / ${row.label}`;document.getElementById('ruleParentResults').classList.remove('open');ruleParentSearchState.active=-1}
 function handleRuleParentKey(e){handleComboKey(e,ruleParentSearchState,updateRuleParentSearch,selectRuleParentResult,document.getElementById('ruleParentResults'))}
 function refreshRuleSelectors(){
- const tagHidden=document.getElementById('ruleTagSelect'),parentHidden=document.getElementById('ruleNumberParent');if(!tagHidden||!parentHidden)return;
- const selectedTag=tagDefinitions().find(t=>String(t.id)===String(tagHidden.value));document.getElementById('ruleTagSelected').textContent=selectedTag?`${selectedTag.name||selectedTag.id} (${selectedTag.id})`:'未選択';
+ const parentHidden=document.getElementById('ruleNumberParent');if(!parentHidden)return;
  const parents=parentRows(),selectedParent=parents.find(x=>x.value===parentHidden.value);if(!selectedParent&&parentHidden.value){parentHidden.value='';document.getElementById('ruleParentSearch').value=''}document.getElementById('ruleParentSelected').textContent=selectedParent?`${selectedParent.idLabel} / ${selectedParent.label}`:(parents.length?'親タグを検索して選択':'先に通常タグを配置');
 }
-function addRuleTagNode(){syncRuleDraftFromForm();const tagId=String(document.getElementById('ruleTagSelect').value||'');if(!tagId)return alert('通常タグを検索して選択してください。');ruleDraft.nodes.push({node_id:ruleNodeId(),type:'tag',section:ruleTagSection.value,tag_id:tagId});rememberRuleTag(tagId);document.getElementById('ruleTagSelect').value='';document.getElementById('ruleTagSearch').value='';document.getElementById('ruleTagSelected').textContent='未選択';renderRules()}
 function addRuleNumberNode(){syncRuleDraftFromForm();const parentId=String(document.getElementById('ruleNumberParent').value||''),parent=ruleDraft.nodes.find(n=>n.node_id===parentId&&n.type==='tag');if(!parent)return alert('親タグを検索して選択してください。');const raw=String(ruleNumberValue.value||'').trim();if(raw===''||!Number.isFinite(Number(raw)))return alert('数値を入力してください。');ruleDraft.nodes.push({node_id:ruleNodeId(),type:'number',section:parent.section,parent_node_id:parent.node_id,operator:ruleNumberOperator.value||'none',value:Number(raw)});ruleNumberValue.value='';renderRules()}
 function removeRuleNode(id){const children=ruleDraft.nodes.filter(n=>n.parent_node_id===id).map(n=>n.node_id);ruleDraft.nodes=ruleDraft.nodes.filter(n=>n.node_id!==id&&!children.includes(n.node_id));renderRules()}
 function renderRulePreview(){const root=document.getElementById('rulePreview');if(!root)return;syncRuleDraftFromForm();root.innerHTML=`<div class="item"><b>${esc(ruleDraft.name||'名称未設定')}</b><div class="small">全項目タグ管理</div></div>`+Object.entries(RULE_SECTIONS).map(([key,label])=>{const tags=ruleDraft.nodes.filter(n=>n.type==='tag'&&n.section===key);return `<div class="rule-node-group"><b>${esc(label)}</b>${tags.length?tags.map(t=>{const nums=ruleDraft.nodes.filter(n=>n.type==='number'&&n.parent_node_id===t.node_id);return `<div class="rule-node"><span class="tag-chip">${esc(ruleTagLabel(t.tag_id))}</span><button class="danger" onclick="removeRuleNode('${escAttr(t.node_id)}')">削除</button></div>${nums.map(n=>`<div class="rule-number-node"><span>${esc(RULE_OPERATORS[n.operator]||'')} ${esc(String(n.value))}</span> <button class="danger" onclick="removeRuleNode('${escAttr(n.node_id)}')">削除</button></div>`).join('')}`}).join(''):'<div class="small">未配置</div>'}</div>`}).join('')}
-function clearRuleEditor(){ruleDraft={id:'',name:'',nodes:[]};ruleEditId.value='';ruleName.value='';ruleNumberOperator.value='none';ruleNumberValue.value='';['ruleTagSelect','ruleNumberParent','ruleTagSearch','ruleParentSearch'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});renderRules()}
+function clearRuleEditor(){ruleDraft={id:'',name:'',nodes:[]};ruleEditId.value='';ruleName.value='';ruleNumberOperator.value='none';ruleNumberValue.value='';['ruleNumberParent','ruleParentSearch'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});renderRules()}
 function saveRule(){ensureRuleData();syncRuleDraftFromForm();if(!ruleDraft.name)return alert('名称を入力してください。');if(!ruleDraft.nodes.some(n=>n.type==='tag'&&n.section==='context'))return alert('使用場所タグを配置してください。');if(!ruleDraft.nodes.some(n=>n.type==='tag'&&n.section==='timing'))return alert('発生タイミングタグを配置してください。');const orphan=ruleDraft.nodes.find(n=>n.type==='number'&&!ruleDraft.nodes.some(p=>p.node_id===n.parent_node_id&&p.type==='tag'));if(orphan)return alert('親タグのない数値タグがあります。');const rec={id:ruleDraft.id||('RUL-'+Date.now()),name:ruleDraft.name,nodes:structuredClone(ruleDraft.nodes),updated_at:now()};const i=data.rules.findIndex(r=>r.id===rec.id);if(i>=0)data.rules[i]=rec;else data.rules.push(rec);persist('rule saved');editRule(rec.id)}
 function editRule(id){ensureRuleData();const r=data.rules.find(x=>x.id===id);if(!r)return;ruleDraft=structuredClone(r);ruleDraft.nodes=Array.isArray(ruleDraft.nodes)?ruleDraft.nodes:[];ruleEditId.value=r.id;ruleName.value=r.name||'';showView('rules');renderRules()}
 function deleteRule(id){if(!confirm('ルールを削除しますか？'))return;data.rules=data.rules.filter(r=>r.id!==id);if(ruleDraft.id===id)clearRuleEditor();persist('rule deleted')}
 function renderRules(){ensureRuleData();refreshRuleSelectors();renderRulePreview();const list=document.getElementById('ruleList');if(!list)return;list.innerHTML=data.rules.length?data.rules.map(r=>{const nodes=Array.isArray(r.nodes)?r.nodes:[],labels=section=>nodes.filter(n=>n.type==='tag'&&n.section===section).map(n=>ruleTagLabel(n.tag_id)).join('・');return `<div class="item"><b>${esc(r.name||r.id)}</b> <span class="badge">${esc(labels('context')||'使用場所未設定')}</span><div class="small">${esc(labels('timing')||'タイミング未設定')} / タグ ${nodes.filter(n=>n.type==='tag').length} / 数値 ${nodes.filter(n=>n.type==='number').length}</div><div class="toolbar"><button onclick="editRule('${escAttr(r.id)}')">編集</button><button class="danger" onclick="deleteRule('${escAttr(r.id)}')">削除</button></div></div>`}).join(''):'<div class="item">登録ルールはありません。</div>'}
 
-document.addEventListener('click',e=>{if(!e.target.closest('#ruleTagCombo'))document.getElementById('ruleTagResults')?.classList.remove('open');if(!e.target.closest('#ruleParentCombo'))document.getElementById('ruleParentResults')?.classList.remove('open')});
-document.getElementById('ruleTagSection')?.addEventListener('change',()=>{document.getElementById('ruleTagSelect').value='';document.getElementById('ruleTagSearch').value='';document.getElementById('ruleTagSelected').textContent='未選択'});
+document.addEventListener('click',e=>{if(!e.target.closest('#ruleParentCombo'))document.getElementById('ruleParentResults')?.classList.remove('open')});
+document.getElementById('ruleTagPicker')?.addEventListener('click',e=>{if(e.target.id==='ruleTagPicker')closeRuleTagPicker()});
 
 // BUILD415_RULE_NUMBER_TAG_END
 
