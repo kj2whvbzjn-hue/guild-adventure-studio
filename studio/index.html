@@ -737,6 +737,17 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <button onclick="openTagCategoryCenter()">カテゴリ管理</button>
     </div>
     <div id="tagManagementValidation" class="small"></div>
+    <div class="card" style="margin-top:12px">
+      <h3>登録済みタグ一覧 <span class="badge ok">GKS-B002</span></h3>
+      <div class="filter-bar">
+        <input id="tagCenterSearch" placeholder="ID・名称・別名を検索" oninput="renderTagManagementCenter()">
+        <select id="tagCenterCategoryFilter" onchange="renderTagManagementCenter()"><option value="">全カテゴリ</option></select>
+        <select id="tagCenterStateFilter" onchange="renderTagManagementCenter()">
+          <option value="">全状態</option><option value="used">使用中</option><option value="unused">未使用</option><option value="enabled">有効</option><option value="disabled">無効</option><option value="deprecated">廃止済み</option><option value="locked">ロック</option>
+        </select>
+      </div>
+      <div id="tagCenterTableWrap" style="overflow:auto"></div>
+    </div>
     <div class="grid">
       <div class="field"><label>参照を確認するタグ</label><select id="tagManagementSelectedTag" onchange="renderTagManagementCenter()"></select></div>
       <div id="tagManagementReferenceDetail" class="item">タグを選択してください。</div>
@@ -2020,6 +2031,7 @@ function syncMasterFormMode(){
 
 // GKS-B001_TAG_MANAGEMENT_CENTER_BEGIN
 function tagCenterStat(label,value,detail=''){return `<div class="item"><b>${esc(label)}</b><div style="font-size:1.45rem;font-weight:700">${esc(value)}</div>${detail?`<div class="small">${esc(detail)}</div>`:''}</div>`}
+function selectTagFromCenter(id){const select=document.getElementById('tagManagementSelectedTag');if(select){select.value=id;renderTagManagementCenter();document.getElementById('tagManagementReferenceDetail')?.scrollIntoView({behavior:'smooth',block:'nearest'})}}
 function renderTagManagementCenter(){
  const root=document.getElementById('tagManagementSummary');if(!root||masterCategory.value!=='tags')return;
  rebuildTagIndex();const report=buildTagGovernanceReport();const summary=report.summary||{};
@@ -2031,13 +2043,20 @@ function renderTagManagementCenter(){
   tagCenterStat('参照総数',summary.reference_count??0,'キャラクター・マスター'),
   tagCenterStat('受入判定',report.acceptance?.pass?'PASS':'BLOCKED',(report.acceptance?.blockers||[]).join(' / ')||'重大阻害なし')
  ].join('');
+ const tags=tagDefinitions().slice().sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
+ const categories=new Map(tagCategoryDefinitions().map(x=>[x.id,x.name||x.id]));
+ const categoryFilter=document.getElementById('tagCenterCategoryFilter');if(categoryFilter){const prev=categoryFilter.value;categoryFilter.innerHTML='<option value="">全カテゴリ</option>'+tagCategoryDefinitions().slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(c=>`<option value="${escAttr(c.id)}">${esc(c.name||c.id)}</option>`).join('');if([...categoryFilter.options].some(o=>o.value===prev))categoryFilter.value=prev}
+ const q=String(document.getElementById('tagCenterSearch')?.value||'').trim().toLowerCase(),cf=categoryFilter?.value||'',sf=document.getElementById('tagCenterStateFilter')?.value||'';
+ const filtered=tags.filter(t=>{const usage=Number(getTagUsage(t.id)||0);const text=[t.id,t.name,t.category_id,(t.aliases||[]).join(' ')].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(cf&&t.category_id!==cf)return false;if(sf==='used'&&usage<1)return false;if(sf==='unused'&&usage>0)return false;if(sf==='enabled'&&t.enabled===false)return false;if(sf==='disabled'&&t.enabled!==false)return false;if(sf==='deprecated'&&t.deprecated!==true)return false;if(sf==='locked'&&t.locked!==true)return false;return true});
+ const table=document.getElementById('tagCenterTableWrap');if(table)table.innerHTML=filtered.length?`<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">名称</th><th style="text-align:left">カテゴリ</th><th>使用数</th><th style="text-align:left">状態</th><th style="text-align:left">操作</th></tr></thead><tbody>${filtered.map(t=>{const usage=Number(getTagUsage(t.id)||0),decision=canDeleteTag(t.id);const state=[t.enabled===false?'無効':'有効',t.deprecated===true?'廃止':'',t.locked===true?'ロック':''].filter(Boolean).join(' / ');return `<tr style="border-top:1px solid var(--border,#d8dee8)"><td><code>${esc(t.id)}</code></td><td><button class="link-button" onclick="selectTagFromCenter('${escAttr(t.id)}')">${esc(t.name||t.id)}</button></td><td>${esc(categories.get(t.category_id)||t.category_id||'未分類')}</td><td style="text-align:center"><button onclick="selectTagFromCenter('${escAttr(t.id)}')">${usage}</button></td><td>${esc(state)}</td><td><button onclick="editMaster('tags','${escAttr(t.id)}')">編集</button> <button class="danger" ${decision.allowed?'':'disabled title="'+escAttr(decision.reasons.join('、'))+'"'} onclick="deleteMaster('tags','${escAttr(t.id)}')">削除</button></td></tr>`}).join('')}</tbody></table>`:'<div class="item">条件に一致するタグはありません。</div>';
  const select=document.getElementById('tagManagementSelectedTag');const previous=select.value;
- select.innerHTML='<option value="">選択してください</option>'+tagDefinitions().slice().sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')).map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('');
- if(tagDefinitions().some(t=>t.id===previous))select.value=previous;
- const detail=document.getElementById('tagManagementReferenceDetail'),id=select.value;if(!id){detail.innerHTML='タグを選択してください。';return}
- const tag=tagDefinitions().find(t=>t.id===id)||{};const refs=getTagReferences(id)||[];const children=getChildTags(id)||[];const replacement=resolveTagReplacementChain(id);const deletion=canDeleteTag(id);
- detail.innerHTML=`<b>${esc(tag.name||id)}</b> <span class="badge">${esc(id)}</span><div class="small">使用 ${refs.length}件 / 子タグ ${children.length}件 / 削除 ${deletion.allowed?'可能':'不可'}</div><div class="small">置換経路: ${esc((replacement.chain||[]).join(' → ')||'なし')} ${replacement.valid?'':'（無効）'}</div><hr><b>参照箇所</b>${refs.length?'<ul>'+refs.slice(0,50).map(r=>`<li><code>${esc(r.path||String(r))}</code></li>`).join('')+'</ul>':'<div class="small">参照はありません。</div>'}${refs.length>50?`<div class="small">ほか ${refs.length-50}件</div>`:''}`;
- const v=document.getElementById('tagManagementValidation');const errors=validation.filter(x=>x.level==='ERROR'&&String(x.message||'').includes('タグ')).length,warnings=validation.filter(x=>x.level==='WARNING'&&String(x.message||'').includes('タグ')).length;v.textContent=`直近のタグ検証: エラー ${errors} / 警告 ${warnings}`;
+ select.innerHTML='<option value="">選択してください</option>'+tags.map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('');
+ if(tags.some(t=>t.id===previous))select.value=previous;
+ const detail=document.getElementById('tagManagementReferenceDetail'),id=select.value;if(!id){detail.innerHTML='タグを選択してください。';}else{
+  const tag=tags.find(t=>t.id===id)||{};const refs=getTagReferences(id)||[];const children=getChildTags(id)||[];const replacement=resolveTagReplacementChain(id);const deletion=canDeleteTag(id);
+  detail.innerHTML=`<b>${esc(tag.name||id)}</b> <span class="badge">${esc(id)}</span><div class="small">使用 ${refs.length}件 / 子タグ ${children.length}件 / 削除 ${deletion.allowed?'可能':'不可'}</div><div class="small">置換経路: ${esc((replacement.chain||[]).join(' → ')||'なし')} ${replacement.valid?'':'（無効）'}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(id)}')">このタグを編集</button></div><hr><b>参照箇所</b>${refs.length?'<ul>'+refs.slice(0,100).map(r=>`<li><code>${esc(r.path||String(r))}</code></li>`).join('')+'</ul>':'<div class="small">参照はありません。</div>'}${refs.length>100?`<div class="small">ほか ${refs.length-100}件</div>`:''}`;
+ }
+ const v=document.getElementById('tagManagementValidation');const errors=validation.filter(x=>x.level==='ERROR'&&String(x.message||'').includes('タグ')).length,warnings=validation.filter(x=>x.level==='WARNING'&&String(x.message||'').includes('タグ')).length;v.textContent=`直近のタグ検証: エラー ${errors} / 警告 ${warnings} / 表示 ${filtered.length}件`;
 }
 function runTagCenterValidation(){runValidation();renderTagManagementCenter();alert('タグ検証を実行しました。結果はタグ管理センターとデータ検証画面で確認できます。')}
 function openTagRepairCenter(){showView('validation');setTimeout(()=>document.getElementById('tagRepairSummary')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
@@ -4046,6 +4065,7 @@ document.addEventListener('DOMContentLoaded',renderMasterTagChips);
 
 window.characterTagsValue = window.characterTagsValue || [];
 </script>
+<!-- GKS-B002_TAG_DAILY_MANAGEMENT -->
 </body>
 </html>
 <script>
