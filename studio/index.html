@@ -697,8 +697,8 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   <div class="card">
     <h2>マスター登録</h2>
     <div class="grid">
-      <div class="field"><label>分類</label><select id="masterCategory" onchange="renderMasters()">
-        <option value="stats">能力値</option><option value="jobs">職業</option><option value="skills">スキル</option>
+      <div class="field"><label>分類</label><select id="masterCategory" onchange="updateMasterFormMode();renderMasters()">
+        <option value="tags">タグ</option><option value="stats">能力値</option><option value="jobs">職業</option><option value="skills">スキル</option>
         <option value="equipment">装備</option><option value="mods">MOD</option><option value="monsters">モンスター</option>
         <option value="status_effects">状態異常</option><option value="tablets">石板</option><option value="ai_conditions">AI条件</option>
         <option value="ai_targets">AI対象</option><option value="ai_actions">AI行動</option>
@@ -707,7 +707,11 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div class="field"><label>名称</label><input id="masterName"></div>
       <div class="field"><label>状態</label><select id="masterStatus"><option value="draft">下書き</option><option value="review">確認中</option><option value="approved">承認済み</option><option value="archived">保管済み</option></select></div>
     </div>
-    <div class="grid">
+    <div id="tagMasterFields" class="grid hidden">
+      <div class="field"><label>タグカテゴリ</label><select id="tagMasterCategoryId"></select></div>
+      <div class="field"><label>親タグ（任意）</label><select id="tagMasterParentId"><option value="">なし</option></select></div>
+    </div>
+    <div class="grid" id="normalMasterFields">
       <div class="field tag-picker-field"><label>タグ</label><input id="masterTags" type="hidden"><div id="masterTagChips" class="tag-chip-list"></div><button type="button" onclick="openMasterTagPicker()">＋ タグ追加</button></div>
       <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
     </div>
@@ -725,19 +729,16 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 
 <section id="view-rules" class="view hidden">
-  <h1>ルールエディター <span class="badge ok">BUILD415</span></h1>
-  <p class="small">通常タグを配置し、数値タグは配置時に「親タグ・比較演算子・値」を指定します。親はタグマスターではなく、このルール内の配置ノードIDを参照します。</p>
+  <h1>ルールエディター <span class="badge ok">BUILD416</span></h1>
+  <p class="small">使用場所・発生タイミング・対象・条件・アクション・設定をすべて通常タグで配置します。数値タグは配置時に「親タグ・比較演算子・値」を指定します。</p>
   <div class="rule-builder-grid">
     <div>
       <div class="card">
         <h2>ルール基本情報</h2>
         <input id="ruleEditId" type="hidden">
         <div class="field"><label>名称</label><input id="ruleName" placeholder="燃焼5スタックで爆発"></div>
-        <div class="grid">
-          <div class="field"><label>使用場所</label><select id="ruleContext"><option>Battle</option><option>Map</option><option>Quest</option><option>Facility</option></select></div>
-          <div class="field"><label>発生タイミング</label><input id="ruleTiming" placeholder="Hit / Timer / TileEntry"></div>
-        </div>
-        <div class="field"><label>通常タグ配置先</label><select id="ruleTagSection"><option value="target">対象タグ</option><option value="condition">追加条件</option><option value="action">実行アクション</option><option value="setting">実行設定</option></select></div>
+        <p class="small">使用場所・発生タイミングを含む全項目を通常タグで構成します。</p>
+        <div class="field"><label>通常タグ配置先</label><select id="ruleTagSection"><option value="context">使用場所</option><option value="timing">発生タイミング</option><option value="target">対象タグ</option><option value="condition">追加条件</option><option value="action">実行アクション</option><option value="setting">実行設定</option></select></div>
         <div class="field"><label>通常タグ</label><select id="ruleTagSelect"></select></div>
         <button onclick="addRuleTagNode()">通常タグを配置</button>
       </div>
@@ -1165,7 +1166,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <script>
-const APP_VERSION='1.23.0-dev';
+const APP_VERSION='1.24.0-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -1551,9 +1552,9 @@ function nextId(type){
  return p+'-'+String(max+1).padStart(4,'0')
 }
 
-const MASTER_LABELS={stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
+const MASTER_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
 let editingMasterId='';
-function masterPrefix(category){return ({stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
+function masterPrefix(category){return ({tags:'TAG',stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
 function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.masters[category]||[]).forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(String(x.id||'').startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
 let tagPickerSelection=[];
 function tagDefinitions(){return Array.isArray(data.tags)?data.tags:[]}
@@ -1929,11 +1930,13 @@ function renderTagPicker(){
 function toggleTagPickerSelection(id,checked){tagPickerSelection=checked?[...new Set([...tagPickerSelection,id])]:tagPickerSelection.filter(x=>x!==id)}
 function applyTagPicker(){setMasterTagIds(tagPickerSelection);closeTagPicker()}
 
-function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')}
-function editMaster(category,id){const m=(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';window.scrollTo({top:0,behavior:'smooth'})}
-function deleteMaster(category,id){if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
-function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value=''}
-function renderMasters(){if(!document.getElementById('masterList'))return;const c=masterCategory.value||'stats',q=(masterSearch.value||'').toLowerCase();const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'}
+function renderTagMasterOptions(){const cat=document.getElementById('tagMasterCategoryId'),parent=document.getElementById('tagMasterParentId');if(!cat||!parent)return;const cv=cat.value,pv=parent.value;cat.innerHTML='<option value="">未分類</option>'+tagCategoryDefinitions().filter(x=>x.enabled!==false).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');parent.innerHTML='<option value="">なし</option>'+tagDefinitions().filter(x=>x.enabled!==false&&x.id!==editingMasterId).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');if([...cat.options].some(o=>o.value===cv))cat.value=cv;if([...parent.options].some(o=>o.value===pv))parent.value=pv}
+function updateMasterFormMode(){const isTag=masterCategory.value==='tags';document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);renderTagMasterOptions()}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')}
+function editMaster(category,id){const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';updateMasterFormMode();if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}window.scrollTo({top:0,behavior:'smooth'})}
+function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
+function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
+function renderMasters(){if(!document.getElementById('masterList'))return;const c=masterCategory.value||'tags',q=(masterSearch.value||'').toLowerCase();updateMasterFormMode();if(c==='tags'){const rows=tagDefinitions().filter(m=>[m.id,m.name,m.category_id,m.description].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">カテゴリ: ${esc(m.category_id||'未分類')} / 親: ${esc(m.parent_id||'なし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('tags','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録タグはありません。</div>';return}const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'}
 function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')));return '\ufeff'+lines.join('\r\n')}
@@ -1978,13 +1981,13 @@ function normalizeBattleUnits(rows,side){if(!Array.isArray(rows))throw new Error
 function seedEquipmentBattleSample(){data.masters.equipment=data.masters.equipment||[];data.masters.mods=data.masters.mods||[];const upsert=(c,r)=>{const i=data.masters[c].findIndex(x=>x.id===r.id);if(i>=0)data.masters[c][i]=r;else data.masters[c].push(r)};upsert('mods',{id:'MOD-BTL-ATK',name:'攻撃強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{attack:12,crit:3}},description:'装備連携確認用',updated_at:now()});upsert('mods',{id:'MOD-BTL-RES',name:'守護強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{hp:60,defense:6,damage_resist:5}},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-SWORD',name:'試作騎士剣',status:'approved',tags:['武器','戦闘サンプル'],params:{stats:{attack:18,accuracy:3},mod_ids:['MOD-BTL-ATK']},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-ARMOR',name:'試作騎士鎧',status:'approved',tags:['鎧','戦闘サンプル'],params:{stats:{hp:80,defense:10,status_resist:5},mod_ids:['MOD-BTL-RES']},description:'装備連携確認用',updated_at:now()});const allies=JSON.parse(JSON.stringify(BATTLE_SAMPLE_ALLIES));allies[0].equipment_ids=['EQP-BTL-SWORD','EQP-BTL-ARMOR'];battleAllies.value=JSON.stringify(allies,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);persist('battle equipment sample');battleSummary.innerHTML='装備・MODマスターと連携するサンプルを登録しました。'}
 
 // BUILD415_RULE_NUMBER_TAG_BEGIN
-let ruleDraft={id:'',name:'',context:'Battle',timing:'',nodes:[]};
-const RULE_SECTIONS={target:'対象タグ',condition:'追加条件',action:'実行アクション',setting:'実行設定'};
+let ruleDraft={id:'',name:'',nodes:[]};
+const RULE_SECTIONS={context:'使用場所',timing:'発生タイミング',target:'対象タグ',condition:'追加条件',action:'実行アクション',setting:'実行設定'};
 const RULE_OPERATORS={none:'',eq:'等しい',gte:'以上',lte:'以下',gt:'超過',lt:'未満',neq:'等しくない'};
 function ensureRuleData(){if(!Array.isArray(data.rules))data.rules=[];if(!Array.isArray(ruleDraft.nodes))ruleDraft.nodes=[]}
 function ruleNodeId(){return 'RN-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)}
 function ruleTagLabel(id){const t=tagDefinitions().find(x=>String(x.id)===String(id));return t?(t.name||t.id):id}
-function syncRuleDraftFromForm(){ruleDraft.name=String(document.getElementById('ruleName')?.value||'').trim();ruleDraft.context=String(document.getElementById('ruleContext')?.value||'Battle');ruleDraft.timing=String(document.getElementById('ruleTiming')?.value||'').trim()}
+function syncRuleDraftFromForm(){ruleDraft.name=String(document.getElementById('ruleName')?.value||'').trim()}
 function refreshRuleSelectors(){
  const tagSel=document.getElementById('ruleTagSelect'),parentSel=document.getElementById('ruleNumberParent');if(!tagSel||!parentSel)return;
  tagSel.innerHTML=tagDefinitions().filter(t=>t.enabled!==false).map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('')||'<option value="">タグ未登録</option>';
@@ -1993,12 +1996,12 @@ function refreshRuleSelectors(){
 function addRuleTagNode(){syncRuleDraftFromForm();const tagId=String(ruleTagSelect.value||'');if(!tagId)return alert('通常タグを選択してください。');ruleDraft.nodes.push({node_id:ruleNodeId(),type:'tag',section:ruleTagSection.value,tag_id:tagId});renderRules()}
 function addRuleNumberNode(){syncRuleDraftFromForm();const parentId=String(ruleNumberParent.value||''),parent=ruleDraft.nodes.find(n=>n.node_id===parentId&&n.type==='tag');if(!parent)return alert('親タグを選択してください。');const raw=String(ruleNumberValue.value||'').trim();if(raw===''||!Number.isFinite(Number(raw)))return alert('数値を入力してください。');ruleDraft.nodes.push({node_id:ruleNodeId(),type:'number',section:parent.section,parent_node_id:parent.node_id,operator:ruleNumberOperator.value||'none',value:Number(raw)});ruleNumberValue.value='';renderRules()}
 function removeRuleNode(id){const children=ruleDraft.nodes.filter(n=>n.parent_node_id===id).map(n=>n.node_id);ruleDraft.nodes=ruleDraft.nodes.filter(n=>n.node_id!==id&&!children.includes(n.node_id));renderRules()}
-function renderRulePreview(){const root=document.getElementById('rulePreview');if(!root)return;syncRuleDraftFromForm();root.innerHTML=`<div class="item"><b>${esc(ruleDraft.name||'名称未設定')}</b><div class="small">${esc(ruleDraft.context)} / ${esc(ruleDraft.timing||'タイミング未設定')}</div></div>`+Object.entries(RULE_SECTIONS).map(([key,label])=>{const tags=ruleDraft.nodes.filter(n=>n.type==='tag'&&n.section===key);return `<div class="rule-node-group"><b>${esc(label)}</b>${tags.length?tags.map(t=>{const nums=ruleDraft.nodes.filter(n=>n.type==='number'&&n.parent_node_id===t.node_id);return `<div class="rule-node"><span class="tag-chip">${esc(ruleTagLabel(t.tag_id))}</span><button class="danger" onclick="removeRuleNode('${escAttr(t.node_id)}')">削除</button></div>${nums.map(n=>`<div class="rule-number-node"><span>${esc(RULE_OPERATORS[n.operator]||'')} ${esc(String(n.value))}</span> <button class="danger" onclick="removeRuleNode('${escAttr(n.node_id)}')">削除</button></div>`).join('')}`}).join(''):'<div class="small">未配置</div>'}</div>`}).join('')}
-function clearRuleEditor(){ruleDraft={id:'',name:'',context:'Battle',timing:'',nodes:[]};ruleEditId.value='';ruleName.value='';ruleContext.value='Battle';ruleTiming.value='';ruleNumberOperator.value='none';ruleNumberValue.value='';renderRules()}
-function saveRule(){ensureRuleData();syncRuleDraftFromForm();if(!ruleDraft.name)return alert('名称を入力してください。');if(!ruleDraft.timing)return alert('発生タイミングを入力してください。');const orphan=ruleDraft.nodes.find(n=>n.type==='number'&&!ruleDraft.nodes.some(p=>p.node_id===n.parent_node_id&&p.type==='tag'));if(orphan)return alert('親タグのない数値タグがあります。');const rec={id:ruleDraft.id||('RUL-'+Date.now()),name:ruleDraft.name,context:ruleDraft.context,timing:ruleDraft.timing,nodes:structuredClone(ruleDraft.nodes),updated_at:now()};const i=data.rules.findIndex(r=>r.id===rec.id);if(i>=0)data.rules[i]=rec;else data.rules.push(rec);persist('rule saved');editRule(rec.id)}
-function editRule(id){ensureRuleData();const r=data.rules.find(x=>x.id===id);if(!r)return;ruleDraft=structuredClone(r);ruleEditId.value=r.id;ruleName.value=r.name||'';ruleContext.value=r.context||'Battle';ruleTiming.value=r.timing||'';showView('rules');renderRules()}
+function renderRulePreview(){const root=document.getElementById('rulePreview');if(!root)return;syncRuleDraftFromForm();root.innerHTML=`<div class="item"><b>${esc(ruleDraft.name||'名称未設定')}</b><div class="small">全項目タグ管理</div></div>`+Object.entries(RULE_SECTIONS).map(([key,label])=>{const tags=ruleDraft.nodes.filter(n=>n.type==='tag'&&n.section===key);return `<div class="rule-node-group"><b>${esc(label)}</b>${tags.length?tags.map(t=>{const nums=ruleDraft.nodes.filter(n=>n.type==='number'&&n.parent_node_id===t.node_id);return `<div class="rule-node"><span class="tag-chip">${esc(ruleTagLabel(t.tag_id))}</span><button class="danger" onclick="removeRuleNode('${escAttr(t.node_id)}')">削除</button></div>${nums.map(n=>`<div class="rule-number-node"><span>${esc(RULE_OPERATORS[n.operator]||'')} ${esc(String(n.value))}</span> <button class="danger" onclick="removeRuleNode('${escAttr(n.node_id)}')">削除</button></div>`).join('')}`}).join(''):'<div class="small">未配置</div>'}</div>`}).join('')}
+function clearRuleEditor(){ruleDraft={id:'',name:'',nodes:[]};ruleEditId.value='';ruleName.value='';ruleNumberOperator.value='none';ruleNumberValue.value='';renderRules()}
+function saveRule(){ensureRuleData();syncRuleDraftFromForm();if(!ruleDraft.name)return alert('名称を入力してください。');if(!ruleDraft.nodes.some(n=>n.type==='tag'&&n.section==='context'))return alert('使用場所タグを配置してください。');if(!ruleDraft.nodes.some(n=>n.type==='tag'&&n.section==='timing'))return alert('発生タイミングタグを配置してください。');const orphan=ruleDraft.nodes.find(n=>n.type==='number'&&!ruleDraft.nodes.some(p=>p.node_id===n.parent_node_id&&p.type==='tag'));if(orphan)return alert('親タグのない数値タグがあります。');const rec={id:ruleDraft.id||('RUL-'+Date.now()),name:ruleDraft.name,nodes:structuredClone(ruleDraft.nodes),updated_at:now()};const i=data.rules.findIndex(r=>r.id===rec.id);if(i>=0)data.rules[i]=rec;else data.rules.push(rec);persist('rule saved');editRule(rec.id)}
+function editRule(id){ensureRuleData();const r=data.rules.find(x=>x.id===id);if(!r)return;ruleDraft=structuredClone(r);ruleDraft.nodes=Array.isArray(ruleDraft.nodes)?ruleDraft.nodes:[];ruleEditId.value=r.id;ruleName.value=r.name||'';showView('rules');renderRules()}
 function deleteRule(id){if(!confirm('ルールを削除しますか？'))return;data.rules=data.rules.filter(r=>r.id!==id);if(ruleDraft.id===id)clearRuleEditor();persist('rule deleted')}
-function renderRules(){ensureRuleData();refreshRuleSelectors();renderRulePreview();const list=document.getElementById('ruleList');if(!list)return;list.innerHTML=data.rules.length?data.rules.map(r=>`<div class="item"><b>${esc(r.name||r.id)}</b> <span class="badge">${esc(r.context||'')}</span><div class="small">${esc(r.timing||'')} / タグ ${r.nodes?.filter(n=>n.type==='tag').length||0} / 数値 ${r.nodes?.filter(n=>n.type==='number').length||0}</div><div class="toolbar"><button onclick="editRule('${escAttr(r.id)}')">編集</button><button class="danger" onclick="deleteRule('${escAttr(r.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録ルールはありません。</div>'}
+function renderRules(){ensureRuleData();refreshRuleSelectors();renderRulePreview();const list=document.getElementById('ruleList');if(!list)return;list.innerHTML=data.rules.length?data.rules.map(r=>{const nodes=Array.isArray(r.nodes)?r.nodes:[],labels=section=>nodes.filter(n=>n.type==='tag'&&n.section===section).map(n=>ruleTagLabel(n.tag_id)).join('・');return `<div class="item"><b>${esc(r.name||r.id)}</b> <span class="badge">${esc(labels('context')||'使用場所未設定')}</span><div class="small">${esc(labels('timing')||'タイミング未設定')} / タグ ${nodes.filter(n=>n.type==='tag').length} / 数値 ${nodes.filter(n=>n.type==='number').length}</div><div class="toolbar"><button onclick="editRule('${escAttr(r.id)}')">編集</button><button class="danger" onclick="deleteRule('${escAttr(r.id)}')">削除</button></div></div>`}).join(''):'<div class="item">登録ルールはありません。</div>'}
 // BUILD415_RULE_NUMBER_TAG_END
 
 function battleConditionOk(rule,u,units){const c=String(rule.condition||'always');if(c==='always')return true;if(c.startsWith('mp_at_least:'))return u.mp>=Number(c.split(':')[1]||0);if(c.startsWith('hp_below:'))return u.hp/u.maxHp*100<Number(c.split(':')[1]||0);if(c.startsWith('ally_hp_below:'))return units.some(x=>x.side===u.side&&x.alive&&x.hp/x.maxHp*100<Number(c.split(':')[1]||0));if(c.startsWith('enemy_count_at_most:'))return units.filter(x=>x.side!==u.side&&x.alive).length<=Number(c.split(':')[1]||0);return false}
@@ -2062,7 +2065,7 @@ function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)retu
 
 function renderBattle(){if(!document.getElementById('battleAllies'))return;if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
 
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
