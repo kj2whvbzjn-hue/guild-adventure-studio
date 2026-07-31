@@ -1555,7 +1555,7 @@ function nextId(type){
 const MASTER_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
 let editingMasterId='';
 function masterPrefix(category){return ({tags:'TAG',stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
-function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.masters[category]||[]).forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(String(x.id||'').startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
+function nextMasterId(category){const p=masterPrefix(category);let max=0;const rows=category==='tags'?tagDefinitions():(data.masters[category]||[]);rows.forEach(x=>{const id=String(x.id||'');const m=id.match(/(\d+)$/);if(id.startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
 let tagPickerSelection=[];
 function tagDefinitions(){return Array.isArray(data.tags)?data.tags:[]}
 function tagCategoryDefinitions(){return Array.isArray(data.tag_categories)?data.tag_categories:[]}
