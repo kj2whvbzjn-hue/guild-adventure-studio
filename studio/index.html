@@ -707,6 +707,19 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
         <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
       </div>
     </div>
+    <div id="skillExecutionFields" class="hidden">
+      <h3>タグ駆動スキル実行 <span class="badge ok">GKS-G001</span></h3>
+      <p class="small">条件・コスト・効果を機械可読JSONとして定義します。タグIDは共通タグ辞書 <code>data.tags</code> に存在する必要があります。</p>
+      <div class="grid">
+        <div class="field"><label>条件モード</label><select id="skillConditionMode"><option value="all">すべて満たす (all)</option><option value="any">いずれかを満たす (any)</option></select></div>
+        <div class="field"><label>タグ辞書参照</label><select id="skillExecutionTagPicker" onchange="insertSkillExecutionTagId(this.value)"><option value="">タグを選択</option></select></div>
+      </div>
+      <div class="field"><label>条件 conditions[]</label><textarea id="skillExecutionConditions" placeholder='[{"subject":"target","type":"has_tag","tagId":"TAG-0001"}]'></textarea></div>
+      <div class="field"><label>コスト costs[]</label><textarea id="skillExecutionCosts" placeholder='[{"subject":"target","type":"consume_stack","stackId":"CHILL","amount":3}]'></textarea></div>
+      <div class="field"><label>効果 effects[]</label><textarea id="skillExecutionEffects" placeholder='[{"subject":"target","type":"add_tag","tagId":"TAG-0002"}]'></textarea></div>
+      <div class="toolbar"><button type="button" onclick="insertSkillExecutionExample()">例を挿入</button><button type="button" onclick="validateSkillExecutionForm(true)">定義を検証</button></div>
+      <div id="skillExecutionValidation" class="small"></div>
+    </div>
     <div id="tagMasterFields" class="hidden">
       <div class="grid">
         <div class="field"><label>タグカテゴリ</label><select id="tagMasterCategoryId"></select></div>
@@ -2026,7 +2039,10 @@ function handleMasterCategoryChange(){clearMasterForm();renderMasters()}
 function syncMasterFormMode(){
  const isTag=masterCategory.value==='tags';document.getElementById('standardMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);
  document.getElementById('tagManagementCenter')?.classList.toggle('hidden',!isTag);
- document.getElementById('masterStatus')?.closest('.field')?.classList.toggle('hidden',isTag);if(isTag){populateTagMasterSelectors();renderTagManagementCenter()}
+ document.getElementById('masterStatus')?.closest('.field')?.classList.toggle('hidden',isTag);
+ const isSkill=masterCategory.value==='skills';document.getElementById('skillExecutionFields')?.classList.toggle('hidden',!isSkill);
+ if(isSkill)populateSkillExecutionTagPicker();
+ if(isTag){populateTagMasterSelectors();renderTagManagementCenter()}
 }
 
 // GKS-B001_TAG_MANAGEMENT_CENTER_BEGIN
@@ -2070,6 +2086,32 @@ function addTagCategoryFromMaster(){
  createBackup('before-tag-category-add');data.tag_categories.push({id,name:name.trim(),enabled:true,locked:false,order:tagCategoryDefinitions().length+1,created_at:now(),updated_at:now()});persist('tag category added');masterCategory.value='tags';renderMasters();alert(`タグカテゴリ「${name.trim()}」を追加しました。`)
 }
 // GKS-B001_TAG_MANAGEMENT_CENTER_END
+// GKS-G001_TAG_DRIVEN_SKILL_DEFINITION_BEGIN
+const SKILL_EXECUTION_CONDITION_TYPES=new Set(['has_tag','tag_exists','tag_missing','stack_at_least']);
+const SKILL_EXECUTION_COST_TYPES=new Set(['remove_tag','consume_stack']);
+const SKILL_EXECUTION_EFFECT_TYPES=new Set(['add_tag','remove_tag','add_stack','remove_stack']);
+function populateSkillExecutionTagPicker(){
+ const el=document.getElementById('skillExecutionTagPicker');if(!el)return;
+ el.innerHTML='<option value="">タグを選択</option>'+tagDefinitions().filter(t=>t.enabled!==false&&t.deprecated!==true).sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')).map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('');
+}
+function insertSkillExecutionTagId(id){if(!id)return;const target=document.activeElement;if(target&&['skillExecutionConditions','skillExecutionCosts','skillExecutionEffects'].includes(target.id)){const start=target.selectionStart??target.value.length,end=target.selectionEnd??start;target.value=target.value.slice(0,start)+id+target.value.slice(end);target.focus();target.selectionStart=target.selectionEnd=start+id.length}else navigator.clipboard?.writeText(id).catch(()=>{});document.getElementById('skillExecutionTagPicker').value=''}
+function insertSkillExecutionExample(){
+ const tags=tagDefinitions().filter(t=>t.enabled!==false&&t.deprecated!==true),source=tags[0]?.id||'TAG-SOURCE',result=tags[1]?.id||source;
+ skillConditionMode.value='all';skillExecutionConditions.value=JSON.stringify([{subject:'target',type:'has_tag',tagId:source},{subject:'target',type:'stack_at_least',stackId:'CHILL',amount:3}],null,2);skillExecutionCosts.value=JSON.stringify([{subject:'target',type:'remove_tag',tagId:source},{subject:'target',type:'consume_stack',stackId:'CHILL',amount:3}],null,2);skillExecutionEffects.value=JSON.stringify([{subject:'target',type:'add_tag',tagId:result},{subject:'target',type:'add_stack',stackId:'BREAK',amount:1}],null,2);validateSkillExecutionForm(false)
+}
+function parseSkillExecutionArray(id,label){const el=document.getElementById(id),text=String(el?.value||'').trim();if(!text)return [];let value;try{value=JSON.parse(text)}catch(e){throw new Error(`${label}のJSONが不正です: ${e.message}`)}if(!Array.isArray(value))throw new Error(`${label}はJSON配列で入力してください。`);return value}
+function operationTagId(op){return String(op?.tagId||op?.tag_id||op?.tag?.id||'').trim()}
+function normalizeSkillExecutionOperation(op){const x={...(op||{})};if(x.type==='tag_exists')x.type='has_tag';if(x.tag_id&&!x.tagId)x.tagId=x.tag_id;delete x.tag_id;if(x.tag?.id&&!x.tagId)x.tagId=x.tag.id;if(x.amount!==undefined)x.amount=Number(x.amount);return x}
+function buildSkillExecutionFromForm(){return {conditionMode:skillConditionMode.value==='any'?'any':'all',conditions:parseSkillExecutionArray('skillExecutionConditions','条件').map(normalizeSkillExecutionOperation),costs:parseSkillExecutionArray('skillExecutionCosts','コスト').map(normalizeSkillExecutionOperation),effects:parseSkillExecutionArray('skillExecutionEffects','効果').map(normalizeSkillExecutionOperation)}}
+function validateSkillExecutionDefinition(execution){
+ const errors=[],warnings=[],known=new Set(tagDefinitions().map(t=>String(t.id||''))),check=(rows,allowed,label)=>rows.forEach((op,i)=>{if(!op||typeof op!=='object')return errors.push(`${label}[${i}]はオブジェクトではありません。`);if(!allowed.has(op.type))errors.push(`${label}[${i}]のtype「${op.type||''}」は未対応です。`);if(!['actor','target'].includes(String(op.subject||'target')))errors.push(`${label}[${i}]のsubjectはactorまたはtargetです。`);const tid=operationTagId(op);if(['has_tag','tag_missing','add_tag','remove_tag'].includes(op.type)){if(!tid)errors.push(`${label}[${i}]にtagIdがありません。`);else if(!known.has(tid))errors.push(`${label}[${i}]のタグ「${tid}」はタグ辞書に存在しません。`)}if(['stack_at_least','consume_stack','add_stack','remove_stack'].includes(op.type)){if(!String(op.stackId||'').trim())errors.push(`${label}[${i}]にstackIdがありません。`);if(!Number.isFinite(Number(op.amount))||Number(op.amount)<=0)errors.push(`${label}[${i}]のamountは1以上の数値が必要です。`)}});
+ check(execution.conditions||[],SKILL_EXECUTION_CONDITION_TYPES,'conditions');check(execution.costs||[],SKILL_EXECUTION_COST_TYPES,'costs');check(execution.effects||[],SKILL_EXECUTION_EFFECT_TYPES,'effects');if(!(execution.conditions||[]).length)warnings.push('条件が空のため常時実行可能です。');if(!(execution.effects||[]).length)warnings.push('効果が空です。');return {valid:errors.length===0,errors,warnings}
+}
+function validateSkillExecutionForm(showAlert=false){const root=document.getElementById('skillExecutionValidation');try{const execution=buildSkillExecutionFromForm(),result=validateSkillExecutionDefinition(execution);if(root)root.innerHTML=result.valid?`<span class="badge ok">PASS</span> ${esc(result.warnings.join(' / ')||'タグ駆動定義は有効です。')}`:`<span class="badge danger">BLOCKED</span> ${esc(result.errors.join(' / '))}`;if(showAlert)alert(result.valid?'タグ駆動スキル定義は有効です。':'定義エラー:\n・'+result.errors.join('\n・'));return {execution,...result}}catch(e){if(root)root.innerHTML=`<span class="badge danger">BLOCKED</span> ${esc(e.message)}`;if(showAlert)alert(e.message);return {valid:false,errors:[e.message],warnings:[]}}
+}
+function loadSkillExecutionForm(master){const ex=master?.params?.execution||master?.execution||{};skillConditionMode.value=ex.conditionMode==='any'?'any':'all';skillExecutionConditions.value=JSON.stringify(ex.conditions||[],null,2);skillExecutionCosts.value=JSON.stringify(ex.costs||[],null,2);skillExecutionEffects.value=JSON.stringify(ex.effects||[],null,2);validateSkillExecutionForm(false)}
+function clearSkillExecutionForm(){if(!document.getElementById('skillExecutionConditions'))return;skillConditionMode.value='all';skillExecutionConditions.value='';skillExecutionCosts.value='';skillExecutionEffects.value='';skillExecutionValidation.textContent=''}
+// GKS-G001_TAG_DRIVEN_SKILL_DEFINITION_END
 function saveMaster(){
  const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');
  if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');
@@ -2080,18 +2122,19 @@ function saveMaster(){
   const i=tagDefinitions().findIndex(x=>x.id===oldId);if(i>=0)data.tags[i]=rec;else data.tags.push(rec);clearMasterForm();persist('tag master saved');return;
  }
  let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}
+ if(c==='skills'){const checked=validateSkillExecutionForm(false);if(!checked.valid)return alert('タグ駆動スキル定義を保存できません。\n・'+checked.errors.join('\n・'));if(checked.execution.conditions.length||checked.execution.costs.length||checked.execution.effects.length)params.execution=checked.execution;else delete params.execution;}
  const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')
 }
 function editMaster(category,id){
  const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterDescription.value=m.description||'';syncMasterFormMode();
  if(category==='tags'){populateTagMasterSelectors(m);tagMasterAliases.value=(m.aliases||[]).join(', ');tagMasterEnabled.checked=m.enabled!==false;tagMasterDeprecated.checked=m.deprecated===true;tagMasterLocked.checked=m.locked===true;}
- else{masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2)}window.scrollTo({top:0,behavior:'smooth'})
+ else{masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);if(category==='skills')loadSkillExecutionForm(m)}window.scrollTo({top:0,behavior:'smooth'})
 }
 function deleteMaster(category,id){
  if(category==='tags'){const decision=canDeleteTag(id);if(!decision.allowed)return alert('このタグは安全に削除できません。\n・'+decision.reasons.join('\n・'));if(!confirm(id+'を削除しますか？'))return;createBackup('before-tag-master-delete');data.tags=tagDefinitions().filter(x=>x.id!==id);persist('tag master deleted');return}
  if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')
 }
-function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';if(document.getElementById('tagMasterAliases')){tagMasterAliases.value='';tagMasterEnabled.checked=true;tagMasterDeprecated.checked=false;tagMasterLocked.checked=false;}syncMasterFormMode()}
+function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';clearSkillExecutionForm();if(document.getElementById('tagMasterAliases')){tagMasterAliases.value='';tagMasterEnabled.checked=true;tagMasterDeprecated.checked=false;tagMasterLocked.checked=false;}syncMasterFormMode()}
 function renderMasters(){
  if(!document.getElementById('masterList'))return;const c=masterCategory.value||'stats';syncMasterFormMode();const q=(masterSearch.value||'').toLowerCase();
  if(c==='tags'){
