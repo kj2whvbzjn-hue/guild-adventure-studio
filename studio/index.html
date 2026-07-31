@@ -47,6 +47,7 @@ textarea{min-height:110px;resize:vertical}
 .list{display:flex;flex-direction:column;gap:8px}
 .item{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
 .item .meta{font-size:12px;color:var(--muted)}
+.button-like{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:#fff;color:var(--accent);cursor:pointer;font:inherit;min-height:44px;box-sizing:border-box}
 .badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;font-size:12px}
 .badge.ok{background:#d1fae5;color:var(--ok)}.badge.warn{background:#fef3c7;color:var(--warn)}.badge.err{background:#fee2e2;color:var(--danger)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
@@ -262,6 +263,13 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
   <div class="card">
     <h2>登録プロジェクト</h2>
+    <p class="small">プロジェクトは端末・ブラウザごとに保存されます。別端末へ移す場合は、元の端末で一括出力し、移行先で一括読込してください。</p>
+    <div class="toolbar">
+      <button onclick="exportAllProjects()">全プロジェクトを一括出力</button>
+      <label class="button-like" for="allProjectsImportFile">全プロジェクトを一括読込</label>
+      <input type="file" id="allProjectsImportFile" accept=".json,application/json" class="hidden" onchange="importAllProjectsFromInput(this)">
+      <button onclick="repairProjectRegistryAndRender()">一覧を再検出</button>
+    </div>
     <div id="projectList" class="list"></div>
   </div>
 </section>
@@ -1203,7 +1211,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <script>
-const APP_VERSION='1.25.0-dev';
+const APP_VERSION='1.25.1-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -1219,6 +1227,7 @@ function initial(){
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
  ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[{"id":"devHeal","name":"検証ヒール","kind":"heal","environment":"development","mpCost":10,"cooldown":2,"multiplier":1.5,"target":"ally"},{"id":"devPoison","name":"検証ポイズン","kind":"status","environment":"development","mpCost":8,"cooldown":0,"target":"enemy","statusId":"poison"},{"id":"devBurn","name":"検証バーン","kind":"status","environment":"development","mpCost":9,"cooldown":0,"target":"enemy","statusId":"burn"},{"id":"devBleed","name":"検証ブリード","kind":"status","environment":"development","mpCost":10,"cooldown":0,"target":"enemy","statusId":"bleed"},{"id":"devSleep","name":"検証スリープ","kind":"status","environment":"development","mpCost":11,"cooldown":0,"target":"enemy","statusId":"sleep"},{"id":"devStun","name":"検証スタン","kind":"status","environment":"development","mpCost":12,"cooldown":0,"target":"enemy","statusId":"stun"},{"id":"devFreeze","name":"検証フリーズ","kind":"status","environment":"development","mpCost":13,"cooldown":0,"target":"enemy","statusId":"freeze"},{"id":"devBattleBless","name":"検証バトルブレス","kind":"buff","environment":"development","mpCost":6,"cooldown":0,"target":"ally","buff":{"id":"devBattleBless","name":"検証バトルブレス","stat":"outgoingDamage","power":40,"duration":300}},{"id":"devAddFireTag","name":"検証・炎タグ付与","kind":"tag","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","tag":{"id":"FIRE","name":"炎"}},{"id":"devRemoveFireTag","name":"検証・炎タグ削除","kind":"tag","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","tagId":"FIRE"},{"id":"devAddRefrigerationStack","name":"検証・冷却スタック付与","kind":"stack","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","stack":{"id":"REFRIGERATION","name":"Refrigeration／冷却"},"amount":1},{"id":"devRemoveRefrigerationStack","name":"検証・冷却スタック減少","kind":"stack","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":1},{"id":"devConsumeRefrigerationStack","name":"検証・冷却スタック消費","kind":"stack","environment":"development","operation":"consume","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":2},{"id":"devTagDrivenInteraction","name":"検証・タグ駆動相互作用","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"add_tag","tag":{"id":"DEV_INTERACTION_RESULT","name":"検証・相互作用結果"}}]}},{"id":"devBattleBlessWeak","name":"検証弱ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessWeak","name":"検証弱ブレス","stat":"outgoingDamage","power":20,"duration":600}},{"id":"devBattleBlessStrong","name":"検証強ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessStrong","name":"検証強ブレス","stat":"outgoingDamage","power":80,"duration":200}},{"id":"devTagDrivenRollback","name":"検証・タグ駆動ロールバック","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"unknown_operation"}]}}],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
 }
+repairProjectRegistry();
 migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
 localStorage.setItem(CURRENT_KEY,currentProjectId);
@@ -1258,6 +1267,27 @@ function migrateLegacyProject(){
 }
 function loadProject(id){
  try{return JSON.parse(localStorage.getItem(projectStorageKey(id)))}catch(e){return null}
+}
+function repairProjectRegistry(){
+ const known=new Map(getProjectRegistry().map(x=>[String(x.id),x]));
+ for(let i=0;i<localStorage.length;i++){
+  const key=localStorage.key(i);
+  if(!key||!key.startsWith(PROJECT_KEY_PREFIX))continue;
+  const id=key.slice(PROJECT_KEY_PREFIX.length);
+  const project=loadProject(id);
+  if(!project)continue;
+  const meta=known.get(id)||{};
+  known.set(id,{id,name:project.project?.name||meta.name||id,updated_at:project.project?.updated_at||meta.updated_at||''});
+ }
+ const list=[...known.values()].filter(x=>x&&x.id);
+ if(list.length)saveProjectRegistry(list);
+ return list;
+}
+function repairProjectRegistryAndRender(){
+ const before=getProjectRegistry().length;
+ const list=repairProjectRegistry();
+ renderProjects();
+ alert(`プロジェクト一覧を再検出しました。${before}件 → ${list.length}件`);
 }
 function normalizeStoryDesign(value){
  const d=(value&&typeof value==='object')?value:{};
@@ -1503,6 +1533,43 @@ function exportAllProjects(){
  };
  const blob=new Blob([JSON.stringify(packageData,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='guild-adventure-studio-all-projects.json';a.click();URL.revokeObjectURL(a.href)
+}
+
+function importAllProjectsFromInput(input){
+ const file=input?.files?.[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const pkg=JSON.parse(reader.result);
+   if(pkg?.format!=='guild-adventure-studio-multi-project'||!Array.isArray(pkg.projects))throw new Error('全プロジェクト一括出力ファイルではありません。');
+   const incoming=pkg.projects.filter(x=>x?.meta?.id&&x?.data);
+   if(!incoming.length)throw new Error('読込可能なプロジェクトがありません。');
+   const existing=new Set(getProjectRegistry().map(x=>String(x.id)));
+   const conflicts=incoming.filter(x=>existing.has(String(x.meta.id))).map(x=>x.meta.id);
+   if(conflicts.length&&!confirm(`同じIDのプロジェクト ${conflicts.length}件を上書きしますか？\n${conflicts.join(', ')}`))return;
+   const merged=new Map(getProjectRegistry().map(x=>[String(x.id),x]));
+   incoming.forEach(({meta,data:project})=>{
+    const id=String(meta.id);
+    project.project=project.project||{};
+    project.project.id=id;
+    safeStorageSet(projectStorageKey(id),JSON.stringify(project),`プロジェクト ${id}`);
+    merged.set(id,{id,name:project.project.name||meta.name||id,updated_at:project.project.updated_at||meta.updated_at||now()});
+   });
+   saveProjectRegistry([...merged.values()]);
+   const requested=String(pkg.current_project_id||'');
+   if(requested&&merged.has(requested)){
+    currentProjectId=requested;
+    localStorage.setItem(CURRENT_KEY,currentProjectId);
+    data=loadProject(currentProjectId)||data;
+    normalizeData();
+   }
+   input.value='';
+   render();
+   alert(`${incoming.length}件のプロジェクトを読み込みました。`);
+  }catch(e){alert('一括読込失敗: '+e.message);input.value='';}
+ };
+ reader.readAsText(file,'utf-8');
 }
 
 function applyProject(){
@@ -2287,7 +2354,7 @@ function exportProject(){
 }
 function importProject(){
  const f=document.getElementById('importFile').files[0];if(!f)return alert('JSONファイルを選択してください。');
- const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.organizations=obj.organizations||[];obj.terms=obj.terms||[];obj.relationships=obj.relationships||[];obj.timeline=obj.timeline||[];obj.quests=obj.quests||[];obj.events=obj.events||[];obj.flags=obj.flags||[];obj.battle_tests=obj.battle_tests||[];obj.masters=obj.masters||{};createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
+ const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(obj?.format==='guild-adventure-studio-multi-project'){document.getElementById('importFile').value='';const dt=new DataTransfer();dt.items.add(f);const temp={files:dt.files,value:''};return importAllProjectsFromInput(temp)}if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.organizations=obj.organizations||[];obj.terms=obj.terms||[];obj.relationships=obj.relationships||[];obj.timeline=obj.timeline||[];obj.quests=obj.quests||[];obj.events=obj.events||[];obj.flags=obj.flags||[];obj.battle_tests=obj.battle_tests||[];obj.masters=obj.masters||{};createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
 
