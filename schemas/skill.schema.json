@@ -3,62 +3,266 @@
   "$id": "ga-v9://schemas/skill.schema.json",
   "title": "Guild Adventure V9 Skill Data",
   "type": "object",
-  "required": ["schemaVersion", "build", "status", "skills"],
+  "required": [
+    "schemaVersion",
+    "build",
+    "status",
+    "skills"
+  ],
   "additionalProperties": false,
   "properties": {
-    "$schema": {"type": "string"},
-    "schemaVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
-    "build": {"type": "integer", "minimum": 399},
-    "status": {"enum": ["development", "adopted"]},
-    "skills": {"type": "array", "items": {"$ref": "#/$defs/skill"}}
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "build": {
+      "type": "integer",
+      "minimum": 399
+    },
+    "status": {
+      "enum": [
+        "development",
+        "adopted"
+      ]
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/skill"
+      }
+    }
   },
   "$defs": {
     "localizedName": {
-      "type": "object", "required": ["ja"], "additionalProperties": false,
-      "properties": {"ja": {"type": "string", "minLength": 1}, "en": {"type": "string"}}
+      "type": "object",
+      "required": [
+        "ja"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ja": {
+          "type": "string",
+          "minLength": 1
+        },
+        "en": {
+          "type": "string"
+        }
+      }
     },
     "condition": {
-      "type": "object", "required": ["subject", "type"],
+      "type": "object",
+      "required": [
+        "subject",
+        "type"
+      ],
       "properties": {
-        "subject": {"enum": ["actor", "target"]},
-        "type": {"enum": ["has_tag", "not_has_tag", "stack_at_least"]},
-        "tagId": {"type": "string", "minLength": 1},
-        "stackId": {"type": "string", "minLength": 1},
-        "amount": {"type": "integer", "minimum": 1}
+        "subject": {
+          "enum": [
+            "actor",
+            "target"
+          ]
+        },
+        "type": {
+          "enum": [
+            "has_tag",
+            "not_has_tag",
+            "tag_missing",
+            "stack_at_least",
+            "hp_ratio_at_most",
+            "hp_ratio_at_least"
+          ]
+        },
+        "tagId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stackId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
       }
     },
     "operation": {
-      "type": "object", "required": ["subject", "type"],
+      "type": "object",
+      "required": [
+        "subject",
+        "type"
+      ],
       "properties": {
-        "subject": {"enum": ["actor", "target"]},
-        "type": {"enum": ["add_tag", "remove_tag", "add_stack", "consume_stack"]},
-        "tagId": {"type": "string", "minLength": 1},
-        "tag": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string", "minLength": 1}, "name": {"type": "string"}}},
-        "stackId": {"type": "string", "minLength": 1},
-        "stack": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string", "minLength": 1}, "name": {"type": "string"}}},
-        "amount": {"type": "integer", "minimum": 1}
+        "subject": {
+          "enum": [
+            "actor",
+            "target"
+          ]
+        },
+        "type": {
+          "enum": [
+            "add_tag",
+            "remove_tag",
+            "add_stack",
+            "remove_stack",
+            "consume_stack",
+            "spend_hp",
+            "deal_damage",
+            "heal"
+          ]
+        },
+        "tagId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "stackId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stack": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "power": {
+          "type": "number",
+          "minimum": 0
+        },
+        "multiplier": {
+          "type": "number",
+          "minimum": 0
+        },
+        "scale": {
+          "enum": [
+            "actor_attack",
+            "target_max_hp",
+            "fixed"
+          ]
+        }
       }
     },
     "skill": {
       "type": "object",
-      "required": ["id", "version", "status", "name", "kind", "mpCost", "cooldown", "target", "execution"],
+      "required": [
+        "id",
+        "version",
+        "status",
+        "name",
+        "kind",
+        "mpCost",
+        "cooldown",
+        "target",
+        "execution"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$"},
-        "version": {"type": "integer", "minimum": 1},
-        "status": {"enum": ["development", "adopted", "deprecated"]},
-        "name": {"$ref": "#/$defs/localizedName"},
-        "kind": {"const": "interaction"},
-        "mpCost": {"type": "number", "minimum": 0},
-        "cooldown": {"type": "integer", "minimum": 0},
-        "target": {"enum": ["self", "ally", "enemy"]},
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "development",
+            "adopted",
+            "deprecated"
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/localizedName"
+        },
+        "kind": {
+          "const": "interaction"
+        },
+        "mpCost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cooldown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "enum": [
+            "self",
+            "ally",
+            "enemy"
+          ]
+        },
         "execution": {
-          "type": "object", "required": ["conditionMode", "conditions", "costs", "effects"], "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "conditionMode",
+            "conditions",
+            "costs",
+            "effects"
+          ],
+          "additionalProperties": false,
           "properties": {
-            "conditionMode": {"enum": ["all", "any"]},
-            "conditions": {"type": "array", "items": {"$ref": "#/$defs/condition"}},
-            "costs": {"type": "array", "items": {"$ref": "#/$defs/operation"}},
-            "effects": {"type": "array", "items": {"$ref": "#/$defs/operation"}}
+            "conditionMode": {
+              "enum": [
+                "all",
+                "any"
+              ]
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "costs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/operation"
+              }
+            },
+            "effects": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/operation"
+              }
+            }
           }
         }
       }
