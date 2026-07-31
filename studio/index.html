@@ -135,6 +135,11 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .tag-inspector-tag.active{outline:2px solid var(--accent)}
 .tag-reference-path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow-wrap:anywhere}
 @media(max-width:720px){.tag-inspector-grid{grid-template-columns:1fr}.tag-inspector-list{max-height:260px}}
+.rule-builder-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,2fr);gap:14px}
+.rule-node-group{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#fafafa}
+.rule-node{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:6px 0}
+.rule-number-node{margin-left:24px;padding:6px 8px;border-left:3px solid var(--accent);background:#fff;border-radius:6px}
+@media(max-width:800px){.rule-builder-grid{grid-template-columns:1fr}}
 
 @media(max-width:900px){
   .main{grid-template-columns:1fr}
@@ -180,6 +185,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <button data-view="references">参照関係マップ</button>
     <button data-view="characters">キャラクター</button>
     <button data-view="masters">マスターデータ</button>
+    <button data-view="rules">ルールエディター</button>
     <button data-view="battle">戦闘テスト</button>
     <button data-view="decisions">決定事項ログ</button>
     <button data-view="entities">データ・ID管理</button>
@@ -691,80 +697,22 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   <div class="card">
     <h2>マスター登録</h2>
     <div class="grid">
-      <div class="field"><label>分類</label><select id="masterCategory" onchange="handleMasterCategoryChange()">
+      <div class="field"><label>分類</label><select id="masterCategory" onchange="renderMasters()">
         <option value="stats">能力値</option><option value="jobs">職業</option><option value="skills">スキル</option>
         <option value="equipment">装備</option><option value="mods">MOD</option><option value="monsters">モンスター</option>
         <option value="status_effects">状態異常</option><option value="tablets">石板</option><option value="ai_conditions">AI条件</option>
-        <option value="ai_targets">AI対象</option><option value="ai_actions">AI行動</option><option value="tags">タグ</option>
+        <option value="ai_targets">AI対象</option><option value="ai_actions">AI行動</option>
       </select></div>
       <div class="field"><label>ID</label><input id="masterId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>名称</label><input id="masterName"></div>
       <div class="field"><label>状態</label><select id="masterStatus"><option value="draft">下書き</option><option value="review">確認中</option><option value="approved">承認済み</option><option value="archived">保管済み</option></select></div>
     </div>
-    <div id="standardMasterFields">
-      <div class="grid">
-        <div class="field tag-picker-field"><label>タグ</label><input id="masterTags" type="hidden"><div id="masterTagChips" class="tag-chip-list"></div><button type="button" onclick="openMasterTagPicker()">＋ タグ追加</button></div>
-        <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
-      </div>
-    </div>
-    <div id="skillExecutionFields" class="hidden">
-      <h3>タグ駆動スキル実行 <span class="badge ok">GKS-G003</span></h3>
-      <p class="small">条件・コスト・効果を機械可読JSONとして定義します。タグIDは共通タグ辞書 <code>data.tags</code> に存在する必要があります。GKS-G003ではHP条件、ダメージ、回復にも対応します。</p>
-      <div class="grid">
-        <div class="field"><label>条件モード</label><select id="skillConditionMode"><option value="all">すべて満たす (all)</option><option value="any">いずれかを満たす (any)</option></select></div>
-        <div class="field"><label>タグ辞書参照</label><select id="skillExecutionTagPicker" onchange="insertSkillExecutionTagId(this.value)"><option value="">タグを選択</option></select></div>
-      </div>
-      <div class="field"><label>条件 conditions[]</label><textarea id="skillExecutionConditions" placeholder='[{"subject":"target","type":"has_tag","tagId":"TAG-0001"}]'></textarea></div>
-      <div class="field"><label>コスト costs[]</label><textarea id="skillExecutionCosts" placeholder='[{"subject":"target","type":"consume_stack","stackId":"CHILL","amount":3}]'></textarea></div>
-      <div class="field"><label>効果 effects[]</label><textarea id="skillExecutionEffects" placeholder='[{"subject":"target","type":"add_tag","tagId":"TAG-0002"}]'></textarea></div>
-      <div class="toolbar"><button type="button" onclick="insertSkillExecutionExample()">例を挿入</button><button type="button" onclick="validateSkillExecutionForm(true)">定義を検証</button></div>
-      <div id="skillExecutionValidation" class="small"></div>
-    </div>
-    <div id="tagMasterFields" class="hidden">
-      <div class="grid">
-        <div class="field"><label>タグカテゴリ</label><select id="tagMasterCategoryId"></select></div>
-        <div class="field"><label>親タグ</label><select id="tagMasterParentId"></select></div>
-        <div class="field"><label>置換先タグ</label><select id="tagMasterReplacementId"></select></div>
-        <div class="field"><label>エイリアス（カンマ区切り）</label><input id="tagMasterAliases" placeholder="別名, 略称"></div>
-      </div>
-      <div class="toolbar">
-        <label><input type="checkbox" id="tagMasterEnabled" checked> 有効</label>
-        <label><input type="checkbox" id="tagMasterDeprecated"> 廃止済み</label>
-        <label><input type="checkbox" id="tagMasterLocked"> ロック</label>
-      </div>
-      <p class="small">タグは共通タグ辞書 <code>data.tags</code> に保存され、キャラクターや各マスターデータから参照できます。</p>
+    <div class="grid">
+      <div class="field tag-picker-field"><label>タグ</label><input id="masterTags" type="hidden"><div id="masterTagChips" class="tag-chip-list"></div><button type="button" onclick="openMasterTagPicker()">＋ タグ追加</button></div>
+      <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
     </div>
     <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
-  </div>
-  <div id="tagManagementCenter" class="card hidden">
-    <h2>タグ管理センター <span class="badge ok">GKS-B001</span></h2>
-    <p class="small">タグの登録・利用状況・監査・修復をこの画面からまとめて操作できます。修復の適用前にはBUILD415の安全確認とバックアップが実行されます。</p>
-    <div id="tagManagementSummary" class="grid"></div>
-    <div class="toolbar">
-      <button class="primary" onclick="runTagCenterValidation()">タグ検証を実行</button>
-      <button onclick="exportTagGovernanceReport()">監査JSON出力</button>
-      <button onclick="openTagRepairCenter()">修復プランナー</button>
-      <button onclick="openTagBaselineCenter()">ベースライン比較</button>
-      <button onclick="addTagCategoryFromMaster()">カテゴリ追加</button>
-      <button onclick="openTagCategoryCenter()">カテゴリ管理</button>
-    </div>
-    <div id="tagManagementValidation" class="small"></div>
-    <div class="card" style="margin-top:12px">
-      <h3>登録済みタグ一覧 <span class="badge ok">GKS-B002</span></h3>
-      <div class="filter-bar">
-        <input id="tagCenterSearch" placeholder="ID・名称・別名を検索" oninput="renderTagManagementCenter()">
-        <select id="tagCenterCategoryFilter" onchange="renderTagManagementCenter()"><option value="">全カテゴリ</option></select>
-        <select id="tagCenterStateFilter" onchange="renderTagManagementCenter()">
-          <option value="">全状態</option><option value="used">使用中</option><option value="unused">未使用</option><option value="enabled">有効</option><option value="disabled">無効</option><option value="deprecated">廃止済み</option><option value="locked">ロック</option>
-        </select>
-      </div>
-      <div id="tagCenterTableWrap" style="overflow:auto"></div>
-    </div>
-    <div class="grid">
-      <div class="field"><label>参照を確認するタグ</label><select id="tagManagementSelectedTag" onchange="renderTagManagementCenter()"></select></div>
-      <div id="tagManagementReferenceDetail" class="item">タグを選択してください。</div>
-    </div>
   </div>
   <div class="card">
     <h2>CSV入出力</h2>
@@ -775,6 +723,39 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   <div id="masterList" class="list"></div>
 </section>
 
+
+<section id="view-rules" class="view hidden">
+  <h1>ルールエディター <span class="badge ok">BUILD415</span></h1>
+  <p class="small">通常タグを配置し、数値タグは配置時に「親タグ・比較演算子・値」を指定します。親はタグマスターではなく、このルール内の配置ノードIDを参照します。</p>
+  <div class="rule-builder-grid">
+    <div>
+      <div class="card">
+        <h2>ルール基本情報</h2>
+        <input id="ruleEditId" type="hidden">
+        <div class="field"><label>名称</label><input id="ruleName" placeholder="燃焼5スタックで爆発"></div>
+        <div class="grid">
+          <div class="field"><label>使用場所</label><select id="ruleContext"><option>Battle</option><option>Map</option><option>Quest</option><option>Facility</option></select></div>
+          <div class="field"><label>発生タイミング</label><input id="ruleTiming" placeholder="Hit / Timer / TileEntry"></div>
+        </div>
+        <div class="field"><label>通常タグ配置先</label><select id="ruleTagSection"><option value="target">対象タグ</option><option value="condition">追加条件</option><option value="action">実行アクション</option><option value="setting">実行設定</option></select></div>
+        <div class="field"><label>通常タグ</label><select id="ruleTagSelect"></select></div>
+        <button onclick="addRuleTagNode()">通常タグを配置</button>
+      </div>
+      <div class="card">
+        <h2>数値タグ配置</h2>
+        <div class="field"><label>親タグ</label><select id="ruleNumberParent"></select></div>
+        <div class="field"><label>比較演算子</label><select id="ruleNumberOperator"><option value="none">なし</option><option value="eq">等しい</option><option value="gte">以上</option><option value="lte">以下</option><option value="gt">超過</option><option value="lt">未満</option><option value="neq">等しくない</option></select></div>
+        <div class="field"><label>値</label><input id="ruleNumberValue" type="number" step="any" placeholder="5"></div>
+        <button onclick="addRuleNumberNode()">数値タグを配置</button>
+      </div>
+      <div class="toolbar"><button class="primary" onclick="saveRule()">ルール保存</button><button onclick="clearRuleEditor()">新規</button></div>
+    </div>
+    <div>
+      <div class="card"><h2>編集中ルール</h2><div id="rulePreview"></div></div>
+      <div class="card"><h2>登録ルール</h2><div id="ruleList" class="list"></div></div>
+    </div>
+  </div>
+</section>
 
 <section id="view-battle" class="view hidden">
   <h1>戦闘プロトタイプ</h1>
@@ -880,22 +861,6 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div id="tagGovernanceBaselineSummary" class="small">基準監査JSONは未読込です。</div>
     <div id="tagGovernanceDriftResult" class="list"></div>
   </div>
-  <div class="card">
-    <h2>タグ修復プランナー <span class="badge warn">BUILD415</span></h2>
-    <p class="small">監査結果から安全に実行可能な修復候補を生成します。置換は既存の tags 配列だけを対象とし、実行前バックアップとセッション内ロールバックを提供します。物理削除候補は初期状態では未選択です。</p>
-    <div class="toolbar">
-      <button class="primary" onclick="generateTagRepairPlan()">修復計画を生成</button>
-      <button onclick="selectAllTagRepairActions(true)">すべて選択</button>
-      <button onclick="selectAllTagRepairActions(false)">選択解除</button>
-      <button onclick="exportTagRepairPlan()">計画JSON出力</button>
-      <button class="danger" onclick="applySelectedTagRepairs()">選択した修復を適用</button>
-      <button onclick="rollbackLastTagRepair()" id="tagRepairRollbackButton" disabled>直前の修復を戻す</button>
-    </div>
-    <div id="tagRepairSummary" class="small">修復計画は未生成です。</div>
-    <div id="tagRepairPlanList" class="list"></div>
-    <div id="tagRepairExecutionLog" class="list"></div>
-  </div>
-
 </section>
 
 <section id="view-backup" class="view hidden">
@@ -1214,7 +1179,7 @@ function initial(){
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[{"id":"devHeal","name":"検証ヒール","kind":"heal","environment":"development","mpCost":10,"cooldown":2,"multiplier":1.5,"target":"ally"},{"id":"devPoison","name":"検証ポイズン","kind":"status","environment":"development","mpCost":8,"cooldown":0,"target":"enemy","statusId":"poison"},{"id":"devBurn","name":"検証バーン","kind":"status","environment":"development","mpCost":9,"cooldown":0,"target":"enemy","statusId":"burn"},{"id":"devBleed","name":"検証ブリード","kind":"status","environment":"development","mpCost":10,"cooldown":0,"target":"enemy","statusId":"bleed"},{"id":"devSleep","name":"検証スリープ","kind":"status","environment":"development","mpCost":11,"cooldown":0,"target":"enemy","statusId":"sleep"},{"id":"devStun","name":"検証スタン","kind":"status","environment":"development","mpCost":12,"cooldown":0,"target":"enemy","statusId":"stun"},{"id":"devFreeze","name":"検証フリーズ","kind":"status","environment":"development","mpCost":13,"cooldown":0,"target":"enemy","statusId":"freeze"},{"id":"devBattleBless","name":"検証バトルブレス","kind":"buff","environment":"development","mpCost":6,"cooldown":0,"target":"ally","buff":{"id":"devBattleBless","name":"検証バトルブレス","stat":"outgoingDamage","power":40,"duration":300}},{"id":"devAddFireTag","name":"検証・炎タグ付与","kind":"tag","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","tag":{"id":"FIRE","name":"炎"}},{"id":"devRemoveFireTag","name":"検証・炎タグ削除","kind":"tag","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","tagId":"FIRE"},{"id":"devAddRefrigerationStack","name":"検証・冷却スタック付与","kind":"stack","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","stack":{"id":"REFRIGERATION","name":"Refrigeration／冷却"},"amount":1},{"id":"devRemoveRefrigerationStack","name":"検証・冷却スタック減少","kind":"stack","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":1},{"id":"devConsumeRefrigerationStack","name":"検証・冷却スタック消費","kind":"stack","environment":"development","operation":"consume","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":2},{"id":"devTagDrivenInteraction","name":"検証・タグ駆動相互作用","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"add_tag","tag":{"id":"DEV_INTERACTION_RESULT","name":"検証・相互作用結果"}}]}},{"id":"devBattleBlessWeak","name":"検証弱ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessWeak","name":"検証弱ブレス","stat":"outgoingDamage","power":20,"duration":600}},{"id":"devBattleBlessStrong","name":"検証強ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessStrong","name":"検証強ブレス","stat":"outgoingDamage","power":80,"duration":200}},{"id":"devTagDrivenRollback","name":"検証・タグ駆動ロールバック","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"unknown_operation"}]}}],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[{"id":"devHeal","name":"検証ヒール","kind":"heal","environment":"development","mpCost":10,"cooldown":2,"multiplier":1.5,"target":"ally"},{"id":"devPoison","name":"検証ポイズン","kind":"status","environment":"development","mpCost":8,"cooldown":0,"target":"enemy","statusId":"poison"},{"id":"devBurn","name":"検証バーン","kind":"status","environment":"development","mpCost":9,"cooldown":0,"target":"enemy","statusId":"burn"},{"id":"devBleed","name":"検証ブリード","kind":"status","environment":"development","mpCost":10,"cooldown":0,"target":"enemy","statusId":"bleed"},{"id":"devSleep","name":"検証スリープ","kind":"status","environment":"development","mpCost":11,"cooldown":0,"target":"enemy","statusId":"sleep"},{"id":"devStun","name":"検証スタン","kind":"status","environment":"development","mpCost":12,"cooldown":0,"target":"enemy","statusId":"stun"},{"id":"devFreeze","name":"検証フリーズ","kind":"status","environment":"development","mpCost":13,"cooldown":0,"target":"enemy","statusId":"freeze"},{"id":"devBattleBless","name":"検証バトルブレス","kind":"buff","environment":"development","mpCost":6,"cooldown":0,"target":"ally","buff":{"id":"devBattleBless","name":"検証バトルブレス","stat":"outgoingDamage","power":40,"duration":300}},{"id":"devAddFireTag","name":"検証・炎タグ付与","kind":"tag","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","tag":{"id":"FIRE","name":"炎"}},{"id":"devRemoveFireTag","name":"検証・炎タグ削除","kind":"tag","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","tagId":"FIRE"},{"id":"devAddRefrigerationStack","name":"検証・冷却スタック付与","kind":"stack","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","stack":{"id":"REFRIGERATION","name":"Refrigeration／冷却"},"amount":1},{"id":"devRemoveRefrigerationStack","name":"検証・冷却スタック減少","kind":"stack","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":1},{"id":"devConsumeRefrigerationStack","name":"検証・冷却スタック消費","kind":"stack","environment":"development","operation":"consume","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":2},{"id":"devTagDrivenInteraction","name":"検証・タグ駆動相互作用","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"add_tag","tag":{"id":"DEV_INTERACTION_RESULT","name":"検証・相互作用結果"}}]}},{"id":"devBattleBlessWeak","name":"検証弱ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessWeak","name":"検証弱ブレス","stat":"outgoingDamage","power":20,"duration":600}},{"id":"devBattleBlessStrong","name":"検証強ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessStrong","name":"検証強ブレス","stat":"outgoingDamage","power":80,"duration":200}},{"id":"devTagDrivenRollback","name":"検証・タグ駆動ロールバック","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"unknown_operation"}]}}],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
 }
 migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
@@ -1586,15 +1551,13 @@ function nextId(type){
  return p+'-'+String(max+1).padStart(4,'0')
 }
 
-const MASTER_LABELS={stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動',tags:'タグ'};
+const MASTER_LABELS={stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
 let editingMasterId='';
-function masterPrefix(category){return ({stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',tags:'TAG'})[category]||'MST'}
-function nextMasterId(category){const p=masterPrefix(category);let max=0;const rows=category==='tags'?tagDefinitions():(data.masters[category]||[]);rows.forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(String(x.id||'').startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
+function masterPrefix(category){return ({stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
+function nextMasterId(category){const p=masterPrefix(category);let max=0;(data.masters[category]||[]).forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(String(x.id||'').startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
 let tagPickerSelection=[];
 function tagDefinitions(){return Array.isArray(data.tags)?data.tags:[]}
 function tagCategoryDefinitions(){return Array.isArray(data.tag_categories)?data.tag_categories:[]}
-// BUILD415_1_TAG_MASTER_UI_INTEGRATION
-// Tags are managed from the master-data screen while remaining stored in data.tags.
 // BUILD408_TAG_INDEX_SERVICE_BEGIN
 class TagIndexService{
  constructor(){this.reset()}
@@ -1937,66 +1900,6 @@ function renderTagGovernanceDrift(){
 function exportTagGovernanceDriftReport(){if(!tagGovernanceBaseline)return alert('先に基準監査JSONを読み込んでください。');const drift=compareTagGovernanceBaseline();if(!drift)return;downloadText(`GK_TagGovernanceDrift_${currentProjectId}.json`,JSON.stringify(drift,null,2),'application/json;charset=utf-8')}
 // BUILD414_TAG_GOVERNANCE_BASELINE_DRIFT_END
 
-// BUILD415_TAG_REPAIR_PLANNER_BEGIN
-let tagRepairPlan=null;
-let tagRepairLastSnapshot=null;
-let tagRepairExecutionLog=[];
-function tagRepairActionId(type,source,target=''){return `${type}:${source}:${target}`}
-function buildTagRepairPlan(){
- rebuildTagIndex();
- const governance=buildTagGovernanceReport(),actions=[];
- governance.migration_candidates.forEach(row=>{
-  const source=String(row.source_tag_id||''),configured=String(row.replacement_tag_id||'');
-  if(!row.ready||!configured)return;
-  const chain=resolveTagReplacementChain(source),target=String(chain.chain?.[chain.chain.length-1]||configured);
-  const decision=canReplaceTag(source,target);
-  if(!decision.allowed||!target||target===source)return;
-  actions.push({id:tagRepairActionId('replace-references',source,target),type:'replace-references',selected:true,safety:'safe',source_tag_id:source,source_name:row.source_name||'',target_tag_id:target,target_name:tagIndexService.getTag(target)?.name||'',reference_count:getTagUsage(source),references:getTagReferences(source),description:`${source} の参照を ${target} へ置換`});
- });
- tagDefinitions().forEach(tag=>{
-  const id=String(tag?.id||'').trim(),decision=canDeleteTag(id);
-  if(tag?.deprecated===true&&decision.allowed){
-   actions.push({id:tagRepairActionId('delete-unused-tag',id),type:'delete-unused-tag',selected:false,safety:'destructive',source_tag_id:id,source_name:tag?.name||'',target_tag_id:'',target_name:'',reference_count:0,references:[],description:`未使用の廃止タグ ${id} を物理削除`});
-  }
- });
- return {schema:'gk.tag-repair-plan.v1',generated_at:now(),project_id:currentProjectId,project_name:data.project?.name||'',app_version:APP_VERSION,governance_acceptance:governance.acceptance,summary:{action_count:actions.length,replacement_count:actions.filter(a=>a.type==='replace-references').length,delete_count:actions.filter(a=>a.type==='delete-unused-tag').length,selected_count:actions.filter(a=>a.selected).length},actions};
-}
-function generateTagRepairPlan(){tagRepairPlan=buildTagRepairPlan();renderTagRepairPlanner();return tagRepairPlan}
-function setTagRepairActionSelected(id,selected){if(!tagRepairPlan)return;const action=tagRepairPlan.actions.find(a=>a.id===id);if(action)action.selected=!!selected;tagRepairPlan.summary.selected_count=tagRepairPlan.actions.filter(a=>a.selected).length;renderTagRepairPlanner()}
-function selectAllTagRepairActions(selected){if(!tagRepairPlan)generateTagRepairPlan();tagRepairPlan.actions.forEach(a=>a.selected=!!selected);tagRepairPlan.summary.selected_count=tagRepairPlan.actions.filter(a=>a.selected).length;renderTagRepairPlanner()}
-function renderTagRepairPlanner(){
- const summary=document.getElementById('tagRepairSummary'),root=document.getElementById('tagRepairPlanList'),log=document.getElementById('tagRepairExecutionLog'),rollback=document.getElementById('tagRepairRollbackButton');if(!summary||!root)return;
- if(rollback)rollback.disabled=!tagRepairLastSnapshot;
- if(!tagRepairPlan){summary.textContent='修復計画は未生成です。';root.innerHTML='';if(log)log.innerHTML='';return}
- const p=tagRepairPlan;summary.innerHTML=`候補 <b>${p.summary.action_count}</b> / 参照置換 <b>${p.summary.replacement_count}</b> / 物理削除 <b>${p.summary.delete_count}</b> / 選択 <b>${p.actions.filter(a=>a.selected).length}</b>`;
- root.innerHTML=p.actions.map(a=>`<div class="item"><label><input type="checkbox" ${a.selected?'checked':''} onchange="setTagRepairActionSelected('${escAttr(a.id)}',this.checked)"> <b>${esc(a.description)}</b></label> <span class="badge ${a.safety==='safe'?'ok':'warn'}">${a.safety==='safe'?'安全置換':'破壊的操作'}</span><div class="small">種類: ${esc(a.type)} / 参照: ${a.reference_count}${a.target_tag_id?` / ${esc(a.source_tag_id)} → ${esc(a.target_tag_id)}`:''}</div>${a.references?.length?`<details><summary>影響箇所 ${a.references.length}件</summary>${a.references.map(r=>`<div class="tag-reference-path">${esc(r.path)} — ${esc(r.owner_name||r.owner_id||r.owner_type)}</div>`).join('')}</details>`:''}</div>`).join('')||'<div class="item">現在、自動修復可能な候補はありません。</div>';
- if(log)log.innerHTML=tagRepairExecutionLog.length?`<div class="item"><b>実行ログ</b><div class="small">${tagRepairExecutionLog.map(x=>`${esc(x.at)} — ${esc(x.message)}`).join('<br>')}</div></div>`:'';
-}
-function exportTagRepairPlan(){const plan=tagRepairPlan||generateTagRepairPlan();const clean=structuredClone(plan);clean.summary.selected_count=clean.actions.filter(a=>a.selected).length;downloadText(`GK_TagRepairPlan_${currentProjectId}.json`,JSON.stringify(clean,null,2),'application/json;charset=utf-8')}
-function replaceTagReferencesInData(source,target){
- let changed=0;const replace=arr=>{if(!Array.isArray(arr))return arr;const out=[];arr.forEach(v=>{const id=String(v??'').trim(),mapped=id===source?target:id;if(mapped!==id)changed++;if(mapped&&!out.includes(mapped))out.push(mapped)});return out};
- (data.characters||[]).forEach(x=>x.tags=replace(x.tags));Object.values(data.masters||{}).forEach(rows=>(Array.isArray(rows)?rows:[]).forEach(x=>x.tags=replace(x.tags)));return changed;
-}
-function applySelectedTagRepairs(){
- if(!tagRepairPlan)generateTagRepairPlan();const selected=tagRepairPlan.actions.filter(a=>a.selected);if(!selected.length)return alert('適用する修復を選択してください。');
- const destructive=selected.filter(a=>a.safety==='destructive').length;
- if(!confirm(`選択した ${selected.length} 件の修復を適用します。${destructive?`\n物理削除 ${destructive} 件を含みます。`:''}\n実行前バックアップを作成します。よろしいですか？`))return;
- rebuildTagIndex();
- for(const a of selected){if(a.type==='replace-references'){const decision=canReplaceTag(a.source_tag_id,a.target_tag_id);if(!decision.allowed)return alert(`計画が古くなっています: ${a.source_tag_id}\n${decision.reasons.join('、')}`)}else if(a.type==='delete-unused-tag'){const decision=canDeleteTag(a.source_tag_id);if(!decision.allowed)return alert(`削除条件が変化しました: ${a.source_tag_id}\n${decision.reasons.join('、')}`)}}
- tagRepairLastSnapshot={at:now(),project_id:currentProjectId,data:structuredClone(data)};createBackup('before-build415-tag-repair');
- let replacements=0,deletions=0;
- selected.filter(a=>a.type==='replace-references').forEach(a=>{replacements+=replaceTagReferencesInData(a.source_tag_id,a.target_tag_id);const tag=tagDefinitions().find(t=>String(t?.id||'').trim()===a.source_tag_id);if(tag){tag.deprecated=true;tag.replacement_tag_id=a.target_tag_id}});
- const deleteIds=new Set(selected.filter(a=>a.type==='delete-unused-tag').map(a=>a.source_tag_id));if(deleteIds.size){const before=tagDefinitions().length;data.tags=tagDefinitions().filter(t=>!deleteIds.has(String(t?.id||'').trim()));deletions=before-data.tags.length}
- const ok=persist(`BUILD415 tag repair: ${replacements} replacements, ${deletions} deletions`);if(!ok){data=structuredClone(tagRepairLastSnapshot.data);tagRepairLastSnapshot=null;return alert('保存に失敗したため修復を取り消しました。')}
- rebuildTagIndex();runValidation();tagRepairExecutionLog.unshift({at:now(),message:`適用完了: 参照置換 ${replacements}件 / タグ削除 ${deletions}件 / 検証 ${Array.isArray(validation)?validation.length:0}件`});tagRepairPlan=buildTagRepairPlan();renderTagRepairPlanner();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();alert(`修復を適用しました。\n参照置換: ${replacements}件\nタグ削除: ${deletions}件`);
-}
-function rollbackLastTagRepair(){
- if(!tagRepairLastSnapshot)return alert('このセッションで戻せる修復はありません。');if(tagRepairLastSnapshot.project_id!==currentProjectId)return alert('別プロジェクトの修復スナップショットのため復元できません。');if(!confirm(`直前のBUILD415修復（${tagRepairLastSnapshot.at}）を戻しますか？\n現在状態もバックアップします。`))return;
- createBackup('before-build415-tag-repair-rollback');data=structuredClone(tagRepairLastSnapshot.data);tagRepairLastSnapshot=null;persist('BUILD415 tag repair rollback');rebuildTagIndex();runValidation();tagRepairExecutionLog.unshift({at:now(),message:'直前のBUILD415修復をロールバックしました'});tagRepairPlan=buildTagRepairPlan();renderTagRepairPlanner();alert('直前の修復をロールバックしました。');
-}
-// BUILD415_TAG_REPAIR_PLANNER_END
-
-
 function tagLabel(id){const t=tagDefinitions().find(x=>x.id===id);return t?(t.name||t.id):id}
 function masterTagIds(){return masterTags.value?masterTags.value.split(',').map(x=>x.trim()).filter(Boolean):[]}
 function setMasterTagIds(ids){masterTags.value=[...new Set((ids||[]).filter(Boolean))].join(',');renderMasterTagChips()}
@@ -2026,135 +1929,16 @@ function renderTagPicker(){
 function toggleTagPickerSelection(id,checked){tagPickerSelection=checked?[...new Set([...tagPickerSelection,id])]:tagPickerSelection.filter(x=>x!==id)}
 function applyTagPicker(){setMasterTagIds(tagPickerSelection);closeTagPicker()}
 
-function populateTagMasterSelectors(current={}){
- const category=document.getElementById('tagMasterCategoryId'),parent=document.getElementById('tagMasterParentId'),replacement=document.getElementById('tagMasterReplacementId');
- if(!category||!parent||!replacement)return;
- category.innerHTML='<option value="">未分類</option>'+tagCategoryDefinitions().slice().sort((a,b)=>(a.order||0)-(b.order||0)||String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');
- const editing=String(current.id||editingMasterId||'');
- const options=tagDefinitions().filter(x=>String(x.id||'')!==editing).sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');
- parent.innerHTML='<option value="">なし</option>'+options;replacement.innerHTML='<option value="">なし</option>'+options;
- category.value=String(current.category_id||'');parent.value=String(current.parent_id||'');replacement.value=String(current.replacement_tag_id||current.recommended_replacement_tag_id||'');
-}
-function handleMasterCategoryChange(){clearMasterForm();renderMasters()}
-function syncMasterFormMode(){
- const isTag=masterCategory.value==='tags';document.getElementById('standardMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);
- document.getElementById('tagManagementCenter')?.classList.toggle('hidden',!isTag);
- document.getElementById('masterStatus')?.closest('.field')?.classList.toggle('hidden',isTag);
- const isSkill=masterCategory.value==='skills';document.getElementById('skillExecutionFields')?.classList.toggle('hidden',!isSkill);
- if(isSkill)populateSkillExecutionTagPicker();
- if(isTag){populateTagMasterSelectors();renderTagManagementCenter()}
-}
-
-// GKS-B001_TAG_MANAGEMENT_CENTER_BEGIN
-function tagCenterStat(label,value,detail=''){return `<div class="item"><b>${esc(label)}</b><div style="font-size:1.45rem;font-weight:700">${esc(value)}</div>${detail?`<div class="small">${esc(detail)}</div>`:''}</div>`}
-function selectTagFromCenter(id){const select=document.getElementById('tagManagementSelectedTag');if(select){select.value=id;renderTagManagementCenter();document.getElementById('tagManagementReferenceDetail')?.scrollIntoView({behavior:'smooth',block:'nearest'})}}
-function renderTagManagementCenter(){
- const root=document.getElementById('tagManagementSummary');if(!root||masterCategory.value!=='tags')return;
- rebuildTagIndex();const report=buildTagGovernanceReport();const summary=report.summary||{};
- root.innerHTML=[
-  tagCenterStat('登録タグ',summary.tag_count??tagDefinitions().length,'共通タグ辞書'),
-  tagCenterStat('使用中',summary.used_tag_count??0,'1件以上参照'),
-  tagCenterStat('未使用',summary.unused_tag_count??0,'安全削除候補を含む'),
-  tagCenterStat('廃止済み',summary.deprecated_tag_count??0,'置換先の確認が必要'),
-  tagCenterStat('参照総数',summary.reference_count??0,'キャラクター・マスター'),
-  tagCenterStat('受入判定',report.acceptance?.pass?'PASS':'BLOCKED',(report.acceptance?.blockers||[]).join(' / ')||'重大阻害なし')
- ].join('');
- const tags=tagDefinitions().slice().sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
- const categories=new Map(tagCategoryDefinitions().map(x=>[x.id,x.name||x.id]));
- const categoryFilter=document.getElementById('tagCenterCategoryFilter');if(categoryFilter){const prev=categoryFilter.value;categoryFilter.innerHTML='<option value="">全カテゴリ</option>'+tagCategoryDefinitions().slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(c=>`<option value="${escAttr(c.id)}">${esc(c.name||c.id)}</option>`).join('');if([...categoryFilter.options].some(o=>o.value===prev))categoryFilter.value=prev}
- const q=String(document.getElementById('tagCenterSearch')?.value||'').trim().toLowerCase(),cf=categoryFilter?.value||'',sf=document.getElementById('tagCenterStateFilter')?.value||'';
- const filtered=tags.filter(t=>{const usage=Number(getTagUsage(t.id)||0);const text=[t.id,t.name,t.category_id,(t.aliases||[]).join(' ')].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(cf&&t.category_id!==cf)return false;if(sf==='used'&&usage<1)return false;if(sf==='unused'&&usage>0)return false;if(sf==='enabled'&&t.enabled===false)return false;if(sf==='disabled'&&t.enabled!==false)return false;if(sf==='deprecated'&&t.deprecated!==true)return false;if(sf==='locked'&&t.locked!==true)return false;return true});
- const table=document.getElementById('tagCenterTableWrap');if(table)table.innerHTML=filtered.length?`<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">ID</th><th style="text-align:left">名称</th><th style="text-align:left">カテゴリ</th><th>使用数</th><th style="text-align:left">状態</th><th style="text-align:left">操作</th></tr></thead><tbody>${filtered.map(t=>{const usage=Number(getTagUsage(t.id)||0),decision=canDeleteTag(t.id);const state=[t.enabled===false?'無効':'有効',t.deprecated===true?'廃止':'',t.locked===true?'ロック':''].filter(Boolean).join(' / ');return `<tr style="border-top:1px solid var(--border,#d8dee8)"><td><code>${esc(t.id)}</code></td><td><button class="link-button" onclick="selectTagFromCenter('${escAttr(t.id)}')">${esc(t.name||t.id)}</button></td><td>${esc(categories.get(t.category_id)||t.category_id||'未分類')}</td><td style="text-align:center"><button onclick="selectTagFromCenter('${escAttr(t.id)}')">${usage}</button></td><td>${esc(state)}</td><td><button onclick="editMaster('tags','${escAttr(t.id)}')">編集</button> <button class="danger" ${decision.allowed?'':'disabled title="'+escAttr(decision.reasons.join('、'))+'"'} onclick="deleteMaster('tags','${escAttr(t.id)}')">削除</button></td></tr>`}).join('')}</tbody></table>`:'<div class="item">条件に一致するタグはありません。</div>';
- const select=document.getElementById('tagManagementSelectedTag');const previous=select.value;
- select.innerHTML='<option value="">選択してください</option>'+tags.map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('');
- if(tags.some(t=>t.id===previous))select.value=previous;
- const detail=document.getElementById('tagManagementReferenceDetail'),id=select.value;if(!id){detail.innerHTML='タグを選択してください。';}else{
-  const tag=tags.find(t=>t.id===id)||{};const refs=getTagReferences(id)||[];const children=getChildTags(id)||[];const replacement=resolveTagReplacementChain(id);const deletion=canDeleteTag(id);
-  detail.innerHTML=`<b>${esc(tag.name||id)}</b> <span class="badge">${esc(id)}</span><div class="small">使用 ${refs.length}件 / 子タグ ${children.length}件 / 削除 ${deletion.allowed?'可能':'不可'}</div><div class="small">置換経路: ${esc((replacement.chain||[]).join(' → ')||'なし')} ${replacement.valid?'':'（無効）'}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(id)}')">このタグを編集</button></div><hr><b>参照箇所</b>${refs.length?'<ul>'+refs.slice(0,100).map(r=>`<li><code>${esc(r.path||String(r))}</code></li>`).join('')+'</ul>':'<div class="small">参照はありません。</div>'}${refs.length>100?`<div class="small">ほか ${refs.length-100}件</div>`:''}`;
- }
- const v=document.getElementById('tagManagementValidation');const errors=validation.filter(x=>x.level==='ERROR'&&String(x.message||'').includes('タグ')).length,warnings=validation.filter(x=>x.level==='WARNING'&&String(x.message||'').includes('タグ')).length;v.textContent=`直近のタグ検証: エラー ${errors} / 警告 ${warnings} / 表示 ${filtered.length}件`;
-}
-function runTagCenterValidation(){runValidation();renderTagManagementCenter();alert('タグ検証を実行しました。結果はタグ管理センターとデータ検証画面で確認できます。')}
-function openTagRepairCenter(){showView('validation');setTimeout(()=>document.getElementById('tagRepairSummary')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
-function openTagBaselineCenter(){showView('validation');setTimeout(()=>document.getElementById('tagGovernanceBaselineSummary')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
-function openTagCategoryCenter(){showView('validation');setTimeout(()=>document.getElementById('tagCategoryInspectorList')?.closest('.card')?.scrollIntoView({behavior:'smooth',block:'start'}),0)}
-function addTagCategoryFromMaster(){
- const name=prompt('新しいタグカテゴリ名を入力してください。');if(!name||!name.trim())return;
- const idInput=prompt('カテゴリIDを入力してください（空欄なら自動採番）。','');
- let id=String(idInput||'').trim();if(!id){let max=0;tagCategoryDefinitions().forEach(x=>{const m=String(x.id||'').match(/(\d+)$/);if(m)max=Math.max(max,+m[1])});id='TAGCAT-'+String(max+1).padStart(4,'0')}
- if(tagCategoryDefinitions().some(x=>x.id===id))return alert('同じカテゴリIDが既に存在します。');
- createBackup('before-tag-category-add');data.tag_categories.push({id,name:name.trim(),enabled:true,locked:false,order:tagCategoryDefinitions().length+1,created_at:now(),updated_at:now()});persist('tag category added');masterCategory.value='tags';renderMasters();alert(`タグカテゴリ「${name.trim()}」を追加しました。`)
-}
-// GKS-B001_TAG_MANAGEMENT_CENTER_END
-// GKS-G003_TAG_DRIVEN_COMBAT_EFFECTS_BEGIN
-// GKS-G001 compatibility signatures retained for regression tests:
-// new Set(['has_tag','tag_exists','tag_missing','stack_at_least'])
-// new Set(['remove_tag','consume_stack'])
-// new Set(['add_tag','remove_tag','add_stack','remove_stack'])
-// GKS-G001_TAG_DRIVEN_SKILL_DEFINITION_BEGIN
-const SKILL_EXECUTION_CONDITION_TYPES=new Set(['has_tag','tag_exists','tag_missing','stack_at_least','hp_ratio_at_most','hp_ratio_at_least']);
-const SKILL_EXECUTION_COST_TYPES=new Set(['remove_tag','consume_stack','spend_hp']);
-const SKILL_EXECUTION_EFFECT_TYPES=new Set(['add_tag','remove_tag','add_stack','remove_stack','deal_damage','heal']);
-function populateSkillExecutionTagPicker(){
- const el=document.getElementById('skillExecutionTagPicker');if(!el)return;
- el.innerHTML='<option value="">タグを選択</option>'+tagDefinitions().filter(t=>t.enabled!==false&&t.deprecated!==true).sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')).map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('');
-}
-function insertSkillExecutionTagId(id){if(!id)return;const target=document.activeElement;if(target&&['skillExecutionConditions','skillExecutionCosts','skillExecutionEffects'].includes(target.id)){const start=target.selectionStart??target.value.length,end=target.selectionEnd??start;target.value=target.value.slice(0,start)+id+target.value.slice(end);target.focus();target.selectionStart=target.selectionEnd=start+id.length}else navigator.clipboard?.writeText(id).catch(()=>{});document.getElementById('skillExecutionTagPicker').value=''}
-function insertSkillExecutionExample(){
- const tags=tagDefinitions().filter(t=>t.enabled!==false&&t.deprecated!==true),source=tags[0]?.id||'TAG-SOURCE',result=tags[1]?.id||source;
- skillConditionMode.value='all';skillExecutionConditions.value=JSON.stringify([{subject:'target',type:'has_tag',tagId:source},{subject:'target',type:'stack_at_least',stackId:'CHILL',amount:3},{subject:'target',type:'hp_ratio_at_most',ratio:0.75}],null,2);skillExecutionCosts.value=JSON.stringify([{subject:'target',type:'remove_tag',tagId:source},{subject:'target',type:'consume_stack',stackId:'CHILL',amount:3}],null,2);skillExecutionEffects.value=JSON.stringify([{subject:'target',type:'deal_damage',power:45,scale:'actor_attack',multiplier:1.2},{subject:'target',type:'add_tag',tagId:result},{subject:'target',type:'add_stack',stackId:'BREAK',amount:1}],null,2);validateSkillExecutionForm(false)
-}
-function parseSkillExecutionArray(id,label){const el=document.getElementById(id),text=String(el?.value||'').trim();if(!text)return [];let value;try{value=JSON.parse(text)}catch(e){throw new Error(`${label}のJSONが不正です: ${e.message}`)}if(!Array.isArray(value))throw new Error(`${label}はJSON配列で入力してください。`);return value}
-function operationTagId(op){return String(op?.tagId||op?.tag_id||op?.tag?.id||'').trim()}
-function normalizeSkillExecutionOperation(op){const x={...(op||{})};if(x.type==='tag_exists')x.type='has_tag';if(x.tag_id&&!x.tagId)x.tagId=x.tag_id;delete x.tag_id;if(x.tag?.id&&!x.tagId)x.tagId=x.tag.id;if(x.amount!==undefined)x.amount=Number(x.amount);return x}
-function buildSkillExecutionFromForm(){return {conditionMode:skillConditionMode.value==='any'?'any':'all',conditions:parseSkillExecutionArray('skillExecutionConditions','条件').map(normalizeSkillExecutionOperation),costs:parseSkillExecutionArray('skillExecutionCosts','コスト').map(normalizeSkillExecutionOperation),effects:parseSkillExecutionArray('skillExecutionEffects','効果').map(normalizeSkillExecutionOperation)}}
-function validateSkillExecutionDefinition(execution){
- const errors=[],warnings=[],known=new Set(tagDefinitions().map(t=>String(t.id||''))),check=(rows,allowed,label)=>rows.forEach((op,i)=>{if(!op||typeof op!=='object')return errors.push(`${label}[${i}]はオブジェクトではありません。`);if(!allowed.has(op.type))errors.push(`${label}[${i}]のtype「${op.type||''}」は未対応です。`);if(!['actor','target'].includes(String(op.subject||'target')))errors.push(`${label}[${i}]のsubjectはactorまたはtargetです。`);const tid=operationTagId(op);if(['has_tag','tag_missing','add_tag','remove_tag'].includes(op.type)){if(!tid)errors.push(`${label}[${i}]にtagIdがありません。`);else if(!known.has(tid))errors.push(`${label}[${i}]のタグ「${tid}」はタグ辞書に存在しません。`)}if(['stack_at_least','consume_stack','add_stack','remove_stack'].includes(op.type)){if(!String(op.stackId||'').trim())errors.push(`${label}[${i}]にstackIdがありません。`);if(!Number.isFinite(Number(op.amount))||Number(op.amount)<=0)errors.push(`${label}[${i}]のamountは1以上の数値が必要です。`)}if(['hp_ratio_at_most','hp_ratio_at_least'].includes(op.type)){if(!Number.isFinite(Number(op.ratio))||Number(op.ratio)<0||Number(op.ratio)>1)errors.push(`${label}[${i}]のratioは0以上1以下の数値が必要です。`)}if(['deal_damage','heal'].includes(op.type)){const hasPower=Number.isFinite(Number(op.power))&&Number(op.power)>=0,hasMultiplier=Number.isFinite(Number(op.multiplier))&&Number(op.multiplier)>=0;if(!hasPower&&!hasMultiplier)errors.push(`${label}[${i}]はpowerまたはmultiplierを指定してください。`);if(op.scale!==undefined&&!['actor_attack','target_max_hp','fixed'].includes(String(op.scale)))errors.push(`${label}[${i}]のscaleはactor_attack / target_max_hp / fixedです。`)}if(op.type==='spend_hp'&&(!Number.isFinite(Number(op.amount))||Number(op.amount)<=0))errors.push(`${label}[${i}]のamountは1以上の数値が必要です。`);});
- check(execution.conditions||[],SKILL_EXECUTION_CONDITION_TYPES,'conditions');check(execution.costs||[],SKILL_EXECUTION_COST_TYPES,'costs');check(execution.effects||[],SKILL_EXECUTION_EFFECT_TYPES,'effects');if(!(execution.conditions||[]).length)warnings.push('条件が空のため常時実行可能です。');if(!(execution.effects||[]).length)warnings.push('効果が空です。');return {valid:errors.length===0,errors,warnings}
-}
-function validateSkillExecutionForm(showAlert=false){const root=document.getElementById('skillExecutionValidation');try{const execution=buildSkillExecutionFromForm(),result=validateSkillExecutionDefinition(execution);if(root)root.innerHTML=result.valid?`<span class="badge ok">PASS</span> ${esc(result.warnings.join(' / ')||'タグ駆動定義は有効です。')}`:`<span class="badge danger">BLOCKED</span> ${esc(result.errors.join(' / '))}`;if(showAlert)alert(result.valid?'タグ駆動スキル定義は有効です。':'定義エラー:\n・'+result.errors.join('\n・'));return {execution,...result}}catch(e){if(root)root.innerHTML=`<span class="badge danger">BLOCKED</span> ${esc(e.message)}`;if(showAlert)alert(e.message);return {valid:false,errors:[e.message],warnings:[]}}
-}
-function loadSkillExecutionForm(master){const ex=master?.params?.execution||master?.execution||{};skillConditionMode.value=ex.conditionMode==='any'?'any':'all';skillExecutionConditions.value=JSON.stringify(ex.conditions||[],null,2);skillExecutionCosts.value=JSON.stringify(ex.costs||[],null,2);skillExecutionEffects.value=JSON.stringify(ex.effects||[],null,2);validateSkillExecutionForm(false)}
-function clearSkillExecutionForm(){if(!document.getElementById('skillExecutionConditions'))return;skillConditionMode.value='all';skillExecutionConditions.value='';skillExecutionCosts.value='';skillExecutionEffects.value='';skillExecutionValidation.textContent=''}
-// GKS-G001_TAG_DRIVEN_SKILL_DEFINITION_END
-// GKS-G003_TAG_DRIVEN_COMBAT_EFFECTS_END
-function saveMaster(){
- const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');
- if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');
- if(c==='tags'){
-  const oldId=editingMasterId;const aliases=tagMasterAliases.value.split(',').map(x=>x.trim()).filter(Boolean);const rec={id,name,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',aliases,enabled:tagMasterEnabled.checked,deprecated:tagMasterDeprecated.checked,locked:tagMasterLocked.checked,replacement_tag_id:tagMasterReplacementId.value||'',description:masterDescription.value,updated_at:now()};
-  const duplicateAlias=tagDefinitions().find(t=>t.id!==oldId&&[t.id,t.name,...(t.aliases||[])].map(x=>String(x||'').trim().toLowerCase()).some(x=>x&&aliases.map(a=>a.toLowerCase()).includes(x)));if(duplicateAlias&&!confirm(`エイリアスが「${duplicateAlias.name||duplicateAlias.id}」と重複する可能性があります。登録を続けますか？`))return;
-  if(rec.parent_id===id)return alert('自分自身を親タグには設定できません。');if(rec.replacement_tag_id===id)return alert('自分自身を置換先には設定できません。');
-  const i=tagDefinitions().findIndex(x=>x.id===oldId);if(i>=0)data.tags[i]=rec;else data.tags.push(rec);clearMasterForm();persist('tag master saved');return;
- }
- let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}
- if(c==='skills'){const checked=validateSkillExecutionForm(false);if(!checked.valid)return alert('タグ駆動スキル定義を保存できません。\n・'+checked.errors.join('\n・'));if(checked.execution.conditions.length||checked.execution.costs.length||checked.execution.effects.length)params.execution=checked.execution;else delete params.execution;}
- const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')
-}
-function editMaster(category,id){
- const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterDescription.value=m.description||'';syncMasterFormMode();
- if(category==='tags'){populateTagMasterSelectors(m);tagMasterAliases.value=(m.aliases||[]).join(', ');tagMasterEnabled.checked=m.enabled!==false;tagMasterDeprecated.checked=m.deprecated===true;tagMasterLocked.checked=m.locked===true;}
- else{masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);if(category==='skills')loadSkillExecutionForm(m)}window.scrollTo({top:0,behavior:'smooth'})
-}
-function deleteMaster(category,id){
- if(category==='tags'){const decision=canDeleteTag(id);if(!decision.allowed)return alert('このタグは安全に削除できません。\n・'+decision.reasons.join('\n・'));if(!confirm(id+'を削除しますか？'))return;createBackup('before-tag-master-delete');data.tags=tagDefinitions().filter(x=>x.id!==id);persist('tag master deleted');return}
- if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')
-}
-function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';clearSkillExecutionForm();if(document.getElementById('tagMasterAliases')){tagMasterAliases.value='';tagMasterEnabled.checked=true;tagMasterDeprecated.checked=false;tagMasterLocked.checked=false;}syncMasterFormMode()}
-function renderMasters(){
- if(!document.getElementById('masterList'))return;const c=masterCategory.value||'stats';syncMasterFormMode();const q=(masterSearch.value||'').toLowerCase();
- if(c==='tags'){
-  const categories=new Map(tagCategoryDefinitions().map(x=>[x.id,x.name||x.id]));const rows=tagDefinitions().filter(m=>[m.id,m.name,m.category_id,(m.aliases||[]).join(' ')].join(' ').toLowerCase().includes(q));
-  masterList.innerHTML=rows.length?rows.map(m=>{const decision=canDeleteTag(m.id);return `<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> ${m.enabled===false?'<span class="badge">無効</span>':'<span class="badge">有効</span>'} ${m.deprecated===true?'<span class="badge">廃止</span>':''} ${m.locked===true?'<span class="badge">ロック</span>':''}<div class="small">カテゴリ: ${esc(categories.get(m.category_id)||m.category_id||'未分類')} / 親: ${esc(m.parent_id||'なし')} / 使用: ${getTagUsage(m.id)}件</div><div class="small">別名: ${esc((m.aliases||[]).join(', ')||'なし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(m.id)}')">編集</button><button class="danger" ${decision.allowed?'':'disabled title="'+escAttr(decision.reasons.join('、'))+'"'} onclick="deleteMaster('tags','${escAttr(m.id)}')">削除</button></div></div>`}).join(''):'<div class="item">登録タグはありません。</div>';return;
- }
- const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'
-}
-
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved')}
+function editMaster(category,id){const m=(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';window.scrollTo({top:0,behavior:'smooth'})}
+function deleteMaster(category,id){if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
+function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value=''}
+function renderMasters(){if(!document.getElementById('masterList'))return;const c=masterCategory.value||'stats',q=(masterSearch.value||'').toLowerCase();const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'}
 function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
-function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];if(category==='tags'){tagDefinitions().forEach(m=>lines.push(['tags',m.id,m.name,m.enabled===false?'disabled':(m.deprecated===true?'deprecated':'active'),(m.aliases||[]).join('|'),JSON.stringify({category_id:m.category_id||'',parent_id:m.parent_id||'',replacement_tag_id:m.replacement_tag_id||'',locked:m.locked===true}),m.description||''].map(csvCell).join(',')))}else{(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')))}return '\ufeff'+lines.join('\r\n')}
+function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')));return '\ufeff'+lines.join('\r\n')}
 function exportMasterCsv(){const c=masterCategory.value;downloadText('GK_'+c+'_v'+APP_VERSION+'.csv',masterCsv(c),'text/csv;charset=utf-8')}
-function exportAllMastersCsv(){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];Object.keys(MASTER_LABELS).filter(c=>c!=='tags').forEach(c=>(data.masters[c]||[]).forEach(m=>lines.push([c,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(','))));tagDefinitions().forEach(m=>lines.push(['tags',m.id,m.name,m.enabled===false?'disabled':(m.deprecated===true?'deprecated':'active'),(m.aliases||[]).join('|'),JSON.stringify({category_id:m.category_id||'',parent_id:m.parent_id||'',replacement_tag_id:m.replacement_tag_id||'',locked:m.locked===true}),m.description||''].map(csvCell).join(',')));downloadText('GK_MasterDB_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
+function exportAllMastersCsv(){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];Object.keys(MASTER_LABELS).forEach(c=>(data.masters[c]||[]).forEach(m=>lines.push([c,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(','))));downloadText('GK_MasterDB_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
 function addEntity(){
  let type=document.getElementById('entityType').value,id=document.getElementById('entityId').value.trim()||nextId(type),name=document.getElementById('entityName').value.trim();
@@ -2192,6 +1976,31 @@ function battleStatBlock(rec){const p=rec&&rec.params&&typeof rec.params==='obje
 function resolveBattleLoadout(u){const totals={hp:0,mp:0,mp_regen:0,agi:0,attack:0,defense:0,accuracy:0,crit:0,damage_resist:0,status_resist:0},sources=[],missing=[];const add=(rec,kind)=>{if(!rec)return;const st=battleStatBlock(rec);Object.keys(totals).forEach(k=>totals[k]+=Number(st[k])||0);sources.push({id:rec.id,name:rec.name,kind});const nested=Array.isArray(rec.params&&rec.params.mod_ids)?rec.params.mod_ids:[];nested.forEach(id=>{const m=battleMasterById('mods',id);if(m)add(m,'mod');else missing.push(id)})};(Array.isArray(u.equipment_ids)?u.equipment_ids:[]).forEach(id=>{const rec=battleMasterById('equipment',id);if(rec)add(rec,'equipment');else missing.push(id)});(Array.isArray(u.mod_ids)?u.mod_ids:[]).forEach(id=>{const rec=battleMasterById('mods',id);if(rec)add(rec,'mod');else missing.push(id)});return {totals,sources,missing}}
 function normalizeBattleUnits(rows,side){if(!Array.isArray(rows))throw new Error(side+'は配列で入力してください。');if(side==='味方'&&rows.length>6)throw new Error('味方は最大6人です。');return rows.map((u,i)=>{const loadout=resolveBattleLoadout(u),b=loadout.totals,hp=Math.max(1,(Number(u.hp)||100)+b.hp),mp=Math.max(0,(Number(u.mp)||0)+b.mp),ai=Array.isArray(u.ai)&&u.ai.length?u.ai:[{condition:'always',action:'attack',target:'enemy_random'}];if(loadout.missing.length)throw new Error((u.name||u.id||side+(i+1))+'の装備・MOD参照が見つかりません: '+loadout.missing.join(', '));if(ai.length>20)throw new Error((u.name||u.id||side+(i+1))+'のAIノードは最大20件です。');return {id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),attack:Math.max(1,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy:Math.max(1,Math.min(100,(Number(u.accuracy)||85)+b.accuracy)),crit:Math.max(0,Math.min(100,(Number(u.crit)||5)+b.crit)),damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist:Math.max(0,Math.min(75,(Number(u.status_resist)||0)+b.status_resist)),skills:Array.isArray(u.skills)?u.skills:[],ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,statuses:[],cooldowns:{},ag:0,actions:0,alive:true,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0}})}
 function seedEquipmentBattleSample(){data.masters.equipment=data.masters.equipment||[];data.masters.mods=data.masters.mods||[];const upsert=(c,r)=>{const i=data.masters[c].findIndex(x=>x.id===r.id);if(i>=0)data.masters[c][i]=r;else data.masters[c].push(r)};upsert('mods',{id:'MOD-BTL-ATK',name:'攻撃強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{attack:12,crit:3}},description:'装備連携確認用',updated_at:now()});upsert('mods',{id:'MOD-BTL-RES',name:'守護強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{hp:60,defense:6,damage_resist:5}},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-SWORD',name:'試作騎士剣',status:'approved',tags:['武器','戦闘サンプル'],params:{stats:{attack:18,accuracy:3},mod_ids:['MOD-BTL-ATK']},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-ARMOR',name:'試作騎士鎧',status:'approved',tags:['鎧','戦闘サンプル'],params:{stats:{hp:80,defense:10,status_resist:5},mod_ids:['MOD-BTL-RES']},description:'装備連携確認用',updated_at:now()});const allies=JSON.parse(JSON.stringify(BATTLE_SAMPLE_ALLIES));allies[0].equipment_ids=['EQP-BTL-SWORD','EQP-BTL-ARMOR'];battleAllies.value=JSON.stringify(allies,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);persist('battle equipment sample');battleSummary.innerHTML='装備・MODマスターと連携するサンプルを登録しました。'}
+
+// BUILD415_RULE_NUMBER_TAG_BEGIN
+let ruleDraft={id:'',name:'',context:'Battle',timing:'',nodes:[]};
+const RULE_SECTIONS={target:'対象タグ',condition:'追加条件',action:'実行アクション',setting:'実行設定'};
+const RULE_OPERATORS={none:'',eq:'等しい',gte:'以上',lte:'以下',gt:'超過',lt:'未満',neq:'等しくない'};
+function ensureRuleData(){if(!Array.isArray(data.rules))data.rules=[];if(!Array.isArray(ruleDraft.nodes))ruleDraft.nodes=[]}
+function ruleNodeId(){return 'RN-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)}
+function ruleTagLabel(id){const t=tagDefinitions().find(x=>String(x.id)===String(id));return t?(t.name||t.id):id}
+function syncRuleDraftFromForm(){ruleDraft.name=String(document.getElementById('ruleName')?.value||'').trim();ruleDraft.context=String(document.getElementById('ruleContext')?.value||'Battle');ruleDraft.timing=String(document.getElementById('ruleTiming')?.value||'').trim()}
+function refreshRuleSelectors(){
+ const tagSel=document.getElementById('ruleTagSelect'),parentSel=document.getElementById('ruleNumberParent');if(!tagSel||!parentSel)return;
+ tagSel.innerHTML=tagDefinitions().filter(t=>t.enabled!==false).map(t=>`<option value="${escAttr(t.id)}">${esc(t.name||t.id)} (${esc(t.id)})</option>`).join('')||'<option value="">タグ未登録</option>';
+ const current=parentSel.value;parentSel.innerHTML=ruleDraft.nodes.filter(n=>n.type==='tag').map(n=>`<option value="${escAttr(n.node_id)}">${esc(RULE_SECTIONS[n.section]||n.section)} / ${esc(ruleTagLabel(n.tag_id))}</option>`).join('')||'<option value="">先に通常タグを配置</option>';if([...parentSel.options].some(o=>o.value===current))parentSel.value=current;
+}
+function addRuleTagNode(){syncRuleDraftFromForm();const tagId=String(ruleTagSelect.value||'');if(!tagId)return alert('通常タグを選択してください。');ruleDraft.nodes.push({node_id:ruleNodeId(),type:'tag',section:ruleTagSection.value,tag_id:tagId});renderRules()}
+function addRuleNumberNode(){syncRuleDraftFromForm();const parentId=String(ruleNumberParent.value||''),parent=ruleDraft.nodes.find(n=>n.node_id===parentId&&n.type==='tag');if(!parent)return alert('親タグを選択してください。');const raw=String(ruleNumberValue.value||'').trim();if(raw===''||!Number.isFinite(Number(raw)))return alert('数値を入力してください。');ruleDraft.nodes.push({node_id:ruleNodeId(),type:'number',section:parent.section,parent_node_id:parent.node_id,operator:ruleNumberOperator.value||'none',value:Number(raw)});ruleNumberValue.value='';renderRules()}
+function removeRuleNode(id){const children=ruleDraft.nodes.filter(n=>n.parent_node_id===id).map(n=>n.node_id);ruleDraft.nodes=ruleDraft.nodes.filter(n=>n.node_id!==id&&!children.includes(n.node_id));renderRules()}
+function renderRulePreview(){const root=document.getElementById('rulePreview');if(!root)return;syncRuleDraftFromForm();root.innerHTML=`<div class="item"><b>${esc(ruleDraft.name||'名称未設定')}</b><div class="small">${esc(ruleDraft.context)} / ${esc(ruleDraft.timing||'タイミング未設定')}</div></div>`+Object.entries(RULE_SECTIONS).map(([key,label])=>{const tags=ruleDraft.nodes.filter(n=>n.type==='tag'&&n.section===key);return `<div class="rule-node-group"><b>${esc(label)}</b>${tags.length?tags.map(t=>{const nums=ruleDraft.nodes.filter(n=>n.type==='number'&&n.parent_node_id===t.node_id);return `<div class="rule-node"><span class="tag-chip">${esc(ruleTagLabel(t.tag_id))}</span><button class="danger" onclick="removeRuleNode('${escAttr(t.node_id)}')">削除</button></div>${nums.map(n=>`<div class="rule-number-node"><span>${esc(RULE_OPERATORS[n.operator]||'')} ${esc(String(n.value))}</span> <button class="danger" onclick="removeRuleNode('${escAttr(n.node_id)}')">削除</button></div>`).join('')}`}).join(''):'<div class="small">未配置</div>'}</div>`}).join('')}
+function clearRuleEditor(){ruleDraft={id:'',name:'',context:'Battle',timing:'',nodes:[]};ruleEditId.value='';ruleName.value='';ruleContext.value='Battle';ruleTiming.value='';ruleNumberOperator.value='none';ruleNumberValue.value='';renderRules()}
+function saveRule(){ensureRuleData();syncRuleDraftFromForm();if(!ruleDraft.name)return alert('名称を入力してください。');if(!ruleDraft.timing)return alert('発生タイミングを入力してください。');const orphan=ruleDraft.nodes.find(n=>n.type==='number'&&!ruleDraft.nodes.some(p=>p.node_id===n.parent_node_id&&p.type==='tag'));if(orphan)return alert('親タグのない数値タグがあります。');const rec={id:ruleDraft.id||('RUL-'+Date.now()),name:ruleDraft.name,context:ruleDraft.context,timing:ruleDraft.timing,nodes:structuredClone(ruleDraft.nodes),updated_at:now()};const i=data.rules.findIndex(r=>r.id===rec.id);if(i>=0)data.rules[i]=rec;else data.rules.push(rec);persist('rule saved');editRule(rec.id)}
+function editRule(id){ensureRuleData();const r=data.rules.find(x=>x.id===id);if(!r)return;ruleDraft=structuredClone(r);ruleEditId.value=r.id;ruleName.value=r.name||'';ruleContext.value=r.context||'Battle';ruleTiming.value=r.timing||'';showView('rules');renderRules()}
+function deleteRule(id){if(!confirm('ルールを削除しますか？'))return;data.rules=data.rules.filter(r=>r.id!==id);if(ruleDraft.id===id)clearRuleEditor();persist('rule deleted')}
+function renderRules(){ensureRuleData();refreshRuleSelectors();renderRulePreview();const list=document.getElementById('ruleList');if(!list)return;list.innerHTML=data.rules.length?data.rules.map(r=>`<div class="item"><b>${esc(r.name||r.id)}</b> <span class="badge">${esc(r.context||'')}</span><div class="small">${esc(r.timing||'')} / タグ ${r.nodes?.filter(n=>n.type==='tag').length||0} / 数値 ${r.nodes?.filter(n=>n.type==='number').length||0}</div><div class="toolbar"><button onclick="editRule('${escAttr(r.id)}')">編集</button><button class="danger" onclick="deleteRule('${escAttr(r.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録ルールはありません。</div>'}
+// BUILD415_RULE_NUMBER_TAG_END
+
 function battleConditionOk(rule,u,units){const c=String(rule.condition||'always');if(c==='always')return true;if(c.startsWith('mp_at_least:'))return u.mp>=Number(c.split(':')[1]||0);if(c.startsWith('hp_below:'))return u.hp/u.maxHp*100<Number(c.split(':')[1]||0);if(c.startsWith('ally_hp_below:'))return units.some(x=>x.side===u.side&&x.alive&&x.hp/x.maxHp*100<Number(c.split(':')[1]||0));if(c.startsWith('enemy_count_at_most:'))return units.filter(x=>x.side!==u.side&&x.alive).length<=Number(c.split(':')[1]||0);return false}
 function battleTargets(kind,u,units,rnd){const allies=units.filter(x=>x.side===u.side&&x.alive),enemies=units.filter(x=>x.side!==u.side&&x.alive);const pool=String(kind||'enemy_random').startsWith('ally')||kind==='self'?allies:enemies;if(!pool.length)return[];if(kind==='self')return[u];if(kind==='ally_lowest'||kind==='enemy_lowest')return[pool.slice().sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0]];if(kind==='enemy_highest')return[pool.slice().sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0]];if(kind==='enemy_defense_lowest')return[pool.slice().sort((a,b)=>a.defense-b.defense)[0]];if(kind==='ally_all'||kind==='enemy_all')return pool;return[pool[Math.floor(rnd()*pool.length)]]}
 function recoveryScale(tick){return tick>=800?.2:tick>=500?.5:1}
@@ -2253,7 +2062,7 @@ function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)retu
 
 function renderBattle(){if(!document.getElementById('battleAllies'))return;if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
 
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
@@ -4019,7 +3828,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderTagRepairPlanner();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
@@ -4114,7 +3923,6 @@ document.addEventListener('DOMContentLoaded',renderMasterTagChips);
 
 window.characterTagsValue = window.characterTagsValue || [];
 </script>
-<!-- GKS-B002_TAG_DAILY_MANAGEMENT -->
 </body>
 </html>
 <script>
