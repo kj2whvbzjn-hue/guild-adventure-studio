@@ -45,7 +45,7 @@ if fm.exists():
     formal=json.loads(fm.read_text(encoding='utf-8-sig'))
     if str(formal.get('build'))!=str(build): errors.append('FORMAL_MANIFEST_BUILD_MISMATCH')
     previous=formal.get('previous_build')
-    if previous is not None and int(previous)>=int(build): errors.append('FORMAL_MANIFEST_PREVIOUS_BUILD_INVALID')
+    if previous is not None and build is not None and int(previous)>=int(build): errors.append('FORMAL_MANIFEST_PREVIOUS_BUILD_INVALID')
     for doc in formal.get('formal_documents',[]):
         if not (root/doc).exists(): errors.append(f'FORMAL_DOCUMENT_MISSING {doc}')
 # frozen-generation boundary consistency
