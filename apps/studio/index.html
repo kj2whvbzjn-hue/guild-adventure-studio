@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.31.0-dev</title>
+<title>GK Studio v1.32.0-dev</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -169,6 +169,23 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 @media(min-width:801px){.rule-tag-picker{padding:24px}.rule-tag-picker-sheet{height:min(820px,100%);border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.3)}}
 
+/* BUILD462 standardized input panel */
+.studio-input-overlay{position:fixed;inset:0;z-index:260;background:rgba(15,23,42,.52);display:flex;align-items:center;justify-content:center;padding:18px}
+.studio-input-overlay.hidden{display:none}
+.studio-input-sheet{width:min(820px,100%);max-height:min(900px,94vh);background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(15,23,42,.34);display:flex;flex-direction:column;overflow:hidden}
+.studio-input-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff}
+.studio-input-head h2{margin:0;font-size:20px}
+.studio-input-head button{min-width:88px}
+.studio-input-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px;overscroll-behavior:contain}
+.studio-input-body>.hidden{display:block!important}
+body.studio-input-open{overflow:hidden}
+@media(max-width:720px){
+ .studio-input-overlay{padding:0;align-items:stretch}
+ .studio-input-sheet{width:100%;max-height:none;height:100%;border-radius:0}
+ .studio-input-head{padding:calc(12px + env(safe-area-inset-top)) 14px 10px;position:sticky;top:0;z-index:2}
+ .studio-input-body{padding:14px 14px calc(92px + env(safe-area-inset-bottom))}
+}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -180,7 +197,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.31.0-dev / 数式ワークフロー案内改善版 / Formal Build 461</div>
+    <div class="version">GK Studio v1.32.0-dev / 入力パネル標準化版 / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -802,8 +819,16 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   </div>
 </div>
 
+
+<div id="studioInputOverlay" class="studio-input-overlay hidden" aria-hidden="true" onclick="handleStudioInputBackdrop(event)">
+  <div class="studio-input-sheet" role="dialog" aria-modal="true" aria-labelledby="studioInputTitle">
+    <div class="studio-input-head"><h2 id="studioInputTitle">入力</h2><button type="button" onclick="closeStudioInputPanel()">閉じる</button></div>
+    <div id="studioInputBody" class="studio-input-body"></div>
+  </div>
+</div>
+
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD461</span><span class="small">GK Studio v1.31.0-dev／数式ワークフロー案内改善版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD462</span><span class="small">GK Studio v1.32.0-dev／数式ワークフロー案内改善版</span></div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -820,7 +845,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="card" style="background:#f8fbff;border-color:#9bb9e8">
       <h3>STEP 1　新しい数式を作る</h3>
       <p class="small">戦闘係数を編集し、名前を付けて保存します。</p>
-      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="toggleFormulaStep('formulaEditorPanel',this)">新しい数式を作る</button></div>
+      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openStudioInputPanel('formulaEditorPanel','新しい数式を作る')">新しい数式を作る</button></div>
       <div id="formulaEditorPanel" class="hidden" style="margin-top:14px">
         <h4>戦闘計算・仮係数</h4>
         <p class="small">装備・スキル・MODを主軸にし、能力値は限定補正として扱います。</p>
@@ -841,7 +866,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
         <div class="toolbar"><button onclick="saveBattleFormulaConfig()">現在の入力値を一時保存</button><button onclick="resetBattleFormulaConfig()">初期値へ戻す</button><button onclick="exportBattleFormulaConfig()">係数JSON出力</button></div>
         <div id="battleFormulaSummary" class="small">未保存</div>
         <div class="field" style="margin-top:14px"><label>新しい数式セット名</label><input id="formulaProfileName" placeholder="例：装備命中85案"></div>
-        <div class="toolbar"><button class="primary" style="width:100%" onclick="saveFormulaProfile()">この数式を名前を付けて保存</button></div>
+        <div class="toolbar"><button class="primary" style="width:100%" onclick="saveFormulaProfile()">この数式を名前を付けて保存</button></div><div class="toolbar"><button type="button" style="width:100%" onclick="closeStudioInputPanel()">入力画面を閉じる</button></div>
         <details style="margin-top:12px"><summary><b>保存した数式を見る</b></summary>
           <div class="field" style="margin-top:12px"><label>管理する数式セット</label><select id="formulaProfileSelect"></select><div class="small">ここで選んだ1件だけを読み込み、または削除します。</div></div>
           <div class="toolbar"><button onclick="loadFormulaProfile()">選択中を編集画面へ読み込む</button><button class="danger" onclick="deleteFormulaProfile()">選択中を削除</button></div>
@@ -852,7 +877,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="card" style="background:#f8fbff;border-color:#9bb9e8">
       <h3>STEP 2　数式を比較する</h3>
       <div class="card small" style="background:#fff;margin:10px 0 14px"><b>固定するもの</b><br>現在の編成・装備・スキル・MOD・Seed<br><br><b>変更するもの</b><br>比較する数式A・比較する数式B</div>
-      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="toggleFormulaStep('formulaComparePanel',this)">数式を比較する</button></div>
+      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openStudioInputPanel('formulaComparePanel','数式を比較する')">数式を比較する</button></div>
       <div id="formulaComparePanel" class="hidden" style="margin-top:14px">
         <div id="formulaFixedFormation" class="card small" style="background:#fff">使用する編成：現在の入力内容</div>
         <div class="grid">
@@ -860,7 +885,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
           <div class="field"><label>比較する数式B</label><select id="formulaCompareB"></select></div>
         </div>
         <div class="toolbar"><button class="primary" style="width:100%" onclick="compareFormulaProfiles()">比較を実行する</button></div>
-        <div class="toolbar"><button onclick="exportFormulaComparisonCsv()">比較結果をCSV出力</button></div>
+        <div class="toolbar"><button onclick="exportFormulaComparisonCsv()">比較結果をCSV出力</button><button type="button" onclick="closeStudioInputPanel()">比較画面を閉じる</button></div>
       </div>
     </div>
 
@@ -2164,6 +2189,32 @@ function readBattleTraceOptions(){return {events:!!document.getElementById('logB
 function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
+
+let studioInputPanelState=null;
+function openStudioInputPanel(id,title){
+  const panel=document.getElementById(id),overlay=document.getElementById('studioInputOverlay'),body=document.getElementById('studioInputBody'),heading=document.getElementById('studioInputTitle');
+  if(!panel||!overlay||!body)return;
+  if(studioInputPanelState)closeStudioInputPanel();
+  const marker=document.createComment('studio-input-panel-marker');
+  panel.parentNode.insertBefore(marker,panel);
+  studioInputPanelState={panel,marker};
+  panel.classList.remove('hidden');
+  body.appendChild(panel);
+  heading.textContent=title||'入力';
+  overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');
+  document.body.classList.add('studio-input-open');
+  const focusable=panel.querySelector('input,select,textarea,button');if(focusable)setTimeout(()=>focusable.focus(),30);
+}
+function closeStudioInputPanel(){
+  const overlay=document.getElementById('studioInputOverlay'),body=document.getElementById('studioInputBody');
+  if(studioInputPanelState){const {panel,marker}=studioInputPanelState;marker.parentNode.insertBefore(panel,marker);marker.remove();panel.classList.add('hidden');studioInputPanelState=null;}
+  if(body)body.innerHTML='';
+  if(overlay){overlay.classList.add('hidden');overlay.setAttribute('aria-hidden','true');}
+  document.body.classList.remove('studio-input-open');
+}
+function handleStudioInputBackdrop(event){if(event.target&&event.target.id==='studioInputOverlay')closeStudioInputPanel()}
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&studioInputPanelState)closeStudioInputPanel()});
+
 function toggleFormulaStep(id,button){const panel=document.getElementById(id);if(!panel)return;const opening=panel.classList.contains('hidden');panel.classList.toggle('hidden');if(button){button.textContent=opening?(id==='formulaEditorPanel'?'数式編集を閉じる':'数式比較を閉じる'):(id==='formulaEditorPanel'?'新しい数式を作る':'数式を比較する')}}
 function saveFormulaProfile(){const name=String(document.getElementById('formulaProfileName')?.value||'').trim();if(!name)return alert('新しい数式セット名を入力してください。');const rows=formulaProfiles(),config=readBattleFormulaConfig(),existing=rows.findIndex(x=>x.name===name),rec={name,config:{...config},updated_at:now()};if(existing>=0)rows[existing]=rec;else rows.push(rec);persist('battle formula profile');renderFormulaProfiles();formulaCompareSummary.textContent=`${name} を保存しました。`}
 function loadFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('保存済み数式セットを選択してください。');const i=Number(v),rec=formulaProfiles()[i];if(!rec)return alert('保存済み数式セットを選択してください。');applyBattleFormulaConfig(rec.config);formulaCompareSummary.textContent=`${rec.name} を読み込みました。`;updateBattleComparisonFixedLabels()}
