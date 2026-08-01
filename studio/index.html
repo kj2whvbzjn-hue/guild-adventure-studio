@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.30.0-dev</title>
+<title>GK Studio v1.31.0-dev</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.30.0-dev / 数式作成比較フロー版 / Formal Build 460</div>
+    <div class="version">GK Studio v1.31.0-dev / 数式ワークフロー案内改善版 / Formal Build 461</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -803,7 +803,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD460</span><span class="small">GK Studio v1.30.0-dev／数式作成比較フロー版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD461</span><span class="small">GK Studio v1.31.0-dev／数式ワークフロー案内改善版</span></div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -818,9 +818,9 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <p class="small">①数式を作る → ②比較する数式を選ぶ → ③実行して結果を見る、の順に進めます。</p>
 
     <div class="card" style="background:#f8fbff;border-color:#9bb9e8">
-      <h3>STEP 1　数式を作る</h3>
-      <p class="small">戦闘係数を編集し、名前を付けて数式セットとして保存します。</p>
-      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="toggleFormulaStep('formulaEditorPanel',this)">数式を作る</button></div>
+      <h3>STEP 1　新しい数式を作る</h3>
+      <p class="small">戦闘係数を編集し、名前を付けて保存します。</p>
+      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="toggleFormulaStep('formulaEditorPanel',this)">新しい数式を作る</button></div>
       <div id="formulaEditorPanel" class="hidden" style="margin-top:14px">
         <h4>戦闘計算・仮係数</h4>
         <p class="small">装備・スキル・MODを主軸にし、能力値は限定補正として扱います。</p>
@@ -842,7 +842,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
         <div id="battleFormulaSummary" class="small">未保存</div>
         <div class="field" style="margin-top:14px"><label>新しい数式セット名</label><input id="formulaProfileName" placeholder="例：装備命中85案"></div>
         <div class="toolbar"><button class="primary" style="width:100%" onclick="saveFormulaProfile()">この数式を名前を付けて保存</button></div>
-        <details style="margin-top:12px"><summary><b>保存済み数式セットの管理</b></summary>
+        <details style="margin-top:12px"><summary><b>保存した数式を見る</b></summary>
           <div class="field" style="margin-top:12px"><label>管理する数式セット</label><select id="formulaProfileSelect"></select><div class="small">ここで選んだ1件だけを読み込み、または削除します。</div></div>
           <div class="toolbar"><button onclick="loadFormulaProfile()">選択中を編集画面へ読み込む</button><button class="danger" onclick="deleteFormulaProfile()">選択中を削除</button></div>
         </details>
@@ -851,13 +851,13 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
     <div class="card" style="background:#f8fbff;border-color:#9bb9e8">
       <h3>STEP 2　数式を比較する</h3>
-      <p class="small">現在入力中の編成・装備・スキル・MOD・Seedは同じまま、保存した数式セットA/Bだけを変えて比較します。</p>
+      <div class="card small" style="background:#fff;margin:10px 0 14px"><b>固定するもの</b><br>現在の編成・装備・スキル・MOD・Seed<br><br><b>変更するもの</b><br>比較する数式A・比較する数式B</div>
       <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="toggleFormulaStep('formulaComparePanel',this)">数式を比較する</button></div>
       <div id="formulaComparePanel" class="hidden" style="margin-top:14px">
         <div id="formulaFixedFormation" class="card small" style="background:#fff">使用する編成：現在の入力内容</div>
         <div class="grid">
-          <div class="field"><label>数式セットA</label><select id="formulaCompareA"></select></div>
-          <div class="field"><label>数式セットB</label><select id="formulaCompareB"></select></div>
+          <div class="field"><label>比較する数式A</label><select id="formulaCompareA"></select></div>
+          <div class="field"><label>比較する数式B</label><select id="formulaCompareB"></select></div>
         </div>
         <div class="toolbar"><button class="primary" style="width:100%" onclick="compareFormulaProfiles()">比較を実行する</button></div>
         <div class="toolbar"><button onclick="exportFormulaComparisonCsv()">比較結果をCSV出力</button></div>
@@ -2164,13 +2164,13 @@ function readBattleTraceOptions(){return {events:!!document.getElementById('logB
 function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
-function toggleFormulaStep(id,button){const panel=document.getElementById(id);if(!panel)return;const opening=panel.classList.contains('hidden');panel.classList.toggle('hidden');if(button){button.textContent=opening?(id==='formulaEditorPanel'?'数式作成を閉じる':'数式比較を閉じる'):(id==='formulaEditorPanel'?'数式を作る':'数式を比較する')}}
+function toggleFormulaStep(id,button){const panel=document.getElementById(id);if(!panel)return;const opening=panel.classList.contains('hidden');panel.classList.toggle('hidden');if(button){button.textContent=opening?(id==='formulaEditorPanel'?'数式編集を閉じる':'数式比較を閉じる'):(id==='formulaEditorPanel'?'新しい数式を作る':'数式を比較する')}}
 function saveFormulaProfile(){const name=String(document.getElementById('formulaProfileName')?.value||'').trim();if(!name)return alert('新しい数式セット名を入力してください。');const rows=formulaProfiles(),config=readBattleFormulaConfig(),existing=rows.findIndex(x=>x.name===name),rec={name,config:{...config},updated_at:now()};if(existing>=0)rows[existing]=rec;else rows.push(rec);persist('battle formula profile');renderFormulaProfiles();formulaCompareSummary.textContent=`${name} を保存しました。`}
 function loadFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('保存済み数式セットを選択してください。');const i=Number(v),rec=formulaProfiles()[i];if(!rec)return alert('保存済み数式セットを選択してください。');applyBattleFormulaConfig(rec.config);formulaCompareSummary.textContent=`${rec.name} を読み込みました。`;updateBattleComparisonFixedLabels()}
 function deleteFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('保存済み数式セットを選択してください。');const i=Number(v),rows=formulaProfiles(),rec=rows[i];if(!rec)return alert('保存済み数式セットを選択してください。');if(!confirm(`保存済み数式セット「${rec.name}」を削除します。元に戻せません。よろしいですか？`))return;rows.splice(i,1);persist('battle formula profile delete');renderFormulaProfiles();formulaCompareSummary.textContent='削除しました。'}
 function formulaStats(results){const ally=r=>battleHistoryTotals(r,'allies'),wins=results.filter(r=>r.result==='味方勝利').length,totalHits=results.reduce((n,r)=>n+ally(r).hits,0),totalMisses=results.reduce((n,r)=>n+ally(r).misses,0),totalCrits=results.reduce((n,r)=>n+ally(r).crits,0);return {trials:results.length,win_rate:results.length?wins/results.length*100:0,avg_ticks:battleAverage(results,r=>r.ticks),avg_damage:battleAverage(results,r=>ally(r).damage_dealt),avg_healing:battleAverage(results,r=>ally(r).healing_done),avg_survivors:battleAverage(results,r=>ally(r).survivors),hit_rate:totalHits+totalMisses?totalHits/(totalHits+totalMisses)*100:0,crit_rate:totalHits?totalCrits/totalHits*100:0}}
 function runFormulaProfileBatch(rec,count,start,step){const original={...battleFormulaConfig},originalSeed=battleSeed.value,results=[];applyBattleFormulaConfig(rec.config);for(let i=0;i<count;i++){battleSeed.value=start+i*step;const r=runBattleTest({silent:true,persistResult:false,formulaOverride:rec.config});if(r)results.push(JSON.parse(JSON.stringify(r)))}battleSeed.value=originalSeed;applyBattleFormulaConfig(original);return {name:rec.name,config:rec.config,stats:formulaStats(results)}}
-function compareFormulaProfiles(){if(formulaCompareA.value===''||formulaCompareB.value==='')return alert('数式Aと数式Bを選択してください。');if(formulaCompareA.value===formulaCompareB.value)return alert('数式セットAとBには異なる数式を選択してください。');const rows=formulaProfiles(),a=rows[Number(formulaCompareA.value)],b=rows[Number(formulaCompareB.value)];if(!a||!b)return alert('数式Aと数式Bを選択してください。');const count=Math.max(2,Math.min(10000,Number(battleBatchCount.value)||1000)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1);const started=performance.now();lastFormulaComparison=[runFormulaProfileBatch(a,count,start,step),runFormulaProfileBatch(b,count,start,step)];const [x,y]=lastFormulaComparison,d=(k)=>y.stats[k]-x.stats[k];formulaCompareSummary.innerHTML=`<b>${esc(x.name)} → ${esc(y.name)}</b> / ${count}試行（${(performance.now()-started).toFixed(0)}ms）<br>勝率 ${x.stats.win_rate.toFixed(2)}% → ${y.stats.win_rate.toFixed(2)}%（${d('win_rate')>=0?'+':''}${d('win_rate').toFixed(2)}）<br>平均Tick ${x.stats.avg_ticks.toFixed(2)} → ${y.stats.avg_ticks.toFixed(2)}（${d('avg_ticks')>=0?'+':''}${d('avg_ticks').toFixed(2)}）<br>平均与ダメ ${x.stats.avg_damage.toFixed(2)} → ${y.stats.avg_damage.toFixed(2)} / 命中 ${x.stats.hit_rate.toFixed(2)}% → ${y.stats.hit_rate.toFixed(2)}% / クリ ${x.stats.crit_rate.toFixed(2)}% → ${y.stats.crit_rate.toFixed(2)}%`}
+function compareFormulaProfiles(){if(formulaCompareA.value===''||formulaCompareB.value==='')return alert('比較する数式AとBを選択してください。');if(formulaCompareA.value===formulaCompareB.value)return alert('比較する数式AとBには異なる数式を選択してください。');const rows=formulaProfiles(),a=rows[Number(formulaCompareA.value)],b=rows[Number(formulaCompareB.value)];if(!a||!b)return alert('比較する数式AとBを選択してください。');const count=Math.max(2,Math.min(10000,Number(battleBatchCount.value)||1000)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1);const started=performance.now();lastFormulaComparison=[runFormulaProfileBatch(a,count,start,step),runFormulaProfileBatch(b,count,start,step)];const [x,y]=lastFormulaComparison,d=(k)=>y.stats[k]-x.stats[k];formulaCompareSummary.innerHTML=`<b>${esc(x.name)} → ${esc(y.name)}</b> / ${count}試行（${(performance.now()-started).toFixed(0)}ms）<br>勝率 ${x.stats.win_rate.toFixed(2)}% → ${y.stats.win_rate.toFixed(2)}%（${d('win_rate')>=0?'+':''}${d('win_rate').toFixed(2)}）<br>平均Tick ${x.stats.avg_ticks.toFixed(2)} → ${y.stats.avg_ticks.toFixed(2)}（${d('avg_ticks')>=0?'+':''}${d('avg_ticks').toFixed(2)}）<br>平均与ダメ ${x.stats.avg_damage.toFixed(2)} → ${y.stats.avg_damage.toFixed(2)} / 命中 ${x.stats.hit_rate.toFixed(2)}% → ${y.stats.hit_rate.toFixed(2)}% / クリ ${x.stats.crit_rate.toFixed(2)}% → ${y.stats.crit_rate.toFixed(2)}%`}
 function exportFormulaComparisonCsv(){if(!lastFormulaComparison.length)return alert('先に数式比較を実行してください。');const cols=['name','trials','win_rate','avg_ticks','avg_damage','avg_healing','avg_survivors','hit_rate','crit_rate','config_json'],rows=lastFormulaComparison.map(x=>[x.name,x.stats.trials,x.stats.win_rate,x.stats.avg_ticks,x.stats.avg_damage,x.stats.avg_healing,x.stats.avg_survivors,x.stats.hit_rate,x.stats.crit_rate,JSON.stringify(x.config)]);downloadText('GK_BattleFormula_Comparison.csv','\uFEFF'+[cols,...rows].map(r=>r.map(csvCell).join(',')).join('\n'),'text/csv;charset=utf-8')}
 
 function resetBattleSample(){battleAllies.value=JSON.stringify(BATTLE_SAMPLE_ALLIES,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);battleSummary.innerHTML='拡張サンプルを読み込みました。';battleLog.textContent='';battleMetrics.innerHTML='戦闘実行後に表示します。'}
