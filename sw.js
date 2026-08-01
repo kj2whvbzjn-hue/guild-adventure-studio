@@ -1,11 +1,11 @@
-const CACHE_NAME='guild-adventure-build453';
-const OFFLINE_URL='./index.html?appv=453';
+const CACHE_NAME='guild-adventure-build455';
+const OFFLINE_URL='./index.html?appv=455';
 const APP_SHELL=[
   './',
-  './index.html?appv=453',
-  './manifest.webmanifest?v=453',
-  './icon-192.png?v=453',
-  './icon-512.png?v=453'
+  './index.html?appv=455',
+  './manifest.webmanifest?v=455',
+  './icon-192.png?v=455',
+  './icon-512.png?v=455'
 ];
 
 self.addEventListener('install',event=>{
