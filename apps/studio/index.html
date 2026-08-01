@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.23.0-dev</title>
+<title>GK Studio v1.28.0-dev</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.23.0-dev / 開発運用負荷軽減版 / Formal Build 335</div>
+    <div class="version">GK Studio v1.28.0-dev / 戦闘比較UI分離版 / Formal Build 458</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -834,14 +834,21 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div id="battleFormulaSummary" class="small">未保存</div>
     <hr>
     <h3>数式プロファイル比較</h3>
+    <div class="card" style="background:#f6f9ff;border-color:#9bb9e8">
+      <b>固定するもの：</b>現在入力中の味方・敵編成、装備、スキル、MOD、Seed範囲<br>
+      <b>変えるもの：</b>数式プロファイルA / B
+      <div id="formulaFixedFormation" class="small" style="margin-top:6px">固定編成：現在の入力内容</div>
+    </div>
     <div class="grid">
       <div class="field"><label>保存名</label><input id="formulaProfileName" placeholder="例：命中案A"></div>
       <div class="field"><label>保存済みプロファイル</label><select id="formulaProfileSelect"></select></div>
-      <div class="field"><label>比較A</label><select id="formulaCompareA"></select></div>
-      <div class="field"><label>比較B</label><select id="formulaCompareB"></select></div>
+      <div class="field"><label>数式A</label><select id="formulaCompareA"></select></div>
+      <div class="field"><label>数式B</label><select id="formulaCompareB"></select></div>
     </div>
-    <div class="toolbar"><button class="primary" onclick="saveFormulaProfile()">現在値を保存</button><button onclick="loadFormulaProfile()">読込</button><button class="danger" onclick="deleteFormulaProfile()">削除</button><button onclick="compareFormulaProfiles()">同一条件で比較</button><button onclick="exportFormulaComparisonCsv()">比較CSV出力</button></div>
-    <div id="formulaCompareSummary" class="small">係数だけを切り替え、同じ編成・Seed範囲で結果を比較します。</div>
+    <div class="toolbar"><button onclick="saveFormulaProfile()">現在値を保存</button><button onclick="loadFormulaProfile()">読込</button><button class="danger" onclick="deleteFormulaProfile()">削除</button></div>
+    <div class="toolbar"><button class="primary" style="width:100%" onclick="compareFormulaProfiles()">現在の編成を固定して、数式A/Bを比較</button></div>
+    <div class="toolbar"><button onclick="exportFormulaComparisonCsv()">数式比較CSV出力</button></div>
+    <div id="formulaCompareSummary" class="small">数式Aと数式Bに異なるプロファイルを選択してください。編成は現在の入力内容で固定されます。</div>
   </div>
   <div class="card">
     <h2>ログ出力設定</h2>
@@ -868,12 +875,18 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div class="field"><label>保存済み編成</label><select id="battleSnapshotSelect"></select></div>
     </div>
     <div class="toolbar"><button class="primary" onclick="saveBattleSnapshot()">現在編成を保存</button><button onclick="loadBattleSnapshot()">選択編成を読込</button><button class="danger" onclick="deleteBattleSnapshot()">選択編成を削除</button><button onclick="exportBattleSnapshotsJson()">編成JSON出力</button></div>
-    <div class="grid">
-      <div class="field"><label>比較編成A</label><select id="battleSnapshotCompareA"></select></div>
-      <div class="field"><label>比較編成B</label><select id="battleSnapshotCompareB"></select></div>
+    <div class="card" style="background:#fffaf0;border-color:#dfbd76">
+      <b>固定するもの：</b>現在の戦闘数式・係数、Seed範囲<br>
+      <b>変えるもの：</b>編成A / B
+      <div id="snapshotFixedFormula" class="small" style="margin-top:6px">固定数式：現在の仮係数</div>
     </div>
-    <div class="toolbar"><button class="primary" onclick="compareBattleSnapshots()">同一シード条件で比較</button><button onclick="exportSnapshotComparisonCsv()">比較CSV出力</button></div>
-    <div id="battleSnapshotSummary" class="small">味方・敵・最大Tick・ログ上限を名前付きで保存し、同じシード範囲で比較できます。</div>
+    <div class="grid">
+      <div class="field"><label>編成A</label><select id="battleSnapshotCompareA"></select></div>
+      <div class="field"><label>編成B</label><select id="battleSnapshotCompareB"></select></div>
+    </div>
+    <div class="toolbar"><button class="primary" style="width:100%" onclick="compareBattleSnapshots()">現在の数式を固定して、編成A/Bを比較</button></div>
+    <div class="toolbar"><button onclick="exportSnapshotComparisonCsv()">編成比較CSV出力</button></div>
+    <div id="battleSnapshotSummary" class="small">編成Aと編成Bに異なるスナップショットを選択してください。数式は現在の仮係数で固定されます。</div>
   </div>
   <div class="card small">ユニットJSONに <code>equipment_ids</code> と <code>mod_ids</code> を指定すると、マスターデータの装備・MODからHP、MP、攻撃、防御、AGI、命中、クリティカル、耐性、MP回復を加算します。</div><div id="battleSummary" class="card">未実行</div>
   <div class="card"><h2>ユニット別集計</h2><div id="battleMetrics" class="small">戦闘実行後に表示します。</div></div>
@@ -1252,7 +1265,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <script>
-const APP_VERSION='1.27.0-dev';
+const APP_VERSION='1.28.0-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2133,11 +2146,11 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 function saveFormulaProfile(){const name=String(document.getElementById('formulaProfileName')?.value||'').trim();if(!name)return alert('保存名を入力してください。');const rows=formulaProfiles(),config=readBattleFormulaConfig(),existing=rows.findIndex(x=>x.name===name),rec={name,config:{...config},updated_at:now()};if(existing>=0)rows[existing]=rec;else rows.push(rec);persist('battle formula profile');renderFormulaProfiles();formulaCompareSummary.textContent=`${name} を保存しました。`}
-function loadFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('プロファイルを選択してください。');const i=Number(v),rec=formulaProfiles()[i];if(!rec)return alert('プロファイルを選択してください。');applyBattleFormulaConfig(rec.config);formulaCompareSummary.textContent=`${rec.name} を読み込みました。`}
+function loadFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('プロファイルを選択してください。');const i=Number(v),rec=formulaProfiles()[i];if(!rec)return alert('プロファイルを選択してください。');applyBattleFormulaConfig(rec.config);formulaCompareSummary.textContent=`${rec.name} を読み込みました。`;updateBattleComparisonFixedLabels()}
 function deleteFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('プロファイルを選択してください。');const i=Number(v),rows=formulaProfiles(),rec=rows[i];if(!rec)return alert('プロファイルを選択してください。');if(!confirm(`${rec.name} を削除しますか？`))return;rows.splice(i,1);persist('battle formula profile delete');renderFormulaProfiles();formulaCompareSummary.textContent='削除しました。'}
 function formulaStats(results){const ally=r=>battleHistoryTotals(r,'allies'),wins=results.filter(r=>r.result==='味方勝利').length,totalHits=results.reduce((n,r)=>n+ally(r).hits,0),totalMisses=results.reduce((n,r)=>n+ally(r).misses,0),totalCrits=results.reduce((n,r)=>n+ally(r).crits,0);return {trials:results.length,win_rate:results.length?wins/results.length*100:0,avg_ticks:battleAverage(results,r=>r.ticks),avg_damage:battleAverage(results,r=>ally(r).damage_dealt),avg_healing:battleAverage(results,r=>ally(r).healing_done),avg_survivors:battleAverage(results,r=>ally(r).survivors),hit_rate:totalHits+totalMisses?totalHits/(totalHits+totalMisses)*100:0,crit_rate:totalHits?totalCrits/totalHits*100:0}}
 function runFormulaProfileBatch(rec,count,start,step){const original={...battleFormulaConfig},originalSeed=battleSeed.value,results=[];applyBattleFormulaConfig(rec.config);for(let i=0;i<count;i++){battleSeed.value=start+i*step;const r=runBattleTest({silent:true,persistResult:false,formulaOverride:rec.config});if(r)results.push(JSON.parse(JSON.stringify(r)))}battleSeed.value=originalSeed;applyBattleFormulaConfig(original);return {name:rec.name,config:rec.config,stats:formulaStats(results)}}
-function compareFormulaProfiles(){if(formulaCompareA.value===''||formulaCompareB.value==='')return alert('比較Aと比較Bを選択してください。');const rows=formulaProfiles(),a=rows[Number(formulaCompareA.value)],b=rows[Number(formulaCompareB.value)];if(!a||!b)return alert('比較Aと比較Bを選択してください。');const count=Math.max(2,Math.min(10000,Number(battleBatchCount.value)||1000)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1);const started=performance.now();lastFormulaComparison=[runFormulaProfileBatch(a,count,start,step),runFormulaProfileBatch(b,count,start,step)];const [x,y]=lastFormulaComparison,d=(k)=>y.stats[k]-x.stats[k];formulaCompareSummary.innerHTML=`<b>${esc(x.name)} → ${esc(y.name)}</b> / ${count}試行（${(performance.now()-started).toFixed(0)}ms）<br>勝率 ${x.stats.win_rate.toFixed(2)}% → ${y.stats.win_rate.toFixed(2)}%（${d('win_rate')>=0?'+':''}${d('win_rate').toFixed(2)}）<br>平均Tick ${x.stats.avg_ticks.toFixed(2)} → ${y.stats.avg_ticks.toFixed(2)}（${d('avg_ticks')>=0?'+':''}${d('avg_ticks').toFixed(2)}）<br>平均与ダメ ${x.stats.avg_damage.toFixed(2)} → ${y.stats.avg_damage.toFixed(2)} / 命中 ${x.stats.hit_rate.toFixed(2)}% → ${y.stats.hit_rate.toFixed(2)}% / クリ ${x.stats.crit_rate.toFixed(2)}% → ${y.stats.crit_rate.toFixed(2)}%`}
+function compareFormulaProfiles(){if(formulaCompareA.value===''||formulaCompareB.value==='')return alert('数式Aと数式Bを選択してください。');if(formulaCompareA.value===formulaCompareB.value)return alert('数式Aと数式Bには異なるプロファイルを選択してください。編成は現在の入力内容で固定されます。');const rows=formulaProfiles(),a=rows[Number(formulaCompareA.value)],b=rows[Number(formulaCompareB.value)];if(!a||!b)return alert('数式Aと数式Bを選択してください。');const count=Math.max(2,Math.min(10000,Number(battleBatchCount.value)||1000)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1);const started=performance.now();lastFormulaComparison=[runFormulaProfileBatch(a,count,start,step),runFormulaProfileBatch(b,count,start,step)];const [x,y]=lastFormulaComparison,d=(k)=>y.stats[k]-x.stats[k];formulaCompareSummary.innerHTML=`<b>${esc(x.name)} → ${esc(y.name)}</b> / ${count}試行（${(performance.now()-started).toFixed(0)}ms）<br>勝率 ${x.stats.win_rate.toFixed(2)}% → ${y.stats.win_rate.toFixed(2)}%（${d('win_rate')>=0?'+':''}${d('win_rate').toFixed(2)}）<br>平均Tick ${x.stats.avg_ticks.toFixed(2)} → ${y.stats.avg_ticks.toFixed(2)}（${d('avg_ticks')>=0?'+':''}${d('avg_ticks').toFixed(2)}）<br>平均与ダメ ${x.stats.avg_damage.toFixed(2)} → ${y.stats.avg_damage.toFixed(2)} / 命中 ${x.stats.hit_rate.toFixed(2)}% → ${y.stats.hit_rate.toFixed(2)}% / クリ ${x.stats.crit_rate.toFixed(2)}% → ${y.stats.crit_rate.toFixed(2)}%`}
 function exportFormulaComparisonCsv(){if(!lastFormulaComparison.length)return alert('先に数式比較を実行してください。');const cols=['name','trials','win_rate','avg_ticks','avg_damage','avg_healing','avg_survivors','hit_rate','crit_rate','config_json'],rows=lastFormulaComparison.map(x=>[x.name,x.stats.trials,x.stats.win_rate,x.stats.avg_ticks,x.stats.avg_damage,x.stats.avg_healing,x.stats.avg_survivors,x.stats.hit_rate,x.stats.crit_rate,JSON.stringify(x.config)]);downloadText('GK_BattleFormula_Comparison.csv','\uFEFF'+[cols,...rows].map(r=>r.map(csvCell).join(',')).join('\n'),'text/csv;charset=utf-8')}
 
 function resetBattleSample(){battleAllies.value=JSON.stringify(BATTLE_SAMPLE_ALLIES,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);battleSummary.innerHTML='拡張サンプルを読み込みました。';battleLog.textContent='';battleMetrics.innerHTML='戦闘実行後に表示します。'}
@@ -2251,13 +2264,14 @@ function runSnapshotBatch(rec,seeds){
 }
 function snapshotSummary(name,results){const wins=results.filter(r=>r.result==='味方勝利').length,ally=r=>battleHistoryTotals(r,'allies');return {name,trials:results.length,wins,win_rate:results.length?wins/results.length*100:0,avg_ticks:battleAverage(results,r=>r.ticks),avg_damage:battleAverage(results,r=>ally(r).damage_dealt),avg_healing:battleAverage(results,r=>ally(r).healing_done),avg_survivors:battleAverage(results,r=>ally(r).survivors),std_ticks:battleStdDev(results,r=>r.ticks)};}
 function compareBattleSnapshots(){
- const A=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotCompareA.value),B=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotCompareB.value);if(!A||!B)return alert('比較編成AとBを選択してください。');if(A.id===B.id)return alert('異なる編成を選択してください。');
+ const A=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotCompareA.value),B=(data.battle_snapshots||[]).find(x=>x.id===battleSnapshotCompareB.value);if(!A||!B)return alert('比較編成AとBを選択してください。');if(A.id===B.id)return alert('編成Aと編成Bには異なる編成を選択してください。数式は現在の仮係数で固定されます。');
  const count=Math.max(2,Math.min(100,Number(battleBatchCount.value)||20)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1),seeds=Array.from({length:count},(_,i)=>start+i*step),ra=runSnapshotBatch(A,seeds),rb=runSnapshotBatch(B,seeds),sa=snapshotSummary(A.name,ra),sb=snapshotSummary(B.name,rb);lastSnapshotComparison=[{summary:sa,results:ra},{summary:sb,results:rb}];
  const d=(x,y)=>(Number(y||0)-Number(x||0));battleSnapshotSummary.innerHTML=`<h3>比較結果（B − A）</h3><table><thead><tr><th>編成</th><th>勝率</th><th>平均Tick</th><th>標準偏差</th><th>平均与ダメ</th><th>平均回復</th><th>平均生存</th></tr></thead><tbody><tr><td>${esc(sa.name)}</td><td>${sa.win_rate.toFixed(1)}%</td><td>${sa.avg_ticks.toFixed(1)}</td><td>${sa.std_ticks.toFixed(1)}</td><td>${sa.avg_damage.toFixed(1)}</td><td>${sa.avg_healing.toFixed(1)}</td><td>${sa.avg_survivors.toFixed(2)}</td></tr><tr><td>${esc(sb.name)}</td><td>${sb.win_rate.toFixed(1)}%</td><td>${sb.avg_ticks.toFixed(1)}</td><td>${sb.std_ticks.toFixed(1)}</td><td>${sb.avg_damage.toFixed(1)}</td><td>${sb.avg_healing.toFixed(1)}</td><td>${sb.avg_survivors.toFixed(2)}</td></tr></tbody></table><p>差分：勝率 ${d(sa.win_rate,sb.win_rate)>=0?'+':''}${d(sa.win_rate,sb.win_rate).toFixed(1)}pt / 平均Tick ${d(sa.avg_ticks,sb.avg_ticks)>=0?'+':''}${d(sa.avg_ticks,sb.avg_ticks).toFixed(1)} / 与ダメ ${d(sa.avg_damage,sb.avg_damage)>=0?'+':''}${d(sa.avg_damage,sb.avg_damage).toFixed(1)} / 生存 ${d(sa.avg_survivors,sb.avg_survivors)>=0?'+':''}${d(sa.avg_survivors,sb.avg_survivors).toFixed(2)}</p>`;
 }
 function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)return alert('先に編成比較を実行してください。');const head=['formation','seed','result','ticks','ally_survivors','ally_actions','ally_damage','ally_healing'];const lines=[head.map(csvCell).join(',')];lastSnapshotComparison.forEach(group=>group.results.forEach(r=>{const a=battleHistoryTotals(r,'allies');lines.push([group.summary.name,r.seed,r.result,r.ticks,a.survivors,a.actions,a.damage_dealt,a.healing_done].map(csvCell).join(','))}));downloadText('GK_FormationComparison_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
-function renderBattle(){if(!document.getElementById('battleAllies'))return;applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
+function renderBattle(){if(!document.getElementById('battleAllies'))return;applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();updateBattleComparisonFixedLabels();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
+function updateBattleComparisonFixedLabels(){const ff=document.getElementById('formulaFixedFormation'),sf=document.getElementById('snapshotFixedFormula');if(ff){let ac=0,ec=0;try{ac=JSON.parse(battleAllies.value||'[]').length;ec=JSON.parse(battleEnemies.value||'[]').length}catch(_){ }ff.textContent=`固定編成：現在の入力内容（味方${ac} / 敵${ec}）`;}if(sf){const c=readBattleFormulaConfig();sf.textContent=`固定数式：${c.version||'未設定'} / 命中元=${c.accuracySource==='equipment'?'装備':'キャラクター'} / STR補正=${c.strAccuracyCoefficient} / AG係数=${c.agiGaugeCoefficient} / クリ倍率=${c.critMultiplier}`;}}
 
 function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function runValidation(){
@@ -4120,7 +4134,7 @@ document.addEventListener('DOMContentLoaded',renderMasterTagChips);
 
 window.characterTagsValue = window.characterTagsValue || [];
 
-window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{renderFormulaProfiles();},0)});
+window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>{renderFormulaProfiles();updateBattleComparisonFixedLabels();['battleAllies','battleEnemies','formulaAccuracySource','formulaEquipmentAccuracy','formulaCharacterAccuracy','formulaStrAccuracy','formulaAgiGauge','formulaBaseCrit','formulaLukCrit','formulaCritMultiplier','formulaDefenseCoefficient','formulaVariance','formulaMinimumDamage','formulaVersion'].forEach(id=>document.getElementById(id)?.addEventListener('change',updateBattleComparisonFixedLabels));},0)});
 </script>
 </body>
 </html>
