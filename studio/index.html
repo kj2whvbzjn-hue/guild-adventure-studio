@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.28.0-dev</title>
+<title>GK Studio v1.29.0-dev</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.28.0-dev / 戦闘比較UI分離版 / Formal Build 458</div>
+    <div class="version">GK Studio v1.29.0-dev / 数式セット管理UI改善版 / Formal Build 459</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -803,7 +803,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD459</span><span class="small">GK Studio v1.29.0-dev／数式セット管理UI改善版</span></div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -833,22 +833,22 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="toolbar"><button class="primary" onclick="saveBattleFormulaConfig()">仮係数を保存</button><button onclick="resetBattleFormulaConfig()">初期値へ戻す</button><button onclick="exportBattleFormulaConfig()">係数JSON出力</button></div>
     <div id="battleFormulaSummary" class="small">未保存</div>
     <hr>
-    <h3>数式プロファイル比較</h3>
+    <h3>数式セット比較</h3>
     <div class="card" style="background:#f6f9ff;border-color:#9bb9e8">
       <b>固定するもの：</b>現在入力中の味方・敵編成、装備、スキル、MOD、Seed範囲<br>
       <b>変えるもの：</b>数式プロファイルA / B
       <div id="formulaFixedFormation" class="small" style="margin-top:6px">固定編成：現在の入力内容</div>
     </div>
     <div class="grid">
-      <div class="field"><label>保存名</label><input id="formulaProfileName" placeholder="例：命中案A"></div>
-      <div class="field"><label>保存済みプロファイル</label><select id="formulaProfileSelect"></select></div>
-      <div class="field"><label>数式A</label><select id="formulaCompareA"></select></div>
-      <div class="field"><label>数式B</label><select id="formulaCompareB"></select></div>
+      <div class="field"><label>新しい数式セット名</label><input id="formulaProfileName" placeholder="例：装備命中85案"></div>
+      <div class="field"><label>保存済み数式セット（管理対象）</label><select id="formulaProfileSelect"></select><div class="small">ここで選んだ数式セットだけを「読み込み」「削除」します。</div></div>
+      <div class="field"><label>比較する数式セットA</label><select id="formulaCompareA"></select></div>
+      <div class="field"><label>比較する数式セットB</label><select id="formulaCompareB"></select></div>
     </div>
-    <div class="toolbar"><button onclick="saveFormulaProfile()">現在値を保存</button><button onclick="loadFormulaProfile()">読込</button><button class="danger" onclick="deleteFormulaProfile()">削除</button></div>
-    <div class="toolbar"><button class="primary" style="width:100%" onclick="compareFormulaProfiles()">現在の編成を固定して、数式A/Bを比較</button></div>
+    <div class="toolbar"><button onclick="saveFormulaProfile()">現在の係数を新しい数式セットとして保存</button></div><div class="toolbar"><button onclick="loadFormulaProfile()">選択中の数式セットを読み込む</button><button class="danger" onclick="deleteFormulaProfile()">選択中の数式セットを削除</button></div>
+    <div class="toolbar"><button class="primary" style="width:100%" onclick="compareFormulaProfiles()">現在の編成を固定して、数式セットA/Bを比較</button></div>
     <div class="toolbar"><button onclick="exportFormulaComparisonCsv()">数式比較CSV出力</button></div>
-    <div id="formulaCompareSummary" class="small">数式Aと数式Bに異なるプロファイルを選択してください。編成は現在の入力内容で固定されます。</div>
+    <div id="formulaCompareSummary" class="small">比較する数式セットA/Bに異なるセットを選択してください。編成は現在の入力内容で固定されます。</div>
   </div>
   <div class="card">
     <h2>ログ出力設定</h2>
@@ -1265,7 +1265,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <script>
-const APP_VERSION='1.28.0-dev';
+const APP_VERSION='1.29.0-dev';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2145,9 +2145,9 @@ function readBattleTraceOptions(){return {events:!!document.getElementById('logB
 function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
-function saveFormulaProfile(){const name=String(document.getElementById('formulaProfileName')?.value||'').trim();if(!name)return alert('保存名を入力してください。');const rows=formulaProfiles(),config=readBattleFormulaConfig(),existing=rows.findIndex(x=>x.name===name),rec={name,config:{...config},updated_at:now()};if(existing>=0)rows[existing]=rec;else rows.push(rec);persist('battle formula profile');renderFormulaProfiles();formulaCompareSummary.textContent=`${name} を保存しました。`}
-function loadFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('プロファイルを選択してください。');const i=Number(v),rec=formulaProfiles()[i];if(!rec)return alert('プロファイルを選択してください。');applyBattleFormulaConfig(rec.config);formulaCompareSummary.textContent=`${rec.name} を読み込みました。`;updateBattleComparisonFixedLabels()}
-function deleteFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('プロファイルを選択してください。');const i=Number(v),rows=formulaProfiles(),rec=rows[i];if(!rec)return alert('プロファイルを選択してください。');if(!confirm(`${rec.name} を削除しますか？`))return;rows.splice(i,1);persist('battle formula profile delete');renderFormulaProfiles();formulaCompareSummary.textContent='削除しました。'}
+function saveFormulaProfile(){const name=String(document.getElementById('formulaProfileName')?.value||'').trim();if(!name)return alert('新しい数式セット名を入力してください。');const rows=formulaProfiles(),config=readBattleFormulaConfig(),existing=rows.findIndex(x=>x.name===name),rec={name,config:{...config},updated_at:now()};if(existing>=0)rows[existing]=rec;else rows.push(rec);persist('battle formula profile');renderFormulaProfiles();formulaCompareSummary.textContent=`${name} を保存しました。`}
+function loadFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('保存済み数式セットを選択してください。');const i=Number(v),rec=formulaProfiles()[i];if(!rec)return alert('保存済み数式セットを選択してください。');applyBattleFormulaConfig(rec.config);formulaCompareSummary.textContent=`${rec.name} を読み込みました。`;updateBattleComparisonFixedLabels()}
+function deleteFormulaProfile(){const v=document.getElementById('formulaProfileSelect')?.value;if(v==='')return alert('保存済み数式セットを選択してください。');const i=Number(v),rows=formulaProfiles(),rec=rows[i];if(!rec)return alert('保存済み数式セットを選択してください。');if(!confirm(`保存済み数式セット「${rec.name}」を削除します。元に戻せません。よろしいですか？`))return;rows.splice(i,1);persist('battle formula profile delete');renderFormulaProfiles();formulaCompareSummary.textContent='削除しました。'}
 function formulaStats(results){const ally=r=>battleHistoryTotals(r,'allies'),wins=results.filter(r=>r.result==='味方勝利').length,totalHits=results.reduce((n,r)=>n+ally(r).hits,0),totalMisses=results.reduce((n,r)=>n+ally(r).misses,0),totalCrits=results.reduce((n,r)=>n+ally(r).crits,0);return {trials:results.length,win_rate:results.length?wins/results.length*100:0,avg_ticks:battleAverage(results,r=>r.ticks),avg_damage:battleAverage(results,r=>ally(r).damage_dealt),avg_healing:battleAverage(results,r=>ally(r).healing_done),avg_survivors:battleAverage(results,r=>ally(r).survivors),hit_rate:totalHits+totalMisses?totalHits/(totalHits+totalMisses)*100:0,crit_rate:totalHits?totalCrits/totalHits*100:0}}
 function runFormulaProfileBatch(rec,count,start,step){const original={...battleFormulaConfig},originalSeed=battleSeed.value,results=[];applyBattleFormulaConfig(rec.config);for(let i=0;i<count;i++){battleSeed.value=start+i*step;const r=runBattleTest({silent:true,persistResult:false,formulaOverride:rec.config});if(r)results.push(JSON.parse(JSON.stringify(r)))}battleSeed.value=originalSeed;applyBattleFormulaConfig(original);return {name:rec.name,config:rec.config,stats:formulaStats(results)}}
 function compareFormulaProfiles(){if(formulaCompareA.value===''||formulaCompareB.value==='')return alert('数式Aと数式Bを選択してください。');if(formulaCompareA.value===formulaCompareB.value)return alert('数式Aと数式Bには異なるプロファイルを選択してください。編成は現在の入力内容で固定されます。');const rows=formulaProfiles(),a=rows[Number(formulaCompareA.value)],b=rows[Number(formulaCompareB.value)];if(!a||!b)return alert('数式Aと数式Bを選択してください。');const count=Math.max(2,Math.min(10000,Number(battleBatchCount.value)||1000)),start=Number(battleBatchStart.value)||1,step=Math.max(1,Number(battleBatchStep.value)||1);const started=performance.now();lastFormulaComparison=[runFormulaProfileBatch(a,count,start,step),runFormulaProfileBatch(b,count,start,step)];const [x,y]=lastFormulaComparison,d=(k)=>y.stats[k]-x.stats[k];formulaCompareSummary.innerHTML=`<b>${esc(x.name)} → ${esc(y.name)}</b> / ${count}試行（${(performance.now()-started).toFixed(0)}ms）<br>勝率 ${x.stats.win_rate.toFixed(2)}% → ${y.stats.win_rate.toFixed(2)}%（${d('win_rate')>=0?'+':''}${d('win_rate').toFixed(2)}）<br>平均Tick ${x.stats.avg_ticks.toFixed(2)} → ${y.stats.avg_ticks.toFixed(2)}（${d('avg_ticks')>=0?'+':''}${d('avg_ticks').toFixed(2)}）<br>平均与ダメ ${x.stats.avg_damage.toFixed(2)} → ${y.stats.avg_damage.toFixed(2)} / 命中 ${x.stats.hit_rate.toFixed(2)}% → ${y.stats.hit_rate.toFixed(2)}% / クリ ${x.stats.crit_rate.toFixed(2)}% → ${y.stats.crit_rate.toFixed(2)}%`}
