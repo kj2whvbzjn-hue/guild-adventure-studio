@@ -234,6 +234,18 @@ body.studio-input-open{overflow:hidden}
   .mobile-header-actions button{flex:0 0 auto;min-height:40px;white-space:nowrap}
 }
 
+
+/* BUILD468.6 category-first launcher and action panels */
+.launcher-category-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.launcher-category-tabs button{min-height:46px;font-weight:700}
+.launcher-category-tabs button.active{background:#dbeafe;border-color:#2563eb;color:#1d4ed8}
+.launcher-action-panel{display:none}
+.launcher-action-panel.active{display:block}
+.launcher-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.launcher-action-grid button{min-height:58px;text-align:left;white-space:normal;line-height:1.35}
+.launcher-section-title{font-size:14px;font-weight:700;color:var(--muted);margin:14px 0 8px}
+@media(max-width:520px){.launcher-action-grid{grid-template-columns:1fr 1fr}.launcher-action-grid button{min-height:62px}}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -245,7 +257,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.5</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.6</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -261,45 +273,58 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <div class="main">
 <aside id="sidebar" class="sidebar" aria-label="機能ランチャー">
   <div class="mobile-launcher-head">
-    <div><div class="pane-title">機能ランチャー</div><div class="small">目的の機能を選ぶと編集画面へ移動します。</div></div>
+    <div><div class="pane-title">機能ランチャー</div><div class="small">分類を選び、実行する機能を押してください。</div></div>
     <button type="button" class="mobile-only" onclick="closeMobile()">閉じる</button>
   </div>
-  <div class="mobile-launcher-search">
-    <input id="featureSearch" type="search" placeholder="機能名を検索" aria-label="機能名を検索" oninput="filterFeatureLauncher(this.value)">
-    <button type="button" onclick="clearFeatureSearch()">クリア</button>
+  <div class="launcher-category-tabs" role="tablist" aria-label="機能分類">
+    <button type="button" class="active" data-launcher-category="basic" onclick="selectLauncherCategory('basic',this)">基本</button>
+    <button type="button" data-launcher-category="create" onclick="selectLauncherCategory('create',this)">制作</button>
+    <button type="button" data-launcher-category="manage" onclick="selectLauncherCategory('manage',this)">管理</button>
   </div>
-  <div id="recentFeatureArea" class="recent-feature-area hidden">
-    <div class="nav-group-title">最近使った機能</div>
-    <div id="recentFeatureButtons" class="recent-feature-buttons"></div>
+  <div id="launcherPanel-basic" class="launcher-action-panel active">
+    <div class="launcher-action-grid">
+      <button type="button" onclick="runLauncherAction('dashboard')">ダッシュボードを見る</button>
+      <button type="button" onclick="runLauncherAction('projects')">プロジェクトを選ぶ</button>
+      <button type="button" onclick="runLauncherAction('project')">プロジェクト設定を開く</button>
+    </div>
   </div>
-  <div class="nav" id="nav">
-    <div class="nav-group-title" data-group-title="基本">基本</div>
-    <button data-view="dashboard" data-group="基本" class="active">ダッシュボード</button>
-    <button data-view="projects" data-group="基本">プロジェクト一覧</button>
-    <button data-view="project" data-group="基本">プロジェクト設定</button>
-
-    <div class="nav-group-title" data-group-title="制作">制作</div>
-    <button data-view="story" data-group="制作">シナリオ</button>
-    <button data-view="storyeditor" data-group="制作">シナリオ構成</button>
-    <button data-view="quests" data-group="制作">クエスト</button>
-    <button data-view="events" data-group="制作">イベント</button>
-    <button data-view="flags" data-group="制作">フラグ</button>
-    <button data-view="characters" data-group="制作">キャラクター</button>
-    <button data-view="masters" data-group="制作">マスターデータ</button>
-    <button data-view="rules" data-group="制作">ルール編集</button>
-
-    <div class="nav-group-title" data-group-title="検証">検証</div>
-    <button data-view="battle" data-group="検証">戦闘テスト</button>
-    <button data-view="references" data-group="検証">参照関係</button>
-    <button data-view="validation" data-group="検証">データ検証</button>
-    <button data-view="entities" data-group="検証">データ・ID管理</button>
-    <button data-view="decisions" data-group="検証">決定事項ログ</button>
-
-    <div class="nav-group-title" data-group-title="管理">管理</div>
-    <button data-view="backup" data-group="管理">バックアップ</button>
-    <button data-view="githubsync" data-group="管理">GitHub同期</button>
-    <button data-view="studiodeploy" data-group="管理">GitHub配置</button>
-    <button data-view="importexport" data-group="管理">読込・出力</button>
+  <div id="launcherPanel-create" class="launcher-action-panel">
+    <div class="launcher-section-title">シナリオ</div>
+    <div class="launcher-action-grid">
+      <button type="button" onclick="runLauncherAction('story')">シナリオを開く</button>
+      <button type="button" onclick="runLauncherAction('chapter-new')">新しい章を作る</button>
+      <button type="button" onclick="runLauncherAction('story-structure')">シナリオ構成を編集する</button>
+    </div>
+    <div class="launcher-section-title">制作データ</div>
+    <div class="launcher-action-grid">
+      <button type="button" onclick="runLauncherAction('quest-new')">新しいクエストを作る</button>
+      <button type="button" onclick="runLauncherAction('event-new')">新しいイベントを作る</button>
+      <button type="button" onclick="runLauncherAction('flag-new')">新しいフラグを作る</button>
+      <button type="button" onclick="runLauncherAction('character-new')">新しいキャラクターを作る</button>
+      <button type="button" onclick="runLauncherAction('master-new')">新しいマスターを作る</button>
+      <button type="button" onclick="runLauncherAction('rules')">ルール編集を開く</button>
+    </div>
+  </div>
+  <div id="launcherPanel-manage" class="launcher-action-panel">
+    <div class="launcher-action-grid">
+      <button type="button" onclick="runLauncherAction('battle')">戦闘テストを開く</button>
+      <button type="button" onclick="runLauncherAction('validation')">データを検証する</button>
+      <button type="button" onclick="runLauncherAction('references')">参照関係を確認する</button>
+      <button type="button" onclick="runLauncherAction('backup')">バックアップを開く</button>
+      <button type="button" onclick="runLauncherAction('githubsync')">GitHub同期を開く</button>
+      <button type="button" onclick="runLauncherAction('studiodeploy')">GitHub配置を開く</button>
+      <button type="button" onclick="runLauncherAction('importexport')">読込・出力を開く</button>
+      <button type="button" onclick="openBuildSettings();closeMobile()">ビルド設定を開く</button>
+    </div>
+  </div>
+  <div class="nav hidden" id="nav" aria-hidden="true">
+    <button data-view="dashboard" class="active">ダッシュボード</button>
+    <button data-view="projects">プロジェクト一覧</button><button data-view="project">プロジェクト設定</button>
+    <button data-view="story">シナリオ</button><button data-view="storyeditor">シナリオ構成</button>
+    <button data-view="quests">クエスト</button><button data-view="events">イベント</button><button data-view="flags">フラグ</button>
+    <button data-view="characters">キャラクター</button><button data-view="masters">マスター</button><button data-view="rules">ルール</button>
+    <button data-view="battle">戦闘</button><button data-view="references">参照</button><button data-view="validation">検証</button>
+    <button data-view="backup">バックアップ</button><button data-view="githubsync">同期</button><button data-view="studiodeploy">配置</button><button data-view="importexport">読込出力</button>
   </div>
 </aside>
 
@@ -378,6 +403,14 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <section id="view-story" class="view hidden">
   <h1>シナリオ</h1>
   <div class="card">
+    <h2>シナリオ制作</h2>
+    <p class="small">章の新規作成と、章・節・シーン・会話の構成編集を一つの入口にまとめています。</p>
+    <div class="launcher-action-grid">
+      <button class="primary" type="button" onclick="openChapterEditor()">新しい章を作る</button>
+      <button type="button" onclick="showView('storyeditor')">シナリオ構成を編集する</button>
+    </div>
+  </div>
+  <div id="chapterEditorPanel" class="card hidden">
     <h2>章の追加</h2>
     <div class="grid">
       <div class="field"><label>章ID</label><input id="chapterId" placeholder="空欄で自動採番"></div>
@@ -768,7 +801,8 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-characters" class="view hidden">
   <h1>キャラクター</h1>
-  <div class="card">
+  <div class="card"><p class="small">登録・編集は必要なときだけ入力パネルを開きます。</p><button class="primary" style="width:100%" type="button" onclick="openCharacterEditor()">新しいキャラクターを作る</button></div>
+  <div id="characterEditorPanel" class="card hidden">
     <div class="grid">
       <div class="field"><label>キャラクターID</label><input id="characterId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>名前</label><input id="characterName"></div>
@@ -1671,6 +1705,30 @@ function filterFeatureLauncher(value=''){
  document.querySelectorAll('#nav .nav-group-title').forEach(t=>{const g=t.dataset.groupTitle;t.classList.toggle('feature-hidden',q&&![...document.querySelectorAll(`#nav button[data-group="${g}"]`)].some(b=>!b.classList.contains('feature-hidden')))});
 }
 function clearFeatureSearch(){const input=document.getElementById('featureSearch');if(input)input.value='';filterFeatureLauncher('')}
+function selectLauncherCategory(name,button){
+ document.querySelectorAll('.launcher-category-tabs button').forEach(b=>b.classList.toggle('active',b===button));
+ document.querySelectorAll('.launcher-action-panel').forEach(p=>p.classList.toggle('active',p.id==='launcherPanel-'+name));
+}
+function runLauncherAction(action){
+ const direct={dashboard:'dashboard',projects:'projects',project:'project',story:'story',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
+ if(direct[action]){showView(direct[action]);return}
+ if(action==='chapter-new'){showView('story');setTimeout(openChapterEditor,0);return}
+ if(action==='story-structure'){showView('storyeditor');return}
+ if(action==='quest-new'){showView('quests');setTimeout(openQuestEditor,0);return}
+ if(action==='event-new'){showView('events');setTimeout(openEventEditor,0);return}
+ if(action==='flag-new'){showView('flags');setTimeout(openFlagEditor,0);return}
+ if(action==='character-new'){showView('characters');setTimeout(openCharacterEditor,0);return}
+ if(action==='master-new'){showView('masters');setTimeout(openMasterEditor,0);return}
+}
+function openChapterEditor(){
+ ['chapterId','chapterTitle','chapterTheme','chapterSummary'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+ openStudioInputPanel('chapterEditorPanel','新しい章を作る');
+}
+function openCharacterEditor(){
+ ['characterId','characterName','characterRole','characterJob','characterRace','characterAge','characterSpeech','characterOrganization','characterFirstAppearance','characterJoinPoint','characterLeavePoint','characterAwakenPoint','characterGoal1','characterGoal2','characterGoal3','characterProfile'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+ window.characterTagsValue=[];if(window.renderCharacterTagChips)renderCharacterTagChips();
+ openStudioInputPanel('characterEditorPanel','新しいキャラクターを作る');
+}
 function showView(name){
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
  const target=document.getElementById('view-'+name);if(!target)return;
@@ -1815,7 +1873,7 @@ function addChapter(){
  if(allIds().includes(id))return alert('そのIDは既に使用されています。');
  data.chapters.push({id,no:+document.getElementById('chapterNo').value||1,title,theme:document.getElementById('chapterTheme').value.trim(),summary:document.getElementById('chapterSummary').value.trim(),sections:[],status:'draft',created_at:now(),updated_at:now()});
  chapterId.value='';chapterTitle.value='';chapterTheme.value='';chapterSummary.value='';
- persist('chapter added')
+ persist('chapter added');closeStudioInputPanel()
 }
 function addSection(chapterId){
  let chapter=data.chapters.find(c=>c.id===chapterId);if(!chapter)return;
@@ -1839,7 +1897,7 @@ function addCharacter(){
  data.characters.push({id,name,role:characterRole.value.trim(),job:characterJob.value.trim(),race:characterRace.value.trim(),age:characterAge.value.trim(),speech:characterSpeech.value.trim(),organization_id:characterOrganization.value.trim(),first_appearance:characterFirstAppearance.value.trim(),join_point:characterJoinPoint.value.trim(),leave_point:characterLeavePoint.value.trim(),awaken_point:characterAwakenPoint.value.trim(),goals:[characterGoal1.value.trim(),characterGoal2.value.trim(),characterGoal3.value.trim()],profile:characterProfile.value.trim(),tags: (window.characterTagsValue || []),
     status:'draft',created_at:now(),updated_at:now()});
  ['characterId','characterName','characterRole','characterJob','characterRace','characterAge','characterSpeech','characterOrganization','characterFirstAppearance','characterJoinPoint','characterLeavePoint','characterAwakenPoint','characterGoal1','characterGoal2','characterGoal3','characterProfile'].forEach(x=>document.getElementById(x).value='');
- persist('character added')
+ persist('character added');closeStudioInputPanel()
 }
 function deleteCharacter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.characters=data.characters.filter(x=>x.id!==id);persist('character deleted')}}
 
