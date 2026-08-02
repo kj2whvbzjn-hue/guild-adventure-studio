@@ -197,10 +197,11 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / 入力パネル標準化版 / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.3</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
+  <button type="button" onclick="openBuildSettings()">開発ビルド設定</button>
   <button class="desktop-only" onclick="saveLocal()">端末保存</button>
   <button id="installBtn" class="desktop-only hidden">アプリをインストール</button><button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
 </header>
@@ -830,6 +831,21 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 
+<div id="buildSettingsPanel" class="hidden">
+  <div class="grid">
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="468.3" placeholder="例: 468.3"></div>
+    <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.32.0-dev"></div>
+    <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
+  </div>
+  <p class="small">この設定は端末内に保存され、Studioの画面表示と配布情報の候補に使用されます。正式基準番号は変更しません。</p>
+  <div class="toolbar">
+    <button type="button" onclick="resetBuildSettings()">初期値へ戻す</button>
+    <button type="button" onclick="copyBuildSummary()">配布情報をコピー</button>
+    <button class="primary" type="button" onclick="saveBuildSettings()">保存</button>
+  </div>
+  <div id="buildSettingsStatus" class="small"></div>
+</div>
+
 <div id="studioInputOverlay" class="studio-input-overlay hidden" aria-hidden="true" onclick="handleStudioInputBackdrop(event)">
   <div class="studio-input-sheet" role="dialog" aria-modal="true" aria-labelledby="studioInputTitle">
     <div class="studio-input-head"><h2 id="studioInputTitle">入力</h2><button type="button" onclick="closeStudioInputPanel()">閉じる</button></div>
@@ -838,7 +854,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </div>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD462</span><span class="small">GK Studio v1.32.0-dev／数式ワークフロー案内改善版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">468.3</span></span><span class="small">GK Studio v1.32.0-dev／数式ワークフロー案内改善版</span></div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -2200,6 +2216,41 @@ function readBattleTraceOptions(){return {events:!!document.getElementById('logB
 function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
+
+const GKS_BUILD_DEFAULTS={developmentBuild:'468.3',studioVersion:'1.32.0-dev',formalBuild:'462'};
+const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
+function loadBuildSettings(){
+  let saved={};
+  try{saved=JSON.parse(localStorage.getItem(GKS_BUILD_SETTINGS_KEY)||'{}')||{}}catch(e){saved={}}
+  return {...GKS_BUILD_DEFAULTS,...saved,formalBuild:GKS_BUILD_DEFAULTS.formalBuild};
+}
+function applyBuildSettings(){
+  const settings=loadBuildSettings();
+  const label=document.getElementById('developmentBuildLabel');if(label)label.textContent=settings.developmentBuild;const battleLabel=document.getElementById('battleDevelopmentBuildLabel');if(battleLabel)battleLabel.textContent=settings.developmentBuild;
+  document.title=`GK Studio v${settings.studioVersion} / Development Build ${settings.developmentBuild}`;
+  const dev=document.getElementById('developmentBuildInput');if(dev)dev.value=settings.developmentBuild;
+  const ver=document.getElementById('studioVersionInput');if(ver)ver.value=settings.studioVersion;
+  const formal=document.getElementById('formalBuildInput');if(formal)formal.value=settings.formalBuild;
+  window.GKS_BUILD_INFO={...settings,cacheQuery:`appv=${settings.developmentBuild.replace(/[^0-9A-Za-z]/g,'_')}`};
+}
+function openBuildSettings(){applyBuildSettings();openStudioInputPanel('buildSettingsPanel','開発ビルド設定')}
+function saveBuildSettings(){
+  const developmentBuild=String(document.getElementById('developmentBuildInput')?.value||'').trim();
+  const studioVersion=String(document.getElementById('studioVersionInput')?.value||'').trim();
+  if(!/^\d+(?:\.\d+)+$/.test(developmentBuild))return alert('開発ビルド番号は 468.3 のように入力してください。');
+  if(!studioVersion)return alert('表示バージョンを入力してください。');
+  const settings={developmentBuild,studioVersion,formalBuild:GKS_BUILD_DEFAULTS.formalBuild};
+  localStorage.setItem(GKS_BUILD_SETTINGS_KEY,JSON.stringify(settings));
+  applyBuildSettings();
+  const status=document.getElementById('buildSettingsStatus');if(status)status.textContent=`保存しました: Development Build ${developmentBuild}`;
+}
+function resetBuildSettings(){localStorage.removeItem(GKS_BUILD_SETTINGS_KEY);applyBuildSettings();const status=document.getElementById('buildSettingsStatus');if(status)status.textContent='初期値へ戻しました。'}
+async function copyBuildSummary(){
+  const s=loadBuildSettings();
+  const text=`GK Studio v${s.studioVersion}\nDevelopment Build ${s.developmentBuild}\nFormal Build ${s.formalBuild}\ncache_query=appv=${s.developmentBuild.replace(/[^0-9A-Za-z]/g,'_')}`;
+  try{await navigator.clipboard.writeText(text);const status=document.getElementById('buildSettingsStatus');if(status)status.textContent='配布情報をコピーしました。'}catch(e){alert(text)}
+}
+window.addEventListener('DOMContentLoaded',applyBuildSettings);
 
 let studioInputPanelState=null;
 function openStudioInputPanel(id,title){
