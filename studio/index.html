@@ -281,6 +281,17 @@ body.studio-input-open{overflow:hidden}
 
 
 .launcher-focus{outline:4px solid rgba(38,105,230,.38);box-shadow:0 0 0 8px rgba(38,105,230,.10);transition:outline-color .2s,box-shadow .2s}
+
+/* BUILD470.1 verification home */
+.verification-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.verification-kpi{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-height:112px;padding:14px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px}
+.verification-kpi:hover{border-color:var(--accent);box-shadow:0 4px 18px rgba(15,23,42,.08)}
+.verification-kpi span{font-size:12px;color:var(--muted);font-weight:700}.verification-kpi b{font-size:22px}.verification-kpi small{color:var(--muted)}
+.verification-action-list{display:grid;gap:9px}.verification-action-list button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:12px}.verification-action-list button span{font-size:12px;opacity:.78}
+.verification-steps{display:grid;gap:10px;padding-left:22px}.verification-steps li{padding-left:4px}.verification-steps span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+@media(max-width:900px){.verification-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.verification-kpis{grid-template-columns:1fr}.verification-kpi{min-height:96px}}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -337,6 +348,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   </div>
   <div id="launcherPanel-verify" class="launcher-action-panel">
     <div class="launcher-action-grid">
+      <button type="button" class="primary" onclick="runLauncherAction('verification-home')">検証ホームを開く</button>
       <button type="button" onclick="runLauncherAction('battle')">戦闘テストを開く</button>
       <button type="button" onclick="runLauncherAction('battle-formula')">戦闘計算式を作る</button>
       <button type="button" onclick="runLauncherAction('ratio-cards')">比率計算を作る</button>
@@ -363,7 +375,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <button data-view="story">シナリオ</button><button data-view="storyeditor">シナリオ構成</button>
     <button data-view="quests">クエスト</button><button data-view="events">イベント</button><button data-view="flags">フラグ</button>
     <button data-view="characters">キャラクター</button><button data-view="masters">マスター</button><button data-view="rules">ルール</button>
-    <button data-view="battle">戦闘</button><button data-view="references">参照</button><button data-view="validation">検証</button>
+    <button data-view="verification-home">検証ホーム</button><button data-view="battle">戦闘</button><button data-view="references">参照</button><button data-view="validation">検証</button>
     <button data-view="backup">バックアップ</button><button data-view="githubsync">同期</button><button data-view="studiodeploy">配置</button><button data-view="importexport">読込出力</button>
   </div>
 </aside>
@@ -977,8 +989,8 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="469.6" placeholder="例: 469.6"></div>
-    <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.32.0-dev"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="470.1" placeholder="例: 470.1"></div>
+    <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.33.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
   <p class="small">この設定は端末内に保存され、Studioの画面表示と配布情報の候補に使用されます。正式基準番号は変更しません。</p>
@@ -997,8 +1009,40 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   </div>
 </div>
 
+<section id="view-verification-home" class="view hidden">
+  <div class="view-heading"><h1>検証ホーム</h1><button class="primary" type="button" onclick="refreshVerificationHome()">状態を再集計</button></div>
+  <p class="small">戦闘テスト、一括検証、データ整合性、参照関係を一か所から確認します。BUILD 470.1 検証ホーム基盤。</p>
+  <div class="verification-kpis">
+    <button type="button" class="verification-kpi" onclick="runLauncherAction('battle')"><span>戦闘テスト</span><b id="verificationBattleStatus">準備完了</b><small>単体シミュレーション</small></button>
+    <button type="button" class="verification-kpi" onclick="runLauncherAction('batch-test')"><span>一括検証</span><b id="verificationBatchStatus">未実行</b><small>複数シード・範囲探索</small></button>
+    <button type="button" class="verification-kpi" onclick="runLauncherAction('validation')"><span>データ検証</span><b id="verificationIssueCount">0件</b><small id="verificationIssueDetail">エラー 0 / 警告 0</small></button>
+    <button type="button" class="verification-kpi" onclick="runLauncherAction('references')"><span>参照確認</span><b id="verificationReferenceCount">0件</b><small>登録済み参照</small></button>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h2>検証を開始</h2>
+      <div class="verification-action-list">
+        <button class="primary" type="button" onclick="runLauncherAction('battle')"><b>戦闘テスト</b><span>現在の編成で1戦を実行</span></button>
+        <button type="button" onclick="runLauncherAction('batch-test')"><b>一括検証</b><span>複数シードまたはパラメータ範囲を検証</span></button>
+        <button type="button" onclick="runLauncherAction('validation')"><b>データ検証</b><span>ID重複・必須項目・タグ整合性を確認</span></button>
+        <button type="button" onclick="runLauncherAction('references')"><b>参照確認</b><span>ID参照の接続状況を確認</span></button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>推奨ワークフロー</h2>
+      <ol class="verification-steps">
+        <li><b>データ検証</b><span>入力漏れと重複を先に解消</span></li>
+        <li><b>参照確認</b><span>カード・装備・スキルの接続を確認</span></li>
+        <li><b>戦闘テスト</b><span>代表条件で計算結果とログを確認</span></li>
+        <li><b>一括検証</b><span>乱数とパラメータ範囲の偏りを確認</span></li>
+      </ol>
+      <div id="verificationRecommendation" class="item">状態を集計しています。</div>
+    </div>
+  </div>
+</section>
+
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">469.6</span></span><span class="small">GK Studio v1.32.0-dev／数式ワークフロー案内改善版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">470.1</span></span><span class="small">GK Studio v1.33.0-dev／検証ホーム基盤版</span></div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -1851,7 +1895,7 @@ function openVerificationSection(section,cardType){
  },80);
 }
 function runLauncherAction(action){
- const direct={dashboard:'dashboard',projects:'projects',project:'project',story:'story',quests:'quests',events:'events',flags:'flags',characters:'characters',masters:'masters',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
+ const direct={dashboard:'dashboard','verification-home':'verification-home',projects:'projects',project:'project',story:'story',quests:'quests',events:'events',flags:'flags',characters:'characters',masters:'masters',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
  if(action==='battle-formula'){openVerificationSection('battle-formula');return}
  if(action==='ratio-cards'){openVerificationSection('design-cards','ratio');return}
  if(action==='result-cards'){openVerificationSection('design-cards','calculation');return}
@@ -1875,6 +1919,19 @@ function openCharacterEditor(){
  ['characterId','characterName','characterRole','characterJob','characterRace','characterAge','characterSpeech','characterOrganization','characterFirstAppearance','characterJoinPoint','characterLeavePoint','characterAwakenPoint','characterGoal1','characterGoal2','characterGoal3','characterProfile'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
  window.characterTagsValue=[];if(window.renderCharacterTagChips)renderCharacterTagChips();
  openStudioInputPanel('characterEditorPanel','キャラクターを作成');
+}
+function refreshVerificationHome(){runValidation();renderVerificationHome()}
+function renderVerificationHome(){
+ const issues=Array.isArray(validation)?validation:[];
+ const errorCount=issues.filter(x=>String(x.level||x.severity||x.type||'').toLowerCase()==='error').length;
+ const warningCount=issues.filter(x=>['warning','warn'].includes(String(x.level||x.severity||x.type||'').toLowerCase())).length;
+ const total=issues.length;
+ const refCount=(data.references&&Array.isArray(data.references)?data.references.length:0)+(data.rules&&Array.isArray(data.rules)?data.rules.length:0);
+ const issueCount=document.getElementById('verificationIssueCount');if(issueCount)issueCount.textContent=total+'件';
+ const detail=document.getElementById('verificationIssueDetail');if(detail)detail.textContent='エラー '+errorCount+' / 警告 '+warningCount;
+ const refs=document.getElementById('verificationReferenceCount');if(refs)refs.textContent=refCount+'件';
+ const batch=document.getElementById('verificationBatchStatus');if(batch){const text=document.getElementById('battleBatchSummary')?.textContent||'';batch.textContent=/勝率|完了|結果/.test(text)?'結果あり':'未実行'}
+ const rec=document.getElementById('verificationRecommendation');if(rec){rec.className='item '+(errorCount?'error':warningCount?'warn':'ok');rec.textContent=errorCount?'データエラーを先に解消してください。':warningCount?'警告を確認後、戦闘テストへ進めます。':'データ検証上の重大な問題はありません。戦闘テストへ進めます。'}
 }
 function showView(name){
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
@@ -4534,7 +4591,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();renderVerificationHome();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
