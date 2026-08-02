@@ -491,8 +491,9 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <section id="view-quests" class="view hidden">
   <h1>クエストデータベース</h1>
 
-  <div class="card">
-    <h2>クエスト登録</h2>
+  <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openQuestEditor()">新しいクエストを作る</button></div>
+  <div id="questEditorPanel" class="card hidden">
+    <h2>クエスト入力</h2>
     <div class="grid">
       <div class="field"><label>クエストID</label><input id="questId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>クエスト名</label><input id="questName"></div>
@@ -546,6 +547,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="toolbar">
       <button class="primary" onclick="saveQuest()">登録・更新</button>
       <button onclick="clearQuestForm()">入力をクリア</button>
+      <button type="button" onclick="closeStudioInputPanel()">キャンセル</button>
     </div>
   </div>
 
@@ -574,8 +576,9 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <section id="view-events" class="view hidden">
   <h1>イベントデータベース</h1>
 
-  <div class="card">
-    <h2>イベント登録</h2>
+  <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openEventEditor()">新しいイベントを作る</button></div>
+  <div id="eventEditorPanel" class="card hidden">
+    <h2>イベント入力</h2>
     <div class="grid">
       <div class="field"><label>イベントID</label><input id="eventId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>イベント名</label><input id="eventName"></div>
@@ -634,6 +637,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="toolbar">
       <button class="primary" onclick="saveEvent()">登録・更新</button>
       <button onclick="clearEventForm()">入力をクリア</button>
+      <button type="button" onclick="closeStudioInputPanel()">キャンセル</button>
     </div>
   </div>
 
@@ -663,8 +667,9 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-flags" class="view hidden">
   <h1>フラグデータベース</h1>
-  <div class="card">
-    <h2>フラグ登録</h2>
+  <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openFlagEditor()">新しいフラグを作る</button></div>
+  <div id="flagEditorPanel" class="card hidden">
+    <h2>フラグ入力</h2>
     <div class="grid">
       <div class="field"><label>フラグID</label><input id="flagId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>フラグ名</label><input id="flagName"></div>
@@ -672,7 +677,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div class="field"><label>初期値</label><select id="flagDefault"><option value="false">OFF</option><option value="true">ON</option></select></div>
     </div>
     <div class="field"><label>説明</label><textarea id="flagDescription"></textarea></div>
-    <div class="toolbar"><button class="primary" onclick="saveFlag()">登録・更新</button><button onclick="clearFlagForm()">入力をクリア</button></div>
+    <div class="toolbar"><button class="primary" onclick="saveFlag()">登録・更新</button><button onclick="clearFlagForm()">入力をクリア</button><button type="button" onclick="closeStudioInputPanel()">キャンセル</button></div>
   </div>
   <div class="card"><div class="filter-bar"><input id="flagSearch" placeholder="ID・名称・説明を検索" oninput="renderFlags()"><select id="flagCategoryFilter" onchange="renderFlags()"><option value="">全分類</option><option value="story">ストーリー</option><option value="quest">クエスト</option><option value="character">キャラクター</option><option value="world">世界</option><option value="system">システム</option></select></div></div>
   <div id="flagList" class="list"></div>
@@ -3804,6 +3809,7 @@ function removeEventCharacterDraft(id){
  renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
 }
 
+function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','新しいクエストを作る')}
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
  questSummary.value='';questConditions.value='';questCompletion.value='';questFailure.value='';questRewards.value='';
@@ -3854,6 +3860,7 @@ function saveQuest(){
  persist('quest saved');
  clearQuestForm();
  renderQuests();
+ closeStudioInputPanel();
 }
 
 function editQuest(id){
@@ -3865,6 +3872,7 @@ function editQuest(id){
  refreshLinkSelectors('quest',q.links||{});
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
  showView('quests');
+ openStudioInputPanel('questEditorPanel','クエストを編集する');
 }
 
 function deleteQuest(id){
@@ -3901,6 +3909,7 @@ function renderQuests(){
  }).join('')||'<div class="card">クエストはまだありません。</div>';
 }
 
+function openEventEditor(){clearEventForm();openStudioInputPanel('eventEditorPanel','新しいイベントを作る')}
 function clearEventForm(){
  eventId.value='';eventName.value='';eventType.value='story';eventStatus.value='draft';
  eventSummary.value='';eventConditions.value='';eventResults.value='';
@@ -3949,6 +3958,7 @@ function saveEvent(){
  persist('event saved');
  clearEventForm();
  renderEvents();
+ closeStudioInputPanel();
 }
 
 function editEvent(id){
@@ -3963,6 +3973,7 @@ function editEvent(id){
  eventQuestLink.value=e.links?.quest_id||'';
  renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
  showView('events');
+ openStudioInputPanel('eventEditorPanel','イベントを編集する');
 }
 
 function deleteEvent(id){
@@ -3993,6 +4004,7 @@ function renderEvents(){
  </div>`).join('')||'<div class="card">イベントはまだありません。</div>';
 }
 
+function openFlagEditor(){clearFlagForm();openStudioInputPanel('flagEditorPanel','新しいフラグを作る')}
 function clearFlagForm(){
  flagId.value='';flagName.value='';flagCategory.value='story';flagDefault.value='false';flagDescription.value='';
 }
@@ -4005,11 +4017,11 @@ function saveFlag(){
  const record={id,name,category:flagCategory.value,default_value:flagDefault.value==='true',description:flagDescription.value,updated_at:now()};
  const i=data.flags.findIndex(x=>x.id===id);
  if(i>=0){record.created_at=data.flags[i].created_at||now();data.flags[i]=record}else{record.created_at=now();data.flags.push(record)}
- persist('flag saved');clearFlagForm();renderFlags();
+ persist('flag saved');clearFlagForm();renderFlags();closeStudioInputPanel();
 }
 function editFlag(id){
  const f=data.flags.find(x=>x.id===id);if(!f)return;
- flagId.value=f.id;flagName.value=f.name;flagCategory.value=f.category||'story';flagDefault.value=f.default_value?'true':'false';flagDescription.value=f.description||'';showView('flags');
+ flagId.value=f.id;flagName.value=f.name;flagCategory.value=f.category||'story';flagDefault.value=f.default_value?'true':'false';flagDescription.value=f.description||'';showView('flags');openStudioInputPanel('flagEditorPanel','フラグを編集する');
 }
 function flagReferences(id){
  const refs=[];
