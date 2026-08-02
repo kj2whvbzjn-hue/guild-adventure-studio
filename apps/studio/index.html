@@ -186,6 +186,31 @@ body.studio-input-open{overflow:hidden}
  .studio-input-body{padding:14px 14px calc(92px + env(safe-area-inset-bottom))}
 }
 
+/* BUILD468.4 mobile feature launcher */
+.mobile-only{display:none}
+.mobile-launcher-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mobile-launcher-search{display:flex;gap:8px;margin:10px 0 12px}
+.mobile-launcher-search input{min-width:0;flex:1}
+.nav-group-title{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin:13px 4px 6px}
+.recent-feature-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.recent-feature-buttons button{min-height:44px;text-align:left}
+#nav button.feature-hidden,#nav .nav-group-title.feature-hidden{display:none!important}
+@media(max-width:900px){
+ .mobile-only{display:inline-flex}
+ .sidebar.mobile-open{top:0;bottom:0;padding:calc(12px + env(safe-area-inset-top)) 12px calc(76px + env(safe-area-inset-bottom));overflow:auto;background:#fff}
+ .mobile-launcher-head{position:sticky;top:calc(-12px - env(safe-area-inset-top));z-index:3;background:#fff;padding:calc(12px + env(safe-area-inset-top)) 0 9px;border-bottom:1px solid var(--line)}
+ .mobile-launcher-search{position:sticky;top:68px;z-index:3;background:#fff;padding:8px 0;margin:0 0 8px}
+ .mobile-launcher-search input{min-height:44px;font-size:16px}
+ .mobile-launcher-search button{min-height:44px}
+ #nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #nav .nav-group-title{grid-column:1/-1;margin-top:14px}
+ #nav button{min-height:52px;text-align:left;line-height:1.25;padding:10px 12px}
+ #nav button.active{box-shadow:0 0 0 2px var(--accent) inset;background:var(--accent2)}
+ .recent-feature-area{margin-bottom:8px}
+ .workspace{scroll-margin-top:12px}
+}
+@media(max-width:380px){#nav{grid-template-columns:1fr}}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -197,7 +222,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.3</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.4</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
@@ -207,29 +232,47 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </header>
 
 <div class="main">
-<aside id="sidebar" class="sidebar">
-  <div class="pane-title">機能一覧</div>
+<aside id="sidebar" class="sidebar" aria-label="機能ランチャー">
+  <div class="mobile-launcher-head">
+    <div><div class="pane-title">機能ランチャー</div><div class="small">目的の機能を選ぶと編集画面へ移動します。</div></div>
+    <button type="button" class="mobile-only" onclick="closeMobile()">閉じる</button>
+  </div>
+  <div class="mobile-launcher-search">
+    <input id="featureSearch" type="search" placeholder="機能名を検索" aria-label="機能名を検索" oninput="filterFeatureLauncher(this.value)">
+    <button type="button" onclick="clearFeatureSearch()">クリア</button>
+  </div>
+  <div id="recentFeatureArea" class="recent-feature-area hidden">
+    <div class="nav-group-title">最近使った機能</div>
+    <div id="recentFeatureButtons" class="recent-feature-buttons"></div>
+  </div>
   <div class="nav" id="nav">
-    <button data-view="dashboard" class="active">ダッシュボード</button>
-    <button data-view="projects">プロジェクト一覧</button>
-    <button data-view="project">プロジェクト設定</button>
-    <button data-view="story">シナリオ</button>
-    <button data-view="storyeditor">シナリオ構成エディター</button>
-    <button data-view="quests">クエスト</button>
-    <button data-view="events">イベント</button>
-    <button data-view="flags">フラグ</button>
-    <button data-view="references">参照関係マップ</button>
-    <button data-view="characters">キャラクター</button>
-    <button data-view="masters">マスターデータ</button>
-    <button data-view="rules">ルールエディター</button>
-    <button data-view="battle">戦闘テスト</button>
-    <button data-view="decisions">決定事項ログ</button>
-    <button data-view="entities">データ・ID管理</button>
-    <button data-view="validation">データ検証</button>
-    <button data-view="backup">バックアップ</button>
-    <button data-view="githubsync">GitHub同期</button>
-    <button data-view="studiodeploy">GitHub配置・更新</button>
-    <button data-view="importexport">読込・出力</button>
+    <div class="nav-group-title" data-group-title="基本">基本</div>
+    <button data-view="dashboard" data-group="基本" class="active">ダッシュボード</button>
+    <button data-view="projects" data-group="基本">プロジェクト一覧</button>
+    <button data-view="project" data-group="基本">プロジェクト設定</button>
+
+    <div class="nav-group-title" data-group-title="制作">制作</div>
+    <button data-view="story" data-group="制作">シナリオ</button>
+    <button data-view="storyeditor" data-group="制作">シナリオ構成</button>
+    <button data-view="quests" data-group="制作">クエスト</button>
+    <button data-view="events" data-group="制作">イベント</button>
+    <button data-view="flags" data-group="制作">フラグ</button>
+    <button data-view="characters" data-group="制作">キャラクター</button>
+    <button data-view="masters" data-group="制作">マスターデータ</button>
+    <button data-view="rules" data-group="制作">ルール編集</button>
+
+    <div class="nav-group-title" data-group-title="検証">検証</div>
+    <button data-view="battle" data-group="検証">戦闘テスト</button>
+    <button data-view="references" data-group="検証">参照関係</button>
+    <button data-view="validation" data-group="検証">データ検証</button>
+    <button data-view="entities" data-group="検証">データ・ID管理</button>
+    <button data-view="decisions" data-group="検証">決定事項ログ</button>
+
+    <div class="nav-group-title" data-group-title="管理">管理</div>
+    <button data-view="backup" data-group="管理">バックアップ</button>
+    <button data-view="githubsync" data-group="管理">GitHub同期</button>
+    <button data-view="studiodeploy" data-group="管理">GitHub配置</button>
+    <button data-view="importexport" data-group="管理">読込・出力</button>
   </div>
 </aside>
 
@@ -1580,11 +1623,34 @@ function restoreBackup(id){
  createBackup('before-restore');data=structuredClone(b.data);persist('backup restore')
 }
 function clearBackups(){if(confirm('全バックアップを削除しますか？')){localStorage.removeItem(backupStorageKey(currentProjectId));render()}}
+const RECENT_FEATURES_KEY='gks_recent_features_v468';
+function featureButton(view){return document.querySelector(`#nav button[data-view="${view}"]`)}
+function rememberRecentFeature(name){
+ if(!name||name==='dashboard')return;
+ let items=[];try{items=JSON.parse(localStorage.getItem(RECENT_FEATURES_KEY)||'[]')}catch(e){}
+ items=[name,...items.filter(x=>x!==name)].slice(0,4);
+ localStorage.setItem(RECENT_FEATURES_KEY,JSON.stringify(items));renderRecentFeatures();
+}
+function renderRecentFeatures(){
+ let items=[];try{items=JSON.parse(localStorage.getItem(RECENT_FEATURES_KEY)||'[]')}catch(e){}
+ const area=document.getElementById('recentFeatureArea'),box=document.getElementById('recentFeatureButtons');
+ if(!area||!box)return;box.innerHTML='';
+ items.forEach(view=>{const src=featureButton(view);if(!src)return;const b=document.createElement('button');b.type='button';b.textContent=src.textContent;b.onclick=()=>showView(view);box.appendChild(b)});
+ area.classList.toggle('hidden',box.children.length===0);
+}
+function filterFeatureLauncher(value=''){
+ const q=String(value).trim().toLowerCase();
+ document.querySelectorAll('#nav button[data-view]').forEach(b=>b.classList.toggle('feature-hidden',q&&!b.textContent.toLowerCase().includes(q)));
+ document.querySelectorAll('#nav .nav-group-title').forEach(t=>{const g=t.dataset.groupTitle;t.classList.toggle('feature-hidden',q&&![...document.querySelectorAll(`#nav button[data-group="${g}"]`)].some(b=>!b.classList.contains('feature-hidden')))});
+}
+function clearFeatureSearch(){const input=document.getElementById('featureSearch');if(input)input.value='';filterFeatureLauncher('')}
 function showView(name){
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
- document.getElementById('view-'+name).classList.remove('hidden');
- document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
- document.getElementById('selectedLabel').value=name; closeMobile(); render()
+ const target=document.getElementById('view-'+name);if(!target)return;
+ target.classList.remove('hidden');
+ document.querySelectorAll('#nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+ document.getElementById('selectedLabel').value=name; rememberRecentFeature(name); closeMobile(); render();
+ if(window.matchMedia('(max-width:900px)').matches){window.scrollTo({top:0,behavior:'instant'})}
 }
 document.getElementById('nav').addEventListener('click',e=>{if(e.target.dataset.view)showView(e.target.dataset.view)})
 
@@ -2217,7 +2283,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'468.3',studioVersion:'1.32.0-dev',formalBuild:'462'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'468.4',studioVersion:'1.32.0-dev',formalBuild:'462'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -4187,8 +4253,9 @@ function jpLevel(value){return ({ERROR:'エラー',WARNING:'警告',INFO:'情報
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
-function toggleMobile(id){document.getElementById(id).classList.toggle('mobile-open')}
+function toggleMobile(id){const el=document.getElementById(id);el.classList.toggle('mobile-open');if(id==='sidebar'&&el.classList.contains('mobile-open')){renderRecentFeatures();setTimeout(()=>document.getElementById('featureSearch')?.focus(),60)}}
 function closeMobile(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('inspector').classList.remove('mobile-open')}
+window.addEventListener('DOMContentLoaded',renderRecentFeatures);
 window.addEventListener('beforeunload',()=>{try{localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data))}catch(e){console.error(e)}});
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
