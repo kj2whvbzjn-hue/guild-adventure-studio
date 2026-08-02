@@ -211,6 +211,29 @@ body.studio-input-open{overflow:hidden}
 }
 @media(max-width:380px){#nav{grid-template-columns:1fr}}
 
+@media(max-width:900px){
+  .app{grid-template-rows:auto 1fr}
+  header{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:start;padding:10px 12px;position:sticky;top:0}
+  header>div:first-child{min-width:0}
+  header .brand{font-size:16px;white-space:normal;line-height:1.25}
+  header .version{font-size:11px;line-height:1.35;white-space:normal}
+  header .spacer{display:none}
+  header>.status{display:none}
+  header>button:not(.desktop-only){min-width:max-content;white-space:nowrap;padding:8px 10px;font-size:13px;line-height:1.2}
+  header{grid-template-areas:"brand" "actions"}
+  header>div:first-child{grid-area:brand}
+  header>button:not(.desktop-only){grid-area:auto}
+  header::after{content:"";display:block;grid-column:1;height:0}
+  header{overflow:visible}
+  header .mobile-header-actions{display:flex}
+}
+.mobile-header-actions{display:contents}
+@media(max-width:900px){
+  .mobile-header-actions{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;scrollbar-width:none}
+  .mobile-header-actions::-webkit-scrollbar{display:none}
+  .mobile-header-actions button{flex:0 0 auto;min-height:40px;white-space:nowrap}
+}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -222,13 +245,17 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.4</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.5</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
-  <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトルへ</button><span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
-  <button type="button" onclick="openBuildSettings()">開発ビルド設定</button>
-  <button class="desktop-only" onclick="saveLocal()">端末保存</button>
-  <button id="installBtn" class="desktop-only hidden">アプリをインストール</button><button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
+  <div class="mobile-header-actions" aria-label="Studio操作">
+    <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトル</button>
+    <button type="button" onclick="openBuildSettings()">ビルド設定</button>
+    <button class="desktop-only" onclick="saveLocal()">端末保存</button>
+    <button id="installBtn" class="desktop-only hidden">アプリをインストール</button>
+    <button class="primary desktop-only" onclick="exportProject()">JSON出力</button>
+  </div>
+  <span id="currentProjectLabel" class="status"></span><span id="saveStatus" class="status">未保存</span>
 </header>
 
 <div class="main">
