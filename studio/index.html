@@ -180,6 +180,7 @@ body.rule-picker-open{overflow:hidden}
 .skill-candidate-list{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 12px 130px;display:flex;flex-direction:column;gap:12px}
 .skill-candidate-section-title{font-size:17px;font-weight:800;margin:8px 2px 0}
 .skill-candidate-card{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(15,23,42,.06);cursor:pointer}
+.skill-candidate-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}.skill-candidate-card:has(.skill-candidate-input:checked){border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}.skill-candidate-card:has(.skill-candidate-input:checked) .skill-candidate-check{background:#2563eb;border-color:#2563eb}.skill-candidate-card:has(.skill-candidate-input:checked) .skill-candidate-check::before{content:'✓'}
 .skill-candidate-card.selected{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .skill-candidate-card.excluded{cursor:not-allowed;opacity:.72;background:#f8fafc}
 .skill-candidate-card-head{display:flex;align-items:flex-start;gap:12px}.skill-candidate-check{flex:0 0 30px;width:30px;height:30px;border-radius:9px;border:2px solid #94a3b8;display:grid;place-items:center;font-size:20px;font-weight:900;color:#fff;background:#fff;margin-top:1px}
@@ -974,7 +975,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div id="monsterSkillGeneratorFields" class="card hidden" style="margin-top:16px">
       <h3>スキル候補自動判定</h3>
       <p class="small">モンスターのタグ・レベル・強度・Tier上限と、スキル側の必要タグ・最低レベル・最低強度・Tierを照合します。</p>
-      <div class="toolbar"><button class="primary" type="button" onclick="evaluateMonsterSkillCandidates(true)">候補を判定・選択</button><button id="applyMonsterSkillCandidatesButton" class="hidden" type="button" onclick="openMonsterSkillCandidatePicker()">候補選択を開く</button></div>
+      <div class="toolbar"><button class="primary" type="button" onclick="evaluateAndOpenMonsterSkillPicker()">候補を判定・選択</button><button id="applyMonsterSkillCandidatesButton" class="hidden" type="button" onclick="openMonsterSkillCandidatePicker()">候補選択を開く</button></div>
       <div id="monsterSkillCandidateResult" class="small">モンスターを編集し、「候補を判定」を押してください。</div>
     </div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
@@ -2719,17 +2720,26 @@ function parseMasterParamsForSkillEvaluation(){
 }
 function numericThreshold(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
 function skillRequirementData(skill){const p=skill.params&&typeof skill.params==='object'?skill.params:{};return {required_tags:Array.isArray(p.required_tags)?p.required_tags:(Array.isArray(skill.tags)?skill.tags:[]),tier:numericThreshold(p.skill_tier,1),min_level:numericThreshold(p.min_level,0),min_enemy_budget:numericThreshold(p.min_enemy_budget,0)}}
-function evaluateMonsterSkillCandidates(openPicker=false){
- if((masterCategory.value||'')!=='monsters')return alert('分類を「モンスター」にしてください。');
- let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('数値・条件・効果（JSON）が正しいJSONではありません。')}
+function evaluateMonsterSkillCandidates(){
+ const category=document.getElementById('masterCategory');
+ const paramsInput=document.getElementById('masterParams');
+ const idInput=document.getElementById('masterId');
+ if(!category||category.value!=='monsters')throw new Error('分類を「モンスター」にしてください。');
+ let params={};
+ try{params=String(paramsInput?.value||'').trim()?JSON.parse(paramsInput.value):{}}catch(e){throw new Error('数値・条件・効果（JSON）が正しいJSONではありません。');}
  const monsterTags=masterTagIds(),level=numericThreshold(params.level,0),enemyBudget=numericThreshold(params.enemy_budget,0),tierCap=numericThreshold(params.skill_tier_cap,Infinity);
  const skills=masterRows('skills'),eligible=[],excluded=[];
  skills.forEach(skill=>{const r=skillRequirementData(skill),missing=r.required_tags.filter(id=>!monsterTags.includes(id)),reasons=[];if(missing.length)reasons.push(`必要タグ不足: ${missing.map(tagLabel).join('、')}`);if(level<r.min_level)reasons.push(`レベル不足 ${level} < ${r.min_level}`);if(enemyBudget<r.min_enemy_budget)reasons.push(`強度不足 ${enemyBudget} < ${r.min_enemy_budget}`);if(r.tier>tierCap)reasons.push(`Tier上限超過 ${r.tier} > ${tierCap}`);const row={id:skill.id,name:skill.name||skill.id,description:skill.description||'',tags:r.required_tags,tier:r.tier,min_level:r.min_level,min_enemy_budget:r.min_enemy_budget,reasons};(reasons.length?excluded:eligible).push(row)});
- lastMonsterSkillCandidateEvaluation={monster_id:masterId.value.trim(),level,enemy_budget:enemyBudget,skill_tier_cap:Number.isFinite(tierCap)?tierCap:null,monster_tags:monsterTags,eligible,excluded,evaluated_at:now()};
- const existing=Array.isArray(params.skill_ids)?params.skill_ids:[];monsterSkillCandidateSelection=new Set(existing.filter(id=>eligible.some(x=>x.id===id)));
+ lastMonsterSkillCandidateEvaluation={monster_id:String(idInput?.value||'').trim(),level,enemy_budget:enemyBudget,skill_tier_cap:Number.isFinite(tierCap)?tierCap:null,monster_tags:monsterTags,eligible,excluded,evaluated_at:now()};
+ const existing=Array.isArray(params.skill_ids)?params.skill_ids:[];
+ monsterSkillCandidateSelection=new Set(existing.filter(id=>eligible.some(x=>x.id===id)));
  renderMonsterSkillCandidateSummary();
  const button=document.getElementById('applyMonsterSkillCandidatesButton');if(button)button.classList.toggle('hidden',!eligible.length);
- if(openPicker)openMonsterSkillCandidatePicker();
+ return lastMonsterSkillCandidateEvaluation;
+}
+function evaluateAndOpenMonsterSkillPicker(){
+ try{evaluateMonsterSkillCandidates();openMonsterSkillCandidatePicker();}
+ catch(error){console.error(error);alert(error?.message||String(error));}
 }
 function renderMonsterSkillCandidateSummary(){
  const result=document.getElementById('monsterSkillCandidateResult');if(!result)return;
@@ -2738,14 +2748,15 @@ function renderMonsterSkillCandidateSummary(){
  result.innerHTML=`<div class="item"><b>採用候補 ${e.eligible.length}件／除外 ${e.excluded.length}件</b><div class="small">Lv ${e.level} / 強度 ${e.enemy_budget} / Tier上限 ${e.skill_tier_cap??'制限なし'}</div><div class="small">現在の選択: ${selected.length?selected.map(id=>{const x=e.eligible.find(v=>v.id===id);return esc(x?.name||id)}).join('、'):'未選択'}</div><div class="toolbar"><button type="button" onclick="openMonsterSkillCandidatePicker()">大きい選択画面を開く</button></div></div>`;
 }
 function openMonsterSkillCandidatePicker(){
- if(!lastMonsterSkillCandidateEvaluation)return evaluateMonsterSkillCandidates(true);
+ if(!lastMonsterSkillCandidateEvaluation){try{evaluateMonsterSkillCandidates()}catch(error){return alert(error?.message||String(error))}}
  const modal=document.getElementById('monsterSkillCandidatePicker'),search=document.getElementById('monsterSkillCandidateSearch');search.value='';modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');document.body.classList.add('skill-candidate-open');renderMonsterSkillCandidatePicker();setTimeout(()=>search.focus(),30);
 }
 function closeMonsterSkillCandidatePicker(){const modal=document.getElementById('monsterSkillCandidatePicker');modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');document.body.classList.remove('skill-candidate-open')}
 function monsterSkillCandidateMatches(row,q){return !q||[row.id,row.name,row.description,...(row.tags||[]),...(row.tags||[]).map(tagLabel)].filter(Boolean).join(' ').toLowerCase().includes(q)}
 function renderMonsterSkillCandidateCard(row,excluded=false){
  const selected=monsterSkillCandidateSelection.has(row.id),tagNames=(row.tags||[]).map(tagLabel).join('、')||'条件タグなし';
- return `<button type="button" class="skill-candidate-card ${selected?'selected':''} ${excluded?'excluded':''}" ${excluded?'disabled':''} onclick="toggleMonsterSkillCandidateSelection('${escAttr(row.id)}')"><div class="skill-candidate-card-head"><span class="skill-candidate-check"></span><span class="skill-candidate-card-main"><span class="skill-candidate-name">${esc(row.name)}</span><div class="skill-candidate-id">${esc(row.id)}</div><span class="skill-candidate-meta"><span class="badge">Tier ${row.tier}</span><span class="badge">必要Lv ${row.min_level}</span><span class="badge">必要強度 ${row.min_enemy_budget}</span></span><div class="skill-candidate-tags">一致条件: ${esc(tagNames)}</div>${row.description?`<div class="skill-candidate-tags">${esc(row.description)}</div>`:''}${excluded?`<div class="skill-candidate-reason">${esc(row.reasons.join(' / '))}</div>`:''}</span></div></button>`;
+ const input=excluded?'':`<input class="skill-candidate-input" type="checkbox" ${selected?'checked':''} onchange="setMonsterSkillCandidateSelection('${escAttr(row.id)}',this.checked)">`;
+ return `<label class="skill-candidate-card ${selected?'selected':''} ${excluded?'excluded':''}">${input}<div class="skill-candidate-card-head"><span class="skill-candidate-check"></span><span class="skill-candidate-card-main"><span class="skill-candidate-name">${esc(row.name)}</span><div class="skill-candidate-id">${esc(row.id)}</div><span class="skill-candidate-meta"><span class="badge">Tier ${row.tier}</span><span class="badge">必要Lv ${row.min_level}</span><span class="badge">必要強度 ${row.min_enemy_budget}</span></span><div class="skill-candidate-tags">一致条件: ${esc(tagNames)}</div>${row.description?`<div class="skill-candidate-tags">${esc(row.description)}</div>`:''}${excluded?`<div class="skill-candidate-reason">${esc(row.reasons.join(' / '))}</div>`:''}</span></div></label>`;
 }
 function renderMonsterSkillCandidatePicker(){
  const e=lastMonsterSkillCandidateEvaluation;if(!e)return;
@@ -2755,7 +2766,8 @@ function renderMonsterSkillCandidatePicker(){
  document.getElementById('monsterSkillCandidatePickerList').innerHTML=`<div class="skill-candidate-section-title">採用候補 ${eligible.length}件</div>${eligible.length?eligible.map(x=>renderMonsterSkillCandidateCard(x,false)).join(''):'<div class="tag-picker-empty">該当する採用候補はありません。</div>'}<div class="skill-candidate-section-title">条件外 ${excluded.length}件</div>${excluded.length?excluded.map(x=>renderMonsterSkillCandidateCard(x,true)).join(''):'<div class="tag-picker-empty">該当する条件外スキルはありません。</div>'}`;
  const confirm=document.getElementById('monsterSkillCandidatePickerConfirm');confirm.disabled=monsterSkillCandidateSelection.size===0;confirm.textContent=`選択した${monsterSkillCandidateSelection.size}件を反映`;
 }
-function toggleMonsterSkillCandidateSelection(id){if(monsterSkillCandidateSelection.has(id))monsterSkillCandidateSelection.delete(id);else monsterSkillCandidateSelection.add(id);renderMonsterSkillCandidatePicker()}
+function setMonsterSkillCandidateSelection(id,checked){if(checked)monsterSkillCandidateSelection.add(id);else monsterSkillCandidateSelection.delete(id);renderMonsterSkillCandidatePicker()}
+function toggleMonsterSkillCandidateSelection(id){setMonsterSkillCandidateSelection(id,!monsterSkillCandidateSelection.has(id))}
 function selectAllEligibleMonsterSkills(){const e=lastMonsterSkillCandidateEvaluation;if(!e)return;const q=(document.getElementById('monsterSkillCandidateSearch').value||'').trim().toLowerCase();e.eligible.filter(x=>monsterSkillCandidateMatches(x,q)).forEach(x=>monsterSkillCandidateSelection.add(x.id));renderMonsterSkillCandidatePicker()}
 function clearMonsterSkillCandidateSelection(){monsterSkillCandidateSelection.clear();renderMonsterSkillCandidatePicker()}
 function confirmMonsterSkillCandidateSelection(){applyMonsterSkillCandidates([...monsterSkillCandidateSelection]);closeMonsterSkillCandidatePicker()}
