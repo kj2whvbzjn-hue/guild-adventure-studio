@@ -347,7 +347,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.7</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.8</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1042,7 +1042,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.7" placeholder="例: 472.3"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.8" placeholder="例: 472.3"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -2769,11 +2769,11 @@ function setMonsterSkillCandidateSelection(id,checked){if(checked)monsterSkillCa
 function toggleMonsterSkillCandidateSelection(id){setMonsterSkillCandidateSelection(id,!monsterSkillCandidateSelection.has(id))}
 function selectAllEligibleMonsterSkills(){const e=lastMonsterSkillCandidateEvaluation;if(!e)return;const q=(document.getElementById('monsterSkillCandidateSearch').value||'').trim().toLowerCase();e.eligible.filter(x=>monsterSkillCandidateMatches(x,q)).forEach(x=>monsterSkillCandidateSelection.add(x.id));renderMonsterSkillCandidatePicker()}
 function clearMonsterSkillCandidateSelection(){monsterSkillCandidateSelection.clear();renderMonsterSkillCandidatePicker()}
-function confirmMonsterSkillCandidateSelection(){applyMonsterSkillCandidates([...monsterSkillCandidateSelection]);closeMonsterSkillCandidatePicker()}
+function confirmMonsterSkillCandidateSelection(){const ids=[...monsterSkillCandidateSelection];if(!ids.length)return;applyMonsterSkillCandidates(ids);closeMonsterSkillCandidatePicker();setTimeout(()=>{const result=document.getElementById('monsterSkillCandidateResult');if(result){result.scrollIntoView({block:'center',behavior:'smooth'});}},30)}
 function applyMonsterSkillCandidates(selectedIds){
  const e=lastMonsterSkillCandidateEvaluation;if(!e)return alert('先に候補を判定してください。');
  const ids=Array.isArray(selectedIds)?selectedIds:[...monsterSkillCandidateSelection];let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(err){return alert('数値・条件・効果（JSON）が正しいJSONではありません。')}
- params.candidate_skill_ids=e.eligible.map(x=>x.id);params.skill_ids=ids;params.skill_candidate_evaluation={evaluated_at:e.evaluated_at,level:e.level,enemy_budget:e.enemy_budget,skill_tier_cap:e.skill_tier_cap,eligible_ids:e.eligible.map(x=>x.id),selected_ids:ids,excluded:e.excluded.map(x=>({id:x.id,reasons:x.reasons}))};masterParams.value=JSON.stringify(params,null,2);renderMonsterSkillCandidateSummary();alert(`選択したスキル ${ids.length}件をJSONへ反映しました。最後に「登録・更新」を押して保存してください。`)
+ params.candidate_skill_ids=e.eligible.map(x=>x.id);params.skill_ids=ids;params.skill_candidate_evaluation={evaluated_at:e.evaluated_at,level:e.level,enemy_budget:e.enemy_budget,skill_tier_cap:e.skill_tier_cap,eligible_ids:e.eligible.map(x=>x.id),selected_ids:ids,excluded:e.excluded.map(x=>({id:x.id,reasons:x.reasons}))};masterParams.value=JSON.stringify(params,null,2);renderMonsterSkillCandidateSummary();const result=document.getElementById('monsterSkillCandidateResult');if(result){const names=ids.map(id=>e.eligible.find(x=>x.id===id)?.name||id);result.insertAdjacentHTML('afterbegin',`<div class="item ok"><b>選択した${ids.length}件を反映しました</b><div class="small">${names.map(esc).join('、')}</div><div class="small">最後に「登録・更新」を押して保存してください。</div></div>`)}
 }
 function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved');closeStudioInputPanel()}
 function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditorPanel','マスターを作成')}
@@ -2862,7 +2862,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.7',studioVersion:'1.43.7',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.8',studioVersion:'1.43.8',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
