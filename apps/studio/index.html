@@ -169,7 +169,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 /* BUILD472.4 monster skill candidate picker */
-.skill-candidate-picker{position:fixed;inset:0;z-index:240;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
+.skill-candidate-picker{position:fixed;inset:0;z-index:280;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .skill-candidate-picker.hidden{display:none}
 .skill-candidate-sheet{width:min(760px,100%);height:100%;background:#f6f8fb;display:flex;flex-direction:column;overflow:hidden}
 .skill-candidate-head{background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 12px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -347,7 +347,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.6</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.7</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -974,7 +974,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div id="monsterSkillGeneratorFields" class="card hidden" style="margin-top:16px">
       <h3>スキル候補自動判定</h3>
       <p class="small">モンスターのタグ・レベル・強度・Tier上限と、スキル側の必要タグ・最低レベル・最低強度・Tierを照合します。</p>
-      <div class="toolbar"><button class="primary" type="button" onclick="evaluateAndOpenMonsterSkillPicker()">候補を判定・選択</button><button id="applyMonsterSkillCandidatesButton" class="hidden" type="button" onclick="openMonsterSkillCandidatePicker()">候補選択を開く</button></div>
+      <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="evaluateAndOpenMonsterSkillPicker()">候補を判定・選択</button></div>
       <div id="monsterSkillCandidateResult" class="small">モンスターを編集し、「候補を判定」を押してください。</div>
     </div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
@@ -1041,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.6" placeholder="例: 471.0"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.7" placeholder="例: 471.0"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -2733,7 +2733,6 @@ function evaluateMonsterSkillCandidates(){
  const existing=Array.isArray(params.skill_ids)?params.skill_ids:[];
  monsterSkillCandidateSelection=new Set(existing.filter(id=>eligible.some(x=>x.id===id)));
  renderMonsterSkillCandidateSummary();
- const button=document.getElementById('applyMonsterSkillCandidatesButton');if(button)button.classList.toggle('hidden',!eligible.length);
  return lastMonsterSkillCandidateEvaluation;
 }
 function evaluateAndOpenMonsterSkillPicker(){
@@ -2744,7 +2743,7 @@ function renderMonsterSkillCandidateSummary(){
  const result=document.getElementById('monsterSkillCandidateResult');if(!result)return;
  const e=lastMonsterSkillCandidateEvaluation;if(!e){result.innerHTML='モンスターを編集し、「候補を判定・選択」を押してください。';return}
  const selected=[...monsterSkillCandidateSelection];
- result.innerHTML=`<div class="item"><b>採用候補 ${e.eligible.length}件／除外 ${e.excluded.length}件</b><div class="small">Lv ${e.level} / 強度 ${e.enemy_budget} / Tier上限 ${e.skill_tier_cap??'制限なし'}</div><div class="small">現在の選択: ${selected.length?selected.map(id=>{const x=e.eligible.find(v=>v.id===id);return esc(x?.name||id)}).join('、'):'未選択'}</div><div class="toolbar"><button type="button" onclick="openMonsterSkillCandidatePicker()">大きい選択画面を開く</button></div></div>`;
+ result.innerHTML=`<div class="item"><b>採用候補 ${e.eligible.length}件／除外 ${e.excluded.length}件</b><div class="small">Lv ${e.level} / 強度 ${e.enemy_budget} / Tier上限 ${e.skill_tier_cap??'制限なし'}</div><div class="small">現在の選択: ${selected.length?selected.map(id=>{const x=e.eligible.find(v=>v.id===id);return esc(x?.name||id)}).join('、'):'未選択'}</div></div>`;
 }
 function openMonsterSkillCandidatePicker(){
  if(!lastMonsterSkillCandidateEvaluation){try{evaluateMonsterSkillCandidates()}catch(error){return alert(error?.message||String(error))}}
@@ -2862,7 +2861,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.6',studioVersion:'1.43.6',formalBuild:'471.0'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.7',studioVersion:'1.43.7',formalBuild:'471.0'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
