@@ -347,7 +347,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">468.9</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.6</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1041,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.4" placeholder="例: 471.0"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.6" placeholder="例: 471.0"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -2727,7 +2727,7 @@ function evaluateMonsterSkillCandidates(){
  let params={};
  try{params=String(paramsInput?.value||'').trim()?JSON.parse(paramsInput.value):{}}catch(e){throw new Error('数値・条件・効果（JSON）が正しいJSONではありません。');}
  const monsterTags=masterTagIds(),level=numericThreshold(params.level,0),enemyBudget=numericThreshold(params.enemy_budget,0),tierCap=numericThreshold(params.skill_tier_cap,Infinity);
- const skills=masterRows('skills'),eligible=[],excluded=[];
+ const skills=(data.masters?.skills||[]),eligible=[],excluded=[];
  skills.forEach(skill=>{const r=skillRequirementData(skill),missing=r.required_tags.filter(id=>!monsterTags.includes(id)),reasons=[];if(missing.length)reasons.push(`必要タグ不足: ${missing.map(tagLabel).join('、')}`);if(level<r.min_level)reasons.push(`レベル不足 ${level} < ${r.min_level}`);if(enemyBudget<r.min_enemy_budget)reasons.push(`強度不足 ${enemyBudget} < ${r.min_enemy_budget}`);if(r.tier>tierCap)reasons.push(`Tier上限超過 ${r.tier} > ${tierCap}`);const row={id:skill.id,name:skill.name||skill.id,description:skill.description||'',tags:r.required_tags,tier:r.tier,min_level:r.min_level,min_enemy_budget:r.min_enemy_budget,reasons};(reasons.length?excluded:eligible).push(row)});
  lastMonsterSkillCandidateEvaluation={monster_id:String(idInput?.value||'').trim(),level,enemy_budget:enemyBudget,skill_tier_cap:Number.isFinite(tierCap)?tierCap:null,monster_tags:monsterTags,eligible,excluded,evaluated_at:now()};
  const existing=Array.isArray(params.skill_ids)?params.skill_ids:[];
@@ -2862,12 +2862,12 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.4',studioVersion:'1.43.4',formalBuild:'471.0'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.6',studioVersion:'1.43.6',formalBuild:'471.0'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
   try{saved=JSON.parse(localStorage.getItem(GKS_BUILD_SETTINGS_KEY)||'{}')||{}}catch(e){saved={}}
-  return {...GKS_BUILD_DEFAULTS,...saved,formalBuild:GKS_BUILD_DEFAULTS.formalBuild};
+  return {...saved,developmentBuild:GKS_BUILD_DEFAULTS.developmentBuild,studioVersion:GKS_BUILD_DEFAULTS.studioVersion,formalBuild:GKS_BUILD_DEFAULTS.formalBuild};
 }
 function applyBuildSettings(){
   const settings=loadBuildSettings();
