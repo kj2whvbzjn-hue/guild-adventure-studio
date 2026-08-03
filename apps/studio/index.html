@@ -946,6 +946,12 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div class="field"><label>数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div>
     </div>
     <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
+    <div id="monsterSkillGeneratorFields" class="card hidden" style="margin-top:16px">
+      <h3>スキル候補自動判定</h3>
+      <p class="small">モンスターのタグ・レベル・強度・Tier上限と、スキル側の必要タグ・最低レベル・最低強度・Tierを照合します。</p>
+      <div class="toolbar"><button type="button" onclick="evaluateMonsterSkillCandidates()">候補を判定</button><button id="applyMonsterSkillCandidatesButton" class="primary hidden" type="button" onclick="applyMonsterSkillCandidates()">採用候補をスキルIDへ反映</button></div>
+      <div id="monsterSkillCandidateResult" class="small">モンスターを編集し、「候補を判定」を押してください。</div>
+    </div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
   </div>
   <div class="card">
@@ -2657,12 +2663,66 @@ function toggleTagPickerSelection(id,checked){tagPickerSelection=checked?[...new
 function applyTagPicker(){setMasterTagIds(tagPickerSelection);closeTagPicker()}
 
 function renderTagMasterOptions(){const cat=document.getElementById('tagMasterCategoryId'),parent=document.getElementById('tagMasterParentId');if(!cat||!parent)return;const cv=cat.value,pv=parent.value;cat.innerHTML='<option value="">未分類</option>'+tagCategoryDefinitions().filter(x=>x.enabled!==false).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');parent.innerHTML='<option value="">なし</option>'+tagDefinitions().filter(x=>x.enabled!==false&&x.id!==editingMasterId).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');if([...cat.options].some(o=>o.value===cv))cat.value=cv;if([...parent.options].some(o=>o.value===pv))parent.value=pv}
-function updateMasterFormMode(){const isTag=masterCategory.value==='tags';document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);renderTagMasterOptions()}
+function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters';document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
+
+let lastMonsterSkillCandidateEvaluation=null;
+function resetMonsterSkillCandidateResult(){
+ lastMonsterSkillCandidateEvaluation=null;
+ const result=document.getElementById('monsterSkillCandidateResult'),button=document.getElementById('applyMonsterSkillCandidatesButton');
+ if(result)result.textContent='モンスターを編集し、「候補を判定」を押してください。';
+ if(button)button.classList.add('hidden');
+}
+function parseMasterParamsForSkillEvaluation(){
+ const raw=String(masterParams.value||'').trim();
+ if(!raw)return {};
+ try{return JSON.parse(raw)}catch(e){throw new Error('数値・条件・効果（JSON）の形式が正しくありません: '+e.message)}
+}
+function numericThreshold(value,fallback=0){const n=Number(value);return Number.isFinite(n)?n:fallback}
+function evaluateMonsterSkillCandidates(){
+ try{
+  if(masterCategory.value!=='monsters')throw new Error('分類をモンスターにしてください。');
+  const monsterTags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params=parseMasterParamsForSkillEvaluation();
+  const level=numericThreshold(params.level,0),enemyBudget=numericThreshold(params.enemy_budget,0),tierCap=numericThreshold(params.skill_tier_cap,Infinity);
+  const eligible=[],excluded=[];
+  (data.masters.skills||[]).forEach(skill=>{
+   const sp=skill.params&&typeof skill.params==='object'?skill.params:{};
+   const required=Array.isArray(sp.required_tags)?sp.required_tags.filter(Boolean):[];
+   const missing=required.filter(id=>!monsterTags.includes(id));
+   const minLevel=numericThreshold(sp.min_level,0),minBudget=numericThreshold(sp.min_enemy_budget,0),tier=numericThreshold(sp.skill_tier,1);
+   const reasons=[];
+   if(missing.length)reasons.push('必要タグ不足: '+missing.map(tagLabel).join('、'));
+   if(level<minLevel)reasons.push(`レベル不足 ${level} < ${minLevel}`);
+   if(enemyBudget<minBudget)reasons.push(`強度不足 ${enemyBudget} < ${minBudget}`);
+   if(tier>tierCap)reasons.push(`Tier上限超過 ${tier} > ${tierCap}`);
+   const row={id:skill.id,name:skill.name||skill.id,tier,min_level:minLevel,min_enemy_budget:minBudget,required_tags:required,reasons};
+   (reasons.length?excluded:eligible).push(row);
+  });
+  lastMonsterSkillCandidateEvaluation={monster_id:masterId.value.trim(),level,enemy_budget:enemyBudget,skill_tier_cap:Number.isFinite(tierCap)?tierCap:null,eligible,excluded,evaluated_at:now()};
+  const result=document.getElementById('monsterSkillCandidateResult'),button=document.getElementById('applyMonsterSkillCandidatesButton');
+  const ok=eligible.length?eligible.map(x=>`<div class="item"><b>採用候補: ${esc(x.name)}</b> <span class="badge">Tier ${x.tier}</span><div class="small">${esc(x.id)} / 必要Lv ${x.min_level} / 必要強度 ${x.min_enemy_budget}</div></div>`).join(''):'<div class="item">採用候補はありません。</div>';
+  const ng=excluded.length?excluded.map(x=>`<div class="item"><b>除外: ${esc(x.name)}</b> <span class="badge">Tier ${x.tier}</span><div class="small">${esc(x.id)} / ${esc(x.reasons.join(' / '))}</div></div>`).join(''):'<div class="item">除外されたスキルはありません。</div>';
+  if(result)result.innerHTML=`<div class="small"><b>判定条件:</b> Lv ${level} / 強度 ${enemyBudget} / Tier上限 ${Number.isFinite(tierCap)?tierCap:'制限なし'} / タグ ${monsterTags.map(tagLabel).join('、')||'なし'}</div><h4>採用候補 ${eligible.length}件</h4>${ok}<h4>除外 ${excluded.length}件</h4>${ng}`;
+  if(button)button.classList.toggle('hidden',eligible.length===0);
+ }catch(e){alert('スキル候補を判定できません: '+e.message)}
+}
+function applyMonsterSkillCandidates(){
+ try{
+  if(!lastMonsterSkillCandidateEvaluation)throw new Error('先に候補を判定してください。');
+  const params=parseMasterParamsForSkillEvaluation(),ids=lastMonsterSkillCandidateEvaluation.eligible.map(x=>x.id);
+  params.candidate_skill_ids=ids;
+  params.skill_ids=ids;
+  params.excluded_skill_ids=lastMonsterSkillCandidateEvaluation.excluded.map(x=>x.id);
+  params.skill_selection_result=lastMonsterSkillCandidateEvaluation;
+  masterParams.value=JSON.stringify(params,null,2);
+  alert(`採用候補 ${ids.length}件をJSONへ反映しました。最後に「登録・更新」を押して保存してください。`);
+ }catch(e){alert('候補を反映できません: '+e.message)}
+}
+
 function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};const arr=data.masters[c];const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved');closeStudioInputPanel()}
 function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditorPanel','マスターを作成')}
-function editMaster(category,id){const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';updateMasterFormMode();if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
+function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';updateMasterFormMode();if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
-function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
+function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
 function masterSearchText(category,m){
  const tagIds=Array.isArray(m.tags)?m.tags:[];
  const tagNames=tagIds.map(tagLabel);
