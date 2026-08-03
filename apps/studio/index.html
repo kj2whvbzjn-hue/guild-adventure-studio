@@ -953,7 +953,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="toolbar"><button onclick="exportMasterCsv()">選択分類をCSV出力</button><button onclick="exportAllMastersCsv()">全分類をCSV一括出力</button></div>
     <p class="small">UTF-8 BOM付きCSVです。Excel・Googleスプレッドシートで読み込めます。</p>
   </div>
-  <div class="card"><div class="filter-bar"><input id="masterSearch" placeholder="ID・名称・タグを検索" oninput="renderMasters()"></div></div>
+  <div class="card"><div class="filter-bar"><input id="masterSearch" placeholder="全分類からID・名称・タグを検索" oninput="renderMasters()"></div></div>
   <div id="masterList" class="list"></div>
 </section>
 
@@ -2663,7 +2663,37 @@ function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditor
 function editMaster(category,id){const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(m.params||{},null,2);masterDescription.value=m.description||'';updateMasterFormMode();if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
 function clearMasterForm(){editingMasterId='';masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
-function renderMasters(){if(!document.getElementById('masterList'))return;const c=masterCategory.value||'tags',q=(masterSearch.value||'').toLowerCase();updateMasterFormMode();if(c==='tags'){const rows=tagDefinitions().filter(m=>[m.id,m.name,m.category_id,m.description].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">カテゴリ: ${esc(m.category_id||'未分類')} / 親: ${esc(m.parent_id||'なし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('tags','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録タグはありません。</div>';return}const rows=(data.masters[c]||[]).filter(m=>[m.id,m.name,(m.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));masterList.innerHTML=rows.length?rows.map(m=>`<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(jpStatus(m.status))}</span><div class="small">${esc((m.tags||[]).join(', '))}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(c)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(c)}','${escAttr(m.id)}')">削除</button></div></div>`).join(''):'<div class="item">登録データはありません。</div>'}
+function masterSearchText(category,m){
+ const tagIds=Array.isArray(m.tags)?m.tags:[];
+ const tagNames=tagIds.map(tagLabel);
+ const params=m.params&&typeof m.params==='object'?JSON.stringify(m.params):String(m.params||'');
+ return [category,MASTER_LABELS[category]||category,m.id,m.name,m.category_id,m.parent_id,m.description,...tagIds,...tagNames,params].filter(Boolean).join(' ').toLowerCase();
+}
+function renderMasterRow(category,m){
+ const categoryLabel=MASTER_LABELS[category]||category;
+ if(category==='tags')return `<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">カテゴリ: ${esc(m.category_id||'未分類')} / 親: ${esc(m.parent_id||'なし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('tags','${escAttr(m.id)}')">削除</button></div></div>`;
+ const tagText=(Array.isArray(m.tags)?m.tags:[]).map(id=>tagLabel(id)).join(', ');
+ return `<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">${esc(tagText||'タグなし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(category)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(category)}','${escAttr(m.id)}')">削除</button></div></div>`;
+}
+function renderMasters(){
+ if(!document.getElementById('masterList'))return;
+ const c=masterCategory.value||'tags',q=(masterSearch.value||'').trim().toLowerCase();
+ updateMasterFormMode();
+ if(q){
+  const results=[];
+  tagDefinitions().forEach(m=>{if(masterSearchText('tags',m).includes(q))results.push({category:'tags',record:m})});
+  Object.keys(MASTER_LABELS).filter(category=>category!=='tags').forEach(category=>(data.masters[category]||[]).forEach(m=>{if(masterSearchText(category,m).includes(q))results.push({category,record:m})}));
+  masterList.innerHTML=results.length?`<div class="item small">全分類検索: ${results.length}件</div>`+results.map(x=>renderMasterRow(x.category,x.record)).join(''):'<div class="item">全分類に一致するデータはありません。</div>';
+  return;
+ }
+ if(c==='tags'){
+  const rows=tagDefinitions();
+  masterList.innerHTML=rows.length?rows.map(m=>renderMasterRow('tags',m)).join(''):'<div class="item">登録タグはありません。</div>';
+  return;
+ }
+ const rows=data.masters[c]||[];
+ masterList.innerHTML=rows.length?rows.map(m=>renderMasterRow(c,m)).join(''):'<div class="item">登録データはありません。</div>';
+}
 function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')));return '\ufeff'+lines.join('\r\n')}
