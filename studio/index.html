@@ -302,8 +302,8 @@ body.studio-input-open{overflow:hidden}
 @media(max-width:480px){.verification-kpis{grid-template-columns:1fr}.verification-kpi{min-height:96px}}
 
 /* BUILD470.7 AI balance explorer */
-/* BUILD471.0 formal release foundation */
-/* BUILD471.0 release package finalization */
+/* BUILD472.0 event timeline/history linkage */
+/* BUILD472.0 event linkage package */
 .release-package{margin-top:16px;background:#fffdf7;border-color:#d8bd7a}.release-package-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.release-package-stat{padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}.release-package-stat b{display:block;font-size:20px;margin-top:4px}.release-package-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}@media(max-width:800px){.release-package-grid{grid-template-columns:1fr}}
 .release-gate{margin-top:16px;background:#f7fbf8;border-color:#9cc8aa}.release-gate-grid{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.5fr);gap:14px}.release-grade{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:170px;border:1px solid var(--line);border-radius:14px;background:#fff;text-align:center}.release-grade b{font-size:42px;line-height:1}.release-grade span{margin-top:8px;font-weight:800}.release-checks{display:grid;gap:8px}.release-check{display:grid;grid-template-columns:28px 1fr auto;gap:9px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.release-check .mark{font-size:18px;text-align:center}.release-check small{color:var(--muted)}.release-check.pass{border-color:#96c5a5}.release-check.warn{border-color:#e0c081}.release-check.fail{border-color:#d99898;background:#fff8f8}@media(max-width:800px){.release-gate-grid{grid-template-columns:1fr}.release-check{grid-template-columns:28px 1fr}.release-check>small{grid-column:2}}
 
@@ -811,6 +811,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       </div>
     </div>
 
+    <p class="small">登録・更新すると、発生シーンの章・節を使って時系列を自動作成し、選択した登場キャラクターのイベント履歴にも反映します。イベント更新時は連携先も更新され、削除時は自動生成分のみ削除されます。</p>
     <div class="toolbar">
       <button class="primary" onclick="saveEvent()">登録・更新</button>
       <button onclick="clearEventForm()">入力をクリア</button>
@@ -1010,7 +1011,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="471.0" placeholder="例: 471.0"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.0" placeholder="例: 472.0"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1059,7 +1060,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-verification-home" class="view hidden">
   <div class="view-heading"><h1>検証ホーム</h1><button class="primary" type="button" onclick="refreshVerificationHome()">状態を再集計</button></div>
-  <p class="small">データ検証・参照確認・戦闘テスト・一括検証を接続し、最新結果と統合レポートを一か所で管理します。BUILD 471.0 正式リリース基盤。</p>
+  <p class="small">データ検証・参照確認・戦闘テスト・一括検証を接続し、最新結果と統合レポートを一か所で管理します。BUILD 472.0 イベント連携。</p>
   <div class="verification-kpis">
     <button type="button" class="verification-kpi" onclick="runLauncherAction('battle')"><span>戦闘テスト</span><b id="verificationBattleStatus">準備完了</b><small>単体シミュレーション</small></button>
     <button type="button" class="verification-kpi" onclick="runLauncherAction('batch-test')"><span>一括検証</span><b id="verificationBatchStatus">未実行</b><small>複数シード・範囲探索</small></button>
@@ -1143,7 +1144,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">471.0</span></span><span class="small">GK Studio v1.42.0／正式リリース基盤</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.0</span></span><span class="small">GK Studio v1.43.0／イベント連携</span></div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -1886,7 +1887,7 @@ function normalizeData(){
  data.terms=data.terms||[];
  data.relationships=data.relationships||[];
  data.timeline=data.timeline||[];
- data.characters.forEach(c=>{c.race=c.race||'';c.age=c.age||'';c.speech=c.speech||'';c.organization_id=c.organization_id||'';c.first_appearance=c.first_appearance||'';c.join_point=c.join_point||'';c.leave_point=c.leave_point||'';c.awaken_point=c.awaken_point||'';c.goals=c.goals||['','',''];});
+ data.characters.forEach(c=>{c.race=c.race||'';c.age=c.age||'';c.speech=c.speech||'';c.organization_id=c.organization_id||'';c.first_appearance=c.first_appearance||'';c.join_point=c.join_point||'';c.leave_point=c.leave_point||'';c.awaken_point=c.awaken_point||'';c.goals=c.goals||['','',''];c.event_history=Array.isArray(c.event_history)?c.event_history:[];});
  data.quests=data.quests||[];
  data.events=data.events||[];
  data.flags=data.flags||[];
@@ -2715,7 +2716,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'471.0',studioVersion:'1.42.0',formalBuild:'471.0'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.0',studioVersion:'1.43.0',formalBuild:'472.0'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -4589,6 +4590,69 @@ function clearEventForm(){
  renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
 }
 
+function eventStoryPosition(links={}){
+ const chapter=data.chapters.find(c=>c.id===(links.chapter_id||''));
+ const section=chapter?.sections?.find(s=>s.id===(links.section_id||''));
+ return {chapter_no:Number(chapter?.no)||0,section_no:Number(section?.no)||0};
+}
+function eventTimelineText(record){
+ const details=[record.name,record.summary,record.results].map(x=>(x||'').trim()).filter(Boolean);
+ return details.join('：');
+}
+function eventAutoTimelineId(eventId,targetId,index){
+ const safe=v=>String(v||'ALL').replace(/[^A-Za-z0-9_-]/g,'-');
+ return `TML-AUTO-${safe(eventId)}-${safe(targetId)}-${index+1}`;
+}
+function syncEventConnections(record){
+ const position=eventStoryPosition(record.links||{});
+ const oldTimeline=new Map((data.timeline||[]).filter(t=>t.source_event_id===record.id&&t.auto_generated).map(t=>[t.target_id||'',t]));
+ data.timeline=(data.timeline||[]).filter(t=>!(t.source_event_id===record.id&&t.auto_generated));
+ (data.characters||[]).forEach(character=>{
+  character.event_history=(character.event_history||[]).filter(h=>h.source_event_id!==record.id);
+ });
+ const targets=(record.links?.character_ids||[]).length?[...new Set(record.links.character_ids)]:[''];
+ targets.forEach((targetId,index)=>{
+  const previous=oldTimeline.get(targetId||'');
+  data.timeline.push({
+   id:previous?.id||eventAutoTimelineId(record.id,targetId,index),
+   chapter_no:position.chapter_no,
+   section_no:position.section_no,
+   target_id:targetId||'',
+   event:eventTimelineText(record),
+   source_event_id:record.id,
+   source_scene_id:record.links?.scene_id||'',
+   source_quest_id:record.links?.quest_id||'',
+   auto_generated:true,
+   created_at:previous?.created_at||now(),
+   updated_at:now()
+  });
+  if(targetId){
+   const character=data.characters.find(c=>c.id===targetId);
+   if(character){
+    character.event_history=character.event_history||[];
+    character.event_history.push({
+     source_event_id:record.id,
+     event_name:record.name,
+     chapter_no:position.chapter_no,
+     section_no:position.section_no,
+     scene_id:record.links?.scene_id||'',
+     quest_id:record.links?.quest_id||'',
+     summary:record.summary||'',
+     results:record.results||'',
+     recorded_at:now()
+    });
+    character.updated_at=now();
+   }
+  }
+ });
+}
+function removeEventConnections(eventId){
+ data.timeline=(data.timeline||[]).filter(t=>!(t.source_event_id===eventId&&t.auto_generated));
+ (data.characters||[]).forEach(character=>{
+  character.event_history=(character.event_history||[]).filter(h=>h.source_event_id!==eventId);
+ });
+}
+
 function saveEvent(){
  const id=eventId.value.trim()||nextId('Event');
  const name=eventName.value.trim();
@@ -4623,7 +4687,8 @@ function saveEvent(){
   record.created_at=now();
   data.events.push(record);
  }
- persist('event saved');
+ syncEventConnections(record);
+ persist('event saved + timeline/history synced');
  clearEventForm();
  renderEvents();
  closeStudioInputPanel();
@@ -4648,7 +4713,8 @@ function deleteEvent(id){
  if(!confirm(id+'を削除しますか？'))return;
  createBackup('before-event-delete');
  data.events=data.events.filter(x=>x.id!==id);
- persist('event deleted');
+ removeEventConnections(id);
+ persist('event deleted + linked timeline/history removed');
 }
 
 function renderEvents(){
@@ -4778,11 +4844,11 @@ function renderChapters(){
  chapterList.innerHTML=[...data.chapters].sort((a,b)=>(a.no||0)-(b.no||0)).map(c=>`<div class="item"><b>第${esc(c.no)}章 ${esc(c.title)}</b> <span class="badge">${esc(c.id)}</span><p><strong>テーマ:</strong> ${esc(c.theme||'')}</p><p>${esc(c.summary||'')}</p><div class="toolbar"><button onclick="addSection('${escAttr(c.id)}')">節を追加</button><button class="danger" onclick="deleteChapter('${escAttr(c.id)}')">章を削除</button></div><div class="list">${(c.sections||[]).map(s=>`<div class="item"><b>${esc(s.no)}節 ${esc(s.title)}</b> <span class="badge">${esc(s.id)}</span> <button class="danger" onclick="deleteSection('${escAttr(c.id)}','${escAttr(s.id)}')">削除</button></div>`).join('')||'<div class="small">節はまだありません。</div>'}</div></div>`).join('')||'<div class="card">章はまだありません。</div>'
 }
 function renderCharacters(){
- characterList.innerHTML=[...data.characters].map(c=>`<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')} / ${esc(c.race||'')} / 所属 ${esc(c.organization_id||'なし')}</div><p>${esc(c.profile||'')}</p><div class="meta">目的: ${esc((c.goals||[]).filter(Boolean).join(' → ')||'未設定')} / 初登場 ${esc(c.first_appearance||'未設定')} / 加入 ${esc(c.join_point||'未設定')} / 覚醒 ${esc(c.awaken_point||'未設定')}</div><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`).join('')||'<div class="card">キャラクターはまだありません。</div>';
+ characterList.innerHTML=[...data.characters].map(c=>{const history=c.event_history||[];const latest=[...history].sort((a,b)=>String(b.recorded_at||'').localeCompare(String(a.recorded_at||''))).slice(0,3);return `<div class="item"><b>${esc(c.name)}</b> <span class="badge">${esc(c.id)}</span><div class="meta">${esc(c.role||'')} / ${esc(c.job||'')} / ${esc(c.race||'')} / 所属 ${esc(c.organization_id||'なし')}</div><p>${esc(c.profile||'')}</p><div class="meta">目的: ${esc((c.goals||[]).filter(Boolean).join(' → ')||'未設定')} / 初登場 ${esc(c.first_appearance||'未設定')} / 加入 ${esc(c.join_point||'未設定')} / 覚醒 ${esc(c.awaken_point||'未設定')}</div><div class="meta">イベント履歴: ${history.length}件${latest.length?' / '+latest.map(h=>`第${h.chapter_no||'?'}章${h.section_no?' '+h.section_no+'節':''} ${h.event_name||h.source_event_id}`).join(' / '):''}</div><button class="danger" onclick="deleteCharacter('${escAttr(c.id)}')">削除</button></div>`}).join('')||'<div class="card">キャラクターはまだありません。</div>';
  organizationList.innerHTML=data.organizations.map(o=>`<div class="item"><b>${esc(o.name)}</b> <span class="badge">${esc(o.id)}</span><div class="meta">${esc(o.type||'')}</div><p>${esc(o.notes||'')}</p><button class="danger" onclick="deleteOrganization('${escAttr(o.id)}')">削除</button></div>`).join('')||'<div class="card">組織はまだありません。</div>';
  termList.innerHTML=data.terms.map(t=>`<div class="item"><b>${esc(t.name)}</b> <span class="badge">${esc(t.id)}</span><div class="meta">${esc(t.category||'')}</div><p>${esc(t.description||'')}</p><button class="danger" onclick="deleteTerm('${escAttr(t.id)}')">削除</button></div>`).join('')||'<div class="card">用語はまだありません。</div>';
  relationshipList.innerHTML=data.relationships.map(r=>`<div class="item"><b>${esc(characterName(r.from_character_id))} → ${esc(characterName(r.to_character_id))}</b> <span class="badge">${esc(r.type)}</span><p>${esc(r.notes||'')}</p><button class="danger" onclick="deleteRelationship('${escAttr(r.id)}')">削除</button></div>`).join('')||'<div class="card">関係はまだありません。</div>';
- timelineList.innerHTML=[...data.timeline].sort((a,b)=>(a.chapter_no-b.chapter_no)||(a.section_no-b.section_no)).map(t=>`<div class="item"><b>第${esc(t.chapter_no||'?')}章 ${esc(t.section_no? t.section_no+'節':'')}</b> <span class="badge">${esc(t.target_id||'全体')}</span><p>${esc(t.event)}</p><button class="danger" onclick="deleteTimeline('${escAttr(t.id)}')">削除</button></div>`).join('')||'<div class="card">時系列はまだありません。</div>'
+ timelineList.innerHTML=[...data.timeline].sort((a,b)=>(a.chapter_no-b.chapter_no)||(a.section_no-b.section_no)).map(t=>`<div class="item"><b>第${esc(t.chapter_no||'?')}章 ${esc(t.section_no? t.section_no+'節':'')}</b> <span class="badge">${esc(t.target_id||'全体')}</span>${t.auto_generated?'<span class="badge">イベント自動連携</span>':''}<p>${esc(t.event)}</p><button class="danger" onclick="deleteTimeline('${escAttr(t.id)}')">削除</button></div>`).join('')||'<div class="card">時系列はまだありません。</div>'
 }
 
 function renderValidation(){
