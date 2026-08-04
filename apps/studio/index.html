@@ -336,7 +336,7 @@ body.studio-input-open{overflow:hidden}
 @media(max-width:560px){.ai-objective-grid,.ai-candidate{grid-template-columns:1fr}}
 
 
-/* BUILD472.35: five-step AI handoff workflow */
+/* BUILD472.36: five-step AI handoff workflow */
 .benchmark-workflow-launcher{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .benchmark-workflow-launcher .small{margin:0}
 .benchmark-workflow-overlay{position:fixed;inset:0;z-index:360;background:rgba(15,23,42,.58);display:flex;align-items:stretch;justify-content:center}
@@ -375,7 +375,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.30</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.36</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1070,7 +1070,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.30" placeholder="例: 472.30"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.36" placeholder="例: 472.36"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1245,7 +1245,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
   </div>
   <div id="battleDeveloperWorkspace" class="hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.35</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.36</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1710,54 +1710,65 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 
 <section id="view-studiodeploy" class="view hidden">
-  <h1>スタジオ更新配置 <span class="badge ok">正式機能</span></h1>
+  <h1>Studio更新 <span class="badge ok">GitHub配置</span></h1>
 
   <div class="card">
-    <h2>スタジオ本体をGitHub Pagesへ配置</h2>
-    <p>新しいGuild Adventure Studioの更新ZIPを選択し、GitHubリポジトリの公開ブランチへ単一Commitで配置します。</p>
-    <p class="small">接続設定、差分解析、最終承認、配置をこの画面だけで完了できます。GitHubへの書込みは最後の「配置実行（人間承認）」押下後だけ開始されます。</p>
-  </div>
-
-  <div class="card">
-    <h2>開発運用負荷軽減 <span class="badge ok">P0実装継続</span></h2>
-    <p>GitHub連携画面は実装済みです。現在は開発側の反復作業を減らすため、GitHub読取APIの一時障害を自動再試行し、失敗時にはHTTP状態・Request ID・Rate Limit情報を表示します。書込みAPIは重複Commit防止のため自動再試行しません。</p>
-    <div id="deployReadinessStatus" class="item">
-      <b>初回操作:</b> ① Owner・Repository・Branch入力 → ② PAT入力 → ③ 接続テスト → ④ 更新ZIP選択 → ⑤ 差分確認 → ⑥ 配置実行（人間承認）
-    </div>
-    <p class="small">実Repositoryへの書込み試験と実GitHub Pages反映試験は、利用者の認証情報と公開環境で実施する受入試験です。Tokenは成果物・ログ・監査ZIPへ保存しません。</p>
-  </div>
-
-  <div class="card">
-    <h2>0. GitHub接続設定</h2>
+    <h2>1. 接続先</h2>
+    <p class="small">接続先はこの端末へ自動保存します。アクセストークンだけは安全のため保存せず、毎回入力します。</p>
     <div class="grid">
       <div class="field">
-        <label>Owner</label>
-        <input id="deployGhOwner" placeholder="例: kj2whvbzjn-hue" oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+        <label>オーナー名</label>
+        <input id="deployGhOwner" placeholder="例: kj2whvbzjn-hue" oninput="syncDeployGitHubSettings();saveDeployConnectionSettingsSilent();updateDeployReadiness()">
       </div>
       <div class="field">
-        <label>Repository</label>
-        <input id="deployGhRepo" placeholder="例: guild-adventure-studio" oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+        <label>リポジトリ名</label>
+        <input id="deployGhRepo" placeholder="例: guild-adventure-studio" oninput="syncDeployGitHubSettings();saveDeployConnectionSettingsSilent();updateDeployReadiness()">
       </div>
       <div class="field">
-        <label>Branch</label>
-        <input id="deployGhBranch" value="main" oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+        <label>ブランチ</label>
+        <input id="deployGhBranch" value="main" oninput="syncDeployGitHubSettings();saveDeployConnectionSettingsSilent();updateDeployReadiness()">
       </div>
     </div>
     <div class="field">
-      <label>Fine-grained Personal Access Token</label>
-      <input id="deployGhToken" type="password" autocomplete="off" placeholder="github_pat_..." oninput="syncDeployGitHubSettings();updateDeployReadiness()">
-      <div class="small">必要権限: Contents = Read and write、Metadata = Read-only。トークンは保存せず、現在のタブのメモリ内だけで使用します。</div>
+      <label>アクセストークン（毎回入力・保存しません）</label>
+      <input id="deployGhToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_..." oninput="syncDeployGitHubSettings();updateDeployReadiness()">
+      <div class="small">必要権限: Contents = Read and write、Metadata = Read-only。プロジェクト、履歴、ログ、監査ZIPへ収録しません。</div>
     </div>
-    <label><input type="checkbox" checked disabled> トークンを保存しない（固定）</label>
     <div class="toolbar">
-      <button onclick="saveDeployConnectionSettings()">接続先だけ保存</button>
-      <button class="primary" onclick="testDeployGitHubConnection()">接続テスト</button>
+      <button onclick="testDeployGitHubConnection()">接続を確認</button>
     </div>
     <div id="deployGhStatus" class="item">未接続</div>
   </div>
 
   <div class="card">
-    <h2>1. 更新ZIPを選択</h2>
+    <h2>2. 更新ZIP</h2>
+    <div id="deployDrop" class="deploy-drop">
+      <input id="studioUpdateZip" type="file" accept=".zip,application/zip">
+      <p><b>更新ZIPを選択、またはここへドロップ</b></p>
+      <p class="small">選択すると自動検査し、GitHub上の現在ファイルとの差分を準備します。</p>
+    </div>
+    <div class="toolbar">
+      <button onclick="inspectStudioPackage()">再確認</button>
+      <button onclick="clearStudioPackage()">選択解除</button>
+    </div>
+    <div id="deployPackageStatus" class="item">更新パッケージ未選択</div>
+    <div id="deploySummary" class="small">パッケージ確認後に差分件数を表示します。</div>
+  </div>
+
+  <div class="card">
+    <h2>3. GitHubへ配置</h2>
+    <div id="deployReadinessStatus" class="item">接続先、トークン、更新ZIPを準備してください。</div>
+    <div class="toolbar">
+      <button id="deployExecuteButton" class="primary" onclick="deployStudioPackage()" disabled>GitHubへ配置</button>
+    </div>
+    <div class="deploy-progress"><div id="deployProgressBar"></div></div>
+    <div id="deployProgressText" class="small">待機中</div>
+  </div>
+
+  <details class="card">
+    <summary><b>詳細・保守機能</b></summary>
+    <p class="small">通常の更新では変更不要です。差分一覧、配置先、監査、公開確認、ロールバックを使用するときだけ開いてください。</p>
+
     <div class="field">
       <label>ZIPの種類</label>
       <select id="deployPackageMode" onchange="clearStudioPackage()">
@@ -1765,31 +1776,10 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
         <option value="public">公開ZIP（index.html必須）</option>
         <option value="patch">AI差分ZIP（index.html不要）</option>
       </select>
-      <div class="small">自動判定では、公開ルートにindex.htmlがあれば公開ZIP、なければAI差分ZIPとして扱います。</div>
     </div>
-    <div id="deployDrop" class="deploy-drop">
-      <input id="studioUpdateZip" type="file" accept=".zip,application/zip">
-      <p><b>更新ZIPを選択、またはここへドロップ</b></p>
-      <p class="small">ZIP内にフォルダが1つだけある場合は、自動的にそのフォルダを公開ルートとして扱います。</p>
-    </div>
-    <div class="toolbar">
-      <button onclick="inspectStudioPackage()">再解析・差分更新</button>
-      <button onclick="clearStudioPackage()">選択解除</button>
-    </div>
-    <div id="deployPackageStatus" class="item">更新パッケージ未選択</div>
-  </div>
-
-  <div class="card">
-    <h2>2. 配置設定</h2>
     <div class="grid">
-      <div class="field">
-        <label>配置先フォルダ</label>
-        <input id="deployBasePath" value="" placeholder="空欄＝リポジトリ直下">
-      </div>
-      <div class="field">
-        <label>コミットメッセージ</label>
-        <input id="deployCommitMessage" value="Deploy Guild Adventure Studio update">
-      </div>
+      <div class="field"><label>配置先フォルダ</label><input id="deployBasePath" value="" placeholder="空欄＝リポジトリ直下"></div>
+      <div class="field"><label>コミットメッセージ</label><input id="deployCommitMessage" value="Deploy Guild Adventure Studio update"></div>
       <div class="field">
         <label>公開確認先</label>
         <select id="deployPublicTarget">
@@ -1797,76 +1787,39 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
           <option value="formal-v01">正式版V0.1</option>
           <option value="formal-v02">正式版V0.2</option>
           <option value="formal-v03">正式版V0.3（旧版）</option>
-          <option value="game" selected>最新版ゲーム（BUILD453）</option>
+          <option value="game" selected>最新版ゲーム</option>
           <option value="studio">開発Studio</option>
         </select>
-        <div class="small">「公開ページを確認」とPages自動確認で開く場所です。</div>
       </div>
     </div>
-    <div class="field">
-      <label>保護するファイル（カンマ区切り）</label>
-      <input id="deployProtectedPaths" value="project-data.json">
-      <div class="small">同名ファイルがZIPに含まれていてもアップロードしません。</div>
-    </div>
+    <div class="field"><label>保護するファイル（カンマ区切り）</label><input id="deployProtectedPaths" value="project-data.json"></div>
     <label><input id="deployDryRun" type="checkbox"> テスト実行（GitHubへ書き込まない）</label>
-  </div>
 
-  <div class="card">
-    <h2>3. GitHub差分確認</h2>
-    <div id="deploySummary" class="small">パッケージ確認後に表示します。</div>
+    <h3>差分ファイル</h3>
     <div id="deployFileList" class="deploy-file-list"></div>
-  </div>
 
-  <div class="card">
-    <h2>4. GitHubへ一括配置</h2>
-    <div class="toolbar">
-      <button id="deployExecuteButton" class="primary" onclick="deployStudioPackage()" disabled>配置実行（人間承認）</button>
-      <button onclick="openPagesAfterDeploy()">公開ページを確認</button>
-    </div>
-    <div class="deploy-progress"><div id="deployProgressBar"></div></div>
-    <div id="deployProgressText" class="small">待機中</div>
+    <h3>更新ログ</h3>
     <div id="deployLog" class="deploy-log">更新ログ</div>
-  </div>
 
-  <div class="card">
-    <h2>5. 公開確認・監査証跡</h2>
-    <p class="small">配置完了後、GitHub Pagesの公開HTMLを一定間隔で確認します。確認処理は公開URLへの読取りのみで、GitHubへの書込みは行いません。</p>
+    <h3>公開確認・監査</h3>
     <div class="grid">
-      <div class="field">
-        <label>確認間隔（秒）</label>
-        <input id="deployPagesInterval" type="number" min="3" max="60" value="5">
-      </div>
-      <div class="field">
-        <label>最大待機時間（秒）</label>
-        <input id="deployPagesTimeout" type="number" min="15" max="600" value="180">
-      </div>
+      <div class="field"><label>確認間隔（秒）</label><input id="deployPagesInterval" type="number" min="3" max="60" value="5"></div>
+      <div class="field"><label>最大待機時間（秒）</label><input id="deployPagesTimeout" type="number" min="15" max="600" value="180"></div>
     </div>
     <div class="toolbar">
-      <button onclick="confirmPagesDeployment()">Pages反映を自動確認</button>
+      <button onclick="openPagesAfterDeploy()">公開ページを開く</button>
+      <button onclick="confirmPagesDeployment()">Pages反映を確認</button>
       <button onclick="downloadDeployAuditZip()">配置監査ZIPを保存</button>
     </div>
     <div id="deployPagesStatus" class="item">未確認</div>
-  </div>
 
-
-  <div class="card">
-    <h2>6. 直前の配置を元に戻す</h2>
-    <p class="small">GK Studioから行った直前の配置だけを対象にします。配置後に別のCommitがある場合は、安全のため自動停止します。復元も人間承認後に1 Commitで実行します。</p>
+    <h3>直前の配置を元に戻す</h3>
     <div id="deployRollbackStatus" class="item">復元可能な配置履歴はありません。</div>
     <div class="toolbar">
-      <button id="deployRollbackButton" class="danger" onclick="rollbackLastStudioDeploy()" disabled>直前の配置を元に戻す（人間承認）</button>
+      <button id="deployRollbackButton" class="danger" onclick="rollbackLastStudioDeploy()" disabled>直前の配置を元に戻す</button>
       <button onclick="renderDeployRollbackStatus()">履歴を再確認</button>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>安全対策</h2>
-    <p class="small">
-      変更ファイルだけをGit Data APIでBlob化し、Tree・Commitを作成した後、Branch参照を最後に1回だけ更新します。
-      <code>.git</code>、<code>.github</code>、隠しファイル、保護対象ファイルは除外し、削除は実行しません。
-      GitHubへの書込みは「配置実行（人間承認）」を押した場合だけ行います。
-    </p>
-  </div>
+  </details>
 </section>
 
 <section id="view-importexport" class="view hidden">
@@ -4063,7 +4016,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.34',studioVersion:'1.45.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.36',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -5489,6 +5442,11 @@ function setDeployGhStatus(message,level='INFO'){
  if(!el)return;
  el.innerHTML=`<span class="badge ${level==='ERROR'?'err':level==='OK'?'ok':level==='WARNING'?'warn':''}">${esc(jpLevel(level))}</span> ${esc(message)}`;
 }
+function saveDeployConnectionSettingsSilent(){
+ syncDeployGitHubSettings();
+ const s={owner:ghOwner.value.trim(),repo:ghRepo.value.trim(),branch:ghBranch.value.trim()||'main',path:ghPath.value.trim()||'project-data.json'};
+ localStorage.setItem(GH_SETTINGS_KEY,JSON.stringify(s));
+}
 function saveDeployConnectionSettings(){
  syncDeployGitHubSettings();
  saveGitHubSettings();
@@ -5514,6 +5472,7 @@ function initializeStudioDeploy(){
  const drop=document.getElementById('deployDrop');
  if(!drop||drop.dataset.bound)return;
  drop.dataset.bound='1';
+ syncDeployGitHubSettings('legacy');
  ['dragenter','dragover'].forEach(name=>drop.addEventListener(name,e=>{e.preventDefault();drop.classList.add('drag')}));
  ['dragleave','drop'].forEach(name=>drop.addEventListener(name,e=>{e.preventDefault();drop.classList.remove('drag')}));
  drop.addEventListener('drop',e=>{
