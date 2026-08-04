@@ -1174,13 +1174,14 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.31</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.32</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
     <p class="small">プロジェクトJSONとは別の、戦闘検証専用JSONを扱います。この欄の操作は既存プロジェクトや旧戦闘履歴を上書きしません。</p>
     <input id="battleVerificationFileInput" class="hidden" type="file" accept="application/json,.json" onchange="importBattleVerificationFile(this.files&&this.files[0]);this.value=''">
     <input id="battlePackageFileInput" class="hidden" type="file" accept="application/zip,.zip" onchange="importBattlePackageFile(this.files&&this.files[0]);this.value=''">
+    <input id="battleBenchmarkResultPackageFileInput" class="hidden" type="file" accept="application/zip,.zip" onchange="importBattleBenchmarkResultPackage(this.files&&this.files[0]);this.value=''">
     <div class="toolbar">
       <button class="primary" type="button" onclick="document.getElementById('battlePackageFileInput').click()">AI作成Battle Package ZIPを読み込む</button>
       <button class="primary" type="button" onclick="exportBattleAiPackageTemplate()">AI用Battle Packageひな形ZIPを出力</button>
@@ -1255,8 +1256,11 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
           <button type="button" onclick="cancelBattleBenchmark()">中止</button>
           <button type="button" onclick="exportLatestBattleBenchmarkResult(false)">完全結果JSONを出力</button>
           <button type="button" onclick="exportLatestBattleBenchmarkResult(true)">AI解析用JSONを出力</button>
+          <button class="primary" type="button" onclick="exportLatestBattleBenchmarkResultPackage()">Benchmark結果Package ZIPを出力</button>
+          <button type="button" onclick="document.getElementById('battleBenchmarkResultPackageFileInput').click()">Benchmark結果Package ZIPを読み込む</button>
         </div>
         <div id="battleBenchmarkStatus" class="item">未実行です。</div>
+        <div id="battleBenchmarkResultPackageStatus" class="item" style="margin-top:8px"><b>Benchmark結果Package：</b>未読込です。</div>
         <div id="battleBenchmarkResultList"></div>
       </div>
     </div>
@@ -3445,7 +3449,7 @@ async function exportBattleAiBenchmarkSamplePackage(){
  const targetB=structuredClone(base);targetB.id='BRT-BENCH-TARGET-002';targetB.name='Benchmark対象B';targetB.allies=[];targetB.enemies[0].unit.hp=Math.max(1,Number(targetB.enemies[0].unit.hp||100)+50);
  const set={id:'BOS-BENCH-QA-001',name:'Benchmark確認対象集合',roster_ids:[targetA.id,targetB.id],tags:['qa','battle-package']};
  const benchmark={id:'BB-BENCH-QA-001',name:'Battle Package Benchmark確認',baseline_roster_id:base.id,opponent_set_id:set.id,execution:{trials_per_matchup:3,seed_start:30000,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','damage','errors'],expectations:{error_count:{max:0}},tags:['qa','battle-package']};
- const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-BENCHMARK-QA-001',name:'Battle Package Benchmark確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},target:{minimum_build:'472.31'},contents:{rosters:3,tests:0,opponent_sets:1,benchmarks:1,jobs:1},validation:{allow_unused_resources:true},instructions:'基準編成と2対象を各3試行し、ランキング付き結果を生成してください。'};
+ const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-BENCHMARK-QA-001',name:'Battle Package Benchmark確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},target:{minimum_build:'472.32'},contents:{rosters:3,tests:0,opponent_sets:1,benchmarks:1,jobs:1},validation:{allow_unused_resources:true},instructions:'基準編成と2対象を各3試行し、ランキング付き結果を生成してください。'};
  const plan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-BENCHMARK-QA-001',name:'Benchmark確認計画',execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true,stop_on_required_failure:true},jobs:[{job_id:'JOB-BENCHMARK-QA-001',job_type:'battle-benchmark',job_version:'1.0.0',required:true,enabled:true,resource_refs:{benchmark_id:benchmark.id},output_policy:{level:'representative'}}]};
  validateBattleAiBenchmarkSampleGeneration({base,targetA,targetB,set,benchmark,plan});
  const writer=GKZipCore.writer.create();writer.addJson('manifest.json',manifest);writer.addJson('execution_plan.json',plan);writer.addJson(`resources/rosters/${base.id}.json`,battleVerificationEnvelope('battle-roster',base));writer.addJson(`resources/rosters/${targetA.id}.json`,battleVerificationEnvelope('battle-roster',targetA));writer.addJson(`resources/rosters/${targetB.id}.json`,battleVerificationEnvelope('battle-roster',targetB));writer.addJson(`resources/opponent_sets/${set.id}.json`,battleVerificationEnvelope('battle-opponent-set',set));writer.addJson(`resources/benchmarks/${benchmark.id}.json`,battleVerificationEnvelope('battle-benchmark',benchmark));writer.addText('README_AI.md','# Battle Package Benchmark確認サンプル\n\n期待結果:\n- Benchmarkジョブ1件\n- 対象2件\n- 各3試行\n- 総試行6戦\n- Result Packageにmatchupsとrankingを収録\n');
@@ -3468,7 +3472,7 @@ async function exportBattleAiPackageTemplate(){
   created_at:createdAt,
   created_by:'studio-template',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},
-  target:{minimum_build:'472.31'},
+  target:{minimum_build:'472.32'},
   contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,jobs:0},
   validation:{allow_unused_resources:true},
   instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
@@ -3505,7 +3509,7 @@ async function exportBattleAiExecutableSamplePackage(){
   format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',
   package_id:'BVP-EXECUTOR-QA-001',name:'Battle Package Executor確認サンプル',created_at:createdAt,created_by:'studio-sample',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},
-  target:{minimum_build:'472.31'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
+  target:{minimum_build:'472.32'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
   validation:{allow_unused_resources:true},instructions:'このZIPをStudioへ読み込み、1ジョブ・10試行を実行してください。'
  };
  const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-EXECUTOR-QA-001',name:'Executor確認用実行計画',execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[{
@@ -3527,7 +3531,7 @@ async function exportBattleAiMultiJobSamplePackage(){
  const packageVersion='1.0.0',createdAt=now(),roster=battleRosterTemplateData();
  const testA={...battleTestTemplateData(),id:'BT-MULTI-QA-001',name:'複数ジョブ確認A',roster_id:roster.id,execution:{mode:'multiple',trials:5,seed_start:31000,seed_step:1,max_ticks:1000},tags:['sample','multi-job']};
  const testB={...battleTestTemplateData(),id:'BT-MULTI-QA-002',name:'複数ジョブ確認B',roster_id:roster.id,execution:{mode:'multiple',trials:5,seed_start:32000,seed_step:1,max_ticks:1000},tags:['sample','multi-job']};
- const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-MULTI-JOB-QA-001',name:'Battle Package 複数ジョブ確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},target:{minimum_build:'472.31'},contents:{rosters:1,tests:2,opponent_sets:0,benchmarks:0,jobs:3},validation:{allow_unused_resources:true},instructions:'有効な2ジョブを順次実行し、無効な1ジョブをスキップしてください。'};
+ const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-MULTI-JOB-QA-001',name:'Battle Package 複数ジョブ確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},target:{minimum_build:'472.32'},contents:{rosters:1,tests:2,opponent_sets:0,benchmarks:0,jobs:3},validation:{allow_unused_resources:true},instructions:'有効な2ジョブを順次実行し、無効な1ジョブをスキップしてください。'};
  const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-MULTI-JOB-QA-001',name:'複数ジョブ確認用実行計画',execution_policy:{continue_on_error:true,stop_on_required_failure:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[
   {job_id:'JOB-MULTI-QA-001',job_type:'battle-test',job_version:'1.0.0',required:true,enabled:true,resource_refs:{roster_id:roster.id,test_id:testA.id},output_policy:{level:'representative'}},
   {job_id:'JOB-MULTI-QA-DISABLED',job_type:'battle-test',job_version:'1.0.0',required:false,enabled:false,resource_refs:{roster_id:roster.id,test_id:testA.id},output_policy:{level:'summary'}},
@@ -3816,6 +3820,68 @@ function battleBenchmarkAiPayload(result){return {format:'guild-adventure-studio
 function exportBattleBenchmarkResultById(id,aiOnly=false){const result=ensureBattleVerificationStore().results.find(x=>String(x.id)===String(id));if(!result)return alert('Benchmark結果が見つかりません。');const payload=aiOnly?battleBenchmarkAiPayload(result):battleVerificationEnvelope('battle-result',result);downloadText(`GK_BattleBenchmark_${aiOnly?'AI_':''}${result.id}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8')}
 function exportLatestBattleBenchmarkResult(aiOnly=false){const result=window.lastBattleBenchmarkResult||ensureBattleVerificationStore().results.find(x=>x.document_type==='battle-benchmark-result');if(!result)return alert('先にBenchmarkを実行してください。');exportBattleBenchmarkResultById(result.id,aiOnly)}
 
+function battleBenchmarkResultPackageSummary(result){
+ const matchups=Array.isArray(result?.matchups)?result.matchups:[];
+ const ranking=matchups.map((m,index)=>({rank:index+1,target_roster_id:m.target_roster_id,target_roster_name:m.target_roster_name,summary:m.summary||{}}));
+ const tickSamples=[];
+ matchups.forEach(m=>(Array.isArray(m.representative_runs)?m.representative_runs:[]).forEach(run=>{const v=Number(run?.ticks);if(Number.isFinite(v))tickSamples.push(v)}));
+ tickSamples.sort((a,b)=>a-b);
+ const mean=tickSamples.length?tickSamples.reduce((a,b)=>a+b,0)/tickSamples.length:null;
+ const median=tickSamples.length?(tickSamples.length%2?tickSamples[(tickSamples.length-1)/2]:(tickSamples[tickSamples.length/2-1]+tickSamples[tickSamples.length/2])/2):null;
+ const variance=tickSamples.length&&mean!==null?tickSamples.reduce((n,v)=>n+Math.pow(v-mean,2),0)/tickSamples.length:null;
+ const aggregate=battleBenchmarkAggregate(result);
+ return {
+  format:'guild-adventure-studio-battle-benchmark-summary',version:'1.0.0',result_id:result?.id||'',benchmark_id:result?.benchmark_id||'',benchmark_name:result?.benchmark_name||'',build_version:result?.build_version||loadBuildSettings().developmentBuild,formula_version:result?.formula_version||'',executed_at:result?.executed_at||'',assessment:result?.assessment||{status:'UNASSESSED'},comparison:result?.comparison?{status:result.comparison.status,delta:result.comparison.delta}:null,
+  execution:result?.execution||{},summary:result?.summary||{},aggregate,ranking,
+  representative_tick_statistics:{sample_count:tickSamples.length,minimum:tickSamples.length?tickSamples[0]:null,maximum:tickSamples.length?tickSamples[tickSamples.length-1]:null,median,mean,standard_deviation:variance===null?null:Math.sqrt(variance),note:'代表試行のみから算出した参考統計です。全試行の分布ではありません。'}
+ };
+}
+async function exportLatestBattleBenchmarkResultPackage(){
+ const result=window.lastBattleBenchmarkResult||ensureBattleVerificationStore().results.find(x=>x.document_type==='battle-benchmark-result');
+ if(!result)return alert('先にBenchmarkを実行してください。');
+ try{
+  const complete=battleVerificationEnvelope('battle-result',result),ai=battleBenchmarkAiPayload(result),summary=battleBenchmarkResultPackageSummary(result);
+  if(!complete?.data||!ai?.result_id||!summary?.result_id)throw new Error('結果JSON・AI解析JSON・Summaryの生成に失敗しました。');
+  const writer=GKZipCore.writer.create();
+  writer.addJson('benchmark_result.json',complete);
+  writer.addJson('benchmark_ai_result.json',ai);
+  writer.addJson('benchmark_summary.json',summary);
+  writer.addText('README.md','# Guild Adventure Studio Benchmark Result Package\n\nこのZIPにはBenchmark完全結果、AI解析結果、軽量Summary、Manifestを収録しています。\n');
+  const files=await writer.fileManifest({sha256:true});
+  const build=loadBuildSettings();
+  const packageId='BBRP-'+Date.now();
+  const manifest={format:'guild-adventure-studio-battle-benchmark-result-package',package_version:'1.0.0',package_type:'result',package_id:packageId,created_at:now(),source_result_id:result.id,benchmark:{id:result.benchmark_id,name:result.benchmark_name},build:{development:result.build_version||build.developmentBuild,studio_version:build.studioVersion,formal:build.formalBuild},formula_version:result.formula_version||'',execution:{trials_per_matchup:result.execution?.trialsPerMatchup||0,seed_start:result.execution?.seedStart||0,seed_step:result.execution?.seedStep||1,max_ticks:result.execution?.maxTicks||0,cancelled:!!result.execution?.cancelled},assessment:result.assessment||{status:'UNASSESSED'},contents:{benchmark_result:1,benchmark_ai_result:1,benchmark_summary:1},files};
+  writer.addJson('manifest.json',manifest);
+  await writer.download(`GK_BattleBenchmark_ResultPackage_${result.id}.zip`);
+  alert(`Benchmark結果Package ZIPを出力しました。\nBenchmark: ${result.benchmark_name||result.benchmark_id}\n完全結果・AI解析・Summaryを収録しました。`);
+ }catch(error){console.error(error);alert('Benchmark結果Package ZIPを生成できませんでした。\n原因: '+(error?.message||error));}
+}
+async function importBattleBenchmarkResultPackage(file){
+ if(!file)return;
+ const status=document.getElementById('battleBenchmarkResultPackageStatus');
+ if(status)status.innerHTML='<b>Benchmark結果Package：</b>読込中です。';
+ try{
+  const session=await GKZipCore.reader.inspect(file,{limits:GKZipCore.limits.createPolicy({maxFiles:100,maxFileBytes:10*1024*1024,maxTotalBytes:30*1024*1024}),acceptedExtensions:['.json','.md'],rejectUnknownExtensions:true,stripCommonRoot:true});
+  const required=['manifest.json','benchmark_result.json','benchmark_ai_result.json','benchmark_summary.json'];
+  const paths=new Set(session.entries.map(x=>x.path));
+  const missing=required.filter(path=>!paths.has(path));
+  if(missing.length)throw new Error('必須ファイルが不足しています: '+missing.join(', '));
+  const manifest=await session.getJson('manifest.json');
+  if(manifest?.format!=='guild-adventure-studio-battle-benchmark-result-package')throw new Error('Benchmark Result Package形式ではありません。');
+  if(String(manifest?.package_version||'')!=='1.0.0')throw new Error('未対応のPackage Versionです: '+String(manifest?.package_version||''));
+  const complete=await session.getJson('benchmark_result.json'),ai=await session.getJson('benchmark_ai_result.json'),summary=await session.getJson('benchmark_summary.json');
+  const result=complete?.data;
+  if(!result||result.document_type!=='battle-benchmark-result')throw new Error('benchmark_result.jsonの内容が不正です。');
+  if(String(ai?.result_id||'')!==String(result.id||''))throw new Error('AI解析JSONのResult IDが一致しません。');
+  if(String(summary?.result_id||'')!==String(result.id||''))throw new Error('Summary JSONのResult IDが一致しません。');
+  window.lastImportedBattleBenchmarkResultPackage={file_name:file.name,manifest,result,ai,summary};
+  const text=`<b>Benchmark結果Package：</b>読込完了<br>Benchmark: ${esc(result.benchmark_name||result.benchmark_id)}<br>Build: ${esc(result.build_version||manifest?.build?.development||'不明')} / 判定: ${esc(result.assessment?.status||'UNASSESSED')}<br>対象 ${Number(result.summary?.matchups_completed||0).toLocaleString()}件 / 試行 ${Number(result.summary?.trials_completed||0).toLocaleString()}戦 / エラー ${Number(result.summary?.error_count||0).toLocaleString()}件<br><span class="small">確認用セッションに保持しました。履歴へはまだ登録していません。</span>`;
+  if(status)status.innerHTML=text;
+  alert(`Benchmark結果Packageを読み込みました。\nBenchmark: ${result.benchmark_name||result.benchmark_id}\nBuild: ${result.build_version||manifest?.build?.development||'不明'}\n判定: ${result.assessment?.status||'UNASSESSED'}\n試行: ${Number(result.summary?.trials_completed||0).toLocaleString()}戦`);
+ }catch(error){console.error(error);if(status)status.innerHTML='<b>Benchmark結果Package：</b>読込失敗<br><span class="small">'+esc(error?.message||String(error))+'</span>';alert('Benchmark結果Packageを読み込めませんでした。\n原因: '+(error?.message||error));}
+}
+
+
 function renderBattleExecutionCenter(){
  const rs=document.getElementById('battleExecutionRosterSelect'),ts=document.getElementById('battleExecutionTestSelect'),list=document.getElementById('battleVerificationResultList');if(!rs||!ts||!list)return;
  const store=ensureBattleVerificationStore(),rv=rs.value,tv=ts.value;
@@ -3909,7 +3975,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.31',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.32',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
