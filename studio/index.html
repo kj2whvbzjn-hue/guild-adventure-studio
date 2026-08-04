@@ -336,7 +336,7 @@ body.studio-input-open{overflow:hidden}
 @media(max-width:560px){.ai-objective-grid,.ai-candidate{grid-template-columns:1fr}}
 
 
-/* BUILD472.41: scoped GitHub DELETE allowlist support */
+/* BUILD472.42: exact-file and folder-only DELETE rules */
 .benchmark-workflow-launcher{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .benchmark-workflow-launcher .small{margin:0}
 .benchmark-workflow-overlay{position:fixed;inset:0;z-index:360;background:rgba(15,23,42,.58);display:flex;align-items:stretch;justify-content:center}
@@ -376,7 +376,7 @@ updateDeployDeleteControl();
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.41</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.42</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1071,7 +1071,7 @@ updateDeployDeleteControl();
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.41" placeholder="例: 472.41"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.42" placeholder="例: 472.42"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1246,7 +1246,7 @@ updateDeployDeleteControl();
     </div>
   </div>
   <div id="battleDeveloperWorkspace" class="hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.41</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.42</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1799,9 +1799,9 @@ updateDeployDeleteControl();
       <label><input id="deployAllowDelete" type="checkbox" onchange="handleDeployDeleteToggle()"> ZIPに存在しないGitHub上のファイルを削除する</label>
       <div id="deployDeleteHelp" class="small">初期状態は無効です。公開ZIPをリポジトリの完全な配置内容として扱う場合だけ使用してください。AI差分ZIPでは削除できません。</div>
       <div class="field" style="margin-top:10px">
-        <label>削除を許可するパス（カンマ区切り）</label>
-        <input id="deployDeleteAllowlist" value="archive/,AUDIT_,ARTIFACT_SHA256,BUILD,WORK_REPORT,RELEASE_NOTES,DECISION_" oninput="handleDeployDeleteAllowlistChange()">
-        <div class="small">例: <code>archive/</code> は配下すべて、<code>BUILD</code> はルート直下でBUILDから始まるファイルだけを許可します。空欄では削除しません。</div>
+        <label>削除を許可するフォルダ／ファイル（カンマ区切り）</label>
+        <input id="deployDeleteAllowlist" value="archive/" oninput="handleDeployDeleteAllowlistChange()">
+        <div class="small">例: <code>archive/</code> は配下すべて、<code>BUILD_472.01.md</code> はそのファイルだけを許可します。接頭辞一致は行いません。空欄では削除しません。</div>
       </div>
     </div>
 
@@ -4026,7 +4026,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.41',studioVersion:'1.45.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.42',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -5165,8 +5165,7 @@ function isDeployDeleteAllowed(relativePath){
  const rules=parseDeployDeleteAllowlist();
  return rules.some(rule=>{
   if(rule.endsWith('/'))return path.startsWith(rule);
-  if(rule.includes('/'))return path===rule||path.startsWith(rule+'/');
-  return !path.includes('/')&&path.startsWith(rule);
+  return path===rule;
  });
 }
 function handleDeployDeleteAllowlistChange(){
@@ -5184,7 +5183,7 @@ function updateDeployDeleteControl(){
  checkbox.disabled=!publicPackage;
  if(!publicPackage)checkbox.checked=false;
  help.textContent=publicPackage
-  ?'削除許可ONかつ許可パスに一致するものだけをDELETE候補にします。保護ファイル・危険パス・許可外は削除しません。'
+  ?'削除許可ONかつ、末尾/のフォルダ一致または完全一致ファイルだけをDELETE候補にします。保護ファイル・危険パス・許可外は削除しません。'
   :'AI差分ZIPまたは未選択のため削除は無効です。削除には公開ZIPが必要です。';
 }
 async function handleDeployDeleteToggle(){
@@ -5318,7 +5317,7 @@ async function prepareStudioDeployDiff(){
   renderDeployPackage();
   const deleteCount=studioDeployDeleteCandidates.length;
   const blockedCount=studioDeployDeleteBlocked.length;
-  deployPackageStatus.innerHTML=`<span class="badge ok">配置準備完了</span> ADD ${add} / MODIFY ${modify} / DELETE ${deleteCount} / BLOCKED ${blockedCount} / UNCHANGED ${unchanged}`;
+  deployPackageStatus.innerHTML=`<span class="badge ok">配置準備完了</span> ADD ${add} / MODIFY ${modify} / DELETE(許可済) ${deleteCount} / BLOCKED(許可外) ${blockedCount} / UNCHANGED ${unchanged}`;
   deployLogMessage(`GitHub差分取得完了: ADD ${add}, MODIFY ${modify}, DELETE ${deleteCount}, BLOCKED ${blockedCount}, UNCHANGED ${unchanged}`);
   deployProgressBar.style.width='100%';
   deployProgressText.textContent=changes.length?`配置待機: ${changes.length}件（人間承認が必要）`:'差分なし';
@@ -5335,7 +5334,7 @@ function renderDeployPackage(){
  const unchanged=included.filter(x=>x.status==='UNCHANGED');
  const total=changes.reduce((n,x)=>n+x.size,0);
  deploySummary.textContent=(studioDeployFiles.length||deletes.length||blocked.length)
-  ?`変更 ${changes.length}件 / 削除 ${deletes.length}件 / 削除対象外 ${blocked.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
+  ?`変更 ${changes.length}件 / 削除許可済 ${deletes.length}件 / 削除許可外 ${blocked.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
   :'パッケージ確認後に表示します。';
  const rows=[...studioDeployFiles,...deletes,...blocked];
  deployFileList.innerHTML=rows.map(f=>{
@@ -5367,7 +5366,7 @@ async function deployStudioPackage(){
  const deletePreview=changes.filter(x=>x.status==='DELETE').slice(0,20).map(x=>'・'+x.target).join('\n');
  const deleteRules=parseDeployDeleteAllowlist().join(', ')||'なし';
  if(!confirm(`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\nDELETE: ${deleteCount}\n削除許可: ${deleteRules}\nCommit: ${message}${deleteCount?`\n\n削除対象（最大20件表示）:\n${deletePreview}`:''}\n\nGitHubへの書込みはこの承認後にだけ開始されます。続行しますか？`))return;
- if(deleteCount&&!confirm(`最終確認\n\nGitHub上の ${deleteCount} ファイルを削除します。\n削除は新しいCommitとして記録され、ロールバック可能です。\n\n本当に続行しますか？`))return;
+ if(deleteCount&&!confirm(`最終確認\n\nGitHub上の ${deleteCount} ファイルを削除します。\n削除許可ルール: ${deleteRules}\n\n削除対象（最大20件）:\n${deletePreview}\n\n削除は新しいCommitとして記録され、ロールバック可能です。\n\n本当に続行しますか？`))return;
  try{
   studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);resetDeployLog();
   deployLogMessage(`${dry?'テスト':'単一Commit配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
