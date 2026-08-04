@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.15</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.16</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1198,6 +1198,15 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       </div>
       <div id="battleRosterManagerSummary" class="item">編成はまだ登録されていません。</div>
       <div id="battleRosterManagerList"></div>
+    </div>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid #c9d8e6">
+      <div class="view-heading" style="margin-bottom:10px"><div>
+        <h3 style="margin:0">登録済みテスト</h3>
+        <p class="small" style="margin:5px 0 0">テスト定義を削除しても、既に出力したJSONには影響しません。保存済み結果は削除時に残すか選べます。</p>
+      </div></div>
+      <div id="battleTestManagerSummary" class="item">テストはまだ登録されていません。</div>
+      <div id="battleTestManagerList"></div>
     </div>
 
     <div style="margin-top:18px;padding-top:16px;border-top:1px solid #c9d8e6" id="battleExecutionCenter">
@@ -2988,12 +2997,18 @@ function exportBattleRosterRecord(rosterId){
  downloadText(`GK_BattleRoster_${roster.id}_v1.0.0.json`,JSON.stringify(battleVerificationEnvelope('battle-roster',structuredClone(roster)),null,2),'application/json;charset=utf-8');
 }
 function deleteBattleRosterRecord(rosterId){
- const store=ensureBattleVerificationStore(),used=store.tests.filter(x=>String(x.roster_id)===String(rosterId));
- if(used.length)return alert(`この編成はテスト ${used.map(x=>x.id).join(', ')} から参照されています。先に参照を解除してください。`);
- const roster=store.rosters.find(x=>String(x.id)===String(rosterId));
- if(!roster||!confirm(`${roster.name||roster.id} を削除しますか？`))return;
+ const store=ensureBattleVerificationStore(),roster=store.rosters.find(x=>String(x.id)===String(rosterId));
+ if(!roster)return alert('編成が見つかりません。');
+ const used=store.tests.filter(x=>String(x.roster_id)===String(rosterId)),testIds=used.map(x=>String(x.id));
+ if(used.length){
+  if(!confirm(`この編成はテスト ${testIds.join(', ')} から参照されています。編成と参照テストを一緒に削除しますか？`))return;
+  const deleteResults=confirm(`関連する実行結果も削除しますか？\nOK：結果も削除\nキャンセル：結果は履歴として残す`);
+  store.tests=store.tests.filter(x=>!testIds.includes(String(x.id)));
+  if(deleteResults)store.results=store.results.filter(x=>!testIds.includes(String(x.test_id))&&String(x.roster_id)!==String(rosterId));
+ }else if(!confirm(`${roster.name||roster.id} を削除しますか？`))return;
  store.rosters=store.rosters.filter(x=>String(x.id)!==String(rosterId));
- persist('battle roster deleted');renderBattleVerificationFoundation(`${rosterId} を削除しました。`);
+ persist('battle roster deleted');
+ renderBattleVerificationFoundation(`${rosterId} を削除しました。${used.length?` 参照テスト ${used.length}件も削除しました。`:''}`);
 }
 function renderBattleRosterManager(){
  const box=document.getElementById('battleRosterManagerList'),summary=document.getElementById('battleRosterManagerSummary');
@@ -3006,6 +3021,43 @@ function renderBattleRosterManager(){
   try{const s=battleRosterRecordSummary(roster);details=`味方 ${s.count.allies} / 敵 ${s.count.enemies} / 合計 ${s.count.total}<br><span class="small">${esc(s.limitText)}</span>`}
   catch(e){details=`<span class="error">検証エラー：${esc(e.message)}</span>`}
   return `<div class="item" style="margin-top:10px"><b>${esc(roster.name||roster.id)}</b><br><span class="small">${esc(roster.id)}</span><div style="margin-top:7px">${details}</div><div class="toolbar" style="margin-top:10px"><button class="primary" type="button" onclick="applyBattleRoster('${esc(roster.id)}')">戦闘入力へ反映</button><button type="button" onclick="exportBattleRosterRecord('${esc(roster.id)}')">JSON出力</button><button class="danger" type="button" onclick="deleteBattleRosterRecord('${esc(roster.id)}')">削除</button></div></div>`;
+ }).join('');
+}
+function exportBattleTestRecord(testId){
+ const test=ensureBattleVerificationStore().tests.find(x=>String(x.id)===String(testId));
+ if(!test)return alert('テストが見つかりません。');
+ downloadText(`GK_BattleTest_${test.id}_v1.0.0.json`,JSON.stringify(battleVerificationEnvelope('battle-test',structuredClone(test)),null,2),'application/json;charset=utf-8');
+}
+function deleteBattleTestRecord(testId){
+ const store=ensureBattleVerificationStore(),test=store.tests.find(x=>String(x.id)===String(testId));
+ if(!test)return alert('テストが見つかりません。');
+ const results=store.results.filter(x=>String(x.test_id)===String(testId));
+ if(!confirm(`${test.name||test.id} を削除しますか？${results.length?`\n保存済み結果 ${results.length}件があります。`:''}`))return;
+ let deleteResults=false;
+ if(results.length)deleteResults=confirm(`このテストの保存済み結果 ${results.length}件も削除しますか？\nOK：結果も削除\nキャンセル：結果は履歴として残す`);
+ store.tests=store.tests.filter(x=>String(x.id)!==String(testId));
+ if(deleteResults)store.results=store.results.filter(x=>String(x.test_id)!==String(testId));
+ persist('battle test deleted');
+ renderBattleVerificationFoundation(`${testId} を削除しました。${deleteResults?` 結果 ${results.length}件も削除しました。`:results.length?' 結果は履歴として残しました。':''}`);
+}
+function deleteBattleVerificationResult(resultId){
+ const store=ensureBattleVerificationStore(),result=store.results.find(x=>String(x.id)===String(resultId));
+ if(!result)return alert('結果が見つかりません。');
+ if(!confirm(`${result.test_name||result.test_id} の結果を削除しますか？\n結果ID：${result.id}`))return;
+ store.results=store.results.filter(x=>String(x.id)!==String(resultId));
+ if(window.lastBattleVerificationResult&&String(window.lastBattleVerificationResult.id)===String(resultId))window.lastBattleVerificationResult=store.results[0]||null;
+ persist('battle verification result deleted');
+ renderBattleVerificationFoundation(`${result.id} を削除しました。`);
+}
+function renderBattleTestManager(){
+ const box=document.getElementById('battleTestManagerList'),summary=document.getElementById('battleTestManagerSummary');
+ if(!box||!summary)return;
+ const store=ensureBattleVerificationStore(),rows=store.tests;
+ if(!rows.length){summary.textContent='テストはまだ登録されていません。';box.innerHTML='';return}
+ summary.innerHTML=`<b>${rows.length}件</b>のテストを登録済みです。`;
+ box.innerHTML=rows.map(test=>{
+  const cfg=battleVerificationTestConfig(test),roster=store.rosters.find(x=>String(x.id)===String(test.roster_id)),resultCount=store.results.filter(x=>String(x.test_id)===String(test.id)).length;
+  return `<div class="item" style="margin-top:10px"><b>${esc(test.name||test.id)}</b><br><span class="small">${esc(test.id)}</span><div style="margin-top:7px">参照編成：${esc(roster?(roster.name||roster.id):(test.roster_id||'未指定'))}<br>方式 ${esc(cfg.mode)} / 試行 ${cfg.trials.toLocaleString()} / Seed ${cfg.seedStart} / 最大Tick ${cfg.maxTicks}<br><span class="small">保存済み結果 ${resultCount}件</span></div><div class="toolbar" style="margin-top:10px"><button type="button" onclick="exportBattleTestRecord('${esc(test.id)}')">JSON出力</button><button class="danger" type="button" onclick="deleteBattleTestRecord('${esc(test.id)}')">削除</button></div></div>`;
  }).join('');
 }
 function battleVerificationTestConfig(test){
@@ -3051,7 +3103,7 @@ function renderBattleExecutionCenter(){
  ts.innerHTML='<option value="">選択してください</option>'+store.tests.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)} / ${esc(x.id)}</option>`).join('');
  if(store.rosters.some(x=>String(x.id)===rv))rs.value=rv;
  if(store.tests.some(x=>String(x.id)===tv))ts.value=tv;
- list.innerHTML=store.results.length?'<h4 style="margin-bottom:8px">最近の検証結果</h4>'+store.results.slice(0,10).map(r=>`<div class="item" style="margin-top:8px"><b>${esc(r.test_name||r.test_id)}</b><br><span class="small">${esc(r.roster_name||r.roster_id)} / ${esc(r.executed_at||'')}</span><br>${esc(r.assessment&&r.assessment.status||'UNASSESSED')} / ${r.summary.trials_completed}試行 / 勝率 ${(Number(r.summary.win_rate||0)*100).toFixed(1)}% / 平均Tick ${Number(r.summary.average_ticks||0).toFixed(1)}<div class="toolbar" style="margin-top:8px"><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',false)">完全JSON</button><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',true)">AI用JSON</button></div></div>`).join(''):'<p class="small">検証結果はまだありません。</p>';
+ list.innerHTML=store.results.length?'<h4 style="margin-bottom:8px">最近の検証結果</h4>'+store.results.slice(0,10).map(r=>`<div class="item" style="margin-top:8px"><b>${esc(r.test_name||r.test_id)}</b><br><span class="small">${esc(r.roster_name||r.roster_id)} / ${esc(r.executed_at||'')}</span><br>${esc(r.assessment&&r.assessment.status||'UNASSESSED')} / ${r.summary.trials_completed}試行 / 勝率 ${(Number(r.summary.win_rate||0)*100).toFixed(1)}% / 平均Tick ${Number(r.summary.average_ticks||0).toFixed(1)}<div class="toolbar" style="margin-top:8px"><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',false)">完全JSON</button><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',true)">AI用JSON</button><button class="danger" type="button" onclick="deleteBattleVerificationResult('${esc(r.id)}')">結果削除</button></div></div>`).join(''):'<p class="small">検証結果はまだありません。</p>';
  previewBattleVerificationExecution();
 }
 function runBattleVerificationTest(){
@@ -3082,6 +3134,7 @@ function renderBattleVerificationFoundation(message='',isError=false){
  status.textContent=message||'専用JSONを読み込むか、ひな形を出力してください。';
  summary.innerHTML=`登録済み編成 <b>${store.rosters.length}</b>件 ／ 登録済みテスト <b>${store.tests.length}</b>件<br><span class="small">旧 battle_tests・battle_snapshots とは別領域です。</span>`;
  renderBattleRosterManager();
+ renderBattleTestManager();
  renderBattleExecutionCenter();
 }
 
@@ -3133,7 +3186,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.15',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.16',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
