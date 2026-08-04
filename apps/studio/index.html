@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.25</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.26</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1193,6 +1193,14 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
     <div id="battlePackageStatus" class="item"><b>Battle Package：</b>未読込です。</div>
     <div id="battlePackageSummary" class="small" style="white-space:pre-wrap"></div>
+    <div id="battlePackageExecutionPanel" style="margin-top:12px;padding-top:12px;border-top:1px solid #c9d8e6">
+      <div class="toolbar">
+        <button id="battlePackageExecuteButton" class="primary" type="button" onclick="runBattlePackageExecution()" disabled>読み込んだPackageを実行</button>
+        <button id="battlePackageCancelButton" type="button" onclick="cancelBattlePackageExecution()" disabled>中止</button>
+      </div>
+      <div id="battlePackageExecutionStatus" class="item">実行可能なBattle Packageを読み込んでください。</div>
+      <div id="battlePackageExecutionSummary" class="small" style="white-space:pre-wrap"></div>
+    </div>
     <div id="battleVerificationFileStatus" class="item" style="margin-top:10px"><b>個別JSON：</b>未読込です。</div>
     <div id="battleVerificationFileSummary" class="small"></div>
 
@@ -3098,7 +3106,7 @@ async function inspectBattlePackage(file){
   let cfg;
   try{validateBattleRosterCapacity(roster);cfg=battleVerificationTestConfig(test)}catch(error){diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_JOB_CONFIG_INVALID',error.message,{job_id:jobId}));continue}
   if(cfg.trials<1||cfg.trials>500000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TRIALS_OUT_OF_RANGE',`試行数が許容範囲外です: ${cfg.trials}`,{job_id:jobId}));
-  if(cfg.maxTicks<1||cfg.maxTicks>100000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_MAX_TICKS_OUT_OF_RANGE',`最大Tickが許容範囲外です: ${cfg.maxTicks}`,{job_id:jobId}));
+  if(cfg.maxTicks<1||cfg.maxTicks>1000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_MAX_TICKS_OUT_OF_RANGE',`最大Tickが許容範囲外です: ${cfg.maxTicks}`,{job_id:jobId}));
   if(diagnostics.some(x=>x.job_id===jobId&&(x.severity==='JOB_ERROR'||x.severity==='FATAL')))continue;
   estimatedTrials+=cfg.trials;
   activeJobs.push({job_id:jobId,job_type:type,required:job.required!==false,roster_id:rosterId,test_id:testId,trials:cfg.trials,seed_start:cfg.seedStart,seed_step:cfg.seedStep,max_ticks:cfg.maxTicks,output_policy:job.output_policy||{level:'representative'}});
@@ -3132,13 +3140,95 @@ async function importBattlePackageFile(file){
   const ready=fatal===0&&jobErrors===0&&session.activeJobs.length>0;
   const empty=fatal===0&&jobErrors===0&&session.executionPlan.jobs.length===0;
   battlePackageSetStatus(ready?'読込・事前検証が完了しました。':empty?'空のひな形パッケージを確認しました。':'読込しましたが、実行できないジョブがあります。',!ready&&!empty,summary);
+  renderBattlePackageExecutionState(session);
   alert(ready?`Battle Packageを確認しました。\n実行可能ジョブ: ${session.activeJobs.length}件\n予定総試行: ${session.estimatedTrials.toLocaleString()}戦\n\nまだ既存データへ登録していません。`:empty?'空のBattle Packageひな形を確認しました。\nAIがリソースと実行ジョブを追加したZIPを読み込んでください。':`Battle Packageを読み込みましたが、実行準備は未完了です。\nJOB_ERROR: ${jobErrors}件`);
  }catch(error){
   battlePackageSession=null;
+  renderBattlePackageExecutionState(null);
   const details=Array.isArray(error.diagnostics)?error.diagnostics.map(x=>`[${x.severity}] ${x.message}`).slice(0,8).join('\n'):'';
   battlePackageSetStatus('読込に失敗しました。',true,`${error.message}${details?'\n'+details:''}`);
   alert(`Battle Packageの読込に失敗しました。\n${error.message}`);
  }
+}
+
+window.battlePackageCancelRequested=false;
+function battlePackageExecutionElements(){return {execute:document.getElementById('battlePackageExecuteButton'),cancel:document.getElementById('battlePackageCancelButton'),status:document.getElementById('battlePackageExecutionStatus'),summary:document.getElementById('battlePackageExecutionSummary')}}
+function renderBattlePackageExecutionState(session=battlePackageSession){
+ const el=battlePackageExecutionElements();if(!el.status)return;
+ const fatal=session?.diagnostics?.filter(x=>x.severity==='FATAL').length||0,jobErrors=session?.diagnostics?.filter(x=>x.severity==='JOB_ERROR').length||0;
+ const running=!!session?.execution&&session.execution.status==='running',ready=!!session&&fatal===0&&jobErrors===0&&session.activeJobs.length>0&&!running;
+ if(el.execute)el.execute.disabled=!ready;
+ if(el.cancel)el.cancel.disabled=!running;
+ if(!session){el.status.className='item';el.status.textContent='実行可能なBattle Packageを読み込んでください。';if(el.summary)el.summary.textContent='';return}
+ const execution=session.execution;
+ if(!execution){el.status.className='item';el.status.textContent=ready?`実行準備完了：${session.activeJobs.length}ジョブ / ${session.estimatedTrials.toLocaleString()}戦`:'実行できるジョブがありません。';if(el.summary)el.summary.textContent='結果はまだありません。';return}
+ const labels={running:'実行中',completed:'完了',completed_with_errors:'エラーあり完了',cancelled:'中止',failed:'失敗'};
+ el.status.className=execution.status==='failed'?'item error':'item';
+ el.status.innerHTML=`<b>${esc(labels[execution.status]||execution.status)}</b> / ジョブ ${execution.jobs_completed}/${execution.jobs_requested} / 試行 ${execution.trials_completed.toLocaleString()}/${execution.trials_requested.toLocaleString()} / エラー ${execution.error_count}`;
+ if(el.summary){
+  const rows=(session.results||[]).map((r,i)=>`${i+1}. ${r.job_id} / ${r.status} / ${r.summary?.trials_completed||0}試行 / 勝率 ${((Number(r.summary?.win_rate)||0)*100).toFixed(1)}% / 平均Tick ${(Number(r.summary?.average_ticks)||0).toFixed(1)} / エラー ${r.summary?.error_count||0}`);
+  el.summary.textContent=rows.length?`セッション結果（既存データ未登録）\n${rows.join('\n')}`:'完了したジョブ結果はまだありません。';
+ }
+}
+function cancelBattlePackageExecution(){
+ const session=battlePackageSession;if(!session?.execution||session.execution.status!=='running')return;
+ window.battlePackageCancelRequested=true;
+ const el=battlePackageExecutionElements();if(el.status)el.status.textContent='中止要求を受け付けました。現在の試行またはチャンク完了後に停止します。';
+ if(el.cancel)el.cancel.disabled=true;
+}
+function battlePackageRepresentativeRuns(runs){
+ if(!runs.length)return [];
+ const sorted=[...runs].sort((a,b)=>Number(a.ticks||0)-Number(b.ticks||0));
+ return [sorted[0],sorted[Math.floor((sorted.length-1)/2)],sorted[sorted.length-1]].filter((x,i,a)=>a.indexOf(x)===i);
+}
+async function runBattlePackageExecution(){
+ const session=battlePackageSession,el=battlePackageExecutionElements();
+ if(!session||!session.activeJobs.length)return alert('実行可能なBattle Packageを先に読み込んでください。');
+ const fatal=session.diagnostics.filter(x=>x.severity==='FATAL').length,jobErrors=session.diagnostics.filter(x=>x.severity==='JOB_ERROR').length;
+ if(fatal||jobErrors)return alert(`事前検証エラーがあるため実行できません。\nFATAL ${fatal} / JOB_ERROR ${jobErrors}`);
+ if(session.execution?.status==='running')return alert('Battle Packageを実行中です。');
+ if(!confirm(`Battle Packageを実行します。\n\n${session.manifest.name||session.manifest.package_id}\nジョブ: ${session.activeJobs.length}件\n予定総試行: ${session.estimatedTrials.toLocaleString()}戦\n\n実行結果は検証セッションにだけ保持し、既存データへ登録しません。`))return;
+ if(session.estimatedTrials>100000&&!confirm(`予定総試行は${session.estimatedTrials.toLocaleString()}戦です。iPhoneでは時間がかかる可能性があります。続行しますか？`))return;
+ window.battlePackageCancelRequested=false;
+ session.results=[];
+ session.execution={execution_id:'BEX-'+Date.now(),status:'running',started_at:now(),finished_at:null,jobs_requested:session.activeJobs.length,jobs_completed:0,jobs_failed:0,trials_requested:session.estimatedTrials,trials_completed:0,error_count:0,cancelled:false};
+ renderBattlePackageExecutionState(session);
+ const formulaConfig=readBattleFormulaConfig(),policy=session.executionPlan.execution_policy||{},continueOnError=policy.continue_on_error!==false;
+ try{
+  for(const job of session.activeJobs){
+   if(window.battlePackageCancelRequested)break;
+   const roster=session.resources.rosters.get(job.roster_id),test=session.resources.tests.get(job.test_id),started=performance.now();
+   const jobResult={job_id:job.job_id,job_type:job.job_type,status:'running',test_id:job.test_id,test_name:test?.name||job.test_id,roster_id:job.roster_id,roster_name:roster?.name||job.roster_id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{trials:job.trials,seed_start:job.seed_start,seed_step:job.seed_step,max_ticks:job.max_ticks,elapsed_ms:0},summary:null,assessment:null,errors:[],representative_runs:[]};
+   try{
+    if(!roster||!test)throw new Error('実行時に参照リソースを取得できませんでした。');
+    const expanded=expandBattleRoster(roster),runs=[],errors=[];
+    let lastYield=performance.now();
+    for(let i=0;i<job.trials;i++){
+     if(window.battlePackageCancelRequested)break;
+     const seed=job.seed_start+i*job.seed_step;
+     try{runs.push(runBattleSimulation({formulaConfig,traceOptions:{events:false,ai:false,damage:false,tick:false,json:false},maxTicks:job.max_ticks,logLimit:50,seed,allies:expanded.allies,enemies:expanded.enemies},{silent:true,persistResult:false}))}catch(error){errors.push({index:i,seed,message:error.message});session.execution.error_count++}
+     session.execution.trials_completed++;
+     if((i+1)%25===0||performance.now()-lastYield>50){renderBattlePackageExecutionState(session);await new Promise(resolve=>setTimeout(resolve,0));lastYield=performance.now()}
+    }
+    const summary=summarizeBattleVerificationRuns(runs,errors),assessment=evaluateBattleVerificationExpectations(test,summary);
+    jobResult.status=window.battlePackageCancelRequested?'cancelled':'completed';jobResult.summary=summary;jobResult.assessment=assessment;jobResult.errors=errors;jobResult.representative_runs=battlePackageRepresentativeRuns(runs);jobResult.execution.elapsed_ms=performance.now()-started;
+    session.results.push(jobResult);
+    if(jobResult.status==='completed')session.execution.jobs_completed++;
+   }catch(error){
+    jobResult.status='failed';jobResult.errors=[{message:error.message}];jobResult.summary=summarizeBattleVerificationRuns([],jobResult.errors);jobResult.execution.elapsed_ms=performance.now()-started;session.results.push(jobResult);session.execution.jobs_failed++;session.execution.error_count++;
+    if(!continueOnError||job.required)break;
+   }
+   renderBattlePackageExecutionState(session);await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  session.execution.cancelled=window.battlePackageCancelRequested;
+  session.execution.finished_at=now();
+  session.execution.status=window.battlePackageCancelRequested?'cancelled':session.execution.jobs_failed?'completed_with_errors':'completed';
+  renderBattlePackageExecutionState(session);
+  const completed=session.execution.jobs_completed,failed=session.execution.jobs_failed;
+  alert(session.execution.status==='cancelled'?`Battle Packageを中止しました。\n完了ジョブ: ${completed}件\n完了試行: ${session.execution.trials_completed.toLocaleString()}戦\n部分結果はセッション内に保持しています。`:`Battle Packageの実行が完了しました。\n完了ジョブ: ${completed}件\n失敗ジョブ: ${failed}件\n完了試行: ${session.execution.trials_completed.toLocaleString()}戦\nエラー: ${session.execution.error_count}件`);
+ }catch(error){
+  session.execution.status='failed';session.execution.finished_at=now();session.execution.error_count++;renderBattlePackageExecutionState(session);alert(`Battle Packageの実行に失敗しました。\n${error.message}`);
+ }finally{window.battlePackageCancelRequested=false;renderBattlePackageExecutionState(session)}
 }
 
 function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプル可変人数編成',allies:[{count:1,unit:structuredClone(BATTLE_SAMPLE_ALLIES[0]),overrides:{}}],enemies:[{count:1,unit:structuredClone(BATTLE_SAMPLE_ENEMIES[0]),overrides:{}}],constraints:{max_allies:'system',max_enemies:'system',max_total_units:'system',overflow_policy:'error'},tags:['sample','flexible-roster']}}
@@ -3156,7 +3246,7 @@ async function exportBattleAiPackageTemplate(){
   created_at:createdAt,
   created_by:'studio-template',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},
-  target:{minimum_build:'472.25'},
+  target:{minimum_build:'472.26'},
   contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,jobs:0},
   validation:{allow_unused_resources:true},
   instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
@@ -3556,7 +3646,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.25',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.26',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
