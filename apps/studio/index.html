@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.30.2</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.31</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -3238,6 +3238,19 @@ function battlePackageRepresentativeRuns(runs){
  const sorted=[...runs].sort((a,b)=>Number(a.ticks||0)-Number(b.ticks||0));
  return [sorted[0],sorted[Math.floor((sorted.length-1)/2)],sorted[sorted.length-1]].filter((x,i,a)=>a.indexOf(x)===i);
 }
+function battlePackageBenchmarkAnalysis(result){
+ const rows=(result?.ranking||[]).filter(x=>x&&x.summary),valid=rows.filter(x=>Number(x.summary?.trials_completed)>0),rates=valid.map(x=>Number(x.summary?.win_rate)||0),ticks=valid.map(x=>Number(x.summary?.average_ticks)||0),ally=valid.map(x=>Number(x.summary?.average_ally_damage)||0),enemy=valid.map(x=>Number(x.summary?.average_enemy_damage)||0);
+ const avg=a=>a.length?a.reduce((n,x)=>n+x,0)/a.length:0,min=a=>a.length?Math.min(...a):0,max=a=>a.length?Math.max(...a):0;
+ const top=valid[0]||null,bottom=valid.length?valid[valid.length-1]:null,balanced=valid.filter(x=>{const r=Number(x.summary?.win_rate)||0;return r>=.4&&r<=.6}),dominant=valid.filter(x=>(Number(x.summary?.win_rate)||0)>=.8),weak=valid.filter(x=>(Number(x.summary?.win_rate)||0)<=.2),errorRows=rows.filter(x=>Number(x.error_count||x.summary?.error_count||0)>0);
+ const recommendations=[];
+ if(!valid.length)recommendations.push('有効な対戦結果がないため、リソース参照と実行エラーを確認してください。');
+ if(dominant.length)recommendations.push(`勝率80%以上の対象が${dominant.length}件あります。基準編成が強すぎる可能性を確認してください。`);
+ if(weak.length)recommendations.push(`勝率20%以下の対象が${weak.length}件あります。基準編成が弱すぎる、または対象側が強すぎる可能性を確認してください。`);
+ if(valid.length>1&&max(rates)-min(rates)>=.5)recommendations.push('対象間の勝率差が50ポイント以上あります。対象編成の役割・耐久・火力差を確認してください。');
+ if(errorRows.length)recommendations.push(`エラーを含む対象が${errorRows.length}件あります。順位評価より先にエラー原因を確認してください。`);
+ if(valid.length&&balanced.length===valid.length&&!errorRows.length)recommendations.push('全対象が40〜60%の範囲で、今回の条件では大きな偏りは見られません。');
+ return {version:'1.0.0',benchmark_id:result?.benchmark_id||null,baseline_roster_id:result?.baseline_roster_id||null,opponent_set_id:result?.opponent_set_id||null,counts:{ranking:rows.length,valid:valid.length,balanced:balanced.length,dominant:dominant.length,weak:weak.length,error_matchups:errorRows.length},averages:{win_rate:avg(rates),average_ticks:avg(ticks),average_ally_damage:avg(ally),average_enemy_damage:avg(enemy)},spread:{win_rate_points:(max(rates)-min(rates))*100,average_ticks:max(ticks)-min(ticks)},top:top?{rank:top.rank,target_roster_id:top.target_roster_id,target_roster_name:top.target_roster_name,summary:top.summary}:null,bottom:bottom?{rank:bottom.rank,target_roster_id:bottom.target_roster_id,target_roster_name:bottom.target_roster_name,summary:bottom.summary}:null,recommendations};
+}
 async function runBattlePackageBenchmarkJob(session,job,formulaConfig){
  const benchmark=session.resources.benchmarks.get(job.benchmark_id),base=session.resources.rosters.get(job.baseline_roster_id),set=session.resources.opponent_sets.get(job.opponent_set_id);
  if(!benchmark||!base||!set)throw new Error('Benchmark実行時に参照リソースを取得できませんでした。');
@@ -3261,7 +3274,7 @@ async function runBattlePackageBenchmarkJob(session,job,formulaConfig){
  }
  matchups.sort((a,b)=>b.summary.win_rate-a.summary.win_rate||a.summary.average_ticks-b.summary.average_ticks);
  const trialsCompleted=matchups.reduce((n,x)=>n+(Number(x.summary?.trials_completed)||0),0),errorCount=matchups.reduce((n,x)=>n+(Number(x.summary?.error_count)||0),0)+errors.length;
- return {job_id:job.job_id,job_type:job.job_type,status:window.battlePackageCancelRequested?'cancelled':'completed',benchmark_id:benchmark.id,benchmark_name:benchmark.name||benchmark.id,baseline_roster_id:base.id,baseline_roster_name:base.name||base.id,opponent_set_id:set.id,opponent_set_name:set.name||set.id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{trials:job.trials,trials_per_matchup:cfg.trialsPerMatchup,seed_start:cfg.seedStart,seed_step:cfg.seedStep,max_ticks:cfg.maxTicks,elapsed_ms:performance.now()-started},summary:{matchups_requested:targetIds.length,matchups_completed:matchups.length,trials_requested:job.trials,trials_completed:trialsCompleted,error_count:errorCount},assessment:{status:errorCount?'WARNING':'PASS'},comparison:null,analysis:null,matchups,ranking:matchups.map((x,index)=>({rank:index+1,target_roster_id:x.target_roster_id,target_roster_name:x.target_roster_name,summary:x.summary,error_count:x.errors.length})),errors,representative_runs:[]};
+ const result={job_id:job.job_id,job_type:job.job_type,status:window.battlePackageCancelRequested?'cancelled':'completed',benchmark_id:benchmark.id,benchmark_name:benchmark.name||benchmark.id,baseline_roster_id:base.id,baseline_roster_name:base.name||base.id,opponent_set_id:set.id,opponent_set_name:set.name||set.id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{trials:job.trials,trials_per_matchup:cfg.trialsPerMatchup,seed_start:cfg.seedStart,seed_step:cfg.seedStep,max_ticks:cfg.maxTicks,elapsed_ms:performance.now()-started},summary:{matchups_requested:targetIds.length,matchups_completed:matchups.length,trials_requested:job.trials,trials_completed:trialsCompleted,error_count:errorCount},assessment:{status:errorCount?'WARNING':'PASS'},comparison:null,analysis:null,matchups,ranking:matchups.map((x,index)=>({rank:index+1,target_roster_id:x.target_roster_id,target_roster_name:x.target_roster_name,summary:x.summary,error_count:x.errors.length})),errors,representative_runs:[]};result.analysis=battlePackageBenchmarkAnalysis(result);return result;
 }
 
 async function runBattlePackageExecution(){
@@ -3335,7 +3348,7 @@ function battlePackageAiSummary(session){
  const execution=session.execution||{};
  const jobs=(session.results||[]).map(result=>{
   const common={job_id:result.job_id,job_type:result.job_type,status:result.status,trials_requested:Number(result.execution?.trials)||0,trials_completed:Number(result.summary?.trials_completed)||0,error_count:Number(result.summary?.error_count)||0,assessment:result.assessment||null};
-  if(result.job_type==='battle-benchmark')return {...common,benchmark_id:result.benchmark_id,benchmark_name:result.benchmark_name,baseline_roster_id:result.baseline_roster_id,opponent_set_id:result.opponent_set_id,matchups_requested:Number(result.summary?.matchups_requested)||0,matchups_completed:Number(result.summary?.matchups_completed)||0,ranking:structuredClone(result.ranking||[])};
+  if(result.job_type==='battle-benchmark')return {...common,benchmark_id:result.benchmark_id,benchmark_name:result.benchmark_name,baseline_roster_id:result.baseline_roster_id,opponent_set_id:result.opponent_set_id,matchups_requested:Number(result.summary?.matchups_requested)||0,matchups_completed:Number(result.summary?.matchups_completed)||0,ranking:structuredClone(result.ranking||[]),benchmark_analysis:structuredClone(result.analysis||battlePackageBenchmarkAnalysis(result))};
   return {...common,roster_id:result.roster_id,roster_name:result.roster_name,test_id:result.test_id,test_name:result.test_name,wins:Number(result.summary?.wins)||0,losses:Number(result.summary?.losses)||0,draws:Number(result.summary?.draws)||0,win_rate:Number(result.summary?.win_rate)||0,average_ticks:Number(result.summary?.average_ticks)||0};
  });
  return {
@@ -3370,6 +3383,8 @@ async function exportBattlePackageResult(){
  writer.addJson('execution_report.json',executionReport);
  for(const result of session.results){writer.addJson(`results/jobs/${battlePackageSafeFilePart(result.job_id)}.json`,result);}
  writer.addJson('ai/summary.json',battlePackageAiSummary(session));
+ const benchmarkResults=(session.results||[]).filter(x=>x.job_type==='battle-benchmark');
+ if(benchmarkResults.length){const benchmarkOverview={document_type:'battle-benchmark-ai-overview',version:'1.0.0',generated_at:createdAt,source_package_id:sourcePackageId,execution_id:executionId,benchmarks:benchmarkResults.map(x=>({job_id:x.job_id,benchmark_id:x.benchmark_id,benchmark_name:x.benchmark_name,status:x.status,summary:x.summary,ranking:x.ranking||[],analysis:x.analysis||battlePackageBenchmarkAnalysis(x)}))};writer.addJson('ai/benchmark_overview.json',benchmarkOverview);writer.addJson('metrics/benchmark_summary.json',{document_type:'battle-benchmark-metrics',version:'1.0.0',generated_at:createdAt,items:benchmarkOverview.benchmarks.map(x=>({job_id:x.job_id,benchmark_id:x.benchmark_id,status:x.status,counts:x.analysis.counts,averages:x.analysis.averages,spread:x.analysis.spread,top:x.analysis.top,bottom:x.analysis.bottom}))});}
  writer.addText('README_RESULT.md','# Battle Verification Result Package\n\nこのZIPはGuild Adventure StudioのBattle Package実行結果です。\n\n- `execution_report.json`: 全体の実行状態\n- `results/jobs/`: ジョブ別の詳細結果\n- `ai/summary.json`: AIが最初に読む要約\n- `input/`: 実行に使用した入力Battle Package一式\n\n`partial: true`の場合は中止または失敗による部分結果です。\n');
  const fileManifest=await writer.fileManifest({sha256:true});
  const resultManifest={
@@ -3378,7 +3393,7 @@ async function exportBattlePackageResult(){
   source:{package_id:sourcePackageId,package_version:session.manifest.package_version,execution_id:executionId},
   target:{build:loadBuildSettings().developmentBuild,formula_version:readBattleFormulaConfig().version},
   execution:{status:session.execution.status,partial:executionReport.partial,jobs_completed:session.execution.jobs_completed,jobs_failed:session.execution.jobs_failed,trials_completed:session.execution.trials_completed,error_count:session.execution.error_count},
-  contents:{input_files:session.reader.entries.length,job_results:session.results.length,ai_summaries:1},files:fileManifest
+  contents:{input_files:session.reader.entries.length,job_results:session.results.length,ai_summaries:1+(benchmarkResults.length?1:0),metric_files:benchmarkResults.length?1:0},files:fileManifest
  };
  writer.addJson('manifest.json',resultManifest);
  const fileName=`GK_BattleVerification_Result_${battlePackageSafeFilePart(sourcePackageId)}_${battlePackageSafeFilePart(executionId)}.zip`;
@@ -3430,7 +3445,7 @@ async function exportBattleAiBenchmarkSamplePackage(){
  const targetB=structuredClone(base);targetB.id='BRT-BENCH-TARGET-002';targetB.name='Benchmark対象B';targetB.allies=[];targetB.enemies[0].unit.hp=Math.max(1,Number(targetB.enemies[0].unit.hp||100)+50);
  const set={id:'BOS-BENCH-QA-001',name:'Benchmark確認対象集合',roster_ids:[targetA.id,targetB.id],tags:['qa','battle-package']};
  const benchmark={id:'BB-BENCH-QA-001',name:'Battle Package Benchmark確認',baseline_roster_id:base.id,opponent_set_id:set.id,execution:{trials_per_matchup:3,seed_start:30000,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','damage','errors'],expectations:{error_count:{max:0}},tags:['qa','battle-package']};
- const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-BENCHMARK-QA-001',name:'Battle Package Benchmark確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},target:{minimum_build:'472.30.2'},contents:{rosters:3,tests:0,opponent_sets:1,benchmarks:1,jobs:1},validation:{allow_unused_resources:true},instructions:'基準編成と2対象を各3試行し、ランキング付き結果を生成してください。'};
+ const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-BENCHMARK-QA-001',name:'Battle Package Benchmark確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},target:{minimum_build:'472.31'},contents:{rosters:3,tests:0,opponent_sets:1,benchmarks:1,jobs:1},validation:{allow_unused_resources:true},instructions:'基準編成と2対象を各3試行し、ランキング付き結果を生成してください。'};
  const plan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-BENCHMARK-QA-001',name:'Benchmark確認計画',execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true,stop_on_required_failure:true},jobs:[{job_id:'JOB-BENCHMARK-QA-001',job_type:'battle-benchmark',job_version:'1.0.0',required:true,enabled:true,resource_refs:{benchmark_id:benchmark.id},output_policy:{level:'representative'}}]};
  validateBattleAiBenchmarkSampleGeneration({base,targetA,targetB,set,benchmark,plan});
  const writer=GKZipCore.writer.create();writer.addJson('manifest.json',manifest);writer.addJson('execution_plan.json',plan);writer.addJson(`resources/rosters/${base.id}.json`,battleVerificationEnvelope('battle-roster',base));writer.addJson(`resources/rosters/${targetA.id}.json`,battleVerificationEnvelope('battle-roster',targetA));writer.addJson(`resources/rosters/${targetB.id}.json`,battleVerificationEnvelope('battle-roster',targetB));writer.addJson(`resources/opponent_sets/${set.id}.json`,battleVerificationEnvelope('battle-opponent-set',set));writer.addJson(`resources/benchmarks/${benchmark.id}.json`,battleVerificationEnvelope('battle-benchmark',benchmark));writer.addText('README_AI.md','# Battle Package Benchmark確認サンプル\n\n期待結果:\n- Benchmarkジョブ1件\n- 対象2件\n- 各3試行\n- 総試行6戦\n- Result Packageにmatchupsとrankingを収録\n');
@@ -3453,7 +3468,7 @@ async function exportBattleAiPackageTemplate(){
   created_at:createdAt,
   created_by:'studio-template',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},
-  target:{minimum_build:'472.30.2'},
+  target:{minimum_build:'472.31'},
   contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,jobs:0},
   validation:{allow_unused_resources:true},
   instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
@@ -3490,7 +3505,7 @@ async function exportBattleAiExecutableSamplePackage(){
   format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',
   package_id:'BVP-EXECUTOR-QA-001',name:'Battle Package Executor確認サンプル',created_at:createdAt,created_by:'studio-sample',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},
-  target:{minimum_build:'472.30.2'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
+  target:{minimum_build:'472.31'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
   validation:{allow_unused_resources:true},instructions:'このZIPをStudioへ読み込み、1ジョブ・10試行を実行してください。'
  };
  const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-EXECUTOR-QA-001',name:'Executor確認用実行計画',execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[{
@@ -3512,7 +3527,7 @@ async function exportBattleAiMultiJobSamplePackage(){
  const packageVersion='1.0.0',createdAt=now(),roster=battleRosterTemplateData();
  const testA={...battleTestTemplateData(),id:'BT-MULTI-QA-001',name:'複数ジョブ確認A',roster_id:roster.id,execution:{mode:'multiple',trials:5,seed_start:31000,seed_step:1,max_ticks:1000},tags:['sample','multi-job']};
  const testB={...battleTestTemplateData(),id:'BT-MULTI-QA-002',name:'複数ジョブ確認B',roster_id:roster.id,execution:{mode:'multiple',trials:5,seed_start:32000,seed_step:1,max_ticks:1000},tags:['sample','multi-job']};
- const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-MULTI-JOB-QA-001',name:'Battle Package 複数ジョブ確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},target:{minimum_build:'472.30.2'},contents:{rosters:1,tests:2,opponent_sets:0,benchmarks:0,jobs:3},validation:{allow_unused_resources:true},instructions:'有効な2ジョブを順次実行し、無効な1ジョブをスキップしてください。'};
+ const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-MULTI-JOB-QA-001',name:'Battle Package 複数ジョブ確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},target:{minimum_build:'472.31'},contents:{rosters:1,tests:2,opponent_sets:0,benchmarks:0,jobs:3},validation:{allow_unused_resources:true},instructions:'有効な2ジョブを順次実行し、無効な1ジョブをスキップしてください。'};
  const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-MULTI-JOB-QA-001',name:'複数ジョブ確認用実行計画',execution_policy:{continue_on_error:true,stop_on_required_failure:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[
   {job_id:'JOB-MULTI-QA-001',job_type:'battle-test',job_version:'1.0.0',required:true,enabled:true,resource_refs:{roster_id:roster.id,test_id:testA.id},output_policy:{level:'representative'}},
   {job_id:'JOB-MULTI-QA-DISABLED',job_type:'battle-test',job_version:'1.0.0',required:false,enabled:false,resource_refs:{roster_id:roster.id,test_id:testA.id},output_policy:{level:'summary'}},
@@ -3894,7 +3909,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.30.2',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.31',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
