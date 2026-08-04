@@ -335,6 +335,35 @@ body.studio-input-open{overflow:hidden}
 @media(max-width:1000px){.ai-explorer-grid{grid-template-columns:1fr}.ai-candidate{grid-template-columns:repeat(2,minmax(0,1fr))}.ai-candidate>button{grid-column:1/-1}}
 @media(max-width:560px){.ai-objective-grid,.ai-candidate{grid-template-columns:1fr}}
 
+
+/* BUILD472.33: zero-scroll Benchmark workflow launcher */
+.benchmark-workflow-launcher{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.benchmark-workflow-launcher .small{margin:0}
+.benchmark-workflow-overlay{position:fixed;inset:0;z-index:360;background:rgba(15,23,42,.58);display:flex;align-items:stretch;justify-content:center}
+.benchmark-workflow-overlay.hidden{display:none}
+.benchmark-workflow-sheet{width:min(760px,100%);height:100%;background:#f8fafc;display:flex;flex-direction:column;overflow:hidden}
+.benchmark-workflow-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:#fff;border-bottom:1px solid var(--line)}
+.benchmark-workflow-head h2{margin:0;font-size:19px}
+.benchmark-workflow-body{flex:1;min-height:0;padding:10px 12px;display:grid;grid-template-rows:auto auto auto auto;gap:9px;overflow:hidden}
+.benchmark-workflow-body .field{margin:0}.benchmark-workflow-body select{min-height:46px}
+.benchmark-workflow-preview{padding:10px;max-height:130px;overflow:auto;font-size:13px;line-height:1.45}
+.benchmark-workflow-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.benchmark-workflow-actions button{min-height:48px;padding:8px 10px}
+.benchmark-workflow-actions .wide{grid-column:1/-1}
+.benchmark-workflow-state{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0}
+.benchmark-workflow-state .item{padding:10px;overflow:auto;font-size:13px;line-height:1.4}
+.benchmark-workflow-foot{padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.benchmark-workflow-foot button{min-height:46px}
+body.benchmark-workflow-open{overflow:hidden}
+@media(max-width:520px){
+ .benchmark-workflow-launcher{grid-template-columns:1fr}
+ .benchmark-workflow-body{padding:8px;gap:7px}
+ .benchmark-workflow-preview{max-height:112px}
+ .benchmark-workflow-actions button{min-height:44px;font-size:14px}
+ .benchmark-workflow-state{grid-template-columns:1fr}
+ .benchmark-workflow-state .item{max-height:82px}
+}
+
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -1054,6 +1083,37 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   <div id="buildSettingsStatus" class="small"></div>
 </div>
 
+
+<div id="benchmarkWorkflowOverlay" class="benchmark-workflow-overlay hidden" aria-hidden="true" onclick="handleBenchmarkWorkflowBackdrop(event)">
+  <div class="benchmark-workflow-sheet" role="dialog" aria-modal="true" aria-labelledby="benchmarkWorkflowTitle" onclick="event.stopPropagation()">
+    <div class="benchmark-workflow-head">
+      <div><h2 id="benchmarkWorkflowTitle">Benchmark ZIPワークフロー</h2><div class="small">出す → 実行 → 受け取る</div></div>
+      <button type="button" onclick="closeBenchmarkWorkflow()">閉じる</button>
+    </div>
+    <div class="benchmark-workflow-body">
+      <div class="field"><label>使用するBenchmark</label><select id="battleBenchmarkSelect" onchange="previewBattleBenchmark()"><option value="">選択してください</option></select></div>
+      <div id="battleBenchmarkPreview" class="item benchmark-workflow-preview">Benchmarkを選択してください。</div>
+      <div class="benchmark-workflow-actions">
+        <button class="primary wide" type="button" onclick="runBattleBenchmark()">選択したBenchmarkを実行</button>
+        <button type="button" onclick="cancelBattleBenchmark()">中止</button>
+        <button type="button" onclick="exportLatestBattleBenchmarkResult(false)">完全結果JSON</button>
+        <button type="button" onclick="exportLatestBattleBenchmarkResult(true)">AI解析JSON</button>
+        <button class="primary" type="button" onclick="exportLatestBattleBenchmarkResultPackage()">結果Package ZIP出力</button>
+        <button type="button" onclick="document.getElementById('battleBenchmarkResultPackageFileInput').click()">結果Package ZIP読込</button>
+      </div>
+      <div class="benchmark-workflow-state">
+        <div id="battleBenchmarkStatus" class="item">未実行です。</div>
+        <div id="battleBenchmarkResultPackageStatus" class="item"><b>Benchmark結果Package：</b>未読込です。</div>
+      </div>
+      <div id="battleBenchmarkResultList" class="hidden"></div>
+    </div>
+    <div class="benchmark-workflow-foot">
+      <button type="button" onclick="closeBenchmarkWorkflow()">閉じる</button>
+      <button class="primary" type="button" onclick="document.getElementById('battleBenchmarkResultPackageFileInput').click()">受取ZIPを読み込む</button>
+    </div>
+  </div>
+</div>
+
 <div id="studioInputOverlay" class="studio-input-overlay hidden" aria-hidden="true" onclick="handleStudioInputBackdrop(event)">
   <div class="studio-input-sheet" role="dialog" aria-modal="true" aria-labelledby="studioInputTitle">
     <div class="studio-input-head"><h2 id="studioInputTitle">入力</h2><div class="toolbar"><button type="button" onclick="backToDatabase()">戻る</button><button type="button" onclick="closeToProductionLauncher()">閉じる</button></div></div>
@@ -1174,7 +1234,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.32.1</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.33</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1246,22 +1306,10 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <div id="battleBenchmarkManagerList"></div>
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid #c9d8e6">
-        <h3 style="margin-top:0">Benchmark実行センター</h3>
-        <div class="grid">
-          <div class="field"><label>使用するBenchmark</label><select id="battleBenchmarkSelect" onchange="previewBattleBenchmark()"><option value="">選択してください</option></select></div>
+        <div class="benchmark-workflow-launcher item">
+          <div><b>Benchmark ZIPワークフロー</b><p class="small">選択・実行・結果ZIP出力・受取ZIP読込を1画面で完結します。</p></div>
+          <button class="primary" type="button" onclick="openBenchmarkWorkflow()">ワークフローを開く</button>
         </div>
-        <div id="battleBenchmarkPreview" class="item">Benchmarkを選択してください。</div>
-        <div class="toolbar">
-          <button class="primary" type="button" onclick="runBattleBenchmark()">選択したBenchmarkを実行</button>
-          <button type="button" onclick="cancelBattleBenchmark()">中止</button>
-          <button type="button" onclick="exportLatestBattleBenchmarkResult(false)">完全結果JSONを出力</button>
-          <button type="button" onclick="exportLatestBattleBenchmarkResult(true)">AI解析用JSONを出力</button>
-          <button class="primary" type="button" onclick="exportLatestBattleBenchmarkResultPackage()">Benchmark結果Package ZIPを出力</button>
-          <button type="button" onclick="document.getElementById('battleBenchmarkResultPackageFileInput').click()">Benchmark結果Package ZIPを読み込む</button>
-        </div>
-        <div id="battleBenchmarkStatus" class="item">未実行です。</div>
-        <div id="battleBenchmarkResultPackageStatus" class="item" style="margin-top:8px"><b>Benchmark結果Package：</b>未読込です。</div>
-        <div id="battleBenchmarkResultList"></div>
       </div>
     </div>
 
@@ -3820,6 +3868,22 @@ function battleBenchmarkAiPayload(result){return {format:'guild-adventure-studio
 function exportBattleBenchmarkResultById(id,aiOnly=false){const result=ensureBattleVerificationStore().results.find(x=>String(x.id)===String(id));if(!result)return alert('Benchmark結果が見つかりません。');const payload=aiOnly?battleBenchmarkAiPayload(result):battleVerificationEnvelope('battle-result',result);downloadText(`GK_BattleBenchmark_${aiOnly?'AI_':''}${result.id}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8')}
 function exportLatestBattleBenchmarkResult(aiOnly=false){const result=window.lastBattleBenchmarkResult||ensureBattleVerificationStore().results.find(x=>x.document_type==='battle-benchmark-result');if(!result)return alert('先にBenchmarkを実行してください。');exportBattleBenchmarkResultById(result.id,aiOnly)}
 
+
+function openBenchmarkWorkflow(){
+ const overlay=document.getElementById('benchmarkWorkflowOverlay');
+ if(!overlay)return;
+ overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');
+ document.body.classList.add('benchmark-workflow-open');
+ previewBattleBenchmark();
+}
+function closeBenchmarkWorkflow(){
+ const overlay=document.getElementById('benchmarkWorkflowOverlay');
+ if(!overlay)return;
+ overlay.classList.add('hidden');overlay.setAttribute('aria-hidden','true');
+ document.body.classList.remove('benchmark-workflow-open');
+}
+function handleBenchmarkWorkflowBackdrop(event){if(event.target===event.currentTarget)closeBenchmarkWorkflow();}
+
 function battleBenchmarkResultPackageSummary(result){
  const matchups=Array.isArray(result?.matchups)?result.matchups:[];
  const ranking=matchups.map((m,index)=>({rank:index+1,target_roster_id:m.target_roster_id,target_roster_name:m.target_roster_name,summary:m.summary||{}}));
@@ -3975,7 +4039,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.32.1',studioVersion:'1.45.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.33',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
