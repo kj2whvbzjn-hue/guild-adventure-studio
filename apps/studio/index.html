@@ -346,7 +346,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.21</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.22</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1041,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.21" placeholder="例: 472.21"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.22" placeholder="例: 472.22"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.21</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.22</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -3371,7 +3371,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.21',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.22',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -3941,6 +3941,126 @@ const GKZipCore={
    return this.sha256Bytes(new TextEncoder().encode(String(text??'')));
   }
  },
+ diagnostics:{
+  create(){return [];},
+  add(list,severity,code,message,extra={}){
+   const item={severity:String(severity||'INFO'),code:String(code||'UNKNOWN'),message:String(message||''),...extra};
+   if(Array.isArray(list))list.push(item);
+   return item;
+  },
+  hasFatal(list){return (Array.isArray(list)?list:[]).some(item=>item?.severity==='FATAL');}
+ },
+ reader:{
+  toBytes(value){
+   if(value instanceof Uint8Array)return value;
+   if(value instanceof ArrayBuffer)return new Uint8Array(value);
+   if(ArrayBuffer.isView(value))return new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
+   return new Uint8Array(value||0);
+  },
+  rawEntryNames(bytes){
+   const data=this.toBytes(bytes);
+   const view=new DataView(data.buffer,data.byteOffset,data.byteLength);
+   let eocd=-1;
+   for(let i=data.length-22;i>=Math.max(0,data.length-65557);i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break}}
+   if(eocd<0)return [];
+   const count=view.getUint16(eocd+10,true);
+   let offset=view.getUint32(eocd+16,true);
+   const names=[];const decoder=new TextDecoder('utf-8',{fatal:false});
+   for(let i=0;i<count&&offset+46<=data.length;i++){
+    if(view.getUint32(offset,true)!==0x02014b50)break;
+    const nameLength=view.getUint16(offset+28,true);
+    const extraLength=view.getUint16(offset+30,true);
+    const commentLength=view.getUint16(offset+32,true);
+    names.push(decoder.decode(data.subarray(offset+46,offset+46+nameLength)));
+    offset+=46+nameLength+extraLength+commentLength;
+   }
+   return names;
+  },
+  async inspect(file,options={}){
+   if(typeof JSZip==='undefined')throw new Error('ZIP読込ライブラリを読み込めませんでした。');
+   if(!file)throw new Error('ZIPファイルが指定されていません。');
+   const diagnostics=GKZipCore.diagnostics.create();
+   const limits=options.limits||GKZipCore.limits.createPolicy();
+   const sourceBytes=file instanceof Uint8Array?file:this.toBytes(typeof file.arrayBuffer==='function'?await file.arrayBuffer():file);
+   const rawNames=this.rawEntryNames(sourceBytes).filter(name=>!String(name).endsWith('/'));
+   const countResult=GKZipCore.limits.validate({fileCount:rawNames.length},limits);
+   if(!countResult.ok){
+    GKZipCore.diagnostics.add(diagnostics,'FATAL',countResult.code,'ZIP内ファイル数が上限を超えています。',{actual:countResult.actual,limit:countResult.limit});
+    throw Object.assign(new Error(`ZIP内ファイル数が上限${countResult.limit}件を超えています。`),{code:countResult.code,diagnostics});
+   }
+   const rawNormalized=[];
+   for(const name of rawNames){
+    const rawPath=String(name||'').replace(/\\/g,'/');
+    if(rawPath.startsWith('/')||/^[A-Za-z]:\//.test(rawPath)||rawPath.split('/').some(part=>part==='..')){
+     GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_UNSAFE',`危険なZIPパスです: ${rawPath}`,{path:rawPath});
+     throw Object.assign(new Error(`危険なZIPパスを検出しました: ${rawPath}`),{code:'ZIP_PATH_UNSAFE',diagnostics});
+    }
+    rawNormalized.push(GKZipCore.path.normalize(rawPath));
+   }
+   const root=options.stripCommonRoot===false?'':GKZipCore.path.commonRoot(rawNormalized);
+   const normalizedRawRelative=rawNormalized.map(path=>root&&path.startsWith(root)?path.slice(root.length):path).filter(Boolean);
+   if(new Set(normalizedRawRelative).size!==normalizedRawRelative.length){
+    GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_DUPLICATE_NORMALIZED','正規化後に重複するZIPパスがあります。');
+    throw Object.assign(new Error('重複正規化パスを検出しました。'),{code:'ZIP_PATH_DUPLICATE_NORMALIZED',diagnostics});
+   }
+   const zip=await JSZip.loadAsync(sourceBytes);
+   const sourceEntries=Object.values(zip.files).filter(entry=>!entry.dir);
+   const seen=new Set();
+   const entries=[];
+   for(const sourceEntry of sourceEntries){
+    const rawPath=String(sourceEntry.unsafeOriginalName||sourceEntry.name||'').replace(/\\/g,'/');
+    if(rawPath.startsWith('/')||/^[A-Za-z]:\//.test(rawPath)){
+     GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_ABSOLUTE',`絶対パスは使用できません: ${rawPath}`,{path:rawPath});
+     throw Object.assign(new Error(`絶対パスを検出しました: ${rawPath}`),{code:'ZIP_PATH_ABSOLUTE',diagnostics});
+    }
+    let relative=GKZipCore.path.normalize(rawPath);
+    if(root&&relative.startsWith(root))relative=relative.slice(root.length);
+    if(!relative)continue;
+    const parts=relative.split('/');
+    if(parts.some(part=>!part||part==='.'||part==='..')){
+     GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_UNSAFE',`危険なZIPパスです: ${relative}`,{path:relative});
+     throw Object.assign(new Error(`危険なZIPパスを検出しました: ${relative}`),{code:'ZIP_PATH_UNSAFE',diagnostics});
+    }
+    if(seen.has(relative)){
+     GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_DUPLICATE_NORMALIZED',`重複正規化パスです: ${relative}`,{path:relative});
+     throw Object.assign(new Error(`重複正規化パスを検出しました: ${relative}`),{code:'ZIP_PATH_DUPLICATE_NORMALIZED',diagnostics});
+    }
+    seen.add(relative);
+    if(Array.isArray(options.acceptedExtensions)&&options.acceptedExtensions.length){
+     const lower=relative.toLowerCase();
+     const accepted=options.acceptedExtensions.some(ext=>lower.endsWith(String(ext).toLowerCase()));
+     if(!accepted){
+      const severity=options.rejectUnknownExtensions===false?'INFO':'FATAL';
+      GKZipCore.diagnostics.add(diagnostics,severity,'ZIP_EXTENSION_NOT_ALLOWED',`許可されていない拡張子です: ${relative}`,{path:relative});
+      if(severity==='FATAL')throw Object.assign(new Error(`許可されていないファイルです: ${relative}`),{code:'ZIP_EXTENSION_NOT_ALLOWED',diagnostics});
+     }
+    }
+    entries.push({path:relative,sourcePath:sourceEntry.name,sourceEntry,sizeHint:Number(sourceEntry?._data?.uncompressedSize)||null});
+   }
+   const cache=new Map();
+   let loadedTotalBytes=0;
+   async function getBytes(path){
+    const normalized=GKZipCore.path.normalize(path);
+    if(cache.has(normalized))return cache.get(normalized);
+    const item=entries.find(entry=>entry.path===normalized);
+    if(!item)throw Object.assign(new Error(`ZIP内ファイルが見つかりません: ${normalized}`),{code:'ZIP_ENTRY_NOT_FOUND'});
+    const bytes=await item.sourceEntry.async('uint8array');
+    const single=GKZipCore.limits.validate({fileBytes:bytes.length},limits);
+    if(!single.ok)throw Object.assign(new Error(`単体ファイル上限超過: ${normalized}`),{code:single.code,path:normalized,actual:single.actual,limit:single.limit});
+    loadedTotalBytes+=bytes.length;
+    const total=GKZipCore.limits.validate({totalBytes:loadedTotalBytes},limits);
+    if(!total.ok)throw Object.assign(new Error(`ZIP展開後の合計容量が上限を超えています。`),{code:total.code,actual:total.actual,limit:total.limit});
+    cache.set(normalized,bytes);
+    return bytes;
+   }
+   async function getText(path){return new TextDecoder('utf-8',{fatal:false}).decode(await getBytes(path));}
+   async function getJson(path){
+    try{return JSON.parse(await getText(path));}
+    catch(error){throw Object.assign(new Error(`${GKZipCore.path.normalize(path)}をJSONとして解析できません。`),{code:'JSON_PARSE_ERROR',path:GKZipCore.path.normalize(path),cause:error});}
+   }
+   return {fileName:file.name||'',zip,entries,commonRoot:root,diagnostics,getBytes,getText,getJson,get loadedTotalBytes(){return loadedTotalBytes;}};
+  }
+ },
  format:{
   bytes(size){
    const value=Number(size)||0;
@@ -4319,32 +4439,20 @@ function setDeployExecuteEnabled(enabled){
 async function inspectStudioPackage(){
  const file=studioUpdateZip.files?.[0];
  if(!file)return alert('更新ZIPを選択してください。');
- if(typeof JSZip==='undefined')return alert('ZIP読込ライブラリを読み込めませんでした。再読み込みしてください。');
  try{
   studioDeployPlan=null;studioDeployLastResult=null;setDeployExecuteEnabled(false);setDeployPagesStatus('未確認');
   deployPackageStatus.textContent='ZIPを解析中…';
-  const zip=await JSZip.loadAsync(file);
-  const entries=Object.values(zip.files).filter(x=>!x.dir);
-  if(entries.length>STUDIO_DEPLOY_MAX_FILES)throw new Error(`ZIP内ファイル数が上限${STUDIO_DEPLOY_MAX_FILES}件を超えています。`);
-  const root=commonZipRoot(entries.map(x=>x.name));
+  const packageReader=await GKZipCore.reader.inspect(file,{limits:STUDIO_DEPLOY_LIMIT_POLICY,stripCommonRoot:true});
   const protectedSet=protectedDeploySet();
-  const files=[];let meta=null;let totalBytes=0;
-  const normalizedSeen=new Set();
-  for(const entry of entries){
-   let relative=normalizeDeployPath(entry.name);
-   if(root&&relative.startsWith(root))relative=relative.slice(root.length);
-   if(!relative)continue;
-   if(normalizedSeen.has(relative))throw new Error(`重複正規化パスを検出しました: ${relative}`);
-   normalizedSeen.add(relative);
+  const files=[];let meta=null;
+  for(const entry of packageReader.entries){
+   const relative=entry.path;
    if(relative==='studio-update.json'){
-    try{meta=JSON.parse(await entry.async('text'))}catch(e){throw new Error('studio-update.jsonを解析できません。')}
+    try{meta=await packageReader.getJson(relative)}catch(e){throw new Error('studio-update.jsonを解析できません。')}
     continue;
    }
    const excluded=isUnsafeDeployPath(relative)||protectedSet.has(relative);
-   const bytes=await entry.async('uint8array');
-   if(bytes.length>STUDIO_DEPLOY_MAX_FILE_BYTES)throw new Error(`単体ファイル上限超過: ${relative}`);
-   totalBytes+=bytes.length;
-   if(totalBytes>STUDIO_DEPLOY_MAX_TOTAL_BYTES)throw new Error('ZIP展開後の合計容量が100MBを超えています。');
+   const bytes=await packageReader.getBytes(relative);
    files.push({path:relative,size:bytes.length,bytes,excluded,reason:excluded?'保護・除外':'未比較',status:excluded?'PROTECTED':'PENDING'});
   }
   const uploadable=files.filter(x=>!x.excluded);
