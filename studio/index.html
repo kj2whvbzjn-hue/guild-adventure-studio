@@ -336,7 +336,7 @@ body.studio-input-open{overflow:hidden}
 @media(max-width:560px){.ai-objective-grid,.ai-candidate{grid-template-columns:1fr}}
 
 
-/* BUILD472.39: asset cleanup / runtime behavior unchanged */
+/* BUILD472.40: GitHub deployment DELETE diff and commit support */
 .benchmark-workflow-launcher{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .benchmark-workflow-launcher .small{margin:0}
 .benchmark-workflow-overlay{position:fixed;inset:0;z-index:360;background:rgba(15,23,42,.58);display:flex;align-items:stretch;justify-content:center}
@@ -367,6 +367,7 @@ body.benchmark-workflow-open{overflow:hidden}
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
+updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=333"></script>
 </head>
@@ -375,7 +376,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.39</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.40</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1070,7 +1071,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.39" placeholder="例: 472.39"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.40" placeholder="例: 472.40"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1245,7 +1246,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
   </div>
   <div id="battleDeveloperWorkspace" class="hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.39</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.40</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1794,6 +1795,10 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
     <div class="field"><label>保護するファイル（カンマ区切り）</label><input id="deployProtectedPaths" value="project-data.json"></div>
     <label><input id="deployDryRun" type="checkbox"> テスト実行（GitHubへ書き込まない）</label>
+    <div class="item" style="margin-top:12px">
+      <label><input id="deployAllowDelete" type="checkbox" onchange="handleDeployDeleteToggle()"> ZIPに存在しないGitHub上のファイルを削除する</label>
+      <div id="deployDeleteHelp" class="small">初期状態は無効です。公開ZIPをリポジトリの完全な配置内容として扱う場合だけ使用してください。AI差分ZIPでは削除できません。</div>
+    </div>
 
     <h3>差分ファイル</h3>
     <div id="deployFileList" class="deploy-file-list"></div>
@@ -4016,7 +4021,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.39',studioVersion:'1.45.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.40',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -5028,6 +5033,7 @@ let studioDeployBusy=false;
 let studioDeployPlan=null;
 let studioDeployLastResult=null;
 let studioDeployPackageKind=null;
+let studioDeployDeleteCandidates=[];
 const STUDIO_DEPLOY_HISTORY_KEY='gk_studio_deploy_history_v1';
 const STUDIO_DEPLOY_LIMIT_POLICY=GKZipCore.limits.createPolicy({maxFiles:5000,maxFileBytes:20*1024*1024,maxTotalBytes:100*1024*1024});
 const STUDIO_DEPLOY_MAX_FILES=STUDIO_DEPLOY_LIMIT_POLICY.maxFiles;
@@ -5143,6 +5149,35 @@ function setDeployExecuteEnabled(enabled){
  const button=document.getElementById('deployExecuteButton');
  if(button)button.disabled=!enabled;
 }
+function updateDeployDeleteControl(){
+ const checkbox=document.getElementById('deployAllowDelete');
+ const help=document.getElementById('deployDeleteHelp');
+ if(!checkbox||!help)return;
+ const publicPackage=studioDeployPackageKind==='public';
+ checkbox.disabled=!publicPackage;
+ if(!publicPackage)checkbox.checked=false;
+ help.textContent=publicPackage
+  ?'削除許可ON時のみ、配置先のGitHubファイルからZIPに存在しないものをDELETE候補にします。保護ファイルと危険パスは削除しません。'
+  :'AI差分ZIPまたは未選択のため削除は無効です。削除には公開ZIPが必要です。';
+}
+async function handleDeployDeleteToggle(){
+ studioDeployDeleteCandidates=[];
+ studioDeployPlan=null;
+ setDeployExecuteEnabled(false);
+ renderDeployPackage();
+ if(studioDeployFiles.some(x=>!x.excluded)){
+  try{await prepareStudioDeployDiff()}catch(e){
+   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
+  }
+ }
+}
+function remotePathInsideDeployBase(remotePath,base){
+ const normalized=normalizeDeployPath(remotePath);
+ const normalizedBase=normalizeDeployPath(base).replace(/\/$/,'');
+ if(!normalizedBase)return normalized;
+ if(normalized===normalizedBase)return '';
+ return normalized.startsWith(normalizedBase+'/')?normalized.slice(normalizedBase.length+1):null;
+}
 async function inspectStudioPackage(){
  const file=studioUpdateZip.files?.[0];
  if(!file)return alert('更新ZIPを選択してください。');
@@ -5169,7 +5204,8 @@ async function inspectStudioPackage(){
   const packageKind=selectedMode==='auto'?(hasRootIndex?'public':'patch'):selectedMode;
   if(packageKind==='public'&&!hasRootIndex)throw new Error('公開ZIPには公開ルートのindex.htmlが必要です。AI差分ZIPを選ぶか、自動判定を使用してください。');
   studioDeployPackageKind=packageKind;
-  studioDeployFiles=files;studioDeployMeta=meta;
+  studioDeployFiles=files;studioDeployMeta=meta;studioDeployDeleteCandidates=[];
+  updateDeployDeleteControl();
   renderDeployPackage();
   const version=meta?.display_version||meta?.version||'バージョン情報なし';
   const kindLabel=packageKind==='patch'?'AI差分ZIP':'公開ZIP';
@@ -5177,7 +5213,7 @@ async function inspectStudioPackage(){
   resetDeployLog();deployLogMessage(`ローカル検査完了: ${uploadable.length}ファイル。GitHub差分を取得します。`);
   await prepareStudioDeployDiff();
  }catch(e){
-  studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;setDeployExecuteEnabled(false);
+  studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];updateDeployDeleteControl();setDeployExecuteEnabled(false);
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
   renderDeployPackage();
  }
@@ -5195,11 +5231,14 @@ async function prepareStudioDeployDiff(){
  if(!files.length)throw new Error('配置可能なファイルがありません。');
  const c=getGhConfig();
  const base=normalizeDeployPath(deployBasePath.value);
+ const deleteEnabled=document.getElementById('deployAllowDelete')?.checked===true;
+ if(deleteEnabled&&studioDeployPackageKind!=='public')throw new Error('削除機能は公開ZIPでのみ使用できます。');
  studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);
  try{
   saveGitHubSettings();
   const remote=await getGitHead(c);
-  const map=new Map((remote.tree.tree||[]).filter(x=>x.type==='blob').map(x=>[x.path,x.sha]));
+  const remoteBlobs=(remote.tree.tree||[]).filter(x=>x.type==='blob');
+  const map=new Map(remoteBlobs.map(x=>[x.path,x.sha]));
   let add=0,modify=0,unchanged=0;
   for(let i=0;i<files.length;i++){
    const file=files[i];
@@ -5211,14 +5250,41 @@ async function prepareStudioDeployDiff(){
    file.status=!remoteSha?'ADD':remoteSha===file.gitSha?'UNCHANGED':'MODIFY';
    file.reason=file.status;
    if(file.status==='ADD')add++; else if(file.status==='MODIFY')modify++; else unchanged++;
-   deployProgressBar.style.width=Math.round(((i+1)/files.length)*100)+'%';
+   deployProgressBar.style.width=Math.round(((i+1)/files.length)*85)+'%';
    deployProgressText.textContent=`差分解析 ${i+1}/${files.length}`;
   }
-  const changes=files.filter(x=>x.status==='ADD'||x.status==='MODIFY');
-  studioDeployPlan={...remote,owner:c.owner,repoName:c.repo,branch:c.branch,base,changes,preparedAt:new Date().toISOString()};
+
+  studioDeployDeleteCandidates=[];
+  if(deleteEnabled){
+   const protectedSet=protectedDeploySet();
+   const localTargets=new Set(files.map(x=>x.target));
+   for(const remoteFile of remoteBlobs){
+    const relative=remotePathInsideDeployBase(remoteFile.path,base);
+    if(relative===null||relative==='')continue;
+    if(localTargets.has(remoteFile.path))continue;
+    if(protectedSet.has(relative)||isUnsafeDeployPath(relative))continue;
+    studioDeployDeleteCandidates.push({
+     path:relative,target:remoteFile.path,size:0,bytes:null,excluded:false,
+     reason:'ZIPに存在しないGitHubファイル',status:'DELETE',
+     remoteSha:remoteFile.sha,gitSha:null,sha256:null
+    });
+   }
+   studioDeployDeleteCandidates.sort((a,b)=>a.target.localeCompare(b.target));
+  }
+
+  const changes=[
+   ...files.filter(x=>x.status==='ADD'||x.status==='MODIFY'),
+   ...studioDeployDeleteCandidates
+  ];
+  studioDeployPlan={
+   ...remote,owner:c.owner,repoName:c.repo,branch:c.branch,base,changes,
+   deleteEnabled,preparedAt:new Date().toISOString()
+  };
   renderDeployPackage();
-  deployPackageStatus.innerHTML=`<span class="badge ok">配置準備完了</span> ADD ${add} / MODIFY ${modify} / UNCHANGED ${unchanged}`;
-  deployLogMessage(`GitHub差分取得完了: ADD ${add}, MODIFY ${modify}, UNCHANGED ${unchanged}`);
+  const deleteCount=studioDeployDeleteCandidates.length;
+  deployPackageStatus.innerHTML=`<span class="badge ok">配置準備完了</span> ADD ${add} / MODIFY ${modify} / DELETE ${deleteCount} / UNCHANGED ${unchanged}`;
+  deployLogMessage(`GitHub差分取得完了: ADD ${add}, MODIFY ${modify}, DELETE ${deleteCount}, UNCHANGED ${unchanged}`);
+  deployProgressBar.style.width='100%';
   deployProgressText.textContent=changes.length?`配置待機: ${changes.length}件（人間承認が必要）`:'差分なし';
   setDeployExecuteEnabled(changes.length>0);
  }finally{studioDeployBusy=false;setGhBusy(false)}
@@ -5228,19 +5294,21 @@ function renderDeployPackage(){
  const included=studioDeployFiles.filter(x=>!x.excluded);
  const excluded=studioDeployFiles.filter(x=>x.excluded);
  const changes=included.filter(x=>x.status==='ADD'||x.status==='MODIFY');
+ const deletes=studioDeployDeleteCandidates||[];
  const unchanged=included.filter(x=>x.status==='UNCHANGED');
  const total=changes.reduce((n,x)=>n+x.size,0);
- deploySummary.textContent=studioDeployFiles.length
-  ?`変更 ${changes.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
+ deploySummary.textContent=(studioDeployFiles.length||deletes.length)
+  ?`変更 ${changes.length}件 / 削除 ${deletes.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
   :'パッケージ確認後に表示します。';
- deployFileList.innerHTML=studioDeployFiles.map(f=>{
+ const rows=[...studioDeployFiles,...deletes];
+ deployFileList.innerHTML=rows.map(f=>{
   const status=f.excluded?'PROTECTED':f.status||'PENDING';
-  const cls=status==='ADD'||status==='MODIFY'?'warn':status==='UNCHANGED'?'ok':'warn';
-  return `<div class="deploy-file-row"><span>${esc(f.target||f.path)}</span><span>${esc(formatBytes(f.size))}</span><span class="badge ${cls}">${esc(status)}</span></div>`;
+  const cls=status==='ADD'||status==='MODIFY'?'warn':status==='DELETE'?'err':status==='UNCHANGED'?'ok':'warn';
+  return `<div class="deploy-file-row"><span>${esc(f.target||f.path)}</span><span>${status==='DELETE'?'—':esc(formatBytes(f.size))}</span><span class="badge ${cls}">${esc(status)}</span></div>`;
  }).join('');
 }
 function clearStudioPackage(){
- studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;setDeployPagesStatus('未確認');
+ studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
  deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
  deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
@@ -5256,8 +5324,12 @@ async function deployStudioPackage(){
  if(c.owner!==studioDeployPlan.owner||c.repo!==studioDeployPlan.repoName||c.branch!==studioDeployPlan.branch)return alert('接続先が差分解析時から変更されています。再解析してください。');
  const message=(deployCommitMessage.value.trim()||'Deploy Guild Adventure Studio update')+(studioDeployMeta?.version?` ${studioDeployMeta.version}`:'');
  const dry=deployDryRun.checked;
- const add=changes.filter(x=>x.status==='ADD').length,modify=changes.filter(x=>x.status==='MODIFY').length;
- if(!confirm(`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\n削除: 0\nCommit: ${message}\n\nGitHubへの書込みはこの承認後にだけ開始されます。続行しますか？`))return;
+ const add=changes.filter(x=>x.status==='ADD').length;
+ const modify=changes.filter(x=>x.status==='MODIFY').length;
+ const deleteCount=changes.filter(x=>x.status==='DELETE').length;
+ const deletePreview=changes.filter(x=>x.status==='DELETE').slice(0,20).map(x=>'・'+x.target).join('\n');
+ if(!confirm(`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\nDELETE: ${deleteCount}\nCommit: ${message}${deleteCount?`\n\n削除対象（最大20件表示）:\n${deletePreview}`:''}\n\nGitHubへの書込みはこの承認後にだけ開始されます。続行しますか？`))return;
+ if(deleteCount&&!confirm(`最終確認\n\nGitHub上の ${deleteCount} ファイルを削除します。\n削除は新しいCommitとして記録され、ロールバック可能です。\n\n本当に続行しますか？`))return;
  try{
   studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);resetDeployLog();
   deployLogMessage(`${dry?'テスト':'単一Commit配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
@@ -5265,7 +5337,7 @@ async function deployStudioPackage(){
   if(current.headSha!==studioDeployPlan.headSha)throw new Error('差分解析後にBranchが更新されました。競合防止のため停止しました。再解析してください。');
   if(dry){
    deployProgressBar.style.width='100%';deployProgressText.textContent=`テスト完了 ${changes.length}件`;
-   deployLogMessage(`テスト完了: ref更新なし / 対象 ${changes.length}件`);
+   deployLogMessage(`テスト完了: ref更新なし / ADD ${add} / MODIFY ${modify} / DELETE ${deleteCount}`);
    deployPackageStatus.innerHTML='<span class="badge ok">テスト完了</span> GitHubへの書込みはありません。';
    setDeployExecuteEnabled(true);return;
   }
@@ -5273,6 +5345,12 @@ async function deployStudioPackage(){
   for(let i=0;i<changes.length;i++){
    const file=changes[i];
    deployProgressBar.style.width=Math.round((i/changes.length)*75)+'%';
+   if(file.status==='DELETE'){
+    deployProgressText.textContent=`削除登録 ${i+1}/${changes.length} ${file.target}`;
+    treeEntries.push({path:file.target,mode:'100644',type:'blob',sha:null});
+    deployLogMessage(`Tree: DELETE ${file.target}`);
+    continue;
+   }
    deployProgressText.textContent=`Blob作成 ${i+1}/${changes.length} ${file.target}`;
    const blob=await createGitBlob(studioDeployPlan.repo,file);
    treeEntries.push({path:file.target,mode:'100644',type:'blob',sha:blob.sha});
@@ -5293,10 +5371,10 @@ async function deployStudioPackage(){
    commitMessage:message,preparedAt:studioDeployPlan.preparedAt,committedAt:new Date().toISOString(),
    packageVersion:studioDeployMeta?.display_version||studioDeployMeta?.version||null,
    cacheQuery:studioDeployMeta?.cache_query||null,
-   changes:changes.map(f=>({path:f.target,status:f.status,size:f.size,sha256:f.sha256,gitBlobSha:f.gitSha}))
+   changes:changes.map(f=>({path:f.target,status:f.status,size:f.size||0,sha256:f.sha256||null,gitBlobSha:f.gitSha||null}))
   };
   saveStudioDeployHistory(studioDeployLastResult);
-  deployPackageStatus.innerHTML=`<span class="badge ok">GitHub配置完了</span> 単一Commit ${esc(commit.sha.slice(0,12))} / Pages反映確認待ち。`;
+  deployPackageStatus.innerHTML=`<span class="badge ok">GitHub配置完了</span> ADD ${add} / MODIFY ${modify} / DELETE ${deleteCount} / Commit ${esc(commit.sha.slice(0,12))}`;
   setDeployPagesStatus('Commit成功。Pages反映確認待ちです。','WARNING');
   studioDeployPlan=null;
   confirmPagesDeployment();
