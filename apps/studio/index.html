@@ -336,7 +336,7 @@ body.studio-input-open{overflow:hidden}
 @media(max-width:560px){.ai-objective-grid,.ai-candidate{grid-template-columns:1fr}}
 
 
-/* BUILD472.33: zero-scroll Benchmark workflow launcher */
+/* BUILD472.34: four-button human workflow */
 .benchmark-workflow-launcher{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 .benchmark-workflow-launcher .small{margin:0}
 .benchmark-workflow-overlay{position:fixed;inset:0;z-index:360;background:rgba(15,23,42,.58);display:flex;align-items:stretch;justify-content:center}
@@ -1234,7 +1234,17 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.33</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <div id="battleHumanWorkflow" style="min-height:calc(100dvh - 210px);display:flex;align-items:center;justify-content:center;padding:18px 0 36px">
+    <div style="width:min(100%,720px);display:grid;gap:16px">
+      <button class="primary" type="button" style="min-height:88px;font-size:1.22rem;font-weight:800" onclick="document.getElementById('battlePackageFileInput').click()">1. Battle Package ZIPを読み込む</button>
+      <button class="primary" type="button" style="min-height:88px;font-size:1.22rem;font-weight:800" onclick="runBattlePackageExecution()">2. 読み込んだPackageを実行</button>
+      <button class="primary" type="button" style="min-height:88px;font-size:1.22rem;font-weight:800" onclick="exportBattlePackageResult()">3. 結果Package ZIPを出力</button>
+      <button type="button" style="min-height:88px;font-size:1.22rem;font-weight:800" onclick="document.getElementById('battleBenchmarkResultPackageFileInput').click()">4. 結果Package ZIPを読み込む</button>
+      <div id="battleHumanWorkflowStatus" class="item" style="margin:0;text-align:center">Battle Packageを読み込んでください。</div>
+    </div>
+  </div>
+  <div id="battleDeveloperWorkspace" class="hidden">
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.34</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1559,6 +1569,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
   <div class="card"><h2>ユニット別集計</h2><div id="battleMetrics" class="small">戦闘実行後に表示します。</div></div>
   <div class="card"><h2>戦闘履歴・比較</h2><p class="small">比較A・比較Bを1件ずつ選ぶと差分を表示します。履歴は最大50件です。</p><div id="battleHistory"></div><div id="battleCompare" class="small"></div></div>
   <div class="card"><h2>戦闘ログ</h2><pre id="battleLog" style="white-space:pre-wrap;max-height:560px;overflow:auto"></pre></div>
+  </div>
 </section>
 
 <section id="view-decisions" class="view hidden">
@@ -3869,6 +3880,18 @@ function exportBattleBenchmarkResultById(id,aiOnly=false){const result=ensureBat
 function exportLatestBattleBenchmarkResult(aiOnly=false){const result=window.lastBattleBenchmarkResult||ensureBattleVerificationStore().results.find(x=>x.document_type==='battle-benchmark-result');if(!result)return alert('先にBenchmarkを実行してください。');exportBattleBenchmarkResultById(result.id,aiOnly)}
 
 
+function updateBattleHumanWorkflowStatus(){
+ const target=document.getElementById('battleHumanWorkflowStatus');if(!target)return;
+ const packageStatus=document.getElementById('battlePackageStatus');
+ const executionStatus=document.getElementById('battlePackageExecutionStatus');
+ const resultStatus=document.getElementById('battleBenchmarkResultPackageStatus');
+ const texts=[packageStatus?.textContent,executionStatus?.textContent,resultStatus?.textContent].filter(Boolean);
+ target.textContent=texts.find(x=>x&&!/未読込です|読み込んでください/.test(x))||'Battle Packageを読み込んでください。';
+}
+function initBattleHumanWorkflowStatus(){
+ ['battlePackageStatus','battlePackageExecutionStatus','battleBenchmarkResultPackageStatus'].forEach(id=>{const el=document.getElementById(id);if(el)new MutationObserver(updateBattleHumanWorkflowStatus).observe(el,{subtree:true,childList:true,characterData:true});});
+ updateBattleHumanWorkflowStatus();
+}
 function openBenchmarkWorkflow(){
  const overlay=document.getElementById('benchmarkWorkflowOverlay');
  if(!overlay)return;
@@ -4039,7 +4062,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.33',studioVersion:'1.45.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.34',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -4444,7 +4467,7 @@ function compareBattleSnapshots(){
 }
 function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)return alert('先に編成比較を実行してください。');const head=['formation','seed','result','ticks','ally_survivors','ally_actions','ally_damage','ally_healing'];const lines=[head.map(csvCell).join(',')];lastSnapshotComparison.forEach(group=>group.results.forEach(r=>{const a=battleHistoryTotals(r,'allies');lines.push([group.summary.name,r.seed,r.result,r.ticks,a.survivors,a.actions,a.damage_dealt,a.healing_done].map(csvCell).join(','))}));downloadText('GK_FormationComparison_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
-function renderBattle(){if(!document.getElementById('battleAllies'))return;renderBattleVerificationFoundation();applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();updateBattleComparisonFixedLabels();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
+function renderBattle(){if(!document.getElementById('battleAllies'))return;renderBattleVerificationFoundation();initBattleHumanWorkflowStatus();applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();updateBattleComparisonFixedLabels();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
 function updateBattleComparisonFixedLabels(){const ff=document.getElementById('formulaFixedFormation'),sf=document.getElementById('snapshotFixedFormula');if(ff){let ac=0,ec=0;try{ac=JSON.parse(battleAllies.value||'[]').length;ec=JSON.parse(battleEnemies.value||'[]').length}catch(_){ }ff.textContent=`固定編成：現在の入力内容（味方${ac} / 敵${ec}）`;}if(sf){const c=readBattleFormulaConfig();sf.textContent=`固定数式：${c.version||'未設定'} / 命中元=${c.accuracySource==='equipment'?'装備':'キャラクター'} / STR補正=${c.strAccuracyCoefficient} / AG係数=${c.agiGaugeCoefficient} / クリ倍率=${c.critMultiplier}`;}}
 
 function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
