@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.32</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.32.1</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -3829,7 +3829,7 @@ function battleBenchmarkResultPackageSummary(result){
  const mean=tickSamples.length?tickSamples.reduce((a,b)=>a+b,0)/tickSamples.length:null;
  const median=tickSamples.length?(tickSamples.length%2?tickSamples[(tickSamples.length-1)/2]:(tickSamples[tickSamples.length/2-1]+tickSamples[tickSamples.length/2])/2):null;
  const variance=tickSamples.length&&mean!==null?tickSamples.reduce((n,v)=>n+Math.pow(v-mean,2),0)/tickSamples.length:null;
- const aggregate=battleBenchmarkAggregate(result);
+ const aggregate=benchmarkAggregateSummary(result);
  return {
   format:'guild-adventure-studio-battle-benchmark-summary',version:'1.0.0',result_id:result?.id||'',benchmark_id:result?.benchmark_id||'',benchmark_name:result?.benchmark_name||'',build_version:result?.build_version||loadBuildSettings().developmentBuild,formula_version:result?.formula_version||'',executed_at:result?.executed_at||'',assessment:result?.assessment||{status:'UNASSESSED'},comparison:result?.comparison?{status:result.comparison.status,delta:result.comparison.delta}:null,
   execution:result?.execution||{},summary:result?.summary||{},aggregate,ranking,
@@ -3975,7 +3975,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.32',studioVersion:'1.45.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.32.1',studioVersion:'1.45.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
