@@ -168,6 +168,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .rule-tag-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.5fr;gap:10px}.rule-tag-picker-foot button{min-height:48px;font-size:15px}.rule-tag-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}
 body.rule-picker-open{overflow:hidden}
 
+/* BUILD472.13.1 Phase I2 restart: isolated battle verification file foundation */
 /* BUILD472.12 Phase I1: battle simulation core extraction */
 .master-skill-picker{position:fixed;inset:0;z-index:320;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .master-skill-picker.hidden{display:none}
@@ -345,7 +346,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.12</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.13.1</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1040,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.12" placeholder="例: 472.12"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.13.1" placeholder="例: 472.13.1"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1174,6 +1175,20 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <section id="view-battle" class="view hidden">
   <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.1</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+
+  <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
+    <h2>戦闘検証専用ファイル</h2>
+    <p class="small">プロジェクトJSONとは別の、戦闘検証専用JSONを扱います。この欄の操作は既存プロジェクトや旧戦闘履歴を上書きしません。</p>
+    <input id="battleVerificationFileInput" class="hidden" type="file" accept="application/json,.json" onchange="importBattleVerificationFile(this.files&&this.files[0]);this.value=''">
+    <div class="toolbar">
+      <button class="primary" type="button" onclick="document.getElementById('battleVerificationFileInput').click()">テストJSONを読み込む</button>
+      <button type="button" onclick="exportBattleRosterTemplate()">編成ひな形JSON</button>
+      <button type="button" onclick="exportBattleTestTemplate()">テストひな形JSON</button>
+      <button type="button" onclick="exportBattleVerificationStore()">登録内容を出力</button>
+    </div>
+    <div id="battleVerificationFileStatus" class="item">未読込です。</div>
+    <div id="battleVerificationFileSummary" class="small"></div>
+  </div>
   <div class="card">
     <h2>戦闘条件</h2>
     <div class="grid">
@@ -2802,6 +2817,61 @@ function renderMasters(){
 function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')));return '\ufeff'+lines.join('\r\n')}
+
+function ensureBattleVerificationStore(){
+ if(!data.battle_verification||typeof data.battle_verification!=='object'||Array.isArray(data.battle_verification)){
+  data.battle_verification={schema_version:'1.0.0',test_projects:[],rosters:[],roster_templates:[],opponent_sets:[],tests:[],benchmarks:[],results:[],change_events:[]};
+ }
+ const store=data.battle_verification;
+ ['test_projects','rosters','roster_templates','opponent_sets','tests','benchmarks','results','change_events'].forEach(k=>{if(!Array.isArray(store[k]))store[k]=[]});
+ if(!store.schema_version)store.schema_version='1.0.0';
+ return store;
+}
+function battleVerificationEnvelope(documentType,payload){return {format:'guild-adventure-studio-battle-test',version:'1.0.0',document_type:documentType,created_at:now(),data:payload}}
+function validateBattleVerificationEnvelope(doc){
+ if(!doc||typeof doc!=='object'||Array.isArray(doc))throw new Error('JSONの最上位はオブジェクトにしてください。');
+ if(doc.format!=='guild-adventure-studio-battle-test')throw new Error('戦闘検証専用フォーマットではありません。');
+ if(String(doc.version||'')!=='1.0.0')throw new Error('未対応のフォーマットversionです：'+String(doc.version||'未指定'));
+ const type=String(doc.document_type||'');
+ if(!['battle-roster','battle-test'].includes(type))throw new Error('この段階で読み込めるdocument_typeは battle-roster / battle-test です。');
+ const payload=doc.data;
+ if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('dataオブジェクトがありません。');
+ if(!String(payload.id||'').trim())throw new Error('data.idが必要です。');
+ if(type==='battle-roster'){
+  if(!Array.isArray(payload.allies)||!Array.isArray(payload.enemies))throw new Error('battle-rosterにはallies配列とenemies配列が必要です。');
+ }
+ if(type==='battle-test'&&!String(payload.roster_id||'').trim())throw new Error('battle-testにはroster_idが必要です。');
+ return {type,payload:structuredClone(payload)};
+}
+function upsertBattleVerificationRecord(rows,record){const i=rows.findIndex(x=>String(x.id)===String(record.id));if(i>=0)rows[i]=record;else rows.push(record);return i>=0?'更新':'登録'}
+function importBattleVerificationFile(file){
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{try{
+  const parsed=JSON.parse(String(reader.result||''));
+  const checked=validateBattleVerificationEnvelope(parsed),store=ensureBattleVerificationStore();
+  const list=checked.type==='battle-roster'?store.rosters:store.tests;
+  const action=upsertBattleVerificationRecord(list,{...checked.payload,document_type:checked.type,imported_at:now()});
+  persist('battle verification file import');
+  renderBattleVerificationFoundation(`${checked.type} / ${checked.payload.id} を${action}しました。`);
+ }catch(e){renderBattleVerificationFoundation('読込失敗：'+e.message,true)}};
+ reader.onerror=()=>renderBattleVerificationFoundation('読込失敗：ファイルを読み取れませんでした。',true);
+ reader.readAsText(file);
+}
+function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプル固定編成',allies:[{master_id:'CHR-SAMPLE-001',level:1,count:1,overrides:{}}],enemies:[{master_id:'MON-SAMPLE-001',level:1,count:1,overrides:{}}],constraints:{max_allies:'system',max_enemies:'system',max_total_units:'system',overflow_policy:'error'},tags:[]}}
+function battleTestTemplateData(){return {id:'BT-SAMPLE-001',name:'サンプル単発検証',roster_id:'BRT-SAMPLE-001',purpose:'validation',execution:{mode:'single',trials:1,seed_start:12345,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','skill_usage','errors'],expectations:{error_count:{max:0}},tags:[]}}
+function exportBattleRosterTemplate(){downloadText('GK_BattleRoster_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-roster',battleRosterTemplateData()),null,2),'application/json;charset=utf-8')}
+function exportBattleTestTemplate(){downloadText('GK_BattleTest_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-test',battleTestTemplateData()),null,2),'application/json;charset=utf-8')}
+function exportBattleVerificationStore(){const store=ensureBattleVerificationStore();downloadText('GK_BattleVerification_Store_'+(currentProjectId||'PROJECT')+'.json',JSON.stringify({format:'guild-adventure-studio-battle-test-store',version:'1.0.0',exported_at:now(),project_id:currentProjectId,data:structuredClone(store)},null,2),'application/json;charset=utf-8')}
+function renderBattleVerificationFoundation(message='',isError=false){
+ const status=document.getElementById('battleVerificationFileStatus'),summary=document.getElementById('battleVerificationFileSummary');
+ if(!status||!summary)return;
+ const store=ensureBattleVerificationStore();
+ status.className='item '+(isError?'error':'');
+ status.textContent=message||'専用JSONを読み込むか、ひな形を出力してください。';
+ summary.innerHTML=`登録済み編成 <b>${store.rosters.length}</b>件 ／ 登録済みテスト <b>${store.tests.length}</b>件<br><span class="small">旧 battle_tests・battle_snapshots とは別領域です。</span>`;
+}
+
 function exportMasterCsv(){const c=masterCategory.value;downloadText('GK_'+c+'_v'+APP_VERSION+'.csv',masterCsv(c),'text/csv;charset=utf-8')}
 function exportAllMastersCsv(){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];Object.keys(MASTER_LABELS).forEach(c=>(data.masters[c]||[]).forEach(m=>lines.push([c,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(','))));downloadText('GK_MasterDB_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
@@ -2850,7 +2920,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.12',studioVersion:'1.43.9',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.13.1',studioVersion:'1.43.9',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -3255,7 +3325,7 @@ function compareBattleSnapshots(){
 }
 function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)return alert('先に編成比較を実行してください。');const head=['formation','seed','result','ticks','ally_survivors','ally_actions','ally_damage','ally_healing'];const lines=[head.map(csvCell).join(',')];lastSnapshotComparison.forEach(group=>group.results.forEach(r=>{const a=battleHistoryTotals(r,'allies');lines.push([group.summary.name,r.seed,r.result,r.ticks,a.survivors,a.actions,a.damage_dealt,a.healing_done].map(csvCell).join(','))}));downloadText('GK_FormationComparison_v'+APP_VERSION+'.csv','\ufeff'+lines.join('\r\n'),'text/csv;charset=utf-8')}
 
-function renderBattle(){if(!document.getElementById('battleAllies'))return;applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();updateBattleComparisonFixedLabels();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
+function renderBattle(){if(!document.getElementById('battleAllies'))return;renderBattleVerificationFoundation();applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();updateBattleComparisonFixedLabels();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
 function updateBattleComparisonFixedLabels(){const ff=document.getElementById('formulaFixedFormation'),sf=document.getElementById('snapshotFixedFormula');if(ff){let ac=0,ec=0;try{ac=JSON.parse(battleAllies.value||'[]').length;ec=JSON.parse(battleEnemies.value||'[]').length}catch(_){ }ff.textContent=`固定編成：現在の入力内容（味方${ac} / 敵${ec}）`;}if(sf){const c=readBattleFormulaConfig();sf.textContent=`固定数式：${c.version||'未設定'} / 命中元=${c.accuracySource==='equipment'?'装備':'キャラクター'} / STR補正=${c.strAccuracyCoefficient} / AG係数=${c.agiGaugeCoefficient} / クリ倍率=${c.critMultiplier}`;}}
 
 function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
