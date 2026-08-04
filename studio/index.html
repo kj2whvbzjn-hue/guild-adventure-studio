@@ -168,7 +168,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .rule-tag-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.5fr;gap:10px}.rule-tag-picker-foot button{min-height:48px;font-size:15px}.rule-tag-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}
 body.rule-picker-open{overflow:hidden}
 
-/* BUILD472.13.1 Phase I2 restart: isolated battle verification file foundation */
+/* BUILD472.14 Phase I3: flexible battle roster management */
 /* BUILD472.12 Phase I1: battle simulation core extraction */
 .master-skill-picker{position:fixed;inset:0;z-index:320;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .master-skill-picker.hidden{display:none}
@@ -346,7 +346,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.13.1</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.14</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1041,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.13.1" placeholder="例: 472.13.1"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.14" placeholder="例: 472.14"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1188,6 +1188,17 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     </div>
     <div id="battleVerificationFileStatus" class="item">未読込です。</div>
     <div id="battleVerificationFileSummary" class="small"></div>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid #c9d8e6">
+      <div class="view-heading" style="margin-bottom:10px">
+        <div>
+          <h3 style="margin:0">登録済み編成</h3>
+          <p class="small" style="margin:5px 0 0">人数は固定しません。各参加者の <code>count</code> とシステム設定の上限で判定します。</p>
+        </div>
+      </div>
+      <div id="battleRosterManagerSummary" class="item">編成はまだ登録されていません。</div>
+      <div id="battleRosterManagerList"></div>
+    </div>
   </div>
   <div class="card">
     <h2>戦闘条件</h2>
@@ -2828,6 +2839,34 @@ function ensureBattleVerificationStore(){
  return store;
 }
 function battleVerificationEnvelope(documentType,payload){return {format:'guild-adventure-studio-battle-test',version:'1.0.0',document_type:documentType,created_at:now(),data:payload}}
+function battleSystemLimits(){
+ const src=(data.settings&&data.settings.battle_limits)||data.battle_limits||{};
+ const numberOrNull=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?Math.floor(n):null};
+ return {max_allies:numberOrNull(src.max_allies),max_enemies:numberOrNull(src.max_enemies),max_total_units:numberOrNull(src.max_total_units)};
+}
+function battleRosterSideCount(entries){return (entries||[]).reduce((sum,x)=>sum+Math.max(1,Math.floor(Number(x&&x.count)||1)),0)}
+function validateBattleRosterEntries(entries,label){
+ if(!Array.isArray(entries))throw new Error(`battle-rosterには${label}配列が必要です。`);
+ entries.forEach((entry,index)=>{
+  if(!entry||typeof entry!=='object'||Array.isArray(entry))throw new Error(`${label}[${index}]はオブジェクトにしてください。`);
+  const count=Number(entry.count==null?1:entry.count);
+  if(!Number.isInteger(count)||count<1)throw new Error(`${label}[${index}].countは1以上の整数にしてください。`);
+  const hasUnit=entry.unit&&typeof entry.unit==='object'&&!Array.isArray(entry.unit);
+  const hasMaster=String(entry.master_id||'').trim();
+  const hasDirect=String(entry.id||'').trim()&&(entry.hp!=null||entry.maxHp!=null||entry.attack!=null);
+  if(!hasUnit&&!hasMaster&&!hasDirect)throw new Error(`${label}[${index}]にはmaster_id、unit、または直接戦闘データが必要です。`);
+ });
+}
+function validateBattleRosterCapacity(payload){
+ const allies=battleRosterSideCount(payload.allies),enemies=battleRosterSideCount(payload.enemies),limits=battleSystemLimits();
+ const policy=String(payload.constraints&&payload.constraints.overflow_policy||'error');
+ const issues=[];
+ if(limits.max_allies&&allies>limits.max_allies)issues.push(`味方 ${allies} > 上限 ${limits.max_allies}`);
+ if(limits.max_enemies&&enemies>limits.max_enemies)issues.push(`敵 ${enemies} > 上限 ${limits.max_enemies}`);
+ if(limits.max_total_units&&allies+enemies>limits.max_total_units)issues.push(`合計 ${allies+enemies} > 上限 ${limits.max_total_units}`);
+ if(issues.length&&policy==='error')throw new Error('人数上限超過：'+issues.join(' / '));
+ return {allies,enemies,total:allies+enemies,limits,warnings:issues};
+}
 function validateBattleVerificationEnvelope(doc){
  if(!doc||typeof doc!=='object'||Array.isArray(doc))throw new Error('JSONの最上位はオブジェクトにしてください。');
  if(doc.format!=='guild-adventure-studio-battle-test')throw new Error('戦闘検証専用フォーマットではありません。');
@@ -2838,7 +2877,9 @@ function validateBattleVerificationEnvelope(doc){
  if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('dataオブジェクトがありません。');
  if(!String(payload.id||'').trim())throw new Error('data.idが必要です。');
  if(type==='battle-roster'){
-  if(!Array.isArray(payload.allies)||!Array.isArray(payload.enemies))throw new Error('battle-rosterにはallies配列とenemies配列が必要です。');
+  validateBattleRosterEntries(payload.allies,'allies');
+  validateBattleRosterEntries(payload.enemies,'enemies');
+  validateBattleRosterCapacity(payload);
  }
  if(type==='battle-test'&&!String(payload.roster_id||'').trim())throw new Error('battle-testにはroster_idが必要です。');
  return {type,payload:structuredClone(payload)};
@@ -2858,11 +2899,94 @@ function importBattleVerificationFile(file){
  reader.onerror=()=>renderBattleVerificationFoundation('読込失敗：ファイルを読み取れませんでした。',true);
  reader.readAsText(file);
 }
-function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプル固定編成',allies:[{master_id:'CHR-SAMPLE-001',level:1,count:1,overrides:{}}],enemies:[{master_id:'MON-SAMPLE-001',level:1,count:1,overrides:{}}],constraints:{max_allies:'system',max_enemies:'system',max_total_units:'system',overflow_policy:'error'},tags:[]}}
+function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプル可変人数編成',allies:[{count:1,unit:structuredClone(BATTLE_SAMPLE_ALLIES[0]),overrides:{}}],enemies:[{count:1,unit:structuredClone(BATTLE_SAMPLE_ENEMIES[0]),overrides:{}}],constraints:{max_allies:'system',max_enemies:'system',max_total_units:'system',overflow_policy:'error'},tags:['sample','flexible-roster']}}
 function battleTestTemplateData(){return {id:'BT-SAMPLE-001',name:'サンプル単発検証',roster_id:'BRT-SAMPLE-001',purpose:'validation',execution:{mode:'single',trials:1,seed_start:12345,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','skill_usage','errors'],expectations:{error_count:{max:0}},tags:[]}}
 function exportBattleRosterTemplate(){downloadText('GK_BattleRoster_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-roster',battleRosterTemplateData()),null,2),'application/json;charset=utf-8')}
 function exportBattleTestTemplate(){downloadText('GK_BattleTest_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-test',battleTestTemplateData()),null,2),'application/json;charset=utf-8')}
 function exportBattleVerificationStore(){const store=ensureBattleVerificationStore();downloadText('GK_BattleVerification_Store_'+(currentProjectId||'PROJECT')+'.json',JSON.stringify({format:'guild-adventure-studio-battle-test-store',version:'1.0.0',exported_at:now(),project_id:currentProjectId,data:structuredClone(store)},null,2),'application/json;charset=utf-8')}
+function battleRosterRecordSummary(roster){
+ const count=validateBattleRosterCapacity(roster),limits=count.limits;
+ const limitText=(limits.max_allies||limits.max_enemies||limits.max_total_units)?`設定上限：味方 ${limits.max_allies||'未設定'} / 敵 ${limits.max_enemies||'未設定'} / 合計 ${limits.max_total_units||'未設定'}`:'人数上限：システム設定なし（固定値を使用しません）';
+ return {count,limitText};
+}
+function findBattleMaster(masterId){
+ const id=String(masterId||'');
+ for(const category of Object.keys(data.masters||{})){
+  const record=(data.masters[category]||[]).find(x=>String(x.id)===id);
+  if(record)return {category,record};
+ }
+ return null;
+}
+function masterRecordToBattleUnit(masterId,side,entry){
+ const found=findBattleMaster(masterId);
+ if(!found)throw new Error(`参照マスターが見つかりません：${masterId}`);
+ const m=found.record,p=m.params||{},stats={...(p.stats||{}),...(p.battle||{})},overrides=entry.overrides||{};
+ const skillIds=[...(entry.skill_ids||p.skill_ids||m.skill_ids||[])];
+ const skills=skillIds.map(id=>{
+  const s=findBattleMaster(id);
+  if(!s)return {id,name:id,type:'attack',power:1,target:'enemy_random'};
+  return {id:s.record.id,name:s.record.name||s.record.id,...(s.record.params||{})};
+ });
+ return {id:String(entry.instance_id||m.id),name:m.name||m.id,side,level:Number(entry.level||p.level||1),hp:Number(stats.hp||p.hp||100),mp:Number(stats.mp||p.mp||0),mp_regen:Number(stats.mp_regen||p.mp_regen||0),agi:Number(stats.agi||p.agi||10),str:Number(stats.str||p.str||0),luk:Number(stats.luk||p.luk||0),attack:Number(stats.attack||p.attack||10),defense:Number(stats.defense||p.defense||0),accuracy:Number(stats.accuracy||p.accuracy||85),crit:Number(stats.crit||p.crit||0),damage_resist:Number(stats.damage_resist||p.damage_resist||0),status_resist:Number(stats.status_resist||p.status_resist||0),skills,ai:structuredClone(entry.ai||p.ai||m.ai||[{condition:'always',action:'attack',target:'enemy_random'}]),equipment_ids:structuredClone(entry.equipment_ids||p.equipment_ids||[]),mod_ids:structuredClone(entry.mod_ids||p.mod_ids||[]),...structuredClone(overrides)};
+}
+function expandBattleRosterEntry(entry,side,index){
+ const count=Math.max(1,Math.floor(Number(entry.count)||1)),out=[];
+ for(let n=0;n<count;n++){
+  let unit;
+  if(entry.unit&&typeof entry.unit==='object')unit=structuredClone(entry.unit);
+  else if(entry.master_id)unit=masterRecordToBattleUnit(entry.master_id,side,entry);
+  else unit=structuredClone(entry);
+  delete unit.unit;delete unit.count;delete unit.master_id;delete unit.overrides;
+  Object.assign(unit,structuredClone(entry.overrides||{}));
+  unit.side=side;
+  const baseId=String(unit.id||entry.master_id||`${side}-${index+1}`);
+  if(count>1)unit.id=`${baseId}-${n+1}`;
+  out.push(unit);
+ }
+ return out;
+}
+function expandBattleRoster(roster){
+ validateBattleRosterEntries(roster.allies,'allies');validateBattleRosterEntries(roster.enemies,'enemies');validateBattleRosterCapacity(roster);
+ return {allies:roster.allies.flatMap((x,i)=>expandBattleRosterEntry(x,'味方',i)),enemies:roster.enemies.flatMap((x,i)=>expandBattleRosterEntry(x,'敵',i))};
+}
+function applyBattleRoster(rosterId){
+ try{
+  const roster=ensureBattleVerificationStore().rosters.find(x=>String(x.id)===String(rosterId));
+  if(!roster)throw new Error('編成が見つかりません。');
+  const expanded=expandBattleRoster(roster);
+  battleAllies.value=JSON.stringify(expanded.allies,null,2);
+  battleEnemies.value=JSON.stringify(expanded.enemies,null,2);
+  updateBattleComparisonFixedLabels();
+  battleSummary.innerHTML=`編成 <b>${esc(roster.name||roster.id)}</b> を戦闘入力へ反映しました（味方${expanded.allies.length} / 敵${expanded.enemies.length}）。`;
+  renderBattleVerificationFoundation(`${roster.id} を戦闘入力へ反映しました。`);
+ }catch(e){renderBattleVerificationFoundation('編成反映失敗：'+e.message,true)}
+}
+function exportBattleRosterRecord(rosterId){
+ const roster=ensureBattleVerificationStore().rosters.find(x=>String(x.id)===String(rosterId));
+ if(!roster)return alert('編成が見つかりません。');
+ downloadText(`GK_BattleRoster_${roster.id}_v1.0.0.json`,JSON.stringify(battleVerificationEnvelope('battle-roster',structuredClone(roster)),null,2),'application/json;charset=utf-8');
+}
+function deleteBattleRosterRecord(rosterId){
+ const store=ensureBattleVerificationStore(),used=store.tests.filter(x=>String(x.roster_id)===String(rosterId));
+ if(used.length)return alert(`この編成はテスト ${used.map(x=>x.id).join(', ')} から参照されています。先に参照を解除してください。`);
+ const roster=store.rosters.find(x=>String(x.id)===String(rosterId));
+ if(!roster||!confirm(`${roster.name||roster.id} を削除しますか？`))return;
+ store.rosters=store.rosters.filter(x=>String(x.id)!==String(rosterId));
+ persist('battle roster deleted');renderBattleVerificationFoundation(`${rosterId} を削除しました。`);
+}
+function renderBattleRosterManager(){
+ const box=document.getElementById('battleRosterManagerList'),summary=document.getElementById('battleRosterManagerSummary');
+ if(!box||!summary)return;
+ const rows=ensureBattleVerificationStore().rosters;
+ if(!rows.length){summary.textContent='編成はまだ登録されていません。';box.innerHTML='';return}
+ summary.innerHTML=`<b>${rows.length}件</b>の可変人数編成を登録済みです。`;
+ box.innerHTML=rows.map(roster=>{
+  let details;
+  try{const s=battleRosterRecordSummary(roster);details=`味方 ${s.count.allies} / 敵 ${s.count.enemies} / 合計 ${s.count.total}<br><span class="small">${esc(s.limitText)}</span>`}
+  catch(e){details=`<span class="error">検証エラー：${esc(e.message)}</span>`}
+  return `<div class="item" style="margin-top:10px"><b>${esc(roster.name||roster.id)}</b><br><span class="small">${esc(roster.id)}</span><div style="margin-top:7px">${details}</div><div class="toolbar" style="margin-top:10px"><button class="primary" type="button" onclick="applyBattleRoster('${esc(roster.id)}')">戦闘入力へ反映</button><button type="button" onclick="exportBattleRosterRecord('${esc(roster.id)}')">JSON出力</button><button class="danger" type="button" onclick="deleteBattleRosterRecord('${esc(roster.id)}')">削除</button></div></div>`;
+ }).join('');
+}
 function renderBattleVerificationFoundation(message='',isError=false){
  const status=document.getElementById('battleVerificationFileStatus'),summary=document.getElementById('battleVerificationFileSummary');
  if(!status||!summary)return;
@@ -2870,6 +2994,7 @@ function renderBattleVerificationFoundation(message='',isError=false){
  status.className='item '+(isError?'error':'');
  status.textContent=message||'専用JSONを読み込むか、ひな形を出力してください。';
  summary.innerHTML=`登録済み編成 <b>${store.rosters.length}</b>件 ／ 登録済みテスト <b>${store.tests.length}</b>件<br><span class="small">旧 battle_tests・battle_snapshots とは別領域です。</span>`;
+ renderBattleRosterManager();
 }
 
 function exportMasterCsv(){const c=masterCategory.value;downloadText('GK_'+c+'_v'+APP_VERSION+'.csv',masterCsv(c),'text/csv;charset=utf-8')}
@@ -2920,7 +3045,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.13.1',studioVersion:'1.43.9',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.14',studioVersion:'1.43.9',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
