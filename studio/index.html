@@ -346,7 +346,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.20</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.21</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1041,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.20" placeholder="例: 472.20"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.21" placeholder="例: 472.21"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.20</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.21</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -3371,7 +3371,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.20',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.21',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
@@ -3894,7 +3894,64 @@ function validatePhpExport(){
  renderPhpExportStatus(result.issues);
  return result;
 }
-async function sha256Hex(text){return GKExportCore.sha256Hex(text);}
+const GKZipCore={
+ version:'1.0.0',
+ path:{
+  normalize(path){return String(path||'').replace(/\\/g,'/').replace(/^\/+/, '').replace(/\/+/g,'/');},
+  join(base,path){
+   const a=this.normalize(base).replace(/\/$/,'');
+   const b=this.normalize(path);
+   return a?`${a}/${b}`:b;
+  },
+  commonRoot(paths){
+   const valid=(Array.isArray(paths)?paths:[]).filter(Boolean).map(path=>this.normalize(path));
+   if(!valid.length)return '';
+   const first=valid[0].split('/')[0];
+   return valid.every(path=>path.includes('/')&&path.split('/')[0]===first)?first+'/':'';
+  },
+  hasNormalizedDuplicates(paths){
+   const normalized=(Array.isArray(paths)?paths:[]).map(path=>this.normalize(path));
+   return new Set(normalized).size!==normalized.length;
+  }
+ },
+ limits:{
+  createPolicy(options={}){
+   return Object.freeze({
+    maxFiles:Number.isFinite(options.maxFiles)?options.maxFiles:Infinity,
+    maxFileBytes:Number.isFinite(options.maxFileBytes)?options.maxFileBytes:Infinity,
+    maxTotalBytes:Number.isFinite(options.maxTotalBytes)?options.maxTotalBytes:Infinity
+   });
+  },
+  validate({fileCount=0,fileBytes=0,totalBytes=0}={},policy){
+   const p=policy||this.createPolicy();
+   if(fileCount>p.maxFiles)return {ok:false,code:'ZIP_ENTRY_COUNT_EXCEEDED',limit:p.maxFiles,actual:fileCount};
+   if(fileBytes>p.maxFileBytes)return {ok:false,code:'ZIP_ENTRY_SIZE_EXCEEDED',limit:p.maxFileBytes,actual:fileBytes};
+   if(totalBytes>p.maxTotalBytes)return {ok:false,code:'ZIP_TOTAL_SIZE_EXCEEDED',limit:p.maxTotalBytes,actual:totalBytes};
+   return {ok:true,code:'OK'};
+  }
+ },
+ hash:{
+  toHex(buffer){return Array.from(new Uint8Array(buffer),b=>b.toString(16).padStart(2,'0')).join('');},
+  async sha256Bytes(bytes){
+   const value=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||0);
+   return this.toHex(await crypto.subtle.digest('SHA-256',value));
+  },
+  async sha256Text(text){
+   if(typeof GKExportCore!=='undefined'&&typeof GKExportCore.sha256Hex==='function')return GKExportCore.sha256Hex(String(text??''));
+   return this.sha256Bytes(new TextEncoder().encode(String(text??'')));
+  }
+ },
+ format:{
+  bytes(size){
+   const value=Number(size)||0;
+   if(value<1024)return value+' B';
+   if(value<1024*1024)return (value/1024).toFixed(1)+' KB';
+   return (value/1024/1024).toFixed(1)+' MB';
+  }
+ }
+};
+async function sha256TextHex(text){return GKZipCore.hash.sha256Text(text);}
+async function sha256BytesHex(bytes){return GKZipCore.hash.sha256Bytes(bytes);}
 async function exportPhpPackage(){
  if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。再読み込みしてください。');
  const result=validatePhpExport();
@@ -3910,7 +3967,7 @@ async function exportPhpPackage(){
   const envelope=phpExportEnvelope(result.files[path],dataVersion,generatedAt);
   const text=JSON.stringify(envelope,null,2)+'\n';
   exportRoot.file(path,text);
-  manifestFiles.push({path,sha256:await sha256Hex(text),required:true});
+  manifestFiles.push({path,sha256:await sha256TextHex(text),required:true});
  }
  const manifest={
   schema_version:PHP_EXPORT_SCHEMA_VERSION,
@@ -4145,9 +4202,10 @@ let studioDeployPlan=null;
 let studioDeployLastResult=null;
 let studioDeployPackageKind=null;
 const STUDIO_DEPLOY_HISTORY_KEY='gk_studio_deploy_history_v1';
-const STUDIO_DEPLOY_MAX_FILES=5000;
-const STUDIO_DEPLOY_MAX_FILE_BYTES=20*1024*1024;
-const STUDIO_DEPLOY_MAX_TOTAL_BYTES=100*1024*1024;
+const STUDIO_DEPLOY_LIMIT_POLICY=GKZipCore.limits.createPolicy({maxFiles:5000,maxFileBytes:20*1024*1024,maxTotalBytes:100*1024*1024});
+const STUDIO_DEPLOY_MAX_FILES=STUDIO_DEPLOY_LIMIT_POLICY.maxFiles;
+const STUDIO_DEPLOY_MAX_FILE_BYTES=STUDIO_DEPLOY_LIMIT_POLICY.maxFileBytes;
+const STUDIO_DEPLOY_MAX_TOTAL_BYTES=STUDIO_DEPLOY_LIMIT_POLICY.maxTotalBytes;
 
 
 function loadStudioDeployHistory(){
@@ -4245,12 +4303,7 @@ function bytesToBase64(bytes){
  for(let i=0;i<bytes.length;i+=chunk)binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
  return btoa(binary);
 }
-function commonZipRoot(paths){
- const valid=paths.filter(Boolean).map(normalizeDeployPath);
- if(!valid.length)return '';
- const first=valid[0].split('/')[0];
- return valid.every(p=>p.includes('/')&&p.split('/')[0]===first)?first+'/':'';
-}
+function commonZipRoot(paths){return GKZipCore.path.commonRoot(paths);}
 async function gitBlobSha(bytes){
  const header=new TextEncoder().encode(`blob ${bytes.length}\0`);
  const joined=new Uint8Array(header.length+bytes.length);
@@ -4258,10 +4311,7 @@ async function gitBlobSha(bytes){
  const digest=await crypto.subtle.digest('SHA-1',joined);
  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
 }
-async function sha256Hex(bytes){
- const digest=await crypto.subtle.digest('SHA-256',bytes);
- return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
-}
+
 function setDeployExecuteEnabled(enabled){
  const button=document.getElementById('deployExecuteButton');
  if(button)button.disabled=!enabled;
@@ -4340,7 +4390,7 @@ async function prepareStudioDeployDiff(){
    const file=files[i];
    file.target=joinDeployPath(base,file.path);
    file.gitSha=await gitBlobSha(file.bytes);
-   file.sha256=await sha256Hex(file.bytes);
+   file.sha256=await sha256BytesHex(file.bytes);
    const remoteSha=map.get(file.target);
    file.remoteSha=remoteSha||null;
    file.status=!remoteSha?'ADD':remoteSha===file.gitSha?'UNCHANGED':'MODIFY';
