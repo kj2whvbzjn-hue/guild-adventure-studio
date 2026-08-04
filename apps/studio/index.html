@@ -346,7 +346,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.28</span> / Formal Build 462</div>
+    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.29</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1041,7 +1041,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.28" placeholder="例: 472.28"></div>
+    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.29" placeholder="例: 472.29"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.28</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.29</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1185,6 +1185,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       <button class="primary" type="button" onclick="document.getElementById('battlePackageFileInput').click()">AI作成Battle Package ZIPを読み込む</button>
       <button class="primary" type="button" onclick="exportBattleAiPackageTemplate()">AI用Battle Packageひな形ZIPを出力</button>
       <button type="button" onclick="exportBattleAiExecutableSamplePackage()">実行テスト用Battle PackageサンプルZIPを出力</button>
+      <button type="button" onclick="exportBattleAiMultiJobSamplePackage()">複数ジョブ確認用Battle Package ZIPを出力</button>
       <button type="button" onclick="document.getElementById('battleVerificationFileInput').click()">個別の戦闘検証JSONを読み込む</button>
       <button type="button" onclick="exportBattleRosterTemplate()">編成ひな形JSONを出力</button>
       <button type="button" onclick="exportBattleTestTemplate()">テストひな形JSONを出力</button>
@@ -3016,6 +3017,8 @@ ID: ${checked.payload.id}${detail?'\n'+detail:''}`);
 const BATTLE_PACKAGE_LIMIT_POLICY=Object.freeze({maxFiles:1000,maxFileBytes:5*1024*1024,maxTotalBytes:50*1024*1024});
 let battlePackageSession=null;
 function battlePackageDiagnostic(severity,code,message,details={}){return {severity,code,message,...details}}
+function battlePackageBlockingJobErrors(session){return (session?.diagnostics||[]).filter(x=>x.severity==='JOB_ERROR'&&x.required!==false).length}
+function battlePackageSkippedResult(item){return {job_id:item.job_id,job_type:item.job_type||'',status:'skipped',skip_reason:item.reason||'skipped',required:item.required!==false,executed_at:null,execution:{trials:0,elapsed_ms:0},summary:null,assessment:null,errors:[],representative_runs:[]}}
 function battlePackageSetStatus(message,isError=false,summary=''){
  const status=document.getElementById('battlePackageStatus'),box=document.getElementById('battlePackageSummary');
  if(status){status.className=isError?'item error':'item';status.innerHTML=`<b>Battle Package：</b>${esc(message)}`}
@@ -3066,6 +3069,13 @@ async function inspectBattlePackage(file){
  const executionPlan=validateBattleExecutionPlan(await reader.getJson('execution_plan.json'));
  const resources={rosters:new Map(),tests:new Map(),opponent_sets:new Map(),benchmarks:new Map()};
  const resourcePaths={rosters:new Map(),tests:new Map(),opponent_sets:new Map(),benchmarks:new Map()};
+ const skippedJobs=[];
+ for(const job of executionPlan.jobs){
+  if(job&&job.enabled===false){
+   const item={job_id:String(job.job_id),job_type:String(job.job_type||''),required:job.required!==false,reason:'disabled'};
+   skippedJobs.push(item);diagnostics.push(battlePackageDiagnostic('INFO','BATTLE_JOB_DISABLED',`無効ジョブをスキップします: ${item.job_id}`,{job_id:item.job_id,job_type:item.job_type,required:item.required}));
+  }
+ }
  const enabledJobs=executionPlan.jobs.filter(job=>job&&job.enabled!==false);
  const activeJobs=[];
  let estimatedTrials=0;
@@ -3073,8 +3083,9 @@ async function inspectBattlePackage(file){
   const jobId=String(job.job_id);
   const type=String(job.job_type||'');
   if(type!=='battle-test'){
-   const severity=job.required===false?'INFO':'JOB_ERROR';
-   diagnostics.push(battlePackageDiagnostic(severity,'BATTLE_JOB_TYPE_UNSUPPORTED',`初期版で未対応のjob_typeです: ${type||'未指定'}`,{job_id:jobId,job_type:type}));
+   const required=job.required!==false,severity=required?'JOB_ERROR':'INFO';
+   diagnostics.push(battlePackageDiagnostic(severity,'BATTLE_JOB_TYPE_UNSUPPORTED',`初期版で未対応のjob_typeです: ${type||'未指定'}`,{job_id:jobId,job_type:type,required}));
+   if(!required)skippedJobs.push({job_id:jobId,job_type:type,required:false,reason:'unsupported_optional'});
    continue;
   }
   const refs=job.resource_refs||{};
@@ -3100,18 +3111,18 @@ async function inspectBattlePackage(file){
   try{
    roster=await resolve(rosterCandidates,rosterId,'battle-roster',resources.rosters,resourcePaths.rosters);
    test=await resolve(testCandidates,testId,'battle-test',resources.tests,resourcePaths.tests);
-  }catch(error){diagnostics.push(battlePackageDiagnostic('JOB_ERROR',error.code||'BATTLE_RESOURCE_INVALID',error.message,{job_id:jobId,path:error.path||''}));continue}
-  if(!roster)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_ROSTER_REFERENCE_MISSING',`参照編成がありません: ${rosterId}`,{job_id:jobId,resource_id:rosterId}));
-  if(!test)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TEST_REFERENCE_MISSING',`参照テストがありません: ${testId}`,{job_id:jobId,resource_id:testId}));
+  }catch(error){diagnostics.push(battlePackageDiagnostic('JOB_ERROR',error.code||'BATTLE_RESOURCE_INVALID',error.message,{job_id:jobId,path:error.path||'',required:job.required!==false}));continue}
+  if(!roster)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_ROSTER_REFERENCE_MISSING',`参照編成がありません: ${rosterId}`,{job_id:jobId,resource_id:rosterId,required:job.required!==false}));
+  if(!test)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TEST_REFERENCE_MISSING',`参照テストがありません: ${testId}`,{job_id:jobId,resource_id:testId,required:job.required!==false}));
   if(!roster||!test)continue;
-  if(String(test.roster_id||'')!==rosterId)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TEST_ROSTER_MISMATCH',`テストのroster_idとjob参照が一致しません: ${jobId}`,{job_id:jobId}));
+  if(String(test.roster_id||'')!==rosterId)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TEST_ROSTER_MISMATCH',`テストのroster_idとjob参照が一致しません: ${jobId}`,{job_id:jobId,required:job.required!==false}));
   let cfg;
-  try{validateBattleRosterCapacity(roster);cfg=battleVerificationTestConfig(test)}catch(error){diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_JOB_CONFIG_INVALID',error.message,{job_id:jobId}));continue}
-  if(cfg.trials<1||cfg.trials>500000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TRIALS_OUT_OF_RANGE',`試行数が許容範囲外です: ${cfg.trials}`,{job_id:jobId}));
-  if(cfg.maxTicks<1||cfg.maxTicks>1000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_MAX_TICKS_OUT_OF_RANGE',`最大Tickが許容範囲外です: ${cfg.maxTicks}`,{job_id:jobId}));
+  try{validateBattleRosterCapacity(roster);cfg=battleVerificationTestConfig(test)}catch(error){diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_JOB_CONFIG_INVALID',error.message,{job_id:jobId,required:job.required!==false}));continue}
+  if(cfg.trials<1||cfg.trials>500000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_TRIALS_OUT_OF_RANGE',`試行数が許容範囲外です: ${cfg.trials}`,{job_id:jobId,required:job.required!==false}));
+  if(cfg.maxTicks<1||cfg.maxTicks>1000)diagnostics.push(battlePackageDiagnostic('JOB_ERROR','BATTLE_MAX_TICKS_OUT_OF_RANGE',`最大Tickが許容範囲外です: ${cfg.maxTicks}`,{job_id:jobId,required:job.required!==false}));
   if(diagnostics.some(x=>x.job_id===jobId&&(x.severity==='JOB_ERROR'||x.severity==='FATAL')))continue;
   estimatedTrials+=cfg.trials;
-  activeJobs.push({job_id:jobId,job_type:type,required:job.required!==false,roster_id:rosterId,test_id:testId,trials:cfg.trials,seed_start:cfg.seedStart,seed_step:cfg.seedStep,max_ticks:cfg.maxTicks,output_policy:job.output_policy||{level:'representative'}});
+  activeJobs.push({job_id:jobId,job_type:type,required:job.required!==false,order:executionPlan.jobs.indexOf(job),roster_id:rosterId,test_id:testId,trials:cfg.trials,seed_start:cfg.seedStart,seed_step:cfg.seedStep,max_ticks:cfg.maxTicks,output_policy:job.output_policy||{level:'representative'}});
  }
  const allResourceCounts={
   rosters:reader.entries.filter(e=>e.path.startsWith('resources/rosters/')&&e.path.toLowerCase().endsWith('.json')).length,
@@ -3119,7 +3130,7 @@ async function inspectBattlePackage(file){
   opponent_sets:reader.entries.filter(e=>e.path.startsWith('resources/opponent_sets/')&&e.path.toLowerCase().endsWith('.json')).length,
   benchmarks:reader.entries.filter(e=>e.path.startsWith('resources/benchmarks/')&&e.path.toLowerCase().endsWith('.json')).length
  };
- return {fileName:file.name||'',reader,manifest,executionPlan,resources,resourcePaths,activeJobs,estimatedTrials,diagnostics,allResourceCounts,inspected_at:now()};
+ return {fileName:file.name||'',reader,manifest,executionPlan,resources,resourcePaths,activeJobs,skippedJobs,plannedJobCount:executionPlan.jobs.length,estimatedTrials,diagnostics,allResourceCounts,inspected_at:now()};
 }
 async function importBattlePackageFile(file){
  if(!file)return;
@@ -3157,8 +3168,8 @@ window.battlePackageCancelRequested=false;
 function battlePackageExecutionElements(){return {execute:document.getElementById('battlePackageExecuteButton'),cancel:document.getElementById('battlePackageCancelButton'),exportResult:document.getElementById('battlePackageResultExportButton'),status:document.getElementById('battlePackageExecutionStatus'),summary:document.getElementById('battlePackageExecutionSummary')}}
 function renderBattlePackageExecutionState(session=battlePackageSession){
  const el=battlePackageExecutionElements();if(!el.status)return;
- const fatal=session?.diagnostics?.filter(x=>x.severity==='FATAL').length||0,jobErrors=session?.diagnostics?.filter(x=>x.severity==='JOB_ERROR').length||0;
- const running=!!session?.execution&&session.execution.status==='running',ready=!!session&&fatal===0&&jobErrors===0&&session.activeJobs.length>0&&!running;
+ const fatal=session?.diagnostics?.filter(x=>x.severity==='FATAL').length||0,jobErrors=session?.diagnostics?.filter(x=>x.severity==='JOB_ERROR').length||0,blockingJobErrors=battlePackageBlockingJobErrors(session);
+ const running=!!session?.execution&&session.execution.status==='running',ready=!!session&&fatal===0&&blockingJobErrors===0&&session.activeJobs.length>0&&!running;
  if(el.execute)el.execute.disabled=!ready;
  if(el.cancel)el.cancel.disabled=!running;
  if(el.exportResult)el.exportResult.disabled=!session?.execution||running||!(session.results||[]).length;
@@ -3167,9 +3178,9 @@ function renderBattlePackageExecutionState(session=battlePackageSession){
  if(!execution){el.status.className='item';el.status.textContent=ready?`実行準備完了：${session.activeJobs.length}ジョブ / ${session.estimatedTrials.toLocaleString()}戦`:'実行できるジョブがありません。';if(el.summary)el.summary.textContent='結果はまだありません。';return}
  const labels={running:'実行中',completed:'完了',completed_with_errors:'エラーあり完了',cancelled:'中止',failed:'失敗'};
  el.status.className=execution.status==='failed'?'item error':'item';
- el.status.innerHTML=`<b>${esc(labels[execution.status]||execution.status)}</b> / ジョブ ${execution.jobs_completed}/${execution.jobs_requested} / 試行 ${execution.trials_completed.toLocaleString()}/${execution.trials_requested.toLocaleString()} / エラー ${execution.error_count}`;
+ el.status.innerHTML=`<b>${esc(labels[execution.status]||execution.status)}</b> / 実行 ${execution.jobs_completed}/${execution.jobs_requested} / スキップ ${execution.jobs_skipped||0} / 未実行 ${execution.jobs_not_run||0} / 試行 ${execution.trials_completed.toLocaleString()}/${execution.trials_requested.toLocaleString()} / エラー ${execution.error_count}`;
  if(el.summary){
-  const rows=(session.results||[]).map((r,i)=>`${i+1}. ${r.job_id} / ${r.status} / ${r.summary?.trials_completed||0}試行 / 勝率 ${((Number(r.summary?.win_rate)||0)*100).toFixed(1)}% / 平均Tick ${(Number(r.summary?.average_ticks)||0).toFixed(1)} / エラー ${r.summary?.error_count||0}`);
+  const rows=(session.results||[]).map((r,i)=>r.status==='skipped'||r.status==='not_run'?`${i+1}. ${r.job_id} / ${r.status} / ${r.skip_reason||r.not_run_reason||''}`:`${i+1}. ${r.job_id} / ${r.status} / ${r.summary?.trials_completed||0}試行 / 勝率 ${((Number(r.summary?.win_rate)||0)*100).toFixed(1)}% / 平均Tick ${(Number(r.summary?.average_ticks)||0).toFixed(1)} / エラー ${r.summary?.error_count||0}`);
   el.summary.textContent=rows.length?`セッション結果（既存データ未登録）\n${rows.join('\n')}`:'完了したジョブ結果はまだありません。';
  }
 }
@@ -3187,18 +3198,20 @@ function battlePackageRepresentativeRuns(runs){
 async function runBattlePackageExecution(){
  const session=battlePackageSession,el=battlePackageExecutionElements();
  if(!session||!session.activeJobs.length)return alert('実行可能なBattle Packageを先に読み込んでください。');
- const fatal=session.diagnostics.filter(x=>x.severity==='FATAL').length,jobErrors=session.diagnostics.filter(x=>x.severity==='JOB_ERROR').length;
- if(fatal||jobErrors)return alert(`事前検証エラーがあるため実行できません。\nFATAL ${fatal} / JOB_ERROR ${jobErrors}`);
+ const fatal=session.diagnostics.filter(x=>x.severity==='FATAL').length,jobErrors=session.diagnostics.filter(x=>x.severity==='JOB_ERROR').length,blockingJobErrors=battlePackageBlockingJobErrors(session);
+ if(fatal||blockingJobErrors)return alert(`事前検証エラーがあるため実行できません。\nFATAL ${fatal} / 必須JOB_ERROR ${blockingJobErrors} / 全JOB_ERROR ${jobErrors}`);
  if(session.execution?.status==='running')return alert('Battle Packageを実行中です。');
  if(!confirm(`Battle Packageを実行します。\n\n${session.manifest.name||session.manifest.package_id}\nジョブ: ${session.activeJobs.length}件\n予定総試行: ${session.estimatedTrials.toLocaleString()}戦\n\n実行結果は検証セッションにだけ保持し、既存データへ登録しません。`))return;
  if(session.estimatedTrials>100000&&!confirm(`予定総試行は${session.estimatedTrials.toLocaleString()}戦です。iPhoneでは時間がかかる可能性があります。続行しますか？`))return;
  window.battlePackageCancelRequested=false;
- session.results=[];
- session.execution={execution_id:'BEX-'+Date.now(),status:'running',started_at:now(),finished_at:null,jobs_requested:session.activeJobs.length,jobs_completed:0,jobs_failed:0,trials_requested:session.estimatedTrials,trials_completed:0,error_count:0,cancelled:false};
+ session.results=(session.skippedJobs||[]).map(battlePackageSkippedResult);
+ session.execution={execution_id:'BEX-'+Date.now(),status:'running',started_at:now(),finished_at:null,jobs_planned:session.plannedJobCount||session.executionPlan.jobs.length,jobs_requested:session.activeJobs.length,jobs_completed:0,jobs_failed:0,jobs_skipped:(session.skippedJobs||[]).length,jobs_not_run:0,trials_requested:session.estimatedTrials,trials_completed:0,error_count:0,cancelled:false};
  renderBattlePackageExecutionState(session);
- const formulaConfig=readBattleFormulaConfig(),policy=session.executionPlan.execution_policy||{},continueOnError=policy.continue_on_error!==false;
+ const formulaConfig=readBattleFormulaConfig(),policy=session.executionPlan.execution_policy||{},continueOnError=policy.continue_on_error!==false,stopOnRequiredFailure=policy.stop_on_required_failure!==false;
+ let stoppedAt=-1;
  try{
-  for(const job of session.activeJobs){
+  for(let jobIndex=0;jobIndex<session.activeJobs.length;jobIndex++){
+   const job=session.activeJobs[jobIndex];
    if(window.battlePackageCancelRequested)break;
    const roster=session.resources.rosters.get(job.roster_id),test=session.resources.tests.get(job.test_id),started=performance.now();
    const jobResult={job_id:job.job_id,job_type:job.job_type,status:'running',test_id:job.test_id,test_name:test?.name||job.test_id,roster_id:job.roster_id,roster_name:roster?.name||job.roster_id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{trials:job.trials,seed_start:job.seed_start,seed_step:job.seed_step,max_ticks:job.max_ticks,elapsed_ms:0},summary:null,assessment:null,errors:[],representative_runs:[]};
@@ -3219,9 +3232,12 @@ async function runBattlePackageExecution(){
     if(jobResult.status==='completed')session.execution.jobs_completed++;
    }catch(error){
     jobResult.status='failed';jobResult.errors=[{message:error.message}];jobResult.summary=summarizeBattleVerificationRuns([],jobResult.errors);jobResult.execution.elapsed_ms=performance.now()-started;session.results.push(jobResult);session.execution.jobs_failed++;session.execution.error_count++;
-    if(!continueOnError||job.required)break;
+    if(!continueOnError||(job.required&&stopOnRequiredFailure)){stoppedAt=jobIndex;break;}
    }
    renderBattlePackageExecutionState(session);await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  if(stoppedAt>=0&&!window.battlePackageCancelRequested){
+   for(const pending of session.activeJobs.slice(stoppedAt+1)){session.results.push({job_id:pending.job_id,job_type:pending.job_type,status:'not_run',not_run_reason:'previous_job_failure',required:pending.required,executed_at:null,execution:{trials:pending.trials,elapsed_ms:0},summary:null,assessment:null,errors:[],representative_runs:[]});session.execution.jobs_not_run++;}
   }
   session.execution.cancelled=window.battlePackageCancelRequested;
   session.execution.finished_at=now();
@@ -3251,8 +3267,8 @@ function battlePackageAiSummary(session){
  return {
   document_type:'battle-result-ai-summary',version:'1.0.0',generated_at:now(),
   source_package:{package_id:session.manifest.package_id,name:session.manifest.name||session.manifest.package_id,package_version:session.manifest.package_version},
-  execution:{execution_id:execution.execution_id,status:execution.status,started_at:execution.started_at,finished_at:execution.finished_at,jobs_requested:execution.jobs_requested,jobs_completed:execution.jobs_completed,jobs_failed:execution.jobs_failed,trials_requested:execution.trials_requested,trials_completed:execution.trials_completed,error_count:execution.error_count,partial:execution.status==='cancelled'||execution.status==='failed'},
-  totals:{jobs:jobs.length,completed_jobs:jobs.filter(x=>x.status==='completed').length,failed_jobs:jobs.filter(x=>x.status==='failed').length,cancelled_jobs:jobs.filter(x=>x.status==='cancelled').length},
+  execution:{execution_id:execution.execution_id,status:execution.status,started_at:execution.started_at,finished_at:execution.finished_at,jobs_planned:execution.jobs_planned,jobs_requested:execution.jobs_requested,jobs_completed:execution.jobs_completed,jobs_failed:execution.jobs_failed,jobs_skipped:execution.jobs_skipped||0,jobs_not_run:execution.jobs_not_run||0,trials_requested:execution.trials_requested,trials_completed:execution.trials_completed,error_count:execution.error_count,partial:execution.status==='cancelled'||execution.status==='failed'},
+  totals:{jobs:jobs.length,completed_jobs:jobs.filter(x=>x.status==='completed').length,failed_jobs:jobs.filter(x=>x.status==='failed').length,cancelled_jobs:jobs.filter(x=>x.status==='cancelled').length,skipped_jobs:jobs.filter(x=>x.status==='skipped').length,not_run_jobs:jobs.filter(x=>x.status==='not_run').length},
   jobs,
   diagnostics:structuredClone(session.diagnostics||[]),
   guidance:['最初にexecution.statusとpartialを確認してください。','jobsの勝率・平均Tick・error_countを比較してください。','詳細確認が必要な場合はresults/jobs内のrepresentative_runsとerrorsを参照してください。']
@@ -3273,7 +3289,7 @@ async function exportBattlePackageResult(){
   execution_id:executionId,status:session.execution.status,partial:session.execution.status==='cancelled'||session.execution.status==='failed',
   started_at:session.execution.started_at,finished_at:session.execution.finished_at,
   build_version:loadBuildSettings().developmentBuild,formula_version:readBattleFormulaConfig().version,
-  jobs_requested:session.execution.jobs_requested,jobs_completed:session.execution.jobs_completed,jobs_failed:session.execution.jobs_failed,
+  jobs_planned:session.execution.jobs_planned,jobs_requested:session.execution.jobs_requested,jobs_completed:session.execution.jobs_completed,jobs_failed:session.execution.jobs_failed,jobs_skipped:session.execution.jobs_skipped||0,jobs_not_run:session.execution.jobs_not_run||0,
   trials_requested:session.execution.trials_requested,trials_completed:session.execution.trials_completed,error_count:session.execution.error_count,
   diagnostics:structuredClone(session.diagnostics||[])
  };
@@ -3311,7 +3327,7 @@ async function exportBattleAiPackageTemplate(){
   created_at:createdAt,
   created_by:'studio-template',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},
-  target:{minimum_build:'472.28'},
+  target:{minimum_build:'472.29'},
   contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,jobs:0},
   validation:{allow_unused_resources:true},
   instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
@@ -3348,7 +3364,7 @@ async function exportBattleAiExecutableSamplePackage(){
   format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',
   package_id:'BVP-EXECUTOR-QA-001',name:'Battle Package Executor確認サンプル',created_at:createdAt,created_by:'studio-sample',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},
-  target:{minimum_build:'472.28'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
+  target:{minimum_build:'472.29'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
   validation:{allow_unused_resources:true},instructions:'このZIPをStudioへ読み込み、1ジョブ・10試行を実行してください。'
  };
  const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-EXECUTOR-QA-001',name:'Executor確認用実行計画',execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[{
@@ -3364,6 +3380,21 @@ async function exportBattleAiExecutableSamplePackage(){
  writer.addText('README_AI.md',readme);
  await writer.download('GK_BattleVerification_Executor_QA_v1.0.0.zip');
  alert('実行テスト用Battle PackageサンプルZIPを出力しました。\nStudioへ読み込み、1ジョブ・10試行を実行してください。');
+}
+async function exportBattleAiMultiJobSamplePackage(){
+ if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。再読み込みしてください。');
+ const packageVersion='1.0.0',createdAt=now(),roster=battleRosterTemplateData();
+ const testA={...battleTestTemplateData(),id:'BT-MULTI-QA-001',name:'複数ジョブ確認A',roster_id:roster.id,execution:{mode:'multiple',trials:5,seed_start:31000,seed_step:1,max_ticks:1000},tags:['sample','multi-job']};
+ const testB={...battleTestTemplateData(),id:'BT-MULTI-QA-002',name:'複数ジョブ確認B',roster_id:roster.id,execution:{mode:'multiple',trials:5,seed_start:32000,seed_step:1,max_ticks:1000},tags:['sample','multi-job']};
+ const manifest={format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',package_id:'BVP-MULTI-JOB-QA-001',name:'Battle Package 複数ジョブ確認サンプル',created_at:createdAt,created_by:'studio-sample',schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},target:{minimum_build:'472.29'},contents:{rosters:1,tests:2,opponent_sets:0,benchmarks:0,jobs:3},validation:{allow_unused_resources:true},instructions:'有効な2ジョブを順次実行し、無効な1ジョブをスキップしてください。'};
+ const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-MULTI-JOB-QA-001',name:'複数ジョブ確認用実行計画',execution_policy:{continue_on_error:true,stop_on_required_failure:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[
+  {job_id:'JOB-MULTI-QA-001',job_type:'battle-test',job_version:'1.0.0',required:true,enabled:true,resource_refs:{roster_id:roster.id,test_id:testA.id},output_policy:{level:'representative'}},
+  {job_id:'JOB-MULTI-QA-DISABLED',job_type:'battle-test',job_version:'1.0.0',required:false,enabled:false,resource_refs:{roster_id:roster.id,test_id:testA.id},output_policy:{level:'summary'}},
+  {job_id:'JOB-MULTI-QA-002',job_type:'battle-test',job_version:'1.0.0',required:true,enabled:true,resource_refs:{roster_id:roster.id,test_id:testB.id},output_policy:{level:'representative'}}
+ ]};
+ const readme='# Battle Package 複数ジョブ確認サンプル\n\n期待結果:\n- 計画3件\n- 実行可能2件\n- 無効スキップ1件\n- 予定総試行10戦\n- 完了ジョブ2件\n- 結果Package内に completed 2件 / skipped 1件\n';
+ const writer=GKZipCore.writer.create();writer.addJson('manifest.json',manifest);writer.addJson('execution_plan.json',executionPlan);writer.addJson(`resources/rosters/${roster.id}.json`,battleVerificationEnvelope('battle-roster',roster));writer.addJson(`resources/tests/${testA.id}.json`,battleVerificationEnvelope('battle-test',testA));writer.addJson(`resources/tests/${testB.id}.json`,battleVerificationEnvelope('battle-test',testB));writer.addText('README_AI.md',readme);
+ await writer.download('GK_BattleVerification_MultiJob_QA_v1.0.0.zip');alert('複数ジョブ確認用Battle Package ZIPを出力しました。\n有効2ジョブ・無効1ジョブ・合計10試行です。');
 }
 function exportBattleRosterTemplate(){downloadText('GK_BattleRoster_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-roster',battleRosterTemplateData()),null,2),'application/json;charset=utf-8')}
 function exportBattleTestTemplate(){downloadText('GK_BattleTest_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-test',battleTestTemplateData()),null,2),'application/json;charset=utf-8')}
@@ -3737,7 +3768,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.28',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.29',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
