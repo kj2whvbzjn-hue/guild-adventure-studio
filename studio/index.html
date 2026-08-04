@@ -1174,19 +1174,19 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.17</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.18</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
     <p class="small">プロジェクトJSONとは別の、戦闘検証専用JSONを扱います。この欄の操作は既存プロジェクトや旧戦闘履歴を上書きしません。</p>
     <input id="battleVerificationFileInput" class="hidden" type="file" accept="application/json,.json" onchange="importBattleVerificationFile(this.files&&this.files[0]);this.value=''">
     <div class="toolbar">
-      <button class="primary" type="button" onclick="document.getElementById('battleVerificationFileInput').click()">テストJSONを読み込む</button>
-      <button type="button" onclick="exportBattleRosterTemplate()">編成ひな形JSON</button>
-      <button type="button" onclick="exportBattleTestTemplate()">テストひな形JSON</button>
-      <button type="button" onclick="exportBattleOpponentSetTemplate()">対象集合ひな形JSON</button>
-      <button type="button" onclick="exportBattleBenchmarkTemplate()">Benchmarkひな形JSON</button>
-      <button type="button" onclick="exportBattleVerificationStore()">登録内容を出力</button>
+      <button class="primary" type="button" onclick="document.getElementById('battleVerificationFileInput').click()">戦闘検証JSONを読み込む</button>
+      <button type="button" onclick="exportBattleRosterTemplate()">編成ひな形JSONを出力</button>
+      <button type="button" onclick="exportBattleTestTemplate()">テストひな形JSONを出力</button>
+      <button type="button" onclick="exportBattleOpponentSetTemplate()">対象集合ひな形JSONを出力</button>
+      <button type="button" onclick="exportBattleBenchmarkTemplate()">Benchmarkひな形JSONを出力</button>
+      <button type="button" onclick="exportBattleVerificationStore()">登録済み検証データをJSON出力</button>
     </div>
     <div id="battleVerificationFileStatus" class="item">未読込です。</div>
     <div id="battleVerificationFileSummary" class="small"></div>
@@ -1233,10 +1233,10 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
         </div>
         <div id="battleBenchmarkPreview" class="item">Benchmarkを選択してください。</div>
         <div class="toolbar">
-          <button class="primary" type="button" onclick="runBattleBenchmark()">Benchmarkを実行</button>
+          <button class="primary" type="button" onclick="runBattleBenchmark()">選択したBenchmarkを実行</button>
           <button type="button" onclick="cancelBattleBenchmark()">中止</button>
-          <button type="button" onclick="exportLatestBattleBenchmarkResult(false)">完全結果JSON</button>
-          <button type="button" onclick="exportLatestBattleBenchmarkResult(true)">AI解析用JSON</button>
+          <button type="button" onclick="exportLatestBattleBenchmarkResult(false)">完全結果JSONを出力</button>
+          <button type="button" onclick="exportLatestBattleBenchmarkResult(true)">AI解析用JSONを出力</button>
         </div>
         <div id="battleBenchmarkStatus" class="item">未実行です。</div>
         <div id="battleBenchmarkResultList"></div>
@@ -1256,9 +1256,9 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
       </div>
       <div id="battleExecutionPreview" class="item">編成とテストを選択してください。</div>
       <div class="toolbar">
-        <button class="primary" type="button" onclick="runBattleVerificationTest()">選択内容で実行</button>
-        <button type="button" onclick="exportLatestBattleVerificationResult(false)">完全結果JSON</button>
-        <button type="button" onclick="exportLatestBattleVerificationResult(true)">AI解析用JSON</button>
+        <button class="primary" type="button" onclick="runBattleVerificationTest()">選択した編成・テストを実行</button>
+        <button type="button" onclick="exportLatestBattleVerificationResult(false)">完全結果JSONを出力</button>
+        <button type="button" onclick="exportLatestBattleVerificationResult(true)">AI解析用JSONを出力</button>
       </div>
       <div id="battleExecutionStatus" class="item">未実行です。</div>
       <div id="battleVerificationResultList"></div>
@@ -2956,8 +2956,17 @@ function validateBattleVerificationEnvelope(doc){
  return {type,payload:structuredClone(payload)};
 }
 function upsertBattleVerificationRecord(rows,record){const i=rows.findIndex(x=>String(x.id)===String(record.id));if(i>=0)rows[i]=record;else rows.push(record);return i>=0?'更新':'登録'}
+function battleVerificationTypeLabel(type){return type==='battle-roster'?'編成':type==='battle-test'?'テスト':type==='battle-opponent-set'?'対象集合':type==='battle-benchmark'?'Benchmark':type}
+function battleVerificationImportDetail(type,payload){
+ if(type==='battle-roster'){const c=validateBattleRosterCapacity(payload);return `味方 ${c.allies}人 / 敵 ${c.enemies}人 / 合計 ${c.total}人`}
+ if(type==='battle-test'){const c=battleVerificationTestConfig(payload);return `試行 ${c.trials.toLocaleString()}件 / Seed ${c.seedStart} / 最大Tick ${c.maxTicks}`}
+ if(type==='battle-opponent-set')return `対象編成 ${Array.isArray(payload.roster_ids)?payload.roster_ids.length:0}件`;
+ if(type==='battle-benchmark'){const c=battleBenchmarkConfig(payload);return `各 ${c.trialsPerMatchup.toLocaleString()}試行 / Seed ${c.seedStart} / 最大Tick ${c.maxTicks}`}
+ return '';
+}
 function importBattleVerificationFile(file){
  if(!file)return;
+ const input=document.getElementById('battleVerificationFileInput');
  const reader=new FileReader();
  reader.onload=()=>{try{
   const parsed=JSON.parse(String(reader.result||''));
@@ -2965,20 +2974,25 @@ function importBattleVerificationFile(file){
   const list=checked.type==='battle-roster'?store.rosters:checked.type==='battle-test'?store.tests:checked.type==='battle-opponent-set'?store.opponent_sets:store.benchmarks;
   const action=upsertBattleVerificationRecord(list,{...checked.payload,document_type:checked.type,imported_at:now()});
   persist('battle verification file import');
-  renderBattleVerificationFoundation(`${checked.type} / ${checked.payload.id} を${action}しました。`);
- }catch(e){renderBattleVerificationFoundation('読込失敗：'+e.message,true)}};
- reader.onerror=()=>renderBattleVerificationFoundation('読込失敗：ファイルを読み取れませんでした。',true);
+  const label=battleVerificationTypeLabel(checked.type),detail=battleVerificationImportDetail(checked.type,checked.payload);
+  renderBattleVerificationFoundation(`${label} / ${checked.payload.id} を${action}しました。`);
+  alert(`${label}JSONを取り込みました。
+${checked.payload.name||checked.payload.id}
+ID: ${checked.payload.id}${detail?'\n'+detail:''}`);
+ }catch(e){renderBattleVerificationFoundation('読込失敗：'+e.message,true);alert('戦闘検証JSONの読込に失敗しました。\n'+e.message)}finally{if(input)input.value=''}};
+ reader.onerror=()=>{renderBattleVerificationFoundation('読込失敗：ファイルを読み取れませんでした。',true);alert('戦闘検証JSONの読込に失敗しました。\nファイルを読み取れませんでした。');if(input)input.value=''};
  reader.readAsText(file);
 }
 function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプル可変人数編成',allies:[{count:1,unit:structuredClone(BATTLE_SAMPLE_ALLIES[0]),overrides:{}}],enemies:[{count:1,unit:structuredClone(BATTLE_SAMPLE_ENEMIES[0]),overrides:{}}],constraints:{max_allies:'system',max_enemies:'system',max_total_units:'system',overflow_policy:'error'},tags:['sample','flexible-roster']}}
 function battleTestTemplateData(){return {id:'BT-SAMPLE-001',name:'サンプル単発検証',roster_id:'BRT-SAMPLE-001',purpose:'validation',execution:{mode:'single',trials:1,seed_start:12345,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','skill_usage','errors'],expectations:{error_count:{max:0}},tags:[]}}
-function exportBattleRosterTemplate(){downloadText('GK_BattleRoster_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-roster',battleRosterTemplateData()),null,2),'application/json;charset=utf-8')}
-function exportBattleTestTemplate(){downloadText('GK_BattleTest_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-test',battleTestTemplateData()),null,2),'application/json;charset=utf-8')}
+function exportBattleRosterTemplate(){downloadText('GK_BattleRoster_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-roster',battleRosterTemplateData()),null,2),'application/json;charset=utf-8');alert('編成ひな形JSONを出力しました。\nダウンロード一覧または「ファイル」アプリを確認してください。')}
+function exportBattleTestTemplate(){downloadText('GK_BattleTest_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-test',battleTestTemplateData()),null,2),'application/json;charset=utf-8');alert('テストひな形JSONを出力しました。\nダウンロード一覧または「ファイル」アプリを確認してください。')}
 function battleOpponentSetTemplateData(){return {id:'BOS-SAMPLE-001',name:'サンプル対象編成集合',roster_ids:['BRT-SAMPLE-001'],tags:['sample','benchmark-targets']}}
 function battleBenchmarkTemplateData(){return {id:'BB-SAMPLE-001',name:'サンプルBenchmark',baseline_roster_id:'BRT-SAMPLE-001',opponent_set_id:'BOS-SAMPLE-001',execution:{trials_per_matchup:10,seed_start:20000,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','damage','errors'],expectations:{error_count:{max:0}},tags:['sample','benchmark']}}
-function exportBattleOpponentSetTemplate(){downloadText('GK_BattleOpponentSet_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-opponent-set',battleOpponentSetTemplateData()),null,2),'application/json;charset=utf-8')}
-function exportBattleBenchmarkTemplate(){downloadText('GK_BattleBenchmark_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-benchmark',battleBenchmarkTemplateData()),null,2),'application/json;charset=utf-8')}
-function exportBattleVerificationStore(){const store=ensureBattleVerificationStore();downloadText('GK_BattleVerification_Store_'+(currentProjectId||'PROJECT')+'.json',JSON.stringify({format:'guild-adventure-studio-battle-test-store',version:'1.0.0',exported_at:now(),project_id:currentProjectId,data:structuredClone(store)},null,2),'application/json;charset=utf-8')}
+function exportBattleOpponentSetTemplate(){downloadText('GK_BattleOpponentSet_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-opponent-set',battleOpponentSetTemplateData()),null,2),'application/json;charset=utf-8');alert('対象集合ひな形JSONを出力しました。\nダウンロード一覧または「ファイル」アプリを確認してください。')}
+function exportBattleBenchmarkTemplate(){downloadText('GK_BattleBenchmark_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-benchmark',battleBenchmarkTemplateData()),null,2),'application/json;charset=utf-8');alert('Benchmarkひな形JSONを出力しました。\nダウンロード一覧または「ファイル」アプリを確認してください。')}
+function exportBattleVerificationStore(){const store=ensureBattleVerificationStore();downloadText('GK_BattleVerification_Store_'+(currentProjectId||'PROJECT')+'.json',JSON.stringify({format:'guild-adventure-studio-battle-test-store',version:'1.0.0',exported_at:now(),project_id:currentProjectId,data:structuredClone(store)},null,2),'application/json;charset=utf-8');alert(`登録済み検証データをJSON出力しました。
+編成 ${store.rosters.length}件 / テスト ${store.tests.length}件 / 対象集合 ${store.opponent_sets.length}件 / Benchmark ${store.benchmarks.length}件`)}
 function battleRosterRecordSummary(roster){
  const count=validateBattleRosterCapacity(roster),limits=count.limits;
  const limitText=(limits.max_allies||limits.max_enemies||limits.max_total_units)?`設定上限：味方 ${limits.max_allies||'未設定'} / 敵 ${limits.max_enemies||'未設定'} / 合計 ${limits.max_total_units||'未設定'}`:'人数上限：システム設定なし（固定値を使用しません）';
@@ -3142,8 +3156,8 @@ function previewBattleVerificationExecution(){
  try{const counts=validateBattleRosterCapacity(roster),cfg=battleVerificationTestConfig(test),total=cfg.trials;box.innerHTML=`<b>${esc(roster.name||roster.id)}</b> × <b>${esc(test.name||test.id)}</b><br>味方 ${counts.allies} / 敵 ${counts.enemies} / 合計 ${counts.total}<br>実行方式 ${esc(cfg.mode)} / 試行 ${total.toLocaleString()} / Seed ${cfg.seedStart}${total>1?`〜（+${cfg.seedStep}）`:''} / 最大Tick ${cfg.maxTicks}<br><span class="small">この段階では固定編成テストです。対象集合を使う1対100等は次のBenchmark段階で追加します。</span>`}catch(e){box.innerHTML=`<span class="error">${esc(e.message)}</span>`}
 }
 
-function exportBattleOpponentSetById(id){const row=ensureBattleVerificationStore().opponent_sets.find(x=>String(x.id)===String(id));if(!row)return alert('対象集合が見つかりません。');downloadText(`GK_BattleOpponentSet_${row.id}.json`,JSON.stringify(battleVerificationEnvelope('battle-opponent-set',row),null,2),'application/json;charset=utf-8')}
-function exportBattleBenchmarkById(id){const row=ensureBattleVerificationStore().benchmarks.find(x=>String(x.id)===String(id));if(!row)return alert('Benchmarkが見つかりません。');downloadText(`GK_BattleBenchmark_${row.id}.json`,JSON.stringify(battleVerificationEnvelope('battle-benchmark',row),null,2),'application/json;charset=utf-8')}
+function exportBattleOpponentSetById(id){const row=ensureBattleVerificationStore().opponent_sets.find(x=>String(x.id)===String(id));if(!row)return alert('対象集合が見つかりません。');downloadText(`GK_BattleOpponentSet_${row.id}.json`,JSON.stringify(battleVerificationEnvelope('battle-opponent-set',row),null,2),'application/json;charset=utf-8');alert(`対象集合JSONを出力しました。\n${row.name||row.id}\nID: ${row.id}`)}
+function exportBattleBenchmarkById(id){const row=ensureBattleVerificationStore().benchmarks.find(x=>String(x.id)===String(id));if(!row)return alert('Benchmarkが見つかりません。');downloadText(`GK_BattleBenchmark_${row.id}.json`,JSON.stringify(battleVerificationEnvelope('battle-benchmark',row),null,2),'application/json;charset=utf-8');alert(`Benchmark JSONを出力しました。\n${row.name||row.id}\nID: ${row.id}`)}
 function deleteBattleOpponentSet(id){const store=ensureBattleVerificationStore(),used=store.benchmarks.filter(x=>String(x.opponent_set_id)===String(id));if(used.length)return alert(`この対象集合はBenchmark ${used.map(x=>x.id).join(', ')} から参照されています。先にBenchmarkを削除してください。`);const row=store.opponent_sets.find(x=>String(x.id)===String(id));if(!row||!confirm(`${row.name||row.id} を削除しますか？`))return;store.opponent_sets=store.opponent_sets.filter(x=>String(x.id)!==String(id));persist('battle opponent set deleted');renderBattleVerificationFoundation(`${id} を削除しました。`)}
 function deleteBattleBenchmark(id){const store=ensureBattleVerificationStore(),row=store.benchmarks.find(x=>String(x.id)===String(id)),results=store.results.filter(x=>String(x.benchmark_id)===String(id));if(!row||!confirm(`${row.name||row.id} を削除しますか？\n保存済みBenchmark結果 ${results.length}件があります。`))return;let deleteResults=false;if(results.length)deleteResults=confirm('関連するBenchmark結果も削除しますか？\nキャンセルを選ぶと結果は履歴として残します。');store.benchmarks=store.benchmarks.filter(x=>String(x.id)!==String(id));if(deleteResults)store.results=store.results.filter(x=>String(x.benchmark_id)!==String(id));persist('battle benchmark deleted');renderBattleVerificationFoundation(`${id} を削除しました。${deleteResults?` 結果 ${results.length}件も削除しました。`:results.length?' 結果は履歴として残しました。':''}`)}
 function renderBattleBenchmarkManagers(){
@@ -3156,23 +3170,23 @@ function renderBattleBenchmarkManagers(){
 }
 function battleBenchmarkConfig(row){const e=row.execution||{},trials=Math.max(1,Math.floor(Number(e.trials_per_matchup||e.trials||1))),seedStart=Math.floor(Number(e.seed_start||1)),seedStep=Math.max(1,Math.floor(Number(e.seed_step||1))),maxTicks=Math.max(1,Math.min(1000,Math.floor(Number(e.max_ticks||1000))));return {trialsPerMatchup:trials,seedStart,seedStep,maxTicks}}
 function previewBattleBenchmark(){const box=document.getElementById('battleBenchmarkPreview'),id=document.getElementById('battleBenchmarkSelect')?.value||'';if(!box)return;const store=ensureBattleVerificationStore(),row=store.benchmarks.find(x=>String(x.id)===id);if(!row){box.textContent='Benchmarkを選択してください。';return}const base=store.rosters.find(x=>String(x.id)===String(row.baseline_roster_id)),set=store.opponent_sets.find(x=>String(x.id)===String(row.opponent_set_id)),cfg=battleBenchmarkConfig(row),targets=(set&&set.roster_ids||[]);box.innerHTML=`<b>${esc(row.name||row.id)}</b><br>基準：${esc(base&&base.name||row.baseline_roster_id)}<br>対象：${targets.length}件 / 各 ${cfg.trialsPerMatchup.toLocaleString()}試行 / 総試行 ${(targets.length*cfg.trialsPerMatchup).toLocaleString()}<br>Seed ${cfg.seedStart}（組合せごとに連続） / 最大Tick ${cfg.maxTicks}<br><span class="small">基準編成の味方側と、各対象編成の敵側を組み合わせます。対象に敵側がない場合は味方側を敵として使用します。</span>`}
-function renderBattleBenchmarkCenter(){const sel=document.getElementById('battleBenchmarkSelect'),list=document.getElementById('battleBenchmarkResultList');if(!sel||!list)return;const store=ensureBattleVerificationStore(),v=sel.value;sel.innerHTML='<option value="">選択してください</option>'+store.benchmarks.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)} / ${esc(x.id)}</option>`).join('');if(store.benchmarks.some(x=>String(x.id)===v))sel.value=v;const rows=store.results.filter(x=>x.document_type==='battle-benchmark-result').slice(0,10);list.innerHTML=rows.length?'<h4 style="margin-bottom:8px">最近のBenchmark結果</h4>'+rows.map(r=>`<div class="item" style="margin-top:8px"><b>${esc(r.benchmark_name||r.benchmark_id)}</b><br><span class="small">${esc(r.executed_at||'')} / 対象 ${r.summary.matchups_completed}件</span><br>${esc(r.assessment&&r.assessment.status||'UNASSESSED')} / 総試行 ${r.summary.trials_completed} / エラー ${r.summary.error_count}<div class="toolbar" style="margin-top:8px"><button type="button" onclick="exportBattleBenchmarkResultById('${esc(r.id)}',false)">完全JSON</button><button type="button" onclick="exportBattleBenchmarkResultById('${esc(r.id)}',true)">AI用JSON</button><button class="danger" type="button" onclick="deleteBattleVerificationResult('${esc(r.id)}')">結果削除</button></div></div>`).join(''):'<p class="small">Benchmark結果はまだありません。</p>';previewBattleBenchmark()}
+function renderBattleBenchmarkCenter(){const sel=document.getElementById('battleBenchmarkSelect'),list=document.getElementById('battleBenchmarkResultList');if(!sel||!list)return;const store=ensureBattleVerificationStore(),v=sel.value;sel.innerHTML='<option value="">選択してください</option>'+store.benchmarks.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)} / ${esc(x.id)}</option>`).join('');if(store.benchmarks.some(x=>String(x.id)===v))sel.value=v;const rows=store.results.filter(x=>x.document_type==='battle-benchmark-result').slice(0,10);list.innerHTML=rows.length?'<h4 style="margin-bottom:8px">最近のBenchmark結果</h4>'+rows.map(r=>`<div class="item" style="margin-top:8px"><b>${esc(r.benchmark_name||r.benchmark_id)}</b><br><span class="small">${esc(r.executed_at||'')} / 対象 ${r.summary.matchups_completed}件</span><br>${esc(r.assessment&&r.assessment.status||'UNASSESSED')} / 総試行 ${r.summary.trials_completed} / エラー ${r.summary.error_count}<div class="toolbar" style="margin-top:8px"><button type="button" onclick="exportBattleBenchmarkResultById('${esc(r.id)}',false)">完全JSONを出力</button><button type="button" onclick="exportBattleBenchmarkResultById('${esc(r.id)}',true)">AI用JSONを出力</button><button class="danger" type="button" onclick="deleteBattleVerificationResult('${esc(r.id)}')">結果削除</button></div></div>`).join(''):'<p class="small">Benchmark結果はまだありません。</p>';previewBattleBenchmark()}
 window.battleBenchmarkCancelRequested=false;
 function cancelBattleBenchmark(){window.battleBenchmarkCancelRequested=true;const el=document.getElementById('battleBenchmarkStatus');if(el)el.textContent='中止要求を受け付けました。現在の試行後に停止します。'}
 async function runBattleBenchmark(){
  const status=document.getElementById('battleBenchmarkStatus'),id=document.getElementById('battleBenchmarkSelect')?.value||'',store=ensureBattleVerificationStore();
- try{const row=store.benchmarks.find(x=>String(x.id)===id);if(!row)throw new Error('Benchmarkを選択してください。');const base=store.rosters.find(x=>String(x.id)===String(row.baseline_roster_id)),set=store.opponent_sets.find(x=>String(x.id)===String(row.opponent_set_id));if(!base)throw new Error(`基準編成が見つかりません：${row.baseline_roster_id}`);if(!set)throw new Error(`対象集合が見つかりません：${row.opponent_set_id}`);const targetIds=[...new Set((set.roster_ids||[]).map(String))],cfg=battleBenchmarkConfig(row),total=targetIds.length*cfg.trialsPerMatchup;if(!targetIds.length)throw new Error('対象集合が空です。');if(total>200000&&!confirm(`総試行 ${total.toLocaleString()}件です。iPhoneでは時間がかかる可能性があります。続行しますか？`))return;
+ try{const row=store.benchmarks.find(x=>String(x.id)===id);if(!row){alert('Benchmarkが選択されていません。\n先にBenchmark JSONを読み込み、使用するBenchmarkを選択してください。');throw new Error('Benchmarkを選択してください。');}const base=store.rosters.find(x=>String(x.id)===String(row.baseline_roster_id)),set=store.opponent_sets.find(x=>String(x.id)===String(row.opponent_set_id));if(!base)throw new Error(`基準編成が見つかりません：${row.baseline_roster_id}`);if(!set)throw new Error(`対象集合が見つかりません：${row.opponent_set_id}`);const targetIds=[...new Set((set.roster_ids||[]).map(String))],cfg=battleBenchmarkConfig(row),total=targetIds.length*cfg.trialsPerMatchup;if(!targetIds.length)throw new Error('対象集合が空です。');if(!confirm(`Benchmarkを開始します。\n\n${row.name||row.id}\n基準編成: ${base.name||base.id}\n対象: ${targetIds.length}件\n各 ${cfg.trialsPerMatchup.toLocaleString()}試行\n総試行: ${total.toLocaleString()}戦\nSeed: ${cfg.seedStart}\n最大Tick: ${cfg.maxTicks}\n\n実行しますか？`))return;if(total>200000&&!confirm(`総試行 ${total.toLocaleString()}件です。iPhoneでは時間がかかる可能性があります。続行しますか？`))return;
   const baseExpanded=expandBattleRoster(base),formulaConfig=readBattleFormulaConfig(),matchups=[],errors=[],started=performance.now();window.battleBenchmarkCancelRequested=false;let completed=0;
   status.className='item';status.textContent=`実行中：0 / ${total.toLocaleString()}`;
   for(let m=0;m<targetIds.length;m++){if(window.battleBenchmarkCancelRequested)break;const target=store.rosters.find(x=>String(x.id)===targetIds[m]);if(!target){errors.push({target_roster_id:targetIds[m],message:'対象編成が見つかりません。'});continue}const exp=expandBattleRoster(target),enemyUnits=exp.enemies.length?exp.enemies:exp.allies.map(x=>({...structuredClone(x),side:'敵'})),runs=[],localErrors=[];
    for(let i=0;i<cfg.trialsPerMatchup;i++){if(window.battleBenchmarkCancelRequested)break;const seed=cfg.seedStart+m*cfg.trialsPerMatchup*cfg.seedStep+i*cfg.seedStep;try{runs.push(runBattleSimulation({formulaConfig,traceOptions:{events:false,ai:false,damage:false,tick:false,json:false},maxTicks:cfg.maxTicks,logLimit:20,seed,allies:baseExpanded.allies,enemies:enemyUnits},{silent:true,persistResult:false}))}catch(e){localErrors.push({seed,message:e.message})}completed++;if(completed%25===0){status.textContent=`実行中：${completed.toLocaleString()} / ${total.toLocaleString()}（対象 ${m+1}/${targetIds.length}）`;await new Promise(r=>setTimeout(r,0))}}
    const summary=summarizeBattleVerificationRuns(runs,localErrors);matchups.push({matchup_id:`${base.id}__VS__${target.id}`,baseline_roster_id:base.id,target_roster_id:target.id,target_roster_name:target.name||target.id,summary,errors:localErrors,representative_runs:runs.length?[runs[0],runs[runs.length-1]].filter((x,i,a)=>a.indexOf(x)===i):[]});
   }
-  matchups.sort((a,b)=>b.summary.win_rate-a.summary.win_rate||a.summary.average_ticks-b.summary.average_ticks);const trialsCompleted=matchups.reduce((n,x)=>n+x.summary.trials_completed,0),errorCount=matchups.reduce((n,x)=>n+x.summary.error_count,0)+errors.length,result={id:'BBR-'+Date.now(),document_type:'battle-benchmark-result',schema_version:'1.0.0',benchmark_id:row.id,benchmark_name:row.name||row.id,baseline_roster_id:base.id,baseline_roster_name:base.name||base.id,opponent_set_id:set.id,opponent_set_name:set.name||set.id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{...cfg,elapsed_ms:performance.now()-started,cancelled:window.battleBenchmarkCancelRequested},summary:{matchups_requested:targetIds.length,matchups_completed:matchups.length,trials_requested:total,trials_completed:trialsCompleted,error_count:errorCount},assessment:{status:errorCount?'WARNING':'PASS'},matchups,errors};store.results.unshift(result);store.results=store.results.slice(0,100);window.lastBattleBenchmarkResult=result;persist('battle benchmark result');status.innerHTML=`<b>${result.assessment.status}</b> / 対象 ${matchups.length}/${targetIds.length} / 総試行 ${trialsCompleted.toLocaleString()} / エラー ${errorCount}${result.execution.cancelled?' / 中止':''}`;renderBattleBenchmarkCenter();
- }catch(e){status.className='item error';status.textContent='Benchmark実行失敗：'+e.message}
+  matchups.sort((a,b)=>b.summary.win_rate-a.summary.win_rate||a.summary.average_ticks-b.summary.average_ticks);const trialsCompleted=matchups.reduce((n,x)=>n+x.summary.trials_completed,0),errorCount=matchups.reduce((n,x)=>n+x.summary.error_count,0)+errors.length,result={id:'BBR-'+Date.now(),document_type:'battle-benchmark-result',schema_version:'1.0.0',benchmark_id:row.id,benchmark_name:row.name||row.id,baseline_roster_id:base.id,baseline_roster_name:base.name||base.id,opponent_set_id:set.id,opponent_set_name:set.name||set.id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{...cfg,elapsed_ms:performance.now()-started,cancelled:window.battleBenchmarkCancelRequested},summary:{matchups_requested:targetIds.length,matchups_completed:matchups.length,trials_requested:total,trials_completed:trialsCompleted,error_count:errorCount},assessment:{status:errorCount?'WARNING':'PASS'},matchups,errors};store.results.unshift(result);store.results=store.results.slice(0,100);window.lastBattleBenchmarkResult=result;persist('battle benchmark result');status.innerHTML=`<b>${result.assessment.status}</b> / 対象 ${matchups.length}/${targetIds.length} / 総試行 ${trialsCompleted.toLocaleString()} / エラー ${errorCount}${result.execution.cancelled?' / 中止':''}`;renderBattleBenchmarkCenter();alert(`Benchmarkが${result.execution.cancelled?'中止':'完了'}しました。\n対象: ${matchups.length}/${targetIds.length}件\n総試行: ${trialsCompleted.toLocaleString()}戦\nエラー: ${errorCount}件\n判定: ${result.assessment.status}`);
+ }catch(e){status.className='item error';status.textContent='Benchmark実行失敗：'+e.message;if(e.message!=='Benchmarkを選択してください。')alert('Benchmarkを実行できませんでした。\n'+e.message)}
 }
 function battleBenchmarkAiPayload(result){return {format:'guild-adventure-studio-battle-benchmark-result-ai',version:'1.0.0',result_id:result.id,benchmark:{id:result.benchmark_id,name:result.benchmark_name},baseline:{id:result.baseline_roster_id,name:result.baseline_roster_name},opponent_set:{id:result.opponent_set_id,name:result.opponent_set_name},executed_at:result.executed_at,build_version:result.build_version,formula_version:result.formula_version,execution:result.execution,summary:result.summary,assessment:result.assessment,ranking:(result.matchups||[]).map((x,index)=>({rank:index+1,target_roster_id:x.target_roster_id,target_roster_name:x.target_roster_name,summary:x.summary,errors:x.errors}))}}
-function exportBattleBenchmarkResultById(id,aiOnly=false){const result=ensureBattleVerificationStore().results.find(x=>String(x.id)===String(id));if(!result)return alert('Benchmark結果が見つかりません。');const payload=aiOnly?battleBenchmarkAiPayload(result):battleVerificationEnvelope('battle-result',result);downloadText(`GK_BattleBenchmark_${aiOnly?'AI_':''}${result.id}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8')}
+function exportBattleBenchmarkResultById(id,aiOnly=false){const result=ensureBattleVerificationStore().results.find(x=>String(x.id)===String(id));if(!result)return alert('Benchmark結果が見つかりません。');const payload=aiOnly?battleBenchmarkAiPayload(result):battleVerificationEnvelope('battle-result',result);downloadText(`GK_BattleBenchmark_${aiOnly?'AI_':''}${result.id}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');alert(`${aiOnly?'AI解析用':'完全結果'}JSONを出力しました。\n結果ID: ${result.id}`)}
 function exportLatestBattleBenchmarkResult(aiOnly=false){const result=window.lastBattleBenchmarkResult||ensureBattleVerificationStore().results.find(x=>x.document_type==='battle-benchmark-result');if(!result)return alert('先にBenchmarkを実行してください。');exportBattleBenchmarkResultById(result.id,aiOnly)}
 
 function renderBattleExecutionCenter(){
@@ -3182,15 +3196,16 @@ function renderBattleExecutionCenter(){
  ts.innerHTML='<option value="">選択してください</option>'+store.tests.map(x=>`<option value="${esc(x.id)}">${esc(x.name||x.id)} / ${esc(x.id)}</option>`).join('');
  if(store.rosters.some(x=>String(x.id)===rv))rs.value=rv;
  if(store.tests.some(x=>String(x.id)===tv))ts.value=tv;
- list.innerHTML=store.results.length?'<h4 style="margin-bottom:8px">最近の検証結果</h4>'+store.results.slice(0,10).map(r=>`<div class="item" style="margin-top:8px"><b>${esc(r.test_name||r.test_id)}</b><br><span class="small">${esc(r.roster_name||r.roster_id)} / ${esc(r.executed_at||'')}</span><br>${esc(r.assessment&&r.assessment.status||'UNASSESSED')} / ${r.summary.trials_completed}試行 / 勝率 ${(Number(r.summary.win_rate||0)*100).toFixed(1)}% / 平均Tick ${Number(r.summary.average_ticks||0).toFixed(1)}<div class="toolbar" style="margin-top:8px"><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',false)">完全JSON</button><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',true)">AI用JSON</button><button class="danger" type="button" onclick="deleteBattleVerificationResult('${esc(r.id)}')">結果削除</button></div></div>`).join(''):'<p class="small">検証結果はまだありません。</p>';
+ list.innerHTML=store.results.length?'<h4 style="margin-bottom:8px">最近の検証結果</h4>'+store.results.slice(0,10).map(r=>`<div class="item" style="margin-top:8px"><b>${esc(r.test_name||r.test_id)}</b><br><span class="small">${esc(r.roster_name||r.roster_id)} / ${esc(r.executed_at||'')}</span><br>${esc(r.assessment&&r.assessment.status||'UNASSESSED')} / ${r.summary.trials_completed}試行 / 勝率 ${(Number(r.summary.win_rate||0)*100).toFixed(1)}% / 平均Tick ${Number(r.summary.average_ticks||0).toFixed(1)}<div class="toolbar" style="margin-top:8px"><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',false)">完全JSONを出力</button><button type="button" onclick="exportBattleVerificationResultById('${esc(r.id)}',true)">AI用JSONを出力</button><button class="danger" type="button" onclick="deleteBattleVerificationResult('${esc(r.id)}')">結果削除</button></div></div>`).join(''):'<p class="small">検証結果はまだありません。</p>';
  previewBattleVerificationExecution();
 }
 function runBattleVerificationTest(){
  const status=document.getElementById('battleExecutionStatus'),rosterId=document.getElementById('battleExecutionRosterSelect')?.value||'',testId=document.getElementById('battleExecutionTestSelect')?.value||'',store=ensureBattleVerificationStore();
  try{
-  const roster=store.rosters.find(x=>String(x.id)===rosterId),test=store.tests.find(x=>String(x.id)===testId);if(!roster||!test)throw new Error('編成とテストを選択してください。');
+  const roster=store.rosters.find(x=>String(x.id)===rosterId),test=store.tests.find(x=>String(x.id)===testId);if(!roster||!test){alert('編成またはテストが選択されていません。\n先に編成JSONとテストJSONを読み込み、両方を選択してください。');throw new Error('編成とテストを選択してください。');}
   if(String(test.roster_id||'')&&String(test.roster_id)!==String(roster.id))throw new Error(`このテストは編成 ${test.roster_id} を参照しています。`);
   const expanded=expandBattleRoster(roster),cfg=battleVerificationTestConfig(test),runs=[],errors=[],started=performance.now(),formulaConfig=readBattleFormulaConfig();
+  if(!confirm(`戦闘テストを開始します。\n\n編成: ${roster.name||roster.id}\nテスト: ${test.name||test.id}\n試行: ${cfg.trials.toLocaleString()}件\nSeed: ${cfg.seedStart}\n最大Tick: ${cfg.maxTicks}\n\n実行しますか？`))return;
   status.className='item';status.textContent=`実行中：0 / ${cfg.trials}`;
   for(let i=0;i<cfg.trials;i++){
    try{const result=runBattleSimulation({formulaConfig,traceOptions:{events:false,ai:false,damage:false,tick:false,json:false},maxTicks:cfg.maxTicks,logLimit:50,seed:cfg.seedStart+i*cfg.seedStep,allies:expanded.allies,enemies:expanded.enemies},{silent:true,persistResult:false});runs.push(result)}catch(e){errors.push({index:i,seed:cfg.seedStart+i*cfg.seedStep,message:e.message})}
@@ -3198,11 +3213,11 @@ function runBattleVerificationTest(){
   const summary=summarizeBattleVerificationRuns(runs,errors),assessment=evaluateBattleVerificationExpectations(test,summary),result={id:'BR-'+Date.now(),document_type:'battle-result',schema_version:'1.0.0',test_id:test.id,test_name:test.name||test.id,roster_id:roster.id,roster_name:roster.name||roster.id,executed_at:now(),build_version:loadBuildSettings().developmentBuild,formula_version:formulaConfig.version,execution:{...cfg,elapsed_ms:performance.now()-started},summary,assessment,errors,representative_runs:runs.length?[runs[0],runs[Math.floor(runs.length/2)],runs[runs.length-1]].filter((x,i,a)=>a.indexOf(x)===i):[]};
   store.results.unshift(result);store.results=store.results.slice(0,100);window.lastBattleVerificationResult=result;persist('battle verification result');
   status.innerHTML=`<b>${esc(assessment.status)}</b> / ${summary.trials_completed}試行 / 勝率 ${(summary.win_rate*100).toFixed(1)}% / 平均Tick ${summary.average_ticks.toFixed(1)} / エラー ${summary.error_count}`;
-  renderBattleExecutionCenter();
- }catch(e){status.className='item error';status.textContent='実行失敗：'+e.message}
+  renderBattleExecutionCenter();alert(`戦闘テストが完了しました。\n試行: ${summary.trials_completed.toLocaleString()}件\n勝率: ${(summary.win_rate*100).toFixed(1)}%\n平均Tick: ${summary.average_ticks.toFixed(1)}\nエラー: ${summary.error_count}件\n判定: ${assessment.status}`);
+ }catch(e){status.className='item error';status.textContent='実行失敗：'+e.message;if(e.message!=='編成とテストを選択してください。')alert('戦闘テストを実行できませんでした。\n'+e.message)}
 }
 function battleVerificationAiPayload(result){return {format:'guild-adventure-studio-battle-result-ai',version:'1.0.0',result_id:result.id,test:{id:result.test_id,name:result.test_name},roster:{id:result.roster_id,name:result.roster_name},executed_at:result.executed_at,build_version:result.build_version,formula_version:result.formula_version,execution:result.execution,summary:result.summary,assessment:result.assessment,errors:result.errors,representative_runs:(result.representative_runs||[]).map(r=>({seed:r.seed,result:r.result,ticks:r.ticks,metrics:r.metrics,logs:(r.logs||[]).slice(0,50)}))};}
-function exportBattleVerificationResultById(resultId,aiOnly=false){const result=ensureBattleVerificationStore().results.find(x=>String(x.id)===String(resultId));if(!result)return alert('結果が見つかりません。');const payload=aiOnly?battleVerificationAiPayload(result):battleVerificationEnvelope('battle-result',result);downloadText(`GK_BattleVerification_${aiOnly?'AI_':''}${result.id}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8')}
+function exportBattleVerificationResultById(resultId,aiOnly=false){const result=ensureBattleVerificationStore().results.find(x=>String(x.id)===String(resultId));if(!result)return alert('結果が見つかりません。');const payload=aiOnly?battleVerificationAiPayload(result):battleVerificationEnvelope('battle-result',result);downloadText(`GK_BattleVerification_${aiOnly?'AI_':''}${result.id}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');alert(`${aiOnly?'AI解析用':'完全結果'}JSONを出力しました。\n結果ID: ${result.id}`)}
 function exportLatestBattleVerificationResult(aiOnly=false){const result=window.lastBattleVerificationResult||ensureBattleVerificationStore().results[0];if(!result)return alert('先に戦闘検証を実行してください。');exportBattleVerificationResultById(result.id,aiOnly)}
 
 function renderBattleVerificationFoundation(message='',isError=false){
@@ -3266,7 +3281,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.17',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.18',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
