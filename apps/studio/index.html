@@ -1174,7 +1174,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 </section>
 
 <section id="view-battle" class="view hidden">
-  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.26</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
+  <h1>戦闘計算シミュレーター</h1><div style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px"><span style="display:inline-block;background:#173a63;color:#fff;font-weight:800;border-radius:999px;padding:7px 12px">BUILD <span id="battleDevelopmentBuildLabel">472.27</span></span><span class="small">GK Studio v1.43.1／イベント連携修正版</span></div>
 
   <div class="card" id="battleVerificationFileCard" style="border-color:#8fb5d9;background:#f8fbff">
     <h2>戦闘検証専用ファイル</h2>
@@ -1184,6 +1184,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
     <div class="toolbar">
       <button class="primary" type="button" onclick="document.getElementById('battlePackageFileInput').click()">AI作成Battle Package ZIPを読み込む</button>
       <button class="primary" type="button" onclick="exportBattleAiPackageTemplate()">AI用Battle Packageひな形ZIPを出力</button>
+      <button type="button" onclick="exportBattleAiExecutableSamplePackage()">実行テスト用Battle PackageサンプルZIPを出力</button>
       <button type="button" onclick="document.getElementById('battleVerificationFileInput').click()">個別の戦闘検証JSONを読み込む</button>
       <button type="button" onclick="exportBattleRosterTemplate()">編成ひな形JSONを出力</button>
       <button type="button" onclick="exportBattleTestTemplate()">テストひな形JSONを出力</button>
@@ -3246,7 +3247,7 @@ async function exportBattleAiPackageTemplate(){
   created_at:createdAt,
   created_by:'studio-template',
   schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},
-  target:{minimum_build:'472.26'},
+  target:{minimum_build:'472.27'},
   contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,jobs:0},
   validation:{allow_unused_resources:true},
   instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
@@ -3273,6 +3274,32 @@ async function exportBattleAiPackageTemplate(){
  writer.addText('resources/opponent_sets/PLACE_JSON_HERE.md','# battle-opponent-set JSONを配置\n');
  writer.addText('resources/benchmarks/PLACE_JSON_HERE.md','# battle-benchmark JSONを配置（将来対応）\n');
  await writer.download(`GK_BattleVerification_AI_Template_v${packageVersion}.zip`);
+}
+async function exportBattleAiExecutableSamplePackage(){
+ if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。再読み込みしてください。');
+ const packageVersion='1.0.0',createdAt=now();
+ const roster=battleRosterTemplateData();
+ const test={...battleTestTemplateData(),name:'Executor確認用 10試行テスト',execution:{mode:'multiple',trials:10,seed_start:12345,seed_step:1,max_ticks:1000},tags:['sample','executor-qa']};
+ const manifest={
+  format:'guild-adventure-studio-battle-verification-package',package_version:packageVersion,package_type:'input',
+  package_id:'BVP-EXECUTOR-QA-001',name:'Battle Package Executor確認サンプル',created_at:createdAt,created_by:'studio-sample',
+  schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0'},
+  target:{minimum_build:'472.27'},contents:{rosters:1,tests:1,opponent_sets:0,benchmarks:0,jobs:1},
+  validation:{allow_unused_resources:true},instructions:'このZIPをStudioへ読み込み、1ジョブ・10試行を実行してください。'
+ };
+ const executionPlan={document_type:'battle-execution-plan',version:'1.0.0',plan_id:'BEP-EXECUTOR-QA-001',name:'Executor確認用実行計画',execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true},jobs:[{
+  job_id:'JOB-EXECUTOR-QA-001',job_type:'battle-test',job_version:'1.0.0',required:true,enabled:true,
+  resource_refs:{roster_id:roster.id,test_id:test.id},output_policy:{level:'representative'}
+ }]};
+ const readme=`# Battle Package Executor 確認サンプル\n\nこのZIPはReaderとExecutorの実機確認用です。\n\n## 期待される読込結果\n- 編成: 1件\n- テスト: 1件\n- 実行計画: 1件\n- 実行可能: 1件\n- 予定総試行: 10戦\n- FATAL / JOB_ERROR: 0件\n\n## 期待される操作\n1. このZIPを読み込む。\n2. 「読み込んだPackageを実行」を押す。\n3. 1ジョブ・10試行が完了することを確認する。\n4. 勝率・平均Tick・エラー数が表示されることを確認する。\n\nこの実行結果は既存プロジェクトや登録済み検証結果へ保存されません。\n`;
+ const writer=GKZipCore.writer.create();
+ writer.addJson('manifest.json',manifest);
+ writer.addJson('execution_plan.json',executionPlan);
+ writer.addJson(`resources/rosters/${roster.id}.json`,battleVerificationEnvelope('battle-roster',roster));
+ writer.addJson(`resources/tests/${test.id}.json`,battleVerificationEnvelope('battle-test',test));
+ writer.addText('README_AI.md',readme);
+ await writer.download('GK_BattleVerification_Executor_QA_v1.0.0.zip');
+ alert('実行テスト用Battle PackageサンプルZIPを出力しました。\nStudioへ読み込み、1ジョブ・10試行を実行してください。');
 }
 function exportBattleRosterTemplate(){downloadText('GK_BattleRoster_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-roster',battleRosterTemplateData()),null,2),'application/json;charset=utf-8')}
 function exportBattleTestTemplate(){downloadText('GK_BattleTest_Template_v1.0.0.json',JSON.stringify(battleVerificationEnvelope('battle-test',battleTestTemplateData()),null,2),'application/json;charset=utf-8')}
@@ -3646,7 +3673,7 @@ function tracePush(trace,row){if(battleTraceOptions.json)trace.push(row)}
 function formulaProfiles(){if(!Array.isArray(data.battle_formula_profiles))data.battle_formula_profiles=[];return data.battle_formula_profiles}
 function renderFormulaProfiles(){const rows=formulaProfiles();['formulaProfileSelect','formulaCompareA','formulaCompareB'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const current=el.value;el.innerHTML='<option value="">選択してください</option>'+rows.map((r,i)=>`<option value="${i}">${esc(r.name)} / ${esc(r.config.version||'')}</option>`).join('');if(current&&rows[Number(current)])el.value=current})}
 
-const GKS_BUILD_DEFAULTS={developmentBuild:'472.26',studioVersion:'1.44.0',formalBuild:'472.1'};
+const GKS_BUILD_DEFAULTS={developmentBuild:'472.27',studioVersion:'1.44.0',formalBuild:'472.1'};
 const GKS_BUILD_SETTINGS_KEY='gk.studio.buildSettings';
 function loadBuildSettings(){
   let saved={};
