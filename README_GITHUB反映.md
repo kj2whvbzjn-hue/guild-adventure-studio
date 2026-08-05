@@ -1,25 +1,30 @@
-# GA-B459 GitHub反映
+# GA-B460 GitHub反映手順
 
-このZIPをリポジトリ直下へ展開して上書きしてください。
+この差分はタグ検証ゲーム `/game-tag-test/` のみを GA-B460 に更新します。
+Studio GKS-B473 と既存ゲーム `/game/` GA-B455 は変更しません。
 
-## ビルド
-- Studio: GKS-B473（変更なし）
-- 既存ゲーム /game/: GA-B455（変更なし）
-- タグ検証ゲーム /game-tag-test/: GA-B459
+## 反映
 
-## 実機確認
-1. `/game-tag-test/?v=459` を開く
-2. 開発者モードを有効化
-3. 戦闘画面の「時間差3スタック検証」を押す
-4. 自動出力JSONを確認
+1. ZIPを展開する。
+2. リポジトリ直下へ内容を上書きする。
+3. GitHubへコミット・プッシュする。
+4. `/game-tag-test/?v=460` を開く。
+5. 開発者モードで「DOT撃破検証」を実行する。
+6. 自動出力されたJSONを確認する。
 
-## 期待値
-- test.id: TAG-DOT-STAGGERED-TIMER-001
-- end_tick: 1600
-- execution_count: 3
-- DOT付与Tick: 0, 250, 600
-- DOT終了Tick: 1000, 1250, 1600
-- DOT Hit: 30
-- DOT合計: 600
-- 通常AI行動: 0
+## DOT撃破検証の期待値
+
+- test.id: `TAG-DOT-DEFEAT-001`
+- Tick進行: 0 → 1000
+- 初期HP: 100
+- ATTACK: 1回
+- DOT: Tick 100、200、300の3回
+- DOT合計: 52（20 + 20 + 12）
+- DOT撃破: Tick 300で1回
+- DOT通常終了: 0回
+- 撃破後DOT: 0回
+- 最終HP: 0
+- target_alive: false
+- active_dot_stacks: 0
+- normal_ai_actions: 0
 - passed: true

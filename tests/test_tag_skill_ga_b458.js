@@ -2,7 +2,7 @@ const fs=require('fs');
 const path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','game-tag-test','index.html'),'utf8');
 const checks=[
- ['GA-B458+ regression build',html.includes('DOT Independent Timer Verification')||html.includes('DOT Stack Limit Verification')],
+ ['GA-B458+ regression build',html.includes('DOT Defeat Verification')||html.includes('DOT Independent Timer Verification')||html.includes('DOT Stack Limit Verification')],
  ['stack limit button',html.includes('id="tagTestRunStackLimit"')],
  ['six executions',html.includes('executionCount:6')],
  ['five expected stacks',html.includes('expectedStacks:5')],
