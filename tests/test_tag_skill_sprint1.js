@@ -1,0 +1,26 @@
+const fs=require('fs');
+const vm=require('vm');
+const html=fs.readFileSync('/mnt/data/tag_skill_implementation/guild-adventure-studio-main/game-tag-test/index.html','utf8');
+const start=html.indexOf("const TAG_SKILL_TEST_BUILD=");
+const end=html.indexOf("const GAUGE_MAX=100;",start);
+if(start<0||end<0)throw new Error('tag runtime not found');
+const src=html.slice(start,end);
+const context={console,Set,Number,Math,JSON,String,Array,escapeHtml:s=>String(s),$:()=>null,battle:{tick:0,log:[],units:[]}};
+vm.createContext(context);vm.runInContext(src,context);
+function assert(cond,msg){if(!cond)throw new Error(msg)}
+let r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-ATTACK'));
+assert(r.ok,'valid attack should compile');
+assert(r.definition.logicOrder.join(',')==='ATTACK','attack logic order');
+assert(r.definition.parameters.damage===100,'damage 100');
+r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-HEAVY'));
+assert(r.ok&&r.definition.parameters.damage===150,'heavy attack');
+r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-INVALID'));
+assert(!r.ok&&r.errors.some(x=>x.includes('DAMAGE')),'invalid missing damage');
+r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-POISON-PENDING'));
+assert(r.ok,'poison definition should compile');
+assert(r.definition.logicOrder.join(',')==='ATTACK,DOT','poison logic order');
+assert(r.warnings.some(x=>x.includes('Sprint 2')),'dot pending warning');
+const actor={id:'A',alive:true,side:'味方',attack:48};
+assert(context.calculateTaggedAttackDamage(actor,context.compileTaggedSkill(context.findTagSkill('SKL-TEST-ATTACK')).definition)===48,'100% damage');
+assert(context.calculateTaggedAttackDamage(actor,context.compileTaggedSkill(context.findTagSkill('SKL-TEST-HEAVY')).definition)===72,'150% damage');
+console.log('PASS tag skill Sprint 1: 7 assertions');
