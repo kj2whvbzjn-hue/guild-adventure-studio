@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ギルド冒険物語 V9 デモ BUILD455</title>
+<title>ギルド冒険物語 V9 タグ検証 GA-B456</title>
 
 <script>
 /* BUILD424: preserve user-selected developer mode and keep mobile runtime orientation-independent. */
@@ -541,7 +541,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 
 <div id="fixedCanvasHost"><div id="fixedCanvas">
 <a class="studio-back" id="studioBackLink" href="../studio/" aria-label="GK Studioへ戻る">GK Studioへ戻る</a>
-<header><div class="header-line"><div><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">BUILD455 — Battle Reservation Logic Foundation</div><div class="phase-dev-nav" id="phaseDevNav"><button data-phase="title">タイトル</button><button data-phase="base">拠点</button><button data-phase="event">イベント</button><button data-phase="battle">戦闘</button><button data-phase="result">リザルト</button></div></div><button id="developerModeBtn" class="developer-toggle" aria-pressed="false">開発者モード</button></div></header>
+<header><div class="header-line"><div><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">GA-B456 — Tag Skill DOT Runtime</div><div class="phase-dev-nav" id="phaseDevNav"><button data-phase="title">タイトル</button><button data-phase="base">拠点</button><button data-phase="event">イベント</button><button data-phase="battle">戦闘</button><button data-phase="result">リザルト</button></div></div><button id="developerModeBtn" class="developer-toggle" aria-pressed="false">開発者モード</button></div></header>
 <div class="wrap">
 <main id="phaseRoot">
 <section class="phase-screen dev-workspace" id="phase-devhome" data-phase="devhome"><div class="phase-shell">
@@ -583,7 +583,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <div class="battle-stage vertical-battle" id="battleStage"><div class="side-label enemy-label">ENEMY</div><div class="side-label ally-label">ALLY</div><div class="scene-title" id="sceneTitle">待機中</div><div class="scene-result" id="sceneResult"></div><div class="battle-divider"></div><div id="sceneUnits"></div></div>
 <div class="battle-public-log" id="battlePublicLog" aria-live="polite"><div class="battle-public-log-title">戦闘ログ</div><div id="battlePublicLogBody">まだ行動はありません。</div></div>
 <div class="scene-toolbar battle-bottom-controls"><button class="primary" id="sceneAuto">戦闘開始</button><button id="scenePause">一時停止</button><button id="sceneStep">1行動</button><button id="sceneReset">再戦</button><label>速度<select id="sceneSpeed"><option value="1.5" selected>観戦</option><option value="1">標準</option><option value="0.6">×2</option><option value="0.35">×4</option></select></label><label><input type="checkbox" id="sceneMotion" checked> 演出</label><label class="developer-only hidden">配置<select id="sceneLayout"><option value="vertical" selected>上下</option></select></label></div>
-<div class="small scene-note" id="sceneCaption">AI判断 → タグスキル予約 → 固定対象確認 → タグ解析・検証 → ATTACK実行の順で表示します。⚔️攻撃／🛡️防御／💚回復／💦判断中／⏳待機／❌失敗</div>
+<div class="small scene-note" id="sceneCaption">AI判断 → タグスキル予約 → 固定対象確認 → タグ解析・検証 → ATTACK → DOT付与・Tick発生の順で表示します。⚔️攻撃／🛡️防御／💚回復／💦判断中／⏳待機／❌失敗</div>
 </section>
 </div></section>
 <section class="phase-screen" id="phase-result" data-phase="result"><div class="phase-shell result-stage"><div class="result-box"><div class="result-heading" id="resultHeading">戦闘結果</div><p id="resultSummary">戦闘結果を集計しています。</p><div id="resultReward" class="card" style="margin:16px 0;text-align:left"></div><div class="row" style="justify-content:center"><button id="resultToEvent">イベントへ戻る</button><button class="primary" id="resultToBase">拠点へ帰還</button></div><p class="small">ギルド資金・戦績・装備ドロップを保存します。数値はV9ライブラリの前提に従う暫定調整値です。</p></div></div></section>
@@ -596,8 +596,8 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <label>オート増加量<select id="battleStep"><option value="1">1 Tick</option><option value="10" selected>10 Tick</option><option value="100">100 Tick</option><option value="1000">1000 Tick</option></select></label>
 </div>
 <section class="card" id="tagSkillTestPanel" style="margin-top:12px">
-<h3>タグスキル Sprint 1 検証</h3>
-<p class="small">一般タグと数値タグからスキルをコンパイルし、既存のHP・演出・ログへ接続します。現在の実装対象はATTACKです。</p>
+<h3>タグスキル Sprint 2 検証</h3>
+<p class="small">一般タグと数値タグからスキルをコンパイルし、ATTACK命中後にDOTを個別スタックとして付与します。DOTは各スタック独立の発生間隔・持続時間で処理します。</p>
 <div class="row">
 <label>スキル<select id="tagTestSkill"></select></label>
 <label>使用者<select id="tagTestActor"></select></label>
@@ -740,7 +740,7 @@ const EQUIPMENT={
  '魔力の指輪':{slot:'accessory',rarity:'rare',attack:9,maxHp:45,agi:1,description:'魔力を攻撃力へ変換する指輪。'},
  '古代の護符':{slot:'accessory',rarity:'legendary',attack:18,maxHp:120,agi:3,description:'失われた文明の祝福を帯びた護符。'}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'V9 Build 455',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'GA-B456',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','result'];
 let currentPhase='title';
@@ -860,7 +860,7 @@ function normalize(raw){
  raw.selectedQuestId=QUESTS.some(q=>q.id===raw.selectedQuestId)?raw.selectedQuestId:'Q-001';
  raw.inventory=Array.isArray(raw.inventory)?raw.inventory.filter(x=>EQUIPMENT[x]):[];
  raw.characters.forEach(c=>{c.aiPolicy=['weakest','lowestHp','random','boss','finish'].includes(c.aiPolicy)?c.aiPolicy:'lowestHp';c.equipment=c.equipment&&typeof c.equipment==='object'?c.equipment:{weapon:null,armor:null,accessory:null}});
- raw.schemaRevision='1.4.0';raw.gameVersion='V9 Build 455';
+ raw.schemaRevision='1.4.0';raw.gameVersion='GA-B456';
  return raw;
 }
 function persist(){data.updatedAt=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
@@ -929,14 +929,14 @@ $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('h
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'V9 Build 455',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'GA-B456',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
-const TAG_SKILL_TEST_BUILD='Sprint 1 / ATTACK';
+const TAG_SKILL_TEST_BUILD='GA-B456 / Sprint 2 / ATTACK + DOT';
 const TAG_SKILLS=[
  {id:'SKL-TEST-ATTACK',name:'タグ攻撃テスト',tags:['ATTACK','敵','単体','物理','DAMAGE=100']},
  {id:'SKL-TEST-HEAVY',name:'強打テスト',tags:['ATTACK','敵','単体','物理','DAMAGE=150']},
  {id:'SKL-TEST-INVALID',name:'不正攻撃（DAMAGEなし）',tags:['ATTACK','敵','単体','物理']},
- {id:'SKL-TEST-POISON-PENDING',name:'毒斬り（DOT未実装確認）',tags:['ATTACK','DOT','敵','単体','物理','毒属性','DAMAGE=100','DOT_POWER=20','DOT_DURATION=1000','DOT_INTERVAL=100','STACK_GAIN=1']}
+ {id:'SKL-TEST-POISON',name:'毒斬り（DOT実装確認）',tags:['ATTACK','DOT','敵','単体','物理','毒属性','DAMAGE=100','DOT_POWER=20','DOT_DURATION=1000','DOT_INTERVAL=100','STACK_GAIN=1']}
 ];
 const TAG_LOGIC_ORDER=['ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','SHIELD','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
@@ -967,7 +967,7 @@ function compileTaggedSkill(skill){
  if(n.DAMAGE&&(!Number.isFinite(n.DAMAGE.value)||n.DAMAGE.value<0))errors.push('DAMAGEは0以上の有限数が必要です');
  if(g.has('DOT')){
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN'])if(!n[key])errors.push(`DOTには${key}が必要です`);
-  warnings.push('DOTはSprint 2で実行接続します。Sprint 1ではATTACKのみ実行します。');
+  for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN']){const v=n[key]?.value;if(v!=null&&(!Number.isFinite(v)||v<=0))errors.push(`${key}は0より大きい有限数が必要です`)}
  }
  const targetSide=g.has('敵')?'enemy':g.has('味方')?'ally':g.has('自分')?'self':g.has('死体')?'corpse':g.has('地点')?'point':null;
  const range=g.has('単体')?'single':g.has('全体')?'all':g.has('前列')?'front':g.has('後列')?'back':g.has('ランダム')?'random':g.has('貫通')?'pierce':null;
@@ -1012,19 +1012,45 @@ function applyTaggedDamage(attacker,target,damage,skill){
  if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
  finishIfNeeded();return{ok:true,damage:applied,beforeHp:before,afterHp:target.hp};
 }
+const DOT_STACK_TYPES={poison:{id:'poison',label:'毒',maxStack:5}};
+let dotStackSequence=0;
+function resolveDotType(compiled){if(compiled.parsed?.generalTags?.has('毒属性'))return DOT_STACK_TYPES.poison;return{id:'generic-dot',label:'DOT',maxStack:5}}
+function ensureDotStackList(target){if(!Array.isArray(target.dotStacks))target.dotStacks=[];return target.dotStacks}
+function applyTaggedDot(source,target,compiled){
+ if(!target?.alive)return{ok:false,reason:'DOT付与対象が無効です'};
+ const type=resolveDotType(compiled),list=ensureDotStackList(target),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
+ const current=list.filter(x=>x.typeId===type.id).length,available=Math.max(0,type.maxStack-current),addCount=Math.min(gain,available);
+ if(addCount<=0){battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${type.label}は最大${type.maxStack}スタックのため付与失敗`);return{ok:false,reason:'MAX_STACK',added:0,current,maxStack:type.maxStack}}
+ const power=Math.max(0,Math.floor(compiled.definition.parameters.dotPower)),duration=Math.max(1,Math.floor(compiled.definition.parameters.dotDuration)),interval=Math.max(1,Math.floor(compiled.definition.parameters.dotInterval)),added=[];
+ for(let i=0;i<addCount;i++){const stack={id:`DOT-${++dotStackSequence}`,typeId:type.id,label:type.label,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,power,appliedAt:battle.tick,expiresAt:battle.tick+duration,nextTick:battle.tick+interval,interval,duration};list.push(stack);added.push(stack)}
+ battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${source.name}の${compiled.definition.name} → ${target.name}へ${type.label} ${added.length}スタック付与（${current+added.length}/${type.maxStack}、威力${power}、間隔${interval}、持続${duration}）`);
+ return{ok:true,added:added.length,current:current+added.length,maxStack:type.maxStack,stacks:added};
+}
+function applyDotTick(target,stack){
+ if(!target.alive)return false;const source=battle.units.find(x=>x.id===stack.sourceId),before=target.hp;target.hp=Math.max(0,target.hp-stack.power);const applied=before-target.hp;
+ if(source){source.damageDealt+=applied;queueSceneEvent({attackerId:source.id,targetId:target.id,attackerName:source.name,attackerSide:source.side,miss:false,damage:applied})}target.damageTaken+=applied;
+ battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${stack.label}#${stack.id} → ${target.name}に${applied}ダメージ（残HP ${target.hp}/${target.maxHp}）`);
+ if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;target.dotStacks=[];battle.log.push(`[Tick ${battle.tick}] ${target.name}は${stack.label}により戦闘不能`)}finishIfNeeded();return true;
+}
+function processDotStacks(){
+ for(const target of battle.units){const list=ensureDotStackList(target);if(!list.length)continue;if(!target.alive){target.dotStacks=[];continue}const keep=[];
+  for(const stack of list){while(target.alive&&stack.nextTick<=battle.tick&&stack.nextTick<=stack.expiresAt){applyDotTick(target,stack);stack.nextTick+=stack.interval;if(battle.result||battle.pendingResult)break}if(target.alive&&stack.nextTick<=stack.expiresAt)keep.push(stack);else if(target.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${stack.label}#${stack.id}が終了`)}
+  target.dotStacks=keep;if(battle.result||battle.pendingResult)break}
+}
+function dotStatusText(unit){const stacks=ensureDotStackList(unit);if(!stacks.length)return'なし';const groups={};for(const x of stacks)(groups[x.label]||(groups[x.label]=[])).push(x);return Object.entries(groups).map(([label,items])=>`${label}×${items.length}（次:${Math.min(...items.map(x=>x.nextTick))} / 最長:${Math.max(...items.map(x=>x.expiresAt))}）`).join('、')}
 function executeTaggedSkill(actor,target,skillSource,{manual=false}={}){
  const compiled=compileTaggedSkill(skillSource);
  battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);
  if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
  const resolved=resolveTaggedTarget(actor,target,compiled.definition);
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
- let attackResult=null;
+ let attackResult=null,dotResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
  for(const logic of compiled.definition.logicOrder){
-  if(logic==='ATTACK')attackResult=applyTaggedDamage(actor,resolved.target,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);
+  if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolved.target,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
+  else if(logic==='DOT'){if(!attackSucceeded)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ATTACK不成立のためDOT付与をスキップ`);else if(!resolved.target.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] 対象戦闘不能のためDOT付与をスキップ`);else dotResult=applyTaggedDot(actor,resolved.target,compiled)}
   else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
  }
- if(manual)renderBattle();
- return{ok:true,compiled,attackResult};
+ if(manual)renderBattle();return{ok:true,compiled,attackResult,dotResult};
 }
 function populateTagSkillTestUI(){
  const skill=$('tagTestSkill'),actor=$('tagTestActor'),target=$('tagTestTarget');if(!skill||!actor||!target)return;
@@ -1044,13 +1070,13 @@ function setupTagSkillTestUI(){
  execute.dataset.bound='1';
  actor.onchange=populateTagSkillTestUI;
  compile.onclick=()=>{const result=compileTaggedSkill(findTagSkill($('tagTestSkill').value));$('tagTestResult').textContent=formatCompileResult(result)};
- execute.onclick=()=>{const skill=findTagSkill($('tagTestSkill').value),a=battle.units.find(x=>x.id===$('tagTestActor').value),t=battle.units.find(x=>x.id===$('tagTestTarget').value);const result=executeTaggedSkill(a,t,skill,{manual:true});$('tagTestResult').textContent=formatCompileResult(result.compiled||compileTaggedSkill(skill))+(result.ok?`\n[EXECUTE] SUCCESS${result.attackResult?` / damage=${result.attackResult.damage}`:''}`:`\n[EXECUTE] FAILED / ${result.reason||result.stage}`)};
+ execute.onclick=()=>{const skill=findTagSkill($('tagTestSkill').value),a=battle.units.find(x=>x.id===$('tagTestActor').value),t=battle.units.find(x=>x.id===$('tagTestTarget').value);const result=executeTaggedSkill(a,t,skill,{manual:true});$('tagTestResult').textContent=formatCompileResult(result.compiled||compileTaggedSkill(skill))+(result.ok?`\n[EXECUTE] SUCCESS${result.attackResult?` / damage=${result.attackResult.damage}`:''}${result.dotResult?` / DOT=${result.dotResult.added||0} stack`:''}`:`\n[EXECUTE] FAILED / ${result.reason||result.stage}`)};
  populateTagSkillTestUI();
 }
 const GAUGE_MAX=100;
 const RESERVATION_DELAY_TICKS=4;
 let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false};
-function makeCombatant(base){return {...base,hp:base.maxHp,alive:true,damageDealt:0,damageTaken:0,reservedAction:null,lastReservation:null,defaultSkillId:base.defaultSkillId||'SKL-TEST-ATTACK'}}
+function makeCombatant(base){return {...base,hp:base.maxHp,alive:true,damageDealt:0,damageTaken:0,dotStacks:[],reservedAction:null,lastReservation:null,defaultSkillId:base.defaultSkillId||'SKL-TEST-ATTACK'}}
 function makeBattleUnits(){
  const members=data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,6);
  const allies=members.map((c,i)=>{const b=equipmentBonus(c);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',aiPolicy:c.aiPolicy,agi:Math.max(1,c.stats.AGI+b.agi),attack:10+c.stats.STR*3+c.level*2+b.attack,maxHp:100+c.stats.VIT*20+c.level*10+b.maxHp,gauge:0,actions:0,order:i,lastActionTick:null})});
@@ -1108,8 +1134,8 @@ function queueSceneEvent(evt){if(sceneBusy)sceneQueue.push(evt);else playSceneEv
 function resetBattle(){pauseBattle();sceneQueue=[];sceneBusy=false;battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false};renderBattle();ensureSceneUnits(true);setupTagSkillTestUI();populateTagSkillTestUI()}
 function renderBattle(){
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.pendingResult?'最終演出待機':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;
- $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
- $('battleLog').textContent=battle.log.length?battle.log.slice(-100).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;const publicLog=$('battlePublicLogBody');if(publicLog){const rows=battle.log.filter(x=>/ダメージ|戦闘不能|戦闘終了|TAG\]\[ERROR/.test(x)).slice(-5).map(x=>x.replace(/^\[Tick \d+\] /,''));publicLog.textContent=rows.length?rows.join('\n'):'まだ行動はありません。'}ensureSceneUnits();populateTagSkillTestUI();
+ $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
+ $('battleLog').textContent=battle.log.length?battle.log.slice(-100).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;const publicLog=$('battlePublicLogBody');if(publicLog){const rows=battle.log.filter(x=>/ダメージ|戦闘不能|戦闘終了|TAG\]\[ERROR|TAG\]\[DOT/.test(x)).slice(-5).map(x=>x.replace(/^\[Tick \d+\] /,''));publicLog.textContent=rows.length?rows.join('\n'):'まだ行動はありません。'}ensureSceneUnits();populateTagSkillTestUI();
 }
 function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);if(!opponents.length)return null;if(attacker.aiPolicy==='random')return opponents[Math.floor(Math.random()*opponents.length)];if(attacker.aiPolicy==='weakest')return opponents.sort((a,b)=>a.maxHp-b.maxHp||a.order-b.order)[0];return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]}
 function reserveAction(actor){
@@ -1186,6 +1212,8 @@ function executeReservation(actor){
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
   battle.tick++;
+  processDotStacks();
+  if(battle.result||battle.pendingResult)break;
   battle.units.filter(u=>u.alive).forEach(u=>u.gauge+=u.agi);
   const reservable=battle.units.filter(u=>u.alive&&!u.reservedAction&&u.gauge>=GAUGE_MAX).sort((a,b)=>(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
   reservable.forEach(reserveAction);
@@ -1364,8 +1392,8 @@ try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(r
 <script id="build448-mobile-polish">
 (function(){
   const BUILD='448';
-  document.querySelectorAll('.sub').forEach(el=>{if(/BUILD4[0-9]{2}|Build 4[0-9]{2}|Mobile One-Tap|Mobile Quick Actions/i.test(el.textContent))el.textContent='BUILD455 — Battle Reservation Logic Foundation';});
-  const tv=document.querySelector('.title-version'); if(tv) tv.textContent='V9 / BUILD 454';
+  document.querySelectorAll('.sub').forEach(el=>{if(/BUILD4[0-9]{2}|Build 4[0-9]{2}|Mobile One-Tap|Mobile Quick Actions/i.test(el.textContent))el.textContent='GA-B456 — Tag Skill DOT Runtime';});
+  const tv=document.querySelector('.title-version'); if(tv) tv.textContent='V9 / GA-B456';
   const eventOptions=document.querySelector('.event-options');
   if(eventOptions && !document.getElementById('eventScout')){
     const scout=document.createElement('button'); scout.id='eventScout'; scout.className='event-choice-scout'; scout.textContent='敵の様子を確認する';
@@ -1392,7 +1420,7 @@ try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(r
   if(typeof originalPrepare==='function'){
     window.prepareEvent=function(){originalPrepare();const notice=document.getElementById('eventNotice');if(notice)notice.textContent='行動を1つ選んでください。敵情報や戦利品候補を確認してから戦闘できます。';};
   }
-  try{if(window.data){data.gameVersion='V9 Build 455';if(typeof persist==='function')persist();}}catch(_e){}
+  try{if(window.data){data.gameVersion='GA-B456';if(typeof persist==='function')persist();}}catch(_e){}
 })();
 
 function renderCharacterEquipment(){

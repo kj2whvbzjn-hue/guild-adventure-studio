@@ -1,0 +1,8 @@
+const fs=require('fs'),vm=require('vm'),path=require('path');
+const html=fs.readFileSync(path.resolve(__dirname,'../game-tag-test/index.html'),'utf8');
+const start=html.indexOf("const TAG_SKILL_TEST_BUILD="),end=html.indexOf("function populateTagSkillTestUI()",start);if(start<0||end<0)throw new Error('runtime missing');
+const context={console,Set,Number,Math,JSON,String,Array,escapeHtml:s=>String(s),$:()=>null,battle:{tick:0,log:[],units:[],result:null,pendingResult:null},queueSceneEvent:()=>{},finishIfNeeded:()=>false,renderBattle:()=>{}};
+vm.createContext(context);vm.runInContext(html.slice(start,end),context);const assert=(v,m)=>{if(!v)throw new Error(m)};
+const poison=context.findTagSkill('SKL-TEST-POISON'),compiled=context.compileTaggedSkill(poison);assert(compiled.ok,'compile');assert(compiled.definition.logicOrder.join(',')==='ATTACK,DOT','order');assert(compiled.warnings.length===0,'warning');
+const actor={id:'A',name:'Actor',alive:true,side:'味方',attack:50,damageDealt:0},target={id:'E',name:'Enemy',alive:true,side:'敵',hp:500,maxHp:500,damageTaken:0,dotStacks:[]};context.battle.units=[actor,target];
+const r=context.executeTaggedSkill(actor,target,poison);assert(r.attackResult.damage===50,'attack');assert(r.dotResult.added===1,'add');assert(target.dotStacks[0].nextTick===100,'interval');context.battle.tick=99;context.processDotStacks();assert(target.hp===450,'early');context.battle.tick=100;context.processDotStacks();assert(target.hp===430,'first');context.battle.tick=1000;context.processDotStacks();assert(target.dotStacks.length===0,'expiry');assert(target.hp===250,'10 ticks');console.log('PASS Sprint2 9 assertions');
