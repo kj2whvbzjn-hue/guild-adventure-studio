@@ -1,18 +1,21 @@
-const CACHE_NAME="ga-game-b475";
+const CACHE_NAME="ga-game-b476";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=475';
+const OFFLINE_URL='./index.html?appv=476';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=475",
-  "./manifest.webmanifest?v=475",
-  "./icon-192.png?v=475",
-  "./icon-512.png?v=475",
-  "../Export/skill/skills.json?v=475"
+  "./index.html?appv=476",
+  "./manifest.webmanifest?v=476",
+  "./icon-192.png?v=476",
+  "./icon-512.png?v=476",
+  "../Export/skill/skills.json?v=476"
 ,
-  "../assets/shared/config/runtime-config.js?v=475",
-  "../assets/shared/js/game-shell-common.js?v=475"
+  "../assets/shared/config/runtime-config.js?v=476",
+  "../assets/shared/js/game-shell-common.js?v=476"
 ,
-  "./assets/js/app-runtime.js?v=475"
+  "./assets/js/app-runtime.js?v=476"
+,
+  "./assets/js/tag-skill-runtime.js?v=476",
+  "./assets/js/studio-skill-bridge.js?v=476"
 ];
 
 self.addEventListener('install',event=>{

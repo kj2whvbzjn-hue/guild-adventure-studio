@@ -1,17 +1,19 @@
-const CACHE_NAME="ga-tag-test-b475";
+const CACHE_NAME="ga-tag-test-b476";
 const CACHE_PREFIX="ga-tag-test-";
-const OFFLINE_URL='./index.html?appv=475';
+const OFFLINE_URL='./index.html?appv=476';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=475",
-  "./manifest.webmanifest?v=475",
-  "./icon-192.png?v=475",
-  "./icon-512.png?v=475"
+  "./index.html?appv=476",
+  "./manifest.webmanifest?v=476",
+  "./icon-192.png?v=476",
+  "./icon-512.png?v=476"
 ,
-  "../assets/shared/config/runtime-config.js?v=475",
-  "../assets/shared/js/game-shell-common.js?v=475"
+  "../assets/shared/config/runtime-config.js?v=476",
+  "../assets/shared/js/game-shell-common.js?v=476"
 ,
-  "./assets/js/validation-runtime.js?v=475"
+  "./assets/js/validation-runtime.js?v=476"
+,
+  "./assets/js/tag-skill-runtime.js?v=476"
 ];
 
 self.addEventListener('install',event=>{
