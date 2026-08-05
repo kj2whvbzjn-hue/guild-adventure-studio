@@ -1,4 +1,4 @@
-# AI Gateway Local Bridge v0.7
+# AI Gateway Local Bridge v0.8
 
 1. `config.example.php` を `config.php` にコピーし、長いランダムトークンを設定します。
 2. `start.sh` または `start.bat` を実行します。
@@ -8,7 +8,7 @@
 AI向けエンドポイントは読み取り専用です。`/bridge/snapshot` はGK Studio画面から明示的に押した場合だけ、現在状態のスナップショットをローカル保存します。外部送信は行いません。
 
 
-## v0.8 読み取りAPI
+## 読み取りAPI
 
 - `GET /ai/status` — 接続状態、スナップショット状態、公開能力
 - `GET /ai/project` — 最後に明示同期したプロジェクト情報

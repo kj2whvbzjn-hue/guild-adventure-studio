@@ -36,15 +36,8 @@ Real plot and chapter generation starts in CPF-002. GUI remains outside CPF-001.
 ## CPF-002 Story Import and Analysis
 
 ```bash
-php bin/cpf.php story:import <project-dir> examples/story-import.sample.json
-php bin/cpf.php story:analyze <project-dir> STORY001
+php cpf/bin/cpf.php story:import <project-dir> examples/story-import.sample.json
+php cpf/bin/cpf.php story:analyze <project-dir> STORY001
 ```
 
 Use `--replace-drafts` as the third import argument only when replacing unlocked `DRAFT` or `REJECTED` Nodes. Approved and locked Nodes are never replaced by the importer.
-
-
-## 提出物配布ルール（統一運用）
-- すべての提出物（監査報告・検査結果・修正計画・成果物・ログ・チェックリスト）は必ずZIP形式で配布する。
-- 単体ファイルのみで正式提出してはならない。
-- ZIPには関連ログ、SHA-256一覧、マニフェスト等を含める。
-- リリースチェックではZIP作成・CRC・展開確認・SHA確認を実施する。

@@ -153,10 +153,3 @@ php php-runtime/bin/gvf-release.php Export report.html battle-case.json 1000 202
 ```
 
 通常モードではSimulation未指定をSKIPPEDとして記録します。正式リリース判定では`--strict-release`と戦闘ケースを指定してください。
-
-
-## 提出物配布ルール（統一運用）
-- すべての提出物（監査報告・検査結果・修正計画・成果物・ログ・チェックリスト）は必ずZIP形式で配布する。
-- 単体ファイルのみで正式提出してはならない。
-- ZIPには関連ログ、SHA-256一覧、マニフェスト等を含める。
-- リリースチェックではZIP作成・CRC・展開確認・SHA確認を実施する。
