@@ -9,8 +9,7 @@ const APP_SHELL=[
   "./icon-512.png?v=481"
 ,
   "../assets/shared/config/runtime-config.js?v=481",
-  "../assets/shared/js/game-shell-common.js?v=481",
-  "../assets/shared/js/page-identity-guard.js?v=481"
+  "../assets/shared/js/game-shell-common.js?v=481"
 ,
   "./assets/js/validation-runtime.js?v=481"
 ,

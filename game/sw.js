@@ -10,8 +10,7 @@ const APP_SHELL=[
   "../Export/skill/skills.json?v=481"
 ,
   "../assets/shared/config/runtime-config.js?v=481",
-  "../assets/shared/js/game-shell-common.js?v=481",
-  "../assets/shared/js/page-identity-guard.js?v=481"
+  "../assets/shared/js/game-shell-common.js?v=481"
 ,
   "./assets/js/app-runtime.js?v=481"
 ,

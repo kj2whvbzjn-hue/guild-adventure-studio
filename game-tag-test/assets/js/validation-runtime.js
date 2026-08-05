@@ -427,8 +427,191 @@ function populateTagSkillTestUI(){
  const preferred=battle.units.find(x=>x.id===selectedTarget&&x.alive&&x.id!==currentActor?.id)||battle.units.find(x=>x.alive&&x.side!==currentActor?.side);
  if(preferred)target.value=preferred.id;
 }
+
+const GAUGE_MAX=100;
+const RESERVATION_DELAY_TICKS=4;
+let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationEvents:[],validationMeta:null};
+function makeCombatant(base){return {...base,hp:base.maxHp,alive:true,damageDealt:0,damageTaken:0,dotStacks:[],reservedAction:null,lastReservation:null,defaultSkillId:base.defaultSkillId||'SKL-TEST-ATTACK'}}
+function makeBattleUnits(){
+ const members=data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,6);
+ const allies=members.map((c,i)=>{const b=equipmentBonus(c);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',aiPolicy:c.aiPolicy,agi:Math.max(1,c.stats.AGI+b.agi),attack:10+c.stats.STR*3+c.level*2+b.attack,maxHp:100+c.stats.VIT*20+c.level*10+b.maxHp,gauge:0,actions:0,order:i,lastActionTick:null})});
+ if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',aiPolicy:'lowestHp',agi:11,attack:48,maxHp:360,gauge:0,actions:0,order:0,lastActionTick:null}));
+ const q=selectedQuest();const enemies=q.enemies.map((e,i)=>makeCombatant({id:`E${i}`,name:e.name,side:'敵',aiPolicy:'lowestHp',agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
+ return [...allies,...enemies];
+}
+
+const AI_GRID=8;
+const AI_CHIPS={
+ start:[{type:'start',label:'開始'}],
+ condition:[{type:'condition',label:'自分HP判定',key:'selfHp',value:40},{type:'condition',label:'味方HP判定',key:'allyHp',value:40},{type:'condition',label:'敵が射程内',key:'enemyRange',value:1},{type:'condition',label:'スキル使用可能',key:'skillReady',value:1}],
+ branch:[{type:'branch',label:'YES / NO'},{type:'branch',label:'確率分岐',key:'chance',value:50}],
+ target:[{type:'target',label:'最弱の味方',key:'lowestAlly'},{type:'target',label:'最も近い敵',key:'nearestEnemy'},{type:'target',label:'HP最少の敵',key:'lowestEnemy'},{type:'target',label:'ボス',key:'boss'}],
+ action:[{type:'action',label:'通常攻撃',key:'attack'},{type:'action',label:'スキル使用',key:'skill',value:'ヒール'},{type:'action',label:'接近',key:'approach'},{type:'action',label:'離脱',key:'retreat'},{type:'action',label:'防御',key:'guard'},{type:'action',label:'待機',key:'wait'}],
+ advanced:[{type:'advanced',label:'3 Tick待機',key:'waitTicks',value:3},{type:'advanced',label:'連続禁止',key:'noRepeat',value:1},{type:'advanced',label:'サブルーチン',key:'subroutine',value:'A'}]
+};
+function defaultAiGraph(){return{version:1,cells:[{id:'N1',x:0,y:0,type:'start',label:'開始'},{id:'N2',x:0,y:1,type:'target',label:'HP最少の敵',key:'lowestEnemy'},{id:'N3',x:0,y:2,type:'action',label:'通常攻撃',key:'attack'}]}}
+function normalizeAiGraph(g){if(!g||!Array.isArray(g.cells))return defaultAiGraph();g.cells=g.cells.filter(n=>Number.isInteger(n.x)&&Number.isInteger(n.y)&&n.x>=0&&n.x<AI_GRID&&n.y>=0&&n.y<AI_GRID);return g}
+let aiEditCharacter=null,aiDraft=null,aiSelectedTemplate=null,aiHistory=[],aiSelectedNodeId=null,aiPaletteCategory='condition',aiRunTimer=null;
+function openAiEditorFor(c){if(!c)return;aiEditCharacter=c;aiDraft=clone(normalizeAiGraph(c.aiGraph));aiHistory=[];aiSelectedNodeId=null;aiSelectedTemplate=null;$('aiEditorTitle').textContent=`${c.name} — AIチップ編集`;$('aiEditor').classList.add('open');$('aiEditor').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';renderAiPalette();renderAiBoard()}
+function closeAiEditor(){clearInterval(aiRunTimer);$('aiEditor').classList.remove('open');$('aiEditor').setAttribute('aria-hidden','true');$('aiConfig').classList.remove('open');document.body.style.overflow=''}
+function saveAiHistory(){aiHistory.push(JSON.stringify(aiDraft));if(aiHistory.length>30)aiHistory.shift()}
+function nodeAt(x,y){return aiDraft.cells.find(n=>n.x===x&&n.y===y)}
+function renderAiBoard(){const board=$('aiBoard');board.innerHTML='';for(let y=0;y<AI_GRID;y++)for(let x=0;x<AI_GRID;x++){const cell=document.createElement('button');cell.type='button';cell.className='ai-cell';cell.dataset.x=x;cell.dataset.y=y;const n=nodeAt(x,y);if(n){cell.innerHTML=`<div class="ai-chip ${n.type}" data-node="${n.id}"><b>${escapeHtml(n.label)}</b>${n.value!==undefined?`<small>${escapeHtml(String(n.value))}</small>`:''}${n.type==='branch'?'<span class="yes">YES</span><span class="no">NO</span>':''}</div>`;cell.onclick=()=>openAiNodeConfig(n)}else cell.onclick=()=>placeAiChip(x,y);board.appendChild(cell)}}
+function renderAiPalette(){const cats=[['start','開始'],['condition','条件'],['branch','分岐'],['target','対象'],['action','行動'],['advanced','高度']];$('aiPaletteTabs').innerHTML=cats.map(([k,l])=>`<button class="${k===aiPaletteCategory?'active':''}" data-ai-cat="${k}">${l}</button>`).join('');$('aiPaletteTabs').querySelectorAll('[data-ai-cat]').forEach(b=>b.onclick=()=>{aiPaletteCategory=b.dataset.aiCat;aiSelectedTemplate=null;renderAiPalette()});$('aiPaletteGrid').innerHTML=(AI_CHIPS[aiPaletteCategory]||[]).map((t,i)=>`<button class="ai-palette-chip ${aiSelectedTemplate?.label===t.label?'selected':''}" data-ai-template="${i}">${t.label}</button>`).join('');$('aiPaletteGrid').querySelectorAll('[data-ai-template]').forEach(b=>b.onclick=()=>{aiSelectedTemplate=clone(AI_CHIPS[aiPaletteCategory][Number(b.dataset.aiTemplate)]);renderAiPalette()})}
+function placeAiChip(x,y){if(!aiSelectedTemplate)return;saveAiHistory();aiDraft.cells.push({...clone(aiSelectedTemplate),id:'N'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),x,y});renderAiBoard()}
+function openAiNodeConfig(n){aiSelectedNodeId=n.id;$('aiConfigTitle').textContent=n.label;let body='<p class="small">このチップの設定を変更します。</p>';if(n.type==='condition')body+=`<label>判定値<input id="aiNodeValue" type="number" min="0" max="100" value="${Number(n.value??40)}"></label>`;if(n.type==='action'&&n.key==='skill')body+=`<label>使用スキル<select id="aiNodeValue"><option>ヒール</option><option>炎斬り</option><option>挑発</option><option>ファイア</option></select></label>`;if(n.type==='advanced')body+=`<label>値<input id="aiNodeValue" value="${escapeHtml(String(n.value??''))}"></label>`;$('aiConfigBody').innerHTML=body;$('aiConfig').classList.add('open');const input=$('aiNodeValue');if(input){input.value=String(n.value??input.value);input.onchange=()=>{saveAiHistory();n.value=input.type==='number'?Number(input.value):input.value;renderAiBoard()}}}
+function deleteAiSelected(){const i=aiDraft.cells.findIndex(n=>n.id===aiSelectedNodeId);if(i>=0){saveAiHistory();aiDraft.cells.splice(i,1);renderAiBoard()}$('aiConfig').classList.remove('open')}
+function loadPriestPreset(){saveAiHistory();aiDraft={version:1,cells:[{id:'P1',x:0,y:0,type:'start',label:'開始'},{id:'P2',x:0,y:1,type:'condition',label:'味方HP判定',key:'allyHp',value:40},{id:'P3',x:1,y:1,type:'branch',label:'YES / NO'},{id:'P4',x:2,y:0,type:'target',label:'最弱の味方',key:'lowestAlly'},{id:'P5',x:3,y:0,type:'action',label:'スキル使用',key:'skill',value:'ヒール'},{id:'P6',x:2,y:2,type:'target',label:'最も近い敵',key:'nearestEnemy'},{id:'P7',x:3,y:2,type:'action',label:'通常攻撃',key:'attack'}]};renderAiBoard()}
+function simulateAi(){clearInterval(aiRunTimer);const nodes=[...aiDraft.cells].sort((a,b)=>a.y-b.y||a.x-b.x);let i=0;document.querySelectorAll('.ai-chip').forEach(e=>e.classList.remove('active-run'));aiRunTimer=setInterval(()=>{document.querySelectorAll('.ai-chip').forEach(e=>e.classList.remove('active-run'));if(i>=nodes.length){clearInterval(aiRunTimer);return}document.querySelector(`[data-node="${nodes[i++].id}"]`)?.classList.add('active-run')},500)}
+$('aiEditorClose').onclick=closeAiEditor;$('aiEditorSave').onclick=()=>{if(aiEditCharacter){aiEditCharacter.aiGraph=clone(aiDraft);persist();notify(`${aiEditCharacter.name}のAIチップを保存しました。`)}closeAiEditor()};$('aiUndo').onclick=()=>{if(!aiHistory.length)return;aiDraft=JSON.parse(aiHistory.pop());renderAiBoard()};$('aiClear').onclick=()=>{if(confirm('盤面をすべて消去しますか？')){saveAiHistory();aiDraft={version:1,cells:[]};renderAiBoard()}};$('aiPreset').onclick=loadPriestPreset;$('aiTest').onclick=simulateAi;$('aiDeleteChip').onclick=deleteAiSelected;$('aiConfigClose').onclick=()=>$('aiConfig').classList.remove('open');
+const openAiBtn=$('openAiEditor');if(openAiBtn)openAiBtn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===selectedId));const skillBtn=$('openSkillPlaceholder');if(skillBtn)skillBtn.onclick=()=>alert('スキル装着画面は次の実験Buildで追加します。');const equipViewBtn=$('openEquipView');if(equipViewBtn)equipViewBtn.onclick=()=>setBaseView('equipment');
+
+
+/* Sprint 4 console synchronized — GA-B481 */
+function buildModifierValidationReport(){
+ const meta=battle.validationMeta||{},targetIds=meta.targetIds||[meta.targetId].filter(Boolean),targets=targetIds.map(id=>battle.units.find(x=>x.id===id)).filter(Boolean),events=battle.validationEvents||[];
+ const added=events.filter(x=>x.type==='modifier_stack_added'),expired=events.filter(x=>x.type==='modifier_expired'),changes=events.filter(x=>x.type==='modifier_effective_changed'),errors=events.filter(x=>x.type==='error').map(x=>x.message||String(x));
+ const actualByTarget={};for(const id of targetIds)actualByTarget[id]=changes.filter(x=>x.target_id===id).map(x=>({tick:x.tick,before:x.before,after:x.after,reason:x.reason}));
+ if(battle.tick-meta.startTick!==meta.requestedTicks)errors.push(`Tick進行数不一致: ${battle.tick-meta.startTick}/${meta.requestedTicks}`);
+ const expectedPerTarget=3,expectedTotal=expectedPerTarget*targetIds.length;
+ if(added.reduce((n,x)=>n+(x.count||1),0)!==expectedTotal)errors.push(`スタック追加数不一致: ${added.reduce((n,x)=>n+(x.count||1),0)}/${expectedTotal}`);
+ if(expired.length!==expectedTotal)errors.push(`スタック終了数不一致: ${expired.length}/${expectedTotal}`);
+ for(const id of targetIds){const transitions=(actualByTarget[id]||[]).map(x=>[x.tick,x.after]);if(JSON.stringify(transitions)!==JSON.stringify(meta.expectedTransitions))errors.push(`${id} 実効値遷移不一致: ${JSON.stringify(transitions)}/${JSON.stringify(meta.expectedTransitions)}`)}
+ for(const t of targets)if(ensureModifierStackList(t).length!==0)errors.push(`${t.id} にmodifierスタックが残っています`);
+ if(battle.actions!==0)errors.push(`通常AI行動が混入しました: ${battle.actions}`);
+ return{schema_version:'1.1.0',build:'GA-B474',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',start_tick:meta.startTick,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{kind:meta.kind,stat:'ATK',source_id:meta.actorId,target_ids:targetIds,range:meta.range||'single',applications:meta.applications},events,final_state:{targets:targets.map(t=>({target_id:t.id,target_alive:t.alive,active_modifier_stacks:ensureModifierStackList(t).length,effective_power:effectiveModifierPower(t,meta.kind,'ATK'),effective_attack:effectiveAttackValue(t)}))},summary:{target_count:targetIds.length,modifier_stacks_added:added.reduce((n,x)=>n+(x.count||1),0),modifier_stacks_expired:expired.length,effective_transitions_by_target:actualByTarget,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
+}
+function downloadModifierValidationJson(){const report=buildModifierValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-modifier-validation-GA-B474-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function formatModifierValidationSummary(report){const s=report.summary;return `[MODIFIER JSON TEST] ${s.passed?'PASS':'FAIL'}
+[Tick] ${report.test.start_tick} -> ${report.test.end_tick}
+[TARGETS] ${s.target_count}
+[STACKS] added=${s.modifier_stacks_added}, expired=${s.modifier_stacks_expired}
+[AI ACTIONS] ${s.normal_ai_actions}
+[ERRORS] ${s.errors.length}${s.errors.length?'\n'+s.errors.map(x=>' - '+x).join('\n'):''}`}
+function ensureValidationTargets(side,count){let targets=battle.units.filter(x=>x.alive&&x.side===side);while(targets.length<count){const i=targets.length,b=makeCombatant({id:`${side==='味方'?'A':'E'}-MOD-${i+1}`,name:`${side}検証${i+1}`,side,aiPolicy:'lowestHp',agi:1,attack:40+i*3,maxHp:500,gauge:0,actions:0,order:800+i,lastActionTick:null});battle.units.push(b);targets.push(b)}return targets.slice(0,count)}
+function runModifierHighestValidation(kind,{all=false}={}){
+ pauseBattle();resetBattle();const actor=battle.units.find(x=>x.alive&&x.side==='味方');if(!actor){$('tagTestResult').textContent='[MODIFIER TEST] FAILED / 使用者がありません';return}
+ const targetSide=kind==='BUFF'?actor.side:battle.units.find(x=>x.side!==actor.side)?.side||'敵',targets=all?ensureValidationTargets(targetSide,3):[kind==='BUFF'?actor:battle.units.find(x=>x.alive&&x.side!==actor.side)].filter(Boolean);if(!targets.length){$('tagTestResult').textContent='[MODIFIER TEST] FAILED / 対象がありません';return}
+ targets.forEach(t=>t.modifierStacks=[]);battle.validationMode=true;battle.validationEvents=[];battle.actions=0;
+ const prefix=kind==='BUFF'?(all?'SKL-TEST-BUFF-ALL-':'SKL-TEST-BUFF-'):(all?'SKL-TEST-DEBUFF-ALL-':'SKL-TEST-DEBUFF-'),skills=[findTagSkill(prefix+'10'),findTagSkill(prefix+'30'),findTagSkill(prefix+'20')],applications=[{tick:0,power:10,duration:1000},{tick:100,power:30,duration:500},{tick:200,power:20,duration:1000}],testId=`TAG-${kind}-${all?'ALL-':' '}HIGHEST-001`.replace(' ','');
+ battle.validationMeta={kind,testId,startTick:0,requestedTicks:1200,actorId:actor.id,targetId:targets[0].id,targetIds:targets.map(x=>x.id),range:all?'all':'single',applications,expectedTransitions:[[0,10],[100,30],[600,20],[1200,0]]};recordValidationEvent('test_started',{build:'GA-B474',test_id:testId,target_ids:targets.map(x=>x.id)});
+ let result=executeTaggedSkill(actor,targets[0],skills[0]);processTicks(100);result=executeTaggedSkill(actor,targets[0],skills[1]);processTicks(100);result=executeTaggedSkill(actor,targets[0],skills[2]);processTicks(1000);recordValidationEvent('test_completed',{});renderBattle();const report=downloadModifierValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled)+`
+${formatModifierValidationSummary(report)}`;
+}
+function buildModifierDeathValidationReport(){
+ const meta=battle.validationMeta||{},events=battle.validationEvents||[],target=battle.units.find(x=>x.id===meta.targetId),source=battle.units.find(x=>x.id===meta.actorId),errors=events.filter(x=>x.type==='error').map(x=>x.message||String(x));
+ const cleared=events.filter(x=>x.type==='modifier_cleared_on_death'),cleanup=events.filter(x=>x.type==='modifier_death_cleanup'),expired=events.filter(x=>x.type==='modifier_expired'),sourceDefeated=events.filter(x=>x.type==='modifier_source_defeated');
+ if(battle.tick-meta.startTick!==meta.requestedTicks)errors.push(`Tick進行数不一致: ${battle.tick-meta.startTick}/${meta.requestedTicks}`);
+ if(meta.mode==='target_death'){
+  if(cleared.length!==3)errors.push(`死亡時解除数不一致: ${cleared.length}/3`);
+  if(cleanup.length!==1||cleanup[0].cleared_count!==3)errors.push('死亡時一括解除イベント不一致');
+  if(expired.some(x=>x.target_id===meta.targetId))errors.push('死亡後に通常終了イベントが発生しました');
+  if(target?.alive!==false)errors.push('対象が戦闘不能ではありません');
+  if(target&&ensureModifierStackList(target).length!==0)errors.push('死亡対象にmodifierが残っています');
+ }else{
+  if(sourceDefeated.length!==1||sourceDefeated[0].persistent_stack_count!==1)errors.push('付与者死亡時の継続記録不一致');
+  if(cleared.some(x=>x.target_id===meta.targetId))errors.push('付与者死亡により対象効果が解除されました');
+  if(expired.filter(x=>x.target_id===meta.targetId).length!==1)errors.push('対象効果が自然終了していません');
+  if(source?.alive!==false)errors.push('付与者が戦闘不能ではありません');
+  if(target?.alive!==true)errors.push('効果対象が生存していません');
+  if(target&&ensureModifierStackList(target).length!==0)errors.push('自然終了後もmodifierが残っています');
+ }
+ if(battle.actions!==0)errors.push(`通常AI行動が混入しました: ${battle.actions}`);
+ return{schema_version:'1.2.0',build:'GA-B474',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',lifecycle_mode:meta.mode,start_tick:meta.startTick,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{kind:'BUFF',stat:'ATK',source_id:meta.actorId,target_id:meta.targetId,death_tick:meta.deathTick,policy:meta.mode==='source_death'?'grant_persists_until_expiry':'target_death_clears_all'},events,final_state:{source_alive:source?.alive??null,target_alive:target?.alive??null,target_active_modifier_stacks:target?ensureModifierStackList(target).length:null,target_effective_power:target?effectiveModifierPower(target,'BUFF','ATK'):null},summary:{modifier_stacks_cleared_on_death:cleared.length,death_cleanup_events:cleanup.length,modifier_stacks_expired:expired.length,source_defeated_events:sourceDefeated.length,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
+}
+function downloadModifierDeathValidationJson(){const report=buildModifierDeathValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-modifier-death-validation-GA-B474-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function formatModifierDeathSummary(report){const s=report.summary;return `[MODIFIER DEATH JSON TEST] ${s.passed?'PASS':'FAIL'}\n[MODE] ${report.test.lifecycle_mode}\n[Tick] ${report.test.start_tick} -> ${report.test.end_tick}\n[CLEARED] ${s.modifier_stacks_cleared_on_death}\n[EXPIRED] ${s.modifier_stacks_expired}\n[AI ACTIONS] ${s.normal_ai_actions}\n[ERRORS] ${s.errors.length}${s.errors.length?'\n'+s.errors.map(x=>' - '+x).join('\n'):''}`}
+function defeatUnitForModifierValidation(unit,cause){if(!unit?.alive)return;unit.hp=0;unit.alive=false;unit.gauge=0;unit.reservedAction=null;const cleared=clearModifierStacksOnDeath(unit,{cause});const persistent=recordModifierSourceDefeated(unit);recordValidationEvent('unit_defeated',{target_id:unit.id,cause,cleared_modifier_stacks:cleared,persistent_granted_stacks:persistent})}
+function runModifierTargetDeathValidation(){
+ pauseBattle();resetBattle();const actor=battle.units.find(x=>x.alive&&x.side==='味方'),target=battle.units.find(x=>x.alive&&x.side==='敵');if(!actor||!target){$('tagTestResult').textContent='[MODIFIER DEATH TEST] FAILED / 使用者または対象がありません';return}
+ target.modifierStacks=[];battle.validationMode=true;battle.validationEvents=[];battle.actions=0;modifierStackSequence=0;
+ const skills=[findTagSkill('SKL-TEST-DEBUFF-10'),findTagSkill('SKL-TEST-DEBUFF-30'),findTagSkill('SKL-TEST-DEBUFF-20')];battle.validationMeta={mode:'target_death',testId:'TAG-MODIFIER-TARGET-DEATH-001',startTick:0,requestedTicks:1200,deathTick:300,actorId:actor.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B474',test_id:battle.validationMeta.testId});
+ let result=executeTaggedSkill(actor,target,skills[0]);processTicks(100);executeTaggedSkill(actor,target,skills[1]);processTicks(100);executeTaggedSkill(actor,target,skills[2]);processTicks(100);defeatUnitForModifierValidation(target,'validation_target_death');processTicks(900);recordValidationEvent('test_completed',{});renderBattle();const report=downloadModifierDeathValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled)+`\n${formatModifierDeathSummary(report)}`;
+}
+function runModifierSourceDeathValidation(){
+ pauseBattle();resetBattle();const source=battle.units.find(x=>x.alive&&x.side==='味方'),target=ensureValidationTargets('味方',2).find(x=>x.id!==source?.id);if(!source||!target){$('tagTestResult').textContent='[MODIFIER SOURCE TEST] FAILED / 使用者または対象がありません';return}
+ source.modifierStacks=[];target.modifierStacks=[];battle.validationMode=true;battle.validationEvents=[];battle.actions=0;modifierStackSequence=0;
+ const skill=findTagSkill('SKL-TEST-BUFF-10');battle.validationMeta={mode:'source_death',testId:'TAG-MODIFIER-SOURCE-DEATH-001',startTick:0,requestedTicks:1200,deathTick:200,actorId:source.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B474',test_id:battle.validationMeta.testId});
+ const result=executeTaggedSkill(source,target,skill);processTicks(200);defeatUnitForModifierValidation(source,'validation_source_death');processTicks(1000);recordValidationEvent('test_completed',{});renderBattle();const report=downloadModifierDeathValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled)+`\n${formatModifierDeathSummary(report)}`;
+}
+function buildConditionalFollowUpValidationReport(){
+ const meta=battle.validationMeta||{},events=battle.validationEvents||[],errors=[];
+ const triggered=events.filter(x=>x.type==='follow_up_triggered'),skipped=events.filter(x=>x.type==='follow_up_skipped'),blocked=events.filter(x=>x.type==='follow_up_chain_blocked'),attacks=events.filter(x=>x.type==='attack');
+ const followDamage=attacks.filter(x=>x.skill_id==='SKL-TEST-FOLLOW-POISON');
+ if(battle.tick!==meta.requestedTicks)errors.push(`Tick不一致: ${battle.tick}/${meta.requestedTicks}`);
+ if(triggered.length!==1)errors.push(`連携発動数不一致: ${triggered.length}/1`);
+ if(skipped.filter(x=>x.reason==='CONDITION_POISONED_FALSE').length!==1)errors.push('毒なし時の条件抑止が1回ではありません');
+ if(followDamage.length!==1)errors.push(`連携ダメージ回数不一致: ${followDamage.length}/1`);
+ if(blocked.length!==1)errors.push(`多重連鎖防止イベント不一致: ${blocked.length}/1`);
+ if(battle.actions!==0)errors.push(`通常AI行動が混入しました: ${battle.actions}`);
+ return{schema_version:'1.3.0',build:'GA-B474',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',start_tick:0,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{trigger:'ALLY_ATTACK',condition:'POISONED',initiator_id:meta.initiatorId,follower_id:meta.followerId,target_id:meta.targetId,follow_up_skill_id:'SKL-TEST-FOLLOW-POISON'},events,final_state:{target_hp:battle.units.find(x=>x.id===meta.targetId)?.hp??null,target_alive:battle.units.find(x=>x.id===meta.targetId)?.alive??null},summary:{follow_up_triggered:triggered.length,condition_skipped:skipped.length,follow_up_damage_events:followDamage.length,chain_blocked:blocked.length,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
+}
+function downloadConditionalFollowUpValidationJson(){const report=buildConditionalFollowUpValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-follow-up-validation-GA-B474-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function runConditionalFollowUpValidation(){
+ pauseBattle();resetBattle();const allies=ensureValidationTargets('味方',3),initiator=allies[0],follower=allies[1],target=battle.units.find(x=>x.alive&&x.side==='敵');if(!initiator||!follower||!target){$('tagTestResult').textContent='[FOLLOW UP TEST] FAILED / 必要ユニットがありません';return}
+ battle.validationMode=true;battle.validationEvents=[];battle.actions=0;dotStackSequence=0;follower.followUpSkillIds=['SKL-TEST-FOLLOW-POISON'];target.maxHp=Math.max(target.maxHp,5000);target.hp=target.maxHp;target.dotStacks=[];
+ battle.validationMeta={testId:'TAG-FOLLOW-UP-POISONED-001',requestedTicks:10,initiatorId:initiator.id,followerId:follower.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B474',test_id:battle.validationMeta.testId});
+ executeTaggedSkill(initiator,target,findTagSkill('SKL-TEST-ATTACK'));processTicks(5);
+ applyTaggedDot(initiator,target,compileTaggedSkill(findTagSkill('SKL-TEST-POISON')));executeTaggedSkill(initiator,target,findTagSkill('SKL-TEST-ATTACK'));processTicks(5);
+ recordValidationEvent('test_completed',{});renderBattle();const report=downloadConditionalFollowUpValidationJson();$('tagTestResult').textContent=`[FOLLOW UP JSON TEST] ${report.summary.passed?'PASS':'FAIL'}\n[TRIGGERED] ${report.summary.follow_up_triggered}\n[SKIPPED] ${report.summary.condition_skipped}\n[DAMAGE] ${report.summary.follow_up_damage_events}\n[CHAIN BLOCKED] ${report.summary.chain_blocked}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`;
+}
+
+function runHealSingleValidation(){
+ pauseBattle();resetBattle();
+ const actor=battle.units.find(x=>x.alive&&x.side==='味方');
+ const target=battle.units.find(x=>x.alive&&x.side==='味方'&&x.id!==actor?.id);
+ const skill=findTagSkill('SKL-TEST-HEAL-100');
+ if(!actor||!target||!skill){$('tagTestResult').textContent='[HEAL SINGLE] FAILED / 必要データがありません';return}
+ target.hp=Math.max(1,target.maxHp-50);
+ const before=target.hp,result=executeTaggedSkill(actor,target,skill),after=target.hp;
+ const passed=result.ok&&after===target.maxHp&&result.healResult?.healed===50&&result.healResult?.overheal===50;
+ $('tagTestResult').textContent=`[HEAL SINGLE] ${passed?'PASS':'FAIL'}\nHP ${before} → ${after}/${target.maxHp}\n回復 ${result.healResult?.healed??0}\n超過 ${result.healResult?.overheal??0}`;
+ renderBattle();
+}
+function runHealAllValidation(){
+ pauseBattle();resetBattle();
+ const allies=battle.units.filter(x=>x.alive&&x.side==='味方');
+ const actor=allies[0],skill=findTagSkill('SKL-TEST-HEAL-ALL-60');
+ if(!actor||allies.length<2||!skill){$('tagTestResult').textContent='[HEAL ALL] FAILED / 必要データがありません';return}
+ allies.forEach((u,i)=>u.hp=Math.max(1,u.maxHp-(30+i*40)));
+ const before=allies.map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp}));
+ const result=executeTaggedSkill(actor,allies[1],skill);
+ const after=allies.map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp}));
+ const passed=result.ok&&result.targets.length===allies.length&&after.every((u,i)=>u.hp===Math.min(u.maxHp,before[i].hp+60));
+ $('tagTestResult').textContent=`[HEAL ALL] ${passed?'PASS':'FAIL'}\n対象 ${result.targets.length}/${allies.length}\n`+after.map((u,i)=>`${u.id}: ${before[i].hp}→${u.hp}/${u.maxHp}`).join('\n');
+ renderBattle();
+}
+
+
+
+function runHealSingleValidation(){
+ pauseBattle();resetBattle();
+ const actor=battle.units.find(x=>x.alive&&x.side==='味方');
+ const target=battle.units.find(x=>x.alive&&x.side==='味方'&&x.id!==actor?.id);
+ const skill=findTagSkill('SKL-TEST-HEAL-100');
+ if(!actor||!target||!skill){$('tagTestResult').textContent='[HEAL SINGLE] FAILED / 必要データがありません';return}
+ target.hp=Math.max(1,target.maxHp-50);
+ const before=target.hp,result=executeTaggedSkill(actor,target,skill),after=target.hp;
+ const passed=result.ok&&after===target.maxHp&&result.healResult?.healed===50&&result.healResult?.overheal===50;
+ $('tagTestResult').textContent=`[HEAL SINGLE] ${passed?'PASS':'FAIL'}\nHP ${before} → ${after}/${target.maxHp}\n回復 ${result.healResult?.healed??0}\n超過 ${result.healResult?.overheal??0}`;
+ renderBattle();
+}
+function runHealAllValidation(){
+ pauseBattle();resetBattle();
+ const allies=battle.units.filter(x=>x.alive&&x.side==='味方');
+ const actor=allies[0],skill=findTagSkill('SKL-TEST-HEAL-ALL-60');
+ if(!actor||allies.length<2||!skill){$('tagTestResult').textContent='[HEAL ALL] FAILED / 必要データがありません';return}
+ allies.forEach((u,i)=>u.hp=Math.max(1,u.maxHp-(30+i*40)));
+ const before=allies.map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp}));
+ const result=executeTaggedSkill(actor,allies[1],skill);
+ const after=allies.map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp}));
+ const passed=result.ok&&result.targets.length===allies.length&&after.every((u,i)=>u.hp===Math.min(u.maxHp,before[i].hp+60));
+ $('tagTestResult').textContent=`[HEAL ALL] ${passed?'PASS':'FAIL'}\n対象 ${result.targets.length}/${allies.length}\n`+after.map((u,i)=>`${u.id}: ${before[i].hp}→${u.hp}/${u.maxHp}`).join('\n');
+ renderBattle();
+}
+
 function setupTagSkillTestUI(){
- const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
+ const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),runHealSingle=$('tagTestRunHealSingle'),runHealAll=$('tagTestRunHealAll'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
  execute.dataset.bound='1';
  actor.onchange=populateTagSkillTestUI;
  compile.onclick=()=>{const result=compileTaggedSkill(findTagSkill($('tagTestSkill').value));$('tagTestResult').textContent=formatCompileResult(result)};
@@ -491,44 +674,17 @@ function setupTagSkillTestUI(){
   if(!result.ok)recordValidationEvent('error',{message:result.reason||result.stage||'execute failed'});
   processTicks(1000);recordValidationEvent('test_completed',{});renderBattle();const report=downloadValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled||compiled)+`\n${formatValidationSummary(report)}`;
  };
- if(exportJson)exportJson.onclick=()=>{const report=downloadValidationJson();$('tagTestResult').textContent=`${$('tagTestResult').textContent}\n[JSON] 出力完了 / ${report.summary.passed?'PASS':'FAIL'}`};
+ if(runBuffHighest)runBuffHighest.onclick=()=>runModifierHighestValidation('BUFF');
+ if(runDebuffHighest)runDebuffHighest.onclick=()=>runModifierHighestValidation('DEBUFF');
+ if(runBuffAll)runBuffAll.onclick=()=>runModifierHighestValidation('BUFF',{all:true});
+ if(runDebuffAll)runDebuffAll.onclick=()=>runModifierHighestValidation('DEBUFF',{all:true});
+ if(runModifierTargetDeath)runModifierTargetDeath.onclick=runModifierTargetDeathValidation;
+ if(runModifierSourceDeath)runModifierSourceDeath.onclick=runModifierSourceDeathValidation;
+ if(runConditionalFollowUp)runConditionalFollowUp.onclick=runConditionalFollowUpValidation;
+ if(runStudioBridge)runStudioBridge.onclick=()=>{$('tagTestResult').textContent='[INFO] Studio正式データ連携検証はゲーム側で実行してください。'};
+ if(runHealSingle)runHealSingle.onclick=runHealSingleValidation;
+ if(runHealAll)runHealAll.onclick=runHealAllValidation;
+ if(runFormalRegression)runFormalRegression.onclick=()=>{$('tagTestResult').textContent='[INFO] 正式運用回帰検証はゲーム側で実行してください。'};
+ if(exportJson)exportJson.onclick=()=>{const report=battle.validationMeta?.kind?downloadModifierValidationJson():downloadValidationJson();$('tagTestResult').textContent=`${$('tagTestResult').textContent}\n[JSON] 出力完了 / ${report.summary.passed?'PASS':'FAIL'}`};
  populateTagSkillTestUI();
 }
-const GAUGE_MAX=100;
-const RESERVATION_DELAY_TICKS=4;
-let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationEvents:[],validationMeta:null};
-function makeCombatant(base){return {...base,hp:base.maxHp,alive:true,damageDealt:0,damageTaken:0,dotStacks:[],reservedAction:null,lastReservation:null,defaultSkillId:base.defaultSkillId||'SKL-TEST-ATTACK'}}
-function makeBattleUnits(){
- const members=data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,6);
- const allies=members.map((c,i)=>{const b=equipmentBonus(c);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',aiPolicy:c.aiPolicy,agi:Math.max(1,c.stats.AGI+b.agi),attack:10+c.stats.STR*3+c.level*2+b.attack,maxHp:100+c.stats.VIT*20+c.level*10+b.maxHp,gauge:0,actions:0,order:i,lastActionTick:null})});
- if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',aiPolicy:'lowestHp',agi:11,attack:48,maxHp:360,gauge:0,actions:0,order:0,lastActionTick:null}));
- const q=selectedQuest();const enemies=q.enemies.map((e,i)=>makeCombatant({id:`E${i}`,name:e.name,side:'敵',aiPolicy:'lowestHp',agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
- return [...allies,...enemies];
-}
-
-const AI_GRID=8;
-const AI_CHIPS={
- start:[{type:'start',label:'開始'}],
- condition:[{type:'condition',label:'自分HP判定',key:'selfHp',value:40},{type:'condition',label:'味方HP判定',key:'allyHp',value:40},{type:'condition',label:'敵が射程内',key:'enemyRange',value:1},{type:'condition',label:'スキル使用可能',key:'skillReady',value:1}],
- branch:[{type:'branch',label:'YES / NO'},{type:'branch',label:'確率分岐',key:'chance',value:50}],
- target:[{type:'target',label:'最弱の味方',key:'lowestAlly'},{type:'target',label:'最も近い敵',key:'nearestEnemy'},{type:'target',label:'HP最少の敵',key:'lowestEnemy'},{type:'target',label:'ボス',key:'boss'}],
- action:[{type:'action',label:'通常攻撃',key:'attack'},{type:'action',label:'スキル使用',key:'skill',value:'ヒール'},{type:'action',label:'接近',key:'approach'},{type:'action',label:'離脱',key:'retreat'},{type:'action',label:'防御',key:'guard'},{type:'action',label:'待機',key:'wait'}],
- advanced:[{type:'advanced',label:'3 Tick待機',key:'waitTicks',value:3},{type:'advanced',label:'連続禁止',key:'noRepeat',value:1},{type:'advanced',label:'サブルーチン',key:'subroutine',value:'A'}]
-};
-function defaultAiGraph(){return{version:1,cells:[{id:'N1',x:0,y:0,type:'start',label:'開始'},{id:'N2',x:0,y:1,type:'target',label:'HP最少の敵',key:'lowestEnemy'},{id:'N3',x:0,y:2,type:'action',label:'通常攻撃',key:'attack'}]}}
-function normalizeAiGraph(g){if(!g||!Array.isArray(g.cells))return defaultAiGraph();g.cells=g.cells.filter(n=>Number.isInteger(n.x)&&Number.isInteger(n.y)&&n.x>=0&&n.x<AI_GRID&&n.y>=0&&n.y<AI_GRID);return g}
-let aiEditCharacter=null,aiDraft=null,aiSelectedTemplate=null,aiHistory=[],aiSelectedNodeId=null,aiPaletteCategory='condition',aiRunTimer=null;
-function openAiEditorFor(c){if(!c)return;aiEditCharacter=c;aiDraft=clone(normalizeAiGraph(c.aiGraph));aiHistory=[];aiSelectedNodeId=null;aiSelectedTemplate=null;$('aiEditorTitle').textContent=`${c.name} — AIチップ編集`;$('aiEditor').classList.add('open');$('aiEditor').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';renderAiPalette();renderAiBoard()}
-function closeAiEditor(){clearInterval(aiRunTimer);$('aiEditor').classList.remove('open');$('aiEditor').setAttribute('aria-hidden','true');$('aiConfig').classList.remove('open');document.body.style.overflow=''}
-function saveAiHistory(){aiHistory.push(JSON.stringify(aiDraft));if(aiHistory.length>30)aiHistory.shift()}
-function nodeAt(x,y){return aiDraft.cells.find(n=>n.x===x&&n.y===y)}
-function renderAiBoard(){const board=$('aiBoard');board.innerHTML='';for(let y=0;y<AI_GRID;y++)for(let x=0;x<AI_GRID;x++){const cell=document.createElement('button');cell.type='button';cell.className='ai-cell';cell.dataset.x=x;cell.dataset.y=y;const n=nodeAt(x,y);if(n){cell.innerHTML=`<div class="ai-chip ${n.type}" data-node="${n.id}"><b>${escapeHtml(n.label)}</b>${n.value!==undefined?`<small>${escapeHtml(String(n.value))}</small>`:''}${n.type==='branch'?'<span class="yes">YES</span><span class="no">NO</span>':''}</div>`;cell.onclick=()=>openAiNodeConfig(n)}else cell.onclick=()=>placeAiChip(x,y);board.appendChild(cell)}}
-function renderAiPalette(){const cats=[['start','開始'],['condition','条件'],['branch','分岐'],['target','対象'],['action','行動'],['advanced','高度']];$('aiPaletteTabs').innerHTML=cats.map(([k,l])=>`<button class="${k===aiPaletteCategory?'active':''}" data-ai-cat="${k}">${l}</button>`).join('');$('aiPaletteTabs').querySelectorAll('[data-ai-cat]').forEach(b=>b.onclick=()=>{aiPaletteCategory=b.dataset.aiCat;aiSelectedTemplate=null;renderAiPalette()});$('aiPaletteGrid').innerHTML=(AI_CHIPS[aiPaletteCategory]||[]).map((t,i)=>`<button class="ai-palette-chip ${aiSelectedTemplate?.label===t.label?'selected':''}" data-ai-template="${i}">${t.label}</button>`).join('');$('aiPaletteGrid').querySelectorAll('[data-ai-template]').forEach(b=>b.onclick=()=>{aiSelectedTemplate=clone(AI_CHIPS[aiPaletteCategory][Number(b.dataset.aiTemplate)]);renderAiPalette()})}
-function placeAiChip(x,y){if(!aiSelectedTemplate)return;saveAiHistory();aiDraft.cells.push({...clone(aiSelectedTemplate),id:'N'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),x,y});renderAiBoard()}
-function openAiNodeConfig(n){aiSelectedNodeId=n.id;$('aiConfigTitle').textContent=n.label;let body='<p class="small">このチップの設定を変更します。</p>';if(n.type==='condition')body+=`<label>判定値<input id="aiNodeValue" type="number" min="0" max="100" value="${Number(n.value??40)}"></label>`;if(n.type==='action'&&n.key==='skill')body+=`<label>使用スキル<select id="aiNodeValue"><option>ヒール</option><option>炎斬り</option><option>挑発</option><option>ファイア</option></select></label>`;if(n.type==='advanced')body+=`<label>値<input id="aiNodeValue" value="${escapeHtml(String(n.value??''))}"></label>`;$('aiConfigBody').innerHTML=body;$('aiConfig').classList.add('open');const input=$('aiNodeValue');if(input){input.value=String(n.value??input.value);input.onchange=()=>{saveAiHistory();n.value=input.type==='number'?Number(input.value):input.value;renderAiBoard()}}}
-function deleteAiSelected(){const i=aiDraft.cells.findIndex(n=>n.id===aiSelectedNodeId);if(i>=0){saveAiHistory();aiDraft.cells.splice(i,1);renderAiBoard()}$('aiConfig').classList.remove('open')}
-function loadPriestPreset(){saveAiHistory();aiDraft={version:1,cells:[{id:'P1',x:0,y:0,type:'start',label:'開始'},{id:'P2',x:0,y:1,type:'condition',label:'味方HP判定',key:'allyHp',value:40},{id:'P3',x:1,y:1,type:'branch',label:'YES / NO'},{id:'P4',x:2,y:0,type:'target',label:'最弱の味方',key:'lowestAlly'},{id:'P5',x:3,y:0,type:'action',label:'スキル使用',key:'skill',value:'ヒール'},{id:'P6',x:2,y:2,type:'target',label:'最も近い敵',key:'nearestEnemy'},{id:'P7',x:3,y:2,type:'action',label:'通常攻撃',key:'attack'}]};renderAiBoard()}
-function simulateAi(){clearInterval(aiRunTimer);const nodes=[...aiDraft.cells].sort((a,b)=>a.y-b.y||a.x-b.x);let i=0;document.querySelectorAll('.ai-chip').forEach(e=>e.classList.remove('active-run'));aiRunTimer=setInterval(()=>{document.querySelectorAll('.ai-chip').forEach(e=>e.classList.remove('active-run'));if(i>=nodes.length){clearInterval(aiRunTimer);return}document.querySelector(`[data-node="${nodes[i++].id}"]`)?.classList.add('active-run')},500)}
-$('aiEditorClose').onclick=closeAiEditor;$('aiEditorSave').onclick=()=>{if(aiEditCharacter){aiEditCharacter.aiGraph=clone(aiDraft);persist();notify(`${aiEditCharacter.name}のAIチップを保存しました。`)}closeAiEditor()};$('aiUndo').onclick=()=>{if(!aiHistory.length)return;aiDraft=JSON.parse(aiHistory.pop());renderAiBoard()};$('aiClear').onclick=()=>{if(confirm('盤面をすべて消去しますか？')){saveAiHistory();aiDraft={version:1,cells:[]};renderAiBoard()}};$('aiPreset').onclick=loadPriestPreset;$('aiTest').onclick=simulateAi;$('aiDeleteChip').onclick=deleteAiSelected;$('aiConfigClose').onclick=()=>$('aiConfig').classList.remove('open');
-const openAiBtn=$('openAiEditor');if(openAiBtn)openAiBtn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===selectedId));const skillBtn=$('openSkillPlaceholder');if(skillBtn)skillBtn.onclick=()=>alert('スキル装着画面は次の実験Buildで追加します。');const equipViewBtn=$('openEquipView');if(equipViewBtn)equipViewBtn.onclick=()=>setBaseView('equipment');
-

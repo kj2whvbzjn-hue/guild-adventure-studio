@@ -537,8 +537,35 @@ function runConditionalFollowUpValidation(){
  applyTaggedDot(initiator,target,compileTaggedSkill(findTagSkill('SKL-TEST-POISON')));executeTaggedSkill(initiator,target,findTagSkill('SKL-TEST-ATTACK'));processTicks(5);
  recordValidationEvent('test_completed',{});renderBattle();const report=downloadConditionalFollowUpValidationJson();$('tagTestResult').textContent=`[FOLLOW UP JSON TEST] ${report.summary.passed?'PASS':'FAIL'}\n[TRIGGERED] ${report.summary.follow_up_triggered}\n[SKIPPED] ${report.summary.condition_skipped}\n[DAMAGE] ${report.summary.follow_up_damage_events}\n[CHAIN BLOCKED] ${report.summary.chain_blocked}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`;
 }
+
+function runHealSingleValidation(){
+ pauseBattle();resetBattle();
+ const actor=battle.units.find(x=>x.alive&&x.side==='味方');
+ const target=battle.units.find(x=>x.alive&&x.side==='味方'&&x.id!==actor?.id);
+ const skill=findTagSkill('SKL-TEST-HEAL-100');
+ if(!actor||!target||!skill){$('tagTestResult').textContent='[HEAL SINGLE] FAILED / 必要データがありません';return}
+ target.hp=Math.max(1,target.maxHp-50);
+ const before=target.hp,result=executeTaggedSkill(actor,target,skill),after=target.hp;
+ const passed=result.ok&&after===target.maxHp&&result.healResult?.healed===50&&result.healResult?.overheal===50;
+ $('tagTestResult').textContent=`[HEAL SINGLE] ${passed?'PASS':'FAIL'}\nHP ${before} → ${after}/${target.maxHp}\n回復 ${result.healResult?.healed??0}\n超過 ${result.healResult?.overheal??0}`;
+ renderBattle();
+}
+function runHealAllValidation(){
+ pauseBattle();resetBattle();
+ const allies=battle.units.filter(x=>x.alive&&x.side==='味方');
+ const actor=allies[0],skill=findTagSkill('SKL-TEST-HEAL-ALL-60');
+ if(!actor||allies.length<2||!skill){$('tagTestResult').textContent='[HEAL ALL] FAILED / 必要データがありません';return}
+ allies.forEach((u,i)=>u.hp=Math.max(1,u.maxHp-(30+i*40)));
+ const before=allies.map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp}));
+ const result=executeTaggedSkill(actor,allies[1],skill);
+ const after=allies.map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp}));
+ const passed=result.ok&&result.targets.length===allies.length&&after.every((u,i)=>u.hp===Math.min(u.maxHp,before[i].hp+60));
+ $('tagTestResult').textContent=`[HEAL ALL] ${passed?'PASS':'FAIL'}\n対象 ${result.targets.length}/${allies.length}\n`+after.map((u,i)=>`${u.id}: ${before[i].hp}→${u.hp}/${u.maxHp}`).join('\n');
+ renderBattle();
+}
+
 function setupTagSkillTestUI(){
- const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
+ const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),runHealSingle=$('tagTestRunHealSingle'),runHealAll=$('tagTestRunHealAll'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
  execute.dataset.bound='1';
  actor.onchange=populateTagSkillTestUI;
  compile.onclick=()=>{const result=compileTaggedSkill(findTagSkill($('tagTestSkill').value));$('tagTestResult').textContent=formatCompileResult(result)};
@@ -609,6 +636,8 @@ function setupTagSkillTestUI(){
  if(runModifierSourceDeath)runModifierSourceDeath.onclick=runModifierSourceDeathValidation;
  if(runConditionalFollowUp)runConditionalFollowUp.onclick=runConditionalFollowUpValidation;
  if(runStudioBridge)runStudioBridge.onclick=async()=>{if(studioSkillBridge.status!=='loaded')await loadStudioSkillDefinitions();const report=downloadStudioBridgeValidationJson();$('tagTestResult').textContent=`[STUDIO BRIDGE] ${report.summary.passed?'PASS':'FAIL'}\n[STATUS] ${report.source.status}\n[IMPORTED] ${report.source.imported_count}\n[STUDIO SOURCED] ${report.summary.studio_sourced_count}/${report.summary.required_count}\n[COMPILED] ${report.summary.compiled_count}/${report.summary.required_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`};
+ if(runHealSingle)runHealSingle.onclick=runHealSingleValidation;
+ if(runHealAll)runHealAll.onclick=runHealAllValidation;
  if(runFormalRegression)runFormalRegression.onclick=async()=>{if(studioSkillBridge.status!=='loaded')await loadStudioSkillDefinitions();const report=downloadFormalRuntimeRegressionJson();$('tagTestResult').textContent=`[FORMAL REGRESSION] ${report.summary.passed?'PASS':'FAIL'}\n[STATUS] ${report.source.status}\n[PRODUCTION DEFINITIONS] ${report.summary.production_compile_count}/${report.summary.production_definition_count}\n[VALIDATION REJECTIONS] ${report.summary.validation_expected_rejection_count}/${report.summary.validation_definition_count}\n[REQUIRED STUDIO] ${report.summary.required_studio_sourced}/${report.summary.required_count}\n[EMBEDDED PRODUCTION] ${report.summary.production_embedded_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`};
  if(exportJson)exportJson.onclick=()=>{const report=battle.validationMeta?.kind?downloadModifierValidationJson():downloadValidationJson();$('tagTestResult').textContent=`${$('tagTestResult').textContent}\n[JSON] 出力完了 / ${report.summary.passed?'PASS':'FAIL'}`};
  populateTagSkillTestUI();

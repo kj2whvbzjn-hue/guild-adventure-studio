@@ -1,11 +1,9 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta name="ga-page-kind" content="tag-test">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ギルド冒険物語 V9 タグ検証 GA-B481</title>
 
-<script src="../assets/shared/js/page-identity-guard.js?v=481"></script>
 <script src="../assets/shared/config/runtime-config.js?v=481"></script>
 <script src="../assets/shared/js/game-shell-common.js?v=481"></script>
 <style>
@@ -502,7 +500,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 @media(max-width:600px){.growth-grid{grid-template-columns:repeat(4,1fr)}.job-modal-panel{padding:10px}.job-option{padding:12px}}
 </style>
 </head>
-<body data-ga-page-kind="tag-test">
+<body>
 <style id="ga-project-nav-style">
 .ga-project-nav{position:relative;z-index:9999;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#101827;color:#fff;font:13px/1.4 system-ui,-apple-system,sans-serif;border-bottom:1px solid rgba(255,255,255,.14)}
 .ga-project-nav a{color:#fff;text-decoration:none;padding:5px 9px;border:1px solid rgba(255,255,255,.25);border-radius:7px;background:rgba(255,255,255,.07)}
@@ -583,8 +581,8 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <label>オート増加量<select id="battleStep"><option value="1">1 Tick</option><option value="10" selected>10 Tick</option><option value="100">100 Tick</option><option value="1000">1000 Tick</option></select></label>
 </div>
 <section class="card" id="tagSkillTestPanel" style="margin-top:12px">
-<h3>タグスキル Sprint 2.4 検証</h3>
-<p class="small">一般タグと数値タグからスキルをコンパイルし、ATTACK命中後にDOTを個別スタックとして付与します。検証専用モードでは通常AIを停止し、1000 Tickの全イベントをJSONへ出力し、複数スタック、独立タイマー、DOT撃破時の停止処理も検証します。</p>
+<h3>タグスキル Sprint 4 検証（タグ検証）</h3>
+<p class="small">ATTACK・DOTに加え、単体BUFF／DEBUFFを複数スタックとして保持し、同一能力値では最高強度だけを実効値へ反映します。各スタックの独立終了、最高値終了後の次点切替、全終了後の原値復帰をJSONで検証します。</p>
 <div class="row">
 <label>スキル<select id="tagTestSkill"></select></label>
 <label>使用者<select id="tagTestActor"></select></label>
@@ -595,9 +593,18 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <button id="tagTestRunStackLimit">5スタック＋上限検証</button>
 <button id="tagTestRunStaggered">時間差3スタック検証</button>
 <button id="tagTestRunDefeat">DOT撃破検証</button>
+<button id="tagTestRunBuffHighest">単体BUFF最高値検証</button>
+<button id="tagTestRunDebuffHighest">単体DEBUFF最高値検証</button>
+<button id="tagTestRunBuffAll">味方全体BUFF検証</button>
+<button id="tagTestRunDebuffAll">敵全体DEBUFF検証</button>
+<button id="tagTestRunModifierTargetDeath">効果対象死亡検証</button>
+<button id="tagTestRunModifierSourceDeath">付与者死亡検証</button>
+<button id="tagTestRunConditionalFollowUp">条件付き連携攻撃検証</button>
+<button id="tagTestRunStudioBridge">Studio正式データ連携検証</button>
+<button id="tagTestRunHealSingle">単体回復検証</button><button id="tagTestRunHealAll">味方全体回復検証</button><button id="tagTestRunFormalRegression">正式運用回帰検証</button>
 <button id="tagTestExportJson">JSONログ出力</button>
 </div>
-<div class="small" style="margin-top:8px">各検証は通常AI・行動ゲージ処理を停止します。5スタック＋上限検証は6回同時付与、時間差3スタック検証はTick 0・250・600で再付与します。DOT撃破検証は低HP対象を毒で倒し、撃破後の追加DOTがなく、スタックが消去されることをJSONで確認します。</div>
+<div class="small" style="margin-top:8px">各検証は通常AI・行動ゲージ処理を停止します。BUFF／DEBUFF最高値検証はTick 0・100・200に強度10・30・20を付与し、実効値が10→30→20→0へ切り替わることを確認します。複数対象・死亡制御に加え、本BuildではStudioの正式出力 Export/skill/skills.json を読み込み、タグ定義を同一ランタイムへ接続します。連携攻撃まで含む正式データの読込・コンパイル・ID一致をJSONで検証します。正式運用回帰検証では、必須スキルがすべてStudio出力由来であること、全Studioタグ定義がコンパイル可能であること、固定埋込定義が正式運用対象へ混入していないことを確認します。</div>
 <div id="tagTestResult" class="battle-log" style="min-height:110px;max-height:260px;margin-top:10px">未実行</div>
 </section>
 <div style="margin:10px 0"><span class="metric" id="battleTick">Tick: 0</span><span class="metric" id="battleStatus">状態: 待機</span><span class="metric" id="battleActions">行動回数: 0</span><span class="metric" id="battleResult">勝敗: 未決着</span></div>
