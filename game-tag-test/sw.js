@@ -1,4 +1,4 @@
-const CACHE_NAME='guild-adventure-ga-b456';
+const CACHE_NAME='guild-adventure-ga-b457';
 const OFFLINE_URL='./index.html?appv=456';
 const APP_SHELL=[
   './',
