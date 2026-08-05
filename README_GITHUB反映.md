@@ -1,16 +1,13 @@
-# GA-B457 GitHub反映
+# GA-B458 GitHub反映
 
-リポジトリ直下へ上書き展開してください。
+このZIPをリポジトリ直下へ展開して上書きしてください。
 
-変更対象:
-- game-tag-test/index.html
-- game-tag-test/sw.js
-- game-tag-test/manifest.webmanifest
+- Studio: GKS-B473（変更なし）
+- 既存ゲーム `game/`: GA-B455（変更なし）
+- タグ検証ゲーム `game-tag-test/`: GA-B458
 
-追加対象:
-- docs/implementation/GA-B457_DOT_JSON検証.md
-- tests/test_tag_skill_ga_b457.js
+反映後の確認URL:
 
-変更なし:
-- studio/（GKS-B473）
-- game/（GA-B455）
+`/game-tag-test/?v=458`
+
+開発者モード → 戦闘 → Battle Core → `5スタック＋上限検証` を実行してください。

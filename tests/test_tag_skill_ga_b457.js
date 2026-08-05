@@ -2,7 +2,7 @@ const fs=require('fs');
 const path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','game-tag-test','index.html'),'utf8');
 const checks=[
- ['GA-B457 build',html.includes("GA-B457 / Sprint 2.1 / DOT JSON Verification")],
+ ['GA-B457+ JSON validation regression',html.includes('DOT Stack Limit Verification')||html.includes('DOT JSON Verification')],
  ['1000 tick button',html.includes('id="tagTestRun1000"')],
  ['JSON export button',html.includes('id="tagTestExportJson"')],
  ['validation mode',html.includes('battle.validationMode')],
