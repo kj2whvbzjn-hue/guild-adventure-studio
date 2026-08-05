@@ -6,8 +6,8 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
-OUT_JSON = ROOT / 'docs/architecture/BUILD428_ORGANIZATION_AUDIT.json'
-OUT_MD = ROOT / 'docs/architecture/BUILD428_ORGANIZATION_AUDIT.md'
+OUT_JSON = ROOT / 'reports/organization-audit.json'
+OUT_MD = ROOT / 'reports/organization-audit.md'
 ARCHIVE_PREFIXES = ('formal-', 'legacy-home')
 GENERATED_NAMES = {'ARTIFACT_SHA256SUMS.txt','SHA256SUMS.txt'}
 TEXT_EXTS = {'.html','.js','.css','.json','.md','.txt','.py','.sh','.php','.csv','.webmanifest'}
@@ -65,7 +65,6 @@ summary=defaultdict(lambda:{'files':0,'bytes':0})
 for rec in files:
     summary[rec['category']]['files']+=1; summary[rec['category']]['bytes']+=rec['bytes']
 report={
- 'build':428,
  'mode':'non-destructive-audit',
  'root':ROOT.name,
  'summary':dict(sorted(summary.items())),
@@ -80,7 +79,7 @@ report={
 }
 OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
 OUT_JSON.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-lines=['# BUILD428 Organization Audit','',
+lines=['# Organization Audit','',
        'This is a non-destructive inventory. No files were deleted or moved.','',
        '## Category summary','', '| Category | Files | Bytes |','|---|---:|---:|']
 for k,v in report['summary'].items(): lines.append(f"| {k} | {v['files']} | {v['bytes']} |")
