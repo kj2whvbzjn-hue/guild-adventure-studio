@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ギルド冒険物語 V9 正式版 GA-B468</title>
+<title>ギルド冒険物語 V9 正式版 GA-B469</title>
 
 <script>
 /* BUILD424: preserve user-selected developer mode and keep mobile runtime orientation-independent. */
@@ -556,7 +556,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 
 <div id="fixedCanvasHost"><div id="fixedCanvas">
 <a class="studio-back" id="studioBackLink" href="../studio/" aria-label="GK Studioへ戻る">GK Studioへ戻る</a>
-<header><div class="header-line"><div><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">GA-B468 — Formal Runtime Regression</div><div class="phase-dev-nav" id="phaseDevNav"><button data-phase="title">タイトル</button><button data-phase="base">拠点</button><button data-phase="event">イベント</button><button data-phase="battle">戦闘</button><button data-phase="result">リザルト</button></div></div><button id="developerModeBtn" class="developer-toggle" aria-pressed="false">開発者モード</button></div></header>
+<header><div class="header-line"><div><h1>ギルド冒険物語 V9 正式版</h1><div class="sub">GA-B469 — Formal Runtime Environment Separation</div><div class="phase-dev-nav" id="phaseDevNav"><button data-phase="title">タイトル</button><button data-phase="base">拠点</button><button data-phase="event">イベント</button><button data-phase="battle">戦闘</button><button data-phase="result">リザルト</button></div></div><button id="developerModeBtn" class="developer-toggle" aria-pressed="false">開発者モード</button></div></header>
 <div class="wrap">
 <main id="phaseRoot">
 <section class="phase-screen dev-workspace" id="phase-devhome" data-phase="devhome"><div class="phase-shell">
@@ -568,7 +568,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <section class="phase-screen active" id="phase-title" data-phase="title"><div class="phase-shell phase-title">
  <div class="title-visual" aria-hidden="true"><div class="title-shine"></div><div class="title-emblem"><div class="title-kicker">GUILD CHRONICLE</div><div class="title-logo">ギルド冒険物語<small>GUILD ADVENTURE</small></div><div class="title-rule"></div></div></div>
  <div class="title-menu" aria-label="タイトルメニュー"><h2>冒険を始める</h2><button class="primary" id="titleStart">はじめから</button><button id="titleContinue">つづきから</button><button id="titleSettings">設定</button><p class="small">タイトルから拠点、イベント、戦闘、リザルトまで横持ちで統一します。</p></div>
- <div class="title-version">V9 / GA-B468</div><div class="title-copyright">GK Studio</div>
+ <div class="title-version">V9 / GA-B469</div><div class="title-copyright">GK Studio</div>
 </div></section>
 <section class="phase-screen" id="phase-base" data-phase="base"><div class="phase-shell">
  <div class="phase-banner"><div><div class="phase-name">拠点フェーズ</div><div class="small">ギルドで編成・育成・保存を行い、準備が整ったら冒険へ出発します。</div></div><div class="phase-actions"><button class="primary" id="baseDepart">冒険へ出発</button></div></div>
@@ -771,7 +771,7 @@ const EQUIPMENT={
  '魔力の指輪':{slot:'accessory',rarity:'rare',attack:9,maxHp:45,agi:1,description:'魔力を攻撃力へ変換する指輪。'},
  '古代の護符':{slot:'accessory',rarity:'legendary',attack:18,maxHp:120,agi:3,description:'失われた文明の祝福を帯びた護符。'}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'GA-B468',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'GA-B469',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','result'];
 let currentPhase='title';
@@ -891,7 +891,7 @@ function normalize(raw){
  raw.selectedQuestId=QUESTS.some(q=>q.id===raw.selectedQuestId)?raw.selectedQuestId:'Q-001';
  raw.inventory=Array.isArray(raw.inventory)?raw.inventory.filter(x=>EQUIPMENT[x]):[];
  raw.characters.forEach(c=>{c.aiPolicy=['weakest','lowestHp','random','boss','finish'].includes(c.aiPolicy)?c.aiPolicy:'lowestHp';c.equipment=c.equipment&&typeof c.equipment==='object'?c.equipment:{weapon:null,armor:null,accessory:null}});
- raw.schemaRevision='1.4.0';raw.gameVersion='GA-B468';
+ raw.schemaRevision='1.4.0';raw.gameVersion='GA-B469';
  return raw;
 }
 function persist(){data.updatedAt=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
@@ -970,7 +970,7 @@ $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('h
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'GA-B468',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'GA-B469',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const DOT_LOG_SCHEMA_VERSION='1.0.0';
 function ensureValidationState(){
@@ -1042,7 +1042,7 @@ function buildValidationReport(){
  }
  const report={
   schema_version:DOT_LOG_SCHEMA_VERSION,
-  build:'GA-B468',
+  build:'GA-B469',
   generated_at:new Date().toISOString(),
   test:{id:meta.testId||'TAG-DOT-1000TICK-001',mode:'isolated',start_tick:meta.startTick??0,end_tick:battle.tick,requested_ticks:meta.requestedTicks??null},
   input:{skill_id:meta.skillId||'',user_id:meta.actorId||'',target_id:meta.targetId||'',tags:meta.tags||[],execution_count:meta.expectedAttackCount??1},
@@ -1071,7 +1071,7 @@ function buildValidationReport(){
 function downloadValidationJson(){
  const report=buildValidationReport();
  const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');
- a.href=URL.createObjectURL(blob);a.download=`tag-dot-validation-GA-B468-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);
+ a.href=URL.createObjectURL(blob);a.download=`tag-dot-validation-GA-B469-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);
  return report;
 }
 function formatValidationSummary(report){
@@ -1079,7 +1079,7 @@ function formatValidationSummary(report){
  return `[JSON TEST] ${s.passed?'PASS':'FAIL'}\n[Tick] ${report.test.start_tick} -> ${report.test.end_tick}\n[ATTACK] count=${s.attack_count}, damage=${s.attack_damage}\n[DOT] added=${s.dot_stacks_added}, rejected=${s.dot_stacks_rejected}, hits=${s.dot_hit_count}/${s.expected_dot_hit_count}, total=${s.dot_damage_total}/${s.expected_dot_damage_total}\n[EXPIRED] ${s.dot_expired_count}
 [DOT DEFEAT] ${s.dot_defeat_count}\n[AI ACTIONS] ${s.normal_ai_actions}\n[ACTIVE STACKS] ${report.final_state.active_dot_stacks}\n[ERRORS] ${s.errors.length}${s.errors.length?'\n'+s.errors.map(x=>' - '+x).join('\n'):''}`;
 }
-const TAG_SKILL_TEST_BUILD='GA-B468 / Studio Export Bridge / ATTACK + DOT + BUFF + DEBUFF + FOLLOW_UP';
+const TAG_SKILL_TEST_BUILD='GA-B469 / Studio Export Bridge / ATTACK + DOT + BUFF + DEBUFF + FOLLOW_UP';
 const TAG_SKILLS=[
  {id:'SKL-TEST-ATTACK',name:'タグ攻撃テスト',tags:['ATTACK','敵','単体','物理','DAMAGE=100'],source:'embedded_validation',environment:'development'},
  {id:'SKL-TEST-HEAVY',name:'強打テスト',tags:['ATTACK','敵','単体','物理','DAMAGE=150'],source:'embedded_validation',environment:'development'},
@@ -1099,7 +1099,7 @@ const TAG_SKILLS=[
  {id:'SKL-TEST-DEBUFF-ALL-20',name:'敵全体攻撃弱体20',tags:['DEBUFF','敵','全体','ATK','POWER=20','DURATION=1000','STACK_GAIN=1'],source:'embedded_validation',environment:'development'},
  {id:'SKL-TEST-FOLLOW-POISON',name:'毒状態への連携追撃',tags:['FOLLOW_UP','TRIGGER_ALLY_ATTACK','CONDITION_POISONED','敵','単体','物理','DAMAGE=80'],source:'embedded_validation',environment:'development'},
 ];
-const STUDIO_SKILL_EXPORT_URL='../Export/skill/skills.json?v=468';
+const STUDIO_SKILL_EXPORT_URL='../Export/skill/skills.json?v=469';
 const studioSkillBridge={status:'idle',source_url:STUDIO_SKILL_EXPORT_URL,schema_version:null,data_version:null,generated_by:null,imported_ids:[],errors:[],loaded_at:null};
 function normalizeStudioTagSkill(record){
  if(!record||typeof record!=='object')return null;
@@ -1128,25 +1128,30 @@ function buildStudioBridgeValidationReport(){
  const errors=[];
  if(studioSkillBridge.status!=='loaded')errors.push(`Studio出力未読込: ${studioSkillBridge.status}`);
  for(const row of compile_results){if(!row.found)errors.push(`${row.id}が見つかりません`);else if(row.source!=='studio_export')errors.push(`${row.id}がStudio出力由来ではありません`);else if(!row.compiled_ok)errors.push(`${row.id}のコンパイル失敗`)}
- return{schema_version:'1.0.0',build:'GA-B468',generated_at:new Date().toISOString(),test:{id:'TAG-STUDIO-EXPORT-BRIDGE-001',mode:'formal_data_bridge'},source:{url:studioSkillBridge.source_url,status:studioSkillBridge.status,schema_version:studioSkillBridge.schema_version,data_version:studioSkillBridge.data_version,generated_by:studioSkillBridge.generated_by,loaded_at:studioSkillBridge.loaded_at,imported_count:studioSkillBridge.imported_ids.length,imported_ids:[...studioSkillBridge.imported_ids]},compile_results,summary:{required_count:required.length,studio_sourced_count:compile_results.filter(x=>x.source==='studio_export').length,compiled_count:compile_results.filter(x=>x.compiled_ok).length,passed:errors.length===0,errors:[...studioSkillBridge.errors,...errors]}};
+ return{schema_version:'1.0.0',build:'GA-B469',generated_at:new Date().toISOString(),test:{id:'TAG-STUDIO-EXPORT-BRIDGE-001',mode:'formal_data_bridge'},source:{url:studioSkillBridge.source_url,status:studioSkillBridge.status,schema_version:studioSkillBridge.schema_version,data_version:studioSkillBridge.data_version,generated_by:studioSkillBridge.generated_by,loaded_at:studioSkillBridge.loaded_at,imported_count:studioSkillBridge.imported_ids.length,imported_ids:[...studioSkillBridge.imported_ids]},compile_results,summary:{required_count:required.length,studio_sourced_count:compile_results.filter(x=>x.source==='studio_export').length,compiled_count:compile_results.filter(x=>x.compiled_ok).length,passed:errors.length===0,errors:[...studioSkillBridge.errors,...errors]}};
 }
-function downloadStudioBridgeValidationJson(){const report=buildStudioBridgeValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-studio-bridge-validation-GA-B468-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function downloadStudioBridgeValidationJson(){const report=buildStudioBridgeValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-studio-bridge-validation-GA-B469-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
 
 function buildFormalRuntimeRegressionReport(){
  const required=['SKL-TEST-ATTACK','SKL-TEST-POISON','SKL-TEST-BUFF-10','SKL-TEST-DEBUFF-10','SKL-TEST-FOLLOW-POISON'];
  const imported=TAG_SKILLS.filter(x=>x.source==='studio_export');
- const compile_results=imported.map(skill=>{const compiled=compileTaggedSkill(skill);return{id:skill.id,name:skill.name,source:skill.source,environment:skill.environment||null,compiled_ok:!!compiled.ok,logic_order:compiled.definition?.logicOrder||[],errors:compiled.errors||[]}});
- const required_results=required.map(id=>{const skill=findTagSkill(id);return{id,found:!!skill,source:skill?.source||null,compiled_ok:!!(skill&&compileTaggedSkill(skill).ok)}});
+ const production=imported.filter(x=>(x.environment||'production')==='production');
+ const validation=imported.filter(x=>(x.environment||'production')==='validation');
+ const compileRow=skill=>{const compiled=compileTaggedSkill(skill);return{id:skill.id,name:skill.name,source:skill.source,environment:skill.environment||'production',compiled_ok:!!compiled.ok,logic_order:compiled.definition?.logicOrder||[],errors:compiled.errors||[]}};
+ const production_results=production.map(compileRow);
+ const validation_results=validation.map(skill=>{const row=compileRow(skill);return{...row,expected_result:'rejected',validation_passed:!row.compiled_ok&&row.errors.length>0}});
+ const required_results=required.map(id=>{const skill=findTagSkill(id);return{id,found:!!skill,source:skill?.source||null,environment:skill?.environment||null,compiled_ok:!!(skill&&compileTaggedSkill(skill).ok)}});
  const production_embedded=TAG_SKILLS.filter(x=>x.source!=='studio_export' && (x.environment||'production')==='production').map(x=>x.id);
  const errors=[];
  if(studioSkillBridge.status!=='loaded')errors.push(`Studio出力未読込: ${studioSkillBridge.status}`);
  if(!studioSkillBridge.data_version)errors.push('data_versionがありません');
- for(const row of required_results){if(!row.found)errors.push(`${row.id}がありません`);else if(row.source!=='studio_export')errors.push(`${row.id}が固定定義です`);else if(!row.compiled_ok)errors.push(`${row.id}のコンパイルに失敗しました`)}
- for(const row of compile_results){if(!row.compiled_ok)errors.push(`${row.id}: ${row.errors.join(', ')}`)}
+ for(const row of required_results){if(!row.found)errors.push(`${row.id}がありません`);else if(row.source!=='studio_export')errors.push(`${row.id}が固定定義です`);else if(row.environment!=='production')errors.push(`${row.id}がproductionではありません`);else if(!row.compiled_ok)errors.push(`${row.id}のコンパイルに失敗しました`)}
+ for(const row of production_results){if(!row.compiled_ok)errors.push(`${row.id}: ${row.errors.join(', ')}`)}
+ for(const row of validation_results){if(!row.validation_passed)errors.push(`${row.id}: validation定義が期待どおり拒否されませんでした`)}
  if(production_embedded.length)errors.push(`正式運用対象に固定定義が残っています: ${production_embedded.join(', ')}`);
- return{schema_version:'1.0.0',build:'GA-B468',generated_at:new Date().toISOString(),test:{id:'TAG-FORMAL-RUNTIME-REGRESSION-001',mode:'formal_runtime_regression'},source:{status:studioSkillBridge.status,url:studioSkillBridge.source_url,data_version:studioSkillBridge.data_version,generated_by:studioSkillBridge.generated_by,imported_count:imported.length},required_results,compile_results,dependency_audit:{production_embedded_ids:production_embedded,studio_runtime_ids:imported.map(x=>x.id)},summary:{required_count:required.length,required_studio_sourced:required_results.filter(x=>x.source==='studio_export').length,studio_compile_count:compile_results.filter(x=>x.compiled_ok).length,studio_definition_count:compile_results.length,production_embedded_count:production_embedded.length,passed:errors.length===0,errors}};
+ return{schema_version:'1.1.0',build:'GA-B469',generated_at:new Date().toISOString(),test:{id:'TAG-FORMAL-RUNTIME-REGRESSION-001',mode:'formal_runtime_environment_separation'},source:{status:studioSkillBridge.status,url:studioSkillBridge.source_url,data_version:studioSkillBridge.data_version,generated_by:studioSkillBridge.generated_by,imported_count:imported.length},required_results,production_results,validation_results,dependency_audit:{production_embedded_ids:production_embedded,studio_production_ids:production.map(x=>x.id),studio_validation_ids:validation.map(x=>x.id)},summary:{required_count:required.length,required_studio_sourced:required_results.filter(x=>x.source==='studio_export'&&x.environment==='production').length,production_compile_count:production_results.filter(x=>x.compiled_ok).length,production_definition_count:production_results.length,validation_expected_rejection_count:validation_results.filter(x=>x.validation_passed).length,validation_definition_count:validation_results.length,production_embedded_count:production_embedded.length,passed:errors.length===0,errors}};
 }
-function downloadFormalRuntimeRegressionJson(){const report=buildFormalRuntimeRegressionReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-formal-runtime-regression-GA-B468-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function downloadFormalRuntimeRegressionJson(){const report=buildFormalRuntimeRegressionReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-formal-runtime-regression-GA-B469-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
 const TAG_LOGIC_ORDER=['ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','SHIELD','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -1371,9 +1376,9 @@ function buildModifierValidationReport(){
  for(const id of targetIds){const transitions=(actualByTarget[id]||[]).map(x=>[x.tick,x.after]);if(JSON.stringify(transitions)!==JSON.stringify(meta.expectedTransitions))errors.push(`${id} 実効値遷移不一致: ${JSON.stringify(transitions)}/${JSON.stringify(meta.expectedTransitions)}`)}
  for(const t of targets)if(ensureModifierStackList(t).length!==0)errors.push(`${t.id} にmodifierスタックが残っています`);
  if(battle.actions!==0)errors.push(`通常AI行動が混入しました: ${battle.actions}`);
- return{schema_version:'1.1.0',build:'GA-B468',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',start_tick:meta.startTick,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{kind:meta.kind,stat:'ATK',source_id:meta.actorId,target_ids:targetIds,range:meta.range||'single',applications:meta.applications},events,final_state:{targets:targets.map(t=>({target_id:t.id,target_alive:t.alive,active_modifier_stacks:ensureModifierStackList(t).length,effective_power:effectiveModifierPower(t,meta.kind,'ATK'),effective_attack:effectiveAttackValue(t)}))},summary:{target_count:targetIds.length,modifier_stacks_added:added.reduce((n,x)=>n+(x.count||1),0),modifier_stacks_expired:expired.length,effective_transitions_by_target:actualByTarget,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
+ return{schema_version:'1.1.0',build:'GA-B469',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',start_tick:meta.startTick,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{kind:meta.kind,stat:'ATK',source_id:meta.actorId,target_ids:targetIds,range:meta.range||'single',applications:meta.applications},events,final_state:{targets:targets.map(t=>({target_id:t.id,target_alive:t.alive,active_modifier_stacks:ensureModifierStackList(t).length,effective_power:effectiveModifierPower(t,meta.kind,'ATK'),effective_attack:effectiveAttackValue(t)}))},summary:{target_count:targetIds.length,modifier_stacks_added:added.reduce((n,x)=>n+(x.count||1),0),modifier_stacks_expired:expired.length,effective_transitions_by_target:actualByTarget,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
 }
-function downloadModifierValidationJson(){const report=buildModifierValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-modifier-validation-GA-B468-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function downloadModifierValidationJson(){const report=buildModifierValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-modifier-validation-GA-B469-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
 function formatModifierValidationSummary(report){const s=report.summary;return `[MODIFIER JSON TEST] ${s.passed?'PASS':'FAIL'}
 [Tick] ${report.test.start_tick} -> ${report.test.end_tick}
 [TARGETS] ${s.target_count}
@@ -1386,7 +1391,7 @@ function runModifierHighestValidation(kind,{all=false}={}){
  const targetSide=kind==='BUFF'?actor.side:battle.units.find(x=>x.side!==actor.side)?.side||'敵',targets=all?ensureValidationTargets(targetSide,3):[kind==='BUFF'?actor:battle.units.find(x=>x.alive&&x.side!==actor.side)].filter(Boolean);if(!targets.length){$('tagTestResult').textContent='[MODIFIER TEST] FAILED / 対象がありません';return}
  targets.forEach(t=>t.modifierStacks=[]);battle.validationMode=true;battle.validationEvents=[];battle.actions=0;
  const prefix=kind==='BUFF'?(all?'SKL-TEST-BUFF-ALL-':'SKL-TEST-BUFF-'):(all?'SKL-TEST-DEBUFF-ALL-':'SKL-TEST-DEBUFF-'),skills=[findTagSkill(prefix+'10'),findTagSkill(prefix+'30'),findTagSkill(prefix+'20')],applications=[{tick:0,power:10,duration:1000},{tick:100,power:30,duration:500},{tick:200,power:20,duration:1000}],testId=`TAG-${kind}-${all?'ALL-':' '}HIGHEST-001`.replace(' ','');
- battle.validationMeta={kind,testId,startTick:0,requestedTicks:1200,actorId:actor.id,targetId:targets[0].id,targetIds:targets.map(x=>x.id),range:all?'all':'single',applications,expectedTransitions:[[0,10],[100,30],[600,20],[1200,0]]};recordValidationEvent('test_started',{build:'GA-B468',test_id:testId,target_ids:targets.map(x=>x.id)});
+ battle.validationMeta={kind,testId,startTick:0,requestedTicks:1200,actorId:actor.id,targetId:targets[0].id,targetIds:targets.map(x=>x.id),range:all?'all':'single',applications,expectedTransitions:[[0,10],[100,30],[600,20],[1200,0]]};recordValidationEvent('test_started',{build:'GA-B469',test_id:testId,target_ids:targets.map(x=>x.id)});
  let result=executeTaggedSkill(actor,targets[0],skills[0]);processTicks(100);result=executeTaggedSkill(actor,targets[0],skills[1]);processTicks(100);result=executeTaggedSkill(actor,targets[0],skills[2]);processTicks(1000);recordValidationEvent('test_completed',{});renderBattle();const report=downloadModifierValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled)+`
 ${formatModifierValidationSummary(report)}`;
 }
@@ -1409,21 +1414,21 @@ function buildModifierDeathValidationReport(){
   if(target&&ensureModifierStackList(target).length!==0)errors.push('自然終了後もmodifierが残っています');
  }
  if(battle.actions!==0)errors.push(`通常AI行動が混入しました: ${battle.actions}`);
- return{schema_version:'1.2.0',build:'GA-B468',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',lifecycle_mode:meta.mode,start_tick:meta.startTick,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{kind:'BUFF',stat:'ATK',source_id:meta.actorId,target_id:meta.targetId,death_tick:meta.deathTick,policy:meta.mode==='source_death'?'grant_persists_until_expiry':'target_death_clears_all'},events,final_state:{source_alive:source?.alive??null,target_alive:target?.alive??null,target_active_modifier_stacks:target?ensureModifierStackList(target).length:null,target_effective_power:target?effectiveModifierPower(target,'BUFF','ATK'):null},summary:{modifier_stacks_cleared_on_death:cleared.length,death_cleanup_events:cleanup.length,modifier_stacks_expired:expired.length,source_defeated_events:sourceDefeated.length,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
+ return{schema_version:'1.2.0',build:'GA-B469',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',lifecycle_mode:meta.mode,start_tick:meta.startTick,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{kind:'BUFF',stat:'ATK',source_id:meta.actorId,target_id:meta.targetId,death_tick:meta.deathTick,policy:meta.mode==='source_death'?'grant_persists_until_expiry':'target_death_clears_all'},events,final_state:{source_alive:source?.alive??null,target_alive:target?.alive??null,target_active_modifier_stacks:target?ensureModifierStackList(target).length:null,target_effective_power:target?effectiveModifierPower(target,'BUFF','ATK'):null},summary:{modifier_stacks_cleared_on_death:cleared.length,death_cleanup_events:cleanup.length,modifier_stacks_expired:expired.length,source_defeated_events:sourceDefeated.length,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
 }
-function downloadModifierDeathValidationJson(){const report=buildModifierDeathValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-modifier-death-validation-GA-B468-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function downloadModifierDeathValidationJson(){const report=buildModifierDeathValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-modifier-death-validation-GA-B469-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
 function formatModifierDeathSummary(report){const s=report.summary;return `[MODIFIER DEATH JSON TEST] ${s.passed?'PASS':'FAIL'}\n[MODE] ${report.test.lifecycle_mode}\n[Tick] ${report.test.start_tick} -> ${report.test.end_tick}\n[CLEARED] ${s.modifier_stacks_cleared_on_death}\n[EXPIRED] ${s.modifier_stacks_expired}\n[AI ACTIONS] ${s.normal_ai_actions}\n[ERRORS] ${s.errors.length}${s.errors.length?'\n'+s.errors.map(x=>' - '+x).join('\n'):''}`}
 function defeatUnitForModifierValidation(unit,cause){if(!unit?.alive)return;unit.hp=0;unit.alive=false;unit.gauge=0;unit.reservedAction=null;const cleared=clearModifierStacksOnDeath(unit,{cause});const persistent=recordModifierSourceDefeated(unit);recordValidationEvent('unit_defeated',{target_id:unit.id,cause,cleared_modifier_stacks:cleared,persistent_granted_stacks:persistent})}
 function runModifierTargetDeathValidation(){
  pauseBattle();resetBattle();const actor=battle.units.find(x=>x.alive&&x.side==='味方'),target=battle.units.find(x=>x.alive&&x.side==='敵');if(!actor||!target){$('tagTestResult').textContent='[MODIFIER DEATH TEST] FAILED / 使用者または対象がありません';return}
  target.modifierStacks=[];battle.validationMode=true;battle.validationEvents=[];battle.actions=0;modifierStackSequence=0;
- const skills=[findTagSkill('SKL-TEST-DEBUFF-10'),findTagSkill('SKL-TEST-DEBUFF-30'),findTagSkill('SKL-TEST-DEBUFF-20')];battle.validationMeta={mode:'target_death',testId:'TAG-MODIFIER-TARGET-DEATH-001',startTick:0,requestedTicks:1200,deathTick:300,actorId:actor.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B468',test_id:battle.validationMeta.testId});
+ const skills=[findTagSkill('SKL-TEST-DEBUFF-10'),findTagSkill('SKL-TEST-DEBUFF-30'),findTagSkill('SKL-TEST-DEBUFF-20')];battle.validationMeta={mode:'target_death',testId:'TAG-MODIFIER-TARGET-DEATH-001',startTick:0,requestedTicks:1200,deathTick:300,actorId:actor.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B469',test_id:battle.validationMeta.testId});
  let result=executeTaggedSkill(actor,target,skills[0]);processTicks(100);executeTaggedSkill(actor,target,skills[1]);processTicks(100);executeTaggedSkill(actor,target,skills[2]);processTicks(100);defeatUnitForModifierValidation(target,'validation_target_death');processTicks(900);recordValidationEvent('test_completed',{});renderBattle();const report=downloadModifierDeathValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled)+`\n${formatModifierDeathSummary(report)}`;
 }
 function runModifierSourceDeathValidation(){
  pauseBattle();resetBattle();const source=battle.units.find(x=>x.alive&&x.side==='味方'),target=ensureValidationTargets('味方',2).find(x=>x.id!==source?.id);if(!source||!target){$('tagTestResult').textContent='[MODIFIER SOURCE TEST] FAILED / 使用者または対象がありません';return}
  source.modifierStacks=[];target.modifierStacks=[];battle.validationMode=true;battle.validationEvents=[];battle.actions=0;modifierStackSequence=0;
- const skill=findTagSkill('SKL-TEST-BUFF-10');battle.validationMeta={mode:'source_death',testId:'TAG-MODIFIER-SOURCE-DEATH-001',startTick:0,requestedTicks:1200,deathTick:200,actorId:source.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B468',test_id:battle.validationMeta.testId});
+ const skill=findTagSkill('SKL-TEST-BUFF-10');battle.validationMeta={mode:'source_death',testId:'TAG-MODIFIER-SOURCE-DEATH-001',startTick:0,requestedTicks:1200,deathTick:200,actorId:source.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B469',test_id:battle.validationMeta.testId});
  const result=executeTaggedSkill(source,target,skill);processTicks(200);defeatUnitForModifierValidation(source,'validation_source_death');processTicks(1000);recordValidationEvent('test_completed',{});renderBattle();const report=downloadModifierDeathValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled)+`\n${formatModifierDeathSummary(report)}`;
 }
 function buildConditionalFollowUpValidationReport(){
@@ -1436,13 +1441,13 @@ function buildConditionalFollowUpValidationReport(){
  if(followDamage.length!==1)errors.push(`連携ダメージ回数不一致: ${followDamage.length}/1`);
  if(blocked.length!==1)errors.push(`多重連鎖防止イベント不一致: ${blocked.length}/1`);
  if(battle.actions!==0)errors.push(`通常AI行動が混入しました: ${battle.actions}`);
- return{schema_version:'1.3.0',build:'GA-B468',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',start_tick:0,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{trigger:'ALLY_ATTACK',condition:'POISONED',initiator_id:meta.initiatorId,follower_id:meta.followerId,target_id:meta.targetId,follow_up_skill_id:'SKL-TEST-FOLLOW-POISON'},events,final_state:{target_hp:battle.units.find(x=>x.id===meta.targetId)?.hp??null,target_alive:battle.units.find(x=>x.id===meta.targetId)?.alive??null},summary:{follow_up_triggered:triggered.length,condition_skipped:skipped.length,follow_up_damage_events:followDamage.length,chain_blocked:blocked.length,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
+ return{schema_version:'1.3.0',build:'GA-B469',generated_at:new Date().toISOString(),test:{id:meta.testId,mode:'isolated',start_tick:0,end_tick:battle.tick,requested_ticks:meta.requestedTicks},input:{trigger:'ALLY_ATTACK',condition:'POISONED',initiator_id:meta.initiatorId,follower_id:meta.followerId,target_id:meta.targetId,follow_up_skill_id:'SKL-TEST-FOLLOW-POISON'},events,final_state:{target_hp:battle.units.find(x=>x.id===meta.targetId)?.hp??null,target_alive:battle.units.find(x=>x.id===meta.targetId)?.alive??null},summary:{follow_up_triggered:triggered.length,condition_skipped:skipped.length,follow_up_damage_events:followDamage.length,chain_blocked:blocked.length,normal_ai_actions:battle.actions,passed:errors.length===0,errors}};
 }
-function downloadConditionalFollowUpValidationJson(){const report=buildConditionalFollowUpValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-follow-up-validation-GA-B468-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
+function downloadConditionalFollowUpValidationJson(){const report=buildConditionalFollowUpValidationReport(),blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-follow-up-validation-GA-B469-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);return report}
 function runConditionalFollowUpValidation(){
  pauseBattle();resetBattle();const allies=ensureValidationTargets('味方',3),initiator=allies[0],follower=allies[1],target=battle.units.find(x=>x.alive&&x.side==='敵');if(!initiator||!follower||!target){$('tagTestResult').textContent='[FOLLOW UP TEST] FAILED / 必要ユニットがありません';return}
  battle.validationMode=true;battle.validationEvents=[];battle.actions=0;dotStackSequence=0;follower.followUpSkillIds=['SKL-TEST-FOLLOW-POISON'];target.maxHp=Math.max(target.maxHp,5000);target.hp=target.maxHp;target.dotStacks=[];
- battle.validationMeta={testId:'TAG-FOLLOW-UP-POISONED-001',requestedTicks:10,initiatorId:initiator.id,followerId:follower.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B468',test_id:battle.validationMeta.testId});
+ battle.validationMeta={testId:'TAG-FOLLOW-UP-POISONED-001',requestedTicks:10,initiatorId:initiator.id,followerId:follower.id,targetId:target.id};recordValidationEvent('test_started',{build:'GA-B469',test_id:battle.validationMeta.testId});
  executeTaggedSkill(initiator,target,findTagSkill('SKL-TEST-ATTACK'));processTicks(5);
  applyTaggedDot(initiator,target,compileTaggedSkill(findTagSkill('SKL-TEST-POISON')));executeTaggedSkill(initiator,target,findTagSkill('SKL-TEST-ATTACK'));processTicks(5);
  recordValidationEvent('test_completed',{});renderBattle();const report=downloadConditionalFollowUpValidationJson();$('tagTestResult').textContent=`[FOLLOW UP JSON TEST] ${report.summary.passed?'PASS':'FAIL'}\n[TRIGGERED] ${report.summary.follow_up_triggered}\n[SKIPPED] ${report.summary.condition_skipped}\n[DAMAGE] ${report.summary.follow_up_damage_events}\n[CHAIN BLOCKED] ${report.summary.chain_blocked}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`;
@@ -1464,7 +1469,7 @@ function setupTagSkillTestUI(){
   target.maxHp=Math.max(target.maxHp,5000);target.hp=target.maxHp;target.alive=true;
   battle.validationMode=true;battle.validationEvents=[];battle.actions=0;
   battle.validationMeta={testId,startTick:battle.tick,requestedTicks,skillId:skill.id,actorId:actor.id,targetId:target.id,tags:[...(skill.tags||[])],dotPower:compiled.definition.parameters.dotPower,dotDuration:compiled.definition.parameters.dotDuration,dotInterval:compiled.definition.parameters.dotInterval,stackGain:compiled.definition.parameters.stackGain,expectedStacks,expectedRejects,expectedAttackCount:executionCount,initialState:{target_hp:target.hp,target_alive:target.alive,active_dot_stacks:target.dotStacks?.length||0}};
-  recordValidationEvent('test_started',{build:'GA-B468',test_id:testId});
+  recordValidationEvent('test_started',{build:'GA-B469',test_id:testId});
   let lastResult=null;
   for(let i=0;i<executionCount;i++){lastResult=executeTaggedSkill(actor,target,skill,{manual:false});if(!lastResult.ok)recordValidationEvent('error',{message:lastResult.reason||lastResult.stage||'execute failed',execution_index:i})}
   processTicks(requestedTicks);recordValidationEvent('test_completed',{});renderBattle();const report=downloadValidationJson();$('tagTestResult').textContent=formatCompileResult(lastResult?.compiled||compiled)+`\n${formatValidationSummary(report)}`;
@@ -1482,7 +1487,7 @@ function setupTagSkillTestUI(){
   target.maxHp=Math.max(target.maxHp,5000);target.hp=target.maxHp;target.alive=true;
   battle.validationMode=true;battle.validationEvents=[];battle.actions=0;
   battle.validationMeta={testId:'TAG-DOT-STAGGERED-TIMER-001',startTick:0,requestedTicks:1600,skillId:skill.id,actorId:actor.id,targetId:target.id,tags:[...(skill.tags||[])],dotPower:compiled.definition.parameters.dotPower,dotDuration:compiled.definition.parameters.dotDuration,dotInterval:compiled.definition.parameters.dotInterval,stackGain:compiled.definition.parameters.stackGain,expectedStacks:3,expectedRejects:0,expectedAttackCount:3,expectedAddTicks:[0,250,600],expectedExpireTicks:[1000,1250,1600],initialState:{target_hp:target.hp,target_alive:target.alive,active_dot_stacks:0}};
-  recordValidationEvent('test_started',{build:'GA-B468',test_id:'TAG-DOT-STAGGERED-TIMER-001'});
+  recordValidationEvent('test_started',{build:'GA-B469',test_id:'TAG-DOT-STAGGERED-TIMER-001'});
   let results=[];
   results.push(executeTaggedSkill(actor,target,skill,{manual:false}));
   processTicks(250);results.push(executeTaggedSkill(actor,target,skill,{manual:false}));
@@ -1506,7 +1511,7 @@ function setupTagSkillTestUI(){
   target.maxHp=100;target.hp=100;target.alive=true;target.dotStacks=[];
   battle.validationMode=true;battle.validationEvents=[];battle.actions=0;
   battle.validationMeta={testId:'TAG-DOT-DEFEAT-001',startTick:0,requestedTicks:1000,skillId:skill.id,actorId:actor.id,targetId:target.id,tags:[...(skill.tags||[])],dotPower:compiled.definition.parameters.dotPower,dotDuration:compiled.definition.parameters.dotDuration,dotInterval:compiled.definition.parameters.dotInterval,stackGain:compiled.definition.parameters.stackGain,expectedStacks:1,expectedRejects:0,expectedAttackCount:1,expectedDotHits:3,expectedDotDamageTotal:52,expectedExpiredCount:0,expectedDefeatCount:1,expectedDefeatTick:300,expectedTargetAlive:false,initialState:{target_hp:100,target_alive:true,active_dot_stacks:0}};
-  recordValidationEvent('test_started',{build:'GA-B468',test_id:'TAG-DOT-DEFEAT-001'});
+  recordValidationEvent('test_started',{build:'GA-B469',test_id:'TAG-DOT-DEFEAT-001'});
   const result=executeTaggedSkill(actor,target,skill,{manual:false});
   if(!result.ok)recordValidationEvent('error',{message:result.reason||result.stage||'execute failed'});
   processTicks(1000);recordValidationEvent('test_completed',{});renderBattle();const report=downloadValidationJson();$('tagTestResult').textContent=formatCompileResult(result.compiled||compiled)+`\n${formatValidationSummary(report)}`;
@@ -1519,7 +1524,7 @@ function setupTagSkillTestUI(){
  if(runModifierSourceDeath)runModifierSourceDeath.onclick=runModifierSourceDeathValidation;
  if(runConditionalFollowUp)runConditionalFollowUp.onclick=runConditionalFollowUpValidation;
  if(runStudioBridge)runStudioBridge.onclick=async()=>{if(studioSkillBridge.status!=='loaded')await loadStudioSkillDefinitions();const report=downloadStudioBridgeValidationJson();$('tagTestResult').textContent=`[STUDIO BRIDGE] ${report.summary.passed?'PASS':'FAIL'}\n[STATUS] ${report.source.status}\n[IMPORTED] ${report.source.imported_count}\n[STUDIO SOURCED] ${report.summary.studio_sourced_count}/${report.summary.required_count}\n[COMPILED] ${report.summary.compiled_count}/${report.summary.required_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`};
- if(runFormalRegression)runFormalRegression.onclick=async()=>{if(studioSkillBridge.status!=='loaded')await loadStudioSkillDefinitions();const report=downloadFormalRuntimeRegressionJson();$('tagTestResult').textContent=`[FORMAL REGRESSION] ${report.summary.passed?'PASS':'FAIL'}\n[STATUS] ${report.source.status}\n[STUDIO DEFINITIONS] ${report.summary.studio_compile_count}/${report.summary.studio_definition_count}\n[REQUIRED STUDIO] ${report.summary.required_studio_sourced}/${report.summary.required_count}\n[EMBEDDED PRODUCTION] ${report.summary.production_embedded_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`};
+ if(runFormalRegression)runFormalRegression.onclick=async()=>{if(studioSkillBridge.status!=='loaded')await loadStudioSkillDefinitions();const report=downloadFormalRuntimeRegressionJson();$('tagTestResult').textContent=`[FORMAL REGRESSION] ${report.summary.passed?'PASS':'FAIL'}\n[STATUS] ${report.source.status}\n[PRODUCTION DEFINITIONS] ${report.summary.production_compile_count}/${report.summary.production_definition_count}\n[VALIDATION REJECTIONS] ${report.summary.validation_expected_rejection_count}/${report.summary.validation_definition_count}\n[REQUIRED STUDIO] ${report.summary.required_studio_sourced}/${report.summary.required_count}\n[EMBEDDED PRODUCTION] ${report.summary.production_embedded_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`};
  if(exportJson)exportJson.onclick=()=>{const report=battle.validationMeta?.kind?downloadModifierValidationJson():downloadValidationJson();$('tagTestResult').textContent=`${$('tagTestResult').textContent}\n[JSON] 出力完了 / ${report.summary.passed?'PASS':'FAIL'}`};
  populateTagSkillTestUI();
 }
@@ -1844,8 +1849,8 @@ try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(r
 <script id="build448-mobile-polish">
 (function(){
   const BUILD='448';
-  document.querySelectorAll('.sub').forEach(el=>{if(/BUILD4[0-9]{2}|Build 4[0-9]{2}|Mobile One-Tap|Mobile Quick Actions/i.test(el.textContent))el.textContent='GA-B468 — Formal Runtime Regression';});
-  const tv=document.querySelector('.title-version'); if(tv) tv.textContent='V9 / GA-B468';
+  document.querySelectorAll('.sub').forEach(el=>{if(/BUILD4[0-9]{2}|Build 4[0-9]{2}|Mobile One-Tap|Mobile Quick Actions/i.test(el.textContent))el.textContent='GA-B469 — Formal Runtime Environment Separation';});
+  const tv=document.querySelector('.title-version'); if(tv) tv.textContent='V9 / GA-B469';
   const eventOptions=document.querySelector('.event-options');
   if(eventOptions && !document.getElementById('eventScout')){
     const scout=document.createElement('button'); scout.id='eventScout'; scout.className='event-choice-scout'; scout.textContent='敵の様子を確認する';
@@ -1872,7 +1877,7 @@ try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(r
   if(typeof originalPrepare==='function'){
     window.prepareEvent=function(){originalPrepare();const notice=document.getElementById('eventNotice');if(notice)notice.textContent='行動を1つ選んでください。敵情報や戦利品候補を確認してから戦闘できます。';};
   }
-  try{if(window.data){data.gameVersion='GA-B468';if(typeof persist==='function')persist();}}catch(_e){}
+  try{if(window.data){data.gameVersion='GA-B469';if(typeof persist==='function')persist();}}catch(_e){}
 })();
 
 function renderCharacterEquipment(){
