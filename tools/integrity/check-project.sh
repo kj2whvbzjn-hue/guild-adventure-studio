@@ -5,9 +5,6 @@ fail=0
 required=(
   "index.html"
   "studio/index.html"
-  "apps/index.html"
-  "apps/game/index.html"
-  "apps/studio/index.html"
   "export-core.js"
   "bootstrap-core.js"
   "bootstrap-ui.js"
@@ -15,7 +12,6 @@ required=(
   "manifest.webmanifest"
   "sw.js"
   "project-data.json"
-  "VERSION.txt"
 )
 for file in "${required[@]}"; do
   if [[ ! -s "$ROOT/$file" ]]; then
@@ -41,8 +37,6 @@ for rel in ['project-data.json','manifest.webmanifest','package_manifest.json','
 print('JSON_OK')
 PY
 
-grep -q 'index.html' "$ROOT/apps/game/index.html" || { echo 'GAME_REDIRECT_INVALID'; fail=1; }
-grep -q 'studio' "$ROOT/apps/studio/index.html" || { echo 'STUDIO_REDIRECT_INVALID'; fail=1; }
 python3 "$ROOT/tools/integrity/check-html-links.py" "$ROOT" || fail=1
 python3 "$ROOT/tools/integrity/audit-organization.py" "$ROOT" || fail=1
 

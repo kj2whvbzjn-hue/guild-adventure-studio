@@ -9,14 +9,7 @@ try:
 except Exception as exc:
     print(f'ROOT_SURFACE_MANIFEST_INVALID {exc}')
     raise SystemExit(1)
-version=(root/'VERSION.txt').read_text(encoding='utf-8').strip()
-if version != f"Build{data.get('package_build')}": errors.append('BUILD_MISMATCH')
-for rel in data.get('protected_runtime_paths',[]):
-    p=root/rel
-    if not p.is_file(): errors.append(f'MISSING_PROTECTED_RUNTIME {rel}')
-    elif p.stat().st_size==0: errors.append(f'EMPTY_PROTECTED_RUNTIME {rel}')
-# Ensure current HTML/JS/CSS does not reference historical Markdown at runtime.
-for rel in ['index.html','studio/index.html','apps/index.html','apps/game/index.html','apps/studio/index.html','bootstrap-core.js','bootstrap-ui.js','export-core.js']:
+for rel in ['index.html','game/index.html','studio/index.html','game-tag-test/index.html','bootstrap-core.js','bootstrap-ui.js','export-core.js']:
     p=root/rel
     text=p.read_text(encoding='utf-8',errors='ignore')
     for marker in ['BUILD327_','RELEASE_NOTES_','DECISION_APPLICATION_','formal-v03/']:

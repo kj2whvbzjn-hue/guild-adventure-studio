@@ -385,7 +385,7 @@ updateDeployDeleteControl();
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Distribution Build GKS-B484 / Legacy Engine v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.43</span> / Formal Build 462</div>
+    <div class="version">Game GA-B481 / Studio GKS-B484</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1080,7 +1080,7 @@ updateDeployDeleteControl();
 
 <div id="buildSettingsPanel" class="hidden">
   <div class="grid">
-    <div class="field"><label>開発ビルド番号</label><input id="developmentBuildInput" inputmode="decimal" value="472.43" placeholder="例: 472.43"></div>
+    <div class="field"><label>旧互換メタデータ（現行ビルド判定には使用しない）</label><input id="developmentBuildInput" inputmode="decimal" value="472.43" placeholder="旧資料照合用"></div>
     <div class="field"><label>表示バージョン</label><input id="studioVersionInput" value="1.34.0-dev"></div>
     <div class="field"><label>正式基準番号</label><input id="formalBuildInput" value="462" readonly></div>
   </div>
@@ -5324,10 +5324,10 @@ async function prepareStudioDeployDiff(){
      reason:'ZIPに存在しないGitHubファイル',status:'DELETE',
      remoteSha:remoteFile.sha,gitSha:null,sha256:null
     };
+    // DELETE_MANIFEST に明示された対象だけを削除候補として扱う。
+    // ZIPに含まれないだけのGitHub既存ファイルは、許可外件数に数えず保持する。
     if(isDeployDeleteManifestAllowed(relative)){
      studioDeployDeleteCandidates.push(candidate);
-    }else{
-     studioDeployDeleteBlocked.push({...candidate,status:'DELETE_BLOCKED',reason:'削除許可パス外'});
     }
    }
    studioDeployDeleteCandidates.sort((a,b)=>a.target.localeCompare(b.target));

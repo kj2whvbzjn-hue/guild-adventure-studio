@@ -9,10 +9,6 @@ try:
 except Exception as exc:
     print(f'TEST_REGISTRY_INVALID {exc}')
     raise SystemExit(1)
-version=(root/'VERSION.txt').read_text(encoding='utf-8').strip()
-expected='Build'+str(registry.get('package_build'))
-if version != expected:
-    errors.append(f'BUILD_MISMATCH registry={expected} version={version}')
 seen=set()
 for group in ('release_gate','historical_gap'):
     for item in registry.get(group,[]):

@@ -44,7 +44,7 @@ echo "SYNTAX_CHECK_PASS"
 echo "[5/6] GITHUB_CHECK"
 python3 "$ROOT/tools/integrity/check-deployment-map.py" "$ROOT"
 python3 "$ROOT/tools/release/check-github-candidate.py"
-BUILD_NUM="$(sed -n 's/^Build//p' "$ROOT/VERSION.txt")"
+BUILD_NUM="$(sed -n 's/.*gameBuild: "GA-B\([0-9][0-9]*\)".*/\1/p' "$ROOT/assets/shared/config/runtime-config.js")"
 PUBLIC_ZIP="$ROOT/release-output/GKS-GITHUB-B${BUILD_NUM}.zip"
 python3 "$ROOT/tools/release/build-github-pages-package.py" --output "$PUBLIC_ZIP"
 python3 - "$PUBLIC_ZIP" <<'PY3'

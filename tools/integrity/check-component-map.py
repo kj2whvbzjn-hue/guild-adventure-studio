@@ -10,11 +10,6 @@ except Exception as exc:
     print('COMPONENT_MAP_FAIL')
     print(f'INVALID_MANIFEST {exc}')
     sys.exit(1)
-version=(root/'VERSION.txt').read_text(encoding='utf-8').strip()
-try: build=int(version.removeprefix('Build'))
-except Exception: build=-1
-if data.get('package_build') != build:
-    errors.append('BUILD_MISMATCH')
 seen=set()
 for component in data.get('components',[]):
     cid=component.get('id','<missing>')

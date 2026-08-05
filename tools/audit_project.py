@@ -20,7 +20,6 @@ if jp.exists() and cp.exists():
         for k in cd[0].keys() if cd else []:
             if str(a.get(k,''))!=str(b.get(k,'')): errors.append(f'DECISION_FIELD_MISMATCH {a.get("id")} {k}')
 # build consistency
-version=(root/'VERSION.txt').read_text(encoding='utf-8')
 m=re.search(r'Build\s+(\d+)',version); build=m.group(1) if m else None
 su=json.loads((root/'studio-update.json').read_text(encoding='utf-8'))
 if build!=str(su.get('build')): errors.append('BUILD_VERSION_STUDIO_UPDATE_MISMATCH')
@@ -36,7 +35,6 @@ for p in root.rglob('*'):
         errors.append(f'PACKAGE_GENERATED_ARTIFACT {p.relative_to(root)}')
 # README build consistency
 readme=(root/'README.md').read_text(encoding='utf-8')
-rm=re.search(r'Formal Build\s+(\d+)',readme)
 if not rm or rm.group(1)!=build: errors.append('README_BUILD_MISMATCH')
 
 # formal release manifest consistency

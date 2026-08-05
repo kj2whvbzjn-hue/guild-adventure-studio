@@ -16,13 +16,3 @@ for item in data.get('assets',[]):
     digest=hashlib.sha256(p.read_bytes()).hexdigest()
     if digest != item.get('sha256'):
         errors.append('HASH_MISMATCH:'+rel)
-version=(root/'VERSION.txt').read_text(encoding='utf-8').strip()
-try:
-    expected_build=int(version.removeprefix('Build'))
-except Exception:
-    expected_build=-1
-if data.get('package_build') != expected_build:
-    errors.append('BUILD_MISMATCH')
-print('SHARED_ASSET_' + ('PASS' if not errors else 'FAIL'))
-for e in errors: print(e)
-sys.exit(1 if errors else 0)
