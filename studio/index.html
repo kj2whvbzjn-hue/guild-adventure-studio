@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio v1.42.0</title>
+<title>GK Studio GKS-B476</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -372,15 +372,24 @@ updateDeployDeleteControl();
   <script src="export-core.js?v=333"></script>
 </head>
 <body>
+<style id="ga-project-nav-style">
+.ga-project-nav{position:relative;z-index:9999;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#101827;color:#fff;font:13px/1.4 system-ui,-apple-system,sans-serif;border-bottom:1px solid rgba(255,255,255,.14)}
+.ga-project-nav a{color:#fff;text-decoration:none;padding:5px 9px;border:1px solid rgba(255,255,255,.25);border-radius:7px;background:rgba(255,255,255,.07)}
+.ga-project-nav a[aria-current="page"]{background:#fff;color:#101827;font-weight:700}
+.ga-project-nav .build{margin-left:auto;opacity:.8}
+@media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
+</style>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../game-tag-test/">タグ検証</a><a href="../docs/">資料</a><span class="build">GA-B473 / GKS-B476</span></nav>
+
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">GK Studio v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.43</span> / Formal Build 462</div>
+    <div class="version">Distribution Build GKS-B476 / Legacy Engine v1.32.0-dev / Development Build <span id="developmentBuildLabel">472.43</span> / Formal Build 462</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
-    <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=453'">ゲームタイトル</button>
+    <button onclick="window.location.href='../game/?entry=studio&amp;phase=title&amp;build=473'">ゲームタイトル</button>
     <button type="button" onclick="openBuildSettings()">ビルド設定</button>
     <button class="desktop-only" onclick="saveLocal()">端末保存</button>
     <button id="installBtn" class="desktop-only hidden">アプリをインストール</button>
@@ -1921,6 +1930,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.42.0';
+const DISTRIBUTION_BUILD='GKS-B476';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4511,7 +4521,7 @@ function exportImplementationReport(){
 const PHP_EXPORT_SCHEMA_VERSION=GKExportCore.SCHEMA_VERSION;
 const PHP_EXPORT_PATHS=GKExportCore.EXPORT_PATHS;
 function buildPhpExportData(){return GKExportCore.buildData(data);}
-function phpExportEnvelope(payload,dataVersion,generatedAt){return GKExportCore.envelope(payload,dataVersion,generatedAt,APP_VERSION);}
+function phpExportEnvelope(payload,dataVersion,generatedAt){return GKExportCore.envelope(payload,dataVersion,generatedAt,DISTRIBUTION_BUILD);}
 function validateExportIds(path,payload,issues){
  if(!Array.isArray(payload))return;
  const ids=new Set();
@@ -4813,7 +4823,7 @@ async function exportPhpPackage(){
   schema_version:PHP_EXPORT_SCHEMA_VERSION,
   data_version:dataVersion,
   generated_at:generatedAt,
-  generated_by:'GK Studio v'+APP_VERSION,
+  generated_by:'GK Studio '+DISTRIBUTION_BUILD,
   files:manifestFiles
  };
  writer.addJson('manifest.json',manifest);
@@ -5510,7 +5520,7 @@ async function downloadDeployAuditZip(){
   preparedAt:studioDeployPlan?.preparedAt||null,packageVersion:expectedDeployMarker()||null,
   changes:(studioDeployPlan?.changes||[]).map(f=>({path:f.target,status:f.status,size:f.size,sha256:f.sha256,gitBlobSha:f.gitSha}))
  };
- const payload={schema_version:'1.0',generated_at:new Date().toISOString(),generated_by:`GK Studio v${APP_VERSION}`,token_saved:false,deletion_count:0,force_update:false,...result};
+ const payload={schema_version:'1.0',generated_at:new Date().toISOString(),generated_by:`GK Studio ${DISTRIBUTION_BUILD}`,token_saved:false,deletion_count:0,force_update:false,...result};
  const shaLines=(payload.changes||[]).map(x=>`${x.sha256||'-'}  ${x.path}`).join('\n')+'\n';
  const log=document.getElementById('deployLog')?.textContent||'';
  const summary=[
@@ -6674,7 +6684,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=474',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=476',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);

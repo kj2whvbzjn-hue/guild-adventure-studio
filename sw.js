@@ -1,12 +1,12 @@
-const CACHE_NAME="ga-root-b471";
+const CACHE_NAME="ga-root-b473";
 const CACHE_PREFIX="ga-root-";
-const OFFLINE_URL='./index.html?appv=471';
+const OFFLINE_URL='./index.html?appv=473';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=471",
-  "./manifest.webmanifest?v=471",
-  "./icon-192.png?v=471",
-  "./icon-512.png?v=471"
+  "./index.html?appv=473",
+  "./manifest.webmanifest?v=473",
+  "./icon-192.png?v=473",
+  "./icon-512.png?v=473"
 ];
 
 self.addEventListener('install',event=>{
