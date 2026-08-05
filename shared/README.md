@@ -1,13 +1,12 @@
 # Shared
 
-ゲームとStudioの両方から利用する共通処理の配置先です。
+ゲームとStudioが共通利用する設定、依存関係、検査定義、公開パッケージ定義を配置します。
 
-現時点の共通候補:
-- `../export-core.js`
-- `../jszip.min.js`
-- `../bootstrap-core.js`
-- `../bootstrap-ui.js`
-- `../bootstrap-ui.css`
-- `../schemas/`
+主な内容:
+- `assets/` — 共通画像とアセットマニフェスト
+- `dependencies/` — コンポーネント、配置、ランタイム境界
+- `integrity/` — 重要ファイルとルート構成の検査定義
+- `release/` — GitHub Pages向け公開候補定義
+- `tests/` — テスト登録情報
 
-BUILD425では参照切れを避けるため移動していません。移動時は旧パスに互換ローダーを残します。
+実行コードの正本を複製せず、共通化は参照先と検査を更新しながら行います。

@@ -209,15 +209,3 @@ DEC-0030により、Commit成功後のPages自動確認と、Tokenを含まな�
 
 ## Build335 / DEC-0033
 Build334の開発フェーズを再監査し、外部認証なしで進められるP0作業としてローカル事前検査を強化しました。配布物への `__pycache__`、`.pyc`、`.tmp` 混入とREADME・更新メタデータのBuild不一致を監査で拒否します。実Repository配置、100件超・1,000件規模性能試験、書込み失敗時の安全な再開は外部環境または追加設計が必要な継続項目です。
-
-## BUILD425 内部分類
-
-スマホ中心の開発とGitHub Pages互換を維持するため、ゲームとStudioの分類入口を追加しました。
-
-- ゲーム（従来URL）: `index.html`
-- Studio（従来URL）: `studio/`
-- 分類後ゲーム入口: `apps/game/`
-- 分類後Studio入口: `apps/studio/`
-- 構造説明: `docs/architecture/PROJECT_STRUCTURE.md`
-
-現段階では安全のため実装本体を大規模移動せず、既存リンクを維持しています。
