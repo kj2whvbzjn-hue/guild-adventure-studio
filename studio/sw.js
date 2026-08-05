@@ -1,11 +1,12 @@
-const CACHE_NAME='guild-adventure-v003-build454';
-const OFFLINE_URL='./index.html?appv=453';
+const CACHE_NAME="gks-studio-b474";
+const CACHE_PREFIX="gks-studio-";
+const OFFLINE_URL='./index.html?appv=474';
 const APP_SHELL=[
-  './',
-  './index.html?appv=453',
-  './manifest.webmanifest?v=453',
-  './icon-192.png?v=453',
-  './icon-512.png?v=453'
+  "./",
+  "./index.html?appv=474",
+  "./manifest.webmanifest?v=474",
+  "./icon-192.png?v=474",
+  "./icon-512.png?v=474"
 ];
 
 self.addEventListener('install',event=>{
@@ -18,7 +19,11 @@ self.addEventListener('install',event=>{
 self.addEventListener('activate',event=>{
   event.waitUntil(
     caches.keys()
-      .then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key))))
+      .then(keys=>Promise.all(
+        keys
+          .filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE_NAME)
+          .map(key=>caches.delete(key))
+      ))
       .then(()=>self.clients.claim())
   );
 });

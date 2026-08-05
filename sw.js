@@ -1,11 +1,12 @@
-const CACHE_NAME='guild-adventure-build455';
-const OFFLINE_URL='./index.html?appv=455';
+const CACHE_NAME="ga-root-b471";
+const CACHE_PREFIX="ga-root-";
+const OFFLINE_URL='./index.html?appv=471';
 const APP_SHELL=[
-  './',
-  './index.html?appv=455',
-  './manifest.webmanifest?v=455',
-  './icon-192.png?v=455',
-  './icon-512.png?v=455'
+  "./",
+  "./index.html?appv=471",
+  "./manifest.webmanifest?v=471",
+  "./icon-192.png?v=471",
+  "./icon-512.png?v=471"
 ];
 
 self.addEventListener('install',event=>{
@@ -18,7 +19,11 @@ self.addEventListener('install',event=>{
 self.addEventListener('activate',event=>{
   event.waitUntil(
     caches.keys()
-      .then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key))))
+      .then(keys=>Promise.all(
+        keys
+          .filter(key=>key.startsWith(CACHE_PREFIX)&&key!==CACHE_NAME)
+          .map(key=>caches.delete(key))
+      ))
       .then(()=>self.clients.claim())
   );
 });
