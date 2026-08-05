@@ -1,23 +1,19 @@
-# GA-B462 GitHub反映
+# GA-B463 GitHub反映
 
-リポジトリ直下へ、このZIPの内容を上書きしてください。
+基準: GA-B462正式統合版
 
-## 変更対象
-- `game/index.html`
-- `game/sw.js`
-- `tests/test_tag_skill_ga_b462.js`
+変更対象:
+- `guild-adventure-studio-main/game/index.html`
+- `guild-adventure-studio-main/game/sw.js`
 
-## ビルド
-- Studio: GKS-B473（変更なし）
-- 実ゲーム: GA-B462
-- タグ検証画面: GA-B460（変更なし）
+反映内容:
+- 単体BUFF／DEBUFFタグ実行
+- 複数スタックの独立保持
+- 同一能力値では最高強度のみ実効
+- 最高値終了後の次点への切替
+- 全スタック終了後の原値復帰
+- BUFF／DEBUFF専用JSON検証
+- Service Workerキャッシュ GA-B463
 
-## 実装
-- 冒険者詳細からスキル装着画面へ遷移
-- 所持スキル一覧と装着状態表示
-- 毒斬りを含むスキルの装着・保存
-- 旧セーブデータへのスキル初期値補完
-- 戦闘ユニットへ装着スキルIDを引き渡し
-- AI予約・実行時に装着スキルを使用
-
-確認URL: `https://kj2whvbzjn-hue.github.io/guild-adventure-studio/game/?v=462`
+確認URL:
+`https://kj2whvbzjn-hue.github.io/guild-adventure-studio/game/?v=463`
