@@ -161,7 +161,7 @@ async function searchFiles(query,limit){
 
 async function getHandover(){
   const manifest=await loadManifest();
-  const preferred=manifest.handoverFiles||['BUILD335_PHASE_AND_PLAN_STATUS.md','DECISION_LOG.md','README.md'];
+  const preferred=manifest.handoverFiles||['README.md','studio-update.json','package-build.json'];
   const files=[];
   for(const path of preferred){
     if(manifest.allowedFiles.includes(path))files.push(await getFile(path));
