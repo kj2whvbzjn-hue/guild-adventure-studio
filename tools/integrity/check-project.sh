@@ -30,7 +30,7 @@ fi
 python3 - "$ROOT" <<'PY'
 import json, pathlib, sys
 root = pathlib.Path(sys.argv[1])
-for rel in ['project-data.json','manifest.webmanifest','package_manifest.json','BUILD424_CHANGE_MANIFEST.json']:
+for rel in ['project-data.json','manifest.webmanifest','package_manifest.json','package-build.json','studio-update.json','shared/integrity/critical-runtime-manifest.json']:
     p=root/rel
     if p.exists():
         with p.open(encoding='utf-8') as f: json.load(f)

@@ -5,10 +5,12 @@ import hashlib, json, re, sys
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
+args = sys.argv[1:]
+root_arg = next((arg for arg in args if not arg.startswith('--')), '.')
+ROOT = Path(root_arg).resolve()
+WRITE_REPORTS = '--write' in args
 OUT_JSON = ROOT / 'reports/organization-audit.json'
 OUT_MD = ROOT / 'reports/organization-audit.md'
-ARCHIVE_PREFIXES = ('formal-', 'legacy-home')
 GENERATED_NAMES = {'ARTIFACT_SHA256SUMS.txt','SHA256SUMS.txt'}
 TEXT_EXTS = {'.html','.js','.css','.json','.md','.txt','.py','.sh','.php','.csv','.webmanifest'}
 
@@ -22,10 +24,8 @@ def category(rel: Path) -> str:
     first=rel.parts[0] if rel.parts else ''
     if first == 'studio': return 'studio-runtime'
     if first == 'game' or rel.as_posix() == 'index.html': return 'game-runtime'
-    if first == 'apps': return 'entrypoints'
     if first in {'shared','data'}: return first
     if first in {'tools','tests'}: return 'verification'
-    if first.startswith(ARCHIVE_PREFIXES) or first == 'legacy-home': return 'archive'
     if rel.suffix.lower() in {'.md','.txt'} or rel.name.startswith(('BUILD','RELEASE','DECISION','AUDIT','WORK_REPORT')): return 'documentation'
     return 'root-or-support'
 
@@ -55,7 +55,7 @@ unused_candidates=[]
 for rec in files:
     rel=Path(rec['path'])
     if rec['category'] not in {'root-or-support','documentation'}: continue
-    if rel.name in GENERATED_NAMES or rel.name in {'index.html','VERSION.txt','README.md'}: continue
+    if rel.name in GENERATED_NAMES or rel.name in {'index.html','README.md','DELETE_MANIFEST.txt'}: continue
     # Only mark as candidate if basename is unique enough and absent elsewhere.
     if len(rel.name) >= 8 and len(re.findall(re.escape(rel.name), text)) <= 1:
         unused_candidates.append({'path':rec['path'],'bytes':rec['bytes'],'reason':'filename not referenced by other scanned text; review only'})
@@ -77,8 +77,6 @@ report={
    'notes':'Candidates and duplicates are informational; no automatic deletion is authorized.'
  }
 }
-OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-OUT_JSON.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 lines=['# Organization Audit','',
        'This is a non-destructive inventory. No files were deleted or moved.','',
        '## Category summary','', '| Category | Files | Bytes |','|---|---:|---:|']
@@ -93,5 +91,8 @@ lines += ['',f"## Unused review candidates: {len(unused_candidates)}",'',
 for u in unused_candidates[:40]: lines.append(f"- `{u['path']}` ({u['bytes']} bytes)")
 if len(unused_candidates)>40: lines.append(f"- …and {len(unused_candidates)-40} more candidates; see JSON report.")
 lines += ['','## Safety result','','- Deleted files: 0','- Runtime files moved: 0','- Existing public URLs changed: no','']
-OUT_MD.write_text('\n'.join(lines),encoding='utf-8')
-print(f"ORGANIZATION_AUDIT_OK files={len(files)} duplicate_groups={len(duplicates)} candidates={len(unused_candidates)}")
+if WRITE_REPORTS:
+    OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
+    OUT_JSON.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    OUT_MD.write_text('\n'.join(lines),encoding='utf-8')
+print(f"ORGANIZATION_AUDIT_OK files={len(files)} duplicate_groups={len(duplicates)} candidates={len(unused_candidates)} reports_written={str(WRITE_REPORTS).lower()}")

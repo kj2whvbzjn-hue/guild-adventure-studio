@@ -9,11 +9,17 @@ try:
 except Exception as exc:
     print(f'ROOT_SURFACE_MANIFEST_INVALID {exc}')
     raise SystemExit(1)
-for rel in ['index.html','game/index.html','studio/index.html','game-tag-test/index.html','bootstrap-core.js','bootstrap-ui.js','export-core.js']:
+for rel in data.get('protected_runtime_paths', []):
     p=root/rel
+    if not p.is_file():
+        errors.append(f'PROTECTED_RUNTIME_MISSING {rel}')
+        continue
+    if p.suffix.lower() not in {'.html','.js','.css','.json','.webmanifest','.txt'}:
+        continue
     text=p.read_text(encoding='utf-8',errors='ignore')
-    for marker in ['BUILD327_','RELEASE_NOTES_','DECISION_APPLICATION_','formal-v03/']:
-        if marker in text: errors.append(f'HISTORICAL_RUNTIME_REFERENCE {rel} -> {marker}')
+    for marker in data.get('forbidden_runtime_references', []):
+        if marker in text:
+            errors.append(f'HISTORICAL_RUNTIME_REFERENCE {rel} -> {marker}')
 if errors:
     print('ROOT_SURFACE_CONTRACT_FAIL')
     for e in errors: print(e)
