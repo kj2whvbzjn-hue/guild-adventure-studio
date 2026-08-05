@@ -1,12 +1,12 @@
-const CACHE_NAME="gks-studio-b477";
+const CACHE_NAME="gks-studio-b478";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=477';
+const OFFLINE_URL='./index.html?appv=478';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=477",
-  "./manifest.webmanifest?v=477",
-  "./icon-192.png?v=477",
-  "./icon-512.png?v=477"
+  "./index.html?appv=478",
+  "./manifest.webmanifest?v=478",
+  "./icon-192.png?v=478",
+  "./icon-512.png?v=478"
 ];
 
 self.addEventListener('install',event=>{
