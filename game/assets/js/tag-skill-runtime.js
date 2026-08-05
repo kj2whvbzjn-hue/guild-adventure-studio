@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime extracted without logic changes — GA-B476 */
+/* Tag skill compiler/runtime — GA-B480 / P01-01 HEAL */
 const TAG_LOGIC_ORDER=['ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','SHIELD','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -26,6 +26,9 @@ function compileTaggedSkill(skill){
  if(g.has('ランダム')&&!n.RANDOM_COUNT)errors.push('ランダムにはRANDOM_COUNTが必要です');
  if(g.has('ATTACK')&&!n.DAMAGE)errors.push('ATTACKにはDAMAGEが必要です');
  if(n.DAMAGE&&(!Number.isFinite(n.DAMAGE.value)||n.DAMAGE.value<0))errors.push('DAMAGEは0以上の有限数が必要です');
+ if(g.has('HEAL')&&!n.HEAL)errors.push('HEALにはHEAL数値タグが必要です');
+ if(n.HEAL&&(!Number.isFinite(n.HEAL.value)||n.HEAL.value<=0))errors.push('HEALは0より大きい有限数が必要です');
+ if(g.has('HEAL')&&!hasAnyTag(g,['自分','味方']))errors.push('HEALの対象は自分または味方が必要です');
  if(g.has('DOT')){
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN'])if(!n[key])errors.push(`DOTには${key}が必要です`);
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN']){const v=n[key]?.value;if(v!=null&&(!Number.isFinite(v)||v<=0))errors.push(`${key}は0より大きい有限数が必要です`)}
@@ -43,7 +46,7 @@ function compileTaggedSkill(skill){
  const targetSide=g.has('敵')?'enemy':g.has('味方')?'ally':g.has('自分')?'self':g.has('死体')?'corpse':g.has('地点')?'point':null;
  const range=g.has('単体')?'single':g.has('全体')?'all':g.has('前列')?'front':g.has('後列')?'back':g.has('ランダム')?'random':g.has('貫通')?'pierce':null;
  const damageType=g.has('物理')?'physical':g.has('魔法')?'magical':g.has('固定')?'fixed':null;
- return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,parameters:{damageType,damage:n.DAMAGE?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,modifierStat:['ATK','DEF','AGI','VIT','INT','DEX','LUK'].find(x=>g.has(x))||null,modifierPower:n.POWER?.value??null,modifierDuration:n.DURATION?.value??null,followUpTrigger:g.has('TRIGGER_ALLY_ATTACK')?'ALLY_ATTACK':null,followUpCondition:g.has('CONDITION_POISONED')?'POISONED':null},sourceTags:[...(skill?.tags||[])]},parsed};
+ return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,parameters:{damageType,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,modifierStat:['ATK','DEF','AGI','VIT','INT','DEX','LUK'].find(x=>g.has(x))||null,modifierPower:n.POWER?.value??null,modifierDuration:n.DURATION?.value??null,followUpTrigger:g.has('TRIGGER_ALLY_ATTACK')?'ALLY_ATTACK':null,followUpCondition:g.has('CONDITION_POISONED')?'POISONED':null},sourceTags:[...(skill?.tags||[])]},parsed};
 }
 function findTagSkill(skillId){return TAG_SKILLS.find(x=>x.id===skillId)||null}
 function formatCompileResult(result){
@@ -132,6 +135,15 @@ function applyTaggedDamage(attacker,target,damage,skill){
  if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;clearModifierStacksOnDeath(target,{cause:'tagged_attack',sourceId:attacker.id});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
  finishIfNeeded();return{ok:true,damage:applied,beforeHp:before,afterHp:target.hp};
 }
+function applyTaggedHeal(source,target,compiled){
+ if(!target?.alive)return{ok:false,reason:'回復対象が無効です'};
+ const requested=Math.max(0,Math.floor(Number(compiled.definition.parameters.heal)||0)),before=target.hp;
+ target.hp=Math.min(target.maxHp,target.hp+requested);
+ const applied=target.hp-before,overheal=Math.max(0,requested-applied);
+ battle.log.push(`[Tick ${battle.tick}] [TAG][HEAL] ${source.name}の${compiled.definition.name} → ${target.name}を${applied}回復（HEAL=${requested}, HP ${before}→${target.hp}/${target.maxHp}${overheal?`, 超過${overheal}`:''}）`);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('heal',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,requested,applied,overheal,hp_before:before,hp_after:target.hp,max_hp:target.maxHp});
+ return{ok:true,requested,healed:applied,overheal,beforeHp:before,afterHp:target.hp};
+}
 const DOT_STACK_TYPES={poison:{id:'poison',label:'毒',maxStack:5}};
 let dotStackSequence=0;
 function resolveDotType(compiled){if(compiled.parsed?.generalTags?.has('毒属性'))return DOT_STACK_TYPES.poison;return{id:'generic-dot',label:'DOT',maxStack:5}}
@@ -166,21 +178,22 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[];
  for(const resolvedTarget of resolved.targets){
-  let attackResult=null,dotResult=null,modifierResult=null,followUpResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
+  let attackResult=null,healResult=null,dotResult=null,modifierResult=null,followUpResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
   for(const logic of compiled.definition.logicOrder){
    if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
+   else if(logic==='HEAL'){healResult=applyTaggedHeal(actor,resolvedTarget,compiled)}
    else if(logic==='DOT'){if(!attackSucceeded)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ATTACK不成立のためDOT付与をスキップ`);else if(!resolvedTarget.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] 対象戦闘不能のためDOT付与をスキップ`);else dotResult=applyTaggedDot(actor,resolvedTarget,compiled)}
    else if(logic==='FOLLOW_UP'){followUpResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}
    else if(logic==='BUFF'||logic==='DEBUFF'){modifierResult=applyTaggedModifier(actor,resolvedTarget,compiled,logic)}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
-  targetResults.push({targetId:resolvedTarget.id,attackResult,dotResult,modifierResult,followUpResult});
+  targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,dotResult,modifierResult,followUpResult});
   if(attackResult?.ok&&!isFollowUp)dispatchConditionalFollowUps(actor,resolvedTarget,{trigger:'ALLY_ATTACK',originSkillId:compiled.definition.id});
   else if(followUpResult?.ok&&isFollowUp)recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN'});
  }
  if(manual)renderBattle();
  const first=targetResults[0]||{};
- return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,dotResult:first.dotResult,modifierResult:first.modifierResult,followUpResult:first.followUpResult};
+ return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,dotResult:first.dotResult,modifierResult:first.modifierResult,followUpResult:first.followUpResult};
 }
 function dispatchConditionalFollowUps(initiator,target,event){
  if(!initiator?.alive||!target?.alive||event?.trigger!=='ALLY_ATTACK')return[];

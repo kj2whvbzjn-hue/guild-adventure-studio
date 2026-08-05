@@ -26,6 +26,9 @@ function compileTaggedSkill(skill){
  if(g.has('ランダム')&&!n.RANDOM_COUNT)errors.push('ランダムにはRANDOM_COUNTが必要です');
  if(g.has('ATTACK')&&!n.DAMAGE)errors.push('ATTACKにはDAMAGEが必要です');
  if(n.DAMAGE&&(!Number.isFinite(n.DAMAGE.value)||n.DAMAGE.value<0))errors.push('DAMAGEは0以上の有限数が必要です');
+ if(g.has('HEAL')&&!n.HEAL)errors.push('HEALにはHEAL数値タグが必要です');
+ if(n.HEAL&&(!Number.isFinite(n.HEAL.value)||n.HEAL.value<=0))errors.push('HEALは0より大きい有限数が必要です');
+ if(g.has('HEAL')&&!hasAnyTag(g,['自分','味方']))errors.push('HEALの対象は自分または味方が必要です');
  if(g.has('DOT')){
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN'])if(!n[key])errors.push(`DOTには${key}が必要です`);
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN']){const v=n[key]?.value;if(v!=null&&(!Number.isFinite(v)||v<=0))errors.push(`${key}は0より大きい有限数が必要です`)}
@@ -33,7 +36,7 @@ function compileTaggedSkill(skill){
  const targetSide=g.has('敵')?'enemy':g.has('味方')?'ally':g.has('自分')?'self':g.has('死体')?'corpse':g.has('地点')?'point':null;
  const range=g.has('単体')?'single':g.has('全体')?'all':g.has('前列')?'front':g.has('後列')?'back':g.has('ランダム')?'random':g.has('貫通')?'pierce':null;
  const damageType=g.has('物理')?'physical':g.has('魔法')?'magical':g.has('固定')?'fixed':null;
- return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,parameters:{damageType,damage:n.DAMAGE?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null},sourceTags:[...(skill?.tags||[])]},parsed};
+ return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,parameters:{damageType,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null},sourceTags:[...(skill?.tags||[])]},parsed};
 }
 function findTagSkill(skillId){return TAG_SKILLS.find(x=>x.id===skillId)||null}
 function formatCompileResult(result){
@@ -51,14 +54,21 @@ function formatCompileResult(result){
   `[RESULT] ${result.ok?'VALID':'INVALID'}`
  ].join('\n');
 }
-function resolveTaggedTarget(actor,target,definition){
- if(!actor||!actor.alive)return{ok:false,reason:'使用者が無効です'};
- if(!target||!target.alive)return{ok:false,reason:'対象が無効です'};
- if(definition.target.side==='enemy'&&target.side===actor.side)return{ok:false,reason:'敵対象タグに対して味方を選択しています'};
- if(definition.target.side==='ally'&&target.side!==actor.side)return{ok:false,reason:'味方対象タグに対して敵を選択しています'};
- if(definition.target.side==='self'&&target.id!==actor.id)return{ok:false,reason:'自分対象ですが使用者以外が選択されています'};
- if(definition.target.range!=='single')return{ok:false,reason:`Sprint 1では範囲 ${definition.target.range} は未対応です`};
- return{ok:true,target};
+function resolveTaggedTargets(actor,target,definition){
+ if(!actor||!actor.alive)return{ok:false,reason:'使用者が無効です',targets:[]};
+ const side=definition.target.side,range=definition.target.range;
+ let candidates=[];
+ if(side==='self')candidates=[actor];
+ else if(side==='ally')candidates=battle.units.filter(x=>x.alive&&x.side===actor.side);
+ else if(side==='enemy')candidates=battle.units.filter(x=>x.alive&&x.side!==actor.side);
+ else return{ok:false,reason:'対象陣営タグがありません',targets:[]};
+ if(range==='single'){
+  if(!target||!target.alive)return{ok:false,reason:'対象が無効です',targets:[]};
+  if(!candidates.some(x=>x.id===target.id))return{ok:false,reason:'対象陣営タグと選択対象が一致しません',targets:[]};
+  candidates=[target];
+ }else if(range!=='all')return{ok:false,reason:`範囲 ${range} は未対応です`,targets:[]};
+ if(!candidates.length)return{ok:false,reason:'有効な対象がありません',targets:[]};
+ return{ok:true,targets:candidates};
 }
 function calculateTaggedAttackDamage(attacker,definition){
  const rate=Number(definition.parameters.damage);
@@ -72,6 +82,15 @@ function applyTaggedDamage(attacker,target,damage,skill){
  battle.log.push(`[Tick ${battle.tick}] [TAG][ATTACK] ${attacker.name}の${skill.name} → ${target.name}に${applied}ダメージ（DAMAGE=${skill.parameters.damage}, 残HP ${target.hp}/${target.maxHp}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('attack',{source_id:attacker.id,target_id:target.id,skill_id:skill.id,damage:applied,hp_before:before,hp_after:target.hp});
  if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
  finishIfNeeded();return{ok:true,damage:applied,beforeHp:before,afterHp:target.hp};
+}
+function applyTaggedHeal(source,target,compiled){
+ if(!target?.alive)return{ok:false,reason:'回復対象が無効です'};
+ const requested=Math.max(0,Math.floor(Number(compiled.definition.parameters.heal)||0)),before=target.hp;
+ target.hp=Math.min(target.maxHp,target.hp+requested);
+ const applied=target.hp-before,overheal=Math.max(0,requested-applied);
+ battle.log.push(`[Tick ${battle.tick}] [TAG][HEAL] ${source.name}の${compiled.definition.name} → ${target.name}を${applied}回復（HEAL=${requested}, HP ${before}→${target.hp}/${target.maxHp}${overheal?`, 超過${overheal}`:''}）`);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('heal',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,requested,applied,overheal,hp_before:before,hp_after:target.hp,max_hp:target.maxHp});
+ return{ok:true,requested,healed:applied,overheal,beforeHp:before,afterHp:target.hp};
 }
 const DOT_STACK_TYPES={poison:{id:'poison',label:'毒',maxStack:5}};
 let dotStackSequence=0;
@@ -103,13 +122,20 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false}={}){
  const compiled=compileTaggedSkill(skillSource);
  battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);
  if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
- const resolved=resolveTaggedTarget(actor,target,compiled.definition);
+ const resolved=resolveTaggedTargets(actor,target,compiled.definition);
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
- let attackResult=null,dotResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
- for(const logic of compiled.definition.logicOrder){
-  if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolved.target,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
-  else if(logic==='DOT'){if(!attackSucceeded)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ATTACK不成立のためDOT付与をスキップ`);else if(!resolved.target.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] 対象戦闘不能のためDOT付与をスキップ`);else dotResult=applyTaggedDot(actor,resolved.target,compiled)}
-  else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
+ const targetResults=[];
+ for(const resolvedTarget of resolved.targets){
+  let attackResult=null,healResult=null,dotResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
+  for(const logic of compiled.definition.logicOrder){
+   if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
+   else if(logic==='HEAL'){healResult=applyTaggedHeal(actor,resolvedTarget,compiled)}
+   else if(logic==='DOT'){if(!attackSucceeded)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ATTACK不成立のためDOT付与をスキップ`);else if(!resolvedTarget.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] 対象戦闘不能のためDOT付与をスキップ`);else dotResult=applyTaggedDot(actor,resolvedTarget,compiled)}
+   else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
+  }
+  targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,dotResult});
  }
- if(manual)renderBattle();return{ok:true,compiled,attackResult,dotResult};
+ if(manual)renderBattle();
+ const first=targetResults[0]||{};
+ return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,dotResult:first.dotResult};
 }
