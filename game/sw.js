@@ -1,12 +1,12 @@
-const CACHE_NAME='guild-adventure-ga-b467';
-const OFFLINE_URL='./index.html?appv=467';
+const CACHE_NAME='guild-adventure-ga-b468';
+const OFFLINE_URL='./index.html?appv=468';
 const APP_SHELL=[
   './',
-  './index.html?appv=467',
-  './manifest.webmanifest?v=467',
-  './icon-192.png?v=467',
-  './icon-512.png?v=467',
-  '../Export/skill/skills.json?v=467'
+  './index.html?appv=468',
+  './manifest.webmanifest?v=468',
+  './icon-192.png?v=468',
+  './icon-512.png?v=468',
+  '../Export/skill/skills.json?v=468'
 ];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('guild-adventure-')&&key!==CACHE_NAME).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
