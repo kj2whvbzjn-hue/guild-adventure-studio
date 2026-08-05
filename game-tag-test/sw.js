@@ -1,22 +1,23 @@
-const CACHE_NAME="ga-tag-test-b480";
+const CACHE_NAME="ga-tag-test-b481";
 const CACHE_PREFIX="ga-tag-test-";
-const OFFLINE_URL='./index.html?appv=480';
+const OFFLINE_URL='./index.html?appv=481';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=480",
-  "./manifest.webmanifest?v=480",
-  "./icon-192.png?v=480",
-  "./icon-512.png?v=480"
+  "./index.html?appv=481",
+  "./manifest.webmanifest?v=481",
+  "./icon-192.png?v=481",
+  "./icon-512.png?v=481"
 ,
-  "../assets/shared/config/runtime-config.js?v=480",
-  "../assets/shared/js/game-shell-common.js?v=480"
+  "../assets/shared/config/runtime-config.js?v=481",
+  "../assets/shared/js/game-shell-common.js?v=481",
+  "../assets/shared/js/page-identity-guard.js?v=481"
 ,
-  "./assets/js/validation-runtime.js?v=480"
+  "./assets/js/validation-runtime.js?v=481"
 ,
-  "./assets/js/tag-skill-runtime.js?v=480"
+  "./assets/js/tag-skill-runtime.js?v=481"
 ,
-  "./assets/js/battle-control.js?v=480",
-  "./assets/js/ui-bootstrap.js?v=480"
+  "./assets/js/battle-control.js?v=481",
+  "./assets/js/ui-bootstrap.js?v=481"
 ];
 
 self.addEventListener('install',event=>{
