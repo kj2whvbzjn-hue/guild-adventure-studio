@@ -5130,11 +5130,14 @@ function joinDeployPath(base,path){
  const b=normalizeDeployPath(path);
  return a?`${a}/${b}`:b;
 }
+function isAllowedRootDotfile(path){
+ return normalizeDeployPath(path)==='.gitignore';
+}
 function isUnsafeDeployPath(path){
  const normalized=normalizeDeployPath(path);
  const parts=normalized.split('/');
  const lower=normalized.toLowerCase();
- return parts.some(p=>!p||p==='.'||p==='..'||(p.startsWith('.')&&p!=='.gitignore')) ||
+ return parts.some(p=>!p||p==='.'||p==='..'||(p.startsWith('.')&&!isAllowedRootDotfile(normalized))) ||
   parts.includes('.git') || parts.includes('.github') ||
   /(^|\/)(\.env|id_rsa|id_ed25519|.*\.(pem|key|p12|pfx))$/i.test(normalized) ||
   /(token|secret|credential|private[-_ ]?key)/i.test(lower);
