@@ -197,6 +197,14 @@ def main() -> int:
 
     started = time.time()
     results = []
+    if args.input_zip and context == "source":
+        results.append(run_step(
+            "source_zip_binding",
+            [sys.executable, str(ROOT / "tools/inspection/check-source-zip-binding.py"),
+             str(ROOT), "--input-zip", str(args.input_zip.resolve()),
+             "--json-output", str(evidence_dir / "source-zip-binding.json")],
+            required=True, timeout_seconds=args.timeout, env=env,
+        ))
     setup_error = None
     try:
         steps = build_steps(args.profile, release_output, context)

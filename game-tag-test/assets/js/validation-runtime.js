@@ -610,84 +610,8 @@ function runHealAllValidation(){
  renderBattle();
 }
 
-function cloneHealValidationUnit(unit){
- return unit?{id:unit.id,name:unit.name,side:unit.side,hp:unit.hp,max_hp:unit.maxHp,alive:!!unit.alive}:null;
-}
-function makeHealValidationCase({id,label,initialState,events,finalState,expectations,errors,result}){
- return{id,label,initial_state:initialState,events,final_state:finalState,expectations,result,passed:errors.length===0,errors};
-}
-function runHealDeviceJsonValidation(){
- pauseBattle();
- const cases=[];
- const runCase=(id,label,executor)=>{
-  resetBattle();battle.validationMode=true;battle.validationEvents=[];battle.actions=0;
-  try{cases.push(executor())}catch(error){cases.push(makeHealValidationCase({id,label,initialState:null,events:[...(battle.validationEvents||[])],finalState:null,expectations:{},result:null,errors:[String(error?.stack||error)]}))}
- };
- runCase('HEAL-SINGLE','単体回復',()=>{
-  const actor=battle.units.find(x=>x.alive&&x.side==='味方');
-  const target=battle.units.find(x=>x.alive&&x.side==='味方'&&x.id!==actor?.id);
-  const skill=findTagSkill('SKL-TEST-HEAL-100'),errors=[];
-  if(!actor||!target||!skill)errors.push('必要な使用者・対象・スキルがありません');
-  if(errors.length)return makeHealValidationCase({id:'HEAL-SINGLE',label:'単体回復',initialState:null,events:[],finalState:null,expectations:{},result:null,errors});
-  target.hp=Math.max(1,target.maxHp-50);
-  const initial={actor:cloneHealValidationUnit(actor),target:cloneHealValidationUnit(target),skill:{id:skill.id,tags:[...(skill.tags||[])]}};
-  const result=executeTaggedSkill(actor,target,skill),finalState={actor:cloneHealValidationUnit(actor),target:cloneHealValidationUnit(target)};
-  if(!result.ok)errors.push(`実行失敗: ${result.reason||result.stage||'unknown'}`);
-  if(finalState.target.hp!==finalState.target.max_hp)errors.push(`最大HP到達不一致: ${finalState.target.hp}/${finalState.target.max_hp}`);
-  if(result.healResult?.healed!==50)errors.push(`実回復量不一致: ${result.healResult?.healed}/50`);
-  if(result.healResult?.overheal!==50)errors.push(`超過回復量不一致: ${result.healResult?.overheal}/50`);
-  return makeHealValidationCase({id:'HEAL-SINGLE',label:'単体回復',initialState:initial,events:[...(battle.validationEvents||[])],finalState,expectations:{healed:50,overheal:50,hp_capped_at_max:true},result,errors});
- });
- runCase('HEAL-ALL','味方全体回復',()=>{
-  const allies=battle.units.filter(x=>x.alive&&x.side==='味方'),actor=allies[0],skill=findTagSkill('SKL-TEST-HEAL-ALL-60'),errors=[];
-  if(!actor||allies.length<2||!skill)errors.push('必要な味方・使用者・スキルがありません');
-  if(errors.length)return makeHealValidationCase({id:'HEAL-ALL',label:'味方全体回復',initialState:null,events:[],finalState:null,expectations:{},result:null,errors});
-  allies.forEach((u,i)=>u.hp=Math.max(1,u.maxHp-(30+i*40)));
-  const initial={actor:cloneHealValidationUnit(actor),targets:allies.map(cloneHealValidationUnit),skill:{id:skill.id,tags:[...(skill.tags||[])]}};
-  const result=executeTaggedSkill(actor,allies[1],skill),finalState={targets:allies.map(cloneHealValidationUnit)};
-  if(!result.ok)errors.push(`実行失敗: ${result.reason||result.stage||'unknown'}`);
-  if(result.targets?.length!==allies.length)errors.push(`対象数不一致: ${result.targets?.length||0}/${allies.length}`);
-  finalState.targets.forEach((u,i)=>{const expected=Math.min(initial.targets[i].max_hp,initial.targets[i].hp+60);if(u.hp!==expected)errors.push(`${u.id} HP不一致: ${u.hp}/${expected}`)});
-  return makeHealValidationCase({id:'HEAL-ALL',label:'味方全体回復',initialState:initial,events:[...(battle.validationEvents||[])],finalState,expectations:{heal:60,target_count:allies.length,enemy_unchanged:true},result,errors});
- });
- runCase('HEAL-DEAD-REJECT','戦闘不能対象拒否',()=>{
-  const actor=battle.units.find(x=>x.alive&&x.side==='味方');
-  const target=battle.units.find(x=>x.alive&&x.side==='味方'&&x.id!==actor?.id);
-  const skill=findTagSkill('SKL-TEST-HEAL-100'),errors=[];
-  if(!actor||!target||!skill)errors.push('必要データがありません');
-  if(errors.length)return makeHealValidationCase({id:'HEAL-DEAD-REJECT',label:'戦闘不能対象拒否',initialState:null,events:[],finalState:null,expectations:{},result:null,errors});
-  target.hp=0;target.alive=false;
-  const initial={actor:cloneHealValidationUnit(actor),target:cloneHealValidationUnit(target)};
-  const result=executeTaggedSkill(actor,target,skill),finalState={target:cloneHealValidationUnit(target)};
-  if(result.ok)errors.push('戦闘不能対象への通常回復が成功しました');
-  if(target.hp!==0||target.alive)errors.push('戦闘不能対象の状態が変更されました');
-  return makeHealValidationCase({id:'HEAL-DEAD-REJECT',label:'戦闘不能対象拒否',initialState:initial,events:[...(battle.validationEvents||[])],finalState,expectations:{execution_ok:false,hp:0,alive:false},result,errors});
- });
- runCase('HEAL-ENEMY-REJECT','敵対象拒否',()=>{
-  const actor=battle.units.find(x=>x.alive&&x.side==='味方'),target=battle.units.find(x=>x.alive&&x.side==='敵'),skill=findTagSkill('SKL-TEST-HEAL-100'),errors=[];
-  if(!actor||!target||!skill)errors.push('必要データがありません');
-  if(errors.length)return makeHealValidationCase({id:'HEAL-ENEMY-REJECT',label:'敵対象拒否',initialState:null,events:[],finalState:null,expectations:{},result:null,errors});
-  target.hp=Math.max(1,target.maxHp-50);const initial={actor:cloneHealValidationUnit(actor),target:cloneHealValidationUnit(target)};
-  const result=executeTaggedSkill(actor,target,skill),finalState={target:cloneHealValidationUnit(target)};
-  if(result.ok)errors.push('味方用回復が敵対象へ成功しました');
-  if(finalState.target.hp!==initial.target.hp)errors.push('拒否後に敵HPが変化しました');
-  return makeHealValidationCase({id:'HEAL-ENEMY-REJECT',label:'敵対象拒否',initialState:initial,events:[...(battle.validationEvents||[])],finalState,expectations:{execution_ok:false,hp_unchanged:true},result,errors});
- });
- runCase('HEAL-INVALID-DATA-REJECT','不正回復データ拒否',()=>{
-  const errors=[],invalid={id:'SKL-INVALID-HEAL-0',name:'不正回復',tags:['HEAL','味方','単体','HEAL=0']},compiled=compileTaggedSkill(invalid);
-  if(compiled.ok)errors.push('HEAL=0の不正データがコンパイルを通過しました');
-  if(!compiled.errors.some(x=>x.includes('0より大きい')))errors.push('期待するHEAL値エラーがありません');
-  return makeHealValidationCase({id:'HEAL-INVALID-DATA-REJECT',label:'不正回復データ拒否',initialState:{skill:invalid},events:[],finalState:{compiled_ok:compiled.ok,compile_errors:[...compiled.errors]},expectations:{compiled_ok:false},result:compiled,errors});
- });
- const errors=cases.flatMap(c=>c.errors.map(message=>`${c.id}: ${message}`));
- const report={schema_version:'1.3.0',build:'GA-B482',generated_at:new Date().toISOString(),test:{id:'TAG-HEAL-DEVICE-001',mode:'device_validation',entrypoint:'game-tag-test/index.html',trigger:'tagTestRunHealJson'},cases,summary:{case_count:cases.length,passed_count:cases.filter(x=>x.passed).length,failed_count:cases.filter(x=>!x.passed).length,passed:errors.length===0,errors}};
- const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-heal-device-validation-GA-B482-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);
- $('tagTestResult').textContent=`[HEAL DEVICE JSON] ${report.summary.passed?'PASS':'FAIL'}\n[CASES] ${report.summary.passed_count}/${report.summary.case_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.map(x=>' - '+x).join('\n'):''}\n[JSON] 出力完了`;
- renderBattle();return report;
-}
-
 function setupTagSkillTestUI(){
- const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),runHealSingle=$('tagTestRunHealSingle'),runHealAll=$('tagTestRunHealAll'),runHealJson=$('tagTestRunHealJson'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
+ const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),runHealSingle=$('tagTestRunHealSingle'),runHealAll=$('tagTestRunHealAll'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
  execute.dataset.bound='1';
  actor.onchange=populateTagSkillTestUI;
  compile.onclick=()=>{const result=compileTaggedSkill(findTagSkill($('tagTestSkill').value));$('tagTestResult').textContent=formatCompileResult(result)};
@@ -760,7 +684,6 @@ function setupTagSkillTestUI(){
  if(runStudioBridge)runStudioBridge.onclick=()=>{$('tagTestResult').textContent='[INFO] Studio正式データ連携検証はゲーム側で実行してください。'};
  if(runHealSingle)runHealSingle.onclick=runHealSingleValidation;
  if(runHealAll)runHealAll.onclick=runHealAllValidation;
- if(runHealJson)runHealJson.onclick=runHealDeviceJsonValidation;
  if(runFormalRegression)runFormalRegression.onclick=()=>{$('tagTestResult').textContent='[INFO] 正式運用回帰検証はゲーム側で実行してください。'};
  if(exportJson)exportJson.onclick=()=>{const report=battle.validationMeta?.kind?downloadModifierValidationJson():downloadValidationJson();$('tagTestResult').textContent=`${$('tagTestResult').textContent}\n[JSON] 出力完了 / ${report.summary.passed?'PASS':'FAIL'}`};
  populateTagSkillTestUI();
