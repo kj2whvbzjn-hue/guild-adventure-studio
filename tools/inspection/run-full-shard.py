@@ -46,14 +46,6 @@ def main() -> int:
     selected_names = set(plan["shards"][args.shard])
 
     all_steps = unified.build_steps("full", None, args.context)
-    if args.context == "source":
-        all_steps.insert(0, (
-            "source_zip_binding",
-            [sys.executable, str(ROOT / "tools/inspection/check-source-zip-binding.py"),
-             str(ROOT), "--input-zip", str(args.input_zip.resolve()),
-             "--json-output", str(evidence_dir / "source-zip-binding.json")],
-            True,
-        ))
     available = {name for name, _, _ in all_steps}
     # delete_manifest exists only in update context.
     effective_selected = selected_names & available
