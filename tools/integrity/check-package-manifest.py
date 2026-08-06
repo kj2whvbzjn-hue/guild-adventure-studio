@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import sys
+sys.dont_write_bytecode = True
 from pathlib import Path
 import hashlib,json,sys
 root=Path(sys.argv[1] if len(sys.argv)>1 else Path(__file__).resolve().parents[2]).resolve();sys.path.insert(0,str(root/'tools/inspection'))

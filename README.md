@@ -126,3 +126,6 @@ AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業�
 
 ## システムファイル分類
 `docs/operations/SYSTEM_FILE_POLICY.md`を参照してください。
+
+## 証跡付き検査
+検査対象のSHA-256、ZIP名情報、検査前後のツリー差分は`docs/operations/FORENSIC_INSPECTION.md`に従って記録します。

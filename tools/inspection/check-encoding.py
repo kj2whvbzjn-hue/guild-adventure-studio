@@ -32,10 +32,10 @@ def main()->int:
  try:
   studio_text=studio_path.read_text(encoding='utf-8')
   required_markers=[
-   'decodeEscapedUnicodeFilename(value)',
+   'containsEscapedUnicodeFilename(value)',
    "normalize('NFC')",
    'ZIP_FILENAME_CANONICALIZED',
-   'invalidUploadNames'
+   'escapedUnicodeNames'
   ]
   for required in required_markers:
    if required not in studio_text:

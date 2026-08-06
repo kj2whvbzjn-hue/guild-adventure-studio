@@ -1,35 +1,58 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+import sys
+sys.dont_write_bytecode = True
+
 from pathlib import Path
-import json, subprocess, sys
-root=Path(sys.argv[1] if len(sys.argv)>1 else Path(__file__).resolve().parents[2])
-registry_path=root/'shared/tests/test-registry.json'
-errors=[]
+import json
+import os
+import subprocess
+
+root = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]).resolve()
+registry_path = root / "shared/tests/test-registry.json"
+errors = []
 try:
-    registry=json.loads(registry_path.read_text(encoding='utf-8'))
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
 except Exception as exc:
-    print(f'TEST_REGISTRY_INVALID {exc}')
+    print(f"TEST_REGISTRY_INVALID {exc}")
     raise SystemExit(1)
-seen=set()
-for group in ('release_gate','historical_gap'):
-    for item in registry.get(group,[]):
-        rel=item.get('path','')
-        if not rel or rel in seen: errors.append(f'DUPLICATE_OR_EMPTY {rel}')
+
+seen = set()
+for group in ("release_gate", "historical_gap"):
+    for item in registry.get(group, []):
+        rel = item.get("path", "")
+        if not rel or rel in seen:
+            errors.append(f"DUPLICATE_OR_EMPTY {rel}")
         seen.add(rel)
-        if not (root/rel).is_file(): errors.append(f'MISSING_TEST {rel}')
-for p in sorted((root/'tools').glob('test_*')):
-    rel=p.relative_to(root).as_posix()
-    if p.is_file() and p.suffix in ('.py','.js','.php') and rel not in seen:
-        errors.append(f'UNCLASSIFIED_TEST {rel}')
+        if not (root / rel).is_file():
+            errors.append(f"MISSING_TEST {rel}")
+for path in sorted((root / "tools").glob("test_*")):
+    rel = path.relative_to(root).as_posix()
+    if path.is_file() and path.suffix in (".py", ".js", ".php") and rel not in seen:
+        errors.append(f"UNCLASSIFIED_TEST {rel}")
 if errors:
-    print('\n'.join(errors)); raise SystemExit(1)
-passed=0
-for item in registry.get('release_gate',[]):
-    rel=item['path']; runtime=item['runtime']
-    proc=subprocess.run([runtime,str(root/rel)],cwd=root,text=True,capture_output=True)
+    print("\n".join(errors))
+    raise SystemExit(1)
+
+env = os.environ.copy()
+env["PYTHONDONTWRITEBYTECODE"] = "1"
+env.pop("PYTHONPYCACHEPREFIX", None)
+
+passed = 0
+for item in registry.get("release_gate", []):
+    rel = item["path"]
+    runtime = item["runtime"]
+    if runtime in ("python", "python3", "py"):
+        command = [sys.executable, "-B", str(root / rel)]
+    else:
+        command = [runtime, str(root / rel)]
+    proc = subprocess.run(command, cwd=root, env=env, text=True, capture_output=True)
     if proc.returncode:
-        print(f'RELEASE_TEST_FAIL {rel}')
-        if proc.stdout: print(proc.stdout.rstrip())
-        if proc.stderr: print(proc.stderr.rstrip())
+        print(f"RELEASE_TEST_FAIL {rel}")
+        if proc.stdout:
+            print(proc.stdout.rstrip())
+        if proc.stderr:
+            print(proc.stderr.rstrip())
         raise SystemExit(1)
-    passed+=1
-print(f'TEST_REGISTRY_OK release_gate={passed} historical_gap={len(registry.get("historical_gap",[]))}')
+    passed += 1
+print(f"TEST_REGISTRY_OK release_gate={passed} historical_gap={len(registry.get('historical_gap', []))}")

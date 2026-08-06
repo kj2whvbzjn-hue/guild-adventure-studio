@@ -52,3 +52,6 @@
 
 ## システムファイル分類
 `docs/operations/SYSTEM_FILE_POLICY.md`と機械ポリシーに従い、更新専用制御と成果物をGitHubへ配置しない。
+
+## 原因調査と検査証跡
+原因未確定の不具合へ推測変換や自動修復を加えない。`docs/operations/FORENSIC_INSPECTION.md`に従い、対象ZIPと検査結果を証跡で結び付ける。

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+import sys
+sys.dont_write_bytecode = True
 import argparse,json,sys
 from pathlib import Path
 from system_file_policy import classify,load_policy
