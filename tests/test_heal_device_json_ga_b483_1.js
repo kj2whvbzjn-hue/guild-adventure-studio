@@ -1,0 +1,11 @@
+const fs=require('fs');
+const assert=require('assert');
+const html=fs.readFileSync('game-tag-test/index.html','utf8');
+const runtime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
+const rootSw=fs.readFileSync('sw.js','utf8');
+assert(html.includes('id="tagTestRunHealJson"'),'回復JSON検証ボタンがありません');
+assert(runtime.includes("build:'GA-B483.1'"),'JSON buildがGA-B483.1ではありません');
+assert(runtime.includes('tag-heal-device-validation-GA-B483.1-'),'JSONファイル名がGA-B483.1ではありません');
+assert(runtime.includes('ensureHealValidationFixtures'),'回復検証fixtureがありません');
+assert(rootSw.includes('ga-root-b4831'),'ルートService Workerキャッシュが更新されていません');
+console.log('HEAL_DEVICE_JSON_GA_B483_1_OK');
