@@ -127,6 +127,7 @@ function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
   battle.tick++;
   processModifierStacks();
+  processShieldEffects();
   processDotStacks();
   if(battle.result||battle.pendingResult)break;
   if(battle.validationMode)continue;
