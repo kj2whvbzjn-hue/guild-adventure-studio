@@ -101,3 +101,14 @@ python3 tools/inspection/run.py full --context update
 
 `full`と`release`ではNode.jsとPHPが利用できない場合も失敗とします。`quick`のみ、実行環境がない構文検査を警告として扱います。
 一時ファイル、`__pycache__`、`.pyc`、`.tmp`、バックアップファイルが混入した場合は、どのコンテキストでも不合格になります。
+
+### 検査の停止対策
+
+各検査工程には既定120秒のタイムアウトがあります。外部ランタイムやテストが停止しても、検査全体が無期限に待機することはありません。
+
+```bash
+python3 tools/inspection/run.py full --context source --timeout 120
+python3 tools/inspection/run.py full --context update --fail-fast
+```
+
+`--timeout`は各工程の上限秒数、`--fail-fast`は最初の必須失敗で停止する指定です。タイムアウトは終了コード124としてレポートに記録されます。

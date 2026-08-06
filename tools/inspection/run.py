@@ -25,18 +25,34 @@ def command_available(name: str) -> bool:
     return shutil.which(name) is not None
 
 
-def run_step(name: str, command: list[str], *, required: bool = True) -> dict:
+def run_step(name: str, command: list[str], *, required: bool = True, timeout_seconds: int = 120) -> dict:
     started = time.time()
-    proc = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+    try:
+        proc = subprocess.run(
+            command, cwd=ROOT, text=True, capture_output=True, timeout=timeout_seconds
+        )
+        returncode = proc.returncode
+        stdout = proc.stdout.rstrip()
+        stderr = proc.stderr.rstrip()
+        timed_out = False
+    except subprocess.TimeoutExpired as exc:
+        returncode = 124
+        stdout = (exc.stdout or "").rstrip() if isinstance(exc.stdout, str) else ""
+        stderr = (exc.stderr or "").rstrip() if isinstance(exc.stderr, str) else ""
+        timed_out = True
+        timeout_message = f"inspection step timed out after {timeout_seconds} seconds"
+        stderr = f"{stderr}\n{timeout_message}".strip()
     result = {
         "name": name,
         "command": command,
         "required": required,
-        "status": "pass" if proc.returncode == 0 else ("fail" if required else "warn"),
-        "returncode": proc.returncode,
+        "status": "pass" if returncode == 0 else ("fail" if required else "warn"),
+        "returncode": returncode,
+        "timed_out": timed_out,
+        "timeout_seconds": timeout_seconds,
         "duration_ms": round((time.time() - started) * 1000),
-        "stdout": proc.stdout.rstrip(),
-        "stderr": proc.stderr.rstrip(),
+        "stdout": stdout,
+        "stderr": stderr,
     }
     marker = {"pass": "PASS", "fail": "FAIL", "warn": "WARN"}[result["status"]]
     print(f"[{marker}] {name} ({result['duration_ms']} ms)")
@@ -154,6 +170,8 @@ def main() -> int:
     parser.add_argument("--report", type=Path, help="Write a JSON result report.")
     parser.add_argument("--release-output", type=Path)
     parser.add_argument("--context", choices=("auto", "source", "update"), default="auto", help="source=GitHub checkout, update=Studio deployment ZIP")
+    parser.add_argument("--timeout", type=int, default=120, help="Maximum seconds allowed for each inspection step (default: 120).")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop immediately after the first required failure.")
     args = parser.parse_args()
 
     context = args.context
@@ -161,7 +179,15 @@ def main() -> int:
         context = "update" if (ROOT / "DELETE_MANIFEST.txt").is_file() else "source"
     started = time.time()
     print(f"INSPECTION_CONTEXT {context}")
-    results = [run_step(name, command, required=required) for name, command, required in build_steps(args.profile, args.release_output, context)]
+    if args.timeout < 1:
+        parser.error("--timeout must be at least 1 second")
+    results = []
+    for name, command, required in build_steps(args.profile, args.release_output, context):
+        result = run_step(name, command, required=required, timeout_seconds=args.timeout)
+        results.append(result)
+        if args.fail_fast and result["status"] == "fail":
+            print(f"FAIL_FAST_STOP step={name}")
+            break
     failed = [r for r in results if r["status"] == "fail"]
     warnings = [r for r in results if r["status"] == "warn"]
     report = {
