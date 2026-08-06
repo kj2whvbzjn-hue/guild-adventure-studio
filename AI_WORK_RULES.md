@@ -35,3 +35,11 @@
 - AIは成果物を作成する前に、この規則と`docs/operations/ARTIFACT_SUBMISSION_POLICY.md`を読み、AI引き継ぎデータにも含める。
 - AI向けコンテキストに提出規則が含まれていない場合、成果物生成を開始せず、設定不備として報告する。
 
+
+## 文字化け防止（iPhone運用・必須）
+
+- テキストはUTF-8、CSVはUTF-8 BOM付きとする。
+- ZIP内ファイル名はNFC正規化し、非ASCII名にはUTF-8フラグを付ける。
+- `#Uxxxx`形式へ日本語を置換した新規ファイル名を生成しない。
+- アップロードZIPは提出前に文字コード検査へ合格させる。
+- 詳細は `docs/operations/ENCODING_POLICY.md` を読むこと。
