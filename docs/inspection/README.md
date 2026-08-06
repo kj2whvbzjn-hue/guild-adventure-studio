@@ -35,3 +35,15 @@ python3 tools/inspection/run.py release --report reports/inspection-release.json
 - 削除可否は検査とは分離し、`DELETE_MANIFEST.txt`の完全一致パスだけを許可する。
 
 既存の`tools/integrity/check-project.sh`と`tools/release/run-approved-flow.sh`は互換入口として残し、この統一ランナーを呼び出す。
+
+## 削除の既定動作
+
+通常更新では削除を行わない。`DELETE_MANIFEST.txt`はコメントのみとし、削除件数0を正常状態とする。
+
+削除が1件でもある場合は、今回分だけを記載した`DELETE_MANIFEST.txt`と、完全一致する人間承認`DELETE_APPROVAL.json`が必要になる。保護領域、20件超、一般指示による承認、削除制御変更との同時実行は不合格になる。
+
+詳細:
+
+- `docs/operations/DELETION_POLICY.md`
+- `docs/operations/DELETE_WORKFLOW.md`
+- `AI_WORK_RULES.md`

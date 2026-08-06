@@ -40,12 +40,17 @@
 
 `Export/`を直接手編集せず、生成元と出力結果の差異を残さないでください。
 
+## AI作業ルール
+
+AIを使う作業では、最初に`AI_WORK_RULES.md`を読む。特にファイル削除は原則禁止で、例外手順は`docs/operations/DELETION_POLICY.md`と`docs/operations/DELETE_WORKFLOW.md`に従う。
+
 ## GitHub差分配置
 
 Studioの更新画面では、更新ZIPをGitHub上の現在ファイルと比較し、ADD、MODIFY、DELETE、UNCHANGEDへ分類します。
 
-- 削除は`DELETE_MANIFEST.txt`に完全一致で記載されたパスだけを対象とする。
-- 削除許可は人間が明示的に有効化する。
+- 通常更新は削除0件を既定とする。
+- 例外削除は、今回分だけの`DELETE_MANIFEST.txt`と、完全一致する人間承認`DELETE_APPROVAL.json`が必要。
+- 一般的な指示を削除承認として扱わず、削除許可は人間が対象パスごとに明示する。
 - PATは保存しない。
 - 配置は単一Commitで行う。
 - `.git`、`.github`、隠しファイル、マニフェスト外削除は対象外とする。

@@ -5,7 +5,7 @@ import hashlib, json, sys
 root = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]).resolve()
 manifest_path = root / 'package_manifest.json'
 ignored_roots = {'reports', 'release-output', '.git'}
-control_files = {'DELETE_MANIFEST.txt', 'studio-update.json'}
+control_files = {'DELETE_MANIFEST.txt', 'DELETE_APPROVAL.json', 'studio-update.json'}
 errors = []
 try:
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import sys
 
-CONTROL = {"DELETE_MANIFEST.txt"}
+CONTROL = {"DELETE_MANIFEST.txt", "DELETE_APPROVAL.json"}
 TRANSIENT_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 TRANSIENT_SUFFIXES = {".pyc", ".pyo", ".tmp", ".bak", ".swp"}
 
@@ -20,8 +20,11 @@ def main() -> int:
     errors: list[str] = []
 
     delete_manifest = root / "DELETE_MANIFEST.txt"
+    delete_approval = root / "DELETE_APPROVAL.json"
     if args.context == "source" and delete_manifest.exists():
         errors.append("SOURCE_CONTAINS_DELETE_MANIFEST")
+    if args.context == "source" and delete_approval.exists():
+        errors.append("SOURCE_CONTAINS_DELETE_APPROVAL")
     if args.context == "update" and not delete_manifest.is_file():
         errors.append("UPDATE_MISSING_DELETE_MANIFEST")
 
