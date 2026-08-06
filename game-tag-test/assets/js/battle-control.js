@@ -48,7 +48,7 @@ function queueSceneEvent(evt){if(sceneBusy)sceneQueue.push(evt);else playSceneEv
 function resetBattle(){pauseBattle();sceneQueue=[];sceneBusy=false;battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationEvents:[],validationMeta:null};renderBattle();ensureSceneUnits(true);setupTagSkillTestUI();populateTagSkillTestUI()}
 function renderBattle(){
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.pendingResult?'最終演出待機':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;
- $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
+ $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${u.attack}</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small"><b>シールド:</b> ${escapeHtml(shieldStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
  $('battleLog').textContent=battle.log.length?battle.log.slice(-100).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;const publicLog=$('battlePublicLogBody');if(publicLog){const rows=battle.log.filter(x=>/ダメージ|戦闘不能|戦闘終了|TAG\]\[ERROR|TAG\]\[DOT/.test(x)).slice(-5).map(x=>x.replace(/^\[Tick \d+\] /,''));publicLog.textContent=rows.length?rows.join('\n'):'まだ行動はありません。'}ensureSceneUnits();populateTagSkillTestUI();
 }
 function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);if(!opponents.length)return null;if(attacker.aiPolicy==='random')return opponents[Math.floor(Math.random()*opponents.length)];if(attacker.aiPolicy==='weakest')return opponents.sort((a,b)=>a.maxHp-b.maxHp||a.order-b.order)[0];return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]}
@@ -94,7 +94,7 @@ function finishIfNeeded(){
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
  battle.pendingResult=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
- battle.units.forEach(u=>u.reservedAction=null);
+ battle.units.forEach(u=>u.reservedAction=null);clearAllShields('battle_end');
  battle.log.push(`[Tick ${battle.tick}] 決着条件を検出 — 最終演出を待機`);
  battle.running=false;battle.runToken++;
  if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;
@@ -102,11 +102,11 @@ function finishIfNeeded(){
 }
 function performBasicAttack(attacker,target){
  if(!target)return false;
- const damage=Math.max(1,attacker.attack);target.hp=Math.max(0,target.hp-damage);
+ const rawDamage=Math.max(1,attacker.attack),shield=consumeShieldDamage(target,rawDamage,{sourceId:attacker.id,damageType:'basic_attack'}),damage=shield.hpDamage;target.hp=Math.max(0,target.hp-damage);
  queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage});
  attacker.damageDealt+=damage;target.damageTaken+=damage;
- battle.log.push(`[Tick ${battle.tick}] ${attacker.name}の通常攻撃 → ${target.name}に${damage}ダメージ（残HP ${target.hp}/${target.maxHp}）`);
- if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
+ battle.log.push(`[Tick ${battle.tick}] ${attacker.name}の通常攻撃 → ${target.name}に${damage}HPダメージ（シールド吸収${shield.absorbed}、残HP ${target.hp}/${target.maxHp}）`);
+ if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;target.shieldEffects=[];battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
  finishIfNeeded();return true;
 }
 function executeReservation(actor){
@@ -126,6 +126,7 @@ function executeReservation(actor){
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
   battle.tick++;
+  processShieldEffects();
   processDotStacks();
   if(battle.result||battle.pendingResult)break;
   if(battle.validationMode)continue;

@@ -4,7 +4,7 @@ import json,re,sys
 root=Path(__file__).resolve().parents[2]
 errors=[]
 config=(root/'assets/shared/config/runtime-config.js').read_text(encoding='utf-8')
-gm=re.search(r'gameBuild:\s*["\'](GA-B\d+)',config)
+gm=re.search(r'gameBuild:\s*["\'](GA-B\d+(?:\.\d+)?)',config)
 sm=re.search(r'studioBuild:\s*["\'](GKS-B\d+)',config)
 if not gm: errors.append('GAME_BUILD_MISSING')
 if not sm: errors.append('STUDIO_BUILD_MISSING')

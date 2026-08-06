@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "task_id": "P01-02",
+  "feature": "SHIELD",
+  "status": "IMPLEMENTED_TEST_BUILD",
+  "game_build": "GA-B484.1",
+  "studio_build": "GKS-B484",
+  "source_basis": "GA-B483.2 design package and GA-B483.2 GitHub source",
+  "decisions": {
+    "storage": "HPとは別のshieldEffects配列で個別インスタンス保持",
+    "stacking": "加算。各付与を個別残量・個別期限で保持",
+    "consumption_order": "付与時刻が古い順のFIFO",
+    "damage_order": "シールド吸収後、残余のみHPへ適用",
+    "dot_consumes_shield": true,
+    "heal_restores_shield": false,
+    "zero_remaining": "即時削除",
+    "death": "対象死亡時に全シールド消去",
+    "battle_end": "戦闘終了判定時に全シールド消去",
+    "duration_unit": "battle tick",
+    "target": "自分または味方。単体または全体。戦闘不能対象は拒否"
+  },
+  "required_tags": ["SHIELD", "SHIELD=<positive number>", "DURATION=<positive tick>", "自分|味方", "単体|全体"],
+  "device_json_test": {
+    "id": "TAG-SHIELD-DEVICE-001",
+    "trigger": "tagTestRunShieldJson",
+    "cases": [
+      "SHIELD-ABSORB-PARTIAL",
+      "SHIELD-OVERFLOW",
+      "SHIELD-INVALID-DATA-REJECT",
+      "SHIELD-DEAD-REJECT",
+      "SHIELD-ALL",
+      "SHIELD-MULTIPLE-FIFO",
+      "SHIELD-DURATION-EXPIRE",
+      "SHIELD-BATTLE-END-CLEAR"
+    ]
+  },
+  "completion_state": "実機JSON未実施。P01-02は検証中"
+}
