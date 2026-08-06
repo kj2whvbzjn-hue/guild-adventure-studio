@@ -91,7 +91,7 @@ def syntax_steps() -> Iterable[tuple[str, list[str], bool]]:
     )
 
 
-def build_steps(profile: str, release_output: Path | None) -> list[tuple[str, list[str], bool]]:
+def build_steps(profile: str, release_output: Path | None, context: str) -> list[tuple[str, list[str], bool]]:
     py = sys.executable
     steps: list[tuple[str, list[str], bool]] = [
         (
@@ -107,9 +107,10 @@ def build_steps(profile: str, release_output: Path | None) -> list[tuple[str, li
         ("html_links", [py, str(ROOT / "tools/integrity/check-html-links.py"), str(ROOT)], True),
         ("package_metadata", [py, str(ROOT / "tools/integrity/check-package-metadata.py")], True),
         ("critical_runtime", [py, str(ROOT / "tools/integrity/check-critical-runtime.py"), str(ROOT)], True),
-        ("delete_manifest", [py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True),
         ("package_manifest", [py, str(ROOT / "tools/integrity/check-package-manifest.py"), str(ROOT)], True),
     ]
+    if context == "update":
+        steps.insert(4, ("delete_manifest", [py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True))
     steps.extend(syntax_steps())
 
     if profile in {"full", "release"}:
@@ -151,15 +152,21 @@ def main() -> int:
     parser.add_argument("profile", choices=("quick", "full", "release"), nargs="?", default="quick")
     parser.add_argument("--report", type=Path, help="Write a JSON result report.")
     parser.add_argument("--release-output", type=Path)
+    parser.add_argument("--context", choices=("auto", "source", "update"), default="auto", help="source=GitHub checkout, update=Studio deployment ZIP")
     args = parser.parse_args()
 
+    context = args.context
+    if context == "auto":
+        context = "update" if (ROOT / "DELETE_MANIFEST.txt").is_file() else "source"
     started = time.time()
-    results = [run_step(name, command, required=required) for name, command, required in build_steps(args.profile, args.release_output)]
+    print(f"INSPECTION_CONTEXT {context}")
+    results = [run_step(name, command, required=required) for name, command, required in build_steps(args.profile, args.release_output, context)]
     failed = [r for r in results if r["status"] == "fail"]
     warnings = [r for r in results if r["status"] == "warn"]
     report = {
         "schema_version": 1,
         "profile": args.profile,
+        "context": context,
         "root": str(ROOT),
         "status": "fail" if failed else "pass",
         "duration_ms": round((time.time() - started) * 1000),

@@ -5,6 +5,7 @@ import hashlib, json, sys
 root = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]).resolve()
 manifest_path = root / 'package_manifest.json'
 ignored_roots = {'reports', 'release-output', '.git'}
+control_files = {'DELETE_MANIFEST.txt'}
 errors = []
 try:
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
@@ -15,6 +16,8 @@ entries = manifest.get('files', [])
 seen = set()
 for item in entries:
     rel = item.get('path', '')
+    if rel in control_files:
+        continue
     if not rel or rel in seen:
         errors.append(f'DUPLICATE_OR_EMPTY {rel}')
         continue
@@ -38,6 +41,8 @@ for p in root.rglob('*'):
     if not p.is_file() or p == manifest_path:
         continue
     rel = p.relative_to(root)
+    if rel.as_posix() in control_files:
+        continue
     if rel.parts and rel.parts[0] in ignored_roots:
         continue
     if '__pycache__' in rel.parts or p.suffix == '.pyc':

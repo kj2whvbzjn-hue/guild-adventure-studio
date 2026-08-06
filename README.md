@@ -69,3 +69,14 @@ php php-runtime/tests/run.php Export
 ```
 
 CPFの操作方法は `cpf/README.md`、PHPランタイムの詳細は `php-runtime/README.md`、AIブリッジは `ai-gateway-server/README.md` を参照してください。
+
+## 検査コンテキスト
+
+GitHubから取得したソースでは `DELETE_MANIFEST.txt` は存在しません。配置ZIPでは削除許可のために存在します。
+
+```bash
+python3 tools/inspection/run.py full --context source
+python3 tools/inspection/run.py full --context update
+```
+
+通常は `--context auto` が自動判定します。
