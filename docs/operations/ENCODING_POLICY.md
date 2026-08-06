@@ -22,3 +22,10 @@
 
 - `python3 tools/inspection/run.py full --context update` が合格する。
 - iPhoneでZIPを展開し、日本語本文と日本語ファイル名が正しく表示される。
+
+## Studio配置時のファイル名保護
+
+- ZIP内の`#Uxxxx`形式は、読込時にUnicode文字へ復元してNFCへ正規化する。
+- GitHub送信直前に、`#Uxxxx`残存とNFC未正規化を再検査する。
+- 不正な配置パスが1件でもある場合は配置を停止する。
+- PythonなどUTF-8フラグ対応のZIP処理を検証基準とし、端末側の表示だけで文字化けを断定しない。

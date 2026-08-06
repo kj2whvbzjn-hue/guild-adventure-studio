@@ -28,6 +28,20 @@ def main()->int:
    head=text[:2048].lower().replace("'",'"')
    if not re.search(r'<meta\s+[^>]*charset\s*=\s*"?utf-8',head): errors.append(f'HTML_CHARSET_MISSING {rel}')
   if f.suffix.lower()=='.csv' and not b.startswith(b'\xef\xbb\xbf'): errors.append(f'CSV_BOM_MISSING {rel}')
+ studio_path=root/'studio/index.html'
+ try:
+  studio_text=studio_path.read_text(encoding='utf-8')
+  required_markers=[
+   'decodeEscapedUnicodeFilename(value)',
+   "normalize('NFC')",
+   'ZIP_FILENAME_CANONICALIZED',
+   'invalidUploadNames'
+  ]
+  for required in required_markers:
+   if required not in studio_text:
+    errors.append(f'STUDIO_FILENAME_GUARD_MISSING {required}')
+ except Exception as e:
+  errors.append(f'STUDIO_FILENAME_GUARD_READ_FAIL {e}')
  if a.zip_path:
   zp=Path(a.zip_path)
   try:

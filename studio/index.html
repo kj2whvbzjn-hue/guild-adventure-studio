@@ -4555,10 +4555,27 @@ function validatePhpExport(){
  renderPhpExportStatus(result.issues);
  return result;
 }
+function normalizeUnicodeNfc(value){
+ try{return String(value??'').normalize('NFC')}
+ catch(_){return String(value??'')}
+}
+function decodeEscapedUnicodeFilename(value){
+ return String(value??'').replace(/#U([0-9A-Fa-f]{4,6})/g,(match,hex)=>{
+  const codePoint=Number.parseInt(hex,16);
+  if(!Number.isFinite(codePoint)||codePoint<0||codePoint>0x10FFFF)return match;
+  try{return String.fromCodePoint(codePoint)}catch(_){return match}
+ });
+}
+function containsEscapedUnicodeFilename(value){
+ return /#U[0-9A-Fa-f]{4,6}/.test(String(value??''));
+}
 const GKZipCore={
  version:'1.0.0',
  path:{
-  normalize(path){return String(path||'').replace(/\\/g,'/').replace(/^\/+/, '').replace(/\/+/g,'/');},
+  normalize(path){
+   const decoded=decodeEscapedUnicodeFilename(path);
+   return normalizeUnicodeNfc(String(decoded||'').replace(/\\/g,'/').replace(/^\/+/, '').replace(/\/+/g,'/'));
+  },
   join(base,path){
    const a=this.normalize(base).replace(/\/$/,'');
    const b=this.normalize(path);
@@ -4651,7 +4668,11 @@ const GKZipCore={
    }
    const rawNormalized=[];
    for(const name of rawNames){
-    const rawPath=String(name||'').replace(/\\/g,'/');
+    const originalRawPath=String(name||'').replace(/\\/g,'/');
+    const rawPath=GKZipCore.path.normalize(originalRawPath);
+    if(originalRawPath!==rawPath){
+     GKZipCore.diagnostics.add(diagnostics,'INFO','ZIP_FILENAME_CANONICALIZED',`ZIPファイル名をUnicode NFCへ正規化しました: ${originalRawPath} -> ${rawPath}`,{sourcePath:originalRawPath,path:rawPath});
+    }
     if(rawPath.startsWith('/')||/^[A-Za-z]:\//.test(rawPath)||rawPath.split('/').some(part=>part==='..')){
      GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_UNSAFE',`危険なZIPパスです: ${rawPath}`,{path:rawPath});
      throw Object.assign(new Error(`危険なZIPパスを検出しました: ${rawPath}`),{code:'ZIP_PATH_UNSAFE',diagnostics});
@@ -4669,7 +4690,11 @@ const GKZipCore={
    const seen=new Set();
    const entries=[];
    for(const sourceEntry of sourceEntries){
-    const rawPath=String(sourceEntry.unsafeOriginalName||sourceEntry.name||'').replace(/\\/g,'/');
+    const originalRawPath=String(sourceEntry.unsafeOriginalName||sourceEntry.name||'').replace(/\\/g,'/');
+    const rawPath=GKZipCore.path.normalize(originalRawPath);
+    if(originalRawPath!==rawPath){
+     GKZipCore.diagnostics.add(diagnostics,'INFO','ZIP_FILENAME_CANONICALIZED',`ZIPファイル名をUnicode NFCへ正規化しました: ${originalRawPath} -> ${rawPath}`,{sourcePath:originalRawPath,path:rawPath});
+    }
     if(rawPath.startsWith('/')||/^[A-Za-z]:\//.test(rawPath)){
      GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_PATH_ABSOLUTE',`絶対パスは使用できません: ${rawPath}`,{path:rawPath});
      throw Object.assign(new Error(`絶対パスを検出しました: ${rawPath}`),{code:'ZIP_PATH_ABSOLUTE',diagnostics});
@@ -5270,6 +5295,10 @@ async function inspectStudioPackage(){
   }
   if(!meta)throw new Error('studio-update.jsonがありません。外側の提出ZIPではなく、直接の更新ZIPを選択してください。');
   const uploadable=files.filter(x=>!x.excluded);
+  const invalidUploadNames=uploadable.filter(x=>containsEscapedUnicodeFilename(x.path)||x.path!==normalizeUnicodeNfc(x.path));
+  if(invalidUploadNames.length){
+   throw new Error('文字化けまたはNFC未正規化の配置パスを検出しました: '+invalidUploadNames.map(x=>x.path).join(', '));
+  }
   if(!uploadable.length)throw new Error('ZIP内に配置可能なファイルがありません。');
   const selectedMode=document.getElementById('deployPackageMode')?.value||'auto';
   const hasRootIndex=uploadable.some(x=>x.path==='index.html');
