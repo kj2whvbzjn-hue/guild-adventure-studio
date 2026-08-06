@@ -124,3 +124,5 @@ AI GatewayとStudioのAIエクスポートは、`AI_START.md`、`AI_PROJECT_INDE
 
 AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業宣言、変更範囲、完了条件、ZIP提出、完了報告の順で作業する。AI GatewayとStudioのAI用ZIPはこの憲章を必須コンテキストとして提供し、接続漏れは検査で不合格になる。
 
+## システムファイル分類
+`docs/operations/SYSTEM_FILE_POLICY.md`を参照してください。

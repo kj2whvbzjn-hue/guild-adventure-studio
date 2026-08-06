@@ -5145,6 +5145,21 @@ function isUnsafeDeployPath(path){
 function protectedDeploySet(){
  return new Set(splitCsv(deployProtectedPaths.value).map(normalizeDeployPath));
 }
+function deployPolicyGlobMatch(path,pattern){
+ const p=normalizeDeployPath(path);
+ const escaped=String(pattern||'').replace(/[.+^${}()|[\]\\]/g,'\\$&')
+  .replace(/\*\*/g,'§§DOUBLESTAR§§').replace(/\*/g,'[^/]*').replace(/§§DOUBLESTAR§§/g,'.*').replace(/\?/g,'.');
+ return new RegExp('^'+escaped+'$').test(p);
+}
+function classifyDeploySystemFile(path,policy){
+ const rel=normalizeDeployPath(path);
+ for(const name of ['update_only','artifact','temporary']){
+  const rule=policy?.classes?.[name]||{};
+  if((rule.exact_paths||[]).map(normalizeDeployPath).includes(rel))return name;
+  if((rule.patterns||[]).some(pattern=>deployPolicyGlobMatch(rel,pattern)))return name;
+ }
+ return policy?.default_class||'persistent';
+}
 function bytesToBase64(bytes){
  let binary='';
  const chunk=0x8000;
@@ -5229,6 +5244,11 @@ async function inspectStudioPackage(){
   const packageReader=await GKZipCore.reader.inspect(file,{limits:STUDIO_DEPLOY_LIMIT_POLICY,stripCommonRoot:true});
   const protectedSet=protectedDeploySet();
   const files=[];let meta=null;
+  const policyEntry=packageReader.entries.find(x=>x.path==='shared/integrity/system-file-policy.json');
+  if(!policyEntry)throw new Error('system-file-policy.jsonがないため更新ZIPを分類できません。');
+  let systemFilePolicy;
+  try{systemFilePolicy=await packageReader.getJson('shared/integrity/system-file-policy.json')}
+  catch(e){throw new Error('system-file-policy.jsonを解析できません。')}
   studioDeployDeleteManifestRules=[];
   for(const entry of packageReader.entries){
    const relative=entry.path;
@@ -5241,10 +5261,14 @@ async function inspectStudioPackage(){
     studioDeployDeleteManifestRules=parseDeployDeleteManifestText(manifestText);
     continue;
    }
-   const excluded=isUnsafeDeployPath(relative)||protectedSet.has(relative);
+   const fileClass=classifyDeploySystemFile(relative,systemFilePolicy);
+   const policyExcluded=fileClass!=='persistent';
+   const excluded=policyExcluded||isUnsafeDeployPath(relative)||protectedSet.has(relative);
    const bytes=await packageReader.getBytes(relative);
-   files.push({path:relative,size:bytes.length,bytes,excluded,reason:excluded?'保護・除外':'未比較',status:excluded?'PROTECTED':'PENDING'});
+   const reason=policyExcluded?`分類除外:${fileClass}`:(excluded?'保護・除外':'未比較');
+   files.push({path:relative,size:bytes.length,bytes,excluded,reason,status:excluded?'PROTECTED':'PENDING',fileClass});
   }
+  if(!meta)throw new Error('studio-update.jsonがありません。外側の提出ZIPではなく、直接の更新ZIPを選択してください。');
   const uploadable=files.filter(x=>!x.excluded);
   if(!uploadable.length)throw new Error('ZIP内に配置可能なファイルがありません。');
   const selectedMode=document.getElementById('deployPackageMode')?.value||'auto';

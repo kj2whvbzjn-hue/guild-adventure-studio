@@ -1,72 +1,33 @@
 #!/usr/bin/env python3
-"""Validate whether a tree is a GitHub source checkout or a Studio update package."""
 from __future__ import annotations
-import argparse
-import json
+import argparse,json,sys
 from pathlib import Path
-import sys
-
-CONTROL = {"DELETE_MANIFEST.txt", "DELETE_APPROVAL.json"}
-TRANSIENT_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
-TRANSIENT_SUFFIXES = {".pyc", ".pyo", ".tmp", ".bak", ".swp"}
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("root", nargs="?", default=Path(__file__).resolve().parents[2])
-    parser.add_argument("--context", choices=("source", "update"), required=True)
-    args = parser.parse_args()
-    root = Path(args.root).resolve()
-    errors: list[str] = []
-
-    delete_manifest = root / "DELETE_MANIFEST.txt"
-    delete_approval = root / "DELETE_APPROVAL.json"
-    if args.context == "source" and delete_manifest.exists():
-        errors.append("SOURCE_CONTAINS_DELETE_MANIFEST")
-    if args.context == "source" and delete_approval.exists():
-        errors.append("SOURCE_CONTAINS_DELETE_APPROVAL")
-    if args.context == "update" and not delete_manifest.is_file():
-        errors.append("UPDATE_MISSING_DELETE_MANIFEST")
-
-    # Deployment metadata must exist and must not revive removed aggregate/formal build concepts.
-    meta_path = root / "studio-update.json"
-    try:
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        errors.append(f"STUDIO_UPDATE_INVALID {exc}")
-        meta = {}
-    if meta.get("version") != "GKS-B484":
-        errors.append(f"STUDIO_VERSION_UNEXPECTED {meta.get('version')!r}")
-    if "formal" in json.dumps(meta, ensure_ascii=False).lower() and meta.get("formal_build") not in (None, ""):
-        errors.append("FORMAL_BUILD_REINTRODUCED")
-
-    # Reject generated or editor debris from both source and update packages.
-    for p in root.rglob("*"):
-        rel = p.relative_to(root)
-        if any(part in TRANSIENT_DIRS for part in rel.parts):
-            errors.append(f"TRANSIENT_PATH {rel.as_posix()}")
-            continue
-        if p.is_file() and p.suffix.lower() in TRANSIENT_SUFFIXES:
-            errors.append(f"TRANSIENT_FILE {rel.as_posix()}")
-
-    # Ensure context control files do not leak into package authority.
-    manifest_path = root / "package_manifest.json"
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        listed = {x.get("path") for x in manifest.get("files", [])}
-        leaked = sorted(CONTROL & listed)
-        for rel in leaked:
-            errors.append(f"CONTROL_FILE_LISTED {rel}")
-    except Exception as exc:
-        errors.append(f"PACKAGE_MANIFEST_INVALID {exc}")
-
-    if errors:
-        print("INSPECTION_CONTEXT_FAIL")
-        print("\n".join(sorted(set(errors))))
-        return 1
-    print(f"INSPECTION_CONTEXT_OK context={args.context}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+from system_file_policy import classify,load_policy
+def main()->int:
+ p=argparse.ArgumentParser();p.add_argument('root',nargs='?',default=Path(__file__).resolve().parents[2]);p.add_argument('--context',choices=('source','update'),required=True);a=p.parse_args();root=Path(a.root).resolve();errors=[]
+ try:policy=load_policy(root)
+ except Exception as e:print(f'INSPECTION_CONTEXT_FAIL\nSYSTEM_FILE_POLICY_INVALID {e}');return 1
+ allowed=set(policy['rules'][f'{a.context}_allowed_classes'])
+ for f in root.rglob('*'):
+  if not f.is_file() or '.git' in f.parts:continue
+  rel=f.relative_to(root).as_posix();c=classify(rel,policy)
+  if c not in allowed:errors.append(f'{a.context.upper()}_FORBIDDEN_{c.upper()} {rel}')
+ if a.context=='update':
+  for key in ('require_update_metadata','require_update_delete_manifest'):
+   rel=policy['rules'][key]
+   if not (root/rel).is_file():errors.append(f'UPDATE_MISSING_REQUIRED {rel}')
+ meta_path=root/policy['rules']['require_update_metadata']
+ if a.context=='update' or meta_path.exists():
+  try:meta=json.loads(meta_path.read_text(encoding='utf-8'))
+  except Exception as e:errors.append(f'STUDIO_UPDATE_INVALID {e}');meta={}
+  if meta.get('version')!='GKS-B484':errors.append(f'STUDIO_VERSION_UNEXPECTED {meta.get("version")!r}')
+  if 'formal' in json.dumps(meta,ensure_ascii=False).lower() and meta.get('formal_build') not in (None,''):errors.append('FORMAL_BUILD_REINTRODUCED')
+ try:
+  manifest=json.loads((root/'package_manifest.json').read_text(encoding='utf-8'))
+  for item in manifest.get('files',[]):
+   rel=item.get('path','')
+   if classify(rel,policy)!='persistent':errors.append(f'NONPERSISTENT_FILE_LISTED {rel}')
+ except Exception as e:errors.append(f'PACKAGE_MANIFEST_INVALID {e}')
+ if errors:print('INSPECTION_CONTEXT_FAIL');print('\n'.join(sorted(set(errors))));return 1
+ print(f'INSPECTION_CONTEXT_OK context={a.context}');return 0
+if __name__=='__main__':raise SystemExit(main())

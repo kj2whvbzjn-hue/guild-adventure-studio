@@ -2,6 +2,9 @@
 from __future__ import annotations
 import argparse, json, sys, zipfile
 from pathlib import Path, PurePosixPath
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools/inspection"))
+from system_file_policy import classify, load_policy
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / 'shared/release/github-pages-package.json'
@@ -23,6 +26,7 @@ def safe_rel(path: Path) -> str:
 
 
 def collect(data: dict) -> list[tuple[str, Path]]:
+    policy = load_policy(ROOT)
     selected: dict[str, Path] = {}
     excluded = set(data.get('excluded_from_upload_candidate', []))
 
@@ -30,7 +34,10 @@ def collect(data: dict) -> list[tuple[str, Path]]:
         p = ROOT / rel
         if not p.is_file() or p.stat().st_size == 0:
             raise FileNotFoundError(f'missing required file: {rel}')
-        selected[safe_rel(p)] = p
+        rel_path = safe_rel(p)
+        if classify(rel_path, policy) != "persistent":
+            raise ValueError(f"nonpersistent required file: {rel_path}")
+        selected[rel_path] = p
 
     for rel in data.get('required_roots', []):
         base = ROOT / rel
@@ -43,7 +50,8 @@ def collect(data: dict) -> list[tuple[str, Path]]:
                 item = safe_rel(p)
                 if PurePosixPath(item).parts[0] in excluded:
                     raise ValueError(f'excluded path selected: {item}')
-                selected[item] = p
+                if classify(item, policy) == "persistent":
+                    selected[item] = p
 
     for rel in selected:
         if PurePosixPath(rel).parts[0] in excluded:
