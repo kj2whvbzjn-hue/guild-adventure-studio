@@ -55,3 +55,6 @@
 
 ## 原因調査と検査証跡
 原因未確定の不具合へ推測変換や自動修復を加えない。`docs/operations/FORENSIC_INSPECTION.md`に従い、対象ZIPと検査結果を証跡で結び付ける。
+
+## Full検査の集約
+Fullの分割結果は、入力ZIP SHA-256・ツリーSHA-256・contextが一致し、全固定シャードが揃った場合だけ`FULL_PASS`とする。

@@ -129,3 +129,6 @@ AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業�
 
 ## 証跡付き検査
 検査対象のSHA-256、ZIP名情報、検査前後のツリー差分は`docs/operations/FORENSIC_INSPECTION.md`に従って記録します。
+
+## 分割Full検査
+実行時間制限がある環境では`docs/operations/SHARDED_FULL_INSPECTION.md`に従い、同一入力・同一ツリーの固定シャードを集約します。
