@@ -80,3 +80,9 @@ python3 tools/inspection/run.py full --context update
 ```
 
 通常は `--context auto` が自動判定します。
+
+## 配置メタデータ
+
+`studio-update.json` はStudio配置時の表示・保護設定に使う可変メタデータです。
+配置対象には含めますが、配置後に内容が更新される可能性があるため、`package_manifest.json` のハッシュ正本からは除外します。
+ゲームとStudioの現行識別子は、それぞれの実装側定義を確認してください。プロジェクト全体BuildおよびFormal Buildは使用しません。
