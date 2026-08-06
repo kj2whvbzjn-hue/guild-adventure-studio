@@ -15,6 +15,9 @@ startup=[
 governance=[
  'AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json','AI_WORK_RULES.md',
  'docs/operations/ARTIFACT_SUBMISSION_POLICY.md',
+ 'docs/operations/DELETION_POLICY.md',
+ 'package-build.json',
+ 'package_manifest.json',
  'shared/integrity/artifact-submission-policy.json',
 ]
 errors=[]
@@ -44,8 +47,22 @@ gateway=(root/'ai-gateway.js').read_text(encoding='utf-8')
 for token in ['loadGovernance','governance:await loadGovernance()','acknowledgementRequired:true','AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json']:
  if token not in gateway: errors.append('GATEWAY_WIRING_MISSING '+token)
 exporter=(root/'modules/verification/ai-export.js').read_text(encoding='utf-8')
-for token in ['loadRequiredGovernance','governance/AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json','必ず1つのZIPで提出']:
+export_sequence=[
+ 'governance/AI_START.md',
+ 'governance/AI_PROJECT_INDEX.json',
+ 'governance/AI_PROJECT_STATUS.json',
+ 'governance/AI_WORK_RULES.md',
+ 'governance/docs/operations/ARTIFACT_SUBMISSION_POLICY.md',
+ 'governance/docs/operations/DELETION_POLICY.md',
+ 'governance/package-build.json',
+ 'governance/package_manifest.json',
+]
+for token in ['loadRequiredGovernance','必ず1つのZIPで提出']+export_sequence:
  if token not in exporter: errors.append('AI_EXPORT_WIRING_MISSING '+token)
+export_positions=[exporter.find(token) for token in export_sequence]
+if all(i>=0 for i in export_positions) and export_positions != sorted(export_positions): errors.append('AI_EXPORT_START_SEQUENCE_ORDER_INVALID')
+if '1. governance/AI_START.md' not in exporter or '8. governance/package_manifest.json' not in exporter: errors.append('AI_EXPORT_README_SEQUENCE_INCOMPLETE')
+if '3. guides/verification-guide.md' in exporter or '4. data/design-cards.json\n5. data/project.json' in exporter: errors.append('AI_EXPORT_README_NUMBERING_LEGACY')
 rules=(root/'AI_WORK_RULES.md').read_text(encoding='utf-8')
 if 'AI_START.md' not in rules or '必ず1つのZIP' not in rules: errors.append('START_OR_ZIP_RULE_MISSING_FROM_AI_RULES')
 policy=json.loads((root/'shared/integrity/artifact-submission-policy.json').read_text(encoding='utf-8'))
