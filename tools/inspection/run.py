@@ -52,7 +52,7 @@ def python_inline(name: str, source: str) -> dict:
     return run_step(name, [sys.executable, "-c", source, str(ROOT)])
 
 
-def syntax_steps() -> Iterable[tuple[str, list[str], bool]]:
+def syntax_steps(profile: str) -> Iterable[tuple[str, list[str], bool]]:
     if command_available("node"):
         yield (
             "javascript_syntax",
@@ -64,7 +64,7 @@ def syntax_steps() -> Iterable[tuple[str, list[str], bool]]:
             True,
         )
     else:
-        yield ("javascript_syntax_runtime_missing", ["bash", "-lc", "echo 'node is not installed'"], False)
+        yield ("javascript_syntax_runtime_missing", ["bash", "-lc", "echo 'node is not installed'"], profile != 'quick')
 
     if command_available("php"):
         yield (
@@ -77,7 +77,7 @@ def syntax_steps() -> Iterable[tuple[str, list[str], bool]]:
             True,
         )
     else:
-        yield ("php_syntax_runtime_missing", ["bash", "-lc", "echo 'php is not installed'"], False)
+        yield ("php_syntax_runtime_missing", ["bash", "-lc", "echo 'php is not installed'"], profile != 'quick')
 
     yield (
         "python_syntax",
@@ -111,7 +111,8 @@ def build_steps(profile: str, release_output: Path | None, context: str) -> list
     ]
     if context == "update":
         steps.insert(4, ("delete_manifest", [py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True))
-    steps.extend(syntax_steps())
+    steps.insert(0, ("inspection_context", [py, str(ROOT / "tools/inspection/check-context.py"), str(ROOT), "--context", context], True))
+    steps.extend(syntax_steps(profile))
 
     if profile in {"full", "release"}:
         steps.extend(

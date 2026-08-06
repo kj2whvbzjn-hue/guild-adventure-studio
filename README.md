@@ -86,3 +86,18 @@ python3 tools/inspection/run.py full --context update
 `studio-update.json` はStudio配置時の表示・保護設定に使う可変メタデータです。
 配置対象には含めますが、配置後に内容が更新される可能性があるため、`package_manifest.json` のハッシュ正本からは除外します。
 ゲームとStudioの現行識別子は、それぞれの実装側定義を確認してください。プロジェクト全体BuildおよびFormal Buildは使用しません。
+
+## 検査コンテキスト
+
+検査は対象の種類を区別します。
+
+- `source`: GitHubの「Code → Download ZIP」で取得したソース。`DELETE_MANIFEST.txt`を含めません。
+- `update`: Studioへ投入する更新ZIP。`DELETE_MANIFEST.txt`を必須とします。
+
+```bash
+python3 tools/inspection/run.py quick --context source
+python3 tools/inspection/run.py full --context update
+```
+
+`full`と`release`ではNode.jsとPHPが利用できない場合も失敗とします。`quick`のみ、実行環境がない構文検査を警告として扱います。
+一時ファイル、`__pycache__`、`.pyc`、`.tmp`、バックアップファイルが混入した場合は、どのコンテキストでも不合格になります。
