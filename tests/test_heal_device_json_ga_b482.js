@@ -11,13 +11,13 @@ assert(runtime.includes('function ensureHealValidationFixtures()'),'回復検証
 assert(runtime.includes("resetBattle();ensureHealValidationFixtures();"),'各ケース開始時にfixtureを初期化していません');
 assert(runtime.includes("SKL-TEST-HEAL-100"),'単体回復fixtureがありません');
 assert(runtime.includes("SKL-TEST-HEAL-ALL-60"),'全体回復fixtureがありません');
-assert(runtime.includes("a.download=`tag-heal-device-validation-GA-B485-"),'回復JSONファイル名がありません');
+assert(runtime.includes("a.download=`tag-heal-device-validation-GA-B485.1-"),'回復JSONファイル名がありません');
 
-assert(runtime.includes("build:'GA-B485'"),'回復JSON buildがGA-B485ではありません');
-assert(html.includes('validation-runtime.js?v=4850'),'タグ検証ランタイムのキャッシュバスターがありません');
-assert(html.includes("data.gameVersion='GA-B485'"),'タグ検証の保存ビルドがGA-B485ではありません');
+assert(runtime.includes("build:'GA-B485.1'"),'回復JSON buildがGA-B485.1ではありません');
+assert(html.includes('validation-runtime.js?v=4851'),'タグ検証ランタイムのキャッシュバスターがありません');
+assert(html.includes("data.gameVersion='GA-B485.1'"),'タグ検証の保存ビルドがGA-B485.1ではありません');
 const tagSw=fs.readFileSync('game-tag-test/sw.js','utf8');
-assert(tagSw.includes('ga-tag-test-b4850'),'タグ検証Service Workerキャッシュが更新されていません');
-assert(tagSw.includes('validation-runtime.js?v=4850'),'Service Workerが旧検証ランタイムを参照しています');
+assert(tagSw.includes('ga-tag-test-b4851'),'タグ検証Service Workerキャッシュが更新されていません');
+assert(tagSw.includes('validation-runtime.js?v=4851'),'Service Workerが旧検証ランタイムを参照しています');
 
 console.log('HEAL_DEVICE_JSON_GA_B483_2_OK');
