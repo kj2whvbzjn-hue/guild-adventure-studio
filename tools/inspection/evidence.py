@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
+import struct
 import json
 import os
 import platform
@@ -95,25 +97,131 @@ def compare_trees(before: dict, after: dict) -> dict:
     }
 
 
+def _find_eocd(data: bytes) -> int:
+    start = max(0, len(data) - 65557)
+    return data.rfind(b"PK\x05\x06", start)
+
+
+def _parse_extra_fields(extra: bytes) -> list[dict]:
+    fields = []
+    offset = 0
+    while offset + 4 <= len(extra):
+        header_id, size = struct.unpack_from("<HH", extra, offset)
+        offset += 4
+        payload = extra[offset:offset + size]
+        if len(payload) != size:
+            fields.append({"header_id": f"0x{header_id:04x}", "truncated": True})
+            break
+        record = {
+            "header_id": f"0x{header_id:04x}",
+            "size": size,
+            "payload_base64": base64.b64encode(payload).decode("ascii"),
+        }
+        if header_id == 0x7075:
+            record["type"] = "unicode_path"
+            if size >= 5:
+                version = payload[0]
+                name_crc32 = struct.unpack_from("<I", payload, 1)[0]
+                utf8_bytes = payload[5:]
+                record.update({
+                    "version": version,
+                    "name_crc32": f"{name_crc32:08x}",
+                    "unicode_name_bytes_base64": base64.b64encode(utf8_bytes).decode("ascii"),
+                })
+                try:
+                    record["unicode_name"] = utf8_bytes.decode("utf-8", "strict")
+                    record["unicode_name_decode_ok"] = True
+                except UnicodeDecodeError as exc:
+                    record["unicode_name_decode_ok"] = False
+                    record["decode_error"] = {"start": exc.start, "end": exc.end}
+            else:
+                record["invalid"] = "payload_too_short"
+        fields.append(record)
+        offset += size
+    return fields
+
+
+def _central_directory_records(zip_path: Path) -> list[dict]:
+    data = zip_path.read_bytes()
+    eocd = _find_eocd(data)
+    if eocd < 0:
+        raise ValueError("ZIP_EOCD_NOT_FOUND")
+    count = struct.unpack_from("<H", data, eocd + 10)[0]
+    offset = struct.unpack_from("<I", data, eocd + 16)[0]
+    if count == 0xFFFF or offset == 0xFFFFFFFF:
+        raise ValueError("ZIP64_CENTRAL_DIRECTORY_NOT_SUPPORTED_FOR_RAW_EVIDENCE")
+    records = []
+    for index in range(count):
+        if offset + 46 > len(data) or data[offset:offset + 4] != b"PK\x01\x02":
+            raise ValueError(f"CENTRAL_DIRECTORY_INVALID index={index} offset={offset}")
+        flags = struct.unpack_from("<H", data, offset + 8)[0]
+        crc32 = struct.unpack_from("<I", data, offset + 16)[0]
+        compressed_size = struct.unpack_from("<I", data, offset + 20)[0]
+        file_size = struct.unpack_from("<I", data, offset + 24)[0]
+        name_len, extra_len, comment_len = struct.unpack_from("<HHH", data, offset + 28)
+        name_start = offset + 46
+        raw_name = data[name_start:name_start + name_len]
+        extra = data[name_start + name_len:name_start + name_len + extra_len]
+        fields = _parse_extra_fields(extra)
+        unicode_path = next((f for f in fields if f.get("type") == "unicode_path"), None)
+        utf8_flag = bool(flags & 0x800)
+        decoded_name = None
+        decode_source = None
+        decode_error = None
+        if utf8_flag:
+            try:
+                decoded_name = raw_name.decode("utf-8", "strict")
+                decode_source = "general_purpose_utf8_flag"
+            except UnicodeDecodeError as exc:
+                decode_error = {"encoding": "utf-8", "start": exc.start, "end": exc.end}
+        elif all(b < 0x80 for b in raw_name):
+            decoded_name = raw_name.decode("ascii")
+            decode_source = "ascii_without_utf8_flag"
+        elif unicode_path and unicode_path.get("unicode_name_decode_ok"):
+            expected_crc = f"{binascii.crc32(raw_name) & 0xffffffff:08x}"
+            unicode_path["raw_name_crc32"] = expected_crc
+            unicode_path["crc_matches_raw_name"] = unicode_path.get("name_crc32") == expected_crc
+            if unicode_path["crc_matches_raw_name"] and unicode_path.get("version") == 1:
+                decoded_name = unicode_path["unicode_name"]
+                decode_source = "unicode_path_extra_field_0x7075"
+        if decoded_name is None and decode_error is None:
+            decode_error = {"encoding": "unsupported_unflagged_non_ascii", "raw_length": len(raw_name)}
+        records.append({
+            "index": index,
+            "central_directory_offset": offset,
+            "raw_name_bytes_base64": base64.b64encode(raw_name).decode("ascii"),
+            "raw_name_bytes_hex": raw_name.hex(),
+            "flag_bits": flags,
+            "utf8_flag": utf8_flag,
+            "decoded_name": decoded_name,
+            "decode_source": decode_source,
+            "decode_error": decode_error,
+            "path_state": path_state(decoded_name) if decoded_name is not None else None,
+            "crc32": f"{crc32:08x}",
+            "compressed_size": compressed_size,
+            "size": file_size,
+            "extra_fields": fields,
+            "extra_fields_base64": base64.b64encode(extra).decode("ascii"),
+        })
+        offset += 46 + name_len + extra_len + comment_len
+    return records
+
+
 def zip_entries(zip_path: Path) -> dict:
     zip_path = zip_path.resolve()
-    records = []
+    raw_records = _central_directory_records(zip_path)
     with ZipFile(zip_path) as zf:
-        for info in zf.infolist():
-            name = info.filename
-            raw_reconstruction = name.encode("utf-8") if info.flag_bits & 0x800 else None
-            records.append({
-                "name": name,
-                "path_state": path_state(name),
-                "flag_bits": info.flag_bits,
-                "utf8_flag": bool(info.flag_bits & 0x800),
-                "raw_name_bytes_base64": base64.b64encode(raw_reconstruction).decode("ascii") if raw_reconstruction is not None else None,
-                "compress_type": info.compress_type,
-                "compressed_size": info.compress_size,
-                "size": info.file_size,
-                "crc32": f"{info.CRC:08x}",
-                "extra_fields_base64": base64.b64encode(info.extra).decode("ascii"),
-            })
+        infos = zf.infolist()
+        if len(infos) != len(raw_records):
+            raise ValueError("ZIPINFO_CENTRAL_DIRECTORY_COUNT_MISMATCH")
+        records = []
+        for raw, info in zip(raw_records, infos):
+            record = dict(raw)
+            record["library_name"] = info.filename
+            record["library_path_state"] = path_state(info.filename)
+            record["library_matches_decoded_name"] = raw.get("decoded_name") == info.filename
+            record["library_flag_bits"] = info.flag_bits
+            records.append(record)
     canonical = json.dumps(records, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return {
         "schema_version": EVIDENCE_SCHEMA_VERSION,

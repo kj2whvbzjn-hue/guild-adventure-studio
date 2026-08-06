@@ -2,6 +2,9 @@
 from __future__ import annotations
 import argparse, json, re, sys, unicodedata, zipfile
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from evidence import zip_entries
+from pathlib import Path
 
 TEXT_EXTS={'.html','.htm','.js','.css','.json','.webmanifest','.md','.txt','.py','.sh','.php','.csv','.xml','.yml','.yaml'}
 ESCAPED_RE=re.compile(r'#U[0-9A-Fa-f]{4,6}')
@@ -35,7 +38,10 @@ def main()->int:
    'containsEscapedUnicodeFilename(value)',
    "normalize('NFC')",
    'ZIP_FILENAME_CANONICALIZED',
-   'escapedUnicodeNames'
+   'escapedUnicodeNames',
+   'rawEntryMetadata(bytes)',
+   'unicode_path_extra_field_0x7075',
+   'ZIP_FILENAME_LIBRARY_MISMATCH'
   ]
   for required in required_markers:
    if required not in studio_text:
@@ -45,14 +51,16 @@ def main()->int:
  if a.zip_path:
   zp=Path(a.zip_path)
   try:
+   evidence=zip_entries(zp)
+   for item in evidence['entries']:
+    n=item.get('decoded_name')
+    if item.get('decode_error'): errors.append(f"ZIP_FILENAME_DECODE_ERROR index={item['index']} {item['decode_error']}")
+    if not item.get('library_matches_decoded_name'): errors.append(f"ZIP_LIBRARY_NAME_MISMATCH index={item['index']} decoded={n!r} library={item.get('library_name')!r}")
+    if n and unicodedata.normalize('NFC',n)!=n: errors.append(f'ZIP_FILENAME_NOT_NFC {n}')
+    if n and ESCAPED_RE.search(n) and n not in legacy: errors.append(f'ZIP_ESCAPED_UNICODE_FILENAME {n}')
    with zipfile.ZipFile(zp) as z:
     bad=z.testzip()
     if bad: errors.append(f'ZIP_CORRUPT {bad}')
-    for i in z.infolist():
-     n=i.filename
-     if unicodedata.normalize('NFC',n)!=n: errors.append(f'ZIP_FILENAME_NOT_NFC {n}')
-     if any(ord(c)>127 for c in n) and not (i.flag_bits & 0x800): errors.append(f'ZIP_UTF8_FLAG_MISSING {n}')
-     if ESCAPED_RE.search(n) and n not in legacy: errors.append(f'ZIP_ESCAPED_UNICODE_FILENAME {n}')
   except Exception as e: errors.append(f'ZIP_READ_FAIL {e}')
  if warnings:
   print('ENCODING_WARN'); print('\n'.join(sorted(set(warnings))))

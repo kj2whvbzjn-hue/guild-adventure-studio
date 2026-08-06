@@ -4627,24 +4627,64 @@ const GKZipCore={
    if(ArrayBuffer.isView(value))return new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
    return new Uint8Array(value||0);
   },
-  rawEntryNames(bytes){
-   const data=this.toBytes(bytes);
-   const view=new DataView(data.buffer,data.byteOffset,data.byteLength);
+  crc32(bytes){
+   let crc=0xFFFFFFFF;
+   for(const value of bytes){
+    crc^=value;
+    for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xEDB88320:0);
+   }
+   return (crc^0xFFFFFFFF)>>>0;
+  },
+  parseExtraFields(extra,rawNameBytes){
+   const view=new DataView(extra.buffer,extra.byteOffset,extra.byteLength);
+   const fields=[];let offset=0;
+   while(offset+4<=extra.length){
+    const headerId=view.getUint16(offset,true);const size=view.getUint16(offset+2,true);offset+=4;
+    if(offset+size>extra.length){fields.push({headerId,size,truncated:true});break}
+    const payload=extra.subarray(offset,offset+size);const item={headerId,size};
+    if(headerId===0x7075){
+     item.type='unicode_path';
+     if(size>=5){
+      item.version=payload[0];item.nameCrc32=new DataView(payload.buffer,payload.byteOffset+1,4).getUint32(0,true);
+      const unicodeBytes=payload.subarray(5);
+      try{item.unicodeName=new TextDecoder('utf-8',{fatal:true}).decode(unicodeBytes);item.decodeOk=true}
+      catch(error){item.decodeOk=false;item.decodeError=String(error?.message||error)}
+      item.rawNameCrc32=this.crc32(rawNameBytes);item.crcMatchesRawName=item.nameCrc32===item.rawNameCrc32;
+     }else item.invalid='payload_too_short';
+    }
+    fields.push(item);offset+=size;
+   }
+   return fields;
+  },
+  rawEntryMetadata(bytes){
+   const data=this.toBytes(bytes);const view=new DataView(data.buffer,data.byteOffset,data.byteLength);
    let eocd=-1;
    for(let i=data.length-22;i>=Math.max(0,data.length-65557);i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break}}
-   if(eocd<0)return [];
-   const count=view.getUint16(eocd+10,true);
-   let offset=view.getUint32(eocd+16,true);
-   const names=[];const decoder=new TextDecoder('utf-8',{fatal:false});
-   for(let i=0;i<count&&offset+46<=data.length;i++){
-    if(view.getUint32(offset,true)!==0x02014b50)break;
-    const nameLength=view.getUint16(offset+28,true);
-    const extraLength=view.getUint16(offset+30,true);
-    const commentLength=view.getUint16(offset+32,true);
-    names.push(decoder.decode(data.subarray(offset+46,offset+46+nameLength)));
+   if(eocd<0)throw new Error('ZIP中央ディレクトリ終端が見つかりません。');
+   const count=view.getUint16(eocd+10,true);let offset=view.getUint32(eocd+16,true);
+   if(count===0xFFFF||offset===0xFFFFFFFF)throw new Error('ZIP64の生ファイル名証跡は未対応です。');
+   const records=[];
+   for(let index=0;index<count;index++){
+    if(offset+46>data.length||view.getUint32(offset,true)!==0x02014b50)throw new Error(`ZIP中央ディレクトリが不正です: ${index}`);
+    const flags=view.getUint16(offset+8,true);const nameLength=view.getUint16(offset+28,true);
+    const extraLength=view.getUint16(offset+30,true);const commentLength=view.getUint16(offset+32,true);
+    const rawNameBytes=data.subarray(offset+46,offset+46+nameLength);
+    const extra=data.subarray(offset+46+nameLength,offset+46+nameLength+extraLength);
+    const fields=this.parseExtraFields(extra,rawNameBytes);const unicodePath=fields.find(x=>x.type==='unicode_path');
+    const utf8Flag=Boolean(flags&0x800);let decodedName=null;let decodeSource=null;let decodeError=null;
+    if(utf8Flag){
+     try{decodedName=new TextDecoder('utf-8',{fatal:true}).decode(rawNameBytes);decodeSource='general_purpose_utf8_flag'}
+     catch(error){decodeError=`UTF-8宣言された名前を厳密デコードできません: ${String(error?.message||error)}`}
+    }else if(Array.from(rawNameBytes).every(value=>value<0x80)){
+     decodedName=String.fromCharCode(...rawNameBytes);decodeSource='ascii_without_utf8_flag';
+    }else if(unicodePath?.decodeOk&&unicodePath?.version===1&&unicodePath?.crcMatchesRawName){
+     decodedName=unicodePath.unicodeName;decodeSource='unicode_path_extra_field_0x7075';
+    }else decodeError='UTF-8未宣言の非ASCII名に、有効なUnicode Path Extra Fieldがありません。';
+    records.push({index,flags,utf8Flag,decodedName,decodeSource,decodeError,extraFields:fields,
+     rawNameHex:Array.from(rawNameBytes).map(v=>v.toString(16).padStart(2,'0')).join('')});
     offset+=46+nameLength+extraLength+commentLength;
    }
-   return names;
+   return records;
   },
   async inspect(file,options={}){
    if(typeof JSZip==='undefined')throw new Error('ZIP読込ライブラリを読み込めませんでした。');
@@ -4652,7 +4692,13 @@ const GKZipCore={
    const diagnostics=GKZipCore.diagnostics.create();
    const limits=options.limits||GKZipCore.limits.createPolicy();
    const sourceBytes=file instanceof Uint8Array?file:this.toBytes(typeof file.arrayBuffer==='function'?await file.arrayBuffer():file);
-   const rawNames=this.rawEntryNames(sourceBytes).filter(name=>!String(name).endsWith('/'));
+   const rawMetadata=this.rawEntryMetadata(sourceBytes);
+   const invalidMetadata=rawMetadata.filter(item=>item.decodeError||!item.decodedName);
+   if(invalidMetadata.length){
+    GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_FILENAME_METADATA_INVALID','ZIP名の文字コード宣言またはUnicode Path Extra Fieldが不正です。',{entries:invalidMetadata});
+    throw Object.assign(new Error('ZIPファイル名メタデータが不正です。自動推測せず停止しました。'),{code:'ZIP_FILENAME_METADATA_INVALID',diagnostics});
+   }
+   const rawNames=rawMetadata.map(item=>item.decodedName).filter(name=>!String(name).endsWith('/'));
    const countResult=GKZipCore.limits.validate({fileCount:rawNames.length},limits);
    if(!countResult.ok){
     GKZipCore.diagnostics.add(diagnostics,'FATAL',countResult.code,'ZIP内ファイル数が上限を超えています。',{actual:countResult.actual,limit:countResult.limit});
@@ -4679,6 +4725,12 @@ const GKZipCore={
    }
    const zip=await JSZip.loadAsync(sourceBytes);
    const sourceEntries=Object.values(zip.files).filter(entry=>!entry.dir);
+   const centralNames=rawNames.map(name=>GKZipCore.path.normalize(name)).sort();
+   const jsZipNames=sourceEntries.map(entry=>GKZipCore.path.normalize(String(entry.unsafeOriginalName||entry.name||''))).sort();
+   if(JSON.stringify(centralNames)!==JSON.stringify(jsZipNames)){
+    GKZipCore.diagnostics.add(diagnostics,'FATAL','ZIP_FILENAME_LIBRARY_MISMATCH','中央ディレクトリの仕様準拠名とJSZip解釈名が一致しません。',{centralNames,jsZipNames,rawMetadata});
+    throw Object.assign(new Error('ZIPファイル名の解釈がライブラリ間で不一致です。'),{code:'ZIP_FILENAME_LIBRARY_MISMATCH',diagnostics});
+   }
    const seen=new Set();
    const entries=[];
    for(const sourceEntry of sourceEntries){
@@ -5283,7 +5335,7 @@ async function inspectStudioPackage(){
    const excluded=policyExcluded||isUnsafeDeployPath(relative)||protectedSet.has(relative);
    const bytes=await packageReader.getBytes(relative);
    const reason=policyExcluded?`分類除外:${fileClass}`:(excluded?'保護・除外':'未比較');
-   files.push({path:relative,size:bytes.length,bytes,excluded,reason,status:excluded?'PROTECTED':'PENDING',fileClass});
+   files.push({path:relative,size:bytes.length,bytes,excluded,reason,status:excluded?'PROTECTED':'PENDING',fileClass,nameEvidence:entry.nameEvidence||null});
   }
   if(!meta)throw new Error('studio-update.jsonがありません。外側の提出ZIPではなく、直接の更新ZIPを選択してください。');
   const uploadable=files.filter(x=>!x.excluded);
