@@ -84,7 +84,7 @@ def syntax_steps(profile: str) -> Iterable[tuple[str, list[str], bool]]:
         [
             sys.executable,
             "-c",
-            "import pathlib,py_compile,sys; root=pathlib.Path(sys.argv[1]); files=[p for p in root.rglob('*.py') if '.git' not in p.parts]; [py_compile.compile(str(p),doraise=True) for p in files]; print(f'PYTHON_SYNTAX_OK files={len(files)}')",
+            "import pathlib,sys; root=pathlib.Path(sys.argv[1]); files=[p for p in root.rglob('*.py') if '.git' not in p.parts and '__pycache__' not in p.parts]; [compile(p.read_text(encoding='utf-8'),str(p),'exec') for p in files]; print(f'PYTHON_SYNTAX_OK files={len(files)}')",
             str(ROOT),
         ],
         True,
