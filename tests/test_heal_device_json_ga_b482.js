@@ -7,5 +7,9 @@ assert(runtime.includes("test:{id:'TAG-HEAL-DEVICE-001'"),'回復実機JSONテ�
 for(const id of ['HEAL-SINGLE','HEAL-ALL','HEAL-DEAD-REJECT','HEAL-ENEMY-REJECT','HEAL-INVALID-DATA-REJECT'])assert(runtime.includes(`'${id}'`),`${id} がありません`);
 assert(runtime.includes("schema_version:'1.3.0'"),'過去形式に合わせたschema_versionがありません');
 assert(runtime.includes("summary:{case_count:"),'AI判定用summaryがありません');
-assert(runtime.includes("a.download=`tag-heal-device-validation-GA-B482-"),'回復JSONファイル名がありません');
-console.log('HEAL_DEVICE_JSON_GA_B482_OK');
+assert(runtime.includes('function ensureHealValidationFixtures()'),'回復検証fixture初期化がありません');
+assert(runtime.includes("resetBattle();ensureHealValidationFixtures();"),'各ケース開始時にfixtureを初期化していません');
+assert(runtime.includes("SKL-TEST-HEAL-100"),'単体回復fixtureがありません');
+assert(runtime.includes("SKL-TEST-HEAL-ALL-60"),'全体回復fixtureがありません');
+assert(runtime.includes("a.download=`tag-heal-device-validation-GA-B482.1-"),'回復JSONファイル名がありません');
+console.log('HEAL_DEVICE_JSON_GA_B482_1_OK');
