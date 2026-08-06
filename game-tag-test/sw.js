@@ -1,22 +1,22 @@
-const CACHE_NAME="ga-tag-test-b4860";
+const CACHE_NAME="ga-tag-test-b4861";
 const CACHE_PREFIX="ga-tag-test-";
-const OFFLINE_URL='./index.html?appv=4860';
+const OFFLINE_URL='./index.html?appv=4861';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=4860",
-  "./manifest.webmanifest?v=4860",
-  "./icon-192.png?v=4860",
-  "./icon-512.png?v=4860"
+  "./index.html?appv=4861",
+  "./manifest.webmanifest?v=4861",
+  "./icon-192.png?v=4861",
+  "./icon-512.png?v=4861"
 ,
-  "../assets/shared/config/runtime-config.js?v=4860",
-  "../assets/shared/js/game-shell-common.js?v=4860"
+  "../assets/shared/config/runtime-config.js?v=4861",
+  "../assets/shared/js/game-shell-common.js?v=4861"
 ,
-  "./assets/js/validation-runtime.js?v=4860"
+  "./assets/js/validation-runtime.js?v=4861"
 ,
-  "./assets/js/tag-skill-runtime.js?v=4860"
+  "./assets/js/tag-skill-runtime.js?v=4861"
 ,
-  "./assets/js/battle-control.js?v=4860",
-  "./assets/js/ui-bootstrap.js?v=4860"
+  "./assets/js/battle-control.js?v=4861",
+  "./assets/js/ui-bootstrap.js?v=4861"
 ];
 
 self.addEventListener('install',event=>{
@@ -62,15 +62,14 @@ async function networkFirst(request){
   }
 }
 
-async function cacheFirst(request){
-  const cached=await caches.match(request);
-  if(cached)return cached;
-  const response=await fetch(request,{cache:'no-cache'});
-  if(response && response.ok){
-    const cache=await caches.open(CACHE_NAME);
-    cache.put(request,response.clone());
+async function networkOnlyWithOfflineFallback(request){
+  try{
+    return await fetch(request,{cache:'no-store'});
+  }catch(error){
+    const cached=await caches.match(request);
+    if(cached)return cached;
+    throw error;
   }
-  return response;
 }
 
 self.addEventListener('fetch',event=>{
@@ -78,18 +77,12 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET')return;
 
   const url=new URL(request.url);
+  if(url.origin!==self.location.origin)return;
 
-  if(
-    request.mode==='navigate' ||
-    url.pathname.endsWith('/index.html') ||
-    url.pathname.endsWith('/sw.js') ||
-    url.pathname.endsWith('/manifest.webmanifest')
-  ){
+  if(request.mode==='navigate'){
     event.respondWith(networkFirst(request));
     return;
   }
 
-  if(url.origin===self.location.origin){
-    event.respondWith(cacheFirst(request));
-  }
+  event.respondWith(networkOnlyWithOfflineFallback(request));
 });
