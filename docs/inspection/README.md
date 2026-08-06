@@ -47,3 +47,7 @@ python3 tools/inspection/run.py release --report reports/inspection-release.json
 - `docs/operations/DELETION_POLICY.md`
 - `docs/operations/DELETE_WORKFLOW.md`
 - `AI_WORK_RULES.md`
+
+## AI起動ガバナンス
+
+`ai_governance`検査は`AI_START.md`の存在、必須読込順、Gateway・Studio AIエクスポートへの接続を確認する。起動順が欠ける場合は必須失敗となる。

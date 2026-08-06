@@ -10,7 +10,7 @@ AIが「単独ファイルだからZIP不要」「文書だからZIP不要」な
 
 ## AIの必須動作
 
-1. 作業開始時に`AI_WORK_RULES.md`と本書を読む。
+1. 作業開始時に`AI_START.md`を読み、定義された順序で`AI_PROJECT_INDEX.json`、`AI_PROJECT_STATUS.json`、`AI_WORK_RULES.md`、本書を読む。
 2. AI GatewayまたはAI引き継ぎZIPには、両文書の実内容を含める。
 3. 規則を取得できない場合は、成果物生成を停止して設定不備を報告する。
 4. 最終成果物は1つのZIPだけを正式成果物として案内する。

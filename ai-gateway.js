@@ -3,7 +3,7 @@
 
 const GATEWAY_VERSION='0.8.0';
 const MANIFEST_URL='./ai-gateway-manifest.json';
-const REQUIRED_GOVERNANCE_FILES=['AI_WORK_RULES.md','docs/operations/ARTIFACT_SUBMISSION_POLICY.md','shared/integrity/artifact-submission-policy.json'];
+const REQUIRED_GOVERNANCE_FILES=['AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json','AI_WORK_RULES.md','docs/operations/ARTIFACT_SUBMISSION_POLICY.md','shared/integrity/artifact-submission-policy.json'];
 let manifestCache=null;
 let sourceIndexCache=null;
 
