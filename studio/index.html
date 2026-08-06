@@ -5388,10 +5388,26 @@ async function deployStudioPackage(){
  const add=changes.filter(x=>x.status==='ADD').length;
  const modify=changes.filter(x=>x.status==='MODIFY').length;
  const deleteCount=changes.filter(x=>x.status==='DELETE').length;
- const deletePreview=changes.filter(x=>x.status==='DELETE').slice(0,20).map(x=>'・'+x.target).join('\n');
- const deleteRules=studioDeployDeleteManifestRules.join(', ')||'なし';
- if(!confirm(`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\nDELETE: ${deleteCount}\nDELETE_MANIFEST: ${deleteRules}\nCommit: ${message}${deleteCount?`\n\n削除対象（最大20件表示）:\n${deletePreview}`:''}\n\nGitHubへの書込みはこの承認後にだけ開始されます。続行しますか？`))return;
- if(deleteCount&&!confirm(`最終確認\n\nGitHub上の ${deleteCount} ファイルを削除します。\nDELETE_MANIFEST: ${deleteRules}\n\n削除対象（最大20件）:\n${deletePreview}\n\n削除は新しいCommitとして記録され、ロールバック可能です。\n\n本当に続行しますか？`))return;
+ const deleteItems=changes.filter(x=>x.status==='DELETE');
+ const modifyItems=changes.filter(x=>x.status==='MODIFY');
+ const addItems=changes.filter(x=>x.status==='ADD');
+ const previewLimit=20;
+ const formatPreview=(items)=>items.slice(0,previewLimit).map(x=>'・'+x.target).join('\n');
+ const remaining=(items)=>items.length>previewLimit?`\n…ほか ${items.length-previewLimit}件`:'';
+ const deletePreview=formatPreview(deleteItems)+remaining(deleteItems);
+ const modifyPreview=formatPreview(modifyItems)+remaining(modifyItems);
+ const addPreview=formatPreview(addItems)+remaining(addItems);
+ if(deleteItems.length!==deleteCount||modifyItems.length!==modify||addItems.length!==add){
+  alert('差分件数と確認対象の件数が一致しません。安全のため配置を停止します。再確認してください。');
+  return;
+ }
+ const firstConfirm=`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\nDELETE: ${deleteCount}\nCommit: ${message}`
+  +(add?`\n\n追加対象（最大${previewLimit}件）:\n${addPreview}`:'')
+  +(modify?`\n\n変更対象（最大${previewLimit}件）:\n${modifyPreview}`:'')
+  +(deleteCount?`\n\n今回の削除対象（最大${previewLimit}件）:\n${deletePreview}`:'')
+  +'\n\nGitHubへの書込みはこの承認後にだけ開始されます。続行しますか？';
+ if(!confirm(firstConfirm))return;
+ if(deleteCount&&!confirm(`最終確認\n\n今回、GitHub上の ${deleteCount} ファイルだけを削除します。\n\n削除対象（最大${previewLimit}件）:\n${deletePreview}\n\nDELETE_MANIFEST.txtの全履歴ではなく、現在GitHubに存在する実削除対象だけを表示しています。\n削除は新しいCommitとして記録され、ロールバック可能です。\n\n本当に続行しますか？`))return;
  try{
   studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);resetDeployLog();
   deployLogMessage(`${dry?'テスト':'単一Commit配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
