@@ -53,7 +53,8 @@ for lineno, raw in enumerate(manifest_lines, 1):
     seen.add(rel)
     if posix.is_absolute() or ".." in posix.parts or rel.endswith("/") or "\\" in rel:
         errors.append(f"UNSAFE_PATH line={lineno} path={rel}")
-    if rel in {"DELETE_MANIFEST.txt", policy.get("approval_file", "DELETE_APPROVAL.json")}:
+    cleanup_exact = set(policy.get("source_cleanup_exact_paths", []))
+    if rel in {"DELETE_MANIFEST.txt", policy.get("approval_file", "DELETE_APPROVAL.json")} and rel not in cleanup_exact:
         errors.append(f"CONTROL_FILE_DELETE line={lineno} path={rel}")
     entries.append(rel)
 
@@ -65,8 +66,9 @@ elif len(entries) > max_entries:
 
 protected_exact = set(policy.get("protected_exact_paths", []))
 protected_prefixes = tuple(policy.get("protected_prefixes", []))
+cleanup_exact = set(policy.get("source_cleanup_exact_paths", []))
 for rel in entries:
-    if rel in protected_exact or any(rel.startswith(prefix) for prefix in protected_prefixes):
+    if rel not in cleanup_exact and (rel in protected_exact or any(rel.startswith(prefix) for prefix in protected_prefixes)):
         errors.append(f"PROTECTED_PATH path={rel}")
 
 approval_name = policy.get("approval_file", "DELETE_APPROVAL.json")
@@ -111,8 +113,14 @@ if entries:
                 errors.append(f"DELETE_APPROVAL_PATH_MISSING index={index}")
                 continue
             approved_paths.append(path_value)
+            expected_cleanup_category = policy.get("source_cleanup_categories", {}).get(path_value)
             if item.get("category") not in allowed_categories:
                 errors.append(f"DELETE_APPROVAL_CATEGORY_INVALID path={path_value}")
+            elif expected_cleanup_category and item.get("category") != expected_cleanup_category:
+                errors.append(
+                    f"DELETE_APPROVAL_CLEANUP_CATEGORY_MISMATCH path={path_value} "
+                    f"expected={expected_cleanup_category} actual={item.get('category')}"
+                )
             for field in required_text_fields:
                 value = item.get(field)
                 if not isinstance(value, str) or not value.strip():

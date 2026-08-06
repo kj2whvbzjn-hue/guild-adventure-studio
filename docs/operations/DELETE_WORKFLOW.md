@@ -80,3 +80,11 @@ ADD 0 / MODIFY 0 / DELETE 0 / BLOCKED 0
 ```
 
 大きな削除や構造変更後は、GitHubから最新ZIPを取得し、次の正式基準にする。
+
+## ソース基準へ混入した非永続ファイルの除去
+
+`system-file-policy.json`導入前にGitHubへ混入した更新専用制御ファイルや成果物は、
+`delete-policy.json`の`source_cleanup_exact_paths`へ完全一致パスで登録したものだけ削除できる。
+
+この例外は通常の削除許可ではない。登録外の制御ファイル、保護領域、成果物は引き続き拒否する。
+削除検査機構の変更と実削除は別々の更新で行う。
