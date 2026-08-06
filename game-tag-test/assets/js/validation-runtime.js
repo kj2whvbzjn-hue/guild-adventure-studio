@@ -467,7 +467,7 @@ $('aiEditorClose').onclick=closeAiEditor;$('aiEditorSave').onclick=()=>{if(aiEdi
 const openAiBtn=$('openAiEditor');if(openAiBtn)openAiBtn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===selectedId));const skillBtn=$('openSkillPlaceholder');if(skillBtn)skillBtn.onclick=()=>alert('スキル装着画面は次の実験Buildで追加します。');const equipViewBtn=$('openEquipView');if(equipViewBtn)equipViewBtn.onclick=()=>setBaseView('equipment');
 
 
-/* Sprint 4 console synchronized — GA-B481 */
+/* Sprint 4 console synchronized — GA-B482.2 */
 function buildModifierValidationReport(){
  const meta=battle.validationMeta||{},targetIds=meta.targetIds||[meta.targetId].filter(Boolean),targets=targetIds.map(id=>battle.units.find(x=>x.id===id)).filter(Boolean),events=battle.validationEvents||[];
  const added=events.filter(x=>x.type==='modifier_stack_added'),expired=events.filter(x=>x.type==='modifier_expired'),changes=events.filter(x=>x.type==='modifier_effective_changed'),errors=events.filter(x=>x.type==='error').map(x=>x.message||String(x));
@@ -692,8 +692,8 @@ function runHealDeviceJsonValidation(){
   return makeHealValidationCase({id:'HEAL-INVALID-DATA-REJECT',label:'不正回復データ拒否',initialState:{skill:invalid},events:[],finalState:{compiled_ok:compiled.ok,compile_errors:[...compiled.errors]},expectations:{compiled_ok:false},result:compiled,errors});
  });
  const errors=cases.flatMap(c=>c.errors.map(message=>`${c.id}: ${message}`));
- const report={schema_version:'1.3.0',build:'GA-B482.1',generated_at:new Date().toISOString(),test:{id:'TAG-HEAL-DEVICE-001',mode:'device_validation',entrypoint:'game-tag-test/index.html',trigger:'tagTestRunHealJson'},cases,summary:{case_count:cases.length,passed_count:cases.filter(x=>x.passed).length,failed_count:cases.filter(x=>!x.passed).length,passed:errors.length===0,errors}};
- const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-heal-device-validation-GA-B482.1-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);
+ const report={schema_version:'1.3.0',build:'GA-B482.2',generated_at:new Date().toISOString(),test:{id:'TAG-HEAL-DEVICE-001',mode:'device_validation',entrypoint:'game-tag-test/index.html',trigger:'tagTestRunHealJson'},cases,summary:{case_count:cases.length,passed_count:cases.filter(x=>x.passed).length,failed_count:cases.filter(x=>!x.passed).length,passed:errors.length===0,errors}};
+ const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-heal-device-validation-GA-B482.2-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);
  $('tagTestResult').textContent=`[HEAL DEVICE JSON] ${report.summary.passed?'PASS':'FAIL'}\n[CASES] ${report.summary.passed_count}/${report.summary.case_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.map(x=>' - '+x).join('\n'):''}\n[JSON] 出力完了`;
  renderBattle();return report;
 }
