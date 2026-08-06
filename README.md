@@ -120,4 +120,7 @@ python3 tools/inspection/run.py full --context update --fail-fast
 ## AIルールの自動引き継ぎ
 
 AI GatewayとStudioのAIエクスポートは、`AI_START.md`、`AI_PROJECT_INDEX.json`、`AI_PROJECT_STATUS.json`、`AI_WORK_RULES.md`、成果物提出ポリシー、機械ポリシーを必須コンテキストとして実内容ごと渡す。取得できない場合はAI用成果物の生成を停止する。アップロードを伴う成果物は、管理資料や単独文書を含め、必ず1つのZIPで提出する。
+## AI作業憲章
+
+AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業宣言、変更範囲、完了条件、ZIP提出、完了報告の順で作業する。AI GatewayとStudioのAI用ZIPはこの憲章を必須コンテキストとして提供し、接続漏れは検査で不合格になる。
 

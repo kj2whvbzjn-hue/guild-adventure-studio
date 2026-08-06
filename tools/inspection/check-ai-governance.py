@@ -40,11 +40,17 @@ for rel in sequence:
 if all(i>=0 for i in pos) and pos != sorted(pos): errors.append('START_SEQUENCE_ORDER_INVALID')
 if '必ず1つのZIP' not in start: errors.append('ZIP_RULE_MISSING_FROM_AI_START')
 if '成果物生成を開始してはならない' not in start: errors.append('START_FAIL_CLOSED_MISSING')
+required_start_tokens=[
+ 'AIの役割と判断優先順位','開始前チェック（Pre-flight）','作業宣言','変更を許可する範囲',
+ '完了条件','完了報告形式','データ保全','必ず1つのZIP'
+]
+for token in required_start_tokens:
+ if token not in start: errors.append('AI_OPERATION_CHARTER_MISSING '+token)
 for rel in ['AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json']:
  try: json.loads((root/rel).read_text(encoding='utf-8'))
  except Exception as exc: errors.append('STARTUP_JSON_INVALID '+rel+' '+str(exc))
 gateway=(root/'ai-gateway.js').read_text(encoding='utf-8')
-for token in ['loadGovernance','governance:await loadGovernance()','acknowledgementRequired:true','AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json']:
+for token in ['loadGovernance','governance:await loadGovernance()','acknowledgementRequired:true','operatingContract','preflightRequired:true','workDeclarationRequired:true','scopeRestrictionRequired:true','completionReportRequired:true','AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json']:
  if token not in gateway: errors.append('GATEWAY_WIRING_MISSING '+token)
 exporter=(root/'modules/verification/ai-export.js').read_text(encoding='utf-8')
 export_sequence=[
@@ -57,7 +63,7 @@ export_sequence=[
  'governance/package-build.json',
  'governance/package_manifest.json',
 ]
-for token in ['loadRequiredGovernance','必ず1つのZIPで提出']+export_sequence:
+for token in ['loadRequiredGovernance','必ず1つのZIPで提出','作業宣言として確定','宣言した範囲外を便乗修正','未解決事項・成果物ZIP']+export_sequence:
  if token not in exporter: errors.append('AI_EXPORT_WIRING_MISSING '+token)
 export_positions=[exporter.find(token) for token in export_sequence]
 if all(i>=0 for i in export_positions) and export_positions != sorted(export_positions): errors.append('AI_EXPORT_START_SEQUENCE_ORDER_INVALID')

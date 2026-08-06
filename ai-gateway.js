@@ -79,7 +79,17 @@ async function loadGovernance(){
     requiredFiles:configured,
     files,
     artifactSubmission:{uploadFormat:'zip',appliesToAllUploadedArtifacts:true,individualFinalFilesAllowed:false},
-    acknowledgementRequired:true
+    acknowledgementRequired:true,
+    operatingContract:{
+      decisionPriority:['data_preservation','runtime_stability','specification_stability','explicit_user_instruction','new_features'],
+      preflightRequired:true,
+      workDeclarationRequired:true,
+      scopeRestrictionRequired:true,
+      deletionDefault:'prohibited',
+      uploadedArtifactFormat:'single_zip',
+      completionReportRequired:true,
+      failClosedWhenGovernanceUnavailable:true
+    }
   };
 }
 
