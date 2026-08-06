@@ -1,12 +1,12 @@
-const CACHE_NAME="ga-root-b4861";
+const CACHE_NAME="ga-root-b4860";
 const CACHE_PREFIX="ga-root-";
-const OFFLINE_URL='./index.html?appv=4861';
+const OFFLINE_URL='./index.html?appv=4860';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=4861",
-  "./manifest.webmanifest?v=4861",
-  "./icon-192.png?v=4861",
-  "./icon-512.png?v=4861"
+  "./index.html?appv=4860",
+  "./manifest.webmanifest?v=4860",
+  "./icon-192.png?v=4860",
+  "./icon-512.png?v=4860"
 ];
 
 self.addEventListener('install',event=>{
@@ -52,14 +52,15 @@ async function networkFirst(request){
   }
 }
 
-async function networkOnlyWithOfflineFallback(request){
-  try{
-    return await fetch(request,{cache:'no-store'});
-  }catch(error){
-    const cached=await caches.match(request);
-    if(cached)return cached;
-    throw error;
+async function cacheFirst(request){
+  const cached=await caches.match(request);
+  if(cached)return cached;
+  const response=await fetch(request,{cache:'no-cache'});
+  if(response && response.ok){
+    const cache=await caches.open(CACHE_NAME);
+    cache.put(request,response.clone());
   }
+  return response;
 }
 
 self.addEventListener('fetch',event=>{
@@ -67,12 +68,18 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET')return;
 
   const url=new URL(request.url);
-  if(url.origin!==self.location.origin)return;
 
-  if(request.mode==='navigate'){
+  if(
+    request.mode==='navigate' ||
+    url.pathname.endsWith('/index.html') ||
+    url.pathname.endsWith('/sw.js') ||
+    url.pathname.endsWith('/manifest.webmanifest')
+  ){
     event.respondWith(networkFirst(request));
     return;
   }
 
-  event.respondWith(networkOnlyWithOfflineFallback(request));
+  if(url.origin===self.location.origin){
+    event.respondWith(cacheFirst(request));
+  }
 });
