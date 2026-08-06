@@ -128,6 +128,7 @@ def build_steps(profile: str, release_output: Path | None, context: str) -> list
     if context == "update":
         steps.insert(4, ("delete_manifest", [py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True))
     steps.insert(0, ("inspection_context", [py, str(ROOT / "tools/inspection/check-context.py"), str(ROOT), "--context", context], True))
+    steps.insert(1, ("ai_governance", [py, str(ROOT / "tools/inspection/check-ai-governance.py"), str(ROOT)], True))
     steps.extend(syntax_steps(profile))
 
     if profile in {"full", "release"}:

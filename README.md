@@ -117,3 +117,7 @@ python3 tools/inspection/run.py full --context update --fail-fast
 ```
 
 `--timeout`は各工程の上限秒数、`--fail-fast`は最初の必須失敗で停止する指定です。タイムアウトは終了コード124としてレポートに記録されます。
+## AIルールの自動引き継ぎ
+
+AI GatewayとStudioのAIエクスポートは、`AI_WORK_RULES.md`、成果物提出ポリシー、機械ポリシーを必須コンテキストとして実内容ごと渡す。取得できない場合はAI用成果物の生成を停止する。アップロードを伴う成果物は、管理資料や単独文書を含め、必ず1つのZIPで提出する。
+

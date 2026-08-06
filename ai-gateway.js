@@ -3,6 +3,7 @@
 
 const GATEWAY_VERSION='0.8.0';
 const MANIFEST_URL='./ai-gateway-manifest.json';
+const REQUIRED_GOVERNANCE_FILES=['AI_WORK_RULES.md','docs/operations/ARTIFACT_SUBMISSION_POLICY.md','shared/integrity/artifact-submission-policy.json'];
 let manifestCache=null;
 let sourceIndexCache=null;
 
@@ -62,6 +63,26 @@ function projectSummary(project){
   };
 }
 
+async function loadGovernance(){
+  const manifest=await loadManifest();
+  const configured=Array.isArray(manifest.requiredGovernanceFiles)?manifest.requiredGovernanceFiles:REQUIRED_GOVERNANCE_FILES;
+  const files=[];
+  for(const path of configured){
+    if(!manifest.allowedFiles.includes(path))throw new Error('Required governance file is not allowlisted: '+path);
+    const item=await getFile(path);
+    if(!item.content.trim())throw new Error('Required governance file is empty: '+path);
+    files.push(item);
+  }
+  return {
+    status:'required',
+    loaded:true,
+    requiredFiles:configured,
+    files,
+    artifactSubmission:{uploadFormat:'zip',appliesToAllUploadedArtifacts:true,individualFinalFilesAllowed:false},
+    acknowledgementRequired:true
+  };
+}
+
 async function buildContext(profile){
   const manifest=await loadManifest();
   const project=currentProject();
@@ -82,7 +103,8 @@ async function buildContext(profile){
     validation:validationResult(),
     availableRoutes:clone(manifest.routes),
     availableFiles:clone(manifest.allowedFiles),
-    capabilities:clone(manifest.capabilities||[])
+    capabilities:clone(manifest.capabilities||[]),
+    governance:await loadGovernance()
   };
   if(selectedProfile==='minimal'){
     delete context.availableFiles;
@@ -243,6 +265,8 @@ async function exportBundle(){
   zip.file('ai-gateway-manifest.json',JSON.stringify(manifest,null,2));
   const handover=zip.folder('handover');
   for(const item of (await getHandover()).files)handover.file(item.path,item.content);
+  const governance=zip.folder('governance');
+  for(const item of (await loadGovernance()).files)governance.file(item.path,item.content);
   const source=zip.folder('source');
   const failures=[];
   for(const path of manifest.allowedFiles){
@@ -268,7 +292,7 @@ async function renderPanel(){
   }catch(error){status.textContent='エラー';output.textContent=error.stack||error.message;}
 }
 
-window.GKStudioAIGateway={version:GATEWAY_VERSION,request,buildContext,getFile,getFileRange,getHandover,buildSourceIndex,searchFiles,exportContext,exportBundle,renderPanel,bridgeSettings,saveBridgeSettings,bridgeRequest,bridgeHealth,syncBridgeSnapshot};
+window.GKStudioAIGateway={version:GATEWAY_VERSION,request,buildContext,loadGovernance,getFile,getFileRange,getHandover,buildSourceIndex,searchFiles,exportContext,exportBundle,renderPanel,bridgeSettings,saveBridgeSettings,bridgeRequest,bridgeHealth,syncBridgeSnapshot};
 window.aiGatewayRefresh=renderPanel;
 window.aiGatewayExportContext=async()=>{try{await exportContext();}catch(e){alert(e.message);}};
 window.aiGatewayExportBundle=async()=>{try{const r=await exportBundle();alert('AI取得用パッケージを出力しました。取得失敗: '+r.failures.length+'件');}catch(e){alert(e.message);}};
