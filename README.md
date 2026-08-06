@@ -132,3 +132,6 @@ AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業�
 
 ## 分割Full検査
 実行時間制限がある環境では`docs/operations/SHARDED_FULL_INSPECTION.md`に従い、同一入力・同一ツリーの固定シャードを集約します。
+
+## 入力ZIPとの結合検査
+source検査は入力ZIPと展開ツリーのパス・サイズ・SHA-256一致を先に確認します。詳細は`docs/operations/SOURCE_ZIP_BINDING.md`を参照してください。
