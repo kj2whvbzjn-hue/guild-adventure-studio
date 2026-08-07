@@ -16,7 +16,9 @@
 
 ## 旧形式ファイル名の解消
 
-`README_GITHUB#U53cd#U6620.md`は、人間の個別承認に基づき削除済みである。正しい日本語名の`README_GITHUB反映.md`を保持し、`#Uxxxx`形式の新規生成は禁止する。
+過去に`README_GITHUB反映.md`が一部の展開環境で`README_GITHUB#U53cd#U6620.md`へ変換された事例があった。
+再発防止のため、この永続ファイルは人間の個別承認に基づきASCII安全名`README_GITHUB_REFLECTION.md`へ移行する。
+永続ファイルの新規命名は原則ASCII安全名を使用し、`#Uxxxx`形式の新規生成は禁止する。
 
 ## 完了条件
 

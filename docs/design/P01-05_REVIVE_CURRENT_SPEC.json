@@ -1,10 +1,10 @@
 {
   "schema_version": "1.1.0",
   "task_id": "P01-05",
-  "build": "GA-B486.23",
-  "feature": "REVIVE_RATE_HP_TAG_VALIDATION",
+  "build": "GA-B486.24",
+  "feature": "REVIVE_RATE_HP_GAME_RUNTIME_VALIDATION",
   "base_build": "GA-B486.21",
-  "status": "rate_game_runtime_connection_ready",
+  "status": "rate_game_runtime_validation_ready",
   "scope": {
     "logic": "REVIVE",
     "target_side": "ally",
@@ -15,29 +15,31 @@
     "fixed_tag": "REVIVE_HP",
     "rate_tag": "REVIVE_HP_RATE",
     "rate_unit": "ratio_0_to_1",
-    "stage": "game_tag_test_only"
+    "stage": "game_runtime_validation"
   },
   "decisions": {
     "rate_formula": "max(1, floor(target.max_hp * REVIVE_HP_RATE))",
     "rate_range": "0 < value <= 1",
     "fixed_and_rate": "mutually_exclusive",
-    "fixed_mode_regression": "maintained",
+    "fixed_mode_regression": "deferred_not_release_gate",
     "living_single_target": "INVALID_TARGET",
     "gauge_after_revive": 0,
-    "same_tick_action": false
+    "same_tick_action": false,
+    "fixed_mode_future_use": "candidate_for_last_stand_foundation"
   },
   "validation": {
-    "entrypoint": "game-tag-test/index.html",
+    "entrypoint": "game/index.html",
     "trigger": "tagTestRunReviveJson",
-    "case_count": 8,
-    "output_pattern": "tag-revive-rate-device-validation-GA-B486.22-*.json"
+    "release_gate_case_count": 7,
+    "deferred_check_count": 1,
+    "output_pattern": "tag-revive-rate-game-runtime-validation-GA-B486.24-*.json"
   },
   "not_in_scope": [
-    "game runtime connection",
     "Studio formal connection",
     "formal runtime regression",
-    "removal of REVIVE_HP"
+    "removal of REVIVE_HP",
+    "implementation of last-stand/death-prevention"
   ],
-  "stage": "game_runtime_connection",
+  "stage": "game_runtime_validation",
   "game_runtime_rate_supported": true
 }
