@@ -128,6 +128,7 @@ function processTicks(count){
   battle.tick++;
   processModifierStacks();
   processShieldEffects();
+  processStatusEffects();
   processDotStacks();
   if(battle.result||battle.pendingResult)break;
   if(battle.validationMode)continue;

@@ -1,0 +1,260 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_type": "design_only",
+  "deployable": false,
+  "task": {
+    "id": "P01-03",
+    "name": "状態異常基盤",
+    "phase": 1,
+    "status": "PROPOSAL",
+    "base_game_build": "GA-B484.1",
+    "base_studio_build": "GKS-B484",
+    "implementation_start_condition": "P01-02シールドの実機JSONおよび正式運用回帰がPASSした後"
+  },
+  "purpose": "個別状態異常を増やす前に、付与・持続・耐性・重複・解除・死亡・戦闘終了・ログを共通ランタイムとして確立する。",
+  "source_principles": [
+    "状態異常、BUFF、DEBUFF、DOT、スタックは別概念として管理する。",
+    "状態異常耐性の実効上限は75%。入力値が75を超える場合は75へ制限する。",
+    "恒久的な完全無効および恒久的な付与禁止は基本機能として設けない。",
+    "状態異常の持続はTick基準で管理する。",
+    "付与・更新・満了・解除・死亡・戦闘終了の理由をJSONイベントへ記録する。"
+  ],
+  "scope": {
+    "included": [
+      "状態異常共通データモデル",
+      "付与成功判定",
+      "耐性上限処理",
+      "持続Tickと満了",
+      "再付与時の共通重複規則",
+      "手動解除APIへの接続点",
+      "死亡時・戦闘終了時の消去",
+      "JSON実機検証"
+    ],
+    "excluded": [
+      "P01-04解除スキル本体",
+      "P01-09行動不能の全禁止範囲",
+      "個別状態異常の大量実装",
+      "装備・ジョブ・石板由来の高度な耐性補正"
+    ]
+  },
+  "formal_tag_proposal": {
+    "classification_tag": "STATUS",
+    "status_identifier_tag": "STATUS_ID=<id>",
+    "duration_tag": "DURATION=<tick>",
+    "target_tags": [
+      "自分",
+      "味方",
+      "敵",
+      "単体",
+      "全体"
+    ],
+    "optional_tags": [
+      "REFRESH",
+      "INDEPENDENT",
+      "STRONGEST"
+    ],
+    "validation_rules": [
+      "STATUSにはSTATUS_IDが必要",
+      "DURATIONは0より大きい有限整数",
+      "対象陣営と選択対象が一致すること"
+    ]
+  },
+  "runtime_model": {
+    "status_instance": {
+      "instance_id": "STATUS-I-<sequence>",
+      "status_id": "STATUS-<name>",
+      "source_id": "unit id",
+      "target_id": "unit id",
+      "skill_id": "skill id",
+      "applied_tick": "integer",
+      "base_duration_tick": "integer",
+      "effective_duration_tick": "integer",
+      "expires_tick": "integer",
+      "application_rate": "0..100",
+      "target_resistance": "0..75",
+      "stack_policy": "refresh|independent|strongest",
+      "payload": {},
+      "remove_on_death": true,
+      "remove_on_battle_end": true
+    },
+    "target_storage": "unit.statusEffects[]",
+    "stable_order": [
+      "applied_tick",
+      "instance_sequence"
+    ]
+  },
+  "resistance_design": {
+    "decision": "初回基盤では付与成功率へ耐性を適用し、持続時間短縮には使わない。",
+    "formula": "effective_rate = clamp(base_rate * (1 - clamp(resistance,0,75)/100), 0, 100)",
+    "randomness": "実機JSON検証では固定乱数値を注入して再現可能にする。通常ゲームでは既存乱数供給元へ接続する。",
+    "examples": [
+      {
+        "base_rate": 100,
+        "resistance": 0,
+        "effective_rate": 100
+      },
+      {
+        "base_rate": 100,
+        "resistance": 75,
+        "effective_rate": 25
+      },
+      {
+        "base_rate": 80,
+        "resistance": 50,
+        "effective_rate": 40
+      },
+      {
+        "base_rate": 100,
+        "resistance": 100,
+        "effective_rate": 25,
+        "note": "resistanceは75へ制限"
+      }
+    ],
+    "open_for_future": "状態異常ごとの耐性種別および持続時間短縮方式は個別仕様で拡張する。"
+  },
+  "duplicate_policy": {
+    "default": "refresh",
+    "refresh": "同一status_id・同一targetの既存1件を維持し、expires_tickを新しい付与時点から再計算する。payloadは新定義で更新する。",
+    "independent": "instance_idごとに独立保持する。Phase 1では検証用のみとし、個別正式採用は別承認。",
+    "strongest": "強度比較キーが定義された状態だけで使用する。未定義の場合はコンパイル拒否。",
+    "reason": "初回基盤で無制限多重化を避け、解除・ログ・満了判定を安定させるため。"
+  },
+  "first_reference_status": {
+    "id": "STATUS-ACCURACY-DOWN",
+    "display_name": "命中低下",
+    "reason": "既存DOTと重複せず、行動不能やスキル禁止のような広範囲の実行制御を要求しないため、基盤確認に適する。",
+    "payload": {
+      "accuracy_modifier": -20
+    },
+    "default_duration_tick": 300,
+    "stack_policy": "refresh",
+    "note": "命中計算への本番接続が未整備の場合、初回テストでは状態保持・参照値・満了までを検証し、命中結果への影響は別ケースで接続確認する。"
+  },
+  "removal_contract": {
+    "api": "removeStatus(target, selector, reason, tick)",
+    "selectors": [
+      "instance_id",
+      "status_id",
+      "category=status"
+    ],
+    "reasons": [
+      "expired",
+      "manual_dispel",
+      "target_dead",
+      "battle_end",
+      "replaced",
+      "scripted"
+    ],
+    "p01_04_connection": "解除スキルはこのAPIを呼び、解除順序・解除数だけをP01-04で追加する。"
+  },
+  "death_and_battle_end": {
+    "target_death": "remove_on_death=trueの状態を即時消去し、reason=target_deadを記録",
+    "source_death": "初回基盤では継続。付与者依存状態は将来のオーラ等で別指定する。",
+    "battle_end": "remove_on_battle_end=trueの状態を全消去し、reason=battle_endを記録",
+    "carry_over": "Phase 1状態異常はすべてbattle_only"
+  },
+  "json_device_test": {
+    "test_id": "TAG-STATUS-DEVICE-001",
+    "proposed_trigger": "tagTestRunStatusJson",
+    "output_filename": "tag-status-device-validation-GA-B<test-build>-*.json",
+    "required_cases": [
+      {
+        "id": "STATUS-APPLY-0RES",
+        "expectation": "耐性0で確定付与、状態1件、expires_tick整合"
+      },
+      {
+        "id": "STATUS-RESIST-75",
+        "expectation": "耐性75で実効率25、固定乱数により拒否、状態0件"
+      },
+      {
+        "id": "STATUS-RESIST-CAP",
+        "expectation": "耐性100入力を75へ制限"
+      },
+      {
+        "id": "STATUS-REFRESH",
+        "expectation": "同一状態再付与で件数1、期限更新、status_refreshed"
+      },
+      {
+        "id": "STATUS-EXPIRE",
+        "expectation": "expires_tick到達で消去、reason=expired"
+      },
+      {
+        "id": "STATUS-MANUAL-REMOVE",
+        "expectation": "共通解除APIで消去、reason=manual_dispel"
+      },
+      {
+        "id": "STATUS-TARGET-DEATH",
+        "expectation": "対象死亡で消去、reason=target_dead"
+      },
+      {
+        "id": "STATUS-BATTLE-END",
+        "expectation": "戦闘終了で消去、reason=battle_end"
+      },
+      {
+        "id": "STATUS-INVALID-DATA",
+        "expectation": "STATUS_IDなし、DURATION<=0をコンパイル拒否"
+      },
+      {
+        "id": "STATUS-REGRESSION",
+        "expectation": "ATTACK/DOT/BUFF/DEBUFF/HEAL/SHIELDの既存検証がPASS"
+      }
+    ],
+    "summary_requirement": "全ケースpassed=true、errors=[]"
+  },
+  "implementation_files_expected": [
+    "game/assets/js/tag-skill-runtime.js",
+    "game/assets/js/battle-control.js",
+    "game-tag-test/assets/js/tag-skill-runtime.js",
+    "game-tag-test/assets/js/battle-control.js",
+    "game-tag-test/assets/js/validation-runtime.js",
+    "game-tag-test/index.html",
+    "Export/skill/skills.json",
+    "shared/tests/test-registry.json",
+    "tests/test_status_runtime_<build>.js",
+    "tests/test_status_device_json_<build>.js"
+  ],
+  "open_questions": [
+    {
+      "id": "OPEN-01",
+      "question": "命中低下を最初の正式状態異常として採用するか",
+      "blocking": false,
+      "proposal": "採用"
+    },
+    {
+      "id": "OPEN-02",
+      "question": "状態異常成功判定に既存命中判定を重ねるか",
+      "blocking": true,
+      "proposal": "Phase 1では攻撃命中後の100%付与と、耐性による持続時間短縮を検証する"
+    },
+    {
+      "id": "OPEN-03",
+      "question": "同一状態の発生源が異なる場合もrefreshするか",
+      "blocking": true,
+      "proposal": "target+status_id単位でrefresh。source_idは最新付与者へ更新"
+    },
+    {
+      "id": "OPEN-04",
+      "question": "解除不能状態をPhase 1で許可するか",
+      "blocking": false,
+      "proposal": "不採用"
+    }
+  ],
+  "acceptance_conditions": [
+    "専用自動テストがPASS",
+    "Quick/Full検査がPASS",
+    "実機JSONが全ケースPASS",
+    "正式運用回帰がPASS",
+    "既存機能への回帰なし",
+    "テスト小数ビルドで検証後、正式整数ビルドへ昇格"
+  ],
+  "next_action": "P01-02の公開反映・実機JSON・正式運用回帰がPASSした後、本設計を読み直し、blockingなOPENだけを確定してP01-03実装へ入る。",
+  "build": "GA-B486.5",
+  "application_rule": "攻撃命中時は100%付与。耐性は付与率ではなく持続時間を短縮する。",
+  "resistance_rule": {
+    "cap_percent": 75,
+    "effect": "duration_reduction",
+    "formula": "floor(base_duration * (1 - resistance/100))",
+    "minimum_duration_tick": 1,
+    "immunity": false
+  }
+}
