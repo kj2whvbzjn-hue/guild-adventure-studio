@@ -2,8 +2,8 @@
   "schema_version": "1.0.0",
   "task_id": "P01-09",
   "title": "行動不能",
-  "stage": "tag_validation",
-  "runtime_application": false,
+  "stage": "runtime_v1",
+  "runtime_application": true,
   "formal_basis": {
     "status_logic": "STATUS",
     "payload_tag": "ACTION_DISABLED=true",
@@ -15,6 +15,7 @@
   "execution_rule": {
     "decision_point": "action_order_execution_eligibility_check",
     "reservation_semantics": "presentation_only_no_execution_right",
+    "reservation_content_not_binding_at_execution": true,
     "blocked_actions": [
       "normal_action",
       "skill_action",
@@ -29,15 +30,19 @@
     ],
     "cover_relation_remains_active_while_cover_source_action_disabled": true
   },
+  "runtime_connection": {
+    "canonical_check": "actionExecutionEligibility",
+    "scheduled_action": "checked once when execution order is reached",
+    "direct_skill_pipeline": "blocked before target/effect execution",
+    "counter": "uses canonical action-disabled check",
+    "follow_up": "uses canonical action-disabled check",
+    "normal_action": "uses canonical action-disabled check",
+    "after_status_expiry_or_removal": "normal execution eligibility is evaluated again at the next execution opportunity"
+  },
   "scope_notes": [
     "個別状態名（スタン・睡眠・凍結等）はP01-09基盤では正式化しない",
     "睡眠の被弾解除など個別解除条件は別仕様",
-    "本工程ではタグ/コンパイル検証まで。実行時停止ロジックは次工程"
-  ],
-  "validation": {
-    "ACTION_DISABLED=true": "accepted only with STATUS",
-    "ACTION_DISABLED=false": "rejected",
-    "ACTION_DISABLED numeric": "rejected",
-    "ACTION_DISABLED outside STATUS": "rejected"
-  }
+    "予約表示の内容は実行時の対象・スキルを拘束しない",
+    "行動不能そのものは既存STATUSの持続・解除・死亡・戦闘終了ルールを使用する"
+  ]
 }

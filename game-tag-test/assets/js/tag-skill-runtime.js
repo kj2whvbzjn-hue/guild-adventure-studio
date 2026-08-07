@@ -1,4 +1,4 @@
-/* Validation tag skill compiler/runtime — GA-B486.38 / P01-06 AURA source-dependent runtime v1 */
+/* Validation tag skill compiler/runtime — GA-B486.39 / P01-06 AURA source-dependent runtime v1 */
 const TAG_LOGIC_ORDER=['COVER','COUNTER','ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -310,10 +310,15 @@ function reviveTarget(actor,target,compiled){
  return{ok:true,targetId:target.id,hpBefore:before,hpAfter:after,maxHp,reviveMode:mode,reviveValue,gauge:target.gauge};
 }
 
+function actionExecutionEligibility(unit,{actionKind='skill_action'}={}){
+ if(!unit?.alive)return{ok:false,reason:'ACTOR_DEAD',actionKind};
+ const status=ensureStatusEffects(unit).find(x=>x?.payload?.action_disabled===true);
+ if(unit.actionDisabled===true||status)return{ok:false,reason:'ACTION_DISABLED',actionKind,statusInstanceId:status?.instanceId||null,statusId:status?.statusId||null};
+ return{ok:true,reason:null,actionKind,statusInstanceId:null,statusId:null};
+}
 function counterActionBlocked(unit){
- if(!unit?.alive)return true;
- if(unit.counterDisabled===true||unit.actionDisabled===true)return true;
- return ensureStatusEffects(unit).some(x=>x?.payload?.action_disabled===true);
+ if(unit?.counterDisabled===true)return true;
+ return !actionExecutionEligibility(unit,{actionKind:'COUNTER'}).ok;
 }
 function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackResult,{origin='base'}={}){
  const skip=(reason,extra={})=>{typeof recordValidationEvent==='function'&&recordValidationEvent('counter_skipped',{source_id:defender?.id||null,attacker_id:attacker?.id||null,incoming_skill_id:incomingCompiled?.definition?.id||null,origin,reason,...extra});return{ok:false,triggered:false,reason}};
@@ -331,11 +336,12 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',suppressDerived:true});
  return{ok:!!result?.ok,triggered:true,skillId,result};
 }
-function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false}={}){
+function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,skipExecutionEligibility=false}={}){
  const compiled=compileTaggedSkill(skillSource);
  battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);
  if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
  const actualOrigin=origin||(isFollowUp?'follow_up':compiled.definition.logicOrder.includes('COUNTER')?'counter':'base');
+ if(!skipExecutionEligibility){const eligibility=actionExecutionEligibility(actor,{actionKind:actualOrigin==='counter'?'COUNTER':actualOrigin==='follow_up'?'FOLLOW_UP':'skill_action'});if(!eligibility.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor?.id||null,skill_id:compiled.definition.id,origin:actualOrigin,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});return{ok:false,stage:'execution_eligibility',reason:eligibility.reason,eligibility,compiled}}}
  const resolved=resolveTaggedTargets(actor,target,compiled.definition);
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[];

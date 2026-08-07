@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime — GA-B486.38 / P01-07 COUNTER runtime v1.1 */
+/* Tag skill compiler/runtime — GA-B486.39 / P01-07 COUNTER runtime v1.1 */
 const TAG_LOGIC_ORDER=['COVER','COUNTER','ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -406,10 +406,15 @@ function resolveCoverIntervention(attacker,originalTarget,incomingCompiled,conte
  battle.log.push(`[Tick ${battle.tick}] [TAG][COVER] ${coverSource.name}が${originalTarget.name}をかばう → ${incomingCompiled.definition.name}の対象を差し替え`);return{target:coverSource,covered:true,effect};
 }
 
+function actionExecutionEligibility(unit,{actionKind='skill_action'}={}){
+ if(!unit?.alive)return{ok:false,reason:'ACTOR_DEAD',actionKind};
+ const status=ensureStatusEffects(unit).find(x=>x?.payload?.action_disabled===true);
+ if(unit.actionDisabled===true||status)return{ok:false,reason:'ACTION_DISABLED',actionKind,statusInstanceId:status?.instanceId||null,statusId:status?.statusId||null};
+ return{ok:true,reason:null,actionKind,statusInstanceId:null,statusId:null};
+}
 function counterActionBlocked(unit){
- if(!unit?.alive)return true;
- if(unit.counterDisabled===true||unit.actionDisabled===true)return true;
- return ensureStatusEffects(unit).some(x=>x?.payload?.action_disabled===true);
+ if(unit?.counterDisabled===true)return true;
+ return !actionExecutionEligibility(unit,{actionKind:'COUNTER'}).ok;
 }
 function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackResult,{origin='base',derivedGeneration=0,wasCovered=false}={}){
  const skip=(reason,extra={})=>{typeof recordValidationEvent==='function'&&recordValidationEvent('counter_skipped',{source_id:defender?.id||null,attacker_id:attacker?.id||null,incoming_skill_id:incomingCompiled?.definition?.id||null,origin,derived_generation:derivedGeneration,was_covered:wasCovered,reason,...extra});return{ok:false,triggered:false,reason}};
@@ -420,9 +425,11 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  typeof recordValidationEvent==='function'&&recordValidationEvent('counter_triggered',{source_id:defender.id,attacker_id:attacker.id,incoming_skill_id:incomingCompiled.definition.id,counter_skill_id:skillId,origin,derived_generation:derivedGeneration,was_covered:wasCovered,shield_absorbed:attackResult.shieldAbsorbed||0,hp_damage:attackResult.damage||0});battle.log.push(`[Tick ${battle.tick}] [TAG][COUNTER] ${defender.name}が${attacker.name}へ反撃 — ${skill.name}`);
  const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1});return{ok:!!result?.ok,triggered:true,skillId,result};
 }
-function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,derivedGeneration=0}={}){
+function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,derivedGeneration=0,skipExecutionEligibility=false}={}){
  const compiled=compileTaggedSkill(skillSource);battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
- const actualOrigin=origin||(isFollowUp?'follow_up':compiled.definition.logicOrder.includes('COUNTER')?'counter':'base'),resolved=resolveTaggedTargets(actor,target,compiled.definition);if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
+ const actualOrigin=origin||(isFollowUp?'follow_up':compiled.definition.logicOrder.includes('COUNTER')?'counter':'base');
+ if(!skipExecutionEligibility){const eligibility=actionExecutionEligibility(actor,{actionKind:actualOrigin==='counter'?'COUNTER':actualOrigin==='follow_up'?'FOLLOW_UP':'skill_action'});if(!eligibility.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor?.id||null,skill_id:compiled.definition.id,origin:actualOrigin,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});battle.log.push(`[Tick ${battle.tick}] [TAG][ACTION_DISABLED] ${actor?.name||'unknown'}の${compiled.definition.name}は実行不能`);return{ok:false,stage:'execution_eligibility',reason:eligibility.reason,eligibility,compiled}}}
+ const resolved=resolveTaggedTargets(actor,target,compiled.definition);if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[],executionContext={areaCoverUsed:false};
  for(const originalTarget of resolved.targets){
   let actionTarget=originalTarget,coverResult={target:originalTarget,covered:false,effect:null};const directAttack=compiled.definition.logicOrder.some(x=>x==='ATTACK'||x==='FOLLOW_UP');if(directAttack){coverResult=resolveCoverIntervention(actor,originalTarget,compiled,{origin:actualOrigin,derivedGeneration,areaCoverUsed:executionContext.areaCoverUsed});actionTarget=coverResult.target;if(coverResult.covered&&compiled.definition.target.range==='all')executionContext.areaCoverUsed=true}
@@ -439,6 +446,7 @@ function dispatchConditionalFollowUps(initiator,target,event){
  for(const follower of battle.units.filter(x=>x.alive&&x.side===initiator.side&&x.id!==initiator.id)){
   const ids=Array.isArray(follower.followUpSkillIds)?follower.followUpSkillIds:[];
   for(const skillId of ids){
+   const eligibility=actionExecutionEligibility(follower,{actionKind:'FOLLOW_UP'});if(!eligibility.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});continue}
    const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);
    if(!compiled.ok||!compiled.definition.logicOrder.includes('FOLLOW_UP'))continue;
    const poisoned=ensureDotStackList(target).length>0;

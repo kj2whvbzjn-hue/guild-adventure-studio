@@ -66,15 +66,19 @@ function cancelReservation(actor,reason,consumeGauge=true){
  battle.log.push(`[Tick ${battle.tick}] ${actor.name}の予約は失敗 — ${reason}`);
  actor.reservedAction=null;if(consumeGauge)actor.gauge=Math.max(0,actor.gauge-50);
 }
+function evaluateActionExecution(actor){
+ if(!actor?.alive)return{ok:false,reason:'行動者が戦闘不能',code:'ACTOR_DEAD'};
+ if(actor.gauge<GAUGE_MAX)return{ok:false,reason:`Gauge不足 (${actor.gauge}/${GAUGE_MAX})`,code:'GAUGE_SHORTAGE'};
+ const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action'}):{ok:true};
+ if(!eligibility.ok)return{ok:false,reason:'行動不能',code:eligibility.reason||'ACTION_DISABLED',eligibility};
+ const target=chooseTarget(actor);if(!target)return{ok:false,reason:'実行時点で有効対象がありません',code:'NO_VALID_TARGET'};
+ const skill=findTagSkill(actor.defaultSkillId)||TAG_SKILLS[0];if(!skill)return{ok:false,reason:'実行可能スキルがありません',code:'NO_VALID_SKILL'};
+ const compiled=compileTaggedSkill(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
+ return{ok:true,target,skill,compiled};
+}
 function revalidateReservation(actor){
- const r=actor.reservedAction;if(!r)return{ok:false,reason:'予約なし'};
- if(!actor.alive)return{ok:false,reason:'行動者が戦闘不能'};
- let target=battle.units.find(u=>u.id===r.targetId);
- if(!target||!target.alive||target.side===actor.side){
-  return{ok:false,reason:'予約時の固定対象が無効'};
- }
- if(actor.gauge<GAUGE_MAX)return{ok:false,reason:`Gauge不足 (${actor.gauge}/${GAUGE_MAX})`};
- return{ok:true,target};
+ if(!actor?.reservedAction)return{ok:false,reason:'予約なし',code:'NO_PRESENTATION_RESERVATION'};
+ return evaluateActionExecution(actor);
 }
 function waitForSceneIdle(timeout=5000){return new Promise(resolve=>{const started=performance.now();const check=()=>{if((!sceneBusy&&sceneQueue.length===0)||performance.now()-started>=timeout)return resolve();setTimeout(check,25)};check()})}
 async function completeBattleEnding(){
@@ -102,6 +106,7 @@ function finishIfNeeded(){
 }
 function performBasicAttack(attacker,target){
  if(!target)return false;
+ const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(attacker,{actionKind:'normal_action'}):{ok:true};if(!eligibility.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:attacker?.id||null,target_id:target?.id||null,action_kind:'normal_action',reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});return false}
  const rawDamage=Math.max(1,attacker.attack),shield=consumeShieldDamage(target,rawDamage,{sourceId:attacker.id,damageType:'basic_attack'}),damage=shield.hpDamage;target.hp=Math.max(0,target.hp-damage);
  queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage});
  attacker.damageDealt+=damage;target.damageTaken+=damage;
@@ -113,15 +118,13 @@ function executeReservation(actor){
  const r=actor.reservedAction;if(!r||r.executeAt>battle.tick)return false;
  r.status='revalidating';
  const checked=revalidateReservation(actor);
- if(!checked.ok){cancelReservation(actor,checked.reason);return false}
- const target=checked.target,skill=findTagSkill(r.skillId);
- if(!skill){cancelReservation(actor,`スキルが見つかりません: ${r.skillId}`,false);return false}
- const compiled=compileTaggedSkill(skill);
- if(!compiled.ok){cancelReservation(actor,`スキル定義エラー: ${compiled.errors.join(' / ')}`,false);return false}
+ if(!checked.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,reason:checked.code||checked.reason,status_instance_id:checked.eligibility?.statusInstanceId||null,status_id:checked.eligibility?.statusId||null});cancelReservation(actor,checked.reason);return false}
+ const target=checked.target,skill=checked.skill;
  r.status='executing';actor.gauge=Math.max(0,actor.gauge-GAUGE_MAX);actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;
- battle.log.push(`[Tick ${battle.tick}] ${actor.name}の予約を実行 — ${r.label} → ${target.name}`);
- actor.lastReservation={...r,status:'completed',completedAt:battle.tick};actor.reservedAction=null;
- return executeTaggedSkill(actor,target,skill).ok;
+ battle.log.push(`[Tick ${battle.tick}] ${actor.name}は実行時判定で「${skill.name}」を確定 → ${target.name}`);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null});
+ actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
+ return executeTaggedSkill(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
