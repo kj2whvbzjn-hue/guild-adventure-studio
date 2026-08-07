@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime — GA-B486.26 / P01-06 AURA tag validation */
+/* Tag skill compiler/runtime — GA-B486.27 / P01-06 AURA source-dependent runtime v1 */
 const TAG_LOGIC_ORDER=['ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -135,7 +135,24 @@ function resolveTaggedTargets(actor,target,definition){
 let modifierStackSequence=0;
 function ensureModifierStackList(target){if(!Array.isArray(target.modifierStacks))target.modifierStacks=[];return target.modifierStacks}
 function modifierGroupKey(kind,stat){return `${kind}:${stat}`}
-function effectiveModifierPower(target,kind,stat){const active=ensureModifierStackList(target).filter(x=>x.kind===kind&&x.stat===stat&&x.expiresAt>battle.tick);return active.length?Math.max(...active.map(x=>x.power)):0}
+function auraSourceSkillIds(source){return Array.isArray(source?.auraSkillIds)?source.auraSkillIds:[]}
+function activeAuraEntries(target,kind,stat){
+ if(!target?.alive)return[];const entries=[];
+ for(const source of battle.units.filter(x=>x.alive)){
+  for(const skillId of auraSourceSkillIds(source)){
+   const skill=findTagSkill(skillId);if(!skill)continue;const compiled=compileTaggedSkill(skill);if(!compiled.ok||!compiled.definition.logicOrder.includes('AURA'))continue;
+   const p=compiled.definition.parameters;if(p.auraEffect!==kind||p.modifierStat!==stat)continue;
+   const targetSide=p.auraTarget==='ally'?source.side:(p.auraTarget==='enemy'?(source.side==='味方'?'敵':'味方'):null);if(target.side!==targetSide)continue;
+   if(p.auraTarget==='ally'&&p.auraScope==='allies_excluding_self'&&target.id===source.id)continue;
+   if(p.auraTarget==='ally'&&!['all','self_and_allies','allies_excluding_self'].includes(p.auraScope))continue;
+   if(p.auraTarget==='enemy'&&p.auraScope!=='all')continue;
+   entries.push({kind,stat,power:Math.max(0,Number(p.auraValue)||0),sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,priority:Number(p.auraPriority)||0,stack:p.auraStack||'highest'});
+  }
+ }
+ return entries;
+}
+function effectiveAuraPower(target,kind,stat){const entries=activeAuraEntries(target,kind,stat);return entries.length?Math.max(...entries.map(x=>x.power)):0}
+function effectiveModifierPower(target,kind,stat){if(!target?.alive)return 0;const active=ensureModifierStackList(target).filter(x=>x.kind===kind&&x.stat===stat&&x.expiresAt>battle.tick),normal=active.length?Math.max(...active.map(x=>x.power)):0,aura=effectiveAuraPower(target,kind,stat);return Math.max(normal,aura)}
 function effectiveAttackValue(unit){const buff=effectiveModifierPower(unit,'BUFF','ATK'),debuff=effectiveModifierPower(unit,'DEBUFF','ATK');return Math.max(0,Math.floor(unit.attack*(1+buff/100)*(1-debuff/100)))}
 function recordEffectiveModifierChange(target,kind,stat,before,after,reason){if(before===after)return;battle.log.push(`[Tick ${battle.tick}] [TAG][${kind}] ${target.name}の${stat}実効値 ${before}% → ${after}%（${reason}）`);recordValidationEvent('modifier_effective_changed',{target_id:target.id,kind,stat,before,after,reason})}
 function applyTaggedModifier(source,target,compiled,logic){
@@ -173,7 +190,7 @@ function recordModifierSourceDefeated(source){
  battle.log.push(`[Tick ${battle.tick}] [TAG][MODIFIER] 付与者${source.name}が戦闘不能。付与型効果${dependent.length}件は自然終了まで継続`);
  return dependent.length;
 }
-function modifierStatusText(unit){const list=ensureModifierStackList(unit);if(!list.length)return'なし';const groups={};for(const x of list){const k=modifierGroupKey(x.kind,x.stat);(groups[k]||(groups[k]=[])).push(x)}return Object.entries(groups).map(([k,v])=>`${k} ${v.length}stack / 実効${Math.max(...v.map(x=>x.power))}%`).join('、')}
+function modifierStatusText(unit){const list=ensureModifierStackList(unit),stats=['ATK','DEF','AGI','VIT','INT','DEX','LUK'],parts=[];const groups={};for(const x of list){const k=modifierGroupKey(x.kind,x.stat);(groups[k]||(groups[k]=[])).push(x)}for(const [k,v] of Object.entries(groups)){const [kind,stat]=k.split(':'),effective=effectiveModifierPower(unit,kind,stat);parts.push(`${k} ${v.length}stack / 実効${effective}%`)}for(const kind of ['BUFF','DEBUFF'])for(const stat of stats){const aura=effectiveAuraPower(unit,kind,stat);if(aura&&!groups[modifierGroupKey(kind,stat)])parts.push(`AURA ${kind}:${stat} 実効${aura}%`)}return parts.length?parts.join('、'):'なし'}
 let shieldEffectSequence=0;
 function ensureShieldEffects(target){if(!Array.isArray(target.shieldEffects))target.shieldEffects=[];return target.shieldEffects}
 function shieldTotal(target){return ensureShieldEffects(target).reduce((sum,x)=>sum+Math.max(0,Number(x.remaining)||0),0)}
