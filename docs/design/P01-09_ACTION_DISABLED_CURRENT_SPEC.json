@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "P01-09",
+  "title": "行動不能",
+  "stage": "tag_validation",
+  "runtime_application": false,
+  "formal_basis": {
+    "status_logic": "STATUS",
+    "payload_tag": "ACTION_DISABLED=true",
+    "compiled_payload": {
+      "action_disabled": true
+    },
+    "lifetime": "existing STATUS duration/removal/death/battle-end rules"
+  },
+  "execution_rule": {
+    "decision_point": "action_order_execution_eligibility_check",
+    "reservation_semantics": "presentation_only_no_execution_right",
+    "blocked_actions": [
+      "normal_action",
+      "skill_action",
+      "COUNTER",
+      "FOLLOW_UP"
+    ],
+    "existing_continuous_effects_continue": [
+      "DOT",
+      "SHIELD",
+      "AURA",
+      "COVER"
+    ],
+    "cover_relation_remains_active_while_cover_source_action_disabled": true
+  },
+  "scope_notes": [
+    "個別状態名（スタン・睡眠・凍結等）はP01-09基盤では正式化しない",
+    "睡眠の被弾解除など個別解除条件は別仕様",
+    "本工程ではタグ/コンパイル検証まで。実行時停止ロジックは次工程"
+  ],
+  "validation": {
+    "ACTION_DISABLED=true": "accepted only with STATUS",
+    "ACTION_DISABLED=false": "rejected",
+    "ACTION_DISABLED numeric": "rejected",
+    "ACTION_DISABLED outside STATUS": "rejected"
+  }
+}
