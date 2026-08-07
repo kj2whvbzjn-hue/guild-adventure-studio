@@ -3,7 +3,7 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const exportData=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
 const skills=exportData.data.map(x=>({...x,source:'studio_export'}));
 const errors=[];
-if(build.game_build!=='GA-B486.41')errors.push(`build=${build.game_build}`);
+if(build.game_build!=='GA-B486.42')errors.push(`build=${build.game_build}`);
 const revive=skills.find(x=>x.id==='SKL-REVIVE-SINGLE-100');
 if(!revive)errors.push('SKL-REVIVE-SINGLE-100 missing');
 const ctx={console,Math,Date,JSON,TAG_SKILLS:skills,battle:{tick:0,units:[],log:[],validationMode:true,validationEvents:[]},recordValidationEvent:()=>{},queueSceneEvent:()=>{},finishIfNeeded:()=>{},renderBattle:()=>{}};
