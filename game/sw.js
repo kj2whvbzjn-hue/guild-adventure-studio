@@ -1,24 +1,24 @@
-const CACHE_NAME="ga-game-b48636";
+const CACHE_NAME="ga-game-b48637";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=48636';
+const OFFLINE_URL='./index.html?appv=48637';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=48636",
-  "./manifest.webmanifest?v=48636",
-  "./icon-192.png?v=48636",
-  "./icon-512.png?v=48636",
-  "../Export/skill/skills.json?v=48636"
+  "./index.html?appv=48637",
+  "./manifest.webmanifest?v=48637",
+  "./icon-192.png?v=48637",
+  "./icon-512.png?v=48637",
+  "../Export/skill/skills.json?v=48637"
 ,
-  "../assets/shared/config/runtime-config.js?v=48636",
-  "../assets/shared/js/game-shell-common.js?v=48636"
+  "../assets/shared/config/runtime-config.js?v=48637",
+  "../assets/shared/js/game-shell-common.js?v=48637"
 ,
-  "./assets/js/app-runtime.js?v=48636"
+  "./assets/js/app-runtime.js?v=48637"
 ,
-  "./assets/js/tag-skill-runtime.js?v=48636",
-  "./assets/js/studio-skill-bridge.js?v=48636"
+  "./assets/js/tag-skill-runtime.js?v=48637",
+  "./assets/js/studio-skill-bridge.js?v=48637"
 ,
-  "./assets/js/battle-control.js?v=48636",
-  "./assets/js/ui-bootstrap.js?v=48636"
+  "./assets/js/battle-control.js?v=48637",
+  "./assets/js/ui-bootstrap.js?v=48637"
 ];
 
 self.addEventListener('install',event=>{
