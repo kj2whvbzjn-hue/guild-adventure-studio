@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
   "task_id": "P01-06",
-  "build": "GA-B486.27",
+  "build": "GA-B486.28",
   "feature": "AURA_FOUNDATION_TAG_VALIDATION",
   "base_build": "GA-B486.24",
-  "status": "runtime_connection_v1",
+  "status": "runtime_connection_v1_revive_fix",
   "authority": {
     "current_battle_spec": "戦闘仕様_正式統合版_v5",
     "current_battle_spec_sha256": "d01521bd71ad4269354c33aa57fd021bec24286aec3a173684eaab937acbdd2c",
@@ -12,7 +12,7 @@
     "priority": "current specification and current runtime override reference design"
   },
   "scope": {
-    "stage": "tag_validation_device_json",
+    "stage": "runtime_connection_v1_revive_fix",
     "classification_tag": "AURA",
     "supported_effects": [
       "BUFF",
@@ -42,7 +42,7 @@
     "additive": "deferred",
     "unique_source": "deferred",
     "normal_buff_debuff_combination": "rejected in foundation",
-    "runtime_application": "not connected in this build"
+    "runtime_application": "connected for BUFF/DEBUFF source-dependent highest runtime"
   },
   "validation": {
     "test": "tests/aura-foundation-tag-validation-ga-b486-25.js",
@@ -54,7 +54,9 @@
       "game/index.html"
     ],
     "device_trigger": "tagTestRunAuraJson",
-    "device_json_cases": 11
+    "device_json_cases": 11,
+    "runtime_device_trigger": "tagTestRunAuraRuntimeJson",
+    "runtime_device_cases": 6
   },
   "not_in_scope": [
     "aura runtime activation",
@@ -65,7 +67,7 @@
     "STATUS aura",
     "additive/unique_source stacking"
   ],
-  "next_stage": "user device JSON validation; after PASS, proceed to next Studio data creation/runtime connection stage",
+  "next_stage": "user device runtime JSON validation; proceed only when all 6 cases pass",
   "runtime_application": true,
   "source_dependency": true,
   "stacking": "highest",
@@ -77,5 +79,11 @@
     "STATUS aura",
     "additive",
     "unique_source"
-  ]
+  ],
+  "runtime_fix": {
+    "issue": "fixed REVIVE_HP was misclassified as rate mode when REVIVE_HP_RATE was null because Number(null) is finite",
+    "change": "rate mode is selected only when REVIVE_HP_RATE is actually present",
+    "expected": "fixed HP revive restores hp/alive, then aura source/target is re-evaluated",
+    "scope": "revive connection only; aura highest/death-disable behavior unchanged"
+  }
 }

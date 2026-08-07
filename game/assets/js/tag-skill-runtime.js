@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime — GA-B486.27 / P01-06 AURA source-dependent runtime v1 */
+/* Tag skill compiler/runtime — GA-B486.28 / P01-06 AURA revive connection fix */
 const TAG_LOGIC_ORDER=['ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -313,7 +313,7 @@ function reviveTarget(actor,target,compiled){
  if(!actor?.alive)return{ok:false,reason:'使用者が無効です'};
  if(!target||target.side!==actor.side||target.alive||target.hp>0)return{ok:false,reason:'INVALID_TARGET'};
  const fixed=compiled.definition.parameters.reviveHp,rate=compiled.definition.parameters.reviveHpRate;
- const mode=Number.isFinite(Number(rate))?'rate':'fixed',reviveValue=mode==='rate'?Number(rate):Math.floor(Number(fixed)||0);
+ const mode=rate!=null&&rate!==''?'rate':'fixed',reviveValue=mode==='rate'?Number(rate):Math.floor(Number(fixed)||0);
  if(mode==='fixed'&&reviveValue<1)return{ok:false,reason:'REVIVE_HPが無効です'};
  if(mode==='rate'&&(!Number.isFinite(reviveValue)||reviveValue<=0||reviveValue>1))return{ok:false,reason:'REVIVE_HP_RATEが無効です'};
  const before=target.hp,maxHp=Math.max(1,Math.floor(Number(target.maxHp)||1));

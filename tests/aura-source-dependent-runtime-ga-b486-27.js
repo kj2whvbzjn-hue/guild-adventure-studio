@@ -3,7 +3,7 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const exportData=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
 const skills=exportData.data.map(x=>({...x,source:'studio_export'}));
 const errors=[];
-if(build.game_build!=='GA-B486.27')errors.push(`build=${build.game_build}`);
+if(build.game_build!=='GA-B486.28')errors.push(`build=${build.game_build}`);
 for(const id of ['SKL-AURA-ALLY-ATK-10','SKL-AURA-ALLY-ATK-30','SKL-AURA-ALLY-DEF-15-EX','SKL-AURA-ENEMY-ATK-DOWN-20'])if(!skills.some(x=>x.id===id&&x.environment==='production'))errors.push(`${id} missing`);
 const ctx={console,Math,Date,JSON,TAG_SKILLS:skills,battle:{tick:0,units:[],log:[],validationMode:true,validationEvents:[]},recordValidationEvent:()=>{},queueSceneEvent:()=>{},finishIfNeeded:()=>{},renderBattle:()=>{}};
 vm.createContext(ctx);
@@ -24,4 +24,4 @@ const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8'),html=fs.readFi
 if(!app.includes('function tagTestRunAuraRuntimeJson()')||!app.includes('TAG-AURA-RUNTIME-DEVICE-001'))errors.push('device runtime json missing');
 if(!html.includes('id="tagTestRunAuraRuntimeJson"'))errors.push('device runtime button missing');
 if(errors.length){errors.forEach(e=>console.error('FAIL',e));process.exit(1)}
-console.log('AURA_SOURCE_DEPENDENT_RUNTIME_GA_B486_27_OK');
+console.log('AURA_SOURCE_DEPENDENT_RUNTIME_GA_B486_28_OK');
