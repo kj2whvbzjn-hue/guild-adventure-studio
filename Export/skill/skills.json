@@ -1,7 +1,7 @@
 {
   "schema_version": "1.1.0",
-  "data_version": "GA-B486.27-p01-06-aura-runtime-v1",
-  "generated_at": "2026-08-07T07:29:00.000Z",
+  "data_version": "GA-B486.30-p01-07-counter-data-driven-tag-v1",
+  "generated_at": "2026-08-07T08:20:00Z",
   "generated_by": "GK Studio GKS-B484",
   "data": [
     {
@@ -864,6 +864,154 @@
         "ATK"
       ],
       "description": "P01-06 オーラ基盤。highest実動作確認用の味方側ATK上昇オーラ正式Studioデータ。GA-B486.27で発生源依存ランタイム接続対象。"
+    },
+    {
+      "id": "SKL-COUNTER-ATTACK-100",
+      "name": "反撃100",
+      "environment": "production",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TRIGGER=hit",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=1",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "ATTACK",
+        "敵",
+        "単体",
+        "物理",
+        "DAMAGE=100"
+      ],
+      "description": "P01-07 反撃基盤。発動条件をCOUNTERデータで保持し、命中時・攻撃者本人・1被弾最大1回・生存必須・シールド全吸収でも反撃候補を定義する。威力・クリティカル・パッシブ付与は既存ATTACK定義/処理を使用する。ランタイム接続前。"
+    },
+    {
+      "id": "COUNTER-VALIDATION-NO-ATTACK",
+      "name": "反撃検証・ATTACKなし",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TRIGGER=hit",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=1",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "敵",
+        "単体",
+        "物理"
+      ],
+      "description": "COUNTERは既存ATTACK定義を必須とする拒否確認。"
+    },
+    {
+      "id": "COUNTER-VALIDATION-ALL",
+      "name": "反撃検証・全体攻撃",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TRIGGER=hit",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=1",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "ATTACK",
+        "敵",
+        "全体",
+        "物理",
+        "DAMAGE=100"
+      ],
+      "description": "反撃スキルは攻撃者本人への単体ATTACKのみとするため範囲指定を拒否する確認。"
+    },
+    {
+      "id": "COUNTER-VALIDATION-LIMIT-2",
+      "name": "反撃検証・LIMIT=2",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TRIGGER=hit",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=2",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "ATTACK",
+        "敵",
+        "単体",
+        "物理",
+        "DAMAGE=100"
+      ],
+      "description": "現仕様は1被弾につき最大1反撃のためCOUNTER_LIMIT=2を拒否する確認。"
+    },
+    {
+      "id": "COUNTER-VALIDATION-NO-TRIGGER",
+      "name": "反撃検証・TRIGGERなし",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=1",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "ATTACK",
+        "敵",
+        "単体",
+        "物理",
+        "DAMAGE=100"
+      ],
+      "description": "データ駆動の発動条件COUNTER_TRIGGERが必須であることを確認。"
+    },
+    {
+      "id": "COUNTER-VALIDATION-LEGACY-DAMAGE",
+      "name": "反撃検証・専用ダメージ式",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TRIGGER=hit",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=1",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "ATTACK",
+        "敵",
+        "単体",
+        "物理",
+        "DAMAGE=100",
+        "COUNTER_RATE=0.5"
+      ],
+      "description": "反撃専用RATE/DAMAGE/MODEを作らず既存ATTACK定義を使用することを確認。"
+    },
+    {
+      "id": "COUNTER-VALIDATION-FOLLOWUP",
+      "name": "反撃検証・FOLLOW_UP混在",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COUNTER",
+        "COUNTER_TRIGGER=hit",
+        "COUNTER_TARGET=attacker",
+        "COUNTER_LIMIT=1",
+        "COUNTER_PRIORITY=0",
+        "COUNTER_REQUIRE_ALIVE=true",
+        "COUNTER_ALLOW_ZERO_DAMAGE=true",
+        "ATTACK",
+        "敵",
+        "単体",
+        "物理",
+        "DAMAGE=100",
+        "FOLLOW_UP",
+        "TRIGGER_ALLY_ATTACK",
+        "CONDITION_POISONED"
+      ],
+      "description": "反撃定義とFOLLOW_UPロジックの混在を拒否し、派生行動連鎖を分離する確認。"
     }
   ]
 }

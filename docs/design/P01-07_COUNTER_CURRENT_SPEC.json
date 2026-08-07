@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.1.0",
+  "task_id": "P01-07",
+  "name": "反撃",
+  "status": "CURRENT_CONFIRMED",
+  "base_game_build": "GA-B486.28",
+  "implementation_stage": "data_driven_tag_validation",
+  "runtime_application": false,
+  "authority": {
+    "formal_battle_spec": "戦闘仕様_正式統合版_v5",
+    "reference_only": "5.反撃.zip / P01-07_COUNTER_DESIGN.json",
+    "note": "正式仕様とユーザー確定事項を優先。旧案のデータ駆動思想を採用し、専用ダメージ式だけは既存ATTACK再利用方針と競合するため不採用。"
+  },
+  "confirmed_rules": {
+    "trigger": "単体・直接・基本効果の攻撃が命中した時",
+    "shield_full_absorb": "反撃候補になる",
+    "miss": "反撃しない",
+    "defender_death": "反撃しない",
+    "action_disabled": "反撃しない",
+    "battle_end_confirmed": "反撃失敗・実行しない",
+    "target": "元の攻撃者本人のみ",
+    "incoming_area_attack": "反撃不可",
+    "incoming_dot": "反撃不可",
+    "incoming_status_only": "反撃不可",
+    "derived_attack_origin": "反撃/FOLLOW_UP等の連鎖発火には反応しない",
+    "counter_chain": "禁止",
+    "multiple_counter_execution": "1被弾につき最大1回。重複ルールはスキル設定側の責務",
+    "attack_definition": "既存ATTACK定義をそのまま使用",
+    "critical": "既存ATTACK基盤の判定を使用",
+    "passive_additional_effects": "既存ATTACK処理で付与される効果は反撃にも適用。反撃専用の重複処理は作らない"
+  },
+  "tag_contract": {
+    "required": [
+      "COUNTER",
+      "COUNTER_TRIGGER=hit",
+      "COUNTER_TARGET=attacker",
+      "COUNTER_LIMIT=1",
+      "COUNTER_PRIORITY=<integer>",
+      "COUNTER_REQUIRE_ALIVE=true",
+      "COUNTER_ALLOW_ZERO_DAMAGE=true",
+      "ATTACK",
+      "敵",
+      "単体",
+      "DAMAGE=<existing ATTACK rule>"
+    ],
+    "accepted_data_fields": {
+      "COUNTER_TRIGGER": "現在hit",
+      "COUNTER_TARGET": "現在attacker",
+      "COUNTER_LIMIT": "現在1のみ",
+      "COUNTER_PRIORITY": "有限整数。初期正式データ0",
+      "COUNTER_REQUIRE_ALIVE": "現在true",
+      "COUNTER_ALLOW_ZERO_DAMAGE": "現在true"
+    },
+    "rejected_dedicated_damage_fields": [
+      "COUNTER_RATE",
+      "COUNTER_DAMAGE",
+      "COUNTER_MODE"
+    ],
+    "rejected_logic_mix": [
+      "FOLLOW_UP"
+    ],
+    "note": "COUNTERは発動条件・制約をデータで保持し、威力・クリティカル・付随効果は既存ATTACK基盤へ委譲する。PRIORITY/LIMITはデータ項目として保持するが、現ランタイム仕様は1被弾最大1回。"
+  },
+  "deferred": {
+    "runtime_origin_flag": "ランタイム接続工程で既存イベント構造に合わせて決定。用途は基本効果/派生効果の識別のみ。",
+    "skill_duplicate_policy": "スキル設定側で扱う。P01-07ランタイムでは複数候補選択を実装しない。",
+    "priority_resolution": "重複ルールをスキル設定側で扱う工程まで、P01-07では発動順選択に使用しない。"
+  }
+}

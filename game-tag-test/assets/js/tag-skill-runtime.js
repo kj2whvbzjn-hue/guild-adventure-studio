@@ -1,5 +1,5 @@
-/* Validation tag skill compiler/runtime — GA-B486.28 / P01-06 AURA source-dependent runtime v1 */
-const TAG_LOGIC_ORDER=['ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
+/* Validation tag skill compiler/runtime — GA-B486.30 / P01-06 AURA source-dependent runtime v1 */
+const TAG_LOGIC_ORDER=['COUNTER','ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
  const generalTags=new Set(),numericTags={},errors=[];
@@ -38,6 +38,25 @@ function compileTaggedSkill(skill){
  if(g.has('DOT')){
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN'])if(!n[key])errors.push(`DOTには${key}が必要です`);
   for(const key of ['DOT_POWER','DOT_DURATION','DOT_INTERVAL','STACK_GAIN']){const v=n[key]?.value;if(v!=null&&(!Number.isFinite(v)||v<=0))errors.push(`${key}は0より大きい有限数が必要です`)}
+ }
+ if(g.has('COUNTER')){
+  const counterTrigger=[...g].find(x=>x.startsWith('COUNTER_TRIGGER='))?.slice(16)||null;
+  const counterTarget=[...g].find(x=>x.startsWith('COUNTER_TARGET='))?.slice(15)||null;
+  const counterRequireAlive=[...g].find(x=>x.startsWith('COUNTER_REQUIRE_ALIVE='))?.slice(22)||null;
+  const counterAllowZeroDamage=[...g].find(x=>x.startsWith('COUNTER_ALLOW_ZERO_DAMAGE='))?.slice(26)||null;
+  if(!g.has('ATTACK'))errors.push('COUNTERにはATTACK定義が必要です');
+  if(!g.has('敵'))errors.push('COUNTERの対象は攻撃者本人（敵）が必要です');
+  if(!g.has('単体'))errors.push('COUNTERは単体ATTACK定義が必要です');
+  if(hasAnyTag(g,['全体','前列','後列','ランダム','貫通']))errors.push('COUNTERは範囲ATTACK定義を使用できません');
+  if(g.has('FOLLOW_UP'))errors.push('COUNTERとFOLLOW_UPロジックは同時指定できません');
+  if(counterTrigger!=='hit')errors.push('現在のCOUNTER_TRIGGERはhitが必要です');
+  if(counterTarget!=='attacker')errors.push('現在のCOUNTER_TARGETはattackerが必要です');
+  if(!n.COUNTER_LIMIT||!Number.isFinite(n.COUNTER_LIMIT.value)||!Number.isInteger(n.COUNTER_LIMIT.value)||n.COUNTER_LIMIT.value!==1)errors.push('現在のCOUNTER_LIMITは1が必要です');
+  if(!n.COUNTER_PRIORITY||!Number.isFinite(n.COUNTER_PRIORITY.value)||!Number.isInteger(n.COUNTER_PRIORITY.value))errors.push('COUNTER_PRIORITYは有限整数が必要です');
+  if(counterRequireAlive!=='true')errors.push('現在のCOUNTER_REQUIRE_ALIVEはtrueが必要です');
+  if(counterAllowZeroDamage!=='true')errors.push('現在のCOUNTER_ALLOW_ZERO_DAMAGEはtrueが必要です');
+  for(const key of ['COUNTER_RATE','COUNTER_DAMAGE'])if(n[key])errors.push(`${key}は既存ATTACK定義を使用するため指定できません`);
+  if([...g].some(x=>x.startsWith('COUNTER_MODE=')))errors.push('COUNTER_MODEは既存ATTACK定義を使用するため指定できません');
  }
  if(g.has('AURA')){
   const effect=[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null;
@@ -82,7 +101,7 @@ function compileTaggedSkill(skill){
  const targetSide=isAura?'self':g.has('敵')?'enemy':g.has('味方')?'ally':g.has('自分')?'self':g.has('死体')?'corpse':g.has('地点')?'point':null;
  const range=isAura?'single':g.has('単体')?'single':g.has('全体')?'all':g.has('前列')?'front':g.has('後列')?'back':g.has('ランダム')?'random':g.has('貫通')?'pierce':null;
  const damageType=g.has('物理')?'physical':g.has('魔法')?'magical':g.has('固定')?'fixed':null;
- return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,parameters:{damageType,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,shield:n.SHIELD?.value??null,shieldDuration:n.DURATION?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,statusId:[...g].find(x=>x.startsWith('STATUS_ID='))?.slice(10)||null,statusDuration:g.has('STATUS')?(n.DURATION?.value??null):null,statusStackPolicy:g.has('INDEPENDENT')?'independent':g.has('STRONGEST')?'strongest':'refresh',statusPayload:[...g].includes('STATUS_ID=STATUS-ACCURACY-DOWN')?{accuracy_modifier:-20}:{},cleanseCount:n.CLEANSE_COUNT?.value??null,cleanseAll:g.has('CLEANSE_ALL'),cleanseCategory:[...g].find(x=>x.startsWith('CLEANSE_CATEGORY='))?.slice(17)||'status',cleanseOrder:[...g].find(x=>x.startsWith('CLEANSE_ORDER='))?.slice(14)||'oldest',reviveHp:n.REVIVE_HP?.value??null,reviveHpRate:n.REVIVE_HP_RATE?.value??null,auraEffect:[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null,auraValue:n.AURA_VALUE?.value??null,auraTarget:[...g].find(x=>x.startsWith('AURA_TARGET='))?.slice(12)||null,auraScope:[...g].find(x=>x.startsWith('AURA_SCOPE='))?.slice(11)||null,auraStack:[...g].find(x=>x.startsWith('AURA_STACK='))?.slice(11)||'highest',auraPriority:n.AURA_PRIORITY?.value??0},sourceTags:[...(skill?.tags||[])]},parsed};
+ return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,parameters:{damageType,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,shield:n.SHIELD?.value??null,shieldDuration:n.DURATION?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,statusId:[...g].find(x=>x.startsWith('STATUS_ID='))?.slice(10)||null,statusDuration:g.has('STATUS')?(n.DURATION?.value??null):null,statusStackPolicy:g.has('INDEPENDENT')?'independent':g.has('STRONGEST')?'strongest':'refresh',statusPayload:[...g].includes('STATUS_ID=STATUS-ACCURACY-DOWN')?{accuracy_modifier:-20}:{},cleanseCount:n.CLEANSE_COUNT?.value??null,cleanseAll:g.has('CLEANSE_ALL'),cleanseCategory:[...g].find(x=>x.startsWith('CLEANSE_CATEGORY='))?.slice(17)||'status',cleanseOrder:[...g].find(x=>x.startsWith('CLEANSE_ORDER='))?.slice(14)||'oldest',reviveHp:n.REVIVE_HP?.value??null,reviveHpRate:n.REVIVE_HP_RATE?.value??null,auraEffect:[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null,auraValue:n.AURA_VALUE?.value??null,auraTarget:[...g].find(x=>x.startsWith('AURA_TARGET='))?.slice(12)||null,auraScope:[...g].find(x=>x.startsWith('AURA_SCOPE='))?.slice(11)||null,auraStack:[...g].find(x=>x.startsWith('AURA_STACK='))?.slice(11)||'highest',auraPriority:n.AURA_PRIORITY?.value??0,counterTrigger:[...g].find(x=>x.startsWith('COUNTER_TRIGGER='))?.slice(16)||null,counterTarget:[...g].find(x=>x.startsWith('COUNTER_TARGET='))?.slice(15)||null,counterLimit:n.COUNTER_LIMIT?.value??null,counterPriority:n.COUNTER_PRIORITY?.value??null,counterRequireAlive:[...g].find(x=>x.startsWith('COUNTER_REQUIRE_ALIVE='))?.slice(22)||null,counterAllowZeroDamage:[...g].find(x=>x.startsWith('COUNTER_ALLOW_ZERO_DAMAGE='))?.slice(26)||null,counterUsesAttack:g.has('COUNTER')&&g.has('ATTACK')},sourceTags:[...(skill?.tags||[])]},parsed};
 }
 function findTagSkill(skillId){return TAG_SKILLS.find(x=>x.id===skillId)||null}
 function formatCompileResult(result){
