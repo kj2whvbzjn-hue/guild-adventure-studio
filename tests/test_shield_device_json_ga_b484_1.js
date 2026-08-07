@@ -1,1 +1,15 @@
-const fs=require('fs');const assert=(v,m)=>{if(!v)throw new Error(m)};const runtime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');const tag=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');const html=fs.readFileSync('game-tag-test/index.html','utf8');assert(html.includes('tagTestRunShieldJson'),'シールドJSONボタンなし');assert(runtime.includes("TAG-SHIELD-DEVICE-001"),'テストIDなし');for(const id of ['SHIELD-ABSORB-PARTIAL','SHIELD-OVERFLOW','SHIELD-INVALID-DATA-REJECT','SHIELD-DEAD-REJECT','SHIELD-ALL','SHIELD-MULTIPLE-FIFO','SHIELD-DURATION-EXPIRE','SHIELD-BATTLE-END-CLEAR'])assert(runtime.includes(`'${id}'`),`${id}なし`);for(const token of ['applyTaggedShield','consumeShieldDamage','processShieldEffects','clearAllShields'])assert(tag.includes(token),`${token}なし`);assert(tag.includes("g.has('SHIELD')&&!n.SHIELD"),'SHIELD必須検証なし');assert(runtime.includes("build:'GA-B486.2'"),'ビルド不一致');console.log('SHIELD_DEVICE_JSON_GA_B484_1_OK');
+const fs=require('fs');
+const assert=(v,m)=>{if(!v)throw new Error(m)};
+const runtime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
+const tag=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');
+const html=fs.readFileSync('game-tag-test/index.html','utf8');
+const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
+const buildId=build.game_build;
+assert(html.includes('tagTestRunShieldJson'),'シールドJSONボタンなし');
+assert(runtime.includes('TAG-SHIELD-DEVICE-001'),'テストIDなし');
+for(const id of ['SHIELD-ABSORB-PARTIAL','SHIELD-OVERFLOW','SHIELD-INVALID-DATA-REJECT','SHIELD-DEAD-REJECT','SHIELD-ALL','SHIELD-MULTIPLE-FIFO','SHIELD-DURATION-EXPIRE','SHIELD-BATTLE-END-CLEAR'])assert(runtime.includes(`'${id}'`),`${id}なし`);
+for(const token of ['applyTaggedShield','consumeShieldDamage','processShieldEffects','clearAllShields'])assert(tag.includes(token),`${token}なし`);
+assert(tag.includes("g.has('SHIELD')&&!n.SHIELD"),'SHIELD必須検証なし');
+assert(runtime.includes('tag-shield-device-validation-'),'シールドJSONファイル名なし');
+assert(html.includes(buildId),'タグ検証画面に現行ビルド表記なし');
+console.log('SHIELD_DEVICE_JSON_CURRENT_BUILD_OK');

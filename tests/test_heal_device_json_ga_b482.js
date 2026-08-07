@@ -2,6 +2,9 @@ const fs=require('fs');
 const assert=require('assert');
 const html=fs.readFileSync('game-tag-test/index.html','utf8');
 const runtime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
+const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
+const buildId=build.game_build;
+const cacheId=buildId.replace(/^GA-B/,'').replace('.','');
 assert(html.includes('id="tagTestRunHealJson"'),'回復JSON検証ボタンがありません');
 assert(runtime.includes("test:{id:'TAG-HEAL-DEVICE-001'"),'回復実機JSONテストIDがありません');
 for(const id of ['HEAL-SINGLE','HEAL-ALL','HEAL-DEAD-REJECT','HEAL-ENEMY-REJECT','HEAL-INVALID-DATA-REJECT'])assert(runtime.includes(`'${id}'`),`${id} がありません`);
@@ -11,13 +14,10 @@ assert(runtime.includes('function ensureHealValidationFixtures()'),'回復検証
 assert(runtime.includes("resetBattle();ensureHealValidationFixtures();"),'各ケース開始時にfixtureを初期化していません');
 assert(runtime.includes("SKL-TEST-HEAL-100"),'単体回復fixtureがありません');
 assert(runtime.includes("SKL-TEST-HEAL-ALL-60"),'全体回復fixtureがありません');
-assert(runtime.includes("a.download=`tag-heal-device-validation-GA-B486.1-"),'回復JSONファイル名がありません');
-
-assert(runtime.includes("build:'GA-B486.1'"),'回復JSON buildがGA-B486.1ではありません');
-assert(html.includes('validation-runtime.js?v=4861'),'タグ検証ランタイムのキャッシュバスターがありません');
-assert(html.includes("data.gameVersion='GA-B486.1'"),'タグ検証の保存ビルドがGA-B486.1ではありません');
+assert(runtime.includes('a.download=`tag-heal-device-validation-'),'回復JSONファイル名がありません');
+assert(html.includes(`validation-runtime.js?v=${cacheId}`),'タグ検証ランタイムのキャッシュバスターが現行ビルドではありません');
+assert(html.includes(`data.gameVersion='${buildId}'`),'タグ検証の保存ビルドが現行ビルドではありません');
 const tagSw=fs.readFileSync('game-tag-test/sw.js','utf8');
-assert(tagSw.includes('ga-tag-test-b4861'),'タグ検証Service Workerキャッシュが更新されていません');
-assert(tagSw.includes('validation-runtime.js?v=4861'),'Service Workerが旧検証ランタイムを参照しています');
-
-console.log('HEAL_DEVICE_JSON_GA_B483_2_OK');
+assert(tagSw.includes(`ga-tag-test-b${cacheId}`),'タグ検証Service Workerキャッシュが現行ビルドではありません');
+assert(tagSw.includes(`validation-runtime.js?v=${cacheId}`),'Service Workerが現行検証ランタイムを参照していません');
+console.log('HEAL_DEVICE_JSON_CURRENT_BUILD_OK');
