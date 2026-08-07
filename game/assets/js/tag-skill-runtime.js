@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime — GA-B486.32 / P01-07 COUNTER runtime v1.1 */
+/* Tag skill compiler/runtime — GA-B486.33 / P01-07 COUNTER runtime v1.1 */
 const TAG_LOGIC_ORDER=['COUNTER','ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
