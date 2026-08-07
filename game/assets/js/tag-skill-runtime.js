@@ -80,7 +80,7 @@ function findTagSkill(skillId){return TAG_SKILLS.find(x=>x.id===skillId)||null}
 function formatCompileResult(result){
  const d=result.definition,p=result.parsed;
  return [
-  `[BUILD] ${TAG_SKILL_TEST_BUILD}`,
+  `[BUILD] ${TAG_SKILL_BUILD}`,
   `[SKILL] ${d.id} / ${d.name}`,
   `[GENERAL] ${[...p.generalTags].join(', ')||'(なし)'}`,
   `[NUMERIC] ${Object.values(p.numericTags).map(x=>x.raw).join(', ')||'(なし)'}`,
