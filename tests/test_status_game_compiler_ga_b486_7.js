@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm');
+const code=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
+const ctx={console,window:{},battle:{tick:0,units:[],log:[]},TAG_SKILLS:[],TAG_SKILL_TEST_BUILD:'GA-B486.7'};
+vm.createContext(ctx); vm.runInContext(code,ctx);
+const r=ctx.compileTaggedSkill({id:'SKL-TEST-STATUS-ACCURACY-DOWN',name:'命中低下',tags:['STATUS','STATUS_ID=STATUS-ACCURACY-DOWN','敵','単体','DURATION=400']});
+if(!r.ok) throw new Error(r.errors.join('; '));
+if(JSON.stringify(r.definition.logicOrder)!=='["STATUS"]') throw new Error('STATUS missing in logicOrder');
+if(r.definition.parameters.statusId!=='STATUS-ACCURACY-DOWN') throw new Error('statusId missing');
+if(r.definition.parameters.statusDuration!==400) throw new Error('statusDuration missing');
+if(r.definition.parameters.statusPayload.accuracy_modifier!==-20) throw new Error('statusPayload missing');
+console.log('STATUS_GAME_COMPILER_GA_B486_7_OK');
