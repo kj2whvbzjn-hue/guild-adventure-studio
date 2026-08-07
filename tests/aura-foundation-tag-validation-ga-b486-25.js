@@ -29,8 +29,8 @@ const invalid=[
   {id:'BAD-COMBINED',tags:['AURA','BUFF','AURA_EFFECT=BUFF','AURA_VALUE=10','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','ATK','POWER=10','DURATION=100','STACK_GAIN=1']}
 ];
 const errors=[];
-if(build.game_build!=='GA-B486.25')errors.push(`build=${build.game_build}`);
-if(spec.status!=='tag_validation_ready')errors.push(`spec_status=${spec.status}`);
+if(build.game_build!=='GA-B486.26')errors.push(`build=${build.game_build}`);
+if(!['tag_validation_ready','device_json_validation_ready'].includes(spec.status))errors.push(`spec_status=${spec.status}`);
 for(const [name,compile] of compilers){
   for(const skill of valid){const r=compile(skill);if(!r.ok)errors.push(`${name}:${skill.id}: expected VALID: ${r.errors.join(' / ')}`);else{
     if(r.definition.logicOrder.join(',')!=='AURA')errors.push(`${name}:${skill.id}: logic=${r.definition.logicOrder}`);

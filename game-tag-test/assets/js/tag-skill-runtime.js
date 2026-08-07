@@ -1,4 +1,4 @@
-/* Validation tag skill compiler/runtime — GA-B486.25 / P01-06 AURA tag validation */
+/* Validation tag skill compiler/runtime — GA-B486.26 / P01-06 AURA tag validation */
 const TAG_LOGIC_ORDER=['ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){

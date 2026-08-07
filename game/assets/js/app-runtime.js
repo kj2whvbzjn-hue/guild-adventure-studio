@@ -640,8 +640,36 @@ function tagTestRunReviveJson(){
  const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-revive-rate-game-runtime-validation-GA-B486.24-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);$('tagTestResult').textContent=`[REVIVE RATE GAME RUNTIME JSON] ${report.summary.passed?'PASS':'FAIL'}\n[CASES] ${report.summary.passed_count}/${report.summary.case_count}`;return report;
 }
 
+
+function tagTestRunAuraJson(){
+ const valid=[
+  {id:'AURA-ALLY-ATK',label:'味方ATKオーラ',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=10','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','AURA_STACK=highest','AURA_PRIORITY=0','ATK']},
+  {id:'AURA-ALLY-DEF-EX',label:'本人除外DEFオーラ',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=15','AURA_TARGET=ally','AURA_SCOPE=allies_excluding_self','DEF']},
+  {id:'AURA-ENEMY-ATK-DOWN',label:'敵全体ATK低下オーラ',tags:['AURA','AURA_EFFECT=DEBUFF','AURA_VALUE=20','AURA_TARGET=enemy','AURA_SCOPE=all','ATK']}
+ ];
+ const invalid=[
+  {id:'AURA-BAD-STATUS',label:'STATUSオーラ未対応',tags:['AURA','AURA_EFFECT=STATUS','AURA_VALUE=10','AURA_TARGET=enemy','AURA_SCOPE=all','ATK']},
+  {id:'AURA-BAD-NO-VALUE',label:'値なし拒否',tags:['AURA','AURA_EFFECT=BUFF','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','ATK']},
+  {id:'AURA-BAD-ZERO',label:'0値拒否',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=0','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','ATK']},
+  {id:'AURA-BAD-TARGET',label:'対象種別拒否',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=10','AURA_TARGET=self','AURA_SCOPE=self_and_allies','ATK']},
+  {id:'AURA-BAD-ENEMY-SCOPE',label:'敵対象scope制限',tags:['AURA','AURA_EFFECT=DEBUFF','AURA_VALUE=10','AURA_TARGET=enemy','AURA_SCOPE=allies_excluding_self','ATK']},
+  {id:'AURA-BAD-STACK',label:'additive未対応',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=10','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','AURA_STACK=additive','ATK']},
+  {id:'AURA-BAD-NO-STAT',label:'能力値なし拒否',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=10','AURA_TARGET=ally','AURA_SCOPE=self_and_allies']},
+  {id:'AURA-BAD-COMBINED',label:'通常BUFF混在拒否',tags:['AURA','BUFF','AURA_EFFECT=BUFF','AURA_VALUE=10','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','ATK','POWER=10','DURATION=100','STACK_GAIN=1']}
+ ];
+ const cases=[],errors=[];
+ const add=(row,expectedOk)=>{const result=compileTaggedSkill({id:row.id,name:row.label,tags:row.tags});const er=[];
+  if(result.ok!==expectedOk)er.push(expectedOk?'正常系が拒否されました':'異常系が受理されました');
+  if(expectedOk&&result.ok){const d=result.definition,p=d.parameters||{};if(!d.logicOrder?.includes('AURA'))er.push('logicOrderにAURAがありません');if(d.target?.side!=='self'||d.target?.range!=='single')er.push(`通常target正規化不一致:${d.target?.side}/${d.target?.range}`);if(p.auraStack!=='highest')er.push(`AURA_STACK不一致:${p.auraStack}`);}
+  const c={id:row.id,label:row.label,input:{tags:[...row.tags]},expected:{compiled_ok:expectedOk},result,passed:er.length===0,errors:er};cases.push(c);if(er.length)errors.push(...er.map(x=>`${row.id}: ${x}`));};
+ valid.forEach(x=>add(x,true));invalid.forEach(x=>add(x,false));
+ const entrypoint=location.pathname.includes('game-tag-test')?'game-tag-test/index.html':'game/index.html';
+ const report={schema_version:'1.0.0',build:'GA-B486.26',generated_at:new Date().toISOString(),test:{id:'TAG-AURA-DEVICE-001',mode:'device_validation',entrypoint,trigger:'tagTestRunAuraJson'},current_spec:{task_id:'P01-06',stage:'tag_validation',runtime_application:false,supported_effects:['BUFF','DEBUFF'],supported_stats:['ATK','DEF','AGI','VIT','INT','DEX','LUK'],value_tag:'AURA_VALUE',target_tag:'AURA_TARGET=<ally|enemy>',scope_tag:'AURA_SCOPE=<all|self_and_allies|allies_excluding_self>',stacking:'highest only',status_aura:'deferred',additive:'deferred',unique_source:'deferred'},cases,summary:{case_count:cases.length,passed_count:cases.filter(x=>x.passed).length,failed_count:cases.filter(x=>!x.passed).length,passed:errors.length===0,errors}};
+ const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`tag-aura-device-validation-GA-B486.26-${new Date().toISOString().replace(/[:.]/g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);$('tagTestResult').textContent=`[AURA DEVICE JSON] ${report.summary.passed?'PASS':'FAIL'}\n[CASES] ${report.summary.passed_count}/${report.summary.case_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.map(x=>' - '+x).join('\n'):''}\n[JSON] 出力完了`;return report;
+}
+
 function setupTagSkillTestUI(){
- const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),runHealSingle=$('tagTestRunHealSingle'),runHealAll=$('tagTestRunHealAll'),runShieldJson=$('tagTestRunShieldJson'),runStatusJson=$('tagTestRunStatusJson'),runCleanseJson=$('tagTestRunCleanseJson'),runReviveJson=$('tagTestRunReviveJson'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
+ const execute=$('tagTestExecute'),compile=$('tagTestCompile'),actor=$('tagTestActor'),run1000=$('tagTestRun1000'),runStackLimit=$('tagTestRunStackLimit'),runStaggered=$('tagTestRunStaggered'),runDefeat=$('tagTestRunDefeat'),runBuffHighest=$('tagTestRunBuffHighest'),runDebuffHighest=$('tagTestRunDebuffHighest'),runBuffAll=$('tagTestRunBuffAll'),runDebuffAll=$('tagTestRunDebuffAll'),runModifierTargetDeath=$('tagTestRunModifierTargetDeath'),runModifierSourceDeath=$('tagTestRunModifierSourceDeath'),runConditionalFollowUp=$('tagTestRunConditionalFollowUp'),runStudioBridge=$('tagTestRunStudioBridge'),runFormalRegression=$('tagTestRunFormalRegression'),runHealSingle=$('tagTestRunHealSingle'),runHealAll=$('tagTestRunHealAll'),runShieldJson=$('tagTestRunShieldJson'),runStatusJson=$('tagTestRunStatusJson'),runCleanseJson=$('tagTestRunCleanseJson'),runReviveJson=$('tagTestRunReviveJson'),runAuraJson=$('tagTestRunAuraJson'),exportJson=$('tagTestExportJson');if(!execute||execute.dataset.bound)return;
  execute.dataset.bound='1';
  actor.onchange=populateTagSkillTestUI;
  compile.onclick=()=>{const result=compileTaggedSkill(findTagSkill($('tagTestSkill').value));$('tagTestResult').textContent=formatCompileResult(result)};
@@ -718,6 +746,7 @@ function setupTagSkillTestUI(){
  if(runStatusJson)runStatusJson.onclick=tagTestRunStatusJson;
  if(runCleanseJson)runCleanseJson.onclick=tagTestRunCleanseJson;
  if(runReviveJson)runReviveJson.onclick=tagTestRunReviveJson;
+ if(runAuraJson)runAuraJson.onclick=tagTestRunAuraJson;
  if(runFormalRegression)runFormalRegression.onclick=async()=>{if(studioSkillBridge.status!=='loaded')await loadStudioSkillDefinitions();const report=downloadFormalRuntimeRegressionJson();$('tagTestResult').textContent=`[FORMAL REGRESSION] ${report.summary.passed?'PASS':'FAIL'}\n[STATUS] ${report.source.status}\n[PRODUCTION DEFINITIONS] ${report.summary.production_compile_count}/${report.summary.production_definition_count}\n[VALIDATION REJECTIONS] ${report.summary.validation_expected_rejection_count}/${report.summary.validation_definition_count}\n[REQUIRED STUDIO] ${report.summary.required_studio_sourced}/${report.summary.required_count}\n[EMBEDDED PRODUCTION] ${report.summary.production_embedded_count}\n[ERRORS] ${report.summary.errors.length}${report.summary.errors.length?'\n'+report.summary.errors.join('\n'):''}`};
  if(exportJson)exportJson.onclick=()=>{const report=battle.validationMeta?.kind?downloadModifierValidationJson():downloadValidationJson();$('tagTestResult').textContent=`${$('tagTestResult').textContent}\n[JSON] 出力完了 / ${report.summary.passed?'PASS':'FAIL'}`};
  populateTagSkillTestUI();
