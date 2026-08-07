@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime — GA-B486.30 / P01-06 AURA revive connection fix */
+/* Tag skill compiler/runtime — GA-B486.31 / P01-07 COUNTER runtime v1 */
 const TAG_LOGIC_ORDER=['COUNTER','ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -342,16 +342,39 @@ function reviveTarget(actor,target,compiled){
  typeof recordValidationEvent==='function'&&recordValidationEvent('revive',{source_id:actor.id,target_id:target.id,skill_id:compiled.definition.id,hp_before:before,hp_after:after,max_hp:maxHp,mode,revive_value:reviveValue});
  return{ok:true,targetId:target.id,hpBefore:before,hpAfter:after,maxHp,reviveMode:mode,reviveValue,gauge:target.gauge};
 }
-function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false}={}){
+function counterActionBlocked(unit){
+ if(!unit?.alive)return true;
+ if(unit.counterDisabled===true||unit.actionDisabled===true)return true;
+ return ensureStatusEffects(unit).some(x=>x?.payload?.action_disabled===true);
+}
+function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackResult,{origin='base'}={}){
+ const skip=(reason,extra={})=>{typeof recordValidationEvent==='function'&&recordValidationEvent('counter_skipped',{source_id:defender?.id||null,attacker_id:attacker?.id||null,incoming_skill_id:incomingCompiled?.definition?.id||null,origin,reason,...extra});return{ok:false,triggered:false,reason}};
+ if(origin!=='base')return skip('DERIVED_ORIGIN');
+ if(!attackResult?.ok)return skip('NO_HIT');
+ if(incomingCompiled?.definition?.target?.range!=='single')return skip('AREA_ATTACK');
+ if(!defender?.alive)return skip('DEFENDER_DEAD');
+ if(battle.result||battle.pendingResult)return skip('BATTLE_END');
+ if(counterActionBlocked(defender))return skip('ACTION_DISABLED');
+ const skillId=defender.counterSkillId||null;if(!skillId)return skip('NO_COUNTER_SKILL');
+ const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);if(!skill||!compiled.ok||!compiled.definition.logicOrder.includes('COUNTER'))return skip('INVALID_COUNTER_SKILL');
+ if(compiled.definition.parameters.counterTrigger!=='hit'||compiled.definition.parameters.counterTarget!=='attacker')return skip('COUNTER_CONDITION_MISMATCH');
+ typeof recordValidationEvent==='function'&&recordValidationEvent('counter_triggered',{source_id:defender.id,attacker_id:attacker.id,incoming_skill_id:incomingCompiled.definition.id,counter_skill_id:skillId,origin,shield_absorbed:attackResult.shieldAbsorbed||0,hp_damage:attackResult.damage||0});
+ battle.log.push(`[Tick ${battle.tick}] [TAG][COUNTER] ${defender.name}が${attacker.name}へ反撃 — ${skill.name}`);
+ const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',suppressDerived:true});
+ return{ok:!!result?.ok,triggered:true,skillId,result};
+}
+function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false}={}){
  const compiled=compileTaggedSkill(skillSource);
  battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);
  if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
+ const actualOrigin=origin||(isFollowUp?'follow_up':compiled.definition.logicOrder.includes('COUNTER')?'counter':'base');
  const resolved=resolveTaggedTargets(actor,target,compiled.definition);
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[];
  for(const resolvedTarget of resolved.targets){
   let attackResult=null,healResult=null,shieldResult=null,dotResult=null,modifierResult=null,followUpResult=null,statusResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
   for(const logic of compiled.definition.logicOrder){
+   if(logic==='COUNTER'){continue}
    if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL'){healResult=applyTaggedHeal(actor,resolvedTarget,compiled)}
    else if(logic==='SHIELD'){shieldResult=applyTaggedShield(actor,resolvedTarget,compiled)}
@@ -364,8 +387,9 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
   targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,modifierResult,followUpResult,statusResult,cleanseResult,reviveResult});
-  if(attackResult?.ok&&!isFollowUp)dispatchConditionalFollowUps(actor,resolvedTarget,{trigger:'ALLY_ATTACK',originSkillId:compiled.definition.id});
-  else if(followUpResult?.ok&&isFollowUp)recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN'});
+  if(attackResult?.ok&&!suppressDerived&&actualOrigin==='base'){dispatchCounterAfterAttack(actor,resolvedTarget,compiled,attackResult,{origin:actualOrigin});if(!battle.result&&!battle.pendingResult)dispatchConditionalFollowUps(actor,resolvedTarget,{trigger:'ALLY_ATTACK',originSkillId:compiled.definition.id});}
+  else if(attackResult?.ok&&actualOrigin==='counter')recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN'});
+  else if(followUpResult?.ok&&actualOrigin==='follow_up')recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN'});
  }
  if(manual)renderBattle();
  const first=targetResults[0]||{};
