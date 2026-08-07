@@ -1,4 +1,4 @@
-/* Validation tag skill compiler/runtime — GA-B486.31 / P01-06 AURA source-dependent runtime v1 */
+/* Validation tag skill compiler/runtime — GA-B486.32 / P01-06 AURA source-dependent runtime v1 */
 const TAG_LOGIC_ORDER=['COUNTER','ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
@@ -285,8 +285,8 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  if(origin!=='base')return skip('DERIVED_ORIGIN');
  if(!attackResult?.ok)return skip('NO_HIT');
  if(incomingCompiled?.definition?.target?.range!=='single')return skip('AREA_ATTACK');
- if(!defender?.alive)return skip('DEFENDER_DEAD');
  if(battle.result||battle.pendingResult)return skip('BATTLE_END');
+ if(!defender?.alive)return skip('DEFENDER_DEAD');
  if(counterActionBlocked(defender))return skip('ACTION_DISABLED');
  const skillId=defender.counterSkillId||null;if(!skillId)return skip('NO_COUNTER_SKILL');
  const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);if(!skill||!compiled.ok||!compiled.definition.logicOrder.includes('COUNTER'))return skip('INVALID_COUNTER_SKILL');
