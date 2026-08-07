@@ -94,7 +94,7 @@ function finishIfNeeded(){
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
  battle.pendingResult=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
- battle.units.forEach(u=>u.reservedAction=null);clearAllShields('battle_end');clearAllStatuses('battle_end');
+ battle.units.forEach(u=>u.reservedAction=null);clearAllShields('battle_end');clearAllStatuses('battle_end');clearAllCoverEffects('battle_end');
  battle.log.push(`[Tick ${battle.tick}] 決着条件を検出 — 最終演出を待機`);
  battle.running=false;battle.runToken++;
  if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;
@@ -129,6 +129,7 @@ function processTicks(count){
   processModifierStacks();
   processShieldEffects();
   processStatusEffects();
+  processCoverEffects();
   processDotStacks();
   if(battle.result||battle.pendingResult)break;
   if(battle.validationMode)continue;
