@@ -57,9 +57,11 @@ function compileTaggedSkill(skill){
  if(g.has('REVIVE')){
   if(!g.has('味方'))errors.push('REVIVEの対象は味方が必要です');
   if(g.has('自分')||g.has('敵')||g.has('死体')||g.has('地点'))errors.push('REVIVEは味方以外を対象にできません');
-  if(!n.REVIVE_HP)errors.push('REVIVEにはREVIVE_HPが必要です');
-  if(n.REVIVE_HP&&(!Number.isFinite(n.REVIVE_HP.value)||!Number.isInteger(n.REVIVE_HP.value)||n.REVIVE_HP.value<1))errors.push('REVIVE_HPは1以上の有限整数が必要です');
-  if(n.REVIVE_HP_RATE)errors.push('REVIVE_HP_RATEは現段階では未対応です');
+  const hasFixed=!!n.REVIVE_HP,hasRate=!!n.REVIVE_HP_RATE;
+  if(hasFixed&&hasRate)errors.push('REVIVE_HPとREVIVE_HP_RATEは同時指定できません');
+  if(!hasFixed&&!hasRate)errors.push('REVIVEにはREVIVE_HPまたはREVIVE_HP_RATEが必要です');
+  if(hasFixed&&(!Number.isFinite(n.REVIVE_HP.value)||!Number.isInteger(n.REVIVE_HP.value)||n.REVIVE_HP.value<1))errors.push('REVIVE_HPは1以上の有限整数が必要です');
+  if(hasRate&&(!Number.isFinite(n.REVIVE_HP_RATE.value)||n.REVIVE_HP_RATE.value<=0||n.REVIVE_HP_RATE.value>1))errors.push('REVIVE_HP_RATEは0より大きく1以下の有限数が必要です');
  }
  const targetSide=g.has('敵')?'enemy':g.has('味方')?'ally':g.has('自分')?'self':g.has('死体')?'corpse':g.has('地点')?'point':null;
  const range=g.has('単体')?'single':g.has('全体')?'all':g.has('前列')?'front':g.has('後列')?'back':g.has('ランダム')?'random':g.has('貫通')?'pierce':null;
@@ -225,13 +227,17 @@ function resetCombatantOnDeath(target,{reason='death',sourceId=null}={}){
 function reviveTarget(actor,target,compiled){
  if(!actor?.alive)return{ok:false,reason:'使用者が無効です'};
  if(!target||target.side!==actor.side||target.alive||target.hp>0)return{ok:false,reason:'INVALID_TARGET'};
- const requested=Math.floor(Number(compiled.definition.parameters.reviveHp)||0);
- if(requested<1)return{ok:false,reason:'REVIVE_HPが無効です'};
- const before=target.hp,maxHp=Math.max(1,Math.floor(Number(target.maxHp)||1)),after=Math.min(requested,maxHp);
+ const maxHp=Math.max(1,Math.floor(Number(target.maxHp)||1));
+ const fixed=compiled.definition.parameters.reviveHp,rate=compiled.definition.parameters.reviveHpRate;
+ const mode=rate!=null?'rate':'fixed';
+ const reviveValue=mode==='rate'?Number(rate):Math.floor(Number(fixed)||0);
+ if(mode==='fixed'&&reviveValue<1)return{ok:false,reason:'REVIVE_HPが無効です'};
+ if(mode==='rate'&&(!Number.isFinite(reviveValue)||reviveValue<=0||reviveValue>1))return{ok:false,reason:'REVIVE_HP_RATEが無効です'};
+ const before=target.hp,calculated=mode==='rate'?Math.max(1,Math.floor(maxHp*reviveValue)):reviveValue,after=Math.min(calculated,maxHp);
  target.hp=after;target.alive=true;target.gauge=0;target.reservedAction=null;
  battle.log.push(`[Tick ${battle.tick}] [TAG][REVIVE] ${actor.name}の${compiled.definition.name} → ${target.name}がHP${after}で復活`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('revive',{source_id:actor.id,target_id:target.id,skill_id:compiled.definition.id,hp_before:before,hp_after:after,max_hp:maxHp,mode:'fixed',revive_value:requested});
- return{ok:true,targetId:target.id,hpBefore:before,hpAfter:after,maxHp,reviveMode:'fixed',reviveValue:requested,gauge:target.gauge};
+ typeof recordValidationEvent==='function'&&recordValidationEvent('revive',{source_id:actor.id,target_id:target.id,skill_id:compiled.definition.id,hp_before:before,hp_after:after,max_hp:maxHp,mode,revive_value:reviveValue});
+ return{ok:true,targetId:target.id,hpBefore:before,hpAfter:after,maxHp,reviveMode:mode,reviveValue,gauge:target.gauge};
 }
 
 function executeTaggedSkill(actor,target,skillSource,{manual=false}={}){
