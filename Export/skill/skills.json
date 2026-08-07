@@ -1,6 +1,6 @@
 {
   "schema_version": "1.1.0",
-  "data_version": "GA-B486.34-p01-08-cover-runtime-fixtures-v1",
+  "data_version": "GA-B486.35-p01-08-cover-lifetime-tag-v1",
   "generated_at": "2026-08-07T16:34:42+00:00",
   "generated_by": "GK Studio GKS-B484",
   "data": [
@@ -1062,10 +1062,11 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
         "味方",
         "単体"
       ],
-      "description": "P01-08 かばう正式Studioデータ。指定した味方1人を保護するCOVER関係で、次工程のランタイム接続対象。base/counter/follow_upの直接ATTACKを対象とし、DOT単独・STATUS単独は対象外。COVER自体は派生世代を増やさず、対象差し替え後の被弾者COUNTERを許可する。寿命（回数・時間）は未確定のためこのデータでは定義しない。"
+      "description": "P01-08 かばう正式Studioデータ。指定した味方1人を保護するCOVER関係。寿命はデータ駆動で、この初回正式スキルはCOVER_LIFETIME=persistent。base/counter/follow_upの直接ATTACKを対象とし、DOT単独・STATUS単独は対象外。COVER自体は派生世代を増やさず、対象差し替え後の被弾者COUNTERを許可する。"
     },
     {
       "id": "SKL-COVER-TEST-ALL-ALLIES",
@@ -1078,10 +1079,47 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=10",
         "COVER_REMOVABLE=false",
+        "COVER_LIFETIME=persistent",
         "味方",
         "全体"
       ],
-      "description": "P01-08 COVER基盤がall_alliesを受理できることを確認する正式フィクスチャ。初回正式スキル自体はsingle_ally。"
+      "description": "P01-08 COVER基盤がall_alliesとpersistent寿命を受理できることを確認する正式フィクスチャ。初回正式スキル自体はsingle_ally。"
+    },
+    {
+      "id": "SKL-COVER-TEST-USES-1",
+      "name": "かばう検証・1回制限",
+      "environment": "production",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=uses",
+        "COVER_USES=1",
+        "味方",
+        "単体"
+      ],
+      "description": "P01-08 COVER寿命モードusesの正式フィクスチャ。1回かばった時点で関係終了するランタイム検証に使用する。"
+    },
+    {
+      "id": "SKL-COVER-TEST-DURATION-300",
+      "name": "かばう検証・時間300",
+      "environment": "production",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=duration",
+        "DURATION=300",
+        "味方",
+        "単体"
+      ],
+      "description": "P01-08 COVER寿命モードdurationの正式フィクスチャ。持続300で関係終了するランタイム検証に使用する。"
     },
     {
       "id": "SKL-COVER-TEST-DOT-ONLY",
@@ -1110,6 +1148,7 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
         "味方",
         "単体"
       ],
@@ -1126,6 +1165,7 @@
         "COVER_TRIGGER=direct_damage",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
         "味方",
         "単体"
       ],
@@ -1141,6 +1181,7 @@
         "COVER_TARGET=single_ally",
         "COVER_TRIGGER=direct_attack",
         "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
         "味方",
         "単体"
       ],
@@ -1157,6 +1198,7 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=yes",
+        "COVER_LIFETIME=persistent",
         "味方",
         "単体"
       ],
@@ -1173,6 +1215,7 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
         "自分",
         "単体"
       ],
@@ -1180,7 +1223,7 @@
     },
     {
       "id": "COVER-VALIDATION-USES",
-      "name": "かばう検証・未確定USES",
+      "name": "かばう検証・uses値なし",
       "environment": "validation",
       "definition_format": "tag_v1",
       "tags": [
@@ -1189,15 +1232,15 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=true",
-        "COVER_USES=1",
+        "COVER_LIFETIME=uses",
         "味方",
         "単体"
       ],
-      "description": "参考案のCOVER_USESはまだ正式確定していないため現段階では拒否する。"
+      "description": "COVER_LIFETIME=usesでは1以上の整数COVER_USESが必須であることを確認。"
     },
     {
       "id": "COVER-VALIDATION-DURATION",
-      "name": "かばう検証・未確定DURATION",
+      "name": "かばう検証・duration値なし",
       "environment": "validation",
       "definition_format": "tag_v1",
       "tags": [
@@ -1206,11 +1249,101 @@
         "COVER_TRIGGER=direct_attack",
         "COVER_PRIORITY=0",
         "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=duration",
+        "味方",
+        "単体"
+      ],
+      "description": "COVER_LIFETIME=durationでは1以上の整数DURATIONが必須であることを確認。"
+    },
+    {
+      "id": "COVER-VALIDATION-NO-LIFETIME",
+      "name": "かばう検証・LIFETIMEなし",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "味方",
+        "単体"
+      ],
+      "description": "COVER_LIFETIME必須の拒否確認。"
+    },
+    {
+      "id": "COVER-VALIDATION-USES-DURATION",
+      "name": "かばう検証・usesとDURATION併用",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=uses",
+        "COVER_USES=1",
         "DURATION=300",
         "味方",
         "単体"
       ],
-      "description": "参考案のCOVER DURATIONはまだ正式確定していないため現段階では拒否する。"
+      "description": "寿命モードを排他的にし、usesとDURATIONの併用を拒否する。"
+    },
+    {
+      "id": "COVER-VALIDATION-DURATION-USES",
+      "name": "かばう検証・durationとUSES併用",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=duration",
+        "DURATION=300",
+        "COVER_USES=1",
+        "味方",
+        "単体"
+      ],
+      "description": "寿命モードを排他的にし、durationとCOVER_USESの併用を拒否する。"
+    },
+    {
+      "id": "COVER-VALIDATION-PERSISTENT-USES",
+      "name": "かばう検証・persistentとUSES併用",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
+        "COVER_USES=1",
+        "味方",
+        "単体"
+      ],
+      "description": "persistentではCOVER_USESを指定できないことを確認。"
+    },
+    {
+      "id": "COVER-VALIDATION-PERSISTENT-DURATION",
+      "name": "かばう検証・persistentとDURATION併用",
+      "environment": "validation",
+      "definition_format": "tag_v1",
+      "tags": [
+        "COVER",
+        "COVER_TARGET=single_ally",
+        "COVER_TRIGGER=direct_attack",
+        "COVER_PRIORITY=0",
+        "COVER_REMOVABLE=true",
+        "COVER_LIFETIME=persistent",
+        "DURATION=300",
+        "味方",
+        "単体"
+      ],
+      "description": "persistentではDURATIONを指定できないことを確認。"
     },
     {
       "id": "COVER-VALIDATION-MIXED-ATTACK",
@@ -1225,6 +1358,7 @@
         "COVER_REMOVABLE=true",
         "ATTACK",
         "DAMAGE=10",
+        "COVER_LIFETIME=persistent",
         "味方",
         "単体",
         "物理"
