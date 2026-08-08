@@ -22,7 +22,14 @@ def main()->int:
  if a.context=='update' or meta_path.exists():
   try:meta=json.loads(meta_path.read_text(encoding='utf-8'))
   except Exception as e:errors.append(f'STUDIO_UPDATE_INVALID {e}');meta={}
-  if meta.get('version')!='GKS-B484':errors.append(f'STUDIO_VERSION_UNEXPECTED {meta.get("version")!r}')
+  try:
+   build=json.loads((root/'package-build.json').read_text(encoding='utf-8'));expected_studio=build.get('studio_build')
+  except Exception as e:
+   errors.append(f'PACKAGE_BUILD_INVALID {e}');expected_studio=None
+  if not expected_studio:errors.append('STUDIO_VERSION_SOURCE_MISSING package-build.json:studio_build')
+  else:
+   if meta.get('version')!=expected_studio:errors.append(f'STUDIO_VERSION_UNEXPECTED {meta.get("version")!r} expected={expected_studio!r}')
+   if meta.get('studio_version') not in (None,'',expected_studio):errors.append(f'STUDIO_COMPONENT_VERSION_UNEXPECTED {meta.get("studio_version")!r} expected={expected_studio!r}')
   if 'formal' in json.dumps(meta,ensure_ascii=False).lower() and meta.get('formal_build') not in (None,''):errors.append('FORMAL_BUILD_REINTRODUCED')
  try:
   manifest=json.loads((root/'package_manifest.json').read_text(encoding='utf-8'))

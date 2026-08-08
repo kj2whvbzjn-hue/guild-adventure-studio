@@ -4,10 +4,18 @@
 
 ## quick
 
-通常の編集後に実行する。必須入口、JSON、リンク、主要メタデータ、重要ランタイム、削除マニフェスト、パッケージマニフェスト、JavaScript・PHP・Python構文を確認する。
+通常の編集後に実行する。必須入口、JSON、リンク、主要メタデータ、重要ランタイム、削除マニフェスト、パッケージマニフェストに加え、重要ランタイムJavaScriptと検査基盤Pythonの軽量構文検査を行う。
+
+全JavaScript・全PHP・全Pythonの網羅構文検査は`full`/`release`で維持する。Quickから検査能力を削除するのではなく、日常検査と配置前完全検査の責務を分離する。
 
 ```bash
 python3 tools/inspection/run.py quick
+```
+
+Quick検査基盤そのものを変更した場合は、独立回帰テストも実行する。これは日常Quickや既存Fullの正式ゲートには追加しない。
+
+```bash
+python3 tools/inspection/test-quick-framework.py
 ```
 
 ## full
@@ -29,7 +37,7 @@ python3 tools/inspection/run.py release --report reports/inspection-release.json
 ## 判定規則
 
 - 必須検査が1件でも失敗した場合は終了コード1とする。
-- Node.jsまたはPHPが導入されていない環境では、その言語の構文検査だけ警告とする。導入済み環境で構文エラーがあれば失敗する。
+- Quickではcritical-runtime manifestに列挙されたJavaScriptだけを構文検査し、対象が存在する場合はNode.jsを必須とする。Full/Releaseでは全JavaScript・全PHP・全Pythonの網羅構文検査を必須とする。
 - 現行のリリース判定テストは`shared/tests/test-registry.json`の`release_gate`だけを実行する。
 - レポートは明示的に`--report`を指定した場合だけ生成し、通常検査で作業ツリーを変更しない。
 - 削除可否は検査とは分離し、`DELETE_MANIFEST.txt`の完全一致パスだけを許可する。

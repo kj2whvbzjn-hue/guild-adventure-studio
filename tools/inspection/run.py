@@ -105,14 +105,17 @@ def run_step(name: str, command: list[str], *, required: bool, timeout_seconds: 
 
 
 def syntax_steps(profile: str) -> Iterable[tuple[str, list[str], bool]]:
+    if profile == "quick":
+        yield ("quick_syntax", [sys.executable, str(ROOT / "tools/inspection/check-quick-syntax.py"), str(ROOT)], True)
+        return
     if command_available("node"):
         yield ("javascript_syntax", ["bash", "-lc", "set -euo pipefail; while IFS= read -r -d '' f; do node --check \"$f\" >/dev/null; done < <(find . -type f -name '*.js' ! -path '*/vendor/*' ! -name 'jszip.min.js' -print0)"], True)
     else:
-        yield ("javascript_syntax_runtime_missing", ["bash", "-lc", "echo 'node is not installed'"], profile != "quick")
+        yield ("javascript_syntax_runtime_missing", ["bash", "-lc", "echo 'node is not installed'"], True)
     if command_available("php"):
         yield ("php_syntax", ["bash", "-lc", "set -euo pipefail; while IFS= read -r -d '' f; do php -l \"$f\" >/dev/null; done < <(find . -type f -name '*.php' -print0)"], True)
     else:
-        yield ("php_syntax_runtime_missing", ["bash", "-lc", "echo 'php is not installed'"], profile != "quick")
+        yield ("php_syntax_runtime_missing", ["bash", "-lc", "echo 'php is not installed'"], True)
     yield ("python_syntax", [sys.executable, "-c", "import pathlib,sys; r=pathlib.Path(sys.argv[1]); fs=[p for p in r.rglob('*.py') if '.git' not in p.parts and '__pycache__' not in p.parts]; [compile(p.read_text(encoding='utf-8'),str(p),'exec') for p in fs]; print(f'PYTHON_SYNTAX_OK files={len(fs)}')", str(ROOT)], True)
 
 

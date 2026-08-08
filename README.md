@@ -104,7 +104,7 @@ python3 tools/inspection/run.py quick --context source
 python3 tools/inspection/run.py full --context update
 ```
 
-`full`と`release`ではNode.jsとPHPが利用できない場合も失敗とします。`quick`のみ、実行環境がない構文検査を警告として扱います。
+`quick`はcritical-runtime JavaScriptと検査基盤Pythonを軽量検査し、critical JavaScriptがある場合はNode.jsを必須とします。`full`と`release`では全JavaScript・全PHP・全Pythonの網羅構文検査を維持します。
 一時ファイル、`__pycache__`、`.pyc`、`.tmp`、バックアップファイルが混入した場合は、どのコンテキストでも不合格になります。
 
 ### 検査の停止対策
