@@ -7,7 +7,7 @@ const spec=JSON.parse(fs.readFileSync(path.join(root,'docs/design/P01-13_SIMULTA
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 const exp=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const must=(ok,msg)=>{if(!ok){console.error('FAIL',msg);process.exit(1)}};
-must(build.game_build==='GA-B486.56','build');
+must(build.game_build==='GA-B486.57','build');
 must(spec.validation_patch==='P01-13-VAL-2'&&spec.stage==='validation_v2','spec stage');
 must(spec.formal_runtime_change===false&&spec.candidate_only===true,'must remain validation only');
 must(String(exp.data_version||'').includes('p01-13-seeded-battle-tie-roll-collision-validation-v3'),'data version');
