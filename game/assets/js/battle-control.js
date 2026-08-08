@@ -126,6 +126,18 @@ function executeReservation(actor){
  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
  return executeTaggedSkill(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }
+function activationPriorityFeatureEnabled(){return battle?.validationActivationPriority===true}
+function activationPriorityOf(unit){
+ if(!activationPriorityFeatureEnabled()||!unit?.alive)return 0;
+ const skill=findTagSkill(unit.defaultSkillId)||TAG_SKILLS[0],compiled=skill?compileTaggedSkill(skill):null;
+ return compiled?.ok?Number(compiled.definition.parameters.activationPriority)||0:0;
+}
+function fixDueActionOrder(due){
+ const rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit)}));
+ rows.sort((a,b)=>b.priority-a.priority||a.index-b.index);
+ if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:x.unit.defaultSkillId||null,priority:x.priority}))});
+ return rows.map(x=>x.unit);
+}
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
   battle.tick++;
@@ -140,7 +152,8 @@ function processTicks(count){
   battle.units.filter(u=>u.alive).forEach(u=>u.gauge+=u.agi);
   const reservable=battle.units.filter(u=>u.alive&&!u.reservedAction&&u.gauge>=GAUGE_MAX).sort((a,b)=>(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
   reservable.forEach(reserveAction);
-  const due=battle.units.filter(u=>u.alive&&u.reservedAction&&u.reservedAction.executeAt<=battle.tick).sort((a,b)=>a.reservedAction.executeAt-b.reservedAction.executeAt||(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
+  const dueBase=battle.units.filter(u=>u.alive&&u.reservedAction&&u.reservedAction.executeAt<=battle.tick).sort((a,b)=>a.reservedAction.executeAt-b.reservedAction.executeAt||(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
+  const due=fixDueActionOrder(dueBase);
   for(const u of due){if(battle.result||battle.pendingResult)break;executeReservation(u)}
  }
 }

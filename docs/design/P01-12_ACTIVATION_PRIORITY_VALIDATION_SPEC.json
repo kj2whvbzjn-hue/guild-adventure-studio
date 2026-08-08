@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "P01-12",
+  "name": "発動優先度",
+  "status": "VALIDATION_DRAFT",
+  "build": "GA-B486.46",
+  "runtime_application": false,
+  "source_priority": [
+    "戦闘仕様_正式統合版_v5",
+    "latest_git_source_GA-B486.46",
+    "P01-08_COVER_CURRENT_SPEC.json",
+    "P01-07_COUNTER_CURRENT_SPEC.json"
+  ],
+  "source_confirmed": {
+    "same_tick_order_decided_once": true,
+    "same_tick_order_maintained": true,
+    "next_tick_redecides": true,
+    "deterministic_order_required": true,
+    "tie_order_formalization": "deferred_P01-13"
+  },
+  "validation_design": {
+    "provisional_tag": "ACTIVATION_PRIORITY=<integer>",
+    "default": 0,
+    "higher_value_first": true,
+    "scope": "base reserved skill actions that become due in the same tick",
+    "reservation_consumes_or_commits": false,
+    "decision_point": "due action list fixed once per tick before execution",
+    "normal_runtime_enabled": false,
+    "validation_only_gate": "battle.validationActivationPriority === true",
+    "tie_behavior": "preserve pre-P01-12 due order as implementation-stable fallback; not formalized until P01-13"
+  },
+  "protected_behavior": [
+    "cost/CD execution boundary",
+    "action-disabled eligibility",
+    "target revalidation",
+    "cover/counter/follow-up semantics",
+    "existing due order when feature gate is off"
+  ],
+  "promotion_condition": "User-side device validation and regression must pass before formal runtime enablement.",
+  "deferred": [
+    "same-priority formal tie-break",
+    "reactive multi-trigger simultaneous ordering beyond existing feature-local priority rules",
+    "formal runtime enablement"
+  ],
+  "validation_patch": "P01-12-VAL-1"
+}
