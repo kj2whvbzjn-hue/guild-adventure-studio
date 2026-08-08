@@ -126,7 +126,7 @@ function executeReservation(actor){
  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
  return executeTaggedSkill(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }
-function activationPriorityFeatureEnabled(){return battle?.validationActivationPriority===true}
+function activationPriorityFeatureEnabled(){return true}
 function activationPriorityOf(unit){
  if(!activationPriorityFeatureEnabled()||!unit?.alive)return 0;
  const skill=findTagSkill(unit.defaultSkillId)||TAG_SKILLS[0],compiled=skill?compileTaggedSkill(skill):null;
