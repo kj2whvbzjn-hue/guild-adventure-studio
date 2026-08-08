@@ -13,4 +13,4 @@ if(!rt.includes('ACTIVATION_PRIORITYは有限整数が必要です'))errors.push
 if(spec.runtime_application!==false||spec.validation_design.normal_runtime_enabled!==false)errors.push('formal gate must be off');
 if(spec.validation_patch!=='P01-12-VAL-2')errors.push('spec validation patch');
 if(errors.length){errors.forEach(x=>console.error('FAIL',x));process.exit(1)}
-console.log('ACTIVATION_PRIORITY_RUNTIME_VALIDATION_GA_B486_46_VAL2_OK');
+console.log('ACTIVATION_PRIORITY_RUNTIME_VALIDATION_GA_B486_47_VAL2_OK');
