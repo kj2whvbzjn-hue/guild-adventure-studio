@@ -17,5 +17,15 @@ const dx=require('../data-exchange-core.js');
   assert(dx.validateEnvelopeShape(env).ok);
   const allRoot={schema_version:'4.0.0-draft',project:{id:'P2',updated_at:'R2'},tags:[{id:'T1'}],masters:{monsters:[],skills:[],jobs:[],equipment:[],mods:[],stats:[{id:'STAT-1',name:'Stat',tags:['T1']}],status_effects:[{id:'SE-1',name:'Status',tags:['T1']}],tablets:[{id:'TAB-1',name:'Tablet',tags:['T1']}],ai_conditions:[],ai_targets:[],ai_actions:[]}};
   for(const ds of ['stats','status_effects','tablets']){const out=await dx.buildEnvelope({rootData:allRoot,dataset:ds,ids:[dx.records(allRoot,ds)[0].id],dependencyMode:'direct',studioVersion:'TEST'});assert.equal(out.datasets[ds].length,1);assert.deepEqual(out.permissions.writable,[ds]);assert.equal(out.datasets.tags.length,1);}
+  const unchanged=await dx.dryRunImport({rootData:root,envelope:env});
+  assert.equal(unchanged.ok,true);assert.equal(unchanged.summary.unchanged,1);assert.equal(unchanged.can_apply,false);
+  const changed=JSON.parse(JSON.stringify(env));changed.datasets.monsters[0].name='Changed';changed.metadata.package_hash='';
+  assert.equal((await dx.dryRunImport({rootData:root,envelope:changed})).summary.conflict,1);
+  const added=JSON.parse(JSON.stringify(env));added.datasets.monsters[0].id='M2';added.datasets.monsters[0].params.skill_ids=[];added.metadata.base_hash='';added.metadata.package_hash='';
+  assert.equal((await dx.dryRunImport({rootData:root,envelope:added})).summary.add,1);
+  const broken=JSON.parse(JSON.stringify(added));broken.datasets.monsters[0].params.skill_ids=['MISSING'];
+  assert.equal((await dx.dryRunImport({rootData:root,envelope:broken})).summary.broken_reference,1);
+  const incompatible=JSON.parse(JSON.stringify(env));incompatible.project_id='OTHER';incompatible.metadata.package_hash='';
+  assert.equal((await dx.dryRunImport({rootData:root,envelope:incompatible})).summary.incompatible,1);
   console.log('Data Exchange core tests: PASS');
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -180,7 +180,7 @@ body.rule-picker-open{overflow:hidden}
 .dx-picker-row{position:relative;min-height:72px;padding:11px 48px 11px 13px;border:1px solid #dbe2ea;border-radius:12px;margin-bottom:9px;background:#fff;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
 .dx-picker-row.selected{background:#e8f1ff;border-color:#4f86d9;box-shadow:0 0 0 1px #4f86d9 inset}.dx-picker-row.selected:after{content:'✓';position:absolute;right:15px;top:16px;font-size:21px;font-weight:800;color:#245fae}
 .dx-picker-row-name{font-weight:800;font-size:16px;line-height:1.35}.dx-picker-row-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#64748b;margin-top:2px;overflow-wrap:anywhere}.dx-picker-row-meta{margin-top:6px;font-size:12px;color:#475569;line-height:1.4}
-.dx-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.6fr;gap:10px}.dx-picker-foot button{min-height:48px;font-size:15px}.dx-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}
+.dx-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.6fr;gap:10px}.dx-picker-foot button{min-height:48px;font-size:15px}.dx-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}.dx-dryrun-summary{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.dx-dryrun-row{padding:9px 0;border-top:1px solid var(--line)}.dx-dryrun-error{color:#b91c1c;margin-top:6px}.dx-dryrun-warn{color:#92400e;margin-top:6px}
 body.dx-picker-open{overflow:hidden}@media(min-width:801px){.dx-picker{padding:24px}.dx-picker-sheet{height:min(860px,100%);border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.3)}}
 
 /* BUILD472.14 Phase I3: flexible battle roster management */
@@ -1864,11 +1864,11 @@ updateDeployDeleteControl();
     <h2>部分データ交換 <span class="badge ok">NEW</span></h2>
     <p>GitHub配置済み完成資産・Game Exportとは独立したJSON交換入口です。専用選択画面から対応マスター分類を選び、個別または全件で出力できます。</p>
     <div class="toolbar"><button type="button" class="primary" onclick="GKSDataExchangeUI.openPicker()">出力対象を選択する</button></div>
-    <h3>Data Exchange JSON 形式確認</h3>
-    <p class="small">この段階では既存データへ適用しません。Dry Run / Safe Mergeは次フェーズで実装します。</p>
+    <h3>Data Exchange Import Dry Run</h3>
+    <p class="small">JSONを解析し、追加・変更なし・競合・不正・非互換・元データ更新済み・参照切れ・read_only差異を判定します。この工程では正本データを一切変更しません。</p>
     <input type="file" id="dxImportFile" accept=".json,application/json">
-    <button type="button" onclick="GKSDataExchangeUI.inspectImportFile()">形式だけ確認</button>
-    <div id="dxImportStatus" class="item small">未確認</div>
+    <button type="button" class="primary" onclick="GKSDataExchangeUI.inspectImportFile()">Dry Runを実行</button>
+    <div id="dxImportStatus" class="item small">未実行 / データ変更 0件</div>
   </div>
   <div class="card">
     <h2>JSON出力</h2>
@@ -6952,8 +6952,8 @@ function applyDesignFormationsToBattle(){try{const a=document.getElementById('de
 setTimeout(loadDesignCards,0);
 
 </script>
-<script src="./data-exchange/data-exchange-core.js?v=1"></script>
-<script src="./data-exchange/data-exchange-ui.js?v=3"></script>
+<script src="./data-exchange/data-exchange-core.js?v=2"></script>
+<script src="./data-exchange/data-exchange-ui.js?v=4"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded',renderMasterTagChips);

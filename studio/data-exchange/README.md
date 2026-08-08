@@ -10,8 +10,12 @@
 - 関連データ none / direct / recursive Export
 - 管理画面の専用入口骨格
 
+DE-8実装済み:
+- Import Parser / Dry Run（正本変更なし）
+- add / unchanged / conflict / invalid / incompatible / stale_source / broken_reference / readonly_modified 判定
+- package_hash検証 / project_id・version互換確認
+
 未実装（次フェーズ）:
-- Import Dry Run
 - Conflict解決
 - Safe Merge / Atomic Apply
 - Undo

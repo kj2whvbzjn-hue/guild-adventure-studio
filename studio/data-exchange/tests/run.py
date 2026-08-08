@@ -84,6 +84,19 @@ def smoke_names():
     if not any(k in t for k in ("dependency", "recursive", "skill", "tag")):
         raise RuntimeError("dependency test marker missing")
 
+def import_dry_run():
+    core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    index = (STUDIO / "index.html").read_text(encoding="utf-8")
+    required_core = ["dryRunImport", "readonly_modified", "broken_reference", "stale_source", "verifyPackageHash"]
+    missing = [x for x in required_core if x not in core]
+    if missing:
+        raise RuntimeError("DE-8 core markers missing: " + ", ".join(missing))
+    if "Dry Runを実行" not in index or "renderDryRun" not in ui:
+        raise RuntimeError("DE-8 Dry Run UI missing")
+    if "can_apply:false" not in core:
+        raise RuntimeError("DE-8 must remain non-applying")
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -102,6 +115,7 @@ def main():
         "fixture_parse": fixture_parse,
         "canonicalization_smoke": smoke_names,
         "dependency_smoke": smoke_names,
+        "import_dry_run": import_dry_run,
     }
     done=set()
     for name in steps:

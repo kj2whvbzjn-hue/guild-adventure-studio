@@ -24,7 +24,24 @@
   function clearSelection(){selectedSet().clear();renderPicker();}
   async function exportSelection(){try{const dataset=currentDataset(),ids=[...selectedSet(dataset)].filter(id=>rows(dataset).some(r=>String(r.id)===id)).sort();if(!ids.length)throw new Error('出力対象を1件以上選択してください。');const mode=document.getElementById('dxPickerDependencyMode')?.value||'none';const envelope=await GKSDataExchange.buildEnvelope({rootData:data,dataset,ids,dependencyMode:mode,studioVersion:(typeof DISTRIBUTION_BUILD!=='undefined'?DISTRIBUTION_BUILD:'')});const project=(data.project?.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_'),suffix=mode==='recursive'?'GPT':mode==='direct'?'REFS':'DATA';downloadText(`${project}_${dataset.toUpperCase()}_${suffix}_${ids.length}.json`,JSON.stringify(envelope,null,2),'application/json;charset=utf-8');setStatus(`Data Exchange出力: ${DATASET_LABELS[dataset]||dataset} ${ids.length}件 / ${mode}`);}catch(e){alert('Data Exchange出力失敗: '+e.message);}}
   function setStatus(text){const el=document.getElementById('dxMasterExportStatus');if(el)el.textContent=text;}
-  function inspectImportFile(){const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);const shape=GKSDataExchange.validateEnvelopeShape(obj);if(!shape.ok)throw new Error(shape.errors.join(' / '));const projectOk=obj.project_id===String(data.project?.id||''),counts=Object.entries(obj.datasets||{}).map(([k,v])=>`${k}:${Array.isArray(v)?v.length:'?'}`).join(' / ');status.innerHTML=`<span class="badge ${projectOk?'ok':'warn'}">${projectOk?'形式OK':'project_id不一致'}</span> ${escText(counts)}<br><span class="small">この段階ではDry Run/Import適用は行いません。データは変更されていません。</span>`;}catch(e){status.innerHTML=`<span class="badge error">形式エラー</span> ${escText(e.message)}`;}};reader.readAsText(file,'utf-8');}
+  function renderDryRun(result){
+    const status=document.getElementById('dxImportStatus');if(!status)return;
+    const order=['add','unchanged','conflict','invalid','incompatible','stale_source','broken_reference','readonly_modified'];
+    const labels={add:'追加',unchanged:'変更なし',conflict:'競合',invalid:'不正',incompatible:'非互換',stale_source:'元データ更新済み',broken_reference:'参照切れ',readonly_modified:'read_only差異'};
+    const summary=order.map(k=>`<span class="badge">${labels[k]} ${result.summary?.[k]||0}</span>`).join(' ');
+    const messages=[...(result.errors||[]).map(x=>`<div class="dx-dryrun-error">ERROR: ${escText(x)}</div>`),...(result.warnings||[]).map(x=>`<div class="dx-dryrun-warn">WARN: ${escText(x)}</div>`)].join('');
+    const rows=(result.items||[]).map(item=>`<div class="dx-dryrun-row"><b>${escText(labels[item.status]||item.status)}</b> ${escText(item.dataset)} / ${escText(item.id||'-')}<div class="small">${escText(item.detail||'')}</div></div>`).join('');
+    status.innerHTML=`<div><span class="badge ${result.ok?'ok':'error'}">${result.ok?'Dry Run完了':'Dry Run停止'}</span> <span class="small">データ変更 0件 / Apply未実装</span></div><div class="dx-dryrun-summary">${summary}</div>${messages}${rows||'<div class="small">差分項目はありません。</div>'}`;
+  }
+  function inspectImportFile(){
+    const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');
+    if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}
+    if(status)status.textContent='解析中…';
+    const reader=new FileReader();
+    reader.onload=async()=>{try{const obj=JSON.parse(reader.result);const result=await GKSDataExchange.dryRunImport({rootData:data,envelope:obj});renderDryRun(result);}catch(e){status.innerHTML=`<span class="badge error">解析エラー</span> ${escText(e.message)}<br><span class="small">データ変更 0件</span>`;}};
+    reader.onerror=()=>{if(status)status.innerHTML='<span class="badge error">読込エラー</span> ファイルを読み込めませんでした。<br><span class="small">データ変更 0件</span>';};
+    reader.readAsText(file,'utf-8');
+  }
   function onViewRefresh(){}
   window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,onViewRefresh};
 })( );

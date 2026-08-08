@@ -116,6 +116,82 @@
     envelope.metadata.package_hash=await sha256Hex(stableStringify(hashable));
     return envelope;
   }
+  function idsFor(dataset,rows){
+    const def=REGISTRY[dataset]; const out=[]; const seen=new Set(); const errors=[];
+    (Array.isArray(rows)?rows:[]).forEach((row,index)=>{
+      if(!row||typeof row!=='object'||Array.isArray(row)){errors.push(`${dataset}[${index}]がオブジェクトではありません。`);return;}
+      const id=String(row[def.idField]??'').trim();
+      if(!id){errors.push(`${dataset}[${index}]に${def.idField}がありません。`);return;}
+      if(seen.has(id))errors.push(`${dataset}に重複IDがあります: ${id}`);
+      seen.add(id);out.push(id);
+    });
+    return {ids:out,errors};
+  }
+  function referencedIds(dataset,row){
+    const refs=[];
+    (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>collectIds(row,dep.paths).forEach(id=>refs.push({dataset:dep.dataset,id})));
+    return refs;
+  }
+  async function verifyPackageHash(envelope){
+    const expected=String(envelope?.metadata?.package_hash||'').trim();
+    if(!expected)return {checked:false,ok:true,expected:'',actual:''};
+    const hashable=clone(envelope);hashable.metadata=hashable.metadata||{};hashable.metadata.generated_at='';hashable.metadata.package_hash='';
+    const actual=await sha256Hex(stableStringify(hashable));
+    return {checked:true,ok:actual===expected,expected,actual};
+  }
+  async function dryRunImport(options){
+    const rootData=options?.rootData||{}; const envelope=options?.envelope;
+    const result={ok:false,can_apply:false,summary:{add:0,unchanged:0,conflict:0,invalid:0,incompatible:0,stale_source:0,broken_reference:0,readonly_modified:0},items:[],errors:[],warnings:[],package_hash:{checked:false,ok:true,expected:'',actual:''}};
+    const shape=validateEnvelopeShape(envelope);
+    if(!shape.ok){result.errors.push(...shape.errors);result.summary.invalid+=shape.errors.length;return result;}
+    if(envelope.version!==VERSION){result.errors.push(`version非互換: ${envelope.version} / 対応: ${VERSION}`);result.summary.incompatible++;return result;}
+    if(String(envelope.project_id)!==String(rootData.project?.id||'')){result.errors.push(`project_id不一致: ${envelope.project_id}`);result.summary.incompatible++;return result;}
+    const writable=new Set(uniqueStrings(envelope.permissions?.writable||[]));
+    const readOnly=new Set(uniqueStrings(envelope.permissions?.read_only||[]));
+    const datasetNames=Object.keys(envelope.datasets||{});
+    const unknown=datasetNames.filter(ds=>!REGISTRY[ds]);
+    if(unknown.length){unknown.forEach(ds=>result.items.push({dataset:ds,id:'',status:'incompatible',detail:'未対応Dataset'}));result.summary.incompatible+=unknown.length;result.errors.push('未対応Dataset: '+unknown.join(', '));return result;}
+    const overlap=[...writable].filter(ds=>readOnly.has(ds));
+    if(overlap.length){result.summary.invalid+=overlap.length;result.errors.push('writable/read_only重複: '+overlap.join(', '));return result;}
+    const undeclared=datasetNames.filter(ds=>!writable.has(ds)&&!readOnly.has(ds));
+    if(undeclared.length){result.summary.invalid+=undeclared.length;result.errors.push('permissions未宣言Dataset: '+undeclared.join(', '));return result;}
+    const writeDatasets=datasetNames.filter(ds=>writable.has(ds));
+    if(writeDatasets.length!==1){result.summary.invalid++;result.errors.push('Dry Runではwritable Datasetは1分類である必要があります。');return result;}
+    for(const ds of datasetNames){
+      const checked=idsFor(ds,envelope.datasets[ds]);
+      if(checked.errors.length){result.errors.push(...checked.errors);result.summary.invalid+=checked.errors.length;}
+    }
+    if(result.summary.invalid)return result;
+    result.package_hash=await verifyPackageHash(envelope);
+    if(result.package_hash.checked&&!result.package_hash.ok){result.summary.invalid++;result.errors.push('package_hashが一致しません。ファイル内容がExport後に変更されています。');return result;}
+    const incomingIndex={};datasetNames.forEach(ds=>{incomingIndex[ds]=new Map((envelope.datasets[ds]||[]).map(row=>[String(row.id),row]));});
+    const localIndex={};Object.keys(REGISTRY).forEach(ds=>{localIndex[ds]=new Map(records(rootData,ds).map(row=>[String(row.id),row]));});
+    for(const ds of datasetNames){
+      for(const row of envelope.datasets[ds]){
+        const id=String(row.id),local=localIndex[ds].get(id);
+        const same=!!local&&stableStringify(canonicalizeRecord(ds,local))===stableStringify(canonicalizeRecord(ds,row));
+        if(readOnly.has(ds)){
+          if(!local||!same){result.items.push({dataset:ds,id,status:'readonly_modified',detail:!local?'read_only参照が現在のProjectに存在しません。':'read_only参照が現在値と異なります。'});result.summary.readonly_modified++;}
+          continue;
+        }
+        const broken=referencedIds(ds,row).filter(ref=>!(incomingIndex[ref.dataset]?.has(ref.id))&&!(localIndex[ref.dataset]?.has(ref.id)));
+        if(broken.length){result.items.push({dataset:ds,id,status:'broken_reference',detail:broken.map(x=>`${x.dataset}:${x.id}`).join(', ')});result.summary.broken_reference++;continue;}
+        if(!local){result.items.push({dataset:ds,id,status:'add',detail:'新規追加候補'});result.summary.add++;}
+        else if(same){result.items.push({dataset:ds,id,status:'unchanged',detail:'現在値と同一'});result.summary.unchanged++;}
+        else{result.items.push({dataset:ds,id,status:'conflict',detail:'同一IDの現在値と内容が異なります。'});result.summary.conflict++;}
+      }
+    }
+    const primary=writeDatasets[0],baseHash=String(envelope.metadata?.base_hash||'').trim();
+    if(baseHash){
+      const incomingIds=(envelope.datasets[primary]||[]).map(r=>String(r.id));
+      const localRows=incomingIds.map(id=>localIndex[primary].get(id)).filter(Boolean);
+      if(localRows.length===incomingIds.length){
+        const actual=await sha256Hex(stableStringify({dataset:primary,records:canonicalRecords(primary,localRows)}));
+        if(actual!==baseHash){result.summary.stale_source++;result.warnings.push('base_hashが現在のProjectと一致しません。Export後に対象データが変更された可能性があります。');}
+      }
+    }
+    result.ok=result.errors.length===0;result.can_apply=false;return result;
+  }
   function validateEnvelopeShape(value){
     const errors=[];
     if(!value||typeof value!=='object'||Array.isArray(value))return {ok:false,errors:['Envelopeがオブジェクトではありません。']};
@@ -127,5 +203,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,resolveDependencies,buildEnvelope,validateEnvelopeShape};
+  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport};
 });
