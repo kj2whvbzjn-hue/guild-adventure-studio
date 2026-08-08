@@ -2,7 +2,7 @@ const fs=require('fs');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const rt=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctl=fs.readFileSync('game/assets/js/battle-control.js','utf8'),app=fs.readFileSync('game/assets/js/app-runtime.js','utf8'),html=fs.readFileSync('game/index.html','utf8');
 const spec=JSON.parse(fs.readFileSync('docs/design/P01-10_COOLDOWN_CURRENT_SPEC.json','utf8'));const errors=[];
-if(build.game_build!=='GA-B486.51')errors.push('build='+build.game_build);
+if(build.game_build!=='GA-B486.52')errors.push('build='+build.game_build);
 for(const x of ['function ensureCooldownState','function skillCooldownRemaining','function startSkillCooldown','function processCooldowns',"reason:'COOLDOWN'",'cooldown_started','cooldown_expired'])if(!rt.includes(x))errors.push('runtime missing '+x);
 for(const x of ['skillId:compiled.definition.id','processCooldowns();'])if(!ctl.includes(x))errors.push('control missing '+x);
 for(const x of ['COOLDOWN-RUNTIME-START','COOLDOWN-RUNTIME-BLOCK','COOLDOWN-RUNTIME-EXPIRE-REUSE','COOLDOWN-RUNTIME-ZERO','COOLDOWN-RUNTIME-RESERVATION-NO-START','COOLDOWN-RUNTIME-ACTION-DISABLED-NO-START','COOLDOWN-RUNTIME-INVALID-TARGET-NO-START'])if(!app.includes(x))errors.push('case missing '+x);

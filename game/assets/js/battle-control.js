@@ -128,9 +128,9 @@ function executeReservation(actor){
 }
 function activationPriorityFeatureEnabled(){return true}
 function p0113Hash32(text){let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0}
-function assignBattleTieRolls(seed,units=battle.units){
+function assignBattleTieRolls(seed,units=battle.units,hashFn=p0113Hash32){
  const used=new Set(),history=[];const ordered=[...units].sort((a,b)=>String(a.id).localeCompare(String(b.id)));
- for(const u of ordered){let round=0,roll;do{roll=(p0113Hash32(`${seed}|${u.id}|${round}`)%1000000)+1;round++}while(used.has(roll));used.add(roll);u.battleTieRoll=roll;history.push({actor_id:u.id,tie_roll:roll,reroll_round:round-1})}
+ for(const u of ordered){let round=0,roll;do{roll=(hashFn(`${seed}|${u.id}|${round}`,u.id,round)%1000000)+1;round++}while(used.has(roll));used.add(roll);u.battleTieRoll=roll;history.push({actor_id:u.id,tie_roll:roll,reroll_round:round-1})}
  battle.p0113TieSeed=String(seed);battle.p0113TieRollHistory=history;return history
 }
 function activationPriorityOf(unit){
