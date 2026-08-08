@@ -45,12 +45,17 @@ def studio_reference():
 def ui_selection_rule():
     index = STUDIO / "index.html"
     text = index.read_text(encoding="utf-8")
-    if 'input type="checkbox" data-dx-monster-id' in text or 'data-dx-monster-id=' in text:
-        raise RuntimeError("Data Exchange must not add native checkbox selection to master items")
-    if 'data-dx-monster-row=' not in text:
-        raise RuntimeError("Monster row selection hook missing")
-    if 'チェックしたモンスター' in text:
-        raise RuntimeError("Legacy checkbox wording remains")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    if 'type="checkbox"' in ui.lower() or "type='checkbox'" in ui.lower():
+        raise RuntimeError("Data Exchange dedicated picker must not use native checkbox selection")
+    if 'data-dx-monster-row=' in text or 'dx-selectable' in text:
+        raise RuntimeError("Normal master rows must not contain Data Exchange selection hooks")
+    required = ['id="masterExchangeToolbar"', 'id="dataExchangePicker"', '表示中を全選択', '分類全件を選択']
+    missing = [x for x in required if x not in text]
+    if missing:
+        raise RuntimeError("Dedicated Data Exchange selection surface missing: " + ", ".join(missing))
+    if 'openPicker' not in ui or 'selectAllDataset' not in ui:
+        raise RuntimeError("Dedicated picker selection functions missing")
 
 def format_version():
     core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")

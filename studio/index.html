@@ -45,9 +45,6 @@ textarea{min-height:110px;resize:vertical}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .list{display:flex;flex-direction:column;gap:8px}
 .item{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
-.item.dx-selectable{position:relative;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y;padding-right:46px}
-.item.dx-selectable.dx-selected{background:#e8f1ff;border-color:#4f86d9;box-shadow:0 0 0 1px #4f86d9 inset}
-.item.dx-selectable.dx-selected:after{content:'✓';position:absolute;right:15px;top:15px;font-size:21px;font-weight:800;color:#245fae}
 .item .meta{font-size:12px;color:var(--muted)}
 .button-like{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:#fff;color:var(--accent);cursor:pointer;font:inherit;min-height:44px;box-sizing:border-box}
 .badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;font-size:12px}
@@ -170,6 +167,21 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 .rule-tag-row-name{font-weight:750;font-size:15px}.rule-tag-row-sub{margin-top:3px;font-size:12px;color:#64748b;line-height:1.35}.rule-tag-row-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .rule-tag-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.5fr;gap:10px}.rule-tag-picker-foot button{min-height:48px;font-size:15px}.rule-tag-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}
 body.rule-picker-open{overflow:hidden}
+
+
+/* GKS-B485 Data Exchange dedicated selection surface */
+.dx-picker{position:fixed;inset:0;z-index:325;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
+.dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+.dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
+.dx-picker-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.dx-picker-title h2{margin:0;font-size:19px}
+.dx-picker-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dx-picker-controls select,.dx-picker-controls input{min-height:44px;font-size:16px}
+.dx-picker-search{width:100%;min-height:44px;font-size:16px;margin-top:8px}.dx-picker-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}.dx-picker-tools button{min-height:40px}.dx-picker-count{margin-left:auto;font-size:12px;color:#64748b}
+.dx-picker-list{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:8px 10px 130px;background:#f8fafc}
+.dx-picker-row{position:relative;min-height:72px;padding:11px 48px 11px 13px;border:1px solid #dbe2ea;border-radius:12px;margin-bottom:9px;background:#fff;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
+.dx-picker-row.selected{background:#e8f1ff;border-color:#4f86d9;box-shadow:0 0 0 1px #4f86d9 inset}.dx-picker-row.selected:after{content:'✓';position:absolute;right:15px;top:16px;font-size:21px;font-weight:800;color:#245fae}
+.dx-picker-row-name{font-weight:800;font-size:16px;line-height:1.35}.dx-picker-row-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#64748b;margin-top:2px;overflow-wrap:anywhere}.dx-picker-row-meta{margin-top:6px;font-size:12px;color:#475569;line-height:1.4}
+.dx-picker-foot{position:sticky;bottom:0;z-index:3;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -3px 14px rgba(15,23,42,.1);display:grid;grid-template-columns:1fr 1.6fr;gap:10px}.dx-picker-foot button{min-height:48px;font-size:15px}.dx-picker-foot .primary:disabled{opacity:.45;cursor:not-allowed}
+body.dx-picker-open{overflow:hidden}@media(min-width:801px){.dx-picker{padding:24px}.dx-picker-sheet{height:min(860px,100%);border-radius:14px;box-shadow:0 24px 70px rgba(15,23,42,.3)}}
 
 /* BUILD472.14 Phase I3: flexible battle roster management */
 /* BUILD472.12 Phase I1: battle simulation core extraction */
@@ -1026,20 +1038,11 @@ updateDeployDeleteControl();
     <div class="toolbar"><button onclick="exportMasterCsv()">選択分類をCSV出力</button><button onclick="exportAllMastersCsv()">全分類をCSV一括出力</button></div>
     <p class="small">UTF-8 BOM付きCSVです。Excel・Googleスプレッドシートで読み込めます。</p>
   </div>
-  <div id="monsterExchangeToolbar" class="card hidden">
-    <h2>部分データ交換 <span class="badge">Monster</span></h2>
-    <p class="small">既存の全プロジェクト出力とは別入口です。モンスター項目をタップして選択し、選択したモンスターだけをGKS_DATA_EXCHANGE形式で出力します。</p>
-    <div class="toolbar">
-      <button type="button" onclick="GKSDataExchangeUI.selectVisibleMonsters()">表示中を全選択</button>
-      <button type="button" onclick="GKSDataExchangeUI.clearMonsterSelection()">選択解除</button>
-      <span id="dxMonsterSelectionCount" class="small">選択 0件</span>
-    </div>
-    <div class="toolbar">
-      <button data-dx-export type="button" onclick="GKSDataExchangeUI.exportMonsters('none')" disabled>選択をJSON出力</button>
-      <button data-dx-export type="button" onclick="GKSDataExchangeUI.exportMonsters('direct')" disabled>関連データ込み</button>
-      <button data-dx-export class="primary" type="button" onclick="GKSDataExchangeUI.exportMonsters('recursive')" disabled>GPT用出力</button>
-    </div>
-    <div id="dxMonsterExportStatus" class="small">未出力</div>
+  <div id="masterExchangeToolbar" class="card">
+    <h2>部分データ交換 <span class="badge ok">Data Exchange</span></h2>
+    <p class="small">通常のマスター一覧とは別の専用選択画面で、分類・検索・個別選択・全件選択を行ってJSON出力します。既存の編集・削除操作には影響しません。</p>
+    <div class="toolbar"><button type="button" class="primary" onclick="GKSDataExchangeUI.openPicker()">部分データ交換を開く</button></div>
+    <div id="dxMasterExportStatus" class="small">未出力</div>
   </div>
   <div class="card"><div class="filter-bar"><input id="masterSearch" placeholder="全分類からID・名称・タグを検索" oninput="renderMasters()"></div></div>
   <div id="masterList" class="list"></div>
@@ -1859,12 +1862,8 @@ updateDeployDeleteControl();
   <h1>読込・出力</h1>
   <div class="card">
     <h2>部分データ交換 <span class="badge ok">NEW</span></h2>
-    <p>GitHub配置済み完成資産・Game Exportとは独立したJSON交換入口です。現在はMonster ExportとEnvelope形式確認まで有効です。</p>
-    <div id="dxCentralSelection" class="item small">Monster選択: 0件</div>
-    <div class="grid">
-      <div class="field"><label>関連データ</label><select id="dxDependencyMode"><option value="none">本体のみ</option><option value="direct">直接参照</option><option value="recursive">再帰参照（GPT用）</option></select></div>
-    </div>
-    <div class="toolbar"><button type="button" class="primary" onclick="GKSDataExchangeUI.centralExport()">マスター画面で選択したMonsterを出力</button></div>
+    <p>GitHub配置済み完成資産・Game Exportとは独立したJSON交換入口です。専用選択画面から対応マスター分類を選び、個別または全件で出力できます。</p>
+    <div class="toolbar"><button type="button" class="primary" onclick="GKSDataExchangeUI.openPicker()">出力対象を選択する</button></div>
     <h3>Data Exchange JSON 形式確認</h3>
     <p class="small">この段階では既存データへ適用しません。Dry Run / Safe Mergeは次フェーズで実装します。</p>
     <input type="file" id="dxImportFile" accept=".json,application/json">
@@ -1924,6 +1923,27 @@ updateDeployDeleteControl();
 </div>
 
 
+
+<div id="dataExchangePicker" class="dx-picker hidden" aria-hidden="true">
+  <div class="dx-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="dataExchangePickerTitle">
+    <div class="dx-picker-head">
+      <div class="dx-picker-title"><h2 id="dataExchangePickerTitle">部分データ交換</h2><button type="button" onclick="GKSDataExchangeUI.closePicker()">閉じる</button></div>
+      <div class="dx-picker-controls">
+        <select id="dxPickerDataset" aria-label="出力分類" onchange="GKSDataExchangeUI.changeDataset()"></select>
+        <select id="dxPickerDependencyMode" aria-label="関連データ"><option value="none">本体のみ</option><option value="direct">直接参照</option><option value="recursive">再帰参照（GPT用）</option></select>
+      </div>
+      <input id="dxPickerSearch" class="dx-picker-search" type="search" autocomplete="off" placeholder="ID・名称・タグを検索" oninput="GKSDataExchangeUI.renderPicker()">
+      <div class="dx-picker-tools">
+        <button type="button" onclick="GKSDataExchangeUI.selectVisible()">表示中を全選択</button>
+        <button type="button" onclick="GKSDataExchangeUI.selectAllDataset()">分類全件を選択</button>
+        <button type="button" onclick="GKSDataExchangeUI.clearSelection()">選択解除</button>
+        <span id="dxPickerCount" class="dx-picker-count">選択 0件</span>
+      </div>
+    </div>
+    <div id="dxPickerList" class="dx-picker-list"></div>
+    <div class="dx-picker-foot"><button type="button" onclick="GKSDataExchangeUI.closePicker()">キャンセル</button><button id="dxPickerExport" class="primary" type="button" onclick="GKSDataExchangeUI.exportSelection()" disabled>選択をJSON出力</button></div>
+  </div>
+</div>
 
 <div id="masterSkillPicker" class="master-skill-picker hidden" aria-hidden="true">
   <div class="master-skill-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="masterSkillPickerTitle">
@@ -2965,8 +2985,7 @@ function renderMasterRow(category,m){
  const categoryLabel=MASTER_LABELS[category]||category;
  if(category==='tags')return `<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">カテゴリ: ${esc(m.category_id||'未分類')} / 親: ${esc(m.parent_id||'なし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('tags','${escAttr(m.id)}')">削除</button></div></div>`;
  const tagText=(Array.isArray(m.tags)?m.tags:[]).map(id=>tagLabel(id)).join(', ');
- const dxRow=category==='monsters'?` data-dx-monster-row="${escAttr(m.id)}" class="item dx-selectable" role="button" aria-pressed="false" tabindex="0" onclick="GKSDataExchangeUI.toggleMonsterFromRow('${escAttr(m.id)}')" onkeydown="GKSDataExchangeUI.handleMonsterRowKey(event,'${escAttr(m.id)}')"`:' class="item"';
- return `<div${dxRow}><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">${esc(tagText||'タグなし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="event.stopPropagation();editMaster('${escAttr(category)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="event.stopPropagation();deleteMaster('${escAttr(category)}','${escAttr(m.id)}')">削除</button></div></div>`;
+ return `<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">${esc(tagText||'タグなし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(category)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(category)}','${escAttr(m.id)}')">削除</button></div></div>`;
 }
 function renderMasters(){
  if(!document.getElementById('masterList'))return;
@@ -2977,17 +2996,17 @@ function renderMasters(){
   tagDefinitions().forEach(m=>{if(masterSearchText('tags',m).includes(q))results.push({category:'tags',record:m})});
   Object.keys(MASTER_LABELS).filter(category=>category!=='tags').forEach(category=>(data.masters[category]||[]).forEach(m=>{if(masterSearchText(category,m).includes(q))results.push({category,record:m})}));
   masterList.innerHTML=results.length?`<div class="item small">全分類検索: ${results.length}件</div>`+results.map(x=>renderMasterRow(x.category,x.record)).join(''):'<div class="item">全分類に一致するデータはありません。</div>';
-  requestAnimationFrame(()=>window.GKSDataExchangeUI?.refreshMasterExportUi());return;
+  return;
  }
  if(c==='tags'){
   const rows=tagDefinitions();
   masterList.innerHTML=rows.length?rows.map(m=>renderMasterRow('tags',m)).join(''):'<div class="item">登録タグはありません。</div>';
-  requestAnimationFrame(()=>window.GKSDataExchangeUI?.refreshMasterExportUi());return;
+  return;
  }
  const rows=data.masters[c]||[];
  masterList.innerHTML=rows.length?rows.map(m=>renderMasterRow(c,m)).join(''):'<div class="item">登録データはありません。</div>';
- requestAnimationFrame(()=>window.GKSDataExchangeUI?.refreshMasterExportUi());
 }
+
 function csvCell(v){const s=typeof v==='string'?v:JSON.stringify(v??'');return '"'+s.replace(/"/g,'""')+'"'}
 function downloadText(name,text,type='text/plain;charset=utf-8'){const b=new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 function masterCsv(category){const head=['category','id','name','status','tags','params_json','description'];const lines=[head.map(csvCell).join(',')];(data.masters[category]||[]).forEach(m=>lines.push([category,m.id,m.name,m.status,(m.tags||[]).join('|'),JSON.stringify(m.params||{}),m.description||''].map(csvCell).join(',')));return '\ufeff'+lines.join('\r\n')}
@@ -6934,7 +6953,7 @@ setTimeout(loadDesignCards,0);
 
 </script>
 <script src="./data-exchange/data-exchange-core.js?v=1"></script>
-<script src="./data-exchange/data-exchange-ui.js?v=2"></script>
+<script src="./data-exchange/data-exchange-ui.js?v=3"></script>
 
 <script>
 window.addEventListener('DOMContentLoaded',()=>{

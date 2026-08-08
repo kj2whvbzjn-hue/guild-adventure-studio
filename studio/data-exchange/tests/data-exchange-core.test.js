@@ -15,5 +15,7 @@ const dx=require('../data-exchange-core.js');
   assert(env.permissions.read_only.includes('tags'));
   assert.equal(env.metadata.package_hash.length,64);
   assert(dx.validateEnvelopeShape(env).ok);
+  const allRoot={schema_version:'4.0.0-draft',project:{id:'P2',updated_at:'R2'},tags:[{id:'T1'}],masters:{monsters:[],skills:[],jobs:[],equipment:[],mods:[],stats:[{id:'STAT-1',name:'Stat',tags:['T1']}],status_effects:[{id:'SE-1',name:'Status',tags:['T1']}],tablets:[{id:'TAB-1',name:'Tablet',tags:['T1']}],ai_conditions:[],ai_targets:[],ai_actions:[]}};
+  for(const ds of ['stats','status_effects','tablets']){const out=await dx.buildEnvelope({rootData:allRoot,dataset:ds,ids:[dx.records(allRoot,ds)[0].id],dependencyMode:'direct',studioVersion:'TEST'});assert.equal(out.datasets[ds].length,1);assert.deepEqual(out.permissions.writable,[ds]);assert.equal(out.datasets.tags.length,1);}
   console.log('Data Exchange core tests: PASS');
 })().catch(e=>{console.error(e);process.exit(1)});

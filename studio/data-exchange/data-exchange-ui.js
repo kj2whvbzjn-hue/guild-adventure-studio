@@ -1,56 +1,30 @@
 (function(){
   'use strict';
-  const selectedMonsters=new Set();
+  const selectedByDataset=new Map();
+  const DATASET_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
+  const ORDER=['monsters','tags','skills','jobs','equipment','mods','stats','status_effects','tablets','ai_conditions','ai_targets','ai_actions'];
 
-  function currentMonsterRows(){return Array.isArray(data?.masters?.monsters)?data.masters.monsters:[];}
-  function visibleMonsterRows(){return Array.from(document.querySelectorAll('[data-dx-monster-row]'));}
-  function selectedIds(){return [...selectedMonsters].filter(id=>currentMonsterRows().some(row=>String(row.id)===id)).sort();}
-  function syncRows(){visibleMonsterRows().forEach(row=>{const id=String(row.dataset.dxMonsterRow||'');const selected=selectedMonsters.has(id);row.classList.toggle('dx-selected',selected);row.setAttribute('aria-pressed',selected?'true':'false');});}
-  function refreshMasterExportUi(){
-    const box=document.getElementById('monsterExchangeToolbar');if(!box)return;
-    const active=document.getElementById('masterCategory')?.value==='monsters';
-    box.classList.toggle('hidden',!active);
-    if(!active)return;
-    syncRows();
-    const count=document.getElementById('dxMonsterSelectionCount');if(count)count.textContent=`選択 ${selectedIds().length}件 / 表示 ${visibleMonsterRows().length}件`;
-    const exportButtons=box.querySelectorAll('[data-dx-export]');exportButtons.forEach(btn=>btn.disabled=selectedIds().length===0);
-  }
-  function toggleMonsterFromRow(id){id=String(id);if(selectedMonsters.has(id))selectedMonsters.delete(id);else selectedMonsters.add(id);refreshMasterExportUi();}
-  function handleMonsterRowKey(event,id){if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMonsterFromRow(id);}}
-  function selectVisibleMonsters(){visibleMonsterRows().forEach(row=>selectedMonsters.add(String(row.dataset.dxMonsterRow||'')));refreshMasterExportUi();}
-  function clearMonsterSelection(){selectedMonsters.clear();refreshMasterExportUi();}
-  async function exportMonsters(mode){
-    try{
-      const ids=selectedIds();if(!ids.length)throw new Error('モンスターを1件以上選択してください。');
-      const envelope=await GKSDataExchange.buildEnvelope({rootData:data,dataset:'monsters',ids,dependencyMode:mode,studioVersion:(typeof DISTRIBUTION_BUILD!=='undefined'?DISTRIBUTION_BUILD:'')});
-      const suffix=mode==='none'?'MONSTERS':mode==='direct'?'MONSTERS_REFS':'MONSTERS_GPT';
-      const project=(data.project?.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_');
-      downloadText(`${project}_${suffix}_${ids.length}.json`,JSON.stringify(envelope,null,2),'application/json;charset=utf-8');
-      setMasterStatus(`Data Exchange出力: Monster ${ids.length}件 / ${mode}`);
-    }catch(e){alert('Data Exchange出力失敗: '+e.message);}
-  }
-  function setMasterStatus(text){const el=document.getElementById('dxMonsterExportStatus');if(el)el.textContent=text;}
-  function selectedSummary(){return selectedIds().join(', ');}
-  function centralRefresh(){
-    const el=document.getElementById('dxCentralSelection');if(el)el.textContent=`Monster選択: ${selectedIds().length}件${selectedIds().length?' / '+selectedSummary():''}`;
-  }
-  async function centralExport(){
-    const mode=document.getElementById('dxDependencyMode')?.value||'none';
-    await exportMonsters(mode);centralRefresh();
-  }
-  function inspectImportFile(){
-    const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');
-    if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}
-    const reader=new FileReader();reader.onload=()=>{
-      try{
-        const obj=JSON.parse(reader.result);const shape=GKSDataExchange.validateEnvelopeShape(obj);if(!shape.ok)throw new Error(shape.errors.join(' / '));
-        const projectOk=obj.project_id===String(data.project?.id||'');
-        const counts=Object.entries(obj.datasets||{}).map(([k,v])=>`${k}:${Array.isArray(v)?v.length:'?'}`).join(' / ');
-        status.innerHTML=`<span class="badge ${projectOk?'ok':'warn'}">${projectOk?'形式OK':'project_id不一致'}</span> ${esc(counts)}<br><span class="small">この段階ではDry Run/Import適用は行いません。データは変更されていません。</span>`;
-      }catch(e){status.innerHTML=`<span class="badge error">形式エラー</span> ${esc(e.message)}`;}
-    };reader.readAsText(file,'utf-8');
-  }
-  function onViewRefresh(){refreshMasterExportUi();centralRefresh();}
-  window.GKSDataExchangeUI={refreshMasterExportUi,toggleMonsterFromRow,handleMonsterRowKey,selectVisibleMonsters,clearMonsterSelection,exportMonsters,centralExport,inspectImportFile,onViewRefresh,selectedIds};
-  window.addEventListener('DOMContentLoaded',()=>setTimeout(onViewRefresh,0));
-})();
+  function supportedDatasets(){return ORDER.filter(k=>GKSDataExchange.REGISTRY[k]);}
+  function currentDataset(){return document.getElementById('dxPickerDataset')?.value||supportedDatasets()[0]||'monsters';}
+  function selectedSet(dataset=currentDataset()){if(!selectedByDataset.has(dataset))selectedByDataset.set(dataset,new Set());return selectedByDataset.get(dataset);}
+  function rows(dataset=currentDataset()){try{return GKSDataExchange.records(data,dataset)||[];}catch(_){return [];}}
+  function searchText(row){const tags=Array.isArray(row?.tags)?row.tags:[];return [row?.id,row?.name,row?.description,row?.category_id,row?.parent_id,...tags,...tags.map(id=>typeof tagLabel==='function'?tagLabel(id):id),JSON.stringify(row?.params||{})].filter(Boolean).join(' ').toLowerCase();}
+  function visibleRecords(){const q=(document.getElementById('dxPickerSearch')?.value||'').trim().toLowerCase();return rows().filter(row=>!q||searchText(row).includes(q));}
+  function escText(v){return typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function escA(v){return typeof escAttr==='function'?escAttr(String(v??'')):escText(v);}
+  function initDatasetOptions(){const select=document.getElementById('dxPickerDataset');if(!select)return;const old=select.value;select.innerHTML=supportedDatasets().map(k=>`<option value="${escA(k)}">${escText(DATASET_LABELS[k]||k)}</option>`).join('');if(old&&supportedDatasets().includes(old))select.value=old;else if(supportedDatasets().includes('monsters'))select.value='monsters';}
+  function renderPicker(){const list=document.getElementById('dxPickerList');if(!list)return;const dataset=currentDataset(),set=selectedSet(dataset),visible=visibleRecords();list.innerHTML=visible.length?visible.map(row=>{const id=String(row?.id||''),sel=set.has(id),tags=Array.isArray(row?.tags)?row.tags.map(t=>typeof tagLabel==='function'?tagLabel(t):t).join(', '):'';return `<div class="dx-picker-row${sel?' selected':''}" role="button" tabindex="0" aria-pressed="${sel?'true':'false'}" onclick="GKSDataExchangeUI.toggleItem('${escA(id)}')" onkeydown="GKSDataExchangeUI.handleItemKey(event,'${escA(id)}')"><div class="dx-picker-row-name">${escText(row?.name||id)} <span class="badge">${escText(DATASET_LABELS[dataset]||dataset)}</span></div><div class="dx-picker-row-id">${escText(id)}</div><div class="dx-picker-row-meta">${escText(tags||row?.description||'')}</div></div>`}).join(''):'<div class="item">表示対象はありません。</div>';const count=document.getElementById('dxPickerCount');if(count)count.textContent=`選択 ${set.size}件 / 表示 ${visible.length}件 / 全 ${rows(dataset).length}件`;const btn=document.getElementById('dxPickerExport');if(btn){btn.disabled=set.size===0;btn.textContent=`選択した${set.size}件をJSON出力`;}}
+  function openPicker(){initDatasetOptions();const p=document.getElementById('dataExchangePicker');if(!p)return;document.getElementById('dxPickerSearch').value='';p.classList.remove('hidden');p.setAttribute('aria-hidden','false');document.body.classList.add('dx-picker-open');renderPicker();}
+  function closePicker(){const p=document.getElementById('dataExchangePicker');if(!p)return;p.classList.add('hidden');p.setAttribute('aria-hidden','true');document.body.classList.remove('dx-picker-open');}
+  function changeDataset(){const search=document.getElementById('dxPickerSearch');if(search)search.value='';renderPicker();}
+  function toggleItem(id){const set=selectedSet();id=String(id);if(set.has(id))set.delete(id);else set.add(id);renderPicker();}
+  function handleItemKey(event,id){if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleItem(id);}}
+  function selectVisible(){const set=selectedSet();visibleRecords().forEach(r=>set.add(String(r.id)));renderPicker();}
+  function selectAllDataset(){const set=selectedSet();rows().forEach(r=>set.add(String(r.id)));renderPicker();}
+  function clearSelection(){selectedSet().clear();renderPicker();}
+  async function exportSelection(){try{const dataset=currentDataset(),ids=[...selectedSet(dataset)].filter(id=>rows(dataset).some(r=>String(r.id)===id)).sort();if(!ids.length)throw new Error('出力対象を1件以上選択してください。');const mode=document.getElementById('dxPickerDependencyMode')?.value||'none';const envelope=await GKSDataExchange.buildEnvelope({rootData:data,dataset,ids,dependencyMode:mode,studioVersion:(typeof DISTRIBUTION_BUILD!=='undefined'?DISTRIBUTION_BUILD:'')});const project=(data.project?.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_'),suffix=mode==='recursive'?'GPT':mode==='direct'?'REFS':'DATA';downloadText(`${project}_${dataset.toUpperCase()}_${suffix}_${ids.length}.json`,JSON.stringify(envelope,null,2),'application/json;charset=utf-8');setStatus(`Data Exchange出力: ${DATASET_LABELS[dataset]||dataset} ${ids.length}件 / ${mode}`);}catch(e){alert('Data Exchange出力失敗: '+e.message);}}
+  function setStatus(text){const el=document.getElementById('dxMasterExportStatus');if(el)el.textContent=text;}
+  function inspectImportFile(){const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}const reader=new FileReader();reader.onload=()=>{try{const obj=JSON.parse(reader.result);const shape=GKSDataExchange.validateEnvelopeShape(obj);if(!shape.ok)throw new Error(shape.errors.join(' / '));const projectOk=obj.project_id===String(data.project?.id||''),counts=Object.entries(obj.datasets||{}).map(([k,v])=>`${k}:${Array.isArray(v)?v.length:'?'}`).join(' / ');status.innerHTML=`<span class="badge ${projectOk?'ok':'warn'}">${projectOk?'形式OK':'project_id不一致'}</span> ${escText(counts)}<br><span class="small">この段階ではDry Run/Import適用は行いません。データは変更されていません。</span>`;}catch(e){status.innerHTML=`<span class="badge error">形式エラー</span> ${escText(e.message)}`;}};reader.readAsText(file,'utf-8');}
+  function onViewRefresh(){}
+  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,onViewRefresh};
+})( );
