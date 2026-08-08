@@ -7,7 +7,7 @@ const spec=JSON.parse(fs.readFileSync(path.join(root,'docs/design/P01-13_SIMULTA
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 const exp=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const must=(ok,msg)=>{if(!ok){console.error('FAIL',msg);process.exit(1)}};
-must(build.game_build==='GA-B486.50','build');
+must(build.game_build==='GA-B486.51','build');
 must(spec.validation_patch==='P01-13-VAL-1'&&spec.status==='validation_candidate_not_formal','spec stage');
 must(spec.formal_runtime_change===false,'must not formalize');
 must(String(exp.data_version||'').includes('p01-13-simultaneous-order-validation-v1'),'data version');
@@ -16,4 +16,4 @@ must(battle.includes('b.priority-a.priority||a.index-b.index'),'P01-12 stable pr
 must(app.includes('function runSimultaneousActivationOrderValidation()'),'runtime validation');
 must(app.includes("SIMULTANEOUS-ORDER-OVERFLOW")&&app.includes("SIMULTANEOUS-ORDER-AGI")&&app.includes("SIMULTANEOUS-ORDER-ACTOR-ORDER")&&app.includes("SIMULTANEOUS-ORDER-FIXED-COMMITTED"),'cases');
 must(html.includes('同時発動順序JSON検証'),'button');
-console.log('SIMULTANEOUS_ACTIVATION_ORDER_P01_13_VAL1_GA_B486_50_OK');
+console.log('SIMULTANEOUS_ACTIVATION_ORDER_P01_13_VAL1_HISTORICAL');

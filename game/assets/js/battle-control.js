@@ -127,15 +127,21 @@ function executeReservation(actor){
  return executeTaggedSkill(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }
 function activationPriorityFeatureEnabled(){return true}
+function p0113Hash32(text){let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0}
+function assignBattleTieRolls(seed,units=battle.units){
+ const used=new Set(),history=[];const ordered=[...units].sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+ for(const u of ordered){let round=0,roll;do{roll=(p0113Hash32(`${seed}|${u.id}|${round}`)%1000000)+1;round++}while(used.has(roll));used.add(roll);u.battleTieRoll=roll;history.push({actor_id:u.id,tie_roll:roll,reroll_round:round-1})}
+ battle.p0113TieSeed=String(seed);battle.p0113TieRollHistory=history;return history
+}
 function activationPriorityOf(unit){
  if(!activationPriorityFeatureEnabled()||!unit?.alive)return 0;
  const skill=findTagSkill(unit.defaultSkillId)||TAG_SKILLS[0],compiled=skill?compileTaggedSkill(skill):null;
  return compiled?.ok?Number(compiled.definition.parameters.activationPriority)||0:0;
 }
 function fixDueActionOrder(due){
- const rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit)}));
- rows.sort((a,b)=>b.priority-a.priority||a.index-b.index);
- if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:x.unit.defaultSkillId||null,priority:x.priority}))});
+ const rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit),tieRoll:Number(unit.battleTieRoll)||0}));
+ rows.sort((a,b)=>b.priority-a.priority||(battle.validationSimultaneousTieRoll===true?b.tieRoll-a.tieRoll:a.index-b.index));
+ if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:x.unit.defaultSkillId||null,priority:x.priority,battle_tie_roll:x.tieRoll||null}))});
  return rows.map(x=>x.unit);
 }
 function processTicks(count){
