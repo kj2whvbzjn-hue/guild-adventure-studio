@@ -45,6 +45,9 @@ textarea{min-height:110px;resize:vertical}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .list{display:flex;flex-direction:column;gap:8px}
 .item{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+.item.dx-selectable{position:relative;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y;padding-right:46px}
+.item.dx-selectable.dx-selected{background:#e8f1ff;border-color:#4f86d9;box-shadow:0 0 0 1px #4f86d9 inset}
+.item.dx-selectable.dx-selected:after{content:'✓';position:absolute;right:15px;top:15px;font-size:21px;font-weight:800;color:#245fae}
 .item .meta{font-size:12px;color:var(--muted)}
 .button-like{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:#fff;color:var(--accent);cursor:pointer;font:inherit;min-height:44px;box-sizing:border-box}
 .badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;font-size:12px}
@@ -1025,7 +1028,7 @@ updateDeployDeleteControl();
   </div>
   <div id="monsterExchangeToolbar" class="card hidden">
     <h2>部分データ交換 <span class="badge">Monster</span></h2>
-    <p class="small">既存の全プロジェクト出力とは別入口です。チェックしたモンスターだけをGKS_DATA_EXCHANGE形式で出力します。</p>
+    <p class="small">既存の全プロジェクト出力とは別入口です。モンスター項目をタップして選択し、選択したモンスターだけをGKS_DATA_EXCHANGE形式で出力します。</p>
     <div class="toolbar">
       <button type="button" onclick="GKSDataExchangeUI.selectVisibleMonsters()">表示中を全選択</button>
       <button type="button" onclick="GKSDataExchangeUI.clearMonsterSelection()">選択解除</button>
@@ -2962,8 +2965,8 @@ function renderMasterRow(category,m){
  const categoryLabel=MASTER_LABELS[category]||category;
  if(category==='tags')return `<div class="item"><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">カテゴリ: ${esc(m.category_id||'未分類')} / 親: ${esc(m.parent_id||'なし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('tags','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('tags','${escAttr(m.id)}')">削除</button></div></div>`;
  const tagText=(Array.isArray(m.tags)?m.tags:[]).map(id=>tagLabel(id)).join(', ');
- const dxSelect=category==='monsters'?`<label style="display:inline-flex;align-items:center;gap:6px;margin-right:8px"><input type="checkbox" data-dx-monster-id="${escAttr(m.id)}" onchange="GKSDataExchangeUI.toggleMonster('${escAttr(m.id)}',this.checked)">交換選択</label>`:'';
- return `<div class="item">${dxSelect}<b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">${esc(tagText||'タグなし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="editMaster('${escAttr(category)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="deleteMaster('${escAttr(category)}','${escAttr(m.id)}')">削除</button></div></div>`;
+ const dxRow=category==='monsters'?` data-dx-monster-row="${escAttr(m.id)}" class="item dx-selectable" role="button" aria-pressed="false" tabindex="0" onclick="GKSDataExchangeUI.toggleMonsterFromRow('${escAttr(m.id)}')" onkeydown="GKSDataExchangeUI.handleMonsterRowKey(event,'${escAttr(m.id)}')"`:' class="item"';
+ return `<div${dxRow}><b>${esc(m.id)} / ${esc(m.name)}</b> <span class="badge">${esc(categoryLabel)}</span> <span class="badge">${esc(jpStatus(m.status||'draft'))}</span><div class="small">${esc(tagText||'タグなし')}</div><div class="small">${esc(m.description||'')}</div><div class="toolbar"><button onclick="event.stopPropagation();editMaster('${escAttr(category)}','${escAttr(m.id)}')">編集</button><button class="danger" onclick="event.stopPropagation();deleteMaster('${escAttr(category)}','${escAttr(m.id)}')">削除</button></div></div>`;
 }
 function renderMasters(){
  if(!document.getElementById('masterList'))return;
@@ -6931,7 +6934,7 @@ setTimeout(loadDesignCards,0);
 
 </script>
 <script src="./data-exchange/data-exchange-core.js?v=1"></script>
-<script src="./data-exchange/data-exchange-ui.js?v=1"></script>
+<script src="./data-exchange/data-exchange-ui.js?v=2"></script>
 
 <script>
 window.addEventListener('DOMContentLoaded',()=>{

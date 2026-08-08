@@ -3,20 +3,21 @@
   const selectedMonsters=new Set();
 
   function currentMonsterRows(){return Array.isArray(data?.masters?.monsters)?data.masters.monsters:[];}
-  function visibleMonsterCheckboxes(){return Array.from(document.querySelectorAll('input[data-dx-monster-id]'));}
+  function visibleMonsterRows(){return Array.from(document.querySelectorAll('[data-dx-monster-row]'));}
   function selectedIds(){return [...selectedMonsters].filter(id=>currentMonsterRows().some(row=>String(row.id)===id)).sort();}
-  function syncChecks(){visibleMonsterCheckboxes().forEach(cb=>{cb.checked=selectedMonsters.has(cb.dataset.dxMonsterId);});}
+  function syncRows(){visibleMonsterRows().forEach(row=>{const id=String(row.dataset.dxMonsterRow||'');const selected=selectedMonsters.has(id);row.classList.toggle('dx-selected',selected);row.setAttribute('aria-pressed',selected?'true':'false');});}
   function refreshMasterExportUi(){
     const box=document.getElementById('monsterExchangeToolbar');if(!box)return;
     const active=document.getElementById('masterCategory')?.value==='monsters';
     box.classList.toggle('hidden',!active);
     if(!active)return;
-    syncChecks();
-    const count=document.getElementById('dxMonsterSelectionCount');if(count)count.textContent=`選択 ${selectedIds().length}件 / 表示 ${visibleMonsterCheckboxes().length}件`;
+    syncRows();
+    const count=document.getElementById('dxMonsterSelectionCount');if(count)count.textContent=`選択 ${selectedIds().length}件 / 表示 ${visibleMonsterRows().length}件`;
     const exportButtons=box.querySelectorAll('[data-dx-export]');exportButtons.forEach(btn=>btn.disabled=selectedIds().length===0);
   }
-  function toggleMonster(id,checked){if(checked)selectedMonsters.add(String(id));else selectedMonsters.delete(String(id));refreshMasterExportUi();}
-  function selectVisibleMonsters(){visibleMonsterCheckboxes().forEach(cb=>selectedMonsters.add(cb.dataset.dxMonsterId));refreshMasterExportUi();}
+  function toggleMonsterFromRow(id){id=String(id);if(selectedMonsters.has(id))selectedMonsters.delete(id);else selectedMonsters.add(id);refreshMasterExportUi();}
+  function handleMonsterRowKey(event,id){if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMonsterFromRow(id);}}
+  function selectVisibleMonsters(){visibleMonsterRows().forEach(row=>selectedMonsters.add(String(row.dataset.dxMonsterRow||'')));refreshMasterExportUi();}
   function clearMonsterSelection(){selectedMonsters.clear();refreshMasterExportUi();}
   async function exportMonsters(mode){
     try{
@@ -50,6 +51,6 @@
     };reader.readAsText(file,'utf-8');
   }
   function onViewRefresh(){refreshMasterExportUi();centralRefresh();}
-  window.GKSDataExchangeUI={refreshMasterExportUi,toggleMonster,selectVisibleMonsters,clearMonsterSelection,exportMonsters,centralExport,inspectImportFile,onViewRefresh,selectedIds};
+  window.GKSDataExchangeUI={refreshMasterExportUi,toggleMonsterFromRow,handleMonsterRowKey,selectVisibleMonsters,clearMonsterSelection,exportMonsters,centralExport,inspectImportFile,onViewRefresh,selectedIds};
   window.addEventListener('DOMContentLoaded',()=>setTimeout(onViewRefresh,0));
 })();

@@ -42,6 +42,16 @@ def studio_reference():
     if missing:
         raise RuntimeError("Studio reference missing: " + ", ".join(missing))
 
+def ui_selection_rule():
+    index = STUDIO / "index.html"
+    text = index.read_text(encoding="utf-8")
+    if 'input type="checkbox" data-dx-monster-id' in text or 'data-dx-monster-id=' in text:
+        raise RuntimeError("Data Exchange must not add native checkbox selection to master items")
+    if 'data-dx-monster-row=' not in text:
+        raise RuntimeError("Monster row selection hook missing")
+    if 'チェックしたモンスター' in text:
+        raise RuntimeError("Legacy checkbox wording remains")
+
 def format_version():
     core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
     if "GKS_DATA_EXCHANGE" not in core:
@@ -78,6 +88,7 @@ def main():
         "json_parse": check_json,
         "core_unit_test": core_test,
         "studio_reference": studio_reference,
+        "ui_selection_rule": ui_selection_rule,
         "format_version": format_version,
         "fixture_parse": fixture_parse,
         "canonicalization_smoke": smoke_names,
