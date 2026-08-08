@@ -93,12 +93,15 @@ async function completeBattleEnding(){
  if(currentPhase==='battle'&&battle.result){renderBattleResult();setPhase('result',{keepBattle:true})}
  battle.ending=false;
 }
+function clearBattleEndDotStacks(){for(const u of battle.units){if(Array.isArray(u.dotStacks)&&u.dotStacks.length){const count=u.dotStacks.length;u.dotStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stacks_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
+function clearBattleEndModifierStacks(){for(const u of battle.units){if(Array.isArray(u.modifierStacks)&&u.modifierStacks.length){const count=u.modifierStacks.length;u.modifierStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('modifier_stacks_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
+function clearBattleEndCooldowns(){for(const u of battle.units){const count=u.cooldowns&&typeof u.cooldowns==='object'&&!Array.isArray(u.cooldowns)?Object.keys(u.cooldowns).length:0;if(count){u.cooldowns={};typeof recordValidationEvent==='function'&&recordValidationEvent('cooldowns_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
 function finishIfNeeded(){
  const allyAlive=battle.units.some(u=>u.alive&&u.side==='味方'),enemyAlive=battle.units.some(u=>u.alive&&u.side==='敵');
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
  battle.pendingResult=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
- battle.units.forEach(u=>u.reservedAction=null);clearAllShields('battle_end');clearAllStatuses('battle_end');clearAllCoverEffects('battle_end');
+ battle.units.forEach(u=>u.reservedAction=null);clearAllShields('battle_end');clearAllStatuses('battle_end');clearAllCoverEffects('battle_end');clearBattleEndDotStacks();clearBattleEndModifierStacks();clearBattleEndCooldowns();
  battle.log.push(`[Tick ${battle.tick}] 決着条件を検出 — 最終演出を待機`);
  battle.running=false;battle.runToken++;
  if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;
