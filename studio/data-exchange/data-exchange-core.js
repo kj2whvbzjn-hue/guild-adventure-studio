@@ -139,13 +139,31 @@
     const actual=await sha256Hex(stableStringify(hashable));
     return {checked:true,ok:actual===expected,expected,actual};
   }
+  function getIntegrityValidator(){
+    if(typeof globalThis!=='undefined'&&globalThis.GKSDataExchangeIntegrityValidator)return globalThis.GKSDataExchangeIntegrityValidator;
+    if(typeof require==='function'){try{return require('./data-exchange-integrity-validator.js');}catch(e){return null;}}
+    return null;
+  }
   async function dryRunImport(options){
     const rootData=options?.rootData||{}; const envelope=options?.envelope;
     const result={ok:false,can_apply:false,summary:{add:0,unchanged:0,conflict:0,invalid:0,incompatible:0,stale_source:0,broken_reference:0,readonly_modified:0},items:[],errors:[],warnings:[],package_hash:{checked:false,ok:true,expected:'',actual:''}};
     const shape=validateEnvelopeShape(envelope);
     if(!shape.ok){result.errors.push(...shape.errors);result.summary.invalid+=shape.errors.length;return result;}
-    if(envelope.version!==VERSION){result.errors.push(`version非互換: ${envelope.version} / 対応: ${VERSION}`);result.summary.incompatible++;return result;}
-    if(String(envelope.project_id)!==String(rootData.project?.id||'')){result.errors.push(`project_id不一致: ${envelope.project_id}`);result.summary.incompatible++;return result;}
+    const validator=getIntegrityValidator();
+    if(validator){
+      const integrity=validator.validate({rootData,envelope,registry:REGISTRY,records,canonicalizeRecord,stableStringify,referencedIds,format:FORMAT,version:VERSION});
+      result.integrity=integrity;
+      for(const issue of integrity.issues||[]){
+        if(issue.code==='incompatible'||issue.code==='unknown_dataset'){result.summary.incompatible++;}
+        else if(issue.code==='readonly_modified'){result.summary.readonly_modified++;result.items.push({dataset:issue.dataset,id:issue.id,status:'readonly_modified',detail:issue.detail});}
+        else if(issue.code==='broken_reference'){result.summary.broken_reference++;result.items.push({dataset:issue.dataset,id:issue.id,status:'broken_reference',detail:issue.detail});}
+        else if(issue.code==='invalid'||issue.code==='unsupported_delete'){result.summary.invalid++;}
+      }
+      if(integrity.blocking){result.errors.push(...integrity.errors);return result;}
+    }else{
+      if(envelope.version!==VERSION){result.errors.push(`version非互換: ${envelope.version} / 対応: ${VERSION}`);result.summary.incompatible++;return result;}
+      if(String(envelope.project_id)!==String(rootData.project?.id||'')){result.errors.push(`project_id不一致: ${envelope.project_id}`);result.summary.incompatible++;return result;}
+    }
     const writable=new Set(uniqueStrings(envelope.permissions?.writable||[]));
     const readOnly=new Set(uniqueStrings(envelope.permissions?.read_only||[]));
     const datasetNames=Object.keys(envelope.datasets||{});
@@ -171,11 +189,11 @@
         const id=String(row.id),local=localIndex[ds].get(id);
         const same=!!local&&stableStringify(canonicalizeRecord(ds,local))===stableStringify(canonicalizeRecord(ds,row));
         if(readOnly.has(ds)){
-          if(!local||!same){result.items.push({dataset:ds,id,status:'readonly_modified',detail:!local?'read_only参照が現在のProjectに存在しません。':'read_only参照が現在値と異なります。'});result.summary.readonly_modified++;}
+          if(!result.integrity&&!local||(!result.integrity&&local&&!same)){result.items.push({dataset:ds,id,status:'readonly_modified',detail:!local?'read_only参照が現在のProjectに存在しません。':'read_only参照が現在値と異なります。'});result.summary.readonly_modified++;}
           continue;
         }
         const broken=referencedIds(ds,row).filter(ref=>!(incomingIndex[ref.dataset]?.has(ref.id))&&!(localIndex[ref.dataset]?.has(ref.id)));
-        if(broken.length){result.items.push({dataset:ds,id,status:'broken_reference',detail:broken.map(x=>`${x.dataset}:${x.id}`).join(', ')});result.summary.broken_reference++;continue;}
+        if(broken.length){if(!result.integrity){result.items.push({dataset:ds,id,status:'broken_reference',detail:broken.map(x=>`${x.dataset}:${x.id}`).join(', ')});result.summary.broken_reference++;}continue;}
         if(!local){result.items.push({dataset:ds,id,status:'add',detail:'新規追加候補'});result.summary.add++;}
         else if(same){result.items.push({dataset:ds,id,status:'unchanged',detail:'現在値と同一'});result.summary.unchanged++;}
         else{result.items.push({dataset:ds,id,status:'conflict',detail:'同一IDの現在値と内容が異なります。'});result.summary.conflict++;}

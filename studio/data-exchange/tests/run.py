@@ -23,7 +23,7 @@ def check_json():
         json.loads(p.read_text(encoding="utf-8"))
 
 def js_syntax():
-    for p in [DX / "data-exchange-core.js", DX / "data-exchange-ui.js"]:
+    for p in [DX / "data-exchange-integrity-validator.js", DX / "data-exchange-core.js", DX / "data-exchange-ui.js"]:
         if p.exists():
             run(["node", "--check", str(p)])
 
@@ -97,6 +97,19 @@ def import_dry_run():
     if "can_apply:false" not in core:
         raise RuntimeError("DE-8 must remain non-applying")
 
+def integrity_validator():
+    validator = DX / "data-exchange-integrity-validator.js"
+    if not validator.exists():
+        raise RuntimeError("DataExchangeIntegrityValidator missing")
+    text = validator.read_text(encoding="utf-8")
+    required = ["unknown_dataset", "readonly_modified", "broken_reference", "unsupported_delete", "schema_version", "record_count"]
+    missing = [x for x in required if x not in text]
+    if missing:
+        raise RuntimeError("DE-9 validator markers missing: " + ", ".join(missing))
+    index = (STUDIO / "index.html").read_text(encoding="utf-8")
+    if "data-exchange-integrity-validator.js" not in index:
+        raise RuntimeError("DE-9 validator Studio reference missing")
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -116,6 +129,7 @@ def main():
         "canonicalization_smoke": smoke_names,
         "dependency_smoke": smoke_names,
         "import_dry_run": import_dry_run,
+        "integrity_validator": integrity_validator,
     }
     done=set()
     for name in steps:

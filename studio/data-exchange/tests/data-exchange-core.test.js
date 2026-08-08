@@ -1,4 +1,6 @@
 const assert=require('assert');
+const validator=require('../data-exchange-integrity-validator.js');
+global.GKSDataExchangeIntegrityValidator=validator;
 const dx=require('../data-exchange-core.js');
 
 (async()=>{
@@ -24,8 +26,18 @@ const dx=require('../data-exchange-core.js');
   const added=JSON.parse(JSON.stringify(env));added.datasets.monsters[0].id='M2';added.datasets.monsters[0].params.skill_ids=[];added.metadata.base_hash='';added.metadata.package_hash='';
   assert.equal((await dx.dryRunImport({rootData:root,envelope:added})).summary.add,1);
   const broken=JSON.parse(JSON.stringify(added));broken.datasets.monsters[0].params.skill_ids=['MISSING'];
-  assert.equal((await dx.dryRunImport({rootData:root,envelope:broken})).summary.broken_reference,1);
+  const brokenResult=await dx.dryRunImport({rootData:root,envelope:broken});assert.equal(brokenResult.summary.broken_reference,1);assert.equal(brokenResult.ok,true);assert.equal(brokenResult.integrity.apply_blocking,true);
+  const roEnv=JSON.parse(JSON.stringify(env));roEnv.datasets.tags[0].name='ChangedTag';roEnv.metadata.package_hash='';
+  const roResult=await dx.dryRunImport({rootData:root,envelope:roEnv});assert.equal(roResult.summary.readonly_modified,1);assert.equal(roResult.ok,true);assert.equal(roResult.integrity.apply_blocking,true);
   const incompatible=JSON.parse(JSON.stringify(env));incompatible.project_id='OTHER';incompatible.metadata.package_hash='';
   assert.equal((await dx.dryRunImport({rootData:root,envelope:incompatible})).summary.incompatible,1);
+  const schemaBad=JSON.parse(JSON.stringify(env));schemaBad.metadata.schema_version='OLD';schemaBad.metadata.package_hash='';
+  assert.equal((await dx.dryRunImport({rootData:root,envelope:schemaBad})).summary.incompatible,1);
+  const duplicate=JSON.parse(JSON.stringify(env));duplicate.datasets.monsters.push(JSON.parse(JSON.stringify(duplicate.datasets.monsters[0])));duplicate.metadata.record_count.monsters=2;duplicate.metadata.package_hash='';
+  assert((await dx.dryRunImport({rootData:root,envelope:duplicate})).summary.invalid>=1);
+  const countBad=JSON.parse(JSON.stringify(env));countBad.metadata.record_count.monsters=99;countBad.metadata.package_hash='';
+  assert((await dx.dryRunImport({rootData:root,envelope:countBad})).summary.invalid>=1);
+  const deleteBad=JSON.parse(JSON.stringify(env));deleteBad.operations={delete:['M1']};deleteBad.metadata.package_hash='';
+  assert((await dx.dryRunImport({rootData:root,envelope:deleteBad})).summary.invalid>=1);
   console.log('Data Exchange core tests: PASS');
 })().catch(e=>{console.error(e);process.exit(1)});

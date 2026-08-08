@@ -26,3 +26,10 @@ UI統一ルール:
 - 複数選択はStudio既存仕様に合わせ、項目全体のタップ/クリックで選択状態を切り替える。
 - 編集・削除など既存操作は選択操作と分離する。
 
+
+## DE-9実装済み
+- DataExchangeIntegrityValidator（Data Exchange専用、既存DataIntegrityValidator非改変）
+- project / format / version / schema整合
+- ID欠落・重複、unknown dataset、record_count不整合
+- read_only差異、参照切れ、DELETE v1拒否
+- Applyは未実装。DE-10 Stale / Permission Enforcementへ継続。
