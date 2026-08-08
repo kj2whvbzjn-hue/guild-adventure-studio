@@ -1,4 +1,4 @@
-/* Tag skill compiler/runtime — GA-B486.53 / P01-12 activation priority validation */
+/* Tag skill compiler/runtime — GA-B486.56 / P01-12 activation priority validation */
 const TAG_LOGIC_ORDER=['COVER','COUNTER','ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){

@@ -9,7 +9,7 @@ for(const x of ['ACTIVATION-PRIORITY-FORMAL-SAME-TICK-HIGH-FIRST','ACTIVATION-PR
 if(!app.includes("if(!battle.validationMode&&battle.validationCaptureEvents!==true)return;"))errors.push('formal evidence capture gate');
 if(!app.includes("formal_candidate:'P01-12-FORMAL-1'"))errors.push('formal candidate id');
 if(!ctl.includes('function activationPriorityFeatureEnabled(){return true}'))errors.push('formal priority feature not enabled');
-if(!app.includes('GA-B486.53-P01-12-FORMAL1-'))errors.push('device report filename must identify formal build');
+if(!app.includes('GA-B486.56-P01-12-FORMAL1-'))errors.push('device report filename must identify formal build');
 if(!rt.includes('ACTIVATION_PRIORITYは有限整数が必要です'))errors.push('compiler validation');
 if(spec.validation_patch!=='P01-12-FORMAL-1'||spec.runtime_application!==true||spec.status!=='FORMAL_CANDIDATE'||spec.validation_design.normal_runtime_enabled!==true)errors.push('formal spec state');
 if(errors.length){errors.forEach(x=>console.error('FAIL',x));process.exit(1)}
