@@ -56,6 +56,10 @@ def ui_selection_rule():
         raise RuntimeError("Dedicated Data Exchange selection surface missing: " + ", ".join(missing))
     if 'openPicker' not in ui or 'selectAllDataset' not in ui:
         raise RuntimeError("Dedicated picker selection functions missing")
+    if '.dx-picker{position:fixed;inset:0;z-index:10050;' not in text:
+        raise RuntimeError("Data Exchange picker must stay above the global project navigation")
+    if "make('最新版ゲーム'" in text or "最新版のゲームページを開く" in text:
+        raise RuntimeError("Obsolete floating latest-game launcher must not overlap Data Exchange UI")
 
 def format_version():
     core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
