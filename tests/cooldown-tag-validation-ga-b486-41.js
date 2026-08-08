@@ -12,7 +12,7 @@ for(const [id,tags] of [
  ['negative',['ATTACK','敵','単体','物理','DAMAGE=100','COOLDOWN=-1']],
  ['decimal',['ATTACK','敵','単体','物理','DAMAGE=100','COOLDOWN=1.5']]
 ]){const r=c({id,name:id,tags});if(r.ok)throw new Error(id+' should reject')}
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(data.data_version!=='GA-B486.52-p01-13-seeded-battle-tie-roll-collision-validation-v3')throw new Error('data_version mismatch');
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(data.data_version!=='GA-B486.53-p01-13-seeded-battle-tie-roll-formal-v1')throw new Error('data_version mismatch');
 const prod=data.data.find(x=>x.id==='SKL-COOLDOWN-ATTACK-300');if(!prod||prod.environment!=='production'||!c(prod).ok)throw new Error('production fixture invalid');
 for(const id of ['COOLDOWN-VALIDATION-NEGATIVE','COOLDOWN-VALIDATION-DECIMAL']){const x=data.data.find(v=>v.id===id);if(!x||x.environment!=='validation'||c(x).ok)throw new Error('validation fixture not rejected '+id)}
 const html=fs.readFileSync('game-tag-test/index.html','utf8'),vr=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');if(!html.includes('tagTestRunCooldownJson')||!vr.includes('function tagTestRunCooldownJson()'))throw new Error('device JSON path missing');

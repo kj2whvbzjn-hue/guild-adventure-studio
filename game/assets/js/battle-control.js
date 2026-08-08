@@ -45,7 +45,7 @@ function impactAt(el){const p=scenePoint(el),slash=document.createElement('div')
 function damageAt(el,value,miss=false){const p=scenePoint(el),pop=document.createElement('div');pop.className='damage-pop'+(miss?' miss':'');pop.textContent=miss?'MISS':`-${value}`;pop.style.left=p.x+'px';pop.style.top=(p.y-20)+'px';$('battleStage').appendChild(pop);pop.animate([{transform:'translate(-50%,-20%) scale(.7)',opacity:0},{transform:'translate(-50%,-70%) scale(1.15)',opacity:1,offset:.25},{transform:'translate(-50%,-135%) scale(1)',opacity:0}],{duration:760,easing:'ease-out'});setTimeout(()=>pop.remove(),800)}
 function queueSceneEvent(evt){if(sceneBusy)sceneQueue.push(evt);else playSceneEvent(evt)}
 
-function resetBattle(){pauseBattle();sceneQueue=[];sceneBusy=false;battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationEvents:[],validationMeta:null};renderBattle();ensureSceneUnits(true);setupTagSkillTestUI();populateTagSkillTestUI()}
+function resetBattle(){pauseBattle();sceneQueue=[];sceneBusy=false;battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationEvents:[],validationMeta:null};initializeBattleTieRolls();renderBattle();ensureSceneUnits(true);setupTagSkillTestUI();populateTagSkillTestUI()}
 function renderBattle(){
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.pendingResult?'最終演出待機':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;
  $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${effectiveAttackValue(u)}（基礎${u.attack}）</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small"><b>シールド:</b> ${escapeHtml(shieldStatusText(u))}</div><div class="small"><b>BUFF/DEBUFF:</b> ${escapeHtml(modifierStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
@@ -128,6 +128,12 @@ function executeReservation(actor){
 }
 function activationPriorityFeatureEnabled(){return true}
 function p0113Hash32(text){let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0}
+function createBattleTieSeed(){
+ if(globalThis.crypto&&typeof globalThis.crypto.getRandomValues==='function'){const a=new Uint32Array(4);globalThis.crypto.getRandomValues(a);return Array.from(a,x=>x.toString(16).padStart(8,'0')).join('')}
+ return `${Date.now().toString(36)}-${Math.floor((globalThis.performance?.now?.()||0)*1000).toString(36)}-${battle.runToken||0}`
+}
+function initializeBattleTieRolls(seed=createBattleTieSeed()){return assignBattleTieRolls(seed,battle.units)}
+
 function assignBattleTieRolls(seed,units=battle.units,hashFn=p0113Hash32){
  const used=new Set(),history=[];const ordered=[...units].sort((a,b)=>String(a.id).localeCompare(String(b.id)));
  for(const u of ordered){let round=0,roll;do{roll=(hashFn(`${seed}|${u.id}|${round}`,u.id,round)%1000000)+1;round++}while(used.has(roll));used.add(roll);u.battleTieRoll=roll;history.push({actor_id:u.id,tie_roll:roll,reroll_round:round-1})}
@@ -140,7 +146,7 @@ function activationPriorityOf(unit){
 }
 function fixDueActionOrder(due){
  const rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit),tieRoll:Number(unit.battleTieRoll)||0}));
- rows.sort((a,b)=>b.priority-a.priority||(battle.validationSimultaneousTieRoll===true?b.tieRoll-a.tieRoll:a.index-b.index));
+ rows.sort((a,b)=>b.priority-a.priority||b.tieRoll-a.tieRoll);
  if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:x.unit.defaultSkillId||null,priority:x.priority,battle_tie_roll:x.tieRoll||null}))});
  return rows.map(x=>x.unit);
 }

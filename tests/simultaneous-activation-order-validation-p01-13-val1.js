@@ -7,7 +7,7 @@ const spec=JSON.parse(fs.readFileSync(path.join(root,'docs/design/P01-13_SIMULTA
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 const exp=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const must=(ok,msg)=>{if(!ok){console.error('FAIL',msg);process.exit(1)}};
-must(build.game_build==='GA-B486.52','build');
+must(build.game_build==='GA-B486.53','build');
 must(spec.validation_patch==='P01-13-VAL-1'&&spec.status==='validation_candidate_not_formal','spec stage');
 must(spec.formal_runtime_change===false,'must not formalize');
 must(String(exp.data_version||'').includes('p01-13-simultaneous-order-validation-v1'),'data version');
