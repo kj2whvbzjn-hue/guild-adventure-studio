@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gks-data-exchange-envelope.schema.json",
+  "title": "GKS Data Exchange Envelope",
+  "type": "object",
+  "required": ["format", "version", "project_id", "mode", "permissions", "metadata", "datasets"],
+  "properties": {
+    "format": {"const": "GKS_DATA_EXCHANGE"},
+    "version": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "mode": {"const": "partial"},
+    "permissions": {
+      "type": "object",
+      "required": ["writable", "read_only"],
+      "properties": {
+        "writable": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "read_only": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "metadata": {"type": "object"},
+    "datasets": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "array"}}
+  },
+  "additionalProperties": false
+}
