@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "task_id": "P01-11",
+  "title": "コスト",
+  "stage": "runtime_v1_formal_regression",
+  "build": "GA-B486.46",
+  "status": "completed_initial_runtime",
+  "authoritative_inputs": [
+    "V9ライブラリ_v2.0/03_戦闘_AI/Skill/01_スキルシステム仕様_正式仕様ドラフト_v2.md",
+    "戦闘仕様_正式統合版_v5"
+  ],
+  "formal_behavior": {
+    "reservation_consumes_cost": false,
+    "action_order_check": [
+      "target",
+      "range",
+      "mp",
+      "cooldown",
+      "usage_limit",
+      "required_conditions",
+      "skill_specific_conditions"
+    ],
+    "casting_recheck": false,
+    "interrupt_before_activation": {
+      "cost_consumed": false,
+      "cooldown_started": false,
+      "effect_applied": false
+    },
+    "activation_established": {
+      "consume_cost": true,
+      "start_cooldown": true
+    },
+    "effect_failure_after_activation": "does_not_refund_cost"
+  },
+  "implementation": {
+    "tag": "MP_COST=<number>",
+    "minimum": 0,
+    "omitted": 0,
+    "compiled_common_shape": [
+      "type",
+      "amount",
+      "payCondition",
+      "consumeTiming",
+      "refundCondition",
+      "failureReason"
+    ],
+    "runtime_cost_types": [
+      "mp"
+    ],
+    "future_extension_types": [
+      "hp",
+      "action_gauge",
+      "stack",
+      "dedicated_resource",
+      "item",
+      "multi_cost"
+    ],
+    "casting_runtime": "deferred_existing_casting_foundation_not_present"
+  },
+  "regression_cases": [
+    "compile_common_costs",
+    "consume_and_cooldown",
+    "shortage_block",
+    "reservation_no_consume",
+    "invalid_target_no_consume",
+    "action_disabled_no_consume",
+    "cooldown_second_use_no_extra_consume"
+  ],
+  "deletions": 0
+}

@@ -72,8 +72,8 @@ function evaluateActionExecution(actor){
  const target=chooseTarget(actor);if(!target)return{ok:false,reason:'実行時点で有効対象がありません',code:'NO_VALID_TARGET'};
  const skill=findTagSkill(actor.defaultSkillId)||TAG_SKILLS[0];if(!skill)return{ok:false,reason:'実行可能スキルがありません',code:'NO_VALID_SKILL'};
  const compiled=compileTaggedSkill(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
- const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action',skillId:compiled.definition.id,cooldown:compiled.definition.parameters.cooldown}):{ok:true};
- if(!eligibility.ok)return{ok:false,reason:eligibility.reason==='COOLDOWN'?`クールダウン中（残り${eligibility.cooldownRemaining} Tick）`:'行動不能',code:eligibility.reason||'ACTION_DISABLED',eligibility,skill,compiled};
+ const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action',skillId:compiled.definition.id,cooldown:compiled.definition.parameters.cooldown,compiled}):{ok:true};
+ if(!eligibility.ok){const reason=eligibility.reason==='COOLDOWN'?`クールダウン中（残り${eligibility.cooldownRemaining} Tick）`:eligibility.reason==='COST_SHORTAGE'?`MP不足（必要${eligibility.costCheck?.failures?.[0]?.required??'?'} / 現在${eligibility.costCheck?.failures?.[0]?.available??'?'}）`:'行動不能';return{ok:false,reason,code:eligibility.reason||'ACTION_DISABLED',eligibility,skill,compiled}};
  return{ok:true,target,skill,compiled};
 }
 function revalidateReservation(actor){
