@@ -200,6 +200,12 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit Studio integration missing")
     if "data-exchange-core.js?v=8" not in index:
         raise RuntimeError("DE-16.1 core cache bust missing")
+    if "data-exchange-transaction.js?v=3" not in index or "data-exchange-audit.js?v=3" not in index or "data-exchange-ui.js?v=13" not in index:
+        raise RuntimeError("DE-16.2 cache bust missing")
+    required_ui2 = ["data_exchange_audit_sessions", "auditProjectStorage", "auditLegacyStorageKey", "Data Exchange Audit migration"]
+    missing_ui2 = [x for x in required_ui2 if x not in ui]
+    if missing_ui2:
+        raise RuntimeError("DE-16.2 persistence markers missing: " + ", ".join(missing_ui2))
     run(["node", str(HERE / "data-exchange-audit.test.js")], cwd=str(HERE))
 
 def main():

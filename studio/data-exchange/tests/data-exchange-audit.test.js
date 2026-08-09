@@ -104,6 +104,22 @@ async function main(){
   assert(audit.append(storage,key,s3,{maxSessions:2,maxBytes:1024*1024}));
   assert.equal(audit.load(storage,key).length,2);
 
+
+  // Project-backed persistence reload simulation.
+  const projectState={data_exchange_audit_sessions:[]};
+  const projectStore={
+    getItem(){return JSON.stringify(projectState.data_exchange_audit_sessions||[]);},
+    setItem(_k,v){projectState.data_exchange_audit_sessions=JSON.parse(v);}
+  };
+  assert(audit.append(projectStore,'project-audit-sessions',session));
+  const serialized=JSON.stringify(projectState);
+  const reloaded=JSON.parse(serialized);
+  const reloadStore={getItem(){return JSON.stringify(reloaded.data_exchange_audit_sessions||[]);},setItem(_k,v){reloaded.data_exchange_audit_sessions=JSON.parse(v);}};
+  const reloadSessions=audit.load(reloadStore,'project-audit-sessions');
+  assert.equal(reloadSessions.length,1);
+  assert.equal(reloadSessions[0].import_session_id,session.import_session_id);
+  assert.deepEqual(reloadSessions[0].undo_snapshot.remove_ids,['M2']);
+
   console.log('DATA EXCHANGE AUDIT TEST: PASS');
 }
 main().catch(e=>{console.error(e);process.exit(1);});
