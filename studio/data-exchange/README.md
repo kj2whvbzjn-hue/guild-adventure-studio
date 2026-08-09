@@ -65,3 +65,14 @@ UI統一ルール:
 ### DE-13 AI Impact Export download fix
 - GPT用影響範囲JSONはUTF-8 JSON Blobを生成して既存 `downloadBlob(blob, name)` に渡す。
 - 共通ダウンロード関数の引数順を維持し、iPhone/Safariでも保存可能な経路に統一する。
+
+
+## DE-14 DataExchangeTransaction
+固定手順:
+current data → deep clone → Safe Merge candidate → normalize → Data Exchange validation → candidate hash → Backup → commit → persist。
+
+- Backup失敗時はcommitしない。
+- candidate validation失敗時はBackup/commit/persistを行わない。
+- persist失敗時はcommit前のdataへrollbackする。
+- `beforeHash` / `candidateHash` / `afterHash` をTransaction結果として保持する。
+- 既存AtomicExportUpdaterは変更せず、Data Exchange専用層として独立実装する。

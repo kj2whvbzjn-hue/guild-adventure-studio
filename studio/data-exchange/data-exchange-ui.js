@@ -81,23 +81,25 @@
     if(!lastApplyPlan?.can_apply||!lastEnvelope)return alert('Apply可能なDry Run結果がありません。');
     const label=DATASET_LABELS[lastApplyPlan.dataset]||lastApplyPlan.dataset;
     if(!confirm(`${label} ${lastApplyPlan.add_count}件を正本データへ追加します。\n既存IDは上書きしません。\n続行しますか？`))return;
-    if(typeof createBackup!=='function'||!createBackup('before-data-exchange-safe-apply',{silent:true})){
-      return alert('バックアップを作成できないためApplyを中止しました。');
-    }
     const before=structuredClone(data);
     try{
-      const applied=await GKSDataExchange.applySafeMerge({rootData:data,envelope:lastEnvelope,plan:lastApplyPlan,dryRun:lastDryRun});
-      data=applied.nextRootData;
-      if(typeof persist!=='function'||persist(`Data Exchange Safe Apply: ${applied.applied.dataset} ${applied.applied.count}件`)===false){
-        data=before;
-        throw new Error('端末保存に失敗したためメモリ上の変更を戻しました。');
-      }
-      lastDryRun=applied.verify;
+      if(!globalThis.GKSDataExchangeTransaction)throw new Error('DataExchangeTransactionが読み込まれていません。');
+      const tx=await GKSDataExchangeTransaction.execute({
+        rootData:data,
+        envelope:lastEnvelope,
+        plan:lastApplyPlan,
+        dryRun:lastDryRun,
+        backup:()=>typeof createBackup==='function'&&createBackup('before-data-exchange-safe-apply',{silent:true}),
+        commit:(candidate)=>{data=candidate;return true;},
+        persist:()=>typeof persist==='function'&&persist(`Data Exchange Transaction: ${lastApplyPlan.dataset} ${lastApplyPlan.add_count}件`)!==false,
+        rollback:(original)=>{data=original;return true;}
+      });
+      lastDryRun=tx.validation;
       lastApplyPlan=await GKSDataExchange.createApplyPlan({rootData:data,envelope:lastEnvelope,dryRun:lastDryRun});
-      renderDryRun(lastDryRun,applied.applied.count);
+      renderDryRun(lastDryRun,tx.applied.count);
       renderImpactPreview(lastDryRun);
       renderApplyPanel();
-      alert(`Safe Apply完了: ${label} ${applied.applied.count}件\nバックアップ作成・反映後再検証まで完了しました。`);
+      alert(`Safe Apply完了: ${label} ${tx.applied.count}件\nTransaction検証・Backup・commit・persist・再検証まで完了しました。`);
     }catch(e){
       data=before;
       renderApplyPanel();

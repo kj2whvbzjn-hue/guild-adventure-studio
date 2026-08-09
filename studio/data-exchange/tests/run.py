@@ -23,7 +23,7 @@ def check_json():
         json.loads(p.read_text(encoding="utf-8"))
 
 def js_syntax():
-    for p in [DX / "data-exchange-integrity-validator.js", DX / "data-exchange-core.js", DX / "data-exchange-ui.js"]:
+    for p in [DX / "data-exchange-integrity-validator.js", DX / "data-exchange-core.js", DX / "data-exchange-transaction.js", DX / "data-exchange-ui.js"]:
         if p.exists():
             run(["node", "--check", str(p)])
 
@@ -154,6 +154,21 @@ def impact_preview():
     if 'id="dxImpactPreview"' not in index or "AI影響範囲" not in index:
         raise RuntimeError("DE-13 Preview panel missing")
 
+def transaction_layer():
+    tx = DX / "data-exchange-transaction.js"
+    if not tx.exists():
+        raise RuntimeError("DE-14 DataExchangeTransaction missing")
+    text = tx.read_text(encoding="utf-8")
+    required = ["candidateHash", "beforeHash", "backup", "commit", "persist", "rollback", "candidateIsValid"]
+    missing = [x for x in required if x not in text]
+    if missing:
+        raise RuntimeError("DE-14 transaction markers missing: " + ", ".join(missing))
+    index = (STUDIO / "index.html").read_text(encoding="utf-8")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    if "data-exchange-transaction.js" not in index or "GKSDataExchangeTransaction.execute" not in ui:
+        raise RuntimeError("DE-14 transaction Studio integration missing")
+    run(["node", str(HERE / "data-exchange-transaction.test.js")], cwd=str(HERE))
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -177,6 +192,7 @@ def main():
         "safe_merge_apply": safe_merge_apply,
         "stale_source_detection": stale_source_detection,
         "impact_preview": impact_preview,
+        "transaction_layer": transaction_layer,
     }
     done=set()
     for name in steps:
