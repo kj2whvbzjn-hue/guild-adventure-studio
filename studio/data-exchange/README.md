@@ -97,3 +97,9 @@ current data → deep clone → Safe Merge candidate → normalize → Data Exch
 - Undo候補を再構成後、before_hash一致・構造検証・Backup・commit・persist・再検証を行う。
 - Auditは最大10Session、既定3MiBまで。古いSessionから自動整理する。
 - GPT用Audit JSONを出力できる。
+
+
+### DE-16.1 Audit Undo device regression fix
+- DE-15で更新されたcoreのブラウザキャッシュ番号を更新し、旧DE-14 Planが残る状態を防止する。
+- Auditは旧Plan `{ids, add_count}` でもTransaction結果から `added` / `undo_snapshot.remove_ids` を復元できる。
+- 実機で検出した「applied_idsはあるがundo_snapshotが空」を回帰テスト化する。

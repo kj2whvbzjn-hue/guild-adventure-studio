@@ -41,6 +41,14 @@ async function main(){
   assert.deepEqual(session.undo_snapshot.remove_ids,['M2']);
   assert.equal(session.undo_snapshot.restore_records.length,0);
 
+  // Device regression: cached DE-14 core supplied legacy plan {ids, add_count}.
+  const legacyPlan={dataset:'monsters',add_count:1,ids:['M2'],conflict_choices:{}};
+  const legacySession=audit.buildSession({
+    transaction:result,plan:legacyPlan,envelope:add,beforeData:root,afterHash,sourceFilename:'ADD.json'
+  });
+  assert.deepEqual(legacySession.added,['M2']);
+  assert.deepEqual(legacySession.undo_snapshot.remove_ids,['M2']);
+
   const storage=new MemoryStorage(),key='audit';
   assert.equal(audit.append(storage,key,session,{maxSessions:10,maxBytes:1024*1024}),true);
   assert.equal(audit.load(storage,key).length,1);

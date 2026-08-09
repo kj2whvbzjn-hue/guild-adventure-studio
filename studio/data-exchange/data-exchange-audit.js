@@ -48,13 +48,23 @@
     }
     cursor[def.path[def.path.length-1]]=rows.map(clone);
   }
-  function buildUndoSnapshot(beforeData,plan){
-    const dataset=String(plan?.dataset||'');
-    const restoreIds=new Set((plan?.import_ids||[]).map(String));
+  function normalizedPlanIds(plan,tx){
+    const all=(tx?.applied?.ids||plan?.ids||[]).map(String);
+    const addIds=Array.isArray(plan?.add_ids)?plan.add_ids.map(String):
+      all.slice(0,Math.max(0,Number(tx?.applied?.add_count??plan?.add_count)||0));
+    const importIds=Array.isArray(plan?.import_ids)?plan.import_ids.map(String):
+      all.slice(addIds.length,addIds.length+Math.max(0,Number(tx?.applied?.changed_count)||0));
+    const keepIds=Array.isArray(plan?.keep_ids)?plan.keep_ids.map(String):[];
+    return {addIds,importIds,keepIds};
+  }
+  function buildUndoSnapshot(beforeData,plan,tx){
+    const dataset=String(plan?.dataset||tx?.applied?.dataset||'');
+    const ids=normalizedPlanIds(plan,tx);
+    const restoreIds=new Set(ids.importIds);
     const restoreRecords=datasetRows(beforeData,dataset).filter(row=>restoreIds.has(String(row?.id||'')));
     return {
       dataset,
-      remove_ids:clone(plan?.add_ids||[]),
+      remove_ids:clone(ids.addIds),
       restore_records:restoreRecords
     };
   }
@@ -91,6 +101,7 @@
   }
   function buildSession(options){
     const tx=options?.transaction||{},plan=options?.plan||{},envelope=options?.envelope||{};
+    const ids=normalizedPlanIds(plan,tx);
     return {
       format:FORMAT,
       version:VERSION,
@@ -104,12 +115,12 @@
       candidate_hash:String(tx.candidateHash||options?.candidateHash||''),
       after_hash:String(options?.afterHash||tx.afterHash||''),
       dataset:String(plan.dataset||tx.applied?.dataset||''),
-      added:clone(plan.add_ids||[]),
-      changed:clone(plan.import_ids||[]),
-      kept:clone(plan.keep_ids||[]),
+      added:clone(ids.addIds),
+      changed:clone(ids.importIds),
+      kept:clone(ids.keepIds),
       conflict_choices:clone(plan.conflict_choices||{}),
       applied_ids:clone(tx.applied?.ids||[]),
-      undo_snapshot:buildUndoSnapshot(options?.beforeData||{},plan),
+      undo_snapshot:buildUndoSnapshot(options?.beforeData||{},plan,tx),
       undone:false,
       undone_at:'',
       undo_after_hash:''
@@ -188,5 +199,5 @@
     return save(storage,key,sessions,options);
   }
 
-  return {FORMAT,VERSION,DEFAULT_MAX_SESSIONS,DEFAULT_MAX_BYTES,load,save,buildSession,append,exportPayload,validateSnapshot,buildUndoSnapshot,applyUndoSnapshot,canUndo,undo,markUndone};
+  return {FORMAT,VERSION,DEFAULT_MAX_SESSIONS,DEFAULT_MAX_BYTES,load,save,normalizedPlanIds,buildSession,append,exportPayload,validateSnapshot,buildUndoSnapshot,applyUndoSnapshot,canUndo,undo,markUndone};
 });
