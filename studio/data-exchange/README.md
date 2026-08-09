@@ -103,3 +103,11 @@ current data → deep clone → Safe Merge candidate → normalize → Data Exch
 - DE-15で更新されたcoreのブラウザキャッシュ番号を更新し、旧DE-14 Planが残る状態を防止する。
 - Auditは旧Plan `{ids, add_count}` でもTransaction結果から `added` / `undo_snapshot.remove_ids` を復元できる。
 - 実機で検出した「applied_idsはあるがundo_snapshotが空」を回帰テスト化する。
+
+
+### DE-16.3 Undo semantic hash fix
+- 実機で `Undo候補hashが元状態と一致しません` を検出。
+- 原因は Studio `persist()` が毎回 `project.updated_at` と `history` を更新するため。
+- Data Exchange Transaction/Undo の projectHash はゲーム・マスターデータの意味的状態を比較し、`project.updated_at` と `history` を除外する。
+- モンスター等の実データ変更は引き続きhash差分として検出する。
+- persist由来メタデータだけが変化した状態で `canUndo()` が成功する回帰テストを追加。

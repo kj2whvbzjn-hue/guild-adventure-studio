@@ -26,8 +26,19 @@
       (s.broken_reference||0)===0 &&
       (s.readonly_modified||0)===0;
   }
+  function projectHashSnapshot(data){
+    const snapshot=clone(data||{});
+    // Studio persist() always changes these operational fields.
+    // They do not represent game/master content and must not invalidate
+    // a session-scoped Data Exchange Undo.
+    if(snapshot.project&&typeof snapshot.project==='object'){
+      delete snapshot.project.updated_at;
+    }
+    delete snapshot.history;
+    return snapshot;
+  }
   async function projectHash(data){
-    return Core.sha256Hex(Core.stableStringify(data));
+    return Core.sha256Hex(Core.stableStringify(projectHashSnapshot(data)));
   }
   async function execute(options){
     if(!Core)throw new Error('DataExchangeTransaction: Data Exchange Coreがありません。');

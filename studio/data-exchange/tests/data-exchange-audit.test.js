@@ -56,6 +56,11 @@ async function main(){
   assert.equal(exported.format,'GKS_DATA_EXCHANGE_AUDIT');
   assert.equal(exported.sessions[0].source_filename,'ADD.json');
 
+  // Simulate Studio persist(): operational metadata changes after commit.
+  live.project.updated_at='PERSISTED';
+  live.history=(live.history||[]).concat([{at:'PERSISTED',message:'Data Exchange Transaction'}]);
+  session.after_hash=await tx.projectHash(live);
+
   const can=await audit.canUndo(session,live);
   assert.equal(can.ok,true);
   const undoResult=await audit.undo({

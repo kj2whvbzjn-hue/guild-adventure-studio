@@ -200,6 +200,12 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit Studio integration missing")
     if "data-exchange-core.js?v=8" not in index:
         raise RuntimeError("DE-16.1 core cache bust missing")
+    if "data-exchange-transaction.js?v=3" not in index or "data-exchange-ui.js?v=13" not in index:
+        raise RuntimeError("DE-16.3 cache bust missing")
+    transaction = (DX / "data-exchange-transaction.js").read_text(encoding="utf-8")
+    for marker in ["projectHashSnapshot", "delete snapshot.project.updated_at", "delete snapshot.history"]:
+        if marker not in transaction:
+            raise RuntimeError("DE-16.3 semantic hash marker missing: " + marker)
     run(["node", str(HERE / "data-exchange-audit.test.js")], cwd=str(HERE))
 
 def main():

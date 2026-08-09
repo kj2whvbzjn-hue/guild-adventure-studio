@@ -86,6 +86,25 @@ async function main(){
   assert.equal(dx.records(live,'monsters')[0].name,'One');
   assert.equal(keepTx.validation.summary.conflict,1);
 
+
+  const semanticBase=JSON.parse(JSON.stringify(root));
+  semanticBase.project.updated_at='BEFORE';
+  semanticBase.history=[{at:'A',message:'previous'}];
+  const semanticAfter=JSON.parse(JSON.stringify(semanticBase));
+  semanticAfter.project.updated_at='AFTER';
+  semanticAfter.history.push({at:'B',message:'Data Exchange Transaction'});
+  assert.equal(
+    await tx.projectHash(semanticBase),
+    await tx.projectHash(semanticAfter),
+    'persist-only project.updated_at/history changes must not change transaction hash'
+  );
+  semanticAfter.masters.monsters[0].name='Real content change';
+  assert.notEqual(
+    await tx.projectHash(semanticBase),
+    await tx.projectHash(semanticAfter),
+    'real master data changes must still change transaction hash'
+  );
+
   console.log('DATA EXCHANGE TRANSACTION TEST: PASS');
 }
 main().catch(e=>{console.error(e);process.exit(1);});
