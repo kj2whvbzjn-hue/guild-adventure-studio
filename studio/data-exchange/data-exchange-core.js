@@ -81,6 +81,9 @@
   function canonicalRecords(dataset,rows){
     return rows.map(r=>canonicalizeRecord(dataset,r)).sort((a,b)=>String(a.id||'').localeCompare(String(b.id||''),'en'));
   }
+  async function recordHash(dataset,row){
+    return sha256Hex(stableStringify(canonicalizeRecord(dataset,row)));
+  }
   function collectIds(record,paths){return uniqueStrings(paths.flatMap(path=>{const v=getAt(record,path);return Array.isArray(v)?v:[v];}));}
   function resolveDependencies(rootData,primaryDataset,primaryRows,mode='none'){
     if(mode==='none')return {};
@@ -103,13 +106,15 @@
     Object.entries(dependencies).forEach(([key,value])=>{if(key!==dataset)datasets[key]=value;});
     const canonicalForBase={dataset,records:canonicalRecords(dataset,primary)};
     const baseHash=await sha256Hex(stableStringify(canonicalForBase));
+    const recordHashes={};
+    for(const row of primary)recordHashes[String(row.id)]=await recordHash(dataset,row);
     const envelope={
       format:FORMAT,version:VERSION,project_id:String(rootData.project?.id||''),mode:'partial',
       permissions:{writable:[dataset],read_only:Object.keys(datasets).filter(k=>k!==dataset).sort()},
       metadata:{
         generated_at:new Date().toISOString(),source:'studio-data-exchange',studio_version:String(options.studioVersion||''),schema_version:String(rootData.schema_version||''),
         dependency_mode:mode,record_count:Object.fromEntries(Object.entries(datasets).map(([k,v])=>[k,v.length])),base_project_revision:String(rootData.project?.updated_at||''),base_hash:baseHash,
-        package_hash:'',hash_algorithm:'SHA-256'
+        record_hashes:{[dataset]:recordHashes},package_hash:'',hash_algorithm:'SHA-256'
       },datasets
     };
     const hashable=clone(envelope);hashable.metadata.generated_at='';hashable.metadata.package_hash='';
@@ -200,12 +205,38 @@
       }
     }
     const primary=writeDatasets[0],baseHash=String(envelope.metadata?.base_hash||'').trim();
-    if(baseHash){
+    const exportedRevision=String(envelope.metadata?.base_project_revision||'').trim();
+    const currentRevision=String(rootData.project?.updated_at||'').trim();
+    result.source_revision={exported:exportedRevision,current:currentRevision,changed:!!exportedRevision&&!!currentRevision&&exportedRevision!==currentRevision};
+    const sourceHashes=envelope.metadata?.record_hashes?.[primary];
+    let usedRecordHashes=false;
+    if(sourceHashes&&typeof sourceHashes==='object'&&!Array.isArray(sourceHashes)){
+      for(const row of envelope.datasets[primary]||[]){
+        const id=String(row.id),expected=String(sourceHashes[id]||'').trim(),local=localIndex[primary].get(id);
+        if(!expected||!local)continue;
+        usedRecordHashes=true;
+        const actual=await recordHash(primary,local);
+        if(actual!==expected){
+          result.summary.stale_source++;
+          result.items.push({dataset:primary,id,status:'stale_source',detail:'Export後にこのレコードが正本側で変更されています。'});
+        }
+      }
+      if(result.summary.stale_source){
+        result.warnings.push(`対象レコード ${result.summary.stale_source}件がExport後に変更されています。古いImportとしてApplyを禁止します。`);
+      }else if(result.source_revision.changed){
+        result.warnings.push('Project revisionはExport後に更新されていますが、選択対象レコードのhashは一致しています。');
+      }
+    }
+    if(!usedRecordHashes&&baseHash){
       const incomingIds=(envelope.datasets[primary]||[]).map(r=>String(r.id));
       const localRows=incomingIds.map(id=>localIndex[primary].get(id)).filter(Boolean);
       if(localRows.length===incomingIds.length){
         const actual=await sha256Hex(stableStringify({dataset:primary,records:canonicalRecords(primary,localRows)}));
-        if(actual!==baseHash){result.summary.stale_source++;result.warnings.push('base_hashが現在のProjectと一致しません。Export後に対象データが変更された可能性があります。');}
+        if(actual!==baseHash){
+          result.summary.stale_source++;
+          result.items.push({dataset:primary,id:'',status:'stale_source',detail:'旧形式base_hashが現在の対象データと一致しません。'});
+          result.warnings.push('base_hashが現在のProjectと一致しません。Export後に対象データが変更された可能性があります。');
+        }
       }
     }
     result.ok=result.errors.length===0;
@@ -287,5 +318,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

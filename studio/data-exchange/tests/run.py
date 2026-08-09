@@ -127,6 +127,18 @@ def safe_merge_apply():
     if "既存IDは上書きしません" not in ui:
         raise RuntimeError("DE-10 must preserve add-only safe merge rule")
 
+def stale_source_detection():
+    core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
+    required = ["recordHash", "record_hashes", "base_project_revision", "base_hash", "stale_source", "source_revision"]
+    missing = [x for x in required if x not in core]
+    if missing:
+        raise RuntimeError("DE-11 stale-source markers missing: " + ", ".join(missing))
+    test = (HERE / "data-exchange-core.test.js").read_text(encoding="utf-8")
+    required_tests = ["normal GPT edit must not be stale", "legacy base_hash fallback", "source_revision.changed"]
+    missing_tests = [x for x in required_tests if x not in test]
+    if missing_tests:
+        raise RuntimeError("DE-11 stale-source regression tests missing: " + ", ".join(missing_tests))
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -148,6 +160,7 @@ def main():
         "import_dry_run": import_dry_run,
         "integrity_validator": integrity_validator,
         "safe_merge_apply": safe_merge_apply,
+        "stale_source_detection": stale_source_detection,
     }
     done=set()
     for name in steps:

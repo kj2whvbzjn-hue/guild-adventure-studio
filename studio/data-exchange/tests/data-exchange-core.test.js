@@ -16,6 +16,7 @@ const dx=require('../data-exchange-core.js');
   assert.deepEqual(env.permissions.writable,['monsters']);
   assert(env.permissions.read_only.includes('tags'));
   assert.equal(env.metadata.package_hash.length,64);
+  assert.equal(env.metadata.record_hashes.monsters.M1.length,64);
   assert(dx.validateEnvelopeShape(env).ok);
   const allRoot={schema_version:'4.0.0-draft',project:{id:'P2',updated_at:'R2'},tags:[{id:'T1'}],masters:{monsters:[],skills:[],jobs:[],equipment:[],mods:[],stats:[{id:'STAT-1',name:'Stat',tags:['T1']}],status_effects:[{id:'SE-1',name:'Status',tags:['T1']}],tablets:[{id:'TAB-1',name:'Tablet',tags:['T1']}],ai_conditions:[],ai_targets:[],ai_actions:[]}};
   for(const ds of ['stats','status_effects','tablets']){const out=await dx.buildEnvelope({rootData:allRoot,dataset:ds,ids:[dx.records(allRoot,ds)[0].id],dependencyMode:'direct',studioVersion:'TEST'});assert.equal(out.datasets[ds].length,1);assert.deepEqual(out.permissions.writable,[ds]);assert.equal(out.datasets.tags.length,1);}
@@ -44,6 +45,27 @@ const dx=require('../data-exchange-core.js');
   assert.equal(brokenPlan.can_apply,false);assert(brokenPlan.reasons.some(x=>x.includes('参照切れ')));
   const noChangePlan=await dx.createApplyPlan({rootData:root,envelope:env});
   assert.equal(noChangePlan.can_apply,false);assert(noChangePlan.reasons.some(x=>x.includes('追加対象')));
+  const normalConflict=JSON.parse(JSON.stringify(env));normalConflict.datasets.monsters[0].name='GPTChanged';normalConflict.metadata.package_hash='';
+  const normalConflictResult=await dx.dryRunImport({rootData:root,envelope:normalConflict});
+  assert.equal(normalConflictResult.summary.conflict,1);
+  assert.equal(normalConflictResult.summary.stale_source,0,'normal GPT edit must not be stale when current source record is unchanged');
+
+  const staleRoot=JSON.parse(JSON.stringify(root));staleRoot.project.updated_at='R2';staleRoot.masters.monsters[0].name='ServerChanged';
+  const staleImport=JSON.parse(JSON.stringify(env));staleImport.datasets.monsters[0].name='GPTChanged';staleImport.metadata.package_hash='';
+  const staleResult=await dx.dryRunImport({rootData:staleRoot,envelope:staleImport});
+  assert.equal(staleResult.summary.stale_source,1);
+  assert(staleResult.items.some(x=>x.status==='stale_source'&&x.id==='M1'));
+  assert.equal(staleResult.can_apply,false);
+
+  const revisionOnlyRoot=JSON.parse(JSON.stringify(root));revisionOnlyRoot.project.updated_at='R2';
+  const revisionOnlyResult=await dx.dryRunImport({rootData:revisionOnlyRoot,envelope:env});
+  assert.equal(revisionOnlyResult.summary.stale_source,0,'unrelated project revision change must not stale an unchanged selected record');
+  assert.equal(revisionOnlyResult.source_revision.changed,true);
+
+  const legacyStale=JSON.parse(JSON.stringify(env));delete legacyStale.metadata.record_hashes;legacyStale.metadata.package_hash='';
+  const legacyStaleResult=await dx.dryRunImport({rootData:staleRoot,envelope:legacyStale});
+  assert.equal(legacyStaleResult.summary.stale_source,1,'legacy base_hash fallback must remain supported');
+
   const incompatible=JSON.parse(JSON.stringify(env));incompatible.project_id='OTHER';incompatible.metadata.package_hash='';
   assert.equal((await dx.dryRunImport({rootData:root,envelope:incompatible})).summary.incompatible,1);
   const schemaBad=JSON.parse(JSON.stringify(env));schemaBad.metadata.schema_version='OLD';schemaBad.metadata.package_hash='';
