@@ -198,7 +198,7 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit UI markers missing: " + ", ".join(missing_ui))
     if "data-exchange-audit.js" not in index or 'id="dxAuditPanel"' not in index:
         raise RuntimeError("DE-16 Audit Studio integration missing")
-    if "data-exchange-core.js?v=8" not in index:
+    if "data-exchange-core.js?v=9" not in index:
         raise RuntimeError("DE-16.1 core cache bust missing")
     if "data-exchange-transaction.js?v=3" not in index:
         raise RuntimeError("DE-16.3 transaction cache bust missing")
@@ -223,6 +223,9 @@ def cache_bust_de165():
 
 def monster_vertical_gate():
     run(["node", str(HERE / "data-exchange-monster-vertical-gate.test.js")], cwd=str(HERE))
+
+def tag_skill_vertical_gate():
+    run(["node", str(HERE / "data-exchange-tag-skill-vertical-gate.test.js")], cwd=str(HERE))
 
 
 def main():
@@ -253,6 +256,7 @@ def main():
         "audit_undo": audit_undo,
         "cache_bust_de165": cache_bust_de165,
         "monster_vertical_gate": monster_vertical_gate,
+        "tag_skill_vertical_gate": tag_skill_vertical_gate,
     }
     done=set()
     for name in steps:

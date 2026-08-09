@@ -74,6 +74,7 @@
       Object.keys(registry).forEach(ds=>{localIndex[ds]=new Map(records(rootData,ds).map(row=>[String(row?.[registry[ds].idField||'id']||''),row]));});
       const incomingIndex={};
       names.filter(ds=>registry[ds]&&Array.isArray(datasets[ds])).forEach(ds=>{incomingIndex[ds]=new Map(datasets[ds].map(row=>[rowId(row,registry[ds]),row]).filter(x=>x[0]));});
+      const tagCategoryIds=new Set((Array.isArray(rootData.tag_categories)?rootData.tag_categories:[]).map(row=>String(row?.id||'').trim()).filter(Boolean));
       for(const ds of names){
         if(!registry[ds]||!Array.isArray(datasets[ds]))continue;
         for(const row of datasets[ds]){
@@ -86,6 +87,15 @@
           if(typeof referencedIds==='function'){
             const broken=referencedIds(ds,row).filter(ref=>!(incomingIndex[ref.dataset]?.has(ref.id))&&!(localIndex[ref.dataset]?.has(ref.id)));
             if(broken.length)addIssue(out,'broken_reference',ds,id,broken.map(x=>`${x.dataset}:${x.id}`).join(', '),'issue');
+          }
+          if(ds==='tags'){
+            const parentId=String(row?.parent_id||'').trim();
+            const replacementId=String(row?.replacement_tag_id||row?.recommended_replacement_tag_id||'').trim();
+            const categoryId=String(row?.category_id||'').trim();
+            const tagExists=refId=>!!refId&&((incomingIndex.tags?.has(refId))||(localIndex.tags?.has(refId)));
+            if(parentId&&!tagExists(parentId))addIssue(out,'broken_reference',ds,id,`tags:${parentId} (parent_id)`,'issue');
+            if(replacementId&&!tagExists(replacementId))addIssue(out,'broken_reference',ds,id,`tags:${replacementId} (replacement_tag_id)`,'issue');
+            if(categoryId&&!tagCategoryIds.has(categoryId))addIssue(out,'broken_reference',ds,id,`tag_categories:${categoryId} (category_id)`,'issue');
           }
         }
       }

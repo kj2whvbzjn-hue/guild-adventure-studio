@@ -150,3 +150,19 @@ Gate対象:
 - Studio再読込時に `renderAuditPanel()` を自動実行し、保存済みAudit SessionとUndo可能状態を復元する。
 - Safari等で初期表示が追随しない場合に備え、GitHub配置履歴と同じ再読込パターンで `履歴を再確認` を提供する。
 - Importファイル選択・Dry Run結果・競合選択などの一時UI状態は復元対象外とする。
+
+
+## DE-18 Tag / Skill Vertical Slice Gate
+Monster Vertical Sliceで固定した安全条件をTag / Skillへ拡張する。
+
+追加した安全条件:
+- Tagを主DatasetとしてExport / Dry Run / Safe Merge / Transaction / Audit / Undo可能
+- Tagの `parent_id` / replacement / `category_id` 参照切れをblocking
+- Skillを主DatasetとしてExportし、参照Tagをread_only dependencyとして同梱
+- SkillのTag参照切れ・read_only差異・stale source・DELETE v1をblocking
+- Tag / Skillの新規追加時、既知の安全なトップレベル項目以外をSafe Apply前に拒否
+- 既存Monster Vertical Gateを同じQuick/Fullで回帰
+
+専用Gate: `tag_skill_vertical_gate`
+
+DE-18完了後もData Exchangeのwritable Datasetは1分類、Dependencyはread_only、競合はkeep/import明示選択を維持する。

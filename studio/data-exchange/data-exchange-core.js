@@ -361,7 +361,9 @@
     return reasons;
   }
   const SAFE_TOP_LEVEL_FIELDS={
-    monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at'])
+    monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
+    skills:new Set(['id','name','status','tags','params','description','created_at','updated_at','version','kind','environment','mpCost','cooldown','multiplier','target','statusId','buff','operation','tag','tagId','stack','amount','stackId','execution'])
   };
   function unknownIncomingFields(dataset,localRow,incomingRow){
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
