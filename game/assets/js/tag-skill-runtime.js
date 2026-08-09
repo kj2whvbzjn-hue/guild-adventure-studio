@@ -213,6 +213,8 @@ function activeAuraEntries(target,kind,stat){
 function effectiveAuraPower(target,kind,stat){const entries=activeAuraEntries(target,kind,stat);return entries.length?Math.max(...entries.map(x=>x.power)):0}
 function effectiveModifierPower(target,kind,stat){if(!target?.alive)return 0;const active=ensureModifierStackList(target).filter(x=>x.kind===kind&&x.stat===stat&&x.expiresAt>battle.tick),normal=active.length?Math.max(...active.map(x=>x.power)):0,aura=effectiveAuraPower(target,kind,stat);return Math.max(normal,aura)}
 function effectiveAttackValue(unit){const buff=effectiveModifierPower(unit,'BUFF','ATK'),debuff=effectiveModifierPower(unit,'DEBUFF','ATK');return Math.max(0,Math.floor(unit.attack*(1+buff/100)*(1-debuff/100)))}
+function effectiveDamageResist(unit){const base=Number(unit?.damageResist??unit?.damage_resist??0),buff=effectiveModifierPower(unit,'BUFF','DEF'),debuff=effectiveModifierPower(unit,'DEBUFF','DEF'),value=(Number.isFinite(base)?base:0)+buff-debuff;return Math.max(0,Math.min(75,value))}
+function applyDefenseResistance(unit,damage){const raw=Math.max(0,Math.floor(Number(damage)||0)),resistance=effectiveDamageResist(unit),reduced=Math.max(0,Math.floor(raw*(1-resistance/100)));return{rawDamage:raw,resistance,damage:reduced}}
 function recordEffectiveModifierChange(target,kind,stat,before,after,reason){if(before===after)return;battle.log.push(`[Tick ${battle.tick}] [TAG][${kind}] ${target.name}の${stat}実効値 ${before}% → ${after}%（${reason}）`);recordValidationEvent('modifier_effective_changed',{target_id:target.id,kind,stat,before,after,reason})}
 function applyTaggedModifier(source,target,compiled,logic){
  if(!target?.alive)return{ok:false,reason:'効果対象が無効です'};
@@ -316,12 +318,12 @@ function calculateTaggedAttackDamage(attacker,definition){
  return Math.max(0,Math.floor(effectiveAttackValue(attacker)*(rate/100)));
 }
 function applyTaggedDamage(attacker,target,damage,skill){
- const before=target.hp,shield=consumeShieldDamage(target,damage,{sourceId:attacker.id,skillId:skill.id,damageType:'tag_attack'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;
+ const before=target.hp,defense=applyDefenseResistance(target,damage),shield=consumeShieldDamage(target,defense.damage,{sourceId:attacker.id,skillId:skill.id,damageType:'tag_attack'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;
  queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage:applied});
  attacker.damageDealt+=applied;target.damageTaken+=applied;
- battle.log.push(`[Tick ${battle.tick}] [TAG][ATTACK] ${attacker.name}の${skill.name} → ${target.name}に${applied}HPダメージ（シールド吸収${shield.absorbed}、DAMAGE=${skill.parameters.damage}, 残HP ${target.hp}/${target.maxHp}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('attack',{source_id:attacker.id,target_id:target.id,skill_id:skill.id,raw_damage:shield.rawDamage,shield_absorbed:shield.absorbed,damage:applied,hp_before:before,hp_after:target.hp});
+ battle.log.push(`[Tick ${battle.tick}] [TAG][ATTACK] ${attacker.name}の${skill.name} → ${target.name}に${applied}HPダメージ（防御耐性${defense.resistance}%、耐性前${defense.rawDamage}、シールド吸収${shield.absorbed}、DAMAGE=${skill.parameters.damage}, 残HP ${target.hp}/${target.maxHp}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('attack',{source_id:attacker.id,target_id:target.id,skill_id:skill.id,raw_damage:defense.rawDamage,defense_resistance:defense.resistance,post_resistance_damage:defense.damage,shield_absorbed:shield.absorbed,damage:applied,hp_before:before,hp_after:target.hp});
  if(target.hp<=0){resetCombatantOnDeath(target,{reason:'tag_attack',sourceId:attacker.id});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
- finishIfNeeded();return{ok:true,damage:applied,rawDamage:shield.rawDamage,shieldAbsorbed:shield.absorbed,beforeHp:before,afterHp:target.hp};
+ finishIfNeeded();return{ok:true,damage:applied,rawDamage:defense.rawDamage,defenseResistance:defense.resistance,postResistanceDamage:defense.damage,shieldAbsorbed:shield.absorbed,beforeHp:before,afterHp:target.hp};
 }
 function applyTaggedHeal(source,target,compiled){
  if(!target?.alive)return{ok:false,reason:'回復対象が無効です'};
