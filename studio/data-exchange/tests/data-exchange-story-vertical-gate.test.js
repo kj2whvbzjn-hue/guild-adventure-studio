@@ -12,11 +12,11 @@ async function main(){
  const base=baseProject();
  const html=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
  assert(html.includes('data-exchange-core.js?v=12'),'DE-20 core cache key');
- assert(html.includes('data-exchange-ui.js?v=20'),'DE-20 UI cache key');
+ assert(html.includes('data-exchange-ui.js?v=21'),'DE-20 UI cache key');
  assert(html.includes('GKSDataExchangeUI.openStoryPicker()'),'Story Data Exchange scenario entry');
  const ui=fs.readFileSync(path.resolve(__dirname,'../data-exchange-ui.js'),'utf8');
  assert(ui.includes("datasets:['chapters','story_sections','story_scenes','story_dialogues']"),'Story-only picker datasets');
- assert(ui.includes("title:'シナリオ データ入出力'"),'Story-only picker title');
+ assert(ui.includes("title:'シナリオ データ出力'"),'Story-only picker title');
  assert(fs.existsSync(path.resolve(__dirname,'../schemas/chapter-dataset.schema.json')),'chapter schema');
  const env=await dx.buildEnvelope({rootData:base,dataset:'chapters',ids:['CHP-BASE'],dependencyMode:'recursive',studioVersion:'TEST-DE20'});
  assert.deepEqual(env.permissions.writable,['chapters']);assert.deepEqual(env.permissions.read_only,[]);assert.equal(env.datasets.chapters.length,1);assert.equal(env.datasets.chapters[0].sections[0].scenes[0].dialogues[0].text,'Hello');
