@@ -38,15 +38,8 @@
     return Core.records(rootData,dataset).map(clone);
   }
   function setDatasetRows(rootData,dataset,rows){
-    const def=Core.REGISTRY[dataset];
-    if(!def)throw new Error('DataExchangeAudit: 未対応Dataset: '+dataset);
-    let cursor=rootData;
-    for(let i=0;i<def.path.length-1;i++){
-      const key=def.path[i];
-      if(!cursor[key]||typeof cursor[key]!=='object')cursor[key]={};
-      cursor=cursor[key];
-    }
-    cursor[def.path[def.path.length-1]]=rows.map(clone);
+    if(typeof Core.setDatasetRecords!=='function')throw new Error('DataExchangeAudit: Dataset setterがありません。');
+    Core.setDatasetRecords(rootData,dataset,rows.map(clone));
   }
   async function datasetHash(rootData,dataset){
     return Core.sha256Hex(Core.stableStringify(datasetRows(rootData,dataset)));

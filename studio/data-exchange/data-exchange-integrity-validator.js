@@ -97,6 +97,36 @@
             if(replacementId&&!tagExists(replacementId))addIssue(out,'broken_reference',ds,id,`tags:${replacementId} (replacement_tag_id)`,'issue');
             if(categoryId&&!tagCategoryIds.has(categoryId))addIssue(out,'broken_reference',ds,id,`tag_categories:${categoryId} (category_id)`,'issue');
           }
+          if(ds==='story_sections'||ds==='story_scenes'||ds==='story_dialogues'){
+            const chapterId=String(row?.chapter_id||'').trim();
+            const sectionId=String(row?.section_id||'').trim();
+            const sceneId=String(row?.scene_id||'').trim();
+            const chapter=(Array.isArray(rootData.chapters)?rootData.chapters:[]).find(x=>String(x?.id||'')===chapterId);
+            const section=chapter&&(chapter.sections||[]).find(x=>String(x?.id||'')===sectionId);
+            const scene=section&&(section.scenes||[]).find(x=>String(x?.id||'')===sceneId);
+            if(!chapterId||!chapter)addIssue(out,'broken_reference',ds,id,`chapters:${chapterId||'(なし)'} (chapter_id)`,'issue');
+            if(ds!=='story_sections'&&(!sectionId||!section))addIssue(out,'broken_reference',ds,id,`story_sections:${sectionId||'(なし)'} (section_id)`,'issue');
+            if(ds==='story_dialogues'&&(!sceneId||!scene))addIssue(out,'broken_reference',ds,id,`story_scenes:${sceneId||'(なし)'} (scene_id)`,'issue');
+            const local=localIndex[ds]?.get(id);
+            if(local){
+              const parentFields=registry[ds]?.contextFields||[];
+              const changed=parentFields.filter(key=>String(local?.[key]||'')!==String(row?.[key]||''));
+              if(changed.length)addIssue(out,'invalid',ds,id,`親階層の変更は未対応です: ${changed.join(', ')}`);
+            }
+          }
+        }
+        if(ds==='story_sections'){
+          const additionsByChapter=new Map();
+          for(const row of datasets[ds]){
+            const id=rowId(row,registry[ds]);
+            if(!id||localIndex[ds]?.has(id))continue;
+            const cid=String(row?.chapter_id||'').trim();
+            additionsByChapter.set(cid,(additionsByChapter.get(cid)||0)+1);
+          }
+          for(const [cid,addCount] of additionsByChapter){
+            const chapter=(Array.isArray(rootData.chapters)?rootData.chapters:[]).find(x=>String(x?.id||'')===cid);
+            if(chapter&&((chapter.sections||[]).length+addCount)>20)addIssue(out,'invalid',ds,'',`1章に登録できる節は最大20節です: ${cid}`);
+          }
         }
       }
     }

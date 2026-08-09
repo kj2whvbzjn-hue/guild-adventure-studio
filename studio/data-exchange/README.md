@@ -166,3 +166,13 @@ Monster Vertical Sliceで固定した安全条件をTag / Skillへ拡張する�
 専用Gate: `tag_skill_vertical_gate`
 
 DE-18完了後もData Exchangeのwritable Datasetは1分類、Dependencyはread_only、競合はkeep/import明示選択を維持する。
+
+
+## Story nested partial exchange (GKS-B491)
+- Chapterの既存保存形式 `chapters[].sections[].scenes[].dialogues[]` は変更しない。
+- Data Exchange上だけ `story_sections` / `story_scenes` / `story_dialogues` を仮想Datasetとして提供する。
+- Sectionは `chapter_id`、Sceneは `chapter_id + section_id`、Dialogueは `chapter_id + section_id + scene_id` を親コンテキストとして持つ。
+- SectionのImportは既存 `scenes` を保持し、SceneのImportは既存 `dialogues` を保持する。子配列を巻き込んだ上書きを行わない。
+- 親参照切れはApply blocking。既存レコードの親階層変更（re-parent）は未対応としてblockingする。
+- Story Editor既存仕様に合わせ、1章20節の上限をData Exchange経由のSection追加にも適用する。
+- Transaction / Audit / Undoは仮想Dataset単位の差分を記録し、正本の入れ子構造へ安全に復元する。

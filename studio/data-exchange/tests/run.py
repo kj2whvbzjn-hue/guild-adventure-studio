@@ -60,6 +60,13 @@ def ui_selection_rule():
         raise RuntimeError("Data Exchange picker must stay above the global project navigation")
     if "make('最新版ゲーム'" in text or "最新版のゲームページを開く" in text:
         raise RuntimeError("Obsolete floating latest-game launcher must not overlap Data Exchange UI")
+    story_required=['GKSDataExchangeUI.openStoryPicker()', '>データ入出力</button>']
+    story_missing=[x for x in story_required if x not in text]
+    if story_missing:
+        raise RuntimeError('Story Data Exchange entry missing: '+', '.join(story_missing))
+    for marker in ["datasets:['chapters','story_sections','story_scenes','story_dialogues']","title:'シナリオ データ入出力'"]:
+        if marker not in ui:
+            raise RuntimeError('Story-only picker filter missing: '+marker)
 
 def format_version():
     core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
@@ -198,11 +205,11 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit UI markers missing: " + ", ".join(missing_ui))
     if "data-exchange-audit.js" not in index or 'id="dxAuditPanel"' not in index:
         raise RuntimeError("DE-16 Audit Studio integration missing")
-    if "data-exchange-core.js?v=11" not in index:
+    if "data-exchange-core.js?v=12" not in index:
         raise RuntimeError("DE-16.1 core cache bust missing")
     if "data-exchange-transaction.js?v=3" not in index:
         raise RuntimeError("DE-16.3 transaction cache bust missing")
-    if "data-exchange-audit.js?v=4" not in index or "data-exchange-ui.js?v=18" not in index:
+    if "data-exchange-audit.js?v=5" not in index or "data-exchange-ui.js?v=20" not in index:
         raise RuntimeError("DE-16.5 cache bust missing")
     transaction = (DX / "data-exchange-transaction.js").read_text(encoding="utf-8")
     for marker in ["projectHashSnapshot", "delete snapshot.project.updated_at", "delete snapshot.history"]:
@@ -214,9 +221,9 @@ def cache_bust_de165():
     index = (STUDIO / "index.html").read_text(encoding="utf-8")
     audit = (DX / "data-exchange-audit.js").read_text(encoding="utf-8")
     ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
-    if "data-exchange-audit.js?v=4" not in index:
+    if "data-exchange-audit.js?v=5" not in index:
         raise RuntimeError("DE-16.5 audit cache bust missing")
-    if "data-exchange-ui.js?v=18" not in index:
+    if "data-exchange-ui.js?v=20" not in index:
         raise RuntimeError("DE-16.5 UI cache bust missing")
     if "async function datasetHash" not in audit or "GKSDataExchangeAudit.datasetHash" not in ui:
         raise RuntimeError("DE-16.5 datasetHash runtime integration missing")

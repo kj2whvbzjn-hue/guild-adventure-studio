@@ -30,13 +30,35 @@
     ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
-    chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]}
+    chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
+    story_sections:{virtual:'story_sections',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id']},
+    story_scenes:{virtual:'story_scenes',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id','section_id']},
+    story_dialogues:{virtual:'story_dialogues',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id','section_id','scene_id']}
   };
 
   function clone(value){return value==null?value:JSON.parse(JSON.stringify(value));}
   function getAt(obj,path){return String(path||'').split('.').filter(Boolean).reduce((v,k)=>v==null?undefined:v[k],obj);}
+  function storyVirtualRecords(rootData,dataset){
+    const out=[];
+    for(const chapter of Array.isArray(rootData?.chapters)?rootData.chapters:[]){
+      const chapterId=String(chapter?.id||'');
+      for(const section of Array.isArray(chapter?.sections)?chapter.sections:[]){
+        const sectionId=String(section?.id||'');
+        if(dataset==='story_sections'){const row=clone(section);delete row.scenes;row.chapter_id=chapterId;out.push(row);continue;}
+        for(const scene of Array.isArray(section?.scenes)?section.scenes:[]){
+          const sceneId=String(scene?.id||'');
+          if(dataset==='story_scenes'){const row=clone(scene);delete row.dialogues;row.chapter_id=chapterId;row.section_id=sectionId;out.push(row);continue;}
+          if(dataset==='story_dialogues'){
+            for(const dialogue of Array.isArray(scene?.dialogues)?scene.dialogues:[]){const row=clone(dialogue);row.chapter_id=chapterId;row.section_id=sectionId;row.scene_id=sceneId;out.push(row);}
+          }
+        }
+      }
+    }
+    return out;
+  }
   function records(rootData,dataset){
     const def=REGISTRY[dataset]; if(!def)throw new Error('未対応Dataset: '+dataset);
+    if(def.virtual)return storyVirtualRecords(rootData,dataset);
     const value=def.path.reduce((v,k)=>v&&v[k],rootData);
     return Array.isArray(value)?value:[];
   }
@@ -338,8 +360,33 @@
     result.can_apply=result.ok&&blockers.length===0&&(result.summary.add||0)>0;
     return result;
   }
+  function stripStoryContext(row,fields){const out=clone(row||{});for(const key of fields||[])delete out[key];return out;}
+  function setStoryVirtualRecords(rootData,dataset,newRows){
+    const rows=(Array.isArray(newRows)?newRows:[]).map(clone);
+    const chapters=Array.isArray(rootData?.chapters)?rootData.chapters:[];
+    const chapterById=new Map(chapters.map(ch=>[String(ch?.id||''),ch]));
+    if(dataset==='story_sections'){
+      const grouped=new Map();for(const row of rows){const cid=String(row?.chapter_id||'');if(!chapterById.has(cid))throw new Error('親Chapterが見つかりません: '+cid);if(!grouped.has(cid))grouped.set(cid,[]);grouped.get(cid).push(row);}
+      for(const chapter of chapters){const cid=String(chapter?.id||''),existing=new Map((chapter.sections||[]).map(x=>[String(x?.id||''),x]));chapter.sections=(grouped.get(cid)||[]).map(row=>{const clean=stripStoryContext(row,['chapter_id']);const old=existing.get(String(row.id));clean.scenes=clone(old?.scenes||[]);return clean;});}
+      return;
+    }
+    if(dataset==='story_scenes'){
+      const sections=new Map();for(const chapter of chapters)for(const section of chapter.sections||[])sections.set(String(chapter.id)+'::'+String(section.id),section);
+      const grouped=new Map();for(const row of rows){const key=String(row?.chapter_id||'')+'::'+String(row?.section_id||'');if(!sections.has(key))throw new Error('親Sectionが見つかりません: '+key);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(row);}
+      for(const [key,section] of sections){const existing=new Map((section.scenes||[]).map(x=>[String(x?.id||''),x]));section.scenes=(grouped.get(key)||[]).map(row=>{const clean=stripStoryContext(row,['chapter_id','section_id']);const old=existing.get(String(row.id));clean.dialogues=clone(old?.dialogues||[]);return clean;});}
+      return;
+    }
+    if(dataset==='story_dialogues'){
+      const scenes=new Map();for(const chapter of chapters)for(const section of chapter.sections||[])for(const scene of section.scenes||[])scenes.set(String(chapter.id)+'::'+String(section.id)+'::'+String(scene.id),scene);
+      const grouped=new Map();for(const row of rows){const key=String(row?.chapter_id||'')+'::'+String(row?.section_id||'')+'::'+String(row?.scene_id||'');if(!scenes.has(key))throw new Error('親Sceneが見つかりません: '+key);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(row);}
+      for(const [key,scene] of scenes)scene.dialogues=(grouped.get(key)||[]).map(row=>stripStoryContext(row,['chapter_id','section_id','scene_id']));
+      return;
+    }
+    throw new Error('未対応Story Dataset: '+dataset);
+  }
   function setDatasetRecords(rootData,dataset,newRows){
     const def=REGISTRY[dataset];if(!def)throw new Error('未対応Dataset: '+dataset);
+    if(def.virtual){setStoryVirtualRecords(rootData,dataset,newRows);return;}
     let target=rootData;
     for(let i=0;i<def.path.length-1;i++){
       const key=def.path[i];
@@ -371,7 +418,10 @@
     ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at'])
+    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
+    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at']),
+    story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),
+    story_dialogues:new Set(['id','chapter_id','section_id','scene_id','no','status','speaker','text','stage_direction','description','created_at','updated_at'])
   };
   function unknownIncomingFields(dataset,localRow,incomingRow){
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
@@ -516,5 +566,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

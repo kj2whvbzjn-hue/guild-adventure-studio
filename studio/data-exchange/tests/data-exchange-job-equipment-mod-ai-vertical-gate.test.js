@@ -54,7 +54,7 @@ async function applyAndUndo(base,envelope,dataset,filename){
 async function main(){
   const base=baseProject();
   const studioHtml=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
-  assert(studioHtml.includes('data-exchange-core.js?v=11'),'Studio must load DE-19 core with refreshed cache key');
+  assert(studioHtml.includes('data-exchange-core.js?v=12'),'Studio must load DE-19 core with refreshed cache key');
   for(const f of ['job-dataset.schema.json','equipment-dataset.schema.json','mod-dataset.schema.json','ai_condition-dataset.schema.json','ai_target-dataset.schema.json','ai_action-dataset.schema.json']){
     assert(fs.existsSync(path.resolve(__dirname,'../schemas',f)),`missing schema ${f}`);
   }
