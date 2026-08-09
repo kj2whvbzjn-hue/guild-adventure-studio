@@ -1,5 +1,6 @@
 /* Validation tag skill compiler/runtime — GA-B486.58 / P01-06 AURA source-dependent runtime v1 */
 const TAG_LOGIC_ORDER=['COVER','COUNTER','ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
+const TAG_COMBAT_MODIFIER_PARAMS=['ATK','DEF','MAGIC_WEAPON_BONUS','STATUS_RESIST']; // 戦闘パラメータ。閾値ステータス(STR/VIT/AGI/DEX/INT/MND/LUK)とは別系統
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
 function parseSkillTags(skill){
  const generalTags=new Set(),numericTags={},errors=[];
@@ -101,7 +102,7 @@ function compileTaggedSkill(skill){
   if(auraTarget==='enemy'&&scope!=='all')errors.push('敵オーラのAURA_SCOPEはallのみ対応です');
   if(stack!=='highest')errors.push('初回AURA_STACKはhighestのみ対応です');
   if(n.AURA_PRIORITY&&(!Number.isFinite(n.AURA_PRIORITY.value)||!Number.isInteger(n.AURA_PRIORITY.value)))errors.push('AURA_PRIORITYは有限整数が必要です');
-  if(!hasAnyTag(g,['ATK','DEF','AGI','VIT','INT','DEX','LUK']))errors.push('BUFF/DEBUFFオーラには能力値タグが必要です');
+  if(!hasAnyTag(g,TAG_COMBAT_MODIFIER_PARAMS))errors.push('BUFF/DEBUFFオーラには戦闘パラメータタグが必要です');
   if(g.has('BUFF')||g.has('DEBUFF'))errors.push('AURAと通常BUFF/DEBUFFロジックは同時指定できません');
  }
  const actionDisabledTags=[...g].filter(x=>x.startsWith('ACTION_DISABLED='));
