@@ -188,7 +188,7 @@ def audit_undo():
     text = audit.read_text(encoding="utf-8")
     ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
     index = (STUDIO / "index.html").read_text(encoding="utf-8")
-    required = ["import_session_id", "before_hash", "candidate_hash", "after_hash", "source_filename", "undo_snapshot", "canUndo", "markUndone", "DEFAULT_MAX_SESSIONS", "DEFAULT_MAX_BYTES"]
+    required = ["import_session_id", "before_hash", "candidate_hash", "after_hash", "source_filename", "undo_snapshot", "canUndo", "markUndone", "DEFAULT_MAX_SESSIONS", "DEFAULT_MAX_BYTES", "before_dataset_hash", "after_dataset_hash", "datasetHash"]
     missing = [x for x in required if x not in text]
     if missing:
         raise RuntimeError("DE-16 Audit markers missing: " + ", ".join(missing))
@@ -200,8 +200,10 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit Studio integration missing")
     if "data-exchange-core.js?v=8" not in index:
         raise RuntimeError("DE-16.1 core cache bust missing")
-    if "data-exchange-transaction.js?v=3" not in index or "data-exchange-ui.js?v=13" not in index:
-        raise RuntimeError("DE-16.3 cache bust missing")
+    if "data-exchange-transaction.js?v=3" not in index:
+        raise RuntimeError("DE-16.3 transaction cache bust missing")
+    if "data-exchange-audit.js?v=3" not in index or "data-exchange-ui.js?v=14" not in index:
+        raise RuntimeError("DE-16.4 cache bust missing")
     transaction = (DX / "data-exchange-transaction.js").read_text(encoding="utf-8")
     for marker in ["projectHashSnapshot", "delete snapshot.project.updated_at", "delete snapshot.history"]:
         if marker not in transaction:

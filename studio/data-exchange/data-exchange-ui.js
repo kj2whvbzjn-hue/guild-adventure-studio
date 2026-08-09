@@ -179,12 +179,16 @@
       });
       txCompleted=true;
       const actualAfterHash=await GKSDataExchangeTransaction.projectHash(data);
+      const beforeDatasetHash=await GKSDataExchangeAudit.datasetHash(before,appliedPlan.dataset);
+      const afterDatasetHash=await GKSDataExchangeAudit.datasetHash(data,appliedPlan.dataset);
       const session=GKSDataExchangeAudit.buildSession({
         transaction:tx,
         plan:appliedPlan,
         envelope:appliedEnvelope,
         beforeData:before,
         afterHash:actualAfterHash,
+        beforeDatasetHash,
+        afterDatasetHash,
         sourceFilename:lastSourceFilename,
         projectId:String(currentProjectId||data?.project?.id||'')
       });

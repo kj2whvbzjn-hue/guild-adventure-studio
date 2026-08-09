@@ -111,3 +111,11 @@ current data → deep clone → Safe Merge candidate → normalize → Data Exch
 - Data Exchange Transaction/Undo の projectHash はゲーム・マスターデータの意味的状態を比較し、`project.updated_at` と `history` を除外する。
 - モンスター等の実データ変更は引き続きhash差分として検出する。
 - persist由来メタデータだけが変化した状態で `canUndo()` が成功する回帰テストを追加。
+
+
+### DE-16.4 Dataset-scoped Undo verification
+- 実機でDE-16.3後も `Undo候補hashが元状態と一致しません` を確認。
+- 現在Projectの `after_hash` 一致チェックは維持し、Apply後に別編集があればUndoを拒否する。
+- Undo復元の正しさはProject全体before hashではなく、対象Datasetの `before_dataset_hash / after_dataset_hash` で検証する。
+- これによりStudio側の非Dataset運用状態が変化しても、対象マスターを正しく元状態へ戻せる。
+- 旧SessionはDataset hashが無い場合のみ従来のbefore_hash検証へフォールバックする。

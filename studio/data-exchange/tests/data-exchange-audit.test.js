@@ -34,7 +34,9 @@ async function main(){
   });
   const afterHash=await tx.projectHash(live);
   const session=audit.buildSession({
-    transaction:result,plan,envelope:add,beforeData:root,afterHash,sourceFilename:'ADD.json'
+    transaction:result,plan,envelope:add,beforeData:root,afterHash,sourceFilename:'ADD.json',
+    beforeDatasetHash:await audit.datasetHash(root,'monsters'),
+    afterDatasetHash:await audit.datasetHash(live,'monsters')
   });
   assert.equal(session.dataset,'monsters');
   assert.deepEqual(session.added,['M2']);
@@ -59,7 +61,11 @@ async function main(){
   // Simulate Studio persist(): operational metadata changes after commit.
   live.project.updated_at='PERSISTED';
   live.history=(live.history||[]).concat([{at:'PERSISTED',message:'Data Exchange Transaction'}]);
+  // Simulate unrelated Studio operational state that may be recomputed during persist/render.
+  // Full-project before hash would no longer match after removing only M2, but Dataset hash should.
+  live.runtime_view_state={last_render:'after-apply'};
   session.after_hash=await tx.projectHash(live);
+  session.after_dataset_hash=await audit.datasetHash(live,'monsters');
 
   const can=await audit.canUndo(session,live);
   assert.equal(can.ok,true);
@@ -75,6 +81,8 @@ async function main(){
   });
   assert.equal(dx.records(live,'monsters').length,1);
   assert.equal(dx.records(live,'monsters')[0].id,'M1');
+  assert.equal(live.runtime_view_state.last_render,'after-apply');
+  assert.equal(await audit.datasetHash(live,'monsters'),session.before_dataset_hash);
   assert.equal(audit.markUndone(storage,key,session.import_session_id,undoResult.undoAfterHash),true);
   assert.equal(audit.load(storage,key)[0].undone,true);
 

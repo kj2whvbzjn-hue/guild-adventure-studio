@@ -48,6 +48,9 @@
     }
     cursor[def.path[def.path.length-1]]=rows.map(clone);
   }
+  async function datasetHash(rootData,dataset){
+    return Core.sha256Hex(Core.stableStringify(datasetRows(rootData,dataset)));
+  }
   function normalizedPlanIds(plan,tx){
     const all=(tx?.applied?.ids||plan?.ids||[]).map(String);
     const addIds=Array.isArray(plan?.add_ids)?plan.add_ids.map(String):
@@ -115,6 +118,8 @@
       candidate_hash:String(tx.candidateHash||options?.candidateHash||''),
       after_hash:String(options?.afterHash||tx.afterHash||''),
       dataset:String(plan.dataset||tx.applied?.dataset||''),
+      before_dataset_hash:String(options?.beforeDatasetHash||''),
+      after_dataset_hash:String(options?.afterDatasetHash||''),
       added:clone(ids.addIds),
       changed:clone(ids.importIds),
       kept:clone(ids.keepIds),
@@ -143,7 +148,20 @@
     }
     const structural=validateSnapshot(currentData,session);
     if(!structural.ok)return structural;
+    if(session.after_dataset_hash){
+      const currentDatasetHash=await datasetHash(currentData,session.dataset);
+      if(currentDatasetHash!==String(session.after_dataset_hash)){
+        return {ok:false,reason:'対象DatasetがSession適用直後の状態と一致しません。',currentDatasetHash,expectedAfterDatasetHash:String(session.after_dataset_hash)};
+      }
+    }
     const candidate=applyUndoSnapshot(currentData,session.undo_snapshot);
+    if(session.before_dataset_hash){
+      const beforeDatasetHash=await datasetHash(candidate,session.dataset);
+      if(beforeDatasetHash!==String(session.before_dataset_hash)){
+        return {ok:false,reason:'Undo候補Datasetが元状態と一致しません。',beforeDatasetHash,expectedBeforeDatasetHash:String(session.before_dataset_hash)};
+      }
+      return {ok:true,currentHash,beforeDatasetHash,candidate};
+    }
     const beforeHash=await Transaction.projectHash(candidate);
     if(beforeHash!==String(session.before_hash||'')){
       return {ok:false,reason:'Undo候補hashが元状態と一致しません。',beforeHash,expectedBeforeHash:String(session.before_hash||'')};
@@ -166,7 +184,12 @@
       if(valid===false||valid?.ok===false)throw new Error('Undo candidate validationに失敗しました。');
     }
     const candidateHash=await Transaction.projectHash(candidate);
-    if(candidateHash!==String(session.before_hash||''))throw new Error('Undo candidate hashが元状態と一致しません。');
+    if(session.before_dataset_hash){
+      const candidateDatasetHash=await datasetHash(candidate,session.dataset);
+      if(candidateDatasetHash!==String(session.before_dataset_hash))throw new Error('Undo candidate Dataset hashが元状態と一致しません。');
+    }else if(candidateHash!==String(session.before_hash||'')){
+      throw new Error('Undo candidate hashが元状態と一致しません。');
+    }
     if(typeof options?.backup!=='function'||await options.backup({currentData:clone(currentData),session})===false)throw new Error('Undo前Backupに失敗しました。');
 
     const original=clone(currentData);
@@ -182,6 +205,10 @@
       if(typeof options?.validate==='function'){
         const validAfter=await options.validate(clone(afterData));
         if(validAfter===false||validAfter?.ok===false)throw new Error('Undo後再検証に失敗しました。');
+      }
+      if(session.before_dataset_hash){
+        const restoredDatasetHash=await datasetHash(afterData,session.dataset);
+        if(restoredDatasetHash!==String(session.before_dataset_hash))throw new Error('Undo後Dataset再検証に失敗しました。');
       }
       const undoAfterHash=await Transaction.projectHash(afterData);
       return {ok:true,candidateHash,undoAfterHash};
@@ -199,5 +226,5 @@
     return save(storage,key,sessions,options);
   }
 
-  return {FORMAT,VERSION,DEFAULT_MAX_SESSIONS,DEFAULT_MAX_BYTES,load,save,normalizedPlanIds,buildSession,append,exportPayload,validateSnapshot,buildUndoSnapshot,applyUndoSnapshot,canUndo,undo,markUndone};
+  return {FORMAT,VERSION,DEFAULT_MAX_SESSIONS,DEFAULT_MAX_BYTES,load,save,datasetHash,normalizedPlanIds,buildSession,append,exportPayload,validateSnapshot,buildUndoSnapshot,applyUndoSnapshot,canUndo,undo,markUndone};
 });
