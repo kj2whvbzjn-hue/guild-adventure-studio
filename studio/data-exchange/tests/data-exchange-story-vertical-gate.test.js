@@ -12,7 +12,7 @@ async function main(){
  const base=baseProject();
  const html=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
  assert(html.includes('data-exchange-core.js?v=11'),'DE-20 core cache key');
- assert(html.includes('data-exchange-ui.js?v=17'),'DE-20 UI cache key');
+ assert(html.includes('data-exchange-ui.js?v=18'),'DE-20 UI cache key');
  assert(fs.existsSync(path.resolve(__dirname,'../schemas/chapter-dataset.schema.json')),'chapter schema');
  const env=await dx.buildEnvelope({rootData:base,dataset:'chapters',ids:['CHP-BASE'],dependencyMode:'recursive',studioVersion:'TEST-DE20'});
  assert.deepEqual(env.permissions.writable,['chapters']);assert.deepEqual(env.permissions.read_only,[]);assert.equal(env.datasets.chapters.length,1);assert.equal(env.datasets.chapters[0].sections[0].scenes[0].dialogues[0].text,'Hello');

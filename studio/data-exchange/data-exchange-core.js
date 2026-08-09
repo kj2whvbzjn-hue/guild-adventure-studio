@@ -357,7 +357,7 @@
     if(!options.allowConflict&&(s.conflict||0)>0)reasons.push(`競合 ${s.conflict}件`);
     if((s.stale_source||0)>0)reasons.push(`元データ更新済み ${s.stale_source}件`);
     if((s.broken_reference||0)>0)reasons.push(`参照切れ ${s.broken_reference}件`);
-    if((s.readonly_modified||0)>0)reasons.push(`read_only差異 ${s.readonly_modified}件`);
+    if((s.readonly_modified||0)>0)reasons.push(`参照データ差異 ${s.readonly_modified}件`);
     if(result?.integrity?.apply_blocking&&!reasons.length)reasons.push('Integrity ValidatorがApplyを禁止しています。');
     return reasons;
   }

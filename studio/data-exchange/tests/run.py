@@ -92,7 +92,7 @@ def import_dry_run():
     missing = [x for x in required_core if x not in core]
     if missing:
         raise RuntimeError("DE-8 core markers missing: " + ", ".join(missing))
-    if "Dry Runを実行" not in index or "renderDryRun" not in ui:
+    if "反映確認" not in index or "renderDryRun" not in ui:
         raise RuntimeError("DE-8 Dry Run UI missing")
     if "dryRunImport" not in core:
         raise RuntimeError("DE-8 Dry Run core missing")
@@ -122,7 +122,7 @@ def safe_merge_apply():
     missing_ui = [x for x in required_ui if x not in ui]
     if missing_ui:
         raise RuntimeError("DE-10 Safe Apply UI markers missing: " + ", ".join(missing_ui))
-    if 'id="dxApplyPanel"' not in index or "Data Exchange Import / Safe Merge" not in index:
+    if 'id="dxApplyPanel"' not in index or "データ取込・反映" not in index:
         raise RuntimeError("DE-10 Apply panel missing")
     if "競合は明示選択が必須です" not in ui:
         raise RuntimeError("Safe Merge must never overwrite conflicts without an explicit choice")
@@ -147,11 +147,11 @@ def impact_preview():
     missing = [x for x in required_core if x not in core]
     if missing:
         raise RuntimeError("DE-13 core markers missing: " + ", ".join(missing))
-    required_ui = ["renderImpactPreview", "exportImpactForGPT", "GPT用影響範囲JSONを出力", "new Blob", "downloadBlob(blob"]
+    required_ui = ["renderImpactPreview", "exportImpactForGPT", "影響データ出力", "new Blob", "downloadBlob(blob"]
     missing_ui = [x for x in required_ui if x not in ui]
     if missing_ui:
         raise RuntimeError("DE-13 UI markers missing: " + ", ".join(missing_ui))
-    if 'id="dxImpactPreview"' not in index or "AI影響範囲" not in index:
+    if 'id="dxImpactPreview"' not in index or "影響範囲" not in index:
         raise RuntimeError("DE-13 Preview panel missing")
 
 def transaction_layer():
@@ -192,7 +192,7 @@ def audit_undo():
     missing = [x for x in required if x not in text]
     if missing:
         raise RuntimeError("DE-16 Audit markers missing: " + ", ".join(missing))
-    required_ui = ["renderAuditPanel", "refreshAuditHistory", "exportAuditForGPT", "undoLatestSession", "before-data-exchange-undo", "GPT用Audit JSON", "履歴を再確認", "DOMContentLoaded"]
+    required_ui = ["renderAuditPanel", "refreshAuditHistory", "exportAuditForGPT", "undoLatestSession", "before-data-exchange-undo", "履歴出力", "履歴を再確認", "DOMContentLoaded"]
     missing_ui = [x for x in required_ui if x not in ui]
     if missing_ui:
         raise RuntimeError("DE-16 Audit UI markers missing: " + ", ".join(missing_ui))
@@ -202,7 +202,7 @@ def audit_undo():
         raise RuntimeError("DE-16.1 core cache bust missing")
     if "data-exchange-transaction.js?v=3" not in index:
         raise RuntimeError("DE-16.3 transaction cache bust missing")
-    if "data-exchange-audit.js?v=4" not in index or "data-exchange-ui.js?v=17" not in index:
+    if "data-exchange-audit.js?v=4" not in index or "data-exchange-ui.js?v=18" not in index:
         raise RuntimeError("DE-16.5 cache bust missing")
     transaction = (DX / "data-exchange-transaction.js").read_text(encoding="utf-8")
     for marker in ["projectHashSnapshot", "delete snapshot.project.updated_at", "delete snapshot.history"]:
@@ -216,7 +216,7 @@ def cache_bust_de165():
     ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
     if "data-exchange-audit.js?v=4" not in index:
         raise RuntimeError("DE-16.5 audit cache bust missing")
-    if "data-exchange-ui.js?v=17" not in index:
+    if "data-exchange-ui.js?v=18" not in index:
         raise RuntimeError("DE-16.5 UI cache bust missing")
     if "async function datasetHash" not in audit or "GKSDataExchangeAudit.datasetHash" not in ui:
         raise RuntimeError("DE-16.5 datasetHash runtime integration missing")
