@@ -62,6 +62,30 @@ async function main(){
   assert.equal(rollbackCalls,1);
   assert.equal(dx.records(live,'monsters').length,1,'persist failure must rollback current data');
 
+
+  const conflict=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['M1'],dependencyMode:'none',studioVersion:'TEST'});
+  conflict.datasets.monsters[0].name='Imported';
+  conflict.metadata.package_hash='';
+  const conflictDry=await dx.dryRunImport({rootData:root,envelope:conflict});
+
+  const importPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{M1:'import'}});
+  live=JSON.parse(JSON.stringify(root));
+  const importTx=await tx.execute({
+    rootData:live,envelope:conflict,plan:importPlan,dryRun:conflictDry,
+    backup:()=>true,commit:(candidate)=>{live=candidate;return true;},persist:()=>true,rollback:(before)=>{live=before;return true;}
+  });
+  assert.equal(dx.records(live,'monsters')[0].name,'Imported');
+  assert.equal(importTx.validation.summary.conflict,0);
+
+  const keepPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{M1:'keep'}});
+  live=JSON.parse(JSON.stringify(root));
+  const keepTx=await tx.execute({
+    rootData:live,envelope:conflict,plan:keepPlan,dryRun:conflictDry,
+    backup:()=>true,commit:(candidate)=>{live=candidate;return true;},persist:()=>true,rollback:(before)=>{live=before;return true;}
+  });
+  assert.equal(dx.records(live,'monsters')[0].name,'One');
+  assert.equal(keepTx.validation.summary.conflict,1);
+
   console.log('DATA EXCHANGE TRANSACTION TEST: PASS');
 }
 main().catch(e=>{console.error(e);process.exit(1);});

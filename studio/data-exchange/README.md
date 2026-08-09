@@ -76,3 +76,24 @@ current data → deep clone → Safe Merge candidate → normalize → Data Exch
 - persist失敗時はcommit前のdataへrollbackする。
 - `beforeHash` / `candidateHash` / `afterHash` をTransaction結果として保持する。
 - 既存AtomicExportUpdaterは変更せず、Data Exchange専用層として独立実装する。
+
+
+## DE-15 Safe Merge
+- 新規ID: add
+- 同一内容: unchanged
+- 同一ID差分: conflict。未解決のままApply不可。
+- Conflictは `keep`（既存維持） / `import`（Import採用）をレコード単位で明示選択する。
+- 一括「全て既存維持」「全てImport採用」も提供するが、内部PlanはID単位choiceとして保持する。
+- Import採用時は現在側にしか存在しないフィールドを保持し、古いImportによる新フィールド消失を防止する。
+- 現在側にもschema安全リストにも存在しない未知フィールドがImportに来た場合はApply停止。
+- DELETEは引き続きunsupported。
+
+
+## DE-16 Data Exchange Audit / Undo
+- Apply成功後のみ `GKS_DATA_EXCHANGE_AUDIT / 1.0.0` Sessionを確定する。
+- 記録: import_session_id / timestamp / package_hash / source filename / before_hash / candidate_hash / after_hash / dataset / added / changed / kept / conflict choices。
+- Undo用にはProject全体コピーではなく、追加IDのremove listとImport採用前recordだけを保存する。
+- Undoは現在Project hashがSessionのafter_hashと完全一致する場合のみ許可する。
+- Undo候補を再構成後、before_hash一致・構造検証・Backup・commit・persist・再検証を行う。
+- Auditは最大10Session、既定3MiBまで。古いSessionから自動整理する。
+- GPT用Audit JSONを出力できる。

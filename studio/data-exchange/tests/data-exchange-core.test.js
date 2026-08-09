@@ -43,11 +43,36 @@ const dx=require('../data-exchange-core.js');
   assert.equal(applied.verify.summary.unchanged,1);
   assert.equal(applied.verify.summary.add,0);
   const conflictPlan=await dx.createApplyPlan({rootData:root,envelope:changed});
-  assert.equal(conflictPlan.can_apply,false);assert(conflictPlan.reasons.some(x=>x.includes('競合')));
+  assert.equal(conflictPlan.can_apply,false);assert(conflictPlan.reasons.some(x=>x.includes('競合未解決')));
+
+  const importPlan=await dx.createApplyPlan({rootData:root,envelope:changed,conflictChoices:{M1:'import'}});
+  assert.equal(importPlan.can_apply,true);assert.deepEqual(importPlan.import_ids,['M1']);
+  const importApplied=await dx.applySafeMerge({rootData:root,envelope:changed,plan:importPlan});
+  assert.equal(dx.records(importApplied.nextRootData,'monsters')[0].name,'Changed');
+  assert.equal(importApplied.applied.changed_count,1);
+  assert.equal(importApplied.verify.summary.conflict,0);
+
+  const keepPlan=await dx.createApplyPlan({rootData:root,envelope:changed,conflictChoices:{M1:'keep'}});
+  assert.equal(keepPlan.can_apply,true);assert.deepEqual(keepPlan.keep_ids,['M1']);
+  const keepApplied=await dx.applySafeMerge({rootData:root,envelope:changed,plan:keepPlan});
+  assert.equal(dx.records(keepApplied.nextRootData,'monsters')[0].name,'Monster');
+  assert.equal(keepApplied.verify.summary.conflict,1);
+
+  const futureRoot=JSON.parse(JSON.stringify(root));futureRoot.masters.monsters[0].future_field='preserve-me';
+  const futureEnv=await dx.buildEnvelope({rootData:futureRoot,dataset:'monsters',ids:['M1'],dependencyMode:'none',studioVersion:'TEST'});
+  delete futureEnv.datasets.monsters[0].future_field;futureEnv.datasets.monsters[0].name='Changed';futureEnv.metadata.package_hash='';
+  const futurePlan=await dx.createApplyPlan({rootData:futureRoot,envelope:futureEnv,conflictChoices:{M1:'import'}});
+  assert.equal(futurePlan.can_apply,true);
+  const futureApplied=await dx.applySafeMerge({rootData:futureRoot,envelope:futureEnv,plan:futurePlan});
+  assert.equal(dx.records(futureApplied.nextRootData,'monsters')[0].future_field,'preserve-me','current-only fields must survive Import adoption');
+
+  const unknownIncoming=JSON.parse(JSON.stringify(changed));unknownIncoming.datasets.monsters[0].alien_field='unsafe';unknownIncoming.metadata.package_hash='';
+  const unknownPlan=await dx.createApplyPlan({rootData:root,envelope:unknownIncoming,conflictChoices:{M1:'import'}});
+  assert.equal(unknownPlan.can_apply,false);assert(unknownPlan.reasons.some(x=>x.includes('未知フィールド')));
   const brokenPlan=await dx.createApplyPlan({rootData:root,envelope:broken});
   assert.equal(brokenPlan.can_apply,false);assert(brokenPlan.reasons.some(x=>x.includes('参照切れ')));
   const noChangePlan=await dx.createApplyPlan({rootData:root,envelope:env});
-  assert.equal(noChangePlan.can_apply,false);assert(noChangePlan.reasons.some(x=>x.includes('追加対象')));
+  assert.equal(noChangePlan.can_apply,false);assert(noChangePlan.reasons.some(x=>x.includes('追加・競合対象')));
   const normalConflict=JSON.parse(JSON.stringify(env));normalConflict.datasets.monsters[0].name='GPTChanged';normalConflict.metadata.package_hash='';
   const normalConflictResult=await dx.dryRunImport({rootData:root,envelope:normalConflict});
   assert.equal(normalConflictResult.summary.conflict,1);

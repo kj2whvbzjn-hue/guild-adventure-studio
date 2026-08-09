@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   const selectedByDataset=new Map();
-  let lastEnvelope=null,lastDryRun=null,lastApplyPlan=null;
+  let lastEnvelope=null,lastDryRun=null,lastApplyPlan=null,conflictChoices={},lastSourceFilename='';
   const DATASET_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
   const ORDER=['monsters','tags','skills','jobs','equipment','mods','stats','status_effects','tablets','ai_conditions','ai_targets','ai_actions'];
 
@@ -13,6 +13,73 @@
   function visibleRecords(){const q=(document.getElementById('dxPickerSearch')?.value||'').trim().toLowerCase();return rows().filter(row=>!q||searchText(row).includes(q));}
   function escText(v){return typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function escA(v){return typeof escAttr==='function'?escAttr(String(v??'')):escText(v);}
+  function auditStorageKey(){return `gks_data_exchange_audit_v1_${String(currentProjectId||data?.project?.id||'default')}`;}
+  function normalizeCandidate(candidate){
+    const original=data;
+    try{
+      data=structuredClone(candidate);
+      if(typeof normalizeData==='function')normalizeData();
+      return structuredClone(data);
+    }finally{data=original;}
+  }
+  function validateAuditCandidate(candidate,session){
+    const check=GKSDataExchangeAudit.validateSnapshot(candidate,session);
+    return check?.ok!==false;
+  }
+  function latestUndoableSession(){
+    return GKSDataExchangeAudit.load(localStorage,auditStorageKey()).find(x=>!x.undone)||null;
+  }
+  function renderAuditPanel(){
+    const panel=document.getElementById('dxAuditPanel');if(!panel||!globalThis.GKSDataExchangeAudit)return;
+    const sessions=GKSDataExchangeAudit.load(localStorage,auditStorageKey());
+    const latest=sessions[0],undoable=latestUndoableSession();
+    if(!sessions.length){
+      panel.innerHTML='<span class="small">Data Exchange Apply履歴はありません。</span>';
+      return;
+    }
+    const latestText=latest?`${escText(latest.dataset||'-')} / 追加${latest.added?.length||0} / 変更${latest.changed?.length||0} / 維持${latest.kept?.length||0}${latest.undone?' / Undo済み':''}`:'';
+    panel.innerHTML=`<div><span class="badge">Audit ${sessions.length}件</span> <span class="small">${latestText}</span></div><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.exportAuditForGPT()">GPT用Audit JSONを出力</button><button type="button" ${undoable?'':'disabled'} onclick="GKSDataExchangeUI.undoLatestSession()">直前SessionをUndo</button></div><div class="small">Undoは現在状態が対象Session直後のhashと一致する場合だけ実行できます。</div>`;
+  }
+  function exportAuditForGPT(){
+    const payload=GKSDataExchangeAudit.exportPayload(localStorage,auditStorageKey());
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    downloadBlob(blob,`DX_AUDIT_${String(currentProjectId||'project')}_${stamp}.json`);
+  }
+  async function undoLatestSession(){
+    const session=latestUndoableSession();
+    if(!session)return alert('Undo可能なData Exchange Sessionはありません。');
+    if(!confirm(`直前のData Exchange SessionをUndoします。\n${session.dataset} / 追加${session.added?.length||0} / 変更${session.changed?.length||0}\n続行しますか？`))return;
+    const beforeUndo=structuredClone(data);
+    let undoCompleted=false;
+    try{
+      const result=await GKSDataExchangeAudit.undo({
+        session,
+        currentData:data,
+        normalize:normalizeCandidate,
+        validate:(candidate)=>validateAuditCandidate(candidate,session),
+        backup:()=>typeof createBackup==='function'&&createBackup('before-data-exchange-undo',{silent:true}),
+        commit:(candidate)=>{data=candidate;return true;},
+        persist:()=>typeof persist==='function'&&persist(`Data Exchange Undo: ${session.import_session_id}`)!==false,
+        readCurrent:()=>structuredClone(data),
+        rollback:(original)=>{data=original;return true;},
+        rollbackPersist:()=>typeof persist==='function'&&persist(`Data Exchange Undo rollback: ${session.import_session_id}`)!==false
+      });
+      undoCompleted=true;
+      if(!GKSDataExchangeAudit.markUndone(localStorage,auditStorageKey(),session.import_session_id,result.undoAfterHash)){
+        throw new Error('Undo後Audit更新に失敗しました。');
+      }
+      lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;conflictChoices={};
+      renderDryRun({ok:true,summary:{add:0,unchanged:0,conflict:0,invalid:0,incompatible:0,stale_source:0,broken_reference:0,readonly_modified:0},items:[],errors:[],warnings:[]},0);
+      renderImpactPreview(null);renderApplyPanel();renderAuditPanel();
+      alert('Data Exchange Undo完了: Backup・復元・persist・再検証まで完了しました。');
+    }catch(e){
+      data=beforeUndo;
+      if(undoCompleted&&typeof persist==='function')persist(`Data Exchange Undo audit failure rollback: ${session.import_session_id}`);
+      renderAuditPanel();
+      alert('Data Exchange Undo失敗: '+e.message);
+    }
+  }
   function initDatasetOptions(){const select=document.getElementById('dxPickerDataset');if(!select)return;const old=select.value;select.innerHTML=supportedDatasets().map(k=>`<option value="${escA(k)}">${escText(DATASET_LABELS[k]||k)}</option>`).join('');if(old&&supportedDatasets().includes(old))select.value=old;else if(supportedDatasets().includes('monsters'))select.value='monsters';}
   function renderPicker(){const list=document.getElementById('dxPickerList');if(!list)return;const dataset=currentDataset(),set=selectedSet(dataset),visible=visibleRecords();list.innerHTML=visible.length?visible.map(row=>{const id=String(row?.id||''),sel=set.has(id),tags=Array.isArray(row?.tags)?row.tags.map(t=>typeof tagLabel==='function'?tagLabel(t):t).join(', '):'';return `<div class="dx-picker-row${sel?' selected':''}" role="button" tabindex="0" aria-pressed="${sel?'true':'false'}" onclick="GKSDataExchangeUI.toggleItem('${escA(id)}')" onkeydown="GKSDataExchangeUI.handleItemKey(event,'${escA(id)}')"><div class="dx-picker-row-name">${escText(row?.name||id)} <span class="badge">${escText(DATASET_LABELS[dataset]||dataset)}</span></div><div class="dx-picker-row-id">${escText(id)}</div><div class="dx-picker-row-meta">${escText(tags||row?.description||'')}</div></div>`}).join(''):'<div class="item">表示対象はありません。</div>';const count=document.getElementById('dxPickerCount');if(count)count.textContent=`選択 ${set.size}件 / 表示 ${visible.length}件 / 全 ${rows(dataset).length}件`;const btn=document.getElementById('dxPickerExport');if(btn){btn.disabled=set.size===0;btn.textContent=`選択した${set.size}件をJSON出力`;}}
   function openPicker(){initDatasetOptions();const p=document.getElementById('dataExchangePicker');if(!p)return;document.getElementById('dxPickerSearch').value='';p.classList.remove('hidden');p.setAttribute('aria-hidden','false');document.body.classList.add('dx-picker-open');renderPicker();}
@@ -52,11 +119,23 @@
     if(!lastDryRun||!lastEnvelope){panel.innerHTML='<span class="small">Dry Run後にApply可否を表示します。</span>';return;}
     const plan=lastApplyPlan;
     if(!plan){panel.innerHTML='<span class="small">Apply可否を確認中…</span>';return;}
+    const conflicts=(lastDryRun.items||[]).filter(x=>x.status==='conflict'&&x.dataset===plan.dataset);
+    const conflictUi=conflicts.length?`<div class="item small"><b>競合 ${conflicts.length}件</b><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.setAllConflictChoices('keep')">全て既存維持</button><button type="button" onclick="GKSDataExchangeUI.setAllConflictChoices('import')">全てImport採用</button></div>${conflicts.map(x=>{const id=String(x.id),v=conflictChoices[id]||'';return `<div class="dx-dryrun-row"><b>${escText(id)}</b><select onchange="GKSDataExchangeUI.setConflictChoice('${escA(id)}',this.value)"><option value="" ${!v?'selected':''}>未選択</option><option value="keep" ${v==='keep'?'selected':''}>既存維持</option><option value="import" ${v==='import'?'selected':''}>Import採用</option></select></div>`;}).join('')}</div>`:'';
     if(!plan.can_apply){
-      panel.innerHTML=`<div><span class="badge error">Apply不可</span> <span class="small">正本データは変更されません。</span></div><div class="dx-dryrun-error">${escText((plan.reasons||[]).join(' / ')||'追加対象がありません。')}</div>`;
+      panel.innerHTML=`${conflictUi}<div><span class="badge error">Apply不可</span> <span class="small">正本データは変更されません。</span></div><div class="dx-dryrun-error">${escText((plan.reasons||[]).join(' / ')||'適用対象がありません。')}</div>`;
       return;
     }
-    panel.innerHTML=`<div><span class="badge ok">Apply可能</span> <b>${escText(DATASET_LABELS[plan.dataset]||plan.dataset)} ${plan.add_count}件を追加</b></div><div class="small">既存IDは上書きしません。Apply直前に自動バックアップを作成し、反映後に再検証します。</div><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.showApplyPlan()">変更内容を確認</button><button type="button" class="primary" onclick="GKSDataExchangeUI.applySafeMerge()">この内容で反映</button></div>`;
+    const label=DATASET_LABELS[plan.dataset]||plan.dataset;
+    panel.innerHTML=`${conflictUi}<div><span class="badge ok">Apply可能</span> <b>${escText(label)} 追加${plan.add_count} / Import採用${plan.import_ids?.length||0} / 既存維持${plan.keep_ids?.length||0}</b></div><div class="small">競合は明示選択が必須です。Import採用時も現在側にしかないフィールドは保持します。</div><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.showApplyPlan()">変更内容を確認</button><button type="button" class="primary" onclick="GKSDataExchangeUI.applySafeMerge()">この内容で反映</button></div>`;
+  }
+  async function setConflictChoice(id,value){
+    if(value)conflictChoices[id]=value;else delete conflictChoices[id];
+    await updateApplyPlan();
+  }
+  async function setAllConflictChoices(value){
+    const dataset=lastApplyPlan?.dataset||lastEnvelope?.permissions?.writable?.[0]||'';
+    for(const item of lastDryRun?.items||[])if(item.status==='conflict'&&item.dataset===dataset)conflictChoices[String(item.id)]=value;
+    await updateApplyPlan();
   }
   function renderDryRun(result,appliedCount=0){
     const status=document.getElementById('dxImportStatus');if(!status)return;
@@ -69,21 +148,25 @@
     status.innerHTML=`<div><span class="badge ${result.ok?'ok':'error'}">${result.ok?'Dry Run完了':'Dry Run停止'}</span> <span class="small">${changeText}</span></div><div class="dx-dryrun-summary">${summary}</div>${messages}${rows||'<div class="small">差分項目はありません。</div>'}`;
   }
   async function updateApplyPlan(){
-    lastApplyPlan=lastEnvelope&&lastDryRun?await GKSDataExchange.createApplyPlan({rootData:data,envelope:lastEnvelope,dryRun:lastDryRun}):null;
+    lastApplyPlan=lastEnvelope&&lastDryRun?await GKSDataExchange.createApplyPlan({rootData:data,envelope:lastEnvelope,dryRun:lastDryRun,conflictChoices}):null;
     renderApplyPanel();
   }
   function showApplyPlan(){
     if(!lastApplyPlan?.can_apply)return alert('現在のデータはApplyできません。');
     const ids=(lastApplyPlan.ids||[]).join('\n');
-    alert(`Safe Merge 反映予定\n分類: ${DATASET_LABELS[lastApplyPlan.dataset]||lastApplyPlan.dataset}\n追加: ${lastApplyPlan.add_count}件\n\n${ids}`);
+    alert(`Safe Merge 反映予定\n分類: ${DATASET_LABELS[lastApplyPlan.dataset]||lastApplyPlan.dataset}\n追加: ${lastApplyPlan.add_count}件\nImport採用: ${lastApplyPlan.import_ids?.length||0}件\n既存維持: ${lastApplyPlan.keep_ids?.length||0}件\n\n${ids}`);
   }
   async function applySafeMerge(){
     if(!lastApplyPlan?.can_apply||!lastEnvelope)return alert('Apply可能なDry Run結果がありません。');
     const label=DATASET_LABELS[lastApplyPlan.dataset]||lastApplyPlan.dataset;
-    if(!confirm(`${label} ${lastApplyPlan.add_count}件を正本データへ追加します。\n既存IDは上書きしません。\n続行しますか？`))return;
+    if(!confirm(`${label} を反映します。\n追加 ${lastApplyPlan.add_count}件 / Import採用 ${lastApplyPlan.import_ids?.length||0}件 / 既存維持 ${lastApplyPlan.keep_ids?.length||0}件\n続行しますか？`))return;
     const before=structuredClone(data);
+    const appliedPlan=structuredClone(lastApplyPlan);
+    const appliedEnvelope=structuredClone(lastEnvelope);
+    let txCompleted=false;
     try{
       if(!globalThis.GKSDataExchangeTransaction)throw new Error('DataExchangeTransactionが読み込まれていません。');
+      if(!globalThis.GKSDataExchangeAudit)throw new Error('DataExchangeAuditが読み込まれていません。');
       const tx=await GKSDataExchangeTransaction.execute({
         rootData:data,
         envelope:lastEnvelope,
@@ -91,25 +174,41 @@
         dryRun:lastDryRun,
         backup:()=>typeof createBackup==='function'&&createBackup('before-data-exchange-safe-apply',{silent:true}),
         commit:(candidate)=>{data=candidate;return true;},
-        persist:()=>typeof persist==='function'&&persist(`Data Exchange Transaction: ${lastApplyPlan.dataset} ${lastApplyPlan.add_count}件`)!==false,
+        persist:()=>typeof persist==='function'&&persist(`Data Exchange Transaction: ${lastApplyPlan.dataset} add=${lastApplyPlan.add_count} import=${lastApplyPlan.import_ids?.length||0} keep=${lastApplyPlan.keep_ids?.length||0}`)!==false,
         rollback:(original)=>{data=original;return true;}
       });
-      lastDryRun=tx.validation;
-      lastApplyPlan=await GKSDataExchange.createApplyPlan({rootData:data,envelope:lastEnvelope,dryRun:lastDryRun});
+      txCompleted=true;
+      const actualAfterHash=await GKSDataExchangeTransaction.projectHash(data);
+      const session=GKSDataExchangeAudit.buildSession({
+        transaction:tx,
+        plan:appliedPlan,
+        envelope:appliedEnvelope,
+        beforeData:before,
+        afterHash:actualAfterHash,
+        sourceFilename:lastSourceFilename,
+        projectId:String(currentProjectId||data?.project?.id||'')
+      });
+      if(!GKSDataExchangeAudit.append(localStorage,auditStorageKey(),session)){
+        throw new Error('Data Exchange Auditを保存できませんでした。');
+      }
+      lastDryRun=tx.validation;conflictChoices={};
+      lastApplyPlan=await GKSDataExchange.createApplyPlan({rootData:data,envelope:lastEnvelope,dryRun:lastDryRun,conflictChoices});
       renderDryRun(lastDryRun,tx.applied.count);
       renderImpactPreview(lastDryRun);
-      renderApplyPanel();
-      alert(`Safe Apply完了: ${label} ${tx.applied.count}件\nTransaction検証・Backup・commit・persist・再検証まで完了しました。`);
+      renderApplyPanel();renderAuditPanel();
+      alert(`Safe Apply完了: ${label} ${tx.applied.count}件\nTransaction検証・Backup・commit・persist・再検証・Audit記録まで完了しました。`);
     }catch(e){
       data=before;
-      renderApplyPanel();
+      if(txCompleted&&typeof persist==='function')persist('Data Exchange Audit failure rollback');
+      renderApplyPanel();renderAuditPanel();
       alert('Safe Apply失敗: '+e.message);
     }
   }
   function inspectImportFile(){
     const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');
     if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}
-    lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;renderApplyPanel();renderImpactPreview(null);
+    lastSourceFilename=String(file.name||'');
+    lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;conflictChoices={};renderApplyPanel();renderImpactPreview(null);
     if(status)status.textContent='解析中…';
     const reader=new FileReader();
     reader.onload=async()=>{try{
@@ -126,6 +225,6 @@
     reader.onerror=()=>{if(status)status.innerHTML='<span class="badge error">読込エラー</span> ファイルを読み込めませんでした。<br><span class="small">データ変更 0件</span>';};
     reader.readAsText(file,'utf-8');
   }
-  function onViewRefresh(){}
-  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,showApplyPlan,applySafeMerge,onViewRefresh};
+  function onViewRefresh(){renderAuditPanel();}
+  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,exportAuditForGPT,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,onViewRefresh};
 })( );

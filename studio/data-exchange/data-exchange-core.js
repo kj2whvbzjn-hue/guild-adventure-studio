@@ -347,58 +347,153 @@
     }
     target[def.path[def.path.length-1]]=newRows;
   }
-  function applyBlockReasons(result){
+  function applyBlockReasons(result,options={}){
     const reasons=[];
     if(!result?.ok)reasons.push('Dry Runが正常完了していません。');
     const s=result?.summary||{};
     if((s.invalid||0)>0)reasons.push(`不正 ${s.invalid}件`);
     if((s.incompatible||0)>0)reasons.push(`非互換 ${s.incompatible}件`);
-    if((s.conflict||0)>0)reasons.push(`競合 ${s.conflict}件`);
+    if(!options.allowConflict&&(s.conflict||0)>0)reasons.push(`競合 ${s.conflict}件`);
     if((s.stale_source||0)>0)reasons.push(`元データ更新済み ${s.stale_source}件`);
     if((s.broken_reference||0)>0)reasons.push(`参照切れ ${s.broken_reference}件`);
     if((s.readonly_modified||0)>0)reasons.push(`read_only差異 ${s.readonly_modified}件`);
     if(result?.integrity?.apply_blocking&&!reasons.length)reasons.push('Integrity ValidatorがApplyを禁止しています。');
     return reasons;
   }
+  const SAFE_TOP_LEVEL_FIELDS={
+    monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at'])
+  };
+  function unknownIncomingFields(dataset,localRow,incomingRow){
+    const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
+    if(!allowed||!incomingRow||typeof incomingRow!=='object')return [];
+    const localKeys=new Set(Object.keys(localRow||{}));
+    return Object.keys(incomingRow).filter(key=>!allowed.has(key)&&!localKeys.has(key));
+  }
+  function mergeRecordPreservingCurrent(dataset,localRow,incomingRow){
+    const unknown=unknownIncomingFields(dataset,localRow,incomingRow);
+    if(unknown.length)throw new Error(`未知フィールドを検出しました: ${dataset} / ${incomingRow?.id||'-'} / ${unknown.join(', ')}`);
+    const merged=clone(localRow||{});
+    for(const [key,value] of Object.entries(incomingRow||{}))merged[key]=clone(value);
+    return merged;
+  }
   async function createApplyPlan(options){
     const rootData=options?.rootData||{},envelope=options?.envelope;
     const dryRun=options?.dryRun||await dryRunImport({rootData,envelope});
     const writable=uniqueStrings(envelope?.permissions?.writable||[]);
-    const reasons=applyBlockReasons(dryRun);
+    const reasons=applyBlockReasons(dryRun,{allowConflict:true});
     if(writable.length!==1)reasons.push('writable Datasetは1分類である必要があります。');
-    const dataset=writable[0]||'';
+    const dataset=writable[0]||'',def=REGISTRY[dataset];
+    const incoming=Array.isArray(envelope?.datasets?.[dataset])?envelope.datasets[dataset]:[];
+    const sourceById=new Map(incoming.map(row=>[String(row?.[def?.idField||'id']??''),row]));
+    const localById=new Map(records(rootData,dataset).map(row=>[String(row?.[def?.idField||'id']??''),row]));
     const addItems=(dryRun.items||[]).filter(x=>x.status==='add'&&x.dataset===dataset);
-    if(!addItems.length&&!reasons.length)reasons.push('追加対象がありません。Safe Merge v1は追加のみ対応です。');
-    const ids=addItems.map(x=>String(x.id)).filter(Boolean);
-    const plan={ok:reasons.length===0,can_apply:reasons.length===0,dataset,add_count:ids.length,ids,reasons,dryRun};
+    const conflictItems=(dryRun.items||[]).filter(x=>x.status==='conflict'&&x.dataset===dataset);
+    const addIds=addItems.map(x=>String(x.id)).filter(Boolean);
+    const choices={...(options?.conflictChoices||{})};
+    const keepIds=[],importIds=[],unresolvedIds=[];
+    for(const item of conflictItems){
+      const id=String(item.id),choice=String(choices[id]||'');
+      if(choice==='keep')keepIds.push(id);
+      else if(choice==='import')importIds.push(id);
+      else unresolvedIds.push(id);
+      const unknown=unknownIncomingFields(dataset,localById.get(id),sourceById.get(id));
+      if(unknown.length)reasons.push(`未知フィールド ${id}: ${unknown.join(', ')}`);
+    }
+    for(const id of addIds){
+      const unknown=unknownIncomingFields(dataset,null,sourceById.get(id));
+      if(unknown.length)reasons.push(`未知フィールド ${id}: ${unknown.join(', ')}`);
+    }
+    if(unresolvedIds.length)reasons.push(`競合未解決 ${unresolvedIds.length}件`);
+    if(!addIds.length&&!conflictItems.length&&!reasons.length)reasons.push('追加・競合対象がありません。');
+    const plan={
+      ok:reasons.length===0,can_apply:reasons.length===0,dataset,
+      add_count:addIds.length,add_ids:addIds,
+      conflict_count:conflictItems.length,
+      conflict_choices:choices,
+      keep_ids:keepIds,import_ids:importIds,unresolved_ids:unresolvedIds,
+      ids:[...addIds,...importIds],reasons,dryRun
+    };
     dryRun.can_apply=plan.can_apply;
-    dryRun.apply_plan={dataset,add_count:ids.length,ids:ids.slice(),reasons:reasons.slice()};
+    dryRun.apply_plan={
+      dataset,add_count:addIds.length,conflict_count:conflictItems.length,
+      add_ids:addIds.slice(),keep_ids:keepIds.slice(),import_ids:importIds.slice(),
+      unresolved_ids:unresolvedIds.slice(),reasons:reasons.slice()
+    };
     return plan;
   }
   async function applySafeMerge(options){
     const rootData=options?.rootData||{},envelope=options?.envelope;
-    const plan=options?.plan||await createApplyPlan({rootData,envelope,dryRun:options?.dryRun});
+    const plan=options?.plan||await createApplyPlan({
+      rootData,envelope,dryRun:options?.dryRun,conflictChoices:options?.conflictChoices
+    });
     if(!plan.can_apply)throw new Error('Safe Apply不可: '+(plan.reasons||[]).join(' / '));
     const dataset=plan.dataset,def=REGISTRY[dataset];
     const incoming=Array.isArray(envelope?.datasets?.[dataset])?envelope.datasets[dataset]:[];
-    const addSet=new Set(plan.ids);
     const sourceById=new Map(incoming.map(row=>[String(row?.[def.idField]??''),row]));
-    const current=records(rootData,dataset);
-    const existing=new Set(current.map(row=>String(row?.[def.idField]??'')));
-    const additions=[];
-    for(const id of plan.ids){
-      if(existing.has(id))throw new Error('Apply直前に既存IDを検出しました: '+id);
+    const current=records(rootData,dataset).map(clone);
+    const index=new Map(current.map((row,i)=>[String(row?.[def.idField]??''),i]));
+    const appliedIds=[];
+    for(const id of plan.add_ids||[]){
+      if(index.has(id))throw new Error('Apply直前に既存IDを検出しました: '+id);
       const row=sourceById.get(id);
       if(!row)throw new Error('Apply対象データが見つかりません: '+id);
-      additions.push(clone(row));
+      const unknown=unknownIncomingFields(dataset,null,row);
+      if(unknown.length)throw new Error(`未知フィールドを検出しました: ${id} / ${unknown.join(', ')}`);
+      current.push(clone(row));index.set(id,current.length-1);appliedIds.push(id);
+    }
+    for(const id of plan.import_ids||[]){
+      if(!index.has(id))throw new Error('Conflict対象の現在レコードが見つかりません: '+id);
+      const row=sourceById.get(id);
+      if(!row)throw new Error('Import採用データが見つかりません: '+id);
+      const pos=index.get(id);
+      current[pos]=mergeRecordPreservingCurrent(dataset,current[pos],row);
+      appliedIds.push(id);
     }
     const nextRootData=clone(rootData);
-    setDatasetRecords(nextRootData,dataset,[...records(nextRootData,dataset).map(clone),...additions]);
-    const verify=await dryRunImport({rootData:nextRootData,envelope});
-    if(!verify.ok||verify.summary.add!==0||verify.summary.conflict!==0||verify.summary.broken_reference!==0||verify.summary.readonly_modified!==0){
+    setDatasetRecords(nextRootData,dataset,current);
+
+    // Post-Apply verification compares against the committed candidate, not the pre-Import source hash.
+    // Otherwise an intentional conflict adoption would be misclassified as stale_source.
+    const verifyEnvelope=clone(envelope);
+    if(verifyEnvelope?.metadata){
+      verifyEnvelope.metadata.base_hash='';
+      if(!verifyEnvelope.metadata.record_hashes||typeof verifyEnvelope.metadata.record_hashes!=='object')verifyEnvelope.metadata.record_hashes={};
+      if(!verifyEnvelope.metadata.record_hashes[dataset]||typeof verifyEnvelope.metadata.record_hashes[dataset]!=='object')verifyEnvelope.metadata.record_hashes[dataset]={};
+      for(const id of plan.import_ids||[]){
+        const pos=index.get(id);
+        const candidateRow=clone(current[pos]);
+        verifyEnvelope.metadata.record_hashes[dataset][id]=await recordHash(dataset,candidateRow);
+        const rows=verifyEnvelope.datasets?.[dataset]||[];
+        const rowPos=rows.findIndex(row=>String(row?.[def.idField]??'')===id);
+        if(rowPos>=0)rows[rowPos]=candidateRow;
+      }
+      verifyEnvelope.metadata.package_hash='';
+    }
+    const verify=await dryRunImport({rootData:nextRootData,envelope:verifyEnvelope});
+    const verifyConflicts=(verify.items||[]).filter(x=>x.status==='conflict'&&x.dataset===dataset).map(x=>String(x.id)).sort();
+    const expectedKeep=(plan.keep_ids||[]).slice().sort();
+    const conflictOk=stableStringify(verifyConflicts)===stableStringify(expectedKeep);
+    if(!verify.ok||
+       verify.summary.add!==0||
+       !conflictOk||
+       verify.summary.broken_reference!==0||
+       verify.summary.readonly_modified!==0||
+       verify.summary.stale_source!==0||
+       verify.summary.invalid!==0||
+       verify.summary.incompatible!==0){
       throw new Error('Apply後の再検証に失敗しました。書き込み候補は破棄されました。');
     }
-    return {nextRootData,applied:{dataset,count:additions.length,ids:plan.ids.slice()},verify};
+    return {
+      nextRootData,
+      applied:{
+        dataset,count:appliedIds.length,
+        add_count:(plan.add_ids||[]).length,
+        changed_count:(plan.import_ids||[]).length,
+        kept_count:(plan.keep_ids||[]).length,
+        ids:appliedIds
+      },
+      verify
+    };
   }
   function validateEnvelopeShape(value){
     const errors=[];
@@ -411,5 +506,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

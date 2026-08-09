@@ -23,7 +23,7 @@ def check_json():
         json.loads(p.read_text(encoding="utf-8"))
 
 def js_syntax():
-    for p in [DX / "data-exchange-integrity-validator.js", DX / "data-exchange-core.js", DX / "data-exchange-transaction.js", DX / "data-exchange-ui.js"]:
+    for p in [DX / "data-exchange-integrity-validator.js", DX / "data-exchange-core.js", DX / "data-exchange-transaction.js", DX / "data-exchange-audit.js", DX / "data-exchange-ui.js"]:
         if p.exists():
             run(["node", "--check", str(p)])
 
@@ -124,8 +124,8 @@ def safe_merge_apply():
         raise RuntimeError("DE-10 Safe Apply UI markers missing: " + ", ".join(missing_ui))
     if 'id="dxApplyPanel"' not in index or "Data Exchange Import / Safe Merge" not in index:
         raise RuntimeError("DE-10 Apply panel missing")
-    if "既存IDは上書きしません" not in ui:
-        raise RuntimeError("DE-10 must preserve add-only safe merge rule")
+    if "競合は明示選択が必須です" not in ui:
+        raise RuntimeError("Safe Merge must never overwrite conflicts without an explicit choice")
 
 def stale_source_detection():
     core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
@@ -169,6 +169,37 @@ def transaction_layer():
         raise RuntimeError("DE-14 transaction Studio integration missing")
     run(["node", str(HERE / "data-exchange-transaction.test.js")], cwd=str(HERE))
 
+def safe_merge_v2():
+    core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    required_core = ["conflictChoices", "keep_ids", "import_ids", "mergeRecordPreservingCurrent", "unknownIncomingFields"]
+    missing = [x for x in required_core if x not in core]
+    if missing:
+        raise RuntimeError("DE-15 Safe Merge markers missing: " + ", ".join(missing))
+    required_ui = ["setConflictChoice", "setAllConflictChoices", "既存維持", "Import採用"]
+    missing_ui = [x for x in required_ui if x not in ui]
+    if missing_ui:
+        raise RuntimeError("DE-15 Safe Merge UI markers missing: " + ", ".join(missing_ui))
+
+def audit_undo():
+    audit = DX / "data-exchange-audit.js"
+    if not audit.exists():
+        raise RuntimeError("DE-16 Data Exchange Audit missing")
+    text = audit.read_text(encoding="utf-8")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    index = (STUDIO / "index.html").read_text(encoding="utf-8")
+    required = ["import_session_id", "before_hash", "candidate_hash", "after_hash", "source_filename", "undo_snapshot", "canUndo", "markUndone", "DEFAULT_MAX_SESSIONS", "DEFAULT_MAX_BYTES"]
+    missing = [x for x in required if x not in text]
+    if missing:
+        raise RuntimeError("DE-16 Audit markers missing: " + ", ".join(missing))
+    required_ui = ["renderAuditPanel", "exportAuditForGPT", "undoLatestSession", "before-data-exchange-undo", "GPT用Audit JSON"]
+    missing_ui = [x for x in required_ui if x not in ui]
+    if missing_ui:
+        raise RuntimeError("DE-16 Audit UI markers missing: " + ", ".join(missing_ui))
+    if "data-exchange-audit.js" not in index or 'id="dxAuditPanel"' not in index:
+        raise RuntimeError("DE-16 Audit Studio integration missing")
+    run(["node", str(HERE / "data-exchange-audit.test.js")], cwd=str(HERE))
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -193,6 +224,8 @@ def main():
         "stale_source_detection": stale_source_detection,
         "impact_preview": impact_preview,
         "transaction_layer": transaction_layer,
+        "safe_merge_v2": safe_merge_v2,
+        "audit_undo": audit_undo,
     }
     done=set()
     for name in steps:

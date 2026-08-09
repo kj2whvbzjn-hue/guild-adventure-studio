@@ -12,14 +12,17 @@
     if(typeof value!=='function')throw new Error(`DataExchangeTransaction: ${name} hookがありません。`);
     return value;
   }
-  function candidateIsValid(result){
+  function candidateIsValid(result,plan){
     const s=result?.summary||{};
+    const items=result?.items||[];
+    const conflicts=items.filter(x=>x.status==='conflict'&&x.dataset===plan?.dataset).map(x=>String(x.id)).sort();
+    const expectedKeeps=(plan?.keep_ids||[]).map(String).sort();
     return !!result?.ok &&
       (s.add||0)===0 &&
-      (s.conflict||0)===0 &&
+      Core.stableStringify(conflicts)===Core.stableStringify(expectedKeeps) &&
+      (s.stale_source||0)===0 &&
       (s.invalid||0)===0 &&
       (s.incompatible||0)===0 &&
-      (s.stale_source||0)===0 &&
       (s.broken_reference||0)===0 &&
       (s.readonly_modified||0)===0;
   }
@@ -41,13 +44,14 @@
     });
 
     let candidateData=clone(built.nextRootData);
+    let validation=built.verify;
     if(typeof options?.normalize==='function'){
       const normalized=await options.normalize(clone(candidateData));
       if(normalized!==undefined)candidateData=clone(normalized);
+      validation=await Core.dryRunImport({rootData:candidateData,envelope});
     }
 
-    const validation=await Core.dryRunImport({rootData:candidateData,envelope});
-    if(!candidateIsValid(validation)){
+    if(!candidateIsValid(validation,options?.plan)){
       throw new Error('DataExchangeTransaction: candidate validationに失敗しました。commitしません。');
     }
 
