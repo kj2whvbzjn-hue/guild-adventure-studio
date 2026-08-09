@@ -25,7 +25,7 @@
     status_effects:{path:['masters','status_effects'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     tablets:{path:['masters','tablets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     jobs:{path:['masters','jobs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
-    equipment:{path:['masters','equipment'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    equipment:{path:['masters','equipment'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','mod_ids','params.mod_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['mod_ids','params.mod_ids']}]},
     mods:{path:['masters','mods'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
@@ -363,7 +363,13 @@
   const SAFE_TOP_LEVEL_FIELDS={
     monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
-    skills:new Set(['id','name','status','tags','params','description','created_at','updated_at','version','kind','environment','mpCost','cooldown','multiplier','target','statusId','buff','operation','tag','tagId','stack','amount','stackId','execution'])
+    skills:new Set(['id','name','status','tags','params','description','created_at','updated_at','version','kind','environment','mpCost','cooldown','multiplier','target','statusId','buff','operation','tag','tagId','stack','amount','stackId','execution']),
+    jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
+    equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int']),
+    mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at'])
   };
   function unknownIncomingFields(dataset,localRow,incomingRow){
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
