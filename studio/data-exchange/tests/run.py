@@ -147,7 +147,7 @@ def impact_preview():
     missing = [x for x in required_core if x not in core]
     if missing:
         raise RuntimeError("DE-13 core markers missing: " + ", ".join(missing))
-    required_ui = ["renderImpactPreview", "exportImpactForGPT", "GPT用影響範囲JSONを出力"]
+    required_ui = ["renderImpactPreview", "exportImpactForGPT", "GPT用影響範囲JSONを出力", "new Blob", "downloadBlob(blob"]
     missing_ui = [x for x in required_ui if x not in ui]
     if missing_ui:
         raise RuntimeError("DE-13 UI markers missing: " + ", ".join(missing_ui))

@@ -44,7 +44,8 @@
     const payload=GKSDataExchange.buildImpactExportPayload(lastEnvelope,lastDryRun);
     const primary=String(lastEnvelope?.permissions?.writable?.[0]||'data');
     const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-    downloadBlob(`DX_IMPACT_${primary}_${stamp}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+    downloadBlob(blob,`DX_IMPACT_${primary}_${stamp}.json`);
   }
   function renderApplyPanel(){
     const panel=document.getElementById('dxApplyPanel');if(!panel)return;

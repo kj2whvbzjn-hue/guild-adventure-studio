@@ -60,3 +60,8 @@ UI統一ルール:
 - `GPT用影響範囲JSONを出力` で `GKS_DATA_EXCHANGE_IMPACT / 1.0.0` を保存する。
 - JSONは direct_changes / references.additions / references.existing / references.differences / unaffected_datasets を全件保持する。
 - フィールドdiffと元Data Exchange Packageの識別情報も保持し、GPTが追加の画面確認なしに解析できることを優先する。
+
+
+### DE-13 AI Impact Export download fix
+- GPT用影響範囲JSONはUTF-8 JSON Blobを生成して既存 `downloadBlob(blob, name)` に渡す。
+- 共通ダウンロード関数の引数順を維持し、iPhone/Safariでも保存可能な経路に統一する。
