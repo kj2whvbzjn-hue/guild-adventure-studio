@@ -16,11 +16,11 @@ with tempfile.TemporaryDirectory(prefix="gk-binding-") as td:
     (good/"package_manifest.json").write_bytes(b"{}\n")
     shutil.copytree(good,bad,dirs_exist_ok=True)
     (bad/"README_GITHUB反映.md").rename(bad/"README_GITHUB#U53cd#U6620.md")
-    ok=subprocess.run([sys.executable,"-B",str(CHECKER),str(good),"--input-zip",str(zp)],
+    ok=subprocess.run([sys.executable,"-S","-B",str(CHECKER),str(good),"--input-zip",str(zp)],
                       text=True,capture_output=True)
     if ok.returncode or "SOURCE_ZIP_BINDING_OK" not in ok.stdout:
         print(ok.stdout); print(ok.stderr); raise SystemExit(1)
-    ng=subprocess.run([sys.executable,"-B",str(CHECKER),str(bad),"--input-zip",str(zp)],
+    ng=subprocess.run([sys.executable,"-S","-B",str(CHECKER),str(bad),"--input-zip",str(zp)],
                       text=True,capture_output=True)
     if ng.returncode==0 or "EXTRACTED_PATH_SUBSTITUTION" not in ng.stdout:
         print(ng.stdout); print(ng.stderr); raise SystemExit(1)

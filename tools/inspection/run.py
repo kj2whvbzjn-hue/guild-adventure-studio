@@ -106,51 +106,52 @@ def run_step(name: str, command: list[str], *, required: bool, timeout_seconds: 
 
 def syntax_steps(profile: str) -> Iterable[tuple[str, list[str], bool]]:
     if profile == "quick":
-        yield ("quick_syntax", [sys.executable, str(ROOT / "tools/inspection/check-quick-syntax.py"), str(ROOT)], True)
+        yield ("quick_syntax", [sys.executable, "-S", "-B", str(ROOT / "tools/inspection/check-quick-syntax.py"), str(ROOT)], True)
         return
     if command_available("node"):
-        yield ("javascript_syntax", ["bash", "-lc", "set -euo pipefail; while IFS= read -r -d '' f; do node --check \"$f\" >/dev/null; done < <(find . -type f -name '*.js' ! -path '*/vendor/*' ! -name 'jszip.min.js' -print0)"], True)
+        yield ("javascript_syntax", ["node", str(ROOT / "tools/inspection/check-full-javascript-syntax.js"), str(ROOT)], True)
     else:
         yield ("javascript_syntax_runtime_missing", ["bash", "-lc", "echo 'node is not installed'"], True)
     if command_available("php"):
-        yield ("php_syntax", ["bash", "-lc", "set -euo pipefail; while IFS= read -r -d '' f; do php -l \"$f\" >/dev/null; done < <(find . -type f -name '*.php' -print0)"], True)
+        yield ("php_syntax", ["php", str(ROOT / "tools/inspection/check-full-php-syntax.php"), str(ROOT)], True)
     else:
         yield ("php_syntax_runtime_missing", ["bash", "-lc", "echo 'php is not installed'"], True)
-    yield ("python_syntax", [sys.executable, "-c", "import pathlib,sys; r=pathlib.Path(sys.argv[1]); fs=[p for p in r.rglob('*.py') if '.git' not in p.parts and '__pycache__' not in p.parts]; [compile(p.read_text(encoding='utf-8'),str(p),'exec') for p in fs]; print(f'PYTHON_SYNTAX_OK files={len(fs)}')", str(ROOT)], True)
+    yield ("python_syntax", [sys.executable, "-S", "-B", "-c", "import pathlib,sys; r=pathlib.Path(sys.argv[1]); fs=[p for p in r.rglob('*.py') if '.git' not in p.parts and '__pycache__' not in p.parts]; [compile(p.read_text(encoding='utf-8'),str(p),'exec') for p in fs]; print(f'PYTHON_SYNTAX_OK files={len(fs)}')", str(ROOT)], True)
 
 
 def build_steps(profile: str, release_output: Path | None, context: str) -> list[tuple[str, list[str], bool]]:
-    py = sys.executable
+    py = [sys.executable, "-S", "-B"]
     steps = [
-        ("inspection_context", [py, str(ROOT / "tools/inspection/check-context.py"), str(ROOT), "--context", context], True),
-        ("ai_governance", [py, str(ROOT / "tools/inspection/check-ai-governance.py"), str(ROOT)], True),
-        ("encoding_iphone", [py, str(ROOT / "tools/inspection/check-encoding.py"), str(ROOT)], True),
-        ("required_paths_and_json", [py, "-c", "import json,pathlib,sys; r=pathlib.Path(sys.argv[1]); req=['index.html','game/index.html','studio/index.html','game-tag-test/index.html','project-data.json','package-build.json','package_manifest.json','shared/tests/test-registry.json','docs/operations/ENCODING_POLICY.md','shared/integrity/encoding-policy.json','tools/inspection/check-encoding.py']; missing=[p for p in req if not (r/p).is_file() or (r/p).stat().st_size==0]; [json.loads(p.read_text(encoding='utf-8')) for p in r.rglob('*.json') if '.git' not in p.parts]; [json.loads(p.read_text(encoding='utf-8')) for p in r.rglob('*.webmanifest')]; print('REQUIRED_AND_JSON_OK'); sys.exit(1 if missing else 0)", str(ROOT)], True),
-        ("html_links", [py, str(ROOT / "tools/integrity/check-html-links.py"), str(ROOT)], True),
-        ("package_metadata", [py, str(ROOT / "tools/integrity/check-package-metadata.py")], True),
-        ("critical_runtime", [py, str(ROOT / "tools/integrity/check-critical-runtime.py"), str(ROOT)], True),
-        ("package_manifest", [py, str(ROOT / "tools/integrity/check-package-manifest.py"), str(ROOT)], True),
+        ("inspection_context", [*py, str(ROOT / "tools/inspection/check-context.py"), str(ROOT), "--context", context], True),
+        ("ai_governance", [*py, str(ROOT / "tools/inspection/check-ai-governance.py"), str(ROOT)], True),
+        ("encoding_iphone", [*py, str(ROOT / "tools/inspection/check-encoding.py"), str(ROOT)], True),
+        ("required_paths_and_json", [*py, "-c", "import json,pathlib,sys; r=pathlib.Path(sys.argv[1]); req=['index.html','game/index.html','studio/index.html','game-tag-test/index.html','project-data.json','package-build.json','package_manifest.json','shared/tests/test-registry.json','docs/operations/ENCODING_POLICY.md','shared/integrity/encoding-policy.json','tools/inspection/check-encoding.py']; missing=[p for p in req if not (r/p).is_file() or (r/p).stat().st_size==0]; [json.loads(p.read_text(encoding='utf-8')) for p in r.rglob('*.json') if '.git' not in p.parts]; [json.loads(p.read_text(encoding='utf-8')) for p in r.rglob('*.webmanifest')]; print('REQUIRED_AND_JSON_OK'); sys.exit(1 if missing else 0)", str(ROOT)], True),
+        ("html_links", [*py, str(ROOT / "tools/integrity/check-html-links.py"), str(ROOT)], True),
+        ("package_metadata", [*py, str(ROOT / "tools/integrity/check-package-metadata.py")], True),
+        ("critical_runtime", [*py, str(ROOT / "tools/integrity/check-critical-runtime.py"), str(ROOT)], True),
+        ("package_manifest", [*py, str(ROOT / "tools/integrity/check-package-manifest.py"), str(ROOT)], True),
     ]
     if context == "update":
-        steps.insert(4, ("delete_manifest", [py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True))
+        steps.insert(4, ("delete_manifest", [*py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True))
     steps.extend(syntax_steps(profile))
     if profile in {"full", "release"}:
         steps.extend([
-            ("organization", [py, str(ROOT / "tools/integrity/audit-organization.py"), str(ROOT)], True),
-            ("shared_assets", [py, str(ROOT / "tools/integrity/check-shared-assets.py")], True),
-            ("component_map", [py, str(ROOT / "tools/integrity/check-component-map.py")], True),
-            ("runtime_boundary", [py, str(ROOT / "tools/integrity/check-runtime-boundary.py")], True),
-            ("deployment_map", [py, str(ROOT / "tools/integrity/check-deployment-map.py"), str(ROOT)], True),
-            ("root_surface", [py, str(ROOT / "tools/integrity/check-root-surface.py"), str(ROOT)], True),
-            ("active_test_gate", [py, str(ROOT / "tools/integrity/check-test-registry.py"), str(ROOT)], True),
-            ("github_candidate", [py, str(ROOT / "tools/release/check-github-candidate.py")], True),
+            ("organization", [*py, str(ROOT / "tools/integrity/audit-organization.py"), str(ROOT)], True),
+            ("shared_assets", [*py, str(ROOT / "tools/integrity/check-shared-assets.py")], True),
+            ("component_map", [*py, str(ROOT / "tools/integrity/check-component-map.py")], True),
+            ("runtime_boundary", [*py, str(ROOT / "tools/integrity/check-runtime-boundary.py")], True),
+            ("deployment_map", [*py, str(ROOT / "tools/integrity/check-deployment-map.py"), str(ROOT)], True),
+            ("root_surface", [*py, str(ROOT / "tools/integrity/check-root-surface.py"), str(ROOT)], True),
+            ("full_framework_regression", [*py, str(ROOT / "tools/inspection/test-full-framework.py")], True),
+            ("active_test_gate", [*py, str(ROOT / "tools/integrity/check-test-registry.py"), str(ROOT)], True),
+            ("github_candidate", [*py, str(ROOT / "tools/release/check-github-candidate.py")], True),
         ])
     if profile == "release":
         if release_output is None:
             raise ValueError("release profile requires --release-output outside source root")
         steps.extend([
-            ("build_github_package", [py, str(ROOT / "tools/release/build-github-pages-package.py"), "--output", str(release_output)], True),
-            ("release_zip_integrity", [py, "-c", "import sys,zipfile; p=sys.argv[1]; z=zipfile.ZipFile(p); bad=z.testzip(); print(f'ZIP_OK files={len(z.infolist())}'); sys.exit(1 if bad else 0)", str(release_output)], True),
+            ("build_github_package", [*py, str(ROOT / "tools/release/build-github-pages-package.py"), "--output", str(release_output)], True),
+            ("release_zip_integrity", [*py, "-c", "import sys,zipfile; p=sys.argv[1]; z=zipfile.ZipFile(p); bad=z.testzip(); print(f'ZIP_OK files={len(z.infolist())}'); sys.exit(1 if bad else 0)", str(release_output)], True),
         ])
     return steps
 

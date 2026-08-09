@@ -43,7 +43,7 @@ for item in registry.get("release_gate", []):
     rel = item["path"]
     runtime = item["runtime"]
     if runtime in ("python", "python3", "py"):
-        command = [sys.executable, "-B", str(root / rel)]
+        command = [sys.executable, "-S", "-B", str(root / rel)]
     else:
         command = [runtime, str(root / rel)]
     proc = subprocess.run(command, cwd=root, env=env, text=True, capture_output=True)

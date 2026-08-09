@@ -20,10 +20,12 @@ python3 tools/inspection/test-quick-framework.py
 
 ## full
 
-GitHubへ配置する前に実行する。quickに加え、構成、共有資産、依存関係、実行境界、配置定義、ルート保護、現行テスト8件、GitHub Pages候補を確認する。
+GitHubへ配置する前に実行する。quickに加え、構成、共有資産、依存関係、実行境界、配置定義、ルート保護、`shared/tests/test-registry.json`の現行release gate、GitHub Pages候補を確認する。
+
+全JavaScript・全PHPの構文検査は検査対象を減らさず、各ランタイム1プロセスで一括解析する。Python検査子プロセスは標準ライブラリ専用の`-S -B`で起動し、外部site初期化の影響をFull内部へ持ち込まない。
 
 ```bash
-python3 tools/inspection/run.py full --report reports/inspection-full.json
+python3 -S -B tools/inspection/run.py full --report reports/inspection-full.json
 ```
 
 ## release
@@ -31,7 +33,7 @@ python3 tools/inspection/run.py full --report reports/inspection-full.json
 公開パッケージを作る直前に実行する。fullに加え、GitHub Pages ZIPを生成してZIP整合性を検査する。
 
 ```bash
-python3 tools/inspection/run.py release --report reports/inspection-release.json
+python3 -S -B tools/inspection/run.py release --report reports/inspection-release.json
 ```
 
 ## 判定規則
