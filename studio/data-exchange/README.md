@@ -144,3 +144,9 @@ Gate対象:
 - Audit Session / Undo / undone記録
 
 `monster_vertical_gate` がQuick/Fullの双方でPASSしない限り、DE-18 Tag / Skill拡張へ進まない。
+
+### DE-17 Reload restoration
+- Safe Apply後のAudit Sessionは既存のproject-scoped `localStorage` を正本として再利用する。
+- Studio再読込時に `renderAuditPanel()` を自動実行し、保存済みAudit SessionとUndo可能状態を復元する。
+- Safari等で初期表示が追随しない場合に備え、GitHub配置履歴と同じ再読込パターンで `履歴を再確認` を提供する。
+- Importファイル選択・Dry Run結果・競合選択などの一時UI状態は復元対象外とする。

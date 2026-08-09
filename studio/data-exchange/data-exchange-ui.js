@@ -34,7 +34,7 @@
     const sessions=GKSDataExchangeAudit.load(localStorage,auditStorageKey());
     const latest=sessions[0],undoable=latestUndoableSession();
     if(!sessions.length){
-      panel.innerHTML='<span class="small">Data Exchange Apply履歴はありません。</span>';
+      panel.innerHTML='<div><span class="small">Data Exchange Apply履歴はありません。</span></div><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.refreshAuditHistory()">履歴を再確認</button></div>';
       return;
     }
     const latestText=latest?`${escText(latest.dataset||'-')} / 追加${latest.added?.length||0} / 変更${latest.changed?.length||0} / 維持${latest.kept?.length||0}${latest.undone?' / Undo済み':''}`:'';
@@ -229,6 +229,8 @@
     reader.onerror=()=>{if(status)status.innerHTML='<span class="badge error">読込エラー</span> ファイルを読み込めませんでした。<br><span class="small">データ変更 0件</span>';};
     reader.readAsText(file,'utf-8');
   }
+  function refreshAuditHistory(){renderAuditPanel();}
   function onViewRefresh(){renderAuditPanel();}
-  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,exportAuditForGPT,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,onViewRefresh};
+  if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',()=>{setTimeout(renderAuditPanel,0);});
+  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,refreshAuditHistory,exportAuditForGPT,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,onViewRefresh};
 })( );
