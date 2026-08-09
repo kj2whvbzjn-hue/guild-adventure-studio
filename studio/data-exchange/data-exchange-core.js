@@ -29,7 +29,8 @@
     mods:{path:['masters','mods'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
-    ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]}
+    ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]}
   };
 
   function clone(value){return value==null?value:JSON.parse(JSON.stringify(value));}
@@ -369,7 +370,8 @@
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at'])
+    ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at'])
   };
   function unknownIncomingFields(dataset,localRow,incomingRow){
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];

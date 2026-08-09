@@ -1,0 +1,29 @@
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const dx=require('../data-exchange-core.js');
+const tx=require('../data-exchange-transaction.js');
+const audit=require('../data-exchange-audit.js');
+const clone=x=>JSON.parse(JSON.stringify(x));
+class MemoryStorage{constructor(){this.map=new Map()}getItem(k){return this.map.has(k)?this.map.get(k):null}setItem(k,v){this.map.set(k,String(v))}removeItem(k){this.map.delete(k)}}
+function baseProject(){return {schema_version:'4.0.0-draft',project:{id:'PRJ-DE20',updated_at:'R1'},chapters:[{id:'CHP-BASE',no:1,title:'Base Chapter',theme:'',summary:'Base',status:'draft',design:{goal:'',source_version:1},sections:[{id:'SEC-BASE',no:1,title:'Base Section',summary:'',purpose:'',start_state:'',end_state:'',key_points:'',status:'draft',design:{goal:'',source_version:1},scenes:[{id:'SCN-BASE',no:1,title:'Base Scene',summary:'',status:'draft',dialogues:[{id:'DLG-BASE',no:1,status:'draft',speaker:'Hero',text:'Hello',stage_direction:''}]}]}],candidate_revisions:[],export_control:{ready:false,approved_revision_id:'',canonical_hash:'',marked_at:'',marked_by:''},created_at:'T0',updated_at:'T1'}],masters:{monsters:[],skills:[],stats:[],status_effects:[],tablets:[],jobs:[],mods:[],equipment:[],ai_conditions:[],ai_targets:[],ai_actions:[]},tags:[],tag_categories:[],history:[]}}
+async function makeAdd(base,id){const env=await dx.buildEnvelope({rootData:base,dataset:'chapters',ids:['CHP-BASE'],dependencyMode:'recursive',studioVersion:'TEST-DE20'});const out=clone(env),row=out.datasets.chapters[0];row.id=id;row.no=2;row.title='DE20 Story';row.summary='Story vertical';row.sections=[{id:'SEC-DE20',no:1,title:'Section',summary:'',purpose:'',start_state:'',end_state:'',key_points:'',status:'draft',design:{goal:'',source_version:1},scenes:[{id:'SCN-DE20',no:1,title:'Scene',summary:'',status:'draft',dialogues:[{id:'DLG-DE20',no:1,status:'draft',speaker:'Narrator',text:'DE20',stage_direction:''}]}]}];row.candidate_revisions=[];row.export_control={ready:false,approved_revision_id:'',canonical_hash:'',marked_at:'',marked_by:''};out.metadata.base_hash='';out.metadata.record_hashes={chapters:{}};out.metadata.package_hash='';return out}
+async function main(){
+ const base=baseProject();
+ const html=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
+ assert(html.includes('data-exchange-core.js?v=11'),'DE-20 core cache key');
+ assert(html.includes('data-exchange-ui.js?v=17'),'DE-20 UI cache key');
+ assert(fs.existsSync(path.resolve(__dirname,'../schemas/chapter-dataset.schema.json')),'chapter schema');
+ const env=await dx.buildEnvelope({rootData:base,dataset:'chapters',ids:['CHP-BASE'],dependencyMode:'recursive',studioVersion:'TEST-DE20'});
+ assert.deepEqual(env.permissions.writable,['chapters']);assert.deepEqual(env.permissions.read_only,[]);assert.equal(env.datasets.chapters.length,1);assert.equal(env.datasets.chapters[0].sections[0].scenes[0].dialogues[0].text,'Hello');
+ const add=await makeAdd(base,'CHP-DE20');const dry=await dx.dryRunImport({rootData:base,envelope:add});assert.equal(dry.summary.add,1);assert.equal(dry.can_apply,true);
+ const plan=await dx.createApplyPlan({rootData:base,envelope:add,dryRun:dry});assert.equal(plan.can_apply,true,plan.reasons.join(' / '));
+ let live=clone(base),before=clone(base);const tr=await tx.execute({rootData:live,envelope:add,plan,dryRun:dry,backup:()=>true,commit:c=>{live=c;return true;},persist:()=>true,rollback:b=>{live=b;return true;}});assert.equal(tr.ok,true);assert.equal(live.chapters.find(x=>x.id==='CHP-DE20').sections[0].scenes[0].dialogues[0].text,'DE20');
+ const store=new MemoryStorage();const session=audit.buildSession({transaction:tr,plan,envelope:add,beforeData:before,afterHash:await tx.projectHash(live),beforeDatasetHash:await audit.datasetHash(before,'chapters'),afterDatasetHash:await audit.datasetHash(live,'chapters'),sourceFilename:'DE20_STORY.json'});assert(audit.append(store,'audit',session));const undo=await audit.undo({session,currentData:live,normalize:x=>x,validate:x=>audit.validateSnapshot(x,session),backup:()=>true,commit:c=>{live=c;return true;},persist:()=>true,readCurrent:()=>live,rollback:b=>{live=b;return true;}});assert.equal(live.chapters.some(x=>x.id==='CHP-DE20'),false);assert(audit.markUndone(store,'audit',session.import_session_id,undo.undoAfterHash));
+ const unknown=await makeAdd(base,'CHP-DE20-UNKNOWN');unknown.datasets.chapters[0].future_story_payload={unsafe:true};unknown.metadata.package_hash='';const ud=await dx.dryRunImport({rootData:base,envelope:unknown});const up=await dx.createApplyPlan({rootData:base,envelope:unknown,dryRun:ud});assert.equal(up.can_apply,false);assert(up.reasons.some(x=>x.includes('未知フィールド')));
+ const existing=await dx.buildEnvelope({rootData:base,dataset:'chapters',ids:['CHP-BASE'],dependencyMode:'none',studioVersion:'TEST-DE20'});const changed=clone(existing);changed.datasets.chapters[0].summary='GPT changed';changed.metadata.package_hash='';const cd=await dx.dryRunImport({rootData:base,envelope:changed});assert.equal(cd.summary.conflict,1);assert.equal((await dx.createApplyPlan({rootData:base,envelope:changed,dryRun:cd})).can_apply,false);assert.equal((await dx.createApplyPlan({rootData:base,envelope:changed,dryRun:cd,conflictChoices:{'CHP-BASE':'import'}})).can_apply,true);
+ const stale=clone(base);stale.chapters[0].summary='Changed after export';const sd=await dx.dryRunImport({rootData:stale,envelope:existing});assert.equal(sd.summary.stale_source,1);assert.equal(sd.can_apply,false);
+ const del=clone(add);del.operations={delete:{chapters:['CHP-DE20']}};del.metadata.package_hash='';const dd=await dx.dryRunImport({rootData:base,envelope:del});assert.equal(dd.can_apply,false);assert(dd.summary.invalid+dd.summary.incompatible>=1);
+ console.log('DE-20 Story vertical gate: PASS');
+}
+main().catch(e=>{console.error(e);process.exit(1)});
