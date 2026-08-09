@@ -1,4 +1,6 @@
 const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
 const dx=require('../data-exchange-core.js');
 const tx=require('../data-exchange-transaction.js');
 const audit=require('../data-exchange-audit.js');
@@ -58,6 +60,10 @@ async function applyAndUndo(base,envelope,dataset,filename){
 
 async function main(){
   const base=baseProject();
+
+  // Runtime regression: B485 validator cache key must not be reused after DE-18 reference rules changed.
+  const studioHtml=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
+  assert(studioHtml.includes('data-exchange-integrity-validator.js?v=2'),'Studio must load the DE-18 integrity validator with the refreshed cache key');
 
   // 1. Tag primary Dataset: deterministic export + safe add/apply/audit/undo.
   const tagExport=await dx.buildEnvelope({rootData:base,dataset:'tags',ids:['TAG-BURN'],dependencyMode:'recursive',studioVersion:'TEST-DE18'});
