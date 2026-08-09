@@ -119,3 +119,10 @@ current data → deep clone → Safe Merge candidate → normalize → Data Exch
 - Undo復元の正しさはProject全体before hashではなく、対象Datasetの `before_dataset_hash / after_dataset_hash` で検証する。
 - これによりStudio側の非Dataset運用状態が変化しても、対象マスターを正しく元状態へ戻せる。
 - 旧SessionはDataset hashが無い場合のみ従来のbefore_hash検証へフォールバックする。
+
+
+### DE-16.5 Audit runtime cache bust
+- DE-16.4実機で `GKSDataExchangeAudit.datasetHash is not a function` を検出。
+- 最新GitHubソースには `datasetHash` 定義・export・UI呼出が揃っていたため、旧Audit JSキャッシュ残留と判定。
+- `data-exchange-audit.js` cache versionを v3→v4、`data-exchange-ui.js` を v14→v15 へ更新。
+- 機能ロジックは変更しない。
