@@ -27,11 +27,7 @@
       (s.readonly_modified||0)===0;
   }
   async function projectHash(data){
-    const snapshot=clone(data||{});
-    // Audit metadata is operational history, not game/master state.
-    // Excluding it prevents Audit persistence itself from invalidating Undo hashes.
-    delete snapshot.data_exchange_audit_sessions;
-    return Core.sha256Hex(Core.stableStringify(snapshot));
+    return Core.sha256Hex(Core.stableStringify(data));
   }
   async function execute(options){
     if(!Core)throw new Error('DataExchangeTransaction: Data Exchange Coreがありません。');

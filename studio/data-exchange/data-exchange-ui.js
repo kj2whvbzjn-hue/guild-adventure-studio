@@ -13,42 +13,7 @@
   function visibleRecords(){const q=(document.getElementById('dxPickerSearch')?.value||'').trim().toLowerCase();return rows().filter(row=>!q||searchText(row).includes(q));}
   function escText(v){return typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function escA(v){return typeof escAttr==='function'?escAttr(String(v??'')):escText(v);}
-  function auditLegacyStorageKey(){return `gks_data_exchange_audit_v1_${String(currentProjectId||data?.project?.id||'default')}`;}
-  function auditStorageKey(){return 'project-audit-sessions';}
-  function auditProjectStorage(){
-    return {
-      getItem(){
-        const embedded=Array.isArray(data?.data_exchange_audit_sessions)?data.data_exchange_audit_sessions:null;
-        if(embedded&&embedded.length)return JSON.stringify(embedded);
-        // One-time migration from DE-16/16.1 standalone localStorage.
-        try{
-          const legacy=JSON.parse(localStorage.getItem(auditLegacyStorageKey())||'[]');
-          if(Array.isArray(legacy)&&legacy.length){
-            data.data_exchange_audit_sessions=legacy;
-            if(typeof safeStorageSet==='function'){
-              safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'Data Exchange Audit migration');
-            }
-            return JSON.stringify(legacy);
-          }
-        }catch(_){}
-        return JSON.stringify(Array.isArray(embedded)?embedded:[]);
-      },
-      setItem(_key,value){
-        const parsed=JSON.parse(String(value||'[]'));
-        data.data_exchange_audit_sessions=Array.isArray(parsed)?parsed:[];
-        if(typeof safeStorageSet!=='function')throw new Error('Data Exchange Audit保存関数がありません。');
-        if(!safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'Data Exchange Audit')){
-          throw new Error('Data Exchange Auditを正本へ保存できませんでした。');
-        }
-      },
-      removeItem(){
-        data.data_exchange_audit_sessions=[];
-        if(typeof safeStorageSet==='function'){
-          safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'Data Exchange Audit');
-        }
-      }
-    };
-  }
+  function auditStorageKey(){return `gks_data_exchange_audit_v1_${String(currentProjectId||data?.project?.id||'default')}`;}
   function normalizeCandidate(candidate){
     const original=data;
     try{
@@ -62,11 +27,11 @@
     return check?.ok!==false;
   }
   function latestUndoableSession(){
-    return GKSDataExchangeAudit.load(auditProjectStorage(),auditStorageKey()).find(x=>!x.undone)||null;
+    return GKSDataExchangeAudit.load(localStorage,auditStorageKey()).find(x=>!x.undone)||null;
   }
   function renderAuditPanel(){
     const panel=document.getElementById('dxAuditPanel');if(!panel||!globalThis.GKSDataExchangeAudit)return;
-    const sessions=GKSDataExchangeAudit.load(auditProjectStorage(),auditStorageKey());
+    const sessions=GKSDataExchangeAudit.load(localStorage,auditStorageKey());
     const latest=sessions[0],undoable=latestUndoableSession();
     if(!sessions.length){
       panel.innerHTML='<span class="small">Data Exchange Apply履歴はありません。</span>';
@@ -76,7 +41,7 @@
     panel.innerHTML=`<div><span class="badge">Audit ${sessions.length}件</span> <span class="small">${latestText}</span></div><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.exportAuditForGPT()">GPT用Audit JSONを出力</button><button type="button" ${undoable?'':'disabled'} onclick="GKSDataExchangeUI.undoLatestSession()">直前SessionをUndo</button></div><div class="small">Undoは現在状態が対象Session直後のhashと一致する場合だけ実行できます。</div>`;
   }
   function exportAuditForGPT(){
-    const payload=GKSDataExchangeAudit.exportPayload(auditProjectStorage(),auditStorageKey());
+    const payload=GKSDataExchangeAudit.exportPayload(localStorage,auditStorageKey());
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
     const stamp=new Date().toISOString().replace(/[:.]/g,'-');
     downloadBlob(blob,`DX_AUDIT_${String(currentProjectId||'project')}_${stamp}.json`);
@@ -101,7 +66,7 @@
         rollbackPersist:()=>typeof persist==='function'&&persist(`Data Exchange Undo rollback: ${session.import_session_id}`)!==false
       });
       undoCompleted=true;
-      if(!GKSDataExchangeAudit.markUndone(auditProjectStorage(),auditStorageKey(),session.import_session_id,result.undoAfterHash)){
+      if(!GKSDataExchangeAudit.markUndone(localStorage,auditStorageKey(),session.import_session_id,result.undoAfterHash)){
         throw new Error('Undo後Audit更新に失敗しました。');
       }
       lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;conflictChoices={};
@@ -223,7 +188,7 @@
         sourceFilename:lastSourceFilename,
         projectId:String(currentProjectId||data?.project?.id||'')
       });
-      if(!GKSDataExchangeAudit.append(auditProjectStorage(),auditStorageKey(),session)){
+      if(!GKSDataExchangeAudit.append(localStorage,auditStorageKey(),session)){
         throw new Error('Data Exchange Auditを保存できませんでした。');
       }
       lastDryRun=tx.validation;conflictChoices={};

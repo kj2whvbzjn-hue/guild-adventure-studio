@@ -86,12 +86,6 @@ async function main(){
   assert.equal(dx.records(live,'monsters')[0].name,'One');
   assert.equal(keepTx.validation.summary.conflict,1);
 
-
-  const hashBase=JSON.parse(JSON.stringify(root));
-  const hashAudit=JSON.parse(JSON.stringify(root));
-  hashAudit.data_exchange_audit_sessions=[{import_session_id:'S1'}];
-  assert.equal(await tx.projectHash(hashBase),await tx.projectHash(hashAudit),'audit metadata must not affect transaction project hash');
-
   console.log('DATA EXCHANGE TRANSACTION TEST: PASS');
 }
 main().catch(e=>{console.error(e);process.exit(1);});
