@@ -214,6 +214,30 @@
       }
     };
   }
+  function buildImpactExportPayload(envelope,result){
+    const impact=result?.impact_preview||{summary:{},direct:[],reference_additions:[],existing_references:[],reference_differences:[],unaffected:[]};
+    return {
+      format:'GKS_DATA_EXCHANGE_IMPACT',
+      version:'1.0.0',
+      generated_at:new Date().toISOString(),
+      project_id:String(envelope?.project_id||''),
+      source:{
+        data_exchange_format:String(envelope?.format||''),
+        data_exchange_version:String(envelope?.version||''),
+        source_generated_at:String(envelope?.metadata?.generated_at||''),
+        source_package_hash:String(envelope?.metadata?.package_hash||''),
+        source_project_revision:String(envelope?.metadata?.base_project_revision||'')
+      },
+      summary:clone(impact.summary||{}),
+      direct_changes:clone(impact.direct||[]),
+      references:{
+        additions:clone(impact.reference_additions||[]),
+        existing:clone(impact.existing_references||[]),
+        differences:clone(impact.reference_differences||[])
+      },
+      unaffected_datasets:clone(impact.unaffected||[])
+    };
+  }
   async function dryRunImport(options){
     const rootData=options?.rootData||{}; const envelope=options?.envelope;
     const result={ok:false,can_apply:false,summary:{add:0,unchanged:0,conflict:0,invalid:0,incompatible:0,stale_source:0,broken_reference:0,readonly_modified:0},items:[],errors:[],warnings:[],package_hash:{checked:false,ok:true,expected:'',actual:''}};
@@ -387,5 +411,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

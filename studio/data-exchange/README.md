@@ -53,3 +53,10 @@ UI統一ルール:
 - conflict / stale_source等の直接変更にはcanonicalized recordのフィールド単位diffを表示する。
 - Previewは表示専用で、正本データを変更しない。
 - Merge単位はレコード単位のままとし、diffは判断材料として表示する。
+
+
+### DE-13 AI-first運用
+- 人間向け画面は件数要約のみとし、全参照一覧は展開しない。
+- `GPT用影響範囲JSONを出力` で `GKS_DATA_EXCHANGE_IMPACT / 1.0.0` を保存する。
+- JSONは direct_changes / references.additions / references.existing / references.differences / unaffected_datasets を全件保持する。
+- フィールドdiffと元Data Exchange Packageの識別情報も保持し、GPTが追加の画面確認なしに解析できることを優先する。

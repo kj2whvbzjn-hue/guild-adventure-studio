@@ -33,23 +33,18 @@
     const panel=document.getElementById('dxImpactPreview');if(!panel)return;
     const impact=result?.impact_preview;
     if(!impact){
-      panel.innerHTML='<span class="small">Dry Runが完了すると影響範囲を表示します。</span>';
+      panel.innerHTML='<span class="small">Dry Run後にGPT用影響範囲JSONを生成できます。</span>';
       return;
     }
     const s=impact.summary||{};
-    const badges=`<div class="dx-dryrun-summary"><span class="badge">直接変更 ${s.direct||0}</span><span class="badge">参照追加 ${s.reference_additions||0}</span><span class="badge">既存参照 ${s.existing_references||0}</span><span class="badge">参照差異 ${s.reference_differences||0}</span><span class="badge">影響なし ${s.unaffected||0}</span></div>`;
-    const direct=(impact.direct||[]).map(item=>{
-      const diffs=(item.diffs||[]).map(d=>`<div class="small"><b>${escText(d.path)}</b>: ${escText(shortJson(d.before))} → ${escText(shortJson(d.after))}</div>`).join('');
-      return `<div class="dx-dryrun-row"><b>直接変更</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)} <span class="badge">${escText(item.status)}</span>${diffs}</div>`;
-    }).join('');
-    const refsAdd=(impact.reference_additions||[]).map(item=>`<div class="dx-dryrun-row"><b>参照追加</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)}</div>`).join('');
-    const refsExisting=(impact.existing_references||[]).map(item=>`<div class="dx-dryrun-row"><b>既存参照</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)}</div>`).join('');
-    const refsDiff=(impact.reference_differences||[]).map(item=>{
-      const diffs=(item.diffs||[]).map(d=>`<div class="small"><b>${escText(d.path)}</b>: ${escText(shortJson(d.before))} → ${escText(shortJson(d.after))}</div>`).join('');
-      return `<div class="dx-dryrun-row"><b>参照差異</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)}${diffs}</div>`;
-    }).join('');
-    const unaffected=(impact.unaffected||[]).length?`<div class="small"><b>影響なし:</b> ${(impact.unaffected||[]).map(x=>escText(DATASET_LABELS[x]||x)).join(' / ')}</div>`:'';
-    panel.innerHTML=`${badges}${direct}${refsAdd}${refsExisting}${refsDiff}${unaffected||'<div class="small">影響なし分類はありません。</div>'}`;
+    panel.innerHTML=`<div class="dx-dryrun-summary"><span class="badge">直接 ${s.direct||0}</span><span class="badge">参照追加 ${s.reference_additions||0}</span><span class="badge">既存参照 ${s.existing_references||0}</span><span class="badge">参照差異 ${s.reference_differences||0}</span><span class="badge">影響なし ${s.unaffected||0}</span></div><div class="toolbar"><button type="button" class="primary" onclick="GKSDataExchangeUI.exportImpactForGPT()">GPT用影響範囲JSONを出力</button></div><div class="small">詳細は画面展開せず、AI解析用JSONへ全件出力します。</div>`;
+  }
+  function exportImpactForGPT(){
+    if(!lastEnvelope||!lastDryRun?.impact_preview)return alert('先にDry Runを実行してください。');
+    const payload=GKSDataExchange.buildImpactExportPayload(lastEnvelope,lastDryRun);
+    const primary=String(lastEnvelope?.permissions?.writable?.[0]||'data');
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    downloadBlob(`DX_IMPACT_${primary}_${stamp}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
   }
   function renderApplyPanel(){
     const panel=document.getElementById('dxApplyPanel');if(!panel)return;
@@ -129,5 +124,5 @@
     reader.readAsText(file,'utf-8');
   }
   function onViewRefresh(){}
-  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,showApplyPlan,applySafeMerge,onViewRefresh};
+  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,showApplyPlan,applySafeMerge,onViewRefresh};
 })( );

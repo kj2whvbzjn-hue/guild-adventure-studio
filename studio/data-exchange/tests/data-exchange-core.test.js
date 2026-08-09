@@ -78,6 +78,10 @@ const dx=require('../data-exchange-core.js');
   assert.equal(preview.summary.direct,0);
   assert(preview.summary.existing_references>=1,'read_only dependencies already present must be shown as existing references');
   assert(preview.unaffected.includes('jobs'),'unrelated datasets must be listed as unaffected');
+  const aiPayload=dx.buildImpactExportPayload(env,{impact_preview:preview});
+  assert.equal(aiPayload.format,'GKS_DATA_EXCHANGE_IMPACT');
+  assert(Array.isArray(aiPayload.references.existing));
+  assert.equal(aiPayload.summary.existing_references,preview.summary.existing_references);
 
   const incompatible=JSON.parse(JSON.stringify(env));incompatible.project_id='OTHER';incompatible.metadata.package_hash='';
   assert.equal((await dx.dryRunImport({rootData:root,envelope:incompatible})).summary.incompatible,1);
