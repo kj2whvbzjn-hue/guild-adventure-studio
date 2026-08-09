@@ -149,6 +149,71 @@
     if(typeof require==='function'){try{return require('./data-exchange-integrity-validator.js');}catch(e){return null;}}
     return null;
   }
+  function fieldDiffValues(beforeValue,afterValue,path='',out=[]){
+    const beforeObj=beforeValue&&typeof beforeValue==='object',afterObj=afterValue&&typeof afterValue==='object';
+    if(Array.isArray(beforeValue)||Array.isArray(afterValue)){
+      if(stableStringify(beforeValue)!==stableStringify(afterValue))out.push({path:path||'(record)',before:clone(beforeValue),after:clone(afterValue)});
+      return out;
+    }
+    if(beforeObj&&afterObj){
+      const keys=[...new Set([...Object.keys(beforeValue),...Object.keys(afterValue)])].sort();
+      for(const key of keys)fieldDiffValues(beforeValue[key],afterValue[key],path?path+'.'+key:key,out);
+      return out;
+    }
+    if(stableStringify(beforeValue)!==stableStringify(afterValue))out.push({path:path||'(record)',before:clone(beforeValue),after:clone(afterValue)});
+    return out;
+  }
+  function recordFieldDiff(dataset,beforeRow,afterRow){
+    if(!beforeRow||!afterRow)return [];
+    return fieldDiffValues(canonicalizeRecord(dataset,beforeRow),canonicalizeRecord(dataset,afterRow));
+  }
+  function buildImpactPreview(rootData,envelope,result){
+    const writable=new Set(uniqueStrings(envelope?.permissions?.writable||[]));
+    const readOnly=new Set(uniqueStrings(envelope?.permissions?.read_only||[]));
+    const direct=[],reference_additions=[],existing_references=[],reference_differences=[];
+    const impactedDatasets=new Set();
+    const statusByKey=new Map((result?.items||[]).map(x=>[`${x.dataset}::${x.id}`,x.status]));
+    for(const [dataset,rows] of Object.entries(envelope?.datasets||{})){
+      if(!REGISTRY[dataset])continue;
+      const localMap=new Map(records(rootData,dataset).map(row=>[String(row?.[REGISTRY[dataset].idField]??''),row]));
+      for(const row of rows||[]){
+        const id=String(row?.[REGISTRY[dataset].idField]??''),local=localMap.get(id);
+        const same=!!local&&stableStringify(canonicalizeRecord(dataset,local))===stableStringify(canonicalizeRecord(dataset,row));
+        if(writable.has(dataset)){
+          const status=statusByKey.get(`${dataset}::${id}`)||(local?(same?'unchanged':'conflict'):'add');
+          if(status!=='unchanged'){
+            impactedDatasets.add(dataset);
+            direct.push({dataset,id,status,diffs:local?recordFieldDiff(dataset,local,row):[]});
+          }
+        }else if(readOnly.has(dataset)){
+          if(!local){
+            impactedDatasets.add(dataset);
+            reference_additions.push({dataset,id});
+          }else if(same){
+            existing_references.push({dataset,id});
+          }else{
+            impactedDatasets.add(dataset);
+            reference_differences.push({dataset,id,diffs:recordFieldDiff(dataset,local,row)});
+          }
+        }
+      }
+    }
+    const unaffected=Object.keys(REGISTRY).filter(dataset=>!impactedDatasets.has(dataset)&&!writable.has(dataset)&&!readOnly.has(dataset)).sort();
+    return {
+      direct,
+      reference_additions,
+      existing_references,
+      reference_differences,
+      unaffected,
+      summary:{
+        direct:direct.length,
+        reference_additions:reference_additions.length,
+        existing_references:existing_references.length,
+        reference_differences:reference_differences.length,
+        unaffected:unaffected.length
+      }
+    };
+  }
   async function dryRunImport(options){
     const rootData=options?.rootData||{}; const envelope=options?.envelope;
     const result={ok:false,can_apply:false,summary:{add:0,unchanged:0,conflict:0,invalid:0,incompatible:0,stale_source:0,broken_reference:0,readonly_modified:0},items:[],errors:[],warnings:[],package_hash:{checked:false,ok:true,expected:'',actual:''}};
@@ -243,6 +308,7 @@
       }
     }
     result.ok=result.errors.length===0;
+    result.impact_preview=buildImpactPreview(rootData,envelope,result);
     const blockers=applyBlockReasons(result);
     result.can_apply=result.ok&&blockers.length===0&&(result.summary.add||0)>0;
     return result;
@@ -321,5 +387,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

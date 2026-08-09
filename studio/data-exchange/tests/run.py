@@ -139,6 +139,21 @@ def stale_source_detection():
     if missing_tests:
         raise RuntimeError("DE-11 stale-source regression tests missing: " + ", ".join(missing_tests))
 
+def impact_preview():
+    core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    index = (STUDIO / "index.html").read_text(encoding="utf-8")
+    required_core = ["buildImpactPreview", "recordFieldDiff", "reference_additions", "existing_references", "reference_differences"]
+    missing = [x for x in required_core if x not in core]
+    if missing:
+        raise RuntimeError("DE-13 core markers missing: " + ", ".join(missing))
+    required_ui = ["renderImpactPreview", "直接変更", "参照追加", "既存参照", "影響なし"]
+    missing_ui = [x for x in required_ui if x not in ui]
+    if missing_ui:
+        raise RuntimeError("DE-13 UI markers missing: " + ", ".join(missing_ui))
+    if 'id="dxImpactPreview"' not in index or "影響範囲Preview" not in index:
+        raise RuntimeError("DE-13 Preview panel missing")
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -161,6 +176,7 @@ def main():
         "integrity_validator": integrity_validator,
         "safe_merge_apply": safe_merge_apply,
         "stale_source_detection": stale_source_detection,
+        "impact_preview": impact_preview,
     }
     done=set()
     for name in steps:

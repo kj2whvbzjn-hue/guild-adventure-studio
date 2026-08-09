@@ -25,6 +25,32 @@
   function clearSelection(){selectedSet().clear();renderPicker();}
   async function exportSelection(){try{const dataset=currentDataset(),ids=[...selectedSet(dataset)].filter(id=>rows(dataset).some(r=>String(r.id)===id)).sort();if(!ids.length)throw new Error('出力対象を1件以上選択してください。');const mode=document.getElementById('dxPickerDependencyMode')?.value||'none';const envelope=await GKSDataExchange.buildEnvelope({rootData:data,dataset,ids,dependencyMode:mode,studioVersion:(typeof DISTRIBUTION_BUILD!=='undefined'?DISTRIBUTION_BUILD:'')});const project=(data.project?.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_'),suffix=mode==='recursive'?'GPT':mode==='direct'?'REFS':'DATA';downloadText(`${project}_${dataset.toUpperCase()}_${suffix}_${ids.length}.json`,JSON.stringify(envelope,null,2),'application/json;charset=utf-8');setStatus(`Data Exchange出力: ${DATASET_LABELS[dataset]||dataset} ${ids.length}件 / ${mode}`);}catch(e){alert('Data Exchange出力失敗: '+e.message);}}
   function setStatus(text){const el=document.getElementById('dxMasterExportStatus');if(el)el.textContent=text;}
+  function shortJson(value){
+    const s=typeof value==='string'?value:JSON.stringify(value);
+    return s==null?'':(s.length>120?s.slice(0,117)+'…':s);
+  }
+  function renderImpactPreview(result){
+    const panel=document.getElementById('dxImpactPreview');if(!panel)return;
+    const impact=result?.impact_preview;
+    if(!impact){
+      panel.innerHTML='<span class="small">Dry Runが完了すると影響範囲を表示します。</span>';
+      return;
+    }
+    const s=impact.summary||{};
+    const badges=`<div class="dx-dryrun-summary"><span class="badge">直接変更 ${s.direct||0}</span><span class="badge">参照追加 ${s.reference_additions||0}</span><span class="badge">既存参照 ${s.existing_references||0}</span><span class="badge">参照差異 ${s.reference_differences||0}</span><span class="badge">影響なし ${s.unaffected||0}</span></div>`;
+    const direct=(impact.direct||[]).map(item=>{
+      const diffs=(item.diffs||[]).map(d=>`<div class="small"><b>${escText(d.path)}</b>: ${escText(shortJson(d.before))} → ${escText(shortJson(d.after))}</div>`).join('');
+      return `<div class="dx-dryrun-row"><b>直接変更</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)} <span class="badge">${escText(item.status)}</span>${diffs}</div>`;
+    }).join('');
+    const refsAdd=(impact.reference_additions||[]).map(item=>`<div class="dx-dryrun-row"><b>参照追加</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)}</div>`).join('');
+    const refsExisting=(impact.existing_references||[]).map(item=>`<div class="dx-dryrun-row"><b>既存参照</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)}</div>`).join('');
+    const refsDiff=(impact.reference_differences||[]).map(item=>{
+      const diffs=(item.diffs||[]).map(d=>`<div class="small"><b>${escText(d.path)}</b>: ${escText(shortJson(d.before))} → ${escText(shortJson(d.after))}</div>`).join('');
+      return `<div class="dx-dryrun-row"><b>参照差異</b> ${escText(DATASET_LABELS[item.dataset]||item.dataset)} / ${escText(item.id)}${diffs}</div>`;
+    }).join('');
+    const unaffected=(impact.unaffected||[]).length?`<div class="small"><b>影響なし:</b> ${(impact.unaffected||[]).map(x=>escText(DATASET_LABELS[x]||x)).join(' / ')}</div>`:'';
+    panel.innerHTML=`${badges}${direct}${refsAdd}${refsExisting}${refsDiff}${unaffected||'<div class="small">影響なし分類はありません。</div>'}`;
+  }
   function renderApplyPanel(){
     const panel=document.getElementById('dxApplyPanel');if(!panel)return;
     if(!lastDryRun||!lastEnvelope){panel.innerHTML='<span class="small">Dry Run後にApply可否を表示します。</span>';return;}
@@ -73,6 +99,7 @@
       lastDryRun=applied.verify;
       lastApplyPlan=await GKSDataExchange.createApplyPlan({rootData:data,envelope:lastEnvelope,dryRun:lastDryRun});
       renderDryRun(lastDryRun,applied.applied.count);
+      renderImpactPreview(lastDryRun);
       renderApplyPanel();
       alert(`Safe Apply完了: ${label} ${applied.applied.count}件\nバックアップ作成・反映後再検証まで完了しました。`);
     }catch(e){
@@ -84,13 +111,14 @@
   function inspectImportFile(){
     const input=document.getElementById('dxImportFile'),file=input?.files?.[0],status=document.getElementById('dxImportStatus');
     if(!file){if(status)status.textContent='JSONファイルを選択してください。';return;}
-    lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;renderApplyPanel();
+    lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;renderApplyPanel();renderImpactPreview(null);
     if(status)status.textContent='解析中…';
     const reader=new FileReader();
     reader.onload=async()=>{try{
       lastEnvelope=JSON.parse(reader.result);
       lastDryRun=await GKSDataExchange.dryRunImport({rootData:data,envelope:lastEnvelope});
       renderDryRun(lastDryRun);
+      renderImpactPreview(lastDryRun);
       await updateApplyPlan();
     }catch(e){
       lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;
@@ -101,5 +129,5 @@
     reader.readAsText(file,'utf-8');
   }
   function onViewRefresh(){}
-  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,showApplyPlan,applySafeMerge,onViewRefresh};
+  window.GKSDataExchangeUI={openPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,showApplyPlan,applySafeMerge,onViewRefresh};
 })( );

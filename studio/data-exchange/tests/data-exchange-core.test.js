@@ -25,7 +25,10 @@ const dx=require('../data-exchange-core.js');
   const changed=JSON.parse(JSON.stringify(env));changed.datasets.monsters[0].name='Changed';changed.metadata.package_hash='';
   assert.equal((await dx.dryRunImport({rootData:root,envelope:changed})).summary.conflict,1);
   const added=JSON.parse(JSON.stringify(env));added.datasets.monsters[0].id='M2';added.datasets.monsters[0].params.skill_ids=[];added.metadata.base_hash='';added.metadata.package_hash='';
-  assert.equal((await dx.dryRunImport({rootData:root,envelope:added})).summary.add,1);
+  const addedResult=await dx.dryRunImport({rootData:root,envelope:added});
+  assert.equal(addedResult.summary.add,1);
+  assert.equal(addedResult.impact_preview.summary.direct,1);
+  assert(addedResult.impact_preview.direct.some(x=>x.dataset==='monsters'&&x.id==='M2'&&x.status==='add'));
   const broken=JSON.parse(JSON.stringify(added));broken.datasets.monsters[0].params.skill_ids=['MISSING'];
   const brokenResult=await dx.dryRunImport({rootData:root,envelope:broken});assert.equal(brokenResult.summary.broken_reference,1);assert.equal(brokenResult.ok,true);assert.equal(brokenResult.integrity.apply_blocking,true);
   const roEnv=JSON.parse(JSON.stringify(env));roEnv.datasets.tags[0].name='ChangedTag';roEnv.metadata.package_hash='';
@@ -49,6 +52,9 @@ const dx=require('../data-exchange-core.js');
   const normalConflictResult=await dx.dryRunImport({rootData:root,envelope:normalConflict});
   assert.equal(normalConflictResult.summary.conflict,1);
   assert.equal(normalConflictResult.summary.stale_source,0,'normal GPT edit must not be stale when current source record is unchanged');
+  assert.equal(normalConflictResult.impact_preview.summary.direct,1);
+  const conflictImpact=normalConflictResult.impact_preview.direct.find(x=>x.dataset==='monsters'&&x.id==='M1');
+  assert(conflictImpact&&conflictImpact.diffs.some(d=>d.path==='name'),'conflict preview must expose field-level diff');
 
   const staleRoot=JSON.parse(JSON.stringify(root));staleRoot.project.updated_at='R2';staleRoot.masters.monsters[0].name='ServerChanged';
   const staleImport=JSON.parse(JSON.stringify(env));staleImport.datasets.monsters[0].name='GPTChanged';staleImport.metadata.package_hash='';
@@ -67,6 +73,11 @@ const dx=require('../data-exchange-core.js');
   const legacyStale=JSON.parse(JSON.stringify(env));delete legacyStale.metadata.record_hashes;legacyStale.metadata.package_hash='';
   const legacyStaleResult=await dx.dryRunImport({rootData:staleRoot,envelope:legacyStale});
   assert.equal(legacyStaleResult.summary.stale_source,1,'legacy base_hash fallback must remain supported');
+
+  const preview=dx.buildImpactPreview(root,env,unchanged);
+  assert.equal(preview.summary.direct,0);
+  assert(preview.summary.existing_references>=1,'read_only dependencies already present must be shown as existing references');
+  assert(preview.unaffected.includes('jobs'),'unrelated datasets must be listed as unaffected');
 
   const incompatible=JSON.parse(JSON.stringify(env));incompatible.project_id='OTHER';incompatible.metadata.package_hash='';
   assert.equal((await dx.dryRunImport({rootData:root,envelope:incompatible})).summary.incompatible,1);

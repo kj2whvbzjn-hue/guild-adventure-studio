@@ -45,3 +45,11 @@ UI統一ルール:
 ### DE-11 stale/conflict precedence
 - record_hashesによりExport後の正本変更を確認できた同一IDは、通常の `conflict` より `stale_source` を優先する。
 - 同一レコードを `conflict` と `stale_source` の二重計上にしない。
+
+
+## DE-13 影響範囲Preview
+- Dry Run結果からApply前の影響範囲を表示する。
+- 区分: 直接変更 / 参照追加 / 既存参照 / 参照差異 / 影響なし。
+- conflict / stale_source等の直接変更にはcanonicalized recordのフィールド単位diffを表示する。
+- Previewは表示専用で、正本データを変更しない。
+- Merge単位はレコード単位のままとし、diffは判断材料として表示する。
