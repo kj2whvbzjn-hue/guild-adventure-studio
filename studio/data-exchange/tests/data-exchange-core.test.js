@@ -54,7 +54,9 @@ const dx=require('../data-exchange-core.js');
   const staleImport=JSON.parse(JSON.stringify(env));staleImport.datasets.monsters[0].name='GPTChanged';staleImport.metadata.package_hash='';
   const staleResult=await dx.dryRunImport({rootData:staleRoot,envelope:staleImport});
   assert.equal(staleResult.summary.stale_source,1);
+  assert.equal(staleResult.summary.conflict,0,'stale_source must take precedence over normal conflict for a changed source record');
   assert(staleResult.items.some(x=>x.status==='stale_source'&&x.id==='M1'));
+  assert(!staleResult.items.some(x=>x.status==='conflict'&&x.id==='M1'));
   assert.equal(staleResult.can_apply,false);
 
   const revisionOnlyRoot=JSON.parse(JSON.stringify(root));revisionOnlyRoot.project.updated_at='R2';

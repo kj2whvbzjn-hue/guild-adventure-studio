@@ -41,3 +41,7 @@ UI統一ルール:
 - Project revisionだけが変わり、選択対象record hashが一致する場合はstale扱いにしない。
 - `record_hashes` を持たない旧Packageはaggregate `base_hash` で後方互換検査する。
 - `stale_source` はApply blockingとする。
+
+### DE-11 stale/conflict precedence
+- record_hashesによりExport後の正本変更を確認できた同一IDは、通常の `conflict` より `stale_source` を優先する。
+- 同一レコードを `conflict` と `stale_source` の二重計上にしない。

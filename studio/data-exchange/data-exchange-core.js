@@ -189,12 +189,33 @@
     if(result.package_hash.checked&&!result.package_hash.ok){result.summary.invalid++;result.errors.push('package_hashが一致しません。ファイル内容がExport後に変更されています。');return result;}
     const incomingIndex={};datasetNames.forEach(ds=>{incomingIndex[ds]=new Map((envelope.datasets[ds]||[]).map(row=>[String(row.id),row]));});
     const localIndex={};Object.keys(REGISTRY).forEach(ds=>{localIndex[ds]=new Map(records(rootData,ds).map(row=>[String(row.id),row]));});
+    const primary=writeDatasets[0],baseHash=String(envelope.metadata?.base_hash||'').trim();
+    const exportedRevision=String(envelope.metadata?.base_project_revision||'').trim();
+    const currentRevision=String(rootData.project?.updated_at||'').trim();
+    result.source_revision={exported:exportedRevision,current:currentRevision,changed:!!exportedRevision&&!!currentRevision&&exportedRevision!==currentRevision};
+    const sourceHashes=envelope.metadata?.record_hashes?.[primary];
+    const staleIds=new Set();
+    let usedRecordHashes=false;
+    if(sourceHashes&&typeof sourceHashes==='object'&&!Array.isArray(sourceHashes)){
+      for(const row of envelope.datasets[primary]||[]){
+        const id=String(row.id),expected=String(sourceHashes[id]||'').trim(),local=localIndex[primary].get(id);
+        if(!expected||!local)continue;
+        usedRecordHashes=true;
+        const actual=await recordHash(primary,local);
+        if(actual!==expected)staleIds.add(id);
+      }
+    }
     for(const ds of datasetNames){
       for(const row of envelope.datasets[ds]){
         const id=String(row.id),local=localIndex[ds].get(id);
         const same=!!local&&stableStringify(canonicalizeRecord(ds,local))===stableStringify(canonicalizeRecord(ds,row));
         if(readOnly.has(ds)){
           if(!result.integrity&&!local||(!result.integrity&&local&&!same)){result.items.push({dataset:ds,id,status:'readonly_modified',detail:!local?'read_only参照が現在のProjectに存在しません。':'read_only参照が現在値と異なります。'});result.summary.readonly_modified++;}
+          continue;
+        }
+        if(ds===primary&&local&&staleIds.has(id)){
+          result.items.push({dataset:ds,id,status:'stale_source',detail:'Export後にこのレコードが正本側で変更されています。'});
+          result.summary.stale_source++;
           continue;
         }
         const broken=referencedIds(ds,row).filter(ref=>!(incomingIndex[ref.dataset]?.has(ref.id))&&!(localIndex[ref.dataset]?.has(ref.id)));
@@ -204,28 +225,10 @@
         else{result.items.push({dataset:ds,id,status:'conflict',detail:'同一IDの現在値と内容が異なります。'});result.summary.conflict++;}
       }
     }
-    const primary=writeDatasets[0],baseHash=String(envelope.metadata?.base_hash||'').trim();
-    const exportedRevision=String(envelope.metadata?.base_project_revision||'').trim();
-    const currentRevision=String(rootData.project?.updated_at||'').trim();
-    result.source_revision={exported:exportedRevision,current:currentRevision,changed:!!exportedRevision&&!!currentRevision&&exportedRevision!==currentRevision};
-    const sourceHashes=envelope.metadata?.record_hashes?.[primary];
-    let usedRecordHashes=false;
-    if(sourceHashes&&typeof sourceHashes==='object'&&!Array.isArray(sourceHashes)){
-      for(const row of envelope.datasets[primary]||[]){
-        const id=String(row.id),expected=String(sourceHashes[id]||'').trim(),local=localIndex[primary].get(id);
-        if(!expected||!local)continue;
-        usedRecordHashes=true;
-        const actual=await recordHash(primary,local);
-        if(actual!==expected){
-          result.summary.stale_source++;
-          result.items.push({dataset:primary,id,status:'stale_source',detail:'Export後にこのレコードが正本側で変更されています。'});
-        }
-      }
-      if(result.summary.stale_source){
-        result.warnings.push(`対象レコード ${result.summary.stale_source}件がExport後に変更されています。古いImportとしてApplyを禁止します。`);
-      }else if(result.source_revision.changed){
-        result.warnings.push('Project revisionはExport後に更新されていますが、選択対象レコードのhashは一致しています。');
-      }
+    if(result.summary.stale_source){
+      result.warnings.push(`対象レコード ${result.summary.stale_source}件がExport後に変更されています。古いImportとしてApplyを禁止します。`);
+    }else if(usedRecordHashes&&result.source_revision.changed){
+      result.warnings.push('Project revisionはExport後に更新されていますが、選択対象レコードのhashは一致しています。');
     }
     if(!usedRecordHashes&&baseHash){
       const incomingIds=(envelope.datasets[primary]||[]).map(r=>String(r.id));
