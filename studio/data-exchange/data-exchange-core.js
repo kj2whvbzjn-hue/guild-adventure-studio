@@ -208,7 +208,73 @@
         if(actual!==baseHash){result.summary.stale_source++;result.warnings.push('base_hashが現在のProjectと一致しません。Export後に対象データが変更された可能性があります。');}
       }
     }
-    result.ok=result.errors.length===0;result.can_apply=false;return result;
+    result.ok=result.errors.length===0;
+    const blockers=applyBlockReasons(result);
+    result.can_apply=result.ok&&blockers.length===0&&(result.summary.add||0)>0;
+    return result;
+  }
+  function setDatasetRecords(rootData,dataset,newRows){
+    const def=REGISTRY[dataset];if(!def)throw new Error('未対応Dataset: '+dataset);
+    let target=rootData;
+    for(let i=0;i<def.path.length-1;i++){
+      const key=def.path[i];
+      if(!target[key]||typeof target[key]!=='object')target[key]={};
+      target=target[key];
+    }
+    target[def.path[def.path.length-1]]=newRows;
+  }
+  function applyBlockReasons(result){
+    const reasons=[];
+    if(!result?.ok)reasons.push('Dry Runが正常完了していません。');
+    const s=result?.summary||{};
+    if((s.invalid||0)>0)reasons.push(`不正 ${s.invalid}件`);
+    if((s.incompatible||0)>0)reasons.push(`非互換 ${s.incompatible}件`);
+    if((s.conflict||0)>0)reasons.push(`競合 ${s.conflict}件`);
+    if((s.stale_source||0)>0)reasons.push(`元データ更新済み ${s.stale_source}件`);
+    if((s.broken_reference||0)>0)reasons.push(`参照切れ ${s.broken_reference}件`);
+    if((s.readonly_modified||0)>0)reasons.push(`read_only差異 ${s.readonly_modified}件`);
+    if(result?.integrity?.apply_blocking&&!reasons.length)reasons.push('Integrity ValidatorがApplyを禁止しています。');
+    return reasons;
+  }
+  async function createApplyPlan(options){
+    const rootData=options?.rootData||{},envelope=options?.envelope;
+    const dryRun=options?.dryRun||await dryRunImport({rootData,envelope});
+    const writable=uniqueStrings(envelope?.permissions?.writable||[]);
+    const reasons=applyBlockReasons(dryRun);
+    if(writable.length!==1)reasons.push('writable Datasetは1分類である必要があります。');
+    const dataset=writable[0]||'';
+    const addItems=(dryRun.items||[]).filter(x=>x.status==='add'&&x.dataset===dataset);
+    if(!addItems.length&&!reasons.length)reasons.push('追加対象がありません。Safe Merge v1は追加のみ対応です。');
+    const ids=addItems.map(x=>String(x.id)).filter(Boolean);
+    const plan={ok:reasons.length===0,can_apply:reasons.length===0,dataset,add_count:ids.length,ids,reasons,dryRun};
+    dryRun.can_apply=plan.can_apply;
+    dryRun.apply_plan={dataset,add_count:ids.length,ids:ids.slice(),reasons:reasons.slice()};
+    return plan;
+  }
+  async function applySafeMerge(options){
+    const rootData=options?.rootData||{},envelope=options?.envelope;
+    const plan=options?.plan||await createApplyPlan({rootData,envelope,dryRun:options?.dryRun});
+    if(!plan.can_apply)throw new Error('Safe Apply不可: '+(plan.reasons||[]).join(' / '));
+    const dataset=plan.dataset,def=REGISTRY[dataset];
+    const incoming=Array.isArray(envelope?.datasets?.[dataset])?envelope.datasets[dataset]:[];
+    const addSet=new Set(plan.ids);
+    const sourceById=new Map(incoming.map(row=>[String(row?.[def.idField]??''),row]));
+    const current=records(rootData,dataset);
+    const existing=new Set(current.map(row=>String(row?.[def.idField]??'')));
+    const additions=[];
+    for(const id of plan.ids){
+      if(existing.has(id))throw new Error('Apply直前に既存IDを検出しました: '+id);
+      const row=sourceById.get(id);
+      if(!row)throw new Error('Apply対象データが見つかりません: '+id);
+      additions.push(clone(row));
+    }
+    const nextRootData=clone(rootData);
+    setDatasetRecords(nextRootData,dataset,[...records(nextRootData,dataset).map(clone),...additions]);
+    const verify=await dryRunImport({rootData:nextRootData,envelope});
+    if(!verify.ok||verify.summary.add!==0||verify.summary.conflict!==0||verify.summary.broken_reference!==0||verify.summary.readonly_modified!==0){
+      throw new Error('Apply後の再検証に失敗しました。書き込み候補は破棄されました。');
+    }
+    return {nextRootData,applied:{dataset,count:additions.length,ids:plan.ids.slice()},verify};
   }
   function validateEnvelopeShape(value){
     const errors=[];
@@ -221,5 +287,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport};
+  return {FORMAT,VERSION,REGISTRY,records,canonicalizeRecord,stableStringify,sha256Hex,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

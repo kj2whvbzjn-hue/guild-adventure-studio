@@ -94,8 +94,8 @@ def import_dry_run():
         raise RuntimeError("DE-8 core markers missing: " + ", ".join(missing))
     if "Dry Runを実行" not in index or "renderDryRun" not in ui:
         raise RuntimeError("DE-8 Dry Run UI missing")
-    if "can_apply:false" not in core:
-        raise RuntimeError("DE-8 must remain non-applying")
+    if "dryRunImport" not in core:
+        raise RuntimeError("DE-8 Dry Run core missing")
 
 def integrity_validator():
     validator = DX / "data-exchange-integrity-validator.js"
@@ -109,6 +109,23 @@ def integrity_validator():
     index = (STUDIO / "index.html").read_text(encoding="utf-8")
     if "data-exchange-integrity-validator.js" not in index:
         raise RuntimeError("DE-9 validator Studio reference missing")
+
+def safe_merge_apply():
+    core = (DX / "data-exchange-core.js").read_text(encoding="utf-8")
+    ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
+    index = (STUDIO / "index.html").read_text(encoding="utf-8")
+    required_core = ["createApplyPlan", "applySafeMerge", "applyBlockReasons", "setDatasetRecords"]
+    missing = [x for x in required_core if x not in core]
+    if missing:
+        raise RuntimeError("DE-10 core markers missing: " + ", ".join(missing))
+    required_ui = ["showApplyPlan", "applySafeMerge", "before-data-exchange-safe-apply", "createBackup"]
+    missing_ui = [x for x in required_ui if x not in ui]
+    if missing_ui:
+        raise RuntimeError("DE-10 Safe Apply UI markers missing: " + ", ".join(missing_ui))
+    if 'id="dxApplyPanel"' not in index or "Data Exchange Import / Safe Merge" not in index:
+        raise RuntimeError("DE-10 Apply panel missing")
+    if "既存IDは上書きしません" not in ui:
+        raise RuntimeError("DE-10 must preserve add-only safe merge rule")
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
@@ -130,6 +147,7 @@ def main():
         "dependency_smoke": smoke_names,
         "import_dry_run": import_dry_run,
         "integrity_validator": integrity_validator,
+        "safe_merge_apply": safe_merge_apply,
     }
     done=set()
     for name in steps:
