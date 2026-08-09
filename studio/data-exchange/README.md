@@ -126,3 +126,21 @@ current data → deep clone → Safe Merge candidate → normalize → Data Exch
 - 最新GitHubソースには `datasetHash` 定義・export・UI呼出が揃っていたため、旧Audit JSキャッシュ残留と判定。
 - `data-exchange-audit.js` cache versionを v3→v4、`data-exchange-ui.js` を v14→v15 へ更新。
 - 機能ロジックは変更しない。
+
+
+## DE-17 Monster Vertical Slice Gate
+MonsterをData Exchangeの基準Vertical Sliceとして固定する受入Gate。
+
+Gate対象:
+- Monster Export / package hash / dependency read_only
+- Import Dry Run: add / unchanged / conflict
+- AI-first Impact JSON
+- conflict keep / import
+- stale_source blocking
+- broken_reference blocking
+- read_only差異 blocking
+- DELETE v1 blocking
+- DataExchangeTransaction
+- Audit Session / Undo / undone記録
+
+`monster_vertical_gate` がQuick/Fullの双方でPASSしない限り、DE-18 Tag / Skill拡張へ進まない。

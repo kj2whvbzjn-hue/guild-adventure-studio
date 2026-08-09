@@ -221,6 +221,10 @@ def cache_bust_de165():
     if "async function datasetHash" not in audit or "GKSDataExchangeAudit.datasetHash" not in ui:
         raise RuntimeError("DE-16.5 datasetHash runtime integration missing")
 
+def monster_vertical_gate():
+    run(["node", str(HERE / "data-exchange-monster-vertical-gate.test.js")], cwd=str(HERE))
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "quick"
     if mode not in ("quick", "full"):
@@ -248,6 +252,7 @@ def main():
         "safe_merge_v2": safe_merge_v2,
         "audit_undo": audit_undo,
         "cache_bust_de165": cache_bust_de165,
+        "monster_vertical_gate": monster_vertical_gate,
     }
     done=set()
     for name in steps:
