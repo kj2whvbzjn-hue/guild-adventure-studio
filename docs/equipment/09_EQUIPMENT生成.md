@@ -35,3 +35,21 @@ Balance Configの数値を変更すれば、Generatorコードを変更せず再
 
 現在のConfigには資料記載値を初期調整値として登録しているが、最終確定値ではない。
 旧カテゴリ名 `スカウト` は互換入力として `軽装` に正規化する。
+
+
+## BaseItem Pipeline v1.2 / GKS-B495
+
+単体生成に加えて、同一Generatorを共有する以下の経路を正式接続する。
+
+- 一括試算: `simulateBatch()`。Equipment Masterへ保存しない。
+- 一括生成: `generateBatch()` → Validator → Preview → `commitBatch()`。全件OKの場合のみ保存可能。
+- AI request: `prepareAiRequest()`。AIはカテゴリ、BaseItem候補、iLv帯、生成数、seed、ID prefixのみ指定可能。
+- AI requestへ `required_*`、`attack`、`accuracy`、`magic_weapon_bonus`、`base_critical_rate`、`hp_bonus`、`mp_bonus`、`evasion` を直接指定した場合はエラー。
+
+### Growth拡張点
+
+Balance Configの `growth` を使用する。防具は `hp / mp / evasion` をiLv別に独立設定できる。初期値はすべて1.0。武器は拡張点のみ保持し `enabled=false` とする。要求閾値にはGrowthを掛けない。
+
+### Data Exchange
+
+正式Equipment field（武器性能、防具性能、要求値、生成履歴）をData Exchangeの許可fieldへ追加する。生成履歴 `generation` にGenerator / Rules / Config / seed / calculation traceを保持する。

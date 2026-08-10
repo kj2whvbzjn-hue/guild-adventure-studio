@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, sys, zipfile
+import argparse, json, sys, zipfile, re, unicodedata
 from pathlib import Path, PurePosixPath
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools/inspection"))
@@ -17,8 +17,12 @@ def load_manifest() -> dict:
     return data
 
 
+ESCAPED_RE = re.compile(r'#U[0-9A-Fa-f]{4,6}')
+
 def safe_rel(path: Path) -> str:
-    rel = path.relative_to(ROOT).as_posix()
+    rel = unicodedata.normalize('NFC', path.relative_to(ROOT).as_posix())
+    if ESCAPED_RE.search(rel):
+        raise ValueError(f'escaped unicode filename forbidden: {rel}')
     p = PurePosixPath(rel)
     if p.is_absolute() or '..' in p.parts:
         raise ValueError(f'unsafe path: {rel}')
@@ -65,7 +69,14 @@ def write_zip(items: list[tuple[str, Path]], output: Path) -> None:
     if tmp.exists(): tmp.unlink()
     with zipfile.ZipFile(tmp, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for rel, p in items:
-            zf.write(p, rel)
+            rel = unicodedata.normalize('NFC', rel)
+            if ESCAPED_RE.search(rel):
+                raise ValueError(f'escaped unicode filename forbidden: {rel}')
+            info = zipfile.ZipInfo.from_file(p, arcname=rel)
+            info.flag_bits |= 0x800
+            info.compress_type = zipfile.ZIP_DEFLATED
+            with p.open('rb') as src, zf.open(info, 'w', force_zip64=True) as dst:
+                dst.write(src.read())
     with zipfile.ZipFile(tmp, 'r') as zf:
         bad = zf.testzip()
         if bad:
