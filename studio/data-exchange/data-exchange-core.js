@@ -155,9 +155,25 @@
     });
     return {ids:out,errors};
   }
+  const SKILL_RUNTIME_LOGIC_TAGS=new Set(['COVER','COUNTER','ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE']);
+  const SKILL_RUNTIME_GENERAL_TAGS=new Set(['自分','味方','敵','死体','地点','単体','全体','前列','後列','ランダム','貫通','物理','魔法','固定','ATK','DEF','MAGIC_WEAPON_BONUS','STATUS_RESIST','TRIGGER_ALLY_ATTACK','CONDITION_POISONED','CLEANSE_ALL','INDEPENDENT','STRONGEST','ACTION_DISABLED=true']);
+  const SKILL_RUNTIME_PREFIXES=['STATUS_ID=','CLEANSE_CATEGORY=','CLEANSE_ORDER=','AURA_EFFECT=','AURA_TARGET=','AURA_SCOPE=','AURA_STACK=','COVER_TARGET=','COVER_TRIGGER=','COVER_REMOVABLE=','COVER_LIFETIME=','COUNTER_TRIGGER=','COUNTER_TARGET=','COUNTER_REQUIRE_ALIVE=','COUNTER_ALLOW_ZERO_DAMAGE='];
+  function isSkillRuntimeSystemTag(id){
+    const value=String(id||'').trim();if(!value)return false;
+    if(SKILL_RUNTIME_LOGIC_TAGS.has(value)||SKILL_RUNTIME_GENERAL_TAGS.has(value))return true;
+    if(SKILL_RUNTIME_PREFIXES.some(prefix=>value.startsWith(prefix)))return true;
+    return /^[A-Za-z][A-Za-z0-9_]*\s*(=|>=|<=|>|<)\s*-?\d+(?:\.\d+)?$/.test(value);
+  }
   function referencedIds(dataset,row){
     const refs=[];
-    (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>collectIds(row,dep.paths).forEach(id=>refs.push({dataset:dep.dataset,id})));
+    (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>{
+      for(const path of dep.paths||[]){
+        for(const id of collectIds(row,[path])){
+          if(dataset==='skills'&&dep.dataset==='tags'&&path==='tags'&&isSkillRuntimeSystemTag(id))continue;
+          refs.push({dataset:dep.dataset,id});
+        }
+      }
+    });
     return refs;
   }
   async function verifyPackageHash(envelope){

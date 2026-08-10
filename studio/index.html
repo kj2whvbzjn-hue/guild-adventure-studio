@@ -169,7 +169,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B500 Story nested Data Exchange + scenario export wording */
+/* GKS-B501 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -394,13 +394,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../game-tag-test/">タグ検証</a><a href="../docs/">資料</a><span class="build">GA-B486.58 / GKS-B500</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../game-tag-test/">タグ検証</a><a href="../docs/">資料</a><span class="build">GA-B486.58 / GKS-B501</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.58 / Studio GKS-B500</div>
+    <div class="version">Game GA-B486.58 / Studio GKS-B501</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -442,6 +442,7 @@ updateDeployDeleteControl();
       <button type="button" onclick="runLauncherAction('characters')">キャラクター</button>
       <button type="button" onclick="runLauncherAction('masters')">マスター</button>
       <button type="button" onclick="runLauncherAction('equipment-generator')">装備生成</button>
+      <button type="button" onclick="runLauncherAction('skill-generator')">スキル生成</button>
       <button type="button" onclick="runLauncherAction('rules')">ルール</button>
     </div>
   </div>
@@ -474,7 +475,7 @@ updateDeployDeleteControl();
     <button data-view="projects">プロジェクト一覧</button><button data-view="project">プロジェクト設定</button>
     <button data-view="story">シナリオ</button><button data-view="storyeditor">シナリオ構成</button>
     <button data-view="quests">クエスト</button><button data-view="events">イベント</button><button data-view="flags">フラグ</button>
-    <button data-view="characters">キャラクター</button><button data-view="masters">マスター</button><button data-view="equipment-generator">装備生成</button><button data-view="rules">ルール</button>
+    <button data-view="characters">キャラクター</button><button data-view="masters">マスター</button><button data-view="equipment-generator">装備生成</button><button data-view="skill-generator">スキル生成</button><button data-view="rules">ルール</button>
     <button data-view="verification-home">検証ホーム</button><button data-view="battle">戦闘</button><button data-view="references">参照</button><button data-view="validation">検証</button>
     <button data-view="backup">バックアップ</button><button data-view="githubsync">同期</button><button data-view="studiodeploy">配置</button><button data-view="importexport">読込出力</button>
   </div>
@@ -1986,7 +1987,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B500';
+const DISTRIBUTION_BUILD='GKS-B501';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2269,7 +2270,7 @@ function openVerificationSection(section,cardType){
  },80);
 }
 function runLauncherAction(action){
- const direct={dashboard:'dashboard',guide:'guide','verification-home':'verification-home',projects:'projects',project:'project',story:'story',quests:'quests',events:'events',flags:'flags',characters:'characters',masters:'masters','equipment-generator':'equipment-generator',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
+ const direct={dashboard:'dashboard',guide:'guide','verification-home':'verification-home',projects:'projects',project:'project',story:'story',quests:'quests',events:'events',flags:'flags',characters:'characters',masters:'masters','equipment-generator':'equipment-generator','skill-generator':'skill-generator',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
  if(action==='ai-explorer'){showView('verification-home');setTimeout(()=>document.getElementById('aiExplorerCard')?.scrollIntoView({behavior:'smooth',block:'start'}),80);return}
  if(action==='battle-formula'){openVerificationSection('battle-formula');return}
  if(action==='ratio-cards'){openVerificationSection('design-cards','ratio');return}
@@ -6959,10 +6960,12 @@ function applyDesignFormationsToBattle(){try{const a=document.getElementById('de
 setTimeout(loadDesignCards,0);
 
 </script>
-<script>window.GKSEquipmentHost={getData:()=>data,persist:message=>persist(message),getBuild:()=>DISTRIBUTION_BUILD};</script>
-<script src="./equipment/equipment-generator.js?v=4970"></script>
+<script>window.GKSEquipmentHost={getData:()=>data,persist:message=>persist(message),getBuild:()=>DISTRIBUTION_BUILD};
+window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};</script>
+<script src="./equipment/equipment-generator.js?v=4971"></script>
+<script src="./skill/skill-generator.js?v=1"></script>
 <script src="./data-exchange/data-exchange-integrity-validator.js?v=3"></script>
-<script src="./data-exchange/data-exchange-core.js?v=12"></script>
+<script src="./data-exchange/data-exchange-core.js?v=13"></script>
 <script src="./data-exchange/data-exchange-transaction.js?v=3"></script>
 <script src="./data-exchange/data-exchange-audit.js?v=5"></script>
 <script src="./data-exchange/data-exchange-ui.js?v=21"></script>
