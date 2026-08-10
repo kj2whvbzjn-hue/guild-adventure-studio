@@ -10,6 +10,6 @@ assert(!verify.includes("runLauncherAction('equipment-generator')"),'検証タ�
 assert(!html.includes('>Equipment Generator</button>'),'英語の装備生成ボタンが残っています');
 assert(js.includes('<h1>装備生成</h1>'),'装備生成画面の見出しが日本語ではありません');
 assert(!js.includes('<h1>Equipment Generator</h1>'),'英語の見出しが残っています');
-assert(js.includes('生成して確認')&&js.includes('JSONファイルを選択')&&js.includes('完成JSON（管理読込用）出力'),'装備生成画面の主要操作が日本語化されていません');
+assert(js.includes('生成して確認')&&js.includes('武器JSONを選択')&&js.includes('完成装備JSONを書き出す'),'装備生成画面の主要操作が日本語化されていません');
 assert(!js.includes('id="eqgBatchCommit"'),'通常UIにマスター直書きの一括保存導線が残っています');
 console.log('EQUIPMENT_UI_GKS_B496_OK');
