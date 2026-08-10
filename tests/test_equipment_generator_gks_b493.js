@@ -1,0 +1,28 @@
+const fs=require('fs');const path=require('path');const vm=require('vm');
+const root=path.resolve(__dirname,'..');
+global.window=global;global.data={tags:[{id:'WEAPON_STAFF'}],masters:{equipment:[]}};global.persist=()=>{};
+global.document={readyState:'loading',addEventListener:()=>{},querySelector:()=>null,getElementById:()=>null};
+global.fetch=async function(rel){const p=path.resolve(root,'studio',String(rel).replace(/^\.\//,''));return {ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync(p,'utf8'))}};
+vm.runInThisContext(fs.readFileSync(path.join(root,'studio/equipment/equipment-generator.js'),'utf8'),{filename:'equipment-generator.js'});
+(async()=>{
+ await GKSEquipmentGenerator.initialize();
+ let sword=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:3,seed:'42',id:'EQP-W'});
+ if(!sword.validation.ok)throw new Error('weapon validation: '+sword.validation.errors.join(','));
+ for(const [k,v] of Object.entries({required_str:18,required_dex:9,required_int:3,attack:36,accuracy:18,magic_weapon_bonus:18,base_critical_rate:.05}))if(sword.record[k]!==v)throw new Error(`${k}: ${sword.record[k]} != ${v}`);
+ let armor=GKSEquipmentGenerator.generate({kind:'armor',base_item_type:'重装',armor_slot:'鎧',item_level:2,seed:'1',id:'EQP-A'});
+ if(!armor.validation.ok)throw new Error('armor validation: '+armor.validation.errors.join(','));
+ for(const [k,v] of Object.entries({required_vit:12,required_mnd:6,required_agi:2,hp_bonus:240,mp_bonus:120,evasion:40}))if(armor.record[k]!==v)throw new Error(`${k}: ${armor.record[k]} != ${v}`);
+ let light=GKSEquipmentGenerator.generate({kind:'armor',base_item_type:'スカウト',armor_slot:'頭',item_level:1,seed:'1',id:'EQP-L'});
+ if(light.record.armor_category!=='軽装')throw new Error('legacy armor alias failed');
+ const cfg=JSON.parse(fs.readFileSync(path.join(root,'studio/equipment/equipment-balance-config.json'),'utf8'));
+ cfg.weapon.requirement_coefficients['片手剣'].str=7; cfg.weapon.performance.attack_multiplier=3; cfg.weapon.performance.base_critical_rate=.08;
+ cfg.armor.requirement_coefficients['重装'].vit=8; cfg.armor.slot_coefficients['鎧']=25; cfg.item_level.max=12;
+ GKSEquipmentGenerator.setConfigForTest(cfg);
+ sword=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:3,id:'EQP-W2'});
+ if(sword.record.required_str!==21||sword.record.attack!==63||sword.record.base_critical_rate!==.08)throw new Error('weapon values are not config-driven');
+ armor=GKSEquipmentGenerator.generate({kind:'armor',base_item_type:'重装',armor_slot:'鎧',item_level:2,id:'EQP-A2'});
+ if(armor.record.required_vit!==16||armor.record.hp_bonus!==400)throw new Error('armor values are not config-driven');
+ const ilv12=GKSEquipmentGenerator.generate({kind:'armor',base_item_type:'軽装',armor_slot:'足',item_level:12,id:'EQP-I12'});
+ if(!ilv12.validation.ok)throw new Error('item level range is not config-driven');
+ console.log('EQUIPMENT_GENERATOR_GKS_B494_OK');
+})().catch(e=>{console.error(e);process.exit(1)});
