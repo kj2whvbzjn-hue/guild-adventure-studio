@@ -345,6 +345,15 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',suppressDerived:true});
  return{ok:!!result?.ok,triggered:true,skillId,result};
 }
+function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=true}={}){
+ const requiresAttack=compiled.definition.logicOrder.includes('ATTACK');
+ if((logic==='STATUS'||logic==='DOT')&&requiresAttack&&!attackSucceeded){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] ATTACK不成立のため${logic==='STATUS'?'状態異常':'DOT'}付与をスキップ`);return{handled:true,skipped:true,reason:'ATTACK_FAILED',result:null}}
+ if(!target?.alive){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 対象戦闘不能のため${logic==='STATUS'?'状態異常':logic==='DOT'?'DOT':'付与効果'}付与をスキップ`);return{handled:true,skipped:true,reason:'TARGET_DEAD',result:null}}
+ if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled)};
+ if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled)};
+ if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled)};
+ return{handled:false,skipped:false,result:null};
+}
 function compareTaggedCondition(actual,operator,expected){if(!Number.isFinite(actual)||!Number.isFinite(expected))return false;switch(operator){case '=':return actual===expected;case '!=':return actual!==expected;case '>':return actual>expected;case '>=':return actual>=expected;case '<':return actual<expected;case '<=':return actual<=expected;default:return false}}
 function taggedConditionActual(actor,key){if(!actor)return NaN;switch(key){case 'CONDITION_SELF_HP':return Number(actor.hp);case 'CONDITION_SELF_HP_RATE':return Number(actor.maxHp)>0?Number(actor.hp)/Number(actor.maxHp):0;case 'CONDITION_SELF_MP':return Number(actor.mp);case 'CONDITION_SELF_MP_RATE':return Number(actor.maxMp)>0?Number(actor.mp)/Number(actor.maxMp):0;case 'CONDITION_ENEMY_COUNT':return battle.units.filter(x=>x.alive&&x.side!==actor.side).length;case 'CONDITION_ALLY_COUNT':return battle.units.filter(x=>x.alive&&x.side===actor.side).length;case 'CONDITION_BATTLE_TICK':return Number(battle.tick||0);default:return NaN}}
 function evaluateTaggedSkillConditions(actor,compiled){const conditions=compiled?.definition?.parameters?.conditions||[];if(!conditions.length)return{ok:true,mode:'all',results:[]};const results=conditions.map(c=>{const actual=taggedConditionActual(actor,c.key),passed=compareTaggedCondition(actual,c.operator,Number(c.value));return{...c,actual,passed}});return{ok:results.every(x=>x.passed),mode:'all',results}}
@@ -364,11 +373,9 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
    if(logic==='COUNTER'){continue}
    if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL'){healResult=applyTaggedHeal(actor,resolvedTarget,compiled)}
-   else if(logic==='SHIELD'){shieldResult=applyTaggedShield(actor,resolvedTarget,compiled)}
+   else if(['SHIELD','STATUS','DOT'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else dotResult=applyResult.result}
    else if(logic==='CLEANSE'){cleanseResult=cleanseStatusEffects(actor,resolvedTarget,compiled)}
    else if(logic==='REVIVE'){reviveResult=reviveTarget(actor,resolvedTarget,compiled)}
-   else if(logic==='STATUS'){if(compiled.definition.logicOrder.includes('ATTACK')&&!attackSucceeded)battle.log.push(`[Tick ${battle.tick}] [TAG][STATUS] ATTACK不成立のため状態異常付与をスキップ`);else if(!resolvedTarget.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][STATUS] 対象戦闘不能のため状態異常付与をスキップ`);else statusResult=applyTaggedStatus(actor,resolvedTarget,compiled)}
-   else if(logic==='DOT'){if(!attackSucceeded)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ATTACK不成立のためDOT付与をスキップ`);else if(!resolvedTarget.alive)battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] 対象戦闘不能のためDOT付与をスキップ`);else dotResult=applyTaggedDot(actor,resolvedTarget,compiled)}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
   targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,cleanseResult,reviveResult});
