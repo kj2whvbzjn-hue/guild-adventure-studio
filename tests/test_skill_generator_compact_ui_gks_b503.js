@@ -1,0 +1,23 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const js=fs.readFileSync(path.join(root,'studio/skill/skill-generator.js'),'utf8');
+const index=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
+const config=fs.readFileSync(path.join(root,'assets/shared/config/runtime-config.js'),'utf8');
+function need(cond,msg){if(!cond)throw new Error(msg);}
+need(js.includes("const VERSION='1.1.0'"),'skill generator version not bumped');
+need(js.includes('③ 選択した効果の設定'),'dynamic effect settings section missing');
+need(js.includes('runtimeFields={ATTACK:'),'runtime field map missing');
+need(js.includes('renderDynamic()'),'dynamic renderer missing');
+need(js.includes('skg-fixed-op'),'fixed equals UI missing');
+need(js.includes("textContent='固定値として実行タグへ出力'"),'fixed value explanation missing');
+need(js.includes('④ 検索・分類'),'search/classification separation missing');
+need(js.includes('⑤ AI・JSON一括'),'AI JSON fold section missing');
+need(js.includes("q('skgManualGenerate').disabled=missing.length>0"),'required field generation lock missing');
+need(js.includes("if(q('skgRange')?.value==='ランダム')add('RANDOM_COUNT')"),'random count dynamic requirement missing');
+need(js.includes('.skg-runtime-grid input[type=checkbox]'),'mobile checkbox override missing');
+need(js.includes('width:22px!important'),'mobile checkbox fixed width lost');
+need(index.includes('GKS-B503'),'Studio build not bumped');
+need(index.includes('./skill/skill-generator.js?v=3'),'skill generator cache key not bumped');
+need(config.includes('studioBuild: "GKS-B503"'),'runtime config Studio build not bumped');
+console.log('SKILL_GENERATOR_COMPACT_UI_GKS_B503_PASS');
