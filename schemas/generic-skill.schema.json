@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gks://schemas/generic-skill.schema.json",
+  "title": "GKS Generic Skill R03-A",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "trigger",
+    "target",
+    "effects"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skillLevel": {
+      "type": "number",
+      "minimum": 0
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "property",
+          "operator",
+          "value"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "=",
+              "!=",
+              ">",
+              ">=",
+              "<",
+              "<="
+            ]
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "side",
+        "range"
+      ],
+      "properties": {
+        "side": {
+          "type": "string",
+          "minLength": 1
+        },
+        "range": {
+          "type": "string",
+          "minLength": 1
+        },
+        "randomCount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "effectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "power": {
+            "type": "number"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "interval": {
+            "type": "number"
+          },
+          "stackGain": {
+            "type": "number"
+          },
+          "damageType": {
+            "type": "string"
+          },
+          "hp": {
+            "type": "number"
+          },
+          "hpRate": {
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "resourceType": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "APPLY"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "required": [
+                "effectId"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mpCost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cooldown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "activationPriority": {
+          "type": "integer"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "generation": {
+      "type": "object"
+    }
+  }
+}

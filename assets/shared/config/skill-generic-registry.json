@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "phase": "R03-A",
+  "runtime": {
+    "effects": [
+      "DAMAGE",
+      "HEAL",
+      "APPLY",
+      "REMOVE",
+      "RESOURCE_CHANGE",
+      "REVIVE",
+      "TARGET_CONTROL",
+      "SPECIAL"
+    ],
+    "legacy_adapter_supported": [
+      "DAMAGE",
+      "HEAL",
+      "APPLY",
+      "REMOVE",
+      "REVIVE"
+    ]
+  },
+  "triggers": {
+    "ON_USE": {
+      "legacy_supported": true
+    },
+    "ON_HIT_RECEIVED": {
+      "legacy_supported": false
+    },
+    "ON_DAMAGE_DEALT": {
+      "legacy_supported": false
+    },
+    "ON_TURN_START": {
+      "legacy_supported": false
+    },
+    "ON_TURN_END": {
+      "legacy_supported": false
+    },
+    "ON_DEATH": {
+      "legacy_supported": false
+    },
+    "ON_STATUS_APPLIED": {
+      "legacy_supported": false
+    }
+  },
+  "conditions": {
+    "SELF_HP": {
+      "legacy_tag": "CONDITION_SELF_HP",
+      "value_type": "number"
+    },
+    "SELF_HP_RATE": {
+      "legacy_tag": "CONDITION_SELF_HP_RATE",
+      "value_type": "rate"
+    },
+    "SELF_MP": {
+      "legacy_tag": "CONDITION_SELF_MP",
+      "value_type": "number"
+    },
+    "SELF_MP_RATE": {
+      "legacy_tag": "CONDITION_SELF_MP_RATE",
+      "value_type": "rate"
+    },
+    "ENEMY_COUNT": {
+      "legacy_tag": "CONDITION_ENEMY_COUNT",
+      "value_type": "non_negative_integer"
+    },
+    "ALLY_COUNT": {
+      "legacy_tag": "CONDITION_ALLY_COUNT",
+      "value_type": "non_negative_integer"
+    },
+    "BATTLE_TICK": {
+      "legacy_tag": "CONDITION_BATTLE_TICK",
+      "value_type": "non_negative_integer"
+    }
+  },
+  "targets": {
+    "sides": {
+      "SELF": "自分",
+      "ALLY": "味方",
+      "ENEMY": "敵",
+      "CORPSE": "死体",
+      "POINT": "地点"
+    },
+    "ranges": {
+      "SINGLE": "単体",
+      "ALL": "全体",
+      "FRONT": "前列",
+      "BACK": "後列",
+      "RANDOM": "ランダム",
+      "PIERCE": "貫通"
+    }
+  },
+  "damage_types": {
+    "PHYSICAL": "物理",
+    "MAGICAL": "魔法",
+    "FIXED": "固定"
+  },
+  "effects": {
+    "BURN": {
+      "kind": "DOT",
+      "label": "火傷",
+      "budgetWeight": 1.5,
+      "legacy": {
+        "logic": "DOT"
+      },
+      "defaults": {
+        "interval": 100,
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "DOT"
+      }
+    },
+    "POISON": {
+      "kind": "DOT",
+      "label": "毒",
+      "budgetWeight": 1.4,
+      "legacy": {
+        "logic": "DOT"
+      },
+      "defaults": {
+        "interval": 100,
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "DOT"
+      }
+    },
+    "STUN": {
+      "kind": "STATUS",
+      "label": "行動不能",
+      "budgetWeight": 3.0,
+      "legacy": {
+        "logic": "STATUS",
+        "statusId": "STATUS-STUN",
+        "generalTags": [
+          "ACTION_DISABLED=true"
+        ]
+      },
+      "defaults": {},
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "STATUS"
+      }
+    },
+    "ACCURACY_DOWN": {
+      "kind": "STATUS",
+      "label": "命中低下",
+      "budgetWeight": 1.6,
+      "legacy": {
+        "logic": "STATUS",
+        "statusId": "STATUS-ACCURACY-DOWN"
+      },
+      "defaults": {},
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "STATUS"
+      }
+    },
+    "ATK_UP": {
+      "kind": "BUFF",
+      "label": "攻撃強化",
+      "budgetWeight": 1.2,
+      "legacy": {
+        "logic": "BUFF",
+        "modifierStat": "ATK"
+      },
+      "defaults": {
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "BUFF"
+      }
+    },
+    "DEF_DOWN": {
+      "kind": "DEBUFF",
+      "label": "防御弱体",
+      "budgetWeight": 1.2,
+      "legacy": {
+        "logic": "DEBUFF",
+        "modifierStat": "DEF"
+      },
+      "defaults": {
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "DEBUFF"
+      }
+    },
+    "BARRIER": {
+      "kind": "SHIELD",
+      "label": "シールド",
+      "budgetWeight": 1.3,
+      "legacy": {
+        "logic": "SHIELD"
+      },
+      "defaults": {},
+      "lifecycle": {
+        "stackRule": "LEGACY",
+        "refreshRule": "LEGACY",
+        "snapshotPolicy": "LEGACY",
+        "dispelCategory": "SHIELD"
+      }
+    }
+  },
+  "apply_model": {
+    "schema_version": 1,
+    "required_lifecycle_fields": [
+      "stackRule",
+      "refreshRule",
+      "snapshotPolicy",
+      "dispelCategory"
+    ],
+    "stack_rules": [
+      "LEGACY",
+      "STACK",
+      "REPLACE",
+      "IGNORE"
+    ],
+    "refresh_rules": [
+      "LEGACY",
+      "REFRESH",
+      "EXTEND",
+      "KEEP"
+    ],
+    "snapshot_policies": [
+      "LEGACY",
+      "SNAPSHOT",
+      "DYNAMIC"
+    ],
+    "note": "R03-Aではlifecycleを正規化するが、Legacy Battle Runtimeの挙動は変更しない。"
+  }
+}
