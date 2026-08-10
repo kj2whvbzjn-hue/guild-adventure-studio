@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R03-A';
+const VERSION='R03-B';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -14,7 +14,10 @@ function normalizeRegistry(registry){return registry&&typeof registry==='object'
 function resolveLifecycle(def,registry,errors,path){
  const model=registry?.apply_model,lifecycle=def?.lifecycle;if(!model||!lifecycle||typeof lifecycle!=='object'){err(errors,'EFFECT_LIFECYCLE_REQUIRED',path,'APPLY Effectにはlifecycle定義が必要です');return null}
  const req=Array.isArray(model.required_lifecycle_fields)?model.required_lifecycle_fields:[];for(const key of req)if(!own(lifecycle,key)||lifecycle[key]==null||lifecycle[key]==='')err(errors,'EFFECT_LIFECYCLE_FIELD_REQUIRED',`${path}.${key}`,`lifecycle.${key}が必要です`);
- const checks=[['stackRule','stack_rules'],['refreshRule','refresh_rules'],['snapshotPolicy','snapshot_policies']];for(const [key,listKey] of checks){const allowed=model[listKey];if(Array.isArray(allowed)&&own(lifecycle,key)&&!allowed.includes(lifecycle[key]))err(errors,'EFFECT_LIFECYCLE_VALUE_INVALID',`${path}.${key}`,`未定義lifecycle値: ${lifecycle[key]}`)}
+ const checks=[['stackRule','stack_rules'],['refreshRule','refresh_rules'],['snapshotPolicy','snapshot_policies'],['dispelCategory','dispel_categories'],['effectiveRule','effective_rules'],['consumeRule','consume_rules']];
+ for(const [key,listKey] of checks){const allowed=model[listKey];if(Array.isArray(allowed)&&own(lifecycle,key)&&!allowed.includes(lifecycle[key]))err(errors,'EFFECT_LIFECYCLE_VALUE_INVALID',`${path}.${key}`,`未定義lifecycle値: ${lifecycle[key]}`)}
+ for(const key of ['removeOnDeath','removeOnBattleEnd','removable'])if(own(lifecycle,key)&&typeof lifecycle[key]!=='boolean')err(errors,'EFFECT_LIFECYCLE_BOOLEAN_INVALID',`${path}.${key}`,`lifecycle.${key}はbooleanが必要です`);
+ if(own(lifecycle,'maxStacks')&&(!Number.isInteger(lifecycle.maxStacks)||lifecycle.maxStacks<1))err(errors,'EFFECT_LIFECYCLE_MAX_STACKS_INVALID',`${path}.maxStacks`,'maxStacksは1以上の整数が必要です');
  return {...lifecycle};
 }
 function compileGenericSkill(skill,registry,legacyCompile){

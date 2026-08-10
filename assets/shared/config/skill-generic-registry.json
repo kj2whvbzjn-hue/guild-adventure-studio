@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "phase": "R03-A",
+  "phase": "R03-B",
   "runtime": {
     "effects": [
       "DAMAGE",
@@ -108,10 +108,17 @@
         "stackGain": 1
       },
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "DOT"
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "DOT",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "maxStacks": 5,
+        "effectiveRule": "SUM",
+        "consumeRule": "NONE",
+        "identityPolicy": "LEGACY_GENERIC_DOT"
       }
     },
     "POISON": {
@@ -126,10 +133,17 @@
         "stackGain": 1
       },
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "DOT"
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "DOT",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "maxStacks": 5,
+        "effectiveRule": "SUM",
+        "consumeRule": "NONE",
+        "identityPolicy": "LEGACY_POISON"
       }
     },
     "STUN": {
@@ -145,10 +159,16 @@
       },
       "defaults": {},
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "STATUS"
+        "stackRule": "UNIQUE",
+        "refreshRule": "REFRESH",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "STATUS",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": true,
+        "effectiveRule": "LATEST",
+        "consumeRule": "NONE",
+        "resistancePolicy": "DURATION_REDUCTION"
       }
     },
     "ACCURACY_DOWN": {
@@ -161,10 +181,16 @@
       },
       "defaults": {},
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "STATUS"
+        "stackRule": "UNIQUE",
+        "refreshRule": "REFRESH",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "STATUS",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": true,
+        "effectiveRule": "LATEST",
+        "consumeRule": "NONE",
+        "resistancePolicy": "DURATION_REDUCTION"
       }
     },
     "ATK_UP": {
@@ -179,10 +205,15 @@
         "stackGain": 1
       },
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "BUFF"
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "BUFF",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "effectiveRule": "HIGHEST",
+        "consumeRule": "NONE"
       }
     },
     "DEF_DOWN": {
@@ -197,10 +228,15 @@
         "stackGain": 1
       },
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "DEBUFF"
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "DEBUFF",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "effectiveRule": "HIGHEST",
+        "consumeRule": "NONE"
       }
     },
     "BARRIER": {
@@ -212,38 +248,64 @@
       },
       "defaults": {},
       "lifecycle": {
-        "stackRule": "LEGACY",
-        "refreshRule": "LEGACY",
-        "snapshotPolicy": "LEGACY",
-        "dispelCategory": "SHIELD"
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "SHIELD",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "effectiveRule": "SUM",
+        "consumeRule": "FIFO"
       }
     }
   },
   "apply_model": {
-    "schema_version": 1,
+    "schema_version": 2,
     "required_lifecycle_fields": [
       "stackRule",
       "refreshRule",
       "snapshotPolicy",
-      "dispelCategory"
+      "dispelCategory",
+      "removeOnDeath",
+      "removeOnBattleEnd",
+      "removable"
     ],
     "stack_rules": [
-      "LEGACY",
+      "UNIQUE",
       "STACK",
       "REPLACE",
       "IGNORE"
     ],
     "refresh_rules": [
-      "LEGACY",
       "REFRESH",
       "EXTEND",
-      "KEEP"
+      "KEEP",
+      "REPLACE"
     ],
     "snapshot_policies": [
-      "LEGACY",
       "SNAPSHOT",
       "DYNAMIC"
     ],
-    "note": "R03-Aではlifecycleを正規化するが、Legacy Battle Runtimeの挙動は変更しない。"
+    "note": "R03-BでLegacy実挙動を具体的なlifecycle規則へ固定。Battle Runtimeの挙動自体は変更しない。",
+    "dispel_categories": [
+      "STATUS",
+      "DOT",
+      "BUFF",
+      "DEBUFF",
+      "SHIELD",
+      "NONE"
+    ],
+    "effective_rules": [
+      "HIGHEST",
+      "SUM",
+      "LATEST",
+      "NONE"
+    ],
+    "consume_rules": [
+      "FIFO",
+      "LIFO",
+      "NONE"
+    ]
   }
 }
