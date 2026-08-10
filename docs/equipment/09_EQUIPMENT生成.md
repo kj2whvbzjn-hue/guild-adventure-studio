@@ -6,7 +6,7 @@ Equipment完全統合仕様 v1.1 と防具係数仕様に基づく AI → Studio
 - Tag / MOD / Stats / Balance Config / Generation Rules は read_only
 - AIは装備カテゴリ、BaseItem候補、iLv/帯、生成数を指定できる
 - AIは `required_*`, `attack`, `accuracy`, `magic_weapon_bonus`, `base_critical_rate`, `hp_bonus`, `mp_bonus`, `evasion` を正規値として直接決定しない
-- 正規経路: AI request → Studio Generator → Generation Rules → Active Balance Config → Validator → Preview → Commit → Equipment Master
+- 正規経路: AI request / 手動入力 → Studio Generator → Generation Rules → Active生成設定 → Validator → Preview → JSON出力 → バランステスト往復 → 完成後に「管理 → 読込」のData Exchangeゲートからマスター登録
 - 存在しないTag/MOD IDを推測生成しない
 
 ## バランス数値の扱い
@@ -53,3 +53,16 @@ Balance Configの `growth` を使用する。防具は `hp / mp / evasion` をiL
 ### Data Exchange
 
 正式Equipment field（武器性能、防具性能、要求値、生成履歴）をData Exchangeの許可fieldへ追加する。生成履歴 `generation` にGenerator / Rules / Config / seed / calculation traceを保持する。
+
+
+## iPhone / AI JSON Pipeline v1.3 / GKS-B497
+
+- 装備生成画面を「生成設定 → JSON/手動入力 → 試算・数値確認 → JSON出力」の4段階に整理する。
+- 生成係数は静的 `equipment-balance-config.json` を初期値とし、プロジェクト内 `equipment_generation.active_config` に保存した設定を以後の生成基準として優先する。
+- 武器種のSTR/DEX/INT、防具カテゴリのVIT/MND/AGI、部位係数、攻撃倍率、命中倍率、基礎クリティカル率はiPhoneから編集可能とする。高度な設定は設定JSONの読込・出力で往復できる。
+- AI一括入力は `GKS_EQUIPMENT_GENERATION_REQUEST` の `requests` 配列を正式入口とし、JSONファイル読込と貼付の両方に対応する。従来の単一requestも互換入力として受け付ける。
+- AIは正式性能数値を直接決定できない。すべてActive生成設定から再計算する。
+- 確認画面では要求閾値と正式性能をカードで表示し、各装備の計算過程を展開表示できる。
+- `GKS_EQUIPMENT_GENERATION_WORK` は生成要求・使用Config・生成結果をまとめた往復用JSON。AI再編集およびバランステスト工程の受渡しに使用する。
+- 完成装備は既存 `GKS_DATA_EXCHANGE` のequipment Dataset形式で書き出す。装備生成画面からマスターへ直接登録する入口は追加しない。登録は既存の「管理 → 読込」に一本化する。
+- 旧 `commit()` / `commitBatch()` APIは後方互換・既存テスト資産のため保持するが、通常UIには表示しない。

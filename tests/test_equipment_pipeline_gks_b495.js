@@ -6,7 +6,7 @@ global.fetch=async rel=>{const p=path.resolve(root,'studio',String(rel).replace(
 vm.runInThisContext(fs.readFileSync(path.join(root,'studio/equipment/equipment-generator.js'),'utf8'),{filename:'equipment-generator.js'});
 (async()=>{
  await GKSEquipmentGenerator.initialize();
- if(GKSEquipmentGenerator.GENERATOR_VERSION!=='1.2.0')throw new Error('generator version');
+ if(GKSEquipmentGenerator.GENERATOR_VERSION!=='1.3.0')throw new Error('generator version');
  const sim=GKSEquipmentGenerator.simulateBatch({kind:'weapon',base_item_types:['片手剣','杖'],item_level:{min:1,max:2},id_prefix:'SIM'});
  if(sim.summary.count!==4||sim.summary.invalid!==0||sim.commit_allowed!==false)throw new Error('batch simulation failed');
  if(data.masters.equipment.length!==0||persistCount!==0)throw new Error('simulation must not persist');

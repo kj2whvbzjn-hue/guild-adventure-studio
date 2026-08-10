@@ -1,0 +1,18 @@
+const fs=require('fs');const path=require('path');const vm=require('vm');
+const root=path.resolve(__dirname,'..');
+global.window=global;let persistCount=0;global.data={schema_version:'4.0.0-draft',project:{id:'PRJ-TEST',updated_at:'2026-08-10T00:00:00Z'},tags:[{id:'WEAPON_STAFF'}],masters:{equipment:[],mods:[]}};global.persist=()=>{persistCount++;return true};
+global.document={readyState:'loading',addEventListener:()=>{},querySelector:()=>null,getElementById:()=>null};
+global.fetch=async rel=>{const p=path.resolve(root,'studio',String(rel).replace(/^\.\//,''));return {ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync(p,'utf8'))}};
+global.GKSDataExchange=require(path.join(root,'studio/data-exchange/data-exchange-core.js'));
+vm.runInThisContext(fs.readFileSync(path.join(root,'studio/equipment/equipment-generator.js'),'utf8'),{filename:'equipment-generator.js'});
+(async()=>{await GKSEquipmentGenerator.initialize();
+ const tpl=GKSEquipmentGenerator.requestTemplate();if(tpl.schema!=='GKS_EQUIPMENT_GENERATION_REQUEST'||tpl.requests.length<2)throw new Error('template');
+ const p=GKSEquipmentGenerator.generateRequestPayload({schema:'GKS_EQUIPMENT_GENERATION_REQUEST',requests:[{kind:'weapon',base_item_types:['片手剣'],item_level:{min:1,max:2},id_prefix:'W'},{kind:'armor',base_item_types:['重装'],armor_slots:['鎧'],item_level:{min:1,max:2},id_prefix:'A'}]});
+ if(p.summary.count!==4||p.summary.invalid!==0)throw new Error('json batch');
+ const work=GKSEquipmentGenerator.workingPackage();if(work.schema!=='GKS_EQUIPMENT_GENERATION_WORK'||work.equipment.length!==4)throw new Error('work export');
+ const env=await GKSEquipmentGenerator.managementEnvelope();if(env.format!=='GKS_DATA_EXCHANGE'||env.permissions.writable[0]!=='equipment'||env.datasets.equipment.length!==4)throw new Error('management envelope');const dry=await GKSDataExchange.dryRunImport({rootData:data,envelope:env});if(!dry.ok||!dry.can_apply||dry.summary.add!==4)throw new Error('management dry run');
+ const cfg=GKSEquipmentGenerator.getConfig();cfg.config_version='2.1.1-test';cfg.weapon.requirement_coefficients['片手剣'].str=7;GKSEquipmentGenerator.saveActiveConfig(cfg);if(data.equipment_generation.active_config.config_version!=='2.1.1-test'||persistCount<1)throw new Error('config persistence');
+ const after=GKSEquipmentGenerator.generate({kind:'weapon',base_item_type:'片手剣',item_level:2,id:'CFG'});if(after.record.required_str!==14)throw new Error('active config not applied');
+ let blocked=false;try{GKSEquipmentGenerator.generateRequestPayload({requests:[{kind:'weapon',base_item_type:'片手剣',item_level_min:1,item_level_max:1,id_prefix:'X',attack:999}]});}catch(e){blocked=String(e.message).includes('正式な数値項目');}if(!blocked)throw new Error('numeric authority');
+ console.log('EQUIPMENT_JSON_PIPELINE_GKS_B497_OK');
+})().catch(e=>{console.error(e);process.exit(1)});
