@@ -1,6 +1,6 @@
 (function(global){
 'use strict';
-const VERSION='1.2.0';
+const VERSION='1.3.0';
 let spec=null,preview=null,lastEnvelope=null,lastDryRun=null;
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const stamp=()=>new Date().toISOString();
@@ -161,6 +161,7 @@ function renderPanel(){
  q('skgDryRun').onclick=async()=>{try{const d=await dryRun(),sm=d.summary||{};q('skgApplyStatus').innerHTML=`<b>${d.ok?'受け入れ検査PASS':'受け入れ検査STOP'}</b><br>追加 ${sm.add||0} / 変更なし ${sm.unchanged||0} / 競合 ${sm.conflict||0} / 不正 ${sm.invalid||0} / 参照切れ ${sm.broken_reference||0} / 非互換 ${sm.incompatible||0}`;q('skgRegister').disabled=!(d.ok&&(sm.add||0)>0&&(sm.conflict||0)===0);}catch(e){q('skgApplyStatus').textContent='Dry Runエラー: '+e.message;}};
  q('skgRegister').onclick=async()=>{try{if(!confirm('新規スキルをSafe Applyで登録します。続行しますか？'))return;const tx=await safeRegisterNewOnly();q('skgApplyStatus').innerHTML=`<b>登録完了</b> ${tx.applied.count}件。Backup → commit → persist → 再検証まで完了しました。`;q('skgRegister').disabled=true;}catch(e){q('skgApplyStatus').textContent='登録停止: '+e.message;}};renderDynamic();
 }
-const api={VERSION,CONDITION_FIELDS,loadSpec,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
+async function compileGenericDraft(skill,options={}){if(!global.GKSGenericSkillBridge?.compileForLegacy)throw new Error('Generic Skill Bridgeが読み込まれていません');return global.GKSGenericSkillBridge.compileForLegacy(skill,{legacyCompile:global.compileTaggedSkill||null,...options});}
+const api={VERSION,CONDITION_FIELDS,loadSpec,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
 function boot(){loadSpec().then(renderPanel).catch(e=>{console.error('[SkillGenerator]',e);renderPanel();});}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })(window);
