@@ -16,7 +16,7 @@ vm.runInThisContext(fs.readFileSync(path.join(root,'studio/equipment/equipment-g
  if(rows.length!==4||data.masters.equipment.length!==4||persistCount!==1)throw new Error('batch commit failed');
  const ai=GKSEquipmentGenerator.prepareAiRequest({kind:'weapon',base_item_types:['片手剣'],item_level:{min:1,max:3},id_prefix:'AI',seed:'x'});
  if(ai.summary.count!==3||ai.summary.invalid!==0)throw new Error('AI request pipeline failed');
- let blocked=false;try{GKSEquipmentGenerator.prepareAiRequest({kind:'weapon',base_item_type:'片手剣',item_level_min:1,item_level_max:1,attack:999});}catch(e){blocked=String(e.message).includes('正式数値field');}
+ let blocked=false;try{GKSEquipmentGenerator.prepareAiRequest({kind:'weapon',base_item_type:'片手剣',item_level_min:1,item_level_max:1,attack:999});}catch(e){blocked=String(e.message).includes('正式な数値項目');}
  if(!blocked)throw new Error('AI numeric authority must be blocked');
  const cfg=JSON.parse(fs.readFileSync(path.join(root,'studio/equipment/equipment-balance-config.json'),'utf8'));
  cfg.growth.armor.hp['2']=1.5;GKSEquipmentGenerator.setConfigForTest(cfg);

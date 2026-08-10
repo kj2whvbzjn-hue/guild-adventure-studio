@@ -1,0 +1,14 @@
+const fs=require('fs');
+const assert=require('assert');
+const html=fs.readFileSync('studio/index.html','utf8');
+const js=fs.readFileSync('studio/equipment/equipment-generator.js','utf8');
+const create=html.match(/<div id="launcherPanel-create"[\s\S]*?<\/div>\s*<\/div>/)?.[0]||'';
+const verify=html.match(/<div id="launcherPanel-verify"[\s\S]*?<\/div>\s*<\/div>/)?.[0]||'';
+assert(create.includes("runLauncherAction('equipment-generator')"),'制作タブに装備生成がありません');
+assert(create.includes('>装備生成</button>'),'制作タブの表示名が日本語ではありません');
+assert(!verify.includes("runLauncherAction('equipment-generator')"),'検証タブに装備生成が残っています');
+assert(!html.includes('>Equipment Generator</button>'),'英語の装備生成ボタンが残っています');
+assert(js.includes('<h1>装備生成</h1>'),'装備生成画面の見出しが日本語ではありません');
+assert(!js.includes('<h1>Equipment Generator</h1>'),'英語の見出しが残っています');
+assert(js.includes('生成して確認')&&js.includes('一括保存')&&js.includes('検証結果／生成内容の確認'),'装備生成画面の主要操作が日本語化されていません');
+console.log('EQUIPMENT_UI_GKS_B496_OK');
