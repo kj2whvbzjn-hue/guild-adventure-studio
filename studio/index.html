@@ -1034,6 +1034,17 @@ updateDeployDeleteControl();
     </div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
   </div>
+  <div id="equipmentGenerationPipeline" class="card">
+    <h2>装備生成パイプライン <span class="badge ok">AI + Data Exchange</span></h2>
+    <p class="small">既存の装備マスター、正式タグ、MODを参照して装備候補を生成します。AIが返したJSONは、予約ID・参照ID・装備Schemaを検証し、Backup付きData Exchange Transactionを通過した新規装備だけを反映します。</p>
+    <div class="grid"><div class="field"><label>生成件数</label><input id="equipmentPipelineCount" type="number" min="1" max="50" value="5"></div><div class="field"><label>テーマ</label><input id="equipmentPipelineTheme" placeholder="例: 序盤の騎士団装備 / 火山Tier2装備"></div><div class="field"><label>装備種別方針</label><input id="equipmentPipelineTypes" placeholder="例: 剣,盾,鎧,アクセサリ"></div><div class="field"><label>能力値合計目安</label><input id="equipmentPipelineStatBudget" type="number" min="0" value="25"></div></div>
+    <div class="grid"><div class="field"><label>item_level 最小</label><input id="equipmentPipelineLevelMin" type="number" min="0" value="1"></div><div class="field"><label>item_level 最大</label><input id="equipmentPipelineLevelMax" type="number" min="0" value="10"></div></div>
+    <div class="field"><label>追加条件</label><textarea id="equipmentPipelineNotes" placeholder="命名、役割、バランス、世界観などの追加条件"></textarea></div>
+    <div class="toolbar"><button class="primary" type="button" onclick="buildEquipmentGenerationPrompt()">1. 生成プロンプトを組み立て</button><button type="button" onclick="copyEquipmentGenerationPrompt()">プロンプトをコピー</button><button type="button" onclick="clearEquipmentGenerationPipeline()">クリア</button></div>
+    <div id="equipmentPipelineReservedIds" class="small">予約ID: 未発行</div><div class="field"><label>AIへ渡すプロンプト</label><textarea id="equipmentPipelinePrompt" rows="16" readonly></textarea></div><div class="field"><label>2. AI生成JSONを貼り付け</label><textarea id="equipmentPipelineJson" rows="16" placeholder='{"equipment":[{"id":"EQP-0001",...}]}'></textarea></div>
+    <div class="toolbar"><button type="button" onclick="validateEquipmentGenerationJson()">3. JSON・参照・差分を検証</button><button id="equipmentPipelineApply" class="primary" type="button" disabled onclick="applyEquipmentGenerationCandidates()">4. 検証済み装備を反映</button></div><div id="equipmentPipelineStatus" class="item">未実行</div><div id="equipmentPipelinePreview" class="list"></div>
+  </div>
+
   <div class="card">
     <h2>CSV入出力</h2>
     <div class="toolbar"><button onclick="exportMasterCsv()">選択分類をCSV出力</button><button onclick="exportAllMastersCsv()">全分類をCSV一括出力</button></div>
@@ -6963,6 +6974,7 @@ setTimeout(loadDesignCards,0);
 <script src="./data-exchange/data-exchange-transaction.js?v=3"></script>
 <script src="./data-exchange/data-exchange-audit.js?v=5"></script>
 <script src="./data-exchange/data-exchange-ui.js?v=21"></script>
+<script src="./equipment-generation-pipeline.js?v=1"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded',renderMasterTagChips);
