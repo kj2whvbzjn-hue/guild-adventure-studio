@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
-assert.strictEqual(build.game_build,'GA-B486.110');
+assert.strictEqual(build.game_build,'GA-B486.111');
 const html=fs.readFileSync(path.join(root,'game/index.html'),'utf8');
 const runtime=fs.readFileSync(path.join(root,'game/assets/js/app-runtime.js'),'utf8');
 assert.ok(html.includes('id="tagTestRunR04GenericAuraRuntimeJson"'),'Game Generic AURA device button missing');

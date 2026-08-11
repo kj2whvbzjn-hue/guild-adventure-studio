@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R05-F';
+const VERSION='R05-G';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -54,7 +54,7 @@ function compileGenericSkill(skill,registry,legacyCompile){
  }
  const effects=Array.isArray(skill.effects)?skill.effects:[];if(!effects.length)err(errors,'EFFECT_REQUIRED','effects','effectsが1件以上必要です');
  if(trigger==='WHILE_SOURCE_ALIVE')auraEffectContract=compileAuraEffectAdapter(skill,registry,tags,errors,normalizedEffects);
- else for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,effectContracts,applyContracts);
+ else for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,effectContracts,applyContracts,skill);
  if(trigger==='ON_ALLY_ATTACK'){const idx=tags.indexOf('ATTACK');if(idx>=0)tags.splice(idx,1);}
  const seenApplyLogic=new Set();for(const c of applyContracts){if(seenApplyLogic.has(c.logic))err(errors,'LEGACY_APPLY_LOGIC_DUPLICATE','effects',`Legacy Adapterでは同一APPLY logicを複数同時実行できません: ${c.logic}`);seenApplyLogic.add(c.logic)}
  const res=skill.resource||{};
@@ -146,7 +146,7 @@ function compileAuraEffectAdapter(skill,registry,tags,errors,normalizedEffects){
  return{effectId:effect.effectId,kind:def.kind,logic:'AURA',modifierStat:stat,power:effect.power,targetSide,targetScope,stack:'highest',sourceDependent:true};
 }
 
-function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,effectContracts,applyContracts){
+function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,effectContracts,applyContracts,skill){
  const p=`effects[${index}]`;if(!effect||typeof effect!=='object'){err(errors,'INVALID_EFFECT',p,'Effect objectが必要です');return}
  const type=String(effect.type||'').toUpperCase();
  if(!registry.runtime?.effects?.includes(type)){err(errors,'UNKNOWN_EFFECT_TYPE',`${p}.type`,`未定義Effect type: ${type||'(なし)'}`);return}
@@ -163,6 +163,21 @@ function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffe
  }
  if(type==='RESOURCE_CHANGE'){
   const resource=String(effect.resource||'').toUpperCase();if(resource!=='MP'){err(errors,'RESOURCE_CHANGE_RESOURCE_UNSUPPORTED',`${p}.resource`,'R05-E RESOURCE_CHANGEはMPのみ対応です');return}if(!Number.isFinite(effect.amount)||effect.amount===0){err(errors,'RESOURCE_CHANGE_AMOUNT_INVALID',`${p}.amount`,'amountは0以外の有限数が必要です');return}pushUnique(tags,'RESOURCE_CHANGE');const normalized={type:'RESOURCE_CHANGE',resource:'MP',amount:effect.amount};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
+ }
+ if(type==='TARGET_CONTROL'){
+  const mode=String(effect.mode||'COVER').toUpperCase(),trigger=String(effect.trigger||'DIRECT_ATTACK').toUpperCase(),lifetime=String(effect.lifetime||'PERSISTENT').toUpperCase();
+  if(mode!=='COVER'){err(errors,'TARGET_CONTROL_MODE_UNSUPPORTED',`${p}.mode`,'R05-G TARGET_CONTROLはCOVERのみ対応です');return}
+  if(trigger!=='DIRECT_ATTACK'){err(errors,'TARGET_CONTROL_TRIGGER_UNSUPPORTED',`${p}.trigger`,'R05-G TARGET_CONTROLはDIRECT_ATTACKのみ対応です');return}
+  if(skill?.target?.side!=='ALLY'){err(errors,'TARGET_CONTROL_TARGET_SIDE_REQUIRED','target.side','TARGET_CONTROL COVERはALLY対象が必要です');return}
+  if(!['SINGLE','ALL'].includes(skill?.target?.range)){err(errors,'TARGET_CONTROL_TARGET_RANGE_UNSUPPORTED','target.range','TARGET_CONTROL COVERはSINGLEまたはALLが必要です');return}
+  if(!Number.isInteger(effect.priority??0)){err(errors,'TARGET_CONTROL_PRIORITY_INVALID',`${p}.priority`,'priorityは整数が必要です');return}
+  if(typeof effect.removable!=='boolean'){err(errors,'TARGET_CONTROL_REMOVABLE_REQUIRED',`${p}.removable`,'removableはbooleanが必要です');return}
+  if(!['PERSISTENT','USES','DURATION'].includes(lifetime)){err(errors,'TARGET_CONTROL_LIFETIME_INVALID',`${p}.lifetime`,'lifetimeはPERSISTENT / USES / DURATIONが必要です');return}
+  const uses=lifetime==='USES'?effect.uses:null,duration=lifetime==='DURATION'?effect.duration:null;
+  if(lifetime==='USES'&&(!Number.isInteger(uses)||uses<1)){err(errors,'TARGET_CONTROL_USES_INVALID',`${p}.uses`,'USESには1以上の整数usesが必要です');return}
+  if(lifetime==='DURATION'&&(!Number.isInteger(duration)||duration<1)){err(errors,'TARGET_CONTROL_DURATION_INVALID',`${p}.duration`,'DURATIONには1以上の整数durationが必要です');return}
+  pushUnique(tags,'COVER');pushUnique(tags,`COVER_TARGET=${skill.target.range==='ALL'?'all_allies':'single_ally'}`);pushUnique(tags,'COVER_TRIGGER=direct_attack');pushUnique(tags,`COVER_PRIORITY=${effect.priority??0}`);pushUnique(tags,`COVER_REMOVABLE=${effect.removable}`);pushUnique(tags,`COVER_LIFETIME=${lifetime.toLowerCase()}`);if(lifetime==='USES')pushUnique(tags,`COVER_USES=${uses}`);if(lifetime==='DURATION')pushUnique(tags,`DURATION=${duration}`);
+  const normalized={type:'TARGET_CONTROL',mode:'COVER',trigger:'DIRECT_ATTACK',priority:effect.priority??0,removable:effect.removable,lifetime,uses,duration};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
  }
  if(type==='APPLY')compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,applyContracts);
 }
