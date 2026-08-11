@@ -1,0 +1,13 @@
+const fs=require('fs');
+const assert=require('assert');
+const build=require('../package-build.json');
+assert.strictEqual(build.game_build,'GA-B486.96');
+const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
+const runtime=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
+assert.ok(app.includes("origin:'follow_up',derivedGeneration:1"),'derived device case must use production follow-up origin without suppressDerived');
+assert.ok(app.includes("x.type==='follow_up_chain_blocked'&&x.skill_id===incoming.id"),'device case must observe production follow_up_chain_blocked event');
+assert.ok(app.includes('counter_trigger_count:counterEvents.length'),'device case must assert no COUNTER trigger');
+assert.ok(app.includes('follow_up_chain_block_count:chainBlocks.length'),'device report must expose chain block count');
+assert.ok(runtime.includes("else if(actualOrigin==='follow_up')recordValidationEvent('follow_up_chain_blocked'"),'production follow-up chain block event missing');
+assert.ok(runtime.includes("if(origin!=='base'&&!wasCovered)return skip('DERIVED_ORIGIN')"),'COUNTER dispatcher derived-origin guard missing');
+console.log('DEVICE_R04_GENERIC_COUNTER_DERIVED_OBSERVATION_GA_B486_96_PASS');

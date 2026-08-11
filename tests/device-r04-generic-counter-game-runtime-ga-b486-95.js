@@ -3,7 +3,7 @@ const assert=require('assert');
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const registry=require('../assets/shared/config/skill-generic-registry.json');
 const build=require('../package-build.json');
-assert.strictEqual(build.game_build,'GA-B486.95');
+assert.strictEqual(build.game_build,'GA-B486.96');
 const sample={schemaVersion:1,id:'R04-DEVICE-GENERIC-COUNTER',name:'R04 Generic Counter Device',trigger:{type:'ON_HIT_RECEIVED',scope:'SELF',priority:7},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0}};
 const generated=generic.compileGenericSkill(sample,registry);
 assert.strictEqual(generated.ok,true,JSON.stringify(generated.errors));
@@ -14,4 +14,4 @@ const html=fs.readFileSync('game/index.html','utf8'),app=fs.readFileSync('game/a
 assert.ok(html.includes('id="tagTestRunR04GenericCounterRuntimeJson"'),'Game device button missing');
 for(const marker of ['async function runR04GenericCounterDeviceValidation()','GKSGenericSkillBridge.compileForLegacy','R04-GENERIC-COUNTER-RUNTIME-BASIC','R04-GENERIC-COUNTER-RUNTIME-ZERO-DAMAGE','R04-GENERIC-COUNTER-RUNTIME-DERIVED-BLOCK','generic_production_runtime_device_validation'])assert.ok(app.includes(marker),`app marker missing: ${marker}`);
 for(const marker of ["engine.dispatchCompiled(triggerContract,'hit_received'",'generic_trigger_dispatched','function executeTaggedSkill('])assert.ok(runtime.includes(marker),`runtime marker missing: ${marker}`);
-console.log('DEVICE_R04_GENERIC_COUNTER_GAME_RUNTIME_GA_B486_95_PASS');
+console.log('DEVICE_R04_GENERIC_COUNTER_GAME_RUNTIME_GA_B486_96_PASS');
