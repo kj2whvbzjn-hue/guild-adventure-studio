@@ -45,11 +45,12 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  for(const [i,c] of (Array.isArray(raw.effectContracts)?raw.effectContracts:[]).entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.effectContracts[${i}]はobjectが必要です`);continue}
   const type=String(c.type||'').toUpperCase(),damageType=c.damageType==null?null:String(c.damageType).toUpperCase();
-  if(type!=='DAMAGE'){errors.push(`genericRuntime.effectContracts[${i}].typeはDAMAGEのみ対応です: ${type||'(なし)'}`);continue}
+  if(!['DAMAGE','HEAL'].includes(type)){errors.push(`genericRuntime.effectContracts[${i}].typeはDAMAGE/HEALのみ対応です: ${type||'(なし)'}`);continue}
   if(!Number.isFinite(c.power)||c.power<0){errors.push(`genericRuntime.effectContracts[${i}].powerは0以上の有限数が必要です`);continue}
-  if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType)){errors.push(`genericRuntime.effectContracts[${i}].damageTypeが無効です: ${damageType}`);continue}
-  if(effectContracts.some(x=>x.type===type)){errors.push('genericRuntime.effectContractsでDAMAGEを複数指定できません');continue}
-  effectContracts.push({type,power:c.power,damageType});
+  if(type==='DAMAGE'&&damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType)){errors.push(`genericRuntime.effectContracts[${i}].damageTypeが無効です: ${damageType}`);continue}
+  if(type==='HEAL'&&damageType!=null){errors.push(`genericRuntime.effectContracts[${i}].damageTypeはHEALで指定できません`);continue}
+  if(effectContracts.some(x=>x.type===type)){errors.push(`genericRuntime.effectContractsで${type}を複数指定できません`);continue}
+  effectContracts.push(type==='DAMAGE'?{type,power:c.power,damageType}:{type,power:c.power});
  }
  const normalizedConditions=[];
  for(const [i,c] of conditionContracts.entries()){
@@ -498,6 +499,19 @@ function executeGenericDamageRuntime(attacker,target,compiled){
  typeof recordValidationEvent==='function'&&recordValidationEvent('generic_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,damage_type:resolved.contract.damageType,calculated_damage:calculated,applied_damage:result.damage});
  return{...result,genericRuntime:true,effectContract:{...resolved.contract},calculatedDamage:calculated};
 }
+function resolveGenericHealContract(compiled){
+ const contract=compiled?.definition?.genericRuntime?.effectContracts?.find(x=>x?.type==='HEAL')||null;
+ if(!contract)return{generic:false,ok:true,contract:null};
+ if(!Number.isFinite(contract.power)||contract.power<0)return{generic:true,ok:false,reason:'GENERIC_HEAL_POWER_INVALID',contract};
+ return{generic:true,ok:true,contract:{type:'HEAL',power:contract.power}};
+}
+function executeGenericHealRuntime(source,target,compiled){
+ const resolved=resolveGenericHealContract(compiled);if(!resolved.generic)return null;
+ if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('generic_heal_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
+ const requested=Math.max(0,Math.floor(resolved.contract.power)),result=applyTaggedHeal(source,target,compiled,requested);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('generic_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
+ return{...result,genericRuntime:true,effectContract:{...resolved.contract}};
+}
 function applyTaggedDamage(attacker,target,damage,skill){
  const before=target.hp,defense=applyDefenseResistance(target,damage),shield=consumeShieldDamage(target,defense.damage,{sourceId:attacker.id,skillId:skill.id,damageType:'tag_attack'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;
  queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage:applied});
@@ -506,9 +520,9 @@ function applyTaggedDamage(attacker,target,damage,skill){
  if(target.hp<=0){resetCombatantOnDeath(target,{reason:'tag_attack',sourceId:attacker.id});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
  finishIfNeeded();return{ok:true,damage:applied,rawDamage:defense.rawDamage,defenseResistance:defense.resistance,postResistanceDamage:defense.damage,shieldAbsorbed:shield.absorbed,beforeHp:before,afterHp:target.hp};
 }
-function applyTaggedHeal(source,target,compiled){
+function applyTaggedHeal(source,target,compiled,requestedOverride=null){
  if(!target?.alive)return{ok:false,reason:'回復対象が無効です'};
- const requested=Math.max(0,Math.floor(Number(compiled.definition.parameters.heal)||0)),before=target.hp;
+ const requested=requestedOverride==null?Math.max(0,Math.floor(Number(compiled.definition.parameters.heal)||0)):requestedOverride,before=target.hp;
  target.hp=Math.min(target.maxHp,target.hp+requested);
  const applied=target.hp-before,overheal=Math.max(0,requested-applied);
  battle.log.push(`[Tick ${battle.tick}] [TAG][HEAL] ${source.name}の${compiled.definition.name} → ${target.name}を${applied}回復（HEAL=${requested}, HP ${before}→${target.hp}/${target.maxHp}${overheal?`, 超過${overheal}`:''}）`);
@@ -795,7 +809,7 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
  for(const originalTarget of resolved.targets){
   let actionTarget=originalTarget,coverResult={target:originalTarget,covered:false,effect:null};const directAttack=compiled.definition.logicOrder.some(x=>x==='ATTACK'||x==='FOLLOW_UP');if(directAttack){coverResult=resolveCoverIntervention(actor,originalTarget,compiled,{origin:actualOrigin,derivedGeneration,areaCoverUsed:executionContext.areaCoverUsed});actionTarget=coverResult.target;if(coverResult.covered&&compiled.definition.target.range==='all')executionContext.areaCoverUsed=true}
   let attackResult=null,healResult=null,shieldResult=null,dotResult=null,modifierResult=null,followUpResult=null,statusResult=null,cleanseResult=null,reviveResult=null,coverApplyResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
-  for(const logic of compiled.definition.logicOrder){if(logic==='COUNTER')continue;if(logic==='COVER'){coverApplyResult=applyTaggedCover(actor,originalTarget,compiled);continue}if(logic==='ATTACK'){attackResult=executeGenericDamageRuntime(actor,actionTarget,compiled)||applyTaggedDamage(actor,actionTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}else if(logic==='HEAL')healResult=applyTaggedHeal(actor,actionTarget,compiled);else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,actionTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}else if(logic==='CLEANSE')cleanseResult=cleanseStatusEffects(actor,actionTarget,compiled);else if(logic==='REVIVE')reviveResult=reviveTarget(actor,actionTarget,compiled);else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime(actor,actionTarget,compiled)||applyTaggedDamage(actor,actionTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`)}
+  for(const logic of compiled.definition.logicOrder){if(logic==='COUNTER')continue;if(logic==='COVER'){coverApplyResult=applyTaggedCover(actor,originalTarget,compiled);continue}if(logic==='ATTACK'){attackResult=executeGenericDamageRuntime(actor,actionTarget,compiled)||applyTaggedDamage(actor,actionTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}else if(logic==='HEAL')healResult=executeGenericHealRuntime(actor,actionTarget,compiled)||applyTaggedHeal(actor,actionTarget,compiled);else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,actionTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}else if(logic==='CLEANSE')cleanseResult=cleanseStatusEffects(actor,actionTarget,compiled);else if(logic==='REVIVE')reviveResult=reviveTarget(actor,actionTarget,compiled);else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime(actor,actionTarget,compiled)||applyTaggedDamage(actor,actionTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`)}
   const effectiveAttackResult=attackResult||followUpResult;targetResults.push({targetId:actionTarget.id,originalTargetId:originalTarget.id,covered:coverResult.covered,coverId:coverResult.effect?.id||null,attackResult,healResult,shieldResult,dotResult,modifierResult,followUpResult,statusResult,cleanseResult,reviveResult,coverApplyResult});
   if(effectiveAttackResult?.ok&&!suppressDerived){if(actualOrigin==='base'){dispatchTaggedBaseReactiveTriggers(actor,actionTarget,compiled,effectiveAttackResult,{derivedGeneration,wasCovered:coverResult.covered,triggerActionContext:actionTriggerContext})}else if(coverResult.covered){dispatchCounterAfterAttack(actor,actionTarget,compiled,effectiveAttackResult,{origin:actualOrigin,derivedGeneration,wasCovered:true,triggerActionContext:actionTriggerContext})}else if(actualOrigin==='counter')recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:actionTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN',derived_generation:derivedGeneration});else if(actualOrigin==='follow_up')recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:actionTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN',derived_generation:derivedGeneration})}
  }

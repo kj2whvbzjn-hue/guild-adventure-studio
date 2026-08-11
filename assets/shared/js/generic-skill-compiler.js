@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R05-A';
+const VERSION='R05-B';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -154,7 +154,7 @@ function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffe
  if(type==='DAMAGE'){
   pushUnique(tags,'ATTACK');addNumeric(tags,'DAMAGE',effect.power,errors,`${p}.power`);if(effect.damageType){const t=registry.damage_types?.[effect.damageType];if(!t)err(errors,'UNKNOWN_DAMAGE_TYPE',`${p}.damageType`,`未定義damageType: ${effect.damageType}`);else pushUnique(tags,t)}const normalized={type:'DAMAGE',power:effect.power,damageType:effect.damageType||null};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
  }
- if(type==='HEAL'){pushUnique(tags,'HEAL');addNumeric(tags,'HEAL',effect.power,errors,`${p}.power`);normalizedEffects.push({type:'HEAL',power:effect.power});return}
+ if(type==='HEAL'){pushUnique(tags,'HEAL');addNumeric(tags,'HEAL',effect.power,errors,`${p}.power`);const normalized={type:'HEAL',power:effect.power};normalizedEffects.push(normalized);effectContracts.push({...normalized});return}
  if(type==='REVIVE'){
   pushUnique(tags,'REVIVE');const hasHp=own(effect,'hp'),hasRate=own(effect,'hpRate');if(hasHp===hasRate){err(errors,'REVIVE_VALUE_REQUIRED',p,'REVIVEはhpまたはhpRateのどちらか1つが必要です');return}if(hasHp)addNumeric(tags,'REVIVE_HP',effect.hp,errors,`${p}.hp`);else addNumeric(tags,'REVIVE_HP_RATE',effect.hpRate,errors,`${p}.hpRate`);return;
  }

@@ -14,5 +14,5 @@ assert.strictEqual(generated.legacySkill.genericRuntime.triggerContract.dispatch
 const html=fs.readFileSync('game/index.html','utf8'),app=fs.readFileSync('game/assets/js/app-runtime.js','utf8'),runtime=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 assert.ok(html.includes('id="tagTestRunR04GenericHealRuntimeJson"'),'Game Generic HEAL device button missing');
 for(const marker of ['async function runR04GenericHealDeviceValidation()','GKSGenericSkillBridge.compileForLegacy','R04-GENERIC-HEAL-RUNTIME-BASIC','R04-GENERIC-HEAL-RUNTIME-CLAMP','R04-GENERIC-HEAL-RUNTIME-DEAD-REJECT','generic_production_runtime_device_validation'])assert.ok(app.includes(marker),`app marker missing: ${marker}`);
-for(const marker of ['function applyTaggedHeal(','recordValidationEvent(\'heal\'','function executeTaggedSkill(','else if(logic===\'HEAL\')healResult=applyTaggedHeal'])assert.ok(runtime.includes(marker),`runtime marker missing: ${marker}`);
+for(const marker of ['function applyTaggedHeal(','recordValidationEvent(\'heal\'','function executeTaggedSkill(','else if(logic===\'HEAL\')healResult=executeGenericHealRuntime'])assert.ok(runtime.includes(marker),`runtime marker missing: ${marker}`);
 console.log('DEVICE_R04_GENERIC_HEAL_GAME_RUNTIME_GA_B486_97_PASS');
