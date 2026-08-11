@@ -14,6 +14,10 @@ const APP_SHELL=[
   "./ai-production/ai-master-adapter.js?v=1",
   "./ai-production/ai-program-validator.js?v=1",
   "./ai-production/ai-program-compiler.js?v=1",
+  "./ai-production/ai-program-trace.js?v=1",
+  "./ai-production/ai-decision-engine.js?v=1",
+  "./ai-production/ai-battle-adapter.js?v=1",
+  "./ai-production/ai-simulation-runner.js?v=1",
   "./ai-production/ai-production-ui.js?v=1"
 ];
 

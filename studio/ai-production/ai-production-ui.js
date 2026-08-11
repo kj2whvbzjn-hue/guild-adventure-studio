@@ -7,13 +7,14 @@
     commonjs ? require('./ai-program-editor.js') : root && root.GKSAIProgramEditor,
     commonjs ? require('./ai-program-validator.js') : root && root.GKSAIProgramValidator,
     commonjs ? require('./ai-program-compiler.js') : root && root.GKSAIProgramCompiler,
+    commonjs ? require('./ai-simulation-runner.js') : root && root.GKSAISimulationRunner,
     root
   );
   if (commonjs) module.exports = api;
   if (root) root.GKSAIProductionUI = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Adapter, Model, Store, Editor, Validator, Compiler, root) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Adapter, Model, Store, Editor, Validator, Compiler, Runner, root) {
   'use strict';
-  let selectedPart = null, selectedNodeId = '', paletteSearch = '', programSearch = '', draft = null, original = null, editor = null, validationResult = null, compileResult = null, dirty = false;
+  let selectedPart = null, selectedNodeId = '', paletteSearch = '', programSearch = '', draft = null, original = null, editor = null, validationResult = null, compileResult = null, dirty = false, simulationResult = null, comparisonBase = null, selectedTrace = 0;
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const clone = (value) => value == null ? value : JSON.parse(JSON.stringify(value));
   function host() { return root?.GKSAIProductionHost || {}; }
@@ -21,7 +22,7 @@
   function references(data) { return {tags: data.tags || [], skills: data.masters?.skills || []}; }
   function now() { return host().now?.() || new Date().toISOString(); }
   function isDirty() { return dirty; }
-  function setDraft(value) { draft = Model.normalizeProgram(value); original = clone(draft); editor = Editor.create(draft); selectedNodeId = ''; validationResult = null; compileResult = draft.compiled||null; dirty = false; }
+  function setDraft(value) { draft = Model.normalizeProgram(value); original = clone(draft); editor = Editor.create(draft); selectedNodeId = ''; validationResult = null; compileResult = draft.compiled||null; simulationResult = null; comparisonBase = null; selectedTrace = 0; dirty = false; }
   function syncGraph() {
     if (!editor || !draft) return;
     const graph = editor.program();
@@ -52,6 +53,12 @@
     const issues=validationResult?.issues||[],summary=validationResult?.summary||{ERROR:0,WARNING:0,INFO:0};
     return `<div class="ai-validation-panel"><div class="ai-program-toolbar"><h3>AI構成検証・コンパイル</h3><button type="button" onclick="GKSAIProductionUI.validateDraft()">構成を検証</button><button type="button" class="primary" onclick="GKSAIProductionUI.compileDraft()">実行形式を生成</button></div>${compileResult?`<p class="small">生成済み: ${esc(compileResult.content_hash)} / 命令 ${compileResult.instructions.length}件</p>`:''}${validationResult?`<p class="${validationResult.valid?'':'ai-unsaved'}">エラー ${summary.ERROR} / 警告 ${summary.WARNING} / 情報 ${summary.INFO}</p><div class="ai-issue-list">${issues.length?issues.map((row,index)=>`<button type="button" class="ai-issue-item ${row.severity.toLowerCase()}" onclick="GKSAIProductionUI.selectIssue(${index})"><b>${esc(row.severity)} / ${esc(row.code)}</b><span>${esc(row.message)}</span><small>${esc(row.node_id||row.edge_id||row.subroutine_id||'プログラム全体')}</small></button>`).join(''):'<p>問題は見つかりませんでした。</p>'}</div>`:'<p class="small">保存前に構造・参照・到達性を検査できます。</p>'}</div>`;
   }
+  function simulationPanelHtml() {
+    if(!draft)return '';
+    const units=host().getBattleUnits?.()||[],actorOptions=units.map((unit)=>`<option value="${esc(unit.id)}">${esc(unit.name||unit.id)} / ${esc(unit.side||'')}</option>`).join(''),summary=simulationResult?.summary;
+    const trace=simulationResult?.traces?.[selectedTrace],events=trace?.events||[],comparison=comparisonBase&&simulationResult?Runner.compare(comparisonBase,simulationResult):null;
+    return `<div class="ai-simulation-panel"><div class="ai-program-toolbar"><h3>固定Seed試行・Trace比較</h3><button type="button" onclick="GKSAIProductionUI.setComparisonBase()"${simulationResult?'':' disabled'}>比較基準にする</button></div><p class="small">戦闘テスト欄の現在の編成を読み取り専用で使用します。既存の戦闘結果とユニットは変更しません。</p><div class="ai-simulation-controls"><label>実行ユニット<select id="aiSimulationActor"><option value="">選択してください</option>${actorOptions}</select></label><label>開始Seed<input id="aiSimulationSeed" type="number" value="0"></label><label>試行数<input id="aiSimulationTrials" type="number" min="1" max="1000" value="10"></label><label>Seed増分<input id="aiSimulationStep" type="number" min="1" value="1"></label><button type="button" class="primary" onclick="GKSAIProductionUI.runSimulation()"${compileResult&&units.length?'':' disabled'}>試行を実行</button></div>${summary?`<div class="ai-simulation-summary"><b>${summary.trials}試行 / 経路 ${summary.unique_paths}種類</b><span>結果 ${esc(JSON.stringify(summary.outcomes))}</span><span>行動 ${esc(JSON.stringify(summary.actions))}</span><span>対象 ${esc(JSON.stringify(summary.targets))}</span></div><label>Trace<select onchange="GKSAIProductionUI.selectTrace(this.value)">${simulationResult.traces.map((row,index)=>`<option value="${index}"${index===selectedTrace?' selected':''}>#${index+1} Seed ${esc(row.seed)} / ${esc(row.outcome.status)}</option>`).join('')}</select></label><div class="ai-trace-list">${events.map((row)=>`<button type="button" class="ai-trace-item" onclick="GKSAIProductionUI.selectNode('${esc(row.source_node_id)}')"><b>${row.step}. ${esc(row.event_type)} / ${esc(row.result)}</b><span>${esc(row.source_node_id)} → ${esc(row.instruction_id)}</span><small>${esc(JSON.stringify(row.details))}</small></button>`).join('')||'<p>イベントなし</p>'}</div>${comparison?`<div class="small">比較: 変更 ${comparison.changed_trials}試行 / 同一 ${comparison.unchanged_trials}試行</div>`:''}`:'<p class="small">実行後に行動分布、対象分布、経路、各ノードのTraceを表示します。</p>'}</div>`;
+  }
   function render(doc) {
     const documentRef = doc || (typeof document !== 'undefined' ? document : null), target = documentRef?.getElementById('aiProductionRoot');
     if (!target || !Adapter || !Model || !Store || !Editor || !Validator || !Compiler) return false;
@@ -62,7 +69,7 @@
     const fields = chosen ? Adapter.inputDescriptors(chosen, references(data)) : [];
     target.innerHTML = `<div class="ai-production-shell"><div class="ai-production-hero"><h2>AIプログラム</h2><p>プロジェクト内へ保存する編集データを作成・再編集します。部品配置と接続は次工程です。</p><div class="ai-program-toolbar"><input type="search" value="${esc(programSearch)}" placeholder="プログラムを検索" oninput="GKSAIProductionUI.setProgramSearch(this.value)"><button type="button" class="primary" onclick="GKSAIProductionUI.newProgram()">新規作成</button></div></div><div class="ai-program-layout"><div class="ai-program-list">${programs.length?programs.map((program)=>`<button type="button" class="ai-program-item ${draft?.id===program.id?'active':''}" onclick="GKSAIProductionUI.openProgram('${esc(program.id)}')"><b>${esc(program.name||program.id)}</b><span>${esc(program.id)} / ${esc(program.status)}</span><small>${esc(program.updated_at||'未保存')}</small></button>`).join(''):'<p>AIプログラムはありません。</p>'}</div>${editorHtml()}</div><div class="ai-production-hero"><h2>AI部品パレット</h2><p>条件・対象・行動マスターを検索し、部品Schemaに従って設定します。</p><input id="aiPaletteSearch" type="search" value="${esc(paletteSearch)}" placeholder="ID・名称・タグを検索" oninput="GKSAIProductionUI.setSearch(this.value)"></div><div class="ai-production-workspace"><div id="aiPaletteList" class="ai-palette-list">${rows.length?rows.map((row) => `<button type="button" class="ai-palette-item ${row.available?'':'disabled'}" ${row.available?'': 'disabled'} onclick="GKSAIProductionUI.select('${esc(row.id)}','${esc(row.node_type)}')"><b>${esc(row.name||row.id)}</b><span>${esc(row.id)} / ${esc(row.node_type)}</span><small>${esc((row.tags||[]).join(' / ')||row.status)}</small></button>`).join(''):'<div class="ai-production-boundary">一致するAI部品がありません。</div>'}</div><div id="aiParameterPanel" class="ai-parameter-panel">${chosen?`<h3>${esc(chosen.name)}</h3><p class="small">${esc(chosen.description)}</p>${fields.length?fields.map(fieldHtml).join(''):'<p>設定項目はありません。</p>'}<button type="button" onclick="GKSAIProductionUI.validateCurrent()">設定を検証</button><div id="aiParameterValidation" class="small"></div>`:'<p>有効な部品を選択してください。</p>'}</div></div></div>`;
     target.innerHTML = target.innerHTML.replace('プロジェクト内へ保存する編集データを作成・再編集します。部品配置と接続は次工程です。','部品を配置・接続し、Undo/Redoで構築履歴を戻せます。').replace('<button type="button" onclick="GKSAIProductionUI.validateCurrent()">設定を検証</button>',`<button type="button" onclick="GKSAIProductionUI.validateCurrent()">設定を検証</button>${draft?'<button type="button" class="primary" onclick="GKSAIProductionUI.addSelectedPart()">プログラムへ追加</button>':''}`);
-    target.innerHTML += validationPanelHtml();
+    target.innerHTML += validationPanelHtml()+simulationPanelHtml();
     return true;
   }
   function refresh() { if (typeof document !== 'undefined' && document.getElementById('view-ai-production')?.classList.contains('hidden') === false) render(); }
@@ -90,6 +97,9 @@
   function redoGraph() { if(!editor?.redo())return false;syncGraph();invalidateCompiled();validationResult=null;dirty=true;render();return true; }
   function validateDraft() { if(!draft)return null;syncGraph();validationResult=Validator.validate(draft,hostData());render();return validationResult; }
   async function compileDraft() { if(!draft)return null;syncGraph();try{const runtime=await Compiler.compile(draft,hostData());draft.compiled=runtime;draft.status='valid';compileResult=runtime;validationResult=Validator.validate(draft,hostData());dirty=true;render();return runtime;}catch(error){compileResult=null;validationResult={valid:false,issues:error.issues||[{severity:'ERROR',code:'AI_COMPILE_FAILED',message:error.message}],summary:{ERROR:(error.issues||[]).filter((row)=>row.severity==='ERROR').length||1,WARNING:0,INFO:0}};render();return null;} }
+  function runSimulation(doc){const documentRef=doc||(typeof document!=='undefined'?document:null),units=host().getBattleUnits?.()||[],actorId=documentRef?.getElementById('aiSimulationActor')?.value;if(!compileResult||!actorId)return null;simulationResult=Runner.run(compileResult,{battle_id:`ai-production-${draft.id}`,tick:0,actor_id:actorId,units,mp_cost_multiplier:Number(host().getMpCostMultiplier?.())||1},{seed_start:Number(documentRef.getElementById('aiSimulationSeed')?.value)||0,trials:Number(documentRef.getElementById('aiSimulationTrials')?.value)||1,seed_step:Number(documentRef.getElementById('aiSimulationStep')?.value)||1,phase:'reservation'});selectedTrace=0;render();return clone(simulationResult);}
+  function selectTrace(index){selectedTrace=Math.max(0,Math.min(Number(index)||0,(simulationResult?.traces?.length||1)-1));render();return selectedTrace;}
+  function setComparisonBase(){if(!simulationResult)return false;comparisonBase=clone(simulationResult);render();return true;}
   function selectIssue(index) { const row=validationResult?.issues?.[Number(index)];if(!row)return false;if(row.node_id){selectedNodeId=row.node_id;render();}return true; }
   function validateCurrent(doc) {
     const documentRef = doc || (typeof document !== 'undefined' ? document : null), data = hostData();
@@ -100,5 +110,5 @@
     if (output) output.textContent = errors.length ? errors.join(' / ') : '設定値は有効です。';
     return errors;
   }
-  return Object.freeze({render, refresh, setSearch, setProgramSearch, select, selectNode, selectIssue, newProgram, openProgram, updateDraft, saveDraft, revertDraft, duplicateDraft, addSelectedPart, updateSelectedNode, connectNodes, undoGraph, redoGraph, validateDraft, compileDraft, isDirty, filterReferenceOptions, validateCurrent});
+  return Object.freeze({render, refresh, setSearch, setProgramSearch, select, selectNode, selectIssue, newProgram, openProgram, updateDraft, saveDraft, revertDraft, duplicateDraft, addSelectedPart, updateSelectedNode, connectNodes, undoGraph, redoGraph, validateDraft, compileDraft, runSimulation, selectTrace, setComparisonBase, isDirty, filterReferenceOptions, validateCurrent});
 });

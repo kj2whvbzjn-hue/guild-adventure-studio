@@ -50,8 +50,8 @@ assert(element.innerHTML.includes('回復優先AI'));
 assert(!element.innerHTML.includes('先行AI</b>'), 'program search must filter unrelated names');
 
 const html = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8');
-assert(html.includes('R7 実行形式生成'), 'evolved Studio must retain R5-A persistence under later AI production stages');
-assert(html.includes('GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now()}'));
+assert(html.includes('R8-B 固定Seed試行'), 'evolved Studio must retain R5-A persistence under later AI production stages');
+assert(html.includes('GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now(),getBattleUnits:'));
 assert(html.includes('window.GKSAIProductionUI?.refresh()'));
 const uiSource = fs.readFileSync(path.join(root, 'studio/ai-production/ai-production-ui.js'), 'utf8');
 assert(!uiSource.includes('localStorage'));

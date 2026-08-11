@@ -37,7 +37,7 @@
     const definitions=Adapter.palette(projectData?.masters||{},'',{}),byMaster=new Map(definitions.map((row)=>[row.id,row]));
     const {order,outgoing}=orderedNodes(program),instructionId=new Map(order.map((node,index)=>[node.instance_id,`I-${String(index+1).padStart(4,'0')}`]));
     const instructions=order.map((node)=>{
-      const definition=byMaster.get(node.master_node_id),edges=outgoing.get(node.instance_id)||[],base={instruction_id:instructionId.get(node.instance_id),op:opFor(node),master_node_id:definition.id,params:canonical(node.parameters||{})};
+      const definition=byMaster.get(node.master_node_id),edges=outgoing.get(node.instance_id)||[],base={instruction_id:instructionId.get(node.instance_id),op:opFor(node),master_node_id:definition.id,evaluator:definition.evaluator,params:canonical(node.parameters||{})};
       if(node.node_type==='condition'){
         const yes=edges.find((edge)=>edge.from.port_id==='true'),no=edges.find((edge)=>edge.from.port_id==='false');
         base.on_true=yes?instructionId.get(yes.to.node_id)||null:null;base.on_false=no?instructionId.get(no.to.node_id)||null:null;

@@ -513,7 +513,7 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-ai-production" class="view hidden">
-  <div class="view-heading"><h1>AI制作</h1><span class="status">R7 実行形式生成</span></div>
+  <div class="view-heading"><h1>AI制作</h1><span class="status">R8-B 固定Seed試行</span></div>
   <div id="aiProductionRoot"></div>
 </section>
 
@@ -2010,6 +2010,10 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-master-adapter.js?v=1"></script>
 <script src="./ai-production/ai-program-validator.js?v=1"></script>
 <script src="./ai-production/ai-program-compiler.js?v=1"></script>
+<script src="./ai-production/ai-program-trace.js?v=1"></script>
+<script src="./ai-production/ai-decision-engine.js?v=1"></script>
+<script src="./ai-production/ai-battle-adapter.js?v=1"></script>
+<script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
 <script>
 const APP_VERSION='1.43.0';
@@ -4371,6 +4375,9 @@ document.getElementById('ruleTagPicker')?.addEventListener('click',e=>{if(e.targ
 
 // BUILD415_RULE_NUMBER_TAG_END
 
+function runCompiledAiDecision(runtime,u,units,tick,seed,phase='reservation'){
+ return window.GKSAIBattleAdapter.decide(runtime,{battle_id:`studio-${seed}`,tick,phase,seed,actor_id:u.id,units,mp_cost_multiplier:Math.max(0,battleFormulaConfig.mpCostMultiplier)});
+}
 function battleConditionOk(rule,u,units){const c=String(rule.condition||'always');if(c==='always')return true;if(c.startsWith('mp_at_least:'))return u.mp>=Number(c.split(':')[1]||0);if(c.startsWith('hp_below:'))return u.hp/u.maxHp*100<Number(c.split(':')[1]||0);if(c.startsWith('ally_hp_below:'))return units.some(x=>x.side===u.side&&x.alive&&x.hp/x.maxHp*100<Number(c.split(':')[1]||0));if(c.startsWith('enemy_count_at_most:'))return units.filter(x=>x.side!==u.side&&x.alive).length<=Number(c.split(':')[1]||0);return false}
 function battleTargets(kind,u,units,rnd){const allies=units.filter(x=>x.side===u.side&&x.alive),enemies=units.filter(x=>x.side!==u.side&&x.alive);const pool=String(kind||'enemy_random').startsWith('ally')||kind==='self'?allies:enemies;if(!pool.length)return[];if(kind==='self')return[u];if(kind==='ally_lowest'||kind==='enemy_lowest')return[pool.slice().sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0]];if(kind==='enemy_highest')return[pool.slice().sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0]];if(kind==='enemy_defense_lowest')return[pool.slice().sort((a,b)=>a.defense-b.defense)[0]];if(kind==='ally_all'||kind==='enemy_all')return pool;return[pool[Math.floor(rnd()*pool.length)]]}
 function recoveryScale(tick){return tick>=800?.2:tick>=500?.5:1}
@@ -7009,7 +7016,7 @@ setTimeout(loadDesignCards,0);
 </script>
 <script>window.GKSEquipmentHost={getData:()=>data,persist:message=>persist(message),getBuild:()=>DISTRIBUTION_BUILD};
 window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};
-window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now()};</script>
+window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now(),getBattleUnits:()=>{try{return [...JSON.parse(battleAllies.value||'[]'),...JSON.parse(battleEnemies.value||'[]')]}catch{return[]}},getMpCostMultiplier:()=>Math.max(0,Number(battleFormulaConfig.mpCostMultiplier)||1)};</script>
 <script src="./equipment/equipment-generator.js?v=4971"></script>
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486100"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486100"></script>
