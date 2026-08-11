@@ -9,7 +9,11 @@ for(const needle of [
  "code:'FORMAL_QUEST_SECTION_BOXES_EMPTY'",
  'assessments.filter(x=>x.assessment.ready)',
  'function formalAdventureQuestImportIssues()',
- '件のQuestを参照不整合のため除外しました。',
+ 'function formalAdventureQuestImportIssueMessage(issue)',
+ "FORMAL_QUEST_CHAPTER_MISSING:'Chapter参照切れ'",
+ '<details class="small warn">',
+ 'escapeHtml(issue.quest_id)',
+ '件のQuestを参照不整合のため除外',
  'StudioのExport検証でChapter / Section / Boxを確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
 assert(!app.includes("filter(q=>{const links=q.links||{};return Boolean(q?.id&&links.chapter_id&&links.section_id)"),'link-only formal quest filter must be removed');

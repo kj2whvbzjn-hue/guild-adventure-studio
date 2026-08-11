@@ -15,6 +15,6 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  const src=fs.readFileSync(path,'utf8');ok(src.includes("getTaggedApplyLifecycleEngine().apply('STATUS'"),`${path}: STATUS does not use facade`);ok(src.includes("getTaggedApplyLifecycleEngine().apply('DOT'"),`${path}: DOT does not use facade`);ok(src.includes('getTaggedApplyLifecycleEngine().apply(logic'),`${path}: modifier does not use facade`);ok(src.includes("getTaggedApplyLifecycleEngine().apply('SHIELD'"),`${path}: SHIELD apply does not use facade`);ok(src.includes("getTaggedApplyLifecycleEngine().consume('SHIELD'"),`${path}: SHIELD consume does not use facade`);
 }
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8')).game_build;
-const cache=String(build).replace(/\D/g,'').slice(-5);
+const cache=String(build).replace(/^GA-B/,'').replaceAll('.','');
 for(const html of ['game/index.html','game-tag-test/index.html','studio/index.html']){const src=fs.readFileSync(html,'utf8');ok(src.includes(`apply-lifecycle-engine.js?v=${cache}`),`${html}: shared lifecycle engine script missing`)}
 console.log('GENERIC_APPLY_LIFECYCLE_ENGINE_R03_F1_PASS');
