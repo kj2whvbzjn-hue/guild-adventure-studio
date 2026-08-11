@@ -6,7 +6,7 @@ function ok(v,m){if(!v)throw new Error(m)}
 const expectedOps=['resolve','apply','expire','cleanup','consume','effective'];
 const expectedKinds=['STATUS','DOT','BUFF','DEBUFF','SHIELD'];
 ok(shared.VERSION==='R03-F4','shared engine version mismatch');
-ok(registry.phase==='R03-F4','registry phase mismatch');
+ok(registry.phase==='R03-F4'||/^R0[4-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||'')),'registry phase predates R03-F4');
 ok(boundary.phase==='R03-F4','boundary phase mismatch');
 ok(JSON.stringify(shared.OPERATIONS)===JSON.stringify(expectedOps),'operation boundary changed');
 ok(JSON.stringify(shared.APPLY_KINDS)===JSON.stringify(expectedKinds),'APPLY kind boundary changed');

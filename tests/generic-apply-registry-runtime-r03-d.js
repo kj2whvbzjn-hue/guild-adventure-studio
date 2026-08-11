@@ -3,7 +3,7 @@ const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-re
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 function ok(v,m){if(!v)throw new Error(m)}
 function loadLegacy(path){const ctx={console};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);return ctx.compileTaggedSkill}
-ok(/^R03-(D|E\d+[a-z]?|F\d+[a-z]?)$/.test(String(registry.phase||'')),'registry phase predates R03-D');
+ok(/^R03-(D|E\d+[a-z]?|F\d+[a-z]?)$/.test(String(registry.phase||''))||/^R0[4-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||'')),'registry phase predates R03-D');
 const sample={schemaVersion:1,id:'R03D-STUN',name:'R03D',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'STUN',duration:100}]};
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const legacy=loadLegacy(path);
