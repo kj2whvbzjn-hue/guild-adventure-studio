@@ -9,6 +9,8 @@ assert(shared.includes("../Export/skill/skills.json"),'skill export probe missin
 assert(shared.includes("['reactive','反応スキル'"),'game reactive manual case missing');
 assert(shared.includes("['counter','反撃検証'"),'tag counter manual case missing');
 assert(shared.includes('結果JSONをコピー'),'clipboard fallback UI missing');
-assert(game.includes('../assets/shared/js/device-test-harness.js?v=48692'),'game harness ref missing');
-assert(tag.includes('../assets/shared/js/device-test-harness.js?v=48692'),'tag harness ref missing');
+const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
+const token=build.game_build.replace(/^GA-B486\./,'486');
+assert(game.includes(`../assets/shared/js/device-test-harness.js?v=${token}`),'game harness ref missing');
+assert(tag.includes(`../assets/shared/js/device-test-harness.js?v=${token}`),'tag harness ref missing');
 console.log('DEVICE_TEST_HARNESS_GA_B486_92_PASS');
