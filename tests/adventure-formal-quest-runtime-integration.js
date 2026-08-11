@@ -4,7 +4,7 @@ assert(app.includes("raw.selectedQuestId=typeof raw.selectedQuestId==='string'?r
 assert(app.includes('let adventureQuestCatalog=[];'),'formal quest catalog missing');
 assert(app.includes('function formalAdventureQuests(){return adventureQuestCatalog.slice();}'),'formal quest selector missing');
 assert(app.includes('function reconcileFormalAdventureQuestSelection()'),'formal quest selection reconciliation missing');
-assert(app.includes("const ql=$('questList'),formalQuests=formalAdventureQuests();"),'quest list must render formal Export quests only');
+assert(app.includes("const ql=$('questList'),formalQuests=formalAdventureQuests(),importIssues=formalAdventureQuestImportIssues();"),'quest list must render import-ready formal Export quests only');
 assert(app.includes('正式Story Questがありません。StudioでChapter / Sectionへ接続したQuestをExportしてください。'),'empty formal Export guidance missing');
 assert(app.includes("if(!bundle)return{started:false,reason:'formal_quest_unavailable'};"),'departure must reject non-formal quest ids');
 assert(!app.includes("reason:'legacy_quest'"),'legacy quest fallback reason must be removed from game runtime');
