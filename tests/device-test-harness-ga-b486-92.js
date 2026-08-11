@@ -1,0 +1,14 @@
+const fs=require('fs');
+const assert=(v,m)=>{if(!v)throw new Error(m)};
+const shared=fs.readFileSync('assets/shared/js/device-test-harness.js','utf8');
+const game=fs.readFileSync('game/index.html','utf8');
+const tag=fs.readFileSync('game-tag-test/index.html','utf8');
+assert(shared.includes("kind:'real_device_acceptance'"),'report kind missing');
+assert(shared.includes('navigator.serviceWorker.getRegistration'),'service worker probe missing');
+assert(shared.includes("../Export/skill/skills.json"),'skill export probe missing');
+assert(shared.includes("['reactive','反応スキル'"),'game reactive manual case missing');
+assert(shared.includes("['counter','反撃検証'"),'tag counter manual case missing');
+assert(shared.includes('結果JSONをコピー'),'clipboard fallback UI missing');
+assert(game.includes('../assets/shared/js/device-test-harness.js?v=48692'),'game harness ref missing');
+assert(tag.includes('../assets/shared/js/device-test-harness.js?v=48692'),'tag harness ref missing');
+console.log('DEVICE_TEST_HARNESS_GA_B486_92_PASS');
