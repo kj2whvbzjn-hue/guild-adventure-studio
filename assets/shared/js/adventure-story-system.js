@@ -2,6 +2,7 @@
 'use strict';
 const BOX_TYPES=new Set(['scene','event','random_event','random_battle']);
 const PLAYBACK_EVENT_TYPES=new Set(['battle_start','action_start','skill_cast','hit','damage','heal','status_apply','status_remove','ko','battle_end']);
+const QUEST_RUN_HISTORY_LIMIT=20;
 function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
 function hashSeed(value){let h=2166136261,s=String(value??'');for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function rng(seed){let x=(Number(seed)>>>0)||0x9e3779b9;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};}
@@ -37,5 +38,48 @@ function simulateQuest(opts){
 function playbackState(run,nowMs=Date.now()){const start=Date.parse(run?.playback_started_at||'');const elapsed=Math.max(0,Number.isFinite(start)?(nowMs-start)/1000:0),duration=Math.max(1,Number(run?.adventure_duration_seconds)||300);return{elapsed_seconds:elapsed,duration_seconds:duration,complete:elapsed>=duration,visible_timeline:(run?.timeline_result||[]).filter(x=>Number(x.at_seconds)<=elapsed)};}
 function commitQuestRun(run,save,{applyReward,applyFlags}={}){if(!run||run.results_applied)return{applied:false,reason:'already_applied'};if(!run.final_result?.success){run.results_applied=true;return{applied:true,success:false};}if(typeof applyReward==='function')applyReward(save,clone(run.reward_result||{}));if(typeof applyFlags==='function')applyFlags(save,clone(run.flag_result||{}));run.results_applied=true;return{applied:true,success:true};}
 function validatePlaybackEvents(events){return(events||[]).every(e=>PLAYBACK_EVENT_TYPES.has(e?.type));}
-return{BOX_TYPES:[...BOX_TYPES],PLAYBACK_EVENT_TYPES:[...PLAYBACK_EVENT_TYPES],clone,hashSeed,rng,normalizeBox,defaultBoxes,normalizeSection,normalizeChapter,normalizeEvent,monsterBudgetCost,chooseWeighted,generateRandomBattle,assignTimeline,simulateQuest,playbackState,commitQuestRun,validatePlaybackEvents};
+
+function normalizeQuestRun(run){
+ const r=run&&typeof run==='object'?run:{};
+ r.quest_run_id=String(r.quest_run_id||'');
+ r.quest_id=String(r.quest_id||'');r.section_id=String(r.section_id||'');r.chapter_id=String(r.chapter_id||'');
+ r.party_snapshot=Array.isArray(r.party_snapshot)?r.party_snapshot:[];
+ r.timeline_result=Array.isArray(r.timeline_result)?r.timeline_result:[];
+ r.battle_results=Array.isArray(r.battle_results)?r.battle_results:[];
+ r.event_results=Array.isArray(r.event_results)?r.event_results:[];
+ r.scene_snapshots=Array.isArray(r.scene_snapshots)?r.scene_snapshots:[];
+ r.reward_result=r.reward_result&&typeof r.reward_result==='object'?r.reward_result:{};
+ r.flag_result=r.flag_result&&typeof r.flag_result==='object'?r.flag_result:{};
+ r.final_result=r.final_result&&typeof r.final_result==='object'?r.final_result:{success:false,failure:{reason:'incomplete_run'}};
+ r.results_applied=Boolean(r.results_applied);
+ r.adventure_duration_seconds=Math.max(1,Number(r.adventure_duration_seconds)||300);
+ r.playback_started_at=String(r.playback_started_at||new Date().toISOString());
+ return r;
+}
+function ensureQuestRunStore(save,{historyLimit=QUEST_RUN_HISTORY_LIMIT}={}){
+ const target=save&&typeof save==='object'?save:{};
+ const current=target.adventure&&typeof target.adventure==='object'?target.adventure:{};
+ const limit=Math.max(1,Math.floor(Number(historyLimit)||QUEST_RUN_HISTORY_LIMIT));
+ current.quest_runs=Array.isArray(current.quest_runs)?current.quest_runs.map(normalizeQuestRun).filter(r=>r.quest_run_id):[];
+ if(current.quest_runs.length>limit)current.quest_runs=current.quest_runs.slice(-limit);
+ current.active_quest_run_id=String(current.active_quest_run_id||'');
+ if(current.active_quest_run_id&&!current.quest_runs.some(r=>r.quest_run_id===current.active_quest_run_id))current.active_quest_run_id='';
+ current.history_limit=limit;target.adventure=current;return current;
+}
+function saveQuestRun(save,run,{activate=true,historyLimit=QUEST_RUN_HISTORY_LIMIT}={}){
+ const store=ensureQuestRunStore(save,{historyLimit}),normalized=normalizeQuestRun(clone(run));
+ if(!normalized.quest_run_id)throw new Error('quest_run_id is required');
+ const index=store.quest_runs.findIndex(r=>r.quest_run_id===normalized.quest_run_id);
+ if(index>=0)store.quest_runs[index]=normalized;else store.quest_runs.push(normalized);
+ if(store.quest_runs.length>store.history_limit)store.quest_runs.splice(0,store.quest_runs.length-store.history_limit);
+ if(activate)store.active_quest_run_id=normalized.quest_run_id;
+ return normalized;
+}
+function activeQuestRun(save){const store=ensureQuestRunStore(save);return store.quest_runs.find(r=>r.quest_run_id===store.active_quest_run_id)||null;}
+function questRunHistory(save){return ensureQuestRunStore(save).quest_runs.slice().reverse();}
+function startQuestRunPlayback(save,run,{startedAt=new Date().toISOString(),historyLimit=QUEST_RUN_HISTORY_LIMIT}={}){const next=normalizeQuestRun(clone(run));next.playback_started_at=startedAt;return saveQuestRun(save,next,{activate:true,historyLimit});}
+function resumeQuestRun(save,nowMs=Date.now()){const run=activeQuestRun(save);return run?{run,playback:playbackState(run,nowMs)}:null;}
+function finishQuestRunPlayback(save,runId){const store=ensureQuestRunStore(save);if(!runId||store.active_quest_run_id===String(runId))store.active_quest_run_id='';return store;}
+function commitStoredQuestRun(save,runId,handlers={}){const store=ensureQuestRunStore(save),run=store.quest_runs.find(r=>r.quest_run_id===String(runId||store.active_quest_run_id));if(!run)return{applied:false,reason:'quest_run_not_found'};const result=commitQuestRun(run,save,handlers);if(result.applied)finishQuestRunPlayback(save,run.quest_run_id);return result;}
+return{BOX_TYPES:[...BOX_TYPES],PLAYBACK_EVENT_TYPES:[...PLAYBACK_EVENT_TYPES],QUEST_RUN_HISTORY_LIMIT,clone,hashSeed,rng,normalizeBox,defaultBoxes,normalizeSection,normalizeChapter,normalizeEvent,monsterBudgetCost,chooseWeighted,generateRandomBattle,assignTimeline,simulateQuest,playbackState,commitQuestRun,validatePlaybackEvents,normalizeQuestRun,ensureQuestRunStore,saveQuestRun,activeQuestRun,questRunHistory,startQuestRunPlayback,resumeQuestRun,finishQuestRunPlayback,commitStoredQuestRun};
 });

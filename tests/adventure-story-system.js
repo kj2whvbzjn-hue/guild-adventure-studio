@@ -70,3 +70,20 @@ assert.deepEqual(S.normalizeEvent({type:'battle',battle_formation:[{monster_id:'
 assert.equal(S.validatePlaybackEvents([{type:'battle_start'},{type:'damage'},{type:'battle_end'}]),true);
 assert.equal(S.validatePlaybackEvents([{type:'debug_line'}]),false);
 console.log('adventure-story-system PASS');
+
+// QuestRun persistence: active run survives save normalization, history is bounded and commit is one-shot.
+const saveStore={guild:{gold:10},flags:{}};
+const stored=S.startQuestRunPlayback(saveStore,{...run,quest_run_id:'QR-STORE-1',results_applied:false},{startedAt:'2026-08-11T00:00:00.000Z'});
+assert.equal(stored.playback_started_at,'2026-08-11T00:00:00.000Z');
+assert.equal(S.activeQuestRun(saveStore).quest_run_id,'QR-STORE-1');
+assert.equal(S.resumeQuestRun(saveStore,Date.parse('2026-08-11T00:02:00.000Z')).playback.complete,true);
+const committed=S.commitStoredQuestRun(saveStore,'QR-STORE-1',{applyReward:(s,r)=>s.guild.gold+=r.gold||0,applyFlags:(s,f)=>Object.assign(s.flags,f)});
+assert.equal(committed.applied,true);
+assert.equal(saveStore.guild.gold,15);
+assert.equal(saveStore.flags.F1,true);
+assert.equal(S.activeQuestRun(saveStore),null);
+assert.equal(S.commitStoredQuestRun(saveStore,'QR-STORE-1',{}).reason,'already_applied');
+const bounded={};for(let i=0;i<25;i++)S.saveQuestRun(bounded,{...run,quest_run_id:`QR-${i}`},{activate:false,historyLimit:20});
+assert.equal(S.questRunHistory(bounded).length,20);
+assert.equal(S.questRunHistory(bounded).at(-1).quest_run_id,'QR-5');
+console.log('adventure-quest-run-store PASS');
