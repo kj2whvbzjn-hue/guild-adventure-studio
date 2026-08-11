@@ -319,13 +319,40 @@ const DOT_STACK_TYPES={poison:{id:'poison',label:'毒',maxStack:5}};
 let dotStackSequence=0;
 function resolveDotType(compiled){if(compiled.parsed?.generalTags?.has('毒属性'))return DOT_STACK_TYPES.poison;return{id:'generic-dot',label:'DOT',maxStack:5}}
 function ensureDotStackList(target){if(!Array.isArray(target.dotStacks))target.dotStacks=[];return target.dotStacks}
-function applyTaggedDot(source,target,compiled){
+function resolveDotStackLifecyclePolicy(lifecycle){
+ const policy=lifecycle&&typeof lifecycle==='object'?lifecycle:null;if(!policy)return{ok:false,reason:'DOT lifecycle契約がありません'};
+ const stackRule=String(policy.stackRule||'').toUpperCase(),refreshRule=String(policy.refreshRule||'').toUpperCase(),snapshotPolicy=String(policy.snapshotPolicy||'').toUpperCase(),effectiveRule=String(policy.effectiveRule||'').toUpperCase(),consumeRule=String(policy.consumeRule||'').toUpperCase(),maxStacks=Number(policy.maxStacks);
+ if(stackRule!=='STACK')return{ok:false,reason:`DOT lifecycle stackRule=${stackRule||'(empty)'} は未対応です`,field:'stackRule',value:stackRule};
+ if(refreshRule!=='KEEP')return{ok:false,reason:`DOT lifecycle refreshRule=${refreshRule||'(empty)'} は未対応です`,field:'refreshRule',value:refreshRule};
+ if(snapshotPolicy!=='SNAPSHOT')return{ok:false,reason:`DOT lifecycle snapshotPolicy=${snapshotPolicy||'(empty)'} は未対応です`,field:'snapshotPolicy',value:snapshotPolicy};
+ if(effectiveRule!=='SUM')return{ok:false,reason:`DOT lifecycle effectiveRule=${effectiveRule||'(empty)'} は未対応です`,field:'effectiveRule',value:effectiveRule};
+ if(consumeRule!=='NONE')return{ok:false,reason:`DOT lifecycle consumeRule=${consumeRule||'(empty)'} は未対応です`,field:'consumeRule',value:consumeRule};
+ if(!Number.isInteger(maxStacks)||maxStacks<1)return{ok:false,reason:'DOT lifecycle maxStacksは1以上の整数が必要です',field:'maxStacks',value:policy.maxStacks};
+ return{ok:true,stackRule,refreshRule,snapshotPolicy,effectiveRule,consumeRule,maxStacks};
+}
+function applyDotStackLifecycle(list,{identityKey,gain,newStack}={},lifecycle){
+ if(!Array.isArray(list))return{ok:false,reason:'DOT lifecycle対象listが配列ではありません',added:0,current:0,maxStack:null,stacks:[]};
+ const policy=resolveDotStackLifecyclePolicy(lifecycle);if(!policy.ok)return{...policy,added:0,current:0,maxStack:policy.maxStacks||null,stacks:[]};
+ if(!identityKey)return{ok:false,reason:'DOT lifecycleにはidentityKeyが必要です',added:0,current:0,maxStack:policy.maxStacks,stacks:[],policy};
+ const requested=Math.max(1,Math.floor(Number(gain)||1)),current=list.filter(x=>x&&x.typeId===identityKey).length,available=Math.max(0,policy.maxStacks-current),addCount=Math.min(requested,available);
+ if(addCount<=0)return{ok:false,reason:'MAX_STACK',added:0,current,maxStack:policy.maxStacks,stacks:[],policy};
+ const added=[];for(let i=0;i<addCount;i++){const stack=typeof newStack==='function'?newStack(i):null;if(!stack||typeof stack!=='object')return{ok:false,reason:'DOT lifecycle新規付与にはnewStackが必要です',added:added.length,current:current+added.length,maxStack:policy.maxStacks,stacks:added,policy};list.push(stack);added.push(stack)}
+ return{ok:true,added:added.length,current:current+added.length,maxStack:policy.maxStacks,stacks:added,policy};
+}
+function applyTaggedDot(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'DOT付与対象が無効です'};
  const type=resolveDotType(compiled),list=ensureDotStackList(target),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
+ const power=Math.max(0,Math.floor(compiled.definition.parameters.dotPower)),duration=Math.max(1,Math.floor(compiled.definition.parameters.dotDuration)),interval=Math.max(1,Math.floor(compiled.definition.parameters.dotInterval));
+ const createStack=()=>({id:`DOT-${++dotStackSequence}`,typeId:type.id,label:type.label,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,power,appliedAt:battle.tick,expiresAt:battle.tick+duration,nextTick:battle.tick+interval,interval,duration});
+ if(lifecyclePolicy){
+  const applied=applyDotStackLifecycle(list,{identityKey:type.id,gain,newStack:createStack},lifecyclePolicy);
+  if(!applied.ok){if(applied.reason==='MAX_STACK'){battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${type.label}は最大${applied.maxStack}スタックのため付与失敗`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:'MAX_STACK',current:applied.current,max_stack:applied.maxStack});return{ok:false,reason:'MAX_STACK',added:0,current:applied.current,maxStack:applied.maxStack,lifecyclePolicy}}typeof recordValidationEvent==='function'&&recordValidationEvent('dot_lifecycle_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:applied.reason||'DOT_LIFECYCLE_REJECTED',field:applied.field||null,value:applied.value||null});return{ok:false,reason:applied.reason||'DOT_LIFECYCLE_REJECTED',lifecyclePolicy}}
+  const added=applied.stacks;battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${source.name}の${compiled.definition.name} → ${target.name}へ${type.label} ${added.length}スタック付与（${applied.current}/${applied.maxStack}、威力${power}、間隔${interval}、持続${duration}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,stack_ids:added.map(x=>x.id),count:added.length,power,duration,interval,expires_at:battle.tick+duration});
+  return{ok:true,added:added.length,current:applied.current,maxStack:applied.maxStack,stacks:added,lifecyclePolicy};
+ }
  const current=list.filter(x=>x.typeId===type.id).length,available=Math.max(0,type.maxStack-current),addCount=Math.min(gain,available);
  if(addCount<=0){battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${type.label}は最大${type.maxStack}スタックのため付与失敗`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:'MAX_STACK',current,max_stack:type.maxStack});return{ok:false,reason:'MAX_STACK',added:0,current,maxStack:type.maxStack}}
- const power=Math.max(0,Math.floor(compiled.definition.parameters.dotPower)),duration=Math.max(1,Math.floor(compiled.definition.parameters.dotDuration)),interval=Math.max(1,Math.floor(compiled.definition.parameters.dotInterval)),added=[];
- for(let i=0;i<addCount;i++){const stack={id:`DOT-${++dotStackSequence}`,typeId:type.id,label:type.label,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,power,appliedAt:battle.tick,expiresAt:battle.tick+duration,nextTick:battle.tick+interval,interval,duration};list.push(stack);added.push(stack)}
+ const added=[];for(let i=0;i<addCount;i++){const stack=createStack();list.push(stack);added.push(stack)}
  battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${source.name}の${compiled.definition.name} → ${target.name}へ${type.label} ${added.length}スタック付与（${current+added.length}/${type.maxStack}、威力${power}、間隔${interval}、持続${duration}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,stack_ids:added.map(x=>x.id),count:added.length,power,duration,interval,expires_at:battle.tick+duration});
  return{ok:true,added:added.length,current:current+added.length,maxStack:type.maxStack,stacks:added};
 }
@@ -417,7 +444,7 @@ function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=t
  if((logic==='STATUS'||logic==='DOT')&&requiresAttack&&!attackSucceeded){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] ATTACK不成立のため${logic==='STATUS'?'状態異常':'DOT'}付与をスキップ`);return{handled:true,skipped:true,reason:'ATTACK_FAILED',result:null}}
  if(!target?.alive){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 対象戦闘不能のため${logic==='STATUS'?'状態異常':logic==='DOT'?'DOT':'付与効果'}付与をスキップ`);return{handled:true,skipped:true,reason:'TARGET_DEAD',result:null}}
  if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
- if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  return{handled:false,skipped:false,result:null};
 }
