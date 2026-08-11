@@ -17,7 +17,7 @@ const invalid=[
  {skill:{schemaVersion:99,id:'X',name:'bad',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:1}]},code:'UNSUPPORTED_SCHEMA'},
  {skill:{schemaVersion:1,id:'X',name:'bad',trigger:{type:'ON_DEATH'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:1}]},code:'LEGACY_TRIGGER_UNSUPPORTED'},
  {skill:{schemaVersion:1,id:'X',name:'bad',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'NO_SUCH',duration:1}]},code:'UNKNOWN_EFFECT_ID'},
- {skill:{schemaVersion:1,id:'X',name:'bad',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'RESOURCE_CHANGE',amount:10}]},code:'LEGACY_EFFECT_UNSUPPORTED'},
+ {skill:{schemaVersion:1,id:'X',name:'bad',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'RESOURCE_CHANGE',resource:'HP',amount:10}]},code:'RESOURCE_CHANGE_RESOURCE_UNSUPPORTED'},
  {skill:{schemaVersion:1,id:'X',name:'bad',trigger:{type:'ON_USE'},conditions:[{scope:'TARGET',property:'SELF_HP',operator:'<',value:10}],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:1}]},code:'CONDITION_SCOPE_UNSUPPORTED'}
 ];
 for(const x of invalid){const r=generic.compileGenericSkill(x.skill,registry,legacyCompilers[0]);ok(!r.ok,'invalid accepted: '+x.code);ok(r.errors.some(e=>e.code===x.code),'missing error '+x.code+': '+JSON.stringify(r.errors));}

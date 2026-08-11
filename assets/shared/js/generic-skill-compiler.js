@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R05-D';
+const VERSION='R05-E';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -160,6 +160,9 @@ function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffe
  }
  if(type==='REMOVE'){
   if(effect.category!=='STATUS'){err(errors,'REMOVE_CATEGORY_UNSUPPORTED',`${p}.category`,'R02 REMOVEはSTATUSのみ対応です');return}pushUnique(tags,'CLEANSE');pushUnique(tags,'CLEANSE_CATEGORY=status');pushUnique(tags,'CLEANSE_ORDER=oldest');if(effect.all===true)pushUnique(tags,'CLEANSE_ALL');else{if(!Number.isInteger(effect.count)||effect.count<1)err(errors,'REMOVE_COUNT_REQUIRED',`${p}.count`,'REMOVEはcount>=1またはall=trueが必要です');else pushUnique(tags,`CLEANSE_COUNT=${effect.count}`)}const normalized={type:'REMOVE',category:'STATUS',count:effect.all===true?null:effect.count,all:effect.all===true,order:'oldest'};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
+ }
+ if(type==='RESOURCE_CHANGE'){
+  const resource=String(effect.resource||'').toUpperCase();if(resource!=='MP'){err(errors,'RESOURCE_CHANGE_RESOURCE_UNSUPPORTED',`${p}.resource`,'R05-E RESOURCE_CHANGEはMPのみ対応です');return}if(!Number.isFinite(effect.amount)||effect.amount===0){err(errors,'RESOURCE_CHANGE_AMOUNT_INVALID',`${p}.amount`,'amountは0以外の有限数が必要です');return}pushUnique(tags,'RESOURCE_CHANGE');const normalized={type:'RESOURCE_CHANGE',resource:'MP',amount:effect.amount};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
  }
  if(type==='APPLY')compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,applyContracts);
 }
