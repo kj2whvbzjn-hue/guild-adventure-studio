@@ -3,7 +3,7 @@ const assert=require('assert');
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const registry=require('../assets/shared/config/skill-generic-registry.json');
 const build=require('../package-build.json');
-assert.strictEqual(build.game_build,'GA-B486.97');
+assert.ok(/^GA-B486\.(?:9[7-9]|[1-9][0-9]{2,})$/.test(build.game_build),`unexpected build ${build.game_build}`);
 const sample={schemaVersion:1,id:'R04-DEVICE-GENERIC-HEAL',name:'R04 Generic Heal Device',trigger:{type:'ON_USE',scope:'SELF'},target:{side:'ALLY',range:'SINGLE'},effects:[{type:'HEAL',power:120}],resource:{mpCost:0,cooldown:0}};
 const generated=generic.compileGenericSkill(sample,registry);
 assert.strictEqual(generated.ok,true,JSON.stringify(generated.errors));

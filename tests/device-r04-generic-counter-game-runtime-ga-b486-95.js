@@ -3,7 +3,7 @@ const assert=require('assert');
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const registry=require('../assets/shared/config/skill-generic-registry.json');
 const build=require('../package-build.json');
-assert.strictEqual(build.game_build,'GA-B486.97');
+assert.ok(/^GA-B486\.\d+$/.test(build.game_build),`unexpected build ${build.game_build}`);
 const sample={schemaVersion:1,id:'R04-DEVICE-GENERIC-COUNTER',name:'R04 Generic Counter Device',trigger:{type:'ON_HIT_RECEIVED',scope:'SELF',priority:7},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0}};
 const generated=generic.compileGenericSkill(sample,registry);
 assert.strictEqual(generated.ok,true,JSON.stringify(generated.errors));

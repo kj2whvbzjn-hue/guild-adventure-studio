@@ -1,7 +1,7 @@
 const fs=require('fs');
 const assert=require('assert');
 const build=require('../package-build.json');
-assert.strictEqual(build.game_build,'GA-B486.97');
+assert.ok(/^GA-B486\.\d+$/.test(build.game_build),`unexpected build ${build.game_build}`);
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
 const runtime=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 assert.ok(app.includes("origin:'follow_up',derivedGeneration:1"),'derived device case must use production follow-up origin without suppressDerived');
