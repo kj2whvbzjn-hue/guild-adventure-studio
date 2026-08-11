@@ -14,7 +14,7 @@ const sample={
   resource:{mpCost:0,cooldown:0}
 };
 
-assert.strictEqual(generic.VERSION,'R05-G');
+assert.strictEqual(generic.VERSION,'R05-H');
 for(const runtimePath of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
   const events=[];
   const ctx={console,battle:{tick:0,units:[],log:[]},recordValidationEvent:(type,payload)=>events.push({type,payload})};

@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R05-G';
+const VERSION='R05-H';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -150,6 +150,7 @@ function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffe
  const p=`effects[${index}]`;if(!effect||typeof effect!=='object'){err(errors,'INVALID_EFFECT',p,'Effect objectが必要です');return}
  const type=String(effect.type||'').toUpperCase();
  if(!registry.runtime?.effects?.includes(type)){err(errors,'UNKNOWN_EFFECT_TYPE',`${p}.type`,`未定義Effect type: ${type||'(なし)'}`);return}
+ if(type==='SPECIAL'){err(errors,'SPECIAL_BOUNDARY_DEFERRED',`${p}.type`,'R05-H SPECIALは境界確定のみです。effect固有contractとexecution ownerが定義されるまでLegacy Adapter・Generic direct runtimeへ接続しません');return}
  if(!registry.runtime?.legacy_adapter_supported?.includes(type)){err(errors,'LEGACY_EFFECT_UNSUPPORTED',`${p}.type`,`R02 Legacy Adapter未対応Effect: ${type}`);return}
  if(type==='DAMAGE'){
   pushUnique(tags,'ATTACK');addNumeric(tags,'DAMAGE',effect.power,errors,`${p}.power`);if(effect.damageType){const t=registry.damage_types?.[effect.damageType];if(!t)err(errors,'UNKNOWN_DAMAGE_TYPE',`${p}.damageType`,`未定義damageType: ${effect.damageType}`);else pushUnique(tags,t)}const normalized={type:'DAMAGE',power:effect.power,damageType:effect.damageType||null};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;

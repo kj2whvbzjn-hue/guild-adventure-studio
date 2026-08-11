@@ -12,7 +12,7 @@ const cases=[
  {id:'SHIELD',target:{side:'ALLY',range:'SINGLE'},effect:{type:'APPLY',effectId:'BARRIER',power:80,duration:500},legacy:'SHIELD=80',tampered:'SHIELD=999',expect:{shield:80,shieldDuration:500}}
 ];
 
-assert.strictEqual(generic.VERSION,'R05-G');
+assert.strictEqual(generic.VERSION,'R05-H');
 for(const runtimePath of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const ctx={console,battle:{tick:0,units:[],log:[]}};vm.createContext(ctx);vm.runInContext(fs.readFileSync(runtimePath,'utf8'),ctx);
  for(const item of cases){

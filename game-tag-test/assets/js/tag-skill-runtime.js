@@ -45,6 +45,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  for(const [i,c] of (Array.isArray(raw.effectContracts)?raw.effectContracts:[]).entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.effectContracts[${i}]はobjectが必要です`);continue}
   const type=String(c.type||'').toUpperCase(),damageType=c.damageType==null?null:String(c.damageType).toUpperCase();
+  if(type==='SPECIAL'){errors.push(`genericRuntime.effectContracts[${i}].SPECIALはR05-H境界外です`);continue}
   if(!['DAMAGE','HEAL','REMOVE','RESOURCE_CHANGE','REVIVE','TARGET_CONTROL'].includes(type)){errors.push(`genericRuntime.effectContracts[${i}].typeが未対応です: ${type||'(なし)'}`);continue}
   if(['DAMAGE','HEAL'].includes(type)&&(!Number.isFinite(c.power)||c.power<0)){errors.push(`genericRuntime.effectContracts[${i}].powerは0以上の有限数が必要です`);continue}
   if(type==='DAMAGE'&&damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType)){errors.push(`genericRuntime.effectContracts[${i}].damageTypeが無効です: ${damageType}`);continue}

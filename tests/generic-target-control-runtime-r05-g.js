@@ -1,6 +1,6 @@
 const assert=require('assert'),fs=require('fs'),vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8')),generic=require('../assets/shared/js/generic-skill-compiler.js');
-assert.strictEqual(generic.VERSION,'R05-G');assert.strictEqual(registry.phase,'R05-G');
+assert.strictEqual(generic.VERSION,'R05-H');assert.strictEqual(registry.phase,'R05-H');
 const cases=[
  {lifetime:'PERSISTENT',priority:3,removable:false},
  {lifetime:'USES',priority:7,removable:true,uses:2},
