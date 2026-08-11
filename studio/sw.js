@@ -13,6 +13,7 @@ const APP_SHELL=[
   "./ai-production/ai-program-editor.js?v=1",
   "./ai-production/ai-master-adapter.js?v=1",
   "./ai-production/ai-program-validator.js?v=1",
+  "./ai-production/ai-program-compiler.js?v=1",
   "./ai-production/ai-production-ui.js?v=1"
 ];
 

@@ -6,13 +6,14 @@
     commonjs ? require('./ai-program-store.js') : root && root.GKSAIProgramStore,
     commonjs ? require('./ai-program-editor.js') : root && root.GKSAIProgramEditor,
     commonjs ? require('./ai-program-validator.js') : root && root.GKSAIProgramValidator,
+    commonjs ? require('./ai-program-compiler.js') : root && root.GKSAIProgramCompiler,
     root
   );
   if (commonjs) module.exports = api;
   if (root) root.GKSAIProductionUI = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Adapter, Model, Store, Editor, Validator, root) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Adapter, Model, Store, Editor, Validator, Compiler, root) {
   'use strict';
-  let selectedPart = null, selectedNodeId = '', paletteSearch = '', programSearch = '', draft = null, original = null, editor = null, validationResult = null, dirty = false;
+  let selectedPart = null, selectedNodeId = '', paletteSearch = '', programSearch = '', draft = null, original = null, editor = null, validationResult = null, compileResult = null, dirty = false;
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const clone = (value) => value == null ? value : JSON.parse(JSON.stringify(value));
   function host() { return root?.GKSAIProductionHost || {}; }
@@ -20,12 +21,13 @@
   function references(data) { return {tags: data.tags || [], skills: data.masters?.skills || []}; }
   function now() { return host().now?.() || new Date().toISOString(); }
   function isDirty() { return dirty; }
-  function setDraft(value) { draft = Model.normalizeProgram(value); original = clone(draft); editor = Editor.create(draft); selectedNodeId = ''; validationResult = null; dirty = false; }
+  function setDraft(value) { draft = Model.normalizeProgram(value); original = clone(draft); editor = Editor.create(draft); selectedNodeId = ''; validationResult = null; compileResult = draft.compiled||null; dirty = false; }
   function syncGraph() {
     if (!editor || !draft) return;
     const graph = editor.program();
-    draft = {...graph,name:draft.name,status:draft.status,tags:clone(draft.tags),description:draft.description,updated_at:draft.updated_at};
+    draft = {...graph,name:draft.name,status:draft.status,tags:clone(draft.tags),description:draft.description,updated_at:draft.updated_at,compiled:draft.compiled||null};
   }
+  function invalidateCompiled(){if(draft)draft.compiled=null;compileResult=null;}
   function markDirty() { dirty = true; render(); }
   function fieldHtml(field) {
     const required = field.required ? ' required' : '';
@@ -48,11 +50,11 @@
   function validationPanelHtml() {
     if(!draft)return '';
     const issues=validationResult?.issues||[],summary=validationResult?.summary||{ERROR:0,WARNING:0,INFO:0};
-    return `<div class="ai-validation-panel"><div class="ai-program-toolbar"><h3>AI構成検証</h3><button type="button" onclick="GKSAIProductionUI.validateDraft()">構成を検証</button></div>${validationResult?`<p class="${validationResult.valid?'':'ai-unsaved'}">エラー ${summary.ERROR} / 警告 ${summary.WARNING} / 情報 ${summary.INFO}</p><div class="ai-issue-list">${issues.length?issues.map((row,index)=>`<button type="button" class="ai-issue-item ${row.severity.toLowerCase()}" onclick="GKSAIProductionUI.selectIssue(${index})"><b>${esc(row.severity)} / ${esc(row.code)}</b><span>${esc(row.message)}</span><small>${esc(row.node_id||row.edge_id||row.subroutine_id||'プログラム全体')}</small></button>`).join(''):'<p>問題は見つかりませんでした。</p>'}</div>`:'<p class="small">保存前に構造・参照・到達性を検査できます。</p>'}</div>`;
+    return `<div class="ai-validation-panel"><div class="ai-program-toolbar"><h3>AI構成検証・コンパイル</h3><button type="button" onclick="GKSAIProductionUI.validateDraft()">構成を検証</button><button type="button" class="primary" onclick="GKSAIProductionUI.compileDraft()">実行形式を生成</button></div>${compileResult?`<p class="small">生成済み: ${esc(compileResult.content_hash)} / 命令 ${compileResult.instructions.length}件</p>`:''}${validationResult?`<p class="${validationResult.valid?'':'ai-unsaved'}">エラー ${summary.ERROR} / 警告 ${summary.WARNING} / 情報 ${summary.INFO}</p><div class="ai-issue-list">${issues.length?issues.map((row,index)=>`<button type="button" class="ai-issue-item ${row.severity.toLowerCase()}" onclick="GKSAIProductionUI.selectIssue(${index})"><b>${esc(row.severity)} / ${esc(row.code)}</b><span>${esc(row.message)}</span><small>${esc(row.node_id||row.edge_id||row.subroutine_id||'プログラム全体')}</small></button>`).join(''):'<p>問題は見つかりませんでした。</p>'}</div>`:'<p class="small">保存前に構造・参照・到達性を検査できます。</p>'}</div>`;
   }
   function render(doc) {
     const documentRef = doc || (typeof document !== 'undefined' ? document : null), target = documentRef?.getElementById('aiProductionRoot');
-    if (!target || !Adapter || !Model || !Store || !Editor || !Validator) return false;
+    if (!target || !Adapter || !Model || !Store || !Editor || !Validator || !Compiler) return false;
     const data = hostData(); Store.normalizeProject(data);
     const programs = programRows(data);
     const rows = Adapter.palette(data.masters, paletteSearch, {data_version: Model.DATA_VERSION, unlocked_ids: data.ai_unlocks || []});
@@ -80,13 +82,14 @@
     documentRef?.querySelectorAll?.('[data-ai-param]').forEach((input)=>{ const field=descriptors.find((item)=>item.name===input.dataset.aiParam); let value=input.type==='checkbox'?input.checked:input.value; if(value!==''&&(field?.type==='number'||field?.type==='integer'))value=Number(value); values[input.dataset.aiParam]=value; });
     return values;
   }
-  function addSelectedPart(doc) { const node=selectedDefinition(); if(!draft||!editor||!node)return false; const values=readParameters(doc,node),errors=Adapter.validateParameters(node,values,references(hostData())); if(errors.length){root?.alert?.(errors.join('\n'));return false;} const placed=editor.addNode(node,values,{x:(draft.nodes.length%3)*240,y:Math.floor(draft.nodes.length/3)*140}); syncGraph(); selectedNodeId=placed.instance_id; validationResult=null; dirty=true; render(); return placed; }
+  function addSelectedPart(doc) { const node=selectedDefinition(); if(!draft||!editor||!node)return false; const values=readParameters(doc,node),errors=Adapter.validateParameters(node,values,references(hostData())); if(errors.length){root?.alert?.(errors.join('\n'));return false;} const placed=editor.addNode(node,values,{x:(draft.nodes.length%3)*240,y:Math.floor(draft.nodes.length/3)*140}); syncGraph(); invalidateCompiled(); selectedNodeId=placed.instance_id; validationResult=null; dirty=true; render(); return placed; }
   function selectNode(id) { selectedNodeId=String(id||''); render(); }
-  function updateSelectedNode(doc) { const documentRef=doc||(typeof document!=='undefined'?document:null); if(!editor||!selectedNodeId)return false; let parameters; try{parameters=JSON.parse(documentRef?.getElementById('aiNodeParameters')?.value||'{}');}catch(e){root?.alert?.('パラメータJSONが不正です。');return false;} editor.updateNode(selectedNodeId,{position:{x:Number(documentRef?.getElementById('aiNodeX')?.value)||0,y:Number(documentRef?.getElementById('aiNodeY')?.value)||0},comment:documentRef?.getElementById('aiNodeComment')?.value||'',parameters}); syncGraph(); validationResult=null; dirty=true; render(); return true; }
-  function connectNodes(doc) { const documentRef=doc||(typeof document!=='undefined'?document:null); if(!editor)return false; try{editor.connect({node_id:documentRef?.getElementById('aiEdgeFromNode')?.value,port_id:documentRef?.getElementById('aiEdgeFromPort')?.value},{node_id:documentRef?.getElementById('aiEdgeToNode')?.value,port_id:documentRef?.getElementById('aiEdgeToPort')?.value});syncGraph();validationResult=null;dirty=true;render();return true;}catch(e){root?.alert?.(e.message);return false;} }
-  function undoGraph() { if(!editor?.undo())return false;syncGraph();validationResult=null;dirty=true;render();return true; }
-  function redoGraph() { if(!editor?.redo())return false;syncGraph();validationResult=null;dirty=true;render();return true; }
+  function updateSelectedNode(doc) { const documentRef=doc||(typeof document!=='undefined'?document:null); if(!editor||!selectedNodeId)return false; let parameters; try{parameters=JSON.parse(documentRef?.getElementById('aiNodeParameters')?.value||'{}');}catch(e){root?.alert?.('パラメータJSONが不正です。');return false;} editor.updateNode(selectedNodeId,{position:{x:Number(documentRef?.getElementById('aiNodeX')?.value)||0,y:Number(documentRef?.getElementById('aiNodeY')?.value)||0},comment:documentRef?.getElementById('aiNodeComment')?.value||'',parameters}); syncGraph(); invalidateCompiled(); validationResult=null; dirty=true; render(); return true; }
+  function connectNodes(doc) { const documentRef=doc||(typeof document!=='undefined'?document:null); if(!editor)return false; try{editor.connect({node_id:documentRef?.getElementById('aiEdgeFromNode')?.value,port_id:documentRef?.getElementById('aiEdgeFromPort')?.value},{node_id:documentRef?.getElementById('aiEdgeToNode')?.value,port_id:documentRef?.getElementById('aiEdgeToPort')?.value});syncGraph();invalidateCompiled();validationResult=null;dirty=true;render();return true;}catch(e){root?.alert?.(e.message);return false;} }
+  function undoGraph() { if(!editor?.undo())return false;syncGraph();invalidateCompiled();validationResult=null;dirty=true;render();return true; }
+  function redoGraph() { if(!editor?.redo())return false;syncGraph();invalidateCompiled();validationResult=null;dirty=true;render();return true; }
   function validateDraft() { if(!draft)return null;syncGraph();validationResult=Validator.validate(draft,hostData());render();return validationResult; }
+  async function compileDraft() { if(!draft)return null;syncGraph();try{const runtime=await Compiler.compile(draft,hostData());draft.compiled=runtime;draft.status='valid';compileResult=runtime;validationResult=Validator.validate(draft,hostData());dirty=true;render();return runtime;}catch(error){compileResult=null;validationResult={valid:false,issues:error.issues||[{severity:'ERROR',code:'AI_COMPILE_FAILED',message:error.message}],summary:{ERROR:(error.issues||[]).filter((row)=>row.severity==='ERROR').length||1,WARNING:0,INFO:0}};render();return null;} }
   function selectIssue(index) { const row=validationResult?.issues?.[Number(index)];if(!row)return false;if(row.node_id){selectedNodeId=row.node_id;render();}return true; }
   function validateCurrent(doc) {
     const documentRef = doc || (typeof document !== 'undefined' ? document : null), data = hostData();
@@ -97,5 +100,5 @@
     if (output) output.textContent = errors.length ? errors.join(' / ') : '設定値は有効です。';
     return errors;
   }
-  return Object.freeze({render, refresh, setSearch, setProgramSearch, select, selectNode, selectIssue, newProgram, openProgram, updateDraft, saveDraft, revertDraft, duplicateDraft, addSelectedPart, updateSelectedNode, connectNodes, undoGraph, redoGraph, validateDraft, isDirty, filterReferenceOptions, validateCurrent});
+  return Object.freeze({render, refresh, setSearch, setProgramSearch, select, selectNode, selectIssue, newProgram, openProgram, updateDraft, saveDraft, revertDraft, duplicateDraft, addSelectedPart, updateSelectedNode, connectNodes, undoGraph, redoGraph, validateDraft, compileDraft, isDirty, filterReferenceOptions, validateCurrent});
 });

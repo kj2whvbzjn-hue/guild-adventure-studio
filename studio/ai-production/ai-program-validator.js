@@ -54,6 +54,7 @@
     duplicates(subroutines,'id').forEach((id)=>issues.push(issue('ERROR','AI_SUBROUTINE_DUPLICATE',`サブルーチンIDが重複しています: ${id}`,{subroutine_id:id})));
     for(const subroutine of subroutines)if(!nodeIds.has(subroutine.entry_node_id))issues.push(issue('ERROR','AI_SUBROUTINE_ENTRY_MISSING',`サブルーチン開始部品が存在しません: ${subroutine.entry_node_id}`,{subroutine_id:String(subroutine.id||'')}));
     const signature=new Set();for(const edge of edges){const key=`${edge.from?.node_id}.${edge.from?.port_id}>${edge.to?.node_id}.${edge.to?.port_id}`;if(signature.has(key))issues.push(issue('ERROR','AI_EDGE_DUPLICATE',`同じ接続が重複しています: ${key}`,{edge_id:String(edge.edge_id||'')}));signature.add(key);}
+    const outputUse=new Map();for(const edge of edges){const key=`${edge.from?.node_id}.${edge.from?.port_id}`;const rows=outputUse.get(key)||[];rows.push(String(edge.edge_id||''));outputUse.set(key,rows);}for(const [key,ids] of outputUse)if(ids.length>1)issues.push(issue('ERROR','AI_OUTPUT_AMBIGUOUS',`同じ出力ポートに複数の接続があります: ${key}`,{edge_id:ids.sort()[0]}));
     issues.sort((a,b)=>(rank[a.severity]-rank[b.severity])||String(a.node_id||a.edge_id||a.subroutine_id||'').localeCompare(String(b.node_id||b.edge_id||b.subroutine_id||''))||a.code.localeCompare(b.code)||a.message.localeCompare(b.message));
     const summary={ERROR:0,WARNING:0,INFO:0};issues.forEach((row)=>summary[row.severity]++);
     return Object.freeze({valid:summary.ERROR===0,issues:Object.freeze(issues),summary:Object.freeze(summary)});
