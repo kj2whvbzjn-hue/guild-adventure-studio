@@ -2,7 +2,7 @@ const fs=require('fs');
 const assert=(v,m)=>{if(!v)throw new Error(m)};
 const runtime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert(build.game_build==='GA-B486.94','unexpected game build');
+assert(build.game_build==='GA-B486.95','unexpected game build');
 assert(runtime.includes("function currentValidationGameBuild(){return window.GA_PROJECT_CONFIG?.gameBuild||'UNKNOWN'}"),'current build helper missing');
 const fixture=(runtime.match(/function prepareShieldValidationFixture\(\)\{[^\n]+/)||[])[0]||'';
 assert(fixture.includes("ensureValidationTargets('味方',3)"),'shield fixture does not ensure three allies');
