@@ -40,6 +40,6 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  ok(lb1.ok&&lb2.ok&&legacyTarget.modifierStacks.length===3&&ctx.effectiveModifierPower(legacyTarget,'BUFF','ATK')===25,`${path}: legacy BUFF parity failed`);
 
  const srcText=fs.readFileSync(path,'utf8');
- ok(srcText.includes("applyTaggedModifier(source,target,compiled,logic,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production modifier path does not delegate lifecycle policy`);
+ ok(srcText.includes("applyTaggedModifier(source,target,runtimeCompiled,logic,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production modifier path does not delegate lifecycle policy`);
 }
 console.log('GENERIC_MODIFIER_LIFECYCLE_R03_E3B_PASS');

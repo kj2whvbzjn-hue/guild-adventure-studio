@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R05-B';
+const VERSION='R05-C';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -167,7 +167,10 @@ function compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,a
  const def=registry.effects?.[effect.effectId];if(!def){err(errors,'UNKNOWN_EFFECT_ID',`${p}.effectId`,`未定義Effect ID: ${effect.effectId||'(なし)'}`);return}
  const kind=def.kind,legacy=def.legacy||{},defaults=def.defaults||{},lifecycle=resolveLifecycle(def,registry,errors,`${p}.effectId.lifecycle`);pushUnique(tags,legacy.logic);
  for(const t of legacy.generalTags||[])pushUnique(tags,t);
- const normalized={type:'APPLY',effectId:effect.effectId,kind,lifecycle,power:own(effect,'power')?effect.power:null,duration:own(effect,'duration')?effect.duration:null,interval:own(effect,'interval')?effect.interval:(own(defaults,'interval')?defaults.interval:null),stackGain:own(effect,'stackGain')?effect.stackGain:(own(defaults,'stackGain')?defaults.stackGain:null)};normalizedEffects.push(normalized);applyContracts.push({effectId:effect.effectId,kind,logic:legacy.logic,lifecycle:{...lifecycle}});
+ const normalized={type:'APPLY',effectId:effect.effectId,kind,lifecycle,power:own(effect,'power')?effect.power:null,duration:own(effect,'duration')?effect.duration:null,interval:own(effect,'interval')?effect.interval:(own(defaults,'interval')?defaults.interval:null),stackGain:own(effect,'stackGain')?effect.stackGain:(own(defaults,'stackGain')?defaults.stackGain:null)};
+ const statusId=legacy.statusId||effect.effectId,statusPayload={...((legacy.generalTags||[]).includes('ACTION_DISABLED=true')?{action_disabled:true}:{}),...(statusId==='STATUS-ACCURACY-DOWN'?{accuracy_modifier:-20}:{})};
+ const values={power:normalized.power,duration:normalized.duration,interval:normalized.interval,stackGain:normalized.stackGain,statusId,modifierStat:legacy.modifierStat||null,statusPayload};
+ normalizedEffects.push(normalized);applyContracts.push({effectId:effect.effectId,kind,logic:legacy.logic,values,lifecycle:{...lifecycle}});
  if(kind==='STATUS'){
   pushUnique(tags,`STATUS_ID=${legacy.statusId||effect.effectId}`);if(!Number.isInteger(effect.duration)||effect.duration<=0)err(errors,'APPLY_DURATION_REQUIRED',`${p}.duration`,'STATUS付与には正の整数durationが必要です');else pushUnique(tags,`DURATION=${effect.duration}`);return;
  }

@@ -73,7 +73,8 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
   if(!g.has(logic)){errors.push(`genericRuntime.applyContractsの${logic}がスキルタグに存在しません`);continue}
   if(!c.lifecycle||typeof c.lifecycle!=='object'||Array.isArray(c.lifecycle)){errors.push(`genericRuntime.applyContracts[${i}].lifecycleが必要です`);continue}
   for(const key of ['stackRule','refreshRule','snapshotPolicy','dispelCategory','removeOnDeath','removeOnBattleEnd','removable','effectiveRule','consumeRule'])if(c.lifecycle[key]==null||c.lifecycle[key]==='')errors.push(`genericRuntime.applyContracts[${i}].lifecycle.${key}が必要です`);
-  out.push({effectId,kind,logic,lifecycle:{...c.lifecycle}});
+  const values=c.values&&typeof c.values==='object'&&!Array.isArray(c.values)?{...c.values,statusPayload:{...(c.values.statusPayload||{})}}:null;
+  out.push({effectId,kind,logic,values,lifecycle:{...c.lifecycle}});
  }
  for(const logic of ['STATUS','DOT','BUFF','DEBUFF','SHIELD'])if(g.has(logic)&&!seen.has(logic))errors.push(`Generic由来APPLYには${logic}のlifecycle契約が必要です`);
  let auraEffectContract=null;
@@ -770,17 +771,32 @@ function resolveGenericApplyPolicy(compiled,logic){
  const policy={stackRule:lc.stackRule,refreshRule:lc.refreshRule,snapshotPolicy:lc.snapshotPolicy,effectiveRule:lc.effectiveRule,consumeRule:lc.consumeRule,dispelCategory:lc.dispelCategory,removeOnDeath:lc.removeOnDeath===true,removeOnBattleEnd:lc.removeOnBattleEnd===true,removable:lc.removable===true,maxStacks:Number.isInteger(lc.maxStacks)?lc.maxStacks:null,resistancePolicy:lc.resistancePolicy||null,identityPolicy:lc.identityPolicy||null};
  return{...lifecycleRef,policy};
 }
+function resolveGenericApplyDefinition(compiled,contract){
+ const values=contract?.values;if(!values)return{ok:true,genericValues:false,compiled};
+ const p={...(compiled?.definition?.parameters||{})},logic=String(contract.logic||'');
+ if(logic==='STATUS'){p.statusId=values.statusId;p.statusDuration=values.duration;p.statusPayload={...(values.statusPayload||{})}}
+ else if(logic==='DOT'){p.dotPower=values.power;p.dotDuration=values.duration;p.dotInterval=values.interval;p.stackGain=values.stackGain}
+ else if(logic==='BUFF'||logic==='DEBUFF'){p.modifierStat=values.modifierStat;p.modifierPower=values.power;p.modifierDuration=values.duration;p.stackGain=values.stackGain}
+ else if(logic==='SHIELD'){p.shield=values.power;p.shieldDuration=values.duration}
+ else return{ok:false,genericValues:true,reason:'GENERIC_APPLY_VALUES_LOGIC_INVALID',compiled:null};
+ const numeric=logic==='STATUS'?[p.statusDuration]:logic==='DOT'?[p.dotPower,p.dotDuration,p.dotInterval,p.stackGain]:logic==='SHIELD'?[p.shield,p.shieldDuration]:[p.modifierPower,p.modifierDuration,p.stackGain];
+ if(numeric.some(x=>!Number.isFinite(x)||x<0))return{ok:false,genericValues:true,reason:'GENERIC_APPLY_VALUES_INVALID',compiled:null};
+ return{ok:true,genericValues:true,compiled:{...compiled,definition:{...compiled.definition,parameters:p}}};
+}
 function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=true}={}){
  const lifecycleRef=resolveGenericApplyPolicy(compiled,logic);
  if(!lifecycleRef.ok){const policyError=String(lifecycleRef.reason||'').startsWith('GENERIC_APPLY_POLICY_');battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] Generic APPLY ${policyError?'policy':'lifecycle契約'}が不正です`);typeof recordValidationEvent==='function'&&recordValidationEvent(policyError?'generic_apply_policy_rejected':'generic_apply_contract_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,reason:lifecycleRef.reason,field:lifecycleRef.policyField||null,value:lifecycleRef.policyValue||null});return{handled:true,skipped:true,error:true,reason:lifecycleRef.reason,result:null,lifecycle:lifecycleRef.lifecycle||null,policy:null}}
  if(lifecycleRef.generic&&typeof recordValidationEvent==='function'){recordValidationEvent('generic_apply_contract_resolved',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,registry_phase:compiled?.definition?.genericRuntime?.registryPhase||null,lifecycle:lifecycleRef.lifecycle});recordValidationEvent('generic_apply_policy_resolved',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,registry_phase:compiled?.definition?.genericRuntime?.registryPhase||null,policy:lifecycleRef.policy})}
+ const direct=resolveGenericApplyDefinition(compiled,lifecycleRef.contract);if(!direct.ok)return{handled:true,skipped:true,error:true,reason:direct.reason,result:null,contract:lifecycleRef.contract};
+ const runtimeCompiled=direct.compiled;
+ if(direct.genericValues&&typeof recordValidationEvent==='function')recordValidationEvent('generic_apply_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,values:lifecycleRef.contract.values});
  const requiresAttack=compiled.definition.logicOrder.includes('ATTACK');
  if((logic==='STATUS'||logic==='DOT')&&requiresAttack&&!attackSucceeded){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] ATTACK不成立のため${logic==='STATUS'?'状態異常':'DOT'}付与をスキップ`);return{handled:true,skipped:true,reason:'ATTACK_FAILED',result:null}}
  if(!target?.alive){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 対象戦闘不能のため${logic==='STATUS'?'状態異常':logic==='DOT'?'DOT':'付与効果'}付与をスキップ`);return{handled:true,skipped:true,reason:'TARGET_DEAD',result:null}}
- if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
- if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
- if(logic==='BUFF'||logic==='DEBUFF')return{handled:true,skipped:false,result:applyTaggedModifier(source,target,compiled,logic,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
- if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,runtimeCompiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,runtimeCompiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='BUFF'||logic==='DEBUFF')return{handled:true,skipped:false,result:applyTaggedModifier(source,target,runtimeCompiled,logic,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,runtimeCompiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  return{handled:false,skipped:false,result:null};
 }
 function compareTaggedCondition(actual,operator,expected){if(!Number.isFinite(actual)||!Number.isFinite(expected))return false;switch(operator){case '=':return actual===expected;case '!=':return actual!==expected;case '>':return actual>expected;case '>=':return actual>=expected;case '<':return actual<expected;case '<=':return actual<=expected;default:return false}}

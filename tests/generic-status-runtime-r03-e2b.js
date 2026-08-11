@@ -22,6 +22,6 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  ok(target.statusEffects[0].instanceId===instanceId,`${path}: refresh replaced STATUS instance`);
  ok(target.statusEffects[0].expiresTick>firstExpires,`${path}: refresh did not update duration`);
  const src=fs.readFileSync(path,'utf8');
- ok(src.includes("applyTaggedStatus(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production STATUS path does not delegate policy`);
+ ok(src.includes("applyTaggedStatus(source,target,runtimeCompiled,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production STATUS path does not delegate policy`);
 }
 console.log('GENERIC_STATUS_RUNTIME_R03_E2B_PASS');

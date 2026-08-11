@@ -29,6 +29,6 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  ok(la.ok&&la.current===2&&lb.ok&&lb.current===4&&lc.ok&&lc.current===5,`${path}: legacy DOT stack parity failed`);
  ok(ld.ok===false&&ld.reason==='MAX_STACK'&&legacyTarget.dotStacks.length===5,`${path}: legacy DOT max stack parity failed`);
  const src=fs.readFileSync(path,'utf8');
- ok(src.includes("applyTaggedDot(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production DOT path does not delegate lifecycle policy`);
+ ok(src.includes("applyTaggedDot(source,target,runtimeCompiled,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production DOT path does not delegate lifecycle policy`);
 }
 console.log('GENERIC_DOT_LIFECYCLE_R03_E3A_PASS');

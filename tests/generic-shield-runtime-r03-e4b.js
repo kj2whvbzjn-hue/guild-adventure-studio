@@ -27,6 +27,6 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  const shape=x=>({amount:x.amount,remaining:x.remaining,appliedAt:x.appliedAt,expiresAt:x.expiresAt,duration:x.duration,sourceId:x.sourceId});
  ok(JSON.stringify(target.shieldEffects.map(shape))===JSON.stringify(legacyTarget.shieldEffects.map(shape)),`${path}: generic/legacy SHIELD shape mismatch`);
  const src=fs.readFileSync(path,'utf8');
- ok(src.includes("applyTaggedShield(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production SHIELD path does not delegate lifecycle policy`);
+ ok(src.includes("applyTaggedShield(source,target,runtimeCompiled,lifecycleRef.generic?lifecycleRef.policy:null)"),`${path}: production SHIELD path does not delegate lifecycle policy`);
 }
 console.log('GENERIC_SHIELD_RUNTIME_R03_E4B_PASS');
