@@ -16,10 +16,12 @@ def main()->int:
  try: policy=json.loads(policy_path.read_text(encoding='utf-8'))
  except Exception as e: print('ENCODING_FAIL'); print('POLICY_INVALID',e); return 1
  legacy=set(policy.get('legacy_exceptions',[]))
+ ascii_only_prefixes=tuple(str(x) for x in policy.get('ascii_only_path_prefixes',[]))
  for f in root.rglob('*'):
   if not f.is_file() or '.git' in f.parts: continue
   rel=f.relative_to(root).as_posix()
   if unicodedata.normalize('NFC',rel)!=rel: errors.append(f'FILENAME_NOT_NFC {rel}')
+  if ascii_only_prefixes and any(rel.startswith(prefix) for prefix in ascii_only_prefixes) and any(ord(ch)>127 for ch in rel): errors.append(f'NON_ASCII_FILENAME_FORBIDDEN {rel}')
   if ESCAPED_RE.search(rel):
    (warnings if rel in legacy else errors).append(f'ESCAPED_UNICODE_FILENAME {rel}')
   if f.suffix.lower() not in TEXT_EXTS: continue
