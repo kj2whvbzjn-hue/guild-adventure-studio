@@ -66,6 +66,12 @@ assert.equal(fixed.event_results[0].type,'battle');
 assert.equal(fixed.reward_result.gold,12);
 assert.equal(fixed.timeline_result[0].battle_result_index,0);
 
+// Random battle always persists the generated seed, even when a Battle Core adapter omits it.
+let randomBattleSeed;
+const randomBattle=S.simulateQuest({quest:{id:'QRB'},section:{id:'SRB',boxes:[{id:'RB',type:'random_battle'}]},chapter:{id:'CRB',available_monster_ids:['M1']},monsters:[{id:'M1',enemy_budget_cost:1}],enemyBudget:1,seed:12,simulateBattle:({seed})=>{randomBattleSeed=seed;return{victory:true,reward:{},playback_events:[]}}});
+assert(Number.isInteger(randomBattleSeed));
+assert.equal(randomBattle.battle_results[0].seed,randomBattleSeed);
+
 const fixedFail=S.simulateQuest({quest:{id:'QF2'},section:{id:'SF2',boxes:[{id:'FB',type:'event',ref_id:'EB'},{id:'AFTER',type:'scene',ref_id:'SC'}]},chapter:{id:'CF2'},events:[{id:'EB',type:'battle',battle_formation:[{monster_id:'M1',count:1}]}],scenes:[{id:'SC',dialogues:[]}],seed:10,simulateBattle:()=>({victory:false,reason:'boss_lost',reward:{gold:999},playback_events:[]})});
 assert.equal(fixedFail.final_result.success,false);
 assert.equal(fixedFail.final_result.failure.reason,'boss_lost');
