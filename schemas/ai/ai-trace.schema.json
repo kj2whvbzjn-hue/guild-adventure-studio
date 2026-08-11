@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/ai/ai-trace.schema.json",
+  "title": "Studio AI battle decision trace",
+  "type": "object",
+  "required": ["schema_version", "data_version", "battle_id", "program_id", "program_version", "actor_id", "seed", "events", "outcome"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "data_version": {"type": "string", "minLength": 1},
+    "battle_id": {"type": "string", "minLength": 1},
+    "program_id": {"type": "string", "minLength": 1},
+    "program_version": {"type": "integer", "minimum": 1},
+    "actor_id": {"type": "string", "minLength": 1},
+    "seed": {"type": ["string", "integer"]},
+    "events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
+    "outcome": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"type": "string", "enum": ["selected", "wait", "failed", "step_limit"]},
+        "action_id": {"type": ["string", "null"]},
+        "target_id": {"type": ["string", "null"]},
+        "reason": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "event": {
+      "type": "object",
+      "required": ["tick", "phase", "step", "instruction_id", "source_node_id", "event_type", "result", "details"],
+      "properties": {
+        "tick": {"type": "integer", "minimum": 0},
+        "phase": {"type": "string", "enum": ["reservation", "execution", "rethink"]},
+        "step": {"type": "integer", "minimum": 1},
+        "instruction_id": {"type": "string", "minLength": 1},
+        "source_node_id": {"type": "string", "minLength": 1},
+        "event_type": {"type": "string", "enum": ["condition", "target", "action", "branch", "call", "wait", "end", "error"]},
+        "result": {"type": "string", "enum": ["true", "false", "selected", "skipped", "entered", "returned", "failed", "completed"]},
+        "details": {"type": "object"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

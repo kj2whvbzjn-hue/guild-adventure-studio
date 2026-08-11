@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/ai/ai-program.schema.json",
+  "title": "Studio player-authored AI program",
+  "type": "object",
+  "required": ["schema_version", "data_version", "id", "name", "version", "status", "entry_node_id", "nodes", "edges", "subroutines"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "data_version": {"type": "string", "minLength": 1},
+    "id": {"type": "string", "minLength": 1, "pattern": "^AIP-[A-Za-z0-9_.-]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "status": {"type": "string", "enum": ["draft", "valid", "invalid", "archived"]},
+    "entry_node_id": {"type": "string", "minLength": 1},
+    "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/node"}},
+    "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+    "subroutines": {"type": "array", "items": {"$ref": "#/$defs/subroutine"}},
+    "tags": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "description": {"type": "string"},
+    "updated_at": {"type": "string", "minLength": 1},
+    "compiled": {"type": ["object", "null"]}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {"x": {"type": "number"}, "y": {"type": "number"}},
+      "additionalProperties": false
+    },
+    "node": {
+      "type": "object",
+      "required": ["instance_id", "master_node_id", "node_type", "position", "parameters"],
+      "properties": {
+        "instance_id": {"type": "string", "minLength": 1},
+        "master_node_id": {"type": "string", "minLength": 1},
+        "node_type": {"type": "string", "enum": ["condition", "target", "action"]},
+        "position": {"$ref": "#/$defs/position"},
+        "parameters": {"type": "object"},
+        "comment": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "endpoint": {
+      "type": "object",
+      "required": ["node_id", "port_id"],
+      "properties": {"node_id": {"type": "string", "minLength": 1}, "port_id": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "required": ["edge_id", "from", "to"],
+      "properties": {
+        "edge_id": {"type": "string", "minLength": 1},
+        "from": {"$ref": "#/$defs/endpoint"},
+        "to": {"$ref": "#/$defs/endpoint"}
+      },
+      "additionalProperties": false
+    },
+    "subroutine": {
+      "type": "object",
+      "required": ["id", "entry_node_id"],
+      "properties": {"id": {"type": "string", "minLength": 1}, "entry_node_id": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    }
+  }
+}
