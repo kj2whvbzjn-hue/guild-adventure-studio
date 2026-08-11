@@ -1,10 +1,10 @@
-const CACHE_NAME="gks-studio-b485";
+const CACHE_NAME="gks-studio-b527";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=485';
+const OFFLINE_URL='./index.html?appv=527';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=485",
-  "./manifest.webmanifest?v=485",
+  "./index.html?appv=527",
+  "./manifest.webmanifest?v=527",
   "./icon-192.png?v=485",
   "./icon-512.png?v=485",
   "./ai-production/ai-production.css?v=1",
@@ -19,7 +19,14 @@ const APP_SHELL=[
   "./ai-production/ai-battle-adapter.js?v=1",
   "./ai-production/ai-simulation-runner.js?v=1",
   "./ai-production/ai-export-adapter.js?v=1",
-  "./ai-production/ai-production-ui.js?v=1"
+  "./ai-production/ai-production-ui.js?v=1",
+  "./data-exchange/data-exchange-integrity-validator.js?v=3",
+  "./data-exchange/data-exchange-core.js?v=14",
+  "./data-exchange/data-exchange-transaction.js?v=3",
+  "./data-exchange/data-exchange-audit.js?v=5",
+  "./data-exchange/data-exchange-ui.js?v=22",
+  "./data-exchange/dataset-registry.json",
+  "./data-exchange/schemas/ai_program-dataset.schema.json"
 ];
 
 self.addEventListener('install',event=>{
