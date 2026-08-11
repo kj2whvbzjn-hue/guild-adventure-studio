@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R05-C';
+const VERSION='R05-D';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -159,7 +159,7 @@ function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffe
   pushUnique(tags,'REVIVE');const hasHp=own(effect,'hp'),hasRate=own(effect,'hpRate');if(hasHp===hasRate){err(errors,'REVIVE_VALUE_REQUIRED',p,'REVIVEはhpまたはhpRateのどちらか1つが必要です');return}if(hasHp)addNumeric(tags,'REVIVE_HP',effect.hp,errors,`${p}.hp`);else addNumeric(tags,'REVIVE_HP_RATE',effect.hpRate,errors,`${p}.hpRate`);return;
  }
  if(type==='REMOVE'){
-  if(effect.category!=='STATUS'){err(errors,'REMOVE_CATEGORY_UNSUPPORTED',`${p}.category`,'R02 REMOVEはSTATUSのみ対応です');return}pushUnique(tags,'CLEANSE');pushUnique(tags,'CLEANSE_CATEGORY=status');pushUnique(tags,'CLEANSE_ORDER=oldest');if(effect.all===true)pushUnique(tags,'CLEANSE_ALL');else{if(!Number.isInteger(effect.count)||effect.count<1)err(errors,'REMOVE_COUNT_REQUIRED',`${p}.count`,'REMOVEはcount>=1またはall=trueが必要です');else pushUnique(tags,`CLEANSE_COUNT=${effect.count}`)}return;
+  if(effect.category!=='STATUS'){err(errors,'REMOVE_CATEGORY_UNSUPPORTED',`${p}.category`,'R02 REMOVEはSTATUSのみ対応です');return}pushUnique(tags,'CLEANSE');pushUnique(tags,'CLEANSE_CATEGORY=status');pushUnique(tags,'CLEANSE_ORDER=oldest');if(effect.all===true)pushUnique(tags,'CLEANSE_ALL');else{if(!Number.isInteger(effect.count)||effect.count<1)err(errors,'REMOVE_COUNT_REQUIRED',`${p}.count`,'REMOVEはcount>=1またはall=trueが必要です');else pushUnique(tags,`CLEANSE_COUNT=${effect.count}`)}const normalized={type:'REMOVE',category:'STATUS',count:effect.all===true?null:effect.count,all:effect.all===true,order:'oldest'};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
  }
  if(type==='APPLY')compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,applyContracts);
 }

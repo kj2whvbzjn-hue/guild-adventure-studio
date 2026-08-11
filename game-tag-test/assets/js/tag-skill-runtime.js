@@ -45,12 +45,12 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  for(const [i,c] of (Array.isArray(raw.effectContracts)?raw.effectContracts:[]).entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.effectContracts[${i}]はobjectが必要です`);continue}
   const type=String(c.type||'').toUpperCase(),damageType=c.damageType==null?null:String(c.damageType).toUpperCase();
-  if(!['DAMAGE','HEAL'].includes(type)){errors.push(`genericRuntime.effectContracts[${i}].typeはDAMAGE/HEALのみ対応です: ${type||'(なし)'}`);continue}
-  if(!Number.isFinite(c.power)||c.power<0){errors.push(`genericRuntime.effectContracts[${i}].powerは0以上の有限数が必要です`);continue}
+  if(!['DAMAGE','HEAL','REMOVE'].includes(type)){errors.push(`genericRuntime.effectContracts[${i}].typeはDAMAGE/HEAL/REMOVEのみ対応です: ${type||'(なし)'}`);continue}
+  if(type!=='REMOVE'&&(!Number.isFinite(c.power)||c.power<0)){errors.push(`genericRuntime.effectContracts[${i}].powerは0以上の有限数が必要です`);continue}
   if(type==='DAMAGE'&&damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType)){errors.push(`genericRuntime.effectContracts[${i}].damageTypeが無効です: ${damageType}`);continue}
   if(type==='HEAL'&&damageType!=null){errors.push(`genericRuntime.effectContracts[${i}].damageTypeはHEALで指定できません`);continue}
   if(effectContracts.some(x=>x.type===type)){errors.push(`genericRuntime.effectContractsで${type}を複数指定できません`);continue}
-  effectContracts.push(type==='DAMAGE'?{type,power:c.power,damageType}:{type,power:c.power});
+  if(type==='REMOVE'){if(String(c.category||'').toUpperCase()!=='STATUS'||typeof c.all!=='boolean'||(!c.all&&(!Number.isInteger(c.count)||c.count<1))||String(c.order||'')!=='oldest'){errors.push(`genericRuntime.effectContracts[${i}]のREMOVE契約が無効です`);continue}effectContracts.push({type,category:'STATUS',count:c.all?null:c.count,all:c.all,order:'oldest'});}else effectContracts.push(type==='DAMAGE'?{type,power:c.power,damageType}:{type,power:c.power});
  }
  const normalizedConditions=[];
  for(const [i,c] of conditionContracts.entries()){
@@ -470,6 +470,12 @@ function cleanseStatusEffects(source,target,compiled){
  typeof recordValidationEvent==='function'&&recordValidationEvent('cleanse_summary',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,requested_count:result.requestedCount,removed_count:result.removedCount,skipped_protected_count:result.skippedProtectedCount,remaining_negative_count:result.remainingNegativeCount});
  return result;
 }
+function executeGenericRemoveRuntime(source,target,compiled){
+ const contract=compiled?.definition?.genericRuntime?.effectContracts?.find(x=>x?.type==='REMOVE')||null;if(!contract)return null;
+ if(contract.category!=='STATUS'||typeof contract.all!=='boolean'||(!contract.all&&(!Number.isInteger(contract.count)||contract.count<1))||contract.order!=='oldest')return{ok:false,error:true,reason:'GENERIC_REMOVE_CONTRACT_INVALID'};
+ const p={...compiled.definition.parameters,cleanseCategory:'status',cleanseOrder:'oldest',cleanseAll:contract.all,cleanseCount:contract.count},result=cleanseStatusEffects(source,target,{...compiled,definition:{...compiled.definition,parameters:p}});
+ typeof recordValidationEvent==='function'&&recordValidationEvent('generic_remove_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,all:contract.all,count:contract.count,removed_count:result.removedCount});return{...result,genericRuntime:true,effectContract:{...contract}};
+}
 
 function calculateTaggedAttackDamage(attacker,definition){
  const rate=Number(definition.parameters.damage);
@@ -837,7 +843,7 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
    if(logic==='ATTACK'){attackResult=executeGenericDamageRuntime(actor,resolvedTarget,compiled)||applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL'){healResult=executeGenericHealRuntime(actor,resolvedTarget,compiled)||applyTaggedHeal(actor,resolvedTarget,compiled)}
    else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
-   else if(logic==='CLEANSE'){cleanseResult=cleanseStatusEffects(actor,resolvedTarget,compiled)}
+   else if(logic==='CLEANSE'){cleanseResult=executeGenericRemoveRuntime(actor,resolvedTarget,compiled)||cleanseStatusEffects(actor,resolvedTarget,compiled)}
    else if(logic==='REVIVE'){reviveResult=reviveTarget(actor,resolvedTarget,compiled)}
    else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime(actor,resolvedTarget,compiled)||applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);

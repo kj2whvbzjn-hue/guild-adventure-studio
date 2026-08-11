@@ -14,7 +14,7 @@ const sample={
   resource:{mpCost:0,cooldown:0}
 };
 
-assert.strictEqual(generic.VERSION,'R05-C');
+assert.strictEqual(generic.VERSION,'R05-D');
 for(const runtimePath of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
   const ctx={console,battle:{tick:0,units:[],log:[]}};
   vm.createContext(ctx);
