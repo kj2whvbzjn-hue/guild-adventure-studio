@@ -250,13 +250,24 @@ function applyStatusUniqueRefreshLifecycle(list,{statusId,newEffect,refreshPatch
  if(!statusId)return{ok:false,reason:'STATUS lifecycleにはstatusIdが必要です',refreshed:false,effect:null};
  const existing=list.find(x=>x&&x.statusId===statusId);
  if(existing){Object.assign(existing,refreshPatch||{});return{ok:true,refreshed:true,effect:existing,policy}}
- if(!newEffect||typeof newEffect!=='object')return{ok:false,reason:'STATUS lifecycle新規付与にはnewEffectが必要です',refreshed:false,effect:null,policy};
- list.push(newEffect);return{ok:true,refreshed:false,effect:newEffect,policy};
+ const created=typeof newEffect==='function'?newEffect():newEffect;
+ if(!created||typeof created!=='object')return{ok:false,reason:'STATUS lifecycle新規付与にはnewEffectが必要です',refreshed:false,effect:null,policy};
+ list.push(created);return{ok:true,refreshed:false,effect:created,policy};
 }
-function applyTaggedStatus(source,target,compiled){
+function applyTaggedStatus(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'状態異常対象が無効です'};
  const p=compiled.definition.parameters,statusId=p.statusId,baseDuration=Math.floor(Number(p.statusDuration)||0),resistance=statusResistance(target,statusId),duration=effectiveStatusDuration(baseDuration,resistance);
- const list=ensureStatusEffects(target),policy=p.statusStackPolicy||'refresh',existing=list.find(x=>x.statusId===statusId);
+ const list=ensureStatusEffects(target),policy=p.statusStackPolicy||'refresh';
+ if(lifecyclePolicy){
+  const refreshPatch={sourceId:source.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,payload:p.statusPayload||{}};
+  const createEffect=()=>{const seq=++statusEffectSequence;return{instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true,removable:true,protected:false,removePriority:0}};
+  const applied=applyStatusUniqueRefreshLifecycle(list,{statusId,newEffect:createEffect,refreshPatch},lifecyclePolicy);
+  if(!applied.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('status_lifecycle_rejected',{status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:applied.reason||'STATUS_LIFECYCLE_REJECTED',field:applied.field||null,value:applied.value||null});return{ok:false,reason:applied.reason||'STATUS_LIFECYCLE_REJECTED',lifecyclePolicy}}
+  const effect=applied.effect;
+  if(applied.refreshed){typeof recordValidationEvent==='function'&&recordValidationEvent('status_refreshed',{instance_id:effect.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:effect.expiresTick});return{ok:true,refreshed:true,effect,lifecyclePolicy}}
+  typeof recordValidationEvent==='function'&&recordValidationEvent('status_applied',{instance_id:effect.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:effect.expiresTick});return{ok:true,refreshed:false,effect,lifecyclePolicy};
+ }
+ const existing=list.find(x=>x.statusId===statusId);
  if(policy==='refresh'&&existing){existing.sourceId=source.id;existing.skillId=compiled.definition.id;existing.appliedTick=battle.tick;existing.baseDurationTick=baseDuration;existing.effectiveDurationTick=duration;existing.expiresTick=battle.tick+duration;existing.targetResistance=resistance;existing.payload=p.statusPayload||{};typeof recordValidationEvent==='function'&&recordValidationEvent('status_refreshed',{instance_id:existing.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:existing.expiresTick});return{ok:true,refreshed:true,effect:existing}}
  const seq=++statusEffectSequence,effect={instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true,removable:true,protected:false,removePriority:0};
  list.push(effect);typeof recordValidationEvent==='function'&&recordValidationEvent('status_applied',{instance_id:effect.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:effect.expiresTick});return{ok:true,refreshed:false,effect};
@@ -405,7 +416,7 @@ function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=t
  const requiresAttack=compiled.definition.logicOrder.includes('ATTACK');
  if((logic==='STATUS'||logic==='DOT')&&requiresAttack&&!attackSucceeded){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] ATTACK不成立のため${logic==='STATUS'?'状態異常':'DOT'}付与をスキップ`);return{handled:true,skipped:true,reason:'ATTACK_FAILED',result:null}}
  if(!target?.alive){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 対象戦闘不能のため${logic==='STATUS'?'状態異常':logic==='DOT'?'DOT':'付与効果'}付与をスキップ`);return{handled:true,skipped:true,reason:'TARGET_DEAD',result:null}}
- if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  return{handled:false,skipped:false,result:null};
