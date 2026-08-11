@@ -23,6 +23,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)){errors.push('genericRuntimeはobjectが必要です');return null}
  if(raw.schemaVersion!==1){errors.push(`genericRuntime.schemaVersion=${raw.schemaVersion}は未対応です`);return null}
  if(!Array.isArray(raw.applyContracts)){errors.push('genericRuntime.applyContractsは配列が必要です');return null}
+ const conditionContracts=Array.isArray(raw.conditionContracts)?raw.conditionContracts:[];
  let triggerContract=null;
  if(raw.triggerContract!=null){
   const c=raw.triggerContract;
@@ -32,12 +33,24 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
    if(!type)errors.push('genericRuntime.triggerContract.typeが必要です');
    if(scope!=='SELF')errors.push('genericRuntime.triggerContract.scopeはSELFが必要です');
    if(type==='ON_HIT_RECEIVED'){if(engineEvent!=='hit_received')errors.push('ON_HIT_RECEIVEDのengineEventはhit_receivedが必要です');if(dispatchMode!=='LEGACY_COUNTER_ADAPTER')errors.push('ON_HIT_RECEIVEDのdispatchModeはLEGACY_COUNTER_ADAPTERが必要です');if(!g.has('COUNTER'))errors.push('ON_HIT_RECEIVED契約にはCOUNTERタグが必要です')}
+   else if(type==='ON_ALLY_ATTACK'){if(engineEvent!=='ally_attack')errors.push('ON_ALLY_ATTACKのengineEventはally_attackが必要です');if(dispatchMode!=='LEGACY_FOLLOW_UP_ADAPTER')errors.push('ON_ALLY_ATTACKのdispatchModeはLEGACY_FOLLOW_UP_ADAPTERが必要です');if(!g.has('FOLLOW_UP'))errors.push('ON_ALLY_ATTACK契約にはFOLLOW_UPタグが必要です')}
    else if(type!=='ON_USE')errors.push(`genericRuntime.triggerContract.typeは未対応です: ${type}`);
    triggerContract={type,scope,engineEvent,dispatchMode,priority:Number.isInteger(c.priority)?c.priority:0};
   }
  }else if(g.has('COUNTER')){
   triggerContract={type:'ON_HIT_RECEIVED',scope:'SELF',engineEvent:'hit_received',dispatchMode:'LEGACY_COUNTER_ADAPTER',priority:Number.isInteger(n?.COUNTER_PRIORITY?.value)?n.COUNTER_PRIORITY.value:0,migratedFromLegacyGeneric:true};
  }else triggerContract={type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0,migratedFromLegacyGeneric:true};
+ const normalizedConditions=[];
+ for(const [i,c] of conditionContracts.entries()){
+  if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.conditionContracts[${i}]はobjectが必要です`);continue}
+  const property=String(c.property||'').toUpperCase(),scope=String(c.scope||'').toUpperCase(),enginePredicate=String(c.enginePredicate||'');
+  if(property!=='TARGET_POISONED'){errors.push(`genericRuntime.conditionContracts[${i}].propertyは未対応です: ${property||'(なし)'}`);continue}
+  if(scope!=='TARGET')errors.push(`genericRuntime.conditionContracts[${i}].scopeはTARGETが必要です`);
+  if(enginePredicate!=='target_poisoned')errors.push(`genericRuntime.conditionContracts[${i}].enginePredicateはtarget_poisonedが必要です`);
+  if(c.expected!==true)errors.push(`genericRuntime.conditionContracts[${i}].expectedはtrueが必要です`);
+  if(!g.has('CONDITION_POISONED'))errors.push('TARGET_POISONED契約にはCONDITION_POISONEDタグが必要です');
+  normalizedConditions.push({property,scope,enginePredicate,expected:true});
+ }
  const out=[],seen=new Set();
  for(const [i,c] of raw.applyContracts.entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.applyContracts[${i}]はobjectが必要です`);continue}
@@ -51,7 +64,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
   out.push({effectId,kind,logic,lifecycle:{...c.lifecycle}});
  }
  for(const logic of ['STATUS','DOT','BUFF','DEBUFF','SHIELD'])if(g.has(logic)&&!seen.has(logic))errors.push(`Generic由来APPLYには${logic}のlifecycle契約が必要です`);
- return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,applyContracts:out};
+ return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,applyContracts:out};
 }
 function compileTaggedSkill(skill){
  const parsed=parseSkillTags(skill),errors=[...parsed.errors],warnings=[];
@@ -717,11 +730,32 @@ function dispatchConditionalFollowUps(initiator,target,event){
    const eligibility=actionExecutionEligibility(follower,{actionKind:'FOLLOW_UP'});if(!eligibility.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});continue}
    const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);
    if(!compiled.ok||!compiled.definition.logicOrder.includes('FOLLOW_UP'))continue;
-   const poisoned=ensureDotStackList(target).length>0;
-   if(!poisoned){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_POISONED_FALSE'});continue}
-   recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED'});
-   battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
-   const result=executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1});results.push(result);
+   const triggerContract=compiled.definition.genericRuntime?.triggerContract||null;
+   const conditionContract=compiled.definition.genericRuntime?.conditionContracts?.find(c=>c.property==='TARGET_POISONED')||null;
+   const runLegacyFollowUp=()=>{
+    let poisoned=false;
+    if(conditionContract){
+     const conditionEngine=globalThis.GKSConditionEngine;
+     if(!conditionEngine?.evaluateCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_ENGINE_UNAVAILABLE'});return{ok:false,reason:'CONDITION_ENGINE_UNAVAILABLE'}}
+     const checked=conditionEngine.evaluateCompiled(conditionContract,{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId},()=>ensureDotStackList(target).length>0);
+     if(!checked.ok||!checked.passed){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason,genericCondition:true});return{ok:false,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason}}
+     recordValidationEvent('generic_condition_resolved',{source_id:follower.id,target_id:target.id,skill_id:skillId,property:conditionContract.property,passed:true});
+     poisoned=true;
+    }else poisoned=ensureDotStackList(target).length>0;
+    if(!poisoned){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_POISONED_FALSE'});return{ok:false,reason:'CONDITION_POISONED_FALSE'}}
+    recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',genericTrigger:!!triggerContract});
+    battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
+    return executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1});
+   };
+   if(triggerContract?.type==='ON_ALLY_ATTACK'){
+    const engine=globalThis.GKSTriggerEngine;
+    if(!engine?.dispatchCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TRIGGER_ENGINE_UNAVAILABLE'});continue}
+    const dispatched=engine.dispatchCompiled(triggerContract,'ally_attack',{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId,originSkillId:event?.originSkillId||null},runLegacyFollowUp);
+    recordValidationEvent('generic_trigger_dispatched',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger_type:'ON_ALLY_ATTACK',engine_event:'ally_attack',ok:dispatched.ok});
+    if(dispatched.ok&&dispatched.result?.ok)results.push(dispatched.result);
+   }else{
+    const result=runLegacyFollowUp();if(result?.ok)results.push(result);
+   }
   }
  }
  return results;

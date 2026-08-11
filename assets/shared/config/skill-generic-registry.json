@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "phase": "R04-B2",
+  "phase": "R04-C2",
   "runtime": {
     "effects": [
       "DAMAGE",
@@ -99,6 +99,25 @@
       "allowed_scopes": [
         "SELF"
       ]
+    },
+    "ON_ALLY_ATTACK": {
+      "legacy_supported": true,
+      "enabled": true,
+      "engine_event": "ally_attack",
+      "dispatch_mode": "LEGACY_FOLLOW_UP_ADAPTER",
+      "allowed_scopes": [
+        "SELF"
+      ],
+      "legacy_adapter": {
+        "logic": "FOLLOW_UP",
+        "requires_effect": "DAMAGE",
+        "requires_condition": "TARGET_POISONED",
+        "target_side": "ENEMY",
+        "target_range": "SINGLE",
+        "general_tags": [
+          "TRIGGER_ALLY_ATTACK"
+        ]
+      }
     }
   },
   "conditions": {
@@ -129,6 +148,14 @@
     "BATTLE_TICK": {
       "legacy_tag": "CONDITION_BATTLE_TICK",
       "value_type": "non_negative_integer"
+    },
+    "TARGET_POISONED": {
+      "legacy_tag": "CONDITION_POISONED",
+      "value_type": "predicate",
+      "scope": "TARGET",
+      "engine_predicate": "target_poisoned",
+      "legacy_supported": true,
+      "enabled": true
     }
   },
   "targets": {

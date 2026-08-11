@@ -5,9 +5,9 @@ const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-re
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const triggerEngine=require('../assets/shared/js/trigger-engine.js');
 
-assert.strictEqual(registry.phase,'R04-B2');
-assert.strictEqual(generic.VERSION,'R04-B2');
-assert.strictEqual(triggerEngine.VERSION,'R04-B2');
+assert.ok(/^R04-[BC]\d+$/.test(registry.phase));
+assert.ok(/^R04-[BC]\d+$/.test(generic.VERSION));
+assert.ok(/^R04-[BC]\d+$/.test(triggerEngine.VERSION));
 
 const sample={
   schemaVersion:1,

@@ -1,5 +1,5 @@
 /* Validation tag skill compiler/runtime — GA-B486.59 / P01-06 AURA source-dependent runtime v1 */
-const TAG_LOGIC_ORDER=['COVER','COUNTER','ATTACK','DOT','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
+const TAG_LOGIC_ORDER=['COVER','COUNTER','ATTACK','DOT','FOLLOW_UP','HEAL','HOT','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','SUMMON','DISPEL','REVIVE'];
 const TAG_COMBAT_MODIFIER_PARAMS=['ATK','DEF','MAGIC_WEAPON_BONUS','STATUS_RESIST']; // 戦闘パラメータ。閾値ステータス(STR/VIT/AGI/DEX/INT/MND/LUK)とは別系統
 const TAG_CONDITION_KEYS=['CONDITION_SELF_HP','CONDITION_SELF_HP_RATE','CONDITION_SELF_MP','CONDITION_SELF_MP_RATE','CONDITION_ENEMY_COUNT','CONDITION_ALLY_COUNT','CONDITION_BATTLE_TICK'];
 function normalizeGeneralTag(tag){return String(tag??'').trim()}
@@ -23,6 +23,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  if(!raw||typeof raw!=='object'||Array.isArray(raw)){errors.push('genericRuntimeはobjectが必要です');return null}
  if(raw.schemaVersion!==1){errors.push(`genericRuntime.schemaVersion=${raw.schemaVersion}は未対応です`);return null}
  if(!Array.isArray(raw.applyContracts)){errors.push('genericRuntime.applyContractsは配列が必要です');return null}
+ const conditionContracts=Array.isArray(raw.conditionContracts)?raw.conditionContracts:[];
  let triggerContract=null;
  if(raw.triggerContract!=null){
   const c=raw.triggerContract;
@@ -32,12 +33,24 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
    if(!type)errors.push('genericRuntime.triggerContract.typeが必要です');
    if(scope!=='SELF')errors.push('genericRuntime.triggerContract.scopeはSELFが必要です');
    if(type==='ON_HIT_RECEIVED'){if(engineEvent!=='hit_received')errors.push('ON_HIT_RECEIVEDのengineEventはhit_receivedが必要です');if(dispatchMode!=='LEGACY_COUNTER_ADAPTER')errors.push('ON_HIT_RECEIVEDのdispatchModeはLEGACY_COUNTER_ADAPTERが必要です');if(!g.has('COUNTER'))errors.push('ON_HIT_RECEIVED契約にはCOUNTERタグが必要です')}
+   else if(type==='ON_ALLY_ATTACK'){if(engineEvent!=='ally_attack')errors.push('ON_ALLY_ATTACKのengineEventはally_attackが必要です');if(dispatchMode!=='LEGACY_FOLLOW_UP_ADAPTER')errors.push('ON_ALLY_ATTACKのdispatchModeはLEGACY_FOLLOW_UP_ADAPTERが必要です');if(!g.has('FOLLOW_UP'))errors.push('ON_ALLY_ATTACK契約にはFOLLOW_UPタグが必要です')}
    else if(type!=='ON_USE')errors.push(`genericRuntime.triggerContract.typeは未対応です: ${type}`);
    triggerContract={type,scope,engineEvent,dispatchMode,priority:Number.isInteger(c.priority)?c.priority:0};
   }
  }else if(g.has('COUNTER')){
   triggerContract={type:'ON_HIT_RECEIVED',scope:'SELF',engineEvent:'hit_received',dispatchMode:'LEGACY_COUNTER_ADAPTER',priority:Number.isInteger(n?.COUNTER_PRIORITY?.value)?n.COUNTER_PRIORITY.value:0,migratedFromLegacyGeneric:true};
  }else triggerContract={type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0,migratedFromLegacyGeneric:true};
+ const normalizedConditions=[];
+ for(const [i,c] of conditionContracts.entries()){
+  if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.conditionContracts[${i}]はobjectが必要です`);continue}
+  const property=String(c.property||'').toUpperCase(),scope=String(c.scope||'').toUpperCase(),enginePredicate=String(c.enginePredicate||'');
+  if(property!=='TARGET_POISONED'){errors.push(`genericRuntime.conditionContracts[${i}].propertyは未対応です: ${property||'(なし)'}`);continue}
+  if(scope!=='TARGET')errors.push(`genericRuntime.conditionContracts[${i}].scopeはTARGETが必要です`);
+  if(enginePredicate!=='target_poisoned')errors.push(`genericRuntime.conditionContracts[${i}].enginePredicateはtarget_poisonedが必要です`);
+  if(c.expected!==true)errors.push(`genericRuntime.conditionContracts[${i}].expectedはtrueが必要です`);
+  if(!g.has('CONDITION_POISONED'))errors.push('TARGET_POISONED契約にはCONDITION_POISONEDタグが必要です');
+  normalizedConditions.push({property,scope,enginePredicate,expected:true});
+ }
  const out=[],seen=new Set();
  for(const [i,c] of raw.applyContracts.entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.applyContracts[${i}]はobjectが必要です`);continue}
@@ -51,7 +64,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
   out.push({effectId,kind,logic,lifecycle:{...c.lifecycle}});
  }
  for(const logic of ['STATUS','DOT','BUFF','DEBUFF','SHIELD'])if(g.has(logic)&&!seen.has(logic))errors.push(`Generic由来APPLYには${logic}のlifecycle契約が必要です`);
- return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,applyContracts:out};
+ return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,applyContracts:out};
 }
 function compileTaggedSkill(skill){
  const parsed=parseSkillTags(skill),errors=[...parsed.errors],warnings=[];
@@ -128,6 +141,11 @@ function compileTaggedSkill(skill){
   if(counterAllowZeroDamage!=='true')errors.push('現在のCOUNTER_ALLOW_ZERO_DAMAGEはtrueが必要です');
   for(const key of ['COUNTER_RATE','COUNTER_DAMAGE'])if(n[key])errors.push(`${key}は既存ATTACK定義を使用するため指定できません`);
   if([...g].some(x=>x.startsWith('COUNTER_MODE=')))errors.push('COUNTER_MODEは既存ATTACK定義を使用するため指定できません');
+ }
+ if(g.has('FOLLOW_UP')){
+  if(!g.has('TRIGGER_ALLY_ATTACK'))errors.push('FOLLOW_UPにはTRIGGER_ALLY_ATTACKが必要です');
+  if(!g.has('CONDITION_POISONED'))errors.push('FOLLOW_UPにはCONDITION_POISONEDが必要です');
+  if(!n.DAMAGE)errors.push('FOLLOW_UPにはDAMAGEが必要です');
  }
  if(g.has('AURA')){
   const effect=[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null;

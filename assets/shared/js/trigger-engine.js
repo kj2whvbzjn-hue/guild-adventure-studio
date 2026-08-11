@@ -1,6 +1,6 @@
 /* GKS Trigger Engine foundation — R04-A
  * Registry-backed trigger resolution/validation/event recording only.
- * This phase does not dispatch battle effects; COUNTER/FOLLOW_UP/AURA remain on legacy paths.
+ * R04-C2 dispatches Generic COUNTER/FOLLOW_UP through validated compiled contracts; effect execution remains in battle runtimes.
  */
 (function(root,factory){
   const api=factory();
@@ -8,9 +8,9 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-B2';
+  const VERSION='R04-C2';
   const SUPPORTED=Object.freeze([
-    'ON_USE','ON_HIT_RECEIVED','ON_DAMAGE_DEALT',
+    'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
     'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED'
   ]);
   const BOUNDARY=Object.freeze({
@@ -76,7 +76,7 @@
     const actual=String(eventType||'').trim();
     if(!expected)return failure('TRIGGER_ENGINE_EVENT_REQUIRED',type);
     if(actual!==expected)return failure('TRIGGER_ENGINE_EVENT_MISMATCH',type,{expected_event:expected,actual_event:actual});
-    if(contract.dispatchMode&&contract.dispatchMode!=='LEGACY_COUNTER_ADAPTER')return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
+    if(contract.dispatchMode&&!['LEGACY_COUNTER_ADAPTER','LEGACY_FOLLOW_UP_ADAPTER'].includes(contract.dispatchMode))return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
     return{ok:true,type,contract:{...contract,type}};
   }
   function dispatchCompiled(contract,eventType,payload={},handler){

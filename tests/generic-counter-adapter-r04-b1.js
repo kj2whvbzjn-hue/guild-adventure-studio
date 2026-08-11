@@ -4,8 +4,8 @@ const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 
-assert.ok(/^R04-B/.test(registry.phase),`unexpected phase ${registry.phase}`);
-assert.ok(/^R04-B/.test(generic.VERSION),`unexpected compiler version ${generic.VERSION}`);
+assert.ok(/^R04-[BC]/.test(registry.phase),`unexpected phase ${registry.phase}`);
+assert.ok(/^R04-[BC]/.test(generic.VERSION),`unexpected compiler version ${generic.VERSION}`);
 assert.strictEqual(registry.triggers.ON_HIT_RECEIVED.legacy_supported,true);
 assert.strictEqual(registry.triggers.ON_HIT_RECEIVED.dispatch_mode,'LEGACY_COUNTER_ADAPTER');
 

@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R04-B2';
+const VERSION='R04-C2';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -21,7 +21,7 @@ function resolveLifecycle(def,registry,errors,path){
  return {...lifecycle};
 }
 function compileGenericSkill(skill,registry,legacyCompile){
- const errors=[],warnings=[],tags=[],normalizedEffects=[],applyContracts=[];registry=normalizeRegistry(registry);
+ const errors=[],warnings=[],tags=[],normalizedEffects=[],applyContracts=[],conditionContracts=[];registry=normalizeRegistry(registry);
  if(!registry){err(errors,'REGISTRY_REQUIRED','registry','Generic Skill Registryが必要です');return result()}
  if(!skill||typeof skill!=='object'||Array.isArray(skill)){err(errors,'INVALID_SKILL','$','スキルはobjectが必要です');return result()}
  if(skill.schemaVersion!==SUPPORTED_SCHEMA)err(errors,'UNSUPPORTED_SCHEMA','schemaVersion',`schemaVersion=${skill.schemaVersion}は未対応です`);
@@ -38,19 +38,29 @@ function compileGenericSkill(skill,registry,legacyCompile){
  if(skill.target?.range==='RANDOM')addNumeric(tags,'RANDOM_COUNT',skill.target?.randomCount,errors,'target.randomCount');
  for(const [i,c] of (Array.isArray(skill.conditions)?skill.conditions:[]).entries()){
   if(!c||typeof c!=='object'){err(errors,'INVALID_CONDITION',`conditions[${i}]`,'条件objectが必要です');continue}
-  if(c.scope&&c.scope!=='SELF')err(errors,'CONDITION_SCOPE_UNSUPPORTED',`conditions[${i}].scope`,`R02ではSELF条件のみ対応です: ${c.scope}`);
   const def=registry.conditions?.[c.property];if(!def){err(errors,'UNKNOWN_CONDITION',`conditions[${i}].property`,`未定義Condition: ${c.property||'(なし)'}`);continue}
+  if(def.value_type==='predicate'){
+   const scope=String(c.scope||def.scope||'TARGET').toUpperCase();
+   if(def.scope&&scope!==String(def.scope).toUpperCase())err(errors,'CONDITION_SCOPE_UNSUPPORTED',`conditions[${i}].scope`,`${c.property}は${def.scope} scopeが必要です`);
+   if(c.value!=null&&c.value!==true)err(errors,'PREDICATE_EXPECTED_TRUE',`conditions[${i}].value`,`${c.property} predicateはtrueのみ対応です`);
+   if(c.operator!=null&&c.operator!=='=' )err(errors,'PREDICATE_OPERATOR_UNSUPPORTED',`conditions[${i}].operator`,`${c.property} predicateは=のみ対応です`);
+   pushUnique(tags,def.legacy_tag);
+   conditionContracts.push({property:String(c.property),scope,enginePredicate:String(def.engine_predicate||''),expected:true});
+   continue;
+  }
+  if(c.scope&&c.scope!=='SELF')err(errors,'CONDITION_SCOPE_UNSUPPORTED',`conditions[${i}].scope`,`数値条件はSELFのみ対応です: ${c.scope}`);
   if(!OPS.has(c.operator)){err(errors,'UNKNOWN_OPERATOR',`conditions[${i}].operator`,`未対応比較演算子: ${c.operator||'(なし)'}`);continue}
   validateConditionValue(def,c.value,errors,`conditions[${i}].value`);if(num(c.value))pushUnique(tags,`${def.legacy_tag}${c.operator}${c.value}`);
  }
  const effects=Array.isArray(skill.effects)?skill.effects:[];if(!effects.length)err(errors,'EFFECT_REQUIRED','effects','effectsが1件以上必要です');
  for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,applyContracts);
+ if(trigger==='ON_ALLY_ATTACK'){const idx=tags.indexOf('ATTACK');if(idx>=0)tags.splice(idx,1);}
  const seenApplyLogic=new Set();for(const c of applyContracts){if(seenApplyLogic.has(c.logic))err(errors,'LEGACY_APPLY_LOGIC_DUPLICATE','effects',`Legacy Adapterでは同一APPLY logicを複数同時実行できません: ${c.logic}`);seenApplyLogic.add(c.logic)}
  const res=skill.resource||{};
  if(own(res,'mpCost'))addNumeric(tags,'MP_COST',res.mpCost,errors,'resource.mpCost');
  if(own(res,'cooldown')){if(!Number.isInteger(res.cooldown)||res.cooldown<0)err(errors,'INVALID_COOLDOWN','resource.cooldown','cooldownは0以上の整数が必要です');else pushUnique(tags,`COOLDOWN=${res.cooldown}`)}
  if(own(res,'activationPriority')){if(!Number.isInteger(res.activationPriority))err(errors,'INVALID_ACTIVATION_PRIORITY','resource.activationPriority','activationPriorityは整数が必要です');else pushUnique(tags,`ACTIVATION_PRIORITY=${res.activationPriority}`)}
- const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))};
+ const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))};
  const legacySkill={id:String(skill.id||''),name:String(skill.name||''),tags,genericRuntime};
  let legacyValidation=null;
  if(!errors.length&&typeof legacyCompile==='function'){
@@ -58,7 +68,7 @@ function compileGenericSkill(skill,registry,legacyCompile){
   catch(e){err(errors,'LEGACY_COMPILE_EXCEPTION','legacySkill',e?.message||String(e))}
  }
  return result();
- function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
+ function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
 }
 
 function buildTriggerContract(skill,def){
@@ -89,6 +99,18 @@ function compileTriggerAdapter(skill,trigger,def,registry,tags,errors){
   const priority=own(skill.trigger,'priority')?skill.trigger.priority:defaults.COUNTER_PRIORITY;
   if(!Number.isInteger(limit)||limit!==1)err(errors,'COUNTER_LIMIT_INVALID','trigger.limit','現在のCOUNTER limitは1が必要です');else pushUnique(tags,`COUNTER_LIMIT=${limit}`);
   if(!Number.isInteger(priority))err(errors,'COUNTER_PRIORITY_INVALID','trigger.priority','COUNTER priorityは整数が必要です');else pushUnique(tags,`COUNTER_PRIORITY=${priority}`);
+  return;
+ }
+ if(trigger==='ON_ALLY_ATTACK'){
+  if(adapter.logic!=='FOLLOW_UP'){err(errors,'FOLLOW_UP_ADAPTER_LOGIC_INVALID','trigger.type','ON_ALLY_ATTACKはFOLLOW_UP Adapterが必要です');return}
+  if(skill.target?.side!==adapter.target_side)err(errors,'FOLLOW_UP_TARGET_SIDE_REQUIRED','target.side',`FOLLOW_UPは${adapter.target_side}対象が必要です`);
+  if(skill.target?.range!==adapter.target_range)err(errors,'FOLLOW_UP_TARGET_RANGE_REQUIRED','target.range',`FOLLOW_UPは${adapter.target_range}範囲が必要です`);
+  const effects=Array.isArray(skill.effects)?skill.effects:[];
+  if(!effects.some(e=>String(e?.type||'').toUpperCase()===String(adapter.requires_effect||'DAMAGE').toUpperCase()))err(errors,'FOLLOW_UP_DAMAGE_EFFECT_REQUIRED','effects','ON_ALLY_ATTACK Follow-upにはDAMAGE Effectが必要です');
+  const conditions=Array.isArray(skill.conditions)?skill.conditions:[];
+  if(!conditions.some(c=>String(c?.property||'').toUpperCase()===String(adapter.requires_condition||'TARGET_POISONED').toUpperCase()))err(errors,'FOLLOW_UP_CONDITION_REQUIRED','conditions',`ON_ALLY_ATTACK Follow-upには${adapter.requires_condition||'TARGET_POISONED'} Conditionが必要です`);
+  pushUnique(tags,adapter.logic);
+  for(const t of adapter.general_tags||[])pushUnique(tags,t);
   return;
  }
  err(errors,'TRIGGER_LEGACY_ADAPTER_UNIMPLEMENTED','trigger.type',`Trigger Adapter未実装: ${trigger}`);
