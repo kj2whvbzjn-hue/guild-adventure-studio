@@ -3,14 +3,14 @@ const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-re
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 function ok(v,m){if(!v)throw new Error(m)}
 function loadLegacy(path){const ctx={console};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);return ctx.compileTaggedSkill}
-ok(registry.phase==='R03-D','registry phase is not R03-D');
+ok(/^R03-(D|E[0-9]+)$/.test(String(registry.phase||'')),'registry phase predates R03-D');
 const sample={schemaVersion:1,id:'R03D-STUN',name:'R03D',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'STUN',duration:100}]};
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const legacy=loadLegacy(path);
  const out=generic.compileGenericSkill(sample,registry,legacy);
  ok(out.ok,`${path}: generic compile failed ${JSON.stringify(out.errors)}`);
  const rt=out.legacySkill.genericRuntime;ok(rt&&rt.schemaVersion===1,`${path}: genericRuntime missing`);
- ok(rt.registryPhase==='R03-D',`${path}: registryPhase missing`);
+ ok(rt.registryPhase===registry.phase,`${path}: registryPhase missing`);
  ok(rt.applyContracts.length===1,`${path}: apply contract missing`);
  const c=rt.applyContracts[0];ok(c.effectId==='STUN'&&c.logic==='STATUS',`${path}: wrong apply contract`);
  ok(c.lifecycle.refreshRule==='REFRESH',`${path}: lifecycle not registry-derived`);

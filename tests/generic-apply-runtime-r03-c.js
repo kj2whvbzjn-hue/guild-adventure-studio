@@ -10,5 +10,5 @@ for(const [name,src] of [['game',game],['game-tag-test',test]]){
 }
 ok(game.includes("logic==='BUFF'||logic==='DEBUFF'"), 'game: modifier APPLY dispatch missing');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
-ok(/^R03-[C-Z]$/.test(String(registry.phase||'')),'registry phase predates R03-C');
+ok(/^R03-(C|D|E[0-9]+)$/.test(String(registry.phase||'')),'registry phase predates R03-C');
 console.log('GENERIC_APPLY_RUNTIME_R03_C_PASS');
