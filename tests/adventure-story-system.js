@@ -76,6 +76,12 @@ assert.deepEqual(fixedFail.reward_result,{});
 assert.deepEqual(S.normalizeEvent({type:'battle',battle_formation:[{monster_id:'M1',count:2.8}]}).battle_formation,[{monster_id:'M1',count:2}]);
 assert.equal(S.validatePlaybackEvents([{type:'battle_start'},{type:'damage'},{type:'battle_end'}]),true);
 assert.equal(S.validatePlaybackEvents([{type:'debug_line'}]),false);
+const invalidPlayback=S.simulateQuest({quest:{id:'Q-INVALID-PLAYBACK'},section:{id:'S-INVALID-PLAYBACK',boxes:[{id:'B-INVALID',type:'event',ref_id:'E-INVALID'}]},chapter:{id:'C-INVALID-PLAYBACK'},events:[{id:'E-INVALID',type:'battle',battle_formation:[{monster_id:'M1',count:1}]}],seed:11,simulateBattle:()=>({victory:true,reward:{gold:999},playback_events:[{type:'debug_line'}]})});
+assert.equal(invalidPlayback.final_result.success,false);
+assert.equal(invalidPlayback.final_result.failure.reason,'simulation_error');
+assert(invalidPlayback.final_result.failure.message.includes('Invalid Battle Playback Event type: debug_line'));
+assert.equal(invalidPlayback.timeline_result.length,0);
+assert.deepEqual(invalidPlayback.reward_result,{});
 
 // Quest start gate and cost: prerequisite/flag checks are deterministic and consumption is one-shot at start.
 const gate=S.questStartRequirements({prerequisite_ids:['Q-PREV'],required_flags:['F-OPEN']},{completedQuestIds:['Q-PREV'],flags:{'F-OPEN':true}});
