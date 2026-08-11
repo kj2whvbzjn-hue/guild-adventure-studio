@@ -401,7 +401,7 @@ updateDeployDeleteControl();
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.98 / Studio GKS-B528</div>
+    <div class="version">Game GA-B486.98 / Studio GKS-B529</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -811,6 +811,7 @@ updateDeployDeleteControl();
       </div>
     </div>
     <div id="questFormalStatus" class="item" style="margin-top:10px"></div>
+    <div id="questFormalWorkflow" class="item" style="margin-top:10px"></div>
 
     <div class="toolbar">
       <button class="primary" onclick="saveQuest()">登録・更新</button>
@@ -2002,7 +2003,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B528';
+const DISTRIBUTION_BUILD='GKS-B529';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6482,7 +6483,42 @@ function removeEventCharacterDraft(id){
 
 function questFormalAssessment(quest){return (typeof GKExportCore!=='undefined'&&typeof GKExportCore.formalStoryQuestAssessment==='function')?GKExportCore.formalStoryQuestAssessment(data,quest):{is_formal:false,ready:false,issues:[],message:'正式Story Quest判定を利用できません。'};}
 function currentQuestFormalDraft(){return {id:(questId?.value||'').trim()||'(新規Quest)',links:{chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
-function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready){el.innerHTML='<span class="badge ok">正式Story Quest</span> Game遠征一覧へExportされます。';return}if(a.is_formal){el.innerHTML='<span class="badge warn">要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';return}el.innerHTML='<span class="badge">通常Quest</span> Chapter / Section未接続のためGame遠征一覧には出ません。';}
+function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready)el.innerHTML='<span class="badge ok">正式Story Quest</span> Game遠征一覧へExportされます。';else if(a.is_formal)el.innerHTML='<span class="badge warn">要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else el.innerHTML='<span class="badge">通常Quest</span> Chapter / Section未接続のためGame遠征一覧には出ません。';renderQuestFormalWorkflow();}
+function formalQuestWorkflowState(){
+ const chapterId=questChapterLink?.value||'',sectionId=questSectionLink?.value||'';
+ const chapter=chapterId?getChapter(chapterId):null;
+ const section=(chapterId&&sectionId)?getSection(chapterId,sectionId):null;
+ const boxes=Array.isArray(section?.boxes)?section.boxes:[];
+ return {chapterId,sectionId,chapter,section,boxes,assessment:questFormalAssessment(currentQuestFormalDraft())};
+}
+function openQuestFormalSection(){
+ const state=formalQuestWorkflowState();
+ if(!state.chapter||!state.section)return alert('先に章と節を選択してください。');
+ storySelection={type:'section',chapterId:state.chapterId,sectionId:state.sectionId,sceneId:'',dialogueId:''};
+ closeStudioInputPanel();
+ showView('storyeditor');
+ renderStoryTree();
+ renderStoryEditor();
+}
+function openQuestFormalExport(){
+ closeStudioInputPanel();
+ showView('importexport');
+ const result=validatePhpExport();
+ document.getElementById('phpExportStatus')?.scrollIntoView({behavior:'smooth',block:'center'});
+ return result;
+}
+function renderQuestFormalWorkflow(){
+ const el=document.getElementById('questFormalWorkflow');if(!el)return;
+ const state=formalQuestWorkflowState(),chapterOk=!!state.chapter,sectionOk=!!state.section,boxesOk=state.boxes.length>0,ready=state.assessment.ready;
+ const step=(ok,label,detail)=>`<div class="meta"><span class="badge ${ok?'ok':'warn'}">${ok?'✓':'未完了'}</span> <b>${esc(label)}</b> — ${esc(detail)}</div>`;
+ el.innerHTML='<b>正式Story Quest 作成手順</b>'+
+  step(chapterOk,'1. Chapter',chapterOk?`${state.chapter.title||state.chapter.id} を選択済み`:'関連シナリオの「章」を選択')+
+  step(sectionOk,'2. Section',sectionOk?`${state.section.title||state.section.id} を選択済み`:'章を選んで「節」を選択')+
+  step(boxesOk,'3. Box',sectionOk?(boxesOk?`${state.boxes.length} Box設定済み`:'Sectionに1件以上のBoxを設定'):'Section選択後に確認')+
+  step(ready,'4. Export',ready?'正式Story QuestとしてExport可能':'上の要件を完了してからExport')+
+  `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${sectionOk?'':'disabled'}>Section / Boxを確認</button><button type="button" onclick="openQuestFormalExport()">Export検証へ</button></div>`;
+}
+
 function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
