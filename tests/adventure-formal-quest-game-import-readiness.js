@@ -17,6 +17,10 @@ for(const needle of [
  "loadAdventureContent({force:true})",
  'id="reloadStoryQuests"',
  'Storyデータを再読込',
+ 'let adventureStoryLoadState=',
+ 'function formalAdventureStoryLoadLabel()',
+ 'id="storyDataLoadStatus"',
+ '最終読込 ${time} ／ 利用可能 ${s.quest_count}件 ／ 除外 ${s.excluded_count}件',
  '件のQuestを参照不整合のため除外',
  'StudioのExport検証でChapter / Section / Boxを確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
