@@ -18,11 +18,26 @@ function parseSkillTags(skill){
  return{generalTags,numericTags,errors};
 }
 function hasAnyTag(set,candidates){return candidates.some(x=>set.has(x))}
-function normalizeGenericRuntimeContract(skill,g,errors){
+function normalizeGenericRuntimeContract(skill,g,n,errors){
  const raw=skill?.genericRuntime;if(raw==null)return null;
  if(!raw||typeof raw!=='object'||Array.isArray(raw)){errors.push('genericRuntimeはobjectが必要です');return null}
  if(raw.schemaVersion!==1){errors.push(`genericRuntime.schemaVersion=${raw.schemaVersion}は未対応です`);return null}
  if(!Array.isArray(raw.applyContracts)){errors.push('genericRuntime.applyContractsは配列が必要です');return null}
+ let triggerContract=null;
+ if(raw.triggerContract!=null){
+  const c=raw.triggerContract;
+  if(!c||typeof c!=='object'||Array.isArray(c))errors.push('genericRuntime.triggerContractはobjectが必要です');
+  else{
+   const type=String(c.type||'').toUpperCase(),scope=String(c.scope||'').toUpperCase(),engineEvent=String(c.engineEvent||''),dispatchMode=String(c.dispatchMode||'');
+   if(!type)errors.push('genericRuntime.triggerContract.typeが必要です');
+   if(scope!=='SELF')errors.push('genericRuntime.triggerContract.scopeはSELFが必要です');
+   if(type==='ON_HIT_RECEIVED'){if(engineEvent!=='hit_received')errors.push('ON_HIT_RECEIVEDのengineEventはhit_receivedが必要です');if(dispatchMode!=='LEGACY_COUNTER_ADAPTER')errors.push('ON_HIT_RECEIVEDのdispatchModeはLEGACY_COUNTER_ADAPTERが必要です');if(!g.has('COUNTER'))errors.push('ON_HIT_RECEIVED契約にはCOUNTERタグが必要です')}
+   else if(type!=='ON_USE')errors.push(`genericRuntime.triggerContract.typeは未対応です: ${type}`);
+   triggerContract={type,scope,engineEvent,dispatchMode,priority:Number.isInteger(c.priority)?c.priority:0};
+  }
+ }else if(g.has('COUNTER')){
+  triggerContract={type:'ON_HIT_RECEIVED',scope:'SELF',engineEvent:'hit_received',dispatchMode:'LEGACY_COUNTER_ADAPTER',priority:Number.isInteger(n?.COUNTER_PRIORITY?.value)?n.COUNTER_PRIORITY.value:0,migratedFromLegacyGeneric:true};
+ }else triggerContract={type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0,migratedFromLegacyGeneric:true};
  const out=[],seen=new Set();
  for(const [i,c] of raw.applyContracts.entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.applyContracts[${i}]はobjectが必要です`);continue}
@@ -36,12 +51,12 @@ function normalizeGenericRuntimeContract(skill,g,errors){
   out.push({effectId,kind,logic,lifecycle:{...c.lifecycle}});
  }
  for(const logic of ['STATUS','DOT','BUFF','DEBUFF','SHIELD'])if(g.has(logic)&&!seen.has(logic))errors.push(`Generic由来APPLYには${logic}のlifecycle契約が必要です`);
- return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),applyContracts:out};
+ return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,applyContracts:out};
 }
 function compileTaggedSkill(skill){
  const parsed=parseSkillTags(skill),errors=[...parsed.errors],warnings=[];
  const g=parsed.generalTags,n=parsed.numericTags;
- const genericRuntime=normalizeGenericRuntimeContract(skill,g,errors);
+ const genericRuntime=normalizeGenericRuntimeContract(skill,g,n,errors);
  for(const [key,entry] of Object.entries(n)){if(!TAG_CONDITION_KEYS.includes(key)&&entry.operator!=='=')errors.push(`${key}は効果値のため比較演算子${entry.operator}を使用できません。固定値=を使用してください`)}
  for(const key of TAG_CONDITION_KEYS){const entry=n[key];if(!entry)continue;if(!Number.isFinite(entry.value))errors.push(`${key}の比較値が無効です`);if(key.endsWith('_RATE')&&(entry.value<0||entry.value>1))errors.push(`${key}は0以上1以下で指定してください`);if(['CONDITION_ENEMY_COUNT','CONDITION_ALLY_COUNT','CONDITION_BATTLE_TICK'].includes(key)&&(!Number.isInteger(entry.value)||entry.value<0))errors.push(`${key}は0以上の整数で指定してください`)}
  const logicOrder=TAG_LOGIC_ORDER.filter(x=>g.has(x));
@@ -535,10 +550,16 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  const skillId=defender.counterSkillId||null;if(!skillId)return skip('NO_COUNTER_SKILL');
  const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);if(!skill||!compiled.ok||!compiled.definition.logicOrder.includes('COUNTER'))return skip('INVALID_COUNTER_SKILL');
  if(compiled.definition.parameters.counterTrigger!=='hit'||compiled.definition.parameters.counterTarget!=='attacker')return skip('COUNTER_CONDITION_MISMATCH');
- typeof recordValidationEvent==='function'&&recordValidationEvent('counter_triggered',{source_id:defender.id,attacker_id:attacker.id,incoming_skill_id:incomingCompiled.definition.id,counter_skill_id:skillId,origin,shield_absorbed:attackResult.shieldAbsorbed||0,hp_damage:attackResult.damage||0});
- battle.log.push(`[Tick ${battle.tick}] [TAG][COUNTER] ${defender.name}が${attacker.name}へ反撃 — ${skill.name}`);
- const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',suppressDerived:true});
- return{ok:!!result?.ok,triggered:true,skillId,result};
+ typeof recordValidationEvent==='function'&&recordValidationEvent('counter_triggered',{source_id:defender.id,attacker_id:attacker.id,incoming_skill_id:incomingCompiled.definition.id,counter_skill_id:skillId,origin,shield_absorbed:attackResult.shieldAbsorbed||0,hp_damage:attackResult.damage||0});battle.log.push(`[Tick ${battle.tick}] [TAG][COUNTER] ${defender.name}が${attacker.name}へ反撃 — ${skill.name}`);
+ const triggerContract=compiled.definition.genericRuntime?.triggerContract||null;
+ if(triggerContract?.type==='ON_HIT_RECEIVED'){
+  const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled)return skip('GENERIC_TRIGGER_ENGINE_UNAVAILABLE');
+  const dispatched=engine.dispatchCompiled(triggerContract,'hit_received',{sourceId:defender.id,attackerId:attacker.id,incomingSkillId:incomingCompiled.definition.id,counterSkillId:skillId},()=>executeTaggedSkill(defender,attacker,skill,{origin:'counter'}));
+  if(!dispatched?.ok)return skip('GENERIC_TRIGGER_REJECTED',{trigger_reason:dispatched?.reason||'UNKNOWN'});
+  typeof recordValidationEvent==='function'&&recordValidationEvent('generic_trigger_dispatched',{trigger_type:'ON_HIT_RECEIVED',engine_event:'hit_received',source_id:defender.id,attacker_id:attacker.id,counter_skill_id:skillId});
+  const result=dispatched.result;return{ok:!!result?.ok,triggered:true,skillId,result,genericTrigger:true};
+ }
+ const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter'});return{ok:!!result?.ok,triggered:true,skillId,result,genericTrigger:false};
 }
 
 let taggedApplyLifecycleEngine=null;

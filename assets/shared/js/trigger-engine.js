@@ -8,7 +8,7 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-B1';
+  const VERSION='R04-B2';
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_DAMAGE_DEALT',
     'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED'
@@ -68,5 +68,27 @@
       record
     });
   }
-  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,create});
+  function validateCompiledContract(contract,eventType){
+    if(!contract||typeof contract!=='object'||Array.isArray(contract))return failure('TRIGGER_CONTRACT_REQUIRED','');
+    const type=normalize(contract.type);
+    if(!SUPPORTED.includes(type))return failure('TRIGGER_TYPE_UNSUPPORTED',type);
+    const expected=String(contract.engineEvent||'').trim();
+    const actual=String(eventType||'').trim();
+    if(!expected)return failure('TRIGGER_ENGINE_EVENT_REQUIRED',type);
+    if(actual!==expected)return failure('TRIGGER_ENGINE_EVENT_MISMATCH',type,{expected_event:expected,actual_event:actual});
+    if(contract.dispatchMode&&contract.dispatchMode!=='LEGACY_COUNTER_ADAPTER')return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
+    return{ok:true,type,contract:{...contract,type}};
+  }
+  function dispatchCompiled(contract,eventType,payload={},handler){
+    const checked=validateCompiledContract(contract,eventType);
+    if(!checked.ok)return checked;
+    if(typeof handler!=='function')return failure('TRIGGER_DISPATCH_HANDLER_REQUIRED',checked.type);
+    try{
+      const result=handler({type:checked.type,contract:checked.contract,eventType,payload:payload&&typeof payload==='object'?payload:{}});
+      return{ok:true,triggered:true,type:checked.type,eventType,result};
+    }catch(error){
+      return failure('TRIGGER_DISPATCH_HANDLER_ERROR',checked.type,{message:String(error&&error.message||error)});
+    }
+  }
+  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,create,validateCompiledContract,dispatchCompiled});
 });

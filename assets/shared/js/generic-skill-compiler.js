@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R04-B1';
+const VERSION='R04-B2';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -58,7 +58,18 @@ function compileGenericSkill(skill,registry,legacyCompile){
   catch(e){err(errors,'LEGACY_COMPILE_EXCEPTION','legacySkill',e?.message||String(e))}
  }
  return result();
- function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
+ function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
+}
+
+function buildTriggerContract(skill,def){
+ const type=String(skill?.trigger?.type||'ON_USE').toUpperCase();
+ return{
+  type,
+  scope:String(skill?.trigger?.scope||'SELF').toUpperCase(),
+  engineEvent:String(def?.engine_event||''),
+  dispatchMode:String(def?.dispatch_mode||'RESOLVE_ONLY'),
+  priority:Number.isInteger(skill?.trigger?.priority)?skill.trigger.priority:0
+ };
 }
 
 function compileTriggerAdapter(skill,trigger,def,registry,tags,errors){
