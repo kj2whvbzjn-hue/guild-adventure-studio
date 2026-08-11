@@ -317,15 +317,14 @@ function applyShieldStackLifecycle(target,{source,compiled,amount,duration}={},l
  const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};
  ensureShieldEffects(target).push(effect);return{ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect,policy:resolved};
 }
-function applyTaggedShield(source,target,compiled){
+function applyTaggedShield(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};
  const amount=Math.max(0,Math.floor(Number(compiled.definition.parameters.shield)||0)),duration=Math.max(0,Math.floor(Number(compiled.definition.parameters.shieldDuration)||0));
  if(amount<=0||duration<=0)return{ok:false,reason:'シールド値または持続時間が無効です'};
- const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};
- ensureShieldEffects(target).push(effect);
+ let result;if(lifecyclePolicy){result=applyShieldStackLifecycle(target,{source,compiled,amount,duration},lifecyclePolicy);if(!result.ok)return result}else{const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};ensureShieldEffects(target).push(effect);result={ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect}}
  battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${source.name}の${compiled.definition.name} → ${target.name}へシールド${amount}付与（持続${duration}、総残量${shieldTotal(target)}）`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('shield_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,shield_id:effect.id,amount,duration,expires_at:effect.expiresAt,total_shield:shieldTotal(target)});
- return{ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect};
+ typeof recordValidationEvent==='function'&&recordValidationEvent('shield_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,shield_id:result.effect.id,amount,duration,expires_at:result.effect.expiresAt,total_shield:shieldTotal(target),lifecycle_policy:lifecyclePolicy?result.policy:null});
+ return result;
 }
 function consumeShieldDamage(target,rawDamage,{sourceId=null,skillId=null,damageType='damage'}={}){
  const raw=Math.max(0,Math.floor(Number(rawDamage)||0)),sequenceOf=x=>Number.isFinite(Number(x.sequence))?Number(x.sequence):(Number(String(x.id||'').match(/(\d+)$/)?.[1])||0),effects=ensureShieldEffects(target).sort((a,b)=>a.appliedAt-b.appliedAt||sequenceOf(a)-sequenceOf(b)||String(a.id).localeCompare(String(b.id)));
@@ -591,7 +590,7 @@ function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=t
  if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='BUFF'||logic==='DEBUFF')return{handled:true,skipped:false,result:applyTaggedModifier(source,target,compiled,logic,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
- if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  return{handled:false,skipped:false,result:null};
 }
 function compareTaggedCondition(actual,operator,expected){if(!Number.isFinite(actual)||!Number.isFinite(expected))return false;switch(operator){case '=':return actual===expected;case '!=':return actual!==expected;case '>':return actual>expected;case '>=':return actual>=expected;case '<':return actual<expected;case '<=':return actual<=expected;default:return false}}

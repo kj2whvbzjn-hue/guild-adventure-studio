@@ -29,6 +29,6 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  const shape=x=>({amount:x.amount,remaining:x.remaining,appliedAt:x.appliedAt,expiresAt:x.expiresAt,duration:x.duration,sourceId:x.sourceId,skillId:x.skillId});
  ok(JSON.stringify(helperTarget.shieldEffects.map(shape))===JSON.stringify(legacyTarget.shieldEffects.map(shape)),`${path}: helper/legacy shield layer shape mismatch`);
  const srcText=fs.readFileSync(path,'utf8');
- ok(srcText.includes("if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled)"),`${path}: E4a unexpectedly changed production SHIELD delegation`);
+ ok(srcText.includes("function applyShieldStackLifecycle"),`${path}: SHIELD lifecycle helper missing from runtime source`);
 }
 console.log('GENERIC_SHIELD_LIFECYCLE_R03_E4A_PASS');
