@@ -1985,6 +1985,8 @@ updateDeployDeleteControl();
 </div>
 </div>
 
+<script src="./ai-production/ai-program-model.js?v=1"></script>
+<script src="./ai-production/ai-program-store.js?v=1"></script>
 <script>
 const APP_VERSION='1.43.0';
 const DISTRIBUTION_BUILD='GKS-B527';
@@ -1996,12 +1998,15 @@ const PROJECT_KEY_PREFIX='gas_v4_project_v060_';
 const AUTO_BACKUP_KEY_PREFIX='gas_v4_auto_backup_at_v110_';
 const prefixes={Master:'MST',Organization:'ORG',Term:'TRM',Relationship:'REL',Timeline:'TML',Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG',Quest:'QST',Event:'EVT'};
 function now(){return new Date().toISOString()}
-function initial(){
+function initialBase(){
  return {schema_version:'4.0.0-draft',project:{id:'PRJ-GAS-V4',name:'Guild Adventure Studio',product_version:'4.0.0',status:'development',description:'AIと人間が共同でゲーム開発する統合開発環境',updated_at:now()},decisions:[
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
  ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],masters:{stats:[],jobs:[],skills:[{"id":"devHeal","name":"検証ヒール","kind":"heal","environment":"development","mpCost":10,"cooldown":2,"multiplier":1.5,"target":"ally"},{"id":"devPoison","name":"検証ポイズン","kind":"status","environment":"development","mpCost":8,"cooldown":0,"target":"enemy","statusId":"poison"},{"id":"devBurn","name":"検証バーン","kind":"status","environment":"development","mpCost":9,"cooldown":0,"target":"enemy","statusId":"burn"},{"id":"devBleed","name":"検証ブリード","kind":"status","environment":"development","mpCost":10,"cooldown":0,"target":"enemy","statusId":"bleed"},{"id":"devSleep","name":"検証スリープ","kind":"status","environment":"development","mpCost":11,"cooldown":0,"target":"enemy","statusId":"sleep"},{"id":"devStun","name":"検証スタン","kind":"status","environment":"development","mpCost":12,"cooldown":0,"target":"enemy","statusId":"stun"},{"id":"devFreeze","name":"検証フリーズ","kind":"status","environment":"development","mpCost":13,"cooldown":0,"target":"enemy","statusId":"freeze"},{"id":"devBattleBless","name":"検証バトルブレス","kind":"buff","environment":"development","mpCost":6,"cooldown":0,"target":"ally","buff":{"id":"devBattleBless","name":"検証バトルブレス","stat":"outgoingDamage","power":40,"duration":300}},{"id":"devAddFireTag","name":"検証・炎タグ付与","kind":"tag","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","tag":{"id":"FIRE","name":"炎"}},{"id":"devRemoveFireTag","name":"検証・炎タグ削除","kind":"tag","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","tagId":"FIRE"},{"id":"devAddRefrigerationStack","name":"検証・冷却スタック付与","kind":"stack","environment":"development","operation":"add","mpCost":0,"cooldown":0,"target":"enemy","stack":{"id":"REFRIGERATION","name":"Refrigeration／冷却"},"amount":1},{"id":"devRemoveRefrigerationStack","name":"検証・冷却スタック減少","kind":"stack","environment":"development","operation":"remove","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":1},{"id":"devConsumeRefrigerationStack","name":"検証・冷却スタック消費","kind":"stack","environment":"development","operation":"consume","mpCost":0,"cooldown":0,"target":"enemy","stackId":"REFRIGERATION","amount":2},{"id":"devTagDrivenInteraction","name":"検証・タグ駆動相互作用","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"add_tag","tag":{"id":"DEV_INTERACTION_RESULT","name":"検証・相互作用結果"}}]}},{"id":"devBattleBlessWeak","name":"検証弱ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessWeak","name":"検証弱ブレス","stat":"outgoingDamage","power":20,"duration":600}},{"id":"devBattleBlessStrong","name":"検証強ブレス","kind":"buff","environment":"development","mpCost":0,"cooldown":0,"target":"ally","buff":{"id":"devBattleBlessStrong","name":"検証強ブレス","stat":"outgoingDamage","power":80,"duration":200}},{"id":"devTagDrivenRollback","name":"検証・タグ駆動ロールバック","kind":"interaction","environment":"development","mpCost":0,"cooldown":0,"target":"enemy","execution":{"conditionMode":"all","conditions":[{"subject":"target","type":"has_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"stack_at_least","stackId":"REFRIGERATION","amount":2}],"costs":[{"subject":"target","type":"remove_tag","tagId":"DEV_INTERACTION_SOURCE"},{"subject":"target","type":"consume_stack","stackId":"REFRIGERATION","amount":2}],"effects":[{"subject":"target","type":"unknown_operation"}]}}],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
+}
+function initial(){
+ return window.GKSAIProgramStore.normalizeProject(initialBase());
 }
 repairProjectRegistry();
 migrateLegacyProject();
@@ -2104,6 +2109,7 @@ function verifyStoryProtectedSnapshot(before,obj){
  const changed=[];Object.keys(before).forEach(k=>{if(JSON.stringify(obj[k])!==before[k])changed.push(k);});return changed;
 }
 function normalizeData(){
+ window.GKSAIProgramStore.normalizeProject(data);
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
  data.chapters.forEach((chapter,chapterIndex)=>{
@@ -2196,6 +2202,7 @@ function updateRegistryFromData(){
  saveProjectRegistry(list);
 }
 function persist(message='端末保存'){
+ window.GKSAIProgramStore.normalizeProject(data);
  rebuildTagIndex();
  data.project.updated_at=now();
  data.history=data.history||[];
