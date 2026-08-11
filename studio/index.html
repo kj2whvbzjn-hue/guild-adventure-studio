@@ -384,7 +384,6 @@ body.benchmark-workflow-open{overflow:hidden}
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
-  <script src="../assets/shared/js/adventure-story-system.js?v=1"></script>
   <script src="export-core.js?v=333"></script>
 </head>
 <body>
@@ -401,7 +400,7 @@ updateDeployDeleteControl();
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.87 / Studio GKS-B524</div>
+    <div class="version">Game GA-B486.87 / Studio GKS-B523</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -644,7 +643,6 @@ updateDeployDeleteControl();
           <label>テーマ</label>
           <input id="storyNodeTheme">
         </div>
-        <div id="storyChapterAdventureFields" class="hidden"><div class="grid"><div class="field"><label>使用可能Monster ID（カンマ区切り）</label><input id="storyChapterMonsters"></div><div class="field"><label>Random Event候補（JSON）</label><textarea id="storyChapterRandomEvents" placeholder='[{"event_id":"EVT-0001","weight":1}]'></textarea></div></div></div>
 
         <div id="storyDesignFields" class="hidden">
           <h2>SSF-001 シナリオ設計</h2>
@@ -725,8 +723,6 @@ updateDeployDeleteControl();
             <div class="field"><label>終了状態</label><textarea id="storyNodeEndState"></textarea></div>
           </div>
           <div class="field"><label>重要事項・設定フラグ</label><textarea id="storyNodeKeyPoints" placeholder="加入、離脱、入手物、伏線、フラグ変更など"></textarea></div>
-          <div class="grid"><div class="field"><label>冒険時間（秒）</label><input id="storyAdventureDuration" type="number" min="1" value="300"></div><div class="field"><label>Box列（JSON）</label><textarea id="storyBoxesJson" placeholder='[{"id":"BOX-0001","type":"scene","ref_id":"SCN-0001"}]'></textarea></div></div>
-          <div class="field"><label>Box Editor（配列順が進行順）</label><div class="toolbar"><button type="button" onclick="addStoryAdventureBox()">箱を追加</button></div><div id="storyBoxEditor" class="list"></div></div>
         </div>
 
         <div id="storyStageField" class="field hidden">
@@ -866,7 +862,6 @@ updateDeployDeleteControl();
     <div class="field"><label>内容</label><textarea id="eventSummary"></textarea></div>
     <div class="field"><label>発生条件</label><textarea id="eventConditions"></textarea></div>
     <div class="field"><label>結果・フラグ変更</label><textarea id="eventResults"></textarea></div>
-    <div class="field"><label>固定戦闘編成（battle時 / JSON）</label><textarea id="eventBattleFormation" placeholder='[{"monster_id":"MON-0001","count":2}]'></textarea></div>
 
     <div class="link-grid">
       <div class="link-panel">
@@ -1992,7 +1987,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B524';
+const DISTRIBUTION_BUILD='GKS-B523';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2112,7 +2107,6 @@ function normalizeData(){
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
  data.chapters.forEach((chapter,chapterIndex)=>{
-  if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeChapter(chapter);
   chapter.no=chapter.no||chapterIndex+1;
   chapter.status=chapter.status||'draft';
   chapter.design=normalizeStoryDesign(chapter.design);
@@ -2129,7 +2123,6 @@ function normalizeData(){
    section.design=normalizeStoryDesign(section.design);
    section.candidate_revisions=(section.candidate_revisions||[]).map(normalizeStoryCandidate);
    section.export_control=normalizeStoryExportControl(section.export_control);
-   if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section);
    section.scenes=section.scenes||[];
    section.scenes.forEach((scene,sceneIndex)=>{
     scene.no=scene.no||sceneIndex+1;
@@ -2155,7 +2148,6 @@ function normalizeData(){
  data.characters.forEach(c=>{c.race=c.race||'';c.age=c.age||'';c.speech=c.speech||'';c.organization_id=c.organization_id||'';c.first_appearance=c.first_appearance||'';c.join_point=c.join_point||'';c.leave_point=c.leave_point||'';c.awaken_point=c.awaken_point||'';c.goals=c.goals||['','',''];c.event_history=Array.isArray(c.event_history)?c.event_history:[];});
  data.quests=data.quests||[];
  data.events=data.events||[];
- data.events.forEach(e=>{if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(e);});
  data.flags=data.flags||[];
  data.battle_tests=data.battle_tests||[];
  data.battle_snapshots=data.battle_snapshots||[];
@@ -2495,7 +2487,7 @@ function addSection(chapterId){
  if(chapter.sections.length>=20)return alert('1章に登録できる節は最大20節です。');
  let title=prompt('節タイトルを入力してください。');if(!title)return;
  let id=nextId('Section');
- {const section={id,no:chapter.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()};if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section,{isNew:true});chapter.sections.push(section);}
+ chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()});
  persist('section added')
 }
 function deleteChapter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.chapters=data.chapters.filter(x=>x.id!==id);persist('chapter deleted')}}
@@ -5960,8 +5952,6 @@ function renderStoryEditor(){
  storyNodeSpeaker.value=obj.speaker||'';
  storyNodeText.value=type==='dialogue'?(obj.text||''):(obj.summary||'');
  storyNodeTheme.value=obj.theme||'';
- if(type==='chapter'){storyChapterMonsters.value=(obj.available_monster_ids||[]).join(', ');storyChapterRandomEvents.value=JSON.stringify(obj.random_event_candidates||[],null,2);}
- if(type==='section'){storyAdventureDuration.value=obj.adventure_duration_seconds||300;storyBoxesJson.value=JSON.stringify(obj.boxes||[],null,2);setTimeout(renderStoryAdventureBoxes,0);}
  storyNodeStatus.value=obj.status||'draft';
  storyNodePurpose.value=obj.purpose||'';
  storyNodeStartState.value=obj.start_state||'';
@@ -5992,21 +5982,12 @@ function renderStoryEditor(){
  storyTitleField.classList.toggle('hidden',type==='dialogue');
  storySpeakerField.classList.toggle('hidden',type!=='dialogue');
  storyThemeField.classList.toggle('hidden',type!=='chapter');
- storyChapterAdventureFields.classList.toggle('hidden',type!=='chapter');
  storyPurposeField.classList.toggle('hidden',type!=='section');
  storySectionDetailFields.classList.toggle('hidden',type!=='section');
  storyDesignFields.classList.toggle('hidden',!['chapter','section'].includes(type));
  storyStageField.classList.toggle('hidden',type!=='dialogue');
  storyTextLabel.textContent=type==='dialogue'?'台詞':'あらすじ・内容';
 }
-
-function currentStorySectionForBoxes(){const selected=getStorySelectionObject();return selected&&storySelection.type==='section'?selected.object:null;}
-function syncStoryBoxesTextarea(section){if(window.storyBoxesJson)storyBoxesJson.value=JSON.stringify(section?.boxes||[],null,2);}
-function renderStoryAdventureBoxes(){const host=document.getElementById('storyBoxEditor'),section=currentStorySectionForBoxes();if(!host)return;if(!section){host.innerHTML='';return;}if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section);host.innerHTML=(section.boxes||[]).map((box,i)=>`<div class="item"><div class="grid"><div class="field"><label>${i+1}. Box ID</label><input value="${escAttr(box.id)}" onchange="updateStoryAdventureBox(${i},'id',this.value)"></div><div class="field"><label>type</label><select onchange="updateStoryAdventureBox(${i},'type',this.value)">${['scene','event','random_event','random_battle'].map(t=>`<option value="${t}" ${box.type===t?'selected':''}>${t}</option>`).join('')}</select></div><div class="field"><label>ref_id</label><input value="${escAttr(box.ref_id||'')}" onchange="updateStoryAdventureBox(${i},'ref_id',this.value)" placeholder="Scene/Event ID（random_battleは空欄可）"></div></div><div class="toolbar"><button type="button" onclick="moveStoryAdventureBox(${i},-1)" ${i===0?'disabled':''}>↑ 上へ</button><button type="button" onclick="moveStoryAdventureBox(${i},1)" ${i===(section.boxes.length-1)?'disabled':''}>↓ 下へ</button><button type="button" class="danger" onclick="removeStoryAdventureBox(${i})">箱を削除</button></div></div>`).join('')||'<div class="story-empty">Boxはありません。</div>';syncStoryBoxesTextarea(section);}
-function addStoryAdventureBox(){const section=currentStorySectionForBoxes();if(!section)return;section.boxes=Array.isArray(section.boxes)?section.boxes:[];const n=section.boxes.length+1;section.boxes.push({id:`BOX-${String(n).padStart(4,'0')}`,type:'scene',ref_id:''});renderStoryAdventureBoxes();}
-function removeStoryAdventureBox(index){const section=currentStorySectionForBoxes();if(!section||!Array.isArray(section.boxes))return;section.boxes.splice(index,1);renderStoryAdventureBoxes();}
-function moveStoryAdventureBox(index,direction){const section=currentStorySectionForBoxes();if(!section||!Array.isArray(section.boxes))return;const target=index+direction;if(target<0||target>=section.boxes.length)return;[section.boxes[index],section.boxes[target]]=[section.boxes[target],section.boxes[index]];renderStoryAdventureBoxes();}
-function updateStoryAdventureBox(index,key,value){const section=currentStorySectionForBoxes();if(!section?.boxes?.[index])return;section.boxes[index][key]=value;if(window.GKAdventureStorySystem)section.boxes[index]=GKAdventureStorySystem.normalizeBox(section.boxes[index],index);renderStoryAdventureBoxes();}
 
 function storyPromptLine(label,value){return value?`## ${label}\n${value}\n`:''}
 function buildStoryPrompt(){
@@ -6225,13 +6206,12 @@ function saveStoryNode(){
  obj.no=Math.max(1,+storyNodeNo.value||1);
  obj.status=storyNodeStatus.value||'draft';
  if(type!=='dialogue')obj.title=storyNodeTitle.value.trim();
- if(type==='chapter'){obj.theme=storyNodeTheme.value.trim();obj.available_monster_ids=splitCsv(storyChapterMonsters.value);try{obj.random_event_candidates=JSON.parse(storyChapterRandomEvents.value||'[]');}catch(e){return alert('Random Event候補JSONが正しくありません: '+e.message);}if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeChapter(obj);}
+ if(type==='chapter')obj.theme=storyNodeTheme.value.trim();
  if(type==='section'){
   obj.purpose=storyNodePurpose.value.trim();
   obj.start_state=storyNodeStartState.value;
   obj.end_state=storyNodeEndState.value;
   obj.key_points=storyNodeKeyPoints.value;
-  obj.adventure_duration_seconds=Math.max(1,+storyAdventureDuration.value||300);try{obj.boxes=JSON.parse(storyBoxesJson.value||'[]');}catch(e){return alert('Box列JSONが正しくありません: '+e.message);}if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(obj);
  }
  if(['chapter','section'].includes(type)){
   const previous=normalizeStoryDesign(obj.design);
@@ -6277,7 +6257,6 @@ function storyCreateChapter(){
   created_at:now(),
   updated_at:now()
  };
- if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeChapter(chapter);
  data.chapters.push(chapter);
  persist('chapter added from visual editor');
  selectStoryNode('chapter',chapter.id);
@@ -6293,7 +6272,6 @@ function addChildStoryNode(){
   const title=prompt('節タイトルを入力してください。');
   if(!title)return;
   const section={id:nextId('Section'),no:selected.object.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()};
-  if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section,{isNew:true});
   selected.object.sections.push(section);
   persist('section added from visual editor');
   selectStoryNode('section',selected.object.id,section.id);
@@ -6546,7 +6524,7 @@ function renderQuests(){
 
 function openEventEditor(){clearEventForm();openStudioInputPanel('eventEditorPanel','イベントを作成')}
 function clearEventForm(){
- eventId.value='';eventName.value='';eventType.value='story';eventStatus.value='draft';eventBattleFormation.value='[]';
+ eventId.value='';eventName.value='';eventType.value='story';eventStatus.value='draft';
  eventSummary.value='';eventConditions.value='';eventResults.value='';
  eventQuestLink.value='';eventRequiredFlags.value='';eventSetFlags.value='';
  eventDraftCharacterIds=[];
@@ -6655,11 +6633,8 @@ function saveEvent(){
    quest_id:eventQuestLink.value||'',
    character_ids:[...eventDraftCharacterIds]
   },
-  updated_at:now(),
-  battle_formation:[]
+  updated_at:now()
  };
- try{record.battle_formation=JSON.parse(eventBattleFormation.value||'[]');}catch(e){return alert('固定戦闘編成JSONが正しくありません: '+e.message);}
- if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(record);
  const existing=data.events.findIndex(x=>x.id===id);
  if(existing>=0){
   record.created_at=data.events[existing].created_at||now();
@@ -6678,7 +6653,7 @@ function saveEvent(){
 function editEvent(id){
  const e=data.events.find(x=>x.id===id);if(!e)return;
  eventId.value=e.id;eventName.value=e.name;eventType.value=e.type;eventStatus.value=e.status;
- eventSummary.value=e.summary||'';eventConditions.value=e.conditions||'';eventResults.value=e.results||'';eventBattleFormation.value=JSON.stringify(e.battle_formation||[],null,2);
+ eventSummary.value=e.summary||'';eventConditions.value=e.conditions||'';eventResults.value=e.results||'';
  eventRequiredFlags.value=(e.required_flags||[]).join(', ');
  eventSetFlags.value=(e.set_flags||[]).join(', ');
  eventDraftCharacterIds=[...(e.links?.character_ids||[])];
