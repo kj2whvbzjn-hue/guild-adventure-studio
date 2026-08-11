@@ -28,6 +28,8 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  ok(engine.expire('DEBUFF',{}).ok,`${path}: DEBUFF expire op unavailable`);
  ok(engine.expire('SHIELD',{}).ok,`${path}: SHIELD expire op unavailable`);
  ok(engine.cleanup('SHIELD',{reason:'test'}).ok,`${path}: SHIELD cleanup op unavailable`);
- ok(engine.cleanup('DOT',{}).reason==='LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',`${path}: DOT cleanup must remain unwired in F2`);
+ const dotCleanup=engine.cleanup('DOT',{reason:'test'});
+ if(/^R03-F2/.test(shared.VERSION))ok(dotCleanup.reason==='LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',`${path}: DOT cleanup must remain unwired in F2`);
+ else ok(dotCleanup.ok,`${path}: DOT cleanup must be available after F3b`);
 }
 console.log('GENERIC_APPLY_LIFECYCLE_ENGINE_R03_F2_PASS');

@@ -285,6 +285,7 @@ function processModifierStacks(){
   for(const key of groups){const [kind,stat]=key.split(':'),after=effectiveModifierPower(target,kind,stat);recordEffectiveModifierChange(target,kind,stat,before[key],after,'stack_expired')}
  }
 }
+function clearAllModifierStacks(reason='battle_end'){for(const target of battle.units){const list=ensureModifierStackList(target);if(!list.length)continue;const count=list.length;target.modifierStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('modifier_stacks_cleared',{target_id:target.id,count,reason})}}
 function clearModifierStacksOnDeath(target,{cause='death',sourceId=null}={}){
  const list=ensureModifierStackList(target);if(!list.length)return 0;
  const cleared=[...list],groups=new Map();for(const x of cleared){const key=modifierGroupKey(x.kind,x.stat);groups.set(key,Math.max(groups.get(key)||0,x.power))}
@@ -487,6 +488,7 @@ function applyDotTick(target,stack){
  battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${stack.label}#${stack.id} → ${target.name}に${applied}ダメージ（残HP ${target.hp}/${target.maxHp}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_damage',{source_id:stack.sourceId,target_id:target.id,stack_id:stack.id,raw_damage:stack.power,shield_absorbed:shield.absorbed,damage:applied,hp_before:before,hp_after:target.hp,next_tick:stack.nextTick+stack.interval,expires_at:stack.expiresAt});
  if(target.hp<=0){const clearedStacks=Array.isArray(target.dotStacks)?target.dotStacks.length:0;resetCombatantOnDeath(target,{reason:'dot',sourceId:stack.sourceId});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は${stack.label}により戦闘不能`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_defeat',{source_id:stack.sourceId,target_id:target.id,stack_id:stack.id,label:stack.label,hp_before:before,hp_after:target.hp,cleared_dot_stacks:clearedStacks})}finishIfNeeded();return true;
 }
+function clearAllDotStacks(reason='battle_end'){for(const target of battle.units){const list=ensureDotStackList(target);if(!list.length)continue;const count=list.length;target.dotStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stacks_cleared',{target_id:target.id,count,reason})}}
 function processDotStacks(){
  for(const target of battle.units){const list=ensureDotStackList(target);if(!list.length)continue;if(!target.alive){target.dotStacks=[];continue}const keep=[];
   for(const stack of list){while(target.alive&&stack.nextTick<=battle.tick&&stack.nextTick<=stack.expiresAt){applyDotTick(target,stack);stack.nextTick+=stack.interval;if(battle.result||battle.pendingResult)break}if(target.alive&&stack.nextTick<=stack.expiresAt)keep.push(stack);else if(target.alive){battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${stack.label}#${stack.id}が終了`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_expired',{target_id:target.id,stack_id:stack.id,label:stack.label})}}
@@ -586,15 +588,15 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
 
 let taggedApplyLifecycleEngine=null;
 function createFallbackApplyLifecycleEngine(handlers){
- const table=handlers||{},invoke=(operation,kind,payload={})=>{const key=String(kind||'').toUpperCase(),handler=table[key];if(!handler)return{ok:false,reason:'LIFECYCLE_ENGINE_KIND_UNREGISTERED',kind:key,operation};const fn=handler[operation];if(typeof fn!=='function')return{ok:false,reason:'LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',kind:key,operation};try{return fn(payload)}catch(error){return{ok:false,reason:'LIFECYCLE_ENGINE_HANDLER_ERROR',kind:key,operation,message:String(error&&error.message||error)}}};return{version:'R03-F2-fallback',kinds:Object.keys(table),resolve:(kind,payload)=>invoke('resolve',kind,payload),apply:(kind,payload)=>invoke('apply',kind,payload),expire:(kind,payload)=>invoke('expire',kind,payload),cleanup:(kind,payload)=>invoke('cleanup',kind,payload),consume:(kind,payload)=>invoke('consume',kind,payload),effective:(kind,payload)=>invoke('effective',kind,payload)};
+ const table=handlers||{},invoke=(operation,kind,payload={})=>{const key=String(kind||'').toUpperCase(),handler=table[key];if(!handler)return{ok:false,reason:'LIFECYCLE_ENGINE_KIND_UNREGISTERED',kind:key,operation};const fn=handler[operation];if(typeof fn!=='function')return{ok:false,reason:'LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',kind:key,operation};try{return fn(payload)}catch(error){return{ok:false,reason:'LIFECYCLE_ENGINE_HANDLER_ERROR',kind:key,operation,message:String(error&&error.message||error)}}};return{version:'R03-F3b-fallback',kinds:Object.keys(table),resolve:(kind,payload)=>invoke('resolve',kind,payload),apply:(kind,payload)=>invoke('apply',kind,payload),expire:(kind,payload)=>invoke('expire',kind,payload),cleanup:(kind,payload)=>invoke('cleanup',kind,payload),consume:(kind,payload)=>invoke('consume',kind,payload),effective:(kind,payload)=>invoke('effective',kind,payload)};
 }
 function getTaggedApplyLifecycleEngine(){
  if(taggedApplyLifecycleEngine)return taggedApplyLifecycleEngine;
  const handlers={
   STATUS:{resolve:({lifecycle})=>resolveStatusUniqueRefreshLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyStatusUniqueRefreshLifecycle(list,input,lifecycle),expire:()=>{processStatusEffects();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllStatuses(reason);return{ok:true,reason}}},
-  DOT:{resolve:({lifecycle})=>resolveDotStackLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyDotStackLifecycle(list,input,lifecycle),expire:()=>{processDotStacks();return{ok:true}}},
-  BUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
-  DEBUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
+  DOT:{resolve:({lifecycle})=>resolveDotStackLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyDotStackLifecycle(list,input,lifecycle),expire:()=>{processDotStacks();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllDotStacks(reason);return{ok:true,reason}}},
+  BUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllModifierStacks(reason);return{ok:true,reason}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
+  DEBUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllModifierStacks(reason);return{ok:true,reason}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
   SHIELD:{resolve:({lifecycle})=>resolveShieldStackLifecyclePolicy(lifecycle),apply:({target,input,lifecycle})=>applyShieldStackLifecycle(target,input,lifecycle),expire:()=>{processShieldEffects();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllShields(reason);return{ok:true,reason}},consume:({target,rawDamage,lifecycle})=>consumeShieldLayersLifecycle(target,rawDamage,lifecycle)}
  };
  const shared=typeof globalThis!=='undefined'?globalThis.GKSApplyLifecycleEngine:null;
@@ -608,6 +610,13 @@ function processApplyLifecycleExpirations(){
  for(const kind of steps){const result=engine.expire(kind,{tick:battle.tick});results.push({kind,result});if(!result?.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('apply_lifecycle_expire_failed',{kind,tick:battle.tick,reason:result?.reason||'UNKNOWN'});return{ok:false,kind,reason:result?.reason||'UNKNOWN',results}}}
  return{ok:true,results};
 }
+function processApplyLifecycleCleanup(reason='battle_end'){
+ const engine=getTaggedApplyLifecycleEngine(),steps=['STATUS','DOT','BUFF','DEBUFF','SHIELD'],results=[];
+ for(const kind of steps){const result=engine.cleanup(kind,{reason});if(!result.ok)return{ok:false,kind,reason:result.reason,results};results.push({kind,result})}
+ typeof recordValidationEvent==='function'&&recordValidationEvent('generic_apply_lifecycle_cleanup',{reason,kinds:steps});
+ return{ok:true,reason,results};
+}
+
 function resolveGenericApplyLifecycle(compiled,logic){
  const runtime=compiled?.definition?.genericRuntime;if(!runtime)return{generic:false,ok:true,contract:null,lifecycle:null};
  const contract=runtime.applyContracts?.find(x=>x.logic===logic)||null;
