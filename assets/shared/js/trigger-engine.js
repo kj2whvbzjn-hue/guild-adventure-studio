@@ -8,10 +8,10 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-C2';
+  const VERSION='R04-D1';
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
-    'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED'
+    'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED','WHILE_SOURCE_ALIVE'
   ]);
   const BOUNDARY=Object.freeze({
     scope:'TRIGGER_RESOLUTION_ONLY',

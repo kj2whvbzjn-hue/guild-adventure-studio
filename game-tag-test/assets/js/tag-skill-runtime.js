@@ -34,6 +34,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
    if(scope!=='SELF')errors.push('genericRuntime.triggerContract.scopeはSELFが必要です');
    if(type==='ON_HIT_RECEIVED'){if(engineEvent!=='hit_received')errors.push('ON_HIT_RECEIVEDのengineEventはhit_receivedが必要です');if(dispatchMode!=='LEGACY_COUNTER_ADAPTER')errors.push('ON_HIT_RECEIVEDのdispatchModeはLEGACY_COUNTER_ADAPTERが必要です');if(!g.has('COUNTER'))errors.push('ON_HIT_RECEIVED契約にはCOUNTERタグが必要です')}
    else if(type==='ON_ALLY_ATTACK'){if(engineEvent!=='ally_attack')errors.push('ON_ALLY_ATTACKのengineEventはally_attackが必要です');if(dispatchMode!=='LEGACY_FOLLOW_UP_ADAPTER')errors.push('ON_ALLY_ATTACKのdispatchModeはLEGACY_FOLLOW_UP_ADAPTERが必要です');if(!g.has('FOLLOW_UP'))errors.push('ON_ALLY_ATTACK契約にはFOLLOW_UPタグが必要です')}
+   else if(type==='WHILE_SOURCE_ALIVE'){if(engineEvent!=='aura_evaluate')errors.push('WHILE_SOURCE_ALIVE engineEventはaura_evaluateが必要です');if(dispatchMode!=='LEGACY_AURA_ADAPTER')errors.push('WHILE_SOURCE_ALIVE dispatchModeはLEGACY_AURA_ADAPTERが必要です')}
    else if(type!=='ON_USE')errors.push(`genericRuntime.triggerContract.typeは未対応です: ${type}`);
    triggerContract={type,scope,engineEvent,dispatchMode,priority:Number.isInteger(c.priority)?c.priority:0};
   }
@@ -64,7 +65,10 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
   out.push({effectId,kind,logic,lifecycle:{...c.lifecycle}});
  }
  for(const logic of ['STATUS','DOT','BUFF','DEBUFF','SHIELD'])if(g.has(logic)&&!seen.has(logic))errors.push(`Generic由来APPLYには${logic}のlifecycle契約が必要です`);
- return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,applyContracts:out};
+ let auraEffectContract=null;
+ if(raw.auraEffectContract!=null){const a=raw.auraEffectContract;if(!a||typeof a!=='object'||Array.isArray(a))errors.push('genericRuntime.auraEffectContractはobjectが必要です');else{const kind=String(a.kind||'').toUpperCase(),logic=String(a.logic||'').toUpperCase();if(!['BUFF','DEBUFF'].includes(kind))errors.push(`genericRuntime.auraEffectContract.kindが無効です: ${kind||'(なし)'}`);if(logic!=='AURA')errors.push('genericRuntime.auraEffectContract.logicはAURAが必要です');if(!a.effectId)errors.push('genericRuntime.auraEffectContract.effectIdが必要です');if(!a.modifierStat)errors.push('genericRuntime.auraEffectContract.modifierStatが必要です');if(!Number.isFinite(a.power)||a.power<=0)errors.push('genericRuntime.auraEffectContract.powerは正の有限数が必要です');if(!['ally','enemy'].includes(a.targetSide))errors.push('genericRuntime.auraEffectContract.targetSideが無効です');if(!['all','self_and_allies','allies_excluding_self'].includes(a.targetScope))errors.push('genericRuntime.auraEffectContract.targetScopeが無効です');if(a.stack!=='highest')errors.push('genericRuntime.auraEffectContract.stackはhighestが必要です');if(a.sourceDependent!==true)errors.push('genericRuntime.auraEffectContract.sourceDependentはtrueが必要です');auraEffectContract={...a,kind,logic}}}
+ if(g.has('AURA')&&!auraEffectContract&&triggerContract?.type==='WHILE_SOURCE_ALIVE')errors.push('Generic AURAにはauraEffectContractが必要です');
+ return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,applyContracts:out,auraEffectContract};
 }
 function compileTaggedSkill(skill){
  const parsed=parseSkillTags(skill),errors=[...parsed.errors],warnings=[];

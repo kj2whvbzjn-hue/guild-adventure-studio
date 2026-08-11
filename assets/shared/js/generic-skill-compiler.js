@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R04-C2';
+const VERSION='R04-D1';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -21,7 +21,7 @@ function resolveLifecycle(def,registry,errors,path){
  return {...lifecycle};
 }
 function compileGenericSkill(skill,registry,legacyCompile){
- const errors=[],warnings=[],tags=[],normalizedEffects=[],applyContracts=[],conditionContracts=[];registry=normalizeRegistry(registry);
+ const errors=[],warnings=[],tags=[],normalizedEffects=[],applyContracts=[],conditionContracts=[];let auraEffectContract=null;registry=normalizeRegistry(registry);
  if(!registry){err(errors,'REGISTRY_REQUIRED','registry','Generic Skill Registryが必要です');return result()}
  if(!skill||typeof skill!=='object'||Array.isArray(skill)){err(errors,'INVALID_SKILL','$','スキルはobjectが必要です');return result()}
  if(skill.schemaVersion!==SUPPORTED_SCHEMA)err(errors,'UNSUPPORTED_SCHEMA','schemaVersion',`schemaVersion=${skill.schemaVersion}は未対応です`);
@@ -53,14 +53,15 @@ function compileGenericSkill(skill,registry,legacyCompile){
   validateConditionValue(def,c.value,errors,`conditions[${i}].value`);if(num(c.value))pushUnique(tags,`${def.legacy_tag}${c.operator}${c.value}`);
  }
  const effects=Array.isArray(skill.effects)?skill.effects:[];if(!effects.length)err(errors,'EFFECT_REQUIRED','effects','effectsが1件以上必要です');
- for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,applyContracts);
+ if(trigger==='WHILE_SOURCE_ALIVE')auraEffectContract=compileAuraEffectAdapter(skill,registry,tags,errors,normalizedEffects);
+ else for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,applyContracts);
  if(trigger==='ON_ALLY_ATTACK'){const idx=tags.indexOf('ATTACK');if(idx>=0)tags.splice(idx,1);}
  const seenApplyLogic=new Set();for(const c of applyContracts){if(seenApplyLogic.has(c.logic))err(errors,'LEGACY_APPLY_LOGIC_DUPLICATE','effects',`Legacy Adapterでは同一APPLY logicを複数同時実行できません: ${c.logic}`);seenApplyLogic.add(c.logic)}
  const res=skill.resource||{};
  if(own(res,'mpCost'))addNumeric(tags,'MP_COST',res.mpCost,errors,'resource.mpCost');
  if(own(res,'cooldown')){if(!Number.isInteger(res.cooldown)||res.cooldown<0)err(errors,'INVALID_COOLDOWN','resource.cooldown','cooldownは0以上の整数が必要です');else pushUnique(tags,`COOLDOWN=${res.cooldown}`)}
  if(own(res,'activationPriority')){if(!Number.isInteger(res.activationPriority))err(errors,'INVALID_ACTIVATION_PRIORITY','resource.activationPriority','activationPriorityは整数が必要です');else pushUnique(tags,`ACTIVATION_PRIORITY=${res.activationPriority}`)}
- const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))};
+ const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null};
  const legacySkill={id:String(skill.id||''),name:String(skill.name||''),tags,genericRuntime};
  let legacyValidation=null;
  if(!errors.length&&typeof legacyCompile==='function'){
@@ -68,7 +69,7 @@ function compileGenericSkill(skill,registry,legacyCompile){
   catch(e){err(errors,'LEGACY_COMPILE_EXCEPTION','legacySkill',e?.message||String(e))}
  }
  return result();
- function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
+ function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null}},legacyValidation}}
 }
 
 function buildTriggerContract(skill,def){
@@ -101,6 +102,16 @@ function compileTriggerAdapter(skill,trigger,def,registry,tags,errors){
   if(!Number.isInteger(priority))err(errors,'COUNTER_PRIORITY_INVALID','trigger.priority','COUNTER priorityは整数が必要です');else pushUnique(tags,`COUNTER_PRIORITY=${priority}`);
   return;
  }
+ if(trigger==='WHILE_SOURCE_ALIVE'){
+  if(adapter.logic!=='AURA'){err(errors,'AURA_ADAPTER_LOGIC_INVALID','trigger.type','WHILE_SOURCE_ALIVEはAURA Adapterが必要です');return}
+  if(!Array.isArray(adapter.target_sides)||!adapter.target_sides.includes(skill.target?.side))err(errors,'AURA_TARGET_SIDE_REQUIRED','target.side','AURAはALLYまたはENEMY対象が必要です');
+  if(skill.target?.range!==adapter.target_range)err(errors,'AURA_TARGET_RANGE_REQUIRED','target.range','AURAはALL範囲が必要です');
+  if(skill.target?.excludeSelf===true&&skill.target?.side!=='ALLY')err(errors,'AURA_EXCLUDE_SELF_INVALID','target.excludeSelf','excludeSelfはALLY AURAのみ対応です');
+  if(skill.target?.excludeSelf!=null&&typeof skill.target.excludeSelf!=='boolean')err(errors,'AURA_EXCLUDE_SELF_BOOLEAN_REQUIRED','target.excludeSelf','excludeSelfはbooleanが必要です');
+  if(skill.conditions?.length)err(errors,'AURA_CONDITION_DEFERRED','conditions','R04-D1 AURAはCondition未対応です');
+  pushUnique(tags,'AURA');
+  return;
+ }
  if(trigger==='ON_ALLY_ATTACK'){
   if(adapter.logic!=='FOLLOW_UP'){err(errors,'FOLLOW_UP_ADAPTER_LOGIC_INVALID','trigger.type','ON_ALLY_ATTACKはFOLLOW_UP Adapterが必要です');return}
   if(skill.target?.side!==adapter.target_side)err(errors,'FOLLOW_UP_TARGET_SIDE_REQUIRED','target.side',`FOLLOW_UPは${adapter.target_side}対象が必要です`);
@@ -114,6 +125,25 @@ function compileTriggerAdapter(skill,trigger,def,registry,tags,errors){
   return;
  }
  err(errors,'TRIGGER_LEGACY_ADAPTER_UNIMPLEMENTED','trigger.type',`Trigger Adapter未実装: ${trigger}`);
+}
+
+function compileAuraEffectAdapter(skill,registry,tags,errors,normalizedEffects){
+ const effects=Array.isArray(skill.effects)?skill.effects:[];
+ if(effects.length!==1){err(errors,'AURA_SINGLE_EFFECT_REQUIRED','effects','R04-D1 AURAはAPPLY Effectを1件だけ指定してください');return null}
+ const effect=effects[0],p='effects[0]';
+ if(String(effect?.type||'').toUpperCase()!=='APPLY'){err(errors,'AURA_APPLY_EFFECT_REQUIRED',`${p}.type`,'R04-D1 AURAはAPPLY Effectが必要です');return null}
+ const def=registry.effects?.[effect.effectId];if(!def){err(errors,'UNKNOWN_EFFECT_ID',`${p}.effectId`,`未定義Effect ID: ${effect.effectId||'(なし)'}`);return null}
+ if(!['BUFF','DEBUFF'].includes(def.kind)){err(errors,'AURA_EFFECT_KIND_UNSUPPORTED',`${p}.effectId`,'R04-D1 AURAはBUFF/DEBUFF Effectのみ対応です');return null}
+ const stat=def.legacy?.modifierStat;if(!stat){err(errors,'MODIFIER_STAT_MISSING',`${p}.effectId`,'Aura Effect RegistryにmodifierStatが必要です');return null}
+ if(!num(effect.power)||effect.power<=0)err(errors,'AURA_POWER_REQUIRED',`${p}.power`,'AURA powerは0より大きい有限数が必要です');
+ if(own(effect,'duration'))err(errors,'AURA_DURATION_FORBIDDEN',`${p}.duration`,'source-dependent AURAにdurationは指定できません');
+ if(own(effect,'stackGain'))err(errors,'AURA_STACK_GAIN_FORBIDDEN',`${p}.stackGain`,'R04-D1 AURAはhighest固定のためstackGainを指定できません');
+ const targetSide=skill.target?.side==='ALLY'?'ally':skill.target?.side==='ENEMY'?'enemy':null;
+ const targetScope=targetSide==='enemy'?'all':(skill.target?.excludeSelf===true?'allies_excluding_self':'self_and_allies');
+ pushUnique(tags,`AURA_EFFECT=${def.kind}`);if(num(effect.power))pushUnique(tags,`AURA_VALUE=${effect.power}`);pushUnique(tags,`AURA_TARGET=${targetSide||''}`);pushUnique(tags,`AURA_SCOPE=${targetScope}`);pushUnique(tags,'AURA_STACK=highest');
+ const priority=Number.isInteger(skill.trigger?.priority)?skill.trigger.priority:0;pushUnique(tags,`AURA_PRIORITY=${priority}`);pushUnique(tags,stat);
+ const normalized={type:'APPLY',effectId:effect.effectId,kind:def.kind,power:effect.power,duration:null,sourceDependent:true,stack:'highest'};normalizedEffects.push(normalized);
+ return{effectId:effect.effectId,kind:def.kind,logic:'AURA',modifierStat:stat,power:effect.power,targetSide,targetScope,stack:'highest',sourceDependent:true};
 }
 
 function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,applyContracts){
