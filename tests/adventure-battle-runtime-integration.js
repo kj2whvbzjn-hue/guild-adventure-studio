@@ -1,0 +1,16 @@
+const fs=require('fs'),assert=require('assert');
+const html=fs.readFileSync('game/index.html','utf8');
+const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
+const ctl=fs.readFileSync('game/assets/js/battle-control.js','utf8');
+const storyPos=html.indexOf('adventure-story-system.js');
+const battleCorePos=html.indexOf('adventure-battle-core.js');
+const appPos=html.indexOf('app-runtime.js');
+assert(storyPos>=0&&battleCorePos>storyPos&&appPos>battleCorePos,'Adventure Battle Core must load before app runtime');
+assert(app.includes('let battleLaunchContext=null;'),'battle launch context missing');
+assert(app.includes('GKAdventureBattleCore.expandFormation'),'Monster Master formation is not connected to battle units');
+assert(app.includes('GKAdventureBattleCore.buildBattleResult'),'structured Battle Result is not connected to battle outcome');
+assert(ctl.includes("recordValidationEvent('battle_started'"),'battle_start capture missing');
+assert(ctl.includes("recordValidationEvent('battle_finished'"),'battle_end capture missing');
+assert(ctl.includes("recordValidationEvent('basic_attack'"),'basic attack playback capture missing');
+assert(app.includes("$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')}"),'legacy quest fallback must clear adventure formation');
+console.log('adventure-battle-runtime-integration PASS');

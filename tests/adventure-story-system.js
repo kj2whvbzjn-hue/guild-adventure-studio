@@ -48,6 +48,23 @@ assert.equal(failed.timeline_result.length,1);
 assert.deepEqual(failed.reward_result,{});
 assert.equal(failed.reward_history[0].gold,20);
 
+
+// Fixed battle Event uses the same formation-based Battle Core entry as random battle.
+let fixedCalls=0, eventResolverCalls=0;
+const fixed=S.simulateQuest({quest:{id:'QF'},section:{id:'SF',boxes:[{id:'FB',type:'event',ref_id:'EB'}]},chapter:{id:'CF'},events:[{id:'EB',type:'battle',battle_formation:[{monster_id:'M1',count:2}]}],seed:9,resolveEvent:()=>{eventResolverCalls++;return{success:true}},simulateBattle:({formation,seed,event})=>{fixedCalls++;assert.deepEqual(formation,[{monster_id:'M1',count:2}]);assert.equal(event.id,'EB');assert(Number.isInteger(seed));return{victory:true,reward:{gold:12},playback_events:[{type:'battle_start'},{type:'battle_end'}]}}});
+assert.equal(fixedCalls,1);
+assert.equal(eventResolverCalls,0);
+assert.equal(fixed.battle_results.length,1);
+assert.equal(fixed.event_results[0].type,'battle');
+assert.equal(fixed.reward_result.gold,12);
+assert.equal(fixed.timeline_result[0].battle_result_index,0);
+
+const fixedFail=S.simulateQuest({quest:{id:'QF2'},section:{id:'SF2',boxes:[{id:'FB',type:'event',ref_id:'EB'},{id:'AFTER',type:'scene',ref_id:'SC'}]},chapter:{id:'CF2'},events:[{id:'EB',type:'battle',battle_formation:[{monster_id:'M1',count:1}]}],scenes:[{id:'SC',dialogues:[]}],seed:10,simulateBattle:()=>({victory:false,reason:'boss_lost',reward:{gold:999},playback_events:[]})});
+assert.equal(fixedFail.final_result.success,false);
+assert.equal(fixedFail.final_result.failure.reason,'boss_lost');
+assert.equal(fixedFail.timeline_result.length,1);
+assert.deepEqual(fixedFail.reward_result,{});
+
 // Fixed battle normalization and playback event contract.
 assert.deepEqual(S.normalizeEvent({type:'battle',battle_formation:[{monster_id:'M1',count:2.8}]}).battle_formation,[{monster_id:'M1',count:2}]);
 assert.equal(S.validatePlaybackEvents([{type:'battle_start'},{type:'damage'},{type:'battle_end'}]),true);
