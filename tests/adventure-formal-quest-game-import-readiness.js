@@ -34,6 +34,8 @@ for(const needle of [
  "error.detail=String(cause?.message||'JSON parse failed')",
  "error_detail:String(error?.detail||'')",
  " ／ 詳細 ${s.error_detail}",
+ "failed_at:new Date().toISOString()",
+ " ／ 失敗時刻 ${failed}",
  "'EXPORT_MANIFEST_LOAD_FAILED'",
  "'EXPORT_STORY_JSON_LOAD_FAILED'",
  '読込失敗：${',
