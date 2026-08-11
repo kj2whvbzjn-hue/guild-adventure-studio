@@ -314,8 +314,27 @@ function resolveShieldStackLifecyclePolicy(lifecycle){
 function applyShieldStackLifecycle(target,{source,compiled,amount,duration}={},lifecycle){
  const resolved=resolveShieldStackLifecyclePolicy(lifecycle);if(!resolved.ok)return{ok:false,reason:resolved.reason,field:resolved.field,expected:resolved.expected,actual:resolved.actual};
  if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};amount=Math.max(0,Math.floor(Number(amount)||0));duration=Math.max(0,Math.floor(Number(duration)||0));if(amount<=0||duration<=0)return{ok:false,reason:'シールド値または持続時間が無効です'};
- const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};
+ const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration,lifecyclePolicy:{...resolved}};
  ensureShieldEffects(target).push(effect);return{ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect,policy:resolved};
+}
+function resolveShieldConsumeLifecyclePolicy(lifecycle){
+ const policy=lifecycle&&typeof lifecycle==='object'?lifecycle:{consumeRule:'FIFO'},consumeRule=String(policy.consumeRule||'FIFO').toUpperCase();
+ if(consumeRule!=='FIFO')return{ok:false,reason:'SHIELD_CONSUME_POLICY_UNSUPPORTED',field:'consumeRule',expected:'FIFO',actual:consumeRule};
+ return{ok:true,consumeRule:'FIFO'};
+}
+function resolveShieldConsumePolicyForTarget(target){
+ const policies=ensureShieldEffects(target).map(x=>x?.lifecyclePolicy).filter(x=>x&&typeof x==='object');
+ if(!policies.length)return{ok:true,consumeRule:'FIFO',source:'legacy_default'};
+ for(const policy of policies){const resolved=resolveShieldConsumeLifecyclePolicy(policy);if(!resolved.ok)return resolved}
+ return{ok:true,consumeRule:'FIFO',source:'registry_contract'};
+}
+function consumeShieldLayersLifecycle(target,rawDamage,lifecycle=null){
+ const policy=resolveShieldConsumeLifecyclePolicy(lifecycle);if(!policy.ok)return{ok:false,reason:policy.reason,field:policy.field,expected:policy.expected,actual:policy.actual};
+ const raw=Math.max(0,Math.floor(Number(rawDamage)||0)),sequenceOf=x=>Number.isFinite(Number(x.sequence))?Number(x.sequence):(Number(String(x.id||'').match(/(\d+)$/)?.[1])||0),effects=ensureShieldEffects(target).sort((a,b)=>a.appliedAt-b.appliedAt||sequenceOf(a)-sequenceOf(b)||String(a.id).localeCompare(String(b.id)));
+ let remaining=raw,absorbed=0;const consumed=[];
+ for(const effect of effects){if(remaining<=0)break;const use=Math.min(Math.max(0,effect.remaining),remaining);if(use<=0)continue;effect.remaining-=use;remaining-=use;absorbed+=use;consumed.push({shield_id:effect.id,absorbed:use,remaining:effect.remaining})}
+ target.shieldEffects=effects.filter(x=>x.remaining>0);
+ return{ok:true,rawDamage:raw,absorbed,hpDamage:remaining,totalShield:shieldTotal(target),consumed,policy};
 }
 function applyTaggedShield(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};
@@ -327,12 +346,12 @@ function applyTaggedShield(source,target,compiled,lifecyclePolicy=null){
  return result;
 }
 function consumeShieldDamage(target,rawDamage,{sourceId=null,skillId=null,damageType='damage'}={}){
- const raw=Math.max(0,Math.floor(Number(rawDamage)||0)),sequenceOf=x=>Number.isFinite(Number(x.sequence))?Number(x.sequence):(Number(String(x.id||'').match(/(\d+)$/)?.[1])||0),effects=ensureShieldEffects(target).sort((a,b)=>a.appliedAt-b.appliedAt||sequenceOf(a)-sequenceOf(b)||String(a.id).localeCompare(String(b.id)));
- let remaining=raw,absorbed=0;const consumed=[];
- for(const effect of effects){if(remaining<=0)break;const use=Math.min(Math.max(0,effect.remaining),remaining);if(use<=0)continue;effect.remaining-=use;remaining-=use;absorbed+=use;consumed.push({shield_id:effect.id,absorbed:use,remaining:effect.remaining})}
- target.shieldEffects=effects.filter(x=>x.remaining>0);
- if(absorbed>0){battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${target.name}のシールドが${absorbed}吸収（受けるHPダメージ${remaining}、総残量${shieldTotal(target)}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_absorbed',{source_id:sourceId,target_id:target.id,skill_id:skillId,damage_type:damageType,raw_damage:raw,absorbed,hp_damage:remaining,consumed,total_shield:shieldTotal(target)})}
- return{rawDamage:raw,absorbed,hpDamage:remaining,totalShield:shieldTotal(target),consumed};
+ const raw=Math.max(0,Math.floor(Number(rawDamage)||0)),lifecycle=resolveShieldConsumePolicyForTarget(target);
+ if(!lifecycle.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] consume policyが不正です: ${lifecycle.reason}`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_consume_policy_rejected',{source_id:sourceId,target_id:target?.id||null,skill_id:skillId,damage_type:damageType,raw_damage:raw,reason:lifecycle.reason,field:lifecycle.field||null,expected:lifecycle.expected||null,actual:lifecycle.actual||null});return{rawDamage:raw,absorbed:0,hpDamage:raw,totalShield:shieldTotal(target),consumed:[],policy:null,error:lifecycle.reason}}
+ const result=consumeShieldLayersLifecycle(target,raw,lifecycle);if(!result.ok)return{rawDamage:raw,absorbed:0,hpDamage:raw,totalShield:shieldTotal(target),consumed:[],policy:null,error:result.reason};
+ const {absorbed,hpDamage,consumed}=result;
+ if(absorbed>0){battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${target.name}のシールドが${absorbed}吸収（受けるHPダメージ${hpDamage}、総残量${shieldTotal(target)}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_absorbed',{source_id:sourceId,target_id:target.id,skill_id:skillId,damage_type:damageType,raw_damage:raw,absorbed,hp_damage:hpDamage,consumed,total_shield:shieldTotal(target),consume_rule:result.policy.consumeRule,policy_source:lifecycle.source})}
+ return{rawDamage:raw,absorbed,hpDamage,totalShield:shieldTotal(target),consumed,policy:result.policy};
 }
 function processShieldEffects(){for(const target of battle.units){const effects=ensureShieldEffects(target),expired=effects.filter(x=>x.expiresAt<=battle.tick);if(expired.length){target.shieldEffects=effects.filter(x=>x.expiresAt>battle.tick&&x.remaining>0);for(const x of expired){battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${target.name}の${x.skillName}#${x.id}が終了（残量${x.remaining}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_expired',{target_id:target.id,shield_id:x.id,remaining:x.remaining,expired_at:battle.tick})}}}}
 function clearAllShields(reason='battle_end'){for(const target of battle.units){const count=ensureShieldEffects(target).length,total=shieldTotal(target);if(count){target.shieldEffects=[];battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${target.name}のシールドを消去（${reason}、${count}枚、残量${total}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_cleared',{target_id:target.id,reason,count,total})}}}
