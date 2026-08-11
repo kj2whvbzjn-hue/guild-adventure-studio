@@ -10,6 +10,7 @@ const APP_SHELL=[
   "./ai-production/ai-production.css?v=1",
   "./ai-production/ai-program-model.js?v=1",
   "./ai-production/ai-program-store.js?v=1",
+  "./ai-production/ai-program-editor.js?v=1",
   "./ai-production/ai-master-adapter.js?v=1",
   "./ai-production/ai-production-ui.js?v=1"
 ];
