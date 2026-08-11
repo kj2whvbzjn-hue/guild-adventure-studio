@@ -487,8 +487,11 @@ function processDotStacks(){
 function dotStatusText(unit){const stacks=ensureDotStackList(unit);if(!stacks.length)return'なし';const groups={};for(const x of stacks)(groups[x.label]||(groups[x.label]=[])).push(x);return Object.entries(groups).map(([label,items])=>`${label}×${items.length}（次:${Math.min(...items.map(x=>x.nextTick))} / 最長:${Math.max(...items.map(x=>x.expiresAt))}）`).join('、')}
 function resetCombatantOnDeath(target,{reason='death',sourceId=null}={}){
  if(!target)return{ok:false,reason:'対象がありません'};
- const cleared={statuses:Array.isArray(target.statusEffects)?target.statusEffects.length:0,dots:Array.isArray(target.dotStacks)?target.dotStacks.length:0,modifiers:Array.isArray(target.modifierStacks)?target.modifierStacks.length:0,shields:Array.isArray(target.shieldEffects)?target.shieldEffects.length:0};
- target.hp=0;target.alive=false;target.gauge=0;target.reservedAction=null;target.statusEffects=[];target.dotStacks=[];target.modifierStacks=[];target.shieldEffects=[];
+ const beforeCleared={statuses:Array.isArray(target.statusEffects)?target.statusEffects.length:0,dots:Array.isArray(target.dotStacks)?target.dotStacks.length:0,modifiers:Array.isArray(target.modifierStacks)?target.modifierStacks.length:0,shields:Array.isArray(target.shieldEffects)?target.shieldEffects.length:0};
+ target.hp=0;target.alive=false;target.gauge=0;target.reservedAction=null;
+ const lifecycleCleanup=processApplyLifecycleDeathCleanup(target,{reason,sourceId});
+ const cleared=lifecycleCleanup?.ok?lifecycleCleanup.cleared:beforeCleared;
+ if(!lifecycleCleanup?.ok){target.statusEffects=[];target.dotStacks=[];target.modifierStacks=[];target.shieldEffects=[];typeof recordValidationEvent==='function'&&recordValidationEvent('generic_apply_lifecycle_death_cleanup_fallback',{target_id:target.id,source_id:sourceId,reason,error:lifecycleCleanup?.reason||'UNKNOWN'})}
  if('followUpQueue' in target)target.followUpQueue=[];
  if('followUpReservations' in target)target.followUpReservations=[];
  if('temporaryResources' in target)target.temporaryResources={};
@@ -540,16 +543,16 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
 
 let taggedApplyLifecycleEngine=null;
 function createFallbackApplyLifecycleEngine(handlers){
- const table=handlers||{},invoke=(operation,kind,payload={})=>{const key=String(kind||'').toUpperCase(),handler=table[key];if(!handler)return{ok:false,reason:'LIFECYCLE_ENGINE_KIND_UNREGISTERED',kind:key,operation};const fn=handler[operation];if(typeof fn!=='function')return{ok:false,reason:'LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',kind:key,operation};try{return fn(payload)}catch(error){return{ok:false,reason:'LIFECYCLE_ENGINE_HANDLER_ERROR',kind:key,operation,message:String(error&&error.message||error)}}};return{version:'R03-F3b-fallback',kinds:Object.keys(table),resolve:(kind,payload)=>invoke('resolve',kind,payload),apply:(kind,payload)=>invoke('apply',kind,payload),expire:(kind,payload)=>invoke('expire',kind,payload),cleanup:(kind,payload)=>invoke('cleanup',kind,payload),consume:(kind,payload)=>invoke('consume',kind,payload),effective:(kind,payload)=>invoke('effective',kind,payload)};
+ const table=handlers||{},invoke=(operation,kind,payload={})=>{const key=String(kind||'').toUpperCase(),handler=table[key];if(!handler)return{ok:false,reason:'LIFECYCLE_ENGINE_KIND_UNREGISTERED',kind:key,operation};const fn=handler[operation];if(typeof fn!=='function')return{ok:false,reason:'LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',kind:key,operation};try{return fn(payload)}catch(error){return{ok:false,reason:'LIFECYCLE_ENGINE_HANDLER_ERROR',kind:key,operation,message:String(error&&error.message||error)}}};return{version:'R03-F3c-fallback',kinds:Object.keys(table),resolve:(kind,payload)=>invoke('resolve',kind,payload),apply:(kind,payload)=>invoke('apply',kind,payload),expire:(kind,payload)=>invoke('expire',kind,payload),cleanup:(kind,payload)=>invoke('cleanup',kind,payload),consume:(kind,payload)=>invoke('consume',kind,payload),effective:(kind,payload)=>invoke('effective',kind,payload)};
 }
 function getTaggedApplyLifecycleEngine(){
  if(taggedApplyLifecycleEngine)return taggedApplyLifecycleEngine;
  const handlers={
-  STATUS:{resolve:({lifecycle})=>resolveStatusUniqueRefreshLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyStatusUniqueRefreshLifecycle(list,input,lifecycle),expire:()=>{processStatusEffects();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllStatuses(reason);return{ok:true,reason}}},
-  DOT:{resolve:({lifecycle})=>resolveDotStackLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyDotStackLifecycle(list,input,lifecycle),expire:()=>{processDotStacks();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllDotStacks(reason);return{ok:true,reason}}},
-  BUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllModifierStacks(reason);return{ok:true,reason}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
-  DEBUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllModifierStacks(reason);return{ok:true,reason}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
-  SHIELD:{resolve:({lifecycle})=>resolveShieldStackLifecyclePolicy(lifecycle),apply:({target,input,lifecycle})=>applyShieldStackLifecycle(target,input,lifecycle),expire:()=>{processShieldEffects();return{ok:true}},cleanup:({reason='battle_end'}={})=>{clearAllShields(reason);return{ok:true,reason}},consume:({target,rawDamage,lifecycle})=>consumeShieldLayersLifecycle(target,rawDamage,lifecycle)}
+  STATUS:{resolve:({lifecycle})=>resolveStatusUniqueRefreshLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyStatusUniqueRefreshLifecycle(list,input,lifecycle),expire:()=>{processStatusEffects();return{ok:true}},cleanup:({reason='battle_end',target=null}={})=>{if(target){const count=ensureStatusEffects(target).length;target.statusEffects=[];return{ok:true,reason,count,targetId:target.id}}clearAllStatuses(reason);return{ok:true,reason}}},
+  DOT:{resolve:({lifecycle})=>resolveDotStackLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyDotStackLifecycle(list,input,lifecycle),expire:()=>{processDotStacks();return{ok:true}},cleanup:({reason='battle_end',target=null}={})=>{if(target){const count=ensureDotStackList(target).length;target.dotStacks=[];return{ok:true,reason,count,targetId:target.id}}clearAllDotStacks(reason);return{ok:true,reason}}},
+  BUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},cleanup:({reason='battle_end',target=null}={})=>{if(target){const count=ensureModifierStackList(target).length;target.modifierStacks=[];return{ok:true,reason,count,targetId:target.id}}clearAllModifierStacks(reason);return{ok:true,reason}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
+  DEBUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),expire:()=>{processModifierStacks();return{ok:true}},cleanup:({reason='battle_end',target=null}={})=>{if(target){const count=ensureModifierStackList(target).length;target.modifierStacks=[];return{ok:true,reason,count,targetId:target.id}}clearAllModifierStacks(reason);return{ok:true,reason}},effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
+  SHIELD:{resolve:({lifecycle})=>resolveShieldStackLifecyclePolicy(lifecycle),apply:({target,input,lifecycle})=>applyShieldStackLifecycle(target,input,lifecycle),expire:()=>{processShieldEffects();return{ok:true}},cleanup:({reason='battle_end',target=null}={})=>{if(target){const count=ensureShieldEffects(target).length,total=shieldTotal(target);target.shieldEffects=[];return{ok:true,reason,count,total,targetId:target.id}}clearAllShields(reason);return{ok:true,reason}},consume:({target,rawDamage,lifecycle})=>consumeShieldLayersLifecycle(target,rawDamage,lifecycle)}
  };
  const shared=typeof globalThis!=='undefined'?globalThis.GKSApplyLifecycleEngine:null;
  taggedApplyLifecycleEngine=shared&&typeof shared.create==='function'?shared.create(handlers):createFallbackApplyLifecycleEngine(handlers);
@@ -567,6 +570,19 @@ function processApplyLifecycleCleanup(reason='battle_end'){
  for(const kind of steps){const result=engine.cleanup(kind,{reason});if(!result.ok)return{ok:false,kind,reason:result.reason,results};results.push({kind,result})}
  typeof recordValidationEvent==='function'&&recordValidationEvent('generic_apply_lifecycle_cleanup',{reason,kinds:steps});
  return{ok:true,reason,results};
+}
+
+function processApplyLifecycleDeathCleanup(target,{reason='death',sourceId=null}={}){
+ if(!target)return{ok:false,reason:'DEATH_CLEANUP_TARGET_MISSING',results:[]};
+ const engine=getTaggedApplyLifecycleEngine(),steps=['STATUS','DOT','BUFF','SHIELD'],results=[],cleared={statuses:0,dots:0,modifiers:0,shields:0};
+ const countKey={STATUS:'statuses',DOT:'dots',BUFF:'modifiers',SHIELD:'shields'};
+ for(const kind of steps){
+  const result=engine.cleanup(kind,{reason:'target_dead',target,sourceId,deathReason:reason});
+  if(!result?.ok)return{ok:false,kind,reason:result?.reason||'UNKNOWN',results,cleared};
+  results.push({kind,result});cleared[countKey[kind]]=Math.max(0,Number(result.count)||0);
+ }
+ typeof recordValidationEvent==='function'&&recordValidationEvent('generic_apply_lifecycle_death_cleanup',{target_id:target.id,source_id:sourceId,reason,cleared,kinds:steps});
+ return{ok:true,reason,targetId:target.id,cleared,results};
 }
 
 function resolveGenericApplyLifecycle(compiled,logic){
