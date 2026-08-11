@@ -8,8 +8,8 @@ assert(app.includes('function adventurePartySnapshot('),'Party Snapshot adapter 
 assert(app.includes('GKAdventureStorySystem.simulateQuest({quest:bundle.quest'),'Adventure Simulation is not connected to runtime');
 assert(app.includes('GKAdventureBattleCore.simulateBasicBattle({party:partySnapshot'),'headless Battle Core is not connected to Adventure Simulation');
 assert(app.includes('const stored=storeAdventureQuestRun(run)'),'simulated QuestRun is not persisted');
-assert(app.includes("reason:'legacy_quest'"),'legacy quest fallback is missing');
-assert(app.includes("$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventureOrLegacy"),'desktop departure is not connected to Adventure Simulation');
+assert(app.includes("reason:'formal_quest_unavailable'"),'formal quest unavailable guard is missing');
+assert(app.includes("$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure"),'desktop departure is not connected to formal Adventure Simulation');
 assert(app.includes("mobileDepart.onclick=async()=>"),'mobile departure is not connected to Adventure Simulation');
 assert(app.includes('loadAdventureContent().then(content=>{registerAdventureQuestCards(content);'),'Adventure quest discovery is not initialized');
 console.log('adventure-simulation-runtime-integration PASS');

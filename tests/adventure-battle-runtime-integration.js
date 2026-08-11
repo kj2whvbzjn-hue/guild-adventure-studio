@@ -12,5 +12,5 @@ assert(app.includes('GKAdventureBattleCore.buildBattleResult'),'structured Battl
 assert(ctl.includes("recordValidationEvent('battle_started'"),'battle_start capture missing');
 assert(ctl.includes("recordValidationEvent('battle_finished'"),'battle_end capture missing');
 assert(ctl.includes("recordValidationEvent('basic_attack'"),'basic attack playback capture missing');
-assert(app.includes("$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')}"),'legacy quest fallback must clear adventure formation');
+assert(app.includes("$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')}"),'developer battle entry must clear adventure formation');
 console.log('adventure-battle-runtime-integration PASS');

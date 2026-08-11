@@ -10,5 +10,6 @@ assert(app.includes('startCostResult:{consumed:true,cost:clone(consumed.cost)}')
 assert(app.includes("reason:'quest_prerequisite_missing'"),'prerequisite block reason missing');
 assert(app.includes("reason:'quest_required_flag_missing'"),'required flag block reason missing');
 assert(app.includes("reason:'insufficient_start_cost'"),'insufficient cost block reason missing');
-assert(app.includes("if(result.reason==='legacy_quest'){prepareEvent();setPhase('event');return}"),'legacy fallback must only run for legacy quest');
+assert(!app.includes("if(result.reason==='legacy_quest')"),'legacy quest fallback must not be reachable from formal departure');
+assert(app.includes("reason:'formal_quest_unavailable'"),'formal quest unavailable guard missing');
 console.log('adventure-quest-start-runtime-integration PASS');
