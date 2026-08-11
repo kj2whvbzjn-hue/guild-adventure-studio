@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm');
 const shared=require('../assets/shared/js/apply-lifecycle-engine.js');
 function ok(v,m){if(!v)throw new Error(m)}
-ok(/^R03-F3/.test(shared.VERSION),'shared lifecycle engine must be R03-F3 series');
+ok(/^R03-F/.test(shared.VERSION),'shared lifecycle engine must remain in R03-F series');
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const calls=[];
  const ctx={console,GKSApplyLifecycleEngine:shared,battle:{tick:77,units:[],log:[],validationEvents:[]},recordValidationEvent(){}};

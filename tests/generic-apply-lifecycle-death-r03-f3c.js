@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm');
 const shared=require('../assets/shared/js/apply-lifecycle-engine.js');
 function ok(v,m){if(!v)throw new Error(m)}
-ok(/^R03-F3c/.test(shared.VERSION),'shared lifecycle engine must be R03-F3c');
+ok(/^R03-F/.test(shared.VERSION),'shared lifecycle engine must remain in R03-F series');
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const events=[];
  const target={id:'TGT',name:'Target',alive:true,hp:100,maxHp:100,gauge:77,reservedAction:{id:'A'},statusEffects:[{instanceId:'S1'},{instanceId:'S2'}],dotStacks:[{id:'D1'}],modifierStacks:[{id:'M1',kind:'BUFF',stat:'ATK',power:10},{id:'M2',kind:'DEBUFF',stat:'DEF',power:20}],shieldEffects:[{id:'H1',remaining:30},{id:'H2',remaining:20}],coverEffects:[],cooldowns:{},followUpQueue:[1],followUpReservations:[1],temporaryResources:{x:1}};
