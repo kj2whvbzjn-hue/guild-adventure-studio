@@ -275,7 +275,12 @@ function activeAuraEntries(target,kind,stat){
  }
  return entries;
 }
-function effectiveAuraPower(target,kind,stat){const entries=activeAuraEntries(target,kind,stat);return entries.length?Math.max(...entries.map(x=>x.power)):0}
+function resolveEffectiveAuraEntry(entries){
+ const list=(Array.isArray(entries)?entries:[]).map((entry,index)=>({entry,index}));
+ list.sort((a,b)=>(Number(b.entry?.power)||0)-(Number(a.entry?.power)||0)||(Number(b.entry?.priority)||0)-(Number(a.entry?.priority)||0)||a.index-b.index);
+ return list.length?list[0].entry:null;
+}
+function effectiveAuraPower(target,kind,stat){const winner=resolveEffectiveAuraEntry(activeAuraEntries(target,kind,stat));return winner?Math.max(0,Number(winner.power)||0):0}
 function resolveModifierStackLifecyclePolicy(policy){
  if(!policy)return{ok:true,legacy:true,stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};
  const expected={stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};

@@ -1,6 +1,6 @@
 /* GKS Trigger Engine foundation — R04-A
  * Registry-backed trigger resolution/validation/event recording only.
- * R04-D2 dispatches Generic COUNTER/FOLLOW_UP/AURA through validated compiled contracts; effect execution remains in battle runtimes.
+ * R04-D3 dispatches Generic COUNTER/FOLLOW_UP/AURA through validated compiled contracts; effect execution remains in battle runtimes.
  */
 (function(root,factory){
   const api=factory();
@@ -8,7 +8,7 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-D2';
+  const VERSION='R04-D3';
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
     'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED','WHILE_SOURCE_ALIVE'
