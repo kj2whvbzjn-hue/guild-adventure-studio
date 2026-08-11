@@ -1,0 +1,331 @@
+{
+  "schema_version": "1.1.0",
+  "build": "GA-B486.104",
+  "generated_at": "2026-08-11T12:06:51.665Z",
+  "test": {
+    "id": "R04-GENERIC-AURA-DEVICE-002",
+    "mode": "generic_production_runtime_device_validation",
+    "entrypoint": "game/index.html",
+    "trigger": "tagTestRunR04GenericAuraRuntimeJson"
+  },
+  "pipeline": [
+    "generic_skill",
+    "generic_skill_compiler",
+    "legacy_adapter",
+    "compileTaggedSkill",
+    "Game activeAuraEntries/effectiveAuraPower",
+    "GKSTriggerEngine",
+    "AURA runtime"
+  ],
+  "scope": [
+    "CONTRACT",
+    "SOURCE_ALIVE_APPLY",
+    "SOURCE_DEATH_REMOVE",
+    "SOURCE_REVIVE_REAPPLY",
+    "HIGHEST_POWER",
+    "PRIORITY_TIE_BREAK"
+  ],
+  "cases": [
+    {
+      "id": "R04-GENERIC-AURA-CONTRACT",
+      "label": "Generic→Legacy Adapter→AURA Trigger/Effect契約",
+      "generic_skill": {
+        "schemaVersion": 1,
+        "id": "R04-DEVICE-GENERIC-AURA",
+        "name": "R04 Generic Aura Device",
+        "trigger": {
+          "type": "WHILE_SOURCE_ALIVE",
+          "scope": "SELF",
+          "priority": 7
+        },
+        "conditions": [],
+        "target": {
+          "side": "ALLY",
+          "range": "ALL"
+        },
+        "effects": [
+          {
+            "type": "APPLY",
+            "effectId": "ATK_UP",
+            "power": 18
+          }
+        ],
+        "resource": {
+          "mpCost": 0,
+          "cooldown": 0
+        }
+      },
+      "legacy_skill": {
+        "id": "R04-DEVICE-GENERIC-AURA",
+        "name": "R04 Generic Aura Device",
+        "tags": [
+          "AURA",
+          "味方",
+          "全体",
+          "AURA_EFFECT=BUFF",
+          "AURA_VALUE=18",
+          "AURA_TARGET=ally",
+          "AURA_SCOPE=self_and_allies",
+          "AURA_STACK=highest",
+          "AURA_PRIORITY=7",
+          "ATK",
+          "MP_COST=0",
+          "COOLDOWN=0"
+        ],
+        "genericRuntime": {
+          "schemaVersion": 1,
+          "registryPhase": "R04-E3",
+          "triggerContract": {
+            "type": "WHILE_SOURCE_ALIVE",
+            "scope": "SELF",
+            "engineEvent": "aura_evaluate",
+            "dispatchMode": "LEGACY_AURA_ADAPTER",
+            "priority": 7
+          },
+          "conditionContracts": [],
+          "applyContracts": [],
+          "auraEffectContract": {
+            "effectId": "ATK_UP",
+            "kind": "BUFF",
+            "logic": "AURA",
+            "modifierStat": "ATK",
+            "power": 18,
+            "targetSide": "ally",
+            "targetScope": "self_and_allies",
+            "stack": "highest",
+            "sourceDependent": true
+          }
+        },
+        "source": "device_fixture",
+        "environment": "validation"
+      },
+      "trigger_contract": {
+        "type": "WHILE_SOURCE_ALIVE",
+        "scope": "SELF",
+        "engineEvent": "aura_evaluate",
+        "dispatchMode": "LEGACY_AURA_ADAPTER",
+        "priority": 7
+      },
+      "aura_effect_contract": {
+        "effectId": "ATK_UP",
+        "kind": "BUFF",
+        "logic": "AURA",
+        "modifierStat": "ATK",
+        "power": 18,
+        "targetSide": "ally",
+        "targetScope": "self_and_allies",
+        "stack": "highest",
+        "sourceDependent": true
+      },
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "R04-GENERIC-AURA-RUNTIME-SOURCE-ALIVE",
+      "label": "発生源生存中にGame本番RuntimeでGeneric AURA適用",
+      "source": {
+        "id": "A0",
+        "alive": true,
+        "auraSkillIds": [
+          "R04-DEVICE-GENERIC-AURA"
+        ]
+      },
+      "target": {
+        "id": "A-MOD-2",
+        "alive": true,
+        "effective_atk_aura": 18
+      },
+      "enemy_effective_atk_aura": 0,
+      "active_auras": [
+        {
+          "kind": "BUFF",
+          "stat": "ATK",
+          "power": 18,
+          "sourceId": "A0",
+          "sourceName": "い",
+          "skillId": "R04-DEVICE-GENERIC-AURA",
+          "skillName": "R04 Generic Aura Device",
+          "priority": 7,
+          "stack": "highest",
+          "genericTrigger": true
+        }
+      ],
+      "winner": {
+        "kind": "BUFF",
+        "stat": "ATK",
+        "power": 18,
+        "sourceId": "A0",
+        "sourceName": "い",
+        "skillId": "R04-DEVICE-GENERIC-AURA",
+        "skillName": "R04 Generic Aura Device",
+        "priority": 7,
+        "stack": "highest",
+        "genericTrigger": true
+      },
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "R04-GENERIC-AURA-RUNTIME-SOURCE-DEAD",
+      "label": "発生源死亡時にGame本番RuntimeでGeneric AURA解除",
+      "source": {
+        "id": "A0",
+        "alive": false,
+        "hp": 0,
+        "auraSkillIds": [
+          "R04-DEVICE-GENERIC-AURA"
+        ]
+      },
+      "target": {
+        "id": "A-MOD-2",
+        "effective_atk_aura_before": 18,
+        "effective_atk_aura_after": 0
+      },
+      "active_auras_after_death": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "R04-GENERIC-AURA-RUNTIME-SOURCE-REVIVE",
+      "label": "発生源復活時にGame本番RuntimeでGeneric AURA再適用",
+      "source": {
+        "id": "A0",
+        "alive": true,
+        "hp": 480,
+        "auraSkillIds": [
+          "R04-DEVICE-GENERIC-AURA"
+        ]
+      },
+      "target": {
+        "id": "A-MOD-2",
+        "effective_atk_aura_while_dead": 0,
+        "effective_atk_aura_after_revive": 18
+      },
+      "active_auras_after_revive": [
+        {
+          "kind": "BUFF",
+          "stat": "ATK",
+          "power": 18,
+          "sourceId": "A0",
+          "sourceName": "い",
+          "skillId": "R04-DEVICE-GENERIC-AURA",
+          "skillName": "R04 Generic Aura Device",
+          "priority": 7,
+          "stack": "highest",
+          "genericTrigger": true
+        }
+      ],
+      "winner": {
+        "kind": "BUFF",
+        "stat": "ATK",
+        "power": 18,
+        "sourceId": "A0",
+        "sourceName": "い",
+        "skillId": "R04-DEVICE-GENERIC-AURA",
+        "skillName": "R04 Generic Aura Device",
+        "priority": 7,
+        "stack": "highest",
+        "genericTrigger": true
+      },
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "R04-GENERIC-AURA-RUNTIME-HIGHEST",
+      "label": "複数Generic AURAはpower最高値を採用",
+      "active_auras": [
+        {
+          "kind": "BUFF",
+          "stat": "ATK",
+          "power": 18,
+          "sourceId": "A0",
+          "sourceName": "い",
+          "skillId": "R04-DEVICE-GENERIC-AURA",
+          "skillName": "R04 Generic Aura Device",
+          "priority": 7,
+          "stack": "highest",
+          "genericTrigger": true
+        },
+        {
+          "kind": "BUFF",
+          "stat": "ATK",
+          "power": 30,
+          "sourceId": "A-MOD-3",
+          "sourceName": "味方検証3",
+          "skillId": "R04-DEVICE-GENERIC-AURA-30-P1",
+          "skillName": "R04 Generic Aura 30 P1",
+          "priority": 1,
+          "stack": "highest",
+          "genericTrigger": true
+        }
+      ],
+      "winner": {
+        "kind": "BUFF",
+        "stat": "ATK",
+        "power": 30,
+        "sourceId": "A-MOD-3",
+        "sourceName": "味方検証3",
+        "skillId": "R04-DEVICE-GENERIC-AURA-30-P1",
+        "skillName": "R04 Generic Aura 30 P1",
+        "priority": 1,
+        "stack": "highest",
+        "genericTrigger": true
+      },
+      "effective_atk_aura": 30,
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "R04-GENERIC-AURA-RUNTIME-PRIORITY",
+      "label": "同値Generic AURAはpriority最高値を採用",
+      "active_auras": [
+        {
+          "kind": "BUFF",
+          "stat": "ATK",
+          "power": 30,
+          "sourceId": "A0",
+          "sourceName": "い",
+          "skillId": "R04-DEVICE-GENERIC-AURA-30-P1",
+          "skillName": "R04 Generic Aura 30 P1",
+          "priority": 1,
+          "stack": "highest",
+          "genericTrigger": true
+        },
+        {
+          "kind": "BUFF",
+          "stat": "ATK",
+          "power": 30,
+          "sourceId": "A-MOD-3",
+          "sourceName": "味方検証3",
+          "skillId": "R04-DEVICE-GENERIC-AURA-30-P9",
+          "skillName": "R04 Generic Aura 30 P9",
+          "priority": 9,
+          "stack": "highest",
+          "genericTrigger": true
+        }
+      ],
+      "winner": {
+        "kind": "BUFF",
+        "stat": "ATK",
+        "power": 30,
+        "sourceId": "A-MOD-3",
+        "sourceName": "味方検証3",
+        "skillId": "R04-DEVICE-GENERIC-AURA-30-P9",
+        "skillName": "R04 Generic Aura 30 P9",
+        "priority": 9,
+        "stack": "highest",
+        "genericTrigger": true
+      },
+      "effective_atk_aura": 30,
+      "errors": [],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "case_count": 6,
+    "passed_count": 6,
+    "failed_count": 0,
+    "passed": true,
+    "errors": []
+  }
+}
