@@ -9,8 +9,14 @@ assert(app.includes("adventureHistoryFilter==='success'"),'success history filte
 assert(app.includes("adventureHistoryFilter==='failure'"),'failure history filtering missing');
 assert(app.includes('保存済み Scene Snapshot'),'Scene Viewer must identify saved snapshot source');
 assert(app.includes('保存済みBattle Result / Playback Eventsのみを表示'),'Battle Viewer must use stored result/events only');
+assert(app.includes('p.source_id'),'Battle Viewer must resolve Battle Core source_id payload');
+assert(app.includes('p.target_id'),'Battle Viewer must resolve Battle Core target_id payload');
+assert(app.includes('p.value??p.amount??p.damage??p.applied'),'Battle Viewer must read Battle Core numeric value payload');
+assert(app.includes('p.status_name||p.status||p.status_id'),'Battle Viewer must read Battle Core status_id payload');
+assert(app.includes('p.skill_name||p.skill||p.skill_id'),'Battle Viewer must read Battle Core skill_id payload');
+assert(app.includes('Object.fromEntries(units.map'),'Battle Viewer must resolve stored unit ids to stored final-state names');
 assert(app.includes('function renderAdventureReturnResult(summary)'),'return result renderer missing');
 assert(app.includes('QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。'),'return result must make no-recalculation behavior explicit');
 assert(app.includes("const summary={run_id:current.quest_run_id"),'return summary must be captured from stored QuestRun before commit');
-assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.116';"),'current game build missing');
+assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.117';"),'current game build missing');
 console.log('adventure-playback-viewers-runtime-integration PASS');
