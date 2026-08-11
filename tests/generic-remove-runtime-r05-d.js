@@ -2,7 +2,7 @@ const assert=require('assert'),fs=require('fs'),vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const sample={schemaVersion:1,id:'R05D-REMOVE',name:'R05-D Remove',trigger:{type:'ON_USE',scope:'SELF'},target:{side:'ALLY',range:'SINGLE'},effects:[{type:'REMOVE',category:'STATUS',count:1}],resource:{mpCost:0,cooldown:0}};
-assert.strictEqual(generic.VERSION,'R05-E');
+assert.strictEqual(generic.VERSION,'R05-F');
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const events=[],ctx={console,battle:{tick:10,units:[],log:[]},recordValidationEvent:(type,payload)=>events.push({type,payload})};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);
  const out=generic.compileGenericSkill(sample,registry,ctx.compileTaggedSkill);assert.strictEqual(out.ok,true,JSON.stringify(out.errors));
