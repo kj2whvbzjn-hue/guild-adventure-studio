@@ -401,7 +401,7 @@ updateDeployDeleteControl();
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.98 / Studio GKS-B527</div>
+    <div class="version">Game GA-B486.98 / Studio GKS-B528</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -810,6 +810,7 @@ updateDeployDeleteControl();
         <button onclick="addQuestCharacterDraft()">関連キャラを追加</button>
       </div>
     </div>
+    <div id="questFormalStatus" class="item" style="margin-top:10px"></div>
 
     <div class="toolbar">
       <button class="primary" onclick="saveQuest()">登録・更新</button>
@@ -2001,7 +2002,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B527';
+const DISTRIBUTION_BUILD='GKS-B528';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4551,6 +4552,7 @@ function runValidation(){
  data.timeline.forEach(t=>{if(t.target_id&&!allIds().includes(t.target_id))validation.push({level:'WARNING',message:t.id+' の対象IDが存在しません: '+t.target_id})});
  data.quests.forEach(q=>{
   if(!q.name)validation.push({level:'ERROR',message:q.id+' のクエスト名が未設定'});
+  const formal=questFormalAssessment(q);(formal.issues||[]).forEach(issue=>validation.push({level:issue.level||'ERROR',message:issue.message,code:issue.code||''}));
   (q.prerequisite_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の前提クエスト '+id+' が存在しません'});});
   (q.next_quest_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の後続クエスト '+id+' が存在しません'});});
   [...(q.required_flags||[]),...(q.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:q.id+' が未登録フラグ '+id+' を参照しています'});});
@@ -4562,10 +4564,10 @@ function runValidation(){
    if(!known)validation.push({level:'WARN',message:q.id+' の開始コスト資源 '+resourceId+' は石板Masterに存在しません（汎用資源として使用する場合は無視可）'});
   });
   (q.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:q.id+' の関連キャラクターが存在しません: '+id})});
-  if(q.links?.chapter_id&&!getChapter(q.links.chapter_id))validation.push({level:'ERROR',message:q.id+' の関連章が存在しません'});
-  if(q.links?.section_id&&!getSection(q.links.chapter_id,q.links.section_id))validation.push({level:'ERROR',message:q.id+' の関連節が存在しません'});
   if(q.links?.scene_id&&!getScene(q.links.chapter_id,q.links.section_id,q.links.scene_id))validation.push({level:'ERROR',message:q.id+' の関連シーンが存在しません'});
  });
+ const formalQuestSummary=(typeof GKExportCore!=='undefined'&&GKExportCore.summarizeFormalStoryQuests)?GKExportCore.summarizeFormalStoryQuests(data):{ready_count:0};
+ if(formalQuestSummary.ready_count===0)validation.push({level:'WARNING',message:'正式Story Questが0件です。Exportは可能ですが、Gameの遠征一覧にはStory Questが表示されません。',code:'FORMAL_QUEST_ZERO'});
  data.events.forEach(e=>{
   if(!e.name)validation.push({level:'ERROR',message:e.id+' のイベント名が未設定'});
   if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'ERROR',message:e.id+' の関連クエストが存在しません'});
@@ -4624,7 +4626,7 @@ function validateExportIds(path,payload,issues){
 }
 function collectPhpExportIssues(){
  runValidation();
- const issues=validation.filter(x=>x.level==='ERROR').map(x=>({...x,source:'Studio'}));
+ const issues=validation.map(x=>({...x,source:'Studio'}));
  const scenarioIssues=GKExportCore.collectScenarioExportIssues(data);
  scenarioIssues.forEach(x=>issues.push({...x,source:'SSF-005'}));
  const files=buildPhpExportData();
@@ -4632,20 +4634,22 @@ function collectPhpExportIssues(){
   if(!(path in files))issues.push({level:'ERROR',message:'必須Export定義がありません: '+path});
   else validateExportIds(path,files[path],issues);
  });
- return {files,issues};
+ const formalSummary=(typeof GKExportCore!=='undefined'&&GKExportCore.summarizeFormalStoryQuests)?GKExportCore.summarizeFormalStoryQuests(data):{ready_count:0};
+ return {files,issues,formalSummary};
 }
-function renderPhpExportStatus(issues){
+function renderPhpExportStatus(issues,formalSummary={ready_count:0}){
  const el=document.getElementById('phpExportStatus');if(!el)return;
  const errors=issues.filter(x=>x.level==='ERROR');
  if(!errors.length){
-  el.innerHTML='<span class="badge ok">合格</span> 22ファイル生成可能。ID重複・Studio検証エラーなし。';
+  const formalCount=Math.max(0,Number(formalSummary.ready_count)||0);
+  el.innerHTML=formalCount?'<span class="badge ok">合格</span> 22ファイル生成可能。正式Story Quest '+formalCount+'件をGame遠征へExportします。':'<span class="badge warn">合格（Story 0件）</span> Exportは可能ですが、Gameの遠征一覧にはStory Questが表示されません。';
  }else{
   el.innerHTML='<span class="badge err">不合格</span> '+errors.length+'件<br>'+errors.slice(0,8).map(x=>esc(x.message)).join('<br>');
  }
 }
 function validatePhpExport(){
  const result=collectPhpExportIssues();
- renderPhpExportStatus(result.issues);
+ renderPhpExportStatus(result.issues,result.formalSummary);
  return result;
 }
 function normalizeUnicodeNfc(value){
@@ -6425,11 +6429,11 @@ function bindLinkSelectors(prefix){
  const s=document.getElementById(prefix+'SectionLink');
  if(c&&!c.dataset.bound){
   c.dataset.bound='1';
-  c.addEventListener('change',()=>refreshLinkSelectors(prefix,{chapter_id:c.value}));
+  c.addEventListener('change',()=>{refreshLinkSelectors(prefix,{chapter_id:c.value});if(prefix==='quest')renderQuestFormalStatus();});
  }
  if(s&&!s.dataset.bound){
   s.dataset.bound='1';
-  s.addEventListener('change',()=>refreshLinkSelectors(prefix,{chapter_id:c.value,section_id:s.value}));
+  s.addEventListener('change',()=>{refreshLinkSelectors(prefix,{chapter_id:c.value,section_id:s.value});if(prefix==='quest')renderQuestFormalStatus();});
  }
 }
 
@@ -6476,7 +6480,10 @@ function removeEventCharacterDraft(id){
  renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
 }
 
-function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成')}
+function questFormalAssessment(quest){return (typeof GKExportCore!=='undefined'&&typeof GKExportCore.formalStoryQuestAssessment==='function')?GKExportCore.formalStoryQuestAssessment(data,quest):{is_formal:false,ready:false,issues:[],message:'正式Story Quest判定を利用できません。'};}
+function currentQuestFormalDraft(){return {id:(questId?.value||'').trim()||'(新規Quest)',links:{chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
+function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready){el.innerHTML='<span class="badge ok">正式Story Quest</span> Game遠征一覧へExportされます。';return}if(a.is_formal){el.innerHTML='<span class="badge warn">要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';return}el.innerHTML='<span class="badge">通常Quest</span> Chapter / Section未接続のためGame遠征一覧には出ません。';}
+function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
  questSummary.value='';questConditions.value='';questCompletion.value='';questFailure.value='';questRewards.value='';
@@ -6486,6 +6493,7 @@ function clearQuestForm(){
  refreshLinkSelectors('quest',{});
  renderCharacterSelect('questCharacterLink');
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+ renderQuestFormalStatus();
 }
 
 function saveQuest(){
@@ -6551,6 +6559,7 @@ function editQuest(id){
  questDraftCharacterIds=[...(q.links?.character_ids||[])];
  refreshLinkSelectors('quest',q.links||{});
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+ renderQuestFormalStatus();
  showView('quests');
  openStudioInputPanel('questEditorPanel','クエストを編集する');
 }
@@ -6574,12 +6583,14 @@ function renderQuests(){
   return (!keyword||hay.includes(keyword))&&(!type||q.type===type)&&(!status||q.status===status);
  });
  questList.innerHTML=list.map(q=>{
-  const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id);
+  const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id),formal=questFormalAssessment(q);
+  const formalBadge=formal.ready?'<span class="badge ok">正式Story</span>':formal.is_formal?'<span class="badge warn">Story要件不足</span>':'<span class="badge">通常Quest</span>';
   return `<div class="item">
    <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
-   <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span>
+   <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span> ${formalBadge}
    <p>${esc(q.summary||'')}</p>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
+   <div class="meta">Game遠征: ${esc(formal.message)}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
    <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questName).join(', ')||'なし')}</div>
    <div class="meta">必要フラグ: ${esc((q.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((q.set_flags||[]).join(', ')||'なし')}</div>
