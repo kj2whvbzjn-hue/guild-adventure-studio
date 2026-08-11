@@ -13,6 +13,10 @@ const chapter=S.normalizeChapter({available_monster_ids:['M1','M2'],random_event
 const gen=S.generateRandomBattle({budget:5,monsterIds:chapter.available_monster_ids,monsters:[{id:'M1',enemy_budget_cost:2},{id:'M2',enemy_budget_cost:3}],random:S.rng(1)});
 assert(gen.remaining_budget>=0&&gen.remaining_budget<2);
 assert(gen.formation.length>0);
+// Weight 0 is preserved as an explicit disabled candidate; missing weight defaults to 1.
+const weightedChapter=S.normalizeChapter({random_event_candidates:[{event_id:'E-OFF',weight:0},{event_id:'E-DEFAULT'}]});
+assert.equal(weightedChapter.random_event_candidates[0].weight,0);
+assert.equal(weightedChapter.random_event_candidates[1].weight,1);
 
 // Complete simulation: scene snapshot, weighted random event, reward/flag aggregation and deterministic timeline.
 const baseOpts={quest:{id:'Q1'},section:{id:'S1',adventure_duration_seconds:100,boxes:[{id:'B1',type:'scene',ref_id:'SC1'},{id:'B2',type:'random_event'}]},chapter:{id:'C1',random_event_candidates:[{event_id:'E0',weight:100},{event_id:'E1',weight:1}]},scenes:[{id:'SC1',dialogues:[{speaker:'A',text:'snapshot text'}]}],events:[{id:'E0'},{id:'E1'}],partySnapshot:[{id:'P1'}],seed:7,checkEventCondition:(event)=>event.id!=='E0',resolveEvent:({event})=>({success:true,reward:{gold:event.id==='E1'?5:99},flags:{F1:true}})};
@@ -24,6 +28,9 @@ assert.equal(run.event_results[0].event_id,'E1');
 assert.equal(run.reward_result.gold,5);
 assert.equal(run.flag_result.F1,true);
 assert.equal(run.scene_snapshots[0].dialogues[0].text,'snapshot text');
+// A prior Box flag change participates in the eligibility check of a later random_event.
+const flagDriven=S.simulateQuest({quest:{id:'Q-FLAG'},section:{id:'S-FLAG',boxes:[{id:'SET',type:'event',ref_id:'E-SET'},{id:'RAND',type:'random_event'}]},chapter:{id:'C-FLAG',random_event_candidates:[{event_id:'E-LOCKED',weight:100},{event_id:'E-OPEN',weight:1}]},events:[{id:'E-SET'},{id:'E-LOCKED',required_flags:['OPEN']},{id:'E-OPEN'}],seed:17,resolveEvent:({event})=>event.id==='E-SET'?{success:true,flags:{OPEN:true}}:{success:true},checkEventCondition:(event,flags)=>!(event.required_flags||[]).some(id=>!flags[id])});
+assert.equal(flagDriven.event_results[1].event_id,'E-LOCKED');
 
 // Master edits after simulation cannot mutate snapshots.
 baseOpts.scenes[0].dialogues[0].text='changed master';

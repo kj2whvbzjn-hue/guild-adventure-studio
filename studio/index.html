@@ -401,7 +401,7 @@ updateDeployDeleteControl();
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.95 / Studio GKS-B525</div>
+    <div class="version">Game GA-B486.96 / Studio GKS-B526</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -644,7 +644,7 @@ updateDeployDeleteControl();
           <label>テーマ</label>
           <input id="storyNodeTheme">
         </div>
-        <div id="storyChapterAdventureFields" class="hidden"><div class="grid"><div class="field"><label>使用可能Monster ID（カンマ区切り）</label><input id="storyChapterMonsters"></div><div class="field"><label>Random Event候補（JSON）</label><textarea id="storyChapterRandomEvents" placeholder='[{"event_id":"EVT-0001","weight":1}]'></textarea></div></div></div>
+        <div id="storyChapterAdventureFields" class="hidden"><div class="grid"><div class="field"><label>使用可能Monster ID（カンマ区切り）</label><input id="storyChapterMonsters"></div><div class="field"><label>Random Event候補</label><div id="storyRandomEventCandidates"></div><div class="toolbar"><button type="button" onclick="addStoryRandomEventCandidate()">候補を追加</button></div><textarea id="storyChapterRandomEvents" class="hidden" aria-hidden="true"></textarea><div class="small">Weightは0以上。0は候補を無効化します。Event側のrequired_flags等の条件はQuest開始時Simulationで評価されます。</div></div></div></div>
 
         <div id="storyDesignFields" class="hidden">
           <h2>SSF-001 シナリオ設計</h2>
@@ -1996,7 +1996,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B525';
+const DISTRIBUTION_BUILD='GKS-B526';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4523,6 +4523,10 @@ function runValidation(){
  data.decisions.forEach(d=>{if(!d.text)validation.push({level:'ERROR',message:d.id+' の決定内容が未設定'})});
  data.chapters.forEach(c=>{
   if(!c.title)validation.push({level:'ERROR',message:c.id+' の章タイトルが未設定'});
+  const randomCandidates=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeChapter(JSON.parse(JSON.stringify(c))).random_event_candidates:(c.random_event_candidates||[]);
+  const candidateIds=new Set();
+  randomCandidates.forEach(row=>{const id=String(row.event_id||'');if(!data.events.some(e=>e.id===id))validation.push({level:'ERROR',message:c.id+' のRandom Event候補が存在しません: '+id});if(candidateIds.has(id))validation.push({level:'WARN',message:c.id+' のRandom Event候補が重複しています: '+id});candidateIds.add(id);if(!Number.isFinite(Number(row.weight))||Number(row.weight)<0)validation.push({level:'ERROR',message:c.id+' のRandom Event Weightが不正です: '+id});});
+  if(randomCandidates.length&&randomCandidates.every(row=>Number(row.weight)<=0))validation.push({level:'WARN',message:c.id+' のRandom Event候補は全てWeight 0です'});
   (c.sections||[]).forEach(s=>{
    if(!s.title)validation.push({level:'ERROR',message:s.id+' の節タイトルが未設定'});
    (s.scenes||[]).forEach(sc=>{
@@ -5972,7 +5976,7 @@ function renderStoryEditor(){
  storyNodeSpeaker.value=obj.speaker||'';
  storyNodeText.value=type==='dialogue'?(obj.text||''):(obj.summary||'');
  storyNodeTheme.value=obj.theme||'';
- if(type==='chapter'){storyChapterMonsters.value=(obj.available_monster_ids||[]).join(', ');storyChapterRandomEvents.value=JSON.stringify(obj.random_event_candidates||[],null,2);}
+ if(type==='chapter'){storyChapterMonsters.value=(obj.available_monster_ids||[]).join(', ');storyChapterRandomEvents.value=JSON.stringify(obj.random_event_candidates||[],null,2);setTimeout(renderStoryRandomEventCandidates,0);}
  if(type==='section'){storyAdventureDuration.value=obj.adventure_duration_seconds||300;storyBoxesJson.value=JSON.stringify(obj.boxes||[],null,2);setTimeout(renderStoryAdventureBoxes,0);}
  storyNodeStatus.value=obj.status||'draft';
  storyNodePurpose.value=obj.purpose||'';
@@ -6011,6 +6015,14 @@ function renderStoryEditor(){
  storyStageField.classList.toggle('hidden',type!=='dialogue');
  storyTextLabel.textContent=type==='dialogue'?'台詞':'あらすじ・内容';
 }
+
+function storyRandomEventDraft(){try{const rows=JSON.parse(storyChapterRandomEvents.value||'[]');return Array.isArray(rows)?rows:[];}catch(_e){return[];}}
+function syncStoryRandomEventDraft(rows){storyChapterRandomEvents.value=JSON.stringify(rows||[],null,2);}
+function storyRandomEventOptions(selectedId){const events=(data.events||[]).slice().sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));return '<option value="">Eventを選択</option>'+events.map(e=>`<option value="${escAttr(e.id)}" ${String(selectedId||'')===String(e.id)?'selected':''}>${esc(e.name||e.id)} [${esc(e.id)}]</option>`).join('');}
+function renderStoryRandomEventCandidates(){const host=document.getElementById('storyRandomEventCandidates');if(!host)return;const rows=storyRandomEventDraft();host.innerHTML=rows.map((row,i)=>`<div class="item"><div class="grid"><div class="field"><label>${i+1}. Event</label><select onchange="updateStoryRandomEventCandidate(${i},'event_id',this.value)">${storyRandomEventOptions(row.event_id)}</select></div><div class="field"><label>Weight</label><input type="number" min="0" step="0.1" value="${escAttr(row.weight??1)}" onchange="updateStoryRandomEventCandidate(${i},'weight',this.value)"></div></div><div class="toolbar"><button type="button" class="danger" onclick="removeStoryRandomEventCandidate(${i})">候補から外す</button></div></div>`).join('')||'<div class="story-empty">Random Event候補はありません。</div>';}
+function addStoryRandomEventCandidate(){const rows=storyRandomEventDraft();const used=new Set(rows.map(x=>String(x.event_id||'')));const first=(data.events||[]).find(e=>!used.has(String(e.id)));rows.push({event_id:first?.id||'',weight:1});syncStoryRandomEventDraft(rows);renderStoryRandomEventCandidates();}
+function removeStoryRandomEventCandidate(index){const rows=storyRandomEventDraft();rows.splice(index,1);syncStoryRandomEventDraft(rows);renderStoryRandomEventCandidates();}
+function updateStoryRandomEventCandidate(index,key,value){const rows=storyRandomEventDraft();if(!rows[index])return;if(key==='weight')rows[index].weight=Math.max(0,Number(value)||0);else rows[index][key]=String(value||'');syncStoryRandomEventDraft(rows);renderStoryRandomEventCandidates();}
 
 function currentStorySectionForBoxes(){const selected=getStorySelectionObject();return selected&&storySelection.type==='section'?selected.object:null;}
 function syncStoryBoxesTextarea(section){if(window.storyBoxesJson)storyBoxesJson.value=JSON.stringify(section?.boxes||[],null,2);}
@@ -7012,11 +7024,11 @@ setTimeout(loadDesignCards,0);
 <script>window.GKSEquipmentHost={getData:()=>data,persist:message=>persist(message),getBuild:()=>DISTRIBUTION_BUILD};
 window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};</script>
 <script src="./equipment/equipment-generator.js?v=4971"></script>
-<script src="../assets/shared/js/apply-lifecycle-engine.js?v=48695"></script>
-<script src="../assets/shared/js/trigger-engine.js?v=48695"></script>
-<script src="../assets/shared/js/condition-engine.js?v=48695"></script>
-<script src="../assets/shared/js/generic-skill-compiler.js?v=48695"></script>
-<script src="../assets/shared/js/generic-skill-bridge.js?v=48695"></script>
+<script src="../assets/shared/js/apply-lifecycle-engine.js?v=48696"></script>
+<script src="../assets/shared/js/trigger-engine.js?v=48696"></script>
+<script src="../assets/shared/js/condition-engine.js?v=48696"></script>
+<script src="../assets/shared/js/generic-skill-compiler.js?v=48696"></script>
+<script src="../assets/shared/js/generic-skill-bridge.js?v=48696"></script>
 <script src="./skill/skill-generator.js?v=5"></script>
 <script src="./data-exchange/data-exchange-integrity-validator.js?v=3"></script>
 <script src="./data-exchange/data-exchange-core.js?v=13"></script>
