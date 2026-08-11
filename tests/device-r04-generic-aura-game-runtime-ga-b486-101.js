@@ -1,0 +1,18 @@
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
+assert.strictEqual(build.game_build,'GA-B486.101');
+const html=fs.readFileSync(path.join(root,'game/index.html'),'utf8');
+const runtime=fs.readFileSync(path.join(root,'game/assets/js/app-runtime.js'),'utf8');
+assert.ok(html.includes('id=\"tagTestRunR04GenericAuraRuntimeJson\"'),'Game Generic AURA device button missing');
+assert.ok(runtime.includes('async function runR04GenericAuraDeviceValidation()'),'Generic AURA device validation runner missing');
+assert.ok(runtime.includes("type:'WHILE_SOURCE_ALIVE',scope:'SELF',priority:7"),'WHILE_SOURCE_ALIVE fixture missing');
+assert.ok(runtime.includes("effectId:'ATK_UP',power:18"),'Generic AURA effect fixture missing');
+assert.ok(runtime.includes("contract?.engineEvent!=='aura_evaluate'"),'AURA engine event assertion missing');
+assert.ok(runtime.includes("contract?.dispatchMode!=='LEGACY_AURA_ADAPTER'"),'AURA adapter dispatch assertion missing');
+assert.ok(runtime.includes("activeAuraEntries(f.target,'BUFF','ATK')"),'production activeAuraEntries path missing');
+assert.ok(runtime.includes("effectiveAuraPower(f.target,'BUFF','ATK')"),'production effectiveAuraPower path missing');
+assert.ok(runtime.includes("'GKSTriggerEngine','AURA runtime'"),'production AURA pipeline missing');
+console.log('DEVICE_R04_GENERIC_AURA_GAME_RUNTIME_GA_B486_101_PASS');
