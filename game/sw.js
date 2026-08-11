@@ -1,31 +1,31 @@
-const CACHE_NAME="ga-game-b48696";
+const CACHE_NAME="ga-game-b48697";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=48696';
+const OFFLINE_URL='./index.html?appv=48697';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=48696",
-  "./manifest.webmanifest?v=48696",
-  "./icon-192.png?v=48696",
-  "./icon-512.png?v=48696",
-  "../Export/skill/skills.json?v=48696"
+  "./index.html?appv=48697",
+  "./manifest.webmanifest?v=48697",
+  "./icon-192.png?v=48697",
+  "./icon-512.png?v=48697",
+  "../Export/skill/skills.json?v=48697"
 ,
-  "../assets/shared/config/runtime-config.js?v=48696",
-  "../assets/shared/js/game-shell-common.js?v=48696",
-  "../assets/shared/js/apply-lifecycle-engine.js?v=48696",
-  "../assets/shared/js/trigger-engine.js?v=48696",
-  "../assets/shared/js/condition-engine.js?v=48696",
-  "../assets/shared/js/generic-skill-compiler.js?v=48696",
-  "../assets/shared/js/generic-skill-bridge.js?v=48696",
-  "../assets/shared/js/device-test-harness.js?v=48696",
-  "../assets/shared/config/skill-generic-registry.json?v=48696"
+  "../assets/shared/config/runtime-config.js?v=48697",
+  "../assets/shared/js/game-shell-common.js?v=48697",
+  "../assets/shared/js/apply-lifecycle-engine.js?v=48697",
+  "../assets/shared/js/trigger-engine.js?v=48697",
+  "../assets/shared/js/condition-engine.js?v=48697",
+  "../assets/shared/js/generic-skill-compiler.js?v=48697",
+  "../assets/shared/js/generic-skill-bridge.js?v=48697",
+  "../assets/shared/js/device-test-harness.js?v=48697",
+  "../assets/shared/config/skill-generic-registry.json?v=48697"
 ,
-  "./assets/js/app-runtime.js?v=48696"
+  "./assets/js/app-runtime.js?v=48697"
 ,
-  "./assets/js/tag-skill-runtime.js?v=48696",
-  "./assets/js/studio-skill-bridge.js?v=48696"
+  "./assets/js/tag-skill-runtime.js?v=48697",
+  "./assets/js/studio-skill-bridge.js?v=48697"
 ,
-  "./assets/js/battle-control.js?v=48696",
-  "./assets/js/ui-bootstrap.js?v=48696"
+  "./assets/js/battle-control.js?v=48697",
+  "./assets/js/ui-bootstrap.js?v=48697"
 ];
 
 self.addEventListener('install',event=>{
