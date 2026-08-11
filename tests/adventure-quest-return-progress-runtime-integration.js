@@ -7,4 +7,8 @@ assert(app.includes('applyQuestProgress:(save,progress)=>'),'runtime quest progr
 assert(app.includes('completed_quest_ids=[...completed]'),'completed quest set commit missing');
 assert(app.includes('unlocked_quest_ids=[...unlocked]'),'next quest unlock commit missing');
 assert(app.includes("Object.assign(save.flags,progress?.set_flags||{})"),'quest configured flags commit missing');
+
+assert(story.includes("if(typeof applyFlags==='function')applyFlags(save,clone(run.flag_result||{}));if(success)"),'confirmed flag diff must commit for both success and failure runs');
+assert(app.includes("progress:clone(current.quest_progress_result||{})"),'return summary must expose persisted quest progress');
+assert(app.includes('<b>Quest進行</b>'),'return result must display committed quest progress');
 console.log('adventure-quest-return-progress-runtime-integration: PASS');

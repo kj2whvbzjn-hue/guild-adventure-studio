@@ -49,12 +49,17 @@ assert.equal(save.flags.F1,true);
 assert.equal(S.commitQuestRun(run,save,{}).reason,'already_applied');
 
 // Failure terminates later boxes and removes all formal rewards.
-const failed=S.simulateQuest({quest:{id:'Q2'},section:{id:'S2',boxes:[{id:'A',type:'event',ref_id:'E2'},{id:'B',type:'scene',ref_id:'SC2'}]},chapter:{id:'C2'},events:[{id:'E2'}],scenes:[{id:'SC2',dialogues:[]}],seed:8,resolveEvent:()=>({success:false,failed:true,reason:'trap',reward:{gold:20}})});
+const failed=S.simulateQuest({quest:{id:'Q2'},section:{id:'S2',boxes:[{id:'A',type:'event',ref_id:'E2'},{id:'B',type:'scene',ref_id:'SC2'}]},chapter:{id:'C2'},events:[{id:'E2'}],scenes:[{id:'SC2',dialogues:[]}],seed:8,resolveEvent:()=>({success:false,failed:true,reason:'trap',reward:{gold:20},flags:{'F-TRAP-SEEN':true}})});
 assert.equal(failed.final_result.success,false);
 assert.equal(failed.timeline_result.length,1);
 assert.deepEqual(failed.final_result.final_state,{status:'failure',processed_box_count:1,last_processed_box_id:'A'});
 assert.deepEqual(failed.reward_result,{});
 assert.equal(failed.reward_history[0].gold,20);
+assert.equal(failed.flag_result['F-TRAP-SEEN'],true);
+const failedSave={gold:100,flags:{}};
+const failedCommit=S.commitQuestRun(failed,failedSave,{applyReward:(save,reward)=>{save.gold+=(reward.gold||0);},applyFlags:(save,flags)=>Object.assign(save.flags,flags),applyQuestProgress:()=>{throw new Error('failed Quest must not complete progress');}});
+assert.equal(failedCommit.applied,true);assert.equal(failedCommit.success,false);assert.equal(failedSave.gold,100);assert.equal(failedSave.flags['F-TRAP-SEEN'],true);
+assert.equal(S.commitQuestRun(failed,failedSave,{}).reason,'already_applied');
 
 
 // Fixed battle Event uses the same formation-based Battle Core entry as random battle.
@@ -127,6 +132,11 @@ assert.equal(saveStore.guild.gold,15);
 assert.equal(saveStore.flags.F1,true);
 assert.equal(S.activeQuestRun(saveStore),null);
 assert.equal(S.commitStoredQuestRun(saveStore,'QR-STORE-1',{}).reason,'already_applied');
+const failedStoredSave={guild:{gold:50},flags:{}};
+S.startQuestRunPlayback(failedStoredSave,{...failed,quest_run_id:'QR-FAILED-RETURN',results_applied:false},{startedAt:'2026-08-11T00:00:00.000Z'});
+const failedStoredCommit=S.commitStoredQuestRun(failedStoredSave,'QR-FAILED-RETURN',{applyReward:(save,reward)=>{save.guild.gold+=reward.gold||999;},applyFlags:(save,flags)=>Object.assign(save.flags,flags),applyQuestProgress:()=>{throw new Error('failed Quest must not commit quest progress');}},Date.parse('2026-08-11T00:06:00.000Z'));
+assert.equal(failedStoredCommit.applied,true);assert.equal(failedStoredCommit.success,false);assert.equal(failedStoredSave.guild.gold,50);assert.equal(failedStoredSave.flags['F-TRAP-SEEN'],true);assert.equal(S.activeQuestRun(failedStoredSave),null);
+assert.equal(S.commitStoredQuestRun(failedStoredSave,'QR-FAILED-RETURN',{}).reason,'already_applied');
 const progressSave={guild:{gold:0},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]}};
 const progressRun={...run,quest_run_id:'QR-PROGRESS',results_applied:false,final_result:{success:true},reward_result:{},flag_result:{},quest_progress_result:{complete_quest_id:'Q-DONE',unlock_quest_ids:['Q-NEXT','Q-NEXT'],set_flags:{'F-QUEST':true}}};
 const progressCommit=S.commitQuestRun(progressRun,progressSave,{applyQuestProgress:(save,p)=>{save.quest_progress.completed_quest_ids.push(p.complete_quest_id);save.quest_progress.unlocked_quest_ids.push(...new Set(p.unlock_quest_ids));Object.assign(save.flags,p.set_flags);}});
