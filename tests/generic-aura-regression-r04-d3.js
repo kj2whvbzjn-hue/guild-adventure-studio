@@ -4,7 +4,7 @@ const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const trigger=require('../assets/shared/js/trigger-engine.js');
-assert.ok(/^R04-(?:D3|E\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-(?:D3|E\d+)$/.test(registry.phase)||/^R0[5-9]-/.test(registry.phase)||/^R[1-9][0-9]-/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.ok(/^R04-(?:D3|E\d+)$/.test(trigger.VERSION),`unexpected trigger engine version ${trigger.VERSION}`);
 
 function genericAura(id,power,priority,{side='ALLY',excludeSelf=false,effectId='ATK_UP'}={}){

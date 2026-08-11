@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R04-D2';
+const VERSION='R05-A';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -21,7 +21,7 @@ function resolveLifecycle(def,registry,errors,path){
  return {...lifecycle};
 }
 function compileGenericSkill(skill,registry,legacyCompile){
- const errors=[],warnings=[],tags=[],normalizedEffects=[],applyContracts=[],conditionContracts=[];let auraEffectContract=null;registry=normalizeRegistry(registry);
+ const errors=[],warnings=[],tags=[],normalizedEffects=[],effectContracts=[],applyContracts=[],conditionContracts=[];let auraEffectContract=null;registry=normalizeRegistry(registry);
  if(!registry){err(errors,'REGISTRY_REQUIRED','registry','Generic Skill Registryが必要です');return result()}
  if(!skill||typeof skill!=='object'||Array.isArray(skill)){err(errors,'INVALID_SKILL','$','スキルはobjectが必要です');return result()}
  if(skill.schemaVersion!==SUPPORTED_SCHEMA)err(errors,'UNSUPPORTED_SCHEMA','schemaVersion',`schemaVersion=${skill.schemaVersion}は未対応です`);
@@ -54,14 +54,14 @@ function compileGenericSkill(skill,registry,legacyCompile){
  }
  const effects=Array.isArray(skill.effects)?skill.effects:[];if(!effects.length)err(errors,'EFFECT_REQUIRED','effects','effectsが1件以上必要です');
  if(trigger==='WHILE_SOURCE_ALIVE')auraEffectContract=compileAuraEffectAdapter(skill,registry,tags,errors,normalizedEffects);
- else for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,applyContracts);
+ else for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,effectContracts,applyContracts);
  if(trigger==='ON_ALLY_ATTACK'){const idx=tags.indexOf('ATTACK');if(idx>=0)tags.splice(idx,1);}
  const seenApplyLogic=new Set();for(const c of applyContracts){if(seenApplyLogic.has(c.logic))err(errors,'LEGACY_APPLY_LOGIC_DUPLICATE','effects',`Legacy Adapterでは同一APPLY logicを複数同時実行できません: ${c.logic}`);seenApplyLogic.add(c.logic)}
  const res=skill.resource||{};
  if(own(res,'mpCost'))addNumeric(tags,'MP_COST',res.mpCost,errors,'resource.mpCost');
  if(own(res,'cooldown')){if(!Number.isInteger(res.cooldown)||res.cooldown<0)err(errors,'INVALID_COOLDOWN','resource.cooldown','cooldownは0以上の整数が必要です');else pushUnique(tags,`COOLDOWN=${res.cooldown}`)}
  if(own(res,'activationPriority')){if(!Number.isInteger(res.activationPriority))err(errors,'INVALID_ACTIVATION_PRIORITY','resource.activationPriority','activationPriorityは整数が必要です');else pushUnique(tags,`ACTIVATION_PRIORITY=${res.activationPriority}`)}
- const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null};
+ const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),effectContracts:effectContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null};
  const legacySkill={id:String(skill.id||''),name:String(skill.name||''),tags,genericRuntime};
  let legacyValidation=null;
  if(!errors.length&&typeof legacyCompile==='function'){
@@ -69,7 +69,7 @@ function compileGenericSkill(skill,registry,legacyCompile){
   catch(e){err(errors,'LEGACY_COMPILE_EXCEPTION','legacySkill',e?.message||String(e))}
  }
  return result();
- function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null}},legacyValidation}}
+ function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),effectContracts:effectContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null}},legacyValidation}}
 }
 
 function buildTriggerContract(skill,def){
@@ -146,13 +146,13 @@ function compileAuraEffectAdapter(skill,registry,tags,errors,normalizedEffects){
  return{effectId:effect.effectId,kind:def.kind,logic:'AURA',modifierStat:stat,power:effect.power,targetSide,targetScope,stack:'highest',sourceDependent:true};
 }
 
-function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,applyContracts){
+function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,effectContracts,applyContracts){
  const p=`effects[${index}]`;if(!effect||typeof effect!=='object'){err(errors,'INVALID_EFFECT',p,'Effect objectが必要です');return}
  const type=String(effect.type||'').toUpperCase();
  if(!registry.runtime?.effects?.includes(type)){err(errors,'UNKNOWN_EFFECT_TYPE',`${p}.type`,`未定義Effect type: ${type||'(なし)'}`);return}
  if(!registry.runtime?.legacy_adapter_supported?.includes(type)){err(errors,'LEGACY_EFFECT_UNSUPPORTED',`${p}.type`,`R02 Legacy Adapter未対応Effect: ${type}`);return}
  if(type==='DAMAGE'){
-  pushUnique(tags,'ATTACK');addNumeric(tags,'DAMAGE',effect.power,errors,`${p}.power`);if(effect.damageType){const t=registry.damage_types?.[effect.damageType];if(!t)err(errors,'UNKNOWN_DAMAGE_TYPE',`${p}.damageType`,`未定義damageType: ${effect.damageType}`);else pushUnique(tags,t)}normalizedEffects.push({type:'DAMAGE',power:effect.power,damageType:effect.damageType||null});return;
+  pushUnique(tags,'ATTACK');addNumeric(tags,'DAMAGE',effect.power,errors,`${p}.power`);if(effect.damageType){const t=registry.damage_types?.[effect.damageType];if(!t)err(errors,'UNKNOWN_DAMAGE_TYPE',`${p}.damageType`,`未定義damageType: ${effect.damageType}`);else pushUnique(tags,t)}const normalized={type:'DAMAGE',power:effect.power,damageType:effect.damageType||null};normalizedEffects.push(normalized);effectContracts.push({...normalized});return;
  }
  if(type==='HEAL'){pushUnique(tags,'HEAL');addNumeric(tags,'HEAL',effect.power,errors,`${p}.power`);normalizedEffects.push({type:'HEAL',power:effect.power});return}
  if(type==='REVIVE'){

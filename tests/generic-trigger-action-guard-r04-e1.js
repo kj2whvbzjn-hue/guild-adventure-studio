@@ -3,7 +3,7 @@ const fs=require('fs');
 const engine=require('../assets/shared/js/trigger-engine.js');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 assert.ok(/^R04-E[123]$/.test(engine.VERSION),`unexpected trigger engine version ${engine.VERSION}`);
-assert.ok(/^R04-E[123]$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-E[123]$/.test(registry.phase)||/^R0[5-9]-/.test(registry.phase)||/^R[1-9][0-9]-/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.strictEqual(engine.DEFAULT_ACTION_TRIGGER_LIMIT,16);
 
 // One action owns one cumulative trigger budget. Released triggers may fire again,

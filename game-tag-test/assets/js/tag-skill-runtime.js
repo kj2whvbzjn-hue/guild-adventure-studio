@@ -41,6 +41,16 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  }else if(g.has('COUNTER')){
   triggerContract={type:'ON_HIT_RECEIVED',scope:'SELF',engineEvent:'hit_received',dispatchMode:'LEGACY_COUNTER_ADAPTER',priority:Number.isInteger(n?.COUNTER_PRIORITY?.value)?n.COUNTER_PRIORITY.value:0,migratedFromLegacyGeneric:true};
  }else triggerContract={type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0,migratedFromLegacyGeneric:true};
+ const effectContracts=[];
+ for(const [i,c] of (Array.isArray(raw.effectContracts)?raw.effectContracts:[]).entries()){
+  if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.effectContracts[${i}]はobjectが必要です`);continue}
+  const type=String(c.type||'').toUpperCase(),damageType=c.damageType==null?null:String(c.damageType).toUpperCase();
+  if(type!=='DAMAGE'){errors.push(`genericRuntime.effectContracts[${i}].typeはDAMAGEのみ対応です: ${type||'(なし)'}`);continue}
+  if(!Number.isFinite(c.power)||c.power<0){errors.push(`genericRuntime.effectContracts[${i}].powerは0以上の有限数が必要です`);continue}
+  if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType)){errors.push(`genericRuntime.effectContracts[${i}].damageTypeが無効です: ${damageType}`);continue}
+  if(effectContracts.some(x=>x.type===type)){errors.push('genericRuntime.effectContractsでDAMAGEを複数指定できません');continue}
+  effectContracts.push({type,power:c.power,damageType});
+ }
  const normalizedConditions=[];
  for(const [i,c] of conditionContracts.entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`genericRuntime.conditionContracts[${i}]はobjectが必要です`);continue}
@@ -68,7 +78,7 @@ function normalizeGenericRuntimeContract(skill,g,n,errors){
  let auraEffectContract=null;
  if(raw.auraEffectContract!=null){const a=raw.auraEffectContract;if(!a||typeof a!=='object'||Array.isArray(a))errors.push('genericRuntime.auraEffectContractはobjectが必要です');else{const kind=String(a.kind||'').toUpperCase(),logic=String(a.logic||'').toUpperCase();if(!['BUFF','DEBUFF'].includes(kind))errors.push(`genericRuntime.auraEffectContract.kindが無効です: ${kind||'(なし)'}`);if(logic!=='AURA')errors.push('genericRuntime.auraEffectContract.logicはAURAが必要です');if(!a.effectId)errors.push('genericRuntime.auraEffectContract.effectIdが必要です');if(!a.modifierStat)errors.push('genericRuntime.auraEffectContract.modifierStatが必要です');if(!Number.isFinite(a.power)||a.power<=0)errors.push('genericRuntime.auraEffectContract.powerは正の有限数が必要です');if(!['ally','enemy'].includes(a.targetSide))errors.push('genericRuntime.auraEffectContract.targetSideが無効です');if(!['all','self_and_allies','allies_excluding_self'].includes(a.targetScope))errors.push('genericRuntime.auraEffectContract.targetScopeが無効です');if(a.stack!=='highest')errors.push('genericRuntime.auraEffectContract.stackはhighestが必要です');if(a.sourceDependent!==true)errors.push('genericRuntime.auraEffectContract.sourceDependentはtrueが必要です');auraEffectContract={...a,kind,logic}}}
  if(g.has('AURA')&&!auraEffectContract&&triggerContract?.type==='WHILE_SOURCE_ALIVE')errors.push('Generic AURAにはauraEffectContractが必要です');
- return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,applyContracts:out,auraEffectContract};
+ return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,effectContracts,applyContracts:out,auraEffectContract};
 }
 function compileTaggedSkill(skill){
  const parsed=parseSkillTags(skill),errors=[...parsed.errors],warnings=[];
@@ -464,6 +474,25 @@ function calculateTaggedAttackDamage(attacker,definition){
  if(definition.parameters.damageType==='fixed')return Math.max(0,Math.floor(rate));
  return Math.max(0,Math.floor(Math.max(0,attacker.attack)*(rate/100)));
 }
+function resolveGenericDamageContract(compiled){
+ const contract=compiled?.definition?.genericRuntime?.effectContracts?.find(x=>x?.type==='DAMAGE')||null;
+ if(!contract)return{generic:false,ok:true,contract:null};
+ const damageType=contract.damageType==null?null:String(contract.damageType).toUpperCase();
+ if(!Number.isFinite(contract.power)||contract.power<0)return{generic:true,ok:false,reason:'GENERIC_DAMAGE_POWER_INVALID',contract};
+ if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType))return{generic:true,ok:false,reason:'GENERIC_DAMAGE_TYPE_INVALID',contract};
+ return{generic:true,ok:true,contract:{type:'DAMAGE',power:contract.power,damageType}};
+}
+function calculateGenericDamage(attacker,contract){
+ if(contract.damageType==='FIXED')return Math.max(0,Math.floor(contract.power));
+ return Math.max(0,Math.floor(Math.max(0,attacker.attack)*(contract.power/100)));
+}
+function executeGenericDamageRuntime(attacker,target,compiled){
+ const resolved=resolveGenericDamageContract(compiled);if(!resolved.generic)return null;
+ if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('generic_damage_rejected',{source_id:attacker?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
+ const calculated=calculateGenericDamage(attacker,resolved.contract),result=applyTaggedDamage(attacker,target,calculated,compiled.definition);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('generic_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,damage_type:resolved.contract.damageType,calculated_damage:calculated,applied_damage:result.damage});
+ return{...result,genericRuntime:true,effectContract:{...resolved.contract},calculatedDamage:calculated};
+}
 function applyTaggedDamage(attacker,target,damage,skill){
  const before=target.hp,shield=consumeShieldDamage(target,damage,{sourceId:attacker.id,skillId:skill.id,damageType:'tag_attack'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;
  queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage:applied});
@@ -775,12 +804,12 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
   let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,modifierResult=null,followUpResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
   for(const logic of compiled.definition.logicOrder){
    if(logic==='COUNTER'){continue}
-   if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
+   if(logic==='ATTACK'){attackResult=executeGenericDamageRuntime(actor,resolvedTarget,compiled)||applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL'){healResult=applyTaggedHeal(actor,resolvedTarget,compiled)}
    else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
    else if(logic==='CLEANSE'){cleanseResult=cleanseStatusEffects(actor,resolvedTarget,compiled)}
    else if(logic==='REVIVE'){reviveResult=reviveTarget(actor,resolvedTarget,compiled)}
-   else if(logic==='FOLLOW_UP'){followUpResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}
+   else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime(actor,resolvedTarget,compiled)||applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
   const effectiveAttackResult=attackResult||followUpResult;targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,modifierResult,followUpResult,cleanseResult,reviveResult});

@@ -3,7 +3,7 @@ const fs=require('fs');
 const engine=require('../assets/shared/js/trigger-engine.js');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 assert.ok(/^R04-E[23]$/.test(engine.VERSION),`unexpected trigger engine version ${engine.VERSION}`);
-assert.ok(/^R04-E[23]$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-E[23]$/.test(registry.phase)||/^R0[5-9]-/.test(registry.phase)||/^R[1-9][0-9]-/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.deepStrictEqual(engine.REACTIVE_FAMILY_ORDER,{COUNTER:0,FOLLOW_UP:1});
 
 // Reactive families keep the established production boundary: COUNTER before FOLLOW_UP.
@@ -43,7 +43,7 @@ for(const src of [game,test]){
 for(const name of ['dispatchConditionalFollowUps','dispatchTaggedBaseReactiveTriggers']){
  assert.strictEqual(fnText(game,name),fnText(test,name),`${name} Game/game-tag-test parity`);
 }
-assert.ok(test.includes("else if(logic==='FOLLOW_UP'){followUpResult=applyTaggedDamage"),'game-tag-test FOLLOW_UP runtime execution missing');
+assert.ok(test.includes("else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime"),'game-tag-test Generic FOLLOW_UP DAMAGE runtime execution missing');
 assert.ok(test.includes("effectiveAttackResult=attackResult||followUpResult"),'game-tag-test derived trigger result parity missing');
 
 console.log('GENERIC_TRIGGER_SIMULTANEOUS_ORDER_R04_E2_PASS');
