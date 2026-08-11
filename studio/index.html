@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#f3f4f6">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="stylesheet" href="./ai-production/ai-production.css?v=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
@@ -443,6 +444,7 @@ updateDeployDeleteControl();
       <button type="button" onclick="runLauncherAction('masters')">マスター</button>
       <button type="button" onclick="runLauncherAction('equipment-generator')">装備生成</button>
       <button type="button" onclick="runLauncherAction('skill-generator')">スキル生成</button>
+      <button type="button" class="primary" onclick="runLauncherAction('ai-production')">AI制作</button>
       <button type="button" onclick="runLauncherAction('rules')">ルール</button>
     </div>
   </div>
@@ -475,7 +477,7 @@ updateDeployDeleteControl();
     <button data-view="projects">プロジェクト一覧</button><button data-view="project">プロジェクト設定</button>
     <button data-view="story">シナリオ</button><button data-view="storyeditor">シナリオ構成</button>
     <button data-view="quests">クエスト</button><button data-view="events">イベント</button><button data-view="flags">フラグ</button>
-    <button data-view="characters">キャラクター</button><button data-view="masters">マスター</button><button data-view="equipment-generator">装備生成</button><button data-view="skill-generator">スキル生成</button><button data-view="rules">ルール</button>
+    <button data-view="characters">キャラクター</button><button data-view="masters">マスター</button><button data-view="equipment-generator">装備生成</button><button data-view="skill-generator">スキル生成</button><button data-view="ai-production">AI制作</button><button data-view="rules">ルール</button>
     <button data-view="verification-home">検証ホーム</button><button data-view="battle">戦闘</button><button data-view="references">参照</button><button data-view="validation">検証</button>
     <button data-view="backup">バックアップ</button><button data-view="githubsync">同期</button><button data-view="studiodeploy">配置</button><button data-view="importexport">読込出力</button>
   </div>
@@ -508,6 +510,11 @@ updateDeployDeleteControl();
       <button onclick="exportProject()">JSON出力</button>
     </div>
   </div>
+</section>
+
+<section id="view-ai-production" class="view hidden">
+  <div class="view-heading"><h1>AI制作</h1><span class="status">R3 入口</span></div>
+  <div id="aiProductionRoot"></div>
 </section>
 
 
@@ -1169,6 +1176,7 @@ updateDeployDeleteControl();
     <article class="guide-card" data-guide-keywords="計算 結果 数式 formula card"><h3>計算カード・結果カード</h3><p>複数の入力を組み合わせる数式と、その出力定義をカードとして管理します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('formula-cards')">計算カード</button><button type="button" onclick="runLauncherAction('result-cards')">結果カード</button></div></article>
     <article class="guide-card" data-guide-keywords="戦闘 ダメージ 数式 シミュレーター"><h3>戦闘計算式</h3><p>攻撃、倍率、属性、クリティカル、耐性の順序を組み立てて比較します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('battle-formula')">数式を開く</button></div></article>
     <article class="guide-card" data-guide-keywords="装備 スキル 編成 AI カード"><h3>装備・スキル・編成</h3><p>戦闘で使う資産カードを作り、キャラクターや編成へ接続します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('asset-cards')">資産カードを開く</button></div></article>
+    <article class="guide-card" data-guide-keywords="AI 制作 プログラム 組み立て"><h3>AI制作を開く</h3><p>プレイヤー用AIプログラムの制作領域を開きます。編集機能は次工程で追加します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('ai-production')">AI制作を開く</button></div></article>
     <article class="guide-card" data-guide-keywords="検証 エラー 警告 参照 整合性"><h3>データを検証する</h3><p>ID重複、必須項目、参照関係を確認してから戦闘テストへ進みます。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('verification-home')">検証ホーム</button></div></article>
     <article class="guide-card" data-guide-keywords="戦闘 テスト シミュレーション ログ"><h3>戦闘テストを実行する</h3><p>代表的な編成と乱数シードで1戦を実行し、結果とログを確認します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('battle')">戦闘テスト</button></div></article>
     <article class="guide-card" data-guide-keywords="一括 検証 複数 シード バランス"><h3>一括検証する</h3><p>複数シードや条件範囲をまとめて実行し、勝率や偏りを探します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('batch-test')">一括検証</button></div></article>
@@ -1987,6 +1995,7 @@ updateDeployDeleteControl();
 
 <script src="./ai-production/ai-program-model.js?v=1"></script>
 <script src="./ai-production/ai-program-store.js?v=1"></script>
+<script src="./ai-production/ai-production-ui.js?v=1"></script>
 <script>
 const APP_VERSION='1.43.0';
 const DISTRIBUTION_BUILD='GKS-B527';
@@ -2277,7 +2286,7 @@ function openVerificationSection(section,cardType){
  },80);
 }
 function runLauncherAction(action){
- const direct={dashboard:'dashboard',guide:'guide','verification-home':'verification-home',projects:'projects',project:'project',story:'story',quests:'quests',events:'events',flags:'flags',characters:'characters',masters:'masters','equipment-generator':'equipment-generator','skill-generator':'skill-generator',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
+ const direct={dashboard:'dashboard',guide:'guide','verification-home':'verification-home',projects:'projects',project:'project',story:'story',quests:'quests',events:'events',flags:'flags',characters:'characters',masters:'masters','equipment-generator':'equipment-generator','skill-generator':'skill-generator','ai-production':'ai-production',rules:'rules',battle:'battle',validation:'validation',references:'references',backup:'backup',githubsync:'githubsync',studiodeploy:'studiodeploy',importexport:'importexport'};
  if(action==='ai-explorer'){showView('verification-home');setTimeout(()=>document.getElementById('aiExplorerCard')?.scrollIntoView({behavior:'smooth',block:'start'}),80);return}
  if(action==='battle-formula'){openVerificationSection('battle-formula');return}
  if(action==='ratio-cards'){openVerificationSection('design-cards','ratio');return}
@@ -2343,12 +2352,14 @@ function renderVerificationHome(){
  const rec=document.getElementById('verificationRecommendation');if(rec){rec.className='item '+(errorCount?'error':warningCount?'warn':'ok');rec.textContent=errorCount?'データエラーを先に解消してください。':warningCount?'警告を確認後、代表戦闘へ進めます。':snap.battle?'代表戦闘結果を確認し、一括検証へ進めます。':'データ検証上の重大な問題はありません。代表戦闘へ進めます。'}
 }
 function showView(name){
+ const target=document.getElementById('view-'+name);if(!target)return false;
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
- const target=document.getElementById('view-'+name);if(!target)return;
  target.classList.remove('hidden');
  document.querySelectorAll('#nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
  document.getElementById('selectedLabel').value=name; rememberRecentFeature(name); closeMobile(); render();
+ if(name==='ai-production')window.GKSAIProductionUI?.render();
  if(window.matchMedia('(max-width:900px)').matches){window.scrollTo({top:0,behavior:'instant'})}
+ return true;
 }
 document.getElementById('nav').addEventListener('click',e=>{if(e.target.dataset.view)showView(e.target.dataset.view)})
 

@@ -6,7 +6,11 @@ const APP_SHELL=[
   "./index.html?appv=485",
   "./manifest.webmanifest?v=485",
   "./icon-192.png?v=485",
-  "./icon-512.png?v=485"
+  "./icon-512.png?v=485",
+  "./ai-production/ai-production.css?v=1",
+  "./ai-production/ai-program-model.js?v=1",
+  "./ai-production/ai-program-store.js?v=1",
+  "./ai-production/ai-production-ui.js?v=1"
 ];
 
 self.addEventListener('install',event=>{
