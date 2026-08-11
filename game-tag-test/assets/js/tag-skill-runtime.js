@@ -255,7 +255,7 @@ function applyTaggedModifier(source,target,compiled,logic,lifecyclePolicy=null){
  const stat=compiled.definition.parameters.modifierStat,power=Math.max(0,Number(compiled.definition.parameters.modifierPower)||0),duration=Math.max(1,Math.floor(compiled.definition.parameters.modifierDuration)),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
  const before=effectiveModifierPower(target,logic,stat),added=[];
  if(lifecyclePolicy){
-  const lifecycleResult=applyModifierStackLifecycle(source,target,compiled,logic,lifecyclePolicy);
+  const lifecycleResult=getTaggedApplyLifecycleEngine().apply(logic,{source,target,compiled,logic,lifecycle:lifecyclePolicy});
   if(!lifecycleResult.ok)return lifecycleResult;
   added.push(...lifecycleResult.added);
  }else{
@@ -331,7 +331,7 @@ function applyTaggedShield(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};
  const amount=Math.max(0,Math.floor(Number(compiled.definition.parameters.shield)||0)),duration=Math.max(0,Math.floor(Number(compiled.definition.parameters.shieldDuration)||0));
  if(amount<=0||duration<=0)return{ok:false,reason:'シールド値または持続時間が無効です'};
- let result;if(lifecyclePolicy){result=applyShieldStackLifecycle(target,{source,compiled,amount,duration},lifecyclePolicy);if(!result.ok)return result}else{const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};ensureShieldEffects(target).push(effect);result={ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect}}
+ let result;if(lifecyclePolicy){result=getTaggedApplyLifecycleEngine().apply('SHIELD',{target,input:{source,compiled,amount,duration},lifecycle:lifecyclePolicy});if(!result.ok)return result}else{const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};ensureShieldEffects(target).push(effect);result={ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect}}
  battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${source.name}の${compiled.definition.name} → ${target.name}へシールド${amount}付与（持続${duration}、総残量${shieldTotal(target)}）`);
  typeof recordValidationEvent==='function'&&recordValidationEvent('shield_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,shield_id:result.effect.id,amount,duration,expires_at:result.effect.expiresAt,total_shield:shieldTotal(target),lifecycle_policy:lifecyclePolicy?result.policy:null});
  return result;
@@ -339,7 +339,7 @@ function applyTaggedShield(source,target,compiled,lifecyclePolicy=null){
 function consumeShieldDamage(target,rawDamage,{sourceId=null,skillId=null,damageType='damage'}={}){
  const raw=Math.max(0,Math.floor(Number(rawDamage)||0)),lifecycle=resolveShieldConsumePolicyForTarget(target);
  if(!lifecycle.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] consume policyが不正です: ${lifecycle.reason}`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_consume_policy_rejected',{source_id:sourceId,target_id:target?.id||null,skill_id:skillId,damage_type:damageType,raw_damage:raw,reason:lifecycle.reason,field:lifecycle.field||null,expected:lifecycle.expected||null,actual:lifecycle.actual||null});return{rawDamage:raw,absorbed:0,hpDamage:raw,totalShield:shieldTotal(target),consumed:[],policy:null,error:lifecycle.reason}}
- const result=consumeShieldLayersLifecycle(target,raw,lifecycle);if(!result.ok)return{rawDamage:raw,absorbed:0,hpDamage:raw,totalShield:shieldTotal(target),consumed:[],policy:null,error:result.reason};
+ const result=getTaggedApplyLifecycleEngine().consume('SHIELD',{target,rawDamage:raw,lifecycle});if(!result.ok)return{rawDamage:raw,absorbed:0,hpDamage:raw,totalShield:shieldTotal(target),consumed:[],policy:null,error:result.reason};
  const {absorbed,hpDamage,consumed}=result;
  if(absorbed>0){battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${target.name}のシールドが${absorbed}吸収（受けるHPダメージ${hpDamage}、総残量${shieldTotal(target)}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('shield_absorbed',{source_id:sourceId,target_id:target.id,skill_id:skillId,damage_type:damageType,raw_damage:raw,absorbed,hp_damage:hpDamage,consumed,total_shield:shieldTotal(target),consume_rule:result.policy.consumeRule,policy_source:lifecycle.source})}
  return{rawDamage:raw,absorbed,hpDamage,totalShield:shieldTotal(target),consumed,policy:result.policy};
@@ -376,7 +376,7 @@ function applyTaggedStatus(source,target,compiled,lifecyclePolicy=null){
  if(lifecyclePolicy){
   const refreshPatch={sourceId:source.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,payload:p.statusPayload||{}};
   const createEffect=()=>{const seq=++statusEffectSequence;return{instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true,removable:true,protected:false,removePriority:0}};
-  const applied=applyStatusUniqueRefreshLifecycle(list,{statusId,newEffect:createEffect,refreshPatch},lifecyclePolicy);
+  const applied=getTaggedApplyLifecycleEngine().apply('STATUS',{list,input:{statusId,newEffect:createEffect,refreshPatch},lifecycle:lifecyclePolicy});
   if(!applied.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('status_lifecycle_rejected',{status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:applied.reason||'STATUS_LIFECYCLE_REJECTED',field:applied.field||null,value:applied.value||null});return{ok:false,reason:applied.reason||'STATUS_LIFECYCLE_REJECTED',lifecyclePolicy}}
   const effect=applied.effect;
   if(applied.refreshed){typeof recordValidationEvent==='function'&&recordValidationEvent('status_refreshed',{instance_id:effect.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:effect.expiresTick});return{ok:true,refreshed:true,effect,lifecyclePolicy}}
@@ -460,7 +460,7 @@ function applyTaggedDot(source,target,compiled,lifecyclePolicy=null){
  const power=Math.max(0,Math.floor(compiled.definition.parameters.dotPower)),duration=Math.max(1,Math.floor(compiled.definition.parameters.dotDuration)),interval=Math.max(1,Math.floor(compiled.definition.parameters.dotInterval));
  const createStack=()=>({id:`DOT-${++dotStackSequence}`,typeId:type.id,label:type.label,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,power,appliedAt:battle.tick,expiresAt:battle.tick+duration,nextTick:battle.tick+interval,interval,duration});
  if(lifecyclePolicy){
-  const applied=applyDotStackLifecycle(list,{identityKey:type.id,gain,newStack:createStack},lifecyclePolicy);
+  const applied=getTaggedApplyLifecycleEngine().apply('DOT',{list,input:{identityKey:type.id,gain,newStack:createStack},lifecycle:lifecyclePolicy});
   if(!applied.ok){if(applied.reason==='MAX_STACK'){battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${type.label}は最大${applied.maxStack}スタックのため付与失敗`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:'MAX_STACK',current:applied.current,max_stack:applied.maxStack});return{ok:false,reason:'MAX_STACK',added:0,current:applied.current,maxStack:applied.maxStack,lifecyclePolicy}}typeof recordValidationEvent==='function'&&recordValidationEvent('dot_lifecycle_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:applied.reason||'DOT_LIFECYCLE_REJECTED',field:applied.field||null,value:applied.value||null});return{ok:false,reason:applied.reason||'DOT_LIFECYCLE_REJECTED',lifecyclePolicy}}
   const added=applied.stacks;battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${source.name}の${compiled.definition.name} → ${target.name}へ${type.label} ${added.length}スタック付与（${applied.current}/${applied.maxStack}、威力${power}、間隔${interval}、持続${duration}）`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,stack_ids:added.map(x=>x.id),count:added.length,power,duration,interval,expires_at:battle.tick+duration});
   return{ok:true,added:added.length,current:applied.current,maxStack:applied.maxStack,stacks:added,lifecyclePolicy};
@@ -535,6 +535,25 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',suppressDerived:true});
  return{ok:!!result?.ok,triggered:true,skillId,result};
 }
+
+let taggedApplyLifecycleEngine=null;
+function createFallbackApplyLifecycleEngine(handlers){
+ const table=handlers||{},invoke=(operation,kind,payload={})=>{const key=String(kind||'').toUpperCase(),handler=table[key];if(!handler)return{ok:false,reason:'LIFECYCLE_ENGINE_KIND_UNREGISTERED',kind:key,operation};const fn=handler[operation];if(typeof fn!=='function')return{ok:false,reason:'LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',kind:key,operation};try{return fn(payload)}catch(error){return{ok:false,reason:'LIFECYCLE_ENGINE_HANDLER_ERROR',kind:key,operation,message:String(error&&error.message||error)}}};return{version:'R03-F1-fallback',kinds:Object.keys(table),resolve:(kind,payload)=>invoke('resolve',kind,payload),apply:(kind,payload)=>invoke('apply',kind,payload),consume:(kind,payload)=>invoke('consume',kind,payload),effective:(kind,payload)=>invoke('effective',kind,payload)};
+}
+function getTaggedApplyLifecycleEngine(){
+ if(taggedApplyLifecycleEngine)return taggedApplyLifecycleEngine;
+ const handlers={
+  STATUS:{resolve:({lifecycle})=>resolveStatusUniqueRefreshLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyStatusUniqueRefreshLifecycle(list,input,lifecycle)},
+  DOT:{resolve:({lifecycle})=>resolveDotStackLifecyclePolicy(lifecycle),apply:({list,input,lifecycle})=>applyDotStackLifecycle(list,input,lifecycle)},
+  BUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
+  DEBUFF:{resolve:({lifecycle})=>resolveModifierStackLifecyclePolicy(lifecycle),apply:({source,target,compiled,logic,lifecycle})=>applyModifierStackLifecycle(source,target,compiled,logic,lifecycle),effective:({stacks,lifecycle})=>resolveModifierEffectiveValue(stacks,lifecycle)},
+  SHIELD:{resolve:({lifecycle})=>resolveShieldStackLifecyclePolicy(lifecycle),apply:({target,input,lifecycle})=>applyShieldStackLifecycle(target,input,lifecycle),consume:({target,rawDamage,lifecycle})=>consumeShieldLayersLifecycle(target,rawDamage,lifecycle)}
+ };
+ const shared=typeof globalThis!=='undefined'?globalThis.GKSApplyLifecycleEngine:null;
+ taggedApplyLifecycleEngine=shared&&typeof shared.create==='function'?shared.create(handlers):createFallbackApplyLifecycleEngine(handlers);
+ return taggedApplyLifecycleEngine;
+}
+
 function resolveGenericApplyLifecycle(compiled,logic){
  const runtime=compiled?.definition?.genericRuntime;if(!runtime)return{generic:false,ok:true,contract:null,lifecycle:null};
  const contract=runtime.applyContracts?.find(x=>x.logic===logic)||null;
