@@ -34,7 +34,7 @@ php php-runtime/tests/run.php Export
 
 ## 個別データSchema
 
-- `schemas/export-schema-map.json` が22 ExportパスとSchema正本を対応付けます。
+- `schemas/export-schema-map.json` が24 ExportパスとSchema正本を対応付けます。
 - `schemas/exports/*.schema.json` をNode E2EとPHP Runtimeで共有します。
 - 初期Schemaは `additionalProperties: true` で、未確定項目を許容します。
 - 配列データの各レコードは `id` 必須・空文字禁止です。
@@ -43,8 +43,8 @@ php php-runtime/tests/run.php Export
 
 ## Data Integrity Validator（DEC-0011）
 
-- `schemas/export-schema-map.json` の22パスを公式パス正本として固定します。
-- manifestは公式22パスを過不足なく含み、すべて`required: true`である必要があります。
+- `schemas/export-schema-map.json` の24パスを公式パス正本として固定します。
+- manifestは公式24パスを過不足なく含み、すべて`required: true`である必要があります。
 - 同一ファイル内のID重複を拒否します。
 - クエスト3種、MOD3種は横断グループでもID重複を拒否します。
 - `schemas/data-integrity-rules.json` に登録された確定参照を検証します。

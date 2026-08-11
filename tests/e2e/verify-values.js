@@ -11,6 +11,8 @@ const checks=[
  ['equipment mod split',data('equipment/mods.json')[0].id==='MOD001'],
  ['monster mod split',data('monster/monster_mods.json')[0].id==='MMOD001'],
  ['stone mod split',data('stone/stone_mods.json')[0].id==='SMOD001']
+ ,['AI program',data('ai/ai_programs.json')[0].id==='AIP-0001'&&!('compiled' in data('ai/ai_programs.json')[0])]
+ ,['AI runtime',data('ai/ai_runtimes.json')[0].program_id==='AIP-0001'&&data('ai/ai_runtimes.json')[0].source_map['I-0001']==='AIN-0001']
 ];
 for(const [name,ok] of checks)console.log((ok?'[PASS] ':'[FAIL] ')+name);
 if(checks.some(x=>!x[1]))process.exit(1);

@@ -18,6 +18,7 @@ const APP_SHELL=[
   "./ai-production/ai-decision-engine.js?v=1",
   "./ai-production/ai-battle-adapter.js?v=1",
   "./ai-production/ai-simulation-runner.js?v=1",
+  "./ai-production/ai-export-adapter.js?v=1",
   "./ai-production/ai-production-ui.js?v=1"
 ];
 

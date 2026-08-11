@@ -6,7 +6,7 @@
   'use strict';
   const SCHEMA_VERSION='1.0.0';
   const EXPORT_PATHS=[
-    'ai/ai_nodes.json','ai/ai_templates.json',
+    'ai/ai_nodes.json','ai/ai_templates.json','ai/ai_programs.json','ai/ai_runtimes.json',
     'equipment/equipment.json','equipment/mods.json',
     'event/events.json','event/flags.json',
     'master/jobs.json','master/statuses.json',
@@ -16,6 +16,7 @@
     'skill/skills.json','stone/stone_mods.json','stone/stones.json',
     'system/balance.json','system/drop_tables.json','system/game_settings.json'
   ];
+  function aiExportAdapter(){if(typeof require==='function'){const path=require('node:path'),base=__dirname.endsWith(path.sep+'studio')?'ai-production':path.join('studio','ai-production');return require(path.join(__dirname,base,'ai-export-adapter.js'));}return globalThis.GKSAIExportAdapter;}
   function clean(value){
     if(Array.isArray(value))return value.map(clean);
     if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value)
@@ -51,6 +52,7 @@
     (data.chapters||[]).forEach(ch=>{inspect(ch,'chapter','');(ch.sections||[]).forEach(sec=>inspect(sec,'section',ch.id||''));});
     return issues;
   }
+  function collectAIExportIssues(data){const adapter=aiExportAdapter();return adapter?adapter.collectIssues(data):[{level:'ERROR',code:'AI_EXPORT_ADAPTER_MISSING',message:'AI Export Adapterを読み込めません。'}];}
   function buildData(data){
     const chapters=[],sections=[],scenes=[];
     (data.chapters||[]).forEach(chapter=>{
@@ -60,10 +62,11 @@
         (section.scenes||[]).forEach(scene=>scenes.push(clean({...scene,chapter_id:chapter.id,section_id:section.id})));
       });
     });
-    const masters=data.masters||{}, quests=data.quests||[], mods=masters.mods||[];
+    const masters=data.masters||{}, quests=data.quests||[], mods=masters.mods||[],ai=aiExportAdapter()?.build(data)||{programs:[],runtimes:[]};
     return {
       'ai/ai_nodes.json':[...(masters.ai_conditions||[]).map(x=>({...clean(x),node_type:'condition'})),...(masters.ai_targets||[]).map(x=>({...clean(x),node_type:'target'})),...(masters.ai_actions||[]).map(x=>({...clean(x),node_type:'action'}))],
       'ai/ai_templates.json':clean(data.ai_templates||[]),
+      'ai/ai_programs.json':clean(ai.programs),'ai/ai_runtimes.json':clean(ai.runtimes),
       'equipment/equipment.json':clean(masters.equipment||[]),
       'equipment/mods.json':clean(mods.filter(x=>!recordsByTag([x],['monster','stone','tablet','石板']).length)),
       'event/events.json':clean(data.events||[]),'event/flags.json':clean(data.flags||[]),
@@ -81,11 +84,12 @@
     const crypto=require('node:crypto'); return crypto.createHash('sha256').update(text,'utf8').digest('hex');
   }
   async function buildPackage(data,{dataVersion,generatedAt,appVersion}){
+    const aiIssues=collectAIExportIssues(data);if(aiIssues.some(row=>row.level==='ERROR')){const error=new Error('AI export validation failed');error.issues=aiIssues;throw error;}
     const payloads=buildData(data), files={}, manifestFiles=[];
     for(const path of EXPORT_PATHS){const text=JSON.stringify(envelope(payloads[path],dataVersion,generatedAt,appVersion),null,2)+'\n';files[path]=text;manifestFiles.push({path,sha256:await sha256Hex(text),required:true});}
     const manifest={schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,files:manifestFiles};
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,clean,scenarioTextHash,collectScenarioExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,clean,scenarioTextHash,collectScenarioExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

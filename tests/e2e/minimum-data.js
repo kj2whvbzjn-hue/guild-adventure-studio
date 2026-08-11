@@ -4,6 +4,7 @@ module.exports={
  quests:[{id:'MQ001',type:'main',name:'最初の依頼',monster_id:'MON001'}],
  events:[{id:'EV001',name:'入隊イベント',flag_id:'FLG001'}],flags:[{id:'FLG001',name:'入隊済み',default:false}],
  ai_templates:[{id:'AIT001',name:'基本AI'}],
+ ai_programs:[{schema_version:'1.0.0',data_version:'1.0.0',id:'AIP-0001',name:'通常攻撃AI',version:1,status:'valid',entry_node_id:'AIN-0001',nodes:[{instance_id:'AIN-0001',master_node_id:'AIA001',master_version:1,node_type:'action',position:{x:0,y:0},parameters:{}}],edges:[],subroutines:[],tags:[],description:'E2E',compiled:{schema_version:'1.0.0',data_version:'1.0.0',program_id:'AIP-0001',program_version:1,compiler_version:'1.0.0',entry_instruction:'I-0001',instructions:[{instruction_id:'I-0001',op:'ACTION',master_node_id:'AIA001',evaluator:'action.attack',params:{},next:null}],source_map:{'I-0001':'AIN-0001'},limits:{max_steps:128,max_subroutine_depth:8},content_hash:'0000000000000000000000000000000000000000000000000000000000000000'}}],
  masters:{
   jobs:[{id:'JOB001',name:'騎士',str:11,vit:13}],status_effects:[{id:'ST001',name:'毒'}],
   skills:[{id:'SK001',name:'斬撃',power:100}],equipment:[{id:'EQ001',name:'鉄の剣',mod_ids:['MOD001']}],

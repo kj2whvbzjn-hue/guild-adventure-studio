@@ -89,7 +89,7 @@ function expectLoaderError(string $name, callable $loaderFactory, string $source
 
 try {
     $pkg = (new ExportLoader(['1.0.0']))->load($source);
-    report('valid package loads', count($pkg->paths()) === 22, 'loaded ' . count($pkg->paths()) . ' files');
+    report('valid package loads', count($pkg->paths()) === 24, 'loaded ' . count($pkg->paths()) . ' files');
 } catch (Throwable $e) {
     report('valid package loads', false, $e->getMessage());
 }
@@ -230,7 +230,7 @@ expectError('document generated_by must match manifest', $source, function (stri
 }, 'GENERATED_BY_MISMATCH');
 
 
-expectError('manifest must contain exact official 22 paths', $source, function (string $tmp): void {
+expectError('manifest must contain exact official 24 paths', $source, function (string $tmp): void {
     $p = $tmp . '/manifest.json';
     $m = json_decode((string)file_get_contents($p), true, 512, JSON_THROW_ON_ERROR);
     $m['files'] = array_values(array_filter($m['files'], fn(array $e): bool => $e['path'] !== 'skill/skills.json'));
@@ -442,7 +442,7 @@ expectLoaderError('Export total size limit stops startup',
         $settings = $loaded->document('system/game_settings.json')['data'] ?? [];
         $leftovers = array_values(array_filter(glob($root . '/.Export.*') ?: [], fn(string $p): bool => basename($p) !== '.Export.rollback')); 
         report('atomic update switches only validated package',
-            count($package->paths()) === 22
+            count($package->paths()) === 24
             && $before !== $after
             && ($settings['party_size'] ?? null) === 5
             && $leftovers === []
@@ -505,7 +505,7 @@ expectLoaderError('Export total size limit stops startup',
         $pkg = (new \GK\Export\ExportRollbackManager())->restore($backup, $live);
         $loaded=(new ExportLoader(['1.0.0']))->load($live);
         $settings=$loaded->document('system/game_settings.json')['data']??[];
-        report('rollback restores validated persistent backup', count($pkg->paths())===22 && ($settings['party_size']??null)!==6 && is_dir($backup));
+        report('rollback restores validated persistent backup', count($pkg->paths())===24 && ($settings['party_size']??null)!==6 && is_dir($backup));
     } catch (Throwable $e) { report('rollback restores validated persistent backup', false, $e->getMessage()); }
     finally {
         if(is_dir($root)){ $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST); foreach($it as $item){$item->isDir()?rmdir($item->getPathname()):unlink($item->getPathname());} rmdir($root); }

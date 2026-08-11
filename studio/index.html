@@ -513,7 +513,7 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-ai-production" class="view hidden">
-  <div class="view-heading"><h1>AI制作</h1><span class="status">R8-B 固定Seed試行</span></div>
+  <div class="view-heading"><h1>AI制作</h1><span class="status">R9-A 正式Export</span></div>
   <div id="aiProductionRoot"></div>
 </section>
 
@@ -2014,6 +2014,7 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-decision-engine.js?v=1"></script>
 <script src="./ai-production/ai-battle-adapter.js?v=1"></script>
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
+<script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
 <script>
 const APP_VERSION='1.43.0';
@@ -4649,6 +4650,7 @@ function collectPhpExportIssues(){
  const issues=validation.filter(x=>x.level==='ERROR').map(x=>({...x,source:'Studio'}));
  const scenarioIssues=GKExportCore.collectScenarioExportIssues(data);
  scenarioIssues.forEach(x=>issues.push({...x,source:'SSF-005'}));
+ GKExportCore.collectAIExportIssues(data).forEach(x=>issues.push({...x,source:'AI制作'}));
  const files=buildPhpExportData();
  PHP_EXPORT_PATHS.forEach(path=>{
   if(!(path in files))issues.push({level:'ERROR',message:'必須Export定義がありません: '+path});
@@ -4660,7 +4662,7 @@ function renderPhpExportStatus(issues){
  const el=document.getElementById('phpExportStatus');if(!el)return;
  const errors=issues.filter(x=>x.level==='ERROR');
  if(!errors.length){
-  el.innerHTML='<span class="badge ok">合格</span> 22ファイル生成可能。ID重複・Studio検証エラーなし。';
+  el.innerHTML='<span class="badge ok">合格</span> 24ファイル生成可能。ID重複・Studio検証エラーなし。';
  }else{
   el.innerHTML='<span class="badge err">不合格</span> '+errors.length+'件<br>'+errors.slice(0,8).map(x=>esc(x.message)).join('<br>');
  }
