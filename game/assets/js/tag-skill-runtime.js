@@ -723,39 +723,47 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
 }
 function dispatchConditionalFollowUps(initiator,target,event){
  if(!initiator?.alive||!target?.alive||event?.trigger!=='ALLY_ATTACK')return[];
- const results=[];
+ const results=[],candidates=[];let sequence=0;
  for(const follower of battle.units.filter(x=>x.alive&&x.side===initiator.side&&x.id!==initiator.id)){
   const ids=Array.isArray(follower.followUpSkillIds)?follower.followUpSkillIds:[];
   for(const skillId of ids){
-   const eligibility=actionExecutionEligibility(follower,{actionKind:'FOLLOW_UP'});if(!eligibility.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});continue}
    const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);
    if(!compiled.ok||!compiled.definition.logicOrder.includes('FOLLOW_UP'))continue;
    const triggerContract=compiled.definition.genericRuntime?.triggerContract||null;
-   const conditionContract=compiled.definition.genericRuntime?.conditionContracts?.find(c=>c.property==='TARGET_POISONED')||null;
-   const runLegacyFollowUp=()=>{
-    let poisoned=false;
-    if(conditionContract){
-     const conditionEngine=globalThis.GKSConditionEngine;
-     if(!conditionEngine?.evaluateCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_ENGINE_UNAVAILABLE'});return{ok:false,reason:'CONDITION_ENGINE_UNAVAILABLE'}}
-     const checked=conditionEngine.evaluateCompiled(conditionContract,{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId},()=>ensureDotStackList(target).length>0);
-     if(!checked.ok||!checked.passed){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason,genericCondition:true});return{ok:false,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason}}
-     recordValidationEvent('generic_condition_resolved',{source_id:follower.id,target_id:target.id,skill_id:skillId,property:conditionContract.property,passed:true});
-     poisoned=true;
-    }else poisoned=ensureDotStackList(target).length>0;
-    if(!poisoned){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_POISONED_FALSE'});return{ok:false,reason:'CONDITION_POISONED_FALSE'}}
-    recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',genericTrigger:!!triggerContract});
-    battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
-    return executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1});
-   };
-   if(triggerContract?.type==='ON_ALLY_ATTACK'){
-    const engine=globalThis.GKSTriggerEngine;
-    if(!engine?.dispatchCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TRIGGER_ENGINE_UNAVAILABLE'});continue}
-    const dispatched=engine.dispatchCompiled(triggerContract,'ally_attack',{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId,originSkillId:event?.originSkillId||null},runLegacyFollowUp);
-    recordValidationEvent('generic_trigger_dispatched',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger_type:'ON_ALLY_ATTACK',engine_event:'ally_attack',ok:dispatched.ok});
-    if(dispatched.ok&&dispatched.result?.ok)results.push(dispatched.result);
-   }else{
-    const result=runLegacyFollowUp();if(result?.ok)results.push(result);
-   }
+   candidates.push({follower,skillId,skill,compiled,triggerContract,priority:Number.isInteger(triggerContract?.priority)?triggerContract.priority:0,sequence:sequence++});
+  }
+ }
+ candidates.sort((a,b)=>b.priority-a.priority||a.sequence-b.sequence);
+ if(candidates.length)recordValidationEvent('follow_up_order_fixed',{initiator_id:initiator.id,target_id:target.id,origin_skill_id:event?.originSkillId||null,order:candidates.map(x=>({source_id:x.follower.id,skill_id:x.skillId,priority:x.priority,sequence:x.sequence}))});
+ for(const candidate of candidates){
+  const {follower,skillId,skill,compiled,triggerContract}=candidate;
+  if(!target.alive){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TARGET_DEAD'});continue}
+  const eligibility=actionExecutionEligibility(follower,{actionKind:'FOLLOW_UP'});if(!eligibility.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});continue}
+  const conditionContract=compiled.definition.genericRuntime?.conditionContracts?.find(c=>c.property==='TARGET_POISONED')||null;
+  const runLegacyFollowUp=()=>{
+   if(!target.alive){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TARGET_DEAD'});return{ok:false,reason:'TARGET_DEAD'}}
+   let poisoned=false;
+   if(conditionContract){
+    const conditionEngine=globalThis.GKSConditionEngine;
+    if(!conditionEngine?.evaluateCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_ENGINE_UNAVAILABLE'});return{ok:false,reason:'CONDITION_ENGINE_UNAVAILABLE'}}
+    const checked=conditionEngine.evaluateCompiled(conditionContract,{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId},()=>ensureDotStackList(target).length>0);
+    if(!checked.ok||!checked.passed){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason,genericCondition:true});return{ok:false,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason}}
+    recordValidationEvent('generic_condition_resolved',{source_id:follower.id,target_id:target.id,skill_id:skillId,property:conditionContract.property,passed:true});
+    poisoned=true;
+   }else poisoned=ensureDotStackList(target).length>0;
+   if(!poisoned){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_POISONED_FALSE'});return{ok:false,reason:'CONDITION_POISONED_FALSE'}}
+   recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',genericTrigger:!!triggerContract,priority:candidate.priority});
+   battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
+   return executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1});
+  };
+  if(triggerContract?.type==='ON_ALLY_ATTACK'){
+   const engine=globalThis.GKSTriggerEngine;
+   if(!engine?.dispatchCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TRIGGER_ENGINE_UNAVAILABLE'});continue}
+   const dispatched=engine.dispatchCompiled(triggerContract,'ally_attack',{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId,originSkillId:event?.originSkillId||null},runLegacyFollowUp);
+   recordValidationEvent('generic_trigger_dispatched',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger_type:'ON_ALLY_ATTACK',engine_event:'ally_attack',ok:dispatched.ok,priority:candidate.priority});
+   if(dispatched.ok&&dispatched.result?.ok)results.push(dispatched.result);
+  }else{
+   const result=runLegacyFollowUp();if(result?.ok)results.push(result);
   }
  }
  return results;
