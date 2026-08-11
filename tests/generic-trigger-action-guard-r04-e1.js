@@ -2,8 +2,8 @@ const assert=require('assert');
 const fs=require('fs');
 const engine=require('../assets/shared/js/trigger-engine.js');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
-assert.strictEqual(engine.VERSION,'R04-E1');
-assert.strictEqual(registry.phase,'R04-E1');
+assert.ok(/^R04-E[12]$/.test(engine.VERSION),`unexpected trigger engine version ${engine.VERSION}`);
+assert.ok(/^R04-E[12]$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.strictEqual(engine.DEFAULT_ACTION_TRIGGER_LIMIT,16);
 
 // One action owns one cumulative trigger budget. Released triggers may fire again,
@@ -33,9 +33,8 @@ for(const runtimePath of ['game/assets/js/tag-skill-runtime.js','game-tag-test/a
 const game=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 assert.ok(game.includes("event={...(event||{}),triggerActionContext}"),'FOLLOW_UP action context inheritance missing');
 assert.ok(game.includes("`FOLLOW_UP:${follower.id}:${skillId}`"),'FOLLOW_UP activation key missing');
-assert.ok(game.includes("candidates.sort((a,b)=>b.priority-a.priority||a.sequence-b.sequence)"),'FOLLOW_UP priority order missing');
-const counterPos=game.indexOf('dispatchCounterAfterAttack(actor,actionTarget,compiled,effectiveAttackResult');
-const followPos=game.indexOf("dispatchConditionalFollowUps(actor,actionTarget,{trigger:'ALLY_ATTACK'");
-assert.ok(counterPos>=0&&followPos>counterPos,'COUNTER must remain before FOLLOW_UP for the same base hit');
+assert.ok(game.includes("candidates.splice(0,candidates.length,...orderTaggedSimultaneousTriggers(candidates))"),'FOLLOW_UP shared priority order missing');
+assert.ok(game.includes("{kind:'COUNTER',priority:0,sequence:0},{kind:'FOLLOW_UP',priority:0,sequence:1}"),'COUNTER must remain before FOLLOW_UP for the same base hit');
+assert.ok(game.includes('dispatchTaggedBaseReactiveTriggers(actor,actionTarget,compiled,effectiveAttackResult'),'base hit must use shared reactive ordering');
 
 console.log('GENERIC_TRIGGER_ACTION_GUARD_R04_E1_PASS');

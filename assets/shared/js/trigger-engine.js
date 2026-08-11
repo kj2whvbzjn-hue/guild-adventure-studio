@@ -1,6 +1,7 @@
 /* GKS Trigger Engine foundation — R04-A
  * Registry-backed trigger resolution/validation/event recording only.
  * R04-E1 adds a shared per-action trigger guard for recursion/re-entry and activation caps while preserving runtime effect execution.
+ * R04-E2 adds deterministic simultaneous reactive-trigger ordering shared by Game and game-tag-test.
  */
 (function(root,factory){
   const api=factory();
@@ -8,7 +9,7 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-E1';
+  const VERSION='R04-E2';
   const DEFAULT_ACTION_TRIGGER_LIMIT=16;
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
@@ -100,6 +101,20 @@
     let released=false;
     return{ok:true,key:normalizedKey,index:context.activationCount,max_activations:max,release(){if(released)return false;released=true;context.activeKeys.delete(normalizedKey);return true}};
   }
+
+  const REACTIVE_FAMILY_ORDER=Object.freeze({COUNTER:0,FOLLOW_UP:1});
+  function normalizeReactiveCandidate(candidate,index){
+    const c=candidate&&typeof candidate==='object'?candidate:{};
+    const kind=String(c.kind||'').trim().toUpperCase();
+    const priority=Number.isInteger(Number(c.priority))?Number(c.priority):0;
+    const sequence=Number.isInteger(Number(c.sequence))?Number(c.sequence):index;
+    const familyRank=Object.prototype.hasOwnProperty.call(REACTIVE_FAMILY_ORDER,kind)?REACTIVE_FAMILY_ORDER[kind]:99;
+    return{...c,kind,priority,sequence,familyRank};
+  }
+  function orderSimultaneousCandidates(candidates){
+    if(!Array.isArray(candidates))return[];
+    return candidates.map((candidate,index)=>normalizeReactiveCandidate(candidate,index)).sort((a,b)=>a.familyRank-b.familyRank||b.priority-a.priority||a.sequence-b.sequence);
+  }
   function dispatchCompiled(contract,eventType,payload={},handler){
     const checked=validateCompiledContract(contract,eventType);
     if(!checked.ok)return checked;
@@ -111,5 +126,5 @@
       return failure('TRIGGER_DISPATCH_HANDLER_ERROR',checked.type,{message:String(error&&error.message||error)});
     }
   }
-  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,create,createActionContext,tryActivate,validateCompiledContract,dispatchCompiled});
+  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,REACTIVE_FAMILY_ORDER,create,createActionContext,tryActivate,orderSimultaneousCandidates,validateCompiledContract,dispatchCompiled});
 });

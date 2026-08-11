@@ -588,6 +588,11 @@ function acquireTaggedTriggerActivation(context,key,meta={}){
  if(count>=max)return{ok:false,reason:'TRIGGER_ACTION_LIMIT_REACHED',activation_count:count,max_activations:max};
  context.activationCount=count+1;return{ok:true,index:context.activationCount,max_activations:max,release(){return true}};
 }
+function orderTaggedSimultaneousTriggers(candidates){
+ const engine=globalThis.GKSTriggerEngine;
+ if(engine?.orderSimultaneousCandidates)return engine.orderSimultaneousCandidates(candidates);
+ const family={COUNTER:0,FOLLOW_UP:1};return (Array.isArray(candidates)?candidates:[]).map((x,index)=>({...x,kind:String(x?.kind||'').toUpperCase(),priority:Number.isInteger(Number(x?.priority))?Number(x.priority):0,sequence:Number.isInteger(Number(x?.sequence))?Number(x.sequence):index})).sort((a,b)=>(family[a.kind]??99)-(family[b.kind]??99)||b.priority-a.priority||a.sequence-b.sequence);
+}
 function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackResult,{origin='base',derivedGeneration=0,wasCovered=false,triggerActionContext=null}={}){
  const skip=(reason,extra={})=>{typeof recordValidationEvent==='function'&&recordValidationEvent('counter_skipped',{source_id:defender?.id||null,attacker_id:attacker?.id||null,incoming_skill_id:incomingCompiled?.definition?.id||null,origin,derived_generation:derivedGeneration,was_covered:wasCovered,reason,...extra});return{ok:false,triggered:false,reason}};
  triggerActionContext=createTaggedTriggerActionContext(attacker,incomingCompiled,triggerActionContext);
@@ -694,6 +699,67 @@ function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=t
 function compareTaggedCondition(actual,operator,expected){if(!Number.isFinite(actual)||!Number.isFinite(expected))return false;switch(operator){case '=':return actual===expected;case '!=':return actual!==expected;case '>':return actual>expected;case '>=':return actual>=expected;case '<':return actual<expected;case '<=':return actual<=expected;default:return false}}
 function taggedConditionActual(actor,key){if(!actor)return NaN;switch(key){case 'CONDITION_SELF_HP':return Number(actor.hp);case 'CONDITION_SELF_HP_RATE':return Number(actor.maxHp)>0?Number(actor.hp)/Number(actor.maxHp):0;case 'CONDITION_SELF_MP':return Number(actor.mp);case 'CONDITION_SELF_MP_RATE':return Number(actor.maxMp)>0?Number(actor.mp)/Number(actor.maxMp):0;case 'CONDITION_ENEMY_COUNT':return battle.units.filter(x=>x.alive&&x.side!==actor.side).length;case 'CONDITION_ALLY_COUNT':return battle.units.filter(x=>x.alive&&x.side===actor.side).length;case 'CONDITION_BATTLE_TICK':return Number(battle.tick||0);default:return NaN}}
 function evaluateTaggedSkillConditions(actor,compiled){const conditions=compiled?.definition?.parameters?.conditions||[];if(!conditions.length)return{ok:true,mode:'all',results:[]};const results=conditions.map(c=>{const actual=taggedConditionActual(actor,c.key),passed=compareTaggedCondition(actual,c.operator,Number(c.value));return{...c,actual,passed}});return{ok:results.every(x=>x.passed),mode:'all',results}}
+function dispatchConditionalFollowUps(initiator,target,event){
+ if(!initiator?.alive||!target?.alive||event?.trigger!=='ALLY_ATTACK')return[];
+ const triggerActionContext=createTaggedTriggerActionContext(initiator,{definition:{id:event?.originSkillId||'follow_up_event'}},event?.triggerActionContext||null);event={...(event||{}),triggerActionContext};
+ const results=[],candidates=[];let sequence=0;
+ for(const follower of battle.units.filter(x=>x.alive&&x.side===initiator.side&&x.id!==initiator.id)){
+  const ids=Array.isArray(follower.followUpSkillIds)?follower.followUpSkillIds:[];
+  for(const skillId of ids){
+   const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);
+   if(!compiled.ok||!compiled.definition.logicOrder.includes('FOLLOW_UP'))continue;
+   const triggerContract=compiled.definition.genericRuntime?.triggerContract||null;
+   candidates.push({follower,skillId,skill,compiled,triggerContract,priority:Number.isInteger(triggerContract?.priority)?triggerContract.priority:0,sequence:sequence++});
+  }
+ }
+ candidates.splice(0,candidates.length,...orderTaggedSimultaneousTriggers(candidates));
+ if(candidates.length)recordValidationEvent('follow_up_order_fixed',{initiator_id:initiator.id,target_id:target.id,origin_skill_id:event?.originSkillId||null,order:candidates.map(x=>({source_id:x.follower.id,skill_id:x.skillId,priority:x.priority,sequence:x.sequence}))});
+ for(const candidate of candidates){
+  const {follower,skillId,skill,compiled,triggerContract}=candidate;
+  if(!target.alive){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TARGET_DEAD'});continue}
+  const eligibility=actionExecutionEligibility(follower,{actionKind:'FOLLOW_UP'});if(!eligibility.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});continue}
+  const conditionContract=compiled.definition.genericRuntime?.conditionContracts?.find(c=>c.property==='TARGET_POISONED')||null;
+  const runLegacyFollowUp=()=>{
+   if(!target.alive){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TARGET_DEAD'});return{ok:false,reason:'TARGET_DEAD'}}
+   let poisoned=false;
+   if(conditionContract){
+    const conditionEngine=globalThis.GKSConditionEngine;
+    if(!conditionEngine?.evaluateCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_ENGINE_UNAVAILABLE'});return{ok:false,reason:'CONDITION_ENGINE_UNAVAILABLE'}}
+    const checked=conditionEngine.evaluateCompiled(conditionContract,{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId},()=>ensureDotStackList(target).length>0);
+    if(!checked.ok||!checked.passed){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason,genericCondition:true});return{ok:false,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason}}
+    recordValidationEvent('generic_condition_resolved',{source_id:follower.id,target_id:target.id,skill_id:skillId,property:conditionContract.property,passed:true});
+    poisoned=true;
+   }else poisoned=ensureDotStackList(target).length>0;
+   if(!poisoned){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_POISONED_FALSE'});return{ok:false,reason:'CONDITION_POISONED_FALSE'}}
+   const activation=acquireTaggedTriggerActivation(event?.triggerActionContext,`FOLLOW_UP:${follower.id}:${skillId}`,{kind:'FOLLOW_UP',sourceId:follower.id,targetId:target.id,skillId});
+   if(!activation?.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:activation?.reason||'TRIGGER_GUARD_REJECTED',activation_count:activation?.activation_count??event?.triggerActionContext?.activationCount??0,max_activations:activation?.max_activations??event?.triggerActionContext?.maxActivations??null});return{ok:false,reason:activation?.reason||'TRIGGER_GUARD_REJECTED'}}
+   recordValidationEvent('trigger_action_activation',{kind:'FOLLOW_UP',source_id:follower.id,target_id:target.id,skill_id:skillId,index:activation.index,max_activations:activation.max_activations});
+   recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',genericTrigger:!!triggerContract,priority:candidate.priority});
+   battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
+   const result=executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1,triggerActionContext:event?.triggerActionContext});activation.release?.();return result;
+  };
+  if(triggerContract?.type==='ON_ALLY_ATTACK'){
+   const engine=globalThis.GKSTriggerEngine;
+   if(!engine?.dispatchCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TRIGGER_ENGINE_UNAVAILABLE'});continue}
+   const dispatched=engine.dispatchCompiled(triggerContract,'ally_attack',{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId,originSkillId:event?.originSkillId||null},runLegacyFollowUp);
+   recordValidationEvent('generic_trigger_dispatched',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger_type:'ON_ALLY_ATTACK',engine_event:'ally_attack',ok:dispatched.ok,priority:candidate.priority});
+   if(dispatched.ok&&dispatched.result?.ok)results.push(dispatched.result);
+  }else{
+   const result=runLegacyFollowUp();if(result?.ok)results.push(result);
+  }
+ }
+ return results;
+}
+function dispatchTaggedBaseReactiveTriggers(actor,target,compiled,attackResult,{derivedGeneration=0,wasCovered=false,triggerActionContext=null}={}){
+ const slots=orderTaggedSimultaneousTriggers([{kind:'COUNTER',priority:0,sequence:0},{kind:'FOLLOW_UP',priority:0,sequence:1}]);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('trigger_simultaneous_order_fixed',{source_id:actor?.id||null,target_id:target?.id||null,origin_skill_id:compiled?.definition?.id||null,order:slots.map(x=>({kind:x.kind,priority:x.priority,sequence:x.sequence}))});
+ const results={counter:null,followUps:[]};
+ for(const slot of slots){
+  if(slot.kind==='COUNTER')results.counter=dispatchCounterAfterAttack(actor,target,compiled,attackResult,{origin:'base',derivedGeneration,wasCovered,triggerActionContext});
+  else if(slot.kind==='FOLLOW_UP'&&!battle.result&&!battle.pendingResult)results.followUps=dispatchConditionalFollowUps(actor,target,{trigger:'ALLY_ATTACK',originSkillId:compiled.definition.id,derivedGeneration,triggerActionContext});
+ }
+ return results;
+}
 function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,derivedGeneration=0,skipExecutionEligibility=false,triggerActionContext=null}={}){
  const compiled=compileTaggedSkill(skillSource);
  battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);
@@ -706,7 +772,7 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[];
  for(const resolvedTarget of resolved.targets){
-  let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,modifierResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
+  let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,modifierResult=null,followUpResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
   for(const logic of compiled.definition.logicOrder){
    if(logic==='COUNTER'){continue}
    if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
@@ -714,13 +780,13 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
    else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
    else if(logic==='CLEANSE'){cleanseResult=cleanseStatusEffects(actor,resolvedTarget,compiled)}
    else if(logic==='REVIVE'){reviveResult=reviveTarget(actor,resolvedTarget,compiled)}
+   else if(logic==='FOLLOW_UP'){followUpResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
-  targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,modifierResult,cleanseResult,reviveResult});
-  if(attackResult?.ok&&!suppressDerived&&actualOrigin==='base')dispatchCounterAfterAttack(actor,resolvedTarget,compiled,attackResult,{origin:actualOrigin,derivedGeneration,triggerActionContext:actionTriggerContext});
-  else if(attackResult?.ok&&actualOrigin==='counter')typeof recordValidationEvent==='function'&&recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN',derived_generation:derivedGeneration});
+  const effectiveAttackResult=attackResult||followUpResult;targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,modifierResult,followUpResult,cleanseResult,reviveResult});
+  if(effectiveAttackResult?.ok&&!suppressDerived){if(actualOrigin==='base')dispatchTaggedBaseReactiveTriggers(actor,resolvedTarget,compiled,effectiveAttackResult,{derivedGeneration,triggerActionContext:actionTriggerContext});else if(actualOrigin==='counter')typeof recordValidationEvent==='function'&&recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN',derived_generation:derivedGeneration});else if(actualOrigin==='follow_up')typeof recordValidationEvent==='function'&&recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN',derived_generation:derivedGeneration})}
  }
  if(manual)renderBattle();
  const first=targetResults[0]||{};
- return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,shieldResult:first.shieldResult,dotResult:first.dotResult,statusResult:first.statusResult,cleanseResult:first.cleanseResult,reviveResult:first.reviveResult};
+ return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,shieldResult:first.shieldResult,dotResult:first.dotResult,statusResult:first.statusResult,followUpResult:first.followUpResult,cleanseResult:first.cleanseResult,reviveResult:first.reviveResult};
 }

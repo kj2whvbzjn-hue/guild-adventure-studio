@@ -5,7 +5,7 @@ assert.ok(/^R04-(?:C3|D\d+|E\d+)$/.test(registry.phase),`unexpected registry pha
 const source=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 
 // Multiple Generic FOLLOW_UP candidates are ordered by trigger priority, then by pre-existing discovery order.
-assert.ok(source.includes("candidates.sort((a,b)=>b.priority-a.priority||a.sequence-b.sequence)"),'FOLLOW_UP priority ordering missing');
+assert.ok(source.includes("candidates.splice(0,candidates.length,...orderTaggedSimultaneousTriggers(candidates))"),'FOLLOW_UP priority ordering missing');
 assert.ok(source.includes("follow_up_order_fixed"),'FOLLOW_UP fixed-order audit event missing');
 assert.ok(source.includes("priority:Number.isInteger(triggerContract?.priority)?triggerContract.priority:0"),'Generic trigger priority not consumed');
 
