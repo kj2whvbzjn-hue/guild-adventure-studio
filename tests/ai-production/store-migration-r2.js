@@ -49,8 +49,9 @@ multiProjectPackage.projects.forEach((entry) => Store.normalizeProject(entry.dat
 assert.strictEqual(multiProjectPackage.projects[0].data.ai_programs.length, 1);
 assert.strictEqual(multiProjectPackage.projects[1].data.ai_programs.length, 0, 'project AI collections must remain isolated');
 
-const canonicalProject = JSON.parse(fs.readFileSync(path.join(root, 'project-data.json'), 'utf8'));
-assert(Array.isArray(canonicalProject.ai_programs), 'project-data.json must own ai_programs');
+const protectedProjectData = JSON.parse(fs.readFileSync(path.join(root, 'project-data.json'), 'utf8'));
+Store.normalizeProject(protectedProjectData);
+assert(Array.isArray(protectedProjectData.ai_programs), 'protected project-data.json must migrate at runtime');
 
 const studioHtml = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8');
 assert(studioHtml.includes('./ai-production/ai-program-model.js?v=1'));
