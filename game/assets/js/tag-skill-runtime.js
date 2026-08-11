@@ -258,11 +258,19 @@ function activeAuraEntries(target,kind,stat){
   for(const skillId of auraSourceSkillIds(source)){
    const skill=findTagSkill(skillId);if(!skill)continue;const compiled=compileTaggedSkill(skill);if(!compiled.ok||!compiled.definition.logicOrder.includes('AURA'))continue;
    const p=compiled.definition.parameters;if(p.auraEffect!==kind||p.modifierStat!==stat)continue;
-   const targetSide=p.auraTarget==='ally'?source.side:(p.auraTarget==='enemy'?(source.side==='味方'?'敵':'味方'):null);if(target.side!==targetSide)continue;
-   if(p.auraTarget==='ally'&&p.auraScope==='allies_excluding_self'&&target.id===source.id)continue;
-   if(p.auraTarget==='ally'&&!['all','self_and_allies','allies_excluding_self'].includes(p.auraScope))continue;
-   if(p.auraTarget==='enemy'&&p.auraScope!=='all')continue;
-   entries.push({kind,stat,power:Math.max(0,Number(p.auraValue)||0),sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,priority:Number(p.auraPriority)||0,stack:p.auraStack||'highest'});
+   const triggerContract=compiled.definition.genericRuntime?.triggerContract||null;
+   const collectAuraEntry=()=>{
+    const targetSide=p.auraTarget==='ally'?source.side:(p.auraTarget==='enemy'?(source.side==='味方'?'敵':'味方'):null);if(target.side!==targetSide)return false;
+    if(p.auraTarget==='ally'&&p.auraScope==='allies_excluding_self'&&target.id===source.id)return false;
+    if(p.auraTarget==='ally'&&!['all','self_and_allies','allies_excluding_self'].includes(p.auraScope))return false;
+    if(p.auraTarget==='enemy'&&p.auraScope!=='all')return false;
+    entries.push({kind,stat,power:Math.max(0,Number(p.auraValue)||0),sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,priority:Number(p.auraPriority)||0,stack:p.auraStack||'highest',genericTrigger:!!triggerContract});return true;
+   };
+   if(triggerContract?.type==='WHILE_SOURCE_ALIVE'){
+    const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled)continue;
+    const dispatched=engine.dispatchCompiled(triggerContract,'aura_evaluate',{sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,kind,stat},collectAuraEntry);
+    if(!dispatched.ok)continue;
+   }else collectAuraEntry();
   }
  }
  return entries;
