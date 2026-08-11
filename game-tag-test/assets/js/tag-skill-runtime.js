@@ -166,7 +166,7 @@ function compileTaggedSkill(skill){
  const damageType=g.has('物理')?'physical':g.has('魔法')?'magical':g.has('固定')?'fixed':null;
  const mpCost=n.MP_COST?.value??0,costs=mpCost>0?[{type:'mp',amount:mpCost,payCondition:'sufficient_resource',consumeTiming:'activation_established',refundCondition:'not_consumed_before_activation',failureReason:'MP_SHORTAGE'}]:[],activationPriority=n.ACTIVATION_PRIORITY?.value??0;
  const conditions=TAG_CONDITION_KEYS.filter(key=>n[key]).map(key=>({key,operator:n[key].operator,value:n[key].value,raw:n[key].raw}));
- return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,costs,parameters:{damageType,mpCost,activationPriority,cooldown:n.COOLDOWN?.value??0,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,shield:n.SHIELD?.value??null,shieldDuration:n.DURATION?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,statusId:[...g].find(x=>x.startsWith('STATUS_ID='))?.slice(10)||null,statusDuration:g.has('STATUS')?(n.DURATION?.value??null):null,statusStackPolicy:g.has('INDEPENDENT')?'independent':g.has('STRONGEST')?'strongest':'refresh',statusPayload:{...([...g].includes('STATUS_ID=STATUS-ACCURACY-DOWN')?{accuracy_modifier:-20}:{}),...(g.has('ACTION_DISABLED=true')?{action_disabled:true}:{})},cleanseCount:n.CLEANSE_COUNT?.value??null,cleanseAll:g.has('CLEANSE_ALL'),cleanseCategory:[...g].find(x=>x.startsWith('CLEANSE_CATEGORY='))?.slice(17)||'status',cleanseOrder:[...g].find(x=>x.startsWith('CLEANSE_ORDER='))?.slice(14)||'oldest',reviveHp:n.REVIVE_HP?.value??null,reviveHpRate:n.REVIVE_HP_RATE?.value??null,auraEffect:[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null,auraValue:n.AURA_VALUE?.value??null,auraTarget:[...g].find(x=>x.startsWith('AURA_TARGET='))?.slice(12)||null,auraScope:[...g].find(x=>x.startsWith('AURA_SCOPE='))?.slice(11)||null,auraStack:[...g].find(x=>x.startsWith('AURA_STACK='))?.slice(11)||'highest',auraPriority:n.AURA_PRIORITY?.value??0,coverTarget:[...g].find(x=>x.startsWith('COVER_TARGET='))?.slice(13)||null,coverTrigger:[...g].find(x=>x.startsWith('COVER_TRIGGER='))?.slice(14)||null,coverPriority:n.COVER_PRIORITY?.value??null,coverRemovable:[...g].find(x=>x.startsWith('COVER_REMOVABLE='))?.slice(16)||null,coverLifetime:[...g].find(x=>x.startsWith('COVER_LIFETIME='))?.slice(15)||null,coverUses:n.COVER_USES?.value??null,coverDuration:g.has('COVER')?(n.DURATION?.value??null):null,coverRuntimeApplied:true,counterTrigger:[...g].find(x=>x.startsWith('COUNTER_TRIGGER='))?.slice(16)||null,counterTarget:[...g].find(x=>x.startsWith('COUNTER_TARGET='))?.slice(15)||null,counterLimit:n.COUNTER_LIMIT?.value??null,counterPriority:n.COUNTER_PRIORITY?.value??null,counterRequireAlive:[...g].find(x=>x.startsWith('COUNTER_REQUIRE_ALIVE='))?.slice(22)||null,counterAllowZeroDamage:[...g].find(x=>x.startsWith('COUNTER_ALLOW_ZERO_DAMAGE='))?.slice(26)||null,counterUsesAttack:g.has('COUNTER')&&g.has('ATTACK'),conditions,conditionMode:'all'},genericRuntime,sourceTags:[...(skill?.tags||[])]},parsed};
+ return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,costs,parameters:{damageType,mpCost,activationPriority,cooldown:n.COOLDOWN?.value??0,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,shield:n.SHIELD?.value??null,shieldDuration:n.DURATION?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,modifierStat:TAG_COMBAT_MODIFIER_PARAMS.find(x=>g.has(x))||null,modifierPower:n.POWER?.value??null,modifierDuration:n.DURATION?.value??null,statusId:[...g].find(x=>x.startsWith('STATUS_ID='))?.slice(10)||null,statusDuration:g.has('STATUS')?(n.DURATION?.value??null):null,statusStackPolicy:g.has('INDEPENDENT')?'independent':g.has('STRONGEST')?'strongest':'refresh',statusPayload:{...([...g].includes('STATUS_ID=STATUS-ACCURACY-DOWN')?{accuracy_modifier:-20}:{}),...(g.has('ACTION_DISABLED=true')?{action_disabled:true}:{})},cleanseCount:n.CLEANSE_COUNT?.value??null,cleanseAll:g.has('CLEANSE_ALL'),cleanseCategory:[...g].find(x=>x.startsWith('CLEANSE_CATEGORY='))?.slice(17)||'status',cleanseOrder:[...g].find(x=>x.startsWith('CLEANSE_ORDER='))?.slice(14)||'oldest',reviveHp:n.REVIVE_HP?.value??null,reviveHpRate:n.REVIVE_HP_RATE?.value??null,auraEffect:[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null,auraValue:n.AURA_VALUE?.value??null,auraTarget:[...g].find(x=>x.startsWith('AURA_TARGET='))?.slice(12)||null,auraScope:[...g].find(x=>x.startsWith('AURA_SCOPE='))?.slice(11)||null,auraStack:[...g].find(x=>x.startsWith('AURA_STACK='))?.slice(11)||'highest',auraPriority:n.AURA_PRIORITY?.value??0,coverTarget:[...g].find(x=>x.startsWith('COVER_TARGET='))?.slice(13)||null,coverTrigger:[...g].find(x=>x.startsWith('COVER_TRIGGER='))?.slice(14)||null,coverPriority:n.COVER_PRIORITY?.value??null,coverRemovable:[...g].find(x=>x.startsWith('COVER_REMOVABLE='))?.slice(16)||null,coverLifetime:[...g].find(x=>x.startsWith('COVER_LIFETIME='))?.slice(15)||null,coverUses:n.COVER_USES?.value??null,coverDuration:g.has('COVER')?(n.DURATION?.value??null):null,coverRuntimeApplied:true,counterTrigger:[...g].find(x=>x.startsWith('COUNTER_TRIGGER='))?.slice(16)||null,counterTarget:[...g].find(x=>x.startsWith('COUNTER_TARGET='))?.slice(15)||null,counterLimit:n.COUNTER_LIMIT?.value??null,counterPriority:n.COUNTER_PRIORITY?.value??null,counterRequireAlive:[...g].find(x=>x.startsWith('COUNTER_REQUIRE_ALIVE='))?.slice(22)||null,counterAllowZeroDamage:[...g].find(x=>x.startsWith('COUNTER_ALLOW_ZERO_DAMAGE='))?.slice(26)||null,counterUsesAttack:g.has('COUNTER')&&g.has('ATTACK'),conditions,conditionMode:'all'},genericRuntime,sourceTags:[...(skill?.tags||[])]},parsed};
 }
 function findTagSkill(skillId){return TAG_SKILLS.find(x=>x.id===skillId)||null}
 function formatCompileResult(result){
@@ -207,6 +207,92 @@ function resolveTaggedTargets(actor,target,definition){
  return{ok:true,targets:candidates};
 }
 
+let modifierStackSequence=0;
+function ensureModifierStackList(target){if(!Array.isArray(target.modifierStacks))target.modifierStacks=[];return target.modifierStacks}
+function modifierGroupKey(kind,stat){return `${kind}:${stat}`}
+function auraSourceSkillIds(source){return Array.isArray(source?.auraSkillIds)?source.auraSkillIds:[]}
+function activeAuraEntries(target,kind,stat){
+ if(!target?.alive)return[];const entries=[];
+ for(const source of battle.units.filter(x=>x.alive)){
+  for(const skillId of auraSourceSkillIds(source)){
+   const skill=findTagSkill(skillId);if(!skill)continue;const compiled=compileTaggedSkill(skill);if(!compiled.ok||!compiled.definition.logicOrder.includes('AURA'))continue;
+   const p=compiled.definition.parameters;if(p.auraEffect!==kind||p.modifierStat!==stat)continue;
+   const targetSide=p.auraTarget==='ally'?source.side:(p.auraTarget==='enemy'?(source.side==='味方'?'敵':'味方'):null);if(target.side!==targetSide)continue;
+   if(p.auraTarget==='ally'&&p.auraScope==='allies_excluding_self'&&target.id===source.id)continue;
+   if(p.auraTarget==='ally'&&!['all','self_and_allies','allies_excluding_self'].includes(p.auraScope))continue;
+   if(p.auraTarget==='enemy'&&p.auraScope!=='all')continue;
+   entries.push({kind,stat,power:Math.max(0,Number(p.auraValue)||0),sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,priority:Number(p.auraPriority)||0,stack:p.auraStack||'highest'});
+  }
+ }
+ return entries;
+}
+function effectiveAuraPower(target,kind,stat){const entries=activeAuraEntries(target,kind,stat);return entries.length?Math.max(...entries.map(x=>x.power)):0}
+function resolveModifierStackLifecyclePolicy(policy){
+ if(!policy)return{ok:true,legacy:true,stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};
+ const expected={stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};
+ for(const [field,value] of Object.entries(expected))if(policy[field]!==value)return{ok:false,legacy:false,field,value:policy[field],expected:value};
+ return{ok:true,legacy:false,...expected};
+}
+function resolveModifierEffectiveValue(stacks,policy=null){
+ const checked=resolveModifierStackLifecyclePolicy(policy);if(!checked.ok)return{ok:false,reason:'MODIFIER_LIFECYCLE_POLICY_MISMATCH',...checked,power:0};
+ const values=(Array.isArray(stacks)?stacks:[]).map(x=>Math.max(0,Number(x?.power)||0));
+ return{ok:true,power:values.length?Math.max(...values):0,policy:checked};
+}
+function applyModifierStackLifecycle(source,target,compiled,logic,policy){
+ const checked=resolveModifierStackLifecyclePolicy(policy);if(!checked.ok)return{ok:false,reason:'MODIFIER_LIFECYCLE_POLICY_MISMATCH',policyError:checked};
+ const stat=compiled.definition.parameters.modifierStat,power=Math.max(0,Number(compiled.definition.parameters.modifierPower)||0),duration=Math.max(1,Math.floor(compiled.definition.parameters.modifierDuration)),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
+ const list=ensureModifierStackList(target),added=[];
+ for(let i=0;i<gain;i++){const stack={id:`MOD-${++modifierStackSequence}`,kind:logic,stat,power,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};list.push(stack);added.push(stack)}
+ return{ok:true,added,power,duration,stat,policy:checked};
+}
+function effectiveModifierPower(target,kind,stat){if(!target?.alive)return 0;const active=ensureModifierStackList(target).filter(x=>x.kind===kind&&x.stat===stat&&x.expiresAt>battle.tick),normalResult=resolveModifierEffectiveValue(active),normal=normalResult.ok?normalResult.power:0,aura=effectiveAuraPower(target,kind,stat);return Math.max(normal,aura)}
+function effectiveAttackValue(unit){const buff=effectiveModifierPower(unit,'BUFF','ATK'),debuff=effectiveModifierPower(unit,'DEBUFF','ATK');return Math.max(0,Math.floor(unit.attack*(1+buff/100)*(1-debuff/100)))}
+function effectiveDamageResist(unit){const base=Number(unit?.damageResist??unit?.damage_resist??0),buff=effectiveModifierPower(unit,'BUFF','DEF'),debuff=effectiveModifierPower(unit,'DEBUFF','DEF'),value=(Number.isFinite(base)?base:0)+buff-debuff;return Math.max(0,Math.min(75,value))}
+function applyDefenseResistance(unit,damage){const raw=Math.max(0,Math.floor(Number(damage)||0)),resistance=effectiveDamageResist(unit),reduced=Math.max(0,Math.floor(raw*(1-resistance/100)));return{rawDamage:raw,resistance,damage:reduced}}
+function recordEffectiveModifierChange(target,kind,stat,before,after,reason){if(before===after)return;battle.log.push(`[Tick ${battle.tick}] [TAG][${kind}] ${target.name}の${stat}実効値 ${before}% → ${after}%（${reason}）`);recordValidationEvent('modifier_effective_changed',{target_id:target.id,kind,stat,before,after,reason})}
+function applyTaggedModifier(source,target,compiled,logic,lifecyclePolicy=null){
+ if(!target?.alive)return{ok:false,reason:'効果対象が無効です'};
+ const stat=compiled.definition.parameters.modifierStat,power=Math.max(0,Number(compiled.definition.parameters.modifierPower)||0),duration=Math.max(1,Math.floor(compiled.definition.parameters.modifierDuration)),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
+ const before=effectiveModifierPower(target,logic,stat),added=[];
+ if(lifecyclePolicy){
+  const lifecycleResult=applyModifierStackLifecycle(source,target,compiled,logic,lifecyclePolicy);
+  if(!lifecycleResult.ok)return lifecycleResult;
+  added.push(...lifecycleResult.added);
+ }else{
+  const list=ensureModifierStackList(target);
+  for(let i=0;i<gain;i++){const stack={id:`MOD-${++modifierStackSequence}`,kind:logic,stat,power,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};list.push(stack);added.push(stack)}
+ }
+ const after=effectiveModifierPower(target,logic,stat);
+ battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] ${source.name}の${compiled.definition.name} → ${target.name}へ${stat} ${power}%を${added.length}スタック付与（実効${after}%、終了Tick ${battle.tick+duration}）`);
+ recordValidationEvent('modifier_stack_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,kind:logic,stat,power,count:added.length,stack_ids:added.map(x=>x.id),expires_at:battle.tick+duration,effective_before:before,effective_after:after,lifecycle_policy:lifecyclePolicy||null});
+ recordEffectiveModifierChange(target,logic,stat,before,after,'stack_added');
+ return{ok:true,added:added.length,power,effective:after,stacks:added,lifecyclePolicy:lifecyclePolicy||null};
+}
+function processModifierStacks(){
+ for(const target of battle.units){const list=ensureModifierStackList(target);if(!list.length)continue;if(!target.alive){target.modifierStacks=[];continue}
+  const groups=new Set(list.map(x=>modifierGroupKey(x.kind,x.stat))),before={};for(const key of groups){const [kind,stat]=key.split(':');before[key]=Math.max(0,...list.filter(x=>x.kind===kind&&x.stat===stat).map(x=>x.power))}
+  const expired=list.filter(x=>x.expiresAt<=battle.tick),keep=list.filter(x=>x.expiresAt>battle.tick);target.modifierStacks=keep;
+  for(const x of expired){battle.log.push(`[Tick ${battle.tick}] [TAG][${x.kind}] ${target.name}の${x.stat} ${x.power}% #${x.id}が終了`);recordValidationEvent('modifier_expired',{target_id:target.id,stack_id:x.id,kind:x.kind,stat:x.stat,power:x.power})}
+  for(const key of groups){const [kind,stat]=key.split(':'),after=effectiveModifierPower(target,kind,stat);recordEffectiveModifierChange(target,kind,stat,before[key],after,'stack_expired')}
+ }
+}
+function clearModifierStacksOnDeath(target,{cause='death',sourceId=null}={}){
+ const list=ensureModifierStackList(target);if(!list.length)return 0;
+ const cleared=[...list],groups=new Map();for(const x of cleared){const key=modifierGroupKey(x.kind,x.stat);groups.set(key,Math.max(groups.get(key)||0,x.power))}
+ target.modifierStacks=[];
+ for(const x of cleared)recordValidationEvent('modifier_cleared_on_death',{target_id:target.id,stack_id:x.id,kind:x.kind,stat:x.stat,power:x.power,source_id:x.sourceId,cause});
+ for(const [key,before] of groups){const [kind,stat]=key.split(':');recordEffectiveModifierChange(target,kind,stat,before,0,'target_defeated')}
+ battle.log.push(`[Tick ${battle.tick}] [TAG][MODIFIER] ${target.name}の効果${cleared.length}件を戦闘不能により解除`);
+ recordValidationEvent('modifier_death_cleanup',{target_id:target.id,source_id:sourceId,cleared_count:cleared.length,cause});
+ return cleared.length;
+}
+function recordModifierSourceDefeated(source){
+ const dependent=battle.units.flatMap(t=>ensureModifierStackList(t).filter(x=>x.sourceId===source.id).map(x=>({target_id:t.id,stack_id:x.id,kind:x.kind,stat:x.stat,power:x.power,expires_at:x.expiresAt})));
+ recordValidationEvent('modifier_source_defeated',{source_id:source.id,persistent_stack_count:dependent.length,persistent_stacks:dependent});
+ battle.log.push(`[Tick ${battle.tick}] [TAG][MODIFIER] 付与者${source.name}が戦闘不能。付与型効果${dependent.length}件は自然終了まで継続`);
+ return dependent.length;
+}
+function modifierStatusText(unit){const list=ensureModifierStackList(unit),stats=TAG_COMBAT_MODIFIER_PARAMS,parts=[];const groups={};for(const x of list){const k=modifierGroupKey(x.kind,x.stat);(groups[k]||(groups[k]=[])).push(x)}for(const [k,v] of Object.entries(groups)){const [kind,stat]=k.split(':'),effective=effectiveModifierPower(unit,kind,stat);parts.push(`${k} ${v.length}stack / 実効${effective}%`)}for(const kind of ['BUFF','DEBUFF'])for(const stat of stats){const aura=effectiveAuraPower(unit,kind,stat);if(aura&&!groups[modifierGroupKey(kind,stat)])parts.push(`AURA ${kind}:${stat} 実効${aura}%`)}return parts.length?parts.join('、'):'なし'}
 let shieldEffectSequence=0;
 function ensureShieldEffects(target){if(!Array.isArray(target.shieldEffects))target.shieldEffects=[];return target.shieldEffects}
 function shieldTotal(target){return ensureShieldEffects(target).reduce((sum,x)=>sum+Math.max(0,Number(x.remaining)||0),0)}
@@ -445,6 +531,7 @@ function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=t
  if(!target?.alive){battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 対象戦闘不能のため${logic==='STATUS'?'状態異常':logic==='DOT'?'DOT':'付与効果'}付与をスキップ`);return{handled:true,skipped:true,reason:'TARGET_DEAD',result:null}}
  if(logic==='STATUS')return{handled:true,skipped:false,result:applyTaggedStatus(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='DOT')return{handled:true,skipped:false,result:applyTaggedDot(source,target,compiled,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
+ if(logic==='BUFF'||logic==='DEBUFF')return{handled:true,skipped:false,result:applyTaggedModifier(source,target,compiled,logic,lifecycleRef.generic?lifecycleRef.policy:null),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  if(logic==='SHIELD')return{handled:true,skipped:false,result:applyTaggedShield(source,target,compiled),lifecycle:lifecycleRef.lifecycle,policy:lifecycleRef.policy,contract:lifecycleRef.contract};
  return{handled:false,skipped:false,result:null};
 }
@@ -462,17 +549,17 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[];
  for(const resolvedTarget of resolved.targets){
-  let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
+  let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,modifierResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
   for(const logic of compiled.definition.logicOrder){
    if(logic==='COUNTER'){continue}
    if(logic==='ATTACK'){attackResult=applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL'){healResult=applyTaggedHeal(actor,resolvedTarget,compiled)}
-   else if(['SHIELD','STATUS','DOT'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else dotResult=applyResult.result}
+   else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
    else if(logic==='CLEANSE'){cleanseResult=cleanseStatusEffects(actor,resolvedTarget,compiled)}
    else if(logic==='REVIVE'){reviveResult=reviveTarget(actor,resolvedTarget,compiled)}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
-  targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,cleanseResult,reviveResult});
+  targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,modifierResult,cleanseResult,reviveResult});
   if(attackResult?.ok&&!suppressDerived&&actualOrigin==='base')dispatchCounterAfterAttack(actor,resolvedTarget,compiled,attackResult,{origin:actualOrigin});
   else if(attackResult?.ok&&actualOrigin==='counter')typeof recordValidationEvent==='function'&&recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN'});
  }
