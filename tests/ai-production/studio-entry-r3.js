@@ -30,8 +30,8 @@ assert(html.includes("if(name==='ai-production')window.GKSAIProductionUI?.render
 const rootElement = {innerHTML: ''};
 const fakeDocument = {getElementById: (id) => id === 'aiProductionRoot' ? rootElement : null};
 assert.strictEqual(UI.render(fakeDocument), true);
-assert(rootElement.innerHTML.includes('R3 入口確認画面'));
-assert(rootElement.innerHTML.includes('編集機能</b><span>次工程で追加'));
+assert(rootElement.innerHTML.includes('AI部品パレット'));
+assert(rootElement.innerHTML.includes('一致するAI部品がありません'));
 assert.strictEqual(UI.render({getElementById: () => null}), false);
 
 assert(css.includes('@media(max-width:700px)'), 'AI production entry must have a mobile layout');
