@@ -69,6 +69,26 @@ assert.deepEqual(fixedFail.reward_result,{});
 assert.deepEqual(S.normalizeEvent({type:'battle',battle_formation:[{monster_id:'M1',count:2.8}]}).battle_formation,[{monster_id:'M1',count:2}]);
 assert.equal(S.validatePlaybackEvents([{type:'battle_start'},{type:'damage'},{type:'battle_end'}]),true);
 assert.equal(S.validatePlaybackEvents([{type:'debug_line'}]),false);
+
+// Quest start gate and cost: prerequisite/flag checks are deterministic and consumption is one-shot at start.
+const gate=S.questStartRequirements({prerequisite_ids:['Q-PREV'],required_flags:['F-OPEN']},{completedQuestIds:['Q-PREV'],flags:{'F-OPEN':true}});
+assert.equal(gate.ok,true);
+assert.equal(S.questStartRequirements({prerequisite_ids:['Q-PREV'],required_flags:['F-OPEN']},{completedQuestIds:[],flags:{}}).ok,false);
+const startCost=S.normalizeQuestStartCost({start_cost:{gold:30,resources:{'TBL-RED':2}}});
+assert.deepEqual(startCost,{gold:30,resources:{'TBL-RED':2}});
+const startSave={guild:{gold:100},quest_resources:{'TBL-RED':3}};
+assert.equal(S.canAffordQuestStartCost(startSave,startCost).ok,true);
+const consumed=S.consumeQuestStartCost(startSave,startCost);
+assert.equal(consumed.consumed,true);assert.equal(startSave.guild.gold,70);assert.equal(startSave.quest_resources['TBL-RED'],1);
+assert.equal(S.consumeQuestStartCost(startSave,startCost).reason,'insufficient_start_cost');
+const progress=S.questProgressResult({id:'Q-NOW',next_quest_ids:['Q-NEXT'],set_flags:['F-DONE']},true);
+assert.deepEqual(progress,{complete_quest_id:'Q-NOW',unlock_quest_ids:['Q-NEXT'],set_flags:{'F-DONE':true}});
+const progressedRun=S.simulateQuest({quest:{id:'Q-PROG',next_quest_ids:['Q-2'],set_flags:['F-Q']},section:{id:'S-PROG',boxes:[]},chapter:{id:'C-PROG'},startCostResult:{consumed:true,cost:{gold:10,resources:{}}}});
+assert.equal(progressedRun.quest_progress_result.complete_quest_id,'Q-PROG');
+assert.equal(progressedRun.quest_progress_result.unlock_quest_ids[0],'Q-2');
+assert.equal(progressedRun.quest_progress_result.set_flags['F-Q'],true);
+assert.equal(progressedRun.start_cost_result.cost.gold,10);
+
 console.log('adventure-story-system PASS');
 
 // QuestRun persistence: active run survives save normalization, history is bounded and commit is one-shot.
