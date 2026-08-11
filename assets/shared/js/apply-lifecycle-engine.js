@@ -1,4 +1,4 @@
-/* GKS APPLY Lifecycle Engine facade — R03-F2
+/* GKS APPLY Lifecycle Engine facade — R03-F3a
  * Central API for lifecycle policy operations. Effect-specific algorithms stay in tag runtimes
  * until later R03-F phases; this facade only normalizes invocation and failure handling.
  */
@@ -8,7 +8,7 @@
   if(root)root.GKSApplyLifecycleEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R03-F2';
+  const VERSION='R03-F3a';
   const OPERATIONS=Object.freeze(['resolve','apply','expire','cleanup','consume','effective']);
   function normalizeKind(kind){return String(kind||'').trim().toUpperCase()}
   function failure(code,kind,operation,extra={}){return{ok:false,reason:code,kind:normalizeKind(kind),operation,...extra}}

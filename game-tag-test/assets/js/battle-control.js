@@ -129,9 +129,7 @@ function executeReservation(actor){
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
   battle.tick++;
-  processShieldEffects();
-  processStatusEffects();
-  processDotStacks();
+  processApplyLifecycleExpirations();
   if(battle.result||battle.pendingResult)break;
   if(battle.validationMode)continue;
   battle.units.filter(u=>u.alive).forEach(u=>u.gauge+=u.agi);

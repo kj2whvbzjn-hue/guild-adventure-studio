@@ -156,12 +156,9 @@ function fixDueActionOrder(due){
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
   battle.tick++;
-  processModifierStacks();
-  processShieldEffects();
-  processStatusEffects();
+  processApplyLifecycleExpirations();
   processCooldowns();
   processCoverEffects();
-  processDotStacks();
   if(battle.result||battle.pendingResult)break;
   if(battle.validationMode)continue;
   battle.units.filter(u=>u.alive).forEach(u=>u.gauge+=u.agi);

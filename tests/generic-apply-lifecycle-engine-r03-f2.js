@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm');
 const shared=require('../assets/shared/js/apply-lifecycle-engine.js');
 function ok(v,m){if(!v)throw new Error(m)}
-ok(shared.VERSION==='R03-F2','shared lifecycle engine version mismatch');
+ok(/^R03-F/.test(shared.VERSION),'shared lifecycle engine F-series version mismatch');
 for(const op of ['resolve','apply','expire','cleanup','consume','effective'])ok(shared.OPERATIONS.includes(op),`operation ${op} missing`);
 const calls=[];
 const probe=shared.create({
@@ -20,7 +20,7 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  const ctx={console,GKSApplyLifecycleEngine:shared,battle:{tick:0,units:[],log:[],validationEvents:[]},recordValidationEvent(){}};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);
  ok(typeof ctx.getTaggedApplyLifecycleEngine==='function',`${path}: lifecycle engine missing`);
  const engine=ctx.getTaggedApplyLifecycleEngine();
- ok(engine.version==='R03-F2',`${path}: shared R03-F2 engine not connected`);
+ ok(/^R03-F/.test(engine.version),`${path}: shared F-series engine not connected`);
  ok(engine.expire('STATUS',{}).ok,`${path}: STATUS expire op unavailable`);
  ok(engine.cleanup('STATUS',{reason:'test'}).ok,`${path}: STATUS cleanup op unavailable`);
  ok(engine.expire('DOT',{}).ok,`${path}: DOT expire op unavailable`);

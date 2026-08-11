@@ -602,6 +602,12 @@ function getTaggedApplyLifecycleEngine(){
  return taggedApplyLifecycleEngine;
 }
 
+
+function processApplyLifecycleExpirations(){
+ const engine=getTaggedApplyLifecycleEngine(),steps=['BUFF','SHIELD','STATUS','DOT'],results=[];
+ for(const kind of steps){const result=engine.expire(kind,{tick:battle.tick});results.push({kind,result});if(!result?.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('apply_lifecycle_expire_failed',{kind,tick:battle.tick,reason:result?.reason||'UNKNOWN'});return{ok:false,kind,reason:result?.reason||'UNKNOWN',results}}}
+ return{ok:true,results};
+}
 function resolveGenericApplyLifecycle(compiled,logic){
  const runtime=compiled?.definition?.genericRuntime;if(!runtime)return{generic:false,ok:true,contract:null,lifecycle:null};
  const contract=runtime.applyContracts?.find(x=>x.logic===logic)||null;
