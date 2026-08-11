@@ -13,6 +13,10 @@ for(const needle of [
  "FORMAL_QUEST_CHAPTER_MISSING:'Chapter参照切れ'",
  '<details class="small warn">',
  'escapeHtml(issue.quest_id)',
+ 'async function reloadFormalAdventureQuests()',
+ "loadAdventureContent({force:true})",
+ 'id="reloadStoryQuests"',
+ 'Storyデータを再読込',
  '件のQuestを参照不整合のため除外',
  'StudioのExport検証でChapter / Section / Boxを確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
