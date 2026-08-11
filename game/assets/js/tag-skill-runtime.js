@@ -307,6 +307,22 @@ function ensureStatusEffects(target){if(!Array.isArray(target.statusEffects))tar
 function statusSnapshot(target){return ensureStatusEffects(target).map(x=>({instance_id:x.instanceId,status_id:x.statusId,source_id:x.sourceId,target_id:x.targetId,skill_id:x.skillId,applied_tick:x.appliedTick,base_duration_tick:x.baseDurationTick,effective_duration_tick:x.effectiveDurationTick,expires_tick:x.expiresTick,target_resistance:x.targetResistance,stack_policy:x.stackPolicy,payload:x.payload}))}
 function statusResistance(target,statusId){const raw=Number(target?.statusResistance?.[statusId]??target?.statusResistance??0);return Math.max(0,Math.min(75,Number.isFinite(raw)?raw:0))}
 function effectiveStatusDuration(baseDuration,resistance){return Math.max(1,Math.floor(Math.max(1,Number(baseDuration)||1)*(1-Math.max(0,Math.min(75,Number(resistance)||0))/100)))}
+function resolveStatusUniqueRefreshLifecyclePolicy(lifecycle){
+ const policy=lifecycle&&typeof lifecycle==='object'?lifecycle:null;if(!policy)return{ok:false,reason:'STATUS lifecycle契約がありません'};
+ const stackRule=String(policy.stackRule||'').toUpperCase(),refreshRule=String(policy.refreshRule||'').toUpperCase();
+ if(stackRule!=='UNIQUE')return{ok:false,reason:`STATUS lifecycle stackRule=${stackRule||'(empty)'} は未対応です`,field:'stackRule',value:stackRule};
+ if(refreshRule!=='REFRESH')return{ok:false,reason:`STATUS lifecycle refreshRule=${refreshRule||'(empty)'} は未対応です`,field:'refreshRule',value:refreshRule};
+ return{ok:true,stackRule,refreshRule};
+}
+function applyStatusUniqueRefreshLifecycle(list,{statusId,newEffect,refreshPatch}={},lifecycle){
+ if(!Array.isArray(list))return{ok:false,reason:'STATUS lifecycle対象listが配列ではありません'};
+ const policy=resolveStatusUniqueRefreshLifecyclePolicy(lifecycle);if(!policy.ok)return{...policy,refreshed:false,effect:null};
+ if(!statusId)return{ok:false,reason:'STATUS lifecycleにはstatusIdが必要です',refreshed:false,effect:null};
+ const existing=list.find(x=>x&&x.statusId===statusId);
+ if(existing){Object.assign(existing,refreshPatch||{});return{ok:true,refreshed:true,effect:existing,policy}}
+ if(!newEffect||typeof newEffect!=='object')return{ok:false,reason:'STATUS lifecycle新規付与にはnewEffectが必要です',refreshed:false,effect:null,policy};
+ list.push(newEffect);return{ok:true,refreshed:false,effect:newEffect,policy};
+}
 function applyTaggedStatus(source,target,compiled){
  if(!target?.alive)return{ok:false,reason:'状態異常対象が無効です'};
  const p=compiled.definition.parameters,statusId=p.statusId,baseDuration=Math.floor(Number(p.statusDuration)||0),resistance=statusResistance(target,statusId),duration=effectiveStatusDuration(baseDuration,resistance);
