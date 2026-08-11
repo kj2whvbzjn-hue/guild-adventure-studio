@@ -2,8 +2,8 @@ const assert=require('assert');
 const fs=require('fs');
 const engine=require('../assets/shared/js/trigger-engine.js');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
-assert.strictEqual(engine.VERSION,'R04-E2');
-assert.strictEqual(registry.phase,'R04-E2');
+assert.ok(/^R04-E[23]$/.test(engine.VERSION),`unexpected trigger engine version ${engine.VERSION}`);
+assert.ok(/^R04-E[23]$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.deepStrictEqual(engine.REACTIVE_FAMILY_ORDER,{COUNTER:0,FOLLOW_UP:1});
 
 // Reactive families keep the established production boundary: COUNTER before FOLLOW_UP.

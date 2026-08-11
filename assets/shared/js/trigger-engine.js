@@ -2,6 +2,7 @@
  * Registry-backed trigger resolution/validation/event recording only.
  * R04-E1 adds a shared per-action trigger guard for recursion/re-entry and activation caps while preserving runtime effect execution.
  * R04-E2 adds deterministic simultaneous reactive-trigger ordering shared by Game and game-tag-test.
+ * R04-E3 closes R04 with a cross-trigger regression gate; runtime behavior is unchanged.
  */
 (function(root,factory){
   const api=factory();
@@ -9,7 +10,7 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-E2';
+  const VERSION='R04-E3';
   const DEFAULT_ACTION_TRIGGER_LIMIT=16;
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
