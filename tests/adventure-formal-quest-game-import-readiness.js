@@ -20,7 +20,10 @@ for(const needle of [
  'let adventureStoryLoadState=',
  'function formalAdventureStoryLoadLabel()',
  'id="storyDataLoadStatus"',
- '最終読込 ${time} ／ 利用可能 ${s.quest_count}件 ／ 除外 ${s.excluded_count}件',
+ "manifest:'../Export/manifest.json'",
+ 'async function fetchAdventureManifest()',
+ 'data_version:String(content?.manifest?.data_version||\'\')',
+ 'Export ${version} ／ 最終読込 ${time}',
  '件のQuestを参照不整合のため除外',
  'StudioのExport検証でChapter / Section / Boxを確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
