@@ -11,8 +11,8 @@ async function makeAdd(base,id){const env=await dx.buildEnvelope({rootData:base,
 async function main(){
  const base=baseProject();
  const html=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
- assert(html.includes('data-exchange-core.js?v=12'),'DE-20 core cache key');
- assert(html.includes('data-exchange-ui.js?v=21'),'DE-20 UI cache key');
+ assert(html.includes('data-exchange-core.js?v=14'),'DE-20 core cache key');
+ assert(html.includes('data-exchange-ui.js?v=22'),'DE-20 UI cache key');
  assert(html.includes('GKSDataExchangeUI.openStoryPicker()'),'Story Data Exchange scenario entry');
  const ui=fs.readFileSync(path.resolve(__dirname,'../data-exchange-ui.js'),'utf8');
  assert(ui.includes("datasets:['chapters','story_sections','story_scenes','story_dialogues']"),'Story-only picker datasets');

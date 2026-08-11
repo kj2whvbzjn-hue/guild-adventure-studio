@@ -31,7 +31,7 @@ const ui=fs.readFileSync(path.join(root,'studio/ai-production/ai-production-ui.j
 const sw=fs.readFileSync(path.join(root,'studio/sw.js'),'utf8');
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'studio/ai-production/manifest.json'),'utf8'));
 assert(html.includes('./ai-production/ai-program-editor.js?v=1'));
-assert(html.includes('R9-A 正式Export'), 'evolved Studio must retain R5-B graph editing under formal export');
+assert(html.includes('R9-B Data Exchange'), 'evolved Studio must retain R5-B graph editing under formal export');
 assert(sw.includes('./ai-production/ai-program-editor.js?v=1'));
 assert.strictEqual(manifest.entrypoints.editor,'ai-program-editor.js');
 assert(ui.includes('GKSAIProductionUI.addSelectedPart()'));

@@ -205,11 +205,11 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit UI markers missing: " + ", ".join(missing_ui))
     if "data-exchange-audit.js" not in index or 'id="dxAuditPanel"' not in index:
         raise RuntimeError("DE-16 Audit Studio integration missing")
-    if "data-exchange-core.js?v=12" not in index:
+    if "data-exchange-core.js?v=14" not in index:
         raise RuntimeError("DE-16.1 core cache bust missing")
     if "data-exchange-transaction.js?v=3" not in index:
         raise RuntimeError("DE-16.3 transaction cache bust missing")
-    if "data-exchange-audit.js?v=5" not in index or "data-exchange-ui.js?v=21" not in index:
+    if "data-exchange-audit.js?v=5" not in index or "data-exchange-ui.js?v=22" not in index:
         raise RuntimeError("DE-16.5 cache bust missing")
     transaction = (DX / "data-exchange-transaction.js").read_text(encoding="utf-8")
     for marker in ["projectHashSnapshot", "delete snapshot.project.updated_at", "delete snapshot.history"]:
@@ -223,7 +223,7 @@ def cache_bust_de165():
     ui = (DX / "data-exchange-ui.js").read_text(encoding="utf-8")
     if "data-exchange-audit.js?v=5" not in index:
         raise RuntimeError("DE-16.5 audit cache bust missing")
-    if "data-exchange-ui.js?v=21" not in index:
+    if "data-exchange-ui.js?v=22" not in index:
         raise RuntimeError("DE-16.5 UI cache bust missing")
     if "async function datasetHash" not in audit or "GKSDataExchangeAudit.datasetHash" not in ui:
         raise RuntimeError("DE-16.5 datasetHash runtime integration missing")
@@ -239,6 +239,9 @@ def job_equipment_mod_ai_vertical_gate():
 
 def story_vertical_gate():
     run(["node", str(HERE / "data-exchange-story-vertical-gate.test.js")], cwd=str(HERE))
+
+def ai_program_vertical_gate():
+    run(["node", str(HERE / "data-exchange-ai-program-vertical-gate.test.js")], cwd=str(HERE))
 
 
 def main():
@@ -272,6 +275,7 @@ def main():
         "tag_skill_vertical_gate": tag_skill_vertical_gate,
         "job_equipment_mod_ai_vertical_gate": job_equipment_mod_ai_vertical_gate,
         "story_vertical_gate": story_vertical_gate,
+        "ai_program_vertical_gate": ai_program_vertical_gate,
     }
     done=set()
     for name in steps:
