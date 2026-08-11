@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R04-A';
+const VERSION='R04-B1';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -27,10 +27,11 @@ function compileGenericSkill(skill,registry,legacyCompile){
  if(skill.schemaVersion!==SUPPORTED_SCHEMA)err(errors,'UNSUPPORTED_SCHEMA','schemaVersion',`schemaVersion=${skill.schemaVersion}は未対応です`);
  if(typeof skill.id!=='string'||!skill.id.trim())err(errors,'ID_REQUIRED','id','idが必要です');
  if(typeof skill.name!=='string'||!skill.name.trim())err(errors,'NAME_REQUIRED','name','nameが必要です');
- const trigger=skill.trigger?.type;
+ const trigger=String(skill.trigger?.type||'').toUpperCase();
  const triggerDef=registry.triggers?.[trigger];
  if(!triggerDef)err(errors,'UNKNOWN_TRIGGER','trigger.type',`未定義Trigger: ${trigger||'(なし)'}`);
- else if(!triggerDef.legacy_supported)err(errors,'LEGACY_TRIGGER_UNSUPPORTED','trigger.type',`R02 Legacy Adapter未対応Trigger: ${trigger}`);
+ else if(!triggerDef.legacy_supported)err(errors,'LEGACY_TRIGGER_UNSUPPORTED','trigger.type',`Legacy Adapter未対応Trigger: ${trigger}`);
+ else compileTriggerAdapter(skill,trigger,triggerDef,registry,tags,errors);
  const side=registry.targets?.sides?.[skill.target?.side],range=registry.targets?.ranges?.[skill.target?.range];
  if(!side)err(errors,'UNKNOWN_TARGET_SIDE','target.side',`未定義対象: ${skill.target?.side||'(なし)'}`);else pushUnique(tags,side);
  if(!range)err(errors,'UNKNOWN_TARGET_RANGE','target.range',`未定義範囲: ${skill.target?.range||'(なし)'}`);else pushUnique(tags,range);
@@ -59,6 +60,29 @@ function compileGenericSkill(skill,registry,legacyCompile){
  return result();
  function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
 }
+
+function compileTriggerAdapter(skill,trigger,def,registry,tags,errors){
+ if(trigger==='ON_USE')return;
+ const adapter=def?.legacy_adapter;
+ if(!adapter||typeof adapter!=='object'){err(errors,'TRIGGER_LEGACY_ADAPTER_REQUIRED','trigger.type',`${trigger}のLegacy Adapter定義が必要です`);return}
+ if(trigger==='ON_HIT_RECEIVED'){
+  if(adapter.logic!=='COUNTER'){err(errors,'COUNTER_ADAPTER_LOGIC_INVALID','trigger.type','ON_HIT_RECEIVEDはCOUNTER Adapterが必要です');return}
+  if(skill.target?.side!==adapter.target_side)err(errors,'COUNTER_TARGET_SIDE_REQUIRED','target.side',`COUNTERは${adapter.target_side}対象が必要です`);
+  if(skill.target?.range!==adapter.target_range)err(errors,'COUNTER_TARGET_RANGE_REQUIRED','target.range',`COUNTERは${adapter.target_range}範囲が必要です`);
+  const effects=Array.isArray(skill.effects)?skill.effects:[];
+  if(!effects.some(e=>String(e?.type||'').toUpperCase()===String(adapter.requires_effect||'DAMAGE').toUpperCase()))err(errors,'COUNTER_DAMAGE_EFFECT_REQUIRED','effects','ON_HIT_RECEIVED CounterにはDAMAGE Effectが必要です');
+  pushUnique(tags,adapter.logic);
+  for(const t of adapter.general_tags||[])pushUnique(tags,t);
+  const defaults=adapter.numeric_defaults||{};
+  const limit=own(skill.trigger,'limit')?skill.trigger.limit:defaults.COUNTER_LIMIT;
+  const priority=own(skill.trigger,'priority')?skill.trigger.priority:defaults.COUNTER_PRIORITY;
+  if(!Number.isInteger(limit)||limit!==1)err(errors,'COUNTER_LIMIT_INVALID','trigger.limit','現在のCOUNTER limitは1が必要です');else pushUnique(tags,`COUNTER_LIMIT=${limit}`);
+  if(!Number.isInteger(priority))err(errors,'COUNTER_PRIORITY_INVALID','trigger.priority','COUNTER priorityは整数が必要です');else pushUnique(tags,`COUNTER_PRIORITY=${priority}`);
+  return;
+ }
+ err(errors,'TRIGGER_LEGACY_ADAPTER_UNIMPLEMENTED','trigger.type',`Trigger Adapter未実装: ${trigger}`);
+}
+
 function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,applyContracts){
  const p=`effects[${index}]`;if(!effect||typeof effect!=='object'){err(errors,'INVALID_EFFECT',p,'Effect objectが必要です');return}
  const type=String(effect.type||'').toUpperCase();

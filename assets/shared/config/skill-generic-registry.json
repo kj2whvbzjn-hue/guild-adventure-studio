@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "phase": "R04-A",
+  "phase": "R04-B1",
   "runtime": {
     "effects": [
       "DAMAGE",
@@ -31,13 +31,29 @@
       ]
     },
     "ON_HIT_RECEIVED": {
-      "legacy_supported": false,
+      "legacy_supported": true,
       "enabled": true,
       "engine_event": "hit_received",
-      "dispatch_mode": "RESOLVE_ONLY",
+      "dispatch_mode": "LEGACY_COUNTER_ADAPTER",
       "allowed_scopes": [
         "SELF"
-      ]
+      ],
+      "legacy_adapter": {
+        "logic": "COUNTER",
+        "requires_effect": "DAMAGE",
+        "target_side": "ENEMY",
+        "target_range": "SINGLE",
+        "general_tags": [
+          "COUNTER_TRIGGER=hit",
+          "COUNTER_TARGET=attacker",
+          "COUNTER_REQUIRE_ALIVE=true",
+          "COUNTER_ALLOW_ZERO_DAMAGE=true"
+        ],
+        "numeric_defaults": {
+          "COUNTER_LIMIT": 1,
+          "COUNTER_PRIORITY": 0
+        }
+      }
     },
     "ON_DAMAGE_DEALT": {
       "legacy_supported": false,

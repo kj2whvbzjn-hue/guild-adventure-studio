@@ -8,7 +8,7 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-A';
+  const VERSION='R04-B1';
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_DAMAGE_DEALT',
     'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED'
