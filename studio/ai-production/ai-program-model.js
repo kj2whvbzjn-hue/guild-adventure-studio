@@ -50,5 +50,21 @@
     }
     return candidate;
   }
-  return Object.freeze({DATA_VERSION, normalizeProgram, duplicateIds, nextProgramId});
+  function createProgram(id, now) {
+    return normalizeProgram({
+      id: String(id || ''), name: '新しいAIプログラム', updated_at: String(now || ''),
+      status: 'draft', entry_node_id: '', nodes: [], edges: [], subroutines: [], tags: [], description: ''
+    });
+  }
+  function duplicateProgram(value, id, now) {
+    const copy = normalizeProgram(value);
+    copy.id = String(id || '');
+    copy.name = `${copy.name || 'AIプログラム'} のコピー`;
+    copy.version = 1;
+    copy.status = 'draft';
+    copy.updated_at = String(now || '');
+    copy.compiled = null;
+    return copy;
+  }
+  return Object.freeze({DATA_VERSION, normalizeProgram, duplicateIds, nextProgramId, createProgram, duplicateProgram});
 });

@@ -37,5 +37,13 @@
     else projectData.ai_programs.push(program);
     return program;
   }
-  return Object.freeze({normalizeProject, inspect, nextProgramId, upsert});
+  function duplicate(projectData, sourceId, now) {
+    normalizeProject(projectData);
+    const source = projectData.ai_programs.find((program) => program.id === sourceId);
+    if (!source) throw new Error(`AI program not found: ${sourceId}`);
+    const copy = Model.duplicateProgram(source, nextProgramId(projectData), now);
+    projectData.ai_programs.push(copy);
+    return copy;
+  }
+  return Object.freeze({normalizeProject, inspect, nextProgramId, upsert, duplicate});
 });

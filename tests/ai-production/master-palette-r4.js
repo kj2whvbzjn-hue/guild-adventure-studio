@@ -49,7 +49,7 @@ const html = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8');
 assert(html.includes('id="aiMasterFields"'));
 assert(html.includes('id="aiMasterParameterSchema"'));
 assert(html.includes('params.ai_definition=structuredClone(node)'), 'dedicated fields must mirror into legacy params');
-assert(html.includes('window.GKSAIProductionHost={getData:()=>data}'));
+assert(html.includes('window.GKSAIProductionHost={getData:()=>data,'), 'evolved host must retain read-only master access while adding project persistence');
 assert(html.includes('./ai-production/ai-master-adapter.js?v=1'));
 
 console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 sync=1');

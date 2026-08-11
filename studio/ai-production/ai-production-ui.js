@@ -1,14 +1,25 @@
 (function (root, factory) {
-  const adapter = typeof module === 'object' && module.exports ? require('./ai-master-adapter.js') : root && root.GKSAIMasterAdapter;
-  const api = factory(adapter, root);
-  if (typeof module === 'object' && module.exports) module.exports = api;
+  const commonjs = typeof module === 'object' && module.exports;
+  const api = factory(
+    commonjs ? require('./ai-master-adapter.js') : root && root.GKSAIMasterAdapter,
+    commonjs ? require('./ai-program-model.js') : root && root.GKSAIProgramModel,
+    commonjs ? require('./ai-program-store.js') : root && root.GKSAIProgramStore,
+    root
+  );
+  if (commonjs) module.exports = api;
   if (root) root.GKSAIProductionUI = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Adapter, root) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Adapter, Model, Store, root) {
   'use strict';
-  let selected = null, search = '';
+  let selectedPart = null, paletteSearch = '', programSearch = '', draft = null, original = null, dirty = false;
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  function hostData() { return root?.GKSAIProductionHost?.getData?.() || {masters: {}, tags: []}; }
+  const clone = (value) => value == null ? value : JSON.parse(JSON.stringify(value));
+  function host() { return root?.GKSAIProductionHost || {}; }
+  function hostData() { return host().getData?.() || {masters: {}, tags: [], ai_programs: []}; }
   function references(data) { return {tags: data.tags || [], skills: data.masters?.skills || []}; }
+  function now() { return host().now?.() || new Date().toISOString(); }
+  function isDirty() { return dirty; }
+  function setDraft(value) { draft = Model.normalizeProgram(value); original = clone(draft); dirty = false; }
+  function markDirty() { dirty = true; render(); }
   function fieldHtml(field) {
     const required = field.required ? ' required' : '';
     if (field.options.length) return `<label>${esc(field.label)}${field.required?' *':''}<select data-ai-param="${esc(field.name)}"${required}><option value="">選択してください</option>${field.options.map((option) => `<option value="${esc(option.id)}">${esc(option.name)} (${esc(option.id)})</option>`).join('')}</select>${field.ref_kind==='tag'?'<input class="ai-reference-search" type="search" placeholder="タグを検索" oninput="GKSAIProductionUI.filterReferenceOptions(this)">':''}</label>`;
@@ -16,30 +27,44 @@
     const type = field.type === 'number' || field.type === 'integer' ? 'number' : 'text';
     return `<label>${esc(field.label)}${field.required?' *':''}<input data-ai-param="${esc(field.name)}" type="${type}"${field.minimum!=null?` min="${field.minimum}"`:''}${field.maximum!=null?` max="${field.maximum}"`:''}${field.type==='integer'?' step="1"':''}${required}></label>`;
   }
+  function programRows(data) {
+    const q = programSearch.trim().toLowerCase();
+    return (Array.isArray(data.ai_programs) ? data.ai_programs : []).filter((program) => !q || [program.id, program.name, program.description, ...(program.tags || [])].join(' ').toLowerCase().includes(q));
+  }
+  function editorHtml() {
+    if (!draft) return '<div class="ai-program-editor"><p>一覧からAIプログラムを選択するか、新規作成してください。</p></div>';
+    return `<div class="ai-program-editor"><div class="ai-program-toolbar"><h3>${esc(draft.id)}</h3>${dirty?'<span class="ai-unsaved">未保存</span>':'<span class="small">保存済み</span>'}</div><label>名称 *<input id="aiProgramName" value="${esc(draft.name)}" oninput="GKSAIProductionUI.updateDraft('name',this.value)"></label><label>状態<select id="aiProgramStatus" onchange="GKSAIProductionUI.updateDraft('status',this.value)">${['draft','valid','invalid','archived'].map((status)=>`<option value="${status}"${draft.status===status?' selected':''}>${status}</option>`).join('')}</select></label><label>タグ（空白またはカンマ区切り）<input id="aiProgramTags" value="${esc((draft.tags||[]).join(' '))}" oninput="GKSAIProductionUI.updateDraft('tags',this.value)"></label><label>説明<textarea id="aiProgramDescription" rows="4" oninput="GKSAIProductionUI.updateDraft('description',this.value)">${esc(draft.description)}</textarea></label><div class="small">部品 ${draft.nodes.length} / 接続 ${draft.edges.length} / サブルーチン ${draft.subroutines.length}${draft.updated_at?` / 更新 ${esc(draft.updated_at)}`:''}</div><div class="ai-editor-actions"><button type="button" class="primary" onclick="GKSAIProductionUI.saveDraft()">保存</button><button type="button" onclick="GKSAIProductionUI.revertDraft()"${dirty?'':' disabled'}>変更を戻す</button><button type="button" onclick="GKSAIProductionUI.duplicateDraft()">複製</button></div></div>`;
+  }
   function render(doc) {
     const documentRef = doc || (typeof document !== 'undefined' ? document : null), target = documentRef?.getElementById('aiProductionRoot');
-    if (!target || !Adapter) return false;
-    const data = hostData(), rows = Adapter.palette(data.masters, search, {data_version: '1.0.0', unlocked_ids: data.ai_unlocks || []});
-    const chosen = selected ? rows.find((row) => row.id === selected.id && row.node_type === selected.node_type) : null;
+    if (!target || !Adapter || !Model || !Store) return false;
+    const data = hostData(); Store.normalizeProject(data);
+    const programs = programRows(data);
+    const rows = Adapter.palette(data.masters, paletteSearch, {data_version: Model.DATA_VERSION, unlocked_ids: data.ai_unlocks || []});
+    const chosen = selectedPart ? rows.find((row) => row.id === selectedPart.id && row.node_type === selectedPart.node_type) : null;
     const fields = chosen ? Adapter.inputDescriptors(chosen, references(data)) : [];
-    target.innerHTML = `<div class="ai-production-shell"><div class="ai-production-hero"><h2>AI部品パレット</h2><p>条件・対象・行動マスターを検索し、部品Schemaに従って設定します。</p><input id="aiPaletteSearch" type="search" value="${esc(search)}" placeholder="ID・名称・タグを検索" oninput="GKSAIProductionUI.setSearch(this.value)"></div><div class="ai-production-workspace"><div id="aiPaletteList" class="ai-palette-list">${rows.length?rows.map((row) => `<button type="button" class="ai-palette-item ${row.available?'':'disabled'}" ${row.available?'': 'disabled'} onclick="GKSAIProductionUI.select('${esc(row.id)}','${esc(row.node_type)}')"><b>${esc(row.name||row.id)}</b><span>${esc(row.id)} / ${esc(row.node_type)}</span><small>${esc((row.tags||[]).join(' / ')||row.status)}</small></button>`).join(''):'<div class="ai-production-boundary">一致するAI部品がありません。</div>'}</div><div id="aiParameterPanel" class="ai-parameter-panel">${chosen?`<h3>${esc(chosen.name)}</h3><p class="small">${esc(chosen.description)}</p>${fields.length?fields.map(fieldHtml).join(''):'<p>設定項目はありません。</p>'}<button type="button" onclick="GKSAIProductionUI.validateCurrent()">設定を検証</button><div id="aiParameterValidation" class="small"></div>`:'<p>有効な部品を選択してください。</p>'}</div></div></div>`;
+    target.innerHTML = `<div class="ai-production-shell"><div class="ai-production-hero"><h2>AIプログラム</h2><p>プロジェクト内へ保存する編集データを作成・再編集します。部品配置と接続は次工程です。</p><div class="ai-program-toolbar"><input type="search" value="${esc(programSearch)}" placeholder="プログラムを検索" oninput="GKSAIProductionUI.setProgramSearch(this.value)"><button type="button" class="primary" onclick="GKSAIProductionUI.newProgram()">新規作成</button></div></div><div class="ai-program-layout"><div class="ai-program-list">${programs.length?programs.map((program)=>`<button type="button" class="ai-program-item ${draft?.id===program.id?'active':''}" onclick="GKSAIProductionUI.openProgram('${esc(program.id)}')"><b>${esc(program.name||program.id)}</b><span>${esc(program.id)} / ${esc(program.status)}</span><small>${esc(program.updated_at||'未保存')}</small></button>`).join(''):'<p>AIプログラムはありません。</p>'}</div>${editorHtml()}</div><div class="ai-production-hero"><h2>AI部品パレット</h2><p>条件・対象・行動マスターを検索し、部品Schemaに従って設定します。</p><input id="aiPaletteSearch" type="search" value="${esc(paletteSearch)}" placeholder="ID・名称・タグを検索" oninput="GKSAIProductionUI.setSearch(this.value)"></div><div class="ai-production-workspace"><div id="aiPaletteList" class="ai-palette-list">${rows.length?rows.map((row) => `<button type="button" class="ai-palette-item ${row.available?'':'disabled'}" ${row.available?'': 'disabled'} onclick="GKSAIProductionUI.select('${esc(row.id)}','${esc(row.node_type)}')"><b>${esc(row.name||row.id)}</b><span>${esc(row.id)} / ${esc(row.node_type)}</span><small>${esc((row.tags||[]).join(' / ')||row.status)}</small></button>`).join(''):'<div class="ai-production-boundary">一致するAI部品がありません。</div>'}</div><div id="aiParameterPanel" class="ai-parameter-panel">${chosen?`<h3>${esc(chosen.name)}</h3><p class="small">${esc(chosen.description)}</p>${fields.length?fields.map(fieldHtml).join(''):'<p>設定項目はありません。</p>'}<button type="button" onclick="GKSAIProductionUI.validateCurrent()">設定を検証</button><div id="aiParameterValidation" class="small"></div>`:'<p>有効な部品を選択してください。</p>'}</div></div></div>`;
     return true;
   }
-  function setSearch(value) { search = String(value || ''); selected = null; render(); }
-  function select(id, nodeType) { selected = {id, node_type: nodeType}; render(); }
-  function filterReferenceOptions(input) {
-    const select = input.previousElementSibling, q = String(input.value || '').toLowerCase();
-    if (select) Array.from(select.options).forEach((option, index) => { if (index) option.hidden = !option.textContent.toLowerCase().includes(q); });
-  }
+  function refresh() { if (typeof document !== 'undefined' && document.getElementById('view-ai-production')?.classList.contains('hidden') === false) render(); }
+  function setSearch(value) { paletteSearch = String(value || ''); selectedPart = null; render(); }
+  function setProgramSearch(value) { programSearch = String(value || ''); render(); }
+  function select(id, nodeType) { selectedPart = {id, node_type: nodeType}; render(); }
+  function newProgram() { const data = hostData(); setDraft(Model.createProgram(Store.nextProgramId(data), now())); dirty = true; render(); return clone(draft); }
+  function openProgram(id) { if (dirty && root?.confirm && !root.confirm('未保存の変更を破棄して開きますか？')) return false; const found = hostData().ai_programs?.find((program)=>program.id===id); if (!found) return false; setDraft(found); render(); return true; }
+  function updateDraft(field, value) { if (!draft) return false; draft[field] = field === 'tags' ? String(value||'').split(/[\s,]+/).filter(Boolean) : String(value ?? ''); dirty = true; return true; }
+  function saveDraft() { if (!draft) return false; if (!draft.name.trim()) { root?.alert?.('名称を入力してください。'); return false; } draft.updated_at = now(); Store.upsert(hostData(), draft); setDraft(draft); host().persist?.(`AIプログラム保存: ${draft.id}`); render(); return true; }
+  function revertDraft() { if (!original) return false; draft = clone(original); dirty = false; render(); return true; }
+  function duplicateDraft() { if (!draft) return false; const copy = Model.duplicateProgram(draft, Store.nextProgramId(hostData()), now()); setDraft(copy); dirty = true; render(); return clone(copy); }
+  function filterReferenceOptions(input) { const selectElement = input.previousElementSibling, q = String(input.value || '').toLowerCase(); if (selectElement) Array.from(selectElement.options).forEach((option, index) => { if (index) option.hidden = !option.textContent.toLowerCase().includes(q); }); }
   function validateCurrent(doc) {
     const documentRef = doc || (typeof document !== 'undefined' ? document : null), data = hostData();
-    const node = Adapter.palette(data.masters, '', {data_version:'1.0.0', unlocked_ids:data.ai_unlocks||[]}).find((row) => selected && row.id === selected.id && row.node_type === selected.node_type);
+    const node = Adapter.palette(data.masters, '', {data_version:Model.DATA_VERSION, unlocked_ids:data.ai_unlocks||[]}).find((row) => selectedPart && row.id === selectedPart.id && row.node_type === selectedPart.node_type);
     if (!node) return ['AI部品が選択されていません。'];
-    const values = {};
-    documentRef?.querySelectorAll?.('[data-ai-param]').forEach((input) => { values[input.dataset.aiParam] = input.type === 'checkbox' ? input.checked : input.value; });
+    const values = {}; documentRef?.querySelectorAll?.('[data-ai-param]').forEach((input) => { values[input.dataset.aiParam] = input.type === 'checkbox' ? input.checked : input.value; });
     const errors = Adapter.validateParameters(node, values, references(data)), output = documentRef?.getElementById('aiParameterValidation');
     if (output) output.textContent = errors.length ? errors.join(' / ') : '設定値は有効です。';
     return errors;
   }
-  return Object.freeze({render, setSearch, select, filterReferenceOptions, validateCurrent});
+  return Object.freeze({render, refresh, setSearch, setProgramSearch, select, newProgram, openProgram, updateDraft, saveDraft, revertDraft, duplicateDraft, isDirty, filterReferenceOptions, validateCurrent});
 });

@@ -513,7 +513,7 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-ai-production" class="view hidden">
-  <div class="view-heading"><h1>AI制作</h1><span class="status">R3 入口</span></div>
+  <div class="view-heading"><h1>AI制作</h1><span class="status">R5-A 保存編集基盤</span></div>
   <div id="aiProductionRoot"></div>
 </section>
 
@@ -1187,7 +1187,7 @@ updateDeployDeleteControl();
     <article class="guide-card" data-guide-keywords="計算 結果 数式 formula card"><h3>計算カード・結果カード</h3><p>複数の入力を組み合わせる数式と、その出力定義をカードとして管理します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('formula-cards')">計算カード</button><button type="button" onclick="runLauncherAction('result-cards')">結果カード</button></div></article>
     <article class="guide-card" data-guide-keywords="戦闘 ダメージ 数式 シミュレーター"><h3>戦闘計算式</h3><p>攻撃、倍率、属性、クリティカル、耐性の順序を組み立てて比較します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('battle-formula')">数式を開く</button></div></article>
     <article class="guide-card" data-guide-keywords="装備 スキル 編成 AI カード"><h3>装備・スキル・編成</h3><p>戦闘で使う資産カードを作り、キャラクターや編成へ接続します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('asset-cards')">資産カードを開く</button></div></article>
-    <article class="guide-card" data-guide-keywords="AI 制作 プログラム 組み立て"><h3>AI制作を開く</h3><p>プレイヤー用AIプログラムの制作領域を開きます。編集機能は次工程で追加します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('ai-production')">AI制作を開く</button></div></article>
+    <article class="guide-card" data-guide-keywords="AI 制作 プログラム 組み立て"><h3>AI制作を開く</h3><p>プレイヤー用AIプログラムを新規作成、保存、再編集、複製できます。部品配置と接続は次工程で追加します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('ai-production')">AI制作を開く</button></div></article>
     <article class="guide-card" data-guide-keywords="検証 エラー 警告 参照 整合性"><h3>データを検証する</h3><p>ID重複、必須項目、参照関係を確認してから戦闘テストへ進みます。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('verification-home')">検証ホーム</button></div></article>
     <article class="guide-card" data-guide-keywords="戦闘 テスト シミュレーション ログ"><h3>戦闘テストを実行する</h3><p>代表的な編成と乱数シードで1戦を実行し、結果とログを確認します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('battle')">戦闘テスト</button></div></article>
     <article class="guide-card" data-guide-keywords="一括 検証 複数 シード バランス"><h3>一括検証する</h3><p>複数シードや条件範囲をまとめて実行し、勝率や偏りを探します。</p><div class="toolbar"><button type="button" onclick="runLauncherAction('batch-test')">一括検証</button></div></article>
@@ -6853,7 +6853,7 @@ function renderBackups(){
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();renderVerificationHome();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();renderVerificationHome();window.GKSAIProductionUI?.refresh();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
@@ -6997,7 +6997,7 @@ setTimeout(loadDesignCards,0);
 </script>
 <script>window.GKSEquipmentHost={getData:()=>data,persist:message=>persist(message),getBuild:()=>DISTRIBUTION_BUILD};
 window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};
-window.GKSAIProductionHost={getData:()=>data};</script>
+window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now()};</script>
 <script src="./equipment/equipment-generator.js?v=4971"></script>
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486100"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486100"></script>
