@@ -4,8 +4,8 @@ const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const trigger=require('../assets/shared/js/trigger-engine.js');
-assert.strictEqual(registry.phase,'R04-D3');
-assert.strictEqual(trigger.VERSION,'R04-D3');
+assert.ok(/^R04-(?:D3|E\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-(?:D3|E\d+)$/.test(trigger.VERSION),`unexpected trigger engine version ${trigger.VERSION}`);
 
 function genericAura(id,power,priority,{side='ALLY',excludeSelf=false,effectId='ATK_UP'}={}){
  const skill={schemaVersion:1,id,name:id,trigger:{type:'WHILE_SOURCE_ALIVE',scope:'SELF',priority},conditions:[],target:{side,range:'ALL',...(excludeSelf?{excludeSelf:true}:{})},effects:[{type:'APPLY',effectId,power}],resource:{mpCost:0,cooldown:0}};

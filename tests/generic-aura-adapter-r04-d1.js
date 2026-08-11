@@ -4,7 +4,7 @@ const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const trigger=require('../assets/shared/js/trigger-engine.js');
-assert.ok(/^R04-D[1-9]$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-(?:D[1-9]|E\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.strictEqual(registry.triggers.WHILE_SOURCE_ALIVE.dispatch_mode,'LEGACY_AURA_ADAPTER');
 assert.ok(trigger.SUPPORTED.includes('WHILE_SOURCE_ALIVE'));
 const sample={schemaVersion:1,id:'R04D-AURA',name:'Generic Aura',trigger:{type:'WHILE_SOURCE_ALIVE',scope:'SELF',priority:7},conditions:[],target:{side:'ALLY',range:'ALL'},effects:[{type:'APPLY',effectId:'ATK_UP',power:18}],resource:{mpCost:0,cooldown:0}};

@@ -5,9 +5,9 @@ const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-re
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const triggerEngine=require('../assets/shared/js/trigger-engine.js');
 
-assert.ok(/^R04-[BCD]\d+/.test(String(registry.phase||'')),`unexpected registry phase ${registry.phase}`);
-assert.ok(/^R04-[BCD]\d+/.test(String(generic.VERSION||'')),`unexpected generic compiler version ${generic.VERSION}`);
-assert.ok(/^R04-[BCD]\d+/.test(String(triggerEngine.VERSION||'')),`unexpected trigger engine version ${triggerEngine.VERSION}`);
+assert.ok(/^R04-[BCDE]\d+/.test(String(registry.phase||'')),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-[BCDE]\d+/.test(String(generic.VERSION||'')),`unexpected generic compiler version ${generic.VERSION}`);
+assert.ok(/^R04-[BCDE]\d+/.test(String(triggerEngine.VERSION||'')),`unexpected trigger engine version ${triggerEngine.VERSION}`);
 
 const sample={
   schemaVersion:1,

@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
-assert.ok(/^R04-(?:C3|D\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-(?:C3|D\d+|E\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 const source=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 
 // Multiple Generic FOLLOW_UP candidates are ordered by trigger priority, then by pre-existing discovery order.

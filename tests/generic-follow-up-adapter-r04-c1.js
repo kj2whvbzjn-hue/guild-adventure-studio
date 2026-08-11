@@ -3,7 +3,7 @@ const fs=require('fs');
 const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
-assert.ok(/^R04-(?:C[23]|D\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-(?:C[23]|D\d+|E\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.strictEqual(registry.triggers.ON_ALLY_ATTACK.dispatch_mode,'LEGACY_FOLLOW_UP_ADAPTER');
 assert.strictEqual(registry.conditions.TARGET_POISONED.engine_predicate,'target_poisoned');
 const sample={schemaVersion:1,id:'R04C-FOLLOW',name:'Generic Follow',trigger:{type:'ON_ALLY_ATTACK',scope:'SELF'},conditions:[{property:'TARGET_POISONED',scope:'TARGET',operator:'=',value:true}],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:75,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0}};

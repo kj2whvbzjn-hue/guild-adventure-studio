@@ -4,8 +4,8 @@ const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const trigger=require('../assets/shared/js/trigger-engine.js');
-assert.ok(/^R04-D[2-9]$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
-assert.ok(/^R04-D[2-9]$/.test(trigger.VERSION),`unexpected trigger engine version ${trigger.VERSION}`);
+assert.ok(/^R04-(?:D[2-9]|E\d+)$/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(/^R04-(?:D[2-9]|E\d+)$/.test(trigger.VERSION),`unexpected trigger engine version ${trigger.VERSION}`);
 assert.ok(trigger.SUPPORTED.includes('WHILE_SOURCE_ALIVE'));
 
 const contract={type:'WHILE_SOURCE_ALIVE',scope:'SELF',engineEvent:'aura_evaluate',dispatchMode:'LEGACY_AURA_ADAPTER',priority:3};

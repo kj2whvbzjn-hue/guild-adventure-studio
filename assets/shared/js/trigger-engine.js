@@ -1,6 +1,6 @@
 /* GKS Trigger Engine foundation — R04-A
  * Registry-backed trigger resolution/validation/event recording only.
- * R04-D3 dispatches Generic COUNTER/FOLLOW_UP/AURA through validated compiled contracts; effect execution remains in battle runtimes.
+ * R04-E1 adds a shared per-action trigger guard for recursion/re-entry and activation caps while preserving runtime effect execution.
  */
 (function(root,factory){
   const api=factory();
@@ -8,7 +8,8 @@
   if(root)root.GKSTriggerEngine=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const VERSION='R04-D3';
+  const VERSION='R04-E1';
+  const DEFAULT_ACTION_TRIGGER_LIMIT=16;
   const SUPPORTED=Object.freeze([
     'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
     'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED','WHILE_SOURCE_ALIVE'
@@ -79,6 +80,26 @@
     if(contract.dispatchMode&&!['LEGACY_COUNTER_ADAPTER','LEGACY_FOLLOW_UP_ADAPTER','LEGACY_AURA_ADAPTER'].includes(contract.dispatchMode))return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
     return{ok:true,type,contract:{...contract,type}};
   }
+  function createActionContext(options={}){
+    const raw=Number(options.maxActivations);
+    const maxActivations=Number.isInteger(raw)&&raw>0?raw:DEFAULT_ACTION_TRIGGER_LIMIT;
+    return{actionId:String(options.actionId||''),maxActivations,activationCount:0,activeKeys:new Set(),history:[]};
+  }
+  function tryActivate(context,key,meta={}){
+    if(!context||typeof context!=='object')return failure('TRIGGER_ACTION_CONTEXT_REQUIRED','');
+    const normalizedKey=String(key||'').trim();
+    if(!normalizedKey)return failure('TRIGGER_ACTIVATION_KEY_REQUIRED','');
+    if(!(context.activeKeys instanceof Set))context.activeKeys=new Set();
+    if(!Array.isArray(context.history))context.history=[];
+    const max=Number.isInteger(context.maxActivations)&&context.maxActivations>0?context.maxActivations:DEFAULT_ACTION_TRIGGER_LIMIT;
+    const count=Math.max(0,Number(context.activationCount)||0);
+    if(count>=max)return failure('TRIGGER_ACTION_LIMIT_REACHED','',{key:normalizedKey,activation_count:count,max_activations:max});
+    if(context.activeKeys.has(normalizedKey))return failure('TRIGGER_REENTRY_BLOCKED','',{key:normalizedKey,activation_count:count,max_activations:max});
+    context.activationCount=count+1;context.activeKeys.add(normalizedKey);
+    const entry=Object.freeze({key:normalizedKey,index:context.activationCount,meta:meta&&typeof meta==='object'?{...meta}:{}});context.history.push(entry);
+    let released=false;
+    return{ok:true,key:normalizedKey,index:context.activationCount,max_activations:max,release(){if(released)return false;released=true;context.activeKeys.delete(normalizedKey);return true}};
+  }
   function dispatchCompiled(contract,eventType,payload={},handler){
     const checked=validateCompiledContract(contract,eventType);
     if(!checked.ok)return checked;
@@ -90,5 +111,5 @@
       return failure('TRIGGER_DISPATCH_HANDLER_ERROR',checked.type,{message:String(error&&error.message||error)});
     }
   }
-  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,create,validateCompiledContract,dispatchCompiled});
+  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,create,createActionContext,tryActivate,validateCompiledContract,dispatchCompiled});
 });
