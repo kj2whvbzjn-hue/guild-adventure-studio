@@ -1,7 +1,7 @@
 /* GKS Generic Skill Compiler — R02-A foundation. Converts Generic Skill Model to the current legacy tag skill format without executing battle effects. */
 (function(root){
 'use strict';
-const VERSION='R03-C';
+const VERSION='R03-D';
 const OPS=new Set(['=','!=','>','>=','<','<=']);
 const SUPPORTED_SCHEMA=1;
 function own(o,k){return Object.prototype.hasOwnProperty.call(o||{},k)}
@@ -21,7 +21,7 @@ function resolveLifecycle(def,registry,errors,path){
  return {...lifecycle};
 }
 function compileGenericSkill(skill,registry,legacyCompile){
- const errors=[],warnings=[],tags=[],normalizedEffects=[];registry=normalizeRegistry(registry);
+ const errors=[],warnings=[],tags=[],normalizedEffects=[],applyContracts=[];registry=normalizeRegistry(registry);
  if(!registry){err(errors,'REGISTRY_REQUIRED','registry','Generic Skill Registryが必要です');return result()}
  if(!skill||typeof skill!=='object'||Array.isArray(skill)){err(errors,'INVALID_SKILL','$','スキルはobjectが必要です');return result()}
  if(skill.schemaVersion!==SUPPORTED_SCHEMA)err(errors,'UNSUPPORTED_SCHEMA','schemaVersion',`schemaVersion=${skill.schemaVersion}は未対応です`);
@@ -43,21 +43,23 @@ function compileGenericSkill(skill,registry,legacyCompile){
   validateConditionValue(def,c.value,errors,`conditions[${i}].value`);if(num(c.value))pushUnique(tags,`${def.legacy_tag}${c.operator}${c.value}`);
  }
  const effects=Array.isArray(skill.effects)?skill.effects:[];if(!effects.length)err(errors,'EFFECT_REQUIRED','effects','effectsが1件以上必要です');
- for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects);
+ for(const [i,effect] of effects.entries())compileEffect(effect,i,registry,tags,errors,warnings,normalizedEffects,applyContracts);
+ const seenApplyLogic=new Set();for(const c of applyContracts){if(seenApplyLogic.has(c.logic))err(errors,'LEGACY_APPLY_LOGIC_DUPLICATE','effects',`Legacy Adapterでは同一APPLY logicを複数同時実行できません: ${c.logic}`);seenApplyLogic.add(c.logic)}
  const res=skill.resource||{};
  if(own(res,'mpCost'))addNumeric(tags,'MP_COST',res.mpCost,errors,'resource.mpCost');
  if(own(res,'cooldown')){if(!Number.isInteger(res.cooldown)||res.cooldown<0)err(errors,'INVALID_COOLDOWN','resource.cooldown','cooldownは0以上の整数が必要です');else pushUnique(tags,`COOLDOWN=${res.cooldown}`)}
  if(own(res,'activationPriority')){if(!Number.isInteger(res.activationPriority))err(errors,'INVALID_ACTIVATION_PRIORITY','resource.activationPriority','activationPriorityは整数が必要です');else pushUnique(tags,`ACTIVATION_PRIORITY=${res.activationPriority}`)}
- const legacySkill={id:String(skill.id||''),name:String(skill.name||''),tags};
+ const genericRuntime={schemaVersion:1,registryPhase:String(registry.phase||''),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))};
+ const legacySkill={id:String(skill.id||''),name:String(skill.name||''),tags,genericRuntime};
  let legacyValidation=null;
  if(!errors.length&&typeof legacyCompile==='function'){
   try{legacyValidation=legacyCompile(legacySkill);if(!legacyValidation?.ok)for(const m of legacyValidation?.errors||['legacy compile failed'])err(errors,'LEGACY_COMPILE_REJECTED','legacySkill',String(m));}
   catch(e){err(errors,'LEGACY_COMPILE_EXCEPTION','legacySkill',e?.message||String(e))}
  }
  return result();
- function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags]},legacyValidation}}
+ function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}}))}},legacyValidation}}
 }
-function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects){
+function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffects,applyContracts){
  const p=`effects[${index}]`;if(!effect||typeof effect!=='object'){err(errors,'INVALID_EFFECT',p,'Effect objectが必要です');return}
  const type=String(effect.type||'').toUpperCase();
  if(!registry.runtime?.effects?.includes(type)){err(errors,'UNKNOWN_EFFECT_TYPE',`${p}.type`,`未定義Effect type: ${type||'(なし)'}`);return}
@@ -72,13 +74,13 @@ function compileEffect(effect,index,registry,tags,errors,warnings,normalizedEffe
  if(type==='REMOVE'){
   if(effect.category!=='STATUS'){err(errors,'REMOVE_CATEGORY_UNSUPPORTED',`${p}.category`,'R02 REMOVEはSTATUSのみ対応です');return}pushUnique(tags,'CLEANSE');pushUnique(tags,'CLEANSE_CATEGORY=status');pushUnique(tags,'CLEANSE_ORDER=oldest');if(effect.all===true)pushUnique(tags,'CLEANSE_ALL');else{if(!Number.isInteger(effect.count)||effect.count<1)err(errors,'REMOVE_COUNT_REQUIRED',`${p}.count`,'REMOVEはcount>=1またはall=trueが必要です');else pushUnique(tags,`CLEANSE_COUNT=${effect.count}`)}return;
  }
- if(type==='APPLY')compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects);
+ if(type==='APPLY')compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,applyContracts);
 }
-function compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects){
+function compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,applyContracts){
  const def=registry.effects?.[effect.effectId];if(!def){err(errors,'UNKNOWN_EFFECT_ID',`${p}.effectId`,`未定義Effect ID: ${effect.effectId||'(なし)'}`);return}
  const kind=def.kind,legacy=def.legacy||{},defaults=def.defaults||{},lifecycle=resolveLifecycle(def,registry,errors,`${p}.effectId.lifecycle`);pushUnique(tags,legacy.logic);
  for(const t of legacy.generalTags||[])pushUnique(tags,t);
- const normalized={type:'APPLY',effectId:effect.effectId,kind,lifecycle,power:own(effect,'power')?effect.power:null,duration:own(effect,'duration')?effect.duration:null,interval:own(effect,'interval')?effect.interval:(own(defaults,'interval')?defaults.interval:null),stackGain:own(effect,'stackGain')?effect.stackGain:(own(defaults,'stackGain')?defaults.stackGain:null)};normalizedEffects.push(normalized);
+ const normalized={type:'APPLY',effectId:effect.effectId,kind,lifecycle,power:own(effect,'power')?effect.power:null,duration:own(effect,'duration')?effect.duration:null,interval:own(effect,'interval')?effect.interval:(own(defaults,'interval')?defaults.interval:null),stackGain:own(effect,'stackGain')?effect.stackGain:(own(defaults,'stackGain')?defaults.stackGain:null)};normalizedEffects.push(normalized);applyContracts.push({effectId:effect.effectId,kind,logic:legacy.logic,lifecycle:{...lifecycle}});
  if(kind==='STATUS'){
   pushUnique(tags,`STATUS_ID=${legacy.statusId||effect.effectId}`);if(!Number.isInteger(effect.duration)||effect.duration<=0)err(errors,'APPLY_DURATION_REQUIRED',`${p}.duration`,'STATUS付与には正の整数durationが必要です');else pushUnique(tags,`DURATION=${effect.duration}`);return;
  }
