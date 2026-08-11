@@ -1,0 +1,15 @@
+const fs=require('fs'),assert=require('assert');
+const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
+assert(app.includes('const ADVENTURE_EXPORT_FILES='),'Adventure Export source map is missing');
+assert(app.includes('async function loadAdventureContent('),'Adventure Export loader is missing');
+assert(app.includes('function registerAdventureQuestCards('),'Studio Export quests are not registered in the quest selection list');
+assert(app.includes('function resolveAdventureBundle('),'Quest to Chapter/Section resolver is missing');
+assert(app.includes('function adventurePartySnapshot('),'Party Snapshot adapter is missing');
+assert(app.includes('GKAdventureStorySystem.simulateQuest({quest:bundle.quest'),'Adventure Simulation is not connected to runtime');
+assert(app.includes('GKAdventureBattleCore.simulateBasicBattle({party:partySnapshot'),'headless Battle Core is not connected to Adventure Simulation');
+assert(app.includes('const stored=storeAdventureQuestRun(run)'),'simulated QuestRun is not persisted');
+assert(app.includes("reason:'legacy_quest'"),'legacy quest fallback is missing');
+assert(app.includes("$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventureOrLegacy"),'desktop departure is not connected to Adventure Simulation');
+assert(app.includes("mobileDepart.onclick=async()=>"),'mobile departure is not connected to Adventure Simulation');
+assert(app.includes('loadAdventureContent().then(content=>{registerAdventureQuestCards(content);'),'Adventure quest discovery is not initialized');
+console.log('adventure-simulation-runtime-integration PASS');

@@ -25,3 +25,13 @@ assert.equal(result.unit_final_state[1].monster_id,'M1');
 assert.equal(result.statistics.ally_damage,100);
 assert.equal(result.playback_events.at(-1).type,'battle_end');
 console.log('adventure-battle-core PASS');
+
+const simInput={party:[{id:'C1',name:'Hero',max_hp:180,attack:45,agi:12}],formation:[{monster_id:'M1',count:2}],monsters:[{id:'M1',name:'Slime',params:{hp:90,attack:12,agi:7}}],seed:98765};
+const sim1=B.simulateBasicBattle(simInput),sim2=B.simulateBasicBattle(simInput);
+assert.equal(sim1.victory,true);
+assert.deepEqual(sim1,sim2,'same seed and snapshots must produce identical Battle Result');
+assert.equal(S.validatePlaybackEvents(sim1.playback_events),true);
+assert.equal(sim1.playback_events[0].type,'battle_start');
+assert.equal(sim1.playback_events.at(-1).type,'battle_end');
+assert(sim1.statistics.actions>0);
+console.log('adventure-battle-core headless simulation PASS');
