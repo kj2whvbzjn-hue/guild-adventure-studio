@@ -67,14 +67,25 @@ elif len(entries) > max_entries:
 protected_exact = set(policy.get("protected_exact_paths", []))
 protected_prefixes = tuple(policy.get("protected_prefixes", []))
 cleanup_exact = set(policy.get("source_cleanup_exact_paths", []))
+deletion_control_paths = set(policy.get("deletion_control_paths", []))
 for rel in entries:
-    if rel not in cleanup_exact and (rel in protected_exact or any(rel.startswith(prefix) for prefix in protected_prefixes)):
-        errors.append(f"PROTECTED_PATH path={rel}")
+    if rel in deletion_control_paths and rel not in cleanup_exact:
+        errors.append(f"DELETION_CONTROL_PATH_DELETE_FORBIDDEN path={rel}")
+protected_entries = {
+    rel for rel in entries
+    if rel not in cleanup_exact and (rel in protected_exact or any(rel.startswith(prefix) for prefix in protected_prefixes))
+}
+protected_delete_mode = policy.get("protected_delete_mode", "deny")
+protected_delete_entry_field = policy.get("protected_delete_entry_field", "protected_delete")
 
 approval_name = policy.get("approval_file", "DELETE_APPROVAL.json")
 approval_path = root / approval_name
 if entries:
     approval = load_json(approval_path, "DELETE_APPROVAL")
+    if not approval and protected_entries:
+        for rel in entries:
+            if rel in protected_entries:
+                errors.append(f"PROTECTED_PATH path={rel}")
     if approval:
         if approval.get("schema_version") != 1:
             errors.append("DELETE_APPROVAL_SCHEMA_VERSION")
@@ -113,6 +124,13 @@ if entries:
                 errors.append(f"DELETE_APPROVAL_PATH_MISSING index={index}")
                 continue
             approved_paths.append(path_value)
+            if path_value in protected_entries:
+                if protected_delete_mode != "dual_human_approval":
+                    errors.append(f"PROTECTED_PATH path={path_value}")
+                elif item.get(protected_delete_entry_field) is not True:
+                    errors.append(f"PROTECTED_DELETE_APPROVAL_REQUIRED path={path_value}")
+            elif item.get(protected_delete_entry_field) is True:
+                errors.append(f"PROTECTED_DELETE_FLAG_ON_UNPROTECTED_PATH path={path_value}")
             expected_cleanup_category = policy.get("source_cleanup_categories", {}).get(path_value)
             if item.get("category") not in allowed_categories:
                 errors.append(f"DELETE_APPROVAL_CATEGORY_INVALID path={path_value}")
@@ -141,4 +159,5 @@ if errors:
     raise SystemExit(1)
 
 mode = "normal_update_no_delete" if not entries else "exceptional_delete_approved"
-print(f"DELETE_MANIFEST_OK entries={len(entries)} mode={mode}")
+protected_count = len(protected_entries)
+print(f"DELETE_MANIFEST_OK entries={len(entries)} protected={protected_count} mode={mode}")
