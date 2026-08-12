@@ -1,0 +1,15 @@
+const assert=require('assert');
+const fs=require('fs');
+const build=require('../package-build.json');
+assert.strictEqual(build.studio_build,'GKS-B535');
+const html=fs.readFileSync('studio/index.html','utf8');
+const sw=fs.readFileSync('studio/sw.js','utf8');
+const skg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
+assert.ok(html.includes("navigator.serviceWorker.register('./sw.js?v=535'"),'Studio SW registration cache key must follow B535');
+assert.ok(html.includes('./skill/skill-generator.js?v=13'),'Skill Generator cache key must advance after dynamic-view hotfix');
+assert.ok(html.includes("url.searchParams.set('appv','535')"),'Studio reload appv must advance after SW activation');
+assert.ok(sw.includes('const CACHE_NAME="gks-studio-b535"'),'Studio SW cache namespace must advance');
+assert.ok(sw.includes("./index.html?appv=535"),'Studio offline shell must use the B535 appv');
+assert.ok(skg.includes("document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}))"),'Skill Generator must notify view readiness');
+assert.ok(html.includes("document.addEventListener('gks:view-ready',handleStudioDynamicViewReady)"),'Studio must consume dynamic view readiness');
+console.log('PASS GKS-B535 Skill Generator device cache refresh regression');
