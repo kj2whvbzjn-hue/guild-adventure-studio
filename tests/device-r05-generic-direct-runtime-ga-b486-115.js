@@ -26,6 +26,9 @@ assert.ok(app.includes("t==='DAMAGE=73'?'DAMAGE=999':t"),'DAMAGE legacy tamper c
 assert.ok(app.includes("t==='HEAL=63'?'HEAL=999':t"),'HEAL legacy tamper check missing');
 assert.ok(app.includes("t.startsWith('COVER_PRIORITY=')?'COVER_PRIORITY=999':t"),'TARGET_CONTROL legacy tamper check missing');
 
+const tagSkillRuntime=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');
+assert.ok(tagSkillRuntime.includes("recordValidationEvent('cover_added'"),'tag-test TARGET_CONTROL must emit cover_added parity event');
+assert.ok(tagSkillRuntime.includes('remaining_uses:effect.remainingUses'),'tag-test TARGET_CONTROL cover_added must expose remaining uses');
 const tagHtml=fs.readFileSync('game-tag-test/index.html','utf8');
 const tagValidation=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
 assert.ok(tagHtml.includes('id="tagTestRunR05GenericDirectRuntimeJson"'),'R05 tag-test device button missing');
@@ -36,4 +39,4 @@ for(const marker of [
  'runR05GenericDirectRuntimeJson.onclick=tagTestRunR05GenericDirectRuntimeJson',
  'tagTestRunR05GenericDirectRuntimeJson'
 ])assert.ok(tagValidation.includes(marker),`tag-test marker missing: ${marker}`);
-console.log('DEVICE_R05_GENERIC_DIRECT_RUNTIME_GA_B486_116_PASS');
+console.log('DEVICE_R05_GENERIC_DIRECT_RUNTIME_GA_B486_117_PASS');
