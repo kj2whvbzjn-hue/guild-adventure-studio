@@ -19,4 +19,4 @@ assert.strictEqual(report.summary.passed,true,JSON.stringify(report.summary.erro
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\''])assert.ok(src.includes(marker),`missing ${marker}`);
 const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486121b549'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
-console.log('PASS GKS-B549 R06 Master structured composite runtime formal-regression connection');
+console.log('PASS GKS-B550 R06 Master structured composite runtime formal-regression connection');

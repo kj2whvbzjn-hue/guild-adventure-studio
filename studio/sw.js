@@ -1,12 +1,12 @@
-const CACHE_NAME="gks-studio-b549";
+const CACHE_NAME="gks-studio-b550";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=549';
+const OFFLINE_URL='./index.html?appv=550';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=549",
-  "./manifest.webmanifest?v=549",
-  "./icon-192.png?v=549",
-  "./icon-512.png?v=549",
+  "./index.html?appv=550",
+  "./manifest.webmanifest?v=550",
+  "./icon-192.png?v=550",
+  "./icon-512.png?v=550",
   "./skill/runtime-requirements.json",
   "../assets/shared/config/skill-generic-registry.json",
   "../assets/shared/config/skill-budget-rules.json",
