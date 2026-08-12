@@ -1,7 +1,7 @@
 /* GKS Generic Skill Authoring Registry — G01. Registry-driven Studio authoring definitions. */
 (function(root){
 'use strict';
-const VERSION='G02';
+const VERSION='G03';
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 function registryRequired(registry){
  if(!registry||typeof registry!=='object')throw new Error('Generic Skill Registryが必要です');
@@ -25,7 +25,26 @@ function resolveEffectRequirements(registry,effectType,draft={}){
  for(const rule of def.conditional_required||[]){const when=rule?.when||{};if(pathValue(draft,when.field)===when.equals)for(const f of rule.fields||[])if(!required.includes(f))required.push(f);}
  return{ok:errors.length===0&&def.enabled!==false,type,label:def.label||type,enabled:def.enabled!==false,boundary:def.boundary||null,reason:def.reason||null,requiredFields:required,optionalFields:optional.filter(f=>!required.includes(f)),oneOfRequired:clone(def.one_of_required||[]),supportedValues:clone(def.supported_values||{}),errors};
 }
+
+function resolveConditionRequirements(registry,property){
+ const a=registryRequired(registry),key=String(property||'').toUpperCase(),def=registry.conditions?.[key];
+ if(!def)return{ok:false,property:key,enabled:false,scope:'',operators:[],valueType:null,valueControl:null,errors:[`未定義Condition property: ${key||'(なし)'}`]};
+ const valueType=String(def.value_type||'number'),scope=String(def.scope||a.condition?.scope_default||'SELF').toUpperCase();
+ const control=clone(a.condition?.value_type_controls?.[valueType]||{control:'number',step:'any'});
+ const operators=Array.isArray(control?.operator_options)?[...control.operator_options]:[...(a.condition?.operators||[])];
+ return{ok:def.enabled!==false,property:key,label:def.label||key,enabled:def.enabled!==false,scope,scopeLocked:true,operators,valueType,valueControl:control,legacyTag:def.legacy_tag||null,enginePredicate:def.engine_predicate||null,errors:def.enabled===false?[`無効Condition property: ${key}`]:[]};
+}
+function validateConditionDraft(registry,condition){
+ const c=condition&&typeof condition==='object'?condition:{},req=resolveConditionRequirements(registry,c.property),errors=[];
+ if(!req.ok){errors.push(...req.errors);return{ok:false,errors,requirements:req};}
+ const scope=String(c.scope||'').toUpperCase();if(scope!==req.scope)errors.push(`${req.property}のscopeは${req.scope}が必要です`);
+ if(!req.operators.includes(c.operator))errors.push(`${req.property}のoperatorが未対応です: ${c.operator||'(なし)'}`);
+ const v=c.value,ctl=req.valueControl||{};
+ if(req.valueType==='predicate'){if(v!==true)errors.push(`${req.property} predicateはtrueのみ対応です`);}
+ else{if(typeof v!=='number'||!Number.isFinite(v))errors.push(`${req.property}のvalueは有限数が必要です`);else{if(ctl.integer&&!Number.isInteger(v))errors.push(`${req.property}は整数で指定してください`);if(ctl.min!=null&&v<ctl.min)errors.push(`${req.property}は${ctl.min}以上が必要です`);if(ctl.max!=null&&v>ctl.max)errors.push(`${req.property}は${ctl.max}以下が必要です`);}}
+ return{ok:errors.length===0,errors,requirements:req};
+}
 function buildUiDefinition(registry){const a=registryRequired(registry);return{version:VERSION,phase:String(a.phase||''),registryPhase:String(registry.phase||''),skillRequiredFields:clone(a.skill_required_fields||[]),fields:listFieldDefinitions(registry),effects:listRuntimeEffects(registry),applyEffects:listApplyEffects(registry),triggers:listTriggers(registry),conditions:listConditions(registry),targets:listTargets(registry),damageTypes:listDamageTypes(registry),trigger:clone(a.trigger||{}),condition:clone(a.condition||{}),target:clone(a.target||{}),resource:clone(a.resource||{})};}
-const api=Object.freeze({VERSION,buildUiDefinition,listFieldDefinitions,listRuntimeEffects,listTriggers,listConditions,listTargets,listDamageTypes,listApplyEffects,resolveEffectRequirements});
+const api=Object.freeze({VERSION,buildUiDefinition,listFieldDefinitions,listRuntimeEffects,listTriggers,listConditions,listTargets,listDamageTypes,listApplyEffects,resolveEffectRequirements,resolveConditionRequirements,validateConditionDraft});
 root.GKSGenericSkillAuthoringRegistry=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
