@@ -21,5 +21,5 @@ for(const token of [
 ])if(!validation.includes(token))throw new Error(`missing validation token: ${token}`);
 for(const token of ['function applyTaggedCover','||applyTaggedCover(actor,resolvedTarget,compiled)','coverApplyResult'])if(!runtime.includes(token))throw new Error(`missing COVER parity token: ${token}`);
 const exp=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
-if(String(exp.data_version||'').startsWith('GA-B486.117')&&String(exp.generated_by||'').includes('GKS-B528'))throw new Error('fixture unexpectedly current; update test expectation and run Studio acceptance');
+if(String(exp.data_version||'').startsWith('GA-B486.117')&&String(exp.generated_by||'').includes('GKS-B529'))throw new Error('fixture unexpectedly current; update test expectation and run Studio acceptance');
 console.log('DEVICE_R06_LEGACY_GENERIC_RUNTIME_GA_B486_118_PASS');
