@@ -12,6 +12,8 @@ if(!bridge.includes("schema_version:'1.9.0'"))errors.push('formal schema version
 if(!bridge.includes(`tag-formal-runtime-regression-${build.game_build}-`))errors.push('formal filename build mismatch');
 if(!app.includes('function runCoverRuntimeRegression()'))errors.push('cover reusable regression runner missing');
 if(!app.includes('COVER-RUNTIME-COUNTER-COVER-COUNTER'))errors.push('counter-cover-counter regression missing');
+if(!app.includes('COVER-RUNTIME-AREA-BLOCK'))errors.push('area attack COVER block regression missing');
+if(!app.includes('area_attack_cover:false'))errors.push('formal area attack COVER spec missing');
 if(!index.includes('P01-08 COVER Runtime v1の13ケース'))errors.push('formal regression UI description missing');
 if(errors.length){errors.forEach(x=>console.error('FAIL',x));process.exit(1)}
 console.log('COVER_FORMAL_REGRESSION_GA_B486_37_OK');

@@ -21,8 +21,8 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  }
  assert.ok(events.some(x=>x.type==='generic_target_control_executed'));
  assert.ok(events.some(x=>x.type==='generic_apply_executed'));
- // Legacy tag-only COVER remains intentionally strict during transition.
- const legacy={id:'LEGACY-COVER-SHIELD',name:'Legacy',tags:['COVER','COVER_TARGET=single_ally','COVER_TRIGGER=direct_attack','COVER_PRIORITY=0','COVER_REMOVABLE=true','COVER_LIFETIME=persistent','味方','単体','SHIELD','SHIELD=20','DURATION=100']};
- const old=ctx.compileTaggedSkill(legacy);assert.strictEqual(old.ok,false);assert.ok(old.errors.some(x=>x.includes('persistentではDURATION')));assert.ok(old.errors.some(x=>x.includes('COVER定義は専用関係')));
+ // Formalized rule: COVER is not a dedicated-skill-only logic. SHIELD duration must remain separate from persistent COVER lifetime.
+ const mixed={id:'COVER-SHIELD-FORMAL',name:'Formal mixed',tags:['COVER','COVER_TARGET=single_ally','COVER_TRIGGER=direct_attack','COVER_PRIORITY=0','COVER_REMOVABLE=true','COVER_LIFETIME=persistent','味方','単体','SHIELD','SHIELD=20','DURATION=100']};
+ const mixedCompiled=ctx.compileTaggedSkill(mixed);assert.strictEqual(mixedCompiled.ok,true,mixedCompiled.errors.join(' / '));assert.strictEqual(mixedCompiled.definition.parameters.coverDuration,null);assert.strictEqual(mixedCompiled.definition.parameters.shieldDuration,100);
 }
 console.log('PASS GKS-B550 R06 structured COVER+SHIELD composite runtime contract separation');
