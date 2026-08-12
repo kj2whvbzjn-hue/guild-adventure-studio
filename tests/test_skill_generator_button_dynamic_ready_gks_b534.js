@@ -1,7 +1,7 @@
 const fs=require('fs'),assert=require('assert'),vm=require('vm');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 assert.strictEqual(build.game_build,'GA-B486.121');
-assert.strictEqual(build.studio_build,'GKS-B538');
+assert.strictEqual(build.studio_build,'GKS-B539');
 const html=fs.readFileSync('studio/index.html','utf8');
 const skill=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 assert.ok(html.includes("runLauncherAction('skill-generator')"),'launcher skill-generator button missing');
@@ -10,7 +10,7 @@ assert.ok(html.includes("if(!target){pendingStudioView=name;return false;}"),'dy
 assert.ok(html.indexOf("if(!target){pendingStudioView=name;return false;}")<html.indexOf("document.querySelectorAll('.view').forEach"),'current view must not be hidden before dynamic target exists');
 assert.ok(html.includes("document.addEventListener('gks:view-ready',handleStudioDynamicViewReady)"),'dynamic view ready listener missing');
 assert.ok(skill.includes("new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}})"),'Skill Generator must notify view readiness after panel render');
-assert.ok(html.includes('./skill/skill-generator.js?v=16'),'Skill Generator cache key was not advanced');
+assert.ok(html.includes('./skill/skill-generator.js?v=17'),'Skill Generator cache key was not advanced');
 
 function classList(initial=[]){const set=new Set(initial);return{add:x=>set.add(x),remove:x=>set.delete(x),toggle:(x,on)=>on?set.add(x):set.delete(x),contains:x=>set.has(x)};}
 const views={
