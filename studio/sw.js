@@ -1,12 +1,16 @@
-const CACHE_NAME="gks-studio-b536";
+const CACHE_NAME="gks-studio-b537";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=536';
+const OFFLINE_URL='./index.html?appv=537';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=536",
-  "./manifest.webmanifest?v=536",
-  "./icon-192.png?v=536",
-  "./icon-512.png?v=536"
+  "./index.html?appv=537",
+  "./manifest.webmanifest?v=537",
+  "./icon-192.png?v=537",
+  "./icon-512.png?v=537",
+  "./skill/runtime-requirements.json",
+  "../assets/shared/config/skill-generic-registry.json",
+  "../assets/shared/config/skill-budget-rules.json",
+  "../assets/shared/config/skill-ai-generation-rules.json"
 ];
 
 self.addEventListener('install',event=>{

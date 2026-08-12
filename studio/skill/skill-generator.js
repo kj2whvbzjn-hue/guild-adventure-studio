@@ -6,13 +6,27 @@ const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const stamp=()=>new Date().toISOString();
 const hostData=()=>global.GKSSkillHost?.getData?.()||global.data;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function loadSpec(){if(!spec){const r=await fetch('./skill/runtime-requirements.json',{cache:'no-store'});if(!r.ok)throw new Error('runtime-requirements.json の読込に失敗しました');spec=await r.json();}return spec;}
-async function loadGenericDefinition({force=false}={}){if(force||!genericRegistry){if(!global.GKSGenericSkillBridge?.loadRegistry)throw new Error('Generic Skill Bridgeが読み込まれていません');genericRegistry=await global.GKSGenericSkillBridge.loadRegistry({force});}if(!global.GKSGenericSkillAuthoringRegistry?.buildUiDefinition)throw new Error('Generic Skill Authoring Registryが読み込まれていません');genericUiDefinition=global.GKSGenericSkillAuthoringRegistry.buildUiDefinition(genericRegistry);return clone(genericUiDefinition);}
+const DEPENDENCY_TIMEOUT_MS=12000;
+async function fetchJsonDependency(url,label,{timeoutMs=DEPENDENCY_TIMEOUT_MS}={}){
+ const controller=typeof AbortController==='function'?new AbortController():null;let timer=null;
+ try{
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{try{controller?.abort();}catch{}reject(new Error(`${label} の読込が ${Math.ceil(timeoutMs/1000)}秒でタイムアウトしました`));},timeoutMs);});
+  const request=fetch(url,{cache:'no-store',...(controller?{signal:controller.signal}:{})});
+  const r=await Promise.race([request,timeout]);
+  if(!r?.ok)throw new Error(`${label} の読込に失敗しました${r?.status?` (HTTP ${r.status})`:''}`);
+  return await r.json();
+ }catch(error){
+  if(error?.name==='AbortError')throw new Error(`${label} の読込がタイムアウトしました`);
+  throw error;
+ }finally{if(timer)clearTimeout(timer);}
+}
+async function loadSpec(){if(!spec)spec=await fetchJsonDependency('./skill/runtime-requirements.json','Runtime Requirements');return spec;}
+async function loadGenericDefinition({force=false}={}){if(force||!genericRegistry)genericRegistry=await fetchJsonDependency('../assets/shared/config/skill-generic-registry.json','Generic Registry');if(!global.GKSGenericSkillAuthoringRegistry?.buildUiDefinition)throw new Error('Generic Skill Authoring Registryが読み込まれていません');genericUiDefinition=global.GKSGenericSkillAuthoringRegistry.buildUiDefinition(genericRegistry);return clone(genericUiDefinition);}
 function genericEffectRequirements(type,draft={}){if(!genericRegistry)throw new Error('Generic Skill Registryを先に読み込んでください');return global.GKSGenericSkillAuthoringRegistry.resolveEffectRequirements(genericRegistry,type,draft);}
 function genericConditionRequirements(property){if(!genericRegistry)throw new Error('Generic Skill Registryを先に読み込んでください');return global.GKSGenericSkillAuthoringRegistry.resolveConditionRequirements(genericRegistry,property);}
-async function loadBudgetRules({force=false}={}){if(force||!budgetRules){if(!global.GKSGenericSkillBudgetEngine?.loadRules)throw new Error('Generic Skill Budget Engineが読み込まれていません');budgetRules=await global.GKSGenericSkillBudgetEngine.loadRules({force});}return clone(budgetRules);}
+async function loadBudgetRules({force=false}={}){if(force||!budgetRules)budgetRules=await fetchJsonDependency('../assets/shared/config/skill-budget-rules.json','Budget Rules');if(!global.GKSGenericSkillBudgetEngine?.calculate)throw new Error('Generic Skill Budget Engineが読み込まれていません');return clone(budgetRules);}
 function calculateGenericBudget(draft,options={}){if(!budgetRules)throw new Error('Skill Budget Rulesを先に読み込んでください');return global.GKSGenericSkillBudgetEngine.calculate(draft,budgetRules,genericRegistry,options);}
-async function loadAiGenerationRules({force=false}={}){if(force||!aiGenerationRules){const r=await fetch('../assets/shared/config/skill-ai-generation-rules.json',{cache:'no-store'});if(!r.ok)throw new Error('AI Generation Rulesの読込に失敗しました');aiGenerationRules=await r.json();}return clone(aiGenerationRules);}
+async function loadAiGenerationRules({force=false}={}){if(force||!aiGenerationRules)aiGenerationRules=await fetchJsonDependency('../assets/shared/config/skill-ai-generation-rules.json','AI Rules');return clone(aiGenerationRules);}
 function aiRequestTemplate(){return{schema:'GKS_GENERIC_SKILL_AI_BATCH_REQUEST',version:'1.0.0',requests:[{skillLevel:10,intent:'敵単体への物理攻撃',effects:[{type:'DAMAGE',damageType:'PHYSICAL'}],target:'ENEMY',range:'SINGLE',desiredStrength:'MEDIUM',searchMetadata:{tags:['攻撃','単体'],description:'AIは意図と構造だけを指定し、最終戦闘数値はStudioが決定する。'}},{skillLevel:10,intent:'味方単体を回復',effects:[{type:'HEAL'}],target:'ALLY',range:'SINGLE',desiredStrength:0.65,searchMetadata:{tags:['回復']}}]};}
 async function generateGenericAiBatch(payload){if(!global.GKSGenericSkillAiBatchEngine?.generateBatch)throw new Error('G05 AI Batch Engineが読み込まれていません');if(!aiGenerationRules)await loadAiGenerationRules();aiBatchPreview=await global.GKSGenericSkillAiBatchEngine.generateBatch(payload,{registry:genericRegistry,budgetRules, rules:aiGenerationRules,budgetEngine:global.GKSGenericSkillBudgetEngine,compile:skill=>compileGenericDraft(skill),idPrefix:'G05-AI'});return clone(aiBatchPreview);}
 const LOGICS=['ATTACK','DOT','FOLLOW_UP','HEAL','BUFF','DEBUFF','AURA','SHIELD','STATUS','CLEANSE','REVIVE','COVER','COUNTER'];
@@ -212,8 +226,8 @@ function renderPanel(){
  q('skgDryRun').onclick=async()=>{try{const d=await dryRun(),sm=d.summary||{};q('skgApplyStatus').innerHTML=`<b>${d.ok?'受け入れ検査PASS':'受け入れ検査STOP'}</b><br>追加 ${sm.add||0} / 変更なし ${sm.unchanged||0} / 競合 ${sm.conflict||0} / 不正 ${sm.invalid||0} / 参照切れ ${sm.broken_reference||0} / 非互換 ${sm.incompatible||0}`;q('skgRegister').disabled=!(d.ok&&(sm.add||0)>0&&(sm.conflict||0)===0);}catch(e){q('skgApplyStatus').textContent='Dry Runエラー: '+e.message;}};
  q('skgRegister').onclick=async()=>{try{if(!confirm('新規スキルをSafe Applyで登録します。続行しますか？'))return;const tx=await safeRegisterNewOnly();q('skgApplyStatus').innerHTML=`<b>登録完了</b> ${tx.applied.count}件。Backup → commit → persist → 再検証まで完了しました。`;q('skgRegister').disabled=true;}catch(e){q('skgApplyStatus').textContent='登録停止: '+e.message;}};renderGenericDynamic();renderDynamic();document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}));
 }
-async function compileGenericDraft(skill,options={}){if(!global.GKSGenericSkillBridge?.compileForLegacy)throw new Error('Generic Skill Bridgeが読み込まれていません');return global.GKSGenericSkillBridge.compileForLegacy(skill,{legacyCompile:global.compileTaggedSkill||null,...options});}
-const api={VERSION,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,buildGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
+async function compileGenericDraft(skill,options={}){if(!global.GKSGenericSkillBridge?.compileForLegacy)throw new Error('Generic Skill Bridgeが読み込まれていません');return global.GKSGenericSkillBridge.compileForLegacy(skill,{legacyCompile:global.compileTaggedSkill||null,registry:genericRegistry,...options});}
+const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,buildGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
 function setBootStatus(message,kind='info'){const view=document.getElementById('view-skill-generator');if(!view||view.dataset.skgShell!=='loading')return;const el=view.querySelector('#skgBootStatus');if(el){el.textContent=message;el.dataset.status=kind;}}
 async function boot(){
  setBootStatus('Runtime / Registry / Budget / AI定義を読み込み中です。');
