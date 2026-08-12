@@ -484,13 +484,17 @@ function executeGenericResourceChangeRuntime(source,target,compiled){
  const before=Math.max(0,Number(target.mp)||0),max=Math.max(0,Number(target.maxMp)||before),after=Math.max(0,Math.min(max,before+contract.amount));target.mp=after;const applied=after-before;
  typeof recordValidationEvent==='function'&&recordValidationEvent('generic_resource_change_executed',{source_id:source?.id||null,target_id:target.id,skill_id:compiled?.definition?.id||null,resource:'MP',requested:contract.amount,applied,before,after,max});return{ok:true,resource:'MP',requested:contract.amount,applied,before,after,genericRuntime:true,effectContract:{...contract}};
 }
+function applyTagTestCoverControl(source,target,compiled,control=null){
+ const p=compiled?.definition?.parameters||{};if(!source?.alive||!target?.alive||source.side!==target.side||source.id===target.id)return{ok:false,reason:'COVER対象が無効です'};
+ const lifetime=control?String(control.lifetime||'').toLowerCase():String(p.coverLifetime||''),uses=lifetime==='uses'?Number(control?control.uses:p.coverUses):null,duration=lifetime==='duration'?Number(control?control.duration:p.coverDuration):null,priority=control?Number(control.priority):Number(p.coverPriority)||0,removable=control?control.removable===true:p.coverRemovable==='true';
+ if(!Array.isArray(target.coverEffects))target.coverEffects=[];const effect={id:`TAGTEST-COVER-${target.coverEffects.length+1}`,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,priority,removable,lifetime,remainingUses:lifetime==='uses'?uses:null,appliedAt:battle.tick,expiresAt:lifetime==='duration'?battle.tick+duration:null};target.coverEffects.push(effect);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('cover_added',{cover_id:effect.id,source_id:source.id,target_id:target.id,skill_id:effect.skillId,priority:effect.priority,removable:effect.removable,lifetime:effect.lifetime,remaining_uses:effect.remainingUses,expires_at:effect.expiresAt});return{ok:true,effect};
+}
+function applyTaggedCover(source,target,compiled){return applyTagTestCoverControl(source,target,compiled,null)}
 function executeGenericTargetControlRuntime(source,target,compiled){
  const contract=compiled?.definition?.genericRuntime?.effectContracts?.find(x=>x?.type==='TARGET_CONTROL')||null;if(!contract)return null;
  if(contract.mode!=='COVER'||contract.trigger!=='DIRECT_ATTACK'||!Number.isInteger(contract.priority)||typeof contract.removable!=='boolean'||!['PERSISTENT','USES','DURATION'].includes(contract.lifetime)||(contract.lifetime==='USES'&&(!Number.isInteger(contract.uses)||contract.uses<1))||(contract.lifetime==='DURATION'&&(!Number.isInteger(contract.duration)||contract.duration<1)))return{ok:false,error:true,reason:'GENERIC_TARGET_CONTROL_CONTRACT_INVALID'};
- if(!source?.alive||!target?.alive||source.side!==target.side||source.id===target.id)return{ok:false,reason:'TARGET_CONTROL_TARGET_INVALID'};
- if(!Array.isArray(target.coverEffects))target.coverEffects=[];const lifetime=contract.lifetime.toLowerCase(),effect={id:`GENERIC-COVER-${target.coverEffects.length+1}`,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,priority:contract.priority,removable:contract.removable,lifetime,remainingUses:lifetime==='uses'?contract.uses:null,appliedAt:battle.tick,expiresAt:lifetime==='duration'?battle.tick+contract.duration:null};target.coverEffects.push(effect);
- typeof recordValidationEvent==='function'&&recordValidationEvent('cover_added',{cover_id:effect.id,source_id:source.id,target_id:target.id,skill_id:effect.skillId,priority:effect.priority,removable:effect.removable,lifetime:effect.lifetime,remaining_uses:effect.remainingUses,expires_at:effect.expiresAt});
- typeof recordValidationEvent==='function'&&recordValidationEvent('generic_target_control_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,mode:contract.mode,trigger:contract.trigger,priority:contract.priority,removable:contract.removable,lifetime:contract.lifetime,uses:contract.uses,duration:contract.duration,applied:true});return{ok:true,effect,genericRuntime:true,effectContract:{...contract}};
+ const result=applyTagTestCoverControl(source,target,compiled,contract);typeof recordValidationEvent==='function'&&recordValidationEvent('generic_target_control_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,mode:contract.mode,trigger:contract.trigger,priority:contract.priority,removable:contract.removable,lifetime:contract.lifetime,uses:contract.uses,duration:contract.duration,applied:result.ok===true});return{...result,genericRuntime:true,effectContract:{...contract}};
 }
 function calculateTaggedAttackDamage(attacker,definition){
  const rate=Number(definition.parameters.damage);
@@ -857,10 +861,10 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
  if(!resolved.ok){battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${resolved.reason}`);return{ok:false,stage:'target',reason:resolved.reason,compiled}}
  const targetResults=[];
  for(const resolvedTarget of resolved.targets){
-  let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,modifierResult=null,followUpResult=null,cleanseResult=null,reviveResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
+  let attackResult=null,healResult=null,shieldResult=null,dotResult=null,statusResult=null,modifierResult=null,followUpResult=null,cleanseResult=null,reviveResult=null,coverApplyResult=null,attackSucceeded=!compiled.definition.logicOrder.includes('ATTACK');
   for(const logic of compiled.definition.logicOrder){
    if(logic==='COUNTER'){continue}
-   if(logic==='COVER'){executeGenericTargetControlRuntime(actor,resolvedTarget,compiled);continue}
+   if(logic==='COVER'){coverApplyResult=executeGenericTargetControlRuntime(actor,resolvedTarget,compiled)||applyTaggedCover(actor,resolvedTarget,compiled);continue}
    if(logic==='ATTACK'){attackResult=executeGenericDamageRuntime(actor,resolvedTarget,compiled)||applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL'){healResult=executeGenericHealRuntime(actor,resolvedTarget,compiled)||applyTaggedHeal(actor,resolvedTarget,compiled)}
    else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,resolvedTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
@@ -870,10 +874,10 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
    else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime(actor,resolvedTarget,compiled)||applyTaggedDamage(actor,resolvedTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!followUpResult?.ok}
    else battle.log.push(`[Tick ${battle.tick}] [TAG][PENDING] ${logic}ロジックは未接続`);
   }
-  const effectiveAttackResult=attackResult||followUpResult;targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,modifierResult,followUpResult,cleanseResult,reviveResult});
+  const effectiveAttackResult=attackResult||followUpResult;targetResults.push({targetId:resolvedTarget.id,attackResult,healResult,shieldResult,dotResult,statusResult,modifierResult,followUpResult,cleanseResult,reviveResult,coverApplyResult});
   if(effectiveAttackResult?.ok&&!suppressDerived){if(actualOrigin==='base')dispatchTaggedBaseReactiveTriggers(actor,resolvedTarget,compiled,effectiveAttackResult,{derivedGeneration,triggerActionContext:actionTriggerContext});else if(actualOrigin==='counter')typeof recordValidationEvent==='function'&&recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN',derived_generation:derivedGeneration});else if(actualOrigin==='follow_up')typeof recordValidationEvent==='function'&&recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:resolvedTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN',derived_generation:derivedGeneration})}
  }
  if(manual)renderBattle();
  const first=targetResults[0]||{};
- return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,shieldResult:first.shieldResult,dotResult:first.dotResult,statusResult:first.statusResult,followUpResult:first.followUpResult,cleanseResult:first.cleanseResult,reviveResult:first.reviveResult};
+ return{ok:true,compiled,targets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,shieldResult:first.shieldResult,dotResult:first.dotResult,statusResult:first.statusResult,followUpResult:first.followUpResult,cleanseResult:first.cleanseResult,reviveResult:first.reviveResult,coverApplyResult:first.coverApplyResult};
 }
