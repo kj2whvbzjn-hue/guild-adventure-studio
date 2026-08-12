@@ -1836,7 +1836,8 @@ updateDeployDeleteControl();
       <input id="deployAllowProtectedDelete" type="checkbox" hidden>
       <div class="toolbar">
         <button id="deployAllowDeleteButton" type="button" onclick="toggleDeployDeleteApproval('normal')" aria-pressed="false">通常の削除許可: OFF</button>
-        <button id="deployAllowProtectedDeleteButton" class="danger" type="button" onclick="toggleDeployDeleteApproval('protected')" aria-pressed="false" disabled>保護領域削除許可: OFF</button>
+        <button id="deployAllowProtectedDeleteButton" class="danger" type="button" onclick="toggleDeployDeleteApproval('protected')" aria-pressed="false">保護領域削除許可: OFF</button>
+        <button id="deployReanalyzeButton" type="button" onclick="handleDeployDeleteToggle()">差分を再解析</button>
       </div>
       <div id="deployDeleteHelp" class="small">通常削除は「通常の削除許可」、tests/ など保護領域の削除はさらに「保護領域削除許可」が必要です。AI差分ZIPでは削除できません。</div>
       <div class="item" style="margin-top:10px">
@@ -5354,7 +5355,8 @@ function updateDeployDeleteManifestStatus(){
  }
  const folders=studioDeployDeleteManifestRules.filter(x=>x.endsWith('/')).length;
  const files=studioDeployDeleteManifestRules.length-folders;
- el.textContent=`検出済み: ${studioDeployDeleteManifestRules.length}ルール（フォルダ ${folders} / ファイル ${files}）`;
+ const protectedCount=studioDeployDeleteManifestRules.filter(rule=>isDeployProtectedDeletionPath(rule)).length;
+ el.textContent=`検出済み: ${studioDeployDeleteManifestRules.length}ルール（フォルダ ${folders} / ファイル ${files} / 保護領域 ${protectedCount}）。承認前でも下の差分ファイル欄に削除予定を表示します。`;
 }
 function isDeployProtectedDeletionPath(path){
  const rel=normalizeDeployPath(path);
@@ -5378,29 +5380,63 @@ function updateDeployDeleteControl(){
  const hasProtected=deployManifestHasProtectedDeletion();
  if(!publicPackage||!hasManifest){normal.checked=false;protectedBox.checked=false;}
  if(!normal.checked||!hasProtected)protectedBox.checked=false;
- normalButton.disabled=!publicPackage||!hasManifest;
- protectedButton.disabled=!publicPackage||!hasManifest||!hasProtected||!normal.checked;
+ // 人間側が押したとき理由を表示できるよう、承認ボタン自体はdisabledにしない。
+ normalButton.disabled=false;
+ protectedButton.disabled=false;
  normalButton.textContent=`通常の削除許可: ${normal.checked?'ON':'OFF'}`;
  protectedButton.textContent=`保護領域削除許可: ${protectedBox.checked?'ON':'OFF'}`;
  normalButton.setAttribute('aria-pressed',normal.checked?'true':'false');
  protectedButton.setAttribute('aria-pressed',protectedBox.checked?'true':'false');
- help.textContent=!publicPackage
-  ?'AI差分ZIPまたは未選択のため削除は無効です。削除には公開ZIPが必要です。'
-  :hasProtected
-   ?'DELETE_MANIFESTに保護領域があります。通常の削除許可に加えて、保護領域削除許可もONの場合だけ削除できます。'
-   :'DELETE_MANIFESTの通常削除対象は、通常の削除許可がONの場合だけ削除できます。';
+ help.textContent=!studioDeployPackageKind
+  ?'更新ZIP未選択です。削除承認はZIP読込後に行えます。'
+  :!publicPackage
+   ?'AI差分ZIPのため削除は実行できません。削除には公開ZIPが必要です。'
+   :!hasManifest
+    ?'DELETE_MANIFEST.txt未検出です。削除予定はありません。'
+    :hasProtected&&!normal.checked
+     ?'保護領域の削除予定があります。先に通常の削除許可をONにしてください。'
+     :hasProtected
+      ?'保護領域の削除予定があります。実行には通常削除許可と保護領域削除許可の両方が必要です。'
+      :'通常削除の予定があります。実行には通常の削除許可が必要です。';
 }
 async function toggleDeployDeleteApproval(kind){
  const normal=document.getElementById('deployAllowDelete');
  const protectedBox=document.getElementById('deployAllowProtectedDelete');
+ const help=document.getElementById('deployDeleteHelp');
  if(!normal||!protectedBox)return;
+ const publicPackage=studioDeployPackageKind==='public';
+ const hasManifest=studioDeployDeleteManifestRules.length>0;
+ const hasProtected=deployManifestHasProtectedDeletion();
+ if(!studioDeployPackageKind){
+  if(help)help.textContent='更新ZIPが未選択です。先にZIPを読み込んでください。';
+  return;
+ }
+ if(!publicPackage){
+  if(help)help.textContent='このZIPはAI差分ZIPです。削除承認は公開ZIPでのみ使用できます。';
+  return;
+ }
+ if(!hasManifest){
+  if(help)help.textContent='DELETE_MANIFEST.txtがないため削除承認は不要です。';
+  return;
+ }
  if(kind==='normal')normal.checked=!normal.checked;
  if(kind==='protected'){
-  if(!normal.checked||!deployManifestHasProtectedDeletion())return;
+  if(!hasProtected){
+   if(help)help.textContent='このDELETE_MANIFESTには保護領域の削除予定がありません。';
+   return;
+  }
+  if(!normal.checked){
+   if(help)help.textContent='保護領域削除許可の前に、通常の削除許可をONにしてください。';
+   return;
+  }
   protectedBox.checked=!protectedBox.checked;
  }
+ if(!normal.checked)protectedBox.checked=false;
  updateDeployDeleteControl();
- await handleDeployDeleteToggle();
+ // 承認操作は状態変更だけ。GitHub差分の再取得は「差分を再解析」で明示実行する。
+ studioDeployPlan=null;
+ setDeployExecuteEnabled(false);
+ renderDeployPackage();
 }
 async function handleDeployDeleteToggle(){
  studioDeployDeleteCandidates=[];
@@ -5588,14 +5624,28 @@ function renderDeployPackage(){
  const blocked=studioDeployDeleteBlocked||[];
  const unchanged=included.filter(x=>x.status==='UNCHANGED');
  const total=changes.reduce((n,x)=>n+x.size,0);
- deploySummary.textContent=(studioDeployFiles.length||deletes.length||blocked.length)
-  ?`変更 ${changes.length}件 / 削除許可済 ${deletes.length}件 / 削除許可外 ${blocked.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
+ const resolvedDeletePaths=new Set([...deletes,...blocked].map(x=>normalizeDeployPath(x.path)));
+ const manifestPreview=(studioDeployDeleteManifestRules||[])
+  .filter(rule=>!resolvedDeletePaths.has(normalizeDeployPath(rule)))
+  .map(rule=>({
+   path:rule,target:rule,size:0,excluded:false,
+   status:isDeployProtectedDeletionPath(rule)?'DELETE_PLANNED_PROTECTED':'DELETE_PLANNED',
+   reason:'DELETE_MANIFEST削除予定（承認前プレビュー）'
+  }));
+ deploySummary.textContent=(studioDeployFiles.length||deletes.length||blocked.length||manifestPreview.length)
+  ?`変更 ${changes.length}件 / 削除予定 ${manifestPreview.length}件 / 削除許可済 ${deletes.length}件 / 削除BLOCK ${blocked.length}件 / 同一 ${unchanged.length}件 / 除外 ${excluded.length}件 / 送信 ${formatBytes(total)}`
   :'パッケージ確認後に表示します。';
- const rows=[...studioDeployFiles,...deletes,...blocked];
+ const rows=[...studioDeployFiles,...manifestPreview,...deletes,...blocked];
  deployFileList.innerHTML=rows.map(f=>{
   const status=f.excluded?'PROTECTED':f.status||'PENDING';
-  const cls=status==='ADD'||status==='MODIFY'?'warn':status==='DELETE'?'err':status==='DELETE_BLOCKED'?'warn':status==='UNCHANGED'?'ok':'warn';
-  return `<div class="deploy-file-row"><span>${esc(f.target||f.path)}</span><span>${status==='DELETE'?'—':esc(formatBytes(f.size))}</span><span class="badge ${cls}">${esc(status)}</span></div>`;
+  const cls=status==='ADD'||status==='MODIFY'?'warn'
+   :status==='DELETE'?'err'
+   :status==='DELETE_PLANNED_PROTECTED'?'err'
+   :status==='DELETE_PLANNED'?'warn'
+   :status==='DELETE_BLOCKED'?'warn'
+   :status==='UNCHANGED'?'ok':'warn';
+  const sizeLabel=status.startsWith('DELETE')?'—':esc(formatBytes(f.size));
+  return `<div class="deploy-file-row"><span>${esc(f.target||f.path)}</span><span>${sizeLabel}</span><span class="badge ${cls}">${esc(status)}</span></div>`;
  }).join('');
 }
 function clearStudioPackage(){
