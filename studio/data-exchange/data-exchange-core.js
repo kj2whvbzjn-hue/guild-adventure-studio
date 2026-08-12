@@ -165,7 +165,7 @@
     return /^[A-Za-z][A-Za-z0-9_]*\s*(=|>=|<=|>|<)\s*-?\d+(?:\.\d+)?$/.test(value);
   }
   function hasStructuredSkillRuntime(row){
-    const runtime=row?.genericRuntime;
+    const runtime=row?.runtimeContracts||row?.genericRuntime;
     return !!runtime&&typeof runtime==='object'&&!Array.isArray(runtime)&&Number.isInteger(Number(runtime.schemaVersion))&&Number(runtime.schemaVersion)>=1&&
       runtime.triggerContract&&typeof runtime.triggerContract==='object'&&
       Array.isArray(runtime.conditionContracts)&&Array.isArray(runtime.effectContracts)&&Array.isArray(runtime.applyContracts);
@@ -174,6 +174,7 @@
     const refs=[],structuredSkill=dataset==='skills'&&hasStructuredSkillRuntime(row);
     (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>{
       for(const path of dep.paths||[]){
+        // New Skill System: runtime semantics live in runtimeContracts (genericRuntime is compatibility-only). Compiler-emitted legacy tags are not Master references.
         // New Skill System: runtime semantics live in genericRuntime. Compiler-emitted legacy tags are not Master references.
         if(structuredSkill&&dep.dataset==='tags'&&path==='tags')continue;
         for(const id of collectIds(row,[path])){
@@ -436,7 +437,7 @@
   const SAFE_TOP_LEVEL_FIELDS={
     monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
-    skills:new Set(['id','name','status','tags','params','description','created_at','updated_at','version','kind','environment','mpCost','cooldown','multiplier','target','statusId','buff','operation','tag','tagId','stack','amount','stackId','execution','genericRuntime']),
+    skills:new Set(['id','name','status','tags','params','description','created_at','updated_at','version','kind','environment','mpCost','cooldown','multiplier','target','statusId','buff','operation','tag','tagId','stack','amount','stackId','execution','runtimeContracts','genericRuntime']),
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
