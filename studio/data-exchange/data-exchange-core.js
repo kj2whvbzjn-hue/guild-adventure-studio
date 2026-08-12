@@ -164,11 +164,20 @@
     if(SKILL_RUNTIME_PREFIXES.some(prefix=>value.startsWith(prefix)))return true;
     return /^[A-Za-z][A-Za-z0-9_]*\s*(=|>=|<=|>|<)\s*-?\d+(?:\.\d+)?$/.test(value);
   }
+  function hasStructuredSkillRuntime(row){
+    const runtime=row?.genericRuntime;
+    return !!runtime&&typeof runtime==='object'&&!Array.isArray(runtime)&&Number.isInteger(Number(runtime.schemaVersion))&&Number(runtime.schemaVersion)>=1&&
+      runtime.triggerContract&&typeof runtime.triggerContract==='object'&&
+      Array.isArray(runtime.conditionContracts)&&Array.isArray(runtime.effectContracts)&&Array.isArray(runtime.applyContracts);
+  }
   function referencedIds(dataset,row){
-    const refs=[];
+    const refs=[],structuredSkill=dataset==='skills'&&hasStructuredSkillRuntime(row);
     (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>{
       for(const path of dep.paths||[]){
+        // New Skill System: runtime semantics live in genericRuntime. Compiler-emitted legacy tags are not Master references.
+        if(structuredSkill&&dep.dataset==='tags'&&path==='tags')continue;
         for(const id of collectIds(row,[path])){
+          // Transitional legacy fallback only; removed when Legacy Skill is retired after final acceptance.
           if(dataset==='skills'&&dep.dataset==='tags'&&path==='tags'&&isSkillRuntimeSystemTag(id))continue;
           refs.push({dataset:dep.dataset,id});
         }

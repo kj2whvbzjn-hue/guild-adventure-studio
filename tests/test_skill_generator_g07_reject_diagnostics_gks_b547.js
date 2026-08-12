@@ -29,4 +29,4 @@ assert.ok(api.g07FormatBlocker(conflict).includes('S2'));
 
 for(const marker of ['g07Blocker:blocker','e.g07Blocker?g07FormatBlocker','read-only参照データの追加または変更が検出されました。'])assert.ok(src.includes(marker),`missing ${marker}`);
 const page=fs.readFileSync('studio/index.html','utf8');assert.ok(page.includes('skill-generator.js?v=25'));
-console.log('PASS GKS-B547 G07 human-readable reject diagnostics');
+console.log('PASS GKS-B548 G07 human-readable reject diagnostics');
