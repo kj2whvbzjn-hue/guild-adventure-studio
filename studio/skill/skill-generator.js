@@ -33,7 +33,7 @@ async function fetchJsonDependency(url,label,{timeoutMs=DEPENDENCY_TIMEOUT_MS}={
  }finally{if(timer)clearTimeout(timer);}
 }
 async function loadSpec(){if(!spec)spec=await fetchJsonDependency('./skill/runtime-requirements.json','Runtime Requirements');return spec;}
-async function loadGenericDefinition({force=false}={}){if(force||!genericRegistry)genericRegistry=await fetchJsonDependency('../assets/shared/config/skill-generic-registry.json','Generic Registry');if(!skillAuthoringRegistryApi()?.buildUiDefinition)throw new Error('Generic Skill Authoring Registryが読み込まれていません');genericUiDefinition=skillAuthoringRegistryApi().buildUiDefinition(genericRegistry);return clone(genericUiDefinition);}
+async function loadGenericDefinition({force=false}={}){if(force||!genericRegistry)genericRegistry=await fetchJsonDependency('../assets/shared/config/skill-registry.json','Skill Registry');if(!skillAuthoringRegistryApi()?.buildUiDefinition)throw new Error('Skill Authoring Registryが読み込まれていません');genericUiDefinition=skillAuthoringRegistryApi().buildUiDefinition(genericRegistry);return clone(genericUiDefinition);}
 function genericEffectRequirements(type,draft={}){if(!genericRegistry)throw new Error('Generic Skill Registryを先に読み込んでください');return skillAuthoringRegistryApi().resolveEffectRequirements(genericRegistry,type,draft);}
 function genericConditionRequirements(property){if(!genericRegistry)throw new Error('Generic Skill Registryを先に読み込んでください');return skillAuthoringRegistryApi().resolveConditionRequirements(genericRegistry,property);}
 async function loadBudgetRules({force=false}={}){if(force||!budgetRules)budgetRules=await fetchJsonDependency('../assets/shared/config/skill-budget-rules.json','Budget Rules');if(!skillBudgetEngineApi()?.calculate)throw new Error('Generic Skill Budget Engineが読み込まれていません');return clone(budgetRules);}
@@ -216,8 +216,7 @@ async function g07BuildMasterEnvelopeFromGenericBatch(payload){
  const batch=g06ImportJsonObject(payload,'GKS_GENERIC_SKILL_BATCH'),rows=[];
  for(const row of batch.skills){
   const compiled=await compileGenericDraft(row.skill);
-  if(!compiled?.ok||!(compiled?.compiledSkill||compiled?.legacySkill))throw Object.assign(new Error(`G07 compile拒否: ${row?.skill?.id||'(unknown)'}`),{code:'G07_COMPILE_REJECT'});
-  rows.push(clone(compiled.compiledSkill||compiled.legacySkill));
+  if(!compiled?.ok||!compiled?.compiledSkill?.runtimeContracts)throw Object.assign(new Error(`G07正式compile拒否: ${row?.skill?.id||'(unknown)'}`),{code:'G07_COMPILE_REJECT'});   rows.push(clone(compiled.compiledSkill));
  }
  if(!rows.length)throw Object.assign(new Error('G07登録対象Skillがありません'),{code:'G07_REGISTER_EMPTY'});
  const ids=rows.map(x=>String(x.id||''));
@@ -429,7 +428,7 @@ function renderPanel(){
  q('skgDryRun').onclick=async()=>{try{const d=await dryRun(),sm=d.summary||{};q('skgApplyStatus').innerHTML=`<b>${d.ok?'受け入れ検査PASS':'受け入れ検査STOP'}</b><br>追加 ${sm.add||0} / 変更なし ${sm.unchanged||0} / 競合 ${sm.conflict||0} / 不正 ${sm.invalid||0} / 参照切れ ${sm.broken_reference||0} / 非互換 ${sm.incompatible||0}`;q('skgRegister').disabled=!(d.ok&&(sm.add||0)>0&&(sm.conflict||0)===0);}catch(e){q('skgApplyStatus').textContent='Dry Runエラー: '+e.message;}};
  q('skgRegister').onclick=async()=>{try{if(!confirm('新規スキルをSafe Applyで登録します。続行しますか？'))return;const tx=await safeRegisterNewOnly();q('skgApplyStatus').innerHTML=`<b>登録完了</b> ${tx.applied.count}件。Backup → commit → persist → 再検証まで完了しました。`;q('skgRegister').disabled=true;}catch(e){q('skgApplyStatus').textContent='登録停止: '+e.message;}};renderGenericDynamic();renderDynamic();document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}));
 }
-async function compileGenericDraft(skill,options={}){if(!skillCompileServiceApi()?.compileSkill)throw new Error('Generic Skill Bridgeが読み込まれていません');return skillCompileServiceApi().compileSkill(skill,{legacyCompile:global.compileTaggedSkill||null,registry:genericRegistry,...options});}
+async function compileGenericDraft(skill,options={}){const service=global.GKSSkillNativeCompileService;if(!service?.compileSkill)throw new Error('正式Skill Compile Serviceが読み込まれていません');return service.compileSkill(skill,{registry:genericRegistry,...options});}
 const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,g06ExportAiRequest,g06ExportGenericSkills,g06ExportValidationReport,g06ExportRejectedRequests,g06ExportBatchResult,g06ImportBatchResult,g06ValidationReportToReinput,g06ImportJsonObject,g06StrictSkillIssues,g06RevalidateGenericBatch,g07DryRunBlocker,g07FormatBlocker,g07AuditStorageKey,g07BuildMasterEnvelopeFromGenericBatch,g07DryRunMasterRegistration,g07SafeApplyGenericBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
 function setBootStatus(message,kind='info'){const view=document.getElementById('view-skill-generator');if(!view||view.dataset.skgShell!=='loading')return;const el=view.querySelector('#skgBootStatus');if(el){el.textContent=message;el.dataset.status=kind;}}
 async function boot(){

@@ -11,14 +11,14 @@ assert.ok(skg.includes('Promise.race([request,timeout])'),'dependency fetch must
 assert.ok(skg.includes('controller?.abort()'),'timeout must abort the pending fetch when AbortController is available');
 for(const [label,url] of [
  ['Runtime Requirements','./skill/runtime-requirements.json'],
- ['Generic Registry','../assets/shared/config/skill-generic-registry.json'],
+ ['Skill Registry','../assets/shared/config/skill-registry.json'],
  ['Budget Rules','../assets/shared/config/skill-budget-rules.json'],
  ['AI Rules','../assets/shared/config/skill-ai-generation-rules.json']
 ]){
  assert.ok(skg.includes(`fetchJsonDependency('${url}','${label}')`),`${label} must use bounded dependency loading`);
  assert.ok(sw.includes(`"${url}"`),`${label} must be in Studio service-worker app shell`);
 }
-assert.ok(skg.includes('registry:genericRegistry'),'Generic compile must reuse the already-loaded registry instead of refetching it');
+assert.ok(skg.includes('registry:genericRegistry'),'Skill compile must reuse the already-loaded registry instead of refetching it');
 assert.ok(skg.includes("setBootStatus('初期化停止: '+message,'error')"),'timeout/fetch failure must be visible in-view');
 assert.ok(html.includes('Game GA-B486.121 / Studio GKS-B555'),'Studio header build must not show the stale GKS-B527 label');
 assert.ok(html.includes('./skill/skill-generator.js?v=27'),'Skill Generator cache key must advance');

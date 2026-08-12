@@ -1,0 +1,792 @@
+{
+  "schema_version": 1,
+  "phase": "FORMAL-SKILL-1",
+  "runtime": {
+    "effects": [
+      "DAMAGE",
+      "HEAL",
+      "APPLY",
+      "REMOVE",
+      "RESOURCE_CHANGE",
+      "REVIVE",
+      "TARGET_CONTROL",
+      "SPECIAL"
+    ]
+  },
+  "authoring": {
+    "schema_version": 1,
+    "phase": "G05",
+    "source_of_truth": "skill-registry.json",
+    "purpose": "Formal Skill authoring definition shared by Studio, Skill Compiler, Skill Master, and Runtime.",
+    "skill_required_fields": [
+      "id",
+      "name",
+      "trigger.type",
+      "target.side",
+      "target.range",
+      "effects"
+    ],
+    "effect_types": {
+      "DAMAGE": {
+        "label": "Damage",
+        "enabled": true,
+        "required_fields": [
+          "power"
+        ],
+        "optional_fields": [
+          "damageType"
+        ]
+      },
+      "HEAL": {
+        "label": "Heal",
+        "enabled": true,
+        "required_fields": [
+          "power"
+        ],
+        "optional_fields": []
+      },
+      "APPLY": {
+        "label": "Apply",
+        "enabled": true,
+        "required_fields": [
+          "effectId"
+        ],
+        "optional_fields": [
+          "power",
+          "duration",
+          "interval",
+          "stackGain"
+        ],
+        "required_fields_by_registry_effect_kind": {
+          "STATUS": [
+            "duration"
+          ],
+          "DOT": [
+            "power",
+            "duration"
+          ],
+          "BUFF": [
+            "power",
+            "duration"
+          ],
+          "DEBUFF": [
+            "power",
+            "duration"
+          ],
+          "SHIELD": [
+            "power",
+            "duration"
+          ]
+        }
+      },
+      "REMOVE": {
+        "label": "Remove",
+        "enabled": true,
+        "required_fields": [
+          "category"
+        ],
+        "optional_fields": [
+          "count",
+          "all"
+        ],
+        "one_of_required": [
+          [
+            "count",
+            "all"
+          ]
+        ],
+        "supported_values": {
+          "category": [
+            "STATUS"
+          ]
+        }
+      },
+      "RESOURCE_CHANGE": {
+        "label": "Resource",
+        "enabled": true,
+        "required_fields": [
+          "resource",
+          "amount"
+        ],
+        "optional_fields": [],
+        "supported_values": {
+          "resource": [
+            "MP"
+          ]
+        }
+      },
+      "REVIVE": {
+        "label": "Revive",
+        "enabled": true,
+        "required_fields": [],
+        "optional_fields": [
+          "hp",
+          "hpRate"
+        ],
+        "one_of_required": [
+          [
+            "hp",
+            "hpRate"
+          ]
+        ]
+      },
+      "TARGET_CONTROL": {
+        "label": "Target Control",
+        "enabled": true,
+        "required_fields": [
+          "mode",
+          "trigger",
+          "priority",
+          "removable",
+          "lifetime"
+        ],
+        "optional_fields": [
+          "uses",
+          "duration"
+        ],
+        "supported_values": {
+          "mode": [
+            "COVER"
+          ],
+          "trigger": [
+            "DIRECT_ATTACK"
+          ],
+          "lifetime": [
+            "PERSISTENT",
+            "USES",
+            "DURATION"
+          ]
+        },
+        "conditional_required": [
+          {
+            "when": {
+              "field": "lifetime",
+              "equals": "USES"
+            },
+            "fields": [
+              "uses"
+            ]
+          },
+          {
+            "when": {
+              "field": "lifetime",
+              "equals": "DURATION"
+            },
+            "fields": [
+              "duration"
+            ]
+          }
+        ]
+      },
+      "SPECIAL": {
+        "label": "Special",
+        "enabled": false,
+        "required_fields": [],
+        "optional_fields": [],
+        "boundary": "DEFERRED",
+        "reason": "SPECIAL requires an effect-specific contract and execution owner before Skill Runtime admission."
+      }
+    },
+    "trigger": {
+      "required_fields": [
+        "type"
+      ],
+      "optional_fields": [
+        "scope",
+        "priority"
+      ],
+      "options_source": "triggers"
+    },
+    "condition": {
+      "required_fields": [
+        "scope",
+        "property",
+        "operator",
+        "value"
+      ],
+      "options_source": "conditions",
+      "operators": [
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<="
+      ],
+      "scope_default": "SELF",
+      "value_type_controls": {
+        "number": {
+          "control": "number",
+          "step": "any"
+        },
+        "rate": {
+          "control": "number",
+          "step": "any",
+          "min": 0,
+          "max": 1
+        },
+        "non_negative_integer": {
+          "control": "number",
+          "step": "1",
+          "min": 0,
+          "integer": true
+        },
+        "predicate": {
+          "control": "select",
+          "options": [
+            true
+          ],
+          "operator_options": [
+            "="
+          ]
+        }
+      }
+    },
+    "target": {
+      "required_fields": [
+        "side",
+        "range"
+      ],
+      "optional_fields": [
+        "randomCount",
+        "excludeSelf"
+      ],
+      "side_options_source": "targets.sides",
+      "range_options_source": "targets.ranges"
+    },
+    "resource": {
+      "optional_fields": [
+        "mpCost",
+        "cooldown",
+        "activationPriority"
+      ]
+    },
+    "field_definitions": {
+      "power": {
+        "label": "効果量",
+        "control": "number",
+        "step": "any"
+      },
+      "damageType": {
+        "label": "ダメージ種別",
+        "control": "select",
+        "options_source": "damage_types"
+      },
+      "effectId": {
+        "label": "Effect",
+        "control": "select",
+        "options_source": "effects"
+      },
+      "duration": {
+        "label": "持続時間",
+        "control": "number",
+        "step": "1",
+        "min": 1
+      },
+      "interval": {
+        "label": "発生間隔",
+        "control": "number",
+        "step": "1",
+        "min": 1
+      },
+      "stackGain": {
+        "label": "スタック増加",
+        "control": "number",
+        "step": "1",
+        "min": 1
+      },
+      "category": {
+        "label": "解除カテゴリ",
+        "control": "select"
+      },
+      "count": {
+        "label": "解除件数",
+        "control": "number",
+        "step": "1",
+        "min": 1
+      },
+      "all": {
+        "label": "全解除",
+        "control": "boolean"
+      },
+      "resource": {
+        "label": "リソース",
+        "control": "select"
+      },
+      "amount": {
+        "label": "変化量",
+        "control": "number",
+        "step": "any"
+      },
+      "hp": {
+        "label": "蘇生HP",
+        "control": "number",
+        "step": "1",
+        "min": 1
+      },
+      "hpRate": {
+        "label": "蘇生HP割合",
+        "control": "number",
+        "step": "any",
+        "min": 1e-06,
+        "max": 1
+      },
+      "mode": {
+        "label": "対象制御モード",
+        "control": "select"
+      },
+      "trigger": {
+        "label": "対象制御Trigger",
+        "control": "select"
+      },
+      "priority": {
+        "label": "優先度",
+        "control": "number",
+        "step": "1"
+      },
+      "removable": {
+        "label": "解除可能",
+        "control": "boolean"
+      },
+      "lifetime": {
+        "label": "寿命",
+        "control": "select"
+      },
+      "uses": {
+        "label": "使用回数",
+        "control": "number",
+        "step": "1",
+        "min": 1
+      }
+    },
+    "budget": {
+      "rules_source": "../assets/shared/config/skill-budget-rules.json",
+      "budgetRuleVersion": "G04-BUDGET-V1",
+      "existing_skill_policy": "NO_AUTOMATIC_RECALCULATION"
+    }
+  },
+  "triggers": {
+    "ON_USE": {
+      "enabled": true,
+      "engine_event": "use",
+      "dispatch_mode": "RESOLVE_ONLY",
+      "allowed_scopes": [
+        "SELF"
+      ]
+    },
+    "ON_HIT_RECEIVED": {
+      "enabled": true,
+      "engine_event": "hit_received",
+      "dispatch_mode": "COUNTER",
+      "allowed_scopes": [
+        "SELF"
+      ],
+      "runtime_contract": {
+        "logic": "COUNTER",
+        "requires_effect": "DAMAGE",
+        "target_side": "ENEMY",
+        "target_range": "SINGLE",
+        "numeric_defaults": {
+          "COUNTER_LIMIT": 1,
+          "COUNTER_PRIORITY": 0
+        }
+      }
+    },
+    "ON_DAMAGE_DEALT": {
+      "enabled": true,
+      "engine_event": "damage_dealt",
+      "dispatch_mode": "RESOLVE_ONLY",
+      "allowed_scopes": [
+        "SELF"
+      ]
+    },
+    "ON_TURN_START": {
+      "enabled": true,
+      "engine_event": "turn_start",
+      "dispatch_mode": "RESOLVE_ONLY",
+      "allowed_scopes": [
+        "SELF"
+      ]
+    },
+    "ON_TURN_END": {
+      "enabled": true,
+      "engine_event": "turn_end",
+      "dispatch_mode": "RESOLVE_ONLY",
+      "allowed_scopes": [
+        "SELF"
+      ]
+    },
+    "ON_DEATH": {
+      "enabled": true,
+      "engine_event": "death",
+      "dispatch_mode": "RESOLVE_ONLY",
+      "allowed_scopes": [
+        "SELF"
+      ]
+    },
+    "ON_STATUS_APPLIED": {
+      "enabled": true,
+      "engine_event": "status_applied",
+      "dispatch_mode": "RESOLVE_ONLY",
+      "allowed_scopes": [
+        "SELF"
+      ]
+    },
+    "ON_ALLY_ATTACK": {
+      "enabled": true,
+      "engine_event": "ally_attack",
+      "dispatch_mode": "FOLLOW_UP",
+      "allowed_scopes": [
+        "SELF"
+      ],
+      "runtime_contract": {
+        "logic": "FOLLOW_UP",
+        "requires_effect": "DAMAGE",
+        "requires_condition": "TARGET_POISONED",
+        "target_side": "ENEMY",
+        "target_range": "SINGLE",
+        "numeric_defaults": {}
+      }
+    },
+    "WHILE_SOURCE_ALIVE": {
+      "enabled": true,
+      "engine_event": "aura_evaluate",
+      "dispatch_mode": "AURA",
+      "allowed_scopes": [
+        "SELF"
+      ],
+      "runtime_contract": {
+        "logic": "AURA",
+        "requires_effect_type": "APPLY",
+        "target_sides": [
+          "ALLY",
+          "ENEMY"
+        ],
+        "target_range": "ALL",
+        "stack": "highest",
+        "numeric_defaults": {}
+      }
+    }
+  },
+  "conditions": {
+    "SELF_HP": {
+      "value_type": "number"
+    },
+    "SELF_HP_RATE": {
+      "value_type": "rate"
+    },
+    "SELF_MP": {
+      "value_type": "number"
+    },
+    "SELF_MP_RATE": {
+      "value_type": "rate"
+    },
+    "ENEMY_COUNT": {
+      "value_type": "non_negative_integer"
+    },
+    "ALLY_COUNT": {
+      "value_type": "non_negative_integer"
+    },
+    "BATTLE_TICK": {
+      "value_type": "non_negative_integer"
+    },
+    "TARGET_POISONED": {
+      "value_type": "predicate",
+      "scope": "TARGET",
+      "engine_predicate": "target_poisoned",
+      "enabled": true
+    }
+  },
+  "targets": {
+    "sides": {
+      "SELF": "自分",
+      "ALLY": "味方",
+      "ENEMY": "敵",
+      "CORPSE": "死体",
+      "POINT": "地点"
+    },
+    "ranges": {
+      "SINGLE": "単体",
+      "ALL": "全体",
+      "FRONT": "前列",
+      "BACK": "後列",
+      "RANDOM": "ランダム",
+      "PIERCE": "貫通"
+    }
+  },
+  "damage_types": {
+    "PHYSICAL": "物理",
+    "MAGICAL": "魔法",
+    "FIXED": "固定"
+  },
+  "effects": {
+    "BURN": {
+      "kind": "DOT",
+      "label": "火傷",
+      "budgetWeight": 1.5,
+      "defaults": {
+        "interval": 100,
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "DOT",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "maxStacks": 5,
+        "effectiveRule": "SUM",
+        "consumeRule": "NONE",
+        "identityPolicy": "EFFECT_SOURCE_STACK"
+      },
+      "runtime": {
+        "logic": "DOT"
+      }
+    },
+    "POISON": {
+      "kind": "DOT",
+      "label": "毒",
+      "budgetWeight": 1.4,
+      "defaults": {
+        "interval": 100,
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "DOT",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "maxStacks": 5,
+        "effectiveRule": "SUM",
+        "consumeRule": "NONE",
+        "identityPolicy": "EFFECT_SOURCE_STACK"
+      },
+      "runtime": {
+        "logic": "DOT"
+      }
+    },
+    "STUN": {
+      "kind": "STATUS",
+      "label": "行動不能",
+      "budgetWeight": 3.0,
+      "defaults": {},
+      "lifecycle": {
+        "stackRule": "UNIQUE",
+        "refreshRule": "REFRESH",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "STATUS",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": true,
+        "effectiveRule": "LATEST",
+        "consumeRule": "NONE",
+        "resistancePolicy": "DURATION_REDUCTION"
+      },
+      "runtime": {
+        "logic": "STATUS",
+        "statusId": "STATUS-STUN",
+        "statusPayload": {
+          "actionDisabled": true
+        }
+      }
+    },
+    "ACCURACY_DOWN": {
+      "kind": "STATUS",
+      "label": "命中低下",
+      "budgetWeight": 1.6,
+      "defaults": {},
+      "lifecycle": {
+        "stackRule": "UNIQUE",
+        "refreshRule": "REFRESH",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "STATUS",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": true,
+        "effectiveRule": "LATEST",
+        "consumeRule": "NONE",
+        "resistancePolicy": "DURATION_REDUCTION"
+      },
+      "runtime": {
+        "logic": "STATUS",
+        "statusId": "STATUS-ACCURACY-DOWN"
+      }
+    },
+    "ATK_UP": {
+      "kind": "BUFF",
+      "label": "攻撃強化",
+      "budgetWeight": 1.2,
+      "defaults": {
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "BUFF",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "effectiveRule": "HIGHEST",
+        "consumeRule": "NONE"
+      },
+      "runtime": {
+        "logic": "BUFF",
+        "modifierStat": "ATK"
+      }
+    },
+    "DEF_DOWN": {
+      "kind": "DEBUFF",
+      "label": "防御弱体",
+      "budgetWeight": 1.2,
+      "defaults": {
+        "stackGain": 1
+      },
+      "lifecycle": {
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "DEBUFF",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "effectiveRule": "HIGHEST",
+        "consumeRule": "NONE"
+      },
+      "runtime": {
+        "logic": "DEBUFF",
+        "modifierStat": "DEF"
+      }
+    },
+    "BARRIER": {
+      "kind": "SHIELD",
+      "label": "シールド",
+      "budgetWeight": 1.3,
+      "defaults": {},
+      "lifecycle": {
+        "stackRule": "STACK",
+        "refreshRule": "KEEP",
+        "snapshotPolicy": "SNAPSHOT",
+        "dispelCategory": "SHIELD",
+        "removeOnDeath": true,
+        "removeOnBattleEnd": true,
+        "removable": false,
+        "effectiveRule": "SUM",
+        "consumeRule": "FIFO"
+      },
+      "runtime": {
+        "logic": "SHIELD"
+      }
+    }
+  },
+  "apply_model": {
+    "schema_version": 2,
+    "required_lifecycle_fields": [
+      "stackRule",
+      "refreshRule",
+      "snapshotPolicy",
+      "dispelCategory",
+      "removeOnDeath",
+      "removeOnBattleEnd",
+      "removable"
+    ],
+    "stack_rules": [
+      "UNIQUE",
+      "STACK",
+      "REPLACE",
+      "IGNORE"
+    ],
+    "refresh_rules": [
+      "REFRESH",
+      "EXTEND",
+      "KEEP",
+      "REPLACE"
+    ],
+    "snapshot_policies": [
+      "SNAPSHOT",
+      "DYNAMIC"
+    ],
+    "note": "R03-E1でlifecycle契約を共通ポリシー判定層へ接続。既存Effect内部アルゴリズムは変更しない。",
+    "dispel_categories": [
+      "STATUS",
+      "DOT",
+      "BUFF",
+      "DEBUFF",
+      "SHIELD",
+      "NONE"
+    ],
+    "effective_rules": [
+      "HIGHEST",
+      "SUM",
+      "LATEST",
+      "NONE"
+    ],
+    "consume_rules": [
+      "FIFO",
+      "LIFO",
+      "NONE"
+    ]
+  },
+  "lifecycle_engine_boundary": {
+    "scope": "APPLY_LIFECYCLE_ONLY",
+    "owns": [
+      "resolve",
+      "apply",
+      "expire",
+      "cleanup",
+      "consume",
+      "effective"
+    ],
+    "applyKinds": [
+      "STATUS",
+      "DOT",
+      "BUFF",
+      "DEBUFF",
+      "SHIELD"
+    ],
+    "excludes": [
+      "TRIGGER_DISPATCH",
+      "TARGET_RESOLUTION",
+      "DAMAGE_FORMULA",
+      "HEAL_FORMULA",
+      "RESOURCE_COST",
+      "COVER_ROUTING",
+      "COUNTER_CHAIN",
+      "FOLLOW_UP_CHAIN",
+      "AURA_TRIGGER"
+    ],
+    "effectSpecificResponsibilities": [
+      "DOT_DAMAGE_FORMULA",
+      "STATUS_RESISTANCE",
+      "BUFF_STAT_APPLICATION",
+      "DEBUFF_STAT_APPLICATION",
+      "SHIELD_DAMAGE_ABSORPTION"
+    ]
+  },
+  "target_control_model": {
+    "schema_version": 1,
+    "modes": [
+      "COVER"
+    ],
+    "triggers": [
+      "DIRECT_ATTACK"
+    ],
+    "lifetimes": [
+      "PERSISTENT",
+      "USES",
+      "DURATION"
+    ],
+    "target_sides": [
+      "ALLY"
+    ],
+    "target_ranges": [
+      "SINGLE",
+      "ALL"
+    ]
+  }
+}

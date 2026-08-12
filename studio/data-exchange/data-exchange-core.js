@@ -437,7 +437,7 @@
   const SAFE_TOP_LEVEL_FIELDS={
     monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
-    skills:new Set(['id','name','status','tags','params','description','created_at','updated_at','version','kind','environment','mpCost','cooldown','multiplier','target','statusId','buff','operation','tag','tagId','stack','amount','stackId','execution','runtimeContracts','genericRuntime']),
+    skills:new Set((global.GKSSkillSchema?.masterAllowed?.()||['schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts','status','description','created_at','updated_at'])),
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),

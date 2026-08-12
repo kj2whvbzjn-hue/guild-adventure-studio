@@ -8,7 +8,7 @@ const APP_SHELL=[
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
   "./skill/runtime-requirements.json",
-  "../assets/shared/config/skill-generic-registry.json",
+  "../assets/shared/config/skill-registry.json",
   "../assets/shared/config/skill-budget-rules.json",
   "../assets/shared/config/skill-ai-generation-rules.json"
 ];

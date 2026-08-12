@@ -10,9 +10,15 @@ const dx=require('../studio/data-exchange/data-exchange-core.js');
    chapters:[]
  };
  const skill={
+   schemaVersion:1,
    id:'G05-AI-001',
    name:'R06現行実機検査用',
-   tags:['ATTACK','DAMAGE=570','物理','敵','単体','MP_COST=0','COOLDOWN=0','ACTIVATION_PRIORITY=0'],
+   skillLevel:50,
+   trigger:{type:'ON_USE',scope:'SELF'},
+   conditions:[],
+   target:{side:'ENEMY',range:'SINGLE'},
+   effects:[{type:'DAMAGE',power:570,damageType:'PHYSICAL'}],
+   resource:{mpCost:0,cooldown:0,activationPriority:0},
    runtimeContracts:{
      schemaVersion:1,
      registryPhase:'R05-H',
