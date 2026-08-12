@@ -96,6 +96,8 @@ function g06StrictSkillIssues(skill,index=0){
  return issues;
 }
 async function g06RevalidateGenericBatch(payload){
+ if(!genericRegistry)await loadGenericDefinition();
+ if(!genericRegistry?.authoring?.effect_types)throw Object.assign(new Error('Skill RegistryのEffect定義が未接続です'),{code:'G06_SKILL_REGISTRY_REQUIRED'});
  const batch=g06ImportJsonObject(payload,'GKS_GENERIC_SKILL_BATCH');
  const rootIssues=g06UnknownFields(batch,['schema','version','sourceSchema','aiGenerationRuleVersion','budgetRuleVersion','skills'],'$');
  if(!Array.isArray(batch.skills)||!batch.skills.length)rootIssues.push({code:'G06_GENERIC_SKILLS_REQUIRED',path:'skills',message:'skillsを1件以上指定してください'});
@@ -116,7 +118,7 @@ async function g06RevalidateGenericBatch(payload){
   }
   entries.push({index:i,skillId:row?.skill?.id||null,status:issues.length?'REJECT':'ACCEPT',roundtripMatch,budgetResult:clone(budget),compilerWarnings:clone(compiled?.warnings||[]),issues});
  }
- return{schema:'GKS_GENERIC_SKILL_REVALIDATION_REPORT',version:G06_JSON_VERSION,sourceSchema:batch.schema,summary:{total:entries.length,accepted:entries.filter(x=>x.status==='ACCEPT').length,rejected:entries.filter(x=>x.status==='REJECT').length,rootIssueCount:rootIssues.length,allAccepted:rootIssues.length===0&&entries.length>0&&entries.every(x=>x.status==='ACCEPT')},rootIssues,entries};
+ return{schema:'GKS_GENERIC_SKILL_REVALIDATION_REPORT',version:G06_JSON_VERSION,sourceSchema:batch.schema,registry:{loaded:true,phase:String(genericRegistry?.phase||''),effectTypeCount:Object.keys(genericRegistry?.authoring?.effect_types||{}).length},summary:{total:entries.length,accepted:entries.filter(x=>x.status==='ACCEPT').length,rejected:entries.filter(x=>x.status==='REJECT').length,rootIssueCount:rootIssues.length,allAccepted:rootIssues.length===0&&entries.length>0&&entries.every(x=>x.status==='ACCEPT')},rootIssues,entries};
 }
 
 
