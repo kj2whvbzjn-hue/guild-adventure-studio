@@ -1,0 +1,10 @@
+const fs=require('fs'),assert=require('assert');
+const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
+assert.ok(src.includes('lastG06GenericBatch=clone(payload)'),'G06 import must retain Generic Batch');
+assert.ok(src.includes('if(report.summary.allAccepted)lastG06GenericBatch=clone(payload)'),'G06 PASS must retain validated batch');
+assert.ok(src.includes("let payload=lastG06GenericBatch?clone(lastG06GenericBatch):null"),'G07 button must prefer retained G06 batch');
+assert.ok(src.includes("const raw=q('skgG06GenericJson')?.value?.trim()"),'G07 button must fallback to G06 textarea');
+assert.ok(src.includes("if(!payload)payload=g06ExportGenericSkills()"),'G07 button must preserve generated-batch fallback');
+assert.ok(src.includes("直近のG06 Generic Skill BatchをG07登録欄へセットしました。"));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=23'));
+console.log('PASS GKS-B545 G06->G07 Generic Batch handoff hotfix');

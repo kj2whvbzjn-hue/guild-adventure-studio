@@ -29,5 +29,5 @@ const brokenReport=JSON.parse(JSON.stringify(report));brokenReport.entries[1].re
 assert.throws(()=>api.g06ValidationReportToReinput(brokenReport),e=>e.code==='G06_REJECT_REQUEST_MISSING');
 
 for(const marker of ['skgG06BatchExport','skgG06BatchRestore','skgG06ValidationFile','skgG06ValidationToReinput'])assert.ok(src.includes(marker),`missing UI marker ${marker}`);
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=22'));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=23'));
 console.log('PASS GKS-B542 G06 batch restore / validation reject reinput');
