@@ -11,7 +11,7 @@ ctx.GKSGenericSkillAuthoringRegistry={buildUiDefinition:()=>({})};
 ctx.GKSGenericSkillBudgetEngine={calculate:(skill,rules)=>({ok:true,budgetRuleVersion:rules.budgetRuleVersion,cost:10,limit:20,errors:[],calculationTrace:[]})};
 ctx.GKSGenericSkillBridge={compileForLegacy:async(skill)=>({ok:true,errors:[],warnings:[],legacySkill:{id:skill.id,name:skill.name,tags:['ATTACK','DAMAGE=10','敵','単体']}})};
 ctx.GKSSkillHost={
- getData:()=>host,getBuild:()=> 'GKS-B548',
+ getData:()=>host,getBuild:()=> 'GKS-B549',
  backup:()=>{backupCount++;return true;},
  setData:d=>{host=JSON.parse(JSON.stringify(d));return true;},
  persist:()=>{persistCount++;return true;}
@@ -75,5 +75,5 @@ const api=ctx.GKSSkillGenerator;
 
  for(const m of ['skgG07Undo','G07_STALE_SOURCE','G07_BROKEN_REFERENCE','G07_STALE_SOURCE_HASH','G07_AUDIT_SAVE_FAILED','gks_data_exchange_audit_v1_'])assert.ok(src.includes(m),`missing ${m}`);
  const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=25'));
- console.log('PASS GKS-B548 G07 acceptance stale/broken/conflict/audit/undo gate');
+ console.log('PASS GKS-B549 G07 acceptance stale/broken/conflict/audit/undo gate');
 })().catch(e=>{console.error(e);process.exit(1);});

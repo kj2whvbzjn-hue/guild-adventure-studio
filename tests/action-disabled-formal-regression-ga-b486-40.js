@@ -9,7 +9,7 @@ if(!/^GA-B\d+(?:\.\d+)+$/.test(build.game_build||''))errors.push(`build=${build.
 if(!bridge.includes("'SKL-STATUS-ACTION-DISABLED-400'"))errors.push('formal required action-disabled skill missing');
 if(!bridge.includes("action_disabled_runtime=typeof runActionDisabledRuntimeRegression"))errors.push('formal action-disabled runtime integration missing');
 if(!bridge.includes('action_disabled_runtime_passed_count'))errors.push('formal action-disabled summary missing');
-if(!bridge.includes("schema_version:'1.8.0'"))errors.push('formal schema version mismatch');
+if(!bridge.includes("schema_version:'1.9.0'"))errors.push('formal schema version mismatch');
 if(!bridge.includes(`tag-formal-runtime-regression-${build.game_build}-`))errors.push('formal filename build mismatch');
 if(!app.includes('function runActionDisabledRuntimeRegression()'))errors.push('action-disabled reusable regression runner missing');
 for(const id of ['ACTION-DISABLED-RUNTIME-SKILL-BLOCK','ACTION-DISABLED-RUNTIME-NORMAL-BLOCK','ACTION-DISABLED-RUNTIME-EXPIRE-RESTORE','ACTION-DISABLED-RUNTIME-RESERVATION-PRESENTATION','ACTION-DISABLED-RUNTIME-COUNTER-BLOCK','ACTION-DISABLED-RUNTIME-FOLLOW-UP-BLOCK','ACTION-DISABLED-RUNTIME-DOT-CONTINUES','ACTION-DISABLED-RUNTIME-SHIELD-CONTINUES','ACTION-DISABLED-RUNTIME-AURA-CONTINUES','ACTION-DISABLED-RUNTIME-COVER-CONTINUES'])if(!app.includes(id))errors.push(`runtime case missing ${id}`);

@@ -8,7 +8,7 @@ if(!/^GA-B\d+(?:\.\d+)+$/.test(build.game_build||''))errors.push(`build=${build.
 for(const id of ['SKL-COVER-SINGLE-ALLY','SKL-COVER-TEST-ALL-ALLIES','SKL-COVER-TEST-USES-1','SKL-COVER-TEST-DURATION-300','SKL-COVER-TEST-DOT-ONLY'])if(!bridge.includes(id))errors.push(`formal required missing ${id}`);
 if(!bridge.includes("cover_runtime=typeof runCoverRuntimeRegression"))errors.push('formal cover runtime integration missing');
 if(!bridge.includes('cover_runtime_passed_count'))errors.push('formal cover summary missing');
-if(!bridge.includes("schema_version:'1.8.0'"))errors.push('formal schema version mismatch');
+if(!bridge.includes("schema_version:'1.9.0'"))errors.push('formal schema version mismatch');
 if(!bridge.includes(`tag-formal-runtime-regression-${build.game_build}-`))errors.push('formal filename build mismatch');
 if(!app.includes('function runCoverRuntimeRegression()'))errors.push('cover reusable regression runner missing');
 if(!app.includes('COVER-RUNTIME-COUNTER-COVER-COUNTER'))errors.push('counter-cover-counter regression missing');

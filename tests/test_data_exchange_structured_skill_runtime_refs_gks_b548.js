@@ -31,7 +31,7 @@ function structuredSkill(id,tags){
  staged.masters.skills=[
    structuredSkill('R06-B548-001',['味方','単体','RESOURCE_CHANGE','FUTURE_EFFECT_TYPE_X','MP_COST=0'])
  ];
- const env=await dx.buildEnvelope({rootData:staged,dataset:'skills',ids:['R06-B548-001'],dependencyMode:'direct',studioVersion:'GKS-B548'});
+ const env=await dx.buildEnvelope({rootData:staged,dataset:'skills',ids:['R06-B548-001'],dependencyMode:'direct',studioVersion:'GKS-B549'});
  const dry=await dx.dryRunImport({rootData:root,envelope:env});
  assert.strictEqual(dry.summary.add,1);
  assert.strictEqual(dry.summary.broken_reference,0,'structured Skill runtime tags must not become Tag Master references');
@@ -41,7 +41,7 @@ function structuredSkill(id,tags){
  const s2=structuredSkill('R06-B548-002',['RESOURCE_CHANGE']);
  s2.params={required_tags:['TAG-MISSING']};
  staged2.masters.skills=[s2];
- const env2=await dx.buildEnvelope({rootData:staged2,dataset:'skills',ids:['R06-B548-002'],dependencyMode:'direct',studioVersion:'GKS-B548'});
+ const env2=await dx.buildEnvelope({rootData:staged2,dataset:'skills',ids:['R06-B548-002'],dependencyMode:'direct',studioVersion:'GKS-B549'});
  const dry2=await dx.dryRunImport({rootData:root,envelope:env2});
  assert.strictEqual(dry2.summary.broken_reference,1,'explicit required_tags dependency must still be enforced');
  assert.ok(dry2.items.some(x=>x.status==='broken_reference'&&x.id==='R06-B548-002'&&String(x.detail).includes('TAG-MISSING')));
@@ -49,7 +49,7 @@ function structuredSkill(id,tags){
  // Transitional old Skill without structured runtime keeps the old tag-reference behavior.
  const staged3=JSON.parse(JSON.stringify(root));
  staged3.masters.skills=[{id:'OLD-SKILL',name:'old',tags:['CUSTOM-TAG-REF']}];
- const env3=await dx.buildEnvelope({rootData:staged3,dataset:'skills',ids:['OLD-SKILL'],dependencyMode:'direct',studioVersion:'GKS-B548'});
+ const env3=await dx.buildEnvelope({rootData:staged3,dataset:'skills',ids:['OLD-SKILL'],dependencyMode:'direct',studioVersion:'GKS-B549'});
  const dry3=await dx.dryRunImport({rootData:root,envelope:env3});
  assert.strictEqual(dry3.summary.broken_reference,1);
 
@@ -58,5 +58,5 @@ function structuredSkill(id,tags){
  assert.ok(core.includes('New Skill System: runtime semantics live in genericRuntime'));
  const html=fs.readFileSync('studio/index.html','utf8');
  assert.ok(html.includes('data-exchange-core.js?v=15'));
- console.log('PASS GKS-B548 structured Skill runtime reference boundary');
+ console.log('PASS GKS-B549 structured Skill runtime reference boundary');
 })().catch(e=>{console.error(e);process.exit(1);});
