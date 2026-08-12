@@ -176,17 +176,29 @@ async function dryRun(){const env=await buildEnvelope();lastDryRun=await global.
 
 function g07AuditStorageKey(){return `gks_data_exchange_audit_v1_${String(hostData()?.project?.id||'default')}`;}
 function g07DryRunBlocker(dry){
- const summary=dry?.summary||{};
+ const summary=dry?.summary||{},items=Array.isArray(dry?.items)?dry.items:[];
  const checks=[
-  ['stale_source','G07_STALE_SOURCE','stale source'],
-  ['broken_reference','G07_BROKEN_REFERENCE','broken reference'],
-  ['conflict','G07_ID_CONFLICT','既存ID競合'],
-  ['invalid','G07_INVALID_IMPORT','invalid'],
-  ['incompatible','G07_INCOMPATIBLE_IMPORT','incompatible'],
-  ['readonly_modified','G07_READONLY_MODIFIED','read-only変更']
+  ['stale_source','G07_STALE_SOURCE','stale source','同一IDの現在Masterと登録候補の内容が一致しません。古い/別内容のデータとして扱い、上書きを停止しました。','既存Masterを残すなら登録候補のIDを変更してください。既存Masterを更新する意図なら、差分を確認して専用の更新経路を使用してください。'],
+  ['broken_reference','G07_BROKEN_REFERENCE','broken reference','登録候補が参照するIDを現在Projectまたは同時Import内で解決できません。','不足している参照先を先に登録するか、参照IDを修正してください。'],
+  ['conflict','G07_ID_CONFLICT','既存ID競合','同一IDのMasterがすでに存在し、内容が異なります。自動上書きを停止しました。','新規登録ならIDを変更してください。更新目的なら差分確認後に明示的な更新経路を使用してください。'],
+  ['invalid','G07_INVALID_IMPORT','invalid','Data Exchange検査で登録候補が無効と判定されました。','表示された対象とdetailを確認し、入力データを修正してください。'],
+  ['incompatible','G07_INCOMPATIBLE_IMPORT','incompatible','現在のProject/Data Exchange仕様と互換性がありません。','schema/version/対象datasetの互換性を確認してください。'],
+  ['readonly_modified','G07_READONLY_MODIFIED','read-only変更','read-only参照データの追加または変更が検出されました。','read-only対象は変更せず、正本側のデータを確認してください。']
  ];
- for(const [field,code,label] of checks)if(Number(summary[field]||0)>0)return{code,count:Number(summary[field]),message:`G07登録拒否: ${label} ${summary[field]}件`};
+ for(const [field,code,label,explanation,recommendation] of checks){
+  const count=Number(summary[field]||0);
+  if(count>0){
+   const affected=items.filter(x=>x?.status===field).map(x=>({dataset:String(x.dataset||''),id:String(x.id||''),detail:String(x.detail||'')}));
+   return{code,count,label,explanation,recommendation,affected,message:`G07登録拒否: ${label} ${count}件`};
+  }
+ }
  return null;
+}
+function g07FormatBlocker(blocker){
+ if(!blocker)return'';
+ const rows=(blocker.affected||[]).slice(0,8).map(x=>`・${x.dataset||'(dataset不明)'} / ${x.id||'(ID不明)'}${x.detail?` — ${x.detail}`:''}`);
+ const more=(blocker.affected||[]).length>8?`<br>…ほか ${(blocker.affected||[]).length-8}件`:'';
+ return `<b>G07 Dry Run REJECT [${esc(blocker.code)}]</b><br><b>原因:</b> ${esc(blocker.label)} ${blocker.count}件<br><b>安全処理:</b> ${esc(blocker.explanation)}<br>${rows.length?`<b>対象:</b><br>${rows.map(esc).join('<br>')}${more}<br>`:''}<b>推奨対応:</b> ${esc(blocker.recommendation)}`;
 }
 async function g07BuildMasterEnvelopeFromGenericBatch(payload){
  const report=await g06RevalidateGenericBatch(payload);
@@ -211,7 +223,7 @@ async function g07DryRunMasterRegistration(payload){
  const sourceHash=global.GKSDataExchangeTransaction?.projectHash?await global.GKSDataExchangeTransaction.projectHash(source):null;
  const dry=await global.GKSDataExchange.dryRunImport({rootData:source,envelope:built.envelope});
  if(!dry?.ok)throw Object.assign(new Error('G07 Dry Runが停止しました'),{code:'G07_DRY_RUN_REJECT',dryRun:dry});
- const blocker=g07DryRunBlocker(dry);if(blocker)throw Object.assign(new Error(blocker.message),{code:blocker.code,dryRun:dry,count:blocker.count});
+ const blocker=g07DryRunBlocker(dry);if(blocker)throw Object.assign(new Error(blocker.message),{code:blocker.code,dryRun:dry,count:blocker.count,g07Blocker:blocker});
  if((dry.summary?.add||0)!==built.legacySkills.length)throw Object.assign(new Error(`G07登録拒否: add件数不一致 expected=${built.legacySkills.length} actual=${dry.summary?.add||0}`),{code:'G07_ADD_COUNT_MISMATCH',dryRun:dry});
  const plan=await global.GKSDataExchange.createApplyPlan({rootData:source,envelope:built.envelope,dryRun:dry,conflictChoices:{}});
  if(!plan?.can_apply)throw Object.assign(new Error((plan?.reasons||['G07 Apply Plan拒否']).join(' / ')),{code:'G07_APPLY_PLAN_REJECT',plan,dryRun:dry});
@@ -400,15 +412,15 @@ function renderPanel(){
  q('skgTemplate').onclick=()=>download('Skill_AI_Request_Template.json',requestTemplate());q('skgFile').onchange=async e=>{try{const f=e.target.files?.[0];if(f){q('skgJson').value=await f.text();q('skgJsonStatus').textContent=f.name+' を読み込みました。';}}catch(err){q('skgJsonStatus').textContent='読込エラー: '+err.message;}};q('skgDryGenerate').onclick=()=>{try{preview=generateBatch(JSON.parse(q('skgJson').value||'{}'));render(preview);q('skgJsonStatus').textContent=`生成器検査: ${preview.summary.valid}/${preview.summary.count} PASS`;}catch(e){q('skgJsonStatus').textContent='JSON受入エラー: '+e.message;}};
  
  q('skgG07UseLastGeneric').onclick=()=>{try{let payload=lastG06GenericBatch?clone(lastG06GenericBatch):null;if(!payload){const raw=q('skgG06GenericJson')?.value?.trim();if(raw)payload=g06ImportJsonObject(JSON.parse(raw),'GKS_GENERIC_SKILL_BATCH');}if(!payload)payload=g06ExportGenericSkills();q('skgG07GenericJson').value=JSON.stringify(payload,null,2);q('skgG07Status').textContent='直近のG06 Generic Skill BatchをG07登録欄へセットしました。';}catch(e){q('skgG07Status').textContent='G07準備REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
- q('skgG07DryRun').onclick=async()=>{try{const payload=JSON.parse(q('skgG07GenericJson').value||'{}');const out=await g07DryRunMasterRegistration(payload);q('skgG07Status').innerHTML=`<b>G07 Dry Run PASS</b> add ${out.dryRun.summary?.add||0} / conflict 0<br><span class="small">再Validation・Compiler・部分JSON Dry Run・Apply Plan検査を通過しました。まだMasterへ書き込みません。</span>`;}catch(e){q('skgG07Status').textContent='G07 Dry Run REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
- q('skgG07Register').onclick=async()=>{try{const payload=JSON.parse(q('skgG07GenericJson').value||'{}');const out=await g07SafeApplyGenericBatch(payload);q('skgG07Status').innerHTML=`<b>G07 Safe Apply 完了</b> add ${out.plan?.add_count||out.dryRun.summary?.add||0}<br><span class="small">backup / transaction / persist / Audit記録まで完了。直前SessionはUndoできます。</span>`;}catch(e){q('skgG07Status').textContent='G07登録REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
+ q('skgG07DryRun').onclick=async()=>{try{const payload=JSON.parse(q('skgG07GenericJson').value||'{}');const out=await g07DryRunMasterRegistration(payload);q('skgG07Status').innerHTML=`<b>G07 Dry Run PASS</b> add ${out.dryRun.summary?.add||0} / conflict 0<br><span class="small">再Validation・Compiler・部分JSON Dry Run・Apply Plan検査を通過しました。まだMasterへ書き込みません。</span>`;}catch(e){q('skgG07Status').innerHTML=e.g07Blocker?g07FormatBlocker(e.g07Blocker):esc('G07 Dry Run REJECT ['+(e.code||'ERROR')+']: '+e.message);}};
+ q('skgG07Register').onclick=async()=>{try{const payload=JSON.parse(q('skgG07GenericJson').value||'{}');const out=await g07SafeApplyGenericBatch(payload);q('skgG07Status').innerHTML=`<b>G07 Safe Apply 完了</b> add ${out.plan?.add_count||out.dryRun.summary?.add||0}<br><span class="small">backup / transaction / persist / Audit記録まで完了。直前SessionはUndoできます。</span>`;}catch(e){q('skgG07Status').innerHTML=e.g07Blocker?g07FormatBlocker(e.g07Blocker):esc('G07登録REJECT ['+(e.code||'ERROR')+']: '+e.message);}};
  q('skgG07Undo').onclick=()=>{try{if(!global.GKSDataExchangeUI?.undoLatestSession)throw Object.assign(new Error('Data Exchange Undo UIがありません'),{code:'G07_UNDO_UI_REQUIRED'});global.GKSDataExchangeUI.undoLatestSession();q('skgG07Status').textContent='Data Exchange Auditの直前Session Undoを開始しました。';}catch(e){q('skgG07Status').textContent='G07 Undo REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
  q('skgExport').onclick=async()=>{try{const env=await buildEnvelope();download(`Skill_Final_${Date.now()}.json`,env);q('skgApplyStatus').textContent='完成スキルJSONを出力しました。管理 → 読込でも同じDry Runを実行できます。';}catch(e){q('skgApplyStatus').textContent='出力エラー: '+e.message;}};
  q('skgDryRun').onclick=async()=>{try{const d=await dryRun(),sm=d.summary||{};q('skgApplyStatus').innerHTML=`<b>${d.ok?'受け入れ検査PASS':'受け入れ検査STOP'}</b><br>追加 ${sm.add||0} / 変更なし ${sm.unchanged||0} / 競合 ${sm.conflict||0} / 不正 ${sm.invalid||0} / 参照切れ ${sm.broken_reference||0} / 非互換 ${sm.incompatible||0}`;q('skgRegister').disabled=!(d.ok&&(sm.add||0)>0&&(sm.conflict||0)===0);}catch(e){q('skgApplyStatus').textContent='Dry Runエラー: '+e.message;}};
  q('skgRegister').onclick=async()=>{try{if(!confirm('新規スキルをSafe Applyで登録します。続行しますか？'))return;const tx=await safeRegisterNewOnly();q('skgApplyStatus').innerHTML=`<b>登録完了</b> ${tx.applied.count}件。Backup → commit → persist → 再検証まで完了しました。`;q('skgRegister').disabled=true;}catch(e){q('skgApplyStatus').textContent='登録停止: '+e.message;}};renderGenericDynamic();renderDynamic();document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}));
 }
 async function compileGenericDraft(skill,options={}){if(!global.GKSGenericSkillBridge?.compileForLegacy)throw new Error('Generic Skill Bridgeが読み込まれていません');return global.GKSGenericSkillBridge.compileForLegacy(skill,{legacyCompile:global.compileTaggedSkill||null,registry:genericRegistry,...options});}
-const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,g06ExportAiRequest,g06ExportGenericSkills,g06ExportValidationReport,g06ExportRejectedRequests,g06ExportBatchResult,g06ImportBatchResult,g06ValidationReportToReinput,g06ImportJsonObject,g06StrictSkillIssues,g06RevalidateGenericBatch,g07DryRunBlocker,g07AuditStorageKey,g07BuildMasterEnvelopeFromGenericBatch,g07DryRunMasterRegistration,g07SafeApplyGenericBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
+const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,g06ExportAiRequest,g06ExportGenericSkills,g06ExportValidationReport,g06ExportRejectedRequests,g06ExportBatchResult,g06ImportBatchResult,g06ValidationReportToReinput,g06ImportJsonObject,g06StrictSkillIssues,g06RevalidateGenericBatch,g07DryRunBlocker,g07FormatBlocker,g07AuditStorageKey,g07BuildMasterEnvelopeFromGenericBatch,g07DryRunMasterRegistration,g07SafeApplyGenericBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
 function setBootStatus(message,kind='info'){const view=document.getElementById('view-skill-generator');if(!view||view.dataset.skgShell!=='loading')return;const el=view.querySelector('#skgBootStatus');if(el){el.textContent=message;el.dataset.status=kind;}}
 async function boot(){
  bootDiag('BOOT-4: boot entered');
