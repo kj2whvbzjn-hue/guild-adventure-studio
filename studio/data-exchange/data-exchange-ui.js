@@ -46,10 +46,28 @@
     const stamp=new Date().toISOString().replace(/[:.]/g,'-');
     downloadBlob(blob,`DX_AUDIT_${String(currentProjectId||'project')}_${stamp}.json`);
   }
+  function findUndoableSessionById(sessionId,expectedDataset=''){
+    const id=String(sessionId||'');
+    if(!id)return null;
+    const session=GKSDataExchangeAudit.load(localStorage,auditStorageKey()).find(x=>String(x.import_session_id||'')===id&&!x.undone)||null;
+    if(!session)return null;
+    if(expectedDataset&&String(session.dataset||'')!==String(expectedDataset))return null;
+    return session;
+  }
+  async function undoSessionById(sessionId,options={}){
+    const expectedDataset=String(options?.expectedDataset||'');
+    const session=findUndoableSessionById(sessionId,expectedDataset);
+    if(!session)throw new Error(`指定されたUndo Sessionが見つかりません${expectedDataset?` (${expectedDataset})`:''}。`);
+    if(!confirm(`指定したData Exchange SessionをUndoします。\n${session.dataset} / 追加${session.added?.length||0} / 変更${session.changed?.length||0}\n続行しますか？`))return;
+    return undoAuditSession(session);
+  }
   async function undoLatestSession(){
     const session=latestUndoableSession();
     if(!session)return alert('Undo可能なData Exchange Sessionはありません。');
     if(!confirm(`直前のData Exchange SessionをUndoします。\n${session.dataset} / 追加${session.added?.length||0} / 変更${session.changed?.length||0}\n続行しますか？`))return;
+    return undoAuditSession(session);
+  }
+  async function undoAuditSession(session){
     const beforeUndo=structuredClone(data);
     let undoCompleted=false;
     try{
@@ -238,5 +256,5 @@
   function refreshAuditHistory(){renderAuditPanel();}
   function onViewRefresh(){renderAuditPanel();}
   if(typeof document!=='undefined')document.addEventListener('DOMContentLoaded',()=>{setTimeout(renderAuditPanel,0);});
-  window.GKSDataExchangeUI={updateImportFilename,openPicker,openStoryPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,refreshAuditHistory,exportAuditForGPT,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,onViewRefresh};
+  window.GKSDataExchangeUI={updateImportFilename,openPicker,openStoryPicker,closePicker,changeDataset,renderPicker,toggleItem,handleItemKey,selectVisible,selectAllDataset,clearSelection,exportSelection,inspectImportFile,renderImpactPreview,exportImpactForGPT,renderAuditPanel,refreshAuditHistory,exportAuditForGPT,findUndoableSessionById,undoSessionById,undoLatestSession,setConflictChoice,setAllConflictChoices,showApplyPlan,applySafeMerge,onViewRefresh};
 })( );

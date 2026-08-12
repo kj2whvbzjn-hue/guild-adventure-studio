@@ -1,6 +1,6 @@
 const assert=require('assert'),fs=require('fs');
 const build=require('../package-build.json');
-assert.strictEqual(build.studio_build,'GKS-B554');
+assert.strictEqual(build.studio_build,'GKS-B555');
 const html=fs.readFileSync('game/index.html','utf8');
 const sw=fs.readFileSync('game/sw.js','utf8');
 const cfg=fs.readFileSync('assets/shared/config/runtime-config.js','utf8');

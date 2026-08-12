@@ -48,7 +48,7 @@ const dx=require('../studio/data-exchange/data-exchange-core.js');
    'G07 Dry Run must validate Apply Plan before reporting PASS');
  assert.ok(src.includes('部分JSON Dry Run・Apply Plan検査を通過しました'));
  const html=fs.readFileSync('studio/index.html','utf8');
- assert.ok(html.includes('skill-generator.js?v=26'));
+ assert.ok(html.includes('skill-generator.js?v=27'));
  assert.ok(html.includes('data-exchange-core.js?v=15'));
  console.log('PASS GKS-B550 genericRuntime Master contract + G07 Dry Run Apply Plan gate');
 })().catch(e=>{console.error(e);process.exit(1);});

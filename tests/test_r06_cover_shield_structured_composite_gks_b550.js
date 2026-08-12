@@ -1,7 +1,37 @@
 const assert=require('assert'),fs=require('fs'),vm=require('vm');
-const payload=JSON.parse(fs.readFileSync('/mnt/data/PRJ-GKS-CH01-DEMO_SKILLS_GPT_81.json','utf8'));
-const rows=payload.datasets.skills.filter(x=>/^R06-B547-MASS-0(?:4[3-8])$/.test(x.id));
-assert.strictEqual(rows.length,6,'expected the six Master COVER+SHIELD cases');
+
+// Self-contained regression fixtures.
+// This test verifies the COVER + SHIELD runtime contract separation itself; it must not
+// depend on a developer-local demo Master JSON under /mnt/data. Keep six variants so
+// both runtimes are exercised repeatedly with different SHIELD values/durations.
+function coverShieldFixture(index,power,duration,priority,removable){
+ return {
+  id:`R06-B550-COVER-SHIELD-${String(index).padStart(2,'0')}`,
+  name:`COVER+SHIELD regression ${String(index).padStart(2,'0')}`,
+  tags:['COVER','COVER_TARGET=single_ally','COVER_TRIGGER=direct_attack',`COVER_PRIORITY=${priority}`,`COVER_REMOVABLE=${removable}`,'COVER_LIFETIME=persistent','味方','単体','SHIELD',`SHIELD=${power}`,`DURATION=${duration}`],
+  genericRuntime:{
+   schemaVersion:1,registryPhase:'R05-H',
+   triggerContract:{type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0},
+   conditionContracts:[],
+   effectContracts:[{type:'TARGET_CONTROL',mode:'COVER',trigger:'DIRECT_ATTACK',priority,removable,lifetime:'PERSISTENT'}],
+   applyContracts:[{
+    effectId:`R06-B550-SHIELD-${String(index).padStart(2,'0')}`,kind:'SHIELD',logic:'SHIELD',
+    values:{power,duration},
+    lifecycle:{stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',dispelCategory:'SHIELD',removeOnDeath:true,removeOnBattleEnd:true,removable:true,effectiveRule:'SUM',consumeRule:'FIFO'}
+   }],
+   auraEffectContract:null
+  }
+ };
+}
+const rows=[
+ coverShieldFixture(1,10,20,0,true),
+ coverShieldFixture(2,15,40,1,true),
+ coverShieldFixture(3,20,60,2,false),
+ coverShieldFixture(4,25,80,3,true),
+ coverShieldFixture(5,30,100,4,false),
+ coverShieldFixture(6,40,120,5,true)
+];
+assert.strictEqual(rows.length,6,'expected six self-contained COVER+SHIELD regression cases');
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const events=[],ctx={console,battle:{tick:100,units:[],log:[]},recordValidationEvent:(type,payload)=>events.push({type,payload})};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);
  for(const skill of rows){
