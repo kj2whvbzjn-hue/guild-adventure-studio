@@ -1,13 +1,16 @@
 'use strict';
 const fs=require('fs'), path=require('path'), assert=require('assert');
 const html=fs.readFileSync(path.join(__dirname,'..','studio','index.html'),'utf8');
-assert(html.includes("DELETE_PLANNED_PROTECTED"), 'protected delete preview status missing');
-assert(html.includes("DELETE_MANIFEST削除予定（承認前プレビュー）"), 'pre-approval preview missing');
-assert(html.includes("normalButton.disabled=false"), 'normal approval button must accept click for feedback');
-assert(html.includes("protectedButton.disabled=false"), 'protected approval button must accept click for feedback');
-assert(html.includes("更新ZIPが未選択です。先にZIPを読み込んでください。"), 'missing no-package feedback');
-assert(html.includes("保護領域削除許可の前に、通常の削除許可をONにしてください。"), 'missing approval-order feedback');
-assert(html.includes("差分を再解析"), 'explicit diff reanalysis control missing');
+
+assert(html.includes("削除予定 ${files}件"), 'manifest delete count preview missing');
+assert(html.includes("未承認のためまだ削除は実行されません"), 'pre-approval safety notice missing');
+assert(html.includes("normalButton.disabled=!publicPackage||!hasManifest"), 'normal approval button behavior must match prior version');
+assert(html.includes("protectedButton.disabled=!publicPackage||!hasManifest||!hasProtected||!normal.checked"), 'protected approval button behavior must match prior version');
+assert(!html.includes('id="deployReanalyzeButton"'), 'manual reanalyze button must not be required');
+assert(!html.includes("DELETE_PLANNED_PROTECTED"), 'pre-approval file-by-file delete preview must be removed');
+
 const toggle=html.match(/async function toggleDeployDeleteApproval\(kind\)\{[\s\S]*?\n\}/);
-assert(toggle && !toggle[0].includes("prepareStudioDeployDiff"), 'approval toggle must not fetch GitHub diff');
-console.log('PASS test_studio_delete_preview_and_approval_feedback_gks_b556');
+assert(toggle, 'toggleDeployDeleteApproval missing');
+assert(toggle[0].includes("await handleDeployDeleteToggle()"), 'approval toggle must automatically refresh diff as before');
+
+console.log('PASS test_studio_delete_count_preview_prior_behavior_gks_b556');
