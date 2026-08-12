@@ -175,14 +175,6 @@ async function buildEnvelope(){if(!preview||preview.summary.invalid)throw new Er
 async function dryRun(){const env=await buildEnvelope();lastDryRun=await global.GKSDataExchange.dryRunImport({rootData:hostData(),envelope:env});return clone(lastDryRun);}
 
 function g07AuditStorageKey(){return `gks_data_exchange_audit_v1_${String(hostData()?.project?.id||'default')}`;}
-function g07UndoPointerKey(){return `gks_g07_last_apply_session_v1_${String(hostData()?.project?.id||'default')}`;}
-function g07RememberUndoSession(session){
- if(typeof localStorage==='undefined'||!session?.import_session_id)return false;
- if(String(session.dataset||'')!=='skills')throw Object.assign(new Error(`G07 Audit dataset不一致: ${session.dataset||'(empty)'}`),{code:'G07_AUDIT_DATASET_MISMATCH'});
- localStorage.setItem(g07UndoPointerKey(),String(session.import_session_id));return true;
-}
-function g07ReadUndoSessionId(){return typeof localStorage==='undefined'?'':String(localStorage.getItem(g07UndoPointerKey())||'');}
-function g07ClearUndoSessionId(){if(typeof localStorage!=='undefined')localStorage.removeItem(g07UndoPointerKey());}
 function g07DryRunBlocker(dry){
  const summary=dry?.summary||{},items=Array.isArray(dry?.items)?dry.items:[];
  const checks=[
@@ -265,7 +257,6 @@ async function g07SafeApplyGenericBatch(payload){
   if(typeof localStorage==='undefined'||!global.GKSDataExchangeAudit.append(localStorage,g07AuditStorageKey(),auditSession)){
    throw Object.assign(new Error('G07 Audit記録を保存できませんでした'),{code:'G07_AUDIT_SAVE_FAILED'});
   }
-  if(!g07RememberUndoSession(auditSession))throw Object.assign(new Error('G07 Undo対象Sessionを保存できませんでした'),{code:'G07_UNDO_SESSION_SAVE_FAILED'});
  }catch(e){
   if(tx?.ok){
    try{global.GKSSkillHost?.setData?.(clone(currentBefore));global.GKSSkillHost?.persist?.('G07 Audit failure rollback');}catch{}
@@ -423,22 +414,13 @@ function renderPanel(){
  q('skgG07UseLastGeneric').onclick=()=>{try{let payload=lastG06GenericBatch?clone(lastG06GenericBatch):null;if(!payload){const raw=q('skgG06GenericJson')?.value?.trim();if(raw)payload=g06ImportJsonObject(JSON.parse(raw),'GKS_GENERIC_SKILL_BATCH');}if(!payload)payload=g06ExportGenericSkills();q('skgG07GenericJson').value=JSON.stringify(payload,null,2);q('skgG07Status').textContent='直近のG06 Generic Skill BatchをG07登録欄へセットしました。';}catch(e){q('skgG07Status').textContent='G07準備REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
  q('skgG07DryRun').onclick=async()=>{try{const payload=JSON.parse(q('skgG07GenericJson').value||'{}');const out=await g07DryRunMasterRegistration(payload);q('skgG07Status').innerHTML=`<b>G07 Dry Run PASS</b> add ${out.dryRun.summary?.add||0} / conflict 0<br><span class="small">再Validation・Compiler・部分JSON Dry Run・Apply Plan検査を通過しました。まだMasterへ書き込みません。</span>`;}catch(e){q('skgG07Status').innerHTML=e.g07Blocker?g07FormatBlocker(e.g07Blocker):esc('G07 Dry Run REJECT ['+(e.code||'ERROR')+']: '+e.message);}};
  q('skgG07Register').onclick=async()=>{try{const payload=JSON.parse(q('skgG07GenericJson').value||'{}');const out=await g07SafeApplyGenericBatch(payload);q('skgG07Status').innerHTML=`<b>G07 Safe Apply 完了</b> add ${out.plan?.add_count||out.dryRun.summary?.add||0}<br><span class="small">backup / transaction / persist / Audit記録まで完了。直前SessionはUndoできます。</span>`;}catch(e){q('skgG07Status').innerHTML=e.g07Blocker?g07FormatBlocker(e.g07Blocker):esc('G07登録REJECT ['+(e.code||'ERROR')+']: '+e.message);}};
- q('skgG07Undo').onclick=async()=>{try{
-  if(!global.GKSDataExchangeUI?.undoSessionById)throw Object.assign(new Error('Data Exchange Session指定Undo UIがありません'),{code:'G07_UNDO_UI_REQUIRED'});
-  const sessionId=g07ReadUndoSessionId();if(!sessionId)throw Object.assign(new Error('直前のG07 Safe Apply Sessionが記録されていません'),{code:'G07_UNDO_SESSION_REQUIRED'});
-  q('skgG07Status').textContent='G07 Safe Applyの対象SessionをUndo実行中です。';
-  const out=await global.GKSDataExchangeUI.undoSessionById(sessionId,{expectedDataset:'skills'});if(!out)return;
-  if(String(out.session_id||'')!==sessionId||String(out.dataset||'')!=='skills')throw Object.assign(new Error('Undo結果のSession/datasetがG07対象と一致しません'),{code:'G07_UNDO_RESULT_MISMATCH'});
-  g07ClearUndoSessionId();
-  const undone=out.undone_count||0,remain=out.remain_count||0,conflict=out.conflict_count||0;
-  q('skgG07Status').innerHTML=`<b>G07 Undo 完了</b> success ${undone}<br><span class="small">dataset skills / session ${esc(sessionId)}<br>undone ${undone} / remain ${remain} / conflict ${conflict}<br>backup / transaction / persist / Audit記録まで完了。現在のSkill Masterは登録前の状態に戻っています。</span>`;
- }catch(e){q('skgG07Status').textContent='G07 Undo REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
+ q('skgG07Undo').onclick=async()=>{try{if(!global.GKSDataExchangeUI?.undoLatestSession)throw Object.assign(new Error('Data Exchange Undo UIがありません'),{code:'G07_UNDO_UI_REQUIRED'});q('skgG07Status').textContent='Data Exchange Auditの直前Session Undoを実行中です。';const out=await global.GKSDataExchangeUI.undoLatestSession();if(!out)return;const undone=out.undone_count||0,remain=out.remain_count||0,conflict=out.conflict_count||0;q('skgG07Status').innerHTML=`<b>G07 Undo 完了</b> success ${undone}<br><span class="small">undone ${undone} / remain ${remain} / conflict ${conflict}<br>backup / transaction / persist / Audit記録まで完了。現在のMasterは登録前の状態に戻っています。</span>`;}catch(e){q('skgG07Status').textContent='G07 Undo REJECT ['+(e.code||'ERROR')+']: '+e.message;}};
  q('skgExport').onclick=async()=>{try{const env=await buildEnvelope();download(`Skill_Final_${Date.now()}.json`,env);q('skgApplyStatus').textContent='完成スキルJSONを出力しました。管理 → 読込でも同じDry Runを実行できます。';}catch(e){q('skgApplyStatus').textContent='出力エラー: '+e.message;}};
  q('skgDryRun').onclick=async()=>{try{const d=await dryRun(),sm=d.summary||{};q('skgApplyStatus').innerHTML=`<b>${d.ok?'受け入れ検査PASS':'受け入れ検査STOP'}</b><br>追加 ${sm.add||0} / 変更なし ${sm.unchanged||0} / 競合 ${sm.conflict||0} / 不正 ${sm.invalid||0} / 参照切れ ${sm.broken_reference||0} / 非互換 ${sm.incompatible||0}`;q('skgRegister').disabled=!(d.ok&&(sm.add||0)>0&&(sm.conflict||0)===0);}catch(e){q('skgApplyStatus').textContent='Dry Runエラー: '+e.message;}};
  q('skgRegister').onclick=async()=>{try{if(!confirm('新規スキルをSafe Applyで登録します。続行しますか？'))return;const tx=await safeRegisterNewOnly();q('skgApplyStatus').innerHTML=`<b>登録完了</b> ${tx.applied.count}件。Backup → commit → persist → 再検証まで完了しました。`;q('skgRegister').disabled=true;}catch(e){q('skgApplyStatus').textContent='登録停止: '+e.message;}};renderGenericDynamic();renderDynamic();document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}));
 }
 async function compileGenericDraft(skill,options={}){if(!global.GKSGenericSkillBridge?.compileForLegacy)throw new Error('Generic Skill Bridgeが読み込まれていません');return global.GKSGenericSkillBridge.compileForLegacy(skill,{legacyCompile:global.compileTaggedSkill||null,registry:genericRegistry,...options});}
-const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,g06ExportAiRequest,g06ExportGenericSkills,g06ExportValidationReport,g06ExportRejectedRequests,g06ExportBatchResult,g06ImportBatchResult,g06ValidationReportToReinput,g06ImportJsonObject,g06StrictSkillIssues,g06RevalidateGenericBatch,g07DryRunBlocker,g07FormatBlocker,g07AuditStorageKey,g07UndoPointerKey,g07RememberUndoSession,g07ReadUndoSessionId,g07ClearUndoSessionId,g07BuildMasterEnvelopeFromGenericBatch,g07DryRunMasterRegistration,g07SafeApplyGenericBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
+const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,g06ExportAiRequest,g06ExportGenericSkills,g06ExportValidationReport,g06ExportRejectedRequests,g06ExportBatchResult,g06ImportBatchResult,g06ValidationReportToReinput,g06ImportJsonObject,g06StrictSkillIssues,g06RevalidateGenericBatch,g07DryRunBlocker,g07FormatBlocker,g07AuditStorageKey,g07BuildMasterEnvelopeFromGenericBatch,g07DryRunMasterRegistration,g07SafeApplyGenericBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
 function setBootStatus(message,kind='info'){const view=document.getElementById('view-skill-generator');if(!view||view.dataset.skgShell!=='loading')return;const el=view.querySelector('#skgBootStatus');if(el){el.textContent=message;el.dataset.status=kind;}}
 async function boot(){
  bootDiag('BOOT-4: boot entered');

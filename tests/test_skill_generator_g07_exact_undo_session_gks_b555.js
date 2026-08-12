@@ -4,24 +4,11 @@ assert.strictEqual(build.studio_build,'GKS-B555');
 const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 const ui=fs.readFileSync('studio/data-exchange/data-exchange-ui.js','utf8');
 const html=fs.readFileSync('studio/index.html','utf8');
-
-for(const needle of [
- 'gks_g07_last_apply_session_v1_',
- 'g07RememberUndoSession(auditSession)',
- 'g07ReadUndoSessionId()',
- "undoSessionById(sessionId,{expectedDataset:'skills'})",
- "String(out.dataset||'')!=='skills'",
- 'dataset skills / session ${esc(sessionId)}'
-]) assert.ok(sg.includes(needle),'missing G07 exact-session guard: '+needle);
-
-assert.ok(!/skgG07Undo'\)\.onclick[\s\S]{0,1200}undoLatestSession/.test(sg),'G07 must not call globally latest Undo session');
-for(const needle of [
- 'function findUndoableSessionById(sessionId,expectedDataset',
- 'async function undoSessionById(sessionId,options={})',
- "String(session.dataset||'')!==String(expectedDataset)",
- 'return undoAuditSession(session);'
-]) assert.ok(ui.includes(needle),'missing Data Exchange explicit-session API: '+needle);
-
-assert.ok(html.includes('skill-generator.js?v=27'));
-assert.ok(html.includes('data-exchange-ui.js?v=23'));
-console.log('PASS GKS-B555 G07 exact skills-session Undo targeting');
+assert.ok(sg.includes("await global.GKSDataExchangeUI.undoLatestSession()"),'G07 Undo must use the proven latest-session path');
+assert.ok(!sg.includes('g07UndoPointerKey'),'G07 exact-session pointer must be removed by rollback');
+assert.ok(!sg.includes('undoSessionById(sessionId'),'G07 exact-session Undo call must be removed by rollback');
+assert.ok(ui.includes('async function undoLatestSession()'),'Data Exchange latest-session Undo must remain');
+assert.ok(!ui.includes('async function undoSessionById('),'B555 exact-session Undo API must be removed by rollback');
+assert.ok(html.includes('skill-generator.js?v=27r1'),'Skill generator rollback must cache-bust');
+assert.ok(html.includes('data-exchange-ui.js?v=23r1'),'Data Exchange UI rollback must cache-bust');
+console.log('PASS GKS-B555 G07 Undo rollback to proven latest-session path');
