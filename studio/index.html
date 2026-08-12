@@ -394,7 +394,7 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../game-tag-test/">タグ検証</a><a href="../docs/">資料</a><span class="build">GA-B486.121 / GKS-B533</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../game-tag-test/">タグ検証</a><a href="../docs/">資料</a><span class="build">GA-B486.121 / GKS-B534</span></nav>
 
 <div class="app">
 <header>
@@ -1987,7 +1987,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B533';
+const DISTRIBUTION_BUILD='GKS-B534';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2335,14 +2335,23 @@ function renderVerificationHome(){
  const integrated=document.getElementById('verificationIntegratedSummary');if(integrated){const complete=!errorCount&&!!snap.battle&&!!snap.batch;integrated.className='item '+(errorCount?'error':complete?'ok':'warn');integrated.innerHTML=errorCount?`<b>接続停止：</b> データエラー ${errorCount}件を解消してください。`:!snap.battle?'<b>次の操作：</b> 代表戦闘を実行し、戦闘計算との接続を確認してください。':!snap.batch?'<b>次の操作：</b> 一括検証を実行すると全レイヤーの接続が完了します。':'<b>全レイヤー接続済み：</b> 統合レポートを出力できます。'}
  const rec=document.getElementById('verificationRecommendation');if(rec){rec.className='item '+(errorCount?'error':warningCount?'warn':'ok');rec.textContent=errorCount?'データエラーを先に解消してください。':warningCount?'警告を確認後、代表戦闘へ進めます。':snap.battle?'代表戦闘結果を確認し、一括検証へ進めます。':'データ検証上の重大な問題はありません。代表戦闘へ進めます。'}
 }
+let pendingStudioView='';
 function showView(name){
+ const target=document.getElementById('view-'+name);
+ if(!target){pendingStudioView=name;return false;}
+ pendingStudioView='';
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
- const target=document.getElementById('view-'+name);if(!target)return;
  target.classList.remove('hidden');
  document.querySelectorAll('#nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
  document.getElementById('selectedLabel').value=name; rememberRecentFeature(name); closeMobile(); render();
  if(window.matchMedia('(max-width:900px)').matches){window.scrollTo({top:0,behavior:'instant'})}
+ return true;
 }
+function handleStudioDynamicViewReady(event){
+ const name=String(event?.detail?.view||'');
+ if(name&&pendingStudioView===name)showView(name);
+}
+document.addEventListener('gks:view-ready',handleStudioDynamicViewReady);
 document.getElementById('nav').addEventListener('click',e=>{if(e.target.dataset.view)showView(e.target.dataset.view)})
 
 function sanitizeProjectId(value){
@@ -6971,7 +6980,7 @@ window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return 
 <script src="../assets/shared/js/generic-skill-authoring-registry.js?v=4"></script>
 <script src="../assets/shared/js/generic-skill-budget-engine.js?v=1"></script>
 <script src="../assets/shared/js/generic-skill-ai-batch-engine.js?v=1"></script>
-<script src="./skill/skill-generator.js?v=11"></script>
+<script src="./skill/skill-generator.js?v=12"></script>
 <script src="./data-exchange/data-exchange-integrity-validator.js?v=3"></script>
 <script src="./data-exchange/data-exchange-core.js?v=13"></script>
 <script src="./data-exchange/data-exchange-transaction.js?v=3"></script>
