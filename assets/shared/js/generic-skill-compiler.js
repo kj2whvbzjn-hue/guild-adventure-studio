@@ -69,7 +69,7 @@ function compileGenericSkill(skill,registry,legacyCompile){
   catch(e){err(errors,'LEGACY_COMPILE_EXCEPTION','legacySkill',e?.message||String(e))}
  }
  return result();
- function result(){return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],legacySkill:{id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),effectContracts:effectContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null}},legacyValidation}}
+ function result(){const compiledSkill={id:String(skill?.id||''),name:String(skill?.name||''),tags:[...tags],genericRuntime:{schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),conditionContracts:conditionContracts.map(c=>({...c})),effectContracts:effectContracts.map(c=>({...c})),applyContracts:applyContracts.map(c=>({...c,lifecycle:{...c.lifecycle}})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null}};return{ok:errors.length===0,version:VERSION,errors,warnings,normalizedEffects:[...normalizedEffects],compiledSkill,legacySkill:compiledSkill,legacyValidation}}
 }
 
 function buildTriggerContract(skill,def){
@@ -204,7 +204,9 @@ function compileApply(effect,p,registry,tags,errors,warnings,normalizedEffects,a
  }
  warnings.push({code:'APPLY_KIND_DEFERRED',path:`${p}.effectId`,message:`Effect kind ${kind} はRegistryに存在しますがR02 Adapter未接続です`});err(errors,'APPLY_KIND_UNSUPPORTED',`${p}.effectId`,`R02 APPLY未対応kind: ${kind}`);
 }
-const api={VERSION,SUPPORTED_SCHEMA,compileGenericSkill};
+function compileSkill(skill,registry,compatCompile){return compileGenericSkill(skill,registry,compatCompile)}
+const api={VERSION,SUPPORTED_SCHEMA,compileSkill,compileGenericSkill};
+root.GKSSkillCompiler=api;
 root.GKSGenericSkillCompiler=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
