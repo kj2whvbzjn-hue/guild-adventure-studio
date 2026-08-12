@@ -10,10 +10,14 @@ for(const token of [
 ])if(!html.includes(token))throw new Error(`missing html token: ${token}`);
 for(const token of [
  'R06-LEGACY-GENERIC-RUNTIME-DEVICE-001',
+ 'R06-B intentional mismatch rejection',
  'Current Studio Export freshness gate',
  'studio_export_acceptance_is_separate:true',
  'uses_legacy_demo_export:false',
- 'acceptance_ready=versionOk&&studioOk'
+ 'acceptance_ready=versionOk&&studioOk',
+ 'RUNTIME_RESULT_MISMATCH was not rejected',
+ 'mismatch_rejection_passed_count',
+ '[MISMATCH REJECTION]'
 ])if(!validation.includes(token))throw new Error(`missing validation token: ${token}`);
 for(const token of ['function applyTaggedCover','||applyTaggedCover(actor,resolvedTarget,compiled)','coverApplyResult'])if(!runtime.includes(token))throw new Error(`missing COVER parity token: ${token}`);
 const exp=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));

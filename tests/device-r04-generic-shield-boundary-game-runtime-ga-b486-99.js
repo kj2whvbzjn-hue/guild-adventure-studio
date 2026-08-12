@@ -3,7 +3,7 @@ const assert=require('assert');
 const generic=require('../assets/shared/js/generic-skill-compiler.js');
 const registry=require('../assets/shared/config/skill-generic-registry.json');
 const build=require('../package-build.json');
-assert.strictEqual(build.game_build,'GA-B486.118');
+assert.strictEqual(build.game_build,'GA-B486.119');
 const sample={schemaVersion:1,id:'R04-DEVICE-GENERIC-SHIELD-BOUNDARY',name:'R04 Generic Shield Boundary Device',trigger:{type:'ON_USE',scope:'SELF'},target:{side:'ALLY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BARRIER',power:100,duration:300}],resource:{mpCost:0,cooldown:0}};
 const generated=generic.compileGenericSkill(sample,registry);
 assert.strictEqual(generated.ok,true,JSON.stringify(generated.errors));
