@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const registry=require('../assets/shared/config/skill-registry.json');
-const nativeCompiler=require('../assets/shared/js/skill-native-compiler.js');
+const nativeCompiler=require('../assets/shared/js/skill-compiler.js');
 const budgetRules=require('../assets/shared/config/skill-budget-rules.json');
 const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 
@@ -10,7 +10,7 @@ const storage={m:new Map(),getItem(k){return this.m.has(k)?this.m.get(k):null},s
 const ctx={window:null,document,console,setTimeout,clearTimeout,AbortController,CustomEvent:function(){},localStorage:storage};ctx.window=ctx;
 ctx.GKSGenericSkillAuthoringRegistry={buildUiDefinition:()=>({})};
 ctx.GKSGenericSkillBudgetEngine={calculate:(skill,rules)=>({ok:true,budgetRuleVersion:rules.budgetRuleVersion,cost:10,limit:20,errors:[],calculationTrace:[]})};
-ctx.GKSSkillNativeCompileService={compileSkill:async(skill,{registry})=>nativeCompiler.compileSkill(skill,registry)};
+ctx.GKSSkillCompileService={compileSkill:async(skill,{registry})=>nativeCompiler.compileSkill(skill,registry)};
 ctx.GKSSkillHost={
  getData:()=>host,getBuild:()=> 'GKS-B550',
  backup:()=>{backupCount++;return true;},

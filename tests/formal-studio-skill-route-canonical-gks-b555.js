@@ -1,0 +1,18 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
+const studio=fs.readFileSync(path.join(root,'studio/skill/skill-generator.js'),'utf8');
+const service=fs.readFileSync(path.join(root,'assets/shared/js/skill-compile-service.js'),'utf8');
+assert(html.includes('../assets/shared/js/skill-compiler.js'));
+assert(html.includes('../assets/shared/js/skill-compile-service.js'));
+assert(!html.includes('skill-native-compiler.js'));
+assert(!html.includes('skill-native-compile-service.js'));
+assert(studio.includes('global.GKSSkillCompileService'));
+assert(!studio.includes('GKSSkillNativeCompileService'));
+assert(!studio.includes('legacySkill'));
+assert(!studio.includes('compileForLegacy'));
+assert(!studio.includes('genericRuntime'));
+assert(service.includes('root.GKSSkillCompiler'));
+assert(!service.includes('GKSSkillNativeCompiler'));
+console.log('FORMAL_STUDIO_SKILL_ROUTE_CANONICAL_PASS');

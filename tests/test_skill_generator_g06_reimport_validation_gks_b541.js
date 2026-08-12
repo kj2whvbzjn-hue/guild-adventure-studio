@@ -1,13 +1,13 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const registry=require('../assets/shared/config/skill-registry.json');
-const nativeCompiler=require('../assets/shared/js/skill-native-compiler.js');
+const nativeCompiler=require('../assets/shared/js/skill-compiler.js');
 const budgetRules=require('../assets/shared/config/skill-budget-rules.json');
 const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 const document={readyState:'loading',addEventListener(){},getElementById(){return null},querySelector(){return null},dispatchEvent(){}};
 const ctx={window:null,document,console,setTimeout,clearTimeout,AbortController,CustomEvent:function(){}};ctx.window=ctx;
 ctx.GKSGenericSkillAuthoringRegistry={buildUiDefinition:()=>({})};
 ctx.GKSGenericSkillBudgetEngine={calculate:(skill,rules)=>({ok:true,budgetRuleVersion:rules.budgetRuleVersion,cost:10,limit:20,errors:[],calculationTrace:[]})};
-ctx.GKSSkillNativeCompileService={compileSkill:async(skill,{registry})=>nativeCompiler.compileSkill(skill,registry)};
+ctx.GKSSkillCompileService={compileSkill:async(skill,{registry})=>nativeCompiler.compileSkill(skill,registry)};
 ctx.fetch=async url=>({ok:true,status:200,json:async()=>String(url).includes('budget')?budgetRules:registry});
 vm.createContext(ctx);vm.runInContext(src,ctx);
 const api=ctx.GKSSkillGenerator;
