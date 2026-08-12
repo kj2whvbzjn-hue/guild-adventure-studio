@@ -1,5 +1,7 @@
 (function(global){
 'use strict';
+const bootDiag=message=>{try{global.GKSSkillGeneratorBootDiagnostic?.mark?.(message);}catch{}};
+bootDiag('BOOT-3: module entered');
 const VERSION='1.7.0';
 let spec=null,genericRegistry=null,genericUiDefinition=null,budgetRules=null,aiGenerationRules=null,preview=null,aiBatchPreview=null,lastEnvelope=null,lastDryRun=null;
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
@@ -8,14 +10,16 @@ const hostData=()=>global.GKSSkillHost?.getData?.()||global.data;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DEPENDENCY_TIMEOUT_MS=12000;
 async function fetchJsonDependency(url,label,{timeoutMs=DEPENDENCY_TIMEOUT_MS}={}){
+ bootDiag(`DEP-START: ${label}`);
  const controller=typeof AbortController==='function'?new AbortController():null;let timer=null;
  try{
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{try{controller?.abort();}catch{}reject(new Error(`${label} の読込が ${Math.ceil(timeoutMs/1000)}秒でタイムアウトしました`));},timeoutMs);});
   const request=fetch(url,{cache:'no-store',...(controller?{signal:controller.signal}:{})});
   const r=await Promise.race([request,timeout]);
   if(!r?.ok)throw new Error(`${label} の読込に失敗しました${r?.status?` (HTTP ${r.status})`:''}`);
-  return await r.json();
+  const json=await r.json(); bootDiag(`DEP-OK: ${label}`); return json;
  }catch(error){
+  bootDiag(`DEP-FAIL: ${label}: ${error?.message||error}`);
   if(error?.name==='AbortError')throw new Error(`${label} の読込がタイムアウトしました`);
   throw error;
  }finally{if(timer)clearTimeout(timer);}
@@ -230,11 +234,15 @@ async function compileGenericDraft(skill,options={}){if(!global.GKSGenericSkillB
 const api={VERSION,DEPENDENCY_TIMEOUT_MS,fetchJsonDependency,CONDITION_FIELDS,loadSpec,loadGenericDefinition,loadBudgetRules,loadAiGenerationRules,calculateGenericBudget,aiRequestTemplate,generateGenericAiBatch,genericEffectRequirements,genericConditionRequirements,requiredFor,validateDraft,buildTags,generateRecord,generateBatch,requestTemplate,buildEnvelope,dryRun,safeRegisterNewOnly,compileGenericDraft,buildGenericDraft,getGenericUiDefinition:()=>clone(genericUiDefinition),getBudgetRules:()=>clone(budgetRules),getAiGenerationRules:()=>clone(aiGenerationRules),getAiBatchPreview:()=>clone(aiBatchPreview),getPreview:()=>clone(preview)};global.GKSSkillGenerator=api;
 function setBootStatus(message,kind='info'){const view=document.getElementById('view-skill-generator');if(!view||view.dataset.skgShell!=='loading')return;const el=view.querySelector('#skgBootStatus');if(el){el.textContent=message;el.dataset.status=kind;}}
 async function boot(){
+ bootDiag('BOOT-4: boot entered');
  setBootStatus('Runtime / Registry / Budget / AI定義を読み込み中です。');
  const tasks=[['Runtime Requirements',loadSpec()],['Generic Registry',loadGenericDefinition()],['Budget Rules',loadBudgetRules()],['AI Rules',loadAiGenerationRules()]];
  const settled=await Promise.allSettled(tasks.map(x=>x[1])),failed=settled.map((r,i)=>r.status==='rejected'?{name:tasks[i][0],reason:r.reason}:null).filter(Boolean);
- if(failed.length){const message=failed.map(x=>`${x.name}: ${x.reason?.message||x.reason}`).join(' / ');console.error('[SkillGenerator] dependency load failed',failed);setBootStatus('初期化停止: '+message,'error');document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}));return;}
+ if(failed.length){bootDiag('BOOT-X: dependency failure aggregate');const message=failed.map(x=>`${x.name}: ${x.reason?.message||x.reason}`).join(' / ');console.error('[SkillGenerator] dependency load failed',failed);setBootStatus('初期化停止: '+message,'error');document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}));return;}
+ bootDiag('BOOT-5: dependencies complete');
  renderPanel();
+ bootDiag('BOOT-6: panel rendered');
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+bootDiag(`BOOT-3A: readyState=${document.readyState}`);
+if(document.readyState==='loading'){bootDiag('BOOT-3B: waiting DOMContentLoaded');document.addEventListener('DOMContentLoaded',boot);}else{bootDiag('BOOT-3B: boot immediate');boot();}
 })(window);
