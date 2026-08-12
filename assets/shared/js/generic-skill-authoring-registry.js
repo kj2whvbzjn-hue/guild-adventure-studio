@@ -1,7 +1,7 @@
 /* GKS Generic Skill Authoring Registry — G01. Registry-driven Studio authoring definitions. */
 (function(root){
 'use strict';
-const VERSION='G03';
+const VERSION='G04';
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 function registryRequired(registry){
  if(!registry||typeof registry!=='object')throw new Error('Generic Skill Registryが必要です');
