@@ -72,12 +72,16 @@
       lastEnvelope=null;lastDryRun=null;lastApplyPlan=null;conflictChoices={};
       renderDryRun({ok:true,summary:{add:0,unchanged:0,conflict:0,invalid:0,incompatible:0,stale_source:0,broken_reference:0,readonly_modified:0},items:[],errors:[],warnings:[]},0);
       renderImpactPreview(null);renderApplyPanel();renderAuditPanel();
+      const targetCount=(session.added?.length||0)+(session.changed?.length||0);
+      const undoSummary={ok:true,session_id:session.import_session_id,target_count:targetCount,undone_count:targetCount,remain_count:0,conflict_count:0,dataset:session.dataset};
       alert('Data Exchange Undo完了: Backup・復元・persist・再検証まで完了しました。');
+      return undoSummary;
     }catch(e){
       data=beforeUndo;
       if(undoCompleted&&typeof persist==='function')persist(`Data Exchange Undo audit failure rollback: ${session.import_session_id}`);
       renderAuditPanel();
       alert('Data Exchange Undo失敗: '+e.message);
+      throw e;
     }
   }
   function initDatasetOptions(){const select=document.getElementById('dxPickerDataset');if(!select)return;const old=select.value;select.innerHTML=supportedDatasets().map(k=>`<option value="${escA(k)}">${escText(DATASET_LABELS[k]||k)}</option>`).join('');if(old&&supportedDatasets().includes(old))select.value=old;else if(supportedDatasets().includes('monsters'))select.value='monsters';}
