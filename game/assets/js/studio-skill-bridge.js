@@ -5,7 +5,7 @@ function normalizeStudioTagSkill(record){
  if(!record||typeof record!=='object')return null;
  const tags=Array.isArray(record.tags)?record.tags.map(x=>String(x).trim()).filter(Boolean):[];
  if(!record.id||!record.name||!tags.length)return null;
- return{id:String(record.id),name:String(record.name),tags,source:'studio_export',environment:record.environment||'production',definition_format:record.definition_format||'tag_v1'};
+ return{id:String(record.id),name:String(record.name),tags,source:'studio_export',environment:record.environment||'production',definition_format:record.definition_format||'tag_v1',expected_result:record.expected_result||null};
 }
 async function loadStudioSkillDefinitions(){
  studioSkillBridge.status='loading';studioSkillBridge.errors=[];
@@ -148,7 +148,7 @@ function buildFormalRuntimeRegressionReport(){
  const validation=imported.filter(x=>(x.environment||'production')==='validation');
  const compileRow=skill=>{const compiled=compileTaggedSkill(skill);return{id:skill.id,name:skill.name,source:skill.source,environment:skill.environment||'production',compiled_ok:!!compiled.ok,logic_order:compiled.definition?.logicOrder||[],errors:compiled.errors||[]}};
  const production_results=production.map(compileRow);
- const validation_results=validation.map(skill=>{const row=compileRow(skill);return{...row,expected_result:'rejected',validation_passed:!row.compiled_ok&&row.errors.length>0}});
+ const validation_results=validation.map(skill=>{const row=compileRow(skill),expected=skill.expected_result||'rejected';const passed=expected==='accepted'?row.compiled_ok:(!row.compiled_ok&&row.errors.length>0);return{...row,expected_result:expected,validation_passed:passed}});
  const required_results=required.map(id=>{const skill=findTagSkill(id);return{id,found:!!skill,source:skill?.source||null,environment:skill?.environment||null,compiled_ok:!!(skill&&compileTaggedSkill(skill).ok)} });
  const production_embedded=TAG_SKILLS.filter(x=>x.source!=='studio_export' && (x.environment||'production')==='production').map(x=>x.id);
  const shield_runtime=runFormalShieldRuntimeRegression();
