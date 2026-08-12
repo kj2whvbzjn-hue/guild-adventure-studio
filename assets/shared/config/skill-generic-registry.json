@@ -31,6 +31,226 @@
       "reason": "SPECIAL requires an effect-specific contract and execution owner before Generic Battle Runtime admission."
     }
   },
+  "authoring": {
+    "schema_version": 1,
+    "phase": "G01",
+    "source_of_truth": "skill-generic-registry.json",
+    "purpose": "Registry-driven Studio authoring definition. G01 exposes required fields without replacing the legacy-oriented Effect UI; G02 consumes this definition for the Generic Effect UI.",
+    "skill_required_fields": [
+      "id",
+      "name",
+      "trigger.type",
+      "target.side",
+      "target.range",
+      "effects"
+    ],
+    "effect_types": {
+      "DAMAGE": {
+        "label": "Damage",
+        "enabled": true,
+        "required_fields": [
+          "power"
+        ],
+        "optional_fields": [
+          "damageType"
+        ]
+      },
+      "HEAL": {
+        "label": "Heal",
+        "enabled": true,
+        "required_fields": [
+          "power"
+        ],
+        "optional_fields": []
+      },
+      "APPLY": {
+        "label": "Apply",
+        "enabled": true,
+        "required_fields": [
+          "effectId"
+        ],
+        "optional_fields": [
+          "power",
+          "duration",
+          "interval",
+          "stackGain"
+        ],
+        "required_fields_by_registry_effect_kind": {
+          "STATUS": [
+            "duration"
+          ],
+          "DOT": [
+            "power",
+            "duration"
+          ],
+          "BUFF": [
+            "power",
+            "duration"
+          ],
+          "DEBUFF": [
+            "power",
+            "duration"
+          ],
+          "SHIELD": [
+            "power",
+            "duration"
+          ]
+        }
+      },
+      "REMOVE": {
+        "label": "Remove",
+        "enabled": true,
+        "required_fields": [
+          "category"
+        ],
+        "optional_fields": [
+          "count",
+          "all"
+        ],
+        "one_of_required": [
+          [
+            "count",
+            "all"
+          ]
+        ],
+        "supported_values": {
+          "category": [
+            "STATUS"
+          ]
+        }
+      },
+      "RESOURCE_CHANGE": {
+        "label": "Resource",
+        "enabled": true,
+        "required_fields": [
+          "resource",
+          "amount"
+        ],
+        "optional_fields": [],
+        "supported_values": {
+          "resource": [
+            "MP"
+          ]
+        }
+      },
+      "REVIVE": {
+        "label": "Revive",
+        "enabled": true,
+        "required_fields": [],
+        "optional_fields": [
+          "hp",
+          "hpRate"
+        ],
+        "one_of_required": [
+          [
+            "hp",
+            "hpRate"
+          ]
+        ]
+      },
+      "TARGET_CONTROL": {
+        "label": "Target Control",
+        "enabled": true,
+        "required_fields": [
+          "mode",
+          "trigger",
+          "priority",
+          "removable",
+          "lifetime"
+        ],
+        "optional_fields": [
+          "uses",
+          "duration"
+        ],
+        "supported_values": {
+          "mode": [
+            "COVER"
+          ],
+          "trigger": [
+            "DIRECT_ATTACK"
+          ],
+          "lifetime": [
+            "PERSISTENT",
+            "USES",
+            "DURATION"
+          ]
+        },
+        "conditional_required": [
+          {
+            "when": {
+              "field": "lifetime",
+              "equals": "USES"
+            },
+            "fields": [
+              "uses"
+            ]
+          },
+          {
+            "when": {
+              "field": "lifetime",
+              "equals": "DURATION"
+            },
+            "fields": [
+              "duration"
+            ]
+          }
+        ]
+      },
+      "SPECIAL": {
+        "label": "Special",
+        "enabled": false,
+        "required_fields": [],
+        "optional_fields": [],
+        "boundary": "DEFERRED",
+        "reason": "SPECIAL requires an effect-specific contract and execution owner before Generic Battle Runtime admission."
+      }
+    },
+    "trigger": {
+      "required_fields": [
+        "type"
+      ],
+      "optional_fields": [
+        "scope",
+        "priority"
+      ],
+      "options_source": "triggers"
+    },
+    "condition": {
+      "required_fields": [
+        "property",
+        "operator",
+        "value"
+      ],
+      "options_source": "conditions",
+      "operators": [
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<="
+      ]
+    },
+    "target": {
+      "required_fields": [
+        "side",
+        "range"
+      ],
+      "optional_fields": [
+        "randomCount",
+        "excludeSelf"
+      ],
+      "side_options_source": "targets.sides",
+      "range_options_source": "targets.ranges"
+    },
+    "resource": {
+      "optional_fields": [
+        "mpCost",
+        "cooldown",
+        "activationPriority"
+      ]
+    }
+  },
   "triggers": {
     "ON_USE": {
       "legacy_supported": true,
