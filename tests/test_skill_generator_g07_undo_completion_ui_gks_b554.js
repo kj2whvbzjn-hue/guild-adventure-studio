@@ -1,6 +1,6 @@
 const assert=require('assert'),fs=require('fs');
 const build=require('../package-build.json');
-assert.strictEqual(build.studio_build,'GKS-B555');
+assert.strictEqual(build.studio_build,'GKS-B554');
 const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 const ui=fs.readFileSync('studio/data-exchange/data-exchange-ui.js','utf8');
 const html=fs.readFileSync('studio/index.html','utf8');
@@ -15,6 +15,6 @@ for(const needle of ['target_count:targetCount','undone_count:targetCount','rema
   assert.ok(ui.includes(needle),'Data Exchange Undo result missing: '+needle);
 }
 assert.ok(ui.includes('return undoSummary;'),'Undo UI must return completion summary');
-assert.ok(html.includes('skill-generator.js?v=27'),'Skill generator cache key must advance');
-assert.ok(html.includes('data-exchange-ui.js?v=23'),'Data Exchange UI cache key must advance');
+assert.ok(html.includes('skill-generator.js?v=26'),'Skill generator cache key must advance');
+assert.ok(html.includes('data-exchange-ui.js?v=22'),'Data Exchange UI cache key must advance');
 console.log('PASS GKS-B554 G07 Undo completion UI');
