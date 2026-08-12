@@ -25,4 +25,15 @@ assert.ok(app.includes("source:'r05_current_contract_device_fixture'"),'fixture 
 assert.ok(app.includes("t==='DAMAGE=73'?'DAMAGE=999':t"),'DAMAGE legacy tamper check missing');
 assert.ok(app.includes("t==='HEAL=63'?'HEAL=999':t"),'HEAL legacy tamper check missing');
 assert.ok(app.includes("t.startsWith('COVER_PRIORITY=')?'COVER_PRIORITY=999':t"),'TARGET_CONTROL legacy tamper check missing');
-console.log('DEVICE_R05_GENERIC_DIRECT_RUNTIME_GA_B486_115_PASS');
+
+const tagHtml=fs.readFileSync('game-tag-test/index.html','utf8');
+const tagValidation=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
+assert.ok(tagHtml.includes('id="tagTestRunR05GenericDirectRuntimeJson"'),'R05 tag-test device button missing');
+for(const marker of [
+ 'async function runR05GenericDirectRuntimeDeviceValidation()',
+ 'R05-GENERIC-DIRECT-RUNTIME-DEVICE-001',
+ "entrypoint='game-tag-test/index.html'",
+ 'runR05GenericDirectRuntimeJson.onclick=tagTestRunR05GenericDirectRuntimeJson',
+ 'tagTestRunR05GenericDirectRuntimeJson'
+])assert.ok(tagValidation.includes(marker),`tag-test marker missing: ${marker}`);
+console.log('DEVICE_R05_GENERIC_DIRECT_RUNTIME_GA_B486_116_PASS');
