@@ -1,29 +1,29 @@
-const CACHE_NAME="ga-tag-test-b486131-b550";
+const CACHE_NAME="ga-tag-test-b486132-b550";
 const CACHE_PREFIX="ga-tag-test-";
-const OFFLINE_URL='./index.html?appv=486131b555';
+const OFFLINE_URL='./index.html?appv=486132b555';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=486131b555",
-  "./manifest.webmanifest?v=486131",
-  "./icon-192.png?v=486131",
-  "./icon-512.png?v=486131"
+  "./index.html?appv=486132b555",
+  "./manifest.webmanifest?v=486132",
+  "./icon-192.png?v=486132",
+  "./icon-512.png?v=486132"
 ,
-  "../assets/shared/config/runtime-config.js?v=486131",
-  "../assets/shared/js/game-shell-common.js?v=486131",
-  "../assets/shared/js/apply-lifecycle-engine.js?v=486131",
-  "../assets/shared/js/trigger-engine.js?v=486131",
-  "../assets/shared/js/condition-engine.js?v=486131",
-  "../assets/shared/js/skill-compiler.js?v=486131",
-  "../assets/shared/js/skill-compile-service.js?v=486131",
-  "../assets/shared/js/device-test-harness.js?v=486131",
-  "../assets/shared/config/skill-registry.json?v=486131"
+  "../assets/shared/config/runtime-config.js?v=486132",
+  "../assets/shared/js/game-shell-common.js?v=486132",
+  "../assets/shared/js/apply-lifecycle-engine.js?v=486132",
+  "../assets/shared/js/trigger-engine.js?v=486132",
+  "../assets/shared/js/condition-engine.js?v=486132",
+  "../assets/shared/js/skill-compiler.js?v=486132",
+  "../assets/shared/js/skill-compile-service.js?v=486132",
+  "./assets/js/device-tag-test-harness.js?v=486132",
+  "../assets/shared/config/skill-registry.json?v=486132"
 ,
-  "./assets/js/validation-runtime.js?v=486131"
+  "./assets/js/validation-runtime.js?v=486132"
 ,
-  "./assets/js/tag-skill-runtime.js?v=486131b555"
+  "./assets/js/tag-skill-runtime.js?v=486132b555"
 ,
-  "./assets/js/battle-control.js?v=486131",
-  "./assets/js/ui-bootstrap.js?v=486131"
+  "./assets/js/battle-control.js?v=486132",
+  "./assets/js/ui-bootstrap.js?v=486132"
 ];
 
 self.addEventListener('install',event=>{

@@ -1,6 +1,6 @@
 const fs=require('fs');
 const assert=(v,m)=>{if(!v)throw new Error(m)};
-const tagShared=fs.readFileSync('assets/shared/js/device-test-harness.js','utf8');
+const tagShared=fs.readFileSync('game-tag-test/assets/js/device-tag-test-harness.js','utf8');
 const gameShared=fs.readFileSync('assets/shared/js/device-game-test-harness.js','utf8');
 const game=fs.readFileSync('game/index.html','utf8');
 const tag=fs.readFileSync('game-tag-test/index.html','utf8');
@@ -18,5 +18,6 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const token=build.game_build.replace(/^GA-B486\./,'486');
 assert(game.includes(`../assets/shared/js/device-game-test-harness.js?v=${token}`),'formal game harness ref missing');
 assert(!game.includes(`../assets/shared/js/device-test-harness.js?v=${token}`),'legacy-capable shared harness still loaded by game');
-assert(tag.includes(`../assets/shared/js/device-test-harness.js?v=${token}`),'tag harness ref missing');
+assert(tag.includes(`./assets/js/device-tag-test-harness.js?v=${token}`),'isolated tag harness ref missing');
+assert(!tag.includes('../assets/shared/js/device-test-harness.js'),'shared legacy-capable harness still loaded by tag-test');
 console.log('DEVICE_TEST_HARNESS_GA_B486_92_PASS');

@@ -6,7 +6,7 @@ const registry=require('../assets/shared/config/skill-registry.json');
 const runtimeSrc=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
 const bridgeSrc=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-bridge.js'),'utf8');
 const battleSrc=fs.readFileSync(path.join(root,'game/assets/js/battle-control.js'),'utf8');
-const deviceHarnessSrc=fs.readFileSync(path.join(root,'assets/shared/js/device-test-harness.js'),'utf8');
+const deviceHarnessSrc=fs.readFileSync(path.join(root,'assets/shared/js/device-game-test-harness.js'),'utf8');
 const gameIndexSrc=fs.readFileSync(path.join(root,'game/index.html'),'utf8');
 const gameSwSrc=fs.readFileSync(path.join(root,'game/sw.js'),'utf8');
 
