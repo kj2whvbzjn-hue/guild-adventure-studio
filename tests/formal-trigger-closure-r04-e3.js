@@ -21,7 +21,7 @@ assert.strictEqual(unknown.reason,'TRIGGER_TYPE_UNSUPPORTED');
 
 // Compiled contracts fail closed on event mismatch / unsupported dispatch mode.
 let calls=0;
-let dispatched=engine.dispatchCompiled({type:'ON_HIT_RECEIVED',engineEvent:'hit_received',dispatchMode:'LEGACY_COUNTER_ADAPTER'},'ally_attack',{},()=>{calls++;});
+let dispatched=engine.dispatchCompiled({type:'ON_HIT_RECEIVED',engineEvent:'hit_received',dispatchMode:'COUNTER'},'ally_attack',{},()=>{calls++;});
 assert.strictEqual(dispatched.ok,false);assert.strictEqual(dispatched.reason,'TRIGGER_ENGINE_EVENT_MISMATCH');assert.strictEqual(calls,0);
 dispatched=engine.dispatchCompiled({type:'ON_HIT_RECEIVED',engineEvent:'hit_received',dispatchMode:'FUTURE_UNSAFE'},'hit_received',{},()=>{calls++;});
 assert.strictEqual(dispatched.ok,false);assert.strictEqual(dispatched.reason,'TRIGGER_DISPATCH_MODE_UNSUPPORTED');assert.strictEqual(calls,0);
@@ -69,7 +69,7 @@ for(const src of [game,tagTest]){
   assert.ok(src.includes("engine.dispatchCompiled(triggerContract,'hit_received'"),'COUNTER Trigger Engine boundary missing');
   assert.ok(src.includes("engine.dispatchCompiled(triggerContract,'ally_attack'"),'FOLLOW_UP Trigger Engine boundary missing');
   assert.ok(src.includes("engine.dispatchCompiled(triggerContract,'aura_evaluate'"),'AURA Trigger Engine boundary missing');
-  assert.ok(src.includes('genericTrigger:false'),'Legacy reactive/aura fallback marker missing');
+  assert.ok(src.includes('formalTrigger:false'),'Tag reactive/aura fallback marker missing');
   assert.ok(src.includes('createTaggedTriggerActionContext'),'shared per-action Trigger Guard missing');
   assert.ok(src.includes('orderTaggedSimultaneousTriggers'),'shared simultaneous Trigger ordering missing');
 }

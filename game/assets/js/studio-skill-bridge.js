@@ -131,10 +131,10 @@ function runR06MasterStructuredRuntimeFinalRegression(){
    const result=executeSkillRuntime(f.actor,target,skill,{origin:'base',suppressDerived:true}),eventTypes=(battle.validationEvents||[]).filter(x=>x?.skill_id===skill.id).map(x=>x.type);
    if(!result?.ok)caseErrors.push(`execute failed: ${result?.stage||result?.reason||'unknown'}`);
    for(const contract of runtime.effectContracts||[]){
-    const eventType={DAMAGE:'generic_damage_executed',HEAL:'generic_heal_executed',REMOVE:'generic_remove_executed',RESOURCE_CHANGE:'generic_resource_change_executed',REVIVE:'generic_revive_executed',TARGET_CONTROL:'generic_target_control_executed'}[contract.type];
+    const eventType={DAMAGE:'skill_damage_executed',HEAL:'skill_heal_executed',REMOVE:'skill_remove_executed',RESOURCE_CHANGE:'skill_resource_change_executed',REVIVE:'skill_revive_executed',TARGET_CONTROL:'skill_target_control_executed'}[contract.type];
     if(eventType&&r06FinalEventCount(skill.id,eventType)<1)caseErrors.push(`${contract.type} runtime event missing`);
    }
-   for(const contract of runtime.applyContracts||[])if(r06FinalEventCount(skill.id,'generic_apply_executed')<1)caseErrors.push(`${contract.logic} APPLY runtime event missing`);
+   for(const contract of runtime.applyContracts||[])if(r06FinalEventCount(skill.id,'runtime_apply_executed')<1)caseErrors.push(`${contract.logic} APPLY runtime event missing`);
    const effectCount=(runtime.effectContracts||[]).length+(runtime.applyContracts||[]).length+(runtime.auraEffectContract?1:0),composite=effectCount>=2;
    const after={hp:target.hp,mp:target.mp,status_count:ensureStatusEffects(target).length,shield_total:typeof shieldTotal==='function'?shieldTotal(target):0};
    cases.push({id:skill.id,name:skill.name,source:'studio_master_localstorage',project_id:source.project_id,runtime_contract_source:runtimeContractSource,logic_order:compiled.definition.logicOrder,effect_types:(runtime.effectContracts||[]).map(x=>x.type),apply_logics:(runtime.applyContracts||[]).map(x=>x.logic),effect_count:effectCount,composite,before,after,event_types:eventTypes,passed:caseErrors.length===0,errors:caseErrors});

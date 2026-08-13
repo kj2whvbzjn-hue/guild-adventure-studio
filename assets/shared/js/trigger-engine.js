@@ -52,7 +52,7 @@
       const result=resolve(type);
       if(!result.ok)return result;
       const event=Object.freeze({
-        event:'generic_trigger_resolved',
+        event:'skill_trigger_resolved',
         triggerType:result.type,
         phase:registry.phase||null,
         payload:payload&&typeof payload==='object'?{...payload}:{}
@@ -79,7 +79,7 @@
     const actual=String(eventType||'').trim();
     if(!expected)return failure('TRIGGER_ENGINE_EVENT_REQUIRED',type);
     if(actual!==expected)return failure('TRIGGER_ENGINE_EVENT_MISMATCH',type,{expected_event:expected,actual_event:actual});
-    if(contract.dispatchMode&&!['LEGACY_COUNTER_ADAPTER','LEGACY_FOLLOW_UP_ADAPTER','LEGACY_AURA_ADAPTER'].includes(contract.dispatchMode))return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
+    if(contract.dispatchMode&&!['RESOLVE_ONLY','COUNTER','FOLLOW_UP','AURA'].includes(contract.dispatchMode))return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
     return{ok:true,type,contract:{...contract,type}};
   }
   function createActionContext(options={}){

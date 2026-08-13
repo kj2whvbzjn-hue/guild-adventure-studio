@@ -32,15 +32,15 @@ function normalizeRuntimeContracts(skill,g,n,errors){
    const type=String(c.type||'').toUpperCase(),scope=String(c.scope||'').toUpperCase(),engineEvent=String(c.engineEvent||''),dispatchMode=String(c.dispatchMode||'');
    if(!type)errors.push('runtimeContracts.triggerContract.typeが必要です');
    if(scope!=='SELF')errors.push('runtimeContracts.triggerContract.scopeはSELFが必要です');
-   if(type==='ON_HIT_RECEIVED'){if(engineEvent!=='hit_received')errors.push('ON_HIT_RECEIVEDのengineEventはhit_receivedが必要です');if(dispatchMode!=='LEGACY_COUNTER_ADAPTER')errors.push('ON_HIT_RECEIVEDのdispatchModeはLEGACY_COUNTER_ADAPTERが必要です');if(!g.has('COUNTER'))errors.push('ON_HIT_RECEIVED契約にはCOUNTERタグが必要です')}
-   else if(type==='ON_ALLY_ATTACK'){if(engineEvent!=='ally_attack')errors.push('ON_ALLY_ATTACKのengineEventはally_attackが必要です');if(dispatchMode!=='LEGACY_FOLLOW_UP_ADAPTER')errors.push('ON_ALLY_ATTACKのdispatchModeはLEGACY_FOLLOW_UP_ADAPTERが必要です');if(!g.has('FOLLOW_UP'))errors.push('ON_ALLY_ATTACK契約にはFOLLOW_UPタグが必要です')}
-   else if(type==='WHILE_SOURCE_ALIVE'){if(engineEvent!=='aura_evaluate')errors.push('WHILE_SOURCE_ALIVE engineEventはaura_evaluateが必要です');if(dispatchMode!=='LEGACY_AURA_ADAPTER')errors.push('WHILE_SOURCE_ALIVE dispatchModeはLEGACY_AURA_ADAPTERが必要です')}
+   if(type==='ON_HIT_RECEIVED'){if(engineEvent!=='hit_received')errors.push('ON_HIT_RECEIVEDのengineEventはhit_receivedが必要です');if(dispatchMode!=='COUNTER')errors.push('ON_HIT_RECEIVEDのdispatchModeはCOUNTERが必要です');if(!g.has('COUNTER'))errors.push('ON_HIT_RECEIVED契約にはCOUNTERタグが必要です')}
+   else if(type==='ON_ALLY_ATTACK'){if(engineEvent!=='ally_attack')errors.push('ON_ALLY_ATTACKのengineEventはally_attackが必要です');if(dispatchMode!=='FOLLOW_UP')errors.push('ON_ALLY_ATTACKのdispatchModeはFOLLOW_UPが必要です');if(!g.has('FOLLOW_UP'))errors.push('ON_ALLY_ATTACK契約にはFOLLOW_UPタグが必要です')}
+   else if(type==='WHILE_SOURCE_ALIVE'){if(engineEvent!=='aura_evaluate')errors.push('WHILE_SOURCE_ALIVE engineEventはaura_evaluateが必要です');if(dispatchMode!=='AURA')errors.push('WHILE_SOURCE_ALIVE dispatchModeはAURAが必要です')}
    else if(type!=='ON_USE')errors.push(`runtimeContracts.triggerContract.typeは未対応です: ${type}`);
    triggerContract={type,scope,engineEvent,dispatchMode,priority:Number.isInteger(c.priority)?c.priority:0};
   }
  }else if(g.has('COUNTER')){
-  triggerContract={type:'ON_HIT_RECEIVED',scope:'SELF',engineEvent:'hit_received',dispatchMode:'LEGACY_COUNTER_ADAPTER',priority:Number.isInteger(n?.COUNTER_PRIORITY?.value)?n.COUNTER_PRIORITY.value:0,migratedFromLegacyGeneric:true};
- }else triggerContract={type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0,migratedFromLegacyGeneric:true};
+  triggerContract={type:'ON_HIT_RECEIVED',scope:'SELF',engineEvent:'hit_received',dispatchMode:'COUNTER',priority:Number.isInteger(n?.COUNTER_PRIORITY?.value)?n.COUNTER_PRIORITY.value:0,migratedFromTagSkill:true};
+ }else triggerContract={type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0,migratedFromTagSkill:true};
  const effectContracts=[];
  for(const [i,c] of (Array.isArray(raw.effectContracts)?raw.effectContracts:[]).entries()){
   if(!c||typeof c!=='object'||Array.isArray(c)){errors.push(`runtimeContracts.effectContracts[${i}]はobjectが必要です`);continue}
@@ -420,7 +420,7 @@ function activeAuraEntries(target,kind,stat){
     if(p.auraTarget==='ally'&&p.auraScope==='allies_excluding_self'&&target.id===source.id)return false;
     if(p.auraTarget==='ally'&&!['all','self_and_allies','allies_excluding_self'].includes(p.auraScope))return false;
     if(p.auraTarget==='enemy'&&p.auraScope!=='all')return false;
-    entries.push({kind,stat,power:Math.max(0,Number(p.auraValue)||0),sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,priority:Number(p.auraPriority)||0,stack:p.auraStack||'highest',genericTrigger:!!triggerContract});return true;
+    entries.push({kind,stat,power:Math.max(0,Number(p.auraValue)||0),sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,priority:Number(p.auraPriority)||0,stack:p.auraStack||'highest',formalTrigger:!!triggerContract});return true;
    };
    if(triggerContract?.type==='WHILE_SOURCE_ALIVE'){
     const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled)continue;
@@ -526,7 +526,7 @@ function resolveShieldConsumeLifecyclePolicy(lifecycle){
 }
 function resolveShieldConsumePolicyForTarget(target){
  const policies=ensureShieldEffects(target).map(x=>x?.lifecyclePolicy).filter(x=>x&&typeof x==='object');
- if(!policies.length)return{ok:true,consumeRule:'FIFO',source:'legacy_default'};
+ if(!policies.length)return{ok:true,consumeRule:'FIFO',source:'runtime_default'};
  for(const policy of policies){const resolved=resolveShieldConsumeLifecyclePolicy(policy);if(!resolved.ok)return resolved}
  return{ok:true,consumeRule:'FIFO',source:'registry_contract'};
 }
@@ -621,16 +621,16 @@ function cleanseStatusEffects(source,target,compiled){
 }
 function executeRuntimeRemoveRuntime(source,target,compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='REMOVE')||null;if(!contract)return null;
- if(contract.category!=='STATUS'||typeof contract.all!=='boolean'||(!contract.all&&(!Number.isInteger(contract.count)||contract.count<1))||contract.order!=='oldest')return{ok:false,error:true,reason:'GENERIC_REMOVE_CONTRACT_INVALID'};
+ if(contract.category!=='STATUS'||typeof contract.all!=='boolean'||(!contract.all&&(!Number.isInteger(contract.count)||contract.count<1))||contract.order!=='oldest')return{ok:false,error:true,reason:'SKILL_RUNTIME_REMOVE_CONTRACT_INVALID'};
  const p={...compiled.definition.parameters,cleanseCategory:'status',cleanseOrder:'oldest',cleanseAll:contract.all,cleanseCount:contract.count},result=cleanseStatusEffects(source,target,{...compiled,definition:{...compiled.definition,parameters:p}});
- typeof recordValidationEvent==='function'&&recordValidationEvent('generic_remove_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,all:contract.all,count:contract.count,removed_count:result.removedCount});return{...result,runtimeContracts:true,effectContract:{...contract}};
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_remove_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,all:contract.all,count:contract.count,removed_count:result.removedCount});return{...result,runtimeContracts:true,effectContract:{...contract}};
 }
 
 function executeRuntimeResourceChangeRuntime(source,target,compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='RESOURCE_CHANGE')||null;if(!contract)return null;
- if(contract.resource!=='MP'||!Number.isFinite(contract.amount)||contract.amount===0)return{ok:false,error:true,reason:'GENERIC_RESOURCE_CHANGE_CONTRACT_INVALID'};if(!target?.alive)return{ok:false,reason:'RESOURCE_TARGET_INVALID'};
+ if(contract.resource!=='MP'||!Number.isFinite(contract.amount)||contract.amount===0)return{ok:false,error:true,reason:'SKILL_RUNTIME_RESOURCE_CHANGE_CONTRACT_INVALID'};if(!target?.alive)return{ok:false,reason:'RESOURCE_TARGET_INVALID'};
  const before=Math.max(0,Number(target.mp)||0),max=Math.max(0,Number(target.maxMp)||before),after=Math.max(0,Math.min(max,before+contract.amount));target.mp=after;const applied=after-before;
- typeof recordValidationEvent==='function'&&recordValidationEvent('generic_resource_change_executed',{source_id:source?.id||null,target_id:target.id,skill_id:compiled?.definition?.id||null,resource:'MP',requested:contract.amount,applied,before,after,max});return{ok:true,resource:'MP',requested:contract.amount,applied,before,after,runtimeContracts:true,effectContract:{...contract}};
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_resource_change_executed',{source_id:source?.id||null,target_id:target.id,skill_id:compiled?.definition?.id||null,resource:'MP',requested:contract.amount,applied,before,after,max});return{ok:true,resource:'MP',requested:contract.amount,applied,before,after,runtimeContracts:true,effectContract:{...contract}};
 }
 function calculateTaggedAttackDamage(attacker,definition){
  const rate=Number(definition.parameters.damage);
@@ -641,32 +641,32 @@ function resolveRuntimeDamageContract(compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='DAMAGE')||null;
  if(!contract)return{formal:false,ok:true,contract:null};
  const damageType=contract.damageType==null?null:String(contract.damageType).toUpperCase();
- if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'GENERIC_DAMAGE_POWER_INVALID',contract};
- if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType))return{formal:true,ok:false,reason:'GENERIC_DAMAGE_TYPE_INVALID',contract};
+ if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_POWER_INVALID',contract};
+ if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType))return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_TYPE_INVALID',contract};
  return{formal:true,ok:true,contract:{type:'DAMAGE',power:contract.power,damageType}};
 }
-function calculateGenericDamage(attacker,contract){
+function calculateSkillDamage(attacker,contract){
  if(contract.damageType==='FIXED')return Math.max(0,Math.floor(contract.power));
  return Math.max(0,Math.floor(effectiveAttackValue(attacker)*(contract.power/100)));
 }
 function executeRuntimeDamageRuntime(attacker,target,compiled){
  const resolved=resolveRuntimeDamageContract(compiled);if(!resolved.formal)return null;
- if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('generic_damage_rejected',{source_id:attacker?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
- const calculated=calculateGenericDamage(attacker,resolved.contract),result=applyTaggedDamage(attacker,target,calculated,compiled.definition);
- typeof recordValidationEvent==='function'&&recordValidationEvent('generic_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,damage_type:resolved.contract.damageType,calculated_damage:calculated,applied_damage:result.damage});
+ if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_rejected',{source_id:attacker?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
+ const calculated=calculateSkillDamage(attacker,resolved.contract),result=applyTaggedDamage(attacker,target,calculated,compiled.definition);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,damage_type:resolved.contract.damageType,calculated_damage:calculated,applied_damage:result.damage});
  return{...result,runtimeContracts:true,effectContract:{...resolved.contract},calculatedDamage:calculated};
 }
 function resolveRuntimeHealContract(compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='HEAL')||null;
  if(!contract)return{formal:false,ok:true,contract:null};
- if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'GENERIC_HEAL_POWER_INVALID',contract};
+ if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'SKILL_RUNTIME_HEAL_POWER_INVALID',contract};
  return{formal:true,ok:true,contract:{type:'HEAL',power:contract.power}};
 }
 function executeRuntimeHealRuntime(source,target,compiled){
  const resolved=resolveRuntimeHealContract(compiled);if(!resolved.formal)return null;
- if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('generic_heal_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
+ if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
  const requested=Math.max(0,Math.floor(resolved.contract.power)),result=applyTaggedHeal(source,target,compiled,requested);
- typeof recordValidationEvent==='function'&&recordValidationEvent('generic_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
  return{...result,runtimeContracts:true,effectContract:{...resolved.contract}};
 }
 function applyTaggedDamage(attacker,target,damage,skill){
@@ -756,8 +756,8 @@ function resetCombatantOnDeath(target,{reason='death',sourceId=null}={}){
 }
 function executeRuntimeReviveRuntime(actor,target,compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='REVIVE')||null;if(!contract)return null;const hasHp=contract.hp!=null,hasRate=contract.hpRate!=null;
- if(hasHp===hasRate)return{ok:false,error:true,reason:'GENERIC_REVIVE_CONTRACT_INVALID'};const p={...compiled.definition.parameters,reviveHp:hasHp?contract.hp:null,reviveHpRate:hasRate?contract.hpRate:null},result=reviveTarget(actor,target,{...compiled,definition:{...compiled.definition,parameters:p}});
- typeof recordValidationEvent==='function'&&recordValidationEvent('generic_revive_executed',{source_id:actor?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,hp:contract.hp,hp_rate:contract.hpRate,revived:result.ok===true});return{...result,runtimeContracts:true,effectContract:{...contract}};
+ if(hasHp===hasRate)return{ok:false,error:true,reason:'SKILL_RUNTIME_REVIVE_CONTRACT_INVALID'};const p={...compiled.definition.parameters,reviveHp:hasHp?contract.hp:null,reviveHpRate:hasRate?contract.hpRate:null},result=reviveTarget(actor,target,{...compiled,definition:{...compiled.definition,parameters:p}});
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_revive_executed',{source_id:actor?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,hp:contract.hp,hp_rate:contract.hpRate,revived:result.ok===true});return{...result,runtimeContracts:true,effectContract:{...contract}};
 }
 function reviveTarget(actor,target,compiled){
  if(!actor?.alive)return{ok:false,reason:'使用者が無効です'};
@@ -793,8 +793,8 @@ function applyCoverControl(source,target,compiled,control=null){
 function applyTaggedCover(source,target,compiled){return applyCoverControl(source,target,compiled,null)}
 function executeRuntimeTargetControlRuntime(source,target,compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='TARGET_CONTROL')||null;if(!contract)return null;
- if(contract.mode!=='COVER'||contract.trigger!=='DIRECT_ATTACK'||!Number.isInteger(contract.priority)||typeof contract.removable!=='boolean'||!['PERSISTENT','USES','DURATION'].includes(contract.lifetime)||(contract.lifetime==='USES'&&(!Number.isInteger(contract.uses)||contract.uses<1))||(contract.lifetime==='DURATION'&&(!Number.isInteger(contract.duration)||contract.duration<1)))return{ok:false,error:true,reason:'GENERIC_TARGET_CONTROL_CONTRACT_INVALID'};
- const result=applyCoverControl(source,target,compiled,contract);typeof recordValidationEvent==='function'&&recordValidationEvent('generic_target_control_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,mode:contract.mode,trigger:contract.trigger,priority:contract.priority,removable:contract.removable,lifetime:contract.lifetime,uses:contract.uses,duration:contract.duration,applied:result.ok===true});return{...result,runtimeContracts:true,effectContract:{...contract}};
+ if(contract.mode!=='COVER'||contract.trigger!=='DIRECT_ATTACK'||!Number.isInteger(contract.priority)||typeof contract.removable!=='boolean'||!['PERSISTENT','USES','DURATION'].includes(contract.lifetime)||(contract.lifetime==='USES'&&(!Number.isInteger(contract.uses)||contract.uses<1))||(contract.lifetime==='DURATION'&&(!Number.isInteger(contract.duration)||contract.duration<1)))return{ok:false,error:true,reason:'SKILL_RUNTIME_TARGET_CONTROL_CONTRACT_INVALID'};
+ const result=applyCoverControl(source,target,compiled,contract);typeof recordValidationEvent==='function'&&recordValidationEvent('skill_target_control_executed',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,mode:contract.mode,trigger:contract.trigger,priority:contract.priority,removable:contract.removable,lifetime:contract.lifetime,uses:contract.uses,duration:contract.duration,applied:result.ok===true});return{...result,runtimeContracts:true,effectContract:{...contract}};
 }
 function processCoverEffects(){for(const target of battle.units){for(const effect of [...ensureCoverEffects(target)]){const source=battle.units.find(x=>x.id===effect.sourceId);if(!target.alive)removeCoverEffect(target,effect,'TARGET_DEAD');else if(!source?.alive)removeCoverEffect(target,effect,'SOURCE_DEAD');else if(effect.lifetime==='duration'&&effect.expiresAt<=battle.tick)removeCoverEffect(target,effect,'EXPIRED')}}}
 function clearAllCoverEffects(reason='battle_end'){for(const target of battle.units)for(const effect of [...ensureCoverEffects(target)])removeCoverEffect(target,effect,reason)}
@@ -873,13 +873,13 @@ const activation=acquireTaggedTriggerActivation(triggerActionContext,`COUNTER:${
  typeof recordValidationEvent==='function'&&recordValidationEvent('counter_triggered',{source_id:defender.id,attacker_id:attacker.id,incoming_skill_id:incomingCompiled.definition.id,counter_skill_id:skillId,origin,derived_generation:derivedGeneration,was_covered:wasCovered,shield_absorbed:attackResult.shieldAbsorbed||0,hp_damage:attackResult.damage||0});battle.log.push(`[Tick ${battle.tick}] [TAG][COUNTER] ${defender.name}が${attacker.name}へ反撃 — ${skill.name}`);
  const triggerContract=compiled.definition.runtimeContracts?.triggerContract||null;
  if(triggerContract?.type==='ON_HIT_RECEIVED'){
-  const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled){activation.release?.();return skip('GENERIC_TRIGGER_ENGINE_UNAVAILABLE');}
+  const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled){activation.release?.();return skip('SKILL_RUNTIME_TRIGGER_ENGINE_UNAVAILABLE');}
   const dispatched=engine.dispatchCompiled(triggerContract,'hit_received',{sourceId:defender.id,attackerId:attacker.id,incomingSkillId:incomingCompiled.definition.id,counterSkillId:skillId},()=>executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext}));
-  if(!dispatched?.ok){activation.release?.();return skip('GENERIC_TRIGGER_REJECTED',{trigger_reason:dispatched?.reason||'UNKNOWN'});}
-  typeof recordValidationEvent==='function'&&recordValidationEvent('generic_trigger_dispatched',{trigger_type:'ON_HIT_RECEIVED',engine_event:'hit_received',source_id:defender.id,attacker_id:attacker.id,counter_skill_id:skillId});
-  const result=dispatched.result;activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,genericTrigger:true};
+  if(!dispatched?.ok){activation.release?.();return skip('SKILL_RUNTIME_TRIGGER_REJECTED',{trigger_reason:dispatched?.reason||'UNKNOWN'});}
+  typeof recordValidationEvent==='function'&&recordValidationEvent('skill_trigger_dispatched',{trigger_type:'ON_HIT_RECEIVED',engine_event:'hit_received',source_id:defender.id,attacker_id:attacker.id,counter_skill_id:skillId});
+  const result=dispatched.result;activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:true};
  }
- const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext});activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,genericTrigger:false};}
+ const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext});activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:false};}
 
 let taggedApplyLifecycleEngine=null;
 function createFallbackApplyLifecycleEngine(handlers){
@@ -930,34 +930,34 @@ function processApplyLifecycleDeathCleanup(target,{reason='death',sourceId=null}
 function resolveRuntimeApplyLifecycle(compiled,logic){
  const runtime=compiled?.definition?.runtimeContracts;if(!runtime)return{formal:false,ok:true,contract:null,lifecycle:null};
  const contract=runtime.applyContracts?.find(x=>x.logic===logic)||null;
- if(!contract||!contract.lifecycle)return{formal:true,ok:false,reason:'GENERIC_APPLY_CONTRACT_MISSING',contract:null,lifecycle:null};
+ if(!contract||!contract.lifecycle)return{formal:true,ok:false,reason:'SKILL_RUNTIME_APPLY_CONTRACT_MISSING',contract:null,lifecycle:null};
  return{formal:true,ok:true,contract,lifecycle:contract.lifecycle};
 }
 function resolveRuntimeApplyPolicy(compiled,logic){
  const lifecycleRef=resolveRuntimeApplyLifecycle(compiled,logic);if(!lifecycleRef.ok||!lifecycleRef.formal)return{...lifecycleRef,policy:null};
  const lc=lifecycleRef.lifecycle||{},contract=lifecycleRef.contract||{};
  const allowed={stackRule:new Set(['UNIQUE','STACK','REPLACE','IGNORE']),refreshRule:new Set(['REFRESH','EXTEND','KEEP','REPLACE']),snapshotPolicy:new Set(['SNAPSHOT','DYNAMIC']),effectiveRule:new Set(['HIGHEST','SUM','LATEST','NONE']),consumeRule:new Set(['FIFO','LIFO','NONE']),dispelCategory:new Set(['STATUS','DOT','BUFF','DEBUFF','SHIELD','NONE'])};
- for(const [key,set] of Object.entries(allowed)){const value=String(lc[key]??'');if(!set.has(value))return{...lifecycleRef,ok:false,reason:'GENERIC_APPLY_POLICY_UNKNOWN',policy:null,policyField:key,policyValue:value}}
- if(String(contract.kind||'')!==logic)return{...lifecycleRef,ok:false,reason:'GENERIC_APPLY_POLICY_KIND_MISMATCH',policy:null,policyField:'kind',policyValue:String(contract.kind||'')};
- if(String(lc.dispelCategory||'')!==logic)return{...lifecycleRef,ok:false,reason:'GENERIC_APPLY_POLICY_CATEGORY_MISMATCH',policy:null,policyField:'dispelCategory',policyValue:String(lc.dispelCategory||'')};
+ for(const [key,set] of Object.entries(allowed)){const value=String(lc[key]??'');if(!set.has(value))return{...lifecycleRef,ok:false,reason:'SKILL_RUNTIME_APPLY_POLICY_UNKNOWN',policy:null,policyField:key,policyValue:value}}
+ if(String(contract.kind||'')!==logic)return{...lifecycleRef,ok:false,reason:'SKILL_RUNTIME_APPLY_POLICY_KIND_MISMATCH',policy:null,policyField:'kind',policyValue:String(contract.kind||'')};
+ if(String(lc.dispelCategory||'')!==logic)return{...lifecycleRef,ok:false,reason:'SKILL_RUNTIME_APPLY_POLICY_CATEGORY_MISMATCH',policy:null,policyField:'dispelCategory',policyValue:String(lc.dispelCategory||'')};
  const policy={stackRule:lc.stackRule,refreshRule:lc.refreshRule,snapshotPolicy:lc.snapshotPolicy,effectiveRule:lc.effectiveRule,consumeRule:lc.consumeRule,dispelCategory:lc.dispelCategory,removeOnDeath:lc.removeOnDeath===true,removeOnBattleEnd:lc.removeOnBattleEnd===true,removable:lc.removable===true,maxStacks:Number.isInteger(lc.maxStacks)?lc.maxStacks:null,resistancePolicy:lc.resistancePolicy||null,identityPolicy:lc.identityPolicy||null};
  return{...lifecycleRef,policy};
 }
 function resolveRuntimeApplyDefinition(compiled,contract){
- const values=contract?.values;if(!values)return{ok:true,genericValues:false,compiled};
+ const values=contract?.values;if(!values)return{ok:true,formalValues:false,compiled};
  const p={...(compiled?.definition?.parameters||{})},logic=String(contract.logic||'');
  if(logic==='STATUS'){p.statusId=values.statusId;p.statusDuration=values.duration;p.statusPayload={...(values.statusPayload||{})}}
  else if(logic==='DOT'){p.dotPower=values.power;p.dotDuration=values.duration;p.dotInterval=values.interval;p.stackGain=values.stackGain}
  else if(logic==='BUFF'||logic==='DEBUFF'){p.modifierStat=values.modifierStat;p.modifierPower=values.power;p.modifierDuration=values.duration;p.stackGain=values.stackGain}
  else if(logic==='SHIELD'){p.shield=values.power;p.shieldDuration=values.duration}
- else return{ok:false,genericValues:true,reason:'GENERIC_APPLY_VALUES_LOGIC_INVALID',compiled:null};
+ else return{ok:false,formalValues:true,reason:'SKILL_RUNTIME_APPLY_VALUES_LOGIC_INVALID',compiled:null};
  const numeric=logic==='STATUS'?[p.statusDuration]:logic==='DOT'?[p.dotPower,p.dotDuration,p.dotInterval,p.stackGain]:logic==='SHIELD'?[p.shield,p.shieldDuration]:[p.modifierPower,p.modifierDuration,p.stackGain];
- if(numeric.some(x=>!Number.isFinite(x)||x<0))return{ok:false,genericValues:true,reason:'GENERIC_APPLY_VALUES_INVALID',compiled:null};
- return{ok:true,genericValues:true,compiled:{...compiled,definition:{...compiled.definition,parameters:p}}};
+ if(numeric.some(x=>!Number.isFinite(x)||x<0))return{ok:false,formalValues:true,reason:'SKILL_RUNTIME_APPLY_VALUES_INVALID',compiled:null};
+ return{ok:true,formalValues:true,compiled:{...compiled,definition:{...compiled.definition,parameters:p}}};
 }
 function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=true}={}){
  const lifecycleRef=resolveRuntimeApplyPolicy(compiled,logic);
- if(!lifecycleRef.ok){const policyError=String(lifecycleRef.reason||'').startsWith('GENERIC_APPLY_POLICY_');battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 正式Runtime APPLY ${policyError?'policy':'lifecycle契約'}が不正です`);typeof recordValidationEvent==='function'&&recordValidationEvent(policyError?'runtime_apply_policy_rejected':'runtime_apply_contract_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,reason:lifecycleRef.reason,field:lifecycleRef.policyField||null,value:lifecycleRef.policyValue||null});return{handled:true,skipped:true,error:true,reason:lifecycleRef.reason,result:null,lifecycle:lifecycleRef.lifecycle||null,policy:null}}
+ if(!lifecycleRef.ok){const policyError=String(lifecycleRef.reason||'').startsWith('SKILL_RUNTIME_APPLY_POLICY_');battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 正式Runtime APPLY ${policyError?'policy':'lifecycle契約'}が不正です`);typeof recordValidationEvent==='function'&&recordValidationEvent(policyError?'runtime_apply_policy_rejected':'runtime_apply_contract_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,reason:lifecycleRef.reason,field:lifecycleRef.policyField||null,value:lifecycleRef.policyValue||null});return{handled:true,skipped:true,error:true,reason:lifecycleRef.reason,result:null,lifecycle:lifecycleRef.lifecycle||null,policy:null}}
  if(lifecycleRef.formal&&typeof recordValidationEvent==='function'){recordValidationEvent('runtime_apply_contract_resolved',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,registry_phase:(compiled?.definition?.runtimeContracts)?.registryPhase||null,lifecycle:lifecycleRef.lifecycle});recordValidationEvent('runtime_apply_policy_resolved',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,registry_phase:(compiled?.definition?.runtimeContracts)?.registryPhase||null,policy:lifecycleRef.policy})}
  const direct=resolveRuntimeApplyDefinition(compiled,lifecycleRef.contract);if(!direct.ok)return{handled:true,skipped:true,error:true,reason:direct.reason,result:null,contract:lifecycleRef.contract};
  const runtimeCompiled=direct.compiled;
@@ -1026,33 +1026,33 @@ function dispatchConditionalFollowUps(initiator,target,event){
   if(!target.alive){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TARGET_DEAD'});continue}
   const eligibility=actionExecutionEligibility(follower,{actionKind:'FOLLOW_UP'});if(!eligibility.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});continue}
   const conditionContract=compiled.definition.runtimeContracts?.conditionContracts?.find(c=>c.property==='TARGET_POISONED')||null;
-  const runLegacyFollowUp=()=>{
+  const runFollowUp=()=>{
    if(!target.alive){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TARGET_DEAD'});return{ok:false,reason:'TARGET_DEAD'}}
    let poisoned=false;
    if(conditionContract){
     const conditionEngine=globalThis.GKSConditionEngine;
     if(!conditionEngine?.evaluateCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_ENGINE_UNAVAILABLE'});return{ok:false,reason:'CONDITION_ENGINE_UNAVAILABLE'}}
     const checked=conditionEngine.evaluateCompiled(conditionContract,{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId},()=>ensureDotStackList(target).length>0);
-    if(!checked.ok||!checked.passed){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason,genericCondition:true});return{ok:false,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason}}
-    recordValidationEvent('generic_condition_resolved',{source_id:follower.id,target_id:target.id,skill_id:skillId,property:conditionContract.property,passed:true});
+    if(!checked.ok||!checked.passed){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason,formalCondition:true});return{ok:false,reason:checked.ok?'CONDITION_POISONED_FALSE':checked.reason}}
+    recordValidationEvent('skill_condition_resolved',{source_id:follower.id,target_id:target.id,skill_id:skillId,property:conditionContract.property,passed:true});
     poisoned=true;
    }else poisoned=ensureDotStackList(target).length>0;
    if(!poisoned){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'CONDITION_POISONED_FALSE'});return{ok:false,reason:'CONDITION_POISONED_FALSE'}}
    const activation=acquireTaggedTriggerActivation(event?.triggerActionContext,`FOLLOW_UP:${follower.id}:${skillId}`,{kind:'FOLLOW_UP',sourceId:follower.id,targetId:target.id,skillId});
    if(!activation?.ok){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:activation?.reason||'TRIGGER_GUARD_REJECTED',activation_count:activation?.activation_count??event?.triggerActionContext?.activationCount??0,max_activations:activation?.max_activations??event?.triggerActionContext?.maxActivations??null});return{ok:false,reason:activation?.reason||'TRIGGER_GUARD_REJECTED'}}
    recordValidationEvent('trigger_action_activation',{kind:'FOLLOW_UP',source_id:follower.id,target_id:target.id,skill_id:skillId,index:activation.index,max_activations:activation.max_activations});
-   recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',genericTrigger:!!triggerContract,priority:candidate.priority});
+   recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',formalTrigger:!!triggerContract,priority:candidate.priority});
    battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
    const result=executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1,triggerActionContext:event?.triggerActionContext});activation.release?.();return result;
   };
   if(triggerContract?.type==='ON_ALLY_ATTACK'){
    const engine=globalThis.GKSTriggerEngine;
    if(!engine?.dispatchCompiled){recordValidationEvent('follow_up_skipped',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,reason:'TRIGGER_ENGINE_UNAVAILABLE'});continue}
-   const dispatched=engine.dispatchCompiled(triggerContract,'ally_attack',{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId,originSkillId:event?.originSkillId||null},runLegacyFollowUp);
-   recordValidationEvent('generic_trigger_dispatched',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger_type:'ON_ALLY_ATTACK',engine_event:'ally_attack',ok:dispatched.ok,priority:candidate.priority});
+   const dispatched=engine.dispatchCompiled(triggerContract,'ally_attack',{sourceId:follower.id,initiatorId:initiator.id,targetId:target.id,skillId,originSkillId:event?.originSkillId||null},runFollowUp);
+   recordValidationEvent('skill_trigger_dispatched',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger_type:'ON_ALLY_ATTACK',engine_event:'ally_attack',ok:dispatched.ok,priority:candidate.priority});
    if(dispatched.ok&&dispatched.result?.ok)results.push(dispatched.result);
   }else{
-   const result=runLegacyFollowUp();if(result?.ok)results.push(result);
+   const result=runFollowUp();if(result?.ok)results.push(result);
   }
  }
  return results;
