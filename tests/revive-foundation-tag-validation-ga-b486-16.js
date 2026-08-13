@@ -1,9 +1,23 @@
-const fs=require('fs'),path=require('path');
-const root=path.resolve(__dirname,'..');
-const runtime=fs.readFileSync(path.join(root,'game-tag-test/assets/js/tag-skill-runtime.js'),'utf8');
-const validation=fs.readFileSync(path.join(root,'game-tag-test/assets/js/validation-runtime.js'),'utf8');
-const html=fs.readFileSync(path.join(root,'game-tag-test/index.html'),'utf8');
-for(const token of ["if(g.has('REVIVE'))",'reviveHp:n.REVIVE_HP','function resetCombatantOnDeath','function reviveTarget',"else if(logic==='REVIVE')"]){if(!runtime.includes(token))throw new Error('missing runtime token: '+token)}
-for(const token of ['function tagTestRunReviveJson','TAG-REVIVE-DEVICE-001','REVIVE-DEATH-RESET','tag-revive-device-validation-GA-B486.16']){if(!validation.includes(token))throw new Error('missing validation token: '+token)}
-if(!html.includes('id="tagTestRunReviveJson"'))throw new Error('REVIVE validation button missing');
-console.log('REVIVE_FOUNDATION_TAG_VALIDATION_GA_B486_16_OK');
+const assert=require('assert');
+const fs=require('fs');
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const skill={schemaVersion:1,id:'SKL-9160',name:'Revive Foundation Formal',trigger:{type:'ON_USE',scope:'SELF'},target:{side:'ALLY',range:'SINGLE'},effects:[{type:'REVIVE',hp:120}],resource:{mpCost:0,cooldown:0}};
+const out=compiler.compileSkill(skill,registry);
+assert.strictEqual(out.ok,true,JSON.stringify(out.errors));
+assert.deepStrictEqual(out.compiledSkill.runtimeContracts.effectContracts,[{type:'REVIVE',hp:120,hpRate:null}]);
+const events=[];
+const ctx={console,battle:{tick:50,units:[],log:[]},recordValidationEvent:(type,payload)=>events.push({type,payload})};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+const compiled=ctx.compileSkillForRuntime(out.compiledSkill);
+assert.strictEqual(compiled.ok,true,JSON.stringify(compiled.errors));
+const actor={id:'SRC',name:'Source',side:'ally',alive:true,hp:100,maxHp:100};
+const target={id:'TGT',name:'Target',side:'ally',alive:true,hp:1,maxHp:500,gauge:99,statusEffects:[{id:'s'}],dotStacks:[{id:'d'}],modifierStacks:[{id:'m'}],shieldEffects:[{id:'h'}],coverEffects:[],cooldowns:{}};
+ctx.battle.units=[actor,target];
+const death=ctx.resetCombatantOnDeath(target,{reason:'revive_foundation_test',sourceId:actor.id});
+assert.strictEqual(death.ok,true);assert.strictEqual(target.alive,false);assert.strictEqual(target.hp,0);assert.strictEqual(target.gauge,0);assert.strictEqual(target.statusEffects.length,0);assert.strictEqual(target.dotStacks.length,0);assert.strictEqual(target.modifierStacks.length,0);assert.strictEqual(target.shieldEffects.length,0);
+const revived=ctx.executeRuntimeReviveRuntime(actor,target,compiled);
+assert.strictEqual(revived.ok,true);assert.strictEqual(target.alive,true);assert.strictEqual(target.hp,120);assert.strictEqual(target.gauge,0);
+assert.ok(events.some(x=>x.type==='skill_revive_executed'&&x.payload.revived===true));
+console.log('REVIVE_FOUNDATION_FORMAL_VALIDATION_GA_B486_16_OK');

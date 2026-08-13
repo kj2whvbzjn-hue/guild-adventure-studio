@@ -126,6 +126,8 @@ function compileEffect(effect,index,skill,registry,errors){
  if(type==='REVIVE'){
   const hasHp=own(effect,'hp'),hasRate=own(effect,'hpRate');
   if(hasHp===hasRate)error(errors,'REVIVE_VALUE_REQUIRED',path,'REVIVEはhpまたはhpRateのどちらか1つが必要です');
+  if(hasHp&&(!Number.isInteger(effect.hp)||effect.hp<1))error(errors,'REVIVE_HP_INVALID',`${path}.hp`,'REVIVE hpは1以上の整数が必要です');
+  if(hasRate&&(!num(effect.hpRate)||effect.hpRate<=0||effect.hpRate>1))error(errors,'REVIVE_HP_RATE_INVALID',`${path}.hpRate`,'REVIVE hpRateは0より大きく1以下の有限数が必要です');
   return{type,hp:hasHp?effect.hp:null,hpRate:hasRate?effect.hpRate:null};
  }
  if(type==='REMOVE'){

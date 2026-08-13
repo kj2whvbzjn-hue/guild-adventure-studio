@@ -1,1 +1,12 @@
-const fs=require('fs'),vm=require('vm');const src=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');const pre=src.split('function findTagSkill')[0];const f=src.slice(src.indexOf('function effectiveStatusDuration'),src.indexOf('function applyTaggedStatus'));const ctx={console};vm.createContext(ctx);vm.runInContext(pre+'\n'+f,ctx);let r=ctx.compileTaggedSkill({id:'S',tags:['STATUS','STATUS_ID=STATUS-ACCURACY-DOWN','敵','単体','DURATION=400']});if(!r.ok)throw new Error(r.errors.join(','));if('statusRate' in r.definition.parameters)throw new Error('STATUS_RATE remained');if(r.definition.parameters.statusDuration!==400)throw new Error('duration');if(vm.runInContext('effectiveStatusDuration(400,25)',ctx)!==300||vm.runInContext('effectiveStatusDuration(400,75)',ctx)!==100||vm.runInContext('effectiveStatusDuration(400,100)',ctx)!==100)throw new Error('resistance duration');console.log('STATUS_RUNTIME_GA_B486_5_OK');
+const assert=require('assert');
+const fs=require('fs');
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const skill={schemaVersion:1,id:'SKL-9005',name:'Status Runtime Formal',trigger:{type:'ON_USE',scope:'SELF'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'ACCURACY_DOWN',duration:400}],resource:{mpCost:0,cooldown:0}};
+const out=compiler.compileSkill(skill,registry);assert.strictEqual(out.ok,true,JSON.stringify(out.errors));
+assert.strictEqual(out.compiledSkill.runtimeContracts.applyContracts.length,1);const contract=out.compiledSkill.runtimeContracts.applyContracts[0];assert.strictEqual(contract.logic,'STATUS');assert.strictEqual(contract.values.statusId,'STATUS-ACCURACY-DOWN');assert.strictEqual(contract.values.duration,400);
+const ctx={console,battle:{tick:0,units:[],log:[]}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+const compiled=ctx.compileSkillForRuntime(out.compiledSkill);assert.strictEqual(compiled.ok,true,JSON.stringify(compiled.errors));assert.strictEqual(compiled.definition.parameters.statusDuration,400);assert.strictEqual(compiled.definition.parameters.statusId,'STATUS-ACCURACY-DOWN');
+assert.strictEqual(ctx.effectiveStatusDuration(400,25),300);assert.strictEqual(ctx.effectiveStatusDuration(400,75),100);assert.strictEqual(ctx.effectiveStatusDuration(400,100),100);
+console.log('STATUS_RUNTIME_FORMAL_GA_B486_5_OK');
