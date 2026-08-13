@@ -1,6 +1,6 @@
 const fs=require('fs'),assert=require('assert'),vm=require('vm');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.game_build,'GA-B486.162');
+assert.strictEqual(build.game_build,'GA-B486.163');
 assert.strictEqual(build.studio_build,'GKS-B555');
 const html=fs.readFileSync('studio/index.html','utf8');
 const skill=fs.readFileSync('studio/skill/skill-generator.js','utf8');

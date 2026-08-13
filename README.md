@@ -22,7 +22,7 @@
 
 - `studio/` — 編集・検証・GitHub差分配置
 - `game/` — ゲーム画面
-- `game-tag-test/` — 公開導線から隔離したLegacy Tag検証資産（移行確認中）
+- Legacy Tag検証機能 — Formal Game (`game/`) と正式テストへ移行完了（旧検証アプリはGA-B486.163で削除）
 - `Export/` — Studioから生成されるゲーム受渡しデータ
 - `schemas/` — Export、検証、品質判定の定義
 - `tests/`、`tools/` — 自動検査

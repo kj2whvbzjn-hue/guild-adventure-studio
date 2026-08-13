@@ -1,7 +1,7 @@
 /* GKS Trigger Engine foundation — R04-A
  * Registry-backed trigger resolution/validation/event recording only.
  * R04-E1 adds a shared per-action trigger guard for recursion/re-entry and activation caps while preserving runtime effect execution.
- * R04-E2 adds deterministic simultaneous reactive-trigger ordering shared by Game and game-tag-test.
+ * R04-E2 adds deterministic simultaneous reactive-trigger ordering shared by Formal Game and the retired validation shell.
  * R04-E3 closes R04 with a cross-trigger regression gate; runtime behavior is unchanged.
  */
 (function(root,factory){
