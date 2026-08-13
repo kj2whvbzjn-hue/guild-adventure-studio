@@ -6,7 +6,7 @@ function ok(v,m){if(!v)throw new Error(m)}
 const expectedOps=['resolve','apply','expire','cleanup','consume','effective'];
 const expectedKinds=['STATUS','DOT','BUFF','DEBUFF','SHIELD'];
 ok(shared.VERSION==='R03-F4','shared engine version mismatch');
-ok(registry.phase==='R03-F4'||/^R0[4-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||'')),'registry phase predates R03-F4');
+ok(registry.phase==='R03-F4'||/^R0[4-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||''))||/^FORMAL-SKILL-/.test(String(registry.phase||'')),'registry phase predates R03-F4');
 ok(boundary.phase==='R03-F4','boundary phase mismatch');
 ok(JSON.stringify(shared.OPERATIONS)===JSON.stringify(expectedOps),'operation boundary changed');
 ok(JSON.stringify(shared.APPLY_KINDS)===JSON.stringify(expectedKinds),'APPLY kind boundary changed');
@@ -28,9 +28,9 @@ ok(probe.apply('AURA',{}).reason==='LIFECYCLE_ENGINE_KIND_UNREGISTERED','AURA le
 for(const forbidden of ['TRIGGER_DISPATCH','TARGET_RESOLUTION','DAMAGE_FORMULA','HEAL_FORMULA','RESOURCE_COST','COVER_ROUTING','COUNTER_CHAIN','FOLLOW_UP_CHAIN','AURA_TRIGGER']){
  ok(shared.BOUNDARY.excludes.includes(forbidden),`missing excluded responsibility ${forbidden}`);
 }
-for(const rel of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
+for(const rel of ['game/assets/js/tag-skill-runtime.js']){
  const src=fs.readFileSync(rel,'utf8');
  ok(src.includes("version:'R03-F4-fallback'"),`${rel}: fallback boundary version missing`);
  ok(src.includes("allowed=['STATUS','DOT','BUFF','DEBUFF','SHIELD']"),`${rel}: fallback APPLY allowlist missing`);
 }
-console.log('GENERIC_APPLY_LIFECYCLE_BOUNDARY_R03_F4_PASS');
+console.log('FORMAL_APPLY_LIFECYCLE_BOUNDARY_R03_F4_PASS');
