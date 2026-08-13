@@ -1,8 +1,8 @@
-/* Shared runtime/data configuration — GA-B486.137 / GKS-B555 */
+/* Shared runtime/data configuration — GA-B486.138 / GKS-B555 */
 window.GA_PROJECT_CONFIG = Object.freeze({
-  gameBuild: "GA-B486.137",
+  gameBuild: "GA-B486.138",
   studioBuild: "GKS-B555",
-  skillExportUrl: '../Export/skill/skills.json?v=486137b555',
+  skillExportUrl: '../Export/skill/skills.json?v=486138b555',
   productionEnvironment: 'production',
   validationEnvironment: 'validation'
 });
