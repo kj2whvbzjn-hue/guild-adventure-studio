@@ -1,19 +1,14 @@
+const assert=require('assert');
 const fs=require('fs');
-const path=require('path');
-const html=fs.readFileSync(path.join(__dirname,'..','game-tag-test','index.html'),'utf8');
-const checks=[
- ['GA-B458+ regression build',html.includes('DOT Defeat Verification')||html.includes('DOT Independent Timer Verification')||html.includes('DOT Stack Limit Verification')],
- ['stack limit button',html.includes('id="tagTestRunStackLimit"')],
- ['six executions',html.includes('executionCount:6')],
- ['five expected stacks',html.includes('expectedStacks:5')],
- ['one expected rejection',html.includes('expectedRejects:1')],
- ['MAX_STACK event',html.includes("recordValidationEvent('dot_stack_rejected'")],
- ['high HP isolation',html.includes('target.maxHp=Math.max(target.maxHp,5000)')],
- ['strict non-empty validation',html.includes("validationErrors.push('skill_idがありません')")],
- ['requested tick strict validation',html.includes('Tick進行数不一致')&&html.includes('requested_ticksが正の数ではありません')],
- ['stack hit expectation',html.includes('hitsPerStack*expectedStacks')],
- ['AI isolation',html.includes('if(battle.validationMode)continue')],
-];
-let failed=0;
-for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failed++;}
-if(failed)process.exit(1);
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const events=[];const battle={tick:0,units:[],log:[],result:null,pendingResult:null};
+const ctx={console,battle,recordValidationEvent:(type,payload={})=>events.push({type,...payload})};vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+const skill={schemaVersion:1,id:'SKL-9458',name:'Formal DOT stack cap',trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BURN',power:12,duration:1000,interval:100,stackGain:1}],resource:{mpCost:0,cooldown:0}};
+const out=compiler.compileSkill(skill,registry);assert.strictEqual(out.ok,true,JSON.stringify(out.errors));const compiled=ctx.compileSkillForRuntime(out.compiledSkill);assert.strictEqual(compiled.ok,true,JSON.stringify(compiled.errors));
+const source={id:'A',name:'Actor',side:'ally',alive:true},target={id:'E',name:'Enemy',side:'enemy',alive:true,hp:5000,maxHp:5000,dotStacks:[]};battle.units=[source,target];
+for(let i=0;i<5;i++){const r=ctx.applyTaggedApplyRuntime(source,target,compiled,'DOT');assert.strictEqual(r.result.ok,true,`apply ${i+1}`);assert.strictEqual(r.result.current,i+1);}
+const sixth=ctx.applyTaggedApplyRuntime(source,target,compiled,'DOT');assert.strictEqual(sixth.result.ok,false);assert.strictEqual(sixth.result.reason,'MAX_STACK');assert.strictEqual(sixth.result.current,5);assert.strictEqual(target.dotStacks.length,5);
+assert.strictEqual(events.filter(x=>x.type==='dot_stack_added').length,5);assert.strictEqual(events.filter(x=>x.type==='dot_stack_rejected'&&x.reason==='MAX_STACK').length,1);
+console.log('FORMAL_DOT_STACK_CAP_GA_B458_PASS');

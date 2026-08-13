@@ -1,20 +1,16 @@
+const assert=require('assert');
 const fs=require('fs');
-const path=require('path');
-const html=fs.readFileSync(path.join(__dirname,'..','game-tag-test','index.html'),'utf8');
-const checks=[
- ['GA-B460 build',html.includes('GA-B460 / Sprint 2.4 / DOT Defeat Verification')],
- ['defeat button',html.includes('id="tagTestRunDefeat"')],
- ['defeat test id',html.includes('TAG-DOT-DEFEAT-001')],
- ['low HP setup',html.includes('target.maxHp=100;target.hp=100')],
- ['three DOT hits expected',html.includes('expectedDotHits:3')],
- ['partial lethal DOT total',html.includes('expectedDotDamageTotal:52')],
- ['defeat at tick 300',html.includes('expectedDefeatTick:300')],
- ['defeat event recorded',html.includes("recordValidationEvent('dot_defeat'")],
- ['post-defeat DOT guard',html.includes('撃破後にDOTダメージが発生しています')],
- ['stacks cleared',html.includes('cleared_dot_stacks:clearedStacks')],
- ['AI isolation',html.includes('if(battle.validationMode)continue')],
- ['GA-B460 JSON filename',html.includes('tag-dot-validation-GA-B460-')],
-];
-let failed=0;
-for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failed++;}
-if(failed)process.exit(1);
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const events=[];const battle={tick:0,units:[],log:[],result:null,pendingResult:null};
+const ctx={console,battle,queueSceneEvent:()=>{},finishIfNeeded:()=>false,recordValidationEvent:(type,payload={})=>events.push({tick:battle.tick,type,...payload})};vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+const skill={schemaVersion:1,id:'SKL-9461',name:'Formal DOT defeat regression',trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BURN',power:20,duration:1000,interval:100,stackGain:1}],resource:{mpCost:0,cooldown:0}};
+const out=compiler.compileSkill(skill,registry);assert.strictEqual(out.ok,true,JSON.stringify(out.errors));const compiled=ctx.compileSkillForRuntime(out.compiledSkill);assert.strictEqual(compiled.ok,true,JSON.stringify(compiled.errors));
+const source={id:'A',name:'Actor',side:'ally',alive:true,damageDealt:0},target={id:'E',name:'Enemy',side:'enemy',alive:true,hp:52,maxHp:100,damageTaken:0,gauge:0,dotStacks:[],statusEffects:[],modifierStacks:[],shieldEffects:[],coverEffects:[],cooldowns:{}};battle.units=[source,target];
+const applied=ctx.applyTaggedApplyRuntime(source,target,compiled,'DOT');assert.strictEqual(applied.result.ok,true);assert.strictEqual(target.dotStacks.length,1);
+for(const tick of [100,200,300]){battle.tick=tick;ctx.processDotStacks();}
+assert.strictEqual(target.hp,0);assert.strictEqual(target.alive,false);assert.strictEqual(source.damageDealt,52);assert.strictEqual(target.damageTaken,52);assert.strictEqual(target.dotStacks.length,0,'DOT stacks must clear on defeat');
+const defeat=events.find(x=>x.type==='dot_defeat');assert.ok(defeat,'dot_defeat event missing');assert.strictEqual(defeat.tick,300);assert.strictEqual(defeat.cleared_dot_stacks,1);const damageCount=events.filter(x=>x.type==='dot_damage').length;assert.strictEqual(damageCount,3);
+battle.tick=400;ctx.processDotStacks();assert.strictEqual(events.filter(x=>x.type==='dot_damage').length,damageCount,'post-defeat DOT damage occurred');
+console.log('FORMAL_DOT_DEFEAT_GA_B460_PASS');

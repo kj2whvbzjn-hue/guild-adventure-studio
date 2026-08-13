@@ -1,19 +1,10 @@
+const assert=require('assert');
 const fs=require('fs');
-const path=require('path');
-const html=fs.readFileSync(path.join(__dirname,'..','game-tag-test','index.html'),'utf8');
-const checks=[
- ['GA-B460 build',html.includes('GA-B460 / Sprint 2.4 / DOT Defeat Verification')],
- ['staggered button',html.includes('id="tagTestRunStaggered"')],
- ['staggered test id',html.includes('TAG-DOT-STAGGERED-TIMER-001')],
- ['requested 1600 ticks',html.includes('requestedTicks:1600')],
- ['add tick expectations',html.includes('expectedAddTicks:[0,250,600]')],
- ['expire tick expectations',html.includes('expectedExpireTicks:[1000,1250,1600]')],
- ['three staggered executions',html.includes('processTicks(250)')&&html.includes('processTicks(350)')&&html.includes('processTicks(1000)')],
- ['per-stack hit schedule',html.includes('expectedHitTicksByStack')],
- ['schedule validation',html.includes('DOT付与Tick不一致')&&html.includes('DOT終了Tick不一致')&&html.includes('DOT発生Tick不一致')],
- ['AI isolation',html.includes('if(battle.validationMode)continue')],
- ['GA-B460 JSON filename',html.includes('tag-dot-validation-GA-B460-')],
-];
-let failed=0;
-for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failed++;}
-if(failed)process.exit(1);
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const ctx={console,battle:{tick:0,units:[],log:[]}};vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+const skill={schemaVersion:1,id:'SKL-9460',name:'Formal DOT compatibility boundary',trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BURN',power:10,duration:300,interval:100,stackGain:1}],resource:{mpCost:0,cooldown:0}};
+const out=compiler.compileSkill(skill,registry);assert.strictEqual(out.ok,true,JSON.stringify(out.errors));assert.ok(out.compiledSkill.runtimeContracts,'Formal compiler did not emit runtimeContracts');const runtime=ctx.compileSkillForRuntime(out.compiledSkill);assert.strictEqual(runtime.ok,true,JSON.stringify(runtime.errors));assert.ok(runtime.definition.logicOrder.includes('DOT'));
+assert.strictEqual(typeof ctx.compileTaggedSkill,'undefined','Legacy compileTaggedSkill must not return');assert.strictEqual(ctx.compileSkillForRuntime({id:'LEGACY-DOT',name:'Legacy DOT',tags:['DOT']}).ok,false,'tag-only Legacy DOT must be rejected');
+console.log('FORMAL_DOT_COMPAT_BOUNDARY_GA_B459_PASS');

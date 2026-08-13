@@ -1,19 +1,20 @@
+const assert=require('assert');
 const fs=require('fs');
-const path=require('path');
-const html=fs.readFileSync(path.join(__dirname,'..','game-tag-test','index.html'),'utf8');
-const checks=[
- ['GA-B457+ JSON validation regression',html.includes('DOT Defeat Verification')||html.includes('DOT Defeat Verification')||html.includes('DOT Independent Timer Verification')||html.includes('DOT Stack Limit Verification')||html.includes('DOT JSON Verification')],
- ['1000 tick button',html.includes('id="tagTestRun1000"')],
- ['JSON export button',html.includes('id="tagTestExportJson"')],
- ['validation mode',html.includes('battle.validationMode')],
- ['AI isolation',html.includes('if(battle.validationMode)continue')],
- ['attack event',html.includes("recordValidationEvent('attack'")],
- ['stack event',html.includes("recordValidationEvent('dot_stack_added'")],
- ['dot damage event',html.includes("recordValidationEvent('dot_damage'")],
- ['expire event',html.includes("recordValidationEvent('dot_expired'")],
- ['JSON schema',html.includes("DOT_LOG_SCHEMA_VERSION='1.0.0'")],
- ['PASS calculation',html.includes('expected_dot_hit_count')&&html.includes('normal_ai_actions')],
-];
-let failed=0;
-for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failed++;}
-if(failed)process.exit(1);
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const events=[];
+const battle={tick:0,units:[],log:[],result:null,pendingResult:null};
+const ctx={console,battle,queueSceneEvent:()=>{},finishIfNeeded:()=>false,recordValidationEvent:(type,payload={})=>events.push({tick:battle.tick,type,...payload})};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+const skill={schemaVersion:1,id:'SKL-9457',name:'Formal DOT basic regression',trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BURN',power:20,duration:1000,interval:100,stackGain:1}],resource:{mpCost:0,cooldown:0}};
+const out=compiler.compileSkill(skill,registry);assert.strictEqual(out.ok,true,JSON.stringify(out.errors));
+const compiled=ctx.compileSkillForRuntime(out.compiledSkill);assert.strictEqual(compiled.ok,true,JSON.stringify(compiled.errors));
+assert.ok(compiled.definition.runtimeContracts,'runtimeContracts missing');assert.ok(compiled.definition.logicOrder.includes('DOT'),'DOT logic missing');
+const source={id:'A',name:'Actor',side:'ally',alive:true,damageDealt:0};
+const target={id:'E',name:'Enemy',side:'enemy',alive:true,hp:5000,maxHp:5000,damageTaken:0,dotStacks:[],statusEffects:[],modifierStacks:[],shieldEffects:[],coverEffects:[]};battle.units=[source,target];
+const applied=ctx.applyTaggedApplyRuntime(source,target,compiled,'DOT');assert.strictEqual(applied.result.ok,true);assert.strictEqual(applied.result.added,1);assert.strictEqual(target.dotStacks.length,1);
+for(let tick=100;tick<=1000;tick+=100){battle.tick=tick;ctx.processDotStacks();}
+assert.strictEqual(target.hp,4800,'DOT total damage mismatch');assert.strictEqual(target.dotStacks.length,0,'DOT stack did not expire');
+assert.strictEqual(events.filter(x=>x.type==='dot_stack_added').length,1,'dot_stack_added event mismatch');assert.strictEqual(events.filter(x=>x.type==='dot_damage').length,10,'dot_damage event mismatch');assert.strictEqual(events.filter(x=>x.type==='dot_expired').length,1,'dot_expired event mismatch');
+console.log('FORMAL_DOT_BASIC_GA_B457_PASS');
