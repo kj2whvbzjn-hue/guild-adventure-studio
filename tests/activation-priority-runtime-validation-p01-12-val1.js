@@ -2,6 +2,7 @@ const fs=require('fs');
 const ctl=fs.readFileSync('game/assets/js/battle-control.js','utf8');
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
 const rt=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
+const validationCompiler=fs.readFileSync('assets/shared/js/validation-tag-compiler.js','utf8');
 const spec=JSON.parse(fs.readFileSync('docs/design/P01-12_ACTIVATION_PRIORITY_VALIDATION_SPEC.json','utf8'));
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const errors=[];
@@ -11,7 +12,8 @@ if(!app.includes("if(!battle.validationMode&&battle.validationCaptureEvents!==tr
 if(!app.includes("formal_candidate:'P01-12-FORMAL-1'"))errors.push('formal candidate id');
 if(!ctl.includes('function activationPriorityFeatureEnabled(){return true}'))errors.push('formal priority feature not enabled');
 if(!app.includes(`${build.game_build}-P01-12-FORMAL1-`))errors.push('device report filename must identify formal build');
-if(!rt.includes('ACTIVATION_PRIORITYは有限整数が必要です'))errors.push('compiler validation');
+if(!validationCompiler.includes('ACTIVATION_PRIORITYは有限整数が必要です'))errors.push('validation compiler rule');
+if(rt.includes('function compileTaggedSkill('))errors.push('production runtime still contains Tag compiler');
 if(spec.validation_patch!=='P01-12-FORMAL-1'||spec.runtime_application!==true||spec.status!=='FORMAL_CANDIDATE'||spec.validation_design.normal_runtime_enabled!==true)errors.push('formal spec state');
 if(errors.length){errors.forEach(x=>console.error('FAIL',x));process.exit(1)}
 console.log('ACTIVATION_PRIORITY_FORMAL_CANDIDATE_GA_B486_50_OK');

@@ -7,7 +7,8 @@ const ctx={
  recordValidationEvent:(type,payload)=>{events.push({type,...payload});ctx.battle.validationEvents.push({type,...payload})},
  TAG_SKILLS:[],
 };
-vm.createContext(ctx);
+ctx.globalThis=ctx;vm.createContext(ctx);
+vm.runInContext(fs.readFileSync('assets/shared/js/validation-tag-compiler.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
 
 const source={id:'C',name:'coverer',side:'ally',alive:true,coverEffects:[]};
@@ -16,7 +17,7 @@ const enemy={id:'E',name:'enemy',side:'enemy',alive:true};
 ctx.battle.units=[source,target,enemy];
 
 const coverSkill={id:'COVER-SHIELD',name:'cover+shield',tags:['味方','単体','COVER','COVER_TARGET=single_ally','COVER_TRIGGER=direct_attack','COVER_PRIORITY=0','COVER_REMOVABLE=true','COVER_LIFETIME=persistent','SHIELD','SHIELD=50','DURATION=200']};
-const compiledCover=ctx.compileTaggedSkill(coverSkill);
+const compiledCover=ctx.GKSValidationTagCompiler.compile(coverSkill);
 assert.strictEqual(compiledCover.ok,true,compiledCover.errors.join(' / '));
 assert.strictEqual(compiledCover.definition.parameters.coverDuration,null);
 assert.strictEqual(compiledCover.definition.parameters.shieldDuration,200);

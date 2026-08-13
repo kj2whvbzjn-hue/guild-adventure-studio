@@ -16,6 +16,10 @@ for(const rel of callers){
 const gameRuntime=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
 assert(!gameRuntime.includes('function findTagSkill('),'Production runtime still exposes transitional findTagSkill alias');
 assert(!gameRuntime.includes('function executeTaggedSkill('),'Production runtime still exposes transitional executeTaggedSkill alias');
+assert(!gameRuntime.includes('function compileTaggedSkill('),'Production runtime still contains transitional Tag compiler');
+assert(!gameRuntime.includes('function parseSkillTags('),'Production runtime still contains Tag parser');
+const validationCompiler=fs.readFileSync(path.join(root,'assets/shared/js/validation-tag-compiler.js'),'utf8');
+assert(validationCompiler.includes('GKSValidationTagCompiler'),'isolated validation compiler API missing');
 for(const rel of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const src=fs.readFileSync(path.join(root,rel),'utf8');
  assert(src.includes('function findSkill(skillId)'),'canonical findSkill missing');

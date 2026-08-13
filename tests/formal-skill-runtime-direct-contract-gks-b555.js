@@ -14,6 +14,9 @@ assert(runtimeSrc.includes("production:'runtimeContracts_only'"),'production run
 assert(!runtimeSrc.slice(runtimeSrc.indexOf('function runtimeSkillStore'),runtimeSrc.indexOf('function compileSkillForRuntime')).includes('TAG_SKILLS'),'Game runtime store must not fall back to TAG_SKILLS');
 assert(!runtimeSrc.includes('function executeTaggedSkill('),'Production runtime must not expose transitional executeTaggedSkill alias');
 assert(!runtimeSrc.includes('function findTagSkill('),'Production runtime must not expose transitional findTagSkill alias');
+assert(!runtimeSrc.includes('function compileTaggedSkill('),'Production runtime must not contain the legacy Tag compiler');
+assert(!runtimeSrc.includes('function parseSkillTags('),'Production runtime must not contain Tag parser helpers');
+assert(runtimeSrc.includes('GKSValidationTagCompiler'),'non-production validation must delegate to isolated validation compiler');
 assert(battleSrc.includes('function formalBattleSkill(skillId){'),'battle formal Skill guard missing');
 assert(battleSrc.includes('NO_FORMAL_PRODUCTION_SKILL'),'battle must block without formal Production Skill');
 assert(deviceHarnessSrc.includes("['compileSkillRuntime','executeSkillRuntime','GKSTriggerEngine','GKSSkillRuntimeMode','GKSSkillRuntimeDiagnostics']"),'device test must require formal Game APIs');
