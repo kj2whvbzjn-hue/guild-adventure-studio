@@ -22,5 +22,5 @@ const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 for(const marker of ['skgGenericConditionList','skgGenericConditionAdd','addGenericConditionRow','collectGenericConditions','validateGenericConditions','scope + property + operator + value'])assert.ok(sg.includes(marker),`G03 marker missing: ${marker}`);
 assert.ok(sg.includes('conditions:collectGenericConditions()'),'Generic draft must include Registry-driven conditions');
 assert.ok(sg.includes('旧Runtime互換Condition UI'),'Legacy Condition UI must remain compatibility-only');
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('generic-skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=27'));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('generic-skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=28'));
 console.log('SKILL_GENERATOR_G03_CONDITION_UI_GKS_B530_PASS');

@@ -57,6 +57,6 @@ function structuredSkill(id,tags){
  assert.ok(core.includes("structuredSkill&&dep.dataset==='tags'&&path==='tags'"));
  assert.ok(core.includes('New Skill System: runtime semantics live in genericRuntime'));
  const html=fs.readFileSync('studio/index.html','utf8');
- assert.ok(html.includes('data-exchange-core.js?v=15'));
+ assert.ok(html.includes('data-exchange-core.js?v=16'));
  console.log('PASS GKS-B550 structured Skill runtime reference boundary');
 })().catch(e=>{console.error(e);process.exit(1);});

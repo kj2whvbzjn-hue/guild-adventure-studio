@@ -5,6 +5,6 @@ assert.ok(src.includes('if(report.summary.allAccepted)lastG06GenericBatch=clone(
 assert.ok(src.includes("let payload=lastG06GenericBatch?clone(lastG06GenericBatch):null"),'G07 button must prefer retained G06 batch');
 assert.ok(src.includes("const raw=q('skgG06GenericJson')?.value?.trim()"),'G07 button must fallback to G06 textarea');
 assert.ok(src.includes("if(!payload)payload=g06ExportGenericSkills()"),'G07 button must preserve generated-batch fallback');
-assert.ok(src.includes("直近のG06 Generic Skill BatchをG07登録欄へセットしました。"));
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=27'));
+assert.ok(src.includes("直近のG06 Skill BatchをG07登録欄へセットしました。"));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=28'));
 console.log('PASS GKS-B550 G06->G07 Generic Batch handoff hotfix');

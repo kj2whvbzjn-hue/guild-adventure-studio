@@ -54,7 +54,7 @@ const api=ctx.GKSSkillGenerator;
  const dry=await api.g07DryRunMasterRegistration(batch);
  assert.strictEqual(dry.dryRun.summary.add,1);assert.strictEqual(host.masters.skills.length,0,'Dry Run must not mutate Master');
 
- const applied=await api.g07SafeApplyGenericBatch(batch);
+ const applied=await api.g07SafeApplySkillBatch(batch);
  assert.strictEqual(applied.plan.add_count,1);assert.strictEqual(host.masters.skills.length,1);
  assert.strictEqual(backupCount,1);assert.strictEqual(commitCount,1);assert.strictEqual(persistCount,1);
 
@@ -66,6 +66,6 @@ const api=ctx.GKSSkillGenerator;
  await assert.rejects(()=>api.g07DryRunMasterRegistration(rejected),e=>e.code==='G07_REVALIDATION_REJECT');
 
  for(const m of ['skgG07GenericJson','skgG07DryRun','skgG07Register','G07_ID_CONFLICT','before-g07-generic-skill-safe-apply'])assert.ok(src.includes(m),`missing ${m}`);
- const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=27'));
+ const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=28'));
  console.log('PASS GKS-B543 G07 Master registration safety gate');
 })().catch(e=>{console.error(e);process.exit(1);});

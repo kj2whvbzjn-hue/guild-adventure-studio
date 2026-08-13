@@ -61,20 +61,20 @@ const api=ctx.GKSSkillGenerator;
  dryMode='broken';await assert.rejects(()=>api.g07DryRunMasterRegistration(batch),e=>e.code==='G07_BROKEN_REFERENCE');
  dryMode='conflict';await assert.rejects(()=>api.g07DryRunMasterRegistration(batch),e=>e.code==='G07_ID_CONFLICT');
 
- dryMode='ok';hashSequence=['SAME','SAME','AFTER'];const applied=await api.g07SafeApplyGenericBatch(batch);
+ dryMode='ok';hashSequence=['SAME','SAME','AFTER'];const applied=await api.g07SafeApplySkillBatch(batch);
  assert.strictEqual(applied.plan.add_count,1);assert.strictEqual(host.masters.skills.length,1);
  assert.strictEqual(auditSaved,1,'successful G07 apply must save Data Exchange audit');
  assert.strictEqual(JSON.parse(storage.getItem(api.g07AuditStorageKey()))[0].import_session_id,'G07-SESSION-1');
  assert.ok(backupCount>=1&&persistCount>=1);
 
  host={project:{id:'P-G07'},masters:{skills:[]}};hashSequence=['DRY-HASH','CHANGED-HASH'];
- await assert.rejects(()=>api.g07SafeApplyGenericBatch(batch),e=>e.code==='G07_STALE_SOURCE_HASH');
+ await assert.rejects(()=>api.g07SafeApplySkillBatch(batch),e=>e.code==='G07_STALE_SOURCE_HASH');
  assert.strictEqual(host.masters.skills.length,0,'stale source hash must reject before commit');
 
  const unknown=JSON.parse(JSON.stringify(batch));unknown.skills[0].skill.unknownField=true;
  await assert.rejects(()=>api.g07DryRunMasterRegistration(unknown),e=>e.code==='G07_REVALIDATION_REJECT');
 
  for(const m of ['skgG07Undo','G07_STALE_SOURCE','G07_BROKEN_REFERENCE','G07_STALE_SOURCE_HASH','G07_AUDIT_SAVE_FAILED','gks_data_exchange_audit_v1_'])assert.ok(src.includes(m),`missing ${m}`);
- const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=27'));
+ const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=28'));
  console.log('PASS GKS-B550 G07 acceptance stale/broken/conflict/audit/undo gate');
 })().catch(e=>{console.error(e);process.exit(1);});

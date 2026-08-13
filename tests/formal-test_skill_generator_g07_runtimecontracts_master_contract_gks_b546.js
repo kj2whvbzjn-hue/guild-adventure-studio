@@ -52,9 +52,9 @@ const dx=require('../studio/data-exchange/data-exchange-core.js');
  const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
  assert.ok(src.includes("const plan=await global.GKSDataExchange.createApplyPlan({rootData:source,envelope:built.envelope,dryRun:dry,conflictChoices:{}})"),
    'G07 Dry Run must validate Apply Plan before reporting PASS');
- assert.ok(src.includes('部分JSON Dry Run・Apply Plan検査を通過しました'));
+ assert.ok(src.includes('正式Skill Master契約・Dry Run・Apply Plan検査を通過しました'));
  const html=fs.readFileSync('studio/index.html','utf8');
- assert.ok(html.includes('skill-generator.js?v=27'));
- assert.ok(html.includes('data-exchange-core.js?v=15'));
+ assert.ok(html.includes('skill-generator.js?v=28'));
+ assert.ok(html.includes('data-exchange-core.js?v=16'));
  console.log('PASS GKS-B550 runtimeContracts Master contract + G07 Dry Run Apply Plan gate');
 })().catch(e=>{console.error(e);process.exit(1);});

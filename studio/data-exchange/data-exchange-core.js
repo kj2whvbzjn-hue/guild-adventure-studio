@@ -431,10 +431,25 @@
     if(result?.integrity?.apply_blocking&&!reasons.length)reasons.push('Integrity ValidatorがApplyを禁止しています。');
     return reasons;
   }
+  const FORMAL_SKILL_MASTER_FIELDS=Object.freeze([
+    'schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts',
+    'status','description','created_at','updated_at'
+  ]);
+  function skillMasterContractDiagnostic(){
+    const shared=global.GKSSkillSchema?.masterAllowed?.();
+    if(!Array.isArray(shared))return{shared_schema_loaded:false,shared_matches:false,missing:[...FORMAL_SKILL_MASTER_FIELDS],extra:[]};
+    const expected=new Set(FORMAL_SKILL_MASTER_FIELDS),actual=new Set(shared);
+    return{
+      shared_schema_loaded:true,
+      shared_matches:FORMAL_SKILL_MASTER_FIELDS.every(x=>actual.has(x))&&shared.every(x=>expected.has(x)),
+      missing:FORMAL_SKILL_MASTER_FIELDS.filter(x=>!actual.has(x)),
+      extra:shared.filter(x=>!expected.has(x))
+    };
+  }
   const SAFE_TOP_LEVEL_FIELDS={
     monsters:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
-    skills:new Set((global.GKSSkillSchema?.masterAllowed?.()||['schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts','status','description','created_at','updated_at'])),
+    skills:new Set(FORMAL_SKILL_MASTER_FIELDS),
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
@@ -589,5 +604,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,FORMAL_SKILL_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });
