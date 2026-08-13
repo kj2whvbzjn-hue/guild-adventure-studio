@@ -19,12 +19,11 @@ assert(!gameRuntime.includes('function executeTaggedSkill('),'Production runtime
 assert(!gameRuntime.includes('function compileTaggedSkill('),'Production runtime still contains transitional Tag compiler');
 assert(!gameRuntime.includes('function parseSkillTags('),'Production runtime still contains Tag parser');
 assert(!gameRuntime.includes('GKSValidationTagCompiler'),'Production runtime still references isolated validation Tag compiler');
-const validationCompiler=fs.readFileSync(path.join(root,'assets/shared/js/validation-tag-compiler.js'),'utf8');
-assert(validationCompiler.includes('GKSValidationTagCompiler'),'isolated validation compiler API missing');
 for(const rel of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const src=fs.readFileSync(path.join(root,rel),'utf8');
  assert(src.includes('function findSkill(skillId)'),'canonical findSkill missing');
  assert(src.includes('function compileSkillForRuntime(skill)'),'canonical runtime compile dispatcher missing');
  assert(src.includes('function executeSkillRuntime('),'canonical runtime executor missing');
 }
+assert(!fs.readFileSync(path.join(root,'game/index.html'),'utf8').includes('validation-tag-compiler.js'),'Production Game must not load validation Tag compiler');
 console.log('FORMAL_SKILL_RUNTIME_CALLER_API_PASS');

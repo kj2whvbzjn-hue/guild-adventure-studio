@@ -1,14 +1,14 @@
-
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const formalCompiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
 const events=[];
 const ctx={
  console,
  battle:{tick:0,units:[],log:[],validationEvents:[]},
  recordValidationEvent:(type,payload)=>{events.push({type,...payload});ctx.battle.validationEvents.push({type,...payload})},
- TAG_SKILLS:[],
+ SKILLS:[],
 };
 ctx.globalThis=ctx;vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('assets/shared/js/validation-tag-compiler.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
 
 const source={id:'C',name:'coverer',side:'ally',alive:true,coverEffects:[]};
@@ -16,8 +16,18 @@ const target={id:'P',name:'protected',side:'ally',alive:true,coverEffects:[]};
 const enemy={id:'E',name:'enemy',side:'enemy',alive:true};
 ctx.battle.units=[source,target,enemy];
 
-const coverSkill={id:'COVER-SHIELD',name:'cover+shield',tags:['味方','単体','COVER','COVER_TARGET=single_ally','COVER_TRIGGER=direct_attack','COVER_PRIORITY=0','COVER_REMOVABLE=true','COVER_LIFETIME=persistent','SHIELD','SHIELD=50','DURATION=200']};
-const compiledCover=ctx.GKSValidationTagCompiler.compile(coverSkill);
+const coverSkill={
+ schemaVersion:1,id:'COVER-SHIELD',name:'cover+shield',skillLevel:5,
+ trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ALLY',range:'SINGLE'},
+ effects:[
+  {type:'TARGET_CONTROL',mode:'COVER',trigger:'DIRECT_ATTACK',priority:0,removable:true,lifetime:'PERSISTENT'},
+  {type:'APPLY',effectId:'BARRIER',power:50,duration:200}
+ ],
+ resource:{mpCost:0,cooldown:0,activationPriority:0}
+};
+const formal=formalCompiler.compileSkill(coverSkill,registry);
+assert.strictEqual(formal.ok,true,JSON.stringify(formal.errors));
+const compiledCover=ctx.compileSkillForRuntime(formal.compiledSkill);
 assert.strictEqual(compiledCover.ok,true,compiledCover.errors.join(' / '));
 assert.strictEqual(compiledCover.definition.parameters.coverDuration,null);
 assert.strictEqual(compiledCover.definition.parameters.shieldDuration,200);
