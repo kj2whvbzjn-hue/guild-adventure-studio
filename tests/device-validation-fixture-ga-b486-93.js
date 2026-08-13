@@ -1,18 +1,18 @@
 const fs=require('fs');
 const assert=(v,m)=>{if(!v)throw new Error(m)};
-const runtime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');
+const harness=fs.readFileSync('assets/shared/js/device-game-test-harness.js','utf8');
+const game=fs.readFileSync('game/index.html','utf8');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 assert(/^GA-B486\.\d+$/.test(build.game_build),'unexpected game build');
-assert(runtime.includes("function currentValidationGameBuild(){return window.GA_PROJECT_CONFIG?.gameBuild||'UNKNOWN'}"),'current build helper missing');
-const fixture=(runtime.match(/function prepareShieldValidationFixture\(\)\{[^\n]+/)||[])[0]||'';
-assert(fixture.includes("ensureValidationTargets('味方',3)"),'shield fixture does not ensure three allies');
-assert(fixture.includes("ensureValidationTargets('敵',1)"),'shield fixture does not ensure an enemy');
-assert(fixture.includes('u.shieldEffects=[]'),'shield fixture does not reset shields');
-assert(runtime.includes("for(const e of battle.units.filter(u=>u.side==='敵')){e.hp=0;e.alive=false}finishIfNeeded();"),'shield battle-end validation does not defeat all battle enemies');
-assert(!runtime.includes("for(const e of f.enemies){e.hp=0;e.alive=false}finishIfNeeded();"),'shield battle-end validation still depends on fixture enemy subset');
-for(const id of ['TAG-HEAL-DEVICE-001','TAG-SHIELD-DEVICE-001','TAG-STATUS-DEVICE-001','TAG-CLEANSE-DEVICE-001','TAG-REVIVE-RATE-DEVICE-001']){
-  const pos=runtime.indexOf(`id:'${id}'`); assert(pos>=0,`${id} missing`);
-  const chunk=runtime.slice(Math.max(0,pos-180),pos+180);
-  assert(chunk.includes('build:currentValidationGameBuild()'),`${id} still exports stale build`);
-}
+assert(harness.includes("const BUILD=(window.GA_PROJECT_CONFIG&&window.GA_PROJECT_CONFIG.gameBuild)||'UNKNOWN'"),'Formal Game current build helper missing');
+assert(harness.includes("const STUDIO_BUILD=(window.GA_PROJECT_CONFIG&&window.GA_PROJECT_CONFIG.studioBuild)||'UNKNOWN'"),'Formal Game current Studio build helper missing');
+assert(harness.includes("kind:'real_device_acceptance'"),'Formal Game report kind missing');
+assert(harness.includes('game_build:BUILD,studio_build:STUDIO_BUILD'),'Formal Game report does not export current build metadata');
+assert(harness.includes("window.GKSSkillRuntimeMode?.production==='runtimeContracts_only'"),'Formal runtimeContracts-only device guard missing');
+assert(harness.includes("runtimeDiag.productionSkills===runtimeDiag.formalProductionSkills"),'Formal production skill contract parity check missing');
+assert(harness.includes("missingContracts.length===0"),'Formal production missing-contract guard missing');
+assert(harness.includes("probeFetch('skill-fetch','Studio正式skillデータ取得','../Export/skill/skills.json',true)"),'Formal skill export device probe missing');
+assert(!harness.includes("build:'GA-B486."),'Formal Game report contains stale hard-coded build metadata');
+const token=build.game_build.replace(/^GA-B486\./,'486');
+assert(game.includes(`../assets/shared/js/device-game-test-harness.js?v=${token}`),'Formal Game current-build harness ref missing');
 console.log('DEVICE_VALIDATION_FIXTURE_GA_B486_93_PASS');
