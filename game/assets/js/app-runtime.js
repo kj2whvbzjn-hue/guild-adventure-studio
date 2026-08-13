@@ -986,10 +986,7 @@ function tagTestRunSimultaneousActivationOrderJson(){pauseBattle();const report=
 
 function resolveSkillCompileService(){
  const formal=globalThis.GKSSkillCompileService;
- if(formal?.compileSkill)return formal;
- // Temporary compatibility boundary during formal promotion; remove with retired R04 Generic marker gates.
- if(globalThis.GKSGenericSkillBridge?.compileForLegacy)return{...globalThis.GKSGenericSkillBridge,compileSkill:globalThis.GKSGenericSkillBridge.compileForLegacy};
- return null;
+ return formal?.compileSkill?formal:null;
 }
 async function runR04TriggerFoundationDeviceValidation(){
  const gameBuild=window.GA_PROJECT_CONFIG?.gameBuild||'UNKNOWN',entrypoint=location.pathname.includes('game-tag-test')?'game-tag-test/index.html':'game/index.html',engine=globalThis.GKSTriggerEngine,bridge=resolveSkillCompileService(),cases=[],rejectionCases=[],errors=[];

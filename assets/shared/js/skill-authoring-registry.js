@@ -46,5 +46,5 @@ function validateConditionDraft(registry,condition){
 }
 function buildUiDefinition(registry){const a=registryRequired(registry);return{version:VERSION,phase:String(a.phase||''),registryPhase:String(registry.phase||''),skillRequiredFields:clone(a.skill_required_fields||[]),fields:listFieldDefinitions(registry),effects:listRuntimeEffects(registry),applyEffects:listApplyEffects(registry),triggers:listTriggers(registry),conditions:listConditions(registry),targets:listTargets(registry),damageTypes:listDamageTypes(registry),trigger:clone(a.trigger||{}),condition:clone(a.condition||{}),target:clone(a.target||{}),resource:clone(a.resource||{})};}
 const api=Object.freeze({VERSION,buildUiDefinition,listFieldDefinitions,listRuntimeEffects,listTriggers,listConditions,listTargets,listDamageTypes,listApplyEffects,resolveEffectRequirements,resolveConditionRequirements,validateConditionDraft});
-root.GKSSkillAuthoringRegistry=api;root.GKSGenericSkillAuthoringRegistry=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
+root.GKSSkillAuthoringRegistry=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
