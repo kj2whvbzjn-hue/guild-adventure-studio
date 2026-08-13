@@ -5,9 +5,17 @@ const compiler=require('../assets/shared/js/skill-compiler.js');
 const registry=require('../assets/shared/config/skill-registry.json');
 const runtimeSrc=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
 const bridgeSrc=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-bridge.js'),'utf8');
+const battleSrc=fs.readFileSync(path.join(root,'game/assets/js/battle-control.js'),'utf8');
+const deviceHarnessSrc=fs.readFileSync(path.join(root,'assets/shared/js/device-test-harness.js'),'utf8');
 
 assert(runtimeSrc.includes('function compileSkillRuntime(skill){'),'formal runtime compiler is missing');
 assert(runtimeSrc.includes('function executeSkillRuntime('),'formal runtime executor is missing');
+assert(runtimeSrc.includes("production:'runtimeContracts_only'"),'production runtime mode must be formal only');
+assert(!runtimeSrc.slice(runtimeSrc.indexOf('function runtimeSkillStore'),runtimeSrc.indexOf('function compileSkillForRuntime')).includes('TAG_SKILLS'),'Game runtime store must not fall back to TAG_SKILLS');
+assert((runtimeSrc.match(/executeTaggedSkill\(/g)||[]).length===1,'Game production internals must not call executeTaggedSkill');
+assert(battleSrc.includes('function formalBattleSkill(skillId){'),'battle formal Skill guard missing');
+assert(battleSrc.includes('NO_FORMAL_PRODUCTION_SKILL'),'battle must block without formal Production Skill');
+assert(deviceHarnessSrc.includes("['compileSkillRuntime','executeSkillRuntime','GKSTriggerEngine','GKSSkillRuntimeMode','GKSSkillRuntimeDiagnostics']"),'device test must require formal Game APIs');
 assert(runtimeSrc.includes('const compiled=compileSkillForRuntime(skillSource);'),
   'structured Skill execution does not use canonical runtime dispatcher');
 const r06Start=bridgeSrc.indexOf('function runR06MasterStructuredRuntimeFinalRegression');
@@ -30,6 +38,9 @@ assert(!('tags' in authored.compiledSkill));
 
 const ctx={console,globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
 vm.runInContext(runtimeSrc,ctx);
+const rejectedLegacyProduction=ctx.compileSkillForRuntime({id:'LEGACY-PROD',name:'Legacy Production',environment:'production',tags:['ATTACK','敵','単体','DAMAGE=1']});
+assert.strictEqual(rejectedLegacyProduction.ok,false,'Production tag-only Skill must be rejected');
+assert(rejectedLegacyProduction.errors.some(x=>x.includes('runtimeContracts')),'Production rejection must require runtimeContracts');
 const compiled=ctx.compileSkillRuntime(authored.compiledSkill);
 assert(compiled.ok,JSON.stringify(compiled.errors));
 assert(compiled.definition.runtimeContracts);

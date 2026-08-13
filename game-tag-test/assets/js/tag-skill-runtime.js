@@ -874,12 +874,12 @@ const activation=acquireTaggedTriggerActivation(triggerActionContext,`COUNTER:${
  const triggerContract=compiled.definition.runtimeContracts?.triggerContract||null;
  if(triggerContract?.type==='ON_HIT_RECEIVED'){
   const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled){activation.release?.();return skip('SKILL_RUNTIME_TRIGGER_ENGINE_UNAVAILABLE');}
-  const dispatched=engine.dispatchCompiled(triggerContract,'hit_received',{sourceId:defender.id,attackerId:attacker.id,incomingSkillId:incomingCompiled.definition.id,counterSkillId:skillId},()=>executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext}));
+  const dispatched=engine.dispatchCompiled(triggerContract,'hit_received',{sourceId:defender.id,attackerId:attacker.id,incomingSkillId:incomingCompiled.definition.id,counterSkillId:skillId},()=>executeSkillRuntime(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext}));
   if(!dispatched?.ok){activation.release?.();return skip('SKILL_RUNTIME_TRIGGER_REJECTED',{trigger_reason:dispatched?.reason||'UNKNOWN'});}
   typeof recordValidationEvent==='function'&&recordValidationEvent('skill_trigger_dispatched',{trigger_type:'ON_HIT_RECEIVED',engine_event:'hit_received',source_id:defender.id,attacker_id:attacker.id,counter_skill_id:skillId});
   const result=dispatched.result;activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:true};
  }
- const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext});activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:false};}
+ const result=executeSkillRuntime(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext});activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:false};}
 
 let taggedApplyLifecycleEngine=null;
 function createFallbackApplyLifecycleEngine(handlers){
@@ -1043,7 +1043,7 @@ function dispatchConditionalFollowUps(initiator,target,event){
    recordValidationEvent('trigger_action_activation',{kind:'FOLLOW_UP',source_id:follower.id,target_id:target.id,skill_id:skillId,index:activation.index,max_activations:activation.max_activations});
    recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',formalTrigger:!!triggerContract,priority:candidate.priority});
    battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
-   const result=executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1,triggerActionContext:event?.triggerActionContext});activation.release?.();return result;
+   const result=executeSkillRuntime(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1,triggerActionContext:event?.triggerActionContext});activation.release?.();return result;
   };
   if(triggerContract?.type==='ON_ALLY_ATTACK'){
    const engine=globalThis.GKSTriggerEngine;

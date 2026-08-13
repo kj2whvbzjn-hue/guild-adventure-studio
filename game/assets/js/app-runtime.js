@@ -248,7 +248,7 @@ function renderCharacterSkillView(){
  if(!c){title.textContent='冒険者のスキル';current.innerHTML='<div class="skill-empty">冒険者を選択してください。</div>';list.innerHTML='';return}
  const equipped=findSkill(c.equippedSkillId);title.textContent=`${c.name}のスキル`;
  current.innerHTML=`<div class="skill-loadout-current"><b>装着中</b><div class="name">${escapeHtml(equipped?.name||'未装着')}</div><div class="small">戦闘ではこのスキルをAIが予約・実行します。</div></div>`;
- const owned=(c.skills||[]).map(findTagSkill).filter(x=>x&&compileSkillForRuntime(x).ok);
+ const owned=(c.skills||[]).map(findSkill).filter(x=>x&&compileSkillForRuntime(x).ok);
  list.innerHTML=owned.length?owned.map(skill=>{const compiled=compileSkillForRuntime(skill),selected=skill.id===c.equippedSkillId;return `<div class="skill-choice ${selected?'selected':''}"><div><b>${escapeHtml(skill.name)}</b><div class="small">${escapeHtml(compiled.definition.logicOrder.join(' → '))} ／ 対象 ${escapeHtml(compiled.definition.target.side)}・${escapeHtml(compiled.definition.target.range)}</div><div class="skill-tags">${skill.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div></div><button type="button" class="${selected?'good':'primary'}" data-equip-skill="${skill.id}" ${selected?'disabled':''}>${selected?'装着中':'装着する'}</button></div>`}).join(''):'<div class="skill-empty">装着可能なスキルがありません。</div>';
  list.querySelectorAll('[data-equip-skill]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.equipSkill;if(!c.skills.includes(id)||!findSkill(id))return;c.equippedSkillId=id;persist();render();renderCharacterSkillView();notify(`${c.name}が${findSkill(id).name}を装着しました。`)});
 }

@@ -43,8 +43,15 @@ async function runChecks(){
  if('indexedDB' in window){await new Promise(resolve=>{let done=false;try{const req=indexedDB.open('__ga_device_probe__',1);req.onerror=()=>{if(!done){done=true;addCheck('indexedDB','IndexedDB',false,req.error?.message||'open failed',true);resolve()}};req.onsuccess=()=>{try{req.result.close();indexedDB.deleteDatabase('__ga_device_probe__')}catch(_e){}if(!done){done=true;addCheck('indexedDB','IndexedDB',true,'open/delete OK',true);resolve()}};}catch(e){addCheck('indexedDB','IndexedDB',false,e.message||e,true);resolve()}})}else addCheck('indexedDB','IndexedDB',false,'APIなし',true);
  const swAvailable='serviceWorker' in navigator; addCheck('sw-api','Service Worker API',swAvailable,swAvailable?'利用可能':'APIなし',true);
  if(swAvailable){try{const reg=await navigator.serviceWorker.getRegistration();addCheck('sw-registration','Service Worker登録',!!reg,reg?`scope=${reg.scope} / controller=${navigator.serviceWorker.controller?'YES':'NO'}`:'未登録',true);}catch(e){addCheck('sw-registration','Service Worker登録',false,e.message||e,true)}}
- const requiredGlobals=context==='game'?['compileTaggedSkill','executeTaggedSkill','tagTestRunCounterJson','tagTestRunAuraJson','GKSTriggerEngine']:['compileTaggedSkill','executeTaggedSkill','tagTestRunCounterJson','tagTestRunAuraJson','GKSTriggerEngine'];
- const missing=requiredGlobals.filter(n=>n==='GKSTriggerEngine'?!window.GKSTriggerEngine:typeof window[n]!=='function'); addCheck('runtime-globals','主要Runtime API',missing.length===0,missing.length?`不足: ${missing.join(', ')}`:'主要API検出');
+ const requiredGlobals=context==='game'?['compileSkillRuntime','executeSkillRuntime','GKSTriggerEngine','GKSSkillRuntimeMode','GKSSkillRuntimeDiagnostics']:['compileTaggedSkill','executeTaggedSkill','tagTestRunCounterJson','tagTestRunAuraJson','GKSTriggerEngine'];
+ const missing=requiredGlobals.filter(n=>n==='GKSTriggerEngine'||n==='GKSSkillRuntimeMode'?!window[n]:typeof window[n]!=='function'); addCheck('runtime-globals','主要Runtime API',missing.length===0,missing.length?`不足: ${missing.join(', ')}`:'主要API検出');
+ if(context==='game'){
+  const formalMode=window.GKSSkillRuntimeMode?.production==='runtimeContracts_only';
+  addCheck('formal-runtime-mode','本番Skill Runtime',formalMode,formalMode?'runtimeContracts only':'正式Runtime modeを確認できません');
+  const runtimeDiag=typeof window.GKSSkillRuntimeDiagnostics==='function'?window.GKSSkillRuntimeDiagnostics():null,missingContracts=runtimeDiag?.invalidProductionSkillIds||[];
+  const formalReady=!!runtimeDiag&&runtimeDiag.productionSkills>0&&runtimeDiag.productionSkills===runtimeDiag.formalProductionSkills&&runtimeDiag.studioProductionSkills>0&&missingContracts.length===0;
+  addCheck('production-skill-contracts','本番Skill契約',formalReady,!runtimeDiag?'Runtime診断APIなし':missingContracts.length?`runtimeContracts不足: ${missingContracts.join(', ')}`:runtimeDiag.productionSkills===0?'Production Skillが0件です':runtimeDiag.studioProductionSkills===0?'Studio正式Production Skillが未読込です':`${runtimeDiag.productionSkills}件すべて正式契約 / Studio正式 ${runtimeDiag.studioProductionSkills}件`);
+ }
  const requiredDom=context==='game'?['sceneAuto','sceneStep','sceneReset','tagSkillTestPanel','tagTestResult']:['tagSkillTestPanel','tagTestRunCounterJson','tagTestRunAuraJson','tagTestResult'];
  const missingDom=requiredDom.filter(id=>!$(id)); addCheck('runtime-dom','主要操作DOM',missingDom.length===0,missingDom.length?`不足: ${missingDom.join(', ')}`:'主要DOM検出');
  await probeFetch('self-fetch','現在ページ再取得','./');

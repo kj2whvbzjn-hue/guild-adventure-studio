@@ -353,17 +353,24 @@ function compileTaggedSkill(skill){
  const conditions=TAG_CONDITION_KEYS.filter(key=>n[key]).map(key=>({key,operator:n[key].operator,value:n[key].value,raw:n[key].raw}));
  return{ok:errors.length===0,errors,warnings,definition:{id:skill?.id||'',name:skill?.name||'',target:{side:targetSide,range},logicOrder,costs,parameters:{damageType,mpCost,activationPriority,cooldown:n.COOLDOWN?.value??0,damage:n.DAMAGE?.value??null,heal:n.HEAL?.value??null,shield:n.SHIELD?.value??null,shieldDuration:n.DURATION?.value??null,dotPower:n.DOT_POWER?.value??null,dotDuration:n.DOT_DURATION?.value??null,dotInterval:n.DOT_INTERVAL?.value??null,stackGain:n.STACK_GAIN?.value??null,modifierStat:TAG_COMBAT_MODIFIER_PARAMS.find(x=>g.has(x))||null,modifierPower:n.POWER?.value??null,modifierDuration:n.DURATION?.value??null,followUpTrigger:g.has('TRIGGER_ALLY_ATTACK')?'ALLY_ATTACK':null,followUpCondition:g.has('CONDITION_POISONED')?'POISONED':null,statusId:[...g].find(x=>x.startsWith('STATUS_ID='))?.slice(10)||null,statusDuration:g.has('STATUS')?(n.DURATION?.value??null):null,statusStackPolicy:g.has('INDEPENDENT')?'independent':g.has('STRONGEST')?'strongest':'refresh',statusPayload:{...([...g].includes('STATUS_ID=STATUS-ACCURACY-DOWN')?{accuracy_modifier:-20}:{}),...(g.has('ACTION_DISABLED=true')?{action_disabled:true}:{})},cleanseCount:n.CLEANSE_COUNT?.value??null,cleanseAll:g.has('CLEANSE_ALL'),cleanseCategory:[...g].find(x=>x.startsWith('CLEANSE_CATEGORY='))?.slice(17)||'status',cleanseOrder:[...g].find(x=>x.startsWith('CLEANSE_ORDER='))?.slice(14)||'oldest',reviveHp:n.REVIVE_HP?.value??null,reviveHpRate:n.REVIVE_HP_RATE?.value??null,auraEffect:[...g].find(x=>x.startsWith('AURA_EFFECT='))?.slice(12)||null,auraValue:n.AURA_VALUE?.value??null,auraTarget:[...g].find(x=>x.startsWith('AURA_TARGET='))?.slice(12)||null,auraScope:[...g].find(x=>x.startsWith('AURA_SCOPE='))?.slice(11)||null,auraStack:[...g].find(x=>x.startsWith('AURA_STACK='))?.slice(11)||'highest',auraPriority:n.AURA_PRIORITY?.value??0,coverTarget:[...g].find(x=>x.startsWith('COVER_TARGET='))?.slice(13)||null,coverTrigger:[...g].find(x=>x.startsWith('COVER_TRIGGER='))?.slice(14)||null,coverPriority:structuredTargetControl?structuredTargetControl.priority:(n.COVER_PRIORITY?.value??null),coverRemovable:structuredTargetControl?String(structuredTargetControl.removable):([...g].find(x=>x.startsWith('COVER_REMOVABLE='))?.slice(16)||null),coverLifetime:structuredTargetControl?String(structuredTargetControl.lifetime||'').toLowerCase():([...g].find(x=>x.startsWith('COVER_LIFETIME='))?.slice(15)||null),coverUses:structuredTargetControl?(structuredTargetControl.uses??null):(n.COVER_USES?.value??null),coverDuration:structuredTargetControl?(structuredTargetControl.duration??null):(g.has('COVER')&&([...g].find(x=>x.startsWith('COVER_LIFETIME='))?.slice(15)==='duration')?(n.DURATION?.value??null):null),coverRuntimeApplied:true,counterTrigger:[...g].find(x=>x.startsWith('COUNTER_TRIGGER='))?.slice(16)||null,counterTarget:[...g].find(x=>x.startsWith('COUNTER_TARGET='))?.slice(15)||null,counterLimit:n.COUNTER_LIMIT?.value??null,counterPriority:n.COUNTER_PRIORITY?.value??null,counterRequireAlive:[...g].find(x=>x.startsWith('COUNTER_REQUIRE_ALIVE='))?.slice(22)||null,counterAllowZeroDamage:[...g].find(x=>x.startsWith('COUNTER_ALLOW_ZERO_DAMAGE='))?.slice(26)||null,counterUsesAttack:g.has('COUNTER')&&g.has('ATTACK'),conditions,conditionMode:'all'},runtimeContracts:runtimeContracts,sourceTags:[...(skill?.tags||[])]},parsed};
 }
+const GKS_SKILL_RUNTIME_MODE=Object.freeze({production:'runtimeContracts_only',compatibility:'non_production_tag_validation_only'});
+globalThis.GKSSkillRuntimeMode=GKS_SKILL_RUNTIME_MODE;
 function runtimeSkillStore(){
  if(typeof SKILLS!=='undefined'&&Array.isArray(SKILLS))return SKILLS;
- if(typeof TAG_SKILLS!=='undefined'&&Array.isArray(TAG_SKILLS))return TAG_SKILLS;
  return[];
 }
 function findSkill(skillId){return runtimeSkillStore().find(x=>x.id===skillId)||null}
 function findTagSkill(skillId){return findSkill(skillId)}
+function skillRuntimeDiagnostics(){
+ const skills=runtimeSkillStore(),production=skills.filter(x=>String(x?.environment||'production').toLowerCase()==='production');
+ const formal=production.filter(x=>x?.runtimeContracts&&x?.schemaVersion===1),invalid=production.filter(x=>!x?.runtimeContracts||x?.schemaVersion!==1);
+ return{mode:GKS_SKILL_RUNTIME_MODE.production,totalSkills:skills.length,productionSkills:production.length,formalProductionSkills:formal.length,invalidProductionSkillIds:invalid.map(x=>x?.id||'(unknown)'),studioProductionSkills:formal.filter(x=>x?.source==='studio_export').length};
+}
+globalThis.GKSSkillRuntimeDiagnostics=skillRuntimeDiagnostics;
 function compileSkillForRuntime(skill){
  if(skill?.runtimeContracts)return compileSkillRuntime(skill);
  if(String(skill?.environment||'production').toLowerCase()==='production'){
-  return{ok:false,errors:['Production SkillはruntimeContractsが必要です'],warnings:[],definition:null,parsed:null};
+  return{ok:false,errors:['Production Skillは正式runtimeContractsが必要です'],warnings:[],definition:null,parsed:null};
  }
  return compileTaggedSkill(skill);
 }
@@ -874,12 +881,12 @@ const activation=acquireTaggedTriggerActivation(triggerActionContext,`COUNTER:${
  const triggerContract=compiled.definition.runtimeContracts?.triggerContract||null;
  if(triggerContract?.type==='ON_HIT_RECEIVED'){
   const engine=globalThis.GKSTriggerEngine;if(!engine?.dispatchCompiled){activation.release?.();return skip('SKILL_RUNTIME_TRIGGER_ENGINE_UNAVAILABLE');}
-  const dispatched=engine.dispatchCompiled(triggerContract,'hit_received',{sourceId:defender.id,attackerId:attacker.id,incomingSkillId:incomingCompiled.definition.id,counterSkillId:skillId},()=>executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext}));
+  const dispatched=engine.dispatchCompiled(triggerContract,'hit_received',{sourceId:defender.id,attackerId:attacker.id,incomingSkillId:incomingCompiled.definition.id,counterSkillId:skillId},()=>executeSkillRuntime(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext}));
   if(!dispatched?.ok){activation.release?.();return skip('SKILL_RUNTIME_TRIGGER_REJECTED',{trigger_reason:dispatched?.reason||'UNKNOWN'});}
   typeof recordValidationEvent==='function'&&recordValidationEvent('skill_trigger_dispatched',{trigger_type:'ON_HIT_RECEIVED',engine_event:'hit_received',source_id:defender.id,attacker_id:attacker.id,counter_skill_id:skillId});
   const result=dispatched.result;activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:true};
  }
- const result=executeTaggedSkill(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext});activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:false};}
+ const result=executeSkillRuntime(defender,attacker,skill,{origin:'counter',derivedGeneration:Number(derivedGeneration)+1,triggerActionContext});activation.release?.();return{ok:!!result?.ok,triggered:true,skillId,result,formalTrigger:false};}
 
 let taggedApplyLifecycleEngine=null;
 function createFallbackApplyLifecycleEngine(handlers){
@@ -1043,7 +1050,7 @@ function dispatchConditionalFollowUps(initiator,target,event){
    recordValidationEvent('trigger_action_activation',{kind:'FOLLOW_UP',source_id:follower.id,target_id:target.id,skill_id:skillId,index:activation.index,max_activations:activation.max_activations});
    recordValidationEvent('follow_up_triggered',{source_id:follower.id,initiator_id:initiator.id,target_id:target.id,skill_id:skillId,trigger:'ALLY_ATTACK',condition:'POISONED',formalTrigger:!!triggerContract,priority:candidate.priority});
    battle.log.push(`[Tick ${battle.tick}] [TAG][FOLLOW_UP] ${follower.name}が${initiator.name}の攻撃に連携 → ${target.name}`);
-   const result=executeTaggedSkill(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1,triggerActionContext:event?.triggerActionContext});activation.release?.();return result;
+   const result=executeSkillRuntime(follower,target,skill,{isFollowUp:true,derivedGeneration:Number(event?.derivedGeneration||0)+1,triggerActionContext:event?.triggerActionContext});activation.release?.();return result;
   };
   if(triggerContract?.type==='ON_ALLY_ATTACK'){
    const engine=globalThis.GKSTriggerEngine;
