@@ -18,5 +18,5 @@ const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 for(const marker of ['skgGenericEffects','skgGenericEffectFields','renderGenericDynamic','makeGenericField','generateGenericPreview','authoring_model:\'generic\''])assert.ok(sg.includes(marker),`G02 UI marker missing: ${marker}`);
 assert.ok(sg.includes('旧Runtime互換UI'),'Legacy UI must remain compatibility-only, not deleted');
 assert.ok(!sg.includes('id="skgGenericEffects">${LOGICS.map'),'Generic Effect choices must not come from legacy LOGICS');
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=28'));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=29'));
 console.log('SKILL_GENERATOR_G02_EFFECT_UI_GKS_B529_PASS');

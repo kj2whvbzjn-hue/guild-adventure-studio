@@ -9,6 +9,6 @@ assert.ok(!sg.includes('g07UndoPointerKey'),'G07 exact-session pointer must be r
 assert.ok(!sg.includes('undoSessionById(sessionId'),'G07 exact-session Undo call must be removed by rollback');
 assert.ok(ui.includes('async function undoLatestSession()'),'Data Exchange latest-session Undo must remain');
 assert.ok(!ui.includes('async function undoSessionById('),'B555 exact-session Undo API must be removed by rollback');
-assert.ok(html.includes('skill-generator.js?v=28'),'Skill generator rollback must cache-bust');
+assert.ok(html.includes('skill-generator.js?v=29'),'Skill generator rollback must cache-bust');
 assert.ok(html.includes('data-exchange-ui.js?v=23r1'),'Data Exchange UI rollback must cache-bust');
 console.log('PASS GKS-B555 G07 Undo rollback to proven latest-session path');
