@@ -7,6 +7,8 @@ const runtimeSrc=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtim
 const bridgeSrc=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-bridge.js'),'utf8');
 const battleSrc=fs.readFileSync(path.join(root,'game/assets/js/battle-control.js'),'utf8');
 const deviceHarnessSrc=fs.readFileSync(path.join(root,'assets/shared/js/device-test-harness.js'),'utf8');
+const gameIndexSrc=fs.readFileSync(path.join(root,'game/index.html'),'utf8');
+const gameSwSrc=fs.readFileSync(path.join(root,'game/sw.js'),'utf8');
 
 assert(runtimeSrc.includes('function compileSkillRuntime(skill){'),'formal runtime compiler is missing');
 assert(runtimeSrc.includes('function executeSkillRuntime('),'formal runtime executor is missing');
@@ -17,6 +19,8 @@ assert(!runtimeSrc.includes('function findTagSkill('),'Production runtime must n
 assert(!runtimeSrc.includes('function compileTaggedSkill('),'Production runtime must not contain the legacy Tag compiler');
 assert(!runtimeSrc.includes('function parseSkillTags('),'Production runtime must not contain Tag parser helpers');
 assert(runtimeSrc.includes('GKSValidationTagCompiler'),'non-production validation must delegate to isolated validation compiler');
+assert(!gameIndexSrc.includes('validation-tag-compiler.js'),'Production Game page must not load the validation Tag compiler');
+assert(!gameSwSrc.includes('validation-tag-compiler.js'),'Production Game service worker must not cache the validation Tag compiler');
 assert(battleSrc.includes('function formalBattleSkill(skillId){'),'battle formal Skill guard missing');
 assert(battleSrc.includes('NO_FORMAL_PRODUCTION_SKILL'),'battle must block without formal Production Skill');
 assert(deviceHarnessSrc.includes("['compileSkillRuntime','executeSkillRuntime','GKSTriggerEngine','GKSSkillRuntimeMode','GKSSkillRuntimeDiagnostics']"),'device test must require formal Game APIs');
