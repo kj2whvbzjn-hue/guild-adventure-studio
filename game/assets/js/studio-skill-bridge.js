@@ -1,5 +1,6 @@
 /* Studio skill data bridge — GKS-B484 / P01-01 HEAL */
 const STUDIO_SKILL_EXPORT_URL=window.GA_PROJECT_CONFIG.skillExportUrl;
+let studioSkillFormalRegistry=null;
 const studioSkillBridge={status:'idle',source_url:STUDIO_SKILL_EXPORT_URL,schema_version:null,data_version:null,generated_by:null,imported_ids:[],errors:[],loaded_at:null};
 function normalizeStudioSkill(record){
  if(!record||typeof record!=='object'||!record.id||!record.name)return null;
@@ -17,6 +18,7 @@ async function loadStudioSkillDefinitions(){
   const response=await fetch(STUDIO_SKILL_EXPORT_URL,{cache:'no-store'});
   if(!response.ok)throw new Error(`HTTP ${response.status}`);
   const payload=await response.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]);
+  if(globalThis.GKSSkillCompileService?.loadRegistry)studioSkillFormalRegistry=await globalThis.GKSSkillCompileService.loadRegistry();
   const imported=rows.map(normalizeStudioSkill).filter(Boolean);
   if(!imported.length)throw new Error('Skill定義が0件です');
   for(const skill of imported){const i=SKILLS.findIndex(x=>x.id===skill.id);if(i>=0)SKILLS.splice(i,1,skill);else SKILLS.push(skill)}
@@ -103,6 +105,15 @@ function loadCurrentStudioMasterForRuntimeRegression(){
   return{ok:true,project_id:id,skills,project,error:null};
  }catch(e){return{ok:false,project_id:null,skills:[],error:String(e?.message||e)}}
 }
+function compileStudioMasterSkillForRuntime(skill){
+ if(skill?.runtimeContracts)return{ok:true,skill,authored:null,source:'runtimeContracts'};
+ const compiler=globalThis.GKSSkillCompiler,registry=studioSkillFormalRegistry||globalThis.GKSSkillCompileService?.getLoadedRegistry?.()||null;
+ if(!compiler?.compileSkill)return{ok:false,skill:null,authored:null,source:null,errors:['GKSSkillCompilerがありません']};
+ if(!registry)return{ok:false,skill:null,authored:null,source:null,errors:['Skill Registryが読み込まれていません']};
+ const authored=compiler.compileSkill(skill,registry);
+ if(!authored?.ok||!authored?.compiledSkill)return{ok:false,skill:null,authored,source:null,errors:(authored?.errors||[]).map(x=>x?.message||x?.code||String(x))};
+ return{ok:true,skill:{...authored.compiledSkill,source:'studio_master_localstorage',environment:'production'},authored,source:'formal_compiler'};
+}
 function r06FinalPrepareBattle(){
  pauseBattle();resetBattle();battle.validationMode=true;battle.validationCaptureEvents=true;battle.validationEvents=[];
  const allies=ensureValidationTargets('味方',3),enemies=ensureValidationTargets('敵',3);
@@ -117,18 +128,18 @@ function runR06MasterStructuredRuntimeFinalRegression(){
  const source=loadCurrentStudioMasterForRuntimeRegression(),cases=[],errors=[];
  if(!source.ok)return{schema_version:'1.0.0',build:'GA-B486.121',generated_at:new Date().toISOString(),test:{id:'R06-MASTER-STRUCTURED-RUNTIME-FINAL-001',mode:'master_registered_structured_skill_composite_runtime_final'},source,compile_results:[],cases:[],summary:{master_skill_count:0,compile_passed_count:0,runtime_passed_count:0,runtime_case_count:0,composite_case_count:0,passed:false,errors:[source.error||'Studio Masterを取得できません']}};
  const rows=source.skills.filter(x=>String(x?.id||'').startsWith(R06_FINAL_MASTER_SKILL_PREFIX)).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
- const compile_results=rows.map(skill=>{const compiled=compileSkillRuntime(skill),runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?'runtimeContracts':null,er=[];if(!compiled?.ok)er.push(...(compiled?.errors||['compile failed']));if(!runtime)er.push('runtimeContractsがRuntime compilerへ接続されていません');return{id:skill.id,name:skill.name,compiled_ok:!!compiled?.ok,runtime_contract_connected:!!runtime,runtime_contract_source:runtimeContractSource,logic_order:compiled?.definition?.logicOrder||[],effect_types:(runtime?.effectContracts||[]).map(x=>x.type),apply_logics:(runtime?.applyContracts||[]).map(x=>x.logic),errors:er}});
+ const compile_results=rows.map(skill=>{const prepared=compileStudioMasterSkillForRuntime(skill),compiled=prepared.ok?compileSkillRuntime(prepared.skill):null,runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?(prepared.source==='formal_compiler'?'formal_compiler->runtimeContracts':'runtimeContracts'):null,er=[];if(!prepared.ok)er.push(...(prepared.errors||['formal compile failed']));else if(!compiled?.ok)er.push(...(compiled?.errors||['compile failed']));if(!runtime)er.push('runtimeContractsがRuntime compilerへ接続されていません');return{id:skill.id,name:skill.name,compiled_ok:!!compiled?.ok,runtime_contract_connected:!!runtime,runtime_contract_source:runtimeContractSource,logic_order:compiled?.definition?.logicOrder||[],effect_types:(runtime?.effectContracts||[]).map(x=>x.type),apply_logics:(runtime?.applyContracts||[]).map(x=>x.logic),errors:er}});
  for(const row of compile_results)if(row.errors.length)errors.push(`${row.id}: ${row.errors.join(' / ')}`);
  for(const skill of rows){
-  const compiled=compileSkillRuntime(skill),runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?'runtimeContracts':null,caseErrors=[];
-  if(!compiled?.ok||!runtime){cases.push({id:skill.id,name:skill.name,runtime_contract_source:runtimeContractSource,passed:false,errors:['compile/runtimeContracts connection failed']});continue}
+  const prepared=compileStudioMasterSkillForRuntime(skill),runtimeSkill=prepared.skill,compiled=prepared.ok?compileSkillRuntime(runtimeSkill):null,runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?(prepared.source==='formal_compiler'?'formal_compiler->runtimeContracts':'runtimeContracts'):null,caseErrors=[];
+  if(!prepared.ok||!compiled?.ok||!runtime){cases.push({id:skill.id,name:skill.name,runtime_contract_source:runtimeContractSource,passed:false,errors:[...(prepared.errors||[]),'compile/runtimeContracts connection failed']});continue}
   
   try{
    const f=r06FinalPrepareBattle(),side=compiled.definition.target.side,target=side==='enemy'?f.enemies[0]:side==='corpse'?f.allies[1]:f.allies[1];
    if(side==='corpse'){target.hp=0;target.alive=false}
    if((runtime.effectContracts||[]).some(x=>x.type==='REMOVE'))r06FinalSeedCleanseTarget(target,skill.id);
    const before={hp:target.hp,mp:target.mp,status_count:ensureStatusEffects(target).length,shield_total:typeof shieldTotal==='function'?shieldTotal(target):0};
-   const result=executeSkillRuntime(f.actor,target,skill,{origin:'base',suppressDerived:true}),eventTypes=(battle.validationEvents||[]).filter(x=>x?.skill_id===skill.id).map(x=>x.type);
+   const result=executeSkillRuntime(f.actor,target,runtimeSkill,{origin:'base',suppressDerived:true}),eventTypes=(battle.validationEvents||[]).filter(x=>x?.skill_id===skill.id).map(x=>x.type);
    if(!result?.ok)caseErrors.push(`execute failed: ${result?.stage||result?.reason||'unknown'}`);
    for(const contract of runtime.effectContracts||[]){
     const eventType={DAMAGE:'skill_damage_executed',HEAL:'skill_heal_executed',REMOVE:'skill_remove_executed',RESOURCE_CHANGE:'skill_resource_change_executed',REVIVE:'skill_revive_executed',TARGET_CONTROL:'skill_target_control_executed'}[contract.type];
@@ -143,7 +154,7 @@ function runR06MasterStructuredRuntimeFinalRegression(){
  for(const row of cases)if(!row.passed)errors.push(`${row.id}: ${(row.errors||[]).join(' / ')}`);
  if(rows.length!==48)errors.push(`R06最終Master Skill件数が48ではありません: ${rows.length}`);
  const compositeCount=cases.filter(x=>x.composite).length;if(compositeCount!==48)errors.push(`複合Skill件数が48ではありません: ${compositeCount}`);
- const runtimeContractsCount=compile_results.filter(x=>x.runtime_contract_source==='runtimeContracts').length,noContractCount=compile_results.filter(x=>!x.runtime_contract_source).length;
+ const runtimeContractsCount=compile_results.filter(x=>!!x.runtime_contract_source).length,noContractCount=compile_results.filter(x=>!x.runtime_contract_source).length;
  if(runtimeContractsCount!==rows.length)errors.push(`R06正式Runtime契約のruntimeContracts接続が全件ではありません: ${runtimeContractsCount}/${rows.length}`);
  return{schema_version:'1.1.0',build:'GA-B486.121',generated_at:new Date().toISOString(),test:{id:'R06-MASTER-STRUCTURED-RUNTIME-FINAL-001',mode:'master_registered_structured_skill_composite_runtime_final',entrypoint:'game/index.html'},source:{status:'loaded',project_id:source.project_id,storage:'Studio current project localStorage',skill_prefix:R06_FINAL_MASTER_SKILL_PREFIX,master_skill_count:rows.length},compile_results,cases,summary:{master_skill_count:rows.length,compile_passed_count:compile_results.filter(x=>x.compiled_ok&&x.runtime_contract_connected).length,runtime_contracts_count:runtimeContractsCount,no_contract_count:noContractCount,runtime_passed_count:cases.filter(x=>x.passed).length,runtime_case_count:cases.length,composite_case_count:compositeCount,passed:errors.length===0,errors}};
 }

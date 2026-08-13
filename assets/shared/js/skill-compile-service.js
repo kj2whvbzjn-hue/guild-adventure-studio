@@ -1,6 +1,6 @@
 /* GKS Formal Skill Compile Service. */
 (function(root){'use strict';
-const VERSION='FORMAL-SKILL-1';let registryPromise=null;
+const VERSION='FORMAL-SKILL-1';let registryPromise=null,loadedRegistry=null;
 function baseUrl(){
  const scripts=[...(root.document?.scripts||[])];
  const me=scripts.find(s=>String(s.src||'').includes('/assets/shared/js/skill-compile-service.js'));
@@ -8,7 +8,7 @@ function baseUrl(){
  return '../assets/shared/config/skill-registry.json';
 }
 async function loadRegistry({force=false}={}){
- if(force||!registryPromise)registryPromise=fetch(baseUrl(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`Skill Registry load failed: ${r.status}`);return r.json()});
+ if(force||!registryPromise)registryPromise=fetch(baseUrl(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`Skill Registry load failed: ${r.status}`);return r.json()}).then(registry=>(loadedRegistry=registry,registry));
  return registryPromise;
 }
 async function compileSkill(skill,{registry=null}={}){
@@ -16,7 +16,8 @@ async function compileSkill(skill,{registry=null}={}){
  if(!compiler?.compileSkill)throw new Error('GKSSkillCompiler is not loaded');
  return compiler.compileSkill(skill,registry||await loadRegistry());
 }
-const api=Object.freeze({VERSION,loadRegistry,compileSkill});
+function getLoadedRegistry(){return loadedRegistry}
+const api=Object.freeze({VERSION,loadRegistry,getLoadedRegistry,compileSkill});
 root.GKSSkillCompileService=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
