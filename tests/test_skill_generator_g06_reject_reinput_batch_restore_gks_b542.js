@@ -6,7 +6,7 @@ vm.createContext(ctx);vm.runInContext(src,ctx);
 const api=ctx.GKSSkillGenerator;
 assert.ok(api.g06ExportBatchResult&&api.g06ImportBatchResult&&api.g06ValidationReportToReinput,'G06 stage3 API missing');
 
-const result={schema:'GKS_GENERIC_SKILL_AI_BATCH_RESULT',version:'1.0.0',aiGenerationRuleVersion:'G05-AI-GENERATION-V1',budgetRuleVersion:'G04-BUDGET-V1',
+const result={schema:'GKS_SKILL_AI_BATCH_RESULT',version:'1.0.0',aiGenerationRuleVersion:'G05-AI-GENERATION-V1',budgetRuleVersion:'G04-BUDGET-V1',
  entries:[
   {index:0,status:'ACCEPT',request:{skillLevel:10,intent:'ok',effects:[{type:'DAMAGE'}],target:'ENEMY',range:'SINGLE',desiredStrength:'MEDIUM',searchMetadata:{}},skill:{id:'S1'},generation:{},validation:{registry:true,budget:true,compiler:true,issues:[]}},
   {index:1,status:'REJECT',request:{skillLevel:10,intent:'bad',effects:[{type:'NO_SUCH'}],target:'ENEMY',range:'SINGLE',desiredStrength:'MEDIUM',searchMetadata:{}},skill:null,generation:null,validation:{registry:false,budget:false,compiler:false,issues:[{code:'AI_EFFECT_UNKNOWN',path:'effects[0].type',message:'unknown'}]}}
@@ -22,7 +22,7 @@ assert.throws(()=>api.g06ImportBatchResult(badField),e=>e.code==='G06_UNKNOWN_FI
 const report=api.g06ExportValidationReport(result);
 assert.strictEqual(report.entries[1].request.intent,'bad','Validation Report must retain source request for correction');
 const reinput=api.g06ValidationReportToReinput(report);
-assert.strictEqual(reinput.schema,'GKS_GENERIC_SKILL_AI_BATCH_REQUEST');assert.strictEqual(reinput.requests.length,1);assert.strictEqual(reinput.requests[0].intent,'bad');
+assert.strictEqual(reinput.schema,'GKS_SKILL_AI_BATCH_REQUEST');assert.strictEqual(reinput.requests.length,1);assert.strictEqual(reinput.requests[0].intent,'bad');
 const noReject=JSON.parse(JSON.stringify(report));noReject.entries=noReject.entries.filter(x=>x.status==='ACCEPT');noReject.summary={total:1,accepted:1,rejected:0,allAccepted:true};
 assert.throws(()=>api.g06ValidationReportToReinput(noReject),e=>e.code==='G06_REJECT_REINPUT_EMPTY');
 const brokenReport=JSON.parse(JSON.stringify(report));brokenReport.entries[1].request=null;

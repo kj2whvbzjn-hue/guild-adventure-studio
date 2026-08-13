@@ -26,6 +26,6 @@ assert.ok(req('TARGET_CONTROL',{lifetime:'DURATION'}).requiredFields.includes('d
 assert.ok(!req('TARGET_CONTROL',{lifetime:'PERSISTENT'}).requiredFields.includes('uses'));
 assert.strictEqual(req('SPECIAL').enabled,false);
 const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8'),html=fs.readFileSync('studio/index.html','utf8');
-for(const marker of ['loadGenericDefinition','genericEffectRequirements','GKSSkillAuthoringRegistry','getGenericUiDefinition','G01 Registry接続'])assert.ok(sg.includes(marker),`skill-generator G01 marker missing: ${marker}`);
+for(const marker of ['loadSkillDefinition','skillEffectRequirements','GKSSkillAuthoringRegistry','getSkillUiDefinition','G01 Registry接続'])assert.ok(sg.includes(marker),`skill-generator G01 marker missing: ${marker}`);
 assert.ok(html.includes('skill-authoring-registry.js?v=4'),'Studio authoring registry script is not loaded');
 console.log('SKILL_GENERATOR_G01_REGISTRY_GKS_B528_PASS');

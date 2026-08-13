@@ -48,9 +48,9 @@ vm.createContext(ctx);vm.runInContext(src,ctx);
 const api=ctx.GKSSkillGenerator;
 
 (async()=>{
- await api.loadGenericDefinition();await api.loadBudgetRules();
+ await api.loadSkillDefinition();await api.loadBudgetRules();
  const skill={schemaVersion:1,id:'G07-S1',name:'Skill',skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10}],resource:{mpCost:0,cooldown:0,activationPriority:0}};
- const batch={schema:'GKS_GENERIC_SKILL_BATCH',version:'1.0.0',sourceSchema:'GKS_GENERIC_SKILL_AI_BATCH_RESULT',aiGenerationRuleVersion:'A',budgetRuleVersion:budgetRules.budgetRuleVersion,skills:[{index:0,skill,generation:{},validation:{budgetResult:{ok:true,budgetRuleVersion:budgetRules.budgetRuleVersion,cost:10,limit:20},compilerWarnings:[]}}]};
+ const batch={schema:'GKS_SKILL_BATCH',version:'1.0.0',sourceSchema:'GKS_SKILL_AI_BATCH_RESULT',aiGenerationRuleVersion:'A',budgetRuleVersion:budgetRules.budgetRuleVersion,skills:[{index:0,skill,generation:{},validation:{budgetResult:{ok:true,budgetRuleVersion:budgetRules.budgetRuleVersion,cost:10,limit:20},compilerWarnings:[]}}]};
 
  assert.strictEqual(api.g07DryRunBlocker({summary:{stale_source:1}}).code,'G07_STALE_SOURCE');
  assert.strictEqual(api.g07DryRunBlocker({summary:{broken_reference:1}}).code,'G07_BROKEN_REFERENCE');

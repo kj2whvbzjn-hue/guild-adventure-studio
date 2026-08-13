@@ -15,7 +15,7 @@ const apply=author.resolveEffectRequirements(registry,'APPLY',{effectId:'BURN'})
 for(const f of ['effectId','power','duration'])assert.ok(apply.requiredFields.includes(f),`BURN field missing: ${f}`);
 const cover=author.resolveEffectRequirements(registry,'TARGET_CONTROL',{lifetime:'USES'});assert.ok(cover.requiredFields.includes('uses'));
 const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
-for(const marker of ['skgGenericEffects','skgGenericEffectFields','renderGenericDynamic','makeGenericField','generateGenericPreview','authoring_model:\'generic\''])assert.ok(sg.includes(marker),`G02 UI marker missing: ${marker}`);
+for(const marker of ['skgGenericEffects','skgGenericEffectFields','renderSkillDynamic','makeGenericField','generateGenericPreview','authoring_model:\'generic\''])assert.ok(sg.includes(marker),`G02 UI marker missing: ${marker}`);
 assert.ok(sg.includes('旧Runtime互換UI'),'Legacy UI must remain compatibility-only, not deleted');
 assert.ok(!sg.includes('id="skgGenericEffects">${LOGICS.map'),'Generic Effect choices must not come from legacy LOGICS');
 const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('generic-skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=29'));

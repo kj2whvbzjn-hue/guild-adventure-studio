@@ -3,7 +3,7 @@ const vm=require('vm');
 const assert=require('assert');
 const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 
-assert(!/compileGenericDraft,\s*buildGenericDraft,\s*getGenericUiDefinition/.test(src),
+assert(!/compileSkillDraft,\s*buildGenericDraft,\s*getSkillUiDefinition/.test(src),
   'renderPanel-local buildGenericDraft must not be exported from module scope');
 
 const marks=[];
