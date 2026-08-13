@@ -2,37 +2,32 @@ const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
-const generic=require('../assets/shared/js/skill-compiler.js');
+const compiler=require('../assets/shared/js/skill-compiler.js');
 const trigger=require('../assets/shared/js/trigger-engine.js');
 assert.ok(registry.phase==='FORMAL-SKILL-1'||/^R04-(?:D3|E\d+)$/.test(registry.phase)||/^R0[5-9]-/.test(registry.phase)||/^R[1-9][0-9]-/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.ok(/^R04-(?:D3|E\d+)$/.test(trigger.VERSION),`unexpected trigger engine version ${trigger.VERSION}`);
 
-function genericAura(id,power,priority,{side='ALLY',excludeSelf=false,effectId='ATK_UP'}={}){
+function formalAura(id,power,priority,{side='ALLY',excludeSelf=false,effectId='ATK_UP'}={}){
  const skill={schemaVersion:1,id,name:id,trigger:{type:'WHILE_SOURCE_ALIVE',scope:'SELF',priority},conditions:[],target:{side,range:'ALL',...(excludeSelf?{excludeSelf:true}:{})},effects:[{type:'APPLY',effectId,power}],resource:{mpCost:0,cooldown:0}};
- const out=generic.compileSkill(skill,registry);assert.strictEqual(out.ok,true,`${id}: ${JSON.stringify(out.errors)}`);return out.compiledSkill;
+ const out=compiler.compileSkill(skill,registry);assert.strictEqual(out.ok,true,`${id}: ${JSON.stringify(out.errors)}`);return out.compiledSkill;
 }
-const g10p1=genericAura('G10P1',10,1),g30p0=genericAura('G30P0',30,0),g30p9=genericAura('G30P9',30,9),g30p9b=genericAura('G30P9B',30,9);
-const gExclude=genericAura('GEX',15,2,{excludeSelf:true});
-const gEnemy=genericAura('GENEMY',20,4,{side:'ENEMY',effectId:'DEF_DOWN'});
-const legacy={id:'LEGACY30',name:'Legacy30',tags:['AURA','AURA_EFFECT=BUFF','AURA_VALUE=30','AURA_TARGET=ally','AURA_SCOPE=self_and_allies','AURA_STACK=highest','AURA_PRIORITY=5','ATK']};
-
-const signatures=[];
-for(const runtimePath of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
- const a={id:'A',name:'A',side:'味方',alive:true,auraSkillIds:[g10p1.id,g30p0.id]};
- const b={id:'B',name:'B',side:'味方',alive:true,auraSkillIds:[g30p9.id]};
- const c={id:'C',name:'C',side:'味方',alive:true,auraSkillIds:[]};
- const e={id:'E',name:'E',side:'敵',alive:true,auraSkillIds:[]};
- const skills=[g10p1,g30p0,g30p9,g30p9b,gExclude,gEnemy,legacy];
- const ctx={console,battle:{tick:0,units:[a,b,c,e],log:[]},GKSTriggerEngine:trigger,TAG_SKILLS:skills};vm.createContext(ctx);vm.runInContext(fs.readFileSync(runtimePath,'utf8'),ctx);
- let entries=ctx.activeAuraEntries(c,'BUFF','ATK');let winner=ctx.resolveEffectiveAuraEntry(entries);
- assert.strictEqual(ctx.effectiveAuraPower(c,'BUFF','ATK'),30,`${runtimePath}: highest power`);assert.strictEqual(winner.skillId,g30p9.id,`${runtimePath}: equal power must use higher priority`);
- a.auraSkillIds=[legacy.id];b.auraSkillIds=[g30p9.id];entries=ctx.activeAuraEntries(c,'BUFF','ATK');winner=ctx.resolveEffectiveAuraEntry(entries);assert.strictEqual(winner.skillId,g30p9.id,`${runtimePath}: generic/legacy priority tie-break`);
- a.auraSkillIds=[g30p9b.id];b.auraSkillIds=[g30p9.id];entries=ctx.activeAuraEntries(c,'BUFF','ATK');winner=ctx.resolveEffectiveAuraEntry(entries);assert.strictEqual(winner.sourceId,'A',`${runtimePath}: same power/priority must preserve source order`);
- a.auraSkillIds=[gExclude.id];b.auraSkillIds=[];assert.strictEqual(ctx.effectiveAuraPower(a,'BUFF','ATK'),0,`${runtimePath}: exclude self`);assert.strictEqual(ctx.effectiveAuraPower(c,'BUFF','ATK'),15,`${runtimePath}: exclude self ally`);
- a.auraSkillIds=[gEnemy.id];assert.strictEqual(ctx.effectiveAuraPower(e,'DEBUFF','DEF'),20,`${runtimePath}: enemy aura`);assert.strictEqual(ctx.effectiveAuraPower(c,'DEBUFF','DEF'),0,`${runtimePath}: enemy aura side`);
- e.alive=false;assert.strictEqual(ctx.activeAuraEntries(e,'DEBUFF','DEF').length,0,`${runtimePath}: dead target inactive`);e.alive=true;a.alive=false;assert.strictEqual(ctx.effectiveAuraPower(e,'DEBUFF','DEF'),0,`${runtimePath}: dead source inactive`);
- a.alive=true;a.auraSkillIds=[g30p9.id];ctx.GKSTriggerEngine=null;assert.strictEqual(ctx.activeAuraEntries(c,'BUFF','ATK').length,0,`${runtimePath}: generic requires trigger engine`);a.auraSkillIds=[legacy.id];assert.strictEqual(ctx.effectiveAuraPower(c,'BUFF','ATK'),30,`${runtimePath}: legacy fallback`);
- signatures.push(JSON.stringify({winnerRule:['power_desc','priority_desc','source_order'],genericRequiresEngine:true,legacyFallback:true,excludeSelf:true,enemyTarget:true}));
-}
-assert.strictEqual(signatures[0],signatures[1],'Game/game-tag-test parity');
-console.log('GENERIC_AURA_REGRESSION_R04_D3_PASS');
+const a10p1=formalAura('A10P1',10,1),a30p0=formalAura('A30P0',30,0),a30p9=formalAura('A30P9',30,9),a30p9b=formalAura('A30P9B',30,9);
+const aExclude=formalAura('AEX',15,2,{excludeSelf:true});
+const aEnemy=formalAura('AENEMY',20,4,{side:'ENEMY',effectId:'DEF_DOWN'});
+const skills=[a10p1,a30p0,a30p9,a30p9b,aExclude,aEnemy];
+const a={id:'A',name:'A',side:'味方',alive:true,auraSkillIds:[a10p1.id,a30p0.id]};
+const b={id:'B',name:'B',side:'味方',alive:true,auraSkillIds:[a30p9.id]};
+const c={id:'C',name:'C',side:'味方',alive:true,auraSkillIds:[]};
+const e={id:'E',name:'E',side:'敵',alive:true,auraSkillIds:[]};
+const ctx={console,battle:{tick:0,units:[a,b,c,e],log:[]},GKSTriggerEngine:trigger,SKILLS:skills};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+for(const skill of skills){const compiled=ctx.compileSkillForRuntime(skill);assert.strictEqual(compiled.ok,true,`${skill.id}: ${JSON.stringify(compiled.errors)}`);assert.ok(compiled.definition.logicOrder.includes('AURA'));}
+let entries=ctx.activeAuraEntries(c,'BUFF','ATK');let winner=ctx.resolveEffectiveAuraEntry(entries);
+assert.strictEqual(ctx.effectiveAuraPower(c,'BUFF','ATK'),30,'highest power');assert.strictEqual(winner.skillId,a30p9.id,'equal power must use higher priority');
+a.auraSkillIds=[a30p9b.id];b.auraSkillIds=[a30p9.id];entries=ctx.activeAuraEntries(c,'BUFF','ATK');winner=ctx.resolveEffectiveAuraEntry(entries);assert.strictEqual(winner.sourceId,'A','same power/priority must preserve source order');
+a.auraSkillIds=[aExclude.id];b.auraSkillIds=[];assert.strictEqual(ctx.effectiveAuraPower(a,'BUFF','ATK'),0,'exclude self');assert.strictEqual(ctx.effectiveAuraPower(c,'BUFF','ATK'),15,'exclude self ally');
+a.auraSkillIds=[aEnemy.id];assert.strictEqual(ctx.effectiveAuraPower(e,'DEBUFF','DEF'),20,'enemy aura');assert.strictEqual(ctx.effectiveAuraPower(c,'DEBUFF','DEF'),0,'enemy aura side');
+e.alive=false;assert.strictEqual(ctx.activeAuraEntries(e,'DEBUFF','DEF').length,0,'dead target inactive');e.alive=true;a.alive=false;assert.strictEqual(ctx.effectiveAuraPower(e,'DEBUFF','DEF'),0,'dead source inactive');
+a.alive=true;a.auraSkillIds=[a30p9.id];ctx.GKSTriggerEngine=null;assert.strictEqual(ctx.activeAuraEntries(c,'BUFF','ATK').length,0,'Formal aura requires trigger engine dispatch');
+assert.strictEqual(ctx.compileSkillForRuntime({id:'LEGACY-AURA',name:'Legacy Aura',tags:['AURA']}).ok,false,'Legacy tag-only aura must be rejected');
+console.log('FORMAL_AURA_REGRESSION_R04_D3_PASS');
