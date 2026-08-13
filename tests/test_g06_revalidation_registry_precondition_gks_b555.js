@@ -1,11 +1,22 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.join(__dirname,'..');
-const src=fs.readFileSync(path.join(root,'studio/skill/skill-generator.js'),'utf8');
-assert(src.includes("if(!skillRegistry)await loadSkillDefinition();"),
-  'G06 revalidation must load Skill Registry before unknown-field validation');
-assert(src.includes("G06_SKILL_REGISTRY_REQUIRED"),
-  'G06 registry precondition error code missing');
-assert(src.includes("effectTypeCount:Object.keys(skillRegistry?.authoring?.effect_types||{}).length"),
-  'G06 revalidation report registry diagnostics missing');
-console.log('PASS test_g06_revalidation_registry_precondition_gks_b555');
+const studio=fs.readFileSync(path.join(root,'studio/skill/skill-generator.js'),'utf8');
+for(const token of [
+  'g06-roundtrip',
+  'G06 Batch Result再Import',
+  'Validation Report → REJECT再入力',
+  'G06 Skill JSON再Import検証',
+  '旧一括JSON互換',
+  'g06RevalidateSkillBatch',
+  'g06ValidationReportToReinput',
+  'g06ImportBatchResult',
+  'g06ExportBatchResult',
+  'G06_REJECT_Reinput.json',
+  'G06_Validation_Report.json',
+  'G06_Batch_Result.json'
+]) assert(!studio.includes(token),`legacy G06 token remains: ${token}`);
+assert(studio.includes('Formal Skill一括生成'));
+assert(studio.includes('buildFormalSkillBatch'));
+assert(studio.includes('G07登録Dry Run'));
+console.log('PASS formal Studio G06 round-trip legacy removed');

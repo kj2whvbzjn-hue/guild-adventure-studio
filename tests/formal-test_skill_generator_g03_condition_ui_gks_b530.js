@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const build=require('../package-build.json');
 const registry=require('../assets/shared/config/skill-registry.json');
-assert.strictEqual(build.game_build,'GA-B486.126');
+assert.strictEqual(build.game_build,'GA-B486.127');
 assert.strictEqual(build.studio_build,'GKS-B555');
 assert.ok(['G03','G04','G05'].includes(registry.authoring.phase));
 assert.deepStrictEqual(registry.authoring.condition.required_fields,['scope','property','operator','value']);
@@ -22,5 +22,5 @@ const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 for(const marker of ['skgGenericConditionList','skgGenericConditionAdd','addGenericConditionRow','collectGenericConditions','validateGenericConditions','scope + property + operator + value'])assert.ok(sg.includes(marker),`G03 marker missing: ${marker}`);
 assert.ok(sg.includes('conditions:collectGenericConditions()'),'Generic draft must include Registry-driven conditions');
 assert.ok(sg.includes('旧Runtime互換Condition UI'),'Legacy Condition UI must remain compatibility-only');
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=31'));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=32'));
 console.log('SKILL_GENERATOR_G03_CONDITION_UI_GKS_B530_PASS');

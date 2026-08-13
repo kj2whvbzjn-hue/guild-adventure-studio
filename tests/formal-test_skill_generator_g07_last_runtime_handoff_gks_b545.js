@@ -1,10 +1,10 @@
 const fs=require('fs'),assert=require('assert');
 const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
-assert.ok(src.includes('lastG06SkillBatch=clone(payload)'),'G06 import must retain Generic Batch');
-assert.ok(src.includes('if(report.summary.allAccepted)lastG06SkillBatch=clone(payload)'),'G06 PASS must retain validated batch');
-assert.ok(src.includes("let payload=lastG06SkillBatch?clone(lastG06SkillBatch):null"),'G07 button must prefer retained G06 batch');
-assert.ok(src.includes("const raw=q('skgG06SkillJson')?.value?.trim()"),'G07 button must fallback to G06 textarea');
-assert.ok(src.includes("if(!payload)payload=g06ExportSkills()"),'G07 button must preserve generated-batch fallback');
+assert.ok(src.includes('lastFormalSkillBatch=buildFormalSkillBatch(aiBatchPreview)'),'AI generation must retain Formal Batch directly');
+assert.ok(src.includes("let payload=lastFormalSkillBatch?clone(lastFormalSkillBatch):buildFormalSkillBatch()"),'G07 button must use direct Formal Batch handoff');
+assert.ok(!src.includes('lastG06SkillBatch'),'legacy G06 retained batch must be removed');
+assert.ok(!src.includes("skgG06SkillJson"),'legacy G06 textarea fallback must be removed');
+assert.ok(!src.includes('g06RevalidateSkillBatch'),'legacy G06 revalidation must be removed');
 assert.ok(src.includes("直近のAI一括生成結果を正式GKS_SKILL_BATCHとしてG07登録欄へセットしました。"));
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=31'));
-console.log('PASS GKS-B550 G06->G07 Generic Batch handoff hotfix');
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=32'));
+console.log('PASS GKS-B555 AI->G07 Formal Batch direct handoff');
