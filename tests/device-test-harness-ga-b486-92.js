@@ -4,6 +4,8 @@ const tagShared=fs.readFileSync('game-tag-test/assets/js/device-tag-test-harness
 const gameShared=fs.readFileSync('assets/shared/js/device-game-test-harness.js','utf8');
 const game=fs.readFileSync('game/index.html','utf8');
 const tag=fs.readFileSync('game-tag-test/index.html','utf8');
+const legacyHarness='assets/shared/js/device-test-harness.js';
+assert(!fs.existsSync(legacyHarness),'retired shared legacy-capable harness must be physically removed');
 for(const shared of [tagShared,gameShared]){
  assert(shared.includes("kind:'real_device_acceptance'"),'report kind missing');
  assert(shared.includes('navigator.serviceWorker.getRegistration'),'service worker probe missing');

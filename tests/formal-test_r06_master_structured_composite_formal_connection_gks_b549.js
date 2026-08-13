@@ -16,6 +16,6 @@ assert.strictEqual(report.summary.composite_case_count,48);
 assert.strictEqual(report.summary.passed,true,JSON.stringify(report.summary.errors));
 assert.ok(report.compile_results.every(x=>x.input_source==='master.runtimeContracts'),'formal Master runtimeContracts must be used directly');
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\''])assert.ok(src.includes(marker),`missing ${marker}`);
-const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486132b555'));
+const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486133b555'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
 console.log('PASS GKS-B550 R06 Master structured composite runtime formal-regression connection');
