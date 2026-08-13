@@ -1,27 +1,59 @@
+'use strict';
 const fs=require('fs');
 const vm=require('vm');
-const path=require('path');
-const html=fs.readFileSync(path.resolve(__dirname,'../game-tag-test/index.html'),'utf8');
-const start=html.indexOf("const TAG_SKILL_TEST_BUILD=");
-const end=html.indexOf("const GAUGE_MAX=100;",start);
-if(start<0||end<0)throw new Error('tag runtime not found');
-const src=html.slice(start,end);
-const context={console,Set,Number,Math,JSON,String,Array,escapeHtml:s=>String(s),$:()=>null,battle:{tick:0,log:[],units:[]}};
-vm.createContext(context);vm.runInContext(src,context);
-function assert(cond,msg){if(!cond)throw new Error(msg)}
-let r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-ATTACK'));
-assert(r.ok,'valid attack should compile');
-assert(r.definition.logicOrder.join(',')==='ATTACK','attack logic order');
-assert(r.definition.parameters.damage===100,'damage 100');
-r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-HEAVY'));
-assert(r.ok&&r.definition.parameters.damage===150,'heavy attack');
-r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-INVALID'));
-assert(!r.ok&&r.errors.some(x=>x.includes('DAMAGE')),'invalid missing damage');
-r=context.compileTaggedSkill(context.findTagSkill('SKL-TEST-POISON'));
-assert(r.ok,'poison definition should compile');
-assert(r.definition.logicOrder.join(',')==='ATTACK,DOT','poison logic order');
-assert(r.warnings.length===0,'dot connected');
+const assert=require('assert');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
+
+const baseSkill=(id,effects)=>({
+  schemaVersion:1,
+  id,
+  name:id,
+  skillLevel:5,
+  trigger:{type:'ON_USE',scope:'SELF'},
+  conditions:[],
+  target:{side:'ENEMY',range:'SINGLE'},
+  effects,
+  resource:{mpCost:0,cooldown:0,activationPriority:0}
+});
+
+const context={console,battle:{tick:0,log:[],units:[]}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),context);
+
+const compileFormal=(skill)=>{
+  const formal=compiler.compileSkill(skill,registry);
+  const runtime=formal.ok?context.compileSkillForRuntime(formal.compiledSkill):null;
+  return {formal,runtime};
+};
+
+let r=compileFormal(baseSkill('SKL-9101',[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}]));
+assert.strictEqual(r.formal.ok,true,JSON.stringify(r.formal.errors));
+assert.strictEqual(r.runtime.ok,true,JSON.stringify(r.runtime.errors));
+assert.strictEqual(r.runtime.definition.logicOrder.join(','),'ATTACK');
+assert.strictEqual(r.runtime.definition.parameters.damage,100);
+
+r=compileFormal(baseSkill('SKL-9102',[{type:'DAMAGE',power:150,damageType:'PHYSICAL'}]));
+assert.strictEqual(r.formal.ok,true,JSON.stringify(r.formal.errors));
+assert.strictEqual(r.runtime.definition.parameters.damage,150);
+
+r=compileFormal(baseSkill('SKL-9103',[{type:'DAMAGE',damageType:'PHYSICAL'}]));
+assert.strictEqual(r.formal.ok,false,'missing DAMAGE power must be rejected at the Formal registration gate');
+assert(r.formal.errors.some(x=>x.code==='DAMAGE_POWER_REQUIRED'),'DAMAGE_POWER_REQUIRED must be reported');
+
+r=compileFormal(baseSkill('SKL-9104',[
+  {type:'DAMAGE',power:100,damageType:'PHYSICAL'},
+  {type:'APPLY',effectId:'POISON',power:3,duration:20,interval:100,stackGain:1}
+]));
+assert.strictEqual(r.formal.ok,true,JSON.stringify(r.formal.errors));
+assert.strictEqual(r.runtime.ok,true,JSON.stringify(r.runtime.errors));
+assert.strictEqual(r.runtime.definition.logicOrder.join(','),'ATTACK,DOT');
+assert.strictEqual(r.formal.warnings.length,0,'Formal ATTACK + DOT must compile without warnings');
+
 const actor={id:'A',alive:true,side:'味方',attack:48};
-assert(context.calculateTaggedAttackDamage(actor,context.compileTaggedSkill(context.findTagSkill('SKL-TEST-ATTACK')).definition)===48,'100% damage');
-assert(context.calculateTaggedAttackDamage(actor,context.compileTaggedSkill(context.findTagSkill('SKL-TEST-HEAVY')).definition)===72,'150% damage');
-console.log('PASS tag skill Sprint 1: 7 assertions');
+const attack=compileFormal(baseSkill('SKL-9105',[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}])).runtime;
+const heavy=compileFormal(baseSkill('SKL-9106',[{type:'DAMAGE',power:150,damageType:'PHYSICAL'}])).runtime;
+assert.strictEqual(context.calculateSkillDamage(actor,context.resolveRuntimeDamageContract(attack).contract),48,'100% damage');
+assert.strictEqual(context.calculateSkillDamage(actor,context.resolveRuntimeDamageContract(heavy).contract),72,'150% damage');
+
+console.log('PASS Formal skill Sprint 1: isolated Legacy dependency removed');
