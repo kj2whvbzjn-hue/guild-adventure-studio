@@ -438,10 +438,10 @@ function resolveEffectiveAuraEntry(entries){
 }
 function effectiveAuraPower(target,kind,stat){const winner=resolveEffectiveAuraEntry(activeAuraEntries(target,kind,stat));return winner?Math.max(0,Number(winner.power)||0):0}
 function resolveModifierStackLifecyclePolicy(policy){
- if(!policy)return{ok:true,legacy:true,stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};
+ if(!policy)return{ok:true,defaulted:true,stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};
  const expected={stackRule:'STACK',refreshRule:'KEEP',snapshotPolicy:'SNAPSHOT',effectiveRule:'HIGHEST',consumeRule:'NONE'};
- for(const [field,value] of Object.entries(expected))if(policy[field]!==value)return{ok:false,legacy:false,field,value:policy[field],expected:value};
- return{ok:true,legacy:false,...expected};
+ for(const [field,value] of Object.entries(expected))if(policy[field]!==value)return{ok:false,defaulted:false,field,value:policy[field],expected:value};
+ return{ok:true,defaulted:false,...expected};
 }
 function resolveModifierEffectiveValue(stacks,policy=null){
  const checked=resolveModifierStackLifecyclePolicy(policy);if(!checked.ok)return{ok:false,reason:'MODIFIER_LIFECYCLE_POLICY_MISMATCH',...checked,power:0};

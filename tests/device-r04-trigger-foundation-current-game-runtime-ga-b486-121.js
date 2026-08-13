@@ -18,7 +18,7 @@ for(const src of [tagRuntime,gameRuntime]){
   assert.ok(src.includes('TRIGGER_DISPATCH_MODE_UNSUPPORTED'),'dispatch rejection missing');
   assert.ok(src.includes('TRIGGER_REENTRY_BLOCKED'),'re-entry rejection missing');
   assert.ok(src.includes('TRIGGER_ACTION_LIMIT_REACHED'),'action limit rejection missing');
-  assert.ok(src.includes("uses_studio_export:false,uses_legacy_demo_export:false"),'device provenance must exclude old exports');
+  assert.ok(src.includes("uses_studio_export:false,uses_retired_demo_export:false"),'device provenance must exclude old exports');
   assert.ok(src.includes('tagTestRunR04TriggerFoundationJson'),'R04 Trigger button binding missing');
 }
 

@@ -32,7 +32,7 @@ function resolveConditionRequirements(registry,property){
  const valueType=String(def.value_type||'number'),scope=String(def.scope||a.condition?.scope_default||'SELF').toUpperCase();
  const control=clone(a.condition?.value_type_controls?.[valueType]||{control:'number',step:'any'});
  const operators=Array.isArray(control?.operator_options)?[...control.operator_options]:[...(a.condition?.operators||[])];
- return{ok:def.enabled!==false,property:key,label:def.label||key,enabled:def.enabled!==false,scope,scopeLocked:true,operators,valueType,valueControl:control,legacyTag:def.legacy_tag||null,enginePredicate:def.engine_predicate||null,errors:def.enabled===false?[`無効Condition property: ${key}`]:[]};
+ return{ok:def.enabled!==false,property:key,label:def.label||key,enabled:def.enabled!==false,scope,scopeLocked:true,operators,valueType,valueControl:control,enginePredicate:def.engine_predicate||null,errors:def.enabled===false?[`無効Condition property: ${key}`]:[]};
 }
 function validateConditionDraft(registry,condition){
  const c=condition&&typeof condition==='object'?condition:{},req=resolveConditionRequirements(registry,c.property),errors=[];

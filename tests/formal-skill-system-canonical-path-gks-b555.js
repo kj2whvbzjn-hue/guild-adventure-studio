@@ -22,4 +22,11 @@ assert(out.compiledSkill?.runtimeContracts);
 assert(!('tags' in out.compiledSkill));
 assert(!('genericRuntime' in out.compiledSkill));
 assert(!('legacySkill' in out));
+
+const tagRuntime=fs.readFileSync(path.join(__dirname,'../game/assets/js/tag-skill-runtime.js'),'utf8');
+const authoringRegistry=fs.readFileSync(path.join(__dirname,'../assets/shared/js/skill-authoring-registry.js'),'utf8');
+assert(!tagRuntime.includes('legacy:true'));
+assert(!tagRuntime.includes('legacy:false'));
+assert(!authoringRegistry.includes('legacyTag'));
+assert(!authoringRegistry.includes('legacy_tag'));
 console.log('FORMAL_SKILL_SYSTEM_CANONICAL_PATH_PASS');
