@@ -55,7 +55,7 @@ function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&
 function reserveAction(actor){
  if(!actor.alive||actor.reservedAction||actor.gauge<GAUGE_MAX||battle.result||battle.pendingResult)return false;
  const target=chooseTarget(actor);if(!target)return false;
- const skill=findTagSkill(actor.defaultSkillId)||TAG_SKILLS[0];actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`Gauge ${actor.gauge} が ${GAUGE_MAX} 以上`,reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
+ const skill=findSkill(actor.defaultSkillId)||SKILLS[0];actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`Gauge ${actor.gauge} が ${GAUGE_MAX} 以上`,reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
  actor.lastReservation={...actor.reservedAction};
  battle.log.push(`[Tick ${battle.tick}] ${actor.name}は「${skill.name}」を予約 → 対象 ${target.name}（実行予定 Tick ${actor.reservedAction.executeAt}）`);
  return true;
@@ -72,8 +72,8 @@ function evaluateActionExecution(actor){
  const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action'}):{ok:true};
  if(!eligibility.ok)return{ok:false,reason:'行動不能',code:eligibility.reason||'ACTION_DISABLED',eligibility};
  const target=chooseTarget(actor);if(!target)return{ok:false,reason:'実行時点で有効対象がありません',code:'NO_VALID_TARGET'};
- const skill=findTagSkill(actor.defaultSkillId)||TAG_SKILLS[0];if(!skill)return{ok:false,reason:'実行可能スキルがありません',code:'NO_VALID_SKILL'};
- const compiled=compileTaggedSkill(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
+ const skill=findSkill(actor.defaultSkillId)||SKILLS[0];if(!skill)return{ok:false,reason:'実行可能スキルがありません',code:'NO_VALID_SKILL'};
+ const compiled=compileSkillForRuntime(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
  return{ok:true,target,skill,compiled};
 }
 function revalidateReservation(actor){
@@ -124,7 +124,7 @@ function executeReservation(actor){
  battle.log.push(`[Tick ${battle.tick}] ${actor.name}は実行時判定で「${skill.name}」を確定 → ${target.name}`);
  typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null});
  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
- return executeTaggedSkill(actor,target,skill,{skipExecutionEligibility:true}).ok;
+ return executeSkillRuntime(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){

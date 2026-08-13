@@ -55,7 +55,7 @@ function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&
 function reserveAction(actor){
  if(!actor.alive||actor.reservedAction||actor.gauge<GAUGE_MAX||battle.result||battle.pendingResult)return false;
  const target=chooseTarget(actor);if(!target)return false;
- const skill=findTagSkill(actor.defaultSkillId)||TAG_SKILLS[0];actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`Gauge ${actor.gauge} が ${GAUGE_MAX} 以上`,reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
+ const skill=findSkill(actor.defaultSkillId)||SKILLS[0];actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`Gauge ${actor.gauge} が ${GAUGE_MAX} 以上`,reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
  actor.lastReservation={...actor.reservedAction};
  battle.log.push(`[Tick ${battle.tick}] ${actor.name}は「${skill.name}」を予約 → 対象 ${target.name}（実行予定 Tick ${actor.reservedAction.executeAt}）`);
  return true;
@@ -70,8 +70,8 @@ function evaluateActionExecution(actor){
  if(!actor?.alive)return{ok:false,reason:'行動者が戦闘不能',code:'ACTOR_DEAD'};
  if(actor.gauge<GAUGE_MAX)return{ok:false,reason:`Gauge不足 (${actor.gauge}/${GAUGE_MAX})`,code:'GAUGE_SHORTAGE'};
  const target=chooseTarget(actor);if(!target)return{ok:false,reason:'実行時点で有効対象がありません',code:'NO_VALID_TARGET'};
- const skill=findTagSkill(actor.defaultSkillId)||TAG_SKILLS[0];if(!skill)return{ok:false,reason:'実行可能スキルがありません',code:'NO_VALID_SKILL'};
- const compiled=compileTaggedSkill(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
+ const skill=findSkill(actor.defaultSkillId)||SKILLS[0];if(!skill)return{ok:false,reason:'実行可能スキルがありません',code:'NO_VALID_SKILL'};
+ const compiled=compileSkillForRuntime(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
  const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action',skillId:compiled.definition.id,cooldown:compiled.definition.parameters.cooldown,compiled}):{ok:true};
  if(!eligibility.ok){const reason=eligibility.reason==='COOLDOWN'?`クールダウン中（残り${eligibility.cooldownRemaining} Tick）`:eligibility.reason==='COST_SHORTAGE'?`MP不足（必要${eligibility.costCheck?.failures?.[0]?.required??'?'} / 現在${eligibility.costCheck?.failures?.[0]?.available??'?'}）`:'行動不能';return{ok:false,reason,code:eligibility.reason||'ACTION_DISABLED',eligibility,skill,compiled}};
  return{ok:true,target,skill,compiled};
@@ -127,7 +127,7 @@ function executeReservation(actor){
  battle.log.push(`[Tick ${battle.tick}] ${actor.name}は実行時判定で「${skill.name}」を確定 → ${target.name}`);
  typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null});
  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
- return executeTaggedSkill(actor,target,skill,{skipExecutionEligibility:true}).ok;
+ return executeSkillRuntime(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }
 function activationPriorityFeatureEnabled(){return true}
 function p0113Hash32(text){let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0}
@@ -144,7 +144,7 @@ function assignBattleTieRolls(seed,units=battle.units,hashFn=p0113Hash32){
 }
 function activationPriorityOf(unit){
  if(!activationPriorityFeatureEnabled()||!unit?.alive)return 0;
- const skill=findTagSkill(unit.defaultSkillId)||TAG_SKILLS[0],compiled=skill?compileTaggedSkill(skill):null;
+ const skill=findSkill(unit.defaultSkillId)||SKILLS[0],compiled=skill?compileSkillForRuntime(skill):null;
  return compiled?.ok?Number(compiled.definition.parameters.activationPriority)||0:0;
 }
 function fixDueActionOrder(due){
