@@ -113,10 +113,10 @@ function runR06MasterStructuredRuntimeFinalRegression(){
  const source=loadCurrentStudioMasterForRuntimeRegression(),cases=[],errors=[];
  if(!source.ok)return{schema_version:'1.0.0',build:'GA-B486.121',generated_at:new Date().toISOString(),test:{id:'R06-MASTER-STRUCTURED-RUNTIME-FINAL-001',mode:'master_registered_structured_skill_composite_runtime_final'},source,compile_results:[],cases:[],summary:{master_skill_count:0,compile_passed_count:0,runtime_passed_count:0,runtime_case_count:0,composite_case_count:0,passed:false,errors:[source.error||'Studio Masterを取得できません']}};
  const rows=source.skills.filter(x=>String(x?.id||'').startsWith(R06_FINAL_MASTER_SKILL_PREFIX)).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
- const compile_results=rows.map(skill=>{const compiled=compileTaggedSkill(skill),runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?'runtimeContracts':null,er=[];if(!compiled?.ok)er.push(...(compiled?.errors||['compile failed']));if(!runtime)er.push('runtimeContractsがRuntime compilerへ接続されていません');return{id:skill.id,name:skill.name,compiled_ok:!!compiled?.ok,runtime_contract_connected:!!runtime,runtime_contract_source:runtimeContractSource,logic_order:compiled?.definition?.logicOrder||[],effect_types:(runtime?.effectContracts||[]).map(x=>x.type),apply_logics:(runtime?.applyContracts||[]).map(x=>x.logic),errors:er}});
+ const compile_results=rows.map(skill=>{const compiled=compileSkillRuntime(skill),runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?'runtimeContracts':null,er=[];if(!compiled?.ok)er.push(...(compiled?.errors||['compile failed']));if(!runtime)er.push('runtimeContractsがRuntime compilerへ接続されていません');return{id:skill.id,name:skill.name,compiled_ok:!!compiled?.ok,runtime_contract_connected:!!runtime,runtime_contract_source:runtimeContractSource,logic_order:compiled?.definition?.logicOrder||[],effect_types:(runtime?.effectContracts||[]).map(x=>x.type),apply_logics:(runtime?.applyContracts||[]).map(x=>x.logic),errors:er}});
  for(const row of compile_results)if(row.errors.length)errors.push(`${row.id}: ${row.errors.join(' / ')}`);
  for(const skill of rows){
-  const compiled=compileTaggedSkill(skill),runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?'runtimeContracts':null,caseErrors=[];
+  const compiled=compileSkillRuntime(skill),runtime=compiled?.definition?.runtimeContracts||null,runtimeContractSource=runtime?'runtimeContracts':null,caseErrors=[];
   if(!compiled?.ok||!runtime){cases.push({id:skill.id,name:skill.name,runtime_contract_source:runtimeContractSource,passed:false,errors:['compile/runtimeContracts connection failed']});continue}
   
   try{
@@ -124,7 +124,7 @@ function runR06MasterStructuredRuntimeFinalRegression(){
    if(side==='corpse'){target.hp=0;target.alive=false}
    if((runtime.effectContracts||[]).some(x=>x.type==='REMOVE'))r06FinalSeedCleanseTarget(target,skill.id);
    const before={hp:target.hp,mp:target.mp,status_count:ensureStatusEffects(target).length,shield_total:typeof shieldTotal==='function'?shieldTotal(target):0};
-   const result=executeTaggedSkill(f.actor,target,skill,{origin:'base',suppressDerived:true}),eventTypes=(battle.validationEvents||[]).filter(x=>x?.skill_id===skill.id).map(x=>x.type);
+   const result=executeSkillRuntime(f.actor,target,skill,{origin:'base',suppressDerived:true}),eventTypes=(battle.validationEvents||[]).filter(x=>x?.skill_id===skill.id).map(x=>x.type);
    if(!result?.ok)caseErrors.push(`execute failed: ${result?.stage||result?.reason||'unknown'}`);
    for(const contract of runtime.effectContracts||[]){
     const eventType={DAMAGE:'generic_damage_executed',HEAL:'generic_heal_executed',REMOVE:'generic_remove_executed',RESOURCE_CHANGE:'generic_resource_change_executed',REVIVE:'generic_revive_executed',TARGET_CONTROL:'generic_target_control_executed'}[contract.type];

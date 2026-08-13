@@ -83,6 +83,132 @@ function normalizeRuntimeContracts(skill,g,n,errors){
  if(g.has('AURA')&&!auraEffectContract&&triggerContract?.type==='WHILE_SOURCE_ALIVE')errors.push('正式AURAにはauraEffectContractが必要です');
  return{schemaVersion:1,registryPhase:String(raw.registryPhase||''),triggerContract,conditionContracts:normalizedConditions,effectContracts,applyContracts:out,auraEffectContract};
 }
+
+function compileSkillRuntime(skill){
+ const errors=[],warnings=[],runtime=skill?.runtimeContracts;
+ if(!runtime||typeof runtime!=='object'||Array.isArray(runtime)){
+  return{ok:false,errors:['runtimeContractsが必要です'],warnings,definition:null,parsed:null};
+ }
+ if(runtime.schemaVersion!==1)errors.push(`runtimeContracts.schemaVersion=${runtime.schemaVersion}は未対応です`);
+ if(!runtime.triggerContract||typeof runtime.triggerContract!=='object')errors.push('runtimeContracts.triggerContractが必要です');
+ if(!Array.isArray(runtime.conditionContracts))errors.push('runtimeContracts.conditionContractsは配列が必要です');
+ if(!Array.isArray(runtime.effectContracts))errors.push('runtimeContracts.effectContractsは配列が必要です');
+ if(!Array.isArray(runtime.applyContracts))errors.push('runtimeContracts.applyContractsは配列が必要です');
+
+ const targetSource=runtime.targetContract||skill.target||{};
+ const sideMap={SELF:'self',ALLY:'ally',ENEMY:'enemy',CORPSE:'corpse',POINT:'point'};
+ const rangeMap={SINGLE:'single',ALL:'all',FRONT:'front',BACK:'back',RANDOM:'random',PIERCE:'pierce'};
+ const targetSide=sideMap[String(targetSource.side||'').toUpperCase()]||null;
+ const range=rangeMap[String(targetSource.range||'').toUpperCase()]||null;
+ if(!targetSide)errors.push(`runtimeContracts target.sideが無効です: ${targetSource.side||'(なし)'}`);
+ if(!range)errors.push(`runtimeContracts target.rangeが無効です: ${targetSource.range||'(なし)'}`);
+
+ const logicOrder=[],addLogic=logic=>{if(logic&&!logicOrder.includes(logic))logicOrder.push(logic)};
+ const parameters={
+  damageType:null,
+  mpCost:Number(runtime.resourceContract?.mpCost??skill.resource?.mpCost??0),
+  activationPriority:Number(runtime.resourceContract?.activationPriority??skill.resource?.activationPriority??0),
+  cooldown:Number(runtime.resourceContract?.cooldown??skill.resource?.cooldown??0),
+  damage:null,heal:null,shield:null,shieldDuration:null,dotPower:null,dotDuration:null,dotInterval:null,stackGain:null,
+  modifierStat:null,modifierPower:null,modifierDuration:null,followUpTrigger:null,followUpCondition:null,
+  statusId:null,statusDuration:null,statusStackPolicy:'refresh',statusPayload:{},
+  cleanseCount:null,cleanseAll:false,cleanseCategory:'status',cleanseOrder:'oldest',
+  reviveHp:null,reviveHpRate:null,
+  auraEffect:null,auraValue:null,auraTarget:null,auraScope:null,auraStack:'highest',auraPriority:0,
+  coverTarget:null,coverTrigger:null,coverPriority:null,coverRemovable:null,coverLifetime:null,coverUses:null,coverDuration:null,coverRuntimeApplied:true,
+  counterTrigger:null,counterTarget:null,counterLimit:null,counterPriority:null,counterRequireAlive:null,counterAllowZeroDamage:null,counterUsesAttack:false,
+  conditions:[],conditionMode:'all'
+ };
+
+ for(const [index,c] of (runtime.effectContracts||[]).entries()){
+  const type=String(c?.type||'').toUpperCase();
+  if(type==='DAMAGE'){
+   if(!Number.isFinite(c.power)||c.power<0)errors.push(`runtimeContracts.effectContracts[${index}].powerが無効です`);
+   addLogic('ATTACK');parameters.damage=c.power;parameters.damageType=c.damageType?String(c.damageType).toLowerCase():null;
+  }else if(type==='HEAL'){
+   if(!Number.isFinite(c.power)||c.power<0)errors.push(`runtimeContracts.effectContracts[${index}].powerが無効です`);
+   addLogic('HEAL');parameters.heal=c.power;
+  }else if(type==='REMOVE'){
+   addLogic('CLEANSE');parameters.cleanseCount=c.count??null;parameters.cleanseAll=c.all===true;
+   parameters.cleanseCategory=String(c.category||'STATUS').toLowerCase();parameters.cleanseOrder=String(c.order||'oldest');
+  }else if(type==='RESOURCE_CHANGE'){
+   addLogic('RESOURCE_CHANGE');
+  }else if(type==='REVIVE'){
+   addLogic('REVIVE');parameters.reviveHp=c.hp??null;parameters.reviveHpRate=c.hpRate??null;
+  }else if(type==='TARGET_CONTROL'){
+   const mode=String(c.mode||'').toUpperCase();
+   if(mode!=='COVER')errors.push(`runtimeContracts.effectContracts[${index}].modeは未対応です: ${mode}`);
+   else{
+    addLogic('COVER');
+    parameters.coverTarget=String(targetSource.range||'').toUpperCase()==='ALL'?'all_allies':'single_ally';
+    parameters.coverTrigger=String(c.trigger||'DIRECT_ATTACK').toLowerCase();
+    parameters.coverPriority=c.priority??0;
+    parameters.coverRemovable=String(c.removable);
+    parameters.coverLifetime=String(c.lifetime||'PERSISTENT').toLowerCase();
+    parameters.coverUses=c.uses??null;parameters.coverDuration=c.duration??null;
+   }
+  }else errors.push(`runtimeContracts.effectContracts[${index}].typeは未対応です: ${type||'(なし)'}`);
+ }
+
+ for(const [index,c] of (runtime.applyContracts||[]).entries()){
+  const logic=String(c?.logic||c?.kind||'').toUpperCase(),values=c?.values||{};
+  if(!['STATUS','DOT','BUFF','DEBUFF','SHIELD'].includes(logic)){
+   errors.push(`runtimeContracts.applyContracts[${index}].logicは未対応です: ${logic||'(なし)'}`);
+   continue;
+  }
+  addLogic(logic);
+  if(logic==='DOT'){
+   parameters.dotPower=values.power;parameters.dotDuration=values.duration;parameters.dotInterval=values.interval;parameters.stackGain=values.stackGain;
+  }else if(logic==='BUFF'||logic==='DEBUFF'){
+   parameters.modifierStat=values.modifierStat||null;parameters.modifierPower=values.power;parameters.modifierDuration=values.duration;parameters.stackGain=values.stackGain;
+  }else if(logic==='SHIELD'){
+   parameters.shield=values.power;parameters.shieldDuration=values.duration;
+  }else if(logic==='STATUS'){
+   parameters.statusId=values.statusId||c.effectId||null;parameters.statusDuration=values.duration;parameters.statusPayload={...(values.statusPayload||{})};
+  }
+ }
+
+ const trigger=runtime.triggerContract||{};
+ const triggerType=String(trigger.type||'').toUpperCase();
+ if(triggerType==='ON_ALLY_ATTACK'){
+  parameters.followUpTrigger='ALLY_ATTACK';parameters.followUpCondition='POISONED';addLogic('FOLLOW_UP');
+ }
+ if(triggerType==='ON_HIT_RECEIVED'){
+  parameters.counterTrigger='hit';parameters.counterTarget='attacker';parameters.counterLimit=1;parameters.counterPriority=trigger.priority??0;
+  parameters.counterRequireAlive='true';parameters.counterAllowZeroDamage='true';parameters.counterUsesAttack=logicOrder.includes('ATTACK');addLogic('COUNTER');
+ }
+ if(triggerType==='WHILE_SOURCE_ALIVE'){
+  const aura=runtime.auraEffectContract;
+  if(!aura)errors.push('runtimeContracts.auraEffectContractが必要です');
+  else{
+   addLogic('AURA');parameters.auraEffect=String(aura.kind||'').toUpperCase();parameters.auraValue=aura.power;
+   parameters.auraTarget=aura.targetSide;parameters.auraScope=aura.targetScope;parameters.auraStack=aura.stack||'highest';parameters.auraPriority=aura.priority??0;
+   if(aura.modifierStat)parameters.modifierStat=aura.modifierStat;
+  }
+ }
+
+ parameters.conditions=(runtime.conditionContracts||[]).map(c=>({
+  key:String(c.property||''),operator:c.operator||'=',value:c.value??c.expected,scope:c.scope||'SELF',
+  enginePredicate:c.enginePredicate||null
+ }));
+
+ const ordered=TAG_LOGIC_ORDER.filter(x=>logicOrder.includes(x));
+ for(const logic of logicOrder)if(!ordered.includes(logic))ordered.push(logic);
+ const costs=parameters.mpCost>0?[{
+  type:'mp',amount:parameters.mpCost,payCondition:'sufficient_resource',consumeTiming:'activation_established',
+  refundCondition:'not_consumed_before_activation',failureReason:'MP_SHORTAGE'
+ }]:[];
+
+ return{
+  ok:errors.length===0,errors,warnings,
+  definition:{
+   id:String(skill?.id||''),name:String(skill?.name||''),target:{side:targetSide,range},
+   logicOrder:ordered,costs,parameters,runtimeContracts:runtime,sourceTags:[]
+  },
+  parsed:{generalTags:new Set(),numericTags:{},errors:[]}
+ };
+}
+
 function compileTaggedSkill(skill){
  const parsed=parseSkillTags(skill),errors=[...parsed.errors],warnings=[];
  const g=parsed.generalTags,n=parsed.numericTags;
@@ -845,8 +971,8 @@ function dispatchTaggedBaseReactiveTriggers(actor,target,compiled,attackResult,{
  }
  return results;
 }
-function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,derivedGeneration=0,skipExecutionEligibility=false,triggerActionContext=null}={}){
- const compiled=compileTaggedSkill(skillSource);battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
+function executeSkillRuntime(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,derivedGeneration=0,skipExecutionEligibility=false,triggerActionContext=null}={}){
+ const compiled=skillSource?.runtimeContracts?compileSkillRuntime(skillSource):compileTaggedSkill(skillSource);battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
  const actualOrigin=origin||(isFollowUp?'follow_up':compiled.definition.logicOrder.includes('COUNTER')?'counter':'base');
  const actionTriggerContext=createTaggedTriggerActionContext(actor,compiled,triggerActionContext);
  const conditionResult=evaluateTaggedSkillConditions(actor,compiled);if(!conditionResult.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_condition_blocked',{source_id:actor?.id||null,skill_id:compiled.definition.id,origin:actualOrigin,conditions:conditionResult.results});battle.log.push(`[Tick ${battle.tick}] [TAG][CONDITION] ${actor?.name||'unknown'}の${compiled.definition.name}は発動条件不成立`);return{ok:false,stage:'condition',reason:'CONDITION_FAILED',conditionResult,compiled}}
@@ -863,6 +989,9 @@ function executeTaggedSkill(actor,target,skillSource,{manual=false,isFollowUp=fa
   if(effectiveAttackResult?.ok&&!suppressDerived){if(actualOrigin==='base'){dispatchTaggedBaseReactiveTriggers(actor,actionTarget,compiled,effectiveAttackResult,{derivedGeneration,wasCovered:coverResult.covered,triggerActionContext:actionTriggerContext})}else if(coverResult.covered){dispatchCounterAfterAttack(actor,actionTarget,compiled,effectiveAttackResult,{origin:actualOrigin,derivedGeneration,wasCovered:true,triggerActionContext:actionTriggerContext})}else if(actualOrigin==='counter')recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:actionTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN',derived_generation:derivedGeneration});else if(actualOrigin==='follow_up')recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:actionTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN',derived_generation:derivedGeneration})}
  }
  if(manual)renderBattle();const first=targetResults[0]||{};return{ok:true,compiled,costResult,cooldownStart,targets:targetResults.map(x=>x.targetId),originalTargets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,shieldResult:first.shieldResult,dotResult:first.dotResult,modifierResult:first.modifierResult,followUpResult:first.followUpResult,statusResult:first.statusResult,cleanseResult:first.cleanseResult,reviveResult:first.reviveResult,coverApplyResult:first.coverApplyResult};
+}
+function executeTaggedSkill(actor,target,skillSource,options={}){
+ return executeSkillRuntime(actor,target,skillSource,options);
 }
 function dispatchConditionalFollowUps(initiator,target,event){
  if(!initiator?.alive||!target?.alive||event?.trigger!=='ALLY_ATTACK')return[];
