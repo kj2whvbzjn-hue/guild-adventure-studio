@@ -191,6 +191,7 @@ function compileSkill(skill,registry){
   if(String(effect?.type||'').toUpperCase()==='APPLY'){const c=compileApply(effect,`effects[${i}]`,registry,errors);if(c)applyContracts.push(c)}
   else{const c=compileEffect(effect,i,skill,registry,errors);if(c)effectContracts.push(c)}
  }
+ if(applyContracts.filter(c=>String(c?.kind||'').toUpperCase()==='DOT').length>1)error(errors,'DOT_LOGIC_DUPLICATE','effects','1つのSkillに複数のDOTロジックを同時指定できません');
  const res=skill.resource||{};
  if(own(res,'mpCost')&&!num(res.mpCost))error(errors,'INVALID_MP_COST','resource.mpCost','mpCostは有限数が必要です');
  if(own(res,'cooldown')&&(!Number.isInteger(res.cooldown)||res.cooldown<0))error(errors,'INVALID_COOLDOWN','resource.cooldown','cooldownは0以上の整数が必要です');
