@@ -1,4 +1,53 @@
-const fs=require('fs'),vm=require('vm');
-function load(path){const src=fs.readFileSync(path,'utf8');const ctx={console};vm.createContext(ctx);vm.runInContext(src,ctx);return ctx;}
-const base=['COUNTER','COUNTER_TRIGGER=hit','COUNTER_TARGET=attacker','COUNTER_LIMIT=1','COUNTER_PRIORITY=0','COUNTER_REQUIRE_ALIVE=true','COUNTER_ALLOW_ZERO_DAMAGE=true','ATTACK','敵','単体','物理','DAMAGE=100'];
-for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){const c=load(path);for(const tags of [base,base.map(x=>x==='COUNTER_PRIORITY=0'?'COUNTER_PRIORITY=10':x)]){const r=c.compileTaggedSkill({id:'C',name:'C',tags});if(!r.ok)throw new Error(path+' valid failed '+r.errors.join(','));if(r.definition.parameters.counterLimit!==1)throw new Error(path+' limit lost');}for(const tags of [[...base.filter(x=>x!=='ATTACK'&&!x.startsWith('DAMAGE='))],base.map(x=>x==='単体'?'全体':x),base.map(x=>x==='COUNTER_LIMIT=1'?'COUNTER_LIMIT=2':x),base.filter(x=>!x.startsWith('COUNTER_TRIGGER=')),[...base,'COUNTER_RATE=0.5'],[...base,'FOLLOW_UP','TRIGGER_ALLY_ATTACK','CONDITION_POISONED']]){const r=c.compileTaggedSkill({id:'X',name:'X',tags});if(r.ok)throw new Error(path+' invalid accepted '+tags.join('|'));}}console.log('PASS counter data-driven tag validation GA-B486.30');
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const vm=require('vm');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
+const compiler=require('../assets/shared/js/skill-compiler.js');
+
+function counter(id,priority=0){
+ return {
+  schemaVersion:1,id,name:id,skillLevel:5,
+  trigger:{type:'ON_HIT_RECEIVED',scope:'SELF',priority},conditions:[],
+  target:{side:'ENEMY',range:'SINGLE'},
+  effects:[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}],
+  resource:{mpCost:0,cooldown:0,activationPriority:0}
+ };
+}
+const valid=[counter('COUNTER-P0',0),counter('COUNTER-P10',10)];
+for(const skill of valid){
+ const out=compiler.compileSkill(skill,registry);
+ assert.strictEqual(out.ok,true,`${skill.id}: ${JSON.stringify(out.errors)}`);
+ const c=out.compiledSkill.runtimeContracts;
+ assert.strictEqual(c.triggerContract.dispatchMode,'COUNTER');
+ assert.strictEqual(c.triggerContract.priority,skill.trigger.priority);
+ assert.strictEqual(c.targetContract.side,'ENEMY');
+ assert.strictEqual(c.targetContract.range,'SINGLE');
+ assert.strictEqual(c.effectContracts[0].type,'DAMAGE');
+}
+
+const ctx={console,battle:{tick:0,units:[],log:[]}};
+vm.createContext(ctx);
+vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
+for(const skill of valid){
+ const formal=compiler.compileSkill(skill,registry).compiledSkill;
+ const out=ctx.compileSkillForRuntime(formal);
+ assert.strictEqual(out.ok,true,`${skill.id}: ${JSON.stringify(out.errors)}`);
+ assert.ok(Array.from(out.definition.logicOrder).includes('COUNTER'));
+ assert.ok(Array.from(out.definition.logicOrder).includes('ATTACK'));
+ assert.strictEqual(out.definition.parameters.counterLimit,1);
+ assert.strictEqual(out.definition.parameters.counterPriority,skill.trigger.priority);
+}
+
+const invalid=[
+ [{...counter('NO-DAMAGE'),effects:[{type:'HEAL',power:10}]},'COUNTER_DAMAGE_EFFECT_REQUIRED'],
+ [{...counter('BAD-RANGE'),target:{side:'ENEMY',range:'ALL'}},'COUNTER_TARGET_RANGE_REQUIRED'],
+ [{...counter('BAD-SIDE'),target:{side:'ALLY',range:'SINGLE'}},'COUNTER_TARGET_SIDE_REQUIRED'],
+ [{...counter('BAD-SCOPE'),trigger:{type:'ON_HIT_RECEIVED',scope:'TARGET',priority:0}},'TRIGGER_SCOPE_UNSUPPORTED']
+];
+for(const [skill,code] of invalid){
+ const out=compiler.compileSkill(skill,registry);
+ assert.strictEqual(out.ok,false,`${skill.id}: expected reject`);
+ assert.ok(out.errors.some(e=>e.code===code),`${skill.id}: missing ${code}: ${JSON.stringify(out.errors)}`);
+}
+console.log('PASS counter data-driven formal validation GA-B486.30');
