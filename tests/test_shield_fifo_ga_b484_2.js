@@ -5,7 +5,7 @@ context.global=context;context.window=context;
 context.battle={tick:0,units:[],log:[],validationEvents:[]};
 context.recordValidationEvent=(type,data)=>context.battle.validationEvents.push({type,...data});
 vm.createContext(context);
-vm.runInContext(fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8'),context);
+vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),context);
 const target={id:'A1',name:'T',side:'味方',hp:300,maxHp:300,alive:true,shieldEffects:[]};
 for(let i=1;i<=10;i++)target.shieldEffects.push({id:`SHIELD-${i}`,sequence:i,skillId:`S${i}`,remaining:i===9?100:i===10?40:0,amount:i===9?100:i===10?40:0,appliedAt:0,expiresAt:999});
 target.shieldEffects=target.shieldEffects.filter(x=>x.remaining>0);
@@ -16,4 +16,4 @@ assert(target.shieldEffects[0].id==='SHIELD-10','FIFO境界でSHIELD-10が残ら
 assert(target.shieldEffects[0].remaining===20,'SHIELD-10残量が20でない');
 assert(context.battle.validationEvents[0].consumed[0].shield_id==='SHIELD-9','最初にSHIELD-9が消費されない');
 assert(context.battle.validationEvents[0].consumed[1].shield_id==='SHIELD-10','次にSHIELD-10が消費されない');
-console.log('SHIELD_FIFO_GA_B484_2_OK');
+console.log('SHIELD_FIFO_GA_B484_2_FORMAL_RUNTIME_OK');
