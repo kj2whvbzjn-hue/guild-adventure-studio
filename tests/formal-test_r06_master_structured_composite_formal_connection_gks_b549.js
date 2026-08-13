@@ -1,12 +1,9 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const src=fs.readFileSync('game/assets/js/studio-skill-bridge.js','utf8');
-const skills=Array.from({length:48},(_,i)=>{const id=`R06-B547-MASS-${String(i+1).padStart(3,'0')}`,name=`case${i+1}`;return{
- id,name,tags:['formal-master-wrapper'],params:{skill_generation:{skill:{schemaVersion:1,id:`G05-AI-${String(i+1).padStart(3,'0')}`,name:`generated ${i+1}`,skillLevel:1,
- trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ALLY',range:'SINGLE'},effects:[{type:'RESOURCE_CHANGE',resource:'MP',amount:10},{type:'HEAL',power:10}],resource:{mpCost:0,cooldown:0,activationPriority:0}}}}
-}});
+const compiler=require('../assets/shared/js/skill-compiler.js'),registry=require('../assets/shared/config/skill-registry.json');
+const skills=Array.from({length:48},(_,i)=>{const id=`R06-B547-MASS-${String(i+1).padStart(3,'0')}`,name=`case${i+1}`,draft={schemaVersion:1,id,name,skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ALLY',range:'SINGLE'},effects:[{type:'RESOURCE_CHANGE',resource:'MP',amount:10},{type:'HEAL',power:10}],resource:{mpCost:0,cooldown:0,activationPriority:0}},compiled=compiler.compileSkill(draft,registry);if(!compiled.ok)throw new Error(JSON.stringify(compiled.errors));return compiled.compiledSkill;});
 const project={masters:{skills}};
 const store=new Map([['gas_v4_current_project_v060','P1'],['gas_v4_project_v060_P1',JSON.stringify(project)]]);
-const compiler=require('../assets/shared/js/skill-compiler.js'),registry=require('../assets/shared/config/skill-registry.json');
 const ctx={window:{GA_PROJECT_CONFIG:{skillExportUrl:'x'}},GKSSkillCompiler:compiler,GKSSkillCompileService:{getLoadedRegistry(){return registry}},localStorage:{getItem:k=>store.get(k)||null},console,Date,JSON,Math,Number,String,Array,Set,Map,Blob:function(){},URL:{createObjectURL(){return''},revokeObjectURL(){}},document:{createElement(){return{click(){}}}},TAG_SKILLS:[],battle:{validationEvents:[],validationMode:false,validationCaptureEvents:false,log:[]},pauseBattle(){},resetBattle(){ctx.battle.validationEvents=[]},ensureValidationTargets(side,n){return Array.from({length:n},(_,i)=>({id:`${side}${i}`,side,maxHp:100,maxMp:100,hp:50,mp:50,alive:true,statusEffects:[],shieldEffects:[]}))},ensureStatusEffects:t=>(t.statusEffects||(t.statusEffects=[])),shieldTotal(){return 0},compileSkillRuntime(skill){if(!skill.runtimeContracts)return{ok:false,errors:['runtimeContracts missing'],definition:null};return{ok:true,errors:[],definition:{id:skill.id,name:skill.name,target:{side:'ally',range:'single'},logicOrder:['RESOURCE_CHANGE','HEAL'],runtimeContracts:skill.runtimeContracts}}},executeSkillRuntime(actor,target,skill){for(const c of skill.runtimeContracts.effectContracts){if(c.type==='RESOURCE_CHANGE')ctx.battle.validationEvents.push({type:'skill_resource_change_executed',skill_id:skill.id});if(c.type==='HEAL')ctx.battle.validationEvents.push({type:'skill_heal_executed',skill_id:skill.id})}return{ok:true}},findTagSkill(){return null},runFormalShieldRuntimeRegression(){return{cases:[],summary:{case_count:0,passed_count:0,errors:[]}}},runFormalStatusRuntimeRegression(){return{cases:[],summary:{case_count:0,passed_count:0,errors:[]}}},runFormalCleanseRuntimeRegression(){return{cases:[],summary:{case_count:0,passed_count:0,errors:[]}}},runFormalReviveRuntimeRegression(){return{cases:[],summary:{case_count:0,passed_count:0,errors:[]}}}};
 ctx.window=Object.assign(ctx.window,ctx);ctx.globalThis=ctx;
 vm.createContext(ctx);vm.runInContext(src,ctx);
@@ -17,8 +14,8 @@ assert.strictEqual(report.summary.runtime_passed_count,48);
 assert.strictEqual(report.summary.runtime_case_count,48);
 assert.strictEqual(report.summary.composite_case_count,48);
 assert.strictEqual(report.summary.passed,true,JSON.stringify(report.summary.errors));
-assert.ok(report.compile_results.every(x=>x.input_source==='params.skill_generation.skill'),'nested formal source must be used');
+assert.ok(report.compile_results.every(x=>x.input_source==='master.runtimeContracts'),'formal Master runtimeContracts must be used directly');
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\''])assert.ok(src.includes(marker),`missing ${marker}`);
-const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486123b553'));
+const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486124b555'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
 console.log('PASS GKS-B550 R06 Master structured composite runtime formal-regression connection');

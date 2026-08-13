@@ -2,6 +2,8 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const registry=require('../assets/shared/config/skill-registry.json');
 const compiler=require('../assets/shared/js/skill-compiler.js');
+const budgetEngine=require('../assets/shared/js/skill-budget-engine.js');
+const budgetRules=require('../assets/shared/config/skill-budget-rules.json');
 const sample=JSON.parse(fs.readFileSync('tests/fixtures/g06-r06-48-skill-batch.json','utf8'));
 const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 
@@ -11,6 +13,7 @@ ctx.GKSSkillSchema={
  BATCH:{root:['schema','version','sourceSchema','aiGenerationRuleVersion','budgetRuleVersion','skills'],row:['index','skill','generation','validation']},
  masterAllowed(){return ['schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts','status','description','created_at','updated_at'];}
 };
+ctx.GKSSkillBudgetEngine=budgetEngine;
 ctx.GKSSkillAuthoringRegistry={buildUiDefinition:()=>({effects:[],triggers:[],conditions:[],registryPhase:'FORMAL-SKILL-1'})};
 ctx.GKSSkillCompileService={compileSkill:async(skill)=>compiler.compileSkill(skill,registry)};
 ctx.GKSDataExchange={
@@ -19,7 +22,7 @@ ctx.GKSDataExchange={
  buildEnvelope:async({rootData,ids})=>({datasets:{skills:rootData.masters.skills.filter(x=>ids.includes(x.id))},permissions:{writable:['skills'],read_only:[]}})
 };
 ctx.GKSSkillHost={getData:()=>({project:{id:'P'},masters:{skills:[]}}),getBuild:()=> 'GKS-B555'};
-ctx.fetch=async()=>({ok:true,status:200,json:async()=>registry});
+ctx.fetch=async(url)=>({ok:true,status:200,json:async()=>String(url).includes('skill-budget-rules')?budgetRules:registry});
 vm.createContext(ctx);vm.runInContext(src,ctx);
 const api=ctx.GKSSkillGenerator;
 

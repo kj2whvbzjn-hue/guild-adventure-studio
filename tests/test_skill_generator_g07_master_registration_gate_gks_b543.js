@@ -66,6 +66,6 @@ const api=ctx.GKSSkillGenerator;
  await assert.rejects(()=>api.g07DryRunMasterRegistration(rejected),e=>e.code==='G07_REVALIDATION_REJECT');
 
  for(const m of ['skgG07GenericJson','skgG07DryRun','skgG07Register','G07_ID_CONFLICT','before-g07-generic-skill-safe-apply'])assert.ok(src.includes(m),`missing ${m}`);
- const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=29'));
+ const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=30'));
  console.log('PASS GKS-B543 G07 Master registration safety gate');
 })().catch(e=>{console.error(e);process.exit(1);});
