@@ -18,6 +18,7 @@ assert(!gameRuntime.includes('function findTagSkill('),'Production runtime still
 assert(!gameRuntime.includes('function executeTaggedSkill('),'Production runtime still exposes transitional executeTaggedSkill alias');
 assert(!gameRuntime.includes('function compileTaggedSkill('),'Production runtime still contains transitional Tag compiler');
 assert(!gameRuntime.includes('function parseSkillTags('),'Production runtime still contains Tag parser');
+assert(!gameRuntime.includes('GKSValidationTagCompiler'),'Production runtime still references isolated validation Tag compiler');
 const validationCompiler=fs.readFileSync(path.join(root,'assets/shared/js/validation-tag-compiler.js'),'utf8');
 assert(validationCompiler.includes('GKSValidationTagCompiler'),'isolated validation compiler API missing');
 for(const rel of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){

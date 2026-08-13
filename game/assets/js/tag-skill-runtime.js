@@ -126,7 +126,7 @@ function compileSkillRuntime(skill){
  };
 }
 
-const GKS_SKILL_RUNTIME_MODE=Object.freeze({production:'runtimeContracts_only',validation:'isolated_validation_compiler'});
+const GKS_SKILL_RUNTIME_MODE=Object.freeze({production:'runtimeContracts_only'});
 globalThis.GKSSkillRuntimeMode=GKS_SKILL_RUNTIME_MODE;
 function runtimeSkillStore(){
  if(typeof SKILLS!=='undefined'&&Array.isArray(SKILLS))return SKILLS;
@@ -141,13 +141,7 @@ function skillRuntimeDiagnostics(){
 globalThis.GKSSkillRuntimeDiagnostics=skillRuntimeDiagnostics;
 function compileSkillForRuntime(skill){
  if(skill?.runtimeContracts)return compileSkillRuntime(skill);
- const environment=String(skill?.environment||'production').toLowerCase();
- if(environment==='production'){
-  return{ok:false,errors:['Production Skillは正式runtimeContractsが必要です'],warnings:[],definition:null,parsed:null};
- }
- const validationCompiler=globalThis.GKSValidationTagCompiler;
- if(validationCompiler&&typeof validationCompiler.compile==='function')return validationCompiler.compile(skill);
- return{ok:false,errors:['非Production SkillのTag検証compilerはvalidation専用モジュールが必要です'],warnings:[],definition:null,parsed:null};
+ return{ok:false,errors:['Skillは正式runtimeContractsが必要です'],warnings:[],definition:null,parsed:null};
 }
 function formatCompileResult(result){
  const d=result.definition,p=result.parsed;

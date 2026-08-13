@@ -18,7 +18,7 @@ assert(!runtimeSrc.includes('function executeTaggedSkill('),'Production runtime 
 assert(!runtimeSrc.includes('function findTagSkill('),'Production runtime must not expose transitional findTagSkill alias');
 assert(!runtimeSrc.includes('function compileTaggedSkill('),'Production runtime must not contain the legacy Tag compiler');
 assert(!runtimeSrc.includes('function parseSkillTags('),'Production runtime must not contain Tag parser helpers');
-assert(runtimeSrc.includes('GKSValidationTagCompiler'),'non-production validation must delegate to isolated validation compiler');
+assert(!runtimeSrc.includes('GKSValidationTagCompiler'),'Production runtime must not reference the isolated validation Tag compiler');
 assert(!gameIndexSrc.includes('validation-tag-compiler.js'),'Production Game page must not load the validation Tag compiler');
 assert(!gameSwSrc.includes('validation-tag-compiler.js'),'Production Game service worker must not cache the validation Tag compiler');
 assert(battleSrc.includes('function formalBattleSkill(skillId){'),'battle formal Skill guard missing');
@@ -50,6 +50,9 @@ vm.runInContext(runtimeSrc,ctx);
 const rejectedLegacyProduction=ctx.compileSkillForRuntime({id:'LEGACY-PROD',name:'Legacy Production',environment:'production',tags:['ATTACK','敵','単体','DAMAGE=1']});
 assert.strictEqual(rejectedLegacyProduction.ok,false,'Production tag-only Skill must be rejected');
 assert(rejectedLegacyProduction.errors.some(x=>x.includes('runtimeContracts')),'Production rejection must require runtimeContracts');
+const rejectedLegacyValidation=ctx.compileSkillForRuntime({id:'LEGACY-VAL',name:'Legacy Validation',environment:'validation',tags:['ATTACK','敵','単体','DAMAGE=1']});
+assert.strictEqual(rejectedLegacyValidation.ok,false,'validation tag-only Skill must also be rejected by Production runtime');
+assert(rejectedLegacyValidation.errors.some(x=>x.includes('runtimeContracts')),'all Production runtime dispatch must require runtimeContracts');
 ctx.battle={tick:0,units:[],log:[]};
 const compiled=ctx.compileSkillRuntime(authored.compiledSkill);
 assert(compiled.ok,JSON.stringify(compiled.errors));

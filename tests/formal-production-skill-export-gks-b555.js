@@ -15,7 +15,8 @@ for(const skill of production){
  assert.deepStrictEqual(c.compiledSkill.runtimeContracts,skill.runtimeContracts,`${skill.id}: runtimeContracts mismatch`);
 }
 const runtimeSrc=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
-assert(runtimeSrc.includes("Production Skillは正式runtimeContractsが必要です"),'production fallback guard missing');
+assert(runtimeSrc.includes("Skillは正式runtimeContractsが必要です"),'runtimeContracts-only fallback guard missing');
+assert(!runtimeSrc.includes('GKSValidationTagCompiler'),'Production runtime must not delegate to legacy validation compiler');
 const bridge=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-bridge.js'),'utf8');
 assert(bridge.includes('function normalizeStudioSkill(record){'),'formal Studio Skill normalizer missing');
 assert(bridge.includes("if(environment==='production'||!tags.length)return null;"),'production Tag import must be rejected');
