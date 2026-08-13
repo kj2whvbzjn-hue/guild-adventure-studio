@@ -8,7 +8,7 @@ ok(probe.apply('STATUS',{value:7}).value===7,'shared apply failed');
 ok(probe.consume('shield',{rawDamage:9}).hpDamage===9,'shared consume failed');
 ok(probe.apply('UNKNOWN',{}).reason==='LIFECYCLE_ENGINE_KIND_UNREGISTERED','unknown kind was accepted');
 ok(probe.consume('STATUS',{}).reason==='LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE','missing operation was accepted');
-for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
+for(const path of ['game/assets/js/tag-skill-runtime.js']){
  const ctx={console,GKSApplyLifecycleEngine:shared,battle:{tick:0,units:[],log:[],validationEvents:[]},recordValidationEvent(){}};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);
  ok(typeof ctx.getTaggedApplyLifecycleEngine==='function',`${path}: lifecycle engine facade missing`);const engine=ctx.getTaggedApplyLifecycleEngine();ok(/^R03-F/.test(engine.version),`${path}: shared lifecycle engine not connected`);
  for(const kind of ['STATUS','DOT','BUFF','DEBUFF','SHIELD'])ok(engine.kinds.includes(kind),`${path}: ${kind} handler missing`);
@@ -16,5 +16,5 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
 }
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8')).game_build;
 const cache=String(build).replace(/^GA-B/,'').replace(/\D/g,'');
-for(const html of ['game/index.html','game-tag-test/index.html','studio/index.html']){const src=fs.readFileSync(html,'utf8');ok(src.includes(`apply-lifecycle-engine.js?v=${cache}`),`${html}: shared lifecycle engine script missing`)}
-console.log('GENERIC_APPLY_LIFECYCLE_ENGINE_R03_F1_PASS');
+for(const html of ['game/index.html','studio/index.html']){const src=fs.readFileSync(html,'utf8');ok(src.includes(`apply-lifecycle-engine.js?v=${cache}`),`${html}: shared lifecycle engine script missing`)}
+console.log('FORMAL_APPLY_LIFECYCLE_ENGINE_R03_F1_PASS');

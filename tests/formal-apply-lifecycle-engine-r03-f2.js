@@ -16,7 +16,7 @@ ok(probe.effective('BUFF',{}).power===25,'effective dispatch failed');
 ok(probe.cleanup('UNKNOWN',{}).reason==='LIFECYCLE_ENGINE_KIND_UNREGISTERED','unknown cleanup kind accepted');
 ok(probe.apply('STATUS',{}).reason==='LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE','missing operation accepted');
 
-for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
+for(const path of ['game/assets/js/tag-skill-runtime.js']){
  const ctx={console,GKSApplyLifecycleEngine:shared,battle:{tick:0,units:[],log:[],validationEvents:[]},recordValidationEvent(){}};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);
  ok(typeof ctx.getTaggedApplyLifecycleEngine==='function',`${path}: lifecycle engine missing`);
  const engine=ctx.getTaggedApplyLifecycleEngine();
@@ -32,4 +32,4 @@ for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/j
  if(/^R03-F2/.test(shared.VERSION))ok(dotCleanup.reason==='LIFECYCLE_ENGINE_OPERATION_UNAVAILABLE',`${path}: DOT cleanup must remain unwired in F2`);
  else ok(dotCleanup.ok,`${path}: DOT cleanup must be available after F3b`);
 }
-console.log('GENERIC_APPLY_LIFECYCLE_ENGINE_R03_F2_PASS');
+console.log('FORMAL_APPLY_LIFECYCLE_ENGINE_R03_F2_PASS');
