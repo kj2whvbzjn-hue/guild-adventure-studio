@@ -29,6 +29,6 @@ assert.strictEqual(batch.VERSION,'G05');assert.strictEqual(aiRules.aiGenerationR
  const badStrength=await batch.generateBatch({requests:[{...envelope.requests[0],desiredStrength:1.5}]},{registry,budgetRules,rules:aiRules,budgetEngine:budget,compile});assert.strictEqual(badStrength.entries[0].status,'REJECT');assert.ok(badStrength.entries[0].validation.issues.some(x=>x.code==='AI_DESIRED_STRENGTH_INVALID'));
  const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');for(const marker of ['loadAiGenerationRules','aiRequestTemplate','generateSkillAiBatch','skgAiBatchGenerate'])assert.ok(sg.includes(marker),`G05 marker missing: ${marker}`);
  const ai=fs.readFileSync('assets/shared/js/skill-ai-batch-engine.js','utf8');assert.ok(ai.includes('AI_FINAL_BATTLE_VALUE_FORBIDDEN'));
- const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('generic-skill-ai-batch-engine.js?v=2'));assert.ok(html.includes('skill-generator.js?v=30'));
+ const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('generic-skill-ai-batch-engine.js?v=2'));assert.ok(html.includes('skill-generator.js?v=31'));
  console.log('SKILL_GENERATOR_G05_AI_BATCH_GKS_B532_PASS');
 })().catch(e=>{console.error(e);process.exit(1)});

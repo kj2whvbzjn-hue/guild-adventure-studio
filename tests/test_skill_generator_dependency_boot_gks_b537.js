@@ -20,8 +20,8 @@ for(const [label,url] of [
 }
 assert.ok(skg.includes('registry:skillRegistry'),'Skill compile must reuse the already-loaded registry instead of refetching it');
 assert.ok(skg.includes("setBootStatus('初期化停止: '+message,'error')"),'timeout/fetch failure must be visible in-view');
-assert.ok(html.includes('Game GA-B486.125 / Studio GKS-B555'),'Studio header build must not show the stale GKS-B527 label');
-assert.ok(html.includes('./skill/skill-generator.js?v=30'),'Skill Generator cache key must advance');
+assert.ok(html.includes('Game GA-B486.126 / Studio GKS-B555'),'Studio header build must not show the stale GKS-B527 label');
+assert.ok(html.includes('./skill/skill-generator.js?v=31'),'Skill Generator cache key must advance');
 assert.ok(html.includes("navigator.serviceWorker.register('./sw.js?v=555'"),'Studio service worker URL must advance');
 assert.ok(html.includes("url.searchParams.set('appv','555')"),'Studio reload appv must advance');
 assert.ok(sw.includes('const CACHE_NAME="gks-studio-b555"'),'Studio cache namespace must advance');

@@ -48,7 +48,7 @@ assert(gen.includes('G07 正式Skill Master登録'),'G07 UI is not formalized');
 
 const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 assert(html.includes('skill-schema.js?v=2b555'),'Skill Schema cache bust missing');
-assert(html.includes('skill-generator.js?v=30'),'Skill Generator cache bust missing');
+assert(html.includes('skill-generator.js?v=31'),'Skill Generator cache bust missing');
 assert(html.includes('data-exchange-core.js?v=16'),'Data Exchange cache bust missing');
 
 console.log('FORMAL_G07_MASTER_CONTRACT_CACHE_RESILIENCE_PASS');
