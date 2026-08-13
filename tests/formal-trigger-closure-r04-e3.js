@@ -1,10 +1,10 @@
 const assert=require('assert');
 const fs=require('fs');
 const engine=require('../assets/shared/js/trigger-engine.js');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 
 assert.strictEqual(engine.VERSION,'R04-E3');
-assert.ok(registry.phase==='R04-E3'||/^R0[5-9]-/.test(registry.phase)||/^R[1-9][0-9]-/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
+assert.ok(registry.phase==='FORMAL-SKILL-1'||registry.phase==='R04-E3'||/^R0[5-9]-/.test(registry.phase)||/^R[1-9][0-9]-/.test(registry.phase),`unexpected registry phase ${registry.phase}`);
 assert.strictEqual(engine.DEFAULT_ACTION_TRIGGER_LIMIT,16);
 
 // Registry/engine boundary: every enabled registry trigger must resolve, and unknown triggers fail closed.

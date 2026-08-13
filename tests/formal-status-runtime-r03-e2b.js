@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const generic=require('../assets/shared/js/skill-compiler.js');
 function ok(v,m){if(!v)throw new Error(m)}
 const sample={schemaVersion:1,id:'R03E2B-STUN',name:'R03E2B STUN',trigger:{type:'ON_USE'},target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'STUN',duration:100}]};

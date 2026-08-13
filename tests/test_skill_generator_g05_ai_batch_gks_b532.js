@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const registry=require('../assets/shared/config/skill-generic-registry.json');
+const registry=require('../assets/shared/config/skill-registry.json');
 const budgetRules=require('../assets/shared/config/skill-budget-rules.json');
 const aiRules=require('../assets/shared/config/skill-ai-generation-rules.json');
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);

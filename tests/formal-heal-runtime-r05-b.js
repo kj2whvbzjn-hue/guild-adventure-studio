@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const generic=require('../assets/shared/js/skill-compiler.js');
 
 const sample={

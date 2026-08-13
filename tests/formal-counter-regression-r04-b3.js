@@ -1,11 +1,11 @@
 const assert=require('assert');
 const fs=require('fs');
 const vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const generic=require('../assets/shared/js/skill-compiler.js');
 const triggerEngine=require('../assets/shared/js/trigger-engine.js');
 
-assert.ok(/^R04-[BCDE]\d+/.test(String(registry.phase||''))||/^R0[5-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||'')),`unexpected registry phase ${registry.phase}`);
+assert.ok(registry.phase==='FORMAL-SKILL-1'||/^R04-[BCDE]\d+/.test(String(registry.phase||''))||/^R0[5-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||'')),`unexpected registry phase ${registry.phase}`);
 assert.ok(/^R04-[BCDE]\d+/.test(String(generic.VERSION||''))||/^R0[5-9]-/.test(String(generic.VERSION||''))||/^R[1-9][0-9]-/.test(String(generic.VERSION||'')),`unexpected generic compiler version ${generic.VERSION}`);
 assert.ok(/^R04-[BCDE]\d+/.test(String(triggerEngine.VERSION||'')),`unexpected trigger engine version ${triggerEngine.VERSION}`);
 

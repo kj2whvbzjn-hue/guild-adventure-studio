@@ -1,6 +1,6 @@
 const fs=require('fs');
 const shared=require('../assets/shared/js/apply-lifecycle-engine.js');
-const registry=require('../assets/shared/config/skill-generic-registry.json');
+const registry=require('../assets/shared/config/skill-registry.json');
 const boundary=require('../shared/dependencies/skill-runtime-boundary.json');
 function ok(v,m){if(!v)throw new Error(m)}
 const expectedOps=['resolve','apply','expire','cleanup','consume','effective'];

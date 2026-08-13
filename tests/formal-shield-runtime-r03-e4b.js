@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const generic=require('../assets/shared/js/skill-compiler.js');
 function ok(v,m){if(!v)throw new Error(m)}
 const skill={schemaVersion:1,id:'E4B-SHIELD',name:'E4B Shield',trigger:{type:'ON_USE'},target:{side:'ALLY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BARRIER',power:100,duration:300}]};

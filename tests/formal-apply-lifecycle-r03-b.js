@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const generic=require('../assets/shared/js/skill-compiler.js');
 function loadLegacy(path){const ctx={console};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);return ctx.compileTaggedSkill}
 function ok(v,m){if(!v)throw new Error(m)}

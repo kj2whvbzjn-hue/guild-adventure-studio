@@ -1,5 +1,5 @@
 const assert=require('assert'),fs=require('fs'),vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8')),generic=require('../assets/shared/js/skill-compiler.js');
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8')),generic=require('../assets/shared/js/skill-compiler.js');
 assert.strictEqual(generic.VERSION,'R05-H');
 for(const path of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const events=[],ctx={console,battle:{tick:0,units:[],log:[]},recordValidationEvent:(type,payload)=>events.push({type,payload})};vm.createContext(ctx);vm.runInContext(fs.readFileSync(path,'utf8'),ctx);

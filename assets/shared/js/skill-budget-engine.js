@@ -1,4 +1,4 @@
-/* GKS Generic Skill Budget Engine — G04. Versioned, traceable authoring budget calculation. */
+/* GKS Skill Budget Engine — G04. Versioned, traceable authoring budget calculation. */
 (function(root){
 'use strict';
 const VERSION='G04';

@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const generic=require('../assets/shared/js/skill-compiler.js');
 function ok(v,m){if(!v)throw new Error(m)}
 function compile(ctx,skill){const out=generic.compileSkill(skill,registry,ctx.compileTaggedSkill);ok(out.ok,`generic compile failed ${JSON.stringify(out.errors)}`);const c=ctx.compileTaggedSkill(out.compiledSkill);ok(c.ok,`legacy compile failed ${JSON.stringify(c.errors)}`);return c}

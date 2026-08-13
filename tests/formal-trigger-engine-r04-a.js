@@ -2,7 +2,7 @@ const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
 const engine=require('../assets/shared/js/trigger-engine.js');
-const registry=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/shared/config/skill-generic-registry.json'),'utf8'));
+const registry=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/shared/config/skill-registry.json'),'utf8'));
 
 assert.ok(/^R04-/.test(engine.VERSION),`unexpected trigger engine version ${engine.VERSION}`);
 const seen=[];

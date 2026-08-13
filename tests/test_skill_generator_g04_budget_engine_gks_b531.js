@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const build=require('../package-build.json');
-const registry=require('../assets/shared/config/skill-generic-registry.json');
+const registry=require('../assets/shared/config/skill-registry.json');
 const rules=require('../assets/shared/config/skill-budget-rules.json');
 assert.strictEqual(build.game_build,'GA-B486.121');
 assert.strictEqual(build.studio_build,'GKS-B555');

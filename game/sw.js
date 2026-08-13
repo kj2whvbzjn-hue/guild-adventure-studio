@@ -17,7 +17,7 @@ const APP_SHELL=[
   "../assets/shared/js/skill-compiler.js?v=486121",
   "../assets/shared/js/skill-compile-service.js?v=486121",
   "../assets/shared/js/device-test-harness.js?v=486121",
-  "../assets/shared/config/skill-generic-registry.json?v=486121"
+  "../assets/shared/config/skill-registry.json?v=486121"
 ,
   "./assets/js/app-runtime.js?v=486121b553"
 ,

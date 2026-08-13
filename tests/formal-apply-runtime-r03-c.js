@@ -9,7 +9,7 @@ for(const [name,src] of [['game',game],['game-tag-test',test]]){
  ok(src.includes("reason:'TARGET_DEAD'"),`${name}: dead-target guard missing`);
 }
 ok(game.includes("logic==='BUFF'||logic==='DEBUFF'"), 'game: modifier APPLY dispatch missing');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const phase=String(registry.phase||'');
 const m=phase.match(/^R03-([A-Z])(\d+)?([a-z])?$/);
 const phaseOk=phase==='R03-C'||phase==='R03-D'||(/^R03-(E\d+[a-z]?|F\d+[a-z]?)$/.test(phase))||(/^R0[4-9]-/.test(phase))||(/^R[1-9][0-9]-/.test(phase));

@@ -1,5 +1,5 @@
 const fs=require('fs'),vm=require('vm');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const compiler=require('../assets/shared/js/skill-compiler.js');
 function ok(v,m){if(!v)throw new Error(m)}
 ok(/^R03-(E\d+[a-z]?|F\d+[a-z]?)$/.test(String(registry.phase||''))||/^R0[4-9]-/.test(String(registry.phase||''))||/^R[1-9][0-9]-/.test(String(registry.phase||'')),'registry phase predates R03-E1');

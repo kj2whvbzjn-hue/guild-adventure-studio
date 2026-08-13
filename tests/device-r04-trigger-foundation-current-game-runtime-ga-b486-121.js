@@ -1,7 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const engine=require('../assets/shared/js/trigger-engine.js');
-const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-registry.json','utf8'));
+const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const tagIndex=fs.readFileSync('game-tag-test/index.html','utf8');
 const gameIndex=fs.readFileSync('game/index.html','utf8');
 const tagRuntime=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');

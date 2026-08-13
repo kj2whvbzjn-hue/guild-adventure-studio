@@ -1,11 +1,11 @@
-/* GKS Generic Skill Authoring Registry — G01. Registry-driven Studio authoring definitions. */
+/* GKS Skill Authoring Registry — G01. Registry-driven Studio authoring definitions. */
 (function(root){
 'use strict';
 const VERSION='G04';
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 function registryRequired(registry){
- if(!registry||typeof registry!=='object')throw new Error('Generic Skill Registryが必要です');
- const a=registry.authoring;if(!a||typeof a!=='object')throw new Error('Generic Skill Registry authoring定義がありません');
+ if(!registry||typeof registry!=='object')throw new Error('Skill Registryが必要です');
+ const a=registry.authoring;if(!a||typeof a!=='object')throw new Error('Skill Registry authoring定義がありません');
  if(!a.effect_types||typeof a.effect_types!=='object')throw new Error('authoring.effect_typesがありません');
  return a;
 }
@@ -19,7 +19,7 @@ function listFieldDefinitions(registry){const a=registryRequired(registry);retur
 function listApplyEffects(registry){registryRequired(registry);return Object.entries(registry.effects||{}).map(([effectId,def])=>({effectId,label:def?.label||effectId,kind:def?.kind||null,budgetWeight:def?.budgetWeight??null,defaults:clone(def?.defaults||{}),lifecycle:clone(def?.lifecycle||{})}));}
 function resolveEffectRequirements(registry,effectType,draft={}){
  const a=registryRequired(registry),type=String(effectType||'').toUpperCase(),def=a.effect_types?.[type];
- if(!def)return{ok:false,type,enabled:false,requiredFields:[],optionalFields:[],oneOfRequired:[],errors:[`未定義Generic Effect type: ${type||'(なし)'}`]};
+ if(!def)return{ok:false,type,enabled:false,requiredFields:[],optionalFields:[],oneOfRequired:[],errors:[`未定義Effect type: ${type||'(なし)'}`]};
  const required=[...(def.required_fields||[])],optional=[...(def.optional_fields||[])],errors=[];
  if(def.required_fields_by_registry_effect_kind&&draft?.effectId){const effect=registry.effects?.[draft.effectId];if(!effect)errors.push(`未定義Effect ID: ${draft.effectId}`);else for(const f of def.required_fields_by_registry_effect_kind[effect.kind]||[])if(!required.includes(f))required.push(f);}
  for(const rule of def.conditional_required||[]){const when=rule?.when||{};if(pathValue(draft,when.field)===when.equals)for(const f of rule.fields||[])if(!required.includes(f))required.push(f);}
