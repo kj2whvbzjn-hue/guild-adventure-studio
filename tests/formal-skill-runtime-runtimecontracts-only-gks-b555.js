@@ -1,0 +1,11 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.join(__dirname,'..');
+for(const rel of ['assets/shared/js/skill-authoring-registry.js','assets/shared/js/skill-budget-engine.js','assets/shared/js/skill-ai-batch-engine.js','assets/shared/js/skill-compiler.js','assets/shared/js/skill-compile-service.js'])assert(fs.existsSync(path.join(root,rel)),`formal module missing: ${rel}`);
+const runtime=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
+const dx=fs.readFileSync(path.join(root,'studio/data-exchange/data-exchange-core.js'),'utf8');
+const bridge=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-bridge.js'),'utf8');
+for(const [name,text] of [['runtime',runtime],['data exchange',dx],['bridge',bridge]])assert(!text.includes('genericRuntime'),`${name} still contains genericRuntime`);
+assert(runtime.includes('const raw=skill?.runtimeContracts;'),'Game runtime must accept runtimeContracts only');
+assert(dx.includes('const runtime=row?.runtimeContracts;'),'Data Exchange must accept runtimeContracts only');
+console.log('FORMAL_SKILL_RUNTIME_RUNTIMECONTRACTS_ONLY_PASS');

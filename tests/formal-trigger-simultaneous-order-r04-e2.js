@@ -43,7 +43,7 @@ for(const src of [game,test]){
 for(const name of ['dispatchConditionalFollowUps','dispatchTaggedBaseReactiveTriggers']){
  assert.strictEqual(fnText(game,name),fnText(test,name),`${name} Game/game-tag-test parity`);
 }
-assert.ok(test.includes("else if(logic==='FOLLOW_UP'){followUpResult=executeGenericDamageRuntime"),'game-tag-test Generic FOLLOW_UP DAMAGE runtime execution missing');
+assert.ok(test.includes("else if(logic==='FOLLOW_UP'){followUpResult=executeRuntimeDamageRuntime"),'game-tag-test formal FOLLOW_UP DAMAGE runtime execution missing');
 assert.ok(test.includes("effectiveAttackResult=attackResult||followUpResult"),'game-tag-test derived trigger result parity missing');
 
-console.log('GENERIC_TRIGGER_SIMULTANEOUS_ORDER_R04_E2_PASS');
+console.log('FORMAL_TRIGGER_SIMULTANEOUS_ORDER_R04_E2_PASS');

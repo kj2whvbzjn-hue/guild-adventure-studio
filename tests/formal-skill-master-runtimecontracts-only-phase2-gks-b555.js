@@ -1,0 +1,18 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.join(__dirname,'..');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
+const dx=fs.readFileSync(path.join(root,'studio/data-exchange/data-exchange-core.js'),'utf8');
+const bridge=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-bridge.js'),'utf8');
+const runtime=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
+assert(!dx.includes('genericRuntime'),'Data Exchange still accepts genericRuntime');
+assert(!bridge.includes('genericRuntime'),'Studio Skill Bridge still accepts genericRuntime');
+assert(!runtime.includes('genericRuntime'),'Game Skill runtime still accepts genericRuntime');
+const skill={schemaVersion:1,id:'FORMAL-PHASE2-001',name:'RuntimeContracts Only',skillLevel:5,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:78,damageType:'PHYSICAL'},{type:'APPLY',effectId:'BURN',power:3,duration:20,interval:100,stackGain:1}],resource:{mpCost:0,cooldown:0,activationPriority:0}};
+const out=compiler.compileSkill(skill,registry);
+assert(out.ok,JSON.stringify(out.errors));
+assert(out.compiledSkill.runtimeContracts);
+assert(!('genericRuntime' in out.compiledSkill));
+assert(!('legacySkill' in out));
+console.log('FORMAL_SKILL_MASTER_RUNTIMECONTRACTS_ONLY_PHASE2_PASS');
