@@ -1,3 +1,14 @@
-const fs=require('fs'),vm=require('vm');const src=fs.readFileSync('assets/shared/js/validation-tag-compiler.js','utf8');const sandbox={console};sandbox.globalThis=sandbox;vm.createContext(sandbox);vm.runInContext(src,sandbox);const c=sandbox.GKSValidationTagCompiler.compile;
-for(const [id,v] of [['high',100],['zero',0],['negative',-100]]){const r=c({id,name:id,tags:['ATTACK','敵','単体','物理','DAMAGE=10',`ACTIVATION_PRIORITY=${v}`]});if(!r.ok)throw new Error(id+' rejected '+r.errors.join('|'));if(r.definition.parameters.activationPriority!==v)throw new Error(id+' priority mismatch')}
-const omitted=c({id:'omitted',name:'omitted',tags:['ATTACK','敵','単体','物理','DAMAGE=10']});if(!omitted.ok||omitted.definition.parameters.activationPriority!==0)throw new Error('omitted priority');if(c({id:'decimal',name:'decimal',tags:['ATTACK','敵','単体','物理','DAMAGE=10','ACTIVATION_PRIORITY=1.5']}).ok)throw new Error('decimal accepted');const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(data.data_version!=='FORMAL-SKILL-1')throw new Error('data_version format mismatch');console.log('ACTIVATION_PRIORITY_TAG_FORMAL_GA_B486_50_OK');
+'use strict';
+const fs=require('fs'),assert=require('assert');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
+function skill(id,priority,omit=false){
+ return{schemaVersion:1,id:`SKL-${id}`,name:id,skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],resource:omit?{mpCost:0,cooldown:0}:{mpCost:0,cooldown:0,activationPriority:priority}};
+}
+for(const [id,v] of [['HIGH',100],['ZERO',0],['NEGATIVE',-100]]){
+ const r=compiler.compileSkill(skill(id,v),registry);assert.strictEqual(r.ok,true,`${id} rejected ${JSON.stringify(r.errors)}`);assert.strictEqual(r.compiledSkill.runtimeContracts.resourceContract.activationPriority,v,`${id} priority mismatch`);
+}
+const omitted=compiler.compileSkill(skill('OMITTED',0,true),registry);assert.strictEqual(omitted.ok,true,JSON.stringify(omitted.errors));assert.strictEqual(omitted.compiledSkill.runtimeContracts.resourceContract.activationPriority,0,'omitted priority');
+const decimal=compiler.compileSkill(skill('DECIMAL',1.5),registry);assert.strictEqual(decimal.ok,false,'decimal accepted');assert(decimal.errors.some(x=>x.code==='INVALID_ACTIVATION_PRIORITY'),'decimal must fail with INVALID_ACTIVATION_PRIORITY');
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));assert.strictEqual(data.data_version,'FORMAL-SKILL-1','data_version format mismatch');
+console.log('ACTIVATION_PRIORITY_FORMAL_COMPILER_GA_B486_PASS');

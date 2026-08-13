@@ -1,8 +1,10 @@
-const fs=require('fs');
+'use strict';
+const fs=require('fs'),assert=require('assert');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
 const ctl=fs.readFileSync('game/assets/js/battle-control.js','utf8');
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
 const rt=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
-const validationCompiler=fs.readFileSync('assets/shared/js/validation-tag-compiler.js','utf8');
 const spec=JSON.parse(fs.readFileSync('docs/design/P01-12_ACTIVATION_PRIORITY_VALIDATION_SPEC.json','utf8'));
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const errors=[];
@@ -12,8 +14,9 @@ if(!app.includes("if(!battle.validationMode&&battle.validationCaptureEvents!==tr
 if(!app.includes("formal_candidate:'P01-12-FORMAL-1'"))errors.push('formal candidate id');
 if(!ctl.includes('function activationPriorityFeatureEnabled(){return true}'))errors.push('formal priority feature not enabled');
 if(!app.includes(`${build.game_build}-P01-12-FORMAL1-`))errors.push('device report filename must identify formal build');
-if(!validationCompiler.includes('ACTIVATION_PRIORITYは有限整数が必要です'))errors.push('validation compiler rule');
+const invalid={schemaVersion:1,id:'SKL-AP-INVALID',name:'invalid priority',skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0,activationPriority:1.5}};
+const invalidResult=compiler.compileSkill(invalid,registry);if(invalidResult.ok||!invalidResult.errors.some(x=>x.code==='INVALID_ACTIVATION_PRIORITY'))errors.push('formal compiler activationPriority rule');
 if(rt.includes('function compileTaggedSkill('))errors.push('production runtime still contains Tag compiler');
 if(spec.validation_patch!=='P01-12-FORMAL-1'||spec.runtime_application!==true||spec.status!=='FORMAL_CANDIDATE'||spec.validation_design.normal_runtime_enabled!==true)errors.push('formal spec state');
 if(errors.length){errors.forEach(x=>console.error('FAIL',x));process.exit(1)}
-console.log('ACTIVATION_PRIORITY_FORMAL_CANDIDATE_GA_B486_50_OK');
+console.log('ACTIVATION_PRIORITY_FORMAL_CANDIDATE_GA_B486_PASS');
