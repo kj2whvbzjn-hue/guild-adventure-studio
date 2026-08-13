@@ -7,16 +7,16 @@ const cfg=fs.readFileSync('assets/shared/config/runtime-config.js','utf8');
 for(const needle of [
  '../assets/shared/config/runtime-config.js?v=486121b553',
  './assets/js/tag-skill-runtime.js?v=486121b553',
- './assets/js/studio-skill-bridge.js?v=486121b553',
+ './assets/js/studio-skill-bridge.js?v=486121b554',
  './assets/js/app-runtime.js?v=486121b553'
 ])assert.ok(html.includes(needle),'game html stale cache key: '+needle);
 assert.ok(cfg.includes("skillExportUrl: '../Export/skill/skills.json?v=486121b553'"),'formal Export cache key stale');
 for(const needle of [
- 'ga-game-b486121-b553',
+ 'ga-game-b486121-b554',
  '../Export/skill/skills.json?v=486121b553',
  '../assets/shared/config/runtime-config.js?v=486121b553',
  './assets/js/tag-skill-runtime.js?v=486121b553',
- './assets/js/studio-skill-bridge.js?v=486121b553',
+ './assets/js/studio-skill-bridge.js?v=486121b554',
  './assets/js/app-runtime.js?v=486121b553'
 ])assert.ok(sw.includes(needle),'game SW stale cache key: '+needle);
 assert.ok(!html.includes('studio-skill-bridge.js?v=486121b549'));

@@ -1,4 +1,4 @@
-const CACHE_NAME="ga-game-b486121-b553";
+const CACHE_NAME="ga-game-b486121-b554";
 const CACHE_PREFIX="ga-game-";
 const OFFLINE_URL='./index.html?appv=486121b553';
 const APP_SHELL=[
@@ -22,7 +22,7 @@ const APP_SHELL=[
   "./assets/js/app-runtime.js?v=486121b553"
 ,
   "./assets/js/tag-skill-runtime.js?v=486121b553",
-  "./assets/js/studio-skill-bridge.js?v=486121b553"
+  "./assets/js/studio-skill-bridge.js?v=486121b554"
 ,
   "./assets/js/battle-control.js?v=486121",
   "./assets/js/ui-bootstrap.js?v=486121"
