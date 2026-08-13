@@ -1,17 +1,16 @@
 const fs=require('fs');
 function ok(v,m){if(!v)throw new Error(m)}
 const game=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
-const test=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');
-for(const [name,src] of [['game',game],['game-tag-test',test]]){
- ok(src.includes('function applyTaggedApplyRuntime('),`${name}: APPLY dispatcher missing`);
- ok(src.includes("['SHIELD','STATUS','DOT'"),`${name}: execute loop does not use APPLY dispatcher`);
- ok(src.includes("reason:'ATTACK_FAILED'"),`${name}: ATTACK failure guard missing`);
- ok(src.includes("reason:'TARGET_DEAD'"),`${name}: dead-target guard missing`);
-}
-ok(game.includes("logic==='BUFF'||logic==='DEBUFF'"), 'game: modifier APPLY dispatch missing');
+ok(game.includes('function applyTaggedApplyRuntime('),'game: Formal APPLY dispatcher missing');
+ok(game.includes("['SHIELD','STATUS','DOT'"),'game: execute loop does not use APPLY dispatcher');
+ok(game.includes("reason:'ATTACK_FAILED'"),'game: ATTACK failure guard missing');
+ok(game.includes("reason:'TARGET_DEAD'"),'game: dead-target guard missing');
+ok(game.includes("logic==='BUFF'||logic==='DEBUFF'"),'game: modifier APPLY dispatch missing');
+ok(game.includes('function resolveRuntimeApplyLifecycle('),'game: Formal lifecycle resolver missing');
+ok(game.includes('function resolveRuntimeApplyPolicy('),'game: Formal policy resolver missing');
+ok(game.includes('function resolveRuntimeApplyDefinition('),'game: Formal values resolver missing');
+ok(!game.includes('function compileTaggedSkill('),'game: Legacy compileTaggedSkill returned');
+ok(!game.includes('function parseSkillTags('),'game: Legacy Tag parser returned');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
-const phase=String(registry.phase||'');
-const m=phase.match(/^R03-([A-Z])(\d+)?([a-z])?$/);
-const phaseOk=phase==='R03-C'||phase==='R03-D'||(/^R03-(E\d+[a-z]?|F\d+[a-z]?)$/.test(phase))||(/^R0[4-9]-/.test(phase))||(/^R[1-9][0-9]-/.test(phase));
-ok(phaseOk,'registry phase predates R03-C');
-console.log('GENERIC_APPLY_RUNTIME_R03_C_PASS');
+ok(registry.phase==='FORMAL-SKILL-1','registry phase is not Formal');
+console.log('FORMAL_APPLY_RUNTIME_R03_C_PASS');
