@@ -1,18 +1,27 @@
-const fs=require('fs'),vm=require('vm');
-const src=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');
-const ctx={console,window:{},document:{}};vm.createContext(ctx);vm.runInContext(src,ctx);
-const c=ctx.compileTaggedSkill;if(typeof c!=='function')throw new Error('compileTaggedSkill missing');
-const base=['STATUS','STATUS_ID=STATUS-ACTION-DISABLED','ACTION_DISABLED=true','敵','単体','DURATION=400'];
-const ok=c({id:'T',name:'T',tags:base});if(!ok.ok)throw new Error('formal action disabled rejected: '+ok.errors.join('|'));
-if(ok.definition.parameters.statusPayload.action_disabled!==true)throw new Error('statusPayload.action_disabled missing');
-const attached=c({id:'TA',name:'TA',tags:['ATTACK',...base,'物理','DAMAGE=100']});if(!attached.ok||attached.definition.parameters.statusPayload.action_disabled!==true)throw new Error('ATTACK+STATUS action disabled failed');
-for(const [id,tags] of [
- ['false',base.map(x=>x==='ACTION_DISABLED=true'?'ACTION_DISABLED=false':x)],
- ['numeric',base.map(x=>x==='ACTION_DISABLED=true'?'ACTION_DISABLED=1':x)],
- ['nostatus',['ACTION_DISABLED=true','敵','単体']]
-]){const r=c({id,name:id,tags});if(r.ok)throw new Error(id+' should reject');}
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(data.data_version!=='FORMAL-SKILL-1')throw new Error('data_version format mismatch');
-const prod=data.data.find(x=>x.id==='SKL-STATUS-ACTION-DISABLED-400');if(!prod||prod.environment!=='production'||!ctx.compileSkillForRuntime(prod).ok)throw new Error('production fixture invalid');
-for(const id of ['ACTION-DISABLED-VALIDATION-FALSE','ACTION-DISABLED-VALIDATION-NUMERIC','ACTION-DISABLED-VALIDATION-NO-STATUS','ACTION-DISABLED-VALIDATION-NO-DURATION']){const x=data.data.find(v=>v.id===id);if(!x||x.environment!=='validation'||c(x).ok)throw new Error('validation fixture not rejected '+id)}
-const html=fs.readFileSync('game-tag-test/index.html','utf8'),vr=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');if(!html.includes('tagTestRunActionDisabledJson')||!vr.includes('function tagTestRunActionDisabledJson()'))throw new Error('device JSON path missing');
-console.log('ACTION_DISABLED_TAG_VALIDATION_GA_B486_38_OK');
+
+'use strict';
+const fs=require('fs'),assert=require('assert');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
+function skill(id,effects){return{schemaVersion:1,id:`SKL-${id}`,name:id,skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects,resource:{mpCost:0,cooldown:0,activationPriority:0}}}
+const valid=compiler.compileSkill(skill('ACTION-DISABLED',[{type:'APPLY',effectId:'ACTION_DISABLED',duration:400}]),registry);
+assert.strictEqual(valid.ok,true,JSON.stringify(valid.errors));
+const contract=valid.compiledSkill.runtimeContracts.applyContracts[0];
+assert.strictEqual(contract.effectId,'ACTION_DISABLED');
+assert.strictEqual(contract.values.statusId,'STATUS-ACTION-DISABLED');
+assert.strictEqual(contract.values.statusPayload.actionDisabled,true,'Formal registry actionDisabled contract missing');
+assert.strictEqual(contract.values.duration,400);
+const attached=compiler.compileSkill(skill('ACTION-DISABLED-ATTACK',[{type:'DAMAGE',power:100,damageType:'PHYSICAL'},{type:'APPLY',effectId:'ACTION_DISABLED',duration:400}]),registry);
+assert.strictEqual(attached.ok,true,JSON.stringify(attached.errors));
+assert.strictEqual(attached.compiledSkill.runtimeContracts.effectContracts.length,1);
+assert.strictEqual(attached.compiledSkill.runtimeContracts.applyContracts[0].values.statusPayload.actionDisabled,true);
+const missingDuration=compiler.compileSkill(skill('ACTION-DISABLED-NO-DURATION',[{type:'APPLY',effectId:'ACTION_DISABLED'}]),registry);
+assert.strictEqual(missingDuration.ok,false,'missing duration accepted');
+assert(missingDuration.errors.some(x=>x.code==='APPLY_DURATION_REQUIRED'),JSON.stringify(missingDuration.errors));
+const unknown=compiler.compileSkill(skill('ACTION-DISABLED-UNKNOWN',[{type:'APPLY',effectId:'NOT_REGISTERED',duration:400}]),registry);
+assert.strictEqual(unknown.ok,false,'unknown status accepted');
+assert(unknown.errors.some(x=>x.code==='UNKNOWN_EFFECT_ID'),JSON.stringify(unknown.errors));
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));assert.strictEqual(data.data_version,'FORMAL-SKILL-1');
+const prod=data.data.find(x=>x.id==='SKL-STATUS-ACTION-DISABLED-400');assert(prod&&prod.environment==='production','production fixture missing');
+assert.strictEqual(prod.runtimeContracts?.applyContracts?.[0]?.values?.statusPayload?.actionDisabled,true,'production Formal contract missing');
+console.log('ACTION_DISABLED_FORMAL_VALIDATION_GA_B486_38_OK');

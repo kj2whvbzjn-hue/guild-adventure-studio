@@ -1,19 +1,17 @@
-const fs=require('fs'),vm=require('vm');
-const src=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');
-const ctx={console,window:{},document:{}};vm.createContext(ctx);vm.runInContext(src,ctx);
-const c=ctx.compileTaggedSkill;if(typeof c!=='function')throw new Error('compileTaggedSkill missing');
-for(const [id,tags,expected] of [
- ['formal',['ATTACK','敵','単体','物理','DAMAGE=100','COOLDOWN=300'],300],
- ['zero',['ATTACK','敵','単体','物理','DAMAGE=100','COOLDOWN=0'],0],
- ['omitted',['ATTACK','敵','単体','物理','DAMAGE=100'],0],
- ['heal',['HEAL','味方','単体','HEAL=100','COOLDOWN=120'],120]
-]){const r=c({id,name:id,tags});if(!r.ok)throw new Error(id+' rejected: '+r.errors.join('|'));if(r.definition.parameters.cooldown!==expected)throw new Error(id+' cooldown mismatch '+r.definition.parameters.cooldown)}
-for(const [id,tags] of [
- ['negative',['ATTACK','敵','単体','物理','DAMAGE=100','COOLDOWN=-1']],
- ['decimal',['ATTACK','敵','単体','物理','DAMAGE=100','COOLDOWN=1.5']]
-]){const r=c({id,name:id,tags});if(r.ok)throw new Error(id+' should reject')}
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(data.data_version!=='FORMAL-SKILL-1')throw new Error('data_version format mismatch');
-const prod=data.data.find(x=>x.id==='SKL-COOLDOWN-ATTACK-300');if(!prod||prod.environment!=='production'||!ctx.compileSkillForRuntime(prod).ok)throw new Error('production fixture invalid');
-for(const id of ['COOLDOWN-VALIDATION-NEGATIVE','COOLDOWN-VALIDATION-DECIMAL']){const x=data.data.find(v=>v.id===id);if(!x||x.environment!=='validation'||c(x).ok)throw new Error('validation fixture not rejected '+id)}
-const html=fs.readFileSync('game-tag-test/index.html','utf8'),vr=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');if(!html.includes('tagTestRunCooldownJson')||!vr.includes('function tagTestRunCooldownJson()'))throw new Error('device JSON path missing');
-console.log('COOLDOWN_TAG_VALIDATION_GA_B486_41_OK');
+
+'use strict';
+const fs=require('fs'),assert=require('assert');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
+function skill(id,cooldown,kind='DAMAGE',omit=false){
+ const effects=kind==='HEAL'?[{type:'HEAL',power:100}]:[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}];
+ const resource=omit?{mpCost:0,activationPriority:0}:{mpCost:0,cooldown,activationPriority:0};
+ return{schemaVersion:1,id:`SKL-${id}`,name:id,skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:kind==='HEAL'?'ALLY':'ENEMY',range:'SINGLE'},effects,resource};
+}
+for(const [id,value,kind,omit,expected] of [['FORMAL',300,'DAMAGE',false,300],['ZERO',0,'DAMAGE',false,0],['OMITTED',0,'DAMAGE',true,0],['HEAL',120,'HEAL',false,120]]){
+ const r=compiler.compileSkill(skill(id,value,kind,omit),registry);assert.strictEqual(r.ok,true,`${id}: ${JSON.stringify(r.errors)}`);assert.strictEqual(r.compiledSkill.runtimeContracts.resourceContract.cooldown,expected,`${id} cooldown`);
+}
+for(const [id,value] of [['NEGATIVE',-1],['DECIMAL',1.5]]){const r=compiler.compileSkill(skill(id,value),registry);assert.strictEqual(r.ok,false,`${id} accepted`);assert(r.errors.some(x=>x.code==='INVALID_COOLDOWN'),JSON.stringify(r.errors));}
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));assert.strictEqual(data.data_version,'FORMAL-SKILL-1');
+const prod=data.data.find(x=>x.id==='SKL-COOLDOWN-ATTACK-300');assert(prod&&prod.environment==='production','production fixture missing');assert.strictEqual(prod.runtimeContracts?.resourceContract?.cooldown,300,'production cooldown contract mismatch');
+console.log('COOLDOWN_FORMAL_VALIDATION_GA_B486_41_OK');

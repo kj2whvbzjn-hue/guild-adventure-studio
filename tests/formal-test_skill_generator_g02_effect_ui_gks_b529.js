@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const build=require('../package-build.json');
 const registry=require('../assets/shared/config/skill-registry.json');
-assert.strictEqual(build.game_build,'GA-B486.138');
+assert.strictEqual(build.game_build,'GA-B486.139');
 assert.strictEqual(build.studio_build,'GKS-B555');
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
 vm.runInContext(fs.readFileSync('assets/shared/js/skill-authoring-registry.js','utf8'),ctx);
