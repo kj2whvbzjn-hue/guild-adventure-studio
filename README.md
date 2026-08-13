@@ -16,13 +16,13 @@
 - `index.html` — プロジェクト入口
 - `game/index.html` — ゲーム
 - `studio/index.html` — GK Studio
-- `game-tag-test/index.html` — タグ検証
 - `docs/index.html` — 現行資料案内
 
 ## 主な構成
 
 - `studio/` — 編集・検証・GitHub差分配置
 - `game/` — ゲーム画面
+- `game-tag-test/` — 公開導線から隔離したLegacy Tag検証資産（移行確認中）
 - `Export/` — Studioから生成されるゲーム受渡しデータ
 - `schemas/` — Export、検証、品質判定の定義
 - `tests/`、`tools/` — 自動検査

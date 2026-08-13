@@ -4,6 +4,11 @@ const gameShared=fs.readFileSync('assets/shared/js/device-game-test-harness.js',
 const game=fs.readFileSync('game/index.html','utf8');
 const tag=fs.readFileSync('game-tag-test/index.html','utf8');
 const tagSw=fs.readFileSync('game-tag-test/sw.js','utf8');
+const rootEntry=fs.readFileSync('index.html','utf8');
+const studio=fs.readFileSync('studio/index.html','utf8');
+const docs=fs.readFileSync('docs/index.html','utf8');
+const readme=fs.readFileSync('README.md','utf8');
+const aiIndex=JSON.parse(fs.readFileSync('AI_PROJECT_INDEX.json','utf8'));
 const legacyShared='assets/shared/js/device-test-harness.js';
 const retiredTagHarness='game-tag-test/assets/js/device-tag-test-harness.js';
 assert(!fs.existsSync(legacyShared),'retired shared legacy-capable harness must be physically removed');
@@ -21,4 +26,12 @@ assert(game.includes(`../assets/shared/js/device-game-test-harness.js?v=${token}
 assert(!game.includes('../assets/shared/js/device-test-harness.js'),'retired shared harness still loaded by Game');
 assert(!tag.includes('device-tag-test-harness.js'),'retired tag-test device harness still loaded by tag-test');
 assert(!tagSw.includes('device-tag-test-harness.js'),'retired tag-test device harness still precached');
+assert(!rootEntry.includes('href="./game-tag-test/'),'public root still links Legacy tag-test');
+assert(!game.includes('href="../game-tag-test/'),'Formal Game nav still links Legacy tag-test');
+assert(!studio.includes('href="../game-tag-test/'),'Studio nav still links Legacy tag-test');
+assert(!docs.includes('href="../game-tag-test/'),'Docs nav still links Legacy tag-test');
+assert(!gameShared.includes('../game-tag-test/'),'Formal device harness still links Legacy tag-test');
+assert(!readme.includes('- `game-tag-test/index.html` — タグ検証'),'README still lists Legacy tag-test as public entrypoint');
+assert(!build.public_entrypoints.includes('game-tag-test/index.html'),'package-build still lists Legacy tag-test as public entrypoint');
+assert(!aiIndex.public_entrypoints.includes('game-tag-test/index.html'),'AI project index still lists Legacy tag-test as public entrypoint');
 console.log('DEVICE_TEST_HARNESS_GA_B486_92_PASS');
