@@ -13,6 +13,9 @@ for(const rel of callers){
  for(const token of ['executeTaggedSkill(','compileTaggedSkill(','findTagSkill(','TAG_SKILLS'])
   assert(!src.includes(token),`${rel} still calls transitional ${token}`);
 }
+const gameRuntime=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
+assert(!gameRuntime.includes('function findTagSkill('),'Production runtime still exposes transitional findTagSkill alias');
+assert(!gameRuntime.includes('function executeTaggedSkill('),'Production runtime still exposes transitional executeTaggedSkill alias');
 for(const rel of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
  const src=fs.readFileSync(path.join(root,rel),'utf8');
  assert(src.includes('function findSkill(skillId)'),'canonical findSkill missing');

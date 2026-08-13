@@ -360,7 +360,6 @@ function runtimeSkillStore(){
  return[];
 }
 function findSkill(skillId){return runtimeSkillStore().find(x=>x.id===skillId)||null}
-function findTagSkill(skillId){return findSkill(skillId)}
 function skillRuntimeDiagnostics(){
  const skills=runtimeSkillStore(),production=skills.filter(x=>String(x?.environment||'production').toLowerCase()==='production');
  const formal=production.filter(x=>x?.runtimeContracts&&x?.schemaVersion===1),invalid=production.filter(x=>!x?.runtimeContracts||x?.schemaVersion!==1);
@@ -1009,9 +1008,6 @@ function executeSkillRuntime(actor,target,skillSource,{manual=false,isFollowUp=f
   if(effectiveAttackResult?.ok&&!suppressDerived){if(actualOrigin==='base'){dispatchTaggedBaseReactiveTriggers(actor,actionTarget,compiled,effectiveAttackResult,{derivedGeneration,wasCovered:coverResult.covered,triggerActionContext:actionTriggerContext})}else if(coverResult.covered){dispatchCounterAfterAttack(actor,actionTarget,compiled,effectiveAttackResult,{origin:actualOrigin,derivedGeneration,wasCovered:true,triggerActionContext:actionTriggerContext})}else if(actualOrigin==='counter')recordValidationEvent('counter_chain_blocked',{source_id:actor.id,target_id:actionTarget.id,skill_id:compiled.definition.id,reason:'COUNTER_CANNOT_CHAIN',derived_generation:derivedGeneration});else if(actualOrigin==='follow_up')recordValidationEvent('follow_up_chain_blocked',{source_id:actor.id,target_id:actionTarget.id,skill_id:compiled.definition.id,reason:'FOLLOW_UP_CANNOT_CHAIN',derived_generation:derivedGeneration})}
  }
  if(manual)renderBattle();const first=targetResults[0]||{};return{ok:true,compiled,costResult,cooldownStart,targets:targetResults.map(x=>x.targetId),originalTargets:resolved.targets.map(x=>x.id),targetResults,attackResult:first.attackResult,healResult:first.healResult,shieldResult:first.shieldResult,dotResult:first.dotResult,modifierResult:first.modifierResult,followUpResult:first.followUpResult,statusResult:first.statusResult,cleanseResult:first.cleanseResult,reviveResult:first.reviveResult,coverApplyResult:first.coverApplyResult};
-}
-function executeTaggedSkill(actor,target,skillSource,options={}){
- return executeSkillRuntime(actor,target,skillSource,options);
 }
 function dispatchConditionalFollowUps(initiator,target,event){
  if(!initiator?.alive||!target?.alive||event?.trigger!=='ALLY_ATTACK')return[];
