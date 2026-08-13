@@ -88,6 +88,29 @@ function compileApply(effect,path,registry,errors){
   lifecycle:lifecycle?{...lifecycle}:null
  };
 }
+
+function compileAuraEffect(effect,path,skill,registry,errors){
+ if(!effect||typeof effect!=='object'||String(effect.type||'').toUpperCase()!=='APPLY'){
+  error(errors,'AURA_APPLY_EFFECT_REQUIRED',`${path}.type`,'WHILE_SOURCE_ALIVEにはAPPLY Effectが必要です');return null;
+ }
+ const def=registry.effects?.[effect.effectId];
+ if(!def){error(errors,'UNKNOWN_EFFECT_ID',`${path}.effectId`,`未定義Effect ID: ${effect.effectId||'(なし)'}`);return null}
+ const kind=String(def.kind||'').toUpperCase(),runtime=def.runtime||{};
+ if(!['BUFF','DEBUFF'].includes(kind)){error(errors,'AURA_EFFECT_KIND_UNSUPPORTED',`${path}.effectId`,'AURAはBUFF/DEBUFF Effectのみ対応です');return null}
+ if(!runtime.modifierStat){error(errors,'MODIFIER_STAT_MISSING',`${path}.effectId`,'AURA EffectにmodifierStatが必要です');return null}
+ if(!num(effect.power)){error(errors,'AURA_POWER_REQUIRED',`${path}.power`,'AURA powerは有限数が必要です');return null}
+ const side=String(skill?.target?.side||'').toUpperCase();
+ const targetSide=side==='ALLY'?'ally':side==='ENEMY'?'enemy':'';
+ if(!targetSide){error(errors,'AURA_TARGET_SIDE_REQUIRED','target.side','AURA target.sideはALLYまたはENEMYが必要です');return null}
+ const excludeSelf=skill?.target?.excludeSelf===true;
+ const targetScope=targetSide==='enemy'?'all':excludeSelf?'allies_excluding_self':'self_and_allies';
+ return{
+  effectId:String(effect.effectId),kind,logic:'AURA',modifierStat:String(runtime.modifierStat),
+  power:effect.power,targetSide,targetScope,stack:'highest',
+  priority:Number.isInteger(skill?.trigger?.priority)?skill.trigger.priority:0,sourceDependent:true
+ };
+}
+
 function compileEffect(effect,index,skill,registry,errors){
  const path=`effects[${index}]`;
  if(!effect||typeof effect!=='object'){error(errors,'INVALID_EFFECT',path,'Effect objectが必要です');return null}
@@ -159,8 +182,12 @@ function compileSkill(skill,registry){
   conditionContracts.push({property:String(c.property),scope:String(c.scope||'SELF').toUpperCase(),operator:c.operator,value:c.value});
  }
  const effects=Array.isArray(skill.effects)?skill.effects:[];
+ let auraEffectContract=null;
  if(!effects.length)error(errors,'EFFECT_REQUIRED','effects','effectsが1件以上必要です');
- for(const [i,effect] of effects.entries()){
+ if(trigger==='WHILE_SOURCE_ALIVE'){
+  if(effects.length!==1)error(errors,'AURA_SINGLE_EFFECT_REQUIRED','effects','WHILE_SOURCE_ALIVEはAPPLY Effectを1件だけ指定してください');
+  if(effects[0])auraEffectContract=compileAuraEffect(effects[0],'effects[0]',skill,registry,errors);
+ }else for(const [i,effect] of effects.entries()){
   if(String(effect?.type||'').toUpperCase()==='APPLY'){const c=compileApply(effect,`effects[${i}]`,registry,errors);if(c)applyContracts.push(c)}
   else{const c=compileEffect(effect,i,skill,registry,errors);if(c)effectContracts.push(c)}
  }
@@ -173,7 +200,7 @@ function compileSkill(skill,registry){
   const runtimeContracts={
    schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),
    targetContract:{side:String(skill?.target?.side||''),range:String(skill?.target?.range||''),randomCount:skill?.target?.randomCount??null,excludeSelf:skill?.target?.excludeSelf===true},
-   conditionContracts:[...conditionContracts],effectContracts:[...effectContracts],applyContracts:applyContracts.map(c=>({...c,lifecycle:c.lifecycle?{...c.lifecycle}:null})),
+   conditionContracts:[...conditionContracts],effectContracts:[...effectContracts],applyContracts:applyContracts.map(c=>({...c,lifecycle:c.lifecycle?{...c.lifecycle}:null})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null,
    resourceContract:{mpCost:skill?.resource?.mpCost??0,cooldown:skill?.resource?.cooldown??0,activationPriority:skill?.resource?.activationPriority??0}
   };
   const compiledSkill={schemaVersion:SUPPORTED_SCHEMA,id:String(skill?.id||''),name:String(skill?.name||''),skillLevel:skill?.skillLevel??null,trigger:skill?.trigger?{...skill.trigger}:null,conditions:Array.isArray(skill?.conditions)?skill.conditions.map(x=>({...x})):[],target:skill?.target?{...skill.target}:null,effects:Array.isArray(skill?.effects)?skill.effects.map(x=>({...x})):[],resource:skill?.resource?{...skill.resource}:{},runtimeContracts};

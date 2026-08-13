@@ -1,11 +1,15 @@
 /* Studio skill data bridge — GKS-B484 / P01-01 HEAL */
 const STUDIO_SKILL_EXPORT_URL=window.GA_PROJECT_CONFIG.skillExportUrl;
 const studioSkillBridge={status:'idle',source_url:STUDIO_SKILL_EXPORT_URL,schema_version:null,data_version:null,generated_by:null,imported_ids:[],errors:[],loaded_at:null};
-function normalizeStudioTagSkill(record){
- if(!record||typeof record!=='object')return null;
+function normalizeStudioSkill(record){
+ if(!record||typeof record!=='object'||!record.id||!record.name)return null;
+ const environment=String(record.environment||'production').toLowerCase();
+ if(record.runtimeContracts&&record.schemaVersion===1){
+  return{...record,id:String(record.id),name:String(record.name),source:'studio_export',environment,definition_format:'formal_skill_v1'};
+ }
  const tags=Array.isArray(record.tags)?record.tags.map(x=>String(x).trim()).filter(Boolean):[];
- if(!record.id||!record.name||!tags.length)return null;
- return{id:String(record.id),name:String(record.name),tags,source:'studio_export',environment:record.environment||'production',definition_format:record.definition_format||'tag_v1',expected_result:record.expected_result||null};
+ if(environment==='production'||!tags.length)return null;
+ return{id:String(record.id),name:String(record.name),tags,source:'studio_export',environment,definition_format:record.definition_format||'tag_v1',expected_result:record.expected_result||null};
 }
 async function loadStudioSkillDefinitions(){
  studioSkillBridge.status='loading';studioSkillBridge.errors=[];
@@ -13,8 +17,8 @@ async function loadStudioSkillDefinitions(){
   const response=await fetch(STUDIO_SKILL_EXPORT_URL,{cache:'no-store'});
   if(!response.ok)throw new Error(`HTTP ${response.status}`);
   const payload=await response.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]);
-  const imported=rows.map(normalizeStudioTagSkill).filter(Boolean);
-  if(!imported.length)throw new Error('タグ定義スキルが0件です');
+  const imported=rows.map(normalizeStudioSkill).filter(Boolean);
+  if(!imported.length)throw new Error('Skill定義が0件です');
   for(const skill of imported){const i=SKILLS.findIndex(x=>x.id===skill.id);if(i>=0)SKILLS.splice(i,1,skill);else SKILLS.push(skill)}
   studioSkillBridge.status='loaded';studioSkillBridge.schema_version=payload?.schema_version||null;studioSkillBridge.data_version=payload?.data_version||null;studioSkillBridge.generated_by=payload?.generated_by||null;studioSkillBridge.imported_ids=imported.map(x=>x.id);studioSkillBridge.loaded_at=new Date().toISOString();
   if(typeof populateTagSkillTestUI==='function')populateTagSkillTestUI();

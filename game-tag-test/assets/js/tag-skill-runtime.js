@@ -361,7 +361,11 @@ function runtimeSkillStore(){
 function findSkill(skillId){return runtimeSkillStore().find(x=>x.id===skillId)||null}
 function findTagSkill(skillId){return findSkill(skillId)}
 function compileSkillForRuntime(skill){
- return skill?.runtimeContracts?compileSkillRuntime(skill):compileTaggedSkill(skill);
+ if(skill?.runtimeContracts)return compileSkillRuntime(skill);
+ if(String(skill?.environment||'production').toLowerCase()==='production'){
+  return{ok:false,errors:['Production SkillはruntimeContractsが必要です'],warnings:[],definition:null,parsed:null};
+ }
+ return compileTaggedSkill(skill);
 }
 function formatCompileResult(result){
  const d=result.definition,p=result.parsed;
@@ -408,7 +412,7 @@ function activeAuraEntries(target,kind,stat){
  if(!target?.alive)return[];const entries=[];
  for(const source of battle.units.filter(x=>x.alive)){
   for(const skillId of auraSourceSkillIds(source)){
-   const skill=findTagSkill(skillId);if(!skill)continue;const compiled=compileTaggedSkill(skill);if(!compiled.ok||!compiled.definition.logicOrder.includes('AURA'))continue;
+   const skill=findSkill(skillId);if(!skill)continue;const compiled=compileSkillForRuntime(skill);if(!compiled.ok||!compiled.definition.logicOrder.includes('AURA'))continue;
    const p=compiled.definition.parameters;if(p.auraEffect!==kind||p.modifierStat!==stat)continue;
    const triggerContract=compiled.definition.runtimeContracts?.triggerContract||null;
    const collectAuraEntry=()=>{
@@ -862,7 +866,7 @@ function dispatchCounterAfterAttack(attacker,defender,incomingCompiled,attackRes
  if(origin!=='base'&&!wasCovered)return skip('DERIVED_ORIGIN');
  if(Number(derivedGeneration)>=2)return skip('DERIVED_GENERATION_LIMIT');
  if(!attackResult?.ok)return skip('NO_HIT');if(incomingCompiled?.definition?.target?.range!=='single')return skip('AREA_ATTACK');if(battle.result||battle.pendingResult)return skip('BATTLE_END');if(!defender?.alive)return skip('DEFENDER_DEAD');if(counterActionBlocked(defender))return skip('ACTION_DISABLED');
- const skillId=defender.counterSkillId||null;if(!skillId)return skip('NO_COUNTER_SKILL');const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);if(!skill||!compiled.ok||!compiled.definition.logicOrder.includes('COUNTER'))return skip('INVALID_COUNTER_SKILL');if(compiled.definition.parameters.counterTrigger!=='hit'||compiled.definition.parameters.counterTarget!=='attacker')return skip('COUNTER_CONDITION_MISMATCH');
+ const skillId=defender.counterSkillId||null;if(!skillId)return skip('NO_COUNTER_SKILL');const skill=findSkill(skillId),compiled=compileSkillForRuntime(skill);if(!skill||!compiled.ok||!compiled.definition.logicOrder.includes('COUNTER'))return skip('INVALID_COUNTER_SKILL');if(compiled.definition.parameters.counterTrigger!=='hit'||compiled.definition.parameters.counterTarget!=='attacker')return skip('COUNTER_CONDITION_MISMATCH');
 const activation=acquireTaggedTriggerActivation(triggerActionContext,`COUNTER:${defender.id}:${skillId}`,{kind:'COUNTER',sourceId:defender.id,targetId:attacker.id,skillId});
  if(!activation?.ok)return skip(activation?.reason||'TRIGGER_GUARD_REJECTED',{activation_count:activation?.activation_count??triggerActionContext?.activationCount??0,max_activations:activation?.max_activations??triggerActionContext?.maxActivations??null});
  typeof recordValidationEvent==='function'&&recordValidationEvent('trigger_action_activation',{kind:'COUNTER',source_id:defender.id,target_id:attacker.id,skill_id:skillId,index:activation.index,max_activations:activation.max_activations});
@@ -981,7 +985,7 @@ function dispatchTaggedBaseReactiveTriggers(actor,target,compiled,attackResult,{
  return results;
 }
 function executeSkillRuntime(actor,target,skillSource,{manual=false,isFollowUp=false,origin=null,suppressDerived=false,derivedGeneration=0,skipExecutionEligibility=false,triggerActionContext=null}={}){
- const compiled=skillSource?.runtimeContracts?compileSkillRuntime(skillSource):compileTaggedSkill(skillSource);battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
+ const compiled=compileSkillForRuntime(skillSource);battle.log.push(`[Tick ${battle.tick}] [TAG][COMPILE] ${skillSource?.id||'unknown'} ${compiled.ok?'成功':'失敗'}`);if(!compiled.ok){compiled.errors.forEach(x=>battle.log.push(`[Tick ${battle.tick}] [TAG][ERROR] ${x}`));return{ok:false,stage:'compile',compiled}}
  const actualOrigin=origin||(isFollowUp?'follow_up':compiled.definition.logicOrder.includes('COUNTER')?'counter':'base');
  const actionTriggerContext=createTaggedTriggerActionContext(actor,compiled,triggerActionContext);
  const conditionResult=evaluateTaggedSkillConditions(actor,compiled);if(!conditionResult.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_condition_blocked',{source_id:actor?.id||null,skill_id:compiled.definition.id,origin:actualOrigin,conditions:conditionResult.results});battle.log.push(`[Tick ${battle.tick}] [TAG][CONDITION] ${actor?.name||'unknown'}の${compiled.definition.name}は発動条件不成立`);return{ok:false,stage:'condition',reason:'CONDITION_FAILED',conditionResult,compiled}}
@@ -1009,7 +1013,7 @@ function dispatchConditionalFollowUps(initiator,target,event){
  for(const follower of battle.units.filter(x=>x.alive&&x.side===initiator.side&&x.id!==initiator.id)){
   const ids=Array.isArray(follower.followUpSkillIds)?follower.followUpSkillIds:[];
   for(const skillId of ids){
-   const skill=findTagSkill(skillId),compiled=compileTaggedSkill(skill);
+   const skill=findSkill(skillId),compiled=compileSkillForRuntime(skill);
    if(!compiled.ok||!compiled.definition.logicOrder.includes('FOLLOW_UP'))continue;
    const triggerContract=compiled.definition.runtimeContracts?.triggerContract||null;
    candidates.push({follower,skillId,skill,compiled,triggerContract,priority:Number.isInteger(triggerContract?.priority)?triggerContract.priority:0,sequence:sequence++});

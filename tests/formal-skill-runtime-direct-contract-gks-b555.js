@@ -8,8 +8,8 @@ const bridgeSrc=fs.readFileSync(path.join(root,'game/assets/js/studio-skill-brid
 
 assert(runtimeSrc.includes('function compileSkillRuntime(skill){'),'formal runtime compiler is missing');
 assert(runtimeSrc.includes('function executeSkillRuntime('),'formal runtime executor is missing');
-assert(runtimeSrc.includes('skillSource?.runtimeContracts?compileSkillRuntime(skillSource):compileTaggedSkill(skillSource)'),
-  'structured Skill execution does not select formal runtime compiler');
+assert(runtimeSrc.includes('const compiled=compileSkillForRuntime(skillSource);'),
+  'structured Skill execution does not use canonical runtime dispatcher');
 const r06Start=bridgeSrc.indexOf('function runR06MasterStructuredRuntimeFinalRegression');
 const r06End=bridgeSrc.indexOf('function buildFormalRuntimeRegressionReport',r06Start);
 assert(r06Start>=0&&r06End>r06Start,'R06 final regression block missing');

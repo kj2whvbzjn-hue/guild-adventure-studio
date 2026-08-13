@@ -10,7 +10,7 @@ const exp=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),
 const must=(ok,msg)=>{if(!ok){console.error('FAIL',msg);process.exit(1)}};
 must(/^GA-B\d+(?:\.\d+)+$/.test(build.game_build||''),'build');
 must(spec.formal_candidate==='P01-13-FORMAL-1'&&spec.formal_runtime_change===true,'formal spec');
-must(/^GA-B486\.\d+-/.test(String(exp.data_version||'')),'data version format');
+must(exp.data_version==='FORMAL-SKILL-1','data version format');
 must(battle.includes('function createBattleTieSeed()'),'seed generator');
 must(battle.includes('function initializeBattleTieRolls(seed=createBattleTieSeed())'),'battle init');
 must(battle.includes('initializeBattleTieRolls();renderBattle()'),'reset assigns rolls');

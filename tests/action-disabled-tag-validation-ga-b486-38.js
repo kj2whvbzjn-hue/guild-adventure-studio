@@ -11,8 +11,8 @@ for(const [id,tags] of [
  ['numeric',base.map(x=>x==='ACTION_DISABLED=true'?'ACTION_DISABLED=1':x)],
  ['nostatus',['ACTION_DISABLED=true','敵','単体']]
 ]){const r=c({id,name:id,tags});if(r.ok)throw new Error(id+' should reject');}
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(typeof data.data_version!=='string'||!/^GA-B486\.\d+-/.test(data.data_version))throw new Error('data_version format mismatch');
-const prod=data.data.find(x=>x.id==='SKL-STATUS-ACTION-DISABLED-400');if(!prod||prod.environment!=='production'||!c(prod).ok)throw new Error('production fixture invalid');
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));if(data.data_version!=='FORMAL-SKILL-1')throw new Error('data_version format mismatch');
+const prod=data.data.find(x=>x.id==='SKL-STATUS-ACTION-DISABLED-400');if(!prod||prod.environment!=='production'||!ctx.compileSkillForRuntime(prod).ok)throw new Error('production fixture invalid');
 for(const id of ['ACTION-DISABLED-VALIDATION-FALSE','ACTION-DISABLED-VALIDATION-NUMERIC','ACTION-DISABLED-VALIDATION-NO-STATUS','ACTION-DISABLED-VALIDATION-NO-DURATION']){const x=data.data.find(v=>v.id===id);if(!x||x.environment!=='validation'||c(x).ok)throw new Error('validation fixture not rejected '+id)}
 const html=fs.readFileSync('game-tag-test/index.html','utf8'),vr=fs.readFileSync('game-tag-test/assets/js/validation-runtime.js','utf8');if(!html.includes('tagTestRunActionDisabledJson')||!vr.includes('function tagTestRunActionDisabledJson()'))throw new Error('device JSON path missing');
 console.log('ACTION_DISABLED_TAG_VALIDATION_GA_B486_38_OK');

@@ -6,7 +6,7 @@ const errors=[];
 if(!/^GA-B\d+(?:\.\d+)+$/.test(build.game_build||''))errors.push(`build=${build.game_build}`);
 const revive=skills.find(x=>x.id==='SKL-REVIVE-SINGLE-100');
 if(!revive)errors.push('SKL-REVIVE-SINGLE-100 missing');
-const ctx={console,Math,Date,JSON,TAG_SKILLS:skills,battle:{tick:0,units:[],log:[],validationMode:true,validationEvents:[]},recordValidationEvent:()=>{},queueSceneEvent:()=>{},finishIfNeeded:()=>{},renderBattle:()=>{}};
+const ctx={console,Math,Date,JSON,SKILLS:skills,GKSTriggerEngine:{dispatchCompiled(contract,event,payload,run){return{ok:true,result:run()}}},battle:{tick:0,units:[],log:[],validationMode:true,validationEvents:[]},recordValidationEvent:()=>{},queueSceneEvent:()=>{},finishIfNeeded:()=>{},renderBattle:()=>{}};
 vm.createContext(ctx);
 let src=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 src += `\n(function(){
@@ -16,12 +16,12 @@ src += `\n(function(){
  if(effectiveModifierPower(target,'BUFF','ATK')!==30) throw new Error('pre highest');
  resetCombatantOnDeath(high,{reason:'test'});
  if(effectiveModifierPower(target,'BUFF','ATK')!==10) throw new Error('death disable');
- const rr=executeTaggedSkill(reviver,high,TAG_SKILLS.find(x=>x.id==='SKL-REVIVE-SINGLE-100'));
+ const rr=executeSkillRuntime(reviver,high,SKILLS.find(x=>x.id==='SKL-REVIVE-SINGLE-100'));
  if(!rr.ok||!rr.reviveResult?.ok) throw new Error('fixed revive result');
  if(high.hp!==100||!high.alive) throw new Error('fixed revive state '+high.hp+'/'+high.alive);
  if(effectiveModifierPower(target,'BUFF','ATK')!==30) throw new Error('source aura restore');
  resetCombatantOnDeath(target,{reason:'target'});
- const tr=executeTaggedSkill(reviver,target,TAG_SKILLS.find(x=>x.id==='SKL-REVIVE-SINGLE-100'));
+ const tr=executeSkillRuntime(reviver,target,SKILLS.find(x=>x.id==='SKL-REVIVE-SINGLE-100'));
  if(!tr.ok||!tr.reviveResult?.ok||target.hp!==100||!target.alive) throw new Error('target revive state');
  if(effectiveModifierPower(target,'BUFF','ATK')!==30) throw new Error('target aura re-evaluate');
 })();`;
