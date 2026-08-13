@@ -1,31 +1,31 @@
-const CACHE_NAME="ga-game-b486157-b555";
+const CACHE_NAME="ga-game-b486158-b555";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=486157b555';
+const OFFLINE_URL='./index.html?appv=486158b555';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=486157b555",
-  "./manifest.webmanifest?v=486157",
-  "./icon-192.png?v=486157",
-  "./icon-512.png?v=486157",
-  "../Export/skill/skills.json?v=486157b555"
+  "./index.html?appv=486158b555",
+  "./manifest.webmanifest?v=486158",
+  "./icon-192.png?v=486158",
+  "./icon-512.png?v=486158",
+  "../Export/skill/skills.json?v=486158b555"
 ,
-  "../assets/shared/config/runtime-config.js?v=486157b555",
-  "../assets/shared/js/game-shell-common.js?v=486157",
-  "../assets/shared/js/apply-lifecycle-engine.js?v=486157",
-  "../assets/shared/js/trigger-engine.js?v=486157",
-  "../assets/shared/js/condition-engine.js?v=486157",
-  "../assets/shared/js/skill-compiler.js?v=486157",
-  "../assets/shared/js/skill-compile-service.js?v=486157",
-  "../assets/shared/js/device-game-test-harness.js?v=486157",
-  "../assets/shared/config/skill-registry.json?v=486157"
+  "../assets/shared/config/runtime-config.js?v=486158b555",
+  "../assets/shared/js/game-shell-common.js?v=486158",
+  "../assets/shared/js/apply-lifecycle-engine.js?v=486158",
+  "../assets/shared/js/trigger-engine.js?v=486158",
+  "../assets/shared/js/condition-engine.js?v=486158",
+  "../assets/shared/js/skill-compiler.js?v=486158",
+  "../assets/shared/js/skill-compile-service.js?v=486158",
+  "../assets/shared/js/device-game-test-harness.js?v=486158",
+  "../assets/shared/config/skill-registry.json?v=486158"
 ,
-  "./assets/js/app-runtime.js?v=486157b555"
+  "./assets/js/app-runtime.js?v=486158b555"
 ,
-  "./assets/js/tag-skill-runtime.js?v=486157b555",
-  "./assets/js/studio-skill-bridge.js?v=486157b555"
+  "./assets/js/tag-skill-runtime.js?v=486158b555",
+  "./assets/js/studio-skill-bridge.js?v=486158b555"
 ,
-  "./assets/js/battle-control.js?v=486157",
-  "./assets/js/ui-bootstrap.js?v=486157"
+  "./assets/js/battle-control.js?v=486158",
+  "./assets/js/ui-bootstrap.js?v=486158"
 ];
 
 self.addEventListener('install',event=>{
