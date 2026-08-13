@@ -6,7 +6,7 @@ const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-generic-re
 const budgetRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-budget-rules.json','utf8'));
 const aiRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-ai-generation-rules.json','utf8'));
 const ctx={console};ctx.globalThis=ctx;vm.createContext(ctx);
-for(const f of ['assets/shared/js/generic-skill-budget-engine.js','assets/shared/js/generic-skill-compiler.js','assets/shared/js/generic-skill-ai-batch-engine.js'])vm.runInContext(fs.readFileSync(f,'utf8'),ctx,{filename:f});
+for(const f of ['assets/shared/js/skill-budget-engine.js','assets/shared/js/generic-skill-compiler.js','assets/shared/js/skill-ai-batch-engine.js'])vm.runInContext(fs.readFileSync(f,'utf8'),ctx,{filename:f});
 (async()=>{
  const out=await ctx.GKSGenericSkillAiBatchEngine.generateBatch({requests:[
   {skillLevel:8,intent:'表示確認用攻撃',effects:[{type:'DAMAGE',damageType:'PHYSICAL'}],target:'ENEMY',range:'SINGLE',desiredStrength:'MEDIUM',searchMetadata:{}},

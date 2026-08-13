@@ -91,7 +91,7 @@ function runFormalReviveRuntimeRegression(){
  add('FORMAL-REVIVE-DEATH-RESET','Studio正式死亡リセット後蘇生',()=>{const f=prepare(),actor=f.allies[0],target=f.allies[1],skill=requireSkill('SKL-REVIVE-SINGLE-100'),caseErrors=[],reset=kill(target),result=executeSkillRuntime(actor,target,skill),final=formalReviveSnapshot(target);if(final.status_count||final.dot_count||final.modifier_count||final.shield_count||final.reserved_action||final.gauge!==0)caseErrors.push('死亡前の一時状態が残っています');return{skill_id:skill.id,reset_result:reset,final_state:final,result:result.reviveResult,events:[...battle.validationEvents],errors:caseErrors}});
  return{cases,summary:{case_count:cases.length,passed_count:cases.filter(x=>x.passed).length,failed_count:cases.filter(x=>!x.passed).length,passed:errors.length===0,errors}};
 }
-const R06_FINAL_MASTER_SKILL_PREFIX='G05-AI-';
+const R06_FINAL_MASTER_SKILL_PREFIX='R06-B547-MASS-';
 const STUDIO_CURRENT_PROJECT_STORAGE_KEY='gas_v4_current_project_v060';
 const STUDIO_PROJECT_STORAGE_PREFIX='gas_v4_project_v060_';
 function loadCurrentStudioMasterForRuntimeRegression(){
@@ -145,7 +145,7 @@ function runR06MasterStructuredRuntimeFinalRegression(){
  const compositeCount=cases.filter(x=>x.composite).length;if(compositeCount!==48)errors.push(`複合Skill件数が48ではありません: ${compositeCount}`);
  const runtimeContractsCount=compile_results.filter(x=>x.runtime_contract_source==='runtimeContracts').length,noContractCount=compile_results.filter(x=>!x.runtime_contract_source).length;
  if(runtimeContractsCount!==rows.length)errors.push(`R06正式Runtime契約のruntimeContracts接続が全件ではありません: ${runtimeContractsCount}/${rows.length}`);
- return{schema_version:'1.2.0',build:'GA-B486.121',generated_at:new Date().toISOString(),test:{id:'R06-MASTER-STRUCTURED-RUNTIME-FINAL-001',mode:'master_registered_structured_skill_composite_runtime_final',entrypoint:'game/index.html'},source:{status:'loaded',project_id:source.project_id,storage:'Studio current project localStorage',skill_prefix:R06_FINAL_MASTER_SKILL_PREFIX,master_skill_count:rows.length},compile_results,cases,summary:{master_skill_count:rows.length,compile_passed_count:compile_results.filter(x=>x.compiled_ok&&x.runtime_contract_connected).length,runtime_contracts_count:runtimeContractsCount,no_contract_count:noContractCount,runtime_passed_count:cases.filter(x=>x.passed).length,runtime_case_count:cases.length,composite_case_count:compositeCount,passed:errors.length===0,errors}};
+ return{schema_version:'1.1.0',build:'GA-B486.121',generated_at:new Date().toISOString(),test:{id:'R06-MASTER-STRUCTURED-RUNTIME-FINAL-001',mode:'master_registered_structured_skill_composite_runtime_final',entrypoint:'game/index.html'},source:{status:'loaded',project_id:source.project_id,storage:'Studio current project localStorage',skill_prefix:R06_FINAL_MASTER_SKILL_PREFIX,master_skill_count:rows.length},compile_results,cases,summary:{master_skill_count:rows.length,compile_passed_count:compile_results.filter(x=>x.compiled_ok&&x.runtime_contract_connected).length,runtime_contracts_count:runtimeContractsCount,no_contract_count:noContractCount,runtime_passed_count:cases.filter(x=>x.passed).length,runtime_case_count:cases.length,composite_case_count:compositeCount,passed:errors.length===0,errors}};
 }
 
 function buildFormalRuntimeRegressionReport(){

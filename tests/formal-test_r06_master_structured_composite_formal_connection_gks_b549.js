@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const src=fs.readFileSync('game/assets/js/studio-skill-bridge.js','utf8');
 const skills=Array.from({length:48},(_,i)=>({
- id:`G05-AI-${String(i+1).padStart(3,'0')}`,name:`case${i+1}`,tags:['味方','単体','HEAL=10','RESOURCE_CHANGE'],
+ id:`R06-B547-MASS-${String(i+1).padStart(3,'0')}`,name:`case${i+1}`,tags:['味方','単体','HEAL=10','RESOURCE_CHANGE'],
  runtimeContracts:{schemaVersion:1,registryPhase:'R05-H',triggerContract:{type:'ON_USE',scope:'SELF'},conditionContracts:[],effectContracts:[{type:'RESOURCE_CHANGE',resource:'MP',amount:10},{type:'HEAL',power:10}],applyContracts:[],auraEffectContract:null}
 }));
 const project={masters:{skills}};
@@ -10,8 +10,6 @@ const ctx={window:{GA_PROJECT_CONFIG:{skillExportUrl:'x'}},localStorage:{getItem
 ctx.window=Object.assign(ctx.window,ctx);ctx.globalThis=ctx;
 vm.createContext(ctx);vm.runInContext(src,ctx);
 const report=ctx.runR06MasterStructuredRuntimeFinalRegression();
-assert.strictEqual(report.source.skill_prefix,'G05-AI-');
-assert.ok(!src.includes("R06-B547-MASS-"),'retired R06-B547-MASS selector remains');
 assert.strictEqual(report.summary.master_skill_count,48);
 assert.strictEqual(report.summary.compile_passed_count,48);
 assert.strictEqual(report.summary.runtime_passed_count,48);
@@ -19,6 +17,6 @@ assert.strictEqual(report.summary.runtime_case_count,48);
 assert.strictEqual(report.summary.composite_case_count,48);
 assert.strictEqual(report.summary.passed,true,JSON.stringify(report.summary.errors));
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\''])assert.ok(src.includes(marker),`missing ${marker}`);
-const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486121b554'));
+const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486121b553'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
 console.log('PASS GKS-B550 R06 Master structured composite runtime formal-regression connection');

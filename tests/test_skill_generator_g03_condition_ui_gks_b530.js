@@ -6,7 +6,7 @@ assert.strictEqual(build.studio_build,'GKS-B555');
 assert.ok(['G03','G04','G05'].includes(registry.authoring.phase));
 assert.deepStrictEqual(registry.authoring.condition.required_fields,['scope','property','operator','value']);
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('assets/shared/js/generic-skill-authoring-registry.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('assets/shared/js/skill-authoring-registry.js','utf8'),ctx);
 const author=ctx.GKSGenericSkillAuthoringRegistry;assert.ok(['G03','G04','G05'].includes(author.VERSION));
 const numeric=author.resolveConditionRequirements(registry,'SELF_HP_RATE');
 assert.strictEqual(numeric.ok,true);assert.strictEqual(numeric.scope,'SELF');assert.deepStrictEqual(Array.from(numeric.operators),['=','!=','>','>=','<','<=']);assert.strictEqual(numeric.valueControl.min,0);assert.strictEqual(numeric.valueControl.max,1);

@@ -4,7 +4,7 @@ const registry=require('../assets/shared/config/skill-generic-registry.json');
 assert.strictEqual(build.game_build,'GA-B486.121');
 assert.strictEqual(build.studio_build,'GKS-B555');
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('assets/shared/js/generic-skill-authoring-registry.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('assets/shared/js/skill-authoring-registry.js','utf8'),ctx);
 const author=ctx.GKSGenericSkillAuthoringRegistry;assert.ok(author);assert.ok(['G02','G03','G04','G05'].includes(author.VERSION));
 assert.ok(['G02','G03','G04','G05'].includes(registry.authoring.phase));
 const ui=author.buildUiDefinition(registry);

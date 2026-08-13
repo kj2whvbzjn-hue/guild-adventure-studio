@@ -8,7 +8,7 @@ assert.ok(['G04','G05'].includes(registry.authoring.phase));
 assert.strictEqual(rules.budgetRuleVersion,'G04-BUDGET-V1');
 assert.strictEqual(rules.existing_skill_policy,'NO_AUTOMATIC_RECALCULATION');
 const ctx={console,module:{exports:{}},globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
-vm.runInContext(fs.readFileSync('assets/shared/js/generic-skill-budget-engine.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync('assets/shared/js/skill-budget-engine.js','utf8'),ctx);
 const engine=ctx.GKSGenericSkillBudgetEngine;assert.strictEqual(engine.VERSION,'G04');
 const normal={schemaVersion:1,id:'G04-NORMAL',name:'Normal',skillLevel:10,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:100,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0,activationPriority:0}};
 const ok=engine.calculate(normal,rules,registry);assert.strictEqual(ok.ok,true);assert.strictEqual(ok.withinBudget,true);assert.strictEqual(ok.manualOverrideApplied,false);assert.ok(ok.calculationTrace.some(x=>x.kind==='effect_cost'));assert.ok(ok.calculationTrace.some(x=>x.kind==='trigger'));assert.ok(ok.calculationTrace.some(x=>x.kind==='condition_refund'));assert.ok(ok.calculationTrace.some(x=>x.kind==='mp_refund'));assert.ok(ok.calculationTrace.some(x=>x.kind==='cooldown_refund'));
