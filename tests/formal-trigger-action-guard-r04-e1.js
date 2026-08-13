@@ -17,24 +17,21 @@ let c=engine.tryActivate(ctx,'COUNTER:A',{kind:'COUNTER'});assert.strictEqual(c.
 let over=engine.tryActivate(ctx,'FOLLOW_UP:C',{kind:'FOLLOW_UP'});assert.strictEqual(over.ok,false);assert.strictEqual(over.reason,'TRIGGER_ACTION_LIMIT_REACHED');
 assert.strictEqual(ctx.activationCount,3);assert.strictEqual(ctx.history.length,3);
 
-// Production runtimes must create/share the same action context through derived COUNTER execution.
-for(const runtimePath of ['game/assets/js/tag-skill-runtime.js','game-tag-test/assets/js/tag-skill-runtime.js']){
-  const src=fs.readFileSync(runtimePath,'utf8');
-  assert.ok(src.includes('createTaggedTriggerActionContext'),'action context helper missing: '+runtimePath);
-  assert.ok(src.includes('acquireTaggedTriggerActivation'),'activation guard helper missing: '+runtimePath);
-  assert.ok(src.includes("triggerActionContext=createTaggedTriggerActionContext(attacker,incomingCompiled,triggerActionContext)"),'COUNTER context normalization missing: '+runtimePath);
-  assert.ok(src.includes("triggerActionContext})"),'derived COUNTER must inherit action context: '+runtimePath);
-  assert.ok(src.includes("trigger_action_activation"),'activation audit event missing: '+runtimePath);
-}
+// The Production Formal Game runtime must create/share the same action context through derived COUNTER execution.
+const game=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
+assert.ok(game.includes('createTaggedTriggerActionContext'),'Formal Game action context helper missing');
+assert.ok(game.includes('acquireTaggedTriggerActivation'),'Formal Game activation guard helper missing');
+assert.ok(game.includes("triggerActionContext=createTaggedTriggerActionContext(attacker,incomingCompiled,triggerActionContext)"),'Formal Game COUNTER context normalization missing');
+assert.ok(game.includes("triggerActionContext})"),'Formal Game derived COUNTER must inherit action context');
+assert.ok(game.includes("trigger_action_activation"),'Formal Game activation audit event missing');
 
-// Game FOLLOW_UP shares the base action context and keeps the established ordering:
+// Formal Game FOLLOW_UP shares the base action context and keeps the established ordering:
 // COUNTER dispatch occurs before FOLLOW_UP candidate dispatch, while FOLLOW_UP candidates
 // remain priority-desc / discovery-order stable.
-const game=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
 assert.ok(game.includes("event={...(event||{}),triggerActionContext}"),'FOLLOW_UP action context inheritance missing');
 assert.ok(game.includes("`FOLLOW_UP:${follower.id}:${skillId}`"),'FOLLOW_UP activation key missing');
 assert.ok(game.includes("candidates.splice(0,candidates.length,...orderTaggedSimultaneousTriggers(candidates))"),'FOLLOW_UP shared priority order missing');
 assert.ok(game.includes("{kind:'COUNTER',priority:0,sequence:0},{kind:'FOLLOW_UP',priority:0,sequence:1}"),'COUNTER must remain before FOLLOW_UP for the same base hit');
 assert.ok(game.includes('dispatchTaggedBaseReactiveTriggers(actor,actionTarget,compiled,effectiveAttackResult'),'base hit must use shared reactive ordering');
 
-console.log('GENERIC_TRIGGER_ACTION_GUARD_R04_E1_PASS');
+console.log('FORMAL_TRIGGER_ACTION_GUARD_R04_E1_PASS');

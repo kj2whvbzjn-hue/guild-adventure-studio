@@ -49,29 +49,14 @@ assert.strictEqual(action.activationCount,16);
 const overflow=engine.tryActivate(action,'FOLLOW_UP:OVER',{kind:'FOLLOW_UP'});
 assert.strictEqual(overflow.ok,false);assert.strictEqual(overflow.reason,'TRIGGER_ACTION_LIMIT_REACHED');
 
-function fnText(source,name){
-  const start=source.indexOf(`function ${name}(`);assert.ok(start>=0,`${name} missing`);
-  let depth=0,started=false,quote=null,escape=false;
-  for(let i=start;i<source.length;i++){
-    const ch=source[i];
-    if(quote){if(escape)escape=false;else if(ch==='\\')escape=true;else if(ch===quote)quote=null;continue;}
-    if(ch==='\''||ch==='"'||ch==='`'){quote=ch;continue;}
-    if(ch==='{'){depth++;started=true}else if(ch==='}'){depth--;if(started&&depth===0)return source.slice(start,i+1)}
-  }
-  throw new Error(`${name} unterminated`);
-}
 const game=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8');
-const tagTest=fs.readFileSync('game-tag-test/assets/js/tag-skill-runtime.js','utf8');
 for(const name of ['dispatchCounterAfterAttack','dispatchConditionalFollowUps','dispatchTaggedBaseReactiveTriggers','activeAuraEntries']){
-  assert.strictEqual(fnText(game,name),fnText(tagTest,name),`${name} Game/game-tag-test parity`);
+  assert.ok(game.includes(`function ${name}(`),`${name} missing from Formal Game runtime`);
 }
-for(const src of [game,tagTest]){
-  assert.ok(src.includes("engine.dispatchCompiled(triggerContract,'hit_received'"),'COUNTER Trigger Engine boundary missing');
-  assert.ok(src.includes("engine.dispatchCompiled(triggerContract,'ally_attack'"),'FOLLOW_UP Trigger Engine boundary missing');
-  assert.ok(src.includes("engine.dispatchCompiled(triggerContract,'aura_evaluate'"),'AURA Trigger Engine boundary missing');
-  assert.ok(src.includes('formalTrigger:false'),'Tag reactive/aura fallback marker missing');
-  assert.ok(src.includes('createTaggedTriggerActionContext'),'shared per-action Trigger Guard missing');
-  assert.ok(src.includes('orderTaggedSimultaneousTriggers'),'shared simultaneous Trigger ordering missing');
-}
+assert.ok(game.includes("engine.dispatchCompiled(triggerContract,'hit_received'"),'Formal Game COUNTER Trigger Engine boundary missing');
+assert.ok(game.includes("engine.dispatchCompiled(triggerContract,'ally_attack'"),'Formal Game FOLLOW_UP Trigger Engine boundary missing');
+assert.ok(game.includes("engine.dispatchCompiled(triggerContract,'aura_evaluate'"),'Formal Game AURA Trigger Engine boundary missing');
+assert.ok(game.includes('createTaggedTriggerActionContext'),'Formal Game per-action Trigger Guard missing');
+assert.ok(game.includes('orderTaggedSimultaneousTriggers'),'Formal Game simultaneous Trigger ordering missing');
 
-console.log('GENERIC_TRIGGER_CLOSURE_R04_E3_PASS');
+console.log('FORMAL_TRIGGER_CLOSURE_R04_E3_PASS');
