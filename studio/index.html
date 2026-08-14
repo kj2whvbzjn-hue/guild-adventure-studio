@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B559</title>
+<title>GK Studio GKS-B560</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -255,6 +255,11 @@ body.studio-input-open{overflow:hidden}
 .quest-box-placement-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
 .quest-box-placement-kind{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .quest-box-random-filter{margin-top:7px;padding:8px;border-radius:8px;background:#f1f5f9;font-size:12px;color:#475569;overflow-wrap:anywhere}
+.quest-box-event-catalog{margin-top:8px;padding:10px;border:1px solid #dbe3ee;border-radius:9px;background:#f8fafc}
+.quest-box-event-catalog .grid{margin-top:8px}
+.quest-box-event-catalog-count{margin:6px 0;font-size:12px;color:var(--muted)}
+.quest-box-random-filter-editor{margin-top:8px;padding:10px;border:1px solid #dbe3ee;border-radius:9px;background:#f8fafc}
+.event-classification{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:5px}
 body.quest-box-editor-open{overflow:hidden}
 @media(max-width:720px){
  .quest-box-section-head,.quest-box-summary-main,.quest-box-stage-head{display:block}
@@ -428,7 +433,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=333"></script>
-  <script src="../assets/shared/js/adventure-story-system.js?v=3"></script>
+  <script src="../assets/shared/js/adventure-story-system.js?v=4"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -438,13 +443,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.175 / GKS-B559</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.175 / GKS-B560</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.175 / Studio GKS-B559</div>
+    <div class="version">Game GA-B486.175 / Studio GKS-B560</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -908,13 +913,19 @@ updateDeployDeleteControl();
     <div class="grid">
       <div class="field"><label>イベントID</label><input id="eventId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>イベント名</label><input id="eventName"></div>
+      <div class="field"><label>用途</label>
+        <select id="eventUsage">
+          <option value="story">ストーリー</option>
+          <option value="random">ランダム</option>
+          <option value="common">共通</option>
+        </select>
+      </div>
       <div class="field"><label>種別</label>
         <select id="eventType">
-          <option value="story">ストーリー</option>
           <option value="battle">戦闘</option>
-          <option value="choice">選択肢</option>
-          <option value="reward">報酬</option>
-          <option value="system">システム</option>
+          <option value="exploration">探索</option>
+          <option value="choice">選択</option>
+          <option value="special">特殊</option>
         </select>
       </div>
       <div class="field"><label>状態</label>
@@ -925,42 +936,37 @@ updateDeployDeleteControl();
           <option value="archived">保管済み</option>
         </select>
       </div>
+      <div class="field"><label>有効 / 無効</label>
+        <select id="eventEnabled"><option value="true">有効</option><option value="false">無効</option></select>
+      </div>
+      <div class="field"><label>グループ</label><input id="eventGroup" placeholder="例: forest / ruins"></div>
+      <div class="field"><label>タグ</label><input id="eventTags" placeholder="rare, night, tutorial"></div>
+      <div class="field"><label>強度</label>
+        <select id="eventIntensity">
+          <option value="low">低</option><option value="normal" selected>標準</option><option value="high">高</option><option value="extreme">極高</option>
+        </select>
+      </div>
+      <div class="field"><label>基礎抽選重み</label><input id="eventRandomBaseWeight" type="number" min="0" step="0.1" value="1"></div>
+      <div class="field"><label>生成方針参照（任意）</label><input id="eventGenerationProfileRef" placeholder="未設定なら空欄"></div>
     </div>
 
     <div class="field"><label>内容</label><textarea id="eventSummary"></textarea></div>
-    <div class="field"><label>発生条件</label><textarea id="eventConditions"></textarea></div>
+    <div class="field"><label>発生条件</label><textarea id="eventConditions" placeholder="基本発生条件。機械可読条件の正式化はP6対象"></textarea><div id="eventConditionsNotice" class="small"></div></div>
     <div class="field"><label>結果・フラグ変更</label><textarea id="eventResults"></textarea></div>
 
     <div class="link-grid">
-      <div class="link-panel">
-        <b>発生シーン</b>
-        <div class="grid">
-          <div class="field"><label>章</label><select id="eventChapterLink"></select></div>
-          <div class="field"><label>節</label><select id="eventSectionLink"></select></div>
-          <div class="field"><label>シーン</label><select id="eventSceneLink"></select></div>
-        </div>
-      </div>
-
-      <div class="link-panel">
-        <b>関連クエスト</b>
-        <div class="field"><label>クエスト</label><select id="eventQuestLink"></select></div>
-      </div>
-
-      <div class="link-panel">
-        <b>登場キャラクター</b>
-        <div class="field"><label>キャラクター</label><select id="eventCharacterLink"></select></div>
-        <div id="eventCharacterLinks" class="link-list"></div>
-        <button onclick="addEventCharacterDraft()">関連キャラを追加</button>
-      </div>
-
       <div class="link-panel">
         <b>フラグ</b>
         <div class="field"><label>必要フラグ</label><input id="eventRequiredFlags" placeholder="FLAG-001, FLAG-002"></div>
         <div class="field"><label>設定フラグ</label><input id="eventSetFlags" placeholder="FLAG-003"></div>
       </div>
+      <div id="eventLegacyLinksPanel" class="link-panel hidden">
+        <b>旧連携情報（読み取り専用）</b>
+        <div id="eventLegacyLinksSummary" class="small"></div>
+      </div>
     </div>
 
-    <p class="small">登録・更新すると、発生シーンの章・節を使って時系列を自動作成し、選択した登場キャラクターのイベント履歴にも反映します。イベント更新時は連携先も更新され、削除時は自動生成分のみ削除されます。</p>
+    <p class="small">P3ではEventを独立再利用データとして保存します。旧Eventに残る発生シーン・関連Quest・登場キャラクター情報は非破壊で保持しますが、保存時のTimeline / Character履歴の自動同期は行いません。最終移行フェーズで旧連携を破棄・削除する予定です。</p>
     <div class="toolbar">
       <button class="primary" onclick="saveEvent()">登録・更新</button>
       <button onclick="clearEventForm()">入力をクリア</button>
@@ -970,14 +976,12 @@ updateDeployDeleteControl();
 
   <div class="card">
     <div class="filter-bar">
-      <input id="eventSearch" placeholder="ID・名称・内容を検索" oninput="renderEvents()">
+      <input id="eventSearch" placeholder="ID・名称・内容・グループ・タグを検索" oninput="renderEvents()">
+      <select id="eventUsageFilter" onchange="renderEvents()">
+        <option value="">全用途</option><option value="story">ストーリー</option><option value="random">ランダム</option><option value="common">共通</option>
+      </select>
       <select id="eventTypeFilter" onchange="renderEvents()">
-        <option value="">全種別</option>
-        <option value="story">ストーリー</option>
-        <option value="battle">戦闘</option>
-        <option value="choice">選択肢</option>
-        <option value="reward">報酬</option>
-        <option value="system">システム</option>
+        <option value="">全種別</option><option value="battle">戦闘</option><option value="exploration">探索</option><option value="choice">選択</option><option value="special">特殊</option>
       </select>
       <select id="eventStatusFilter" onchange="renderEvents()">
         <option value="">すべての状態</option>
@@ -2104,7 +2108,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B559';
+const DISTRIBUTION_BUILD='GKS-B560';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4716,12 +4720,20 @@ function runValidation(){
  if(formalQuestSummary.ready_count===0)validation.push({level:'WARNING',message:'正式Story Questが0件です。Exportは可能ですが、Gameの遠征一覧にはStory Questが表示されません。',code:'FORMAL_QUEST_ZERO'});
  data.events.forEach(e=>{
   if(!e.name)validation.push({level:'ERROR',message:e.id+' のイベント名が未設定'});
-  if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'ERROR',message:e.id+' の関連クエストが存在しません'});
+  if(e.usage!==undefined){
+   const usages=Array.isArray(e.usage)?e.usage:[e.usage];if(!usages.length||usages.some(x=>!['story','random','common'].includes(String(x))))validation.push({level:'ERROR',message:e.id+' のEvent用途が不正です'});
+   if(!['battle','exploration','choice','special'].includes(String(e.type)))validation.push({level:'ERROR',message:e.id+' のEvent種別が不正です'});
+   if(e.tags!==undefined&&!Array.isArray(e.tags))validation.push({level:'ERROR',message:e.id+' のEventタグが配列ではありません'});
+   if(e.intensity!==undefined&&!['low','normal','high','extreme'].includes(String(e.intensity)))validation.push({level:'ERROR',message:e.id+' のEvent強度が不正です'});
+   if(e.random_base_weight!==undefined&&(!Number.isFinite(Number(e.random_base_weight))||Number(e.random_base_weight)<0))validation.push({level:'ERROR',message:e.id+' の基礎抽選重みが不正です'});
+   if(e.enabled!==undefined&&typeof e.enabled!=='boolean')validation.push({level:'ERROR',message:e.id+' の有効/無効がbooleanではありません'});
+  }
+  if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'WARN',message:e.id+' の旧連携Questが存在しません（P3では自動同期対象外）'});
   [...(e.required_flags||[]),...(e.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:e.id+' が未登録フラグ '+id+' を参照しています'});});
-  (e.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:e.id+' の関連キャラクターが存在しません: '+id})});
-  if(e.links?.chapter_id&&!getChapter(e.links.chapter_id))validation.push({level:'ERROR',message:e.id+' の関連章が存在しません'});
-  if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'ERROR',message:e.id+' の関連節が存在しません'});
-  if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'ERROR',message:e.id+' の関連シーンが存在しません'});
+  (e.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'WARN',message:e.id+' の旧連携キャラクターが存在しません: '+id})});
+  if(e.links?.chapter_id&&!getChapter(e.links.chapter_id))validation.push({level:'WARN',message:e.id+' の旧連携章が存在しません'});
+  if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'WARN',message:e.id+' の旧連携節が存在しません'});
+  if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'WARN',message:e.id+' の旧連携シーンが存在しません'});
  });
  Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(category==='monsters'&&(!Number.isFinite(Number(m.params?.enemy_budget_cost??1))||Number(m.params?.enemy_budget_cost??1)<1))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Costが不正です'});if(category==='tablets'&&(!Number.isFinite(Number(m.params?.enemy_budget_bonus??0))||Number(m.params?.enemy_budget_bonus??0)<0))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Bonusが不正です'});if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
  validateTagSystem().forEach(issue=>validation.push(issue));
@@ -6779,14 +6791,86 @@ function questBoxSceneOptions(selected){
  const value=String(selected||''),rows=questBoxAllScenes(),known=rows.some(x=>x.id===value);
  return '<option value="">未設定</option>'+(!known&&value?`<option value="${escAttr(value)}" selected>参照切れ: ${esc(value)}</option>`:'')+rows.map(x=>`<option value="${escAttr(x.id)}" ${x.id===value?'selected':''}>${esc(x.label)} (${esc(x.id)})</option>`).join('');
 }
-function questBoxEventOptions(selected){
- const value=String(selected||''),rows=[...(data.events||[])].sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')),known=rows.some(x=>String(x.id)===value);
- return '<option value="">Eventを選択</option>'+(!known&&value?`<option value="${escAttr(value)}" selected>参照切れ: ${esc(value)}</option>`:'')+rows.map(e=>`<option value="${escAttr(e.id)}" ${String(e.id)===value?'selected':''}>${esc(e.name||e.id)} (${esc(e.id)})</option>`).join('');
+function eventUsageValue(event){
+ const raw=event?.usage;
+ if(Array.isArray(raw)){const first=raw.find(x=>['story','random','common'].includes(String(x)));return first?String(first):'common';}
+ if(['story','random','common'].includes(String(raw)))return String(raw);
+ return String(event?.type)==='story'?'story':'common';
+}
+function eventTypeValue(event){
+ const type=String(event?.type||'');
+ if(['battle','exploration','choice','special'].includes(type))return type;
+ if(type==='choice')return 'choice';
+ return 'special';
+}
+function eventUsageLabel(value){return ({story:'ストーリー',random:'ランダム',common:'共通'})[value]||value||'共通'}
+function eventTypeLabel(value){return ({battle:'戦闘',exploration:'探索',choice:'選択',special:'特殊'})[value]||value||'特殊'}
+function eventIntensityLabel(value){return ({low:'低',normal:'標準',high:'高',extreme:'極高'})[value]||value||'標準'}
+function eventUsageMatches(event,usage){if(!usage)return true;const raw=event?.usage;if(Array.isArray(raw))return raw.map(String).includes(usage);return eventUsageValue(event)===usage}
+function eventCatalogMatch(event,filter={}){
+ const usage=String(filter.usage||''),type=String(filter.type||''),group=String(filter.group||'').trim().toLowerCase(),name=String(filter.name||'').trim().toLowerCase(),tags=splitCsv(filter.tags||'').map(x=>x.toLowerCase());
+ const eventTags=(Array.isArray(event?.tags)?event.tags:[]).map(x=>String(x).toLowerCase());
+ if(usage&&!eventUsageMatches(event,usage))return false;
+ if(type&&eventTypeValue(event)!==type)return false;
+ if(group&&String(event?.group||'').trim().toLowerCase()!==group)return false;
+ if(name&&!`${event?.name||''} ${event?.id||''}`.toLowerCase().includes(name))return false;
+ if(tags.length&&!tags.every(tag=>eventTags.includes(tag)))return false;
+ return true;
+}
+function questBoxCatalogFilter(zoneKey,index){
+ if(!questBoxEditorState)return {usage:'',type:'',group:'',tags:'',name:''};
+ questBoxEditorState.catalog_filters=questBoxEditorState.catalog_filters||{};
+ questBoxEditorState.catalog_filters[zoneKey]=questBoxEditorState.catalog_filters[zoneKey]||[];
+ return questBoxEditorState.catalog_filters[zoneKey][index]||(questBoxEditorState.catalog_filters[zoneKey][index]={usage:'',type:'',group:'',tags:'',name:''});
+}
+function questBoxCatalogSelectId(zoneKey,index){return `questBoxEventCatalog_${zoneKey}_${index}`}
+function questBoxCatalogCountId(zoneKey,index){return `questBoxEventCatalogCount_${zoneKey}_${index}`}
+function questBoxEventOptions(selected,filter={}){
+ const value=String(selected||''),all=[...(data.events||[])].sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja')),rows=all.filter(e=>eventCatalogMatch(e,filter)),selectedEvent=all.find(x=>String(x.id)===value),known=!!selectedEvent;
+ let options='<option value="">Eventを選択</option>';
+ if(known&&!rows.includes(selectedEvent))options+=`<option value="${escAttr(value)}" selected>${selectedEvent.enabled===false?'[無効] ':''}${esc(selectedEvent.name||selectedEvent.id)} (${esc(selectedEvent.id)}) — 現在の絞り込み外</option>`;
+ else if(!known&&value)options+=`<option value="${escAttr(value)}" selected>参照切れ: ${esc(value)}</option>`;
+ options+=rows.map(e=>`<option value="${escAttr(e.id)}" ${String(e.id)===value?'selected':''}>${e.enabled===false?'[無効] ':''}[${esc(eventUsageLabel(eventUsageValue(e)))}/${esc(eventTypeLabel(eventTypeValue(e)))}] ${esc(e.name||e.id)} (${esc(e.id)})</option>`).join('');
+ return options;
+}
+function questBoxEventCatalogCount(filter={}){return (data.events||[]).filter(e=>eventCatalogMatch(e,filter)).length}
+function updateQuestBoxCatalogFilter(zoneKey,index,field,value){
+ const filter=questBoxCatalogFilter(zoneKey,index);filter[field]=String(value||'');
+ const placement=questBoxEditorState?.draft?.[zoneKey]?.[index],select=document.getElementById(questBoxCatalogSelectId(zoneKey,index)),count=document.getElementById(questBoxCatalogCountId(zoneKey,index));
+ if(select&&placement)select.innerHTML=questBoxEventOptions(placement.event_id,filter);
+ if(count)count.textContent=`候補 ${questBoxEventCatalogCount(filter)}件`;
+}
+function renderQuestBoxEventCatalog(zoneKey,placement,index){
+ const f=questBoxCatalogFilter(zoneKey,index),count=questBoxEventCatalogCount(f);
+ return `<div class="quest-box-event-catalog"><b>Event Catalog</b><div class="small">Event本体はコピーせず、選択したEvent IDだけをBoxへ保存します。</div><div class="grid">
+  <div class="field"><label>用途</label><select onchange="updateQuestBoxCatalogFilter('${zoneKey}',${index},'usage',this.value)"><option value="">全用途</option><option value="story" ${f.usage==='story'?'selected':''}>ストーリー</option><option value="random" ${f.usage==='random'?'selected':''}>ランダム</option><option value="common" ${f.usage==='common'?'selected':''}>共通</option></select></div>
+  <div class="field"><label>種別</label><select onchange="updateQuestBoxCatalogFilter('${zoneKey}',${index},'type',this.value)"><option value="">全種別</option><option value="battle" ${f.type==='battle'?'selected':''}>戦闘</option><option value="exploration" ${f.type==='exploration'?'selected':''}>探索</option><option value="choice" ${f.type==='choice'?'selected':''}>選択</option><option value="special" ${f.type==='special'?'selected':''}>特殊</option></select></div>
+  <div class="field"><label>グループ</label><input value="${escAttr(f.group)}" onchange="updateQuestBoxCatalogFilter('${zoneKey}',${index},'group',this.value)" placeholder="完全一致"></div>
+  <div class="field"><label>タグ</label><input value="${escAttr(f.tags)}" onchange="updateQuestBoxCatalogFilter('${zoneKey}',${index},'tags',this.value)" placeholder="複数はカンマ区切り"></div>
+  <div class="field"><label>名称検索</label><input value="${escAttr(f.name)}" onchange="updateQuestBoxCatalogFilter('${zoneKey}',${index},'name',this.value)" placeholder="名称 / ID"></div>
+ </div><div id="${questBoxCatalogCountId(zoneKey,index)}" class="quest-box-event-catalog-count">候補 ${count}件</div><div class="field"><label>Event参照</label><select id="${questBoxCatalogSelectId(zoneKey,index)}" onchange="updateQuestBoxPlacement('${zoneKey}',${index},'event_id',this.value)">${questBoxEventOptions(placement.event_id,f)}</select></div></div>`;
 }
 function questBoxRandomFilterSummary(placement){
  const f=placement?.filter&&typeof placement.filter==='object'?placement.filter:{},parts=[];
- if(f.event_type)parts.push('種別='+f.event_type);if(f.group)parts.push('グループ='+f.group);if(Array.isArray(f.tags)&&f.tags.length)parts.push('タグ='+f.tags.join(', '));
- return parts.join(' / ')||'条件なし（P3でEvent絞り込みUIを追加）';
+ if(f.event_type)parts.push('種別='+eventTypeLabel(f.event_type));if(f.group)parts.push('グループ='+f.group);if(Array.isArray(f.tags)&&f.tags.length)parts.push('タグ='+f.tags.join(', '));
+ return parts.join(' / ')||'条件なし';
+}
+function questBoxRandomCandidates(placement){
+ const f=placement?.filter&&typeof placement.filter==='object'?placement.filter:{},tags=Array.isArray(f.tags)?f.tags.map(x=>String(x).toLowerCase()):[];
+ return (data.events||[]).filter(e=>e.enabled!==false&&eventUsageMatches(e,'random')&&(!f.event_type||eventTypeValue(e)===f.event_type)&&(!f.group||String(e.group||'')===String(f.group))&&(!tags.length||tags.every(tag=>(e.tags||[]).map(x=>String(x).toLowerCase()).includes(tag))));
+}
+function updateQuestBoxRandomFilter(zoneKey,index,field,value){
+ const p=questBoxEditorState?.draft?.[zoneKey]?.[index];if(!p)return;p.filter=p.filter&&typeof p.filter==='object'?p.filter:{event_type:null,group:null,tags:[]};
+ if(field==='tags')p.filter.tags=splitCsv(value);else p.filter[field]=String(value||'').trim()||null;
+ renderQuestBoxEditor();
+}
+function renderQuestBoxRandomFilterEditor(zoneKey,placement,index){
+ const f=placement?.filter&&typeof placement.filter==='object'?placement.filter:{},count=questBoxRandomCandidates(placement).length;
+ return `<div class="quest-box-random-filter">抽選候補: ${esc(questBoxRandomFilterSummary(placement))} / 現在の登録Event候補 ${count}件</div><div class="quest-box-random-filter-editor"><div class="small">用途=ランダムは自動条件です。ここでは種別・グループ・タグで候補範囲を指定します。Event発生条件の実Runtime評価はP6対象です。</div><div class="grid" style="margin-top:8px">
+  <div class="field"><label>種別</label><select onchange="updateQuestBoxRandomFilter('${zoneKey}',${index},'event_type',this.value)"><option value="">全種別</option><option value="battle" ${f.event_type==='battle'?'selected':''}>戦闘</option><option value="exploration" ${f.event_type==='exploration'?'selected':''}>探索</option><option value="choice" ${f.event_type==='choice'?'selected':''}>選択</option><option value="special" ${f.event_type==='special'?'selected':''}>特殊</option></select></div>
+  <div class="field"><label>グループ</label><input value="${escAttr(f.group||'')}" onchange="updateQuestBoxRandomFilter('${zoneKey}',${index},'group',this.value)" placeholder="未指定なら全グループ"></div>
+  <div class="field"><label>タグ</label><input value="${escAttr((f.tags||[]).join(', '))}" onchange="updateQuestBoxRandomFilter('${zoneKey}',${index},'tags',this.value)" placeholder="複数はカンマ区切り"></div>
+ </div></div>`;
 }
 function normalizeQuestBoxPlacementOrders(zoneKey){
  const box=questBoxEditorState?.draft;if(!box||!Array.isArray(box[zoneKey]))return;box[zoneKey].forEach((p,i)=>p.order=i+1);
@@ -6800,16 +6884,18 @@ function addQuestBoxPlacement(zoneKey,kind){
  const box=questBoxEditorState?.draft;if(!box||!QUEST_BOX_ZONE_DEFS.some(z=>z.key===zoneKey))return;if(!Array.isArray(box[zoneKey]))box[zoneKey]=[];
  const source=kind==='random_event'?{kind:'random_event',failure_policy:'continue',filter:{event_type:null,group:null,tags:[]},allow_none:true,required:false,box_side_individual_probability_override:false}:{kind:'fixed_event',event_id:'',failure_policy:'continue'};
  const placement=(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuestEventPlacement==='function')?GKAdventureStorySystem.normalizeQuestEventPlacement(source,box[zoneKey].length):source;
- box[zoneKey].push(placement);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor();
+ box[zoneKey].push(placement);questBoxCatalogFilter(zoneKey,box[zoneKey].length-1);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor();
 }
 function moveQuestBoxPlacement(zoneKey,index,direction){
- const rows=questBoxEditorState?.draft?.[zoneKey];if(!Array.isArray(rows))return;const target=index+direction;if(index<0||target<0||target>=rows.length)return;[rows[index],rows[target]]=[rows[target],rows[index]];normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor();
+ const rows=questBoxEditorState?.draft?.[zoneKey];if(!Array.isArray(rows))return;const target=index+direction;if(index<0||target<0||target>=rows.length)return;[rows[index],rows[target]]=[rows[target],rows[index]];
+ const filters=questBoxEditorState?.catalog_filters?.[zoneKey];if(Array.isArray(filters))[filters[index],filters[target]]=[filters[target],filters[index]];
+ normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor();
 }
-function removeQuestBoxPlacement(zoneKey,index){const rows=questBoxEditorState?.draft?.[zoneKey];if(!Array.isArray(rows))return;rows.splice(index,1);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor()}
+function removeQuestBoxPlacement(zoneKey,index){const rows=questBoxEditorState?.draft?.[zoneKey];if(!Array.isArray(rows))return;rows.splice(index,1);const filters=questBoxEditorState?.catalog_filters?.[zoneKey];if(Array.isArray(filters))filters.splice(index,1);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor()}
 function renderQuestBoxPlacement(zoneKey,placement,index,total){
  const random=placement.kind==='random_event';
  return `<div class="quest-box-placement"><div class="quest-box-placement-head"><div class="quest-box-placement-kind"><span class="badge ${random?'warn':'ok'}">${random?'Random Event枠':'固定Event'}</span><span class="small">順序 ${index+1}</span></div><div class="toolbar"><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},1)" ${index===total-1?'disabled':''}>↓</button><button type="button" class="danger" onclick="removeQuestBoxPlacement('${zoneKey}',${index})">削除</button></div></div>
- ${random?`<div class="quest-box-random-filter">抽選候補: ${esc(questBoxRandomFilterSummary(placement))}</div><div class="grid" style="margin-top:8px"><div class="field"><label><input type="checkbox" ${placement.required?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'required',this.checked)"> 必須枠</label></div><div class="field"><label><input type="checkbox" ${placement.allow_none!==false?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'allow_none',this.checked)"> 何も起きないを許可</label></div></div>`:`<div class="field"><label>Event参照</label><select onchange="updateQuestBoxPlacement('${zoneKey}',${index},'event_id',this.value)">${questBoxEventOptions(placement.event_id)}</select></div>`}
+ ${random?`${renderQuestBoxRandomFilterEditor(zoneKey,placement,index)}<div class="grid" style="margin-top:8px"><div class="field"><label><input type="checkbox" ${placement.required?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'required',this.checked)"> 必須枠</label></div><div class="field"><label><input type="checkbox" ${placement.allow_none!==false?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'allow_none',this.checked)"> 何も起きないを許可</label></div></div>`:renderQuestBoxEventCatalog(zoneKey,placement,index)}
  <div class="field"><label>Event失敗時</label><select onchange="updateQuestBoxPlacement('${zoneKey}',${index},'failure_policy',this.value)"><option value="continue" ${placement.failure_policy!=='quest_fail'?'selected':''}>続行</option><option value="quest_fail" ${placement.failure_policy==='quest_fail'?'selected':''}>Quest失敗</option></select></div></div>`;
 }
 function renderQuestBoxZone(zoneDef){
@@ -6823,7 +6909,7 @@ function renderQuestBoxEditor(){
  body.innerHTML=`<div class="field"><label>Box名</label><input value="${esc(box.name||'')}" oninput="updateQuestBoxEditorField('name',this.value)" placeholder="例: 実戦訓練"></div><div class="quest-box-sequence">${renderQuestBoxZone(QUEST_BOX_ZONE_DEFS[0])}${renderQuestBoxSceneStage('pre_scene_id','前Scene')}${renderQuestBoxZone(QUEST_BOX_ZONE_DEFS[1])}${renderQuestBoxSceneStage('mid_scene_id','中Scene')}${renderQuestBoxZone(QUEST_BOX_ZONE_DEFS[2])}${renderQuestBoxSceneStage('post_scene_id','後Scene')}${renderQuestBoxZone(QUEST_BOX_ZONE_DEFS[3])}</div>`;
 }
 function openQuestBoxEditor(index){
- const box=questDraftBoxes[index],overlay=document.getElementById('questBoxEditorOverlay');if(!box||!overlay)return;questBoxEditorState={index,draft:questBoxClone(box,index)};renderQuestBoxEditor();overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');document.body.classList.add('quest-box-editor-open');setTimeout(()=>document.querySelector('#questBoxEditorBody input')?.focus(),30);
+ const box=questDraftBoxes[index],overlay=document.getElementById('questBoxEditorOverlay');if(!box||!overlay)return;questBoxEditorState={index,draft:questBoxClone(box,index),catalog_filters:{}};QUEST_BOX_ZONE_DEFS.forEach(z=>{questBoxEditorState.catalog_filters[z.key]=(questBoxEditorState.draft[z.key]||[]).map(()=>({usage:'',type:'',group:'',tags:'',name:''}))});renderQuestBoxEditor();overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');document.body.classList.add('quest-box-editor-open');setTimeout(()=>document.querySelector('#questBoxEditorBody input')?.focus(),30);
 }
 function closeQuestBoxEditor(){const overlay=document.getElementById('questBoxEditorOverlay');if(overlay){overlay.classList.add('hidden');overlay.setAttribute('aria-hidden','true')}document.body.classList.remove('quest-box-editor-open');questBoxEditorState=null}
 function handleQuestBoxEditorBackdrop(event){if(event.target&&event.target.id==='questBoxEditorOverlay')closeQuestBoxEditor()}
@@ -6995,15 +7081,19 @@ function renderQuests(){
 
 function openEventEditor(){clearEventForm();openStudioInputPanel('eventEditorPanel','イベントを作成')}
 function clearEventForm(){
- eventId.value='';eventName.value='';eventType.value='story';eventStatus.value='draft';
- eventSummary.value='';eventConditions.value='';eventResults.value='';
- eventQuestLink.value='';eventRequiredFlags.value='';eventSetFlags.value='';
- eventDraftCharacterIds=[];
- refreshLinkSelectors('event',{});
- renderCharacterSelect('eventCharacterLink');
- renderQuestSelect('eventQuestLink');
- renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
+ eventId.value='';eventName.value='';eventUsage.value='story';eventType.value='special';eventStatus.value='draft';eventEnabled.value='true';
+ eventGroup.value='';eventTags.value='';eventIntensity.value='normal';eventRandomBaseWeight.value='1';eventGenerationProfileRef.value='';
+ eventSummary.value='';eventConditions.value='';eventConditions.readOnly=false;eventConditionsNotice.textContent='';eventResults.value='';
+ eventRequiredFlags.value='';eventSetFlags.value='';renderEventLegacyLinks({});
 }
+function eventLegacyLinkValues(links={}){return [links.chapter_id,links.section_id,links.scene_id,links.quest_id,...(links.character_ids||[])].filter(Boolean)}
+function renderEventLegacyLinks(links={}){
+ const panel=document.getElementById('eventLegacyLinksPanel'),host=document.getElementById('eventLegacyLinksSummary');if(!panel||!host)return;
+ const values=eventLegacyLinkValues(links);panel.classList.toggle('hidden',values.length===0);
+ host.innerHTML=values.length?`<div>シナリオ: ${esc(storyPath(links))}</div><div>関連Quest: ${esc(links.quest_id?questName(links.quest_id):'なし')}</div><div>登場キャラクター: ${esc((links.character_ids||[]).map(characterName).join(', ')||'なし')}</div><div style="margin-top:6px">この情報はP3保存では変更せず、自動Timeline / Character履歴同期にも使用しません。</div>`:'';
+}
+function eventEditorUsage(event){const raw=event?.usage;if(Array.isArray(raw))return raw.find(x=>['story','random','common'].includes(String(x)))||'common';if(['story','random','common'].includes(String(raw)))return String(raw);return String(event?.type)==='story'?'story':'common'}
+function eventEditorType(event){const type=String(event?.type||'');return ['battle','exploration','choice','special'].includes(type)?type:'special'}
 
 function eventStoryPosition(links={}){
  const chapter=data.chapters.find(c=>c.id===(links.chapter_id||''));
@@ -7028,56 +7118,26 @@ function uniqueTimelineId(preferredId,eventId){
  while(used.has(`${preferredId}-${n}`))n++;
  return `${preferredId}-${n}`;
 }
+// LEGACY ONLY: kept non-destructively during P3. New Event saves must not call this function.
 function syncEventConnections(record){
  const position=eventStoryPosition(record.links||{});
  const linked=(data.timeline||[]).filter(t=>t.source_event_id===record.id&&t.auto_generated);
  const previous=linked[0]||null;
-
- // 自動時系列はイベント1件につき必ず1件だけ。旧版で増えた重複もここで整理する。
  data.timeline=(data.timeline||[]).filter(t=>!(t.source_event_id===record.id&&t.auto_generated));
  const preferredId=previous?.id||eventAutoTimelineId(record.id);
  data.timeline.push({
-  id:uniqueTimelineId(preferredId,record.id),
-  chapter_no:position.chapter_no,
-  section_no:position.section_no,
-  target_id:'',
-  event:eventTimelineText(record),
-  source_event_id:record.id,
-  source_scene_id:record.links?.scene_id||'',
-  source_quest_id:record.links?.quest_id||'',
-  linked_character_ids:[...new Set(record.links?.character_ids||[])],
-  auto_generated:true,
-  created_at:previous?.created_at||now(),
-  updated_at:now()
+  id:uniqueTimelineId(preferredId,record.id),chapter_no:position.chapter_no,section_no:position.section_no,target_id:'',event:eventTimelineText(record),source_event_id:record.id,
+  source_scene_id:record.links?.scene_id||'',source_quest_id:record.links?.quest_id||'',linked_character_ids:[...new Set(record.links?.character_ids||[])],auto_generated:true,created_at:previous?.created_at||now(),updated_at:now()
  });
-
- // キャラクター履歴もイベントごとに1件だけ保持し、編集時は置換する。
- (data.characters||[]).forEach(character=>{
-  character.event_history=(character.event_history||[]).filter(h=>h.source_event_id!==record.id);
- });
+ (data.characters||[]).forEach(character=>{character.event_history=(character.event_history||[]).filter(h=>h.source_event_id!==record.id)});
  [...new Set(record.links?.character_ids||[])].forEach(characterId=>{
-  const character=data.characters.find(c=>c.id===characterId);
-  if(!character)return;
-  character.event_history=character.event_history||[];
-  character.event_history.push({
-   source_event_id:record.id,
-   event_name:record.name,
-   chapter_no:position.chapter_no,
-   section_no:position.section_no,
-   scene_id:record.links?.scene_id||'',
-   quest_id:record.links?.quest_id||'',
-   summary:record.summary||'',
-   results:record.results||'',
-   recorded_at:now()
-  });
-  character.updated_at=now();
+  const character=data.characters.find(c=>c.id===characterId);if(!character)return;character.event_history=character.event_history||[];
+  character.event_history.push({source_event_id:record.id,event_name:record.name,chapter_no:position.chapter_no,section_no:position.section_no,scene_id:record.links?.scene_id||'',quest_id:record.links?.quest_id||'',summary:record.summary||'',results:record.results||'',recorded_at:now()});character.updated_at=now();
  });
 }
 function removeEventConnections(eventId){
  data.timeline=(data.timeline||[]).filter(t=>!(t.source_event_id===eventId&&t.auto_generated));
- (data.characters||[]).forEach(character=>{
-  character.event_history=(character.event_history||[]).filter(h=>h.source_event_id!==eventId);
- });
+ (data.characters||[]).forEach(character=>{character.event_history=(character.event_history||[]).filter(h=>h.source_event_id!==eventId)});
 }
 
 function saveEvent(){
@@ -7086,57 +7146,27 @@ function saveEvent(){
  if(!name)return alert('イベント名を入力してください。');
  const duplicate=allIds().includes(id)&&!data.events.some(x=>x.id===id);
  if(duplicate)return alert('そのIDは別データで使用されています。');
+ const weight=Number(eventRandomBaseWeight.value);if(!Number.isFinite(weight)||weight<0)return alert('基礎抽選重みは0以上の数値にしてください。');
 
- const existing=data.events.findIndex(x=>x.id===id);
- const previous=existing>=0?data.events[existing]:{};
+ const existing=data.events.findIndex(x=>x.id===id),previous=existing>=0?data.events[existing]:{};
  const record={
-  ...previous,
-  id,
-  name,
-  type:previous.usage!==undefined?(previous.type||eventType.value):eventType.value,
-  status:eventStatus.value,
-  summary:eventSummary.value,
-  conditions:Array.isArray(previous.conditions)?previous.conditions:eventConditions.value,
-  results:eventResults.value,
-  required_flags:splitCsv(eventRequiredFlags.value),
-  set_flags:splitCsv(eventSetFlags.value),
-  links:{
-   chapter_id:eventChapterLink.value||'',
-   section_id:eventSectionLink.value||'',
-   scene_id:eventSceneLink.value||'',
-   quest_id:eventQuestLink.value||'',
-   character_ids:[...eventDraftCharacterIds]
-  },
-  updated_at:now()
+  ...previous,id,name,usage:eventUsage.value,type:eventType.value,status:eventStatus.value,enabled:eventEnabled.value!=='false',group:eventGroup.value.trim(),tags:splitCsv(eventTags.value),
+  intensity:eventIntensity.value,random_base_weight:weight,generation_profile_ref:eventGenerationProfileRef.value.trim()||null,summary:eventSummary.value,
+  conditions:Array.isArray(previous.conditions)?previous.conditions:eventConditions.value,results:eventResults.value,required_flags:splitCsv(eventRequiredFlags.value),set_flags:splitCsv(eventSetFlags.value),updated_at:now()
  };
  if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(record);
- if(existing>=0){
-  record.created_at=data.events[existing].created_at||now();
-  data.events[existing]=record;
- }else{
-  record.created_at=now();
-  data.events.push(record);
- }
- syncEventConnections(record);
- persist('event saved + timeline/history synced');
- clearEventForm();
- renderEvents();
- closeStudioInputPanel();
+ if(existing>=0){record.created_at=data.events[existing].created_at||now();data.events[existing]=record}else{record.created_at=now();data.events.push(record)}
+ // P3 boundary: legacy links are preserved by ...previous, but saving no longer creates/updates Timeline or Character event_history.
+ persist('event saved (P3 independent model; legacy link sync disabled)');clearEventForm();renderEvents();closeStudioInputPanel();
 }
 
 function editEvent(id){
  const e=data.events.find(x=>x.id===id);if(!e)return;
- eventId.value=e.id;eventName.value=e.name;eventType.value=e.type;eventStatus.value=e.status;
- eventSummary.value=e.summary||'';eventConditions.value=e.conditions||'';eventResults.value=e.results||'';
- eventRequiredFlags.value=(e.required_flags||[]).join(', ');
- eventSetFlags.value=(e.set_flags||[]).join(', ');
- eventDraftCharacterIds=[...(e.links?.character_ids||[])];
- refreshLinkSelectors('event',e.links||{});
- renderQuestSelect('eventQuestLink');
- eventQuestLink.value=e.links?.quest_id||'';
- renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
- showView('events');
- openStudioInputPanel('eventEditorPanel','イベントを編集する');
+ eventId.value=e.id;eventName.value=e.name;eventUsage.value=eventEditorUsage(e);eventType.value=eventEditorType(e);eventStatus.value=e.status||'draft';eventEnabled.value=e.enabled===false?'false':'true';
+ eventGroup.value=e.group||'';eventTags.value=(e.tags||[]).join(', ');eventIntensity.value=['low','normal','high','extreme'].includes(e.intensity)?e.intensity:'normal';eventRandomBaseWeight.value=e.random_base_weight??1;eventGenerationProfileRef.value=e.generation_profile_ref||'';
+ eventSummary.value=e.summary||'';eventConditions.value=Array.isArray(e.conditions)?JSON.stringify(e.conditions,null,2):(e.conditions||'');eventConditions.readOnly=Array.isArray(e.conditions);eventConditionsNotice.textContent=Array.isArray(e.conditions)?'既存の構造化発生条件を非破壊保持しています。P6で正式な条件編集UIを実装するまで読み取り専用です。':'';eventResults.value=e.results||'';
+ eventRequiredFlags.value=(e.required_flags||[]).join(', ');eventSetFlags.value=(e.set_flags||[]).join(', ');renderEventLegacyLinks(e.links||{});
+ showView('events');openStudioInputPanel('eventEditorPanel','イベントを編集する');
 }
 
 function deleteEvent(id){
@@ -7149,21 +7179,18 @@ function deleteEvent(id){
 
 function renderEvents(){
  if(!window.eventList)return;
- const keyword=(eventSearch?.value||'').trim().toLowerCase();
- const type=eventTypeFilter?.value||'';
- const status=eventStatusFilter?.value||'';
+ const keyword=(eventSearch?.value||'').trim().toLowerCase(),usage=eventUsageFilter?.value||'',type=eventTypeFilter?.value||'',status=eventStatusFilter?.value||'';
  const list=data.events.filter(e=>{
-  const hay=[e.id,e.name,e.summary,e.conditions,e.results,(e.required_flags||[]).join(' '),(e.set_flags||[]).join(' ')].join(' ').toLowerCase();
-  return (!keyword||hay.includes(keyword))&&(!type||e.type===type)&&(!status||e.status===status);
+  const hay=[e.id,e.name,e.summary,e.conditions,e.results,e.group,(e.tags||[]).join(' '),(e.required_flags||[]).join(' '),(e.set_flags||[]).join(' ')].join(' ').toLowerCase();
+  return (!keyword||hay.includes(keyword))&&(!usage||eventUsageMatches(e,usage))&&(!type||eventTypeValue(e)===type)&&(!status||e.status===status);
  });
  eventList.innerHTML=list.map(e=>`<div class="item">
-  <b>${esc(e.name)}</b> <span class="badge">${esc(e.id)}</span>
-  <span class="badge">${esc(jpType(e.type))}</span> <span class="badge">${esc(jpStatus(e.status))}</span>
+  <b>${esc(e.name)}</b> <span class="badge">${esc(e.id)}</span> <span class="badge">用途: ${esc(eventUsageLabel(eventUsageValue(e)))}</span> <span class="badge">種別: ${esc(eventTypeLabel(eventTypeValue(e)))}</span> <span class="badge ${e.enabled===false?'warn':'ok'}">${e.enabled===false?'無効':'有効'}</span> <span class="badge">${esc(jpStatus(e.status))}</span>
   <p>${esc(e.summary||'')}</p>
-  <div class="meta">シナリオ: ${esc(storyPath(e.links||{}))}</div>
-  <div class="meta">関連クエスト: ${esc(e.links?.quest_id?questName(e.links.quest_id):'なし')}</div>
-  <div class="meta">登場キャラ: ${esc((e.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
+  <div class="meta">グループ: ${esc(e.group||'未設定')} / タグ: ${esc((e.tags||[]).join(', ')||'なし')}</div>
+  <div class="meta">強度: ${esc(eventIntensityLabel(e.intensity||'normal'))} / 基礎抽選重み: ${esc(e.random_base_weight??1)} / 生成方針: ${esc(e.generation_profile_ref||'標準')}</div>
   <div class="meta">必要フラグ: ${esc((e.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((e.set_flags||[]).join(', ')||'なし')}</div>
+  ${eventLegacyLinkValues(e.links||{}).length?`<div class="meta">旧連携: ${esc(storyPath(e.links||{}))} / Quest ${esc(e.links?.quest_id||'なし')}（P3では自動同期停止）</div>`:''}
   <div class="toolbar"><button onclick="editEvent('${escAttr(e.id)}')">編集</button><button class="danger" onclick="deleteEvent('${escAttr(e.id)}')">削除</button></div>
  </div>`).join('')||'<div class="card">イベントはまだありません。</div>';
 }
@@ -7245,14 +7272,9 @@ function renderReferenceMap(){
 
 function initializeQuestEventUI(){
  refreshLinkSelectors('quest',{});
- refreshLinkSelectors('event',{});
  bindLinkSelectors('quest');
- bindLinkSelectors('event');
  renderCharacterSelect('questCharacterLink');
- renderCharacterSelect('eventCharacterLink');
- renderQuestSelect('eventQuestLink');
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
- renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
 }
 
 function renderProjects(){
@@ -7325,7 +7347,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','559');
+    url.searchParams.set('appv','560');
     location.replace(url.toString());
    }
  }
@@ -7334,7 +7356,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=559',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=560',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7353,7 +7375,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','559');
+    url.searchParams.set('appv','560');
     location.replace(url.toString());
    }
   });
@@ -7441,7 +7463,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486175"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486175"></script>
 <script src="../assets/shared/js/condition-engine.js?v=486175"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b559"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b560"></script>
 <script src="../assets/shared/js/skill-compiler.js?v=486175"></script>
 <script src="../assets/shared/js/skill-compile-service.js?v=486175"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>

@@ -52,12 +52,17 @@ function normalizeQuest(quest){const q=quest&&typeof quest==='object'?quest:{};q
 function normalizeEvent(event){
  const e=event&&typeof event==='object'?event:{};
  e.battle_formation=Array.isArray(e.battle_formation)?e.battle_formation.map(x=>({monster_id:String(x?.monster_id||''),count:Math.max(1,Math.floor(Number(x?.count)||1))})).filter(x=>x.monster_id):[];
- if(e.usage!==undefined){if(Array.isArray(e.usage))e.usage=stringList(e.usage);else e.usage=String(e.usage||'');}
+ if(e.usage!==undefined){
+  if(Array.isArray(e.usage))e.usage=[...new Set(stringList(e.usage).filter(x=>QUEST_EVENT_USAGES.has(x)))];
+  else{const usage=String(e.usage||'');e.usage=QUEST_EVENT_USAGES.has(usage)?usage:'common';}
+  if(e.type!==undefined&&!QUEST_EVENT_TYPES.has(String(e.type)))e.type='special';
+ }
  if(e.group!==undefined)e.group=String(e.group||'');
  if(e.tags!==undefined)e.tags=stringList(e.tags);
  if(e.intensity!==undefined)e.intensity=QUEST_EVENT_INTENSITIES.has(e.intensity)?e.intensity:String(e.intensity||'');
  if(e.random_base_weight!==undefined)e.random_base_weight=Math.max(0,Number(e.random_base_weight)||0);
  if(e.generation_profile_ref!==undefined&&e.generation_profile_ref!==null)e.generation_profile_ref=String(e.generation_profile_ref);
+ if(e.enabled!==undefined)e.enabled=Boolean(e.enabled);
  if(Array.isArray(e.conditions))e.conditions=e.conditions.map(clone);
  return e;
 }

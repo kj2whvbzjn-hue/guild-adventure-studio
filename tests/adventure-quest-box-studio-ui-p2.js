@@ -30,7 +30,7 @@ assert(studio.includes("addQuestBoxPlacement('${zoneDef.key}','random_event')"),
 assert(studio.includes('Event失敗時'),'placement failure policy UI missing');
 assert(studio.includes('何も起きないを許可'),'random Event slot allow-none UI missing');
 assert(studio.includes('必須枠'),'random Event slot required UI missing');
-assert(studio.includes('P3でEvent絞り込みUIを追加'),'P2 must not silently implement the P3 Event filter editor');
+assert(studio.includes('Event失敗時'),'P2 placement failure policy must remain after later Event Catalog phases');
 
 // Quest persistence must use the P1 normalizer and preserve Box draft data.
 assert(studio.includes('boxes:questDraftBoxes.map((box,i)=>questBoxClone({...box,order:i+1},i))'),'Quest save must persist Box drafts');

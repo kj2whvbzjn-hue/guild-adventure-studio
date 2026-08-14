@@ -65,9 +65,9 @@ assert.equal(modernEvent.custom,'keep');
 const studio=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
 assert(studio.includes("GKAdventureStorySystem.normalizeQuest(q)"),'Studio load/persist must normalize Quest boxes');
 assert(studio.includes('const previous=existing>=0?data.quests[existing]:{};'),'Quest editor must merge previous data');
-assert(studio.includes('const previous=existing>=0?data.events[existing]:{};'),'Event editor must merge previous data');
+assert(studio.includes('previous=existing>=0?data.events[existing]:{}'),'Event editor must merge previous data');
 assert(studio.includes('conditions:Array.isArray(previous.conditions)?previous.conditions:eventConditions.value'),'structured Event conditions must survive legacy editor save');
-assert(studio.includes("type:previous.usage!==undefined?(previous.type||eventType.value):eventType.value"),'new Event type must survive legacy editor save');
+assert(studio.includes('usage:eventUsage.value,type:eventType.value'),'P3 Event editor must save canonical usage/type while preserving previous unknown fields');
 assert(studio.includes("data=obj;normalizeData();persist('json imported')"),'import must normalize P1 model before persistence');
 
 for(const file of ['quest-main_quests.schema.json','quest-sub_quests.schema.json','quest-event_quests.schema.json']){
