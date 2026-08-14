@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B562</title>
+<title>GK Studio GKS-B563</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -433,7 +433,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
-  <script src="../assets/shared/js/adventure-story-system.js?v=5"></script>
+  <script src="../assets/shared/js/adventure-story-system.js?v=6"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -443,13 +443,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.176 / GKS-B562</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.177 / GKS-B563</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.176 / Studio GKS-B562</div>
+    <div class="version">Game GA-B486.177 / Studio GKS-B563</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -870,7 +870,7 @@ updateDeployDeleteControl();
 
     <section class="quest-box-section" aria-labelledby="questBoxSectionTitle">
       <div class="quest-box-section-head">
-        <div><h3 id="questBoxSectionTitle">Box構成</h3><div class="small">Quest内の進行単位です。P5 Game Runtimeは Event A → 前Scene → Event B → 中Scene → Event C → 後Scene → Event D の順で実行します。</div></div>
+        <div><h3 id="questBoxSectionTitle">Box構成</h3><div class="small">Quest内の進行単位です。P6 Game Runtimeは Event A → 前Scene → Event B → 中Scene → Event C → 後Scene → Event D の順で実行し、Random Event枠は到達時に抽選します。</div></div>
         <button class="primary" type="button" onclick="addQuestBoxDraft()">＋ Box追加</button>
       </div>
       <div id="questBoxList" class="quest-box-list"></div>
@@ -2109,7 +2109,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B562';
+const DISTRIBUTION_BUILD='GKS-B563';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6913,7 +6913,7 @@ function saveQuestBoxEditor(){
  const stableId=questBoxId(questDraftBoxes[state.index]);state.draft.box_id=stableId;state.draft.order=state.index+1;questDraftBoxes[state.index]=questBoxClone(state.draft,state.index);normalizeQuestDraftBoxOrder();closeQuestBoxEditor();renderQuestBoxDraftList();
 }
 
-function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready&&a.p5_runtime_ready)el.innerHTML='<span class="badge ok">P5 実行可能Quest</span> Quest.boxes正式Export契約とP5 Game Runtime要件を満たします。';else if(a.ready)el.innerHTML='<span class="badge ok">正式Quest</span> Export契約に適合。<br><span class="small">'+esc((a.p5_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P5 Runtimeでは未対応要素があります。')+'</span>';else if(a.is_formal)el.innerHTML='<span class="badge warn">正式要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else if(a.legacy_runtime_ready)el.innerHTML='<span class="badge warn">旧Runtime情報のみ</span> P5 Game RuntimeではQuest.boxesがないQuestは実行対象外です。';else el.innerHTML='<span class="badge">下書きQuest</span> Quest.boxesを1件以上追加すると正式Quest候補になります。';renderQuestFormalWorkflow();}
+function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready&&a.p6_runtime_ready)el.innerHTML='<span class="badge ok">P6 実行可能Quest</span> Quest.boxes正式Export契約とP6 Game Runtime要件を満たします。';else if(a.ready)el.innerHTML='<span class="badge ok">正式Quest</span> Export契約に適合。<br><span class="small">'+esc((a.p6_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P6 Runtimeでは未対応要素があります。')+'</span>';else if(a.is_formal)el.innerHTML='<span class="badge warn">正式要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else if(a.legacy_runtime_ready)el.innerHTML='<span class="badge warn">旧Runtime情報のみ</span> P6 Game RuntimeではQuest.boxesがないQuestは実行対象外です。';else el.innerHTML='<span class="badge">下書きQuest</span> Quest.boxesを1件以上追加すると正式Quest候補になります。';renderQuestFormalWorkflow();}
 function formalQuestWorkflowState(){
  const chapterId=questChapterLink?.value||'',sectionId=questSectionLink?.value||'';
  const chapter=chapterId?getChapter(chapterId):null;
@@ -6939,12 +6939,12 @@ function openQuestFormalExport(){
 }
 function renderQuestFormalWorkflow(){
  const el=document.getElementById('questFormalWorkflow');if(!el)return;
- const state=formalQuestWorkflowState(),questBoxesOk=state.questBoxes.length>0,ready=state.assessment.ready,p5Ready=state.assessment.p5_runtime_ready;
+ const state=formalQuestWorkflowState(),questBoxesOk=state.questBoxes.length>0,ready=state.assessment.ready,p6Ready=state.assessment.p6_runtime_ready;
  const step=(ok,label,detail)=>`<div class="meta"><span class="badge ${ok?'ok':'warn'}">${ok?'✓':'未完了'}</span> <b>${esc(label)}</b> — ${esc(detail)}</div>`;
- el.innerHTML='<b>P5 正式Quest / Game Runtime</b>'+ 
+ el.innerHTML='<b>P6 正式Quest / Game Runtime</b>'+ 
   step(questBoxesOk,'1. Quest Box',questBoxesOk?`${state.questBoxes.length} Box設定済み`:'Quest画面でBoxを1件以上追加')+
   step(ready,'2. 正式Export契約',ready?'Quest.boxesを正とする正式QuestとしてExport可能':'Quest Box / Scene / Event参照のエラーを修正')+
-  step(p5Ready,'3. P5 Game Runtime',p5Ready?'固定Event + Sceneを新Quest Box順で実行可能':((state.assessment.p5_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P5 Runtime要件を確認'))+
+  step(p6Ready,'3. P6 Game Runtime',p6Ready?'固定Event + Random Event + Sceneを新Quest Box順で実行可能':((state.assessment.p6_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P6 Runtime要件を確認'))+
   `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${state.section?'':'disabled'}>旧Sectionデータを確認（参考）</button><button type="button" onclick="openQuestFormalExport()">Export検証へ</button></div>`;
 }
 function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
@@ -7056,13 +7056,13 @@ function renderQuests(){
  });
  questList.innerHTML=list.map(q=>{
   const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id),formal=questFormalAssessment(q);
-  const formalBadge=formal.ready?`<span class="badge ok">正式Quest</span>${formal.p5_runtime_ready?' <span class="badge ok">P5実行可</span>':' <span class="badge warn">P6/P7待ち</span>'}`:formal.is_formal?'<span class="badge warn">正式要件不足</span>':formal.legacy_runtime_ready?'<span class="badge warn">旧Runtime情報のみ</span>':'<span class="badge">下書きQuest</span>';
+  const formalBadge=formal.ready?`<span class="badge ok">正式Quest</span>${formal.p6_runtime_ready?' <span class="badge ok">P6実行可</span>':' <span class="badge warn">P7待ち</span>'}`:formal.is_formal?'<span class="badge warn">正式要件不足</span>':formal.legacy_runtime_ready?'<span class="badge warn">旧Runtime情報のみ</span>':'<span class="badge">下書きQuest</span>';
   return `<div class="item">
    <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
    <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span> ${formalBadge}
    <p>${esc(q.summary||'')}</p>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
-   <div class="meta">正式Export / P5 Runtime: ${esc(formal.message)}</div>
+   <div class="meta">正式Export / P6 Runtime: ${esc(formal.message)}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
    <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questName).join(', ')||'なし')}</div>
    <div class="meta">必要フラグ: ${esc((q.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((q.set_flags||[]).join(', ')||'なし')}</div>
@@ -7341,7 +7341,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','562');
+    url.searchParams.set('appv','563');
     location.replace(url.toString());
    }
  }
@@ -7350,7 +7350,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=562',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=563',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7369,7 +7369,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','562');
+    url.searchParams.set('appv','563');
     location.replace(url.toString());
    }
   });
@@ -7454,12 +7454,12 @@ setTimeout(loadDesignCards,0);
 window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};
 window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now(),getBattleUnits:()=>{try{return [...JSON.parse(battleAllies.value||'[]'),...JSON.parse(battleEnemies.value||'[]')]}catch{return[]}},getMpCostMultiplier:()=>Math.max(0,Number(battleFormulaConfig.mpCostMultiplier)||1)};</script>
 <script src="./equipment/equipment-generator.js?v=4971"></script>
-<script src="../assets/shared/js/apply-lifecycle-engine.js?v=486176"></script>
-<script src="../assets/shared/js/trigger-engine.js?v=486176"></script>
-<script src="../assets/shared/js/condition-engine.js?v=486176"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b562"></script>
-<script src="../assets/shared/js/skill-compiler.js?v=486176"></script>
-<script src="../assets/shared/js/skill-compile-service.js?v=486176"></script>
+<script src="../assets/shared/js/apply-lifecycle-engine.js?v=486177"></script>
+<script src="../assets/shared/js/trigger-engine.js?v=486177"></script>
+<script src="../assets/shared/js/condition-engine.js?v=486177"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b563"></script>
+<script src="../assets/shared/js/skill-compiler.js?v=486177"></script>
+<script src="../assets/shared/js/skill-compile-service.js?v=486177"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>
 <script src="../assets/shared/js/skill-budget-engine.js?v=2"></script>
 <script src="../assets/shared/js/skill-ai-batch-engine.js?v=2"></script>

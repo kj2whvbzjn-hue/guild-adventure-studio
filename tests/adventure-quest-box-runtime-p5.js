@@ -70,13 +70,7 @@ assert.equal(resolverCalls,1);
 assert.equal(battleAsEvent.battle_results.length,0);
 assert.equal(battleAsEvent.final_result.success,true);
 
-// Random Event slot remains blocked until P6 and must fail deterministically if it bypasses Game readiness.
-const randomPending=S.simulateQuest({quest:{id:'Q-RANDOM-PENDING',adventure_duration_seconds:10,boxes:[{box_id:'BOX-R',order:1,pre_scene_id:'SC-1',mid_scene_id:null,post_scene_id:null,event_zone_before_pre:[{kind:'random_event',order:1,failure_policy:'continue',filter:{},allow_none:true,required:false}],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]}]},scenes,seed:107});
-assert.equal(randomPending.final_result.success,false);
-assert.equal(randomPending.final_result.failure.reason,'simulation_error');
-assert.match(randomPending.final_result.failure.message,/P5/);
-assert.equal(randomPending.timeline_result.length,0);
-
+// P6 owns Random Event execution; this P5 regression remains focused on ordered fixed Event/Scene execution and P7 battle boundary.
 
 // Resolver/snapshot callback exceptions become a deterministic failed QuestRun rather than escaping after start cost consumption.
 const resolverError=S.simulateQuest({quest:{id:'Q-RESOLVER-ERROR',adventure_duration_seconds:10,boxes:[{box_id:'BOX-X',order:1,pre_scene_id:null,mid_scene_id:null,post_scene_id:null,event_zone_before_pre:[fixed('E-X')],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]}]},events:[{id:'E-X',type:'special'}],seed:108,resolveEvent:()=>{throw new Error('resolver exploded')}});

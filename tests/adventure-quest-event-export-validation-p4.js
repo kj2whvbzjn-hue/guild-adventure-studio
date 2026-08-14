@@ -26,21 +26,22 @@ issues=Core.collectQuestEventContractIssues(brokenRef);assert(issues.some(x=>x.l
 
 const requiredZero=structuredClone(base);requiredZero.quests[0].boxes[0].event_zone_after_post[0].filter.group='none';
 issues=Core.collectQuestEventContractIssues(requiredZero);assert(issues.some(x=>x.level==='ERROR'&&x.code==='RANDOM_SLOT_REQUIRED_NO_CANDIDATES'));
-const optionalZero=structuredClone(requiredZero);optionalZero.quests[0].boxes[0].event_zone_after_post[0].required=false;
+const optionalZero=structuredClone(requiredZero);optionalZero.quests[0].boxes[0].event_zone_after_post[0].required=false;optionalZero.quests[0].boxes[0].event_zone_after_post[0].allow_none=true;
 issues=Core.collectQuestEventContractIssues(optionalZero);assert(issues.some(x=>x.level==='WARNING'&&x.code==='RANDOM_SLOT_OPTIONAL_NO_CANDIDATES'));
+const noNoneZero=structuredClone(optionalZero);noNoneZero.quests[0].boxes[0].event_zone_after_post[0].allow_none=false;issues=Core.collectQuestEventContractIssues(noNoneZero);assert(issues.some(x=>x.level==='ERROR'&&x.code==='RANDOM_SLOT_NONE_DISALLOWED_NO_CANDIDATES'));
 
 const conditional=structuredClone(base);conditional.events[1].conditions=[{flag:'F-1'}];
-issues=Core.collectQuestEventContractIssues(conditional);assert(issues.some(x=>x.level==='WARNING'&&x.code==='RANDOM_SLOT_CONTEXT_DEPENDENT'));
+issues=Core.collectQuestEventContractIssues(conditional);assert(issues.some(x=>x.level==='WARNING'&&x.code==='RANDOM_SLOT_UNSTRUCTURED_CONDITIONS_IGNORED'));assert(issues.some(x=>x.level==='WARNING'&&x.code==='EVENT_CONDITIONS_RUNTIME_IGNORED'));
 
 const freeText=structuredClone(base);freeText.events[1].conditions='night only';
-issues=Core.collectQuestEventContractIssues(freeText);assert(issues.some(x=>x.level==='WARNING'&&x.code==='EVENT_CONDITIONS_UNSTRUCTURED'));
+issues=Core.collectQuestEventContractIssues(freeText);assert(issues.some(x=>x.level==='WARNING'&&x.code==='EVENT_CONDITIONS_RUNTIME_IGNORED'));
 
 const forbidden=structuredClone(base);forbidden.events[0].map_id='MAP-X';forbidden.events[0].battle_formation=[{monster_id:'MON-1',count:1}];
 issues=Core.collectQuestEventContractIssues(forbidden);assert(issues.filter(x=>x.level==='ERROR'&&x.code==='EVENT_ENVIRONMENT_FIELD_FORBIDDEN').length>=2);
 
 const p4Only=structuredClone(base);p4Only.chapters[0].sections[0].boxes=[];
 formal=Core.formalStoryQuestAssessment(p4Only,p4Only.quests[0]);assert.equal(formal.ready,true);assert.equal(formal.legacy_runtime_ready,false);
-const exportIssues=Core.collectFormalQuestExportIssues(p4Only);assert(exportIssues.issues.some(x=>x.level==='WARNING'&&x.code==='FORMAL_QUEST_P6_RANDOM_EVENT_PENDING'));assert.equal(formal.p5_runtime_ready,false);
+const exportIssues=Core.collectFormalQuestExportIssues(p4Only);assert(exportIssues.issues.some(x=>x.level==='WARNING'&&x.code==='FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING'));assert.equal(formal.p5_runtime_ready,false);assert.equal(formal.p6_runtime_ready,false);
 
 const out=Core.buildData(base);assert.deepEqual(out['quest/main_quests.json'][0].boxes,base.quests[0].boxes);assert.equal(out['event/events.json'][1].usage,'random');assert.equal(out['event/events.json'][1].random_base_weight,2);
 
@@ -57,6 +58,6 @@ assert.deepEqual(eventSchema.items.properties.usage.oneOf[0].enum,['story','rand
 assert.deepEqual(eventSchema.items.allOf[0].then.properties.type.enum,['battle','exploration','choice','special']);
 
 const html=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
-for(const token of ['GKExportCore.collectQuestEventContractIssues(data)','P4 Export契約 合格','警告 '+"'",'Quest.boxes正式Export契約','P5 Game Runtime'])assert(html.includes(token),`Studio P4 integration missing ${token}`);
+for(const token of ['GKExportCore.collectQuestEventContractIssues(data)','P4 Export契約 合格','警告 '+"'",'Quest.boxes正式Export契約','P6 Game Runtime'])assert(html.includes(token),`Studio P4 integration missing ${token}`);
 assert(!html.includes("level:'WARN'"),'P4 validation must use ERROR/WARNING/INFO levels');
 console.log('adventure-quest-event-export-validation-p4 PASS');

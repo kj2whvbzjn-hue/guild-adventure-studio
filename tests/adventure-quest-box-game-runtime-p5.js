@@ -7,12 +7,10 @@ for(const token of [
   "if(!boxes.length)return{ready:false,quest_id:id,code:'FORMAL_QUEST_BOXES_EMPTY'}",
   "code:'FORMAL_QUEST_SCENE_MISSING'",
   "code:'FORMAL_QUEST_EVENT_MISSING'",
-  "code:'FORMAL_QUEST_RANDOM_EVENT_PENDING'",
   "code:'FORMAL_QUEST_EVENT_RESOLVER_PENDING'",
   "function resolveAdventureBundle(content,questId)",
   "return{quest,scenes:content.scenes||[],events:content.events||[],monsters:content.monsters||[],tablets:content.tablets||[]};",
   "GKAdventureStorySystem.simulateQuest({quest:bundle.quest,scenes:bundle.scenes,events:bundle.events,monsters:bundle.monsters",
-  "P5で実行可能なStory Questがありません。StudioでQuest Boxを設定してExportしてください。"
 ])assert(app.includes(token),`P5 Game Runtime integration missing: ${token}`);
 assert(!app.includes("GKAdventureStorySystem.simulateQuest({quest:bundle.quest,section:bundle.section,chapter:bundle.chapter"),'P5 Game path must not pass legacy Section/Chapter to simulateQuest');
 assert(!app.includes("const links=quest.links||{},chapter=(content.chapters||[]).find"),'P5 bundle resolution must not depend on Quest.links Chapter/Section');

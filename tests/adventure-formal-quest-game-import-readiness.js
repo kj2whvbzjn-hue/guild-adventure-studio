@@ -6,7 +6,9 @@ for(const needle of [
  "code:'FORMAL_QUEST_BOXES_EMPTY'",
  "code:'FORMAL_QUEST_SCENE_MISSING'",
  "code:'FORMAL_QUEST_EVENT_MISSING'",
- "code:'FORMAL_QUEST_RANDOM_EVENT_PENDING'",
+ 'function adventureRandomStaticCandidates(content,placement)',
+ "code:'FORMAL_QUEST_RANDOM_EVENT_NO_CANDIDATES'",
+ "code:'FORMAL_QUEST_RANDOM_EVENT_RESOLVER_PENDING'",
  'assessments.filter(x=>x.assessment.ready)',
  'function formalAdventureQuestImportIssues()',
  'function formalAdventureQuestImportIssueMessage(issue)',
@@ -65,4 +67,6 @@ for(const needle of [
  'StudioのExport検証でQuest Box / Scene / Event参照を確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
 assert(!app.includes("filter(q=>{const links=q.links||{};return Boolean(q?.id&&links.chapter_id&&links.section_id)"),'link-only formal quest filter must be removed');
+assert(!app.includes("FORMAL_QUEST_RANDOM_EVENT_PENDING:'Random EventはP6で実行対応'"),'P6 must not keep the P5 random-event pending import block');
+assert(app.includes('P6で実行可能なStory Questがありません。'),'P6 empty formal Export guidance missing');
 console.log('adventure-formal-quest-game-import-readiness PASS');

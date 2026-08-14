@@ -1,10 +1,10 @@
-const CACHE_NAME="gks-studio-b562";
+const CACHE_NAME="gks-studio-b563";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=562';
+const OFFLINE_URL='./index.html?appv=563';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=562",
-  "./manifest.webmanifest?v=562",
+  "./index.html?appv=563",
+  "./manifest.webmanifest?v=563",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
   "../assets/shared/config/skill-registry.json",
@@ -24,7 +24,7 @@ const APP_SHELL=[
   "./ai-production/ai-export-adapter.js?v=1",
   "./ai-production/ai-production-ui.js?v=1",
   "./data-exchange/schemas/ai_program-dataset.schema.json",
-  "../assets/shared/js/adventure-story-system.js?v=5"
+  "../assets/shared/js/adventure-story-system.js?v=6"
 ];
 
 self.addEventListener('install',event=>{

@@ -135,11 +135,12 @@
             if(placement?.box_side_individual_probability_override===true)issues.push({level:'ERROR',code:'RANDOM_SLOT_PROBABILITY_OVERRIDE_FORBIDDEN',quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} は初期仕様で禁止されているBox側個別確率Overrideを使用しています。`});
             const candidates=randomEventCandidates(data,placement);
             if(!candidates.length){
-              const level=placement?.required===true?'ERROR':'WARNING',code=placement?.required===true?'RANDOM_SLOT_REQUIRED_NO_CANDIDATES':'RANDOM_SLOT_OPTIONAL_NO_CANDIDATES';
-              issues.push({level,code,quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} は現在のEvent Catalogで抽選可能な候補が0件です。`});
+              const required=placement?.required===true,allowNone=placement?.allow_none!==false;
+              const level=required||!allowNone?'ERROR':'WARNING',code=required?'RANDOM_SLOT_REQUIRED_NO_CANDIDATES':(!allowNone?'RANDOM_SLOT_NONE_DISALLOWED_NO_CANDIDATES':'RANDOM_SLOT_OPTIONAL_NO_CANDIDATES');
+              issues.push({level,code,quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} は現在のEvent Catalogで抽選可能な候補が0件です。${required?'必須枠のため実行できません。':(!allowNone?'「何も起きない」を許可していないため実行できません。':'任意枠として何も起こさず続行できます。')}`});
             }else{
-              const conditional=candidates.filter(e=>valuePresent(e?.conditions)||Array.isArray(e?.required_flags)&&e.required_flags.length>0);
-              if(conditional.length===candidates.length)issues.push({level:'WARNING',code:'RANDOM_SLOT_CONTEXT_DEPENDENT',quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} の候補はすべて発生条件を持ちます。D-03未確定のためP4では実行時成立を断定しません。`});
+              const unstructured=candidates.filter(e=>valuePresent(e?.conditions));
+              if(unstructured.length===candidates.length)issues.push({level:'WARNING',code:'RANDOM_SLOT_UNSTRUCTURED_CONDITIONS_IGNORED',quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} の候補はすべて自由/未確定形式のconditionsを持ちます。P6 Runtimeはrequired_flagsだけを機械可読条件として使用し、conditionsは解釈しません。`});
             }
           }
         });
@@ -164,7 +165,7 @@
     if(event?.enabled!==undefined&&typeof event.enabled!=='boolean')issues.push({level:'ERROR',code:'EVENT_ENABLED_INVALID',event_id:eid,message:`${eid} の有効/無効がbooleanではありません。`});
     if(event?.generation_profile_ref!==undefined&&event.generation_profile_ref!==null&&typeof event.generation_profile_ref!=='string')issues.push({level:'ERROR',code:'EVENT_GENERATION_PROFILE_REF_INVALID',event_id:eid,message:`${eid} の生成方針参照が文字列ではありません。`});
     if(event?.conditions!==undefined&&!Array.isArray(event.conditions)&&typeof event.conditions!=='string')issues.push({level:'ERROR',code:'EVENT_CONDITIONS_INVALID',event_id:eid,message:`${eid} の発生条件は文字列または配列である必要があります。`});
-    else if(typeof event?.conditions==='string'&&stringValue(event.conditions))issues.push({level:'WARNING',code:'EVENT_CONDITIONS_UNSTRUCTURED',event_id:eid,message:`${eid} の発生条件は自由記述です。D-03確定までRuntime条件として解釈しません。`});
+    else if(valuePresent(event?.conditions))issues.push({level:'WARNING',code:'EVENT_CONDITIONS_RUNTIME_IGNORED',event_id:eid,message:`${eid} のconditionsはP6 Runtimeでは解釈しません。機械可読な発生条件はrequired_flagsを使用してください。`});
     const forbidden=[
       ['map_id','Map ID'],['area_id','Area ID'],['battle_formation','通常敵固定編成'],['fixed_normal_enemy_roster','通常敵固定一覧'],['map_specific_exploration_result','Map固有探索結果'],['final_reward','確定報酬']
     ];
@@ -200,22 +201,38 @@
     boxes.forEach(box=>QUEST_BOX_ZONE_KEYS.forEach(zoneKey=>(Array.isArray(box?.[zoneKey])?box[zoneKey]:[]).forEach(placement=>{if(placement?.kind==='random_event')issues.push({level:'WARNING',code:'FORMAL_QUEST_P6_RANDOM_EVENT_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:`${qid} はRandom Event枠を含むためP6対応待ちです。`});if(placement?.kind==='fixed_event'){const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});}})));
     return{ready:issues.length===0,issues};
   }
+  function p6StoryQuestRuntimeAssessment(data,quest){
+    const qid=stringValue(quest?.id),boxes=Array.isArray(quest?.boxes)?quest.boxes:[],issues=[];
+    if(!boxes.length){issues.push({level:'WARNING',code:'FORMAL_QUEST_BOXES_EMPTY',quest_id:qid,message:'P6 Game RuntimeにはQuest.boxesが1件以上必要です。'});return{ready:false,issues};}
+    const formalErrors=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');if(formalErrors.length)return{ready:false,issues:formalErrors};
+    const eventById=new Map((data?.events||[]).map(event=>[stringValue(event?.id),event]));
+    boxes.forEach(box=>QUEST_BOX_ZONE_KEYS.forEach(zoneKey=>(Array.isArray(box?.[zoneKey])?box[zoneKey]:[]).forEach(placement=>{
+      if(placement?.kind==='fixed_event'){
+        const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});
+      }
+      if(placement?.kind==='random_event'){
+        const candidates=randomEventCandidates(data,placement),unsupported=candidates.filter(event=>['battle','exploration'].includes(stringValue(event?.type)));
+        if(unsupported.length)issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_ids:unsupported.map(event=>stringValue(event?.id)),message:`${qid} のRandom Event枠はP7 Resolver待ちの戦闘/探索Eventを候補に含みます: ${unsupported.map(event=>stringValue(event?.id)).join(', ')}`});
+      }
+    })));
+    return{ready:issues.length===0,issues};
+  }
   function formalStoryQuestAssessment(data,quest){
-    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest),p5=p5StoryQuestRuntimeAssessment(data,quest);
-    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:false,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないため正式Quest契約の対象外です。':'Quest.boxesがないため正式Quest契約の対象外です。'};
+    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest),p5=p5StoryQuestRuntimeAssessment(data,quest),p6=p6StoryQuestRuntimeAssessment(data,quest);
+    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:false,p6_runtime:p6,p6_runtime_ready:false,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないため正式Quest契約の対象外です。':'Quest.boxesがないため正式Quest契約の対象外です。'};
     const issues=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');
     const ready=issues.length===0;
-    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,message:ready?(p5.ready?'Quest.boxesを正とする正式Export契約とP5 Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P5 Game Runtimeでは未対応要素があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
+    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,p6_runtime:p6,p6_runtime_ready:ready&&p6.ready,message:ready?(p6.ready?'Quest.boxesを正とする正式Export契約とP6 Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P6 Game Runtimeでは未対応要素があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
   }
   function summarizeFormalStoryQuests(data){
     const rows=(data?.quests||[]).map(quest=>({quest,assessment:formalStoryQuestAssessment(data,quest)}));
-    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
+    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,p6_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p6_runtime_ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
   }
   function collectFormalQuestExportIssues(data){
     const summary=summarizeFormalStoryQuests(data),issues=[];
     summary.rows.forEach(row=>{
       row.assessment.issues.forEach(issue=>issues.push(issue));
-      if(row.assessment.ready&&!row.assessment.p5_runtime_ready)for(const runtimeIssue of row.assessment.p5_runtime?.issues||[])if(runtimeIssue.level!=='ERROR')issues.push(runtimeIssue);
+      if(row.assessment.ready&&!row.assessment.p6_runtime_ready)for(const runtimeIssue of row.assessment.p6_runtime?.issues||[])if(runtimeIssue.level!=='ERROR')issues.push(runtimeIssue);
     });
     if(summary.ready_count===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_ZERO',message:'Quest.boxesを正とするP4正式Questが0件です。Exportは可能ですが、新Quest契約として実行対象はありません。'});
     return {summary,issues};
@@ -261,5 +278,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,p5StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });
