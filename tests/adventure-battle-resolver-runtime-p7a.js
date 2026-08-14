@@ -28,18 +28,18 @@ assert.equal(capturedRequest.contract_version,1);
 assert.equal(capturedRequest.quest_id,'Q-P7');
 assert.equal(capturedRequest.event_id,'EVT-BATTLE');
 assert.deepEqual(capturedRequest.quest_context,{map_id:'MAP-PENDING',area_id:'AREA-PENDING',difficulty:4,budget:{policy:'standard'}});
-assert.equal(capturedRequest.quest_difficulty,4);
+assert.equal(capturedRequest.quest_difficulty,8,'P7-B uses explicit selectedStones for difficulty; fixed start-cost resources no longer raise Budget');
 assert.equal(capturedRequest.event_intensity,'high');
 assert.equal(capturedRequest.generation_profile_ref,'GEN-P1');
-assert.equal(capturedRequest.enemy_budget,14,'Quest enemy budget + Tablet bonus must be adapted into the resolver request');
+assert.equal(capturedRequest.enemy_budget,8,'Legacy fixed start-cost resources no longer change P7-B Quest difficulty');
 assert.deepEqual(capturedRequest.budget_policy,{policy:'standard'});
 assert(Number.isInteger(capturedRequest.encounter_seed));
 assert.equal(run.battle_results[0].encounter_request.encounter_seed,capturedRequest.encounter_seed);
 assert.equal(run.battle_results[0].encounter_result.resolver_id,'TEST-P7');
 
-// Difficulty and Event intensity are distinct inputs; P7-A does not invent a scaling formula between them.
+// Numeric Quest difficulty is the effective Enemy Budget; Event intensity remains a separate input.
 const req=S.buildBattleResolverRequest({quest:{id:'Q-SEP',enemy_budget:5,context:{difficulty:9}},event:{id:'E-SEP',type:'battle',intensity:'low'},encounterSeed:123});
-assert.equal(req.quest_difficulty,9);assert.equal(req.event_intensity,'low');assert.equal(req.enemy_budget,5);assert.equal(req.encounter_seed,123);
+assert.equal(req.quest_difficulty,5);assert.equal(req.event_intensity,'low');assert.equal(req.enemy_budget,5);assert.equal(req.encounter_seed,123);
 
 // Battle failure follows the placement-level continue / quest_fail policy.
 const losingBattle=()=>({victory:false,reason:'defeat',reward:{gold:999},playback_events:[{type:'battle_start'},{type:'battle_end'}]});

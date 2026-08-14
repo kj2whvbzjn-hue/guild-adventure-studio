@@ -9,8 +9,8 @@ for(const token of [
  'function adventureRandomStaticCandidates(content,placement)',
  "code:'FORMAL_QUEST_RANDOM_EVENT_NO_CANDIDATES'",
  "code:'FORMAL_QUEST_RANDOM_EVENT_RESOLVER_PENDING'",
- "FORMAL_QUEST_RANDOM_EVENT_RESOLVER_PENDING:'Random Event候補にP7待ちの戦闘/探索Eventがあります'",
- 'P6で実行可能なStory Questがありません。',
+ "FORMAL_QUEST_RANDOM_EVENT_RESOLVER_PENDING:'Random Event候補に未対応ResolverのEventがあります'",
+ 'P7-Bで実行可能なStory Questがありません。',
  'function adventureEventCondition(event,flags)',
  'checkEventCondition:adventureEventCondition',
  'resolveEvent:adventureEventResult'
@@ -42,5 +42,5 @@ const p7={...data,quests:[p7Quest],events:[{id:'R-BATTLE',name:'battle',usage:'r
 assessment=Core.formalStoryQuestAssessment(p7,p7Quest);
 assert.equal(assessment.ready,true);assert.equal(assessment.p6_runtime_ready,false);assert(assessment.p6_runtime.issues.some(x=>x.code==='FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING'));
 
-for(const token of ['P6 実行可能Quest','P6 正式Quest / Game Runtime','3. P6 Game Runtime','P6実行可','P7待ち','正式Export / P6 Runtime'])assert(studio.includes(token),`Studio P6 workflow label missing: ${token}`);
+for(const token of ['P7-B 実行可能Quest','P7-B 正式Quest / Game Runtime','3. P7-B Game Runtime','P7-B実行可'])assert(studio.includes(token),`Studio P7-B workflow label missing: ${token}`);
 console.log('adventure-random-event-game-runtime-p6 PASS');

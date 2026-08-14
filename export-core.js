@@ -11,10 +11,11 @@
     'event/events.json','event/flags.json',
     'master/jobs.json','master/statuses.json',
     'monster/monster_mods.json','monster/monsters.json',
+    'world/maps.json','exploration/outcomes.json',
     'quest/event_quests.json','quest/main_quests.json','quest/sub_quests.json',
     'scenario/chapters.json','scenario/scenes.json','scenario/sections.json',
     'skill/skills.json','stone/stone_mods.json','stone/stones.json',
-    'system/balance.json','system/drop_tables.json','system/game_settings.json'
+    'system/balance.json','system/drop_tables.json','system/game_settings.json','system/adventure_settings.json'
   ];
   function aiExportAdapter(){if(typeof require==='function'){const path=require('node:path'),base=__dirname.endsWith(path.sep+'studio')?'ai-production':path.join('studio','ai-production');return require(path.join(__dirname,base,'ai-export-adapter.js'));}return globalThis.GKSAIExportAdapter;}
   function clean(value){
@@ -217,22 +218,44 @@
     })));
     return{ready:issues.length===0,issues};
   }
+  function p7StoryQuestRuntimeAssessment(data,quest){
+    const qid=stringValue(quest?.id),boxes=Array.isArray(quest?.boxes)?quest.boxes:[],issues=[];
+    if(!boxes.length)return{ready:false,issues:[{level:'WARNING',code:'FORMAL_QUEST_BOXES_EMPTY',quest_id:qid,message:'P7-B Game RuntimeにはQuest.boxesが1件以上必要です。'}]};
+    const formalErrors=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');if(formalErrors.length)return{ready:false,issues:formalErrors};
+    const eventById=new Map((data?.events||[]).map(e=>[stringValue(e?.id),e])),mapIds=new Set((data?.masters?.maps||[]).map(m=>stringValue(m?.id))),monsterIds=new Set((data?.masters?.monsters||[]).map(m=>stringValue(m?.id))),types=new Set();
+    for(const box of boxes)for(const zoneKey of QUEST_BOX_ZONE_KEYS)for(const placement of (Array.isArray(box?.[zoneKey])?box[zoneKey]:[])){
+      if(placement?.kind==='random_event'){
+        if(placement?.encounter_override)issues.push({level:'ERROR',code:'P7_RANDOM_OVERRIDE_INVALID',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:'Random Event枠にはEncounter Overrideを設定できません。'});
+        randomEventCandidates(data,placement).forEach(e=>{const t=stringValue(e?.type);if(['battle','exploration'].includes(t))types.add(t)});continue;
+      }
+      if(placement?.kind!=='fixed_event')continue;const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))types.add(type);
+      const o=placement?.encounter_override;if(!o)continue;
+      if(type!=='battle'){issues.push({level:'ERROR',code:'P7_OVERRIDE_NON_BATTLE',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:'Encounter OverrideはBattle固定Eventだけに設定できます。'});continue;}
+      const mode=stringValue(o.mode||'resolver');if(!['resolver','required_monsters','fixed_formation'].includes(mode)){issues.push({level:'ERROR',code:'P7_OVERRIDE_MODE_INVALID',quest_id:qid,message:`${qid} のEncounter Override modeが不正です。`});continue;}
+      const rows=mode==='required_monsters'?o.required_monsters:mode==='fixed_formation'?o.formation:[];if(mode!=='resolver'&&(!Array.isArray(rows)||!rows.length))issues.push({level:'ERROR',code:'P7_OVERRIDE_FORMATION_EMPTY',quest_id:qid,message:`${qid} の${mode}にMonsterが設定されていません。`});
+      for(const row of rows||[]){const mid=stringValue(row?.monster_id);if(mid&&!monsterIds.has(mid))issues.push({level:'ERROR',code:'P7_OVERRIDE_MONSTER_MISSING',quest_id:qid,monster_id:mid,message:`Story Battle OverrideのMonsterが存在しません: ${mid}`});}
+    }
+    if(types.size){const mapId=stringValue(quest?.context?.map_id);if(!mapId)issues.push({level:'ERROR',code:'P7_MAP_REQUIRED',quest_id:qid,message:`${qid} は戦闘/探索Eventを含むためMap設定が必要です。`});else if(!mapIds.has(mapId))issues.push({level:'ERROR',code:'P7_MAP_MISSING',quest_id:qid,map_id:mapId,message:`${qid} のMap参照が存在しません: ${mapId}`});}
+    if(types.has('battle')&&!(data?.masters?.monsters||[]).length)issues.push({level:'WARNING',code:'P7_MONSTER_MASTER_EMPTY',quest_id:qid,message:'Battle EventがありますがMonster Masterが0件です。'});
+    if(types.has('exploration')&&!(data?.masters?.exploration_outcomes||[]).length)issues.push({level:'WARNING',code:'P7_EXPLORATION_OUTCOME_EMPTY',quest_id:qid,message:'Exploration Eventがありますが探索結果Masterが0件です。'});
+    return{ready:issues.every(x=>x.level!=='ERROR'&&x.level!=='WARNING'),issues,event_types:[...types]};
+  }
   function formalStoryQuestAssessment(data,quest){
-    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest),p5=p5StoryQuestRuntimeAssessment(data,quest),p6=p6StoryQuestRuntimeAssessment(data,quest);
-    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:false,p6_runtime:p6,p6_runtime_ready:false,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないため正式Quest契約の対象外です。':'Quest.boxesがないため正式Quest契約の対象外です。'};
+    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest),p5=p5StoryQuestRuntimeAssessment(data,quest),p6=p6StoryQuestRuntimeAssessment(data,quest),p7=p7StoryQuestRuntimeAssessment(data,quest);
+    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:false,p6_runtime:p6,p6_runtime_ready:false,p7_runtime:p7,p7_runtime_ready:false,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないため正式Quest契約の対象外です。':'Quest.boxesがないため正式Quest契約の対象外です。'};
     const issues=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');
     const ready=issues.length===0;
-    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,p6_runtime:p6,p6_runtime_ready:ready&&p6.ready,message:ready?(p6.ready?'Quest.boxesを正とする正式Export契約とP6 Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P6 Game Runtimeでは未対応要素があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
+    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,p6_runtime:p6,p6_runtime_ready:ready&&p6.ready,p7_runtime:p7,p7_runtime_ready:ready&&p7.ready,message:ready?(p7.ready?'Quest.boxesを正とする正式Export契約とP7-B Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P7-B Runtime要件に不足があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
   }
   function summarizeFormalStoryQuests(data){
     const rows=(data?.quests||[]).map(quest=>({quest,assessment:formalStoryQuestAssessment(data,quest)}));
-    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,p6_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p6_runtime_ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
+    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,p6_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p6_runtime_ready).length,p7_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p7_runtime_ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
   }
   function collectFormalQuestExportIssues(data){
     const summary=summarizeFormalStoryQuests(data),issues=[];
     summary.rows.forEach(row=>{
       row.assessment.issues.forEach(issue=>issues.push(issue));
-      if(row.assessment.ready&&!row.assessment.p6_runtime_ready)for(const runtimeIssue of row.assessment.p6_runtime?.issues||[])if(runtimeIssue.level!=='ERROR')issues.push(runtimeIssue);
+      if(row.assessment.ready&&!row.assessment.p7_runtime_ready)for(const runtimeIssue of row.assessment.p7_runtime?.issues||[])issues.push(runtimeIssue);
     });
     if(summary.ready_count===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_ZERO',message:'Quest.boxesを正とするP4正式Questが0件です。Exportは可能ですが、新Quest契約として実行対象はありません。'});
     return {summary,issues};
@@ -257,10 +280,11 @@
       'event/events.json':clean(data.events||[]),'event/flags.json':clean(data.flags||[]),
       'master/jobs.json':clean(masters.jobs||[]),'master/statuses.json':clean(masters.status_effects||[]),
       'monster/monster_mods.json':clean(recordsByTag(mods,['monster','モンスター'])),'monster/monsters.json':clean(masters.monsters||[]),
+      'world/maps.json':clean(masters.maps||[]),'exploration/outcomes.json':clean(masters.exploration_outcomes||[]),
       'quest/event_quests.json':clean(quests.filter(x=>x.type==='event')),'quest/main_quests.json':clean(quests.filter(x=>x.type==='main')),'quest/sub_quests.json':clean(quests.filter(x=>!['main','event'].includes(x.type))),
       'scenario/chapters.json':chapters,'scenario/scenes.json':scenes,'scenario/sections.json':sections,
       'skill/skills.json':clean(masters.skills||[]),'stone/stone_mods.json':clean(recordsByTag(mods,['stone','tablet','石板'])),'stone/stones.json':clean(masters.tablets||[]),
-      'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean(data.drop_tables||[]),'system/game_settings.json':clean(data.game_settings||{})
+      'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean(data.drop_tables||[]),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
     };
   }
   function envelope(payload,dataVersion,generatedAt,appVersion){return {schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,data:payload};}
@@ -278,5 +302,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

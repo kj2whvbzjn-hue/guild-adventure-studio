@@ -12,7 +12,9 @@ for(const needle of [
  'assessments.filter(x=>x.assessment.ready)',
  'function formalAdventureQuestImportIssues()',
  'function formalAdventureQuestImportIssueMessage(issue)',
- "FORMAL_QUEST_EVENT_RESOLVER_PENDING:'戦闘/探索EventはP7 Resolver対応待ち'",
+ "FORMAL_QUEST_EVENT_RESOLVER_PENDING:'Event Resolverが利用できません'",
+ "code:'FORMAL_QUEST_MAP_REQUIRED'",
+ "code:'FORMAL_QUEST_MAP_MISSING'",
  '<details class="small warn">',
  'escapeHtml(issue.quest_id)',
  'function reloadFormalAdventureQuests()',
@@ -68,5 +70,5 @@ for(const needle of [
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
 assert(!app.includes("filter(q=>{const links=q.links||{};return Boolean(q?.id&&links.chapter_id&&links.section_id)"),'link-only formal quest filter must be removed');
 assert(!app.includes("FORMAL_QUEST_RANDOM_EVENT_PENDING:'Random EventはP6で実行対応'"),'P6 must not keep the P5 random-event pending import block');
-assert(app.includes('P6で実行可能なStory Questがありません。'),'P6 empty formal Export guidance missing');
+assert(app.includes('P7-Bで実行可能なStory Questがありません。'),'P7-B empty formal Export guidance missing');
 console.log('adventure-formal-quest-game-import-readiness PASS');

@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B564</title>
+<title>GK Studio GKS-B565</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -433,7 +433,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
-  <script src="../assets/shared/js/adventure-story-system.js?v=7"></script>
+  <script src="../assets/shared/js/adventure-story-system.js?v=8"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -443,13 +443,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.178 / GKS-B564</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.179 / GKS-B565</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.178 / Studio GKS-B564</div>
+    <div class="version">Game GA-B486.179 / Studio GKS-B565</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -838,9 +838,13 @@ updateDeployDeleteControl();
     <div class="field"><label>報酬</label><textarea id="questRewards"></textarea></div>
     <div class="grid">
       <div class="field"><label>冒険時間（秒）</label><input id="questAdventureDuration" type="number" min="1" step="1" value="300"><div class="small">P5ではQuestが所有し、QuestRun開始時にこの値をSnapshotします。</div></div>
-      <div class="field"><label>Enemy Budget（旧互換）</label><input id="questEnemyBudget" type="number" min="0" step="1" value="0"><div class="small">P5 Box Executorでは未使用です。Encounter Resolver接続はP7で扱います。</div></div>
+      <div class="field"><label>基礎 Enemy Budget</label><input id="questEnemyBudget" type="number" min="0" step="1" value="0"><div class="small">この数値がQuestの基礎難易度です。開始時に消費する石板でBudgetを加算します。</div></div>
       <div class="field"><label>開始コスト（Gold）</label><input id="questStartCostGold" type="number" min="0" step="1" value="0"></div>
-      <div class="field"><label>開始コスト資源（JSON）</label><textarea id="questStartCostResources" placeholder='{"TBL-RED":2}'></textarea><div class="small">石板等の資源IDと消費数。例: {"TBL-RED":2}</div></div>
+      <div class="field"><label>開始コスト資源（JSON）</label><textarea id="questStartCostResources" placeholder='{"TBL-RED":2}'></textarea><div class="small">Quest固有の固定開始コストです。難易度調整用の石板はGame開始時に別途選択・消費します。例: {"RES-TICKET":2}</div></div>
+    </div>
+    <div class="grid">
+      <div class="field"><label>Map</label><select id="questMapId"></select><div class="small">MapのタグがBattle / Explorationの環境候補抽出に使われます。</div></div>
+      <div class="field"><label>実行時環境タグ</label><input id="questEnvironmentTags" placeholder="night, rain"><div class="small">Map固定タグへ追加するQuest固有タグ。カンマ区切り。</div></div>
     </div>
     <div class="grid">
       <div class="field"><label>前提クエストID</label><input id="questPrerequisites" placeholder="QUEST-001, QUEST-002"></div>
@@ -870,7 +874,7 @@ updateDeployDeleteControl();
 
     <section class="quest-box-section" aria-labelledby="questBoxSectionTitle">
       <div class="quest-box-section-head">
-        <div><h3 id="questBoxSectionTitle">Box構成</h3><div class="small">Quest内の進行単位です。P6 Game Runtimeは Event A → 前Scene → Event B → 中Scene → Event C → 後Scene → Event D の順で実行し、Random Event枠は到達時に抽選します。</div></div>
+        <div><h3 id="questBoxSectionTitle">Box構成</h3><div class="small">Quest内の進行単位です。P7-B Game Runtimeは Event A → 前Scene → Event B → 中Scene → Event C → 後Scene → Event D の順で実行し、Random Event枠は到達時に抽選します。</div></div>
         <button class="primary" type="button" onclick="addQuestBoxDraft()">＋ Box追加</button>
       </div>
       <div id="questBoxList" class="quest-box-list"></div>
@@ -1087,6 +1091,7 @@ updateDeployDeleteControl();
         <option value="equipment">装備</option><option value="mods">MOD</option><option value="monsters">モンスター</option>
         <option value="status_effects">状態異常</option><option value="tablets">石板</option><option value="ai_conditions">AI条件</option>
         <option value="ai_targets">AI対象</option><option value="ai_actions">AI行動</option>
+        <option value="maps">マップ</option><option value="exploration_outcomes">探索結果</option><option value="adventure_settings">冒険設定</option>
       </select></div>
       <div class="field"><label>ID</label><input id="masterId" placeholder="空欄で自動採番"></div>
       <div class="field"><label>名称</label><input id="masterName"></div>
@@ -1112,8 +1117,16 @@ updateDeployDeleteControl();
       <div class="field"><label>解放条件（JSON）</label><textarea id="aiMasterUnlock" placeholder='{"required_ids":[]}'></textarea></div>
     </div>
     <div id="masterAdventureBudgetFields" class="grid hidden">
-      <div id="masterMonsterBudgetField" class="field hidden"><label>Enemy Budget Cost</label><input id="masterEnemyBudgetCost" type="number" min="1" step="1" value="1"><div class="small">Random Battle編成で消費するCost。</div></div>
-      <div id="masterTabletBudgetField" class="field hidden"><label>Enemy Budget Bonus</label><input id="masterEnemyBudgetBonus" type="number" min="0" step="1" value="0"><div class="small">この石板を開始コストとして1個消費した時のBudget加算値。</div></div>
+      <div id="masterMonsterBudgetField" class="field hidden"><label>Enemy Budget Cost</label><input id="masterEnemyBudgetCost" type="number" min="1" step="1" value="1"><div class="small">Encounter Resolverが編成を作る時に消費するCost。</div></div>
+      <div id="masterTabletBudgetField" class="field hidden"><label>Stone Level / Budget加算</label><input id="masterEnemyBudgetBonus" type="number" min="0" step="1" value="0"><div class="small">この石板をQuest開始時に1個消費した時のBudget加算値。数値は調整可能です。</div></div>
+    </div>
+    <div id="masterEnvironmentTagFields" class="card hidden" style="margin-top:12px">
+      <b>環境タグ条件</b><div class="small">Monsterは出現条件、探索結果は発生条件として使用します。Mapは通常の「タグ」欄を固定環境タグとして使用します。</div>
+      <div class="grid">
+        <div class="field"><label>ANY（どれか一致）</label><input id="masterEnvTagsAny" placeholder="grassland, forest"></div>
+        <div class="field"><label>ALL（すべて必須）</label><input id="masterEnvTagsAll" placeholder="desert, night"></div>
+        <div class="field"><label>NONE（出現禁止）</label><input id="masterEnvTagsNone" placeholder="town"></div>
+      </div>
     </div>
     <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
     <div id="monsterSkillGeneratorFields" class="card hidden" style="margin-top:16px">
@@ -2109,7 +2122,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B564';
+const DISTRIBUTION_BUILD='GKS-B565';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2133,7 +2146,7 @@ function initial(){
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],ai_programs:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[]},entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],ai_programs:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[],maps:[],exploration_outcomes:[],adventure_settings:[]},entities:[],id_counters:{},history:[]}
 }
 repairProjectRegistry();
 migrateLegacyProject();
@@ -2290,7 +2303,8 @@ function normalizeData(){
  data.battle_snapshots=data.battle_snapshots||[];
  data.battle_tests=data.battle_tests||[];
  data.masters=data.masters||{};
- ['stats','jobs','equipment','mods','monsters','status_effects','tablets'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});['ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.description=m.description||'';});});data.masters.skills=data.masters.skills||[];data.masters.skills.forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.description=m.description||'';if(!isFormalSkillMasterRecord('skills',m)){m.tags=m.tags||[];m.params=m.params||{}}});
+ ['stats','jobs','equipment','mods','monsters','status_effects','tablets','maps','exploration_outcomes','adventure_settings'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});['ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.description=m.description||'';});});data.masters.skills=data.masters.skills||[];data.masters.skills.forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.description=m.description||'';if(!isFormalSkillMasterRecord('skills',m)){m.tags=m.tags||[];m.params=m.params||{}}});
+ if(!data.masters.adventure_settings.length)data.masters.adventure_settings.push({id:'ADV-DEFAULT',name:'冒険バランス既定',status:'active',enabled:true,tags:[],params:{encounter:{default_spawn_weight:1,max_units:100},reward_scaling:{bonus_per_budget:0.02,min_multiplier:1,max_multiplier:null},exploration:{default_base_weight:1,default_success_rate:1,min_success_rate:0,max_success_rate:1,rarity_budget_reference:0,rarity_weight_bonus_per_budget:{common:0,uncommon:0.002,rare:0.005,epic:0.01,legendary:0.02}},fixed_formation_scaling:{hp_per_ratio:1,attack_per_ratio:1,agi_per_ratio:0,min_multiplier:1,max_multiplier:null}},description:'P7-B冒険バランス設定。数値は仮値で、コード変更なしで調整できます。',updated_at:now()});
  data.quests.forEach(q=>{
   q.type=q.type||'sub';
   q.status=q.status||'draft';
@@ -2688,9 +2702,9 @@ function nextId(type){
  return p+'-'+String(max+1).padStart(4,'0')
 }
 
-const MASTER_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動'};
+const MASTER_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動',maps:'マップ',exploration_outcomes:'探索結果',adventure_settings:'冒険設定'};
 let editingMasterId='';
-function masterPrefix(category){return ({tags:'TAG',stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA'})[category]||'MST'}
+function masterPrefix(category){return ({tags:'TAG',stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV'})[category]||'MST'}
 function nextMasterId(category){const p=masterPrefix(category);let max=0;const rows=category==='tags'?tagDefinitions():(data.masters[category]||[]);rows.forEach(x=>{const id=String(x.id||'');const m=id.match(/(\d+)$/);if(id.startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
 let tagPickerSelection=[];
 let monsterSkillCandidateSelection=new Set();
@@ -3073,7 +3087,7 @@ function parseAIMasterJson(id,label,fallback){const field=document.getElementByI
 function readAIMasterDefinition(category,id,name,tags,description){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[category],node=window.GKSAIMasterAdapter.toNode({id,name,status:masterStatus.value,tags,description,data_version:aiMasterDataVersion.value.trim()||'1.0.0',evaluator:aiMasterEvaluator.value.trim(),ports:parseAIMasterJson('aiMasterPorts','ポート定義',{inputs:[],outputs:[]}),parameter_schema:parseAIMasterJson('aiMasterParameterSchema','パラメータSchema',{type:'object',properties:{},required:[],additionalProperties:false}),unlock:parseAIMasterJson('aiMasterUnlock','解放条件',{}),node_type:type},category);const errors=window.GKSAIMasterAdapter.definitionErrors(node);if(errors.length)throw new Error(errors.join('\n'));return node}
 function populateAIMasterFields(record,category){if(!isAIMasterCategory(category))return;const node=window.GKSAIMasterAdapter.toNode(record,category);aiMasterDataVersion.value=node.data_version;aiMasterEvaluator.value=node.evaluator;aiMasterPorts.value=JSON.stringify(node.ports,null,2);aiMasterParameterSchema.value=JSON.stringify(node.parameter_schema,null,2);aiMasterUnlock.value=JSON.stringify(node.unlock||{},null,2)}
 function clearAIMasterFields(){if(!document.getElementById('aiMasterDataVersion'))return;aiMasterDataVersion.value='1.0.0';aiMasterEvaluator.value='';aiMasterPorts.value='';aiMasterParameterSchema.value=JSON.stringify({type:'object',properties:{},required:[],additionalProperties:false},null,2);aiMasterUnlock.value=JSON.stringify({required_ids:[]},null,2)}
-function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',isAI=isAIMasterCategory(masterCategory.value),current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('aiMasterFields')?.classList.toggle('hidden',!isAI);document.getElementById('masterParamsField')?.classList.toggle('hidden',isAI);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);setFormalSkillMasterEditorMode(isFormal);if(isAI&&!aiMasterPorts.value){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[masterCategory.value],node=window.GKSAIMasterAdapter.toNode({node_type:type},masterCategory.value);aiMasterPorts.value=JSON.stringify(node.ports,null,2)}if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
+function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',isExploration=masterCategory.value==='exploration_outcomes',isAI=isAIMasterCategory(masterCategory.value),current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('aiMasterFields')?.classList.toggle('hidden',!isAI);document.getElementById('masterParamsField')?.classList.toggle('hidden',isAI);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);document.getElementById('masterEnvironmentTagFields')?.classList.toggle('hidden',!(isMonster||isExploration));setFormalSkillMasterEditorMode(isFormal);if(isAI&&!aiMasterPorts.value){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[masterCategory.value],node=window.GKSAIMasterAdapter.toNode({node_type:type},masterCategory.value);aiMasterPorts.value=JSON.stringify(node.ports,null,2)}if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
 
 let lastMonsterSkillCandidateEvaluation=null;
 function resetMonsterSkillCandidateResult(){
@@ -3134,11 +3148,11 @@ function renderMonsterSkillCandidateSummary(){
  const ids=[...monsterSkillCandidateSelection],names=ids.map(id=>e.eligible.find(row=>row.id===id)?.name||id);
  result.innerHTML=`<div class="item ok"><b>選択済み ${ids.length}件</b><div class="small">${names.length?names.map(esc).join('、'):'なし'}</div><div class="small">候補 ${e.eligible.length}件 / 条件外 ${e.excluded.length}件。最後に「登録・更新」を押して保存してください。</div></div>`;
 }
-function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters')params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));if(c==='tablets')params.enemy_budget_bonus=Math.max(0,Math.floor(Number(masterEnemyBudgetBonus.value)||0));const tags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean);let rec;if(isAIMasterCategory(c)){try{const node=readAIMasterDefinition(c,id,name,tags,masterDescription.value);rec={id:node.id,name:node.name,node_type:node.node_type,status:node.status,tags:node.tags,description:node.description,data_version:node.data_version,evaluator:node.evaluator,ports:node.ports,parameter_schema:node.parameter_schema,unlock:node.unlock,updated_at:now()}}catch(error){return alert(error.message)}}else rec={id,name,status:masterStatus.value,tags,params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist(isAIMasterCategory(c)?'ai master saved':'master saved');closeStudioInputPanel()}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters'){params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));params.spawn_tags={any:splitCsv(masterEnvTagsAny.value),all:splitCsv(masterEnvTagsAll.value),none:splitCsv(masterEnvTagsNone.value)}}if(c==='exploration_outcomes')params.environment_tags={any:splitCsv(masterEnvTagsAny.value),all:splitCsv(masterEnvTagsAll.value),none:splitCsv(masterEnvTagsNone.value)};if(c==='tablets'){const stoneLevel=Math.max(0,Number(masterEnemyBudgetBonus.value)||0);params.stone_level=stoneLevel;params.enemy_budget_bonus=stoneLevel;}const tags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean);let rec;if(isAIMasterCategory(c)){try{const node=readAIMasterDefinition(c,id,name,tags,masterDescription.value);rec={id:node.id,name:node.name,node_type:node.node_type,status:node.status,tags:node.tags,description:node.description,data_version:node.data_version,evaluator:node.evaluator,ports:node.ports,parameter_schema:node.parameter_schema,unlock:node.unlock,updated_at:now()}}catch(error){return alert(error.message)}}else rec={id,name,status:masterStatus.value,tags,params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist(isAIMasterCategory(c)?'ai master saved':'master saved');closeStudioInputPanel()}
 function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditorPanel','マスターを作成')}
-function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=[...masterStatus.options].some(o=>o.value===(m.status||'draft'))?(m.status||'draft'):'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=isAIMasterCategory(category)?'':JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));masterDescription.value=m.description||'';updateMasterFormMode();populateAIMasterFields(m,category);if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
+function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=[...masterStatus.options].some(o=>o.value===(m.status||'draft'))?(m.status||'draft'):'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=isAIMasterCategory(category)?'':JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.stone_level??m.stone_level??m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));const envCond=(category==='monsters'?(m.params?.spawn_tags??m.spawn_tags):(category==='exploration_outcomes'?(m.params?.environment_tags??m.environment_tags):{}))||{};masterEnvTagsAny.value=(envCond.any||[]).join(', ');masterEnvTagsAll.value=(envCond.all||[]).join(', ');masterEnvTagsNone.value=(envCond.none||[]).join(', ');masterDescription.value=m.description||'';updateMasterFormMode();populateAIMasterFields(m,category);if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
-function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';setFormalSkillMasterEditorMode(false);masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterEnemyBudgetCost.value='1';masterEnemyBudgetBonus.value='0';masterDescription.value='';clearAIMasterFields();if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
+function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';setFormalSkillMasterEditorMode(false);masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterEnemyBudgetCost.value='1';masterEnemyBudgetBonus.value='0';masterEnvTagsAny.value='';masterEnvTagsAll.value='';masterEnvTagsNone.value='';masterDescription.value='';clearAIMasterFields();if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
 function masterSearchText(category,m){
  const tagIds=Array.isArray(m.tags)?m.tags:[];
  const tagNames=tagIds.map(tagLabel);
@@ -6866,6 +6880,22 @@ function renderQuestBoxRandomFilterEditor(zoneKey,placement,index){
   <div class="field"><label>タグ</label><input value="${escAttr((f.tags||[]).join(', '))}" onchange="updateQuestBoxRandomFilter('${zoneKey}',${index},'tags',this.value)" placeholder="複数はカンマ区切り"></div>
  </div></div>`;
 }
+function questBoxPlacementEvent(placement){return (data.events||[]).find(e=>String(e.id||'')===String(placement?.event_id||''))||null}
+function questBoxEncounterRows(raw){return (Array.isArray(raw)?raw:[]).map(x=>({monster_id:String(x?.monster_id||x?.id||''),count:Math.max(1,Math.floor(Number(x?.count)||1))})).filter(x=>x.monster_id)}
+function updateQuestBoxEncounterOverride(zoneKey,index,field,value){
+ const p=questBoxEditorState?.draft?.[zoneKey]?.[index];if(!p||p.kind!=='fixed_event')return;
+ p.encounter_override=p.encounter_override&&typeof p.encounter_override==='object'?p.encounter_override:{mode:'resolver',required_monsters:[],formation:[]};
+ if(field==='mode'){p.encounter_override.mode=['resolver','required_monsters','fixed_formation'].includes(value)?value:'resolver';}
+ else if(field==='required_monsters'||field==='formation'){try{const rows=value.trim()?JSON.parse(value):[];if(!Array.isArray(rows))throw new Error('配列にしてください');p.encounter_override[field]=questBoxEncounterRows(rows)}catch(e){alert('敵編成JSONが正しくありません: '+e.message);return}}
+ else p.encounter_override[field]=value||null;
+ renderQuestBoxEditor();
+}
+function renderQuestBoxEncounterOverride(zoneKey,placement,index){
+ const event=questBoxPlacementEvent(placement);if(eventTypeValue(event)!=='battle')return'';
+ const o=placement.encounter_override&&typeof placement.encounter_override==='object'?placement.encounter_override:{mode:'resolver'},mode=['resolver','required_monsters','fixed_formation'].includes(o.mode)?o.mode:'resolver';
+ const required=JSON.stringify(questBoxEncounterRows(o.required_monsters),null,2),formation=JSON.stringify(questBoxEncounterRows(o.formation),null,2);
+ return `<div class="card" style="margin-top:8px"><b>Story Battle Override</b><div class="small">Event本体には敵編成を保存せず、この固定配置だけにStory事情を設定します。Random Event枠では使用できません。</div><div class="field"><label>Encounter Mode</label><select onchange="updateQuestBoxEncounterOverride('${zoneKey}',${index},'mode',this.value)"><option value="resolver" ${mode==='resolver'?'selected':''}>resolver（Mapタグ＋Budgetで生成）</option><option value="required_monsters" ${mode==='required_monsters'?'selected':''}>required_monsters（必須敵＋残Budget生成）</option><option value="fixed_formation" ${mode==='fixed_formation'?'selected':''}>fixed_formation（固定編成＋難易度Scaling）</option></select></div>${mode==='required_monsters'?`<div class="field"><label>必須Monster（JSON）</label><textarea onchange="updateQuestBoxEncounterOverride('${zoneKey}',${index},'required_monsters',this.value)">${esc(required)}</textarea><div class="small">例: [{"monster_id":"MON-BOSS-001","count":1}]。必須敵はMapタグ制限をバイパスします。</div></div>`:''}${mode==='fixed_formation'?`<div class="field"><label>固定Formation（JSON）</label><textarea onchange="updateQuestBoxEncounterOverride('${zoneKey}',${index},'formation',this.value)">${esc(formation)}</textarea><div class="small">敵IDと数は固定し、石板による難易度はBattle Scaling設定で反映します。</div></div>`:''}</div>`;
+}
 function normalizeQuestBoxPlacementOrders(zoneKey){
  const box=questBoxEditorState?.draft;if(!box||!Array.isArray(box[zoneKey]))return;box[zoneKey].forEach((p,i)=>p.order=i+1);
 }
@@ -6873,6 +6903,7 @@ function updateQuestBoxEditorField(field,value){if(!questBoxEditorState)return;q
 function updateQuestBoxPlacement(zoneKey,index,field,value){
  const p=questBoxEditorState?.draft?.[zoneKey]?.[index];if(!p)return;
  if(field==='required'||field==='allow_none')p[field]=Boolean(value);else p[field]=value;
+ if(field==='event_id'){const event=questBoxPlacementEvent(p);if(eventTypeValue(event)==='battle')p.encounter_override=p.encounter_override&&typeof p.encounter_override==='object'?p.encounter_override:{mode:'resolver',required_monsters:[],formation:[]};else delete p.encounter_override;renderQuestBoxEditor();}
 }
 function addQuestBoxPlacement(zoneKey,kind){
  const box=questBoxEditorState?.draft;if(!box||!QUEST_BOX_ZONE_DEFS.some(z=>z.key===zoneKey))return;if(!Array.isArray(box[zoneKey]))box[zoneKey]=[];
@@ -6890,6 +6921,7 @@ function renderQuestBoxPlacement(zoneKey,placement,index,total){
  const random=placement.kind==='random_event';
  return `<div class="quest-box-placement"><div class="quest-box-placement-head"><div class="quest-box-placement-kind"><span class="badge ${random?'warn':'ok'}">${random?'Random Event枠':'固定Event'}</span><span class="small">順序 ${index+1}</span></div><div class="toolbar"><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},1)" ${index===total-1?'disabled':''}>↓</button><button type="button" class="danger" onclick="removeQuestBoxPlacement('${zoneKey}',${index})">削除</button></div></div>
  ${random?`${renderQuestBoxRandomFilterEditor(zoneKey,placement,index)}<div class="grid" style="margin-top:8px"><div class="field"><label><input type="checkbox" ${placement.required?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'required',this.checked)"> 必須枠</label></div><div class="field"><label><input type="checkbox" ${placement.allow_none!==false?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'allow_none',this.checked)"> 何も起きないを許可</label></div></div>`:renderQuestBoxEventCatalog(zoneKey,placement,index)}
+ ${random?'':renderQuestBoxEncounterOverride(zoneKey,placement,index)}
  <div class="field"><label>Event失敗時</label><select onchange="updateQuestBoxPlacement('${zoneKey}',${index},'failure_policy',this.value)"><option value="continue" ${placement.failure_policy!=='quest_fail'?'selected':''}>続行</option><option value="quest_fail" ${placement.failure_policy==='quest_fail'?'selected':''}>Quest失敗</option></select></div></div>`;
 }
 function renderQuestBoxZone(zoneDef){
@@ -6909,11 +6941,11 @@ function closeQuestBoxEditor(){const overlay=document.getElementById('questBoxEd
 function handleQuestBoxEditorBackdrop(event){if(event.target&&event.target.id==='questBoxEditorOverlay')closeQuestBoxEditor()}
 function saveQuestBoxEditor(){
  const state=questBoxEditorState;if(!state)return;
- for(const z of QUEST_BOX_ZONE_DEFS){for(const placement of state.draft[z.key]||[]){if(placement.kind!=='random_event'&&!String(placement.event_id||'').trim())return alert(`${z.label}の固定Eventを選択してください。`)}}
+ for(const z of QUEST_BOX_ZONE_DEFS){for(const placement of state.draft[z.key]||[]){if(placement.kind!=='random_event'&&!String(placement.event_id||'').trim())return alert(`${z.label}の固定Eventを選択してください。`);if(placement.kind==='fixed_event'&&eventTypeValue(questBoxPlacementEvent(placement))==='battle'){const o=placement.encounter_override||{mode:'resolver'};if(o.mode==='required_monsters'&&!questBoxEncounterRows(o.required_monsters).length)return alert(`${z.label}のrequired_monstersに必須Monsterを設定してください。`);if(o.mode==='fixed_formation'&&!questBoxEncounterRows(o.formation).length)return alert(`${z.label}のfixed_formationに敵編成を設定してください。`)}}}
  const stableId=questBoxId(questDraftBoxes[state.index]);state.draft.box_id=stableId;state.draft.order=state.index+1;questDraftBoxes[state.index]=questBoxClone(state.draft,state.index);normalizeQuestDraftBoxOrder();closeQuestBoxEditor();renderQuestBoxDraftList();
 }
 
-function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready&&a.p6_runtime_ready)el.innerHTML='<span class="badge ok">P6 実行可能Quest</span> Quest.boxes正式Export契約とP6 Game Runtime要件を満たします。';else if(a.ready)el.innerHTML='<span class="badge ok">正式Quest</span> Export契約に適合。<br><span class="small">'+esc((a.p6_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P6 Runtimeでは未対応要素があります。')+'</span>';else if(a.is_formal)el.innerHTML='<span class="badge warn">正式要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else if(a.legacy_runtime_ready)el.innerHTML='<span class="badge warn">旧Runtime情報のみ</span> P6 Game RuntimeではQuest.boxesがないQuestは実行対象外です。';else el.innerHTML='<span class="badge">下書きQuest</span> Quest.boxesを1件以上追加すると正式Quest候補になります。';renderQuestFormalWorkflow();}
+function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready&&a.p7_runtime_ready)el.innerHTML='<span class="badge ok">P7-B 実行可能Quest</span> Quest.boxes正式Export契約とP7-B Game Runtime要件を満たします。';else if(a.ready)el.innerHTML='<span class="badge ok">正式Quest</span> Export契約に適合。<br><span class="small">'+esc((a.p7_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P7-B Runtime要件に不足があります。')+'</span>';else if(a.is_formal)el.innerHTML='<span class="badge warn">正式要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else if(a.legacy_runtime_ready)el.innerHTML='<span class="badge warn">旧Runtime情報のみ</span> P7-B Game RuntimeではQuest.boxesがないQuestは実行対象外です。';else el.innerHTML='<span class="badge">下書きQuest</span> Quest.boxesを1件以上追加すると正式Quest候補になります。';renderQuestFormalWorkflow();}
 function formalQuestWorkflowState(){
  const chapterId=questChapterLink?.value||'',sectionId=questSectionLink?.value||'';
  const chapter=chapterId?getChapter(chapterId):null;
@@ -6939,21 +6971,23 @@ function openQuestFormalExport(){
 }
 function renderQuestFormalWorkflow(){
  const el=document.getElementById('questFormalWorkflow');if(!el)return;
- const state=formalQuestWorkflowState(),questBoxesOk=state.questBoxes.length>0,ready=state.assessment.ready,p6Ready=state.assessment.p6_runtime_ready;
+ const state=formalQuestWorkflowState(),questBoxesOk=state.questBoxes.length>0,ready=state.assessment.ready,p7Ready=state.assessment.p7_runtime_ready;
  const step=(ok,label,detail)=>`<div class="meta"><span class="badge ${ok?'ok':'warn'}">${ok?'✓':'未完了'}</span> <b>${esc(label)}</b> — ${esc(detail)}</div>`;
- el.innerHTML='<b>P6 正式Quest / Game Runtime</b>'+ 
+ el.innerHTML='<b>P7-B 正式Quest / Game Runtime</b>'+ 
   step(questBoxesOk,'1. Quest Box',questBoxesOk?`${state.questBoxes.length} Box設定済み`:'Quest画面でBoxを1件以上追加')+
   step(ready,'2. 正式Export契約',ready?'Quest.boxesを正とする正式QuestとしてExport可能':'Quest Box / Scene / Event参照のエラーを修正')+
-  step(p6Ready,'3. P6 Game Runtime',p6Ready?'固定Event + Random Event + Sceneを新Quest Box順で実行可能':((state.assessment.p6_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P6 Runtime要件を確認'))+
+  step(p6Ready,'3. P7-B Game Runtime',p6Ready?'固定Event + Random Event + Sceneを新Quest Box順で実行可能':((state.assessment.p6_runtime?.issues||[]).map(x=>x.message).join(' / ')||'P6 Runtime要件を確認'))+
   `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${state.section?'':'disabled'}>旧Sectionデータを確認（参考）</button><button type="button" onclick="openQuestFormalExport()">Export検証へ</button></div>`;
 }
+function refreshQuestMapOptions(selected=''){const el=document.getElementById('questMapId');if(!el)return;const rows=data.masters?.maps||[];el.innerHTML='<option value="">未設定</option>'+rows.map(m=>`<option value="${escAttr(m.id)}" ${String(m.id)===String(selected)?'selected':''}>${esc(m.name||m.id)} (${esc(m.id)})</option>`).join('');}
 function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
  questSummary.value='';questConditions.value='';questCompletion.value='';questFailure.value='';questRewards.value='';
- questAdventureDuration.value='300';questEnemyBudget.value='0';questStartCostGold.value='0';questStartCostResources.value='';
+ questAdventureDuration.value='300';questEnemyBudget.value='0';questMapId.value='';questEnvironmentTags.value='';questStartCostGold.value='0';questStartCostResources.value='';
  questPrerequisites.value='';questNextQuests.value='';questRequiredFlags.value='';questSetFlags.value='';
  questDraftCharacterIds=[];questDraftBoxes=[];
+ refreshQuestMapOptions('');
  refreshLinkSelectors('quest',{});
  renderCharacterSelect('questCharacterLink');
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
@@ -6995,7 +7029,9 @@ function saveQuest(){
   set_flags:splitCsv(questSetFlags.value),
   start_cost:startCost,
   adventure_duration_seconds:Math.max(1,Number(questAdventureDuration.value)||300),
-  enemy_budget:Math.max(0,Math.floor(Number(questEnemyBudget.value)||0)),
+  base_enemy_budget:Math.max(0,Number(questEnemyBudget.value)||0),
+  enemy_budget:Math.max(0,Number(questEnemyBudget.value)||0),
+  context:{...(previous.context&&typeof previous.context==='object'?previous.context:{}),map_id:questMapId.value||'',environment_tags:splitCsv(questEnvironmentTags.value)},
   boxes:questDraftBoxes.map((box,i)=>questBoxClone({...box,order:i+1},i)),
   links:{
    chapter_id:questChapterLink.value||'',
@@ -7024,7 +7060,7 @@ function editQuest(id){
  questId.value=q.id;questName.value=q.name;questType.value=q.type;questStatus.value=q.status;
  questSummary.value=q.summary||'';questConditions.value=q.conditions||'';questCompletion.value=q.completion||'';questFailure.value=q.failure||'';questRewards.value=q.rewards||'';
  const startCost=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeQuestStartCost(q):(q.start_cost||{gold:0,resources:{}});
- questAdventureDuration.value=String(Math.max(1,Number(q.adventure_duration_seconds)||300));questEnemyBudget.value=String(Math.max(0,Number(q.enemy_budget)||0));questStartCostGold.value=String(startCost.gold||0);questStartCostResources.value=Object.keys(startCost.resources||{}).length?JSON.stringify(startCost.resources,null,2):'';
+ questAdventureDuration.value=String(Math.max(1,Number(q.adventure_duration_seconds)||300));questEnemyBudget.value=String(Math.max(0,Number(q.base_enemy_budget??q.enemy_budget)||0));refreshQuestMapOptions(q.context?.map_id||'');questEnvironmentTags.value=(q.context?.environment_tags||[]).join(', ');questStartCostGold.value=String(startCost.gold||0);questStartCostResources.value=Object.keys(startCost.resources||{}).length?JSON.stringify(startCost.resources,null,2):'';
  questPrerequisites.value=(q.prerequisite_ids||[]).join(', ');questNextQuests.value=(q.next_quest_ids||[]).join(', ');questRequiredFlags.value=(q.required_flags||[]).join(', ');questSetFlags.value=(q.set_flags||[]).join(', ');
  questDraftCharacterIds=[...(q.links?.character_ids||[])];
  questDraftBoxes=(Array.isArray(q.boxes)?q.boxes:[]).map((box,i)=>questBoxClone(box,i));
@@ -7056,7 +7092,7 @@ function renderQuests(){
  });
  questList.innerHTML=list.map(q=>{
   const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id),formal=questFormalAssessment(q);
-  const formalBadge=formal.ready?`<span class="badge ok">正式Quest</span>${formal.p6_runtime_ready?' <span class="badge ok">P6実行可</span>':' <span class="badge warn">P7待ち</span>'}`:formal.is_formal?'<span class="badge warn">正式要件不足</span>':formal.legacy_runtime_ready?'<span class="badge warn">旧Runtime情報のみ</span>':'<span class="badge">下書きQuest</span>';
+  const formalBadge=formal.ready?`<span class="badge ok">正式Quest</span>${formal.p7_runtime_ready?' <span class="badge ok">P7-B実行可</span>':' <span class="badge warn">Runtime要件不足</span>'}`:formal.is_formal?'<span class="badge warn">正式要件不足</span>':formal.legacy_runtime_ready?'<span class="badge warn">旧Runtime情報のみ</span>':'<span class="badge">下書きQuest</span>';
   return `<div class="item">
    <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
    <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span> ${formalBadge}
@@ -7341,7 +7377,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','564');
+    url.searchParams.set('appv','565');
     location.replace(url.toString());
    }
  }
@@ -7350,7 +7386,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=564',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=565',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7369,7 +7405,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','564');
+    url.searchParams.set('appv','565');
     location.replace(url.toString());
    }
   });
@@ -7454,12 +7490,12 @@ setTimeout(loadDesignCards,0);
 window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};
 window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now(),getBattleUnits:()=>{try{return [...JSON.parse(battleAllies.value||'[]'),...JSON.parse(battleEnemies.value||'[]')]}catch{return[]}},getMpCostMultiplier:()=>Math.max(0,Number(battleFormulaConfig.mpCostMultiplier)||1)};</script>
 <script src="./equipment/equipment-generator.js?v=4971"></script>
-<script src="../assets/shared/js/apply-lifecycle-engine.js?v=486178"></script>
-<script src="../assets/shared/js/trigger-engine.js?v=486178"></script>
-<script src="../assets/shared/js/condition-engine.js?v=486178"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b564"></script>
-<script src="../assets/shared/js/skill-compiler.js?v=486178"></script>
-<script src="../assets/shared/js/skill-compile-service.js?v=486178"></script>
+<script src="../assets/shared/js/apply-lifecycle-engine.js?v=486179"></script>
+<script src="../assets/shared/js/trigger-engine.js?v=486179"></script>
+<script src="../assets/shared/js/condition-engine.js?v=486179"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b565"></script>
+<script src="../assets/shared/js/skill-compiler.js?v=486179"></script>
+<script src="../assets/shared/js/skill-compile-service.js?v=486179"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>
 <script src="../assets/shared/js/skill-budget-engine.js?v=2"></script>
 <script src="../assets/shared/js/skill-ai-batch-engine.js?v=2"></script>

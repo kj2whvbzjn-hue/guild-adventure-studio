@@ -9,7 +9,7 @@ for(const token of [
   "code:'FORMAL_QUEST_EVENT_MISSING'",
   "code:'FORMAL_QUEST_EVENT_RESOLVER_PENDING'",
   "function resolveAdventureBundle(content,questId)",
-  "return{quest,scenes:content.scenes||[],events:content.events||[],monsters:content.monsters||[],tablets:content.tablets||[]};",
+  "return{quest,scenes:content.scenes||[],events:content.events||[],monsters:content.monsters||[],tablets:content.tablets||[],maps:content.maps||[]",
   "GKAdventureStorySystem.simulateQuest({quest:bundle.quest,scenes:bundle.scenes,events:bundle.events,monsters:bundle.monsters",
 ])assert(app.includes(token),`P5 Game Runtime integration missing: ${token}`);
 assert(!app.includes("GKAdventureStorySystem.simulateQuest({quest:bundle.quest,section:bundle.section,chapter:bundle.chapter"),'P5 Game path must not pass legacy Section/Chapter to simulateQuest');

@@ -5,7 +5,7 @@ assert(app.includes('let adventureQuestCatalog=[];'),'formal quest catalog missi
 assert(app.includes('function formalAdventureQuests(){return adventureQuestCatalog.slice();}'),'formal quest selector missing');
 assert(app.includes('function reconcileFormalAdventureQuestSelection()'),'formal quest selection reconciliation missing');
 assert(app.includes("const ql=$('questList'),formalQuests=formalAdventureQuests(),importIssues=formalAdventureQuestImportIssues();"),'quest list must render import-ready formal Export quests only');
-assert(app.includes('P6で実行可能なStory Questがありません。StudioでQuest Box / Random Event条件を設定してExportしてください。'),'empty formal Export guidance missing');
+assert(app.includes('P7-Bで実行可能なStory Questがありません。StudioでQuest Box / Map / Event条件を設定してExportしてください。'),'empty formal Export guidance missing');
 assert(app.includes("if(!bundle)return{started:false,reason:'formal_quest_unavailable'};"),'departure must reject non-formal quest ids');
 assert(!app.includes("reason:'legacy_quest'"),'legacy quest fallback reason must be removed from game runtime');
 assert(!app.includes('beginSelectedAdventureOrLegacy'),'legacy departure adapter must be removed');

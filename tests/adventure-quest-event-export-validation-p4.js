@@ -41,7 +41,7 @@ issues=Core.collectQuestEventContractIssues(forbidden);assert(issues.filter(x=>x
 
 const p4Only=structuredClone(base);p4Only.chapters[0].sections[0].boxes=[];
 formal=Core.formalStoryQuestAssessment(p4Only,p4Only.quests[0]);assert.equal(formal.ready,true);assert.equal(formal.legacy_runtime_ready,false);
-const exportIssues=Core.collectFormalQuestExportIssues(p4Only);assert(exportIssues.issues.some(x=>x.level==='WARNING'&&x.code==='FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING'));assert.equal(formal.p5_runtime_ready,false);assert.equal(formal.p6_runtime_ready,false);
+const exportIssues=Core.collectFormalQuestExportIssues(p4Only);assert(!exportIssues.issues.some(x=>x.code==='FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING'),'P7-B resolved Random Event resolver must not emit the old pending warning');assert(exportIssues.issues.some(x=>x.level==='ERROR'&&x.code==='P7_MAP_REQUIRED'),'P7-B exploration/battle Quest must require a valid Map');assert.equal(formal.p5_runtime_ready,false);assert.equal(formal.p6_runtime_ready,false);assert.equal(formal.p7_runtime_ready,false);
 
 const out=Core.buildData(base);assert.deepEqual(out['quest/main_quests.json'][0].boxes,base.quests[0].boxes);assert.equal(out['event/events.json'][1].usage,'random');assert.equal(out['event/events.json'][1].random_base_weight,2);
 
@@ -58,6 +58,6 @@ assert.deepEqual(eventSchema.items.properties.usage.oneOf[0].enum,['story','rand
 assert.deepEqual(eventSchema.items.allOf[0].then.properties.type.enum,['battle','exploration','choice','special']);
 
 const html=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
-for(const token of ['GKExportCore.collectQuestEventContractIssues(data)','P4 Export契約 合格','警告 '+"'",'Quest.boxes正式Export契約','P6 Game Runtime'])assert(html.includes(token),`Studio P4 integration missing ${token}`);
+for(const token of ['GKExportCore.collectQuestEventContractIssues(data)','P4 Export契約 合格','警告 '+"'",'Quest.boxes正式Export契約','P7-B Game Runtime'])assert(html.includes(token),`Studio P4 integration missing ${token}`);
 assert(!html.includes("level:'WARN'"),'P4 validation must use ERROR/WARNING/INFO levels');
 console.log('adventure-quest-event-export-validation-p4 PASS');

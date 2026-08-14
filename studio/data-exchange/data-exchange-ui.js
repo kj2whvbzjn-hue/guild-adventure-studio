@@ -2,8 +2,8 @@
   'use strict';
   const selectedByDataset=new Map();
   let lastEnvelope=null,lastDryRun=null,lastApplyPlan=null,conflictChoices={},lastSourceFilename='',pickerDatasetFilter=null,pickerTitle='部分データ入出力';
-  const DATASET_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動',ai_programs:'AIプログラム',chapters:'ストーリー章',story_sections:'ストーリー節',story_scenes:'ストーリーシーン',story_dialogues:'ストーリー台詞'};
-  const ORDER=['monsters','tags','skills','jobs','equipment','mods','stats','status_effects','tablets','ai_conditions','ai_targets','ai_actions','ai_programs','chapters','story_sections','story_scenes','story_dialogues'];
+  const DATASET_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',maps:'マップ',exploration_outcomes:'探索結果',adventure_settings:'冒険設定',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動',ai_programs:'AIプログラム',chapters:'ストーリー章',story_sections:'ストーリー節',story_scenes:'ストーリーシーン',story_dialogues:'ストーリー台詞'};
+  const ORDER=['monsters','tags','skills','jobs','equipment','mods','stats','status_effects','tablets','maps','exploration_outcomes','adventure_settings','ai_conditions','ai_targets','ai_actions','ai_programs','chapters','story_sections','story_scenes','story_dialogues'];
 
   function supportedDatasets(){const all=ORDER.filter(k=>GKSDataExchange.REGISTRY[k]);return pickerDatasetFilter?all.filter(k=>pickerDatasetFilter.includes(k)):all;}
   function currentDataset(){return document.getElementById('dxPickerDataset')?.value||supportedDatasets()[0]||'monsters';}
