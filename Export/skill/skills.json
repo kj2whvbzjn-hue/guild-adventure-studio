@@ -3715,25 +3715,86 @@
       "description": "persistentではDURATIONを指定できないことを確認。"
     },
     {
+      "schemaVersion": 1,
       "id": "COVER-VALIDATION-MIXED-ATTACK",
       "name": "かばう検証・ATTACK混在",
-      "environment": "validation",
-      "definition_format": "tag_v1",
-      "tags": [
-        "COVER",
-        "COVER_TARGET=single_ally",
-        "COVER_TRIGGER=direct_attack",
-        "COVER_PRIORITY=0",
-        "COVER_REMOVABLE=true",
-        "ATTACK",
-        "DAMAGE=10",
-        "COVER_LIFETIME=persistent",
-        "味方",
-        "単体",
-        "物理"
+      "skillLevel": 20,
+      "trigger": {
+        "type": "ON_USE",
+        "scope": "SELF"
+      },
+      "conditions": [],
+      "target": {
+        "side": "ALLY",
+        "range": "SINGLE"
+      },
+      "effects": [
+        {
+          "type": "TARGET_CONTROL",
+          "mode": "COVER",
+          "trigger": "DIRECT_ATTACK",
+          "priority": 0,
+          "removable": true,
+          "lifetime": "PERSISTENT"
+        },
+        {
+          "type": "DAMAGE",
+          "power": 10,
+          "damageType": "PHYSICAL"
+        }
       ],
+      "resource": {
+        "mpCost": 0,
+        "cooldown": 0,
+        "activationPriority": 0
+      },
+      "status": "active",
+      "environment": "validation",
+      "source": "studio_export",
       "description": "正式仕様: COVERは単体直接攻撃にのみ反応し、範囲攻撃には反応しない。Skill内ではATTACKやCOUNTER、付与系などとの複合を許可する。",
-      "expected_result": "accepted"
+      "expected_result": "accepted",
+      "runtimeContracts": {
+        "schemaVersion": 1,
+        "registryPhase": "FORMAL-SKILL-1",
+        "triggerContract": {
+          "type": "ON_USE",
+          "scope": "SELF",
+          "engineEvent": "use",
+          "dispatchMode": "RESOLVE_ONLY",
+          "priority": 0
+        },
+        "targetContract": {
+          "side": "ALLY",
+          "range": "SINGLE",
+          "randomCount": null,
+          "excludeSelf": false
+        },
+        "conditionContracts": [],
+        "effectContracts": [
+          {
+            "type": "TARGET_CONTROL",
+            "mode": "COVER",
+            "trigger": "DIRECT_ATTACK",
+            "priority": 0,
+            "removable": true,
+            "lifetime": "PERSISTENT",
+            "uses": null,
+            "duration": null
+          },
+          {
+            "type": "DAMAGE",
+            "power": 10,
+            "damageType": "PHYSICAL"
+          }
+        ],
+        "applyContracts": [],
+        "auraEffectContract": null,
+        "resourceContract": {
+          "mpCost": 0,
+          "cooldown": 0,
+          "activationPriority": 0
+        }
+      }
     },
     {
       "schemaVersion": 1,

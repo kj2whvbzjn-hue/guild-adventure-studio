@@ -9,16 +9,11 @@ assert.strictEqual(row.environment,'validation');
 assert.strictEqual(row.expected_result,'accepted');
 assert.ok(/複合を許可/.test(row.description||''));
 
-const formalSkill={
- schemaVersion:1,id:'COVER-VALIDATION-MIXED-ATTACK-FORMAL',name:'かばう検証・ATTACK混在 Formal',skillLevel:20,
- trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ALLY',range:'SINGLE'},
- effects:[
-  {type:'TARGET_CONTROL',mode:'COVER',trigger:'DIRECT_ATTACK',priority:0,removable:true,lifetime:'PERSISTENT'},
-  {type:'DAMAGE',power:10,damageType:'PHYSICAL'}
- ],
- resource:{mpCost:0,cooldown:0,activationPriority:0}
-};
-const formal=formalCompiler.compileSkill(formalSkill,registry);
+assert.strictEqual(row.schemaVersion,1,'accepted COVER validation row must be Formal Skill');
+assert.ok(row.runtimeContracts,'accepted COVER validation row must carry runtimeContracts');
+assert.ok(!Array.isArray(row.tags),'accepted COVER validation row must not depend on legacy tag_v1 at Production Runtime boundary');
+
+const formal=formalCompiler.compileSkill(row,registry);
 assert.strictEqual(formal.ok,true,JSON.stringify(formal.errors));
 assert.ok(formal.compiledSkill.runtimeContracts,'Formal COVER runtimeContracts missing');
 assert.ok(formal.compiledSkill.runtimeContracts.effectContracts.some(x=>x.type==='TARGET_CONTROL'&&x.mode==='COVER'));
@@ -26,7 +21,7 @@ assert.ok(formal.compiledSkill.runtimeContracts.effectContracts.some(x=>x.type==
 
 const ctx={console,window:{GA_PROJECT_CONFIG:{skillExportUrl:'x'}},SKILLS:[]};ctx.globalThis=ctx;vm.createContext(ctx);
 vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),ctx);
-const compiled=ctx.compileSkillForRuntime(formal.compiledSkill);
+const compiled=ctx.compileSkillForRuntime(row);
 assert.strictEqual(compiled.ok,true,compiled.errors.join(' / '));
 assert.ok(compiled.definition.logicOrder.includes('COVER'));
 assert.ok(compiled.definition.logicOrder.includes('ATTACK'));
