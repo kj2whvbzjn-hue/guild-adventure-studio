@@ -1,0 +1,19 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const runtime=fs.readFileSync(path.join(root,'game/assets/js/app-runtime.js'),'utf8');
+const exportPayload=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
+const rows=Array.isArray(exportPayload)?exportPayload:(exportPayload.data||[]);
+function assert(cond,msg){if(!cond){throw new Error(msg)}}
+const productionSample=rows.find(x=>x.id==='SKL-TEST-ATTACK'&&x.runtimeContracts&&x.schemaVersion===1);
+assert(productionSample,'formal production sample SKL-TEST-ATTACK missing');
+assert(!Array.isArray(productionSample.tags),'fixture must represent production formal skill without legacy tags');
+assert(runtime.includes('function skillDisplayTags(skill,compiled)'), 'skillDisplayTags helper missing');
+assert(runtime.includes('Array.isArray(skill?.tags)'), 'explicit tag guard missing');
+assert(!runtime.includes('${skill.tags.map'), 'render still maps skill.tags directly');
+assert(runtime.includes('tags=skillDisplayTags(skill,compiled)'), 'render does not use resilient display tags');
+const helperBody=runtime.match(/function skillDisplayTags\(skill,compiled\)\{[\s\S]*?\n\}/);
+assert(helperBody,'helper body not found');
+assert(helperBody[0].includes('compiled?.definition?.logicOrder'), 'formal logicOrder fallback missing');
+assert(helperBody[0].includes('compiled?.definition?.target'), 'formal target fallback missing');
+console.log('GAME_TITLE_START_SKILL_TAGS_RESILIENCE_OK build=GA-B486.168');
