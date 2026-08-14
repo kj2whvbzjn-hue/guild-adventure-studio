@@ -7,16 +7,16 @@ for(const needle of [
  'function openQuestFormalSection()',
  'function openQuestFormalExport()',
  'function renderQuestFormalWorkflow()',
- '正式Story Quest 作成手順',
- '1. Chapter',
- '2. Section',
- '3. Box',
- '4. Export',
- 'Section / Boxを確認',
- 'Export検証へ',
+ 'P4 正式Quest / 現行Game互換',
+ '1. Quest Box',
+ '2. P4 Export契約',
+ '3. 現行Game互換',
+ '旧Section互換を確認',
+ 'P4 Export検証へ',
  "showView('storyeditor')",
  "showView('importexport')",
  'validatePhpExport()'
 ])assert(html.includes(needle),`formal quest workflow missing: ${needle}`);
+assert(html.includes('questBoxes=questDraftBoxes'),'P4 workflow must use Quest.boxes as the formal source');
 assert(html.includes("renderQuestFormalWorkflow();"),'workflow must refresh with formal quest status');
 console.log('adventure-formal-quest-studio-workflow-integration: PASS');

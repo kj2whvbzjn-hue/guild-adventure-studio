@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B560</title>
+<title>GK Studio GKS-B561</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -432,7 +432,7 @@ body.benchmark-workflow-open{overflow:hidden}
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
-  <script src="export-core.js?v=333"></script>
+  <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=4"></script>
 </head>
 <body>
@@ -443,13 +443,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.175 / GKS-B560</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.175 / GKS-B561</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.175 / Studio GKS-B560</div>
+    <div class="version">Game GA-B486.175 / Studio GKS-B561</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2108,7 +2108,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B560';
+const DISTRIBUTION_BUILD='GKS-B561';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4680,8 +4680,8 @@ function runValidation(){
   const randomCandidates=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeChapter(JSON.parse(JSON.stringify(c))).random_event_candidates:(c.random_event_candidates||[]);
   (c.available_monster_ids||[]).forEach(id=>{if(!(data.masters.monsters||[]).some(m=>m.id===id))validation.push({level:'ERROR',message:c.id+' の使用可能Monsterが存在しません: '+id});});
   const candidateIds=new Set();
-  randomCandidates.forEach(row=>{const id=String(row.event_id||'');if(!data.events.some(e=>e.id===id))validation.push({level:'ERROR',message:c.id+' のRandom Event候補が存在しません: '+id});if(candidateIds.has(id))validation.push({level:'WARN',message:c.id+' のRandom Event候補が重複しています: '+id});candidateIds.add(id);if(!Number.isFinite(Number(row.weight))||Number(row.weight)<0)validation.push({level:'ERROR',message:c.id+' のRandom Event Weightが不正です: '+id});});
-  if(randomCandidates.length&&randomCandidates.every(row=>Number(row.weight)<=0))validation.push({level:'WARN',message:c.id+' のRandom Event候補は全てWeight 0です'});
+  randomCandidates.forEach(row=>{const id=String(row.event_id||'');if(!data.events.some(e=>e.id===id))validation.push({level:'ERROR',message:c.id+' のRandom Event候補が存在しません: '+id});if(candidateIds.has(id))validation.push({level:'WARNING',message:c.id+' のRandom Event候補が重複しています: '+id});candidateIds.add(id);if(!Number.isFinite(Number(row.weight))||Number(row.weight)<0)validation.push({level:'ERROR',message:c.id+' のRandom Event Weightが不正です: '+id});});
+  if(randomCandidates.length&&randomCandidates.every(row=>Number(row.weight)<=0))validation.push({level:'WARNING',message:c.id+' のRandom Event候補は全てWeight 0です'});
   (c.sections||[]).forEach(s=>{
    if(!s.title)validation.push({level:'ERROR',message:s.id+' の節タイトルが未設定'});
    if(!Number.isFinite(Number(s.enemy_budget??0))||Number(s.enemy_budget??0)<0)validation.push({level:'ERROR',message:s.id+' のEnemy Budgetが不正です'});
@@ -4700,41 +4700,34 @@ function runValidation(){
  data.timeline.forEach(t=>{if(t.target_id&&!allIds().includes(t.target_id))validation.push({level:'WARNING',message:t.id+' の対象IDが存在しません: '+t.target_id})});
  data.quests.forEach(q=>{
   if(!q.name)validation.push({level:'ERROR',message:q.id+' のクエスト名が未設定'});
-  const formal=questFormalAssessment(q);(formal.issues||[]).forEach(issue=>validation.push({level:issue.level||'ERROR',message:issue.message,code:issue.code||''}));
   (q.prerequisite_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の前提クエスト '+id+' が存在しません'});});
   (q.next_quest_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の後続クエスト '+id+' が存在しません'});});
-  [...(q.required_flags||[]),...(q.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:q.id+' が未登録フラグ '+id+' を参照しています'});});
+  [...(q.required_flags||[]),...(q.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARNING',message:q.id+' が未登録フラグ '+id+' を参照しています'});});
   const startCost=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeQuestStartCost(q):(q.start_cost||{gold:0,resources:{}});
   if(Number(startCost.gold)<0)validation.push({level:'ERROR',message:q.id+' の開始Goldコストが不正です'});if(!Number.isFinite(Number(q.enemy_budget??0))||Number(q.enemy_budget??0)<0)validation.push({level:'ERROR',message:q.id+' のEnemy Budgetが不正です'});
   Object.entries(startCost.resources||{}).forEach(([resourceId,count])=>{
    if(!Number.isInteger(Number(count))||Number(count)<=0)validation.push({level:'ERROR',message:q.id+' の開始コスト資源 '+resourceId+' の数量が不正です'});
    const known=(data.masters.tablets||[]).some(x=>x.id===resourceId);
-   if(!known)validation.push({level:'WARN',message:q.id+' の開始コスト資源 '+resourceId+' は石板Masterに存在しません（汎用資源として使用する場合は無視可）'});
+   if(!known)validation.push({level:'WARNING',message:q.id+' の開始コスト資源 '+resourceId+' は石板Masterに存在しません（汎用資源として使用する場合は無視可）'});
   });
   (q.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:q.id+' の関連キャラクターが存在しません: '+id})});
   if(q.links?.chapter_id&&!getChapter(q.links.chapter_id))validation.push({level:'ERROR',message:q.id+' の関連章が存在しません'});
   if(q.links?.section_id&&!getSection(q.links.chapter_id,q.links.section_id))validation.push({level:'ERROR',message:q.id+' の関連節が存在しません'});
   if(q.links?.scene_id&&!getScene(q.links.chapter_id,q.links.section_id,q.links.scene_id))validation.push({level:'ERROR',message:q.id+' の関連シーンが存在しません'});
  });
- const formalQuestSummary=(typeof GKExportCore!=='undefined'&&GKExportCore.summarizeFormalStoryQuests)?GKExportCore.summarizeFormalStoryQuests(data):{ready_count:0};
- if(formalQuestSummary.ready_count===0)validation.push({level:'WARNING',message:'正式Story Questが0件です。Exportは可能ですが、Gameの遠征一覧にはStory Questが表示されません。',code:'FORMAL_QUEST_ZERO'});
  data.events.forEach(e=>{
-  if(!e.name)validation.push({level:'ERROR',message:e.id+' のイベント名が未設定'});
-  if(e.usage!==undefined){
-   const usages=Array.isArray(e.usage)?e.usage:[e.usage];if(!usages.length||usages.some(x=>!['story','random','common'].includes(String(x))))validation.push({level:'ERROR',message:e.id+' のEvent用途が不正です'});
-   if(!['battle','exploration','choice','special'].includes(String(e.type)))validation.push({level:'ERROR',message:e.id+' のEvent種別が不正です'});
-   if(e.tags!==undefined&&!Array.isArray(e.tags))validation.push({level:'ERROR',message:e.id+' のEventタグが配列ではありません'});
-   if(e.intensity!==undefined&&!['low','normal','high','extreme'].includes(String(e.intensity)))validation.push({level:'ERROR',message:e.id+' のEvent強度が不正です'});
-   if(e.random_base_weight!==undefined&&(!Number.isFinite(Number(e.random_base_weight))||Number(e.random_base_weight)<0))validation.push({level:'ERROR',message:e.id+' の基礎抽選重みが不正です'});
-   if(e.enabled!==undefined&&typeof e.enabled!=='boolean')validation.push({level:'ERROR',message:e.id+' の有効/無効がbooleanではありません'});
-  }
-  if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'WARN',message:e.id+' の旧連携Questが存在しません（P3では自動同期対象外）'});
-  [...(e.required_flags||[]),...(e.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:e.id+' が未登録フラグ '+id+' を参照しています'});});
-  (e.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'WARN',message:e.id+' の旧連携キャラクターが存在しません: '+id})});
-  if(e.links?.chapter_id&&!getChapter(e.links.chapter_id))validation.push({level:'WARN',message:e.id+' の旧連携章が存在しません'});
-  if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'WARN',message:e.id+' の旧連携節が存在しません'});
-  if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'WARN',message:e.id+' の旧連携シーンが存在しません'});
+  if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'WARNING',message:e.id+' の旧連携Questが存在しません（P3では自動同期対象外）'});
+  [...(e.required_flags||[]),...(e.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARNING',message:e.id+' が未登録フラグ '+id+' を参照しています'});});
+  (e.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'WARNING',message:e.id+' の旧連携キャラクターが存在しません: '+id})});
+  if(e.links?.chapter_id&&!getChapter(e.links.chapter_id))validation.push({level:'WARNING',message:e.id+' の旧連携章が存在しません'});
+  if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'WARNING',message:e.id+' の旧連携節が存在しません'});
+  if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'WARNING',message:e.id+' の旧連携シーンが存在しません'});
  });
+ if(typeof GKExportCore!=='undefined'&&typeof GKExportCore.collectQuestEventContractIssues==='function'){
+  GKExportCore.collectQuestEventContractIssues(data).forEach(issue=>validation.push({...issue,level:issue.level||'INFO'}));
+  const formalExport=GKExportCore.collectFormalQuestExportIssues(data);
+  (formalExport.issues||[]).forEach(issue=>validation.push({...issue,level:issue.level||'WARNING'}));
+ }
  Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(category==='monsters'&&(!Number.isFinite(Number(m.params?.enemy_budget_cost??1))||Number(m.params?.enemy_budget_cost??1)<1))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Costが不正です'});if(category==='tablets'&&(!Number.isFinite(Number(m.params?.enemy_budget_bonus??0))||Number(m.params?.enemy_budget_bonus??0)<0))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Bonusが不正です'});if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
  validateTagSystem().forEach(issue=>validation.push(issue));
  collectAiProgramValidationIssues().forEach(issue=>validation.push(issue));
@@ -4785,7 +4778,7 @@ function validateExportIds(path,payload,issues){
 }
 function collectPhpExportIssues(){
  runValidation();
- const issues=validation.filter(x=>x.level==='ERROR').map(x=>({...x,source:'Studio'}));
+ const issues=validation.filter(x=>['ERROR','WARNING','INFO'].includes(x.level)).map(x=>({...x,source:'Studio/P4'}));
  const scenarioIssues=GKExportCore.collectScenarioExportIssues(data);
  scenarioIssues.forEach(x=>issues.push({...x,source:'SSF-005'}));
  GKExportCore.collectAIExportIssues(data).forEach(x=>issues.push({...x,source:'AI制作'}));
@@ -4798,11 +4791,11 @@ function collectPhpExportIssues(){
 }
 function renderPhpExportStatus(issues){
  const el=document.getElementById('phpExportStatus');if(!el)return;
- const errors=issues.filter(x=>x.level==='ERROR');
+ const errors=issues.filter(x=>x.level==='ERROR'),warnings=issues.filter(x=>x.level==='WARNING'),infos=issues.filter(x=>x.level==='INFO');
  if(!errors.length){
-  el.innerHTML='<span class="badge ok">合格</span> '+PHP_EXPORT_PATHS.length+'ファイル生成可能。ID重複・Studio検証エラーなし。';
+  el.innerHTML='<span class="badge ok">P4 Export契約 合格</span> '+PHP_EXPORT_PATHS.length+'ファイル生成可能。警告 '+warnings.length+' / 情報 '+infos.length+'。';
  }else{
-  el.innerHTML='<span class="badge err">不合格</span> '+errors.length+'件<br>'+errors.slice(0,8).map(x=>esc(x.message)).join('<br>');
+  el.innerHTML='<span class="badge err">P4 Export契約 不合格</span> エラー '+errors.length+' / 警告 '+warnings.length+'<br>'+errors.slice(0,8).map(x=>esc(x.message)).join('<br>');
  }
 }
 function validatePhpExport(){
@@ -6745,7 +6738,7 @@ function removeEventCharacterDraft(id){
 }
 
 function questFormalAssessment(quest){return (typeof GKExportCore!=='undefined'&&typeof GKExportCore.formalStoryQuestAssessment==='function')?GKExportCore.formalStoryQuestAssessment(data,quest):{is_formal:false,ready:false,issues:[],message:'正式Story Quest判定を利用できません。'};}
-function currentQuestFormalDraft(){return {id:(questId?.value||'').trim()||'(新規Quest)',links:{chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
+function currentQuestFormalDraft(){const id=(questId?.value||'').trim()||'(新規Quest)',previous=data.quests.find(q=>q.id===id)||{};return {...previous,id,name:(questName?.value||previous.name||'').trim(),boxes:questDraftBoxes.map((box,i)=>questBoxClone(box,i)),links:{...(previous.links||{}),chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
 function questBoxClone(box,index=0){
  const raw=JSON.parse(JSON.stringify(box&&typeof box==='object'?box:{}));
  if(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuestBox==='function')return GKAdventureStorySystem.normalizeQuestBox(raw,index);
@@ -6919,13 +6912,13 @@ function saveQuestBoxEditor(){
  const stableId=questBoxId(questDraftBoxes[state.index]);state.draft.box_id=stableId;state.draft.order=state.index+1;questDraftBoxes[state.index]=questBoxClone(state.draft,state.index);normalizeQuestDraftBoxOrder();closeQuestBoxEditor();renderQuestBoxDraftList();
 }
 
-function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready)el.innerHTML='<span class="badge ok">正式Story Quest</span> Game遠征一覧へExportされます。';else if(a.is_formal)el.innerHTML='<span class="badge warn">要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else el.innerHTML='<span class="badge">通常Quest</span> Chapter / Section未接続のためGame遠征一覧には出ません。';renderQuestFormalWorkflow();}
+function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready&&a.legacy_runtime_ready)el.innerHTML='<span class="badge ok">P4 正式Quest</span> Quest.boxes正式Export契約と現行Game互換の両方を満たします。';else if(a.ready)el.innerHTML='<span class="badge ok">P4 正式Quest</span> Quest.boxes正式Export契約に適合。<br><span class="small">P5前の現行Gameでは旧Chapter / Section Box互換が不足するため遠征一覧から除外されます。</span>';else if(a.is_formal)el.innerHTML='<span class="badge warn">P4要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else if(a.legacy_runtime_ready)el.innerHTML='<span class="badge warn">旧Runtime互換</span> 現行Gameでは利用可能ですが、Quest.boxesがないためP4正式Quest契約ではありません。';else el.innerHTML='<span class="badge">下書きQuest</span> Quest.boxesを1件以上追加するとP4正式Quest候補になります。';renderQuestFormalWorkflow();}
 function formalQuestWorkflowState(){
  const chapterId=questChapterLink?.value||'',sectionId=questSectionLink?.value||'';
  const chapter=chapterId?getChapter(chapterId):null;
  const section=(chapterId&&sectionId)?getSection(chapterId,sectionId):null;
- const boxes=Array.isArray(section?.boxes)?section.boxes:[];
- return {chapterId,sectionId,chapter,section,boxes,assessment:questFormalAssessment(currentQuestFormalDraft())};
+ const questBoxes=questDraftBoxes,legacySectionBoxes=Array.isArray(section?.boxes)?section.boxes:[],assessment=questFormalAssessment(currentQuestFormalDraft());
+ return {chapterId,sectionId,chapter,section,questBoxes,legacySectionBoxes,assessment};
 }
 function openQuestFormalSection(){
  const state=formalQuestWorkflowState();
@@ -6945,14 +6938,13 @@ function openQuestFormalExport(){
 }
 function renderQuestFormalWorkflow(){
  const el=document.getElementById('questFormalWorkflow');if(!el)return;
- const state=formalQuestWorkflowState(),chapterOk=!!state.chapter,sectionOk=!!state.section,boxesOk=state.boxes.length>0,ready=state.assessment.ready;
+ const state=formalQuestWorkflowState(),questBoxesOk=state.questBoxes.length>0,ready=state.assessment.ready,legacyReady=state.assessment.legacy_runtime_ready;
  const step=(ok,label,detail)=>`<div class="meta"><span class="badge ${ok?'ok':'warn'}">${ok?'✓':'未完了'}</span> <b>${esc(label)}</b> — ${esc(detail)}</div>`;
- el.innerHTML='<b>正式Story Quest 作成手順</b>'+
-  step(chapterOk,'1. Chapter',chapterOk?`${state.chapter.title||state.chapter.id} を選択済み`:'関連シナリオの「章」を選択')+
-  step(sectionOk,'2. Section',sectionOk?`${state.section.title||state.section.id} を選択済み`:'章を選んで「節」を選択')+
-  step(boxesOk,'3. Box',sectionOk?(boxesOk?`${state.boxes.length} Box設定済み`:'Sectionに1件以上のBoxを設定'):'Section選択後に確認')+
-  step(ready,'4. Export',ready?'正式Story QuestとしてExport可能':'上の要件を完了してからExport')+
-  `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${sectionOk?'':'disabled'}>Section / Boxを確認</button><button type="button" onclick="openQuestFormalExport()">Export検証へ</button></div>`;
+ el.innerHTML='<b>P4 正式Quest / 現行Game互換</b>'+ 
+  step(questBoxesOk,'1. Quest Box',questBoxesOk?`${state.questBoxes.length} Box設定済み`:'Quest画面でBoxを1件以上追加')+
+  step(ready,'2. P4 Export契約',ready?'Quest.boxesを正とする正式QuestとしてExport可能':'Quest Box / Event参照のエラーを修正')+
+  step(legacyReady,'3. 現行Game互換',legacyReady?'P5切替前のGameでも利用可能':'P5前はChapter / Sectionと旧Section Boxが必要（P4 Export自体は可能）')+
+  `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${state.section?'':'disabled'}>旧Section互換を確認</button><button type="button" onclick="openQuestFormalExport()">P4 Export検証へ</button></div>`;
 }
 function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
@@ -7062,13 +7054,13 @@ function renderQuests(){
  });
  questList.innerHTML=list.map(q=>{
   const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id),formal=questFormalAssessment(q);
-  const formalBadge=formal.ready?'<span class="badge ok">正式Story</span>':formal.is_formal?'<span class="badge warn">Story要件不足</span>':'<span class="badge">通常Quest</span>';
+  const formalBadge=formal.ready?`<span class="badge ok">P4正式Quest</span>${formal.legacy_runtime_ready?' <span class="badge ok">現行Game互換</span>':' <span class="badge warn">P5待ち</span>'}`:formal.is_formal?'<span class="badge warn">P4要件不足</span>':formal.legacy_runtime_ready?'<span class="badge warn">旧Runtimeのみ</span>':'<span class="badge">下書きQuest</span>';
   return `<div class="item">
    <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
    <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span> ${formalBadge}
    <p>${esc(q.summary||'')}</p>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
-   <div class="meta">Game遠征: ${esc(formal.message)}</div>
+   <div class="meta">P4 Export / Game互換: ${esc(formal.message)}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
    <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questName).join(', ')||'なし')}</div>
    <div class="meta">必要フラグ: ${esc((q.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((q.set_flags||[]).join(', ')||'なし')}</div>
@@ -7347,7 +7339,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','560');
+    url.searchParams.set('appv','561');
     location.replace(url.toString());
    }
  }
@@ -7356,7 +7348,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=560',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=561',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7375,7 +7367,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','560');
+    url.searchParams.set('appv','561');
     location.replace(url.toString());
    }
   });
@@ -7463,7 +7455,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486175"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486175"></script>
 <script src="../assets/shared/js/condition-engine.js?v=486175"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b560"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b561"></script>
 <script src="../assets/shared/js/skill-compiler.js?v=486175"></script>
 <script src="../assets/shared/js/skill-compile-service.js?v=486175"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>
