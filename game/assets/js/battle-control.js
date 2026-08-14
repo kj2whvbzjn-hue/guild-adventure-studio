@@ -53,6 +53,8 @@ function renderBattle(){
 }
 function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);if(!opponents.length)return null;if(attacker.aiPolicy==='random')return opponents[Math.floor(Math.random()*opponents.length)];if(attacker.aiPolicy==='weakest')return opponents.sort((a,b)=>a.maxHp-b.maxHp||a.order-b.order)[0];return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]}
 function formalBattleSkill(skillId){
+ const e2e=(typeof findDeveloperE2ESkill==='function')?findDeveloperE2ESkill(skillId):null;
+ if(e2e?.runtimeContracts&&e2e?.e2e_test_only===true&&String(e2e?.environment||'production').toLowerCase()==='production')return e2e;
  const preferred=findSkill(skillId);
  if(preferred?.runtimeContracts&&String(preferred?.environment||'production').toLowerCase()==='production')return preferred;
  return SKILLS.find(x=>x?.runtimeContracts&&String(x?.environment||'production').toLowerCase()==='production')||null;
