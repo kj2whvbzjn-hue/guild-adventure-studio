@@ -1,7 +1,7 @@
 const fs=require('fs'),assert=require('assert'),vm=require('vm');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.game_build,'GA-B486.175');
-assert.strictEqual(build.studio_build,'GKS-B561');
+assert.strictEqual(build.game_build,'GA-B486.176');
+assert.strictEqual(build.studio_build,'GKS-B562');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const budgetRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-budget-rules.json','utf8'));
 const aiRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-ai-generation-rules.json','utf8'));
@@ -18,6 +18,6 @@ for(const f of ['assets/shared/js/skill-budget-engine.js','assets/shared/js/skil
  assert.strictEqual(out.entries[1].status,'REJECT');assert.ok(out.entries[1].validation.issues.some(x=>x.code==='AI_FINAL_BATTLE_VALUE_FORBIDDEN'&&x.path==='effects[0].power'));
  const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
  for(const marker of ['data-ai-batch-filter="ALL"','data-ai-batch-filter="ACCEPT"','data-ai-batch-filter="REJECT"','data-ai-batch-status','Registry','Budget','Compiler','Studio生成数値 / Budget trace','x.code||\'REJECT\'','x.path'])assert.ok(sg.includes(marker),`G05 stage2 UI marker missing: ${marker}`);
- const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-compiler.js?v=486175'));assert.ok(html.includes('skill-budget-engine.js?v=2'));assert.ok(html.includes('skill-ai-batch-engine.js?v=2'));assert.ok(html.includes('skill-generator.js?v=33'));assert.ok(!html.includes('generic-skill-compiler.js'));
+ const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-compiler.js?v=486176'));assert.ok(html.includes('skill-budget-engine.js?v=2'));assert.ok(html.includes('skill-ai-batch-engine.js?v=2'));assert.ok(html.includes('skill-generator.js?v=33'));assert.ok(!html.includes('generic-skill-compiler.js'));
  console.log('SKILL_GENERATOR_G05_BATCH_UI_GKS_B533_PASS');
 })().catch(e=>{console.error(e);process.exit(1)});

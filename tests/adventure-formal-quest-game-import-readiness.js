@@ -3,14 +3,14 @@ const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
 for(const needle of [
  'let adventureQuestImportIssues=[];',
  'function assessAdventureQuestImport(content,quest)',
- "code:'FORMAL_QUEST_LINK_INCOMPLETE'",
- "code:'FORMAL_QUEST_CHAPTER_MISSING'",
- "code:'FORMAL_QUEST_SECTION_MISSING'",
- "code:'FORMAL_QUEST_SECTION_BOXES_EMPTY'",
+ "code:'FORMAL_QUEST_BOXES_EMPTY'",
+ "code:'FORMAL_QUEST_SCENE_MISSING'",
+ "code:'FORMAL_QUEST_EVENT_MISSING'",
+ "code:'FORMAL_QUEST_RANDOM_EVENT_PENDING'",
  'assessments.filter(x=>x.assessment.ready)',
  'function formalAdventureQuestImportIssues()',
  'function formalAdventureQuestImportIssueMessage(issue)',
- "FORMAL_QUEST_CHAPTER_MISSING:'Chapter参照切れ'",
+ "FORMAL_QUEST_EVENT_RESOLVER_PENDING:'戦闘/探索EventはP7 Resolver対応待ち'",
  '<details class="small warn">',
  'escapeHtml(issue.quest_id)',
  'function reloadFormalAdventureQuests()',
@@ -62,7 +62,7 @@ for(const needle of [
  "'生成日時未設定'",
  'Export ${version} ／ ${generated} ／ 最終読込 ${time}',
  '件のQuestを参照不整合のため除外',
- 'StudioのExport検証でChapter / Section / Boxを確認してください。'
+ 'StudioのExport検証でQuest Box / Scene / Event参照を確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
 assert(!app.includes("filter(q=>{const links=q.links||{};return Boolean(q?.id&&links.chapter_id&&links.section_id)"),'link-only formal quest filter must be removed');
 console.log('adventure-formal-quest-game-import-readiness PASS');

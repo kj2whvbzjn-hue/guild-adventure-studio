@@ -77,6 +77,7 @@
     const issues=[],qid=stringValue(quest?.id)||'(ID未設定)',boxes=Array.isArray(quest?.boxes)?quest.boxes:[],sceneIds=allSceneIds(data),eventIds=new Set((data?.events||[]).map(e=>stringValue(e?.id)).filter(Boolean));
     if(!stringValue(quest?.id))issues.push({level:'ERROR',code:'QUEST_ID_MISSING',quest_id:'',message:'Quest IDが未設定です。'});
     if(!stringValue(quest?.name))issues.push({level:'ERROR',code:'QUEST_NAME_MISSING',quest_id:qid,message:`${qid} のQuest名が未設定です。`});
+    const adventureDuration=Number(quest?.adventure_duration_seconds);if(!Number.isFinite(adventureDuration)||adventureDuration<1)issues.push({level:'ERROR',code:'QUEST_ADVENTURE_DURATION_INVALID',quest_id:qid,message:`${qid} のadventure_duration_secondsは1以上の数値が必要です。`});
     if(quest?.boxes!==undefined&&!Array.isArray(quest.boxes))issues.push({level:'ERROR',code:'QUEST_BOXES_INVALID',quest_id:qid,message:`${qid} のboxesが配列ではありません。`});
     if(!boxes.length)issues.push({level:'WARNING',code:'QUEST_BOXES_EMPTY',quest_id:qid,message:`${qid} はQuest.boxesが0件です。P4正式Quest契約の対象外です。`});
     const context=quest?.context;
@@ -191,22 +192,30 @@
     if(!Array.isArray(section.boxes)||section.boxes.length===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_SECTION_BOXES_EMPTY',quest_id:stringValue(quest?.id),message:`現行Game Runtimeが参照するSection ${sectionId} の旧Boxが0件です。`});
     return{ready:issues.length===0,chapter_id:chapterId,section_id:sectionId,issues};
   }
+  function p5StoryQuestRuntimeAssessment(data,quest){
+    const qid=stringValue(quest?.id),boxes=Array.isArray(quest?.boxes)?quest.boxes:[],issues=[];
+    if(!boxes.length){issues.push({level:'WARNING',code:'FORMAL_QUEST_BOXES_EMPTY',quest_id:qid,message:'P5 Game RuntimeにはQuest.boxesが1件以上必要です。'});return{ready:false,issues};}
+    const formalErrors=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');if(formalErrors.length)return{ready:false,issues:formalErrors};
+    const eventById=new Map((data?.events||[]).map(event=>[stringValue(event?.id),event]));
+    boxes.forEach(box=>QUEST_BOX_ZONE_KEYS.forEach(zoneKey=>(Array.isArray(box?.[zoneKey])?box[zoneKey]:[]).forEach(placement=>{if(placement?.kind==='random_event')issues.push({level:'WARNING',code:'FORMAL_QUEST_P6_RANDOM_EVENT_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:`${qid} はRandom Event枠を含むためP6対応待ちです。`});if(placement?.kind==='fixed_event'){const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});}})));
+    return{ready:issues.length===0,issues};
+  }
   function formalStoryQuestAssessment(data,quest){
-    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest);
-    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないためP4正式Quest契約の対象外です。':'Quest.boxesがないためP4正式Quest契約の対象外です。'};
+    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest),p5=p5StoryQuestRuntimeAssessment(data,quest);
+    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:false,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないため正式Quest契約の対象外です。':'Quest.boxesがないため正式Quest契約の対象外です。'};
     const issues=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');
     const ready=issues.length===0;
-    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,message:ready?(legacy.ready?'Quest.boxesを正とするP4正式Export契約に適合し、現行Game互換も満たします。':'Quest.boxesを正とするP4正式Export契約に適合します。P5前の現行Gameでは旧Chapter / Section Box互換が不足しています。'):'Quest.boxesを正とするP4正式Export契約の要件を満たしていません。'};
+    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,message:ready?(p5.ready?'Quest.boxesを正とする正式Export契約とP5 Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P5 Game Runtimeでは未対応要素があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
   }
   function summarizeFormalStoryQuests(data){
     const rows=(data?.quests||[]).map(quest=>({quest,assessment:formalStoryQuestAssessment(data,quest)}));
-    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
+    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
   }
   function collectFormalQuestExportIssues(data){
     const summary=summarizeFormalStoryQuests(data),issues=[];
     summary.rows.forEach(row=>{
       row.assessment.issues.forEach(issue=>issues.push(issue));
-      if(row.assessment.ready&&!row.assessment.legacy_runtime_ready)issues.push({level:'WARNING',code:'FORMAL_QUEST_LEGACY_RUNTIME_NOT_READY',quest_id:stringValue(row.quest?.id),message:`${stringValue(row.quest?.id)||'(ID未設定)'} はP4正式Export可能ですが、P5前の現行Game Runtimeでは除外されます。旧Chapter / Section Box互換を残すかP5切替まで待ってください。`});
+      if(row.assessment.ready&&!row.assessment.p5_runtime_ready)for(const runtimeIssue of row.assessment.p5_runtime?.issues||[])if(runtimeIssue.level!=='ERROR')issues.push(runtimeIssue);
     });
     if(summary.ready_count===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_ZERO',message:'Quest.boxesを正とするP4正式Questが0件です。Exportは可能ですが、新Quest契約として実行対象はありません。'});
     return {summary,issues};
@@ -252,5 +261,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,p5StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });
