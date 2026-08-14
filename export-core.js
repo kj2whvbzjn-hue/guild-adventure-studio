@@ -284,7 +284,7 @@
       'quest/event_quests.json':clean(quests.filter(x=>x.type==='event')),'quest/main_quests.json':clean(quests.filter(x=>x.type==='main')),'quest/sub_quests.json':clean(quests.filter(x=>!['main','event'].includes(x.type))),
       'scenario/chapters.json':chapters,'scenario/scenes.json':scenes,'scenario/sections.json':sections,
       'skill/skills.json':clean(masters.skills||[]),'stone/stone_mods.json':clean(recordsByTag(mods,['stone','tablet','石板'])),'stone/stones.json':clean(masters.tablets||[]),
-      'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean(data.drop_tables||[]),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
+      'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean((masters.reward_tables&&masters.reward_tables.length)?masters.reward_tables:(data.drop_tables||[])),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
     };
   }
   function envelope(payload,dataVersion,generatedAt,appVersion){return {schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,data:payload};}

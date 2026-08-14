@@ -16,7 +16,7 @@ const compiler=require(path.join(root,'assets','shared','js','skill-compiler.js'
 const registry=require(path.join(root,'assets','shared','config','skill-registry.json'));
 
 // Retain the original device-HEAL acceptance intent on the Formal Game surface.
-assert.strictEqual(buildId,'GA-B486.179');
+assert.strictEqual(buildId,'GA-B486.180');
 assert(html.includes('id="tagTestRunHealSingle"'),'Formal Game single-heal validation control missing');
 assert(html.includes('id="tagTestRunHealAll"'),'Formal Game all-ally-heal validation control missing');
 assert(appRuntime.includes('function runHealSingleValidation()'),'Formal Game single-heal validation missing');
@@ -30,7 +30,7 @@ assert(harness.includes("kind:'real_device_acceptance'"),'Formal Game real-devic
 assert(harness.includes('device-acceptance-${context}-${BUILD}-'),'device JSON filename is not derived from current Formal Game build');
 assert(harness.includes('結果JSONをコピー'),'device JSON copy path missing');
 assert(html.includes(`../assets/shared/js/device-game-test-harness.js?v=${cacheId}`),'device harness cache buster is not current');
-assert(gameSw.includes(`ga-game-b${cacheId}-b565`),'Game Service Worker cache is not current');
+assert(gameSw.includes(`ga-game-b${cacheId}-b566`),'Game Service Worker cache is not current');
 assert(gameSw.includes(`device-game-test-harness.js?v=${cacheId}`),'Game Service Worker does not cache the current device harness');
 
 // Prove HEAL itself executes through Formal compiler -> runtimeContracts -> Production Runtime.
