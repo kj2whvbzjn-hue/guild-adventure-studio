@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const src=fs.readFileSync('game/assets/js/studio-skill-bridge.js','utf8');
 const skills=Array.from({length:48},(_,i)=>({
- id:`R06-B547-MASS-${String(i+1).padStart(3,'0')}`,name:`case${i+1}`,tags:['味方','単体','HEAL=10','RESOURCE_CHANGE'],
+ id:`SKL-${String(i+1).padStart(4,'0')}`,name:`R06大量複合検査 V${String(i+1).padStart(2,'0')} legacy`,tags:['味方','単体','HEAL=10','RESOURCE_CHANGE'],
  genericRuntime:{schemaVersion:1,registryPhase:'R05-H',triggerContract:{type:'ON_USE',scope:'SELF'},conditionContracts:[],effectContracts:[{type:'RESOURCE_CHANGE',resource:'MP',amount:10},{type:'HEAL',power:10}],applyContracts:[],auraEffectContract:null}
 }));
 const project={masters:{skills}};
@@ -18,6 +18,6 @@ assert.strictEqual(report.summary.composite_case_count,0);
 assert.strictEqual(report.summary.passed,false);
 assert.ok(report.summary.errors.some(x=>String(x).includes('旧形式Skill Master')),'legacy Master must be rejected');
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\''])assert.ok(src.includes(marker),`missing ${marker}`);
-const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486169b555'));
+const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486170b555'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
 console.log('PASS R06 旧形式Master rejected by formal runtime boundary');
