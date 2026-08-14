@@ -21,7 +21,7 @@ ctx.GKSDataExchange={
  skillMasterContractDiagnostic(){return{shared_schema_loaded:true,shared_matches:true,missing:[],extra:[]}},
  buildEnvelope:async({rootData,ids})=>({datasets:{skills:rootData.masters.skills.filter(x=>ids.includes(x.id))},permissions:{writable:['skills'],read_only:[]}})
 };
-ctx.GKSSkillHost={getData:()=>({project:{id:'P'},masters:{skills:[]}}),getBuild:()=> 'GKS-B557'};
+ctx.GKSSkillHost={getData:()=>({project:{id:'P'},masters:{skills:[]}}),getBuild:()=> 'GKS-B558'};
 ctx.fetch=async(url)=>({ok:true,status:200,json:async()=>String(url).includes('skill-budget-rules')?budgetRules:registry});
 vm.createContext(ctx);vm.runInContext(src,ctx);
 const api=ctx.GKSSkillGenerator;

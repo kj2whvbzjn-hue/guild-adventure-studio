@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B557</title>
+<title>GK Studio GKS-B558</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -386,7 +386,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=333"></script>
-  <script src="../assets/shared/js/adventure-story-system.js?v=2"></script>
+  <script src="../assets/shared/js/adventure-story-system.js?v=3"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -396,13 +396,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.174 / GKS-B557</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.175 / GKS-B558</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.174 / Studio GKS-B557</div>
+    <div class="version">Game GA-B486.175 / Studio GKS-B558</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2046,7 +2046,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B557';
+const DISTRIBUTION_BUILD='GKS-B558';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2220,6 +2220,7 @@ function normalizeData(){
  data.characters.forEach(c=>{c.race=c.race||'';c.age=c.age||'';c.speech=c.speech||'';c.organization_id=c.organization_id||'';c.first_appearance=c.first_appearance||'';c.join_point=c.join_point||'';c.leave_point=c.leave_point||'';c.awaken_point=c.awaken_point||'';c.goals=c.goals||['','',''];c.event_history=Array.isArray(c.event_history)?c.event_history:[];});
  data.quests=data.quests||[];
  data.events=data.events||[];
+ data.quests.forEach(q=>{if(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuest==='function')GKAdventureStorySystem.normalizeQuest(q);});
  data.events.forEach(e=>{if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(e);});
  data.flags=data.flags||[];
  data.battle_tests=data.battle_tests||[];
@@ -2271,6 +2272,7 @@ function updateRegistryFromData(){
 }
 function persist(message='端末保存'){
  if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);else data.ai_programs=Array.isArray(data.ai_programs)?data.ai_programs:[];
+ if(window.GKAdventureStorySystem){(data.quests||[]).forEach(q=>{if(typeof GKAdventureStorySystem.normalizeQuest==='function')GKAdventureStorySystem.normalizeQuest(q)});(data.events||[]).forEach(e=>GKAdventureStorySystem.normalizeEvent(e));}
  rebuildTagIndex();
  data.project.updated_at=now();
  data.history=data.history||[];
@@ -5083,6 +5085,7 @@ async function exportPhpPackage(){
 }
 
 function exportProject(){
+ normalizeData();
  runValidation();let errors=validation.filter(x=>x.level==='ERROR');
  if(errors.length&&!confirm('エラーがあります。下書きとして出力しますか？'))return;
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
@@ -5090,7 +5093,7 @@ function exportProject(){
 }
 function importProject(){
  const f=document.getElementById('importFile').files[0];if(!f)return alert('JSONファイルを選択してください。');
- const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(obj?.format==='guild-adventure-studio-multi-project'){document.getElementById('importFile').value='';const dt=new DataTransfer();dt.items.add(f);const temp={files:dt.files,value:''};return importAllProjectsFromInput(temp)}if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.organizations=obj.organizations||[];obj.terms=obj.terms||[];obj.relationships=obj.relationships||[];obj.timeline=obj.timeline||[];obj.quests=obj.quests||[];obj.events=obj.events||[];obj.flags=obj.flags||[];obj.battle_tests=obj.battle_tests||[];obj.masters=obj.masters||{};createBackup('before-import');data=obj;persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
+ const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(obj?.format==='guild-adventure-studio-multi-project'){document.getElementById('importFile').value='';const dt=new DataTransfer();dt.items.add(f);const temp={files:dt.files,value:''};return importAllProjectsFromInput(temp)}if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.organizations=obj.organizations||[];obj.terms=obj.terms||[];obj.relationships=obj.relationships||[];obj.timeline=obj.timeline||[];obj.quests=obj.quests||[];obj.events=obj.events||[];obj.flags=obj.flags||[];obj.battle_tests=obj.battle_tests||[];obj.masters=obj.masters||{};createBackup('before-import');data=obj;normalizeData();persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
 
@@ -6728,7 +6731,10 @@ function saveQuest(){
  }catch(e){return alert('開始コスト資源JSONが正しくありません: '+e.message);}
  const startCost={gold:Math.max(0,Math.floor(Number(questStartCostGold.value)||0)),resources:startCostResources};
 
+ const existing=data.quests.findIndex(x=>x.id===id);
+ const previous=existing>=0?data.quests[existing]:{};
  const record={
+  ...previous,
   id,
   name,
   type:questType.value,
@@ -6752,7 +6758,7 @@ function saveQuest(){
   },
   updated_at:now()
  };
- const existing=data.quests.findIndex(x=>x.id===id);
+ if(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuest==='function')GKAdventureStorySystem.normalizeQuest(record);
  if(existing>=0){
   record.created_at=data.quests[existing].created_at||now();
   data.quests[existing]=record;
@@ -6911,13 +6917,16 @@ function saveEvent(){
  const duplicate=allIds().includes(id)&&!data.events.some(x=>x.id===id);
  if(duplicate)return alert('そのIDは別データで使用されています。');
 
+ const existing=data.events.findIndex(x=>x.id===id);
+ const previous=existing>=0?data.events[existing]:{};
  const record={
+  ...previous,
   id,
   name,
-  type:eventType.value,
+  type:previous.usage!==undefined?(previous.type||eventType.value):eventType.value,
   status:eventStatus.value,
   summary:eventSummary.value,
-  conditions:eventConditions.value,
+  conditions:Array.isArray(previous.conditions)?previous.conditions:eventConditions.value,
   results:eventResults.value,
   required_flags:splitCsv(eventRequiredFlags.value),
   set_flags:splitCsv(eventSetFlags.value),
@@ -6930,7 +6939,7 @@ function saveEvent(){
   },
   updated_at:now()
  };
- const existing=data.events.findIndex(x=>x.id===id);
+ if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(record);
  if(existing>=0){
   record.created_at=data.events[existing].created_at||now();
   data.events[existing]=record;
@@ -7146,7 +7155,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','557');
+    url.searchParams.set('appv','558');
     location.replace(url.toString());
    }
  }
@@ -7155,7 +7164,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=557',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=558',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7174,7 +7183,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','557');
+    url.searchParams.set('appv','558');
     location.replace(url.toString());
    }
   });
@@ -7259,12 +7268,12 @@ setTimeout(loadDesignCards,0);
 window.GKSSkillHost={getData:()=>data,setData:candidate=>{data=candidate;return true;},persist:message=>persist(message),backup:label=>typeof createBackup==='function'?createBackup(label,{silent:true}):true,getBuild:()=>DISTRIBUTION_BUILD};
 window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),now:()=>now(),getBattleUnits:()=>{try{return [...JSON.parse(battleAllies.value||'[]'),...JSON.parse(battleEnemies.value||'[]')]}catch{return[]}},getMpCostMultiplier:()=>Math.max(0,Number(battleFormulaConfig.mpCostMultiplier)||1)};</script>
 <script src="./equipment/equipment-generator.js?v=4971"></script>
-<script src="../assets/shared/js/apply-lifecycle-engine.js?v=486174"></script>
-<script src="../assets/shared/js/trigger-engine.js?v=486174"></script>
-<script src="../assets/shared/js/condition-engine.js?v=486174"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b557"></script>
-<script src="../assets/shared/js/skill-compiler.js?v=486174"></script>
-<script src="../assets/shared/js/skill-compile-service.js?v=486174"></script>
+<script src="../assets/shared/js/apply-lifecycle-engine.js?v=486175"></script>
+<script src="../assets/shared/js/trigger-engine.js?v=486175"></script>
+<script src="../assets/shared/js/condition-engine.js?v=486175"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b558"></script>
+<script src="../assets/shared/js/skill-compiler.js?v=486175"></script>
+<script src="../assets/shared/js/skill-compile-service.js?v=486175"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>
 <script src="../assets/shared/js/skill-budget-engine.js?v=2"></script>
 <script src="../assets/shared/js/skill-ai-batch-engine.js?v=2"></script>

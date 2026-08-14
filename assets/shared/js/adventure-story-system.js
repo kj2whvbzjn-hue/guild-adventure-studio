@@ -2,6 +2,11 @@
 'use strict';
 const BOX_TYPES=new Set(['scene','event','random_event','random_battle']);
 const PLAYBACK_EVENT_TYPES=new Set(['battle_start','action_start','skill_cast','hit','damage','heal','status_apply','status_remove','ko','battle_end']);
+const QUEST_EVENT_PLACEMENT_KINDS=new Set(['fixed_event','random_event']);
+const QUEST_EVENT_FAILURE_POLICIES=new Set(['continue','quest_fail']);
+const QUEST_EVENT_USAGES=new Set(['story','random','common']);
+const QUEST_EVENT_TYPES=new Set(['battle','exploration','choice','special']);
+const QUEST_EVENT_INTENSITIES=new Set(['low','normal','high','extreme']);
 const QUEST_RUN_HISTORY_LIMIT=20;
 function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
 function hashSeed(value){let h=2166136261,s=String(value??'');for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
@@ -10,7 +15,52 @@ function normalizeBox(box,index){const b=box&&typeof box==='object'?box:{};retur
 function defaultBoxes(count=5){return Array.from({length:Math.max(0,count)},(_,i)=>normalizeBox({},i));}
 function normalizeSection(section,{isNew=false}={}){const s=section&&typeof section==='object'?section:{};s.adventure_duration_seconds=Math.max(1,Number(s.adventure_duration_seconds)||300);s.boxes=Array.isArray(s.boxes)?s.boxes.map(normalizeBox):(isNew?defaultBoxes(5):[]);return s;}
 function normalizeChapter(chapter){const c=chapter&&typeof chapter==='object'?chapter:{};c.available_monster_ids=Array.isArray(c.available_monster_ids)?c.available_monster_ids.map(String):[];c.random_event_candidates=Array.isArray(c.random_event_candidates)?c.random_event_candidates.map(x=>{if(typeof x==='string')return{event_id:x,weight:1};const raw=x?.weight,weight=raw===undefined||raw===null||raw===''?1:Math.max(0,Number(raw)||0);return{event_id:String(x?.event_id||x?.id||''),weight};}).filter(x=>x.event_id):[];return c;}
-function normalizeEvent(event){const e=event&&typeof event==='object'?event:{};e.battle_formation=Array.isArray(e.battle_formation)?e.battle_formation.map(x=>({monster_id:String(x?.monster_id||''),count:Math.max(1,Math.floor(Number(x?.count)||1))})).filter(x=>x.monster_id):[];return e;}
+function stringList(value){return Array.isArray(value)?value.map(String).map(x=>x.trim()).filter(Boolean):[];}
+function normalizeQuestEventPlacement(placement,index){
+ const source=placement&&typeof placement==='object'?placement:{},p={...source};
+ const rawKind=String(source.kind||source.placement_type||'').trim();
+ const randomLike=rawKind==='random_event'||rawKind==='random'||source.random_event_slot===true||source.random===true||(!source.event_id&&(source.filter||source.allow_none!==undefined||source.required!==undefined));
+ p.kind=randomLike?'random_event':'fixed_event';
+ p.order=Math.max(1,Math.floor(Number(source.order)||index+1));
+ p.failure_policy=QUEST_EVENT_FAILURE_POLICIES.has(source.failure_policy)?source.failure_policy:'continue';
+ if(p.kind==='fixed_event'){p.event_id=String(source.event_id||source.ref_id||'');}
+ else{
+  const rawFilter=source.filter&&typeof source.filter==='object'?source.filter:{};
+  p.filter={...rawFilter,event_type:rawFilter.event_type==null?null:String(rawFilter.event_type),group:rawFilter.group==null?null:String(rawFilter.group),tags:stringList(rawFilter.tags)};
+  p.allow_none=source.allow_none===undefined?true:Boolean(source.allow_none);
+  p.required=Boolean(source.required);
+  p.box_side_individual_probability_override=Boolean(source.box_side_individual_probability_override);
+ }
+ return p;
+}
+function questBoxZone(source,canonical,alias){const rows=Array.isArray(source[canonical])?source[canonical]:(Array.isArray(source[alias])?source[alias]:[]);return rows.map(normalizeQuestEventPlacement);}
+function normalizeQuestBox(box,index){
+ const source=box&&typeof box==='object'?box:{},b={...source},scenes=source.scenes&&typeof source.scenes==='object'?source.scenes:{};
+ b.box_id=String(source.box_id||source.id||`BOX-${String(index+1).padStart(4,'0')}`);
+ b.name=String(source.name||'');b.order=Math.max(1,Math.floor(Number(source.order)||index+1));
+ b.pre_scene_id=source.pre_scene_id==null?(scenes.pre_scene_id==null?null:String(scenes.pre_scene_id)):String(source.pre_scene_id);
+ b.mid_scene_id=source.mid_scene_id==null?(scenes.mid_scene_id==null?null:String(scenes.mid_scene_id)):String(source.mid_scene_id);
+ b.post_scene_id=source.post_scene_id==null?(scenes.post_scene_id==null?null:String(scenes.post_scene_id)):String(source.post_scene_id);
+ b.event_zone_before_pre=questBoxZone(source,'event_zone_before_pre','event_before_pre');
+ b.event_zone_pre_to_mid=questBoxZone(source,'event_zone_pre_to_mid','event_pre_to_mid');
+ b.event_zone_mid_to_post=questBoxZone(source,'event_zone_mid_to_post','event_mid_to_post');
+ b.event_zone_after_post=questBoxZone(source,'event_zone_after_post','event_after_post');
+ if(source.scenes&&typeof source.scenes==='object')b.scenes={...source.scenes,pre_scene_id:b.pre_scene_id,mid_scene_id:b.mid_scene_id,post_scene_id:b.post_scene_id};
+ return b;
+}
+function normalizeQuest(quest){const q=quest&&typeof quest==='object'?quest:{};q.context=q.context&&typeof q.context==='object'?q.context:{};if(Array.isArray(q.context.tags))q.context.tags=stringList(q.context.tags);q.boxes=Array.isArray(q.boxes)?q.boxes.map(normalizeQuestBox):[];return q;}
+function normalizeEvent(event){
+ const e=event&&typeof event==='object'?event:{};
+ e.battle_formation=Array.isArray(e.battle_formation)?e.battle_formation.map(x=>({monster_id:String(x?.monster_id||''),count:Math.max(1,Math.floor(Number(x?.count)||1))})).filter(x=>x.monster_id):[];
+ if(e.usage!==undefined){if(Array.isArray(e.usage))e.usage=stringList(e.usage);else e.usage=String(e.usage||'');}
+ if(e.group!==undefined)e.group=String(e.group||'');
+ if(e.tags!==undefined)e.tags=stringList(e.tags);
+ if(e.intensity!==undefined)e.intensity=QUEST_EVENT_INTENSITIES.has(e.intensity)?e.intensity:String(e.intensity||'');
+ if(e.random_base_weight!==undefined)e.random_base_weight=Math.max(0,Number(e.random_base_weight)||0);
+ if(e.generation_profile_ref!==undefined&&e.generation_profile_ref!==null)e.generation_profile_ref=String(e.generation_profile_ref);
+ if(Array.isArray(e.conditions))e.conditions=e.conditions.map(clone);
+ return e;
+}
 function monsterBudgetCost(monster){return Math.max(1,Number(monster?.enemy_budget_cost??monster?.budget_cost??monster?.params?.enemy_budget_cost??monster?.params?.budget_cost)||1);}
 function tabletEnemyBudgetBonus(tablet){return Math.max(0,Number(tablet?.enemy_budget_bonus??tablet?.params?.enemy_budget_bonus)||0);}
 function resolveEnemyBudget({quest,section,startCostResources={},tablets=[]}={}){const qb=Math.max(0,Number(quest?.enemy_budget)||0),sb=Math.max(0,Number(section?.enemy_budget)||0),base=qb>0?qb:sb;let bonus=0;for(const[id,count]of Object.entries(startCostResources||{})){const tablet=(tablets||[]).find(x=>String(x.id)===String(id));if(tablet)bonus+=tabletEnemyBudgetBonus(tablet)*Math.max(0,Number(count)||0);}return Math.max(0,Math.floor(base+bonus));}
@@ -96,5 +146,5 @@ function startQuestRunPlayback(save,run,{startedAt=new Date().toISOString(),hist
 function resumeQuestRun(save,nowMs=Date.now()){const run=activeQuestRun(save);return run?{run,playback:playbackState(run,nowMs)}:null;}
 function finishQuestRunPlayback(save,runId){const store=ensureQuestRunStore(save);if(!runId||store.active_quest_run_id===String(runId))store.active_quest_run_id='';return store;}
 function commitStoredQuestRun(save,runId,handlers={},nowMs=Date.now()){const store=ensureQuestRunStore(save),run=store.quest_runs.find(r=>r.quest_run_id===String(runId||store.active_quest_run_id));if(!run)return{applied:false,reason:'quest_run_not_found'};if(!run.results_applied&&!playbackState(run,nowMs).complete)return{applied:false,reason:'playback_incomplete'};const result=commitQuestRun(run,save,handlers);if(result.applied)finishQuestRunPlayback(save,run.quest_run_id);return result;}
-return{BOX_TYPES:[...BOX_TYPES],PLAYBACK_EVENT_TYPES:[...PLAYBACK_EVENT_TYPES],QUEST_RUN_HISTORY_LIMIT,clone,hashSeed,rng,normalizeBox,defaultBoxes,normalizeSection,normalizeChapter,normalizeEvent,normalizeQuestStartCost,questStartRequirements,canAffordQuestStartCost,consumeQuestStartCost,questProgressResult,monsterBudgetCost,tabletEnemyBudgetBonus,resolveEnemyBudget,chooseWeighted,generateRandomBattle,assignTimeline,assertBattlePlaybackEvents,simulateQuest,playbackState,commitQuestRun,validatePlaybackEvents,normalizeQuestRun,ensureQuestRunStore,saveQuestRun,activeQuestRun,questRunHistory,startQuestRunPlayback,resumeQuestRun,finishQuestRunPlayback,commitStoredQuestRun};
+return{BOX_TYPES:[...BOX_TYPES],PLAYBACK_EVENT_TYPES:[...PLAYBACK_EVENT_TYPES],QUEST_EVENT_PLACEMENT_KINDS:[...QUEST_EVENT_PLACEMENT_KINDS],QUEST_EVENT_FAILURE_POLICIES:[...QUEST_EVENT_FAILURE_POLICIES],QUEST_EVENT_USAGES:[...QUEST_EVENT_USAGES],QUEST_EVENT_TYPES:[...QUEST_EVENT_TYPES],QUEST_EVENT_INTENSITIES:[...QUEST_EVENT_INTENSITIES],QUEST_RUN_HISTORY_LIMIT,clone,hashSeed,rng,normalizeBox,defaultBoxes,normalizeSection,normalizeChapter,normalizeQuestEventPlacement,normalizeQuestBox,normalizeQuest,normalizeEvent,normalizeQuestStartCost,questStartRequirements,canAffordQuestStartCost,consumeQuestStartCost,questProgressResult,monsterBudgetCost,tabletEnemyBudgetBonus,resolveEnemyBudget,chooseWeighted,generateRandomBattle,assignTimeline,assertBattlePlaybackEvents,simulateQuest,playbackState,commitQuestRun,validatePlaybackEvents,normalizeQuestRun,ensureQuestRunStore,saveQuestRun,activeQuestRun,questRunHistory,startQuestRunPlayback,resumeQuestRun,finishQuestRunPlayback,commitStoredQuestRun};
 });
