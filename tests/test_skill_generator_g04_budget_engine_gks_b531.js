@@ -3,7 +3,7 @@ const build=require('../package-build.json');
 const registry=require('../assets/shared/config/skill-registry.json');
 const rules=require('../assets/shared/config/skill-budget-rules.json');
 assert.strictEqual(build.game_build,'GA-B486.174');
-assert.strictEqual(build.studio_build,'GKS-B556');
+assert.strictEqual(build.studio_build,'GKS-B557');
 assert.ok(['G04','G05'].includes(registry.authoring.phase));
 assert.strictEqual(rules.budgetRuleVersion,'G04-BUDGET-V1');
 assert.strictEqual(rules.existing_skill_policy,'NO_AUTOMATIC_RECALCULATION');
@@ -17,6 +17,6 @@ const over={...normal,id:'G04-OVER',skillLevel:1,trigger:{type:'WHILE_SOURCE_ALI
 const badOverride=engine.calculate(over,rules,registry,{manualOverride:true,overrideReason:'short'});assert.strictEqual(badOverride.ok,false);assert.strictEqual(badOverride.manualOverrideApplied,false);assert.ok(badOverride.errors.some(x=>x.includes('8文字以上')));
 const acceptedOverride=engine.calculate(over,rules,registry,{manualOverride:true,overrideReason:'balance exception approved'});assert.strictEqual(acceptedOverride.ok,true);assert.strictEqual(acceptedOverride.withinBudget,false);assert.strictEqual(acceptedOverride.manualOverrideApplied,true);assert.strictEqual(acceptedOverride.manualOverrideAudit.budgetRuleVersion,'G04-BUDGET-V1');assert.ok(acceptedOverride.calculationTrace.some(x=>x.kind==='manual_override'));
 const withRefunds={...normal,id:'G04-REFUND',conditions:[{scope:'SELF',property:'SELF_HP_RATE',operator:'<=',value:0.5}],resource:{mpCost:20,cooldown:300,activationPriority:0}};const refund=engine.calculate(withRefunds,rules,registry);assert.ok(refund.cost<ok.cost,'condition/mp/cooldown refunds must reduce cost');
-const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');for(const marker of ['loadBudgetRules','calculateSkillBudget','skgBudgetStatus','skgBudgetOverride','budget:clone(budget)','SKILL_BUDGET_EXCEEDED','既存Skillは自動再計算しません'])assert.ok(sg.includes(marker),`G04 marker missing: ${marker}`);
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-budget-engine.js?v=2'));assert.ok(html.includes('skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=32'));assert.ok(!html.includes('generic-skill-budget-engine.js'));assert.ok(!html.includes('generic-skill-authoring-registry.js'));
+const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');for(const marker of ['loadBudgetRules','calculateSkillBudget','buildFormalDraft','generateFormalPreview','skgBudgetStatus','skgBudgetOverride','validation:{ok,errors,warnings:compiled.warnings||[],logicOrder:[],budget}','SKILL_BUDGET_EXCEEDED','既存Skillは自動再計算しません'])assert.ok(sg.includes(marker),`G04 marker missing: ${marker}`);
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-budget-engine.js?v=2'));assert.ok(html.includes('skill-authoring-registry.js?v=4'));assert.ok(html.includes('skill-generator.js?v=33'));assert.ok(!html.includes('generic-skill-budget-engine.js'));assert.ok(!html.includes('generic-skill-authoring-registry.js'));assert.ok(!sg.includes('params:{skill_generation'),'Formal manual preview must not emit legacy params metadata');
 console.log('SKILL_GENERATOR_G04_BUDGET_ENGINE_GKS_B531_PASS');

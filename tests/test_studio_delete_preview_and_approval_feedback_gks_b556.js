@@ -10,4 +10,4 @@ assert(html.includes("保護領域削除許可の前に、通常の削除許可�
 assert(html.includes("差分を再解析"), 'explicit diff reanalysis control missing');
 const toggle=html.match(/async function toggleDeployDeleteApproval\(kind\)\{[\s\S]*?\n\}/);
 assert(toggle && !toggle[0].includes("prepareStudioDeployDiff"), 'approval toggle must not fetch GitHub diff');
-console.log('PASS test_studio_delete_preview_and_approval_feedback_gks_b556');
+console.log('PASS test_studio_delete_preview_and_approval_feedback_gks_b557');
