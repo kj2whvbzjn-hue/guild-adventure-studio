@@ -24,7 +24,20 @@ function baseProject(){
     masters:{
       monsters:[],stats:[],status_effects:[],tablets:[],jobs:[],equipment:[],mods:[],ai_conditions:[],ai_targets:[],ai_actions:[],
       skills:[
-        {id:'SKL-FIRE',name:'Fire Skill',status:'draft',tags:['TAG-FIRE'],params:{required_tags:['TAG-BURN']},description:'',updated_at:'T1'}
+        {
+          schemaVersion:1,id:'SKL-FIRE',name:'Fire Skill',skillLevel:1,
+          trigger:{type:'ON_USE',scope:'SELF'},conditions:[],
+          target:{side:'ENEMY',range:'SINGLE'},
+          effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],
+          resource:{mpCost:0,cooldown:0,activationPriority:0},
+          runtimeContracts:{
+            schemaVersion:1,registryPhase:'FORMAL-SKILL-1',
+            triggerContract:{type:'ON_USE',scope:'SELF',engineEvent:'use',dispatchMode:'RESOLVE_ONLY',priority:0},
+            conditionContracts:[],effectContracts:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],
+            applyContracts:[],auraEffectContract:null
+          },
+          status:'draft',description:'',updated_at:'T1'
+        }
       ]
     },history:[]
   };
@@ -90,26 +103,23 @@ async function main(){
   assert.equal(tagUnknownPlan.can_apply,false);
   assert(tagUnknownPlan.reasons.some(x=>x.includes('未知フィールド')));
 
-  // 4. Skill primary Dataset exports referenced tags as read_only and supports safe add/apply/audit/undo.
+  // 4. Formal Skill primary Dataset supports safe add/apply/audit/undo without reviving legacy tags/params.
   const skillExport=await dx.buildEnvelope({rootData:base,dataset:'skills',ids:['SKL-FIRE'],dependencyMode:'recursive',studioVersion:'TEST-DE18'});
   assert.deepEqual(skillExport.permissions.writable,['skills']);
-  assert(skillExport.permissions.read_only.includes('tags'));
-  assert.equal(skillExport.datasets.tags.length,2);
-  const skillAdd=await makeAddEnvelope(base,'skills','SKL-BURN',row=>{row.name='Burn Skill';row.tags=['TAG-BURN'];row.params={required_tags:['TAG-FIRE']};});
+  assert.deepEqual(skillExport.permissions.read_only,[]);
+  assert.equal(Object.prototype.hasOwnProperty.call(skillExport.datasets,'tags'),false);
+  const skillAdd=await makeAddEnvelope(base,'skills','SKL-BURN',row=>{row.name='Burn Skill';});
   const skillDry=await dx.dryRunImport({rootData:base,envelope:skillAdd});
   assert.equal(skillDry.can_apply,true);
   assert.equal(skillDry.summary.broken_reference,0);
   await applyAndUndo(base,skillAdd,'skills','DE18_SKILL_ADD.json');
 
-  // 5. Skill broken tag reference and read_only tampering block.
-  const brokenSkill=await makeAddEnvelope(base,'skills','SKL-BROKEN',row=>{row.tags=['TAG-MISSING'];row.params={required_tags:[]};});
-  const brokenSkillDry=await dx.dryRunImport({rootData:base,envelope:brokenSkill});
-  assert.equal(brokenSkillDry.can_apply,false);
-  assert(brokenSkillDry.summary.broken_reference>=1);
-  const ro=clone(skillExport);ro.datasets.tags[0].name='Tampered';ro.metadata.package_hash='';
-  const roDry=await dx.dryRunImport({rootData:base,envelope:ro});
-  assert.equal(roDry.can_apply,false);
-  assert(roDry.summary.readonly_modified>=1);
+  // 5. Legacy Skill tags/params remain blocked by the current Formal Skill Master contract.
+  const legacySkill=await makeAddEnvelope(base,'skills','SKL-LEGACY',row=>{row.tags=['TAG-MISSING'];row.params={required_tags:['TAG-FIRE']};});
+  const legacyDry=await dx.dryRunImport({rootData:base,envelope:legacySkill});
+  const legacyPlan=await dx.createApplyPlan({rootData:base,envelope:legacySkill,dryRun:legacyDry});
+  assert.equal(legacyPlan.can_apply,false);
+  assert(legacyPlan.reasons.some(x=>x.includes('未知フィールド')));
 
   // 6. Conflict requires explicit keep/import; stale source remains blocking.
   const conflict=clone(skillExport);conflict.datasets.skills[0].description='GPT changed';conflict.metadata.package_hash='';

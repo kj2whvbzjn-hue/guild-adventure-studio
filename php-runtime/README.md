@@ -35,7 +35,7 @@ php php-runtime/tests/run.php Export
 
 ## 個別データSchema
 
-- `schemas/export-schema-map.json` が22 ExportパスとSchema正本を対応付けます。
+- `schemas/export-schema-map.json` が24 ExportパスとSchema正本を対応付けます。
 - `schemas/exports/*.schema.json` をNode E2EとPHP Runtimeで共有します。
 - 初期Schemaは `additionalProperties: true` で、未確定項目を許容します。
 - 配列データの各レコードは `id` 必須・空文字禁止です。

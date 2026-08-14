@@ -30,6 +30,13 @@
     ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    ai_programs:{path:['ai_programs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[
+      {dataset:'tags',paths:['tags']},
+      {dataset:'skills',paths:['nodes[].parameters.skill_id']},
+      {dataset:'ai_conditions',nodeType:'condition',paths:['nodes[].master_node_id']},
+      {dataset:'ai_targets',nodeType:'target',paths:['nodes[].master_node_id']},
+      {dataset:'ai_actions',nodeType:'action',paths:['nodes[].master_node_id']}
+    ]},
     chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
     story_sections:{virtual:'story_sections',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id']},
     story_scenes:{virtual:'story_scenes',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id','section_id']},
@@ -38,6 +45,17 @@
 
   function clone(value){return value==null?value:JSON.parse(JSON.stringify(value));}
   function getAt(obj,path){return String(path||'').split('.').filter(Boolean).reduce((v,k)=>v==null?undefined:v[k],obj);}
+  function pathValues(value,path){
+    const parts=String(path||'').split('.').filter(Boolean);
+    const walk=(current,index)=>{
+      if(index>=parts.length)return [current];
+      const arrayPart=parts[index].endsWith('[]'),key=arrayPart?parts[index].slice(0,-2):parts[index];
+      const next=current==null?undefined:current[key];
+      if(arrayPart)return (Array.isArray(next)?next:[]).flatMap(item=>walk(item,index+1));
+      return walk(next,index+1);
+    };
+    return walk(value,0);
+  }
   function storyVirtualRecords(rootData,dataset){
     const out=[];
     for(const chapter of Array.isArray(rootData?.chapters)?rootData.chapters:[]){
@@ -107,12 +125,18 @@
   async function recordHash(dataset,row){
     return sha256Hex(stableStringify(canonicalizeRecord(dataset,row)));
   }
-  function collectIds(record,paths){return uniqueStrings(paths.flatMap(path=>{const v=getAt(record,path);return Array.isArray(v)?v:[v];}));}
+  function collectIds(record,paths){return uniqueStrings(paths.flatMap(path=>pathValues(record,path).flatMap(v=>Array.isArray(v)?v:[v])));}
+  function dependencyIds(record,dependency){
+    if(dependency?.nodeType){
+      return uniqueStrings((Array.isArray(record?.nodes)?record.nodes:[]).filter(node=>node?.node_type===dependency.nodeType).map(node=>node?.master_node_id));
+    }
+    return collectIds(record,dependency?.paths||[]);
+  }
   function resolveDependencies(rootData,primaryDataset,primaryRows,mode='none'){
     if(mode==='none')return {};
     const result={}; const queue=[]; const visited=new Set();
     const add=(dataset,id)=>{if(!id)return;const key=dataset+'::'+id;if(visited.has(key))return;visited.add(key);const row=records(rootData,dataset).find(x=>String(x?.id||'')===String(id));if(!row)return;(result[dataset]||(result[dataset]=[])).push(clone(row));if(mode==='recursive')queue.push({dataset,row});};
-    const scan=(dataset,row)=>{const def=REGISTRY[dataset];(def?.dependencies||[]).forEach(dep=>collectIds(row,dep.paths).forEach(id=>add(dep.dataset,id)));};
+    const scan=(dataset,row)=>{const def=REGISTRY[dataset];(def?.dependencies||[]).forEach(dep=>dependencyIds(row,dep).forEach(id=>add(dep.dataset,id)));};
     primaryRows.forEach(row=>scan(primaryDataset,row));
     while(queue.length){const item=queue.shift();scan(item.dataset,item.row);}
     Object.keys(result).forEach(dataset=>result[dataset]=result[dataset].sort((a,b)=>String(a.id||'').localeCompare(String(b.id||''),'en')));
@@ -173,12 +197,14 @@
   function referencedIds(dataset,row){
     const refs=[],structuredSkill=dataset==='skills'&&hasStructuredSkillRuntime(row);
     (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>{
+      if(dep.nodeType){
+        for(const id of dependencyIds(row,dep))refs.push({dataset:dep.dataset,id});
+        return;
+      }
       for(const path of dep.paths||[]){
         // Formal Skill System: runtime semantics live in runtimeContracts; compiler runtime data is not a Tag Master reference.
         if(structuredSkill&&dep.dataset==='tags'&&path==='tags')continue;
-        for(const id of collectIds(row,[path])){
-          refs.push({dataset:dep.dataset,id});
-        }
+        for(const id of collectIds(row,[path]))refs.push({dataset:dep.dataset,id});
       }
     });
     return refs;
@@ -456,6 +482,7 @@
     ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','compiled','created_at','updated_at']),
     chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at','available_monster_ids','random_event_candidates']),
     story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at','adventure_duration_seconds','boxes']),
     story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),

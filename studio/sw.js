@@ -11,6 +11,20 @@ const APP_SHELL=[
   "../assets/shared/config/skill-registry.json",
   "../assets/shared/config/skill-budget-rules.json",
   "../assets/shared/config/skill-ai-generation-rules.json",
+  "./ai-production/ai-production.css?v=1",
+  "./ai-production/ai-program-model.js?v=1",
+  "./ai-production/ai-program-store.js?v=1",
+  "./ai-production/ai-program-editor.js?v=1",
+  "./ai-production/ai-master-adapter.js?v=1",
+  "./ai-production/ai-program-validator.js?v=1",
+  "./ai-production/ai-program-compiler.js?v=1",
+  "./ai-production/ai-program-trace.js?v=1",
+  "./ai-production/ai-decision-engine.js?v=1",
+  "./ai-production/ai-battle-adapter.js?v=1",
+  "./ai-production/ai-simulation-runner.js?v=1",
+  "./ai-production/ai-export-adapter.js?v=1",
+  "./ai-production/ai-production-ui.js?v=1",
+  "./data-exchange/schemas/ai_program-dataset.schema.json",
   "../assets/shared/js/adventure-story-system.js?v=2"
 ];
 
