@@ -51,6 +51,34 @@
     (data.chapters||[]).forEach(ch=>{inspect(ch,'chapter','');(ch.sections||[]).forEach(sec=>inspect(sec,'section',ch.id||''));});
     return issues;
   }
+  function formalStoryQuestAssessment(data,quest){
+    const links=quest&&quest.links&&typeof quest.links==='object'?quest.links:{};
+    const chapterId=String(links.chapter_id||'').trim();
+    const sectionId=String(links.section_id||'').trim();
+    const candidate=Boolean(chapterId||sectionId);
+    const issues=[];
+    if(!candidate)return {is_formal:false,ready:false,chapter_id:'',section_id:'',issues,message:'Chapter / Section未接続のためGame遠征一覧には出ません。'};
+    if(!chapterId||!sectionId){
+      issues.push({level:'ERROR',code:'FORMAL_QUEST_LINK_INCOMPLETE',quest_id:String(quest?.id||''),message:`${quest?.id||'(ID未設定)'} は正式Story Quest候補ですが、ChapterとSectionの両方を設定してください。`});
+      return {is_formal:true,ready:false,chapter_id:chapterId,section_id:sectionId,issues,message:'Chapter / Sectionの両方が必要です。'};
+    }
+    const chapter=(data?.chapters||[]).find(x=>String(x?.id||'')===chapterId);
+    if(!chapter){issues.push({level:'ERROR',code:'FORMAL_QUEST_CHAPTER_MISSING',quest_id:String(quest?.id||''),message:`${quest?.id||'(ID未設定)'} の正式Story Quest参照Chapterが存在しません: ${chapterId}`});return {is_formal:true,ready:false,chapter_id:chapterId,section_id:sectionId,issues,message:'Chapter参照が切れています。'};}
+    const section=(chapter.sections||[]).find(x=>String(x?.id||'')===sectionId);
+    if(!section){issues.push({level:'ERROR',code:'FORMAL_QUEST_SECTION_MISSING',quest_id:String(quest?.id||''),message:`${quest?.id||'(ID未設定)'} の正式Story Quest参照Sectionが存在しません: ${sectionId}`});return {is_formal:true,ready:false,chapter_id:chapterId,section_id:sectionId,issues,message:'Section参照が切れています。'};}
+    if(!Array.isArray(section.boxes)||section.boxes.length===0)issues.push({level:'ERROR',code:'FORMAL_QUEST_SECTION_BOXES_EMPTY',quest_id:String(quest?.id||''),message:`${quest?.id||'(ID未設定)'} の正式Story Quest参照Section ${sectionId} にBoxがありません。Game遠征開始前に1件以上設定してください。`});
+    return {is_formal:true,ready:issues.length===0,chapter_id:chapterId,section_id:sectionId,issues,message:issues.length?'正式Story Quest要件を満たしていません。':'正式Story QuestとしてGame遠征一覧へExportできます。'};
+  }
+  function summarizeFormalStoryQuests(data){
+    const rows=(data?.quests||[]).map(quest=>({quest,assessment:formalStoryQuestAssessment(data,quest)}));
+    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>String(x.quest?.id||'')),rows};
+  }
+  function collectFormalQuestExportIssues(data){
+    const summary=summarizeFormalStoryQuests(data),issues=[];
+    summary.rows.forEach(row=>row.assessment.issues.forEach(issue=>issues.push(issue)));
+    if(summary.ready_count===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_ZERO',message:'正式Story Questが0件です。Exportは可能ですが、Gameの遠征一覧にはStory Questが表示されません。'});
+    return {summary,issues};
+  }
   function buildData(data){
     const chapters=[],sections=[],scenes=[];
     (data.chapters||[]).forEach(chapter=>{
@@ -87,5 +115,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,clean,scenarioTextHash,collectScenarioExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,clean,scenarioTextHash,collectScenarioExportIssues,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

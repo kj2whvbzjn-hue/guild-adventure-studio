@@ -10,7 +10,8 @@ const APP_SHELL=[
   "./skill/runtime-requirements.json",
   "../assets/shared/config/skill-registry.json",
   "../assets/shared/config/skill-budget-rules.json",
-  "../assets/shared/config/skill-ai-generation-rules.json"
+  "../assets/shared/config/skill-ai-generation-rules.json",
+  "../assets/shared/js/adventure-story-system.js?v=2"
 ];
 
 self.addEventListener('install',event=>{

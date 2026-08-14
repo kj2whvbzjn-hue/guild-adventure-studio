@@ -109,7 +109,7 @@ const EQUIPMENT={
  '魔力の指輪':{slot:'accessory',rarity:'rare',attack:9,maxHp:45,agi:1,description:'魔力を攻撃力へ変換する指輪。'},
  '古代の護符':{slot:'accessory',rarity:'legendary',attack:18,maxHp:120,agi:3,description:'失われた文明の祝福を帯びた護符。'}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.1.0',gameVersion:'GA-B474',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.5.0',gameVersion:'GA-B486.174',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','result'];
 let currentPhase='title';
@@ -139,17 +139,20 @@ $('titleStart').onclick=beginNewGame;
 $('titleContinue').onclick=continueGame;
 $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェーズとして接続します。');
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
-$('baseDepart').onclick=$('baseDepartSide').onclick=()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}prepareEvent();setPhase('event')};
-$('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
+$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure;
+$('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};if($('adventureReturn'))$('adventureReturn').onclick=returnFromAdventurePlayback;
 $('eventObserve').onclick=()=>{const q=selectedQuest();$('eventNotice').textContent='敵情報：'+q.enemies.map(e=>`${e.name}(HP${e.maxHp}/攻撃${e.attack}/AGI${e.agi})`).join('、')};
-$('eventBattle').onclick=()=>{resetBattle();setPhase('battle')};
+$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')};
 $('battleAbort').onclick=()=>setPhase('event');
 $('resultToEvent').onclick=()=>setPhase('event',{keepBattle:true});
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
 document.querySelectorAll('#baseMobileNav [data-base-tab]').forEach(btn=>btn.onclick=()=>setBaseView(btn.dataset.baseTab));
 document.querySelectorAll('[data-open-base-view]').forEach(btn=>btn.onclick=()=>setBaseView(btn.dataset.openBaseView));
-const mobileDepart=$('mobileDepart');if(mobileDepart)mobileDepart.onclick=()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');setBaseView('party');return}prepareEvent();setPhase('event')};
+const mobileDepart=$('mobileDepart');if(mobileDepart)mobileDepart.onclick=async()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');setBaseView('party');return}await beginSelectedAdventure()};
+
+loadAdventureContent().then(content=>{registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();}).catch(error=>{adventureQuestCatalog=[];setAdventureStoryLoadError(error);if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();});
+ensureAdventurePlaybackTicker();
 
 $('devGoBattle').onclick=()=>{resetBattle();setPhase('battle')};
 $('devGoBase').onclick=()=>setPhase('base',{keepBattle:true});
@@ -160,7 +163,7 @@ if($('devStudioLink')&&$('studioBackLink'))$('devStudioLink').href=$('studioBack
 try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('セーブデータを読み込みました。');}}
  catch(e){alert(`読込失敗: ${e.message}`);return}
  if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();
- setPhase('base');
+ const activeRun=currentAdventureQuestRun();if(activeRun)openAdventurePlayback(activeRun);else setPhase('base');
 }
 
 
@@ -184,8 +187,9 @@ function applyBattleOutcome(){
  data.guild=data.guild||{gold:0,victories:0,defeats:0,lastBattle:null};
  if(victory){data.guild.gold=(data.guild.gold||0)+reward;data.guild.victories=(data.guild.victories||0)+1}
  else if(battle.result==='敵勝利'){data.guild.defeats=(data.guild.defeats||0)+1}
- data.guild.lastBattle={result:battle.result,rewardGold:reward,tick:battle.tick,actions:battle.actions,at:new Date().toISOString()};
- if(dropped)data.inventory.push(dropped);battle.reward={gold:reward,victory,dropped};battle.rewardApplied=true;persist();renderGuildSummary();
+ const structuredBattleResult=window.GKAdventureBattleCore?GKAdventureBattleCore.buildBattleResult({battle,context:battleLaunchContext||{}}):null;
+ data.guild.lastBattle={result:battle.result,rewardGold:reward,tick:battle.tick,actions:battle.actions,at:new Date().toISOString(),battleResult:structuredBattleResult};
+ if(dropped)data.inventory.push(dropped);battle.reward={gold:reward,victory,dropped,battle_result:structuredBattleResult};battle.rewardApplied=true;persist();renderGuildSummary();
  return battle.reward;
 }
 function renderBattleResult(){
@@ -227,13 +231,169 @@ function normalize(raw){
  raw.guild.defeats=Math.max(0,Number(raw.guild.defeats)||0);
  raw.guild.lastBattle=raw.guild.lastBattle&&typeof raw.guild.lastBattle==='object'?raw.guild.lastBattle:null;
  raw.partyIds=Array.isArray(raw.partyIds)?raw.partyIds.filter(id=>raw.characters.some(c=>c.id===id)).slice(0,6):raw.characters.slice(0,6).map(c=>c.id);
- raw.selectedQuestId=QUESTS.some(q=>q.id===raw.selectedQuestId)?raw.selectedQuestId:'Q-001';
+ raw.selectedQuestId=typeof raw.selectedQuestId==='string'?raw.selectedQuestId:'';
  raw.inventory=Array.isArray(raw.inventory)?raw.inventory.filter(x=>EQUIPMENT[x]):[];
+ raw.flags=raw.flags&&typeof raw.flags==='object'?raw.flags:{};
+ raw.quest_progress=raw.quest_progress&&typeof raw.quest_progress==='object'?raw.quest_progress:{};raw.quest_progress.completed_quest_ids=Array.isArray(raw.quest_progress.completed_quest_ids)?[...new Set(raw.quest_progress.completed_quest_ids.map(String))]:[];raw.quest_progress.unlocked_quest_ids=Array.isArray(raw.quest_progress.unlocked_quest_ids)?[...new Set(raw.quest_progress.unlocked_quest_ids.map(String))]:[];
+ raw.quest_resources=raw.quest_resources&&typeof raw.quest_resources==='object'?Object.fromEntries(Object.entries(raw.quest_resources).map(([k,v])=>[String(k),Math.max(0,Math.floor(Number(v)||0))])):{};
+ if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(raw);else raw.adventure=raw.adventure&&typeof raw.adventure==='object'?raw.adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20};
  raw.characters.forEach(c=>{c.aiPolicy=['weakest','lowestHp','random','boss','finish'].includes(c.aiPolicy)?c.aiPolicy:'lowestHp';c.equipment=c.equipment&&typeof c.equipment==='object'?c.equipment:{weapon:null,armor:null,accessory:null}});
- raw.schemaRevision='1.4.0';raw.gameVersion='GA-B474';
+ raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.174';
  return raw;
 }
-function persist(){data.updatedAt=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
+function persist(){data.updatedAt=new Date().toISOString();if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(data);localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
+function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});persist();return stored}
+function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
+function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
+function commitAdventureQuestRun(runId){if(!window.GKAdventureStorySystem)return{applied:false,reason:'story_system_unavailable'};const result=GKAdventureStorySystem.commitStoredQuestRun(data,runId,{applyReward:(save,reward)=>{save.guild=save.guild||{};if(Number(reward.gold))save.guild.gold=Math.max(0,Number(save.guild.gold)||0)+Number(reward.gold);if(Array.isArray(reward.items))save.inventory.push(...reward.items.filter(x=>EQUIPMENT[x]));},applyFlags:(save,flags)=>{save.flags=save.flags&&typeof save.flags==='object'?save.flags:{};Object.assign(save.flags,flags||{});},applyQuestProgress:(save,progress)=>{save.quest_progress=save.quest_progress&&typeof save.quest_progress==='object'?save.quest_progress:{};const completed=new Set((save.quest_progress.completed_quest_ids||[]).map(String)),unlocked=new Set((save.quest_progress.unlocked_quest_ids||[]).map(String));const completeId=String(progress?.complete_quest_id||'');if(completeId)completed.add(completeId);for(const id of progress?.unlock_quest_ids||[]){const qid=String(id||'');if(qid)unlocked.add(qid);}save.quest_progress.completed_quest_ids=[...completed];save.quest_progress.unlocked_quest_ids=[...unlocked];save.flags=save.flags&&typeof save.flags==='object'?save.flags:{};Object.assign(save.flags,progress?.set_flags||{});}});persist();renderGuildSummary();return result}
+function adventurePlaybackLabel(nowMs=Date.now()){const state=resumeAdventurePlayback(nowMs);if(!state)return'';const p=state.playback,done=p.complete?'帰還可能':'進行中';return`冒険 ${done} ${Math.min(p.elapsed_seconds,p.duration_seconds).toFixed(0)}/${p.duration_seconds.toFixed(0)}秒`;}
+
+let adventurePlaybackHistoryRunId='';
+let adventurePlaybackLastVisibleCount=0;
+let adventureHistoryFilter='all';
+let adventureReturnSummary=null;
+function adventureQuestRunHistory(){return window.GKAdventureStorySystem?GKAdventureStorySystem.questRunHistory(data):[];}
+function adventureQuestRunById(runId){return adventureQuestRunHistory().find(run=>String(run.quest_run_id)===String(runId))||null;}
+function adventurePlaybackViewState(nowMs=Date.now()){
+ if(adventurePlaybackHistoryRunId){const run=adventureQuestRunById(adventurePlaybackHistoryRunId);if(run){const start=Date.parse(run.playback_started_at||''),duration=Math.max(1,Number(run.adventure_duration_seconds)||300),historyNow=Number.isFinite(start)?Math.max(nowMs,start+duration*1000):nowMs+duration*1000;const playback=GKAdventureStorySystem.playbackState(run,historyNow);return{run,playback,history:true};}adventurePlaybackHistoryRunId='';}
+ const state=resumeAdventurePlayback(nowMs);return state?{...state,history:false}:null;
+}
+function adventureQuestRunStatus(run,nowMs=Date.now()){
+ if(!run)return'';if(run.results_applied)return run.final_result?.success===false?'失敗・帰還済み':'成功・帰還済み';
+ const active=String(data.adventure?.active_quest_run_id||'')===String(run.quest_run_id);if(active){const p=GKAdventureStorySystem.playbackState(run,nowMs);return p.complete?'帰還待ち':'進行中';}
+ return run.final_result?.success===false?'失敗':'完了';
+}
+function renderAdventureHistory(){
+ const list=$('adventureHistoryList'),resume=$('adventureResume'),filter=$('adventureHistoryFilter'),count=$('adventureHistoryCount');if(!list)return;const history=adventureQuestRunHistory(),active=currentAdventureQuestRun();
+ if(filter){filter.value=adventureHistoryFilter;filter.onchange=()=>{adventureHistoryFilter=filter.value||'all';renderAdventureHistory();};}
+ if(resume){resume.classList.toggle('hidden',!active);resume.textContent=active?(resumeAdventurePlayback()?.playback.complete?'帰還待ちの冒険へ戻る':'進行中の冒険へ戻る'):'進行中の冒険へ戻る';resume.onclick=()=>active&&openAdventurePlayback(active);}
+ const filtered=history.filter(run=>{if(adventureHistoryFilter==='all')return true;const status=adventureQuestRunStatus(run);if(adventureHistoryFilter==='active')return status==='進行中'||status==='帰還待ち';if(adventureHistoryFilter==='success')return run.final_result?.success!==false&&(run.results_applied||status==='完了');if(adventureHistoryFilter==='failure')return run.final_result?.success===false;return true;});
+ if(count)count.textContent=`${filtered.length} / ${history.length}件`;
+ if(!history.length){list.innerHTML='<div class="adventure-history-empty small">冒険履歴はまだありません。</div>';return;}
+ if(!filtered.length){list.innerHTML='<div class="adventure-history-empty small">条件に一致する冒険履歴はありません。</div>';return;}
+ list.innerHTML=filtered.slice(0,12).map(run=>{const isActive=active?.quest_run_id===run.quest_run_id,status=adventureQuestRunStatus(run),started=String(run.playback_started_at||'').slice(0,16).replace('T',' '),resultLabel=run.final_result?.success===false?'失敗':'成功';return`<div class="adventure-history-row ${isActive?'active':''}"><div><b>${escapeHtml(run.quest_id||'Quest')}</b> <span class="tag">${escapeHtml(status)}</span><div class="small">${escapeHtml(started)} ／ ${Number(run.adventure_duration_seconds||300)}秒 ／ ${escapeHtml(resultLabel)}</div></div><div class="adventure-history-actions">${isActive?`<button type="button" class="primary" data-adventure-resume="${escapeHtml(run.quest_run_id)}">戻る</button>`:`<button type="button" data-adventure-history="${escapeHtml(run.quest_run_id)}">履歴を見る</button>`}</div></div>`}).join('');
+ list.querySelectorAll('[data-adventure-resume]').forEach(btn=>btn.onclick=()=>{const run=adventureQuestRunById(btn.dataset.adventureResume);if(run)openAdventurePlayback(run);});
+ list.querySelectorAll('[data-adventure-history]').forEach(btn=>btn.onclick=()=>{const run=adventureQuestRunById(btn.dataset.adventureHistory);if(run)openAdventurePlayback(run,{history:true});});
+}
+
+function adventurePlaybackEntry(run,item){
+ const type=String(item?.type||'');
+ if(type==='scene'){const scene=run.scene_snapshots?.[Number(item.result_index)];return{kind:'scene',title:'ストーリーイベントが発生した',detail:scene||null};}
+ if(type==='event'||type==='random_event'){
+  const ev=run.event_results?.[Number(item.result_index)];
+  if(ev?.type==='battle'&&Number.isInteger(Number(item.battle_result_index)))return{kind:'battle',title:'戦闘イベントが発生した',detail:run.battle_results?.[Number(item.battle_result_index)]||null};
+  return{kind:'event',title:'イベントが発生した',detail:ev||null};
+ }
+ if(type==='random_battle')return{kind:'battle',title:'戦闘が発生した',detail:run.battle_results?.[Number(item.result_index)]||null};
+ return{kind:'event',title:'冒険イベントが発生した',detail:null};
+}
+function adventurePlaybackEventText(event,unitNames={}){
+ const type=String(event?.type||'event'),p=event?.payload&&typeof event.payload==='object'?event.payload:event;
+ const unitLabel=(id,fallback='')=>String(unitNames?.[String(id||'')]||fallback||id||'');
+ const actor=unitLabel(p.source_id,p.actor_name||p.actor||p.source_name||p.source||''),target=unitLabel(p.target_id,p.target_name||p.target||'');
+ const skill=p.skill_name||p.skill||p.skill_id||'',status=p.status_name||p.status||p.status_id||'',value=Number(p.value??p.amount??p.damage??p.applied??0)||0,hpAfter=Number.isFinite(Number(p.hp_after))?Number(p.hp_after):null;
+ if(type==='battle_start')return'戦闘開始';if(type==='battle_end')return`戦闘終了${p.result?'：'+p.result:''}`;
+ if(type==='action_start')return`${actor||'ユニット'} 行動開始`;if(type==='skill_cast')return`${actor||'ユニット'}${skill?'：'+skill:' がスキルを使用'}`;
+ if(type==='damage')return`${target||'対象'}に${value}ダメージ${hpAfter===null?'':`（残HP ${hpAfter}）`}`;if(type==='heal')return`${target||'対象'}を${value}回復${hpAfter===null?'':`（残HP ${hpAfter}）`}`;
+ if(type==='status_apply')return`${target||'対象'}に状態付与${status?'：'+status:''}`;if(type==='status_remove')return`${target||'対象'}の状態解除${status?'：'+status:''}`;if(type==='ko')return`${target||actor||'ユニット'}が戦闘不能`;
+ if(type==='hit')return`${actor||'攻撃'} → ${target||'対象'} 命中`;return type;
+}
+function adventurePlaybackEventMeta(event){const tick=Number(event?.at_tick);return`${Number.isFinite(tick)?`TICK ${tick}`:'TICK -'} ／ ${String(event?.type||'event')}`;}
+let adventureBattleDetailTimer=0;
+function stopAdventureBattleDetailPlayback(){if(adventureBattleDetailTimer){clearInterval(adventureBattleDetailTimer);adventureBattleDetailTimer=0;}}
+function mountAdventureBattleDetailPlayback(detail,battleResult){
+ stopAdventureBattleDetailPlayback();const events=Array.isArray(battleResult?.playback_events)?battleResult.playback_events:[],units=Array.isArray(battleResult?.unit_final_state)?battleResult.unit_final_state:[],unitNames=Object.fromEntries(units.map(u=>[String(u.id||''),String(u.name||u.id||'')]));let cursor=events.length?0:-1;
+ const draw=()=>{const current=detail.querySelector('[data-adventure-battle-current]'),history=detail.querySelector('[data-adventure-battle-events]'),counter=detail.querySelector('[data-adventure-battle-counter]'),play=detail.querySelector('[data-adventure-battle-play]');if(!current||!history)return;const e=events[cursor];current.innerHTML=e?`<div class="small">${escapeHtml(adventurePlaybackEventMeta(e))}</div><div>${escapeHtml(adventurePlaybackEventText(e,unitNames))}</div>`:'再生イベントはありません。';history.innerHTML=cursor>=0?events.slice(0,cursor+1).map((row,i)=>`<div class="adventure-battle-event ${i===cursor?'current':''}"><span>${i+1}</span><span class="small">${escapeHtml(Number.isFinite(Number(row?.at_tick))?`T${Number(row.at_tick)}`:'T-')}</span><span>${escapeHtml(adventurePlaybackEventText(row,unitNames))}</span></div>`).join(''):'<div class="small">再生イベントはありません。</div>';if(counter)counter.textContent=events.length?`${cursor+1} / ${events.length}`:'0 / 0';detail.querySelector('[data-adventure-battle-prev]')?.toggleAttribute('disabled',cursor<=0);detail.querySelector('[data-adventure-battle-next]')?.toggleAttribute('disabled',cursor<0||cursor>=events.length-1);if(play)play.textContent=adventureBattleDetailTimer?'一時停止':'再生';history.querySelector('.current')?.scrollIntoView({block:'nearest'});};
+ const step=delta=>{if(!events.length)return;cursor=Math.max(0,Math.min(events.length-1,cursor+delta));draw();};
+ detail.querySelector('[data-adventure-battle-first]')?.addEventListener('click',()=>{stopAdventureBattleDetailPlayback();cursor=events.length?0:-1;draw();});detail.querySelector('[data-adventure-battle-prev]')?.addEventListener('click',()=>{stopAdventureBattleDetailPlayback();step(-1);});detail.querySelector('[data-adventure-battle-next]')?.addEventListener('click',()=>{stopAdventureBattleDetailPlayback();step(1);});detail.querySelector('[data-adventure-battle-last]')?.addEventListener('click',()=>{stopAdventureBattleDetailPlayback();cursor=events.length?events.length-1:-1;draw();});detail.querySelector('[data-adventure-battle-play]')?.addEventListener('click',()=>{if(adventureBattleDetailTimer){stopAdventureBattleDetailPlayback();draw();return;}if(!events.length)return;if(cursor>=events.length-1)cursor=0;adventureBattleDetailTimer=setInterval(()=>{if(cursor>=events.length-1){stopAdventureBattleDetailPlayback();draw();return;}cursor++;draw();},700);draw();});draw();
+}
+function renderAdventurePlaybackDetail(run,itemIndex){
+ stopAdventureBattleDetailPlayback();const detail=$('adventurePlaybackDetail');if(!detail)return;const item=run.timeline_result?.[Number(itemIndex)];if(!item){detail.classList.add('hidden');detail.innerHTML='';return;}
+ const view=adventurePlaybackEntry(run,item);let body='';
+ if(view.kind==='scene'){
+  const scene=view.detail||{},dialogues=Array.isArray(scene.dialogues)?scene.dialogues:[];
+  body=`<div class="adventure-detail-head"><div><b>ストーリーイベント</b><div class="small">保存済み Scene Snapshot ／ ${escapeHtml(scene.scene_id||item.ref_id||'')}</div></div><button type="button" data-adventure-detail-close>閉じる</button></div><div class="adventure-scene-dialogues">${dialogues.length?dialogues.map(d=>`<div class="adventure-scene-line"><b>${escapeHtml(d.speaker||d.character_name||'')}</b><div>${escapeHtml(d.text||d.body||'')}</div></div>`).join(''):'<div class="small">会話Snapshotはありません。</div>'}</div>`;
+ }else if(view.kind==='battle'){
+  const br=view.detail||{},events=Array.isArray(br.playback_events)?br.playback_events:[],stats=br.statistics||{},units=Array.isArray(br.unit_final_state)?br.unit_final_state:[];
+  body=`<div class="adventure-detail-head"><div><b>戦闘結果</b><div class="small">保存済みBattle Result / Playback Eventsのみを再生</div></div><button type="button" data-adventure-detail-close>閉じる</button></div><div class="adventure-battle-summary"><div class="adventure-battle-stat"><b>結果</b><div>${br.victory===false?'敗北':'勝利'}</div></div><div class="adventure-battle-stat"><b>行動数</b><div>${Number(stats.actions)||0}</div></div><div class="adventure-battle-stat"><b>味方与ダメージ</b><div>${Number(stats.ally_damage)||0}</div></div><div class="adventure-battle-stat"><b>敵与ダメージ</b><div>${Number(stats.enemy_damage)||0}</div></div></div>${units.length?`<div class="small">最終状態：${units.map(u=>`${escapeHtml(u.name||u.id||'unit')} HP ${Number(u.hp)||0}/${Number(u.max_hp)||0}`).join(' ／ ')}</div>`:''}<div class="adventure-battle-playback"><div class="adventure-battle-current" data-adventure-battle-current></div><div class="adventure-battle-controls"><button type="button" data-adventure-battle-first>最初</button><button type="button" data-adventure-battle-prev>前</button><button type="button" class="primary" data-adventure-battle-play>再生</button><button type="button" data-adventure-battle-next>次</button><button type="button" data-adventure-battle-last>最後</button><span class="small" data-adventure-battle-counter></span></div><div class="adventure-detail-events" data-adventure-battle-events></div></div>`;
+ }else{
+  const ev=view.detail||{};body=`<div class="adventure-detail-head"><div><b>イベント結果</b><div class="small">保存済み Event Result ／ ${escapeHtml(ev.event_id||item.resolved_ref_id||item.ref_id||'')}</div></div><button type="button" data-adventure-detail-close>閉じる</button></div><p>${ev.success===false?'失敗':'完了'}</p>`;
+ }
+ detail.innerHTML=body;detail.classList.remove('hidden');if(view.kind==='battle')mountAdventureBattleDetailPlayback(detail,view.detail||{});detail.querySelector('[data-adventure-detail-close]')?.addEventListener('click',()=>{stopAdventureBattleDetailPlayback();detail.classList.add('hidden');detail.innerHTML='';});
+}
+function renderAdventurePlayback(nowMs=Date.now()){
+ const panel=$('adventurePlaybackPanel');if(!panel)return null;const state=adventurePlaybackViewState(nowMs);
+ if(!state){panel.classList.add('hidden');if($('eventBattle'))$('eventBattle').classList.remove('hidden');if($('eventObserve'))$('eventObserve').classList.remove('hidden');return null;}
+ const {run,playback,history}=state;panel.classList.remove('hidden');if($('eventBattle'))$('eventBattle').classList.add('hidden');if($('eventObserve'))$('eventObserve').classList.add('hidden');
+ const elapsed=Math.min(playback.elapsed_seconds,playback.duration_seconds),pct=Math.max(0,Math.min(100,(elapsed/playback.duration_seconds)*100));
+ if($('adventurePlaybackClock'))$('adventurePlaybackClock').textContent=history?`履歴 ／ ${playback.duration_seconds.toFixed(0)}秒`:`${elapsed.toFixed(0)} / ${playback.duration_seconds.toFixed(0)}秒${playback.complete?' ／ 帰還可能':''}`;
+ if($('adventurePlaybackProgress'))$('adventurePlaybackProgress').style.width=`${pct}%`;
+ if($('eventNotice'))$('eventNotice').textContent=history?'保存済みQuestRunの履歴を表示しています。再抽選・再戦闘は行いません。':playback.complete?(run.final_result?.success?'冒険が完了しました。保存済み結果を確定して帰還できます。':'冒険は失敗しました。帰還すると今回の報酬は反映されません。'):'冒険は開始時刻基準で進行中です。別画面を見ていても時間は進みます。';
+ const log=$('adventurePlaybackLog');if(log){const visible=playback.visible_timeline||[];log.innerHTML=visible.length?visible.map((item,i)=>{const actualIndex=(run.timeline_result||[]).indexOf(item),view=adventurePlaybackEntry(run,item),current=!history&&i===visible.length-1&&!playback.complete;return`<div class="adventure-log-entry ${current?'current':''}" ${current?'aria-current="step"':''}><span class="time">${Number(item.at_seconds||0).toFixed(0)}s</span><span>${escapeHtml(view.title)}${current?' <span class="now">現在</span>':''}</span><button type="button" data-adventure-detail="${actualIndex}">見る</button></div>`}).join(''):'<div class="small">まだ表示可能な冒険ログはありません。</div>';log.querySelectorAll('[data-adventure-detail]').forEach(btn=>btn.onclick=()=>renderAdventurePlaybackDetail(run,btn.dataset.adventureDetail));if(!history&&visible.length>adventurePlaybackLastVisibleCount){adventurePlaybackLastVisibleCount=visible.length;requestAnimationFrame(()=>log.querySelector('.adventure-log-entry.current')?.scrollIntoView({block:'nearest',behavior:'smooth'}));}}
+ const ret=$('adventureReturn');if(ret){ret.disabled=history?false:!playback.complete;ret.textContent=history?'履歴を閉じる':(playback.complete?'帰還して結果を確定':'冒険進行中');}
+ return state;
+}
+function openAdventurePlayback(run,{history=false}={}){
+ adventureReturnSummary=null;const resultPanel=$('adventureReturnResult'),returnButton=$('adventureReturn');if(resultPanel){resultPanel.classList.add('hidden');resultPanel.innerHTML='';}if(returnButton)returnButton.classList.remove('hidden');
+ adventurePlaybackHistoryRunId=history?String(run?.quest_run_id||''):'';adventurePlaybackLastVisibleCount=0;prepareEvent();const q=QUESTS.find(x=>String(x.id)===String(run?.quest_id))||selectedQuest();$('eventTitle').textContent=q?.name||run?.quest_id||'冒険';$('eventBody').textContent=history?'保存済みQuestRunの冒険履歴です。':'Quest開始時に確定したQuestRunを再生しています。';setPhase('event');renderAdventurePlayback();
+}
+function adventureRewardSummary(reward){const r=reward&&typeof reward==='object'?reward:{},parts=[];if(Number(r.gold))parts.push(`Gold ${Number(r.gold)}`);if(Array.isArray(r.items)&&r.items.length)parts.push(`Item ${r.items.length}件`);return parts.length?parts.join(' ／ '):'なし';}
+function renderAdventureReturnResult(summary){const panel=$('adventureReturnResult'),detail=$('adventurePlaybackDetail'),ret=$('adventureReturn');if(!panel)return;if(detail){detail.classList.add('hidden');detail.innerHTML='';}const flags=summary?.flags&&typeof summary.flags==='object'?Object.keys(summary.flags):[],progress=summary?.progress&&typeof summary.progress==='object'?summary.progress:{},completeQuestId=String(progress.complete_quest_id||''),unlockCount=Array.isArray(progress.unlock_quest_ids)?progress.unlock_quest_ids.filter(Boolean).length:0;panel.innerHTML=`<b>${summary?.success===false?'冒険失敗':'冒険成功'}</b><div class="small">QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。</div><div class="adventure-result-grid"><div class="adventure-result-item"><b>報酬</b><div>${escapeHtml(summary?.success===false?'失敗のため報酬なし':adventureRewardSummary(summary?.reward))}</div></div><div class="adventure-result-item"><b>Flag更新</b><div>${flags.length?flags.length+'件':'なし'}</div></div><div class="adventure-result-item"><b>Quest進行</b><div>${escapeHtml(summary?.success===false?'完了なし':(completeQuestId?`完了 ${completeQuestId}${unlockCount?` ／ 解放 ${unlockCount}件`:''}`:'変更なし'))}</div></div><div class="adventure-result-item"><b>QuestRun</b><div class="small">${escapeHtml(summary?.run_id||'')}</div></div></div><button type="button" class="primary" id="adventureReturnHome">拠点へ戻る</button>`;panel.classList.remove('hidden');if(ret)ret.classList.add('hidden');$('adventureReturnHome').onclick=()=>{adventureReturnSummary=null;panel.classList.add('hidden');if(ret)ret.classList.remove('hidden');setPhase('base');setBaseView('home',{instant:true});render();};}
+function returnFromAdventurePlayback(){
+ if(adventurePlaybackHistoryRunId){adventurePlaybackHistoryRunId='';adventurePlaybackLastVisibleCount=0;setPhase('base');setBaseView('quest',{instant:true});renderExpeditionSetup();return;}
+ const current=currentAdventureQuestRun();if(!current)return;const state=resumeAdventurePlayback();if(!state?.playback.complete)return;
+ const summary={run_id:current.quest_run_id,success:current.final_result?.success!==false,reward:clone(current.reward_result||{}),flags:clone(current.flag_result||{}),progress:clone(current.quest_progress_result||{})};
+ const result=commitAdventureQuestRun(current.quest_run_id);if(!result.applied){$('eventNotice').textContent=`帰還処理に失敗しました：${result.reason||'unknown'}`;return;}
+ adventureReturnSummary=summary;renderGuildSummary();renderAdventureHistory();if($('eventNotice'))$('eventNotice').textContent=summary.success?'冒険結果を反映しました。帰還結果を確認してください。':'冒険失敗。確定済み仕様により報酬は反映されません。';renderAdventureReturnResult(summary);notify(summary.success?'冒険結果を反映しました。':'冒険失敗。報酬なしで帰還します。',summary.success?'ok':'warn');
+}
+let adventurePlaybackTimer=0;
+function ensureAdventurePlaybackTicker(){if(adventurePlaybackTimer)return;adventurePlaybackTimer=setInterval(()=>{if(currentAdventureQuestRun()){if(currentPhase==='event')renderAdventurePlayback();else if(currentPhase==='base'){renderGuildSummary();const qs=$('questSummary');if(qs&&typeof renderExpeditionSetup==='function')renderExpeditionSetup();}}},1000);}
+
+
+const ADVENTURE_EXPORT_FILES={manifest:'../Export/manifest.json',quests:['../Export/quest/main_quests.json','../Export/quest/sub_quests.json','../Export/quest/event_quests.json'],chapters:'../Export/scenario/chapters.json',sections:'../Export/scenario/sections.json',scenes:'../Export/scenario/scenes.json',events:'../Export/event/events.json',monsters:'../Export/monster/monsters.json',tablets:'../Export/stone/stones.json'};
+const ADVENTURE_EXPORT_TIMEOUT_MS=15000;
+let adventureContentCache=null;
+async function fetchAdventureResponse(url){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ADVENTURE_EXPORT_TIMEOUT_MS);try{return await fetch(url,{cache:'no-store',signal:controller.signal});}catch(cause){const error=new Error(`Adventure Export network failed: ${url}`);error.code='EXPORT_NETWORK_FAILED';error.files=[url];error.detail=cause?.name==='AbortError'?`timeout ${ADVENTURE_EXPORT_TIMEOUT_MS}ms`:String(cause?.message||'network failed');throw error;}finally{clearTimeout(timer);}}
+async function fetchAdventureExport(url){const res=await fetchAdventureResponse(url);if(!res.ok){const error=new Error(`Adventure Export load failed: ${url} (${res.status})`);error.code='EXPORT_STORY_JSON_LOAD_FAILED';error.files=[url];error.detail=`HTTP ${res.status}`;throw error;}let json;try{json=await res.json();}catch(cause){const error=new Error(`Adventure Export JSON parse failed: ${url}`);error.code='EXPORT_STORY_JSON_LOAD_FAILED';error.files=[url];error.detail=String(cause?.message||'JSON parse failed');throw error;}return{url,data:Array.isArray(json?.data)?json.data:[],data_version:String(json?.data_version||'')};}
+async function fetchAdventureManifest(){const res=await fetchAdventureResponse(ADVENTURE_EXPORT_FILES.manifest);if(!res.ok){const error=new Error(`Adventure Export manifest load failed (${res.status})`);error.code='EXPORT_MANIFEST_LOAD_FAILED';error.files=[ADVENTURE_EXPORT_FILES.manifest];error.detail=`HTTP ${res.status}`;throw error;}try{return await res.json();}catch(cause){const error=new Error('Adventure Export manifest JSON parse failed');error.code='EXPORT_MANIFEST_LOAD_FAILED';error.files=[ADVENTURE_EXPORT_FILES.manifest];error.detail=String(cause?.message||'JSON parse failed');throw error;}}
+function assertAdventureExportVersionConsistency(manifest,documents){const expected=String(manifest?.data_version||'');const mismatches=(documents||[]).filter(doc=>expected&&doc.data_version!==expected);if(mismatches.length){const error=new Error(`Adventure Export data_version mismatch: ${mismatches.map(x=>x.url).join(', ')}`);error.code='EXPORT_VERSION_MISMATCH';error.files=mismatches.map(x=>x.url);error.detail=`expected ${expected}; ${mismatches.map(x=>`${x.url}=${x.data_version||'missing'}`).join(', ')}`;throw error;}return true;}
+async function loadAdventureContent({force=false}={}){if(adventureContentCache&&!force)return adventureContentCache;const questDocs=await Promise.all(ADVENTURE_EXPORT_FILES.quests.map(fetchAdventureExport));const [chapters,sections,scenes,events,monsters,tablets,manifest]=await Promise.all([... [ADVENTURE_EXPORT_FILES.chapters,ADVENTURE_EXPORT_FILES.sections,ADVENTURE_EXPORT_FILES.scenes,ADVENTURE_EXPORT_FILES.events,ADVENTURE_EXPORT_FILES.monsters,ADVENTURE_EXPORT_FILES.tablets].map(fetchAdventureExport),fetchAdventureManifest()]);const documents=[...questDocs,chapters,sections,scenes,events,monsters,tablets];assertAdventureExportVersionConsistency(manifest,documents);adventureContentCache={quests:questDocs.flatMap(x=>x.data),chapters:chapters.data,sections:sections.data,scenes:scenes.data,events:events.data,monsters:monsters.data,tablets:tablets.data,manifest};return adventureContentCache;}
+let adventureQuestCatalog=[];
+let adventureStoryLoadState={status:'loading',loading_started_at:'',loaded_at:'',failed_at:'',load_elapsed_ms:0,quest_count:0,excluded_count:0,data_version:'',generated_at:'',error_code:'',error_files:[],error_detail:''};
+let adventureQuestImportIssues=[];
+function assessAdventureQuestImport(content,quest){
+ const id=String(quest?.id||''),links=quest?.links||{},chapterId=String(links.chapter_id||quest?.chapter_id||''),sectionId=String(links.section_id||quest?.section_id||'');
+ if(!id||!chapterId||!sectionId)return{ready:false,quest_id:id,code:'FORMAL_QUEST_LINK_INCOMPLETE'};
+ const chapter=(content?.chapters||[]).find(x=>String(x?.id||'')===chapterId);
+ if(!chapter)return{ready:false,quest_id:id,code:'FORMAL_QUEST_CHAPTER_MISSING'};
+ const section=(content?.sections||[]).find(x=>String(x?.id||'')===sectionId&&(!x?.chapter_id||String(x.chapter_id)===chapterId));
+ if(!section)return{ready:false,quest_id:id,code:'FORMAL_QUEST_SECTION_MISSING'};
+ if(!Array.isArray(section.boxes)||section.boxes.length===0)return{ready:false,quest_id:id,code:'FORMAL_QUEST_SECTION_BOXES_EMPTY'};
+ return{ready:true,quest_id:id,chapter_id:chapterId,section_id:sectionId};
+}
+function registerAdventureQuestCards(content){const assessments=(content?.quests||[]).map(quest=>({quest,assessment:assessAdventureQuestImport(content,quest)}));adventureQuestImportIssues=assessments.filter(x=>!x.assessment.ready&&x.assessment.quest_id).map(x=>x.assessment);adventureQuestCatalog=assessments.filter(x=>x.assessment.ready).map(({quest:q})=>({id:String(q.id),name:String(q.name||q.id),rank:'Story',stars:1,recommendedLevel:Math.max(1,Math.floor(Number(q.recommended_level)||1)),description:String(q.summary||''),reward:0,bonus:0,enemies:[],drops:[],adventureStory:true}));const loadedAt=new Date().toISOString(),elapsed=adventureStoryLoadElapsedMs(loadedAt);adventureStoryLoadState={status:'loaded',loaded_at:loadedAt,load_elapsed_ms:elapsed,quest_count:adventureQuestCatalog.length,excluded_count:adventureQuestImportIssues.length,data_version:String(content?.manifest?.data_version||''),generated_at:String(content?.manifest?.generated_at||'')};for(const q of adventureQuestCatalog){const i=QUESTS.findIndex(x=>String(x.id)===q.id);if(i>=0)QUESTS[i]=q;else QUESTS.push(q);}return adventureQuestCatalog;}
+function formalAdventureQuests(){return adventureQuestCatalog.slice();}
+function formalAdventureQuestImportIssues(){return adventureQuestImportIssues.slice();}
+function formalAdventureQuestImportIssueMessage(issue){return({FORMAL_QUEST_LINK_INCOMPLETE:'Chapter / Section接続が不足',FORMAL_QUEST_CHAPTER_MISSING:'Chapter参照切れ',FORMAL_QUEST_SECTION_MISSING:'Section参照切れ',FORMAL_QUEST_SECTION_BOXES_EMPTY:'SectionのBoxが0件'})[issue?.code]||'参照不整合';}
+function formatAdventureExportGeneratedAt(value){const date=new Date(value||'');return Number.isNaN(date.getTime())?'生成日時未設定':`生成 ${date.toLocaleString()}`;}
+function adventureStoryLoadErrorCode(error){if(error?.code)return String(error.code);const message=String(error?.message||error||'');if(message.includes('data_version mismatch'))return'EXPORT_VERSION_MISMATCH';if(message.includes('manifest load failed'))return'EXPORT_MANIFEST_LOAD_FAILED';return'EXPORT_STORY_JSON_LOAD_FAILED';}
+function adventureStoryLoadElapsedMs(endedAt){const started=Date.parse(adventureStoryLoadState.loading_started_at||''),ended=Date.parse(endedAt||'');return Number.isFinite(started)&&Number.isFinite(ended)?Math.max(0,ended-started):0;}
+function setAdventureStoryLoading(){adventureStoryLoadState={...adventureStoryLoadState,status:'loading',loading_started_at:new Date().toISOString()};const status=$('storyDataLoadStatus');if(status)status.textContent=formalAdventureStoryLoadLabel();}
+function setAdventureStoryLoadError(error){const failedAt=new Date().toISOString(),elapsed=adventureStoryLoadElapsedMs(failedAt);adventureStoryLoadState={...adventureStoryLoadState,status:'error',failed_at:failedAt,load_elapsed_ms:elapsed,error_code:adventureStoryLoadErrorCode(error),error_files:Array.isArray(error?.files)?error.files.map(String):[],error_detail:String(error?.detail||'')};}
+function formalAdventureStoryLoadLabel(){const s=adventureStoryLoadState;if(s.status==='error'){const reason=({EXPORT_VERSION_MISMATCH:'Export世代不一致',EXPORT_MANIFEST_LOAD_FAILED:'manifest読込失敗',EXPORT_STORY_JSON_LOAD_FAILED:'Story JSON読込失敗',EXPORT_NETWORK_FAILED:'Export通信失敗'})[s.error_code]||'原因不明',failed=s.failed_at?new Date(s.failed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—',elapsed=s.load_elapsed_ms>0?` ／ 所要 ${s.load_elapsed_ms}ms`:'';return`読込失敗：${reason} ／ 失敗時刻 ${failed}${elapsed}${s.error_files?.length?` ／ 対象 ${s.error_files.join(', ')}`:''}${s.error_detail?` ／ 詳細 ${s.error_detail}`:''}`;}if(s.status!=='loaded'){const started=s.loading_started_at?new Date(s.loading_started_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';return started?`再読込中 ／ 開始 ${started}`:'読込中';}const time=s.loaded_at?new Date(s.loaded_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—',version=s.data_version||'未設定',generated=formatAdventureExportGeneratedAt(s.generated_at),elapsed=s.load_elapsed_ms>0?` ／ 所要 ${s.load_elapsed_ms}ms`:'';return`Export ${version} ／ ${generated} ／ 最終読込 ${time}${elapsed} ／ 利用可能 ${s.quest_count}件 ／ 除外 ${s.excluded_count}件`;}
+let adventureStoryReloadPromise=null;
+function reloadFormalAdventureQuests(){if(adventureStoryReloadPromise)return adventureStoryReloadPromise;const button=$('reloadStoryQuests');if(button)button.disabled=true;setAdventureStoryLoading();adventureStoryReloadPromise=(async()=>{try{const content=await loadAdventureContent({force:true});registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();persist();renderExpeditionSetup();notify(`Storyデータを再読込しました（Quest ${formalAdventureQuests().length}件）。`,'ok');return{ok:true,count:formalAdventureQuests().length,issues:formalAdventureQuestImportIssues()};}catch(error){setAdventureStoryLoadError(error);renderExpeditionSetup();notify('Storyデータの再読込に失敗しました。Export配置を確認してください。','bad');return{ok:false,error};}finally{const current=$('reloadStoryQuests');if(current)current.disabled=false;}})();adventureStoryReloadPromise.then(()=>{adventureStoryReloadPromise=null},()=>{adventureStoryReloadPromise=null});return adventureStoryReloadPromise;}
+function reconcileFormalAdventureQuestSelection(){const quests=formalAdventureQuests();if(!quests.length){data.selectedQuestId='';return null}let selected=quests.find(q=>q.id===data.selectedQuestId);if(!selected){selected=quests[0];data.selectedQuestId=selected.id;persist()}return selected;}
+function resolveAdventureBundle(content,questId){const quest=(content?.quests||[]).find(q=>String(q.id)===String(questId));if(!quest)return null;const links=quest.links||{},chapter=(content.chapters||[]).find(c=>String(c.id)===String(links.chapter_id||quest.chapter_id||'')),section=(content.sections||[]).find(s=>String(s.id)===String(links.section_id||quest.section_id||'')&&(!chapter||!s.chapter_id||String(s.chapter_id)===String(chapter.id)));if(!chapter||!section)return null;return{quest,chapter,section,scenes:content.scenes||[],events:content.events||[],monsters:content.monsters||[],tablets:content.tablets||[]};}
+function adventurePartySnapshot(){return data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,6).map(c=>{const b=equipmentBonus(c);return{character_id:c.id,id:c.id,name:c.name,job:c.job,level:c.level,max_hp:100+c.stats.VIT*20+c.level*10+b.maxHp,attack:10+c.stats.STR*3+c.level*2+b.attack,agi:Math.max(1,c.stats.AGI+b.agi),skills:clone(c.skills||[]),equipped_skill_id:c.equippedSkillId||''};});}
+function adventureEventCondition(event,flags){return(event?.required_flags||[]).every(id=>Boolean(flags?.[id]));}
+function adventureEventResult({event}){const flags={};for(const id of event?.set_flags||[])flags[id]=true;return{success:true,reward:{},flags};}
+function adventureEnemyBudget({quest,section,startCostResult,tablets}){return GKAdventureStorySystem.resolveEnemyBudget({quest,section,startCostResources:startCostResult?.cost?.resources||{},tablets:tablets||[]});}
+function simulateAdventureBattle({formation,seed},bundle,partySnapshot){if(!window.GKAdventureBattleCore?.simulateBasicBattle)throw new Error('Adventure Battle Core simulation is not loaded');return GKAdventureBattleCore.simulateBasicBattle({party:partySnapshot,formation,monsters:bundle.monsters,seed});}
+function adventureQuestStartState(quest){const progress=data.quest_progress||{},requirements=GKAdventureStorySystem.questStartRequirements(quest,{completedQuestIds:progress.completed_quest_ids||[],flags:data.flags||{}}),cost=GKAdventureStorySystem.normalizeQuestStartCost(quest),afford=GKAdventureStorySystem.canAffordQuestStartCost(data,cost);return{ok:requirements.ok&&afford.ok,requirements,cost,afford};}
+function adventureQuestStartFailureMessage(result){if(result.reason==='formal_quest_unavailable')return'正式Story Questが選択されていません。StudioからQuestをExportしてください。';if(result.reason==='quest_prerequisite_missing')return`前提クエスト未達成：${(result.missing_prerequisite_ids||[]).join(', ')}`;if(result.reason==='quest_required_flag_missing')return`開始条件Flag不足：${(result.missing_required_flags||[]).join(', ')}`;if(result.reason==='insufficient_start_cost')return'開始コストが不足しています。';if(result.reason==='export_load_failed')return'ストーリーデータを読み込めませんでした。';if(result.reason==='simulation_failed_after_cost')return'開始コスト消費後に冒険確定処理でエラーが発生しました。再試行でコストは返却されません。';return'冒険を開始できませんでした。';}
+async function startSelectedQuestAdventure({forceReload=false}={}){if(!window.GKAdventureStorySystem||!window.GKAdventureBattleCore)return{started:false,reason:'adventure_runtime_unavailable'};const current=currentAdventureQuestRun();if(current)return{started:false,reason:'active_quest_run',run:current};let content;try{content=await loadAdventureContent({force:forceReload});}catch(error){return{started:false,reason:'export_load_failed',error};}const bundle=resolveAdventureBundle(content,data.selectedQuestId);if(!bundle)return{started:false,reason:'formal_quest_unavailable'};const startState=adventureQuestStartState(bundle.quest);if(startState.requirements.missing_prerequisite_ids.length)return{started:false,reason:'quest_prerequisite_missing',...startState.requirements};if(startState.requirements.missing_required_flags.length)return{started:false,reason:'quest_required_flag_missing',...startState.requirements};if(!startState.afford.ok)return{started:false,reason:'insufficient_start_cost',...startState.afford};const consumed=GKAdventureStorySystem.consumeQuestStartCost(data,startState.cost);if(!consumed.consumed)return{started:false,...consumed};data.adventure=data.adventure||{};data.adventure.last_start_cost={quest_id:String(bundle.quest.id||''),consumed_at:new Date().toISOString(),cost:clone(consumed.cost)};persist();const partySnapshot=adventurePartySnapshot();let run;try{run=GKAdventureStorySystem.simulateQuest({quest:bundle.quest,section:bundle.section,chapter:bundle.chapter,scenes:bundle.scenes,events:bundle.events,monsters:bundle.monsters,partySnapshot,flags:clone(data.flags||{}),startCostResult:{consumed:true,cost:clone(consumed.cost)},checkEventCondition:adventureEventCondition,resolveEvent:adventureEventResult,enemyBudget:args=>adventureEnemyBudget({...args,startCostResult:consumed,tablets:bundle.tablets}),simulateBattle:args=>simulateAdventureBattle(args,bundle,partySnapshot)});}catch(error){persist();return{started:false,reason:'simulation_failed_after_cost',error,cost:consumed.cost};}const stored=storeAdventureQuestRun(run);return{started:true,run:stored,bundle};}
+async function beginSelectedAdventure(){if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}const result=await startSelectedQuestAdventure();if(!result.started){if(result.reason==='active_quest_run'){openAdventurePlayback(result.run);return}notify(adventureQuestStartFailureMessage(result),'bad');return}openAdventurePlayback(result.run);}
 function render(){
  const roster=$('roster');$('empty').classList.toggle('hidden',data.characters.length>0);roster.innerHTML=data.characters.map(c=>`<button class="unit adventurer-row ${c.id===selectedId?'selected':''}" data-id="${c.id}"><div><div class="name">${escapeHtml(c.name)}</div><span class="tag">Lv ${c.level}</span><span class="tag">${c.job}</span></div><span class="adventurer-arrow">›</span></button>`).join('');
  roster.querySelectorAll('.unit').forEach(el=>el.onclick=()=>{selectedId=el.dataset.id;render();setBaseView('adventurer',{keepScroll:true});$('detailCard')?.scrollIntoView({behavior:'smooth',block:'start'})});
@@ -291,8 +451,9 @@ function refreshMobileHome(){
 }
 function renderExpeditionSetup(){
  const party=$('partyEditor');if(party){party.innerHTML=data.characters.map(c=>`<div class="unit"><label><input type="checkbox" data-party="${c.id}" ${data.partyIds.includes(c.id)?'checked':''}> <b>${escapeHtml(c.name)}</b> <span class="tag">${c.job}</span></label><div><button type="button" data-open-ai="${c.id}">AIチップ編集</button> <span class="small">${(c.aiGraph?.cells||[]).length}チップ</span></div><div class="small">装備: ${Object.entries(c.equipment||{}).filter(([,v])=>v).map(([slot,n])=>`${n} <button type="button" class="mini" data-unequip="${c.id}:${slot}">外す</button>`).join(' / ')||'なし'}</div></div>`).join('')||'<p class="small">冒険者を作成してください。</p>';party.querySelectorAll('[data-party]').forEach(el=>el.onchange=()=>{if(el.checked&&data.partyIds.length>=6){el.checked=false;notify('パーティは最大6人です。','warn');return}data.partyIds=el.checked?[...data.partyIds,el.dataset.party]:data.partyIds.filter(id=>id!==el.dataset.party);persist();renderExpeditionSetup()});party.querySelectorAll('[data-open-ai]').forEach(btn=>btn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===btn.dataset.openAi)));party.querySelectorAll('[data-unequip]').forEach(btn=>btn.onclick=e=>{e.preventDefault();const [id,slot]=btn.dataset.unequip.split(':'),c=data.characters.find(x=>x.id===id);if(c&&c.equipment?.[slot]){data.inventory.push(c.equipment[slot]);c.equipment[slot]=null;persist();render();notify(`${c.name}の装備を外しました。`)}})}
- const ql=$('questList');if(ql){ql.innerHTML=QUESTS.map(q=>`<label class="unit quest-card ${q.id===data.selectedQuestId?'selected':''}"><input type="radio" name="quest" value="${q.id}" ${q.id===data.selectedQuestId?'checked':''}> <b>${q.name}</b> <span class="tag">${'★'.repeat(q.stars)}</span><span class="tag">Rank ${q.rank}</span><div class="small">推奨Lv ${q.recommendedLevel} ／ 敵 ${q.enemies.length}体</div><p>${q.description}</p><div class="small">基本報酬 <b>${q.reward} G</b> ／ 初回想定ボーナス ${q.bonus} G<br>候補: ${q.drops.map(n=>`${RARITY[EQUIPMENT[n].rarity].label}${n}`).join('・')}</div></label>`).join('');ql.querySelectorAll('input[name=quest]').forEach(el=>el.onchange=()=>{data.selectedQuestId=el.value;persist();renderExpeditionSetup()})}
- const qs=$('questSummary'),q=selectedQuest();if(qs)qs.textContent=`選択中：${q.name} ／ 敵 ${q.enemies.length}体 ／ 編成人数 ${data.partyIds.length}人`;
+ const ql=$('questList'),formalQuests=formalAdventureQuests(),importIssues=formalAdventureQuestImportIssues();if(ql){const issueNotice=importIssues.length?`<details class="small warn"><summary>${importIssues.length}件のQuestを参照不整合のため除外</summary><ul>${importIssues.map(issue=>`<li><b>${escapeHtml(issue.quest_id)}</b>：${escapeHtml(formalAdventureQuestImportIssueMessage(issue))}</li>`).join('')}</ul><p>StudioのExport検証でChapter / Section / Boxを確認してください。</p></details>`:'';ql.innerHTML=(formalQuests.length?formalQuests.map(q=>`<label class="unit quest-card ${q.id===data.selectedQuestId?'selected':''}"><input type="radio" name="quest" value="${q.id}" ${q.id===data.selectedQuestId?'checked':''}> <b>${escapeHtml(q.name)}</b> <span class="tag">Story</span><div class="small">推奨Lv ${q.recommendedLevel}</div><p>${escapeHtml(q.description)}</p></label>`).join(''):'<p class="small">正式Story Questがありません。StudioでChapter / Sectionへ接続したQuestをExportしてください。</p>')+issueNotice+`<div class="small" id="storyDataLoadStatus">${escapeHtml(formalAdventureStoryLoadLabel())}</div><div class="toolbar"><button type="button" id="reloadStoryQuests">Storyデータを再読込</button></div>`;ql.querySelectorAll('input[name=quest]').forEach(el=>el.onchange=()=>{data.selectedQuestId=el.value;persist();renderExpeditionSetup()});$('reloadStoryQuests').onclick=reloadFormalAdventureQuests}
+ const qs=$('questSummary'),q=formalQuests.find(x=>x.id===data.selectedQuestId)||null;if(qs){const activeLabel=adventurePlaybackLabel();qs.textContent=q?`選択中：${q.name} ／ 編成人数 ${data.partyIds.length}人${activeLabel?' ／ '+activeLabel:''}`:`正式Story Quest未選択 ／ 編成人数 ${data.partyIds.length}人${activeLabel?' ／ '+activeLabel:''}`;}
+ renderAdventureHistory();
  const inv=$('inventoryList');if(inv){inv.innerHTML=data.inventory.length?data.inventory.map((name,i)=>{const e=EQUIPMENT[name],r=RARITY[e.rarity];return `<div class="unit loot-card rarity-${e.rarity}"><b>${r.label} ${name}</b> <span class="tag">${r.name}</span><span class="tag">${e.slot}</span><div class="small">攻撃 +${e.attack||0} / HP +${e.maxHp||0} / AGI ${e.agi>=0?'+':''}${e.agi||0}<br>${e.description||''}</div><label>装備先<select data-equip-index="${i}"><option value="">選択</option>${data.characters.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select></label></div>`}).join(''):'<p class="small">装備はまだありません。依頼を達成して戦利品を集めましょう。</p>';inv.querySelectorAll('[data-equip-index]').forEach(el=>el.onchange=()=>{if(!el.value)return;const c=data.characters.find(x=>x.id===el.value),name=data.inventory[Number(el.dataset.equipIndex)],e=EQUIPMENT[name];if(!c||!e)return;c.equipment=c.equipment||{weapon:null,armor:null,accessory:null};const previous=c.equipment[e.slot];c.equipment[e.slot]=name;if(previous)data.inventory.push(previous);data.inventory.splice(Number(el.dataset.equipIndex),1);persist();render();notify(`${c.name}が${name}を装備しました。`)})}
  renderGuildSummary();
  refreshMobileHome();
@@ -317,17 +478,17 @@ $('titleStart').onclick=beginNewGame;
 $('titleContinue').onclick=continueGame;
 $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェーズとして接続します。');
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
-$('baseDepart').onclick=$('baseDepartSide').onclick=()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}prepareEvent();setPhase('event')};
-$('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
+$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure;
+$('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};if($('adventureReturn'))$('adventureReturn').onclick=returnFromAdventurePlayback;
 $('eventObserve').onclick=()=>{const q=selectedQuest();$('eventNotice').textContent='敵情報：'+q.enemies.map(e=>`${e.name}(HP${e.maxHp}/攻撃${e.attack}/AGI${e.agi})`).join('、')};
-$('eventBattle').onclick=()=>{resetBattle();setPhase('battle')};
+$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')};
 $('battleAbort').onclick=()=>setPhase('event');
 $('resultToEvent').onclick=()=>setPhase('event',{keepBattle:true});
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.1.0',gameVersion:'GA-B474',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.5.0',gameVersion:'GA-B486.174',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const DOT_LOG_SCHEMA_VERSION='1.0.0';
 function ensureValidationState(){
@@ -803,13 +964,24 @@ function setupTagSkillTestUI(){
 }
 const GAUGE_MAX=100;
 const RESERVATION_DELAY_TICKS=4;
-let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationEvents:[],validationMeta:null};
+let battleLaunchContext=null;
+let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationCaptureEvents:true,validationEvents:[],validationMeta:null};
+function setBattleLaunchContext(context){battleLaunchContext=context?{formation:window.GKAdventureBattleCore?GKAdventureBattleCore.normalizeFormation(context.formation):clone(context.formation||[]),monsters:clone(context.monsters||[]),seed:context.seed??null,source:context.source||'adventure'}:null;return battleLaunchContext}
+function clearBattleLaunchContext(){battleLaunchContext=null}
+function currentBattleLaunchContext(){return battleLaunchContext?clone(battleLaunchContext):null}
+
 function makeCombatant(base){const maxMp=Math.max(0,Number(base.maxMp??100)||0);return {...base,hp:base.maxHp,maxMp,mp:Math.max(0,Math.min(maxMp,Number(base.mp??maxMp)||0)),alive:true,damageDealt:0,damageTaken:0,dotStacks:[],modifierStacks:[],reservedAction:null,lastReservation:null,defaultSkillId:base.defaultSkillId||'SKL-TEST-ATTACK'}}
 function makeBattleUnits(){
  const members=data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,6);
  const allies=members.map((c,i)=>{const b=equipmentBonus(c),e2e=developerE2EOverrideSkillId(c.id);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',aiPolicy:c.aiPolicy,defaultSkillId:e2e||c.equippedSkillId||c.skills?.[0]||'SKL-TEST-ATTACK',agi:Math.max(1,c.stats.AGI+b.agi),attack:10+c.stats.STR*3+c.level*2+b.attack,maxHp:100+c.stats.VIT*20+c.level*10+b.maxHp,gauge:0,actions:0,order:i,lastActionTick:null})});
  if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',aiPolicy:'lowestHp',defaultSkillId:'SKL-TEST-POISON',agi:11,attack:48,maxHp:360,gauge:0,actions:0,order:0,lastActionTick:null}));
- const q=selectedQuest();const enemies=q.enemies.map((e,i)=>makeCombatant({id:`E${i}`,name:e.name,side:'敵',aiPolicy:'lowestHp',agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
+ let enemies=[];
+ if(battleLaunchContext?.formation?.length&&window.GKAdventureBattleCore){
+  const expanded=GKAdventureBattleCore.expandFormation(battleLaunchContext.formation,battleLaunchContext.monsters||[]);
+  enemies=expanded.map((e,i)=>makeCombatant({id:`E${i}`,monsterId:e.monster_id,name:e.name,side:'敵',aiPolicy:e.aiPolicy,defaultSkillId:e.defaultSkillId,agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
+ }else{
+  const q=selectedQuest();enemies=q.enemies.map((e,i)=>makeCombatant({id:`E${i}`,name:e.name,side:'敵',aiPolicy:'lowestHp',agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
+ }
  return [...allies,...enemies];
 }
 

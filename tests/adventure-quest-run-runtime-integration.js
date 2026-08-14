@@ -1,0 +1,11 @@
+const fs=require('fs'),assert=require('assert');
+const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
+assert(app.includes('GKAdventureStorySystem.ensureQuestRunStore(raw)'),'save normalization is not connected to QuestRun store');
+assert(app.includes('function storeAdventureQuestRun('),'QuestRun save entry is missing');
+assert(app.includes('GKAdventureStorySystem.startQuestRunPlayback(data,run'),'QuestRun playback start is not persisted');
+assert(app.includes('function resumeAdventurePlayback('),'QuestRun resume entry is missing');
+assert(app.includes('GKAdventureStorySystem.resumeQuestRun(data,nowMs)'),'QuestRun catch-up is not connected');
+assert(app.includes('function commitAdventureQuestRun('),'QuestRun return commit entry is missing');
+assert(app.includes('GKAdventureStorySystem.commitStoredQuestRun(data,runId'),'QuestRun one-shot commit is not connected');
+assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.174';"),'save schema/build was not advanced');
+console.log('adventure-quest-run-runtime-integration PASS');

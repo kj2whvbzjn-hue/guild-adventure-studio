@@ -1,0 +1,15 @@
+const fs=require('fs'),assert=require('assert');
+const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
+assert(app.includes('function adventureQuestStartState(quest)'),'Quest start state adapter missing');
+assert(app.includes('GKAdventureStorySystem.questStartRequirements(quest'),'prerequisite/flag start check missing');
+assert(app.includes('GKAdventureStorySystem.normalizeQuestStartCost(quest)'),'start cost normalization missing');
+assert(app.includes('GKAdventureStorySystem.consumeQuestStartCost(data,startState.cost)'),'start cost consumption missing');
+assert(app.includes('data.adventure.last_start_cost='),'persisted anti-disconnect start cost marker missing');
+assert(app.includes('persist();const partySnapshot=adventurePartySnapshot()'),'start cost must persist before Simulation');
+assert(app.includes('startCostResult:{consumed:true,cost:clone(consumed.cost)}'),'QuestRun must snapshot consumed start cost');
+assert(app.includes("reason:'quest_prerequisite_missing'"),'prerequisite block reason missing');
+assert(app.includes("reason:'quest_required_flag_missing'"),'required flag block reason missing');
+assert(app.includes("reason:'insufficient_start_cost'"),'insufficient cost block reason missing');
+assert(!app.includes("if(result.reason==='legacy_quest')"),'legacy quest fallback must not be reachable from formal departure');
+assert(app.includes("reason:'formal_quest_unavailable'"),'formal quest unavailable guard missing');
+console.log('adventure-quest-start-runtime-integration PASS');

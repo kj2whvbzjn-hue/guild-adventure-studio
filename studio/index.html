@@ -385,6 +385,7 @@ window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
 updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=333"></script>
+  <script src="../assets/shared/js/adventure-story-system.js?v=2"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -644,6 +645,8 @@ updateDeployDeleteControl();
           <input id="storyNodeTheme">
         </div>
 
+        <div id="storyChapterAdventureFields" class="hidden"><div class="grid"><div class="field"><label>使用可能Monster ID（カンマ区切り）</label><input id="storyChapterMonsters"></div><div class="field"><label>Random Event候補</label><div id="storyRandomEventCandidates"></div><div class="toolbar"><button type="button" onclick="addStoryRandomEventCandidate()">候補を追加</button></div><textarea id="storyChapterRandomEvents" class="hidden" aria-hidden="true"></textarea><div class="small">Weightは0以上。0は候補を無効化します。Event側のrequired_flags等の条件はQuest開始時Simulationで評価されます。</div></div></div></div>
+
         <div id="storyDesignFields" class="hidden">
           <h2>SSF-001 シナリオ設計</h2>
           <div class="grid">
@@ -723,6 +726,8 @@ updateDeployDeleteControl();
             <div class="field"><label>終了状態</label><textarea id="storyNodeEndState"></textarea></div>
           </div>
           <div class="field"><label>重要事項・設定フラグ</label><textarea id="storyNodeKeyPoints" placeholder="加入、離脱、入手物、伏線、フラグ変更など"></textarea></div>
+          <div class="grid"><div class="field"><label>冒険時間（秒）</label><input id="storyAdventureDuration" type="number" min="1" value="300"></div><div class="field"><label>Enemy Budget（基礎値）</label><input id="storyEnemyBudget" type="number" min="0" step="1" value="0"></div><div class="field"><label>Box列（JSON）</label><textarea id="storyBoxesJson" placeholder='[{"id":"BOX-0001","type":"scene","ref_id":"SCN-0001"}]'></textarea></div></div>
+          <div class="field"><label>Box Editor（配列順が進行順）</label><div class="toolbar"><button type="button" onclick="addStoryAdventureBox()">箱を追加</button></div><div id="storyBoxEditor" class="list"></div></div>
         </div>
 
         <div id="storyStageField" class="field hidden">
@@ -779,6 +784,11 @@ updateDeployDeleteControl();
     <div class="field"><label>失敗条件</label><textarea id="questFailure"></textarea></div>
     <div class="field"><label>報酬</label><textarea id="questRewards"></textarea></div>
     <div class="grid">
+      <div class="field"><label>Enemy Budget（基礎値）</label><input id="questEnemyBudget" type="number" min="0" step="1" value="0"><div class="small">Quest側が0より大きい場合、Section側より優先します。</div></div>
+      <div class="field"><label>開始コスト（Gold）</label><input id="questStartCostGold" type="number" min="0" step="1" value="0"></div>
+      <div class="field"><label>開始コスト資源（JSON）</label><textarea id="questStartCostResources" placeholder='{"TBL-RED":2}'></textarea><div class="small">石板等の資源IDと消費数。例: {"TBL-RED":2}</div></div>
+    </div>
+    <div class="grid">
       <div class="field"><label>前提クエストID</label><input id="questPrerequisites" placeholder="QUEST-001, QUEST-002"></div>
       <div class="field"><label>後続クエストID</label><input id="questNextQuests" placeholder="QUEST-004"></div>
       <div class="field"><label>必要フラグ</label><input id="questRequiredFlags" placeholder="FLAG-001"></div>
@@ -801,6 +811,8 @@ updateDeployDeleteControl();
         <button onclick="addQuestCharacterDraft()">関連キャラを追加</button>
       </div>
     </div>
+    <div id="questFormalStatus" class="item" style="margin-top:10px"></div>
+    <div id="questFormalWorkflow" class="item" style="margin-top:10px"></div>
 
     <div class="toolbar">
       <button class="primary" onclick="saveQuest()">登録・更新</button>
@@ -1026,6 +1038,10 @@ updateDeployDeleteControl();
     <div class="grid" id="normalMasterFields">
       <div class="field tag-picker-field"><label>タグ</label><input id="masterTags" type="hidden"><div id="masterTagChips" class="tag-chip-list"></div><button type="button" onclick="openMasterTagPicker()">＋ タグ追加</button></div>
       <div class="field"><label id="masterParamsLabel">数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div><div id="formalSkillMasterNotice" class="item hidden"><b>Formal Skill</b><div class="small">正式Skill本体はG07 / Formal Compilerの管理対象です。この画面では本体JSONを参照専用で表示し、ID・runtimeContracts・effects等は上書きしません。名称・状態・説明だけ更新できます。</div></div>
+    </div>
+    <div id="masterAdventureBudgetFields" class="grid hidden">
+      <div id="masterMonsterBudgetField" class="field hidden"><label>Enemy Budget Cost</label><input id="masterEnemyBudgetCost" type="number" min="1" step="1" value="1"><div class="small">Random Battle編成で消費するCost。</div></div>
+      <div id="masterTabletBudgetField" class="field hidden"><label>Enemy Budget Bonus</label><input id="masterEnemyBudgetBonus" type="number" min="0" step="1" value="0"><div class="small">この石板を開始コストとして1個消費した時のBudget加算値。</div></div>
     </div>
     <div class="field"><label>説明</label><textarea id="masterDescription"></textarea></div>
     <div id="monsterSkillGeneratorFields" class="card hidden" style="margin-top:16px">
@@ -2129,6 +2145,7 @@ function normalizeData(){
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
  data.chapters.forEach((chapter,chapterIndex)=>{
+  if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeChapter(chapter);
   chapter.no=chapter.no||chapterIndex+1;
   chapter.status=chapter.status||'draft';
   chapter.design=normalizeStoryDesign(chapter.design);
@@ -2145,6 +2162,7 @@ function normalizeData(){
    section.design=normalizeStoryDesign(section.design);
    section.candidate_revisions=(section.candidate_revisions||[]).map(normalizeStoryCandidate);
    section.export_control=normalizeStoryExportControl(section.export_control);
+   if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section);
    section.scenes=section.scenes||[];
    section.scenes.forEach((scene,sceneIndex)=>{
     scene.no=scene.no||sceneIndex+1;
@@ -2170,6 +2188,7 @@ function normalizeData(){
  data.characters.forEach(c=>{c.race=c.race||'';c.age=c.age||'';c.speech=c.speech||'';c.organization_id=c.organization_id||'';c.first_appearance=c.first_appearance||'';c.join_point=c.join_point||'';c.leave_point=c.leave_point||'';c.awaken_point=c.awaken_point||'';c.goals=c.goals||['','',''];c.event_history=Array.isArray(c.event_history)?c.event_history:[];});
  data.quests=data.quests||[];
  data.events=data.events||[];
+ data.events.forEach(e=>{if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(e);});
  data.flags=data.flags||[];
  data.battle_tests=data.battle_tests||[];
  data.battle_snapshots=data.battle_snapshots||[];
@@ -2188,6 +2207,7 @@ function normalizeData(){
   q.next_quest_ids=q.next_quest_ids||[];
   q.required_flags=q.required_flags||[];
   q.set_flags=q.set_flags||[];
+  q.start_cost=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeQuestStartCost(q):{gold:Math.max(0,Math.floor(Number(q.start_cost?.gold)||0)),resources:(q.start_cost?.resources&&typeof q.start_cost.resources==='object'&&!Array.isArray(q.start_cost.resources))?q.start_cost.resources:{}};
   q.links=q.links||{};
   q.links.character_ids=q.links.character_ids||[];
  });
@@ -2518,7 +2538,7 @@ function addSection(chapterId){
  if(chapter.sections.length>=20)return alert('1章に登録できる節は最大20節です。');
  let title=prompt('節タイトルを入力してください。');if(!title)return;
  let id=nextId('Section');
- chapter.sections.push({id,no:chapter.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()});
+ {const section={id,no:chapter.sections.length+1,title,summary:'',purpose:'',start_state:'',end_state:'',key_points:'',design:normalizeStoryDesign(null),scenes:[],status:'draft',created_at:now(),updated_at:now()};if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section,{isNew:true});chapter.sections.push(section);}
  persist('section added')
 }
 function deleteChapter(id){if(confirm(id+'を削除しますか？')){createBackup('before-delete');data.chapters=data.chapters.filter(x=>x.id!==id);persist('chapter deleted')}}
@@ -2948,7 +2968,7 @@ function toggleTagPickerSelection(id,checked){tagPickerSelection=checked?[...new
 function applyTagPicker(){setMasterTagIds(tagPickerSelection);closeTagPicker()}
 
 function renderTagMasterOptions(){const cat=document.getElementById('tagMasterCategoryId'),parent=document.getElementById('tagMasterParentId');if(!cat||!parent)return;const cv=cat.value,pv=parent.value;cat.innerHTML='<option value="">未分類</option>'+tagCategoryDefinitions().filter(x=>x.enabled!==false).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');parent.innerHTML='<option value="">なし</option>'+tagDefinitions().filter(x=>x.enabled!==false&&x.id!==editingMasterId).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)} (${esc(x.id)})</option>`).join('');if([...cat.options].some(o=>o.value===cv))cat.value=cv;if([...parent.options].some(o=>o.value===pv))parent.value=pv}
-function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);setFormalSkillMasterEditorMode(isFormal);if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
+function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);setFormalSkillMasterEditorMode(isFormal);if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
 
 let lastMonsterSkillCandidateEvaluation=null;
 function resetMonsterSkillCandidateResult(){
@@ -3009,11 +3029,11 @@ function renderMonsterSkillCandidateSummary(){
  const ids=[...monsterSkillCandidateSelection],names=ids.map(id=>e.eligible.find(row=>row.id===id)?.name||id);
  result.innerHTML=`<div class="item ok"><b>選択済み ${ids.length}件</b><div class="small">${names.length?names.map(esc).join('、'):'なし'}</div><div class="small">候補 ${e.eligible.length}件 / 条件外 ${e.excluded.length}件。最後に「登録・更新」を押して保存してください。</div></div>`;
 }
-function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved');closeStudioInputPanel()}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters')params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));if(c==='tablets')params.enemy_budget_bonus=Math.max(0,Math.floor(Number(masterEnemyBudgetBonus.value)||0));const rec={id,name,status:masterStatus.value,tags:masterTags.value.split(',').map(x=>x.trim()).filter(Boolean),params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('master saved');closeStudioInputPanel()}
 function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditorPanel','マスターを作成')}
-function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterDescription.value=m.description||'';updateMasterFormMode();if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
+function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=m.status||'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));masterDescription.value=m.description||'';updateMasterFormMode();if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
-function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';setFormalSkillMasterEditorMode(false);masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterDescription.value='';if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
+function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';setFormalSkillMasterEditorMode(false);masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterEnemyBudgetCost.value='1';masterEnemyBudgetBonus.value='0';masterDescription.value='';if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
 function masterSearchText(category,m){
  const tagIds=Array.isArray(m.tags)?m.tags:[];
  const tagNames=tagIds.map(tagLabel);
@@ -4541,8 +4561,15 @@ function runValidation(){
  data.decisions.forEach(d=>{if(!d.text)validation.push({level:'ERROR',message:d.id+' の決定内容が未設定'})});
  data.chapters.forEach(c=>{
   if(!c.title)validation.push({level:'ERROR',message:c.id+' の章タイトルが未設定'});
+  const randomCandidates=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeChapter(JSON.parse(JSON.stringify(c))).random_event_candidates:(c.random_event_candidates||[]);
+  (c.available_monster_ids||[]).forEach(id=>{if(!(data.masters.monsters||[]).some(m=>m.id===id))validation.push({level:'ERROR',message:c.id+' の使用可能Monsterが存在しません: '+id});});
+  const candidateIds=new Set();
+  randomCandidates.forEach(row=>{const id=String(row.event_id||'');if(!data.events.some(e=>e.id===id))validation.push({level:'ERROR',message:c.id+' のRandom Event候補が存在しません: '+id});if(candidateIds.has(id))validation.push({level:'WARN',message:c.id+' のRandom Event候補が重複しています: '+id});candidateIds.add(id);if(!Number.isFinite(Number(row.weight))||Number(row.weight)<0)validation.push({level:'ERROR',message:c.id+' のRandom Event Weightが不正です: '+id});});
+  if(randomCandidates.length&&randomCandidates.every(row=>Number(row.weight)<=0))validation.push({level:'WARN',message:c.id+' のRandom Event候補は全てWeight 0です'});
   (c.sections||[]).forEach(s=>{
    if(!s.title)validation.push({level:'ERROR',message:s.id+' の節タイトルが未設定'});
+   if(!Number.isFinite(Number(s.enemy_budget??0))||Number(s.enemy_budget??0)<0)validation.push({level:'ERROR',message:s.id+' のEnemy Budgetが不正です'});
+   if((s.boxes||[]).some(box=>box.type==='random_battle')&&Math.max(0,Number(s.enemy_budget)||0)===0)validation.push({level:'INFO',message:s.id+' はrandom_battleを含みます。Quest側Enemy Budgetが0の場合、編成は空になります'});
    (s.scenes||[]).forEach(sc=>{
     if(!sc.title)validation.push({level:'ERROR',message:sc.id+' のシーンタイトルが未設定'});
     (sc.dialogues||[]).forEach(d=>{
@@ -4557,14 +4584,24 @@ function runValidation(){
  data.timeline.forEach(t=>{if(t.target_id&&!allIds().includes(t.target_id))validation.push({level:'WARNING',message:t.id+' の対象IDが存在しません: '+t.target_id})});
  data.quests.forEach(q=>{
   if(!q.name)validation.push({level:'ERROR',message:q.id+' のクエスト名が未設定'});
+  const formal=questFormalAssessment(q);(formal.issues||[]).forEach(issue=>validation.push({level:issue.level||'ERROR',message:issue.message,code:issue.code||''}));
   (q.prerequisite_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の前提クエスト '+id+' が存在しません'});});
   (q.next_quest_ids||[]).forEach(id=>{if(!data.quests.some(x=>x.id===id))validation.push({level:'ERROR',message:q.id+' の後続クエスト '+id+' が存在しません'});});
   [...(q.required_flags||[]),...(q.set_flags||[])].forEach(id=>{if(!data.flags.some(x=>x.id===id))validation.push({level:'WARN',message:q.id+' が未登録フラグ '+id+' を参照しています'});});
+  const startCost=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeQuestStartCost(q):(q.start_cost||{gold:0,resources:{}});
+  if(Number(startCost.gold)<0)validation.push({level:'ERROR',message:q.id+' の開始Goldコストが不正です'});if(!Number.isFinite(Number(q.enemy_budget??0))||Number(q.enemy_budget??0)<0)validation.push({level:'ERROR',message:q.id+' のEnemy Budgetが不正です'});
+  Object.entries(startCost.resources||{}).forEach(([resourceId,count])=>{
+   if(!Number.isInteger(Number(count))||Number(count)<=0)validation.push({level:'ERROR',message:q.id+' の開始コスト資源 '+resourceId+' の数量が不正です'});
+   const known=(data.masters.tablets||[]).some(x=>x.id===resourceId);
+   if(!known)validation.push({level:'WARN',message:q.id+' の開始コスト資源 '+resourceId+' は石板Masterに存在しません（汎用資源として使用する場合は無視可）'});
+  });
   (q.links?.character_ids||[]).forEach(id=>{if(!data.characters.some(c=>c.id===id))validation.push({level:'ERROR',message:q.id+' の関連キャラクターが存在しません: '+id})});
   if(q.links?.chapter_id&&!getChapter(q.links.chapter_id))validation.push({level:'ERROR',message:q.id+' の関連章が存在しません'});
   if(q.links?.section_id&&!getSection(q.links.chapter_id,q.links.section_id))validation.push({level:'ERROR',message:q.id+' の関連節が存在しません'});
   if(q.links?.scene_id&&!getScene(q.links.chapter_id,q.links.section_id,q.links.scene_id))validation.push({level:'ERROR',message:q.id+' の関連シーンが存在しません'});
  });
+ const formalQuestSummary=(typeof GKExportCore!=='undefined'&&GKExportCore.summarizeFormalStoryQuests)?GKExportCore.summarizeFormalStoryQuests(data):{ready_count:0};
+ if(formalQuestSummary.ready_count===0)validation.push({level:'WARNING',message:'正式Story Questが0件です。Exportは可能ですが、Gameの遠征一覧にはStory Questが表示されません。',code:'FORMAL_QUEST_ZERO'});
  data.events.forEach(e=>{
   if(!e.name)validation.push({level:'ERROR',message:e.id+' のイベント名が未設定'});
   if(e.links?.quest_id&&!data.quests.some(q=>q.id===e.links.quest_id))validation.push({level:'ERROR',message:e.id+' の関連クエストが存在しません'});
@@ -4574,7 +4611,7 @@ function runValidation(){
   if(e.links?.section_id&&!getSection(e.links.chapter_id,e.links.section_id))validation.push({level:'ERROR',message:e.id+' の関連節が存在しません'});
   if(e.links?.scene_id&&!getScene(e.links.chapter_id,e.links.section_id,e.links.scene_id))validation.push({level:'ERROR',message:e.id+' の関連シーンが存在しません'});
  });
- Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
+ Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(category==='monsters'&&(!Number.isFinite(Number(m.params?.enemy_budget_cost??1))||Number(m.params?.enemy_budget_cost??1)<1))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Costが不正です'});if(category==='tablets'&&(!Number.isFinite(Number(m.params?.enemy_budget_bonus??0))||Number(m.params?.enemy_budget_bonus??0)<0))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Bonusが不正です'});if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
  validateTagSystem().forEach(issue=>validation.push(issue));
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  detectQuestCycles().forEach(path=>validation.push({level:'ERROR',message:'クエスト前提関係が循環しています: '+path}));
@@ -6084,6 +6121,8 @@ function renderStoryEditor(){
  storyNodeSpeaker.value=obj.speaker||'';
  storyNodeText.value=type==='dialogue'?(obj.text||''):(obj.summary||'');
  storyNodeTheme.value=obj.theme||'';
+ if(type==='chapter'){storyChapterMonsters.value=(obj.available_monster_ids||[]).join(', ');storyChapterRandomEvents.value=JSON.stringify(obj.random_event_candidates||[],null,2);setTimeout(renderStoryRandomEventCandidates,0);}
+ if(type==='section'){storyAdventureDuration.value=obj.adventure_duration_seconds||300;storyEnemyBudget.value=String(Math.max(0,Number(obj.enemy_budget)||0));storyBoxesJson.value=JSON.stringify(obj.boxes||[],null,2);setTimeout(renderStoryAdventureBoxes,0);}
  storyNodeStatus.value=obj.status||'draft';
  storyNodePurpose.value=obj.purpose||'';
  storyNodeStartState.value=obj.start_state||'';
@@ -6114,6 +6153,7 @@ function renderStoryEditor(){
  storyTitleField.classList.toggle('hidden',type==='dialogue');
  storySpeakerField.classList.toggle('hidden',type!=='dialogue');
  storyThemeField.classList.toggle('hidden',type!=='chapter');
+ storyChapterAdventureFields.classList.toggle('hidden',type!=='chapter');
  storyPurposeField.classList.toggle('hidden',type!=='section');
  storySectionDetailFields.classList.toggle('hidden',type!=='section');
  storyDesignFields.classList.toggle('hidden',!['chapter','section'].includes(type));
@@ -6121,6 +6161,20 @@ function renderStoryEditor(){
  storyTextLabel.textContent=type==='dialogue'?'台詞':'あらすじ・内容';
 }
 
+function storyRandomEventDraft(){try{const rows=JSON.parse(storyChapterRandomEvents.value||'[]');return Array.isArray(rows)?rows:[];}catch(_e){return[];}}
+function syncStoryRandomEventDraft(rows){storyChapterRandomEvents.value=JSON.stringify(rows||[],null,2);}
+function storyRandomEventOptions(selectedId){const events=(data.events||[]).slice().sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));return '<option value="">Eventを選択</option>'+events.map(e=>`<option value="${escAttr(e.id)}" ${String(selectedId||'')===String(e.id)?'selected':''}>${esc(e.name||e.id)} [${esc(e.id)}]</option>`).join('');}
+function renderStoryRandomEventCandidates(){const host=document.getElementById('storyRandomEventCandidates');if(!host)return;const rows=storyRandomEventDraft();host.innerHTML=rows.map((row,i)=>`<div class="item"><div class="grid"><div class="field"><label>${i+1}. Event</label><select onchange="updateStoryRandomEventCandidate(${i},'event_id',this.value)">${storyRandomEventOptions(row.event_id)}</select></div><div class="field"><label>Weight</label><input type="number" min="0" step="0.1" value="${escAttr(row.weight??1)}" onchange="updateStoryRandomEventCandidate(${i},'weight',this.value)"></div></div><div class="toolbar"><button type="button" class="danger" onclick="removeStoryRandomEventCandidate(${i})">候補から外す</button></div></div>`).join('')||'<div class="story-empty">Random Event候補はありません。</div>';}
+function addStoryRandomEventCandidate(){const rows=storyRandomEventDraft();const used=new Set(rows.map(x=>String(x.event_id||'')));const first=(data.events||[]).find(e=>!used.has(String(e.id)));rows.push({event_id:first?.id||'',weight:1});syncStoryRandomEventDraft(rows);renderStoryRandomEventCandidates();}
+function removeStoryRandomEventCandidate(index){const rows=storyRandomEventDraft();rows.splice(index,1);syncStoryRandomEventDraft(rows);renderStoryRandomEventCandidates();}
+function updateStoryRandomEventCandidate(index,key,value){const rows=storyRandomEventDraft();if(!rows[index])return;if(key==='weight')rows[index].weight=Math.max(0,Number(value)||0);else rows[index][key]=String(value||'');syncStoryRandomEventDraft(rows);renderStoryRandomEventCandidates();}
+function currentStorySectionForBoxes(){const selected=getStorySelectionObject();return selected&&storySelection.type==='section'?selected.object:null;}
+function syncStoryBoxesTextarea(section){if(window.storyBoxesJson)storyBoxesJson.value=JSON.stringify(section?.boxes||[],null,2);}
+function renderStoryAdventureBoxes(){const host=document.getElementById('storyBoxEditor'),section=currentStorySectionForBoxes();if(!host)return;if(!section){host.innerHTML='';return;}if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(section);host.innerHTML=(section.boxes||[]).map((box,i)=>`<div class="item"><div class="grid"><div class="field"><label>${i+1}. Box ID</label><input value="${escAttr(box.id)}" onchange="updateStoryAdventureBox(${i},'id',this.value)"></div><div class="field"><label>type</label><select onchange="updateStoryAdventureBox(${i},'type',this.value)">${['scene','event','random_event','random_battle'].map(t=>`<option value="${t}" ${box.type===t?'selected':''}>${t}</option>`).join('')}</select></div><div class="field"><label>ref_id</label><input value="${escAttr(box.ref_id||'')}" onchange="updateStoryAdventureBox(${i},'ref_id',this.value)" placeholder="Scene/Event ID（random_battleは空欄可）"></div></div><div class="toolbar"><button type="button" onclick="moveStoryAdventureBox(${i},-1)" ${i===0?'disabled':''}>↑ 上へ</button><button type="button" onclick="moveStoryAdventureBox(${i},1)" ${i===(section.boxes.length-1)?'disabled':''}>↓ 下へ</button><button type="button" class="danger" onclick="removeStoryAdventureBox(${i})">箱を削除</button></div></div>`).join('')||'<div class="story-empty">Boxはありません。</div>';syncStoryBoxesTextarea(section);}
+function addStoryAdventureBox(){const section=currentStorySectionForBoxes();if(!section)return;section.boxes=Array.isArray(section.boxes)?section.boxes:[];const n=section.boxes.length+1;section.boxes.push({id:`BOX-${String(n).padStart(4,'0')}`,type:'scene',ref_id:''});renderStoryAdventureBoxes();}
+function removeStoryAdventureBox(index){const section=currentStorySectionForBoxes();if(!section||!Array.isArray(section.boxes))return;section.boxes.splice(index,1);renderStoryAdventureBoxes();}
+function moveStoryAdventureBox(index,direction){const section=currentStorySectionForBoxes();if(!section||!Array.isArray(section.boxes))return;const target=index+direction;if(target<0||target>=section.boxes.length)return;[section.boxes[index],section.boxes[target]]=[section.boxes[target],section.boxes[index]];renderStoryAdventureBoxes();}
+function updateStoryAdventureBox(index,key,value){const section=currentStorySectionForBoxes();if(!section?.boxes?.[index])return;section.boxes[index][key]=value;if(window.GKAdventureStorySystem)section.boxes[index]=GKAdventureStorySystem.normalizeBox(section.boxes[index],index);renderStoryAdventureBoxes();}
 function storyPromptLine(label,value){return value?`## ${label}\n${value}\n`:''}
 function buildStoryPrompt(){
  const selected=getStorySelectionObject();
@@ -6338,12 +6392,13 @@ function saveStoryNode(){
  obj.no=Math.max(1,+storyNodeNo.value||1);
  obj.status=storyNodeStatus.value||'draft';
  if(type!=='dialogue')obj.title=storyNodeTitle.value.trim();
- if(type==='chapter')obj.theme=storyNodeTheme.value.trim();
+ if(type==='chapter'){obj.theme=storyNodeTheme.value.trim();obj.available_monster_ids=splitCsv(storyChapterMonsters.value);try{obj.random_event_candidates=JSON.parse(storyChapterRandomEvents.value||'[]');}catch(e){return alert('Random Event候補JSONが正しくありません: '+e.message);}if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeChapter(obj);}
  if(type==='section'){
   obj.purpose=storyNodePurpose.value.trim();
   obj.start_state=storyNodeStartState.value;
   obj.end_state=storyNodeEndState.value;
   obj.key_points=storyNodeKeyPoints.value;
+  obj.adventure_duration_seconds=Math.max(1,+storyAdventureDuration.value||300);obj.enemy_budget=Math.max(0,Math.floor(Number(storyEnemyBudget.value)||0));try{obj.boxes=JSON.parse(storyBoxesJson.value||'[]');}catch(e){return alert('Box列JSONが正しくありません: '+e.message);}if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeSection(obj);
  }
  if(['chapter','section'].includes(type)){
   const previous=normalizeStoryDesign(obj.design);
@@ -6503,11 +6558,11 @@ function bindLinkSelectors(prefix){
  const s=document.getElementById(prefix+'SectionLink');
  if(c&&!c.dataset.bound){
   c.dataset.bound='1';
-  c.addEventListener('change',()=>refreshLinkSelectors(prefix,{chapter_id:c.value}));
+  c.addEventListener('change',()=>{refreshLinkSelectors(prefix,{chapter_id:c.value});if(prefix==='quest')renderQuestFormalStatus();});
  }
  if(s&&!s.dataset.bound){
   s.dataset.bound='1';
-  s.addEventListener('change',()=>refreshLinkSelectors(prefix,{chapter_id:c.value,section_id:s.value}));
+  s.addEventListener('change',()=>{refreshLinkSelectors(prefix,{chapter_id:c.value,section_id:s.value});if(prefix==='quest')renderQuestFormalStatus();});
  }
 }
 
@@ -6554,15 +6609,54 @@ function removeEventCharacterDraft(id){
  renderDraftCharacterChips('eventCharacterLinks',eventDraftCharacterIds,'removeEventCharacterDraft');
 }
 
-function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成')}
+function questFormalAssessment(quest){return (typeof GKExportCore!=='undefined'&&typeof GKExportCore.formalStoryQuestAssessment==='function')?GKExportCore.formalStoryQuestAssessment(data,quest):{is_formal:false,ready:false,issues:[],message:'正式Story Quest判定を利用できません。'};}
+function currentQuestFormalDraft(){return {id:(questId?.value||'').trim()||'(新規Quest)',links:{chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
+function renderQuestFormalStatus(){const el=document.getElementById('questFormalStatus');if(!el)return;const a=questFormalAssessment(currentQuestFormalDraft());if(a.ready)el.innerHTML='<span class="badge ok">正式Story Quest</span> Game遠征一覧へExportされます。';else if(a.is_formal)el.innerHTML='<span class="badge warn">要件不足</span> '+esc(a.message)+'<br><span class="small">'+esc((a.issues||[]).map(x=>x.message).join(' / '))+'</span>';else el.innerHTML='<span class="badge">通常Quest</span> Chapter / Section未接続のためGame遠征一覧には出ません。';renderQuestFormalWorkflow();}
+function formalQuestWorkflowState(){
+ const chapterId=questChapterLink?.value||'',sectionId=questSectionLink?.value||'';
+ const chapter=chapterId?getChapter(chapterId):null;
+ const section=(chapterId&&sectionId)?getSection(chapterId,sectionId):null;
+ const boxes=Array.isArray(section?.boxes)?section.boxes:[];
+ return {chapterId,sectionId,chapter,section,boxes,assessment:questFormalAssessment(currentQuestFormalDraft())};
+}
+function openQuestFormalSection(){
+ const state=formalQuestWorkflowState();
+ if(!state.chapter||!state.section)return alert('先に章と節を選択してください。');
+ storySelection={type:'section',chapterId:state.chapterId,sectionId:state.sectionId,sceneId:'',dialogueId:''};
+ closeStudioInputPanel();
+ showView('storyeditor');
+ renderStoryTree();
+ renderStoryEditor();
+}
+function openQuestFormalExport(){
+ closeStudioInputPanel();
+ showView('importexport');
+ const result=validatePhpExport();
+ document.getElementById('phpExportStatus')?.scrollIntoView({behavior:'smooth',block:'center'});
+ return result;
+}
+function renderQuestFormalWorkflow(){
+ const el=document.getElementById('questFormalWorkflow');if(!el)return;
+ const state=formalQuestWorkflowState(),chapterOk=!!state.chapter,sectionOk=!!state.section,boxesOk=state.boxes.length>0,ready=state.assessment.ready;
+ const step=(ok,label,detail)=>`<div class="meta"><span class="badge ${ok?'ok':'warn'}">${ok?'✓':'未完了'}</span> <b>${esc(label)}</b> — ${esc(detail)}</div>`;
+ el.innerHTML='<b>正式Story Quest 作成手順</b>'+
+  step(chapterOk,'1. Chapter',chapterOk?`${state.chapter.title||state.chapter.id} を選択済み`:'関連シナリオの「章」を選択')+
+  step(sectionOk,'2. Section',sectionOk?`${state.section.title||state.section.id} を選択済み`:'章を選んで「節」を選択')+
+  step(boxesOk,'3. Box',sectionOk?(boxesOk?`${state.boxes.length} Box設定済み`:'Sectionに1件以上のBoxを設定'):'Section選択後に確認')+
+  step(ready,'4. Export',ready?'正式Story QuestとしてExport可能':'上の要件を完了してからExport')+
+  `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${sectionOk?'':'disabled'}>Section / Boxを確認</button><button type="button" onclick="openQuestFormalExport()">Export検証へ</button></div>`;
+}
+function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
  questSummary.value='';questConditions.value='';questCompletion.value='';questFailure.value='';questRewards.value='';
+ questEnemyBudget.value='0';questStartCostGold.value='0';questStartCostResources.value='';
  questPrerequisites.value='';questNextQuests.value='';questRequiredFlags.value='';questSetFlags.value='';
  questDraftCharacterIds=[];
  refreshLinkSelectors('quest',{});
  renderCharacterSelect('questCharacterLink');
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+ renderQuestFormalStatus();
 }
 
 function saveQuest(){
@@ -6571,6 +6665,14 @@ function saveQuest(){
  if(!name)return alert('クエスト名を入力してください。');
  const duplicate=allIds().includes(id)&&!data.quests.some(x=>x.id===id);
  if(duplicate)return alert('そのIDは別データで使用されています。');
+ let startCostResources={};
+ try{
+  const raw=(questStartCostResources.value||'').trim();
+  startCostResources=raw?JSON.parse(raw):{};
+  if(!startCostResources||typeof startCostResources!=='object'||Array.isArray(startCostResources))throw new Error('オブジェクト形式で入力してください');
+  startCostResources=Object.fromEntries(Object.entries(startCostResources).map(([k,v])=>[String(k).trim(),Math.floor(Number(v))]).filter(([k,v])=>k&&Number.isFinite(v)&&v>0));
+ }catch(e){return alert('開始コスト資源JSONが正しくありません: '+e.message);}
+ const startCost={gold:Math.max(0,Math.floor(Number(questStartCostGold.value)||0)),resources:startCostResources};
 
  const record={
   id,
@@ -6586,6 +6688,8 @@ function saveQuest(){
   next_quest_ids:splitCsv(questNextQuests.value),
   required_flags:splitCsv(questRequiredFlags.value),
   set_flags:splitCsv(questSetFlags.value),
+  start_cost:startCost,
+  enemy_budget:Math.max(0,Math.floor(Number(questEnemyBudget.value)||0)),
   links:{
    chapter_id:questChapterLink.value||'',
    section_id:questSectionLink.value||'',
@@ -6612,10 +6716,13 @@ function editQuest(id){
  const q=data.quests.find(x=>x.id===id);if(!q)return;
  questId.value=q.id;questName.value=q.name;questType.value=q.type;questStatus.value=q.status;
  questSummary.value=q.summary||'';questConditions.value=q.conditions||'';questCompletion.value=q.completion||'';questFailure.value=q.failure||'';questRewards.value=q.rewards||'';
+ const startCost=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeQuestStartCost(q):(q.start_cost||{gold:0,resources:{}});
+ questEnemyBudget.value=String(Math.max(0,Number(q.enemy_budget)||0));questStartCostGold.value=String(startCost.gold||0);questStartCostResources.value=Object.keys(startCost.resources||{}).length?JSON.stringify(startCost.resources,null,2):'';
  questPrerequisites.value=(q.prerequisite_ids||[]).join(', ');questNextQuests.value=(q.next_quest_ids||[]).join(', ');questRequiredFlags.value=(q.required_flags||[]).join(', ');questSetFlags.value=(q.set_flags||[]).join(', ');
  questDraftCharacterIds=[...(q.links?.character_ids||[])];
  refreshLinkSelectors('quest',q.links||{});
  renderDraftCharacterChips('questCharacterLinks',questDraftCharacterIds,'removeQuestCharacterDraft');
+ renderQuestFormalStatus();
  showView('quests');
  openStudioInputPanel('questEditorPanel','クエストを編集する');
 }
@@ -6639,12 +6746,14 @@ function renderQuests(){
   return (!keyword||hay.includes(keyword))&&(!type||q.type===type)&&(!status||q.status===status);
  });
  questList.innerHTML=list.map(q=>{
-  const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id);
+  const linkedEvents=data.events.filter(e=>e.links?.quest_id===q.id),formal=questFormalAssessment(q);
+  const formalBadge=formal.ready?'<span class="badge ok">正式Story</span>':formal.is_formal?'<span class="badge warn">Story要件不足</span>':'<span class="badge">通常Quest</span>';
   return `<div class="item">
    <b>${esc(q.name)}</b> <span class="badge">${esc(q.id)}</span>
-   <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span>
+   <span class="badge">${esc(jpType(q.type))}</span> <span class="badge">${esc(jpStatus(q.status))}</span> ${formalBadge}
    <p>${esc(q.summary||'')}</p>
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
+   <div class="meta">Game遠征: ${esc(formal.message)}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
    <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questName).join(', ')||'なし')}</div>
    <div class="meta">必要フラグ: ${esc((q.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((q.set_flags||[]).join(', ')||'なし')}</div>

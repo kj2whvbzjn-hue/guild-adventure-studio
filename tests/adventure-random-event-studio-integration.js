@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const studio=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
+const Story=require(path.join(root,'assets/shared/js/adventure-story-system.js'));
+assert(studio.includes('id="storyRandomEventCandidates"'),'structured Random Event candidate editor missing');
+assert(studio.includes('addStoryRandomEventCandidate()'),'candidate add action missing');
+assert(studio.includes('updateStoryRandomEventCandidate'),'candidate weight/event editing missing');
+assert(studio.includes('Random Event候補が存在しません'),'chapter candidate reference validation missing');
+assert(studio.includes('Random Event候補は全てWeight 0です'),'all-zero candidate warning missing');
+const normalized=Story.normalizeChapter({random_event_candidates:[{event_id:'EV-0',weight:0},{event_id:'EV-1'}]});
+assert.deepEqual(normalized.random_event_candidates,[{event_id:'EV-0',weight:0},{event_id:'EV-1',weight:1}]);
+console.log('ADVENTURE_RANDOM_EVENT_STUDIO_INTEGRATION_PASS');

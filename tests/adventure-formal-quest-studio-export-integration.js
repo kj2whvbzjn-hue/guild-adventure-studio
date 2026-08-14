@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const Export=require('../studio/export-core.js');
+const section={id:'SEC-1',no:1,title:'節1',boxes:[{type:'scene',ref_id:'SCN-1'}],scenes:[{id:'SCN-1',no:1,title:'Scene'}]};
+const data={chapters:[{id:'CH-1',no:1,title:'章1',sections:[section]}],quests:[],masters:{}};
+let q={id:'Q-NORMAL',name:'通常',links:{chapter_id:'',section_id:''}};
+let a=Export.formalStoryQuestAssessment(data,q);assert.equal(a.is_formal,false);assert.equal(a.ready,false);assert.equal(a.issues.length,0);
+q={id:'Q-PART',name:'片側',links:{chapter_id:'CH-1',section_id:''}};a=Export.formalStoryQuestAssessment(data,q);assert.equal(a.is_formal,true);assert.equal(a.ready,false);assert.equal(a.issues[0].code,'FORMAL_QUEST_LINK_INCOMPLETE');
+q={id:'Q-BROKEN',name:'参照切れ',links:{chapter_id:'CH-1',section_id:'SEC-X'}};a=Export.formalStoryQuestAssessment(data,q);assert.equal(a.ready,false);assert.equal(a.issues[0].code,'FORMAL_QUEST_SECTION_MISSING');
+const emptyData={chapters:[{id:'CH-1',sections:[{id:'SEC-1',boxes:[]}]}],quests:[],masters:{}};
+q={id:'Q-EMPTY',name:'Boxなし',links:{chapter_id:'CH-1',section_id:'SEC-1'}};a=Export.formalStoryQuestAssessment(emptyData,q);assert.equal(a.ready,false);assert.equal(a.issues[0].code,'FORMAL_QUEST_SECTION_BOXES_EMPTY');
+const ready={id:'Q-READY',name:'正式',type:'main',links:{chapter_id:'CH-1',section_id:'SEC-1'}};data.quests=[ready];a=Export.formalStoryQuestAssessment(data,ready);assert.equal(a.ready,true);assert.equal(Export.summarizeFormalStoryQuests(data).ready_count,1);assert.deepEqual(Export.summarizeFormalStoryQuests(data).ready_ids,['Q-READY']);
+const zero=Export.collectFormalQuestExportIssues({...data,quests:[]});assert.equal(zero.summary.ready_count,0);assert(zero.issues.some(x=>x.code==='FORMAL_QUEST_ZERO'&&x.level==='WARNING'));
+const out=Export.buildData(data);assert.equal(out['quest/main_quests.json'][0].links.chapter_id,'CH-1');assert.equal(out['quest/main_quests.json'][0].links.section_id,'SEC-1');
+const html=fs.readFileSync('studio/index.html','utf8');
+for(const needle of ['id="questFormalStatus"','function renderQuestFormalStatus()','正式Story Quest','Story要件不足','FORMAL_QUEST_ZERO','Gameの遠征一覧にはStory Questが表示されません。'])assert(html.includes(needle),`studio integration missing: ${needle}`);
+console.log('adventure-formal-quest-studio-export-integration PASS');

@@ -456,8 +456,8 @@
     ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
-    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at']),
+    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at','available_monster_ids','random_event_candidates']),
+    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at','adventure_duration_seconds','boxes']),
     story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),
     story_dialogues:new Set(['id','chapter_id','section_id','scene_id','no','status','speaker','text','stage_direction','description','created_at','updated_at'])
   };

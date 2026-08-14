@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const studio=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
+const Export=require(path.join(root,'export-core.js'));
+assert(studio.includes('id="questStartCostGold"'),'Quest start Gold cost editor missing');
+assert(studio.includes('id="questStartCostResources"'),'Quest start resource cost editor missing');
+assert(studio.includes('start_cost:startCost'),'Quest start cost save binding missing');
+assert(studio.includes('normalizeQuestStartCost(q)'),'Quest start cost normalization missing');
+assert(studio.includes('開始コスト資源JSONが正しくありません'),'Quest start resource JSON validation missing');
+const data={quests:[{id:'Q-COST',type:'main',start_cost:{gold:50,resources:{'TBL-RED':2}}}],chapters:[],events:[],flags:[],masters:{}};
+const out=Export.buildData(data)['quest/main_quests.json'];
+assert.equal(out.length,1);
+assert.deepEqual(out[0].start_cost,{gold:50,resources:{'TBL-RED':2}});
+console.log('ADVENTURE_QUEST_START_COST_STUDIO_EXPORT_INTEGRATION_PASS');
