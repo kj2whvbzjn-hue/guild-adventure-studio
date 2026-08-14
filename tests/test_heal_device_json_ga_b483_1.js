@@ -16,7 +16,7 @@ const compiler=require(path.join(root,'assets','shared','js','skill-compiler.js'
 const registry=require(path.join(root,'assets','shared','config','skill-registry.json'));
 
 // Retain the original device-HEAL acceptance intent on the Formal Game surface.
-assert.strictEqual(buildId,'GA-B486.173');
+assert.strictEqual(buildId,'GA-B486.174');
 assert(html.includes('id="tagTestRunHealSingle"'),'Formal Game single-heal validation control missing');
 assert(html.includes('id="tagTestRunHealAll"'),'Formal Game all-ally-heal validation control missing');
 assert(appRuntime.includes('function runHealSingleValidation()'),'Formal Game single-heal validation missing');
