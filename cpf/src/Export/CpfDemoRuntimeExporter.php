@@ -45,21 +45,37 @@ final class CpfDemoRuntimeExporter
             $generatedAt = date(DATE_ATOM);
             $generatedBy = 'GK Studio CPF Demo Runtime Exporter';
 
-            foreach ($this->jsonFiles($tmp) as $path) {
+            $manifestPath = $tmp . '/manifest.json';
+            $manifest = $this->readJson($manifestPath);
+            if (!is_array($manifest['files'] ?? null)) {
+                throw new CpfException('BASE_EXPORT_INVALID', 'Base Export manifest files list is invalid.');
+            }
+
+            // Rewrite only the official Runtime Export documents listed by the
+            // manifest. Export/cpf is an auxiliary tool payload, not Runtime data.
+            // Formal Skill v2 is independently versioned and must not be
+            // downgraded to the legacy package envelope by a CPF story export.
+            foreach ($manifest['files'] as $entry) {
+                $relative = is_array($entry) ? ($entry['path'] ?? null) : null;
+                if (!is_string($relative) || $relative === '') {
+                    throw new CpfException('BASE_EXPORT_INVALID', 'Base Export manifest contains an invalid path.');
+                }
+                $path = $tmp . '/' . $relative;
+                if (!is_file($path)) throw new CpfException('BASE_EXPORT_FILE_MISSING', 'Manifest file missing: ' . $relative);
                 $doc = $this->readJson($path);
-                $doc['schema_version'] = '1.0.0';
-                $doc['data_version'] = $dataVersion;
-                $doc['generated_at'] = $generatedAt;
-                $doc['generated_by'] = $generatedBy;
-                $relative = str_replace('\\', '/', substr($path, strlen($tmp) + 1));
+                $isFormalSkillV2 = $relative === 'skill/skills.json' && ($doc['schema_version'] ?? null) === '2.0.0';
+                if (!$isFormalSkillV2) {
+                    $doc['schema_version'] = '1.0.0';
+                    $doc['data_version'] = $dataVersion;
+                    $doc['generated_at'] = $generatedAt;
+                    $doc['generated_by'] = $generatedBy;
+                }
                 foreach (self::MAP as $type => $mapped) {
                     if ($relative === $mapped) $doc['data'] = $approved[$type];
                 }
                 $this->writeJson($path, $doc);
             }
 
-            $manifestPath = $tmp . '/manifest.json';
-            $manifest = $this->readJson($manifestPath);
             $manifest['schema_version'] = '1.0.0';
             $manifest['data_version'] = $dataVersion;
             $manifest['generated_at'] = $generatedAt;

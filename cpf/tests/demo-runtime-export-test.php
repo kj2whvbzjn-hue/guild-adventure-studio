@@ -25,6 +25,9 @@ try {
   if(count($pkg->data('scenario/chapters.json'))!==1) failRuntimeExport('chapter count');
   if(($pkg->data('scenario/scenes.json')[0]['text']??'')!=='冒険が始まる。') failRuntimeExport('scene text');
   if(($pkg->data('event/events.json')[0]['trigger']??'')!=='demo_start') failRuntimeExport('event payload');
+  $skill=$pkg->document('skill/skills.json');
+  if(($skill['schema_version']??null)!=='2.0.0'||($skill['data_version']??null)!=='FORMAL-SKILL-1') failRuntimeExport('Formal Skill v2 metadata was downgraded');
   echo "[PASS] approved CPF demo nodes exported to Runtime Export\n";
   echo "[PASS] generated manifest and hashes accepted by php-runtime ExportLoader\n";
+  echo "[PASS] CPF demo export preserves independently versioned Formal Skill v2\n";
 } finally { rmRuntimeExport($root); }

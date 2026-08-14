@@ -90,8 +90,19 @@ function expectLoaderError(string $name, callable $loaderFactory, string $source
 try {
     $pkg = (new ExportLoader(['1.0.0']))->load($source);
     report('valid package loads', count($pkg->paths()) === 22, 'loaded ' . count($pkg->paths()) . ' files');
+    $formalSkill = $pkg->document('skill/skills.json');
+    report('Formal Skill v2 envelope loads independently from package metadata',
+        ($formalSkill['schema_version'] ?? null) === '2.0.0'
+        && ($formalSkill['data_version'] ?? null) === 'FORMAL-SKILL-1'
+        && is_array($formalSkill['migration'] ?? null)
+    );
+    report('CPF auxiliary payload is excluded from runtime document set',
+        is_dir($source . '/cpf') && !in_array('cpf/bootstrap.php', $pkg->paths(), true)
+    );
 } catch (Throwable $e) {
     report('valid package loads', false, $e->getMessage());
+    report('Formal Skill v2 envelope loads independently from package metadata', false, $e->getMessage());
+    report('CPF auxiliary payload is excluded from runtime document set', false, $e->getMessage());
 }
 
 
@@ -347,6 +358,14 @@ expectError('missing envelope field is rejected', $source, function (string $tmp
 
 expectError('extra envelope field is rejected', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{ $doc['unexpected'] = true; });
+}, 'ENVELOPE_INVALID');
+
+expectError('Formal Skill v2 rejects unsupported data_version', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['data_version'] = 'FORMAL-SKILL-999'; });
+}, 'DATA_VERSION_UNSUPPORTED');
+
+expectError('Formal Skill v2 rejects unsupported envelope fields', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['unexpected'] = true; });
 }, 'ENVELOPE_INVALID');
 
 expectError('empty metadata is rejected', $source, function (string $tmp): void {
