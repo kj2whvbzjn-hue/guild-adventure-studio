@@ -7,4 +7,4 @@ assert.ok(!src.includes("skgG06SkillJson"),'legacy G06 textarea fallback must be
 assert.ok(!src.includes('g06RevalidateSkillBatch'),'legacy G06 revalidation must be removed');
 assert.ok(src.includes("直近のAI一括生成結果を正式GKS_SKILL_BATCHとしてG07登録欄へセットしました。"));
 const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=33'));
-console.log('PASS GKS-B566 AI->G07 Formal Batch direct handoff');
+console.log('PASS GKS-B567 AI->G07 Formal Batch direct handoff');
