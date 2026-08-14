@@ -25,9 +25,9 @@ function baseProject(){
       jobs:[{id:'JOB-WARRIOR',name:'Warrior',status:'draft',tags:['TAG-HEAVY'],params:{},description:'',str:10,vit:8,updated_at:'T1'}],
       mods:[{id:'MOD-FIRE',name:'Fire MOD',status:'draft',tags:['TAG-FIRE'],params:{power:5},description:'',updated_at:'T1'}],
       equipment:[{id:'EQ-SWORD',name:'Sword',status:'draft',tags:['TAG-HEAVY'],mod_ids:['MOD-FIRE'],params:{},description:'',item_level:1,mod_budget:1,updated_at:'T1'}],
-      ai_conditions:[{id:'AIC-FIRE',name:'Has Fire',status:'draft',tags:['TAG-FIRE'],params:{kind:'has_tag'},description:'',updated_at:'T1'}],
-      ai_targets:[{id:'AIT-ENEMY',name:'Enemy',status:'draft',tags:['TAG-HEAVY'],params:{kind:'enemy'},description:'',updated_at:'T1'}],
-      ai_actions:[{id:'AIA-ATTACK',name:'Attack',status:'draft',tags:['TAG-FIRE'],params:{kind:'attack'},description:'',updated_at:'T1'}]
+      ai_conditions:[{id:'AIC-FIRE',name:'Has Fire',node_type:'condition',status:'draft',tags:['TAG-FIRE'],description:'',data_version:'1.0.0',evaluator:'condition.has_tag',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'T1'}],
+      ai_targets:[{id:'AIT-ENEMY',name:'Enemy',node_type:'target',status:'draft',tags:['TAG-HEAVY'],description:'',data_version:'1.0.0',evaluator:'target.enemy',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'T1'}],
+      ai_actions:[{id:'AIA-ATTACK',name:'Attack',node_type:'action',status:'draft',tags:['TAG-FIRE'],description:'',data_version:'1.0.0',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'T1'}]
     },history:[]
   };
 }
@@ -54,7 +54,7 @@ async function applyAndUndo(base,envelope,dataset,filename){
 async function main(){
   const base=baseProject();
   const studioHtml=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
-  assert(studioHtml.includes('data-exchange-core.js?v=16'),'Studio must load DE-19 core with refreshed cache key');
+  assert(studioHtml.includes('data-exchange-core.js?v=17'),'Studio must load DE-19 core with refreshed cache key');
   for(const f of ['job-dataset.schema.json','equipment-dataset.schema.json','mod-dataset.schema.json','ai_condition-dataset.schema.json','ai_target-dataset.schema.json','ai_action-dataset.schema.json']){
     assert(fs.existsSync(path.resolve(__dirname,'../schemas',f)),`missing schema ${f}`);
   }
@@ -109,7 +109,16 @@ async function main(){
     const staleDry=await dx.dryRunImport({rootData:staleRoot,envelope:env});assert.equal(staleDry.summary.stale_source,1,`${ds} stale`);assert.equal(staleDry.can_apply,false);
   }
 
-  // 7. New-record unknown fields and DELETE v1 remain blocked for every DE-19 dataset.
+  // 7. AI Master is Formal-only: generic params are not an accepted AI master field.
+  for(const ds of ['ai_conditions','ai_targets','ai_actions']){
+    const generic=await makeAddEnvelope(base,ds,addIds[ds]+'-GENERIC',row=>{row.params={kind:'generic'};});
+    const dry=await dx.dryRunImport({rootData:base,envelope:generic});
+    const plan=await dx.createApplyPlan({rootData:base,envelope:generic,dryRun:dry});
+    assert.equal(plan.can_apply,false,`${ds} generic params must be blocked`);
+    assert(plan.reasons.some(x=>x.includes('未知フィールド')),`${ds} generic params rejection reason`);
+  }
+
+  // 8. New-record unknown fields and DELETE v1 remain blocked for every DE-19 dataset.
   for(const ds of Object.keys(SOURCE_IDS)){
     const unknown=await makeAddEnvelope(base,ds,addIds[ds]+'-UNKNOWN',row=>{row.future_payload={unsafe:true};});
     const dry=await dx.dryRunImport({rootData:base,envelope:unknown});

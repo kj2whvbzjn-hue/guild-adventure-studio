@@ -21,16 +21,15 @@
   }
   function toNode(master, category) {
     const source = master && typeof master === 'object' ? master : {};
-    const legacy = source.params?.ai_definition && typeof source.params.ai_definition === 'object' ? source.params.ai_definition : {};
-    const type = CATEGORY_TYPE[category] || source.node_type || legacy.node_type || '';
+    const type = CATEGORY_TYPE[category] || source.node_type || '';
     return {
-      id: String(source.id || legacy.id || ''), name: String(source.name || legacy.name || ''), node_type: type,
-      status: formalStatus(source.status || legacy.status), data_version: String(source.data_version || legacy.data_version || '1.0.0'),
-      description: String(source.description || legacy.description || ''), tags: Array.isArray(source.tags) ? clone(source.tags) : clone(legacy.tags || []),
-      evaluator: String(source.evaluator || legacy.evaluator || `${type}.unconfigured`),
-      ports: clone(source.ports || legacy.ports || defaultPorts(type)),
-      parameter_schema: clone(source.parameter_schema || legacy.parameter_schema || {type: 'object', properties: {}, required: [], additionalProperties: false}),
-      unlock: clone(source.unlock || legacy.unlock || {})
+      id: String(source.id || ''), name: String(source.name || ''), node_type: type,
+      status: formalStatus(source.status), data_version: String(source.data_version || '1.0.0'),
+      description: String(source.description || ''), tags: Array.isArray(source.tags) ? clone(source.tags) : [],
+      evaluator: String(source.evaluator || `${type}.unconfigured`),
+      ports: clone(source.ports || defaultPorts(type)),
+      parameter_schema: clone(source.parameter_schema || {type: 'object', properties: {}, required: [], additionalProperties: false}),
+      unlock: clone(source.unlock || {})
     };
   }
   function definitionErrors(node) {

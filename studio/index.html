@@ -396,13 +396,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.174 / GKS-B555</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.174 / GKS-B556</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.174 / Studio GKS-B555</div>
+    <div class="version">Game GA-B486.174 / Studio GKS-B556</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1043,11 +1043,11 @@ updateDeployDeleteControl();
     </div>
     <div class="grid" id="normalMasterFields">
       <div class="field tag-picker-field"><label>タグ</label><input id="masterTags" type="hidden"><div id="masterTagChips" class="tag-chip-list"></div><button type="button" onclick="openMasterTagPicker()">＋ タグ追加</button></div>
-      <div class="field"><label id="masterParamsLabel">数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div><div id="formalSkillMasterNotice" class="item hidden"><b>Formal Skill</b><div class="small">正式Skill本体はG07 / Formal Compilerの管理対象です。この画面では本体JSONを参照専用で表示し、ID・runtimeContracts・effects等は上書きしません。名称・状態・説明だけ更新できます。</div></div>
+      <div id="masterParamsField" class="field"><label id="masterParamsLabel">数値・条件・効果（JSON）</label><textarea id="masterParams" placeholder='{"STR":13,"VIT":12}'></textarea></div><div id="formalSkillMasterNotice" class="item hidden"><b>Formal Skill</b><div class="small">正式Skill本体はG07 / Formal Compilerの管理対象です。この画面では本体JSONを参照専用で表示し、ID・runtimeContracts・effects等は上書きしません。名称・状態・説明だけ更新できます。</div></div>
     </div>
     <div id="aiMasterFields" class="card hidden" style="margin-top:16px">
       <h3>AI部品専用設定</h3>
-      <p class="small">AI専用項目を正本とし、保存時に互換用 <code>params.ai_definition</code> へ同じ内容を同期します。</p>
+      <p class="small">AI専用Formal項目だけを正本として保存します。汎用paramsへの複製は行いません。</p>
       <div class="grid">
         <div class="field"><label>データ版</label><input id="aiMasterDataVersion" value="1.0.0"></div>
         <div class="field"><label>評価器ID</label><input id="aiMasterEvaluator" placeholder="condition.hp_below"></div>
@@ -2034,7 +2034,7 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-program-model.js?v=1"></script>
 <script src="./ai-production/ai-program-store.js?v=1"></script>
 <script src="./ai-production/ai-program-editor.js?v=1"></script>
-<script src="./ai-production/ai-master-adapter.js?v=1"></script>
+<script src="./ai-production/ai-master-adapter.js?v=2"></script>
 <script src="./ai-production/ai-program-validator.js?v=1"></script>
 <script src="./ai-production/ai-program-compiler.js?v=1"></script>
 <script src="./ai-production/ai-program-trace.js?v=1"></script>
@@ -2046,7 +2046,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B555';
+const DISTRIBUTION_BUILD='GKS-B556';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2226,7 +2226,7 @@ function normalizeData(){
  data.battle_snapshots=data.battle_snapshots||[];
  data.battle_tests=data.battle_tests||[];
  data.masters=data.masters||{};
- ['stats','jobs','equipment','mods','monsters','status_effects','tablets','ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});data.masters.skills=data.masters.skills||[];data.masters.skills.forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.description=m.description||'';if(!isFormalSkillMasterRecord('skills',m)){m.tags=m.tags||[];m.params=m.params||{}}});
+ ['stats','jobs','equipment','mods','monsters','status_effects','tablets'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});['ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.description=m.description||'';});});data.masters.skills=data.masters.skills||[];data.masters.skills.forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.description=m.description||'';if(!isFormalSkillMasterRecord('skills',m)){m.tags=m.tags||[];m.params=m.params||{}}});
  data.quests.forEach(q=>{
   q.type=q.type||'sub';
   q.status=q.status||'draft';
@@ -3008,7 +3008,7 @@ function parseAIMasterJson(id,label,fallback){const field=document.getElementByI
 function readAIMasterDefinition(category,id,name,tags,description){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[category],node=window.GKSAIMasterAdapter.toNode({id,name,status:masterStatus.value,tags,description,data_version:aiMasterDataVersion.value.trim()||'1.0.0',evaluator:aiMasterEvaluator.value.trim(),ports:parseAIMasterJson('aiMasterPorts','ポート定義',{inputs:[],outputs:[]}),parameter_schema:parseAIMasterJson('aiMasterParameterSchema','パラメータSchema',{type:'object',properties:{},required:[],additionalProperties:false}),unlock:parseAIMasterJson('aiMasterUnlock','解放条件',{}),node_type:type},category);const errors=window.GKSAIMasterAdapter.definitionErrors(node);if(errors.length)throw new Error(errors.join('\n'));return node}
 function populateAIMasterFields(record,category){if(!isAIMasterCategory(category))return;const node=window.GKSAIMasterAdapter.toNode(record,category);aiMasterDataVersion.value=node.data_version;aiMasterEvaluator.value=node.evaluator;aiMasterPorts.value=JSON.stringify(node.ports,null,2);aiMasterParameterSchema.value=JSON.stringify(node.parameter_schema,null,2);aiMasterUnlock.value=JSON.stringify(node.unlock||{},null,2)}
 function clearAIMasterFields(){if(!document.getElementById('aiMasterDataVersion'))return;aiMasterDataVersion.value='1.0.0';aiMasterEvaluator.value='';aiMasterPorts.value='';aiMasterParameterSchema.value=JSON.stringify({type:'object',properties:{},required:[],additionalProperties:false},null,2);aiMasterUnlock.value=JSON.stringify({required_ids:[]},null,2)}
-function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',isAI=isAIMasterCategory(masterCategory.value),current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('aiMasterFields')?.classList.toggle('hidden',!isAI);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);setFormalSkillMasterEditorMode(isFormal);if(isAI&&!aiMasterPorts.value){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[masterCategory.value],node=window.GKSAIMasterAdapter.toNode({node_type:type},masterCategory.value);aiMasterPorts.value=JSON.stringify(node.ports,null,2)}if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
+function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',isAI=isAIMasterCategory(masterCategory.value),current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('aiMasterFields')?.classList.toggle('hidden',!isAI);document.getElementById('masterParamsField')?.classList.toggle('hidden',isAI);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);setFormalSkillMasterEditorMode(isFormal);if(isAI&&!aiMasterPorts.value){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[masterCategory.value],node=window.GKSAIMasterAdapter.toNode({node_type:type},masterCategory.value);aiMasterPorts.value=JSON.stringify(node.ports,null,2)}if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
 
 let lastMonsterSkillCandidateEvaluation=null;
 function resetMonsterSkillCandidateResult(){
@@ -3069,9 +3069,9 @@ function renderMonsterSkillCandidateSummary(){
  const ids=[...monsterSkillCandidateSelection],names=ids.map(id=>e.eligible.find(row=>row.id===id)?.name||id);
  result.innerHTML=`<div class="item ok"><b>選択済み ${ids.length}件</b><div class="small">${names.length?names.map(esc).join('、'):'なし'}</div><div class="small">候補 ${e.eligible.length}件 / 条件外 ${e.excluded.length}件。最後に「登録・更新」を押して保存してください。</div></div>`;
 }
-function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters')params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));if(c==='tablets')params.enemy_budget_bonus=Math.max(0,Math.floor(Number(masterEnemyBudgetBonus.value)||0));const tags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean);let rec;if(isAIMasterCategory(c)){try{const node=readAIMasterDefinition(c,id,name,tags,masterDescription.value);params.ai_definition=structuredClone(node);rec={id,name,status:node.status,tags,params,description:node.description,data_version:node.data_version,evaluator:node.evaluator,ports:node.ports,parameter_schema:node.parameter_schema,unlock:node.unlock,updated_at:now()}}catch(error){return alert(error.message)}}else rec={id,name,status:masterStatus.value,tags,params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist(isAIMasterCategory(c)?'ai master saved':'master saved');closeStudioInputPanel()}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters')params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));if(c==='tablets')params.enemy_budget_bonus=Math.max(0,Math.floor(Number(masterEnemyBudgetBonus.value)||0));const tags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean);let rec;if(isAIMasterCategory(c)){try{const node=readAIMasterDefinition(c,id,name,tags,masterDescription.value);rec={id:node.id,name:node.name,node_type:node.node_type,status:node.status,tags:node.tags,description:node.description,data_version:node.data_version,evaluator:node.evaluator,ports:node.ports,parameter_schema:node.parameter_schema,unlock:node.unlock,updated_at:now()}}catch(error){return alert(error.message)}}else rec={id,name,status:masterStatus.value,tags,params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist(isAIMasterCategory(c)?'ai master saved':'master saved');closeStudioInputPanel()}
 function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditorPanel','マスターを作成')}
-function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=[...masterStatus.options].some(o=>o.value===(m.status||'draft'))?(m.status||'draft'):'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));masterDescription.value=m.description||'';updateMasterFormMode();populateAIMasterFields(m,category);if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
+function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=[...masterStatus.options].some(o=>o.value===(m.status||'draft'))?(m.status||'draft'):'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=isAIMasterCategory(category)?'':JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));masterDescription.value=m.description||'';updateMasterFormMode();populateAIMasterFields(m,category);if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
 function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';setFormalSkillMasterEditorMode(false);masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterEnemyBudgetCost.value='1';masterEnemyBudgetBonus.value='0';masterDescription.value='';clearAIMasterFields();if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
 function masterSearchText(category,m){
@@ -7146,7 +7146,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','555');
+    url.searchParams.set('appv','556');
     location.replace(url.toString());
    }
  }
@@ -7155,7 +7155,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=555',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=556',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7174,7 +7174,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','555');
+    url.searchParams.set('appv','556');
     location.replace(url.toString());
    }
   });
@@ -7262,7 +7262,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486174"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486174"></script>
 <script src="../assets/shared/js/condition-engine.js?v=486174"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b555"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b556"></script>
 <script src="../assets/shared/js/skill-compiler.js?v=486174"></script>
 <script src="../assets/shared/js/skill-compile-service.js?v=486174"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>
@@ -7283,7 +7283,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 </script>
 <script src="./skill/skill-generator.js?v=32" onload="GKSSkillGeneratorScriptLoaded()" onerror="GKSSkillGeneratorScriptError()"></script>
 <script src="./data-exchange/data-exchange-integrity-validator.js?v=3"></script>
-<script src="./data-exchange/data-exchange-core.js?v=16"></script>
+<script src="./data-exchange/data-exchange-core.js?v=17"></script>
 <script src="./data-exchange/data-exchange-transaction.js?v=3"></script>
 <script src="./data-exchange/data-exchange-audit.js?v=5"></script>
 <script src="./data-exchange/data-exchange-ui.js?v=23r1"></script>

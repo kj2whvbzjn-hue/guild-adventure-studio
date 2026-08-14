@@ -18,6 +18,6 @@ assert.strictEqual(report.summary.composite_case_count,0);
 assert.strictEqual(report.summary.passed,false);
 assert.ok(report.summary.errors.some(x=>String(x).includes('旧形式Skill Master')),'legacy Master must be rejected');
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\''])assert.ok(src.includes(marker),`missing ${marker}`);
-const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486174b555'));
+const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486174b556'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
 console.log('PASS R06 旧形式Master rejected by formal runtime boundary');

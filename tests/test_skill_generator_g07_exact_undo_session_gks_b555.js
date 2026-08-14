@@ -1,6 +1,6 @@
 const assert=require('assert'),fs=require('fs');
 const build=require('../package-build.json');
-assert.strictEqual(build.studio_build,'GKS-B555');
+assert.strictEqual(build.studio_build,'GKS-B556');
 const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 const ui=fs.readFileSync('studio/data-exchange/data-exchange-ui.js','utf8');
 const html=fs.readFileSync('studio/index.html','utf8');
@@ -11,4 +11,4 @@ assert.ok(ui.includes('async function undoLatestSession()'),'Data Exchange lates
 assert.ok(!ui.includes('async function undoSessionById('),'B555 exact-session Undo API must be removed by rollback');
 assert.ok(html.includes('skill-generator.js?v=32'),'Skill generator rollback must cache-bust');
 assert.ok(html.includes('data-exchange-ui.js?v=23r1'),'Data Exchange UI rollback must cache-bust');
-console.log('PASS GKS-B555 G07 Undo rollback to proven latest-session path');
+console.log('PASS GKS-B556 G07 Undo rollback to proven latest-session path');

@@ -461,6 +461,10 @@
     'schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts',
     'status','description','created_at','updated_at'
   ]);
+  const FORMAL_AI_MASTER_FIELDS=Object.freeze([
+    'id','name','node_type','status','tags','description','data_version','evaluator','ports','parameter_schema','unlock',
+    'created_at','updated_at'
+  ]);
   function skillMasterContractDiagnostic(){
     const shared=global.GKSSkillSchema?.masterAllowed?.();
     if(!Array.isArray(shared))return{shared_schema_loaded:false,shared_matches:false,missing:[...FORMAL_SKILL_MASTER_FIELDS],extra:[]};
@@ -479,9 +483,9 @@
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    ai_conditions:new Set(FORMAL_AI_MASTER_FIELDS),
+    ai_targets:new Set(FORMAL_AI_MASTER_FIELDS),
+    ai_actions:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','compiled','created_at','updated_at']),
     chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at','available_monster_ids','random_event_candidates']),
     story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at','adventure_duration_seconds','boxes']),
@@ -491,7 +495,8 @@
   function unknownIncomingFields(dataset,localRow,incomingRow){
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
     if(!allowed||!incomingRow||typeof incomingRow!=='object')return [];
-    const localKeys=new Set(Object.keys(localRow||{}));
+    const formalAI=['ai_conditions','ai_targets','ai_actions'].includes(dataset);
+    const localKeys=formalAI?new Set():new Set(Object.keys(localRow||{}));
     return Object.keys(incomingRow).filter(key=>!allowed.has(key)&&!localKeys.has(key));
   }
   function mergeRecordPreservingCurrent(dataset,localRow,incomingRow){
@@ -631,5 +636,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,FORMAL_SKILL_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

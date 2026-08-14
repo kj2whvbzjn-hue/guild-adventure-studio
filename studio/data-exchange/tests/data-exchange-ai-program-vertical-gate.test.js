@@ -9,9 +9,9 @@ function project(){return {
   tags:[{id:'TAG-AI',name:'AI',aliases:[]}],
   masters:{monsters:[],stats:[],status_effects:[],tablets:[],jobs:[],equipment:[],mods:[],
     skills:[{id:'SKILL-A',name:'Skill A',tags:[],params:{}}],
-    ai_conditions:[{id:'COND-A',name:'Always',tags:[],params:{}}],
-    ai_targets:[{id:'TARGET-A',name:'Enemy',tags:[],params:{}}],
-    ai_actions:[{id:'ACTION-A',name:'Use Skill',tags:[],params:{}}]},
+    ai_conditions:[{id:'COND-A',name:'Always',node_type:'condition',status:'active',tags:[],description:'',data_version:'1.0.0',evaluator:'condition.always',ports:{inputs:[],outputs:[{id:'true'}]},parameter_schema:{type:'object',properties:{}},unlock:{}}],
+    ai_targets:[{id:'TARGET-A',name:'Enemy',node_type:'target',status:'active',tags:[],description:'',data_version:'1.0.0',evaluator:'target.enemy',ports:{inputs:[],outputs:[{id:'next'}]},parameter_schema:{type:'object',properties:{}},unlock:{}}],
+    ai_actions:[{id:'ACTION-A',name:'Use Skill',node_type:'action',status:'active',tags:[],description:'',data_version:'1.0.0',evaluator:'action.skill',ports:{inputs:[],outputs:[{id:'next'}]},parameter_schema:{type:'object',properties:{}},unlock:{}}]},
   ai_programs:[{id:'AIP-BASE',name:'Base AI',status:'valid',tags:['TAG-AI'],description:'',version:1,schema_version:'1.0.0',data_version:1,entry_node_id:'N1',nodes:[
     {instance_id:'N1',master_node_id:'COND-A',master_version:1,node_type:'condition',position:{x:0,y:0},parameters:{},comment:''},
     {instance_id:'N2',master_node_id:'TARGET-A',master_version:1,node_type:'target',position:{x:1,y:0},parameters:{},comment:''},

@@ -8,7 +8,7 @@ const Adapter = require('../../studio/ai-production/ai-master-adapter.js');
 
 const root = path.resolve(__dirname, '../..');
 const master = {
-  id: 'AIC-HP-BELOW', name: 'HP低下', status: 'approved', tags: ['TAG-HP'], description: 'HP割合を検査',
+  id: 'AIC-HP-BELOW', name: 'HP低下', status: 'active', tags: ['TAG-HP'], description: 'HP割合を検査',
   data_version: '1.0.0', evaluator: 'condition.hp_below',
   ports: {inputs: [{id:'in',kind:'flow',data_type:'flow'}], outputs: [{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},
   parameter_schema: {type:'object', required:['threshold','tag_id','skill_id','mode'], properties: {
@@ -22,7 +22,7 @@ const masters = {ai_conditions:[master], ai_targets:[{id:'AIT-SELF',name:'自分
 const refs = {tags:[{id:'TAG-HP',name:'HP'}], skills:[{id:'SKL-HEAL',name:'回復'}]};
 const node = Adapter.toNode(master, 'ai_conditions');
 assert.strictEqual(node.node_type, 'condition');
-assert.strictEqual(node.status, 'active', 'approved legacy status must map to active');
+assert.strictEqual(node.status, 'active');
 assert.deepStrictEqual(Adapter.definitionErrors(node), []);
 assert.strictEqual(Adapter.isAvailable(node, {data_version:'1.0.0',unlocked_ids:[]}), false, 'locked node must be unavailable');
 assert.strictEqual(Adapter.isAvailable(node, {data_version:'1.0.0',unlocked_ids:['UNLOCK-AI']}), true);
@@ -42,14 +42,16 @@ const invalid = Adapter.validateParameters(node, {threshold:2,tag_id:'MISSING',s
 assert(invalid.some(x=>x.includes('最大値')));
 assert(invalid.filter(x=>x.includes('存在しません')).length === 3);
 
-const legacy = Adapter.toNode({id:'AIA-WAIT',name:'待機',status:'approved',params:{ai_definition:{data_version:'1.0.0',evaluator:'action.wait',parameter_schema:{type:'object',properties:{}},ports:{inputs:[],outputs:[{id:'next',kind:'flow',data_type:'flow'}]}}}}, 'ai_actions');
-assert.strictEqual(legacy.evaluator, 'action.wait', 'params.ai_definition must migrate into formal fields');
+const genericParamsOnly = Adapter.toNode({id:'AIA-WAIT',name:'待機',status:'active',params:{definition:{evaluator:'action.wait'}}}, 'ai_actions');
+assert.strictEqual(genericParamsOnly.evaluator, 'action.unconfigured', 'AI Master must read only Formal top-level fields');
 
 const html = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8');
 assert(html.includes('id="aiMasterFields"'));
 assert(html.includes('id="aiMasterParameterSchema"'));
-assert(html.includes('params.ai_definition=structuredClone(node)'), 'dedicated fields must mirror into legacy params');
+assert(!html.includes('params.ai_definition'), 'AI Master must not mirror Formal fields into generic params');
+assert(html.includes('node_type:node.node_type'), 'AI Master save must persist Formal node_type');
+assert(html.includes("masterParamsField')?.classList.toggle('hidden',isAI)"), 'generic params editor must be hidden for AI Master');
 assert(html.includes('window.GKSAIProductionHost={getData:()=>data,'), 'evolved host must retain read-only master access while adding project persistence');
-assert(html.includes('./ai-production/ai-master-adapter.js?v=1'));
+assert(html.includes('./ai-production/ai-master-adapter.js?v=2'));
 
-console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 sync=1');
+console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 formal_only=1');
