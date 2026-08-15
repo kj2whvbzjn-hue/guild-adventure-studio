@@ -12,8 +12,8 @@ assert.ok(skg.includes("s.className=shellVisible?'view':'view hidden'"),'full pa
 assert.ok(skg.includes('Promise.allSettled'),'dependency boot must settle independently');
 assert.ok(skg.includes("setBootStatus('初期化停止: '+message,'error')"),'dependency failure must be shown in the view');
 assert.ok(skg.includes("document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}))"),'view-ready notification must remain available');
-assert.ok(html.includes("navigator.serviceWorker.register('./sw.js?v=591'"),'Studio service worker URL must advance');
-assert.ok(html.includes("url.searchParams.set('appv','591')"),'Studio app reload key must advance');
-assert.ok(sw.includes('gks-studio-b591'),'Studio cache namespace must advance');
-assert.ok(sw.includes("const OFFLINE_URL='./index.html?appv=591'"),'offline shell must advance');
+assert.ok(html.includes("navigator.serviceWorker.register('./sw.js?v=592'"),'Studio service worker URL must advance');
+assert.ok(html.includes("url.searchParams.set('appv','592')"),'Studio app reload key must advance');
+assert.ok(sw.includes('gks-studio-b592'),'Studio cache namespace must advance');
+assert.ok(sw.includes("const OFFLINE_URL='./index.html?appv=592'"),'offline shell must advance');
 console.log('PASS GKS-B536 Skill Generator bootstrap shell / dependency failure visibility');

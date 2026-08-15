@@ -41,13 +41,15 @@ Gameで「Storyデータを再読込」
 | 項目 | Gameデータ配置 | Studio更新配置 |
 |---|---|---|
 | 主目的 | Gameが読む内容を更新 | Studio/Game本体ソースを更新 |
-| 主対象 | `Export/` | 更新ZIPに含まれるソース |
+| 主対象 | `Export/` | 更新ZIPに含まれるソース（`Export/`は強制除外） |
 | Quest/Event/Flag差分 | ID単位で表示 | 対象外 |
 | GitHubファイル削除 | 0件 | 削除ポリシーと個別承認に従う |
 | 履歴 | Game配置専用履歴 | Studio更新専用履歴 |
 | ロールバック | Game配置専用 | Studio更新専用 |
 
 **Gameのバランス調整では原則としてGameデータ配置を使う。** Studio本体の機能修正ZIPをGameデータ配置へ入れない。
+
+Studio更新配置は、更新ZIP内に`Export/`が同梱されていても配置対象から強制除外する。またDELETE_MANIFESTや保護領域削除承認があっても`Export/`は削除対象にしない。GitHub上の公開Gameデータを更新できる窓口はGameデータ配置だけとする。
 
 ## 4. 事前準備
 

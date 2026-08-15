@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B591</title>
+<title>GK Studio GKS-B592</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.183 / GKS-B591</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.183 / GKS-B592</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.183 / Studio GKS-B591</div>
+    <div class="version">Game GA-B486.183 / Studio GKS-B592</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2001,7 +2001,7 @@ updateDeployDeleteControl();
     <div id="deployDrop" class="deploy-drop">
       <input id="studioUpdateZip" type="file" accept=".zip,application/zip">
       <p><b>更新ZIPを選択、またはここへドロップ</b></p>
-      <p class="small">選択すると自動検査し、GitHub上の現在ファイルとの差分を準備します。</p>
+      <p class="small">選択すると自動検査し、GitHub上の現在ファイルとの差分を準備します。<b>Studio更新では <code>Export/</code> を配置・削除しません。</b> Gameデータは専用の「Gameデータ配置」から更新してください。</p>
     </div>
     <div class="toolbar">
       <button onclick="inspectStudioPackage()">再確認</button>
@@ -2232,7 +2232,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B591';
+const DISTRIBUTION_BUILD='GKS-B592';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6248,6 +6248,10 @@ function joinDeployPath(base,path){
  const b=normalizeDeployPath(path);
  return a?`${a}/${b}`:b;
 }
+function isStudioDeployGameDataPath(path){
+ const normalized=normalizeDeployPath(path);
+ return normalized==='Export'||normalized.startsWith('Export/');
+}
 function isAllowedRootDotfile(path){
  return normalizeDeployPath(path)==='.gitignore';
 }
@@ -6271,12 +6275,13 @@ function deployPolicyGlobMatch(path,pattern){
 }
 function classifyDeploySystemFile(path,policy){
  const rel=normalizeDeployPath(path);
- for(const name of ['update_only','artifact','temporary']){
-  const rule=policy?.classes?.[name]||{};
+ const fallback=policy?.default_class||'persistent';
+ for(const [name,rule] of Object.entries(policy?.classes||{})){
+  if(name===fallback)continue;
   if((rule.exact_paths||[]).map(normalizeDeployPath).includes(rel))return name;
   if((rule.patterns||[]).some(pattern=>deployPolicyGlobMatch(rel,pattern)))return name;
  }
- return policy?.default_class||'persistent';
+ return fallback;
 }
 function bytesToBase64(bytes){
  let binary='';
@@ -6306,7 +6311,7 @@ function parseDeployDeleteManifestText(text){
 }
 function isDeployDeleteManifestAllowed(relativePath){
  const path=normalizeDeployPath(relativePath);
- if(!path)return false;
+ if(!path||isStudioDeployGameDataPath(path))return false;
  return studioDeployDeleteManifestRules.some(rule=>{
   if(rule.endsWith('/'))return path.startsWith(rule);
   return path===rule;
@@ -6322,7 +6327,8 @@ function updateDeployDeleteManifestStatus(){
  const folders=studioDeployDeleteManifestRules.filter(x=>x.endsWith('/')).length;
  const files=studioDeployDeleteManifestRules.length-folders;
  const protectedCount=studioDeployDeleteManifestRules.filter(rule=>isDeployProtectedDeletionPath(rule)).length;
- el.textContent=`検出済み: ${studioDeployDeleteManifestRules.length}ルール（フォルダ ${folders} / ファイル ${files} / 保護領域 ${protectedCount}）。承認前でも下の差分ファイル欄に削除予定を表示します。`;
+ const exportIgnoredCount=studioDeployDeleteManifestRules.filter(rule=>isStudioDeployGameDataPath(rule)).length;
+ el.textContent=`検出済み: ${studioDeployDeleteManifestRules.length}ルール（フォルダ ${folders} / ファイル ${files} / 保護領域 ${protectedCount}${exportIgnoredCount?` / Export境界除外 ${exportIgnoredCount}`:''}）。承認前でも下の差分ファイル欄に削除予定を表示します。`;
 }
 function isDeployProtectedDeletionPath(path){
  const rel=normalizeDeployPath(path);
@@ -6452,10 +6458,12 @@ async function inspectStudioPackage(){
     continue;
    }
    const fileClass=classifyDeploySystemFile(relative,systemFilePolicy);
-   const policyExcluded=fileClass!=='persistent';
-   const excluded=policyExcluded||isUnsafeDeployPath(relative)||protectedSet.has(relative);
+   const studioUploadClasses=systemFilePolicy?.rules?.studio_upload_classes||['persistent'];
+   const policyExcluded=!studioUploadClasses.includes(fileClass);
+   const gameDataBoundaryExcluded=isStudioDeployGameDataPath(relative);
+   const excluded=gameDataBoundaryExcluded||policyExcluded||isUnsafeDeployPath(relative)||protectedSet.has(relative);
    const bytes=await packageReader.getBytes(relative);
-   const reason=policyExcluded?`分類除外:${fileClass}`:(excluded?'保護・除外':'未比較');
+   const reason=gameDataBoundaryExcluded?'Gameデータ配置専用: Export/':policyExcluded?`分類除外:${fileClass}`:(excluded?'保護・除外':'未比較');
    files.push({path:relative,size:bytes.length,bytes,excluded,reason,status:excluded?'PROTECTED':'PENDING',fileClass,nameEvidence:entry.nameEvidence||null});
   }
   if(!meta)throw new Error('studio-update.jsonがありません。外側の提出ZIPではなく、直接の更新ZIPを選択してください。');
@@ -6482,7 +6490,8 @@ async function inspectStudioPackage(){
   const kindLabel=packageKind==='patch'?'AI差分ZIP':'公開ZIP';
   deployPackageStatus.innerHTML=`<span class="badge ok">${esc(kindLabel)}</span> ${esc(file.name)} / ${esc(version)}`;
   resetDeployLog();
-  deployLogMessage(`ローカル検査完了: ${uploadable.length}ファイル / DELETE_MANIFEST ${studioDeployDeleteManifestRules.length}ルール。GitHub差分を取得します。`);
+  const exportBoundaryCount=files.filter(x=>isStudioDeployGameDataPath(x.path)).length;
+  deployLogMessage(`ローカル検査完了: ${uploadable.length}ファイル / Export境界除外 ${exportBoundaryCount}ファイル / DELETE_MANIFEST ${studioDeployDeleteManifestRules.length}ルール。GitHub差分を取得します。`);
   await prepareStudioDeployDiff();
  }catch(e){
   studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;
@@ -6503,8 +6512,10 @@ async function getGitHead(c){
 async function prepareStudioDeployDiff(){
  const files=studioDeployFiles.filter(x=>!x.excluded);
  if(!files.length)throw new Error('配置可能なファイルがありません。');
+ if(files.some(x=>isStudioDeployGameDataPath(x.path)))throw new Error('Studio更新にExport/が混入しています。Gameデータ配置専用領域のため停止しました。');
  const c=getGhConfig();
  const base=normalizeDeployPath(deployBasePath.value);
+ if(isStudioDeployGameDataPath(base))throw new Error('Studio更新の配置先フォルダにExport/は指定できません。Gameデータ配置を使用してください。');
  const deleteEnabled=document.getElementById('deployAllowDelete')?.checked===true;
  const protectedDeleteEnabled=document.getElementById('deployAllowProtectedDelete')?.checked===true;
  if(deleteEnabled&&studioDeployPackageKind!=='public')throw new Error('削除機能は公開ZIPでのみ使用できます。');
@@ -6539,6 +6550,7 @@ async function prepareStudioDeployDiff(){
    for(const remoteFile of remoteBlobs){
     const relative=remotePathInsideDeployBase(remoteFile.path,base);
     if(relative===null||relative==='')continue;
+    if(isStudioDeployGameDataPath(relative))continue;
     if(localTargets.has(remoteFile.path))continue;
     if(protectedSet.has(relative)||isUnsafeDeployPath(relative))continue;
     const candidate={
@@ -6567,6 +6579,11 @@ async function prepareStudioDeployDiff(){
    ...files.filter(x=>x.status==='ADD'||x.status==='MODIFY'),
    ...studioDeployDeleteCandidates
   ];
+  const boundaryViolations=changes.filter(x=>{
+   const relative=remotePathInsideDeployBase(x.target,base);
+   return relative!==null&&isStudioDeployGameDataPath(relative);
+  });
+  if(boundaryViolations.length)throw new Error('Studio更新がExport/へ触れようとしたため停止しました: '+boundaryViolations.map(x=>x.target).join(', '));
   studioDeployPlan={
    ...remote,owner:c.owner,repoName:c.repo,branch:c.branch,base,changes,
    deleteEnabled,protectedDeleteEnabled,preparedAt:new Date().toISOString()
@@ -6592,6 +6609,7 @@ function renderDeployPackage(){
  const total=changes.reduce((n,x)=>n+x.size,0);
  const resolvedDeletePaths=new Set([...deletes,...blocked].map(x=>normalizeDeployPath(x.path)));
  const manifestPreview=(studioDeployDeleteManifestRules||[])
+  .filter(rule=>!isStudioDeployGameDataPath(rule))
   .filter(rule=>!resolvedDeletePaths.has(normalizeDeployPath(rule)))
   .map(rule=>({
    path:rule,target:rule,size:0,excluded:false,
@@ -6627,6 +6645,11 @@ async function deployStudioPackage(){
  if(!studioDeployPlan)return alert('先にZIPを選択し、GitHub差分解析を完了してください。');
  const changes=studioDeployPlan.changes||[];
  if(!changes.length)return alert('配置する差分はありません。');
+ const boundaryViolations=changes.filter(x=>{
+  const relative=remotePathInsideDeployBase(x.target,studioDeployPlan.base||'');
+  return relative!==null&&isStudioDeployGameDataPath(relative);
+ });
+ if(boundaryViolations.length)return alert('安全停止: Studio更新ではExport/を配置・削除できません。Gameデータ配置を使用してください。');
  const c=getGhConfig();
  if(c.owner!==studioDeployPlan.owner||c.repo!==studioDeployPlan.repoName||c.branch!==studioDeployPlan.branch)return alert('接続先が差分解析時から変更されています。再解析してください。');
  const message=(deployCommitMessage.value.trim()||'Deploy Guild Adventure Studio update')+(studioDeployMeta?.version?` ${studioDeployMeta.version}`:'');
@@ -8231,7 +8254,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','591');
+    url.searchParams.set('appv','592');
     location.replace(url.toString());
    }
  }
@@ -8240,7 +8263,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=591',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=592',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8259,7 +8282,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','591');
+    url.searchParams.set('appv','592');
     location.replace(url.toString());
    }
   });
