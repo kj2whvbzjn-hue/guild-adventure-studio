@@ -3,7 +3,7 @@ const build=require('../package-build.json');
 const registry=require('../assets/shared/config/skill-registry.json');
 const rules=require('../assets/shared/config/skill-budget-rules.json');
 assert.strictEqual(build.game_build,'GA-B486.180');
-assert.strictEqual(build.studio_build,'GKS-B569');
+assert.strictEqual(build.studio_build,'GKS-B570');
 assert.ok(['G04','G05'].includes(registry.authoring.phase));
 assert.strictEqual(rules.budgetRuleVersion,'G04-BUDGET-V1');
 assert.strictEqual(rules.existing_skill_policy,'NO_AUTOMATIC_RECALCULATION');

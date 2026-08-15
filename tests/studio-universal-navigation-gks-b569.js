@@ -18,4 +18,4 @@ assert.ok(html.includes('closeBenchmarkWorkflow()">もどる</button><button typ
 assert.ok(html.includes('GKSDataExchangeUI.closePicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Data Exchange dialog navigation missing');
 assert.ok(html.includes('closeMasterSkillPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Master Skill picker navigation missing');
 assert.ok(html.includes('closeTagPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Tag picker navigation missing');
-console.log('PASS GKS-B569 universal Studio back/close navigation and Quest Box/detail/dialog navigation');
+console.log('PASS GKS-B570 universal Studio back/close navigation and Quest Box/detail/dialog navigation');
