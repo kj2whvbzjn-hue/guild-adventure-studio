@@ -1,7 +1,7 @@
 const fs=require('fs'),assert=require('assert'),vm=require('vm');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 assert.strictEqual(build.game_build,'GA-B486.181');
-assert.strictEqual(build.studio_build,'GKS-B585');
+assert.strictEqual(build.studio_build,'GKS-B586');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const budgetRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-budget-rules.json','utf8'));
 const aiRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-ai-generation-rules.json','utf8'));

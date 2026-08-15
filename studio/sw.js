@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b585";
+const CACHE_NAME="gks-studio-b586";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=585';
+const OFFLINE_URL='./index.html?appv=586';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=585",
+  "./index.html?appv=586",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",

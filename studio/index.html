@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B585</title>
+<title>GK Studio GKS-B586</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -447,7 +447,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=585"></script>
+  <script src="./adventure-entity-json-import.js?v=586"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.181 / GKS-B585</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.181 / GKS-B586</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.181 / Studio GKS-B585</div>
+    <div class="version">Game GA-B486.181 / Studio GKS-B586</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1164,6 +1164,12 @@ updateDeployDeleteControl();
       <div id="monsterSkillCandidateResult" class="small">モンスターを編集し、「候補を判定」を押してください。</div>
     </div>
     <div class="toolbar"><button class="primary" onclick="saveMaster()">登録・更新</button><button onclick="clearMasterForm()">入力をクリア</button></div>
+  </div>
+  <div class="card">
+    <h2>ID・参照監査</h2>
+    <p class="small">既存データは変更しません。分類ごとのID形式、重複ID、Master間およびQuest/Event等からの構造化参照切れを確認します。</p>
+    <div class="toolbar"><button type="button" class="primary" onclick="runMasterIdReferenceAudit()">監査を実行</button></div>
+    <div id="masterIdReferenceAuditResult" class="small">未実行です。</div>
   </div>
   <div class="card">
     <h2>CSV入出力</h2>
@@ -2217,7 +2223,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B585';
+const DISTRIBUTION_BUILD='GKS-B586';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -3359,6 +3365,67 @@ function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditor
 function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=[...masterStatus.options].some(o=>o.value===(m.status||'draft'))?(m.status||'draft'):'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=isAIMasterCategory(category)?'':JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.stone_level??m.stone_level??m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));masterMonsterDropTableIds.value=(m.params?.drop_table_ids||m.drop_table_ids||[]).join(', ');masterExplorationSuccessRewardTableIds.value=(m.params?.on_success?.reward_table_ids||[]).join(', ');masterExplorationFailureRewardTableIds.value=(m.params?.on_failure?.reward_table_ids||[]).join(', ');const envCond=(category==='monsters'?(m.params?.spawn_tags??m.spawn_tags):(category==='exploration_outcomes'?(m.params?.environment_tags??m.environment_tags):{}))||{};masterEnvTagsAny.value=(envCond.any||[]).join(', ');masterEnvTagsAll.value=(envCond.all||[]).join(', ');masterEnvTagsNone.value=(envCond.none||[]).join(', ');masterDescription.value=m.description||'';updateMasterFormMode();populateAIMasterFields(m,category);if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
 function clearMasterForm(){resetMonsterSkillCandidateResult();editingMasterId='';setFormalSkillMasterEditorMode(false);masterId.value='';masterName.value='';masterStatus.value='draft';masterTags.value='';renderMasterTagChips();masterParams.value='';masterEnemyBudgetCost.value='1';masterEnemyBudgetBonus.value='0';masterMonsterDropTableIds.value='';masterExplorationSuccessRewardTableIds.value='';masterExplorationFailureRewardTableIds.value='';masterEnvTagsAny.value='';masterEnvTagsAll.value='';masterEnvTagsNone.value='';masterDescription.value='';clearAIMasterFields();if(document.getElementById('tagMasterCategoryId'))tagMasterCategoryId.value='';if(document.getElementById('tagMasterParentId'))tagMasterParentId.value='';updateMasterFormMode()}
+const MASTER_AUDIT_REFERENCE_CATEGORY_RULES=[
+ [/reward[_-]?table|drop[_-]?table/,'reward_tables'],[/exploration[_-]?outcome|outcome/,'exploration_outcomes'],[/adventure[_-]?setting/,'adventure_settings'],
+ [/status[_-]?effect|status/,'status_effects'],[/ai[_-]?condition/,'ai_conditions'],[/ai[_-]?target/,'ai_targets'],[/ai[_-]?action/,'ai_actions'],
+ [/equipment/,'equipment'],[/monster/,'monsters'],[/skill/,'skills'],[/tablet|stone/,'tablets'],[/\bmod\b|mod_/,'mods'],[/map/,'maps'],[/job/,'jobs'],[/stat/,'stats'],[/tag/,'tags']
+];
+function masterAuditRecords(){
+ const out=[];
+ (Array.isArray(data.tags)?data.tags:[]).forEach((record,index)=>out.push({category:'tags',record,index,path:`tags[${index}]`}));
+ Object.keys(MASTER_LABELS).filter(category=>category!=='tags').forEach(category=>(data.masters?.[category]||[]).forEach((record,index)=>out.push({category,record,index,path:`masters.${category}[${index}]`})));
+ return out;
+}
+function masterAuditExpectedCategory(key){
+ const k=String(key||'').toLowerCase();if(!k||['id','name','description','notes','summary'].includes(k))return '';
+ for(const [pattern,category] of MASTER_AUDIT_REFERENCE_CATEGORY_RULES)if(pattern.test(k))return category;
+ return '';
+}
+function masterAuditBuildIndex(records){
+ const byCategory={},byId=new Map();Object.keys(MASTER_LABELS).forEach(category=>byCategory[category]=new Map());
+ records.forEach(entry=>{const id=String(entry.record?.id||'').trim();if(!id)return;if(!byCategory[entry.category])byCategory[entry.category]=new Map();if(!byCategory[entry.category].has(id))byCategory[entry.category].set(id,[]);byCategory[entry.category].get(id).push(entry);if(!byId.has(id))byId.set(id,[]);byId.get(id).push(entry)});
+ return {byCategory,byId};
+}
+function masterAuditSourceObjects(records){
+ const sources=records.map(entry=>({path:entry.path,value:entry.record,selfId:String(entry.record?.id||'')}));
+ ['quests','events','characters','entities','flags','chapters'].forEach(group=>(Array.isArray(data[group])?data[group]:[]).forEach((value,index)=>sources.push({path:`${group}[${index}]`,value,selfId:String(value?.id||'')})));
+ return sources;
+}
+function masterAuditReferenceCandidate(value,expectedCategory,index){
+ const id=String(value??'').trim();if(!id)return false;if(index.byId.has(id))return true;const prefix=masterPrefix(expectedCategory)+'-';return id.startsWith(prefix);
+}
+function masterAuditScanReferences(value,path,expectedCategory,index,issues,refsByTarget,selfId){
+ if(Array.isArray(value)){value.forEach((item,i)=>masterAuditScanReferences(item,`${path}[${i}]`,expectedCategory,index,issues,refsByTarget,selfId));return}
+ if(value&&typeof value==='object'){
+  Object.entries(value).forEach(([key,item])=>{if(key==='id'&&path.indexOf('masters.')===0)return;const expected=masterAuditExpectedCategory(key)||expectedCategory;masterAuditScanReferences(item,`${path}.${key}`,expected,index,issues,refsByTarget,selfId)});return;
+ }
+ if(!expectedCategory||typeof value!=='string')return;
+ const values=value.includes(',')?value.split(',').map(x=>x.trim()).filter(Boolean):[value.trim()];
+ values.forEach(id=>{
+  if(!id||!masterAuditReferenceCandidate(id,expectedCategory,index))return;
+  const expectedHits=index.byCategory[expectedCategory]?.get(id)||[],anyHits=index.byId.get(id)||[];
+  if(expectedHits.length){refsByTarget.set(id,(refsByTarget.get(id)||0)+1);return}
+  if(anyHits.length){issues.push({type:'category_mismatch',path,id,expected_category:expectedCategory,actual_categories:[...new Set(anyHits.map(x=>x.category))],message:`${path}: ${id} は ${MASTER_LABELS[expectedCategory]||expectedCategory} 参照ですが、別分類に登録されています。`});return}
+  issues.push({type:'missing_reference',path,id,expected_category:expectedCategory,message:`${path}: 参照先 ${id}（${MASTER_LABELS[expectedCategory]||expectedCategory}）が存在しません。`});
+ });
+}
+function buildMasterIdReferenceAudit(){
+ const records=masterAuditRecords(),index=masterAuditBuildIndex(records),refsByTarget=new Map(),referenceIssues=[];
+ masterAuditSourceObjects(records).forEach(source=>masterAuditScanReferences(source.value,source.path,'',index,referenceIssues,refsByTarget,source.selfId));
+ const formatIssues=[];records.forEach(entry=>{const id=String(entry.record?.id||'').trim(),expected=`${masterPrefix(entry.category)}-0001`;if(!id||!masterIdPattern(entry.category).test(id))formatIssues.push({type:'invalid_id',path:entry.path,id,category:entry.category,reference_count:refsByTarget.get(id)||0,message:`${entry.path}: ${id||'(ID未設定)'} は規約外です。期待形式 ${expected}（参照 ${refsByTarget.get(id)||0}件）`})});
+ const duplicateIssues=[];index.byId.forEach((hits,id)=>{if(hits.length>1)duplicateIssues.push({type:'duplicate_id',id,paths:hits.map(x=>x.path),message:`${id}: IDが${hits.length}件重複しています（${hits.map(x=>x.path).join(', ')}）`})});
+ const issues=[...formatIssues,...duplicateIssues,...referenceIssues];
+ return {generated_at:now(),counts:{records:records.length,invalid_ids:formatIssues.length,duplicate_ids:duplicateIssues.length,missing_references:referenceIssues.filter(x=>x.type==='missing_reference').length,category_mismatches:referenceIssues.filter(x=>x.type==='category_mismatch').length,total_issues:issues.length},issues,refs_by_target:Object.fromEntries(refsByTarget)};
+}
+function renderMasterIdReferenceAudit(report){
+ const el=document.getElementById('masterIdReferenceAuditResult');if(!el)return;const c=report.counts||{},ok=!c.total_issues;
+ const summary=`<div class="item"><span class="badge ${ok?'ok':'warn'}">${ok?'監査合格':'要確認'}</span> Master ${c.records||0}件 / 規約外ID ${c.invalid_ids||0} / 重複 ${c.duplicate_ids||0} / 参照先なし ${c.missing_references||0} / 分類不一致 ${c.category_mismatches||0}</div>`;
+ const rows=(report.issues||[]).slice(0,100).map(issue=>`<div class="item"><b>${esc(issue.type==='invalid_id'?'ID形式':issue.type==='duplicate_id'?'重複ID':issue.type==='missing_reference'?'参照先なし':'分類不一致')}</b><div class="small">${esc(issue.message||'')}</div></div>`).join('');
+ const rest=(report.issues||[]).length>100?`<div class="item small">ほか ${(report.issues||[]).length-100}件。監査はデータを変更していません。</div>`:'';
+ el.innerHTML=summary+(rows||'<div class="item small">修正対象はありません。監査はデータを変更していません。</div>')+rest;
+}
+function runMasterIdReferenceAudit(){const report=buildMasterIdReferenceAudit();window.lastMasterIdReferenceAudit=report;renderMasterIdReferenceAudit(report);return report}
+
 function masterSearchText(category,m){
  const tagIds=Array.isArray(m.tags)?m.tags:[];
  const tagNames=tagIds.map(tagLabel);
@@ -7961,7 +8028,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','585');
+    url.searchParams.set('appv','586');
     location.replace(url.toString());
    }
  }
@@ -7970,7 +8037,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=585',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=586',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7989,7 +8056,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','585');
+    url.searchParams.set('appv','586');
     location.replace(url.toString());
    }
   });

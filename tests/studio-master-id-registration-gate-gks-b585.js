@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 
-assert.strictEqual(build.studio_build,'GKS-B585');
+assert.strictEqual(build.studio_build,'GKS-B586');
 assert.ok(html.includes('function masterIdPattern(category)'), 'master ID pattern helper missing');
 assert.ok(html.includes('function validateMasterIdForCategory(category,id)'), 'master ID validation helper missing');
 assert.ok(html.includes('const idError=validateMasterIdForCategory(c,id);if(idError)return alert(idError);'), 'saveMaster must reject invalid category IDs before persistence');
@@ -25,4 +25,4 @@ assert.strictEqual(valid('skills','SKL-001'),false,'must require exactly four di
 assert.strictEqual(valid('skills','skl-0001'),false,'prefix must be canonical uppercase');
 assert.strictEqual(valid('maps','MAP-00001'),false,'must reject five-digit suffix');
 
-console.log('PASS GKS-B585 Master registration/update gate enforces category prefix + four digits');
+console.log('PASS GKS-B586 Master registration/update gate enforces category prefix + four digits');
