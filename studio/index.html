@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B583</title>
+<title>GK Studio GKS-B584</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -447,7 +447,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=583"></script>
+  <script src="./adventure-entity-json-import.js?v=584"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.181 / GKS-B583</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.181 / GKS-B584</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.181 / Studio GKS-B583</div>
+    <div class="version">Game GA-B486.181 / Studio GKS-B584</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2217,7 +2217,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B583';
+const DISTRIBUTION_BUILD='GKS-B584';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2227,6 +2227,7 @@ const AUTO_BACKUP_KEY_PREFIX='gas_v4_auto_backup_at_v110_';
 const prefixes={Master:'MST',Organization:'ORG',Term:'TRM',Relationship:'REL',Timeline:'TML',Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG',Quest:'QST',Event:'EVT'};
 function now(){return new Date().toISOString()}
 function isFormalSkillMasterRecord(category,m){return category==='skills'&&!!m&&typeof m==='object'&&(Number(m.schemaVersion)>=1||!!m.runtimeContracts||Array.isArray(m.effects)||!!m.trigger||!!m.target||!!m.resource)}
+function masterRequiresParamsObjectValidation(category,m){return !isFormalSkillMasterRecord(category,m)}
 function formalSkillEditorPayload(m){const out={};['schemaVersion','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts'].forEach(k=>{if(m&&m[k]!==undefined)out[k]=JSON.parse(JSON.stringify(m[k]))});return out}
 function setFormalSkillMasterEditorMode(enabled){
  const tagField=document.querySelector('#normalMasterFields .tag-picker-field'),notice=document.getElementById('formalSkillMasterNotice'),label=document.getElementById('masterParamsLabel');
@@ -5038,7 +5039,7 @@ function runValidation(){
   const formalExport=GKExportCore.collectFormalQuestExportIssues(data);
   (formalExport.issues||[]).forEach(issue=>validation.push({...issue,level:issue.level||'WARNING'}));
  }
- Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(category==='monsters'&&(!Number.isFinite(Number(m.params?.enemy_budget_cost??1))||Number(m.params?.enemy_budget_cost??1)<1))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Costが不正です'});if(category==='tablets'&&(!Number.isFinite(Number(m.params?.enemy_budget_bonus??0))||Number(m.params?.enemy_budget_bonus??0)<0))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Bonusが不正です'});if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(typeof m.params!=='object'||Array.isArray(m.params))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
+ Object.entries(data.masters||{}).forEach(([category,rows])=>rows.forEach(m=>{if(category==='monsters'&&(!Number.isFinite(Number(m.params?.enemy_budget_cost??1))||Number(m.params?.enemy_budget_cost??1)<1))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Costが不正です'});if(category==='tablets'&&(!Number.isFinite(Number(m.params?.enemy_budget_bonus??0))||Number(m.params?.enemy_budget_bonus??0)<0))validation.push({level:'ERROR',message:m.id+' のEnemy Budget Bonusが不正です'});if(!m.name)validation.push({level:'ERROR',message:m.id+' の名称が未設定'});if(!m.id)validation.push({level:'ERROR',message:MASTER_LABELS[category]+' にID未設定データがあります'});if(masterRequiresParamsObjectValidation(category,m)&&(typeof m.params!=='object'||Array.isArray(m.params)))validation.push({level:'ERROR',message:m.id+' のパラメータがオブジェクト形式ではありません'});}));
  validateTagSystem().forEach(issue=>validation.push(issue));
  collectAiProgramValidationIssues().forEach(issue=>validation.push(issue));
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
@@ -7957,7 +7958,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','583');
+    url.searchParams.set('appv','584');
     location.replace(url.toString());
    }
  }
@@ -7966,7 +7967,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=583',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=584',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7985,7 +7986,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','583');
+    url.searchParams.set('appv','584');
     location.replace(url.toString());
    }
   });
