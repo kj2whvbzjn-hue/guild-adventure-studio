@@ -4,8 +4,8 @@ const html=fs.readFileSync('studio/index.html','utf8');
 assert.ok(html.includes('function studioNavigateBack()'),'back navigation function missing');
 assert.ok(html.includes('function studioNavigateClose()'),'close navigation function missing');
 assert.ok(html.includes("studioViewHistory.push(previous)"),'view history push missing');
-assert.ok(html.includes("candidate==='__launcher__'"),'launcher history sentinel missing');
-assert.ok(html.includes("selectLauncherCategory('basic',basicButton)"),'Close destination must open Basic/Create/Verify/Manage launcher home');
+assert.ok(html.includes("STUDIO_LAUNCHER_HISTORY_PREFIX='__launcher__:'"),'category-aware launcher history sentinel missing');
+assert.ok(html.includes('studioOpenLauncherHome(category);'),'Close destination must open the current Basic/Create/Verify/Manage launcher Home category');
 assert.ok(html.includes("if(boxOverlay&&!boxOverlay.classList.contains('hidden')){closeQuestBoxEditor();return;}"),'Box editor Back must return to Quest editor');
 assert.ok(!html.includes('id="studioScreenNav"'),'superseded global navigation strip must remain removed');
 assert.ok(html.includes('function studioCommonHeaderElement('),'universal navigation must be rendered by the common child-screen header');
@@ -15,4 +15,4 @@ assert.ok(html.includes('benchmarkWorkflowOverlay')&&html.includes("if(studioOve
 assert.ok(html.includes('dataExchangePicker')&&html.includes("if(studioOverlayVisible('dataExchangePicker'))"),'Data Exchange Back routing missing');
 assert.ok(html.includes('masterSkillPicker')&&html.includes("if(studioOverlayVisible('masterSkillPicker'))"),'Master Skill picker Back routing missing');
 assert.ok(html.includes('tagPickerBackdrop')&&html.includes("if(studioOverlayVisible('tagPickerBackdrop'))"),'Tag picker Back routing missing');
-console.log('PASS GKS-B571 centralized Studio Back/Close behavior with common child-screen headers');
+console.log('PASS current centralized Studio Back/Close behavior with Home-aware common child-screen headers');

@@ -5,7 +5,7 @@ const html=fs.readFileSync('studio/index.html','utf8');
 assert.ok(!html.includes('id="studioScreenNav"'),'legacy global Back/Close strip must be removed');
 assert.ok(html.includes('function studioCommonHeaderElement('),'common Studio header factory missing');
 assert.ok(html.includes('function studioEnsureCommonHeader('),'common Studio header mount missing');
-assert.ok(html.includes("if(!name||name==='dashboard')return;"),'Dashboard must not receive the child-screen header');
+assert.ok(html.includes("function studioEnsureCommonHeader(name){\n if(!name)return;"),'all Studio views including Dashboard must receive the common header');
 assert.ok(html.includes("window.addEventListener('DOMContentLoaded',studioEnsureAllCommonHeaders)"),'static child views must receive common headers');
 assert.ok(html.includes("if(name)studioEnsureCommonHeader(name);"),'dynamic child views must receive common headers');
 assert.ok(html.includes("'equipment-generator':'装備生成'") && html.includes("'skill-generator':'スキル生成'"),'dynamic generator titles missing from common header map');
@@ -27,4 +27,4 @@ assert.ok(html.includes("if(studioOverlayVisible('dataExchangePicker'))") && htm
 assert.ok(!/benchmark-workflow-foot[\s\S]{0,300}studioNavigateClose\(\)/.test(html),'Benchmark footer must not duplicate common Close');
 assert.ok(html.includes("runLauncherAction('story')\">シナリオ") && html.includes("runLauncherAction('quests')\">クエスト"),'Create launcher Scenario/Quest entries missing');
 
-console.log('PASS GKS-B571 common child-screen header, no dashboard/global strip, no duplicate per-view navigation');
+console.log('PASS current common Studio child-screen header, launcher has no global strip, no duplicate per-view navigation');
