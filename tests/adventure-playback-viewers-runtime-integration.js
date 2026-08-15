@@ -24,8 +24,13 @@ assert(app.includes('data-adventure-battle-play'),'Battle Viewer play/pause cont
 assert(app.includes('data-adventure-battle-prev'),'Battle Viewer previous-event control missing');
 assert(app.includes('data-adventure-battle-next'),'Battle Viewer next-event control missing');
 assert(app.includes('events.slice(0,cursor+1)'),'Battle Viewer must reveal only stored events up to the playback cursor');
+assert(app.includes('function placeAdventurePlaybackDetail(itemIndex,{scroll=false}={})'),'Playback detail inline placement helper missing');
+assert(app.includes('data-adventure-entry-index="${actualIndex}"'),'Playback rows must expose the stored timeline index for inline detail placement');
+assert(app.includes("row.insertAdjacentElement('afterend',detail)"),'Event detail must be placed directly below the selected Playback row');
+assert(app.includes('placeAdventurePlaybackDetail(adventurePlaybackDetailItemIndex)'),'Inline detail placement must survive the 1-second Playback rerender');
+assert(app.includes("detail.scrollIntoView({block:'nearest',behavior:'smooth'})"),'Opened Playback detail must be brought into view on mobile');
 assert(app.includes('function renderAdventureReturnResult(summary)'),'return result renderer missing');
 assert(app.includes('QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。'),'return result must make no-recalculation behavior explicit');
 assert(app.includes("const summary={run_id:current.quest_run_id"),'return summary must be captured from stored QuestRun before commit');
-assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.184';"),'current game build missing');
+assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.185';"),'current game build missing');
 console.log('adventure-playback-viewers-runtime-integration PASS');
