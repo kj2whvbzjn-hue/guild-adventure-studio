@@ -65,5 +65,5 @@ assert.ok(html.includes("triggerAdventureEntityJsonImport('quests')"),'Quest JSO
 assert.ok(html.includes("triggerAdventureEntityJsonImport('events')"),'Event JSON import entrance missing');
 assert.ok(html.includes("triggerAdventureEntityJsonImport('story')"),'Story JSON import entrance missing');
 assert.ok(html.includes('Boxは独立登録せず、Quest JSON内の boxes[] として取り込みます。'),'Quest/Box import ownership notice missing');
-assert.ok(html.includes('./adventure-entity-json-import.js?v=582'),'import core script missing');
+assert.ok(html.includes('./adventure-entity-json-import.js?v=583'),'import core script missing');
 console.log('PASS GKS-B582 Quest/Event/Story dedicated JSON bulk import entrances and safe import plan');

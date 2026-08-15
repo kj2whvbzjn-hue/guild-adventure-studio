@@ -1,4 +1,4 @@
-/* Studio skill data bridge — GA-B486.181 / GKS-B582 / Formal Skill */
+/* Studio skill data bridge — GA-B486.181 / GKS-B583 / Formal Skill */
 const STUDIO_SKILL_EXPORT_URL=window.GA_PROJECT_CONFIG.skillExportUrl;
 let studioSkillFormalRegistry=null;
 const studioSkillBridge={status:'idle',source_url:STUDIO_SKILL_EXPORT_URL,schema_version:null,data_version:null,generated_by:null,imported_ids:[],errors:[],loaded_at:null};
