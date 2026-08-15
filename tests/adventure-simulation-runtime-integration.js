@@ -11,5 +11,5 @@ assert(app.includes('const stored=storeAdventureQuestRun(run)'),'simulated Quest
 assert(app.includes("reason:'formal_quest_unavailable'"),'formal quest unavailable guard is missing');
 assert(app.includes("$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure"),'desktop departure is not connected to formal Adventure Simulation');
 assert(app.includes("mobileDepart.onclick=async()=>"),'mobile departure is not connected to Adventure Simulation');
-assert(app.includes('loadAdventureContent().then(content=>{registerAdventureQuestCards(content);'),'Adventure quest discovery is not initialized');
+assert(app.includes('loadAdventureContent().then(content=>{applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);'),'Adventure quest discovery is not initialized');
 console.log('adventure-simulation-runtime-integration PASS');

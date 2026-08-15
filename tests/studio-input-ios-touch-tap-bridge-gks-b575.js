@@ -60,4 +60,4 @@ ctx.studioHandleMobileTouchMove(touchEvent(100,160));
 ctx.studioHandleMobileTouchEnd(touchEvent(100,160,true));
 assert.strictEqual(button.clickCount,1,'scroll gesture must not become a tap');
 
-console.log('PASS GKS-B580 preserves B575 iOS fallback intent with document-level visual hit routing and scroll protection');
+console.log('PASS GKS-B581 preserves B575 iOS fallback intent with document-level visual hit routing and scroll protection');

@@ -9,5 +9,5 @@ assert(app.includes('P7-Bで実行可能なStory Questがありません。Studi
 assert(app.includes("if(!bundle)return{started:false,reason:'formal_quest_unavailable'};"),'departure must reject non-formal quest ids');
 assert(!app.includes("reason:'legacy_quest'"),'legacy quest fallback reason must be removed from game runtime');
 assert(!app.includes('beginSelectedAdventureOrLegacy'),'legacy departure adapter must be removed');
-assert(app.includes("loadAdventureContent().then(content=>{registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();"),'startup must register formal quests then reconcile saved selection');
+assert(app.includes("loadAdventureContent().then(content=>{applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();"),'startup must register formal quests then reconcile saved selection');
 console.log('adventure-formal-quest-runtime-integration PASS');

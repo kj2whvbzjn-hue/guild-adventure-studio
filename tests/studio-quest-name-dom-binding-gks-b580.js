@@ -50,4 +50,4 @@ questNameInput.value='1-1 新たな訓練の日・改';
 const draft=ctx.currentQuestFormalDraft();
 assert.strictEqual(draft.name,'1-1 新たな訓練の日・改','re-changing Quest name must read the actual edited DOM value, not imported/stale helper state');
 
-console.log('PASS GKS-B580 Quest-name DOM binding: list/edit name parity and re-change use the real questName input without helper-name collision');
+console.log('PASS GKS-B581 Quest-name DOM binding: list/edit name parity and re-change use the real questName input without helper-name collision');
