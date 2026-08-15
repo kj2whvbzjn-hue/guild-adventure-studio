@@ -7,12 +7,12 @@ const S=require('../assets/shared/js/adventure-story-system.js');
 
 const studio=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
 
-// Quest editor overview and dedicated Box editor exist.
-for(const token of ['id="questBoxList"','＋ Box追加','id="questBoxEditorOverlay"','Boxを反映','詳細を開く']){
+// Quest editor overview and dedicated Box child screen exist.
+for(const token of ['id="questBoxList"','＋ Box追加','id="questBoxEditorInline"','Boxを反映','詳細を開く']){
   assert(studio.includes(token),`P2 Quest Box UI missing: ${token}`);
 }
-assert(studio.includes('.quest-box-editor-sheet{width:100%;max-height:none;height:100%;border-radius:0}'),'mobile Box editor must use full-screen sheet');
-assert(studio.includes('body.quest-box-editor-open{overflow:hidden}'),'Box editor must lock background scrolling');
+assert(studio.includes('#questEditorPanel.quest-box-detail-open>:not(#questBoxEditorInline){display:none!important}'),'Box detail must replace the Quest editor body in the same Studio input surface');
+assert(!studio.includes('id="questBoxEditorOverlay"'),'nested fixed Box overlay must not return');
 
 // The seven-stage order is fixed in the renderer: A -> pre -> B -> mid -> C -> post -> D.
 const sequenceLine=studio.match(/body\.innerHTML=`<div class="field"><label>Box名<\/label>.*?<div class="quest-box-sequence">([^\n]+)<\/div>`;/)?.[1]||'';

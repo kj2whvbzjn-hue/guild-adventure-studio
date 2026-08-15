@@ -6,10 +6,10 @@ assert.ok(html.includes('function studioNavigateClose()'),'close navigation func
 assert.ok(html.includes("studioViewHistory.push(previous)"),'view history push missing');
 assert.ok(html.includes("STUDIO_LAUNCHER_HISTORY_PREFIX='__launcher__:'"),'category-aware launcher history sentinel missing');
 assert.ok(html.includes('studioOpenLauncherHome(category);'),'Close destination must open the current Basic/Create/Verify/Manage launcher Home category');
-assert.ok(html.includes("if(boxOverlay&&!boxOverlay.classList.contains('hidden')){closeQuestBoxEditor();return;}"),'Box editor Back must return to Quest editor');
+assert.ok(html.includes('if(questBoxEditorState){closeQuestBoxEditor();return;}'),'Box child screen Back must return to Quest editor');
 assert.ok(!html.includes('id="studioScreenNav"'),'superseded global navigation strip must remain removed');
 assert.ok(html.includes('function studioCommonHeaderElement('),'universal navigation must be rendered by the common child-screen header');
-assert.ok(html.includes('quest-box-editor-head studio-common-header'),'Quest Box detail must use the common header');
+assert.ok(html.includes('id="studioInputTitle"')&&html.includes("if(heading)heading.textContent=`${String(index+1).padStart(2,'0')} Boxを編集`"),'Quest Box detail must reuse the Studio input common header');
 assert.ok(html.includes('rule-tag-picker-head')&&html.includes("if(studioOverlayVisible('ruleTagPicker'))"),'Rule Tag picker Back routing missing');
 assert.ok(html.includes('benchmarkWorkflowOverlay')&&html.includes("if(studioOverlayVisible('benchmarkWorkflowOverlay'))"),'Benchmark Back routing missing');
 assert.ok(html.includes('dataExchangePicker')&&html.includes("if(studioOverlayVisible('dataExchangePicker'))"),'Data Exchange Back routing missing');

@@ -25,7 +25,6 @@ assert.ok(html.includes("studioOpenLauncherHome(category);"),'Close must return 
 // Full-screen child screens must sit above the project navigation so their common header is actually visible on iPhone.
 for(const fragment of [
   '.studio-input-overlay{position:fixed;inset:0;z-index:10050',
-  '.quest-box-editor-overlay{position:fixed;inset:0;z-index:10060',
   '.rule-tag-picker{position:fixed;inset:0;z-index:10070',
   '.master-skill-picker{position:fixed;inset:0;z-index:10070',
   '.tag-picker-backdrop{position:fixed;inset:0;z-index:10080',
@@ -55,12 +54,12 @@ const selectedLabel={value:''};
 const nav={addEventListener(){}};
 const doc={
   createElement(){return {className:'',dataset:{},textContent:'',type:'',append(){},addEventListener(){},querySelector(){return {textContent:''}}}},
-  getElementById(id){if(id.startsWith('view-'))return views[id.slice(5)]||null;if(id==='sidebar')return sidebar;if(id==='selectedLabel')return selectedLabel;if(id==='nav')return nav;if(id==='questBoxEditorOverlay')return {classList:classList(['hidden'])};return null},
+  getElementById(id){if(id.startsWith('view-'))return views[id.slice(5)]||null;if(id==='sidebar')return sidebar;if(id==='selectedLabel')return selectedLabel;if(id==='nav')return nav;return null},
   querySelector(sel){if(sel==='.view:not(.hidden)')return Object.values(views).find(v=>!v.classList.contains('hidden'))||null;const m=sel.match(/^\[data-launcher-category="([^"]+)"\]$/);if(m)return categoryButtons.find(b=>b.dataset.launcherCategory===m[1])||null;if(sel==='[data-launcher-category="basic"]')return categoryButtons[0];return null},
   querySelectorAll(sel){if(sel==='.view')return Object.values(views);if(sel==='#nav button[data-view]')return [];if(sel==='.launcher-category-tabs button')return categoryButtons;if(sel==='.launcher-action-panel')return panels;if(sel==='section.view[id]')return [];return []},
   addEventListener(){}
 };
-const ctx={console,document:doc,window:{matchMedia:()=>({matches:true}),scrollTo(){},addEventListener(){},GKSAIProductionUI:null,GKSDataExchangeUI:null},studioInputPanelState:null,rememberRecentFeature(){},closeMobile(){sidebar.classList.remove('mobile-open')},render(){},closeQuestBoxEditor(){},closeRuleTagPicker(){},closeBenchmarkWorkflow(){},closeMasterSkillPicker(){},closeTagPicker(){},backToDatabase(){},setTimeout,clearTimeout};
+const ctx={console,document:doc,window:{matchMedia:()=>({matches:true}),scrollTo(){},addEventListener(){},GKSAIProductionUI:null,GKSDataExchangeUI:null},studioInputPanelState:null,questBoxEditorState:null,rememberRecentFeature(){},closeMobile(){sidebar.classList.remove('mobile-open')},render(){},closeQuestBoxEditor(){},closeRuleTagPicker(){},closeBenchmarkWorkflow(){},closeMasterSkillPicker(){},closeTagPicker(){},backToDatabase(){},setTimeout,clearTimeout};
 ctx.selectLauncherCategory=(name,button)=>{categoryButtons.forEach(b=>b.classList.toggle('active',b===button));panels.forEach(p=>p.classList.toggle('active',p.id==='launcherPanel-'+name));vm.runInContext(`studioLauncherCategory=${JSON.stringify(name||'basic')}`,ctx)};
 ctx.currentStudioView=()=>Object.values(views).find(v=>!v.classList.contains('hidden'))?.id.replace('view-','')||'';
 vm.createContext(ctx);vm.runInContext(code,ctx);
@@ -86,4 +85,4 @@ ctx.studioNavigateClose();
 assert.strictEqual(vm.runInContext('studioLauncherHomeActive',ctx),true);
 assert.ok(categoryButtons.find(b=>b.dataset.launcherCategory==='create').classList.contains('active'),'Close from Flag must return to Create Home');
 
-console.log('PASS GKS-B572 Studio Home-aware common navigation: Dashboard is child, Back is actual previous screen, Close returns category Home, full-screen headers remain visible');
+console.log('PASS GKS-B573 Studio Home-aware common navigation: Dashboard is child, Back is actual previous screen, Close returns category Home, full-screen headers remain visible');

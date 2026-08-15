@@ -15,7 +15,7 @@ for(const title of ['シナリオ','クエスト','イベント','フラグ','�
   assert.ok(!html.includes(`<div class="view-heading"><h1>${title}</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>`),`${title} still has a per-view duplicate close button`);
 }
 
-for(const id of ['ruleTagPickerTitle','benchmarkWorkflowTitle','studioInputTitle','questBoxEditorTitle','dataExchangePickerTitle','masterSkillPickerTitle','tagPickerTitle']){
+for(const id of ['ruleTagPickerTitle','benchmarkWorkflowTitle','studioInputTitle','dataExchangePickerTitle','masterSkillPickerTitle','tagPickerTitle']){
   const pos=html.indexOf(`id="${id}"`);
   assert.ok(pos>=0,`${id} missing`);
   const start=Math.max(0,pos-500),end=Math.min(html.length,pos+700),chunk=html.slice(start,end);
@@ -23,6 +23,7 @@ for(const id of ['ruleTagPickerTitle','benchmarkWorkflowTitle','studioInputTitle
   assert.ok(chunk.includes('studioNavigateBack()') && chunk.includes('studioNavigateClose()'),`${id} common navigation missing`);
 }
 
+assert.ok(html.includes('if(questBoxEditorState){closeQuestBoxEditor();return;}'),'central Back must return from Box child screen to Quest editor');
 assert.ok(html.includes("if(studioOverlayVisible('dataExchangePicker'))") && html.includes("if(studioOverlayVisible('ruleTagPicker'))") && html.includes("if(studioOverlayVisible('tagPickerBackdrop'))"),'central Back must close child overlays one level');
 assert.ok(!/benchmark-workflow-foot[\s\S]{0,300}studioNavigateClose\(\)/.test(html),'Benchmark footer must not duplicate common Close');
 assert.ok(html.includes("runLauncherAction('story')\">シナリオ") && html.includes("runLauncherAction('quests')\">クエスト"),'Create launcher Scenario/Quest entries missing');
