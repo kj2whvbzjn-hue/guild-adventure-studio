@@ -1,15 +1,15 @@
-const CACHE_NAME="ga-game-b486180-b575";
+const CACHE_NAME="ga-game-b486180-b576";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=486180b575';
+const OFFLINE_URL='./index.html?appv=486180b576';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=486180b575",
+  "./index.html?appv=486180b576",
   "./manifest.webmanifest?v=486180",
   "./icon-192.png?v=486180",
   "./icon-512.png?v=486180",
-  "../Export/skill/skills.json?v=486180b575"
+  "../Export/skill/skills.json?v=486180b576"
 ,
-  "../assets/shared/config/runtime-config.js?v=486180b575",
+  "../assets/shared/config/runtime-config.js?v=486180b576",
   "../assets/shared/js/game-shell-common.js?v=486180",
   "../assets/shared/js/apply-lifecycle-engine.js?v=486180",
   "../assets/shared/js/trigger-engine.js?v=486180",
@@ -23,10 +23,10 @@ const APP_SHELL=[
   "../assets/shared/js/device-game-test-harness.js?v=486180",
   "../assets/shared/config/skill-registry.json?v=486180"
 ,
-  "./assets/js/app-runtime.js?v=486180b575"
+  "./assets/js/app-runtime.js?v=486180b576"
 ,
-  "./assets/js/tag-skill-runtime.js?v=486180b575",
-  "./assets/js/studio-skill-bridge.js?v=486180b575"
+  "./assets/js/tag-skill-runtime.js?v=486180b576",
+  "./assets/js/studio-skill-bridge.js?v=486180b576"
 ,
   "./assets/js/battle-control.js?v=486180",
   "./assets/js/ui-bootstrap.js?v=486180"

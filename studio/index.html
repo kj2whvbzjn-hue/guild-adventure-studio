@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B575</title>
+<title>GK Studio GKS-B576</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -217,7 +217,7 @@ body.master-skill-picker-open{overflow:hidden}
 .studio-input-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff}
 .studio-input-head h2{margin:0;font-size:20px}
 .studio-input-head button{min-width:88px}
-.studio-input-overlay button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(37,99,235,.14)}
+.launcher-category-tabs button,.launcher-action-grid button,.studio-input-overlay button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(37,99,235,.14)}
 .studio-input-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px;overscroll-behavior:contain}
 .studio-input-body>.hidden{display:block!important}
 body.studio-input-open{overflow:hidden}
@@ -444,7 +444,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=575"></script>
+  <script src="./adventure-entity-json-import.js?v=576"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -454,13 +454,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B575</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B576</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.180 / Studio GKS-B575</div>
+    <div class="version">Game GA-B486.180 / Studio GKS-B576</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2137,7 +2137,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B575';
+const DISTRIBUTION_BUILD='GKS-B576';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4420,56 +4420,76 @@ async function copyBuildSummary(){
 window.addEventListener('DOMContentLoaded',applyBuildSettings);
 
 let studioInputPanelState=null;
-let studioInputTouchTapState=null;
-let studioInputSyntheticTapActive=false;
-let studioInputSuppressNativeClickUntil=0;
-const STUDIO_INPUT_TOUCH_MOVE_THRESHOLD=12;
-const STUDIO_INPUT_TOUCH_MAX_DURATION=900;
-const STUDIO_INPUT_NATIVE_CLICK_SUPPRESS_MS=700;
-function studioInputTouchPoint(event,changed=false){
+let studioMobileTouchTapState=null;
+let studioMobileSyntheticTapActive=false;
+let studioMobileSuppressNativeClickUntil=0;
+const STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD=12;
+const STUDIO_MOBILE_TOUCH_MAX_DURATION=900;
+const STUDIO_MOBILE_NATIVE_CLICK_SUPPRESS_MS=700;
+function studioIsIosTouchDevice(){
+ const nav=typeof navigator==='object'&&navigator?navigator:{};
+ const ua=String(nav.userAgent||'');
+ return /iP(?:ad|hone|od)/.test(ua)||(/Macintosh/.test(ua)&&Number(nav.maxTouchPoints||0)>1);
+}
+function studioMobileTouchPoint(event,changed=false){
  const list=changed?event?.changedTouches:event?.touches;
  const point=list&&list.length?list[0]:null;
  return point?{x:Number(point.clientX)||0,y:Number(point.clientY)||0}:null;
 }
-function studioInputTouchButton(event){
- const target=event?.target;
- return target&&typeof target.closest==='function'?target.closest('button'):null;
+function studioTouchActiveRoot(){
+ const overlay=document.getElementById('studioInputOverlay');
+ if(overlay&&!overlay.classList.contains('hidden'))return overlay;
+ const sidebar=document.getElementById('sidebar');
+ return sidebar&&sidebar.classList.contains('mobile-open')?sidebar:null;
 }
-function studioInputTouchReset(){studioInputTouchTapState=null;}
-function studioHandleInputTouchStart(event){
- const overlay=document.getElementById('studioInputOverlay'),button=studioInputTouchButton(event),point=studioInputTouchPoint(event);
- if(!overlay||overlay.classList.contains('hidden')||!button||button.disabled||!overlay.contains(button)||!point){studioInputTouchReset();return;}
- studioInputTouchTapState={button,startX:point.x,startY:point.y,lastX:point.x,lastY:point.y,moved:false,startedAt:Date.now()};
+function studioTouchButtonFromPoint(root,point){
+ if(!root||!point||typeof root.querySelectorAll!=='function')return null;
+ const buttons=Array.from(root.querySelectorAll('button'));
+ for(const button of buttons){
+  if(!button||button.disabled||typeof button.getBoundingClientRect!=='function')continue;
+  const rect=button.getBoundingClientRect();
+  if(!rect||Number(rect.width)<=0||Number(rect.height)<=0)continue;
+  if(point.x>=Number(rect.left)&&point.x<=Number(rect.right)&&point.y>=Number(rect.top)&&point.y<=Number(rect.bottom))return button;
+ }
+ return null;
 }
-function studioHandleInputTouchMove(event){
- const state=studioInputTouchTapState,point=studioInputTouchPoint(event);if(!state||!point)return;
- state.lastX=point.x;state.lastY=point.y;
- if(Math.abs(point.x-state.startX)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD||Math.abs(point.y-state.startY)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD)state.moved=true;
+function studioMobileTouchReset(){studioMobileTouchTapState=null;}
+function studioHandleMobileTouchStart(event){
+ if(!studioIsIosTouchDevice()){studioMobileTouchReset();return;}
+ const root=studioTouchActiveRoot(),point=studioMobileTouchPoint(event),button=studioTouchButtonFromPoint(root,point);
+ if(!root||!point||!button){studioMobileTouchReset();return;}
+ studioMobileTouchTapState={root,button,startX:point.x,startY:point.y,moved:false,startedAt:Date.now()};
 }
-function studioHandleInputTouchEnd(event){
- const state=studioInputTouchTapState,point=studioInputTouchPoint(event,true),button=studioInputTouchButton(event),overlay=document.getElementById('studioInputOverlay');
- studioInputTouchReset();
- if(!state||state.moved||Date.now()-state.startedAt>STUDIO_INPUT_TOUCH_MAX_DURATION||!overlay||overlay.classList.contains('hidden')||!button||button!==state.button||button.disabled||!overlay.contains(button))return;
- if(point&&(Math.abs(point.x-state.startX)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD||Math.abs(point.y-state.startY)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD))return;
+function studioHandleMobileTouchMove(event){
+ const state=studioMobileTouchTapState,point=studioMobileTouchPoint(event);if(!state||!point)return;
+ if(Math.abs(point.x-state.startX)>STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD||Math.abs(point.y-state.startY)>STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD)state.moved=true;
+}
+function studioHandleMobileTouchEnd(event){
+ const state=studioMobileTouchTapState,point=studioMobileTouchPoint(event,true),root=studioTouchActiveRoot();
+ studioMobileTouchReset();
+ if(!state||state.moved||!point||Date.now()-state.startedAt>STUDIO_MOBILE_TOUCH_MAX_DURATION||root!==state.root)return;
+ if(Math.abs(point.x-state.startX)>STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD||Math.abs(point.y-state.startY)>STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD)return;
+ const button=studioTouchButtonFromPoint(root,point);
+ if(!button||button!==state.button||button.disabled)return;
  event.preventDefault?.();event.stopPropagation?.();
- studioInputSuppressNativeClickUntil=Date.now()+STUDIO_INPUT_NATIVE_CLICK_SUPPRESS_MS;
- studioInputSyntheticTapActive=true;
- try{button.click();}finally{studioInputSyntheticTapActive=false;}
+ studioMobileSuppressNativeClickUntil=Date.now()+STUDIO_MOBILE_NATIVE_CLICK_SUPPRESS_MS;
+ studioMobileSyntheticTapActive=true;
+ try{button.click();}finally{studioMobileSyntheticTapActive=false;}
 }
-function studioHandleInputClickCapture(event){
- if(studioInputSyntheticTapActive)return;
- if(Date.now()<studioInputSuppressNativeClickUntil){event.preventDefault?.();event.stopImmediatePropagation?.();}
+function studioHandleMobileClickCapture(event){
+ if(studioMobileSyntheticTapActive)return;
+ if(Date.now()<studioMobileSuppressNativeClickUntil){event.preventDefault?.();event.stopImmediatePropagation?.();}
 }
-function installStudioInputTouchTapBridge(){
- const overlay=document.getElementById('studioInputOverlay');if(!overlay||overlay.dataset.touchTapBridge==='1')return;
- overlay.dataset.touchTapBridge='1';
- overlay.addEventListener('touchstart',studioHandleInputTouchStart,{capture:true,passive:true});
- overlay.addEventListener('touchmove',studioHandleInputTouchMove,{capture:true,passive:true});
- overlay.addEventListener('touchend',studioHandleInputTouchEnd,{capture:true,passive:false});
- overlay.addEventListener('touchcancel',studioInputTouchReset,{capture:true,passive:true});
- overlay.addEventListener('click',studioHandleInputClickCapture,true);
+function installStudioMobileTouchRouter(){
+ if(!studioIsIosTouchDevice()||document.documentElement?.dataset?.studioMobileTouchRouter==='1')return;
+ if(document.documentElement?.dataset)document.documentElement.dataset.studioMobileTouchRouter='1';
+ document.addEventListener('touchstart',studioHandleMobileTouchStart,{capture:true,passive:true});
+ document.addEventListener('touchmove',studioHandleMobileTouchMove,{capture:true,passive:true});
+ document.addEventListener('touchend',studioHandleMobileTouchEnd,{capture:true,passive:false});
+ document.addEventListener('touchcancel',studioMobileTouchReset,{capture:true,passive:true});
+ document.addEventListener('click',studioHandleMobileClickCapture,true);
 }
-window.addEventListener('DOMContentLoaded',installStudioInputTouchTapBridge);
+window.addEventListener('DOMContentLoaded',installStudioMobileTouchRouter);
 function openStudioInputPanel(id,title){
   const panel=document.getElementById(id),overlay=document.getElementById('studioInputOverlay'),body=document.getElementById('studioInputBody'),heading=document.getElementById('studioInputTitle');
   if(!panel||!overlay||!body)return;
@@ -7599,7 +7619,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','575');
+    url.searchParams.set('appv','576');
     location.replace(url.toString());
    }
  }
@@ -7608,7 +7628,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=575',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=576',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7627,7 +7647,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','575');
+    url.searchParams.set('appv','576');
     location.replace(url.toString());
    }
   });
