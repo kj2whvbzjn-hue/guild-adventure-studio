@@ -26,4 +26,4 @@ vm.createContext(sandbox);
 vm.runInContext(`${block}; renderQuestFormalWorkflow();`,sandbox,{filename:'quest-formal-workflow-regression.js'});
 assert(el.innerHTML.includes('P7-B Game Runtime'),'Quest formal workflow must render without ReferenceError');
 assert(el.innerHTML.includes('runtime test'),'P7 runtime issue details must render');
-console.log('adventure-quest-new-editor-studio-regression-gks-b567 PASS');
+console.log('adventure-quest-new-editor-studio-regression-gks-b568 PASS');

@@ -21,6 +21,6 @@ assert(harness.includes("kind:'real_device_acceptance'"),'Formal Game実機JSON�
 assert(harness.includes('結果JSONをコピー'),'Formal Game実機JSON持ち出しがありません');
 assert(html.includes(`../assets/shared/js/device-game-test-harness.js?v=${cacheId}`),'Formal Game実機ハーネスのキャッシュバスターが現行ビルドではありません');
 const gameSw=fs.readFileSync('game/sw.js','utf8');
-assert(gameSw.includes(`ga-game-b${cacheId}-b567`),'Game Service Workerキャッシュが現行ビルドではありません');
+assert(gameSw.includes(`ga-game-b${cacheId}-b568`),'Game Service Workerキャッシュが現行ビルドではありません');
 assert(gameSw.includes(`device-game-test-harness.js?v=${cacheId}`),'Service Workerが現行Formal実機ハーネスを参照していません');
 console.log('HEAL_FORMAL_GAME_DEVICE_CURRENT_BUILD_OK');

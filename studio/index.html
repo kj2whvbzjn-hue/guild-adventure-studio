@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B567</title>
+<title>GK Studio GKS-B568</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -434,6 +434,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=9"></script>
+  <script src="./adventure-entity-json-import.js?v=568"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -443,13 +444,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B567</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B568</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.180 / Studio GKS-B567</div>
+    <div class="version">Game GA-B486.180 / Studio GKS-B568</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -616,7 +617,10 @@ updateDeployDeleteControl();
       <button class="primary" type="button" onclick="openChapterEditor()">＋新規</button>
       <button type="button" onclick="showView('storyeditor')">構成編集</button>
       <button type="button" onclick="GKSDataExchangeUI.openStoryPicker()">データ出力</button>
+      <button type="button" onclick="triggerAdventureEntityJsonImport('story')">JSON一括登録</button>
+      <input type="file" id="storyJsonImportFile" accept=".json,application/json" class="hidden" onchange="handleAdventureEntityJsonImportFile('story',this)">
     </div>
+    <div id="storyJsonImportStatus" class="small">JSON一括登録: 未実行（章配列または {&quot;chapters&quot;:[...]} を受け付けます）</div>
   </div>
   <div id="chapterEditorPanel" class="card hidden">
     <h2>章の追加</h2>
@@ -807,7 +811,8 @@ updateDeployDeleteControl();
 <section id="view-quests" class="view hidden">
   <div class="view-heading"><h1>クエスト</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
 
-  <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openQuestEditor()">＋新規</button></div>
+  <div class="toolbar"><button class="primary" style="flex:1 1 220px" type="button" onclick="openQuestEditor()">＋新規</button><button style="flex:1 1 220px" type="button" onclick="triggerAdventureEntityJsonImport('quests')">JSON一括登録</button><input type="file" id="questJsonImportFile" accept=".json,application/json" class="hidden" onchange="handleAdventureEntityJsonImportFile('quests',this)"></div>
+  <div id="questJsonImportStatus" class="small" style="margin-bottom:12px">JSON一括登録: 未実行。Boxは独立登録せず、Quest JSON内の boxes[] として取り込みます。</div>
   <div id="questEditorPanel" class="card hidden">
     <h2>クエスト入力</h2>
     <div class="grid">
@@ -912,7 +917,8 @@ updateDeployDeleteControl();
 <section id="view-events" class="view hidden">
   <div class="view-heading"><h1>イベント</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
 
-  <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openEventEditor()">＋新規</button></div>
+  <div class="toolbar"><button class="primary" style="flex:1 1 220px" type="button" onclick="openEventEditor()">＋新規</button><button style="flex:1 1 220px" type="button" onclick="triggerAdventureEntityJsonImport('events')">JSON一括登録</button><input type="file" id="eventJsonImportFile" accept=".json,application/json" class="hidden" onchange="handleAdventureEntityJsonImportFile('events',this)"></div>
+  <div id="eventJsonImportStatus" class="small" style="margin-bottom:12px">JSON一括登録: 未実行（Event配列または {&quot;events&quot;:[...]} を受け付けます）</div>
   <div id="eventEditorPanel" class="card hidden">
     <h2>イベント入力</h2>
     <div class="grid">
@@ -2125,7 +2131,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B567';
+const DISTRIBUTION_BUILD='GKS-B568';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6984,6 +6990,53 @@ function renderQuestFormalWorkflow(){
   `<div class="toolbar" style="margin-top:8px"><button type="button" onclick="openQuestFormalSection()" ${state.section?'':'disabled'}>旧Sectionデータを確認（参考）</button><button type="button" onclick="openQuestFormalExport()">Export検証へ</button></div>`;
 }
 function refreshQuestMapOptions(selected=''){const el=document.getElementById('questMapId');if(!el)return;const rows=data.masters?.maps||[];el.innerHTML='<option value="">未設定</option>'+rows.map(m=>`<option value="${escAttr(m.id)}" ${String(m.id)===String(selected)?'selected':''}>${esc(m.name||m.id)} (${esc(m.id)})</option>`).join('');}
+const ADVENTURE_ENTITY_IMPORT_UI={
+ quests:{input_id:'questJsonImportFile',status_id:'questJsonImportStatus',label:'Quest'},
+ events:{input_id:'eventJsonImportFile',status_id:'eventJsonImportStatus',label:'Event'},
+ story:{input_id:'storyJsonImportFile',status_id:'storyJsonImportStatus',label:'Story'}
+};
+function adventureEntityImportUi(kind){return ADVENTURE_ENTITY_IMPORT_UI[kind]||null}
+function triggerAdventureEntityJsonImport(kind){
+ const ui=adventureEntityImportUi(kind),input=ui&&document.getElementById(ui.input_id);if(!input)return alert('JSON Import入力が見つかりません。');input.value='';input.click();
+}
+function setAdventureEntityImportStatus(kind,message,level=''){
+ const ui=adventureEntityImportUi(kind),host=ui&&document.getElementById(ui.status_id);if(!host)return;
+ const badge=level?`<span class="badge ${level==='ok'?'ok':level==='warn'?'warn':'err'}">${level==='ok'?'完了':level==='warn'?'確認':'停止'}</span> `:'';
+ host.innerHTML=badge+esc(String(message||''));
+}
+function readAdventureEntityImportFile(file){
+ if(file&&typeof file.text==='function')return file.text();
+ return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(new Error('ファイルを読み込めませんでした。'));r.readAsText(file,'utf-8');});
+}
+function adventureEntityImportConfirmText(plan,fileName){
+ const lines=[`${plan.label} JSON一括登録`,fileName?`ファイル: ${fileName}`:'',`新規: ${plan.adds.length}件`,`更新: ${plan.updates.length}件`,`変更なし: ${plan.unchanged.length}件`,`警告: ${plan.warnings.length}件`].filter(Boolean);
+ if(plan.warnings.length){lines.push('',...plan.warnings.slice(0,8).map(x=>'・'+x));if(plan.warnings.length>8)lines.push(`・ほか ${plan.warnings.length-8}件`);lines.push('','未登録参照の警告は登録を妨げません。後から別JSONで登録できます。');}
+ lines.push('','反映前に端末バックアップを作成します。続行しますか？');return lines.join('\n');
+}
+async function handleAdventureEntityJsonImportFile(kind,input){
+ const ui=adventureEntityImportUi(kind),file=input?.files?.[0];if(!ui||!file)return;
+ try{
+  if(!window.GKSAdventureEntityJsonImport)throw new Error('Adventure Entity JSON Importモジュールが読み込まれていません。');
+  setAdventureEntityImportStatus(kind,'JSONを解析しています…','warn');
+  const text=await readAdventureEntityImportFile(file),payload=JSON.parse(text),plan=GKSAdventureEntityJsonImport.buildPlan(kind,payload,data);
+  window.lastAdventureEntityJsonImportPlan=plan;
+  if(plan.errors.length){setAdventureEntityImportStatus(kind,`解析停止: ${plan.errors.length}件のエラー。データ変更0件。`,'err');return alert(`${ui.label} JSON一括登録を停止しました。\n\n`+plan.errors.join('\n'));}
+  if(!plan.canApply){setAdventureEntityImportStatus(kind,`変更なし: ${plan.unchanged.length}件。データ変更0件。`,'ok');return alert(`${ui.label} JSONは現在のデータと同一です。変更はありません。`);}
+  setAdventureEntityImportStatus(kind,`反映確認: 新規${plan.adds.length} / 更新${plan.updates.length} / 変更なし${plan.unchanged.length} / 警告${plan.warnings.length}`,'warn');
+  if(!confirm(adventureEntityImportConfirmText(plan,file.name)))return;
+  const before=data;
+  let candidate=GKSAdventureEntityJsonImport.applyPlan(before,plan,now());
+  try{data=candidate;normalizeData();candidate=data;}finally{data=before;}
+  if(!createBackup(`before-${kind}-json-import`,{silent:true}))throw new Error('反映前バックアップを保存できませんでした。Importは実行していません。');
+  data=candidate;
+  if(kind==='story')storySelection=null;
+  if(!persist(`${ui.label} JSON bulk import: add=${plan.adds.length} update=${plan.updates.length} unchanged=${plan.unchanged.length}`)){data=before;render();throw new Error('プロジェクト保存に失敗したためImportを取り消しました。');}
+  setAdventureEntityImportStatus(kind,`反映完了: 新規${plan.adds.length} / 更新${plan.updates.length} / 変更なし${plan.unchanged.length} / 警告${plan.warnings.length}`,'ok');
+  alert(`${ui.label} JSON一括登録が完了しました。\n新規 ${plan.adds.length}件 / 更新 ${plan.updates.length}件 / 変更なし ${plan.unchanged.length}件`);
+ }catch(e){setAdventureEntityImportStatus(kind,`読込失敗: ${e.message}。データ変更0件。`,'err');alert(`${ui.label} JSON一括登録失敗: ${e.message}`);}
+ finally{if(input)input.value='';}
+}
+
 function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
  questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
@@ -7381,7 +7434,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','567');
+    url.searchParams.set('appv','568');
     location.replace(url.toString());
    }
  }
@@ -7390,7 +7443,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=567',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=568',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7409,7 +7462,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','567');
+    url.searchParams.set('appv','568');
     location.replace(url.toString());
    }
   });
@@ -7497,7 +7550,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486180"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486180"></script>
 <script src="../assets/shared/js/condition-engine.js?v=486180"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b567"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b568"></script>
 <script src="../assets/shared/js/skill-compiler.js?v=486180"></script>
 <script src="../assets/shared/js/skill-compile-service.js?v=486180"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>
