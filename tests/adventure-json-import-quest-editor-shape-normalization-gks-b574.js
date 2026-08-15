@@ -81,4 +81,4 @@ vm.runInContext('studioNavigateBack()',ctx);assert.strictEqual(vm.runInContext('
 // reopen and close via common close navigation
 vm.runInContext("editQuest('QST-CH01-SEC01'); openQuestBoxEditor(0); studioNavigateClose();",ctx);
 assert.strictEqual(vm.runInContext('questBoxEditorState',ctx),null);assert.strictEqual(vm.runInContext('studioInputPanelState',ctx),null);assert.strictEqual(ctx.__launcherOpened,true);
-console.log('PASS GKS-B577 imported Quest shape normalization -> existing Box/add/back/close');
+console.log('PASS GKS-B578 imported Quest shape normalization -> existing Box/add/back/close');
