@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B568</title>
+<title>GK Studio GKS-B569</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -427,6 +427,10 @@ body.benchmark-workflow-open{overflow:hidden}
  .benchmark-workflow-state .item{max-height:82px}
 }
 
+
+.studio-screen-nav{display:flex;justify-content:flex-end;gap:10px;align-items:center;margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
+.studio-screen-nav button{min-width:96px}
+@media(max-width:900px){.studio-screen-nav{position:sticky;top:0;z-index:30;background:var(--bg,#f4f7f8);padding:10px 0;margin:-2px 0 12px}.studio-screen-nav button{flex:1;min-height:44px}}
 </style>
   <script src="jszip.min.js?v=240">
 window.addEventListener('DOMContentLoaded',()=>{renderDeployRollbackStatus()});
@@ -434,7 +438,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=9"></script>
-  <script src="./adventure-entity-json-import.js?v=568"></script>
+  <script src="./adventure-entity-json-import.js?v=569"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -444,13 +448,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B568</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B569</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.180 / Studio GKS-B568</div>
+    <div class="version">Game GA-B486.180 / Studio GKS-B569</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -533,6 +537,7 @@ updateDeployDeleteControl();
 </aside>
 
 <main class="workspace">
+<div id="studioScreenNav" class="studio-screen-nav" aria-label="Studio画面ナビゲーション"><button type="button" onclick="studioNavigateBack()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div>
 <section id="view-dashboard" class="view">
   <h1>ダッシュボード</h1>
   <div class="kpis">
@@ -609,7 +614,7 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-story" class="view hidden">
-  <div class="view-heading"><h1>シナリオ</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
+  <div class="view-heading"><h1>シナリオ</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>
   <div class="card">
     <h2>シナリオ制作</h2>
     <p class="small">章の新規作成と、章・節・シーン・会話の構成編集を一つの入口にまとめています。</p>
@@ -809,7 +814,7 @@ updateDeployDeleteControl();
 
 
 <section id="view-quests" class="view hidden">
-  <div class="view-heading"><h1>クエスト</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
+  <div class="view-heading"><h1>クエスト</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>
 
   <div class="toolbar"><button class="primary" style="flex:1 1 220px" type="button" onclick="openQuestEditor()">＋新規</button><button style="flex:1 1 220px" type="button" onclick="triggerAdventureEntityJsonImport('quests')">JSON一括登録</button><input type="file" id="questJsonImportFile" accept=".json,application/json" class="hidden" onchange="handleAdventureEntityJsonImportFile('quests',this)"></div>
   <div id="questJsonImportStatus" class="small" style="margin-bottom:12px">JSON一括登録: 未実行。Boxは独立登録せず、Quest JSON内の boxes[] として取り込みます。</div>
@@ -915,7 +920,7 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-events" class="view hidden">
-  <div class="view-heading"><h1>イベント</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
+  <div class="view-heading"><h1>イベント</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>
 
   <div class="toolbar"><button class="primary" style="flex:1 1 220px" type="button" onclick="openEventEditor()">＋新規</button><button style="flex:1 1 220px" type="button" onclick="triggerAdventureEntityJsonImport('events')">JSON一括登録</button><input type="file" id="eventJsonImportFile" accept=".json,application/json" class="hidden" onchange="handleAdventureEntityJsonImportFile('events',this)"></div>
   <div id="eventJsonImportStatus" class="small" style="margin-bottom:12px">JSON一括登録: 未実行（Event配列または {&quot;events&quot;:[...]} を受け付けます）</div>
@@ -1009,7 +1014,7 @@ updateDeployDeleteControl();
 
 
 <section id="view-flags" class="view hidden">
-  <div class="view-heading"><h1>フラグ</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
+  <div class="view-heading"><h1>フラグ</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>
   <div class="toolbar"><button class="primary" style="width:100%" type="button" onclick="openFlagEditor()">＋新規</button></div>
   <div id="flagEditorPanel" class="card hidden">
     <h2>フラグ入力</h2>
@@ -1039,7 +1044,7 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-characters" class="view hidden">
-  <div class="view-heading"><h1>キャラクター</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
+  <div class="view-heading"><h1>キャラクター</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>
   <div class="card"><p class="small">登録・編集は必要なときだけ入力パネルを開きます。</p><button class="primary" style="width:100%" type="button" onclick="openCharacterEditor()">＋新規</button></div>
   <div id="characterEditorPanel" class="card hidden">
     <div class="grid">
@@ -1084,7 +1089,7 @@ updateDeployDeleteControl();
 
 
 <section id="view-masters" class="view hidden">
-  <div class="view-heading"><h1>マスター</h1><button type="button" onclick="openProductionLauncher()">閉じる</button></div>
+  <div class="view-heading"><h1>マスター</h1><button type="button" onclick="studioNavigateClose()">とじる</button></div>
   <div class="card">
     <h2>マスター編集</h2>
     <p class="small">登録・編集は専用の入力パネルで行います。一覧を確認しながら、必要なときだけ入力画面を開けます。</p>
@@ -1208,7 +1213,7 @@ updateDeployDeleteControl();
 <div id="ruleTagPicker" class="rule-tag-picker hidden" aria-hidden="true">
   <div class="rule-tag-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="ruleTagPickerTitle">
     <div class="rule-tag-picker-head">
-      <div class="rule-tag-picker-title"><h2 id="ruleTagPickerTitle">タグを選択</h2><button type="button" onclick="closeRuleTagPicker()">閉じる</button></div>
+      <div class="rule-tag-picker-title"><h2 id="ruleTagPickerTitle">タグを選択</h2><div class="toolbar"><button type="button" onclick="closeRuleTagPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div></div>
       <input id="ruleTagPickerSearch" class="rule-tag-picker-search" type="search" autocomplete="off" placeholder="タグ名・ID・カテゴリ・親・説明を検索" oninput="renderRuleTagPicker()" onkeydown="handleRuleTagPickerKey(event)">
       <div class="rule-tag-picker-tools"><button type="button" onclick="selectAllVisibleRuleTags()">全選択</button><button type="button" onclick="clearRuleTagSelection()">選択解除</button><span id="ruleTagPickerResultCount" class="rule-tag-picker-count"></span></div>
     </div>
@@ -1238,7 +1243,7 @@ updateDeployDeleteControl();
   <div class="benchmark-workflow-sheet" role="dialog" aria-modal="true" aria-labelledby="benchmarkWorkflowTitle" onclick="event.stopPropagation()">
     <div class="benchmark-workflow-head">
       <div><h2 id="benchmarkWorkflowTitle">Benchmark ZIPワークフロー</h2><div class="small">出す → 実行 → 受け取る</div></div>
-      <button type="button" onclick="closeBenchmarkWorkflow()">閉じる</button>
+      <div class="toolbar"><button type="button" onclick="closeBenchmarkWorkflow()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div>
     </div>
     <div class="benchmark-workflow-body">
       <div class="field"><label>使用するBenchmark</label><select id="battleBenchmarkSelect" onchange="previewBattleBenchmark()"><option value="">選択してください</option></select></div>
@@ -1258,7 +1263,7 @@ updateDeployDeleteControl();
       <div id="battleBenchmarkResultList" class="hidden"></div>
     </div>
     <div class="benchmark-workflow-foot">
-      <button type="button" onclick="closeBenchmarkWorkflow()">閉じる</button>
+      <button type="button" onclick="studioNavigateClose()">とじる</button>
       <button class="primary" type="button" onclick="document.getElementById('battleBenchmarkResultPackageFileInput').click()">受取ZIPを読み込む</button>
     </div>
   </div>
@@ -1266,7 +1271,7 @@ updateDeployDeleteControl();
 
 <div id="studioInputOverlay" class="studio-input-overlay hidden" aria-hidden="true" onclick="handleStudioInputBackdrop(event)">
   <div class="studio-input-sheet" role="dialog" aria-modal="true" aria-labelledby="studioInputTitle">
-    <div class="studio-input-head"><h2 id="studioInputTitle">入力</h2><div class="toolbar"><button type="button" onclick="backToDatabase()">戻る</button><button type="button" onclick="closeToProductionLauncher()">閉じる</button></div></div>
+    <div class="studio-input-head"><h2 id="studioInputTitle">入力</h2><div class="toolbar"><button type="button" onclick="studioNavigateBack()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div></div>
     <div id="studioInputBody" class="studio-input-body"></div>
   </div>
 </div>
@@ -1274,7 +1279,7 @@ updateDeployDeleteControl();
 
 <div id="questBoxEditorOverlay" class="quest-box-editor-overlay hidden" aria-hidden="true" onclick="handleQuestBoxEditorBackdrop(event)">
   <div class="quest-box-editor-sheet" role="dialog" aria-modal="true" aria-labelledby="questBoxEditorTitle" onclick="event.stopPropagation()">
-    <div class="quest-box-editor-head"><div><h2 id="questBoxEditorTitle">Boxを編集</h2><div id="questBoxEditorId" class="small"></div></div><button type="button" onclick="closeQuestBoxEditor()">キャンセル</button></div>
+    <div class="quest-box-editor-head"><div><h2 id="questBoxEditorTitle">Boxを編集</h2><div id="questBoxEditorId" class="small"></div></div><div class="toolbar"><button type="button" onclick="studioNavigateBack()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div></div>
     <div id="questBoxEditorBody" class="quest-box-editor-body"></div>
     <div class="quest-box-editor-foot"><button type="button" onclick="closeQuestBoxEditor()">キャンセル</button><button class="primary" type="button" onclick="saveQuestBoxEditor()">Boxを反映</button></div>
   </div>
@@ -2066,7 +2071,7 @@ updateDeployDeleteControl();
 <div id="dataExchangePicker" class="dx-picker hidden" aria-hidden="true">
   <div class="dx-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="dataExchangePickerTitle">
     <div class="dx-picker-head">
-      <div class="dx-picker-title"><h2 id="dataExchangePickerTitle">部分データ入出力</h2><button type="button" onclick="GKSDataExchangeUI.closePicker()">閉じる</button></div>
+      <div class="dx-picker-title"><h2 id="dataExchangePickerTitle">部分データ入出力</h2><div class="toolbar"><button type="button" onclick="GKSDataExchangeUI.closePicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div></div>
       <div class="dx-picker-controls">
         <select id="dxPickerDataset" aria-label="出力分類" onchange="GKSDataExchangeUI.changeDataset()"></select>
         <select id="dxPickerDependencyMode" aria-label="関連データ"><option value="none">本体のみ</option><option value="direct">直接参照</option><option value="recursive">再帰参照（GPT用）</option></select>
@@ -2087,7 +2092,7 @@ updateDeployDeleteControl();
 <div id="masterSkillPicker" class="master-skill-picker hidden" aria-hidden="true">
   <div class="master-skill-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="masterSkillPickerTitle">
     <div class="master-skill-picker-head">
-      <div class="master-skill-picker-title"><h2 id="masterSkillPickerTitle">候補スキルを選択</h2><button type="button" onclick="closeMasterSkillPicker()">閉じる</button></div>
+      <div class="master-skill-picker-title"><h2 id="masterSkillPickerTitle">候補スキルを選択</h2><div class="toolbar"><button type="button" onclick="closeMasterSkillPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div></div>
       <div id="masterSkillPickerSummary" class="master-skill-picker-summary"></div>
       <input id="masterSkillPickerSearch" class="master-skill-picker-search" type="search" autocomplete="off" placeholder="スキル名・ID・タグを検索" oninput="renderMasterSkillPicker()">
       <div class="master-skill-picker-tools"><button type="button" onclick="selectAllVisibleMasterSkills()">表示候補を全選択</button><button type="button" onclick="clearMasterSkillSelection()">選択解除</button><span id="masterSkillPickerCount" class="master-skill-picker-count"></span></div>
@@ -2099,7 +2104,7 @@ updateDeployDeleteControl();
 
 <div id="tagPickerBackdrop" class="tag-picker-backdrop hidden" role="presentation" onclick="closeTagPicker(event)">
   <div class="tag-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="tagPickerTitle" onclick="event.stopPropagation()">
-    <div class="toolbar"><h2 id="tagPickerTitle" style="flex:1;margin:0">タグ選択</h2><button type="button" onclick="closeTagPicker()">閉じる</button></div>
+    <div class="toolbar"><h2 id="tagPickerTitle" style="flex:1;margin:0">タグ選択</h2><button type="button" onclick="closeTagPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div>
     <div class="grid">
       <div class="field"><label>検索</label><input id="tagPickerSearch" placeholder="ID・名称・説明・エイリアス" oninput="renderTagPicker()"></div>
       <div class="field"><label>カテゴリ</label><select id="tagPickerCategory" onchange="renderTagPicker()"><option value="">すべて</option></select></div>
@@ -2131,7 +2136,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B568';
+const DISTRIBUTION_BUILD='GKS-B569';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2501,9 +2506,18 @@ function renderVerificationHome(){
  const rec=document.getElementById('verificationRecommendation');if(rec){rec.className='item '+(errorCount?'error':warningCount?'warn':'ok');rec.textContent=errorCount?'データエラーを先に解消してください。':warningCount?'警告を確認後、代表戦闘へ進めます。':snap.battle?'代表戦闘結果を確認し、一括検証へ進めます。':'データ検証上の重大な問題はありません。代表戦闘へ進めます。'}
 }
 let pendingStudioView='';
+const studioViewHistory=[];
+let studioHistoryNavigation=false;
+let studioLauncherHomeActive=false;
 function showView(name){
  const target=document.getElementById('view-'+name);
  if(!target){pendingStudioView=name;return false;}
+ const current=typeof currentStudioView==='function'?currentStudioView():(typeof document.querySelector==='function'?(document.querySelector('.view:not(.hidden)')?.id||'').replace('view-',''):'');
+ if(!studioHistoryNavigation&&current&&current!==name){
+  const previous=studioLauncherHomeActive?'__launcher__':current;
+  if(studioViewHistory[studioViewHistory.length-1]!==previous)studioViewHistory.push(previous);
+ }
+ studioLauncherHomeActive=false;
  pendingStudioView='';
  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
  target.classList.remove('hidden');
@@ -2512,6 +2526,37 @@ function showView(name){
  if(name==='ai-production')window.GKSAIProductionUI?.render();
  if(window.matchMedia('(max-width:900px)').matches){window.scrollTo({top:0,behavior:'instant'})}
  return true;
+}
+function studioOpenLauncherHome(){
+ const boxOverlay=document.getElementById('questBoxEditorOverlay');
+ if(boxOverlay&&!boxOverlay.classList.contains('hidden'))closeQuestBoxEditor();
+ if(studioInputPanelState)closeStudioInputPanel();
+ const basicButton=document.querySelector('[data-launcher-category="basic"]');
+ if(basicButton)selectLauncherCategory('basic',basicButton);
+ studioLauncherHomeActive=true;
+ const sidebar=document.getElementById('sidebar');
+ if(sidebar&&window.matchMedia('(max-width:900px)').matches)sidebar.classList.add('mobile-open');
+ if(sidebar&&!window.matchMedia('(max-width:900px)').matches)sidebar.scrollIntoView({block:'start'});
+}
+function studioNavigateBack(){
+ const boxOverlay=document.getElementById('questBoxEditorOverlay');
+ if(boxOverlay&&!boxOverlay.classList.contains('hidden')){closeQuestBoxEditor();return;}
+ if(studioInputPanelState){backToDatabase();return;}
+ let target='';
+ const current=currentStudioView();
+ while(studioViewHistory.length&&!target){const candidate=studioViewHistory.pop();if(candidate==='__launcher__'||candidate!==current)target=candidate;}
+ if(!target||target==='__launcher__'){studioOpenLauncherHome();return;}
+ studioHistoryNavigation=true;
+ try{showView(target)}finally{studioHistoryNavigation=false}
+}
+function studioNavigateClose(){
+ studioViewHistory.length=0;
+ try{if(typeof closeRuleTagPicker==='function')closeRuleTagPicker()}catch(e){}
+ try{if(typeof closeBenchmarkWorkflow==='function')closeBenchmarkWorkflow()}catch(e){}
+ try{window.GKSDataExchangeUI?.closePicker?.()}catch(e){}
+ try{if(typeof closeMasterSkillPicker==='function')closeMasterSkillPicker()}catch(e){}
+ try{if(typeof closeTagPicker==='function')closeTagPicker()}catch(e){}
+ studioOpenLauncherHome();
 }
 function handleStudioDynamicViewReady(event){
  const name=String(event?.detail?.view||'');
@@ -4349,7 +4394,7 @@ function backToDatabase(){
 }
 function closeToProductionLauncher(){
  closeStudioInputPanel();
- openProductionLauncher();
+ studioOpenLauncherHome();
 }
 
 function handleStudioInputBackdrop(event){if(event.target&&event.target.id==='studioInputOverlay')closeStudioInputPanel()}
@@ -7434,7 +7479,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','568');
+    url.searchParams.set('appv','569');
     location.replace(url.toString());
    }
  }
@@ -7443,7 +7488,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=568',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=569',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7462,7 +7507,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','568');
+    url.searchParams.set('appv','569');
     location.replace(url.toString());
    }
   });
@@ -7550,7 +7595,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486180"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486180"></script>
 <script src="../assets/shared/js/condition-engine.js?v=486180"></script>
-<script src="../assets/shared/js/skill-schema.js?v=2b568"></script>
+<script src="../assets/shared/js/skill-schema.js?v=2b569"></script>
 <script src="../assets/shared/js/skill-compiler.js?v=486180"></script>
 <script src="../assets/shared/js/skill-compile-service.js?v=486180"></script>
 <script src="../assets/shared/js/skill-authoring-registry.js?v=4"></script>

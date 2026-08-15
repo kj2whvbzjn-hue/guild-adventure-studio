@@ -1,0 +1,21 @@
+const assert=require('assert');
+const fs=require('fs');
+const html=fs.readFileSync('studio/index.html','utf8');
+assert.ok(html.includes('id="studioScreenNav"'),'universal Studio navigation bar missing');
+assert.ok(html.includes('onclick="studioNavigateBack()">もどる</button>'),'back button missing');
+assert.ok(html.includes('onclick="studioNavigateClose()">とじる</button>'),'close button missing');
+assert.ok(html.includes('function studioNavigateBack()'),'back navigation function missing');
+assert.ok(html.includes('function studioNavigateClose()'),'close navigation function missing');
+assert.ok(html.includes("studioViewHistory.push(previous)"),'view history push missing');
+assert.ok(html.includes("candidate==='__launcher__'"),'launcher history sentinel missing');
+assert.ok(html.includes("selectLauncherCategory('basic',basicButton)"),'close destination must open Basic/Create/Verify/Manage launcher home');
+assert.ok(html.includes("if(boxOverlay&&!boxOverlay.classList.contains('hidden')){closeQuestBoxEditor();return;}"),'Box editor back must return to Quest editor');
+assert.ok(html.includes('quest-box-editor-head')&&html.includes('studioNavigateBack()'),'Box detail navigation missing');
+assert.ok(!html.includes('onclick="openProductionLauncher()">閉じる</button>'),'legacy close-to-production-only buttons remain');
+
+assert.ok(html.includes('closeRuleTagPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Rule Tag picker navigation missing');
+assert.ok(html.includes('closeBenchmarkWorkflow()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Benchmark dialog navigation missing');
+assert.ok(html.includes('GKSDataExchangeUI.closePicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Data Exchange dialog navigation missing');
+assert.ok(html.includes('closeMasterSkillPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Master Skill picker navigation missing');
+assert.ok(html.includes('closeTagPicker()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button>'),'Tag picker navigation missing');
+console.log('PASS GKS-B569 universal Studio back/close navigation and Quest Box/detail/dialog navigation');
