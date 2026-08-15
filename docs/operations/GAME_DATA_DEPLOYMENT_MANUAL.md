@@ -1,6 +1,6 @@
 # Gameデータ GitHub配置 運用マニュアル
 
-適用: GA-B486.182 / GKS-B587  
+適用: GA-B486.182 / GKS-B588  
 対象窓口: **Studio → GitHub同期 → Gameデータ配置**
 
 ## 1. このマニュアルの目的

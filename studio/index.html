@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B587</title>
+<title>GK Studio GKS-B588</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -447,7 +447,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=11"></script>
-  <script src="./adventure-entity-json-import.js?v=587"></script>
+  <script src="./adventure-entity-json-import.js?v=588"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.182 / GKS-B587</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.182 / GKS-B588</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.182 / Studio GKS-B587</div>
+    <div class="version">Game GA-B486.182 / Studio GKS-B588</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1170,6 +1170,12 @@ updateDeployDeleteControl();
     <p class="small">既存データは変更しません。分類ごとのID形式、重複ID、Master間およびQuest/Event等からの構造化参照切れを確認します。</p>
     <div class="toolbar"><button type="button" class="primary" onclick="runMasterIdReferenceAudit()">監査を実行</button></div>
     <div id="masterIdReferenceAuditResult" class="small">未実行です。</div>
+  </div>
+  <div class="card">
+    <h2>Gameデータ ID・参照監査</h2>
+    <p class="small">正式Export対象のChapter / Section / Scene / Dialogue / Quest / Event / Flagを読み取り専用で監査します。ID形式、重複、相互参照切れを確認し、データは変更しません。Quest Box IDはQuest内部の安定識別子のため、このID規約監査の対象外です。</p>
+    <div class="toolbar"><button type="button" class="primary" onclick="runGameDataIdReferenceAudit()">Gameデータ監査を実行</button></div>
+    <div id="gameDataIdReferenceAuditResult" class="small">未実行です。</div>
   </div>
   <div class="card">
     <h2>CSV入出力</h2>
@@ -2223,7 +2229,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B587';
+const DISTRIBUTION_BUILD='GKS-B588';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -3437,6 +3443,86 @@ function renderMasterIdReferenceAudit(report){
  el.innerHTML=summary+(rows||'<div class="item small">修正対象はありません。監査はデータを変更していません。</div>')+rest;
 }
 function runMasterIdReferenceAudit(){const report=buildMasterIdReferenceAudit();window.lastMasterIdReferenceAudit=report;renderMasterIdReferenceAudit(report);return report}
+
+const GAME_DATA_AUDIT_RULES={
+ chapter:{label:'Chapter',prefix:'CHP'},section:{label:'Section',prefix:'SEC'},scene:{label:'Scene',prefix:'SCN'},dialogue:{label:'Dialogue',prefix:'DLG'},quest:{label:'Quest',prefix:'QST'},event:{label:'Event',prefix:'EVT'},flag:{label:'Flag',prefix:'FLG'}
+};
+function gameDataAuditPattern(kind){const p=GAME_DATA_AUDIT_RULES[kind]?.prefix||'DAT';return new RegExp('^'+p+'-\\d{4}$')}
+function gameDataAuditRecords(){
+ const out=[];
+ (data.chapters||[]).forEach((chapter,ci)=>{out.push({kind:'chapter',record:chapter,path:`chapters[${ci}]`});(chapter.sections||[]).forEach((section,si)=>{out.push({kind:'section',record:section,path:`chapters[${ci}].sections[${si}]`});(section.scenes||[]).forEach((scene,sci)=>{out.push({kind:'scene',record:scene,path:`chapters[${ci}].sections[${si}].scenes[${sci}]`});(scene.dialogues||[]).forEach((dialogue,di)=>out.push({kind:'dialogue',record:dialogue,path:`chapters[${ci}].sections[${si}].scenes[${sci}].dialogues[${di}]`}))})})});
+ (data.quests||[]).forEach((record,index)=>out.push({kind:'quest',record,path:`quests[${index}]`}));
+ (data.events||[]).forEach((record,index)=>out.push({kind:'event',record,path:`events[${index}]`}));
+ (data.flags||[]).forEach((record,index)=>out.push({kind:'flag',record,path:`flags[${index}]`}));
+ return out;
+}
+function gameDataAuditBuildIndex(records){
+ const byKind={},byId=new Map();Object.keys(GAME_DATA_AUDIT_RULES).forEach(kind=>byKind[kind]=new Map());
+ records.forEach(entry=>{const id=String(entry.record?.id||'').trim();if(!id)return;if(!byKind[entry.kind].has(id))byKind[entry.kind].set(id,[]);byKind[entry.kind].get(id).push(entry);if(!byId.has(id))byId.set(id,[]);byId.get(id).push(entry)});
+ return {byKind,byId};
+}
+function gameDataAuditStringList(value){if(Array.isArray(value))return value.map(x=>String(x??'').trim()).filter(Boolean);if(value==null)return[];return String(value).split(',').map(x=>x.trim()).filter(Boolean)}
+function gameDataAuditReference(index,issues,refsByTarget,path,kind,value){
+ gameDataAuditStringList(value).forEach(id=>{const expected=index.byKind[kind]?.get(id)||[],any=index.byId.get(id)||[];if(expected.length){refsByTarget.set(id,(refsByTarget.get(id)||0)+1);return}if(any.length){issues.push({type:'category_mismatch',path,id,expected_kind:kind,actual_kinds:[...new Set(any.map(x=>x.kind))],message:`${path}: ${id} は ${GAME_DATA_AUDIT_RULES[kind].label} 参照ですが、別種別に登録されています。`});return}issues.push({type:'missing_reference',path,id,expected_kind:kind,message:`${path}: 参照先 ${id}（${GAME_DATA_AUDIT_RULES[kind].label}）が存在しません。`})});
+}
+function gameDataAuditScanNestedNamedRefs(value,path,index,issues,refsByTarget){
+ if(Array.isArray(value)){value.forEach((item,i)=>gameDataAuditScanNestedNamedRefs(item,`${path}[${i}]`,index,issues,refsByTarget));return}
+ if(!value||typeof value!=='object')return;
+ Object.entries(value).forEach(([key,item])=>{
+  const k=String(key).toLowerCase();
+  if(['next_event_ids'].includes(k))gameDataAuditReference(index,issues,refsByTarget,`${path}.${key}`,'event',item);
+  else if(k==='flag_ids')gameDataAuditReference(index,issues,refsByTarget,`${path}.${key}`,'flag',item);
+  else gameDataAuditScanNestedNamedRefs(item,`${path}.${key}`,index,issues,refsByTarget);
+ });
+}
+function gameDataAuditCollectReferences(index,issues,refsByTarget){
+ (data.chapters||[]).forEach((chapter,ci)=>{
+  (Array.isArray(chapter.random_event_candidates)?chapter.random_event_candidates:[]).forEach((row,ri)=>gameDataAuditReference(index,issues,refsByTarget,`chapters[${ci}].random_event_candidates[${ri}].event_id`,'event',row?.event_id));
+  (chapter.sections||[]).forEach((section,si)=>{
+   (section.boxes||[]).forEach((box,bi)=>{const type=String(box?.type||'');if(type==='scene')gameDataAuditReference(index,issues,refsByTarget,`chapters[${ci}].sections[${si}].boxes[${bi}].ref_id`,'scene',box?.ref_id);else if(['event','random_event'].includes(type))gameDataAuditReference(index,issues,refsByTarget,`chapters[${ci}].sections[${si}].boxes[${bi}].ref_id`,'event',box?.ref_id)});
+  });
+ });
+ (data.quests||[]).forEach((quest,qi)=>{
+  ['prerequisite_ids','next_quest_ids'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].${key}`,'quest',quest?.[key]));
+  ['required_flags','set_flags'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].${key}`,'flag',quest?.[key]));
+  const links=quest?.links&&typeof quest.links==='object'?quest.links:{};
+  gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].links.chapter_id`,'chapter',links.chapter_id);
+  gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].links.section_id`,'section',links.section_id);
+  gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].links.scene_id`,'scene',links.scene_id);
+  (quest.boxes||[]).forEach((box,bi)=>{
+   ['pre_scene_id','mid_scene_id','post_scene_id'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].boxes[${bi}].${key}`,'scene',box?.[key]));
+   ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post'].forEach(zone=>(Array.isArray(box?.[zone])?box[zone]:[]).forEach((placement,pi)=>{if(placement?.kind==='fixed_event')gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].boxes[${bi}].${zone}[${pi}].event_id`,'event',placement?.event_id||placement?.ref_id)}));
+  });
+  gameDataAuditScanNestedNamedRefs(quest,`quests[${qi}]`,index,issues,refsByTarget);
+ });
+ (data.events||[]).forEach((event,ei)=>{
+  ['required_flags','set_flags'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].${key}`,'flag',event?.[key]));
+  const links=event?.links&&typeof event.links==='object'?event.links:{};
+  gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].links.chapter_id`,'chapter',links.chapter_id);
+  gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].links.section_id`,'section',links.section_id);
+  gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].links.scene_id`,'scene',links.scene_id);
+  gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].links.quest_id`,'quest',links.quest_id);
+  gameDataAuditScanNestedNamedRefs(event,`events[${ei}]`,index,issues,refsByTarget);
+ });
+}
+function buildGameDataIdReferenceAudit(){
+ const records=gameDataAuditRecords(),index=gameDataAuditBuildIndex(records),refsByTarget=new Map(),referenceIssues=[];
+ gameDataAuditCollectReferences(index,referenceIssues,refsByTarget);
+ const formatIssues=[];records.forEach(entry=>{const id=String(entry.record?.id||'').trim(),rule=GAME_DATA_AUDIT_RULES[entry.kind],expected=`${rule.prefix}-0001`;if(!id||!gameDataAuditPattern(entry.kind).test(id))formatIssues.push({type:'invalid_id',path:entry.path,id,kind:entry.kind,reference_count:refsByTarget.get(id)||0,message:`${entry.path}: ${id||'(ID未設定)'} は規約外です。期待形式 ${expected}（参照 ${refsByTarget.get(id)||0}件）`})});
+ const duplicateIssues=[];index.byId.forEach((hits,id)=>{if(hits.length>1)duplicateIssues.push({type:'duplicate_id',id,paths:hits.map(x=>x.path),message:`${id}: GameデータIDが${hits.length}件重複しています（${hits.map(x=>x.path).join(', ')}）`})});
+ const issues=[...formatIssues,...duplicateIssues,...referenceIssues],byKind={};Object.keys(GAME_DATA_AUDIT_RULES).forEach(kind=>{const rows=records.filter(x=>x.kind===kind),bad=formatIssues.filter(x=>x.kind===kind);byKind[kind]={records:rows.length,invalid_ids:bad.length}});
+ return {generated_at:now(),counts:{records:records.length,invalid_ids:formatIssues.length,duplicate_ids:duplicateIssues.length,missing_references:referenceIssues.filter(x=>x.type==='missing_reference').length,category_mismatches:referenceIssues.filter(x=>x.type==='category_mismatch').length,total_issues:issues.length},by_kind:byKind,issues,refs_by_target:Object.fromEntries(refsByTarget)};
+}
+function renderGameDataIdReferenceAudit(report){
+ const el=document.getElementById('gameDataIdReferenceAuditResult');if(!el)return;const c=report.counts||{},ok=!c.total_issues;
+ const detail=Object.entries(report.by_kind||{}).map(([kind,row])=>`${GAME_DATA_AUDIT_RULES[kind]?.label||kind} ${row.records||0}件${row.invalid_ids?`（規約外${row.invalid_ids}）`:''}`).join(' / ');
+ const summary=`<div class="item"><span class="badge ${ok?'ok':'warn'}">${ok?'監査合格':'要確認'}</span> Gameデータ ${c.records||0}件 / 規約外ID ${c.invalid_ids||0} / 重複 ${c.duplicate_ids||0} / 参照先なし ${c.missing_references||0} / 分類不一致 ${c.category_mismatches||0}<div class="small">${esc(detail)}</div></div>`;
+ const labels={invalid_id:'ID形式',duplicate_id:'重複ID',missing_reference:'参照先なし',category_mismatch:'分類不一致'};
+ const rows=(report.issues||[]).slice(0,150).map(issue=>`<div class="item"><b>${esc(labels[issue.type]||issue.type)}</b><div class="small">${esc(issue.message||'')}</div></div>`).join('');
+ const rest=(report.issues||[]).length>150?`<div class="item small">ほか ${(report.issues||[]).length-150}件。監査はデータを変更していません。</div>`:'';
+ el.innerHTML=summary+(rows||'<div class="item small">修正対象はありません。監査はデータを変更していません。</div>')+rest;
+}
+function runGameDataIdReferenceAudit(){const report=buildGameDataIdReferenceAudit();window.lastGameDataIdReferenceAudit=report;renderGameDataIdReferenceAudit(report);return report}
 
 function masterSearchText(category,m){
  const tagIds=Array.isArray(m.tags)?m.tags:[];
@@ -8040,7 +8126,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','587');
+    url.searchParams.set('appv','588');
     location.replace(url.toString());
    }
  }
@@ -8049,7 +8135,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=587',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=588',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8068,7 +8154,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','587');
+    url.searchParams.set('appv','588');
     location.replace(url.toString());
    }
   });
