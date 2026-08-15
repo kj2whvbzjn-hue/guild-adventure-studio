@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B584</title>
+<title>GK Studio GKS-B585</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -447,7 +447,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=584"></script>
+  <script src="./adventure-entity-json-import.js?v=585"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.181 / GKS-B584</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.181 / GKS-B585</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.181 / Studio GKS-B584</div>
+    <div class="version">Game GA-B486.181 / Studio GKS-B585</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1119,7 +1119,7 @@ updateDeployDeleteControl();
         <option value="ai_targets">AI対象</option><option value="ai_actions">AI行動</option>
         <option value="maps">マップ</option><option value="exploration_outcomes">探索結果</option><option value="reward_tables">報酬テーブル</option><option value="adventure_settings">冒険設定</option>
       </select></div>
-      <div class="field"><label>ID</label><input id="masterId" placeholder="空欄で自動採番"></div>
+      <div class="field"><label>ID</label><input id="masterId" placeholder="空欄で自動採番"><div id="masterIdRuleHint" class="small">分類ごとの3文字Prefix-4桁数字（例: SKL-0001）</div></div>
       <div class="field"><label>名称</label><input id="masterName"></div>
       <div class="field"><label>状態</label><select id="masterStatus"><option value="draft">下書き</option><option value="review">確認中</option><option value="approved">承認済み</option><option value="active">有効</option><option value="disabled">無効</option><option value="deprecated">非推奨</option><option value="archived">保管済み</option></select></div>
     </div>
@@ -2217,7 +2217,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B584';
+const DISTRIBUTION_BUILD='GKS-B585';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2908,6 +2908,9 @@ function nextId(type){
 const MASTER_LABELS={tags:'タグ',stats:'能力値',jobs:'職業',skills:'スキル',equipment:'装備',mods:'MOD',monsters:'モンスター',status_effects:'状態異常',tablets:'石板',ai_conditions:'AI条件',ai_targets:'AI対象',ai_actions:'AI行動',maps:'マップ',exploration_outcomes:'探索結果',reward_tables:'報酬テーブル',adventure_settings:'冒険設定'};
 let editingMasterId='';
 function masterPrefix(category){return ({tags:'TAG',stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',maps:'MAP',exploration_outcomes:'EXP',reward_tables:'RWD',adventure_settings:'ADV'})[category]||'MST'}
+function masterIdPattern(category){const p=masterPrefix(category);return new RegExp('^'+p+'-\\d{4}$')}
+function validateMasterIdForCategory(category,id){const value=String(id||'').trim(),p=masterPrefix(category);if(!value)return `IDを入力してください（形式: ${p}-0001）`;if(!masterIdPattern(category).test(value))return `ID形式が正しくありません。${MASTER_LABELS[category]||category}は ${p}-0001 の形式（${p}- + 4桁数字）で入力してください。`;return ''}
+function updateMasterIdRuleHint(){const el=document.getElementById('masterIdRuleHint');if(!el)return;const c=masterCategory?.value||'tags',p=masterPrefix(c);el.textContent=`必須形式: ${p}-0001（${p}- + 4桁数字）`}
 function nextMasterId(category){const p=masterPrefix(category);let max=0;const rows=category==='tags'?tagDefinitions():(data.masters[category]||[]);rows.forEach(x=>{const id=String(x.id||'');const m=id.match(/(\d+)$/);if(id.startsWith(p+'-')&&m)max=Math.max(max,+m[1])});return p+'-'+String(max+1).padStart(4,'0')}
 let tagPickerSelection=[];
 let monsterSkillCandidateSelection=new Set();
@@ -3290,7 +3293,7 @@ function parseAIMasterJson(id,label,fallback){const field=document.getElementByI
 function readAIMasterDefinition(category,id,name,tags,description){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[category],node=window.GKSAIMasterAdapter.toNode({id,name,status:masterStatus.value,tags,description,data_version:aiMasterDataVersion.value.trim()||'1.0.0',evaluator:aiMasterEvaluator.value.trim(),ports:parseAIMasterJson('aiMasterPorts','ポート定義',{inputs:[],outputs:[]}),parameter_schema:parseAIMasterJson('aiMasterParameterSchema','パラメータSchema',{type:'object',properties:{},required:[],additionalProperties:false}),unlock:parseAIMasterJson('aiMasterUnlock','解放条件',{}),node_type:type},category);const errors=window.GKSAIMasterAdapter.definitionErrors(node);if(errors.length)throw new Error(errors.join('\n'));return node}
 function populateAIMasterFields(record,category){if(!isAIMasterCategory(category))return;const node=window.GKSAIMasterAdapter.toNode(record,category);aiMasterDataVersion.value=node.data_version;aiMasterEvaluator.value=node.evaluator;aiMasterPorts.value=JSON.stringify(node.ports,null,2);aiMasterParameterSchema.value=JSON.stringify(node.parameter_schema,null,2);aiMasterUnlock.value=JSON.stringify(node.unlock||{},null,2)}
 function clearAIMasterFields(){if(!document.getElementById('aiMasterDataVersion'))return;aiMasterDataVersion.value='1.0.0';aiMasterEvaluator.value='';aiMasterPorts.value='';aiMasterParameterSchema.value=JSON.stringify({type:'object',properties:{},required:[],additionalProperties:false},null,2);aiMasterUnlock.value=JSON.stringify({required_ids:[]},null,2)}
-function updateMasterFormMode(){const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',isExploration=masterCategory.value==='exploration_outcomes',isAI=isAIMasterCategory(masterCategory.value),current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('aiMasterFields')?.classList.toggle('hidden',!isAI);document.getElementById('masterParamsField')?.classList.toggle('hidden',isAI);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);document.getElementById('masterMonsterDropTableField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterEnvironmentTagFields')?.classList.toggle('hidden',!(isMonster||isExploration));document.getElementById('masterExplorationRewardFields')?.classList.toggle('hidden',!isExploration);setFormalSkillMasterEditorMode(isFormal);if(isAI&&!aiMasterPorts.value){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[masterCategory.value],node=window.GKSAIMasterAdapter.toNode({node_type:type},masterCategory.value);aiMasterPorts.value=JSON.stringify(node.ports,null,2)}if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
+function updateMasterFormMode(){updateMasterIdRuleHint();const isTag=masterCategory.value==='tags',isMonster=masterCategory.value==='monsters',isTablet=masterCategory.value==='tablets',isExploration=masterCategory.value==='exploration_outcomes',isAI=isAIMasterCategory(masterCategory.value),current=masterCategory.value==='skills'&&editingMasterId?(data.masters?.skills||[]).find(x=>x.id===editingMasterId):null,isFormal=isFormalSkillMasterRecord('skills',current);document.getElementById('tagMasterFields')?.classList.toggle('hidden',!isTag);document.getElementById('normalMasterFields')?.classList.toggle('hidden',isTag);document.getElementById('aiMasterFields')?.classList.toggle('hidden',!isAI);document.getElementById('masterParamsField')?.classList.toggle('hidden',isAI);document.getElementById('monsterSkillGeneratorFields')?.classList.toggle('hidden',!isMonster);document.getElementById('masterAdventureBudgetFields')?.classList.toggle('hidden',!(isMonster||isTablet));document.getElementById('masterMonsterBudgetField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterTabletBudgetField')?.classList.toggle('hidden',!isTablet);document.getElementById('masterMonsterDropTableField')?.classList.toggle('hidden',!isMonster);document.getElementById('masterEnvironmentTagFields')?.classList.toggle('hidden',!(isMonster||isExploration));document.getElementById('masterExplorationRewardFields')?.classList.toggle('hidden',!isExploration);setFormalSkillMasterEditorMode(isFormal);if(isAI&&!aiMasterPorts.value){const type=window.GKSAIMasterAdapter.CATEGORY_TYPE[masterCategory.value],node=window.GKSAIMasterAdapter.toNode({node_type:type},masterCategory.value);aiMasterPorts.value=JSON.stringify(node.ports,null,2)}if(!isMonster)resetMonsterSkillCandidateResult();renderTagMasterOptions()}
 
 let lastMonsterSkillCandidateEvaluation=null;
 function resetMonsterSkillCandidateResult(){
@@ -3351,7 +3354,7 @@ function renderMonsterSkillCandidateSummary(){
  const ids=[...monsterSkillCandidateSelection],names=ids.map(id=>e.eligible.find(row=>row.id===id)?.name||id);
  result.innerHTML=`<div class="item ok"><b>選択済み ${ids.length}件</b><div class="small">${names.length?names.map(esc).join('、'):'なし'}</div><div class="small">候補 ${e.eligible.length}件 / 条件外 ${e.excluded.length}件。最後に「登録・更新」を押して保存してください。</div></div>`;
 }
-function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters'){params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));params.spawn_tags={any:splitCsv(masterEnvTagsAny.value),all:splitCsv(masterEnvTagsAll.value),none:splitCsv(masterEnvTagsNone.value)};params.drop_table_ids=splitCsv(masterMonsterDropTableIds.value)}if(c==='exploration_outcomes'){params.environment_tags={any:splitCsv(masterEnvTagsAny.value),all:splitCsv(masterEnvTagsAll.value),none:splitCsv(masterEnvTagsNone.value)};params.on_success=params.on_success&&typeof params.on_success==='object'?params.on_success:{};params.on_failure=params.on_failure&&typeof params.on_failure==='object'?params.on_failure:{};params.on_success.reward_table_ids=splitCsv(masterExplorationSuccessRewardTableIds.value);params.on_failure.reward_table_ids=splitCsv(masterExplorationFailureRewardTableIds.value)};if(c==='tablets'){const stoneLevel=Math.max(0,Number(masterEnemyBudgetBonus.value)||0);params.stone_level=stoneLevel;params.enemy_budget_bonus=stoneLevel;}const tags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean);let rec;if(isAIMasterCategory(c)){try{const node=readAIMasterDefinition(c,id,name,tags,masterDescription.value);rec={id:node.id,name:node.name,node_type:node.node_type,status:node.status,tags:node.tags,description:node.description,data_version:node.data_version,evaluator:node.evaluator,ports:node.ports,parameter_schema:node.parameter_schema,unlock:node.unlock,updated_at:now()}}catch(error){return alert(error.message)}}else rec={id,name,status:masterStatus.value,tags,params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist(isAIMasterCategory(c)?'ai master saved':'master saved');closeStudioInputPanel()}
+function saveMaster(){const c=masterCategory.value,id=(masterId.value.trim()||nextMasterId(c)),name=masterName.value.trim();if(!name)return alert('名称を入力してください。');const idError=validateMasterIdForCategory(c,id);if(idError)return alert(idError);if(allIds().includes(id)&&id!==editingMasterId)return alert('そのIDは既に使用されています。');if(c==='tags'){const rec={id,name,status:masterStatus.value,category_id:tagMasterCategoryId.value||'',parent_id:tagMasterParentId.value||'',description:masterDescription.value||'',enabled:true,updated_at:now()};const arr=data.tags;const i=arr.findIndex(x=>x.id===editingMasterId);if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist('tag saved');closeStudioInputPanel();return}const arr=data.masters[c],i=arr.findIndex(x=>x.id===editingMasterId),existing=i>=0?arr[i]:null;if(c==='skills'&&isFormalSkillMasterRecord('skills',existing)){const rec={...existing,id:existing.id,name,status:masterStatus.value,description:masterDescription.value||'',updated_at:now()};delete rec.tags;delete rec.params;arr[i]=rec;clearMasterForm();persist('formal skill metadata saved');closeStudioInputPanel();return}let params={};try{params=masterParams.value.trim()?JSON.parse(masterParams.value):{}}catch(e){return alert('JSON形式が正しくありません: '+e.message)}if(c==='monsters'){params.enemy_budget_cost=Math.max(1,Math.floor(Number(masterEnemyBudgetCost.value)||1));params.spawn_tags={any:splitCsv(masterEnvTagsAny.value),all:splitCsv(masterEnvTagsAll.value),none:splitCsv(masterEnvTagsNone.value)};params.drop_table_ids=splitCsv(masterMonsterDropTableIds.value)}if(c==='exploration_outcomes'){params.environment_tags={any:splitCsv(masterEnvTagsAny.value),all:splitCsv(masterEnvTagsAll.value),none:splitCsv(masterEnvTagsNone.value)};params.on_success=params.on_success&&typeof params.on_success==='object'?params.on_success:{};params.on_failure=params.on_failure&&typeof params.on_failure==='object'?params.on_failure:{};params.on_success.reward_table_ids=splitCsv(masterExplorationSuccessRewardTableIds.value);params.on_failure.reward_table_ids=splitCsv(masterExplorationFailureRewardTableIds.value)};if(c==='tablets'){const stoneLevel=Math.max(0,Number(masterEnemyBudgetBonus.value)||0);params.stone_level=stoneLevel;params.enemy_budget_bonus=stoneLevel;}const tags=masterTags.value.split(',').map(x=>x.trim()).filter(Boolean);let rec;if(isAIMasterCategory(c)){try{const node=readAIMasterDefinition(c,id,name,tags,masterDescription.value);rec={id:node.id,name:node.name,node_type:node.node_type,status:node.status,tags:node.tags,description:node.description,data_version:node.data_version,evaluator:node.evaluator,ports:node.ports,parameter_schema:node.parameter_schema,unlock:node.unlock,updated_at:now()}}catch(error){return alert(error.message)}}else rec={id,name,status:masterStatus.value,tags,params,description:masterDescription.value,updated_at:now()};if(i>=0)arr[i]=rec;else arr.push(rec);clearMasterForm();persist(isAIMasterCategory(c)?'ai master saved':'master saved');closeStudioInputPanel()}
 function openMasterEditor(){clearMasterForm();openStudioInputPanel('masterEditorPanel','マスターを作成')}
 function editMaster(category,id){resetMonsterSkillCandidateResult();const m=category==='tags'?tagDefinitions().find(x=>x.id===id):(data.masters[category]||[]).find(x=>x.id===id);if(!m)return;const formal=isFormalSkillMasterRecord(category,m);masterCategory.value=category;editingMasterId=id;masterId.value=m.id;masterName.value=m.name;masterStatus.value=[...masterStatus.options].some(o=>o.value===(m.status||'draft'))?(m.status||'draft'):'draft';masterTags.value=formal?'':(m.tags||[]).join(',');renderMasterTagChips();masterParams.value=isAIMasterCategory(category)?'':JSON.stringify(formal?formalSkillEditorPayload(m):(m.params||{}),null,2);masterEnemyBudgetCost.value=String(Math.max(1,Number(m.params?.enemy_budget_cost??m.enemy_budget_cost)||1));masterEnemyBudgetBonus.value=String(Math.max(0,Number(m.params?.stone_level??m.stone_level??m.params?.enemy_budget_bonus??m.enemy_budget_bonus)||0));masterMonsterDropTableIds.value=(m.params?.drop_table_ids||m.drop_table_ids||[]).join(', ');masterExplorationSuccessRewardTableIds.value=(m.params?.on_success?.reward_table_ids||[]).join(', ');masterExplorationFailureRewardTableIds.value=(m.params?.on_failure?.reward_table_ids||[]).join(', ');const envCond=(category==='monsters'?(m.params?.spawn_tags??m.spawn_tags):(category==='exploration_outcomes'?(m.params?.environment_tags??m.environment_tags):{}))||{};masterEnvTagsAny.value=(envCond.any||[]).join(', ');masterEnvTagsAll.value=(envCond.all||[]).join(', ');masterEnvTagsNone.value=(envCond.none||[]).join(', ');masterDescription.value=m.description||'';updateMasterFormMode();populateAIMasterFields(m,category);if(category==='tags'){tagMasterCategoryId.value=m.category_id||'';tagMasterParentId.value=m.parent_id||''}openStudioInputPanel('masterEditorPanel','マスターを編集する')}
 function deleteMaster(category,id){if(category==='tags'){deleteTagSafely(id);return}if(!confirm(id+'を削除しますか？'))return;createBackup('before-master-delete');data.masters[category]=data.masters[category].filter(x=>x.id!==id);persist('master deleted')}
@@ -7958,7 +7961,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','584');
+    url.searchParams.set('appv','585');
     location.replace(url.toString());
    }
  }
@@ -7967,7 +7970,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=584',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=585',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7986,7 +7989,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','584');
+    url.searchParams.set('appv','585');
     location.replace(url.toString());
    }
   });
