@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 
 assert.ok(html.includes('id="gameDataIdReferenceAuditResult"'),'Game data audit result panel missing');
-assert.ok(html.includes('function buildGameDataIdReferenceAudit()'),'Game data audit builder missing');
+assert.ok(html.includes('function buildGameDataIdReferenceAudit(rootData=data)'),'Game data audit builder missing');
 assert.ok(html.includes('function runGameDataIdReferenceAudit()'),'Game data audit runner missing');
 assert.ok(html.includes('Quest Box IDはQuest内部の安定識別子'),'Box ID exclusion must be explicit');
 
@@ -36,4 +36,4 @@ assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='FLG-MISSIN
 assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='SCN-MISSING'),'legacy Section Box missing Scene must be reported');
 assert.strictEqual(JSON.stringify(context.data),JSON.stringify(original),'audit must not mutate Game data');
 assert.ok(!report.issues.some(x=>x.id==='BOX-QST-CH01-SEC01-01'||x.id==='BOX-LEGACY'),'Quest/Section Box IDs must remain outside this ID audit');
-console.log('PASS GKS-B588 Game data ID/reference audit is read-only and reports Quest/Event/Scene/Flag/reference issues');
+console.log('PASS GKS-B589 Game data ID/reference audit is read-only and reports Quest/Event/Scene/Flag/reference issues');

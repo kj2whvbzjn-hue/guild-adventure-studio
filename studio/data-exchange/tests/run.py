@@ -205,7 +205,7 @@ def audit_undo():
         raise RuntimeError("DE-16 Audit UI markers missing: " + ", ".join(missing_ui))
     if "data-exchange-audit.js" not in index or 'id="dxAuditPanel"' not in index:
         raise RuntimeError("DE-16 Audit Studio integration missing")
-    if "data-exchange-core.js?v=16" not in index:
+    if "data-exchange-core.js?v=18" not in index:
         raise RuntimeError("current core cache bust missing")
     if "data-exchange-transaction.js?v=3" not in index:
         raise RuntimeError("DE-16.3 transaction cache bust missing")

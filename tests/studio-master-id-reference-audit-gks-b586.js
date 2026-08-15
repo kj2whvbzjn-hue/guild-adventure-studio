@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 
 assert.ok(html.includes('id="masterIdReferenceAuditResult"'),'Master audit result panel missing');
-assert.ok(html.includes('function buildMasterIdReferenceAudit()'),'Master audit builder missing');
+assert.ok(html.includes('function buildMasterIdReferenceAudit(rootData=data)'),'Master audit builder missing');
 assert.ok(html.includes('function runMasterIdReferenceAudit()'),'Master audit runner missing');
 
 const start=html.indexOf('const MASTER_AUDIT_REFERENCE_CATEGORY_RULES=');
@@ -43,4 +43,4 @@ assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='SKL-9999')
 assert.ok(report.issues.some(x=>x.type==='category_mismatch'&&x.id==='MON-0001'&&x.expected_category==='skills'),'wrong-category reference must be reported');
 assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='MAP-9999'),'Quest master reference must be audited');
 assert.strictEqual(context.data.masters.skills[1].id,'SKL-LEGACY','audit must not mutate data');
-console.log('PASS GKS-B588 Master ID/reference audit is read-only and reports format/missing/category issues');
+console.log('PASS GKS-B589 Master ID/reference audit is read-only and reports format/missing/category issues');

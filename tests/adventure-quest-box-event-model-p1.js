@@ -68,7 +68,9 @@ assert(studio.includes('const previous=existing>=0?data.quests[existing]:{};'),'
 assert(studio.includes('previous=existing>=0?data.events[existing]:{}'),'Event editor must merge previous data');
 assert(studio.includes('conditions:Array.isArray(previous.conditions)?previous.conditions:eventConditions.value'),'structured Event conditions must survive legacy editor save');
 assert(studio.includes('usage:eventUsage.value,type:eventType.value'),'P3 Event editor must save canonical usage/type while preserving previous unknown fields');
-assert(studio.includes("data=obj;normalizeData();persist('json imported')"),'import must normalize P1 model before persistence');
+assert(studio.includes('function fullImportPrepareCandidate(raw)'),'full import must preflight/normalize candidate data before persistence');
+assert(studio.includes('data=structuredClone(raw);')&&studio.includes('normalizeData();'),'full import candidate normalization must preserve the P1 model before gate evaluation');
+assert(studio.includes("persist('full json imported through preflight gate')"),'full import must persist only after the preflight gate passes');
 
 for(const file of ['quest-main_quests.schema.json','quest-sub_quests.schema.json','quest-event_quests.schema.json']){
  const schema=JSON.parse(fs.readFileSync(path.join(__dirname,'../schemas/exports',file),'utf8'));

@@ -8,6 +8,11 @@
   const FORMAT='GKS_DATA_EXCHANGE';
   const VERSION='1.0.0-draft';
   const VOLATILE_DEFAULT=['updated_at','created_at','generated_at'];
+  const ID_PREFIXES=Object.freeze({
+    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',mods:'MOD',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',ai_programs:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
+  });
+  const ID_RULES=Object.fromEntries(Object.entries(ID_PREFIXES).map(([dataset,prefix])=>[dataset,{prefix,pattern:new RegExp('^'+prefix+'-\\d{4}$'),example:prefix+'-0001'}]));
+
   const REGISTRY={
     monsters:{path:['masters','monsters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.skill_ids','params.candidate_skill_ids','params.equipment_ids','params.mod_ids'],dependencies:[
       {dataset:'tags',paths:['tags']},
@@ -320,13 +325,13 @@
     if(!shape.ok){result.errors.push(...shape.errors);result.summary.invalid+=shape.errors.length;return result;}
     const validator=getIntegrityValidator();
     if(validator){
-      const integrity=validator.validate({rootData,envelope,registry:REGISTRY,records,canonicalizeRecord,stableStringify,referencedIds,format:FORMAT,version:VERSION});
+      const integrity=validator.validate({rootData,envelope,registry:REGISTRY,records,canonicalizeRecord,stableStringify,referencedIds,idRules:ID_RULES,format:FORMAT,version:VERSION});
       result.integrity=integrity;
       for(const issue of integrity.issues||[]){
         if(issue.code==='incompatible'||issue.code==='unknown_dataset'){result.summary.incompatible++;}
         else if(issue.code==='readonly_modified'){result.summary.readonly_modified++;result.items.push({dataset:issue.dataset,id:issue.id,status:'readonly_modified',detail:issue.detail});}
         else if(issue.code==='broken_reference'){result.summary.broken_reference++;result.items.push({dataset:issue.dataset,id:issue.id,status:'broken_reference',detail:issue.detail});}
-        else if(issue.code==='invalid'||issue.code==='unsupported_delete'){result.summary.invalid++;}
+        else if(issue.code==='invalid'||issue.code==='invalid_id'||issue.code==='unsupported_delete'){result.summary.invalid++;}
       }
       if(integrity.blocking){result.errors.push(...integrity.errors);return result;}
     }else{
@@ -639,5 +644,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,ID_PREFIXES,ID_RULES,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

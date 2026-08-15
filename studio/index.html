@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B588</title>
+<title>GK Studio GKS-B589</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.182 / GKS-B588</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.182 / GKS-B589</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.182 / Studio GKS-B588</div>
+    <div class="version">Game GA-B486.182 / Studio GKS-B589</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -599,7 +599,7 @@ updateDeployDeleteControl();
     <p class="small">プロジェクトは端末・ブラウザごとに保存されます。別端末へ移す場合は、元の端末で一括出力し、移行先で一括読込してください。</p>
     <div class="toolbar">
       <button onclick="exportAllProjects()">全プロジェクトを一括出力</button>
-      <label class="button-like" for="allProjectsImportFile">全プロジェクトを一括読込</label>
+      <label class="button-like" for="allProjectsImportFile">全プロジェクトをゲート検証して一括読込</label>
       <input type="file" id="allProjectsImportFile" accept=".json,application/json" class="hidden" onchange="importAllProjectsFromInput(this)">
       <button onclick="repairProjectRegistryAndRender()">一覧を再検出</button>
     </div>
@@ -2126,9 +2126,11 @@ updateDeployDeleteControl();
     <div id="phpExportPublishStatus" class="small">GitHub反映は同期側の「Gameデータ配置」専用窓口で行います。正式Export ZIP生成はここから継続して利用できます。</div>
   </div>
   <div class="card">
-    <h2>JSON読込</h2>
+    <h2>JSON全件読込 <span class="badge ok">事前ゲート</span></h2>
+    <p class="small">部分データ入出力と同じ安全思想で、ID規約・重複・Schema/型・必須項目・参照整合性・Studio検証を反映前に確認します。1件でもERRORがあれば登録0件です。</p>
     <input type="file" id="importFile" accept=".json,application/json">
-    <button onclick="importProject()">選択したJSONを読込</button>
+    <div class="toolbar"><button class="primary" onclick="importProject()">検証して全件読込</button><button id="fullImportAiFixButton" type="button" onclick="exportFullImportAiFix()" disabled>AI修正用JSONを出力</button></div>
+    <div id="fullImportStatus" class="item small">未実行 / データ変更 0件</div>
   </div>
   <div class="card">
     <h2>全データ初期化</h2>
@@ -2229,7 +2231,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B588';
+const DISTRIBUTION_BUILD='GKS-B589';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2808,40 +2810,60 @@ function exportAllProjects(){
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='guild-adventure-studio-all-projects.json';a.click();URL.revokeObjectURL(a.href)
 }
 
-function importAllProjectsFromInput(input){
- const file=input?.files?.[0];
- if(!file)return;
- const reader=new FileReader();
- reader.onload=()=>{
+function buildMultiProjectImportGateReport(pkg,sourceFilename=''){
+ const issues=[],projects=[];
+ if(pkg?.format!=='guild-adventure-studio-multi-project'||!Array.isArray(pkg.projects)){
+  issues.push({severity:'error',code:'invalid_multi_project',path:'',message:'全プロジェクト一括出力ファイルではありません。'});
+  return {schema:'gk.multi-project-import-preflight.v1',generated_at:now(),source_filename:sourceFilename,input_type:'multi_project',ok:false,issues,summary:GKSFullImportGate.summarize(issues),projects:[]};
+ }
+ const seen=new Set();
+ pkg.projects.forEach((entry,index)=>{
+  const metaId=String(entry?.meta?.id||'').trim();
+  if(!metaId||!entry?.data){issues.push({severity:'error',code:'invalid_project_entry',path:`projects[${index}]`,message:`projects[${index}] にmeta.idまたはdataがありません。`});return}
+  if(seen.has(metaId))issues.push({severity:'error',code:'duplicate_project_id',path:`projects[${index}].meta.id`,message:`Project IDが一括ファイル内で重複しています: ${metaId}`});
+  seen.add(metaId);
+  const report=buildFullImportGateReport(entry.data,{sourceFilename,inputType:'multi_project_entry',expectedProjectId:metaId});
+  projects.push({index,meta:structuredClone(entry.meta),report,candidate:report.candidate});
+  (report.issues||[]).forEach(row=>issues.push({...row,path:`projects[${index}]${row.path?'.'+row.path:''}`,message:`${metaId}: ${row.message}`}));
+ });
+ const deduped=fullImportDeduplicateIssues(issues),summary=GKSFullImportGate.summarize(deduped);
+ return {schema:'gk.multi-project-import-preflight.v1',generated_at:now(),source_filename:sourceFilename,input_type:'multi_project',ok:!deduped.some(x=>x.severity==='error'),issues:deduped,summary,projects};
+}
+function importAllProjectsPackage(pkg,sourceFilename='',inputToClear=null){
+ try{
+  const report=buildMultiProjectImportGateReport(pkg,sourceFilename);
+  if(!report.ok){fullImportRememberFailure(pkg,report,sourceFilename,'multi_project');if(inputToClear)inputToClear.value='';alert(`全プロジェクト一括読込を停止しました。ERROR ${report.summary?.errors||0}件 / データ変更0件。\n「読込・出力」からAI修正用JSONを出力できます。`);return false}
+  const incoming=report.projects.map(x=>({meta:x.meta,data:x.candidate}));
+  if(!incoming.length)throw new Error('読込可能なプロジェクトがありません。');
+  const existing=new Set(getProjectRegistry().map(x=>String(x.id))),conflicts=incoming.filter(x=>existing.has(String(x.meta.id))).map(x=>x.meta.id);
+  if(conflicts.length&&!confirm(`同じIDのプロジェクト ${conflicts.length}件を上書きしますか？\n${conflicts.join(', ')}`))return false;
+  const registryBefore=localStorage.getItem(REGISTRY_KEY),currentBefore=localStorage.getItem(CURRENT_KEY),memoryCurrentBefore=currentProjectId,memoryDataBefore=structuredClone(data),storageBefore=new Map();
+  incoming.forEach(({meta})=>storageBefore.set(String(meta.id),localStorage.getItem(projectStorageKey(String(meta.id)))));
   try{
-   const pkg=JSON.parse(reader.result);
-   if(pkg?.format!=='guild-adventure-studio-multi-project'||!Array.isArray(pkg.projects))throw new Error('全プロジェクト一括出力ファイルではありません。');
-   const incoming=pkg.projects.filter(x=>x?.meta?.id&&x?.data);
-   if(!incoming.length)throw new Error('読込可能なプロジェクトがありません。');
-   const existing=new Set(getProjectRegistry().map(x=>String(x.id)));
-   const conflicts=incoming.filter(x=>existing.has(String(x.meta.id))).map(x=>x.meta.id);
-   if(conflicts.length&&!confirm(`同じIDのプロジェクト ${conflicts.length}件を上書きしますか？\n${conflicts.join(', ')}`))return;
    const merged=new Map(getProjectRegistry().map(x=>[String(x.id),x]));
-   incoming.forEach(({meta,data:project})=>{
-    const id=String(meta.id);
-    project.project=project.project||{};
-    project.project.id=id;
-    safeStorageSet(projectStorageKey(id),JSON.stringify(project),`プロジェクト ${id}`);
+   for(const {meta,data:project} of incoming){
+    const id=String(meta.id);project.project=project.project||{};project.project.id=id;
+    if(!safeStorageSet(projectStorageKey(id),JSON.stringify(project),`プロジェクト ${id}`))throw new Error(`${id} の保存に失敗しました。`);
     merged.set(id,{id,name:project.project.name||meta.name||id,updated_at:project.project.updated_at||meta.updated_at||now()});
-   });
-   saveProjectRegistry([...merged.values()]);
-   const requested=String(pkg.current_project_id||'');
-   if(requested&&merged.has(requested)){
-    currentProjectId=requested;
-    localStorage.setItem(CURRENT_KEY,currentProjectId);
-    data=loadProject(currentProjectId)||data;
-    normalizeData();
    }
-   input.value='';
-   render();
-   alert(`${incoming.length}件のプロジェクトを読み込みました。`);
-  }catch(e){alert('一括読込失敗: '+e.message);input.value='';}
- };
+   if(!saveProjectRegistry([...merged.values()]))throw new Error('プロジェクト一覧の保存に失敗しました。');
+   const requested=String(pkg.current_project_id||'');
+   if(requested&&merged.has(requested)){currentProjectId=requested;localStorage.setItem(CURRENT_KEY,currentProjectId);data=loadProject(currentProjectId)||data;normalizeLoadedProject({persistMigration:true});}
+   if(inputToClear)inputToClear.value='';fullImportClearFailure();render();alert(`${incoming.length}件のプロジェクトを読み込みました。全件が事前ゲート合格後にのみ反映されています。`);return true;
+  }catch(error){
+   for(const [id,value] of storageBefore){if(value==null)localStorage.removeItem(projectStorageKey(id));else localStorage.setItem(projectStorageKey(id),value)}
+   if(registryBefore==null)localStorage.removeItem(REGISTRY_KEY);else localStorage.setItem(REGISTRY_KEY,registryBefore);
+   if(currentBefore==null)localStorage.removeItem(CURRENT_KEY);else localStorage.setItem(CURRENT_KEY,currentBefore);
+   currentProjectId=memoryCurrentBefore;data=memoryDataBefore;
+   throw new Error('一括反映をロールバックしました: '+error.message);
+  }
+ }catch(e){if(inputToClear)inputToClear.value='';alert('一括読込失敗: '+e.message);return false}
+}
+function importAllProjectsFromInput(input){
+ const file=input?.files?.[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{try{importAllProjectsPackage(JSON.parse(reader.result),file.name,input)}catch(e){alert('一括読込失敗: '+e.message);input.value='';}};
+ reader.onerror=()=>{alert('一括読込ファイルを読み込めませんでした。');input.value='';};
  reader.readAsText(file,'utf-8');
 }
 
@@ -3388,10 +3410,10 @@ const MASTER_AUDIT_REFERENCE_CATEGORY_RULES=[
  [/status[_-]?effect|status/,'status_effects'],[/ai[_-]?condition/,'ai_conditions'],[/ai[_-]?target/,'ai_targets'],[/ai[_-]?action/,'ai_actions'],
  [/equipment/,'equipment'],[/monster/,'monsters'],[/skill/,'skills'],[/tablet|stone/,'tablets'],[/\bmod\b|mod_/,'mods'],[/map/,'maps'],[/job/,'jobs'],[/stat/,'stats'],[/tag/,'tags']
 ];
-function masterAuditRecords(){
+function masterAuditRecords(rootData=data){
  const out=[];
- (Array.isArray(data.tags)?data.tags:[]).forEach((record,index)=>out.push({category:'tags',record,index,path:`tags[${index}]`}));
- Object.keys(MASTER_LABELS).filter(category=>category!=='tags').forEach(category=>(data.masters?.[category]||[]).forEach((record,index)=>out.push({category,record,index,path:`masters.${category}[${index}]`})));
+ (Array.isArray(rootData?.tags)?rootData.tags:[]).forEach((record,index)=>out.push({category:'tags',record,index,path:`tags[${index}]`}));
+ Object.keys(MASTER_LABELS).filter(category=>category!=='tags').forEach(category=>(rootData?.masters?.[category]||[]).forEach((record,index)=>out.push({category,record,index,path:`masters.${category}[${index}]`})));
  return out;
 }
 function masterAuditExpectedCategory(key){
@@ -3404,9 +3426,9 @@ function masterAuditBuildIndex(records){
  records.forEach(entry=>{const id=String(entry.record?.id||'').trim();if(!id)return;if(!byCategory[entry.category])byCategory[entry.category]=new Map();if(!byCategory[entry.category].has(id))byCategory[entry.category].set(id,[]);byCategory[entry.category].get(id).push(entry);if(!byId.has(id))byId.set(id,[]);byId.get(id).push(entry)});
  return {byCategory,byId};
 }
-function masterAuditSourceObjects(records){
+function masterAuditSourceObjects(records,rootData=data){
  const sources=records.map(entry=>({path:entry.path,value:entry.record,selfId:String(entry.record?.id||'')}));
- ['quests','events','characters','entities','flags','chapters'].forEach(group=>(Array.isArray(data[group])?data[group]:[]).forEach((value,index)=>sources.push({path:`${group}[${index}]`,value,selfId:String(value?.id||'')})));
+ ['quests','events','characters','entities','flags','chapters'].forEach(group=>(Array.isArray(rootData?.[group])?rootData[group]:[]).forEach((value,index)=>sources.push({path:`${group}[${index}]`,value,selfId:String(value?.id||'')})));
  return sources;
 }
 function masterAuditReferenceCandidate(value,expectedCategory,index){
@@ -3427,9 +3449,9 @@ function masterAuditScanReferences(value,path,expectedCategory,index,issues,refs
   issues.push({type:'missing_reference',path,id,expected_category:expectedCategory,message:`${path}: 参照先 ${id}（${MASTER_LABELS[expectedCategory]||expectedCategory}）が存在しません。`});
  });
 }
-function buildMasterIdReferenceAudit(){
- const records=masterAuditRecords(),index=masterAuditBuildIndex(records),refsByTarget=new Map(),referenceIssues=[];
- masterAuditSourceObjects(records).forEach(source=>masterAuditScanReferences(source.value,source.path,'',index,referenceIssues,refsByTarget,source.selfId));
+function buildMasterIdReferenceAudit(rootData=data){
+ const records=masterAuditRecords(rootData),index=masterAuditBuildIndex(records),refsByTarget=new Map(),referenceIssues=[];
+ masterAuditSourceObjects(records,rootData).forEach(source=>masterAuditScanReferences(source.value,source.path,'',index,referenceIssues,refsByTarget,source.selfId));
  const formatIssues=[];records.forEach(entry=>{const id=String(entry.record?.id||'').trim(),expected=`${masterPrefix(entry.category)}-0001`;if(!id||!masterIdPattern(entry.category).test(id))formatIssues.push({type:'invalid_id',path:entry.path,id,category:entry.category,reference_count:refsByTarget.get(id)||0,message:`${entry.path}: ${id||'(ID未設定)'} は規約外です。期待形式 ${expected}（参照 ${refsByTarget.get(id)||0}件）`})});
  const duplicateIssues=[];index.byId.forEach((hits,id)=>{if(hits.length>1)duplicateIssues.push({type:'duplicate_id',id,paths:hits.map(x=>x.path),message:`${id}: IDが${hits.length}件重複しています（${hits.map(x=>x.path).join(', ')}）`})});
  const issues=[...formatIssues,...duplicateIssues,...referenceIssues];
@@ -3448,12 +3470,12 @@ const GAME_DATA_AUDIT_RULES={
  chapter:{label:'Chapter',prefix:'CHP'},section:{label:'Section',prefix:'SEC'},scene:{label:'Scene',prefix:'SCN'},dialogue:{label:'Dialogue',prefix:'DLG'},quest:{label:'Quest',prefix:'QST'},event:{label:'Event',prefix:'EVT'},flag:{label:'Flag',prefix:'FLG'}
 };
 function gameDataAuditPattern(kind){const p=GAME_DATA_AUDIT_RULES[kind]?.prefix||'DAT';return new RegExp('^'+p+'-\\d{4}$')}
-function gameDataAuditRecords(){
+function gameDataAuditRecords(rootData=data){
  const out=[];
- (data.chapters||[]).forEach((chapter,ci)=>{out.push({kind:'chapter',record:chapter,path:`chapters[${ci}]`});(chapter.sections||[]).forEach((section,si)=>{out.push({kind:'section',record:section,path:`chapters[${ci}].sections[${si}]`});(section.scenes||[]).forEach((scene,sci)=>{out.push({kind:'scene',record:scene,path:`chapters[${ci}].sections[${si}].scenes[${sci}]`});(scene.dialogues||[]).forEach((dialogue,di)=>out.push({kind:'dialogue',record:dialogue,path:`chapters[${ci}].sections[${si}].scenes[${sci}].dialogues[${di}]`}))})})});
- (data.quests||[]).forEach((record,index)=>out.push({kind:'quest',record,path:`quests[${index}]`}));
- (data.events||[]).forEach((record,index)=>out.push({kind:'event',record,path:`events[${index}]`}));
- (data.flags||[]).forEach((record,index)=>out.push({kind:'flag',record,path:`flags[${index}]`}));
+ (rootData?.chapters||[]).forEach((chapter,ci)=>{out.push({kind:'chapter',record:chapter,path:`chapters[${ci}]`});(chapter.sections||[]).forEach((section,si)=>{out.push({kind:'section',record:section,path:`chapters[${ci}].sections[${si}]`});(section.scenes||[]).forEach((scene,sci)=>{out.push({kind:'scene',record:scene,path:`chapters[${ci}].sections[${si}].scenes[${sci}]`});(scene.dialogues||[]).forEach((dialogue,di)=>out.push({kind:'dialogue',record:dialogue,path:`chapters[${ci}].sections[${si}].scenes[${sci}].dialogues[${di}]`}))})})});
+ (rootData?.quests||[]).forEach((record,index)=>out.push({kind:'quest',record,path:`quests[${index}]`}));
+ (rootData?.events||[]).forEach((record,index)=>out.push({kind:'event',record,path:`events[${index}]`}));
+ (rootData?.flags||[]).forEach((record,index)=>out.push({kind:'flag',record,path:`flags[${index}]`}));
  return out;
 }
 function gameDataAuditBuildIndex(records){
@@ -3475,14 +3497,14 @@ function gameDataAuditScanNestedNamedRefs(value,path,index,issues,refsByTarget){
   else gameDataAuditScanNestedNamedRefs(item,`${path}.${key}`,index,issues,refsByTarget);
  });
 }
-function gameDataAuditCollectReferences(index,issues,refsByTarget){
- (data.chapters||[]).forEach((chapter,ci)=>{
+function gameDataAuditCollectReferences(rootData,index,issues,refsByTarget){
+ (rootData?.chapters||[]).forEach((chapter,ci)=>{
   (Array.isArray(chapter.random_event_candidates)?chapter.random_event_candidates:[]).forEach((row,ri)=>gameDataAuditReference(index,issues,refsByTarget,`chapters[${ci}].random_event_candidates[${ri}].event_id`,'event',row?.event_id));
   (chapter.sections||[]).forEach((section,si)=>{
    (section.boxes||[]).forEach((box,bi)=>{const type=String(box?.type||'');if(type==='scene')gameDataAuditReference(index,issues,refsByTarget,`chapters[${ci}].sections[${si}].boxes[${bi}].ref_id`,'scene',box?.ref_id);else if(['event','random_event'].includes(type))gameDataAuditReference(index,issues,refsByTarget,`chapters[${ci}].sections[${si}].boxes[${bi}].ref_id`,'event',box?.ref_id)});
   });
  });
- (data.quests||[]).forEach((quest,qi)=>{
+ (rootData?.quests||[]).forEach((quest,qi)=>{
   ['prerequisite_ids','next_quest_ids'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].${key}`,'quest',quest?.[key]));
   ['required_flags','set_flags'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].${key}`,'flag',quest?.[key]));
   const links=quest?.links&&typeof quest.links==='object'?quest.links:{};
@@ -3495,7 +3517,7 @@ function gameDataAuditCollectReferences(index,issues,refsByTarget){
   });
   gameDataAuditScanNestedNamedRefs(quest,`quests[${qi}]`,index,issues,refsByTarget);
  });
- (data.events||[]).forEach((event,ei)=>{
+ (rootData?.events||[]).forEach((event,ei)=>{
   ['required_flags','set_flags'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].${key}`,'flag',event?.[key]));
   const links=event?.links&&typeof event.links==='object'?event.links:{};
   gameDataAuditReference(index,issues,refsByTarget,`events[${ei}].links.chapter_id`,'chapter',links.chapter_id);
@@ -3505,9 +3527,9 @@ function gameDataAuditCollectReferences(index,issues,refsByTarget){
   gameDataAuditScanNestedNamedRefs(event,`events[${ei}]`,index,issues,refsByTarget);
  });
 }
-function buildGameDataIdReferenceAudit(){
- const records=gameDataAuditRecords(),index=gameDataAuditBuildIndex(records),refsByTarget=new Map(),referenceIssues=[];
- gameDataAuditCollectReferences(index,referenceIssues,refsByTarget);
+function buildGameDataIdReferenceAudit(rootData=data){
+ const records=gameDataAuditRecords(rootData),index=gameDataAuditBuildIndex(records),refsByTarget=new Map(),referenceIssues=[];
+ gameDataAuditCollectReferences(rootData,index,referenceIssues,refsByTarget);
  const formatIssues=[];records.forEach(entry=>{const id=String(entry.record?.id||'').trim(),rule=GAME_DATA_AUDIT_RULES[entry.kind],expected=`${rule.prefix}-0001`;if(!id||!gameDataAuditPattern(entry.kind).test(id))formatIssues.push({type:'invalid_id',path:entry.path,id,kind:entry.kind,reference_count:refsByTarget.get(id)||0,message:`${entry.path}: ${id||'(ID未設定)'} は規約外です。期待形式 ${expected}（参照 ${refsByTarget.get(id)||0}件）`})});
  const duplicateIssues=[];index.byId.forEach((hits,id)=>{if(hits.length>1)duplicateIssues.push({type:'duplicate_id',id,paths:hits.map(x=>x.path),message:`${id}: GameデータIDが${hits.length}件重複しています（${hits.map(x=>x.path).join(', ')}）`})});
  const issues=[...formatIssues,...duplicateIssues,...referenceIssues],byKind={};Object.keys(GAME_DATA_AUDIT_RULES).forEach(kind=>{const rows=records.filter(x=>x.kind===kind),bad=formatIssues.filter(x=>x.kind===kind);byKind[kind]={records:rows.length,invalid_ids:bad.length}});
@@ -5148,7 +5170,7 @@ function collectAiProgramValidationIssues(){
  }
  return rows;
 }
-function runValidation(){
+function runValidation(options={}){
  validation=[];let ids=allIds(),seen=new Set;
  ids.forEach(id=>{if(seen.has(id))validation.push({level:'ERROR',message:'ID重複: '+id});seen.add(id)});
  if(!data.project.id)validation.push({level:'ERROR',message:'Project IDが未設定'});
@@ -5213,7 +5235,8 @@ function runValidation(){
  data.entities.forEach(e=>{if(!e.name)validation.push({level:'ERROR',message:e.id+' の名前が未設定'});if(!e.notes)validation.push({level:'INFO',message:e.id+' のメモが未設定'})});
  detectQuestCycles().forEach(path=>validation.push({level:'ERROR',message:'クエスト前提関係が循環しています: '+path}));
  if(!validation.length)validation.push({level:'OK',message:'重大な問題は見つかりませんでした。'});
- renderValidation();renderDashboard()
+ if(!options.silent){renderValidation();renderDashboard()}
+ return validation;
 }
 function implementationSnapshot(){
  const masterCounts=Object.fromEntries(Object.entries(data.masters||{}).map(([k,v])=>[k,(v||[]).length]));
@@ -5641,9 +5664,70 @@ function exportProject(){
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.project.id||'project')+'.json';a.click();URL.revokeObjectURL(a.href)
 }
+let lastFullImportFailure=null;
+function fullImportIssueKey(row){return [row?.severity||'',row?.code||'',row?.path||'',row?.message||''].join('|')}
+function fullImportDeduplicateIssues(rows){const seen=new Set(),out=[];for(const row of rows||[]){const key=fullImportIssueKey(row);if(seen.has(key))continue;seen.add(key);out.push(row)}return out}
+function fullImportSetStatus(report,message=''){
+ const el=document.getElementById('fullImportStatus'),btn=document.getElementById('fullImportAiFixButton');
+ if(btn)btn.disabled=!lastFullImportFailure;
+ if(!el)return;
+ if(!report){el.innerHTML='<span class="small">未実行 / データ変更 0件</span>';return}
+ const errors=(report.issues||[]).filter(x=>x.severity==='error'),warnings=(report.issues||[]).filter(x=>x.severity==='warning');
+ const title=errors.length?'<span class="badge err">検証停止</span>':'<span class="badge ok">検証合格</span>';
+ const rows=errors.slice(0,12).map(x=>`<div class="dx-dryrun-error">ERROR: ${esc(x.message||x.code||'')}</div>`).join('')+warnings.slice(0,6).map(x=>`<div class="dx-dryrun-warn">WARN: ${esc(x.message||x.code||'')}</div>`).join('');
+ el.innerHTML=`${title} ERROR ${errors.length} / WARN ${warnings.length} / データ変更 0件${message?`<div class="small">${esc(message)}</div>`:''}${rows}${errors.length>12?`<div class="small">ほか ${errors.length-12}件。AI修正用JSONには全件収録されます。</div>`:''}`;
+}
+function fullImportPrepareCandidate(raw){
+ const originalData=data,originalValidation=validation;
+ try{
+  data=structuredClone(raw);
+  normalizeData();
+  const candidate=structuredClone(data);
+  runValidation({silent:true});
+  return {candidate,studioIssues:structuredClone(validation)};
+ }finally{data=originalData;validation=originalValidation}
+}
+function buildFullImportGateReport(raw,{sourceFilename='',inputType='project',expectedProjectId=''}={}){
+ if(!globalThis.GKSFullImportGate)throw new Error('Full Import Gateが読み込まれていません。');
+ const shapeIssues=GKSFullImportGate.projectShapeIssues(raw);
+ if(shapeIssues.length)return {schema:'gk.full-import-preflight.v1',generated_at:now(),source_filename:sourceFilename,input_type:inputType,ok:false,issues:shapeIssues,candidate:null,summary:GKSFullImportGate.summarize(shapeIssues)};
+ const prepared=fullImportPrepareCandidate(raw),candidate=prepared.candidate,base=GKSFullImportGate.validateBase(candidate),issues=[...(base.issues||[])];
+ const masterAudit=buildMasterIdReferenceAudit(candidate),gameAudit=buildGameDataIdReferenceAudit(candidate);
+ for(const row of masterAudit.issues||[])if(['missing_reference','category_mismatch'].includes(row.type))issues.push({severity:'error',code:row.type,path:row.path||'',message:row.message||row.type});
+ for(const row of gameAudit.issues||[])if(['missing_reference','category_mismatch'].includes(row.type))issues.push({severity:'error',code:row.type,path:row.path||'',message:row.message||row.type});
+ for(const row of prepared.studioIssues||[]){
+  if(row.level==='ERROR')issues.push({severity:'error',code:row.code||'studio_validation',path:row.source||'',message:row.message||'Studio検証エラー'});
+  else if(row.level==='WARNING')issues.push({severity:'warning',code:row.code||'studio_warning',path:row.source||'',message:row.message||'Studio検証警告'});
+ }
+ const actualId=String(candidate?.project?.id||'').trim(),expected=String(expectedProjectId||'').trim();
+ if(expected&&actualId!==expected)issues.push({severity:'error',code:'project_id_mismatch',path:'project.id',message:`Project ID不一致: JSON=${actualId||'(なし)'} / 反映先=${expected}`});
+ const deduped=fullImportDeduplicateIssues(issues),summary=GKSFullImportGate.summarize(deduped),ok=!deduped.some(x=>x.severity==='error');
+ return {schema:'gk.full-import-preflight.v1',generated_at:now(),source_filename:sourceFilename,input_type:inputType,project_id:actualId,ok,issues:deduped,summary,candidate:ok?candidate:null,audits:{master:masterAudit,game_data:gameAudit}};
+}
+function exportFullImportAiFix(){
+ if(!lastFullImportFailure||!globalThis.GKSFullImportGate)return alert('AI修正用に出力できる検証エラーがありません。');
+ const payload=GKSFullImportGate.aiFixPackage(lastFullImportFailure),stamp=new Date().toISOString().replace(/[:.]/g,'-');
+ downloadText(`GK_AI_FIX_FULL_IMPORT_${stamp}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+}
+function fullImportRememberFailure(input,report,sourceFilename,inputType){lastFullImportFailure={input:structuredClone(input),report:structuredClone(report),sourceFilename,inputType};fullImportSetStatus(report,'1件でもERRORがあるため反映していません。')}
+function fullImportClearFailure(){lastFullImportFailure=null;const btn=document.getElementById('fullImportAiFixButton');if(btn)btn.disabled=true}
 function importProject(){
  const f=document.getElementById('importFile').files[0];if(!f)return alert('JSONファイルを選択してください。');
- const r=new FileReader();r.onload=()=>{try{let obj=JSON.parse(r.result);if(obj?.format==='guild-adventure-studio-multi-project'){document.getElementById('importFile').value='';const dt=new DataTransfer();dt.items.add(f);const temp={files:dt.files,value:''};return importAllProjectsFromInput(temp)}if(!obj.project||!obj.decisions||!obj.entities)throw new Error('必要な構造がありません');obj.chapters=obj.chapters||[];obj.characters=obj.characters||[];obj.organizations=obj.organizations||[];obj.terms=obj.terms||[];obj.relationships=obj.relationships||[];obj.timeline=obj.timeline||[];obj.quests=obj.quests||[];obj.events=obj.events||[];obj.flags=obj.flags||[];obj.battle_tests=obj.battle_tests||[];obj.masters=obj.masters||{};createBackup('before-import');data=obj;normalizeData();persist('json imported');alert('読込完了')}catch(e){alert('読込失敗: '+e.message)}};r.readAsText(f,'utf-8')
+ const r=new FileReader();r.onload=async()=>{try{
+  const obj=JSON.parse(r.result);
+  if(obj?.format==='guild-adventure-studio-multi-project'){document.getElementById('importFile').value='';return importAllProjectsPackage(obj,f.name,null)}
+  const report=buildFullImportGateReport(obj,{sourceFilename:f.name,inputType:'project',expectedProjectId:currentProjectId});
+  if(!report.ok){fullImportRememberFailure(obj,report,f.name,'project');return alert(`全件読込を停止しました。ERROR ${report.summary?.errors||0}件 / データ変更0件。
+AI修正用JSONを出力できます。`)}
+  fullImportClearFailure();fullImportSetStatus(report,'事前検証合格。反映処理へ進みます。');
+  const before=structuredClone(data);
+  if(!createBackup('before-full-json-import',{silent:true}))throw new Error('反映前バックアップを保存できませんでした。');
+  data=structuredClone(report.candidate);
+  if(!persist('full json imported through preflight gate')){data=before;safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(before),'全件Import rollback');render();throw new Error('保存に失敗したため元データへ戻しました。')}
+  document.getElementById('importFile').value='';
+  fullImportSetStatus({...report,issues:[]},'全件読込完了。事前検証・Backup・Persistまで完了しました。');
+  alert('全件読込完了。事前ゲート合格後にのみ反映しました。');
+ }catch(e){alert('読込失敗: '+e.message)}};r.onerror=()=>alert('JSONファイルを読み込めませんでした。');r.readAsText(f,'utf-8')
 }
 function resetProject(){if(confirm('現在のデータを初期化しますか？')){createBackup('before-reset');data=initial();persist('project reset')}}
 
@@ -8126,7 +8210,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','588');
+    url.searchParams.set('appv','589');
     location.replace(url.toString());
    }
  }
@@ -8135,7 +8219,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=588',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=589',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8154,7 +8238,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','588');
+    url.searchParams.set('appv','589');
     location.replace(url.toString());
    }
   });
@@ -8262,8 +8346,9 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 })();
 </script>
 <script src="./skill/skill-generator.js?v=33" onload="GKSSkillGeneratorScriptLoaded()" onerror="GKSSkillGeneratorScriptError()"></script>
-<script src="./data-exchange/data-exchange-integrity-validator.js?v=3"></script>
-<script src="./data-exchange/data-exchange-core.js?v=17"></script>
+<script src="./data-exchange/full-import-gate.js?v=1"></script>
+<script src="./data-exchange/data-exchange-integrity-validator.js?v=4"></script>
+<script src="./data-exchange/data-exchange-core.js?v=18"></script>
 <script src="./data-exchange/data-exchange-transaction.js?v=3"></script>
 <script src="./data-exchange/data-exchange-audit.js?v=5"></script>
 <script src="./data-exchange/data-exchange-ui.js?v=23r1"></script>

@@ -17,21 +17,21 @@ function baseProject(){
     schema_version:'4.0.0-draft',project:{id:'PRJ-DE19',updated_at:'R1'},
     tag_categories:[{id:'CAT-COMBAT',name:'Combat',enabled:true}],
     tags:[
-      {id:'TAG-FIRE',name:'Fire',status:'draft',category_id:'CAT-COMBAT',parent_id:'',description:'',enabled:true,updated_at:'T1'},
-      {id:'TAG-HEAVY',name:'Heavy',status:'draft',category_id:'CAT-COMBAT',parent_id:'',description:'',enabled:true,updated_at:'T1'}
+      {id:'TAG-0001',name:'Fire',status:'draft',category_id:'CAT-COMBAT',parent_id:'',description:'',enabled:true,updated_at:'TAG-0001'},
+      {id:'TAG-0004',name:'Heavy',status:'draft',category_id:'CAT-COMBAT',parent_id:'',description:'',enabled:true,updated_at:'TAG-0001'}
     ],
     masters:{
       monsters:[],skills:[],stats:[],status_effects:[],tablets:[],
-      jobs:[{id:'JOB-WARRIOR',name:'Warrior',status:'draft',tags:['TAG-HEAVY'],params:{},description:'',str:10,vit:8,updated_at:'T1'}],
-      mods:[{id:'MOD-FIRE',name:'Fire MOD',status:'draft',tags:['TAG-FIRE'],params:{power:5},description:'',updated_at:'T1'}],
-      equipment:[{id:'EQ-SWORD',name:'Sword',status:'draft',tags:['TAG-HEAVY'],mod_ids:['MOD-FIRE'],params:{},description:'',item_level:1,mod_budget:1,updated_at:'T1'}],
-      ai_conditions:[{id:'AIC-FIRE',name:'Has Fire',node_type:'condition',status:'draft',tags:['TAG-FIRE'],description:'',data_version:'1.0.0',evaluator:'condition.has_tag',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'T1'}],
-      ai_targets:[{id:'AIT-ENEMY',name:'Enemy',node_type:'target',status:'draft',tags:['TAG-HEAVY'],description:'',data_version:'1.0.0',evaluator:'target.enemy',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'T1'}],
-      ai_actions:[{id:'AIA-ATTACK',name:'Attack',node_type:'action',status:'draft',tags:['TAG-FIRE'],description:'',data_version:'1.0.0',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'T1'}]
+      jobs:[{id:'JOB-0001',name:'Warrior',status:'draft',tags:['TAG-0004'],params:{},description:'',str:10,vit:8,updated_at:'TAG-0001'}],
+      mods:[{id:'MOD-0001',name:'Fire MOD',status:'draft',tags:['TAG-0001'],params:{power:5},description:'',updated_at:'TAG-0001'}],
+      equipment:[{id:'EQP-0001',name:'Sword',status:'draft',tags:['TAG-0004'],mod_ids:['MOD-0001'],params:{},description:'',item_level:1,mod_budget:1,updated_at:'TAG-0001'}],
+      ai_conditions:[{id:'AIC-0001',name:'Has Fire',node_type:'condition',status:'draft',tags:['TAG-0001'],description:'',data_version:'1.0.0',evaluator:'condition.has_tag',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}],
+      ai_targets:[{id:'AIT-0001',name:'Enemy',node_type:'target',status:'draft',tags:['TAG-0004'],description:'',data_version:'1.0.0',evaluator:'target.enemy',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}],
+      ai_actions:[{id:'AIA-0001',name:'Attack',node_type:'action',status:'draft',tags:['TAG-0001'],description:'',data_version:'1.0.0',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}]
     },history:[]
   };
 }
-const SOURCE_IDS={jobs:'JOB-WARRIOR',equipment:'EQ-SWORD',mods:'MOD-FIRE',ai_conditions:'AIC-FIRE',ai_targets:'AIT-ENEMY',ai_actions:'AIA-ATTACK'};
+const SOURCE_IDS={jobs:'JOB-0001',equipment:'EQP-0001',mods:'MOD-0001',ai_conditions:'AIC-0001',ai_targets:'AIT-0001',ai_actions:'AIA-0001'};
 async function makeAddEnvelope(base,dataset,id,mutate){
   const env=await dx.buildEnvelope({rootData:base,dataset,ids:[SOURCE_IDS[dataset]],dependencyMode:'recursive',studioVersion:'TEST-DE19'});
   const out=clone(env),row=out.datasets[dataset][0];row.id=id;if(mutate)mutate(row,out);
@@ -54,7 +54,7 @@ async function applyAndUndo(base,envelope,dataset,filename){
 async function main(){
   const base=baseProject();
   const studioHtml=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
-  assert(studioHtml.includes('data-exchange-core.js?v=17'),'Studio must load DE-19 core with refreshed cache key');
+  assert(studioHtml.includes('data-exchange-core.js?v=18'),'Studio must load DE-19 core with refreshed cache key');
   for(const f of ['job-dataset.schema.json','equipment-dataset.schema.json','mod-dataset.schema.json','ai_condition-dataset.schema.json','ai_target-dataset.schema.json','ai_action-dataset.schema.json']){
     assert(fs.existsSync(path.resolve(__dirname,'../schemas',f)),`missing schema ${f}`);
   }
@@ -66,13 +66,13 @@ async function main(){
     assert(env.permissions.read_only.includes('tags'),`${ds} tag dependency`);
     assert.equal(env.datasets[ds].length,1,`${ds} record`);
   }
-  const equipmentExport=await dx.buildEnvelope({rootData:base,dataset:'equipment',ids:['EQ-SWORD'],dependencyMode:'recursive',studioVersion:'TEST-DE19'});
+  const equipmentExport=await dx.buildEnvelope({rootData:base,dataset:'equipment',ids:['EQP-0001'],dependencyMode:'recursive',studioVersion:'TEST-DE19'});
   assert(equipmentExport.permissions.read_only.includes('mods'),'equipment MOD dependency must be read_only');
   assert.equal(equipmentExport.datasets.mods.length,1);
   assert.equal(equipmentExport.datasets.tags.length,2,'recursive equipment dependency must include equipment + MOD tags');
 
   // 2. New records safely pass Dry Run -> Transaction -> Audit -> Undo for every DE-19 dataset.
-  const addIds={jobs:'JOB-DE19',equipment:'EQ-DE19',mods:'MOD-DE19',ai_conditions:'AIC-DE19',ai_targets:'AIT-DE19',ai_actions:'AIA-DE19'};
+  const addIds={jobs:'JOB-0002',equipment:'EQP-0002',mods:'MOD-0002',ai_conditions:'AIC-0002',ai_targets:'AIT-0002',ai_actions:'AIA-0002'};
   for(const ds of Object.keys(SOURCE_IDS)){
     const env=await makeAddEnvelope(base,ds,addIds[ds],row=>{row.name='DE19 '+ds;row.description='DE-19 vertical test';});
     await applyAndUndo(base,env,ds,`DE19_${ds}.json`);
@@ -80,17 +80,17 @@ async function main(){
 
   // 3. Broken Tag references block all six classifications.
   for(const ds of Object.keys(SOURCE_IDS)){
-    const env=await makeAddEnvelope(base,ds,addIds[ds]+'-BROKEN-TAG',row=>{row.tags=['TAG-MISSING-DE19'];});
+    const env=await makeAddEnvelope(base,ds,addIds[ds].replace(/0002$/,'0003'),row=>{row.tags=['TAG-9998'];});
     const dry=await dx.dryRunImport({rootData:base,envelope:env});
     assert(dry.summary.broken_reference>=1,`${ds} broken tag must be detected`);assert.equal(dry.can_apply,false);
   }
 
   // 4. Equipment mod_ids is a first-class dependency and missing MOD blocks Apply.
-  const badMod=await makeAddEnvelope(base,'equipment','EQ-DE19-BROKEN-MOD',row=>{row.mod_ids=['MOD-MISSING-DE19'];row.tags=[];});
+  const badMod=await makeAddEnvelope(base,'equipment','EQP-0003',row=>{row.mod_ids=['MOD-9999'];row.tags=[];});
   const badModDry=await dx.dryRunImport({rootData:base,envelope:badMod});
-  assert(badModDry.items.some(x=>x.status==='broken_reference'&&String(x.detail).includes('mods:MOD-MISSING-DE19')),'equipment missing MOD reference');
+  assert(badModDry.items.some(x=>x.status==='broken_reference'&&String(x.detail).includes('mods:MOD-9999')),'equipment missing MOD reference');
   assert.equal(badModDry.can_apply,false);
-  const paramsMod=await makeAddEnvelope(base,'equipment','EQ-DE19-PARAM-MOD',row=>{delete row.mod_ids;row.params={mod_ids:['MOD-MISSING-DE19']};row.tags=[];});
+  const paramsMod=await makeAddEnvelope(base,'equipment','EQP-0004',row=>{delete row.mod_ids;row.params={mod_ids:['MOD-9999']};row.tags=[];});
   const paramsModDry=await dx.dryRunImport({rootData:base,envelope:paramsMod});
   assert(paramsModDry.summary.broken_reference>=1,'equipment params.mod_ids must also be checked');
 
@@ -111,7 +111,7 @@ async function main(){
 
   // 7. AI Master is Formal-only: generic params are not an accepted AI master field.
   for(const ds of ['ai_conditions','ai_targets','ai_actions']){
-    const generic=await makeAddEnvelope(base,ds,addIds[ds]+'-GENERIC',row=>{row.params={kind:'generic'};});
+    const generic=await makeAddEnvelope(base,ds,addIds[ds].replace(/0002$/,'0004'),row=>{row.params={kind:'generic'};});
     const dry=await dx.dryRunImport({rootData:base,envelope:generic});
     const plan=await dx.createApplyPlan({rootData:base,envelope:generic,dryRun:dry});
     assert.equal(plan.can_apply,false,`${ds} generic params must be blocked`);
@@ -120,7 +120,7 @@ async function main(){
 
   // 8. New-record unknown fields and DELETE v1 remain blocked for every DE-19 dataset.
   for(const ds of Object.keys(SOURCE_IDS)){
-    const unknown=await makeAddEnvelope(base,ds,addIds[ds]+'-UNKNOWN',row=>{row.future_payload={unsafe:true};});
+    const unknown=await makeAddEnvelope(base,ds,addIds[ds].replace(/0002$/,'0005'),row=>{row.future_payload={unsafe:true};});
     const dry=await dx.dryRunImport({rootData:base,envelope:unknown});
     const plan=await dx.createApplyPlan({rootData:base,envelope:unknown,dryRun:dry});assert.equal(plan.can_apply,false,`${ds} unknown field`);assert(plan.reasons.some(x=>x.includes('未知フィールド')));
     const del=clone(unknown);del.operations={delete:{[ds]:[addIds[ds]]}};del.metadata.package_hash='';
