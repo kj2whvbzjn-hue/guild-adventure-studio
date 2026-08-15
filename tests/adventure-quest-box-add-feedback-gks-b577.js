@@ -58,4 +58,4 @@ assert.strictEqual(delayed.length,1,'highlight cleanup must be scheduled');
 delayed[0]();
 assert.ok(!target.classList.contains('quest-box-placement-added'),'highlight must clear after acknowledgement');
 
-console.log('PASS GKS-B579 Quest Box add feedback: auto-scroll and temporary highlight without redundant success message');
+console.log('PASS GKS-B580 Quest Box add feedback: auto-scroll and temporary highlight without redundant success message');

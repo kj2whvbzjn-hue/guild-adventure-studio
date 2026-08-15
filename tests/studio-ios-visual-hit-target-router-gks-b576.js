@@ -91,4 +91,4 @@ ctx.studioHandleMobileTouchMove(touchEvent(150,340,false,boxAdd));
 ctx.studioHandleMobileTouchEnd(touchEvent(150,340,true,boxAdd));
 assert.strictEqual(boxAdd.clickCount,1,'scrolling must not synthesize a tap');
 
-console.log('PASS GKS-B579 iOS visual hit-target router: Quest/Flag row shift, bottom Rule, Quest Box Add, and scroll protection');
+console.log('PASS GKS-B580 iOS visual hit-target router: Quest/Flag row shift, bottom Rule, Quest Box Add, and scroll protection');

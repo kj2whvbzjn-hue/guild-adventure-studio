@@ -106,4 +106,4 @@ assert.strictEqual(eventRef.showPickerCount,1,'scrolling must not synthesize a s
 assert.ok(html.includes("questId.value=q.id;questName.value=q.name"),'Quest edit must restore persisted quest name');
 assert.ok(html.includes('<label>Box名</label><input value="${esc(box.name||\'\')}"'),'Box editor must restore persisted Box name');
 
-console.log('PASS GKS-B579 iOS form-control visual hit routing: Quest-name re-change, Box-name re-edit, Event reference select, native target preservation, and scroll protection');
+console.log('PASS GKS-B580 iOS form-control visual hit routing: Quest-name re-change, Box-name re-edit, Event reference select, native target preservation, and scroll protection');

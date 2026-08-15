@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B579</title>
+<title>GK Studio GKS-B580</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -226,6 +226,7 @@ body.studio-input-open{overflow:hidden}
  .studio-input-sheet{width:100%;max-height:none;height:100%;border-radius:0}
  .studio-input-head{padding:calc(12px + env(safe-area-inset-top)) 14px 10px;position:sticky;top:0;z-index:2}
  .studio-input-body{padding:14px 14px calc(92px + env(safe-area-inset-bottom))}
+ .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
 /* P2 Quest Box editor / GKS-B573: child screen inside the Quest Studio input surface */
@@ -446,7 +447,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=579"></script>
+  <script src="./adventure-entity-json-import.js?v=580"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -456,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B579</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B580</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.180 / Studio GKS-B579</div>
+    <div class="version">Game GA-B486.180 / Studio GKS-B580</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2139,7 +2140,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B579';
+const DISTRIBUTION_BUILD='GKS-B580';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4446,7 +4447,17 @@ function studioTouchActiveRoot(){
 }
 function studioTouchControlFromPoint(root,point){
  if(!root||!point||typeof root.querySelectorAll!=='function')return null;
- const controls=Array.from(root.querySelectorAll('button,input:not([type="hidden"]),select,textarea'));
+ const selector='button,input:not([type="hidden"]),select,textarea';
+ const controls=Array.from(root.querySelectorAll(selector));
+ if(typeof document.elementFromPoint==='function'){
+  let hit=null;
+  try{hit=document.elementFromPoint(point.x,point.y);}catch(e){}
+  if(hit){
+   let control=hit;
+   try{if(typeof hit.closest==='function')control=hit.closest(selector)||hit;}catch(e){}
+   if(controls.includes(control)&&!control.disabled)return control;
+  }
+ }
  for(const control of controls){
   if(!control||control.disabled||typeof control.getBoundingClientRect!=='function')continue;
   const rect=control.getBoundingClientRect();
@@ -6930,7 +6941,7 @@ function renderQuestSelect(selectId){
 }
 
 function characterName(id){return data.characters.find(x=>x.id===id)?.name||id}
-function questName(id){return data.quests.find(x=>x.id===id)?.name||id}
+function questDisplayName(id){return data.quests.find(x=>x.id===id)?.name||id}
 
 function renderDraftCharacterChips(targetId,ids,removeFn){
  const el=document.getElementById(targetId);
@@ -6959,7 +6970,7 @@ function removeEventCharacterDraft(id){
 }
 
 function questFormalAssessment(quest){return (typeof GKExportCore!=='undefined'&&typeof GKExportCore.formalStoryQuestAssessment==='function')?GKExportCore.formalStoryQuestAssessment(data,quest):{is_formal:false,ready:false,issues:[],message:'正式Story Quest判定を利用できません。'};}
-function currentQuestFormalDraft(){const id=(questId?.value||'').trim()||'(新規Quest)',previous=data.quests.find(q=>q.id===id)||{};return {...previous,id,name:(questName?.value||previous.name||'').trim(),adventure_duration_seconds:Math.max(1,Number(questAdventureDuration?.value)||300),boxes:questDraftBoxes.map((box,i)=>questBoxClone(box,i)),links:{...(previous.links||{}),chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
+function currentQuestFormalDraft(){const questNameInput=document.getElementById('questName'),id=(questId?.value||'').trim()||'(新規Quest)',previous=data.quests.find(q=>q.id===id)||{};return {...previous,id,name:(questNameInput?.value||previous.name||'').trim(),adventure_duration_seconds:Math.max(1,Number(questAdventureDuration?.value)||300),boxes:questDraftBoxes.map((box,i)=>questBoxClone(box,i)),links:{...(previous.links||{}),chapter_id:questChapterLink?.value||'',section_id:questSectionLink?.value||'',scene_id:questSceneLink?.value||''}};}
 function questBoxClone(box,index=0){
  const raw=JSON.parse(JSON.stringify(box&&typeof box==='object'?box:{}));
  if(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuestBox==='function')return GKAdventureStorySystem.normalizeQuestBox(raw,index);
@@ -7256,7 +7267,8 @@ async function handleAdventureEntityJsonImportFile(kind,input){
 
 function openQuestEditor(){clearQuestForm();openStudioInputPanel('questEditorPanel','クエストを作成');renderQuestFormalStatus()}
 function clearQuestForm(){
- questId.value='';questName.value='';questType.value='main';questStatus.value='draft';
+ const questName=document.getElementById('questName');
+ questId.value='';if(questName)questName.value='';questType.value='main';questStatus.value='draft';
  questSummary.value='';questConditions.value='';questCompletion.value='';questFailure.value='';questRewards.value='';
  questAdventureDuration.value='300';questEnemyBudget.value='0';questMapId.value='';questEnvironmentTags.value='';questStartCostGold.value='0';questStartCostResources.value='';
  questPrerequisites.value='';questNextQuests.value='';questRequiredFlags.value='';questSetFlags.value='';
@@ -7270,8 +7282,9 @@ function clearQuestForm(){
 }
 
 function saveQuest(){
+ const questName=document.getElementById('questName');
  const id=questId.value.trim()||nextId('Quest');
- const name=questName.value.trim();
+ const name=(questName?.value||'').trim();
  if(!name)return alert('クエスト名を入力してください。');
  const duplicate=allIds().includes(id)&&!data.quests.some(x=>x.id===id);
  if(duplicate)return alert('そのIDは別データで使用されています。');
@@ -7330,7 +7343,7 @@ function saveQuest(){
 }
 
 function editQuest(id){
- const q=data.quests.find(x=>x.id===id);if(!q)return;
+ const q=data.quests.find(x=>x.id===id),questName=document.getElementById('questName');if(!q||!questName)return;
  questId.value=q.id;questName.value=q.name;questType.value=q.type;questStatus.value=q.status;
  questSummary.value=q.summary||'';questConditions.value=q.conditions||'';questCompletion.value=q.completion||'';questFailure.value=q.failure||'';questRewards.value=q.rewards||'';
  const startCost=window.GKAdventureStorySystem?GKAdventureStorySystem.normalizeQuestStartCost(q):(q.start_cost||{gold:0,resources:{}});
@@ -7374,7 +7387,7 @@ function renderQuests(){
    <div class="meta">シナリオ: ${esc(storyPath(q.links||{}))}</div>
    <div class="meta">正式Export / P6 Runtime: ${esc(formal.message)}</div>
    <div class="meta">関連キャラ: ${esc((q.links?.character_ids||[]).map(characterName).join(', ')||'なし')}</div>
-   <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questName).join(', ')||'なし')}</div>
+   <div class="meta">前提: ${esc((q.prerequisite_ids||[]).map(questDisplayName).join(', ')||'なし')} / 後続: ${esc((q.next_quest_ids||[]).map(questDisplayName).join(', ')||'なし')}</div>
    <div class="meta">必要フラグ: ${esc((q.required_flags||[]).join(', ')||'なし')} / 設定フラグ: ${esc((q.set_flags||[]).join(', ')||'なし')}</div>
    <div class="meta">関連イベント: ${esc(linkedEvents.map(x=>x.name).join(', ')||'なし')}</div>
    <div class="meta">Quest Box: ${Array.isArray(q.boxes)?q.boxes.length:0}件 / Event Placement: ${Array.isArray(q.boxes)?q.boxes.reduce((n,b)=>n+questBoxEventCount(b),0):0}件</div>
@@ -7394,7 +7407,7 @@ function eventLegacyLinkValues(links={}){return [links.chapter_id,links.section_
 function renderEventLegacyLinks(links={}){
  const panel=document.getElementById('eventLegacyLinksPanel'),host=document.getElementById('eventLegacyLinksSummary');if(!panel||!host)return;
  const values=eventLegacyLinkValues(links);panel.classList.toggle('hidden',values.length===0);
- host.innerHTML=values.length?`<div>シナリオ: ${esc(storyPath(links))}</div><div>関連Quest: ${esc(links.quest_id?questName(links.quest_id):'なし')}</div><div>登場キャラクター: ${esc((links.character_ids||[]).map(characterName).join(', ')||'なし')}</div><div style="margin-top:6px">この情報はP3保存では変更せず、自動Timeline / Character履歴同期にも使用しません。</div>`:'';
+ host.innerHTML=values.length?`<div>シナリオ: ${esc(storyPath(links))}</div><div>関連Quest: ${esc(links.quest_id?questDisplayName(links.quest_id):'なし')}</div><div>登場キャラクター: ${esc((links.character_ids||[]).map(characterName).join(', ')||'なし')}</div><div style="margin-top:6px">この情報はP3保存では変更せず、自動Timeline / Character履歴同期にも使用しません。</div>`:'';
 }
 function eventEditorUsage(event){const raw=event?.usage;if(Array.isArray(raw))return raw.find(x=>['story','random','common'].includes(String(x)))||'common';if(['story','random','common'].includes(String(raw)))return String(raw);return String(event?.type)==='story'?'story':'common'}
 function eventEditorType(event){const type=String(event?.type||'');return ['battle','exploration','choice','special'].includes(type)?type:'special'}
@@ -7651,7 +7664,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','579');
+    url.searchParams.set('appv','580');
     location.replace(url.toString());
    }
  }
@@ -7660,7 +7673,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=579',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=580',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7679,7 +7692,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','579');
+    url.searchParams.set('appv','580');
     location.replace(url.toString());
    }
   });
