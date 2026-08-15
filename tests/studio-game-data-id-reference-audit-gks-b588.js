@@ -36,4 +36,4 @@ assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='FLG-MISSIN
 assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='SCN-MISSING'),'legacy Section Box missing Scene must be reported');
 assert.strictEqual(JSON.stringify(context.data),JSON.stringify(original),'audit must not mutate Game data');
 assert.ok(!report.issues.some(x=>x.id==='BOX-QST-CH01-SEC01-01'||x.id==='BOX-LEGACY'),'Quest/Section Box IDs must remain outside this ID audit');
-console.log('PASS GKS-B592 Game data ID/reference audit is read-only and reports Quest/Event/Scene/Flag/reference issues');
+console.log('PASS GKS-B593 Game data ID/reference audit is read-only and reports Quest/Event/Scene/Flag/reference issues');
