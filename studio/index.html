@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B576</title>
+<title>GK Studio GKS-B577</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -252,6 +252,10 @@ body.studio-input-open{overflow:hidden}
 .quest-box-stage-head b{display:block}
 .quest-box-placement-list{display:grid;gap:8px;margin-top:8px}
 .quest-box-placement{border:1px solid #dbe3ee;border-radius:9px;padding:10px;background:#fff}
+.quest-box-placement-added{outline:3px solid rgba(37,99,235,.28);box-shadow:0 0 0 6px rgba(96,165,250,.12);animation:questBoxPlacementAdded 1.35s ease-out}
+@keyframes questBoxPlacementAdded{0%{transform:scale(.995);background:#eff6ff}45%{background:#f8fbff}100%{transform:none;background:#fff;outline-color:transparent;box-shadow:none}}
+.quest-box-add-feedback{display:inline-block;min-height:1.2em;margin-left:6px;font-weight:700;color:#047857;opacity:0;transition:opacity .15s ease}
+.quest-box-add-feedback.show{opacity:1}
 .quest-box-placement-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
 .quest-box-placement-kind{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .quest-box-random-filter{margin-top:7px;padding:8px;border-radius:8px;background:#f1f5f9;font-size:12px;color:#475569;overflow-wrap:anywhere}
@@ -444,7 +448,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=576"></script>
+  <script src="./adventure-entity-json-import.js?v=577"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -454,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B576</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B577</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.180 / Studio GKS-B576</div>
+    <div class="version">Game GA-B486.180 / Studio GKS-B577</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2137,7 +2141,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B576';
+const DISTRIBUTION_BUILD='GKS-B577';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -7091,11 +7095,29 @@ function updateQuestBoxPlacement(zoneKey,index,field,value){
  if(field==='required'||field==='allow_none')p[field]=Boolean(value);else p[field]=value;
  if(field==='event_id'){const event=questBoxPlacementEvent(p);if(eventTypeValue(event)==='battle')p.encounter_override=p.encounter_override&&typeof p.encounter_override==='object'?p.encounter_override:{mode:'resolver',required_monsters:[],formation:[]};else delete p.encounter_override;renderQuestBoxEditor();}
 }
+let questBoxPlacementFeedbackTimer=null;
+function announceQuestBoxPlacementAdded(zoneKey,index,kind){
+ const label=kind==='random_event'?'Random Event枠':'Event';
+ const stage=document.querySelector(`.quest-box-stage[data-quest-zone="${zoneKey}"]`);
+ const target=stage?.querySelector(`.quest-box-placement[data-placement-index="${index}"]`);
+ const feedback=stage?.querySelector('.quest-box-add-feedback');
+ if(feedback){feedback.textContent=`✓ ${label}を追加しました`;feedback.classList.add('show')}
+ if(target){
+  target.classList.add('quest-box-placement-added');
+  if(typeof target.scrollIntoView==='function')target.scrollIntoView({behavior:'smooth',block:'center'});
+ }
+ if(questBoxPlacementFeedbackTimer)clearTimeout(questBoxPlacementFeedbackTimer);
+ questBoxPlacementFeedbackTimer=setTimeout(()=>{
+  target?.classList.remove('quest-box-placement-added');
+  if(feedback){feedback.classList.remove('show');feedback.textContent=''}
+ },1600);
+}
 function addQuestBoxPlacement(zoneKey,kind){
  const box=questBoxEditorState?.draft;if(!box||!QUEST_BOX_ZONE_DEFS.some(z=>z.key===zoneKey))return;if(!Array.isArray(box[zoneKey]))box[zoneKey]=[];
  const source=kind==='random_event'?{kind:'random_event',failure_policy:'continue',filter:{event_type:null,group:null,tags:[]},allow_none:true,required:false,box_side_individual_probability_override:false}:{kind:'fixed_event',event_id:'',failure_policy:'continue'};
  const placement=(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuestEventPlacement==='function')?GKAdventureStorySystem.normalizeQuestEventPlacement(source,box[zoneKey].length):source;
- box[zoneKey].push(placement);questBoxCatalogFilter(zoneKey,box[zoneKey].length-1);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor();
+ box[zoneKey].push(placement);const index=box[zoneKey].length-1;questBoxCatalogFilter(zoneKey,index);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor();
+ setTimeout(()=>announceQuestBoxPlacementAdded(zoneKey,index,kind),0);
 }
 function moveQuestBoxPlacement(zoneKey,index,direction){
  const rows=questBoxEditorState?.draft?.[zoneKey];if(!Array.isArray(rows))return;const target=index+direction;if(index<0||target<0||target>=rows.length)return;[rows[index],rows[target]]=[rows[target],rows[index]];
@@ -7105,14 +7127,14 @@ function moveQuestBoxPlacement(zoneKey,index,direction){
 function removeQuestBoxPlacement(zoneKey,index){const rows=questBoxEditorState?.draft?.[zoneKey];if(!Array.isArray(rows))return;rows.splice(index,1);const filters=questBoxEditorState?.catalog_filters?.[zoneKey];if(Array.isArray(filters))filters.splice(index,1);normalizeQuestBoxPlacementOrders(zoneKey);renderQuestBoxEditor()}
 function renderQuestBoxPlacement(zoneKey,placement,index,total){
  const random=placement.kind==='random_event';
- return `<div class="quest-box-placement"><div class="quest-box-placement-head"><div class="quest-box-placement-kind"><span class="badge ${random?'warn':'ok'}">${random?'Random Event枠':'固定Event'}</span><span class="small">順序 ${index+1}</span></div><div class="toolbar"><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},1)" ${index===total-1?'disabled':''}>↓</button><button type="button" class="danger" onclick="removeQuestBoxPlacement('${zoneKey}',${index})">削除</button></div></div>
+ return `<div class="quest-box-placement" data-placement-index="${index}"><div class="quest-box-placement-head"><div class="quest-box-placement-kind"><span class="badge ${random?'warn':'ok'}">${random?'Random Event枠':'固定Event'}</span><span class="small">順序 ${index+1}</span></div><div class="toolbar"><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},-1)" ${index===0?'disabled':''}>↑</button><button type="button" onclick="moveQuestBoxPlacement('${zoneKey}',${index},1)" ${index===total-1?'disabled':''}>↓</button><button type="button" class="danger" onclick="removeQuestBoxPlacement('${zoneKey}',${index})">削除</button></div></div>
  ${random?`${renderQuestBoxRandomFilterEditor(zoneKey,placement,index)}<div class="grid" style="margin-top:8px"><div class="field"><label><input type="checkbox" ${placement.required?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'required',this.checked)"> 必須枠</label></div><div class="field"><label><input type="checkbox" ${placement.allow_none!==false?'checked':''} onchange="updateQuestBoxPlacement('${zoneKey}',${index},'allow_none',this.checked)"> 何も起きないを許可</label></div></div>`:renderQuestBoxEventCatalog(zoneKey,placement,index)}
  ${random?'':renderQuestBoxEncounterOverride(zoneKey,placement,index)}
  <div class="field"><label>Event失敗時</label><select onchange="updateQuestBoxPlacement('${zoneKey}',${index},'failure_policy',this.value)"><option value="continue" ${placement.failure_policy!=='quest_fail'?'selected':''}>続行</option><option value="quest_fail" ${placement.failure_policy==='quest_fail'?'selected':''}>Quest失敗</option></select></div></div>`;
 }
 function renderQuestBoxZone(zoneDef){
  const box=questBoxEditorState?.draft,rows=Array.isArray(box?.[zoneDef.key])?box[zoneDef.key]:[];
- return `<section class="quest-box-stage event-stage"><div class="quest-box-stage-head"><div><b>${esc(zoneDef.label)}</b><div class="small">${esc(zoneDef.position)} / ${rows.length}件</div></div><div class="toolbar"><button type="button" onclick="addQuestBoxPlacement('${zoneDef.key}','fixed_event')">＋ Event追加</button><button type="button" onclick="addQuestBoxPlacement('${zoneDef.key}','random_event')">＋ Random Event枠</button></div></div><div class="quest-box-placement-list">${rows.length?rows.map((p,i)=>renderQuestBoxPlacement(zoneDef.key,p,i,rows.length)).join(''):'<div class="small">Event Placementなし</div>'}</div></section>`;
+ return `<section class="quest-box-stage event-stage" data-quest-zone="${esc(zoneDef.key)}"><div class="quest-box-stage-head"><div><b>${esc(zoneDef.label)}</b><div class="small">${esc(zoneDef.position)} / ${rows.length}件 <span class="quest-box-add-feedback" role="status" aria-live="polite"></span></div></div><div class="toolbar"><button type="button" onclick="addQuestBoxPlacement('${zoneDef.key}','fixed_event')">＋ Event追加</button><button type="button" onclick="addQuestBoxPlacement('${zoneDef.key}','random_event')">＋ Random Event枠</button></div></div><div class="quest-box-placement-list">${rows.length?rows.map((p,i)=>renderQuestBoxPlacement(zoneDef.key,p,i,rows.length)).join(''):'<div class="small">Event Placementなし</div>'}</div></section>`;
 }
 function renderQuestBoxSceneStage(field,label){const box=questBoxEditorState?.draft;return `<section class="quest-box-stage scene-stage"><b>${esc(label)}</b><div class="field" style="margin-top:8px"><label>Scene参照</label><select onchange="updateQuestBoxEditorField('${field}',this.value)">${questBoxSceneOptions(box?.[field])}</select></div></section>`}
 function renderQuestBoxEditor(){
@@ -7619,7 +7641,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','576');
+    url.searchParams.set('appv','577');
     location.replace(url.toString());
    }
  }
@@ -7628,7 +7650,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=576',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=577',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7647,7 +7669,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','576');
+    url.searchParams.set('appv','577');
     location.replace(url.toString());
    }
   });
