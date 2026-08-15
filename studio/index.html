@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B589</title>
+<title>GK Studio GKS-B590</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -457,13 +457,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.182 / GKS-B589</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.182 / GKS-B590</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.182 / Studio GKS-B589</div>
+    <div class="version">Game GA-B486.182 / Studio GKS-B590</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1939,6 +1939,7 @@ updateDeployDeleteControl();
     <h2>3. 追加・差し替え・除外を確認</h2>
     <p class="small"><b>追加</b>=GitHub版に無いID、<b>差し替え</b>=同じIDで内容変更、<b>除外</b>=GitHub版にはあるが今回の正式Exportには無いIDです。除外してもGitHub上のJSONファイル自体や既存Saveは削除しません。</p>
     <div id="gameDeployEntitySummary" class="item">差分取得後にGameデータ単位の件数を表示します。</div>
+    <div class="toolbar" style="margin-top:10px"><button id="gameDeployDiffExportButton" type="button" onclick="exportGameDeployDiffJson()" disabled>差分JSONを出力</button></div>
     <div id="gameDeployEntityList" class="list"></div>
     <h3>GitHubファイル差分</h3>
     <div id="gameDeployFileSummary" class="small">未取得</div>
@@ -2231,7 +2232,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B589';
+const DISTRIBUTION_BUILD='GKS-B590';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6036,16 +6037,36 @@ function gameDeploySummaries(plan){
   add:entity.reduce((n,x)=>n+x.add.length,0),replace:entity.reduce((n,x)=>n+x.replace.length,0),exclude:entity.reduce((n,x)=>n+x.exclude.length,0),unchanged:entity.reduce((n,x)=>n+x.unchanged.length,0)
  };
 }
+const GAME_DEPLOY_ENTITY_PREVIEW_LIMIT=10;
+const GAME_DEPLOY_FILE_PREVIEW_LIMIT=8;
+function gameDeployDiffExportPayload(plan){
+ if(!plan)return null;
+ const totals=gameDeploySummaries(plan);
+ return{
+  schema:'gk.game-data-deploy-diff.v1',version:'1.0.0',generated_at:new Date().toISOString(),
+  repository:{owner:plan.owner,repo:plan.repoName,branch:plan.branch,head_sha:plan.headSha},
+  data_version:plan.artifact?.dataVersion||'',summary:{game_data:{add:totals.add,replace:totals.replace,exclude:totals.exclude,unchanged:totals.unchanged},github_files:{add:totals.fileAdd,modify:totals.fileModify,unchanged:totals.fileUnchanged,delete:0}},
+  entity_diffs:(plan.entityDiffs||[]).map(diff=>({path:diff.path,add:diff.add||[],replace:diff.replace||[],exclude:diff.exclude||[],unchanged:diff.unchanged||[]})),
+  file_diffs:(plan.files||[]).map(file=>({path:file.target,status:file.status,size:file.size,sha256:file.sha256||'',git_blob_sha:file.gitSha||''}))
+ };
+}
+function exportGameDeployDiffJson(){
+ if(!gameDeployPlan)return alert('先に「検証・差分取得」を実行してください。');
+ const payload=gameDeployDiffExportPayload(gameDeployPlan),stamp=new Date().toISOString().replace(/[:.]/g,'-'),version=String(payload.data_version||'draft').replace(/[^A-Za-z0-9_.-]/g,'_');
+ downloadText(`GK_GameDataDeploy_Diff_${version}_${stamp}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+}
 function renderGameDataDeployPlan(){
- const plan=gameDeployPlan,entitySummary=gameDeployEl('gameDeployEntitySummary'),entityList=gameDeployEl('gameDeployEntityList'),fileSummary=gameDeployEl('gameDeployFileSummary'),fileList=gameDeployEl('gameDeployFileList');if(!entitySummary||!entityList||!fileSummary||!fileList)return;
+ const plan=gameDeployPlan,entitySummary=gameDeployEl('gameDeployEntitySummary'),entityList=gameDeployEl('gameDeployEntityList'),fileSummary=gameDeployEl('gameDeployFileSummary'),fileList=gameDeployEl('gameDeployFileList'),diffButton=gameDeployEl('gameDeployDiffExportButton');if(!entitySummary||!entityList||!fileSummary||!fileList)return;
+ if(diffButton)diffButton.disabled=!plan;
  if(!plan){entitySummary.textContent='差分取得後にGameデータ単位の件数を表示します。';entityList.innerHTML='';fileSummary.textContent='未取得';fileList.innerHTML='';return}
  const totals=gameDeploySummaries(plan),excludeClass=totals.exclude?'warn':'ok';
- entitySummary.innerHTML=`<span class="badge ok">追加 ${totals.add}</span> <span class="badge warn">差し替え ${totals.replace}</span> <span class="badge ${excludeClass}">除外 ${totals.exclude}</span> <span class="badge">同一 ${totals.unchanged}</span> / Data Version ${esc(plan.artifact.dataVersion)}`;
+ entitySummary.innerHTML=`<span class="badge ok">追加 ${totals.add}</span> <span class="badge warn">差し替え ${totals.replace}</span> <span class="badge ${excludeClass}">除外 ${totals.exclude}</span> <span class="badge">同一 ${totals.unchanged}</span> / Data Version ${esc(plan.artifact.dataVersion)}<div class="small">画面は先頭${GAME_DEPLOY_ENTITY_PREVIEW_LIMIT}件のみ表示します。全件は「差分JSONを出力」で確認できます。</div>`;
  const rows=[];for(const diff of plan.entityDiffs){for(const item of diff.add)rows.push({...item,status:'ADD'});for(const item of diff.replace)rows.push({...item,status:'REPLACE'});for(const item of diff.exclude)rows.push({...item,status:'EXCLUDE'})}
- entityList.innerHTML=rows.length?rows.slice(0,300).map(row=>`<div class="item"><span class="badge ${row.status==='ADD'?'ok':row.status==='EXCLUDE'?'warn':''}">${esc(row.status==='ADD'?'追加':row.status==='REPLACE'?'差し替え':'除外')}</span> <b>${esc(row.id)}</b> ${esc(row.label&&row.label!==row.id?' / '+row.label:'')}<div class="small">${esc(row.path)}</div></div>`).join(''):'<div class="item"><span class="badge ok">Gameデータ内容の変更なし</span></div>';
- if(rows.length>300)entityList.innerHTML+=`<div class="small">ほか ${rows.length-300}件</div>`;
- fileSummary.textContent=`ADD ${totals.fileAdd} / MODIFY ${totals.fileModify} / UNCHANGED ${totals.fileUnchanged} / GitHubファイル削除 0件`;
- fileList.innerHTML=plan.files.map(file=>`<div class="deploy-file-row"><span>${esc(file.target)}</span><span>${esc(formatBytes(file.size))}</span><span class="badge ${file.status==='UNCHANGED'?'ok':'warn'}">${esc(file.status)}</span></div>`).join('');
+ entityList.innerHTML=rows.length?rows.slice(0,GAME_DEPLOY_ENTITY_PREVIEW_LIMIT).map(row=>`<div class="item"><span class="badge ${row.status==='ADD'?'ok':row.status==='EXCLUDE'?'warn':''}">${esc(row.status==='ADD'?'追加':row.status==='REPLACE'?'差し替え':'除外')}</span> <b>${esc(row.id)}</b> ${esc(row.label&&row.label!==row.id?' / '+row.label:'')}<div class="small">${esc(row.path)}</div></div>`).join(''):'<div class="item"><span class="badge ok">Gameデータ内容の変更なし</span></div>';
+ if(rows.length>GAME_DEPLOY_ENTITY_PREVIEW_LIMIT)entityList.innerHTML+=`<div class="item small">ほか ${rows.length-GAME_DEPLOY_ENTITY_PREVIEW_LIMIT}件。全件は差分JSONに収録しています。</div>`;
+ fileSummary.textContent=`ADD ${totals.fileAdd} / MODIFY ${totals.fileModify} / UNCHANGED ${totals.fileUnchanged} / GitHubファイル削除 0件（画面は先頭${GAME_DEPLOY_FILE_PREVIEW_LIMIT}件）`;
+ fileList.innerHTML=plan.files.slice(0,GAME_DEPLOY_FILE_PREVIEW_LIMIT).map(file=>`<div class="deploy-file-row"><span>${esc(file.target)}</span><span>${esc(formatBytes(file.size))}</span><span class="badge ${file.status==='UNCHANGED'?'ok':'warn'}">${esc(file.status)}</span></div>`).join('');
+ if(plan.files.length>GAME_DEPLOY_FILE_PREVIEW_LIMIT)fileList.innerHTML+=`<div class="item small">ほか ${plan.files.length-GAME_DEPLOY_FILE_PREVIEW_LIMIT}ファイル。全件は差分JSONに収録しています。</div>`;
 }
 async function prepareGameDataDeploy(){
  if(gameDeployBusy||ghBusy||studioDeployBusy)return alert('別のGitHub処理が実行中です。完了後に再実行してください。');
@@ -8210,7 +8231,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','589');
+    url.searchParams.set('appv','590');
     location.replace(url.toString());
    }
  }
@@ -8219,7 +8240,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=589',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=590',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8238,7 +8259,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','589');
+    url.searchParams.set('appv','590');
     location.replace(url.toString());
    }
   });

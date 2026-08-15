@@ -33,5 +33,5 @@ function validProject(){return {
   assert(!html.includes("createBackup('before-import');data=obj;normalizeData();persist('json imported')"),'legacy direct full-project overwrite must be removed');
   assert(!html.includes('const dt=new DataTransfer();dt.items.add(f)'),'full-project multi-package handoff must not depend on DataTransfer on iPhone Safari');
   assert(html.includes('currentProjectId=memoryCurrentBefore;data=memoryDataBefore;'),'multi-project rollback must restore in-memory state as well as storage');
-  console.log('PASS GKS-B589 full JSON preflight gate + strict partial ID gate');
+  console.log('PASS GKS-B590 full JSON preflight gate + strict partial ID gate');
 })().catch(e=>{console.error(e);process.exit(1)});
