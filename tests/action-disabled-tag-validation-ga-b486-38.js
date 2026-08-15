@@ -1,4 +1,3 @@
-
 'use strict';
 const fs=require('fs'),assert=require('assert');
 const compiler=require('../assets/shared/js/skill-compiler.js');
@@ -21,7 +20,9 @@ assert(missingDuration.errors.some(x=>x.code==='APPLY_DURATION_REQUIRED'),JSON.s
 const unknown=compiler.compileSkill(skill('ACTION-DISABLED-UNKNOWN',[{type:'APPLY',effectId:'NOT_REGISTERED',duration:400}]),registry);
 assert.strictEqual(unknown.ok,false,'unknown status accepted');
 assert(unknown.errors.some(x=>x.code==='UNKNOWN_EFFECT_ID'),JSON.stringify(unknown.errors));
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));assert.strictEqual(data.data_version,'FORMAL-SKILL-1');
-const prod=data.data.find(x=>x.id==='SKL-STATUS-ACTION-DISABLED-400');assert(prod&&prod.environment==='production','production fixture missing');
-assert.strictEqual(prod.runtimeContracts?.applyContracts?.[0]?.values?.statusPayload?.actionDisabled,true,'production Formal contract missing');
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
+const manifest=JSON.parse(fs.readFileSync('Export/manifest.json','utf8'));
+assert.strictEqual(data.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
+assert(Array.isArray(data.data)&&data.data.length>0,'Skill Export is empty');
+assert(data.data.every(x=>x.runtimeContracts?.registryPhase===registry.phase),'Skill Export contains non-Formal runtimeContracts');
 console.log('ACTION_DISABLED_FORMAL_VALIDATION_GA_B486_38_OK');

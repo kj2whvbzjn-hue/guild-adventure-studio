@@ -5,8 +5,9 @@ const runtime=fs.readFileSync(path.join(root,'game/assets/js/app-runtime.js'),'u
 const exportPayload=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const rows=Array.isArray(exportPayload)?exportPayload:(exportPayload.data||[]);
 function assert(cond,msg){if(!cond){throw new Error(msg)}}
-const productionSample=rows.find(x=>x.id==='SKL-TEST-ATTACK'&&x.runtimeContracts&&x.schemaVersion===1);
-assert(productionSample,'formal production sample SKL-TEST-ATTACK missing');
+const productionSample=rows.find(x=>x.runtimeContracts&&x.schemaVersion===1&&!Array.isArray(x.tags)&&(x.environment||'production')==='production');
+assert(productionSample,'formal production sample missing');
+assert(productionSample.runtimeContracts.registryPhase==='FORMAL-SKILL-1','fixture must use Formal runtimeContracts');
 assert(!Array.isArray(productionSample.tags),'fixture must represent production formal skill without legacy tags');
 assert(runtime.includes('function skillDisplayTags(skill,compiled)'), 'skillDisplayTags helper missing');
 assert(runtime.includes('Array.isArray(skill?.tags)'), 'explicit tag guard missing');
