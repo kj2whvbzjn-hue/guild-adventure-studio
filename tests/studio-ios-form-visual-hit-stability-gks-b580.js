@@ -76,4 +76,4 @@ end=tap(120,285,eventFailure);
 assert.strictEqual(eventRef.showPickerCount,1,'Event reference visual hit must open Event reference, not Event failure below');
 assert.strictEqual(eventFailure.showPickerCount,0);
 
-console.log('PASS GKS-B581 iOS form stability: 16px controls plus elementFromPoint-first visual hit routing prevent adjacent-field activation');
+console.log('PASS GKS-B582 iOS form stability: 16px controls plus elementFromPoint-first visual hit routing prevent adjacent-field activation');
