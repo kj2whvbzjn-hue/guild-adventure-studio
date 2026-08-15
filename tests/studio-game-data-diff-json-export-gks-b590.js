@@ -33,4 +33,4 @@ assert.equal(context.payload.summary.game_data.exclude,1);
 assert.equal(context.payload.entity_diffs[0].add.length,12,'JSON export must retain all entity rows');
 assert.equal(context.payload.file_diffs.length,12,'JSON export must retain all file rows');
 assert.equal(context.payload.summary.github_files.delete,0);
-console.log('PASS GKS-B590 compact Game deploy diff preview + full JSON export');
+console.log('PASS GKS-B591 compact Game deploy diff preview + full JSON export');

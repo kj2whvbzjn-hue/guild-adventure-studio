@@ -43,4 +43,4 @@ assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='SKL-9999')
 assert.ok(report.issues.some(x=>x.type==='category_mismatch'&&x.id==='MON-0001'&&x.expected_category==='skills'),'wrong-category reference must be reported');
 assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='MAP-9999'),'Quest master reference must be audited');
 assert.strictEqual(context.data.masters.skills[1].id,'SKL-LEGACY','audit must not mutate data');
-console.log('PASS GKS-B590 Master ID/reference audit is read-only and reports format/missing/category issues');
+console.log('PASS GKS-B591 Master ID/reference audit is read-only and reports format/missing/category issues');

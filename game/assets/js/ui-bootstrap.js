@@ -33,7 +33,7 @@ $('titleStart').onclick=beginNewGame;
 $('titleContinue').onclick=continueGame;
 $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェーズとして接続します。');
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
-$('baseDepart').onclick=$('baseDepartSide').onclick=()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}prepareEvent();setPhase('event')};
+$('baseDepart').onclick=$('baseDepartSide').onclick=async()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}await beginSelectedAdventure()};
 $('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
 $('eventObserve').onclick=()=>{const q=selectedQuest();$('eventNotice').textContent='敵情報：'+q.enemies.map(e=>`${e.name}(HP${e.maxHp}/攻撃${e.attack}/AGI${e.agi})`).join('、')};
 $('eventBattle').onclick=()=>{resetBattle();setPhase('battle')};
