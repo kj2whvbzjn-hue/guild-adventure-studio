@@ -17,10 +17,11 @@ function extractFunction(name){
 }
 function classList(initial=[]){const s=new Set(initial);return{contains:x=>s.has(x),add:x=>s.add(x),remove:x=>s.delete(x)};}
 function button(name,left,top,right,bottom){
-  return {name,disabled:false,clickCount:0,classList:classList(),getBoundingClientRect(){return {left,top,right,bottom,width:right-left,height:bottom-top};},click(){this.clickCount++;}};
+  return {name,tagName:'BUTTON',type:'button',disabled:false,clickCount:0,classList:classList(),getBoundingClientRect(){return {left,top,right,bottom,width:right-left,height:bottom-top};},contains(target){return target===this;},click(){this.clickCount++;}};
 }
 
-assert.ok(html.includes('function studioTouchButtonFromPoint('),'visual-coordinate button resolver must exist');
+assert.ok(html.includes('function studioTouchControlFromPoint('),'visual-coordinate control resolver must exist');
+assert.ok(html.includes('function studioTouchButtonFromPoint('),'button compatibility resolver must exist');
 assert.ok(html.includes("document.addEventListener('touchend',studioHandleMobileTouchEnd,{capture:true,passive:false})"),'document-level iOS touch router must own touchend before Safari creates a wrong native click');
 
 const quest=button('quest',170,100,320,150);
@@ -49,7 +50,7 @@ const STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD=12;
 const STUDIO_MOBILE_TOUCH_MAX_DURATION=900;
 const STUDIO_MOBILE_NATIVE_CLICK_SUPPRESS_MS=700;
 `,ctx);
-for(const name of ['studioIsIosTouchDevice','studioMobileTouchPoint','studioTouchActiveRoot','studioTouchButtonFromPoint','studioMobileTouchReset','studioHandleMobileTouchStart','studioHandleMobileTouchMove','studioHandleMobileTouchEnd','studioHandleMobileClickCapture','installStudioMobileTouchRouter'])vm.runInContext(extractFunction(name),ctx);
+for(const name of ['studioIsIosTouchDevice','studioMobileTouchPoint','studioTouchActiveRoot','studioTouchControlFromPoint','studioTouchButtonFromPoint','studioMobileTouchReset','studioHandleMobileTouchStart','studioHandleMobileTouchMove','studioTouchTargetMatchesControl','studioFocusTouchControl','studioActivateTouchControl','studioHandleMobileTouchEnd','studioHandleMobileClickCapture','installStudioMobileTouchRouter'])vm.runInContext(extractFunction(name),ctx);
 
 ctx.installStudioMobileTouchRouter();
 assert.deepStrictEqual(listeners.map(x=>x.name),['touchstart','touchmove','touchend','touchcancel','click']);
@@ -90,4 +91,4 @@ ctx.studioHandleMobileTouchMove(touchEvent(150,340,false,boxAdd));
 ctx.studioHandleMobileTouchEnd(touchEvent(150,340,true,boxAdd));
 assert.strictEqual(boxAdd.clickCount,1,'scrolling must not synthesize a tap');
 
-console.log('PASS GKS-B578 iOS visual hit-target router: Quest/Flag row shift, bottom Rule, Quest Box Add, and scroll protection');
+console.log('PASS GKS-B579 iOS visual hit-target router: Quest/Flag row shift, bottom Rule, Quest Box Add, and scroll protection');

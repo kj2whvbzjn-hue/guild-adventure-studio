@@ -16,7 +16,7 @@ function extractFunction(name){
   throw new Error(`unterminated ${name}`);
 }
 function classList(initial=[]){const s=new Set(initial);return{contains:x=>s.has(x),add:x=>s.add(x),remove:x=>s.delete(x)};}
-const button={disabled:false,clickCount:0,getBoundingClientRect(){return {left:20,top:100,right:220,bottom:150,width:200,height:50};},click(){this.clickCount++;}};
+const button={tagName:'BUTTON',type:'button',disabled:false,clickCount:0,getBoundingClientRect(){return {left:20,top:100,right:220,bottom:150,width:200,height:50};},contains(target){return target===this;},click(){this.clickCount++;}};
 const overlay={classList:classList(),querySelectorAll:()=>[button]};
 const sidebar={classList:classList(),querySelectorAll:()=>[]};
 const listeners=[];
@@ -33,7 +33,7 @@ const STUDIO_MOBILE_TOUCH_MOVE_THRESHOLD=12;
 const STUDIO_MOBILE_TOUCH_MAX_DURATION=900;
 const STUDIO_MOBILE_NATIVE_CLICK_SUPPRESS_MS=700;
 `,ctx);
-for(const name of ['studioIsIosTouchDevice','studioMobileTouchPoint','studioTouchActiveRoot','studioTouchButtonFromPoint','studioMobileTouchReset','studioHandleMobileTouchStart','studioHandleMobileTouchMove','studioHandleMobileTouchEnd','studioHandleMobileClickCapture','installStudioMobileTouchRouter'])vm.runInContext(extractFunction(name),ctx);
+for(const name of ['studioIsIosTouchDevice','studioMobileTouchPoint','studioTouchActiveRoot','studioTouchControlFromPoint','studioTouchButtonFromPoint','studioMobileTouchReset','studioHandleMobileTouchStart','studioHandleMobileTouchMove','studioTouchTargetMatchesControl','studioFocusTouchControl','studioActivateTouchControl','studioHandleMobileTouchEnd','studioHandleMobileClickCapture','installStudioMobileTouchRouter'])vm.runInContext(extractFunction(name),ctx);
 
 assert.ok(html.includes('.launcher-category-tabs button,.launcher-action-grid button,.studio-input-overlay button{touch-action:manipulation;'),'touch manipulation must cover launcher and Studio input buttons');
 ctx.installStudioMobileTouchRouter();
@@ -60,4 +60,4 @@ ctx.studioHandleMobileTouchMove(touchEvent(100,160));
 ctx.studioHandleMobileTouchEnd(touchEvent(100,160,true));
 assert.strictEqual(button.clickCount,1,'scroll gesture must not become a tap');
 
-console.log('PASS GKS-B578 preserves B575 iOS fallback intent with document-level visual hit routing and scroll protection');
+console.log('PASS GKS-B579 preserves B575 iOS fallback intent with document-level visual hit routing and scroll protection');
