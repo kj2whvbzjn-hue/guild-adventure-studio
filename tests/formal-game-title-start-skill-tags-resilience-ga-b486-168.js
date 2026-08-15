@@ -16,4 +16,4 @@ const helperBody=runtime.match(/function skillDisplayTags\(skill,compiled\)\{[\s
 assert(helperBody,'helper body not found');
 assert(helperBody[0].includes('compiled?.definition?.logicOrder'), 'formal logicOrder fallback missing');
 assert(helperBody[0].includes('compiled?.definition?.target'), 'formal target fallback missing');
-console.log('GAME_TITLE_START_SKILL_TAGS_RESILIENCE_OK build=GA-B486.181');
+console.log('GAME_TITLE_START_SKILL_TAGS_RESILIENCE_OK build=GA-B486.182');

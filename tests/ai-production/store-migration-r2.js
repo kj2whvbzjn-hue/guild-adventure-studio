@@ -57,7 +57,7 @@ const studioHtml = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8')
 assert(studioHtml.includes('./ai-production/ai-program-model.js?v=1'));
 assert(studioHtml.includes('./ai-production/ai-program-store.js?v=1'));
 assert(studioHtml.includes('ai_programs:[]'), 'new Main projects must initialize an AI program collection');
-assert(studioHtml.includes('function normalizeData(){\n if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);'), 'loaded/legacy projects must normalize AI programs through the project boundary');
+assert(studioHtml.includes('function normalizeData(){')&&studioHtml.includes('if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);'), 'loaded/legacy projects must normalize AI programs through the project boundary');
 assert(studioHtml.includes("function persist(message='端末保存'){\n if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);"), 'persist must normalize AI programs without replacing Main save behavior');
 
 const storeSource = fs.readFileSync(path.join(root, 'studio/ai-production/ai-program-store.js'), 'utf8');

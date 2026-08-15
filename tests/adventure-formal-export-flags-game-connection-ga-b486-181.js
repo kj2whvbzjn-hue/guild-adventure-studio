@@ -31,4 +31,4 @@ assert.equal(ctx.data.flags['FLAG-DEFAULT-ON'],true);
 assert.equal(ctx.data.flags['FLAG-DEFAULT-OFF'],false);
 assert.equal(ctx.data.flags['FLAG-KEEP'],true,'existing save Flag must never be overwritten');
 assert.equal(ctx.data.flags['FLAG-EXISTING-FALSE'],false,'existing false save Flag must never be overwritten');
-console.log('PASS GA-B486.181 formal Export Flag connection: definitions/defaults + required/set runtime path');
+console.log('PASS GA-B486.182 formal Export Flag connection: definitions/defaults + required/set runtime path');

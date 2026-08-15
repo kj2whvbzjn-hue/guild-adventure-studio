@@ -6,6 +6,7 @@ const formalRuntime=fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'
 const harness=fs.readFileSync('assets/shared/js/device-game-test-harness.js','utf8');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const buildId=build.game_build;
+const studioCacheId=build.studio_build.replace(/^GKS-B/,'');
 const cacheId=buildId.replace(/^GA-B/,'').replace('.','');
 assert(html.includes('id="tagTestRunHealSingle"'),'Formal Gameに単体回復検証ボタンがありません');
 assert(html.includes('id="tagTestRunHealAll"'),'Formal Gameに全体回復検証ボタンがありません');
@@ -21,6 +22,6 @@ assert(harness.includes("kind:'real_device_acceptance'"),'Formal Game実機JSON�
 assert(harness.includes('結果JSONをコピー'),'Formal Game実機JSON持ち出しがありません');
 assert(html.includes(`../assets/shared/js/device-game-test-harness.js?v=${cacheId}`),'Formal Game実機ハーネスのキャッシュバスターが現行ビルドではありません');
 const gameSw=fs.readFileSync('game/sw.js','utf8');
-assert(gameSw.includes(`ga-game-b${cacheId}-b586`),'Game Service Workerキャッシュが現行ビルドではありません');
+assert(gameSw.includes(`ga-game-b${cacheId}-b${studioCacheId}`),'Game Service Workerキャッシュが現行ビルドではありません');
 assert(gameSw.includes(`device-game-test-harness.js?v=${cacheId}`),'Service Workerが現行Formal実機ハーネスを参照していません');
 console.log('HEAL_FORMAL_GAME_DEVICE_CURRENT_BUILD_OK');

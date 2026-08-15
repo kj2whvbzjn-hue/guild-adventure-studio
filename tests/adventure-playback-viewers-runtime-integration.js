@@ -27,5 +27,5 @@ assert(app.includes('events.slice(0,cursor+1)'),'Battle Viewer must reveal only 
 assert(app.includes('function renderAdventureReturnResult(summary)'),'return result renderer missing');
 assert(app.includes('QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。'),'return result must make no-recalculation behavior explicit');
 assert(app.includes("const summary={run_id:current.quest_run_id"),'return summary must be captured from stored QuestRun before commit');
-assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.181';"),'current game build missing');
+assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.182';"),'current game build missing');
 console.log('adventure-playback-viewers-runtime-integration PASS');

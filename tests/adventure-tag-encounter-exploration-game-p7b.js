@@ -22,7 +22,7 @@ for(const token of [
  'run.start_cost_result={consumed:true',
 ])assert(app.includes(token),`P7-B Game integration missing: ${token}`);
 assert(app.indexOf('GKAdventureStorySystem.simulateQuest({')<app.indexOf('GKAdventureStorySystem.consumeQuestStartCost(data,startState.cost)'),'Stone/start cost must commit only after QuestRun simulation succeeds');
-for(const token of ['adventure-encounter-resolver.js?v=2','id="adventureStonePicker"'])assert(game.includes(token),`P7-B Game shell missing: ${token}`);
+for(const token of ['adventure-encounter-resolver.js?v=3','id="adventureStonePicker"'])assert(game.includes(token),`P7-B Game shell missing: ${token}`);
 for(const token of ['id="questMapId"','id="questEnvironmentTags"','value="maps">マップ','value="exploration_outcomes">探索結果','value="adventure_settings">冒険設定','Story Battle Override','required_monsters','fixed_formation','id="masterEnvironmentTagFields"','params.stone_level=stoneLevel'])assert(studio.includes(token),`P7-B Studio integration missing: ${token}`);
 for(const token of ["'world/maps.json'","'exploration/outcomes.json'","'system/adventure_settings.json'",'function p7StoryQuestRuntimeAssessment(data,quest)','p7_runtime_ready'])assert(exp.includes(token),`P7-B Export integration missing: ${token}`);
 console.log('adventure-tag-encounter-exploration-game-p7b PASS');
