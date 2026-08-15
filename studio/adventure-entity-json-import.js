@@ -11,6 +11,7 @@
   };
   const VOLATILE=new Set(['created_at','updated_at','generated_at']);
   function isObject(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
+  function referenceList(value){if(Array.isArray(value))return value.map(String).map(x=>x.trim()).filter(Boolean);if(typeof value==='string')return value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);return [];}
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v))}
   function deepMerge(current,incoming){
     if(Array.isArray(incoming))return clone(incoming);
@@ -138,8 +139,8 @@
     const id=String(q.id||'Quest'),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||''))),sceneIds=new Set(),mapIds=new Set((rootData?.masters?.maps||[]).map(x=>String(x.id||''))),flagIds=new Set((rootData?.flags||[]).map(x=>String(x.id||''))),questIds=new Set([...(rootData?.quests||[]).map(x=>String(x.id||'')),...incomingQuestIds]);
     for(const chapter of rootData?.chapters||[])for(const section of chapter.sections||[])for(const scene of section.scenes||[])sceneIds.add(String(scene.id||''));
     const mapId=String(q.context?.map_id||'');if(mapId&&!mapIds.has(mapId))warnings.push(`${id}: Map参照は現在未登録です: ${mapId}`);
-    for(const ref of [...(q.prerequisite_ids||[]),...(q.next_quest_ids||[])].map(String).filter(Boolean))if(!questIds.has(ref))warnings.push(`${id}: Quest参照は現在未登録です: ${ref}`);
-    for(const ref of [...(q.required_flags||[]),...(q.set_flags||[])].map(String).filter(Boolean))if(!flagIds.has(ref))warnings.push(`${id}: Flag参照は現在未登録です: ${ref}`);
+    for(const ref of [...referenceList(q.prerequisite_ids),...referenceList(q.next_quest_ids)])if(!questIds.has(ref))warnings.push(`${id}: Quest参照は現在未登録です: ${ref}`);
+    for(const ref of [...referenceList(q.required_flags),...referenceList(q.set_flags)])if(!flagIds.has(ref))warnings.push(`${id}: Flag参照は現在未登録です: ${ref}`);
     for(const box of Array.isArray(q.boxes)?q.boxes:[]){
       for(const sceneKey of ['pre_scene_id','mid_scene_id','post_scene_id']){const ref=String(box?.[sceneKey]||box?.scenes?.[sceneKey]||'');if(ref&&!sceneIds.has(ref))warnings.push(`${id}/${String(box?.box_id||box?.id||'?')}: Scene参照は現在未登録です: ${ref}`);}
       for(const zoneKey of ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post','event_before_pre','event_pre_to_mid','event_mid_to_post','event_after_post'])for(const p of Array.isArray(box?.[zoneKey])?box[zoneKey]:[]){const ref=String(p?.event_id||p?.ref_id||'');if(ref&&!eventIds.has(ref))warnings.push(`${id}/${String(box?.box_id||box?.id||'?')}: Event参照は現在未登録です: ${ref}`);}
