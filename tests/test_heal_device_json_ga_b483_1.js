@@ -30,7 +30,7 @@ assert(harness.includes("kind:'real_device_acceptance'"),'Formal Game real-devic
 assert(harness.includes('device-acceptance-${context}-${BUILD}-'),'device JSON filename is not derived from current Formal Game build');
 assert(harness.includes('結果JSONをコピー'),'device JSON copy path missing');
 assert(html.includes(`../assets/shared/js/device-game-test-harness.js?v=${cacheId}`),'device harness cache buster is not current');
-assert(gameSw.includes(`ga-game-b${cacheId}-b570`),'Game Service Worker cache is not current');
+assert(gameSw.includes(`ga-game-b${cacheId}-b571`),'Game Service Worker cache is not current');
 assert(gameSw.includes(`device-game-test-harness.js?v=${cacheId}`),'Game Service Worker does not cache the current device harness');
 
 // Prove HEAL itself executes through Formal compiler -> runtimeContracts -> Production Runtime.

@@ -15,4 +15,4 @@ assert.ok(html.includes("candidate.status='DELETE_BLOCKED';"),'protected deletio
 assert.ok(html.includes("if(candidate.protectedDelete&&!protectedDeleteEnabled)"),'protected candidate gate must require protected approval');
 assert.ok(html.includes("if(protectedDeleteItems.length&&!(normalDeleteApproved&&protectedDeleteApproved))"),'deployment must require both approvals for protected deletes');
 assert.ok(html.includes("setDeployExecuteEnabled(changes.length>0&&blockedCount===0);"),'deployment must stay disabled while a protected manifest deletion is blocked');
-console.log('PASS GKS-B570 Studio dual human approval for protected deletion');
+console.log('PASS GKS-B571 Studio dual human approval for protected deletion');
