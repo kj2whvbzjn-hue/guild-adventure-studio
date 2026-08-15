@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B574</title>
+<title>GK Studio GKS-B575</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -217,6 +217,7 @@ body.master-skill-picker-open{overflow:hidden}
 .studio-input-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff}
 .studio-input-head h2{margin:0;font-size:20px}
 .studio-input-head button{min-width:88px}
+.studio-input-overlay button{touch-action:manipulation;-webkit-tap-highlight-color:rgba(37,99,235,.14)}
 .studio-input-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px;overscroll-behavior:contain}
 .studio-input-body>.hidden{display:block!important}
 body.studio-input-open{overflow:hidden}
@@ -443,7 +444,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=10"></script>
-  <script src="./adventure-entity-json-import.js?v=574"></script>
+  <script src="./adventure-entity-json-import.js?v=575"></script>
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -453,13 +454,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B574</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.180 / GKS-B575</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.180 / Studio GKS-B574</div>
+    <div class="version">Game GA-B486.180 / Studio GKS-B575</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2136,7 +2137,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B574';
+const DISTRIBUTION_BUILD='GKS-B575';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -4419,6 +4420,56 @@ async function copyBuildSummary(){
 window.addEventListener('DOMContentLoaded',applyBuildSettings);
 
 let studioInputPanelState=null;
+let studioInputTouchTapState=null;
+let studioInputSyntheticTapActive=false;
+let studioInputSuppressNativeClickUntil=0;
+const STUDIO_INPUT_TOUCH_MOVE_THRESHOLD=12;
+const STUDIO_INPUT_TOUCH_MAX_DURATION=900;
+const STUDIO_INPUT_NATIVE_CLICK_SUPPRESS_MS=700;
+function studioInputTouchPoint(event,changed=false){
+ const list=changed?event?.changedTouches:event?.touches;
+ const point=list&&list.length?list[0]:null;
+ return point?{x:Number(point.clientX)||0,y:Number(point.clientY)||0}:null;
+}
+function studioInputTouchButton(event){
+ const target=event?.target;
+ return target&&typeof target.closest==='function'?target.closest('button'):null;
+}
+function studioInputTouchReset(){studioInputTouchTapState=null;}
+function studioHandleInputTouchStart(event){
+ const overlay=document.getElementById('studioInputOverlay'),button=studioInputTouchButton(event),point=studioInputTouchPoint(event);
+ if(!overlay||overlay.classList.contains('hidden')||!button||button.disabled||!overlay.contains(button)||!point){studioInputTouchReset();return;}
+ studioInputTouchTapState={button,startX:point.x,startY:point.y,lastX:point.x,lastY:point.y,moved:false,startedAt:Date.now()};
+}
+function studioHandleInputTouchMove(event){
+ const state=studioInputTouchTapState,point=studioInputTouchPoint(event);if(!state||!point)return;
+ state.lastX=point.x;state.lastY=point.y;
+ if(Math.abs(point.x-state.startX)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD||Math.abs(point.y-state.startY)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD)state.moved=true;
+}
+function studioHandleInputTouchEnd(event){
+ const state=studioInputTouchTapState,point=studioInputTouchPoint(event,true),button=studioInputTouchButton(event),overlay=document.getElementById('studioInputOverlay');
+ studioInputTouchReset();
+ if(!state||state.moved||Date.now()-state.startedAt>STUDIO_INPUT_TOUCH_MAX_DURATION||!overlay||overlay.classList.contains('hidden')||!button||button!==state.button||button.disabled||!overlay.contains(button))return;
+ if(point&&(Math.abs(point.x-state.startX)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD||Math.abs(point.y-state.startY)>STUDIO_INPUT_TOUCH_MOVE_THRESHOLD))return;
+ event.preventDefault?.();event.stopPropagation?.();
+ studioInputSuppressNativeClickUntil=Date.now()+STUDIO_INPUT_NATIVE_CLICK_SUPPRESS_MS;
+ studioInputSyntheticTapActive=true;
+ try{button.click();}finally{studioInputSyntheticTapActive=false;}
+}
+function studioHandleInputClickCapture(event){
+ if(studioInputSyntheticTapActive)return;
+ if(Date.now()<studioInputSuppressNativeClickUntil){event.preventDefault?.();event.stopImmediatePropagation?.();}
+}
+function installStudioInputTouchTapBridge(){
+ const overlay=document.getElementById('studioInputOverlay');if(!overlay||overlay.dataset.touchTapBridge==='1')return;
+ overlay.dataset.touchTapBridge='1';
+ overlay.addEventListener('touchstart',studioHandleInputTouchStart,{capture:true,passive:true});
+ overlay.addEventListener('touchmove',studioHandleInputTouchMove,{capture:true,passive:true});
+ overlay.addEventListener('touchend',studioHandleInputTouchEnd,{capture:true,passive:false});
+ overlay.addEventListener('touchcancel',studioInputTouchReset,{capture:true,passive:true});
+ overlay.addEventListener('click',studioHandleInputClickCapture,true);
+}
+window.addEventListener('DOMContentLoaded',installStudioInputTouchTapBridge);
 function openStudioInputPanel(id,title){
   const panel=document.getElementById(id),overlay=document.getElementById('studioInputOverlay'),body=document.getElementById('studioInputBody'),heading=document.getElementById('studioInputTitle');
   if(!panel||!overlay||!body)return;
@@ -7548,7 +7599,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','574');
+    url.searchParams.set('appv','575');
     location.replace(url.toString());
    }
  }
@@ -7557,7 +7608,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=574',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=575',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -7576,7 +7627,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','574');
+    url.searchParams.set('appv','575');
     location.replace(url.toString());
    }
   });
