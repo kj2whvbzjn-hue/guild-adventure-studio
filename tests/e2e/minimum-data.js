@@ -2,7 +2,7 @@ module.exports={
  project:{id:'e2e-minimum'},
  chapters:[{id:'CH001',name:'平原の章',sections:[{id:'SEC001',name:'旅立ち',scenes:[{id:'SCN001',name:'王子の入隊',text:'日本語・改行\n記号「」を保持'}]}]}],
  quests:[{id:'MQ001',type:'main',name:'最初の依頼',adventure_duration_seconds:300,monster_id:'MON001'}],
- events:[{id:'EV001',name:'入隊イベント',flag_id:'FLG001'}],flags:[{id:'FLG001',name:'入隊済み',default:false}],
+ events:[{id:'EV001',name:'入隊イベント',usage:'story',type:'special',flag_id:'FLG001'}],flags:[{id:'FLG001',name:'入隊済み',default:false}],
  ai_templates:[{id:'AIT001',name:'基本AI'}],
  masters:{
   jobs:[{id:'JOB001',name:'騎士',str:11,vit:13}],status_effects:[{id:'ST001',name:'毒'}],

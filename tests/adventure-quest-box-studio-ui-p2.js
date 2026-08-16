@@ -36,7 +36,7 @@ assert(studio.includes('Event失敗時'),'P2 placement failure policy must remai
 assert(studio.includes('boxes:questDraftBoxes.map((box,i)=>questBoxClone({...box,order:i+1},i))'),'Quest save must persist Box drafts');
 assert(studio.includes('questDraftBoxes=(Array.isArray(q.boxes)?q.boxes:[]).map((box,i)=>questBoxClone(box,i))'),'Quest edit must load Box drafts');
 assert(studio.includes("typeof GKAdventureStorySystem.normalizeQuestBox==='function'"),'Box editor must use P1 normalization');
-assert(studio.includes('id="storyBoxEditor"'),'legacy Section Box Editor must remain during P2');
+assert(!studio.includes('id="storyBoxEditor"'),'legacy Section Box Editor must be removed; Quest Box is the only adventure Box editor');
 
 // Execute only the P2 helper block against a minimal environment to verify reorder/id and multi-placement behavior.
 const start=studio.indexOf('function questBoxClone(box,index=0){');

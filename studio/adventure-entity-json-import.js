@@ -86,6 +86,7 @@
     if(!id)errors.push(`${where}: id は必須です。`);
     if(!String(q.name||'').trim())errors.push(`${where}${id?` ${id}`:''}: name は必須です。`);
     if(q.boxes!==undefined&&!Array.isArray(q.boxes))errors.push(`${where}${id?` ${id}`:''}: boxes は配列で指定してください。`);
+    if(Object.prototype.hasOwnProperty.call(q,'links'))errors.push(`${where}${id?` ${id}`:''}: links は撤去済みです。関連キャラクターは character_ids を使用してください。`);
     const seen=new Set();
     (Array.isArray(q.boxes)?q.boxes:[]).forEach((box,bi)=>{
       const boxId=String(box?.box_id||box?.id||`BOX-${String(bi+1).padStart(4,'0')}`).trim();
@@ -98,12 +99,19 @@
     if(!isObject(e)){errors.push(`${where}: オブジェクトではありません。`);return;}
     if(!id)errors.push(`${where}: id は必須です。`);
     if(!String(e.name||'').trim())errors.push(`${where}${id?` ${id}`:''}: name は必須です。`);
+    if(Object.prototype.hasOwnProperty.call(e,'links'))errors.push(`${where}${id?` ${id}`:''}: links は撤去済みです。`);
+    if(Object.prototype.hasOwnProperty.call(e,'battle_formation'))errors.push(`${where}${id?` ${id}`:''}: battle_formation は撤去済みです。固定戦闘編成はQuest BoxのStory Battle Overrideを使用してください。`);
   }
   function validateStoryRecord(c,index,errors,warnings){
     const where=`Chapter[${index+1}]`,chapterId=String(c?.id||'').trim();
     if(!isObject(c)){errors.push(`${where}: オブジェクトではありません。`);return;}
     if(!chapterId)errors.push(`${where}: id は必須です。`);
     if(!String(c.title||'').trim())errors.push(`${where}${chapterId?` ${chapterId}`:''}: title は必須です。`);
+    if(Object.prototype.hasOwnProperty.call(c,'available_monster_ids'))errors.push(`${chapterId||where}: available_monster_ids は撤去済みです。Monster選定はQuest/Event Resolverへ移行済みです。`);
+    if(Object.prototype.hasOwnProperty.call(c,'random_event_candidates'))errors.push(`${chapterId||where}: random_event_candidates は撤去済みです。Random Event候補はQuest Boxのfilterで指定してください。`);
+    (Array.isArray(c.sections)?c.sections:[]).forEach((section,si)=>{
+      for(const key of ['adventure_duration_seconds','enemy_budget','boxes'])if(Object.prototype.hasOwnProperty.call(section||{},key))errors.push(`${chapterId||where}: Section[${si+1}] の ${key} は撤去済みです。Quest側の正式フィールドを使用してください。`);
+    });
     const local=new Set();
     for(const row of storyNodes(c)){
       if(!row.id){errors.push(`${chapterId||where}: ${row.type} のidがありません。`);continue;}
@@ -136,11 +144,12 @@
     }
   }
   function questReferenceWarnings(q,rootData,incomingQuestIds,warnings){
-    const id=String(q.id||'Quest'),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||''))),sceneIds=new Set(),mapIds=new Set((rootData?.masters?.maps||[]).map(x=>String(x.id||''))),flagIds=new Set((rootData?.flags||[]).map(x=>String(x.id||''))),questIds=new Set([...(rootData?.quests||[]).map(x=>String(x.id||'')),...incomingQuestIds]);
+    const id=String(q.id||'Quest'),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||''))),sceneIds=new Set(),mapIds=new Set((rootData?.masters?.maps||[]).map(x=>String(x.id||''))),flagIds=new Set((rootData?.flags||[]).map(x=>String(x.id||''))),characterIds=new Set((rootData?.characters||[]).map(x=>String(x.id||''))),questIds=new Set([...(rootData?.quests||[]).map(x=>String(x.id||'')),...incomingQuestIds]);
     for(const chapter of rootData?.chapters||[])for(const section of chapter.sections||[])for(const scene of section.scenes||[])sceneIds.add(String(scene.id||''));
     const mapId=String(q.context?.map_id||'');if(mapId&&!mapIds.has(mapId))warnings.push(`${id}: Map参照は現在未登録です: ${mapId}`);
     for(const ref of [...referenceList(q.prerequisite_ids),...referenceList(q.next_quest_ids)])if(!questIds.has(ref))warnings.push(`${id}: Quest参照は現在未登録です: ${ref}`);
     for(const ref of [...referenceList(q.required_flags),...referenceList(q.set_flags)])if(!flagIds.has(ref))warnings.push(`${id}: Flag参照は現在未登録です: ${ref}`);
+    for(const ref of referenceList(q.character_ids))if(!characterIds.has(ref))warnings.push(`${id}: Character参照は現在未登録です: ${ref}`);
     for(const box of Array.isArray(q.boxes)?q.boxes:[]){
       for(const sceneKey of ['pre_scene_id','mid_scene_id','post_scene_id']){const ref=String(box?.[sceneKey]||box?.scenes?.[sceneKey]||'');if(ref&&!sceneIds.has(ref))warnings.push(`${id}/${String(box?.box_id||box?.id||'?')}: Scene参照は現在未登録です: ${ref}`);}
       for(const zoneKey of ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post','event_before_pre','event_pre_to_mid','event_mid_to_post','event_after_post'])for(const p of Array.isArray(box?.[zoneKey])?box[zoneKey]:[]){const ref=String(p?.event_id||p?.ref_id||'');if(ref&&!eventIds.has(ref))warnings.push(`${id}/${String(box?.box_id||box?.id||'?')}: Event参照は現在未登録です: ${ref}`);}
@@ -151,11 +160,6 @@
     for(const ref of [...(e.required_flags||[]),...(e.set_flags||[])].map(String).filter(Boolean))if(!flagIds.has(ref))warnings.push(`${id}: Flag参照は現在未登録です: ${ref}`);
     for(const ref of (e.reward_table_ids||[]).map(String).filter(Boolean))if(!rewardIds.has(ref))warnings.push(`${id}: Reward Table参照は現在未登録です: ${ref}`);
   }
-  function storyReferenceWarnings(c,rootData,warnings){
-    const id=String(c.id||'Chapter'),monsterIds=new Set((rootData?.masters?.monsters||[]).map(x=>String(x.id||''))),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||'')));
-    for(const ref of (c.available_monster_ids||[]).map(String).filter(Boolean))if(!monsterIds.has(ref))warnings.push(`${id}: Monster参照は現在未登録です: ${ref}`);
-    for(const row of c.random_event_candidates||[]){const ref=String(row?.event_id||row?.id||row||'');if(ref&&!eventIds.has(ref))warnings.push(`${id}: Random Event参照は現在未登録です: ${ref}`);}
-  }
   function buildPlan(kind,payload,rootData){
     const records=extractRecords(kind,payload),errors=[],warnings=[];
     if(!records.length)errors.push(`${KINDS[kind].label} Import対象が0件です。`);
@@ -164,7 +168,6 @@
     const incomingQuestIds=new Set(kind==='quests'?records.map(x=>String(x.id||'')):[]);
     if(kind==='quests')records.forEach(q=>questReferenceWarnings(q,rootData||{},incomingQuestIds,warnings));
     if(kind==='events')records.forEach(e=>eventReferenceWarnings(e,rootData||{},warnings));
-    if(kind==='story')records.forEach(c=>storyReferenceWarnings(c,rootData||{},warnings));
     const target=Array.isArray(rootData?.[KINDS[kind].rootKey])?rootData[KINDS[kind].rootKey]:[],byId=new Map(target.map(x=>[String(x?.id||''),x])),adds=[],updates=[],unchanged=[];
     for(const incoming of records){const id=String(incoming?.id||'');if(!id)continue;const current=byId.get(id);if(!current){adds.push(id);continue;}const merged=deepMerge(current,incoming);if(sameMeaning(current,merged))unchanged.push(id);else updates.push(id);}
     return {kind,label:KINDS[kind].label,rootKey:KINDS[kind].rootKey,records,adds,updates,unchanged,errors:[...new Set(errors)],warnings:[...new Set(warnings)],canApply:errors.length===0&&(adds.length+updates.length)>0};

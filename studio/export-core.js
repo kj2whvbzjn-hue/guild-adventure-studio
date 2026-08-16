@@ -151,10 +151,10 @@
     return issues;
   }
   function collectEventContractIssues(data,event){
-    const issues=[],eid=stringValue(event?.id)||'(ID未設定)',modern=event?.usage!==undefined;
+    const issues=[],eid=stringValue(event?.id)||'(ID未設定)';
     if(!stringValue(event?.id))issues.push({level:'ERROR',code:'EVENT_ID_MISSING',event_id:'',message:'Event IDが未設定です。'});
     if(!stringValue(event?.name))issues.push({level:'ERROR',code:'EVENT_NAME_MISSING',event_id:eid,message:`${eid} のEvent名が未設定です。`});
-    if(!modern){issues.push({level:'WARNING',code:'EVENT_LEGACY_MODEL',event_id:eid,message:`${eid} は旧Eventモデルです。P3/P4の用途・種別契約へ未移行ですが、現時点では非破壊保持します。`});return issues;}
+    if(event?.usage===undefined)issues.push({level:'ERROR',code:'EVENT_USAGE_MISSING',event_id:eid,message:`${eid} のEvent用途が未設定です。正式Eventにはusageが必要です。`});
     const usages=eventUsages(event);
     if(!usages.length||usages.some(x=>!QUEST_EVENT_USAGES.has(x)))issues.push({level:'ERROR',code:'EVENT_USAGE_INVALID',event_id:eid,message:`${eid} のEvent用途が不正です。`});
     if(!QUEST_EVENT_TYPES.has(stringValue(event?.type)))issues.push({level:'ERROR',code:'EVENT_TYPE_INVALID',event_id:eid,message:`${eid} のEvent種別が不正です。`});
@@ -168,7 +168,7 @@
     if(event?.conditions!==undefined&&!Array.isArray(event.conditions)&&typeof event.conditions!=='string')issues.push({level:'ERROR',code:'EVENT_CONDITIONS_INVALID',event_id:eid,message:`${eid} の発生条件は文字列または配列である必要があります。`});
     else if(valuePresent(event?.conditions))issues.push({level:'WARNING',code:'EVENT_CONDITIONS_RUNTIME_IGNORED',event_id:eid,message:`${eid} のconditionsはP6 Runtimeでは解釈しません。機械可読な発生条件はrequired_flagsを使用してください。`});
     const forbidden=[
-      ['map_id','Map ID'],['area_id','Area ID'],['battle_formation','通常敵固定編成'],['fixed_normal_enemy_roster','通常敵固定一覧'],['map_specific_exploration_result','Map固有探索結果'],['final_reward','確定報酬']
+      ['map_id','Map ID'],['area_id','Area ID'],['fixed_normal_enemy_roster','通常敵固定一覧'],['map_specific_exploration_result','Map固有探索結果'],['final_reward','確定報酬']
     ];
     forbidden.forEach(([key,label])=>{if(valuePresent(event?.[key]))issues.push({level:'ERROR',code:'EVENT_ENVIRONMENT_FIELD_FORBIDDEN',event_id:eid,field:key,message:`${eid} は新Eventに禁止されている環境依存項目「${label}」(${key})を保持しています。`});});
     return issues;
@@ -182,17 +182,6 @@
     issues.push({level:'INFO',code:'RANDOM_SLOT_COUNT',message:`P4情報: Random Event枠 ${randomSlots.length}件。`});
     issues.push({level:'INFO',code:'SCENE_USAGE_COUNT',message:`P4情報: Quest Boxから参照するScene ${sceneUsage.size}件。`});
     return issues;
-  }
-  function legacyStoryQuestRuntimeAssessment(data,quest){
-    const links=quest&&quest.links&&typeof quest.links==='object'?quest.links:{};
-    const chapterId=stringValue(links.chapter_id),sectionId=stringValue(links.section_id),issues=[];
-    if(!chapterId||!sectionId){issues.push({level:'WARNING',code:'FORMAL_QUEST_LINK_INCOMPLETE',quest_id:stringValue(quest?.id),message:'現行Game互換にはChapter / Sectionの両方が必要です。'});return{ready:false,chapter_id:chapterId,section_id:sectionId,issues};}
-    const chapter=(data?.chapters||[]).find(x=>stringValue(x?.id)===chapterId);
-    if(!chapter){issues.push({level:'WARNING',code:'FORMAL_QUEST_CHAPTER_MISSING',quest_id:stringValue(quest?.id),message:`現行Game互換Chapterが存在しません: ${chapterId}`});return{ready:false,chapter_id:chapterId,section_id:sectionId,issues};}
-    const section=(chapter.sections||[]).find(x=>stringValue(x?.id)===sectionId);
-    if(!section){issues.push({level:'WARNING',code:'FORMAL_QUEST_SECTION_MISSING',quest_id:stringValue(quest?.id),message:`現行Game互換Sectionが存在しません: ${sectionId}`});return{ready:false,chapter_id:chapterId,section_id:sectionId,issues};}
-    if(!Array.isArray(section.boxes)||section.boxes.length===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_SECTION_BOXES_EMPTY',quest_id:stringValue(quest?.id),message:`現行Game Runtimeが参照するSection ${sectionId} の旧Boxが0件です。`});
-    return{ready:issues.length===0,chapter_id:chapterId,section_id:sectionId,issues};
   }
   function p5StoryQuestRuntimeAssessment(data,quest){
     const qid=stringValue(quest?.id),boxes=Array.isArray(quest?.boxes)?quest.boxes:[],issues=[];
@@ -241,15 +230,15 @@
     return{ready:issues.every(x=>x.level!=='ERROR'&&x.level!=='WARNING'),issues,event_types:[...types]};
   }
   function formalStoryQuestAssessment(data,quest){
-    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],legacy=legacyStoryQuestRuntimeAssessment(data,quest),p5=p5StoryQuestRuntimeAssessment(data,quest),p6=p6StoryQuestRuntimeAssessment(data,quest),p7=p7StoryQuestRuntimeAssessment(data,quest);
-    if(!boxes.length)return{is_formal:false,ready:false,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues:[],legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:false,p6_runtime:p6,p6_runtime_ready:false,p7_runtime:p7,p7_runtime_ready:false,message:legacy.ready?'旧Runtime互換Questですが、Quest.boxesがないため正式Quest契約の対象外です。':'Quest.boxesがないため正式Quest契約の対象外です。'};
+    const boxes=Array.isArray(quest?.boxes)?quest.boxes:[],p5=p5StoryQuestRuntimeAssessment(data,quest),p6=p6StoryQuestRuntimeAssessment(data,quest),p7=p7StoryQuestRuntimeAssessment(data,quest);
+    if(!boxes.length)return{is_formal:false,ready:false,issues:[],p5_runtime:p5,p5_runtime_ready:false,p6_runtime:p6,p6_runtime_ready:false,p7_runtime:p7,p7_runtime_ready:false,message:'Quest.boxesがないため正式Quest契約の対象外です。'};
     const issues=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');
     const ready=issues.length===0;
-    return{is_formal:true,ready,chapter_id:legacy.chapter_id,section_id:legacy.section_id,issues,legacy_runtime:legacy,legacy_runtime_ready:legacy.ready,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,p6_runtime:p6,p6_runtime_ready:ready&&p6.ready,p7_runtime:p7,p7_runtime_ready:ready&&p7.ready,message:ready?(p7.ready?'Quest.boxesを正とする正式Export契約とP7-B Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P7-B Runtime要件に不足があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
+    return{is_formal:true,ready,issues,p5_runtime:p5,p5_runtime_ready:ready&&p5.ready,p6_runtime:p6,p6_runtime_ready:ready&&p6.ready,p7_runtime:p7,p7_runtime_ready:ready&&p7.ready,message:ready?(p7.ready?'Quest.boxesを正とする正式Export契約とP7-B Game Runtime要件に適合します。':'Quest.boxesを正とする正式Export契約に適合しますが、P7-B Runtime要件に不足があります。'):'Quest.boxesを正とする正式Export契約の要件を満たしていません。'};
   }
   function summarizeFormalStoryQuests(data){
     const rows=(data?.quests||[]).map(quest=>({quest,assessment:formalStoryQuestAssessment(data,quest)}));
-    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,p6_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p6_runtime_ready).length,p7_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p7_runtime_ready).length,legacy_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.legacy_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
+    return {total_quests:rows.length,formal_candidates:rows.filter(x=>x.assessment.is_formal).length,ready_count:rows.filter(x=>x.assessment.ready).length,p5_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p5_runtime_ready).length,p6_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p6_runtime_ready).length,p7_runtime_ready_count:rows.filter(x=>x.assessment.ready&&x.assessment.p7_runtime_ready).length,ready_ids:rows.filter(x=>x.assessment.ready).map(x=>stringValue(x.quest?.id)),rows};
   }
   function collectFormalQuestExportIssues(data){
     const summary=summarizeFormalStoryQuests(data),issues=[];
@@ -261,12 +250,17 @@
     return {summary,issues};
   }
   function collectAIExportIssues(data){const adapter=aiExportAdapter();return adapter?adapter.collectIssues(data):[{level:'ERROR',code:'AI_EXPORT_ADAPTER_MISSING',message:'AI Export Adapterを読み込めません。'}];}
+  function cleanWithout(row,keys){const out=clean(row);for(const key of keys)delete out[key];return out;}
+  function cleanFormalChapter(row){return cleanWithout(row,['available_monster_ids','random_event_candidates']);}
+  function cleanFormalSection(row){return cleanWithout(row,['adventure_duration_seconds','enemy_budget','boxes']);}
+  function cleanFormalQuest(row){return cleanWithout(row,['links','enemies','drops','reward']);}
+  function cleanFormalEvent(row){return cleanWithout(row,['links','battle_formation']);}
   function buildData(data){
     const chapters=[],sections=[],scenes=[];
     (data.chapters||[]).forEach(chapter=>{
-      const chapterRow=clean({...chapter}); delete chapterRow.sections; chapters.push(chapterRow);
+      const chapterRow=cleanFormalChapter({...chapter}); delete chapterRow.sections; chapters.push(chapterRow);
       (chapter.sections||[]).forEach(section=>{
-        const sectionRow=clean({...section,chapter_id:chapter.id}); delete sectionRow.scenes; sections.push(sectionRow);
+        const sectionRow=cleanFormalSection({...section,chapter_id:chapter.id}); delete sectionRow.scenes; sections.push(sectionRow);
         (section.scenes||[]).forEach(scene=>scenes.push(clean({...scene,chapter_id:chapter.id,section_id:section.id})));
       });
     });
@@ -277,11 +271,11 @@
       'ai/ai_programs.json':clean(ai.programs),'ai/ai_runtimes.json':clean(ai.runtimes),
       'equipment/equipment.json':clean(masters.equipment||[]),
       'equipment/mods.json':clean(mods.filter(x=>!recordsByTag([x],['monster','stone','tablet','石板']).length)),
-      'event/events.json':clean(data.events||[]),'event/flags.json':clean(data.flags||[]),
+      'event/events.json':(data.events||[]).map(cleanFormalEvent),'event/flags.json':clean(data.flags||[]),
       'master/jobs.json':clean(masters.jobs||[]),'master/statuses.json':clean(masters.status_effects||[]),
       'monster/monster_mods.json':clean(recordsByTag(mods,['monster','モンスター'])),'monster/monsters.json':clean(masters.monsters||[]),
       'world/maps.json':clean(masters.maps||[]),'exploration/outcomes.json':clean(masters.exploration_outcomes||[]),
-      'quest/event_quests.json':clean(quests.filter(x=>x.type==='event')),'quest/main_quests.json':clean(quests.filter(x=>x.type==='main')),'quest/sub_quests.json':clean(quests.filter(x=>!['main','event'].includes(x.type))),
+      'quest/event_quests.json':quests.filter(x=>x.type==='event').map(cleanFormalQuest),'quest/main_quests.json':quests.filter(x=>x.type==='main').map(cleanFormalQuest),'quest/sub_quests.json':quests.filter(x=>!['main','event'].includes(x.type)).map(cleanFormalQuest),
       'scenario/chapters.json':chapters,'scenario/scenes.json':scenes,'scenario/sections.json':sections,
       'skill/skills.json':clean(masters.skills||[]),'stone/stone_mods.json':clean(recordsByTag(mods,['stone','tablet','石板'])),'stone/stones.json':clean(masters.tablets||[]),
       'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean((masters.reward_tables&&masters.reward_tables.length)?masters.reward_tables:(data.drop_tables||[])),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
@@ -302,5 +296,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,legacyStoryQuestRuntimeAssessment,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

@@ -1,20 +1,22 @@
-# Guild Adventure 開発ロードマップ
-## 現行確定仕様
+# Guild Adventure Story System Roadmap
+## 現行正式仕様 — 2026-08-16
+
+この文書は現行の正式Story / Questモデルを定義する。旧Section Runtime、旧Story Link、旧Event固定編成モデルは正式仕様ではない。
 
 ---
 
 # 0. 最終アーキテクチャ
 
-Chapter = MAP
-Section = Questの冒険内容
-Quest = 進行管理
-Scene = Quest内の物語
-Event = 固定イベント / 固定戦闘
-Box = Section内の進行スロット
+- **Chapter / Section / Scene / Dialogue**: 物語構造を保持する。
+- **Quest**: 冒険の実行単位。時間、難易度、Context、開始条件、進行、Quest Box、関連キャラクターを所有する。
+- **Quest Box**: Quest内の進行順とScene参照、Fixed / Random Event Placementを所有する。
+- **Event**: 独立再利用データ。用途・種別・Reward・Flag等を持ち、Story上の配置場所は所有しない。
+- **Story Battle Override**: 固定Battle Eventを配置したQuest Box側で、Resolver / required_monsters / fixed_formationを指定する。
+- **QuestRun**: Quest開始時に確定した冒険結果のSnapshot。PlaybackはQuestRunだけを読む。
 
 Quest開始
-→ 石板等の開始コスト消費
-→ Adventure Simulation
+→ 開始コスト消費
+→ Quest Box順にAdventure Simulation
 → QuestRun完全確定
 → Adventure Playback
 → 帰還時に確定済み結果を利用可能化
@@ -23,751 +25,269 @@ Playback中は再抽選・再戦闘・再判定しない。
 
 ---
 
-# 1. 確定したデータ責務
+# 1. 正式データ責務
 
 ## Chapter
-MAP情報を担当。
 
-追加:
-- 使用可能Monster ID一覧
-- 使用可能Random Event ID一覧
+物語の章を表す。Sectionを束ねる。
+
+Adventure Runtime用のMonster候補やRandom Event候補はChapterに持たせない。Monster選定はResolver、Random Event候補はQuest Box Placementのfilterで決定する。
 
 ## Section
-Questの実冒険内容を担当。
 
-追加:
-- boxes[]
-- adventure_duration_seconds
+物語構造としてSceneを束ねる。
 
-新規Section:
-- 初期5箱
-- adventure_duration_seconds = 300
+Adventure Runtimeの時間、Enemy Budget、Boxは所有しない。これらはQuest側の責務である。
 
-既存Section:
-- boxes未定義なら []
-- adventure_duration_seconds未定義なら300
+## Scene / Dialogue
+
+Sceneは物語表示用データ。Dialogueを保持する。Quest BoxはScene IDを参照し、QuestRun生成時に必要な表示情報をSnapshotする。
 
 ## Quest
-進行管理を担当。
 
-- 解放条件
-- 前提Quest
-- 次Quest
-- Chapter / Section紐付け
-- Quest状態管理
+正式な冒険実行単位。
 
-Quest一括報酬は正式設計の中心から外す。
+主な正式フィールド:
+- `adventure_duration_seconds`
+- `base_enemy_budget` / `enemy_budget`
+- `context`
+- `start_cost`
+- `prerequisite_ids`
+- `next_quest_ids`
+- `required_flags`
+- `set_flags`
+- `character_ids`
+- `boxes[]`
 
-## Scene
-既存Sceneを使用。
-会話のみ。
-選択肢なし。
+`character_ids`はQuest直下が唯一の正式な関連キャラクター参照である。
 
 ## Event
-既存Eventを使用。
 
-Event.type = battle
-→ 固定戦闘
+Questから独立した再利用可能Event。
 
-EventBattle専用モデルは作らない。
-親Scene概念も作らない。
+主な正式フィールド:
+- `usage`: `story` / `random` / `common`
+- `type`: `battle` / `exploration` / `choice` / `special`
+- `group`
+- `tags`
+- `conditions`
+- `intensity`
+- `generation_profile_ref`
+- `random_base_weight`
+- `reward_table_id` / `reward_table_ids`
+- `required_flags` / `set_flags`
+- `enabled`
 
----
-
-# 2. Box仕様
-
-Box type:
-
-- scene
-- event
-- random_event
-- random_battle
-
-Box:
-- id
-- type
-- ref_id
-
-orderフィールドは持たない。
-
-boxes[]の配列順が唯一の進行順。
-
-1箱1要素。
+EventはChapter / Section / Scene / Questへの配置リンクを所有しない。Story上の位置はQuest BoxのEvent Placementが決める。
 
 ---
 
-# 3. 通常戦闘
+# 2. Quest Box仕様
 
-random_battle箱ではEnemy Budget方式を使う。
+Questは`boxes[]`を持つ。各Boxには安定した`box_id`と`order`を持たせる。
 
-入力:
-- 石板 / Quest難易度
-- Enemy Budget
-- Chapterの使用可能Monster一覧
+各Boxの進行順は次の7段階で固定する。
 
-処理:
-→ Budget内で敵編成生成
-→ Battle Simulation
-→ Battle Result確定
-→ QuestRun保存
+1. `event_zone_before_pre`
+2. `pre_scene_id`
+3. `event_zone_pre_to_mid`
+4. `mid_scene_id`
+5. `event_zone_mid_to_post`
+6. `post_scene_id`
+7. `event_zone_after_post`
 
-固定確率テーブルは使わない。
+4つのEvent Zoneは複数Placementを保持できる。
 
-MonsterごとのBudget Cost等の数値はバランス調整案件。
+Placement:
+- `fixed_event`: `event_id`でEventを参照する。
+- `random_event`: `filter`で候補を絞り、開始時に確定する。
+- `failure_policy`: Event失敗時のQuest挙動を定める。
 
----
-
-# 4. 固定戦闘
-
-Event.type = battleを使用。
-
-Event側に固定敵編成を持つ。
-
-敵はMonster Master参照。
-
-最低限:
-- monster_id
-- count
-
-敵ステータスをEventへ複製しない。
+Random Event filterはEventの`usage/type/group/tags`等を用いる。Chapter側に候補一覧を持たない。
 
 ---
 
-# 5. Random Event
+# 3. Battle / Exploration Resolver
 
-random_event箱では、
+Battle / ExplorationはQuest Context、Quest難易度、Map、Monster / Exploration Master、Adventure Settingsを入力としてResolverで確定する。
 
-Chapterの使用可能Random Event ID一覧
-→ Quest開始時に1件決定
-→ Event処理
-→ 結果をQuestRunへ保存
+Enemy BudgetはQuestが所有する。石板等による補正はQuest開始時にSnapshotする。
 
-Playbackでは再抽選しない。
+固定Battle Eventで編成を指定したい場合はEvent本体ではなく、Quest BoxのFixed Event PlacementにあるStory Battle Overrideを使用する。
+
+Override mode:
+- `resolver`
+- `required_monsters`
+- `fixed_formation`
+
+Monster MasterのステータスをEventやQuestへ複製しない。
 
 ---
 
-# 6. Quest開始処理
+# 4. Quest開始処理
 
 Quest開始時に結果を完全確定する。
 
-順序:
-
-1. Quest / Section取得
-2. 石板等の開始コスト消費
-3. Party Snapshot
-4. adventure_duration_seconds Snapshot
+1. Quest取得
+2. 開始条件 / Flag確認
+3. 石板等の開始コスト消費
+4. Party / Difficulty / Settings Snapshot
 5. Seed生成
-6. boxesを順番にAdventure Simulation
-7. Scene Snapshot
-8. Event結果確定
-9. random_event確定
-10. random_battle敵編成確定
-11. Battle Simulation
-12. 報酬確定
-13. Flag / Quest進行結果確定
-14. Timeline at_seconds確定
-15. 成功 / 失敗確定
-16. QuestRun保存
-17. Playback開始
+6. Quest Boxを`order`順に処理
+7. Fixed / Random Event決定
+8. Scene Snapshot
+9. Battle / Exploration Resolver実行
+10. Reward確定
+11. Flag / Quest進行結果確定
+12. `at_seconds`確定
+13. 成功 / 失敗確定
+14. QuestRun保存
+15. Playback開始
 
-切断しても結果は変わらない。
+切断・再読込後も結果は変えない。
 
 ---
 
-# 7. 失敗処理
-
-Simulation中に失敗が確定した場合:
-
-- その時点で通常boxes処理を停止
-- 後続箱を処理しない
-- QuestRun終了処理へ移行
-
-QuestRunに:
-- 失敗理由
-- 失敗地点
-- 最終状態
-を保存。
-
-将来の失敗専用Sceneは通常boxesとは別系統で追加可能な余地だけ残す。
-
----
-
-# 8. Scene Snapshot
-
-QuestRun生成時にScene会話内容をSnapshot。
-
-保存:
-- scene_id
-- 会話再生に必要な最小情報
-
-過去QuestRunは現在のSceneマスタを再参照しない。
-
-StudioでSceneを変更しても過去Runは変わらない。
-
----
-
-# 9. Battle Result
-
-Battle Resultは以下を分離する。
-
-- 勝敗
-- Unit最終状態
-- Seed
-- 戦闘統計
-- 現行デバッグログ
-- 将来のゲーム用戦闘ログ
-- Playback専用イベント列
-
-現行logs[]はデバッグ用途。
-
-Battle詳細画面は文字ログ解析ではなく、
-Playback専用イベント列を使う。
-
----
-
-# 10. QuestRun
+# 5. QuestRun / Playback
 
 QuestRunは1回の冒険の完全な確定記録。
 
-最低限保持:
-
-- quest_run_id
-- chapter_id
-- section_id / quest_id
-- party_snapshot
-- seed
-- playback_started_at
-- adventure_duration_seconds
-- timeline_result[]
-- battle_results[]
-- event_results[]
-- scene_snapshots[]
-- reward_results
-- flag/progress_results
-- final_result
-
----
-
-# 11. Timeline
-
-Adventure Simulation時に発生時刻まで確定する。
-
-QuestRun:
-- adventure_duration_seconds
-- timeline_result[].at_seconds
-
-Playback開始時に再配置しない。
-
-過去Runの時刻は将来アルゴリズムが変わっても維持。
-
----
-
-# 12. Playback時間管理
-
-開始時刻基準。
-
-elapsed =
-現在時刻 - playback_started_at
-
-setInterval積み上げ値を正としない。
-
-Scene詳細・Battle詳細を見ている間も進行。
-
-戻った時:
-→ 現在時刻までCatch-up表示。
-
----
-
-# 13. Adventure Playback
-
-PlaybackはQuestRunだけを読む。
-
-禁止:
-- Battle再計算
-- Event再抽選
-- random_event再抽選
-- random_battle再生成
-- Scene条件再判定
-- 報酬再計算
-- Flag再判定
-
----
-
-# 14. Scene詳細
-
-冒険ログ:
-
-「ストーリーイベントが発生した [見る]」
-
-ログでは内容を伏せる。
-
-別画面:
-→ 保存済みScene Snapshotの会話を再生
-
-仕様:
-- 会話のみ
-- 選択肢なし
-- 視聴任意
-- Quest進行を止めない
-- 専用回想画面なし
-- 冒険ログから再閲覧
-
----
-
-# 15. Battle詳細
-
-冒険ログ:
-→ 結果要約
-→ [結果を見る]
-
-別画面:
-→ 保存済みBattle Result / Playback Eventsを再生
-
-再戦闘しない。
-
-詳細画面中もQuestは進行。
-
----
-
-# 16. 報酬・結果の扱い
-
-報酬はQuest一括報酬ではなく、
-
-- Battle結果
-- Event結果
-- 固有イベント結果
-
-として発生。
-
-結果自体はQuest開始時に確定・保存する。
-
-ただしPlayback中は未来の報酬を利用可能にしない。
-
-帰還時:
-→ 確定済み結果をプレイヤーへ公開 / 利用可能化
-
-帰還時に結果を再計算しない。
-
----
-
-# 17. Studio実装
-
-## Chapter Editor
-追加:
-- 使用可能Monster一覧
-- 使用可能Random Event一覧
-
-## Section Editor
-追加:
-- adventure_duration_seconds
-- Box Editor
-
-Box Editor:
-- 初期5箱（新規Section）
-- 箱追加
-- 箱削除
-- 並び替え
-- type選択
-- Scene選択
-- Event選択
-
-## Event Editor
-Event.type = battle時:
-- Monster Master参照固定編成
-- monster_id
-- count
-
-## Monster Master
-Enemy Budget Costを持てる構造を追加。
-
-数値はバランス調整。
-
----
-
-# 18. Export実装
-
-Chapter Export:
-- 使用可能Monster ID一覧
-- 使用可能Random Event ID一覧
-
-Section Export:
-- adventure_duration_seconds
-- boxes[]
-
-Event Export:
-- battle Event固定編成
-
-Monster Export:
-- Enemy Budget Cost
-
-Scene / Event / Monster本体をBoxへコピーしない。
-
----
-
-# 19. Game Runtime実装順
-
-## Phase A: データ基盤
-- Section.boxes
-- adventure_duration_seconds
-- Chapter encounter候補
-- Event battle formation
-- Monster budget cost
-- normalizeData
-- Save / Load
-
-## Phase B: Studio UI
-- Chapter候補編集
-- Section Box Editor
-- 冒険時間編集
-- battle Event編成編集
-
-## Phase C: Export
-- Chapter / Section / Event / Monsterの新規項目出力
-- 参照Validation
-
-## Phase D: Battle Core分離
-現行:
-selectedQuest().enemies
-依存を除去。
-
-変更後:
-Party Snapshot + Enemy Formation
-→ Battle Core
-→ Battle Result
-
-## Phase E: Battle Result拡張
-- Resultデータ
-- Playback Events
-- デバッグログ分離
-
-## Phase F: QuestRun
-- Snapshot
-- Timeline
-- Results
-- Playback開始時刻
-
-## Phase G: Adventure Simulation
-- Box iterator
-- Scene
-- Event
-- Random Event
-- Random Battle
-- Battle
-- Failure terminate
-- Result確定
-- Timeline時刻確定
-
-## Phase H: Adventure Playback
-- 開始時刻基準
-- ログ公開
-- Catch-up
-- 可変冒険時間
-
-## Phase I: 詳細Viewer
-- Scene Viewer
-- Battle Result Playback
-
-## Phase J: 帰還・結果公開
-- 確定済み報酬利用可能化
-- Flag / Progress公開
-- Quest完了
-
----
-
-
-1. QuestとSectionの責務を正式分離
-2. Quest一括報酬中心を廃止
-3. Box typeが2種類から4種類へ確定
-4. random_battleがEnemy Budget方式へ確定
-5. ChapterがMonster / Random Event候補を持つ
-6. Event.type=battleの固定編成方式を確定
-7. Quest開始時に全結果を確定・保存
-8. 切断で石板消費を回避できない構造へ変更
-9. 失敗時は後続boxesを打ち切る
-10. Scene SnapshotをQuestRunへ保存
-11. Battle Playback専用イベント列を追加
-12. Timeline時刻をSimulation時に確定
-13. Playbackは開始時刻基準
-14. 冒険時間はQuestごとに可変、default 300秒
-15. 帰還時は結果計算ではなく結果公開
-
-
----
-
-
-# 1. Box / Section
-
-- Box typeは `scene / event / random_event / random_battle`。
-- 1 Box = 1要素。
-- Boxは安定した `id` を持つ。
-- `order` フィールドは持たず、`boxes[]` の配列順を唯一の進行順とする。
-- 新規Sectionは初期5 Box。
-- 既存Sectionでboxes未定義の場合は `[]`。既存Sectionへ5 Boxを自動生成しない。
-- Sectionは `adventure_duration_seconds` を持つ。
-- defaultは300秒。
-- QuestRun開始時にdurationをSnapshotし、以後Studio側変更の影響を受けない。
-
----
-
-# 2. Timeline / Playback時間
-
-- `timeline_result[].at_seconds` はAdventure Simulation中に確定してQuestRunへ保存する。
-- Playback時に時刻を再計算しない。
-- Boxの時間配分は等間隔方式。
-- 実際に処理されたBox列に対して、QuestRunの冒険時間を等間隔に配分する。
-- Quest失敗で後続Boxが打ち切られた場合、未処理BoxはTimelineへ入れない。
-- Playbackの進行時間は `現在時刻 - playback_started_at` を正とする。
-- Scene/Battle詳細画面を開いている間もQuestは進行する。
-- 戻った際は現在時刻までCatch-upする。
-- pause機能は現仕様に含めない。
-
----
-
-# 3. Random Event
-
-- Chapter/MAPが使用可能Random Event候補を持つ。
-- 各候補はWeightを調整可能。
-- 初期/default Weightは均等割。
-- Adventure Simulation時、まず既存Event条件を満たさない候補を除外する。
-- Simulation内部の途中Flag状態もEvent条件判定に使用する。
-- 条件を満たす候補からWeight付きランダムで1件選択する。
-- 抽選はQuest開始時のSimulationで一度だけ行い、結果をQuestRunへ保存する。
-- Playbackで再抽選しない。
-
----
-
-# 4. Random Battle / Enemy Budget
-
-- `random_battle` はEnemy Budget方式。
-- Chapter/MAPは「使用可能Monster一覧」を持つ。
-- Monster候補には出現Weightを持たせない。
-- Monster MasterはEnemy Budget Costを持つ。
-- Random Battle編成生成は以下。
-  1. 残Budget以下のCostを持つ使用可能Monsterを候補化。
-  2. 候補から1体ランダム選択。
-  3. 選択Monster Costを残Budgetから減算。
-  4. 追加可能Monsterがなくなるまで繰り返す。
-- 固定偏差・固定出現確率テーブルは使用しない。
-- 最大出現数等の安全上限が必要になった場合はバランス調整項目として扱う。
-- Enemy Budget値、Monster Cost値、石板によるBudget増加量など具体数値はバランス調整案件。
-
----
-
-# 5. Fixed Battle
-
-- 固定戦闘は既存 `Event.type = battle` を使用する。
-- EventBattle専用モデルは作らない。
-- 固定編成はMonster Master参照。
-- 基本は `monster_id` と `count`。
-- EnemyFormation専用Masterは現時点では作らない。
-- SceneとBattleの関係はBox順で表現し、親Scene概念は作らない。
-
----
-
-# 6. Adventure Simulation / Quest Failure
-
-Quest開始時の処理原則:
-
-1. 石板等の開始コストを消費。
-2. Party Snapshot取得。
-3. 冒険時間Snapshot。
-4. 全Boxを順にSimulation。
-5. Battle/Event/Random結果、Scene Snapshot、Reward、Flag、Timeline、最終成否を確定。
-6. QuestRunを保存。
-7. Playback開始。
-
-- 切断・再起動後も同じQuestRunへ復帰する。
-- 再抽選・再戦闘・石板消費回避はできない。
-- Simulation中にQuest失敗が確定した時点で通常Box処理を停止する。
-- 後続Scene/Event/Battleは処理しない。
-- QuestRunには失敗理由、失敗地点、最終状態を保持できる構造とする。
-
----
-
-# 7. Flag確定・帰還反映
-
-- Flag変化はQuest開始時のSimulationで確定する。
-- Simulation内部ではworking/intermediate Flag状態を持ち、前のBoxで変更されたFlagを後続Boxの条件判定に使用できる。
-- Playback中は正式SaveへFlagを公開・反映しない。
-- QuestRunには今回のQuestで変更されたFlag差分のみ保存する。
-- Flag全体Snapshotを正式Saveへ上書きしない。
-- EventごとのFlag変更履歴を帰還時に再生し直さない。
-- 帰還時はQuestRunの確定済みFlag差分だけを正式Saveへ一括反映する。
-- 二重反映防止用にQuestRun側で結果反映済み状態を管理できるようにする。
-
----
-
-# 8. Reward確定・帰還反映
-
-- 報酬の発生源はBattle Result / Event Result / 固有イベント結果。
-- 旧Quest一括報酬を正式報酬設計の中心にはしない。
-- Simulation中に各Battle/Event報酬を集計し、QuestRunの最終確定済み `reward_result` として保存する。
-- Playback中は報酬を通常のプレイヤー資産として利用可能にしない。
-- Quest成功時、帰還処理は保存済み `reward_result` を再計算せず正式Saveへ反映する。
-- Quest失敗時は、途中で得たBattle/Event報酬を含めて全報酬を失う。
-- 失敗Runの正式反映対象 `reward_result` は空または無効状態とする。
-- QuestRun履歴には「途中で一時的に得ていたもの」を履歴用途で記録してもよいが、正式資産にはならない。
-- 二重反映防止用にQuestRun側で結果反映済み状態を管理できるようにする。
-
----
-
-# 9. Scene Snapshot
-
-- QuestRun生成時にSceneの会話再生に必要な最小データをSnapshotする。
-- `scene_id` も保持する。
-- 過去QuestRunのScene詳細は現在のScene Masterを再参照せず、保存済みSnapshotを再生する。
-- Scene編集後も過去QuestRunの内容は変化しない。
-- Adventure Logでは内容・タイトル・人物・結果を伏せ、汎用表示例「ストーリーイベントが発生した [見る]」とする。
-- Scene詳細は別画面。
-- 視聴は任意、選択肢なし。
-- 専用Story Replay/Archive画面は作らない。
-- QuestRun履歴が残っている間はAdventure Logから再閲覧可能。
-- NEW/未読表示は作らない。
-
----
-
-# 10. Battle Result / Playback Events
-
-- 現行Battle `logs[]` はデバッグ用途として扱う。
-- 将来の本番ゲーム用戦闘ログは別途拡張する。
-- Battle詳細画面は文字列ログを解析して再現しない。
-- Battle Resultへ構造化されたPlayback専用イベント列を保存する。
-- Battle詳細画面は保存済みBattle Result / Playback Eventsのみを使用し、Battleを再実行しない。
-- Battle詳細画面中もQuest Playbackは進行する。
-
-現段階で固定するPlayback Event種別:
-
-- `battle_start`
-- `action_start`
-- `skill_cast`
-- `hit`
-- `damage`
-- `heal`
-- `status_apply`
-- `status_remove`
-- `ko`
-- `battle_end`
-
-- 各Eventの詳細payload SchemaはBattle詳細画面実装時に演出要件から逆算して確定する。
-- 現段階ではpayloadを過剰に固定しない。
-
----
-
-# 11. QuestRun
-
-QuestRunは1回の冒険の完全な確定記録。
-
-Skeletonとして保持する責務:
-
+最低限保持する情報:
 - `quest_run_id`
 - `quest_id`
-- `section_id`
-- `chapter_id`
-- `party_snapshot`
-- `seed`
+- Story Snapshot参照
+- Party Snapshot
+- Seed
 - `playback_started_at`
 - `adventure_duration_seconds`
 - `timeline_result[]`
 - `battle_results[]`
+- `exploration_results[]`
 - `event_results[]`
-- Scene Snapshot群
-- `reward_result`
-- `flag_result`
-- `final_result`
-- 結果反映済み状態
+- `scene_snapshots[]`
+- Reward結果
+- Flag / Quest進行結果
+- final result
 
-- 正式な細部Field名・payloadは各実装Phaseで必要最小限を確定する。
-- QuestRun全体Schemaを今の段階で過剰固定しない。
-
-QuestRun履歴:
-
-- 最新N件のみ保持。
-- Nは内部設定値として持つ。
-- ユーザー向け設定には出さない。
-- 初期値はScene Snapshot / Battle Playback Eventsを含む実Save容量を確認して調整する。
-- 上限超過時は古いQuestRunから削除する。
-- Story Questも例外扱いしない。
-- 削除されたQuestRunのScene/Battle詳細は再閲覧不可。
+PlaybackはQuestRunのみを読み、Battle再計算、Event再抽選、Random Event再抽選、Scene条件再判定、Reward再計算、Flag再判定を行わない。
 
 ---
 
-# 12. Legacy / Demo扱い
+# 6. Studio正式Authoring
 
-- 旧Questデモ資産は不要。
-- 旧 `Quest.enemies` デモデータは移行しない。
-- 旧Quest報酬などデモ由来の不要データも正式仕様へ引き継がない。
-- Migration機能は作らない。
-- Migration UI / 一時変換ツールも作らない。
-- Runtimeは新正式構造へ一本化する。
-- 必要なテストデータは新仕様で新規作成する。
+## Story Editor
 
-正式Runtime:
+Chapter / Section / Scene / Dialogueの物語構造だけを編集する。Adventure Runtime固有の入力欄は置かない。
 
-Quest
-→ Section
-→ boxes[]
-→ Scene / Event / random_event / random_battle
-→ Battle Core等の既存Core
-→ QuestRun
-→ Playback
-→ 帰還時Commit
+## Quest Editor
 
----
+- Adventure Duration
+- Enemy Budget
+- Map / Environment Context
+- Start Cost
+- Quest prerequisite / next Quest / Flag
+- 直下`character_ids`
+- Quest Box
+- Fixed / Random Event Placement
+- Story Battle Override
 
-# 13. 実装上の重要原則
+を編集する。
 
-- Adventure Simulationは新しいBattle/Story/Flagエンジンではなく、既存システムを順に呼び出して結果をQuestRunへまとめるOrchestratorとする。
-- Battle Coreは `selectedQuest().enemies` 依存を外し、`Party Snapshot + Enemy Formation -> Battle Core -> Battle Result` に分離する。
-- Random BattleとEvent固定Battleは同じBattle Coreを使う。
-- `applyBattleOutcome()` のような「個別Battleから即プレイヤーSaveへ報酬反映する処理」はAdventure Simulation向けに責務分離する。
-- PlaybackはQuestRunのみを読む。
-- Playback中にマスタ参照による再判定・再抽選・再計算を行わない。
-- 既存 `data.timeline[]` はStudio/Scenario authoring用であり、QuestRun Playback Timelineへ流用しない。
+## Event Editor
+
+Eventの独立データだけを編集する。Story Link UIや自動Timeline / Character履歴同期は持たない。
 
 ---
 
-# 14. 現時点で残すもの
+# 7. Import / Export / Validation
 
-以下はコア構造の未確定事項ではなく、実装またはバランス調整時に詰める。
+正式Authoring / Entity Import / Data Exchange / Export / Validationは正式モデルだけを受け付ける。
 
-- Enemy Budget具体数値
-- Monster Cost具体数値
-- 石板ごとのBudget増加量
-- Random Event Weight具体値（defaultは均等）
-- Random Battle安全上限が必要か、その具体値
-- QuestRun履歴上限Nの具体値
-- Battle Playback Event各payload詳細
-- Battle詳細画面の具体演出
-- 最終UIレイアウト
+- Chapter / SectionのAdventure RuntimeフィールドはAuthoring契約外。
+- Questの関連キャラクターは直下`character_ids`を使用する。
+- EventはStory配置リンクを持たない。
+- Event固定編成はEvent本体に持たない。
+- Game Data Reference AuditはQuest BoxのScene / Event参照、Questの直下Character参照、Quest / EventのFlag等を検査する。
 
-これらは現在確定しているアーキテクチャを変更せず調整可能。
+Split 2時点では既存Project JSONをロードしただけで破壊的に書き換えない。正式Exportでは旧フィールドを出力せず、実Project JSONのフィールド移行はSplit 3で明示的に実施する。
 
 ---
 
-# 現在の確定状態
-## 2026-08-11
+# 8. 撤去対象となった旧モデル
 
-基準:
+以下は正式仕様ではない。
 
+- Chapter側の旧Adventure候補フィールド / UI
+- Section側の旧Adventure Duration / Enemy Budget / Box / Box Editor
+- Questの旧Story Link容器
+- Eventの旧Story Link容器
+- Event本体の旧固定Battle編成
+- 旧Story LinkからTimeline / Character履歴を自動同期する処理
+- Chapter / Section LinkをRuntime readinessとして評価するLegacy assessment
+- Questを旧Section IDでグループ化するValidationルール
 
-## 個別精査で解消済み
+既存Project JSONからこれらの物理データを除去する作業は、Source更新とは分離してSplit 3で行う。
 
-- Timeline時間配分 → 等間隔
-- Random Event選択 → 条件Filter後、Weight抽選。初期Weight均等
-- Random Battle Monster Weight → 使用しない
-- Random Battle編成 → 残Budget以下からランダム選択を繰り返す
-- Flag帰還反映 → QuestRunへ変更差分保存、帰還時一括反映
-- 失敗時報酬 → 全損
-- 報酬帰還反映 → Simulationで集計済みreward_resultを帰還時Commit
-- Battle Playback Event → 現段階ではEvent種別のみ固定
-- QuestRun履歴 → 最新N件、Nは内部設定値
-- 旧Quest migration → 行わない。旧デモ資産不要
+---
 
-## 実装前提として残る調整
+# 9. 保護対象
 
-- 具体的なバランス数値
-- QuestRun履歴Nの具体値
-- Battle Playback payload詳細
-- 最終UI / 演出
+撤去作業で維持するもの:
+- Chapter / Section / Scene / Dialogue本文
+- Quest / Quest Box / Event
+- QuestRun / Playback
+- Battle Core / Battle Result / Battle Playback / 戦闘ログ
+- Monster / Map / Reward / Flag / Masterデータ
+- AI制作・AI Runtime関連機能
+- standalone Battle検証経路
 
-上記は実装骨格を止める未確定事項ではない。
+---
+
+# 10. 実装分割
+
+## Split 1 — 完了
+
+- standalone Battleを正式Saveから分離
+- Legacy Quest / Event Runtime fallbackを切離し
+- QuestRun正式経路を維持
+
+## Split 2 — Source更新
+
+- Studio / Schema / Export / Import / Validationを正式モデルへ統一
+- 旧テストを正式回帰へ置換
+- Project JSON実体のフィールド移行は行わない
+
+Gate:
+- Quick
+- Full `--context update`
+- Studio Quest / Event保存・再読込
+- `Quest.character_ids` round trip
+- Full Project JSON Pre-flight compatibility
+
+## Split 3 — Game Data更新
+
+現在使用中のFull Project JSONを対象に、事前差分確認後、旧フィールドを正式モデルへ移行する。Chapter / Section / Scene / Dialogue本文は保持する。
+
+## Split 4 — 撤去後回帰
+
+- Random Battle + Reward + 帰還
+- `quest_fail`
+- Stone + Exploration + reload Snapshot
+- Story Battle Override + `required_monsters`
+- QuestRun履歴
+- standalone Battle
+- Battle Result / Playback
+- AI編集画面
+
+---
+
+# 11. 実装原則
+
+1. Quest開始時に結果を完全確定する。
+2. Playbackで再抽選しない。
+3. Playbackで再戦闘しない。
+4. Quest BoxがStory / Event配置の正式な実行構造である。
+5. Eventは独立再利用データとして維持する。
+6. Battle / Explorationの数値ロジックはResolver / Master / Settingsへ集約する。
+7. Source変更とProject JSON移行を同時に行わない。
+8. 物理ファイル削除は、完全一致パスの事前報告と個別承認がある場合のみ行う。

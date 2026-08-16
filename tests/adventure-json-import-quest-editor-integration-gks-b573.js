@@ -32,7 +32,7 @@ const boxBody=node('questBoxEditorBody');
 const boxList=node('questBoxList');
 const saveStatus=node('saveStatus');
 const elements={questEditorPanel:panel,studioInputOverlay:overlay,studioInputBody:body,studioInputTitle:heading,questBoxEditorInline:inline,questBoxEditorId:boxId,questBoxEditorBody:boxBody,questBoxList:boxList,saveStatus};
-const inputNames=['questId','questName','questType','questStatus','questSummary','questConditions','questCompletion','questFailure','questRewards','questAdventureDuration','questEnemyBudget','questMapId','questEnvironmentTags','questStartCostGold','questStartCostResources','questPrerequisites','questNextQuests','questRequiredFlags','questSetFlags','questChapterLink','questSectionLink','questSceneLink'];
+const inputNames=['questId','questName','questType','questStatus','questSummary','questConditions','questCompletion','questFailure','questRewards','questAdventureDuration','questEnemyBudget','questMapId','questEnvironmentTags','questStartCostGold','questStartCostResources','questPrerequisites','questNextQuests','questRequiredFlags','questSetFlags'];
 for(const name of inputNames)elements[name]=node(name);
 const document={
  body:{classList:classList()},

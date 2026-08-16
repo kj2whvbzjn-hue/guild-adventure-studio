@@ -495,8 +495,8 @@
     ai_targets:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_actions:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','compiled','created_at','updated_at']),
-    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at','available_monster_ids','random_event_candidates']),
-    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at','adventure_duration_seconds','boxes']),
+    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
+    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at']),
     story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),
     story_dialogues:new Set(['id','chapter_id','section_id','scene_id','no','status','speaker','text','stage_direction','description','created_at','updated_at'])
   };

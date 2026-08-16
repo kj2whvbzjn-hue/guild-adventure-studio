@@ -35,7 +35,7 @@ const ctx={
   data:{quests:[q]},
   questId:field(),questType:field(),questStatus:field(),questSummary:field(),questConditions:field(),questCompletion:field(),questFailure:field(),questRewards:field(),
   questAdventureDuration:field(),questEnemyBudget:field(),questEnvironmentTags:field(),questStartCostGold:field(),questStartCostResources:field(),
-  questPrerequisites:field(),questNextQuests:field(),questRequiredFlags:field(),questSetFlags:field(),questChapterLink:field(),questSectionLink:field(),questSceneLink:field(),
+  questPrerequisites:field(),questNextQuests:field(),questRequiredFlags:field(),questSetFlags:field(),
   questDraftCharacterIds:[],questDraftBoxes:[],
   refreshQuestMapOptions(){},refreshLinkSelectors(){},renderDraftCharacterChips(){},renderQuestBoxDraftList(){},renderQuestFormalStatus(){},showView(){},openStudioInputPanel(){},
   questBoxClone(x){return {...x};}

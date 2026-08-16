@@ -32,7 +32,7 @@ const boxBody=node('questBoxEditorBody');
 const boxList=node('questBoxList');
 const saveStatus=node('saveStatus');
 const elements={questEditorPanel:panel,studioInputOverlay:overlay,studioInputBody:body,studioInputTitle:heading,questBoxEditorInline:inline,questBoxEditorId:boxId,questBoxEditorBody:boxBody,questBoxList:boxList,saveStatus};
-const inputNames=['questId','questName','questType','questStatus','questSummary','questConditions','questCompletion','questFailure','questRewards','questAdventureDuration','questEnemyBudget','questMapId','questEnvironmentTags','questStartCostGold','questStartCostResources','questPrerequisites','questNextQuests','questRequiredFlags','questSetFlags','questChapterLink','questSectionLink','questSceneLink'];
+const inputNames=['questId','questName','questType','questStatus','questSummary','questConditions','questCompletion','questFailure','questRewards','questAdventureDuration','questEnemyBudget','questMapId','questEnvironmentTags','questStartCostGold','questStartCostResources','questPrerequisites','questNextQuests','questRequiredFlags','questSetFlags'];
 for(const name of inputNames)elements[name]=node(name);
 const document={
  body:{classList:classList()},
@@ -58,7 +58,7 @@ for(const fn of ['normalizeData','questBoxClone','questBoxId','nextQuestBoxId','
 // override close target with a small launcher stub after function definitions.
 vm.runInContext("studioOpenLauncherHome=function(){ if(questBoxEditorState)closeQuestBoxEditor(); if(studioInputPanelState)closeStudioInputPanel(); window.__launcherOpened=true; };",ctx);
 const root={project:{id:'PRJ-TEST'},chapters:[],quests:[{id:'QST-PREV',name:'前提Quest'}],events:[{id:'EVT-CH01-SEC01-A',name:'A'},{id:'EVT-CH01-SEC01-B',name:'B'},{id:'EVT-CH01-SEC01-C',name:'C'},{id:'EVT-CH01-SEC01-D',name:'D'}],characters:[{id:'CHAR-01',name:'Character 01'}],organizations:[],terms:[],relationships:[],timeline:[],flags:[{id:'FLAG-A',name:'A'},{id:'FLAG-B',name:'B'},{id:'FLAG-C',name:'C'}],entities:[],decisions:[],history:[],tags:[],tag_categories:[],ai_programs:[],masters:{maps:[],reward_tables:[],monsters:[]}};
-const payload={quests:[{id:'QST-CH01-SEC01',name:'新たな訓練の日',type:'sub',status:'draft',context:{environment_tags:'grassland'},prerequisite_ids:'QST-PREV',next_quest_ids:null,required_flags:'FLAG-A, FLAG-B',set_flags:'FLAG-C',links:{character_ids:'CHAR-01'},boxes:[{box_id:'BOX-QST-CH01-SEC01-01',name:'訓練',pre_scene_id:'SCN-CH01-SEC01-A',mid_scene_id:'SCN-CH01-SEC01-B',post_scene_id:'SCN-CH01-SEC01-C',event_zone_before_pre:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-A'}],event_zone_pre_to_mid:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-B'}],event_zone_mid_to_post:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-C'}],event_zone_after_post:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-D'}]}]}]};
+const payload={quests:[{id:'QST-CH01-SEC01',name:'新たな訓練の日',type:'sub',status:'draft',context:{environment_tags:'grassland'},prerequisite_ids:'QST-PREV',next_quest_ids:null,required_flags:'FLAG-A, FLAG-B',set_flags:'FLAG-C',character_ids:['CHAR-01'],boxes:[{box_id:'BOX-QST-CH01-SEC01-01',name:'訓練',pre_scene_id:'SCN-CH01-SEC01-A',mid_scene_id:'SCN-CH01-SEC01-B',post_scene_id:'SCN-CH01-SEC01-C',event_zone_before_pre:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-A'}],event_zone_pre_to_mid:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-B'}],event_zone_mid_to_post:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-C'}],event_zone_after_post:[{kind:'fixed_event',event_id:'EVT-CH01-SEC01-D'}]}]}]};
 const plan=importer.buildPlan('quests',payload,root);assert.deepStrictEqual(plan.errors,[]);let candidate=importer.applyPlan(root,plan,'2026-08-15T05:00:00Z');ctx.data=candidate;vm.runInContext('data=window.data; normalizeData(); window.data=data;',ctx);
 assert.strictEqual(ctx.data.quests.length,2);
 const normalized=ctx.data.quests.find(q=>q.id==='QST-CH01-SEC01');
@@ -66,7 +66,8 @@ assert.strictEqual(JSON.stringify(normalized.context.environment_tags),JSON.stri
 assert.strictEqual(JSON.stringify(normalized.prerequisite_ids),JSON.stringify(['QST-PREV']));
 assert.strictEqual(JSON.stringify(normalized.required_flags),JSON.stringify(['FLAG-A','FLAG-B']));
 assert.strictEqual(JSON.stringify(normalized.set_flags),JSON.stringify(['FLAG-C']));
-assert.strictEqual(JSON.stringify(normalized.links.character_ids),JSON.stringify(['CHAR-01']));
+assert.strictEqual(JSON.stringify(normalized.character_ids),JSON.stringify(['CHAR-01']));
+assert.strictEqual(Object.prototype.hasOwnProperty.call(normalized,'links'),false);
 vm.runInContext("editQuest('QST-CH01-SEC01')",ctx);
 assert.strictEqual(vm.runInContext('questDraftBoxes.length',ctx),1);assert.ok(vm.runInContext('!!studioInputPanelState',ctx));
 assert.strictEqual(elements.questEnvironmentTags.value,'grassland');
