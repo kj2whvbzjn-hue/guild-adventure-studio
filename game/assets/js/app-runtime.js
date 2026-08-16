@@ -79,7 +79,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)settleFixe
 updateFixedCanvasScale();
 requestAnimationFrame(()=>requestAnimationFrame(()=>settleFixedCanvas(1000)));
 'use strict';
-const SAVE_KEY='guildAdventureV9.save.v1', SAVE_VERSION=1;
+const SAVE_KEY='guildAdventureV9.save.v1', SAVE_VERSION=2;
 const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
 const JOBS={
  '剣士':{STR:13,VIT:12,AGI:8,DEX:11,INT:9,MND:10,LUK:7},
@@ -104,7 +104,7 @@ const EQUIPMENT={
  '魔力の指輪':{slot:'accessory',rarity:'rare',attack:9,maxHp:45,agi:1,description:'魔力を攻撃力へ変換する指輪。'},
  '古代の護符':{slot:'accessory',rarity:'legendary',attack:18,maxHp:120,agi:3,description:'失われた文明の祝福を帯びた護符。'}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.5.0',gameVersion:'GA-B486.190',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.5.0',gameVersion:'GA-B486.190',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','result'];
 let currentPhase='title';
@@ -199,9 +199,11 @@ function notify(text,type='ok'){const n=$('notice');n.textContent=text;n.classNa
 function jobOptions(){return Object.keys(JOBS).map(j=>`<option value="${j}">${j}</option>`).join('')}
 $('newJob').innerHTML=jobOptions();if($('changeJob'))$('changeJob').innerHTML=jobOptions();
 if($('jobTable'))$('jobTable').innerHTML=Object.entries(JOBS).map(([job,a])=>`<tr><td><b>${job}</b></td>${STATS.map(s=>`<td>${a[s]} <span class="small">(期待値 ${aptitudeExpected(a[s])})</span></td>`).join('')}</tr>`).join('');
-function makeCharacter(name,job){return{id:uid(),name,level:1,job,stats:Object.fromEntries(STATS.map(s=>[s,10])),skills:['SKL-TEST-ATTACK','SKL-TEST-HEAVY','SKL-TEST-POISON'],equippedSkillId:'SKL-TEST-ATTACK',aiGraph:defaultAiGraph(),aiPolicy:'lowestHp',equipment:{weapon:null,armor:null,accessory:null},jobHistory:[{job,level:1,at:new Date().toISOString()}],growthHistory:[],createdAt:new Date().toISOString()}}
+function makeCharacter(name,job){return{id:uid(),name,level:1,job,stats:Object.fromEntries(STATS.map(s=>[s,10])),skills:['SKL-TEST-ATTACK','SKL-TEST-HEAVY','SKL-TEST-POISON'],equippedSkillId:'SKL-TEST-ATTACK',aiGraph:defaultAiGraph(),aiPolicy:'lowestHp',formalAiBinding:null,equipment:{weapon:null,armor:null,accessory:null},jobHistory:[{job,level:1,at:new Date().toISOString()}],growthHistory:[],createdAt:new Date().toISOString()}}
 function normalize(raw){
- if(!raw||raw.saveVersion!==1||!Array.isArray(raw.characters))throw new Error('Save Data Version 1ではありません。');
+ raw=window.GKGameAISaveBridge?GKGameAISaveBridge.migrate(raw):clone(raw);
+ if(!raw||raw.saveVersion!==SAVE_VERSION||!Array.isArray(raw.characters))throw new Error(`Save Data Version ${SAVE_VERSION}ではありません。`);
+ raw.aiPrograms=Array.isArray(raw.aiPrograms)?raw.aiPrograms:[];raw.aiLayouts=Array.isArray(raw.aiLayouts)?raw.aiLayouts:[];raw.aiPresets=Array.isArray(raw.aiPresets)?raw.aiPresets:[];
  raw.characters.forEach(c=>{
   if(!c.id||typeof c.name!=='string'||!c.name.trim()||!JOBS[c.job]||!Number.isInteger(c.level)||c.level<1||c.level>50)throw new Error('キャラクターデータが不正です。');
   if(!c.stats||typeof c.stats!=='object')throw new Error(`${c.name}の能力値が不正です。`);
@@ -223,7 +225,7 @@ function normalize(raw){
  raw.quest_progress=raw.quest_progress&&typeof raw.quest_progress==='object'?raw.quest_progress:{};raw.quest_progress.completed_quest_ids=Array.isArray(raw.quest_progress.completed_quest_ids)?[...new Set(raw.quest_progress.completed_quest_ids.map(String))]:[];raw.quest_progress.unlocked_quest_ids=Array.isArray(raw.quest_progress.unlocked_quest_ids)?[...new Set(raw.quest_progress.unlocked_quest_ids.map(String))]:[];
  raw.quest_resources=raw.quest_resources&&typeof raw.quest_resources==='object'?Object.fromEntries(Object.entries(raw.quest_resources).map(([k,v])=>[String(k),Math.max(0,Math.floor(Number(v)||0))])):{};
  if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(raw);else raw.adventure=raw.adventure&&typeof raw.adventure==='object'?raw.adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}};
- raw.characters.forEach(c=>{c.aiPolicy=['weakest','lowestHp','random','boss','finish'].includes(c.aiPolicy)?c.aiPolicy:'lowestHp';c.equipment=c.equipment&&typeof c.equipment==='object'?c.equipment:{weapon:null,armor:null,accessory:null}});
+ raw.characters.forEach(c=>{c.aiPolicy=['weakest','lowestHp','random','boss','finish'].includes(c.aiPolicy)?c.aiPolicy:'lowestHp';c.equipment=c.equipment&&typeof c.equipment==='object'?c.equipment:{weapon:null,armor:null,accessory:null};c.formalAiBinding=window.GKGameAISaveBridge?GKGameAISaveBridge.normalizeBinding(c.formalAiBinding):null;});
  raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.190';
  return raw;
 }
@@ -492,8 +494,9 @@ function renderAdventureStonePicker(quest){
  el.innerHTML=`<b>石板によるQuest難易度調整</b><div class="small">選択した石板はQuestRun開始時に追加開始コストとして全て消費され、成功・失敗に関係なく返却されません。</div>${rows.length?`<div class="grid" style="margin-top:8px">${rows.map(t=>{const id=String(t.id||''),available=Math.max(0,Math.floor(Number(data.quest_resources?.[id])||0)),count=Math.max(0,Math.floor(Number(byId.get(id))||0)),level=Math.max(0,Number(t?.stone_level??t?.params?.stone_level??t?.enemy_budget_bonus??t?.params?.enemy_budget_bonus)||0);return `<label class="unit"><b>${escapeHtml(t.name||id)}</b> <span class="tag">Budget +${level}/個</span><div class="small">所持 ${available}</div><input type="number" min="0" max="${available}" step="1" value="${Math.min(count,available)}" data-adventure-stone="${escapeHtml(id)}"></label>`}).join('')}</div>`:'<div class="small">使用可能な石板Masterがありません。</div>'}${difficulty?`<div class="small" style="margin-top:8px">基礎Budget <b>${difficulty.base_enemy_budget}</b> ＋ 石板 <b>${difficulty.stone_budget_delta}</b> ＝ 最終Budget <b>${difficulty.effective_enemy_budget}</b> ／ Event報酬補正（現在設定） <b>×${Number(difficulty.reward_scaling_snapshot?.reward_multiplier||1).toFixed(2)}</b></div>`:''}`;
  el.querySelectorAll('[data-adventure-stone]').forEach(input=>input.onchange=()=>{const id=input.dataset.adventureStone,available=Math.max(0,Math.floor(Number(data.quest_resources?.[id])||0)),n=Math.min(available,Math.max(0,Math.floor(Number(input.value)||0)));setAdventureStoneCount(quest.id,id,n)});
 }
+function characterAiEditorSummary(c){const formal=window.GKGameAISaveBridge?GKGameAISaveBridge.loadForCharacter(data,c?.id):null;return formal?`${formal.program.nodes.length}チップ / Formal`:`${(c?.aiGraph?.cells||[]).length}チップ / 旧AI`; }
 function renderExpeditionSetup(){
- const party=$('partyEditor');if(party){party.innerHTML=data.characters.map(c=>`<div class="unit"><label><input type="checkbox" data-party="${c.id}" ${data.partyIds.includes(c.id)?'checked':''}> <b>${escapeHtml(c.name)}</b> <span class="tag">${c.job}</span></label><div><button type="button" data-open-ai="${c.id}">AIチップ編集</button> <span class="small">${(c.aiGraph?.cells||[]).length}チップ</span></div><div class="small">装備: ${Object.entries(c.equipment||{}).filter(([,v])=>v).map(([slot,n])=>`${n} <button type="button" class="mini" data-unequip="${c.id}:${slot}">外す</button>`).join(' / ')||'なし'}</div></div>`).join('')||'<p class="small">冒険者を作成してください。</p>';party.querySelectorAll('[data-party]').forEach(el=>el.onchange=()=>{if(el.checked&&data.partyIds.length>=6){el.checked=false;notify('パーティは最大6人です。','warn');return}data.partyIds=el.checked?[...data.partyIds,el.dataset.party]:data.partyIds.filter(id=>id!==el.dataset.party);persist();renderExpeditionSetup()});party.querySelectorAll('[data-open-ai]').forEach(btn=>btn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===btn.dataset.openAi)));party.querySelectorAll('[data-unequip]').forEach(btn=>btn.onclick=e=>{e.preventDefault();const [id,slot]=btn.dataset.unequip.split(':'),c=data.characters.find(x=>x.id===id);if(c&&c.equipment?.[slot]){data.inventory.push(c.equipment[slot]);c.equipment[slot]=null;persist();render();notify(`${c.name}の装備を外しました。`)}})}
+ const party=$('partyEditor');if(party){party.innerHTML=data.characters.map(c=>`<div class="unit"><label><input type="checkbox" data-party="${c.id}" ${data.partyIds.includes(c.id)?'checked':''}> <b>${escapeHtml(c.name)}</b> <span class="tag">${c.job}</span></label><div><button type="button" data-open-ai="${c.id}">AIチップ編集</button> <span class="small">${characterAiEditorSummary(c)}</span></div><div class="small">装備: ${Object.entries(c.equipment||{}).filter(([,v])=>v).map(([slot,n])=>`${n} <button type="button" class="mini" data-unequip="${c.id}:${slot}">外す</button>`).join(' / ')||'なし'}</div></div>`).join('')||'<p class="small">冒険者を作成してください。</p>';party.querySelectorAll('[data-party]').forEach(el=>el.onchange=()=>{if(el.checked&&data.partyIds.length>=6){el.checked=false;notify('パーティは最大6人です。','warn');return}data.partyIds=el.checked?[...data.partyIds,el.dataset.party]:data.partyIds.filter(id=>id!==el.dataset.party);persist();renderExpeditionSetup()});party.querySelectorAll('[data-open-ai]').forEach(btn=>btn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===btn.dataset.openAi)));party.querySelectorAll('[data-unequip]').forEach(btn=>btn.onclick=e=>{e.preventDefault();const [id,slot]=btn.dataset.unequip.split(':'),c=data.characters.find(x=>x.id===id);if(c&&c.equipment?.[slot]){data.inventory.push(c.equipment[slot]);c.equipment[slot]=null;persist();render();notify(`${c.name}の装備を外しました。`)}})}
  const ql=$('questList'),formalQuests=formalAdventureQuests(),importIssues=formalAdventureQuestImportIssues();if(ql){const issueNotice=importIssues.length?`<details class="small warn"><summary>${importIssues.length}件のQuestを参照不整合のため除外</summary><ul>${importIssues.map(issue=>`<li><b>${escapeHtml(issue.quest_id)}</b>：${escapeHtml(formalAdventureQuestImportIssueMessage(issue))}</li>`).join('')}</ul><p>StudioのExport検証でQuest Box / Scene / Event参照を確認してください。</p></details>`:'';ql.innerHTML=(formalQuests.length?formalQuests.map(q=>`<label class="unit quest-card ${q.id===data.selectedQuestId?'selected':''}"><input type="radio" name="quest" value="${q.id}" ${q.id===data.selectedQuestId?'checked':''}> <b>${escapeHtml(q.name)}</b> <span class="tag">Story</span><div class="small">推奨Lv ${q.recommendedLevel}</div><p>${escapeHtml(q.description)}</p></label>`).join(''):'<p class="small">P7-Bで実行可能なStory Questがありません。StudioでQuest Box / Map / Event条件を設定してExportしてください。</p>')+issueNotice+`<div class="small" id="storyDataLoadStatus">${escapeHtml(formalAdventureStoryLoadLabel())}</div><div class="toolbar"><button type="button" id="reloadStoryQuests">Storyデータを再読込</button></div>`;ql.querySelectorAll('input[name=quest]').forEach(el=>el.onchange=()=>{data.selectedQuestId=el.value;persist();renderExpeditionSetup()});$('reloadStoryQuests').onclick=reloadFormalAdventureQuests}
  const qs=$('questSummary'),q=formalQuests.find(x=>x.id===data.selectedQuestId)||null;if(qs){const activeLabel=adventurePlaybackLabel();qs.textContent=q?`選択中：${q.name} ／ 編成人数 ${data.partyIds.length}人${activeLabel?' ／ '+activeLabel:''}`:`正式Story Quest未選択 ／ 編成人数 ${data.partyIds.length}人${activeLabel?' ／ '+activeLabel:''}`;}
  renderAdventureStonePicker(q?((adventureContentCache?.quests||[]).find(x=>String(x.id)===String(q.id))||q):null);
@@ -515,7 +518,7 @@ $('openJobChange').onclick=openJobChangeModal;$('jobChangeClose').onclick=closeJ
 
 $('deleteBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c)return;if(!confirm(`${c.name}を削除しますか？`))return;data.characters=data.characters.filter(x=>x.id!==selectedId);data.partyIds=data.partyIds.filter(id=>id!==selectedId);selectedId=null;persist();render();notify('キャラクターを削除しました。','warn')};
 $('saveBtn').onclick=()=>{persist();notify('ブラウザへ保存しました。')};
-$('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
+$('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));window.GKGameAIEditorUI?.resetSessions();selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
 
 $('titleStart').onclick=beginNewGame;
 $('titleContinue').onclick=continueGame;
@@ -1027,8 +1030,11 @@ function makeBattleUnits(){
 
 function openAiEditorFor(c){
  if(!c)return;
- if(!window.GKGameAIEditorUI){notify('正式AI編集UIを読み込めません。','bad');return;}
- window.GKGameAIEditorUI.open({character:c,notify}).catch(error=>notify(String(error?.message||error),'bad'));
+ if(!window.GKGameAIEditorUI||!window.GKGameAISaveBridge){notify('正式AI編集機能を読み込めません。','bad');return;}
+ const saved=GKGameAISaveBridge.loadForCharacter(data,c.id);
+ window.GKGameAIEditorUI.open({character:c,notify,program:saved?.program||null,layout:saved?.layout||null,onSave:({program,layout})=>{
+  const result=GKGameAISaveBridge.saveForCharacter(data,c.id,program,layout);data=result.save;persist();render();return result;
+ }}).catch(error=>notify(String(error?.message||error),'bad'));
 }
 const openAiBtn=$('openAiEditor');if(openAiBtn)openAiBtn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===selectedId));const skillBtn=$('openSkillPlaceholder');if(skillBtn)skillBtn.onclick=()=>{renderCharacterSkillView();setBaseView('character-skills');};const equipViewBtn=$('openEquipView');if(equipViewBtn)equipViewBtn.onclick=()=>setBaseView('equipment');
 

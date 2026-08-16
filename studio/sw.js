@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b600";
+const CACHE_NAME="gks-studio-b602";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=600';
+const OFFLINE_URL='./index.html?appv=602';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=600",
+  "./index.html?appv=602",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
@@ -14,6 +14,8 @@ const APP_SHELL=[
   "../shared/ai/ai-program-model.js?v=1",
   "../shared/ai/ai-layout-model.js?v=1",
   "../shared/ai/ai-master-adapter.js?v=1",
+  "../shared/ai/ai-connection-resolver.js?v=1",
+  "../shared/ai/ai-program-validator.js?v=1",
   "./ai-production/ai-program-model.js?v=1",
   "./ai-production/ai-layout-model.js?v=1",
   "./ai-production/ai-connection-resolver.js?v=1",
@@ -28,7 +30,7 @@ const APP_SHELL=[
   "./ai-production/ai-simulation-runner.js?v=1",
   "./ai-production/ai-export-adapter.js?v=1",
   "./ai-production/ai-production-ui.js?v=1",
-  "./layer-controller.js?v=600",
+  "./layer-controller.js?v=602",
   "./data-exchange/schemas/ai_program-dataset.schema.json",
   "./data-exchange/full-import-gate.js?v=1",
   "./data-exchange/data-exchange-integrity-validator.js?v=4",
