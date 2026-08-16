@@ -12,7 +12,9 @@
   function defaultPorts(type) {
     const input = [{id: 'in', kind: 'flow', data_type: 'flow'}];
     if (type === 'condition') return {inputs: input, outputs: [{id: 'true', kind: 'flow', data_type: 'flow'}, {id: 'false', kind: 'flow', data_type: 'flow'}]};
-    return {inputs: input, outputs: [{id: 'next', kind: 'flow', data_type: 'flow'}]};
+    if (type === 'target') return {inputs: input, outputs: [{id: 'next', kind: 'flow', data_type: 'flow'}]};
+    if (type === 'action') return {inputs: input, outputs: []};
+    return {inputs: input, outputs: []};
   }
   function formalStatus(status) {
     if (status === 'approved') return 'active';
@@ -38,7 +40,16 @@
     if (!node.name) errors.push('名称が必要です。');
     if (!node.evaluator || !/^[A-Za-z][A-Za-z0-9_.-]*$/.test(node.evaluator)) errors.push('評価器IDが不正です。');
     if (!node.parameter_schema || node.parameter_schema.type !== 'object' || typeof node.parameter_schema.properties !== 'object') errors.push('パラメータSchemaはobjectである必要があります。');
-    if (!node.ports || !Array.isArray(node.ports.outputs) || node.ports.outputs.length === 0) errors.push('出力ポートが必要です。');
+    const inputs = Array.isArray(node.ports?.inputs) ? node.ports.inputs : [];
+    const outputs = Array.isArray(node.ports?.outputs) ? node.ports.outputs : [];
+    if (inputs.length !== 1 || inputs[0]?.id !== 'in') errors.push('入力ポートはinを1件だけ定義してください。');
+    if (node.node_type === 'condition') {
+      if (outputs.length !== 2 || outputs[0]?.id !== 'true' || outputs[1]?.id !== 'false') errors.push('条件部品の出力はtrue / falseの2件固定です。');
+    } else if (node.node_type === 'target') {
+      if (outputs.length !== 1 || outputs[0]?.id !== 'next') errors.push('対象部品の出力はnextを1件だけ定義してください。');
+    } else if (node.node_type === 'action') {
+      if (outputs.length !== 0) errors.push('行動部品は終端のため出力ポートを定義できません。');
+    }
     return errors;
   }
   function isAvailable(node, context) {

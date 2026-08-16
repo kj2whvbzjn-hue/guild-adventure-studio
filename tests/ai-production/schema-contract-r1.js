@@ -77,6 +77,12 @@ function semanticErrors(kind, value) {
   if (kind === 'node') {
     const prefixes = {condition: 'AIC-', target: 'AIT-', action: 'AIA-'};
     if (prefixes[value.node_type] && !value.id.startsWith(prefixes[value.node_type])) errors.push('node id prefix does not match node_type');
+    const inputs = Array.isArray(value.ports?.inputs) ? value.ports.inputs : [];
+    const outputs = Array.isArray(value.ports?.outputs) ? value.ports.outputs : [];
+    if (inputs.length !== 1 || inputs[0]?.id !== 'in') errors.push('node must have exactly one in port');
+    if (value.node_type === 'condition' && (outputs.length !== 2 || outputs[0]?.id !== 'true' || outputs[1]?.id !== 'false')) errors.push('condition outputs must be true,false');
+    if (value.node_type === 'target' && (outputs.length !== 1 || outputs[0]?.id !== 'next')) errors.push('target output must be next');
+    if (value.node_type === 'action' && outputs.length !== 0) errors.push('action must have zero outputs');
   }
   if (kind === 'program') {
     const ids = value.nodes.map((node) => node.instance_id);
@@ -124,4 +130,11 @@ for (const [kind, schemaFile] of contracts) {
   assert(invalidErrors.length > 0, `${kind} invalid fixture unexpectedly passed`);
 }
 
-console.log('AI_SCHEMA_CONTRACT_R1_OK schemas=4 valid=4 invalid=4');
+
+const actionSchema = readJson(path.join(root, 'schemas/ai', 'ai-node.schema.json'));
+const validAction = readJson(path.join(fixtures, 'valid-action-node.json'));
+const validActionErrors = [...validate(validAction, actionSchema, actionSchema), ...semanticErrors('node', validAction)];
+assert.deepStrictEqual(validActionErrors, [], `action valid fixture failed:
+${validActionErrors.join('\n')}`);
+
+console.log('AI_SCHEMA_CONTRACT_R1_OK schemas=4 valid=5 invalid=4 action_terminal=1');
