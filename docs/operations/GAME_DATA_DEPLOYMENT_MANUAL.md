@@ -5,14 +5,52 @@
 
 ## 1. このマニュアルの目的
 
-Studioで作成したQuest / Box / Event / Flagなどの正式Gameデータを、Studio本体の更新とは分離してGitHubの`Export/`へ安全に配置し、実機Gameへ反映するための運用手順をまとめる。
+Studioで作成したMonster / Map / Quest / Box / Event / Reward Table / Flag / Skillなどの正式Gameデータを、Studio本体の更新とは分離してGitHubの`Export/`へ安全に配置し、実機Gameへ反映するための運用手順をまとめる。
 
 Gameデータ配置とStudio更新配置は別窓口である。Gameデータ配置ではStudio本体ファイルを更新せず、正式Exportで生成した`Export/`配下だけを対象とする。
 
 ## 2. 全体の流れ
 
+### 2.1 AIがGameデータを作成・修正する場合
+
+AIへGameデータ作業を依頼する場合は、`Export/`を直接編集するのではなく、**現在のStudio Project JSONを入口とする。**
+
+標準手順:
+
 ```text
-StudioでQuest / Event / Flag等を編集
+Studioで現在のProject JSONを出力
+        ↓
+AIへProject JSONを渡す
+        ↓
+AIは既存データを保持して承認範囲だけ追加・変更
+        ↓
+AIから全件読込用Project JSONを受け取る
+        ↓
+Studio「JSON全件読込」でPre-flight検証
+        ↓
+ERROR 0件を確認して全件読込
+        ↓
+Studio画面でMonster / Event / Reward / Quest等を確認
+        ↓
+Data Versionを進める
+        ↓
+「Gameデータ配置」で正式Export生成・差分確認
+        ↓
+人間承認後、Export/だけをGitHubへ配置
+        ↓
+Gameで「Storyデータを再読込」
+        ↓
+新規QuestRunで実機確認
+```
+
+全件読込は現在のProject全体を置換するため、AIへ部分データだけを渡して全件読込用JSONを作らせない。必ず現在のProject JSONを基準にし、既存Story / Skill / ID / 参照を保持する。
+
+Pre-flightでERRORが出た場合は配置へ進まず、検証レポートの原因だけを修正する。未登録タグ、ID形式、参照切れ等を推測で無視しない。
+
+### 2.2 Studio内で直接編集する場合
+
+```text
+StudioでMonster / Map / Quest / Event / Reward Table / Flag / Skill等を編集
         ↓
 Gameデータ配置を開く
         ↓
@@ -87,7 +125,7 @@ demo-0.2.0
 
 ## 5. 初回デモデータを配置する手順
 
-1. Studioでデモ用Quest / Box / Event / Flagを保存する。
+1. Studioでデモ用Monster / Map / Quest / Box / Event / Reward Table / Flag等を保存する。
 2. **GitHub同期 → Gameデータ配置**を開く。
 3. Owner / Repository / Branchを確認する。
 4. PATを入力し、必要なら「接続を確認」を実行する。
@@ -104,7 +142,7 @@ demo-0.2.0
 15. GitHub Pagesへ反映されるまで待つ。
 16. Gameを開き、Quest一覧付近の **「Storyデータを再読込」** を押す。
 17. 表示されたExport Data VersionとQuest件数を確認する。
-18. デモQuestを実際に開始して、Event / Flag / Reward等を確認する。
+18. デモQuestを実際に開始して、Random Monster / Battle / Event / Flag / Reward / 最終集計等を確認する。
 
 ## 6. 追加・差し替え・除外の意味
 
@@ -311,7 +349,8 @@ Gameデータのロールバックは、GitHub Branchを過去へforce resetす�
 7. Gameデータ配置とStudio更新配置を混同しない。
 8. PATは保存しない。
 9. GitHubファイル削除0件を通常運用とする。
-10. 不具合確認時は「Data Version / Quest ID / Event ID / Flag ID」を記録する。
+10. 不具合確認時は「Data Version / Quest ID / Event ID / Monster ID / Reward Table ID / Flag ID」を記録する。
+11. QuestRun開始時に確定したRandom Event / Monster編成 / Rewardは、履歴表示やPlaybackで再抽選しない。
 
 ## 16. 現行の安全境界
 

@@ -31,8 +31,47 @@ function saveBlob(name,blob){const a=document.createElement('a');a.href=URL.crea
 function safeJson(v){try{return JSON.stringify(v,null,2)}catch(e){return JSON.stringify({error:e.message},null,2)}}
 function guideMd(){const g=window.GK_VERIFICATION_GUIDES||{};return Object.entries(g).map(([id,x])=>`# ${x.title}\n\n${x.summary}\n\n## 手順\n${x.steps.map((s,i)=>`${i+1}. ${s}`).join('\n')}\n\n## ポイント\n${x.tips.map(s=>`- ${s}`).join('\n')}\n`).join('\n---\n\n');}
 function collect(){const project=typeof data!=='undefined'?data:null,cards=typeof designCards!=='undefined'?designCards:[];return {project,cards,meta:{schema:'gk-ai-project-package',version:'1.0.0',generated_at:new Date().toISOString(),studio_version:typeof APP_VERSION!=='undefined'?APP_VERSION:'unknown',project_id:typeof currentProjectId!=='undefined'?currentProjectId:'unknown'}};}
-window.exportProjectForAI=async function(){try{const p=collect(),name=(p.project?.project?.id||p.meta.project_id||'project').replace(/[^A-Za-z0-9_.-]/g,'_');const summary={...p.meta,project_name:p.project?.project?.name||'',card_count:p.cards.length,card_types:p.cards.reduce((m,c)=>(m[c.type]=(m[c.type]||0)+1,m),{})};const readme=`# Guild Adventure Studio AI引き継ぎ\n\nこのZIPはエディタから出力された設計・検証データです。最初にgovernance/AI_START.mdを読み、そこに定めた順序で必須ルールを確認し、アップロード成果物は必ず1つのZIPで提出してください。\n\n## 読む順番\n1. governance/AI_START.md\n2. governance/AI_PROJECT_INDEX.json\n3. governance/AI_PROJECT_STATUS.json\n4. governance/AI_WORK_RULES.md\n5. governance/docs/operations/ARTIFACT_SUBMISSION_POLICY.md\n6. governance/docs/operations/DELETION_POLICY.md\n7. governance/package-build.json\n8. governance/package_manifest.json\n9. README.md\n10. project-summary.json\n11. guides/verification-guide.md\n12. data/design-cards.json\n13. data/project.json\n\n## 補助ポリシー\n- governance/shared/integrity/artifact-submission-policy.json\n\n## 作業開始前\n- governance/AI_START.mdの優先順位とPre-flightを完了してください。\n- 目的、変更範囲、変更しない範囲、削除有無、成果物、完了条件を作業宣言として確定してください。\n\n## 重要ルール\n- カードIDとマスターIDを維持してください。\n- 参照は表示名ではなくIDで扱ってください。\n- 不明な値を推測で上書きしないでください。\n- 提案値と正式採用値を区別してください。\n- 宣言した範囲外を便乗修正しないでください。\n- 完了時は追加・変更・削除・検査・未解決事項・成果物ZIPを報告してください。\n`;
- const prompt=`添付ZIPはGuild Adventure Studioのプロジェクトです。最初にgovernance/AI_START.mdを読み、起動順序、役割優先順位、Pre-flightを完了してください。実装前に目的、変更範囲、変更しない範囲、削除有無、成果物、完了条件を作業宣言として確定してください。宣言外の便乗修正は禁止です。アップロードを伴う成果物は種類を問わず必ず1つのZIPで提出してください。次にREADME.mdを読み、既存カードID・マスターID・参照関係を維持してください。仕様にない値は推測で確定せず、提案として明示してください。完了時は追加・変更・削除・検査・未解決事項・成果物ZIPを報告してください。`;
+window.exportProjectForAI=async function(){try{const p=collect(),name=(p.project?.project?.id||p.meta.project_id||'project').replace(/[^A-Za-z0-9_.-]/g,'_');const summary={...p.meta,project_name:p.project?.project?.name||'',card_count:p.cards.length,card_types:p.cards.reduce((m,c)=>(m[c.type]=(m[c.type]||0)+1,m),{})};const readme=`# Guild Adventure Studio AI引き継ぎ
+
+このZIPはエディタから出力された設計・検証データです。最初にgovernance/AI_START.mdを読み、そこに定めた順序で必須ルールを確認してください。成果物は作業種別（SOURCE_UPDATE / GAME_DATA_UPDATE / HYBRID）と配置経路に応じて分離します。
+
+## 読む順番
+1. governance/AI_START.md
+2. governance/AI_PROJECT_INDEX.json
+3. governance/AI_PROJECT_STATUS.json
+4. governance/AI_WORK_RULES.md
+5. governance/docs/operations/ARTIFACT_SUBMISSION_POLICY.md
+6. governance/docs/operations/DELETION_POLICY.md
+7. governance/package-build.json
+8. governance/package_manifest.json
+9. README.md
+10. project-summary.json
+11. guides/verification-guide.md
+12. data/design-cards.json
+13. data/project.json
+
+## 補助ポリシー
+- governance/shared/integrity/artifact-submission-policy.json
+
+## 作業開始前
+- governance/AI_START.mdの優先順位とPre-flightを完了してください。
+- 目的、作業種別、基準ソース、Gameデータ時の基準Project JSON/Data Version、変更範囲、変更しない範囲、削除有無、成果物、配置経路、完了条件を作業宣言として確定してください。
+
+## 成果物経路
+- SOURCE_UPDATE: studio-update.jsonを含みExport/を含まない直接のStudio更新ZIP。
+- GAME_DATA_UPDATE: 現在のStudio Project JSONを保持して変更した全件読込用Project JSON。公開Export/はStudioのGameデータ配置から生成します。
+- HYBRID: 上記2成果物を別々に提出し、外側ZIPへまとめません。
+
+## 重要ルール
+- カードIDとマスターIDを維持してください。
+- 参照は表示名ではなくIDで扱ってください。
+- 不明な値を推測で上書きしないでください。
+- 提案値と正式採用値を区別してください。
+- Export/をGameデータの編集正本として直接修正しないでください。
+- 宣言した範囲外を便乗修正しないでください。
+- 完了時は追加・変更・削除・Gameデータ除外・検査・未解決事項・成果物と配置経路を報告してください。
+`;
+ const prompt=`添付ZIPはGuild Adventure Studioのプロジェクトです。最初にgovernance/AI_START.mdを読み、起動順序、役割優先順位、Pre-flightを完了してください。実装前にSOURCE_UPDATE / GAME_DATA_UPDATE / HYBRIDの作業種別を確定し、目的、基準ソース、Gameデータ時の基準Project JSON/Data Version、変更範囲、変更しない範囲、削除有無、成果物、配置経路、完了条件を作業宣言として確定してください。宣言外の便乗修正は禁止です。SOURCE_UPDATEはstudio-update.jsonを含みExport/を含まない直接のStudio更新ZIP、GAME_DATA_UPDATEは現在のStudio Project JSONを保持した全件読込用Project JSONとして返し、公開Export/はStudioのGameデータ配置から生成してください。HYBRIDでは両成果物を分離し外側ZIPへまとめないでください。次にREADME.mdを読み、既存カードID・マスターID・参照関係を維持してください。仕様にない値は推測で確定せず、提案として明示してください。完了時は追加・変更・削除・Gameデータ除外・検査・未解決事項・成果物と配置経路を報告してください。`;
  const files=[{name:'README.md',data:readme},{name:'AI_PROMPT.txt',data:prompt},{name:'project-summary.json',data:safeJson(summary)},{name:'data/project.json',data:safeJson(p.project)},{name:'data/design-cards.json',data:safeJson({schema:'gk-design-cards',cards:p.cards})},{name:'guides/verification-guide.md',data:guideMd()},{name:'references/card-reference-values.json',data:safeJson(typeof getDesignReferenceValues==='function'?getDesignReferenceValues():{})}];files.push(...await loadRequiredGovernance());saveBlob(`GK_AI_Project_${name}.zip`,zipStore(files));const s=document.getElementById('gkAiExportStatus');if(s)s.textContent='AI用ZIPを出力しました。';}catch(e){alert('AIエクスポート失敗: '+e.message);}};
 function addEntry(){const grid=document.querySelector('#view-verification .grid.two');if(grid&&!document.getElementById('gkAiExportCard')){const c=document.createElement('div');c.className='card';c.id='gkAiExportCard';c.innerHTML='<h2>AIへ渡す</h2><p>プロジェクト、設計カード、参照値、検証ガイドをAI用ZIPへまとめます。</p><div class="toolbar"><button class="primary" type="button" onclick="exportProjectForAI()">AI用ZIPを出力</button><button type="button" onclick="openVerificationGuide(\'ai\')">使い方</button></div><div id="gkAiExportStatus" class="small gk-ai-export-status"></div>';grid.appendChild(c);}const panel=document.querySelector('#launcherPanel-verify .launcher-action-grid');if(panel&&!document.getElementById('gkAiExportLauncherButton')){const b=document.createElement('button');b.id='gkAiExportLauncherButton';b.type='button';b.textContent='AIエクスポート';b.onclick=()=>exportProjectForAI();panel.appendChild(b);}}
 document.addEventListener('DOMContentLoaded',addEntry);
