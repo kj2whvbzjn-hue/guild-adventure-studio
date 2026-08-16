@@ -10,5 +10,9 @@ for(const [id,v] of [['HIGH',100],['ZERO',0],['NEGATIVE',-100]]){
 }
 const omitted=compiler.compileSkill(skill('OMITTED',0,true),registry);assert.strictEqual(omitted.ok,true,JSON.stringify(omitted.errors));assert.strictEqual(omitted.compiledSkill.runtimeContracts.resourceContract.activationPriority,0,'omitted priority');
 const decimal=compiler.compileSkill(skill('DECIMAL',1.5),registry);assert.strictEqual(decimal.ok,false,'decimal accepted');assert(decimal.errors.some(x=>x.code==='INVALID_ACTIVATION_PRIORITY'),'decimal must fail with INVALID_ACTIVATION_PRIORITY');
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));assert.strictEqual(data.data_version,'FORMAL-SKILL-1','data_version format mismatch');
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
+const manifest=JSON.parse(fs.readFileSync('Export/manifest.json','utf8'));
+assert.strictEqual(data.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
+assert(Array.isArray(data.data)&&data.data.length>0,'Skill Export is empty');
+assert(data.data.every(x=>x.runtimeContracts?.registryPhase===registry.phase),'Skill Export contains non-Formal runtimeContracts');
 console.log('ACTIVATION_PRIORITY_FORMAL_COMPILER_GA_B486_PASS');

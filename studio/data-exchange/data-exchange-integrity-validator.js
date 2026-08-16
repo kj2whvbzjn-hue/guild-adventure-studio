@@ -24,6 +24,7 @@
     const canonicalizeRecord=options?.canonicalizeRecord;
     const stableStringify=options?.stableStringify;
     const referencedIds=options?.referencedIds;
+    const idRules=options?.idRules||{};
     const expectedFormat=String(options?.format||'GKS_DATA_EXCHANGE');
     const expectedVersion=String(options?.version||'');
     const out={ok:true,blocking:false,apply_blocking:false,summary:{},issues:[],errors:[],warnings:[]};
@@ -55,6 +56,11 @@
         if(!id){addIssue(out,'invalid',ds,'',`${ds}[${index}]に${def.idField||'id'}がありません。`);return;}
         if(seen.has(id))addIssue(out,'invalid',ds,id,`${ds}に重複IDがあります: ${id}`);
         seen.add(id);
+        const rule=idRules[ds];
+        if(rule){
+          const pattern=rule.pattern instanceof RegExp?rule.pattern:new RegExp(String(rule.pattern||''));
+          if(!pattern.test(id))addIssue(out,'invalid_id',ds,id,`${ds} / ${id} はID規約外です。期待形式 ${rule.example||((rule.prefix||'AAA')+'-0001')}`);
+        }
       });
       const declared=envelope.metadata?.record_count?.[ds];
       if(declared!==undefined && Number(declared)!==rows.length){

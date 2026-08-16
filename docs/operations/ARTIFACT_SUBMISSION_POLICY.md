@@ -2,37 +2,106 @@
 
 ## 原則
 
-アップロードを伴う成果物は、内容、形式、ファイル数にかかわらず、必ず1つのZIPにまとめて提出する。
+成果物は**作業種別と配置先に応じた正式形式へ分離して提出する。** 各成果物は用途と配置先に対応する正式形式で直接提出し、不要な外側ZIPで一括包装しない。
 
-対象には、ソースコード、管理資料、仕様書、検査結果、画像、PDF、表計算、単独文書、更新パッチ、参考資料を含む。
+特に、Studio本体更新とGameデータ更新は別経路である。Studio更新ZIPへ`Export/`を同梱してGameデータを配布せず、Gameデータを外側ZIPへまとめてStudio更新画面へ渡さない。
 
-AIが「単独ファイルだからZIP不要」「文書だからZIP不要」などの例外を独自判断してはならない。ZIP以外を許可できるのは、ユーザーが対象成果物について明示的に別形式を指定した場合だけである。
+## 作業種別ごとの正式成果物
+
+### `SOURCE_UPDATE`
+
+Game / Studio本体、運用文書、検査基盤などのソース変更。
+
+正式成果物:
+
+- `studio-update.json`を含む**直接のStudio更新ZIP** 1件
+- `Export/`は含めない
+- Studioの「更新ZIP」から検証・配置する
+
+複数の更新ZIPをさらに外側ZIPへまとめて提出してはならない。
+
+### `GAME_DATA_UPDATE`
+
+Monster / Map / Quest / Event / Reward Table / Skill等、Studio管理データの変更。
+
+AIがデータを編集する場合の正式成果物:
+
+- 現在のStudio Project JSONを基準に、既存データを保持して必要箇所だけ変更した**全件読込用Project JSON**
+
+公開Gameデータの正式配置:
+
+1. Project JSONをStudioの「JSON全件読込」でPre-flight検証する。
+2. Studioへ読み込み、人間が内容を確認する。
+3. Data Versionを進める。
+4. 「Gameデータ配置」で正式Exportを生成する。
+5. GitHub版との追加 / 差し替え / 除外を人間確認する。
+6. `Export/`だけをGitHubへ配置する。
+
+AIが`Export/`を直接編集したJSON一式を公開正本として提出・配置する運用は禁止する。
+
+### `HYBRID`
+
+ソース変更とGameデータ変更の両方を含む。
+
+- Studio更新ZIPとProject JSONを**別成果物**として提出してよい。
+- それぞれの用途と適用順を明記する。
+- 一方の成果物をもう一方へ同梱しない。
+- 両方のGateを独立して満たす。
+
+## 管理資料・仕様書・検査資料
+
+配置経路を持たない複数の文書、検査資料、画像等をまとめて渡す場合は、原則1つの資料ZIPへまとめる。
+
+ただし、ユーザーが対象成果物について単独JSON、PDF、画像、表計算等の直接形式を明示した場合、またはStudioの正式取込形式が直接ファイルである場合は、その形式を使用してよい。
+
+「ZIP化すること」自体を目的にして、Studioが直接読むProject JSON等を不要な外側ZIPへ包まない。
 
 ## AIの必須動作
 
 1. 作業開始時に`AI_START.md`を読み、定義された順序で`AI_PROJECT_INDEX.json`、`AI_PROJECT_STATUS.json`、`AI_WORK_RULES.md`、本書を読む。
-2. AI GatewayまたはAI引き継ぎZIPには、両文書の実内容を含める。
-3. 規則を取得できない場合は、成果物生成を停止して設定不備を報告する。
-4. 最終成果物は1つのZIPだけを正式成果物として案内する。
-5. 個別ファイルや作業フォルダを最終提出物として案内しない。
+2. `SOURCE_UPDATE` / `GAME_DATA_UPDATE` / `HYBRID`を作業宣言で確定する。
+3. AI GatewayまたはAI引き継ぎZIPには、運用規則の実内容を含める。
+4. 規則を取得できない場合は、成果物生成を停止して設定不備を報告する。
+5. 成果物ごとに用途と配置経路を明記する。
+6. `GAME_DATA_UPDATE`では基準Project JSONを確認せずに部分データだけで全件上書きしない。
 
-## GitHub更新ZIP
+## Studio更新ZIP
 
-GitHubへ配置する更新ZIPは、さらに次を満たす。
+GitHubへStudio更新画面から配置する更新ZIPは次を満たす。
 
-- 配置対象の全変更を含む。
+- `studio-update.json`を含む。
+- 配置対象の承認済みソース変更を含む。
+- `Export/`を含めない。
 - `DELETE_MANIFEST.txt`は今回分だけを記載する。通常更新では削除0件とする。
 - 削除がある場合は有効な`DELETE_APPROVAL.json`を含む。
 - `package_manifest.json`を実体に同期する。
 - `python3 tools/inspection/run.py full --context update`に合格する。
-- ZIP整合性検査に合格する。
+- 必要な場合はrelease Gateに合格する。
+- ZIP整合性・UTF-8/NFC検査に合格する。
 
-## 管理資料等
+## Gameデータ配置
 
-管理資料、仕様書、検査報告書、画像、PDF、表計算、単独文書も、アップロードする場合はZIPに格納する。ファイルが1件だけでも同じである。
+- AI成果物はStudioへ戻すProject JSONとし、公開`Export/`はStudio正式Exportから生成する。
+- 追加 / 差し替え / 除外をID単位で確認する。
+- 意図しない差し替え・除外が1件でもあれば配置しない。
+- GitHubファイル削除0件を通常条件とする。
+- 配置後はGameでData Versionを再読込し、新規QuestRun等で実機確認する。
 
 ## 完了条件
 
-- ZIPが開ける。
-- 期待する成果物がZIP内に存在する。
-- 正式成果物として案内するZIPは1件である。
+`SOURCE_UPDATE`:
+
+- 直接のStudio更新ZIPが開ける。
+- `studio-update.json`と期待する変更が存在する。
+- `Export/`が含まれていない。
+- 必須検査に合格している。
+
+`GAME_DATA_UPDATE`:
+
+- Project JSONがStudio全件読込Pre-flightに合格する。
+- Gameデータ差分が意図どおりである。
+- 配置後のGame再読込・実機確認が完了している。
+
+`HYBRID`:
+
+- 上記2系統がそれぞれ完了している。

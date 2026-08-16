@@ -11,6 +11,8 @@ use GK\Export\GameMasterRepository;
 use GK\Export\AtomicExportUpdater;
 
 $source = $argv[1] ?? dirname(__DIR__, 2) . '/Export';
+$schemaMap = json_decode((string)file_get_contents(dirname(__DIR__, 2) . '/schemas/export-schema-map.json'), true, 512, JSON_THROW_ON_ERROR);
+$officialPathCount = is_array($schemaMap) ? count($schemaMap) : 0;
 $failures = 0;
 
 function report(string $name, bool $ok, string $detail = ''): void {
@@ -89,9 +91,20 @@ function expectLoaderError(string $name, callable $loaderFactory, string $source
 
 try {
     $pkg = (new ExportLoader(['1.0.0']))->load($source);
-    report('valid package loads', count($pkg->paths()) === 22, 'loaded ' . count($pkg->paths()) . ' files');
+    report('valid package loads', count($pkg->paths()) === $officialPathCount, 'loaded ' . count($pkg->paths()) . ' files');
+    $formalSkill = $pkg->document('skill/skills.json');
+    report('Formal Skill v2 envelope loads independently from package metadata',
+        ($formalSkill['schema_version'] ?? null) === '2.0.0'
+        && ($formalSkill['data_version'] ?? null) === 'FORMAL-SKILL-1'
+        && is_array($formalSkill['migration'] ?? null)
+    );
+    report('CPF auxiliary payload is excluded from runtime document set',
+        is_dir($source . '/cpf') && !in_array('cpf/bootstrap.php', $pkg->paths(), true)
+    );
 } catch (Throwable $e) {
     report('valid package loads', false, $e->getMessage());
+    report('Formal Skill v2 envelope loads independently from package metadata', false, $e->getMessage());
+    report('CPF auxiliary payload is excluded from runtime document set', false, $e->getMessage());
 }
 
 
@@ -230,7 +243,7 @@ expectError('document generated_by must match manifest', $source, function (stri
 }, 'GENERATED_BY_MISMATCH');
 
 
-expectError('manifest must contain exact official 22 paths', $source, function (string $tmp): void {
+expectError('manifest must contain exact official paths', $source, function (string $tmp): void {
     $p = $tmp . '/manifest.json';
     $m = json_decode((string)file_get_contents($p), true, 512, JSON_THROW_ON_ERROR);
     $m['files'] = array_values(array_filter($m['files'], fn(array $e): bool => $e['path'] !== 'skill/skills.json'));
@@ -349,6 +362,14 @@ expectError('extra envelope field is rejected', $source, function (string $tmp):
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{ $doc['unexpected'] = true; });
 }, 'ENVELOPE_INVALID');
 
+expectError('Formal Skill v2 rejects unsupported data_version', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['data_version'] = 'FORMAL-SKILL-999'; });
+}, 'DATA_VERSION_UNSUPPORTED');
+
+expectError('Formal Skill v2 rejects unsupported envelope fields', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['unexpected'] = true; });
+}, 'ENVELOPE_INVALID');
+
 expectError('empty metadata is rejected', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{ $doc['generated_by'] = ''; });
 }, 'METADATA_INVALID');
@@ -424,7 +445,7 @@ expectLoaderError('Export total size limit stops startup',
 })();
 
 
-(function () use ($source): void {
+(function () use ($source, $officialPathCount): void {
     $root = sys_get_temp_dir() . '/gk-atomic-update-' . bin2hex(random_bytes(6));
     $live = $root . '/Export';
     $candidate = $root . '/Candidate';
@@ -442,7 +463,7 @@ expectLoaderError('Export total size limit stops startup',
         $settings = $loaded->document('system/game_settings.json')['data'] ?? [];
         $leftovers = array_values(array_filter(glob($root . '/.Export.*') ?: [], fn(string $p): bool => basename($p) !== '.Export.rollback')); 
         report('atomic update switches only validated package',
-            count($package->paths()) === 22
+            count($package->paths()) === $officialPathCount
             && $before !== $after
             && ($settings['party_size'] ?? null) === 5
             && $leftovers === []
@@ -492,7 +513,7 @@ expectLoaderError('Export total size limit stops startup',
 
 
 
-(function () use ($source): void {
+(function () use ($source, $officialPathCount): void {
     $root = sys_get_temp_dir() . '/gk-rollback-' . bin2hex(random_bytes(6));
     $live = $root . '/Export'; $candidate = $root . '/Candidate';
     mkdir($root, 0777, true); copyTree($source, $live); copyTree($source, $candidate);
@@ -505,7 +526,7 @@ expectLoaderError('Export total size limit stops startup',
         $pkg = (new \GK\Export\ExportRollbackManager())->restore($backup, $live);
         $loaded=(new ExportLoader(['1.0.0']))->load($live);
         $settings=$loaded->document('system/game_settings.json')['data']??[];
-        report('rollback restores validated persistent backup', count($pkg->paths())===22 && ($settings['party_size']??null)!==6 && is_dir($backup));
+        report('rollback restores validated persistent backup', count($pkg->paths())===$officialPathCount && ($settings['party_size']??null)!==6 && is_dir($backup));
     } catch (Throwable $e) { report('rollback restores validated persistent backup', false, $e->getMessage()); }
     finally {
         if(is_dir($root)){ $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST); foreach($it as $item){$item->isDir()?rmdir($item->getPathname()):unlink($item->getPathname());} rmdir($root); }

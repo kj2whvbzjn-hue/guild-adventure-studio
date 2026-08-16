@@ -11,6 +11,10 @@ final class ExportLoader
     private const MANIFEST = 'manifest.json';
     private const HASH_PATTERN = '/^[a-f0-9]{64}$/';
     private const VERSION_PATTERN = '/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:[-+][0-9A-Za-z.-]+)?$/';
+    private const FORMAL_SKILL_PATH = 'skill/skills.json';
+    private const FORMAL_SKILL_SCHEMA_VERSION = '2.0.0';
+    private const FORMAL_SKILL_DATA_VERSION = 'FORMAL-SKILL-1';
+    private const AUXILIARY_EXPORT_PREFIXES = ['cpf/'];
     public const DEFAULT_MANIFEST_MAX_BYTES = 1_048_576;
     public const DEFAULT_FILE_MAX_BYTES = 16_777_216;
     public const DEFAULT_EXPORT_MAX_BYTES = 67_108_864;
@@ -118,7 +122,7 @@ final class ExportLoader
             $document = $this->readJsonObject($absolute, $path);
             $this->validateEnvelope($document, $path);
             $this->assertMetadataMatchesManifest($manifest, $document, $path);
-            $this->assertSupportedSchema((string)$document['schema_version'], $path);
+            $this->assertSupportedDocumentSchema((string)$document['schema_version'], $path);
             $this->validateDataSchema($document['data'], $path);
             $documents[$path] = $document;
         }
@@ -135,6 +139,21 @@ final class ExportLoader
      */
     private function assertMetadataMatchesManifest(array $manifest, array $document, string $path): void
     {
+        // Formal Skill v2 is an independently versioned document carried by the
+        // package manifest. Its integrity is bound by the manifest SHA-256, while
+        // its schema/data generation metadata intentionally differs from the
+        // legacy common-envelope metadata used by the other official exports.
+        if ($this->isFormalSkillV2($document, $path)) {
+            if ((string)$document['data_version'] !== self::FORMAL_SKILL_DATA_VERSION) {
+                throw new ExportLoadException('DATA_VERSION_UNSUPPORTED', 'Unsupported Formal Skill data_version.', [
+                    'path' => $path,
+                    'data_version' => (string)$document['data_version'],
+                    'supported' => [self::FORMAL_SKILL_DATA_VERSION],
+                ]);
+            }
+            return;
+        }
+
         $checks = [
             'schema_version' => 'SCHEMA_VERSION_MISMATCH',
             'data_version' => 'DATA_VERSION_MISMATCH',
@@ -221,7 +240,7 @@ final class ExportLoader
             if (!$item->isFile()) {
                 throw new ExportLoadException('UNSUPPORTED_FILE_TYPE', "Unsupported filesystem entry in Export: {$relative}", ['path' => $relative]);
             }
-            if ($relative === self::MANIFEST) {
+            if ($relative === self::MANIFEST || $this->isAuxiliaryExportPath($relative)) {
                 continue;
             }
             $actual[$relative] = true;
@@ -387,7 +406,16 @@ final class ExportLoader
                 throw new ExportLoadException('ENVELOPE_INVALID', "Required envelope field is missing: {$path} / {$key}", ['path' => $path, 'field' => $key]);
             }
         }
-        $extra = array_values(array_diff(array_keys($document), $required));
+
+        $allowed = $required;
+        if ($this->isFormalSkillV2($document, $path)) {
+            $allowed[] = 'migration';
+            if (array_key_exists('migration', $document) && (!is_array($document['migration']) || array_is_list($document['migration']))) {
+                throw new ExportLoadException('ENVELOPE_INVALID', 'Formal Skill migration metadata must be an object.', ['path' => $path, 'field' => 'migration']);
+            }
+        }
+
+        $extra = array_values(array_diff(array_keys($document), $allowed));
         if ($extra !== []) {
             throw new ExportLoadException('ENVELOPE_INVALID', "Envelope contains unsupported fields: {$path}", ['path' => $path, 'fields' => $extra]);
         }
@@ -408,6 +436,32 @@ final class ExportLoader
         if (strtotime((string)$object['generated_at']) === false) {
             throw new ExportLoadException('GENERATED_AT_INVALID', "Invalid generated_at date-time: {$path}", ['path' => $path]);
         }
+    }
+
+
+    /** @param array<string,mixed> $document */
+    private function isFormalSkillV2(array $document, string $path): bool
+    {
+        return $path === self::FORMAL_SKILL_PATH
+            && ($document['schema_version'] ?? null) === self::FORMAL_SKILL_SCHEMA_VERSION;
+    }
+
+    private function assertSupportedDocumentSchema(string $version, string $path): void
+    {
+        if ($path === self::FORMAL_SKILL_PATH && $version === self::FORMAL_SKILL_SCHEMA_VERSION) {
+            return;
+        }
+        $this->assertSupportedSchema($version, $path);
+    }
+
+    private function isAuxiliaryExportPath(string $relativePath): bool
+    {
+        foreach (self::AUXILIARY_EXPORT_PREFIXES as $prefix) {
+            if (str_starts_with($relativePath, $prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function assertSupportedSchema(string $version, string $path): void

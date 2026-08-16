@@ -16,14 +16,14 @@ async function main(){
     project:{id:'P1',updated_at:'R1'},
     tags:[],
     masters:{
-      monsters:[{id:'M1',name:'One',tags:[],params:{skill_ids:[],candidate_skill_ids:[],equipment_ids:[],mod_ids:[]}}],
+      monsters:[{id:'MON-0001',name:'One',tags:[],params:{skill_ids:[],candidate_skill_ids:[],equipment_ids:[],mod_ids:[]}}],
       skills:[],stats:[],status_effects:[],tablets:[],jobs:[],equipment:[],mods:[],
       ai_conditions:[],ai_targets:[],ai_actions:[]
     }
   };
-  const env=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['M1'],dependencyMode:'none',studioVersion:'TEST'});
+  const env=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['MON-0001'],dependencyMode:'none',studioVersion:'TEST'});
   const add=JSON.parse(JSON.stringify(env));
-  add.datasets.monsters[0].id='M2';add.datasets.monsters[0].name='Two';
+  add.datasets.monsters[0].id='MON-0002';add.datasets.monsters[0].name='Two';
   add.metadata.base_hash='';add.metadata.record_hashes={monsters:{}};add.metadata.package_hash='';
   const dry=await dx.dryRunImport({rootData:root,envelope:add});
   const plan=await dx.createApplyPlan({rootData:root,envelope:add,dryRun:dry});
@@ -39,17 +39,17 @@ async function main(){
     afterDatasetHash:await audit.datasetHash(live,'monsters')
   });
   assert.equal(session.dataset,'monsters');
-  assert.deepEqual(session.added,['M2']);
-  assert.deepEqual(session.undo_snapshot.remove_ids,['M2']);
+  assert.deepEqual(session.added,['MON-0002']);
+  assert.deepEqual(session.undo_snapshot.remove_ids,['MON-0002']);
   assert.equal(session.undo_snapshot.restore_records.length,0);
 
   // Device regression: cached DE-14 core supplied legacy plan {ids, add_count}.
-  const legacyPlan={dataset:'monsters',add_count:1,ids:['M2'],conflict_choices:{}};
+  const legacyPlan={dataset:'monsters',add_count:1,ids:['MON-0002'],conflict_choices:{}};
   const legacySession=audit.buildSession({
     transaction:result,plan:legacyPlan,envelope:add,beforeData:root,afterHash,sourceFilename:'ADD.json'
   });
-  assert.deepEqual(legacySession.added,['M2']);
-  assert.deepEqual(legacySession.undo_snapshot.remove_ids,['M2']);
+  assert.deepEqual(legacySession.added,['MON-0002']);
+  assert.deepEqual(legacySession.undo_snapshot.remove_ids,['MON-0002']);
 
   const storage=new MemoryStorage(),key='audit';
   assert.equal(audit.append(storage,key,session,{maxSessions:10,maxBytes:1024*1024}),true);
@@ -80,7 +80,7 @@ async function main(){
     rollback:(before)=>{live=before;return true;}
   });
   assert.equal(dx.records(live,'monsters').length,1);
-  assert.equal(dx.records(live,'monsters')[0].id,'M1');
+  assert.equal(dx.records(live,'monsters')[0].id,'MON-0001');
   assert.equal(live.runtime_view_state.last_render,'after-apply');
   assert.equal(await audit.datasetHash(live,'monsters'),session.before_dataset_hash);
   assert.equal(audit.markUndone(storage,key,session.import_session_id,undoResult.undoAfterHash),true);
@@ -93,10 +93,10 @@ async function main(){
   assert(denied.reason.includes('Session適用直後'));
 
   // Conflict Import snapshot restores the previous record rather than storing the full project.
-  const conflict=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['M1'],dependencyMode:'none',studioVersion:'TEST'});
+  const conflict=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['MON-0001'],dependencyMode:'none',studioVersion:'TEST'});
   conflict.datasets.monsters[0].name='Imported';conflict.metadata.package_hash='';
   const conflictDry=await dx.dryRunImport({rootData:root,envelope:conflict});
-  const conflictPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{M1:'import'}});
+  const conflictPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{'MON-0001':'import'}});
   let conflictLive=JSON.parse(JSON.stringify(root));
   const conflictTx=await tx.execute({
     rootData:conflictLive,envelope:conflict,plan:conflictPlan,dryRun:conflictDry,
@@ -112,7 +112,7 @@ async function main(){
   assert.equal(await tx.projectHash(rebuilt),conflictSession.before_hash);
 
   // Retention limit.
-  const s2={...session,import_session_id:'S2'},s3={...session,import_session_id:'S3'};
+  const s2={...session,import_session_id:'SKL-0002'},s3={...session,import_session_id:'SKL-0003'};
   assert(audit.append(storage,key,s2,{maxSessions:2,maxBytes:1024*1024}));
   assert(audit.append(storage,key,s3,{maxSessions:2,maxBytes:1024*1024}));
   assert.equal(audit.load(storage,key).length,2);

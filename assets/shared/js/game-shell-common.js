@@ -70,8 +70,7 @@ try{if(localStorage.getItem('ga_developer_mode')==='1')document.documentElement.
     if(typeof setBaseView==='function') setBaseView('party');
     return;
    }
-   if(typeof prepareEvent==='function') prepareEvent();
-   if(typeof setPhase==='function') setPhase('event');
+   if(typeof beginSelectedAdventure==='function') beginSelectedAdventure();
   };
  }
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindMobileBaseNav); else bindMobileBaseNav();

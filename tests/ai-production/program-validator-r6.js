@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+'use strict';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const Validator=require('../../studio/ai-production/ai-program-validator.js');
+const root=path.resolve(__dirname,'../..');
+const ports=(outputs)=>({inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:outputs.map((id)=>({id,kind:'flow',data_type:'flow'}))});
+const project={tags:[{id:'TAG-HP',name:'HP'}],masters:{skills:[{id:'SKL-HEAL',name:'回復'}],ai_conditions:[{id:'AIC-HP',name:'HP条件',status:'active',data_version:'1.0.0',evaluator:'condition.hp',ports:ports(['true','false']),parameter_schema:{type:'object',required:['threshold','tag_id'],properties:{threshold:{type:'number',minimum:0,maximum:1},tag_id:{type:'string',ref_kind:'tag'}}}}],ai_targets:[],ai_actions:[{id:'AIA-HEAL',name:'回復',status:'active',data_version:'1.0.0',evaluator:'action.heal',ports:ports(['next']),parameter_schema:{type:'object',required:['skill_id'],properties:{skill_id:{type:'string',ref_kind:'skill'}}}}]}};
+const valid={id:'AIP-VALID',name:'Valid',entry_node_id:'AIN-0001',nodes:[{instance_id:'AIN-0001',master_node_id:'AIC-HP',master_data_version:'1.0.0',node_type:'condition',position:{x:0,y:0},parameters:{threshold:.5,tag_id:'TAG-HP'}},{instance_id:'AIN-0002',master_node_id:'AIA-HEAL',master_data_version:'1.0.0',node_type:'action',position:{x:1,y:0},parameters:{skill_id:'SKL-HEAL'}}],edges:[{edge_id:'AIE-0001',from:{node_id:'AIN-0001',port_id:'true'},to:{node_id:'AIN-0002',port_id:'in'}}],subroutines:[]};
+const ok=Validator.validate(valid,project);assert.strictEqual(ok.valid,true);assert.deepStrictEqual(ok.summary,{ERROR:0,WARNING:0,INFO:0});
+const invalid=structuredClone(valid);invalid.entry_node_id='MISSING';invalid.nodes[0].parameters={threshold:2,tag_id:'MISSING'};invalid.nodes[0].master_data_version='0.9.0';invalid.nodes[1].master_node_id='AIA-MISSING';invalid.edges.push({edge_id:'AIE-0002',from:{node_id:'AIN-0002',port_id:'bad'},to:{node_id:'MISSING',port_id:'in'}});invalid.subroutines=[{id:'SUB-A',entry_node_id:'MISSING'}];
+const bad=Validator.validate(invalid,project);assert.strictEqual(bad.valid,false);for(const code of ['AI_ENTRY_NOT_FOUND','AI_PARAMETER_INVALID','AI_MASTER_VERSION_STALE','AI_MASTER_NOT_FOUND','AI_EDGE_TO_MISSING','AI_SUBROUTINE_ENTRY_MISSING'])assert(bad.issues.some((row)=>row.code===code),code);
+const cycle=structuredClone(valid);cycle.edges.push({edge_id:'AIE-0002',from:{node_id:'AIN-0002',port_id:'next'},to:{node_id:'AIN-0001',port_id:'in'}});assert(Validator.validate(cycle,project).issues.some((row)=>row.code==='AI_CYCLE_UNBOUNDED'));
+const unreachable=structuredClone(valid);unreachable.edges=[];assert(Validator.validate(unreachable,project).issues.some((row)=>row.code==='AI_NODE_UNREACHABLE'));
+assert.deepStrictEqual(Validator.validate(invalid,project).issues,bad.issues,'issue order must be deterministic');
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'studio/ai-production/manifest.json'),'utf8'));
+const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
+assert.strictEqual(manifest.entrypoints.validator,'ai-program-validator.js');
+assert(html.includes('./ai-production/ai-program-validator.js?v=1'));
+assert(html.includes('GKSAIProgramValidator.validate(program,data)'));
+console.log('AI_PROGRAM_VALIDATOR_R6_OK required=1 refs=1 params=1 edges=1 reachability=1 cycle=1 subroutine=1 deterministic=1 integration=1');

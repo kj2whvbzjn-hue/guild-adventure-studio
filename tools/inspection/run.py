@@ -143,7 +143,7 @@ def build_steps(profile: str, release_output: Path | None, context: str) -> list
             ("deployment_map", [*py, str(ROOT / "tools/integrity/check-deployment-map.py"), str(ROOT)], True),
             ("root_surface", [*py, str(ROOT / "tools/integrity/check-root-surface.py"), str(ROOT)], True),
             ("full_framework_regression", [*py, str(ROOT / "tools/inspection/test-full-framework.py")], True),
-            ("active_test_gate", [*py, str(ROOT / "tools/integrity/check-test-registry.py"), str(ROOT)], True),
+            ("active_test_gate", [*py, str(ROOT / "tools/integrity/check-test-registry.py"), str(ROOT), "--context", context], True),
             ("github_candidate", [*py, str(ROOT / "tools/release/check-github-candidate.py")], True),
         ])
     if profile == "release":

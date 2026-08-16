@@ -1,0 +1,18 @@
+const assert=require('assert');
+const fs=require('fs');
+const html=fs.readFileSync('studio/index.html','utf8');
+assert.ok(html.includes('function studioNavigateBack()'),'back navigation function missing');
+assert.ok(html.includes('function studioNavigateClose()'),'close navigation function missing');
+assert.ok(html.includes("studioViewHistory.push(previous)"),'view history push missing');
+assert.ok(html.includes("STUDIO_LAUNCHER_HISTORY_PREFIX='__launcher__:'"),'category-aware launcher history sentinel missing');
+assert.ok(html.includes('studioOpenLauncherHome(category);'),'Close destination must open the current Basic/Create/Verify/Manage launcher Home category');
+assert.ok(html.includes('if(questBoxEditorState){closeQuestBoxEditor();return;}'),'Box child screen Back must return to Quest editor');
+assert.ok(!html.includes('id="studioScreenNav"'),'superseded global navigation strip must remain removed');
+assert.ok(html.includes('function studioCommonHeaderElement('),'universal navigation must be rendered by the common child-screen header');
+assert.ok(html.includes('id="studioInputTitle"')&&html.includes("if(heading)heading.textContent=`${String(index+1).padStart(2,'0')} Boxを編集`"),'Quest Box detail must reuse the Studio input common header');
+assert.ok(html.includes('rule-tag-picker-head')&&html.includes("typeof studioLayerTopId==='function'?studioLayerTopId():''"),'Rule Tag picker must participate in common top-layer Back routing');
+assert.ok(html.includes("if(id==='benchmarkWorkflowOverlay'){closeBenchmarkWorkflow();return true}"),'Benchmark common layer close routing missing');
+assert.ok(html.includes("if(id==='dataExchangePicker'){window.GKSDataExchangeUI?.closePicker?.();return true}"),'Data Exchange common layer close routing missing');
+assert.ok(html.includes("if(id==='masterSkillPicker'){closeMasterSkillPicker();return true}"),'Master Skill picker common layer close routing missing');
+assert.ok(html.includes("if(id==='tagPickerBackdrop'){closeTagPicker();return true}"),'Tag picker common layer close routing missing');
+console.log('PASS current centralized Studio Back/Close behavior with Home-aware common child-screen headers');

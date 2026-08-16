@@ -16,8 +16,170 @@
       "name": {
         "type": "string",
         "minLength": 1
+      },
+      "usage": {
+        "oneOf": [
+          {
+            "type": "string",
+            "enum": [
+              "story",
+              "random",
+              "common"
+            ]
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "story",
+                "random",
+                "common"
+              ]
+            },
+            "uniqueItems": true,
+            "minItems": 1
+          }
+        ]
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "battle",
+          "exploration",
+          "choice",
+          "special",
+          "story",
+          "reward",
+          "system"
+        ]
+      },
+      "group": {
+        "type": "string"
+      },
+      "tags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "conditions": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "array"
+          }
+        ]
+      },
+      "intensity": {
+        "type": "string",
+        "enum": [
+          "low",
+          "normal",
+          "high",
+          "extreme",
+          ""
+        ]
+      },
+      "generation_profile_ref": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "random_base_weight": {
+        "type": "number",
+        "minimum": 0
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "map_id": {},
+      "area_id": {},
+      "battle_formation": {
+        "type": "array"
+      },
+      "fixed_normal_enemy_roster": {
+        "type": "array"
+      },
+      "map_specific_exploration_result": {},
+      "final_reward": {},
+      "reward_table_id": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "reward_table_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "uniqueItems": true
       }
     },
+    "allOf": [
+      {
+        "if": {
+          "required": [
+            "usage"
+          ]
+        },
+        "then": {
+          "required": [
+            "name",
+            "usage",
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "battle",
+                "exploration",
+                "choice",
+                "special"
+              ]
+            },
+            "map_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "",
+                null
+              ]
+            },
+            "area_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "",
+                null
+              ]
+            },
+            "battle_formation": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "fixed_normal_enemy_roster": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "final_reward": {
+              "type": [
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    ],
     "additionalProperties": true
   }
 }

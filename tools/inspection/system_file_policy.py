@@ -14,9 +14,9 @@ def pattern_match(path:str,pattern:str)->bool:
   return fnmatch.fnmatchcase(path,pattern) or fnmatch.fnmatchcase(path,pattern[3:])
  return fnmatch.fnmatchcase(path,pattern)
 def classify(path:str,policy:dict)->str:
- rel=normalize(path)
- for name in ('update_only','artifact','temporary'):
-  rule=policy['classes'].get(name,{})
+ rel=normalize(path);default=policy.get('default_class','persistent')
+ for name,rule in policy.get('classes',{}).items():
+  if name==default:continue
   if rel in {normalize(x) for x in rule.get('exact_paths',[])}:return name
   if any(pattern_match(rel,p) for p in rule.get('patterns',[])):return name
- return policy.get('default_class','persistent')
+ return default

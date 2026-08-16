@@ -1,21 +1,40 @@
 {
-  "schema_version": 1,
-  "policy_id": "ARTIFACT-SUBMISSION-ZIP-001",
-  "default": "zip_required_for_every_uploaded_artifact",
-  "scope": [
-    "source_code",
-    "management_documents",
-    "specifications",
-    "inspection_results",
-    "images",
-    "pdf",
-    "spreadsheets",
-    "single_documents",
-    "patches",
-    "reference_materials"
-  ],
-  "exceptions": {
-    "allowed_only_when": "user_explicitly_requests_non_zip_for_that_artifact"
+  "schema_version": 2,
+  "policy_id": "ARTIFACT-SUBMISSION-ROUTED-002",
+  "default": "route_by_work_type",
+  "work_types": {
+    "SOURCE_UPDATE": {
+      "final_artifact": "direct_studio_update_zip",
+      "requires": "studio-update.json",
+      "forbids": [
+        "Export/**",
+        "outer_wrapper_zip"
+      ],
+      "deployment": "Studio update ZIP"
+    },
+    "GAME_DATA_UPDATE": {
+      "final_artifact": "studio_project_json",
+      "direct_file_allowed": true,
+      "forbids": [
+        "direct_export_as_authoritative_source"
+      ],
+      "deployment": "Studio full JSON import -> Game data deployment -> Export/"
+    },
+    "HYBRID": {
+      "final_artifacts": [
+        "direct_studio_update_zip",
+        "studio_project_json"
+      ],
+      "must_be_separate": true,
+      "forbids": [
+        "outer_wrapper_zip",
+        "Export/** in Studio update ZIP"
+      ]
+    }
+  },
+  "documents": {
+    "multiple_files_default": "one_documentation_zip",
+    "direct_format_allowed_when": "user_explicitly_requests_that_format_or_tool_requires_direct_file"
   },
   "ai_requirements": {
     "must_read": [
@@ -24,7 +43,9 @@
     ],
     "must_embed_in_ai_context": true,
     "fail_closed_when_rules_unavailable": true,
-    "single_final_zip": true,
-    "individual_files_as_final_artifact": false
+    "must_declare_work_type": true,
+    "must_state_artifact_route": true,
+    "single_final_zip": false,
+    "individual_files_as_final_artifact": "allowed_when_route_requires_direct_file"
   }
 }

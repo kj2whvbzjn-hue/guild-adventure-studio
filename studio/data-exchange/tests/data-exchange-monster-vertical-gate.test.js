@@ -8,13 +8,13 @@ function rootData(){
   return {
     schema_version:'4.0.0-draft',
     project:{id:'P-DE17',updated_at:'R1'},
-    tags:[{id:'TAG-A',name:'A'},{id:'TAG-B',name:'B'}],
+    tags:[{id:'TAG-0001',name:'A'},{id:'TAG-0002',name:'B'}],
     masters:{
       monsters:[{
-        id:'MON-BASE',name:'Base Monster',status:'draft',tags:['TAG-A'],
-        params:{skill_ids:['SKL-A'],candidate_skill_ids:['SKL-A'],equipment_ids:[],mod_ids:[]}
+        id:'MON-0001',name:'Base Monster',status:'draft',tags:['TAG-0001'],
+        params:{skill_ids:['SKL-0001'],candidate_skill_ids:['SKL-0001'],equipment_ids:[],mod_ids:[]}
       }],
-      skills:[{id:'SKL-A',name:'Skill A',tags:['TAG-A'],params:{required_tags:['TAG-A']}}],
+      skills:[{id:'SKL-0001',name:'Skill A',tags:['TAG-0001'],params:{required_tags:['TAG-0001']}}],
       stats:[],status_effects:[],tablets:[],jobs:[],equipment:[],mods:[],
       ai_conditions:[],ai_targets:[],ai_actions:[]
     }
@@ -32,7 +32,7 @@ async function main(){
 
   // 1. Export envelope / package hash / dependency read_only.
   const exported=await dx.buildEnvelope({
-    rootData:base,dataset:'monsters',ids:['MON-BASE'],
+    rootData:base,dataset:'monsters',ids:['MON-0001'],
     dependencyMode:'recursive',studioVersion:'DE17'
   });
   assert.equal(exported.format,'GKS_DATA_EXCHANGE');
@@ -48,7 +48,7 @@ async function main(){
 
   // 3. Add + Impact + Safe Transaction.
   const add=clone(exported);
-  add.datasets.monsters[0].id='MON-ADD';
+  add.datasets.monsters[0].id='MON-0002';
   add.datasets.monsters[0].name='Added Monster';
   add.datasets.monsters[0].params.skill_ids=[];
   add.datasets.monsters[0].params.candidate_skill_ids=[];
@@ -66,7 +66,7 @@ async function main(){
   assert.equal(addDry.impact_preview.summary.direct,1);
   const impact=dx.buildImpactExportPayload(add,addDry);
   assert.equal(impact.format,'GKS_DATA_EXCHANGE_IMPACT');
-  assert.equal(impact.direct_changes[0].id,'MON-ADD');
+  assert.equal(impact.direct_changes[0].id,'MON-0002');
 
   const addPlan=await dx.createApplyPlan({rootData:base,envelope:add,dryRun:addDry});
   let live=clone(base);
@@ -79,7 +79,7 @@ async function main(){
     rollback:b=>{live=b;return true;}
   });
   assert.equal(tr.ok,true);
-  assert(dx.records(live,'monsters').some(x=>x.id==='MON-ADD'));
+  assert(dx.records(live,'monsters').some(x=>x.id==='MON-0002'));
 
   // 4. Audit + session-scoped Undo.
   const session=audit.buildSession({
@@ -89,7 +89,7 @@ async function main(){
     afterDatasetHash:await audit.datasetHash(live,'monsters'),
     sourceFilename:'DE17_ADD.json'
   });
-  assert.deepEqual(session.undo_snapshot.remove_ids,['MON-ADD']);
+  assert.deepEqual(session.undo_snapshot.remove_ids,['MON-0002']);
   const store=new MemoryStorage();
   assert(audit.append(store,'audit',session));
   const undo=await audit.undo({
@@ -102,7 +102,7 @@ async function main(){
     readCurrent:()=>live,
     rollback:b=>{live=b;return true;}
   });
-  assert.equal(dx.records(live,'monsters').some(x=>x.id==='MON-ADD'),false);
+  assert.equal(dx.records(live,'monsters').some(x=>x.id==='MON-0002'),false);
   assert.equal(await audit.datasetHash(live,'monsters'),session.before_dataset_hash);
   assert(audit.markUndone(store,'audit',session.import_session_id,undo.undoAfterHash));
   assert.equal(audit.load(store,'audit')[0].undone,true);
@@ -118,7 +118,7 @@ async function main(){
 
   const keep=await dx.createApplyPlan({
     rootData:base,envelope:conflict,dryRun:conflictDry,
-    conflictChoices:{'MON-BASE':'keep'}
+    conflictChoices:{'MON-0001':'keep'}
   });
   assert.equal(keep.can_apply,true);
   const kept=await dx.applySafeMerge({rootData:base,envelope:conflict,plan:keep,dryRun:conflictDry});
@@ -126,7 +126,7 @@ async function main(){
 
   const importedPlan=await dx.createApplyPlan({
     rootData:base,envelope:conflict,dryRun:conflictDry,
-    conflictChoices:{'MON-BASE':'import'}
+    conflictChoices:{'MON-0001':'import'}
   });
   assert.equal(importedPlan.can_apply,true);
   const imported=await dx.applySafeMerge({rootData:base,envelope:conflict,plan:importedPlan,dryRun:conflictDry});
@@ -141,7 +141,7 @@ async function main(){
 
   // 7. Broken reference blocks.
   const broken=clone(add);
-  broken.datasets.monsters[0].params.skill_ids=['SKL-MISSING'];
+  broken.datasets.monsters[0].params.skill_ids=['SKL-9999'];
   broken.metadata.package_hash='';
   const brokenDry=await dx.dryRunImport({rootData:base,envelope:broken});
   assert.equal(brokenDry.summary.broken_reference,1);
@@ -157,7 +157,7 @@ async function main(){
 
   // 9. Unsupported DELETE stays blocked.
   const del=clone(add);
-  del.operations={delete:{monsters:['MON-BASE']}};
+  del.operations={delete:{monsters:['MON-0001']}};
   del.metadata.package_hash='';
   const delDry=await dx.dryRunImport({rootData:base,envelope:del});
   assert.equal(delDry.can_apply,false);

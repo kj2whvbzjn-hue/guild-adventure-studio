@@ -9,7 +9,8 @@ DEC-0002に従い、PHP実ゲームが`Export/`だけをゲームマスターと
 - 必須ファイルの存在を検査する
 - 全ファイルのSHA-256をmanifestと照合する
 - UTF-8・JSON・共通Envelopeを検査する
-- manifestと各ファイルの`schema_version`一致を検査する
+- legacy共通Envelopeはmanifestと各ファイルの`schema_version`等のメタデータ一致を検査する
+- `skill/skills.json` のFormal Skill v2 (`schema_version: 2.0.0` / `data_version: FORMAL-SKILL-1`) は独立バージョンEnvelopeとして検証する
 - 重複パスとパストラバーサルを拒否する
 - 異常時は`ExportLoadException`を投げ、ゲーム開始を停止する
 - Studio内部データへのフォールバックは実装しない
@@ -34,7 +35,7 @@ php php-runtime/tests/run.php Export
 
 ## 個別データSchema
 
-- `schemas/export-schema-map.json` が22 ExportパスとSchema正本を対応付けます。
+- `schemas/export-schema-map.json` が24 ExportパスとSchema正本を対応付けます。
 - `schemas/exports/*.schema.json` をNode E2EとPHP Runtimeで共有します。
 - 初期Schemaは `additionalProperties: true` で、未確定項目を許容します。
 - 配列データの各レコードは `id` 必須・空文字禁止です。
@@ -99,10 +100,23 @@ $partySize = $masters->gameSettings()['party_size'] ?? 6;
 Game code should use the repository instead of reading Export JSON paths directly.
 
 ## DEC-0023 manifest完全照合
-- Export配下の実ファイルを再帰走査し、`manifest.json`未登録ファイルを`MANIFEST_UNKNOWN_FILE`で拒否します。
+- Export配下のRuntime対象実ファイルを再帰走査し、`manifest.json`未登録ファイルを`MANIFEST_UNKNOWN_FILE`で拒否します。
+- `Export/cpf/` はCPF補助ツールの同梱領域であり、22個のRuntime Exportデータには含めません。シンボリックリンク検査は補助領域にも適用します。
 - manifest掲載済みで実体が欠落しているファイルを`MANIFEST_MISSING_FILE`で拒否します。
 - `manifest.json`自身は照合対象一覧から除外します。
 - シンボリックリンクは走査中も`SYMLINK_FORBIDDEN`で拒否します。
+
+
+## Formal Skill v2 compatibility
+
+`skill/skills.json` はFormal Skill移行後、他のlegacy Exportとは独立したバージョンを持ちます。PHP Runtimeは次を明示的に受理します。
+
+- `schema_version: 2.0.0`
+- `data_version: FORMAL-SKILL-1`
+- optional `migration` object
+- `generated_at` / `generated_by` は文書自身の生成情報を保持可能
+
+パッケージ全体との完全性は `Export/manifest.json` の `sha256` で保証します。Formal Skill以外のlegacy Exportは従来どおりmanifestメタデータ完全一致を要求します。
 
 ## Atomic Update（DEC-0025）
 

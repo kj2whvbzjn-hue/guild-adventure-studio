@@ -4,6 +4,7 @@
 
 - `persistent`: GitHubへ永続保存し、package manifestへ登録
 - `update_only`: 更新ZIPだけで使用し、GitHubへ配置しない
+- `game_data`: 正式Gameデータ。`Export/`を分類し、Studio更新では配置せずGameデータ配置だけが更新する
 - `artifact`: 提出ZIP・検査出力。GitHubへ配置しない
 - `temporary`: キャッシュ・一時ファイル。更新ZIPとGitHubソースの両方で禁止
 

@@ -1,7 +1,310 @@
 {
   "schema_version": "1.0.0",
-  "data_version": "0.1.0-dev-build403",
-  "generated_at": "2026-07-30T17:45:00+09:00",
-  "generated_by": "GK Studio v1.23.0-dev",
-  "data": []
+  "data_version": "demo-0.1.4",
+  "generated_at": "2026-08-16T03:23:09.533Z",
+  "generated_by": "GK Studio vGKS-B594",
+  "data": [
+    {
+      "id": "QST-0002",
+      "name": "実機検証：ランダム戦闘＋報酬集計",
+      "type": "event",
+      "status": "active",
+      "summary": "Studio→Export→Game運用確認用。15秒でRandom戦闘、30秒でRandom報酬Event。最終期待値はGold 100＋素材5個。",
+      "adventure_duration_seconds": 30,
+      "base_enemy_budget": 3,
+      "enemy_budget": 3,
+      "start_cost": {
+        "gold": 0,
+        "resources": {}
+      },
+      "prerequisite_ids": [],
+      "next_quest_ids": [],
+      "required_flags": [],
+      "set_flags": [],
+      "context": {
+        "map_id": "MAP-0001",
+        "environment_tags": [
+          "ops-test",
+          "training_ground"
+        ],
+        "difficulty": 3,
+        "budget": {
+          "policy": "standard"
+        }
+      },
+      "boxes": [
+        {
+          "box_id": "BOX-QST-OPS-01",
+          "name": "実機運用確認",
+          "order": 1,
+          "pre_scene_id": null,
+          "mid_scene_id": null,
+          "post_scene_id": null,
+          "event_zone_before_pre": [
+            {
+              "kind": "random_event",
+              "order": 1,
+              "failure_policy": "quest_fail",
+              "filter": {
+                "event_type": "battle",
+                "group": "OPS-E2E",
+                "tags": [
+                  "ops-test",
+                  "battle"
+                ]
+              },
+              "allow_none": false,
+              "required": true,
+              "box_side_individual_probability_override": false
+            }
+          ],
+          "event_zone_pre_to_mid": [],
+          "event_zone_mid_to_post": [],
+          "event_zone_after_post": [
+            {
+              "kind": "random_event",
+              "order": 1,
+              "failure_policy": "quest_fail",
+              "filter": {
+                "event_type": "special",
+                "group": "OPS-E2E",
+                "tags": [
+                  "ops-test",
+                  "reward"
+                ]
+              },
+              "allow_none": false,
+              "required": true,
+              "box_side_individual_probability_override": false
+            }
+          ]
+        }
+      ],
+      "created_at": "2026-08-15T23:57:19.007Z",
+      "updated_at": "2026-08-15T23:57:19.007Z",
+      "conditions": "",
+      "completion": "",
+      "rewards": "",
+      "failure": "",
+      "links": {
+        "chapter_id": "",
+        "section_id": "",
+        "scene_id": "",
+        "character_ids": []
+      }
+    },
+    {
+      "id": "QST-0003",
+      "name": "実機検証2：Budget必敗戦闘＋失敗後停止",
+      "type": "event",
+      "status": "active",
+      "summary": "クエスト失敗経路の実機検証。15秒で失敗前の仮報酬Event、30秒でEnemy Budget 400の守護者群戦。quest_fail後の到達禁止Eventが実行されないことを確認する。",
+      "adventure_duration_seconds": 30,
+      "base_enemy_budget": 400,
+      "enemy_budget": 400,
+      "start_cost": {
+        "gold": 0,
+        "resources": {}
+      },
+      "prerequisite_ids": [],
+      "next_quest_ids": [],
+      "required_flags": [],
+      "set_flags": [],
+      "context": {
+        "map_id": "MAP-0001",
+        "environment_tags": [
+          "demo2-fail"
+        ],
+        "difficulty": 400,
+        "budget": {
+          "policy": "standard"
+        }
+      },
+      "boxes": [
+        {
+          "box_id": "BOX-QST-OPS-FAIL-01",
+          "name": "実機失敗経路確認",
+          "order": 1,
+          "pre_scene_id": null,
+          "mid_scene_id": null,
+          "post_scene_id": null,
+          "event_zone_before_pre": [
+            {
+              "kind": "fixed_event",
+              "order": 1,
+              "failure_policy": "continue",
+              "event_id": "EVT-0007"
+            },
+            {
+              "kind": "fixed_event",
+              "order": 2,
+              "failure_policy": "quest_fail",
+              "event_id": "EVT-0008",
+              "encounter_override": {
+                "mode": "resolver",
+                "required_monsters": [],
+                "formation": [],
+                "scaling_profile_ref": null
+              }
+            }
+          ],
+          "event_zone_pre_to_mid": [],
+          "event_zone_mid_to_post": [],
+          "event_zone_after_post": [
+            {
+              "kind": "fixed_event",
+              "order": 1,
+              "failure_policy": "continue",
+              "event_id": "EVT-0009"
+            }
+          ]
+        }
+      ],
+      "created_at": "2026-08-16T01:20:00.000Z",
+      "updated_at": "2026-08-16T01:20:00.000Z",
+      "conditions": "",
+      "completion": "",
+      "rewards": "",
+      "failure": "Budget Resolverで生成された訓練守護者群に敗北するとQuest失敗。失敗後Eventは実行されない。",
+      "links": {
+        "chapter_id": "",
+        "section_id": "",
+        "scene_id": "",
+        "character_ids": []
+      }
+    },
+    {
+      "id": "QST-0004",
+      "name": "実機検証3準備：探索共鳴石板を入手",
+      "type": "event",
+      "status": "active",
+      "summary": "デモテスト3本体で使うTBL-0001を3個入手する準備Quest。帰還後に石板UIの所持数を確認する。",
+      "adventure_duration_seconds": 15,
+      "base_enemy_budget": 0,
+      "enemy_budget": 0,
+      "start_cost": {
+        "gold": 0,
+        "resources": {}
+      },
+      "prerequisite_ids": [],
+      "next_quest_ids": [
+        "QST-0005"
+      ],
+      "required_flags": [],
+      "set_flags": [],
+      "context": {
+        "map_id": "",
+        "environment_tags": [
+          "demo3-prepare"
+        ],
+        "difficulty": 0,
+        "budget": {
+          "policy": "standard"
+        }
+      },
+      "boxes": [
+        {
+          "box_id": "BOX-QST-OPS-STONE-PREP-01",
+          "name": "デモ3 石板支給",
+          "order": 1,
+          "pre_scene_id": null,
+          "mid_scene_id": null,
+          "post_scene_id": null,
+          "event_zone_before_pre": [
+            {
+              "kind": "fixed_event",
+              "order": 1,
+              "failure_policy": "continue",
+              "event_id": "EVT-0010"
+            }
+          ],
+          "event_zone_pre_to_mid": [],
+          "event_zone_mid_to_post": [],
+          "event_zone_after_post": []
+        }
+      ],
+      "created_at": "2026-08-16T01:41:00.000Z",
+      "updated_at": "2026-08-16T01:41:00.000Z",
+      "conditions": "",
+      "completion": "TBL-0001を3個獲得して帰還する。",
+      "rewards": "TBL-0001 ×3",
+      "failure": "",
+      "links": {
+        "chapter_id": "",
+        "section_id": "",
+        "scene_id": "",
+        "character_ids": []
+      }
+    },
+    {
+      "id": "QST-0005",
+      "name": "実機検証3：Stone＋探索＋再開Snapshot",
+      "type": "event",
+      "status": "active",
+      "summary": "TBL-0001を1個投入して開始。探索結果を確認後にページ再読込し、同一QuestRunのStone消費・探索結果・報酬が再抽選/再消費されず固定されることを確認する。",
+      "adventure_duration_seconds": 90,
+      "base_enemy_budget": 0,
+      "enemy_budget": 0,
+      "start_cost": {
+        "gold": 0,
+        "resources": {}
+      },
+      "prerequisite_ids": [
+        "QST-0004"
+      ],
+      "next_quest_ids": [],
+      "required_flags": [],
+      "set_flags": [],
+      "context": {
+        "map_id": "MAP-0001",
+        "environment_tags": [
+          "demo3-exploration"
+        ],
+        "difficulty": 0,
+        "budget": {
+          "policy": "standard"
+        }
+      },
+      "boxes": [
+        {
+          "box_id": "BOX-QST-OPS-STONE-EXP-01",
+          "name": "デモ3 Stone探索再開",
+          "order": 1,
+          "pre_scene_id": null,
+          "mid_scene_id": null,
+          "post_scene_id": null,
+          "event_zone_before_pre": [
+            {
+              "kind": "fixed_event",
+              "order": 1,
+              "failure_policy": "quest_fail",
+              "event_id": "EVT-0011"
+            }
+          ],
+          "event_zone_pre_to_mid": [],
+          "event_zone_mid_to_post": [
+            {
+              "kind": "fixed_event",
+              "order": 1,
+              "failure_policy": "continue",
+              "event_id": "EVT-0012"
+            }
+          ],
+          "event_zone_after_post": []
+        }
+      ],
+      "created_at": "2026-08-16T01:41:00.000Z",
+      "updated_at": "2026-08-16T01:41:00.000Z",
+      "conditions": "QST-0004完了後、依頼画面でTBL-0001を1個選択して開始する。",
+      "completion": "探索結果表示後にページ再読込→進行中Questへ戻り、同じ探索結果とStone消費1回のみを確認して帰還する。",
+      "rewards": "探索Outcome報酬＋再開チェックポイント報酬。",
+      "failure": "石板未投入では探索候補が存在せずquest_failとなる。",
+      "links": {
+        "chapter_id": "",
+        "section_id": "",
+        "scene_id": "",
+        "character_ids": []
+      }
+    }
+  ]
 }

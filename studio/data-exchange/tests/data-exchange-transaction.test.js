@@ -8,14 +8,14 @@ async function main(){
     project:{id:'P1',updated_at:'R1'},
     tags:[],
     masters:{
-      monsters:[{id:'M1',name:'One',tags:[],params:{skill_ids:[],candidate_skill_ids:[],equipment_ids:[],mod_ids:[]}}],
+      monsters:[{id:'MON-0001',name:'One',tags:[],params:{skill_ids:[],candidate_skill_ids:[],equipment_ids:[],mod_ids:[]}}],
       skills:[],stats:[],status_effects:[],tablets:[],jobs:[],equipment:[],mods:[],
       ai_conditions:[],ai_targets:[],ai_actions:[]
     }
   };
-  const env=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['M1'],dependencyMode:'none',studioVersion:'TEST'});
+  const env=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['MON-0001'],dependencyMode:'none',studioVersion:'TEST'});
   const add=JSON.parse(JSON.stringify(env));
-  add.datasets.monsters[0].id='M2';
+  add.datasets.monsters[0].id='MON-0002';
   add.datasets.monsters[0].name='Two';
   add.metadata.base_hash='';
   add.metadata.record_hashes={monsters:{}};
@@ -63,12 +63,12 @@ async function main(){
   assert.equal(dx.records(live,'monsters').length,1,'persist failure must rollback current data');
 
 
-  const conflict=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['M1'],dependencyMode:'none',studioVersion:'TEST'});
+  const conflict=await dx.buildEnvelope({rootData:root,dataset:'monsters',ids:['MON-0001'],dependencyMode:'none',studioVersion:'TEST'});
   conflict.datasets.monsters[0].name='Imported';
   conflict.metadata.package_hash='';
   const conflictDry=await dx.dryRunImport({rootData:root,envelope:conflict});
 
-  const importPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{M1:'import'}});
+  const importPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{'MON-0001':'import'}});
   live=JSON.parse(JSON.stringify(root));
   const importTx=await tx.execute({
     rootData:live,envelope:conflict,plan:importPlan,dryRun:conflictDry,
@@ -77,7 +77,7 @@ async function main(){
   assert.equal(dx.records(live,'monsters')[0].name,'Imported');
   assert.equal(importTx.validation.summary.conflict,0);
 
-  const keepPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{M1:'keep'}});
+  const keepPlan=await dx.createApplyPlan({rootData:root,envelope:conflict,dryRun:conflictDry,conflictChoices:{'MON-0001':'keep'}});
   live=JSON.parse(JSON.stringify(root));
   const keepTx=await tx.execute({
     rootData:live,envelope:conflict,plan:keepPlan,dryRun:conflictDry,

@@ -4,11 +4,17 @@ import sys
 sys.dont_write_bytecode = True
 
 from pathlib import Path
+import argparse
 import json
 import os
 import subprocess
 
-root = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).resolve().parents[2]).resolve()
+parser = argparse.ArgumentParser()
+parser.add_argument('root', nargs='?', default=Path(__file__).resolve().parents[2])
+parser.add_argument('--context', choices=('source', 'update'), default='source')
+args = parser.parse_args()
+root = Path(args.root).resolve()
+context = args.context
 registry_path = root / "shared/tests/test-registry.json"
 errors = []
 try:
@@ -39,8 +45,13 @@ env["PYTHONDONTWRITEBYTECODE"] = "1"
 env.pop("PYTHONPYCACHEPREFIX", None)
 
 passed = 0
+skipped = 0
 for item in registry.get("release_gate", []):
     rel = item["path"]
+    contexts = item.get("contexts", ["source", "update"])
+    if context not in contexts:
+        skipped += 1
+        continue
     runtime = item["runtime"]
     if runtime in ("python", "python3", "py"):
         command = [sys.executable, "-S", "-B", str(root / rel)]
@@ -55,4 +66,4 @@ for item in registry.get("release_gate", []):
             print(proc.stderr.rstrip())
         raise SystemExit(1)
     passed += 1
-print(f"TEST_REGISTRY_OK release_gate={passed} historical_gap={len(registry.get('historical_gap', []))}")
+print(f"TEST_REGISTRY_OK context={context} release_gate={passed} skipped={skipped} historical_gap={len(registry.get('historical_gap', []))}")

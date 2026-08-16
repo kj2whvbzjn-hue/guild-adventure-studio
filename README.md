@@ -119,7 +119,7 @@ python3 tools/inspection/run.py full --context update --fail-fast
 `--timeout`は各工程の上限秒数、`--fail-fast`は最初の必須失敗で停止する指定です。タイムアウトは終了コード124としてレポートに記録されます。
 ## AIルールの自動引き継ぎ
 
-AI GatewayとStudioのAIエクスポートは、`AI_START.md`、`AI_PROJECT_INDEX.json`、`AI_PROJECT_STATUS.json`、`AI_WORK_RULES.md`、成果物提出ポリシー、機械ポリシーを必須コンテキストとして実内容ごと渡す。取得できない場合はAI用成果物の生成を停止する。アップロードを伴う成果物は、管理資料や単独文書を含め、必ず1つのZIPで提出する。
+AI GatewayとStudioのAIエクスポートは、`AI_START.md`、`AI_PROJECT_INDEX.json`、`AI_PROJECT_STATUS.json`、`AI_WORK_RULES.md`、成果物提出ポリシー、機械ポリシーを必須コンテキストとして実内容ごと渡す。取得できない場合はAI用成果物の生成を停止する。成果物は作業種別と配置先に応じて分離し、`SOURCE_UPDATE`は`studio-update.json`を含む直接のStudio更新ZIP、`GAME_DATA_UPDATE`はStudioへ戻すProject JSON、`HYBRID`は両者を別成果物として提出する。配置経路を持たない複数の管理資料・仕様書・検査資料は原則1つの資料ZIPへまとめる。
 ## AI作業憲章
 
 AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業宣言、変更範囲、完了条件、ZIP提出、完了報告の順で作業する。AI GatewayとStudioのAI用ZIPはこの憲章を必須コンテキストとして提供し、接続漏れは検査で不合格になる。

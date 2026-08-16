@@ -1,9 +1,9 @@
-const CACHE_NAME="ga-root-b4861";
+const CACHE_NAME="ga-root-b486187-b594";
 const CACHE_PREFIX="ga-root-";
-const OFFLINE_URL='./index.html?appv=4861';
+const OFFLINE_URL='./index.html?appv=486187b594';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=4861",
+  "./index.html?appv=486187b594",
   "./manifest.webmanifest?v=4861",
   "./icon-192.png?v=4861",
   "./icon-512.png?v=4861"

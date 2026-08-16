@@ -8,6 +8,11 @@
   const FORMAT='GKS_DATA_EXCHANGE';
   const VERSION='1.0.0-draft';
   const VOLATILE_DEFAULT=['updated_at','created_at','generated_at'];
+  const ID_PREFIXES=Object.freeze({
+    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',mods:'MOD',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',ai_programs:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
+  });
+  const ID_RULES=Object.fromEntries(Object.entries(ID_PREFIXES).map(([dataset,prefix])=>[dataset,{prefix,pattern:new RegExp('^'+prefix+'-\\d{4}$'),example:prefix+'-0001'}]));
+
   const REGISTRY={
     monsters:{path:['masters','monsters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.skill_ids','params.candidate_skill_ids','params.equipment_ids','params.mod_ids'],dependencies:[
       {dataset:'tags',paths:['tags']},
@@ -24,12 +29,22 @@
     stats:{path:['masters','stats'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     status_effects:{path:['masters','status_effects'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     tablets:{path:['masters','tablets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    maps:{path:['masters','maps'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    exploration_outcomes:{path:['masters','exploration_outcomes'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.environment_tags.any','params.environment_tags.all','params.environment_tags.none'],dependencies:[{dataset:'tags',paths:['tags','params.environment_tags.any','params.environment_tags.all','params.environment_tags.none']}]},
+    adventure_settings:{path:['masters','adventure_settings'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     jobs:{path:['masters','jobs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     equipment:{path:['masters','equipment'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','mod_ids','params.mod_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['mod_ids','params.mod_ids']}]},
     mods:{path:['masters','mods'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    ai_programs:{path:['ai_programs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[
+      {dataset:'tags',paths:['tags']},
+      {dataset:'skills',paths:['nodes[].parameters.skill_id']},
+      {dataset:'ai_conditions',nodeType:'condition',paths:['nodes[].master_node_id']},
+      {dataset:'ai_targets',nodeType:'target',paths:['nodes[].master_node_id']},
+      {dataset:'ai_actions',nodeType:'action',paths:['nodes[].master_node_id']}
+    ]},
     chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
     story_sections:{virtual:'story_sections',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id']},
     story_scenes:{virtual:'story_scenes',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id','section_id']},
@@ -38,6 +53,17 @@
 
   function clone(value){return value==null?value:JSON.parse(JSON.stringify(value));}
   function getAt(obj,path){return String(path||'').split('.').filter(Boolean).reduce((v,k)=>v==null?undefined:v[k],obj);}
+  function pathValues(value,path){
+    const parts=String(path||'').split('.').filter(Boolean);
+    const walk=(current,index)=>{
+      if(index>=parts.length)return [current];
+      const arrayPart=parts[index].endsWith('[]'),key=arrayPart?parts[index].slice(0,-2):parts[index];
+      const next=current==null?undefined:current[key];
+      if(arrayPart)return (Array.isArray(next)?next:[]).flatMap(item=>walk(item,index+1));
+      return walk(next,index+1);
+    };
+    return walk(value,0);
+  }
   function storyVirtualRecords(rootData,dataset){
     const out=[];
     for(const chapter of Array.isArray(rootData?.chapters)?rootData.chapters:[]){
@@ -107,12 +133,18 @@
   async function recordHash(dataset,row){
     return sha256Hex(stableStringify(canonicalizeRecord(dataset,row)));
   }
-  function collectIds(record,paths){return uniqueStrings(paths.flatMap(path=>{const v=getAt(record,path);return Array.isArray(v)?v:[v];}));}
+  function collectIds(record,paths){return uniqueStrings(paths.flatMap(path=>pathValues(record,path).flatMap(v=>Array.isArray(v)?v:[v])));}
+  function dependencyIds(record,dependency){
+    if(dependency?.nodeType){
+      return uniqueStrings((Array.isArray(record?.nodes)?record.nodes:[]).filter(node=>node?.node_type===dependency.nodeType).map(node=>node?.master_node_id));
+    }
+    return collectIds(record,dependency?.paths||[]);
+  }
   function resolveDependencies(rootData,primaryDataset,primaryRows,mode='none'){
     if(mode==='none')return {};
     const result={}; const queue=[]; const visited=new Set();
     const add=(dataset,id)=>{if(!id)return;const key=dataset+'::'+id;if(visited.has(key))return;visited.add(key);const row=records(rootData,dataset).find(x=>String(x?.id||'')===String(id));if(!row)return;(result[dataset]||(result[dataset]=[])).push(clone(row));if(mode==='recursive')queue.push({dataset,row});};
-    const scan=(dataset,row)=>{const def=REGISTRY[dataset];(def?.dependencies||[]).forEach(dep=>collectIds(row,dep.paths).forEach(id=>add(dep.dataset,id)));};
+    const scan=(dataset,row)=>{const def=REGISTRY[dataset];(def?.dependencies||[]).forEach(dep=>dependencyIds(row,dep).forEach(id=>add(dep.dataset,id)));};
     primaryRows.forEach(row=>scan(primaryDataset,row));
     while(queue.length){const item=queue.shift();scan(item.dataset,item.row);}
     Object.keys(result).forEach(dataset=>result[dataset]=result[dataset].sort((a,b)=>String(a.id||'').localeCompare(String(b.id||''),'en')));
@@ -173,12 +205,14 @@
   function referencedIds(dataset,row){
     const refs=[],structuredSkill=dataset==='skills'&&hasStructuredSkillRuntime(row);
     (REGISTRY[dataset]?.dependencies||[]).forEach(dep=>{
+      if(dep.nodeType){
+        for(const id of dependencyIds(row,dep))refs.push({dataset:dep.dataset,id});
+        return;
+      }
       for(const path of dep.paths||[]){
         // Formal Skill System: runtime semantics live in runtimeContracts; compiler runtime data is not a Tag Master reference.
         if(structuredSkill&&dep.dataset==='tags'&&path==='tags')continue;
-        for(const id of collectIds(row,[path])){
-          refs.push({dataset:dep.dataset,id});
-        }
+        for(const id of collectIds(row,[path]))refs.push({dataset:dep.dataset,id});
       }
     });
     return refs;
@@ -291,13 +325,13 @@
     if(!shape.ok){result.errors.push(...shape.errors);result.summary.invalid+=shape.errors.length;return result;}
     const validator=getIntegrityValidator();
     if(validator){
-      const integrity=validator.validate({rootData,envelope,registry:REGISTRY,records,canonicalizeRecord,stableStringify,referencedIds,format:FORMAT,version:VERSION});
+      const integrity=validator.validate({rootData,envelope,registry:REGISTRY,records,canonicalizeRecord,stableStringify,referencedIds,idRules:ID_RULES,format:FORMAT,version:VERSION});
       result.integrity=integrity;
       for(const issue of integrity.issues||[]){
         if(issue.code==='incompatible'||issue.code==='unknown_dataset'){result.summary.incompatible++;}
         else if(issue.code==='readonly_modified'){result.summary.readonly_modified++;result.items.push({dataset:issue.dataset,id:issue.id,status:'readonly_modified',detail:issue.detail});}
         else if(issue.code==='broken_reference'){result.summary.broken_reference++;result.items.push({dataset:issue.dataset,id:issue.id,status:'broken_reference',detail:issue.detail});}
-        else if(issue.code==='invalid'||issue.code==='unsupported_delete'){result.summary.invalid++;}
+        else if(issue.code==='invalid'||issue.code==='invalid_id'||issue.code==='unsupported_delete'){result.summary.invalid++;}
       }
       if(integrity.blocking){result.errors.push(...integrity.errors);return result;}
     }else{
@@ -435,6 +469,10 @@
     'schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts',
     'status','description','created_at','updated_at'
   ]);
+  const FORMAL_AI_MASTER_FIELDS=Object.freeze([
+    'id','name','node_type','status','tags','description','data_version','evaluator','ports','parameter_schema','unlock',
+    'created_at','updated_at'
+  ]);
   function skillMasterContractDiagnostic(){
     const shared=global.GKSSkillSchema?.masterAllowed?.();
     if(!Array.isArray(shared))return{shared_schema_loaded:false,shared_matches:false,missing:[...FORMAL_SKILL_MASTER_FIELDS],extra:[]};
@@ -453,18 +491,20 @@
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_conditions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_targets:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    ai_actions:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
-    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
-    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at']),
+    ai_conditions:new Set(FORMAL_AI_MASTER_FIELDS),
+    ai_targets:new Set(FORMAL_AI_MASTER_FIELDS),
+    ai_actions:new Set(FORMAL_AI_MASTER_FIELDS),
+    ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','compiled','created_at','updated_at']),
+    chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at','available_monster_ids','random_event_candidates']),
+    story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at','adventure_duration_seconds','boxes']),
     story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),
     story_dialogues:new Set(['id','chapter_id','section_id','scene_id','no','status','speaker','text','stage_direction','description','created_at','updated_at'])
   };
   function unknownIncomingFields(dataset,localRow,incomingRow){
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
     if(!allowed||!incomingRow||typeof incomingRow!=='object')return [];
-    const localKeys=new Set(Object.keys(localRow||{}));
+    const formalAI=['ai_conditions','ai_targets','ai_actions'].includes(dataset);
+    const localKeys=formalAI?new Set():new Set(Object.keys(localRow||{}));
     return Object.keys(incomingRow).filter(key=>!allowed.has(key)&&!localKeys.has(key));
   }
   function mergeRecordPreservingCurrent(dataset,localRow,incomingRow){
@@ -604,5 +644,5 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,FORMAL_SKILL_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,ID_PREFIXES,ID_RULES,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

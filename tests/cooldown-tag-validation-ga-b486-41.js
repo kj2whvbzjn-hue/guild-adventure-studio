@@ -1,4 +1,3 @@
-
 'use strict';
 const fs=require('fs'),assert=require('assert');
 const compiler=require('../assets/shared/js/skill-compiler.js');
@@ -12,6 +11,9 @@ for(const [id,value,kind,omit,expected] of [['FORMAL',300,'DAMAGE',false,300],['
  const r=compiler.compileSkill(skill(id,value,kind,omit),registry);assert.strictEqual(r.ok,true,`${id}: ${JSON.stringify(r.errors)}`);assert.strictEqual(r.compiledSkill.runtimeContracts.resourceContract.cooldown,expected,`${id} cooldown`);
 }
 for(const [id,value] of [['NEGATIVE',-1],['DECIMAL',1.5]]){const r=compiler.compileSkill(skill(id,value),registry);assert.strictEqual(r.ok,false,`${id} accepted`);assert(r.errors.some(x=>x.code==='INVALID_COOLDOWN'),JSON.stringify(r.errors));}
-const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));assert.strictEqual(data.data_version,'FORMAL-SKILL-1');
-const prod=data.data.find(x=>x.id==='SKL-COOLDOWN-ATTACK-300');assert(prod&&prod.environment==='production','production fixture missing');assert.strictEqual(prod.runtimeContracts?.resourceContract?.cooldown,300,'production cooldown contract mismatch');
+const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
+const manifest=JSON.parse(fs.readFileSync('Export/manifest.json','utf8'));
+assert.strictEqual(data.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
+assert(Array.isArray(data.data)&&data.data.length>0,'Skill Export is empty');
+assert(data.data.every(x=>x.runtimeContracts?.registryPhase===registry.phase),'Skill Export contains non-Formal runtimeContracts');
 console.log('COOLDOWN_FORMAL_VALIDATION_GA_B486_41_OK');

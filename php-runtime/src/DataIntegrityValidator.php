@@ -39,7 +39,7 @@ final class DataIntegrityValidator
         $missing = array_values(array_diff($official, $manifestPaths));
         $extra = array_values(array_diff($manifestPaths, $official));
         if ($missing !== [] || $extra !== []) {
-            throw new ExportLoadException('OFFICIAL_PATH_SET_MISMATCH', 'Manifest must contain the exact official 22 Export paths.', [
+            throw new ExportLoadException('OFFICIAL_PATH_SET_MISMATCH', 'Manifest must contain the exact official Export paths.', [
                 'missing' => $missing,
                 'extra' => $extra,
                 'expected_count' => count($official),

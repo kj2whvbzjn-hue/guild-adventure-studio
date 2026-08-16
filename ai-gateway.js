@@ -78,7 +78,7 @@ async function loadGovernance(){
     loaded:true,
     requiredFiles:configured,
     files,
-    artifactSubmission:{uploadFormat:'zip',appliesToAllUploadedArtifacts:true,individualFinalFilesAllowed:false},
+    artifactSubmission:{routing:'by_work_type',sourceUpdate:'direct_studio_update_zip',gameDataUpdate:'studio_project_json_then_game_data_deploy',hybrid:'separate_artifacts',outerWrapperZip:false},
     acknowledgementRequired:true,
     operatingContract:{
       decisionPriority:['data_preservation','runtime_stability','specification_stability','explicit_user_instruction','new_features'],
@@ -86,7 +86,10 @@ async function loadGovernance(){
       workDeclarationRequired:true,
       scopeRestrictionRequired:true,
       deletionDefault:'prohibited',
-      uploadedArtifactFormat:'single_zip',
+      artifactRouting:'by_work_type',
+      sourceUpdateArtifact:'direct_studio_update_zip',
+      gameDataArtifact:'studio_project_json',
+      hybridArtifactsMustBeSeparate:true,
       completionReportRequired:true,
       failClosedWhenGovernanceUnavailable:true
     }

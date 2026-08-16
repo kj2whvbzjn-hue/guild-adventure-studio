@@ -10,12 +10,12 @@ const guides={
  ai:{title:'AIエクスポート',summary:'現在のプロジェクト、設計カード、検証設定、ガイドをAIが読めるZIPへまとめます。',steps:['プロジェクトを端末保存する','AIエクスポートを実行する','生成ZIPをAIへ添付する','README.mdから読むようAIへ伝える'],tips:['カードIDとマスターIDを維持するよう指示する','個人情報や秘密鍵が含まれないことを確認する']}
 };
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function close(){document.getElementById('gkVerificationGuideOverlay')?.remove();}
+function close(){window.GKSStudioLayerController?.close?.('gkVerificationGuideOverlay');document.getElementById('gkVerificationGuideOverlay')?.remove();}
 window.openVerificationGuide=function(key='home'){
  const g=guides[key]||guides.home; close();
  const el=document.createElement('div');el.id='gkVerificationGuideOverlay';el.className='gk-guide-overlay';
  el.innerHTML=`<div class="gk-guide-dialog" role="dialog" aria-modal="true"><div class="gk-guide-head"><div><b>${esc(g.title)}</b><div class="small">使い方ガイド</div></div><button type="button" onclick="closeVerificationGuide()">閉じる</button></div><div class="gk-guide-body"><p>${esc(g.summary)}</p><h3>手順</h3>${g.steps.map((x,i)=>`<div class="gk-guide-step"><b>${i+1}.</b> ${esc(x)}</div>`).join('')}<h3>ポイント</h3><ul>${g.tips.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><div class="toolbar"><button type="button" onclick="exportVerificationGuideMarkdown('${esc(key)}')">Markdown出力</button></div></div></div>`;
- el.addEventListener('click',e=>{if(e.target===el)close()});document.body.appendChild(el);
+ el.addEventListener('click',e=>{if(e.target===el)close()});document.body.appendChild(el);window.GKSStudioLayerController?.open?.('gkVerificationGuideOverlay');
 };
 window.closeVerificationGuide=close;
 window.exportVerificationGuideMarkdown=function(key){const g=guides[key]||guides.home;const md=`# ${g.title}\n\n${g.summary}\n\n## 手順\n${g.steps.map((x,i)=>`${i+1}. ${x}`).join('\n')}\n\n## ポイント\n${g.tips.map(x=>`- ${x}`).join('\n')}\n`; if(typeof downloadText==='function')downloadText(`GK_Guide_${key}.md`,md,'text/markdown;charset=utf-8');};
