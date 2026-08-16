@@ -24,7 +24,7 @@ for(const id of ['ruleTagPickerTitle','benchmarkWorkflowTitle','studioInputTitle
 }
 
 assert.ok(html.includes('if(questBoxEditorState){closeQuestBoxEditor();return;}'),'central Back must return from Box child screen to Quest editor');
-assert.ok(html.includes("if(studioOverlayVisible('dataExchangePicker'))") && html.includes("if(studioOverlayVisible('ruleTagPicker'))") && html.includes("if(studioOverlayVisible('tagPickerBackdrop'))"),'central Back must close child overlays one level');
+assert.ok(html.includes("typeof studioLayerTopId==='function'?studioLayerTopId():''") && html.includes('studioCloseLayerById(topLayer)'),'central Back must close only the current foreground layer');
 assert.ok(!/benchmark-workflow-foot[\s\S]{0,300}studioNavigateClose\(\)/.test(html),'Benchmark footer must not duplicate common Close');
 assert.ok(html.includes("runLauncherAction('story')\">シナリオ") && html.includes("runLauncherAction('quests')\">クエスト"),'Create launcher Scenario/Quest entries missing');
 

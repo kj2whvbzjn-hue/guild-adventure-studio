@@ -10,9 +10,9 @@ assert.ok(html.includes('if(questBoxEditorState){closeQuestBoxEditor();return;}'
 assert.ok(!html.includes('id="studioScreenNav"'),'superseded global navigation strip must remain removed');
 assert.ok(html.includes('function studioCommonHeaderElement('),'universal navigation must be rendered by the common child-screen header');
 assert.ok(html.includes('id="studioInputTitle"')&&html.includes("if(heading)heading.textContent=`${String(index+1).padStart(2,'0')} Boxを編集`"),'Quest Box detail must reuse the Studio input common header');
-assert.ok(html.includes('rule-tag-picker-head')&&html.includes("if(studioOverlayVisible('ruleTagPicker'))"),'Rule Tag picker Back routing missing');
-assert.ok(html.includes('benchmarkWorkflowOverlay')&&html.includes("if(studioOverlayVisible('benchmarkWorkflowOverlay'))"),'Benchmark Back routing missing');
-assert.ok(html.includes('dataExchangePicker')&&html.includes("if(studioOverlayVisible('dataExchangePicker'))"),'Data Exchange Back routing missing');
-assert.ok(html.includes('masterSkillPicker')&&html.includes("if(studioOverlayVisible('masterSkillPicker'))"),'Master Skill picker Back routing missing');
-assert.ok(html.includes('tagPickerBackdrop')&&html.includes("if(studioOverlayVisible('tagPickerBackdrop'))"),'Tag picker Back routing missing');
+assert.ok(html.includes('rule-tag-picker-head')&&html.includes("typeof studioLayerTopId==='function'?studioLayerTopId():''"),'Rule Tag picker must participate in common top-layer Back routing');
+assert.ok(html.includes("if(id==='benchmarkWorkflowOverlay'){closeBenchmarkWorkflow();return true}"),'Benchmark common layer close routing missing');
+assert.ok(html.includes("if(id==='dataExchangePicker'){window.GKSDataExchangeUI?.closePicker?.();return true}"),'Data Exchange common layer close routing missing');
+assert.ok(html.includes("if(id==='masterSkillPicker'){closeMasterSkillPicker();return true}"),'Master Skill picker common layer close routing missing');
+assert.ok(html.includes("if(id==='tagPickerBackdrop'){closeTagPicker();return true}"),'Tag picker common layer close routing missing');
 console.log('PASS current centralized Studio Back/Close behavior with Home-aware common child-screen headers');

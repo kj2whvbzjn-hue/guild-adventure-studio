@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B593</title>
+<title>GK Studio GKS-B594</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -221,6 +221,7 @@ body.master-skill-picker-open{overflow:hidden}
 .studio-input-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px;overscroll-behavior:contain}
 .studio-input-body>.hidden{display:block!important}
 body.studio-input-open{overflow:hidden}
+body.studio-layer-open{overflow:hidden}
 @media(max-width:720px){
  .studio-input-overlay{padding:0;align-items:stretch}
  .studio-input-sheet{width:100%;max-height:none;height:100%;border-radius:0}
@@ -457,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.187 / GKS-B593</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.187 / GKS-B594</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.187 / Studio GKS-B593</div>
+    <div class="version">Game GA-B486.187 / Studio GKS-B594</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2198,7 +2199,7 @@ updateDeployDeleteControl();
   </div>
 </div>
 
-<div id="tagPickerBackdrop" class="tag-picker-backdrop hidden" role="presentation" onclick="closeTagPicker(event)">
+<div id="tagPickerBackdrop" class="tag-picker-backdrop hidden" role="presentation" aria-hidden="true" onclick="closeTagPicker(event)">
   <div class="tag-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="tagPickerTitle" onclick="event.stopPropagation()">
     <div class="studio-common-header studio-common-header--dialog"><h2 id="tagPickerTitle">タグ選択</h2><div class="studio-common-header-actions"><button type="button" onclick="studioNavigateBack()">もどる</button><button type="button" onclick="studioNavigateClose()">とじる</button></div></div>
     <div class="grid">
@@ -2229,10 +2230,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
+<script src="./layer-controller.js?v=594"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B593';
+const DISTRIBUTION_BUILD='GKS-B594';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2660,6 +2662,20 @@ function studioEnsureCommonHeader(name){
 }
 function studioEnsureAllCommonHeaders(){document.querySelectorAll('section.view[id]').forEach(view=>studioEnsureCommonHeader(view.id.replace('view-','')))}
 function studioOverlayVisible(id){const node=document.getElementById(id);return !!node&&!node.classList.contains('hidden')}
+function studioLayerOpen(id){return window.GKSStudioLayerController?.open?.(id)===true}
+function studioLayerClose(id){return window.GKSStudioLayerController?.close?.(id)===true}
+function studioLayerTopId(){return String(window.GKSStudioLayerController?.topId?.()||'')}
+function studioLayerTopRoot(){return window.GKSStudioLayerController?.topRoot?.()||null}
+function studioCloseLayerById(id){
+ if(id==='dataExchangePicker'){window.GKSDataExchangeUI?.closePicker?.();return true}
+ if(id==='ruleTagPicker'){closeRuleTagPicker();return true}
+ if(id==='benchmarkWorkflowOverlay'){closeBenchmarkWorkflow();return true}
+ if(id==='masterSkillPicker'){closeMasterSkillPicker();return true}
+ if(id==='tagPickerBackdrop'){closeTagPicker();return true}
+ if(id==='gkVerificationGuideOverlay'){window.closeVerificationGuide?.();return true}
+ if(id==='studioInputOverlay'){closeStudioInputPanel();return true}
+ return false;
+}
 function showView(name){
  const target=document.getElementById('view-'+name);
  if(!target){pendingStudioView=name;return false;}
@@ -2703,11 +2719,8 @@ function studioToggleLauncherHome(){
  studioOpenLauncherHome(studioCategoryForView(typeof currentStudioView==='function'?currentStudioView():''));
 }
 function studioNavigateBack(){
- if(studioOverlayVisible('dataExchangePicker')){window.GKSDataExchangeUI?.closePicker?.();return;}
- if(studioOverlayVisible('ruleTagPicker')){closeRuleTagPicker();return;}
- if(studioOverlayVisible('benchmarkWorkflowOverlay')){closeBenchmarkWorkflow();return;}
- if(studioOverlayVisible('masterSkillPicker')){closeMasterSkillPicker();return;}
- if(studioOverlayVisible('tagPickerBackdrop')){closeTagPicker();return;}
+ const topLayer=typeof studioLayerTopId==='function'?studioLayerTopId():'';
+ if(topLayer&&topLayer!=='studioInputOverlay'){if(typeof studioCloseLayerById==='function')studioCloseLayerById(topLayer);return;}
  if(questBoxEditorState){closeQuestBoxEditor();return;}
  if(studioInputPanelState){backToDatabase();return;}
  let target='';
@@ -2724,11 +2737,11 @@ function studioNavigateBack(){
 function studioNavigateClose(){
  const category=studioCategoryForView(typeof currentStudioView==='function'?currentStudioView():'');
  studioViewHistory.length=0;
- try{if(typeof closeRuleTagPicker==='function')closeRuleTagPicker()}catch(e){}
- try{if(typeof closeBenchmarkWorkflow==='function')closeBenchmarkWorkflow()}catch(e){}
- try{window.GKSDataExchangeUI?.closePicker?.()}catch(e){}
- try{if(typeof closeMasterSkillPicker==='function')closeMasterSkillPicker()}catch(e){}
- try{if(typeof closeTagPicker==='function')closeTagPicker()}catch(e){}
+ for(let guard=0;guard<12;guard++){
+  const topLayer=typeof studioLayerTopId==='function'?studioLayerTopId():'';
+  if(!topLayer||topLayer==='studioInputOverlay')break;
+  if(typeof studioCloseLayerById!=='function'||!studioCloseLayerById(topLayer))break;
+ }
  studioOpenLauncherHome(category);
 }
 function handleStudioDynamicViewReady(event){
@@ -3318,9 +3331,9 @@ function openMasterTagPicker(){
  tagPickerSelection=masterTagIds();
  const category=document.getElementById('tagPickerCategory');
  category.innerHTML='<option value="">すべて</option>'+tagCategoryDefinitions().filter(x=>x.enabled!==false).sort((a,b)=>(a.order||0)-(b.order||0)).map(x=>`<option value="${escAttr(x.id)}">${esc(x.name||x.id)}</option>`).join('');
- document.getElementById('tagPickerSearch').value='';document.getElementById('tagPickerBackdrop').classList.remove('hidden');renderTagPicker();
+ document.getElementById('tagPickerSearch').value='';const picker=document.getElementById('tagPickerBackdrop');picker.classList.remove('hidden');picker.setAttribute('aria-hidden','false');if(typeof studioLayerOpen==='function')studioLayerOpen('tagPickerBackdrop');renderTagPicker();
 }
-function closeTagPicker(event){if(event&&event.target!==document.getElementById('tagPickerBackdrop'))return;document.getElementById('tagPickerBackdrop').classList.add('hidden')}
+function closeTagPicker(event){if(event&&event.target!==document.getElementById('tagPickerBackdrop'))return;const picker=document.getElementById('tagPickerBackdrop');picker.classList.add('hidden');picker.setAttribute('aria-hidden','true');if(typeof studioLayerClose==='function')studioLayerClose('tagPickerBackdrop')}
 function renderTagPicker(){
  const root=document.getElementById('tagPickerList');if(!root)return;
  const q=(document.getElementById('tagPickerSearch').value||'').trim().toLowerCase();const category=document.getElementById('tagPickerCategory').value;
@@ -3367,9 +3380,9 @@ function evaluateAndOpenMonsterSkillPicker(){
 function openMasterSkillPicker(){
  const picker=document.getElementById('masterSkillPicker'),search=document.getElementById('masterSkillPickerSearch');
  if(!lastMonsterSkillCandidateEvaluation)evaluateMonsterSkillCandidates();
- search.value='';picker.classList.remove('hidden');picker.setAttribute('aria-hidden','false');document.body.classList.add('master-skill-picker-open');renderMasterSkillPicker();setTimeout(()=>search.focus(),30);
+ search.value='';picker.classList.remove('hidden');picker.setAttribute('aria-hidden','false');document.body.classList.add('master-skill-picker-open');if(typeof studioLayerOpen==='function')studioLayerOpen('masterSkillPicker');renderMasterSkillPicker();setTimeout(()=>search.focus(),30);
 }
-function closeMasterSkillPicker(){const picker=document.getElementById('masterSkillPicker');picker.classList.add('hidden');picker.setAttribute('aria-hidden','true');document.body.classList.remove('master-skill-picker-open')}
+function closeMasterSkillPicker(){const picker=document.getElementById('masterSkillPicker');picker.classList.add('hidden');picker.setAttribute('aria-hidden','true');document.body.classList.remove('master-skill-picker-open');if(typeof studioLayerClose==='function')studioLayerClose('masterSkillPicker')}
 function masterSkillMatches(row,q){return !q||[row.id,row.name,row.description,...(row.tags||[]),...(row.tags||[]).map(tagLabel)].filter(Boolean).join(' ').toLowerCase().includes(q)}
 function masterSkillRowHtml(row,disabled=false){
  const selected=monsterSkillCandidateSelection.has(row.id),tags=(row.tags||[]).map(tagLabel).join('、')||'条件タグなし';
@@ -4491,14 +4504,14 @@ function openBenchmarkWorkflow(){
  const overlay=document.getElementById('benchmarkWorkflowOverlay');
  if(!overlay)return;
  overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');
- document.body.classList.add('benchmark-workflow-open');
+ document.body.classList.add('benchmark-workflow-open');if(typeof studioLayerOpen==='function')studioLayerOpen('benchmarkWorkflowOverlay');
  previewBattleBenchmark();
 }
 function closeBenchmarkWorkflow(){
  const overlay=document.getElementById('benchmarkWorkflowOverlay');
  if(!overlay)return;
  overlay.classList.add('hidden');overlay.setAttribute('aria-hidden','true');
- document.body.classList.remove('benchmark-workflow-open');
+ document.body.classList.remove('benchmark-workflow-open');if(typeof studioLayerClose==='function')studioLayerClose('benchmarkWorkflowOverlay');
 }
 function handleBenchmarkWorkflowBackdrop(event){if(event.target===event.currentTarget)closeBenchmarkWorkflow();}
 
@@ -4710,6 +4723,7 @@ function studioMobileTouchPoint(event,changed=false){
  return point?{x:Number(point.clientX)||0,y:Number(point.clientY)||0}:null;
 }
 function studioTouchActiveRoot(){
+ const layerRoot=typeof studioLayerTopRoot==='function'?studioLayerTopRoot():window.GKSStudioLayerController?.topRoot?.();if(layerRoot)return layerRoot;
  const overlay=document.getElementById('studioInputOverlay');
  if(overlay&&!overlay.classList.contains('hidden'))return overlay;
  const sidebar=document.getElementById('sidebar');
@@ -4802,7 +4816,7 @@ function openStudioInputPanel(id,title){
   body.appendChild(panel);
   heading.textContent=title||'入力';
   overlay.classList.remove('hidden');overlay.setAttribute('aria-hidden','false');
-  document.body.classList.add('studio-input-open');
+  document.body.classList.add('studio-input-open');if(typeof studioLayerOpen==='function')studioLayerOpen('studioInputOverlay');
   const focusable=panel.querySelector('input,select,textarea,button');if(focusable)setTimeout(()=>focusable.focus(),30);
 }
 function closeStudioInputPanel(){
@@ -4811,7 +4825,7 @@ function closeStudioInputPanel(){
   if(studioInputPanelState){const {panel,marker}=studioInputPanelState;marker.parentNode.insertBefore(panel,marker);marker.remove();panel.classList.add('hidden');studioInputPanelState=null;}
   if(body)body.innerHTML='';
   if(overlay){overlay.classList.add('hidden');overlay.setAttribute('aria-hidden','true');}
-  document.body.classList.remove('studio-input-open');
+  document.body.classList.remove('studio-input-open');if(typeof studioLayerClose==='function')studioLayerClose('studioInputOverlay');
 }
 
 function currentStudioView(){
@@ -4830,7 +4844,7 @@ function closeToProductionLauncher(){
 }
 
 function handleStudioInputBackdrop(event){if(event.target&&event.target.id==='studioInputOverlay')closeStudioInputPanel()}
-document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const skillPicker=document.getElementById('masterSkillPicker');if(skillPicker&&!skillPicker.classList.contains('hidden')){event.preventDefault();closeMasterSkillPicker();return}if(studioInputPanelState)closeStudioInputPanel()});
+document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;const topLayer=typeof studioLayerTopId==='function'?studioLayerTopId():'';if(topLayer){event.preventDefault();if(typeof studioCloseLayerById==='function')studioCloseLayerById(topLayer);return}if(studioInputPanelState)closeStudioInputPanel()});
 
 function toggleFormulaStep(id,button){const panel=document.getElementById(id);if(!panel)return;const opening=panel.classList.contains('hidden');panel.classList.toggle('hidden');if(button){button.textContent=opening?(id==='formulaEditorPanel'?'数式編集を閉じる':'数式比較を閉じる'):(id==='formulaEditorPanel'?'新しい数式を作る':'数式を比較する')}}
 function saveFormulaProfile(){const name=String(document.getElementById('formulaProfileName')?.value||'').trim();if(!name)return alert('新しい数式セット名を入力してください。');const rows=formulaProfiles(),config=readBattleFormulaConfig(),existing=rows.findIndex(x=>x.name===name),rec={name,config:{...config},updated_at:now()};if(existing>=0)rows[existing]=rec;else rows.push(rec);persist('battle formula profile');renderFormulaProfiles();formulaCompareSummary.textContent=`${name} を保存しました。`}
@@ -4957,8 +4971,8 @@ function tagSearchText(t){const category=(data.tag_categories||[]).find(c=>Strin
 function ruleTagScore(t,q){let score=0;const name=String(t.name||'').toLowerCase(),id=String(t.id||'').toLowerCase(),text=tagSearchText(t);if(q){if(name===q)score+=100;if(id===q)score+=95;if(name.startsWith(q))score+=60;if(id.startsWith(q))score+=55;if(text.includes(q))score+=20}else{const i=ruleRecentTagIds().indexOf(String(t.id));if(i>=0)score+=100-i;}const sec=RULE_SECTIONS[document.getElementById('ruleTagSection')?.value]||'';if(sec&&text.includes(sec.toLowerCase()))score+=15;return score}
 function ruleTagMeta(t){const category=(data.tag_categories||[]).find(c=>String(c.id)===String(t.category_id));const parent=tagDefinitions().find(x=>String(x.id)===String(t.parent_id));return [category?.name,parent?('親: '+(parent.name||parent.id)):'',t.description||''].filter(Boolean).join(' / ')}
 function renderCombo(panel,items,state,selectFn,emptyText,showRecent){state.items=items;state.active=items.length?Math.min(Math.max(state.active,0),items.length-1):-1;panel.innerHTML=(showRecent&&items.length?'<div class="combo-section-title">最近使用・優先候補</div>':'')+(items.length?items.map((x,i)=>`<div class="combo-option ${i===state.active?'active':''}" role="option" data-index="${i}" onmousedown="event.preventDefault();${selectFn}(${i})"><div class="combo-option-main"><div class="combo-option-name">${esc(x.label)}</div>${x.meta?`<div class="combo-option-meta">${esc(x.meta)}</div>`:''}</div><div class="combo-option-id">${esc(x.idLabel||'')}</div></div>`).join(''):`<div class="combo-empty">${esc(emptyText)}</div>`);panel.classList.add('open')}
-function openRuleTagPicker(){syncRuleDraftFromForm();ruleTagPickerSelected=new Set();const modal=document.getElementById('ruleTagPicker');const input=document.getElementById('ruleTagPickerSearch');document.getElementById('ruleTagPickerTitle').textContent=`${RULE_SECTIONS[ruleTagSection.value]||'通常タグ'}を選択`;input.value='';modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');document.body.classList.add('rule-picker-open');renderRuleTagPicker();setTimeout(()=>input.focus(),30)}
-function closeRuleTagPicker(){const modal=document.getElementById('ruleTagPicker');modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');document.body.classList.remove('rule-picker-open');ruleTagPickerSelected.clear()}
+function openRuleTagPicker(){syncRuleDraftFromForm();ruleTagPickerSelected=new Set();const modal=document.getElementById('ruleTagPicker');const input=document.getElementById('ruleTagPickerSearch');document.getElementById('ruleTagPickerTitle').textContent=`${RULE_SECTIONS[ruleTagSection.value]||'通常タグ'}を選択`;input.value='';modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');document.body.classList.add('rule-picker-open');if(typeof studioLayerOpen==='function')studioLayerOpen('ruleTagPicker');renderRuleTagPicker();setTimeout(()=>input.focus(),30)}
+function closeRuleTagPicker(){const modal=document.getElementById('ruleTagPicker');modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');document.body.classList.remove('rule-picker-open');if(typeof studioLayerClose==='function')studioLayerClose('ruleTagPicker');ruleTagPickerSelected.clear()}
 function renderRuleTagPicker(){const q=String(document.getElementById('ruleTagPickerSearch')?.value||'').trim().toLowerCase();ruleTagPickerRows=tagDefinitions().filter(t=>t.enabled!==false&&(!q||tagSearchText(t).includes(q))).map(t=>({tag:t,score:ruleTagScore(t,q)})).sort((a,b)=>b.score-a.score||String(a.tag.name||a.tag.id).localeCompare(String(b.tag.name||b.tag.id),'ja')).slice(0,50).map(x=>x.tag);const list=document.getElementById('ruleTagPickerList');list.innerHTML=ruleTagPickerRows.length?ruleTagPickerRows.map(t=>{const id=String(t.id),selected=ruleTagPickerSelected.has(id);return `<div class="rule-tag-row ${selected?'selected':''}" role="option" aria-selected="${selected}" tabindex="0" data-tag-id="${escAttr(id)}" onclick="toggleRuleTagPicker('${escAttr(id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRuleTagPicker('${escAttr(id)}')}"><div class="rule-tag-row-name">${esc(t.name||t.id)}</div><div class="rule-tag-row-sub"><span class="rule-tag-row-id">${esc(t.id)}</span>${ruleTagMeta(t)?'　'+esc(ruleTagMeta(t)):''}</div></div>`}).join(''):'<div class="combo-empty">該当するタグがありません。</div>';updateRuleTagPickerFooter()}
 function toggleRuleTagPicker(id){id=String(id);if(ruleTagPickerSelected.has(id))ruleTagPickerSelected.delete(id);else ruleTagPickerSelected.add(id);renderRuleTagPicker()}
 function selectAllVisibleRuleTags(){ruleTagPickerRows.forEach(t=>ruleTagPickerSelected.add(String(t.id)));renderRuleTagPicker()}
@@ -8254,7 +8268,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','593');
+    url.searchParams.set('appv','594');
     location.replace(url.toString());
    }
  }
@@ -8263,7 +8277,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=593',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=594',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8282,7 +8296,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','593');
+    url.searchParams.set('appv','594');
     location.replace(url.toString());
    }
   });
@@ -8395,7 +8409,7 @@ window.GKSAIProductionHost={getData:()=>data,persist:message=>persist(message),n
 <script src="./data-exchange/data-exchange-core.js?v=18"></script>
 <script src="./data-exchange/data-exchange-transaction.js?v=3"></script>
 <script src="./data-exchange/data-exchange-audit.js?v=5"></script>
-<script src="./data-exchange/data-exchange-ui.js?v=23r1"></script>
+<script src="./data-exchange/data-exchange-ui.js?v=24"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded',renderMasterTagChips);

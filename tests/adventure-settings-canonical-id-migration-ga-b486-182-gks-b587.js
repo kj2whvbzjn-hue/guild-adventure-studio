@@ -5,7 +5,7 @@ const S=require('../assets/shared/js/adventure-story-system.js');
 const R=require('../assets/shared/js/adventure-encounter-resolver.js');
 
 assert.strictEqual(build.game_build,'GA-B486.187');
-assert.strictEqual(build.studio_build,'GKS-B593');
+assert.strictEqual(build.studio_build,'GKS-B594');
 assert.strictEqual(S.ADVENTURE_SETTINGS_CANONICAL_ID,'ADV-0001');
 assert.strictEqual(S.ADVENTURE_SETTINGS_LEGACY_ID,'ADV-DEFAULT');
 assert.strictEqual(R.ADVENTURE_SETTINGS_CANONICAL_ID,'ADV-0001');
