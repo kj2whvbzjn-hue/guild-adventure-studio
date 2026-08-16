@@ -49,9 +49,10 @@
     const opts=options||{};
     const fetchImpl=opts.fetch||globalThis.fetch;
     if(typeof fetchImpl!=='function')throw new Error('fetch is required');
-    const aiUrl=opts.aiUrl||'../Export/ai/ai_nodes.json';
-    const skillUrl=opts.skillUrl||'../Export/skill/skills.json';
-    const templateUrl=opts.templateUrl||'../Export/ai/ai_templates.json';
+    const config=globalThis.GA_PROJECT_CONFIG||{};
+    const aiUrl=opts.aiUrl||config.aiNodeExportUrl||'../Export/ai/ai_nodes.json';
+    const skillUrl=opts.skillUrl||config.skillExportUrl||'../Export/skill/skills.json';
+    const templateUrl=opts.templateUrl||config.aiTemplateExportUrl||'../Export/ai/ai_templates.json';
     const warnings=[];
     let ai=[],skills=[],templates=[];
     try{ai=rowsFromEnvelope(await fetchJson(fetchImpl,aiUrl));}catch(error){warnings.push(String(error?.message||error));}
