@@ -1,4 +1,4 @@
-/* Studio common foreground-layer controller — GKS-B600 */
+/* Studio common foreground-layer controller — GKS-B601 */
 (function(global){
 'use strict';
 

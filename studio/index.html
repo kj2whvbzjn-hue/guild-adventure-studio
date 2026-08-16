@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B600</title>
+<title>GK Studio GKS-B601</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.190 / GKS-B600</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.190 / GKS-B601</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.190 / Studio GKS-B600</div>
+    <div class="version">Game GA-B486.190 / Studio GKS-B601</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1913,6 +1913,8 @@ updateDeployDeleteControl();
       <button type="button" onclick="exportPhpPackageFromGameDeploy()">確認用Export ZIP</button>
       <button type="button" onclick="showView('importexport')">読込・出力を開く</button>
     </div>
+    <label style="display:block;margin:12px 0"><input id="gameDeployPreserveRemote" type="checkbox" checked onchange="gameDeployPlan=null;setGameDeployExecuteEnabled(false);renderGameDataDeployPlan();updateGameDeployReadiness()"> GitHub版の既存IDを保持（追加・差し替えのみ）</label>
+    <p class="small">AI追加や部分更新ではONを推奨します。GitHub版にだけ存在する既存IDを今回のExportへ引き継ぎ、意図しない除外を防ぎます。意図した除外を行う場合だけOFFにしてください。</p>
     <div id="gameDeployValidationStatus" class="item">未検証です。</div>
   </div>
 
@@ -2215,11 +2217,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=600"></script>
+<script src="./layer-controller.js?v=601"></script>
 
 <script>
-const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B600';
+const APP_VERSION='1.43.1';
+const DISTRIBUTION_BUILD='GKS-B601';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -5969,6 +5971,30 @@ function gameDataEntityDiff(path,localText,remoteText=''){
  for(const [id,row] of rm)if(!lm.has(id))exclude.push({path,id,label:gameDataRecordLabel(row,id)});
  return{path,supported:true,add,replace,exclude,unchanged};
 }
+function gameDataEnvelopeWithPayload(text,payload){
+ const parsed=JSON.parse(String(text||''));
+ const out=parsed&&typeof parsed==='object'&&!Array.isArray(parsed)&&Object.prototype.hasOwnProperty.call(parsed,'data')?{...parsed,data:payload}:payload;
+ return JSON.stringify(out,null,2)+'\n';
+}
+function gameDataMergePreserveRemote(localText,remoteText=''){
+ let local,remote;
+ try{local=gameDataEnvelopePayload(localText);remote=remoteText?gameDataEnvelopePayload(remoteText):[]}catch(error){return{supported:false,text:localText,preserved:0,reason:'JSON解析不可'}}
+ if(!Array.isArray(local)||!Array.isArray(remote))return{supported:false,text:localText,preserved:0,reason:'配列データではない'};
+ const localRows=local.map(row=>({row,id:gameDataRecordId(row)})),remoteRows=remote.map(row=>({row,id:gameDataRecordId(row)}));
+ if(localRows.some(x=>!x.id)||remoteRows.some(x=>!x.id))return{supported:false,text:localText,preserved:0,reason:'安定IDを持たない配列'};
+ const localIds=new Set(localRows.map(x=>x.id)),remoteIds=new Set(remoteRows.map(x=>x.id));
+ if(localIds.size!==localRows.length||remoteIds.size!==remoteRows.length)return{supported:false,text:localText,preserved:0,reason:'ID重複'};
+ const merged=local.slice();let preserved=0;
+ for(const item of remoteRows)if(!localIds.has(item.id)){merged.push(item.row);preserved++}
+ return{supported:true,text:gameDataEnvelopeWithPayload(localText,merged),preserved};
+}
+async function rebuildGameDeployArtifactManifest(artifact){
+ const files=[];
+ for(const path of PHP_EXPORT_PATHS)files.push({path,sha256:await sha256TextHex(artifact.files[path]),required:true});
+ artifact.manifest={...artifact.manifest,files};
+ artifact.files['manifest.json']=JSON.stringify(artifact.manifest,null,2)+'\n';
+ return artifact;
+}
 function gameDeployParseArtifactData(artifact,path){return gameDataEnvelopePayload(artifact.files[path]||'')}
 function gameDeployStringList(value){return Array.isArray(value)?value.map(x=>String(x||'').trim()).filter(Boolean):String(value??'').split(',').map(x=>x.trim()).filter(Boolean)}
 function validateGameDeployReferences(artifact){
@@ -6001,7 +6027,7 @@ function gameDeployDiffExportPayload(plan){
  return{
   schema:'gk.game-data-deploy-diff.v1',version:'1.0.0',generated_at:new Date().toISOString(),
   repository:{owner:plan.owner,repo:plan.repoName,branch:plan.branch,head_sha:plan.headSha},
-  data_version:plan.artifact?.dataVersion||'',summary:{game_data:{add:totals.add,replace:totals.replace,exclude:totals.exclude,unchanged:totals.unchanged},github_files:{add:totals.fileAdd,modify:totals.fileModify,unchanged:totals.fileUnchanged,delete:0}},
+  data_version:plan.artifact?.dataVersion||'',preserve_github_existing_ids:plan.preserveRemote===true,preserved_remote_entities:Number(plan.preservedRemoteEntities||0),summary:{game_data:{add:totals.add,replace:totals.replace,exclude:totals.exclude,unchanged:totals.unchanged},github_files:{add:totals.fileAdd,modify:totals.fileModify,unchanged:totals.fileUnchanged,delete:0}},
   entity_diffs:(plan.entityDiffs||[]).map(diff=>({path:diff.path,add:diff.add||[],replace:diff.replace||[],exclude:diff.exclude||[],unchanged:diff.unchanged||[]})),
   file_diffs:(plan.files||[]).map(file=>({path:file.target,status:file.status,size:file.size,sha256:file.sha256||'',git_blob_sha:file.gitSha||''}))
  };
@@ -6016,7 +6042,7 @@ function renderGameDataDeployPlan(){
  if(diffButton)diffButton.disabled=!plan;
  if(!plan){entitySummary.textContent='差分取得後にGameデータ単位の件数を表示します。';entityList.innerHTML='';fileSummary.textContent='未取得';fileList.innerHTML='';return}
  const totals=gameDeploySummaries(plan),excludeClass=totals.exclude?'warn':'ok';
- entitySummary.innerHTML=`<span class="badge ok">追加 ${totals.add}</span> <span class="badge warn">差し替え ${totals.replace}</span> <span class="badge ${excludeClass}">除外 ${totals.exclude}</span> <span class="badge">同一 ${totals.unchanged}</span> / Data Version ${esc(plan.artifact.dataVersion)}<div class="small">画面は先頭${GAME_DEPLOY_ENTITY_PREVIEW_LIMIT}件のみ表示します。全件は「差分JSONを出力」で確認できます。</div>`;
+ entitySummary.innerHTML=`<span class="badge ok">追加 ${totals.add}</span> <span class="badge warn">差し替え ${totals.replace}</span> <span class="badge ${excludeClass}">除外 ${totals.exclude}</span> <span class="badge">同一 ${totals.unchanged}</span> / Data Version ${esc(plan.artifact.dataVersion)}${plan.preserveRemote?`<div class="small"><b>既存ID保持 ON</b> / GitHub版から ${Number(plan.preservedRemoteEntities||0)}件を引き継ぎ済み</div>`:''}<div class="small">画面は先頭${GAME_DEPLOY_ENTITY_PREVIEW_LIMIT}件のみ表示します。全件は「差分JSONを出力」で確認できます。</div>`;
  const rows=[];for(const diff of plan.entityDiffs){for(const item of diff.add)rows.push({...item,status:'ADD'});for(const item of diff.replace)rows.push({...item,status:'REPLACE'});for(const item of diff.exclude)rows.push({...item,status:'EXCLUDE'})}
  entityList.innerHTML=rows.length?rows.slice(0,GAME_DEPLOY_ENTITY_PREVIEW_LIMIT).map(row=>`<div class="item"><span class="badge ${row.status==='ADD'?'ok':row.status==='EXCLUDE'?'warn':''}">${esc(row.status==='ADD'?'追加':row.status==='REPLACE'?'差し替え':'除外')}</span> <b>${esc(row.id)}</b> ${esc(row.label&&row.label!==row.id?' / '+row.label:'')}<div class="small">${esc(row.path)}</div></div>`).join(''):'<div class="item"><span class="badge ok">Gameデータ内容の変更なし</span></div>';
  if(rows.length>GAME_DEPLOY_ENTITY_PREVIEW_LIMIT)entityList.innerHTML+=`<div class="item small">ほか ${rows.length-GAME_DEPLOY_ENTITY_PREVIEW_LIMIT}件。全件は差分JSONに収録しています。</div>`;
@@ -6030,25 +6056,40 @@ async function prepareGameDataDeploy(){
  try{
   gameDeployPlan=null;setGameDeployExecuteEnabled(false);syncGameDeployGitHubSettings();saveGameDeployConnectionSettingsSilent();syncGameDeployDataVersion('game');
   setGameDeployBusy(true);setGhBusy(true);resetGameDeployLog();if(bar)bar.style.width='5%';if(progress)progress.textContent='正式Exportを検証中';
-  const version=gameDeployEl('gameDeployDataVersion')?.value.trim()||'';const artifact=await buildPhpExportArtifact(version);const referenceIssues=validateGameDeployReferences(artifact);
+  const version=gameDeployEl('gameDeployDataVersion')?.value.trim()||'',artifact=await buildPhpExportArtifact(version),preserveRemote=gameDeployEl('gameDeployPreserveRemote')?.checked!==false;
+  const c=getGhConfig();if(bar)bar.style.width='10%';if(progress)progress.textContent='GitHub HEADを取得中';
+  const remote=await getGitHead(c),remoteMap=new Map((remote.tree.tree||[]).filter(x=>x.type==='blob').map(x=>[x.path,x.sha])),remoteTextCache=new Map();
+  async function remoteTextFor(target,sha){if(!sha)return'';if(remoteTextCache.has(target))return remoteTextCache.get(target);const text=await getGitBlobText(remote.repo,sha);remoteTextCache.set(target,text);return text}
+  let preservedRemoteEntities=0;
+  if(preserveRemote){
+   for(const path of PHP_EXPORT_PATHS){
+    const target='Export/'+normalizeDeployPath(path),remoteSha=remoteMap.get(target)||null;if(!remoteSha)continue;
+    let localPayload=null;try{localPayload=gameDataEnvelopePayload(artifact.files[path])}catch(_e){}
+    if(!Array.isArray(localPayload))continue;
+    const merge=gameDataMergePreserveRemote(artifact.files[path],await remoteTextFor(target,remoteSha));
+    if(merge.supported){artifact.files[path]=merge.text;preservedRemoteEntities+=merge.preserved}
+   }
+   await rebuildGameDeployArtifactManifest(artifact);
+  }
+  const referenceIssues=validateGameDeployReferences(artifact);
   if(referenceIssues.length){const first=referenceIssues[0];throw Object.assign(new Error(`${first.message}${referenceIssues.length>1?`（ほか${referenceIssues.length-1}件）`:''}`),{code:'GAME_DEPLOY_REFERENCE_VALIDATION_FAILED',issues:referenceIssues})}
-  if(validationStatus)validationStatus.innerHTML=`<span class="badge ok">正式Export検証 合格</span> ${PHP_EXPORT_PATHS.length} JSON + manifest / Flag・Quest参照整合性OK`;
-  gameDeployLogMessage(`正式Export検証: ${artifact.dataVersion} / Flag・Quest参照OK`);if(bar)bar.style.width='15%';if(progress)progress.textContent='GitHub HEADを取得中';
-  const c=getGhConfig(),remote=await getGitHead(c),remoteMap=new Map((remote.tree.tree||[]).filter(x=>x.type==='blob').map(x=>[x.path,x.sha]));
-  const files=[],entityDiffs=[];const entries=Object.entries(artifact.files);
+  if(validationStatus)validationStatus.innerHTML=`<span class="badge ok">正式Export検証 合格</span> ${PHP_EXPORT_PATHS.length} JSON + manifest / Flag・Quest参照整合性OK${preserveRemote?` / GitHub既存ID ${preservedRemoteEntities}件保持`:''}`;
+  gameDeployLogMessage(`正式Export検証: ${artifact.dataVersion} / Flag・Quest参照OK${preserveRemote?` / GitHub既存ID ${preservedRemoteEntities}件保持`:''}`);if(bar)bar.style.width='15%';
+  const files=[],entityDiffs=[],entries=Object.entries(artifact.files);
   for(let i=0;i<entries.length;i++){
    const [path,text]=entries[i],target='Export/'+normalizeDeployPath(path),bytes=new TextEncoder().encode(text),gitSha=await gitBlobSha(bytes),sha256=await sha256BytesHex(bytes),remoteSha=remoteMap.get(target)||null;
    const file={path,target,text,bytes,size:bytes.byteLength,gitSha,sha256,remoteSha,status:!remoteSha?'ADD':remoteSha===gitSha?'UNCHANGED':'MODIFY'};files.push(file);
    let localPayload=null;try{localPayload=gameDataEnvelopePayload(text)}catch(_e){}
    if(Array.isArray(localPayload)){
-    let remoteText='';if(remoteSha)remoteText=await getGitBlobText(remote.repo,remoteSha);
+    const remoteText=remoteSha?await remoteTextFor(target,remoteSha):'';
     const diff=gameDataEntityDiff(path,text,remoteText);if(diff.supported)entityDiffs.push(diff);
    }
    if(bar)bar.style.width=(15+Math.round(((i+1)/entries.length)*75))+'%';if(progress)progress.textContent=`Gameデータ差分 ${i+1}/${entries.length}`;
   }
   const changes=files.filter(file=>file.status==='ADD'||file.status==='MODIFY');
-  gameDeployPlan={...remote,owner:c.owner,repoName:c.repo,branch:c.branch,artifact,files,changes,entityDiffs,preparedAt:new Date().toISOString()};
-  renderGameDataDeployPlan();const totals=gameDeploySummaries(gameDeployPlan);gameDeployLogMessage(`差分完了: Game追加 ${totals.add}, 差し替え ${totals.replace}, 除外 ${totals.exclude}; File ADD ${totals.fileAdd}, MODIFY ${totals.fileModify}`);
+  gameDeployPlan={...remote,owner:c.owner,repoName:c.repo,branch:c.branch,artifact,files,changes,entityDiffs,preserveRemote,preservedRemoteEntities,preparedAt:new Date().toISOString()};
+  const totals=gameDeploySummaries(gameDeployPlan);if(preserveRemote&&totals.exclude)throw new Error(`GitHub既存ID保持モード中に除外 ${totals.exclude}件を検出しました。安全のため停止します。`);
+  renderGameDataDeployPlan();gameDeployLogMessage(`差分完了: Game追加 ${totals.add}, 差し替え ${totals.replace}, 除外 ${totals.exclude}; File ADD ${totals.fileAdd}, MODIFY ${totals.fileModify}`);
   if(progress)progress.textContent=changes.length?`配置待機: ${changes.length}ファイル / 人間確認が必要`:'差分なし';if(bar)bar.style.width='100%';setGameDeployExecuteEnabled(changes.length>0);updateGameDeployReadiness();
  }catch(error){gameDeployPlan=null;renderGameDataDeployPlan();setGameDeployExecuteEnabled(false);if(validationStatus)validationStatus.innerHTML=`<span class="badge err">停止</span> ${esc(error.message)}`;if(progress)progress.textContent='停止しました';if(bar)bar.style.width='0%';gameDeployLogMessage('停止: '+error.message);updateGameDeployReadiness()}
  finally{setGameDeployBusy(false);setGhBusy(false)}
@@ -6056,7 +6097,7 @@ async function prepareGameDataDeploy(){
 async function exportPhpPackageFromGameDeploy(){
  if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。');
  try{
-  syncGameDeployDataVersion('game');const artifact=await buildPhpExportArtifact(gameDeployEl('gameDeployDataVersion')?.value.trim()||''),writer=GKZipCore.writer.create({root:'Export'});
+  syncGameDeployDataVersion('game');const version=gameDeployEl('gameDeployDataVersion')?.value.trim()||'',artifact=(gameDeployPlan&&gameDeployPlan.artifact?.dataVersion===version)?gameDeployPlan.artifact:await buildPhpExportArtifact(version),writer=GKZipCore.writer.create({root:'Export'});
   for(const [path,text] of Object.entries(artifact.files))writer.addText(path,text);
   await writer.download(`GK_Export_${(data.project.id||'project').replace(/[^A-Za-z0-9_.-]/g,'_')}_${artifact.dataVersion}.zip`);
  }catch(error){alert(error.message)}
@@ -6073,7 +6114,7 @@ async function deployGameDataPlan(){
  const changes=gameDeployPlan.changes||[];if(!changes.length)return alert('配置する差分はありません。');syncGameDeployGitHubSettings();const c=getGhConfig();
  if(c.owner!==gameDeployPlan.owner||c.repo!==gameDeployPlan.repoName||c.branch!==gameDeployPlan.branch)return alert('接続先が差分取得時から変更されています。再度「検証・差分取得」を実行してください。');
  const totals=gameDeploySummaries(gameDeployPlan),dry=gameDeployEl('gameDeployDryRun')?.checked===true,message=(gameDeployEl('gameDeployCommitMessage')?.value.trim()||'Publish Guild Adventure Game data')+` ${gameDeployPlan.artifact.dataVersion}`;
- const summary=`Data Version: ${gameDeployPlan.artifact.dataVersion}\nGame追加: ${totals.add}\nGame差し替え: ${totals.replace}\nGame除外: ${totals.exclude}\nGitHubファイル: ADD ${totals.fileAdd} / MODIFY ${totals.fileModify} / DELETE 0\n\n${dry?'テスト実行のためGitHubへ書き込みません。':'1 CommitでExport/だけを更新します。'}`;
+ const summary=`Data Version: ${gameDeployPlan.artifact.dataVersion}\nGame追加: ${totals.add}\nGame差し替え: ${totals.replace}\nGame除外: ${totals.exclude}${gameDeployPlan.preserveRemote?`\nGitHub既存ID保持: ON（${Number(gameDeployPlan.preservedRemoteEntities||0)}件引継ぎ）`:''}\nGitHubファイル: ADD ${totals.fileAdd} / MODIFY ${totals.fileModify} / DELETE 0\n\n${dry?'テスト実行のためGitHubへ書き込みません。':'1 CommitでExport/だけを更新します。'}`;
  if(!confirm(`Gameデータ配置を実行します。\n\n${summary}\n\n続行しますか？`))return;
  if(totals.exclude&&!confirm(`今回 ${totals.exclude}件のGameデータが「除外」になります。\n\nこれはGitHubのJSONファイル削除や既存Save削除ではありませんが、次回Game読込後はそのIDが現行Gameデータから外れます。\n\n除外を含めて続行しますか？`))return;
  const progress=gameDeployEl('gameDeployProgressText'),bar=gameDeployEl('gameDeployProgressBar');
@@ -8048,7 +8089,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','600');
+    url.searchParams.set('appv','601');
     location.replace(url.toString());
    }
  }
@@ -8057,7 +8098,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=600',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=601',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8076,7 +8117,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','600');
+    url.searchParams.set('appv','601');
     location.replace(url.toString());
    }
   });
