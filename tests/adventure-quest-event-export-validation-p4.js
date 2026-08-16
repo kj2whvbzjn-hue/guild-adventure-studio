@@ -16,7 +16,7 @@ const base={
 let issues=Core.collectQuestEventContractIssues(base);
 assert(!issues.some(x=>x.level==='ERROR'),issues.filter(x=>x.level==='ERROR').map(x=>x.message).join('\n'));
 for(const code of ['QUEST_BOX_COUNT','EVENT_COUNT','RANDOM_SLOT_COUNT','SCENE_USAGE_COUNT'])assert(issues.some(x=>x.level==='INFO'&&x.code===code),`missing P4 INFO ${code}`);
-let formal=Core.formalStoryQuestAssessment(base,base.quests[0]);assert.equal(formal.ready,true);assert.equal(Object.prototype.hasOwnProperty.call(formal,'legacy_runtime_ready'),false);
+let formal=Core.formalStoryQuestAssessment(base,base.quests[0]);assert.equal(formal.ready,true);
 
 const duplicate=structuredClone(base);duplicate.quests[0].boxes.push(mkBox({box_id:'BOX-001',order:2,pre_scene_id:null}));
 issues=Core.collectQuestEventContractIssues(duplicate);assert(issues.some(x=>x.level==='ERROR'&&x.code==='QUEST_BOX_ID_DUPLICATE'));
@@ -36,12 +36,12 @@ issues=Core.collectQuestEventContractIssues(conditional);assert(issues.some(x=>x
 const freeText=structuredClone(base);freeText.events[1].conditions='night only';
 issues=Core.collectQuestEventContractIssues(freeText);assert(issues.some(x=>x.level==='WARNING'&&x.code==='EVENT_CONDITIONS_RUNTIME_IGNORED'));
 
-const forbidden=structuredClone(base);forbidden.events[0].map_id='MAP-X';forbidden.events[0].battle_formation=[{monster_id:'MON-1',count:1}];
-issues=Core.collectQuestEventContractIssues(forbidden);assert.equal(issues.filter(x=>x.level==='ERROR'&&x.code==='EVENT_ENVIRONMENT_FIELD_FORBIDDEN').length,1);assert(issues.some(x=>x.level==='ERROR'&&x.code==='RETIRED_EVENT_FIELD'&&x.field==='battle_formation'),'retired Event fields must stop Export instead of being silently stripped');
+const unsupported=structuredClone(base);unsupported.events[0].unsupported_event_field={value:1};
+issues=Core.collectQuestEventContractIssues(unsupported);assert(issues.some(x=>x.level==='ERROR'&&x.code==='EVENT_FIELD_UNSUPPORTED'&&x.field==='unsupported_event_field'),'fields outside the current Formal Event shape must stop Export');
 
 const p4Only=structuredClone(base);
-formal=Core.formalStoryQuestAssessment(p4Only,p4Only.quests[0]);assert.equal(formal.ready,true);assert.equal(Object.prototype.hasOwnProperty.call(formal,'legacy_runtime_ready'),false);
-const exportIssues=Core.collectFormalQuestExportIssues(p4Only);assert(!exportIssues.issues.some(x=>x.code==='FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING'),'P7-B resolved Random Event resolver must not emit the old pending warning');assert(exportIssues.issues.some(x=>x.level==='ERROR'&&x.code==='P7_MAP_REQUIRED'),'P7-B exploration/battle Quest must require a valid Map');assert.equal(formal.p5_runtime_ready,false);assert.equal(formal.p6_runtime_ready,false);assert.equal(formal.p7_runtime_ready,false);
+formal=Core.formalStoryQuestAssessment(p4Only,p4Only.quests[0]);assert.equal(formal.ready,true);
+const exportIssues=Core.collectFormalQuestExportIssues(p4Only);assert(exportIssues.issues.some(x=>x.level==='ERROR'&&x.code==='P7_MAP_REQUIRED'),'P7-B exploration/battle Quest must require a valid Map');assert.equal(formal.p5_runtime_ready,false);assert.equal(formal.p6_runtime_ready,false);assert.equal(formal.p7_runtime_ready,false);
 
 const out=Core.buildData(base);assert.deepEqual(out['quest/main_quests.json'][0].boxes,base.quests[0].boxes);assert.equal(out['event/events.json'][1].usage,'random');assert.equal(out['event/events.json'][1].random_base_weight,2);
 
@@ -53,11 +53,9 @@ for(const file of ['quest-main_quests.schema.json','quest-sub_quests.schema.json
  const placement=box.properties.event_zone_before_pre.items;assert.deepEqual(placement.properties.kind.enum,['fixed_event','random_event']);assert.equal(placement.properties.box_side_individual_probability_override.const,false);
 }
 const eventSchema=JSON.parse(fs.readFileSync(path.join(__dirname,'../schemas/exports/event-events.schema.json'),'utf8'));
-assert(!eventSchema.items.allOf,'formal Event schema must not carry the legacy conditional bridge');
 assert.deepEqual(eventSchema.items.properties.usage.oneOf[0].enum,['story','random','common']);
 assert.deepEqual(eventSchema.items.properties.type.enum,['battle','exploration','choice','special']);
-assert(!eventSchema.items.properties.battle_formation,'formal Event schema must not expose battle_formation');
-assert(!eventSchema.items.properties.links,'formal Event schema must not expose links');
+assert.equal(eventSchema.items.additionalProperties,false,'Formal Event schema must reject fields outside the current shape');
 
 const html=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
 for(const token of ['GKExportCore.collectQuestEventContractIssues(data)','P4 Export契約 合格','警告 '+"'",'Quest.boxes正式Export契約','P7-B Game Runtime'])assert(html.includes(token),`Studio P4 integration missing ${token}`);

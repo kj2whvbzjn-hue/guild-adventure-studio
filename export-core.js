@@ -61,16 +61,43 @@
   function stringValue(value){return String(value??'').trim();}
   function eventUsages(event){const raw=event?.usage;if(Array.isArray(raw))return raw.map(stringValue).filter(Boolean);const one=stringValue(raw);return one?[one]:[];}
   function allSceneIds(data){const ids=new Set();(data?.chapters||[]).forEach(ch=>(ch.sections||[]).forEach(sec=>(sec.scenes||[]).forEach(scene=>{const id=stringValue(scene?.id);if(id)ids.add(id);})));return ids;}
-  function hasOwn(row,key){return Boolean(row&&typeof row==='object'&&Object.prototype.hasOwnProperty.call(row,key));}
-  function collectRetiredStoryModelIssues(data){
+  const FORMAL_CHAPTER_FIELDS=new Set(['id','no','title','theme','summary','purpose','status','design','candidate_revisions','export_control','sections','created_at','updated_at']);
+  const FORMAL_SECTION_FIELDS=new Set(['id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','scenes','created_at','updated_at']);
+  const FORMAL_QUEST_FIELDS=new Set(['id','name','type','status','summary','conditions','completion','rewards','failure','prerequisite_ids','next_quest_ids','required_flags','set_flags','start_cost','adventure_duration_seconds','base_enemy_budget','enemy_budget','recommended_level','context','boxes','character_ids','created_at','updated_at']);
+  const FORMAL_QUEST_CONTEXT_FIELDS=new Set(['map_id','environment_tags','tags','difficulty','budget']);
+  const FORMAL_QUEST_BOX_FIELDS=new Set(['box_id','name','order','pre_scene_id','mid_scene_id','post_scene_id',...QUEST_BOX_ZONE_KEYS]);
+  const FORMAL_EVENT_PLACEMENT_FIELDS=new Set(['kind','order','failure_policy','event_id','filter','allow_none','required','box_side_individual_probability_override','encounter_override']);
+  const FORMAL_EVENT_FILTER_FIELDS=new Set(['event_type','group','tags']);
+  const FORMAL_ENCOUNTER_OVERRIDE_FIELDS=new Set(['mode','required_monsters','formation','scaling_profile_ref']);
+  const FORMAL_ENCOUNTER_MONSTER_FIELDS=new Set(['monster_id','count']);
+  const FORMAL_EVENT_FIELDS=new Set(['id','name','usage','type','status','enabled','group','tags','intensity','random_base_weight','generation_profile_ref','summary','conditions','results','required_flags','set_flags','reward_table_id','reward_table_ids','created_at','updated_at']);
+  function collectUnsupportedFields(row,allowed,{code,target,target_id}={}){
+    const issues=[];if(!row||typeof row!=='object'||Array.isArray(row))return issues;
+    for(const field of Object.keys(row))if(!allowed.has(field))issues.push({level:'ERROR',code:code||'FORMAL_FIELD_UNSUPPORTED',target:target||'',target_id:target_id||'',field,message:`${target||'Record'}${target_id?` ${target_id}`:''} に現行Formal仕様外のフィールドがあります: ${field}`});
+    return issues;
+  }
+  function collectFormalStoryModelIssues(data){
     const issues=[];
+    const adventureSettings=Array.isArray(data?.masters?.adventure_settings)?data.masters.adventure_settings:[];
+    if(adventureSettings.length&&!adventureSettings.some(row=>stringValue(row?.id)==='ADV-0001'))issues.push({level:'ERROR',code:'ADVENTURE_SETTINGS_CANONICAL_MISSING',field:'id',message:'Adventure Settingsの正式ID ADV-0001 がありません。'});
+    for(const row of adventureSettings)if(stringValue(row?.id)!=='ADV-0001')issues.push({level:'ERROR',code:'ADVENTURE_SETTINGS_ID_UNSUPPORTED',target:'Adventure Settings',target_id:stringValue(row?.id)||'(ID未設定)',field:'id',message:`Adventure Settingsに現行Formal仕様外のIDがあります: ${stringValue(row?.id)||'(ID未設定)'}`});
     (data?.chapters||[]).forEach(chapter=>{
-      const cid=stringValue(chapter?.id)||'(ID未設定)';
-      for(const key of ['available_monster_ids','random_event_candidates'])if(hasOwn(chapter,key))issues.push({level:'ERROR',code:'RETIRED_CHAPTER_FIELD',chapter_id:cid,field:key,message:`${cid} に撤去済みChapterフィールド ${key} が残っています。Project JSONを正式モデルへ移行してください。`});
-      (chapter?.sections||[]).forEach(section=>{const sid=stringValue(section?.id)||'(ID未設定)';for(const key of ['adventure_duration_seconds','enemy_budget','boxes'])if(hasOwn(section,key))issues.push({level:'ERROR',code:'RETIRED_SECTION_FIELD',chapter_id:cid,section_id:sid,field:key,message:`${sid} に撤去済みSectionフィールド ${key} が残っています。Quest側の正式フィールドへ移行してください。`});});
+      const cid=stringValue(chapter?.id)||'(ID未設定)';issues.push(...collectUnsupportedFields(chapter,FORMAL_CHAPTER_FIELDS,{code:'CHAPTER_FIELD_UNSUPPORTED',target:'Chapter',target_id:cid}));
+      (chapter?.sections||[]).forEach(section=>{const sid=stringValue(section?.id)||'(ID未設定)';issues.push(...collectUnsupportedFields(section,FORMAL_SECTION_FIELDS,{code:'SECTION_FIELD_UNSUPPORTED',target:'Section',target_id:sid}));});
     });
-    (data?.quests||[]).forEach(quest=>{const qid=stringValue(quest?.id)||'(ID未設定)';for(const key of ['links','enemies','drops','reward'])if(hasOwn(quest,key))issues.push({level:'ERROR',code:'RETIRED_QUEST_FIELD',quest_id:qid,field:key,message:`${qid} に撤去済みQuestフィールド ${key} が残っています。正式Questモデルへ移行してください。`});});
-    (data?.events||[]).forEach(event=>{const eid=stringValue(event?.id)||'(ID未設定)';for(const key of ['links','battle_formation'])if(hasOwn(event,key))issues.push({level:'ERROR',code:'RETIRED_EVENT_FIELD',event_id:eid,field:key,message:`${eid} に撤去済みEventフィールド ${key} が残っています。正式Eventモデルへ移行してください。`});});
+    (data?.quests||[]).forEach(quest=>{
+      const qid=stringValue(quest?.id)||'(ID未設定)';issues.push(...collectUnsupportedFields(quest,FORMAL_QUEST_FIELDS,{code:'QUEST_FIELD_UNSUPPORTED',target:'Quest',target_id:qid}));
+      if(quest?.context&&typeof quest.context==='object'&&!Array.isArray(quest.context))issues.push(...collectUnsupportedFields(quest.context,FORMAL_QUEST_CONTEXT_FIELDS,{code:'QUEST_CONTEXT_FIELD_UNSUPPORTED',target:'Quest Context',target_id:qid}));
+      (Array.isArray(quest?.boxes)?quest.boxes:[]).forEach((box,index)=>{
+        const bid=stringValue(box?.box_id)||`${qid} Box ${index+1}`;issues.push(...collectUnsupportedFields(box,FORMAL_QUEST_BOX_FIELDS,{code:'QUEST_BOX_FIELD_UNSUPPORTED',target:'Quest Box',target_id:bid}));
+        for(const zoneKey of QUEST_BOX_ZONE_KEYS)for(const placement of (Array.isArray(box?.[zoneKey])?box[zoneKey]:[])){
+          issues.push(...collectUnsupportedFields(placement,FORMAL_EVENT_PLACEMENT_FIELDS,{code:'QUEST_PLACEMENT_FIELD_UNSUPPORTED',target:'Event Placement',target_id:`${bid}/${zoneKey}`}));
+          if(placement?.filter&&typeof placement.filter==='object'&&!Array.isArray(placement.filter))issues.push(...collectUnsupportedFields(placement.filter,FORMAL_EVENT_FILTER_FIELDS,{code:'QUEST_EVENT_FILTER_FIELD_UNSUPPORTED',target:'Event Filter',target_id:`${bid}/${zoneKey}`}));
+          const override=placement?.encounter_override;if(override&&typeof override==='object'&&!Array.isArray(override)){issues.push(...collectUnsupportedFields(override,FORMAL_ENCOUNTER_OVERRIDE_FIELDS,{code:'QUEST_ENCOUNTER_OVERRIDE_FIELD_UNSUPPORTED',target:'Encounter Override',target_id:`${bid}/${zoneKey}`}));for(const row of [...(Array.isArray(override.required_monsters)?override.required_monsters:[]),...(Array.isArray(override.formation)?override.formation:[])])issues.push(...collectUnsupportedFields(row,FORMAL_ENCOUNTER_MONSTER_FIELDS,{code:'QUEST_ENCOUNTER_MONSTER_FIELD_UNSUPPORTED',target:'Encounter Monster',target_id:`${bid}/${zoneKey}`}));}
+        }
+      });
+    });
+    (data?.events||[]).forEach(event=>{const eid=stringValue(event?.id)||'(ID未設定)';issues.push(...collectUnsupportedFields(event,FORMAL_EVENT_FIELDS,{code:'EVENT_FIELD_UNSUPPORTED',target:'Event',target_id:eid}));});
     return issues;
   }
   function valuePresent(value){if(value==null)return false;if(Array.isArray(value))return value.length>0;if(typeof value==='object')return Object.keys(value).length>0;return stringValue(value)!=='';}
@@ -99,11 +126,11 @@
       if(context.tags!==undefined&&!Array.isArray(context.tags))issues.push({level:'ERROR',code:'QUEST_CONTEXT_TAGS_INVALID',quest_id:qid,message:`${qid} のContext tagsが配列ではありません。`});
       if(context.difficulty!==undefined&&context.difficulty!==null&&!Number.isFinite(Number(context.difficulty)))issues.push({level:'ERROR',code:'QUEST_CONTEXT_DIFFICULTY_INVALID',quest_id:qid,message:`${qid} のContext difficultyが数値ではありません。`});
       if(context.budget!==undefined&&context.budget!==null&&(typeof context.budget!=='object'||Array.isArray(context.budget)))issues.push({level:'ERROR',code:'QUEST_CONTEXT_BUDGET_INVALID',quest_id:qid,message:`${qid} のContext budgetがオブジェクトではありません。`});
-      if((valuePresent(context.map_id)||valuePresent(context.area_id)))issues.push({level:'INFO',code:'QUEST_CONTEXT_MAP_REFERENCE_UNVERIFIED',quest_id:qid,message:`${qid} のMap/Area参照は正本Dataset未確定のため、P4では存在確認を保留します。`});
+      if(valuePresent(context.map_id))issues.push({level:'INFO',code:'QUEST_CONTEXT_MAP_REFERENCE_UNVERIFIED',quest_id:qid,message:`${qid} のMap参照はP4では存在確認を保留します。`});
     }
     const boxIds=new Set(),boxOrders=new Set();
     boxes.forEach((box,index)=>{
-      const bid=stringValue(box?.box_id||box?.id),label=bid||`${qid} Box ${index+1}`,order=Number(box?.order);
+      const bid=stringValue(box?.box_id),label=bid||`${qid} Box ${index+1}`,order=Number(box?.order);
       if(!bid)issues.push({level:'ERROR',code:'QUEST_BOX_ID_MISSING',quest_id:qid,box_index:index,message:`${qid} のBox ${index+1} にBox IDがありません。`});
       else if(boxIds.has(bid))issues.push({level:'ERROR',code:'QUEST_BOX_ID_DUPLICATE',quest_id:qid,box_id:bid,message:`${qid} のBox IDが重複しています: ${bid}`});
       else boxIds.add(bid);
@@ -132,7 +159,7 @@
           }
           if(!QUEST_EVENT_FAILURE_POLICIES.has(stringValue(placement?.failure_policy)))issues.push({level:'ERROR',code:'QUEST_EVENT_FAILURE_POLICY_INVALID',quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} のfailure_policyが不正です。`});
           if(kind==='fixed_event'){
-            const eventId=stringValue(placement?.event_id||placement?.ref_id);
+            const eventId=stringValue(placement?.event_id);
             if(!eventId)issues.push({level:'ERROR',code:'QUEST_EVENT_REFERENCE_MISSING',quest_id:qid,box_id:bid,zone:zoneKey,message:`${prefix} にEvent IDがありません。`});
             else if(!eventIds.has(eventId))issues.push({level:'ERROR',code:'QUEST_EVENT_REFERENCE_BROKEN',quest_id:qid,box_id:bid,zone:zoneKey,event_id:eventId,message:`${prefix} のEvent参照が存在しません: ${eventId}`});
           }
@@ -174,19 +201,15 @@
     if(event?.tags!==undefined&&!Array.isArray(event.tags))issues.push({level:'ERROR',code:'EVENT_TAGS_INVALID',event_id:eid,message:`${eid} のEventタグが配列ではありません。`});
     if(event?.intensity!==undefined&&stringValue(event.intensity)&&!QUEST_EVENT_INTENSITIES.has(stringValue(event.intensity)))issues.push({level:'ERROR',code:'EVENT_INTENSITY_INVALID',event_id:eid,message:`${eid} のEvent強度が不正です。`});
     if(event?.random_base_weight!==undefined&&(!Number.isFinite(Number(event.random_base_weight))||Number(event.random_base_weight)<0))issues.push({level:'ERROR',code:'EVENT_RANDOM_WEIGHT_INVALID',event_id:eid,message:`${eid} の基礎抽選重みが不正です。`});
-    if(usages.includes('random')&&event?.random_base_weight===undefined)issues.push({level:'WARNING',code:'EVENT_RANDOM_WEIGHT_DEFAULT',event_id:eid,message:`${eid} はRandom用途ですが基礎抽選重みが未設定です。P4 Exportでは既定値1相当として扱う互換状態です。`});
+    if(usages.includes('random')&&event?.random_base_weight===undefined)issues.push({level:'WARNING',code:'EVENT_RANDOM_WEIGHT_DEFAULT',event_id:eid,message:`${eid} はRandom用途ですが基礎抽選重みが未設定です。P4 Exportでは既定値1として扱います。`});
     if(event?.enabled!==undefined&&typeof event.enabled!=='boolean')issues.push({level:'ERROR',code:'EVENT_ENABLED_INVALID',event_id:eid,message:`${eid} の有効/無効がbooleanではありません。`});
     if(event?.generation_profile_ref!==undefined&&event.generation_profile_ref!==null&&typeof event.generation_profile_ref!=='string')issues.push({level:'ERROR',code:'EVENT_GENERATION_PROFILE_REF_INVALID',event_id:eid,message:`${eid} の生成方針参照が文字列ではありません。`});
     if(event?.conditions!==undefined&&!Array.isArray(event.conditions)&&typeof event.conditions!=='string')issues.push({level:'ERROR',code:'EVENT_CONDITIONS_INVALID',event_id:eid,message:`${eid} の発生条件は文字列または配列である必要があります。`});
     else if(valuePresent(event?.conditions))issues.push({level:'WARNING',code:'EVENT_CONDITIONS_RUNTIME_IGNORED',event_id:eid,message:`${eid} のconditionsはP6 Runtimeでは解釈しません。機械可読な発生条件はrequired_flagsを使用してください。`});
-    const forbidden=[
-      ['map_id','Map ID'],['area_id','Area ID'],['fixed_normal_enemy_roster','通常敵固定一覧'],['map_specific_exploration_result','Map固有探索結果'],['final_reward','確定報酬']
-    ];
-    forbidden.forEach(([key,label])=>{if(valuePresent(event?.[key]))issues.push({level:'ERROR',code:'EVENT_ENVIRONMENT_FIELD_FORBIDDEN',event_id:eid,field:key,message:`${eid} は新Eventに禁止されている環境依存項目「${label}」(${key})を保持しています。`});});
     return issues;
   }
   function collectQuestEventContractIssues(data){
-    const issues=[...collectRetiredStoryModelIssues(data)];(data?.quests||[]).forEach(q=>issues.push(...collectQuestContractIssues(data,q)));(data?.events||[]).forEach(e=>issues.push(...collectEventContractIssues(data,e)));
+    const issues=[...collectFormalStoryModelIssues(data)];(data?.quests||[]).forEach(q=>issues.push(...collectQuestContractIssues(data,q)));(data?.events||[]).forEach(e=>issues.push(...collectEventContractIssues(data,e)));
     const boxes=(data?.quests||[]).flatMap(q=>Array.isArray(q?.boxes)?q.boxes:[]),randomSlots=boxes.flatMap(box=>QUEST_BOX_ZONE_KEYS.flatMap(key=>Array.isArray(box?.[key])?box[key]:[])).filter(p=>p?.kind==='random_event');
     const sceneUsage=new Set();boxes.forEach(box=>['pre_scene_id','mid_scene_id','post_scene_id'].forEach(key=>{const id=stringValue(box?.[key]);if(id)sceneUsage.add(id);}));
     issues.push({level:'INFO',code:'QUEST_BOX_COUNT',message:`P4情報: Quest Box ${boxes.length}件。`});
@@ -200,7 +223,7 @@
     if(!boxes.length){issues.push({level:'WARNING',code:'FORMAL_QUEST_BOXES_EMPTY',quest_id:qid,message:'P5 Game RuntimeにはQuest.boxesが1件以上必要です。'});return{ready:false,issues};}
     const formalErrors=collectQuestContractIssues(data,quest).filter(issue=>issue.level==='ERROR');if(formalErrors.length)return{ready:false,issues:formalErrors};
     const eventById=new Map((data?.events||[]).map(event=>[stringValue(event?.id),event]));
-    boxes.forEach(box=>QUEST_BOX_ZONE_KEYS.forEach(zoneKey=>(Array.isArray(box?.[zoneKey])?box[zoneKey]:[]).forEach(placement=>{if(placement?.kind==='random_event')issues.push({level:'WARNING',code:'FORMAL_QUEST_P6_RANDOM_EVENT_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:`${qid} はRandom Event枠を含むためP6対応待ちです。`});if(placement?.kind==='fixed_event'){const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});}})));
+    boxes.forEach(box=>QUEST_BOX_ZONE_KEYS.forEach(zoneKey=>(Array.isArray(box?.[zoneKey])?box[zoneKey]:[]).forEach(placement=>{if(placement?.kind==='random_event')issues.push({level:'WARNING',code:'FORMAL_QUEST_P6_RANDOM_EVENT_PENDING',quest_id:qid,box_id:stringValue(box?.box_id),message:`${qid} はRandom Event枠を含むためP6対応待ちです。`});if(placement?.kind==='fixed_event'){const event=eventById.get(stringValue(placement?.event_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});}})));
     return{ready:issues.length===0,issues};
   }
   function p6StoryQuestRuntimeAssessment(data,quest){
@@ -210,11 +233,11 @@
     const eventById=new Map((data?.events||[]).map(event=>[stringValue(event?.id),event]));
     boxes.forEach(box=>QUEST_BOX_ZONE_KEYS.forEach(zoneKey=>(Array.isArray(box?.[zoneKey])?box[zoneKey]:[]).forEach(placement=>{
       if(placement?.kind==='fixed_event'){
-        const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});
+        const event=eventById.get(stringValue(placement?.event_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id),event_id:stringValue(event?.id),message:`${qid} は${type==='battle'?'戦闘':'探索'}Eventを含むためP7 Resolver対応待ちです。`});
       }
       if(placement?.kind==='random_event'){
         const candidates=randomEventCandidates(data,placement),unsupported=candidates.filter(event=>['battle','exploration'].includes(stringValue(event?.type)));
-        if(unsupported.length)issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),event_ids:unsupported.map(event=>stringValue(event?.id)),message:`${qid} のRandom Event枠はP7 Resolver待ちの戦闘/探索Eventを候補に含みます: ${unsupported.map(event=>stringValue(event?.id)).join(', ')}`});
+        if(unsupported.length)issues.push({level:'WARNING',code:'FORMAL_QUEST_P7_RANDOM_EVENT_RESOLVER_PENDING',quest_id:qid,box_id:stringValue(box?.box_id),event_ids:unsupported.map(event=>stringValue(event?.id)),message:`${qid} のRandom Event枠はP7 Resolver待ちの戦闘/探索Eventを候補に含みます: ${unsupported.map(event=>stringValue(event?.id)).join(', ')}`});
       }
     })));
     return{ready:issues.length===0,issues};
@@ -226,12 +249,12 @@
     const eventById=new Map((data?.events||[]).map(e=>[stringValue(e?.id),e])),mapIds=new Set((data?.masters?.maps||[]).map(m=>stringValue(m?.id))),monsterIds=new Set((data?.masters?.monsters||[]).map(m=>stringValue(m?.id))),types=new Set();
     for(const box of boxes)for(const zoneKey of QUEST_BOX_ZONE_KEYS)for(const placement of (Array.isArray(box?.[zoneKey])?box[zoneKey]:[])){
       if(placement?.kind==='random_event'){
-        if(placement?.encounter_override)issues.push({level:'ERROR',code:'P7_RANDOM_OVERRIDE_INVALID',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:'Random Event枠にはEncounter Overrideを設定できません。'});
+        if(placement?.encounter_override)issues.push({level:'ERROR',code:'P7_RANDOM_OVERRIDE_INVALID',quest_id:qid,box_id:stringValue(box?.box_id),message:'Random Event枠にはEncounter Overrideを設定できません。'});
         randomEventCandidates(data,placement).forEach(e=>{const t=stringValue(e?.type);if(['battle','exploration'].includes(t))types.add(t)});continue;
       }
-      if(placement?.kind!=='fixed_event')continue;const event=eventById.get(stringValue(placement?.event_id||placement?.ref_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))types.add(type);
+      if(placement?.kind!=='fixed_event')continue;const event=eventById.get(stringValue(placement?.event_id)),type=stringValue(event?.type);if(['battle','exploration'].includes(type))types.add(type);
       const o=placement?.encounter_override;if(!o)continue;
-      if(type!=='battle'){issues.push({level:'ERROR',code:'P7_OVERRIDE_NON_BATTLE',quest_id:qid,box_id:stringValue(box?.box_id||box?.id),message:'Encounter OverrideはBattle固定Eventだけに設定できます。'});continue;}
+      if(type!=='battle'){issues.push({level:'ERROR',code:'P7_OVERRIDE_NON_BATTLE',quest_id:qid,box_id:stringValue(box?.box_id),message:'Encounter OverrideはBattle固定Eventだけに設定できます。'});continue;}
       const mode=stringValue(o.mode||'resolver');if(!['resolver','required_monsters','fixed_formation'].includes(mode)){issues.push({level:'ERROR',code:'P7_OVERRIDE_MODE_INVALID',quest_id:qid,message:`${qid} のEncounter Override modeが不正です。`});continue;}
       const rows=mode==='required_monsters'?o.required_monsters:mode==='fixed_formation'?o.formation:[];if(mode!=='resolver'&&(!Array.isArray(rows)||!rows.length))issues.push({level:'ERROR',code:'P7_OVERRIDE_FORMATION_EMPTY',quest_id:qid,message:`${qid} の${mode}にMonsterが設定されていません。`});
       for(const row of rows||[]){const mid=stringValue(row?.monster_id);if(mid&&!monsterIds.has(mid))issues.push({level:'ERROR',code:'P7_OVERRIDE_MONSTER_MISSING',quest_id:qid,monster_id:mid,message:`Story Battle OverrideのMonsterが存在しません: ${mid}`});}
@@ -285,7 +308,7 @@
       'quest/event_quests.json':clean(quests.filter(x=>x.type==='event')),'quest/main_quests.json':clean(quests.filter(x=>x.type==='main')),'quest/sub_quests.json':clean(quests.filter(x=>!['main','event'].includes(x.type))),
       'scenario/chapters.json':chapters,'scenario/scenes.json':scenes,'scenario/sections.json':sections,
       'skill/skills.json':clean(masters.skills||[]),'stone/stone_mods.json':clean(recordsByTag(mods,['stone','tablet','石板'])),'stone/stones.json':clean(masters.tablets||[]),
-      'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean((masters.reward_tables&&masters.reward_tables.length)?masters.reward_tables:(data.drop_tables||[])),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
+      'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean(masters.reward_tables||[]),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
     };
   }
   function envelope(payload,dataVersion,generatedAt,appVersion){return {schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,data:payload};}
@@ -303,5 +326,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectRetiredStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectFormalStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

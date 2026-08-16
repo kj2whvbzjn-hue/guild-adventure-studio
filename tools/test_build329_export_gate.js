@@ -5,7 +5,7 @@ const crypto=require('node:crypto');
 const core=require('../export-core.js');
 const text='承認済み本文。王子は身分を隠して近衛騎士団へ入団する。';
 const hash=crypto.createHash('sha256').update(text,'utf8').digest('hex');
-const base={project:{id:'build329-gate'},chapters:[{id:'CH001',name:'第一章',summary:text,design:{goal:'管理専用'},candidate_revisions:[{id:'REV001',status:'approved',text}],export_control:{ready:true,approved_revision_id:'REV001',canonical_hash:hash},sections:[]}],masters:{},quests:[],events:[],flags:[],ai_templates:[],balance:{},drop_tables:[],game_settings:{}};
+const base={project:{id:'build329-gate'},chapters:[{id:'CH001',title:'第一章',summary:text,design:{goal:'管理専用'},candidate_revisions:[{id:'REV001',status:'approved',text}],export_control:{ready:true,approved_revision_id:'REV001',canonical_hash:hash},sections:[]}],masters:{},quests:[],events:[],flags:[],ai_templates:[],balance:{},drop_tables:[],game_settings:{}};
 assert.deepEqual(core.collectScenarioExportIssues(base),[]);
 const rows=core.buildData(base)['scenario/chapters.json'];
 assert.equal(rows.length,1);assert.equal(rows[0].summary,text);

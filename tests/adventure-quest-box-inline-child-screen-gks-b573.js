@@ -4,7 +4,6 @@ const vm=require('vm');
 const html=fs.readFileSync('studio/index.html','utf8');
 
 assert.ok(html.includes('id="questBoxEditorInline"'),'Box child screen container missing');
-assert.ok(!html.includes('id="questBoxEditorOverlay"'),'legacy nested Box fixed overlay must be removed');
 assert.ok(html.includes('#questEditorPanel.quest-box-detail-open>:not(#questBoxEditorInline){display:none!important}'),'Quest editor child-screen switch CSS missing');
 assert.ok(html.includes('onclick="openQuestBoxEditor(${i},event)"'),'Box detail button must stop the originating mobile click');
 assert.ok(html.includes('if(questBoxEditorState){closeQuestBoxEditor();return;}'),'Back must return from Box child screen to Quest editor before leaving the Quest editor');

@@ -30,7 +30,7 @@ assert.deepEqual(capturedRequest.quest_context,{map_id:'MAP-PENDING',area_id:'AR
 assert.equal(capturedRequest.quest_difficulty,8,'P7-B uses explicit selectedStones for difficulty; fixed start-cost resources no longer raise Budget');
 assert.equal(capturedRequest.event_intensity,'high');
 assert.equal(capturedRequest.generation_profile_ref,'GEN-P1');
-assert.equal(capturedRequest.enemy_budget,8,'Legacy fixed start-cost resources no longer change P7-B Quest difficulty');
+assert.equal(capturedRequest.enemy_budget,8,'fixed start-cost resources do not change P7-B Quest difficulty');
 assert.deepEqual(capturedRequest.budget_policy,{policy:'standard'});
 assert(Number.isInteger(capturedRequest.encounter_seed));
 assert.equal(run.battle_results[0].encounter_request.encounter_seed,capturedRequest.encounter_seed);
@@ -64,7 +64,7 @@ assert.equal(d1.battle_results[0].encounter_request.encounter_seed,d2.battle_res
 assert.equal(d1.battle_results[0].seed,d2.battle_results[0].seed);
 const save={};S.startQuestRunPlayback(save,{...d1,quest_run_id:'QR-P7-PERSIST'},{startedAt:'2026-08-15T00:00:00.000Z'});const stored=S.activeQuestRun(save);assert.deepEqual(stored.battle_results,d1.battle_results);S.resumeQuestRun(save,Date.parse('2026-08-15T00:00:05.000Z'));assert.deepEqual(S.activeQuestRun(save).battle_results,d1.battle_results);
 
-// Resolver failures become deterministic QuestRun failure data instead of silently falling back to a fixed Event roster.
+// Resolver failures become deterministic QuestRun failure data without substituting another Formation.
 const empty=S.simulateQuest({quest:quest('Q-EMPTY',fixed('EVT-BATTLE')),events:[battleEvent],seed:7020,resolveBattleEncounter:()=>({formation:[]}),simulateBattle:()=>{throw new Error('must not run Battle Core for empty formation')}});
 assert.equal(empty.final_result.success,false);assert.equal(empty.final_result.failure.reason,'simulation_error');assert.match(empty.final_result.failure.message,/empty Formation/);
 

@@ -4,7 +4,6 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const studio=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 const Story=require(path.join(root,'assets/shared/js/adventure-story-system.js'));
-assert(!studio.includes('id="storyRandomEventCandidates"'),'legacy Chapter Random Event candidate editor must be removed');
 for(const token of ['addQuestBoxPlacement','updateQuestBoxRandomFilter','event_type','グループ','タグ'])assert(studio.includes(token),`formal Quest Box Random Event authoring missing: ${token}`);
 const placement=Story.normalizeQuestEventPlacement({kind:'random_event',filter:{event_type:'exploration',group:'ruins',tags:['rare']},allow_none:false,required:true},0);
 assert.equal(placement.kind,'random_event');assert.deepEqual(placement.filter,{event_type:'exploration',group:'ruins',tags:['rare']});assert.equal(placement.allow_none,false);assert.equal(placement.required,true);

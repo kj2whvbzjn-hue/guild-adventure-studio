@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B595</title>
+<title>GK Studio GKS-B596</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.188 / GKS-B595</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.189 / GKS-B596</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.188 / Studio GKS-B595</div>
+    <div class="version">Game GA-B486.189 / Studio GKS-B596</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2210,11 +2210,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=595"></script>
+<script src="./layer-controller.js?v=596"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B595';
+const DISTRIBUTION_BUILD='GKS-B596';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2246,7 +2246,7 @@ migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
 localStorage.setItem(CURRENT_KEY,currentProjectId);
 let data=loadProject(currentProjectId)||initial(), validation=[];
-normalizeLoadedProject({persistMigration:true});
+normalizeLoadedProject();
 function projectStorageKey(id){return PROJECT_KEY_PREFIX+id}
 function backupStorageKey(id){return BKEY_PREFIX+id}
 function getProjectRegistry(){
@@ -2342,7 +2342,6 @@ function verifyStoryProtectedSnapshot(before,obj){
  const changed=[];Object.keys(before).forEach(k=>{if(JSON.stringify(obj[k])!==before[k])changed.push(k);});return changed;
 }
 function normalizeData(){
- let adventureSettingsIdMigration={migrated:false,conflict:false};
  if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);else data.ai_programs=Array.isArray(data.ai_programs)?data.ai_programs:[];
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
@@ -2396,10 +2395,7 @@ function normalizeData(){
  data.battle_tests=data.battle_tests||[];
  data.masters=data.masters||{};
  ['stats','jobs','equipment','mods','monsters','status_effects','tablets','maps','exploration_outcomes','reward_tables'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params||{};m.description=m.description||'';});});['ai_conditions','ai_targets','ai_actions'].forEach(k=>{data.masters[k]=data.masters[k]||[];data.masters[k].forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.description=m.description||'';});});data.masters.skills=data.masters.skills||[];data.masters.skills.forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.description=m.description||'';if(!isFormalSkillMasterRecord('skills',m)){m.tags=m.tags||[];m.params=m.params||{}}});
- if(!data.masters.reward_tables.length&&Array.isArray(data.drop_tables)&&data.drop_tables.length)data.masters.reward_tables=data.drop_tables.map(x=>({...x}));
  data.masters.adventure_settings=data.masters.adventure_settings||[];
- if(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.migrateAdventureSettingsRows==='function')adventureSettingsIdMigration=GKAdventureStorySystem.migrateAdventureSettingsRows(data.masters.adventure_settings);
- else{const canonical=data.masters.adventure_settings.find(x=>String(x?.id||'')==='ADV-0001'),legacy=data.masters.adventure_settings.find(x=>String(x?.id||'')==='ADV-DEFAULT');if(legacy&&!canonical){legacy.id='ADV-0001';adventureSettingsIdMigration={migrated:true,conflict:false};}else if(legacy&&canonical)adventureSettingsIdMigration={migrated:false,conflict:true};}
  if(!data.masters.adventure_settings.length)data.masters.adventure_settings.push({id:'ADV-0001',name:'冒険バランス既定',status:'active',enabled:true,tags:[],params:{encounter:{default_spawn_weight:1,max_units:100},reward_scaling:{bonus_per_budget:0.02,min_multiplier:1,max_multiplier:null,amount_rounding:'floor',rarity_weight_bonus_per_budget:{common:0,uncommon:0.002,rare:0.005,epic:0.01,legendary:0.02}},exploration:{default_base_weight:1,default_success_rate:1,min_success_rate:0,max_success_rate:1,rarity_budget_reference:0,rarity_weight_bonus_per_budget:{common:0,uncommon:0.002,rare:0.005,epic:0.01,legendary:0.02}},fixed_formation_scaling:{hp_per_ratio:1,attack_per_ratio:1,agi_per_ratio:0,min_multiplier:1,max_multiplier:null}},description:'P7-C冒険バランス設定。Reward係数・丸め・Rarity補正を含む数値は仮値で、コード変更なしで調整できます。',updated_at:now()});data.masters.adventure_settings.forEach(m=>{m.name=m.name||m.id;m.status=m.status||'draft';m.tags=m.tags||[];m.params=m.params&&typeof m.params==='object'?m.params:{};m.description=m.description||'';const r=m.params.reward_scaling=m.params.reward_scaling&&typeof m.params.reward_scaling==='object'?m.params.reward_scaling:{};if(r.bonus_per_budget==null)r.bonus_per_budget=0.02;if(r.min_multiplier==null)r.min_multiplier=1;if(!Object.prototype.hasOwnProperty.call(r,'max_multiplier'))r.max_multiplier=null;if(!['floor','round','ceil'].includes(String(r.amount_rounding)))r.amount_rounding='floor';r.rarity_weight_bonus_per_budget=r.rarity_weight_bonus_per_budget&&typeof r.rarity_weight_bonus_per_budget==='object'?r.rarity_weight_bonus_per_budget:{common:0,uncommon:0.002,rare:0.005,epic:0.01,legendary:0.02};});
  data.quests.forEach(q=>{
   q.type=q.type||'sub';
@@ -2428,14 +2424,9 @@ function normalizeData(){
  data.entities=data.entities||[];
  data.decisions=data.decisions||[];
  data.history=data.history||[];
- return {adventure_settings_id_migrated:Boolean(adventureSettingsIdMigration?.migrated),adventure_settings_id_conflict:Boolean(adventureSettingsIdMigration?.conflict)};
+ return {};
 }
-function normalizeLoadedProject({persistMigration=false}={}){
- const rows=Array.isArray(data?.masters?.adventure_settings)?data.masters.adventure_settings:[],hasLegacy=rows.some(x=>String(x?.id||'')==='ADV-DEFAULT'),hasCanonical=rows.some(x=>String(x?.id||'')==='ADV-0001');
- if(persistMigration&&hasLegacy&&!hasCanonical)createBackup('before-ADV-DEFAULT-to-ADV-0001-migration',{silent:true});
- const result=normalizeData();
- if(persistMigration&&result?.adventure_settings_id_migrated){data.history=data.history||[];data.history.push({at:now(),message:'adventure settings id migrated ADV-DEFAULT -> ADV-0001'});if(data.history.length>100)data.history.shift();safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'Adventure Settings ID移行');updateRegistryFromData();}
- return result;
+function normalizeLoadedProject(){return normalizeData();
 }
 function backups(){
  try{return JSON.parse(localStorage.getItem(backupStorageKey(currentProjectId)))||[]}catch(e){return []}
@@ -2751,7 +2742,7 @@ function switchProject(id){
  currentProjectId=id;
  localStorage.setItem(CURRENT_KEY,id);
  data=loadProject(id)||initial();
- normalizeLoadedProject({persistMigration:true});
+ normalizeLoadedProject();
  validation=[];
  runValidation();
  showView('dashboard');
@@ -2836,7 +2827,7 @@ function importAllProjectsPackage(pkg,sourceFilename='',inputToClear=null){
    }
    if(!saveProjectRegistry([...merged.values()]))throw new Error('プロジェクト一覧の保存に失敗しました。');
    const requested=String(pkg.current_project_id||'');
-   if(requested&&merged.has(requested)){currentProjectId=requested;localStorage.setItem(CURRENT_KEY,currentProjectId);data=loadProject(currentProjectId)||data;normalizeLoadedProject({persistMigration:true});}
+   if(requested&&merged.has(requested)){currentProjectId=requested;localStorage.setItem(CURRENT_KEY,currentProjectId);data=loadProject(currentProjectId)||data;normalizeLoadedProject();}
    if(inputToClear)inputToClear.value='';fullImportClearFailure();render();alert(`${incoming.length}件のプロジェクトを読み込みました。全件が事前ゲート合格後にのみ反映されています。`);return true;
   }catch(error){
    for(const [id,value] of storageBefore){if(value==null)localStorage.removeItem(projectStorageKey(id));else localStorage.setItem(projectStorageKey(id),value)}
@@ -3493,7 +3484,7 @@ function gameDataAuditCollectReferences(rootData,index,issues,refsByTarget){
   gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].character_ids`,'character',quest?.character_ids);
   (quest.boxes||[]).forEach((box,bi)=>{
    ['pre_scene_id','mid_scene_id','post_scene_id'].forEach(key=>gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].boxes[${bi}].${key}`,'scene',box?.[key]));
-   ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post'].forEach(zone=>(Array.isArray(box?.[zone])?box[zone]:[]).forEach((placement,pi)=>{if(placement?.kind==='fixed_event')gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].boxes[${bi}].${zone}[${pi}].event_id`,'event',placement?.event_id||placement?.ref_id)}));
+   ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post'].forEach(zone=>(Array.isArray(box?.[zone])?box[zone]:[]).forEach((placement,pi)=>{if(placement?.kind==='fixed_event')gameDataAuditReference(index,issues,refsByTarget,`quests[${qi}].boxes[${bi}].${zone}[${pi}].event_id`,'event',placement?.event_id)}));
   });
   gameDataAuditScanNestedNamedRefs(quest,`quests[${qi}]`,index,issues,refsByTarget);
  });
@@ -7301,8 +7292,6 @@ function saveStoryNode(){
  }else{
   obj.summary=storyNodeText.value;
  }
- if(type==='chapter'){delete obj.available_monster_ids;delete obj.random_event_candidates;}
- if(type==='section'){delete obj.adventure_duration_seconds;delete obj.enemy_budget;delete obj.boxes;}
  obj.updated_at=now();
  renumberStorySiblings(selected.parent);
  persist('story node updated');
@@ -7457,7 +7446,7 @@ function questBoxClone(box,index=0){
  ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post'].forEach(key=>{raw[key]=Array.isArray(raw[key])?raw[key]:[]});
  return raw;
 }
-function questBoxId(box){return String(box?.box_id||box?.id||'')}
+function questBoxId(box){return String(box?.box_id||'')}
 function nextQuestBoxId(){
  let max=0;
  const rows=[...(data.quests||[]).flatMap(q=>Array.isArray(q.boxes)?q.boxes:[]),...questDraftBoxes];
@@ -7789,7 +7778,6 @@ function saveQuest(){
   character_ids:[...questDraftCharacterIds],
   updated_at:now()
  };
- for(const key of ['links','enemies','drops','reward'])delete record[key];
  if(window.GKAdventureStorySystem&&typeof GKAdventureStorySystem.normalizeQuest==='function')GKAdventureStorySystem.normalizeQuest(record);
  if(existing>=0){
   record.created_at=data.quests[existing].created_at||now();
@@ -7877,7 +7865,6 @@ function saveEvent(){
   intensity:eventIntensity.value,random_base_weight:weight,generation_profile_ref:eventGenerationProfileRef.value.trim()||null,reward_table_ids:splitCsv(eventRewardTableIds.value),summary:eventSummary.value,
   conditions:Array.isArray(previous.conditions)?previous.conditions:eventConditions.value,results:eventResults.value,required_flags:splitCsv(eventRequiredFlags.value),set_flags:splitCsv(eventSetFlags.value),updated_at:now()
  };
- for(const key of ['links','battle_formation'])delete record[key];
  if(window.GKAdventureStorySystem)GKAdventureStorySystem.normalizeEvent(record);
  if(existing>=0){record.created_at=data.events[existing].created_at||now();data.events[existing]=record}else{record.created_at=now();data.events.push(record)}
  persist('event saved');clearEventForm();renderEvents();closeStudioInputPanel();
@@ -8056,7 +8043,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','595');
+    url.searchParams.set('appv','596');
     location.replace(url.toString());
    }
  }
@@ -8065,7 +8052,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=595',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=596',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8084,7 +8071,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','595');
+    url.searchParams.set('appv','596');
     location.replace(url.toString());
    }
   });

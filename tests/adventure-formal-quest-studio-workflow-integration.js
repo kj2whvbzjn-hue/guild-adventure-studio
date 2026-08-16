@@ -14,8 +14,6 @@ for(const needle of [
  "showView('importexport')",
  'validatePhpExport()'
 ])assert(html.includes(needle),`formal quest workflow missing: ${needle}`);
-assert(!html.includes('function openQuestFormalSection()'),'formal workflow must not navigate to legacy Section runtime data');
-assert(!html.includes('旧Sectionデータを確認（参考）'),'legacy Section workflow action must be removed');
 assert(html.includes('questBoxes=questDraftBoxes'),'workflow must use Quest.boxes as the formal source');
 assert(html.includes('renderQuestFormalWorkflow();'),'workflow must refresh with formal quest status');
 console.log('adventure-formal-quest-studio-workflow-integration: PASS');

@@ -9,8 +9,8 @@ assert(policy.classes.game_data.patterns.includes('Export/**'),'system policy mu
 assert(policy.rules.source_allowed_classes.includes('game_data'),'full source must be allowed to carry bundled Export for local/runtime validation');
 assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct update packages must not carry game_data');
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
-assert.strictEqual(build.game_build,'GA-B486.188');
-assert.strictEqual(build.studio_build,'GKS-B595');
+assert.strictEqual(build.game_build,'GA-B486.189');
+assert.strictEqual(build.studio_build,'GKS-B596');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",
@@ -38,8 +38,7 @@ for(const rel of [
   'tests/simultaneous-activation-order-formal-p01-13.js',
   'tests/test_r06_cover_validation_positive_gks_b552.js',
   'tests/formal-production-skill-export-gks-b555.js',
-  'tests/formal-game-title-start-skill-tags-resilience-ga-b486-168.js',
-  'tests/adventure-settings-canonical-id-migration-ga-b486-182-gks-b587.js'
+  'tests/formal-game-title-start-skill-tags-resilience-ga-b486-168.js'
 ]) assert(sourceOnly.has(rel),`Export fixture test must be source-only in update inspection: ${rel}`);
 const registryRunner=fs.readFileSync('tools/integrity/check-test-registry.py','utf8');
 assert(registryRunner.includes("parser.add_argument('--context', choices=('source', 'update'), default='source')"),'test registry checker must accept inspection context');

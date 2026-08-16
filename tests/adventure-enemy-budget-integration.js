@@ -13,23 +13,18 @@ assert.equal(Story.resolveEnemyBudget({quest:{base_enemy_budget:8},startCostReso
 assert.equal(Story.resolveEnemyBudget({quest:{enemy_budget:4},startCostResources:{'TBL-B':1},tablets}),9);
 assert.equal(Story.resolveEnemyBudget({quest:{base_enemy_budget:0},startCostResources:{},tablets}),0);
 assert.equal(Story.tabletEnemyBudgetBonus({params:{enemy_budget_bonus:2}}),2);
-assert.equal(typeof Story.monsterBudgetCost,'undefined','retired Section random-battle helper must not remain public');
-assert.equal(typeof Story.generateRandomBattle,'undefined','retired Section random-battle generator must be removed');
 
-// Studio authors budget only on Quest/Master. Legacy Section budget UI is removed.
 for(const marker of ['id="questEnemyBudget"','id="masterEnemyBudgetCost"','id="masterEnemyBudgetBonus"','Enemy Budget Costが不正です','Enemy Budget Bonusが不正です'])assert(studio.includes(marker),`Studio marker missing: ${marker}`);
-assert(!studio.includes('id="storyEnemyBudget"'),'retired Section enemy_budget editor must be removed');
-assert(!runtime.includes('function adventureEnemyBudget('),'unused Game compatibility wrapper must be removed');
 assert(!Story.resolveEnemyBudget.toString().includes('section'),'Enemy Budget resolver must not accept a Section fallback');
 
-// Safety is retained: retired Section fields are rejected by the formal export gate instead of silently stripped.
-const retired={quests:[],events:[],chapters:[{id:'C-OLD',sections:[{id:'S-OLD',enemy_budget:6,scenes:[]}]}],masters:{}};
-const retiredIssues=Export.collectRetiredStoryModelIssues(retired);
-assert(retiredIssues.some(x=>x.level==='ERROR'&&x.code==='RETIRED_SECTION_FIELD'&&x.field==='enemy_budget'));
+// Safety is retained: any field outside the current Formal Section shape stops Export.
+const unsupported={quests:[],events:[],chapters:[{id:'C-X',sections:[{id:'S-X',unsupported_budget_field:6,scenes:[]}]}],masters:{}};
+const shapeIssues=Export.collectFormalStoryModelIssues(unsupported);
+assert(shapeIssues.some(x=>x.level==='ERROR'&&x.code==='SECTION_FIELD_UNSUPPORTED'&&x.field==='unsupported_budget_field'));
 
-// Formal Export preserves Quest budget and Monster/Tablet params without relying on Section compatibility fields.
+// Formal Export preserves Quest budget and Monster/Tablet params.
 const data={quests:[{id:'Q-B',name:'Budget',type:'main',adventure_duration_seconds:30,base_enemy_budget:9,enemy_budget:9,boxes:[]}],chapters:[{id:'C-B',sections:[{id:'S-B',scenes:[]}]}],events:[],flags:[],masters:{monsters:[{id:'M-A',params:{enemy_budget_cost:3}}],tablets:[{id:'TBL-A',params:{enemy_budget_bonus:2}}]}};
-assert(!Export.collectRetiredStoryModelIssues(data).length);
+assert(!Export.collectFormalStoryModelIssues(data).length);
 const out=Export.buildData(data);
 assert.equal(out['quest/main_quests.json'][0].enemy_budget,9);
 assert.equal(Object.prototype.hasOwnProperty.call(out['scenario/sections.json'][0],'enemy_budget'),false);

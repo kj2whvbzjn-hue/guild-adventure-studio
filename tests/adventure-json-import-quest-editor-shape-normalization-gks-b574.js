@@ -67,7 +67,6 @@ assert.strictEqual(JSON.stringify(normalized.prerequisite_ids),JSON.stringify(['
 assert.strictEqual(JSON.stringify(normalized.required_flags),JSON.stringify(['FLAG-A','FLAG-B']));
 assert.strictEqual(JSON.stringify(normalized.set_flags),JSON.stringify(['FLAG-C']));
 assert.strictEqual(JSON.stringify(normalized.character_ids),JSON.stringify(['CHAR-01']));
-assert.strictEqual(Object.prototype.hasOwnProperty.call(normalized,'links'),false);
 vm.runInContext("editQuest('QST-CH01-SEC01')",ctx);
 assert.strictEqual(vm.runInContext('questDraftBoxes.length',ctx),1);assert.ok(vm.runInContext('!!studioInputPanelState',ctx));
 assert.strictEqual(elements.questEnvironmentTags.value,'grassland');

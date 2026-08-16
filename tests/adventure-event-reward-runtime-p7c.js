@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const S=require('../assets/shared/js/adventure-story-system.js');
 const W=require('../assets/shared/js/adventure-reward-resolver.js');
 
-const settings=[{id:'ADV-DEFAULT',enabled:true,params:{reward_scaling:{bonus_per_budget:.02,min_multiplier:1,max_multiplier:null,amount_rounding:'floor',rarity_weight_bonus_per_budget:{common:0,rare:.1,epic:.2}}}}];
+const settings=[{id:'ADV-0001',enabled:true,params:{reward_scaling:{bonus_per_budget:.02,min_multiplier:1,max_multiplier:null,amount_rounding:'floor',rarity_weight_bonus_per_budget:{common:0,rare:.1,epic:.2}}}}];
 const difficulty=S.resolveAdventureDifficulty({quest:{id:'Q',base_enemy_budget:100},selectedStones:[{stone_id:'STONE-BUDGET',count:1},{stone_id:'STONE-REWARD',count:1}],tablets:[{id:'STONE-BUDGET',params:{stone_level:25}},{id:'STONE-REWARD',params:{stone_level:0,reward_multiplier_bonus:.2}}],adventureSettings:settings});
 assert.equal(difficulty.stone_budget_delta,25);
 assert.equal(difficulty.reward_scaling_snapshot.difficulty_reward_multiplier,1.5);
