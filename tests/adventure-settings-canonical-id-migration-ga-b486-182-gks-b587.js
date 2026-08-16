@@ -4,7 +4,7 @@ const build=require('../package-build.json');
 const S=require('../assets/shared/js/adventure-story-system.js');
 const R=require('../assets/shared/js/adventure-encounter-resolver.js');
 
-assert.strictEqual(build.game_build,'GA-B486.185');
+assert.strictEqual(build.game_build,'GA-B486.186');
 assert.strictEqual(build.studio_build,'GKS-B593');
 assert.strictEqual(S.ADVENTURE_SETTINGS_CANONICAL_ID,'ADV-0001');
 assert.strictEqual(S.ADVENTURE_SETTINGS_LEGACY_ID,'ADV-DEFAULT');
@@ -59,4 +59,4 @@ const crypto=require('crypto');
 const actual=crypto.createHash('sha256').update(fs.readFileSync('Export/system/adventure_settings.json')).digest('hex');
 assert.strictEqual(entry.sha256,actual,'Export manifest hash must match canonicalized adventure settings');
 
-console.log('PASS GA-B486.185 / GKS-B593 Adventure Settings canonical ID migration preserves data, prefers ADV-0001, and keeps ADV-DEFAULT runtime fallback');
+console.log('PASS GA-B486.186 / GKS-B593 Adventure Settings canonical ID migration preserves data, prefers ADV-0001, and keeps ADV-DEFAULT runtime fallback');
