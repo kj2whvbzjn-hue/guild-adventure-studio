@@ -84,6 +84,27 @@ function semanticErrors(kind, value) {
     if (value.node_type === 'target' && (outputs.length !== 1 || outputs[0]?.id !== 'next')) errors.push('target output must be next');
     if (value.node_type === 'action' && outputs.length !== 0) errors.push('action must have zero outputs');
   }
+  if (kind === 'layout') {
+    const occupied = new Set();
+    const chipIds = new Set();
+    const extensionIds = new Set();
+    for (const chip of value.chips || []) {
+      if (chipIds.has(chip.instance_id)) errors.push(`duplicate chip instance ${chip.instance_id}`);
+      chipIds.add(chip.instance_id);
+      if (chip.x >= value.width || chip.y >= value.height) errors.push(`chip ${chip.instance_id} is outside board`);
+      const key = `${chip.x},${chip.y}`;
+      if (occupied.has(key)) errors.push(`layout cell overlap ${key}`);
+      occupied.add(key);
+    }
+    for (const extension of value.extensions || []) {
+      if (extensionIds.has(extension.id)) errors.push(`duplicate extension ${extension.id}`);
+      extensionIds.add(extension.id);
+      if (extension.x >= value.width || extension.y >= value.height) errors.push(`extension ${extension.id} is outside board`);
+      const key = `${extension.x},${extension.y}`;
+      if (occupied.has(key)) errors.push(`layout cell overlap ${key}`);
+      occupied.add(key);
+    }
+  }
   if (kind === 'program') {
     const ids = value.nodes.map((node) => node.instance_id);
     if (new Set(ids).size !== ids.length) errors.push('node instance ids must be unique');
@@ -116,6 +137,7 @@ function semanticErrors(kind, value) {
 const contracts = [
   ['node', 'ai-node.schema.json'],
   ['program', 'ai-program.schema.json'],
+  ['layout', 'ai-layout.schema.json'],
   ['runtime', 'ai-runtime.schema.json'],
   ['trace', 'ai-trace.schema.json']
 ];
@@ -137,4 +159,4 @@ const validActionErrors = [...validate(validAction, actionSchema, actionSchema),
 assert.deepStrictEqual(validActionErrors, [], `action valid fixture failed:
 ${validActionErrors.join('\n')}`);
 
-console.log('AI_SCHEMA_CONTRACT_R1_OK schemas=4 valid=5 invalid=4 action_terminal=1');
+console.log('AI_SCHEMA_CONTRACT_R1_OK schemas=5 valid=6 invalid=5 action_terminal=1 layout_v1=1');

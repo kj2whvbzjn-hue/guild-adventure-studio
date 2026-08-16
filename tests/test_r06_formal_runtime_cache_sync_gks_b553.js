@@ -1,23 +1,23 @@
 const assert=require('assert'),fs=require('fs');
 const build=require('../package-build.json');
-assert.strictEqual(build.studio_build,'GKS-B597');
+assert.strictEqual(build.studio_build,'GKS-B598');
 const html=fs.readFileSync('game/index.html','utf8');
 const sw=fs.readFileSync('game/sw.js','utf8');
 const cfg=fs.readFileSync('assets/shared/config/runtime-config.js','utf8');
 for(const needle of [
- '../assets/shared/config/runtime-config.js?v=486189b597',
- './assets/js/tag-skill-runtime.js?v=486189b597',
- './assets/js/studio-skill-bridge.js?v=486189b597',
- './assets/js/app-runtime.js?v=486189b597'
+ '../assets/shared/config/runtime-config.js?v=486189b598',
+ './assets/js/tag-skill-runtime.js?v=486189b598',
+ './assets/js/studio-skill-bridge.js?v=486189b598',
+ './assets/js/app-runtime.js?v=486189b598'
 ])assert.ok(html.includes(needle),'game html stale cache key: '+needle);
-assert.ok(cfg.includes("skillExportUrl: '../Export/skill/skills.json?v=486189b597'"),'formal Export cache key stale');
+assert.ok(cfg.includes("skillExportUrl: '../Export/skill/skills.json?v=486189b598'"),'formal Export cache key stale');
 for(const needle of [
- 'ga-game-b486189-b597',
- '../Export/skill/skills.json?v=486189b597',
- '../assets/shared/config/runtime-config.js?v=486189b597',
- './assets/js/tag-skill-runtime.js?v=486189b597',
- './assets/js/studio-skill-bridge.js?v=486189b597',
- './assets/js/app-runtime.js?v=486189b597'
+ 'ga-game-b486189-b598',
+ '../Export/skill/skills.json?v=486189b598',
+ '../assets/shared/config/runtime-config.js?v=486189b598',
+ './assets/js/tag-skill-runtime.js?v=486189b598',
+ './assets/js/studio-skill-bridge.js?v=486189b598',
+ './assets/js/app-runtime.js?v=486189b598'
 ])assert.ok(sw.includes(needle),'game SW stale cache key: '+needle);
 assert.ok(!html.includes('studio-skill-bridge.js?v=486123b549'));
 assert.ok(!html.includes('app-runtime.js?v=486123b549'));

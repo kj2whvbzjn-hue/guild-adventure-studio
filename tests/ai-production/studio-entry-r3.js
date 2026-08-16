@@ -20,6 +20,7 @@ assert(html.includes('id="aiProductionRoot"'), 'AI production view must expose i
 assert(html.includes("'ai-production':'ai-production'"), 'launcher action must route directly to AI production');
 assert(html.includes('./ai-production/ai-production.css?v=1'));
 assert(html.includes('./ai-production/ai-production-ui.js?v=1'));
+assert(html.includes('./ai-production/ai-layout-model.js?v=1'), 'Studio must load AI layout model before production UI');
 
 const showViewStart = html.indexOf('function showView(name){');
 const targetCheck = html.indexOf("if(!target){pendingStudioView=name;return false;}", showViewStart);
@@ -40,7 +41,10 @@ assert(uiSource.includes('GKSAIProgramStore'), 'evolved UI must connect R5 editi
 assert(!uiSource.includes('localStorage'), 'AI UI must retain the Studio persistence boundary');
 assert.strictEqual(manifest.entrypoints.ui, 'ai-production-ui.js');
 assert(manifest.public_globals.includes('GKSAIProductionUI'));
+assert.strictEqual(manifest.entrypoints.layout_model, 'ai-layout-model.js');
+assert(manifest.public_globals.includes('GKSAILayoutModel'));
 assert(sw.includes('./ai-production/ai-production-ui.js?v=1'), 'PWA shell must include the AI production UI');
+assert(sw.includes('./ai-production/ai-layout-model.js?v=1'), 'PWA shell must include the AI layout model');
 assert(sw.includes('./ai-production/ai-production.css?v=1'), 'PWA shell must include the AI production CSS');
 
 console.log('AI_STUDIO_ENTRY_R3_OK launcher=1 navigation=1 recent=1 mobile=1 invalid_view_guard=1');

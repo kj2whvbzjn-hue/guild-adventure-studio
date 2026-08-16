@@ -10,7 +10,7 @@ assert(policy.rules.source_allowed_classes.includes('game_data'),'full source mu
 assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct update packages must not carry game_data');
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
 assert.strictEqual(build.game_build,'GA-B486.189');
-assert.strictEqual(build.studio_build,'GKS-B597');
+assert.strictEqual(build.studio_build,'GKS-B598');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",
