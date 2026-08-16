@@ -296,9 +296,8 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 .quest-card.selected:after{content:'選択中';display:inline-block;margin-top:12px;padding:6px 11px;border-radius:999px;background:#f4bd42;color:#1a2130;font-weight:900}
 #questList{grid-template-columns:1fr!important;gap:12px}
 .event-options{gap:12px!important}.event-options button{min-height:62px!important;font-size:17px;font-weight:850}
-#eventBattle{order:3}.event-choice-scout{order:1}.event-choice-search{order:2}#eventRetreat{order:4}
-#eventObserve{display:none!important}
-#eventNotice{order:5;padding:12px;border-radius:12px;background:rgba(255,255,255,.05);line-height:1.55}
+#eventRetreat{order:1}
+#eventNotice{order:2;padding:12px;border-radius:12px;background:rgba(255,255,255,.05);line-height:1.55}
 @media(max-width:700px){
  .phase-banner .small{display:none}.phase-banner{align-items:center}
  #phase-base .phase-banner .phase-actions{display:none}
@@ -554,7 +553,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <section class="phase-screen dev-workspace" id="phase-devhome" data-phase="devhome"><div class="phase-shell">
  <section class="card dev-home-card"><h2>縦型開発コンソール</h2><p class="small">旧Build 337の実運用画面を基準に、操作 → 状態 → ログの順で確認できる縦型ワークスペースです。正式版の横型表示とゲームロジックは変更しません。</p>
  <div class="dev-home-status"><div>開発表示<b>縦型</b></div><div>正式版表示<b>横型維持</b></div><div>冒険者<b id="devRosterCount">0名</b></div><div>ギルド資金<b id="devGuildGold">0 G</b></div></div>
- <div class="dev-home-actions"><button class="primary" id="devGoBattle">Battle Coreを開く</button><button id="devGoBase">拠点・育成を開く</button><button id="devGoEvent">イベントを開く</button><button id="devGoResult">リザルトを確認</button><a id="devStudioLink" href="../studio/">GK Studioへ戻る</a></div>
+ <div class="dev-home-actions"><button class="primary" id="devGoBattle">Standalone Battleを開く</button><button id="devGoBase">拠点・育成を開く</button><button id="devGoEvent">イベントを開く</button><button id="devGoResult">リザルトを確認</button><a id="devStudioLink" href="../studio/">GK Studioへ戻る</a></div>
  </section>
 </div></section>
 <section class="phase-screen active" id="phase-title" data-phase="title"><div class="phase-shell phase-title">
@@ -577,16 +576,16 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 
 
 <section class="card base-view-card" data-base-view="guild"><div class="base-view-heading">ギルド管理</div><h2>セーブ・バックアップ</h2><div class="row"><button id="saveBtn">ブラウザへ保存</button><button id="loadBtn">ブラウザから読込</button><button id="exportBtn">JSONを書き出す</button><label>JSONを読み込む<input type="file" id="importFile" accept="application/json,.json"></label><button class="danger" id="clearBtn">全データ初期化</button></div><h3>ゲームメニュー</h3><div class="row"><button id="guildToTitle">タイトルへ戻る</button></div><p class="small">通常操作のたび自動保存します。別PCへの移動や更新前のバックアップには「JSONを書き出す」を使用してください。</p></section>
-</div></div><aside class="card base-side" data-base-view="home"><h2>遠征準備</h2><p>現在の冒険者：<b id="baseRosterCount">0</b>名</p><p>ギルド資金：<b id="baseGuildGold">0</b> G</p><p>戦績：<b id="baseBattleRecord">0勝 / 0敗</b></p><p class="small">戦闘結果はブラウザへ自動保存されます。依頼・編成・装備・AI方針は次回遠征へ反映されます。</p><button class="primary" id="baseDepartSide">イベントへ進む</button></aside></div>
+</div></div><aside class="card base-side" data-base-view="home"><h2>遠征準備</h2><p>現在の冒険者：<b id="baseRosterCount">0</b>名</p><p>ギルド資金：<b id="baseGuildGold">0</b> G</p><p>戦績：<b id="baseBattleRecord">0勝 / 0敗</b></p><p class="small">正式冒険の報酬・Quest進行はQuestRun帰還時だけ保存されます。Standalone Battleは正式Saveを更新しません。</p><button class="primary" id="baseDepartSide">イベントへ進む</button></aside></div>
 <nav class="base-mobile-nav" id="baseMobileNav" aria-label="拠点メニュー"><button class="active" data-base-tab="home"><span>⌂</span>拠点</button><button data-base-tab="adventurer"><span>♙</span>冒険者</button><button data-base-tab="quest"><span>★</span>依頼</button><button data-base-tab="guild"><span>🏛</span>ギルド</button></nav>
 </div></section>
 <section class="phase-screen" id="phase-event" data-phase="event"><div class="phase-shell">
  <div class="phase-banner"><div><div class="phase-name">イベントフェーズ</div><div class="small">会話・探索・選択肢・分岐を扱う独立画面です。</div></div><div class="phase-actions"><button id="eventBackBase">拠点へ戻る</button></div></div>
- <div class="event-stage"><div class="event-visual"><div class="event-text"><b id="eventTitle">遠征準備</b><br><span id="eventBody">依頼を選択して出発してください。</span></div></div><div class="card event-options"><h2>行動を選択</h2><button class="primary" id="eventBattle">戦闘を開始する</button><button id="eventObserve">周囲を観察する</button><button id="eventRetreat">拠点へ引き返す</button><div class="small" id="eventNotice">選択した依頼と編成が戦闘へ反映されます。</div><section id="adventurePlaybackPanel" class="adventure-playback hidden" aria-live="polite"><div class="adventure-playback-head"><b>Adventure Playback</b><span id="adventurePlaybackClock" class="small">0 / 0秒</span></div><div class="adventure-progress" aria-hidden="true"><span id="adventurePlaybackProgress"></span></div><div id="adventurePlaybackLog" class="adventure-log"></div><div id="adventurePlaybackDetail" class="adventure-detail hidden"></div><div id="adventureReturnResult" class="adventure-return-result hidden"></div><button id="adventureReturn" class="primary adventure-return" disabled>帰還する</button></section></div></div>
+ <div class="event-stage"><div class="event-visual"><div class="event-text"><b id="eventTitle">QuestRun</b><br><span id="eventBody">依頼を選択して出発してください。</span></div></div><div class="card event-options"><h2>QuestRun Playback</h2><button id="eventRetreat">拠点へ戻る</button><div class="small" id="eventNotice">Quest開始時に確定した結果を再生します。</div><section id="adventurePlaybackPanel" class="adventure-playback hidden" aria-live="polite"><div class="adventure-playback-head"><b>Adventure Playback</b><span id="adventurePlaybackClock" class="small">0 / 0秒</span></div><div class="adventure-progress" aria-hidden="true"><span id="adventurePlaybackProgress"></span></div><div id="adventurePlaybackLog" class="adventure-log"></div><div id="adventurePlaybackDetail" class="adventure-detail hidden"></div><div id="adventureReturnResult" class="adventure-return-result hidden"></div><button id="adventureReturn" class="primary adventure-return" disabled>帰還する</button></section></div></div>
 </div></section>
 <section class="phase-screen" id="phase-battle" data-phase="battle"><div class="phase-shell">
- <div class="phase-banner"><div><div class="phase-name">戦闘フェーズ</div><div class="small">敵を上、味方を下に配置。AIの予約と行動結果を観戦します。</div></div><div class="phase-actions"><button id="battleAbort">イベントへ戻る</button></div></div>
- <section class="card scene-card"><h2>Battle Scene</h2>
+ <div class="phase-banner"><div><div class="phase-name">Standalone Battle</div><div class="small">Story Questに依存しない専用FixtureでBattle Coreを単独検証します。正式Saveは更新しません。</div></div><div class="phase-actions"><button id="battleAbort">拠点へ戻る</button></div></div>
+ <section class="card scene-card"><h2>Standalone Battle Scene</h2>
 <div class="small">AIが予約した行動をアイコンで表示し、実行時はレトロなキャラクター表現と派手な斬撃・衝撃演出で見せます。</div>
 <div class="battle-stage vertical-battle" id="battleStage"><div class="side-label enemy-label">ENEMY</div><div class="side-label ally-label">ALLY</div><div class="scene-title" id="sceneTitle">待機中</div><div class="scene-result" id="sceneResult"></div><div class="battle-divider"></div><div id="sceneUnits"></div></div>
 <div class="battle-public-log" id="battlePublicLog" aria-live="polite"><div class="battle-public-log-title">戦闘ログ</div><div id="battlePublicLogBody">まだ行動はありません。</div></div>
@@ -594,7 +593,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <div class="small scene-note" id="sceneCaption">AI判断 → タグスキル予約 → 固定対象確認 → タグ解析・検証 → ATTACK → DOT付与・Tick発生の順で表示します。⚔️攻撃／🛡️防御／💚回復／💦判断中／⏳待機／❌失敗</div>
 </section>
 </div></section>
-<section class="phase-screen" id="phase-result" data-phase="result"><div class="phase-shell result-stage"><div class="result-box"><div class="result-heading" id="resultHeading">戦闘結果</div><p id="resultSummary">戦闘結果を集計しています。</p><div id="resultReward" class="card" style="margin:16px 0;text-align:left"></div><div class="row" style="justify-content:center"><button id="resultToEvent">イベントへ戻る</button><button class="primary" id="resultToBase">拠点へ帰還</button></div><p class="small">ギルド資金・戦績・装備ドロップを保存します。数値はV9ライブラリの前提に従う暫定調整値です。</p></div></div></section>
+<section class="phase-screen" id="phase-result" data-phase="result"><div class="phase-shell result-stage"><div class="result-box"><div class="result-heading" id="resultHeading">戦闘結果</div><p id="resultSummary">戦闘結果を集計しています。</p><div id="resultReward" class="card" style="margin:16px 0;text-align:left"></div><div class="row" style="justify-content:center"><button id="resultToEvent">同じFixtureで再戦</button><button class="primary" id="resultToBase">拠点へ戻る</button></div><p class="small">Standalone Battleの結果は表示・Playback検証専用です。Gold・Item・戦績・Quest進行を正式SaveへCommitしません。</p></div></div></section>
 </main>
 <details class="card debug-details developer-only hidden" id="developerPanel"><summary>開発・検証用 Battle Core 数値画面</summary><section class="card"><h2>Battle Core 開発コンソール</h2>
 <div class="small">検証用デモとして、各Tickで <b>Action Gauge += AGI</b>、Gaugeが100以上になったユニットが行動します。行動後はGaugeを100減算し、余剰Gaugeを保持します。行動可能になったユニットは、まず対象と行動を予約します。予約から数Tick後、対象の生存・敵味方関係・自身の行動可否を再確認してから通常攻撃を実行します。対象が倒れていた場合は対象を変更せず、固定対象無効として予約を失敗させます。HPが0になると戦闘不能になり、片方が全滅すると戦闘を終了します。MP・Cooldown・疲弊は次ビルド以降です。</div>
@@ -677,32 +676,11 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
   const BUILD='448';
   document.querySelectorAll('.sub').forEach(el=>{if(/BUILD4[0-9]{2}|Build 4[0-9]{2}|Mobile One-Tap|Mobile Quick Actions/i.test(el.textContent))el.textContent='GA-B486.187 — R04 Trigger Device Revalidation / R06 Export Acceptance Pending';});
   const tv=document.querySelector('.title-version'); if(tv) tv.textContent='V9 / GA-B486.187';
-  const eventOptions=document.querySelector('.event-options');
-  if(eventOptions && !document.getElementById('eventScout')){
-    const scout=document.createElement('button'); scout.id='eventScout'; scout.className='event-choice-scout'; scout.textContent='敵の様子を確認する';
-    const search=document.createElement('button'); search.id='eventSearch'; search.className='event-choice-search'; search.textContent='周囲で戦利品を探す';
-    const battle=document.getElementById('eventBattle');
-    eventOptions.insertBefore(scout,battle); eventOptions.insertBefore(search,battle);
-    scout.onclick=function(){
-      const q=typeof selectedQuest==='function'?selectedQuest():null;
-      const notice=document.getElementById('eventNotice');
-      if(notice&&q) notice.textContent='敵情報：'+q.enemies.map(e=>`${e.name}（HP ${e.maxHp}／攻撃 ${e.attack}／AGI ${e.agi}）`).join('、');
-    };
-    search.onclick=function(){
-      const q=typeof selectedQuest==='function'?selectedQuest():null;
-      const notice=document.getElementById('eventNotice');
-      if(notice&&q) notice.textContent='探索結果：この依頼では「'+q.drops.join('・')+'」が見つかる可能性があります。戦闘に勝つと獲得判定が行われます。';
-    };
-  }
   document.querySelectorAll('[data-open-base-view]').forEach(btn=>{
     btn.addEventListener('click',()=>setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0));
   });
   const ql=document.getElementById('questList');
   if(ql){ql.addEventListener('click',e=>{const card=e.target.closest('.quest-card');if(!card)return;const radio=card.querySelector('input[type=radio]');if(radio&&!radio.checked){radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}));}})}
-  const originalPrepare=window.prepareEvent;
-  if(typeof originalPrepare==='function'){
-    window.prepareEvent=function(){originalPrepare();const notice=document.getElementById('eventNotice');if(notice)notice.textContent='行動を1つ選んでください。敵情報や戦利品候補を確認してから戦闘できます。';};
-  }
   try{if(window.data){data.gameVersion='GA-B486.187';if(typeof persist==='function')persist();}}catch(_e){}
 })();
 

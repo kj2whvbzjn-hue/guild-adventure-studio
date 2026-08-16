@@ -91,11 +91,6 @@ const JOBS={
  '冒険家':{STR:12,VIT:11,AGI:10,DEX:7,INT:8,MND:9,LUK:13}
 };
 const RARITY={common:{label:'★',name:'一般',weight:60},uncommon:{label:'★★',name:'上質',weight:27},rare:{label:'★★★',name:'希少',weight:10},epic:{label:'★★★★',name:'英雄',weight:2.5},legendary:{label:'★★★★★',name:'伝説',weight:.5}};
-const QUESTS=[
- {id:'Q-001',name:'街道の魔物討伐',rank:'E',stars:1,recommendedLevel:1,description:'街道を塞ぐスライムとウルフを討伐する。',reward:180,bonus:60,enemies:[{name:'森スライム',agi:7,attack:22,maxHp:240},{name:'街道ウルフ',agi:12,attack:30,maxHp:300}],drops:['錆びた剣','旅人の外套','革の腕輪']},
- {id:'Q-002',name:'ゴブリン斥候隊',rank:'D',stars:2,recommendedLevel:4,description:'森に入り込んだゴブリン斥候隊を排除する。',reward:320,bonus:120,enemies:[{name:'ゴブリン斥候',agi:11,attack:35,maxHp:360},{name:'ゴブリン弓兵',agi:9,attack:40,maxHp:300},{name:'ゴブリン隊長',agi:8,attack:48,maxHp:520}],drops:['青銅の剣','革の鎧','狩人の弓','迅速の指輪']},
- {id:'Q-003',name:'古代祭壇の守護者',rank:'C',stars:4,recommendedLevel:8,description:'古代祭壇で目覚めた守護者を鎮める。高レア装備の可能性がある。',reward:600,bonus:300,enemies:[{name:'石像守護者',agi:6,attack:58,maxHp:900},{name:'紋章の残響',agi:14,attack:42,maxHp:480}],drops:['紋章の剣','守護者の鎧','魔力の指輪','古代の護符']}
-];
 const EQUIPMENT={
  '錆びた剣':{slot:'weapon',rarity:'common',attack:8,maxHp:0,agi:0,description:'使い込まれた練習用の剣。'},
  '青銅の剣':{slot:'weapon',rarity:'uncommon',attack:16,maxHp:0,agi:0,description:'扱いやすい青銅製の剣。'},
@@ -109,7 +104,7 @@ const EQUIPMENT={
  '魔力の指輪':{slot:'accessory',rarity:'rare',attack:9,maxHp:45,agi:1,description:'魔力を攻撃力へ変換する指輪。'},
  '古代の護符':{slot:'accessory',rarity:'legendary',attack:18,maxHp:120,agi:3,description:'失われた文明の祝福を帯びた護符。'}
 };
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.5.0',gameVersion:'GA-B486.187',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};let selectedId=null;
+let data={saveVersion:SAVE_VERSION,schemaRevision:'1.5.0',gameVersion:'GA-B486.187',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const PHASES=['devhome','title','base','event','battle','result'];
 let currentPhase='title';
@@ -141,12 +136,10 @@ $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェ�
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
 $('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure;
 $('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};if($('adventureReturn'))$('adventureReturn').onclick=returnFromAdventurePlayback;
-$('eventObserve').onclick=()=>{const q=selectedQuest();$('eventNotice').textContent='敵情報：'+q.enemies.map(e=>`${e.name}(HP${e.maxHp}/攻撃${e.attack}/AGI${e.agi})`).join('、')};
-$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')};
-$('battleAbort').onclick=()=>setPhase('event');
-$('resultToEvent').onclick=()=>setPhase('event',{keepBattle:true});
+$('battleAbort').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
+$('resultToEvent').onclick=launchStandaloneBattle;
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
-document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
+document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 document.querySelectorAll('#baseMobileNav [data-base-tab]').forEach(btn=>btn.onclick=()=>setBaseView(btn.dataset.baseTab));
 document.querySelectorAll('[data-open-base-view]').forEach(btn=>btn.onclick=()=>setBaseView(btn.dataset.openBaseView));
 const mobileDepart=$('mobileDepart');if(mobileDepart)mobileDepart.onclick=async()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');setBaseView('party');return}await beginSelectedAdventure()};
@@ -154,7 +147,7 @@ const mobileDepart=$('mobileDepart');if(mobileDepart)mobileDepart.onclick=async(
 loadAdventureContent().then(content=>{applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();persist();if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();}).catch(error=>{adventureQuestCatalog=[];setAdventureStoryLoadError(error);if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();});
 ensureAdventurePlaybackTicker();
 
-$('devGoBattle').onclick=()=>{resetBattle();setPhase('battle')};
+$('devGoBattle').onclick=launchStandaloneBattle;
 $('devGoBase').onclick=()=>setPhase('base',{keepBattle:true});
 $('devGoEvent').onclick=()=>setPhase('event',{keepBattle:true});
 $('devGoResult').onclick=()=>setPhase('result',{keepBattle:true});
@@ -182,24 +175,17 @@ function renderGuildSummary(){
 }
 function applyBattleOutcome(){
  if(battle.rewardApplied||!battle.result)return battle.reward||null;
- const victory=battle.result==='味方勝利';
- const quest=selectedQuest();const reward=victory?quest.reward:0;let dropped=null;if(victory&&quest.drops.length){const eligible=quest.drops.map(n=>({name:n,e:EQUIPMENT[n]}));const total=eligible.reduce((a,x)=>a+(RARITY[x.e.rarity]?.weight||1),0);let roll=Math.random()*total;for(const x of eligible){roll-=RARITY[x.e.rarity]?.weight||1;if(roll<=0){dropped=x.name;break}}dropped=dropped||eligible[0].name;}
- data.guild=data.guild||{gold:0,victories:0,defeats:0,lastBattle:null};
- if(victory){data.guild.gold=(data.guild.gold||0)+reward;data.guild.victories=(data.guild.victories||0)+1}
- else if(battle.result==='敵勝利'){data.guild.defeats=(data.guild.defeats||0)+1}
  const structuredBattleResult=window.GKAdventureBattleCore?GKAdventureBattleCore.buildBattleResult({battle,context:battleLaunchContext||{}}):null;
- data.guild.lastBattle={result:battle.result,rewardGold:reward,tick:battle.tick,actions:battle.actions,at:new Date().toISOString(),battleResult:structuredBattleResult};
- if(dropped)data.inventory.push(dropped);battle.reward={gold:reward,victory,dropped,battle_result:structuredBattleResult};battle.rewardApplied=true;persist();renderGuildSummary();
+ battle.reward={gold:0,victory:battle.result==='味方勝利',dropped:null,standalone:true,battle_result:structuredBattleResult};
+ battle.rewardApplied=true;
  return battle.reward;
 }
 function renderBattleResult(){
- const reward=applyBattleOutcome()||{gold:0,victory:false};
+ const reward=applyBattleOutcome()||{gold:0,victory:false,standalone:true};
  $('resultHeading').textContent=battle.result||'戦闘結果';
  $('resultSummary').textContent=`${battle.actions}回の行動、${battle.tick} Tickで戦闘が終了しました。`;
  const panel=$('resultReward');
- if(panel)panel.innerHTML=reward.victory
-  ?`<h3>遠征報酬</h3><p>ギルド資金 <b>+${reward.gold} G</b></p>${reward.dropped?`<div class="loot-reveal rarity-${EQUIPMENT[reward.dropped].rarity}"><div class="small">戦利品を獲得</div><b>${RARITY[EQUIPMENT[reward.dropped].rarity].label} ${reward.dropped}</b><div class="small">${RARITY[EQUIPMENT[reward.dropped].rarity].name} ／ ${EQUIPMENT[reward.dropped].description}</div></div>`:''}<p class="small">現在の所持金：${data.guild.gold} G ／ 戦績：${data.guild.victories}勝 ${data.guild.defeats}敗</p>`
-  :`<h3>遠征結果</h3><p>今回は報酬を獲得できませんでした。</p><p class="small">現在の所持金：${data.guild.gold} G ／ 戦績：${data.guild.victories}勝 ${data.guild.defeats}敗</p>`;
+ if(panel)panel.innerHTML=`<h3>Standalone Battle 検証結果</h3><p>${reward.victory?'勝利':'敗北'}。このBattle Sceneは検証専用です。</p><p class="small">Gold・Item・戦績・Quest進行を正式SaveへCommitしません。正式冒険の結果反映はQuestRun帰還処理だけが行います。</p>`;
 }
 
 function aptitudeExpected(v){return (v/10).toFixed(2)}
@@ -328,9 +314,8 @@ function renderAdventurePlaybackDetail(run,itemIndex){
 }
 function renderAdventurePlayback(nowMs=Date.now()){
  const panel=$('adventurePlaybackPanel');if(!panel)return null;const state=adventurePlaybackViewState(nowMs);
- const legacyActions=[$('eventBattle'),$('eventObserve'),$('eventScout'),$('eventSearch')].filter(Boolean);
- if(!state){panel.classList.add('hidden');legacyActions.forEach(el=>el.classList.remove('hidden'));return null;}
- const {run,playback,history}=state;panel.classList.remove('hidden');legacyActions.forEach(el=>el.classList.add('hidden'));
+ if(!state){panel.classList.add('hidden');return null;}
+ const {run,playback,history}=state;panel.classList.remove('hidden');
  if($('eventTitle'))$('eventTitle').textContent=adventureQuestRunTitle(run);
  const elapsed=Math.min(playback.elapsed_seconds,playback.duration_seconds),pct=Math.max(0,Math.min(100,(elapsed/playback.duration_seconds)*100));
  if($('adventurePlaybackClock'))$('adventurePlaybackClock').textContent=history?`履歴 ／ ${playback.duration_seconds.toFixed(0)}秒`:`${elapsed.toFixed(0)} / ${playback.duration_seconds.toFixed(0)}秒${playback.complete?' ／ 帰還可能':''}`;
@@ -483,7 +468,7 @@ function renderCharacterSkillView(){
  list.innerHTML=owned.length?owned.map(skill=>{const compiled=compileSkillForRuntime(skill),selected=skill.id===c.equippedSkillId,tags=skillDisplayTags(skill,compiled);return `<div class="skill-choice ${selected?'selected':''}"><div><b>${escapeHtml(skill.name)}</b><div class="small">${escapeHtml(compiled.definition.logicOrder.join(' → '))} ／ 対象 ${escapeHtml(compiled.definition.target.side)}・${escapeHtml(compiled.definition.target.range)}</div><div class="skill-tags">${tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div></div><button type="button" class="${selected?'good':'primary'}" data-equip-skill="${skill.id}" ${selected?'disabled':''}>${selected?'装着中':'装着する'}</button></div>`}).join(''):'<div class="skill-empty">装着可能なスキルがありません。</div>';
  list.querySelectorAll('[data-equip-skill]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.equipSkill;if(!c.skills.includes(id)||!findSkill(id))return;c.equippedSkillId=id;persist();render();renderCharacterSkillView();notify(`${c.name}が${findSkill(id).name}を装着しました。`)});
 }
-function selectedQuest(){const formal=formalAdventureQuests();return formal.find(q=>q.id===data.selectedQuestId)||QUESTS.find(q=>q.id===data.selectedQuestId)||formal[0]||QUESTS[0]}
+function selectedQuest(){const formal=formalAdventureQuests();return formal.find(q=>q.id===data.selectedQuestId)||formal[0]||null}
 function equipmentBonus(c){return Object.values(c.equipment||{}).filter(Boolean).reduce((a,n)=>{const e=EQUIPMENT[n];if(e){a.attack+=e.attack||0;a.maxHp+=e.maxHp||0;a.agi+=e.agi||0}return a},{attack:0,maxHp:0,agi:0})}
 
 let activeBaseView='home';
@@ -519,7 +504,6 @@ function renderExpeditionSetup(){
  refreshMobileHome();
  setBaseView(activeBaseView,{keepScroll:true});
 }
-function prepareEvent(){const q=selectedQuest();$('eventTitle').textContent=q.name;$('eventBody').textContent=q.description;$('eventNotice').textContent=`編成 ${data.partyIds.length}人。周囲を観察すると敵情報を確認できます。`}
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
 $('createBtn').onclick=()=>{const name=$('newName').value.trim();if(!name){notify('名前を入力してください。','bad');return}const c=makeCharacter(name,$('newJob').value);data.characters.push(c);if(data.partyIds.length<6)data.partyIds.push(c.id);selectedId=c.id;$('newName').value='';persist();render();notify(`${name}を作成しました。`)};
 $('levelBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c||c.level>=50)return;const a=JOBS[c.job],gained=[],growth={};STATS.forEach(s=>{const amount=rollGrowth(a[s]);growth[s]=amount;if(amount>0){c.stats[s]+=amount;gained.push(`${s} +${amount}`)}});const from=c.level;c.level++;c.growthHistory.push({fromLevel:from,toLevel:c.level,job:c.job,growth,gained,ruleRevision:'V9-1.0.1',at:new Date().toISOString()});persist();render();notify(`${c.name}がLv${c.level}になりました。${gained.length?' 上昇: '+gained.join(', '):' 能力値上昇なし'}`)};
@@ -540,15 +524,13 @@ $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェ�
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
 $('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure;
 $('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};if($('adventureReturn'))$('adventureReturn').onclick=returnFromAdventurePlayback;
-$('eventObserve').onclick=()=>{const q=selectedQuest();$('eventNotice').textContent='敵情報：'+q.enemies.map(e=>`${e.name}(HP${e.maxHp}/攻撃${e.attack}/AGI${e.agi})`).join('、')};
-$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')};
-$('battleAbort').onclick=()=>setPhase('event');
-$('resultToEvent').onclick=()=>setPhase('event',{keepBattle:true});
+$('battleAbort').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
+$('resultToEvent').onclick=launchStandaloneBattle;
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
-document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
+document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.5.0',gameVersion:'GA-B486.187',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'Q-001',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.5.0',gameVersion:'GA-B486.187',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const DOT_LOG_SCHEMA_VERSION='1.0.0';
 function ensureValidationState(){
@@ -1024,24 +1006,23 @@ function setupTagSkillTestUI(){
 }
 const GAUGE_MAX=100;
 const RESERVATION_DELAY_TICKS=4;
+const STANDALONE_BATTLE_FIXTURE={source:'standalone_fixture',seed:486187,formation:[{monster_id:'STANDALONE-SLIME',count:1},{monster_id:'STANDALONE-WOLF',count:1}],monsters:[{id:'STANDALONE-SLIME',name:'検証スライム',params:{maxHp:240,attack:22,agi:7,aiPolicy:'lowestHp',defaultSkillId:'SKL-TEST-ATTACK'}},{id:'STANDALONE-WOLF',name:'検証ウルフ',params:{maxHp:300,attack:30,agi:12,aiPolicy:'lowestHp',defaultSkillId:'SKL-TEST-ATTACK'}}]};
 let battleLaunchContext=null;
 let battle={tick:0,actions:0,units:[],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationCaptureEvents:true,validationEvents:[],validationMeta:null};
-function setBattleLaunchContext(context){battleLaunchContext=context?{formation:window.GKAdventureBattleCore?GKAdventureBattleCore.normalizeFormation(context.formation):clone(context.formation||[]),monsters:clone(context.monsters||[]),seed:context.seed??null,source:context.source||'adventure'}:null;return battleLaunchContext}
+function standaloneBattleContext(){return clone(STANDALONE_BATTLE_FIXTURE)}
+function setBattleLaunchContext(context){battleLaunchContext=context?{formation:window.GKAdventureBattleCore?GKAdventureBattleCore.normalizeFormation(context.formation):clone(context.formation||[]),monsters:clone(context.monsters||[]),seed:context.seed??null,source:context.source||'standalone_fixture'}:null;return battleLaunchContext}
 function clearBattleLaunchContext(){battleLaunchContext=null}
 function currentBattleLaunchContext(){return battleLaunchContext?clone(battleLaunchContext):null}
+function launchStandaloneBattle(){resetBattle(standaloneBattleContext());setPhase('battle')}
 
 function makeCombatant(base){const maxMp=Math.max(0,Number(base.maxMp??100)||0);return {...base,hp:base.maxHp,maxMp,mp:Math.max(0,Math.min(maxMp,Number(base.mp??maxMp)||0)),alive:true,damageDealt:0,damageTaken:0,dotStacks:[],modifierStacks:[],reservedAction:null,lastReservation:null,defaultSkillId:base.defaultSkillId||'SKL-TEST-ATTACK'}}
 function makeBattleUnits(){
  const members=data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,6);
  const allies=members.map((c,i)=>{const b=equipmentBonus(c),e2e=developerE2EOverrideSkillId(c.id);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',aiPolicy:c.aiPolicy,defaultSkillId:e2e||c.equippedSkillId||c.skills?.[0]||'SKL-TEST-ATTACK',agi:Math.max(1,c.stats.AGI+b.agi),attack:10+c.stats.STR*3+c.level*2+b.attack,maxHp:100+c.stats.VIT*20+c.level*10+b.maxHp,gauge:0,actions:0,order:i,lastActionTick:null})});
  if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',aiPolicy:'lowestHp',defaultSkillId:'SKL-TEST-POISON',agi:11,attack:48,maxHp:360,gauge:0,actions:0,order:0,lastActionTick:null}));
- let enemies=[];
- if(battleLaunchContext?.formation?.length&&window.GKAdventureBattleCore){
-  const expanded=GKAdventureBattleCore.expandFormation(battleLaunchContext.formation,battleLaunchContext.monsters||[]);
-  enemies=expanded.map((e,i)=>makeCombatant({id:`E${i}`,monsterId:e.monster_id,name:e.name,side:'敵',aiPolicy:e.aiPolicy,defaultSkillId:e.defaultSkillId,agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
- }else{
-  const q=selectedQuest();enemies=q.enemies.map((e,i)=>makeCombatant({id:`E${i}`,name:e.name,side:'敵',aiPolicy:'lowestHp',agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
- }
+ if(!battleLaunchContext?.formation?.length||!window.GKAdventureBattleCore)throw new Error('Standalone Battle fixture is unavailable');
+ const expanded=GKAdventureBattleCore.expandFormation(battleLaunchContext.formation,battleLaunchContext.monsters||[]);
+ const enemies=expanded.map((e,i)=>makeCombatant({id:`E${i}`,monsterId:e.monster_id,name:e.name,side:'敵',aiPolicy:e.aiPolicy,defaultSkillId:e.defaultSkillId,agi:e.agi,attack:e.attack,maxHp:e.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
  return [...allies,...enemies];
 }
 

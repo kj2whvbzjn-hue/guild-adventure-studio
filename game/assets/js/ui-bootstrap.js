@@ -35,11 +35,9 @@ $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェ�
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
 $('baseDepart').onclick=$('baseDepartSide').onclick=async()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}await beginSelectedAdventure()};
 $('eventBackBase').onclick=$('eventRetreat').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
-$('eventObserve').onclick=()=>{const q=selectedQuest();$('eventNotice').textContent='敵情報：'+q.enemies.map(e=>`${e.name}(HP${e.maxHp}/攻撃${e.attack}/AGI${e.agi})`).join('、')};
-$('eventBattle').onclick=()=>{resetBattle();setPhase('battle')};
-$('battleAbort').onclick=()=>setPhase('event');
-$('resultToEvent').onclick=()=>setPhase('event',{keepBattle:true});
+$('battleAbort').onclick=()=>{setPhase('base');setBaseView('home',{instant:true})};
+$('resultToEvent').onclick=launchStandaloneBattle;
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
-document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>setPhase(btn.dataset.phase,{keepBattle:true}));
+document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 
 try{const raw=localStorage.getItem(SAVE_KEY);if(raw){data=normalize(JSON.parse(raw));selectedId=data.characters[0]?.id||null}}catch(e){notify(`自動読込失敗: ${e.message}`,'bad')}render();resetBattle();setPhase('title',{keepBattle:true});if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();

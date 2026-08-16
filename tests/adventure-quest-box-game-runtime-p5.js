@@ -19,6 +19,7 @@ for(const token of [
   "chapter_id:String(scene.chapter_id||'')",
   "section_id:String(scene.section_id||'')",
   'adventure_duration_seconds:duration',
-  'return quest.boxes.length?simulateQuestBoxRuntime(opts||{},quest):simulateLegacySectionQuest(opts||{});'
+  'function simulateQuest(opts){const quest=normalizeQuest(clone(opts?.quest||{}));return simulateQuestBoxRuntime(opts||{},quest);}'
 ])assert(story.includes(token),`P5 Story Runtime integration missing: ${token}`);
+assert(!story.includes('simulateLegacySectionQuest'),'Legacy Section Quest runtime must be removed');
 console.log('adventure-quest-box-game-runtime-p5 PASS');
