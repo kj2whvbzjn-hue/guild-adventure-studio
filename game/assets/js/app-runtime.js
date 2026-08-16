@@ -1030,11 +1030,30 @@ function makeBattleUnits(){
 
 function openAiEditorFor(c){
  if(!c)return;
- if(!window.GKGameAIEditorUI||!window.GKGameAISaveBridge){notify('正式AI編集機能を読み込めません。','bad');return;}
+ if(!window.GKGameAIEditorUI||!window.GKGameAISaveBridge||!window.GKSAIProgramCompiler){notify('正式AI編集機能を読み込めません。','bad');return;}
  const saved=GKGameAISaveBridge.loadForCharacter(data,c.id);
- window.GKGameAIEditorUI.open({character:c,notify,program:saved?.program||null,layout:saved?.layout||null,onSave:({program,layout})=>{
-  const result=GKGameAISaveBridge.saveForCharacter(data,c.id,program,layout);data=result.save;persist();render();return result;
- }}).catch(error=>notify(String(error?.message||error),'bad'));
+ window.GKGameAIEditorUI.open({
+  character:c,notify,program:saved?.program||null,layout:saved?.layout||null,userPresets:GKGameAISaveBridge.userPresets(data),
+  onSave:async({program,layout,projectData})=>{
+   const staged=GKGameAISaveBridge.saveForCharacter(data,c.id,program,layout);
+   const runtime=await GKSAIProgramCompiler.compile(staged.program,projectData);
+   staged.program.compiled=runtime;
+   const stored=staged.save.aiPrograms.find(row=>String(row.id)===String(staged.program.id));
+   if(!stored)throw new Error('保存対象Formal AI Programが見つかりません。');
+   stored.compiled=clone(runtime);
+   const errors=GKGameAISaveBridge.validateV2(staged.save);if(errors.length)throw new Error(`Formal AI保存後の検証に失敗しました。\n${errors.join('\n')}`);
+   data=staged.save;persist();render();return staged;
+  },
+  onPresetAction:async(payload)=>{
+   let result;
+   if(payload.action==='create')result=GKGameAISaveBridge.createUserPreset(data,payload.name,payload.program,payload.layout);
+   else if(payload.action==='duplicate')result=GKGameAISaveBridge.duplicateUserPreset(data,payload.preset_id,payload.name);
+   else if(payload.action==='rename')result=GKGameAISaveBridge.renameUserPreset(data,payload.preset_id,payload.name);
+   else if(payload.action==='delete')result=GKGameAISaveBridge.deleteUserPreset(data,payload.preset_id);
+   else throw new Error('未対応のPreset操作です。');
+   data=result.save;persist();render();return {presets:GKGameAISaveBridge.userPresets(data)};
+  }
+ }).catch(error=>notify(String(error?.message||error),'bad'));
 }
 const openAiBtn=$('openAiEditor');if(openAiBtn)openAiBtn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===selectedId));const skillBtn=$('openSkillPlaceholder');if(skillBtn)skillBtn.onclick=()=>{renderCharacterSkillView();setBaseView('character-skills');};const equipViewBtn=$('openEquipView');if(equipViewBtn)equipViewBtn.onclick=()=>setBaseView('equipment');
 
