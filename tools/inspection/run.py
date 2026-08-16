@@ -128,6 +128,7 @@ def build_steps(profile: str, release_output: Path | None, context: str) -> list
         ("required_paths_and_json", [*py, "-c", "import json,pathlib,sys; r=pathlib.Path(sys.argv[1]); req=['index.html','game/index.html','studio/index.html','project-data.json','package-build.json','package_manifest.json','shared/tests/test-registry.json','docs/operations/ENCODING_POLICY.md','shared/integrity/encoding-policy.json','tools/inspection/check-encoding.py']; missing=[p for p in req if not (r/p).is_file() or (r/p).stat().st_size==0]; [json.loads(p.read_text(encoding='utf-8')) for p in r.rglob('*.json') if '.git' not in p.parts]; [json.loads(p.read_text(encoding='utf-8')) for p in r.rglob('*.webmanifest')]; print('REQUIRED_AND_JSON_OK'); sys.exit(1 if missing else 0)", str(ROOT)], True),
         ("html_links", [*py, str(ROOT / "tools/integrity/check-html-links.py"), str(ROOT)], True),
         ("package_metadata", [*py, str(ROOT / "tools/integrity/check-package-metadata.py")], True),
+        ("studio_cache_policy", [*py, str(ROOT / "tools/integrity/check-studio-cache-policy.py"), str(ROOT)], True),
         ("critical_runtime", [*py, str(ROOT / "tools/integrity/check-critical-runtime.py"), str(ROOT)], True),
         ("package_manifest", [*py, str(ROOT / "tools/integrity/check-package-manifest.py"), str(ROOT)], True),
     ]

@@ -35,11 +35,22 @@ const APP_SHELL=[
   "./adventure-entity-json-import.js?v=583"
 ];
 
+async function precacheFreshAppShell(){
+  const cache=await caches.open(CACHE_NAME);
+  for(const entry of APP_SHELL){
+    const url=new URL(entry,self.location.href).href;
+    const request=new Request(url,{method:'GET',cache:'no-store'});
+    const response=await fetch(request,{cache:'no-store'});
+    if(!response || !response.ok){
+      throw new Error(`Studio precache failed: ${entry}`);
+    }
+    await cache.put(request,response.clone());
+  }
+}
+
 self.addEventListener('install',event=>{
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL))
-  );
+  event.waitUntil(precacheFreshAppShell());
 });
 
 self.addEventListener('activate',event=>{
@@ -65,7 +76,7 @@ async function networkFirst(request){
     const response=await fetch(request,{cache:'no-store'});
     if(response && response.ok){
       const cache=await caches.open(CACHE_NAME);
-      cache.put(request,response.clone());
+      await cache.put(request,response.clone());
     }
     return response;
   }catch(error){
@@ -78,34 +89,14 @@ async function networkFirst(request){
   }
 }
 
-async function cacheFirst(request){
-  const cached=await caches.match(request);
-  if(cached)return cached;
-  const response=await fetch(request,{cache:'no-cache'});
-  if(response && response.ok){
-    const cache=await caches.open(CACHE_NAME);
-    cache.put(request,response.clone());
-  }
-  return response;
-}
-
 self.addEventListener('fetch',event=>{
   const request=event.request;
   if(request.method!=='GET')return;
 
   const url=new URL(request.url);
-
-  if(
-    request.mode==='navigate' ||
-    url.pathname.endsWith('/index.html') ||
-    url.pathname.endsWith('/sw.js') ||
-    url.pathname.endsWith('/manifest.webmanifest')
-  ){
-    event.respondWith(networkFirst(request));
-    return;
-  }
-
   if(url.origin===self.location.origin){
-    event.respondWith(cacheFirst(request));
+    // Studio code/data freshness is never keyed to hand-maintained ?v= values.
+    // Online: fetch the current file. Offline/network failure: use the last proven cache.
+    event.respondWith(networkFirst(request));
   }
 });

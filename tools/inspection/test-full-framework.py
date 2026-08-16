@@ -24,7 +24,7 @@ def main():
     names=[x[0] for x in runner.build_steps('full',None,'source')]
     expected=[
       'inspection_context','ai_governance','encoding_iphone','required_paths_and_json',
-      'html_links','package_metadata','critical_runtime','package_manifest',
+      'html_links','package_metadata','studio_cache_policy','critical_runtime','package_manifest',
       'javascript_syntax','php_syntax','python_syntax','organization','shared_assets',
       'component_map','runtime_boundary','deployment_map','root_surface',
       'active_test_gate','github_candidate'
@@ -50,9 +50,28 @@ def main():
         (t/'bad.php').write_text("<?php function broken( {\n",encoding='utf-8')
         p=run(['php',str(HERE/'check-full-php-syntax.php'),str(t)],t)
         if p.returncode==0: errors.append('INVALID_PHP_NOT_DETECTED')
+
+        cache_root=t/'cache-policy'; (cache_root/'studio').mkdir(parents=True)
+        (cache_root/'package-build.json').write_text('{"studio_build":"GKS-B777"}\n',encoding='utf-8')
+        (cache_root/'studio/index.html').write_text(
+            "navigator.serviceWorker.register('./sw.js?v=777',{updateViaCache:'none'});\n",encoding='utf-8')
+        good_sw="""const CACHE_NAME=\"gks-studio-b777\";
+const OFFLINE_URL='./index.html?appv=777';
+const APP_SHELL=[];
+async function precacheFreshAppShell(){const cache=await caches.open(CACHE_NAME);const request=new Request('x',{cache:'no-store'});const response=await fetch(request,{cache:'no-store'});await cache.put(request,response.clone());}
+self.addEventListener('install',event=>{event.waitUntil(precacheFreshAppShell());});
+async function networkFirst(request){try{const response=await fetch(request,{cache:'no-store'});return response;}catch(error){const cached=await caches.match(request);if(cached)return cached;throw error;}}
+self.addEventListener('fetch',event=>{const request=event.request;const url=new URL(request.url);if(url.origin===self.location.origin){event.respondWith(networkFirst(request));}});
+"""
+        (cache_root/'studio/sw.js').write_text(good_sw,encoding='utf-8')
+        p=run([sys.executable,'-S','-B',str(ROOT/'tools/integrity/check-studio-cache-policy.py'),str(cache_root)],cache_root)
+        if p.returncode: errors.append('SAFE_STUDIO_CACHE_POLICY_REJECTED '+p.stdout+p.stderr)
+        (cache_root/'studio/sw.js').write_text(good_sw.replace('event.respondWith(networkFirst(request))','event.respondWith(cacheFirst(request))'),encoding='utf-8')
+        p=run([sys.executable,'-S','-B',str(ROOT/'tools/integrity/check-studio-cache-policy.py'),str(cache_root)],cache_root)
+        if p.returncode==0: errors.append('UNSAFE_STUDIO_CACHE_POLICY_NOT_DETECTED')
     if errors:
         print('\n'.join(errors)); return 1
-    print(f'FULL_FRAMEWORK_REGRESSION_OK required_steps={len(expected)} cases=4')
+    print(f'FULL_FRAMEWORK_REGRESSION_OK required_steps={len(expected)} cases=6')
     return 0
 
 if __name__=='__main__': raise SystemExit(main())

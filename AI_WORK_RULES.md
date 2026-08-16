@@ -62,6 +62,13 @@
 - 配置後はGameで「Storyデータを再読込」し、新規QuestRunで確認する。
 - QuestRun開始時に確定したRandom Event / Monster / Rewardを再表示時に再抽選しない。
 
+## Studioキャッシュ安全（必須）
+
+- Studioの同一オリジンGETはオンライン時にnetwork-firstで取得し、キャッシュは通信失敗時のfallbackとしてだけ使う。
+- `?v=` 等の手動クエリ値を最新版保証の正本として扱わない。個別ファイル変更時の手動cache-bust更新へ依存しない。
+- Service WorkerのprecacheはHTTPキャッシュを再利用せずfresh取得する。
+- `studio_cache_policy` GateをQuick / Fullで必須とし、同一オリジンをcache-firstへ戻す変更、`no-store`を外す変更、Studio BuildとService Worker登録/namespaceの不整合はFAILとする。
+
 ## 文字化け防止（iPhone運用・必須）
 
 - テキストはUTF-8、CSVはUTF-8 BOM付きとする。
