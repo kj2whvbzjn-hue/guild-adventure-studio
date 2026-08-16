@@ -1,35 +1,42 @@
-const CACHE_NAME="ga-game-b486189-b599";
+const CACHE_NAME="ga-game-b486190-b600";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=486189b599';
+const OFFLINE_URL='./index.html?appv=486190b600';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=486189b599",
-  "./manifest.webmanifest?v=486189",
-  "./icon-192.png?v=486189",
-  "./icon-512.png?v=486189",
-  "../Export/skill/skills.json?v=486189b599"
+  "./index.html?appv=486190b600",
+  "./manifest.webmanifest?v=486190",
+  "./icon-192.png?v=486190",
+  "./icon-512.png?v=486190",
+  "../Export/skill/skills.json?v=486190b600"
 ,
-  "../assets/shared/config/runtime-config.js?v=486189b599",
-  "../assets/shared/js/game-shell-common.js?v=486189",
-  "../assets/shared/js/apply-lifecycle-engine.js?v=486189",
-  "../assets/shared/js/trigger-engine.js?v=486189",
-  "../assets/shared/js/condition-engine.js?v=486189",
+  "../Export/ai/ai_nodes.json?v=486190b600",
+  "../shared/ai/ai-program-model.js?v=1",
+  "../shared/ai/ai-layout-model.js?v=1",
+  "../shared/ai/ai-master-adapter.js?v=1",
+  "./assets/js/ai-catalog-loader.js?v=486190b600",
+  "./assets/js/ai-editor-ui.js?v=486190b600"
+,
+  "../assets/shared/config/runtime-config.js?v=486190b600",
+  "../assets/shared/js/game-shell-common.js?v=486190",
+  "../assets/shared/js/apply-lifecycle-engine.js?v=486190",
+  "../assets/shared/js/trigger-engine.js?v=486190",
+  "../assets/shared/js/condition-engine.js?v=486190",
   "../assets/shared/js/adventure-story-system.js?v=11",
   "../assets/shared/js/adventure-encounter-resolver.js?v=3",
   "../assets/shared/js/adventure-reward-resolver.js?v=1",
   "../assets/shared/js/adventure-battle-core.js?v=2",
-  "../assets/shared/js/skill-compiler.js?v=486189",
-  "../assets/shared/js/skill-compile-service.js?v=486189",
-  "../assets/shared/js/device-game-test-harness.js?v=486189",
-  "../assets/shared/config/skill-registry.json?v=486189"
+  "../assets/shared/js/skill-compiler.js?v=486190",
+  "../assets/shared/js/skill-compile-service.js?v=486190",
+  "../assets/shared/js/device-game-test-harness.js?v=486190",
+  "../assets/shared/config/skill-registry.json?v=486190"
 ,
-  "./assets/js/app-runtime.js?v=486189b599"
+  "./assets/js/app-runtime.js?v=486190b600"
 ,
-  "./assets/js/tag-skill-runtime.js?v=486189b599",
-  "./assets/js/studio-skill-bridge.js?v=486189b599"
+  "./assets/js/tag-skill-runtime.js?v=486190b600",
+  "./assets/js/studio-skill-bridge.js?v=486190b600"
 ,
-  "./assets/js/battle-control.js?v=486189",
-  "./assets/js/ui-bootstrap.js?v=486189"
+  "./assets/js/battle-control.js?v=486190",
+  "./assets/js/ui-bootstrap.js?v=486190"
 ];
 
 self.addEventListener('install',event=>{

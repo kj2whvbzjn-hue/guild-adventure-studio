@@ -1,0 +1,13 @@
+const assert=require('node:assert');
+const SharedAdapter=require('../../shared/ai/ai-master-adapter.js');
+const StudioAdapter=require('../../studio/ai-production/ai-master-adapter.js');
+const SharedLayout=require('../../shared/ai/ai-layout-model.js');
+const StudioLayout=require('../../studio/ai-production/ai-layout-model.js');
+const SharedProgram=require('../../shared/ai/ai-program-model.js');
+const StudioProgram=require('../../studio/ai-production/ai-program-model.js');
+assert.strictEqual(StudioAdapter,SharedAdapter,'Studio adapter must be shared canonical module');
+assert.strictEqual(StudioLayout,SharedLayout,'Studio layout model must be shared canonical module');
+assert.strictEqual(StudioProgram,SharedProgram,'Studio program model must be shared canonical module');
+const action=SharedAdapter.toNode({id:'AIA-0001',name:'攻撃',status:'active',data_version:'1.0.0',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[]},parameter_schema:{type:'object',properties:{}}},'ai_actions');
+assert.deepStrictEqual(SharedAdapter.definitionErrors(action),[]);
+console.log('PASS Phase3A shared Formal AI canonical core');

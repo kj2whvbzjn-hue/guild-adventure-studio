@@ -1,0 +1,221 @@
+(function(root,factory){
+  const Adapter=typeof module==='object'&&module.exports?require('../../../shared/ai/ai-master-adapter.js'):root?.GKSAIMasterAdapter;
+  const Layout=typeof module==='object'&&module.exports?require('../../../shared/ai/ai-layout-model.js'):root?.GKSAILayoutModel;
+  const Program=typeof module==='object'&&module.exports?require('../../../shared/ai/ai-program-model.js'):root?.GKSAIProgramModel;
+  const Catalog=typeof module==='object'&&module.exports?require('./ai-catalog-loader.js'):root?.GKGameAICatalogLoader;
+  const api=factory(Adapter,Layout,Program,Catalog,root);
+  if(typeof module==='object'&&module.exports)module.exports=api;
+  if(root)root.GKGameAIEditorUI=api;
+})(typeof globalThis!=='undefined'?globalThis:this,function(Adapter,Layout,Program,Catalog,root){
+  'use strict';
+  if(!Adapter||!Layout||!Program||!Catalog)throw new Error('Formal AI editor dependencies are required');
+  const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
+  const CATEGORY_LABEL=Object.freeze({condition:'条件',target:'対象',action:'行動'});
+  const CATEGORY_MASTER=Object.freeze({condition:'ai_conditions',target:'ai_targets',action:'ai_actions'});
+  const sessions=new Map();
+  let ui=null;
+  let activeCharacter=null;
+  let activeSession=null;
+  let catalog=null;
+  let currentCategory='condition';
+  let candidateContext=null;
+  let configContext=null;
+  let notify=()=>{};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function projectData(c){return {masters:clone(c?.masters||{}),tags:clone(c?.refs?.tags||[])};}
+  function definitions(c){return Adapter.palette(c?.masters||{},'',{}).filter(row=>row.available&&row.errors.length===0);}
+  function definitionById(c,id){return definitions(c).find(row=>row.id===String(id||''))||null;}
+  function nextNodeId(nodes){
+    let max=0;for(const row of nodes||[]){const m=/^AIN-([0-9]+)$/.exec(String(row?.instance_id||''));if(m)max=Math.max(max,Number(m[1]));}
+    return `AIN-${String(max+1).padStart(4,'0')}`;
+  }
+  function createSession(c,options){
+    const opts=options||{};
+    let program=Program.createProgram(opts.program_id||'AIP-DRAFT',opts.now||new Date().toISOString());
+    program.name=opts.name||'AI編集中';
+    let layout=Layout.createLayout(opts.layout_id||'AIL-0001',program.id,opts.width||8,opts.height||8);
+    const undo=[],redo=[];
+    const snapshot=()=>({program:clone(program),layout:clone(layout)});
+    const restore=s=>{program=Program.normalizeProgram(clone(s.program));layout=Layout.normalizeLayout(clone(s.layout));};
+    const commit=fn=>{undo.push(snapshot());if(undo.length>50)undo.shift();redo.length=0;fn();};
+    const nodeAt=(x,y)=>{const chip=layout.chips.find(row=>row.x===x&&row.y===y);return chip?program.nodes.find(row=>row.instance_id===chip.instance_id)||null:null;};
+    const definitionFor=node=>definitionById(c,node?.master_node_id);
+    function add(masterId,parameters,x,y){
+      const def=definitionById(c,masterId);if(!def)throw new Error('AI部品Masterが見つかりません。');
+      const paramErrors=Adapter.validateParameters(def,parameters,c?.refs||{});if(paramErrors.length)throw new Error(paramErrors.join('\n'));
+      if(nodeAt(x,y))throw new Error('配置先セルは使用済みです。');
+      let created;
+      commit(()=>{
+        created={instance_id:nextNodeId(program.nodes),master_node_id:def.id,master_data_version:def.data_version,node_type:def.node_type,position:{x,y},parameters:clone(parameters||{}),comment:''};
+        program.nodes.push(created);if(!program.entry_node_id)program.entry_node_id=created.instance_id;
+        layout=Layout.upsertChip(layout,{instance_id:created.instance_id,x,y,rotation:0});
+      });
+      return clone(created);
+    }
+    function updateParameters(instanceId,parameters){
+      const node=program.nodes.find(row=>row.instance_id===instanceId);if(!node)throw new Error('AI部品が見つかりません。');
+      const def=definitionFor(node);if(!def)throw new Error('AI部品Masterが見つかりません。');
+      const errors=Adapter.validateParameters(def,parameters,c?.refs||{});if(errors.length)throw new Error(errors.join('\n'));
+      commit(()=>{node.parameters=clone(parameters||{});});
+    }
+    function replace(instanceId,masterId,parameters){
+      const node=program.nodes.find(row=>row.instance_id===instanceId);if(!node)throw new Error('AI部品が見つかりません。');
+      const def=definitionById(c,masterId);if(!def)throw new Error('AI部品Masterが見つかりません。');
+      const errors=Adapter.validateParameters(def,parameters,c?.refs||{});if(errors.length)throw new Error(errors.join('\n'));
+      commit(()=>{node.master_node_id=def.id;node.master_data_version=def.data_version;node.node_type=def.node_type;node.parameters=clone(parameters||{});});
+    }
+    function remove(instanceId){
+      if(!program.nodes.some(row=>row.instance_id===instanceId))return false;
+      commit(()=>{
+        program.nodes=program.nodes.filter(row=>row.instance_id!==instanceId);
+        program.edges=program.edges.filter(edge=>edge.from?.node_id!==instanceId&&edge.to?.node_id!==instanceId);
+        layout=Layout.removeChip(layout,instanceId);
+        if(program.entry_node_id===instanceId)program.entry_node_id=program.nodes[0]?.instance_id||'';
+      });
+      return true;
+    }
+    function clear(){commit(()=>{program.nodes=[];program.edges=[];program.entry_node_id='';layout={...layout,chips:[],extensions:[]};});}
+    function undoOnce(){if(!undo.length)return false;redo.push(snapshot());restore(undo.pop());return true;}
+    function redoOnce(){if(!redo.length)return false;undo.push(snapshot());restore(redo.pop());return true;}
+    return Object.freeze({
+      program:()=>clone(program),layout:()=>clone(layout),nodeAt,definitionFor,
+      add,updateParameters,replace,remove,clear,undo:undoOnce,redo:redoOnce,
+      canUndo:()=>undo.length>0,canRedo:()=>redo.length>0,
+      parameterErrors:(def,values)=>Adapter.validateParameters(def,values,c?.refs||{}),
+      descriptors:def=>Adapter.inputDescriptors(def,c?.refs||{}),
+      catalog:()=>c
+    });
+  }
+
+  function summaryFor(session,node){
+    const def=session.definitionFor(node);if(!def)return '';
+    const descriptors=session.descriptors(def),parts=[];
+    for(const field of descriptors){
+      const value=node.parameters?.[field.name];if(value==null||value==='')continue;
+      const option=field.options.find(row=>String(row.id)===String(value));
+      parts.push(`${field.label}: ${option?.name||value}`);
+    }
+    return parts.join(' / ');
+  }
+  function portHtml(def){
+    if(!def)return '';
+    const bits=['<span class="ai-formal-port ai-formal-port-in" title="入口">◀</span>'];
+    if(def.node_type==='condition')bits.push('<span class="ai-formal-port ai-formal-port-out ai-formal-port-true" title="TRUE">T▶</span><span class="ai-formal-port ai-formal-port-out ai-formal-port-false" title="FALSE">F▼</span>');
+    if(def.node_type==='target')bits.push('<span class="ai-formal-port ai-formal-port-out ai-formal-port-next" title="出口">▶</span>');
+    return bits.join('');
+  }
+  function renderBoard(){
+    if(!ui||!activeSession)return;
+    const layout=activeSession.layout(),program=activeSession.program();
+    ui.board.style.gridTemplateColumns=`repeat(${layout.width},72px)`;
+    ui.board.style.gridTemplateRows=`repeat(${layout.height},72px)`;
+    ui.board.innerHTML='';
+    const byId=new Map(program.nodes.map(n=>[n.instance_id,n]));
+    for(let y=0;y<layout.height;y++)for(let x=0;x<layout.width;x++){
+      const cell=document.createElement('button');cell.type='button';cell.className='ai-formal-cell';cell.dataset.x=x;cell.dataset.y=y;
+      const chip=layout.chips.find(row=>row.x===x&&row.y===y);const node=chip?byId.get(chip.instance_id):null;
+      if(node){
+        const def=activeSession.definitionFor(node);const summary=summaryFor(activeSession,node);const entry=program.entry_node_id===node.instance_id;
+        cell.classList.add('occupied');
+        cell.innerHTML=`<span class="ai-formal-chip ${esc(node.node_type)}">${portHtml(def)}${entry?'<span class="ai-entry-badge">START</span>':''}<b>${esc(def?.name||node.master_node_id)}</b>${summary?`<small>${esc(summary)}</small>`:''}</span>`;
+        cell.onclick=()=>openExistingConfig(node.instance_id);
+      }else{
+        cell.innerHTML='<span class="ai-formal-add">＋</span>';cell.setAttribute('aria-label',`空きセル ${x+1},${y+1}`);cell.onclick=()=>openCandidates({x,y});
+      }
+      ui.board.appendChild(cell);
+    }
+    ui.undo.disabled=!activeSession.canUndo();ui.redo.disabled=!activeSession.canRedo();
+    const total=program.nodes.length;
+    ui.state.textContent=catalog&&definitions(catalog).length?`${total}チップ / 正式Master ${definitions(catalog).length}件`:'正式AI Master未配置';
+    ui.catalogNotice.classList.toggle('hidden',!!(catalog&&definitions(catalog).length));
+  }
+  function renderCandidateTabs(){
+    ui.candidateTabs.innerHTML=Object.entries(CATEGORY_LABEL).map(([key,label])=>`<button type="button" data-ai-category="${key}" class="${currentCategory===key?'active':''}">${label}</button>`).join('');
+    ui.candidateTabs.querySelectorAll('[data-ai-category]').forEach(btn=>btn.onclick=()=>{currentCategory=btn.dataset.aiCategory;renderCandidateTabs();renderCandidateList();});
+  }
+  function renderCandidateList(){
+    const q=String(ui.candidateSearch.value||'').trim().toLowerCase();
+    const rows=definitions(catalog).filter(row=>row.node_type===currentCategory&&(!q||[row.id,row.name,row.description,...(row.tags||[])].join(' ').toLowerCase().includes(q)));
+    ui.candidateList.innerHTML=rows.map(row=>{
+      const fields=Adapter.inputDescriptors(row,catalog?.refs||{});const req=fields.filter(f=>f.required).map(f=>f.label).join(' / ');
+      return `<button type="button" class="ai-candidate-card ${esc(row.node_type)}" data-ai-master="${esc(row.id)}"><span class="ai-candidate-name">${esc(row.name)}</span><span class="ai-candidate-desc">${esc(row.description||'')}</span><span class="ai-candidate-meta">${req?`必須: ${esc(req)}`:'設定なし'} / ${row.node_type==='condition'?'TRUE・FALSE':row.node_type==='action'?'終端':'出口1'}</span></button>`;
+    }).join('');
+    ui.candidateEmpty.classList.toggle('hidden',rows.length>0);
+    ui.candidateEmpty.textContent=definitions(catalog).length?'条件に一致するチップがありません。':'正式AI MasterがGameデータに配置されていません。';
+    ui.candidateList.querySelectorAll('[data-ai-master]').forEach(btn=>btn.onclick=()=>{const def=definitionById(catalog,btn.dataset.aiMaster);if(!def)return;if(candidateContext?.replaceInstanceId)openConfig(def,{mode:'replace',instanceId:candidateContext.replaceInstanceId},{});else openNewConfig(btn.dataset.aiMaster);});
+  }
+  function showScreen(screen){
+    ui.candidate.classList.toggle('open',screen==='candidate');ui.config.classList.toggle('open',screen==='config');
+  }
+  function openCandidates(context){candidateContext=context;currentCategory='condition';ui.candidateSearch.value='';renderCandidateTabs();renderCandidateList();showScreen('candidate');}
+  function closeSubscreen(){showScreen('board');configContext=null;candidateContext=null;}
+  function valuesFromForm(){
+    const out={};ui.configBody.querySelectorAll('[data-ai-param]').forEach(el=>{
+      if(el.type==='number')out[el.dataset.aiParam]=el.value===''?'':Number(el.value);else out[el.dataset.aiParam]=el.value;
+    });return out;
+  }
+  function renderConfigValidation(def){
+    const values=valuesFromForm();const errors=activeSession.parameterErrors(def,values);
+    ui.configErrors.innerHTML=errors.map(e=>`<div>${esc(e)}</div>`).join('');ui.configApply.disabled=errors.length>0;
+  }
+  function fieldHtml(field,value){
+    const required=field.required?' <span class="required">必須</span>':'';
+    if(field.ref_kind||field.options.length){
+      const options=['<option value="">選択してください</option>',...field.options.map(o=>`<option value="${esc(o.id)}" ${String(value??'')===String(o.id)?'selected':''}>${esc(o.name)}</option>`)].join('');
+      const empty=field.options.length===0?'<small class="ai-ref-empty">正式データ未登録</small>':'';
+      return `<label class="ai-param-field"><span>${esc(field.label)}${required}</span><select data-ai-param="${esc(field.name)}" ${field.required&&field.options.length===0?'disabled':''}>${options}</select>${empty}</label>`;
+    }
+    if(field.type==='number'||field.type==='integer')return `<label class="ai-param-field"><span>${esc(field.label)}${required}</span><input data-ai-param="${esc(field.name)}" type="number" ${field.minimum!=null?`min="${field.minimum}"`:''} ${field.maximum!=null?`max="${field.maximum}"`:''} ${field.type==='integer'?'step="1"':'step="any"'} value="${esc(value??'')}"></label>`;
+    return `<label class="ai-param-field"><span>${esc(field.label)}${required}</span><input data-ai-param="${esc(field.name)}" value="${esc(value??'')}"></label>`;
+  }
+  function openConfig(def,context,values){
+    configContext={...context,masterId:def.id};ui.configTitle.textContent=def.name;
+    const descriptors=activeSession.descriptors(def);ui.configPort.textContent=def.node_type==='condition'?'入口1 / TRUE / FALSE':def.node_type==='action'?'入口1 / 終端':'入口1 / 出口1';
+    ui.configBody.innerHTML=descriptors.length?descriptors.map(field=>fieldHtml(field,values?.[field.name])).join(''):'<div class="ai-no-params">このチップに設定項目はありません。</div>';
+    ui.configDelete.classList.toggle('hidden',context.mode==='new');ui.configReplace.classList.toggle('hidden',context.mode==='new');
+    ui.configApply.textContent=context.mode==='new'?'配置する':'設定を反映';
+    ui.configBody.querySelectorAll('[data-ai-param]').forEach(el=>{el.oninput=()=>renderConfigValidation(def);el.onchange=()=>renderConfigValidation(def);});
+    renderConfigValidation(def);showScreen('config');
+  }
+  function openNewConfig(masterId){const def=definitionById(catalog,masterId);if(!def)return;openConfig(def,{mode:'new',x:candidateContext.x,y:candidateContext.y},{});}
+  function openExistingConfig(instanceId){const program=activeSession.program();const node=program.nodes.find(row=>row.instance_id===instanceId);if(!node)return;const def=activeSession.definitionFor(node);if(!def)return;openConfig(def,{mode:'existing',instanceId},node.parameters||{});}
+  function applyConfig(){
+    if(!configContext)return;const def=definitionById(catalog,configContext.masterId);if(!def)return;const values=valuesFromForm();const errors=activeSession.parameterErrors(def,values);if(errors.length)return;
+    try{
+      if(configContext.mode==='new')activeSession.add(def.id,values,configContext.x,configContext.y);
+      else if(configContext.mode==='replace')activeSession.replace(configContext.instanceId,def.id,values);
+      else activeSession.updateParameters(configContext.instanceId,values);
+      closeSubscreen();renderBoard();
+    }catch(error){notify(String(error?.message||error),'bad');}
+  }
+  function replaceExisting(){
+    if(!configContext?.instanceId)return;const node=activeSession.program().nodes.find(row=>row.instance_id===configContext.instanceId);if(!node)return;
+    const chip=activeSession.layout().chips.find(row=>row.instance_id===node.instance_id);candidateContext={x:chip?.x||0,y:chip?.y||0,replaceInstanceId:node.instance_id};
+    ui.candidateSearch.value='';currentCategory=node.node_type;renderCandidateTabs();renderCandidateList();showScreen('candidate');
+  }
+  async function open(options){
+    const opts=options||{};activeCharacter=opts.character||null;notify=typeof opts.notify==='function'?opts.notify:()=>{};
+    if(!activeCharacter)return;
+    if(!ui)bindDom();
+    ui.title.textContent=`${activeCharacter.name||'冒険者'} — AIチップ編集`;
+    ui.overlay.classList.add('open');ui.overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+    ui.state.textContent='正式AI Masterを読込中…';
+    try{catalog=await Catalog.load({aiUrl:opts.aiUrl,skillUrl:opts.skillUrl});}
+    catch(error){catalog=Catalog.normalize([],[],[],[]);notify(String(error?.message||error),'bad');}
+    const key=String(activeCharacter.id||'default');
+    if(!sessions.has(key))sessions.set(key,createSession(catalog,{program_id:`AIP-DRAFT-${key.replace(/[^A-Za-z0-9_.-]/g,'_')}`,layout_id:'AIL-0001',name:`${activeCharacter.name||''} AI`}));
+    activeSession=sessions.get(key);renderBoard();
+  }
+  function close(){if(!ui)return;showScreen('board');ui.overlay.classList.remove('open');ui.overlay.setAttribute('aria-hidden','true');document.body.style.overflow='';activeCharacter=null;activeSession=null;}
+  function bindDom(){
+    const $=id=>document.getElementById(id);
+    ui={overlay:$('aiEditor'),title:$('aiEditorTitle'),state:$('aiEditorState'),board:$('aiBoard'),catalogNotice:$('aiCatalogNotice'),close:$('aiEditorClose'),save:$('aiEditorSave'),undo:$('aiUndo'),redo:$('aiRedo'),clear:$('aiClear'),candidate:$('aiCandidateScreen'),candidateBack:$('aiCandidateBack'),candidateSearch:$('aiCandidateSearch'),candidateTabs:$('aiCandidateTabs'),candidateList:$('aiCandidateList'),candidateEmpty:$('aiCandidateEmpty'),config:$('aiConfigScreen'),configBack:$('aiConfigBack'),configTitle:$('aiConfigTitle'),configPort:$('aiConfigPort'),configBody:$('aiConfigBody'),configErrors:$('aiConfigErrors'),configApply:$('aiConfigApply'),configDelete:$('aiConfigDelete'),configReplace:$('aiConfigReplace')};
+    ui.close.onclick=close;ui.save.disabled=true;ui.save.title='正式Save接続は後続Phaseで実装します。';
+    ui.undo.onclick=()=>{if(activeSession?.undo()){renderBoard();}};ui.redo.onclick=()=>{if(activeSession?.redo()){renderBoard();}};
+    ui.clear.onclick=()=>{if(activeSession&&confirm('編集中の盤面をすべて消去しますか？')){activeSession.clear();renderBoard();}};
+    ui.candidateBack.onclick=closeSubscreen;ui.candidateSearch.oninput=renderCandidateList;ui.configBack.onclick=()=>{if(configContext?.mode==='new'||configContext?.mode==='replace')showScreen('candidate');else closeSubscreen();};
+    ui.configApply.onclick=applyConfig;ui.configDelete.onclick=()=>{if(configContext?.instanceId&&confirm('このチップを削除しますか？')){activeSession.remove(configContext.instanceId);closeSubscreen();renderBoard();}};ui.configReplace.onclick=replaceExisting;
+  }
+  return Object.freeze({CATEGORY_LABEL,createSession,definitions,definitionById,projectData,open,close});
+});
