@@ -1,35 +1,35 @@
-const CACHE_NAME="ga-game-b486186-b593";
+const CACHE_NAME="ga-game-b486187-b593";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=486186b593';
+const OFFLINE_URL='./index.html?appv=486187b593';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=486186b593",
-  "./manifest.webmanifest?v=486186",
-  "./icon-192.png?v=486186",
-  "./icon-512.png?v=486186",
-  "../Export/skill/skills.json?v=486186b593"
+  "./index.html?appv=486187b593",
+  "./manifest.webmanifest?v=486187",
+  "./icon-192.png?v=486187",
+  "./icon-512.png?v=486187",
+  "../Export/skill/skills.json?v=486187b593"
 ,
-  "../assets/shared/config/runtime-config.js?v=486186b593",
-  "../assets/shared/js/game-shell-common.js?v=486186",
-  "../assets/shared/js/apply-lifecycle-engine.js?v=486186",
-  "../assets/shared/js/trigger-engine.js?v=486186",
-  "../assets/shared/js/condition-engine.js?v=486186",
+  "../assets/shared/config/runtime-config.js?v=486187b593",
+  "../assets/shared/js/game-shell-common.js?v=486187",
+  "../assets/shared/js/apply-lifecycle-engine.js?v=486187",
+  "../assets/shared/js/trigger-engine.js?v=486187",
+  "../assets/shared/js/condition-engine.js?v=486187",
   "../assets/shared/js/adventure-story-system.js?v=11",
   "../assets/shared/js/adventure-encounter-resolver.js?v=3",
   "../assets/shared/js/adventure-reward-resolver.js?v=1",
   "../assets/shared/js/adventure-battle-core.js?v=2",
-  "../assets/shared/js/skill-compiler.js?v=486186",
-  "../assets/shared/js/skill-compile-service.js?v=486186",
-  "../assets/shared/js/device-game-test-harness.js?v=486186",
-  "../assets/shared/config/skill-registry.json?v=486186"
+  "../assets/shared/js/skill-compiler.js?v=486187",
+  "../assets/shared/js/skill-compile-service.js?v=486187",
+  "../assets/shared/js/device-game-test-harness.js?v=486187",
+  "../assets/shared/config/skill-registry.json?v=486187"
 ,
-  "./assets/js/app-runtime.js?v=486186b593"
+  "./assets/js/app-runtime.js?v=486187b593"
 ,
-  "./assets/js/tag-skill-runtime.js?v=486186b593",
-  "./assets/js/studio-skill-bridge.js?v=486186b593"
+  "./assets/js/tag-skill-runtime.js?v=486187b593",
+  "./assets/js/studio-skill-bridge.js?v=486187b593"
 ,
-  "./assets/js/battle-control.js?v=486186",
-  "./assets/js/ui-bootstrap.js?v=486186"
+  "./assets/js/battle-control.js?v=486187",
+  "./assets/js/ui-bootstrap.js?v=486187"
 ];
 
 self.addEventListener('install',event=>{

@@ -33,8 +33,8 @@ assert(app.includes('function adventureRewardDetail(reward)'),'stored reward det
 assert(app.includes('<b>戦闘報酬</b>'),'Battle Viewer must show the stored battle reward');
 assert(app.includes('<b>イベント報酬</b>'),'Event Viewer must show the stored event reward');
 assert(app.includes('<b>出現モンスター</b>'),'Battle Viewer must show the stored encounter monster names');
-assert(app.includes('function renderAdventureReturnResult(summary)'),'return result renderer missing');
+assert(app.includes('function renderAdventureReturnResult(summary,{history=false}={})'),'return/history aggregate result renderer missing');
 assert(app.includes('QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。'),'return result must make no-recalculation behavior explicit');
-assert(app.includes("const summary={run_id:current.quest_run_id"),'return summary must be captured from stored QuestRun before commit');
-assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.186';"),'current game build missing');
+assert(app.includes('const summary=adventureQuestRunSummary(current);'),'return summary must be captured from stored QuestRun before commit');
+assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.187';"),'current game build missing');
 console.log('adventure-playback-viewers-runtime-integration PASS');
