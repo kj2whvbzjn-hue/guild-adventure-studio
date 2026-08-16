@@ -6,7 +6,7 @@ const zones=(before=[])=>({event_zone_before_pre:before,event_zone_pre_to_mid:[]
 const fixed=(event_id,{order=1,failure_policy='quest_fail'}={})=>({kind:'fixed_event',event_id,order,failure_policy});
 const slot=(over={})=>({kind:'random_event',order:1,failure_policy:'quest_fail',filter:{event_type:'battle',group:null,tags:[]},allow_none:false,required:true,box_side_individual_probability_override:false,...over});
 const quest=(id,placement,{enemy_budget=8,context={map_id:'MAP-PENDING',area_id:'AREA-PENDING',difficulty:4,budget:{policy:'standard'}}}={})=>({id,enemy_budget,adventure_duration_seconds:30,context,boxes:[{box_id:'BOX-1',order:1,pre_scene_id:null,mid_scene_id:null,post_scene_id:null,...zones([placement])}]});
-const battleEvent={id:'EVT-BATTLE',name:'Battle',usage:'story',type:'battle',intensity:'high',generation_profile_ref:'GEN-P1',battle_formation:[{monster_id:'LEGACY-FIXED',count:99}]};
+const battleEvent={id:'EVT-BATTLE',name:'Battle',usage:'story',type:'battle',intensity:'high',generation_profile_ref:'GEN-P1'};
 const tablets=[{id:'TBL-BONUS',params:{enemy_budget_bonus:3}}];
 let capturedRequest=null,capturedBattle=null;
 const run=S.simulateQuest({
@@ -22,7 +22,6 @@ assert.equal(run.event_results[0].battle_result_index,0);
 assert.equal(run.event_results[0].success,true);
 assert.deepEqual(run.reward_result,{gold:7});
 assert.deepEqual(capturedBattle.formation,[{monster_id:'M-RESOLVED',count:2}]);
-assert(!capturedBattle.formation.some(x=>x.monster_id==='LEGACY-FIXED'),'P7-A must never read Event.battle_formation as the normal encounter source');
 assert.equal(capturedRequest.contract,'adventure_battle_encounter_request');
 assert.equal(capturedRequest.contract_version,1);
 assert.equal(capturedRequest.quest_id,'Q-P7');

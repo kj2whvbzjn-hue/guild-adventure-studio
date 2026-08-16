@@ -5,15 +5,9 @@ const S=require('../assets/shared/js/adventure-story-system.js');
 const emptyZones=()=>({event_zone_before_pre:[],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]});
 const fixed=(event_id,order=1,failure_policy='continue')=>({kind:'fixed_event',event_id,order,failure_policy});
 
-// Split 1: simulateQuest is Quest Box only. Legacy Section boxes must never execute as a fallback.
+// Split 1: simulateQuest is Quest Box only; the retired legacy simulator is absent.
 assert.equal(typeof S.simulateLegacySectionQuest,'undefined');
-const noFallback=S.simulateQuest({
-  quest:{id:'Q-NO-BOX',adventure_duration_seconds:20,boxes:[]},
-  section:{id:'LEGACY-SECTION',adventure_duration_seconds:999,boxes:[{id:'OLD',type:'scene',ref_id:'SC-OLD'}]},
-  chapter:{id:'LEGACY-CHAPTER',available_monster_ids:['OLD-MONSTER']},
-  scenes:[{id:'SC-OLD',dialogues:[{text:'must not execute'}]}],
-  seed:1
-});
+const noFallback=S.simulateQuest({quest:{id:'Q-NO-BOX',adventure_duration_seconds:20,boxes:[]},scenes:[],seed:1});
 assert.equal(noFallback.timeline_result.length,0);
 assert.equal(noFallback.section_id,'');
 assert.equal(noFallback.chapter_id,'');

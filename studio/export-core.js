@@ -61,6 +61,18 @@
   function stringValue(value){return String(value??'').trim();}
   function eventUsages(event){const raw=event?.usage;if(Array.isArray(raw))return raw.map(stringValue).filter(Boolean);const one=stringValue(raw);return one?[one]:[];}
   function allSceneIds(data){const ids=new Set();(data?.chapters||[]).forEach(ch=>(ch.sections||[]).forEach(sec=>(sec.scenes||[]).forEach(scene=>{const id=stringValue(scene?.id);if(id)ids.add(id);})));return ids;}
+  function hasOwn(row,key){return Boolean(row&&typeof row==='object'&&Object.prototype.hasOwnProperty.call(row,key));}
+  function collectRetiredStoryModelIssues(data){
+    const issues=[];
+    (data?.chapters||[]).forEach(chapter=>{
+      const cid=stringValue(chapter?.id)||'(ID未設定)';
+      for(const key of ['available_monster_ids','random_event_candidates'])if(hasOwn(chapter,key))issues.push({level:'ERROR',code:'RETIRED_CHAPTER_FIELD',chapter_id:cid,field:key,message:`${cid} に撤去済みChapterフィールド ${key} が残っています。Project JSONを正式モデルへ移行してください。`});
+      (chapter?.sections||[]).forEach(section=>{const sid=stringValue(section?.id)||'(ID未設定)';for(const key of ['adventure_duration_seconds','enemy_budget','boxes'])if(hasOwn(section,key))issues.push({level:'ERROR',code:'RETIRED_SECTION_FIELD',chapter_id:cid,section_id:sid,field:key,message:`${sid} に撤去済みSectionフィールド ${key} が残っています。Quest側の正式フィールドへ移行してください。`});});
+    });
+    (data?.quests||[]).forEach(quest=>{const qid=stringValue(quest?.id)||'(ID未設定)';for(const key of ['links','enemies','drops','reward'])if(hasOwn(quest,key))issues.push({level:'ERROR',code:'RETIRED_QUEST_FIELD',quest_id:qid,field:key,message:`${qid} に撤去済みQuestフィールド ${key} が残っています。正式Questモデルへ移行してください。`});});
+    (data?.events||[]).forEach(event=>{const eid=stringValue(event?.id)||'(ID未設定)';for(const key of ['links','battle_formation'])if(hasOwn(event,key))issues.push({level:'ERROR',code:'RETIRED_EVENT_FIELD',event_id:eid,field:key,message:`${eid} に撤去済みEventフィールド ${key} が残っています。正式Eventモデルへ移行してください。`});});
+    return issues;
+  }
   function valuePresent(value){if(value==null)return false;if(Array.isArray(value))return value.length>0;if(typeof value==='object')return Object.keys(value).length>0;return stringValue(value)!=='';}
   function randomEventCandidates(data,placement){
     const filter=placement?.filter&&typeof placement.filter==='object'?placement.filter:{};
@@ -174,7 +186,7 @@
     return issues;
   }
   function collectQuestEventContractIssues(data){
-    const issues=[];(data?.quests||[]).forEach(q=>issues.push(...collectQuestContractIssues(data,q)));(data?.events||[]).forEach(e=>issues.push(...collectEventContractIssues(data,e)));
+    const issues=[...collectRetiredStoryModelIssues(data)];(data?.quests||[]).forEach(q=>issues.push(...collectQuestContractIssues(data,q)));(data?.events||[]).forEach(e=>issues.push(...collectEventContractIssues(data,e)));
     const boxes=(data?.quests||[]).flatMap(q=>Array.isArray(q?.boxes)?q.boxes:[]),randomSlots=boxes.flatMap(box=>QUEST_BOX_ZONE_KEYS.flatMap(key=>Array.isArray(box?.[key])?box[key]:[])).filter(p=>p?.kind==='random_event');
     const sceneUsage=new Set();boxes.forEach(box=>['pre_scene_id','mid_scene_id','post_scene_id'].forEach(key=>{const id=stringValue(box?.[key]);if(id)sceneUsage.add(id);}));
     issues.push({level:'INFO',code:'QUEST_BOX_COUNT',message:`P4情報: Quest Box ${boxes.length}件。`});
@@ -250,17 +262,12 @@
     return {summary,issues};
   }
   function collectAIExportIssues(data){const adapter=aiExportAdapter();return adapter?adapter.collectIssues(data):[{level:'ERROR',code:'AI_EXPORT_ADAPTER_MISSING',message:'AI Export Adapterを読み込めません。'}];}
-  function cleanWithout(row,keys){const out=clean(row);for(const key of keys)delete out[key];return out;}
-  function cleanFormalChapter(row){return cleanWithout(row,['available_monster_ids','random_event_candidates']);}
-  function cleanFormalSection(row){return cleanWithout(row,['adventure_duration_seconds','enemy_budget','boxes']);}
-  function cleanFormalQuest(row){return cleanWithout(row,['links','enemies','drops','reward']);}
-  function cleanFormalEvent(row){return cleanWithout(row,['links','battle_formation']);}
   function buildData(data){
     const chapters=[],sections=[],scenes=[];
     (data.chapters||[]).forEach(chapter=>{
-      const chapterRow=cleanFormalChapter({...chapter}); delete chapterRow.sections; chapters.push(chapterRow);
+      const chapterRow=clean({...chapter}); delete chapterRow.sections; chapters.push(chapterRow);
       (chapter.sections||[]).forEach(section=>{
-        const sectionRow=cleanFormalSection({...section,chapter_id:chapter.id}); delete sectionRow.scenes; sections.push(sectionRow);
+        const sectionRow=clean({...section,chapter_id:chapter.id}); delete sectionRow.scenes; sections.push(sectionRow);
         (section.scenes||[]).forEach(scene=>scenes.push(clean({...scene,chapter_id:chapter.id,section_id:section.id})));
       });
     });
@@ -271,11 +278,11 @@
       'ai/ai_programs.json':clean(ai.programs),'ai/ai_runtimes.json':clean(ai.runtimes),
       'equipment/equipment.json':clean(masters.equipment||[]),
       'equipment/mods.json':clean(mods.filter(x=>!recordsByTag([x],['monster','stone','tablet','石板']).length)),
-      'event/events.json':(data.events||[]).map(cleanFormalEvent),'event/flags.json':clean(data.flags||[]),
+      'event/events.json':clean(data.events||[]),'event/flags.json':clean(data.flags||[]),
       'master/jobs.json':clean(masters.jobs||[]),'master/statuses.json':clean(masters.status_effects||[]),
       'monster/monster_mods.json':clean(recordsByTag(mods,['monster','モンスター'])),'monster/monsters.json':clean(masters.monsters||[]),
       'world/maps.json':clean(masters.maps||[]),'exploration/outcomes.json':clean(masters.exploration_outcomes||[]),
-      'quest/event_quests.json':quests.filter(x=>x.type==='event').map(cleanFormalQuest),'quest/main_quests.json':quests.filter(x=>x.type==='main').map(cleanFormalQuest),'quest/sub_quests.json':quests.filter(x=>!['main','event'].includes(x.type)).map(cleanFormalQuest),
+      'quest/event_quests.json':clean(quests.filter(x=>x.type==='event')),'quest/main_quests.json':clean(quests.filter(x=>x.type==='main')),'quest/sub_quests.json':clean(quests.filter(x=>!['main','event'].includes(x.type))),
       'scenario/chapters.json':chapters,'scenario/scenes.json':scenes,'scenario/sections.json':sections,
       'skill/skills.json':clean(masters.skills||[]),'stone/stone_mods.json':clean(recordsByTag(mods,['stone','tablet','石板'])),'stone/stones.json':clean(masters.tablets||[]),
       'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean((masters.reward_tables&&masters.reward_tables.length)?masters.reward_tables:(data.drop_tables||[])),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
@@ -296,5 +303,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectRetiredStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

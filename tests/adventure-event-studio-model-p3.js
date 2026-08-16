@@ -17,11 +17,6 @@ assert.equal(modern.enabled,false);
 const corrected=S.normalizeEvent({usage:'unknown',type:'reward'});
 assert.equal(corrected.usage,'common');
 assert.equal(corrected.type,'special');
-const legacy=S.normalizeEvent({id:'EVT-LEGACY',type:'reward',links:{quest_id:'Q-OLD'},custom:'keep'});
-assert.equal(legacy.type,'reward');
-assert.equal(legacy.links.quest_id,'Q-OLD');
-assert.equal(legacy.custom,'keep');
-assert.equal(Object.prototype.hasOwnProperty.call(legacy,'usage'),false);
 
 const studio=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
 for(const token of ['id="eventUsage"','id="eventType"','id="eventGroup"','id="eventTags"','id="eventIntensity"','id="eventRandomBaseWeight"','id="eventGenerationProfileRef"','id="eventEnabled"'])assert(studio.includes(token),`P3 Event editor missing ${token}`);
@@ -31,7 +26,7 @@ assert(studio.includes('usage:eventUsage.value,type:eventType.value'),'Event sav
 assert(studio.includes("persist('event saved')"),'formal Event save marker missing');
 const saveStart=studio.indexOf('function saveEvent(){'),saveEnd=studio.indexOf('function editEvent(',saveStart),saveBlock=studio.slice(saveStart,saveEnd);
 assert(!saveBlock.includes('syncEventConnections('),'P3 Event save must not trigger legacy Timeline/Character side effects');
-assert(saveBlock.includes('...previous'),'P3 Event save must non-destructively preserve legacy fields for now');
+assert(saveBlock.includes("for(const key of ['links','battle_formation'])delete record[key]"),'formal Event save must remove retired links/battle_formation fields');
 const deleteStart=studio.indexOf('function deleteEvent('),deleteEnd=studio.indexOf('function renderEvents(',deleteStart),deleteBlock=studio.slice(deleteStart,deleteEnd);
 assert(!deleteBlock.includes('removeEventConnections('),'formal Event deletion must not run legacy Timeline/Character link cleanup');
 

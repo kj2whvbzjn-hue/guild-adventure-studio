@@ -42,4 +42,4 @@ assert.strictEqual(JSON.stringify(context.data),JSON.stringify(original),'audit 
 assert.ok(!report.issues.some(x=>x.id==='BOX-QST-CH01-SEC01-01'),'Quest Box IDs must remain outside this ID audit');
 assert.ok(!source.includes('random_event_candidates'),'audit must not scan legacy Chapter random Event candidates');
 assert.ok(!source.includes('.links'),'audit must not scan legacy Quest/Event links');
-console.log('PASS GKS-B594 Game data ID/reference audit is read-only and uses the formal Quest/Event model');
+console.log('PASS GKS-B595 Game data ID/reference audit is read-only and uses the formal Quest/Event model');

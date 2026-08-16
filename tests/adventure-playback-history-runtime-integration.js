@@ -12,5 +12,5 @@ assert(app.includes("aria-current=\"step\""),'current Box auto-follow marker mis
 assert(app.includes("scrollIntoView({block:'nearest',behavior:'smooth'})"),'current Box auto-follow scroll missing');
 assert(app.includes('const activeRun=currentAdventureQuestRun();if(activeRun)openAdventurePlayback(activeRun);else setPhase(\'base\')'),'continue must resume active QuestRun');
 assert(app.includes("ret.textContent=history?'履歴を閉じる'"),'history viewer must not commit results');
-assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.187';"),'current game build missing');
+assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.188';"),'current game build missing');
 console.log('adventure-playback-history-runtime-integration PASS');

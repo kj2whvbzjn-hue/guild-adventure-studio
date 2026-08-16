@@ -37,8 +37,7 @@ const freeText=structuredClone(base);freeText.events[1].conditions='night only';
 issues=Core.collectQuestEventContractIssues(freeText);assert(issues.some(x=>x.level==='WARNING'&&x.code==='EVENT_CONDITIONS_RUNTIME_IGNORED'));
 
 const forbidden=structuredClone(base);forbidden.events[0].map_id='MAP-X';forbidden.events[0].battle_formation=[{monster_id:'MON-1',count:1}];
-issues=Core.collectQuestEventContractIssues(forbidden);assert.equal(issues.filter(x=>x.level==='ERROR'&&x.code==='EVENT_ENVIRONMENT_FIELD_FORBIDDEN').length,1);
-assert.equal(Object.prototype.hasOwnProperty.call(Core.buildData(forbidden)['event/events.json'][0],'battle_formation'),false,'legacy battle_formation must be stripped from formal Export');
+issues=Core.collectQuestEventContractIssues(forbidden);assert.equal(issues.filter(x=>x.level==='ERROR'&&x.code==='EVENT_ENVIRONMENT_FIELD_FORBIDDEN').length,1);assert(issues.some(x=>x.level==='ERROR'&&x.code==='RETIRED_EVENT_FIELD'&&x.field==='battle_formation'),'retired Event fields must stop Export instead of being silently stripped');
 
 const p4Only=structuredClone(base);
 formal=Core.formalStoryQuestAssessment(p4Only,p4Only.quests[0]);assert.equal(formal.ready,true);assert.equal(Object.prototype.hasOwnProperty.call(formal,'legacy_runtime_ready'),false);

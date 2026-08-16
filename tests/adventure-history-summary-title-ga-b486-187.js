@@ -1,8 +1,8 @@
 const fs=require('fs');const path=require('path');const assert=require('assert');const root=path.resolve(__dirname,'..');
 const app=fs.readFileSync(path.join(root,'game','assets','js','app-runtime.js'),'utf8');
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
-assert.strictEqual(build.game_build,'GA-B486.187');
-assert.strictEqual(build.studio_build,'GKS-B594');
+assert.strictEqual(build.game_build,'GA-B486.188');
+assert.strictEqual(build.studio_build,'GKS-B595');
 assert(app.includes("function adventureQuestRunTitle(run){const stored=String(run?.quest_name||'').trim();if(stored)return stored;"),'stored Quest name must have first priority');
 const openStart=app.indexOf('function openAdventurePlayback(run,{history=false}={}){');
 const openEnd=app.indexOf('function adventureRewardDetail(reward)',openStart);

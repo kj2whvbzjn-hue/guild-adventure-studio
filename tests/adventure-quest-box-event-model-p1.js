@@ -45,12 +45,6 @@ const canonical=S.normalizeQuest({boxes:[{box_id:'BOX-001',event_zone_after_post
 assert.equal(canonical.boxes[0].box_id,'BOX-001');
 assert.equal(canonical.boxes[0].event_zone_after_post[0].event_id,'EVT-2');
 
-const legacyEvent=S.normalizeEvent({id:'E-OLD',type:'story',conditions:'free text',battle_formation:[],custom:'keep'});
-assert.equal(legacyEvent.type,'story');
-assert.equal(legacyEvent.conditions,'free text');
-assert.equal(legacyEvent.custom,'keep');
-assert.equal(Object.prototype.hasOwnProperty.call(legacyEvent,'usage'),false);
-
 const modernEvent=S.normalizeEvent({id:'E-NEW',usage:['random','common'],type:'exploration',group:' ruins ',tags:[' rare ',''],conditions:[{flag:'F1'}],intensity:'high',generation_profile_ref:123,random_base_weight:'2.5',custom:'keep'});
 assert.deepEqual(modernEvent.usage,['random','common']);
 assert.equal(modernEvent.type,'exploration');

@@ -12,4 +12,4 @@ assert(html.includes("if(c==='skills'&&isFormalSkillMasterRecord('skills',existi
 assert(html.includes("delete rec.tags;delete rec.params"),'legacy generic fields must be removed on formal metadata save');
 assert(html.includes("formal?formalSkillEditorPayload(m):(m.params||{})"),'formal editor must show formal top-level payload');
 assert(html.includes("if(!isFormalSkillMasterRecord('skills',m)){m.tags=m.tags||[];m.params=m.params||{}}"),'normalizeData must not pollute formal skills with legacy fields');
-console.log('FORMAL_STUDIO_MASTER_SKILL_EDITOR_OK build=GA-B486.187');
+console.log('FORMAL_STUDIO_MASTER_SKILL_EDITOR_OK build=GA-B486.188');
