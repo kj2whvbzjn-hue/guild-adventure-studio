@@ -227,11 +227,27 @@
       if (count > 1) diagnostics.push(issue('ERROR', 'AI_INPUT_AMBIGUOUS', `同じ入力ポートに複数の接続があります: ${key}`));
     }
 
+    const reachableNodeIds = new Set();
+    const outgoingNodes = new Map([...nodeInfo.keys()].map((id) => [id, []]));
+    for (const edge of uniqueEdges) {
+      if (outgoingNodes.has(edge.from.node_id) && nodeInfo.has(edge.to.node_id)) outgoingNodes.get(edge.from.node_id).push(edge.to.node_id);
+    }
+    const entryNodeId = String(program.entry_node_id || '');
+    if (nodeInfo.has(entryNodeId)) {
+      const queue = [entryNodeId];
+      while (queue.length) {
+        const id = queue.shift();
+        if (reachableNodeIds.has(id)) continue;
+        reachableNodeIds.add(id);
+        queue.push(...(outgoingNodes.get(id) || []));
+      }
+    }
+
     for (const info of nodeInfo.values()) {
       const input = info.ports.find((port) => port.direction === 'input');
       if (!input) continue;
       const key = `${info.node.instance_id}.${input.port_id}`;
-      if (info.node.instance_id !== String(program.entry_node_id || '') && !inputUse.get(key)) {
+      if (reachableNodeIds.has(info.node.instance_id) && info.node.instance_id !== entryNodeId && !inputUse.get(key)) {
         diagnostics.push(issue('ERROR', 'AI_INPUT_REQUIRED', `入力ポートが未接続です: ${key}`, {node_id: info.node.instance_id, port_id: input.port_id}));
       }
     }
@@ -286,7 +302,13 @@
 
     const portMap = {};
     for (const [id, info] of nodeInfo) portMap[id] = clone(info.ports);
-    return finalize(uniqueEdges, connectionDetails, diagnostics, portMap);
+    const normalizedDiagnostics = diagnostics.map((row) => {
+      if (row.severity === 'ERROR' && row.code === 'AI_OUTPUT_OPEN' && row.node_id && !reachableNodeIds.has(row.node_id)) {
+        return issue('WARNING', 'AI_OUTPUT_OPEN', `未使用部品の出力ポートが未接続です: ${row.node_id}.${row.port_id || '未設定'}`, {node_id: row.node_id, port_id: row.port_id});
+      }
+      return row;
+    });
+    return finalize(uniqueEdges, connectionDetails, normalizedDiagnostics, portMap);
   }
 
   function finalize(edges, connections, diagnostics, portMap) {

@@ -48,8 +48,9 @@
       if(toDef&&!(Array.isArray(toDef.ports?.inputs)?toDef.ports.inputs:[]).some((port)=>port.id===to.port_id))issues.push(issue('ERROR','AI_INPUT_PORT_INVALID',`入力ポートが存在しません: ${to.port_id||'未設定'}`,{edge_id:edgeId,node_id:to.node_id}));
       if(adjacency.has(from.node_id)&&nodeIds.has(to.node_id))adjacency.get(from.node_id).push(to.node_id);
     }
+    const reached=new Set();
     if(nodeIds.has(source.entry_node_id)){
-      const reached=new Set(),queue=[source.entry_node_id];while(queue.length){const id=queue.shift();if(reached.has(id))continue;reached.add(id);queue.push(...(adjacency.get(id)||[]));}
+      const queue=[source.entry_node_id];while(queue.length){const id=queue.shift();if(reached.has(id))continue;reached.add(id);queue.push(...(adjacency.get(id)||[]));}
       [...nodeIds].filter((id)=>!reached.has(id)).sort().forEach((id)=>issues.push(issue('WARNING','AI_NODE_UNREACHABLE',`開始部品から到達できません: ${id}`,{node_id:id})));
     }
     cycleNodes(nodes,edges).forEach((path)=>issues.push(issue('ERROR','AI_CYCLE_UNBOUNDED',`評価上限のない循環があります: ${path}`)));
@@ -66,6 +67,9 @@
     for(const [key,ids] of inputUse)if(ids.length>1)issues.push(issue('ERROR','AI_INPUT_AMBIGUOUS',`同じ入力ポートに複数の接続があります: ${key}`,{edge_id:ids.sort()[0]}));
     for(const node of nodes){
       const id=String(node.instance_id||''),definition=byMaster.get(node.master_node_id);if(!definition)continue;
+      // Mandatory flow connections are enforced only on the executable graph.
+      // Unreachable spare chips remain in the Layout/Program as saveable WARNINGs.
+      if(nodeIds.has(source.entry_node_id)&&!reached.has(id))continue;
       if(id!==source.entry_node_id){
         const key=`${id}.in`,count=(inputUse.get(key)||[]).length;
         if(count===0)issues.push(issue('ERROR','AI_INPUT_REQUIRED',`入力ポートが未接続です: ${key}`,{node_id:id}));
