@@ -1,10 +1,10 @@
-/* Shared runtime/data configuration — GA-B486.197 / GKS-B624 */
+/* Shared runtime/data configuration — GA-B486.198 / GKS-B626 */
 window.GA_PROJECT_CONFIG = Object.freeze({
-  gameBuild: "GA-B486.197",
-  studioBuild: "GKS-B624",
-  skillExportUrl: '../Export/skill/skills.json?v=486197b624',
-  aiNodeExportUrl: '../Export/ai/ai_nodes.json?v=486197b624',
-  aiTemplateExportUrl: '../Export/ai/ai_templates.json?v=486197b624',
+  gameBuild: "GA-B486.198",
+  studioBuild: "GKS-B626",
+  skillExportUrl: '../Export/skill/skills.json?v=486198b626',
+  aiNodeExportUrl: '../Export/ai/ai_nodes.json?v=486198b626',
+  aiTemplateExportUrl: '../Export/ai/ai_templates.json?v=486198b626',
   productionEnvironment: 'production',
   validationEnvironment: 'validation'
 });

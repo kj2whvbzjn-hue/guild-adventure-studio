@@ -9,8 +9,7 @@ DEC-0002に従い、PHP実ゲームが`Export/`だけをゲームマスターと
 - 必須ファイルの存在を検査する
 - 全ファイルのSHA-256をmanifestと照合する
 - UTF-8・JSON・共通Envelopeを検査する
-- legacy共通Envelopeはmanifestと各ファイルの`schema_version`等のメタデータ一致を検査する
-- `skill/skills.json` のFormal Skill v2 (`schema_version: 2.0.0` / `data_version: FORMAL-SKILL-1`) は独立バージョンEnvelopeとして検証する
+- 全Runtime対象JSONは共通Envelopeとしてmanifestと`schema_version` / `data_version` / `generated_at` / `generated_by`の完全一致を検査する
 - 重複パスとパストラバーサルを拒否する
 - 異常時は`ExportLoadException`を投げ、ゲーム開始を停止する
 - Studio内部データへのフォールバックは実装しない
@@ -107,16 +106,9 @@ Game code should use the repository instead of reading Export JSON paths directl
 - シンボリックリンクは走査中も`SYMLINK_FORBIDDEN`で拒否します。
 
 
-## Formal Skill v2 compatibility
+## Skill Export Envelope
 
-`skill/skills.json` はFormal Skill移行後、他のlegacy Exportとは独立したバージョンを持ちます。PHP Runtimeは次を明示的に受理します。
-
-- `schema_version: 2.0.0`
-- `data_version: FORMAL-SKILL-1`
-- optional `migration` object
-- `generated_at` / `generated_by` は文書自身の生成情報を保持可能
-
-パッケージ全体との完全性は `Export/manifest.json` の `sha256` で保証します。Formal Skill以外のlegacy Exportは従来どおりmanifestメタデータ完全一致を要求します。
+`skill/skills.json`も他のRuntime対象JSONと同じ現行共通Envelopeを使用します。独立バージョン、移行メタデータ、旧Envelopeの読み替えは行いません。
 
 ## Atomic Update（DEC-0025）
 

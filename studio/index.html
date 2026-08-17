@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B624</title>
+<title>GK Studio GKS-B626</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.197 / GKS-B624</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.198 / GKS-B626</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.197 / Studio GKS-B624</div>
+    <div class="version">Game GA-B486.198 / Studio GKS-B626</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2217,11 +2217,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=624"></script>
+<script src="./layer-controller.js?v=626"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B624';
+const DISTRIBUTION_BUILD='GKS-B626';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6129,6 +6129,7 @@ let studioDeployDeleteBlocked=[];
 let studioDeployDeleteManifestRules=[];
 let studioDeployDeletePolicy=null;
 let studioDeployTestIntegrityPolicy=null;
+let studioDeployBaselineTestIntegrityPolicy=null;
 let studioDeployTestChangeApproval=null;
 let studioDeployProtectedTestChanges=[];
 let studioDeployCurrentBuild=null;
@@ -6267,7 +6268,9 @@ async function loadExternalDeployTestChangeApproval(){
 }
 function isProtectedTestIntegrityPath(path){
  const rel=normalizeDeployPath(path);
- return (studioDeployTestIntegrityPolicy?.protected_patterns||[]).some(pattern=>deployPolicyGlobMatch(rel,pattern));
+ const baselinePatterns=studioDeployBaselineTestIntegrityPolicy?.protected_patterns||[];
+ const appliedPatterns=studioDeployTestIntegrityPolicy?.protected_patterns||[];
+ return [...new Set([...baselinePatterns,...appliedPatterns])].some(pattern=>deployPolicyGlobMatch(rel,pattern));
 }
 function deployBuildTokenVariants(gameBuild,studioBuild){
  const out=new Set([String(gameBuild||''),String(studioBuild||'')].filter(Boolean));
@@ -6591,7 +6594,7 @@ async function inspectStudioPackage(){
  }catch(e){
   studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;
   studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];
-  studioDeployTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;
+  studioDeployTestIntegrityPolicy=null;studioDeployBaselineTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;
   updateDeployDeleteManifestStatus();updateDeployDeleteControl();setDeployExecuteEnabled(false);
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
   renderDeployPackage();
@@ -6605,6 +6608,24 @@ async function getGitHead(c){
  if(tree.truncated)throw new Error('GitHub Tree応答がtruncatedです。配置を停止しました。');
  return {repo,headSha:ref.object.sha,baseTreeSha:commit.tree.sha,tree};
 }
+async function loadStudioDeployBaselineTestIntegrityPolicy(remote,base){
+ const blobs=(remote.tree.tree||[]).filter(x=>x.type==='blob');
+ const target=joinDeployPath(base,'shared/integrity/test-integrity-policy.json');
+ const node=blobs.find(x=>x.path===target);
+ if(!node){
+  studioDeployBaselineTestIntegrityPolicy=null;
+  deployLogMessage('基準Test Integrity policyなし: bootstrapとして更新側policyのみを使用します。');
+  return null;
+ }
+ const blob=await ghRequest(`${remote.repo}/git/blobs/${encodeURIComponent(node.sha)}`);
+ if(blob?.encoding!=='base64')throw new Error('GitHub baseline Test Integrity policy blobのencodingがbase64ではありません。');
+ let policy;
+ try{policy=JSON.parse(new TextDecoder('utf-8').decode(base64ToBytes(blob.content)))}
+ catch(e){throw new Error('GitHub baseline Test Integrity policyを解析できません。')}
+ studioDeployBaselineTestIntegrityPolicy=policy;
+ return policy;
+}
+
 async function verifyStudioDeployBaselineBinding(remote,base,meta){
  const binding=meta?.baseline_source;
  if(!binding||typeof binding!=='object')throw new Error('更新ZIPにbaseline_sourceがありません。正確な基準ソースで適用後Gateを通した更新ZIPを使用してください。');
@@ -6659,6 +6680,7 @@ async function prepareStudioDeployDiff(){
   saveGitHubSettings();
   const remote=await getGitHead(c);
   await verifyStudioDeployBaselineBinding(remote,base,studioDeployMeta);
+  await loadStudioDeployBaselineTestIntegrityPolicy(remote,base);
   const remoteBlobs=(remote.tree.tree||[]).filter(x=>x.type==='blob');
   const map=new Map(remoteBlobs.map(x=>[x.path,x.sha]));
   let add=0,modify=0,unchanged=0;
@@ -6769,7 +6791,7 @@ function renderDeployPackage(){
  }).join('');
 }
 function clearStudioPackage(){
- studioUpdateZip.value='';const testApprovalInput=document.getElementById('deployTestChangeApprovalFile');if(testApprovalInput)testApprovalInput.value='';const testApprovalStatus=document.getElementById('deployTestChangeApprovalStatus');if(testApprovalStatus)testApprovalStatus.textContent='通常更新では不要です。受入テスト・Schema・Gate等を変更する更新だけ、別途受け取った承認JSONを選択してください。更新ZIP内への同梱は拒否します。';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];studioDeployDeletePolicy=null;studioDeployTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;updateDeployDeleteManifestStatus();const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;const protectedDeleteBox=document.getElementById('deployAllowProtectedDelete');if(protectedDeleteBox)protectedDeleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
+ studioUpdateZip.value='';const testApprovalInput=document.getElementById('deployTestChangeApprovalFile');if(testApprovalInput)testApprovalInput.value='';const testApprovalStatus=document.getElementById('deployTestChangeApprovalStatus');if(testApprovalStatus)testApprovalStatus.textContent='通常更新では不要です。受入テスト・Schema・Gate等を変更する更新だけ、別途受け取った承認JSONを選択してください。更新ZIP内への同梱は拒否します。';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];studioDeployDeletePolicy=null;studioDeployTestIntegrityPolicy=null;studioDeployBaselineTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;updateDeployDeleteManifestStatus();const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;const protectedDeleteBox=document.getElementById('deployAllowProtectedDelete');if(protectedDeleteBox)protectedDeleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
  deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
  deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
@@ -8241,7 +8263,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','624');
+    url.searchParams.set('appv','626');
     location.replace(url.toString());
    }
  }
@@ -8250,7 +8272,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=624',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=626',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8269,7 +8291,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','624');
+    url.searchParams.set('appv','626');
     location.replace(url.toString());
    }
   });

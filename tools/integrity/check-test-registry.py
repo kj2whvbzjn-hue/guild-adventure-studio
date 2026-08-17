@@ -55,6 +55,10 @@ for path in sorted((root / "tools").glob("test_*")):
     rel = path.relative_to(root).as_posix()
     if path.is_file() and path.suffix in (".py", ".js", ".php") and rel not in seen:
         errors.append(f"UNCLASSIFIED_TEST {rel}")
+for path in sorted((root / "php-runtime" / "tests").glob("*")):
+    rel = path.relative_to(root).as_posix()
+    if path.is_file() and path.suffix == ".php" and rel not in seen:
+        errors.append(f"UNCLASSIFIED_PHP_RUNTIME_TEST {rel}")
 if errors:
     print("\n".join(errors))
     raise SystemExit(1)

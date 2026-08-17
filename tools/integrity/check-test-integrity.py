@@ -78,12 +78,25 @@ def build_only_equal(a: Path, b: Path, token_union: set[str]) -> bool:
 
 
 def resolve_policy(baseline: Path, applied: Path) -> tuple[dict, str]:
+    """Return the authoritative policy with a fail-closed protected-scope union.
+
+    Baseline policy remains authoritative for approval semantics and exemptions,
+    but an update may only *expand* the protected path set for the same update.
+    Using the union closes the bootstrap gap where a change could add a new
+    protected pattern while modifying files under that pattern without approval.
+    """
     bp = baseline / "shared/integrity/test-integrity-policy.json"
     ap = applied / "shared/integrity/test-integrity-policy.json"
-    if bp.is_file():
-        return load_json(bp), "baseline"
-    if ap.is_file():
-        return load_json(ap), "bootstrap_applied"
+    baseline_policy = load_json(bp) if bp.is_file() else None
+    applied_policy = load_json(ap) if ap.is_file() else None
+    if baseline_policy is not None:
+        merged = dict(baseline_policy)
+        baseline_patterns = list(baseline_policy.get("protected_patterns", []))
+        applied_patterns = list((applied_policy or {}).get("protected_patterns", []))
+        merged["protected_patterns"] = sorted(set(baseline_patterns) | set(applied_patterns))
+        return merged, "baseline_plus_applied_scope_union" if applied_policy is not None else "baseline"
+    if applied_policy is not None:
+        return applied_policy, "bootstrap_applied"
     raise ValueError("TEST_INTEGRITY_POLICY_MISSING")
 
 

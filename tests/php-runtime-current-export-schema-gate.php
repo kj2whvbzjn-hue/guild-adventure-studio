@@ -32,6 +32,37 @@ try {
     gateReport('current Export loads through PHP Runtime', false, $e->getMessage());
 }
 
+
+// Current Skill Export must use the same package envelope; no independent/migration envelope is accepted.
+try {
+    $package = (new ExportLoader(['1.0.0']))->load($exportPath);
+    $skill = $package->document('skill/skills.json');
+    gateReport(
+        'skill Export uses current package envelope',
+        ($skill['schema_version'] ?? null) === ($package->manifest['schema_version'] ?? null)
+        && ($skill['data_version'] ?? null) === ($package->manifest['data_version'] ?? null)
+        && !array_key_exists('migration', $skill)
+    );
+} catch (Throwable $e) {
+    gateReport('skill Export uses current package envelope', false, $e->getMessage());
+}
+
+// The PHP Runtime suites themselves are protected and release-gating.
+try {
+    $policy = json_decode((string)file_get_contents(dirname(__DIR__) . '/shared/integrity/test-integrity-policy.json'), true, 512, JSON_THROW_ON_ERROR);
+    $registry = json_decode((string)file_get_contents(dirname(__DIR__) . '/shared/tests/test-registry.json'), true, 512, JSON_THROW_ON_ERROR);
+    $protected = in_array('php-runtime/tests/**', $policy['protected_patterns'] ?? [], true);
+    $active = array_column($registry['release_gate'] ?? [], 'path');
+    gateReport(
+        'PHP Runtime tests are protected and release-gating',
+        $protected
+        && in_array('php-runtime/tests/run.php', $active, true)
+        && in_array('php-runtime/tests/tag-runtime.php', $active, true)
+    );
+} catch (Throwable $e) {
+    gateReport('PHP Runtime tests are protected and release-gating', false, $e->getMessage());
+}
+
 $validator = new SimpleSchemaValidator();
 
 $validCases = [

@@ -10,7 +10,7 @@ REGISTRY_GATE=ROOT/'tools/integrity/check-test-registry.py'
 def wj(p,d): p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 def seed(root:Path):
     (root/'shared/integrity').mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/'shared/integrity/impact-test-policy.json',root/'shared/integrity/impact-test-policy.json')
-    wj(root/'package-build.json',{'game_build':'GA-B486.197','studio_build':'GKS-B620'})
+    wj(root/'package-build.json',{'game_build':'GA-B486.198','studio_build':'GKS-B620'})
     tests=[
       {'path':'tools/test_source_zip_binding.py','runtime':'python3'},
       {'path':'tests/studio-update-export-boundary-gks-b592.js','runtime':'node'},
@@ -57,7 +57,7 @@ def main():
       a=t/'unknown';shutil.copytree(base,a);p0=a/'mystery.js';p0.write_text('x\n',encoding='utf-8');r,p=plan(base,a,t/'unknown.json')
       if p.get('mode')!='full':errors.append('UNKNOWN_NOT_FULL '+json.dumps(p))
       # Build-token-only -> impact with no effective functional change
-      a=t/'build';shutil.copytree(base,a);wj(a/'package-build.json',{'game_build':'GA-B486.197','studio_build':'GKS-B621'});p0=a/'docs/build.md';p0.parent.mkdir(parents=True,exist_ok=True);p0.write_text('GKS-B621\n',encoding='utf-8');(base/'docs/build.md').write_text('GKS-B620\n',encoding='utf-8');r,p=plan(base,a,t/'build.json')
+      a=t/'build';shutil.copytree(base,a);wj(a/'package-build.json',{'game_build':'GA-B486.198','studio_build':'GKS-B621'});p0=a/'docs/build.md';p0.parent.mkdir(parents=True,exist_ok=True);p0.write_text('GKS-B621\n',encoding='utf-8');(base/'docs/build.md').write_text('GKS-B620\n',encoding='utf-8');r,p=plan(base,a,t/'build.json')
       if p.get('mode')!='impact' or 'docs/build.md' in p.get('effective_changed_paths',[]):errors.append('BUILD_ONLY_NOT_IGNORED '+json.dumps(p))
       # Selection plans are cryptographically bound to the exact applied tree.
       a=t/'stale';shutil.copytree(base,a);(a/'shared/ai/ai-program-model.js').write_text('const a=2;\n',encoding='utf-8');plan_path=t/'stale-plan.json';r,p=plan(base,a,plan_path)

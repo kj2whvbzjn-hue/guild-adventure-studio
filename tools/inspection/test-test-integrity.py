@@ -17,7 +17,7 @@ def run(base: Path, applied: Path, approval: Path|None=None):
     return subprocess.run(cmd,cwd=ROOT,env=env,text=True,capture_output=True,timeout=10)
 def fixture(root: Path, build='GKS-B620', body="assert.strictEqual(value, 1);\n"):
     (root/'shared/integrity').mkdir(parents=True,exist_ok=True); shutil.copy2(POLICY,root/'shared/integrity/test-integrity-policy.json')
-    write_json(root/'package-build.json',{'game_build':'GA-B486.197','studio_build':build})
+    write_json(root/'package-build.json',{'game_build':'GA-B486.198','studio_build':build})
     p=root/'tests/example.js';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
     write_json(root/'shared/tests/test-registry.json',{'schema_version':1,'release_gate':[{'path':'tests/example.js','runtime':'node'}],'historical_gap':[]})
 
@@ -38,7 +38,7 @@ def main():
         # Build token-only change is allowed without approval.
         (applied/'tests/example.js').write_text("const build='GKS-B621'; assert.strictEqual(value, 1);\n",encoding='utf-8')
         (base/'tests/example.js').write_text("const build='GKS-B620'; assert.strictEqual(value, 1);\n",encoding='utf-8')
-        write_json(applied/'package-build.json',{'game_build':'GA-B486.197','studio_build':'GKS-B621'})
+        write_json(applied/'package-build.json',{'game_build':'GA-B486.198','studio_build':'GKS-B621'})
         r=run(base,applied)
         if r.returncode or 'build_only=1' not in r.stdout: errors.append('BUILD_ONLY_REJECTED '+r.stdout+r.stderr)
         # Logic weakening must fail without approval.
@@ -54,7 +54,7 @@ def main():
         if r.returncode==0 or 'MUST_BE_EXTERNAL' not in r.stdout: errors.append('PACKAGED_APPROVAL_NOT_BLOCKED '+r.stdout+r.stderr)
         # New protected files also require approval, closing module-shadow/additive bypasses.
         shutil.copytree(base,applied,dirs_exist_ok=True)
-        write_json(applied/'package-build.json',{'game_build':'GA-B486.197','studio_build':'GKS-B621'})
+        write_json(applied/'package-build.json',{'game_build':'GA-B486.198','studio_build':'GKS-B621'})
         newp=applied/'tools/inspection/json.py';newp.parent.mkdir(parents=True,exist_ok=True);newp.write_text('# shadow attempt\n',encoding='utf-8')
         r=run(base,applied)
         if r.returncode==0 or 'tools/inspection/json.py' not in r.stdout: errors.append('PROTECTED_ADD_NOT_BLOCKED '+r.stdout+r.stderr)
@@ -69,8 +69,24 @@ def main():
             {'path':'tests/extra.js','baseline_sha256':None,'updated_sha256':'0'*64,'reason':'extra'}]})
         r=run(base,applied,bad)
         if r.returncode==0 or 'PATH_MISMATCH' not in r.stdout: errors.append('EXTRA_APPROVAL_NOT_BLOCKED '+r.stdout+r.stderr)
+        # Protected-scope expansion is effective in the same update. The baseline
+        # controls approval semantics, while baseline+applied patterns are unioned.
+        shutil.rmtree(base); shutil.rmtree(applied); fixture(base); shutil.copytree(base,applied)
+        base_policy=json.loads((base/'shared/integrity/test-integrity-policy.json').read_text(encoding='utf-8'))
+        applied_policy=json.loads((applied/'shared/integrity/test-integrity-policy.json').read_text(encoding='utf-8'))
+        base_policy['protected_patterns']=[p for p in base_policy.get('protected_patterns',[]) if p!='php-runtime/tests/**']
+        applied_policy['protected_patterns']=list(dict.fromkeys(applied_policy.get('protected_patterns',[])+['php-runtime/tests/**']))
+        write_json(base/'shared/integrity/test-integrity-policy.json',base_policy)
+        write_json(applied/'shared/integrity/test-integrity-policy.json',applied_policy)
+        old_php=base/'php-runtime/tests/run.php'; old_php.parent.mkdir(parents=True,exist_ok=True); old_php.write_text("<?php echo 'old';\n",encoding='utf-8')
+        new_php=applied/'php-runtime/tests/run.php'; new_php.parent.mkdir(parents=True,exist_ok=True); new_php.write_text("<?php echo 'changed';\n",encoding='utf-8')
+        r=run(base,applied)
+        if r.returncode==0 or 'php-runtime/tests/run.php' not in r.stdout: errors.append('SCOPE_EXPANSION_NOT_PROTECTED '+r.stdout+r.stderr)
+        expansion_approval=t/'scope-expansion-approval.json'; approval_for(expansion_approval,base,applied,['php-runtime/tests/run.php','shared/integrity/test-integrity-policy.json'])
+        r=run(base,applied,expansion_approval)
+        if r.returncode: errors.append('SCOPE_EXPANSION_APPROVAL_REJECTED '+r.stdout+r.stderr)
     if errors:
         print('TEST_INTEGRITY_REGRESSION_FAIL');print('\n'.join(errors));return 1
-    print('TEST_INTEGRITY_REGRESSION_OK cases=7 silent_weakening=blocked protected_add=blocked external_exact_human_approval=required build_token_only=allowed')
+    print('TEST_INTEGRITY_REGRESSION_OK cases=8 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=required build_token_only=allowed')
     return 0
 if __name__=='__main__': raise SystemExit(main())
