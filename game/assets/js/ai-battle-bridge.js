@@ -30,8 +30,7 @@
     const unit=(ctx,id)=>ctx.units.find(row=>row.id===id),actor=ctx=>unit(ctx,ctx.actor_id);
     const sameSide=ctx=>{const self=actor(ctx);return self?ctx.units.filter(row=>row.alive&&row.side===self.side):[];};
     const enemies=ctx=>{const self=actor(ctx);return self?ctx.units.filter(row=>row.alive&&row.side!==self.side):[];};
-    const hash32=text=>{let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0;};
-    const lowest=(rows,ctx,evaluator)=>{if(!rows.length)return null;const ranked=rows.map(row=>({row,ratio:row.hp/row.max_hp})).sort((a,b)=>a.ratio-b.ratio||a.row.id.localeCompare(b.row.id)),min=ranked[0].ratio,tied=ranked.filter(x=>Math.abs(x.ratio-min)<1e-12).map(x=>x.row).sort((a,b)=>a.id.localeCompare(b.id));if(tied.length===1)return tied[0];const key=`${ctx.seed}|${ctx.tick}|${ctx.actor_id}|${evaluator}|${tied.map(x=>x.id).join(',')}`,index=hash32(key)%tied.length;return tied[index];};
+    const lowest=rows=>rows.slice().sort((a,b)=>a.hp/a.max_hp-b.hp/b.max_hp||a.id.localeCompare(b.id))[0]||null;
     return Object.freeze({
       condition(evaluator,params,ctx){
         const self=actor(ctx);if(!self)return false;
@@ -43,8 +42,8 @@
       target(evaluator,params,ctx){
         let selected=null,pool=[];
         if(evaluator==='target.self'){selected=actor(ctx);pool=selected?[selected]:[];}
-        else if(evaluator==='target.ally_lowest'){pool=sameSide(ctx);selected=lowest(pool,ctx,evaluator);}
-        else if(evaluator==='target.enemy_lowest'){pool=enemies(ctx);selected=lowest(pool,ctx,evaluator);}
+        else if(evaluator==='target.ally_lowest'){pool=sameSide(ctx);selected=lowest(pool);}
+        else if(evaluator==='target.enemy_lowest'){pool=enemies(ctx);selected=lowest(pool);}
         return {target_id:selected?.id||null,candidates:pool.map(row=>row.id)};
       },
       action(evaluator,params){
