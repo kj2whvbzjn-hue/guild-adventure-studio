@@ -5,7 +5,7 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const html=fs.readFileSync('studio/index.html','utf8');
 const policy=JSON.parse(fs.readFileSync('shared/integrity/test-integrity-policy.json','utf8'));
 const systemPolicy=JSON.parse(fs.readFileSync('shared/integrity/system-file-policy.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B627');
+assert.strictEqual(build.studio_build,'GKS-B628');
 assert.strictEqual(policy.baseline_policy_authoritative,true);
 assert.strictEqual(policy.protection_scope_strategy,'union_baseline_and_applied_patterns');
 assert.strictEqual(policy.new_protected_files_require_approval,true);
@@ -22,4 +22,4 @@ assert(html.includes('loadStudioDeployBaselineTestIntegrityPolicy(remote,base)')
 assert(html.includes('...baselinePatterns,...appliedPatterns'),'Studio must union baseline and applied protected patterns during the same update');
 assert(html.includes('保護テスト/Gate変更の人間承認'),'Studio must require a separate human confirmation before deployment');
 assert(html.includes('baseline_sha256')&&html.includes('updated_sha256'),'Studio must compare exact protected change hashes');
-console.log('PASS GKS-B627 protected test/Gate changes require baseline+applied scope union, external exact-hash approval, add/modify/delete coverage, and separate deployment-time human confirmation');
+console.log('PASS GKS-B628 protected test/Gate changes require baseline+applied scope union, external exact-hash approval, add/modify/delete coverage, and separate deployment-time human confirmation');
