@@ -3,7 +3,7 @@
 const assert=require('node:assert');
 const Bridge=require('../../game/assets/js/ai-save-bridge.js');
 const makeCharacter=()=>({id:'C-1',name:'A',level:1,job:'剣士',stats:{HP:10,MP:10,STR:10,VIT:10,INT:10,MND:10,AGI:10,DEX:10,LUK:10},skills:['SKL-TEST-ATTACK'],equippedSkillId:'SKL-TEST-ATTACK',formalAiBinding:null,equipment:{weapon:null,armor:null,accessory:null},jobHistory:[],growthHistory:[],createdAt:'2026-08-17T00:00:00Z'});
-const current={saveVersion:3,schemaRevision:'1.6.0',gameVersion:'GA-B486.200',createdAt:'2026-08-17T00:00:00Z',updatedAt:'2026-08-17T00:00:00Z',characters:[makeCharacter()],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:['C-1'],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};
+const current={saveVersion:3,schemaRevision:'1.6.0',gameVersion:'GA-B486.201',createdAt:'2026-08-17T00:00:00Z',updatedAt:'2026-08-17T00:00:00Z',characters:[makeCharacter()],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:['C-1'],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};
 assert.strictEqual(Bridge.SAVE_VERSION,3);
 assert.deepStrictEqual(Bridge.assertCurrent(current),current);
 for(const mutate of [
