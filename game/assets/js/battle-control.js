@@ -48,10 +48,16 @@ function damageAt(el,value,miss=false){const p=scenePoint(el),pop=document.creat
 function queueSceneEvent(evt){if(formalAdventureSimulationDepth>0)return;if(sceneBusy)sceneQueue.push(evt);else playSceneEvent(evt)}
 
 function resetBattle(context=null){pauseBattle();setBattleLaunchContext(context||standaloneBattleContext());sceneQueue=[];sceneBusy=false;battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationCaptureEvents:true,validationEvents:[],validationMeta:null};initializeBattleTieRolls();renderBattle();recordValidationEvent('battle_started',{seed:battleLaunchContext?.seed??battle.p0113TieSeed??null,source:battleLaunchContext?.source||'standalone_fixture'});ensureSceneUnits(true);setupTagSkillTestUI();populateTagSkillTestUI()}
+function updateSceneControls(){
+ const auto=$('sceneAuto'),pause=$('scenePause'),step=$('sceneStep');
+ if(auto){auto.textContent=battle.result?'結果を見る':battle.running?'進行中':(battle.actions>0||battle.tick>0?'再開':'戦闘開始');auto.disabled=!!battle.running||!!battle.pendingResult}
+ if(pause)pause.disabled=!battle.running;
+ if(step)step.disabled=!!battle.running||!!battle.result||!!battle.pendingResult;
+}
 function renderBattle(){
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.pendingResult?'最終演出待機':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;
  $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?(u.reservedAction.type==='wait'?`${rv.icon} ${u.reservedAction.label}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`):`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${effectiveAttackValue(u)}（基礎${u.attack}）</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small"><b>シールド:</b> ${escapeHtml(shieldStatusText(u))}</div><div class="small"><b>BUFF/DEBUFF:</b> ${escapeHtml(modifierStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
- $('battleLog').textContent=battle.log.length?battle.log.slice(-100).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;const publicLog=$('battlePublicLogBody');if(publicLog){const rows=battle.log.filter(x=>/ダメージ|戦闘不能|戦闘終了|TAG\]\[ERROR|TAG\]\[DOT/.test(x)).slice(-5).map(x=>x.replace(/^\[Tick \d+\] /,''));publicLog.textContent=rows.length?rows.join('\n'):'まだ行動はありません。'}ensureSceneUnits();populateTagSkillTestUI();
+ $('battleLog').textContent=battle.log.length?battle.log.slice(-100).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;const publicLog=$('battlePublicLogBody');if(publicLog){const rows=battle.log.filter(x=>/ダメージ|戦闘不能|戦闘終了|TAG\]\[ERROR|TAG\]\[DOT/.test(x)).slice(-5).map(x=>x.replace(/^\[Tick \d+\] /,''));publicLog.textContent=rows.length?rows.join('\n'):'まだ行動はありません。'}ensureSceneUnits();updateSceneControls();populateTagSkillTestUI();
 }
 function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);if(!opponents.length)return null;if(attacker.aiPolicy==='random')return opponents[Math.floor(Math.random()*opponents.length)];if(attacker.aiPolicy==='weakest')return opponents.sort((a,b)=>a.maxHp-b.maxHp||a.order-b.order)[0];return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]}
 function formalBattleSkill(skillId){
@@ -168,9 +174,7 @@ async function completeBattleEnding(){
  battle.result=battle.pendingResult;battle.pendingResult=null;
  recordValidationEvent('battle_finished',{result:battle.result});
  battle.log.push(`[Tick ${battle.tick}] 戦闘終了 — ${battle.result}`);
- renderBattle();ensureSceneUnits();
- await sleep(800);
- if(currentPhase==='battle'&&battle.result){renderBattleResult();setPhase('result',{keepBattle:true})}
+ renderBattle();ensureSceneUnits();renderBattleResult();
  battle.ending=false;
 }
 function clearBattleEndDotStacks(){for(const u of battle.units){if(Array.isArray(u.dotStacks)&&u.dotStacks.length){const count=u.dotStacks.length;u.dotStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stacks_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
@@ -300,6 +304,26 @@ function simulateFormalAdventureBattle({party,formation,monsters,seed=1,maxTicks
 window.GKGameFormalAdventureBattle=Object.freeze({simulate:simulateFormalAdventureBattle});
 
 function advanceTicks(count){if(battle.result||battle.pendingResult)return;processTicks(Math.max(0,Number(count)||0));renderBattle()}
+function processUntilNextAction(maxTicks=10000){
+ if(battle.result||battle.pendingResult)return false;
+ const before=battle.actions;let guard=0;
+ while(battle.actions===before&&!battle.result&&!battle.pendingResult&&guard++<maxTicks)processTicks(1);
+ return battle.actions>before;
+}
+function scenePaceDelayMs(){const speed=Math.max(.25,Number($('sceneSpeed')?.value)||1);return Math.max(120,Math.round(180*speed))}
+async function startSceneBattle(){
+ if(battle.result){renderBattleResult();setPhase('result',{keepBattle:true});return}
+ if(battle.pendingResult||battle.running)return;
+ pauseBattle();battle.running=true;const token=++battle.runToken;renderBattle();
+ while(battle.running&&token===battle.runToken&&!battle.result&&!battle.pendingResult){
+  processUntilNextAction();renderBattle();
+  await waitForSceneIdle();
+  if(!battle.running||token!==battle.runToken||battle.result||battle.pendingResult)break;
+  await sleep(scenePaceDelayMs());
+ }
+ if(token===battle.runToken&&battle.running&&(battle.result||battle.pendingResult)){battle.running=false;renderBattle()}
+}
+function restartSceneBattle(){resetBattle();startSceneBattle()}
 function pauseBattle(){
  battle.runToken++;
  if(battle.timer)cancelAnimationFrame(battle.timer);
@@ -330,6 +354,6 @@ function startBattle(){
 $('tick1').onclick=()=>advanceTicks(1);$('tick10').onclick=()=>advanceTicks(10);$('tick100').onclick=()=>advanceTicks(100);$('tick1000').onclick=()=>advanceTicks(1000);$('battleAuto').onclick=startBattle;$('battlePause').onclick=pauseBattle;$('battleReset').onclick=resetBattle;$('battleInterval').onchange=()=>{if(battle.running)startBattle()};$('battleStep').onchange=()=>{};
 
 
-$('sceneAuto').onclick=startBattle;$('scenePause').onclick=pauseBattle;$('sceneReset').onclick=resetBattle;
-$('sceneStep').onclick=()=>{if(battle.result||battle.pendingResult)return;const before=battle.actions;let guard=0;while(battle.actions===before&&!battle.result&&!battle.pendingResult&&guard++<100)processTicks(1);renderBattle()};
+$('sceneAuto').onclick=startSceneBattle;$('scenePause').onclick=pauseBattle;$('sceneReset').onclick=restartSceneBattle;
+$('sceneStep').onclick=()=>{if(battle.running)pauseBattle();if(battle.result||battle.pendingResult)return;processUntilNextAction();renderBattle()};
 $('sceneMotion').onchange=ensureSceneUnits;$('sceneLayout').value=localStorage.getItem('ga_scene_layout')||'jp';$('sceneLayout').onchange=()=>{localStorage.setItem('ga_scene_layout',$('sceneLayout').value);sceneSignature='';ensureSceneUnits(true)};addEventListener('resize',()=>{sceneSignature='';ensureSceneUnits(true)});
