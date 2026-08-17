@@ -22,7 +22,7 @@
 
 ## 完了条件
 
-- `python3 tools/inspection/run.py full --context update` が合格する。
+- `python3 tools/inspection/run.py accept --context update --baseline-source <exact-baseline-root>` が合格する。
 - ZIP成果物はiPhoneで展開し、日本語本文と日本語ファイル名が正しく表示される。
 - 直接JSON等の成果物はiPhone上で日本語本文が正しく表示される。
 

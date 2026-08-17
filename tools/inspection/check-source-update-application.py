@@ -106,6 +106,15 @@ def run_checked(command: list[str], cwd: Path, timeout: int = 180) -> subprocess
     )
 
 
+
+
+def is_inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
+
 def parse_delete_manifest(update_root: Path) -> list[str]:
     path = update_root / "DELETE_MANIFEST.txt"
     if not path.is_file():
@@ -242,17 +251,27 @@ def main() -> int:
     baseline.add_argument("--baseline-zip", type=Path)
     parser.add_argument("--final-gate", choices=("manifest", "quick", "impact", "accept", "full"), default="accept")
     parser.add_argument("--timeout-per-test", type=int, default=30)
+    parser.add_argument("--test-change-approval", type=Path, help="External human approval for protected test/Gate changes. Must not be inside the update or baseline tree.")
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--timeout", type=int, default=180)
     args = parser.parse_args()
 
     update_root = args.update_root.resolve()
+    test_change_approval = args.test_change_approval.resolve() if args.test_change_approval else None
     errors: list[str] = []
+    if (update_root / "TEST_CHANGE_APPROVAL.json").exists():
+        errors.append("PACKAGED_TEST_CHANGE_APPROVAL_FORBIDDEN")
+    if test_change_approval is not None:
+        if not test_change_approval.is_file():
+            errors.append(f"TEST_CHANGE_APPROVAL_NOT_FOUND {test_change_approval}")
+        elif is_inside(test_change_approval, update_root):
+            errors.append("TEST_CHANGE_APPROVAL_MUST_BE_EXTERNAL_TO_UPDATE")
     report: dict = {
         "schema_version": 1,
         "update_root": str(update_root),
         "final_gate": args.final_gate,
         "status": "fail",
+        "test_change_approval": str(test_change_approval) if test_change_approval else None,
     }
 
     if not update_root.is_dir():
@@ -278,6 +297,9 @@ def main() -> int:
                     extract_source_zip(baseline_zip, baseline_root)
                 except Exception as exc:
                     errors.append(f"BASELINE_ZIP_EXTRACT_FAIL {exc}")
+
+        if test_change_approval is not None and baseline_root.exists() and is_inside(test_change_approval, baseline_root):
+            errors.append("TEST_CHANGE_APPROVAL_MUST_BE_EXTERNAL_TO_BASELINE")
 
         if not errors:
             # A broken baseline cannot be used to certify an update.
@@ -316,9 +338,8 @@ def main() -> int:
                     str(baseline_root), str(applied_root),
                     "--json-output", str(integrity_report_path),
                 ]
-                approval_file = update_root / "TEST_CHANGE_APPROVAL.json"
-                if approval_file.is_file():
-                    integrity_cmd.extend(["--approval-file", str(approval_file)])
+                if test_change_approval is not None:
+                    integrity_cmd.extend(["--approval-file", str(test_change_approval)])
                 integrity_proc = run_checked(integrity_cmd, baseline_root, args.timeout)
                 report["test_integrity_returncode"] = integrity_proc.returncode
                 if integrity_report_path.is_file():

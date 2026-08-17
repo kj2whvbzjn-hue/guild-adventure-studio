@@ -5,10 +5,23 @@ sys.dont_write_bytecode = True
 
 from pathlib import Path
 import argparse
+import hashlib
 import json
 import os
 import subprocess
 import time
+
+def sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def source_tree_sha256(root: Path) -> str:
+    rows=[]
+    for path in sorted(root.rglob("*"), key=lambda p:p.relative_to(root).as_posix()):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel=path.relative_to(root).as_posix()
+        rows.append(f"{rel}\0{path.stat().st_size}\0{sha256_file(path)}")
+    return hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('root', nargs='?', default=Path(__file__).resolve().parents[2])
@@ -61,6 +74,14 @@ if args.selection_file:
         unknown = sorted(selection - active_paths)
         if unknown:
             errors.append('TEST_SELECTION_NOT_ACTIVE ' + ','.join(unknown))
+        expected_tree = str(plan.get('applied_tree_sha256') or '')
+        actual_tree = source_tree_sha256(root)
+        if not expected_tree or expected_tree != actual_tree:
+            errors.append(f"TEST_SELECTION_TREE_MISMATCH expected={expected_tree!r} actual={actual_tree!r}")
+        expected_registry = str(plan.get('test_registry_sha256') or '')
+        actual_registry = sha256_file(registry_path)
+        if not expected_registry or expected_registry != actual_registry:
+            errors.append(f"TEST_SELECTION_REGISTRY_MISMATCH expected={expected_registry!r} actual={actual_registry!r}")
     except Exception as exc:
         errors.append(f"TEST_SELECTION_INVALID {exc}")
 if errors:

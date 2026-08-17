@@ -67,7 +67,7 @@
 ## 6. 機械検査
 
 ```bash
-python3 tools/inspection/run.py full --context update --fail-fast
+python3 tools/inspection/run.py accept --context update --baseline-source <exact-baseline-root> --fail-fast
 ```
 
 必須条件:

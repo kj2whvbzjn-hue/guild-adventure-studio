@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Compare protected acceptance assets against a baseline and reject silent weakening."""
+"""Compare protected acceptance assets against a baseline and reject silent weakening.
+
+The baseline policy is authoritative once installed. Protected files that are
+modified, removed, or newly added require an exact external human approval,
+except for exact build-token-only synchronization explicitly allowed by policy.
+"""
 from __future__ import annotations
 import argparse, fnmatch, hashlib, json, re, sys
 from pathlib import Path
@@ -19,6 +24,14 @@ def load_json(path: Path) -> dict:
 
 def match_any(rel: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatchcase(rel, p) for p in patterns)
+
+
+def is_inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+        return True
+    except ValueError:
+        return False
 
 
 def build_tokens(root: Path) -> set[str]:
@@ -74,16 +87,21 @@ def resolve_policy(baseline: Path, applied: Path) -> tuple[dict, str]:
     raise ValueError("TEST_INTEGRITY_POLICY_MISSING")
 
 
-def validate_approval(path: Path | None, changed: list[dict], policy: dict, errors: list[str]) -> dict | None:
+def validate_approval(path: Path | None, changed: list[dict], policy: dict, errors: list[str], baseline: Path, applied: Path) -> dict | None:
     if not changed:
-        if path and path.is_file():
+        if path is not None:
             errors.append("STALE_TEST_CHANGE_APPROVAL")
         return None
     if path is None or not path.is_file():
         errors.append("PROTECTED_TEST_CHANGE_APPROVAL_REQUIRED " + ",".join(x["path"] for x in changed))
         return None
+    approval_path = path.resolve()
+    if policy.get("approval", {}).get("external_only", False):
+        if is_inside(approval_path, baseline) or is_inside(approval_path, applied):
+            errors.append("TEST_CHANGE_APPROVAL_MUST_BE_EXTERNAL")
+            return None
     try:
-        approval = load_json(path)
+        approval = load_json(approval_path)
     except Exception as exc:
         errors.append(f"TEST_CHANGE_APPROVAL_INVALID {exc}")
         return None
@@ -129,6 +147,17 @@ def validate_approval(path: Path | None, changed: list[dict], policy: dict, erro
     return approval
 
 
+def protected_file_set(root: Path, patterns: list[str]) -> set[str]:
+    out: set[str] = set()
+    for path in root.rglob("*"):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel = path.relative_to(root).as_posix()
+        if match_any(rel, patterns):
+            out.add(rel)
+    return out
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("baseline_root", type=Path)
@@ -147,16 +176,11 @@ def main() -> int:
     if not patterns:
         errors.append("TEST_INTEGRITY_PROTECTED_PATTERNS_EMPTY")
     token_union = build_tokens(baseline) | build_tokens(applied)
-    protected_existing: list[str] = []
-    for path in sorted(baseline.rglob("*"), key=lambda x: x.relative_to(baseline).as_posix()):
-        if not path.is_file() or ".git" in path.parts:
-            continue
-        rel = path.relative_to(baseline).as_posix()
-        if match_any(rel, patterns):
-            protected_existing.append(rel)
+    baseline_protected = protected_file_set(baseline, patterns)
+    applied_protected = protected_file_set(applied, patterns)
     changed: list[dict] = []
     build_only: list[str] = []
-    for rel in protected_existing:
+    for rel in sorted(baseline_protected):
         old = baseline / rel; new = applied / rel
         old_hash = sha256(old); new_hash = sha256(new)
         if old_hash == new_hash:
@@ -164,18 +188,36 @@ def main() -> int:
         if new_hash is not None and policy.get("build_token_only_change", {}).get("allowed_without_approval") and build_only_equal(old, new, token_union):
             build_only.append(rel)
             continue
-        changed.append({"path": rel, "baseline_sha256": old_hash, "updated_sha256": new_hash})
-    approval = validate_approval(args.approval_file, changed, policy, errors)
+        changed.append({
+            "path": rel,
+            "change_kind": "delete" if new_hash is None else "modify",
+            "baseline_sha256": old_hash,
+            "updated_sha256": new_hash,
+        })
+    added = sorted(applied_protected - baseline_protected)
+    if policy.get("new_protected_files_require_approval", True):
+        for rel in added:
+            changed.append({
+                "path": rel,
+                "change_kind": "add",
+                "baseline_sha256": None,
+                "updated_sha256": sha256(applied / rel),
+            })
+    changed.sort(key=lambda x: x["path"])
+    approval = validate_approval(args.approval_file, changed, policy, errors, baseline, applied)
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "status": "fail" if errors else "pass",
         "policy_origin": origin,
-        "protected_existing_count": len(protected_existing),
+        "protected_baseline_count": len(baseline_protected),
+        "protected_applied_count": len(applied_protected),
+        "protected_added_count": len(added),
         "protected_changed_count": len(changed),
         "build_token_only_count": len(build_only),
         "protected_changes": changed,
         "build_token_only_paths": build_only,
         "approval_present": bool(approval),
+        "approval_external_only": bool(policy.get("approval", {}).get("external_only", False)),
         "runtime_human_confirmation_required": bool(changed and policy.get("approval", {}).get("runtime_human_confirmation_required", True)),
         "errors": errors,
     }
@@ -186,7 +228,7 @@ def main() -> int:
         print("TEST_INTEGRITY_FAIL")
         print("\n".join(errors))
         return 1
-    print(f"TEST_INTEGRITY_OK protected={len(protected_existing)} changed={len(changed)} build_only={len(build_only)} approval={'yes' if approval else 'no'} policy={origin}")
+    print(f"TEST_INTEGRITY_OK baseline={len(baseline_protected)} applied={len(applied_protected)} changed={len(changed)} added={len(added)} build_only={len(build_only)} approval={'yes' if approval else 'no'} policy={origin}")
     if changed:
         print("TEST_INTEGRITY_HUMAN_CONFIRMATION_REQUIRED " + ",".join(x["path"] for x in changed))
     return 0

@@ -150,7 +150,7 @@ Gameデータの「除外」はGitHubファイル物理削除とは別概念だ�
 - `package_manifest.json`が実体へ同期している
 - `SOURCE_UPDATE`はQuickと`accept --context update`に合格し、Impact判定がFullを要求した場合は適用後完成ツリーのFullにも合格している
 - 更新Gateには`--baseline-source`または`--baseline-zip`で基準ソースを明示し、`studio-update.json:baseline_source`のBuild / manifest SHA-256 / source tree SHA-256と一致している
-- 既存の保護テスト/Gate/Schema/test registry/integrity policyに実変更がある場合、Build tokenだけの追随を除き、Test Integrity Gateの完全一致hash承認とStudio配置時の別人間確認がある
+- 保護テスト/Gate/Schema/test registry/integrity policyの変更・削除・新規追加がある場合、Build tokenだけの追随を除き、更新ZIP外のTest Integrity Gate完全一致hash承認とStudio配置時の別人間確認がある
 - timeoutは必須FAILのまま`failure_kind=timeout`として分類され、timeoutを理由にテスト基準を弱めていない
 - 必要なQuick / Accept(Impactまたは自動Full) / Release Gateが合格している
 - `studio-update.json`を含み`Export/`を含まない直接のStudio更新ZIPが作成されている

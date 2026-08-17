@@ -5,6 +5,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 ROOT=Path(__file__).resolve().parents[2]
 PLAN=ROOT/'tools/inspection/plan-impact-tests.py'
+REGISTRY_GATE=ROOT/'tools/integrity/check-test-registry.py'
 
 def wj(p,d): p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 def seed(root:Path):
@@ -58,7 +59,13 @@ def main():
       # Build-token-only -> impact with no effective functional change
       a=t/'build';shutil.copytree(base,a);wj(a/'package-build.json',{'game_build':'GA-B486.197','studio_build':'GKS-B621'});p0=a/'docs/build.md';p0.parent.mkdir(parents=True,exist_ok=True);p0.write_text('GKS-B621\n',encoding='utf-8');(base/'docs/build.md').write_text('GKS-B620\n',encoding='utf-8');r,p=plan(base,a,t/'build.json')
       if p.get('mode')!='impact' or 'docs/build.md' in p.get('effective_changed_paths',[]):errors.append('BUILD_ONLY_NOT_IGNORED '+json.dumps(p))
+      # Selection plans are cryptographically bound to the exact applied tree.
+      a=t/'stale';shutil.copytree(base,a);(a/'shared/ai/ai-program-model.js').write_text('const a=2;\n',encoding='utf-8');plan_path=t/'stale-plan.json';r,p=plan(base,a,plan_path)
+      (a/'shared/ai/ai-program-model.js').write_text('const a=3;\n',encoding='utf-8')
+      env=os.environ.copy();env['PYTHONDONTWRITEBYTECODE']='1'
+      rr=subprocess.run([sys.executable,'-S','-B',str(REGISTRY_GATE),str(a),'--context','source','--selection-file',str(plan_path)],cwd=ROOT,env=env,text=True,capture_output=True,timeout=10)
+      if rr.returncode==0 or 'TEST_SELECTION_TREE_MISMATCH' not in (rr.stdout+rr.stderr):errors.append('STALE_SELECTION_NOT_BLOCKED '+rr.stdout+rr.stderr)
     if errors:print('IMPACT_SELECTION_REGRESSION_FAIL');print('\n'.join(errors));return 1
-    print('IMPACT_SELECTION_REGRESSION_OK cases=6 fallback=full safety_critical=full scoped=impact build_only=ignored')
+    print('IMPACT_SELECTION_REGRESSION_OK cases=7 fallback=full safety_critical=full scoped=impact build_only=ignored stale_plan=blocked')
     return 0
 if __name__=='__main__':raise SystemExit(main())

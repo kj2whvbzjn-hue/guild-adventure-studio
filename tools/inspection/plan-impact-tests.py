@@ -47,6 +47,16 @@ def all_paths(root: Path) -> set[str]:
     return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file() and ".git" not in p.parts}
 
 
+def tree_sha(root: Path) -> str:
+    rows=[]
+    for p in sorted(root.rglob("*"), key=lambda x:x.relative_to(root).as_posix()):
+        if not p.is_file() or ".git" in p.parts:
+            continue
+        rel=p.relative_to(root).as_posix()
+        rows.append(f"{rel}\0{p.stat().st_size}\0{sha(p)}")
+    return hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("baseline_root", type=Path)
@@ -118,6 +128,10 @@ def main() -> int:
         "status": "pass",
         "mode": mode,
         "policy_origin": policy_origin,
+        "baseline_tree_sha256": tree_sha(baseline),
+        "applied_tree_sha256": tree_sha(applied),
+        "impact_policy_sha256": sha(policy_path),
+        "test_registry_sha256": sha(applied / "shared/tests/test-registry.json"),
         "raw_changed_paths": raw_changed,
         "effective_changed_paths": effective,
         "ignored_changes": ignored,

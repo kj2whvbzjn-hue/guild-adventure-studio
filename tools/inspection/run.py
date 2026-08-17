@@ -140,6 +140,7 @@ def build_steps(
     timeout_seconds: int = 120,
     timeout_per_test: int = 30,
     test_selection: Path | None = None,
+    test_change_approval: Path | None = None,
 ) -> list[tuple[str, list[str], bool]]:
     if profile == "accept" and context != "update":
         raise ValueError("accept profile is only valid with --context update")
@@ -167,6 +168,8 @@ def build_steps(
             applied_cmd.extend(["--baseline-source", str(baseline_source)])
         else:
             applied_cmd.extend(["--baseline-zip", str(baseline_zip)])
+        if test_change_approval is not None:
+            applied_cmd.extend(["--test-change-approval", str(test_change_approval)])
         steps.append(("source_update_applied_state", applied_cmd, True))
         # Update ZIP validation intentionally avoids a second Full run. The applied-state
         # checker owns functional acceptance against the complete source tree.
@@ -223,6 +226,7 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--timeout-per-test", type=int, default=30)
     parser.add_argument("--test-selection", type=Path, help="Impact plan JSON. Required only for source impact profile.")
+    parser.add_argument("--test-change-approval", type=Path, help="External human approval JSON for protected test/Gate changes. Must be outside source/update trees.")
     parser.add_argument("--fail-fast", action="store_true")
     args = parser.parse_args()
 
@@ -238,6 +242,7 @@ def main() -> int:
         baseline_source = assert_outside_root(args.baseline_source, "--baseline-source") if args.baseline_source else None
         baseline_zip = assert_outside_root(args.baseline_zip, "--baseline-zip") if args.baseline_zip else None
         test_selection = assert_outside_root(args.test_selection, "--test-selection") if args.test_selection else None
+        test_change_approval = assert_outside_root(args.test_change_approval, "--test-change-approval") if args.test_change_approval else None
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -259,6 +264,7 @@ def main() -> int:
         "baseline_source": str(baseline_source) if baseline_source else None,
         "baseline_zip": str(baseline_zip) if baseline_zip else None,
         "test_selection": str(test_selection) if test_selection else None,
+        "test_change_approval": str(test_change_approval) if test_change_approval else None,
         "started_at": utc_now(),
     })
     if input_zip:
@@ -275,6 +281,7 @@ def main() -> int:
             baseline_source=baseline_source, baseline_zip=baseline_zip,
             input_zip=input_zip, timeout_seconds=args.timeout,
             timeout_per_test=args.timeout_per_test, test_selection=test_selection,
+            test_change_approval=test_change_approval,
         )
     except ValueError as exc:
         steps = []

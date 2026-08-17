@@ -151,11 +151,18 @@ def main() -> int:
         if good_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in good_result.stdout:
             errors.append("COMPLETE_UPDATE_REJECTED " + (good_result.stdout + good_result.stderr))
 
+        packaged = base / "packaged-approval-update"
+        shutil.copytree(good, packaged)
+        write_json(packaged / "TEST_CHANGE_APPROVAL.json", {"schema_version":1,"scope":"PROTECTED_TEST_CHANGE","actor_type":"human","approved_by":"fake","entries":[]})
+        packaged_result = run_checker(packaged, baseline)
+        if packaged_result.returncode == 0 or "PACKAGED_TEST_CHANGE_APPROVAL_FORBIDDEN" not in (packaged_result.stdout + packaged_result.stderr):
+            errors.append("PACKAGED_TEST_APPROVAL_NOT_REJECTED " + (packaged_result.stdout + packaged_result.stderr))
+
     if errors:
         print("SOURCE_UPDATE_APPLICATION_REGRESSION_FAIL")
         print("\n".join(errors))
         return 1
-    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=4 nested_export=persistent omitted_file=detected")
+    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=5 nested_export=persistent omitted_file=detected")
     return 0
 
 

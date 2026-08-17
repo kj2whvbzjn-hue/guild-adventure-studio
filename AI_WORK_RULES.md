@@ -40,7 +40,7 @@
 - GameデータはStudioの全件読込Pre-flightとGameデータ配置の正式Export / 参照 / 差分Gateを使用する。
 - 必須検査の失敗を無視して配置しない。
 - `SOURCE_UPDATE`の通常受入では、更新ZIP単体と適用後完成ツリーで同じFullを二重実行しない。機能検査は適用後完成ツリーで1回だけ行い、ZIP結合はSHA-256/パス/サイズで検証する。
-- `tests/**`、Gate、Schema、test registry、integrity policy等の既存保護資産をbaselineから変更する場合はTest Integrity Gateを先に通す。Build tokenだけの追随を除き、完全一致パス・旧新SHA-256・理由を持つ`TEST_CHANGE_APPROVAL.json`とStudio配置時の別人間確認が必要である。
+- `tests/**`、Gate、Schema、test registry、integrity policy等の保護資産を変更・削除・新規追加する場合はTest Integrity Gateを先に通す。Build tokenだけの追随を除き、完全一致パス・旧新SHA-256・理由を持つ**更新ZIP外の**`TEST_CHANGE_APPROVAL.json`とStudio配置時の別人間確認が必要である。承認JSONを更新ZIPへ同梱してはならない。
 - テスト失敗やtimeoutを理由にassert、期待値、skip条件、Gateを変更しない。timeoutは`failure_kind=timeout`としてFAILのまま分類し、原因テストを特定して実装またはテスト性能を直す。
 
 ## 成果物提出
