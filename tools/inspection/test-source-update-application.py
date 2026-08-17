@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for SOURCE_UPDATE applied-state validation."""
+"""Regression tests for SOURCE_UPDATE applied-state and artifact-identity validation."""
 from __future__ import annotations
 
 import hashlib
@@ -47,12 +47,16 @@ def copy_common(root: Path) -> None:
         shutil.copy2(ROOT / rel, target)
 
 
-def rebuild_manifest(root: Path) -> None:
+def load_fixture_policy(root: Path):
     spec = importlib.util.spec_from_file_location("fixture_policy", root / "tools/inspection/system_file_policy.py")
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(mod)
-    policy = mod.load_policy(root)
+    return mod, mod.load_policy(root)
+
+
+def rebuild_manifest(root: Path) -> None:
+    mod, policy = load_fixture_policy(root)
     items = []
     for path in sorted(root.rglob("*"), key=lambda p: p.relative_to(root).as_posix()):
         if not path.is_file() or path.name == "package_manifest.json" or ".git" in path.parts:
@@ -72,7 +76,7 @@ def rebuild_manifest(root: Path) -> None:
 
 def make_baseline(root: Path) -> None:
     copy_common(root)
-    write_json(root / "package-build.json", {"game_build": "GA-TEST", "studio_build": "GKS-TEST"})
+    write_json(root / "package-build.json", {"game_build": "GA-B1.1", "studio_build": "GKS-B100"})
     (root / "sample.txt").write_text("baseline\n", encoding="utf-8")
     exporter = root / "cpf/src/Export/CpfDemoRuntimeExporter.php"
     exporter.parent.mkdir(parents=True, exist_ok=True)
@@ -80,28 +84,57 @@ def make_baseline(root: Path) -> None:
     rebuild_manifest(root)
 
 
-def make_update(root: Path, baseline: Path, include_exporter: bool) -> None:
+def simulate_applied(update: Path, baseline: Path, destination: Path) -> None:
+    shutil.copytree(baseline, destination)
+    mod, policy = load_fixture_policy(update)
+    allowed = set(policy.get("rules", {}).get("studio_upload_classes", ["persistent"]))
+    for path in sorted(update.rglob("*"), key=lambda p: p.relative_to(update).as_posix()):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel = path.relative_to(update).as_posix()
+        if mod.classify(rel, policy) not in allowed:
+            continue
+        target = destination / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, target)
+
+
+def make_update(root: Path, baseline: Path, include_exporter: bool, target_build: str = "GKS-B101") -> None:
     copy_common(root)
-    write_json(root / "package-build.json", {"game_build": "GA-TEST", "studio_build": "GKS-TEST"})
+    write_json(root / "package-build.json", {"game_build": "GA-B1.1", "studio_build": target_build})
     (root / "sample.txt").write_text("updated\n", encoding="utf-8")
     if include_exporter:
         target = root / "cpf/src/Export/CpfDemoRuntimeExporter.php"
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(baseline / "cpf/src/Export/CpfDemoRuntimeExporter.php", target)
     rebuild_manifest(root)
+
+    simulated = root.parent / f"{root.name}-simulated"
+    if simulated.exists():
+        shutil.rmtree(simulated)
+    simulate_applied(root, baseline, simulated)
+    target_tree = tree_sha(simulated)
     write_json(root / "studio-update.json", {
-        "version": "GKS-TEST",
-        "studio_version": "GKS-TEST",
-        "game_version": "GA-TEST",
+        "version": target_build,
+        "studio_version": target_build,
+        "game_version": "GA-B1.1",
         "work_type": "SOURCE_UPDATE",
         "baseline_source": {
-            "game_build": "GA-TEST",
-            "studio_build": "GKS-TEST",
+            "game_build": "GA-B1.1",
+            "studio_build": "GKS-B100",
             "package_manifest_sha256": sha256_file(baseline / "package_manifest.json"),
             "source_tree_sha256": tree_sha(baseline),
         },
+        "target_source": {
+            "game_build": "GA-B1.1",
+            "studio_build": target_build,
+            "package_manifest_sha256": sha256_file(simulated / "package_manifest.json"),
+            "source_tree_sha256": target_tree,
+        },
+        "artifact_id": f"{target_build}-{target_tree[:12]}",
     })
     (root / "DELETE_MANIFEST.txt").write_text("# no deletion\n", encoding="utf-8")
+    shutil.rmtree(simulated)
 
 
 def run_checker(update: Path, baseline: Path) -> subprocess.CompletedProcess[str]:
@@ -136,10 +169,12 @@ def main() -> int:
         baseline = base / "baseline"
         bad = base / "bad-update"
         good = base / "good-update"
-        baseline.mkdir(); bad.mkdir(); good.mkdir()
+        same_build = base / "same-build-update"
+        baseline.mkdir(); bad.mkdir(); good.mkdir(); same_build.mkdir()
         make_baseline(baseline)
         make_update(bad, baseline, include_exporter=False)
         make_update(good, baseline, include_exporter=True)
+        make_update(same_build, baseline, include_exporter=True, target_build="GKS-B100")
 
         bad_result = run_checker(bad, baseline)
         if bad_result.returncode == 0:
@@ -150,6 +185,19 @@ def main() -> int:
         good_result = run_checker(good, baseline)
         if good_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in good_result.stdout:
             errors.append("COMPLETE_UPDATE_REJECTED " + (good_result.stdout + good_result.stderr))
+
+        same_result = run_checker(same_build, baseline)
+        if same_result.returncode == 0 or "STUDIO_BUILD_TRANSITION_NOT_FORWARD" not in (same_result.stdout + same_result.stderr):
+            errors.append("SAME_BUILD_REUSE_NOT_REJECTED " + (same_result.stdout + same_result.stderr))
+
+        bad_artifact = base / "bad-artifact-update"
+        shutil.copytree(good, bad_artifact)
+        meta = json.loads((bad_artifact / "studio-update.json").read_text(encoding="utf-8"))
+        meta["artifact_id"] = "GKS-B101-000000000000"
+        write_json(bad_artifact / "studio-update.json", meta)
+        artifact_result = run_checker(bad_artifact, baseline)
+        if artifact_result.returncode == 0 or "ARTIFACT_ID_MISMATCH" not in (artifact_result.stdout + artifact_result.stderr):
+            errors.append("ARTIFACT_ID_NOT_BOUND_TO_TARGET_TREE " + (artifact_result.stdout + artifact_result.stderr))
 
         packaged = base / "packaged-approval-update"
         shutil.copytree(good, packaged)
@@ -162,7 +210,7 @@ def main() -> int:
         print("SOURCE_UPDATE_APPLICATION_REGRESSION_FAIL")
         print("\n".join(errors))
         return 1
-    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=5 nested_export=persistent omitted_file=detected")
+    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=7 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
     return 0
 
 

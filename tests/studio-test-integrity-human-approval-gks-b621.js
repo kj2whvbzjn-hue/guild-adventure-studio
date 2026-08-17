@@ -5,7 +5,7 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const html=fs.readFileSync('studio/index.html','utf8');
 const policy=JSON.parse(fs.readFileSync('shared/integrity/test-integrity-policy.json','utf8'));
 const systemPolicy=JSON.parse(fs.readFileSync('shared/integrity/system-file-policy.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B623');
+assert.strictEqual(build.studio_build,'GKS-B624');
 assert.strictEqual(policy.baseline_policy_authoritative,true);
 assert.strictEqual(policy.new_protected_files_require_approval,true);
 assert.strictEqual(policy.approval.external_only,true);
@@ -19,4 +19,4 @@ assert(html.includes('TEST_CHANGE_APPROVAL.jsonは更新ZIPへ同梱できませ
 assert(html.includes('validateStudioProtectedTestChanges(remote,files,[...studioDeployDeleteCandidates,...studioDeployDeleteBlocked])'),'Studio must validate protected add/modify/delete changes against GitHub HEAD');
 assert(html.includes('保護テスト/Gate変更の人間承認'),'Studio must require a separate human confirmation before deployment');
 assert(html.includes('baseline_sha256')&&html.includes('updated_sha256'),'Studio must compare exact protected change hashes');
-console.log('PASS GKS-B623 protected test/Gate changes require external exact-hash approval, add/modify/delete coverage, and separate deployment-time human confirmation');
+console.log('PASS GKS-B624 protected test/Gate changes require external exact-hash approval, add/modify/delete coverage, and separate deployment-time human confirmation');

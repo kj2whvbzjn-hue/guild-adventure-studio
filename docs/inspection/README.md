@@ -84,6 +84,7 @@ Gateは次を行う。
 
 1. 基準ソース自身のSource Contextと`package_manifest.json`整合性を確認する。
 2. `studio-update.json:baseline_source`のBuild、manifest SHA-256、完全source tree SHA-256が基準と一致することを確認する。
+3. `target_source`と`artifact_id`が適用後完成ツリーへ一致し、target Studio Buildがbaselineより前進していることを確認する。同一Build番号の成果物再利用はFAILとする。
 3. 更新ZIPのうち`system-file-policy.json`で`persistent`に分類されたファイルだけを基準へoverlayする。ルート`Export/**`は`game_data`としてoverlayしない。`cpf/src/Export/**`のようなネストした`Export`ディレクトリは通常の`persistent`ソースである。
 4. 承認済み`DELETE_MANIFEST.txt`の完全一致パスだけを適用後ツリーから削除する。
 5. 完成ツリーへ通常のSource Quick / Full Gateを再実行する。

@@ -36,6 +36,7 @@
 - 通常ソース編集後は`quick`を実行する。
 - GitHub配置前は`accept --context update`を実行し、`--baseline-source`または`--baseline-zip`で正確な基準完全ソースを必ず指定する。`accept`はImpact判定が不確実・安全重要・受入基準変更の場合に自動でFullへ昇格する。
 - `SOURCE_UPDATE`は更新ZIP単体の整合性だけで合格扱いにせず、基準ソースへoverlayした適用後完成ツリーのSource Gateまで合格させる。
+- `studio-update.json`には`baseline_source`に加えて`target_source`と`artifact_id`を必須とし、targetは適用後完成ツリーと完全一致させる。Studio Buildはbaselineより必ず前進させ、同一Build番号の別成果物・再適用・逆行を禁止する。
 - 公開前は`release`を実行する。
 - GameデータはStudioの全件読込Pre-flightとGameデータ配置の正式Export / 参照 / 差分Gateを使用する。
 - 必須検査の失敗を無視して配置しない。

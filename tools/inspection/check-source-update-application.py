@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
@@ -127,6 +128,15 @@ def parse_delete_manifest(update_root: Path) -> list[str]:
     return out
 
 
+def parse_studio_build(value: object) -> int | None:
+    match = re.fullmatch(r"GKS-B(\d+)", str(value or ""))
+    return int(match.group(1)) if match else None
+
+
+def expected_artifact_id(studio_build: str, source_tree_sha: str) -> str:
+    return f"{studio_build}-{source_tree_sha[:12]}"
+
+
 def validate_baseline_binding(update_root: Path, baseline_root: Path, errors: list[str]) -> dict:
     meta_path = update_root / "studio-update.json"
     try:
@@ -172,6 +182,68 @@ def validate_baseline_binding(update_root: Path, baseline_root: Path, errors: li
         "studio_build": build.get("studio_build"),
         "package_manifest_sha256": actual_manifest_sha,
         "source_tree_sha256": actual_tree_sha,
+    }
+
+
+def validate_target_binding(update_root: Path, baseline_info: dict, applied_root: Path, errors: list[str]) -> dict:
+    meta_path = update_root / "studio-update.json"
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"UPDATE_METADATA_INVALID {exc}")
+        return {}
+    target = meta.get("target_source")
+    if not isinstance(target, dict):
+        errors.append("TARGET_BINDING_MISSING studio-update.json:target_source")
+        return {}
+    artifact_id = str(meta.get("artifact_id") or "")
+    try:
+        build = json.loads((applied_root / "package-build.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"TARGET_PACKAGE_BUILD_INVALID {exc}")
+        build = {}
+
+    actual_game = build.get("game_build")
+    actual_studio = build.get("studio_build")
+    if target.get("game_build") != actual_game:
+        errors.append(f"TARGET_GAME_BUILD_MISMATCH expected={target.get('game_build')!r} actual={actual_game!r}")
+    if target.get("studio_build") != actual_studio:
+        errors.append(f"TARGET_STUDIO_BUILD_MISMATCH expected={target.get('studio_build')!r} actual={actual_studio!r}")
+
+    baseline_studio = baseline_info.get("studio_build")
+    baseline_num = parse_studio_build(baseline_studio)
+    target_num = parse_studio_build(actual_studio)
+    if baseline_num is None or target_num is None:
+        errors.append(f"STUDIO_BUILD_TRANSITION_INVALID baseline={baseline_studio!r} target={actual_studio!r}")
+    elif target_num <= baseline_num:
+        errors.append(f"STUDIO_BUILD_TRANSITION_NOT_FORWARD baseline={baseline_studio} target={actual_studio}")
+
+    manifest_path = applied_root / "package_manifest.json"
+    actual_manifest_sha = sha256_file(manifest_path) if manifest_path.is_file() else None
+    expected_manifest_sha = target.get("package_manifest_sha256")
+    if expected_manifest_sha != actual_manifest_sha:
+        errors.append(
+            "TARGET_PACKAGE_MANIFEST_SHA256_MISMATCH "
+            f"expected={expected_manifest_sha!r} actual={actual_manifest_sha!r}"
+        )
+    actual_tree_sha = source_tree_sha256(applied_root)
+    expected_tree_sha = target.get("source_tree_sha256")
+    if expected_tree_sha != actual_tree_sha:
+        errors.append(f"TARGET_SOURCE_TREE_SHA256_MISMATCH expected={expected_tree_sha!r} actual={actual_tree_sha!r}")
+
+    if not re.fullmatch(r"GKS-B\d+-[0-9a-f]{12}", artifact_id):
+        errors.append(f"ARTIFACT_ID_INVALID {artifact_id!r}")
+    elif actual_studio and actual_tree_sha:
+        expected_id = expected_artifact_id(str(actual_studio), actual_tree_sha)
+        if artifact_id != expected_id:
+            errors.append(f"ARTIFACT_ID_MISMATCH expected={expected_id} actual={artifact_id}")
+
+    return {
+        "game_build": actual_game,
+        "studio_build": actual_studio,
+        "package_manifest_sha256": actual_manifest_sha,
+        "source_tree_sha256": actual_tree_sha,
+        "artifact_id": artifact_id,
     }
 
 
@@ -324,6 +396,8 @@ def main() -> int:
         applied_root = temp / "applied"
         if not errors:
             report["application"] = apply_update(update_root, baseline_root, applied_root, errors)
+        if not errors:
+            report["target"] = validate_target_binding(update_root, report.get("baseline", {}), applied_root, errors)
 
         final_proc: subprocess.CompletedProcess[str] | None = None
         impact_plan_path = temp / "impact-plan.json"

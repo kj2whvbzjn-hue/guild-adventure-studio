@@ -10,7 +10,7 @@ assert(policy.rules.source_allowed_classes.includes('game_data'),'full source mu
 assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct update packages must not carry game_data');
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
 assert.strictEqual(build.game_build,'GA-B486.197');
-assert.strictEqual(build.studio_build,'GKS-B623');
+assert.strictEqual(build.studio_build,'GKS-B624');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",
@@ -27,7 +27,14 @@ for(const marker of [
   "baseline_source.package_manifest_sha256が不正です。",
   "更新ZIPの基準とGitHub HEADが一致しません。package_manifest SHA-256",
   "更新ZIPの基準BuildとGitHub HEADが一致しません。",
-  "await verifyStudioDeployBaselineBinding(remote,base,studioDeployMeta);"
+  "await verifyStudioDeployBaselineBinding(remote,base,studioDeployMeta);",
+  "async function verifyStudioUpdateArtifactIdentity(packageReader,meta,build)",
+  "更新ZIPにtarget_sourceがありません。対象ソースと成果物IDを固定した更新ZIPを使用してください。",
+  "STUDIO_BUILD_TRANSITION_NOT_FORWARD: baseline=",
+  "target_source.package_manifest SHA-256が更新ZIPと一致しません。",
+  "artifact_idがtarget source treeへ結び付いていません。",
+  "studioDeployArtifactIdentity=await verifyStudioUpdateArtifactIdentity(packageReader,meta,studioDeployCurrentBuild);",
+  "STUDIO_BUILD_TRANSITION_NOT_FORWARD: GitHub HEAD="
 ]) assert(html.includes(marker),marker+' missing');
 assert(manual.includes('更新ZIPに含まれるソース（`Export/`は強制除外）'),'manual must document Studio deploy Export boundary');
 assert(manual.includes('GitHub上の公開Gameデータを更新できる窓口はGameデータ配置だけ'),'manual must document sole Export deployment authority');
@@ -51,4 +58,4 @@ assert(registryRunner.includes('if context not in contexts:'),'test registry che
 const inspectionRunner=fs.readFileSync('tools/inspection/run.py','utf8');
 assert(inspectionRunner.includes('"--context", context'),'inspection runner must pass context to active test gate');
 
-console.log('PASS GKS-B623 Studio SOURCE_UPDATE gate hard-excludes root Export/ and verifies exact remote baseline manifest/build before diff');
+console.log('PASS GKS-B624 Studio SOURCE_UPDATE gate hard-excludes root Export/, verifies exact baseline, and rejects non-forward/same-Build artifact reuse');

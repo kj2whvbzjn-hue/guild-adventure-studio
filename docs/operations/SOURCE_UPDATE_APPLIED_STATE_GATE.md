@@ -11,6 +11,8 @@ Studio更新ZIPは「ZIPに存在しない既存GitHubファイルを保持す�
 - 更新ツリー: `studio-update.json`、`DELETE_MANIFEST.txt`を含む直接のSOURCE_UPDATE
 - 基準: `--baseline-source`または`--baseline-zip`で指定した正確な完全ソース
 - `studio-update.json:baseline_source`
+- `studio-update.json:target_source`
+- `studio-update.json:artifact_id`（`<target studio build>-<target source tree SHA-256先頭12桁>`）
   - `game_build`
   - `studio_build`
   - `package_manifest_sha256`
@@ -50,3 +52,11 @@ python3 -S -B tools/inspection/run.py accept \
 ```
 
 基準指定なしのupdate Gateは許可しない。
+
+## Build / artifact 一意性
+
+- target Studio Buildはbaseline Studio Buildより必ず大きくする。
+- 同一Studio Build番号の別内容をSOURCE_UPDATEとして発行しない。
+- 適用後完成ツリーの`package-build.json`、`package_manifest.json` SHA-256、source tree SHA-256が`target_source`と完全一致しない場合はFAILする。
+- `artifact_id`はtarget source tree SHA-256に結び付き、メタデータだけを差し替えて別成果物として扱うことを禁止する。
+- Studio配置時もGitHub HEADのbaseline一致確認後にtargetが前進Buildであることを再確認し、同一Build再適用を停止する。
