@@ -4,7 +4,7 @@ const assert=require('assert');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const html=fs.readFileSync('studio/index.html','utf8');
 const policy=JSON.parse(fs.readFileSync('shared/integrity/test-integrity-policy.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B621');
+assert.strictEqual(build.studio_build,'GKS-B622');
 assert.strictEqual(policy.baseline_policy_authoritative,true);
 assert.strictEqual(policy.approval.runtime_human_confirmation_required,true);
 assert(html.includes("packageReader.getJson('shared/integrity/test-integrity-policy.json')"),'Studio must load test integrity policy');
@@ -12,4 +12,4 @@ assert(html.includes("TEST_CHANGE_APPROVAL.json"),'Studio must inspect protected
 assert(html.includes('validateStudioProtectedTestChanges(remote,files)'),'Studio must validate protected test changes against GitHub HEAD');
 assert(html.includes('保護テスト/Gate変更の人間承認'),'Studio must require a separate human confirmation before deployment');
 assert(html.includes('baseline_sha256')&&html.includes('updated_sha256'),'Studio must compare exact protected change hashes');
-console.log('PASS GKS-B621 protected test/Gate changes require exact hash approval plus separate deployment-time human confirmation');
+console.log('PASS GKS-B622 protected test/Gate changes require exact hash approval plus separate deployment-time human confirmation');
