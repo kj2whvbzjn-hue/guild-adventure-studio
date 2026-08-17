@@ -37,5 +37,24 @@
   },
   "approval_source": "external_only",
   "protection_scope_strategy": "union_baseline_and_applied_patterns",
-  "protection_scope_description": "Baseline approval semantics remain authoritative, while protected path matching uses the union of baseline and applied protected_patterns so a policy expansion cannot modify newly protected files in the same update without approval."
+  "protection_scope_description": "Baseline approval semantics remain authoritative, while protected path matching uses the union of baseline and applied protected_patterns so a policy expansion cannot modify newly protected files in the same update without approval.",
+  "machine_derived_hash_sync": {
+    "allowed_without_approval": true,
+    "description": "Allow only mechanically verifiable size/SHA-256 synchronization in explicitly listed protected manifests. Paths, membership, ordering, schema, purpose, and non-derived fields must remain byte-semantically unchanged; baseline and applied derived values must match the referenced files exactly.",
+    "manifests": [
+      {
+        "path": "shared/integrity/critical-runtime-manifest.json",
+        "entries_field": "files",
+        "path_field": "path",
+        "derived_fields": [
+          "size",
+          "sha256"
+        ],
+        "require_same_entry_order": true,
+        "require_existing_entries_only": true,
+        "verify_baseline_references": true,
+        "verify_applied_references": true
+      }
+    ]
+  }
 }

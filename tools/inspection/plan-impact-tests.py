@@ -75,6 +75,11 @@ def main() -> int:
     tokens = build_tokens(baseline) | build_tokens(applied)
     before = all_paths(baseline); after = all_paths(applied)
     raw_changed = sorted((before ^ after) | {r for r in (before & after) if sha(baseline/r) != sha(applied/r)})
+    test_integrity = {}
+    machine_hash_sync_paths: set[str] = set()
+    if args.test_integrity_report and args.test_integrity_report.is_file():
+        test_integrity = load_json(args.test_integrity_report)
+        machine_hash_sync_paths = {str(x) for x in test_integrity.get("machine_derived_hash_sync_paths", [])}
     ignored = []
     effective = []
     for rel in raw_changed:
@@ -82,14 +87,15 @@ def main() -> int:
             ignored.append({"path": rel, "reason": "package_manifest_generated"}); continue
         if rel == "package-build.json":
             ignored.append({"path": rel, "reason": "component_build_metadata"}); continue
+        if rel in machine_hash_sync_paths:
+            ignored.append({"path": rel, "reason": "machine_derived_hash_sync_verified"}); continue
         if rel in before and rel in after and build_only(baseline/rel, applied/rel, tokens):
             ignored.append({"path": rel, "reason": "build_token_only"}); continue
         effective.append(rel)
     reasons = []
     require_full = False
-    if args.test_integrity_report and args.test_integrity_report.is_file():
-        ti = load_json(args.test_integrity_report)
-        if int(ti.get("protected_changed_count", 0)) > 0:
+    if test_integrity:
+        if int(test_integrity.get("protected_changed_count", 0)) > 0:
             require_full = True; reasons.append("protected_acceptance_asset_changed")
     full_patterns = list(policy.get("full_on_patterns", []))
     full_hits = sorted(rel for rel in effective if match(rel, full_patterns))

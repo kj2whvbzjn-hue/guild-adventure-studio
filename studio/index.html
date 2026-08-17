@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B628</title>
+<title>GK Studio GKS-B629</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.200 / GKS-B628</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.200 / GKS-B629</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.200 / Studio GKS-B628</div>
+    <div class="version">Game GA-B486.200 / Studio GKS-B629</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2217,11 +2217,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=628"></script>
+<script src="./layer-controller.js?v=629"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B628';
+const DISTRIBUTION_BUILD='GKS-B629';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6305,12 +6305,79 @@ async function isDeployBuildTokenOnlyChange(file,remote){
  ])];
  return normalizeDeployBuildOnlyText(before,tokens)===normalizeDeployBuildOnlyText(after,tokens);
 }
+function stableDeployJson(value){
+ if(Array.isArray(value))return '['+value.map(stableDeployJson).join(',')+']';
+ if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+stableDeployJson(value[k])).join(',')+'}';
+ return JSON.stringify(value);
+}
+function deployMachineDerivedHashSyncSpec(path){
+ const cfg=studioDeployBaselineTestIntegrityPolicy?.machine_derived_hash_sync;
+ if(!cfg?.allowed_without_approval)return null;
+ const rel=normalizeDeployPath(path);
+ return (Array.isArray(cfg.manifests)?cfg.manifests:[]).find(x=>normalizeDeployPath(x?.path)===rel)||null;
+}
+async function getDeployBaselineBytes(remote,base,rel){
+ const target=joinDeployPath(base,rel);
+ const node=(remote.tree.tree||[]).find(x=>x.type==='blob'&&x.path===target);
+ if(!node)return null;
+ try{return await fetchGitBlobBytes(remote.repo,node.sha)}catch(_e){return null}
+}
+async function getDeployAppliedBytes(remote,base,rel,files,deletions){
+ const normalized=normalizeDeployPath(rel);
+ if((deletions||[]).some(x=>normalizeDeployPath(x.path)===normalized&&x.status!=='DELETE_BLOCKED'))return null;
+ const local=(files||[]).find(x=>!x.excluded&&normalizeDeployPath(x.path)===normalized);
+ if(local?.bytes)return local.bytes;
+ return await getDeployBaselineBytes(remote,base,normalized);
+}
+async function isDeployMachineDerivedHashSync(file,remote,files,deletions){
+ if(file?.status!=='MODIFY'||!file?.remoteSha||!file?.bytes)return false;
+ const spec=deployMachineDerivedHashSyncSpec(file.path);
+ if(!spec)return false;
+ let beforeBytes,before,after;
+ try{
+  beforeBytes=await fetchGitBlobBytes(remote.repo,file.remoteSha);
+  before=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(beforeBytes));
+  after=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(file.bytes));
+ }catch(_e){return false}
+ const entriesField=String(spec.entries_field||'files');
+ const pathField=String(spec.path_field||'path');
+ const derivedFields=(Array.isArray(spec.derived_fields)&&spec.derived_fields.length?spec.derived_fields:['size','sha256']).map(String);
+ if(stableDeployJson(Object.fromEntries(Object.entries(before).filter(([k])=>k!==entriesField)))!==stableDeployJson(Object.fromEntries(Object.entries(after).filter(([k])=>k!==entriesField))))return false;
+ const beforeEntries=before?.[entriesField],afterEntries=after?.[entriesField];
+ if(!Array.isArray(beforeEntries)||!Array.isArray(afterEntries)||beforeEntries.length!==afterEntries.length)return false;
+ const base=normalizeDeployPath(deployBasePath.value);
+ let changedDerived=false;
+ for(let i=0;i<beforeEntries.length;i++){
+  const oldEntry=beforeEntries[i],newEntry=afterEntries[i];
+  if(!oldEntry||!newEntry||typeof oldEntry!=='object'||typeof newEntry!=='object'||Array.isArray(oldEntry)||Array.isArray(newEntry))return false;
+  const oldKeys=Object.keys(oldEntry).sort(),newKeys=Object.keys(newEntry).sort();
+  if(stableDeployJson(oldKeys)!==stableDeployJson(newKeys))return false;
+  const rel=normalizeDeployPath(oldEntry[pathField]);
+  if(!rel||normalizeDeployPath(newEntry[pathField])!==rel)return false;
+  for(const key of oldKeys){
+   if(!derivedFields.includes(key)&&stableDeployJson(oldEntry[key])!==stableDeployJson(newEntry[key]))return false;
+  }
+  const changed=derivedFields.some(key=>stableDeployJson(oldEntry[key])!==stableDeployJson(newEntry[key]));
+  if(!changed)continue;
+  changedDerived=true;
+  const baselineRef=await getDeployBaselineBytes(remote,base,rel);
+  const appliedRef=await getDeployAppliedBytes(remote,base,rel,files,deletions);
+  if(!baselineRef||!appliedRef)return false;
+  const baselineFacts={size:baselineRef.length,sha256:await sha256BytesHex(baselineRef)};
+  const appliedFacts={size:appliedRef.length,sha256:await sha256BytesHex(appliedRef)};
+  for(const key of derivedFields){
+   if(!(key in baselineFacts)||oldEntry[key]!==baselineFacts[key]||newEntry[key]!==appliedFacts[key])return false;
+  }
+ }
+ return changedDerived;
+}
 async function validateStudioProtectedTestChanges(remote,files){
  const deletions=Array.isArray(arguments[2])?arguments[2]:[];
  const substantive=[];
  const changedFiles=files.filter(x=>(x.status==='MODIFY'||x.status==='ADD')&&isProtectedTestIntegrityPath(x.path));
  for(const file of changedFiles){
   if(file.status==='MODIFY'&&await isDeployBuildTokenOnlyChange(file,remote)){file.testIntegrity='BUILD_TOKEN_ONLY';continue}
+  if(file.status==='MODIFY'&&await isDeployMachineDerivedHashSync(file,remote,files,deletions)){file.testIntegrity='MACHINE_DERIVED_HASH_SYNC';deployLogMessage(`Test Integrity自動検証: ${file.path} は実ファイルと一致するsize/SHA-256同期のみ`);continue}
   let baselineSha256=null;
   if(file.status==='MODIFY'){
    const remoteBytes=await fetchGitBlobBytes(remote.repo,file.remoteSha);
@@ -8263,7 +8330,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','628');
+    url.searchParams.set('appv','629');
     location.replace(url.toString());
    }
  }
@@ -8272,7 +8339,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=628',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=629',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8291,7 +8358,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','628');
+    url.searchParams.set('appv','629');
     location.replace(url.toString());
    }
   });

@@ -19,7 +19,9 @@ SOURCE_UPDATEで、成果物を通すために受入テスト・Schema・Gateを
 - `schemas/**`
 - `studio/data-exchange/tests/**`
 
-Build識別子とそこから機械的に導出されるcache tokenだけが変化し、正規化後の内容が完全一致する場合はBuild追随として扱う。それ以外の**変更・削除・新規追加**は、更新ZIPとは独立した外部`TEST_CHANGE_APPROVAL.json`の完全一致パス、baseline SHA-256、updated SHA-256、理由を要求する。更新ZIP内への承認JSON同梱はFAILとする。
+Build識別子とそこから機械的に導出されるcache tokenだけが変化し、正規化後の内容が完全一致する場合はBuild追随として扱う。加えて、`shared/integrity/test-integrity-policy.json`で明示許可された**機械生成hash台帳**については、既存entryのpath・順序・membership・schema・purpose・非派生フィールドが不変で、変更された`size` / `sha256`をGate自身がbaseline実ファイルと適用後実ファイルから再計算して完全一致を証明できた場合に限り、人間承認を不要とする。現時点の許可対象は`shared/integrity/critical-runtime-manifest.json`だけである。
+
+それ以外の**変更・削除・新規追加**は、更新ZIPとは独立した外部`TEST_CHANGE_APPROVAL.json`の完全一致パス、baseline SHA-256、updated SHA-256、理由を要求する。更新ZIP内への承認JSON同梱はFAILとする。参照先ファイル自体が保護対象なら、そのファイルのロジック変更に対する承認要求はhash台帳同期とは独立して残る。
 
 Studio配置でもGitHub HEADからbaseline SHA-256を再計算し、**更新ZIPとは別に選択された承認ファイル**と一致することを確認する。保護変更がある場合は通常の配置確認とは別に、人間が保護テスト/Gate変更を確認する。
 
@@ -30,7 +32,7 @@ Studio配置でもGitHub HEADからbaseline SHA-256を再計算し、**更新ZIP
 - Formal AIだけの変更はAI関連release testsとBattle接続テストを実行する。
 - Battle Coreだけの変更はBattle/COUNTER/FOLLOW_UP/AURA境界テストを実行する。
 - 文書だけの変更は固定の安全テストと静的Gateを実行する。
-- Gate、Integrity、Schema、test registry、共有基盤、未分類ファイルは**必ずFullへ昇格**する。
+- Gate、Integrity、Schema、test registry、共有基盤、未分類ファイルは**必ずFullへ昇格**する。ただしStage 1で実ファイル再hashまで完了した機械生成hash台帳同期はgenerated metadataとしてImpact差分から除外する。
 
 分類不能時の既定値は`full`であり、Impact判定を理由に未知の変更を軽量テストだけで通さない。
 

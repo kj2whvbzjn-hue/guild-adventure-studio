@@ -34,6 +34,79 @@ def is_inside(path: Path, root: Path) -> bool:
         return False
 
 
+
+
+def file_facts(path: Path) -> dict | None:
+    if not path.is_file():
+        return None
+    data = path.read_bytes()
+    return {"size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def machine_derived_hash_sync_equal(rel: str, old: Path, new: Path, baseline: Path, applied: Path, policy: dict) -> bool:
+    """Return True only for a mechanically provable derived size/hash manifest sync.
+
+    This exemption is intentionally narrow: the manifest path must be explicitly
+    allow-listed by the authoritative baseline policy; entry membership/order/path
+    and every non-derived field must remain unchanged; and both the baseline and
+    applied size/SHA-256 values must exactly match the referenced files.
+    """
+    cfg = policy.get("machine_derived_hash_sync", {})
+    if not cfg.get("allowed_without_approval", False) or not old.is_file() or not new.is_file():
+        return False
+    specs = {str(x.get("path") or ""): x for x in cfg.get("manifests", []) if isinstance(x, dict)}
+    spec = specs.get(rel)
+    if not spec:
+        return False
+    try:
+        before = load_json(old)
+        after = load_json(new)
+    except Exception:
+        return False
+    entries_field = str(spec.get("entries_field") or "files")
+    path_field = str(spec.get("path_field") or "path")
+    derived_fields = tuple(str(x) for x in spec.get("derived_fields", ["size", "sha256"]))
+    if not derived_fields or any(not x for x in derived_fields):
+        return False
+    if set(before) != set(after):
+        return False
+    for key in before:
+        if key != entries_field and before.get(key) != after.get(key):
+            return False
+    before_entries = before.get(entries_field)
+    after_entries = after.get(entries_field)
+    if not isinstance(before_entries, list) or not isinstance(after_entries, list) or len(before_entries) != len(after_entries):
+        return False
+    changed_derived = False
+    for old_entry, new_entry in zip(before_entries, after_entries):
+        if not isinstance(old_entry, dict) or not isinstance(new_entry, dict):
+            return False
+        if set(old_entry) != set(new_entry):
+            return False
+        ref = str(old_entry.get(path_field) or "")
+        if not ref or str(new_entry.get(path_field) or "") != ref:
+            return False
+        # Exact order/path membership is preserved by pairwise comparison above.
+        for key in old_entry:
+            if key not in derived_fields and old_entry.get(key) != new_entry.get(key):
+                return False
+        base_ref = (baseline / ref).resolve()
+        applied_ref = (applied / ref).resolve()
+        if not is_inside(base_ref, baseline) or not is_inside(applied_ref, applied):
+            return False
+        base_facts = file_facts(base_ref)
+        applied_facts = file_facts(applied_ref)
+        if base_facts is None or applied_facts is None:
+            return False
+        for field in derived_fields:
+            if field not in base_facts:
+                return False
+            if old_entry.get(field) != base_facts[field] or new_entry.get(field) != applied_facts[field]:
+                return False
+            if old_entry.get(field) != new_entry.get(field):
+                changed_derived = True
+    return changed_derived
+
 def build_tokens(root: Path) -> set[str]:
     try:
         b = load_json(root / "package-build.json")
@@ -193,6 +266,7 @@ def main() -> int:
     applied_protected = protected_file_set(applied, patterns)
     changed: list[dict] = []
     build_only: list[str] = []
+    machine_hash_sync: list[str] = []
     for rel in sorted(baseline_protected):
         old = baseline / rel; new = applied / rel
         old_hash = sha256(old); new_hash = sha256(new)
@@ -200,6 +274,9 @@ def main() -> int:
             continue
         if new_hash is not None and policy.get("build_token_only_change", {}).get("allowed_without_approval") and build_only_equal(old, new, token_union):
             build_only.append(rel)
+            continue
+        if new_hash is not None and machine_derived_hash_sync_equal(rel, old, new, baseline, applied, policy):
+            machine_hash_sync.append(rel)
             continue
         changed.append({
             "path": rel,
@@ -227,8 +304,10 @@ def main() -> int:
         "protected_added_count": len(added),
         "protected_changed_count": len(changed),
         "build_token_only_count": len(build_only),
+        "machine_derived_hash_sync_count": len(machine_hash_sync),
         "protected_changes": changed,
         "build_token_only_paths": build_only,
+        "machine_derived_hash_sync_paths": machine_hash_sync,
         "approval_present": bool(approval),
         "approval_external_only": bool(policy.get("approval", {}).get("external_only", False)),
         "runtime_human_confirmation_required": bool(changed and policy.get("approval", {}).get("runtime_human_confirmation_required", True)),
@@ -241,7 +320,7 @@ def main() -> int:
         print("TEST_INTEGRITY_FAIL")
         print("\n".join(errors))
         return 1
-    print(f"TEST_INTEGRITY_OK baseline={len(baseline_protected)} applied={len(applied_protected)} changed={len(changed)} added={len(added)} build_only={len(build_only)} approval={'yes' if approval else 'no'} policy={origin}")
+    print(f"TEST_INTEGRITY_OK baseline={len(baseline_protected)} applied={len(applied_protected)} changed={len(changed)} added={len(added)} build_only={len(build_only)} machine_hash_sync={len(machine_hash_sync)} approval={'yes' if approval else 'no'} policy={origin}")
     if changed:
         print("TEST_INTEGRITY_HUMAN_CONFIRMATION_REQUIRED " + ",".join(x["path"] for x in changed))
     return 0

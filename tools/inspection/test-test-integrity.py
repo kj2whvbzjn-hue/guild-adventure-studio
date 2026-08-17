@@ -21,6 +21,15 @@ def fixture(root: Path, build='GKS-B620', body="assert.strictEqual(value, 1);\n"
     p=root/'tests/example.js';p.parent.mkdir(parents=True,exist_ok=True);p.write_text(body,encoding='utf-8')
     write_json(root/'shared/tests/test-registry.json',{'schema_version':1,'release_gate':[{'path':'tests/example.js','runtime':'node'}],'historical_gap':[]})
 
+def write_critical_manifest(root: Path, rel: str):
+    target=root/rel
+    data=target.read_bytes()
+    write_json(root/'shared/integrity/critical-runtime-manifest.json',{
+        'schema_version':1,
+        'purpose':'fixture critical runtime hash ledger',
+        'files':[{'path':rel,'size':len(data),'sha256':hashlib.sha256(data).hexdigest()}]
+    })
+
 def approval_for(path: Path, base: Path, applied: Path, changes: list[str]):
     entries=[]
     for rel in changes:
@@ -85,8 +94,31 @@ def main():
         expansion_approval=t/'scope-expansion-approval.json'; approval_for(expansion_approval,base,applied,['php-runtime/tests/run.php','shared/integrity/test-integrity-policy.json'])
         r=run(base,applied,expansion_approval)
         if r.returncode: errors.append('SCOPE_EXPANSION_APPROVAL_REJECTED '+r.stdout+r.stderr)
+        # A verified critical-runtime size/SHA-256 ledger sync is mechanically derived
+        # metadata and does not require human approval. The referenced runtime file
+        # itself remains subject to its normal classification/Gates.
+        shutil.rmtree(base); shutil.rmtree(applied); fixture(base);
+        runtime=base/'game/runtime.js'; runtime.parent.mkdir(parents=True,exist_ok=True); runtime.write_text('const value=1;\n',encoding='utf-8')
+        write_critical_manifest(base,'game/runtime.js'); shutil.copytree(base,applied)
+        (applied/'game/runtime.js').write_text('const value=2;\n',encoding='utf-8'); write_critical_manifest(applied,'game/runtime.js')
+        r=run(base,applied)
+        if r.returncode or 'machine_hash_sync=1' not in r.stdout: errors.append('MACHINE_HASH_SYNC_REJECTED '+r.stdout+r.stderr)
+        # Fabricated or stale derived values are not exempt.
+        bad_manifest=json.loads((applied/'shared/integrity/critical-runtime-manifest.json').read_text(encoding='utf-8'))
+        bad_manifest['files'][0]['sha256']='0'*64
+        write_json(applied/'shared/integrity/critical-runtime-manifest.json',bad_manifest)
+        r=run(base,applied)
+        if r.returncode==0 or 'shared/integrity/critical-runtime-manifest.json' not in r.stdout: errors.append('FABRICATED_HASH_SYNC_NOT_BLOCKED '+r.stdout+r.stderr)
+        # Entry membership/path changes are semantic manifest changes and still require approval.
+        write_critical_manifest(applied,'game/runtime.js')
+        extra=applied/'game/runtime-extra.js'; extra.write_text('const extra=1;\n',encoding='utf-8')
+        manifest=json.loads((applied/'shared/integrity/critical-runtime-manifest.json').read_text(encoding='utf-8'))
+        b=extra.read_bytes(); manifest['files'].append({'path':'game/runtime-extra.js','size':len(b),'sha256':hashlib.sha256(b).hexdigest()})
+        write_json(applied/'shared/integrity/critical-runtime-manifest.json',manifest)
+        r=run(base,applied)
+        if r.returncode==0 or 'shared/integrity/critical-runtime-manifest.json' not in r.stdout: errors.append('MANIFEST_MEMBERSHIP_CHANGE_NOT_BLOCKED '+r.stdout+r.stderr)
     if errors:
         print('TEST_INTEGRITY_REGRESSION_FAIL');print('\n'.join(errors));return 1
-    print('TEST_INTEGRITY_REGRESSION_OK cases=8 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=required build_token_only=allowed')
+    print('TEST_INTEGRITY_REGRESSION_OK cases=11 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=required build_token_only=allowed machine_hash_sync=verified_only')
     return 0
 if __name__=='__main__': raise SystemExit(main())

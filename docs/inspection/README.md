@@ -51,6 +51,7 @@ python3 -S -B tools/inspection/run.py accept \
 `shared/integrity/test-integrity-policy.json`により、既存の`tests/**`、`tools/inspection/**`、`tools/integrity/**`、`shared/integrity/**`、`shared/tests/test-registry.json`、`schemas/**`等をbaseline基準で保護する。
 
 - Build識別子・そこから導出されるcache tokenだけが変化し、正規化後の全バイトが同一ならBuild追随として許可する。
+- 明示許可された機械生成hash台帳（現在は`shared/integrity/critical-runtime-manifest.json`）は、既存entryの構造・path集合・順序が不変で、変更された`size` / `sha256`がbaseline/applied実ファイルの再計算値と完全一致するとGate自身が証明した場合だけ承認不要とする。path追加・削除・変更、非派生フィールド変更、捏造hashは通常の保護変更として扱う。
 - それ以外の保護ファイルの変更・削除・新規追加は、更新ZIP外の`TEST_CHANGE_APPROVAL.json`による完全一致パス、baseline SHA-256、updated SHA-256、理由を必須とする。更新ZIP内の承認JSONは拒否する。
 - Studio配置時にもGitHub HEADからhashを再計算し、保護変更がある場合は通常の配置確認とは別の人間確認を要求する。
 - 追加テスト自体は追加可能だが、release test registryを変更する場合はregistryが保護対象なので承認が必要になる。
