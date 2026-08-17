@@ -312,6 +312,11 @@
     };
   }
   function envelope(payload,dataVersion,generatedAt,appVersion){return {schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,data:payload};}
+  function envelopeForPath(path,payload,data,dataVersion,generatedAt,appVersion){
+    const doc=envelope(payload,dataVersion,generatedAt,appVersion);
+    if(path==='ai/ai_nodes.json')doc.refs={tags:clean(data?.tags||[]),tag_categories:clean(data?.tag_categories||[])};
+    return doc;
+  }
   async function sha256Hex(text){
     if(globalThis.crypto&&globalThis.crypto.subtle){const bytes=new TextEncoder().encode(text);const digest=await globalThis.crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');}
     const crypto=require('node:crypto'); return crypto.createHash('sha256').update(text,'utf8').digest('hex');
@@ -321,7 +326,7 @@
     const contractIssues=[...collectQuestEventContractIssues(data),...collectFormalQuestExportIssues(data).issues];
     if(contractIssues.some(row=>row.level==='ERROR')){const error=new Error('Quest/Event export validation failed');error.issues=contractIssues;throw error;}
     const payloads=buildData(data), files={}, manifestFiles=[];
-    for(const path of EXPORT_PATHS){const text=JSON.stringify(envelope(payloads[path],dataVersion,generatedAt,appVersion),null,2)+'\n';files[path]=text;manifestFiles.push({path,sha256:await sha256Hex(text),required:true});}
+    for(const path of EXPORT_PATHS){const text=JSON.stringify(envelopeForPath(path,payloads[path],data,dataVersion,generatedAt,appVersion),null,2)+'\n';files[path]=text;manifestFiles.push({path,sha256:await sha256Hex(text),required:true});}
     const manifest={schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,files:manifestFiles};
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};

@@ -9,6 +9,11 @@
     if(Array.isArray(value))return clone(value);
     return Array.isArray(value?.data)?clone(value.data):[];
   }
+  function refsFromEnvelope(value){
+    const refs=value&&typeof value==='object'&&!Array.isArray(value)&&value.refs&&typeof value.refs==='object'?value.refs:{};
+    return {tags:Array.isArray(refs.tags)?clone(refs.tags):[],tag_categories:Array.isArray(refs.tag_categories)?clone(refs.tag_categories):[]};
+  }
+  function dataVersionFromEnvelope(value){return value&&typeof value==='object'&&!Array.isArray(value)?String(value.data_version||''):'';}
   function normalizeOfficialPreset(row){
     if(!row||typeof row!=='object'||Array.isArray(row))return null;
     const id=String(row.id||row.preset_id||'').trim(),name=String(row.name||'').trim();
@@ -54,12 +59,15 @@
     const skillUrl=opts.skillUrl||config.skillExportUrl||'../Export/skill/skills.json';
     const templateUrl=opts.templateUrl||config.aiTemplateExportUrl||'../Export/ai/ai_templates.json';
     const warnings=[];
-    let ai=[],skills=[],templates=[];
-    try{ai=rowsFromEnvelope(await fetchJson(fetchImpl,aiUrl));}catch(error){warnings.push(String(error?.message||error));}
-    try{skills=rowsFromEnvelope(await fetchJson(fetchImpl,skillUrl));}catch(error){warnings.push(String(error?.message||error));}
-    try{templates=rowsFromEnvelope(await fetchJson(fetchImpl,templateUrl));}catch(error){templates=[];}
-    const catalog=normalize(ai,skills,opts.tags||[],opts.tag_categories||[],templates);
-    return Object.freeze({...catalog,warnings:Object.freeze(warnings)});
+    let ai=[],skills=[],templates=[],aiRefs={tags:[],tag_categories:[]},aiVersion='',skillVersion='',templateVersion='';
+    try{const doc=await fetchJson(fetchImpl,aiUrl);ai=rowsFromEnvelope(doc);aiRefs=refsFromEnvelope(doc);aiVersion=dataVersionFromEnvelope(doc);}catch(error){warnings.push(String(error?.message||error));}
+    try{const doc=await fetchJson(fetchImpl,skillUrl);skills=rowsFromEnvelope(doc);skillVersion=dataVersionFromEnvelope(doc);}catch(error){warnings.push(String(error?.message||error));}
+    try{const doc=await fetchJson(fetchImpl,templateUrl);templates=rowsFromEnvelope(doc);templateVersion=dataVersionFromEnvelope(doc);}catch(error){templates=[];}
+    const versions=[aiVersion,skillVersion,templateVersion].filter(Boolean);
+    if(new Set(versions).size>1)warnings.push(`AI参照データのData Versionが一致しません: ${[aiVersion||'-',skillVersion||'-',templateVersion||'-'].join(' / ')}`);
+    const tags=Array.isArray(opts.tags)?opts.tags:aiRefs.tags,tagCategories=Array.isArray(opts.tag_categories)?opts.tag_categories:aiRefs.tag_categories;
+    const catalog=normalize(ai,skills,tags,tagCategories,templates);
+    return Object.freeze({...catalog,data_version:aiVersion||skillVersion||templateVersion||'',warnings:Object.freeze(warnings)});
   }
-  return Object.freeze({rowsFromEnvelope,normalizeOfficialPreset,normalize,load});
+  return Object.freeze({rowsFromEnvelope,refsFromEnvelope,dataVersionFromEnvelope,normalizeOfficialPreset,normalize,load});
 });
