@@ -229,7 +229,15 @@ function normalize(raw){
  raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.190';
  return raw;
 }
-function persist(){data.updatedAt=new Date().toISOString();if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(data);localStorage.setItem(SAVE_KEY,JSON.stringify(data))}
+function persist(){
+ data.saveVersion=SAVE_VERSION;
+ data.aiPrograms=Array.isArray(data.aiPrograms)?data.aiPrograms:[];
+ data.aiLayouts=Array.isArray(data.aiLayouts)?data.aiLayouts:[];
+ data.aiPresets=Array.isArray(data.aiPresets)?data.aiPresets:[];
+ data.updatedAt=new Date().toISOString();
+ if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(data);
+ localStorage.setItem(SAVE_KEY,JSON.stringify(data));
+}
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});persist();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
@@ -507,7 +515,25 @@ function renderExpeditionSetup(){
  setBaseView(activeBaseView,{keepScroll:true});
 }
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]))}
-$('createBtn').onclick=()=>{const name=$('newName').value.trim();if(!name){notify('名前を入力してください。','bad');return}const c=makeCharacter(name,$('newJob').value);data.characters.push(c);if(data.partyIds.length<6)data.partyIds.push(c.id);selectedId=c.id;$('newName').value='';persist();render();notify(`${name}を作成しました。`)};
+function createCharacterFromForm(){
+ const nameInput=$('newName'),jobInput=$('newJob');
+ try{
+  const name=String(nameInput?.value||'').trim(),job=String(jobInput?.value||'');
+  if(!name){notify('名前を入力してください。','bad');return}
+  if(!JOBS[job]){notify('初期職業を選択してください。','bad');return}
+  const c=makeCharacter(name,job);
+  data.characters.push(c);
+  if(data.partyIds.length<6)data.partyIds.push(c.id);
+  selectedId=c.id;
+  if(nameInput)nameInput.value='';
+  let saveError=null;
+  try{persist()}catch(error){saveError=error;console.error('character persist failed',error)}
+  try{render()}catch(error){console.error('character render failed',error);notify(`冒険者は作成しましたが画面更新に失敗しました: ${error.message}`,'bad');return}
+  if(saveError){notify(`冒険者は作成しましたがブラウザ保存に失敗しました: ${saveError.message}`,'bad');return}
+  notify(`${name}を作成しました。`);
+ }catch(error){console.error('character creation failed',error);notify(`冒険者を作成できません: ${error.message}`,'bad')}
+}
+$('createBtn').onclick=createCharacterFromForm;
 $('levelBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c||c.level>=50)return;const a=JOBS[c.job],gained=[],growth={};STATS.forEach(s=>{const amount=rollGrowth(a[s]);growth[s]=amount;if(amount>0){c.stats[s]+=amount;gained.push(`${s} +${amount}`)}});const from=c.level;c.level++;c.growthHistory.push({fromLevel:from,toLevel:c.level,job:c.job,growth,gained,ruleRevision:'V9-1.0.1',at:new Date().toISOString()});persist();render();notify(`${c.name}がLv${c.level}になりました。${gained.length?' 上昇: '+gained.join(', '):' 能力値上昇なし'}`)};
 function growthRank(value){return value>=12?'A':value>=9?'B':'C'}
 function growthRankGrid(job){const a=JOBS[job];return `<div class="growth-grid">${STATS.map(stat=>{const r=growthRank(a[stat]);return `<div class="growth-cell"><span class="small">${stat}</span><b class="rank-${r}">${r}</b></div>`}).join('')}</div>`}
@@ -532,7 +558,7 @@ $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('h
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 $('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v1-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
 $('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));window.GKGameAIEditorUI?.resetSessions();selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:1,schemaRevision:'1.5.0',gameVersion:'GA-B486.190',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
+$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:SAVE_VERSION,schemaRevision:'1.5.0',gameVersion:'GA-B486.190',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const DOT_LOG_SCHEMA_VERSION='1.0.0';
 function ensureValidationState(){
