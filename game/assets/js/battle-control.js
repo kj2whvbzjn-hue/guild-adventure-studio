@@ -1,5 +1,6 @@
 /* Battle scene, reservation and tick control extracted without logic changes — GA-B477 */
 let sceneSignature='', sceneBusy=false, sceneQueue=[], sceneLastActionCount=0;
+let formalAdventureSimulationDepth=0;
 const sceneIcon=name=>/スライム/.test(name)?'●':/ウルフ/.test(name)?'◆':/盗賊/.test(name)?'♠':/剣士/.test(name)?'⚔':'◆';
 function sceneLayoutMode(){return 'vertical'}
 function scenePosition(u,index,sideCount){
@@ -44,7 +45,7 @@ async function playSceneEvent(evt){
 }
 function impactAt(el){const p=scenePoint(el),slash=document.createElement('div');slash.className='flash-slash';slash.style.left=p.x+'px';slash.style.top=p.y+'px';$('battleStage').appendChild(slash);slash.animate([{transform:'translate(-50%,-50%) rotate(-28deg) scale(.25)',opacity:0},{transform:'translate(-50%,-50%) rotate(-28deg) scale(1.35)',opacity:1,offset:.3},{transform:'translate(-50%,-50%) rotate(-28deg) scale(2)',opacity:0}],{duration:420,easing:'ease-out'});setTimeout(()=>slash.remove(),450);const ring=document.createElement('div');ring.className='impact-ring';ring.style.left=p.x+'px';ring.style.top=p.y+'px';$('battleStage').appendChild(ring);ring.animate([{transform:'translate(-50%,-50%) scale(.4)',opacity:1},{transform:'translate(-50%,-50%) scale(3)',opacity:0}],{duration:360});setTimeout(()=>ring.remove(),400)}
 function damageAt(el,value,miss=false){const p=scenePoint(el),pop=document.createElement('div');pop.className='damage-pop'+(miss?' miss':'');pop.textContent=miss?'MISS':`-${value}`;pop.style.left=p.x+'px';pop.style.top=(p.y-20)+'px';$('battleStage').appendChild(pop);pop.animate([{transform:'translate(-50%,-20%) scale(.7)',opacity:0},{transform:'translate(-50%,-70%) scale(1.15)',opacity:1,offset:.25},{transform:'translate(-50%,-135%) scale(1)',opacity:0}],{duration:760,easing:'ease-out'});setTimeout(()=>pop.remove(),800)}
-function queueSceneEvent(evt){if(sceneBusy)sceneQueue.push(evt);else playSceneEvent(evt)}
+function queueSceneEvent(evt){if(formalAdventureSimulationDepth>0)return;if(sceneBusy)sceneQueue.push(evt);else playSceneEvent(evt)}
 
 function resetBattle(context=null){pauseBattle();setBattleLaunchContext(context||standaloneBattleContext());sceneQueue=[];sceneBusy=false;battle={tick:0,actions:0,units:makeBattleUnits(),log:[],timer:null,running:false,runToken:battle.runToken,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationCaptureEvents:true,validationEvents:[],validationMeta:null};initializeBattleTieRolls();renderBattle();recordValidationEvent('battle_started',{seed:battleLaunchContext?.seed??battle.p0113TieSeed??null,source:battleLaunchContext?.source||'standalone_fixture'});ensureSceneUnits(true);setupTagSkillTestUI();populateTagSkillTestUI()}
 function renderBattle(){
@@ -97,6 +98,11 @@ function reserveFormalAiAction(actor,runtime){
 }
 function reserveAction(actor){
  if(!actor.alive||actor.reservedAction||actor.gauge<GAUGE_MAX||battle.result||battle.pendingResult)return false;
+ if(formalAdventureSimulationDepth>0&&!actor.characterId){
+  const target=chooseTarget(actor);if(!target)return false;
+  actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'attack',actionId:'attack',targetId:target.id,label:'通常攻撃',icon:'⚔️',headlessAdventureBasic:true,reason:'Adventure enemy basic attack',reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
+  actor.lastReservation={...actor.reservedAction};return true;
+ }
  if(actor.characterId){
   const formalRuntime=formalAiRuntimeForActor(actor);
   if(!formalRuntime){
@@ -174,8 +180,13 @@ function finishIfNeeded(){
  const allyAlive=battle.units.some(u=>u.alive&&u.side==='味方'),enemyAlive=battle.units.some(u=>u.alive&&u.side==='敵');
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
- battle.pendingResult=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
+ const resolved=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
  battle.units.forEach(u=>u.reservedAction=null);processApplyLifecycleCleanup('battle_end');clearAllCoverEffects('battle_end');clearBattleEndCooldowns();
+ if(formalAdventureSimulationDepth>0){
+  battle.result=resolved;battle.pendingResult=null;battle.running=false;
+  battle.log.push(`[Tick ${battle.tick}] 戦闘終了 — ${battle.result}`);recordValidationEvent('battle_finished',{result:battle.result});return true;
+ }
+ battle.pendingResult=resolved;
  battle.log.push(`[Tick ${battle.tick}] 決着条件を検出 — 最終演出を待機`);
  battle.running=false;battle.runToken++;
  if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;
@@ -194,6 +205,12 @@ function performBasicAttack(attacker,target){
 }
 function executeReservation(actor){
  const r=actor.reservedAction;if(!r||r.executeAt>battle.tick)return false;
+ if(r.headlessAdventureBasic){
+  const target=battle.units.find(unit=>unit.alive&&unit.id===String(r.targetId||''));if(!target){cancelReservation(actor,'対象が無効です');return false;}
+  actor.gauge=Math.max(0,actor.gauge-GAUGE_MAX);actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;
+  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:null,executedTargetId:target.id};actor.reservedAction=null;
+  return performBasicAttack(actor,target);
+ }
  if(r.formalAi){
   r.status='revalidating';const checked=evaluateFormalReservationExecution(actor);
   if(!checked.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,reason:checked.code||checked.reason,status_instance_id:checked.eligibility?.statusInstanceId||null,status_id:checked.eligibility?.statusId||null});cancelReservation(actor,checked.reason);return false;}
@@ -261,6 +278,27 @@ function processTicks(count){
   for(const u of due){if(battle.result||battle.pendingResult)break;executeReservation(u)}
  }
 }
+function simulateFormalAdventureBattle({party,formation,monsters,seed=1,maxTicks=200000}={}){
+ if(!window.GKAdventureBattleCore||!window.GKGameAISaveBridge||!window.GKGameAIBattleBridge)throw new Error('Formal Adventure Battle runtime is not loaded');
+ const previousBattle=battle,previousContext=battleLaunchContext,normalizedParty=Array.isArray(party)?party:[];
+ formalAdventureSimulationDepth++;
+ try{
+  battleLaunchContext={formation:GKAdventureBattleCore.normalizeFormation(formation),monsters:clone(monsters||[]),seed,source:'adventure_questrun'};
+  const allies=normalizedParty.map((row,i)=>makeCombatant({id:`A${i}`,characterId:String(row?.character_id||row?.id||''),name:String(row?.name||`Adventurer ${i+1}`),side:'味方',agi:Math.max(1,Math.floor(Number(row?.agi)||1)),attack:Math.max(1,Math.floor(Number(row?.attack??row?.atk)||1)),maxHp:Math.max(1,Math.floor(Number(row?.max_hp??row?.maxHp??row?.hp)||1)),maxMp:Math.max(0,Math.floor(Number(row?.max_mp??row?.maxMp??100)||0)),mp:Math.max(0,Math.floor(Number(row?.mp??row?.max_mp??row?.maxMp??100)||0)),gauge:0,actions:0,order:i,lastActionTick:null}));
+  if(!allies.length)throw new Error('Party Snapshot is empty');
+  const expanded=GKAdventureBattleCore.expandFormation(battleLaunchContext.formation,battleLaunchContext.monsters||[]);
+  const enemies=expanded.map((row,i)=>makeCombatant({id:`E${i}`,monsterId:row.monster_id,name:row.name,side:'敵',aiPolicy:row.aiPolicy,agi:row.agi,attack:row.attack,maxHp:row.maxHp,gauge:0,actions:0,order:100+i,lastActionTick:null}));
+  if(!enemies.length)throw new Error('Enemy Formation is empty');
+  battle={tick:0,actions:0,units:[...allies,...enemies],log:[],timer:null,running:false,runToken:0,lastFrameAt:0,tickAccumulator:0,result:null,pendingResult:null,ending:false,reward:null,rewardApplied:false,validationMode:false,validationCaptureEvents:true,validationEvents:[],validationMeta:null};
+  initializeBattleTieRolls(seed);recordValidationEvent('battle_started',{seed,source:'adventure_questrun'});
+  const cap=Math.max(1,Math.floor(Number(maxTicks)||200000));
+  while(!battle.result&&!battle.pendingResult&&battle.tick<cap)processTicks(1);
+  if(!battle.result){const error=new Error(`Formal Adventure Battle exceeded maxTicks: ${cap}`);error.code='FORMAL_ADVENTURE_BATTLE_TICK_LIMIT';throw error;}
+  const result=GKAdventureBattleCore.buildBattleResult({battle,context:battleLaunchContext});result.reward={};return result;
+ }finally{battle=previousBattle;battleLaunchContext=previousContext;formalAdventureSimulationDepth=Math.max(0,formalAdventureSimulationDepth-1);}
+}
+window.GKGameFormalAdventureBattle=Object.freeze({simulate:simulateFormalAdventureBattle});
+
 function advanceTicks(count){if(battle.result||battle.pendingResult)return;processTicks(Math.max(0,Number(count)||0));renderBattle()}
 function pauseBattle(){
  battle.runToken++;
