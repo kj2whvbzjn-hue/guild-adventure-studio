@@ -222,6 +222,18 @@ expectError('wrong field type is rejected by data schema', $source, function (st
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{$doc['data']=[['id'=>'JOB001','name'=>'騎士','str'=>'11']];});
 }, 'DATA_SCHEMA_INVALID');
 
+expectError('AI node refs must be an object', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'ai/ai_nodes.json', function(array &$doc):void{$doc['refs']=['invalid'];});
+}, 'ENVELOPE_INVALID');
+
+expectError('AI node refs reject unknown fields', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'ai/ai_nodes.json', function(array &$doc):void{$doc['refs']['unknown']=[];});
+}, 'ENVELOPE_INVALID');
+
+expectError('AI node refs fields must be lists', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'ai/ai_nodes.json', function(array &$doc):void{$doc['refs']['tags']=['id'=>'TAG001'];});
+}, 'ENVELOPE_INVALID');
+
 expectError('negative known numeric value is rejected', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{$doc['data']=[['id'=>'SK001','name'=>'斬撃','power'=>-1]];});
 }, 'DATA_SCHEMA_INVALID');

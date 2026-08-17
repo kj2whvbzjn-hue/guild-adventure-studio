@@ -12,6 +12,7 @@ final class ExportLoader
     private const HASH_PATTERN = '/^[a-f0-9]{64}$/';
     private const VERSION_PATTERN = '/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:[-+][0-9A-Za-z.-]+)?$/';
     private const FORMAL_SKILL_PATH = 'skill/skills.json';
+    private const AI_NODE_PATH = 'ai/ai_nodes.json';
     private const FORMAL_SKILL_SCHEMA_VERSION = '2.0.0';
     private const FORMAL_SKILL_DATA_VERSION = 'FORMAL-SKILL-1';
     private const AUXILIARY_EXPORT_PREFIXES = ['cpf/'];
@@ -414,12 +415,35 @@ final class ExportLoader
                 throw new ExportLoadException('ENVELOPE_INVALID', 'Formal Skill migration metadata must be an object.', ['path' => $path, 'field' => 'migration']);
             }
         }
+        if ($path === self::AI_NODE_PATH) {
+            $allowed[] = 'refs';
+            if (array_key_exists('refs', $document)) {
+                $this->validateAiNodeRefs($document['refs'], $path);
+            }
+        }
 
         $extra = array_values(array_diff(array_keys($document), $allowed));
         if ($extra !== []) {
             throw new ExportLoadException('ENVELOPE_INVALID', "Envelope contains unsupported fields: {$path}", ['path' => $path, 'fields' => $extra]);
         }
         $this->validateCommonMetadata($document, $path);
+    }
+
+    private function validateAiNodeRefs(mixed $refs, string $path): void
+    {
+        if (!is_array($refs) || array_is_list($refs)) {
+            throw new ExportLoadException('ENVELOPE_INVALID', 'AI node refs must be an object.', ['path' => $path, 'field' => 'refs']);
+        }
+        $allowed = ['tags', 'tag_categories'];
+        $extra = array_values(array_diff(array_keys($refs), $allowed));
+        if ($extra !== []) {
+            throw new ExportLoadException('ENVELOPE_INVALID', 'AI node refs contain unsupported fields.', ['path' => $path, 'field' => 'refs', 'fields' => $extra]);
+        }
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $refs) && (!is_array($refs[$field]) || !array_is_list($refs[$field]))) {
+                throw new ExportLoadException('ENVELOPE_INVALID', 'AI node refs field must be a list.', ['path' => $path, 'field' => 'refs.' . $field]);
+            }
+        }
     }
 
     /** @param array<string,mixed> $object */
