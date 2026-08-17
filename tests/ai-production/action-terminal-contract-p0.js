@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 const assert=require('assert');
-const Adapter=require('../../studio/ai-production/ai-master-adapter.js');
-const Validator=require('../../studio/ai-production/ai-program-validator.js');
-const Compiler=require('../../studio/ai-production/ai-program-compiler.js');
+const Adapter=require('../../shared/ai/ai-master-adapter.js');
+const Validator=require('../../shared/ai/ai-program-validator.js');
+const Compiler=require('../../shared/ai/ai-program-compiler.js');
 const action=Adapter.toNode({id:'AIA-0001',name:'通常攻撃',status:'active',data_version:'1.0.0',evaluator:'action.attack',parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false}},'ai_actions');
 assert.deepStrictEqual(action.ports.outputs,[]);
 assert.deepStrictEqual(Adapter.definitionErrors(action),[]);

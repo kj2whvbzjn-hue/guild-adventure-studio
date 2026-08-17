@@ -1,5 +1,5 @@
 (function (root, factory) {
-  const model = typeof module === 'object' && module.exports ? require('./ai-program-model.js') : root && root.GKSAIProgramModel;
+  const model = typeof module === 'object' && module.exports ? require('../../shared/ai/ai-program-model.js') : root && root.GKSAIProgramModel;
   const api = factory(model);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.GKSAIProgramStore = api;

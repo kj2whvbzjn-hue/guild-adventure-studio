@@ -3,7 +3,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
-const Validator=require('../../studio/ai-production/ai-program-validator.js');
+const Validator=require('../../shared/ai/ai-program-validator.js');
 const root=path.resolve(__dirname,'../..');
 const ports=(outputs)=>({inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:outputs.map((id)=>({id,kind:'flow',data_type:'flow'}))});
 const project={tags:[{id:'TAG-HP',name:'HP'}],masters:{skills:[{id:'SKL-HEAL',name:'回復'}],ai_conditions:[{id:'AIC-HP',name:'HP条件',status:'active',data_version:'1.0.0',evaluator:'condition.hp',ports:ports(['true','false']),parameter_schema:{type:'object',required:['threshold','tag_id'],properties:{threshold:{type:'number',minimum:0,maximum:1},tag_id:{type:'string',ref_kind:'tag'}}}}],ai_targets:[],ai_actions:[{id:'AIA-HEAL',name:'回復',status:'active',data_version:'1.0.0',evaluator:'action.heal',ports:ports([]),parameter_schema:{type:'object',required:['skill_id'],properties:{skill_id:{type:'string',ref_kind:'skill'}}}},{id:'AIA-WAIT',name:'待機',status:'active',data_version:'1.0.0',evaluator:'action.wait',ports:ports([]),parameter_schema:{type:'object',properties:{}}}]}};
@@ -19,7 +19,7 @@ const cycle=structuredClone(valid);cycle.nodes[2].master_node_id='AIC-HP';cycle.
 assert.deepStrictEqual(Validator.validate(invalid,project).issues,bad.issues,'issue order must be deterministic');
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'studio/ai-production/manifest.json'),'utf8'));
 const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
-assert.strictEqual(manifest.entrypoints.validator,'ai-program-validator.js');
-assert(html.includes('./ai-production/ai-program-validator.js?v=1'));
+assert.strictEqual(manifest.shared_canonical.program_validator,'shared/ai/ai-program-validator.js');
+assert(html.includes('../shared/ai/ai-program-validator.js?v=1'));
 assert(html.includes('GKSAIProgramValidator.validate(program,data)'));
 console.log('AI_PROGRAM_VALIDATOR_R6_OK params=1 exact_ports=1 mandatory_connections=1 action_terminal=1 input_unique=1 unreachable_saveable=1 cycle=1 deterministic=1');

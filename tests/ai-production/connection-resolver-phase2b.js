@@ -2,7 +2,7 @@
 'use strict';
 
 const assert = require('assert');
-const Resolver = require('../../studio/ai-production/ai-connection-resolver.js');
+const Resolver = require('../../shared/ai/ai-connection-resolver.js');
 
 const masters = {
   ai_conditions: [{

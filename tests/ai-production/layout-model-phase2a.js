@@ -2,7 +2,7 @@
 'use strict';
 
 const assert = require('assert');
-const Layout = require('../../studio/ai-production/ai-layout-model.js');
+const Layout = require('../../shared/ai/ai-layout-model.js');
 
 assert.strictEqual(Layout.LAYOUT_VERSION, 1);
 assert.strictEqual(Layout.DEFAULT_WIDTH, 8);

@@ -54,7 +54,8 @@ Store.normalizeProject(protectedProjectData);
 assert(Array.isArray(protectedProjectData.ai_programs), 'protected project-data.json must migrate at runtime');
 
 const studioHtml = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8');
-assert(studioHtml.includes('./ai-production/ai-program-model.js?v=1'));
+assert(studioHtml.includes('../shared/ai/ai-program-model.js?v=1'));
+assert(!studioHtml.includes('./ai-production/ai-program-model.js?v=1'));
 assert(studioHtml.includes('./ai-production/ai-program-store.js?v=1'));
 assert(studioHtml.includes('ai_programs:[]'), 'new Main projects must initialize an AI program collection');
 assert(studioHtml.includes('function normalizeData(){')&&studioHtml.includes('if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);'), 'loaded/legacy projects must normalize AI programs through the project boundary');

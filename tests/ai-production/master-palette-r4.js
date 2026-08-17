@@ -4,7 +4,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const Adapter = require('../../studio/ai-production/ai-master-adapter.js');
+const Adapter = require('../../shared/ai/ai-master-adapter.js');
 
 const root = path.resolve(__dirname, '../..');
 const master = {
@@ -56,6 +56,6 @@ assert(!html.includes('params.ai_definition'), 'AI Master must not mirror Formal
 assert(html.includes('node_type:node.node_type'), 'AI Master save must persist Formal node_type');
 assert(html.includes("masterParamsField')?.classList.toggle('hidden',isAI)"), 'generic params editor must be hidden for AI Master');
 assert(html.includes('window.GKSAIProductionHost={getData:()=>data,'), 'evolved host must retain read-only master access while adding project persistence');
-assert(html.includes('./ai-production/ai-master-adapter.js?v=2'));
+assert(html.includes('../shared/ai/ai-master-adapter.js?v=1'));
 
 console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 formal_only=1 action_terminal=1');

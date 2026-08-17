@@ -1,5 +1,5 @@
 (function(root,factory){
-  const engine=typeof module==='object'&&module.exports?require('./ai-decision-engine.js'):root&&root.GKSAIDecisionEngine;
+  const engine=typeof module==='object'&&module.exports?require('../../shared/ai/ai-decision-engine.js'):root&&root.GKSAIDecisionEngine;
   const api=factory(engine);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.GKSAIBattleAdapter=api;

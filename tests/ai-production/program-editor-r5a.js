@@ -5,7 +5,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const root = path.resolve(__dirname, '../..');
-const Model = require('../../studio/ai-production/ai-program-model.js');
+const Model = require('../../shared/ai/ai-program-model.js');
 const Store = require('../../studio/ai-production/ai-program-store.js');
 
 const project = {project:{id:'PRJ-R5A'}, masters:{ai_conditions:[],ai_targets:[],ai_actions:[],skills:[]}, tags:[], ai_programs:[]};
