@@ -19,6 +19,25 @@ const playback=B.validationEventsToPlaybackEvents([
 assert.equal(S.validatePlaybackEvents(playback),true);
 assert.deepEqual(playback.map(x=>x.type),['battle_start','action_start','skill_cast','hit','damage','status_apply','status_remove','ko','battle_end']);
 
+
+const formalBasicPlayback=B.validationEventsToPlaybackEvents([
+ {tick:11,type:'action_execution_committed',source_id:'A0',target_id:'E0',skill_id:null,formal_ai:true},
+ {tick:11,type:'basic_attack',source_id:'A0',target_id:'E0',damage:80,hp_after:0}
+]);
+assert.deepEqual(formalBasicPlayback.map(x=>x.type),['action_start','hit','damage'],'Formal AI basic attack must not emit skill_cast or duplicate action_start');
+assert.equal(formalBasicPlayback.filter(x=>x.type==='skill_cast').length,0,'basic attack must not be displayed as skill use');
+assert.equal(formalBasicPlayback.filter(x=>x.type==='action_start').length,1,'basic attack action_start must be emitted exactly once');
+
+const headlessBasicPlayback=B.validationEventsToPlaybackEvents([
+ {tick:12,type:'basic_attack',source_id:'A0',target_id:'E0',damage:10,hp_after:70}
+]);
+assert.deepEqual(headlessBasicPlayback.map(x=>x.type),['action_start','hit','damage'],'basic_attack without committed event still needs one action_start');
+
+const waitPlayback=B.validationEventsToPlaybackEvents([
+ {tick:13,type:'action_execution_committed',source_id:'A0',target_id:null,skill_id:null,formal_ai:true,action_kind:'wait'}
+]);
+assert.deepEqual(waitPlayback.map(x=>x.type),['action_start'],'wait must never emit skill_cast');
+
 const result=B.buildBattleResult({battle:{tick:41,actions:2,result:'味方勝利',p0113TieSeed:'seed-x',log:['debug'],validationEvents:[{tick:0,type:'battle_started',seed:'seed-x'},{tick:41,type:'battle_finished',result:'味方勝利'}],units:[{id:'A0',characterId:'C1',name:'Hero',side:'味方',hp:80,maxHp:100,mp:20,maxMp:30,alive:true,damageDealt:100,damageTaken:20},{id:'E0',monsterId:'M1',name:'Slime',side:'敵',hp:0,maxHp:100,mp:0,maxMp:0,alive:false,damageDealt:20,damageTaken:100}]},context:{formation:[{monster_id:'M1',count:1}],seed:'seed-x'}});
 assert.equal(result.victory,true);
 assert.equal(result.unit_final_state[1].monster_id,'M1');
