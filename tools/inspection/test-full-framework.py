@@ -27,10 +27,17 @@ def main():
       'html_links','package_metadata','studio_cache_policy','critical_runtime','package_manifest',
       'javascript_syntax','php_syntax','python_syntax','organization','shared_assets',
       'component_map','runtime_boundary','deployment_map','root_surface',
-      'active_test_gate','github_candidate'
+      'source_update_application_regression','active_test_gate','github_candidate'
     ]
     missing=[x for x in expected if x not in names]
     if missing: errors.append('FULL_STEP_REMOVED '+','.join(missing))
+    zip_names=[x[0] for x in runner.build_steps('full',None,'source',input_zip=Path('/tmp/source.zip'))]
+    if 'source_zip_binding' not in zip_names: errors.append('INPUT_ZIP_BINDING_STEP_MISSING')
+    try:
+        runner.build_steps('quick',None,'update')
+        errors.append('UPDATE_BASELINE_NOT_REQUIRED')
+    except ValueError as exc:
+        if 'baseline' not in str(exc): errors.append('UPDATE_BASELINE_WRONG_ERROR '+str(exc))
     for name,cmd,_ in runner.build_steps('full',None,'source'):
         if cmd and cmd[0]==sys.executable and name not in ('javascript_syntax','php_syntax'):
             if '-S' not in cmd[:4] or '-B' not in cmd[:4]:
@@ -71,7 +78,7 @@ self.addEventListener('fetch',event=>{const request=event.request;const url=new 
         if p.returncode==0: errors.append('UNSAFE_STUDIO_CACHE_POLICY_NOT_DETECTED')
     if errors:
         print('\n'.join(errors)); return 1
-    print(f'FULL_FRAMEWORK_REGRESSION_OK required_steps={len(expected)} cases=6')
+    print(f'FULL_FRAMEWORK_REGRESSION_OK required_steps={len(expected)} cases=8')
     return 0
 
 if __name__=='__main__': raise SystemExit(main())

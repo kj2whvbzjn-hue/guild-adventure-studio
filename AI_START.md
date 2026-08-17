@@ -148,6 +148,8 @@ Gameデータの「除外」はGitHubファイル物理削除とは別概念だ�
 `SOURCE_UPDATE`:
 
 - `package_manifest.json`が実体へ同期している
+- `SOURCE_UPDATE`のQuick / Fullは、更新ZIP単体だけでなく**正確な基準完全ソースへ適用した完成ツリー**でも合格している
+- 更新Gateには`--baseline-source`または`--baseline-zip`で基準ソースを明示し、`studio-update.json:baseline_source`のBuild / manifest SHA-256 / source tree SHA-256と一致している
 - 必要なQuick / Full / Release Gateが合格している
 - `studio-update.json`を含み`Export/`を含まない直接のStudio更新ZIPが作成されている
 

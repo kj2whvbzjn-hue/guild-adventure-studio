@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B619</title>
+<title>GK Studio GKS-B620</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.197 / GKS-B619</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.197 / GKS-B620</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.197 / Studio GKS-B619</div>
+    <div class="version">Game GA-B486.197 / Studio GKS-B620</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2212,11 +2212,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=619"></script>
+<script src="./layer-controller.js?v=620"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B619';
+const DISTRIBUTION_BUILD='GKS-B620';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -5740,6 +5740,11 @@ function base64ToUtf8(encoded){
  const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
  return new TextDecoder('utf-8').decode(bytes);
 }
+function base64ToBytes(encoded){
+ const clean=String(encoded||'').replace(/\s/g,'');
+ const binary=atob(clean);
+ return Uint8Array.from(binary,c=>c.charCodeAt(0));
+}
 const GH_RETRYABLE_STATUS=new Set([429,502,503,504]);
 const GH_READ_RETRY_LIMIT=3;
 function sleepMs(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
@@ -6462,6 +6467,37 @@ async function getGitHead(c){
  if(tree.truncated)throw new Error('GitHub Tree応答がtruncatedです。配置を停止しました。');
  return {repo,headSha:ref.object.sha,baseTreeSha:commit.tree.sha,tree};
 }
+async function verifyStudioDeployBaselineBinding(remote,base,meta){
+ const binding=meta?.baseline_source;
+ if(!binding||typeof binding!=='object')throw new Error('更新ZIPにbaseline_sourceがありません。正確な基準ソースで適用後Gateを通した更新ZIPを使用してください。');
+ const expectedManifest=String(binding.package_manifest_sha256||'').toLowerCase();
+ if(!/^[0-9a-f]{64}$/.test(expectedManifest))throw new Error('baseline_source.package_manifest_sha256が不正です。');
+ const blobs=(remote.tree.tree||[]).filter(x=>x.type==='blob');
+ const blobByPath=new Map(blobs.map(x=>[x.path,x]));
+ const manifestTarget=joinDeployPath(base,'package_manifest.json');
+ const buildTarget=joinDeployPath(base,'package-build.json');
+ const manifestNode=blobByPath.get(manifestTarget);
+ const buildNode=blobByPath.get(buildTarget);
+ if(!manifestNode)throw new Error(`GitHub基準に ${manifestTarget} がありません。更新を停止しました。`);
+ if(!buildNode)throw new Error(`GitHub基準に ${buildTarget} がありません。更新を停止しました。`);
+ const manifestBlob=await ghRequest(`${remote.repo}/git/blobs/${encodeURIComponent(manifestNode.sha)}`);
+ if(manifestBlob?.encoding!=='base64')throw new Error('GitHub package_manifest blobのencodingがbase64ではありません。');
+ const manifestBytes=base64ToBytes(manifestBlob.content);
+ const actualManifest=await sha256BytesHex(manifestBytes);
+ if(actualManifest!==expectedManifest){
+  throw new Error(`更新ZIPの基準とGitHub HEADが一致しません。package_manifest SHA-256 expected=${expectedManifest} actual=${actualManifest}。最新GitHubソースを再取得してGateを再実行してください。`);
+ }
+ const buildBlob=await ghRequest(`${remote.repo}/git/blobs/${encodeURIComponent(buildNode.sha)}`);
+ if(buildBlob?.encoding!=='base64')throw new Error('GitHub package-build blobのencodingがbase64ではありません。');
+ let remoteBuild;
+ try{remoteBuild=JSON.parse(new TextDecoder('utf-8').decode(base64ToBytes(buildBlob.content)))}
+ catch(e){throw new Error('GitHub package-build.jsonを解析できません。')}
+ if(remoteBuild?.game_build!==binding.game_build||remoteBuild?.studio_build!==binding.studio_build){
+  throw new Error(`更新ZIPの基準BuildとGitHub HEADが一致しません。expected=${binding.game_build}/${binding.studio_build} actual=${remoteBuild?.game_build}/${remoteBuild?.studio_build}`);
+ }
+ deployLogMessage(`基準一致: ${binding.game_build} / ${binding.studio_build} / package_manifest ${actualManifest.slice(0,12)}…`);
+ return {packageManifestSha256:actualManifest,gameBuild:remoteBuild.game_build,studioBuild:remoteBuild.studio_build};
+}
 async function prepareStudioDeployDiff(){
  const files=studioDeployFiles.filter(x=>!x.excluded);
  if(!files.length)throw new Error('配置可能なファイルがありません。');
@@ -6478,6 +6514,7 @@ async function prepareStudioDeployDiff(){
  try{
   saveGitHubSettings();
   const remote=await getGitHead(c);
+  await verifyStudioDeployBaselineBinding(remote,base,studioDeployMeta);
   const remoteBlobs=(remote.tree.tree||[]).filter(x=>x.type==='blob');
   const map=new Map(remoteBlobs.map(x=>[x.path,x.sha]));
   let add=0,modify=0,unchanged=0;
@@ -8045,7 +8082,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','619');
+    url.searchParams.set('appv','620');
     location.replace(url.toString());
    }
  }
@@ -8054,7 +8091,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=619',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=620',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8073,7 +8110,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','619');
+    url.searchParams.set('appv','620');
     location.replace(url.toString());
    }
   });

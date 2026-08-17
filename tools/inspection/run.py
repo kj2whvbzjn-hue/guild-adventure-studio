@@ -119,7 +119,15 @@ def syntax_steps(profile: str) -> Iterable[tuple[str, list[str], bool]]:
     yield ("python_syntax", [sys.executable, "-S", "-B", "-c", "import pathlib,sys; r=pathlib.Path(sys.argv[1]); fs=[p for p in r.rglob('*.py') if '.git' not in p.parts and '__pycache__' not in p.parts]; [compile(p.read_text(encoding='utf-8'),str(p),'exec') for p in fs]; print(f'PYTHON_SYNTAX_OK files={len(fs)}')", str(ROOT)], True)
 
 
-def build_steps(profile: str, release_output: Path | None, context: str) -> list[tuple[str, list[str], bool]]:
+def build_steps(
+    profile: str,
+    release_output: Path | None,
+    context: str,
+    baseline_source: Path | None = None,
+    baseline_zip: Path | None = None,
+    input_zip: Path | None = None,
+    timeout_seconds: int = 120,
+) -> list[tuple[str, list[str], bool]]:
     py = [sys.executable, "-S", "-B"]
     steps = [
         ("inspection_context", [*py, str(ROOT / "tools/inspection/check-context.py"), str(ROOT), "--context", context], True),
@@ -132,8 +140,24 @@ def build_steps(profile: str, release_output: Path | None, context: str) -> list
         ("critical_runtime", [*py, str(ROOT / "tools/integrity/check-critical-runtime.py"), str(ROOT)], True),
         ("package_manifest", [*py, str(ROOT / "tools/integrity/check-package-manifest.py"), str(ROOT)], True),
     ]
+    if input_zip is not None:
+        steps.insert(1, ("source_zip_binding", [*py, str(ROOT / "tools/inspection/check-source-zip-binding.py"), str(ROOT), "--input-zip", str(input_zip)], True))
     if context == "update":
         steps.insert(4, ("delete_manifest", [*py, str(ROOT / "tools/integrity/check-delete-manifest.py"), str(ROOT)], True))
+        if (baseline_source is None) == (baseline_zip is None):
+            raise ValueError("update context requires exactly one of --baseline-source or --baseline-zip")
+        applied_cmd = [
+            *py,
+            str(ROOT / "tools/inspection/check-source-update-application.py"),
+            str(ROOT),
+            "--final-gate", profile if profile in {"quick", "full"} else "full",
+            "--timeout", str(timeout_seconds),
+        ]
+        if baseline_source is not None:
+            applied_cmd.extend(["--baseline-source", str(baseline_source)])
+        else:
+            applied_cmd.extend(["--baseline-zip", str(baseline_zip)])
+        steps.append(("source_update_applied_state", applied_cmd, True))
     steps.extend(syntax_steps(profile))
     if profile in {"full", "release"}:
         steps.extend([
@@ -144,6 +168,7 @@ def build_steps(profile: str, release_output: Path | None, context: str) -> list
             ("deployment_map", [*py, str(ROOT / "tools/integrity/check-deployment-map.py"), str(ROOT)], True),
             ("root_surface", [*py, str(ROOT / "tools/integrity/check-root-surface.py"), str(ROOT)], True),
             ("full_framework_regression", [*py, str(ROOT / "tools/inspection/test-full-framework.py")], True),
+            ("source_update_application_regression", [*py, str(ROOT / "tools/inspection/test-source-update-application.py")], True),
             ("active_test_gate", [*py, str(ROOT / "tools/integrity/check-test-registry.py"), str(ROOT), "--context", context], True),
             ("github_candidate", [*py, str(ROOT / "tools/release/check-github-candidate.py")], True),
         ])
@@ -163,6 +188,9 @@ def main() -> int:
     parser.add_argument("--report", type=Path)
     parser.add_argument("--evidence-dir", type=Path)
     parser.add_argument("--input-zip", type=Path, help="Original ZIP used to create this source tree.")
+    baseline_group = parser.add_mutually_exclusive_group()
+    baseline_group.add_argument("--baseline-source", type=Path, help="Exact full source directory that this SOURCE_UPDATE will overlay.")
+    baseline_group.add_argument("--baseline-zip", type=Path, help="Exact full source ZIP that this SOURCE_UPDATE will overlay.")
     parser.add_argument("--release-output", type=Path)
     parser.add_argument("--context", choices=("auto", "source", "update"), default="auto")
     parser.add_argument("--timeout", type=int, default=120)
@@ -175,6 +203,9 @@ def main() -> int:
         report_path = assert_outside_root(args.report, "--report") if args.report else None
         evidence_dir = assert_outside_root(args.evidence_dir, "--evidence-dir") if args.evidence_dir else Path(tempfile.mkdtemp(prefix="gk-inspection-evidence-")).resolve()
         release_output = assert_outside_root(args.release_output, "--release-output") if args.release_output else None
+        input_zip = assert_outside_root(args.input_zip, "--input-zip") if args.input_zip else None
+        baseline_source = assert_outside_root(args.baseline_source, "--baseline-source") if args.baseline_source else None
+        baseline_zip = assert_outside_root(args.baseline_zip, "--baseline-zip") if args.baseline_zip else None
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -192,19 +223,29 @@ def main() -> int:
         "schema_version": 1,
         "input_type": "zip" if args.input_zip else "directory",
         "root": str(ROOT),
-        "input_zip": str(args.input_zip.resolve()) if args.input_zip else None,
+        "input_zip": str(input_zip) if input_zip else None,
+        "baseline_source": str(baseline_source) if baseline_source else None,
+        "baseline_zip": str(baseline_zip) if baseline_zip else None,
         "started_at": utc_now(),
     })
-    if args.input_zip:
-        if not args.input_zip.is_file():
-            parser.error(f"--input-zip not found: {args.input_zip}")
-        write_json(evidence_dir / "zip-entries.json", zip_entries(args.input_zip))
+    if input_zip:
+        if not input_zip.is_file():
+            parser.error(f"--input-zip not found: {input_zip}")
+        write_json(evidence_dir / "zip-entries.json", zip_entries(input_zip))
 
     started = time.time()
     results = []
     setup_error = None
     try:
-        steps = build_steps(args.profile, release_output, context)
+        steps = build_steps(
+            args.profile,
+            release_output,
+            context,
+            baseline_source=baseline_source,
+            baseline_zip=baseline_zip,
+            input_zip=input_zip,
+            timeout_seconds=args.timeout,
+        )
     except ValueError as exc:
         steps = []
         setup_error = str(exc)
@@ -274,7 +315,7 @@ def main() -> int:
         "source_tree_before_sha256": before["tree_sha256"],
         "source_tree_after_sha256": after["tree_sha256"],
         "source_tree_unchanged": delta["unchanged"],
-        "input_zip_sha256": zip_entries(args.input_zip)["zip_sha256"] if args.input_zip else None,
+        "input_zip_sha256": zip_entries(input_zip)["zip_sha256"] if input_zip else None,
         "summary": {
             "passed": sum(r["status"] == "pass" for r in results),
             "failed": len(failed),

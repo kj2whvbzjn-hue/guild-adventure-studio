@@ -34,7 +34,8 @@
 ## 検査
 
 - 通常ソース編集後は`quick`を実行する。
-- GitHub配置前は`full --context update`を実行する。
+- GitHub配置前は`full --context update`を実行し、`--baseline-source`または`--baseline-zip`で正確な基準完全ソースを必ず指定する。
+- `SOURCE_UPDATE`は更新ZIP単体の整合性だけで合格扱いにせず、基準ソースへoverlayした適用後完成ツリーのSource Gateまで合格させる。
 - 公開前は`release`を実行する。
 - GameデータはStudioの全件読込Pre-flightとGameデータ配置の正式Export / 参照 / 差分Gateを使用する。
 - 必須検査の失敗を無視して配置しない。

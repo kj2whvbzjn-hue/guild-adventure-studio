@@ -75,7 +75,10 @@ GitHubへStudio更新画面から配置する更新ZIPは次を満たす。
 - `DELETE_MANIFEST.txt`は今回分だけを記載する。通常更新では削除0件とする。
 - 削除がある場合は有効な`DELETE_APPROVAL.json`を含む。
 - `package_manifest.json`を実体に同期する。
-- `python3 tools/inspection/run.py full --context update`に合格する。
+- `studio-update.json`へ`baseline_source`（基準Game/Studio Build、`package_manifest.json` SHA-256、完全ソースtree SHA-256）を記録する。
+- `python3 tools/inspection/run.py full --context update --baseline-source <exact-baseline-root>`、または`--baseline-zip <exact-baseline.zip>`に合格する。基準指定なしの`update` Gateは不合格とする。
+- update GateはZIP単体の整合性に加え、基準完全ソースへStudioと同じ分類規則でoverlayした**適用後完成ツリー**へSource Gateを再実行する。ZIPにない既存persistentファイルは削除承認がない限り残るものとして検査する。
+- StudioのGitHub差分解析でも、`baseline_source.package_manifest_sha256`と配置先HEADの`package_manifest.json` SHA-256、および基準Buildを照合する。基準が変化している場合は配置しない。
 - 必要な場合はrelease Gateに合格する。
 - ZIP整合性・UTF-8/NFC検査に合格する。
 

@@ -28,6 +28,37 @@ GitHubへ配置する前に実行する。quickに加え、構成、共有資産
 python3 -S -B tools/inspection/run.py full --report reports/inspection-full.json
 ```
 
+
+## SOURCE_UPDATEの適用後Gate
+
+`SOURCE_UPDATE`は更新ZIP単体のFull PASSだけでは配置可としない。Studio更新はZIPに含まれないGitHub既存ファイルを保持するため、更新ZIPとその`package_manifest.json`だけが相互に整合していても、適用後の完全ソースで未登録ファイルが発生し得る。
+
+そのため`--context update`では、**更新対象となる正確な完全ソース基準**を必須指定する。
+
+```bash
+python3 -S -B tools/inspection/run.py full \
+  --context update \
+  --baseline-source /path/to/exact-baseline-source
+```
+
+GitHub Download ZIPを直接基準にする場合: 
+
+```bash
+python3 -S -B tools/inspection/run.py full \
+  --context update \
+  --baseline-zip /path/to/exact-baseline.zip
+```
+
+Gateは次を行う。
+
+1. 基準ソース自身のSource Contextと`package_manifest.json`整合性を確認する。
+2. `studio-update.json:baseline_source`のBuild、manifest SHA-256、完全source tree SHA-256が基準と一致することを確認する。
+3. 更新ZIPのうち`system-file-policy.json`で`persistent`に分類されたファイルだけを基準へoverlayする。ルート`Export/**`は`game_data`としてoverlayしない。`cpf/src/Export/**`のようなネストした`Export`ディレクトリは通常の`persistent`ソースである。
+4. 承認済み`DELETE_MANIFEST.txt`の完全一致パスだけを適用後ツリーから削除する。
+5. 完成ツリーへ通常のSource Quick / Full Gateを再実行する。
+
+基準指定なしの`--context update`はsetup errorで停止する。これにより「更新ZIPから誤ってpersistentファイルを落とし、manifestからも同時に落としたためZIP単体ではPASSする」状態を配置前に検出する。
+
 ## release
 
 公開パッケージを作る直前に実行する。fullに加え、GitHub Pages ZIPを生成してZIP整合性を検査する。

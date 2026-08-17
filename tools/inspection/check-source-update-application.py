@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+"""Validate a SOURCE_UPDATE against the exact source baseline it will overlay.
+
+The Studio deployer uploads only files classified as ``persistent`` from the
+update ZIP. Files omitted from the ZIP remain on GitHub unless they are listed
+in an approved DELETE_MANIFEST. Therefore an update package can be internally
+self-consistent while still producing an invalid deployed tree.
+
+This checker reproduces that overlay model in a temporary directory and then
+runs the normal source inspection against the *applied* tree.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path, PurePosixPath
+import shutil
+import subprocess
+import sys
+import tempfile
+from zipfile import ZipFile, ZipInfo
+
+sys.dont_write_bytecode = True
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from system_file_policy import classify, load_policy  # noqa: E402
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def source_tree_sha256(root: Path) -> str:
+    """Stable digest of the full source tree, including managed Export data."""
+    records: list[str] = []
+    for path in sorted(root.rglob("*"), key=lambda p: p.relative_to(root).as_posix()):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel = path.relative_to(root).as_posix()
+        records.append(f"{rel}\0{path.stat().st_size}\0{sha256_file(path)}")
+    return hashlib.sha256("\n".join(records).encode("utf-8")).hexdigest()
+
+
+def common_top_level(file_names: list[str]) -> str | None:
+    tops: list[str] = []
+    for name in file_names:
+        parts = PurePosixPath(name).parts
+        if parts:
+            tops.append(parts[0])
+    return tops[0] if tops and len(set(tops)) == 1 else None
+
+
+def strip_top(name: str, top: str | None) -> str:
+    parts = PurePosixPath(name).parts
+    if top and parts and parts[0] == top:
+        parts = parts[1:]
+    return PurePosixPath(*parts).as_posix() if parts else ""
+
+
+def zipinfo_is_symlink(info: ZipInfo) -> bool:
+    # Upper 16 bits carry the Unix mode when present.
+    mode = (info.external_attr >> 16) & 0xFFFF
+    return (mode & 0o170000) == 0o120000
+
+
+def extract_source_zip(zip_path: Path, destination: Path) -> None:
+    with ZipFile(zip_path) as zf:
+        infos = [info for info in zf.infolist() if not info.is_dir()]
+        names = [info.filename.replace("\\", "/") for info in infos]
+        top = common_top_level(names)
+        seen: set[str] = set()
+        for info, raw_name in zip(infos, names):
+            if zipinfo_is_symlink(info):
+                raise ValueError(f"BASELINE_ZIP_SYMLINK {raw_name}")
+            rel = strip_top(raw_name, top)
+            if not rel:
+                continue
+            posix = PurePosixPath(rel)
+            if posix.is_absolute() or ".." in posix.parts or "" in posix.parts:
+                raise ValueError(f"BASELINE_ZIP_UNSAFE_PATH {raw_name}")
+            if rel in seen:
+                raise ValueError(f"BASELINE_ZIP_DUPLICATE_PATH {rel}")
+            seen.add(rel)
+            target = destination / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(zf.read(info))
+
+
+def run_checked(command: list[str], cwd: Path, timeout: int = 180) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env.pop("PYTHONPYCACHEPREFIX", None)
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        env=env,
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+    )
+
+
+def parse_delete_manifest(update_root: Path) -> list[str]:
+    path = update_root / "DELETE_MANIFEST.txt"
+    if not path.is_file():
+        return []
+    out: list[str] = []
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
+        rel = raw.strip()
+        if rel and not rel.startswith("#"):
+            out.append(PurePosixPath(rel).as_posix())
+    return out
+
+
+def validate_baseline_binding(update_root: Path, baseline_root: Path, errors: list[str]) -> dict:
+    meta_path = update_root / "studio-update.json"
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"UPDATE_METADATA_INVALID {exc}")
+        return {}
+    binding = meta.get("baseline_source")
+    if not isinstance(binding, dict):
+        errors.append("BASELINE_BINDING_MISSING studio-update.json:baseline_source")
+        return {}
+    try:
+        build = json.loads((baseline_root / "package-build.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        errors.append(f"BASELINE_PACKAGE_BUILD_INVALID {exc}")
+        build = {}
+    expected_game = binding.get("game_build")
+    expected_studio = binding.get("studio_build")
+    if expected_game != build.get("game_build"):
+        errors.append(
+            f"BASELINE_GAME_BUILD_MISMATCH expected={expected_game!r} actual={build.get('game_build')!r}"
+        )
+    if expected_studio != build.get("studio_build"):
+        errors.append(
+            f"BASELINE_STUDIO_BUILD_MISMATCH expected={expected_studio!r} actual={build.get('studio_build')!r}"
+        )
+    manifest_path = baseline_root / "package_manifest.json"
+    actual_manifest_sha = sha256_file(manifest_path) if manifest_path.is_file() else None
+    expected_manifest_sha = binding.get("package_manifest_sha256")
+    if expected_manifest_sha != actual_manifest_sha:
+        errors.append(
+            "BASELINE_PACKAGE_MANIFEST_SHA256_MISMATCH "
+            f"expected={expected_manifest_sha!r} actual={actual_manifest_sha!r}"
+        )
+    actual_tree_sha = source_tree_sha256(baseline_root)
+    expected_tree_sha = binding.get("source_tree_sha256")
+    if expected_tree_sha != actual_tree_sha:
+        errors.append(
+            f"BASELINE_SOURCE_TREE_SHA256_MISMATCH expected={expected_tree_sha!r} actual={actual_tree_sha!r}"
+        )
+    return {
+        "game_build": build.get("game_build"),
+        "studio_build": build.get("studio_build"),
+        "package_manifest_sha256": actual_manifest_sha,
+        "source_tree_sha256": actual_tree_sha,
+    }
+
+
+def apply_update(update_root: Path, baseline_root: Path, applied_root: Path, errors: list[str]) -> dict:
+    shutil.copytree(baseline_root, applied_root, dirs_exist_ok=True)
+    policy = load_policy(update_root)
+    allowed_upload = set(policy.get("rules", {}).get("studio_upload_classes", ["persistent"]))
+    copied: list[str] = []
+    skipped: list[str] = []
+    forbidden: list[str] = []
+    game_data_update_paths: list[str] = []
+
+    for path in sorted(update_root.rglob("*"), key=lambda p: p.relative_to(update_root).as_posix()):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel = path.relative_to(update_root).as_posix()
+        file_class = classify(rel, policy)
+        if file_class == "game_data":
+            game_data_update_paths.append(rel)
+        if file_class in allowed_upload:
+            target = applied_root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+            copied.append(rel)
+        else:
+            skipped.append(rel)
+            if file_class not in {"update_only"}:
+                forbidden.append(f"{file_class}:{rel}")
+
+    if game_data_update_paths:
+        errors.append("UPDATE_CONTAINS_GAME_DATA " + ",".join(game_data_update_paths[:20]))
+    if forbidden:
+        errors.append("UPDATE_CONTAINS_NONUPLOADABLE " + ",".join(forbidden[:20]))
+
+    # Deletion policy is validated independently by check-delete-manifest.py in
+    # the normal update Gate. Here we reproduce the intended applied state.
+    deleted: list[str] = []
+    missing_delete_targets: list[str] = []
+    for rel in parse_delete_manifest(update_root):
+        target = applied_root / rel
+        if target.is_file() or target.is_symlink():
+            target.unlink()
+            deleted.append(rel)
+        elif target.exists() and target.is_dir():
+            errors.append(f"DELETE_TARGET_DIRECTORY_FORBIDDEN {rel}")
+        else:
+            missing_delete_targets.append(rel)
+
+    # Source updates must never mutate baseline game data. The update-only
+    # metadata is intentionally not copied into the applied source tree.
+    changed_game_data: list[str] = []
+    for path in baseline_root.rglob("*"):
+        if not path.is_file() or ".git" in path.parts:
+            continue
+        rel = path.relative_to(baseline_root).as_posix()
+        if classify(rel, policy) != "game_data":
+            continue
+        other = applied_root / rel
+        if not other.is_file() or sha256_file(path) != sha256_file(other):
+            changed_game_data.append(rel)
+    if changed_game_data:
+        errors.append("APPLIED_GAME_DATA_CHANGED " + ",".join(changed_game_data[:20]))
+
+    return {
+        "copied_persistent_count": len(copied),
+        "skipped_update_only_count": sum(1 for rel in skipped if classify(rel, policy) == "update_only"),
+        "deleted_count": len(deleted),
+        "missing_delete_targets": missing_delete_targets,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("update_root", type=Path)
+    baseline = parser.add_mutually_exclusive_group(required=True)
+    baseline.add_argument("--baseline-source", type=Path)
+    baseline.add_argument("--baseline-zip", type=Path)
+    parser.add_argument("--final-gate", choices=("manifest", "quick", "full"), default="full")
+    parser.add_argument("--json-output", type=Path)
+    parser.add_argument("--timeout", type=int, default=180)
+    args = parser.parse_args()
+
+    update_root = args.update_root.resolve()
+    errors: list[str] = []
+    report: dict = {
+        "schema_version": 1,
+        "update_root": str(update_root),
+        "final_gate": args.final_gate,
+        "status": "fail",
+    }
+
+    if not update_root.is_dir():
+        print("SOURCE_UPDATE_APPLIED_STATE_FAIL")
+        print(f"UPDATE_ROOT_NOT_FOUND {update_root}")
+        return 1
+
+    with tempfile.TemporaryDirectory(prefix="gk-source-update-apply-") as td:
+        temp = Path(td)
+        baseline_root: Path
+        if args.baseline_source:
+            baseline_root = args.baseline_source.resolve()
+            if not baseline_root.is_dir():
+                errors.append(f"BASELINE_SOURCE_NOT_FOUND {baseline_root}")
+        else:
+            baseline_zip = args.baseline_zip.resolve()
+            baseline_root = temp / "baseline"
+            baseline_root.mkdir(parents=True)
+            if not baseline_zip.is_file():
+                errors.append(f"BASELINE_ZIP_NOT_FOUND {baseline_zip}")
+            else:
+                try:
+                    extract_source_zip(baseline_zip, baseline_root)
+                except Exception as exc:
+                    errors.append(f"BASELINE_ZIP_EXTRACT_FAIL {exc}")
+
+        if not errors:
+            # A broken baseline cannot be used to certify an update.
+            baseline_context = run_checked(
+                [sys.executable, "-S", "-B", str(baseline_root / "tools/inspection/check-context.py"), str(baseline_root), "--context", "source"],
+                baseline_root,
+                args.timeout,
+            )
+            if baseline_context.returncode != 0:
+                errors.append("BASELINE_CONTEXT_INVALID\n" + (baseline_context.stdout + baseline_context.stderr).strip())
+            baseline_manifest = run_checked(
+                [sys.executable, "-S", "-B", str(baseline_root / "tools/integrity/check-package-manifest.py"), str(baseline_root)],
+                baseline_root,
+                args.timeout,
+            )
+            if baseline_manifest.returncode != 0:
+                errors.append("BASELINE_PACKAGE_MANIFEST_INVALID\n" + (baseline_manifest.stdout + baseline_manifest.stderr).strip())
+
+        if not errors:
+            report["baseline"] = validate_baseline_binding(update_root, baseline_root, errors)
+
+        applied_root = temp / "applied"
+        if not errors:
+            report["application"] = apply_update(update_root, baseline_root, applied_root, errors)
+
+        final_proc: subprocess.CompletedProcess[str] | None = None
+        if not errors:
+            if args.final_gate == "manifest":
+                final_command = [
+                    sys.executable, "-S", "-B",
+                    str(applied_root / "tools/integrity/check-package-manifest.py"),
+                    str(applied_root),
+                ]
+            else:
+                final_command = [
+                    sys.executable, "-S", "-B",
+                    str(applied_root / "tools/inspection/run.py"),
+                    args.final_gate,
+                    "--context", "source",
+                    "--timeout", str(args.timeout),
+                ]
+            final_proc = run_checked(final_command, applied_root, max(args.timeout, 180))
+            report["applied_tree_sha256"] = source_tree_sha256(applied_root)
+            report["final_gate_returncode"] = final_proc.returncode
+            if final_proc.returncode != 0:
+                errors.append("APPLIED_SOURCE_GATE_FAILED\n" + (final_proc.stdout + final_proc.stderr).strip())
+
+    report["status"] = "fail" if errors else "pass"
+    report["errors"] = errors
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        args.json_output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    if errors:
+        print("SOURCE_UPDATE_APPLIED_STATE_FAIL")
+        print("\n".join(errors))
+        return 1
+    print(
+        "SOURCE_UPDATE_APPLIED_STATE_OK "
+        f"final_gate={args.final_gate} copied={report['application']['copied_persistent_count']} "
+        f"deleted={report['application']['deleted_count']} applied_tree_sha256={report['applied_tree_sha256']}"
+    )
+    if final_proc and final_proc.stdout:
+        # Keep the nested result visible without flooding the normal success path.
+        tail = [line for line in final_proc.stdout.splitlines() if line.startswith("INSPECTION_")]
+        if tail:
+            print("APPLIED_" + tail[-1])
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
