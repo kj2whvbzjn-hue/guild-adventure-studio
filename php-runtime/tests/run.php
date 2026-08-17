@@ -92,18 +92,19 @@ function expectLoaderError(string $name, callable $loaderFactory, string $source
 try {
     $pkg = (new ExportLoader(['1.0.0']))->load($source);
     report('valid package loads', count($pkg->paths()) === $officialPathCount, 'loaded ' . count($pkg->paths()) . ' files');
-    $formalSkill = $pkg->document('skill/skills.json');
-    report('Formal Skill v2 envelope loads independently from package metadata',
-        ($formalSkill['schema_version'] ?? null) === '2.0.0'
-        && ($formalSkill['data_version'] ?? null) === 'FORMAL-SKILL-1'
-        && is_array($formalSkill['migration'] ?? null)
+    $skillDoc = $pkg->document('skill/skills.json');
+    report('skill Export uses current package envelope metadata',
+        ($skillDoc['schema_version'] ?? null) === ($pkg->manifest['schema_version'] ?? null)
+        && ($skillDoc['data_version'] ?? null) === ($pkg->manifest['data_version'] ?? null)
+        && ($skillDoc['generated_at'] ?? null) === ($pkg->manifest['generated_at'] ?? null)
+        && ($skillDoc['generated_by'] ?? null) === ($pkg->manifest['generated_by'] ?? null)
     );
     report('CPF auxiliary payload is excluded from runtime document set',
         is_dir($source . '/cpf') && !in_array('cpf/bootstrap.php', $pkg->paths(), true)
     );
 } catch (Throwable $e) {
     report('valid package loads', false, $e->getMessage());
-    report('Formal Skill v2 envelope loads independently from package metadata', false, $e->getMessage());
+    report('skill Export uses current package envelope metadata', false, $e->getMessage());
     report('CPF auxiliary payload is excluded from runtime document set', false, $e->getMessage());
 }
 
@@ -222,6 +223,18 @@ expectError('wrong field type is rejected by data schema', $source, function (st
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{$doc['data']=[['id'=>'JOB001','name'=>'騎士','str'=>'11']];});
 }, 'DATA_SCHEMA_INVALID');
 
+expectError('AI node refs must be an object', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'ai/ai_nodes.json', function(array &$doc):void{$doc['refs']=['invalid'];});
+}, 'ENVELOPE_INVALID');
+
+expectError('AI node refs reject unknown fields', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'ai/ai_nodes.json', function(array &$doc):void{$doc['refs']['unknown']=[];});
+}, 'ENVELOPE_INVALID');
+
+expectError('AI node refs fields must be lists', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'ai/ai_nodes.json', function(array &$doc):void{$doc['refs']['tags']=['id'=>'TAG001'];});
+}, 'ENVELOPE_INVALID');
+
 expectError('negative known numeric value is rejected', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{$doc['data']=[['id'=>'SK001','name'=>'斬撃','power'=>-1]];});
 }, 'DATA_SCHEMA_INVALID');
@@ -284,9 +297,16 @@ expectError('missing equipment MOD reference is rejected', $source, function (st
     });
 }, 'REFERENCE_NOT_FOUND');
 
-expectError('missing quest monster reference is rejected', $source, function (string $tmp): void {
-    rewriteJsonAndManifest($tmp, 'quest/main_quests.json', function(array &$doc):void{
-        $doc['data'] = [['id'=>'MQ001','name'=>'依頼','monster_id'=>'MON999']];
+expectError('missing current Flag reference is rejected', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'event/events.json', function(array &$doc):void{
+        $doc['data'] = [[
+            'id'=>'EV-MISSING-FLAG',
+            'name'=>'Missing Flag reference',
+            'usage'=>'story',
+            'type'=>'special',
+            'required_flags'=>['FLG-MISSING'],
+            'set_flags'=>[]
+        ]];
     });
 }, 'REFERENCE_NOT_FOUND');
 
@@ -362,11 +382,11 @@ expectError('extra envelope field is rejected', $source, function (string $tmp):
     rewriteJsonAndManifest($tmp, 'master/jobs.json', function(array &$doc):void{ $doc['unexpected'] = true; });
 }, 'ENVELOPE_INVALID');
 
-expectError('Formal Skill v2 rejects unsupported data_version', $source, function (string $tmp): void {
-    rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['data_version'] = 'FORMAL-SKILL-999'; });
-}, 'DATA_VERSION_UNSUPPORTED');
+expectError('skill Export data_version must match package metadata', $source, function (string $tmp): void {
+    rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['data_version'] = 'invalid-current-data-version'; });
+}, 'DATA_VERSION_MISMATCH');
 
-expectError('Formal Skill v2 rejects unsupported envelope fields', $source, function (string $tmp): void {
+expectError('skill Export rejects unsupported envelope fields', $source, function (string $tmp): void {
     rewriteJsonAndManifest($tmp, 'skill/skills.json', function(array &$doc):void{ $doc['unexpected'] = true; });
 }, 'ENVELOPE_INVALID');
 
@@ -392,7 +412,7 @@ expectLoaderError('individual JSON size limit stops startup',
 );
 
 expectLoaderError('Export total size limit stops startup',
-    fn(): ExportLoader => new ExportLoader(['1.0.0'], manifestMaxBytes: 4_000, fileMaxBytes: 16_777_216, exportMaxBytes: 4_000),
+    fn(): ExportLoader => new ExportLoader(['1.0.0'], manifestMaxBytes: 8_192, fileMaxBytes: 16_777_216, exportMaxBytes: 8_192),
     $source,
     'EXPORT_TOTAL_TOO_LARGE'
 );
@@ -614,8 +634,8 @@ expectLoaderError('Export total size limit stops startup',
             ['id'=>'SEC002','chapter_id'=>'CH001','order'=>1,'boss_flag'=>true]
         ];});
         rewriteJsonAndManifest($tmp,'event/events.json',function(array &$doc):void{$doc['data']=[
-            ['id'=>'EV001','order'=>1,'required_flag_ids'=>['FLAG_A']],
-            ['id'=>'EV002','order'=>2,'set_flag_ids'=>['FLAG_A']]
+            ['id'=>'EV001','name'=>'Flag require before set','usage'=>'story','type'=>'special','required_flags'=>['FLG-0001'],'set_flags'=>[]],
+            ['id'=>'EV002','name'=>'Flag set later','usage'=>'story','type'=>'special','required_flags'=>[],'set_flags'=>['FLG-0001']]
         ];});
         $pkg=(new ExportLoader(['1.0.0']))->load($tmp);$r=(new \GK\Export\ScenarioValidator())->validate($pkg);
         $codes=array_column($r['findings'],'code');

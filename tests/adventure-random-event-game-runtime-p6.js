@@ -15,7 +15,6 @@ for(const token of [
  'checkEventCondition:adventureEventCondition',
  'resolveEvent:adventureEventResult'
 ])assert(app.includes(token),`P6 Game integration missing: ${token}`);
-assert(!app.includes("FORMAL_QUEST_RANDOM_EVENT_PENDING:'Random EventはP6で実行対応'"),'P5 Random Event pending import block must be retired');
 
 for(const token of [
  'function randomEventCandidates(events,placement,flags={},check,questContext={})',

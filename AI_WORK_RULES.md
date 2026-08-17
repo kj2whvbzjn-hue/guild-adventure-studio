@@ -34,10 +34,15 @@
 ## 検査
 
 - 通常ソース編集後は`quick`を実行する。
-- GitHub配置前は`full --context update`を実行する。
+- GitHub配置前は`accept --context update`を実行し、`--baseline-source`または`--baseline-zip`で正確な基準完全ソースを必ず指定する。`accept`はImpact判定が不確実・安全重要・受入基準変更の場合に自動でFullへ昇格する。
+- `SOURCE_UPDATE`は更新ZIP単体の整合性だけで合格扱いにせず、基準ソースへoverlayした適用後完成ツリーのSource Gateまで合格させる。
+- `studio-update.json`には`baseline_source`に加えて`target_source`と`artifact_id`を必須とし、targetは適用後完成ツリーと完全一致させる。Studio Buildはbaselineより必ず前進させ、同一Build番号の別成果物・再適用・逆行を禁止する。
 - 公開前は`release`を実行する。
 - GameデータはStudioの全件読込Pre-flightとGameデータ配置の正式Export / 参照 / 差分Gateを使用する。
 - 必須検査の失敗を無視して配置しない。
+- `SOURCE_UPDATE`の通常受入では、更新ZIP単体と適用後完成ツリーで同じFullを二重実行しない。機能検査は適用後完成ツリーで1回だけ行い、ZIP結合はSHA-256/パス/サイズで検証する。
+- `tests/**`、Gate、Schema、test registry、integrity policy等の保護資産を変更・削除・新規追加する場合はTest Integrity Gateを先に通す。Build tokenだけの追随を除き、完全一致パス・旧新SHA-256・理由を持つ**更新ZIP外の**`TEST_CHANGE_APPROVAL.json`とStudio配置時の別人間確認が必要である。承認JSONを更新ZIPへ同梱してはならない。
+- テスト失敗やtimeoutを理由にassert、期待値、skip条件、Gateを変更しない。timeoutは`failure_kind=timeout`としてFAILのまま分類し、原因テストを特定して実装またはテスト性能を直す。
 
 ## 成果物提出
 
@@ -61,6 +66,13 @@
 - GitHubファイル削除0件を通常条件とする。
 - 配置後はGameで「Storyデータを再読込」し、新規QuestRunで確認する。
 - QuestRun開始時に確定したRandom Event / Monster / Rewardを再表示時に再抽選しない。
+
+## Studioキャッシュ安全（必須）
+
+- Studioの同一オリジンGETはオンライン時にnetwork-firstで取得し、キャッシュは通信失敗時のfallbackとしてだけ使う。
+- `?v=` 等の手動クエリ値を最新版保証の正本として扱わない。個別ファイル変更時の手動cache-bust更新へ依存しない。
+- Service WorkerのprecacheはHTTPキャッシュを再利用せずfresh取得する。
+- `studio_cache_policy` GateをQuick / Fullで必須とし、同一オリジンをcache-firstへ戻す変更、`no-store`を外す変更、Studio BuildとService Worker登録/namespaceの不整合はFAILとする。
 
 ## 文字化け防止（iPhone運用・必須）
 

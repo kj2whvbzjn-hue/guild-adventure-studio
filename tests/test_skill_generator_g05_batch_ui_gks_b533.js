@@ -1,7 +1,10 @@
 const fs=require('fs'),assert=require('assert'),vm=require('vm');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.game_build,'GA-B486.182');
-assert.strictEqual(build.studio_build,'GKS-B590');
+const runtimeConfig=fs.readFileSync('assets/shared/config/runtime-config.js','utf8');
+const runtimeGameBuild=runtimeConfig.match(/gameBuild:\s*"([^"]+)"/)?.[1]||'';
+const runtimeStudioBuild=runtimeConfig.match(/studioBuild:\s*"([^"]+)"/)?.[1]||'';
+assert.strictEqual(build.game_build,runtimeGameBuild,'package-build game_build must match shared runtime-config');
+assert.strictEqual(build.studio_build,runtimeStudioBuild,'package-build studio_build must match shared runtime-config');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const budgetRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-budget-rules.json','utf8'));
 const aiRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-ai-generation-rules.json','utf8'));

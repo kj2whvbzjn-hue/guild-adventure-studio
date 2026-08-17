@@ -7,7 +7,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (Validator, Adapter, root) {
   'use strict';
   if (!Validator || !Adapter) throw new Error('AI validator and master adapter are required');
-  const COMPILER_VERSION='1.0.0';
+  const COMPILER_VERSION='1.1.0';
   class CompilerError extends Error { constructor(message,issues){super(message);this.name='AIProgramCompilerError';this.issues=issues||[];} }
   function canonical(value) {
     if(Array.isArray(value))return value.map(canonical);
@@ -41,7 +41,9 @@
       if(node.node_type==='condition'){
         const yes=edges.find((edge)=>edge.from.port_id==='true'),no=edges.find((edge)=>edge.from.port_id==='false');
         base.on_true=yes?instructionId.get(yes.to.node_id)||null:null;base.on_false=no?instructionId.get(no.to.node_id)||null:null;
-      }else{const next=edges[0];base.next=next?instructionId.get(next.to.node_id)||null:null;}
+      }else if(node.node_type==='target'){
+        const next=edges.find((edge)=>edge.from.port_id==='next');base.next=next?instructionId.get(next.to.node_id)||null:null;
+      }
       return base;
     });
     const sourceMap={};order.forEach((node)=>{sourceMap[instructionId.get(node.instance_id)]=node.instance_id;});

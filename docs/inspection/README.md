@@ -28,6 +28,70 @@ GitHubへ配置する前に実行する。quickに加え、構成、共有資産
 python3 -S -B tools/inspection/run.py full --report reports/inspection-full.json
 ```
 
+
+
+## accept — SOURCE_UPDATEの通常受入
+
+SOURCE_UPDATEのGitHub配置前は、重いFullを機械的に二重実行せず、次の3段階を1つの受入として実行する。
+
+1. **Integrity**: baseline binding、package manifest、Encoding、削除境界、保護テスト/Gate/Schemaの改変を先に確認する。
+2. **Impact**: 基準ソースとの差分を保守的に分類し、影響テストだけを選択する。分類不能・共通基盤・Schema・Gate・受入基準変更は自動的にFullへ昇格する。
+3. **Full**: Impact plannerがFullを要求した場合、またはrelease時だけ実行する。SOURCE_UPDATEでは適用後完成ツリーに対して1回だけ実行し、更新ZIP単体と完成ツリーで同じFullを重複実行しない。
+
+```bash
+python3 -S -B tools/inspection/run.py accept \
+  --context update \
+  --baseline-source /path/to/exact-baseline-source
+```
+
+`accept`は安全強度を下げる軽量モードではない。Impact ruleに確信がない差分は`fallback=full`で必ずFullへ昇格する。公開前の`release`は従来どおりFullを含む。
+
+### Test Integrity / Anti-Tampering
+
+`shared/integrity/test-integrity-policy.json`により、既存の`tests/**`、`tools/inspection/**`、`tools/integrity/**`、`shared/integrity/**`、`shared/tests/test-registry.json`、`schemas/**`等をbaseline基準で保護する。
+
+- Build識別子・そこから導出されるcache tokenだけが変化し、正規化後の全バイトが同一ならBuild追随として許可する。
+- 明示許可された機械生成hash台帳（現在は`shared/integrity/critical-runtime-manifest.json`）は、既存entryの構造・path集合・順序が不変で、変更された`size` / `sha256`がbaseline/applied実ファイルの再計算値と完全一致するとGate自身が証明した場合だけ承認不要とする。path追加・削除・変更、非派生フィールド変更、捏造hashは通常の保護変更として扱う。
+- それ以外の保護ファイルの変更・削除・新規追加は、更新ZIP外の`TEST_CHANGE_APPROVAL.json`による完全一致パス、baseline SHA-256、updated SHA-256、理由を必須とする。更新ZIP内の承認JSONは拒否する。
+- Studio配置時にもGitHub HEADからhashを再計算し、保護変更がある場合は通常の配置確認とは別の人間確認を要求する。
+- 追加テスト自体は追加可能だが、release test registryを変更する場合はregistryが保護対象なので承認が必要になる。
+- タイムアウト、テスト失敗、成果物不合格は保護テスト改変の承認理由にはならない。仕様変更として人間が明示承認した場合だけ別扱いにする。
+
+### Timeout分類
+
+各release testには個別timeoutを設定し、停止したテスト名を`RELEASE_TEST_TIMEOUT`として特定する。Inspection結果では`failure_kind=timeout`、return code 124として記録し、通常のassertion failureと区別する。ただし必須GateとしてはどちらもFAILであり、timeoutを黙ってskip/warnへ降格しない。
+
+## SOURCE_UPDATEの適用後Gate
+
+`SOURCE_UPDATE`は更新ZIP単体のFull PASSだけでは配置可としない。Studio更新はZIPに含まれないGitHub既存ファイルを保持するため、更新ZIPとその`package_manifest.json`だけが相互に整合していても、適用後の完全ソースで未登録ファイルが発生し得る。
+
+そのため`--context update`では、**更新対象となる正確な完全ソース基準**を必須指定する。
+
+```bash
+python3 -S -B tools/inspection/run.py accept \
+  --context update \
+  --baseline-source /path/to/exact-baseline-source
+```
+
+GitHub Download ZIPを直接基準にする場合: 
+
+```bash
+python3 -S -B tools/inspection/run.py accept \
+  --context update \
+  --baseline-zip /path/to/exact-baseline.zip
+```
+
+Gateは次を行う。
+
+1. 基準ソース自身のSource Contextと`package_manifest.json`整合性を確認する。
+2. `studio-update.json:baseline_source`のBuild、manifest SHA-256、完全source tree SHA-256が基準と一致することを確認する。
+3. `target_source`と`artifact_id`が適用後完成ツリーへ一致し、target Studio Buildがbaselineより前進していることを確認する。同一Build番号の成果物再利用はFAILとする。
+3. 更新ZIPのうち`system-file-policy.json`で`persistent`に分類されたファイルだけを基準へoverlayする。ルート`Export/**`は`game_data`としてoverlayしない。`cpf/src/Export/**`のようなネストした`Export`ディレクトリは通常の`persistent`ソースである。
+4. 承認済み`DELETE_MANIFEST.txt`の完全一致パスだけを適用後ツリーから削除する。
+5. 完成ツリーへ通常のSource Quick / Full Gateを再実行する。
+
+基準指定なしの`--context update`はsetup errorで停止する。これにより「更新ZIPから誤ってpersistentファイルを落とし、manifestからも同時に落としたためZIP単体ではPASSする」状態を配置前に検出する。
+
 ## release
 
 公開パッケージを作る直前に実行する。fullに加え、GitHub Pages ZIPを生成してZIP整合性を検査する。

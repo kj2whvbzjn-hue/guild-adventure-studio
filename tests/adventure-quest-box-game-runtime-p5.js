@@ -12,13 +12,11 @@ for(const token of [
   "return{quest,scenes:content.scenes||[],events:content.events||[],monsters:content.monsters||[],tablets:content.tablets||[],maps:content.maps||[]",
   "GKAdventureStorySystem.simulateQuest({quest:bundle.quest,scenes:bundle.scenes,events:bundle.events,monsters:bundle.monsters",
 ])assert(app.includes(token),`P5 Game Runtime integration missing: ${token}`);
-assert(!app.includes("GKAdventureStorySystem.simulateQuest({quest:bundle.quest,section:bundle.section,chapter:bundle.chapter"),'P5 Game path must not pass legacy Section/Chapter to simulateQuest');
-assert(!app.includes("const links=quest.links||{},chapter=(content.chapters||[]).find"),'P5 bundle resolution must not depend on Quest.links Chapter/Section');
 for(const token of [
   'function resolveQuestStorySnapshot(quest,scenes)',
   "chapter_id:String(scene.chapter_id||'')",
   "section_id:String(scene.section_id||'')",
   'adventure_duration_seconds:duration',
-  'return quest.boxes.length?simulateQuestBoxRuntime(opts||{},quest):simulateLegacySectionQuest(opts||{});'
+  'function simulateQuest(opts){const quest=normalizeQuest(clone(opts?.quest||{}));return simulateQuestBoxRuntime(opts||{},quest);}'
 ])assert(story.includes(token),`P5 Story Runtime integration missing: ${token}`);
 console.log('adventure-quest-box-game-runtime-p5 PASS');

@@ -10,6 +10,18 @@
     story:{label:'Story',rootKey:'chapters',wrapperKeys:['chapters','chapter','story']}
   };
   const VOLATILE=new Set(['created_at','updated_at','generated_at']);
+  const QUEST_FIELDS=new Set(['id','name','type','status','summary','conditions','completion','rewards','failure','prerequisite_ids','next_quest_ids','required_flags','set_flags','start_cost','adventure_duration_seconds','base_enemy_budget','enemy_budget','recommended_level','context','boxes','character_ids','created_at','updated_at']);
+  const QUEST_CONTEXT_FIELDS=new Set(['map_id','environment_tags','tags','difficulty','budget']);
+  const QUEST_BOX_ZONE_KEYS=['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post'];
+  const QUEST_BOX_FIELDS=new Set(['box_id','name','order','pre_scene_id','mid_scene_id','post_scene_id',...QUEST_BOX_ZONE_KEYS]);
+  const PLACEMENT_FIELDS=new Set(['kind','order','failure_policy','event_id','filter','allow_none','required','box_side_individual_probability_override','encounter_override']);
+  const FILTER_FIELDS=new Set(['event_type','group','tags']);
+  const OVERRIDE_FIELDS=new Set(['mode','required_monsters','formation','scaling_profile_ref']);
+  const OVERRIDE_MONSTER_FIELDS=new Set(['monster_id','count']);
+  const EVENT_FIELDS=new Set(['id','name','usage','type','status','enabled','group','tags','intensity','random_base_weight','generation_profile_ref','summary','conditions','results','required_flags','set_flags','reward_table_id','reward_table_ids','created_at','updated_at']);
+  const CHAPTER_FIELDS=new Set(['id','no','title','theme','summary','purpose','status','design','candidate_revisions','export_control','sections','created_at','updated_at']);
+  const SECTION_FIELDS=new Set(['id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','scenes','created_at','updated_at']);
+  function validateAllowedFields(value,allowed,where,errors){if(!isObject(value))return;for(const key of Object.keys(value))if(!allowed.has(key))errors.push(`${where}: 現行Formal仕様外のフィールドです: ${key}`);}
   function isObject(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
   function referenceList(value){if(Array.isArray(value))return value.map(String).map(x=>x.trim()).filter(Boolean);if(typeof value==='string')return value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);return [];}
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v))}
@@ -86,11 +98,16 @@
     if(!id)errors.push(`${where}: id は必須です。`);
     if(!String(q.name||'').trim())errors.push(`${where}${id?` ${id}`:''}: name は必須です。`);
     if(q.boxes!==undefined&&!Array.isArray(q.boxes))errors.push(`${where}${id?` ${id}`:''}: boxes は配列で指定してください。`);
+    validateAllowedFields(q,QUEST_FIELDS,`${where}${id?` ${id}`:''}`,errors);
+    if(isObject(q.context))validateAllowedFields(q.context,QUEST_CONTEXT_FIELDS,`${where}${id?` ${id}`:''}/context`,errors);
     const seen=new Set();
     (Array.isArray(q.boxes)?q.boxes:[]).forEach((box,bi)=>{
-      const boxId=String(box?.box_id||box?.id||`BOX-${String(bi+1).padStart(4,'0')}`).trim();
-      if(seen.has(boxId))errors.push(`${id||where}: Box IDが重複しています: ${boxId}`);seen.add(boxId);
-      if(!box?.box_id&&!box?.id)warnings.push(`${id||where}: Box ${bi+1} はbox_id未指定のため ${boxId} として正規化されます。`);
+      const boxId=String(box?.box_id||'').trim();
+      if(!boxId)errors.push(`${id||where}: Box ${bi+1} はbox_idが必須です。`);
+      else if(seen.has(boxId))errors.push(`${id||where}: Box IDが重複しています: ${boxId}`);
+      else seen.add(boxId);
+      validateAllowedFields(box,QUEST_BOX_FIELDS,`${id||where}/${boxId||`Box ${bi+1}`}`,errors);
+      for(const zoneKey of QUEST_BOX_ZONE_KEYS)for(const placement of Array.isArray(box?.[zoneKey])?box[zoneKey]:[]){validateAllowedFields(placement,PLACEMENT_FIELDS,`${id||where}/${boxId||`Box ${bi+1}`}/${zoneKey}`,errors);if(isObject(placement?.filter))validateAllowedFields(placement.filter,FILTER_FIELDS,`${id||where}/${boxId||`Box ${bi+1}`}/${zoneKey}/filter`,errors);if(isObject(placement?.encounter_override)){validateAllowedFields(placement.encounter_override,OVERRIDE_FIELDS,`${id||where}/${boxId||`Box ${bi+1}`}/${zoneKey}/encounter_override`,errors);for(const row of [...(Array.isArray(placement.encounter_override.required_monsters)?placement.encounter_override.required_monsters:[]),...(Array.isArray(placement.encounter_override.formation)?placement.encounter_override.formation:[])])validateAllowedFields(row,OVERRIDE_MONSTER_FIELDS,`${id||where}/${boxId||`Box ${bi+1}`}/${zoneKey}/encounter_override/monster`,errors);}}
     });
   }
   function validateEventRecord(e,index,errors){
@@ -98,12 +115,15 @@
     if(!isObject(e)){errors.push(`${where}: オブジェクトではありません。`);return;}
     if(!id)errors.push(`${where}: id は必須です。`);
     if(!String(e.name||'').trim())errors.push(`${where}${id?` ${id}`:''}: name は必須です。`);
+    validateAllowedFields(e,EVENT_FIELDS,`${where}${id?` ${id}`:''}`,errors);
   }
   function validateStoryRecord(c,index,errors,warnings){
     const where=`Chapter[${index+1}]`,chapterId=String(c?.id||'').trim();
     if(!isObject(c)){errors.push(`${where}: オブジェクトではありません。`);return;}
     if(!chapterId)errors.push(`${where}: id は必須です。`);
     if(!String(c.title||'').trim())errors.push(`${where}${chapterId?` ${chapterId}`:''}: title は必須です。`);
+    validateAllowedFields(c,CHAPTER_FIELDS,chapterId||where,errors);
+    (Array.isArray(c.sections)?c.sections:[]).forEach((section,si)=>validateAllowedFields(section,SECTION_FIELDS,`${chapterId||where}/Section[${si+1}]`,errors));
     const local=new Set();
     for(const row of storyNodes(c)){
       if(!row.id){errors.push(`${chapterId||where}: ${row.type} のidがありません。`);continue;}
@@ -136,25 +156,21 @@
     }
   }
   function questReferenceWarnings(q,rootData,incomingQuestIds,warnings){
-    const id=String(q.id||'Quest'),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||''))),sceneIds=new Set(),mapIds=new Set((rootData?.masters?.maps||[]).map(x=>String(x.id||''))),flagIds=new Set((rootData?.flags||[]).map(x=>String(x.id||''))),questIds=new Set([...(rootData?.quests||[]).map(x=>String(x.id||'')),...incomingQuestIds]);
+    const id=String(q.id||'Quest'),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||''))),sceneIds=new Set(),mapIds=new Set((rootData?.masters?.maps||[]).map(x=>String(x.id||''))),flagIds=new Set((rootData?.flags||[]).map(x=>String(x.id||''))),characterIds=new Set((rootData?.characters||[]).map(x=>String(x.id||''))),questIds=new Set([...(rootData?.quests||[]).map(x=>String(x.id||'')),...incomingQuestIds]);
     for(const chapter of rootData?.chapters||[])for(const section of chapter.sections||[])for(const scene of section.scenes||[])sceneIds.add(String(scene.id||''));
     const mapId=String(q.context?.map_id||'');if(mapId&&!mapIds.has(mapId))warnings.push(`${id}: Map参照は現在未登録です: ${mapId}`);
     for(const ref of [...referenceList(q.prerequisite_ids),...referenceList(q.next_quest_ids)])if(!questIds.has(ref))warnings.push(`${id}: Quest参照は現在未登録です: ${ref}`);
     for(const ref of [...referenceList(q.required_flags),...referenceList(q.set_flags)])if(!flagIds.has(ref))warnings.push(`${id}: Flag参照は現在未登録です: ${ref}`);
+    for(const ref of referenceList(q.character_ids))if(!characterIds.has(ref))warnings.push(`${id}: Character参照は現在未登録です: ${ref}`);
     for(const box of Array.isArray(q.boxes)?q.boxes:[]){
-      for(const sceneKey of ['pre_scene_id','mid_scene_id','post_scene_id']){const ref=String(box?.[sceneKey]||box?.scenes?.[sceneKey]||'');if(ref&&!sceneIds.has(ref))warnings.push(`${id}/${String(box?.box_id||box?.id||'?')}: Scene参照は現在未登録です: ${ref}`);}
-      for(const zoneKey of ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post','event_before_pre','event_pre_to_mid','event_mid_to_post','event_after_post'])for(const p of Array.isArray(box?.[zoneKey])?box[zoneKey]:[]){const ref=String(p?.event_id||p?.ref_id||'');if(ref&&!eventIds.has(ref))warnings.push(`${id}/${String(box?.box_id||box?.id||'?')}: Event参照は現在未登録です: ${ref}`);}
+      for(const sceneKey of ['pre_scene_id','mid_scene_id','post_scene_id']){const ref=String(box?.[sceneKey]||'');if(ref&&!sceneIds.has(ref))warnings.push(`${id}/${String(box?.box_id||'?')}: Scene参照は現在未登録です: ${ref}`);}
+      for(const zoneKey of ['event_zone_before_pre','event_zone_pre_to_mid','event_zone_mid_to_post','event_zone_after_post'])for(const p of Array.isArray(box?.[zoneKey])?box[zoneKey]:[]){const ref=String(p?.event_id||'');if(ref&&!eventIds.has(ref))warnings.push(`${id}/${String(box?.box_id||'?')}: Event参照は現在未登録です: ${ref}`);}
     }
   }
   function eventReferenceWarnings(e,rootData,warnings){
     const id=String(e.id||'Event'),flagIds=new Set((rootData?.flags||[]).map(x=>String(x.id||''))),rewardIds=new Set((rootData?.masters?.reward_tables||[]).map(x=>String(x.id||'')));
     for(const ref of [...(e.required_flags||[]),...(e.set_flags||[])].map(String).filter(Boolean))if(!flagIds.has(ref))warnings.push(`${id}: Flag参照は現在未登録です: ${ref}`);
     for(const ref of (e.reward_table_ids||[]).map(String).filter(Boolean))if(!rewardIds.has(ref))warnings.push(`${id}: Reward Table参照は現在未登録です: ${ref}`);
-  }
-  function storyReferenceWarnings(c,rootData,warnings){
-    const id=String(c.id||'Chapter'),monsterIds=new Set((rootData?.masters?.monsters||[]).map(x=>String(x.id||''))),eventIds=new Set((rootData?.events||[]).map(x=>String(x.id||'')));
-    for(const ref of (c.available_monster_ids||[]).map(String).filter(Boolean))if(!monsterIds.has(ref))warnings.push(`${id}: Monster参照は現在未登録です: ${ref}`);
-    for(const row of c.random_event_candidates||[]){const ref=String(row?.event_id||row?.id||row||'');if(ref&&!eventIds.has(ref))warnings.push(`${id}: Random Event参照は現在未登録です: ${ref}`);}
   }
   function buildPlan(kind,payload,rootData){
     const records=extractRecords(kind,payload),errors=[],warnings=[];
@@ -164,7 +180,6 @@
     const incomingQuestIds=new Set(kind==='quests'?records.map(x=>String(x.id||'')):[]);
     if(kind==='quests')records.forEach(q=>questReferenceWarnings(q,rootData||{},incomingQuestIds,warnings));
     if(kind==='events')records.forEach(e=>eventReferenceWarnings(e,rootData||{},warnings));
-    if(kind==='story')records.forEach(c=>storyReferenceWarnings(c,rootData||{},warnings));
     const target=Array.isArray(rootData?.[KINDS[kind].rootKey])?rootData[KINDS[kind].rootKey]:[],byId=new Map(target.map(x=>[String(x?.id||''),x])),adds=[],updates=[],unchanged=[];
     for(const incoming of records){const id=String(incoming?.id||'');if(!id)continue;const current=byId.get(id);if(!current){adds.push(id);continue;}const merged=deepMerge(current,incoming);if(sameMeaning(current,merged))unchanged.push(id);else updates.push(id);}
     return {kind,label:KINDS[kind].label,rootKey:KINDS[kind].rootKey,records,adds,updates,unchanged,errors:[...new Set(errors)],warnings:[...new Set(warnings)],canApply:errors.length===0&&(adds.length+updates.length)>0};

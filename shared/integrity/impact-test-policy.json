@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "purpose": "Conservative impact-based test selection. Uncertain or safety-critical changes escalate to Full.",
+  "fallback": "full",
+  "always_test_patterns": [
+    "tools/test_source_zip_binding.py",
+    "tests/studio-update-export-boundary-gks-b592.js"
+  ],
+  "full_on_patterns": [
+    "tools/inspection/**",
+    "tools/integrity/**",
+    "tools/release/**",
+    "shared/integrity/**",
+    "shared/tests/test-registry.json",
+    "schemas/**",
+    "bootstrap-core.js",
+    "bootstrap-ui.js",
+    "export-core.js",
+    "ai-gateway.js",
+    "project-data.json"
+  ],
+  "rules": [
+    {
+      "id": "docs_only",
+      "source_patterns": [
+        "docs/**",
+        "README.md",
+        "README_GITHUB_REFLECTION.md",
+        "INSTALL.md"
+      ],
+      "test_patterns": []
+    },
+    {
+      "id": "formal_ai",
+      "source_patterns": [
+        "shared/ai/**",
+        "studio/ai-production/**",
+        "game/assets/js/ai-*.js"
+      ],
+      "test_patterns": [
+        "tests/ai-production/**",
+        "tests/adventure-battle-core.js",
+        "tests/adventure-battle-runtime-integration.js",
+        "tests/device-test-harness-ga-b486-92.js",
+        "tests/device-validation-fixture-ga-b486-93.js"
+      ]
+    },
+    {
+      "id": "battle_runtime",
+      "source_patterns": [
+        "assets/shared/js/adventure-battle-core.js",
+        "game/assets/js/battle-control.js"
+      ],
+      "test_patterns": [
+        "tests/adventure-battle-core.js",
+        "tests/adventure-battle-runtime-integration.js",
+        "tests/counter-formal-regression-ga-b486-33.js",
+        "tests/formal-follow-up-runtime-r04-c2.js",
+        "tests/formal-trigger-action-guard-r04-e1.js",
+        "tests/formal-trigger-closure-r04-e3.js",
+        "tests/aura-revive-connection-ga-b486-28.js",
+        "tests/battle-end-effect-clear-formal-p01-14.js"
+      ]
+    },
+    {
+      "id": "cpf",
+      "source_patterns": [
+        "cpf/**"
+      ],
+      "test_patterns": [
+        "cpf/tests/**",
+        "tools/test_build329_controlled_story_import.php",
+        "tools/test_build329_export_gate.js"
+      ]
+    },
+    {
+      "id": "equipment",
+      "source_patterns": [
+        "studio/equipment/**"
+      ],
+      "test_patterns": [
+        "tests/test_equipment_*.js"
+      ]
+    }
+  ],
+  "timing": {
+    "integrity_target_seconds": 10,
+    "impact_target_seconds": 90,
+    "per_test_timeout_seconds": 30,
+    "full_step_timeout_seconds": 120
+  }
+}

@@ -5,7 +5,7 @@ const path=require('path');
 const vm=require('vm');
 const S=require('../assets/shared/js/adventure-story-system.js');
 
-// P3 normalization applies the new classification without destructively migrating untouched legacy Events.
+// P3 normalization applies the new classification without rewriting unrelated Event fields.
 const modern=S.normalizeEvent({id:'EVT-P3',usage:'random',type:'exploration',group:'ruins',tags:['rare','night'],intensity:'high',random_base_weight:'2.5',generation_profile_ref:123,enabled:0});
 assert.equal(modern.usage,'random');
 assert.equal(modern.type,'exploration');
@@ -17,22 +17,13 @@ assert.equal(modern.enabled,false);
 const corrected=S.normalizeEvent({usage:'unknown',type:'reward'});
 assert.equal(corrected.usage,'common');
 assert.equal(corrected.type,'special');
-const legacy=S.normalizeEvent({id:'EVT-LEGACY',type:'reward',links:{quest_id:'Q-OLD'},custom:'keep'});
-assert.equal(legacy.type,'reward');
-assert.equal(legacy.links.quest_id,'Q-OLD');
-assert.equal(legacy.custom,'keep');
-assert.equal(Object.prototype.hasOwnProperty.call(legacy,'usage'),false);
 
 const studio=fs.readFileSync(path.join(__dirname,'../studio/index.html'),'utf8');
 for(const token of ['id="eventUsage"','id="eventType"','id="eventGroup"','id="eventTags"','id="eventIntensity"','id="eventRandomBaseWeight"','id="eventGenerationProfileRef"','id="eventEnabled"'])assert(studio.includes(token),`P3 Event editor missing ${token}`);
-for(const legacyInput of ['id="eventChapterLink"','id="eventSectionLink"','id="eventSceneLink"','id="eventQuestLink"','id="eventCharacterLink"'])assert(!studio.includes(legacyInput),`legacy Event link editor must be removed from formal P3 UI: ${legacyInput}`);
-assert(studio.includes('id="eventLegacyLinksPanel"'),'legacy links must remain visible read-only during non-destructive P3');
 assert(studio.includes('usage:eventUsage.value,type:eventType.value'),'Event save must persist independent usage/type');
-assert(studio.includes("persist('event saved (P3 independent model; legacy link sync disabled)')"),'P3 save boundary marker missing');
+assert(studio.includes("persist('event saved')"),'formal Event save marker missing');
 const saveStart=studio.indexOf('function saveEvent(){'),saveEnd=studio.indexOf('function editEvent(',saveStart),saveBlock=studio.slice(saveStart,saveEnd);
-assert(!saveBlock.includes('syncEventConnections('),'P3 Event save must not trigger legacy Timeline/Character side effects');
-assert(saveBlock.includes('...previous'),'P3 Event save must non-destructively preserve legacy fields for now');
-assert(studio.includes('removeEventConnections(id);'),'explicit Event deletion must still clean its old auto-generated connection artifacts during P3');
+const deleteStart=studio.indexOf('function deleteEvent('),deleteEnd=studio.indexOf('function renderEvents(',deleteStart),deleteBlock=studio.slice(deleteStart,deleteEnd);
 
 // Box fixed Event selection uses a real catalog with all five required filters.
 for(const token of ['Event Catalog',"'usage'", "'type'", "'group'", "'tags'", "'name'"])assert(studio.includes(token),`P3 Event Catalog missing ${token}`);
@@ -63,6 +54,6 @@ assert.equal(sandbox.P3.questBoxRandomCandidates({filter:{event_type:'exploratio
 assert.equal(sandbox.P3.questBoxRandomCandidates({filter:{event_type:'battle',group:null,tags:[]}}).length,0);
 
 const schema=JSON.parse(fs.readFileSync(path.join(__dirname,'../schemas/exports/event-events.schema.json'),'utf8'));
-for(const key of ['usage','type','group','tags','conditions','intensity','generation_profile_ref','random_base_weight','enabled'])assert(schema.items.properties[key],`Event export schema missing P3 field ${key}`);
+for(const key of ['usage','type','group','tags','conditions','intensity','generation_profile_ref','random_base_weight','enabled'])assert(schema.items.properties[key],`Event export schema missing formal field ${key}`);
 
 console.log('adventure-event-studio-model-p3 PASS');

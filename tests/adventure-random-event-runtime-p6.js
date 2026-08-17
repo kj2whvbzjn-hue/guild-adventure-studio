@@ -102,6 +102,6 @@ const before=JSON.stringify(stored.random_selections);
 S.resumeQuestRun(save,Date.parse('2026-08-15T00:00:05.000Z'));
 S.playbackState(stored,Date.parse('2026-08-15T00:00:10.000Z'));
 assert.equal(JSON.stringify(S.activeQuestRun(save).random_selections),before);
-assert.deepEqual(S.normalizeQuestRun({quest_run_id:'QR-LEGACY-P6'}).random_selections,[]);
+assert.deepEqual(S.normalizeQuestRun({quest_run_id:'QR-P6-EMPTY'}).random_selections,[]);
 
 console.log('adventure-random-event-runtime-p6 PASS');

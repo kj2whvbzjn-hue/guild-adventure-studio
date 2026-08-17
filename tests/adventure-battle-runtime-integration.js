@@ -12,5 +12,17 @@ assert(app.includes('GKAdventureBattleCore.buildBattleResult'),'structured Battl
 assert(ctl.includes("recordValidationEvent('battle_started'"),'battle_start capture missing');
 assert(ctl.includes("recordValidationEvent('battle_finished'"),'battle_end capture missing');
 assert(ctl.includes("recordValidationEvent('basic_attack'"),'basic attack playback capture missing');
-assert(app.includes("$('eventBattle').onclick=()=>{clearBattleLaunchContext();resetBattle();setPhase('battle')}"),'developer battle entry must clear adventure formation');
+assert(app.includes("const STANDALONE_BATTLE_FIXTURE={source:'standalone_fixture'"),'standalone Battle fixture missing');
+assert(app.includes("function launchStandaloneBattle(){resetBattle(standaloneBattleContext());setPhase('battle')}"),'standalone Battle launcher missing');
+assert(ctl.includes('setBattleLaunchContext(context||standaloneBattleContext())'),'Battle reset must default to standalone fixture');
+
+const ending=ctl.slice(ctl.indexOf('async function completeBattleEnding()'),ctl.indexOf('function clearBattleEndDotStacks()'));
+assert(!ending.includes("setPhase('result'"),'standalone Battle must not force-transition to result after battle end');
+assert(ctl.includes("$('sceneAuto').onclick=startSceneBattle"),'public scene auto control must use human-paced scene loop');
+assert(ctl.includes("$('sceneReset').onclick=restartSceneBattle"),'public replay control must restart the scene immediately');
+assert(ctl.includes('processUntilNextAction();renderBattle();')&&ctl.includes('await waitForSceneIdle();'),'public scene loop must advance one action and wait for its presentation before continuing');
+assert(ctl.includes("battle.result?'結果を見る'"),'completed battle must remain on scene until the user chooses to view the result');
+const outcome=app.slice(app.indexOf('function applyBattleOutcome()'),app.indexOf('function renderBattleResult()'));
+for(const forbidden of ['persist()','data.guild.gold','data.guild.victories','data.guild.defeats','data.inventory.push','data.guild.lastBattle'])assert(!outcome.includes(forbidden),`standalone Battle outcome must not update formal Save: ${forbidden}`);
+assert(outcome.includes('standalone:true'),'standalone Battle result must be marked transient');
 console.log('adventure-battle-runtime-integration PASS');

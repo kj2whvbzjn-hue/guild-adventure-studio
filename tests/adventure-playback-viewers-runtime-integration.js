@@ -13,7 +13,8 @@ assert(app.includes('p.source_id'),'Battle Viewer must resolve Battle Core sourc
 assert(app.includes('p.target_id'),'Battle Viewer must resolve Battle Core target_id payload');
 assert(app.includes('p.value??p.amount??p.damage??p.applied'),'Battle Viewer must read Battle Core numeric value payload');
 assert(app.includes('p.status_name||p.status||p.status_id'),'Battle Viewer must read Battle Core status_id payload');
-assert(app.includes('p.skill_name||p.skill||p.skill_id'),'Battle Viewer must read Battle Core skill_id payload');
+assert(app.includes("p.skill_name||p.skill||''"),'Battle Viewer must display the persisted formal skill name');
+assert(!app.includes('p.skill_name||p.skill||p.skill_id'),'Battle Viewer must not fall back to a raw skill ID for display');
 assert(app.includes('p.hp_after'),'Battle Viewer must expose stored hp_after payload');
 assert(app.includes('function adventurePlaybackEventMeta(event)'),'Battle Viewer event metadata formatter missing');
 assert(app.includes('event?.at_tick'),'Battle Viewer must expose stored at_tick payload');
@@ -36,5 +37,5 @@ assert(app.includes('<b>出現モンスター</b>'),'Battle Viewer must show the
 assert(app.includes('function renderAdventureReturnResult(summary,{history=false}={})'),'return/history aggregate result renderer missing');
 assert(app.includes('QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。'),'return result must make no-recalculation behavior explicit');
 assert(app.includes('const summary=adventureQuestRunSummary(current);'),'return summary must be captured from stored QuestRun before commit');
-assert(app.includes("raw.schemaRevision='1.5.0';raw.gameVersion='GA-B486.187';"),'current game build missing');
+assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.202';"),'current game build missing');
 console.log('adventure-playback-viewers-runtime-integration PASS');

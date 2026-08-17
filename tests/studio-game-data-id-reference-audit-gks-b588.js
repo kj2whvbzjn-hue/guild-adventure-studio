@@ -15,9 +15,13 @@ const end=html.indexOf('function masterSearchText(category,m){',start);
 assert.ok(start>=0&&end>start,'Game data audit source range missing');
 const source=html.slice(start,end);
 const original={
- chapters:[{id:'CHP-0001',random_event_candidates:[{event_id:'EVT-CH01-A'}],sections:[{id:'SEC-0001',boxes:[{id:'BOX-LEGACY',type:'scene',ref_id:'SCN-MISSING'}],scenes:[{id:'SCN-CH01-A',dialogues:[{id:'DLG-0001'}]}]}]}],
- quests:[{id:'QST-CH01-SEC01',prerequisite_ids:['QST-9999'],next_quest_ids:[],required_flags:['FLG-0001'],set_flags:[],links:{chapter_id:'CHP-0001',section_id:'SEC-0001',scene_id:'SCN-CH01-A'},boxes:[{box_id:'BOX-QST-CH01-SEC01-01',pre_scene_id:'SCN-CH01-A',mid_scene_id:'',post_scene_id:'',event_zone_before_pre:[{kind:'fixed_event',event_id:'EVT-CH01-A'}],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]}]}],
- events:[{id:'EVT-CH01-A',required_flags:['FLG-MISSING'],set_flags:[],links:{quest_id:'QST-CH01-SEC01'}}],
+ chapters:[{id:'CHP-0001',sections:[{id:'SEC-0001',scenes:[{id:'SCN-CH01-A',dialogues:[{id:'DLG-0001'}]}]}]}],
+ characters:[{id:'CHR-0001',name:'Character'}],
+ quests:[
+  {id:'QST-0001',next_quest_ids:['QST-CH01-SEC01'],boxes:[]},
+  {id:'QST-CH01-SEC01',prerequisite_ids:['QST-9999'],next_quest_ids:[],required_flags:['FLG-0001'],set_flags:[],character_ids:['CHR-0001'],boxes:[{box_id:'BOX-QST-CH01-SEC01-01',pre_scene_id:'SCN-CH01-A',mid_scene_id:'SCN-MISSING',post_scene_id:'',event_zone_before_pre:[{kind:'fixed_event',event_id:'EVT-CH01-A'}],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]}]}
+ ],
+ events:[{id:'EVT-CH01-A',required_flags:['FLG-MISSING'],set_flags:[]}],
  flags:[{id:'FLG-0001',name:'ok'}]
 };
 const context={
@@ -27,13 +31,15 @@ const context={
 };
 vm.createContext(context);vm.runInContext(source,context);
 const report=vm.runInContext('buildGameDataIdReferenceAudit()',context);
-assert.strictEqual(report.counts.invalid_ids,3,'Quest/Event/Scene legacy IDs must be reported');
-assert.ok(report.issues.some(x=>x.type==='invalid_id'&&x.id==='QST-CH01-SEC01'&&x.reference_count===1),'invalid Quest ID must count Event link reference');
-assert.ok(report.issues.some(x=>x.type==='invalid_id'&&x.id==='EVT-CH01-A'&&x.reference_count===2),'invalid Event ID must count Chapter and Quest references');
-assert.ok(report.issues.some(x=>x.type==='invalid_id'&&x.id==='SCN-CH01-A'&&x.reference_count===2),'invalid Scene ID must count Quest links and Box references');
+assert.strictEqual(report.counts.invalid_ids,3,'Quest/Event/Scene noncanonical IDs must be reported');
+assert.ok(report.issues.some(x=>x.type==='invalid_id'&&x.id==='QST-CH01-SEC01'&&x.reference_count===1),'invalid Quest ID must count formal Quest reference');
+assert.ok(report.issues.some(x=>x.type==='invalid_id'&&x.id==='EVT-CH01-A'&&x.reference_count===1),'invalid Event ID must count Quest Box fixed Event reference');
+assert.ok(report.issues.some(x=>x.type==='invalid_id'&&x.id==='SCN-CH01-A'&&x.reference_count===1),'invalid Scene ID must count Quest Box Scene reference');
 assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='QST-9999'),'missing prerequisite Quest must be reported');
 assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='FLG-MISSING'),'missing Flag must be reported');
-assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='SCN-MISSING'),'legacy Section Box missing Scene must be reported');
+assert.ok(report.issues.some(x=>x.type==='missing_reference'&&x.id==='SCN-MISSING'),'missing Quest Box Scene must be reported');
 assert.strictEqual(JSON.stringify(context.data),JSON.stringify(original),'audit must not mutate Game data');
-assert.ok(!report.issues.some(x=>x.id==='BOX-QST-CH01-SEC01-01'||x.id==='BOX-LEGACY'),'Quest/Section Box IDs must remain outside this ID audit');
-console.log('PASS GKS-B593 Game data ID/reference audit is read-only and reports Quest/Event/Scene/Flag/reference issues');
+assert.ok(!report.issues.some(x=>x.id==='BOX-QST-CH01-SEC01-01'),'Quest Box IDs must remain outside this ID audit');
+assert.ok(!source.includes('random_event_candidates'),'audit must not scan legacy Chapter random Event candidates');
+assert.ok(!source.includes('.links'),'audit must not scan legacy Quest/Event links');
+console.log('PASS GKS-B600 Game data ID/reference audit is read-only and uses the formal Quest/Event model');

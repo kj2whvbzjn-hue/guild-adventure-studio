@@ -17,10 +17,17 @@ def context_fixture(tmp:Path,version:str,include_controls:bool=True,expected_ver
     (tmp/'shared/integrity').mkdir(parents=True,exist_ok=True);(tmp/'tools/inspection').mkdir(parents=True,exist_ok=True)
     shutil.copy2(ROOT/'shared/integrity/system-file-policy.json',tmp/'shared/integrity/system-file-policy.json')
     shutil.copy2(ROOT/'tools/inspection/system_file_policy.py',tmp/'tools/inspection/system_file_policy.py')
-    write_json(tmp/'package-build.json',{'studio_build':expected_version})
+    write_json(tmp/'package-build.json',{'game_build':'GA-B1.1','studio_build':expected_version})
     write_json(tmp/'package_manifest.json',{'schema_version':1,'file_count':0,'files':[]})
     if include_controls:
-        write_json(tmp/'studio-update.json',{'version':version,'studio_version':version,'formal_build':None})
+        target_num=int(expected_version.removeprefix('GKS-B'))
+        target_tree='1'*64
+        write_json(tmp/'studio-update.json',{
+            'version':version,'studio_version':version,'formal_build':None,
+            'baseline_source':{'game_build':'GA-B1.1','studio_build':f'GKS-B{target_num-1}','package_manifest_sha256':'0'*64,'source_tree_sha256':'0'*64},
+            'target_source':{'game_build':'GA-B1.1','studio_build':expected_version,'package_manifest_sha256':'0'*64,'source_tree_sha256':target_tree},
+            'artifact_id':f'{expected_version}-{target_tree[:12]}',
+        })
         (tmp/'DELETE_MANIFEST.txt').write_text('# no deletion\n',encoding='utf-8')
 
 def syntax_fixture(tmp:Path,source:str|None):

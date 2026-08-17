@@ -16,14 +16,13 @@ const scenes=[
   {id:'SC-3',chapter_id:'CH-B',section_id:'SEC-B',dialogues:[{text:'three'}]},
   {id:'SC-4',chapter_id:'CH-C',section_id:'SEC-C',dialogues:[{text:'four'}]}
 ];
-const sceneRun=S.simulateQuest({quest:q3,section:{id:'LEGACY',adventure_duration_seconds:999,boxes:[{id:'OLD',type:'scene',ref_id:'SC-X'}]},chapter:{id:'OLD-CH'},scenes,seed:101});
+const sceneRun=S.simulateQuest({quest:q3,scenes,seed:101});
 assert.deepEqual(sceneRun.timeline_result.map(x=>x.ref_id),['SC-1','SC-2','SC-3','SC-4']);
 assert.deepEqual(sceneRun.timeline_result.map(x=>x.scene_position),['pre','mid','post','pre']);
 assert.equal(sceneRun.adventure_duration_seconds,120);
 assert.equal(sceneRun.chapter_id,'CH-A');
 assert.equal(sceneRun.section_id,'SEC-A');
 assert.equal(sceneRun.timeline_result.at(-1).at_seconds,120);
-assert(!sceneRun.timeline_result.some(x=>x.ref_id==='SC-X'),'P5 path must not execute Section.boxes when Quest.boxes exist');
 
 // Full P5 order including three Events in one zone and all four Event zones.
 const events=['E-A1','E-A2','E-A3','E-B','E-C','E-D'].map(id=>({id,type:'special'}));
@@ -63,9 +62,9 @@ assert.equal(eventOnly.chapter_id,'');
 assert.equal(eventOnly.section_id,'');
 assert.equal(eventOnly.adventure_duration_seconds,15);
 
-// P5 must not revive legacy fixed battle_formation. Battle/Exploration Resolver is P7.
+// Without a Battle Resolver adapter, this P5 boundary remains a generic Event result and does not enter Battle Core.
 let resolverCalls=0;
-const battleAsEvent=S.simulateQuest({quest:{id:'Q-BATTLE-BOUNDARY',adventure_duration_seconds:10,boxes:[{box_id:'BOX-B',order:1,pre_scene_id:null,mid_scene_id:null,post_scene_id:null,event_zone_before_pre:[fixed('E-BATTLE')],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]}]},events:[{id:'E-BATTLE',type:'battle',battle_formation:[{monster_id:'OLD',count:9}]}],seed:106,resolveEvent:()=>{resolverCalls++;return{success:true}},simulateBattle:()=>{throw new Error('P5 Quest Box path must not call legacy battle_formation Battle Core');}});
+const battleAsEvent=S.simulateQuest({quest:{id:'Q-BATTLE-BOUNDARY',adventure_duration_seconds:10,boxes:[{box_id:'BOX-B',order:1,pre_scene_id:null,mid_scene_id:null,post_scene_id:null,event_zone_before_pre:[fixed('E-BATTLE')],event_zone_pre_to_mid:[],event_zone_mid_to_post:[],event_zone_after_post:[]}]},events:[{id:'E-BATTLE',type:'battle'}],seed:106,resolveEvent:()=>{resolverCalls++;return{success:true}},simulateBattle:()=>{throw new Error('P5 boundary must not call Battle Core without a Battle Resolver adapter');}});
 assert.equal(resolverCalls,1);
 assert.equal(battleAsEvent.battle_results.length,0);
 assert.equal(battleAsEvent.final_result.success,true);

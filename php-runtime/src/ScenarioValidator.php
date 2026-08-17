@@ -34,8 +34,10 @@ final class ScenarioValidator
     }
     private function flagFlow(array $docs,array $r,array &$out):void
     {
-        $events=$this->records($docs,(string)($r['event_path']??''));usort($events,fn($a,$b)=>($this->firstNumeric($a,$r['order_fields']??[])??PHP_INT_MAX)<=>($this->firstNumeric($b,$r['order_fields']??[])??PHP_INT_MAX));$set=[];
-        foreach($events as $i=>$e){foreach($this->valuesFromFields($e,$r['require_fields']??[]) as $flag)if(!isset($set[$flag]))$this->add($out,$r,'SCENARIO_FLAG_REQUIRED_BEFORE_SET',(string)$r['event_path'],$i,$e,['flag_id'=>$flag]);foreach($this->valuesFromFields($e,$r['set_fields']??[]) as $flag)$set[$flag]=true;}
+        $events=$this->records($docs,(string)($r['event_path']??''));$ordered=[];$hasExplicitOrder=false;
+        foreach($events as $sourceIndex=>$event){$order=$this->firstNumeric($event,$r['order_fields']??[]);if($order!==null)$hasExplicitOrder=true;$ordered[]=['source_index'=>$sourceIndex,'order'=>$order,'event'=>$event];}
+        if($hasExplicitOrder)usort($ordered,fn($a,$b)=>(($a['order']??PHP_INT_MAX)<=>($b['order']??PHP_INT_MAX))?:($a['source_index']<=>$b['source_index']));
+        $set=[];foreach($ordered as $row){$i=$row['source_index'];$e=$row['event'];foreach($this->valuesFromFields($e,$r['require_fields']??[]) as $flag)if(!isset($set[$flag]))$this->add($out,$r,'SCENARIO_FLAG_REQUIRED_BEFORE_SET',(string)$r['event_path'],$i,$e,['flag_id'=>$flag]);foreach($this->valuesFromFields($e,$r['set_fields']??[]) as $flag)$set[$flag]=true;}
     }
     private function milestones(array $docs,mixed $rules,array &$out,bool $strict):void
     {

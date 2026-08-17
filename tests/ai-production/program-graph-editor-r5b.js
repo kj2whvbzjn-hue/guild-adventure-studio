@@ -38,7 +38,7 @@ assert(ui.includes('GKSAIProductionUI.addSelectedPart()'));
 assert(ui.includes('GKSAIProductionUI.connectNodes()'));
 assert(ui.includes('GKSAIProductionUI.undoGraph()'));
 assert(!ui.includes('localStorage'));
-const project={masters:{ai_conditions:[],ai_targets:[],ai_actions:[{id:'AIA-WAIT',name:'待機',status:'active',data_version:'1.0.0',evaluator:'action.wait',parameter_schema:{type:'object',properties:{}},ports:{inputs:[{id:'in'}],outputs:[{id:'next'}]}}],skills:[]},tags:[],ai_programs:[]};
+const project={masters:{ai_conditions:[],ai_targets:[],ai_actions:[{id:'AIA-WAIT',name:'待機',status:'active',data_version:'1.0.0',evaluator:'action.wait',parameter_schema:{type:'object',properties:{}},ports:{inputs:[{id:'in'}],outputs:[]}}],skills:[]},tags:[],ai_programs:[]};
 global.GKSAIProductionHost={getData:()=>project,now:()=> '2026-08-11T23:00:00Z'};
 const UI=require('../../studio/ai-production/ai-production-ui.js');
 UI.newProgram(); UI.select('AIA-WAIT','action');

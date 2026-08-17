@@ -1,12 +1,12 @@
 (function (root, factory) {
   const commonjs = typeof module === 'object' && module.exports;
   const api = factory(
-    commonjs ? require('./ai-master-adapter.js') : root && root.GKSAIMasterAdapter,
-    commonjs ? require('./ai-program-model.js') : root && root.GKSAIProgramModel,
+    commonjs ? require('../../shared/ai/ai-master-adapter.js') : root && root.GKSAIMasterAdapter,
+    commonjs ? require('../../shared/ai/ai-program-model.js') : root && root.GKSAIProgramModel,
     commonjs ? require('./ai-program-store.js') : root && root.GKSAIProgramStore,
     commonjs ? require('./ai-program-editor.js') : root && root.GKSAIProgramEditor,
-    commonjs ? require('./ai-program-validator.js') : root && root.GKSAIProgramValidator,
-    commonjs ? require('./ai-program-compiler.js') : root && root.GKSAIProgramCompiler,
+    commonjs ? require('../../shared/ai/ai-program-validator.js') : root && root.GKSAIProgramValidator,
+    commonjs ? require('../../shared/ai/ai-program-compiler.js') : root && root.GKSAIProgramCompiler,
     commonjs ? require('./ai-simulation-runner.js') : root && root.GKSAISimulationRunner,
     root
   );

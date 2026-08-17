@@ -7,8 +7,10 @@ const controllerSource=fs.readFileSync('studio/layer-controller.js','utf8');
 const dx=fs.readFileSync('studio/data-exchange/data-exchange-ui.js','utf8');
 const guide=fs.readFileSync('modules/verification/verification-guide.js','utf8');
 
-assert.strictEqual(build.studio_build,'GKS-B594');
-assert.ok(html.includes('<script src="./layer-controller.js?v=594"></script>'),'common layer controller must load before Studio app logic');
+assert.strictEqual(build.studio_build,'GKS-B631');
+const studioBuildNumber=String(build.studio_build).match(/GKS-B(\d+)/)?.[1];
+assert.ok(studioBuildNumber,'studio build number must be available');
+assert.ok(html.includes(`<script src="./layer-controller.js?v=${studioBuildNumber}"></script>`),'common layer controller must load before Studio app logic');
 assert.ok(html.includes("studioLayerOpen('tagPickerBackdrop')")&&html.includes("studioLayerClose('tagPickerBackdrop')"),'Master tag picker must join common layer stack');
 assert.ok(html.includes("studioLayerOpen('masterSkillPicker')")&&html.includes("studioLayerOpen('ruleTagPicker')")&&html.includes("studioLayerOpen('benchmarkWorkflowOverlay')"),'Studio child overlays must join common layer stack');
 assert.ok(html.includes("studioLayerOpen('studioInputOverlay')"),'Studio input overlay must join common layer stack');
@@ -82,4 +84,4 @@ touchCtx.studioHandleMobileTouchStart(touch(100,125,false,lowerSelect));touchCtx
 assert.strictEqual(topCheckbox.clickCount,1,'foreground picker control must win even when Safari reports the background select');
 assert.strictEqual(lowerSelect.showPickerCount,0,'background select must never open through the foreground picker');
 
-console.log('PASS GKS-B594 common Studio layer stack: inert background, z-order, scroll lock, foreground-only iOS touch routing, and nested picker restoration');
+console.log('PASS GKS-B631 common Studio layer stack: inert background, z-order, scroll lock, foreground-only iOS touch routing, and nested picker restoration');

@@ -4,7 +4,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const Adapter = require('../../studio/ai-production/ai-master-adapter.js');
+const Adapter = require('../../shared/ai/ai-master-adapter.js');
 
 const root = path.resolve(__dirname, '../..');
 const master = {
@@ -44,6 +44,10 @@ assert(invalid.filter(x=>x.includes('存在しません')).length === 3);
 
 const genericParamsOnly = Adapter.toNode({id:'AIA-WAIT',name:'待機',status:'active',params:{definition:{evaluator:'action.wait'}}}, 'ai_actions');
 assert.strictEqual(genericParamsOnly.evaluator, 'action.unconfigured', 'AI Master must read only Formal top-level fields');
+assert.deepStrictEqual(genericParamsOnly.ports.outputs, [], 'ACTION default ports must be terminal');
+assert.deepStrictEqual(Adapter.definitionErrors(genericParamsOnly), []);
+const invalidAction = Adapter.toNode({id:'AIA-INVALID',name:'不正ACTION',status:'active',evaluator:'action.wait',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]}}, 'ai_actions');
+assert(Adapter.definitionErrors(invalidAction).some(x=>x.includes('終端')), 'ACTION next output must be rejected');
 
 const html = fs.readFileSync(path.join(root, 'studio/index.html'), 'utf8');
 assert(html.includes('id="aiMasterFields"'));
@@ -52,6 +56,6 @@ assert(!html.includes('params.ai_definition'), 'AI Master must not mirror Formal
 assert(html.includes('node_type:node.node_type'), 'AI Master save must persist Formal node_type');
 assert(html.includes("masterParamsField')?.classList.toggle('hidden',isAI)"), 'generic params editor must be hidden for AI Master');
 assert(html.includes('window.GKSAIProductionHost={getData:()=>data,'), 'evolved host must retain read-only master access while adding project persistence');
-assert(html.includes('./ai-production/ai-master-adapter.js?v=2'));
+assert(html.includes('../shared/ai/ai-master-adapter.js?v=1'));
 
-console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 formal_only=1');
+console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 formal_only=1 action_terminal=1');

@@ -11,12 +11,18 @@ const state={startedAt:nowIso(),lastRun:null,checks:[],manual:{},notes:''};
 try{Object.assign(state.manual,JSON.parse(localStorage.getItem(storageKey)||'{}').manual||{});}catch(_e){}
 const manualCases=[
  ['launch','画面起動','Gameが白画面にならず、タイトル/拠点へ移動できる'],
+ ['ai-open','AI編集起動','新規Game→冒険者詳細→AIチップ編集で8×8盤面が開き、正式AI Masterが表示される'],
+ ['ai-edit','AI配置・2方向分岐','CONDITION / TARGET / ACTIONを配置し、TRUE/FALSEの2方向分岐・延長・回転・移動をタップ操作できる'],
+ ['ai-validator','AI Validator','未接続時はERROR、正しく接続するとVALIDになり、保存可否が状態に追従する'],
+ ['ai-save','AI保存・再読込','AIを保存→編集を閉じる→再度開く→ページ再読込後も同じProgram/Layoutが復元される'],
+ ['ai-preset','自作Preset','Preset作成・読込・複製・名前変更・削除がタップ操作で完結する'],
+ ['ai-battle','AI戦闘接続','保存したAIで戦闘を開始し、ACTIONが予約・実行され戦闘が進行する'],
  ['battle','通常戦闘','依頼→イベント→戦闘開始→決着まで操作できる'],
  ['controls','戦闘操作','一時停止・1行動・再戦がタップで動作する'],
  ['reactive','反応スキル','COUNTER / FOLLOW_UPが表示上も異常連鎖せず動作する'],
  ['aura','AURA','AURAの生存/死亡/復活による有効・無効を確認する'],
  ['result','結果保存','戦闘結果から拠点へ戻り、資金/戦績が維持される'],
- ['reload','再読込','再読込/PWA再起動後も同じBuildが表示される']
+ ['reload','再読込/PWA','再読込/PWA再起動後も同じBuildと保存済みAIが維持される']
 ];
 function classify(ok,optional){return ok?'pass':optional?'warn':'fail'}
 function addCheck(id,label,ok,detail,optional=false){state.checks.push({id,label,status:classify(ok,optional),detail:String(detail??''),at:nowIso()});}
@@ -35,6 +41,10 @@ async function runChecks(){
  if(swAvailable){try{const reg=await navigator.serviceWorker.getRegistration();addCheck('sw-registration','Service Worker登録',!!reg,reg?`scope=${reg.scope} / controller=${navigator.serviceWorker.controller?'YES':'NO'}`:'未登録',true);}catch(e){addCheck('sw-registration','Service Worker登録',false,e.message||e,true)}}
  const requiredGlobals=['compileSkillRuntime','executeSkillRuntime','GKSTriggerEngine','GKSSkillRuntimeMode','GKSSkillRuntimeDiagnostics'];
  const missing=requiredGlobals.filter(n=>n==='GKSTriggerEngine'||n==='GKSSkillRuntimeMode'?!window[n]:typeof window[n]!=='function'); addCheck('runtime-globals','主要Runtime API',missing.length===0,missing.length?`不足: ${missing.join(', ')}`:'主要API検出');
+ const aiGlobals=['GKGameAICatalogLoader','GKGameAISaveBridge','GKGameAIEditorUI','GKGameAIBattleBridge','GKSAIProgramValidator','GKSAIProgramCompiler','GKSAIDecisionEngine'];
+ const missingAi=aiGlobals.filter(n=>!window[n]); addCheck('ai-runtime-globals','Formal AI API',missingAi.length===0,missingAi.length?`不足: ${missingAi.join(', ')}`:'AI編集・保存・戦闘API検出');
+ const aiDom=['aiEditor','aiBoard','aiEditorSave','aiPresetScreen','aiCandidateScreen','aiConfigScreen','openAiEditor'];
+ const missingAiDom=aiDom.filter(id=>!$(id)); addCheck('ai-editor-dom','AI編集DOM',missingAiDom.length===0,missingAiDom.length?`不足: ${missingAiDom.join(', ')}`:'AI編集DOM検出');
  const formalMode=window.GKSSkillRuntimeMode?.production==='runtimeContracts_only';
  addCheck('formal-runtime-mode','本番Skill Runtime',formalMode,formalMode?'runtimeContracts only':'正式Runtime modeを確認できません');
  const runtimeDiag=typeof window.GKSSkillRuntimeDiagnostics==='function'?window.GKSSkillRuntimeDiagnostics():null,missingContracts=runtimeDiag?.invalidProductionSkillIds||[];
@@ -46,6 +56,8 @@ async function runChecks(){
  await probeFetch('manifest-fetch','PWA manifest取得','./manifest.webmanifest',true);
  await probeFetch('build-fetch','Build正本取得','../package-build.json');
  await probeFetch('skill-fetch','Studio正式skillデータ取得','../Export/skill/skills.json',true);
+ try{const r=await fetch(`../Export/ai/ai_nodes.json?device_test=${Date.now()}`,{cache:'no-store'}),doc=await r.json(),rows=Array.isArray(doc?.data)?doc.data:[];addCheck('ai-master-fetch','Formal AI Master取得',r.ok&&rows.length>0,`HTTP ${r.status} / ${rows.length}件`);}catch(e){addCheck('ai-master-fetch','Formal AI Master取得',false,e.message||e)}
+ try{const r=await fetch(`../Export/ai/ai_templates.json?device_test=${Date.now()}`,{cache:'no-store'}),doc=await r.json(),rows=Array.isArray(doc?.data)?doc.data:[];addCheck('ai-template-fetch','公式AI Preset取得',r.ok,`HTTP ${r.status} / ${rows.length}件${rows.length===0?'（公式Preset未投入。自作Presetのみ手動確認）':''}`,true);}catch(e){addCheck('ai-template-fetch','公式AI Preset取得',false,e.message||e,true)}
  if(navigator.storage?.estimate){try{const est=await navigator.storage.estimate();addCheck('storage-estimate','保存容量',true,`usage=${est.usage||0} / quota=${est.quota||0}`,true)}catch(e){addCheck('storage-estimate','保存容量',false,e.message||e,true)}}
  state.lastRun=nowIso(); render(); return getReport();
 }
@@ -64,7 +76,7 @@ function render(){const host=$('gaDeviceTestBody');if(!host)return;const summary
  host.querySelectorAll('.ga-dt-choice button').forEach(btn=>btn.onclick=()=>setManual(btn.parentElement.dataset.case,btn.dataset.status));const notes=$('gaDeviceTestNotes');if(notes)notes.oninput=()=>{state.notes=notes.value};
 }
 function inject(){const panel=$('developerPanel')||document.body;if($('gaDeviceTestPanel'))return;const style=document.createElement('style');style.textContent=`#gaDeviceTestPanel{margin:12px 0;border:2px solid #4b6f91}#gaDeviceTestPanel h3{margin-top:0}.ga-dt-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.ga-dt-summary{display:flex;justify-content:space-between;gap:8px;padding:10px;border-radius:10px;background:#20344e}.ga-dt-summary.pass{outline:2px solid #5b9}.ga-dt-summary.fail{outline:2px solid #d66}.ga-dt-grid{display:grid;gap:6px;margin:10px 0}.ga-dt-row{display:grid;grid-template-columns:minmax(130px,1fr) auto;gap:4px 8px;padding:8px;border-radius:8px;background:rgba(0,0,0,.16)}.ga-dt-row small{grid-column:1/-1;word-break:break-word}.ga-dt-row.pass span{color:#8fd6aa}.ga-dt-row.warn span{color:#f5c451}.ga-dt-row.fail span{color:#ff9292}.ga-dt-manual{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.12)}.ga-dt-manual small{display:block}.ga-dt-choice{display:flex;gap:5px}.ga-dt-choice button{padding:7px 9px;font-size:12px}.ga-dt-choice .selected{outline:2px solid #fff}.ga-dt-choice .pass{background:#2f7253}.ga-dt-choice .fail{background:#8a3e46}.ga-dt-note{display:block;margin-top:12px}.ga-dt-note textarea{width:100%;margin-top:6px}.ga-dt-muted{opacity:.75}#gaDeviceTestMessage[data-status=pass]{color:#8fd6aa}#gaDeviceTestMessage[data-status=warn]{color:#f5c451}@media(max-width:680px){.ga-dt-manual{grid-template-columns:1fr}.ga-dt-choice{justify-content:flex-start}.ga-dt-summary{flex-direction:column}}`;document.head.appendChild(style);
- const section=document.createElement('section');section.id='gaDeviceTestPanel';section.className='card';section.innerHTML=`<h3>実機受入テスト <small>Game Formal Runtime</small></h3><p class="small">端末上で自動診断＋手動チェックを行い、結果をJSONとして持ち出します。自動診断PASSだけでは戦闘操作の合格にはなりません。</p><div class="ga-dt-actions"><button class="primary" id="gaDeviceTestRun">自動診断を実行</button><button id="gaDeviceTestCopy">結果JSONをコピー</button><button id="gaDeviceTestDownload">結果JSONを保存</button></div><div id="gaDeviceTestMessage" class="small"></div><div id="gaDeviceTestBody"></div>`;
+ const section=document.createElement('section');section.id='gaDeviceTestPanel';section.className='card';section.innerHTML=`<h3>実機受入テスト <small>Game Formal Runtime / AI Chip UI</small></h3><p class="small">端末上で自動診断＋手動チェックを行い、結果をJSONとして持ち出します。自動診断PASSだけでは戦闘操作の合格にはなりません。</p><div class="ga-dt-actions"><button class="primary" id="gaDeviceTestRun">自動診断を実行</button><button id="gaDeviceTestCopy">結果JSONをコピー</button><button id="gaDeviceTestDownload">結果JSONを保存</button></div><div id="gaDeviceTestMessage" class="small"></div><div id="gaDeviceTestBody"></div>`;
  const summary=panel.querySelector('summary'); if(summary)summary.insertAdjacentElement('afterend',section); else panel.prepend(section);
  $('gaDeviceTestRun').onclick=()=>{setMessage('診断中…');runChecks()};$('gaDeviceTestCopy').onclick=copyReport;$('gaDeviceTestDownload').onclick=downloadReport;render();
  if(new URLSearchParams(location.search).get('deviceTest')==='1'){panel.classList.remove('hidden');if(panel.tagName==='DETAILS')panel.open=true;setTimeout(()=>section.scrollIntoView({block:'start'}),50)}

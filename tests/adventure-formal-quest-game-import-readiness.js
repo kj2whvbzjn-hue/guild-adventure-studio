@@ -68,7 +68,12 @@ for(const needle of [
  '件のQuestを参照不整合のため除外',
  'StudioのExport検証でQuest Box / Scene / Event参照を確認してください。'
 ])assert(app.includes(needle),`formal quest Game import readiness missing: ${needle}`);
-assert(!app.includes("filter(q=>{const links=q.links||{};return Boolean(q?.id&&links.chapter_id&&links.section_id)"),'link-only formal quest filter must be removed');
-assert(!app.includes("FORMAL_QUEST_RANDOM_EVENT_PENDING:'Random EventはP6で実行対応'"),'P6 must not keep the P5 random-event pending import block');
 assert(app.includes('P7-Bで実行可能なStory Questがありません。'),'P7-B empty formal Export guidance missing');
+
+const ui=fs.readFileSync('game/assets/js/ui-bootstrap.js','utf8');
+const shell=fs.readFileSync('assets/shared/js/game-shell-common.js','utf8');
+assert(app.includes("function selectedQuest(){const formal=formalAdventureQuests();return formal.find(q=>q.id===data.selectedQuestId)||formal[0]||null}"),'selectedQuest must remain formal-only');
+assert(ui.includes("await beginSelectedAdventure()"),'desktop departure must route to QuestRun');
+assert(shell.includes("if(typeof beginSelectedAdventure==='function') beginSelectedAdventure();"),'mobile departure must route to QuestRun');
+assert(app.includes("formalAdventureQuests().find(x=>String(x.id)===String(run?.quest_id))"),'Playback title must resolve the QuestRun quest from the Formal catalog');
 console.log('adventure-formal-quest-game-import-readiness PASS');

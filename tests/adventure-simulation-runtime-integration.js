@@ -6,7 +6,7 @@ assert(app.includes('function registerAdventureQuestCards('),'Studio Export ques
 assert(app.includes('function resolveAdventureBundle('),'Quest to Chapter/Section resolver is missing');
 assert(app.includes('function adventurePartySnapshot('),'Party Snapshot adapter is missing');
 assert(app.includes('GKAdventureStorySystem.simulateQuest({quest:bundle.quest'),'Adventure Simulation is not connected to runtime');
-assert(app.includes('GKAdventureBattleCore.simulateBasicBattle({party:partySnapshot'),'headless Battle Core is not connected to Adventure Simulation');
+assert(app.includes('GKGameFormalAdventureBattle.simulate({party:partySnapshot'),'Formal AI Battle path is not connected to Adventure Simulation');
 assert(app.includes('const stored=storeAdventureQuestRun(run)'),'simulated QuestRun is not persisted');
 assert(app.includes("reason:'formal_quest_unavailable'"),'formal quest unavailable guard is missing');
 assert(app.includes("$('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure"),'desktop departure is not connected to formal Adventure Simulation');

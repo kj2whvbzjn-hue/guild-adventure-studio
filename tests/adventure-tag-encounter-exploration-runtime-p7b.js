@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const S=require('../assets/shared/js/adventure-story-system.js');
 const R=require('../assets/shared/js/adventure-encounter-resolver.js');
 
-const settings=[{id:'ADV-DEFAULT',enabled:true,params:{encounter:{default_spawn_weight:1,max_units:20},reward_scaling:{bonus_per_budget:.01,min_multiplier:1,max_multiplier:null},exploration:{default_base_weight:1,default_success_rate:1,min_success_rate:0,max_success_rate:1,rarity_budget_reference:0,rarity_weight_bonus_per_budget:{common:0,rare:.1,epic:.2}},fixed_formation_scaling:{hp_per_ratio:1,attack_per_ratio:.5,agi_per_ratio:0,min_multiplier:1,max_multiplier:3}}}];
+const settings=[{id:'ADV-0001',enabled:true,params:{encounter:{default_spawn_weight:1,max_units:20},reward_scaling:{bonus_per_budget:.01,min_multiplier:1,max_multiplier:null},exploration:{default_base_weight:1,default_success_rate:1,min_success_rate:0,max_success_rate:1,rarity_budget_reference:0,rarity_weight_bonus_per_budget:{common:0,rare:.1,epic:.2}},fixed_formation_scaling:{hp_per_ratio:1,attack_per_ratio:.5,agi_per_ratio:0,min_multiplier:1,max_multiplier:3}}}];
 const maps=[{id:'MAP-GRASS',name:'Grass',tags:['grassland','outdoor']},{id:'MAP-DESERT',name:'Desert',tags:['desert','outdoor']}];
 const monsters=[
  {id:'M-GRASS',name:'Grass',tags:['BEAST'],params:{enemy_budget_cost:5,spawn_weight:2,spawn_tags:{any:['grassland'],all:[],none:[]},maxHp:100,attack:10,agi:10}},
