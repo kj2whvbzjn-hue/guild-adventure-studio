@@ -13,9 +13,9 @@ function validationEventsToPlaybackEvents(events){
    case'battle_started':out.push({...base,type:'battle_start',seed:e.seed??null});break;
    case'action_execution_committed':{
     const skillId=e.skill_id??null,key=actionKey(e);
-    out.push({...base,type:'action_start',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:skillId});
+    out.push({...base,type:'action_start',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:skillId,skill_name:e.skill_name??null});
     committedActionStartKeys.add(key);
-    if(skillId!==null&&String(skillId).trim()!=='')out.push({...base,type:'skill_cast',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:skillId});
+    if(skillId!==null&&String(skillId).trim()!=='')out.push({...base,type:'skill_cast',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:skillId,skill_name:e.skill_name??null});
     break;
    }
    case'attack':out.push({...base,type:'hit',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null});out.push({...base,type:'damage',source_id:e.source_id??null,target_id:e.target_id??null,skill_id:e.skill_id??null,value:Number(e.damage)||0,hp_after:e.hp_after??null});break;

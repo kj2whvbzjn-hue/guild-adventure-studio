@@ -222,7 +222,7 @@ function executeReservation(actor){
   }
   const skill=checked.skill||null,label=r.type==='attack'?'通常攻撃':skill?.name||r.label;
   battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI予約「${label}」を実行 → ${target.name}`);
-  typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill?.id||null,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,formal_ai:true});
+  typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill?.id||null,skill_name:skill?.name||null,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,formal_ai:true});
   actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill?.id||null,executedTargetId:target.id};actor.reservedAction=null;
   return r.type==='attack'?performBasicAttack(actor,target):executeSkillRuntime(actor,target,skill,{skipExecutionEligibility:true}).ok;
  }
@@ -232,7 +232,7 @@ function executeReservation(actor){
  const target=checked.target,skill=checked.skill;
  r.status='executing';actor.gauge=Math.max(0,actor.gauge-GAUGE_MAX);actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;
  battle.log.push(`[Tick ${battle.tick}] ${actor.name}は実行時判定で「${skill.name}」を確定 → ${target.name}`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null});
+ typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,skill_name:skill.name||null,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null});
  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
  return executeSkillRuntime(actor,target,skill,{skipExecutionEligibility:true}).ok;
 }

@@ -1,50 +1,50 @@
-const CACHE_NAME="ga-game-b486195-b617";
+const CACHE_NAME="ga-game-b486196-b618";
 const CACHE_PREFIX="ga-game-";
-const OFFLINE_URL='./index.html?appv=486195b617';
+const OFFLINE_URL='./index.html?appv=486196b618';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=486195b617",
-  "./manifest.webmanifest?v=486195",
-  "./icon-192.png?v=486195",
-  "./icon-512.png?v=486195",
-  "../Export/skill/skills.json?v=486195b617"
+  "./index.html?appv=486196b618",
+  "./manifest.webmanifest?v=486196",
+  "./icon-192.png?v=486196",
+  "./icon-512.png?v=486196",
+  "../Export/skill/skills.json?v=486196b618"
 ,
-  "../Export/ai/ai_nodes.json?v=486195b617",
-  "../Export/ai/ai_templates.json?v=486195b617",
-  "../shared/ai/ai-program-model.js?v=486195b617",
-  "../shared/ai/ai-layout-model.js?v=486195b617",
-  "../shared/ai/ai-master-adapter.js?v=486195b617",
-  "../shared/ai/ai-connection-resolver.js?v=486195b617",
-  "../shared/ai/ai-program-validator.js?v=486195b617",
-  "../shared/ai/ai-program-compiler.js?v=486195b617",
-  "../shared/ai/ai-program-trace.js?v=486195b617",
-  "../shared/ai/ai-decision-engine.js?v=486195b617",
-  "./assets/js/ai-catalog-loader.js?v=486195b617",
-  "./assets/js/ai-save-bridge.js?v=486195b617",
-  "./assets/js/ai-battle-bridge.js?v=486195b617",
-  "./assets/js/ai-editor-ui.js?v=486195b617"
+  "../Export/ai/ai_nodes.json?v=486196b618",
+  "../Export/ai/ai_templates.json?v=486196b618",
+  "../shared/ai/ai-program-model.js?v=486196b618",
+  "../shared/ai/ai-layout-model.js?v=486196b618",
+  "../shared/ai/ai-master-adapter.js?v=486196b618",
+  "../shared/ai/ai-connection-resolver.js?v=486196b618",
+  "../shared/ai/ai-program-validator.js?v=486196b618",
+  "../shared/ai/ai-program-compiler.js?v=486196b618",
+  "../shared/ai/ai-program-trace.js?v=486196b618",
+  "../shared/ai/ai-decision-engine.js?v=486196b618",
+  "./assets/js/ai-catalog-loader.js?v=486196b618",
+  "./assets/js/ai-save-bridge.js?v=486196b618",
+  "./assets/js/ai-battle-bridge.js?v=486196b618",
+  "./assets/js/ai-editor-ui.js?v=486196b618"
 ,
-  "../assets/shared/config/runtime-config.js?v=486195b617",
-  "../assets/shared/js/game-shell-common.js?v=486195",
-  "../assets/shared/js/apply-lifecycle-engine.js?v=486195",
-  "../assets/shared/js/trigger-engine.js?v=486195",
-  "../assets/shared/js/condition-engine.js?v=486195",
+  "../assets/shared/config/runtime-config.js?v=486196b618",
+  "../assets/shared/js/game-shell-common.js?v=486196",
+  "../assets/shared/js/apply-lifecycle-engine.js?v=486196",
+  "../assets/shared/js/trigger-engine.js?v=486196",
+  "../assets/shared/js/condition-engine.js?v=486196",
   "../assets/shared/js/adventure-story-system.js?v=11",
   "../assets/shared/js/adventure-encounter-resolver.js?v=3",
   "../assets/shared/js/adventure-reward-resolver.js?v=1",
-  "../assets/shared/js/adventure-battle-core.js?v=3",
-  "../assets/shared/js/skill-compiler.js?v=486195",
-  "../assets/shared/js/skill-compile-service.js?v=486195",
-  "../assets/shared/js/device-game-test-harness.js?v=486195",
-  "../assets/shared/config/skill-registry.json?v=486195"
+  "../assets/shared/js/adventure-battle-core.js?v=4",
+  "../assets/shared/js/skill-compiler.js?v=486196",
+  "../assets/shared/js/skill-compile-service.js?v=486196",
+  "../assets/shared/js/device-game-test-harness.js?v=486196",
+  "../assets/shared/config/skill-registry.json?v=486196"
 ,
-  "./assets/js/app-runtime.js?v=486195b617"
+  "./assets/js/app-runtime.js?v=486196b618"
 ,
-  "./assets/js/tag-skill-runtime.js?v=486195b617",
-  "./assets/js/studio-skill-bridge.js?v=486195b617"
+  "./assets/js/tag-skill-runtime.js?v=486196b618",
+  "./assets/js/studio-skill-bridge.js?v=486196b618"
 ,
-  "./assets/js/battle-control.js?v=486195b617",
-  "./assets/js/ui-bootstrap.js?v=486195"
+  "./assets/js/battle-control.js?v=486196b618",
+  "./assets/js/ui-bootstrap.js?v=486196"
 ];
 
 self.addEventListener('install',event=>{
