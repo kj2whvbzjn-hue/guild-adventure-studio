@@ -45,6 +45,11 @@
       })
     });
   }
+  function filterSkills(catalog,allowedSkillIds){
+    const source=catalog&&typeof catalog==='object'?catalog:normalize([],[],[],[],[]),allowed=new Set((Array.isArray(allowedSkillIds)?allowedSkillIds:[]).map(x=>String(x||'').trim()).filter(Boolean));
+    const skills=(source.refs?.skills||[]).filter(row=>allowed.has(String(row?.id||'')));
+    return Object.freeze({...source,refs:Object.freeze({...source.refs,skills:Object.freeze(clone(skills))}),counts:Object.freeze({...source.counts,skills:skills.length})});
+  }
   async function fetchJson(fetchImpl,url){
     const response=await fetchImpl(url,{cache:'no-store'});
     if(!response||!response.ok)throw new Error(`AI catalog fetch failed: ${url} (${response?.status||'network'})`);
@@ -69,5 +74,5 @@
     const catalog=normalize(ai,skills,tags,tagCategories,templates);
     return Object.freeze({...catalog,data_version:aiVersion||skillVersion||templateVersion||'',warnings:Object.freeze(warnings)});
   }
-  return Object.freeze({rowsFromEnvelope,refsFromEnvelope,dataVersionFromEnvelope,normalizeOfficialPreset,normalize,load});
+  return Object.freeze({rowsFromEnvelope,refsFromEnvelope,dataVersionFromEnvelope,normalizeOfficialPreset,normalize,filterSkills,load});
 });

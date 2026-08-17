@@ -11,8 +11,9 @@ function syncPortraitDevelopmentMode(){
 }
 
 function setDeveloperMode(enabled){
- const panel=$('developerPanel'),button=$('developerModeBtn');
+ const panel=$('developerPanel'),button=$('developerModeBtn'),skillAssignment=$('skillAssignmentDeveloper');
  if(panel){panel.classList.toggle('hidden',!enabled);if(!enabled)panel.open=false}
+ if(skillAssignment)skillAssignment.classList.toggle('hidden',!enabled);
  if(button){button.classList.toggle('active',enabled);button.setAttribute('aria-pressed',String(enabled));button.textContent=enabled?'開発者モード ON':'開発者モード'}
  document.body.classList.toggle('dev-enabled',enabled);localStorage.setItem(DEV_KEY,enabled?'1':'0');
  syncPortraitDevelopmentMode();
