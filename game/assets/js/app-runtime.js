@@ -199,9 +199,6 @@ function notify(text,type='ok'){const n=$('notice');n.textContent=text;n.classNa
 function jobOptions(){return Object.keys(JOBS).map(j=>`<option value="${j}">${j}</option>`).join('')}
 $('newJob').innerHTML=jobOptions();if($('changeJob'))$('changeJob').innerHTML=jobOptions();
 if($('jobTable'))$('jobTable').innerHTML=Object.entries(JOBS).map(([job,a])=>`<tr><td><b>${job}</b></td>${STATS.map(s=>`<td>${a[s]} <span class="small">(期待値 ${aptitudeExpected(a[s])})</span></td>`).join('')}</tr>`).join('');
-const LEGACY_AI_GRID=8;
-function defaultAiGraph(){return{version:1,cells:[{id:'N1',x:0,y:0,type:'start',label:'開始'},{id:'N2',x:0,y:1,type:'target',label:'HP最少の敵',key:'lowestEnemy'},{id:'N3',x:0,y:2,type:'action',label:'通常攻撃',key:'attack'}]}}
-function normalizeAiGraph(g){if(!g||!Array.isArray(g.cells))return defaultAiGraph();g.cells=g.cells.filter(n=>Number.isInteger(n.x)&&Number.isInteger(n.y)&&n.x>=0&&n.x<LEGACY_AI_GRID&&n.y>=0&&n.y<LEGACY_AI_GRID);return g}
 function makeCharacter(name,job){return{id:uid(),name,level:1,job,stats:Object.fromEntries(STATS.map(s=>[s,10])),skills:['SKL-TEST-ATTACK','SKL-TEST-HEAVY','SKL-TEST-POISON'],equippedSkillId:'SKL-TEST-ATTACK',aiGraph:defaultAiGraph(),aiPolicy:'lowestHp',formalAiBinding:null,equipment:{weapon:null,armor:null,accessory:null},jobHistory:[{job,level:1,at:new Date().toISOString()}],growthHistory:[],createdAt:new Date().toISOString()}}
 function normalize(raw){
  raw=window.GKGameAISaveBridge?GKGameAISaveBridge.migrate(raw):clone(raw);
