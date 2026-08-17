@@ -1,4 +1,4 @@
-# AIチップUI 手動実機受入 — GA-B486.193 / GKS-B615
+# AIチップUI 手動実機受入 — GA-B486.194 / GKS-B616
 
 ## 目的
 
@@ -14,7 +14,7 @@ Game公開URLの末尾へ `?deviceTest=1` を付ける。
 
 ## 前提
 
-- Game Build表示が `GA-B486.193`、Studio Build表示が `GKS-B615` である。
+- Game Build表示が `GA-B486.194`、Studio Build表示が `GKS-B616` である。
 - Formal AI Master取得がPASSし、AI Masterが1件以上存在する。
 - 現行正式データでは公式AI Presetは0件でもよい。公式Presetは今回の受入対象外とし、自作Presetを確認する。
 - 実機ブラウザのlocalStorageが利用できる。
