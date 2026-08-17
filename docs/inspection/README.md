@@ -29,6 +29,37 @@ python3 -S -B tools/inspection/run.py full --report reports/inspection-full.json
 ```
 
 
+
+## accept — SOURCE_UPDATEの通常受入
+
+SOURCE_UPDATEのGitHub配置前は、重いFullを機械的に二重実行せず、次の3段階を1つの受入として実行する。
+
+1. **Integrity**: baseline binding、package manifest、Encoding、削除境界、保護テスト/Gate/Schemaの改変を先に確認する。
+2. **Impact**: 基準ソースとの差分を保守的に分類し、影響テストだけを選択する。分類不能・共通基盤・Schema・Gate・受入基準変更は自動的にFullへ昇格する。
+3. **Full**: Impact plannerがFullを要求した場合、またはrelease時だけ実行する。SOURCE_UPDATEでは適用後完成ツリーに対して1回だけ実行し、更新ZIP単体と完成ツリーで同じFullを重複実行しない。
+
+```bash
+python3 -S -B tools/inspection/run.py accept \
+  --context update \
+  --baseline-source /path/to/exact-baseline-source
+```
+
+`accept`は安全強度を下げる軽量モードではない。Impact ruleに確信がない差分は`fallback=full`で必ずFullへ昇格する。公開前の`release`は従来どおりFullを含む。
+
+### Test Integrity / Anti-Tampering
+
+`shared/integrity/test-integrity-policy.json`により、既存の`tests/**`、`tools/inspection/**`、`tools/integrity/**`、`shared/integrity/**`、`shared/tests/test-registry.json`、`schemas/**`等をbaseline基準で保護する。
+
+- Build識別子・そこから導出されるcache tokenだけが変化し、正規化後の全バイトが同一ならBuild追随として許可する。
+- それ以外の既存保護ファイル変更は`TEST_CHANGE_APPROVAL.json`の完全一致パス、baseline SHA-256、updated SHA-256、理由を必須とする。
+- Studio配置時にもGitHub HEADからhashを再計算し、保護変更がある場合は通常の配置確認とは別の人間確認を要求する。
+- 追加テスト自体は追加可能だが、release test registryを変更する場合はregistryが保護対象なので承認が必要になる。
+- タイムアウト、テスト失敗、成果物不合格は保護テスト改変の承認理由にはならない。仕様変更として人間が明示承認した場合だけ別扱いにする。
+
+### Timeout分類
+
+各release testには個別timeoutを設定し、停止したテスト名を`RELEASE_TEST_TIMEOUT`として特定する。Inspection結果では`failure_kind=timeout`、return code 124として記録し、通常のassertion failureと区別する。ただし必須GateとしてはどちらもFAILであり、timeoutを黙ってskip/warnへ降格しない。
+
 ## SOURCE_UPDATEの適用後Gate
 
 `SOURCE_UPDATE`は更新ZIP単体のFull PASSだけでは配置可としない。Studio更新はZIPに含まれないGitHub既存ファイルを保持するため、更新ZIPとその`package_manifest.json`だけが相互に整合していても、適用後の完全ソースで未登録ファイルが発生し得る。
@@ -36,7 +67,7 @@ python3 -S -B tools/inspection/run.py full --report reports/inspection-full.json
 そのため`--context update`では、**更新対象となる正確な完全ソース基準**を必須指定する。
 
 ```bash
-python3 -S -B tools/inspection/run.py full \
+python3 -S -B tools/inspection/run.py accept \
   --context update \
   --baseline-source /path/to/exact-baseline-source
 ```
@@ -44,7 +75,7 @@ python3 -S -B tools/inspection/run.py full \
 GitHub Download ZIPを直接基準にする場合: 
 
 ```bash
-python3 -S -B tools/inspection/run.py full \
+python3 -S -B tools/inspection/run.py accept \
   --context update \
   --baseline-zip /path/to/exact-baseline.zip
 ```

@@ -31,12 +31,12 @@ GKS-B620以降のStudio更新画面も、GitHub差分解析の開始時にHEAD�
 
 ## 判定
 
-適用後完成ツリーへ通常のSource Quick / Fullを再実行する。例えば基準に`cpf/src/Export/CpfDemoRuntimeExporter.php`が存在し、更新ZIPからそのファイルとmanifest entryを同時に落とした場合、ZIP単体では整合していても適用後ツリーにはファイルが残るため、`UNLISTED cpf/src/Export/CpfDemoRuntimeExporter.php`としてFAILする。
+適用後完成ツリーへ通常のSource QuickとAcceptを実行する。AcceptはImpact plannerが安全に狭い範囲へ分類できる場合だけ影響テストを選択し、Gate/Schema/共有基盤/未分類差分や保護テスト変更では自動的にFullへ昇格する。更新ZIP単体と適用後完成ツリーで同じFullを二重実行しない。例えば基準に`cpf/src/Export/CpfDemoRuntimeExporter.php`が存在し、更新ZIPからそのファイルとmanifest entryを同時に落とした場合、ZIP単体では整合していても適用後ツリーにはファイルが残るため、`UNLISTED cpf/src/Export/CpfDemoRuntimeExporter.php`としてFAILする。
 
 ## 標準コマンド
 
 ```bash
-python3 -S -B tools/inspection/run.py full \
+python3 -S -B tools/inspection/run.py accept \
   --context update \
   --baseline-source /path/to/exact-baseline-source
 ```
@@ -44,7 +44,7 @@ python3 -S -B tools/inspection/run.py full \
 または:
 
 ```bash
-python3 -S -B tools/inspection/run.py full \
+python3 -S -B tools/inspection/run.py accept \
   --context update \
   --baseline-zip /path/to/exact-baseline.zip
 ```

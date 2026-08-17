@@ -240,7 +240,8 @@ def main() -> int:
     baseline = parser.add_mutually_exclusive_group(required=True)
     baseline.add_argument("--baseline-source", type=Path)
     baseline.add_argument("--baseline-zip", type=Path)
-    parser.add_argument("--final-gate", choices=("manifest", "quick", "full"), default="full")
+    parser.add_argument("--final-gate", choices=("manifest", "quick", "impact", "accept", "full"), default="accept")
+    parser.add_argument("--timeout-per-test", type=int, default=30)
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--timeout", type=int, default=180)
     args = parser.parse_args()
@@ -303,6 +304,55 @@ def main() -> int:
             report["application"] = apply_update(update_root, baseline_root, applied_root, errors)
 
         final_proc: subprocess.CompletedProcess[str] | None = None
+        impact_plan_path = temp / "impact-plan.json"
+        integrity_report_path = temp / "test-integrity.json"
+        if not errors:
+            integrity_checker = baseline_root / "tools/integrity/check-test-integrity.py"
+            if not integrity_checker.is_file():
+                integrity_checker = update_root / "tools/integrity/check-test-integrity.py"
+            if integrity_checker.is_file():
+                integrity_cmd = [
+                    sys.executable, "-S", "-B", str(integrity_checker),
+                    str(baseline_root), str(applied_root),
+                    "--json-output", str(integrity_report_path),
+                ]
+                approval_file = update_root / "TEST_CHANGE_APPROVAL.json"
+                if approval_file.is_file():
+                    integrity_cmd.extend(["--approval-file", str(approval_file)])
+                integrity_proc = run_checked(integrity_cmd, baseline_root, args.timeout)
+                report["test_integrity_returncode"] = integrity_proc.returncode
+                if integrity_report_path.is_file():
+                    report["test_integrity"] = json.loads(integrity_report_path.read_text(encoding="utf-8"))
+                if integrity_proc.returncode != 0:
+                    errors.append("TEST_INTEGRITY_GATE_FAILED\n" + (integrity_proc.stdout + integrity_proc.stderr).strip())
+            elif args.final_gate in {"impact", "accept"}:
+                errors.append("TEST_INTEGRITY_CHECKER_MISSING")
+
+        selected_final_gate = args.final_gate
+        if not errors and args.final_gate in {"impact", "accept"}:
+            planner = baseline_root / "tools/inspection/plan-impact-tests.py"
+            if not planner.is_file():
+                planner = update_root / "tools/inspection/plan-impact-tests.py"
+            if not planner.is_file():
+                errors.append("IMPACT_PLANNER_MISSING")
+            else:
+                plan_cmd = [
+                    sys.executable, "-S", "-B", str(planner),
+                    str(baseline_root), str(applied_root),
+                    "--json-output", str(impact_plan_path),
+                ]
+                if integrity_report_path.is_file():
+                    plan_cmd.extend(["--test-integrity-report", str(integrity_report_path)])
+                plan_proc = run_checked(plan_cmd, baseline_root, args.timeout)
+                if plan_proc.returncode != 0:
+                    errors.append("IMPACT_PLANNER_FAILED\n" + (plan_proc.stdout + plan_proc.stderr).strip())
+                elif impact_plan_path.is_file():
+                    report["impact_plan"] = json.loads(impact_plan_path.read_text(encoding="utf-8"))
+                    mode = report["impact_plan"].get("mode")
+                    if args.final_gate == "impact" and mode != "impact":
+                        errors.append("IMPACT_GATE_ESCALATION_REQUIRED mode=" + str(mode))
+                    selected_final_gate = "full" if mode == "full" else "impact"
+
         if not errors:
             if args.final_gate == "manifest":
                 final_command = [
@@ -311,15 +361,20 @@ def main() -> int:
                     str(applied_root),
                 ]
             else:
+                profile = selected_final_gate if args.final_gate in {"impact", "accept"} else args.final_gate
                 final_command = [
                     sys.executable, "-S", "-B",
                     str(applied_root / "tools/inspection/run.py"),
-                    args.final_gate,
+                    profile,
                     "--context", "source",
                     "--timeout", str(args.timeout),
+                    "--timeout-per-test", str(args.timeout_per_test),
                 ]
-            final_proc = run_checked(final_command, applied_root, max(args.timeout, 180))
+                if profile == "impact":
+                    final_command.extend(["--test-selection", str(impact_plan_path)])
+            final_proc = run_checked(final_command, applied_root, max(args.timeout * 4, 600))
             report["applied_tree_sha256"] = source_tree_sha256(applied_root)
+            report["selected_final_gate"] = selected_final_gate
             report["final_gate_returncode"] = final_proc.returncode
             if final_proc.returncode != 0:
                 errors.append("APPLIED_SOURCE_GATE_FAILED\n" + (final_proc.stdout + final_proc.stderr).strip())
@@ -336,7 +391,7 @@ def main() -> int:
         return 1
     print(
         "SOURCE_UPDATE_APPLIED_STATE_OK "
-        f"final_gate={args.final_gate} copied={report['application']['copied_persistent_count']} "
+        f"final_gate={args.final_gate} selected={report.get('selected_final_gate', args.final_gate)} copied={report['application']['copied_persistent_count']} "
         f"deleted={report['application']['deleted_count']} applied_tree_sha256={report['applied_tree_sha256']}"
     )
     if final_proc and final_proc.stdout:

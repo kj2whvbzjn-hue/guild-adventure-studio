@@ -30,6 +30,9 @@ def main() -> int:
     parser.add_argument("--evidence-dir", type=Path, required=True)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--timeout", type=int, default=120)
+    baseline_group = parser.add_mutually_exclusive_group()
+    baseline_group.add_argument("--baseline-source", type=Path)
+    baseline_group.add_argument("--baseline-zip", type=Path)
     args = parser.parse_args()
 
     try:
@@ -45,7 +48,9 @@ def main() -> int:
         parser.error(f"unknown shard: {args.shard}")
     selected_names = set(plan["shards"][args.shard])
 
-    all_steps = unified.build_steps("full", None, args.context)
+    if args.context == 'update' and ((args.baseline_source is None) == (args.baseline_zip is None)):
+        parser.error('update context requires exactly one of --baseline-source or --baseline-zip')
+    all_steps = unified.build_steps("full", None, args.context, baseline_source=args.baseline_source, baseline_zip=args.baseline_zip, input_zip=args.input_zip, timeout_seconds=args.timeout)
     available = {name for name, _, _ in all_steps}
     # delete_manifest exists only in update context.
     effective_selected = selected_names & available
@@ -68,6 +73,8 @@ def main() -> int:
         "input_zip_sha256": zip_info["zip_sha256"],
         "shard": args.shard,
         "context": args.context,
+        "baseline_source": str(args.baseline_source.resolve()) if args.baseline_source else None,
+        "baseline_zip": str(args.baseline_zip.resolve()) if args.baseline_zip else None,
         "started_at": utc_now(),
     })
 

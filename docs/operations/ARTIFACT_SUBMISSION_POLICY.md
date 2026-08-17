@@ -76,8 +76,10 @@ GitHubへStudio更新画面から配置する更新ZIPは次を満たす。
 - 削除がある場合は有効な`DELETE_APPROVAL.json`を含む。
 - `package_manifest.json`を実体に同期する。
 - `studio-update.json`へ`baseline_source`（基準Game/Studio Build、`package_manifest.json` SHA-256、完全ソースtree SHA-256）を記録する。
-- `python3 tools/inspection/run.py full --context update --baseline-source <exact-baseline-root>`、または`--baseline-zip <exact-baseline.zip>`に合格する。基準指定なしの`update` Gateは不合格とする。
+- `python3 tools/inspection/run.py accept --context update --baseline-source <exact-baseline-root>`、または`--baseline-zip <exact-baseline.zip>`に合格する。Impact判定が不確実・安全重要な場合は自動でFullへ昇格する。基準指定なしの`update` Gateは不合格とする。
 - update GateはZIP単体の整合性に加え、基準完全ソースへStudioと同じ分類規則でoverlayした**適用後完成ツリー**へSource Gateを再実行する。ZIPにない既存persistentファイルは削除承認がない限り残るものとして検査する。
+- 既存の保護テスト/Gate/Schema/test registry/integrity policyを変更する更新は、Build tokenだけの追随を除き`TEST_CHANGE_APPROVAL.json`で完全一致パス・baseline/updated SHA-256・理由を明示し、Studio配置時に通常配置とは別の人間確認を行う。
+- 更新ZIP単体と適用後完成ツリーで同一のFull機能テストを重複実行しない。適用後完成ツリーを機能検査の正本とし、ZIP自体はbinding/hash/encoding/境界を検査する。
 - StudioのGitHub差分解析でも、`baseline_source.package_manifest_sha256`と配置先HEADの`package_manifest.json` SHA-256、および基準Buildを照合する。基準が変化している場合は配置しない。
 - 必要な場合はrelease Gateに合格する。
 - ZIP整合性・UTF-8/NFC検査に合格する。

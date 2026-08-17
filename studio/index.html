@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B620</title>
+<title>GK Studio GKS-B621</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.197 / GKS-B620</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.197 / GKS-B621</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.197 / Studio GKS-B620</div>
+    <div class="version">Game GA-B486.197 / Studio GKS-B621</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2212,11 +2212,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=620"></script>
+<script src="./layer-controller.js?v=621"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B620';
+const DISTRIBUTION_BUILD='GKS-B621';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -6123,6 +6123,10 @@ let studioDeployDeleteCandidates=[];
 let studioDeployDeleteBlocked=[];
 let studioDeployDeleteManifestRules=[];
 let studioDeployDeletePolicy=null;
+let studioDeployTestIntegrityPolicy=null;
+let studioDeployTestChangeApproval=null;
+let studioDeployProtectedTestChanges=[];
+let studioDeployCurrentBuild=null;
 const STUDIO_DEPLOY_HISTORY_KEY='gk_studio_deploy_history_v1';
 const STUDIO_DEPLOY_LIMIT_POLICY=GKZipCore.limits.createPolicy({maxFiles:5000,maxFileBytes:20*1024*1024,maxTotalBytes:100*1024*1024});
 const STUDIO_DEPLOY_MAX_FILES=STUDIO_DEPLOY_LIMIT_POLICY.maxFiles;
@@ -6240,6 +6244,71 @@ function classifyDeploySystemFile(path,policy){
   if((rule.patterns||[]).some(pattern=>deployPolicyGlobMatch(rel,pattern)))return name;
  }
  return fallback;
+}
+function isProtectedTestIntegrityPath(path){
+ const rel=normalizeDeployPath(path);
+ return (studioDeployTestIntegrityPolicy?.protected_patterns||[]).some(pattern=>deployPolicyGlobMatch(rel,pattern));
+}
+function deployBuildTokenVariants(gameBuild,studioBuild){
+ const out=new Set([String(gameBuild||''),String(studioBuild||'')].filter(Boolean));
+ const gm=/^GA-B(\d+)\.(\d+)$/.exec(String(gameBuild||''));
+ const sm=/^GKS-B(\d+)$/.exec(String(studioBuild||''));
+ if(gm&&sm){
+  const cg=gm[1]+gm[2],sb=sm[1];
+  [cg+'b'+sb,'b'+cg+'-b'+sb,'gks-studio-b'+sb,'ga-game-b'+cg+'-b'+sb,'appv='+sb,'?v='+sb,'&v='+sb,'v='+cg+'b'+sb].forEach(x=>out.add(x));
+ }
+ return [...out].filter(Boolean).sort((a,b)=>b.length-a.length);
+}
+function normalizeDeployBuildOnlyText(text,tokens){
+ let value=String(text);
+ for(const token of tokens)value=value.split(token).join('<BUILD_TOKEN>');
+ return value;
+}
+async function fetchGitBlobBytes(repo,sha){
+ const blob=await ghRequest(`${repo}/git/blobs/${encodeURIComponent(sha)}`);
+ if(blob?.encoding!=='base64')throw new Error('GitHub blobのencodingがbase64ではありません。');
+ return base64ToBytes(blob.content);
+}
+async function isDeployBuildTokenOnlyChange(file,remote){
+ if(!file?.remoteSha||!file?.bytes)return false;
+ let remoteBytes;
+ try{remoteBytes=await fetchGitBlobBytes(remote.repo,file.remoteSha)}catch(_e){return false}
+ let before,after;
+ try{before=new TextDecoder('utf-8',{fatal:true}).decode(remoteBytes);after=new TextDecoder('utf-8',{fatal:true}).decode(file.bytes)}catch(_e){return false}
+ const oldBinding=studioDeployMeta?.baseline_source||{};
+ const tokens=[...new Set([
+  ...deployBuildTokenVariants(oldBinding.game_build,oldBinding.studio_build),
+  ...deployBuildTokenVariants(studioDeployCurrentBuild?.game_build,studioDeployCurrentBuild?.studio_build)
+ ])];
+ return normalizeDeployBuildOnlyText(before,tokens)===normalizeDeployBuildOnlyText(after,tokens);
+}
+async function validateStudioProtectedTestChanges(remote,files){
+ const modified=files.filter(x=>x.status==='MODIFY'&&isProtectedTestIntegrityPath(x.path));
+ const substantive=[];
+ for(const file of modified){
+  if(await isDeployBuildTokenOnlyChange(file,remote)){file.testIntegrity='BUILD_TOKEN_ONLY';continue}
+  const remoteBytes=await fetchGitBlobBytes(remote.repo,file.remoteSha);
+  const baselineSha256=await sha256BytesHex(remoteBytes);
+  substantive.push({path:file.path,baseline_sha256:baselineSha256,updated_sha256:file.sha256});
+  file.testIntegrity='PROTECTED_CHANGE';
+ }
+ studioDeployProtectedTestChanges=substantive;
+ const approval=studioDeployTestChangeApproval;
+ if(!substantive.length){
+  if(approval)throw new Error('TEST_CHANGE_APPROVAL.jsonがありますが、保護テスト/Gateの実変更がありません。stale approvalとして停止しました。');
+  return;
+ }
+ if(!approval)throw new Error('保護テスト/Gateが変更されています。TEST_CHANGE_APPROVAL.jsonと人間確認が必要です: '+substantive.map(x=>x.path).join(', '));
+ if(approval.schema_version!==1||approval.scope!=='PROTECTED_TEST_CHANGE'||approval.actor_type!=='human'||!String(approval.approved_by||'').trim())throw new Error('TEST_CHANGE_APPROVAL.jsonの承認情報が不正です。');
+ const entries=Array.isArray(approval.entries)?approval.entries:[];
+ const byPath=new Map(entries.map(x=>[normalizeDeployPath(x?.path),x]));
+ const expected=new Set(substantive.map(x=>x.path));
+ if(byPath.size!==expected.size||[...expected].some(x=>!byPath.has(x)))throw new Error('TEST_CHANGE_APPROVAL.jsonの完全一致パスが実変更と一致しません。');
+ for(const item of substantive){
+  const entry=byPath.get(item.path);
+  if(entry?.baseline_sha256!==item.baseline_sha256||entry?.updated_sha256!==item.updated_sha256||!String(entry?.reason||'').trim())throw new Error('TEST_CHANGE_APPROVAL.jsonのhash/reasonが一致しません: '+item.path);
+ }
+ deployLogMessage(`保護テスト/Gate変更 ${substantive.length}件: 配置実行時に別途人間確認が必要です。`);
 }
 function bytesToBase64(bytes){
  let binary='';
@@ -6404,6 +6473,16 @@ async function inspectStudioPackage(){
   studioDeployDeleteManifestRules=[];
   try{studioDeployDeletePolicy=await packageReader.getJson('shared/integrity/delete-policy.json')}
   catch(e){throw new Error('delete-policy.jsonを解析できません。')}
+  try{studioDeployTestIntegrityPolicy=await packageReader.getJson('shared/integrity/test-integrity-policy.json')}
+  catch(e){throw new Error('test-integrity-policy.jsonを解析できません。')}
+  studioDeployTestChangeApproval=null;
+  if(packageReader.entries.some(x=>x.path==='TEST_CHANGE_APPROVAL.json')){
+   try{studioDeployTestChangeApproval=await packageReader.getJson('TEST_CHANGE_APPROVAL.json')}
+   catch(e){throw new Error('TEST_CHANGE_APPROVAL.jsonを解析できません。')}
+  }
+  try{studioDeployCurrentBuild=await packageReader.getJson('package-build.json')}
+  catch(e){throw new Error('package-build.jsonを解析できません。')}
+  studioDeployProtectedTestChanges=[];
   for(const entry of packageReader.entries){
    const relative=entry.path;
    if(relative==='studio-update.json'){
@@ -6454,6 +6533,7 @@ async function inspectStudioPackage(){
  }catch(e){
   studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;
   studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];
+  studioDeployTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;
   updateDeployDeleteManifestStatus();updateDeployDeleteControl();setDeployExecuteEnabled(false);
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
   renderDeployPackage();
@@ -6531,6 +6611,8 @@ async function prepareStudioDeployDiff(){
    deployProgressBar.style.width=Math.round(((i+1)/files.length)*85)+'%';
    deployProgressText.textContent=`差分解析 ${i+1}/${files.length}`;
   }
+
+  await validateStudioProtectedTestChanges(remote,files);
 
   studioDeployDeleteCandidates=[];
   studioDeployDeleteBlocked=[];
@@ -6623,7 +6705,7 @@ function renderDeployPackage(){
  }).join('');
 }
 function clearStudioPackage(){
- studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];studioDeployDeletePolicy=null;updateDeployDeleteManifestStatus();const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;const protectedDeleteBox=document.getElementById('deployAllowProtectedDelete');if(protectedDeleteBox)protectedDeleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
+ studioUpdateZip.value='';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];studioDeployDeletePolicy=null;studioDeployTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;updateDeployDeleteManifestStatus();const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;const protectedDeleteBox=document.getElementById('deployAllowProtectedDelete');if(protectedDeleteBox)protectedDeleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
  deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
  deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
@@ -6664,6 +6746,17 @@ async function deployStudioPackage(){
  if(deleteItems.length!==deleteCount||modifyItems.length!==modify||addItems.length!==add){
   alert('差分件数と確認対象の件数が一致しません。安全のため配置を停止します。再確認してください。');
   return;
+ }
+ if(studioDeployProtectedTestChanges.length){
+  const approved=confirm(`保護テスト/Gate変更の人間承認
+
+以下 ${studioDeployProtectedTestChanges.length}件は受入基準またはGate本体の変更です。
+通常の成果物修正とは別の承認として確認してください。
+
+${studioDeployProtectedTestChanges.map(x=>'・'+x.path).join('\n')}
+
+TEST_CHANGE_APPROVAL.jsonのhashはGitHub HEADと一致しています。これらの受入基準変更を明示的に承認しますか？`);
+  if(!approved)return;
  }
  const firstConfirm=`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\nDELETE: ${deleteCount}（保護領域 ${protectedDeleteItems.length}）\nCommit: ${message}`
   +(add?`\n\n追加対象（最大${previewLimit}件）:\n${addPreview}`:'')
@@ -8082,7 +8175,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','620');
+    url.searchParams.set('appv','621');
     location.replace(url.toString());
    }
  }
@@ -8091,7 +8184,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=620',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=621',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8110,7 +8203,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','620');
+    url.searchParams.set('appv','621');
     location.replace(url.toString());
    }
   });

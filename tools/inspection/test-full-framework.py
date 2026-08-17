@@ -27,7 +27,8 @@ def main():
       'html_links','package_metadata','studio_cache_policy','critical_runtime','package_manifest',
       'javascript_syntax','php_syntax','python_syntax','organization','shared_assets',
       'component_map','runtime_boundary','deployment_map','root_surface',
-      'source_update_application_regression','active_test_gate','github_candidate'
+      'source_update_application_regression','test_integrity_regression','impact_selection_regression',
+      'timeout_classification_regression','active_test_gate','github_candidate'
     ]
     missing=[x for x in expected if x not in names]
     if missing: errors.append('FULL_STEP_REMOVED '+','.join(missing))
@@ -38,6 +39,22 @@ def main():
         errors.append('UPDATE_BASELINE_NOT_REQUIRED')
     except ValueError as exc:
         if 'baseline' not in str(exc): errors.append('UPDATE_BASELINE_WRONG_ERROR '+str(exc))
+    try:
+        runner.build_steps('accept',None,'source')
+        errors.append('ACCEPT_SOURCE_CONTEXT_NOT_REJECTED')
+    except ValueError as exc:
+        if 'update' not in str(exc): errors.append('ACCEPT_SOURCE_CONTEXT_WRONG_ERROR '+str(exc))
+    try:
+        runner.build_steps('impact',None,'source')
+        errors.append('IMPACT_SELECTION_NOT_REQUIRED')
+    except ValueError as exc:
+        if 'test-selection' not in str(exc): errors.append('IMPACT_SELECTION_WRONG_ERROR '+str(exc))
+    update_names=[x[0] for x in runner.build_steps('full',None,'update',baseline_source=Path('/tmp/baseline'))]
+    if 'source_update_applied_state' not in update_names: errors.append('APPLIED_STATE_GATE_MISSING')
+    if 'active_test_gate' in update_names or 'organization' in update_names:
+        errors.append('DUPLICATE_FULL_STEPS_REINTRODUCED')
+    accept_names=[x[0] for x in runner.build_steps('accept',None,'update',baseline_source=Path('/tmp/baseline'))]
+    if 'source_update_applied_state' not in accept_names: errors.append('ACCEPT_APPLIED_STATE_MISSING')
     for name,cmd,_ in runner.build_steps('full',None,'source'):
         if cmd and cmd[0]==sys.executable and name not in ('javascript_syntax','php_syntax'):
             if '-S' not in cmd[:4] or '-B' not in cmd[:4]:
@@ -78,7 +95,7 @@ self.addEventListener('fetch',event=>{const request=event.request;const url=new 
         if p.returncode==0: errors.append('UNSAFE_STUDIO_CACHE_POLICY_NOT_DETECTED')
     if errors:
         print('\n'.join(errors)); return 1
-    print(f'FULL_FRAMEWORK_REGRESSION_OK required_steps={len(expected)} cases=8')
+    print(f'FULL_FRAMEWORK_REGRESSION_OK required_steps={len(expected)} cases=12')
     return 0
 
 if __name__=='__main__': raise SystemExit(main())

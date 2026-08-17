@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "purpose": "Prevent silent weakening of tests, schemas, inspection gates, and integrity policy in SOURCE_UPDATE artifacts.",
+  "baseline_policy_authoritative": true,
+  "approval_file": "TEST_CHANGE_APPROVAL.json",
+  "new_protected_files_require_approval": false,
+  "existing_protected_files_require_exact_approval_on_change": true,
+  "protected_patterns": [
+    "tests/**",
+    "tools/test_*",
+    "tools/inspection/**",
+    "tools/integrity/**",
+    "shared/integrity/**",
+    "shared/tests/test-registry.json",
+    "schemas/**",
+    "studio/data-exchange/tests/**"
+  ],
+  "approval": {
+    "schema_version": 1,
+    "scope": "PROTECTED_TEST_CHANGE",
+    "actor_type": "human",
+    "required_entry_fields": [
+      "path",
+      "baseline_sha256",
+      "updated_sha256",
+      "reason"
+    ],
+    "exact_path_set_required": true,
+    "runtime_human_confirmation_required": true
+  },
+  "build_token_only_change": {
+    "allowed_without_approval": true,
+    "description": "Only exact current/next Build identifiers and derived cache tokens may differ; all other bytes must remain equal after normalization."
+  }
+}
