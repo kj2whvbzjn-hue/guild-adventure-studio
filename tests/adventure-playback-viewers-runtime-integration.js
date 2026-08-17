@@ -37,5 +37,5 @@ assert(app.includes('<b>出現モンスター</b>'),'Battle Viewer must show the
 assert(app.includes('function renderAdventureReturnResult(summary,{history=false}={})'),'return/history aggregate result renderer missing');
 assert(app.includes('QuestRunに保存済みの結果を正式Saveへ反映しました。再計算はしていません。'),'return result must make no-recalculation behavior explicit');
 assert(app.includes('const summary=adventureQuestRunSummary(current);'),'return summary must be captured from stored QuestRun before commit');
-assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.201';"),'current game build missing');
+assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.202';"),'current game build missing');
 console.log('adventure-playback-viewers-runtime-integration PASS');
