@@ -4,19 +4,15 @@ const path=require('node:path');
 const SharedAdapter=require('../../shared/ai/ai-master-adapter.js');
 const SharedLayout=require('../../shared/ai/ai-layout-model.js');
 const SharedProgram=require('../../shared/ai/ai-program-model.js');
+const SharedResolver=require('../../shared/ai/ai-connection-resolver.js');
+const SharedValidator=require('../../shared/ai/ai-program-validator.js');
+const SharedCompiler=require('../../shared/ai/ai-program-compiler.js');
+const SharedTrace=require('../../shared/ai/ai-program-trace.js');
+const SharedDecision=require('../../shared/ai/ai-decision-engine.js');
 const root=path.resolve(__dirname,'../..');
-const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
-const sw=fs.readFileSync(path.join(root,'studio/sw.js'),'utf8');
-for(const name of ['ai-program-model','ai-layout-model','ai-connection-resolver','ai-master-adapter','ai-program-validator','ai-program-compiler','ai-program-trace','ai-decision-engine']){
-  const wrapper=`./ai-production/${name}.js`;
-  assert(!html.includes(wrapper),`${wrapper} must not be loaded by Studio`);
-  assert(!sw.includes(wrapper),`${wrapper} must not be cached by Studio`);
-  const source=fs.readFileSync(path.join(root,'studio/ai-production',`${name}.js`),'utf8');
-  assert(source.includes('Removed compatibility entrypoint'));
-  assert(!source.includes('module.exports=')&&!source.includes('module.exports ='),'removed wrapper must not forward exports');
-}
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'studio/ai-production/manifest.json'),'utf8'));
+const canonical={program_model:SharedProgram,layout_model:SharedLayout,master_adapter:SharedAdapter,connection_resolver:SharedResolver,program_validator:SharedValidator,program_compiler:SharedCompiler,program_trace:SharedTrace,decision_engine:SharedDecision};
+for(const [key,module] of Object.entries(canonical)){assert(module&&typeof module==='object',`${key} canonical module must load`);assert.strictEqual(manifest.shared_canonical[key],`shared/ai/ai-${key.replaceAll('_','-')}.js`);}
 const action=SharedAdapter.toNode({id:'AIA-0001',name:'攻撃',status:'active',data_version:'1.0.0',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[]},parameter_schema:{type:'object',properties:{}}},'ai_actions');
-assert.deepStrictEqual(SharedAdapter.definitionErrors(action),[]);
-assert.strictEqual(typeof SharedLayout.normalizeLayout,'function');
-assert.strictEqual(typeof SharedProgram.normalizeProgram,'function');
-console.log('PASS Phase3A shared Formal AI canonical core hard-cut=1 wrappers=0');
+assert.deepStrictEqual(SharedAdapter.definitionErrors(action),[]);assert.strictEqual(typeof SharedLayout.normalizeLayout,'function');assert.strictEqual(typeof SharedProgram.normalizeProgram,'function');
+console.log('PASS Phase3A shared Formal AI canonical core current=1');

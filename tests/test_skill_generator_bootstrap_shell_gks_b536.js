@@ -1,5 +1,7 @@
 const assert=require('assert');
 const fs=require('fs');
+const build=require('../package-build.json');
+const buildNo=build.studio_build.replace('GKS-B','');
 const html=fs.readFileSync('studio/index.html','utf8');
 const skg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 const sw=fs.readFileSync('studio/sw.js','utf8');
@@ -12,8 +14,8 @@ assert.ok(skg.includes("s.className=shellVisible?'view':'view hidden'"),'full pa
 assert.ok(skg.includes('Promise.allSettled'),'dependency boot must settle independently');
 assert.ok(skg.includes("setBootStatus('初期化停止: '+message,'error')"),'dependency failure must be shown in the view');
 assert.ok(skg.includes("document.dispatchEvent(new CustomEvent('gks:view-ready',{detail:{view:'skill-generator'}}))"),'view-ready notification must remain available');
-assert.ok(html.includes("navigator.serviceWorker.register('./sw.js?v=613'"),'Studio service worker URL must advance');
-assert.ok(html.includes("url.searchParams.set('appv','613')"),'Studio app reload key must advance');
-assert.ok(sw.includes('gks-studio-b613'),'Studio cache namespace must advance');
-assert.ok(sw.includes("const OFFLINE_URL='./index.html?appv=613'"),'offline shell must advance');
+assert.ok(html.includes(`navigator.serviceWorker.register('./sw.js?v=${buildNo}'`),'Studio service worker URL must advance');
+assert.ok(html.includes(`url.searchParams.set('appv','${buildNo}')`),'Studio app reload key must advance');
+assert.ok(sw.includes(`gks-studio-b${buildNo}`),'Studio cache namespace must advance');
+assert.ok(sw.includes(`const OFFLINE_URL='./index.html?appv=${buildNo}'`),'offline shell must advance');
 console.log('PASS GKS-B536 Skill Generator bootstrap shell / dependency failure visibility');
