@@ -97,7 +97,15 @@ function reserveFormalAiAction(actor,runtime){
 }
 function reserveAction(actor){
  if(!actor.alive||actor.reservedAction||actor.gauge<GAUGE_MAX||battle.result||battle.pendingResult)return false;
- const formalRuntime=formalAiRuntimeForActor(actor);if(formalRuntime)return reserveFormalAiAction(actor,formalRuntime);
+ if(actor.characterId){
+  const formalRuntime=formalAiRuntimeForActor(actor);
+  if(!formalRuntime){
+   if(actor.formalAiUnavailableLogged!==true){battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI未設定のため予約しません`);actor.formalAiUnavailableLogged=true;}
+   return false;
+  }
+  actor.formalAiUnavailableLogged=false;
+  return reserveFormalAiAction(actor,formalRuntime);
+ }
  const target=chooseTarget(actor);if(!target)return false;
  const skill=formalBattleSkill(actor.defaultSkillId);if(!skill){battle.log.push(`[Tick ${battle.tick}] [FORMAL-RUNTIME][BLOCK] 正式Production Skillがありません`);return false}actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`Gauge ${actor.gauge} が ${GAUGE_MAX} 以上`,reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
  actor.lastReservation={...actor.reservedAction};

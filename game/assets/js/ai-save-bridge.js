@@ -46,7 +46,7 @@
     save.aiPrograms=Array.isArray(save.aiPrograms)?save.aiPrograms.map(row=>Program.normalizeProgram(row)):[];
     save.aiLayouts=Array.isArray(save.aiLayouts)?save.aiLayouts.map(row=>Layout.normalizeLayout(row)):[];
     save.aiPresets=Array.isArray(save.aiPresets)?save.aiPresets.map(normalizePreset).filter(Boolean):[];
-    for(const character of save.characters||[])character.formalAiBinding=normalizeBinding(character.formalAiBinding);
+    for(const character of save.characters||[]){character.formalAiBinding=normalizeBinding(character.formalAiBinding);delete character.aiGraph;delete character.aiPolicy;}
     return save;
   }
   function duplicateIds(rows,key){
@@ -84,12 +84,7 @@
   function migrate(raw){
     if(!isObject(raw))throw new Error('Save Dataが不正です。');
     const source=clone(raw);
-    if(source.saveVersion===1){
-      if(!Array.isArray(source.characters))throw new Error('Save Data Version 1のcharactersが不正です。');
-      source.saveVersion=SAVE_VERSION;
-      source.aiPrograms=[];source.aiLayouts=[];source.aiPresets=[];
-      source.characters.forEach(character=>{character.formalAiBinding=null;});
-    }else if(source.saveVersion!==SAVE_VERSION){
+    if(source.saveVersion!==SAVE_VERSION){
       throw new Error(`対応していないSave Data Versionです: ${source.saveVersion}`);
     }
     ensureCollections(source);
