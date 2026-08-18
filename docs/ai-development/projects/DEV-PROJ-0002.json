@@ -1,0 +1,91 @@
+{
+  "format": "gk-development-ai-public-project",
+  "version": "1.0",
+  "generated_at": "2026-08-18T10:53:31.880Z",
+  "studio_build": "",
+  "game_build": "",
+  "summary": {
+    "id": "DEV-PROJ-0002",
+    "name": "Project Status / Context管理",
+    "status": "development",
+    "workflow_stage": "Discovery",
+    "updated_at": "2026-08-18T07:38:27.226Z",
+    "unresolved": true,
+    "counts": {
+      "discussions": 0,
+      "architecture_nodes": 1,
+      "work_boxes": 1,
+      "tasks": 0,
+      "open_tasks": 0,
+      "checks": 0,
+      "pending_or_failed_checks": 0,
+      "decisions": 0,
+      "specifications": 0,
+      "open_questions": 0
+    },
+    "implementation_approval": "Pending",
+    "completion_approval": "Pending",
+    "pending_checks": [],
+    "open_tasks": [],
+    "open_discussions": [],
+    "open_questions": [],
+    "detail_path": "projects/DEV-PROJ-0002.json",
+    "detail_url": "https://kj2whvbzjn-hue.github.io/guild-adventure-studio/docs/ai-development/projects/DEV-PROJ-0002.json"
+  },
+  "project": {
+    "schema_version": "1.1",
+    "workspace": {
+      "id": "DEV-PROJ-0002",
+      "name": "Project Status / Context管理",
+      "status": "development",
+      "updated_at": "2026-08-18T07:38:27.226Z"
+    },
+    "discussions": [],
+    "decisions": [],
+    "specifications": [],
+    "architecture_nodes": [
+      {
+        "id": "ARCH-0001",
+        "name": "Project Status / Context管理",
+        "parent_id": "",
+        "created_at": "2026-08-18T16:34:00+09:00",
+        "updated_at": "2026-08-18T16:34:00+09:00"
+      }
+    ],
+    "work_boxes": [
+      {
+        "id": "BOX-0001",
+        "node_id": "ARCH-0001",
+        "title": "Project Status / Context管理 検討",
+        "body": "【今回わかった必要機能】\n次のAIへこのProjectを引き継ぐ際、Humanが毎回説明文を書かなくても、Studio自身から「このProjectの現在地」を確認できる仕組みが必要。\n\n単なるHistoryではなく、「現在何が真なのか」を構造化して保持・表示できることを目的とする。\n\n【必要情報候補】\n\n1. Project Context\n- Project名\n- Projectの目的\n- 現在の開発Stage\n- このProjectが何を作っているのか\n\n例:\nname: AI Development Studio\npurpose: AI支援による汎用開発・ガバナンスStudioを構築する\nstage: Architecture Exploration\n\n2. Formal / Exploratory状態の区別\nDevelopment Workspace内には以下が混在するため、次のAIが正式情報と探索情報を区別できる必要がある。\n- Approved Decision\n- Approved Specification\n- Human採用済みDiscussion\n- 探索中Architecture\n- Demo Data\n- Draft\n\n状態候補:\n- Formal\n- Draft\n- Exploratory\n- Demo\n- Deprecated\n\nArchitecture / Work Box等にどの粒度で状態を持たせるかは未決。\n\n3. Current Focus\n「今、何を検討・開発しているのか」をStudioが保持する。\n\n候補項目:\n- architecture_id\n- work_box_id\n- theme\n- goal\n\n例:\nArchitecture: Core > Project\nWork Box: Project 概要検討\nTheme: ProjectとDevelopment Workspaceの責務境界\nGoal: 両者の役割を区別できる状態にする\n\n同じWork BoxでもThemeを変更して複数回検討できることを想定する。\n\n4. Project Rules / Governance\n次のAIが必ず守るべきルールをDiscussion本文から推測させず、現在有効なルールとして参照できるようにする。\n\n例:\n- Game ProjectとDevelopment Workspaceを混在させない\n- AIはApproved状態を勝手に確定しない\n- Development ArchitectureはGame / Story Systemから独立させる\n- Story等は設計上の参考にできるが、システム・処理・データモデル・UI部品の流用は禁止\n- Studio全体の共通「戻る」「閉じる」等は共通基盤を利用してよい\n\nRuleがDecision由来の場合はsource Decisionを参照できる形を検討する。\n\n5. Source Baseline\n「どのSource / Buildを現在の実装基準として扱うか」をStudioから確認できる必要がある。\n\n候補:\n- studio_build\n- game_build\n- source_role\n- repository\n- branch\n- commit\n\n当面はBuildと基準Sourceを確認できればよい。\n\n6. AI Handover生成\nStudio側から次のAIへ必要Contextを自動抽出できるようにする。\n\nHandover候補:\n- Project Context\n- Current Focus\n- Project Rules\n- Approved Decisions\n- Approved Specifications\n- 対象Architecture\n- 対象Work Box\n- 関連Discussion\n- 未決事項\n- Source Baseline\n\nHumanが毎回長い引継ぎ文を書かなくても、Studioから現在状態を確認・出力できることを目指す。\n\n【UI候補】\nDevelopment Workspaceに「概要」または「現在地」領域を持つ案。\n\n表示候補:\n- Project名\n- Stage\n- Source Baseline\n- Current Architecture / Work Box\n- Current Theme\n- Approved Decision / Specification件数\n- Exploratory Architecture / Work Box件数\n- 有効Project Rules\n- AI引継ぎ生成\n\n【重要な整理】\nHistory = 過去に何が起きたか\nProject Context / Current Focus / Rules = 今何が真なのか\nDecision / Specification = 正式状態\nArchitecture / Work Box = 現在の検討・開発対象\n\nHistoryだけではAI引継ぎには不足する。\n\n【現時点の位置付け】\nこの内容は正式Specificationではない。\nArchitecture / Work Boxを実際に使用した結果として発見された不足機能の検討内容。\n\n仮称:\nProject Status / Context管理\n\n【未決事項】\n- Project ContextをCore Project自身に持たせるか、独立概念にするか\n- Formal / Exploratory等の状態をどのRecordに持たせるか\n- Current Focusは1件だけか複数同時に持てるか\n- Project RulesをDecisionから自動生成するか、独立Ruleとして管理するか\n- Source Baselineをdevelopment-project.jsonにどこまで保持するか\n- 「概要 / 現在地」UIを独立Tabにするか\n- AI HandoverがSource一式まで含むか、Contextのみ生成するか\n- ThemeをWork Boxの一時属性にするか、独立Recordにするか\n",
+        "created_at": "2026-08-18T16:34:00+09:00",
+        "updated_at": "2026-08-18T16:34:00+09:00"
+      }
+    ],
+    "tasks": [],
+    "history": [
+      {
+        "at": "2026-08-18T16:34:00+09:00",
+        "message": "Project Status / Context管理の独立検討案件を作成"
+      },
+      {
+        "at": "2026-08-18T07:38:27.227Z",
+        "message": "Development Project JSON imported as new project: DEV-PROJ-0002"
+      }
+    ],
+    "checks": [],
+    "workflow": {
+      "stage": "Discovery",
+      "implementation_approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "completion_approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      }
+    }
+  }
+}
