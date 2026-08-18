@@ -1,4 +1,4 @@
-/* GKS-B658 Development AI Publish
+/* GKS-B659 Development AI Publish
  * Development-only read interface for GitHub Pages.
  * Does not reuse Game Project GitHub sync data/model/handlers.
  */
@@ -158,21 +158,32 @@ function getProjectWorkspaces(scope){
  }
  return rows;
 }
+function makeRevision(generatedAt,builds){
+ const stamp=String(generatedAt||iso()).replace(/[^0-9A-Za-z]+/g,'').slice(0,18);
+ const bytes=new Uint8Array(4);try{crypto.getRandomValues(bytes)}catch(_){bytes.set([Date.now()&255,(Date.now()>>8)&255,17,91])}
+ const nonce=Array.from(bytes).map(x=>x.toString(16).padStart(2,'0')).join('');
+ return `${builds.studio_build||'GKS'}-${stamp}-${nonce}`;
+}
+function revisionUrl(url,revision){
+ if(!url)return '';
+ const sep=String(url).includes('?')?'&':'?';
+ return String(url)+sep+'rev='+encodeURIComponent(String(revision||''));
+}
 function buildDataset(config){
- const generatedAt=iso(),base=publicRepoBase(config),workspaces=getProjectWorkspaces(config.scope),builds=buildVersions();
+ const generatedAt=iso(),base=publicRepoBase(config),workspaces=getProjectWorkspaces(config.scope),builds=buildVersions(),publishRevision=makeRevision(generatedAt,builds);
  const details=[],summaries=[];
  for(const w of workspaces){
   const summary=summarizeProject(w),filename=safeId(summary.id)+'.json',detailPath=`projects/${filename}`;
-  summary.detail_path=detailPath;summary.detail_url=base?base+detailPath:'';
+  summary.detail_path=detailPath;summary.detail_url=base?revisionUrl(base+detailPath,publishRevision):'';
   summaries.push(summary);
-  details.push({path:detailPath,data:{format:'gk-development-ai-public-project',version:'1.0',generated_at:generatedAt,studio_build:builds.studio_build,game_build:builds.game_build,summary:clone(summary),project:deepRedact(w)}});
+  details.push({path:detailPath,data:{format:'gk-development-ai-public-project',version:'1.1',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,summary:clone(summary),project:deepRedact(w)}});
  }
  summaries.sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))||String(a.id).localeCompare(String(b.id)));
  const pending=summaries.filter(x=>x.attention_required);
- const projectsDoc={format:'gk-development-ai-public-projects',version:'1.1',generated_at:generatedAt,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,projects:summaries};
- const pendingDoc={format:'gk-development-ai-public-pending',version:'1.1',generated_at:generatedAt,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,projects:pending};
- const manifest={format:'gk-development-ai-public-manifest',version:'1.1',generated_at:generatedAt,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base,projects:base?base+'projects.json':'',pending:base?base+'pending.json':''},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
- return {generated_at:generatedAt,base,manifest,projectsDoc,pendingDoc,details,summaries,pending};
+ const projectsDoc={format:'gk-development-ai-public-projects',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,projects:summaries};
+ const pendingDoc={format:'gk-development-ai-public-pending',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,projects:pending};
+ const manifest={format:'gk-development-ai-public-manifest',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v1',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base,projects:base?revisionUrl(base+'projects.json',publishRevision):'',pending:base?revisionUrl(base+'pending.json',publishRevision):''},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
+ return {generated_at:generatedAt,publish_revision:publishRevision,base,manifest,projectsDoc,pendingDoc,details,summaries,pending};
 }
 function status(message,level='INFO'){
  const node=el('daipStatus');if(!node)return;node.dataset.level=level;node.textContent=message;
@@ -193,9 +204,12 @@ function render(){
  if(el('daipScope')&&document.activeElement!==el('daipScope'))el('daipScope').value=s.scope;
  let base='';try{base=publicRepoBase(configFromForm(false))}catch(_){base=publicRepoBase(s)}
  const baseEl=el('daipPublicBase');if(baseEl)baseEl.textContent=base||'Owner / Repositoryを設定すると表示します。';
- const pendingEl=el('daipPendingUrl');if(pendingEl)pendingEl.textContent=base?base+'pending.json':'—';
  let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
- const lastEl=el('daipLastPublish');if(lastEl)lastEl.textContent=last?.published_at?`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件`:'未公開';
+ const pendingEl=el('daipPendingUrl');if(pendingEl)pendingEl.textContent=last?.pending_url|| (base?base+'pending.json':'—');
+ const lastEl=el('daipLastPublish');if(lastEl){
+  if(!last?.published_at)lastEl.textContent='未公開';
+  else lastEl.textContent=`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件 / Commit ${String(last.commit_sha||'').slice(0,12)||'—'} / Revision ${last.publish_revision||'—'} / Git read-back ${last.git_readback||'未確認'} / Pages ${last.pages_reflection||'未確認'}`;
+ }
  if(lastDataset)renderPreview(lastDataset);
 }
 function preview(){
@@ -205,56 +219,132 @@ function utf8ToBase64(text){const bytes=new TextEncoder().encode(text);let binar
 function base64ToUtf8(value){const binary=atob(String(value||'').replace(/\s+/g,'')),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new TextDecoder('utf-8').decode(bytes)}
 function jsonText(obj){return JSON.stringify(obj,null,2)+'\n'}
 async function sha256Text(text){const bytes=new TextEncoder().encode(text),digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function github(c,url,options={}){
  const headers={'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.token,'X-GitHub-Api-Version':'2022-11-28',...(options.headers||{})};
  const res=await fetch(url,{...options,headers});const text=await res.text();let body=null;try{body=text?JSON.parse(text):null}catch(_){body={message:text}}
  if(!res.ok){const err=new Error(`HTTP ${res.status}: ${body?.message||'GitHub API error'}`);err.status=res.status;throw err}return body;
 }
 function apiRepo(c){return `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`}
+function branchPath(branch){return String(branch||'main').split('/').filter(Boolean).map(encodeURIComponent).join('/')}
 function apiContent(c,path){return apiRepo(c)+'/contents/'+cleanPath(path).split('/').map(encodeURIComponent).join('/')}
-async function getRemote(c,path){try{return await github(c,apiContent(c,path)+`?ref=${encodeURIComponent(c.branch)}`)}catch(e){if(e.status===404)return null;throw e}}
-async function putText(c,path,text,message,knownRemote=null){
- const remote=knownRemote||await getRemote(c,path),payload={message,content:utf8ToBase64(text),branch:c.branch};if(remote?.sha)payload.sha=remote.sha;
- return github(c,apiContent(c,path),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+async function getRemoteAtRef(c,path,ref){try{return await github(c,apiContent(c,path)+`?ref=${encodeURIComponent(ref)}`)}catch(e){if(e.status===404)return null;throw e}}
+async function readGitHead(c){
+ const ref=await github(c,apiRepo(c)+`/git/ref/heads/${branchPath(c.branch)}`),headSha=String(ref?.object?.sha||'');
+ if(!headSha)throw new Error('GitHub Branch HEADを取得できません。');
+ const commit=await github(c,apiRepo(c)+`/git/commits/${encodeURIComponent(headSha)}`),treeSha=String(commit?.tree?.sha||'');
+ if(!treeSha)throw new Error('GitHub HEAD Treeを取得できません。');
+ return {head_sha:headSha,tree_sha:treeSha};
 }
-async function putFile(c,path,obj,message){return putText(c,path,jsonText(obj),message)}
-async function readRemotePackageManifest(c){
- const remote=await getRemote(c,'package_manifest.json');if(!remote?.content)throw new Error('GitHub Sourceのpackage_manifest.jsonを読めません。AI共有はSource Package整合性を維持できないため停止しました。');
+async function readRemotePackageManifestAt(c,refSha){
+ const remote=await getRemoteAtRef(c,'package_manifest.json',refSha);if(!remote?.content)throw new Error('GitHub Sourceのpackage_manifest.jsonを読めません。AI共有はSource Package整合性を維持できないため停止しました。');
  let manifest;try{manifest=JSON.parse(base64ToUtf8(remote.content))}catch(_){throw new Error('GitHub Sourceのpackage_manifest.jsonを解析できません。')}
  if(!Array.isArray(manifest.files))throw new Error('GitHub Sourceのpackage_manifest.json: files がありません。');
- return {remote,manifest};
+ return manifest;
 }
-async function syncSourcePackageManifest(c,published,message){
- const state=await readRemotePackageManifest(c),manifest=state.manifest,byPath=new Map((manifest.files||[]).map(row=>[String(row.path||''),row]));
- for(const row of published){const text=jsonText(row.data),bytes=new TextEncoder().encode(text);byPath.set(row.path,{path:row.path,size:bytes.length,sha256:await sha256Text(text)})}
- manifest.files=Array.from(byPath.values()).filter(row=>row.path).sort((a,b)=>String(a.path).localeCompare(String(b.path)));manifest.file_count=manifest.files.length;manifest.generated_at=iso();
- await putText(c,'package_manifest.json',jsonText(manifest),message+' / package_manifest sync',state.remote);
+async function makePackageManifestText(manifest,published){
+ const next=clone(manifest),byPath=new Map((next.files||[]).map(row=>[String(row.path||''),row]));
+ for(const row of published){const bytes=new TextEncoder().encode(row.text);byPath.set(row.path,{path:row.path,size:bytes.length,sha256:await sha256Text(row.text)})}
+ next.files=Array.from(byPath.values()).filter(row=>row.path).sort((a,b)=>String(a.path).localeCompare(String(b.path)));next.file_count=next.files.length;next.generated_at=iso();
+ return jsonText(next);
+}
+function buildPublicFiles(dataset,root){
+ const rows=[];
+ for(const row of dataset.details)rows.push({path:`${root}/${row.path}`,text:jsonText(row.data),kind:'detail',project_id:String(row.data?.summary?.id||'')});
+ rows.push({path:`${root}/projects.json`,text:jsonText(dataset.projectsDoc),kind:'projects'});
+ rows.push({path:`${root}/pending.json`,text:jsonText(dataset.pendingDoc),kind:'pending'});
+ rows.push({path:`${root}/manifest.json`,text:jsonText(dataset.manifest),kind:'manifest'});
+ return rows;
+}
+async function createTextBlob(c,text){return github(c,apiRepo(c)+'/git/blobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,encoding:'utf-8'})})}
+async function readBlobText(c,sha){const blob=await github(c,apiRepo(c)+`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blob encodingが想定外です。');return base64ToUtf8(blob.content||'')}
+async function atomicCommit(c,dataset){
+ const root=cleanPath(c.base_path),head=await readGitHead(c),remoteManifest=await readRemotePackageManifestAt(c,head.head_sha),publicFiles=buildPublicFiles(dataset,root);
+ const packageManifestText=await makePackageManifestText(remoteManifest,publicFiles),allFiles=[...publicFiles,{path:'package_manifest.json',text:packageManifestText,kind:'package_manifest'}];
+ const blobs=[];
+ for(let i=0;i<allFiles.length;i++){
+  const row=allFiles[i];status(`Atomic Commit準備 ${i+1}/${allFiles.length}\nBlob: ${row.path}`);
+  const blob=await createTextBlob(c,row.text);if(!blob?.sha)throw new Error(`Blob作成失敗: ${row.path}`);blobs.push({...row,sha:String(blob.sha)});
+ }
+ status('Atomic Commit準備\n1つのTreeを作成中…');
+ const tree=await github(c,apiRepo(c)+'/git/trees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:head.tree_sha,tree:blobs.map(row=>({path:row.path,mode:'100644',type:'blob',sha:row.sha}))})});
+ if(!tree?.sha)throw new Error('Git Tree作成に失敗しました。');
+ status('Atomic Commit準備\n1つのCommitを作成中…');
+ const message=`Publish Development AI read data ${dataset.publish_revision}`;
+ const commit=await github(c,apiRepo(c)+'/git/commits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,tree:tree.sha,parents:[head.head_sha]})});
+ if(!commit?.sha)throw new Error('Git Commit作成に失敗しました。');
+ status('Atomic Commit実行\nBranch参照を1回だけ更新中…');
+ await github(c,apiRepo(c)+`/git/refs/heads/${branchPath(c.branch)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:commit.sha,force:false})});
+ return {root,head,commit_sha:String(commit.sha),tree_sha:String(tree.sha),files:blobs};
+}
+async function verifyGitReadback(c,dataset,publishResult){
+ status('GitHub read-back検証中…\nBranch / Tree / pending / detailを確認します。');
+ const current=await readGitHead(c);if(current.head_sha!==publishResult.commit_sha)throw new Error(`read-back: Branch HEADが公開Commitと一致しません (${current.head_sha.slice(0,12)} != ${publishResult.commit_sha.slice(0,12)})`);
+ const tree=await github(c,apiRepo(c)+`/git/trees/${encodeURIComponent(current.tree_sha)}?recursive=1`);if(tree?.truncated)throw new Error('read-back: Git Treeがtruncatedです。');
+ const map=new Map((tree?.tree||[]).filter(x=>x.type==='blob').map(x=>[String(x.path||''),String(x.sha||'')]));
+ for(const row of publishResult.files){if(map.get(row.path)!==row.sha)throw new Error(`read-back: Blob不一致 ${row.path}`)}
+ const pendingPath=`${publishResult.root}/pending.json`,pendingFile=publishResult.files.find(x=>x.path===pendingPath);if(!pendingFile)throw new Error('read-back: pending.jsonがCommit対象にありません。');
+ let pending;try{pending=JSON.parse(await readBlobText(c,pendingFile.sha))}catch(e){throw new Error('read-back: pending.jsonを解析できません: '+e.message)}
+ if(String(pending.publish_revision||'')!==dataset.publish_revision)throw new Error('read-back: pending.json publish_revision不一致');
+ if(String(pending.studio_build||'')!==String(dataset.pendingDoc.studio_build||'')||String(pending.game_build||'')!==String(dataset.pendingDoc.game_build||''))throw new Error('read-back: pending.json Build不一致');
+ if(Number(pending.pending_project_count)!==dataset.pending.length)throw new Error('read-back: pending_project_count不一致');
+ const pendingIds=new Set((pending.projects||[]).map(x=>String(x.id||'')));
+ for(const summary of dataset.pending){
+  if(!pendingIds.has(String(summary.id||'')))throw new Error(`read-back: pending案件不足 ${summary.id}`);
+  const detailPath=`${publishResult.root}/${summary.detail_path}`,detailFile=publishResult.files.find(x=>x.path===detailPath);if(!detailFile)throw new Error(`read-back: detail Commit不足 ${summary.id}`);
+  let detail;try{detail=JSON.parse(await readBlobText(c,detailFile.sha))}catch(e){throw new Error(`read-back: detail解析失敗 ${summary.id}: ${e.message}`)}
+  if(String(detail.publish_revision||'')!==dataset.publish_revision||String(detail.summary?.id||'')!==String(summary.id||''))throw new Error(`read-back: detail内容不一致 ${summary.id}`);
+ }
+ return {status:'Passed',checked_at:iso(),commit_sha:publishResult.commit_sha,pending_project_count:dataset.pending.length};
+}
+async function fetchPublicJson(url,revision){
+ const target=revisionUrl(String(url||'').replace(/([?&])rev=[^&]*/,'$1').replace(/[?&]$/,''),revision)+'&cb='+encodeURIComponent(Date.now());
+ const res=await fetch(target,{method:'GET',cache:'no-store',headers:{'Accept':'application/json'}});if(!res.ok)throw new Error(`HTTP ${res.status}`);return res.json();
+}
+async function verifyPagesOnce(pendingUrl,revision){
+ const pending=await fetchPublicJson(pendingUrl,revision);if(String(pending.publish_revision||'')!==String(revision||''))throw new Error(`Pages pending revision=${pending.publish_revision||'なし'}`);
+ const details=[];
+ for(const summary of pending.projects||[]){
+  if(!summary.detail_url)throw new Error(`Pages detail_urlなし: ${summary.id||'unknown'}`);
+  const detail=await fetchPublicJson(summary.detail_url,revision);if(String(detail.publish_revision||'')!==String(revision||'')||String(detail.summary?.id||'')!==String(summary.id||''))throw new Error(`Pages detail不一致: ${summary.id||'unknown'}`);details.push(String(summary.id||''));
+ }
+ return {status:'Passed',checked_at:iso(),pending_project_count:Number(pending.pending_project_count||0),detail_ids:details};
+}
+async function waitForPagesReflection(pendingUrl,revision,{attempts=12,intervalMs=5000}={}){
+ let lastError=null;
+ for(let i=1;i<=attempts;i++){
+  try{status(`GitHub Pages反映確認 ${i}/${attempts}\nRevision ${revision}`);return await verifyPagesOnce(pendingUrl,revision)}catch(e){lastError=e;if(i<attempts)await sleep(intervalMs)}
+ }
+ return {status:'Pending',checked_at:iso(),message:lastError?.message||'Pages反映を確認できませんでした。'};
 }
 async function testConnection(){
- if(busy)return;try{setBusy(true);const c=configFromForm(true);status('Development AI公開用の接続を確認中…');await github(c,apiRepo(c));localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));status(`接続できました: ${c.owner}/${c.repo} (${c.branch})`,'OK');render()}catch(e){status('接続失敗: '+e.message,'ERROR')}finally{setBusy(false)}
+ if(busy)return;try{setBusy(true);const c=configFromForm(true);status('Development AI公開用の接続を確認中…');const head=await readGitHead(c);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));status(`接続できました: ${c.owner}/${c.repo} (${c.branch})\nHEAD ${head.head_sha.slice(0,12)}`,'OK');render()}catch(e){status('接続失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
 async function publish(){
  if(busy)return;
  try{
   const c=configFromForm(true),dataset=buildDataset(c);
   if(!dataset.summaries.length)throw new Error('公開できるDevelopment Projectがありません。');
-  const warning=`Development Projectの内容を公開GitHub Pagesから読めるJSONとして配置します。\n\n公開先: ${dataset.base}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\n\nDiscussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
+  const warning=`Development Projectの内容を公開GitHub Pagesから読めるJSONとして配置します。\n\n公開先: ${dataset.base}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n公開ファイルとpackage_manifest.jsonは1つのAtomic Commitで更新します。Discussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
   if(!confirm(warning))return;
   setBusy(true);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));
-  await readRemotePackageManifest(c);
-  const root=cleanPath(c.base_path),messageBase=`Publish Development AI read data ${dataset.generated_at}`,published=[];
-  let done=0,total=dataset.details.length+4;
-  for(const row of dataset.details){const path=`${root}/${row.path}`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,row.data,messageBase);published.push({path,data:row.data})}
-  let path=`${root}/projects.json`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,dataset.projectsDoc,messageBase);published.push({path,data:dataset.projectsDoc});
-  path=`${root}/pending.json`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,dataset.pendingDoc,messageBase);published.push({path,data:dataset.pendingDoc});
-  // AI manifest is committed after all read documents.
-  path=`${root}/manifest.json`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,dataset.manifest,messageBase);published.push({path,data:dataset.manifest});
-  // Public read JSON lives in the source branch, so synchronize package_manifest last.
-  status(`GitHubへ公開中 ${++done}/${total}\npackage_manifest.json 整合性同期`);await syncSourcePackageManifest(c,published,messageBase);
-  const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:dataset.base+'pending.json'};
+  const publishResult=await atomicCommit(c,dataset),gitReadback=await verifyGitReadback(c,dataset,publishResult),pendingUrl=revisionUrl(dataset.base+'pending.json',dataset.publish_revision);
+  const pages=await waitForPagesReflection(pendingUrl,dataset.publish_revision);
+  const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:publishResult.root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:pendingUrl,publish_revision:dataset.publish_revision,source_parent_sha:publishResult.head.head_sha,commit_sha:publishResult.commit_sha,git_readback:gitReadback.status,pages_reflection:pages.status,pages_checked_at:pages.checked_at,pages_message:pages.message||''};
   localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));lastDataset=dataset;
-  status(`公開完了。Source package_manifestも同期しました。\nHuman確認対象入口: ${last.pending_url}\n\nChatGPTへこのURLを渡して「未確定案件を見て」と依頼できます。`,'OK');render();
+  if(pages.status==='Passed')status(`公開完了。Atomic Commit / GitHub read-back / Pages反映を確認しました。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nHuman確認対象入口: ${last.pending_url}`,'OK');
+  else status(`GitHub公開は完了しました。Atomic Commit / read-backはPASSです。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nPages反映だけ未確認: ${pages.message||'反映待ち'}\n「公開状態を再検証」で再確認できます。`,'WARNING');
+  render();
  }catch(e){status('公開失敗: '+e.message,'ERROR')}finally{setBusy(false)}
+}
+async function verifyLastPublish(){
+ if(busy)return;
+ try{
+  let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
+  if(!last?.pending_url||!last?.publish_revision)throw new Error('再検証できる公開履歴がありません。');
+  setBusy(true);const pages=await waitForPagesReflection(last.pending_url,last.publish_revision,{attempts:3,intervalMs:3000});last.pages_reflection=pages.status;last.pages_checked_at=pages.checked_at;last.pages_message=pages.message||'';localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));
+  if(pages.status==='Passed')status(`Pages反映PASS。\nRevision: ${last.publish_revision}\nHuman確認対象 ${pages.pending_project_count}件`,'OK');else status(`Pages反映はまだ確認できません: ${pages.message||'反映待ち'}`,'WARNING');render();
+ }catch(e){status('再検証失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
 async function exportZip(){
  try{
@@ -263,18 +353,19 @@ async function exportZip(){
   const writer=GKZipCore.writer.create();
   for(const row of dataset.details)writer.addJson(`${root}/${row.path}`,row.data);
   writer.addJson(`${root}/projects.json`,dataset.projectsDoc);writer.addJson(`${root}/pending.json`,dataset.pendingDoc);writer.addJson(`${root}/manifest.json`,dataset.manifest);
-  writer.addText('README_AI_PUBLIC.txt',`Development AI Public Read Data\n\n公開先Path: ${root}/\n入口: pending.json\n生成: ${dataset.generated_at}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\n\nこのZIPは公開用読み取りデータです。Project詳細にはDiscussion / Work Box / Confirmation等が含まれます。\n`);
+  writer.addText('README_AI_PUBLIC.txt',`Development AI Public Read Data\n\n公開先Path: ${root}/\n入口: pending.json\n生成: ${dataset.generated_at}\nRevision: ${dataset.publish_revision}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\n\nこのZIPは公開用読み取りデータです。Project詳細にはDiscussion / Work Box / Confirmation等が含まれます。\n`);
   await writer.download(`GK_Development_AI_Public_${new Date().toISOString().replace(/[:.]/g,'-')}.zip`);
   lastDataset=dataset;status('公開用JSON ZIPを出力しました。GitHubへ手動配置する場合に使用できます。','OK');renderPreview(dataset);
  }catch(e){status('ZIP出力失敗: '+e.message,'ERROR')}
 }
+function lastPublish(){try{return JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){return null}}
 function openPending(){
- try{const c=configFromForm(false),url=publicRepoBase(c)+'pending.json';if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
+ try{const c=configFromForm(false),last=lastPublish(),url=last?.pending_url||publicRepoBase(c)+'pending.json';if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
 }
 async function copyPrompt(){
- try{const c=configFromForm(false),url=publicRepoBase(c)+'pending.json';const text=`${url}\nこのURLを読み、Human確認対象のDevelopment Projectを確認して。必要な案件だけdetail_urlを辿って、Humanが判断すべき点を日本語で整理して。`;await navigator.clipboard.writeText(text);status('ChatGPTへ渡す文をコピーしました。','OK')}catch(e){status('コピー失敗: '+e.message,'ERROR')}
+ try{const c=configFromForm(false),last=lastPublish(),url=last?.pending_url||publicRepoBase(c)+'pending.json';const text=`${url}\nこのURLを読み、Human確認対象のDevelopment Projectを確認して。必要な案件だけdetail_urlを辿って、Humanが判断すべき点を日本語で整理して。`;await navigator.clipboard.writeText(text);status('ChatGPTへ渡す文をコピーしました。','OK')}catch(e){status('コピー失敗: '+e.message,'ERROR')}
 }
 
-window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildVersions,publicRepoBase,cleanPath,safeId}};
+window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,verifyLastPublish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildVersions,publicRepoBase,cleanPath,safeId,revisionUrl,makeRevision}};
 window.addEventListener('DOMContentLoaded',render);
 })();
