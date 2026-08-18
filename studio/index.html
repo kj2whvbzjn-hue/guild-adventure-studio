@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B652</title>
+<title>GK Studio GKS-B653</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -459,13 +459,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B652</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B653</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B652</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B653</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1750,16 +1750,23 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-development" class="view hidden">
-  <div class="view-heading"><h1>開発管理</h1><span class="status">Development Workspace v1 / 構成探索版</span></div>
+  <div class="view-heading"><h1>開発管理</h1><span class="status">Development Projects / Workspace v1 / 構成探索版</span></div>
   <div class="card">
     <h2>ゲームProjectとは独立した開発管理領域</h2>
-    <p>議論から決定・正式仕様までをここで管理します。Quest / Event / Character / Flag / Master等のGame Project JSONには保存しません。ゲームとの接続は、後から専用Link機構として追加します。</p>
+    <p>開発案件ごとに独立したDevelopment Workspaceを保持します。Quest / Event / Character / Flag / Master等のGame Project JSONには保存しません。案件を切り替えても別案件のDiscussion / Decision / Specification / Architecture / Work Box / Taskを上書きしません。</p>
+    <div class="grid">
+      <div class="field"><label>現在の開発案件</label><select id="developmentProjectSelect" onchange="switchDevelopmentProject(this.value)"></select></div>
+      <div class="field"><label>案件名</label><input id="developmentProjectName" placeholder="開発案件名"><div class="toolbar"><button type="button" onclick="renameDevelopmentProject()">案件名を保存</button><button class="primary" type="button" onclick="createDevelopmentProject()">＋新規案件</button></div></div>
+    </div>
+    <div id="developmentProjectRegistryStatus" class="small"></div>
     <div id="developmentStoreStatus" class="small"></div>
     <div class="toolbar">
-      <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">開発管理JSONを出力</button>
-      <label class="button-like">開発管理JSONを読込<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label>
+      <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button>
+      <label class="button-like">案件JSONを追加<input id="developmentProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label>
+      <label class="button-like">現在案件をJSONで置換<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label>
       <button type="button" onclick="renderDevelopmentWorkspace()">再表示</button>
     </div>
+    <p class="small">ブラウザ保存は案件別の作業コピーです。正本として残す案件は「現在案件JSONを出力」で明示保存してください。案件削除機能はありません。</p>
   </div>
   <div class="kpis">
     <div class="kpi"><span class="small">議論</span><b id="devKpiDiscussions">0</b></div>
@@ -2330,11 +2337,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=652"></script>
+<script src="./layer-controller.js?v=653"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B652';
+const DISTRIBUTION_BUILD='GKS-B653';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -3166,9 +3173,13 @@ function deleteRelationship(id){if(confirm(id+'を削除しますか？')){data.
 function addTimeline(){let id=timelineId.value.trim()||nextId('Timeline'),event=timelineEvent.value.trim();if(!event)return alert('出来事を入力してください。');if(allIds().includes(id))return alert('そのIDは既に使用されています。');data.timeline.push({id,chapter_no:Number(timelineChapter.value)||0,section_no:Number(timelineSection.value)||0,target_id:timelineTarget.value.trim(),event,created_at:now()});timelineId.value=timelineChapter.value=timelineSection.value=timelineTarget.value=timelineEvent.value='';persist('timeline added')}
 function deleteTimeline(id){if(confirm(id+'を削除しますか？')){data.timeline=data.timeline.filter(x=>x.id!==id);persist('timeline deleted')}}
 
-const DEVELOPMENT_STORE_KEY='gk_development_workspace_v1';
-let developmentWorkspace=null,developmentPane='architecture',editingDevDiscussionId='',editingDevDecisionId='',editingDevSpecId='';
+const DEVELOPMENT_LEGACY_STORE_KEY='gk_development_workspace_v1';
+const DEVELOPMENT_REGISTRY_KEY='gk_development_project_registry_v1';
+const DEVELOPMENT_ACTIVE_PROJECT_KEY='gk_development_active_project_v1';
+const DEVELOPMENT_PROJECT_STORE_PREFIX='gk_development_project_v1:';
+let developmentProjectRegistry=null,activeDevelopmentProjectId='',developmentWorkspace=null,developmentPane='architecture',editingDevDiscussionId='',editingDevDecisionId='',editingDevSpecId='';
 function devRefs(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
+function developmentProjectStoreKey(id){return DEVELOPMENT_PROJECT_STORE_PREFIX+encodeURIComponent(String(id||''))}
 function developmentExplorationSeed(stamp=now()){
  return {
   architecture_nodes:[
@@ -3193,10 +3204,11 @@ function developmentSeed(){
  const stamp='2026-08-18T13:00:00+09:00',explore=developmentExplorationSeed(stamp);
  return {schema_version:'1.1',workspace:{id:'DEV-WORKSPACE-001',name:'AI Development Studio 開発管理',status:'development',updated_at:stamp},discussions:[{id:'DISC-0001',title:'汎用AI開発Studio構想',status:'Open',summary:'Guild Adventure Studioで得たゲーム制作・AI共同開発の知見を、汎用AI開発Studioへ発展させる。',body:'既存ゲームのStory / Quest / Event / Character / Flag / 前提条件 / 次遷移を、仕様・依存関係・進捗管理へ一般化する。Discussion → Decision → Specificationまでを開発Studio側で管理し、Game Projectは別系統とする。',open_questions:'ゲーム接続Linkの正式Schema\nSpecification Revision方式\nTest / Buildとの正式な紐付け方式\nRole / Approval履歴の詳細モデル\nDiscussionからDecision / Specificationへの昇格操作\n開発管理JSONのGitHub正本化方式',conclusion:'開発Studio側にDiscussion / Decision / Specification / Dependency / Progressを持ち、ゲーム側とは後から専用Linkで接続する方向を採用する。',related_discussion_ids:[],artifact_note:'AI_Development_Studio_Concept_Draft_v0.1.zip',created_at:stamp,updated_at:stamp}],decisions:[{id:'DEC-DEV-0001',title:'開発管理とGame Projectを分離する',status:'Approved',text:'Discussion → Decision → Specificationまでを開発Studio側の独立データとして管理し、Quest / Event / Character / Flag / Master等のGame Project JSONへ混在させない。ゲームとの対応付けは別途Link機構で実装する。',rationale:'議論・正式仕様・ゲームコンテンツの責務を分離し、将来Web・業務システム等にも同じ開発管理Coreを利用できるようにするため。',source_discussion_ids:['DISC-0001'],approved_by:'Human',approved_at:stamp,created_at:stamp,updated_at:stamp}],specifications:[{id:'SPEC-DEV-0001',title:'独立Development Workspace仕様',status:'Approved',summary:'Studio基本領域にGame Projectとは独立した開発管理Workspaceを持つ。',body:'Development WorkspaceはDiscussion、Decision、Specificationを独立JSONとして保持する。Discussionは議論情報だけを持つ。Decisionは決定理由と根拠Discussionを持つ。Specificationは正式仕様、根拠Decision、前提Specification、Acceptance Criteriaを持つ。Game Project JSONの出力・検証・バックアップ件数にはDevelopment Workspaceを混在させない。ゲーム接続は将来の専用Link機構で行う。',decision_refs:['DEC-DEV-0001'],depends_on:[],acceptance_criteria:'Game Project JSONを出力してもDevelopment Workspaceが含まれない。\nDevelopment Workspace JSONを個別に出力・読込できる。\nDiscussion / Decision / Specificationを登録・編集できる。\nSpecificationの前提依存を表示できる。',approved_by:'Human',approved_at:stamp,created_at:stamp,updated_at:stamp}],architecture_nodes:explore.architecture_nodes,work_boxes:explore.work_boxes,tasks:explore.tasks,history:[{at:stamp,message:'Development Workspace v1 bootstrap approved by Human'},{at:stamp,message:'Architecture / Work Box / Task exploration workspace bootstrap'}]};
 }
+function blankDevelopmentProjectSeed(id,name){const stamp=now();return {schema_version:'1.1',workspace:{id:String(id||''),name:String(name||id||'新しい開発案件'),status:'development',updated_at:stamp},discussions:[],decisions:[],specifications:[],architecture_nodes:[],work_boxes:[],tasks:[],history:[{at:stamp,message:'Development Project created'}]}}
 function normalizeDevelopmentWorkspace(raw){
  const x=(raw&&typeof raw==='object'&&!Array.isArray(raw))?structuredClone(raw):developmentSeed();
  const needsExplorationBootstrap=!Array.isArray(x.architecture_nodes)&&!Array.isArray(x.work_boxes)&&!Array.isArray(x.tasks);
- x.schema_version='1.1';x.workspace=x.workspace&&typeof x.workspace==='object'?x.workspace:{id:'DEV-WORKSPACE-001',name:'AI Development Studio 開発管理',status:'development',updated_at:now()};x.discussions=Array.isArray(x.discussions)?x.discussions:[];x.decisions=Array.isArray(x.decisions)?x.decisions:[];x.specifications=Array.isArray(x.specifications)?x.specifications:[];x.history=Array.isArray(x.history)?x.history:[];
+ x.schema_version='1.1';x.workspace=x.workspace&&typeof x.workspace==='object'?x.workspace:{id:'',name:'Development Project',status:'development',updated_at:now()};x.workspace.id=String(x.workspace.id||'');x.workspace.name=String(x.workspace.name||x.workspace.id||'Development Project');x.workspace.status=String(x.workspace.status||'development');x.discussions=Array.isArray(x.discussions)?x.discussions:[];x.decisions=Array.isArray(x.decisions)?x.decisions:[];x.specifications=Array.isArray(x.specifications)?x.specifications:[];x.history=Array.isArray(x.history)?x.history:[];
  if(needsExplorationBootstrap){const explore=developmentExplorationSeed();x.architecture_nodes=explore.architecture_nodes;x.work_boxes=explore.work_boxes;x.tasks=explore.tasks;x.history.push({at:now(),message:'Architecture / Work Box / Task探索データを初期化'});}
  x.architecture_nodes=Array.isArray(x.architecture_nodes)?x.architecture_nodes:[];x.work_boxes=Array.isArray(x.work_boxes)?x.work_boxes:[];x.tasks=Array.isArray(x.tasks)?x.tasks:[];
  x.discussions=x.discussions.map(d=>({id:String(d.id||''),title:String(d.title||''),status:['Open','Pending','Resolved','Archived'].includes(d.status)?d.status:'Open',summary:String(d.summary||''),body:String(d.body||''),open_questions:String(d.open_questions||''),conclusion:String(d.conclusion||''),related_discussion_ids:Array.isArray(d.related_discussion_ids)?d.related_discussion_ids.map(String).filter(Boolean):[],artifact_note:String(d.artifact_note||''),created_at:d.created_at||now(),updated_at:d.updated_at||d.created_at||now()}));
@@ -3208,9 +3220,62 @@ function normalizeDevelopmentWorkspace(raw){
  const boxIds=new Set(x.work_boxes.map(b=>b.id));x.tasks=x.tasks.map(t=>({id:String(t.id||''),box_id:String(t.box_id||''),title:String(t.title||''),status:['Todo','Doing','Blocked','Done'].includes(t.status)?t.status:'Todo',created_at:t.created_at||now(),updated_at:t.updated_at||t.created_at||now()})).filter(t=>t.id&&boxIds.has(t.box_id));
  return x;
 }
-function saveDevelopmentWorkspace(message='update'){developmentWorkspace=normalizeDevelopmentWorkspace(developmentWorkspace||developmentSeed());developmentWorkspace.workspace.updated_at=now();if(message&&message!=='load')developmentWorkspace.history.push({at:now(),message});try{localStorage.setItem(DEVELOPMENT_STORE_KEY,JSON.stringify(developmentWorkspace));return true}catch(e){alert('開発管理データの保存に失敗しました: '+e.message);return false}}
-function migrateLegacyProjectDiscussions(){const w=developmentWorkspace;if(!w||!Array.isArray(data?.discussions)||!data.discussions.length)return 0;const used=new Set(w.discussions.map(x=>x.id));let imported=0;for(const d of data.discussions){if(!d?.id||used.has(d.id))continue;w.discussions.push({id:String(d.id),title:String(d.title||d.id),status:['Open','Pending','Resolved','Archived'].includes(d.status)?d.status:'Open',summary:String(d.summary||''),body:String(d.body||''),open_questions:String(d.open_questions||''),conclusion:String(d.conclusion||''),related_discussion_ids:Array.isArray(d.related_discussion_ids)?d.related_discussion_ids:[],artifact_note:Array.isArray(d.artifacts)?d.artifacts.map(x=>x?.name||'').filter(Boolean).join(', '):'',created_at:d.created_at||now(),updated_at:d.updated_at||d.created_at||now()});used.add(d.id);imported++}if(imported)saveDevelopmentWorkspace(`Legacy Project Discussionを${imported}件コピー`);return imported}
-function loadDevelopmentWorkspace(){if(!developmentWorkspace){try{const raw=localStorage.getItem(DEVELOPMENT_STORE_KEY);developmentWorkspace=raw?normalizeDevelopmentWorkspace(JSON.parse(raw)):developmentSeed()}catch(_){developmentWorkspace=developmentSeed()}saveDevelopmentWorkspace('load')}migrateLegacyProjectDiscussions();return developmentWorkspace}
+function normalizeDevelopmentProjectRegistry(raw){
+ const rows=Array.isArray(raw?.projects)?raw.projects:Array.isArray(raw)?raw:[];const seen=new Set();
+ return rows.map(r=>({id:String(r?.id||'').trim(),name:String(r?.name||r?.id||'').trim(),status:String(r?.status||'Active'),created_at:String(r?.created_at||now()),updated_at:String(r?.updated_at||r?.created_at||now())})).filter(r=>r.id&&!seen.has(r.id)&&(seen.add(r.id),true));
+}
+function saveDevelopmentProjectRegistry(){try{localStorage.setItem(DEVELOPMENT_REGISTRY_KEY,JSON.stringify({schema_version:1,projects:developmentProjectRegistry||[]}));if(activeDevelopmentProjectId)localStorage.setItem(DEVELOPMENT_ACTIVE_PROJECT_KEY,activeDevelopmentProjectId);return true}catch(e){alert('開発案件一覧の保存に失敗しました: '+e.message);return false}}
+function devNextProjectId(){const used=new Set((developmentProjectRegistry||[]).map(x=>x.id));let n=1,id;do{id='DEV-PROJ-'+String(n++).padStart(4,'0')}while(used.has(id));return id}
+function ensureDevelopmentProjectRegistry(){
+ if(developmentProjectRegistry)return developmentProjectRegistry;
+ try{developmentProjectRegistry=normalizeDevelopmentProjectRegistry(JSON.parse(localStorage.getItem(DEVELOPMENT_REGISTRY_KEY)||'null'))}catch(_){developmentProjectRegistry=[]}
+ if(!developmentProjectRegistry.length){
+  let initial=null;
+  try{const legacy=localStorage.getItem(DEVELOPMENT_LEGACY_STORE_KEY);if(legacy)initial=normalizeDevelopmentWorkspace(JSON.parse(legacy))}catch(_){initial=null}
+  if(!initial)initial=normalizeDevelopmentWorkspace(developmentSeed());
+  let id=String(initial.workspace.id||'').trim()||'DEV-PROJ-0001';if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();
+  initial.workspace.id=id;const name=String(initial.workspace.name||'AI Development Studio 開発管理');initial.workspace.name=name;
+  localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(initial));
+  developmentProjectRegistry=[{id,name,status:'Active',created_at:initial.workspace.updated_at||now(),updated_at:initial.workspace.updated_at||now()}];
+ }
+ const requested=String(localStorage.getItem(DEVELOPMENT_ACTIVE_PROJECT_KEY)||'');activeDevelopmentProjectId=developmentProjectRegistry.some(x=>x.id===requested)?requested:developmentProjectRegistry[0].id;
+ saveDevelopmentProjectRegistry();return developmentProjectRegistry;
+}
+function activeDevelopmentProjectEntry(){ensureDevelopmentProjectRegistry();return developmentProjectRegistry.find(x=>x.id===activeDevelopmentProjectId)||developmentProjectRegistry[0]||null}
+function renderDevelopmentProjectSelector(){
+ const rows=ensureDevelopmentProjectRegistry(),sel=document.getElementById('developmentProjectSelect'),entry=activeDevelopmentProjectEntry();
+ if(sel){sel.innerHTML=rows.map(x=>`<option value="${escAttr(x.id)}">${esc(x.name)} / ${esc(x.id)}</option>`).join('');sel.value=activeDevelopmentProjectId}
+ const name=document.getElementById('developmentProjectName');if(name&&entry)name.value=entry.name||'';
+ const status=document.getElementById('developmentProjectRegistryStatus');if(status)status.innerHTML=`<b>開発案件:</b> ${rows.length}件 / <b>現在:</b> ${esc(entry?.id||'')} / ${esc(entry?.name||'')}`;
+}
+function saveDevelopmentWorkspace(message='update'){
+ ensureDevelopmentProjectRegistry();const entry=activeDevelopmentProjectEntry();if(!entry)return false;
+ developmentWorkspace=normalizeDevelopmentWorkspace(developmentWorkspace||blankDevelopmentProjectSeed(entry.id,entry.name));developmentWorkspace.workspace.id=entry.id;developmentWorkspace.workspace.name=String(developmentWorkspace.workspace.name||entry.name||entry.id);developmentWorkspace.workspace.updated_at=now();if(message&&message!=='load')developmentWorkspace.history.push({at:now(),message});
+ entry.name=developmentWorkspace.workspace.name;entry.updated_at=developmentWorkspace.workspace.updated_at;
+ try{localStorage.setItem(developmentProjectStoreKey(entry.id),JSON.stringify(developmentWorkspace));saveDevelopmentProjectRegistry();return true}catch(e){alert('開発管理データの保存に失敗しました: '+e.message);return false}
+}
+function migrateLegacyProjectDiscussions(){const w=developmentWorkspace,first=ensureDevelopmentProjectRegistry()[0];if(!w||!first||activeDevelopmentProjectId!==first.id||!Array.isArray(data?.discussions)||!data.discussions.length)return 0;const used=new Set(w.discussions.map(x=>x.id));let imported=0;for(const d of data.discussions){if(!d?.id||used.has(d.id))continue;w.discussions.push({id:String(d.id),title:String(d.title||d.id),status:['Open','Pending','Resolved','Archived'].includes(d.status)?d.status:'Open',summary:String(d.summary||''),body:String(d.body||''),open_questions:String(d.open_questions||''),conclusion:String(d.conclusion||''),related_discussion_ids:Array.isArray(d.related_discussion_ids)?d.related_discussion_ids:[],artifact_note:Array.isArray(d.artifacts)?d.artifacts.map(x=>x?.name||'').filter(Boolean).join(', '):'',created_at:d.created_at||now(),updated_at:d.updated_at||d.created_at||now()});used.add(d.id);imported++}if(imported)saveDevelopmentWorkspace(`Legacy Project Discussionを${imported}件コピー`);return imported}
+function loadDevelopmentWorkspace(){
+ ensureDevelopmentProjectRegistry();
+ if(!developmentWorkspace){const entry=activeDevelopmentProjectEntry();try{const raw=localStorage.getItem(developmentProjectStoreKey(entry.id));developmentWorkspace=raw?normalizeDevelopmentWorkspace(JSON.parse(raw)):blankDevelopmentProjectSeed(entry.id,entry.name)}catch(_){developmentWorkspace=blankDevelopmentProjectSeed(entry.id,entry.name)};developmentWorkspace.workspace.id=entry.id;developmentWorkspace.workspace.name=developmentWorkspace.workspace.name||entry.name;if(!localStorage.getItem(developmentProjectStoreKey(entry.id)))saveDevelopmentWorkspace('load')}
+ migrateLegacyProjectDiscussions();return developmentWorkspace;
+}
+function resetDevelopmentEditorsForProjectSwitch(){editingDevDiscussionId='';editingDevDecisionId='';editingDevSpecId='';resetDevDiscussionEditor();resetDevDecisionEditor();resetDevSpecEditor()}
+function switchDevelopmentProject(id){
+ ensureDevelopmentProjectRegistry();id=String(id||'');if(!developmentProjectRegistry.some(x=>x.id===id)){renderDevelopmentProjectSelector();return}if(id===activeDevelopmentProjectId)return;
+ if(!confirm('開発案件を切り替えます。入力欄に未保存の内容がある場合は失われます。続けますか？')){renderDevelopmentProjectSelector();return}
+ activeDevelopmentProjectId=id;localStorage.setItem(DEVELOPMENT_ACTIVE_PROJECT_KEY,id);developmentWorkspace=null;resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+}
+function createDevelopmentProject(){
+ ensureDevelopmentProjectRegistry();const name=String(prompt('新しい開発案件名を入力してください。','新しい開発案件')||'').trim();if(!name)return;
+ const id=devNextProjectId(),w=blankDevelopmentProjectSeed(id,name);localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(w));developmentProjectRegistry.push({id,name,status:'Active',created_at:w.workspace.updated_at,updated_at:w.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=w;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+}
+function renameDevelopmentProject(){
+ const entry=activeDevelopmentProjectEntry(),input=document.getElementById('developmentProjectName');if(!entry||!input)return;const name=String(input.value||'').trim();if(!name)return alert('案件名を入力してください。');entry.name=name;entry.updated_at=now();const w=loadDevelopmentWorkspace();w.workspace.name=name;developmentWorkspace=w;saveDevelopmentWorkspace('Development Project renamed');renderDevelopmentWorkspace();
+}
+async function importDevelopmentProjectAsNew(file){
+ if(!file)return;try{ensureDevelopmentProjectRegistry();const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;let id=String(candidate.workspace.id||'').trim()||devNextProjectId();const originalId=id;if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();const name=String(candidate.workspace.name||file.name.replace(/\.json$/i,'')||id);if(!confirm(`開発管理JSONを新しい案件として追加します。\n${count}\n案件名: ${name}\n案件ID: ${id}${originalId!==id?`\n（元ID ${originalId} は使用中のため新IDへ変更）`:''}\n\n現在案件は上書きしません。追加しますか？`))return;candidate.workspace.id=id;candidate.workspace.name=name;candidate.workspace.updated_at=now();candidate.history.push({at:now(),message:`Development Project JSON imported as new project: ${id}`});localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(candidate));developmentProjectRegistry.push({id,name,status:'Active',created_at:candidate.workspace.updated_at,updated_at:candidate.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`新しい開発案件 ${id} / ${name} を追加しました。`)}catch(e){alert('開発案件JSON追加失敗: '+e.message)}
+}
 function devNextId(prefix,rows){const used=new Set((rows||[]).map(x=>x.id));let n=1,id;do{id=prefix+String(n++).padStart(4,'0')}while(used.has(id));return id}
 function setDevelopmentPane(name){developmentPane=name;['architecture','discussion','decision','specification','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
 function resetDevDiscussionEditor(){editingDevDiscussionId='';['devDiscussionId','devDiscussionTitle','devDiscussionSummary','devDiscussionBody','devDiscussionOpenQuestions','devDiscussionConclusion','devDiscussionRelated','devDiscussionArtifact'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devDiscussionStatus'))devDiscussionStatus.value='Open'}
@@ -3226,8 +3291,9 @@ function developmentOpenQuestions(w){return w.discussions.flatMap(d=>String(d.op
 function renderDevelopmentWorkspace(){
  const root=document.getElementById('view-development');if(!root)return;
  const w=loadDevelopmentWorkspace(),oq=developmentOpenQuestions(w);
+ renderDevelopmentProjectSelector();
  devKpiDiscussions.textContent=w.discussions.length;devKpiArchitecture.textContent=w.architecture_nodes.length;devKpiWorkBoxes.textContent=w.work_boxes.length;devKpiTasks.textContent=w.tasks.length;devKpiDecisions.textContent=w.decisions.length;devKpiSpecifications.textContent=w.specifications.length;devKpiOpenQuestions.textContent=oq.length;
- developmentStoreStatus.innerHTML=`<b>保存:</b> Studio共通 Development Workspace（Game Project非依存） / <b>Architecture:</b> 専用独立Module / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>正本運用:</b> 開発管理JSONを明示出力して保管。ブラウザ保存は作業コピー。 / <b>構成:</b> Architecture ${w.architecture_nodes.length}・Box ${w.work_boxes.length}・Task ${w.tasks.length}`;
+ developmentStoreStatus.innerHTML=`<b>保存:</b> 案件別 Development Workspace（Game Project非依存） / <b>Architecture:</b> 専用独立Module / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>正本運用:</b> 現在案件JSONを明示出力して保管。ブラウザ保存は案件別作業コピー。 / <b>構成:</b> Architecture ${w.architecture_nodes.length}・Box ${w.work_boxes.length}・Task ${w.tasks.length}`;
  ['architecture','discussion','decision','specification','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
  if(developmentPane==='architecture')window.GKSDevelopmentArchitectureExplorer?.render();
  devDiscussionList.innerHTML=[...w.discussions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.id)} / ${esc(d.title)}</b> <span class="badge">${esc(discussionStatusLabel(d.status))}</span><p>${esc(d.summary)}</p><div class="meta">未決 ${String(d.open_questions||'').split(/\r?\n/).filter(x=>x.trim()).length}件 / 更新 ${esc(d.updated_at)}</div><button onclick="editDevDiscussion('${escAttr(d.id)}')">編集</button><button onclick="exportDiscussionAiHandover('${escAttr(d.id)}')">AI共有</button></div>`).join('')||'<div class="small">議論なし</div>';
@@ -3404,7 +3470,7 @@ async function importDiscussionAiReturn(file){
   preview+='\n\n現在のDiscussionをバックアップしてから反映します。よろしいですか？';
   if(!confirm(preview))return;
 
-  const backupKey=DEVELOPMENT_STORE_KEY+'_before_ai_return_'+Date.now();
+  const backupKey=developmentProjectStoreKey(activeDevelopmentProjectId)+'_before_ai_return_'+Date.now();
   localStorage.setItem(backupKey,JSON.stringify(w));
 
   const stamp=now();
@@ -3436,7 +3502,7 @@ async function importDiscussionAiReturn(file){
 }
 
 function exportDevelopmentWorkspace(){downloadText('development-project.json',JSON.stringify(loadDevelopmentWorkspace(),null,2),'application/json;charset=utf-8')}
-async function importDevelopmentWorkspace(file){if(!file)return;try{const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;if(!confirm(`開発管理JSONを読み込みます。\n${count}\n現在の開発管理Workspaceを置き換えますか？`))return;const current=loadDevelopmentWorkspace();localStorage.setItem(DEVELOPMENT_STORE_KEY+'_backup_'+Date.now(),JSON.stringify(current));developmentWorkspace=candidate;saveDevelopmentWorkspace('Development Workspace JSON imported');renderDevelopmentWorkspace();alert('開発管理JSONを読み込みました。')}catch(e){alert('開発管理JSON読込失敗: '+e.message)}}
+async function importDevelopmentWorkspace(file){if(!file)return;try{const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),entry=activeDevelopmentProjectEntry(),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;if(!entry)throw new Error('現在案件がありません。');if(!confirm(`開発管理JSONを現在案件へ読み込みます。\n現在: ${entry.id} / ${entry.name}\n${count}\n\nこの案件だけを置き換えますか？ 他案件には影響しません。`))return;const current=loadDevelopmentWorkspace();localStorage.setItem(developmentProjectStoreKey(entry.id)+'_backup_'+Date.now(),JSON.stringify(current));candidate.workspace.id=entry.id;candidate.workspace.name=String(candidate.workspace.name||entry.name);developmentWorkspace=candidate;saveDevelopmentWorkspace('Development Workspace JSON imported into current project');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert('現在案件へ開発管理JSONを読み込みました。')}catch(e){alert('開発管理JSON読込失敗: '+e.message)}}
 function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
 
 function addDecision(){
@@ -8933,7 +8999,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','652');
+    url.searchParams.set('appv','653');
     location.replace(url.toString());
    }
  }
@@ -8942,7 +9008,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=652',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=653',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8961,7 +9027,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','652');
+    url.searchParams.set('appv','653');
     location.replace(url.toString());
    }
   });
