@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B659</title>
+<title>GK Studio GKS-B660</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -462,13 +462,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B659</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B660</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B659</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B660</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1866,7 +1866,7 @@ updateDeployDeleteControl();
     </div>
 
     <div id="developmentPane-aipublish" class="card hidden">
-      <div class="dev-pane-head"><div><h2>AI共有 <span class="badge ok">GitHub Pages Read</span></h2><p class="small">Development Projectを読み取り専用JSONとして公開します。公開ファイル＋package_manifest.jsonは1つのAtomic Commitで更新し、GitHub read-backとPages反映を検証します。</p></div></div>
+      <div class="dev-pane-head"><div><h2>AI共有 <span class="badge ok">Multi Endpoint Read</span></h2><p class="small">Development Projectを読み取り専用JSONとして1つのAtomic Commitで公開し、GitHub read-backに加えてGitHub Raw / GitHub Pagesの両公開経路を検証します。</p></div></div>
       <div class="daip-warning"><b>公開データです。</b><br>Discussion / Work Box / Confirmation等のProject内容が公開Project詳細JSONへ含まれます。秘密情報や非公開内容を含む案件は公開しないでください。PATは端末へ保存しません。</div>
       <div class="daip-grid" style="margin-top:12px">
         <div class="field"><label>GitHub Owner</label><input id="daipOwner" placeholder="kj2whvbzjn-hue"></div>
@@ -1881,13 +1881,15 @@ updateDeployDeleteControl();
         <button type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.testConnection()">接続確認</button>
         <button type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.preview()">公開内容をプレビュー</button>
         <button type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.exportZip()">公開用JSON ZIP</button>
-        <button class="primary" type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.publish()">GitHub Pages用データを公開</button><button type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.verifyLastPublish()">公開状態を再検証</button>
+        <button class="primary" type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.publish()">AI公開データをAtomic Commit</button><button type="button" data-daip-busy onclick="GKSDevelopmentAIPublish.verifyLastPublish()">公開状態を再検証</button>
       </div>
       <h3>公開URL</h3>
-      <div class="small">Base</div><span id="daipPublicBase" class="daip-url">—</span>
-      <div class="small" style="margin-top:8px">Human確認対象入口</div><span id="daipPendingUrl" class="daip-url">—</span>
-      <div class="daip-actions"><button type="button" onclick="GKSDevelopmentAIPublish.openPending()">pending.jsonを開く</button><button type="button" onclick="GKSDevelopmentAIPublish.copyPrompt()">ChatGPTへ渡す文をコピー</button></div>
-      <p class="small">AIはまず <code>pending.json</code> を読み、必要な案件だけ各 <code>detail_url</code> のProject詳細JSONを取得できます。全Project詳細を毎回読む必要はありません。</p>
+      <div class="small">GitHub Pages Base</div><span id="daipPublicBase" class="daip-url">—</span>
+      <div class="small" style="margin-top:8px">Pages Human確認対象入口</div><span id="daipPendingUrl" class="daip-url">—</span>
+      <div class="small" style="margin-top:8px">GitHub Raw AI入口</div><span id="daipPendingRawUrl" class="daip-url">—</span>
+      <div class="small" style="margin-top:8px">GitHub表示入口</div><span id="daipPendingGithubUrl" class="daip-url">—</span>
+      <div class="daip-actions"><button type="button" onclick="GKSDevelopmentAIPublish.openPending('pages')">Pagesを開く</button><button type="button" onclick="GKSDevelopmentAIPublish.openPending('raw')">Rawを開く</button><button type="button" onclick="GKSDevelopmentAIPublish.openPending('github')">GitHub表示を開く</button><button type="button" onclick="GKSDevelopmentAIPublish.copyPrompt()">ChatGPTへ渡す文をコピー</button></div>
+      <p class="small">AIはまずPagesの <code>pending.json</code> を読み、取得できない場合は同じ <code>publish_revision</code> のGitHub Rawへフォールバックします。各案件も <code>detail_url</code> → <code>detail_raw_url</code> → <code>detail_github_url</code> の順で必要な案件だけ取得します。</p>
       <h3>公開プレビュー</h3><div id="daipPreview" class="daip-preview"><div class="small">まだプレビューしていません。</div></div>
       <h3>最終公開</h3><div id="daipLastPublish" class="small">未公開</div>
       <div id="daipStatus" class="daip-status">Development AI公開はまだ実行していません。</div>
@@ -2378,11 +2380,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=659"></script>
+<script src="./layer-controller.js?v=660"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B659';
+const DISTRIBUTION_BUILD='GKS-B660';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -9152,7 +9154,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','659');
+    url.searchParams.set('appv','660');
     location.replace(url.toString());
    }
  }
@@ -9161,7 +9163,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=659',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=660',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9180,7 +9182,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','659');
+    url.searchParams.set('appv','660');
     location.replace(url.toString());
    }
   });
@@ -9276,7 +9278,7 @@ setTimeout(loadDesignCards,0);
 </script>
 <script src="./development-architecture/architecture-explorer.js?v=2"></script>
 <script src="./development-workflow/development-workflow.js?v=1"></script>
-<script src="./development-ai-publish/development-ai-publish.js?v=4"></script>
+<script src="./development-ai-publish/development-ai-publish.js?v=5"></script>
 <script>
 window.GKSDevelopmentArchitectureExplorer.init({
   getWorkspace:()=>loadDevelopmentWorkspace(),

@@ -1,4 +1,4 @@
-/* GKS-B659 Development AI Publish
+/* GKS-B660 Development AI Publish
  * Development-only read interface for GitHub Pages.
  * Does not reuse Game Project GitHub sync data/model/handlers.
  */
@@ -126,11 +126,21 @@ function saveSettings(){
  const s=configFromForm(false);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:s.owner,repo:s.repo,branch:s.branch,base_path:s.base_path,scope:s.scope}));
  status('接続先を端末へ保存しました。PATは保存していません。','OK');render();
 }
+function encodeSegments(v){return String(v||'').split('/').filter(Boolean).map(encodeURIComponent).join('/')}
 function publicRepoBase(c){
  if(!c.owner||!c.repo)return '';
  const root=c.repo.toLowerCase()===`${c.owner}.github.io`.toLowerCase()?`https://${c.owner}.github.io/`:`https://${c.owner}.github.io/${encodeURIComponent(c.repo)}/`;
- return root+cleanPath(c.base_path).split('/').map(encodeURIComponent).join('/')+'/';
+ return root+encodeSegments(cleanPath(c.base_path))+'/';
 }
+function rawRepoBase(c){
+ if(!c.owner||!c.repo)return '';
+ return `https://raw.githubusercontent.com/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/${encodeSegments(c.branch||'main')}/${encodeSegments(cleanPath(c.base_path))}/`;
+}
+function githubRepoBase(c){
+ if(!c.owner||!c.repo)return '';
+ return `https://github.com/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/blob/${encodeSegments(c.branch||'main')}/${encodeSegments(cleanPath(c.base_path))}/`;
+}
+function publicBases(c){return {pages:publicRepoBase(c),raw:rawRepoBase(c),github:githubRepoBase(c)}}
 function configFromForm(requireToken=true){
  const c={
   owner:String(el('daipOwner')?.value||'').trim(),repo:String(el('daipRepo')?.value||'').trim(),branch:String(el('daipBranch')?.value||'main').trim()||'main',
@@ -170,20 +180,28 @@ function revisionUrl(url,revision){
  return String(url)+sep+'rev='+encodeURIComponent(String(revision||''));
 }
 function buildDataset(config){
- const generatedAt=iso(),base=publicRepoBase(config),workspaces=getProjectWorkspaces(config.scope),builds=buildVersions(),publishRevision=makeRevision(generatedAt,builds);
+ const generatedAt=iso(),bases=publicBases(config),base=bases.pages,workspaces=getProjectWorkspaces(config.scope),builds=buildVersions(),publishRevision=makeRevision(generatedAt,builds);
+ const endpointUrls={
+  pages:{base:bases.pages,projects:bases.pages?revisionUrl(bases.pages+'projects.json',publishRevision):'',pending:bases.pages?revisionUrl(bases.pages+'pending.json',publishRevision):''},
+  raw:{base:bases.raw,projects:bases.raw?revisionUrl(bases.raw+'projects.json',publishRevision):'',pending:bases.raw?revisionUrl(bases.raw+'pending.json',publishRevision):''},
+  github:{base:bases.github,projects:bases.github?revisionUrl(bases.github+'projects.json',publishRevision):'',pending:bases.github?revisionUrl(bases.github+'pending.json',publishRevision):''}
+ };
  const details=[],summaries=[];
  for(const w of workspaces){
   const summary=summarizeProject(w),filename=safeId(summary.id)+'.json',detailPath=`projects/${filename}`;
-  summary.detail_path=detailPath;summary.detail_url=base?revisionUrl(base+detailPath,publishRevision):'';
+  summary.detail_path=detailPath;
+  summary.detail_url=bases.pages?revisionUrl(bases.pages+detailPath,publishRevision):'';
+  summary.detail_raw_url=bases.raw?revisionUrl(bases.raw+detailPath,publishRevision):'';
+  summary.detail_github_url=bases.github?revisionUrl(bases.github+detailPath,publishRevision):'';
   summaries.push(summary);
-  details.push({path:detailPath,data:{format:'gk-development-ai-public-project',version:'1.1',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,summary:clone(summary),project:deepRedact(w)}});
+  details.push({path:detailPath,data:{format:'gk-development-ai-public-project',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,read_endpoints:{pages:summary.detail_url,raw:summary.detail_raw_url,github:summary.detail_github_url},summary:clone(summary),project:deepRedact(w)}});
  }
  summaries.sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))||String(a.id).localeCompare(String(b.id)));
  const pending=summaries.filter(x=>x.attention_required);
- const projectsDoc={format:'gk-development-ai-public-projects',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,projects:summaries};
- const pendingDoc={format:'gk-development-ai-public-pending',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,projects:pending};
- const manifest={format:'gk-development-ai-public-manifest',version:'1.2',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v1',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base,projects:base?revisionUrl(base+'projects.json',publishRevision):'',pending:base?revisionUrl(base+'pending.json',publishRevision):''},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
- return {generated_at:generatedAt,publish_revision:publishRevision,base,manifest,projectsDoc,pendingDoc,details,summaries,pending};
+ const projectsDoc={format:'gk-development-ai-public-projects',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,read_endpoints:endpointUrls,projects:summaries};
+ const pendingDoc={format:'gk-development-ai-public-pending',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,read_endpoints:{pages:endpointUrls.pages.pending,raw:endpointUrls.raw.pending,github:endpointUrls.github.pending},projects:pending};
+ const manifest={format:'gk-development-ai-public-manifest',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v2-multi-endpoint',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base:bases.pages,projects:endpointUrls.pages.projects,pending:endpointUrls.pages.pending,pages:endpointUrls.pages,raw:endpointUrls.raw,github:endpointUrls.github},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
+ return {generated_at:generatedAt,publish_revision:publishRevision,base,bases,endpointUrls,manifest,projectsDoc,pendingDoc,details,summaries,pending};
 }
 function status(message,level='INFO'){
  const node=el('daipStatus');if(!node)return;node.dataset.level=level;node.textContent=message;
@@ -202,13 +220,15 @@ function render(){
  const s=readSettings();
  for(const [id,val] of [['daipOwner',s.owner],['daipRepo',s.repo],['daipBranch',s.branch],['daipBasePath',s.base_path]]){const n=el(id);if(n&&document.activeElement!==n)n.value=val}
  if(el('daipScope')&&document.activeElement!==el('daipScope'))el('daipScope').value=s.scope;
- let base='';try{base=publicRepoBase(configFromForm(false))}catch(_){base=publicRepoBase(s)}
- const baseEl=el('daipPublicBase');if(baseEl)baseEl.textContent=base||'Owner / Repositoryを設定すると表示します。';
+ let bases={pages:'',raw:'',github:''};try{bases=publicBases(configFromForm(false))}catch(_){bases=publicBases(s)}
+ const baseEl=el('daipPublicBase');if(baseEl)baseEl.textContent=bases.pages||'Owner / Repositoryを設定すると表示します。';
  let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
- const pendingEl=el('daipPendingUrl');if(pendingEl)pendingEl.textContent=last?.pending_url|| (base?base+'pending.json':'—');
+ const pendingEl=el('daipPendingUrl');if(pendingEl)pendingEl.textContent=last?.pending_url|| (bases.pages?bases.pages+'pending.json':'—');
+ const rawEl=el('daipPendingRawUrl');if(rawEl)rawEl.textContent=last?.pending_raw_url|| (bases.raw?bases.raw+'pending.json':'—');
+ const githubEl=el('daipPendingGithubUrl');if(githubEl)githubEl.textContent=last?.pending_github_url|| (bases.github?bases.github+'pending.json':'—');
  const lastEl=el('daipLastPublish');if(lastEl){
   if(!last?.published_at)lastEl.textContent='未公開';
-  else lastEl.textContent=`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件 / Commit ${String(last.commit_sha||'').slice(0,12)||'—'} / Revision ${last.publish_revision||'—'} / Git read-back ${last.git_readback||'未確認'} / Pages ${last.pages_reflection||'未確認'}`;
+  else lastEl.textContent=`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件 / Commit ${String(last.commit_sha||'').slice(0,12)||'—'} / Revision ${last.publish_revision||'—'} / Git read-back ${last.git_readback||'未確認'} / Raw ${last.raw_reflection||'未確認'} / Pages ${last.pages_reflection||'未確認'}`;
  }
  if(lastDataset)renderPreview(lastDataset);
 }
@@ -301,22 +321,24 @@ async function fetchPublicJson(url,revision){
  const target=revisionUrl(String(url||'').replace(/([?&])rev=[^&]*/,'$1').replace(/[?&]$/,''),revision)+'&cb='+encodeURIComponent(Date.now());
  const res=await fetch(target,{method:'GET',cache:'no-store',headers:{'Accept':'application/json'}});if(!res.ok)throw new Error(`HTTP ${res.status}`);return res.json();
 }
-async function verifyPagesOnce(pendingUrl,revision){
- const pending=await fetchPublicJson(pendingUrl,revision);if(String(pending.publish_revision||'')!==String(revision||''))throw new Error(`Pages pending revision=${pending.publish_revision||'なし'}`);
+async function verifyPublicEndpointOnce(label,pendingUrl,revision,detailField){
+ const pending=await fetchPublicJson(pendingUrl,revision);if(String(pending.publish_revision||'')!==String(revision||''))throw new Error(`${label} pending revision=${pending.publish_revision||'なし'}`);
  const details=[];
  for(const summary of pending.projects||[]){
-  if(!summary.detail_url)throw new Error(`Pages detail_urlなし: ${summary.id||'unknown'}`);
-  const detail=await fetchPublicJson(summary.detail_url,revision);if(String(detail.publish_revision||'')!==String(revision||'')||String(detail.summary?.id||'')!==String(summary.id||''))throw new Error(`Pages detail不一致: ${summary.id||'unknown'}`);details.push(String(summary.id||''));
+  const detailUrl=String(summary?.[detailField]||'');if(!detailUrl)throw new Error(`${label} ${detailField}なし: ${summary.id||'unknown'}`);
+  const detail=await fetchPublicJson(detailUrl,revision);if(String(detail.publish_revision||'')!==String(revision||'')||String(detail.summary?.id||'')!==String(summary.id||''))throw new Error(`${label} detail不一致: ${summary.id||'unknown'}`);details.push(String(summary.id||''));
  }
  return {status:'Passed',checked_at:iso(),pending_project_count:Number(pending.pending_project_count||0),detail_ids:details};
 }
-async function waitForPagesReflection(pendingUrl,revision,{attempts=12,intervalMs=5000}={}){
+async function waitForPublicReflection(label,pendingUrl,revision,detailField,{attempts=12,intervalMs=5000}={}){
  let lastError=null;
  for(let i=1;i<=attempts;i++){
-  try{status(`GitHub Pages反映確認 ${i}/${attempts}\nRevision ${revision}`);return await verifyPagesOnce(pendingUrl,revision)}catch(e){lastError=e;if(i<attempts)await sleep(intervalMs)}
+  try{status(`${label}反映確認 ${i}/${attempts}\nRevision ${revision}`);return await verifyPublicEndpointOnce(label,pendingUrl,revision,detailField)}catch(e){lastError=e;if(i<attempts)await sleep(intervalMs)}
  }
- return {status:'Pending',checked_at:iso(),message:lastError?.message||'Pages反映を確認できませんでした。'};
+ return {status:'Pending',checked_at:iso(),message:lastError?.message||`${label}反映を確認できませんでした。`};
 }
+async function waitForRawReflection(pendingUrl,revision,options={}){return waitForPublicReflection('GitHub Raw',pendingUrl,revision,'detail_raw_url',{attempts:6,intervalMs:2000,...options})}
+async function waitForPagesReflection(pendingUrl,revision,options={}){return waitForPublicReflection('GitHub Pages',pendingUrl,revision,'detail_url',{attempts:12,intervalMs:5000,...options})}
 async function testConnection(){
  if(busy)return;try{setBusy(true);const c=configFromForm(true);status('Development AI公開用の接続を確認中…');const head=await readGitHead(c);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));status(`接続できました: ${c.owner}/${c.repo} (${c.branch})\nHEAD ${head.head_sha.slice(0,12)}`,'OK');render()}catch(e){status('接続失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
@@ -325,15 +347,17 @@ async function publish(){
  try{
   const c=configFromForm(true),dataset=buildDataset(c);
   if(!dataset.summaries.length)throw new Error('公開できるDevelopment Projectがありません。');
-  const warning=`Development Projectの内容を公開GitHub Pagesから読めるJSONとして配置します。\n\n公開先: ${dataset.base}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n公開ファイルとpackage_manifest.jsonは1つのAtomic Commitで更新します。Discussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
+  const warning=`Development Projectの内容を公開GitHub Pages / GitHub Rawから読めるJSONとして配置します。\n\nPages: ${dataset.endpointUrls.pages.pending}\nRaw: ${dataset.endpointUrls.raw.pending}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n公開ファイルとpackage_manifest.jsonは1つのAtomic Commitで更新します。Discussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
   if(!confirm(warning))return;
   setBusy(true);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));
-  const publishResult=await atomicCommit(c,dataset),gitReadback=await verifyGitReadback(c,dataset,publishResult),pendingUrl=revisionUrl(dataset.base+'pending.json',dataset.publish_revision);
-  const pages=await waitForPagesReflection(pendingUrl,dataset.publish_revision);
-  const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:publishResult.root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:pendingUrl,publish_revision:dataset.publish_revision,source_parent_sha:publishResult.head.head_sha,commit_sha:publishResult.commit_sha,git_readback:gitReadback.status,pages_reflection:pages.status,pages_checked_at:pages.checked_at,pages_message:pages.message||''};
+  const publishResult=await atomicCommit(c,dataset),gitReadback=await verifyGitReadback(c,dataset,publishResult);
+  const pendingUrl=dataset.endpointUrls.pages.pending,pendingRawUrl=dataset.endpointUrls.raw.pending,pendingGithubUrl=dataset.endpointUrls.github.pending;
+  const raw=await waitForRawReflection(pendingRawUrl,dataset.publish_revision),pages=await waitForPagesReflection(pendingUrl,dataset.publish_revision);
+  const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:publishResult.root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:pendingUrl,pending_raw_url:pendingRawUrl,pending_github_url:pendingGithubUrl,publish_revision:dataset.publish_revision,source_parent_sha:publishResult.head.head_sha,commit_sha:publishResult.commit_sha,git_readback:gitReadback.status,raw_reflection:raw.status,raw_checked_at:raw.checked_at,raw_message:raw.message||'',pages_reflection:pages.status,pages_checked_at:pages.checked_at,pages_message:pages.message||''};
   localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));lastDataset=dataset;
-  if(pages.status==='Passed')status(`公開完了。Atomic Commit / GitHub read-back / Pages反映を確認しました。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nHuman確認対象入口: ${last.pending_url}`,'OK');
-  else status(`GitHub公開は完了しました。Atomic Commit / read-backはPASSです。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nPages反映だけ未確認: ${pages.message||'反映待ち'}\n「公開状態を再検証」で再確認できます。`,'WARNING');
+  if(raw.status==='Passed'&&pages.status==='Passed')status(`公開完了。Atomic Commit / GitHub read-back / Raw / Pages反映を確認しました。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nPages入口: ${last.pending_url}\nRaw入口: ${last.pending_raw_url}`,'OK');
+  else if(raw.status==='Passed'||pages.status==='Passed')status(`公開は成立しました。AI公開経路の少なくとも1系統を確認済みです。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nRaw: ${raw.status}${raw.message?' / '+raw.message:''}\nPages: ${pages.status}${pages.message?' / '+pages.message:''}\n「公開状態を再検証」で両経路を再確認できます。`,'WARNING');
+  else status(`GitHub Atomic Commit / read-backはPASSですが、公開読取経路は未確認です。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nRaw: ${raw.message||raw.status}\nPages: ${pages.message||pages.status}\n「公開状態を再検証」で再確認してください。`,'WARNING');
   render();
  }catch(e){status('公開失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
@@ -341,9 +365,15 @@ async function verifyLastPublish(){
  if(busy)return;
  try{
   let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
-  if(!last?.pending_url||!last?.publish_revision)throw new Error('再検証できる公開履歴がありません。');
-  setBusy(true);const pages=await waitForPagesReflection(last.pending_url,last.publish_revision,{attempts:3,intervalMs:3000});last.pages_reflection=pages.status;last.pages_checked_at=pages.checked_at;last.pages_message=pages.message||'';localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));
-  if(pages.status==='Passed')status(`Pages反映PASS。\nRevision: ${last.publish_revision}\nHuman確認対象 ${pages.pending_project_count}件`,'OK');else status(`Pages反映はまだ確認できません: ${pages.message||'反映待ち'}`,'WARNING');render();
+  if(!last?.publish_revision||(!last?.pending_url&&!last?.pending_raw_url))throw new Error('再検証できる公開履歴がありません。');
+  setBusy(true);
+  const c={owner:last.owner||'',repo:last.repo||'',branch:last.branch||'main',base_path:last.base_path||DEFAULT_BASE_PATH},bases=publicBases(c);
+  last.pending_url=last.pending_url||revisionUrl(bases.pages+'pending.json',last.publish_revision);last.pending_raw_url=last.pending_raw_url||revisionUrl(bases.raw+'pending.json',last.publish_revision);last.pending_github_url=last.pending_github_url||revisionUrl(bases.github+'pending.json',last.publish_revision);
+  const raw=await waitForRawReflection(last.pending_raw_url,last.publish_revision,{attempts:3,intervalMs:2000}),pages=await waitForPagesReflection(last.pending_url,last.publish_revision,{attempts:3,intervalMs:3000});
+  last.raw_reflection=raw.status;last.raw_checked_at=raw.checked_at;last.raw_message=raw.message||'';last.pages_reflection=pages.status;last.pages_checked_at=pages.checked_at;last.pages_message=pages.message||'';localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));
+  if(raw.status==='Passed'&&pages.status==='Passed')status(`公開経路再検証PASS。\nRevision: ${last.publish_revision}\nRaw / PagesともHuman確認対象 ${pages.pending_project_count}件`,'OK');
+  else if(raw.status==='Passed'||pages.status==='Passed')status(`公開経路は1系統PASSです。\nRevision: ${last.publish_revision}\nRaw: ${raw.status}${raw.message?' / '+raw.message:''}\nPages: ${pages.status}${pages.message?' / '+pages.message:''}`,'WARNING');
+  else status(`Raw / Pagesともまだ確認できません。\nRaw: ${raw.message||raw.status}\nPages: ${pages.message||pages.status}`,'WARNING');render();
  }catch(e){status('再検証失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
 async function exportZip(){
@@ -353,19 +383,37 @@ async function exportZip(){
   const writer=GKZipCore.writer.create();
   for(const row of dataset.details)writer.addJson(`${root}/${row.path}`,row.data);
   writer.addJson(`${root}/projects.json`,dataset.projectsDoc);writer.addJson(`${root}/pending.json`,dataset.pendingDoc);writer.addJson(`${root}/manifest.json`,dataset.manifest);
-  writer.addText('README_AI_PUBLIC.txt',`Development AI Public Read Data\n\n公開先Path: ${root}/\n入口: pending.json\n生成: ${dataset.generated_at}\nRevision: ${dataset.publish_revision}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\n\nこのZIPは公開用読み取りデータです。Project詳細にはDiscussion / Work Box / Confirmation等が含まれます。\n`);
+  writer.addText('README_AI_PUBLIC.txt',`Development AI Public Read Data
+
+公開先Path: ${root}/
+入口: pending.json
+生成: ${dataset.generated_at}
+Revision: ${dataset.publish_revision}
+案件: ${dataset.summaries.length}
+Human確認対象: ${dataset.pending.length}
+Pages: ${dataset.endpointUrls.pages.pending}
+Raw: ${dataset.endpointUrls.raw.pending}
+GitHub: ${dataset.endpointUrls.github.pending}
+
+AIはPagesを取得できない場合、同じRevisionのRaw、それでも不可ならGitHub表示を利用できます。Project詳細もdetail_url / detail_raw_url / detail_github_urlの順でフォールバックできます。
+このZIPは公開用読み取りデータです。Project詳細にはDiscussion / Work Box / Confirmation等が含まれます。
+`);
   await writer.download(`GK_Development_AI_Public_${new Date().toISOString().replace(/[:.]/g,'-')}.zip`);
   lastDataset=dataset;status('公開用JSON ZIPを出力しました。GitHubへ手動配置する場合に使用できます。','OK');renderPreview(dataset);
  }catch(e){status('ZIP出力失敗: '+e.message,'ERROR')}
 }
 function lastPublish(){try{return JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){return null}}
-function openPending(){
- try{const c=configFromForm(false),last=lastPublish(),url=last?.pending_url||publicRepoBase(c)+'pending.json';if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
+function openPending(kind='pages'){
+ try{const c=configFromForm(false),last=lastPublish(),bases=publicBases(c),urls={pages:last?.pending_url||bases.pages+'pending.json',raw:last?.pending_raw_url||bases.raw+'pending.json',github:last?.pending_github_url||bases.github+'pending.json'},url=urls[kind]||urls.pages;if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
 }
 async function copyPrompt(){
- try{const c=configFromForm(false),last=lastPublish(),url=last?.pending_url||publicRepoBase(c)+'pending.json';const text=`${url}\nこのURLを読み、Human確認対象のDevelopment Projectを確認して。必要な案件だけdetail_urlを辿って、Humanが判断すべき点を日本語で整理して。`;await navigator.clipboard.writeText(text);status('ChatGPTへ渡す文をコピーしました。','OK')}catch(e){status('コピー失敗: '+e.message,'ERROR')}
+ try{
+  const c=configFromForm(false),last=lastPublish(),bases=publicBases(c),revision=String(last?.publish_revision||''),pages=last?.pending_url||bases.pages+'pending.json',raw=last?.pending_raw_url||bases.raw+'pending.json',githubUrl=last?.pending_github_url||bases.github+'pending.json';
+  const text=`Development Studioが公開したHuman確認対象を確認してください。\n${revision?'publish_revision: '+revision+'\n':''}Pages入口: ${pages}\nRaw入口: ${raw}\nGitHub表示入口: ${githubUrl}\n\n1. まずPages入口のpending.jsonを実取得してください。取得できない、cache miss、またはRevision不一致ならRaw入口を実取得してください。Rawも取得できない場合だけGitHub表示入口を使用してください。\n2. pending.jsonのpublish_revision${revision?' が '+revision+' と一致すること':''}を確認してください。一致しない世代の内容を混ぜないでください。\n3. Human確認対象のDevelopment Projectだけ確認してください。必要な案件だけdetail_urlを辿り、取得できなければ同じ案件のdetail_raw_url、さらに必要ならdetail_github_urlへフォールバックしてください。\n4. 実際に取得できた内容だけを根拠に、Humanが判断すべき点を日本語で整理してください。過去データや推測で補完しないでください。\n5. どの入口で取得できたか（Pages / Raw / GitHub表示）とRevision確認結果も最後に報告してください。`;
+  await navigator.clipboard.writeText(text);status('ChatGPTへ渡す3経路フォールバック文をコピーしました。','OK')
+ }catch(e){status('コピー失敗: '+e.message,'ERROR')}
 }
 
-window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,verifyLastPublish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildVersions,publicRepoBase,cleanPath,safeId,revisionUrl,makeRevision}};
+window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,verifyLastPublish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildVersions,publicRepoBase,rawRepoBase,githubRepoBase,publicBases,cleanPath,safeId,revisionUrl,makeRevision,verifyPublicEndpointOnce}};
 window.addEventListener('DOMContentLoaded',render);
 })();
