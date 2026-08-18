@@ -1,0 +1,632 @@
+{
+  "format": "gk-development-ai-public-project",
+  "version": "1.0",
+  "generated_at": "2026-08-18T10:53:31.880Z",
+  "studio_build": "",
+  "game_build": "",
+  "summary": {
+    "id": "DEV-CONTEXT-001",
+    "name": "AI Development Studio 開発管理",
+    "status": "development",
+    "workflow_stage": "Discovery",
+    "updated_at": "2026-08-18T07:40:47.532Z",
+    "unresolved": true,
+    "counts": {
+      "discussions": 1,
+      "architecture_nodes": 29,
+      "work_boxes": 29,
+      "tasks": 0,
+      "open_tasks": 0,
+      "checks": 0,
+      "pending_or_failed_checks": 0,
+      "decisions": 1,
+      "specifications": 1,
+      "open_questions": 14
+    },
+    "implementation_approval": "Pending",
+    "completion_approval": "Pending",
+    "pending_checks": [],
+    "open_tasks": [],
+    "open_discussions": [
+      {
+        "id": "DISC-0001",
+        "title": "汎用AI開発Studio構想",
+        "status": "Open"
+      }
+    ],
+    "open_questions": [
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Architecture / Work Box / Taskの正式なJSON Schema詳細"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Work Box Typeの正式な初期セット"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Architecture NodeとSpecificationの正式なLinkフィールド"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Discussionから複数Decisionを作成する具体的なStudio UI"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Decision Approved後のArchitecture配置UI"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Architecture配置後のSpecification Draft生成UI"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "development-project.jsonの明示保存・読込・差分確認UI"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Development Workspaceの正本JSONとlocalStorage作業コピーの新旧判定方法"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Testとの正式Link Schema"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Buildとの正式Link Schema"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Game側とのLink Schema"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Role / Approval履歴の詳細モデル"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "Specification Revision方式"
+      },
+      {
+        "discussion_id": "DISC-0001",
+        "text": "GitHub上でdevelopment-project.jsonを正本管理する方式"
+      }
+    ],
+    "detail_path": "projects/DEV-CONTEXT-001.json",
+    "detail_url": "https://kj2whvbzjn-hue.github.io/guild-adventure-studio/docs/ai-development/projects/DEV-CONTEXT-001.json"
+  },
+  "project": {
+    "schema_version": "1.1",
+    "workspace": {
+      "id": "DEV-CONTEXT-001",
+      "name": "AI Development Studio 開発管理",
+      "status": "development",
+      "updated_at": "2026-08-18T07:40:47.532Z"
+    },
+    "discussions": [
+      {
+        "id": "DISC-0001",
+        "title": "汎用AI開発Studio構想",
+        "status": "Open",
+        "summary": "汎用AI Development Studioの開発管理基盤について、Development Workspace正本原則、Architecture / Work Box / Task構造、正式昇格フロー、最小UI、Studio自身での実運用、不足機能追加原則、後続拡張順序の①〜⑦をHuman採用として確定した。",
+        "body": "既存ゲームのStory / Quest / Event / Character / Flag / 前提条件 / 次遷移を、仕様・依存関係・進捗管理へ一般化する。Discussion → Decision → Specificationまでを開発Studio側で管理し、Game Projectは別系統とする。\n\n## AI議論追記 2026-08-18T04:56:57.418Z\n## Architecture / Work Box構想の採用\n\n仕様を決める際には、仕様内容だけでなく「システムのどこに属するか」「どのディレクトリ／構成要素へ置くか」というArchitectureの議論が不可欠であるため、Guild Adventure StudioのStory Editorを参考にした開発管理用の別システムを設ける方向を採用した。\n\n### Architecture Tree\nArchitectureはStory Editorの章・節のような固定階層にはせず、自由な深さを持つ再帰的なNode Treeとする。\n\n例:\nProject\n└─ Core\n   └─ Workflow\n      └─ Event\n         └─ Handler\n\nArchitecture Nodeは「どこについての話か」を表す入れ物とし、Specificationそのものとは分離する。Nodeの項目は議論対象によって必要情報が変わるため、初期段階では細かく固定しすぎない。最低限の識別・親子関係を中心とし、必要に応じてtypeやphysical_path等を持てる方向とする。\n\n### Work Box\n既存StoryシステムのBoxの考え方を開発管理へ流用する。\n\nArchitecture Nodeの中へTaskを直接並べるのではなく、Work Boxを挟む。\n\nArchitecture Node\n→ Work Box\n→ Task\n\n役割:\n- Architecture Node: どこについての話か\n- Work Box: そこで今回何を実現・検討するか\n- Task: 具体的に何をするか\n\nWork Boxには、複数Taskをまとめる目的・作業単位としての役割を持たせる。\n\n### Box Type\nWork Boxには用途を表す種類を持たせる方向を採用した。\n\n候補:\n- Discussion\n- Design\n- Specification\n- Implementation\n- Test\n- Migration\n- Research\n- Release\n\nこれにより、Architecture Node単位で「議論済み／仕様化済み／実装中／Test待ち」などの進捗を把握できるようにする。\n\n### Box Dependency\n依存関係はTask単位だけでなくWork Box単位で扱えるようにする。\n\n例:\nSpecification Box\n↓\nImplementation Box\n↓\nTest Box\n\n前提Boxが完了・承認されたことで後続Boxが着手可能になる考え方は、既存ゲームのQuest prerequisite / next questの仕組みを応用できる。\n\n### Specificationとの関係\nArchitecture TreeとSpecificationは同一データにはしない。\n\nArchitecture:\n「どこに何が存在するか／どこについての仕様か」\n\nSpecification:\n「それがどう動かなければならないか」\n\n1つのArchitecture Nodeに複数Specificationを紐付けられる形を想定する。\n\n### 採用した基本構造\nDiscussion\n→ Decision\n→ Architecture\n→ Specification\n→ Implementation / Test\n\n開発作業の構造としては、より具体的に以下を基本案とする。\n\nArchitecture\n→ Work Box\n→ Task\n→ Artifact / Specification / Test\n\nこの構造はGuild Adventure StudioのStory / Box / prerequisite等で得た知見を、汎用開発管理へ転用するものとする。\n\n## AI返却レポート\n### 理解した確定事項\n- Development WorkspaceとGame Projectは分離して管理する。\n- Discussion → Decision → Specificationまでを開発Studio側で扱い、Game側とは別途Link機構で接続する。\n- Architecture Treeは固定階層ではなく自由階層の再帰Node Treeとする。\n- Architecture NodeとSpecificationは同一概念にせず分離する。\n- Architecture Node内ではWork Boxを挟み、その中にTaskを持たせる構造を採用する。\n- Work BoxにはDiscussion / Design / Specification / Implementation / Test等の種類を持たせる方向を採用する。\n- Work Box間の依存関係を扱い、前提作業から後続作業への着手条件に利用する。\n\n### 新しい知見\n- 既存Story Editorの自由な構造表示と、Story Box / Quest prerequisiteの考え方を開発管理へ転用できる。\n- Architecture Nodeの詳細項目を先に固定するより、Nodeを安定した入れ物として保ち、変化しやすい設計・作業情報をWork Box側に寄せる方が汎用性が高い。\n- Architecture → Work Box → Taskという構造にすることで、仕様だけでなくDiscussion・実装・Test・Migration等を同じ構造上で管理できる。\n\n### 未解決事項\n- Architecture / Work Box / Taskの正式なJSON Schema\n- Architecture NodeとSpecificationの正式なLink方式\n- Work BoxとTaskの状態遷移、完了条件、依存解除条件\n- ゲーム側とのLink Schema\n- Specification Revision方式\n- Test / Buildとの正式な紐付け方式\n- Role / Approval履歴の詳細モデル\n- DiscussionからDecision / Specificationへの昇格操作\n- Development Workspace JSONをGitHubで正本化する方式\n\n### 次の論点候補\n- Architecture / Work Box / TaskをDevelopment Workspaceにどう保存するか\n- Discussionの結論からDecision / Architecture / Specificationを生成する昇格フロー\n- Work Boxの状態・依存関係を既存Story / Quest UIへどう対応させるか\n\n_返却取込: 2026-08-18T04:56:57.418Z_\n\n## AI議論追記 2026-08-18T05:18:03.420Z\n## 開発管理基盤の実装方針 ①〜⑦ 採用結果\n\n以下の方針をHuman採用として確定した。\n\n### ① Development Workspace正本原則\nDevelopment Workspaceの唯一の正本は `development-project.json` とする。\n\n- localStorageはStudio上の作業コピーとする。\n- AI Handover ZIPとAI返却JSONは正本そのものではなく、共有・変更入力のための派生成果物とする。\n- 正本更新はHumanによる明示保存とする。\n- GitHub同期は後段で追加する。\n\nまた、`development-project.json` は構造化された管理情報の正本とし、大容量Artifact、添付ファイル、詳細ログ、バイナリ等はJSONへ直接埋め込まず、外部ファイルとして管理してIDまたはPathで参照する。\n\n論理データモデルは、将来 `discussions.json` / `architecture.json` / `tasks.json` 等へ物理分割できることを妨げない構造とする。\n\n### ② Architecture / Work Box / Task 最小仕様\nArchitectureは自由階層のNode Treeとする。\n\n基本構造:\nArchitecture Node\n→ Work Box\n→ Task\n\n意味:\n- Architecture Node = どこについての話・構成か\n- Work Box = そこで何を実現・検討するか\n- Task = 具体的に何をするか\n\n初期段階ではSubTaskを持たせず、Taskは1階層とする。\n\nArchitecture / Work Box / Taskは巨大な再帰ネストとして保存せず、原則フラット配列＋ID参照で保存する。\n\n- Architecture Node: `parent_id`\n- Work Box: `node_id`\n- Task: `box_id`\n\nStudio側でID参照から自由階層ツリーを構築する。\n\n### ③ 正式昇格フロー\n正式な昇格フローは以下とする。\n\nDiscussion\n→ Decision\n→ Architecture\n→ Specification\n\n1つのDiscussionから複数Decisionを作成できる。\n複数Decisionを根拠に1つのSpecificationを作成できる。\n\nAIが担当可能:\n- Decision Draft作成\n- Architecture配置候補の提案\n- Architecture Node新設案の提案\n- Specification Draft作成\n- 依存関係候補の提案\n- Acceptance Criteria案\n- 影響分析\n\nHumanのみが確定可能:\n- Decision Approved\n- Architecture正式配置\n- Architecture正式Nodeの追加・変更\n- Specification Approved\n- Superseded等の正式状態確定\n\n元Discussionは削除せず、ID参照で由来を追跡する。\n初期段階では専用Promotion Recordは作らず、既存参照関係で追跡する。\n\n### ④ Architecture + Work Box + Task 最小版UI\nStory Editor風の自由階層Architecture Treeを作る。\n\n操作:\n- Architecture Nodeを選択\n- 選択Node配下のWork Boxを表示\n- Work Boxを選択\n- 選択Box配下のTaskを表示\n\nTask状態は以下の4状態とする。\n- Todo\n- Doing\n- Blocked\n- Done\n\nWork Box側に独立statusを二重管理せず、Task状態から自動算出する。\n\n例:\n- 全Task Todo → Not Started\n- Doingあり → In Progress\n- Blockedあり → Blocked\n- 全Task Done → Done\n\n### ⑤ Studio自身を実運用対象にする\n最初から既存機能すべてをArchitectureへ登録しない。\n\n今後、開発・変更・検討対象になった機能からArchitecture / Work Box / Taskへ登録する。\n\n最初の実運用対象はAI Development Studio自身とする。\n\n初期Architecture候補:\nAI Development Studio\n├─ Development Workspace\n├─ Architecture Management\n└─ AI Handover\n\nArchitecture / Work Box / Task最小版そのものを最初の管理対象として、このStudio自身をStudioで管理する運用を開始する。\n\n### ⑥ 不足機能の追加原則\n先回りして機能を増やさない。\n\n実運用で不足・不便・矛盾が発生した時点でDiscussionへ登録し、通常の\n\nDiscussion\n→ Decision\n→ Architecture\n→ Specification\n\nフローで追加する。\n\n実際に使用した結果を基準に機能を拡張する。\n\n### ⑦ 後続拡張の優先順位\nArchitecture / Specification基盤が実運用できるようになった後、以下の順で拡張する。\n\n1. Test\n2. Build\n3. Game接続\n4. Approval詳細\n\n理由:\n- まずSpecificationを何で検証するかをTestと結びつける。\n- 次にどのBuildで成立しているかを追跡する。\n- その後Game側のQuest / Event / Flag / Runtime等とのLinkを実装する。\n- Role / Approval履歴の詳細化は最後に行う。\n\n## 現時点の開発管理全体像\n\ndevelopment-project.json\n├─ workspace\n├─ discussions\n├─ decisions\n├─ architecture\n├─ work_boxes\n├─ tasks\n├─ specifications\n├─ dependencies\n├─ history\n├─ approvals      （将来）\n└─ links          （将来）\n\n外部Artifact / 添付 / 詳細ログ / 大容量データは別ファイルとし、IDまたはPathで参照する。\n\nこの方針を、汎用AI Development Studioの開発管理基盤の正式化候補として採用する。\n\n## AI返却レポート\n### 理解した確定事項\n- Development Workspaceの唯一の正本はdevelopment-project.jsonとする。\n- localStorageは作業コピーとし、正本更新はHumanによる明示保存とする。\n- 大容量Artifact・添付・詳細ログ・バイナリは正本JSONへ埋め込まず外部参照とする。\n- Architectureは自由階層Node Treeとする。\n- Architecture Node → Work Box → Taskを基本構造とする。\n- Architecture / Work Box / Taskはフラット配列＋ID参照で保存する。\n- 正式昇格フローはDiscussion → Decision → Architecture → Specificationとする。\n- AIはDraft・候補提案・影響分析まで、正式承認とArchitecture確定はHumanのみとする。\n- Task状態はTodo / Doing / Blocked / Doneとする。\n- Work Box状態はTaskから自動算出する。\n- 最初の実運用対象はAI Development Studio自身とする。\n- 不足機能は実運用で発生した時点でDiscussionから正式フローを通して追加する。\n- 後続拡張順はTest → Build → Game接続 → Approval詳細とする。\n\n### 新しい知見\n- Development Workspaceの論理モデルと物理ファイル構成を分離しておくことで、初期は単一JSON、将来は複数ファイルへ安全に分割できる。\n- 自由階層ツリーをUI表示に使っても、正本はparent_id等によるフラット参照方式の方が大規模化に強い。\n- 汎用Studio自身を最初の利用対象にすることで、Work BoxやTaskに本当に必要な項目を実運用から発見できる。\n\n### 未解決事項\n- Architecture / Work Box / Taskの正式JSON Schema詳細\n- Work Box Typeの正式な初期セット\n- Architecture NodeとSpecificationの正式Linkフィールド\n- DiscussionからDecisionへの具体的な昇格UI\n- DecisionからArchitecture配置への具体的なUI\n- ArchitectureからSpecification Draft生成への具体的なUI\n- development-project.jsonの明示保存・読込・差分確認UI\n- 正本JSONとlocalStorage作業コピーの新旧判定方法\n- Test / Build / Game Linkの各Schema\n- Role / Approval履歴の詳細モデル\n- Specification Revision方式\n- GitHub正本化方式\n\n### 次の論点候補\n- 今回確定した①〜⑦をDecisionへ分割昇格する。\n- Development Workspace正本原則を最初の新規Decisionとして正式化する。\n- Architecture / Work Box / Task構造をDecisionおよびSpecification Draftへ昇格する。\n- その後、Story Editor風Architecture最小UIの実装仕様を確定する。\n\n_返却取込: 2026-08-18T05:18:03.420Z_",
+        "open_questions": "Architecture / Work Box / Taskの正式なJSON Schema詳細\nWork Box Typeの正式な初期セット\nArchitecture NodeとSpecificationの正式なLinkフィールド\nDiscussionから複数Decisionを作成する具体的なStudio UI\nDecision Approved後のArchitecture配置UI\nArchitecture配置後のSpecification Draft生成UI\ndevelopment-project.jsonの明示保存・読込・差分確認UI\nDevelopment Workspaceの正本JSONとlocalStorage作業コピーの新旧判定方法\nTestとの正式Link Schema\nBuildとの正式Link Schema\nGame側とのLink Schema\nRole / Approval履歴の詳細モデル\nSpecification Revision方式\nGitHub上でdevelopment-project.jsonを正本管理する方式",
+        "conclusion": "①〜⑦の開発管理方針をHuman採用として確定した。\n\nDevelopment Workspaceは `development-project.json` を唯一の正本とし、localStorageを作業コピーとする。\nArchitectureは自由階層Node Treeとし、Architecture Node → Work Box → Taskを基本構造とする。\n保存はフラット配列＋ID参照を原則とする。\n正式昇格フローは Discussion → Decision → Architecture → Specification とし、正式承認・Architecture確定はHumanのみが行う。\n最小UIはStory Editor風Tree＋Work Box＋Taskとし、Task状態は Todo / Doing / Blocked / Done、Box状態はTaskから自動算出する。\n最初はAI Development Studio自身をこの仕組みで管理し、実運用で不足した機能だけを追加する。\n後続拡張は Test → Build → Game接続 → Approval詳細 の順とする。",
+        "related_discussion_ids": [],
+        "artifact_note": "AI_Development_Studio_Concept_Draft_v0.1.zip",
+        "created_at": "2026-08-18T13:00:00+09:00",
+        "updated_at": "2026-08-18T05:18:03.420Z"
+      }
+    ],
+    "decisions": [
+      {
+        "id": "DEC-DEV-0001",
+        "title": "開発管理とGame Projectを分離する",
+        "status": "Approved",
+        "text": "Discussion → Decision → Specificationまでを開発Studio側の独立データとして管理し、Quest / Event / Character / Flag / Master等のGame Project JSONへ混在させない。ゲームとの対応付けは別途Link機構で実装する。",
+        "rationale": "議論・正式仕様・ゲームコンテンツの責務を分離し、将来Web・業務システム等にも同じ開発管理Coreを利用できるようにするため。",
+        "source_discussion_ids": [
+          "DISC-0001"
+        ],
+        "approved_by": "Human",
+        "approved_at": "2026-08-18T13:00:00+09:00",
+        "created_at": "2026-08-18T13:00:00+09:00",
+        "updated_at": "2026-08-18T13:00:00+09:00"
+      }
+    ],
+    "specifications": [
+      {
+        "id": "SPEC-DEV-0001",
+        "title": "独立Development Workspace仕様",
+        "status": "Approved",
+        "summary": "Studio基本領域にGame Projectとは独立した開発管理Workspaceを持つ。",
+        "body": "Development WorkspaceはDiscussion、Decision、Specificationを独立JSONとして保持する。Discussionは議論情報だけを持つ。Decisionは決定理由と根拠Discussionを持つ。Specificationは正式仕様、根拠Decision、前提Specification、Acceptance Criteriaを持つ。Game Project JSONの出力・検証・バックアップ件数にはDevelopment Workspaceを混在させない。ゲーム接続は将来の専用Link機構で行う。",
+        "decision_refs": [
+          "DEC-DEV-0001"
+        ],
+        "depends_on": [],
+        "acceptance_criteria": "Game Project JSONを出力してもDevelopment Workspaceが含まれない。\nDevelopment Workspace JSONを個別に出力・読込できる。\nDiscussion / Decision / Specificationを登録・編集できる。\nSpecificationの前提依存を表示できる。",
+        "approved_by": "Human",
+        "approved_at": "2026-08-18T13:00:00+09:00",
+        "created_at": "2026-08-18T13:00:00+09:00",
+        "updated_at": "2026-08-18T13:00:00+09:00"
+      }
+    ],
+    "architecture_nodes": [
+      {
+        "id": "ARCH-0001",
+        "name": "AI Development Studio",
+        "parent_id": "",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0002",
+        "name": "Core",
+        "parent_id": "ARCH-0001",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0003",
+        "name": "Project",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0004",
+        "name": "Requirement",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0005",
+        "name": "Decision",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0006",
+        "name": "Specification",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0007",
+        "name": "Task",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0008",
+        "name": "Artifact",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0009",
+        "name": "Schema",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0010",
+        "name": "Test",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0011",
+        "name": "Validation",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0012",
+        "name": "Approval",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0013",
+        "name": "Build",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0014",
+        "name": "Release",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0015",
+        "name": "History",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0016",
+        "name": "AI Governance",
+        "parent_id": "ARCH-0002",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0017",
+        "name": "AI Engine",
+        "parent_id": "ARCH-0001",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0018",
+        "name": "作業分類",
+        "parent_id": "ARCH-0017",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0019",
+        "name": "Context生成",
+        "parent_id": "ARCH-0017",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0020",
+        "name": "影響分析",
+        "parent_id": "ARCH-0017",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0021",
+        "name": "実装指示",
+        "parent_id": "ARCH-0017",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0022",
+        "name": "Test実行",
+        "parent_id": "ARCH-0017",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0023",
+        "name": "成果物生成",
+        "parent_id": "ARCH-0017",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0024",
+        "name": "Domain Plugins",
+        "parent_id": "ARCH-0001",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0025",
+        "name": "Game Development",
+        "parent_id": "ARCH-0024",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0026",
+        "name": "Web Application",
+        "parent_id": "ARCH-0024",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0027",
+        "name": "Business System",
+        "parent_id": "ARCH-0024",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0028",
+        "name": "API",
+        "parent_id": "ARCH-0024",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "ARCH-0029",
+        "name": "Mobile App",
+        "parent_id": "ARCH-0024",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      }
+    ],
+    "work_boxes": [
+      {
+        "id": "BOX-0001",
+        "node_id": "ARCH-0001",
+        "title": "AI Development Studio 概要検討",
+        "body": "【位置付け】\n汎用AI開発Studio全体のArchitecture仮説を検討するためのRoot。\n\n【現在の構成仮説】\n- Core: Domainに依存しない開発管理の共通概念\n- AI Engine: AIが開発作業を支援・実行するための機能群\n- Domain Plugins: Game / Web / Business / API / Mobile等のDomain固有拡張\n\n【検討内容】\n- Studio全体として何を管理対象にするか\n- Core / AI Engine / Domain Pluginsの責務境界\n- HumanとAIの役割分担\n- 正本データと派生成果物の境界\n- 最小構成として何が必要か\n- 各要素間の主要Workflow\n\n【未決】\nこのTreeは確定Architectureではなく、全体像を具体化するための仮説として扱う。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0002",
+        "node_id": "ARCH-0002",
+        "title": "Core 概要検討",
+        "body": "【位置付け候補】\nDomainに依存せず、どの開発分野でも共通して必要になる管理概念を置く領域。\n\n【検討内容】\n- Coreとして独立させるべき概念の選別\n- 各Core概念の責務と非責務\n- Core間の参照方向と依存関係\n- すべてを正本データにするのか、一部を派生情報にするのか\n- Domain PluginがCoreをどこまで拡張可能にするか\n- AI EngineがCoreを読み書きする際の権限\n\n【確認したいこと】\n現在列挙しているProject〜AI Governanceの全てが独立Coreである必要があるかを実運用で検証する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0003",
+        "node_id": "ARCH-0003",
+        "title": "Project 概要検討",
+        "body": "【概要候補】\n1つの開発対象をDevelopment Studio上で識別し、関連するRequirement / Decision / Specification / Task / Artifact等を束ねる境界。\n\n【検討内容】\n- Projectが保持する最小情報\n- Development Workspaceとの違い・関係\n- 1 ProjectとRepository / Product / Serviceの対応関係\n- Domain Pluginの選択・有効化をProjectが持つか\n- Project状態やVersionをCoreで管理するか\n- 複数Project間参照を許可するか\n\n【境界】\nGame Project等のDomain固有データそのものをCore Projectへ混在させない方針との整合を確認する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0004",
+        "node_id": "ARCH-0004",
+        "title": "Requirement 概要検討",
+        "body": "【概要候補】\n「何を実現する必要があるか」を正式Specificationより前の要求として管理する概念。\n\n【検討内容】\n- Human要求、Business要求、System要求を同じRequirementで扱えるか\n- Discussionとの境界\n- RequirementからDecision / Specificationへの関係\n- 必須度、優先度、受入条件をどこまでRequirementに持たせるか\n- Requirement変更時の影響追跡\n- AIがRequirementを生成・修正できる範囲\n\n【未決】\nRequirementを独立Coreにする価値があるか、Discussion / Specificationで代替できるかを検証する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0005",
+        "node_id": "ARCH-0005",
+        "title": "Decision 概要検討",
+        "body": "【概要候補】\n複数の将来仕様・実装へ影響する設計判断と、その理由を保持する概念。\n\n【検討内容】\n- 何をDecisionへ昇格するかの判定基準\n- Discussion上の採用事項との違い\n- Proposed / Approved / Rejected / Superseded等の状態\n- Human Approval必須範囲\n- 根拠Discussionと影響Specificationの追跡\n- Decision変更時の移行・影響分析\n\n【既存前提】\nAIが勝手にApprovedへ変更せず、正式判断はHumanが行う。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0006",
+        "node_id": "ARCH-0006",
+        "title": "Specification 概要検討",
+        "body": "【概要候補】\n対象が「何を満たさなければならないか」「どう振る舞うか」を正式に定義する概念。\n\n【検討内容】\n- Specificationの最小構造\n- Decisionとの関係\n- Architecture Nodeとの所属関係\n- Acceptance Criteriaの扱い\n- Revision / Superseded方式\n- 複数Specification間の依存\n- 実装・TestとのLink\n- Approved以降の変更手順\n\n【目的】\n全体Architectureが具体化した後に、個別仕様を正式化できる形を見つける。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0007",
+        "node_id": "ARCH-0007",
+        "title": "Task 概要検討",
+        "body": "【概要候補】\n具体的に実行可能な作業単位。\n\n【検討内容】\n- Core TaskとArchitecture Explorer内Taskが同一概念か\n- Work Boxとの関係\n- Taskの粒度\n- Todo / Doing / Blocked / Doneで十分か\n- 担当者・AI・期限・優先度が必要か\n- Task成果物との関係\n- Task依存を持つべきか、Work Box依存に寄せるべきか\n\n【注意】\n現在の探索版Taskを使い、必要な属性だけを実運用から発見する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0008",
+        "node_id": "ARCH-0008",
+        "title": "Artifact 概要検討",
+        "body": "【概要候補】\n開発過程で作成・更新・参照されるファイルや生成物を管理する概念。\n\n【検討内容】\n- Source / Document / ZIP / Report / Image / Binary等の扱い\n- 正本データへ実体を埋め込まずPath / ID参照する原則\n- ArtifactのVersion・Hash・生成元\n- Task / Specification / Buildとの関係\n- AI生成物とHuman生成物の区別が必要か\n- 削除・Archive・Retention\n\n【既存前提】\n大容量Artifactはdevelopment-project.jsonへ直接埋め込まない。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0009",
+        "node_id": "ARCH-0009",
+        "title": "Schema 概要検討",
+        "body": "【概要候補】\n構造化データやAI入出力を機械的に検証するためのSchemaを扱う概念。\n\n【検討内容】\n- Schemaを独立Coreにする必要があるか\n- Specificationの一部またはArtifactとして扱う案との比較\n- JSON Schema等のVersion管理\n- 対象データとのLink\n- Migrationとの関係\n- AI生成データをSchemaでどこまで拘束するか\n\n【未決】\n独立Coreとして成立するかは実際のSchema管理量を見て判断する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0010",
+        "node_id": "ARCH-0010",
+        "title": "Test 概要検討",
+        "body": "【概要候補】\nSpecificationや実装が期待どおり成立しているか確認するためのTest定義・結果を扱う概念。\n\n【検討内容】\n- Test Case / Test Suite / Test Resultの分離\n- Acceptance CriteriaからTestへの変換\n- 自動Testと手動Test\n- Specification / BuildとのLink\n- Test結果を正本として保持する範囲\n- Domain固有TestをPlugin側へ分離する方式\n\n【拡張順】\nArchitecture / Specification基盤の実運用後、優先的に拡張する候補。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0011",
+        "node_id": "ARCH-0011",
+        "title": "Validation 概要検討",
+        "body": "【概要候補】\nデータ・成果物・Project状態がルールに適合しているかを判定する仕組み。\n\n【検討内容】\n- Testとの境界\n- Schema Validationとの境界\n- Build前Gate / Import Gate / Release Gate等の共通化\n- Error / Warning / Infoの扱い\n- Validation結果の保存と履歴\n- Domain Plugin固有Validationの登録方法\n\n【未決】\nTestと独立Coreにする意味があるかを実運用で確認する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0012",
+        "node_id": "ARCH-0012",
+        "title": "Approval 概要検討",
+        "body": "【概要候補】\nAIまたはHumanが行った変更・提案を正式状態へ進めるHuman Approvalを管理する概念。\n\n【検討内容】\n- 何にApprovalが必要か\n- Decision Approved / Specification Approved / Release Approvalの共通化\n- Approver Role\n- 承認・却下・差戻し\n- Approval履歴\n- AIが実行可能な範囲とHuman専用操作\n- 単独承認 / 複数承認の必要性\n\n【既存前提】\nAI変更はHuman Approvalを必要とするという原則を維持する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0013",
+        "node_id": "ARCH-0013",
+        "title": "Build 概要検討",
+        "body": "【概要候補】\n特定時点の仕様・Source・Artifactをまとめ、検証可能な実行／配布単位として識別する概念。\n\n【検討内容】\n- Build ID / Version\n- 入力Artifactと生成Artifact\n- 使用Specification / DecisionのSnapshot\n- Test / Validation結果との関係\n- Reproducibility\n- Build失敗・成功状態\n- Domain PluginごとのBuild処理差\n\n【拡張順】\nTestの次に検討・実装する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0014",
+        "node_id": "ARCH-0014",
+        "title": "Release 概要検討",
+        "body": "【概要候補】\n検証済みBuildを利用者・環境へ正式に届ける状態を扱う概念。\n\n【検討内容】\n- BuildとReleaseの境界\n- Release Version / Channel / Environment\n- Approval Gate\n- Release Notes\n- Rollback\n- Domainごとの配布方式差\n- Release後のHistory記録\n\n【未決】\n初期Studioで独立Coreとして必要か、Buildの状態として十分かを検証する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0015",
+        "node_id": "ARCH-0015",
+        "title": "History 概要検討",
+        "body": "【概要候補】\nDevelopment Workspace上で何が、いつ、なぜ変わったかを追跡する横断的な履歴機能。\n\n【検討内容】\n- Event LogとRecord Revisionの違い\n- Human / AIの操作主体\n- Before / After差分\n- Decision / Specification / Build等の履歴を共通化するか\n- Undo / Restoreとの関係\n- 大量履歴の物理ファイル分割\n- Audit用途\n\n【未決】\nHistoryを独立データ型とするか、全Core共通機能として実装するか。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0016",
+        "node_id": "ARCH-0016",
+        "title": "AI Governance 概要検討",
+        "body": "【概要候補】\nAIがDevelopment Workspaceへ関与する際の権限・ルール・制約を定義する横断領域。\n\n【検討内容】\n- AIがDraft可能な対象\n- AIが変更禁止の正式状態\n- Human Approval Gate\n- Contextへ含める情報\n- AI提案と正本変更の分離\n- AI実行ログ\n- Model差による結果の扱い\n- 機密情報・外部送信の制御\n\n【既存前提】\nAIは提案・Draft・分析を行えるが、正式承認を勝手に確定しない。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0017",
+        "node_id": "ARCH-0017",
+        "title": "AI Engine 概要検討",
+        "body": "【位置付け候補】\nCoreの正本情報を読み取り、分類・Context生成・分析・実装支援・Test・成果物生成を行うAI実行領域。\n\n【検討内容】\n- AI Engineが正本を直接変更できるか\n- CoreとはAPI／Command経由で接続するか\n- 1つのEngineか複数Agent構成か\n- 作業ごとのContext最小化\n- AI出力のValidation\n- Human Approvalまでの境界\n\n【原則候補】\nAI EngineはCoreの正式状態そのものではなく、Coreを利用する実行・支援層として分離する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0018",
+        "node_id": "ARCH-0018",
+        "title": "作業分類 概要検討",
+        "body": "【概要候補】\n依頼内容を解析し、必要な処理経路・対象範囲・必要Contextを決定する機能。\n\n【検討内容】\n- SOURCE_UPDATE / DATA_UPDATE等の一般化\n- Design / Implementation / Test / Research等の分類\n- 複合Workの扱い\n- 分類結果がどのEngine処理を起動するか\n- 誤分類時のHuman修正\n- Domain Pluginが分類種別を拡張できるか",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0019",
+        "node_id": "ARCH-0019",
+        "title": "Context生成 概要検討",
+        "body": "【概要候補】\nAIへ渡す情報を、対象作業に必要な範囲へ絞って構築する機能。\n\n【検討内容】\n- Project / Requirement / Decision / Specification / Architectureから何を抽出するか\n- 関連グラフの辿り方\n- 全Workspaceを毎回渡さない方式\n- Token / Data量制御\n- Approved情報とDraft情報の区別\n- Domain Plugin固有Context\n- Artifact参照の扱い",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0020",
+        "node_id": "ARCH-0020",
+        "title": "影響分析 概要検討",
+        "body": "【概要候補】\n変更候補が他のSpecification・Task・Artifact・Test・Build等へ与える影響を分析する機能。\n\n【検討内容】\n- 影響分析の入力\n- 参照関係・依存関係の利用\n- 直接影響と間接影響\n- 変更前に警告する範囲\n- AI推定と確定依存の区別\n- Domain Plugin固有Impact Rule\n- Humanが確認すべき結果形式",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0021",
+        "node_id": "ARCH-0021",
+        "title": "実装指示 概要検討",
+        "body": "【概要候補】\nApproved SpecificationやWork Boxの内容から、AIが実装作業を行うための具体的な指示・変更範囲を生成する機能。\n\n【検討内容】\n- 実装指示の入力\n- 変更可能ファイル範囲\n- 禁止領域\n- 作業手順とAcceptance Criteria\n- Source変更とData変更の扱い\n- AIへ渡す成果物形式\n- 実装結果をどのArtifact / Taskへ戻すか",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0022",
+        "node_id": "ARCH-0022",
+        "title": "Test実行 概要検討",
+        "body": "【概要候補】\n定義済みTest / ValidationをAIまたは実行環境へ指示し、結果をDevelopment Workspaceへ戻す機能。\n\n【検討内容】\n- Test実行権限\n- Local / CI / Browser / Device等の実行先\n- Test定義と実行結果の分離\n- 失敗時の再実装ループ\n- AIがTest結果を解釈する範囲\n- Build Gateとの関係\n- Domain Plugin固有Test Runner",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0023",
+        "node_id": "ARCH-0023",
+        "title": "成果物生成 概要検討",
+        "body": "【概要候補】\n開発作業からSource、Patch、ZIP、Report、Document等の成果物を生成する機能。\n\n【検討内容】\n- Artifact Coreとの関係\n- 生成物の命名・Version\n- Hash / Manifest\n- 生成元Task / Specification / Build\n- Human確認前後の扱い\n- 大容量ファイルの保存先\n- Domain Plugin別Generator",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0024",
+        "node_id": "ARCH-0024",
+        "title": "Domain Plugins 概要検討",
+        "body": "【位置付け候補】\nCoreをDomain固有概念で汚さず、Game / Web / Business / API / Mobile等へ拡張する領域。\n\n【検討内容】\n- Pluginが追加可能なデータ型\n- Pluginが追加可能なUI\n- Schema / Validation / Test / Buildの拡張点\n- AI ContextへのDomain情報提供\n- CoreデータとのLink\n- Plugin間依存\n- PluginのVersion / Compatibility\n\n【原則候補】\nDomain固有情報はCoreへ直接混在させず、Linkまたは拡張ポイントを通して接続する。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0025",
+        "node_id": "ARCH-0025",
+        "title": "Game Development 概要検討",
+        "body": "【概要候補】\nGuild Adventure Studioで得た知見を最初のDomain Pluginとして扱う候補。\n\n【検討内容】\n- Quest / Event / Character / Flag / Master / Story等のDomainデータ\n- Core Project / Requirement / SpecificationとのLink\n- Game固有Schema / Validation / Test\n- Runtime / Export / Build\n- Gameデータ正本とDevelopment Workspace正本の分離\n- 既存Game Systemへ干渉せず接続する方式\n\n【既存前提】\nGame ProjectとDevelopment Workspaceは独立させる。",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0026",
+        "node_id": "ARCH-0026",
+        "title": "Web Application 概要検討",
+        "body": "【概要候補】\nWeb Application開発に必要なDomain固有概念・検証・Buildを追加するPlugin候補。\n\n【検討内容】\n- Route / Page / Component / State / API Client等をPlugin概念にするか\n- Browser Test\n- Frontend / Backend境界\n- Build / Deploy情報\n- Core SpecificationとのLink\n- Framework固有情報をどこまでPluginへ持たせるか",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0027",
+        "node_id": "ARCH-0027",
+        "title": "Business System 概要検討",
+        "body": "【概要候補】\n業務システム開発に必要なDomain固有概念・制約を追加するPlugin候補。\n\n【検討内容】\n- Business Process / Entity / Role / Permission\n- 業務ルール\n- Audit / Compliance\n- External System連携\n- Data Migration\n- Core Requirement / Specificationとの関係\n- DomainモデルをCoreへ漏らさない方式",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0028",
+        "node_id": "ARCH-0028",
+        "title": "API 概要検討",
+        "body": "【概要候補】\nAPI開発に必要なContract・Endpoint・Version等を扱うDomain Plugin候補。\n\n【検討内容】\n- Endpoint / Method / Request / Response\n- API Schema / Contract\n- Authentication / Authorization\n- Versioning / Compatibility\n- Contract Test\n- Client / Server Artifact\n- Core Specification / ValidationとのLink",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      },
+      {
+        "id": "BOX-0029",
+        "node_id": "ARCH-0029",
+        "title": "Mobile App 概要検討",
+        "body": "【概要候補】\nMobile App開発に必要な画面・Navigation・Platform・配布等を扱うDomain Plugin候補。\n\n【検討内容】\n- Screen / Navigation / State\n- iOS / Android差\n- Device Test\n- Permission / Capability\n- App Build / Signing / Distribution\n- Web Application Pluginとの共通化\n- Core Build / Releaseとの接続",
+        "created_at": "2026-08-18T16:00:00+09:00",
+        "updated_at": "2026-08-18T16:00:00+09:00"
+      }
+    ],
+    "tasks": [],
+    "history": [
+      {
+        "at": "2026-08-18T13:00:00+09:00",
+        "message": "Development Workspace v1 bootstrap approved by Human"
+      },
+      {
+        "at": "2026-08-18T16:00:00+09:00",
+        "message": "AI Development Studio全体Architecture仮説と個別概要検討Work Boxを登録"
+      },
+      {
+        "at": "2026-08-18T07:04:59.863Z",
+        "message": "Development Workspace JSON imported"
+      },
+      {
+        "at": "2026-08-18T07:40:39.645Z",
+        "message": "Development Workspace JSON imported into current project"
+      },
+      {
+        "at": "2026-08-18T07:40:47.532Z",
+        "message": "Development Project renamed"
+      }
+    ],
+    "checks": [],
+    "workflow": {
+      "stage": "Discovery",
+      "implementation_approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "completion_approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      }
+    }
+  }
+}
