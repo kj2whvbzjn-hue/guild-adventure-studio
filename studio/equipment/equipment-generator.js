@@ -3,10 +3,20 @@
 const GENERATOR_VERSION='1.3.0';
 const ILV_NAMES=['','木の','鉄の','鋼鉄の','銀の','ダイヤの','ミスリルの','アダマンタイトの','オリハルコンの','巨人の','竜の','星鋼の'];
 const DEFAULT_BASE_NAME_ROWS=()=>ILV_NAMES.slice(1).map((name,i)=>({level:i+1,name}));
+const ARMOR_HEAVY_NAMES=ILV_NAMES;
+const ARMOR_LIGHT_NAMES=['','布の','革の','硬革の','上質な革の','なめし革の','狩人の','強化革の','ミスリル革の','遊撃士の','熟練狩人の','名人の'];
+const ARMOR_ROBE_NAMES=['','布の','木綿の','麻布の','上質な布の','絹の','魔法使いの','魔法布の','ミスリル織りの','司祭の','大魔導士の','賢者の'];
+const STAFF_WAND_NAMES=['','木の','樫の','白木の','上質な木の','魔法使いの','魔法樹の','魔力を帯びた','ミスリルの','司祭の','大魔導士の','賢者の'];
+const GRIMOIRE_NAMES=['','見習いの魔導書','初級魔導書','魔法使いの魔導書','上質な魔導書','中級魔導書','装飾された魔導書','上級魔導書','古代魔導書','司祭の魔導書','大司祭の魔導書','賢者の魔導書'];
 const ACCESSORY_MAGIC_NAMES=['','見習いの','初級の','魔法使いの','上質な','中級の','魔術師の','上級の','魔導士の','司祭の','大魔導士の','賢者の'];
-const ACCESSORY_BELT_NAMES=['','布の','革の','硬革の','上質な革の','なめし革の','狩人の','強化革の','ミスリル革の','遊撃士の','熟練狩人の','名人の'];
+const ACCESSORY_BELT_NAMES=ARMOR_LIGHT_NAMES;
 const rowsFromNames=names=>names.slice(1).map((name,i)=>({level:i+1,name}));
-const DEFAULT_BASE_NAME_SETS=()=>({weapon:{active_preset:'標準武器',presets:{'標準武器':DEFAULT_BASE_NAME_ROWS()}},armor:{active_preset:'標準防具',presets:{'標準防具':DEFAULT_BASE_NAME_ROWS()}},accessory:{active_preset:'アミュレット・指輪',presets:{'アミュレット・指輪':rowsFromNames(ACCESSORY_MAGIC_NAMES),'ベルト':rowsFromNames(ACCESSORY_BELT_NAMES)}}});
+const DEFAULT_BASE_NAME_SETS=()=>({
+  weapon:{active_preset:'標準武器',presets:{'標準武器':DEFAULT_BASE_NAME_ROWS(),'杖・ワンド':rowsFromNames(STAFF_WAND_NAMES),'魔導書':rowsFromNames(GRIMOIRE_NAMES)}},
+  armor:{active_preset:'標準防具',presets:{'標準防具':DEFAULT_BASE_NAME_ROWS(),'重装':rowsFromNames(ARMOR_HEAVY_NAMES),'軽装':rowsFromNames(ARMOR_LIGHT_NAMES),'ローブ':rowsFromNames(ARMOR_ROBE_NAMES)}},
+  accessory:{active_preset:'アミュレット・指輪',presets:{'アミュレット・指輪':rowsFromNames(ACCESSORY_MAGIC_NAMES),'ベルト':rowsFromNames(ACCESSORY_BELT_NAMES)}}
+});
+const WEAPON_BASE_NAME_PRESET=Object.freeze({'杖':'杖・ワンド','ワンド':'杖・ワンド','魔導書':'魔導書'});
 const ACCESSORY_SLOT_MAP=Object.freeze({'アミュレット':'amulet','指輪':'ring','ベルト':'belt'});
 const AI_FORBIDDEN_NUMERIC_FIELDS=['required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion'];
 let rules=null,config=null,defaultConfig=null,baseNameSets=null,preview=null,batchPreview=null,lastRequestPayload=null;
@@ -37,12 +47,12 @@ function normalizeNameRows(rows){
   return out.sort((a,b)=>a.level-b.level);
 }
 function normalizeBaseNameSets(value){
-  const src=clone(value||DEFAULT_BASE_NAME_SETS()),out={};
+  const defaults=DEFAULT_BASE_NAME_SETS(),src=clone(value||{}),out={};
   for(const kind of ['weapon','armor','accessory']){
-    const part=src[kind]||{},presets={};
+    const part=src[kind]||{},defaultPart=defaults[kind],presets={};
+    for(const [name,rows] of Object.entries(defaultPart.presets||{})){const n=String(name).trim();if(n)presets[n]=normalizeNameRows(rows);}
     for(const [name,rows] of Object.entries(part.presets||{})){const n=String(name).trim();if(n)presets[n]=normalizeNameRows(rows);}
-    if(!Object.keys(presets).length){const d=DEFAULT_BASE_NAME_SETS()[kind];Object.assign(presets,d.presets);}
-    let active=String(part.active_preset||'');if(!presets[active])active=Object.keys(presets)[0];
+    let active=String(part.active_preset||defaultPart.active_preset||'');if(!presets[active])active=String(defaultPart.active_preset||Object.keys(presets)[0]);
     out[kind]={active_preset:active,presets};
   }
   return out;
@@ -51,6 +61,21 @@ function getBaseNameSets(){return clone(baseNameSets||DEFAULT_BASE_NAME_SETS());
 function activeBaseNameRows(kind){const part=(baseNameSets||DEFAULT_BASE_NAME_SETS())[kind];return clone(part?.presets?.[part?.active_preset]||[]);}
 function activeBaseName(kind,itemLevel){const row=activeBaseNameRows(kind).find(r=>Number(r.level)===Number(itemLevel));return row?.name||ILV_NAMES[Number(itemLevel)]||'';}
 function presetBaseName(kind,presetName,itemLevel){const part=(baseNameSets||DEFAULT_BASE_NAME_SETS())[kind],rows=part?.presets?.[presetName]||[];const row=rows.find(r=>Number(r.level)===Number(itemLevel));return row?.name||'';}
+function formalBaseName(kind,type,itemLevel){
+  const sets=baseNameSets||DEFAULT_BASE_NAME_SETS(),active=String(sets?.[kind]?.active_preset||'');
+  if(kind==='armor'){
+    const builtIn=new Set(['標準防具','重装','軽装','ローブ']);
+    if(builtIn.has(active))return presetBaseName('armor',String(type||''),itemLevel)||presetBaseName('armor','標準防具',itemLevel);
+  }
+  if(kind==='weapon'){
+    const builtIn=new Set(['標準武器','杖・ワンド','魔導書']);
+    if(builtIn.has(active)){
+      const preset=WEAPON_BASE_NAME_PRESET[String(type||'')];
+      return preset?presetBaseName('weapon',preset,itemLevel):presetBaseName('weapon','標準武器',itemLevel);
+    }
+  }
+  return activeBaseName(kind,itemLevel);
+}
 function syncItemLevelMaxFromBaseSets(persist=true){
   if(!config||!baseNameSets)return;
   const levels=['weapon','armor','accessory'].flatMap(k=>activeBaseNameRows(k).map(r=>Number(r.level))).filter(Number.isFinite),max=Math.max(Number(config.item_level?.max||1),...(levels.length?levels:[1]));
@@ -87,8 +112,8 @@ function generateWeapon(input){
   const magic_weapon_bonus=required_int*magicMultiplier*gmMagic;
   const base_critical_rate=Number(perf.base_critical_rate);
   const trace=[`required_str=${i}*${c.str}=${required_str}`,`required_dex=${i}*${c.dex}=${required_dex}`,`required_int=${i}*${c.int}=${required_int}`,`attack=${required_str}*${perf.attack_multiplier}*growth(${gmAttack})=${attack}`,`accuracy=${required_dex}*${perf.accuracy_multiplier}*growth(${gmAccuracy})=${accuracy}`,`magic_weapon_bonus=${required_int}*weapon_str_coefficient(${c.str})*growth(${gmMagic})=${magic_weapon_bonus}`,`base_critical_rate=${base_critical_rate}`];
-  const baseName=activeBaseName('weapon',i);
-  const out={id:String(input.id||''),name:String(input.name||`${baseName}${type}`),status:'draft',tags:Array.isArray(input.tags)?clone(input.tags):[],params:{},description:String(input.description||''),mod_ids:[],item_level:i,required_str,required_dex,required_int,attack,accuracy,magic_weapon_bonus,base_critical_rate};
+  const baseName=formalBaseName('weapon',type,i),defaultName=type==='魔導書'?baseName:`${baseName}${type}`;
+  const out={id:String(input.id||''),name:String(input.name||defaultName),status:'draft',tags:Array.isArray(input.tags)?clone(input.tags):[],params:{},description:String(input.description||''),mod_ids:[],item_level:i,required_str,required_dex,required_int,attack,accuracy,magic_weapon_bonus,base_critical_rate};
   out.generation=generationMeta(input,trace);return out;
 }
 function generateArmor(input){
@@ -99,7 +124,7 @@ function generateArmor(input){
   const hpGrowth=growthMultiplier('armor','hp',i),mpGrowth=growthMultiplier('armor','mp',i),evasionGrowth=growthMultiplier('armor','evasion',i);
   const hp_bonus=required_vit*slotCoefficient*hpGrowth,mp_bonus=required_mnd*slotCoefficient*mpGrowth,evasion=required_agi*slotCoefficient*evasionGrowth;
   const trace=[`armor_category=${type}`,`armor_slot=${slot}`,`required_vit=${i}*${c.vit}=${required_vit}`,`required_mnd=${i}*${c.mnd}=${required_mnd}`,`required_agi=${i}*${c.agi}=${required_agi}`,`slot_coefficient=${slotCoefficient}`,`hp_bonus=${required_vit}*${slotCoefficient}*growth(${hpGrowth})=${hp_bonus}`,`mp_bonus=${required_mnd}*${slotCoefficient}*growth(${mpGrowth})=${mp_bonus}`,`evasion=${required_agi}*${slotCoefficient}*growth(${evasionGrowth})=${evasion}`];
-  const baseName=activeBaseName('armor',i);
+  const baseName=formalBaseName('armor',type,i);
   const out={id:String(input.id||''),name:String(input.name||`${baseName}${type}${slot}`),status:'draft',tags:Array.isArray(input.tags)?clone(input.tags):[],params:{},description:String(input.description||''),mod_ids:[],item_level:i,armor_category:type,armor_slot:slot,required_vit,required_mnd,required_agi,hp_bonus,mp_bonus,evasion};
   out.generation=generationMeta({...input,base_item_type:type},trace);return out;
 }
