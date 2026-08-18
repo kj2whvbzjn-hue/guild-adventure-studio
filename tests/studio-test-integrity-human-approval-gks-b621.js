@@ -5,7 +5,7 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const html=fs.readFileSync('studio/index.html','utf8');
 const policy=JSON.parse(fs.readFileSync('shared/integrity/test-integrity-policy.json','utf8'));
 const systemPolicy=JSON.parse(fs.readFileSync('shared/integrity/system-file-policy.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B642');
+assert.strictEqual(build.studio_build,'GKS-B643');
 assert.strictEqual(policy.baseline_policy_authoritative,true);
 assert.strictEqual(policy.protection_scope_strategy,'union_baseline_and_applied_patterns');
 assert.strictEqual(policy.new_protected_files_require_approval,true);
@@ -26,4 +26,4 @@ assert(html.includes('保護テスト/Gate変更の人間承認'),'Studio must r
 assert(html.includes('baseline_sha256')&&html.includes('updated_sha256'),'Studio must compare exact protected change hashes');
 assert(html.includes('isDeployMachineDerivedHashSync'),'Studio must independently verify machine-derived size/SHA-256 synchronization');
 assert(html.includes("file.testIntegrity='MACHINE_DERIVED_HASH_SYNC'"),'verified derived hash sync must be classified separately from human-approved protected changes');
-console.log('PASS GKS-B642 protected test/Gate changes require baseline+applied scope union, external exact-hash approval, verified machine-derived hash sync exemption, add/modify/delete coverage, and separate deployment-time human confirmation');
+console.log('PASS GKS-B643 protected test/Gate changes require baseline+applied scope union, external exact-hash approval, verified machine-derived hash sync exemption, add/modify/delete coverage, and separate deployment-time human confirmation');

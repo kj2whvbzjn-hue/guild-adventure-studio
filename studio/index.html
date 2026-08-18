@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B642</title>
+<title>GK Studio GKS-B643</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B642</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B643</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B642</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B643</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2227,11 +2227,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=642"></script>
+<script src="./layer-controller.js?v=643"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B642';
+const DISTRIBUTION_BUILD='GKS-B643';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2545,10 +2545,73 @@ function maybeCreateAutoBackup(){
   safeStorageSet(key,String(Date.now()),'自動バックアップ日時');
  }
 }
+function backupReasonLabel(reason=''){
+ const raw=String(reason||'').trim();
+ const fixed={
+  manual:'手動バックアップ',
+  save:'手動保存前のバックアップ',
+  'before-full-json-import':'JSON全件読込前の自動バックアップ',
+  'before-restore':'バックアップ復元前の自動バックアップ',
+  'before-canonical-project-reload':'ZIP正本読込前の自動バックアップ',
+  'before-data-exchange-undo':'Data Exchange Undo前の自動バックアップ',
+  'before-data-exchange-safe-apply':'Data Exchange反映前の自動バックアップ',
+  '自動バックアップ（24時間ごと）':'24時間ごとの自動バックアップ'
+ };
+ if(fixed[raw])return fixed[raw];
+ const importMatch=raw.match(/^before-(.+)-json-import$/);
+ if(importMatch)return `${importMatch[1]} JSON読込前の自動バックアップ`;
+ if(raw.startsWith('before-'))return `${raw.slice(7)} 実行前の自動バックアップ`;
+ return raw||'自動バックアップ';
+}
+function backupSnapshotStats(obj){
+ const safe=obj&&typeof obj==='object'?obj:{};
+ const masters=Object.values(safe.masters||{}).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0);
+ return {
+  chapters:Array.isArray(safe.chapters)?safe.chapters.length:0,
+  characters:Array.isArray(safe.characters)?safe.characters.length:0,
+  decisions:Array.isArray(safe.decisions)?safe.decisions.length:0,
+  quests:Array.isArray(safe.quests)?safe.quests.length:0,
+  events:Array.isArray(safe.events)?safe.events.length:0,
+  masters,
+  designCards:Array.isArray(safe.design_cards)?safe.design_cards.length:0,
+  aiPrograms:Array.isArray(safe.ai_programs)?safe.ai_programs.length:0
+ };
+}
+function backupStatsText(obj){
+ const x=backupSnapshotStats(obj);
+ return `章 ${x.chapters} / キャラクター ${x.characters} / 決定事項 ${x.decisions} / Quest ${x.quests} / Event ${x.events} / Master ${x.masters} / 設計カード ${x.designCards} / AI ${x.aiPrograms}`;
+}
+function backupDateLabel(value){
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return String(value||'日時不明');
+ try{return new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d)}catch(e){return d.toLocaleString()}
+}
+function backupDeltaLines(current,target){
+ const a=backupSnapshotStats(current),b=backupSnapshotStats(target);
+ const labels={chapters:'章',characters:'キャラクター',decisions:'決定事項',quests:'Quest',events:'Event',masters:'Master',designCards:'設計カード',aiPrograms:'AI'};
+ return Object.keys(labels).map(key=>{
+  const delta=b[key]-a[key];
+  return `${labels[key]}: ${a[key]} → ${b[key]} (${delta>0?'+':''}${delta})`;
+ });
+}
 function restoreBackup(id){
- let b=backups().find(x=>x.id===id);if(!b)return;
- if(!confirm('このバックアップへ復元しますか？'))return;
- createBackup('before-restore');data=structuredClone(b.data);persist('backup restore')
+ let b=backups().find(x=>x.id===id);if(!b||!b.data)return;
+ const currentUpdated=data?.project?.updated_at||'不明';
+ const targetUpdated=b.data?.project?.updated_at||'不明';
+ const lines=[
+  'このバックアップへ復元しますか？',
+  '',
+  `バックアップ: ${backupDateLabel(b.at)} / ${backupReasonLabel(b.reason)}`,
+  `Project: ${b.data?.project?.id||currentProjectId}`,
+  `Project更新: ${currentUpdated} → ${targetUpdated}`,
+  '',
+  ...backupDeltaLines(data,b.data),
+  '',
+  '復元直前の現在データも自動バックアップします。',
+  '内容を確認して「OK」を押してください。'
+ ];
+ if(!confirm(lines.join('\n')))return;
+ if(!createBackup('before-restore',{silent:true})){alert('復元前バックアップを保存できなかったため、復元を中止しました。');return;}
+ data=structuredClone(b.data);normalizeLoadedProject();persist('backup restore')
 }
 function clearBackups(){if(confirm('全バックアップを削除しますか？')){localStorage.removeItem(backupStorageKey(currentProjectId));render()}}
 const RECENT_FEATURES_KEY='gks_recent_features_v468';
@@ -8363,7 +8426,10 @@ function renderValidation(){
  validationList.innerHTML=validation.map(v=>`<div class="item"><span class="badge ${v.level==='ERROR'?'err':v.level==='WARNING'?'warn':v.level==='OK'?'ok':''}">${jpLevel(v.level)}</span> ${esc(v.message)}</div>`).join('')
 }
 function renderBackups(){
- backupList.innerHTML=backups().map(b=>`<div class="item"><b>${esc(b.id)}</b><div class="meta">${esc(b.at)} / ${esc(b.reason)}</div><button onclick="restoreBackup('${escAttr(b.id)}')">復元</button></div>`).join('')||'<div class="card">バックアップなし</div>'
+ backupList.innerHTML=backups().map(b=>{
+  const snapshot=b.data||{};
+  return `<div class="item"><b>${esc(backupDateLabel(b.at))}　${esc(backupReasonLabel(b.reason))}</b><div class="meta">Backup ID: ${esc(b.id)}</div><div class="meta">Project: ${esc(snapshot?.project?.id||currentProjectId)} / Project更新: ${esc(snapshot?.project?.updated_at||'不明')}</div><div class="meta">${esc(backupStatsText(snapshot))}</div><div class="toolbar"><button onclick="restoreBackup('${escAttr(b.id)}')">この状態に復元</button></div></div>`;
+ }).join('')||'<div class="card">バックアップなし</div>'
 }
 function renderDashboard(){
  kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
@@ -8477,7 +8543,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','642');
+    url.searchParams.set('appv','643');
     location.replace(url.toString());
    }
  }
@@ -8486,7 +8552,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=642',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=643',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8505,7 +8571,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','642');
+    url.searchParams.set('appv','643');
     location.replace(url.toString());
    }
   });
