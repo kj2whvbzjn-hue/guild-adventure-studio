@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B640</title>
+<title>GK Studio GKS-B641</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B640</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B641</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B640</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B641</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -556,6 +556,16 @@ updateDeployDeleteControl();
     <div class="kpi"><span class="small">クエスト</span><b id="kpiQuests">0</b></div>
     <div class="kpi"><span class="small">イベント</span><b id="kpiEvents">0</b></div>
     <div class="kpi"><span class="small">検証結果</span><b id="kpiErrors">0</b></div>
+  </div>
+  <div class="card" id="dataSourceCard">
+    <h2>データ保存状態</h2>
+    <div id="dataSourceStatus" class="small">確認中...</div>
+    <div class="toolbar" style="margin-top:10px">
+      <button type="button" onclick="refreshCanonicalProjectStatus()">状態を再確認</button>
+      <button type="button" onclick="reloadCanonicalProjectData()">ZIP正本 project-data.json を読み直す</button>
+      <button type="button" onclick="exportProject()">現在データをJSON出力</button>
+    </div>
+    <p class="small">Project JSONを正本、ブラウザ保存を作業コピーとして扱います。ブラウザやURLが変わった場合、ローカル保存が無ければZIP内の project-data.json を自動読込します。</p>
   </div>
   <div class="card">
     <h2>現在の開発フェーズ</h2>
@@ -2217,17 +2227,23 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=640"></script>
+<script src="./layer-controller.js?v=641"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B640';
+const DISTRIBUTION_BUILD='GKS-B641';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
 const BKEY_PREFIX='gas_v4_backups_v060_';
 const PROJECT_KEY_PREFIX='gas_v4_project_v060_';
 const AUTO_BACKUP_KEY_PREFIX='gas_v4_auto_backup_at_v110_';
+const STORAGE_SCHEMA_TAG='v060';
+const CANONICAL_PROJECT_URL='../project-data.json';
+let canonicalProjectSnapshot=null;
+let canonicalProjectFetchState='pending';
+let canonicalProjectFetchError='';
+let activeDataSource='browser-localStorage';
 const prefixes={Master:'MST',Organization:'ORG',Term:'TRM',Relationship:'REL',Timeline:'TML',Character:'CHR',Chapter:'CHP',Section:'SEC',Scene:'SCN',Quest:'QST',Event:'EVT',Map:'MAP',Monster:'MON',Item:'ITM',Skill:'SKL',AIProfile:'AIP',Dialogue:'DLG',Quest:'QST',Event:'EVT'};
 function now(){return new Date().toISOString()}
 function isFormalSkillMasterRecord(category,m){return category==='skills'&&!!m&&typeof m==='object'&&(Number(m.schemaVersion)>=1||!!m.runtimeContracts||Array.isArray(m.effects)||!!m.trigger||!!m.target||!!m.resource)}
@@ -2246,16 +2262,52 @@ function initial(){
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],ai_programs:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[],maps:[],exploration_outcomes:[],reward_tables:[],adventure_settings:[]},entities:[],id_counters:{},history:[]}
+ ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],ai_programs:[],design_cards:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[],maps:[],exploration_outcomes:[],reward_tables:[],adventure_settings:[]},entities:[],id_counters:{},history:[]}
 }
+const BOOT_HAD_PROJECT_DATA=hasAnyStoredProjectData();
+migrateVersionedProjectStorage();
 repairProjectRegistry();
 migrateLegacyProject();
 let currentProjectId=localStorage.getItem(CURRENT_KEY)||getProjectRegistry()[0]?.id||'PRJ-GAS-V4';
 localStorage.setItem(CURRENT_KEY,currentProjectId);
 let data=loadProject(currentProjectId)||initial(), validation=[];
 normalizeLoadedProject();
+let lastPersistedSnapshot=JSON.stringify(data);
 function projectStorageKey(id){return PROJECT_KEY_PREFIX+id}
 function backupStorageKey(id){return BKEY_PREFIX+id}
+function hasAnyStoredProjectData(){
+ try{
+  if(localStorage.getItem(LEGACY_KEY))return true;
+  for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i)||'';if(/^gas_v4_project_v\d+_/.test(key))return true;}
+ }catch(e){console.warn('Stored project detection failed',e)}
+ return false;
+}
+function migrateVersionedProjectStorage(){
+ try{
+  const candidates=new Map(),currentKeys=[];
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i)||'';
+   let m=key.match(/^gas_v4_project_v(\d+)_(.+)$/);
+   if(m){
+    const version=Number(m[1])||0,id=m[2];let value=null,parsed=null;
+    try{value=localStorage.getItem(key);parsed=JSON.parse(value)}catch(e){continue}
+    if(!parsed||typeof parsed!=='object')continue;
+    const at=Date.parse(parsed.project?.updated_at||'')||0,row={version,id,key,value,at};
+    const prev=candidates.get(id);if(!prev||row.version>prev.version||(row.version===prev.version&&row.at>prev.at))candidates.set(id,row);
+    continue;
+   }
+   m=key.match(/^gas_v4_current_project_v(\d+)$/);if(m)currentKeys.push({version:Number(m[1])||0,key});
+  }
+  for(const [id,row] of candidates){
+   const target=projectStorageKey(id);
+   if(!localStorage.getItem(target) && row.key!==target)safeStorageSet(target,row.value,`旧保存形式 ${row.key} からの移行`);
+  }
+  if(!localStorage.getItem(CURRENT_KEY)){
+   currentKeys.sort((a,b)=>b.version-a.version);
+   for(const row of currentKeys){const id=String(localStorage.getItem(row.key)||'').trim();if(id&&localStorage.getItem(projectStorageKey(id))){localStorage.setItem(CURRENT_KEY,id);break}}
+  }
+ }catch(e){console.warn('Versioned project migration failed',e)}
+}
 function getProjectRegistry(){
  try{return JSON.parse(localStorage.getItem(REGISTRY_KEY))||[]}catch(e){return []}
 }
@@ -2430,6 +2482,7 @@ function normalizeData(){
  data.flags.forEach(f=>{f.name=f.name||f.id;f.category=f.category||'story';f.default_value=!!f.default_value;f.description=f.description||'';});
  data.entities=data.entities||[];
  data.decisions=data.decisions||[];
+ data.design_cards=Array.isArray(data.design_cards)?data.design_cards:[];
  data.history=data.history||[];
  return {};
 }
@@ -2454,6 +2507,8 @@ function persist(message='端末保存'){
  data.history.push({at:now(),message});
  if(data.history.length>100)data.history.shift();
  if(!safeStorageSet(projectStorageKey(currentProjectId),JSON.stringify(data),'プロジェクト'))return false;
+ lastPersistedSnapshot=JSON.stringify(data);
+ activeDataSource='browser-localStorage';
  updateRegistryFromData();
  document.getElementById('saveStatus').textContent='保存済み';
  maybeCreateAutoBackup();
@@ -2750,8 +2805,12 @@ function switchProject(id){
  localStorage.setItem(CURRENT_KEY,id);
  data=loadProject(id)||initial();
  normalizeLoadedProject();
+ lastPersistedSnapshot=JSON.stringify(data);
+ activeDataSource='browser-localStorage';
  validation=[];
  runValidation();
+ if(typeof loadDesignCards==='function')loadDesignCards();
+ refreshCanonicalProjectStatus();
  showView('dashboard');
 }
 function duplicateCurrentProject(){
@@ -5617,6 +5676,7 @@ function openGameDataDeployFromExport(){
 }
 
 function exportProject(){
+ if(typeof syncDesignCardsIntoProject==='function')syncDesignCardsIntoProject();
  normalizeData();
  runValidation();let errors=validation.filter(x=>x.level==='ERROR');
  if(errors.length&&!confirm('エラーがあります。下書きとして出力しますか？'))return;
@@ -8305,10 +8365,74 @@ function jpLevel(value){return ({ERROR:'エラー',WARNING:'警告',INFO:'情報
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(s){return String(s??'').replace(/\\/g,'\\').replace(/'/g,"\\'")}
+function projectUpdatedAtMs(obj){return Date.parse(obj?.project?.updated_at||'')||0}
+function projectCountSummary(obj){
+ const masters=Object.values(obj?.masters||{}).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0);
+ return `章${obj?.chapters?.length||0} / キャラ${obj?.characters?.length||0} / Quest${obj?.quests?.length||0} / Event${obj?.events?.length||0} / Master${masters} / 設計カード${obj?.design_cards?.length||0}`;
+}
+async function fetchCanonicalProjectData(){
+ canonicalProjectFetchState='loading';canonicalProjectFetchError='';
+ try{
+  const join=CANONICAL_PROJECT_URL.includes('?')?'&':'?';
+  const response=await fetch(CANONICAL_PROJECT_URL+join+'studio_build='+encodeURIComponent(DISTRIBUTION_BUILD)+'&ts='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const obj=await response.json();
+  if(!obj||typeof obj!=='object'||!obj.project?.id)throw new Error('project.id がありません');
+  canonicalProjectSnapshot=obj;canonicalProjectFetchState='loaded';return obj;
+ }catch(e){canonicalProjectSnapshot=null;canonicalProjectFetchState='unavailable';canonicalProjectFetchError=e?.message||String(e);return null}
+}
+function renderDataSourceStatus(){
+ const el=document.getElementById('dataSourceStatus');if(!el)return;
+ const origin=location.origin&&location.origin!=='null'?location.origin:location.href.split('/studio/')[0];
+ const localAt=data?.project?.updated_at||'不明';
+ let canonical='ZIP正本: 確認中';
+ if(canonicalProjectFetchState==='unavailable')canonical=`ZIP正本: 読込不可 (${canonicalProjectFetchError||'unknown'})`;
+ if(canonicalProjectSnapshot){
+  const canonAt=canonicalProjectSnapshot.project?.updated_at||'不明',lm=projectUpdatedAtMs(data),cm=projectUpdatedAtMs(canonicalProjectSnapshot);
+  let relation='更新日時同等';if(cm>lm)relation='ZIP正本の方が新しい';else if(lm>cm)relation='ブラウザ作業データの方が新しい';
+  canonical=`ZIP正本: ${canonAt} / ${relation} / ${projectCountSummary(canonicalProjectSnapshot)}`;
+ }
+ el.innerHTML=`<b>現在:</b> ${esc(activeDataSource)}<br><b>Project:</b> ${esc(currentProjectId)} / 更新 ${esc(localAt)} / ${esc(projectCountSummary(data))}<br><b>保存領域:</b> ${esc(origin)} / ${esc(STORAGE_SCHEMA_TAG)}<br><b>${esc(canonical)}</b>`;
+}
+async function refreshCanonicalProjectStatus(){await fetchCanonicalProjectData();renderDataSourceStatus()}
+async function initializeCanonicalProjectData(){
+ const canonical=await fetchCanonicalProjectData();
+ if(canonical&&!BOOT_HAD_PROJECT_DATA){
+  const id=String(canonical.project.id||'').trim();
+  if(id){
+   currentProjectId=id;localStorage.setItem(CURRENT_KEY,id);
+   safeStorageSet(projectStorageKey(id),JSON.stringify(canonical),'ZIP正本の初期読込');
+   const list=getProjectRegistry().filter(x=>x.id!==id);list.push({id,name:canonical.project?.name||id,updated_at:canonical.project?.updated_at||''});saveProjectRegistry(list);
+   data=structuredClone(canonical);normalizeLoadedProject();lastPersistedSnapshot=JSON.stringify(data);activeDataSource='ZIP project-data.json（初回自動読込）';
+   validation=[];runValidation({silent:true});render();if(typeof loadDesignCards==='function')loadDesignCards();window.GKSAIProductionUI?.refresh();
+  }
+ }
+ renderDataSourceStatus();
+}
+async function reloadCanonicalProjectData(){
+ const canonical=canonicalProjectSnapshot||await fetchCanonicalProjectData();
+ if(!canonical)return alert('ZIP正本 project-data.json を読み込めません。HTTPサーバー経由でStudioを開いているか確認してください。');
+ const id=String(canonical.project?.id||'').trim();if(id!==String(currentProjectId))return alert(`Project IDが異なるため自動反映しません。ZIP=${id} / 現在=${currentProjectId}`);
+ if(!confirm('現在のブラウザ作業データをバックアップして、ZIP内 project-data.json で置き換えますか？'))return;
+ try{
+  const report=buildFullImportGateReport(canonical,{sourceFilename:'project-data.json',inputType:'canonical_project',expectedProjectId:currentProjectId});
+  if(!report.ok)return alert(`ZIP正本のPre-flightでERROR ${report.summary?.errors||0}件。反映していません。`);
+  if(!createBackup('before-canonical-project-reload',{silent:true}))throw new Error('反映前バックアップを保存できませんでした。');
+  data=structuredClone(report.candidate);
+  if(!persist('canonical project-data.json reloaded'))throw new Error('保存できませんでした。');
+  activeDataSource='ZIP project-data.json（手動再読込後）';if(typeof loadDesignCards==='function')loadDesignCards();renderDataSourceStatus();alert('ZIP正本 project-data.json を読み直しました。');
+ }catch(e){alert('正本読込失敗: '+(e?.message||e))}
+}
 function toggleMobile(id){const el=document.getElementById(id);el.classList.toggle('mobile-open');if(id==='sidebar'&&el.classList.contains('mobile-open')){studioLauncherHomeActive=true;studioLauncherCategory=studioCategoryForView(typeof currentStudioView==='function'?currentStudioView():'');renderRecentFeatures();setTimeout(()=>document.getElementById('featureSearch')?.focus(),60)}else if(id==='sidebar'){studioLauncherHomeActive=false}}
 function closeMobile(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('inspector').classList.remove('mobile-open');studioLauncherHomeActive=false}
 window.addEventListener('DOMContentLoaded',renderRecentFeatures);
-window.addEventListener('beforeunload',()=>{try{localStorage.setItem(projectStorageKey(currentProjectId),JSON.stringify(data))}catch(e){console.error(e)}});
+window.addEventListener('beforeunload',()=>{
+ try{
+  const snapshot=JSON.stringify(data);
+  if(snapshot===lastPersistedSnapshot)return;
+  localStorage.setItem(projectStorageKey(currentProjectId),snapshot);
+ }catch(e){console.error(e)}
+});
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
 installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.classList.add('hidden')});
@@ -8330,7 +8454,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','640');
+    url.searchParams.set('appv','641');
     location.replace(url.toString());
    }
  }
@@ -8339,7 +8463,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=640',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=641',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8358,7 +8482,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','640');
+    url.searchParams.set('appv','641');
     location.replace(url.toString());
    }
   });
@@ -8372,13 +8496,26 @@ async function registerAppServiceWorker(){
 }
 
 window.addEventListener('load',registerAppServiceWorker);
-loadGitHubSettings();initializeQuestEventUI();initializeStudioDeploy();render();runValidation();
+window.addEventListener('load',initializeCanonicalProjectData);
+loadGitHubSettings();initializeQuestEventUI();initializeStudioDeploy();render();runValidation();renderDataSourceStatus();
 
 // Build 469.4: reusable design cards, ratio calculations, IDs/master IDs and formation references.
 const DESIGN_CARD_STORAGE_KEY='gk_design_cards_v1';
 let designCards=[];
-function loadDesignCards(){try{designCards=JSON.parse(localStorage.getItem(DESIGN_CARD_STORAGE_KEY)||'[]');if(!Array.isArray(designCards))designCards=[]}catch(e){designCards=[]}renderDesignCardEditor();renderDesignCardList()}
-function persistDesignCards(){localStorage.setItem(DESIGN_CARD_STORAGE_KEY,JSON.stringify(designCards));renderDesignCardList();refreshDesignReferences()}
+function legacyDesignCards(){try{const rows=JSON.parse(localStorage.getItem(DESIGN_CARD_STORAGE_KEY)||'[]');return Array.isArray(rows)?rows:[]}catch(e){return []}}
+function syncDesignCardsIntoProject(){data.design_cards=structuredClone(Array.isArray(designCards)?designCards:[])}
+function loadDesignCards(){
+ const projectCards=Array.isArray(data.design_cards)?data.design_cards:[],legacyCards=legacyDesignCards();
+ designCards=structuredClone(projectCards.length?projectCards:legacyCards);
+ if(!projectCards.length&&legacyCards.length)data.design_cards=structuredClone(legacyCards);
+ renderDesignCardEditor();renderDesignCardList();
+}
+function persistDesignCards(){
+ syncDesignCardsIntoProject();
+ safeStorageSet(DESIGN_CARD_STORAGE_KEY,JSON.stringify(designCards),'設計カード互換バックアップ');
+ if(!persist('design cards updated'))return;
+ renderDesignCardList();refreshDesignReferences();
+}
 function designCardById(id){return designCards.find(c=>c.id===id)||null}
 function makeDesignId(type){const prefix={ratio:'RATIO',calculation:'CALC',formula:'FORMULA',equipment:'EQUIP',skill:'SKILL',character:'CHAR',formation:'FORM'}[type]||'CARD';return prefix+'_'+Date.now().toString(36).toUpperCase()}
 function designField(id,label,value='',type='text',extra=''){return '<div class="field"><label>'+escapeHtml(label)+'</label><input id="'+id+'" type="'+type+'" value="'+escapeHtml(value)+'" '+extra+'></div>'}
