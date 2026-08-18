@@ -1,4 +1,4 @@
-/* GKS-B657 Development AI Publish
+/* GKS-B658 Development AI Publish
  * Development-only read interface for GitHub Pages.
  * Does not reuse Game Project GitHub sync data/model/handlers.
  */
@@ -40,11 +40,43 @@ function summarizeProject(w){
  const discussions=Array.isArray(w?.discussions)?w.discussions:[];
  const oq=openQuestions(w);
  const pendingChecks=checks.filter(x=>['Pending','Failed'].includes(String(x?.status||'Pending')));
+ const failedChecks=checks.filter(x=>String(x?.status||'')==='Failed');
  const openTasks=tasks.filter(x=>String(x?.status||'Todo')!=='Done');
  const openDiscussions=discussions.filter(x=>['Open','Pending'].includes(String(x?.status||'Open')));
+ const pendingDiscussions=discussions.filter(x=>String(x?.status||'')==='Pending');
  const status=String(w?.workspace?.status||'');
  const stage=workflowStage(w);
- const unresolved=status!=='Completed'||stage!=='Completed'||pendingChecks.length>0||openTasks.length>0||openDiscussions.length>0||oq.length>0;
+ const attentionMode=['Auto','Include','Exclude'].includes(String(w?.workspace?.ai_attention||'Auto'))?String(w?.workspace?.ai_attention||'Auto'):'Auto';
+ const counts={
+  discussions:discussions.length,
+  architecture_nodes:(w?.architecture_nodes||[]).length,
+  work_boxes:(w?.work_boxes||[]).length,
+  tasks:tasks.length,
+  open_tasks:openTasks.length,
+  checks:checks.length,
+  pending_or_failed_checks:pendingChecks.length,
+  decisions:(w?.decisions||[]).length,
+  specifications:(w?.specifications||[]).length,
+  open_questions:oq.length
+ };
+ const contentCount=counts.discussions+counts.architecture_nodes+counts.work_boxes+counts.tasks+counts.checks+counts.decisions+counts.specifications;
+ const isEmpty=contentCount===0;
+ const isFinished=status==='Completed'||stage==='Completed';
+ const unresolved=!isFinished&&(pendingChecks.length>0||openTasks.length>0||openDiscussions.length>0||oq.length>0||status!=='Completed'||stage!=='Completed');
+ const reasons=[];
+ if(failedChecks.length)reasons.push(`Failed確認 ${failedChecks.length}件`);
+ if(pendingChecks.length)reasons.push(`確認待ち/FAIL ${pendingChecks.length}件`);
+ if(status==='Pending')reasons.push('案件状態が保留');
+ if(['Specifying','Implementing','Validating'].includes(status))reasons.push(`案件状態 ${status}`);
+ if(['Planning','Implementing','Verifying'].includes(stage))reasons.push(`Workflow ${stage}`);
+ if(pendingDiscussions.length)reasons.push(`保留Discussion ${pendingDiscussions.length}件`);
+ let attentionRequired=false;
+ if(attentionMode==='Include')attentionRequired=true;
+ else if(attentionMode==='Exclude')attentionRequired=false;
+ else attentionRequired=!isEmpty&&!isFinished&&(pendingChecks.length>0||status==='Pending'||['Specifying','Implementing','Validating'].includes(status)||['Planning','Implementing','Verifying'].includes(stage)||pendingDiscussions.length>0);
+ if(attentionMode==='Include')reasons.unshift('Human指定: 常に対象');
+ if(attentionMode==='Exclude')reasons.unshift('Human指定: 対象外');
+ const classification=isFinished?'Completed':isEmpty?'Empty':attentionRequired?'HumanAttention':'Background';
  return {
   id:String(w?.workspace?.id||''),
   name:String(w?.workspace?.name||''),
@@ -52,18 +84,11 @@ function summarizeProject(w){
   workflow_stage:stage,
   updated_at:String(w?.workspace?.updated_at||''),
   unresolved,
-  counts:{
-   discussions:discussions.length,
-   architecture_nodes:(w?.architecture_nodes||[]).length,
-   work_boxes:(w?.work_boxes||[]).length,
-   tasks:tasks.length,
-   open_tasks:openTasks.length,
-   checks:checks.length,
-   pending_or_failed_checks:pendingChecks.length,
-   decisions:(w?.decisions||[]).length,
-   specifications:(w?.specifications||[]).length,
-   open_questions:oq.length
-  },
+  attention_required:attentionRequired,
+  attention_mode:attentionMode,
+  attention_reasons:reasons,
+  classification,
+  counts,
   implementation_approval:String(w?.workflow?.implementation_approval?.status||''),
   completion_approval:String(w?.workflow?.completion_approval?.status||''),
   pending_checks:pendingChecks.map(x=>({id:String(x.id||''),title:String(x.title||''),gate:String(x.gate||'General'),status:String(x.status||'Pending'),target_type:String(x.target_type||''),target_id:String(x.target_id||'')})),
@@ -71,6 +96,11 @@ function summarizeProject(w){
   open_discussions:openDiscussions.map(x=>({id:String(x.id||''),title:String(x.title||''),status:String(x.status||'Open')})),
   open_questions:oq
  };
+}
+function buildVersions(){
+ const studio=typeof DISTRIBUTION_BUILD!=='undefined'?String(DISTRIBUTION_BUILD||''):String(globalThis.DISTRIBUTION_BUILD||globalThis.GA_PROJECT_CONFIG?.studioBuild||'');
+ const game=typeof DISTRIBUTION_GAME_BUILD!=='undefined'?String(DISTRIBUTION_GAME_BUILD||''):String(globalThis.GA_PROJECT_CONFIG?.gameBuild||'');
+ return {studio_build:studio,game_build:game};
 }
 function readSettings(){
  let s={};try{s=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{}}catch(_){s={}}
@@ -129,19 +159,19 @@ function getProjectWorkspaces(scope){
  return rows;
 }
 function buildDataset(config){
- const generatedAt=iso(),base=publicRepoBase(config),workspaces=getProjectWorkspaces(config.scope);
+ const generatedAt=iso(),base=publicRepoBase(config),workspaces=getProjectWorkspaces(config.scope),builds=buildVersions();
  const details=[],summaries=[];
  for(const w of workspaces){
   const summary=summarizeProject(w),filename=safeId(summary.id)+'.json',detailPath=`projects/${filename}`;
   summary.detail_path=detailPath;summary.detail_url=base?base+detailPath:'';
   summaries.push(summary);
-  details.push({path:detailPath,data:{format:'gk-development-ai-public-project',version:'1.0',generated_at:generatedAt,studio_build:String(globalThis.DISTRIBUTION_BUILD||globalThis.GA_PROJECT_CONFIG?.studioBuild||''),game_build:String(globalThis.GA_PROJECT_CONFIG?.gameBuild||''),summary:clone(summary),project:deepRedact(w)}});
+  details.push({path:detailPath,data:{format:'gk-development-ai-public-project',version:'1.0',generated_at:generatedAt,studio_build:builds.studio_build,game_build:builds.game_build,summary:clone(summary),project:deepRedact(w)}});
  }
  summaries.sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))||String(a.id).localeCompare(String(b.id)));
- const pending=summaries.filter(x=>x.unresolved);
- const projectsDoc={format:'gk-development-ai-public-projects',version:'1.0',generated_at:generatedAt,studio_build:String(globalThis.DISTRIBUTION_BUILD||globalThis.GA_PROJECT_CONFIG?.studioBuild||''),game_build:String(globalThis.GA_PROJECT_CONFIG?.gameBuild||''),scope:config.scope,project_count:summaries.length,projects:summaries};
- const pendingDoc={format:'gk-development-ai-public-pending',version:'1.0',generated_at:generatedAt,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_project_count:pending.length,projects:pending};
- const manifest={format:'gk-development-ai-public-manifest',version:'1.0',generated_at:generatedAt,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base,projects:base?base+'projects.json':'',pending:base?base+'pending.json':''},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
+ const pending=summaries.filter(x=>x.attention_required);
+ const projectsDoc={format:'gk-development-ai-public-projects',version:'1.1',generated_at:generatedAt,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,projects:summaries};
+ const pendingDoc={format:'gk-development-ai-public-pending',version:'1.1',generated_at:generatedAt,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,projects:pending};
+ const manifest={format:'gk-development-ai-public-manifest',version:'1.1',generated_at:generatedAt,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base,projects:base?base+'projects.json':'',pending:base?base+'pending.json':''},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
  return {generated_at:generatedAt,base,manifest,projectsDoc,pendingDoc,details,summaries,pending};
 }
 function status(message,level='INFO'){
@@ -152,8 +182,8 @@ function renderPreview(dataset){
  const p=el('daipPreview');if(!p)return;
  if(!dataset){p.innerHTML='<div class="small">まだプレビューしていません。</div>';return}
  const pending=dataset.pending;
- p.innerHTML=`<div class="item"><div class="daip-preview-head"><div><b>公開予定 ${dataset.summaries.length}案件</b><div class="small">未確定 ${pending.length}案件 / 詳細JSON ${dataset.details.length}件</div></div></div><div class="daip-counts"><span class="badge">projects.json</span><span class="badge warn">pending.json</span><span class="badge">projects/&lt;ID&gt;.json</span></div></div>`+
-  (pending.length?pending.map(x=>`<div class="item"><b>${escapeHtml(x.name||x.id)}</b><div class="small">${escapeHtml(x.id)} / ${escapeHtml(x.workflow_stage||x.status)} / 未完了Task ${x.counts.open_tasks} / 確認待ち・FAIL ${x.counts.pending_or_failed_checks} / 未決 ${x.counts.open_questions}</div></div>`).join(''):'<div class="item">未確定案件はありません。</div>');
+ p.innerHTML=`<div class="item"><div class="daip-preview-head"><div><b>公開予定 ${dataset.summaries.length}案件</b><div class="small">Human確認対象 ${pending.length}案件 / 全案件 ${dataset.summaries.length} / 詳細JSON ${dataset.details.length}件</div></div></div><div class="daip-counts"><span class="badge">projects.json</span><span class="badge warn">pending.json</span><span class="badge">projects/&lt;ID&gt;.json</span></div></div>`+
+  (pending.length?pending.map(x=>`<div class="item"><b>${escapeHtml(x.name||x.id)}</b><div class="small">${escapeHtml(x.id)} / ${escapeHtml(x.workflow_stage||x.status)} / 確認待ち・FAIL ${x.counts.pending_or_failed_checks} / 理由 ${escapeHtml((x.attention_reasons||[]).join('・')||'Human確認対象')}</div></div>`).join(''):'<div class="item">Human確認対象の案件はありません。</div>');
 }
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function render(){
@@ -165,11 +195,11 @@ function render(){
  const baseEl=el('daipPublicBase');if(baseEl)baseEl.textContent=base||'Owner / Repositoryを設定すると表示します。';
  const pendingEl=el('daipPendingUrl');if(pendingEl)pendingEl.textContent=base?base+'pending.json':'—';
  let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
- const lastEl=el('daipLastPublish');if(lastEl)lastEl.textContent=last?.published_at?`${last.published_at} / ${last.project_count||0}案件 / 未確定 ${last.pending_project_count||0}件`:'未公開';
+ const lastEl=el('daipLastPublish');if(lastEl)lastEl.textContent=last?.published_at?`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件`:'未公開';
  if(lastDataset)renderPreview(lastDataset);
 }
 function preview(){
- try{const c=configFromForm(false);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));lastDataset=buildDataset(c);renderPreview(lastDataset);status(`公開内容を生成しました。\n案件 ${lastDataset.summaries.length} / 未確定 ${lastDataset.pending.length}\n${lastDataset.base||''}`,'OK');render()}catch(e){status('プレビュー失敗: '+e.message,'ERROR')}
+ try{const c=configFromForm(false);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));lastDataset=buildDataset(c);renderPreview(lastDataset);status(`公開内容を生成しました。\n案件 ${lastDataset.summaries.length} / Human確認対象 ${lastDataset.pending.length}\n${lastDataset.base||''}`,'OK');render()}catch(e){status('プレビュー失敗: '+e.message,'ERROR')}
 }
 function utf8ToBase64(text){const bytes=new TextEncoder().encode(text);let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary)}
 function base64ToUtf8(value){const binary=atob(String(value||'').replace(/\s+/g,'')),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new TextDecoder('utf-8').decode(bytes)}
@@ -208,7 +238,7 @@ async function publish(){
  try{
   const c=configFromForm(true),dataset=buildDataset(c);
   if(!dataset.summaries.length)throw new Error('公開できるDevelopment Projectがありません。');
-  const warning=`Development Projectの内容を公開GitHub Pagesから読めるJSONとして配置します。\n\n公開先: ${dataset.base}\n案件: ${dataset.summaries.length}\n未確定: ${dataset.pending.length}\n\nDiscussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
+  const warning=`Development Projectの内容を公開GitHub Pagesから読めるJSONとして配置します。\n\n公開先: ${dataset.base}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\n\nDiscussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
   if(!confirm(warning))return;
   setBusy(true);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));
   await readRemotePackageManifest(c);
@@ -223,7 +253,7 @@ async function publish(){
   status(`GitHubへ公開中 ${++done}/${total}\npackage_manifest.json 整合性同期`);await syncSourcePackageManifest(c,published,messageBase);
   const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:dataset.base+'pending.json'};
   localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));lastDataset=dataset;
-  status(`公開完了。Source package_manifestも同期しました。\n未確定案件入口: ${last.pending_url}\n\nChatGPTへこのURLを渡して「未確定案件を見て」と依頼できます。`,'OK');render();
+  status(`公開完了。Source package_manifestも同期しました。\nHuman確認対象入口: ${last.pending_url}\n\nChatGPTへこのURLを渡して「未確定案件を見て」と依頼できます。`,'OK');render();
  }catch(e){status('公開失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
 async function exportZip(){
@@ -233,7 +263,7 @@ async function exportZip(){
   const writer=GKZipCore.writer.create();
   for(const row of dataset.details)writer.addJson(`${root}/${row.path}`,row.data);
   writer.addJson(`${root}/projects.json`,dataset.projectsDoc);writer.addJson(`${root}/pending.json`,dataset.pendingDoc);writer.addJson(`${root}/manifest.json`,dataset.manifest);
-  writer.addText('README_AI_PUBLIC.txt',`Development AI Public Read Data\n\n公開先Path: ${root}/\n入口: pending.json\n生成: ${dataset.generated_at}\n案件: ${dataset.summaries.length}\n未確定: ${dataset.pending.length}\n\nこのZIPは公開用読み取りデータです。Project詳細にはDiscussion / Work Box / Confirmation等が含まれます。\n`);
+  writer.addText('README_AI_PUBLIC.txt',`Development AI Public Read Data\n\n公開先Path: ${root}/\n入口: pending.json\n生成: ${dataset.generated_at}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\n\nこのZIPは公開用読み取りデータです。Project詳細にはDiscussion / Work Box / Confirmation等が含まれます。\n`);
   await writer.download(`GK_Development_AI_Public_${new Date().toISOString().replace(/[:.]/g,'-')}.zip`);
   lastDataset=dataset;status('公開用JSON ZIPを出力しました。GitHubへ手動配置する場合に使用できます。','OK');renderPreview(dataset);
  }catch(e){status('ZIP出力失敗: '+e.message,'ERROR')}
@@ -242,9 +272,9 @@ function openPending(){
  try{const c=configFromForm(false),url=publicRepoBase(c)+'pending.json';if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
 }
 async function copyPrompt(){
- try{const c=configFromForm(false),url=publicRepoBase(c)+'pending.json';const text=`${url}\nこのURLを読み、未確定のDevelopment Projectを確認して。必要な案件だけdetail_urlを辿って、Humanが判断すべき点を日本語で整理して。`;await navigator.clipboard.writeText(text);status('ChatGPTへ渡す文をコピーしました。','OK')}catch(e){status('コピー失敗: '+e.message,'ERROR')}
+ try{const c=configFromForm(false),url=publicRepoBase(c)+'pending.json';const text=`${url}\nこのURLを読み、Human確認対象のDevelopment Projectを確認して。必要な案件だけdetail_urlを辿って、Humanが判断すべき点を日本語で整理して。`;await navigator.clipboard.writeText(text);status('ChatGPTへ渡す文をコピーしました。','OK')}catch(e){status('コピー失敗: '+e.message,'ERROR')}
 }
 
-window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,publicRepoBase,cleanPath,safeId}};
+window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildVersions,publicRepoBase,cleanPath,safeId}};
 window.addEventListener('DOMContentLoaded',render);
 })();
