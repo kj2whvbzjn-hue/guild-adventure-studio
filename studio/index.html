@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B643</title>
+<title>GK Studio GKS-B644</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B643</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B644</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B643</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B644</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -493,6 +493,7 @@ updateDeployDeleteControl();
       <button type="button" onclick="runLauncherAction('dashboard')">ダッシュボードを見る</button>
       <button type="button" onclick="runLauncherAction('projects')">プロジェクトを選ぶ</button>
       <button type="button" onclick="runLauncherAction('project')">プロジェクト設定を開く</button>
+      <button type="button" class="primary" onclick="runLauncherAction('discussions')">検討・議論</button>
       <button type="button" onclick="runLauncherAction('guide')">使い方ガイド</button>
     </div>
   </div>
@@ -537,6 +538,7 @@ updateDeployDeleteControl();
   <div class="nav hidden" id="nav" aria-hidden="true">
     <button data-view="dashboard" class="active">ダッシュボード</button>
     <button data-view="guide">ガイド</button>
+    <button data-view="discussions">検討・議論</button>
     <button data-view="projects">プロジェクト一覧</button><button data-view="project">プロジェクト設定</button>
     <button data-view="story">シナリオ</button><button data-view="storyeditor">シナリオ構成</button>
     <button data-view="quests">クエスト</button><button data-view="events">イベント</button><button data-view="flags">フラグ</button>
@@ -553,6 +555,7 @@ updateDeployDeleteControl();
     <div class="kpi"><span class="small">章</span><b id="kpiChapters">0</b></div>
     <div class="kpi"><span class="small">キャラクター</span><b id="kpiCharacters">0</b></div>
     <div class="kpi"><span class="small">決定事項</span><b id="kpiDecisions">0</b></div>
+    <div class="kpi"><span class="small">検討・議論</span><b id="kpiDiscussions">0</b></div>
     <div class="kpi"><span class="small">クエスト</span><b id="kpiQuests">0</b></div>
     <div class="kpi"><span class="small">イベント</span><b id="kpiEvents">0</b></div>
     <div class="kpi"><span class="small">検証結果</span><b id="kpiErrors">0</b></div>
@@ -578,6 +581,7 @@ updateDeployDeleteControl();
     <h2>クイック操作</h2>
     <div class="toolbar">
       <button class="primary" onclick="showView('project')">プロジェクト編集</button>
+      <button onclick="showView('discussions')">検討・議論を開く</button>
       <button onclick="showView('decisions')">決定事項を追加</button>
       <button onclick="runValidation();showView('validation')">検証する</button>
       <button onclick="exportProject()">JSON出力</button>
@@ -1745,6 +1749,44 @@ updateDeployDeleteControl();
   </div>
 </section>
 
+<section id="view-discussions" class="view hidden">
+  <div class="view-heading"><h1>検討・議論</h1><span class="status">Discussion Registry v1</span></div>
+  <div class="card">
+    <p>AIとの会話や設計検討を、正式仕様になる前の記録として保存します。ここでは結論が出ていない案も保持できます。削除せず、終了した議論は「保管」にしてください。</p>
+    <div class="grid">
+      <div class="field"><label>議論ID</label><input id="discussionId" placeholder="空欄でDISC-0001形式に自動採番"></div>
+      <div class="field"><label>状態</label><select id="discussionStatus"><option value="Open">検討中</option><option value="Pending">保留</option><option value="Resolved">結論あり</option><option value="Archived">保管</option></select></div>
+    </div>
+    <div class="field"><label>タイトル</label><input id="discussionTitle" placeholder="例：汎用AI開発Studio構想"></div>
+    <div class="field"><label>概要</label><textarea id="discussionSummary" placeholder="背景と、何を検討しているかを短く整理"></textarea></div>
+    <div class="field"><label>議論内容</label><textarea id="discussionBody" rows="12" placeholder="AIとの会話から残したい論点、候補案、理由などを記録"></textarea></div>
+    <div class="grid">
+      <div class="field"><label>未決事項</label><textarea id="discussionOpenQuestions" placeholder="まだ決まっていないことを1行ずつ"></textarea></div>
+      <div class="field"><label>現在の結論</label><textarea id="discussionConclusion" placeholder="結論が出た時点で記録。未決なら空欄で可"></textarea></div>
+    </div>
+    <div class="grid">
+      <div class="field"><label>関連Discussion ID</label><input id="discussionRelated" placeholder="DISC-0002, DISC-0003"></div>
+      <div class="field"><label>関連Decision ID</label><input id="discussionDecisionRefs" placeholder="DEC-CORE-0001"></div>
+      <div class="field"><label>関連Specification ID</label><input id="discussionSpecRefs" placeholder="SPEC-CORE-001（仕様台帳導入後に利用）"></div>
+      <div class="field"><label>関連資料名</label><input id="discussionArtifactName" placeholder="AI_Development_Studio_Concept_Draft_v0.1.zip"></div>
+    </div>
+    <div class="field"><label>関連資料メモ</label><input id="discussionArtifactNote" placeholder="Concept Draft v0.1 / 内容・保管場所など"></div>
+    <div class="toolbar">
+      <button class="primary" type="button" onclick="saveDiscussion()">保存</button>
+      <button type="button" onclick="resetDiscussionEditor()">新規入力</button>
+      <button type="button" onclick="exportDiscussionMarkdown()">編集中の議論をMarkdown出力</button>
+    </div>
+    <div id="discussionEditStatus" class="small">新規Discussionを入力してください。</div>
+  </div>
+  <div class="card">
+    <div class="grid">
+      <div class="field"><label>検索</label><input id="discussionSearch" placeholder="ID・タイトル・概要・本文" oninput="renderDiscussions()"></div>
+      <div class="field"><label>状態</label><select id="discussionFilter" onchange="renderDiscussions()"><option value="all">すべて</option><option value="Open">検討中</option><option value="Pending">保留</option><option value="Resolved">結論あり</option><option value="Archived">保管</option></select></div>
+    </div>
+  </div>
+  <div id="discussionList" class="list"></div>
+</section>
+
 <section id="view-decisions" class="view hidden">
   <h1>決定事項ログ</h1>
   <div class="card">
@@ -2227,11 +2269,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=643"></script>
+<script src="./layer-controller.js?v=644"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B643';
+const DISTRIBUTION_BUILD='GKS-B644';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2262,7 +2304,7 @@ function initial(){
  {id:'DEC-V4-001',status:'Approved',text:'Guild Adventure Studio Version 4を最優先開発対象とする',refs:[],created_at:now()},
  {id:'DEC-V4-003',status:'Approved',text:'JSONを唯一の正本とする',refs:[],created_at:now()},
  {id:'DEC-V4-006',status:'Approved',text:'AI変更はHuman Approvalを必須とする',refs:[],created_at:now()}
- ],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],ai_programs:[],design_cards:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[],maps:[],exploration_outcomes:[],reward_tables:[],adventure_settings:[]},entities:[],id_counters:{},history:[]}
+ ],discussions:[],chapters:[],characters:[],organizations:[],terms:[],relationships:[],timeline:[],quests:[],events:[],flags:[],rules:[],battle_tests:[],battle_snapshots:[],ai_programs:[],design_cards:[],masters:{stats:[],jobs:[],skills:[],equipment:[],mods:[],monsters:[],status_effects:[],tablets:[],ai_conditions:[],ai_targets:[],ai_actions:[],maps:[],exploration_outcomes:[],reward_tables:[],adventure_settings:[]},entities:[],id_counters:{},history:[]}
 }
 const BOOT_HAD_PROJECT_DATA=hasAnyStoredProjectData();
 migrateVersionedProjectStorage();
@@ -2405,12 +2447,14 @@ function ensureProjectCompatibilityShape(projectData){
  if(!Array.isArray(projectData.ai_programs))projectData.ai_programs=[];
  if(!Array.isArray(projectData.design_cards))projectData.design_cards=[];
  if(!Array.isArray(projectData.rules))projectData.rules=[];
+ if(!Array.isArray(projectData.discussions))projectData.discussions=[];
  return projectData;
 }
 function normalizeData(){
  if(!Array.isArray(data.ai_programs))data.ai_programs=[];
  if(!Array.isArray(data.design_cards))data.design_cards=[];
  if(!Array.isArray(data.rules))data.rules=[];
+ if(!Array.isArray(data.discussions))data.discussions=[];
  if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);else if(!Array.isArray(data.ai_programs))throw new Error('data.ai_programs must be an array');
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
@@ -2492,6 +2536,17 @@ function normalizeData(){
  data.flags.forEach(f=>{f.name=f.name||f.id;f.category=f.category||'story';f.default_value=!!f.default_value;f.description=f.description||'';});
  data.entities=data.entities||[];
  data.decisions=data.decisions||[];
+ data.discussions=Array.isArray(data.discussions)?data.discussions:[];
+ data.discussions.forEach(d=>{
+  d.id=String(d.id||'').trim();d.title=String(d.title||'').trim();
+  d.status=['Open','Pending','Resolved','Archived'].includes(d.status)?d.status:'Open';
+  d.summary=String(d.summary||'');d.body=String(d.body||'');d.open_questions=String(d.open_questions||'');d.conclusion=String(d.conclusion||'');
+  d.related_discussion_ids=Array.isArray(d.related_discussion_ids)?d.related_discussion_ids.map(String).filter(Boolean):[];
+  d.decision_refs=Array.isArray(d.decision_refs)?d.decision_refs.map(String).filter(Boolean):[];
+  d.specification_refs=Array.isArray(d.specification_refs)?d.specification_refs.map(String).filter(Boolean):[];
+  d.artifacts=Array.isArray(d.artifacts)?d.artifacts.filter(x=>x&&typeof x==='object').map(x=>({name:String(x.name||''),note:String(x.note||'')})):[];
+  d.created_at=d.created_at||now();d.updated_at=d.updated_at||d.created_at;
+ });
  data.design_cards=Array.isArray(data.design_cards)?data.design_cards:[];
  data.history=data.history||[];
  return {};
@@ -2570,6 +2625,7 @@ function backupSnapshotStats(obj){
   chapters:Array.isArray(safe.chapters)?safe.chapters.length:0,
   characters:Array.isArray(safe.characters)?safe.characters.length:0,
   decisions:Array.isArray(safe.decisions)?safe.decisions.length:0,
+  discussions:Array.isArray(safe.discussions)?safe.discussions.length:0,
   quests:Array.isArray(safe.quests)?safe.quests.length:0,
   events:Array.isArray(safe.events)?safe.events.length:0,
   masters,
@@ -2579,7 +2635,7 @@ function backupSnapshotStats(obj){
 }
 function backupStatsText(obj){
  const x=backupSnapshotStats(obj);
- return `章 ${x.chapters} / キャラクター ${x.characters} / 決定事項 ${x.decisions} / Quest ${x.quests} / Event ${x.events} / Master ${x.masters} / 設計カード ${x.designCards} / AI ${x.aiPrograms}`;
+ return `章 ${x.chapters} / キャラクター ${x.characters} / 決定事項 ${x.decisions} / 検討・議論 ${x.discussions} / Quest ${x.quests} / Event ${x.events} / Master ${x.masters} / 設計カード ${x.designCards} / AI ${x.aiPrograms}`;
 }
 function backupDateLabel(value){
  const d=new Date(value);if(Number.isNaN(d.getTime()))return String(value||'日時不明');
@@ -2587,7 +2643,7 @@ function backupDateLabel(value){
 }
 function backupDeltaLines(current,target){
  const a=backupSnapshotStats(current),b=backupSnapshotStats(target);
- const labels={chapters:'章',characters:'キャラクター',decisions:'決定事項',quests:'Quest',events:'Event',masters:'Master',designCards:'設計カード',aiPrograms:'AI'};
+ const labels={chapters:'章',characters:'キャラクター',decisions:'決定事項',discussions:'検討・議論',quests:'Quest',events:'Event',masters:'Master',designCards:'設計カード',aiPrograms:'AI'};
  return Object.keys(labels).map(key=>{
   const delta=b[key]-a[key];
   return `${labels[key]}: ${a[key]} → ${b[key]} (${delta>0?'+':''}${delta})`;
@@ -2726,10 +2782,10 @@ let studioLauncherHomeActive=false;
 let studioLauncherCategory='basic';
 const STUDIO_LAUNCHER_HISTORY_PREFIX='__launcher__:';
 const STUDIO_VIEW_TITLES={
- dashboard:'ダッシュボード','ai-production':'AI制作',projects:'プロジェクト一覧',project:'プロジェクト設定',story:'シナリオ',storyeditor:'シナリオ構成エディター',quests:'クエスト',events:'イベント',flags:'フラグ',characters:'キャラクター',masters:'マスター','equipment-generator':'装備生成','skill-generator':'スキル生成',rules:'ルール',guide:'使い方ガイド','verification-home':'検証ホーム',battle:'戦闘計算シミュレーター',references:'参照関係マップ',validation:'データ検証',backup:'バックアップ',githubsync:'GitHub同期',gamedatadeploy:'Gameデータ GitHub配置',studiodeploy:'Studio更新 GitHub配置',importexport:'読込・出力',decisions:'決定事項ログ',entities:'データ・ID管理'
+ dashboard:'ダッシュボード','ai-production':'AI制作',projects:'プロジェクト一覧',project:'プロジェクト設定',discussions:'検討・議論',story:'シナリオ',storyeditor:'シナリオ構成エディター',quests:'クエスト',events:'イベント',flags:'フラグ',characters:'キャラクター',masters:'マスター','equipment-generator':'装備生成','skill-generator':'スキル生成',rules:'ルール',guide:'使い方ガイド','verification-home':'検証ホーム',battle:'戦闘計算シミュレーター',references:'参照関係マップ',validation:'データ検証',backup:'バックアップ',githubsync:'GitHub同期',gamedatadeploy:'Gameデータ GitHub配置',studiodeploy:'Studio更新 GitHub配置',importexport:'読込・出力',decisions:'決定事項ログ',entities:'データ・ID管理'
 };
 const STUDIO_VIEW_CATEGORIES={
- dashboard:'basic',projects:'basic',project:'basic',guide:'basic',decisions:'basic',entities:'basic',
+ dashboard:'basic',projects:'basic',project:'basic',guide:'basic',discussions:'basic',decisions:'basic',entities:'basic',
  story:'create',storyeditor:'create',quests:'create',events:'create',flags:'create',characters:'create',masters:'create','equipment-generator':'create','skill-generator':'create','ai-production':'create',rules:'create',
  'verification-home':'verify',battle:'verify',validation:'verify',references:'verify',
  backup:'manage',githubsync:'manage',gamedatadeploy:'manage',studiodeploy:'manage',importexport:'manage'
@@ -3049,6 +3105,76 @@ function addRelationship(){let id=relationshipId.value.trim()||nextId('Relations
 function deleteRelationship(id){if(confirm(id+'を削除しますか？')){data.relationships=data.relationships.filter(x=>x.id!==id);persist('relationship deleted')}}
 function addTimeline(){let id=timelineId.value.trim()||nextId('Timeline'),event=timelineEvent.value.trim();if(!event)return alert('出来事を入力してください。');if(allIds().includes(id))return alert('そのIDは既に使用されています。');data.timeline.push({id,chapter_no:Number(timelineChapter.value)||0,section_no:Number(timelineSection.value)||0,target_id:timelineTarget.value.trim(),event,created_at:now()});timelineId.value=timelineChapter.value=timelineSection.value=timelineTarget.value=timelineEvent.value='';persist('timeline added')}
 function deleteTimeline(id){if(confirm(id+'を削除しますか？')){data.timeline=data.timeline.filter(x=>x.id!==id);persist('timeline deleted')}}
+
+let editingDiscussionId='';
+function discussionRefs(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
+function nextDiscussionId(){
+ const used=new Set((data.discussions||[]).map(x=>String(x.id||'')));
+ let n=1;while(used.has('DISC-'+String(n).padStart(4,'0')))n++;
+ return 'DISC-'+String(n).padStart(4,'0');
+}
+function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
+function resetDiscussionEditor(){
+ editingDiscussionId='';
+ ['discussionId','discussionTitle','discussionSummary','discussionBody','discussionOpenQuestions','discussionConclusion','discussionRelated','discussionDecisionRefs','discussionSpecRefs','discussionArtifactName','discussionArtifactNote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+ const status=document.getElementById('discussionStatus');if(status)status.value='Open';
+ const label=document.getElementById('discussionEditStatus');if(label)label.textContent='新規Discussionを入力してください。';
+}
+function saveDiscussion(){
+ data.discussions=Array.isArray(data.discussions)?data.discussions:[];
+ const title=String(document.getElementById('discussionTitle')?.value||'').trim();if(!title)return alert('タイトルを入力してください。');
+ let id=String(document.getElementById('discussionId')?.value||'').trim()||editingDiscussionId||nextDiscussionId();
+ const duplicate=data.discussions.find(x=>x.id===id&&x.id!==editingDiscussionId);if(duplicate)return alert('同じDiscussion IDが存在します: '+id);
+ const current=editingDiscussionId?data.discussions.find(x=>x.id===editingDiscussionId):null;
+ const artifactName=String(document.getElementById('discussionArtifactName')?.value||'').trim();
+ const artifactNote=String(document.getElementById('discussionArtifactNote')?.value||'').trim();
+ const row={
+  id,title,status:document.getElementById('discussionStatus')?.value||'Open',
+  summary:String(document.getElementById('discussionSummary')?.value||''),body:String(document.getElementById('discussionBody')?.value||''),
+  open_questions:String(document.getElementById('discussionOpenQuestions')?.value||''),conclusion:String(document.getElementById('discussionConclusion')?.value||''),
+  related_discussion_ids:discussionRefs(document.getElementById('discussionRelated')?.value),decision_refs:discussionRefs(document.getElementById('discussionDecisionRefs')?.value),specification_refs:discussionRefs(document.getElementById('discussionSpecRefs')?.value),
+  artifacts:artifactName?[{name:artifactName,note:artifactNote}]:[],created_at:current?.created_at||now(),updated_at:now()
+ };
+ if(current){const idx=data.discussions.findIndex(x=>x.id===editingDiscussionId);data.discussions[idx]=row}else data.discussions.push(row);
+ editingDiscussionId=id;
+ if(!persist(current?'discussion updated':'discussion added'))return;
+ const label=document.getElementById('discussionEditStatus');if(label)label.textContent=id+' を保存しました。';
+ const idEl=document.getElementById('discussionId');if(idEl)idEl.value=id;
+}
+function editDiscussion(id){
+ const d=(data.discussions||[]).find(x=>x.id===id);if(!d)return;
+ editingDiscussionId=d.id;
+ discussionId.value=d.id||'';discussionTitle.value=d.title||'';discussionStatus.value=d.status||'Open';discussionSummary.value=d.summary||'';discussionBody.value=d.body||'';discussionOpenQuestions.value=d.open_questions||'';discussionConclusion.value=d.conclusion||'';
+ discussionRelated.value=(d.related_discussion_ids||[]).join(', ');discussionDecisionRefs.value=(d.decision_refs||[]).join(', ');discussionSpecRefs.value=(d.specification_refs||[]).join(', ');
+ discussionArtifactName.value=d.artifacts?.[0]?.name||'';discussionArtifactNote.value=d.artifacts?.[0]?.note||'';
+ discussionEditStatus.textContent=d.id+' を編集中です。';
+ document.getElementById('view-discussions')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function archiveDiscussion(id){
+ const d=(data.discussions||[]).find(x=>x.id===id);if(!d)return;
+ if(!confirm(`${id} を「保管」にしますか？\n記録は削除されません。`))return;
+ d.status='Archived';d.updated_at=now();persist('discussion archived');
+ if(editingDiscussionId===id)editDiscussion(id);
+}
+function discussionMarkdown(d){
+ const lines=[`# ${d.id} ${d.title||''}`,'',`- 状態: ${discussionStatusLabel(d.status)}`,`- 作成: ${d.created_at||''}`,`- 更新: ${d.updated_at||''}`,''];
+ if(d.summary)lines.push('## 概要','',d.summary,'');if(d.body)lines.push('## 議論内容','',d.body,'');if(d.open_questions)lines.push('## 未決事項','',d.open_questions,'');if(d.conclusion)lines.push('## 現在の結論','',d.conclusion,'');
+ if((d.related_discussion_ids||[]).length)lines.push('## 関連Discussion','',d.related_discussion_ids.join(', '),'');if((d.decision_refs||[]).length)lines.push('## 関連Decision','',d.decision_refs.join(', '),'');if((d.specification_refs||[]).length)lines.push('## 関連Specification','',d.specification_refs.join(', '),'');
+ if((d.artifacts||[]).length){lines.push('## 関連資料','');d.artifacts.forEach(a=>lines.push(`- ${a.name||''}${a.note?' — '+a.note:''}`));lines.push('')}
+ return lines.join('\n');
+}
+function exportDiscussionById(id){const d=(data.discussions||[]).find(x=>x.id===id);if(!d)return;downloadText(`${d.id}_${(d.title||'discussion').replace(/[\\/:*?"<>|]/g,'_')}.md`,discussionMarkdown(d),'text/markdown;charset=utf-8')}
+function exportDiscussionMarkdown(){
+ const id=editingDiscussionId||String(document.getElementById('discussionId')?.value||'').trim();
+ const d=(data.discussions||[]).find(x=>x.id===id);if(d)return exportDiscussionById(id);
+ alert('保存済みのDiscussionを編集状態にしてから出力してください。');
+}
+function renderDiscussions(){
+ const list=document.getElementById('discussionList');if(!list)return;
+ const q=String(document.getElementById('discussionSearch')?.value||'').trim().toLowerCase(),filter=document.getElementById('discussionFilter')?.value||'all';
+ const rows=[...(data.discussions||[])].filter(d=>filter==='all'||d.status===filter).filter(d=>!q||[d.id,d.title,d.summary,d.body,d.conclusion,(d.decision_refs||[]).join(' '),(d.specification_refs||[]).join(' ')].join('\n').toLowerCase().includes(q)).sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||'')));
+ list.innerHTML=rows.map(d=>`<div class="item"><div><b>${esc(d.id)}　${esc(d.title)}</b> <span class="badge">${esc(discussionStatusLabel(d.status))}</span></div><div class="meta">更新 ${esc(backupDateLabel(d.updated_at))} / Decision ${(d.decision_refs||[]).length} / Spec ${(d.specification_refs||[]).length} / 関連Discussion ${(d.related_discussion_ids||[]).length}</div>${d.summary?`<p>${esc(d.summary)}</p>`:''}${d.conclusion?`<div class="small"><b>現在の結論:</b> ${esc(d.conclusion)}</div>`:''}${d.artifacts?.length?`<div class="small"><b>資料:</b> ${d.artifacts.map(a=>esc(a.name)).join(', ')}</div>`:''}<div class="toolbar"><button onclick="editDiscussion('${escAttr(d.id)}')">編集</button><button onclick="exportDiscussionById('${escAttr(d.id)}')">Markdown出力</button>${d.status!=='Archived'?`<button onclick="archiveDiscussion('${escAttr(d.id)}')">保管</button>`:''}</div></div>`).join('')||'<div class="card">Discussionはまだありません。まず今回の構想などを1件登録してください。</div>';
+}
 
 function addDecision(){
  let id=document.getElementById('decisionId').value.trim(), text=document.getElementById('decisionText').value.trim();
@@ -5268,7 +5394,7 @@ function exportSnapshotComparisonCsv(){if(lastSnapshotComparison.length!==2)retu
 function renderBattle(){if(!document.getElementById('battleAllies'))return;renderBattleVerificationFoundation();initBattleHumanWorkflowStatus();applyBattleFormulaConfig(data.battle_formula_config||BATTLE_FORMULA_DEFAULTS);if(!battleAllies.value)resetBattleSample();renderBattleHistory();renderBattleSnapshots();updateBattleComparisonFixedLabels();if(lastBattleResult)renderBattleMetrics(lastBattleResult)}
 function updateBattleComparisonFixedLabels(){const ff=document.getElementById('formulaFixedFormation'),sf=document.getElementById('snapshotFixedFormula');if(ff){let ac=0,ec=0;try{ac=JSON.parse(battleAllies.value||'[]').length;ec=JSON.parse(battleEnemies.value||'[]').length}catch(_){ }ff.textContent=`固定編成：現在の入力内容（味方${ac} / 敵${ec}）`;}if(sf){const c=readBattleFormulaConfig();sf.textContent=`固定数式：${c.version||'未設定'} / 命中元=${c.accuracySource==='equipment'?'装備':'キャラクター'} / STR補正=${c.strAccuracyCoefficient} / AG係数=${c.agiGaugeCoefficient} / クリ倍率=${c.critMultiplier}`;}}
 
-function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...(data.ai_programs||[]).map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
+function allIds(){return [data.project.id,...data.decisions.map(x=>x.id),...(data.discussions||[]).map(x=>x.id),...data.chapters.flatMap(c=>[c.id,...(c.sections||[]).flatMap(s=>[s.id,...(s.scenes||[]).flatMap(sc=>[sc.id,...(sc.dialogues||[]).map(d=>d.id)])])]),...data.characters.map(x=>x.id),...data.organizations.map(x=>x.id),...data.terms.map(x=>x.id),...data.relationships.map(x=>x.id),...data.timeline.map(x=>x.id),...data.quests.map(x=>x.id),...data.events.map(x=>x.id),...data.flags.map(x=>x.id),...Object.values(data.masters||{}).flat().map(x=>x.id),...tagDefinitions().map(x=>x.id),...(data.ai_programs||[]).map(x=>x.id),...data.entities.map(x=>x.id)].filter(Boolean)}
 function collectAiProgramValidationIssues(){
  const rows=[];if(!window.GKSAIProgramValidator)return rows;
  for(const program of data.ai_programs||[]){
@@ -5283,6 +5409,11 @@ function runValidation(options={}){
  if(!data.project.id)validation.push({level:'ERROR',message:'Project IDが未設定'});
  if(!data.project.name)validation.push({level:'ERROR',message:'Project Nameが未設定'});
  data.decisions.forEach(d=>{if(!d.text)validation.push({level:'ERROR',message:d.id+' の決定内容が未設定'})});
+ (data.discussions||[]).forEach(d=>{
+  if(!d.title)validation.push({level:'ERROR',message:(d.id||'Discussion')+' のタイトルが未設定'});
+  (d.related_discussion_ids||[]).forEach(id=>{if(!(data.discussions||[]).some(x=>x.id===id))validation.push({level:'WARNING',message:d.id+' の関連Discussionが存在しません: '+id})});
+  (d.decision_refs||[]).forEach(id=>{if(!data.decisions.some(x=>x.id===id))validation.push({level:'INFO',message:d.id+' の関連Decisionが現在のProjectに存在しません: '+id})});
+ });
  data.chapters.forEach(c=>{
   if(!c.title)validation.push({level:'ERROR',message:c.id+' の章タイトルが未設定'});
   (c.sections||[]).forEach(s=>{
@@ -8432,9 +8563,9 @@ function renderBackups(){
  }).join('')||'<div class="card">バックアップなし</div>'
 }
 function renderDashboard(){
- kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
+ kpiChapters.textContent=data.chapters.length;kpiCharacters.textContent=data.characters.length;kpiDecisions.textContent=data.decisions.length;if(document.getElementById('kpiDiscussions'))kpiDiscussions.textContent=(data.discussions||[]).length;kpiQuests.textContent=data.quests.length;kpiEvents.textContent=data.events.length;kpiErrors.textContent=validation.filter(x=>x.level==='ERROR').length;renderImplementationStatus()
 }
-function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();renderVerificationHome();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
+function render(){rebuildTagIndex();renderProjects();renderProject();renderChapters();renderStoryTree();renderStoryEditor();renderQuests();renderEvents();renderFlags();renderReferenceMap();renderCharacters();renderMasters();renderRules();renderBattle();renderDiscussions();renderDecisions();renderEntities();renderValidation();renderTagReferenceInspector();renderTagCategoryInspector();renderTagGovernanceDrift();renderBackups();renderDashboard();renderVerificationHome();lastUpdated.value=data.project.updated_at||'';currentProjectLabel.textContent=(data.project.name||currentProjectId)+' /'}
 
 function jpStatus(value){return ({development:'開発中',draft:'下書き',review:'確認中',approved:'承認済み',archived:'保管済み',Proposed:'提案中',Approved:'承認済み',Rejected:'却下',Superseded:'置換済み'})[value]||value}
 function jpType(value){return ({Character:'キャラクター',Chapter:'章',Section:'節',Scene:'シーン',Quest:'クエスト',Event:'イベント',Map:'マップ',Monster:'モンスター',Item:'アイテム',Skill:'スキル',AIProfile:'AI設定',main:'メイン',sub:'サブ',character:'キャラクター',tutorial:'チュートリアル',repeat:'反復',special:'特殊'})[value]||value}
@@ -8445,7 +8576,7 @@ function escAttr(s){return String(s??'').replace(/\\/g,'\\').replace(/'/g,"\\'")
 function projectUpdatedAtMs(obj){return Date.parse(obj?.project?.updated_at||'')||0}
 function projectCountSummary(obj){
  const masters=Object.values(obj?.masters||{}).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0);
- return `章${obj?.chapters?.length||0} / キャラ${obj?.characters?.length||0} / Quest${obj?.quests?.length||0} / Event${obj?.events?.length||0} / Master${masters} / 設計カード${obj?.design_cards?.length||0}`;
+ return `章${obj?.chapters?.length||0} / キャラ${obj?.characters?.length||0} / 議論${obj?.discussions?.length||0} / Quest${obj?.quests?.length||0} / Event${obj?.events?.length||0} / Master${masters} / 設計カード${obj?.design_cards?.length||0}`;
 }
 async function fetchCanonicalProjectData(){
  canonicalProjectFetchState='loading';canonicalProjectFetchError='';
@@ -8543,7 +8674,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','643');
+    url.searchParams.set('appv','644');
     location.replace(url.toString());
    }
  }
@@ -8552,7 +8683,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=643',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=644',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8571,7 +8702,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','643');
+    url.searchParams.set('appv','644');
     location.replace(url.toString());
    }
   });
