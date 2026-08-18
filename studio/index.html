@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B648</title>
+<title>GK Studio GKS-B649</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -459,13 +459,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B648</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B649</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B648</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B649</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1780,7 +1780,7 @@ updateDeployDeleteControl();
     <div class="field"><label>タイトル</label><input id="devDiscussionTitle"></div><div class="field"><label>概要</label><textarea id="devDiscussionSummary"></textarea></div><div class="field"><label>議論内容</label><textarea id="devDiscussionBody" rows="10"></textarea></div>
     <div class="grid"><div class="field"><label>未決事項</label><textarea id="devDiscussionOpenQuestions" placeholder="1行に1件"></textarea></div><div class="field"><label>現在の結論</label><textarea id="devDiscussionConclusion"></textarea></div></div>
     <div class="field"><label>関連Discussion ID</label><input id="devDiscussionRelated" placeholder="DISC-0002, DISC-0003"></div><div class="field"><label>資料メモ</label><input id="devDiscussionArtifact" placeholder="Concept Draft v0.1 など"></div>
-    <div class="toolbar"><button class="primary" type="button" onclick="saveDevDiscussion()">保存</button><button type="button" onclick="resetDevDiscussionEditor()">新規入力</button></div><div id="devDiscussionList" class="list"></div>
+    <div class="toolbar"><button class="primary" type="button" onclick="saveDevDiscussion()">保存</button><button type="button" onclick="resetDevDiscussionEditor()">新規入力</button><label class="button-like">AI返却JSONを読込<input id="discussionReturnImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDiscussionAiReturn(this.files[0]);this.value=''"></label></div><div id="devDiscussionList" class="list"></div>
   </div>
   <div id="developmentPane-decision" class="card hidden">
     <h2>Decision</h2><p class="small">「なぜそう決めたか」を保持します。ApprovedはHumanの正式決定です。</p>
@@ -2280,11 +2280,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=648"></script>
+<script src="./layer-controller.js?v=649"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B648';
+const DISTRIBUTION_BUILD='GKS-B649';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -3236,6 +3236,111 @@ async function exportDiscussionAiHandover(id){
   });
   await writer.download(`GK_AI_Handover_${String(d.id).replace(/[^A-Za-z0-9_-]/g,'_')}.zip`);
  }catch(e){alert('AI共有ZIPの出力に失敗しました: '+e.message)}
+}
+
+
+function cleanDiscussionReturnArray(value){
+ return Array.isArray(value)?value.map(x=>String(x||'').trim()).filter(Boolean):[];
+}
+function discussionReturnReportMarkdown(report){
+ if(!report||typeof report!=='object')return '';
+ const blocks=[];
+ const add=(title,items)=>{items=cleanDiscussionReturnArray(items);if(items.length)blocks.push(`### ${title}\n${items.map(x=>`- ${x}`).join('\n')}`)};
+ add('理解した確定事項',report.understood_confirmed);
+ add('新しい知見',report.new_findings);
+ add('未解決事項',report.unresolved_items);
+ add('次の論点候補',report.proposed_next_topics);
+ return blocks.length?`## AI返却レポート\n${blocks.join('\n\n')}`:'';
+}
+function validateDiscussionAiReturn(raw){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('JSONルートはobjectである必要があります。');
+ if(raw.format!=='gk-development-discussion-return')throw new Error('Discussion返却JSONではありません。formatが不正です。');
+ if(String(raw.version||'')!=='1.0')throw new Error(`未対応の返却形式versionです: ${raw.version||'なし'}`);
+ const target=String(raw.target_discussion_id||'').trim();
+ if(!target)throw new Error('target_discussion_idがありません。');
+ const u=raw.discussion_update;
+ if(!u||typeof u!=='object'||Array.isArray(u))throw new Error('discussion_updateがありません。');
+ const status=String(u.status||'Open');
+ if(!['Open','Pending','Resolved','Archived'].includes(status))throw new Error(`不正なDiscussion状態です: ${status}`);
+ return {
+  target_discussion_id:target,
+  discussion_update:{
+   status,
+   summary:String(u.summary??''),
+   body_append:String(u.body_append??''),
+   open_questions:String(u.open_questions??''),
+   conclusion:String(u.conclusion??''),
+   related_discussion_ids:cleanDiscussionReturnArray(u.related_discussion_ids),
+   artifact_note:String(u.artifact_note??'')
+  },
+  ai_report:raw.ai_report&&typeof raw.ai_report==='object'?raw.ai_report:{}
+ };
+}
+function discussionReturnDiffText(current,ret){
+ const u=ret.discussion_update;
+ const oldOpen=String(current.open_questions||'').split(/\r?\n/).filter(x=>x.trim()).length;
+ const newOpen=String(u.open_questions||'').split(/\r?\n/).filter(x=>x.trim()).length;
+ const relatedBefore=(current.related_discussion_ids||[]).join(', ')||'なし';
+ const relatedAfter=(u.related_discussion_ids||[]).join(', ')||'なし';
+ const lines=[
+  `対象: ${current.id} / ${current.title}`,
+  '',
+  `状態: ${discussionStatusLabel(current.status)} → ${discussionStatusLabel(u.status)}`,
+  `概要: ${String(current.summary||'')===u.summary?'変更なし':'更新あり'}`,
+  `本文追記: ${u.body_append.trim()?`${u.body_append.trim().length}文字`:'なし'}`,
+  `未決事項: ${oldOpen}件 → ${newOpen}件`,
+  `現在の結論: ${String(current.conclusion||'')===u.conclusion?'変更なし':'更新あり'}`,
+  `関連Discussion: ${relatedBefore} → ${relatedAfter}`,
+  `資料メモ: ${String(current.artifact_note||'')===u.artifact_note?'変更なし':'更新あり'}`
+ ];
+ const report=discussionReturnReportMarkdown(ret.ai_report);
+ if(report)lines.push('AI返却レポート: あり');
+ return lines.join('\n');
+}
+async function importDiscussionAiReturn(file){
+ if(!file)return;
+ try{
+  const raw=JSON.parse(await file.text());
+  const ret=validateDiscussionAiReturn(raw);
+  const w=loadDevelopmentWorkspace();
+  const idx=w.discussions.findIndex(x=>x.id===ret.target_discussion_id);
+  if(idx<0)throw new Error(`対象Discussion ${ret.target_discussion_id} が現在のDevelopment Workspaceに存在しません。`);
+  const current=w.discussions[idx],u=ret.discussion_update;
+  const unknownRelated=(u.related_discussion_ids||[]).filter(id=>!w.discussions.some(x=>x.id===id));
+  let preview='AI返却JSONを取り込みます。\n\n'+discussionReturnDiffText(current,ret);
+  if(unknownRelated.length)preview+=`\n\n注意: 未登録の関連Discussion IDがあります:\n${unknownRelated.join(', ')}`;
+  preview+='\n\n現在のDiscussionをバックアップしてから反映します。よろしいですか？';
+  if(!confirm(preview))return;
+
+  const backupKey=DEVELOPMENT_STORE_KEY+'_before_ai_return_'+Date.now();
+  localStorage.setItem(backupKey,JSON.stringify(w));
+
+  const stamp=now();
+  const additions=[];
+  if(u.body_append.trim())additions.push(`## AI議論追記 ${stamp}\n${u.body_append.trim()}`);
+  const reportMd=discussionReturnReportMarkdown(ret.ai_report);
+  if(reportMd)additions.push(`${reportMd}\n\n_返却取込: ${stamp}_`);
+  const mergedBody=[String(current.body||'').trim(),...additions].filter(Boolean).join('\n\n');
+
+  w.discussions[idx]={
+   ...current,
+   status:u.status,
+   summary:u.summary,
+   body:mergedBody,
+   open_questions:u.open_questions,
+   conclusion:u.conclusion,
+   related_discussion_ids:u.related_discussion_ids,
+   artifact_note:u.artifact_note,
+   updated_at:stamp
+  };
+  developmentWorkspace=w;
+  if(!saveDevelopmentWorkspace(`AI Discussion return imported: ${current.id}`))throw new Error('Development Workspaceの保存に失敗しました。');
+  renderDevelopmentWorkspace();
+  editDevDiscussion(current.id);
+  alert(`AI返却JSONを ${current.id} に反映しました。\n反映前バックアップ: ${backupKey}`);
+ }catch(e){
+  alert('AI返却JSONの読込に失敗しました: '+e.message);
+ }
 }
 
 function exportDevelopmentWorkspace(){downloadText('development-project.json',JSON.stringify(loadDevelopmentWorkspace(),null,2),'application/json;charset=utf-8')}
@@ -8736,7 +8841,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','648');
+    url.searchParams.set('appv','649');
     location.replace(url.toString());
    }
  }
@@ -8745,7 +8850,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=648',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=649',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8764,7 +8869,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','648');
+    url.searchParams.set('appv','649');
     location.replace(url.toString());
    }
   });
