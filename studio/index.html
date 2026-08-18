@@ -8,13 +8,13 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="stylesheet" href="./ai-production/ai-production.css?v=1">
 <link rel="stylesheet" href="./development-architecture/architecture-explorer.css?v=2">
-<link rel="stylesheet" href="./development-workspace-ui.css?v=2">
+<link rel="stylesheet" href="./development-workspace-ui.css?v=3">
 <link rel="stylesheet" href="./development-workflow/development-workflow.css?v=1">
 <link rel="stylesheet" href="./development-ai-publish/development-ai-publish.css?v=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B656</title>
+<title>GK Studio GKS-B657</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -462,13 +462,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B656</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B657</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B656</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B657</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1756,6 +1756,19 @@ updateDeployDeleteControl();
   <div class="view-heading"><h1>開発管理</h1><span class="status">Development Projects / Workflow / Confirmation / Navigation</span></div>
 
   <div id="developmentProjectListView">
+    <div class="card dev-data-gateway">
+      <div class="dev-project-launcher-head">
+        <div><h2>全案件データ</h2><p class="small">開発管理に入った直後から、全Development Projectのバックアップ・復元と個別案件の追加を行えます。</p></div>
+      </div>
+      <div class="toolbar dev-data-gateway-actions">
+        <button class="primary" type="button" onclick="exportAllDevelopmentProjects()">全案件JSONを出力</button>
+        <label class="button-like">全案件JSONを復元<input id="developmentAllImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importAllDevelopmentProjects(this.files[0]);this.value=''"></label>
+        <label class="button-like">個別案件JSONを追加<input id="developmentGlobalProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label>
+      </div>
+      <div id="developmentAllDataStatus" class="small dev-data-gateway-status"></div>
+      <p class="small">「全案件JSON」は案件一覧・現在案件ID・各案件のDevelopment Project JSONを1ファイルにまとめます。復元時は現在状態をブラウザ内へ自動バックアップしてから、Development案件一覧を置き換えます。Game Projectには触れません。</p>
+    </div>
+
     <div class="card">
       <div class="dev-project-launcher-head">
         <div><h2>開発案件</h2><p class="small">案件を探して開きます。開いた後はその案件だけを表示します。</p></div>
@@ -1767,14 +1780,14 @@ updateDeployDeleteControl();
       </div>
       <div id="developmentProjectCards" class="dev-project-cards"></div>
       <div id="developmentProjectSettings" class="dev-editor-panel hidden">
-        <h3>案件設定 / JSON</h3>
+        <h3>案件設定</h3>
         <div class="dev-settings-grid">
           <div class="field"><label>現在の開発案件</label><select id="developmentProjectSelect" onchange="switchDevelopmentProject(this.value)"></select></div>
           <div class="field"><label>案件名</label><input id="developmentProjectName" placeholder="開発案件名"></div>
           <div class="field"><label>案件状態</label><select id="developmentProjectStatus"><option value="Exploring">検討中</option><option value="Specifying">仕様化中</option><option value="Implementing">実装中</option><option value="Validating">検証中</option><option value="Pending">保留</option><option value="Completed">完了</option></select></div>
         </div>
-        <div class="toolbar"><button type="button" onclick="saveDevelopmentProjectSettings()">案件設定を保存</button><button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button><label class="button-like">案件JSONを追加<input id="developmentProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label><label class="button-like">現在案件をJSONで置換<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label></div>
-        <p class="small">ブラウザ保存は案件別作業コピーです。案件削除機能はありません。</p>
+        <div class="toolbar"><button type="button" onclick="saveDevelopmentProjectSettings()">案件設定を保存</button></div>
+        <p class="small">ブラウザ保存は案件別作業コピーです。JSONの読込・出力は上の「全案件データ」または案件を開いた後の「データ」から行えます。案件削除機能はありません。</p>
       </div>
       <div id="developmentProjectRegistryStatus" class="small"></div>
     </div>
@@ -1783,14 +1796,14 @@ updateDeployDeleteControl();
   <div id="developmentProjectDetailView" class="hidden">
     <div class="dev-detail-back"><button type="button" onclick="backToDevelopmentProjectList()">← 案件一覧</button><span id="developmentProjectBreadcrumb" class="small"></span></div>
     <div id="developmentCurrentProject" class="card">
-      <div class="dev-current-project-head"><div><div class="small">現在の案件</div><div id="developmentCurrentProjectTitle" class="dev-project-current-title"></div><div id="developmentCurrentProjectFocus" class="small"></div></div><div class="toolbar"><button type="button" onclick="continueCurrentDevelopmentProject()">続きから</button><button type="button" onclick="openDevelopmentProjectSettingsFromDetail()">案件設定</button></div></div>
+      <div class="dev-current-project-head"><div><div class="small">現在の案件</div><div id="developmentCurrentProjectTitle" class="dev-project-current-title"></div><div id="developmentCurrentProjectFocus" class="small"></div></div><div class="toolbar"><button type="button" onclick="continueCurrentDevelopmentProject()">続きから</button><button type="button" onclick="setDevelopmentPane('data')">データ</button><button type="button" onclick="openDevelopmentProjectSettingsFromDetail()">案件設定</button></div></div>
       <div id="developmentStoreStatus" class="small" style="margin-top:10px"></div>
     </div>
     <div class="kpis">
       <div class="kpi"><span class="small">議論</span><b id="devKpiDiscussions">0</b></div><div class="kpi"><span class="small">Architecture</span><b id="devKpiArchitecture">0</b></div><div class="kpi"><span class="small">Work Box</span><b id="devKpiWorkBoxes">0</b></div><div class="kpi"><span class="small">Task</span><b id="devKpiTasks">0</b></div><div class="kpi"><span class="small">決定</span><b id="devKpiDecisions">0</b></div><div class="kpi"><span class="small">仕様</span><b id="devKpiSpecifications">0</b></div><div class="kpi"><span class="small">確認</span><b id="devKpiChecks">0</b></div><div class="kpi"><span class="small">未決事項</span><b id="devKpiOpenQuestions">0</b></div>
     </div>
     <div class="toolbar dev-project-tabs">
-      <button type="button" onclick="setDevelopmentPane('architecture')">構成</button><button type="button" onclick="setDevelopmentPane('discussion')">議論</button><button type="button" onclick="setDevelopmentPane('decision')">決定</button><button type="button" onclick="setDevelopmentPane('specification')">仕様</button><button type="button" onclick="setDevelopmentPane('workflow')">進行</button><button type="button" onclick="setDevelopmentPane('checks')">確認</button><button type="button" onclick="setDevelopmentPane('aipublish')">AI共有</button><button type="button" onclick="setDevelopmentPane('overview')">依存・進捗</button>
+      <button type="button" onclick="setDevelopmentPane('architecture')">構成</button><button type="button" onclick="setDevelopmentPane('discussion')">議論</button><button type="button" onclick="setDevelopmentPane('decision')">決定</button><button type="button" onclick="setDevelopmentPane('specification')">仕様</button><button type="button" onclick="setDevelopmentPane('workflow')">進行</button><button type="button" onclick="setDevelopmentPane('checks')">確認</button><button type="button" onclick="setDevelopmentPane('data')">データ</button><button type="button" onclick="setDevelopmentPane('aipublish')">AI共有</button><button type="button" onclick="setDevelopmentPane('overview')">依存・進捗</button>
     </div>
 
     <div id="developmentPane-architecture" class="card hidden">
@@ -1840,6 +1853,17 @@ updateDeployDeleteControl();
       <div id="devCheckDetail" class="dev-record-detail hidden"><div class="dev-detail-back"><button type="button" data-dwf-action="back-checks">← 確認一覧</button></div><h2 id="devCheckDetailTitle"></h2><div id="devCheckDetailMeta" class="meta"></div><div class="dwf-detail-grid"><div><h3>確認結果</h3><div id="devCheckDetailResult" class="dwf-detail-block"></div></div><div><h3>根拠 / Evidence</h3><div id="devCheckDetailEvidence" class="dwf-detail-block"></div></div></div><p class="small">確認者: <span id="devCheckDetailBy"></span></p><button type="button" data-dwf-action="edit-check">編集</button></div>
       <div id="devCheckEditorPanel" class="dev-editor-panel hidden"><h3 id="devCheckEditorTitle">確認事項</h3><div class="grid"><div class="field"><label>確認ID</label><input id="devCheckId" readonly></div><div class="field"><label>Gate</label><select id="devCheckGate"><option value="General">一般確認</option><option value="Implementation">実装開始前</option><option value="Completion">完了前</option></select></div></div><div class="field"><label>確認事項</label><input id="devCheckTitle"></div><div class="grid"><div class="field"><label>対象種別</label><select id="devCheckTargetType"><option value="Project">Project</option><option value="Architecture">Architecture</option><option value="WorkBox">Work Box</option><option value="Task">Task</option><option value="Artifact">Artifact</option></select></div><div class="field"><label>対象ID</label><input id="devCheckTargetId"></div></div><div class="field"><label>状態</label><select id="devCheckStatus"><option value="Pending">未確認</option><option value="Passed">PASS</option><option value="Failed">FAIL</option><option value="Waived">免除</option></select></div><div class="field"><label>確認結果</label><textarea id="devCheckResult" rows="5"></textarea></div><div class="field"><label>根拠 / Evidence</label><textarea id="devCheckEvidence" rows="4" placeholder="Build、ファイル、Gate、スクリーンショット、Artifactなど"></textarea></div><div class="field"><label>確認者</label><input id="devCheckCheckedBy" placeholder="Human"></div><div class="dev-form-actions"><button class="primary" type="button" data-dwf-action="save-check">保存</button><button type="button" data-dwf-action="cancel-check">キャンセル</button></div></div>
     </div>
+    <div id="developmentPane-data" class="card hidden">
+      <div class="dev-pane-head"><div><h2>読込・出力</h2><p class="small">現在開いているDevelopment Projectだけを扱います。全案件まとめてのバックアップ・復元は「← 案件一覧」先頭の「全案件データ」から行えます。</p></div></div>
+      <div id="developmentProjectDataSummary" class="dev-view-panel small"></div>
+      <div class="toolbar dev-data-project-actions">
+        <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button>
+        <label class="button-like">案件JSONを追加<input id="developmentProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label>
+        <label class="button-like">現在案件をJSONで置換<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label>
+      </div>
+      <p class="small">「案件JSONを追加」は別案件として登録します。「現在案件をJSONで置換」はこの案件だけをバックアップ後に置き換え、他案件には影響しません。</p>
+    </div>
+
     <div id="developmentPane-aipublish" class="card hidden">
       <div class="dev-pane-head"><div><h2>AI共有 <span class="badge ok">GitHub Pages Read</span></h2><p class="small">Development Projectを読み取り専用JSONとして公開し、ChatGPT等から未確定案件を直接参照できるようにします。</p></div></div>
       <div class="daip-warning"><b>公開データです。</b><br>Discussion / Work Box / Confirmation等のProject内容が公開Project詳細JSONへ含まれます。秘密情報や非公開内容を含む案件は公開しないでください。PATは端末へ保存しません。</div>
@@ -2353,11 +2377,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=656"></script>
+<script src="./layer-controller.js?v=657"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B656';
+const DISTRIBUTION_BUILD='GKS-B657';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -3333,7 +3357,7 @@ async function importDevelopmentProjectAsNew(file){
  if(!file)return;try{ensureDevelopmentProjectRegistry();const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 確認 ${(candidate.checks||[]).length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;let id=String(candidate.workspace.id||'').trim()||devNextProjectId();const originalId=id;if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();const name=String(candidate.workspace.name||file.name.replace(/\.json$/i,'')||id);if(!confirm(`開発管理JSONを新しい案件として追加します。\n${count}\n案件名: ${name}\n案件ID: ${id}${originalId!==id?`\n（元ID ${originalId} は使用中のため新IDへ変更）`:''}\n\n現在案件は上書きしません。追加しますか？`))return;candidate.workspace.id=id;candidate.workspace.name=name;candidate.workspace.updated_at=now();candidate.history.push({at:now(),message:`Development Project JSON imported as new project: ${id}`});localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(candidate));developmentProjectRegistry.push({id,name,status:developmentProjectStatusValue(candidate.workspace.status),created_at:candidate.workspace.updated_at,updated_at:candidate.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`新しい開発案件 ${id} / ${name} を追加しました。`)}catch(e){alert('開発案件JSON追加失敗: '+e.message)}
 }
 function devNextId(prefix,rows){const used=new Set((rows||[]).map(x=>x.id));let n=1,id;do{id=prefix+String(n++).padStart(4,'0')}while(used.has(id));return id}
-function setDevelopmentPane(name){developmentPane=name;['architecture','discussion','decision','specification','workflow','checks','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
+function setDevelopmentPane(name){developmentPane=name;['architecture','discussion','decision','specification','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
 function resetDevDiscussionEditor(){editingDevDiscussionId='';['devDiscussionId','devDiscussionTitle','devDiscussionSummary','devDiscussionBody','devDiscussionOpenQuestions','devDiscussionConclusion','devDiscussionRelated','devDiscussionArtifact'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devDiscussionStatus'))devDiscussionStatus.value='Open'}
 function startNewDevDiscussion(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorTitle').textContent='新規Discussion';document.getElementById('devDiscussionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDiscussionTitle?.focus(),0)}
 function closeDevDiscussionEditor(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorPanel')?.classList.add('hidden')}
@@ -3379,7 +3403,7 @@ function developmentOpenQuestions(w){return w.discussions.flatMap(d=>String(d.op
 function renderDevelopmentWorkspace(){
  const root=document.getElementById('view-development');if(!root)return;
  const w=loadDevelopmentWorkspace(),oq=developmentOpenQuestions(w),entry=activeDevelopmentProjectEntry(),snap=developmentProjectSnapshot(entry);
- renderDevelopmentProjectSelector();renderDevelopmentProjectCards();
+ renderDevelopmentProjectSelector();renderDevelopmentProjectCards();renderDevelopmentAllDataStatus();
  document.getElementById('developmentProjectListView')?.classList.toggle('hidden',developmentScreen!=='projects');
  document.getElementById('developmentProjectDetailView')?.classList.toggle('hidden',developmentScreen!=='project');
  if(developmentScreen!=='project')return;
@@ -3388,8 +3412,9 @@ function renderDevelopmentWorkspace(){
  if(currentFocus)currentFocus.textContent=`${entry?.id||w.workspace.id||''} / ${snap.focus}`;
  if(document.getElementById('developmentProjectBreadcrumb'))developmentProjectBreadcrumb.textContent=entry?.name||w.workspace.name||'';
  devKpiDiscussions.textContent=w.discussions.length;devKpiArchitecture.textContent=w.architecture_nodes.length;devKpiWorkBoxes.textContent=w.work_boxes.length;devKpiTasks.textContent=w.tasks.length;devKpiDecisions.textContent=w.decisions.length;devKpiSpecifications.textContent=w.specifications.length;devKpiChecks.textContent=(w.checks||[]).length;devKpiOpenQuestions.textContent=oq.length;
- developmentStoreStatus.innerHTML=`<b>更新:</b> ${esc(w.workspace.updated_at||'')} / <b>未完了Task:</b> ${snap.openTasks} / <b>確認待ち:</b> ${snap.openChecks} / <b>検討中Discussion:</b> ${snap.openDiscussions}<br><b>保存:</b> 案件別作業コピー。正本として残すときは案件設定からJSONを出力。`;
- ['architecture','discussion','decision','specification','workflow','checks','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
+ developmentStoreStatus.innerHTML=`<b>更新:</b> ${esc(w.workspace.updated_at||'')} / <b>未完了Task:</b> ${snap.openTasks} / <b>確認待ち:</b> ${snap.openChecks} / <b>検討中Discussion:</b> ${snap.openDiscussions}<br><b>保存:</b> 案件別作業コピー。正本として残すときは「データ」から案件JSONを出力。`;
+ const dataSummary=document.getElementById('developmentProjectDataSummary');if(dataSummary)dataSummary.innerHTML=`<b>${esc(w.workspace.name||entry?.name||'')}</b><br><b>ID:</b> ${esc(w.workspace.id||entry?.id||'')} / <b>状態:</b> ${esc(developmentProjectStatusLabel(w.workspace.status))} / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>内容:</b> Architecture ${w.architecture_nodes.length} / Work Box ${w.work_boxes.length} / Task ${w.tasks.length} / 確認 ${(w.checks||[]).length} / Discussion ${w.discussions.length} / Decision ${w.decisions.length} / Specification ${w.specifications.length}`;
+ ['architecture','discussion','decision','specification','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
  if(developmentPane==='architecture')window.GKSDevelopmentArchitectureExplorer?.render();
  if(developmentPane==='workflow'||developmentPane==='checks')window.GKSDevelopmentWorkflow?.render();
  if(developmentPane==='aipublish')window.GKSDevelopmentAIPublish?.render();
@@ -3600,7 +3625,34 @@ async function importDiscussionAiReturn(file){
  }
 }
 
-function exportDevelopmentWorkspace(){downloadText('development-project.json',JSON.stringify(loadDevelopmentWorkspace(),null,2),'application/json;charset=utf-8')}
+function developmentProjectCollectionPayload(){
+ ensureDevelopmentProjectRegistry();
+ const projects=(developmentProjectRegistry||[]).map(entry=>{const project=readDevelopmentProjectByEntry(entry),status=developmentProjectStatusValue(project?.workspace?.status||entry.status),name=String(project?.workspace?.name||entry.name||entry.id),updated=String(project?.workspace?.updated_at||entry.updated_at||'');return {registry:{id:entry.id,name,status,created_at:String(entry.created_at||updated||now()),updated_at:updated||String(entry.updated_at||'')},project};});
+ return {format:'gk-development-project-collection',version:'1.0',exported_at:now(),active_project_id:activeDevelopmentProjectId||'',project_count:projects.length,projects};
+}
+function renderDevelopmentAllDataStatus(){
+ const el=document.getElementById('developmentAllDataStatus');if(!el)return;
+ const rows=ensureDevelopmentProjectRegistry().map(developmentProjectSnapshot),active=activeDevelopmentProjectEntry(),finished=rows.filter(x=>x.status==='Completed').length,pending=rows.filter(x=>x.status==='Pending').length,inProgress=rows.length-finished-pending;
+ el.innerHTML=`<b>全案件:</b> ${rows.length}件 / <b>検討・作業中:</b> ${inProgress} / <b>保留:</b> ${pending} / <b>完了:</b> ${finished}<br><b>現在案件:</b> ${esc(active?.id||'')} / ${esc(active?.name||'')}`;
+}
+function exportAllDevelopmentProjects(){downloadText('development-projects.json',JSON.stringify(developmentProjectCollectionPayload(),null,2),'application/json;charset=utf-8')}
+async function importAllDevelopmentProjects(file){
+ if(!file)return;
+ try{
+  const obj=JSON.parse(await file.text());
+  if(obj?.format!=='gk-development-project-collection'||String(obj?.version||'')!=='1.0'||!Array.isArray(obj.projects))throw new Error('全案件JSONの形式ではありません。Studioの「全案件JSONを出力」で作成したファイルを選択してください。');
+  const seen=new Set(),rows=obj.projects.map((item,index)=>{if(!item?.project||typeof item.project!=='object'||Array.isArray(item.project))throw new Error(`${index+1}件目のProject本体がありません。`);const project=normalizeDevelopmentWorkspace(item.project),id=String(item?.registry?.id||project.workspace.id||'').trim();if(!id)throw new Error(`${index+1}件目の案件IDがありません。`);if(seen.has(id))throw new Error(`案件IDが重複しています: ${id}`);seen.add(id);const name=String(item?.registry?.name||project.workspace.name||id),status=developmentProjectStatusValue(item?.registry?.status||project.workspace.status);project.workspace.id=id;project.workspace.name=name;project.workspace.status=status;project.workspace.updated_at=String(project.workspace.updated_at||item?.registry?.updated_at||now());return {entry:{id,name,status,created_at:String(item?.registry?.created_at||project.workspace.updated_at||now()),updated_at:String(item?.registry?.updated_at||project.workspace.updated_at||now())},project}});
+  if(!rows.length)throw new Error('案件が0件です。');
+  const targetActive=seen.has(String(obj.active_project_id||''))?String(obj.active_project_id):rows[0].entry.id;
+  if(!confirm(`Development Project全案件を復元します。\n\n読込案件: ${rows.length}件\n現在案件: ${targetActive}\n\n現在の全案件はブラウザ内へバックアップしてから、案件一覧をこのファイルの内容へ置き換えます。Game Projectには影響しません。続行しますか？`))return;
+  const backupKey='gk_development_project_collection_backup_v1:'+Date.now();
+  localStorage.setItem(backupKey,JSON.stringify(developmentProjectCollectionPayload()));
+  rows.forEach(row=>localStorage.setItem(developmentProjectStoreKey(row.entry.id),JSON.stringify(row.project)));
+  developmentProjectRegistry=rows.map(row=>row.entry);activeDevelopmentProjectId=targetActive;saveDevelopmentProjectRegistry();developmentWorkspace=null;developmentWorkspace=readDevelopmentProjectByEntry(activeDevelopmentProjectEntry());developmentScreen='projects';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+  alert(`Development Project全案件を復元しました。\n案件: ${rows.length}件\n復元前バックアップ: ${backupKey}`);
+ }catch(e){alert('Development Project全案件の復元に失敗しました: '+e.message)}
+}
+function exportDevelopmentWorkspace(){const w=loadDevelopmentWorkspace(),id=String(w?.workspace?.id||activeDevelopmentProjectId||'project').replace(/[^A-Za-z0-9._-]+/g,'_');downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8')}
 async function importDevelopmentWorkspace(file){if(!file)return;try{const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),entry=activeDevelopmentProjectEntry(),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 確認 ${(candidate.checks||[]).length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;if(!entry)throw new Error('現在案件がありません。');if(!confirm(`開発管理JSONを現在案件へ読み込みます。\n現在: ${entry.id} / ${entry.name}\n${count}\n\nこの案件だけを置き換えますか？ 他案件には影響しません。`))return;const current=loadDevelopmentWorkspace();localStorage.setItem(developmentProjectStoreKey(entry.id)+'_backup_'+Date.now(),JSON.stringify(current));candidate.workspace.id=entry.id;candidate.workspace.name=String(candidate.workspace.name||entry.name);developmentWorkspace=candidate;saveDevelopmentWorkspace('Development Workspace JSON imported into current project');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert('現在案件へ開発管理JSONを読み込みました。')}catch(e){alert('開発管理JSON読込失敗: '+e.message)}}
 function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
 
@@ -9098,7 +9150,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','656');
+    url.searchParams.set('appv','657');
     location.replace(url.toString());
    }
  }
@@ -9107,7 +9159,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=656',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=657',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9126,7 +9178,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','656');
+    url.searchParams.set('appv','657');
     location.replace(url.toString());
    }
   });
@@ -9222,7 +9274,7 @@ setTimeout(loadDesignCards,0);
 </script>
 <script src="./development-architecture/architecture-explorer.js?v=2"></script>
 <script src="./development-workflow/development-workflow.js?v=1"></script>
-<script src="./development-ai-publish/development-ai-publish.js?v=1"></script>
+<script src="./development-ai-publish/development-ai-publish.js?v=2"></script>
 <script>
 window.GKSDevelopmentArchitectureExplorer.init({
   getWorkspace:()=>loadDevelopmentWorkspace(),

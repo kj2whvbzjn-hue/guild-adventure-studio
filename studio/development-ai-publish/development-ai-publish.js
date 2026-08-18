@@ -1,4 +1,4 @@
-/* GKS-B656 Development AI Publish
+/* GKS-B657 Development AI Publish
  * Development-only read interface for GitHub Pages.
  * Does not reuse Game Project GitHub sync data/model/handlers.
  */
@@ -107,6 +107,7 @@ function configFromForm(requireToken=true){
   base_path:cleanPath(el('daipBasePath')?.value||DEFAULT_BASE_PATH),scope:String(el('daipScope')?.value||'all')==='current'?'current':'all',token:String(el('daipToken')?.value||'').trim()
  };
  if(!c.owner||!c.repo||!c.base_path||(requireToken&&!c.token))throw new Error(requireToken?'Owner、Repository、公開Path、PATを入力してください。':'Owner、Repository、公開Pathを入力してください。');
+ if(!/^docs(?:\/|$)/i.test(c.base_path))throw new Error('AI公開PathはSource PackageとGame Exportを分離するため docs/ 配下を指定してください。');
  return c;
 }
 function getProjectWorkspaces(scope){
@@ -171,6 +172,9 @@ function preview(){
  try{const c=configFromForm(false);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));lastDataset=buildDataset(c);renderPreview(lastDataset);status(`公開内容を生成しました。\n案件 ${lastDataset.summaries.length} / 未確定 ${lastDataset.pending.length}\n${lastDataset.base||''}`,'OK');render()}catch(e){status('プレビュー失敗: '+e.message,'ERROR')}
 }
 function utf8ToBase64(text){const bytes=new TextEncoder().encode(text);let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary)}
+function base64ToUtf8(value){const binary=atob(String(value||'').replace(/\s+/g,'')),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new TextDecoder('utf-8').decode(bytes)}
+function jsonText(obj){return JSON.stringify(obj,null,2)+'\n'}
+async function sha256Text(text){const bytes=new TextEncoder().encode(text),digest=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(digest)).map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function github(c,url,options={}){
  const headers={'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.token,'X-GitHub-Api-Version':'2022-11-28',...(options.headers||{})};
  const res=await fetch(url,{...options,headers});const text=await res.text();let body=null;try{body=text?JSON.parse(text):null}catch(_){body={message:text}}
@@ -179,9 +183,22 @@ async function github(c,url,options={}){
 function apiRepo(c){return `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`}
 function apiContent(c,path){return apiRepo(c)+'/contents/'+cleanPath(path).split('/').map(encodeURIComponent).join('/')}
 async function getRemote(c,path){try{return await github(c,apiContent(c,path)+`?ref=${encodeURIComponent(c.branch)}`)}catch(e){if(e.status===404)return null;throw e}}
-async function putFile(c,path,obj,message){
- const remote=await getRemote(c,path),payload={message,content:utf8ToBase64(JSON.stringify(obj,null,2)+'\n'),branch:c.branch};if(remote?.sha)payload.sha=remote.sha;
+async function putText(c,path,text,message,knownRemote=null){
+ const remote=knownRemote||await getRemote(c,path),payload={message,content:utf8ToBase64(text),branch:c.branch};if(remote?.sha)payload.sha=remote.sha;
  return github(c,apiContent(c,path),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+}
+async function putFile(c,path,obj,message){return putText(c,path,jsonText(obj),message)}
+async function readRemotePackageManifest(c){
+ const remote=await getRemote(c,'package_manifest.json');if(!remote?.content)throw new Error('GitHub Sourceのpackage_manifest.jsonを読めません。AI共有はSource Package整合性を維持できないため停止しました。');
+ let manifest;try{manifest=JSON.parse(base64ToUtf8(remote.content))}catch(_){throw new Error('GitHub Sourceのpackage_manifest.jsonを解析できません。')}
+ if(!Array.isArray(manifest.files))throw new Error('GitHub Sourceのpackage_manifest.json: files がありません。');
+ return {remote,manifest};
+}
+async function syncSourcePackageManifest(c,published,message){
+ const state=await readRemotePackageManifest(c),manifest=state.manifest,byPath=new Map((manifest.files||[]).map(row=>[String(row.path||''),row]));
+ for(const row of published){const text=jsonText(row.data),bytes=new TextEncoder().encode(text);byPath.set(row.path,{path:row.path,size:bytes.length,sha256:await sha256Text(text)})}
+ manifest.files=Array.from(byPath.values()).filter(row=>row.path).sort((a,b)=>String(a.path).localeCompare(String(b.path)));manifest.file_count=manifest.files.length;manifest.generated_at=iso();
+ await putText(c,'package_manifest.json',jsonText(manifest),message+' / package_manifest sync',state.remote);
 }
 async function testConnection(){
  if(busy)return;try{setBusy(true);const c=configFromForm(true);status('Development AI公開用の接続を確認中…');await github(c,apiRepo(c));localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));status(`接続できました: ${c.owner}/${c.repo} (${c.branch})`,'OK');render()}catch(e){status('接続失敗: '+e.message,'ERROR')}finally{setBusy(false)}
@@ -194,16 +211,19 @@ async function publish(){
   const warning=`Development Projectの内容を公開GitHub Pagesから読めるJSONとして配置します。\n\n公開先: ${dataset.base}\n案件: ${dataset.summaries.length}\n未確定: ${dataset.pending.length}\n\nDiscussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
   if(!confirm(warning))return;
   setBusy(true);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));
-  const root=cleanPath(c.base_path),messageBase=`Publish Development AI read data ${dataset.generated_at}`;
-  let done=0,total=dataset.details.length+3;
-  for(const row of dataset.details){status(`GitHubへ公開中 ${++done}/${total}\n${root}/${row.path}`);await putFile(c,`${root}/${row.path}`,row.data,messageBase)}
-  status(`GitHubへ公開中 ${++done}/${total}\n${root}/projects.json`);await putFile(c,`${root}/projects.json`,dataset.projectsDoc,messageBase);
-  status(`GitHubへ公開中 ${++done}/${total}\n${root}/pending.json`);await putFile(c,`${root}/pending.json`,dataset.pendingDoc,messageBase);
-  // Manifest is committed last. Readers can treat it as the completed generation marker.
-  status(`GitHubへ公開中 ${++done}/${total}\n${root}/manifest.json`);await putFile(c,`${root}/manifest.json`,dataset.manifest,messageBase);
+  await readRemotePackageManifest(c);
+  const root=cleanPath(c.base_path),messageBase=`Publish Development AI read data ${dataset.generated_at}`,published=[];
+  let done=0,total=dataset.details.length+4;
+  for(const row of dataset.details){const path=`${root}/${row.path}`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,row.data,messageBase);published.push({path,data:row.data})}
+  let path=`${root}/projects.json`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,dataset.projectsDoc,messageBase);published.push({path,data:dataset.projectsDoc});
+  path=`${root}/pending.json`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,dataset.pendingDoc,messageBase);published.push({path,data:dataset.pendingDoc});
+  // AI manifest is committed after all read documents.
+  path=`${root}/manifest.json`;status(`GitHubへ公開中 ${++done}/${total}\n${path}`);await putFile(c,path,dataset.manifest,messageBase);published.push({path,data:dataset.manifest});
+  // Public read JSON lives in the source branch, so synchronize package_manifest last.
+  status(`GitHubへ公開中 ${++done}/${total}\npackage_manifest.json 整合性同期`);await syncSourcePackageManifest(c,published,messageBase);
   const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:dataset.base+'pending.json'};
   localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));lastDataset=dataset;
-  status(`公開完了。\n未確定案件入口: ${last.pending_url}\n\nChatGPTへこのURLを渡して「未確定案件を見て」と依頼できます。`,'OK');render();
+  status(`公開完了。Source package_manifestも同期しました。\n未確定案件入口: ${last.pending_url}\n\nChatGPTへこのURLを渡して「未確定案件を見て」と依頼できます。`,'OK');render();
  }catch(e){status('公開失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
 async function exportZip(){
