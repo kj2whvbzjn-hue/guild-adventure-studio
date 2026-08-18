@@ -9,8 +9,8 @@ assert(policy.classes.game_data.patterns.includes('Export/**'),'system policy mu
 assert(policy.rules.source_allowed_classes.includes('game_data'),'full source must be allowed to carry bundled Export for local/runtime validation');
 assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct update packages must not carry game_data');
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
-assert.strictEqual(build.game_build,'GA-B486.208');
-assert.strictEqual(build.studio_build,'GKS-B637');
+assert.strictEqual(build.game_build,'GA-B486.209');
+assert.strictEqual(build.studio_build,'GKS-B638');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",
@@ -58,4 +58,4 @@ assert(registryRunner.includes('if context not in contexts:'),'test registry che
 const inspectionRunner=fs.readFileSync('tools/inspection/run.py','utf8');
 assert(inspectionRunner.includes('"--context", context'),'inspection runner must pass context to active test gate');
 
-console.log('PASS GKS-B637 Studio SOURCE_UPDATE gate hard-excludes root Export/, verifies exact baseline, and rejects non-forward/same-Build artifact reuse');
+console.log('PASS GKS-B638 Studio SOURCE_UPDATE gate hard-excludes root Export/, verifies exact baseline, and rejects non-forward/same-Build artifact reuse');
