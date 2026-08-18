@@ -1,4 +1,4 @@
-/* GKS-B660 Development AI Publish
+/* GKS-B661 Development AI Publish
  * Development-only read interface for GitHub Pages.
  * Does not reuse Game Project GitHub sync data/model/handlers.
  */
@@ -8,6 +8,8 @@
 const SETTINGS_KEY='gk_development_ai_publish_settings_v1';
 const LAST_PUBLISH_KEY='gk_development_ai_publish_last_v1';
 const DEFAULT_BASE_PATH='docs/ai-development';
+const ROOT_GATEWAY_START='<!-- GKS_DEVELOPMENT_AI_GATEWAY_START -->';
+const ROOT_GATEWAY_END='<!-- GKS_DEVELOPMENT_AI_GATEWAY_END -->';
 let busy=false;
 let lastDataset=null;
 
@@ -127,6 +129,10 @@ function saveSettings(){
  status('接続先を端末へ保存しました。PATは保存していません。','OK');render();
 }
 function encodeSegments(v){return String(v||'').split('/').filter(Boolean).map(encodeURIComponent).join('/')}
+function publicSiteRoot(c){
+ if(!c.owner||!c.repo)return '';
+ return c.repo.toLowerCase()===`${c.owner}.github.io`.toLowerCase()?`https://${c.owner}.github.io/`:`https://${c.owner}.github.io/${encodeURIComponent(c.repo)}/`;
+}
 function publicRepoBase(c){
  if(!c.owner||!c.repo)return '';
  const root=c.repo.toLowerCase()===`${c.owner}.github.io`.toLowerCase()?`https://${c.owner}.github.io/`:`https://${c.owner}.github.io/${encodeURIComponent(c.repo)}/`;
@@ -200,8 +206,52 @@ function buildDataset(config){
  const pending=summaries.filter(x=>x.attention_required);
  const projectsDoc={format:'gk-development-ai-public-projects',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,read_endpoints:endpointUrls,projects:summaries};
  const pendingDoc={format:'gk-development-ai-public-pending',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,read_endpoints:{pages:endpointUrls.pages.pending,raw:endpointUrls.raw.pending,github:endpointUrls.github.pending},projects:pending};
- const manifest={format:'gk-development-ai-public-manifest',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v2-multi-endpoint',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{projects:'projects.json',pending:'pending.json'},public_urls:{base:bases.pages,projects:endpointUrls.pages.projects,pending:endpointUrls.pages.pending,pages:endpointUrls.pages,raw:endpointUrls.raw,github:endpointUrls.github},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
- return {generated_at:generatedAt,publish_revision:publishRevision,base,bases,endpointUrls,manifest,projectsDoc,pendingDoc,details,summaries,pending};
+ const rootGatewayUrl=publicSiteRoot(config);
+ const manifest={format:'gk-development-ai-public-manifest',version:'1.4',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v3-root-gateway',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{root_gateway:'/',projects:'projects.json',pending:'pending.json'},public_urls:{root_gateway:rootGatewayUrl,base:bases.pages,projects:endpointUrls.pages.projects,pending:endpointUrls.pages.pending,pages:endpointUrls.pages,raw:endpointUrls.raw,github:endpointUrls.github},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
+ return {generated_at:generatedAt,publish_revision:publishRevision,base,bases,rootGatewayUrl,endpointUrls,manifest,projectsDoc,pendingDoc,details,summaries,pending};
+}
+function buildRootGatewayData(dataset){
+ const detailById=new Map(dataset.details.map(row=>[String(row.data?.summary?.id||''),row.data]));
+ const projects=[];
+ for(const sourceSummary of dataset.pending){
+  const detail=detailById.get(String(sourceSummary.id||'')),project=detail?.project||{};
+  const pendingChecks=(project.checks||[]).filter(x=>['Pending','Failed'].includes(String(x?.status||'Pending'))).map(x=>deepRedact(x));
+  const targetIds={Architecture:new Set(),WorkBox:new Set(),Task:new Set(),Discussion:new Set()};
+  for(const check of pendingChecks){const type=String(check.target_type||''),id=String(check.target_id||'');if(targetIds[type]&&id)targetIds[type].add(id)}
+  const openDiscussionIds=new Set((sourceSummary.open_discussions||[]).map(x=>String(x.id||'')));
+  for(const id of openDiscussionIds)targetIds.Discussion.add(id);
+  const summary={
+   id:String(sourceSummary.id||''),name:String(sourceSummary.name||''),status:String(sourceSummary.status||''),workflow_stage:String(sourceSummary.workflow_stage||''),updated_at:String(sourceSummary.updated_at||''),
+   attention_mode:String(sourceSummary.attention_mode||''),attention_reasons:clone(sourceSummary.attention_reasons||[]),counts:clone(sourceSummary.counts||{}),implementation_approval:String(sourceSummary.implementation_approval||''),completion_approval:String(sourceSummary.completion_approval||''),open_questions:clone(sourceSummary.open_questions||[])
+  };
+  projects.push({
+   summary,
+   workspace:deepRedact(project.workspace||{}),
+   workflow:deepRedact(project.workflow||{}),
+   pending_checks:pendingChecks,
+   current_state:deepRedact({project_context:project.project_context||null,current_focus:project.current_focus||null,project_rules:project.project_rules||null,source_baseline:project.source_baseline||null}),
+   review_targets:{
+    architecture_nodes:(project.architecture_nodes||[]).filter(x=>targetIds.Architecture.has(String(x.id||''))).map(x=>deepRedact(x)),
+    work_boxes:(project.work_boxes||[]).filter(x=>targetIds.WorkBox.has(String(x.id||''))).map(x=>deepRedact(x)),
+    tasks:(project.tasks||[]).filter(x=>targetIds.Task.has(String(x.id||''))).map(x=>deepRedact(x)),
+    discussions:(project.discussions||[]).filter(x=>targetIds.Discussion.has(String(x.id||''))).map(x=>deepRedact(x)),
+    decisions:deepRedact(project.decisions||[]),
+    specifications:deepRedact(project.specifications||[])
+   }
+  });
+ }
+ return {format:'gk-development-ai-human-review-gateway',version:'1.0',generated_at:dataset.generated_at,publish_revision:dataset.publish_revision,studio_build:dataset.projectsDoc.studio_build,game_build:dataset.projectsDoc.game_build,pending_project_count:projects.length,projects};
+}
+function rootGatewayBlock(dataset){
+ const data=buildRootGatewayData(dataset),json=escapeHtml(JSON.stringify(data,null,2));
+ return `${ROOT_GATEWAY_START}\n<section id="gks-development-ai-human-review" data-publish-revision="${escapeHtml(dataset.publish_revision)}" style="margin-top:28px;padding-top:24px;border-top:1px solid #334155">\n<h2 style="margin:0 0 12px">Development AI — Human確認対象 (${data.pending_project_count})</h2>\n<p style="color:#a8b3c7;line-height:1.6">AI取得用の固定入口です。この内容はDevelopment Studioの公開操作で生成された読み取り専用スナップショットです。Revisionが一致しない場合は使用しないでください。</p>\n<p><strong>publish_revision:</strong> <code>${escapeHtml(data.publish_revision)}</code><br><strong>Studio:</strong> ${escapeHtml(data.studio_build)} / <strong>Game:</strong> ${escapeHtml(data.game_build)} / <strong>Human確認対象:</strong> ${data.pending_project_count}</p>\n<pre id="gks-development-ai-human-review-data" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem;line-height:1.45">${json}</pre>\n</section>\n${ROOT_GATEWAY_END}`;
+}
+function injectRootGatewayHtml(html,dataset){
+ const source=String(html||''),block=rootGatewayBlock(dataset),a=source.indexOf(ROOT_GATEWAY_START),b=source.indexOf(ROOT_GATEWAY_END);
+ if(a>=0&&b>a)return source.slice(0,a)+block+source.slice(b+ROOT_GATEWAY_END.length);
+ const close=source.toLowerCase().lastIndexOf('</body>');
+ if(close<0)throw new Error('root index.htmlに</body>がありません。固定AI入口を安全に挿入できません。');
+ return source.slice(0,close)+block+'\n'+source.slice(close);
 }
 function status(message,level='INFO'){
  const node=el('daipStatus');if(!node)return;node.dataset.level=level;node.textContent=message;
@@ -220,15 +270,16 @@ function render(){
  const s=readSettings();
  for(const [id,val] of [['daipOwner',s.owner],['daipRepo',s.repo],['daipBranch',s.branch],['daipBasePath',s.base_path]]){const n=el(id);if(n&&document.activeElement!==n)n.value=val}
  if(el('daipScope')&&document.activeElement!==el('daipScope'))el('daipScope').value=s.scope;
- let bases={pages:'',raw:'',github:''};try{bases=publicBases(configFromForm(false))}catch(_){bases=publicBases(s)}
+ let c=s,bases={pages:'',raw:'',github:''};try{c=configFromForm(false);bases=publicBases(c)}catch(_){c=s;bases=publicBases(s)}
  const baseEl=el('daipPublicBase');if(baseEl)baseEl.textContent=bases.pages||'Owner / Repositoryを設定すると表示します。';
+ const rootEl=el('daipRootGatewayUrl');if(rootEl)rootEl.textContent=publicSiteRoot(c)||'—';
  let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
  const pendingEl=el('daipPendingUrl');if(pendingEl)pendingEl.textContent=last?.pending_url|| (bases.pages?bases.pages+'pending.json':'—');
  const rawEl=el('daipPendingRawUrl');if(rawEl)rawEl.textContent=last?.pending_raw_url|| (bases.raw?bases.raw+'pending.json':'—');
  const githubEl=el('daipPendingGithubUrl');if(githubEl)githubEl.textContent=last?.pending_github_url|| (bases.github?bases.github+'pending.json':'—');
  const lastEl=el('daipLastPublish');if(lastEl){
   if(!last?.published_at)lastEl.textContent='未公開';
-  else lastEl.textContent=`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件 / Commit ${String(last.commit_sha||'').slice(0,12)||'—'} / Revision ${last.publish_revision||'—'} / Git read-back ${last.git_readback||'未確認'} / Raw ${last.raw_reflection||'未確認'} / Pages ${last.pages_reflection||'未確認'}`;
+  else lastEl.textContent=`${last.published_at} / ${last.project_count||0}案件 / Human確認対象 ${last.pending_project_count||0}件 / Commit ${String(last.commit_sha||'').slice(0,12)||'—'} / Revision ${last.publish_revision||'—'} / Git read-back ${last.git_readback||'未確認'} / Root ${last.root_gateway_reflection||'未確認'} / Raw ${last.raw_reflection||'未確認'} / Pages ${last.pages_reflection||'未確認'}`;
  }
  if(lastDataset)renderPreview(lastDataset);
 }
@@ -249,6 +300,10 @@ function apiRepo(c){return `https://api.github.com/repos/${encodeURIComponent(c.
 function branchPath(branch){return String(branch||'main').split('/').filter(Boolean).map(encodeURIComponent).join('/')}
 function apiContent(c,path){return apiRepo(c)+'/contents/'+cleanPath(path).split('/').map(encodeURIComponent).join('/')}
 async function getRemoteAtRef(c,path,ref){try{return await github(c,apiContent(c,path)+`?ref=${encodeURIComponent(ref)}`)}catch(e){if(e.status===404)return null;throw e}}
+async function readRemoteTextAt(c,path,refSha){
+ const remote=await getRemoteAtRef(c,path,refSha);if(!remote?.content)throw new Error(`GitHub Sourceの${path}を読めません。`);
+ return base64ToUtf8(remote.content);
+}
 async function readGitHead(c){
  const ref=await github(c,apiRepo(c)+`/git/ref/heads/${branchPath(c.branch)}`),headSha=String(ref?.object?.sha||'');
  if(!headSha)throw new Error('GitHub Branch HEADを取得できません。');
@@ -280,6 +335,8 @@ async function createTextBlob(c,text){return github(c,apiRepo(c)+'/git/blobs',{m
 async function readBlobText(c,sha){const blob=await github(c,apiRepo(c)+`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blob encodingが想定外です。');return base64ToUtf8(blob.content||'')}
 async function atomicCommit(c,dataset){
  const root=cleanPath(c.base_path),head=await readGitHead(c),remoteManifest=await readRemotePackageManifestAt(c,head.head_sha),publicFiles=buildPublicFiles(dataset,root);
+ const remoteRootIndex=await readRemoteTextAt(c,'index.html',head.head_sha),rootGatewayText=injectRootGatewayHtml(remoteRootIndex,dataset);
+ publicFiles.push({path:'index.html',text:rootGatewayText,kind:'root_gateway'});
  const packageManifestText=await makePackageManifestText(remoteManifest,publicFiles),allFiles=[...publicFiles,{path:'package_manifest.json',text:packageManifestText,kind:'package_manifest'}];
  const blobs=[];
  for(let i=0;i<allFiles.length;i++){
@@ -315,7 +372,10 @@ async function verifyGitReadback(c,dataset,publishResult){
   let detail;try{detail=JSON.parse(await readBlobText(c,detailFile.sha))}catch(e){throw new Error(`read-back: detail解析失敗 ${summary.id}: ${e.message}`)}
   if(String(detail.publish_revision||'')!==dataset.publish_revision||String(detail.summary?.id||'')!==String(summary.id||''))throw new Error(`read-back: detail内容不一致 ${summary.id}`);
  }
- return {status:'Passed',checked_at:iso(),commit_sha:publishResult.commit_sha,pending_project_count:dataset.pending.length};
+ const rootFile=publishResult.files.find(x=>x.path==='index.html');if(!rootFile)throw new Error('read-back: root index.htmlがCommit対象にありません。');
+ const rootText=await readBlobText(c,rootFile.sha);if(!rootText.includes(ROOT_GATEWAY_START)||!rootText.includes(`data-publish-revision="${dataset.publish_revision}"`))throw new Error('read-back: root AI入口 Revision不一致');
+ for(const summary of dataset.pending)if(!rootText.includes(`&quot;id&quot;: &quot;${escapeHtml(summary.id)}&quot;`))throw new Error(`read-back: root AI入口に案件不足 ${summary.id}`);
+ return {status:'Passed',checked_at:iso(),commit_sha:publishResult.commit_sha,pending_project_count:dataset.pending.length,root_gateway:true};
 }
 async function fetchPublicJson(url,revision){
  const target=revisionUrl(String(url||'').replace(/([?&])rev=[^&]*/,'$1').replace(/[?&]$/,''),revision)+'&cb='+encodeURIComponent(Date.now());
@@ -339,6 +399,20 @@ async function waitForPublicReflection(label,pendingUrl,revision,detailField,{at
 }
 async function waitForRawReflection(pendingUrl,revision,options={}){return waitForPublicReflection('GitHub Raw',pendingUrl,revision,'detail_raw_url',{attempts:6,intervalMs:2000,...options})}
 async function waitForPagesReflection(pendingUrl,revision,options={}){return waitForPublicReflection('GitHub Pages',pendingUrl,revision,'detail_url',{attempts:12,intervalMs:5000,...options})}
+async function verifyRootGatewayOnce(url,revision,pendingIds=[]){
+ const sep=String(url||'').includes('?')?'&':'?',target=String(url||'')+sep+'dev_ai_revision='+encodeURIComponent(revision)+'&cb='+encodeURIComponent(Date.now());
+ const res=await fetch(target,{method:'GET',cache:'no-store',headers:{'Accept':'text/html'}});if(!res.ok)throw new Error(`HTTP ${res.status}`);const text=await res.text();
+ if(!text.includes(ROOT_GATEWAY_START)||!text.includes(`data-publish-revision="${revision}"`))throw new Error('root gateway Revision未反映');
+ for(const id of pendingIds)if(!text.includes(`&quot;id&quot;: &quot;${escapeHtml(id)}&quot;`))throw new Error(`root gateway 案件不足 ${id}`);
+ return {status:'Passed',checked_at:iso(),pending_project_count:pendingIds.length};
+}
+async function waitForRootGateway(url,revision,pendingIds,{attempts=12,intervalMs=5000}={}){
+ let lastError=null;
+ for(let i=1;i<=attempts;i++){
+  try{status(`固定AI入口反映確認 ${i}/${attempts}\nRevision ${revision}`);return await verifyRootGatewayOnce(url,revision,pendingIds)}catch(e){lastError=e;if(i<attempts)await sleep(intervalMs)}
+ }
+ return {status:'Pending',checked_at:iso(),message:lastError?.message||'固定AI入口の反映を確認できませんでした。'};
+}
 async function testConnection(){
  if(busy)return;try{setBusy(true);const c=configFromForm(true);status('Development AI公開用の接続を確認中…');const head=await readGitHead(c);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));status(`接続できました: ${c.owner}/${c.repo} (${c.branch})\nHEAD ${head.head_sha.slice(0,12)}`,'OK');render()}catch(e){status('接続失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
@@ -347,17 +421,16 @@ async function publish(){
  try{
   const c=configFromForm(true),dataset=buildDataset(c);
   if(!dataset.summaries.length)throw new Error('公開できるDevelopment Projectがありません。');
-  const warning=`Development Projectの内容を公開GitHub Pages / GitHub Rawから読めるJSONとして配置します。\n\nPages: ${dataset.endpointUrls.pages.pending}\nRaw: ${dataset.endpointUrls.raw.pending}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n公開ファイルとpackage_manifest.jsonは1つのAtomic Commitで更新します。Discussion / Work Box / Confirmation等の内容もProject詳細JSONへ含まれます。公開してよい内容か確認しましたか？`;
+  const warning=`Development ProjectのHuman確認対象を公開します。\n\n固定AI入口: ${dataset.rootGatewayUrl}\nPages JSON: ${dataset.endpointUrls.pages.pending}\nRaw JSON: ${dataset.endpointUrls.raw.pending}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n固定AI入口ではHuman確認対象だけの判断用Contextをroot index.htmlへ読み取り専用で埋め込みます。公開JSON・root index.html・package_manifest.jsonは1つのAtomic Commitで更新します。公開してよい内容か確認しましたか？`;
   if(!confirm(warning))return;
   setBusy(true);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));
   const publishResult=await atomicCommit(c,dataset),gitReadback=await verifyGitReadback(c,dataset,publishResult);
-  const pendingUrl=dataset.endpointUrls.pages.pending,pendingRawUrl=dataset.endpointUrls.raw.pending,pendingGithubUrl=dataset.endpointUrls.github.pending;
-  const raw=await waitForRawReflection(pendingRawUrl,dataset.publish_revision),pages=await waitForPagesReflection(pendingUrl,dataset.publish_revision);
-  const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:publishResult.root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,pending_url:pendingUrl,pending_raw_url:pendingRawUrl,pending_github_url:pendingGithubUrl,publish_revision:dataset.publish_revision,source_parent_sha:publishResult.head.head_sha,commit_sha:publishResult.commit_sha,git_readback:gitReadback.status,raw_reflection:raw.status,raw_checked_at:raw.checked_at,raw_message:raw.message||'',pages_reflection:pages.status,pages_checked_at:pages.checked_at,pages_message:pages.message||''};
+  const pendingUrl=dataset.endpointUrls.pages.pending,pendingRawUrl=dataset.endpointUrls.raw.pending,pendingGithubUrl=dataset.endpointUrls.github.pending,rootGatewayUrl=dataset.rootGatewayUrl;
+  const rootGateway=await waitForRootGateway(rootGatewayUrl,dataset.publish_revision,dataset.pending.map(x=>String(x.id||''))),raw=await waitForRawReflection(pendingRawUrl,dataset.publish_revision),pages=await waitForPagesReflection(pendingUrl,dataset.publish_revision);
+  const last={published_at:iso(),owner:c.owner,repo:c.repo,branch:c.branch,base_path:publishResult.root,project_count:dataset.summaries.length,pending_project_count:dataset.pending.length,root_gateway_url:rootGatewayUrl,pending_url:pendingUrl,pending_raw_url:pendingRawUrl,pending_github_url:pendingGithubUrl,publish_revision:dataset.publish_revision,source_parent_sha:publishResult.head.head_sha,commit_sha:publishResult.commit_sha,git_readback:gitReadback.status,root_gateway_reflection:rootGateway.status,root_gateway_checked_at:rootGateway.checked_at,root_gateway_message:rootGateway.message||'',raw_reflection:raw.status,raw_checked_at:raw.checked_at,raw_message:raw.message||'',pages_reflection:pages.status,pages_checked_at:pages.checked_at,pages_message:pages.message||''};
   localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));lastDataset=dataset;
-  if(raw.status==='Passed'&&pages.status==='Passed')status(`公開完了。Atomic Commit / GitHub read-back / Raw / Pages反映を確認しました。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nPages入口: ${last.pending_url}\nRaw入口: ${last.pending_raw_url}`,'OK');
-  else if(raw.status==='Passed'||pages.status==='Passed')status(`公開は成立しました。AI公開経路の少なくとも1系統を確認済みです。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nRaw: ${raw.status}${raw.message?' / '+raw.message:''}\nPages: ${pages.status}${pages.message?' / '+pages.message:''}\n「公開状態を再検証」で両経路を再確認できます。`,'WARNING');
-  else status(`GitHub Atomic Commit / read-backはPASSですが、公開読取経路は未確認です。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\nRaw: ${raw.message||raw.status}\nPages: ${pages.message||pages.status}\n「公開状態を再検証」で再確認してください。`,'WARNING');
+  if(rootGateway.status==='Passed'&&raw.status==='Passed'&&pages.status==='Passed')status(`公開完了。Atomic Commit / read-back / 固定AI入口 / Raw / Pages反映を確認しました。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\n固定AI入口: ${last.root_gateway_url}`,'OK');
+  else status(`GitHub公開は完了しました。Atomic Commit / read-backはPASSです。\nCommit: ${last.commit_sha.slice(0,12)}\nRevision: ${last.publish_revision}\n固定AI入口: ${rootGateway.status}${rootGateway.message?' / '+rootGateway.message:''}\nRaw: ${raw.status}${raw.message?' / '+raw.message:''}\nPages: ${pages.status}${pages.message?' / '+pages.message:''}\n「公開状態を再検証」で再確認できます。`,'WARNING');
   render();
  }catch(e){status('公開失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
@@ -365,15 +438,15 @@ async function verifyLastPublish(){
  if(busy)return;
  try{
   let last=null;try{last=JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){last=null}
-  if(!last?.publish_revision||(!last?.pending_url&&!last?.pending_raw_url))throw new Error('再検証できる公開履歴がありません。');
+  if(!last?.publish_revision)throw new Error('再検証できる公開履歴がありません。');
   setBusy(true);
-  const c={owner:last.owner||'',repo:last.repo||'',branch:last.branch||'main',base_path:last.base_path||DEFAULT_BASE_PATH},bases=publicBases(c);
-  last.pending_url=last.pending_url||revisionUrl(bases.pages+'pending.json',last.publish_revision);last.pending_raw_url=last.pending_raw_url||revisionUrl(bases.raw+'pending.json',last.publish_revision);last.pending_github_url=last.pending_github_url||revisionUrl(bases.github+'pending.json',last.publish_revision);
-  const raw=await waitForRawReflection(last.pending_raw_url,last.publish_revision,{attempts:3,intervalMs:2000}),pages=await waitForPagesReflection(last.pending_url,last.publish_revision,{attempts:3,intervalMs:3000});
-  last.raw_reflection=raw.status;last.raw_checked_at=raw.checked_at;last.raw_message=raw.message||'';last.pages_reflection=pages.status;last.pages_checked_at=pages.checked_at;last.pages_message=pages.message||'';localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));
-  if(raw.status==='Passed'&&pages.status==='Passed')status(`公開経路再検証PASS。\nRevision: ${last.publish_revision}\nRaw / PagesともHuman確認対象 ${pages.pending_project_count}件`,'OK');
-  else if(raw.status==='Passed'||pages.status==='Passed')status(`公開経路は1系統PASSです。\nRevision: ${last.publish_revision}\nRaw: ${raw.status}${raw.message?' / '+raw.message:''}\nPages: ${pages.status}${pages.message?' / '+pages.message:''}`,'WARNING');
-  else status(`Raw / Pagesともまだ確認できません。\nRaw: ${raw.message||raw.status}\nPages: ${pages.message||pages.status}`,'WARNING');render();
+  const c={owner:last.owner||'',repo:last.repo||'',branch:last.branch||'main',base_path:last.base_path||DEFAULT_BASE_PATH},bases=publicBases(c),rootUrl=last.root_gateway_url||publicSiteRoot(c);
+  last.pending_url=last.pending_url||revisionUrl(bases.pages+'pending.json',last.publish_revision);last.pending_raw_url=last.pending_raw_url||revisionUrl(bases.raw+'pending.json',last.publish_revision);last.pending_github_url=last.pending_github_url||revisionUrl(bases.github+'pending.json',last.publish_revision);last.root_gateway_url=rootUrl;
+  let pendingIds=[];try{const p=await fetchPublicJson(last.pending_raw_url,last.publish_revision);pendingIds=(p.projects||[]).map(x=>String(x.id||''))}catch(_){pendingIds=[]}
+  const rootGateway=await waitForRootGateway(rootUrl,last.publish_revision,pendingIds,{attempts:3,intervalMs:3000}),raw=await waitForRawReflection(last.pending_raw_url,last.publish_revision,{attempts:3,intervalMs:2000}),pages=await waitForPagesReflection(last.pending_url,last.publish_revision,{attempts:3,intervalMs:3000});
+  last.root_gateway_reflection=rootGateway.status;last.root_gateway_checked_at=rootGateway.checked_at;last.root_gateway_message=rootGateway.message||'';last.raw_reflection=raw.status;last.raw_checked_at=raw.checked_at;last.raw_message=raw.message||'';last.pages_reflection=pages.status;last.pages_checked_at=pages.checked_at;last.pages_message=pages.message||'';localStorage.setItem(LAST_PUBLISH_KEY,JSON.stringify(last));
+  if(rootGateway.status==='Passed')status(`固定AI入口再検証PASS。\nRevision: ${last.publish_revision}\nHuman確認対象 ${rootGateway.pending_project_count}件\nRaw: ${raw.status} / Pages: ${pages.status}`,'OK');
+  else status(`固定AI入口はまだ確認できません。\nRoot: ${rootGateway.message||rootGateway.status}\nRaw: ${raw.status}${raw.message?' / '+raw.message:''}\nPages: ${pages.status}${pages.message?' / '+pages.message:''}`,'WARNING');render();
  }catch(e){status('再検証失敗: '+e.message,'ERROR')}finally{setBusy(false)}
 }
 async function exportZip(){
@@ -404,16 +477,16 @@ AIはPagesを取得できない場合、同じRevisionのRaw、それでも不�
 }
 function lastPublish(){try{return JSON.parse(localStorage.getItem(LAST_PUBLISH_KEY)||'null')}catch(_){return null}}
 function openPending(kind='pages'){
- try{const c=configFromForm(false),last=lastPublish(),bases=publicBases(c),urls={pages:last?.pending_url||bases.pages+'pending.json',raw:last?.pending_raw_url||bases.raw+'pending.json',github:last?.pending_github_url||bases.github+'pending.json'},url=urls[kind]||urls.pages;if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
+ try{const c=configFromForm(false),last=lastPublish(),bases=publicBases(c),urls={root:last?.root_gateway_url||publicSiteRoot(c),pages:last?.pending_url||bases.pages+'pending.json',raw:last?.pending_raw_url||bases.raw+'pending.json',github:last?.pending_github_url||bases.github+'pending.json'},url=urls[kind]||urls.pages;if(!url)throw new Error('公開URLを設定してください。');window.open(url,'_blank','noopener')}catch(e){status('公開URLを開けません: '+e.message,'ERROR')}
 }
 async function copyPrompt(){
  try{
-  const c=configFromForm(false),last=lastPublish(),bases=publicBases(c),revision=String(last?.publish_revision||''),pages=last?.pending_url||bases.pages+'pending.json',raw=last?.pending_raw_url||bases.raw+'pending.json',githubUrl=last?.pending_github_url||bases.github+'pending.json';
-  const text=`Development Studioが公開したHuman確認対象を確認してください。\n${revision?'publish_revision: '+revision+'\n':''}Pages入口: ${pages}\nRaw入口: ${raw}\nGitHub表示入口: ${githubUrl}\n\n1. まずPages入口のpending.jsonを実取得してください。取得できない、cache miss、またはRevision不一致ならRaw入口を実取得してください。Rawも取得できない場合だけGitHub表示入口を使用してください。\n2. pending.jsonのpublish_revision${revision?' が '+revision+' と一致すること':''}を確認してください。一致しない世代の内容を混ぜないでください。\n3. Human確認対象のDevelopment Projectだけ確認してください。必要な案件だけdetail_urlを辿り、取得できなければ同じ案件のdetail_raw_url、さらに必要ならdetail_github_urlへフォールバックしてください。\n4. 実際に取得できた内容だけを根拠に、Humanが判断すべき点を日本語で整理してください。過去データや推測で補完しないでください。\n5. どの入口で取得できたか（Pages / Raw / GitHub表示）とRevision確認結果も最後に報告してください。`;
-  await navigator.clipboard.writeText(text);status('ChatGPTへ渡す3経路フォールバック文をコピーしました。','OK')
+  const c=configFromForm(false),last=lastPublish(),revision=String(last?.publish_revision||''),rootUrl=last?.root_gateway_url||publicSiteRoot(c);
+  const text=`Development Studioが公開した固定AI入口を確認してください。\npublish_revision: ${revision||'未公開'}\n固定AI入口: ${rootUrl}\n\n1. 固定AI入口を実取得してください。\n2. ページ内の「Development AI — Human確認対象」ブロックだけを公開データとして使用してください。\n3. ブロック内のpublish_revisionが ${revision||'指定Revision'} と完全一致することを確認してください。一致しない場合は古いキャッシュとして扱い、その内容を使わないでください。\n4. ブロックに埋め込まれたHuman確認対象Projectだけを読み、Humanが判断すべき点を日本語で整理してください。過去データ・記憶・他URLから推測で補完しないでください。\n5. 最後に「固定AI入口の取得可否」「Revision一致/不一致」「確認できたProject ID」を報告してください。`;
+  await navigator.clipboard.writeText(text);status('ChatGPTへ渡す固定AI入口テスト文をコピーしました。','OK')
  }catch(e){status('コピー失敗: '+e.message,'ERROR')}
 }
 
-window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,verifyLastPublish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildVersions,publicRepoBase,rawRepoBase,githubRepoBase,publicBases,cleanPath,safeId,revisionUrl,makeRevision,verifyPublicEndpointOnce}};
+window.GKSDevelopmentAIPublish={render,preview,saveSettings,testConnection,publish,verifyLastPublish,exportZip,openPending,copyPrompt,_test:{deepRedact,summarizeProject,buildDataset,buildRootGatewayData,rootGatewayBlock,injectRootGatewayHtml,buildVersions,publicSiteRoot,publicRepoBase,rawRepoBase,githubRepoBase,publicBases,cleanPath,safeId,revisionUrl,makeRevision,verifyPublicEndpointOnce,verifyRootGatewayOnce}};
 window.addEventListener('DOMContentLoaded',render);
 })();
