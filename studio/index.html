@@ -8,10 +8,11 @@
 <link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="stylesheet" href="./ai-production/ai-production.css?v=1">
 <link rel="stylesheet" href="./development-architecture/architecture-explorer.css?v=1">
+<link rel="stylesheet" href="./development-workspace-ui.css?v=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B653</title>
+<title>GK Studio GKS-B654</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -459,13 +460,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B653</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B654</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B653</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B654</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1751,23 +1752,58 @@ updateDeployDeleteControl();
 
 <section id="view-development" class="view hidden">
   <div class="view-heading"><h1>開発管理</h1><span class="status">Development Projects / Workspace v1 / 構成探索版</span></div>
+
   <div class="card">
-    <h2>ゲームProjectとは独立した開発管理領域</h2>
-    <p>開発案件ごとに独立したDevelopment Workspaceを保持します。Quest / Event / Character / Flag / Master等のGame Project JSONには保存しません。案件を切り替えても別案件のDiscussion / Decision / Specification / Architecture / Work Box / Taskを上書きしません。</p>
-    <div class="grid">
-      <div class="field"><label>現在の開発案件</label><select id="developmentProjectSelect" onchange="switchDevelopmentProject(this.value)"></select></div>
-      <div class="field"><label>案件名</label><input id="developmentProjectName" placeholder="開発案件名"><div class="toolbar"><button type="button" onclick="renameDevelopmentProject()">案件名を保存</button><button class="primary" type="button" onclick="createDevelopmentProject()">＋新規案件</button></div></div>
+    <div class="dev-project-launcher-head">
+      <div>
+        <h2>開発案件</h2>
+        <p class="small">案件を探して続きを開きます。作成・名前変更・JSON操作は必要なときだけ開きます。</p>
+      </div>
+      <div class="toolbar">
+        <button class="primary" type="button" onclick="createDevelopmentProject()">＋ 新規案件</button>
+        <button type="button" onclick="toggleDevelopmentProjectSettings()">案件設定</button>
+      </div>
+    </div>
+    <div class="dev-project-tools">
+      <input id="developmentProjectSearch" placeholder="案件名・ID・Work Boxを検索" oninput="renderDevelopmentProjectCards()">
+      <select id="developmentProjectFilter" onchange="renderDevelopmentProjectCards()">
+        <option value="in-progress">検討・作業中</option>
+        <option value="all">すべて</option>
+        <option value="pending">保留</option>
+        <option value="finished">完了・保管</option>
+      </select>
+    </div>
+    <div id="developmentProjectCards" class="dev-project-cards"></div>
+    <div id="developmentProjectSettings" class="dev-editor-panel hidden">
+      <h3>案件設定 / JSON</h3>
+      <div class="dev-settings-grid">
+        <div class="field"><label>現在の開発案件</label><select id="developmentProjectSelect" onchange="switchDevelopmentProject(this.value)"></select></div>
+        <div class="field"><label>案件名</label><input id="developmentProjectName" placeholder="開発案件名"></div>
+        <div class="field"><label>案件状態</label><select id="developmentProjectStatus"><option value="Exploring">検討中</option><option value="Specifying">仕様化中</option><option value="Implementing">実装中</option><option value="Validating">検証中</option><option value="Pending">保留</option><option value="Completed">完了</option></select></div>
+      </div>
+      <div class="toolbar">
+        <button type="button" onclick="saveDevelopmentProjectSettings()">案件設定を保存</button>
+        <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button>
+        <label class="button-like">案件JSONを追加<input id="developmentProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label>
+        <label class="button-like">現在案件をJSONで置換<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label>
+      </div>
+      <p class="small">ブラウザ保存は案件別作業コピーです。正本として残す案件はJSONを明示出力してください。案件削除機能はありません。</p>
     </div>
     <div id="developmentProjectRegistryStatus" class="small"></div>
-    <div id="developmentStoreStatus" class="small"></div>
-    <div class="toolbar">
-      <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button>
-      <label class="button-like">案件JSONを追加<input id="developmentProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label>
-      <label class="button-like">現在案件をJSONで置換<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label>
-      <button type="button" onclick="renderDevelopmentWorkspace()">再表示</button>
-    </div>
-    <p class="small">ブラウザ保存は案件別の作業コピーです。正本として残す案件は「現在案件JSONを出力」で明示保存してください。案件削除機能はありません。</p>
   </div>
+
+  <div id="developmentCurrentProject" class="card">
+    <div class="dev-current-project-head">
+      <div>
+        <div class="small">現在の案件</div>
+        <div id="developmentCurrentProjectTitle" class="dev-project-current-title"></div>
+        <div id="developmentCurrentProjectFocus" class="small"></div>
+      </div>
+      <button type="button" onclick="continueCurrentDevelopmentProject()">続きから</button>
+    </div>
+    <div id="developmentStoreStatus" class="small" style="margin-top:10px"></div>
+  </div>
+
   <div class="kpis">
     <div class="kpi"><span class="small">議論</span><b id="devKpiDiscussions">0</b></div>
     <div class="kpi"><span class="small">Architecture</span><b id="devKpiArchitecture">0</b></div>
@@ -1786,13 +1822,9 @@ updateDeployDeleteControl();
   </div>
 
   <div id="developmentPane-architecture" class="card hidden">
-    <h2>Architecture / Work Box / Task <span class="badge warn">探索版</span></h2>
-    <p class="small">Development専用の独立探索システムです。Game Project / Story / Quest / Event等とは接続せず、Architecture Node → Work Box → Taskだけを扱います。</p>
-    <div class="toolbar">
-      <button class="primary" type="button" data-dax-action="root-add">Root Node追加</button>
-      <button type="button" data-dax-action="child-add">選択Nodeに子を追加</button>
-      <button type="button" data-dax-action="expand-all">すべて展開</button>
-      <button type="button" data-dax-action="collapse-all">すべて折りたたむ</button>
+    <div class="dev-pane-head">
+      <div><h2>Architecture / Work Box / Task <span class="badge warn">探索版</span></h2><p class="small">通常時は構成と検討内容を閲覧し、追加・編集時だけ入力欄を開きます。</p></div>
+      <div class="toolbar"><button class="primary" type="button" data-dax-action="root-add">＋ Root Node</button><button type="button" data-dax-action="expand-all">すべて展開</button><button type="button" data-dax-action="collapse-all">折りたたむ</button></div>
     </div>
     <div class="dax-layout">
       <div class="dax-tree-pane">
@@ -1801,30 +1833,45 @@ updateDeployDeleteControl();
         <div id="daxTree" class="dax-tree"></div>
       </div>
       <div class="dax-editor-pane">
-        <div id="daxEmpty" class="dax-empty">左のTreeからArchitecture Nodeを選択するか、Root Nodeを追加してください。</div>
+        <div id="daxEmpty" class="dax-empty">Architecture Nodeを選択するか「＋ Root Node」から作成してください。</div>
         <div id="daxEditor" class="hidden">
-          <h3>Architecture Node</h3>
-          <div class="grid"><div class="field"><label>ID</label><input id="daxNodeId" readonly></div><div class="field"><label>親Node</label><select id="daxNodeParent"></select></div></div>
-          <div class="field"><label>名前</label><input id="daxNodeName" placeholder="例: Development Workspace"></div>
-          <div class="toolbar"><button class="primary" type="button" data-dax-action="save-node">Node保存</button><button type="button" data-dax-action="child-add">子Node追加</button><button class="danger" type="button" data-dax-action="delete-node">Node削除</button></div>
+          <div id="daxNodeView" class="dax-view-card">
+            <div class="dax-view-head"><div><div id="daxNodePath" class="dax-breadcrumb"></div><h3 id="daxNodeViewName"></h3><div id="daxNodeViewId" class="dax-view-id"></div></div><div class="toolbar"><button type="button" data-dax-action="edit-node">編集</button><button type="button" data-dax-action="child-add">＋ 子Node</button></div></div>
+          </div>
+          <div id="daxNodeEditorPanel" class="dax-edit-panel hidden">
+            <h3 id="daxNodeEditorTitle">Architecture Node</h3>
+            <div class="grid"><div class="field"><label>ID</label><input id="daxNodeId" readonly></div><div class="field"><label>親Node</label><select id="daxNodeParent"></select></div></div>
+            <div class="field"><label>名前</label><input id="daxNodeName" placeholder="例: Development Workspace"></div>
+            <div class="toolbar"><button class="primary" type="button" data-dax-action="save-node">保存</button><button type="button" data-dax-action="cancel-node-edit">キャンセル</button><button class="danger" type="button" data-dax-action="delete-node">Node削除</button></div>
+          </div>
 
+          <div id="daxNodeDependent">
           <div class="dax-section-divider"></div>
-          <h3>Work Box</h3>
-          <div id="daxBoxSummary" class="dax-summary"></div>
+          <div class="dev-section-head"><div><h3>Work Box</h3><div id="daxBoxSummary" class="dax-summary"></div></div><button type="button" data-dax-action="new-box">＋ Work Box</button></div>
           <div id="daxBoxList" class="dax-box-list"></div>
-          <div class="toolbar"><button type="button" data-dax-action="new-box">新規Work Box</button></div>
-          <div class="grid"><div class="field"><label>Box ID</label><input id="daxBoxId" readonly></div><div class="field"><label>状態（Taskから自動算出）</label><input id="daxBoxStatus" readonly></div></div>
-          <div class="field"><label>タイトル</label><input id="daxBoxTitle" placeholder="この場所で今回考える・実現すること"></div>
-          <div class="field"><label>本文</label><textarea id="daxBoxBody" rows="7" placeholder="まだ仕様になっていない考え、目的、メモを自由に記録"></textarea></div>
-          <div class="toolbar"><button class="primary" type="button" data-dax-action="save-box">Work Box保存</button><button class="danger" type="button" data-dax-action="delete-box">Work Box削除</button></div>
 
-          <div id="daxTaskSection" class="hidden">
+          <div id="daxBoxView" class="dax-view-card hidden">
+            <div class="dax-view-head"><div><div id="daxBoxViewId" class="dax-view-id"></div><h3 id="daxBoxViewTitle"></h3><div id="daxBoxViewStatus"></div></div><button type="button" data-dax-action="edit-box">編集</button></div>
+            <div id="daxBoxViewBody" class="dax-body-view"></div>
             <div class="dax-section-divider"></div>
-            <h3>Task</h3>
+            <div class="dev-section-head"><h3>Task</h3><button type="button" data-dax-action="new-task">＋ Task</button></div>
+            <div id="daxTaskList" class="dax-task-list"></div>
+          </div>
+
+          <div id="daxBoxEditorPanel" class="dax-edit-panel hidden">
+            <h3 id="daxBoxEditorTitle">Work Box</h3>
+            <div class="grid"><div class="field"><label>Box ID</label><input id="daxBoxId" readonly></div><div class="field"><label>状態（Taskから自動算出）</label><input id="daxBoxStatus" readonly></div></div>
+            <div class="field"><label>タイトル</label><input id="daxBoxTitle" placeholder="この場所で今回考える・実現すること"></div>
+            <div class="field"><label>本文</label><textarea id="daxBoxBody" rows="9" placeholder="まだ仕様になっていない考え、目的、メモを自由に記録"></textarea></div>
+            <div class="toolbar"><button class="primary" type="button" data-dax-action="save-box">保存</button><button type="button" data-dax-action="cancel-box-edit">キャンセル</button><button class="danger" type="button" data-dax-action="delete-box">Work Box削除</button></div>
+          </div>
+
+          <div id="daxTaskEditorPanel" class="dax-edit-panel hidden">
+            <h3 id="daxTaskEditorTitle">Task</h3>
             <div class="grid"><div class="field"><label>Task ID</label><input id="daxTaskId" readonly></div><div class="field"><label>状態</label><select id="daxTaskStatus"><option value="Todo">Todo</option><option value="Doing">Doing</option><option value="Blocked">Blocked</option><option value="Done">Done</option></select></div></div>
             <div class="field"><label>Task</label><input id="daxTaskTitle" placeholder="具体的に何をするか"></div>
-            <div class="toolbar"><button class="primary" type="button" data-dax-action="save-task">Task保存</button><button type="button" data-dax-action="new-task">新規Task</button></div>
-            <div id="daxTaskList" class="dax-task-list"></div>
+            <div class="toolbar"><button class="primary" type="button" data-dax-action="save-task">保存</button><button type="button" data-dax-action="cancel-task-edit">キャンセル</button></div>
+          </div>
           </div>
         </div>
       </div>
@@ -1832,26 +1879,41 @@ updateDeployDeleteControl();
   </div>
 
   <div id="developmentPane-discussion" class="card">
-    <h2>Discussion</h2><p class="small">議論は議論だけを保存します。Decision / Specificationは別レコードです。</p>
-    <div class="grid"><div class="field"><label>議論ID</label><input id="devDiscussionId" placeholder="空欄でDISC-0001形式に自動採番"></div><div class="field"><label>状態</label><select id="devDiscussionStatus"><option value="Open">検討中</option><option value="Pending">保留</option><option value="Resolved">結論あり</option><option value="Archived">保管</option></select></div></div>
-    <div class="field"><label>タイトル</label><input id="devDiscussionTitle"></div><div class="field"><label>概要</label><textarea id="devDiscussionSummary"></textarea></div><div class="field"><label>議論内容</label><textarea id="devDiscussionBody" rows="10"></textarea></div>
-    <div class="grid"><div class="field"><label>未決事項</label><textarea id="devDiscussionOpenQuestions" placeholder="1行に1件"></textarea></div><div class="field"><label>現在の結論</label><textarea id="devDiscussionConclusion"></textarea></div></div>
-    <div class="field"><label>関連Discussion ID</label><input id="devDiscussionRelated" placeholder="DISC-0002, DISC-0003"></div><div class="field"><label>資料メモ</label><input id="devDiscussionArtifact" placeholder="Concept Draft v0.1 など"></div>
-    <div class="toolbar"><button class="primary" type="button" onclick="saveDevDiscussion()">保存</button><button type="button" onclick="resetDevDiscussionEditor()">新規入力</button><label class="button-like">AI返却JSONを読込<input id="discussionReturnImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDiscussionAiReturn(this.files[0]);this.value=''"></label></div><div id="devDiscussionList" class="list"></div>
+    <div class="dev-pane-head"><div><h2>Discussion</h2><p class="small">議論は議論だけを保存します。Decision / Specificationは別レコードです。</p></div><div class="toolbar"><button class="primary" type="button" onclick="startNewDevDiscussion()">＋ 新規Discussion</button><label class="button-like">AI返却JSONを読込<input id="discussionReturnImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDiscussionAiReturn(this.files[0]);this.value=''"></label></div></div>
+    <div id="devDiscussionEditorPanel" class="dev-editor-panel hidden">
+      <h3 id="devDiscussionEditorTitle">Discussion</h3>
+      <div class="grid"><div class="field"><label>議論ID</label><input id="devDiscussionId" placeholder="空欄でDISC-0001形式に自動採番"></div><div class="field"><label>状態</label><select id="devDiscussionStatus"><option value="Open">検討中</option><option value="Pending">保留</option><option value="Resolved">結論あり</option><option value="Archived">保管</option></select></div></div>
+      <div class="field"><label>タイトル</label><input id="devDiscussionTitle"></div><div class="field"><label>概要</label><textarea id="devDiscussionSummary"></textarea></div><div class="field"><label>議論内容</label><textarea id="devDiscussionBody" rows="10"></textarea></div>
+      <div class="grid"><div class="field"><label>未決事項</label><textarea id="devDiscussionOpenQuestions" placeholder="1行に1件"></textarea></div><div class="field"><label>現在の結論</label><textarea id="devDiscussionConclusion"></textarea></div></div>
+      <div class="field"><label>関連Discussion ID</label><input id="devDiscussionRelated" placeholder="DISC-0002, DISC-0003"></div><div class="field"><label>資料メモ</label><input id="devDiscussionArtifact" placeholder="Concept Draft v0.1 など"></div>
+      <div class="dev-form-actions"><button class="primary" type="button" onclick="saveDevDiscussion()">保存</button><button type="button" onclick="closeDevDiscussionEditor()">キャンセル</button></div>
+    </div>
+    <div id="devDiscussionList" class="list dev-record-list"></div>
   </div>
+
   <div id="developmentPane-decision" class="card hidden">
-    <h2>Decision</h2><p class="small">「なぜそう決めたか」を保持します。ApprovedはHumanの正式決定です。</p>
-    <div class="grid"><div class="field"><label>Decision ID</label><input id="devDecisionId" placeholder="空欄でDEC-DEV-0001形式に自動採番"></div><div class="field"><label>状態</label><select id="devDecisionStatus"><option value="Proposed">提案中</option><option value="Approved">承認済み</option><option value="Rejected">却下</option><option value="Superseded">置換済み</option></select></div></div>
-    <div class="field"><label>タイトル</label><input id="devDecisionTitle"></div><div class="field"><label>決定内容</label><textarea id="devDecisionText" rows="6"></textarea></div><div class="field"><label>理由</label><textarea id="devDecisionRationale"></textarea></div><div class="field"><label>根拠Discussion ID</label><input id="devDecisionDiscussionRefs" placeholder="DISC-0001"></div>
-    <div class="toolbar"><button class="primary" type="button" onclick="saveDevDecision()">保存</button><button type="button" onclick="resetDevDecisionEditor()">新規入力</button></div><div id="devDecisionList" class="list"></div>
+    <div class="dev-pane-head"><div><h2>Decision</h2><p class="small">「なぜそう決めたか」を保持します。ApprovedはHumanの正式決定です。</p></div><button class="primary" type="button" onclick="startNewDevDecision()">＋ 新規Decision</button></div>
+    <div id="devDecisionEditorPanel" class="dev-editor-panel hidden">
+      <h3 id="devDecisionEditorTitle">Decision</h3>
+      <div class="grid"><div class="field"><label>Decision ID</label><input id="devDecisionId" placeholder="空欄でDEC-DEV-0001形式に自動採番"></div><div class="field"><label>状態</label><select id="devDecisionStatus"><option value="Proposed">提案中</option><option value="Approved">承認済み</option><option value="Rejected">却下</option><option value="Superseded">置換済み</option></select></div></div>
+      <div class="field"><label>タイトル</label><input id="devDecisionTitle"></div><div class="field"><label>決定内容</label><textarea id="devDecisionText" rows="6"></textarea></div><div class="field"><label>理由</label><textarea id="devDecisionRationale"></textarea></div><div class="field"><label>根拠Discussion ID</label><input id="devDecisionDiscussionRefs" placeholder="DISC-0001"></div>
+      <div class="dev-form-actions"><button class="primary" type="button" onclick="saveDevDecision()">保存</button><button type="button" onclick="closeDevDecisionEditor()">キャンセル</button></div>
+    </div>
+    <div id="devDecisionList" class="list dev-record-list"></div>
   </div>
+
   <div id="developmentPane-specification" class="card hidden">
-    <h2>Specification</h2><p class="small">「現在どう動かなければならないか」を正式に記録します。</p>
-    <div class="grid"><div class="field"><label>Specification ID</label><input id="devSpecId" placeholder="空欄でSPEC-DEV-0001形式に自動採番"></div><div class="field"><label>状態</label><select id="devSpecStatus"><option value="Draft">下書き</option><option value="Review">確認中</option><option value="Approved">承認済み</option><option value="Implemented">実装済み</option><option value="Verified">検証済み</option><option value="Superseded">置換済み</option></select></div></div>
-    <div class="field"><label>タイトル</label><input id="devSpecTitle"></div><div class="field"><label>概要</label><textarea id="devSpecSummary"></textarea></div><div class="field"><label>正式仕様</label><textarea id="devSpecBody" rows="10"></textarea></div>
-    <div class="grid"><div class="field"><label>根拠Decision ID</label><input id="devSpecDecisionRefs" placeholder="DEC-DEV-0001"></div><div class="field"><label>前提Specification ID</label><input id="devSpecDependsOn" placeholder="SPEC-DEV-0002, SPEC-DEV-0003"></div></div><div class="field"><label>完了条件 / Acceptance Criteria</label><textarea id="devSpecAcceptance"></textarea></div>
-    <div class="toolbar"><button class="primary" type="button" onclick="saveDevSpecification()">保存</button><button type="button" onclick="resetDevSpecEditor()">新規入力</button></div><div id="devSpecificationList" class="list"></div>
+    <div class="dev-pane-head"><div><h2>Specification</h2><p class="small">「現在どう動かなければならないか」を正式に記録します。</p></div><button class="primary" type="button" onclick="startNewDevSpecification()">＋ 新規Specification</button></div>
+    <div id="devSpecEditorPanel" class="dev-editor-panel hidden">
+      <h3 id="devSpecEditorTitle">Specification</h3>
+      <div class="grid"><div class="field"><label>Specification ID</label><input id="devSpecId" placeholder="空欄でSPEC-DEV-0001形式に自動採番"></div><div class="field"><label>状態</label><select id="devSpecStatus"><option value="Draft">下書き</option><option value="Review">確認中</option><option value="Approved">承認済み</option><option value="Implemented">実装済み</option><option value="Verified">検証済み</option><option value="Superseded">置換済み</option></select></div></div>
+      <div class="field"><label>タイトル</label><input id="devSpecTitle"></div><div class="field"><label>概要</label><textarea id="devSpecSummary"></textarea></div><div class="field"><label>正式仕様</label><textarea id="devSpecBody" rows="10"></textarea></div>
+      <div class="grid"><div class="field"><label>根拠Decision ID</label><input id="devSpecDecisionRefs" placeholder="DEC-DEV-0001"></div><div class="field"><label>前提Specification ID</label><input id="devSpecDependsOn" placeholder="SPEC-DEV-0002, SPEC-DEV-0003"></div></div><div class="field"><label>完了条件 / Acceptance Criteria</label><textarea id="devSpecAcceptance"></textarea></div>
+      <div class="dev-form-actions"><button class="primary" type="button" onclick="saveDevSpecification()">保存</button><button type="button" onclick="closeDevSpecEditor()">キャンセル</button></div>
+    </div>
+    <div id="devSpecificationList" class="list dev-record-list"></div>
   </div>
+
   <div id="developmentPane-overview" class="card hidden"><h2>依存・進捗</h2><p class="small">Specificationの前提関係から着手可能・依存待ちを表示します。ゲーム側への接続はまだ行いません。</p><div id="devDependencyOverview" class="list"></div><h3>未決事項</h3><div id="devOpenQuestionOverview" class="list"></div></div>
 </section>
 
@@ -2337,11 +2399,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=653"></script>
+<script src="./layer-controller.js?v=654"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B653';
+const DISTRIBUTION_BUILD='GKS-B654';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -3204,7 +3266,7 @@ function developmentSeed(){
  const stamp='2026-08-18T13:00:00+09:00',explore=developmentExplorationSeed(stamp);
  return {schema_version:'1.1',workspace:{id:'DEV-WORKSPACE-001',name:'AI Development Studio 開発管理',status:'development',updated_at:stamp},discussions:[{id:'DISC-0001',title:'汎用AI開発Studio構想',status:'Open',summary:'Guild Adventure Studioで得たゲーム制作・AI共同開発の知見を、汎用AI開発Studioへ発展させる。',body:'既存ゲームのStory / Quest / Event / Character / Flag / 前提条件 / 次遷移を、仕様・依存関係・進捗管理へ一般化する。Discussion → Decision → Specificationまでを開発Studio側で管理し、Game Projectは別系統とする。',open_questions:'ゲーム接続Linkの正式Schema\nSpecification Revision方式\nTest / Buildとの正式な紐付け方式\nRole / Approval履歴の詳細モデル\nDiscussionからDecision / Specificationへの昇格操作\n開発管理JSONのGitHub正本化方式',conclusion:'開発Studio側にDiscussion / Decision / Specification / Dependency / Progressを持ち、ゲーム側とは後から専用Linkで接続する方向を採用する。',related_discussion_ids:[],artifact_note:'AI_Development_Studio_Concept_Draft_v0.1.zip',created_at:stamp,updated_at:stamp}],decisions:[{id:'DEC-DEV-0001',title:'開発管理とGame Projectを分離する',status:'Approved',text:'Discussion → Decision → Specificationまでを開発Studio側の独立データとして管理し、Quest / Event / Character / Flag / Master等のGame Project JSONへ混在させない。ゲームとの対応付けは別途Link機構で実装する。',rationale:'議論・正式仕様・ゲームコンテンツの責務を分離し、将来Web・業務システム等にも同じ開発管理Coreを利用できるようにするため。',source_discussion_ids:['DISC-0001'],approved_by:'Human',approved_at:stamp,created_at:stamp,updated_at:stamp}],specifications:[{id:'SPEC-DEV-0001',title:'独立Development Workspace仕様',status:'Approved',summary:'Studio基本領域にGame Projectとは独立した開発管理Workspaceを持つ。',body:'Development WorkspaceはDiscussion、Decision、Specificationを独立JSONとして保持する。Discussionは議論情報だけを持つ。Decisionは決定理由と根拠Discussionを持つ。Specificationは正式仕様、根拠Decision、前提Specification、Acceptance Criteriaを持つ。Game Project JSONの出力・検証・バックアップ件数にはDevelopment Workspaceを混在させない。ゲーム接続は将来の専用Link機構で行う。',decision_refs:['DEC-DEV-0001'],depends_on:[],acceptance_criteria:'Game Project JSONを出力してもDevelopment Workspaceが含まれない。\nDevelopment Workspace JSONを個別に出力・読込できる。\nDiscussion / Decision / Specificationを登録・編集できる。\nSpecificationの前提依存を表示できる。',approved_by:'Human',approved_at:stamp,created_at:stamp,updated_at:stamp}],architecture_nodes:explore.architecture_nodes,work_boxes:explore.work_boxes,tasks:explore.tasks,history:[{at:stamp,message:'Development Workspace v1 bootstrap approved by Human'},{at:stamp,message:'Architecture / Work Box / Task exploration workspace bootstrap'}]};
 }
-function blankDevelopmentProjectSeed(id,name){const stamp=now();return {schema_version:'1.1',workspace:{id:String(id||''),name:String(name||id||'新しい開発案件'),status:'development',updated_at:stamp},discussions:[],decisions:[],specifications:[],architecture_nodes:[],work_boxes:[],tasks:[],history:[{at:stamp,message:'Development Project created'}]}}
+function blankDevelopmentProjectSeed(id,name){const stamp=now();return {schema_version:'1.1',workspace:{id:String(id||''),name:String(name||id||'新しい開発案件'),status:'Exploring',updated_at:stamp},discussions:[],decisions:[],specifications:[],architecture_nodes:[],work_boxes:[],tasks:[],history:[{at:stamp,message:'Development Project created'}]}}
 function normalizeDevelopmentWorkspace(raw){
  const x=(raw&&typeof raw==='object'&&!Array.isArray(raw))?structuredClone(raw):developmentSeed();
  const needsExplorationBootstrap=!Array.isArray(x.architecture_nodes)&&!Array.isArray(x.work_boxes)&&!Array.isArray(x.tasks);
@@ -3222,7 +3284,7 @@ function normalizeDevelopmentWorkspace(raw){
 }
 function normalizeDevelopmentProjectRegistry(raw){
  const rows=Array.isArray(raw?.projects)?raw.projects:Array.isArray(raw)?raw:[];const seen=new Set();
- return rows.map(r=>({id:String(r?.id||'').trim(),name:String(r?.name||r?.id||'').trim(),status:String(r?.status||'Active'),created_at:String(r?.created_at||now()),updated_at:String(r?.updated_at||r?.created_at||now())})).filter(r=>r.id&&!seen.has(r.id)&&(seen.add(r.id),true));
+ return rows.map(r=>({id:String(r?.id||'').trim(),name:String(r?.name||r?.id||'').trim(),status:developmentProjectStatusValue(r?.status),created_at:String(r?.created_at||now()),updated_at:String(r?.updated_at||r?.created_at||now())})).filter(r=>r.id&&!seen.has(r.id)&&(seen.add(r.id),true));
 }
 function saveDevelopmentProjectRegistry(){try{localStorage.setItem(DEVELOPMENT_REGISTRY_KEY,JSON.stringify({schema_version:1,projects:developmentProjectRegistry||[]}));if(activeDevelopmentProjectId)localStorage.setItem(DEVELOPMENT_ACTIVE_PROJECT_KEY,activeDevelopmentProjectId);return true}catch(e){alert('開発案件一覧の保存に失敗しました: '+e.message);return false}}
 function devNextProjectId(){const used=new Set((developmentProjectRegistry||[]).map(x=>x.id));let n=1,id;do{id='DEV-PROJ-'+String(n++).padStart(4,'0')}while(used.has(id));return id}
@@ -3236,69 +3298,112 @@ function ensureDevelopmentProjectRegistry(){
   let id=String(initial.workspace.id||'').trim()||'DEV-PROJ-0001';if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();
   initial.workspace.id=id;const name=String(initial.workspace.name||'AI Development Studio 開発管理');initial.workspace.name=name;
   localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(initial));
-  developmentProjectRegistry=[{id,name,status:'Active',created_at:initial.workspace.updated_at||now(),updated_at:initial.workspace.updated_at||now()}];
+  developmentProjectRegistry=[{id,name,status:developmentProjectStatusValue(initial.workspace.status),created_at:initial.workspace.updated_at||now(),updated_at:initial.workspace.updated_at||now()}];
  }
  const requested=String(localStorage.getItem(DEVELOPMENT_ACTIVE_PROJECT_KEY)||'');activeDevelopmentProjectId=developmentProjectRegistry.some(x=>x.id===requested)?requested:developmentProjectRegistry[0].id;
  saveDevelopmentProjectRegistry();return developmentProjectRegistry;
 }
 function activeDevelopmentProjectEntry(){ensureDevelopmentProjectRegistry();return developmentProjectRegistry.find(x=>x.id===activeDevelopmentProjectId)||developmentProjectRegistry[0]||null}
+function developmentProjectStatusValue(value){
+ const v=String(value||'').trim();
+ if(['Completed','Archived','Done'].includes(v))return 'Completed';
+ if(['Pending','Paused','On Hold'].includes(v))return 'Pending';
+ if(['Specifying','Implementing','Validating','Exploring'].includes(v))return v;
+ if(['development','Active','Open',''].includes(v))return 'Exploring';
+ return 'Exploring';
+}
+function developmentProjectStatusLabel(value){return ({Exploring:'検討中',Specifying:'仕様化中',Implementing:'実装中',Validating:'検証中',Pending:'保留',Completed:'完了'})[developmentProjectStatusValue(value)]||'検討中'}
+function developmentProjectStatusClass(value){const v=developmentProjectStatusValue(value);return v==='Completed'?'is-finished':v==='Pending'?'is-pending':''}
+function readDevelopmentProjectByEntry(entry){
+ if(!entry)return null;
+ if(entry.id===activeDevelopmentProjectId&&developmentWorkspace)return normalizeDevelopmentWorkspace(developmentWorkspace);
+ try{const raw=localStorage.getItem(developmentProjectStoreKey(entry.id));return raw?normalizeDevelopmentWorkspace(JSON.parse(raw)):blankDevelopmentProjectSeed(entry.id,entry.name)}catch(_){return blankDevelopmentProjectSeed(entry.id,entry.name)}
+}
+function developmentProjectSnapshot(entry){
+ const w=readDevelopmentProjectByEntry(entry),boxes=[...(w?.work_boxes||[])].sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||''))),discussions=[...(w?.discussions||[])].sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||''))),latestBox=boxes[0]||null,latestDiscussion=discussions[0]||null;
+ const openTasks=(w?.tasks||[]).filter(t=>t.status!=='Done').length,openDiscussions=discussions.filter(d=>['Open','Pending'].includes(d.status)).length,status=developmentProjectStatusValue(w?.workspace?.status||entry?.status);
+ return {entry,w,status,latestBox,latestDiscussion,openTasks,openDiscussions,updated_at:String(w?.workspace?.updated_at||entry?.updated_at||''),focus:latestBox?`Work Box: ${latestBox.title}`:latestDiscussion?`Discussion: ${latestDiscussion.title}`:'まだ検討内容がありません'};
+}
 function renderDevelopmentProjectSelector(){
  const rows=ensureDevelopmentProjectRegistry(),sel=document.getElementById('developmentProjectSelect'),entry=activeDevelopmentProjectEntry();
  if(sel){sel.innerHTML=rows.map(x=>`<option value="${escAttr(x.id)}">${esc(x.name)} / ${esc(x.id)}</option>`).join('');sel.value=activeDevelopmentProjectId}
  const name=document.getElementById('developmentProjectName');if(name&&entry)name.value=entry.name||'';
+ const w=entry?readDevelopmentProjectByEntry(entry):null,statusInput=document.getElementById('developmentProjectStatus');if(statusInput)statusInput.value=developmentProjectStatusValue(w?.workspace?.status||entry?.status);
  const status=document.getElementById('developmentProjectRegistryStatus');if(status)status.innerHTML=`<b>開発案件:</b> ${rows.length}件 / <b>現在:</b> ${esc(entry?.id||'')} / ${esc(entry?.name||'')}`;
 }
+function renderDevelopmentProjectCards(){
+ const container=document.getElementById('developmentProjectCards');if(!container)return;
+ const query=String(document.getElementById('developmentProjectSearch')?.value||'').trim().toLowerCase(),filter=String(document.getElementById('developmentProjectFilter')?.value||'in-progress');
+ let rows=ensureDevelopmentProjectRegistry().map(developmentProjectSnapshot);
+ rows=rows.filter(s=>{const hay=[s.entry.id,s.entry.name,s.latestBox?.title,s.latestBox?.body,s.latestDiscussion?.title].filter(Boolean).join(' ').toLowerCase();if(query&&!hay.includes(query))return false;if(filter==='all')return true;if(filter==='pending')return s.status==='Pending';if(filter==='finished')return s.status==='Completed';return !['Pending','Completed'].includes(s.status)}).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)));
+ container.innerHTML=rows.map(s=>`<div class="dev-project-card ${s.entry.id===activeDevelopmentProjectId?'is-active':''}"><div class="dev-project-card-top"><div><div class="dev-project-card-title">${esc(s.entry.name)}</div><div class="dev-project-id">${esc(s.entry.id)}</div></div><span class="dev-project-badge ${developmentProjectStatusClass(s.status)}">${esc(developmentProjectStatusLabel(s.status))}</span></div><div class="dev-project-card-focus">${esc(s.focus)}</div><div class="dev-project-card-meta"><span>未完了Task ${s.openTasks}</span><span>検討中Discussion ${s.openDiscussions}</span><span>更新 ${esc(s.updated_at||'不明')}</span></div><div class="dev-project-card-actions"><button class="${s.entry.id===activeDevelopmentProjectId?'primary':''}" type="button" onclick="continueDevelopmentProject('${escAttr(s.entry.id)}')">${s.entry.id===activeDevelopmentProjectId?'続きから':'開く'}</button></div></div>`).join('')||'<div class="dev-empty-guide">条件に一致する開発案件がありません。</div>';
+}
+function toggleDevelopmentProjectSettings(force){const el=document.getElementById('developmentProjectSettings');if(!el)return;const open=typeof force==='boolean'?force:el.classList.contains('hidden');el.classList.toggle('hidden',!open);if(open)renderDevelopmentProjectSelector()}
 function saveDevelopmentWorkspace(message='update'){
  ensureDevelopmentProjectRegistry();const entry=activeDevelopmentProjectEntry();if(!entry)return false;
- developmentWorkspace=normalizeDevelopmentWorkspace(developmentWorkspace||blankDevelopmentProjectSeed(entry.id,entry.name));developmentWorkspace.workspace.id=entry.id;developmentWorkspace.workspace.name=String(developmentWorkspace.workspace.name||entry.name||entry.id);developmentWorkspace.workspace.updated_at=now();if(message&&message!=='load')developmentWorkspace.history.push({at:now(),message});
- entry.name=developmentWorkspace.workspace.name;entry.updated_at=developmentWorkspace.workspace.updated_at;
+ developmentWorkspace=normalizeDevelopmentWorkspace(developmentWorkspace||blankDevelopmentProjectSeed(entry.id,entry.name));developmentWorkspace.workspace.id=entry.id;developmentWorkspace.workspace.name=String(developmentWorkspace.workspace.name||entry.name||entry.id);developmentWorkspace.workspace.status=developmentProjectStatusValue(developmentWorkspace.workspace.status||entry.status);developmentWorkspace.workspace.updated_at=now();if(message&&message!=='load')developmentWorkspace.history.push({at:now(),message});
+ entry.name=developmentWorkspace.workspace.name;entry.status=developmentWorkspace.workspace.status;entry.updated_at=developmentWorkspace.workspace.updated_at;
  try{localStorage.setItem(developmentProjectStoreKey(entry.id),JSON.stringify(developmentWorkspace));saveDevelopmentProjectRegistry();return true}catch(e){alert('開発管理データの保存に失敗しました: '+e.message);return false}
 }
 function migrateLegacyProjectDiscussions(){const w=developmentWorkspace,first=ensureDevelopmentProjectRegistry()[0];if(!w||!first||activeDevelopmentProjectId!==first.id||!Array.isArray(data?.discussions)||!data.discussions.length)return 0;const used=new Set(w.discussions.map(x=>x.id));let imported=0;for(const d of data.discussions){if(!d?.id||used.has(d.id))continue;w.discussions.push({id:String(d.id),title:String(d.title||d.id),status:['Open','Pending','Resolved','Archived'].includes(d.status)?d.status:'Open',summary:String(d.summary||''),body:String(d.body||''),open_questions:String(d.open_questions||''),conclusion:String(d.conclusion||''),related_discussion_ids:Array.isArray(d.related_discussion_ids)?d.related_discussion_ids:[],artifact_note:Array.isArray(d.artifacts)?d.artifacts.map(x=>x?.name||'').filter(Boolean).join(', '):'',created_at:d.created_at||now(),updated_at:d.updated_at||d.created_at||now()});used.add(d.id);imported++}if(imported)saveDevelopmentWorkspace(`Legacy Project Discussionを${imported}件コピー`);return imported}
 function loadDevelopmentWorkspace(){
  ensureDevelopmentProjectRegistry();
- if(!developmentWorkspace){const entry=activeDevelopmentProjectEntry();try{const raw=localStorage.getItem(developmentProjectStoreKey(entry.id));developmentWorkspace=raw?normalizeDevelopmentWorkspace(JSON.parse(raw)):blankDevelopmentProjectSeed(entry.id,entry.name)}catch(_){developmentWorkspace=blankDevelopmentProjectSeed(entry.id,entry.name)};developmentWorkspace.workspace.id=entry.id;developmentWorkspace.workspace.name=developmentWorkspace.workspace.name||entry.name;if(!localStorage.getItem(developmentProjectStoreKey(entry.id)))saveDevelopmentWorkspace('load')}
+ if(!developmentWorkspace){const entry=activeDevelopmentProjectEntry();try{const raw=localStorage.getItem(developmentProjectStoreKey(entry.id));developmentWorkspace=raw?normalizeDevelopmentWorkspace(JSON.parse(raw)):blankDevelopmentProjectSeed(entry.id,entry.name)}catch(_){developmentWorkspace=blankDevelopmentProjectSeed(entry.id,entry.name)};developmentWorkspace.workspace.id=entry.id;developmentWorkspace.workspace.name=developmentWorkspace.workspace.name||entry.name;developmentWorkspace.workspace.status=developmentProjectStatusValue(developmentWorkspace.workspace.status||entry.status);if(!localStorage.getItem(developmentProjectStoreKey(entry.id)))saveDevelopmentWorkspace('load')}
  migrateLegacyProjectDiscussions();return developmentWorkspace;
 }
-function resetDevelopmentEditorsForProjectSwitch(){editingDevDiscussionId='';editingDevDecisionId='';editingDevSpecId='';resetDevDiscussionEditor();resetDevDecisionEditor();resetDevSpecEditor()}
+function hideDevelopmentRecordEditors(){['devDiscussionEditorPanel','devDecisionEditorPanel','devSpecEditorPanel'].forEach(id=>document.getElementById(id)?.classList.add('hidden'))}
+function resetDevelopmentEditorsForProjectSwitch(){editingDevDiscussionId='';editingDevDecisionId='';editingDevSpecId='';resetDevDiscussionEditor();resetDevDecisionEditor();resetDevSpecEditor();hideDevelopmentRecordEditors()}
 function switchDevelopmentProject(id){
- ensureDevelopmentProjectRegistry();id=String(id||'');if(!developmentProjectRegistry.some(x=>x.id===id)){renderDevelopmentProjectSelector();return}if(id===activeDevelopmentProjectId)return;
+ ensureDevelopmentProjectRegistry();id=String(id||'');if(!developmentProjectRegistry.some(x=>x.id===id)){renderDevelopmentProjectSelector();return}if(id===activeDevelopmentProjectId){renderDevelopmentWorkspace();return}
  if(!confirm('開発案件を切り替えます。入力欄に未保存の内容がある場合は失われます。続けますか？')){renderDevelopmentProjectSelector();return}
  activeDevelopmentProjectId=id;localStorage.setItem(DEVELOPMENT_ACTIVE_PROJECT_KEY,id);developmentWorkspace=null;resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
 }
 function createDevelopmentProject(){
  ensureDevelopmentProjectRegistry();const name=String(prompt('新しい開発案件名を入力してください。','新しい開発案件')||'').trim();if(!name)return;
- const id=devNextProjectId(),w=blankDevelopmentProjectSeed(id,name);localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(w));developmentProjectRegistry.push({id,name,status:'Active',created_at:w.workspace.updated_at,updated_at:w.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=w;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+ const id=devNextProjectId(),w=blankDevelopmentProjectSeed(id,name);w.workspace.status='Exploring';localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(w));developmentProjectRegistry.push({id,name,status:'Exploring',created_at:w.workspace.updated_at,updated_at:w.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=w;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();toggleDevelopmentProjectSettings(false);
 }
-function renameDevelopmentProject(){
- const entry=activeDevelopmentProjectEntry(),input=document.getElementById('developmentProjectName');if(!entry||!input)return;const name=String(input.value||'').trim();if(!name)return alert('案件名を入力してください。');entry.name=name;entry.updated_at=now();const w=loadDevelopmentWorkspace();w.workspace.name=name;developmentWorkspace=w;saveDevelopmentWorkspace('Development Project renamed');renderDevelopmentWorkspace();
+function saveDevelopmentProjectSettings(){
+ const entry=activeDevelopmentProjectEntry(),input=document.getElementById('developmentProjectName'),statusInput=document.getElementById('developmentProjectStatus');if(!entry||!input)return;const name=String(input.value||'').trim();if(!name)return alert('案件名を入力してください。');const status=developmentProjectStatusValue(statusInput?.value||entry.status);entry.name=name;entry.status=status;entry.updated_at=now();const w=loadDevelopmentWorkspace();w.workspace.name=name;w.workspace.status=status;developmentWorkspace=w;saveDevelopmentWorkspace('Development Project settings updated');renderDevelopmentWorkspace();toggleDevelopmentProjectSettings(false);
 }
+function renameDevelopmentProject(){saveDevelopmentProjectSettings()}
+function developmentProjectLatestFocus(entry){const snap=developmentProjectSnapshot(entry);return snap.latestBox?{node_id:snap.latestBox.node_id,box_id:snap.latestBox.id}:null}
+function continueDevelopmentProject(id){id=String(id||'');if(id!==activeDevelopmentProjectId)switchDevelopmentProject(id);if(id!==activeDevelopmentProjectId)return;developmentPane='architecture';setDevelopmentPane('architecture');const focus=developmentProjectLatestFocus(activeDevelopmentProjectEntry());if(focus)setTimeout(()=>window.GKSDevelopmentArchitectureExplorer?.focus?.(focus.node_id,focus.box_id),0)}
+function continueCurrentDevelopmentProject(){continueDevelopmentProject(activeDevelopmentProjectId)}
 async function importDevelopmentProjectAsNew(file){
- if(!file)return;try{ensureDevelopmentProjectRegistry();const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;let id=String(candidate.workspace.id||'').trim()||devNextProjectId();const originalId=id;if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();const name=String(candidate.workspace.name||file.name.replace(/\.json$/i,'')||id);if(!confirm(`開発管理JSONを新しい案件として追加します。\n${count}\n案件名: ${name}\n案件ID: ${id}${originalId!==id?`\n（元ID ${originalId} は使用中のため新IDへ変更）`:''}\n\n現在案件は上書きしません。追加しますか？`))return;candidate.workspace.id=id;candidate.workspace.name=name;candidate.workspace.updated_at=now();candidate.history.push({at:now(),message:`Development Project JSON imported as new project: ${id}`});localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(candidate));developmentProjectRegistry.push({id,name,status:'Active',created_at:candidate.workspace.updated_at,updated_at:candidate.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`新しい開発案件 ${id} / ${name} を追加しました。`)}catch(e){alert('開発案件JSON追加失敗: '+e.message)}
+ if(!file)return;try{ensureDevelopmentProjectRegistry();const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;let id=String(candidate.workspace.id||'').trim()||devNextProjectId();const originalId=id;if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();const name=String(candidate.workspace.name||file.name.replace(/\.json$/i,'')||id);if(!confirm(`開発管理JSONを新しい案件として追加します。\n${count}\n案件名: ${name}\n案件ID: ${id}${originalId!==id?`\n（元ID ${originalId} は使用中のため新IDへ変更）`:''}\n\n現在案件は上書きしません。追加しますか？`))return;candidate.workspace.id=id;candidate.workspace.name=name;candidate.workspace.updated_at=now();candidate.history.push({at:now(),message:`Development Project JSON imported as new project: ${id}`});localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(candidate));developmentProjectRegistry.push({id,name,status:developmentProjectStatusValue(candidate.workspace.status),created_at:candidate.workspace.updated_at,updated_at:candidate.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`新しい開発案件 ${id} / ${name} を追加しました。`)}catch(e){alert('開発案件JSON追加失敗: '+e.message)}
 }
 function devNextId(prefix,rows){const used=new Set((rows||[]).map(x=>x.id));let n=1,id;do{id=prefix+String(n++).padStart(4,'0')}while(used.has(id));return id}
 function setDevelopmentPane(name){developmentPane=name;['architecture','discussion','decision','specification','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
 function resetDevDiscussionEditor(){editingDevDiscussionId='';['devDiscussionId','devDiscussionTitle','devDiscussionSummary','devDiscussionBody','devDiscussionOpenQuestions','devDiscussionConclusion','devDiscussionRelated','devDiscussionArtifact'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devDiscussionStatus'))devDiscussionStatus.value='Open'}
-function saveDevDiscussion(){const w=loadDevelopmentWorkspace(),title=devDiscussionTitle.value.trim();if(!title)return alert('タイトルを入力してください。');const id=devDiscussionId.value.trim()||editingDevDiscussionId||devNextId('DISC-',w.discussions);if(w.discussions.some(x=>x.id===id&&x.id!==editingDevDiscussionId))return alert('同じDiscussion IDが存在します。');const old=w.discussions.find(x=>x.id===editingDevDiscussionId);const row={id,title,status:devDiscussionStatus.value,summary:devDiscussionSummary.value,body:devDiscussionBody.value,open_questions:devDiscussionOpenQuestions.value,conclusion:devDiscussionConclusion.value,related_discussion_ids:devRefs(devDiscussionRelated.value),artifact_note:devDiscussionArtifact.value,created_at:old?.created_at||now(),updated_at:now()};if(old)w.discussions[w.discussions.findIndex(x=>x.id===old.id)]=row;else w.discussions.push(row);editingDevDiscussionId=id;saveDevelopmentWorkspace(old?'Discussion updated':'Discussion added');renderDevelopmentWorkspace()}
-function editDevDiscussion(id){const d=loadDevelopmentWorkspace().discussions.find(x=>x.id===id);if(!d)return;editingDevDiscussionId=id;devDiscussionId.value=d.id;devDiscussionStatus.value=d.status;devDiscussionTitle.value=d.title;devDiscussionSummary.value=d.summary;devDiscussionBody.value=d.body;devDiscussionOpenQuestions.value=d.open_questions;devDiscussionConclusion.value=d.conclusion;devDiscussionRelated.value=(d.related_discussion_ids||[]).join(', ');devDiscussionArtifact.value=d.artifact_note||'';setDevelopmentPane('discussion')}
+function startNewDevDiscussion(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorTitle').textContent='新規Discussion';document.getElementById('devDiscussionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDiscussionTitle?.focus(),0)}
+function closeDevDiscussionEditor(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorPanel')?.classList.add('hidden')}
+function saveDevDiscussion(){const w=loadDevelopmentWorkspace(),title=devDiscussionTitle.value.trim();if(!title)return alert('タイトルを入力してください。');const id=devDiscussionId.value.trim()||editingDevDiscussionId||devNextId('DISC-',w.discussions);if(w.discussions.some(x=>x.id===id&&x.id!==editingDevDiscussionId))return alert('同じDiscussion IDが存在します。');const old=w.discussions.find(x=>x.id===editingDevDiscussionId);const row={id,title,status:devDiscussionStatus.value,summary:devDiscussionSummary.value,body:devDiscussionBody.value,open_questions:devDiscussionOpenQuestions.value,conclusion:devDiscussionConclusion.value,related_discussion_ids:devRefs(devDiscussionRelated.value),artifact_note:devDiscussionArtifact.value,created_at:old?.created_at||now(),updated_at:now()};if(old)w.discussions[w.discussions.findIndex(x=>x.id===old.id)]=row;else w.discussions.push(row);saveDevelopmentWorkspace(old?'Discussion updated':'Discussion added');closeDevDiscussionEditor();renderDevelopmentWorkspace()}
+function editDevDiscussion(id){const d=loadDevelopmentWorkspace().discussions.find(x=>x.id===id);if(!d)return;editingDevDiscussionId=id;devDiscussionId.value=d.id;devDiscussionStatus.value=d.status;devDiscussionTitle.value=d.title;devDiscussionSummary.value=d.summary;devDiscussionBody.value=d.body;devDiscussionOpenQuestions.value=d.open_questions;devDiscussionConclusion.value=d.conclusion;devDiscussionRelated.value=(d.related_discussion_ids||[]).join(', ');devDiscussionArtifact.value=d.artifact_note||'';setDevelopmentPane('discussion');document.getElementById('devDiscussionEditorTitle').textContent=`${d.id} を編集`;document.getElementById('devDiscussionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDiscussionTitle?.focus(),0)}
 function resetDevDecisionEditor(){editingDevDecisionId='';['devDecisionId','devDecisionTitle','devDecisionText','devDecisionRationale','devDecisionDiscussionRefs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devDecisionStatus'))devDecisionStatus.value='Proposed'}
-function saveDevDecision(){const w=loadDevelopmentWorkspace(),title=devDecisionTitle.value.trim(),text=devDecisionText.value.trim();if(!title||!text)return alert('タイトルと決定内容を入力してください。');const id=devDecisionId.value.trim()||editingDevDecisionId||devNextId('DEC-DEV-',w.decisions);if(w.decisions.some(x=>x.id===id&&x.id!==editingDevDecisionId))return alert('同じDecision IDが存在します。');const old=w.decisions.find(x=>x.id===editingDevDecisionId),approved=devDecisionStatus.value==='Approved';const row={id,title,status:devDecisionStatus.value,text,rationale:devDecisionRationale.value,source_discussion_ids:devRefs(devDecisionDiscussionRefs.value),approved_by:approved?'Human':'',approved_at:approved?(old?.approved_at||now()):'',created_at:old?.created_at||now(),updated_at:now()};if(old)w.decisions[w.decisions.findIndex(x=>x.id===old.id)]=row;else w.decisions.push(row);editingDevDecisionId=id;saveDevelopmentWorkspace(old?'Decision updated':'Decision added');renderDevelopmentWorkspace()}
-function editDevDecision(id){const d=loadDevelopmentWorkspace().decisions.find(x=>x.id===id);if(!d)return;editingDevDecisionId=id;devDecisionId.value=d.id;devDecisionStatus.value=d.status;devDecisionTitle.value=d.title;devDecisionText.value=d.text;devDecisionRationale.value=d.rationale;devDecisionDiscussionRefs.value=(d.source_discussion_ids||[]).join(', ');setDevelopmentPane('decision')}
+function startNewDevDecision(){resetDevDecisionEditor();document.getElementById('devDecisionEditorTitle').textContent='新規Decision';document.getElementById('devDecisionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDecisionTitle?.focus(),0)}
+function closeDevDecisionEditor(){resetDevDecisionEditor();document.getElementById('devDecisionEditorPanel')?.classList.add('hidden')}
+function saveDevDecision(){const w=loadDevelopmentWorkspace(),title=devDecisionTitle.value.trim(),text=devDecisionText.value.trim();if(!title||!text)return alert('タイトルと決定内容を入力してください。');const id=devDecisionId.value.trim()||editingDevDecisionId||devNextId('DEC-DEV-',w.decisions);if(w.decisions.some(x=>x.id===id&&x.id!==editingDevDecisionId))return alert('同じDecision IDが存在します。');const old=w.decisions.find(x=>x.id===editingDevDecisionId),approved=devDecisionStatus.value==='Approved';const row={id,title,status:devDecisionStatus.value,text,rationale:devDecisionRationale.value,source_discussion_ids:devRefs(devDecisionDiscussionRefs.value),approved_by:approved?'Human':'',approved_at:approved?(old?.approved_at||now()):'',created_at:old?.created_at||now(),updated_at:now()};if(old)w.decisions[w.decisions.findIndex(x=>x.id===old.id)]=row;else w.decisions.push(row);saveDevelopmentWorkspace(old?'Decision updated':'Decision added');closeDevDecisionEditor();renderDevelopmentWorkspace()}
+function editDevDecision(id){const d=loadDevelopmentWorkspace().decisions.find(x=>x.id===id);if(!d)return;editingDevDecisionId=id;devDecisionId.value=d.id;devDecisionStatus.value=d.status;devDecisionTitle.value=d.title;devDecisionText.value=d.text;devDecisionRationale.value=d.rationale;devDecisionDiscussionRefs.value=(d.source_discussion_ids||[]).join(', ');setDevelopmentPane('decision');document.getElementById('devDecisionEditorTitle').textContent=`${d.id} を編集`;document.getElementById('devDecisionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDecisionTitle?.focus(),0)}
 function resetDevSpecEditor(){editingDevSpecId='';['devSpecId','devSpecTitle','devSpecSummary','devSpecBody','devSpecDecisionRefs','devSpecDependsOn','devSpecAcceptance'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devSpecStatus'))devSpecStatus.value='Draft'}
-function saveDevSpecification(){const w=loadDevelopmentWorkspace(),title=devSpecTitle.value.trim(),body=devSpecBody.value.trim();if(!title||!body)return alert('タイトルと正式仕様を入力してください。');const id=devSpecId.value.trim()||editingDevSpecId||devNextId('SPEC-DEV-',w.specifications);if(w.specifications.some(x=>x.id===id&&x.id!==editingDevSpecId))return alert('同じSpecification IDが存在します。');const old=w.specifications.find(x=>x.id===editingDevSpecId),approved=['Approved','Implemented','Verified'].includes(devSpecStatus.value);const row={id,title,status:devSpecStatus.value,summary:devSpecSummary.value,body,decision_refs:devRefs(devSpecDecisionRefs.value),depends_on:devRefs(devSpecDependsOn.value),acceptance_criteria:devSpecAcceptance.value,approved_by:approved?'Human':'',approved_at:approved?(old?.approved_at||now()):'',created_at:old?.created_at||now(),updated_at:now()};if(old)w.specifications[w.specifications.findIndex(x=>x.id===old.id)]=row;else w.specifications.push(row);editingDevSpecId=id;saveDevelopmentWorkspace(old?'Specification updated':'Specification added');renderDevelopmentWorkspace()}
-function editDevSpecification(id){const d=loadDevelopmentWorkspace().specifications.find(x=>x.id===id);if(!d)return;editingDevSpecId=id;devSpecId.value=d.id;devSpecStatus.value=d.status;devSpecTitle.value=d.title;devSpecSummary.value=d.summary;devSpecBody.value=d.body;devSpecDecisionRefs.value=(d.decision_refs||[]).join(', ');devSpecDependsOn.value=(d.depends_on||[]).join(', ');devSpecAcceptance.value=d.acceptance_criteria;setDevelopmentPane('specification')}
+function startNewDevSpecification(){resetDevSpecEditor();document.getElementById('devSpecEditorTitle').textContent='新規Specification';document.getElementById('devSpecEditorPanel')?.classList.remove('hidden');setTimeout(()=>devSpecTitle?.focus(),0)}
+function closeDevSpecEditor(){resetDevSpecEditor();document.getElementById('devSpecEditorPanel')?.classList.add('hidden')}
+function saveDevSpecification(){const w=loadDevelopmentWorkspace(),title=devSpecTitle.value.trim(),body=devSpecBody.value.trim();if(!title||!body)return alert('タイトルと正式仕様を入力してください。');const id=devSpecId.value.trim()||editingDevSpecId||devNextId('SPEC-DEV-',w.specifications);if(w.specifications.some(x=>x.id===id&&x.id!==editingDevSpecId))return alert('同じSpecification IDが存在します。');const old=w.specifications.find(x=>x.id===editingDevSpecId),approved=['Approved','Implemented','Verified'].includes(devSpecStatus.value);const row={id,title,status:devSpecStatus.value,summary:devSpecSummary.value,body,decision_refs:devRefs(devSpecDecisionRefs.value),depends_on:devRefs(devSpecDependsOn.value),acceptance_criteria:devSpecAcceptance.value,approved_by:approved?'Human':'',approved_at:approved?(old?.approved_at||now()):'',created_at:old?.created_at||now(),updated_at:now()};if(old)w.specifications[w.specifications.findIndex(x=>x.id===old.id)]=row;else w.specifications.push(row);saveDevelopmentWorkspace(old?'Specification updated':'Specification added');closeDevSpecEditor();renderDevelopmentWorkspace()}
+function editDevSpecification(id){const d=loadDevelopmentWorkspace().specifications.find(x=>x.id===id);if(!d)return;editingDevSpecId=id;devSpecId.value=d.id;devSpecStatus.value=d.status;devSpecTitle.value=d.title;devSpecSummary.value=d.summary;devSpecBody.value=d.body;devSpecDecisionRefs.value=(d.decision_refs||[]).join(', ');devSpecDependsOn.value=(d.depends_on||[]).join(', ');devSpecAcceptance.value=d.acceptance_criteria;setDevelopmentPane('specification');document.getElementById('devSpecEditorTitle').textContent=`${d.id} を編集`;document.getElementById('devSpecEditorPanel')?.classList.remove('hidden');setTimeout(()=>devSpecTitle?.focus(),0)}
 function developmentOpenQuestions(w){return w.discussions.flatMap(d=>String(d.open_questions||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(text=>({discussion_id:d.id,text})))}
 function renderDevelopmentWorkspace(){
  const root=document.getElementById('view-development');if(!root)return;
- const w=loadDevelopmentWorkspace(),oq=developmentOpenQuestions(w);
- renderDevelopmentProjectSelector();
+ const w=loadDevelopmentWorkspace(),oq=developmentOpenQuestions(w),entry=activeDevelopmentProjectEntry(),snap=developmentProjectSnapshot(entry);
+ renderDevelopmentProjectSelector();renderDevelopmentProjectCards();
+ const currentTitle=document.getElementById('developmentCurrentProjectTitle'),currentFocus=document.getElementById('developmentCurrentProjectFocus');
+ if(currentTitle)currentTitle.innerHTML=`${esc(entry?.name||w.workspace.name||'')} <span class="dev-project-badge ${developmentProjectStatusClass(w.workspace.status)}">${esc(developmentProjectStatusLabel(w.workspace.status))}</span>`;
+ if(currentFocus)currentFocus.textContent=`${entry?.id||w.workspace.id||''} / ${snap.focus}`;
  devKpiDiscussions.textContent=w.discussions.length;devKpiArchitecture.textContent=w.architecture_nodes.length;devKpiWorkBoxes.textContent=w.work_boxes.length;devKpiTasks.textContent=w.tasks.length;devKpiDecisions.textContent=w.decisions.length;devKpiSpecifications.textContent=w.specifications.length;devKpiOpenQuestions.textContent=oq.length;
- developmentStoreStatus.innerHTML=`<b>保存:</b> 案件別 Development Workspace（Game Project非依存） / <b>Architecture:</b> 専用独立Module / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>正本運用:</b> 現在案件JSONを明示出力して保管。ブラウザ保存は案件別作業コピー。 / <b>構成:</b> Architecture ${w.architecture_nodes.length}・Box ${w.work_boxes.length}・Task ${w.tasks.length}`;
+ developmentStoreStatus.innerHTML=`<b>更新:</b> ${esc(w.workspace.updated_at||'')} / <b>未完了Task:</b> ${snap.openTasks} / <b>検討中Discussion:</b> ${snap.openDiscussions}<br><b>保存:</b> 案件別作業コピー。正本として残すときは「案件設定」から現在案件JSONを出力。`;
  ['architecture','discussion','decision','specification','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
  if(developmentPane==='architecture')window.GKSDevelopmentArchitectureExplorer?.render();
- devDiscussionList.innerHTML=[...w.discussions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.id)} / ${esc(d.title)}</b> <span class="badge">${esc(discussionStatusLabel(d.status))}</span><p>${esc(d.summary)}</p><div class="meta">未決 ${String(d.open_questions||'').split(/\r?\n/).filter(x=>x.trim()).length}件 / 更新 ${esc(d.updated_at)}</div><button onclick="editDevDiscussion('${escAttr(d.id)}')">編集</button><button onclick="exportDiscussionAiHandover('${escAttr(d.id)}')">AI共有</button></div>`).join('')||'<div class="small">議論なし</div>';
- devDecisionList.innerHTML=[...w.decisions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.id)} / ${esc(d.title)}</b> <span class="badge ${d.status==='Approved'?'ok':''}">${esc(jpStatus(d.status))}</span><p>${esc(d.text)}</p><div class="meta">根拠: ${esc((d.source_discussion_ids||[]).join(', ')||'なし')}${d.approved_at?' / Human承認 '+esc(d.approved_at):''}</div><button onclick="editDevDecision('${escAttr(d.id)}')">編集</button></div>`).join('')||'<div class="small">決定なし</div>';
- devSpecificationList.innerHTML=[...w.specifications].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>{const missing=(d.depends_on||[]).filter(id=>!w.specifications.some(x=>x.id===id));return `<div class="item"><b>${esc(d.id)} / ${esc(d.title)}</b> <span class="badge ${['Approved','Implemented','Verified'].includes(d.status)?'ok':''}">${esc(jpStatus(d.status))}</span><p>${esc(d.summary)}</p><div class="meta">Decision: ${esc((d.decision_refs||[]).join(', ')||'なし')} / 前提: ${esc((d.depends_on||[]).join(', ')||'なし')}${missing.length?' / 不明 '+esc(missing.join(', ')):''}</div><button onclick="editDevSpecification('${escAttr(d.id)}')">編集</button></div>`}).join('')||'<div class="small">仕様なし</div>';
+ devDiscussionList.innerHTML=[...w.discussions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b> <span class="badge">${esc(discussionStatusLabel(d.status))}</span><div class="meta">${esc(d.id)} / 未決 ${String(d.open_questions||'').split(/\r?\n/).filter(x=>x.trim()).length}件 / 更新 ${esc(d.updated_at)}</div><p>${esc(d.summary||d.body||'')}</p><button onclick="editDevDiscussion('${escAttr(d.id)}')">開く / 編集</button><button onclick="exportDiscussionAiHandover('${escAttr(d.id)}')">AI共有</button></div>`).join('')||'<div class="dev-empty-guide">Discussionはまだありません。「＋ 新規Discussion」から追加できます。</div>';
+ devDecisionList.innerHTML=[...w.decisions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b> <span class="badge ${d.status==='Approved'?'ok':''}">${esc(jpStatus(d.status))}</span><div class="meta">${esc(d.id)} / 根拠: ${esc((d.source_discussion_ids||[]).join(', ')||'なし')}${d.approved_at?' / Human承認 '+esc(d.approved_at):''}</div><p>${esc(d.text)}</p><button onclick="editDevDecision('${escAttr(d.id)}')">開く / 編集</button></div>`).join('')||'<div class="dev-empty-guide">Decisionはまだありません。「＋ 新規Decision」から追加できます。</div>';
+ devSpecificationList.innerHTML=[...w.specifications].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>{const missing=(d.depends_on||[]).filter(id=>!w.specifications.some(x=>x.id===id));return `<div class="item"><b>${esc(d.title)}</b> <span class="badge ${['Approved','Implemented','Verified'].includes(d.status)?'ok':''}">${esc(jpStatus(d.status))}</span><div class="meta">${esc(d.id)} / Decision: ${esc((d.decision_refs||[]).join(', ')||'なし')} / 前提: ${esc((d.depends_on||[]).join(', ')||'なし')}${missing.length?' / 不明 '+esc(missing.join(', ')):''}</div><p>${esc(d.summary||d.body||'')}</p><button onclick="editDevSpecification('${escAttr(d.id)}')">開く / 編集</button></div>`}).join('')||'<div class="dev-empty-guide">Specificationはまだありません。「＋ 新規Specification」から追加できます。</div>';
  devDependencyOverview.innerHTML=w.specifications.map(d=>{const deps=d.depends_on||[],ready=deps.every(id=>w.specifications.some(x=>x.id===id&&['Approved','Implemented','Verified'].includes(x.status)));return `<div class="item"><b>${esc(d.id)} / ${esc(d.title)}</b> <span class="badge ${ready?'ok':'warn'}">${ready?'着手可能':'依存待ち'}</span><div class="meta">前提: ${esc(deps.join(', ')||'なし')}</div></div>`}).join('')||'<div class="small">仕様なし</div>';
  devOpenQuestionOverview.innerHTML=oq.map(x=>`<div class="item"><b>${esc(x.discussion_id)}</b><p>${esc(x.text)}</p></div>`).join('')||'<div class="small">未決事項なし</div>';
 }
@@ -8999,7 +9104,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','653');
+    url.searchParams.set('appv','654');
     location.replace(url.toString());
    }
  }
@@ -9008,7 +9113,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=653',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=654',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9027,7 +9132,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','653');
+    url.searchParams.set('appv','654');
     location.replace(url.toString());
    }
   });
