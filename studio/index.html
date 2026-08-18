@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B641</title>
+<title>GK Studio GKS-B642</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -458,13 +458,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B641</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B642</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B641</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B642</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2227,11 +2227,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=641"></script>
+<script src="./layer-controller.js?v=642"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B641';
+const DISTRIBUTION_BUILD='GKS-B642';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
 const CURRENT_KEY='gas_v4_current_project_v060';
@@ -2400,7 +2400,17 @@ function storyProtectedSnapshot(obj){
 function verifyStoryProtectedSnapshot(before,obj){
  const changed=[];Object.keys(before).forEach(k=>{if(JSON.stringify(obj[k])!==before[k])changed.push(k);});return changed;
 }
+function ensureProjectCompatibilityShape(projectData){
+ if(!projectData||typeof projectData!=='object'||Array.isArray(projectData))return projectData;
+ if(!Array.isArray(projectData.ai_programs))projectData.ai_programs=[];
+ if(!Array.isArray(projectData.design_cards))projectData.design_cards=[];
+ if(!Array.isArray(projectData.rules))projectData.rules=[];
+ return projectData;
+}
 function normalizeData(){
+ if(!Array.isArray(data.ai_programs))data.ai_programs=[];
+ if(!Array.isArray(data.design_cards))data.design_cards=[];
+ if(!Array.isArray(data.rules))data.rules=[];
  if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);else if(!Array.isArray(data.ai_programs))throw new Error('data.ai_programs must be an array');
  data.project=data.project||{id:currentProjectId,name:currentProjectId,product_version:'4.0.0',status:'development',description:'',updated_at:now()};
  data.chapters=data.chapters||[];
@@ -2499,6 +2509,7 @@ function updateRegistryFromData(){
  saveProjectRegistry(list);
 }
 function persist(message='端末保存'){
+ data=ensureProjectCompatibilityShape(data);
  if(window.GKSAIProgramStore)data=GKSAIProgramStore.normalizeProject(data);else if(!Array.isArray(data.ai_programs))throw new Error('data.ai_programs must be an array');
  if(window.GKAdventureStorySystem){(data.quests||[]).forEach(q=>{if(typeof GKAdventureStorySystem.normalizeQuest==='function')GKAdventureStorySystem.normalizeQuest(q)});(data.events||[]).forEach(e=>GKAdventureStorySystem.normalizeEvent(e));}
  rebuildTagIndex();
@@ -8378,6 +8389,7 @@ async function fetchCanonicalProjectData(){
   if(!response.ok)throw new Error(`HTTP ${response.status}`);
   const obj=await response.json();
   if(!obj||typeof obj!=='object'||!obj.project?.id)throw new Error('project.id がありません');
+  ensureProjectCompatibilityShape(obj);
   canonicalProjectSnapshot=obj;canonicalProjectFetchState='loaded';return obj;
  }catch(e){canonicalProjectSnapshot=null;canonicalProjectFetchState='unavailable';canonicalProjectFetchError=e?.message||String(e);return null}
 }
@@ -8401,9 +8413,10 @@ async function initializeCanonicalProjectData(){
   const id=String(canonical.project.id||'').trim();
   if(id){
    currentProjectId=id;localStorage.setItem(CURRENT_KEY,id);
-   safeStorageSet(projectStorageKey(id),JSON.stringify(canonical),'ZIP正本の初期読込');
-   const list=getProjectRegistry().filter(x=>x.id!==id);list.push({id,name:canonical.project?.name||id,updated_at:canonical.project?.updated_at||''});saveProjectRegistry(list);
-   data=structuredClone(canonical);normalizeLoadedProject();lastPersistedSnapshot=JSON.stringify(data);activeDataSource='ZIP project-data.json（初回自動読込）';
+   data=structuredClone(canonical);normalizeLoadedProject();
+   safeStorageSet(projectStorageKey(id),JSON.stringify(data),'ZIP正本の初期読込');
+   const list=getProjectRegistry().filter(x=>x.id!==id);list.push({id,name:data.project?.name||id,updated_at:data.project?.updated_at||''});saveProjectRegistry(list);
+   lastPersistedSnapshot=JSON.stringify(data);activeDataSource='ZIP project-data.json（初回自動読込）';
    validation=[];runValidation({silent:true});render();if(typeof loadDesignCards==='function')loadDesignCards();window.GKSAIProductionUI?.refresh();
   }
  }
@@ -8413,15 +8426,25 @@ async function reloadCanonicalProjectData(){
  const canonical=canonicalProjectSnapshot||await fetchCanonicalProjectData();
  if(!canonical)return alert('ZIP正本 project-data.json を読み込めません。HTTPサーバー経由でStudioを開いているか確認してください。');
  const id=String(canonical.project?.id||'').trim();if(id!==String(currentProjectId))return alert(`Project IDが異なるため自動反映しません。ZIP=${id} / 現在=${currentProjectId}`);
+ const localMs=projectUpdatedAtMs(data),canonicalMs=projectUpdatedAtMs(canonical);
+ if(canonicalMs&&localMs&&canonicalMs<localMs){
+  const localAt=data?.project?.updated_at||'不明',canonicalAt=canonical.project?.updated_at||'不明';
+  if(!confirm(`注意: ZIP正本の方が古いデータです。\n\nブラウザ作業データ: ${localAt}\nZIP正本: ${canonicalAt}\n\n通常は置き換えないでください。古い正本へ復元する目的でのみ続行してください。`))return;
+ }
  if(!confirm('現在のブラウザ作業データをバックアップして、ZIP内 project-data.json で置き換えますか？'))return;
+ const previousData=structuredClone(data);let committed=false;
  try{
   const report=buildFullImportGateReport(canonical,{sourceFilename:'project-data.json',inputType:'canonical_project',expectedProjectId:currentProjectId});
   if(!report.ok)return alert(`ZIP正本のPre-flightでERROR ${report.summary?.errors||0}件。反映していません。`);
   if(!createBackup('before-canonical-project-reload',{silent:true}))throw new Error('反映前バックアップを保存できませんでした。');
-  data=structuredClone(report.candidate);
+  data=structuredClone(report.candidate);ensureProjectCompatibilityShape(data);normalizeLoadedProject();
   if(!persist('canonical project-data.json reloaded'))throw new Error('保存できませんでした。');
+  committed=true;
   activeDataSource='ZIP project-data.json（手動再読込後）';if(typeof loadDesignCards==='function')loadDesignCards();renderDataSourceStatus();alert('ZIP正本 project-data.json を読み直しました。');
- }catch(e){alert('正本読込失敗: '+(e?.message||e))}
+ }catch(e){
+  if(!committed){data=previousData;lastPersistedSnapshot=JSON.stringify(data);render();renderDataSourceStatus();}
+  alert('正本読込失敗: '+(e?.message||e));
+ }
 }
 function toggleMobile(id){const el=document.getElementById(id);el.classList.toggle('mobile-open');if(id==='sidebar'&&el.classList.contains('mobile-open')){studioLauncherHomeActive=true;studioLauncherCategory=studioCategoryForView(typeof currentStudioView==='function'?currentStudioView():'');renderRecentFeatures();setTimeout(()=>document.getElementById('featureSearch')?.focus(),60)}else if(id==='sidebar'){studioLauncherHomeActive=false}}
 function closeMobile(){document.getElementById('sidebar').classList.remove('mobile-open');document.getElementById('inspector').classList.remove('mobile-open');studioLauncherHomeActive=false}
@@ -8454,7 +8477,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','641');
+    url.searchParams.set('appv','642');
     location.replace(url.toString());
    }
  }
@@ -8463,7 +8486,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=641',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=642',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -8482,7 +8505,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','641');
+    url.searchParams.set('appv','642');
     location.replace(url.toString());
    }
   });
