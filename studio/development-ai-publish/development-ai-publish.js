@@ -1,4 +1,4 @@
-/* GKS-B661 Development AI Publish
+/* GKS-B662 Development AI Publish
  * Development-only read interface for GitHub Pages.
  * Does not reuse Game Project GitHub sync data/model/handlers.
  */
@@ -48,6 +48,7 @@ function summarizeProject(w){
  const pendingDiscussions=discussions.filter(x=>String(x?.status||'')==='Pending');
  const status=String(w?.workspace?.status||'');
  const stage=workflowStage(w);
+ const lifecycle=['Active','Paused','Completed','Superseded','Archived'].includes(String(w?.lifecycle?.status||''))?String(w.lifecycle.status):'Active';
  const attentionMode=['Auto','Include','Exclude'].includes(String(w?.workspace?.ai_attention||'Auto'))?String(w?.workspace?.ai_attention||'Auto'):'Auto';
  const counts={
   discussions:discussions.length,
@@ -63,27 +64,33 @@ function summarizeProject(w){
  };
  const contentCount=counts.discussions+counts.architecture_nodes+counts.work_boxes+counts.tasks+counts.checks+counts.decisions+counts.specifications;
  const isEmpty=contentCount===0;
- const isFinished=status==='Completed'||stage==='Completed';
- const unresolved=!isFinished&&(pendingChecks.length>0||openTasks.length>0||openDiscussions.length>0||oq.length>0||status!=='Completed'||stage!=='Completed');
+ const isFinished=lifecycle==='Completed'||lifecycle==='Superseded'||lifecycle==='Archived';
+ const autoEligible=lifecycle==='Active';
+ const unresolved=autoEligible&&(pendingChecks.length>0||openTasks.length>0||openDiscussions.length>0||oq.length>0||stage!=='Completed');
  const reasons=[];
  if(failedChecks.length)reasons.push(`Failed確認 ${failedChecks.length}件`);
  if(pendingChecks.length)reasons.push(`確認待ち/FAIL ${pendingChecks.length}件`);
- if(status==='Pending')reasons.push('案件状態が保留');
+ if(lifecycle==='Paused')reasons.push('Lifecycle Paused');
+ if(lifecycle==='Completed')reasons.push('Lifecycle Completed');
+ if(lifecycle==='Superseded')reasons.push(`Lifecycle Superseded${w?.lifecycle?.superseded_by?' → '+w.lifecycle.superseded_by:''}`);
+ if(lifecycle==='Archived')reasons.push('Lifecycle Archived');
  if(['Specifying','Implementing','Validating'].includes(status))reasons.push(`案件状態 ${status}`);
  if(['Planning','Implementing','Verifying'].includes(stage))reasons.push(`Workflow ${stage}`);
  if(pendingDiscussions.length)reasons.push(`保留Discussion ${pendingDiscussions.length}件`);
  let attentionRequired=false;
  if(attentionMode==='Include')attentionRequired=true;
  else if(attentionMode==='Exclude')attentionRequired=false;
- else attentionRequired=!isEmpty&&!isFinished&&(pendingChecks.length>0||status==='Pending'||['Specifying','Implementing','Validating'].includes(status)||['Planning','Implementing','Verifying'].includes(stage)||pendingDiscussions.length>0);
+ else attentionRequired=!isEmpty&&autoEligible&&(pendingChecks.length>0||['Specifying','Implementing','Validating'].includes(status)||['Planning','Implementing','Verifying'].includes(stage)||pendingDiscussions.length>0);
  if(attentionMode==='Include')reasons.unshift('Human指定: 常に対象');
  if(attentionMode==='Exclude')reasons.unshift('Human指定: 対象外');
- const classification=isFinished?'Completed':isEmpty?'Empty':attentionRequired?'HumanAttention':'Background';
+ const classification=isFinished?lifecycle:isEmpty?'Empty':lifecycle!=='Active'?lifecycle:attentionRequired?'HumanAttention':'Background';
  return {
   id:String(w?.workspace?.id||''),
   name:String(w?.workspace?.name||''),
   status,
   workflow_stage:stage,
+  lifecycle_status:lifecycle,
+  superseded_by:String(w?.lifecycle?.superseded_by||''),
   updated_at:String(w?.workspace?.updated_at||''),
   unresolved,
   attention_required:attentionRequired,
@@ -205,9 +212,9 @@ function buildDataset(config){
  summaries.sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))||String(a.id).localeCompare(String(b.id)));
  const pending=summaries.filter(x=>x.attention_required);
  const projectsDoc={format:'gk-development-ai-public-projects',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:builds.studio_build,game_build:builds.game_build,scope:config.scope,project_count:summaries.length,read_endpoints:endpointUrls,projects:summaries};
- const pendingDoc={format:'gk-development-ai-public-pending',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,read_endpoints:{pages:endpointUrls.pages.pending,raw:endpointUrls.raw.pending,github:endpointUrls.github.pending},projects:pending};
+ const pendingDoc={format:'gk-development-ai-public-pending',version:'1.3',generated_at:generatedAt,publish_revision:publishRevision,studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,pending_semantics:'Human attention only. Auto evaluates Active lifecycle projects; Paused / Completed / Superseded / Archived are excluded unless ai_attention=Include. Per-project ai_attention can Include or Exclude.',pending_project_count:pending.length,read_endpoints:{pages:endpointUrls.pages.pending,raw:endpointUrls.raw.pending,github:endpointUrls.github.pending},projects:pending};
  const rootGatewayUrl=publicSiteRoot(config);
- const manifest={format:'gk-development-ai-public-manifest',version:'1.4',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v3-root-gateway',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Empty/background Discovery projects are excluded in Auto mode; per-project ai_attention can Include or Exclude.',entrypoints:{root_gateway:'/',projects:'projects.json',pending:'pending.json'},public_urls:{root_gateway:rootGatewayUrl,base:bases.pages,projects:endpointUrls.pages.projects,pending:endpointUrls.pages.pending,pages:endpointUrls.pages,raw:endpointUrls.raw,github:endpointUrls.github},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
+ const manifest={format:'gk-development-ai-public-manifest',version:'1.4',generated_at:generatedAt,publish_revision:publishRevision,publish_transport:'git-data-atomic-v3-root-gateway',studio_build:projectsDoc.studio_build,game_build:projectsDoc.game_build,scope:config.scope,project_count:summaries.length,pending_project_count:pending.length,pending_semantics:'Human attention only. Auto evaluates Active lifecycle projects; Paused / Completed / Superseded / Archived are excluded unless ai_attention=Include. Per-project ai_attention can Include or Exclude.',entrypoints:{root_gateway:'/',projects:'projects.json',pending:'pending.json'},public_urls:{root_gateway:rootGatewayUrl,base:bases.pages,projects:endpointUrls.pages.projects,pending:endpointUrls.pages.pending,pages:endpointUrls.pages,raw:endpointUrls.raw,github:endpointUrls.github},privacy:'Public read-only data. Secrets are redacted by key name; review content before publishing.'};
  return {generated_at:generatedAt,publish_revision:publishRevision,base,bases,rootGatewayUrl,endpointUrls,manifest,projectsDoc,pendingDoc,details,summaries,pending};
 }
 function buildRootGatewayData(dataset){
@@ -221,7 +228,7 @@ function buildRootGatewayData(dataset){
   const openDiscussionIds=new Set((sourceSummary.open_discussions||[]).map(x=>String(x.id||'')));
   for(const id of openDiscussionIds)targetIds.Discussion.add(id);
   const summary={
-   id:String(sourceSummary.id||''),name:String(sourceSummary.name||''),status:String(sourceSummary.status||''),workflow_stage:String(sourceSummary.workflow_stage||''),updated_at:String(sourceSummary.updated_at||''),
+   id:String(sourceSummary.id||''),name:String(sourceSummary.name||''),status:String(sourceSummary.status||''),workflow_stage:String(sourceSummary.workflow_stage||''),lifecycle_status:String(sourceSummary.lifecycle_status||'Active'),superseded_by:String(sourceSummary.superseded_by||''),updated_at:String(sourceSummary.updated_at||''),
    attention_mode:String(sourceSummary.attention_mode||''),attention_reasons:clone(sourceSummary.attention_reasons||[]),counts:clone(sourceSummary.counts||{}),implementation_approval:String(sourceSummary.implementation_approval||''),completion_approval:String(sourceSummary.completion_approval||''),open_questions:clone(sourceSummary.open_questions||[])
   };
   projects.push({
@@ -229,7 +236,7 @@ function buildRootGatewayData(dataset){
    workspace:deepRedact(project.workspace||{}),
    workflow:deepRedact(project.workflow||{}),
    pending_checks:pendingChecks,
-   current_state:deepRedact({project_context:project.project_context||null,current_focus:project.current_focus||null,project_rules:project.project_rules||null,source_baseline:project.source_baseline||null}),
+   current_state:deepRedact({project_context:project.project_context||null,current_focus:project.current_focus||null,project_rules:project.project_rules||null,source_baseline:project.source_baseline||null,lifecycle:project.lifecycle||null,latest_implementation_record:[...(project.implementation_records||[])].sort((a,b)=>String(b.recorded_at||'').localeCompare(String(a.recorded_at||'')))[0]||null}),
    review_targets:{
     architecture_nodes:(project.architecture_nodes||[]).filter(x=>targetIds.Architecture.has(String(x.id||''))).map(x=>deepRedact(x)),
     work_boxes:(project.work_boxes||[]).filter(x=>targetIds.WorkBox.has(String(x.id||''))).map(x=>deepRedact(x)),

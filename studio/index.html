@@ -9,12 +9,13 @@
 <link rel="stylesheet" href="./ai-production/ai-production.css?v=1">
 <link rel="stylesheet" href="./development-architecture/architecture-explorer.css?v=2">
 <link rel="stylesheet" href="./development-workspace-ui.css?v=3">
+<link rel="stylesheet" href="./development-project-context/development-project-context.css?v=1">
 <link rel="stylesheet" href="./development-workflow/development-workflow.css?v=1">
 <link rel="stylesheet" href="./development-ai-publish/development-ai-publish.css?v=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B661</title>
+<title>GK Studio GKS-B662</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -462,13 +463,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B661</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B662</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B661</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B662</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1784,11 +1785,11 @@ updateDeployDeleteControl();
         <div class="dev-settings-grid">
           <div class="field"><label>現在の開発案件</label><select id="developmentProjectSelect" onchange="switchDevelopmentProject(this.value)"></select></div>
           <div class="field"><label>案件名</label><input id="developmentProjectName" placeholder="開発案件名"></div>
-          <div class="field"><label>案件状態</label><select id="developmentProjectStatus"><option value="Exploring">検討中</option><option value="Specifying">仕様化中</option><option value="Implementing">実装中</option><option value="Validating">検証中</option><option value="Pending">保留</option><option value="Completed">完了</option></select></div>
+          <div class="field"><label>Workflow互換状態</label><select id="developmentProjectStatus" disabled><option value="Exploring">検討中</option><option value="Specifying">仕様化中</option><option value="Implementing">実装中</option><option value="Validating">検証中</option><option value="Pending">保留</option><option value="Completed">完了</option></select></div>
           <div class="field"><label>AI確認対象</label><select id="developmentProjectAIAttention"><option value="Auto">自動判定</option><option value="Include">常に対象</option><option value="Exclude">対象外</option></select></div>
         </div>
         <div class="toolbar"><button type="button" onclick="saveDevelopmentProjectSettings()">案件設定を保存</button></div>
-        <p class="small">「AI確認対象: 自動判定」は、空案件・Discovery段階の背景/探索案件をpending.jsonから除外し、Planning以降・保留・Pending/Failed確認をHuman確認対象にします。必要なら案件ごとに「常に対象 / 対象外」を指定できます。ブラウザ保存は案件別作業コピーです。JSONの読込・出力は上の「全案件データ」または案件を開いた後の「データ」から行えます。案件削除機能はありません。</p>
+        <p class="small">Workflow互換状態は「進行」画面から更新します。Lifecycleは案件を開いた最初の「現在地」で独立管理します。「AI確認対象: 自動判定」はLifecycleがActiveの案件だけを通常判定し、Paused / Completed / Superseded / Archivedは対象外です。必要なら案件ごとに「常に対象 / 対象外」を指定できます。</p>
       </div>
       <div id="developmentProjectRegistryStatus" class="small"></div>
     </div>
@@ -1804,7 +1805,48 @@ updateDeployDeleteControl();
       <div class="kpi"><span class="small">議論</span><b id="devKpiDiscussions">0</b></div><div class="kpi"><span class="small">Architecture</span><b id="devKpiArchitecture">0</b></div><div class="kpi"><span class="small">Work Box</span><b id="devKpiWorkBoxes">0</b></div><div class="kpi"><span class="small">Task</span><b id="devKpiTasks">0</b></div><div class="kpi"><span class="small">決定</span><b id="devKpiDecisions">0</b></div><div class="kpi"><span class="small">仕様</span><b id="devKpiSpecifications">0</b></div><div class="kpi"><span class="small">確認</span><b id="devKpiChecks">0</b></div><div class="kpi"><span class="small">未決事項</span><b id="devKpiOpenQuestions">0</b></div>
     </div>
     <div class="toolbar dev-project-tabs">
-      <button type="button" onclick="setDevelopmentPane('architecture')">構成</button><button type="button" onclick="setDevelopmentPane('discussion')">議論</button><button type="button" onclick="setDevelopmentPane('decision')">決定</button><button type="button" onclick="setDevelopmentPane('specification')">仕様</button><button type="button" onclick="setDevelopmentPane('workflow')">進行</button><button type="button" onclick="setDevelopmentPane('checks')">確認</button><button type="button" onclick="setDevelopmentPane('data')">データ</button><button type="button" onclick="setDevelopmentPane('aipublish')">AI共有</button><button type="button" onclick="setDevelopmentPane('overview')">依存・進捗</button>
+      <button type="button" onclick="setDevelopmentPane('context')">現在地</button><button type="button" onclick="setDevelopmentPane('architecture')">構成</button><button type="button" onclick="setDevelopmentPane('discussion')">議論</button><button type="button" onclick="setDevelopmentPane('decision')">決定</button><button type="button" onclick="setDevelopmentPane('specification')">仕様</button><button type="button" onclick="setDevelopmentPane('workflow')">進行</button><button type="button" onclick="setDevelopmentPane('checks')">確認</button><button type="button" onclick="setDevelopmentPane('data')">データ</button><button type="button" onclick="setDevelopmentPane('aipublish')">AI共有</button><button type="button" onclick="setDevelopmentPane('overview')">依存・進捗</button>
+    </div>
+
+    <div id="developmentPane-context" class="card hidden">
+      <div class="dev-pane-head"><div><h2>現在地 / Project Context</h2><p class="small">Purpose / Lifecycle / Workflow / Current Focus / Baseline / Active Rules / 最新実装 / Human確認を最初に確認します。</p></div><div class="toolbar"><button type="button" data-dpc-action="edit-context">Purposeを編集</button><button type="button" data-dpc-action="new-record">＋ 実装記録</button></div></div>
+      <div id="devContextOverview"></div>
+      <div id="devContextEditor" class="dpc-editor hidden">
+        <h3>Project Context</h3>
+        <div class="field"><label>Purpose</label><textarea id="dpcPurpose" rows="4" placeholder="この案件は何をするためのProjectか"></textarea></div>
+        <div class="field"><label>Summary</label><textarea id="dpcSummary" rows="3" placeholder="現在の短い説明"></textarea></div>
+        <div class="toolbar"><button class="primary" type="button" data-dpc-action="save-context">保存</button><button type="button" data-dpc-action="cancel-context">キャンセル</button></div>
+      </div>
+      <div id="devFocusEditor" class="dpc-editor hidden">
+        <h3>Current Focus</h3>
+        <div class="dpc-editor-grid"><div class="field"><label>Architecture</label><select id="dpcFocusArchitecture"></select></div><div class="field"><label>Work Box</label><select id="dpcFocusBox"></select></div></div>
+        <div class="field"><label>Theme</label><input id="dpcFocusTheme" placeholder="現在の検討・実装テーマ"></div>
+        <div class="field"><label>Goal</label><textarea id="dpcFocusGoal" rows="3" placeholder="このFocusで達成すること"></textarea></div>
+        <div class="toolbar"><button class="primary" type="button" data-dpc-action="save-focus">保存</button><button type="button" data-dpc-action="clear-focus">解除</button><button type="button" data-dpc-action="cancel-focus">キャンセル</button></div>
+      </div>
+      <div id="devBaselineEditor" class="dpc-editor hidden">
+        <h3>Source Baseline</h3>
+        <div class="dpc-editor-grid"><div class="field"><label>Studio Build</label><input id="dpcBaselineStudio"></div><div class="field"><label>Game Build</label><input id="dpcBaselineGame"></div></div>
+        <div class="field"><label>Source label</label><input id="dpcBaselineSource" placeholder="実装開始時のSource ZIP名など"></div>
+        <div class="toolbar"><button class="primary" type="button" data-dpc-action="save-baseline">Human確認して保存</button><button type="button" data-dpc-action="cancel-baseline">キャンセル</button></div>
+      </div>
+      <div id="devLifecycleEditor" class="dpc-editor hidden"></div>
+      <div id="devRuleEditor" class="dpc-editor hidden">
+        <h3 id="dpcRuleEditorTitle">Project Rule</h3>
+        <div class="dpc-editor-grid"><div class="field"><label>ID</label><input id="dpcRuleId"></div><div class="field"><label>状態</label><select id="dpcRuleStatus"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div></div>
+        <div class="field"><label>Rule</label><textarea id="dpcRuleText" rows="4"></textarea></div>
+        <div class="dpc-editor-grid"><div class="field"><label>Source type</label><input id="dpcRuleSourceType" placeholder="Decision / Specification / Human 等"></div><div class="field"><label>Source ID</label><input id="dpcRuleSourceId"></div></div>
+        <div class="toolbar"><button class="primary" type="button" data-dpc-action="save-rule">保存</button><button type="button" data-dpc-action="cancel-rule">キャンセル</button></div>
+      </div>
+      <div id="devImplementationEditor" class="dpc-editor hidden">
+        <h3>Implementation Record</h3>
+        <div class="dpc-editor-grid"><div class="field"><label>ID</label><input id="dpcImplId" readonly></div><div class="field"><label>Result</label><select id="dpcImplResult"><option value="Applied">Applied</option><option value="Partial">Partial</option><option value="Reverted">Reverted</option></select></div></div>
+        <div class="dpc-editor-grid"><div class="field"><label>Studio Build</label><input id="dpcImplStudio"></div><div class="field"><label>Game Build</label><input id="dpcImplGame"></div></div>
+        <div class="field"><label>Work Box IDs</label><input id="dpcImplBoxes" placeholder="BOX-0001, BOX-0002"></div>
+        <div class="field"><label>Task IDs</label><input id="dpcImplTasks" placeholder="TASK-0001, TASK-0002"></div>
+        <div class="field"><label>Evidence</label><textarea id="dpcImplEvidence" rows="4" placeholder="適用内容・確認結果・根拠"></textarea></div>
+        <div class="toolbar"><button class="primary" type="button" data-dpc-action="save-record">Human確認して保存</button><button type="button" data-dpc-action="cancel-record">キャンセル</button></div>
+      </div>
     </div>
 
     <div id="developmentPane-architecture" class="card hidden">
@@ -1815,12 +1857,12 @@ updateDeployDeleteControl();
           <div id="daxDetailNav" class="dax-detail-nav"><button type="button" data-dax-action="back-level">← 構成</button><div id="daxDetailBreadcrumb" class="dax-breadcrumb"></div></div>
           <div id="daxEmpty" class="dax-empty">Architecture Nodeを選択してください。</div>
           <div id="daxEditor" class="hidden">
-            <div id="daxNodeView" class="dax-view-card"><div class="dax-view-head"><div><div id="daxNodePath" class="dax-breadcrumb"></div><h3 id="daxNodeViewName"></h3><div id="daxNodeViewId" class="dax-view-id"></div></div><div class="toolbar"><button type="button" data-dax-action="edit-node">編集</button><button type="button" data-dax-action="child-add">＋ 子Node</button></div></div></div>
+            <div id="daxNodeView" class="dax-view-card"><div class="dax-view-head"><div><div id="daxNodePath" class="dax-breadcrumb"></div><h3 id="daxNodeViewName"></h3><div id="daxNodeViewId" class="dax-view-id"></div></div><div class="toolbar"><button type="button" onclick="GKSDevelopmentProjectContext?.setFocusFromArchitecture()">Focusに設定</button><button type="button" data-dax-action="edit-node">編集</button><button type="button" data-dax-action="child-add">＋ 子Node</button></div></div></div>
             <div id="daxNodeEditorPanel" class="dax-edit-panel hidden"><h3 id="daxNodeEditorTitle">Architecture Node</h3><div class="grid"><div class="field"><label>ID</label><input id="daxNodeId" readonly></div><div class="field"><label>親Node</label><select id="daxNodeParent"></select></div></div><div class="field"><label>名前</label><input id="daxNodeName"></div><div class="toolbar"><button class="primary" type="button" data-dax-action="save-node">保存</button><button type="button" data-dax-action="cancel-node-edit">キャンセル</button><button class="danger" type="button" data-dax-action="delete-node">Node削除</button></div></div>
             <div id="daxNodeDependent">
               <div id="daxChildSection"><div class="dax-section-divider"></div><div class="dev-section-head"><h3>子Node</h3></div><div id="daxChildNodeList" class="dax-child-list"></div></div>
               <div id="daxNodeWorkBoxes"><div class="dax-section-divider"></div><div class="dev-section-head"><div><h3>Work Box</h3><div id="daxBoxSummary" class="dax-summary"></div></div><button type="button" data-dax-action="new-box">＋ Work Box</button></div><div id="daxBoxList" class="dax-box-list"></div></div>
-              <div id="daxBoxView" class="dax-view-card hidden"><div class="dax-view-head"><div><div id="daxBoxViewId" class="dax-view-id"></div><h3 id="daxBoxViewTitle"></h3><div id="daxBoxViewStatus"></div></div><button type="button" data-dax-action="edit-box">編集</button></div><div id="daxBoxViewBody" class="dax-body-view"></div><div class="dax-section-divider"></div><div class="dev-section-head"><h3>Task</h3><button type="button" data-dax-action="new-task">＋ Task</button></div><div id="daxTaskList" class="dax-task-list"></div></div>
+              <div id="daxBoxView" class="dax-view-card hidden"><div class="dax-view-head"><div><div id="daxBoxViewId" class="dax-view-id"></div><h3 id="daxBoxViewTitle"></h3><div id="daxBoxViewStatus"></div></div><div class="toolbar"><button type="button" onclick="GKSDevelopmentProjectContext?.setFocusFromArchitecture()">Focusに設定</button><button type="button" data-dax-action="edit-box">編集</button></div></div><div id="daxBoxViewBody" class="dax-body-view"></div><div class="dax-section-divider"></div><div class="dev-section-head"><h3>Task</h3><button type="button" data-dax-action="new-task">＋ Task</button></div><div id="daxTaskList" class="dax-task-list"></div></div>
               <div id="daxTaskView" class="dax-view-card hidden"><div class="dax-view-head"><div><div id="daxTaskViewId" class="dax-view-id"></div><h3 id="daxTaskViewTitle"></h3><div id="daxTaskViewStatus"></div></div><div class="toolbar"><button type="button" data-dax-action="edit-current-task">編集</button><button class="danger" type="button" data-dax-action="delete-current-task">削除</button></div></div></div>
               <div id="daxBoxEditorPanel" class="dax-edit-panel hidden"><h3 id="daxBoxEditorTitle">Work Box</h3><div class="grid"><div class="field"><label>Box ID</label><input id="daxBoxId" readonly></div><div class="field"><label>状態</label><input id="daxBoxStatus" readonly></div></div><div class="field"><label>タイトル</label><input id="daxBoxTitle"></div><div class="field"><label>本文</label><textarea id="daxBoxBody" rows="9"></textarea></div><div class="toolbar"><button class="primary" type="button" data-dax-action="save-box">保存</button><button type="button" data-dax-action="cancel-box-edit">キャンセル</button><button class="danger" type="button" data-dax-action="delete-box">Work Box削除</button></div></div>
               <div id="daxTaskEditorPanel" class="dax-edit-panel hidden"><h3 id="daxTaskEditorTitle">Task</h3><div class="grid"><div class="field"><label>Task ID</label><input id="daxTaskId" readonly></div><div class="field"><label>状態</label><select id="daxTaskStatus"><option value="Todo">Todo</option><option value="Doing">Doing</option><option value="Blocked">Blocked</option><option value="Done">Done</option></select></div></div><div class="field"><label>Task</label><input id="daxTaskTitle"></div><div class="toolbar"><button class="primary" type="button" data-dax-action="save-task">保存</button><button type="button" data-dax-action="cancel-task-edit">キャンセル</button></div></div>
@@ -2383,11 +2425,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=661"></script>
+<script src="./layer-controller.js?v=662"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B661';
+const DISTRIBUTION_BUILD='GKS-B662';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3225,7 +3267,7 @@ const DEVELOPMENT_LEGACY_STORE_KEY='gk_development_workspace_v1';
 const DEVELOPMENT_REGISTRY_KEY='gk_development_project_registry_v1';
 const DEVELOPMENT_ACTIVE_PROJECT_KEY='gk_development_active_project_v1';
 const DEVELOPMENT_PROJECT_STORE_PREFIX='gk_development_project_v1:';
-let developmentProjectRegistry=null,activeDevelopmentProjectId='',developmentWorkspace=null,developmentPane='architecture',developmentScreen='projects',editingDevDiscussionId='',editingDevDecisionId='',editingDevSpecId='',selectedDevDiscussionId='',selectedDevDecisionId='',selectedDevSpecId='',developmentProjectListScrollY=0;const developmentRecordScrollY={discussion:0,decision:0,specification:0};
+let developmentProjectRegistry=null,activeDevelopmentProjectId='',developmentWorkspace=null,developmentPane='context',developmentScreen='projects',editingDevDiscussionId='',editingDevDecisionId='',editingDevSpecId='',selectedDevDiscussionId='',selectedDevDecisionId='',selectedDevSpecId='',developmentProjectListScrollY=0;const developmentRecordScrollY={discussion:0,decision:0,specification:0};
 function devRefs(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function developmentProjectStoreKey(id){return DEVELOPMENT_PROJECT_STORE_PREFIX+encodeURIComponent(String(id||''))}
 function developmentExplorationSeed(stamp=now()){
@@ -3252,11 +3294,11 @@ function developmentSeed(){
  const stamp='2026-08-18T13:00:00+09:00',explore=developmentExplorationSeed(stamp);
  return {schema_version:'1.1',workspace:{id:'DEV-WORKSPACE-001',name:'AI Development Studio 開発管理',status:'development',updated_at:stamp},discussions:[{id:'DISC-0001',title:'汎用AI開発Studio構想',status:'Open',summary:'Guild Adventure Studioで得たゲーム制作・AI共同開発の知見を、汎用AI開発Studioへ発展させる。',body:'既存ゲームのStory / Quest / Event / Character / Flag / 前提条件 / 次遷移を、仕様・依存関係・進捗管理へ一般化する。Discussion → Decision → Specificationまでを開発Studio側で管理し、Game Projectは別系統とする。',open_questions:'ゲーム接続Linkの正式Schema\nSpecification Revision方式\nTest / Buildとの正式な紐付け方式\nRole / Approval履歴の詳細モデル\nDiscussionからDecision / Specificationへの昇格操作\n開発管理JSONのGitHub正本化方式',conclusion:'開発Studio側にDiscussion / Decision / Specification / Dependency / Progressを持ち、ゲーム側とは後から専用Linkで接続する方向を採用する。',related_discussion_ids:[],artifact_note:'AI_Development_Studio_Concept_Draft_v0.1.zip',created_at:stamp,updated_at:stamp}],decisions:[{id:'DEC-DEV-0001',title:'開発管理とGame Projectを分離する',status:'Approved',text:'Discussion → Decision → Specificationまでを開発Studio側の独立データとして管理し、Quest / Event / Character / Flag / Master等のGame Project JSONへ混在させない。ゲームとの対応付けは別途Link機構で実装する。',rationale:'議論・正式仕様・ゲームコンテンツの責務を分離し、将来Web・業務システム等にも同じ開発管理Coreを利用できるようにするため。',source_discussion_ids:['DISC-0001'],approved_by:'Human',approved_at:stamp,created_at:stamp,updated_at:stamp}],specifications:[{id:'SPEC-DEV-0001',title:'独立Development Workspace仕様',status:'Approved',summary:'Studio基本領域にGame Projectとは独立した開発管理Workspaceを持つ。',body:'Development WorkspaceはDiscussion、Decision、Specificationを独立JSONとして保持する。Discussionは議論情報だけを持つ。Decisionは決定理由と根拠Discussionを持つ。Specificationは正式仕様、根拠Decision、前提Specification、Acceptance Criteriaを持つ。Game Project JSONの出力・検証・バックアップ件数にはDevelopment Workspaceを混在させない。ゲーム接続は将来の専用Link機構で行う。',decision_refs:['DEC-DEV-0001'],depends_on:[],acceptance_criteria:'Game Project JSONを出力してもDevelopment Workspaceが含まれない。\nDevelopment Workspace JSONを個別に出力・読込できる。\nDiscussion / Decision / Specificationを登録・編集できる。\nSpecificationの前提依存を表示できる。',approved_by:'Human',approved_at:stamp,created_at:stamp,updated_at:stamp}],architecture_nodes:explore.architecture_nodes,work_boxes:explore.work_boxes,tasks:explore.tasks,history:[{at:stamp,message:'Development Workspace v1 bootstrap approved by Human'},{at:stamp,message:'Architecture / Work Box / Task exploration workspace bootstrap'}]};
 }
-function blankDevelopmentProjectSeed(id,name){const stamp=now();return {schema_version:'1.1',workspace:{id:String(id||''),name:String(name||id||'新しい開発案件'),status:'Exploring',ai_attention:'Auto',updated_at:stamp},discussions:[],decisions:[],specifications:[],architecture_nodes:[],work_boxes:[],tasks:[],checks:[],workflow:{stage:'Discovery',implementation_approval:{status:'Pending',by:'',at:''},completion_approval:{status:'Pending',by:'',at:''}},history:[{at:stamp,message:'Development Project created'}]}}
+function blankDevelopmentProjectSeed(id,name){const stamp=now();return {schema_version:'1.2',workspace:{id:String(id||''),name:String(name||id||'新しい開発案件'),status:'Exploring',ai_attention:'Auto',updated_at:stamp},project_context:{purpose:'',summary:''},current_focus:{architecture_id:'',work_box_id:'',theme:'',goal:''},project_rules:[],source_baseline:{studio_build:'',game_build:'',source_label:'',source_role:'current_baseline',recorded_at:''},lifecycle:{status:'Active',superseded_by:'',updated_at:stamp},implementation_records:[],discussions:[],decisions:[],specifications:[],architecture_nodes:[],work_boxes:[],tasks:[],checks:[],workflow:{stage:'Discovery',implementation_approval:{status:'Pending',by:'',at:''},completion_approval:{status:'Pending',by:'',at:''}},history:[{at:stamp,message:'Development Project created'}]}}
 function normalizeDevelopmentWorkspace(raw){
- const x=(raw&&typeof raw==='object'&&!Array.isArray(raw))?structuredClone(raw):developmentSeed();
+ const x=(raw&&typeof raw==='object'&&!Array.isArray(raw))?structuredClone(raw):developmentSeed(),sourceSchema=String(x.schema_version||'1.1');
  const needsExplorationBootstrap=!Array.isArray(x.architecture_nodes)&&!Array.isArray(x.work_boxes)&&!Array.isArray(x.tasks);
- x.schema_version='1.1';x.workspace=x.workspace&&typeof x.workspace==='object'?x.workspace:{id:'',name:'Development Project',status:'development',updated_at:now()};x.workspace.id=String(x.workspace.id||'');x.workspace.name=String(x.workspace.name||x.workspace.id||'Development Project');x.workspace.status=String(x.workspace.status||'development');x.workspace.ai_attention=['Auto','Include','Exclude'].includes(String(x.workspace.ai_attention||'Auto'))?String(x.workspace.ai_attention||'Auto'):'Auto';x.discussions=Array.isArray(x.discussions)?x.discussions:[];x.decisions=Array.isArray(x.decisions)?x.decisions:[];x.specifications=Array.isArray(x.specifications)?x.specifications:[];x.history=Array.isArray(x.history)?x.history:[];
+ x.schema_version='1.2';x.workspace=x.workspace&&typeof x.workspace==='object'?x.workspace:{id:'',name:'Development Project',status:'development',updated_at:now()};x.workspace.id=String(x.workspace.id||'');x.workspace.name=String(x.workspace.name||x.workspace.id||'Development Project');x.workspace.status=String(x.workspace.status||'development');x.workspace.ai_attention=['Auto','Include','Exclude'].includes(String(x.workspace.ai_attention||'Auto'))?String(x.workspace.ai_attention||'Auto'):'Auto';x.discussions=Array.isArray(x.discussions)?x.discussions:[];x.decisions=Array.isArray(x.decisions)?x.decisions:[];x.specifications=Array.isArray(x.specifications)?x.specifications:[];x.history=Array.isArray(x.history)?x.history:[];
  if(needsExplorationBootstrap){const explore=developmentExplorationSeed();x.architecture_nodes=explore.architecture_nodes;x.work_boxes=explore.work_boxes;x.tasks=explore.tasks;x.history.push({at:now(),message:'Architecture / Work Box / Task探索データを初期化'});}
  x.architecture_nodes=Array.isArray(x.architecture_nodes)?x.architecture_nodes:[];x.work_boxes=Array.isArray(x.work_boxes)?x.work_boxes:[];x.tasks=Array.isArray(x.tasks)?x.tasks:[];
  x.discussions=x.discussions.map(d=>({id:String(d.id||''),title:String(d.title||''),status:['Open','Pending','Resolved','Archived'].includes(d.status)?d.status:'Open',summary:String(d.summary||''),body:String(d.body||''),open_questions:String(d.open_questions||''),conclusion:String(d.conclusion||''),related_discussion_ids:Array.isArray(d.related_discussion_ids)?d.related_discussion_ids.map(String).filter(Boolean):[],artifact_note:String(d.artifact_note||''),created_at:d.created_at||now(),updated_at:d.updated_at||d.created_at||now()}));
@@ -3268,6 +3310,13 @@ function normalizeDevelopmentWorkspace(raw){
  const boxIds=new Set(x.work_boxes.map(b=>b.id));x.tasks=x.tasks.map(t=>({id:String(t.id||''),box_id:String(t.box_id||''),title:String(t.title||''),status:['Todo','Doing','Blocked','Done'].includes(t.status)?t.status:'Todo',created_at:t.created_at||now(),updated_at:t.updated_at||t.created_at||now()})).filter(t=>t.id&&boxIds.has(t.box_id));
  x.checks=Array.isArray(x.checks)?x.checks:[];x.checks=x.checks.map(c=>({id:String(c.id||''),title:String(c.title||''),gate:['General','Implementation','Completion'].includes(c.gate)?c.gate:'General',target_type:['Project','Architecture','WorkBox','Task','Artifact'].includes(c.target_type)?c.target_type:'Project',target_id:String(c.target_id||''),status:['Pending','Passed','Failed','Waived'].includes(c.status)?c.status:'Pending',result:String(c.result||''),evidence:String(c.evidence||''),checked_by:String(c.checked_by||''),checked_at:String(c.checked_at||''),created_at:c.created_at||now(),updated_at:c.updated_at||c.created_at||now()})).filter(c=>c.id);
  const stageFromStatus={Specifying:'Planning',Implementing:'Implementing',Validating:'Verifying',Completed:'Completed'};x.workflow=x.workflow&&typeof x.workflow==='object'&&!Array.isArray(x.workflow)?x.workflow:{};x.workflow.stage=['Discovery','Planning','Implementing','Verifying','Completed'].includes(x.workflow.stage)?x.workflow.stage:(stageFromStatus[developmentProjectStatusValue(x.workspace.status)]||'Discovery');x.workflow.implementation_approval=x.workflow.implementation_approval&&typeof x.workflow.implementation_approval==='object'?x.workflow.implementation_approval:{status:'Pending',by:'',at:''};x.workflow.completion_approval=x.workflow.completion_approval&&typeof x.workflow.completion_approval==='object'?x.workflow.completion_approval:{status:'Pending',by:'',at:''};
+ x.project_context=x.project_context&&typeof x.project_context==='object'&&!Array.isArray(x.project_context)?x.project_context:{};x.project_context={purpose:String(x.project_context.purpose||''),summary:String(x.project_context.summary||'')};
+ x.current_focus=x.current_focus&&typeof x.current_focus==='object'&&!Array.isArray(x.current_focus)?x.current_focus:{};x.current_focus={architecture_id:String(x.current_focus.architecture_id||''),work_box_id:String(x.current_focus.work_box_id||''),theme:String(x.current_focus.theme||''),goal:String(x.current_focus.goal||'')};
+ x.project_rules=Array.isArray(x.project_rules)?x.project_rules:[];x.project_rules=x.project_rules.map(r=>({id:String(r.id||''),text:String(r.text||''),status:r.status==='Inactive'?'Inactive':'Active',source_type:String(r.source_type||''),source_id:String(r.source_id||''),created_at:String(r.created_at||now()),updated_at:String(r.updated_at||r.created_at||now())})).filter(r=>r.id&&r.text);
+ x.source_baseline=x.source_baseline&&typeof x.source_baseline==='object'&&!Array.isArray(x.source_baseline)?x.source_baseline:{};x.source_baseline={studio_build:String(x.source_baseline.studio_build||''),game_build:String(x.source_baseline.game_build||''),source_label:String(x.source_baseline.source_label||''),source_role:'current_baseline',recorded_at:String(x.source_baseline.recorded_at||'')};
+ const migrationLifecycle=developmentProjectStatusValue(x.workspace.status)==='Completed'?'Completed':developmentProjectStatusValue(x.workspace.status)==='Pending'?'Paused':'Active';x.lifecycle=x.lifecycle&&typeof x.lifecycle==='object'&&!Array.isArray(x.lifecycle)?x.lifecycle:{};let lifecycleStatus=['Active','Paused','Completed','Superseded','Archived'].includes(x.lifecycle.status)?x.lifecycle.status:migrationLifecycle;let supersededBy=String(x.lifecycle.superseded_by||'');if(lifecycleStatus==='Superseded'&&!supersededBy)lifecycleStatus='Active';x.lifecycle={status:lifecycleStatus,superseded_by:lifecycleStatus==='Superseded'?supersededBy:'',updated_at:String(x.lifecycle.updated_at||x.workspace.updated_at||now())};
+ x.implementation_records=Array.isArray(x.implementation_records)?x.implementation_records:[];x.implementation_records=x.implementation_records.map(r=>({id:String(r.id||''),studio_build:String(r.studio_build||''),game_build:String(r.game_build||''),work_box_ids:Array.isArray(r.work_box_ids)?r.work_box_ids.map(String).filter(Boolean):[],task_ids:Array.isArray(r.task_ids)?r.task_ids.map(String).filter(Boolean):[],result:['Applied','Partial','Reverted'].includes(r.result)?r.result:'Applied',evidence:String(r.evidence||''),recorded_at:String(r.recorded_at||now())})).filter(r=>r.id);
+ if(sourceSchema!=='1.2'&&!x.history.some(h=>h?.message==='Development Project schema normalized to 1.2'))x.history.push({at:now(),message:'Development Project schema normalized to 1.2'});
  return x;
 }
 function normalizeDevelopmentProjectRegistry(raw){
@@ -3302,6 +3351,9 @@ function developmentProjectStatusValue(value){
 }
 function developmentProjectStatusLabel(value){return ({Exploring:'検討中',Specifying:'仕様化中',Implementing:'実装中',Validating:'検証中',Pending:'保留',Completed:'完了'})[developmentProjectStatusValue(value)]||'検討中'}
 function developmentProjectStatusClass(value){const v=developmentProjectStatusValue(value);return v==='Completed'?'is-finished':v==='Pending'?'is-pending':''}
+function developmentLifecycleValue(value){return ['Active','Paused','Completed','Superseded','Archived'].includes(String(value||''))?String(value):'Active'}
+function developmentLifecycleLabel(value){return ({Active:'稼働中',Paused:'一時停止',Completed:'完了',Superseded:'置換済み',Archived:'保管'})[developmentLifecycleValue(value)]||'稼働中'}
+function developmentLifecycleClass(value){const v=developmentLifecycleValue(value);return ['Completed','Superseded','Archived'].includes(v)?'is-finished':v==='Paused'?'is-pending':''}
 function readDevelopmentProjectByEntry(entry){
  if(!entry)return null;
  if(entry.id===activeDevelopmentProjectId&&developmentWorkspace)return normalizeDevelopmentWorkspace(developmentWorkspace);
@@ -3309,8 +3361,9 @@ function readDevelopmentProjectByEntry(entry){
 }
 function developmentProjectSnapshot(entry){
  const w=readDevelopmentProjectByEntry(entry),boxes=[...(w?.work_boxes||[])].sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||''))),discussions=[...(w?.discussions||[])].sort((a,b)=>String(b.updated_at||'').localeCompare(String(a.updated_at||''))),latestBox=boxes[0]||null,latestDiscussion=discussions[0]||null;
- const openTasks=(w?.tasks||[]).filter(t=>t.status!=='Done').length,openDiscussions=discussions.filter(d=>['Open','Pending'].includes(d.status)).length,openChecks=(w?.checks||[]).filter(c=>['Pending','Failed'].includes(c.status)).length,status=developmentProjectStatusValue(w?.workspace?.status||entry?.status);
- return {entry,w,status,latestBox,latestDiscussion,openTasks,openDiscussions,openChecks,updated_at:String(w?.workspace?.updated_at||entry?.updated_at||''),focus:latestBox?`Work Box: ${latestBox.title}`:latestDiscussion?`Discussion: ${latestDiscussion.title}`:'まだ検討内容がありません'};
+ const openTasks=(w?.tasks||[]).filter(t=>t.status!=='Done').length,openDiscussions=discussions.filter(d=>['Open','Pending'].includes(d.status)).length,openChecks=(w?.checks||[]).filter(c=>['Pending','Failed'].includes(c.status)).length,status=developmentProjectStatusValue(w?.workspace?.status||entry?.status),lifecycle=developmentLifecycleValue(w?.lifecycle?.status);
+ const focusBox=(w?.work_boxes||[]).find(b=>b.id===w?.current_focus?.work_box_id),focusNode=(w?.architecture_nodes||[]).find(n=>n.id===w?.current_focus?.architecture_id),focus=focusBox?`Work Box: ${focusBox.title}`:focusNode?`Architecture: ${focusNode.name}`:w?.current_focus?.theme?`Focus: ${w.current_focus.theme}`:latestBox?`Work Box: ${latestBox.title}`:latestDiscussion?`Discussion: ${latestDiscussion.title}`:'まだ検討内容がありません';
+ return {entry,w,status,lifecycle,latestBox,latestDiscussion,openTasks,openDiscussions,openChecks,updated_at:String(w?.workspace?.updated_at||entry?.updated_at||''),focus};
 }
 function renderDevelopmentProjectSelector(){
  const rows=ensureDevelopmentProjectRegistry(),sel=document.getElementById('developmentProjectSelect'),entry=activeDevelopmentProjectEntry();
@@ -3323,8 +3376,8 @@ function renderDevelopmentProjectCards(){
  const container=document.getElementById('developmentProjectCards');if(!container)return;
  const query=String(document.getElementById('developmentProjectSearch')?.value||'').trim().toLowerCase(),filter=String(document.getElementById('developmentProjectFilter')?.value||'in-progress');
  let rows=ensureDevelopmentProjectRegistry().map(developmentProjectSnapshot);
- rows=rows.filter(s=>{const hay=[s.entry.id,s.entry.name,s.latestBox?.title,s.latestBox?.body,s.latestDiscussion?.title].filter(Boolean).join(' ').toLowerCase();if(query&&!hay.includes(query))return false;if(filter==='all')return true;if(filter==='pending')return s.status==='Pending';if(filter==='finished')return s.status==='Completed';return !['Pending','Completed'].includes(s.status)}).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)));
- container.innerHTML=rows.map(s=>`<div class="dev-project-card ${s.entry.id===activeDevelopmentProjectId?'is-active':''}"><div class="dev-project-card-top"><div><div class="dev-project-card-title">${esc(s.entry.name)}</div><div class="dev-project-id">${esc(s.entry.id)}</div></div><span class="dev-project-badge ${developmentProjectStatusClass(s.status)}">${esc(developmentProjectStatusLabel(s.status))}</span></div><div class="dev-project-card-focus">${esc(s.focus)}</div><div class="dev-project-card-meta"><span>未完了Task ${s.openTasks}</span><span>確認待ち ${s.openChecks}</span><span>検討中Discussion ${s.openDiscussions}</span><span>更新 ${esc(s.updated_at||'不明')}</span></div><div class="dev-project-card-actions"><button class="primary" type="button" onclick="openDevelopmentProject('${escAttr(s.entry.id)}')">開く</button></div></div>`).join('')||'<div class="dev-empty-guide">条件に一致する開発案件がありません。</div>';
+ rows=rows.filter(s=>{const hay=[s.entry.id,s.entry.name,s.latestBox?.title,s.latestBox?.body,s.latestDiscussion?.title,s.w?.project_context?.purpose,s.w?.current_focus?.theme].filter(Boolean).join(' ').toLowerCase();if(query&&!hay.includes(query))return false;if(filter==='all')return true;if(filter==='pending')return s.lifecycle==='Paused';if(filter==='finished')return ['Completed','Superseded','Archived'].includes(s.lifecycle);return s.lifecycle==='Active'}).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)));
+ container.innerHTML=rows.map(s=>`<div class="dev-project-card ${s.entry.id===activeDevelopmentProjectId?'is-active':''}"><div class="dev-project-card-top"><div><div class="dev-project-card-title">${esc(s.entry.name)}</div><div class="dev-project-id">${esc(s.entry.id)}</div></div><div><span class="dev-project-badge ${developmentLifecycleClass(s.lifecycle)}">${esc(developmentLifecycleLabel(s.lifecycle))}</span> <span class="dev-project-badge ${developmentProjectStatusClass(s.status)}">${esc(developmentProjectStatusLabel(s.status))}</span></div></div><div class="dev-project-card-focus">${esc(s.focus)}</div><div class="dev-project-card-meta"><span>未完了Task ${s.openTasks}</span><span>確認待ち ${s.openChecks}</span><span>検討中Discussion ${s.openDiscussions}</span><span>更新 ${esc(s.updated_at||'不明')}</span></div><div class="dev-project-card-actions"><button class="primary" type="button" onclick="openDevelopmentProject('${escAttr(s.entry.id)}')">開く</button></div></div>`).join('')||'<div class="dev-empty-guide">条件に一致する開発案件がありません。</div>';
 }
 function toggleDevelopmentProjectSettings(force){const el=document.getElementById('developmentProjectSettings');if(!el)return;const open=typeof force==='boolean'?force:el.classList.contains('hidden');el.classList.toggle('hidden',!open);if(open)renderDevelopmentProjectSelector()}
 function saveDevelopmentWorkspace(message='update'){
@@ -3340,7 +3393,7 @@ function loadDevelopmentWorkspace(){
  migrateLegacyProjectDiscussions();return developmentWorkspace;
 }
 function hideDevelopmentRecordEditors(){['devDiscussionEditorPanel','devDecisionEditorPanel','devSpecEditorPanel'].forEach(id=>document.getElementById(id)?.classList.add('hidden'))}
-function resetDevelopmentEditorsForProjectSwitch(){editingDevDiscussionId='';editingDevDecisionId='';editingDevSpecId='';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';resetDevDiscussionEditor();resetDevDecisionEditor();resetDevSpecEditor();hideDevelopmentRecordEditors();window.GKSDevelopmentArchitectureExplorer?.reset?.();window.GKSDevelopmentWorkflow?.reset?.()}
+function resetDevelopmentEditorsForProjectSwitch(){editingDevDiscussionId='';editingDevDecisionId='';editingDevSpecId='';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';resetDevDiscussionEditor();resetDevDecisionEditor();resetDevSpecEditor();hideDevelopmentRecordEditors();window.GKSDevelopmentProjectContext?.reset?.();window.GKSDevelopmentArchitectureExplorer?.reset?.();window.GKSDevelopmentWorkflow?.reset?.()}
 function switchDevelopmentProject(id){
  ensureDevelopmentProjectRegistry();id=String(id||'');if(!developmentProjectRegistry.some(x=>x.id===id)){renderDevelopmentProjectSelector();return}if(id===activeDevelopmentProjectId){renderDevelopmentWorkspace();return}
  if(!confirm('開発案件を切り替えます。入力欄に未保存の内容がある場合は失われます。続けますか？')){renderDevelopmentProjectSelector();return}
@@ -3355,7 +3408,7 @@ function saveDevelopmentProjectSettings(){
 }
 function renameDevelopmentProject(){saveDevelopmentProjectSettings()}
 function developmentProjectLatestFocus(entry){const snap=developmentProjectSnapshot(entry);return snap.latestBox?{node_id:snap.latestBox.node_id,box_id:snap.latestBox.id}:null}
-function openDevelopmentProject(id){developmentProjectListScrollY=window.scrollY||0;id=String(id||'');if(id!==activeDevelopmentProjectId)switchDevelopmentProject(id);if(id!==activeDevelopmentProjectId)return;developmentScreen='project';developmentPane='architecture';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0)}
+function openDevelopmentProject(id){developmentProjectListScrollY=window.scrollY||0;id=String(id||'');if(id!==activeDevelopmentProjectId)switchDevelopmentProject(id);if(id!==activeDevelopmentProjectId)return;developmentScreen='project';developmentPane='context';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0)}
 function backToDevelopmentProjectList(){developmentScreen='projects';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';hideDevelopmentRecordEditors();window.GKSDevelopmentArchitectureExplorer?.reset?.();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:developmentProjectListScrollY||0,behavior:'instant'}),0)}
 function openDevelopmentProjectSettingsFromDetail(){backToDevelopmentProjectList();setTimeout(()=>toggleDevelopmentProjectSettings(true),0)}
 function continueDevelopmentProject(id){id=String(id||'');if(developmentScreen!=='project'||id!==activeDevelopmentProjectId)openDevelopmentProject(id);if(id!==activeDevelopmentProjectId)return;developmentPane='architecture';setDevelopmentPane('architecture');const focus=developmentProjectLatestFocus(activeDevelopmentProjectEntry());if(focus)setTimeout(()=>window.GKSDevelopmentArchitectureExplorer?.focus?.(focus.node_id,focus.box_id),0)}
@@ -3364,7 +3417,7 @@ async function importDevelopmentProjectAsNew(file){
  if(!file)return;try{ensureDevelopmentProjectRegistry();const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 確認 ${(candidate.checks||[]).length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;let id=String(candidate.workspace.id||'').trim()||devNextProjectId();const originalId=id;if(developmentProjectRegistry.some(x=>x.id===id))id=devNextProjectId();const name=String(candidate.workspace.name||file.name.replace(/\.json$/i,'')||id);if(!confirm(`開発管理JSONを新しい案件として追加します。\n${count}\n案件名: ${name}\n案件ID: ${id}${originalId!==id?`\n（元ID ${originalId} は使用中のため新IDへ変更）`:''}\n\n現在案件は上書きしません。追加しますか？`))return;candidate.workspace.id=id;candidate.workspace.name=name;candidate.workspace.updated_at=now();candidate.history.push({at:now(),message:`Development Project JSON imported as new project: ${id}`});localStorage.setItem(developmentProjectStoreKey(id),JSON.stringify(candidate));developmentProjectRegistry.push({id,name,status:developmentProjectStatusValue(candidate.workspace.status),created_at:candidate.workspace.updated_at,updated_at:candidate.workspace.updated_at});activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`新しい開発案件 ${id} / ${name} を追加しました。`)}catch(e){alert('開発案件JSON追加失敗: '+e.message)}
 }
 function devNextId(prefix,rows){const used=new Set((rows||[]).map(x=>x.id));let n=1,id;do{id=prefix+String(n++).padStart(4,'0')}while(used.has(id));return id}
-function setDevelopmentPane(name){developmentPane=name;['architecture','discussion','decision','specification','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
+function setDevelopmentPane(name){developmentPane=name;['context','architecture','discussion','decision','specification','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
 function resetDevDiscussionEditor(){editingDevDiscussionId='';['devDiscussionId','devDiscussionTitle','devDiscussionSummary','devDiscussionBody','devDiscussionOpenQuestions','devDiscussionConclusion','devDiscussionRelated','devDiscussionArtifact'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devDiscussionStatus'))devDiscussionStatus.value='Open'}
 function startNewDevDiscussion(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorTitle').textContent='新規Discussion';document.getElementById('devDiscussionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDiscussionTitle?.focus(),0)}
 function closeDevDiscussionEditor(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorPanel')?.classList.add('hidden')}
@@ -3415,13 +3468,14 @@ function renderDevelopmentWorkspace(){
  document.getElementById('developmentProjectDetailView')?.classList.toggle('hidden',developmentScreen!=='project');
  if(developmentScreen!=='project')return;
  const currentTitle=document.getElementById('developmentCurrentProjectTitle'),currentFocus=document.getElementById('developmentCurrentProjectFocus');
- if(currentTitle)currentTitle.innerHTML=`${esc(entry?.name||w.workspace.name||'')} <span class="dev-project-badge ${developmentProjectStatusClass(w.workspace.status)}">${esc(developmentProjectStatusLabel(w.workspace.status))}</span>`;
- if(currentFocus)currentFocus.textContent=`${entry?.id||w.workspace.id||''} / ${snap.focus}`;
+ if(currentTitle)currentTitle.innerHTML=`${esc(entry?.name||w.workspace.name||'')} <span class="dev-project-badge ${developmentLifecycleClass(w.lifecycle?.status)}">${esc(developmentLifecycleLabel(w.lifecycle?.status))}</span> <span class="dev-project-badge ${developmentProjectStatusClass(w.workspace.status)}">${esc(developmentProjectStatusLabel(w.workspace.status))}</span>`;
+ if(currentFocus)currentFocus.textContent=`${entry?.id||w.workspace.id||''} / Workflow ${w.workflow?.stage||'Discovery'} / ${snap.focus}`;
  if(document.getElementById('developmentProjectBreadcrumb'))developmentProjectBreadcrumb.textContent=entry?.name||w.workspace.name||'';
  devKpiDiscussions.textContent=w.discussions.length;devKpiArchitecture.textContent=w.architecture_nodes.length;devKpiWorkBoxes.textContent=w.work_boxes.length;devKpiTasks.textContent=w.tasks.length;devKpiDecisions.textContent=w.decisions.length;devKpiSpecifications.textContent=w.specifications.length;devKpiChecks.textContent=(w.checks||[]).length;devKpiOpenQuestions.textContent=oq.length;
  developmentStoreStatus.innerHTML=`<b>更新:</b> ${esc(w.workspace.updated_at||'')} / <b>未完了Task:</b> ${snap.openTasks} / <b>確認待ち:</b> ${snap.openChecks} / <b>検討中Discussion:</b> ${snap.openDiscussions}<br><b>保存:</b> 案件別作業コピー。正本として残すときは「データ」から案件JSONを出力。`;
- const dataSummary=document.getElementById('developmentProjectDataSummary');if(dataSummary)dataSummary.innerHTML=`<b>${esc(w.workspace.name||entry?.name||'')}</b><br><b>ID:</b> ${esc(w.workspace.id||entry?.id||'')} / <b>状態:</b> ${esc(developmentProjectStatusLabel(w.workspace.status))} / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>内容:</b> Architecture ${w.architecture_nodes.length} / Work Box ${w.work_boxes.length} / Task ${w.tasks.length} / 確認 ${(w.checks||[]).length} / Discussion ${w.discussions.length} / Decision ${w.decisions.length} / Specification ${w.specifications.length}`;
- ['architecture','discussion','decision','specification','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
+ const dataSummary=document.getElementById('developmentProjectDataSummary');if(dataSummary)dataSummary.innerHTML=`<b>${esc(w.workspace.name||entry?.name||'')}</b><br><b>ID:</b> ${esc(w.workspace.id||entry?.id||'')} / <b>Lifecycle:</b> ${esc(developmentLifecycleLabel(w.lifecycle?.status))} / <b>Workflow:</b> ${esc(w.workflow?.stage||'Discovery')} / <b>互換状態:</b> ${esc(developmentProjectStatusLabel(w.workspace.status))} / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>内容:</b> Architecture ${w.architecture_nodes.length} / Work Box ${w.work_boxes.length} / Task ${w.tasks.length} / 確認 ${(w.checks||[]).length} / Discussion ${w.discussions.length} / Decision ${w.decisions.length} / Specification ${w.specifications.length}`;
+ ['context','architecture','discussion','decision','specification','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
+ if(developmentPane==='context')window.GKSDevelopmentProjectContext?.render();
  if(developmentPane==='architecture')window.GKSDevelopmentArchitectureExplorer?.render();
  if(developmentPane==='workflow'||developmentPane==='checks')window.GKSDevelopmentWorkflow?.render();
  if(developmentPane==='aipublish')window.GKSDevelopmentAIPublish?.render();
@@ -3639,7 +3693,7 @@ function developmentProjectCollectionPayload(){
 }
 function renderDevelopmentAllDataStatus(){
  const el=document.getElementById('developmentAllDataStatus');if(!el)return;
- const rows=ensureDevelopmentProjectRegistry().map(developmentProjectSnapshot),active=activeDevelopmentProjectEntry(),finished=rows.filter(x=>x.status==='Completed').length,pending=rows.filter(x=>x.status==='Pending').length,inProgress=rows.length-finished-pending;
+ const rows=ensureDevelopmentProjectRegistry().map(developmentProjectSnapshot),active=activeDevelopmentProjectEntry(),finished=rows.filter(x=>['Completed','Superseded','Archived'].includes(x.lifecycle)).length,pending=rows.filter(x=>x.lifecycle==='Paused').length,inProgress=rows.filter(x=>x.lifecycle==='Active').length;
  el.innerHTML=`<b>全案件:</b> ${rows.length}件 / <b>検討・作業中:</b> ${inProgress} / <b>保留:</b> ${pending} / <b>完了:</b> ${finished}<br><b>現在案件:</b> ${esc(active?.id||'')} / ${esc(active?.name||'')}`;
 }
 function exportAllDevelopmentProjects(){downloadText('development-projects.json',JSON.stringify(developmentProjectCollectionPayload(),null,2),'application/json;charset=utf-8')}
@@ -9157,7 +9211,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','661');
+    url.searchParams.set('appv','662');
     location.replace(url.toString());
    }
  }
@@ -9166,7 +9220,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=661',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=662',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9185,7 +9239,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','661');
+    url.searchParams.set('appv','662');
     location.replace(url.toString());
    }
   });
@@ -9279,10 +9333,19 @@ function applyDesignFormationsToBattle(){try{const a=document.getElementById('de
 setTimeout(loadDesignCards,0);
 
 </script>
-<script src="./development-architecture/architecture-explorer.js?v=2"></script>
-<script src="./development-workflow/development-workflow.js?v=1"></script>
-<script src="./development-ai-publish/development-ai-publish.js?v=6"></script>
+<script src="./development-project-context/development-project-context.js?v=1"></script>
+<script src="./development-architecture/architecture-explorer.js?v=3"></script>
+<script src="./development-workflow/development-workflow.js?v=2"></script>
+<script src="./development-ai-publish/development-ai-publish.js?v=7"></script>
 <script>
+window.GKSDevelopmentProjectContext.init({
+  getWorkspace:()=>loadDevelopmentWorkspace(),
+  saveWorkspace:message=>saveDevelopmentWorkspace(message),
+  refreshWorkspace:()=>renderDevelopmentWorkspace(),
+  getBuilds:()=>({studio_build:DISTRIBUTION_BUILD,game_build:DISTRIBUTION_GAME_BUILD}),
+  getProjects:()=>ensureDevelopmentProjectRegistry().map(x=>({id:x.id,name:x.name})),
+  now:()=>now()
+});
 window.GKSDevelopmentArchitectureExplorer.init({
   getWorkspace:()=>loadDevelopmentWorkspace(),
   saveWorkspace:message=>saveDevelopmentWorkspace(message),
