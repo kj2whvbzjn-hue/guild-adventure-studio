@@ -324,6 +324,21 @@ async function readRemotePackageManifestAt(c,refSha){
  if(!Array.isArray(manifest.files))throw new Error('GitHub Sourceのpackage_manifest.json: files がありません。');
  return manifest;
 }
+async function readRemoteCriticalRuntimeManifestAt(c,refSha){
+ const path='shared/integrity/critical-runtime-manifest.json',remote=await getRemoteAtRef(c,path,refSha);if(!remote?.content)throw new Error(`GitHub Sourceの${path}を読めません。root index.html更新時のIntegrity同期を維持できないため停止しました。`);
+ let manifest;try{manifest=JSON.parse(base64ToUtf8(remote.content))}catch(_){throw new Error(`GitHub Sourceの${path}を解析できません。`)}
+ if(!Array.isArray(manifest.files))throw new Error(`GitHub Sourceの${path}: files がありません。`);
+ return manifest;
+}
+async function makeCriticalRuntimeManifestText(manifest,published){
+ const next=clone(manifest),byPath=new Map(published.map(row=>[String(row.path||''),row])),synced=[];
+ for(const entry of next.files||[]){
+  const path=String(entry?.path||''),row=byPath.get(path);if(!row)continue;
+  const bytes=new TextEncoder().encode(row.text);entry.size=bytes.length;entry.sha256=await sha256Text(row.text);synced.push(path);
+ }
+ if(!synced.includes('index.html'))throw new Error('critical-runtime-manifest.jsonにindex.html entryがありません。root index.htmlを安全にAtomic更新できません。');
+ return {text:jsonText(next),synced_paths:synced};
+}
 async function makePackageManifestText(manifest,published){
  const next=clone(manifest),byPath=new Map((next.files||[]).map(row=>[String(row.path||''),row]));
  for(const row of published){const bytes=new TextEncoder().encode(row.text);byPath.set(row.path,{path:row.path,size:bytes.length,sha256:await sha256Text(row.text)})}
@@ -341,10 +356,11 @@ function buildPublicFiles(dataset,root){
 async function createTextBlob(c,text){return github(c,apiRepo(c)+'/git/blobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,encoding:'utf-8'})})}
 async function readBlobText(c,sha){const blob=await github(c,apiRepo(c)+`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blob encodingが想定外です。');return base64ToUtf8(blob.content||'')}
 async function atomicCommit(c,dataset){
- const root=cleanPath(c.base_path),head=await readGitHead(c),remoteManifest=await readRemotePackageManifestAt(c,head.head_sha),publicFiles=buildPublicFiles(dataset,root);
+ const root=cleanPath(c.base_path),head=await readGitHead(c),remoteManifest=await readRemotePackageManifestAt(c,head.head_sha),remoteCriticalManifest=await readRemoteCriticalRuntimeManifestAt(c,head.head_sha),publicFiles=buildPublicFiles(dataset,root);
  const remoteRootIndex=await readRemoteTextAt(c,'index.html',head.head_sha),rootGatewayText=injectRootGatewayHtml(remoteRootIndex,dataset);
  publicFiles.push({path:'index.html',text:rootGatewayText,kind:'root_gateway'});
- const packageManifestText=await makePackageManifestText(remoteManifest,publicFiles),allFiles=[...publicFiles,{path:'package_manifest.json',text:packageManifestText,kind:'package_manifest'}];
+ const criticalSync=await makeCriticalRuntimeManifestText(remoteCriticalManifest,publicFiles),criticalManifestFile={path:'shared/integrity/critical-runtime-manifest.json',text:criticalSync.text,kind:'critical_runtime_manifest'};
+ const packageManifestText=await makePackageManifestText(remoteManifest,[...publicFiles,criticalManifestFile]),allFiles=[...publicFiles,criticalManifestFile,{path:'package_manifest.json',text:packageManifestText,kind:'package_manifest'}];
  const blobs=[];
  for(let i=0;i<allFiles.length;i++){
   const row=allFiles[i];status(`Atomic Commit準備 ${i+1}/${allFiles.length}\nBlob: ${row.path}`);
@@ -428,7 +444,7 @@ async function publish(){
  try{
   const c=configFromForm(true),dataset=buildDataset(c);
   if(!dataset.summaries.length)throw new Error('公開できるDevelopment Projectがありません。');
-  const warning=`Development ProjectのHuman確認対象を公開します。\n\n固定AI入口: ${dataset.rootGatewayUrl}\nPages JSON: ${dataset.endpointUrls.pages.pending}\nRaw JSON: ${dataset.endpointUrls.raw.pending}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n固定AI入口ではHuman確認対象だけの判断用Contextをroot index.htmlへ読み取り専用で埋め込みます。公開JSON・root index.html・package_manifest.jsonは1つのAtomic Commitで更新します。公開してよい内容か確認しましたか？`;
+  const warning=`Development ProjectのHuman確認対象を公開します。\n\n固定AI入口: ${dataset.rootGatewayUrl}\nPages JSON: ${dataset.endpointUrls.pages.pending}\nRaw JSON: ${dataset.endpointUrls.raw.pending}\n案件: ${dataset.summaries.length}\nHuman確認対象: ${dataset.pending.length}\nRevision: ${dataset.publish_revision}\n\n固定AI入口ではHuman確認対象だけの判断用Contextをroot index.htmlへ読み取り専用で埋め込みます。公開JSON・root index.html・critical-runtime-manifest.json・package_manifest.jsonは1つのAtomic Commitで更新します。公開してよい内容か確認しましたか？`;
   if(!confirm(warning))return;
   setBusy(true);localStorage.setItem(SETTINGS_KEY,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base_path:c.base_path,scope:c.scope}));
   const publishResult=await atomicCommit(c,dataset),gitReadback=await verifyGitReadback(c,dataset,publishResult);
