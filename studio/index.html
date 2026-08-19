@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B671</title>
+<title>GK Studio GKS-B672</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -464,13 +464,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B671</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B672</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B671</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B672</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2447,11 +2447,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=671"></script>
+<script src="./layer-controller.js?v=672"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B671';
+const DISTRIBUTION_BUILD='GKS-B672';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3684,12 +3684,17 @@ async function importDiscussionAiReturn(file){
   const unknownRelated=(u.related_discussion_ids||[]).filter(id=>!w.discussions.some(x=>x.id===id));
   let preview='AI返却JSONを取り込みます。\n\n'+discussionReturnDiffText(current,ret);
   if(unknownRelated.length)preview+=`\n\n注意: 未登録の関連Discussion IDがあります:\n${unknownRelated.join(', ')}`;
-  preview+='\n\n現在のDiscussionをバックアップしてから反映します。よろしいですか？';
+  const activeEntry=activeDevelopmentProjectEntry();
+  preview+=activeEntry?.storage_mode==='git'
+   ?'\n\nGit保管案件はSession上へ反映し、Git保存は後から任意で実行できます。よろしいですか？'
+   :'\n\n現在のDiscussionをバックアップしてから反映します。よろしいですか？';
   if(!confirm(preview))return;
 
-  const activeEntry=activeDevelopmentProjectEntry();
-  if(activeEntry?.storage_mode==='git'){if(window.GKSDevelopmentGitStore?.isDirty?.(activeEntry.id))throw new Error('Git未保存の変更があります。AI返却取込前に現在Git案件を保存してください。');}
-  else{const backupKey=developmentProjectStoreKey(activeDevelopmentProjectId)+'_before_ai_return_'+Date.now();localStorage.setItem(backupKey,JSON.stringify(w));}
+  let backupKey='';
+  if(activeEntry?.storage_mode!=='git'){
+   backupKey=developmentProjectStoreKey(activeDevelopmentProjectId)+'_before_ai_return_'+Date.now();
+   localStorage.setItem(backupKey,JSON.stringify(w));
+  }
 
   const stamp=now();
   const additions=[];
@@ -3713,7 +3718,9 @@ async function importDiscussionAiReturn(file){
   if(!saveDevelopmentWorkspace(`AI Discussion return imported: ${current.id}`))throw new Error('Development Workspaceの保存に失敗しました。');
   renderDevelopmentWorkspace();
   editDevDiscussion(current.id);
-  alert(`AI返却JSONを ${current.id} に反映しました。\n反映前バックアップ: ${backupKey}`);
+  alert(activeEntry?.storage_mode==='git'
+   ?`AI返却JSONを ${current.id} にSession反映しました。\nGitにはまだ保存していません。必要なタイミングで「現在Git案件を保存」を実行してください。`
+   :`AI返却JSONを ${current.id} に反映しました。\n反映前バックアップ: ${backupKey}`);
  }catch(e){
   alert('AI返却JSONの読込に失敗しました: '+e.message);
  }
@@ -3748,7 +3755,7 @@ async function importAllDevelopmentProjects(file){
  }catch(e){alert('Development Project全案件の復元に失敗しました: '+e.message)}
 }
 function exportDevelopmentWorkspace(){const w=loadDevelopmentWorkspace(),id=String(w?.workspace?.id||activeDevelopmentProjectId||'project').replace(/[^A-Za-z0-9._-]+/g,'_');downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8')}
-async function importDevelopmentWorkspace(file){if(!file)return;try{const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),entry=activeDevelopmentProjectEntry(),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 確認 ${(candidate.checks||[]).length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;if(!entry)throw new Error('現在案件がありません。');if(!confirm(`開発管理JSONを現在案件へ読み込みます。\n現在: ${entry.id} / ${entry.name}\n${count}\n\nこの案件だけを置き換えますか？ 他案件には影響しません。`))return;const current=loadDevelopmentWorkspace();if(entry.storage_mode==='git'){if(window.GKSDevelopmentGitStore?.isDirty?.(entry.id))throw new Error('Git未保存の変更があります。先に「現在Git案件を保存」を実行してください。');}else localStorage.setItem(developmentProjectStoreKey(entry.id)+'_backup_'+Date.now(),JSON.stringify(current));candidate.workspace.id=entry.id;candidate.workspace.name=String(candidate.workspace.name||entry.name);developmentWorkspace=candidate;saveDevelopmentWorkspace('Development Workspace JSON imported into current project');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert('現在案件へ開発管理JSONを読み込みました。')}catch(e){alert('開発管理JSON読込失敗: '+e.message)}}
+async function importDevelopmentWorkspace(file){if(!file)return;try{const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),entry=activeDevelopmentProjectEntry(),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 確認 ${(candidate.checks||[]).length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;if(!entry)throw new Error('現在案件がありません。');if(!confirm(`開発管理JSONを現在案件へ読み込みます。\n現在: ${entry.id} / ${entry.name}\n${count}\n\nこの案件だけを置き換えますか？ 他案件には影響しません。${entry.storage_mode==='git'?'\nGit保管案件はSession上だけ更新し、Git保存は後から任意で実行できます。':''}`))return;const current=loadDevelopmentWorkspace();if(entry.storage_mode!=='git')localStorage.setItem(developmentProjectStoreKey(entry.id)+'_backup_'+Date.now(),JSON.stringify(current));candidate.workspace.id=entry.id;candidate.workspace.name=String(candidate.workspace.name||entry.name);developmentWorkspace=candidate;saveDevelopmentWorkspace('Development Workspace JSON imported into current project');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(entry.storage_mode==='git'?'現在案件へ開発管理JSONをSession反映しました。Gitにはまだ保存していません。':'現在案件へ開発管理JSONを読み込みました。')}catch(e){alert('開発管理JSON読込失敗: '+e.message)}}
 function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
 
 function addDecision(){
@@ -9265,7 +9272,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','671');
+    url.searchParams.set('appv','672');
     location.replace(url.toString());
    }
  }
@@ -9274,7 +9281,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=671',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=672',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9293,7 +9300,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','671');
+    url.searchParams.set('appv','672');
     location.replace(url.toString());
    }
   });
