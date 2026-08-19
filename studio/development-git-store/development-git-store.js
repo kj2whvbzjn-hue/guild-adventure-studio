@@ -1,4 +1,4 @@
-/* GKS-B672 Development Git Store
+/* GKS-B673 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -91,8 +91,8 @@ function isDirty(id){return state.dirty.has(String(id||''));}
 function markDirty(id){const key=String(id||'');if(!key||!state.loaded.has(key))return;state.dirty.add(key);render();setStatus('現在案件にGit未保存の変更があります。','WARN');}
 function markClean(id){state.dirty.delete(String(id||''));render();}
 async function openFromGit(){
- try{setBusy(true);const c=connection(false);setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');const raw=await remoteText(c),project=parseProject(raw);const id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git案件をSessionへ読込: ${id}\nRemote SHA ${meta.sha}`,'OK');}
- catch(e){setStatus('読込失敗: '+e.message,'ERROR');}
+ try{setBusy(true);const c=connection(false);setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');const raw=await remoteText(c),project=parseProject(raw);const id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git案件をSessionへ読込: ${id}\nRemote SHA ${meta.sha}`,'OK');return true;}
+ catch(e){setStatus('読込失敗: '+e.message,'ERROR');return false;}
  finally{setBusy(false);render();}
 }
 async function uploadFile(file){
