@@ -5,7 +5,7 @@
     "name": "V9ライブラリ統合・最新版化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-19T13:31:00+09:00"
+    "updated_at": "2026-08-19T14:45:00+09:00"
   },
   "project_context": {
     "purpose": "V9ライブラリ v2.0を原本として取り込み、その後に確定した資料を個別機能ごとに精査・統合し、全体整合済みの最新版V9ライブラリを作成する。",
@@ -1115,6 +1115,18 @@
       "approved_at": "2026-08-19T10:55:00+09:00",
       "created_at": "2026-08-19T10:55:00+09:00",
       "updated_at": "2026-08-19T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-V9-CHAR-003",
+      "title": "職業成長値をレベルアップ時の確定値＋端数確率へ変換する",
+      "status": "Approved",
+      "text": "職業適性の成長値はレベルアップ時の成長係数として使用する。変換式は「確定上昇 = floor(成長値 / 10)」、「追加上昇確率 = (成長値 % 10) × 10%」、「最終上昇値 = 確定上昇 + 追加判定成功なら1（失敗なら0）」とする。例: 成長値15は+1確定かつ50%でさらに+1、成長値3は30%で+1、失敗時は+0。成長値そのものはBalance/Dataで可変とし、この変換式を構造仕様として扱う。",
+      "rationale": "Humanが成長値は係数であり、15なら1アップ確定＋50%で2アップ、3なら30%で1アップ、外れたらアップなしと明示し、数式を案件へ記録するよう指定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-19T14:45:00+09:00",
+      "created_at": "2026-08-19T14:45:00+09:00",
+      "updated_at": "2026-08-19T14:45:00+09:00"
     },
     {
       "id": "DEC-V9-MONSTER-001",
@@ -3026,11 +3038,12 @@
       "title": "[CHAR][INTEGRATION CANDIDATE v2] 7Job＋Balance＋Monster生成接続",
       "status": "Review",
       "summary": "CHAR統合候補001を保持したまま後続版を追加。狩人正式名・適性Balance Seedに、Player/Monster共通7Job、固定Skillなし、Monster骨格×7Job派生、内部Job/表示名分離を追加。",
-      "body": "【0. Revision】\n本仕様は SPEC-V9-CHAR-INTEGRATED-001 の後続候補。\n001本文は変更せず履歴として保持する。\n\n【1. 正式7Job】\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\nV9の「弓兵」はBaseline原本に保持。\n最新版正式名称はHuman確定により「狩人」。\n\n【2. 7能力値】\n- STR\n- VIT\n- AGI\n- DEX\n- INT\n- MND\n- LUK\n\n構造はV9から継承。\n\n【3. 職業適性】\n具体数値はBalance。\n現在の仮初期値はExcel Seed:\nA=15 / B=13 / C=10 / D=8 / E=7 / F=4 / G=3\n各職合計60。\n\nこの数値・Rank→value対応はConfig/Master Dataで可変。\nコードへ固定しない。\nA～Gを恒久UI/API契約にすることまでは未確定。\n\n【4. Jobの意味】\nJobはPlayerとMonsterで共通利用できる戦闘指向概念。\nJobの主責務:\n- ステータス成長指向性\n- 戦闘スタイルの方向性\n- Skill創作時の発想材料\n\nJobが持たないもの:\n- 固定Skill\n- 特定Skill IDとの直接対応\n\n「このJobだから必ずこのSkill」という設計にしない。\n\n【5. 正式Job参照】\n実データはjob_id等で正式Job Masterを参照する。\n名前からJob IDを推測生成しない。\n今回の資料では7Jobすべての現行正式ID一覧は確認できないため、\nJOB-KNIGHT等のGolden Sample例から他IDを類推しない。\n\n【6. Monster生成との接続】\n通常の再利用Monster:\nStory\n→ 敵勢力/Monster骨格抽出\n→ 骨格整理・重複排除\n→ 基礎Monster骨格確定\n→ 各骨格×7Job派生\n→ 個体化/命名/特徴付与\n→ 後続Monster工程\n\n1骨格につき原則7Job方向を展開する。\n\nStory固有Boss・固有名Monster:\n- 通常の7Job機械展開とは別枠\n- Story正式名称・役割を優先\n- Job都合で固有名を変更しない\n\n【7. 内部Jobと表示名】\n内部JobとMonster表示名は分離する。\n表示名に「狩人」「騎士」等のJob名を直接含める義務はない。\nJob指向を武器・役割・行動特性・身体特徴へ自然に翻訳できる。\n\n【8. Balance境界】\nJob適性値、Monster能力値、Monster戦闘強度はBalance/Dataの責務。\nAI生成工程で根拠のない数値を独自決定しない。\nMonster側の具体的数値決定はMonster/Enemy Budget統合時に扱う。\n\n【9. Skillとの境界】\nJobはSkill創作の発想材料として使えるが、Skillを固定しない。\n\n8/9資料にあるrequired_tags / Job必須Tag / Phase1 Runtime条件は、\n後発Formal Skillの最新版Schemaとしては採用しない。\n\n最新版Skill側は:\nFormal Skill\n→ Formal Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n\nJob/TagをFormal Skillへどう表現するかは、\nFormal Tag Registry / Formal parameter Schemaの正式資料が追加されるまで固定しない。\n\n【10. Source chronology】\n8/9世代:\n生成フロー v1.0\n→ Runtime適合 v1.1\n→ Job統合 v1.2\n→ 骨格×7Job派生\n→ GKS AI START正式生成マニュアル v1\n\nこの系列のJob/Monster生成部分を参照する。\nSkill/Tag Runtime部分は後発GKS-B555 Formalを優先する。\n\n【11. 残確認】\n- 現行正式Job Masterの7Job ID / Schema\n- 適性値→成長結果の現行変換規則\n- A～Gランク表現を恒久domain/UI contractにするか\n- Monster/Enemy Budget側でのJob成長指向→最終Status変換\n- Formal RegistryにおけるJob意味表現\n",
+      "body": "【0. Revision】\n本仕様は SPEC-V9-CHAR-INTEGRATED-001 の後続候補。\n001本文は変更せず履歴として保持する。\n\n【1. 正式7Job】\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\nV9の「弓兵」はBaseline原本に保持。\n最新版正式名称はHuman確定により「狩人」。\n\n【2. 7能力値】\n- STR\n- VIT\n- AGI\n- DEX\n- INT\n- MND\n- LUK\n\n構造はV9から継承。\n\n【3. 職業適性】\n具体数値はBalance。\n現在の仮初期値はExcel Seed:\nA=15 / B=13 / C=10 / D=8 / E=7 / F=4 / G=3\n各職合計60。\n\nこの数値・Rank→value対応はConfig/Master Dataで可変。\nコードへ固定しない。\nA～Gを恒久UI/API契約にすることまでは未確定。\n\n【レベルアップ時の成長変換：Human確定】\n成長値はレベルアップ時の成長係数として使用する。\n確定上昇 = floor(成長値 / 10)\n追加上昇確率 = (成長値 % 10) × 10%\n最終上昇値 = 確定上昇 + 追加判定成功なら1（失敗なら0）\n\n例:\n- 15 → +1確定、さらに50%で+1（最終+1または+2）\n- 13 → +1確定、さらに30%で+1\n- 10 → +1確定\n- 8 → 80%で+1、失敗時+0\n- 7 → 70%で+1、失敗時+0\n- 4 → 40%で+1、失敗時+0\n- 3 → 30%で+1、失敗時+0\n\n成長値そのものはBalance/Dataで可変、上記変換式は構造仕様とする。\n\n【4. Jobの意味】\nJobはPlayerとMonsterで共通利用できる戦闘指向概念。\nJobの主責務:\n- ステータス成長指向性\n- 戦闘スタイルの方向性\n- Skill創作時の発想材料\n\nJobが持たないもの:\n- 固定Skill\n- 特定Skill IDとの直接対応\n\n「このJobだから必ずこのSkill」という設計にしない。\n\n【5. 正式Job参照】\n実データはjob_id等で正式Job Masterを参照する。\n名前からJob IDを推測生成しない。\n今回の資料では7Jobすべての現行正式ID一覧は確認できないため、\nJOB-KNIGHT等のGolden Sample例から他IDを類推しない。\n\n【6. Monster生成との接続】\n通常の再利用Monster:\nStory\n→ 敵勢力/Monster骨格抽出\n→ 骨格整理・重複排除\n→ 基礎Monster骨格確定\n→ 各骨格×7Job派生\n→ 個体化/命名/特徴付与\n→ 後続Monster工程\n\n1骨格につき原則7Job方向を展開する。\n\nStory固有Boss・固有名Monster:\n- 通常の7Job機械展開とは別枠\n- Story正式名称・役割を優先\n- Job都合で固有名を変更しない\n\n【7. 内部Jobと表示名】\n内部JobとMonster表示名は分離する。\n表示名に「狩人」「騎士」等のJob名を直接含める義務はない。\nJob指向を武器・役割・行動特性・身体特徴へ自然に翻訳できる。\n\n【8. Balance境界】\nJob適性値、Monster能力値、Monster戦闘強度はBalance/Dataの責務。\nAI生成工程で根拠のない数値を独自決定しない。\nMonster側の具体的数値決定はMonster/Enemy Budget統合時に扱う。\n\n【9. Skillとの境界】\nJobはSkill創作の発想材料として使えるが、Skillを固定しない。\n\n8/9資料にあるrequired_tags / Job必須Tag / Phase1 Runtime条件は、\n後発Formal Skillの最新版Schemaとしては採用しない。\n\n最新版Skill側は:\nFormal Skill\n→ Formal Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n\nJob/TagをFormal Skillへどう表現するかは、\nFormal Tag Registry / Formal parameter Schemaの正式資料が追加されるまで固定しない。\n\n【10. Source chronology】\n8/9世代:\n生成フロー v1.0\n→ Runtime適合 v1.1\n→ Job統合 v1.2\n→ 骨格×7Job派生\n→ GKS AI START正式生成マニュアル v1\n\nこの系列のJob/Monster生成部分を参照する。\nSkill/Tag Runtime部分は後発GKS-B555 Formalを優先する。\n\n【11. 残確認】\n- 現行正式Job Masterの7Job ID / Schema\n- A～Gランク表現を恒久domain/UI contractにするか\n- Monster/Enemy Budget側でのJob成長指向→最終Status変換\n- Formal RegistryにおけるJob意味表現\n",
       "decision_refs": [
         "DEC-V9-CHAR-001",
         "DEC-V9-CHAR-002",
-        "DEC-V9-SKILL-001"
+        "DEC-V9-SKILL-001",
+        "DEC-V9-CHAR-003"
       ],
       "depends_on": [
         "SPEC-V9-CHAR-INTEGRATED-001",
@@ -3041,7 +3054,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T11:03:00+09:00",
-      "updated_at": "2026-08-19T11:03:00+09:00"
+      "updated_at": "2026-08-19T14:45:00+09:00"
     },
     {
       "id": "SPEC-V9-MONSTER-SRC-AISTART-001",
@@ -3369,9 +3382,9 @@
       "id": "BOX-V9-CHAR",
       "node_id": "ARCH-V9-CHAR",
       "title": "キャラクター・職業：V9基準から後発確定資料を統合する",
-      "body": "【機能】キャラクター・職業\n\n【Current candidate】\nSPEC-V9-CHAR-INTEGRATED-002\n\n【Human確定】\n- 正式7Jobの当該名称は「狩人」（V9弓兵から名称変更）\n- 職業適性の具体数値はBalance\n- Excel値は現時点の仮初期値\n- Balance値はData/Config可変、ハードコードしない\n\n【後発生成資料から追加した構造候補】\n- Player/Monsterで同じ7Job概念を利用\n- Jobはステータス成長指向性\n- Jobは固定Skillを持たない\n- Jobから特定Skill IDを直接決定しない\n- 通常Monsterは基礎骨格×7Jobを原則展開\n- Story固有Monsterは別枠\n- 内部Jobと表示名を分離\n- Job IDは正式Master参照、推測禁止\n\n【Formal境界】\n8/9資料のrequired_tags / Job必須Tag / Phase1 Skill Runtimeは、\n後発Formal Skill/Tagの正本へ戻さない。\nFormal Registry完成資料が来るまでJobのFormal Tag表現は未確定。\n\n【残り】\n- 現行7Job正式ID / Job Master Schema\n- 適性→成長の現行変換\n- Monster/Enemy Budget側のJob成長指向接続\n",
+      "body": "【機能】キャラクター・職業\n\n【Current candidate】\nSPEC-V9-CHAR-INTEGRATED-002\n\n【Human確定】\n- 成長値→レベルアップ成長は floor(値/10) を確定上昇、(値%10)×10% を追加+1確率とする\n- 正式7Jobの当該名称は「狩人」（V9弓兵から名称変更）\n- 職業適性の具体数値はBalance\n- Excel値は現時点の仮初期値\n- Balance値はData/Config可変、ハードコードしない\n\n【後発生成資料から追加した構造候補】\n- Player/Monsterで同じ7Job概念を利用\n- Jobはステータス成長指向性\n- Jobは固定Skillを持たない\n- Jobから特定Skill IDを直接決定しない\n- 通常Monsterは基礎骨格×7Jobを原則展開\n- Story固有Monsterは別枠\n- 内部Jobと表示名を分離\n- Job IDは正式Master参照、推測禁止\n\n【Formal境界】\n8/9資料のrequired_tags / Job必須Tag / Phase1 Skill Runtimeは、\n後発Formal Skill/Tagの正本へ戻さない。\nFormal Registry完成資料が来るまでJobのFormal Tag表現は未確定。\n\n【残り】\n- 現行7Job正式ID / Job Master Schema\n- Monster/Enemy Budget側のJob成長指向接続\n",
       "created_at": "2026-08-19T09:15:00+09:00",
-      "updated_at": "2026-08-19T11:03:00+09:00"
+      "updated_at": "2026-08-19T14:45:00+09:00"
     },
     {
       "id": "BOX-V9-BATTLE",
@@ -4043,9 +4056,9 @@
       "id": "TASK-V9-CHAR-08",
       "box_id": "BOX-V9-CHAR",
       "title": "適性値→成長結果の現行変換規則を確認する",
-      "status": "Blocked",
+      "status": "Done",
       "created_at": "2026-08-19T11:03:00+09:00",
-      "updated_at": "2026-08-19T11:03:00+09:00"
+      "updated_at": "2026-08-19T14:45:00+09:00"
     },
     {
       "id": "TASK-V9-CHAR-09",
@@ -4927,6 +4940,10 @@
     {
       "at": "2026-08-19T13:31:00+09:00",
       "message": "GKS-B669更新ZIPはsystem-file-policy欠落によりStudio分類前に停止。未配置のため撤回し、同一Build別成果物を避けGKS-B670へ前進。B670はunchanged system-file-policyを更新ZIPへ同梱し、final ZIP direct Exact B668 Accept→applied Full 26/26、Release 28/28 PASS。"
+    },
+    {
+      "at": "2026-08-19T14:45:00+09:00",
+      "message": "Human確定により職業適性の成長値→レベルアップ成長変換式を登録。確定上昇=floor(成長値/10)、追加上昇確率=(成長値%10)×10%、最終上昇値=確定上昇+追加判定成功なら1（失敗なら0）。成長値自体はBalance/Data可変、変換式は構造仕様。TASK-V9-CHAR-08をDoneへ更新。"
     }
   ]
 }
