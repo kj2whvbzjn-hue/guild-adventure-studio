@@ -1,21 +1,21 @@
 {
   "schema_version": "1.2",
   "workspace": {
-    "id": "DEV-V9-REORG-018",
-    "name": "V9ゲーム再実装・登録用Current仕様",
+    "id": "DEV-V9-REORG-019",
+    "name": "V9ゲーム再実装・詳細Current Specification",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-19T20:18:00+09:00"
+    "updated_at": "2026-08-19T20:26:00+09:00"
   },
   "project_context": {
-    "purpose": "Development ProjectのSpecification機能へそのまま登録できる形式で、V9ゲーム再実装に必要なCurrent実装仕様をDomain別に保持する。",
-    "summary": "既存Material/Decisionを保持したまま、Implementation Draftを16 Specificationへ分割。全件Draft。Buildability/実装順等のプロジェクト管理情報はSpecificationから除外。"
+    "purpose": "V9ゲームを実際に再実装する前提で、短い概要Draftではなく、Runtime・Data・Balance・Content・Validationまで実装単位へ分割したCurrent Specificationを仕様システムへ登録する。",
+    "summary": "旧018の16短縮Draftを廃止し、51件の詳細Specificationへ再構成。既存Material 88件、Decision 39件、Discussion 15件は保持。全SpecificationはDraftで未承認。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-R18-SPEC-REGISTER",
-    "work_box_id": "BOX-R18-SPEC-REGISTER",
-    "theme": "登録用Specificationレビュー",
-    "goal": "16件のDraftをStudioへ読込後、Domain単位でReview/Approvedへ進める。"
+    "architecture_id": "ARCH-R19-DETAILED-SPECS",
+    "work_box_id": "BOX-R19-DETAILED-SPECS",
+    "theme": "詳細Specificationレビュー",
+    "goal": "各Domainを実装者視点でレビューし、Content Migration未解決と仕様誤りを潰す。"
   },
   "project_rules": [
     {
@@ -800,28 +800,98 @@
   ],
   "specifications": [
     {
-      "id": "SPEC-V9R-018-CORE",
-      "title": "Core / Balance 実装仕様",
+      "id": "SPEC-V9-019-000",
+      "title": "V9 vNext Current仕様体系・優先順位",
       "status": "Draft",
-      "summary": "ゲームの基礎Runtime値、共通Budget/Balance方針、決定性。",
-      "body": "## Current Runtime Baseline\n\nCurrent active `adventure_settings` の実装値を基準とする。\n\nCharacter:\n- initial_level = 1\n- max_level = 50\n- initial STR / VIT / AGI / DEX / INT / MND / LUK = 各10\n- party_max_size = 6\n\nBattle actor:\n```text\nmax_hp = floor(100 + VIT * 20 + level * 10), min 1\nmax_mp = floor(100), min 0\nattack = floor(10 + STR * 3 + level * 2), min 1\nagi = floor(AGI), min 1\n```\n\nBattle flow:\n- action_gauge.max = 100\n- ai_reevaluation_ratio = 0.10\n- successful_action_consume_ratio = 1.00\n- failed_execution_consume_ratio = 0.50\n- default_skill_duration_ticks = Current active setting\n\n## Budget / Balance\n\n構造RuleとBalance値を分離する。\n- Skill → Formal Skill Budget\n- Enemy → Enemy Budget\n- Equipment → iLv / Generator / Balance Config\n- MOD → Rarity / MOD count / Tier / Balance Config\n- Stone → stone_budget_delta\n- Reward → Reward Resolver settings\n\n後発資料で可変化された数値はコードへ固定しない。\nV9正式値を使う場合は `V9_BASELINE` としてConfig seedに保持し、\nCurrent確定値と区別する。\n\n## Determinism\n\nSeedを持つ処理は、同一Input + Seed + Rules/Data Versionで同じ結果を再現可能にする。\nQuestRunや生成物は再現に必要なVersion/Config/Seed/Snapshotを保存する。",
+      "summary": "V9 v2.0、後発資料、Human Decision、Current Contractを統合する全体規則。",
+      "body": "# 1. 目的\n\n本Specification群は、V9 Library v2.0を変更前Baselineとして保持しつつ、\n後発の正式資料、Human Approved Decision、Current Game/Studio Contractを統合し、\n第三者がゲーム実装に使用できるCurrent仕様をDomain単位で定義する。\n\n# 2. 優先順位\n\n1. Human Approved Decision\n2. 後発Current Contract（後発仕様と一致するSchema / Registry / Compiler / Runtime）\n3. 後発Approved Material\n4. V9 Library v2.0 Approved Material\n5. Historical / Demo / Test data\n\n下位資料は上位資料で明示的に置換された箇所だけを失効させる。\n置換されていない固有情報は保持する。\n\n# 3. Current / Balance / Content / Deferred の分離\n\n- **Current Structure**: RuntimeやData modelとして実装する構造。\n- **Current Contract**: Schema/Registry/Compiler等で現在一意に定義される契約。\n- **Balance Baseline**: 調整可能だが、再現用の初期値として保持する値。\n- **Content Master**: Skill/Tag/Monster/Quest等の個別データ。\n- **Deferred**: Currentでは実装しない、または接続しない機能。\n\nBalance値を「可変だから削除」してはならない。\n再現に必要な具体値はBaselineとして保持し、構造仕様と分離する。\n\n# 4. 禁止事項\n\n- 存在しないID、数式、Field、Runtime pathを推測で追加しない。\n- Review候補・Blocked taskをHuman Approved仕様へ昇格しない。\n- Demo/Test fixtureをProduct Masterへ混入しない。\n- Legacy/Generic/Fallbackを、Current Contractが廃止しているDomainへ復活させない。\n\n# 5. Specification Owner\n\n同じRuleを複数仕様で再定義しない。\n各Domainの正本をOwner Specificationとして一意化し、\n他DomainはOwnerを参照する。",
       "decision_refs": [
+        "DEC-REORG-001",
         "DEC-V9-0001",
         "DEC-V9-0002"
       ],
       "depends_on": [],
-      "acceptance_criteria": "- Lv1/全能力10からHP310、Attack42を再現できる。\n    - Party上限6を超える編成を拒否できる。\n    - Balance値をRuntimeコードへ無断固定しない。\n    - Seeded処理が同一Input/Versionで再現可能。",
+      "acceptance_criteria": "- 全Specificationが上記優先順位を守る。\n- Current/Balance/Content/Deferredの状態を混同しない。\n- 下位資料の固有情報を理由なく捨てない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-CHAR",
-      "title": "Character / Job / Passive 実装仕様",
+      "id": "SPEC-V9-019-CORE-001",
+      "title": "ゲーム概要・ゲームループ・基本能力",
       "status": "Draft",
-      "summary": "7Job、成長、転職、PassiveのCurrent仕様。",
-      "body": "## Job / growth\n\nHuman ApprovedのJob名と仮初期値は `data/human-job-balance-seed.json` を正本とする。\nCurrent exportのJOB-0004「弓兵」はstale dataとして扱い、Runtime表示は「狩人」に統合する。\n\nGrowth:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\ngain = guaranteed + (roll成功 ? 1 : 0)\n```\n\nCurrent active sourceにも aptitude 7〜13のweighted outcome tableが存在する。\nHuman ruleと同じ分布であるため両者は一致。\n\n## Job change\n\n- Level維持\n- 全能力値維持\n- 習得済Skill維持\n- 過去能力値の再計算/減少/初期化なし\n- 次回Level Upから新Job growth\n- 戦闘中不可\n- Guild内\n- Current V9 baseline cost = Level * 100 Gold\n- Job/武器によるSkill使用制限なし\n\n## Build test\n\n1. Lv1全能力10のCharacterを生成できる。\n2. VIT10/Lv1 → max_hp 310。\n3. STR10/Lv1 → attack 42。\n4. aptitude 13は長期試行で70% +1 / 30% +2。\n5. Job Change前後で既存stats/skillsが不変。",
+      "summary": "ゲームのコンセプト、基本ループ、Party、7能力値、予算制設計。",
+      "body": "# 1. コンセプト\n\nギルド運営型ハクスラ自動戦闘RPG。\n\nプレイヤーは冒険者を育成し、依頼を受注してQuestへ派遣する。\n戦闘は自動処理し、AI構築、Equipment収集、育成、Build構築を主要体験とする。\n\n# 2. 基本ゲームループ\n\n```text\nGuild\n→ Quest選択 / 依頼受注\n→ Stone設定（任意）\n→ QuestRun開始\n→ Box / Scene / Event / Battle / Exploration\n→ Reward Result確定\n→ Adventure Playback\n→ Return Commit\n→ Equipment更新\n→ Character育成 / Build更新\n→ 再出撃\n```\n\n# 3. Party\n\n- Party最大人数: 6\n- PartyはQuest開始時にSnapshotする。\n- QuestRun中に元Party/Character Masterが変更されても、開始済みRunの結果へ遡及させない。\n\n# 4. 基本能力値\n\n- STR: 力\n- VIT: 体力\n- AGI: 素早さ\n- DEX: 器用さ\n- INT: 知性\n- MND: 精神\n- LUK: 運\n\nCharacter初期値は全能力10。\nCurrent Level上限は50。\n\n# 5. 条件値と戦闘寄与の分離\n\nEquipment要求値・Skill習得条件等に使う能力値と、\nBattleへ渡すCombat Contributionを同一視しない。\n\nEquipment要求値は装備可否判定専用。\nBattle寄与はCharacter Runtime / Equipment Contribution / Skill / MOD等のOwner Contractを通す。\n\n# 6. 予算制\n\n全Systemを予算制の同一思想で管理する。\n\n- Skill → Skill Budget\n- Enemy → Enemy Budget\n- Equipment → iLv / Generator Config\n- MOD → Rarity / MOD Count / Tier / Config\n- Stone → stone_budget_delta\n- Reward → Reward Resolver Snapshot\n\n強さを予算外のHard-codedボーナスで追加しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-001 コアシステム設計書 / BOX-R7-002 システム設計書統合正式版 / BOX-R7-003 バランス調整指針",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-000"
+      ],
+      "acceptance_criteria": "- Party上限6、7能力、Level上限50を実装できる。\n- Equipment要求値をBattle statへ直接加算しない。\n- Game loopの各段階をOwner Domainへ接続できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-CORE-002",
+      "title": "Current Runtime Baseline・決定性・Snapshot",
+      "status": "Draft",
+      "summary": "Current active Runtime値とSeed/Version/Snapshotの共通要件。",
+      "body": "## Current Runtime Baseline\n\nCurrent active `adventure_settings` の実装値を基準とする。\n\nCharacter:\n- initial_level = 1\n- max_level = 50\n- initial STR / VIT / AGI / DEX / INT / MND / LUK = 各10\n- party_max_size = 6\n\nBattle actor:\n```text\nmax_hp = floor(100 + VIT * 20 + level * 10), min 1\nmax_mp = floor(100), min 0\nattack = floor(10 + STR * 3 + level * 2), min 1\nagi = floor(AGI), min 1\n```\n\nBattle flow:\n- action_gauge.max = 100\n- ai_reevaluation_ratio = 0.10\n- successful_action_consume_ratio = 1.00\n- failed_execution_consume_ratio = 0.50\n- default_skill_duration_ticks = Current active setting\n\n## Budget / Balance\n\n構造RuleとBalance値を分離する。\n- Skill → Formal Skill Budget\n- Enemy → Enemy Budget\n- Equipment → iLv / Generator / Balance Config\n- MOD → Rarity / MOD count / Tier / Balance Config\n- Stone → stone_budget_delta\n- Reward → Reward Resolver settings\n\n後発資料で可変化された数値はコードへ固定しない。\nV9正式値を使う場合は `V9_BASELINE` としてConfig seedに保持し、\nCurrent確定値と区別する。\n\n## Determinism\n\nSeedを持つ処理は、同一Input + Seed + Rules/Data Versionで同じ結果を再現可能にする。\nQuestRunや生成物は再現に必要なVersion/Config/Seed/Snapshotを保存する。\n\n## 追加実装要件\n\n- Seedを使うRandom処理はSeed生成元をログ/Snapshotへ保存する。\n- `generated_at`だけに依存して再現しない。\n- Config更新後も既存生成物/QuestRunを自動再計算しない。\n- Current active設定とV9 Baselineが衝突する場合はCurrent active設定を優先し、V9値は履歴/調整候補へ移す。",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-000",
+        "SPEC-V9-019-CORE-001"
+      ],
+      "acceptance_criteria": "- Lv1/VIT10のCurrent Actor HP、Lv1/STR10のAttackをCurrent式で再現できる。\n- 同一Seed/VersionでRandom結果を再現できる。\n- Config更新で既存Run/Itemの結果が変わらない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-BAL-001",
+      "title": "Balance Baseline管理仕様",
+      "status": "Draft",
+      "summary": "V9具体値を消さず、Current固定値と可変Baselineを区別する。",
+      "body": "# 1. 方針\n\nBalance値は仕様から削除せず、\n`固定構造 / Current active / Human Approved seed / V9 Baseline / Candidate / Deferred`\nの状態を持たせる。\n\n# 2. V9 Baselineの主要値\n\n## Enemy\n- Enemy Budget = EnemyLv（V9 Baseline）\n- Attack 30%\n- Durability 30%\n- Skill 20%\n- Special 10%\n- AI 10%\n- Elite 150%\n- Champion 200%\n- Boss 300%\n- Raid 1000%\n- Mythic 2000%\n\n後発Enemy Budget正式版ではHP / Attack Performance / Defense Performance / Skill / AI / Utilityへ構造が整理され、\n具体配分値はBalance分離されている。\n上記配分率はCurrent固定値ではなくV9 Baselineとして保持する。\n\n## Stack / Resistance\n- 1 Stack = 5%（V9 Baseline）\n- Max 20 Stack（V9 Baseline）\n- 最大100%（V9 Baseline）\n- Status Resistance cap = 75%\n- Element Resistance cap = 75%\n\n## MP / Battle end\n- Active turn MP自然回復 +3（V9 Baseline）\n- Battle終了時HP全回復（V9 Baseline）\n- Battle終了時MPは全回復しない（V9 Baseline）\n\n## Rarity\n具体値は `SPEC-V9-019-RARITY-001` を正本とする。\n\n# 3. 実装\n\nBalance値をRuntimeロジックへ直書きしない。\nConfig/CSV/JSON等で変更可能にする。\nSnapshotが必要なSystemは、Run開始/生成時の値を保存する。\n\n---\n\n## 根拠・統合元\nBOX-R7-003 バランス調整指針 / Human Approved Balance decisions",
+      "decision_refs": [
+        "DEC-V9-MOD-002",
+        "DEC-V9-MOD-005"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-CORE-001"
+      ],
+      "acceptance_criteria": "- Baseline値を削除せず状態付きで保存できる。\n- Config変更が既存結果へ遡及しない。\n- Current固定値と調整候補を区別できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-CHAR-001",
+      "title": "Character Data Model・成長履歴",
+      "status": "Draft",
+      "summary": "Characterの初期値、保存責務、成長履歴。",
+      "body": "# 1. Character基本\n\n- initial_level = 1\n- max_level = 50\n- STR/VIT/AGI/DEX/INT/MND/LUK 初期値 = 各10\n- Jobは現在能力値を上書きしない。\n\n# 2. Characterが保持する情報\n\n最低限:\n- id\n- name\n- level\n- current_job_id\n- stats\n- learned_skill_ids\n- equipped/effective Skill参照\n- equipment\n- job_history\n- growth_history\n- Formal AI binding（Characterのみ）\n- created_at / updated_at\n\n# 3. 成長の原則\n\n現在能力値はCharacter固有の育成結果。\nJob ChangeやBalance Config更新で既存能力値を再計算しない。\n\nLevel Up時に現在Jobの成長値を読み、\n`SPEC-V9-019-JOB-001` の一般変換式で能力値上昇を決定する。\n\n# 4. 保存\n\nGrowth Historyには少なくとも:\n- Level up前後Level\n- 使用Job\n- 各能力growth\n- guaranteed gain\n- extra roll\n- final gain\n- Seed/Random trace（再現が必要な場合）\nを記録可能にする。",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-CORE-002",
+        "SPEC-V9-019-JOB-001"
+      ],
+      "acceptance_criteria": "- Job変更後も既存statsが保持される。\n- Level UpがCurrent Job growthだけを参照する。\n- Growth結果を履歴から追跡可能。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-JOB-001",
+      "title": "Job成長率・Human Approved適性値",
+      "status": "Draft",
+      "summary": "7Job正式名称、一般成長式、Human Approved Balance seed。",
+      "body": "# 1. Current基本7Job\n\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\n旧「弓兵」はCurrentでは「狩人」。\n\n# 2. 一般成長式\n\n各能力値の成長値 `growth` に対して:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\nfinal_gain = guaranteed + (extra_roll_success ? 1 : 0)\n```\n\n内部成長蓄積は行わない。\n\n例:\n- growth 7 → 70%で+1\n- growth 10 → +1確定\n- growth 13 → +1確定、30%で追加+1\n- growth 15 → +1確定、50%で追加+1\n\n# 3. Human Approved仮初期値\n\n| Job | STR | VIT | AGI | DEX | INT | MND | LUK | Total |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| 剣士 | 15 | 13 | 4 | 10 | 7 | 8 | 3 | 60 |\n| 騎士 | 10 | 15 | 3 | 7 | 8 | 13 | 4 | 60 |\n| 盗賊 | 7 | 8 | 15 | 13 | 3 | 4 | 10 | 60 |\n| 狩人 | 8 | 7 | 3 | 15 | 4 | 10 | 13 | 60 |\n| 魔術師 | 4 | 3 | 10 | 8 | 15 | 13 | 7 | 60 |\n| 神官 | 3 | 4 | 7 | 10 | 13 | 15 | 8 | 60 |\n| 冒険家 | 13 | 10 | 8 | 3 | 4 | 7 | 15 | 60 |\n\n\nこの表はHuman ApprovedのBalance仮初期値。\n構造仕様へ固定せずDataとして差し替え可能にする。\n\n旧V9 Job成長率表（各職合計70）はHistorical BaselineとしてMaterialに残すが、\nCurrentの具体初期値には上表を使う。\n\n# 4. Jobの意味\n\nJobは能力値そのものではなく、以後のLevel Up時の成長方向を定義する。\n現在statsをJob Masterから再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-004 ジョブ成長率設計書 / BOX-R12-RECOVER-CHAR-SEED / Human Decisions",
       "decision_refs": [
         "DEC-REORG-CHAR-001",
         "DEC-REORG-CHAR-002",
@@ -829,300 +899,848 @@
         "DEC-V9-CHAR-002"
       ],
       "depends_on": [
-        "SPEC-V9R-018-CORE"
+        "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- 7基本Jobを剣士/騎士/盗賊/狩人/魔術師/神官/冒険家で登録できる。\n    - Human Approved aptitude seedをDataとして差し替え可能。\n    - aptitude 13が+1確定 + 30%で追加+1になる。\n    - 転職で既存Level/Stats/Skillを変更しない。\n    - 旧「弓兵」をCurrent表示へ戻さない。\n    - 状態異常成功率上昇PassiveをCurrentへ復活させない。",
+      "acceptance_criteria": "- 7Jobを正式名称で扱える。\n- 7〜15等の任意growth値へ一般式を適用できる。\n- Human Approved seedをDataとして読み込める。\n- 旧弓兵名/旧70点表をCurrent初期値へ誤採用しない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-BATTLE",
-      "title": "Battle Runtime 実装仕様",
+      "id": "SPEC-V9-019-JOB-002",
+      "title": "Job Change / 転職",
       "status": "Draft",
-      "summary": "Damage/Hit/Cast/Multi-hit/Trigger/Tick/Battle start-endの実装仕様。",
-      "body": "# 02 Battle / Status Runtime\n\n## Battle owner\n\nBattleは:\n- action reservation後の再検証\n- target/range validation\n- damage/heal\n- HP/MP\n- status/stack/shield\n- trigger\n- battle end\nを担当する。\n\nFormal AIは判断まで。Skill CompilerはruntimeContracts生成まで。\n\n## Damage\n\n```text\nphysical_base = attack * skill_multiplier\nmagical_base  = magic_increase_rate * skill_attack_power\nresist_factor = 1 - resistance/100\npost_resist   = base * resist_factor\ncritical      = post_resist * (1 + critical_damage/100)\nfinal_damage  = floor(random_corrected_value), min 0\n```\n\n- CriticalはResistance後。\n- Random correction slotは未設定時1.0。\n- 同一補正箱内加算、異なる箱は乗算。\n- box: Passive / MOD / Skill / Equipment Effect / Status Effect / System / Quest。\n\n## Hit\n\n```text\nhit_rate = hit / (hit + evasion) * 100\nclamp: 5%..100%\n```\n\nMiss時はDamage/Statusなし。\n\n## Cast / MP / Cooldown\n\n1. start\n2. cast\n3. interrupt check\n4. cast complete\n5. MP consume\n6. Cooldown start\n7. execute\n\n中断時はMP/CDなし。\nNormal Damage/DOT/ReflectはCastを中断しない。\n強制移動・Skill禁止等は中断可能。\n\nTargetはactivation時固定。\nCast完了時Range再確認。\nRange外なら不発。再Targetなし。Current LOSなし。\n\n## Damage-reference effects\n\n```text\nreference_damage = min(final_hp_damage, hp_before)\n```\n\n- Absorb: ceil\n- Reflect: floor\n- Reflectを再Reflectしない\n- ReflectへResistanceを再適用しない\n\n## Multi-hit\n\nHitごとにHit→Damage→Shield→HP→derived effect→Statusを完結。\nsingle targetはTarget死亡で残Hit停止。\nmulti-targetは他Target継続。\n\n## Trigger order\n\n1. on-hit\n2. on-being-hit\n3. post-damage\n4. post-HP-loss\n5. kill\n6. incapacitation\n7. end\n\n同段階は古い登録順。\n\n## Battle start/end\n\nStart:\nPassive → Equipment → MOD → Quest → System → start trigger → AI start\n\nEnd:\nend check → end trigger → combat-only modifiers/status/shields cleanup → AI stop → state clear\n\nV9 baseline:\n- battle end HP全回復\n- MPはbattle endで回復しない\n- Active turnごとのMP自然回復 +3\n\nこの3値はV9正式Balance資料に存在するがCurrent `adventure_settings`には明示fieldがない。\n実装時は `V9_BASELINE` Configとして分離し、Current sourceと衝突したら後発Contractを優先する。\n\n## Not Current\n\nSUMMON / knockback / pull / free movement during battleはCurrent Formal effectに含めない。\n\n## Regression tests\n\n- Hit 5% floor / 100% cap\n- Status duration reduction 75% cap\n- Shield FIFO\n- Multi-hit death stop\n- no MP/CD on interrupted cast\n- no re-target at cast completion\n- cleanse oldest STATUS only\n\n    ## Status Owner\n\n    Status/DOT/BUFF/DEBUFF/Shield LifecycleとCleanseは\n    `SPEC-V9R-018-STATUS` を正本とする。\n\n    ## Formal AI Owner\n\n    AI Program/Decision意味論は `SPEC-V9R-018-AI`。\n    Battleは再評価タイミング、Action reservation、実行直前Validationを担当する。",
+      "summary": "転職条件、保持範囲、費用、履歴。",
+      "body": "# 1. 役割\n\n転職は「成長方向変更System」。\nCharacterの過去育成結果を再配分するSystemではない。\n\n# 2. 条件\n\n- Guild所属\n- 戦闘中ではない\n- Guild内で実行\n- 転職費用を支払える\n\n# 3. 転職時に保持するもの\n\n- Level\n- 全能力値\n- 習得済みSkill\n- Equipment\n- その他Character固有進行\n\n過去能力値:\n- 再計算しない\n- 減少しない\n- 初期化しない\n\n# 4. 変更するもの\n\n- current_job_id\n- 次回Level Up以降に参照するJob growth\n\n# 5. 制限\n\n- 転職回数: 無制限\n- Jobによる武器使用制限: なし\n- Jobによる習得済Skill使用制限: なし\n\n# 6. Current V9 Balance Baseline\n\n```text\njob_change_cost_gold = Level * 100\n```\n\n値はBalance Dataとして外部化可能。\n\n# 7. 履歴\n\njob_historyへ:\n- from_job\n- to_job\n- level\n- paid_cost\n- changed_at\nを保存可能にする。\n\n上級職、Job Mastery、Job Achievement、Job TitleはFuture。\n\n---\n\n## 根拠・統合元\nBOX-R7-005 転職システム設計書",
       "decision_refs": [],
       "depends_on": [
-        "SPEC-V9R-018-CORE",
-        "SPEC-V9R-018-SKILL",
-        "SPEC-V9R-018-STATUS"
+        "SPEC-V9-019-CHAR-001",
+        "SPEC-V9-019-JOB-001"
       ],
-      "acceptance_criteria": "- Damage/Hit式、5%-100% Hit clampを再現できる。\n    - Cast interrupt時にMP/CDを消費しない。\n    - Cast完了時Range再確認・Target再取得なしを再現できる。\n    - Multi-hit死亡停止、Trigger順、Reflection/Absorb丸めを再現できる。\n    - Battle start/end順とTick順を固定できる。",
+      "acceptance_criteria": "- Lv30で転職してもLevel30と既存stats/skillsを保持する。\n- 次のLevel Upだけ新Job growthを使う。\n- 戦闘中転職を拒否する。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-STATUS",
-      "title": "Status / Stack / Cleanse 実装仕様",
+      "id": "SPEC-V9-019-PASSIVE-001",
+      "title": "Passive System / Passive Catalog",
       "status": "Draft",
-      "summary": "Current Formal Status lifecycle、Resistance、Cleanse。",
-      "body": "## Status / DOT / BUFF / DEBUFF / Shield\n\nMachine-readable正本:\n- `schemas/assets__shared__config__skill-registry.json`\n- Current Runtime contractのlifecycle。\n\nCurrent registry:\n- DOT: BURN / POISON\n- STATUS: STUN / ACCURACY_DOWN / ACTION_DISABLED\n- BUFF: ATK_UP / DEF_UP\n- DEBUFF: ATK_DOWN / DEF_DOWN\n- SHIELD: BARRIER\n\nLifecycle:\n- STATUS = UNIQUE + REFRESH + LATEST\n- DOT = STACK + KEEP + SUM\n- BUFF/DEBUFF = STACK + KEEP + HIGHEST\n- SHIELD = STACK + KEEP + SUM + FIFO consume\n\nStatus Resistance:\n```text\neffective_duration = ceil(base_duration * (1 - resistance/100))\n```\nCurrent baseline cap 75%。\n\nCurrent APPLY Statusに成功率Rollを置かない。\n\nCurrent REMOVE/CLEANSE:\n- category STATUS only\n- all または count\n- protected / removable=false skip\n- oldest first",
+      "summary": "Passiveの習得・Budget・分類とV9 CatalogのCurrent扱い。",
+      "body": "# Current統合規則\n\n- Passiveは常時効果。手動発動なし。\n- 習得は能力値条件方式。\n- Job制限なし、武器制限なし。\n- Passive Level = PLv。\n- 経験値によるPassive自身の成長なし。\n- 習得条件Baseline: 必要能力値総量 = PLv * 2。\n- Passive Budget = PLv。\n- Tag/正式Effect/Modifierを参照して効果を表現する。\n- 旧「状態異常成功率上昇」はCurrent非採用。Status成功率RollはCurrent Runtimeに存在しない。\n\n## V9 Passive Catalog / Baseline\n\n以下のV9 CatalogはContent seedとして保持する。\n個別効果量はBalance Dataとして外部化する。\n\nギルド冒険物語\n\n\nパッシブシステム設計書\n\n\nVersion 1.0\n\n\n==================================================\n\n■ 基本方針\n\n\n正式採用\n\n\n==================================================\n\n\nパッシブは常時発動効果である\n\n\n==================================================\n\n\nプレイヤーが習得し\n\n\n常時効果を受ける\n\n\n==================================================\n\n\n手動発動は存在しない\n\n\n==================================================\n\n■ 設計思想\n\n\nタグシステムを利用する\n\n\n==================================================\n\n\n武器\n\n\n属性\n\n\nBUFF\n\n\nDEBUFF\n\n\nHEAL\n\n\nを参照する\n\n\n==================================================\n\n\n新武器\n\n\n新スキル\n\n\n新属性\n\n\n追加時も\n\n\nタグ付与のみで対応可能\n\n\n==================================================\n\n■ 習得方式\n\n\nスキルと同様\n\n\n能力値条件方式\n\n\n==================================================\n\n\n職業制限なし\n\n\n==================================================\n\n\n武器制限なし\n\n\n==================================================\n\n■ パッシブレベル\n\n\nPLv\n\n\nPassive Level\n\n\n==================================================\n\n\n経験値成長なし\n\n\n==================================================\n\n\n内部管理用\n\n\n==================================================\n\n■ 習得条件\n\n\n必要能力値総量\n\n\n=\n\n\nPLv × 2\n\n\n==================================================\n\n■ Passive Budget\n\n\nPassive Budget\n\n\n=\n\n\nPLv\n\n\n==================================================\n\n\n全パッシブは\n\n\nPLv予算内で設計する\n\n\n==================================================\n\n■ パッシブ分類\n\n\n武器系\n\n\n==================================================\n\n\n属性系\n\n\n==================================================\n\n\n回復系\n\n\n==================================================\n\n\nBUFF系\n\n\n==================================================\n\n\nDEBUFF系\n\n\n==================================================\n\n\n耐性系\n\n\n==================================================\n\n\n特殊系\n\n\n==================================================\n\n■ 武器系パッシブ\n\n\n\n\n剣術熟練\n\n\nタグ\n\n\nWEAPON_SWORD\n\n\n==================================================\n\n\n効果\n\n\nWEAPON_SWORD装備時\n\n\nダメージ増加\n\n\n==================================================\n\n短剣術熟練\n\n\nタグ\n\n\nWEAPON_DAGGER\n\n\n==================================================\n\n\n効果\n\n\nWEAPON_DAGGER装備時\n\n\nダメージ増加\n\n\n==================================================\n\n斧術熟練\n\n\nタグ\n\n\nWEAPON_AXE\n\n\n==================================================\n\n\n効果\n\n\nWEAPON_AXE装備時\n\n\nダメージ増加\n\n\n==================================================\n\n槍術熟練\n\n\nタグ\n\n\nWEAPON_SPEAR\n\n\n==================================================\n\n\n効果\n\n\nWEAPON_SPEAR装備時\n\n\nダメージ増加\n\n\n==================================================\n\n弓術熟練\n\n\nタグ\n\n\nWEAPON_BOW\n\n\n==================================================\n\n\n効果\n\n\nWEAPON_BOW装備時\n\n\nダメージ増加\n\n\n==================================================\n\n魔導熟練\n\n\nタグ\n\n\nWEAPON_WAND\n\n\nWEAPON_STAFF\n\n\n==================================================\n\n\n効果\n\n\n魔法ダメージ増加\n\n\n==================================================\n\n神官学\n\n\nタグ\n\n\nWEAPON_BOOK\n\n\nHEAL\n\n\n==================================================\n\n\n効果\n\n\n回復量増加\n\n\n==================================================\n\n盾術熟練\n\n\nタグ\n\n\nWEAPON_SHIELD\n\n\n==================================================\n\n\n効果\n\n\n被ダメージ軽減\n\n\n==================================================\n\n■ 物理属性系\n\n\n\n\n斬撃熟練\n\n\nタグ\n\n\nSLASH\n\n\n==================================================\n\n\n効果\n\n\nSLASHダメージ増加\n\n\n==================================================\n\n打撃熟練\n\n\nタグ\n\n\nSTRIKE\n\n\n==================================================\n\n\n効果\n\n\nSTRIKEダメージ増加\n\n\n==================================================\n\n刺突熟練\n\n\nタグ\n\n\nPIERCE\n\n\n==================================================\n\n\n効果\n\n\nPIERCEダメージ増加\n\n\n==================================================\n\n■ 属性系\n\n\n\n\n火炎学\n\n\nタグ\n\n\nFIRE\n\n\n==================================================\n\n\n効果\n\n\nFIREダメージ増加\n\n\n==================================================\n\n氷結学\n\n\nタグ\n\n\nICE\n\n\n==================================================\n\n\n効果\n\n\nICEダメージ増加\n\n\n==================================================\n\n雷撃学\n\n\nタグ\n\n\nLIGHTNING\n\n\n==================================================\n\n\n効果\n\n\nLIGHTNINGダメージ増加\n\n\n==================================================\n\n風学\n\n\nタグ\n\n\nWIND\n\n\n==================================================\n\n\n効果\n\n\nWINDダメージ増加\n\n\n==================================================\n\n土学\n\n\nタグ\n\n\nEARTH\n\n\n==================================================\n\n\n効果\n\n\nEARTHダメージ増加\n\n\n==================================================\n\n神聖学\n\n\nタグ\n\n\nLIGHT\n\n\n==================================================\n\n\n効果\n\n\nLIGHTダメージ増加\n\n\n==================================================\n\n暗黒学\n\n\nタグ\n\n\nDARK\n\n\n==================================================\n\n\n効果\n\n\nDARKダメージ増加\n\n\n==================================================\n\n■ 回復系\n\n\n\n\n治癒学\n\n\nタグ\n\n\nHEAL\n\n\n==================================================\n\n\n効果\n\n\n回復量増加\n\n\n==================================================\n\n上級治癒学\n\n\nタグ\n\n\nHEAL\n\n\n==================================================\n\n\n効果\n\n\n回復量大幅増加\n\n\n==================================================\n\n■ BUFF系\n\n\n\n\n祝福強化\n\n\nタグ\n\n\nBUFF\n\n\n==================================================\n\n\n効果\n\n\nBUFF持続時間増加\n\n\n==================================================\n\n祝福増幅\n\n\nタグ\n\n\nBUFF\n\n\n==================================================\n\n\n効果\n\n\nBUFF効果量増加\n\n\n==================================================\n\n■ DEBUFF系\n\n\n\n\n呪術学\n\n\nタグ\n\n\nDEBUFF\n\n\n==================================================\n\n\n効果\n\n\nDEBUFF持続時間増加\n\n\n==================================================\n\n状態異常強化\n\n\nタグ\n\n\nDEBUFF\n\n\n==================================================\n\n\n効果\n\n\n【Current非採用】状態異常成功率上昇\n\n\n==================================================\n\n■ DOT系\n\n\n\n\n毒学\n\n\nタグ\n\n\nDEBUFF\n\n\n==================================================\n\n\n効果\n\n\n毒持続時間増加\n\n\n==================================================\n\n燃焼学\n\n\nタグ\n\n\nFIRE\n\n\nDEBUFF\n\n\n==================================================\n\n\n効果\n\n\n燃焼持続時間増加\n\n\n==================================================\n\n出血学\n\n\nタグ\n\n\nDEBUFF\n\n\n==================================================\n\n\n効果\n\n\n出血持続時間増加\n\n\n==================================================\n\n■ 耐性系\n\n\n\n\n毒耐性学\n\n\n==================================================\n\n\n効果\n\n\n毒耐性上昇\n\n\n==================================================\n\n火炎耐性学\n\n\n==================================================\n\n\n効果\n\n\nFIRE耐性上昇\n\n\n==================================================\n\n状態異常耐性学\n\n\n==================================================\n\n\n効果\n\n\n状態異常耐性上昇\n\n\n==================================================\n\n■ 特殊系\n\n\n\n\n集中\n\n\n==================================================\n\n\n効果\n\n\n命中率上昇\n\n\n==================================================\n\n幸運\n\n\n==================================================\n\n\n効果\n\n\nLUK補正\n\n\n==================================================\n\n探索術\n\n\n==================================================\n\n\n効果\n\n\nレア発見率上昇\n\n\n==================================================\n\n節約術\n\n\n==================================================\n\n\n効果\n\n\nMP消費軽減\n\n\n==================================================\n\n迅速行動\n\n\n==================================================\n\n\n効果\n\n\nAG獲得量増加\n\n\n==================================================\n\n■ 将来追加予定\n\n\n装備セット連動\n\n\n==================================================\n\n\n召喚連動\n\n\n==================================================\n\n\n石板連動\n\n\n==================================================\n\n\n条件付き発動パッシブ\n\n\n==================================================\n\n\nVersion 1.0\n\n\n正式採用\n\n---\n\n## 根拠・統合元\nBOX-R7-006 パッシブシステム設計書 / DISC-R9-GAP-03",
       "decision_refs": [],
       "depends_on": [
-        "SPEC-V9R-018-CORE",
-        "SPEC-V9R-018-SKILL"
+        "SPEC-V9-019-JOB-001",
+        "SPEC-V9-019-TAG-001",
+        "SPEC-V9-019-BATTLE-001"
       ],
-      "acceptance_criteria": "- STATUS=UNIQUE+REFRESH、DOT=STACK+KEEP、BUFF/DEBUFF=HIGHEST、SHIELD=FIFOを再現できる。\n    - ResistanceはDuration短縮へ適用し、Current Status成功率Rollを実装しない。\n    - CleanseはSTATUSのみ、oldest順、protected/removable判定を守る。",
+      "acceptance_criteria": "- Passiveを常時効果として登録/評価できる。\n- PLv Budgetと能力値習得条件を扱える。\n- Current非採用の状態異常成功率Passiveを有効化しない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-SKILL",
-      "title": "Formal Skill / RANGE 実装仕様",
+      "id": "SPEC-V9-019-BATTLE-001",
+      "title": "Battle: Damage / Resistance / Hit / Critical / Heal",
       "status": "Draft",
-      "summary": "Formal Skill canonical path、Current Registry/Budget/Target/RANGE。",
-      "body": "# 03 Formal Skill / Tag Runtime\n\n## Canonical path\n\n```text\nFormal Skill\n→ Formal Skill Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n```\n\nLegacy/Generic/compileTaggedSkillへ戻さない。\n\n## Machine-readable source of truth\n\n同梱:\n- `schemas/assets__shared__config__skill-registry.json`\n- `schemas/assets__shared__config__skill-budget-rules.json`\n\n### Current Effect types\n\nDAMAGE / HEAL / APPLY / REMOVE / RESOURCE_CHANGE / REVIVE / TARGET_CONTROL。\nSPECIALはdisabled/deferred。\n\n### Target\n\nside:\nSELF / ALLY / ENEMY / CORPSE / POINT\n\nrange:\nSINGLE / ALL / FRONT / BACK / RANDOM / PIERCE\n\n### Damage type\n\nPHYSICAL / MAGICAL / FIXED\n\n## Current Formal Budget\n\nCurrent sourceのG04 budget rulesを実装正本とする。\n\n- limit.base = 40\n- per_skill_level = 6\n- min_skill_level = 1\n- max_skill_level = 100\n- range multiplier:\n  - SINGLE 1.0\n  - ALL 1.6\n  - FRONT/BACK 1.3\n  - RANDOM 1.2\n  - PIERCE 1.4\n- Trigger multiplierとEffect costは同梱JSONを直接読む。\n- existing_skill_policy = NO_AUTOMATIC_RECALCULATION\n\nV9旧 `Skill Budget = SLv` / Range 1.0〜2.0はContent/Baseline履歴として `source-seeds` に保持するが、\n新規Formal SkillのCurrent budget calculationへ混ぜない。\n\n    ## RANGE / Target\n\n    Current Formal RegistryのTarget/Rangeを正本にする。\n    Current target side:\n    - SELF\n    - ALLY\n    - ENEMY\n    - CORPSE\n    - POINT\n\n    Current range:\n    - SINGLE\n    - ALL\n    - FRONT\n    - BACK\n    - RANDOM\n    - PIERCE\n\n    RANGEはbase targetからfinal target setを作る責務。\n    Battle計算そのものをRANGEへ持たせない。",
+      "summary": "Battle計算の数式、補正箱、丸め。",
+      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = 命中値 / (命中値 + 回避値) × 100`\n\n- 命中率下限：5%\n- 命中率上限：100%\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 5. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 6. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-CORE-002",
+        "SPEC-V9-019-EQUIP-004",
+        "SPEC-V9-019-STATUS-001"
+      ],
+      "acceptance_criteria": "- Resistance 0〜75%、Hit 5〜100%、Critical順序を再現できる。\n- Damageは最終floor、Healはceil。\n- 同一補正箱加算・別箱乗算を再現できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-BATTLE-002",
+      "title": "Battle: MP / Cooldown / Cast / Target再検証",
+      "status": "Draft",
+      "summary": "MP/CD/詠唱成立、中断、射程再確認、Target無効。",
+      "body": "## 8. MP・クールダウン\n\n### MP\n- MP不足時はスキル発動不可。\n- AIは再思考へ移行。\n- MP消費量はスキル、装備、MODなど効果発生源側の定義に依存。\n\n`消費後MP = 現在MP - 効果値`\n\n### クールダウン\n- 割合短縮は割合で減少。\n- 固定短縮は固定Tickで減少。\n- 端数は最終計算後に切り上げ。\n- 最小CDは0Tick。\n\n---\n\n## 9. 発動成立\n\n- MP消費とCD開始は発動成立時。\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし、CD開始なし。\n\n処理順：\n1. 使用開始\n2. 詠唱\n3. 中断判定\n4. 詠唱完了\n5. MP消費\n6. CD開始\n7. 効果実行\n\n---\n\n## 10. 吸収・反射\n\n### 共通基準\n- HP吸収、MP吸収、反射などダメージ参照効果は、実際にHPへ通った最終ダメージを基準とする。\n- オーバーキル時は実際に減少したHP量を基準とする。\n\n`参照ダメージ = min(最終ダメージ, ダメージ適用前HP)`\n\n### 吸収\n- 吸収量は切り上げ。\n\n### 反射\n- 反射量は切り捨て。\n- 再反射しない。\n- 反射ダメージには抵抗を再適用しない。\n\n---\n\n## 詠唱\n\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし・CDなし。\n- スキル使用不可、または使用中スキル種別を阻害する効果で中断。\n- 通常ダメージ・DOT・反射ダメージでは中断しない。\n- 強制移動で中断する。\n- 強制移動処理順\n  1. 成立判定\n  2. 詠唱中断\n  3. 位置変更\n  4. 射程・対象更新\n  5. AIは次回再評価で再思考\n\n## 射程\n\n- 発動時に対象固定。\n- 詠唱完了時に射程を再確認。\n- 射程外なら不発。\n- 対象再取得はしない。\n- 遮蔽物・射線判定は採用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-BATTLE-001",
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-RANGE-001"
+      ],
+      "acceptance_criteria": "- Cast中断時はMP/CDを消費しない。\n- Cast完了時にRangeを再確認し、Range外は不発。\n- Target再取得をしない。\n- LOS/遮蔽物判定をCurrentへ追加しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-BATTLE-003",
+      "title": "Battle: Multi-hit / Effect順 / Trigger / KO / Revive",
+      "status": "Draft",
+      "summary": "1Hit完結処理、複合Effect順、Trigger順、戦闘不能、蘇生。",
+      "body": "## 11. 複数Hit\n\n- Hitごとに完全処理。\n- 各Hitごとに命中、ダメージ、抵抗、クリティカル、シールド、HP、吸収、反射、状態異常を処理。\n- 単体スキルは対象を倒した時点で残りHit終了。\n- 範囲・複数対象スキルは一部対象を倒しても他対象への処理を継続。\n- 対象は発動時に固定。\n- 発動後に範囲へ入った対象は追加しない。\n- 途中で無効になった対象は除外する。\n\n---\n\n## 12. 複合効果の処理順\n\n1. 対象確定\n2. 命中判定\n3. ダメージ計算・適用\n4. ダメージ参照効果\n5. 状態異常・BUFF・DEBUFF付与\n6. 回復・MP回復\n7. シールド付与\n8. 位置・行動制御\n9. 召喚・生成\n10. 撃破時・命中時などの誘発効果\n\n- 同じ段階の複数効果は効果データ記載順。\n- 効果単位で成功・失敗を判定。\n- 失敗した効果だけをスキップし、後続効果は継続。\n- ダメージで対象が戦闘不能になった場合、その対象への後続効果は適用しない。\n\n---\n\n## 13. 誘発効果の処理順\n\n1. 命中時\n2. 被弾時\n3. ダメージ確定後\n4. HP減少後\n5. 撃破時\n6. 戦闘不能時\n7. 処理終了時\n\n- 同一段階では付与・登録が古い順。\n\n---\n\n## 14. 戦闘不能\n\n1. HPが0以下になる\n2. 戦闘不能フラグ付与\n3. 撃破時効果\n4. 戦闘不能時効果\n5. ドロップ・経験値・クエスト進行\n6. フィールド・対象リストから除外\n\n---\n\n## 15. 蘇生\n\n1. 蘇生条件成立\n2. 戦闘不能フラグ解除\n3. HP・MPを指定値まで回復\n4. 状態異常・BUFF・DEBUFFをすべて解除\n5. 戦闘対象リストへ復帰\n6. 蘇生時効果を発動\n\n---\n\n## 16. 召喚物\n\n- 召喚者が戦闘不能になると召喚物は即時消滅。\n- 召喚物は自身の能力値を使用。\n- 通常ユニットと同じ戦闘ルールを適用。\n- BUFF、DEBUFF、状態異常、回復、シールド、命中、回避、抵抗、クリティカルなども通常どおり適用。\n\n---\n\n## 17. 対象無効時\n\n- 発動時に対象を固定。\n- 対象無効時に別対象を再取得しない。\n- 効果は不発。\n- AIは再思考へ移行。\n- プレイヤー操作では自動で別対象へ切り替えない。\n\n---\n\n## 蘇生\n\n- 自動蘇生優先。\n- 通常蘇生は次順位。\n- 同種は付与順。\n- 蘇生成功後は他の蘇生は不発。\n- 共通無敵時間なし。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-BATTLE-001",
+        "SPEC-V9-019-BATTLE-002",
+        "SPEC-V9-019-STATUS-001"
+      ],
+      "acceptance_criteria": "- Hitごとに命中〜派生処理を完結する。\n- 単体Target死亡で残Hit停止、他Targetは継続。\n- Trigger順序とKO処理順を固定できる。\n- Auto ReviveをNormal Reviveより優先する。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-BATTLE-004",
+      "title": "Battle: Tick / Active Turn / Battle Start-End",
+      "status": "Draft",
+      "summary": "Tick内順序、Seeded unit order、AI再評価、Start/End順。",
+      "body": "## AI・アクティブターン\n\n- AIはアクティブターン方式。\n- AIはアクションゲージ最大値の10%ごとに再評価する。\n  - 最大100 → 10ごと\n  - 最大1000 → 100ごと\n- 各再評価では毎回新規に評価する。\n- 前回の予約・ターゲット・スキル選択は保持しない。\n- 同点候補は抽選で決定する。\n- 行動直前に最終再検証を行う。\n- 実行不能なら次回再評価まで待機する。\n- AIは現在の情報のみ参照する。\n- 詠唱中は現在情報として参照可能。\n- 未来予測・乱数結果・次行動予定は参照しない。\n- AIは記憶を持たない。\n- ヘイトシステムは不採用。\n- 挑発・ターゲット固定などのAI介入効果でタンクを実現する。\n\n## Tick\n\n- 同一Tickの処理順はTick開始時に一度だけ抽選。\n- Tick内はその順番を維持。\n- 次Tickで再抽選。\n- Hitごとの再抽選はしない。\n\nTick処理順\n1. 持続時間更新\n2. DOT・HOT\n3. クールダウン更新\n4. 効果終了判定\n5. AI思考\n6. 行動予約\n7. Tick終了\n\n## 戦闘開始\n\n1. パッシブ\n2. 装備\n3. MOD\n4. クエスト\n5. システム\n6. 開始時トリガー\n7. AI開始\n\n## 戦闘終了\n\n1. 終了判定\n2. 終了時トリガー\n3. 戦闘専用BUFF/DEBUFF解除\n4. 戦闘専用召喚物消滅\n5. AI停止\n6. 戦闘状態解除\n\n## Current非採用\n\n- SUMMON\n- knockback / pull\n- 戦闘中の任意移動\n\n旧Battle v2の召喚節はCurrent Formal Skill Registryに対応Effectがなく、\nV9採用一覧でも将来拡張扱いのためCurrentへ実装しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v3 / BOX-R14-SPEC-READINESS",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-BATTLE-003",
+        "SPEC-V9-019-AI-003"
+      ],
+      "acceptance_criteria": "- Tick開始時にUnit順を1回決め、Tick中固定できる。\n- AI再評価をAG最大値10%間隔で行える。\n- Start/End順を再現できる。\n- Future effectをCurrent Runtimeへ混入しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-STATUS-001",
+      "title": "Status / DOT Current Lifecycle",
+      "status": "Draft",
+      "summary": "Current Formal STATUS/DOTのLifecycle、Resistance、個別Timer。",
+      "body": "# 1. 概念\n\nStatus / DOT / BUFF / DEBUFF / Shield / Stackを別管理する。\n\n# 2. Current Effect Registry\n\n| Effect ID | Kind | Label | Weight | Stack | Refresh | Effective | Consume | Max | Removable | Resistance |\n|---|---|---|---:|---|---|---|---|---:|---|---|\n| BURN | DOT | 火傷 | 1.5 | STACK | KEEP | SUM | NONE | 5 | False |  |\n| POISON | DOT | 毒 | 1.4 | STACK | KEEP | SUM | NONE | 5 | False |  |\n| STUN | STATUS | 行動不能 | 3.0 | UNIQUE | REFRESH | LATEST | NONE |  | True | DURATION_REDUCTION |\n| ACCURACY_DOWN | STATUS | 命中低下 | 1.6 | UNIQUE | REFRESH | LATEST | NONE |  | True | DURATION_REDUCTION |\n| ATK_UP | BUFF | 攻撃強化 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| DEF_DOWN | DEBUFF | 防御弱体 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| BARRIER | SHIELD | シールド | 1.3 | STACK | KEEP | SUM | FIFO |  | False |  |\n| ATK_DOWN | DEBUFF | 防御弱体 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| DEF_UP | BUFF | 攻撃強化 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| ACTION_DISABLED | STATUS | 行動不能 | 3.0 | UNIQUE | REFRESH | LATEST | NONE |  | True | DURATION_REDUCTION |\n\n\n# 3. STATUS\n\nCurrent STATUS:\n- STUN\n- ACCURACY_DOWN\n- ACTION_DISABLED\n\nLifecycle:\n- stackRule = UNIQUE\n- refreshRule = REFRESH\n- snapshotPolicy = SNAPSHOT\n- effectiveRule = LATEST\n- removeOnDeath = true\n- removeOnBattleEnd = true\n- dispelCategory = STATUS\n- resistancePolicy = DURATION_REDUCTION\n\nStatus適用に独立の成功率Rollを置かない。\nBattle Hit後に適用し、ResistanceはDurationへ作用する。\n\n```text\neffective_duration = ceil(base_duration * (1 - resistance / 100))\n```\n\nCurrent Baseline cap = 75%。\n\n# 4. DOT\n\nCurrent DOT:\n- BURN\n- POISON\n\nLifecycle:\n- stackRule = STACK\n- refreshRule = KEEP\n- snapshotPolicy = SNAPSHOT\n- maxStacks = 5\n- effectiveRule = SUM\n- identityPolicy = EFFECT_SOURCE_STACK\n- removeOnDeath / removeOnBattleEnd = true\n- Current removable = false\n\n各Stackは独立Instance/Timer。\n固定Damage方式。\n割合HP Damageを共通DOT仕様にしない。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / BOX-R13-CURRENT-STATUS-CLEANSE / Battle v2",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-003",
+        "SPEC-V9-019-BATTLE-001"
+      ],
+      "acceptance_criteria": "- Current Registryと同じLifecycleでSTATUS/DOTを保存・更新できる。\n- Status成功率Rollを追加しない。\n- Resistance duration reductionを再現できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-STATUS-002",
+      "title": "BUFF / DEBUFF / Shield / Stack",
+      "status": "Draft",
+      "summary": "同系統HIGHEST、Shield FIFO、汎用Stack Resource。",
+      "body": "# 1. BUFF / DEBUFF\n\nCurrent lifecycle:\n- stackRule = STACK\n- refreshRule = KEEP\n- snapshotPolicy = SNAPSHOT\n- effectiveRule = HIGHEST\n- consumeRule = NONE\n\n同系統の付与はそれぞれ個別Timerを持つ。\n効果量は加算しない。\n最も強いものだけを現在実効値とする。\n最強Effectが終了/解除された場合、残存する次点へ自動的に切り替える。\n弱いEffectを消去せず、それぞれのTimerを進める。\n\nCurrent Registry:\n- ATK_UP\n- DEF_UP\n- ATK_DOWN\n- DEF_DOWN\n\n# 2. Shield\n\nCurrent BARRIER lifecycle:\n- STACK + KEEP\n- effective = SUM\n- consume = FIFO\n- 個別Duration\n- removeOnDeath / removeOnBattleEnd\n- Current removable = false\n\n確定後DamageをShieldへ先に適用し、残余だけHPへ通す。\nShield bypass/ignoreをCurrent共通仕様にしない。\n共通Total capを設けない。\n\n# 3. 汎用Stack Resource\n\nStackはStatus/BUFF/DEBUFFと別の数量Resource。\n最低限:\n- stack_id\n- owner_id\n- source_id\n- current\n- max\n- duration/timer policy\n- gain\n- consume\n- trigger threshold\n- rule_version\n\n操作:\n- create\n- add\n- subtract\n- consume\n- move\n- copy\n- remove\n\n具体的なMAX/GAIN等はStack定義またはBalance Dataへ置く。\nV9の1Stack=5%、Max20はBaselineであって全Stack共通固定式にはしない。\n\n---\n\n## 根拠・統合元\nBOX-R7-016 状態・スタック正式版 / Current Formal Skill Registry",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-STATUS-001",
+        "SPEC-V9-019-BATTLE-001"
+      ],
+      "acceptance_criteria": "- BUFF/DEBUFFが加算されずHIGHESTだけ効く。\n- 最強終了後に次点へ切り替わる。\n- ShieldがFIFO消費される。\n- 汎用Stackを状態異常と分離して保存できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-STATUS-003",
+      "title": "Cleanse / Remove / Temporary Immunity",
+      "status": "Draft",
+      "summary": "Current REMOVE契約、解除順、保護、時間限定無効。",
+      "body": "# 1. REMOVE / CLEANSE\n\nCurrent Formal RuntimeのREMOVEはSTATUSを対象とする。\n\nContract:\n- category = STATUS\n- `all = true` または `count >= 1`\n- order = oldest\n- removable=false をskip\n- protected=true をskip\n\nOldest判定:\n1. appliedTick\n2. sequence\n3. instanceId\n\n解除対象が無い場合でもRuntime Errorにせず、removed_count=0の実行結果を返せる。\n\n# 2. DOT/BUFF/DEBUFF/SHIELD\n\nCurrent REMOVE Contractの共通Cleanse対象に自動追加しない。\nそれらを解除する正式Effectが必要ならRegistryへ別Contractとして追加する。\n\n# 3. Immunity / Disable\n\n恒久的な完全無効は原則不採用。\n時間制限付き無効は許可する。\nBattle v3では判定位置をHit後・各種効果計算前とする。\n\n期間限定のSilence/Stun等による行動/Skill制限はDuration終了/解除で解消する。\n\n---\n\n## 根拠・統合元\nBOX-R13-CURRENT-STATUS-CLEANSE / Battle v3",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-STATUS-001",
+        "SPEC-V9-019-BATTLE-002"
+      ],
+      "acceptance_criteria": "- Cleanseがoldest STATUSだけを契約どおり除去できる。\n- protected/not-removableを残す。\n- Current契約にないDISPEL対象を推測追加しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-SKILL-001",
+      "title": "Formal Skill Authoring / Skill Master Schema",
+      "status": "Draft",
+      "summary": "Current Formal Skill Authoring fieldとMaster保存契約。",
+      "body": "# 1. Canonical Path\n\n```text\nFormal Skill Authoring\n→ Formal Skill Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n```\n\nGeneric/Legacy/compileTaggedSkill/Fallbackを最終経路に残さない。\n\n# 2. Authoring root\n\nRequired:\n[]\n\nOptional:\n[]\n\n正式基礎Field:\n- schemaVersion\n- id\n- name\n- skillLevel\n- trigger\n- conditions\n- target\n- effects\n- resource\n\n# 3. Trigger\n\nRequired:\n- type\n- scope\n\nOptional:\n- priority\n\n# 4. Condition\n\nRequired:\n- property\n- operator\n- value\n\nOptional:\n- scope\n\nOperator:\n= / != / > / >= / < / <=\n\nValue type:\n- number\n- rate 0..1\n- non_negative_integer\n- predicate\n\n# 5. Target\n\nRequired:\n- side\n- range\n\nOptional:\n- randomCount\n- excludeSelf\n\n# 6. Resource\n\nOptional:\n- mpCost\n- cooldown\n- activationPriority\n\n# 7. Skill Master\n\nAuthoring内容とCompiler生成済み `runtimeContracts` を保存する。\nGame RuntimeはruntimeContractsを正規入力として使用する。\n\nUnknown Fieldを場当たり追加しない。\nSchema/Registry更新を先に行う。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / assets/shared/js/skill-schema.js / skill-registry.json",
       "decision_refs": [
         "DEC-V9-SKILL-001",
         "DEC-V9-SKILL-002",
-        "DEC-V9-SKILL-003",
-        "DEC-V9-SKILL-004"
+        "DEC-V9-SKILL-003"
       ],
       "depends_on": [
-        "SPEC-V9R-018-CORE"
+        "SPEC-V9-019-CORE-002"
       ],
-      "acceptance_criteria": "- Formal Skill → Compiler → runtimeContracts → Master → Formal Runtimeだけで実行できる。\n    - genericRuntime/compileTaggedSkill等のLegacy pathへfallbackしない。\n    - Unknown Effect/Target/ConditionをValidation Errorにする。\n    - Current Skill Budget rule JSONから計算する。",
+      "acceptance_criteria": "- Authoring SkillをFormal SchemaでValidationできる。\n- MasterへruntimeContractsを保持できる。\n- Legacy/Generic Skill fieldにFallbackしない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-TAG",
-      "title": "Tag Master / Registry 実装仕様",
+      "id": "SPEC-V9-019-SKILL-002",
+      "title": "Formal Skill Compiler / runtimeContracts",
       "status": "Draft",
-      "summary": "Current Tag構造、参照、検証、Legacy zero。",
-      "body": "## Tag\n\nTag MasterはData-driven。\n必須 id/name。\ncategory/parent/alias/deprecated/replacement等を管理可能。\nparentはgameplay inheritanceを意味しない。\n存在しないTag IDを推測生成しない。\n\nCurrent source treeにはProduct用Tag Catalog exportが見つからない。\nSystem contractは実装できるが、Product Tag contentは別migrationが必要。\n\n    ## Runtime Boundary\n\n    Tagは性質・分類・対象判定・相互作用判定に使う。\n    Tag自体へBattle/Skill計算ロジックを埋め込まない。\n\n    parent/childは管理MetadataでありGameplay inheritanceではない。\n    存在しないTag IDを名前から推測生成しない。\n\n    旧固定Runtime Tag体系をCurrent正式Runtimeとして復活させない。",
+      "summary": "Compiler Validation、runtimeContracts構成、Legacy Zero。",
+      "body": "# 1. Compiler責務\n\nFormal Skill Authoringを直接runtimeContractsへCompileする。\nTag Skill生成やLegacy compatibility compilerを持たない。\n\nCompiler:\n- schemaVersion検査\n- Trigger存在/Enabled/Scope検査\n- Condition Property/Operator/Value型検査\n- Target side/range検査\n- Effect type/parameter検査\n- APPLY Effect lifecycle検査\n- Resource値検査\n- runtimeContracts構築\n- Validation Errorの構造化出力\n\n# 2. APPLY lifecycle\n\nAPPLY EffectはRegistry Effect DefinitionのLifecycleを正本とする。\n\nrequired:\n- stackRule\n- refreshRule\n- snapshotPolicy\n- dispelCategory\n- removeOnDeath\n- removeOnBattleEnd\n- removable\n\n許可値:\n- stackRule: UNIQUE / STACK / REPLACE / IGNORE\n- refreshRule: REFRESH / EXTEND / KEEP / REPLACE\n- snapshotPolicy: SNAPSHOT / DYNAMIC\n- dispelCategory: STATUS / DOT / BUFF / DEBUFF / SHIELD / NONE\n- effectiveRule: HIGHEST / SUM / LATEST / NONE\n- consumeRule: FIFO / LIFO / NONE\n\n# 3. Lifecycle Engine Boundary\n\nLifecycle EngineがOwner:\n- resolve\n- apply\n- expire\n- cleanup\n- consume\n- effective\n\nOwnerではない:\n- Trigger dispatch\n- Target resolution\n- Damage formula\n- Heal formula\n- Resource cost\n- Cover routing\n- Counter / Follow-up chain\n- Aura trigger\n\nEffect固有処理:\n- DOT damage formula\n- Status resistance\n- BUFF/DEBUFF stat application\n- Shield damage absorption\n\n# 4. Legacy Zero\n\n最終成果物に:\n- legacySkill\n- genericRuntime\n- legacyCompile\n- compileForLegacy\n- compileTaggedSkill\n- Legacy Adapter/Fallback\n- old Demo Runtime Bridge\n- old Tag Runtime dependency\nを残さない。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / B555 canonical tests",
+      "decision_refs": [
+        "DEC-V9-SKILL-001",
+        "DEC-V9-SKILL-003",
+        "DEC-V9-SKILL-004",
+        "DEC-V9-TAG-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-TAG-001"
+      ],
+      "acceptance_criteria": "- runtimeContracts-onlyでData Exchange/Game Runtimeへ渡せる。\n- Invalid lifecycle/condition/targetをCompilerが拒否する。\n- Legacy compiler pathが存在しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-SKILL-003",
+      "title": "Formal Skill Registry: Trigger / Condition / Target / Effect",
+      "status": "Draft",
+      "summary": "Current Registryの実装可能な全要素を列挙する。",
+      "body": "# 1. Runtime Effect Types\n\n[\"DAMAGE\", \"HEAL\", \"APPLY\", \"REMOVE\", \"RESOURCE_CHANGE\", \"REVIVE\", \"TARGET_CONTROL\", \"SPECIAL\"]\n\n`SPECIAL` はRegistry上のRuntime Effect typeとして予約されるが、\nCurrent正式機能として有効な個別Contractがない場合は実装を推測しない。\n\n# 2. Trigger Registry\n\n| Trigger | Engine event | Dispatch | Scope | Special contract |\n|---|---|---|---|---|\n| ON_USE | use | RESOLVE_ONLY | SELF |  |\n| ON_HIT_RECEIVED | hit_received | COUNTER | SELF | logic=COUNTER; requires_effect=DAMAGE; target_side=ENEMY; target_range=SINGLE |\n| ON_DAMAGE_DEALT | damage_dealt | RESOLVE_ONLY | SELF |  |\n| ON_TURN_START | turn_start | RESOLVE_ONLY | SELF |  |\n| ON_TURN_END | turn_end | RESOLVE_ONLY | SELF |  |\n| ON_DEATH | death | RESOLVE_ONLY | SELF |  |\n| ON_STATUS_APPLIED | status_applied | RESOLVE_ONLY | SELF |  |\n| ON_ALLY_ATTACK | ally_attack | FOLLOW_UP | SELF | logic=FOLLOW_UP; requires_effect=DAMAGE; requires_condition=TARGET_POISONED; target_side=ENEMY; target_range=SINGLE |\n| WHILE_SOURCE_ALIVE | aura_evaluate | AURA | SELF | logic=AURA; requires_effect_type=APPLY; target_range=ALL; stack=highest |\n\n\n# 3. Condition Registry\n\n| Condition | Value type | Scope | Engine predicate |\n|---|---|---|---|\n| SELF_HP | number | SELF |  |\n| SELF_HP_RATE | rate | SELF |  |\n| SELF_MP | number | SELF |  |\n| SELF_MP_RATE | rate | SELF |  |\n| ENEMY_COUNT | non_negative_integer | SELF |  |\n| ALLY_COUNT | non_negative_integer | SELF |  |\n| BATTLE_TICK | non_negative_integer | SELF |  |\n| TARGET_POISONED | predicate | TARGET | target_poisoned |\n\n\n# 4. Target\n\nSide:\n{\n  \"SELF\": \"自分\",\n  \"ALLY\": \"味方\",\n  \"ENEMY\": \"敵\",\n  \"CORPSE\": \"死体\",\n  \"POINT\": \"地点\"\n}\n\nRange:\n{\n  \"SINGLE\": \"単体\",\n  \"ALL\": \"全体\",\n  \"FRONT\": \"前列\",\n  \"BACK\": \"後列\",\n  \"RANDOM\": \"ランダム\",\n  \"PIERCE\": \"貫通\"\n}\n\nDamage type:\n{\n  \"PHYSICAL\": \"物理\",\n  \"MAGICAL\": \"魔法\",\n  \"FIXED\": \"固定\"\n}\n\n# 5. APPLY Effect Registry\n\n| Effect ID | Kind | Label | Weight | Stack | Refresh | Effective | Consume | Max | Removable | Resistance |\n|---|---|---|---:|---|---|---|---|---:|---|---|\n| BURN | DOT | 火傷 | 1.5 | STACK | KEEP | SUM | NONE | 5 | False |  |\n| POISON | DOT | 毒 | 1.4 | STACK | KEEP | SUM | NONE | 5 | False |  |\n| STUN | STATUS | 行動不能 | 3.0 | UNIQUE | REFRESH | LATEST | NONE |  | True | DURATION_REDUCTION |\n| ACCURACY_DOWN | STATUS | 命中低下 | 1.6 | UNIQUE | REFRESH | LATEST | NONE |  | True | DURATION_REDUCTION |\n| ATK_UP | BUFF | 攻撃強化 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| DEF_DOWN | DEBUFF | 防御弱体 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| BARRIER | SHIELD | シールド | 1.3 | STACK | KEEP | SUM | FIFO |  | False |  |\n| ATK_DOWN | DEBUFF | 防御弱体 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| DEF_UP | BUFF | 攻撃強化 | 1.2 | STACK | KEEP | HIGHEST | NONE |  | False |  |\n| ACTION_DISABLED | STATUS | 行動不能 | 3.0 | UNIQUE | REFRESH | LATEST | NONE |  | True | DURATION_REDUCTION |\n\n\n# 6. TARGET_CONTROL\n\nCurrent model:\n- mode: COVER\n- trigger: DIRECT_ATTACK\n- lifetime: PERSISTENT / USES / DURATION\n- target side: ALLY\n- target range: SINGLE / ALL\n\nTarget ControlはTaunt/Hateの代替として全挙動を自動推論しない。\nRegistryが許可するContractだけを実行する。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / skill-registry.json",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-SKILL-002"
+      ],
+      "acceptance_criteria": "- Registry表にないTrigger/Condition/Effect/TargetをFormal Skillが使用できない。\n- Current Effect lifecycleがRegistry値と一致する。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RANGE-001",
+      "title": "RANGE / Target Expansion",
+      "status": "Draft",
+      "summary": "base targetからfinal target setを生成する共通Range System。",
+      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n# 2. Current Formal Range\n\n- SINGLE\n- ALL\n- FRONT\n- BACK\n- RANDOM\n- PIERCE\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n# 3. Castとの関係\n\nTargetはActivation時に固定。\nCast完了時にRangeを再確認する。\nRange外なら不発。\n別Targetへ再取得しない。\n発動後に範囲へ入った対象を追加しない。\n\n# 4. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 5. Future\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n\n---\n\n## 根拠・統合元\nBOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版 / Current Formal Registry",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-003",
+        "SPEC-V9-019-BATTLE-002"
+      ],
+      "acceptance_criteria": "- Current 6 Range typeをTarget expansionとして実装できる。\n- Cast完了Range再検証とTarget固定を守る。\n- 旧Range CostをCurrent Budgetへ二重適用しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-TAG-001",
+      "title": "Tag Master / Registry / Data Exchange",
+      "status": "Draft",
+      "summary": "Current Tag Master構造、解決、検証、参照。",
+      "body": "# 1. Tag Master\n\nTagは独立Master Dataset。\n必須:\n- id\n- name\n\nOptional/管理:\n- status\n- category_id\n- parent_id\n- description\n- enabled\n- aliases[]\n- deprecated\n- replacement_tag_id\n- recommended_replacement_tag_id\n- order\n- created_at\n- updated_at\n\n# 2. Registry\n\n必須機能:\n- ID resolve\n- name resolve\n- alias resolve\n- duplicate validation\n- reference validation\n- parent cycle validation\n- deprecated/replacement validation\n\nparent/childは管理Metadata。\nGameplay Effectを自動継承しない。\n\n# 3. Runtime Boundary\n\nTagは:\n- 性質\n- 分類\n- 対象判定\n- 相互作用判定\n- 適合/生成Filter\nに使う。\n\nTag自体をDAMAGE/HEAL/DOT等の実行命令にしない。\nFormal SkillはTag IDを参照し、Compiler/RegistryがruntimeContractsを作る。\n\n# 4. Content\n\nProduct個別Tag CatalogはContent Master。\n存在しないIDを名前から推測生成しない。\n\n---\n\n## 根拠・統合元\nBOX-R13-CURRENT-TAG-CONTRACT / BOX-R12-CURRENT-IMPL-EVIDENCE",
       "decision_refs": [
         "DEC-V9-TAG-001",
         "DEC-V9-TAG-002",
         "DEC-V9-AI-007"
       ],
-      "depends_on": [],
-      "acceptance_criteria": "- id/nameを必須としてTag Masterを登録できる。\n    - alias/deprecated/replacement/parent cycleを検証できる。\n    - 未登録Tag参照をErrorにできる。\n    - TagだけでCombat処理を実行しない。",
+      "depends_on": [
+        "SPEC-V9-019-000"
+      ],
+      "acceptance_criteria": "- Tag Datasetをid/name必須でImport/Validateできる。\n- Alias/Parent/Deprecatedを解決できる。\n- TagだけでCombat Effectを実行しない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-EQUIP",
-      "title": "Equipment / BaseItem Generator 実装仕様",
+      "id": "SPEC-V9-019-TAG-002",
+      "title": "Tag Baseline Catalog / Legacy Zero",
       "status": "Draft",
-      "summary": "Equipment三層、10Slot、BaseItem式、Contribution、Current未接続field。",
-      "body": "# 04 Equipment / MOD / Rarity\n\n## Equipment layers\n\n1. BaseItem Generation\n2. Item Generation (Rarity/MOD/Tier)\n3. Loot/Drop\n\n## Slots\n\nWeapon1 / Weapon2 / Head / Armor / Gloves / Feet / Amulet / Ring1 / Ring2 / Belt。\n\n## iLv baseline\n\niLv1〜11:\n木 / 鉄 / 鋼鉄 / 銀 / ダイヤ / ミスリル / アダマンタイト / オリハルコン / 巨人 / 竜 / 星鋼。\n\n## Weapon BaseItem\n\n```text\nrequired_str = iLv * STR coefficient\nrequired_dex = iLv * DEX coefficient\nrequired_int = iLv * INT coefficient\n\nattack = required_str * attack coefficient\naccuracy = required_dex * accuracy coefficient\nmagic_weapon_bonus = required_int * magic coefficient\n```\n\nV9初期 attack coefficient=2 / accuracy coefficient=2。\n具体Weapon requirement coefficientは `data/build-balance-snapshot.json` に収録。\n\nFormal field:\nattack / accuracy / magic_weapon_bonus / base_critical_rate。\n\nbase_critical_rate baseline = 0.05。\nBattle共通初期値として生成せず、Equipment Contributionから渡す。\n\n`magic_weapon_bonus` はCurrent Battle未接続。\nFieldは保持するがBattle効果を発明しない。\n\n## Armor\n\nRequirement dimensions:\nVIT / MND / AGI。\n旧Robe INT要求はCurrent非採用。\n\nFormal performance:\nhp_bonus / mp_bonus / evasion。\n\nArmor growthは初期有効。\nWeapon growthは初期disabled/1.0。",
+      "summary": "V9 Tag名をContent seedとして保持し、Legacy Runtime意味論を除外する。",
+      "body": "# 1. V9 Content Seed\n\n以下はV9 Tag Catalogの主要Baseline。\n\n属性:\n- FIRE\n- ICE\n- LIGHTNING\n- WIND\n- EARTH\n- LIGHT\n- DARK\n\n効果:\n- HEAL\n- BUFF\n- DEBUFF\n\n攻撃属性:\n- SLASH\n- PIERCE\n- STRIKE\n\n武器/装備:\n- WEAPON_SWORD\n- WEAPON_GREATSWORD\n- WEAPON_DAGGER\n- WEAPON_AXE\n- WEAPON_GREATAXE\n- WEAPON_SPEAR\n- WEAPON_BOW\n- WEAPON_GREATBOW\n- WEAPON_STAFF\n- WEAPON_WAND\n- WEAPON_BOOK\n- WEAPON_SHIELD\n- EQUIP_QUIVER\n\n# 2. Current扱い\n\nこれらのIDがCurrent Product Masterに未登録なら、\n仕様だけを根拠にRuntimeへ自動生成しない。\nMigration時にTag Masterへ正式登録してから参照する。\n\n# 3. Legacy Zero\n\n以下をCurrentへ継承しない:\n- ATTACK / DOT等を固定Runtime命令として解釈するLegacy Tag方式\n- DOT_POWER / DOT_DURATION / DOT_INTERVAL等をTag名/Legacy parameterとして特別扱いする方式\n- compileTaggedSkill\n- old Tag Runtime fallback\n\n数値parameterが必要な場合はFormal Schema/Registry fieldとして定義する。\n\n---\n\n## 根拠・統合元\nBOX-R7-018 Tag v5.2 / BOX-R10-TAG-LEGACY-LINEAGE / Human Decisions",
+      "decision_refs": [
+        "DEC-V9-TAG-001",
+        "DEC-V9-TAG-002"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-TAG-001"
+      ],
+      "acceptance_criteria": "- V9 Tag IDsをMigration seedとして保持できる。\n- 未登録IDを推測登録しない。\n- Legacy固定Runtime Tag処理を実装しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-EQUIP-001",
+      "title": "Equipment Structure / Slots / iLv",
+      "status": "Draft",
+      "summary": "Equipment三層、10Slot、iLv命名、BaseItem Rarity。",
+      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
       "decision_refs": [
         "DEC-V9-EQUIP-001",
-        "DEC-V9-EQUIP-002",
-        "DEC-V9-EQUIP-003",
-        "DEC-V9-EQUIP-004",
-        "DEC-V9-EQUIP-005",
-        "DEC-V9-EQUIP-006",
-        "DEC-V9-EQUIP-007",
         "DEC-V9-EQUIP-008"
       ],
       "depends_on": [
-        "SPEC-V9R-018-CORE",
-        "SPEC-V9R-018-CHAR"
+        "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- BaseItem → Item → Lootの3層を分離できる。\n    - 10SlotとAccessory生成対象を実装できる。\n    - Weapon/Armor正式Fieldを使い旧base_attack/base_defenseへfallbackしない。\n    - 同一Seed/Generator/Configで同一BaseItemを生成できる。\n    - magic_weapon_bonusは保存するがBattle式を捏造しない。",
+      "acceptance_criteria": "- BaseItem/Item/Lootを分離できる。\n- 10Slotを実装できる。\n- iLv1〜11をBaseItemとして扱える。\n- Accessoryを初期Generator対象に含める。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-MOD",
-      "title": "MOD / Rarity / Unique 実装仕様",
+      "id": "SPEC-V9-019-EQUIP-002",
+      "title": "Equipment BaseItem Generator / Coefficients",
       "status": "Draft",
-      "summary": "MOD適用、重複、Rarity、UniqueのCurrent/V9 Baseline。",
-      "body": "## MOD\n\nMOD適用式:\n\n```text\nFinal = Base + Base * PercentTotal + FlatTotal\n```\n\nBaseItem保存値は上書きしない。\n\n同一Equipment内同一MOD重複禁止。\n別部位では同一MOD可。\n\nGenerator:\nRarity → MOD count → attack/defense slot → category → type → Tier。\n\n## Rarity V9 Product baseline\n\n- NORMAL 60.00%\n- MAGIC 25.00%\n- RARE 12.00%\n- UNIQUE 2.50%\n- LEGENDARY 0.30%\n- MYTHIC 0.20%\n\nこれはV9 Product Baseline。\nCurrent repositoryのReward rarity `common/uncommon/rare/epic/legendary` は別系統で、\n装備Rarityへ無条件同一視しない。\n\nV9想定:\n- 1 quest ≈ 5min\n- 平均Equipment 5/quest\n- MYTHIC ≈ 8〜9h / 1\n- LEGENDARY ≈ 5〜6h / 1\n\n## Unique\n\nUnique固有sourceは `source-seeds` に保持。\n単純最高火力ではなくBuild/戦術変更を担当。\nELEMENT_ATTACH / ELEMENT_CONVERT / STACK_MODIFY / AUTO_TRIGGER / SKILL_MUTATION / SPECIAL_RULE 等。\n\n## Build test\n\n- 同一seed/configで同一BaseItem\n- no legacy base_attack/base_defense\n- MOD applying does not mutate base\n- duplicate MOD reroll\n- `magic_weapon_bonus` Battle contribution remains disconnected",
+      "summary": "Weapon/Armor要求値、正式Performance field、Growth。",
+      "body": "# 4. 武器BaseItem\n\n## 4.1 要求値\n\n```text\nrequired_str = iLv × STR係数\nrequired_dex = iLv × DEX係数\nrequired_int = iLv × INT係数\n```\n\n要求値は装備可否判定専用。\n\n## 4.2 基礎性能\n\nV9正本の生成思想を継承し、後工程で確定した正式fieldへ接続する。\n\n```text\nattack\n= required_str × attack係数\n\naccuracy\n= required_dex × accuracy係数\n\nmagic_weapon_bonus\n= required_int × magic算出係数\n```\n\nV9初期値:\n- attack係数 = 2\n- accuracy係数 = 2\n- V9の魔法上昇力式 = `INT要求閾値 × STR係数`\n\nただし係数はBalance Configへ分離し、コード固定しない。\n\n正式field名:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n\n基礎クリティカル率5%は**武器側からBattleへ持ち込む正式な戦闘寄与値**として採用する。\n\n```text\nbase_critical_rate = 0.05\n```\n\nこれはBattle側の共通初期Critical 5%ではなく、武器BaseItem由来の値。\nEquipment Contributionを経由してBattleへ渡す。\n\nBattle側でSTR/LUK等から再計算しない。\nCritical Damage倍率とは別概念として扱う。\n\n## 4.3 武器係数\n\n- 片手剣 STR6 / DEX3 / INT1\n- 大剣 STR12 / DEX3 / INT1\n- 短剣 STR3 / DEX6 / INT1\n- 片手斧 STR6 / DEX3 / INT1\n- 大斧 STR12 / DEX3 / INT1\n- 槍 STR6 / DEX3 / INT1\n- 弓 STR3 / DEX6 / INT1\n- 大弓 STR6 / DEX3 / INT1\n- 杖 STR3 / DEX1 / INT6\n- ワンド STR1 / DEX3 / INT6\n- 魔導書 STR1 / DEX3 / INT6\n- 盾 STR6 / DEX3 / INT1\n- 矢筒 STR3 / DEX6 / INT1\n\n杖タグ: `WEAPON_STAFF`\n\n---\n\n# 5. 防具BaseItem\n\n防具要求系統は武器と分離する。\n\n正式要求field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9カテゴリ:\n- 重装: VIT6 / MND3 / AGI1\n- スカウト: AGI6 / VIT3 / MND1\n- ローブ: MND6 / INT3 / VIT1\n\n正式確定:\n防具の要求ステータス系統は **VIT / MND / AGI** とする。\n\n正式field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9ローブに記載されていた `MND6 / INT3 / VIT1` のINT要求は旧仕様として不採用。\n正式Generatorでは防具要求値としてINTを使用しない。\n\n各防具カテゴリ/部位の係数テーブルも、VIT / MND / AGIの3系統へ統一して管理する。\n\n正式BaseItem性能:\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\nBattle RuntimeでVIT/MND/AGIから再計算しない。\n\n---\n\n# 6. 防具iLv追加成長\n\n攻撃Skill等のインフレに追従できるよう、防具性能は要求閾値とは別に追加成長を持てる。\n\n```text\n基礎性能\n= 要求閾値 × 装備/部位係数\n\n最終BaseItem基礎性能\n= 基礎性能 × categoryGrowthMultiplier\n```\n\n防具は初期状態から有効。\n\n個別設定:\n```text\narmor_growth:\n  hp: iLv別設定\n  mp: iLv別設定\n  evasion: iLv別設定\n```\n\n武器側にも同じ拡張点を持てるが初期運用は `1.0` / disabled相当。\n通常UIでは不要な武器Growth設定を露出させない。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
+      "decision_refs": [
+        "DEC-V9-EQUIP-002",
+        "DEC-V9-EQUIP-003",
+        "DEC-V9-EQUIP-006"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-EQUIP-001",
+        "SPEC-V9-019-CHAR-001"
+      ],
+      "acceptance_criteria": "- Weapon要求値とattack/accuracy/magic_weapon_bonusをConfig係数で生成できる。\n- Armor要求値をVIT/MND/AGIだけで生成できる。\n- base_critical_rate 0.05をWeapon Contributionとして扱える。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-EQUIP-003",
+      "title": "Equipment Generation Config / Metadata / Validator",
+      "status": "Draft",
+      "summary": "Generator Rules、Balance Config、再現性Metadata、Validation。",
+      "body": "# 7. Generation Rules / Balance Config\n\nGeneration Rules:\n- 計算順序\n- 入出力\n- 武器/防具分岐\n- 必須データ\n- 検証ルール\n\nBalance Config:\n- 要求閾値係数\n- 武器/防具係数\n- 基礎性能倍率\n- 防具Growth\n- Clamp\n- 丸め\n- 検証閾値\n- 将来のItem Generation用係数\n\n最低metadata:\n- `config_id`\n- `config_version`\n- `status`\n- `created_at`\n- `updated_at`\n\nstatus:\n- draft\n- testing\n- active\n- archived\n\n正規生成は用途ごとに原則1 Active Config。\n\n---\n\n# 8. generation metadata / 再現性\n\n生成物は少なくとも以下を追跡可能にする。\n\n- generator_version\n- generation_rules_version\n- config_id\n- config_version\n- source_spec_version\n- seed\n- base_item_type / base_item_id\n- item_level\n- generated_at\n\n必要に応じて:\n- generation_input\n- calculation_trace\n\n同一入力 + 同一seed + 同一generator_version + 同一Configで同一結果を再現できることを目標とする。\n\nBalance Config更新で既存Equipmentを自動上書きしない。\n\n---\n\n# 9. Generator Validator\n\n```text\nGenerator Validator\n├─ Structural Validation → Error / 停止\n└─ Balance Validation    → 原則Warning\n```\n\nStructural:\n- BaseItem不存在\n- iLv不正\n- Config不存在/status不正\n- Rules/Config互換不一致\n- 係数欠落\n- NaN/Infinity\n- required_* < 0\n- 必須Tag/性能欠落\n- stat/combat parameter混同\n- armor growth設定欠落\n- generation metadata欠落\n\nBalance:\n- attack等の想定レンジ逸脱\n- hp/mp/evasion成長異常候補\n- clamp到達等\n\nBalance閾値はコード固定せずConfig化する。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
+      "decision_refs": [
+        "DEC-V9-EQUIP-005"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-EQUIP-002",
+        "SPEC-V9-019-CORE-002"
+      ],
+      "acceptance_criteria": "- Active Configを使って生成できる。\n- 同一Input/Seed/Generator/Configで同一結果を再生成できる。\n- Structural ErrorとBalance Warningを分離できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-EQUIP-004",
+      "title": "Equipment Consumer / Contribution / MOD Boundary",
+      "status": "Draft",
+      "summary": "Battleへ渡す正式field、旧field廃止、Contribution境界。",
+      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current未接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象。\nCurrent Battleでは計算式未接続。\nBattle contributionを推測しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08",
+      "decision_refs": [
+        "DEC-V9-EQUIP-002",
+        "DEC-V9-EQUIP-004",
+        "DEC-V9-EQUIP-006",
+        "DEC-V9-EQUIP-007"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-EQUIP-003",
+        "SPEC-V9-019-MOD-001"
+      ],
+      "acceptance_criteria": "- 旧base_attack/base_defense/defenseへFallbackしない。\n- Equipment ContributionをMOD処理前後で分離する。\n- magic_weapon_bonusを未接続のまま保持できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-MOD-001",
+      "title": "MOD Architecture / Resolver / Tag Boundary",
+      "status": "Draft",
+      "summary": "v0.4系のCurrent MOD構造、Definition、Required Tag Rule、Resolver。",
+      "body": "# 1. Current構造\n\nMOD v0.4系列を通常MOD構造の最新版として採用する。\n\n```text\nMOD Definition\n+ Common Tag Master\n+ Required Tag Rule\n+ Resolver\n+ Balance Config\n→ Equipment/Runtime\n```\n\nMOD専用Tag DBを作らない。\n\n# 2. MOD Definition\n\n基本:\n- id\n- category\n- tags[]\n- effect_type\n- target\n- operation\n- parameters\n- balance_key\n- enabled\n- schema_version\n\n# 3. Required Tag\n\n`required_tag_rules` は共通Rule Engineで解決する。\nDefinition本体へ手書きrequired_tagsを重複保持しないことを優先する。\nRuleが空ならRequired Tagも空でValidation PASS。\n\n# 4. Runtime Boundary\n\nTag = 性質/分類/対象判定/相互作用。\nEffect = Definition + Resolver + Runtime。\n\nBattle/Skill計算ロジックをTagへ埋め込まない。\n\n# 5. 数値\n\nMOD効果量/確率/上限/係数はBalance Config。\n仕様本文へ固定しない。\nただし再現用BaselineはCatalog/Balance Specificationへ保持する。\n\n---\n\n## 根拠・統合元\nBOX-R7-021 MOD接続 v0.1-v0.4 / BOX-R7-054 決定台帳",
       "decision_refs": [
         "DEC-V9-MOD-001",
         "DEC-V9-MOD-002",
-        "DEC-V9-MOD-003",
-        "DEC-V9-MOD-004",
-        "DEC-V9-MOD-005",
-        "DEC-V9-MOD-006"
+        "DEC-V9-MOD-005"
       ],
       "depends_on": [
-        "SPEC-V9R-018-EQUIP",
-        "SPEC-V9R-018-TAG"
+        "SPEC-V9-019-TAG-001",
+        "SPEC-V9-019-EQUIP-004"
       ],
-      "acceptance_criteria": "- Final = Base + Base*PercentTotal + FlatTotalを再現できる。\n    - Base保存値をMOD処理で破壊しない。\n    - 同一Equipment内重複禁止を実装できる。\n    - Rarity率をV9_BASELINE Configとして読み込める。\n    - Uniqueを通常MODと分離できる。",
+      "acceptance_criteria": "- MOD Definitionを共通Tag/Resolverで実行できる。\n- required_tag_rulesをGenerator/Validatorで共通利用できる。\n- 数値をRuntimeへHard-codeしない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-MONSTER",
-      "title": "Monster / Enemy Budget / Encounter 実装仕様",
+      "id": "SPEC-V9-019-MOD-002",
+      "title": "MOD Application / Generation / Duplicate Rule",
       "status": "Draft",
-      "summary": "Monster Master、Enemy Budget、Spawn/Formation、Product migration境界。",
-      "body": "# 05 Monster / Enemy Budget / Encounter\n\n## Monster Master\n\nMonsterは独立Master。\nCurrent Data Exchange schemaと実装は同梱Schemaを使う。\n\n主要参照:\n- job_id\n- skill_ids / candidate_skill_ids\n- equipment/mod refs\n- spawn_tags.any/all/none\n- enemy_budget_cost\n- drop_table_ids\n\n## Product generation\n\nStory → 基礎骨格 → 重複整理 → 通常骨格×7Job → 名称 → Tag → 正式登録。\nStory固有Boss/固有名Monsterは7Job自動展開と分離。\n\nAI生成工程が能力値/強度を独自決定しない。\n\n## Enemy Budget\n\nCurrent構造:\nHP / Attack Performance / Defense Performance / Skill / AI / Utility。\n\nV9 concrete baseline:\n- Enemy Budget = EnemyLv\n- attack 30%\n- durability 30%\n- skill 20%\n- special 10%\n- AI 10%\n- elite 150%\n- champion 200%\n- boss 300%\n- raid 1000%\n- mythic 2000%\n\n注意:\n後発正式Enemy Budgetは6カテゴリへ構造分離し、具体配分値をBalance保留としている。\nしたがって上記は **V9_BASELINE default seed** であり、Current確定配分と断定しない。\n\n## Encounter Current values\n\n`adventure_settings`:\n- default_spawn_weight = 1\n- max_units = 100\n\nMap/environment tags + Monster spawn_tagsで候補Filter。\nweight + enemy_budget_cost + effective_enemy_budgetでFormation生成。\n\nFixed Formation scaling:\n- hp_per_ratio = 1\n- attack_per_ratio = 1\n- agi_per_ratio = 0\n- min multiplier = 1\n- max = null\n\n## Content\n\nCurrent export Monsterは訓練/デモ用中心。\nV9 `source-seeds/monster_database_v1.txt` はProduct seedとして保持。\n\n旧V9 Monster DBにはSlime/Goblin/Wolf/Orc/Skeleton...Boss等の具体Dataがあるが、\n後発7Job生成思想と完全統合されたCurrent Product Masterではない。\n実装時:\n- Demo export = test fixture\n- V9 DB = migration seed\n- Generated Current Product Master = migration成果物\n\n## Monster AI\n\nCharacter Formal AI Bindingを推測流用しない。\nCurrent Monster/Battle existing pathを維持。\nMonster Formal AI化はFuture。\n\n## Build test\n\n- environment tags filter\n- budget consumption deterministic by seed\n- required_monsters override can bypass normal tag filter\n- fixed formation remains snapshot-stable",
+      "summary": "Equipment MOD式、正式抽選順、重複禁止。",
+      "body": "# 1. Equipment Performance MOD\n\n```text\nFinal\n= Base\n+ (Base * PercentTotal)\n+ FlatTotal\n```\n\nBaseItem保存値をMODで上書きしない。\n\n# 2. 正式抽選順\n\n```text\nRarity\n→ MOD count\n→ attack/defense slot\n→ MOD category\n→ MOD type\n→ MOD Tier\n```\n\n処理順は固定。\n各段階の確率/補正率/Tier値はBalance Data。\n\n# 3. Duplicate\n\n同一Equipment内:\n- 同一MOD重複禁止\n- 重複したら再抽選\n\n別Equipment部位:\n- 同一MODを許可\n\nNORMALはMOD重複処理対象外。\nMAGIC/RARE/UNIQUE/LEGENDARY/MYTHICはMODを持ち得る。\n\n# 4. Ability MOD\n\nSTR/VIT/AGI/DEX/INT/MND/LUK直接増加MODは通常基本枠へ常時出さない。\nRare枠候補として許可する。\nAmuletを能力値MOD専用品にしない。\n\n---\n\n## 根拠・統合元\nBOX-R7-024 MOD重複 / Human MOD Decisions",
+      "decision_refs": [
+        "DEC-V9-MOD-003",
+        "DEC-V9-MOD-004",
+        "DEC-V9-MOD-006",
+        "DEC-V9-EQUIP-007"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-MOD-001",
+        "SPEC-V9-019-RARITY-001"
+      ],
+      "acceptance_criteria": "- MOD抽選順を固定できる。\n- 同一装備内重複を再抽選できる。\n- Base値を破壊せずPercent/Flatを適用できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-MOD-003",
+      "title": "V9 MOD Catalog / Balance Baseline",
+      "status": "Draft",
+      "summary": "V9 MOD種類・Tier・装備部位の具体Baselineを再現用に保持する。",
+      "body": "# 扱い\n\n以下はV9 Product BaselineのMOD Catalog。\n後発Decisionにより数値はBalance可変だが、再現用初期値として削除しない。\n\nCurrent Product Masterへ移行する際は:\n- ID/Tag/Categoryを正式Masterへ登録\n- 数値はBalance Configへ外出し\n- Current Runtime/Equipment fieldと互換しない旧項目はMigration Errorとして扱う\n\n## V9 Catalog原文\n\n【扱い】統合前資料。まだSpecificationではない。\n【分類】11_MOD・Rarity\n【資料系列】MODデータベース設計書\n【版/文書数】4\n\n===== SOURCE 01 =====\nsource_id: MAT-V9-DOC-020\nversion: v9\ndocument: 01_最新版/07_MOD_レアリティ/07_MODデータベース_CRITICAL_Version1.0.txt\nrole: primary_material\nsource_status: Approved\npackage: V9 Library v2.0\n\n【本文】\nsource_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_CRITICAL_Version1.0.txt\nmanifest_sha256: b1a1e468ac24d2b913ee92a96a3627e020bbcadb951777e9b44f28d7a78d6766\nactual_sha256: b1a1e468ac24d2b913ee92a96a3627e020bbcadb951777e9b44f28d7a78d6766\nmanifest_status: 最新版\n\n===== ORIGINAL BODY =====\nギルド冒険物語\n\nMODデータベース設計書\n\nVersion 1.0\n\nPart 2\n\nCRITICAL系MOD\n\n==================================================\n■ 基本方針\n\n正式採用\n\n==================================================\n\nカテゴリ\n\nCRITICAL\n\n==================================================\n\n攻撃枠専用\n\n==================================================\n\n最大2枠\n\n==================================================\n■ CRITICAL_RATE\n\nクリティカル発生率増加\n\n==================================================\n\nタグ\n\nCRITICAL\n\n==================================================\n\nTier1\n\n+10%\n\n==================================================\n\nTier2\n\n+8%\n\n==================================================\n\nTier3\n\n+6%\n\n==================================================\n\nTier4\n\n+4%\n\n==================================================\n\nTier5\n\n+2%\n\n==================================================\n\n出現部位\n\n武器\n\n手袋\n\n指輪\n\nアミュレット\n\n==================================================\n■ CRITICAL_DAMAGE\n\nクリティカルダメージ増加\n\n==================================================\n\nタグ\n\nCRITICAL\n\n==================================================\n\nTier1\n\n+50%\n\n==================================================\n\nTier2\n\n+40%\n\n==================================================\n\nTier3\n\n+30%\n\n==================================================\n\nTier4\n\n+20%\n\n==================================================\n\nTier5\n\n+10%\n\n==================================================\n\n出現部位\n\n武器\n\n手袋\n\n指輪\n\nアミュレット\n\n==================================================\n■ ACCURACY\n\n命中率増加\n\n==================================================\n\nタグ\n\nACCURACY\n\n==================================================\n\nTier1\n\n+20%\n\n==================================================\n\nTier2\n\n+16%\n\n==================================================\n\nTier3\n\n+12%\n\n==================================================\n\nTier4\n\n+8%\n\n==================================================\n\nTier5\n\n+4%\n\n==================================================\n\n出現部位\n\n武器\n\n頭\n\n手袋\n\n指輪\n\n==================================================\n■ 同時出現ルール\n\n同一装備内\n\n同一MOD重複禁止\n\n==================================================\n\nCRITICAL_RATE\n\nCRITICAL_DAMAGE\n\n同時出現可能\n\n==================================================\n\nCRITICAL_RATE\n\nACCURACY\n\n同時出現可能\n\n==================================================\n\nCRITICAL_DAMAGE\n\nACCURACY\n\n同時出現可能\n\n==================================================\n■ 設計思想\n\nCRITICAL_RATE\n\n発生率担当\n\n==================================================\n\nCRITICAL_DAMAGE\n\n倍率担当\n\n==================================================\n\nACCURACY\n\n命中担当\n\n==================================================\n\n火力特化ビルド\n\n==================================================\n\n安定型ビルド\n\n==================================================\n\n命中特化ビルド\n\n==================================================\n\nを成立させる\n\n==================================================\n\nVersion 1.0\n\nPart 2\n\nCRITICAL系MOD\n\n正式採用\n\n===== SOURCE 02 =====\nsource_id: MAT-V9-DOC-021\nversion: v9\ndocument: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DAMAGE_Version1.0.txt\nrole: primary_material\nsource_status: Approved\npackage: V9 Library v2.0\n\n【前版との差分】\n- compare_to: MAT-V9-DOC-020 / v9\n- added_lines: 260\n- removed_lines: 113\n- 追加例:\n  + source_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DAMAGE_Version1.0.txt\n  + manifest_sha256: 225f74bda5360e76ff976f6c237cfe32c1054f33f1fa88fd2471c4fb958d2d85\n  + actual_sha256: 225f74bda5360e76ff976f6c237cfe32c1054f33f1fa88fd2471c4fb958d2d85\n  + Part 1\n  + DAMAGE系MOD\n  + DAMAGE\n  + ■ PHYSICAL_DAMAGE\n  + 物理ダメージ増加\n  + ==================================================\n  + タグ\n  + PHYSICAL\n  + ==================================================\n- 削除/変更例:\n  - source_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_CRITICAL_Version1.0.txt\n  - manifest_sha256: b1a1e468ac24d2b913ee92a96a3627e020bbcadb951777e9b44f28d7a78d6766\n  - actual_sha256: b1a1e468ac24d2b913ee92a96a3627e020bbcadb951777e9b44f28d7a78d6766\n  - Part 2\n  - CRITICAL系MOD\n  - CRITICAL\n  - ■ CRITICAL_RATE\n  - クリティカル発生率増加\n  - ==================================================\n  - タグ\n  - CRITICAL\n  - ==================================================\n\n【本文】\nsource_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DAMAGE_Version1.0.txt\nmanifest_sha256: 225f74bda5360e76ff976f6c237cfe32c1054f33f1fa88fd2471c4fb958d2d85\nactual_sha256: 225f74bda5360e76ff976f6c237cfe32c1054f33f1fa88fd2471c4fb958d2d85\nmanifest_status: 最新版\n\n===== ORIGINAL BODY =====\nギルド冒険物語\n\nMODデータベース設計書\n\nVersion 1.0\n\nPart 1\n\nDAMAGE系MOD\n\n==================================================\n■ 基本方針\n\n正式採用\n\n==================================================\n\nカテゴリ\n\nDAMAGE\n\n==================================================\n\n攻撃枠専用\n\n==================================================\n\n最大2枠\n\n==================================================\n■ PHYSICAL_DAMAGE\n\n物理ダメージ増加\n\n==================================================\n\nタグ\n\nPHYSICAL\n\n==================================================\n\nTier1\n\n+20%\n\n==================================================\n\nTier2\n\n+16%\n\n==================================================\n\nTier3\n\n+12%\n\n==================================================\n\nTier4\n\n+8%\n\n==================================================\n\nTier5\n\n+4%\n\n==================================================\n\n出現部位\n\n武器\n\n頭\n\n鎧\n\n手袋\n\n足\n\n指輪\n\n==================================================\n■ MAGIC_DAMAGE\n\n魔法ダメージ増加\n\n==================================================\n\nタグ\n\nMAGIC\n\n==================================================\n\nTier1\n\n+20%\n\n==================================================\n\nTier2\n\n+16%\n\n==================================================\n\nTier3\n\n+12%\n\n==================================================\n\nTier4\n\n+8%\n\n==================================================\n\nTier5\n\n+4%\n\n==================================================\n\n出現部位\n\n武器\n\n頭\n\n鎧\n\n手袋\n\n足\n\n指輪\n\n==================================================\n■ FIRE_DAMAGE\n\n火属性ダメージ増加\n\n==================================================\n\nタグ\n\nFIRE\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ ICE_DAMAGE\n\n氷属性ダメージ増加\n\n==================================================\n\nタグ\n\nICE\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ LIGHTNING_DAMAGE\n\n雷属性ダメージ増加\n\n==================================================\n\nタグ\n\nLIGHTNING\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ WIND_DAMAGE\n\n風属性ダメージ増加\n\n==================================================\n\nタグ\n\nWIND\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ EARTH_DAMAGE\n\n土属性ダメージ増加\n\n==================================================\n\nタグ\n\nEARTH\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ LIGHT_DAMAGE\n\n光属性ダメージ増加\n\n==================================================\n\nタグ\n\nLIGHT\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ DARK_DAMAGE\n\n闇属性ダメージ増加\n\n==================================================\n\nタグ\n\nDARK\n\n==================================================\n\nTier1\n\n+24%\n\n==================================================\n\nTier2\n\n+20%\n\n==================================================\n\nTier3\n\n+16%\n\n==================================================\n\nTier4\n\n+12%\n\n==================================================\n\nTier5\n\n+8%\n\n==================================================\n\n出現部位\n\n武器\n\n指輪\n\nアミュレット\n\n==================================================\n■ MOD重複ルール\n\n同一装備内\n\n同一MOD重複禁止\n\n==================================================\n\n装備部位が異なる場合\n\n同一MOD重複可能\n\n==================================================\n■ 設計思想\n\nPHYSICAL_DAMAGE\n\n物理ビルド向け\n\n==================================================\n\nMAGIC_DAMAGE\n\n魔法ビルド向け\n\n==================================================\n\n属性系MOD\n\n属性特化ビルド向け\n\n==================================================\n\n物理・魔法より\n\n属性特化の方が高倍率\n\n==================================================\n\n複数部位による属性特化を許可\n\n==================================================\n\nVersion 1.0\n\nPart 1\n\nDAMAGE系MOD\n\n正式採用\n\n===== SOURCE 03 =====\nsource_id: MAT-V9-DOC-022\nversion: v9\ndocument: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DEFENSE_Version1.0.txt\nrole: primary_material\nsource_status: Approved\npackage: V9 Library v2.0\n\n【前版との差分】\n- compare_to: MAT-V9-DOC-021 / v9\n- added_lines: 84\n- removed_lines: 195\n- 追加例:\n  + source_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DEFENSE_Version1.0.txt\n  + manifest_sha256: be4b2d965f92326114a82f1129ca515cdf8da2347abbb565d1f9cbde009af334\n  + actual_sha256: be4b2d965f92326114a82f1129ca515cdf8da2347abbb565d1f9cbde009af334\n  + Part 3\n  + DEFENSE系MOD\n  + DEFENSE\n  + 防御枠専用\n  + ■ EVASION\n  + 回避率増加\n  + EVASION\n  + ==================================================\n  + Tier1\n- 削除/変更例:\n  - source_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DAMAGE_Version1.0.txt\n  - manifest_sha256: 225f74bda5360e76ff976f6c237cfe32c1054f33f1fa88fd2471c4fb958d2d85\n  - actual_sha256: 225f74bda5360e76ff976f6c237cfe32c1054f33f1fa88fd2471c4fb958d2d85\n  - Part 1\n  - DAMAGE系MOD\n  - DAMAGE\n  - 攻撃枠専用\n  - ■ PHYSICAL_DAMAGE\n  - 物理ダメージ増加\n  - PHYSICAL\n  - 武器\n  - ■ MAGIC_DAMAGE\n\n【本文】\nsource_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DEFENSE_Version1.0.txt\nmanifest_sha256: be4b2d965f92326114a82f1129ca515cdf8da2347abbb565d1f9cbde009af334\nactual_sha256: be4b2d965f92326114a82f1129ca515cdf8da2347abbb565d1f9cbde009af334\nmanifest_status: 最新版\n\n===== ORIGINAL BODY =====\nギルド冒険物語\n\n\nMODデータベース設計書\n\n\nVersion 1.0\n\n\nPart 3\n\n\nDEFENSE系MOD\n\n\n==================================================\n\n■ 基本方針\n\n\n正式採用\n\n\n==================================================\n\n\nカテゴリ\n\n\nDEFENSE\n\n\n==================================================\n\n\n防御枠専用\n\n\n==================================================\n\n\n最大2枠\n\n\n==================================================\n\n■ EVASION\n\n\n回避率増加\n\n\n==================================================\n\n\nタグ\n\n\nEVASION\n\n\n==================================================\n\n\nTier1\n\n\n+15%\n\n\n==================================================\n\n\nTier2\n\n\n+12%\n\n\n==================================================\n\n\nTier3\n\n\n+9%\n\n\n==================================================\n\n\nTier4\n\n\n+6%\n\n\n==================================================\n\n\nTier5\n\n\n+3%\n\n\n==================================================\n\n\n出現部位\n\n\n頭\n\n\n鎧\n\n\n手袋\n\n\n足\n\n\n指輪\n\n\n==================================================\n\n■ ELEMENT_RESIST\n\n\n属性耐性増加\n\n\n==================================================\n\n\nタグ\n\n\nELEMENT_RESIST\n\n\n==================================================\n\n\nTier1\n\n\n+20%\n\n\n==================================================\n\n\nTier2\n\n\n+16%\n\n\n==================================================\n\n\nTier3\n\n\n+12%\n\n\n==================================================\n\n\nTier4\n\n\n+8%\n\n\n==================================================\n\n\nTier5\n\n\n+4%\n\n\n==================================================\n\n\n出現部位\n\n\n頭\n\n\n鎧\n\n\n手袋\n\n\n足\n\n\nアミュレット\n\n\n指輪\n\n\n==================================================\n\n■ STATUS_RESIST\n\n\n状態異常耐性増加\n\n\n==================================================\n\n\nタグ\n\n\nSTATUS_RESIST\n\n\n==================================================\n\n\nTier1\n\n\n+20%\n\n\n==================================================\n\n\nTier2\n\n\n+16%\n\n\n==================================================\n\n\nTier3\n\n\n+12%\n\n\n==================================================\n\n\nTier4\n\n\n+8%\n\n\n==================================================\n\n\nTier5\n\n\n+4%\n\n\n==================================================\n\n\n出現部位\n\n\n頭\n\n\n鎧\n\n\n手袋\n\n\n足\n\n\nアミュレット\n\n\n指輪\n\n\n==================================================\n\n■ SURVIVAL\n\n\n最大HP増加\n\n\n==================================================\n\n\nタグ\n\n\nSURVIVAL\n\n\n==================================================\n\n\nTier1\n\n\n+25%\n\n\n==================================================\n\n\nTier2\n\n\n+20%\n\n\n==================================================\n\n\nTier3\n\n\n+15%\n\n\n==================================================\n\n\nTier4\n\n\n+10%\n\n\n==================================================\n\n\nTier5\n\n\n+5%\n\n\n==================================================\n\n\n出現部位\n\n\n頭\n\n\n鎧\n\n\n手袋\n\n\n足\n\n\nベルト\n\n\n==================================================\n\n■ 同時出現ルール\n\n\n同一装備内\n\n\n同一MOD重複禁止\n\n\n==================================================\n\n\nEVASION\n\n\nELEMENT_RESIST\n\n\n同時出現可能\n\n\n==================================================\n\n\nEVASION\n\n\nSTATUS_RESIST\n\n\n同時出現可能\n\n\n==================================================\n\n\nSURVIVAL\n\n\nELEMENT_RESIST\n\n\n同時出現可能\n\n\n==================================================\n\n\nSURVIVAL\n\n\nSTATUS_RESIST\n\n\n同時出現可能\n\n\n==================================================\n\n■ 設計思想\n\n\nEVASION\n\n\n回避特化\n\n\n==================================================\n\n\nELEMENT_RESIST\n\n\n属性耐久特化\n\n\n==================================================\n\n\nSTATUS_RESIST\n\n\n状態異常耐久特化\n\n\n==================================================\n\n\nSURVIVAL\n\n\nHP耐久特化\n\n\n==================================================\n\n\n複数部位による耐久特化ビルドを許可\n\n\n==================================================\n\n\n同一装備内重複は禁止\n\n\n==================================================\n\n\nVersion 1.0\n\n\nPart 3\n\n\nDEFENSE系MOD\n\n\n正式採用\n\n\n\n\n===== SOURCE 04 =====\nsource_id: MAT-V9-DOC-023\nversion: v9\ndocument: 01_最新版/07_MOD_レアリティ/07_MODデータベース_統合正式版_Version1.0.txt\nrole: primary_material\nsource_status: Approved\npackage: V9 Library v2.0\n\n【前版との差分】\n- compare_to: MAT-V9-DOC-022 / v9\n- added_lines: 208\n- removed_lines: 152\n- 追加例:\n  + source_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_統合正式版_Version1.0.txt\n  + manifest_sha256: e89111fef5ac439a7abee4bfc87d2d4036a5f34382f478aa6e9ff37006c610ec\n  + actual_sha256: e89111fef5ac439a7abee4bfc87d2d4036a5f34382f478aa6e9ff37006c610ec\n  + 統合正式版\n  + 全MODは\n  + Tier制\n  + で管理する\n  + ==================================================\n  + Tier1\n  + 最高品質\n  + ==================================================\n  + Tier2\n- 削除/変更例:\n  - source_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_DEFENSE_Version1.0.txt\n  - manifest_sha256: be4b2d965f92326114a82f1129ca515cdf8da2347abbb565d1f9cbde009af334\n  - actual_sha256: be4b2d965f92326114a82f1129ca515cdf8da2347abbb565d1f9cbde009af334\n  - Part 3\n  - DEFENSE系MOD\n  - カテゴリ\n  - 防御枠専用\n  - ==================================================\n  - 最大2枠\n  - ==================================================\n  - ■ EVASION\n  - 回避率増加\n\n【本文】\nsource_path: 01_最新版/07_MOD_レアリティ/07_MODデータベース_統合正式版_Version1.0.txt\nmanifest_sha256: e89111fef5ac439a7abee4bfc87d2d4036a5f34382f478aa6e9ff37006c610ec\nactual_sha256: e89111fef5ac439a7abee4bfc87d2d4036a5f34382f478aa6e9ff37006c610ec\nmanifest_status: 最新版\n\n===== ORIGINAL BODY =====\nギルド冒険物語\n\nMODデータベース設計書\n\nVersion 1.0\n\n統合正式版\n\n==================================================\n■ 基本方針\n\n正式採用\n\n==================================================\n\n全MODは\n\nTier制\n\nで管理する\n\n==================================================\n\nTier1\n\n最高品質\n\n==================================================\n\nTier2\n\n高品質\n\n==================================================\n\nTier3\n\n標準品質\n\n==================================================\n\nTier4\n\n低品質\n\n==================================================\n\nTier5\n\n最低品質\n\n==================================================\n\n内部乱数ロールなし\n\n==================================================\n\n同Tierは常に同一性能\n\n==================================================\n■ MODカテゴリ\n\nDAMAGE\n\n==================================================\n\nCRITICAL\n\n==================================================\n\nDEFENSE\n\n==================================================\n■ MOD枠\n\n攻撃枠\n\n最大2\n\n==================================================\n\n防御枠\n\n最大2\n\n==================================================\n\n全MODは\n\n攻撃枠\n\nまたは\n\n防御枠\n\nへ分類される\n\n==================================================\n■ MOD重複ルール\n\n正式採用\n\n==================================================\n\n同一装備内\n\n同一MOD重複禁止\n\n==================================================\n\n装備部位が異なる場合\n\n同一MOD重複可能\n\n==================================================\n■ DAMAGEカテゴリ\n\n攻撃枠\n\n==================================================\n\nPHYSICAL_DAMAGE\n\n物理ダメージ増加\n\nTier1 +20%\nTier2 +16%\nTier3 +12%\nTier4 +8%\nTier5 +4%\n\n==================================================\n\nMAGIC_DAMAGE\n\n魔法ダメージ増加\n\nTier1 +20%\nTier2 +16%\nTier3 +12%\nTier4 +8%\nTier5 +4%\n\n==================================================\n\nFIRE_DAMAGE\n\n火属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n\nICE_DAMAGE\n\n氷属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n\nLIGHTNING_DAMAGE\n\n雷属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n\nWIND_DAMAGE\n\n風属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n\nEARTH_DAMAGE\n\n土属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n\nLIGHT_DAMAGE\n\n光属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n\nDARK_DAMAGE\n\n闇属性ダメージ増加\n\nTier1 +24%\nTier2 +20%\nTier3 +16%\nTier4 +12%\nTier5 +8%\n\n==================================================\n■ CRITICALカテゴリ\n\n攻撃枠\n\n==================================================\n\nCRITICAL_RATE\n\nクリティカル率増加\n\nTier1 +10%\nTier2 +8%\nTier3 +6%\nTier4 +4%\nTier5 +2%\n\n==================================================\n\nCRITICAL_DAMAGE\n\nクリティカルダメージ増加\n\nTier1 +50%\nTier2 +40%\nTier3 +30%\nTier4 +20%\nTier5 +10%\n\n==================================================\n\nACCURACY\n\n命中率増加\n\nTier1 +20%\nTier2 +16%\nTier3 +12%\nTier4 +8%\nTier5 +4%\n\n==================================================\n■ DEFENSEカテゴリ\n\n防御枠\n\n==================================================\n\nEVASION\n\n回避率増加\n\nTier1 +15%\nTier2 +12%\nTier3 +9%\nTier4 +6%\nTier5 +3%\n\n==================================================\n\nELEMENT_RESIST\n\n属性耐性増加\n\nTier1 +20%\nTier2 +16%\nTier3 +12%\nTier4 +8%\nTier5 +4%\n\n==================================================\n\nSTATUS_RESIST\n\n状態異常耐性増加\n\nTier1 +20%\nTier2 +16%\nTier3 +12%\nTier4 +8%\nTier5 +4%\n\n==================================================\n\nSURVIVAL\n\n最大HP増加\n\nTier1 +25%\nTier2 +20%\nTier3 +15%\nTier4 +10%\nTier5 +5%\n\n==================================================\n■ 属性耐性上限\n\n75%\n\n==================================================\n■ 状態異常耐性上限\n\n100%\n\n==================================================\n■ 設計思想\n\nDAMAGE\n\n火力特化担当\n\n==================================================\n\nCRITICAL\n\n瞬間火力担当\n\n==================================================\n\nDEFENSE\n\n耐久担当\n\n==================================================\n\nTier固定により\n\n装備価値を明確化する\n\n==================================================\n\n数値ロール厳選を排除する\n\n==================================================\n\nMOD種類\n\nTier\n\nレアリティ\n\niLv\n\nを厳選要素とする\n\n==================================================\n\nVersion 1.0\n\n統合正式版\n\n正式採用\n\n---\n\n## 根拠・統合元\nBOX-R7-023 MODデータベース設計書",
+      "decision_refs": [
+        "DEC-V9-MOD-002",
+        "DEC-V9-MOD-005"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-MOD-001",
+        "SPEC-V9-019-MOD-002"
+      ],
+      "acceptance_criteria": "- V9 MOD Catalogの具体値/部位/Tierを失わず参照できる。\n- 数値をCurrent固定仕様と誤認しない。\n- 旧fieldの変換不能項目を推測でCurrent化しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RARITY-001",
+      "title": "Rarity / Drop Baseline",
+      "status": "Draft",
+      "summary": "Equipment Rarity出現率、期待時間、Craft境界。",
+      "body": "ギルド冒険物語\n\nレアリティ出現率設計\n\nVersion 4.7\n\n==================================================\n■ レアリティ出現率\n\nNORMAL\n\n60.00%\n\n==================================================\n\nMAGIC\n\n25.00%\n\n==================================================\n\nRARE\n\n12.00%\n\n==================================================\n\nUNIQUE\n\n2.50%\n\n==================================================\n\nLEGENDARY\n\n0.30%\n\n==================================================\n\nMYTHIC\n\n0.20%\n\n==================================================\n■ 設計目標\n\n想定プレイ時間\n\n1日1時間\n\n==================================================\n\n1クエスト\n\n約5分\n\n==================================================\n\n1時間\n\n約12クエスト\n\n==================================================\n■ 想定ドロップ量\n\n1クエスト平均\n\n装備5個\n\n==================================================\n\n1時間\n\n約60個\n\n==================================================\n■ MYTHIC期待値\n\n出現率\n\n0.20%\n\n==================================================\n\n期待値\n\n約8〜9時間で1個\n\n==================================================\n\n毎日1時間プレイ時\n\n週1個程度\n\n==================================================\n■ LEGENDARY期待値\n\n出現率\n\n0.30%\n\n==================================================\n\n期待値\n\n約5〜6時間で1個\n\n==================================================\n\n毎日1時間プレイ時\n\n週1〜2個程度\n\n==================================================\n■ クラフト方針\n\nNORMAL → MAGIC\n\n可能\n\n==================================================\n\nMAGIC → RARE\n\n可能\n\n==================================================\n\nUNIQUE\n\nクラフト不可\n\n==================================================\n\nLEGENDARY\n\nクラフト不可\n\n==================================================\n\nMYTHIC\n\nクラフト不可\n\n==================================================\n■ 設計思想\n\n高レア装備はドロップ限定とする\n\n==================================================\n\nクラフトは装備補助とする\n\n==================================================\n\n最終装備はドロップで獲得する\n\n==================================================\n\nMYTHICは理想品確定ではない\n\n==================================================\n\nMOD内容によって価値が決定される\n\n## Current統合\n\n上記出現率はV9 Product Baseline。\nCurrent Reward Resolverの `common/uncommon/rare/epic/legendary` はReward Entry側のRarity表現であり、\nEquipmentの NORMAL/MAGIC/RARE/UNIQUE/LEGENDARY/MYTHIC と無条件に同一Mapしない。\n\nRarityはMOD数/生成規則の入力。\nTierはMOD品質を表す。\n\n---\n\n## 根拠・統合元\nBOX-R7-025 レアリティ出現率 v4.7",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-MOD-002"
+      ],
+      "acceptance_criteria": "- V9出現率をConfigとして再現できる。\n- Reward RarityとEquipment Rarityを暗黙変換しない。\n- High Rarity craft不可ルールを保持する。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-UNIQUE-001",
+      "title": "Unique Equipment / Unique MOD",
+      "status": "Draft",
+      "summary": "Unique種別、生成思想、専用MOD、禁止/許可範囲。",
+      "body": "# 1. 役割\n\nUniqueは純粋な最高火力装備ではなく、\nBuild/戦術を変えるEquipment。\n\nLEGENDARY/MYTHICは数値強度側を担当し、\nUniqueはRule変化/相互作用を担当する。\n\n# 2. Unique種別\n\nBaseline:\n- GENERIC_UNIQUE\n- QUEST_UNIQUE\n- EVENT_UNIQUE\n- SECRET_UNIQUE\n- WORLD_UNIQUE\n\n# 3. Unique MOD Category\n\n- ELEMENT_ATTACH\n- ELEMENT_CONVERT\n- STACK_MODIFY\n- AUTO_TRIGGER\n- SKILL_MUTATION\n- SPECIAL_RULE\n\n# 4. Unique専用MOD例\n\nELEMENT_ATTACH:\n- FIRE_ATTACH\n- ICE_ATTACH\n- POISON_ATTACH\n- LIGHT_ATTACH\n- DARK_ATTACH\n\nSTACK_MODIFY:\n- STACK_LIMIT_PLUS_1\n- STACK_DURATION_50\n- STACK_GAIN_BONUS\n- STACK_DECAY_HALF\n\nAUTO_TRIGGER:\n- BURN_TRIGGER_SMALL_INFERNO\n- HOLY_TRIGGER_HEAL\n- SHADOW_TRIGGER_STRIKE\n\nSKILL_MUTATION:\n- FIREBALL_ADD_BURN\n- HEAL_ADD_HOLY\n- ICE_LANCE_ADD_FREEZE\n\nSPECIAL_RULE:\n- DOUBLE_ELEMENT\n- DOT_CRITICAL\n- HEAL_TO_DAMAGE\n- OVERFLOW_STACK\n\n# 5. V9 Safety Baseline\n\n禁止例:\n- UniqueMOD単体で火力50%以上増加\n- Stack上限 +3以上\n- 常時無消費\n- Stack保持100%\n- Trigger倍率変更\n\n許可Baseline:\n- Stack上限 +1/+2\n- 付与率10〜20%\n- Duration +25〜50%\n- 属性付与/変換\n\n数値はCurrent固定値ではなくV9 Baseline。\nFormal Skill/Status/Stackに存在しないRuleを実装する場合は専用正式Contractを追加してから使用する。\n\n---\n\n## 根拠・統合元\nBOX-R13-UNIQUE-INTEGRATED",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-MOD-001",
+        "SPEC-V9-019-STATUS-002",
+        "SPEC-V9-019-SKILL-002"
+      ],
+      "acceptance_criteria": "- Uniqueと通常MODを分離できる。\n- Rule-changing MODを明示Contractで扱える。\n- Legacy例をCurrent Runtimeへ無条件実装しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-MONSTER-001",
+      "title": "Monster Master / Runtime Data Contract",
+      "status": "Draft",
+      "summary": "Monster ID参照、spawn/drop/budget field、Demo分離。",
+      "body": "# 1. Monster Master\n\n最低限:\n- id\n- name\n\nCurrent exportで使用される主なfield:\n- status / enabled\n- tags[]\n- params\n- drop_table_id / drop_table_ids\n\nparamsで扱うCurrent/後発参照候補:\n- job_id\n- skill_ids\n- candidate_skill_ids\n- equipment / mod refs\n- spawn_weight\n- spawn_tags.any / all / none\n- enemy_budget_cost\n- drop_table_id(s)\n- Runtime combat stats（Product正式生成後）\n\n# 2. 参照\n\nJob/Skill/Equipment/MOD/Drop Tableは正式ID参照。\n名前文字列からIDを推測しない。\n\n# 3. Current Demo Data\n\nCurrent sourceのMON-0001等訓練Monsterは実機検証用。\nProduct Monster Masterへ無条件採用しない。\n\n# 4. AI\n\nCharacter `formalAiBinding` をMonsterへ流用しない。\nCurrent Monsterは既存Monster/Battle pathを使用する。\nMonster Formal AI統合はFuture。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-10",
+      "decision_refs": [
+        "DEC-V9-MONSTER-004",
+        "DEC-V9-AI-008"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-EQUIP-001",
+        "SPEC-V9-019-ENEMY-001"
+      ],
+      "acceptance_criteria": "- Monster Masterの正式ID参照をValidationできる。\n- Demo/Test MonsterをProduct Dataと分離できる。\n- Character Formal AI bindingをMonsterへ自動追加しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-MONSTER-002",
+      "title": "Monster Generation / 7Job / Naming",
+      "status": "Draft",
+      "summary": "Storyから骨格抽出し通常Monsterを7Job派生、Story固有を分離する。",
+      "body": "# 1. 通常Monster生成\n\n```text\nStory\n→ 敵候補抽出\n→ 生物/存在としての基礎骨格\n→ 重複整理\n→ 基礎骨格確定\n→ 骨格 × 正式7Job派生\n→ 自然名称\n→ Tag整理\n→ Master登録\n```\n\n通常再利用Monsterは1骨格につき原則7Job方向へ展開する。\nAIが1体ごとに1Jobだけ選ぶ方式を正本にしない。\n\n# 2. Jobの意味\n\nJobは:\n- 成長/戦闘指向\n- Skill発想方向\n- Equipment/行動傾向\nの材料。\n\nJobが固定Skillを自動付与するわけではない。\n\n# 3. Story固有Monster\n\nBoss/固有名Monsterは通常7Job機械展開から分離。\nStory正式名称/役割を優先。\nJob都合で改名・7体化しない。\n\n# 4. Naming\n\n内部Jobと表示名を分離する。\n表示名は骨格、Story所属/役割、武器/装備、行動傾向、特殊特徴から自然に構成可能。\nJob名を表示名へ強制挿入しない。\n\n# 5. Balance Boundary\n\nAI生成工程は能力値、EnemyLv、Enemy Budget、skill_tier_cap等の正式数値を独自決定しない。\n数値はEnemy Budget/Balance Systemへ委譲する。\n\n---\n\n## 根拠・統合元\nBOX-R7-042 MONSTER生成 / BOX-R7-043 命名 / BOX-R7-044 7Job派生",
       "decision_refs": [
         "DEC-V9-MONSTER-001",
         "DEC-V9-MONSTER-002",
         "DEC-V9-MONSTER-003",
-        "DEC-V9-MONSTER-004",
-        "DEC-V9-AI-008"
+        "DEC-V9-MONSTER-004"
       ],
       "depends_on": [
-        "SPEC-V9R-018-CORE",
-        "SPEC-V9R-018-BATTLE",
-        "SPEC-V9R-018-SKILL",
-        "SPEC-V9R-018-EQUIP"
+        "SPEC-V9-019-MONSTER-001",
+        "SPEC-V9-019-JOB-001"
       ],
-      "acceptance_criteria": "- Monster Masterの正式ID参照を検証できる。\n    - spawn_tagsとBudgetでSeeded Formationを生成できる。\n    - fixed overrideと通常Resolverを分離できる。\n    - V9 DBをmigration seed、Current demo exportをtest fixtureとして分離する。",
+      "acceptance_criteria": "- 通常骨格を7Job派生できる。\n- Story固有Monsterを機械展開しない。\n- 内部Jobと表示名を分離する。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-QUEST",
-      "title": "Quest / Box / Event / Reward 実装仕様",
+      "id": "SPEC-V9-019-ENEMY-001",
+      "title": "Enemy Budget Structure / Balance Boundary",
       "status": "Draft",
-      "summary": "Quest-owned Box、Random Event、Encounter、Reward Resolver。",
-      "body": "# 06 Quest / Event / Reward / QuestRun / Story / World\n\n## Quest ownership\n\nQuest owns:\n- base_enemy_budget\n- adventure_duration_seconds\n- context\n- boxes[]\n\nBox:\n- ordered\n- pre/mid/post Scene refs\n- four Event zones\n- fixed/random placements\n- no fixed game-level event count cap in Current contract\n\nEvent:\nusage = story/random/common\ntype = battle/exploration/choice/special\nfailure_policy = continue/quest_fail\n\nRandom Event:\nFilter → weighted seeded draw → save selection/result to QuestRun。\nPlayback/reloadで再抽選しない。\n\n## Reward Resolver Current\n\nMachine-readable schema:\n`schemas/schemas__exports__system-drop_tables.schema.json`\n\nCurrent settings:\n- bonus_per_budget = 0.02\n- min_multiplier = 1\n- amount_rounding = floor\n- rarity weight bonus/budget = `{\"common\": 0, \"uncommon\": 0.002, \"rare\": 0.005, \"epic\": 0.01, \"legendary\": 0.02}`\n\nReward entry:\ngold/equipment/item/stone/material。\nweighted/independent, groups/rolls, chance/rate, rarity, scaling_mode。\n\nQuest自身へ一括固定Rewardを置かない。\nBattle/Event/ExplorationのResultを集計。\n\n## QuestRun / Playback / Commit\n\nQuestRunはDefinitionではなく実行結果。\n\n保存:\n- Box/Event selection\n- seed\n- generated payload\n- Encounter/Battle/Exploration/Event result\n- Scene snapshot\n- flags/progress\n- reward history/result\n\nPlaybackは保存済みResultを読む。\nResolver/Battle/Randomを再実行しない。\n\n成功Return時だけaggregate reward_resultをCommit。\nFailureは未Commit途中報酬を失う。\nReturnで再抽選/再計算しない。",
+      "summary": "Enemy Budgetの6責務とV9 Baseline。",
+      "body": "# 正式採用\n\n# Enemy Budget設計書（正式版 Version 1.0）\n\n## 1. 目的\nEnemy Budgetは、敵ユニットの総合的な強さを複数の責務へ配分するための共通設計である。\n\n## 2. Budget分類\n- HP Budget\n- Attack Performance Budget\n- Defense Performance Budget\n- Skill Budget\n- AI Budget\n- Utility Budget\n\n## 3. 各Budgetの責務\n\n### HP Budget\n耐久力へ配分する。\n\n### Attack Performance Budget\n攻撃性能へ配分する。\n\n### Defense Performance Budget\n防御性能（軽減・耐性・回避・防御系タグ等）へ配分する。\n\n### Skill Budget\nスキル性能・RANGE・追加効果へ配分する。\n\n### AI Budget\nAIルール構成、条件表現、対象選択、行動選択などへ配分する。\n\n### Utility Budget\n移動、支援、召喚、特殊能力などへ配分する。\n\n## 4. Budget配分フロー\nEnemy総Budget\n↓\nカテゴリ配分\n↓\n各システムへ反映\n↓\n戦闘計算・AI・スキルで利用\n\n## 5. 他システムとの関係\n- 戦闘計算：各Budgetを参照\n- AI：AI Budgetを参照\n- RANGE：Skill Budget内で扱う\n- Studio：Budget編集\n- Game：Budget読込\n\n## 6. 正式保留（バランス）\n- 総Budget\n- 配分率\n- 換算係数\n- 難易度補正\n- レベル補正\n- ランク補正\n\n## Current統合\n\n後発正式構造:\n- HP Budget\n- Attack Performance Budget\n- Defense Performance Budget\n- Skill Budget\n- AI Budget\n- Utility Budget\n\nV9のAttack30/Durability30/Skill20/Special10/AI10やRank倍率は\n`SPEC-V9-019-BAL-001` のV9 Baselineとして保持する。\n\n具体配分率/換算係数/難易度/Level/Rank補正はConfig。\n\n---\n\n## 根拠・統合元\nBOX-R7-026 Enemy Budget正式版 / BOX-R7-027 Enemy Budget DB",
       "decision_refs": [],
       "depends_on": [
-        "SPEC-V9R-018-CORE",
-        "SPEC-V9R-018-BATTLE",
-        "SPEC-V9R-018-MONSTER",
-        "SPEC-V9R-018-STONE"
+        "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- Questがboxes[]とContextを所有する。\n    - Random SlotがFilter→weighted seeded draw→QuestRun保存を行う。\n    - Quest自身へ一括固定Rewardを置かない。\n    - Reward Resolverがweighted/independent、scaling、roundingを再現できる。",
+      "acceptance_criteria": "- 6 Budget責務へ分配できるData Modelを実装できる。\n- V9配分率をConfig seedとして保持できる。\n- 配分値をSystem固定式にしない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-STORY",
-      "title": "Story / QuestRun / Playback 実装仕様",
+      "id": "SPEC-V9-019-ENCOUNTER-001",
+      "title": "Encounter / Formation Generation",
       "status": "Draft",
-      "summary": "Story階層、Quest ownership、Snapshot/Playback/Return Commit。",
-      "body": "## Story\n\nChapter / Section / Scene等を管理。\n旧Section-owned BoxはCurrent非採用。Quest-owned boxes[]へ統合。\n\n    ## QuestRun\n\n    QuestRunは実際に起きた結果を保存する。\n    保存対象:\n    - Quest/Box/Event selection\n    - seed\n    - generated payload\n    - Encounter/Battle/Exploration/Event Result\n    - Scene Snapshot\n    - flags/progress\n    - reward history/result\n\n    Playbackは保存済みResultを正本としResolver/Battle/Randomを再実行しない。\n\n    成功Return時のみaggregate reward_resultをCommit。\n    Failureでは未Commit途中報酬を確定所持へ移さない。\n    Return時に再抽選・再計算しない。",
+      "summary": "Map/Runtime Tag、Budget Cost、Fixed Overrideによる編成生成。",
+      "body": "# 1. Normal Encounter\n\nQuest/Map Runtime ContextからMonster候補を作る。\n\nMonster:\n```text\nspawn_tags:\n  any: []\n  all: []\n  none: []\n```\n\nMap/Runtime tagと一致するMonsterだけ通常候補にする。\n\n# 2. Budget Formation\n\n後発Quest仕様の基本:\n1. remaining_budget以下の `enemy_budget_cost` を持つ候補を作る。\n2. 候補からSeeded Randomで1体選択。\n3. Costをremaining_budgetから減算。\n4. 追加可能Monsterが無くなるまで繰り返す。\n5. ResultをQuestRunへ保存する。\n\nCurrent Runtimeには`spawn_weight`利用経路も存在するため、\nCurrent Resolver Contractを正本にし、旧「固定確率表」は使わない。\n\n# 3. Fixed Story Encounter\n\nFixed Event PlacementだけがOverrideを持てる。\n- resolver\n- required_monsters\n- fixed_formation\n\nRandom Event SlotからFixed Formation Overrideを使わない。\n\n固定編成はMonster Master参照。\nMonster statsをEventへ複製しない。\n\n# 4. Reproducibility\n\n保存:\n- request/context\n- effective_enemy_budget\n- candidate IDs\n- seed\n- selected formation\n- scaling snapshot\n- resolver version\n\n---\n\n## 根拠・統合元\nBOX-R7-061 確定仕様サマリ / Story ROADMAP / Current Monster evidence",
       "decision_refs": [],
       "depends_on": [
-        "SPEC-V9R-018-QUEST"
+        "SPEC-V9-019-MONSTER-001",
+        "SPEC-V9-019-ENEMY-001",
+        "SPEC-V9-019-QUEST-001"
       ],
-      "acceptance_criteria": "- Section-owned BoxをCurrentへ復活させない。\n    - QuestRunがData更新後も保存済み結果でPlaybackできる。\n    - Success/FailureでCommit差を再現できる。",
+      "acceptance_criteria": "- Context/Tag/Budgetから同Seedで同Formationを生成できる。\n- Fixed Story BattleとRandom Encounterを分離できる。\n- FormationをPlayback時に再生成しない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-WORLD",
-      "title": "World Runtime / Content Boundary 実装仕様",
+      "id": "SPEC-V9-019-QUEST-001",
+      "title": "Quest / Context / Difficulty / Ownership",
       "status": "Draft",
-      "summary": "World固定構造、ID参照、Product content未確定境界。",
-      "body": "## World\n\nWorld engine:\nRegion / Hub / Connection / Nation / Faction / Race / common terms。\nStory/Questはregion_id等の正式ID参照。\n\nProduct World contentはSource自身が未確定:\n世界地図、地域名、国家、勢力、種族、接続内容、地域別Monster等。\n\nCurrent export `MAP-0001 実機検証用 訓練場` はDEMO_ONLY。\n同じゲームのProduct World contentとして採用しない。\n\n    ## Runtime Boundary\n\n    WORLD:\n    - Region\n    - Hub\n    - Connection\n    - Nation\n    - Faction\n    - Race\n    - common terms\n\n    Story/Quest/Event/Monsterは地域名文字列ではなく正式IDで参照する。\n\n    地域の存在/接続はWORLD。\n    現在利用可能/移動可能かはProgress/Flag/Quest/Unlock条件。\n\n    Map dynamic state（日夜/天候/Story生態変化等）はCurrent非採用。",
+      "summary": "QuestがContext・Budget・Boxesを所有するCurrent構造。",
+      "body": "# 09. 現在までの確定仕様サマリ\n\n## Quest\n\n```text\nQuest\n ├─ 基本情報\n ├─ base_enemy_budget\n ├─ adventure_duration_seconds\n ├─ context\n │    ├─ map_id\n │    └─ environment/runtime context\n └─ boxes[]\n```\n\n- QuestがBoxを所有。\n- QuestがAdventure durationを所有。\n- Quest難易度は`effective_enemy_budget`の数値そのもの。\n- Normal/Hard等の難易度ラベルは使用しない。\n\n# 04. Quest Context仕様\n\n状態: 仮採用\n\n## 1. 基本方針\n\nQuestが冒険環境への参照と条件を持つ。\n\nEvent側にはMap情報を持たせない。\n\n## 2. Quest側の候補項目\n\n- Map参照\n- Area参照\n- Quest難易度\n- Budget方針\n- Encounter方針\n- Boxes\n\n## 3. Questへ直接コピーしないもの\n\n- Mapの地形データ\n- Mapの敵一覧\n- MapのEncounter Poolそのもの\n- 天候データのコピー\n- 地域固有結果のコピー\n\nQuestは参照と方針に留める。\n\n## 4. 具体的な敵生成\n\n戦闘Event発生時:\n\n```text\n戦闘Event\n↓\nQuest側Context\n↓\n戦闘/遭遇生成処理\n↓\nMap・難易度・Budget等を評価\n↓\n具体的な敵編成を決定\n```\n\nEvent自身は敵を決めない。\n\n## 5. 仮採用理由\n\n拡張性・自立性の面で有利。\n\n同じEventを異なるMap、Area、Questで再利用できる。\n\n## 6. 未確定部分\n\n以下は本仕様では確定しない。\n\n- Map状況が時間経過で変化した場合の扱い\n- 開始済みQuestにMap変化を反映するか\n- 固定Story Encounterの例外方法\n- Budgetの最終Schema\n- Encounter方針の最終Schema\n\nこれらは別途決定する。\n\n## Current優先\n\n後発SummaryのQuest-owned `boxes[]` をCurrent正本とする。\n旧Story ROADMAPのSection-owned Boxesは置換済み。\n\nDifficultyはNormal/Hardラベルではなく `effective_enemy_budget` の数値。\n\n---\n\n## 根拠・統合元\nBOX-R7-061 / BOX-R7-031 / DISC-R9-GAP-14",
       "decision_refs": [],
       "depends_on": [
-        "SPEC-V9R-018-CORE"
+        "SPEC-V9-019-CORE-001",
+        "SPEC-V9-019-WORLD-001",
+        "SPEC-V9-019-ENEMY-001"
       ],
-      "acceptance_criteria": "- World definitionとProgress/Unlockを分離できる。\n    - 参照をregion_id等のIDで保持できる。\n    - Sourceに存在しない世界Contentを自動生成しない。",
+      "acceptance_criteria": "- QuestがContext/base_enemy_budget/duration/boxesを保持する。\n- EventへMap/Areaをコピーしない。\n- DifficultyをBudget数値として扱える。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-AI",
-      "title": "Formal AI 実装仕様",
+      "id": "SPEC-V9-019-BOX-001",
+      "title": "Box / Scene Zones / Failure Boundary",
       "status": "Draft",
-      "summary": "Formal AI Program/Layout/Node/Compiler/Decision/Character binding。",
-      "body": "# 07 Formal AI\n\n## Current contract files\n\n同梱:\n- ai-node.schema\n- ai-program.schema\n- ai-layout.schema\n- ai-runtime.schema\n- ai-trace.schema\n- current ai_nodes export\n\n## Flow\n\nGame AI UI\n→ Program\n→ Validator\n→ Compiler\n→ Runtime / Decision Engine\n→ action_id + target_id\n→ Battle\n\nAIは判断まで。Combat executionはBattle。\n\n## Node rules\n\nCONDITION:\n- input 1\n- outputs TRUE/FALSE only\n\nTARGET:\n- input 1\n- output next 1\n\nACTION:\n- input 1\n- terminal\n- action/target決定\n\n## Program / Layout\n\nProgram = executable logic。\nLayout = UI coordinates/board state。\n別正本にする。\n\nConnectionはShared ResolverでProgram edgesへ変換。\n1 input=1 source, 1 output=1 target。\ndead end/cycle/ambiguous branchをreject。\n\n## Character binding\n\nCharacter Save:\nformalAiBinding → program_id / layout_id。\n\nLegacy AIへfallbackしない。\n旧Saveを自動意味変換しない。\n\n## Battle scheduling\n\nBattle側:\n- gauge max 100\n- reevaluate every 10%\n- success action consumes 100%\n- failed execution consumes 50%\n\nAI側:\n- current info only\n- no memory of prior choice as hidden state\n- tie random\n- no future random prediction\n\n## Current content\n\nCurrent ai_programs / ai_runtimes exportは空。\nai_nodes Masterは存在する。\n\nつまりFormal AI engineは作れるが、\nProduct用AI Program contentは別途作成/移行が必要。",
+      "summary": "Quest内Box、Scene順、4 Event Zone、並び替え、失敗停止。",
+      "body": "# 02. Box仕様\n\n## 1. Boxの役割\n\nBoxはQuest内の進行単位である。\n\nBoxはStory SceneとEventの配置・実行順を構成する。\n\nBox自身は具体的な敵編成、Map固有内容、報酬決定を担当しない。\n\n## 2. Boxが持つ情報\n\n最低限の概念情報:\n\n- Box ID\n- Box名\n- Quest内表示順\n- 前Scene参照\n- 中Scene参照\n- 後Scene参照\n- 4つのEvent配置領域\n- 各Event配置の順序\n- Event失敗時処理\n\n## 3. Scene制約\n\nScene順序:\n\n```text\n前 → 中 → 後\n```\n\n固定。\n\n以下は禁止:\n- 中 → 前\n- 後 → 中\n- Scene配列を自由並べ替え\n\n各Sceneは任意。\n\n## 4. Event配置領域\n\n```text\n[Event A]\n前Scene\n[Event B]\n中Scene\n[Event C]\n後Scene\n[Event D]\n```\n\n各領域:\n- 0件以上\n- 固定Event可\n- ランダムEvent枠可\n- 複数配置可\n- 並び順保持\n\n## 5. Box追加\n\nQuest作成画面からBoxを追加できる。\n\nQuestは複数Boxを保持可能。\n\n## 6. Box並び替え\n\nBox IDは並び替えで変更しない。\n\n変更するのはQuest内順序のみ。\n\nスマートフォン対応を考慮し、正式操作として上/下移動を持たせることを推奨済み。\n\nPCでドラッグ操作を追加することは可能だが、ドラッグのみを必須操作にしない。\n\n## 7. Box分割と失敗\n\nBoxを分割した場合でも、Quest失敗時の境界を明確にする。\n\n例:\n\n```text\nBox 1: 完了\nBox 2: 完了\nBox 3: Battle EventでQuest失敗\nBox 4: 未実行\nBox 5: 未実行\n```\n\nQuest失敗確定後は後続処理を実行しない。\n\n失敗以前に起きた結果は消さない。\n\n## 8. 将来分岐\n\n成功/失敗による別Box分岐は将来拡張可能な設計余地を残す。\n\nただし初期実装UIでは:\n- 直列Box\n- Event失敗時「続行 / Quest失敗」\n\nまでとする。\n\n---\n\n## 根拠・統合元\nBOX-R7-029 02_Box仕様",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-EVENT-001"
+      ],
+      "acceptance_criteria": "- pre→mid→postの順序を固定できる。\n- 4 Event Zoneへ固定/Randomを複数配置できる。\n- Quest失敗後に後続Boxを実行しない。\n- Box IDを並び替えで変更しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-EVENT-001",
+      "title": "Event Common / Battle / Exploration Request",
+      "status": "Draft",
+      "summary": "Event usage/type、再利用、Context境界、Failure policy。",
+      "body": "# 03. Event仕様\n\n## 1. Eventの役割\n\nEventは再利用可能な処理定義。\n\nEventは「何が起きるかの種類」を定義し、世界環境そのものを所有しない。\n\n## 2. Eventの基本項目\n\n- Event ID\n- 名称\n- 用途\n- 種別\n- 発生条件\n- 強度\n- 任意の生成方針参照\n- 有効/無効\n- ランダム用基礎抽選重み\n\n## 3. 用途と種別を分離\n\n用途の初期候補:\n- ストーリー\n- ランダム\n- 共通\n\n種別の初期候補:\n- 戦闘\n- 探索\n- 選択\n- 特殊\n\n「ストーリー戦闘」は:\n\n```text\n用途 = ストーリー\n種別 = 戦闘\n```\n\n「ランダム探索」は:\n\n```text\n用途 = ランダム\n種別 = 探索\n```\n\nと表現する。\n\n## 4. Eventに持たせない情報\n\n原則禁止:\n- Map ID\n- Area ID\n- 通常敵の固定一覧\n- 通常敵の固定編成\n- Map固有探索結果\n- 確定報酬\n\n## 5. Eventの発生条件\n\nEventは特定Mapを所有しないが、Quest側から渡されたContextに対して「実行可能か」を判定する条件は持てる。\n\n初期は条件を増やしすぎない。\n\n候補:\n- 用途\n- 種別\n- グループ\n- タグ\n- 基本発生条件\n\n天候、時間、季節、Map状況変化等は未確定仕様のため初期確定条件に含めない。\n\n## 6. 戦闘Event\n\n戦闘Eventは「戦闘を発生させる要求」。\n\n具体的な敵編成は持たない。\n\nEvent側の要求例:\n- 強度\n- 任意の生成方針\n- 発生条件\n\n具体内容はQuest Contextと生成側が決定する。\n\n## 7. 探索Event\n\n探索Eventも同様に、具体的な発見結果を固定しない。\n\nEvent側:\n- 探索を発生させる\n- 強度\n- 任意の生成方針\n- 発生条件\n\n具体結果は探索生成側が決定する。\n\n## 8. Quest難易度とEvent強度\n\n分離する。\n\nQuest難易度:\n- 冒険全体の基準\n\nEvent強度:\n- Quest内での相対的な重さ\n\n例:\n- 低\n- 標準\n- 高\n- 極高\n\n具体的な数値変換は生成側の責務。\n\n## 9. 生成方針\n\n複雑な生成条件をEventへ大量追加しない。\n\n将来的に生成方針参照を使用可能にする。\n\n初期実装では:\n- 標準生成\n- 任意の生成方針参照\n\n程度に留める。\n\n生成方針編集UIそのものは初期必須範囲ではない。\n\n## Current追加\n\nRuntime conditionは `required_flags` を正式条件として扱える。\nEvent本体へ通常Map/固定Formation/確定Rewardを埋め込まない。\n\nBattle EventはEncounter Requestを生成する。\nExploration EventはExploration Resolver Requestを生成する。\n\n---\n\n## 根拠・統合元\nBOX-R7-030 Event仕様 / BOX-R7-061 Current Summary",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-ENCOUNTER-001"
+      ],
+      "acceptance_criteria": "- usageとtypeを別fieldで扱える。\n- Eventを複数Quest/Mapで再利用できる。\n- Eventが通常Formation/Map/確定Rewardを所有しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-EVENT-002",
+      "title": "Random Event Slot / Seeded Selection",
+      "status": "Draft",
+      "summary": "候補Filter、Weight、None/Required、再抽選禁止。",
+      "body": "# 05. ランダムEvent仕様\n\n状態: 採用\n\n## 1. ランダムEvent枠\n\nBoxの4つのEvent配置領域にランダムEvent枠を自由配置できる。\n\n固定Eventとの混在可。\n\n## 2. 候補抽出\n\n基本フロー:\n\n```text\nランダムEvent枠へ到達\n↓\n現在のQuest状況を参照\n↓\n用途 = ランダム のEventを取得\n↓\nEventの発生条件で絞り込み\n↓\nBox側のグループ/タグ指定があればさらに絞り込み\n↓\n重み付き抽選\n↓\n選択Event実行\n```\n\n## 3. Event側のランダム関連情報\n\n- 用途 = ランダム\n- 種別\n- グループ\n- タグ\n- 発生条件\n- 基礎抽選重み\n\n## 4. Box側のランダム枠\n\nBox側は個別Eventを大量列挙することを基本としない。\n\nBox側は抽選対象範囲を指定する。\n\n候補:\n- 種別\n- グループ\n- タグ\n\n## 5. 基礎抽選重み\n\nEvent側に相対的な基礎抽選重みを持たせる。\n\n固定百分率ではない。\n\n候補集合内で相対抽選する。\n\n初期実装ではBox側による個別Event確率上書きを行わない。\n\n## 6. 「何も起きない」\n\nランダムEvent枠側に「何も起きない」を許可する設定を持たせる。\n\n「何も起きない」はEventデータとして作らない。\n\n## 7. 任意 / 必須\n\nランダムEvent枠は:\n- 任意\n- 必須\n\nを設定可能。\n\n任意:\n- 候補0件なら何もせず次へ進むことを許可\n\n必須:\n- 候補0件は実行上の異常\n- Studio側で可能な範囲で事前検証\n\n## 8. 抽選タイミング\n\nそのランダムEvent位置へ到達した時点で一度だけ抽選。\n\nQuest開始時に全ランダムEventを先行抽選しない。\n\n## 9. 再抽選禁止\n\n抽選結果保存は既存QuestRun仕様へ従う。\n\n再読込、再開、Playbackでは再抽選しない。\n\n## 10. 戦闘Eventが選ばれた場合\n\nランダムEvent選択と敵編成生成は別処理。\n\n```text\nランダムEvent抽選\n↓\n戦闘Event選択\n↓\n戦闘生成処理\n↓\nQuest Contextから具体敵編成決定\n```\n\n## 11. 未確定条件\n\nMapの時間変化、天候、季節等による抽選条件は現時点では仕様固定しない。\n\n## QuestRun保存\n\n抽選時に最低限:\n- seed\n- candidate/filter snapshot\n- selected_event_id\n- generated_payload\n- event_result\nを保存する。\n\n後発Current Summaryに従い、usage/type/group/tags/required_flagsで候補化可能。\n\n---\n\n## 根拠・統合元\nBOX-R7-032 Random Event / BOX-R7-061",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-EVENT-001",
+        "SPEC-V9-019-RUN-001"
+      ],
+      "acceptance_criteria": "- 同Seed/同候補で同Eventを選べる。\n- optional/required/allow_noneを扱える。\n- Reload/Playbackで再抽選しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-REWARD-001",
+      "title": "Reward Resolver / Drop Table / Difficulty Scaling",
+      "status": "Draft",
+      "summary": "Current Reward Table Schemaと決定的Resolver。",
+      "body": "# 1. Reward Result\n\n正規化後:\n- gold\n- items/equipment\n- resources/materials/stones\n\nGold/Countは非負整数へ正規化。\n同一Resourceは `resource_kind + resource_id` で集約する。\n\n# 2. Reward Entry kind\n\n[\"gold\", \"equipment\", \"item\", \"stone\", \"material\"]\n\n# 3. Drop Table\n\nTable:\n- id\n- name\n- enabled/status\n- params\n- groups[]\n- entries[]\n\nGroup:\n- id\n- rolls\n- entries[]\n\nEntry:\n- kind\n- weight / base_weight\n- chance / rate\n- rarity\n- scaling_mode\n- amount/count\n- amount_min / amount_max\n- equipment_id / item_id / stone_id / resource_id / resource_kind\n\nScaling mode:\n[\"none\", \"amount\", \"quality\", \"both\"]\n\n# 4. Weighted / Independent\n\n- groupsがある場合: 各Groupのrolls回、Adjusted Weightで選択。\n- entriesのみ:\n  - mode=weighted → rolls回Weighted draw\n  - その他 → Independent chance/rate判定\n\n# 5. Amount Scaling\n\nReward scaling snapshotから:\n- budget_multiplier\n- reward_modifier_multiplier\n- reward_multiplier\n- budget_delta\n- amount_rounding\n- rarity_weight_bonus_per_budget\n\namount/both:\n```text\namount = round(base_amount * budget_multiplier * reward_modifier_multiplier)\n```\n\nrounding = floor / round / ceil。\n\nquality/both:\n```text\nadjusted_weight\n= base_weight * (1 + budget_delta * rarity_weight_bonus_per_budget[rarity])\n```\n\n# 6. Determinism\n\nResolverはSeeded RNG。\nTable resultへ:\n- contract/version\n- table_id\n- seed\n- apply_difficulty_scaling\n- reward_scaling_snapshot\n- settings_snapshot\n- reward\n- traces\nを保存する。\n\n# 7. Quest統合\n\nQuest本体へ一括固定Rewardを置かない。\nBattle/Event/Exploration結果としてRewardを生成して集約する。\n\nReturn時に再抽選・再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R13-CURRENT-QUEST-REWARD / system-drop_tables.schema.json / adventure-reward-resolver.js",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-RUN-001"
+      ],
+      "acceptance_criteria": "- weighted/independent/group抽選をSeededで再現できる。\n- amount/quality/both/noneを分離できる。\n- Returnで再抽選しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RUN-001",
+      "title": "QuestRun / Adventure Simulation / Result Snapshot",
+      "status": "Draft",
+      "summary": "Quest開始時Simulation、完全結果記録、失敗停止。",
+      "body": "# 6. Quest開始処理\n\nQuest開始時に結果を完全確定する。\n\n順序:\n\n1. Quest / Section取得\n2. 石板等の開始コスト消費\n3. Party Snapshot\n4. adventure_duration_seconds Snapshot\n5. Seed生成\n6. boxesを順番にAdventure Simulation\n7. Scene Snapshot\n8. Event結果確定\n9. random_event確定\n10. random_battle敵編成確定\n11. Battle Simulation\n12. 報酬確定\n13. Flag / Quest進行結果確定\n14. Timeline at_seconds確定\n15. 成功 / 失敗確定\n16. QuestRun保存\n17. Playback開始\n\n切断しても結果は変わらない。\n\n---\n\n# 7. 失敗処理\n\nSimulation中に失敗が確定した場合:\n\n- その時点で通常boxes処理を停止\n- 後続箱を処理しない\n- QuestRun終了処理へ移行\n\nQuestRunに:\n- 失敗理由\n- 失敗地点\n- 最終状態\nを保存。\n\n将来の失敗専用Sceneは通常boxesとは別系統で追加可能な余地だけ残す。\n\n---\n\n# 8. Scene Snapshot\n\nQuestRun生成時にScene会話内容をSnapshot。\n\n保存:\n- scene_id\n- 会話再生に必要な最小情報\n\n過去QuestRunは現在のSceneマスタを再参照しない。\n\nStudioでSceneを変更しても過去Runは変わらない。\n\n---\n\n# 9. Battle Result\n\nBattle Resultは以下を分離する。\n\n- 勝敗\n- Unit最終状態\n- Seed\n- 戦闘統計\n- 現行デバッグログ\n- 将来のゲーム用戦闘ログ\n- Playback専用イベント列\n\n現行logs[]はデバッグ用途。\n\nBattle詳細画面は文字ログ解析ではなく、\nPlayback専用イベント列を使う。\n\n---\n\n# 10. QuestRun\n\nQuestRunは1回の冒険の完全な確定記録。\n\n最低限保持:\n\n- quest_run_id\n- chapter_id\n- section_id / quest_id\n- party_snapshot\n- seed\n- playback_started_at\n- adventure_duration_seconds\n- timeline_result[]\n- battle_results[]\n- event_results[]\n- scene_snapshots[]\n- reward_results\n- flag/progress_results\n- final_result\n\n---\n\n# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n## Current ownership correction\n\n旧RoadmapのSection-owned boxesはCurrentではQuest-owned `boxes[]` に置換する。\nその他のQuestRun/Snapshot/Simulation責務は保持する。\n\n## Reward\n\n各Event/Battle/Explorationの途中Rewardはreward_historyへ記録可能。\n成功Runのaggregate `reward_result` を固定。\nFailure時は正式Commit対象を空/無効とする。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061 Current Summary",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-BOX-001",
+        "SPEC-V9-019-REWARD-001"
+      ],
+      "acceptance_criteria": "- Quest開始後、切断しても同じQuestRunへ復帰できる。\n- Simulation中失敗時に後続Boxを処理しない。\n- Scene/Battle/Event/Reward/Flag結果を保存できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RUN-002",
+      "title": "Adventure Playback / Timeline / Return Commit",
+      "status": "Draft",
+      "summary": "Timeline、時間進行、Viewer、再実行禁止、Commit。",
+      "body": "# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n# 12. Playback時間管理\n\n開始時刻基準。\n\nelapsed =\n現在時刻 - playback_started_at\n\nsetInterval積み上げ値を正としない。\n\nScene詳細・Battle詳細を見ている間も進行。\n\n戻った時:\n→ 現在時刻までCatch-up表示。\n\n---\n\n# 13. Adventure Playback\n\nPlaybackはQuestRunだけを読む。\n\n禁止:\n- Battle再計算\n- Event再抽選\n- random_event再抽選\n- random_battle再生成\n- Scene条件再判定\n- 報酬再計算\n- Flag再判定\n\n---\n\n# 14. Scene詳細\n\n冒険ログ:\n\n「ストーリーイベントが発生した [見る]」\n\nログでは内容を伏せる。\n\n別画面:\n→ 保存済みScene Snapshotの会話を再生\n\n仕様:\n- 会話のみ\n- 選択肢なし\n- 視聴任意\n- Quest進行を止めない\n- 専用回想画面なし\n- 冒険ログから再閲覧\n\n---\n\n# 15. Battle詳細\n\n冒険ログ:\n→ 結果要約\n→ [結果を見る]\n\n別画面:\n→ 保存済みBattle Result / Playback Eventsを再生\n\n再戦闘しない。\n\n詳細画面中もQuestは進行。\n\n---\n\n# 16. 報酬・結果の扱い\n\n報酬はQuest一括報酬ではなく、\n\n- Battle結果\n- Event結果\n- 固有イベント結果\n\nとして発生。\n\n結果自体はQuest開始時に確定・保存する。\n\nただしPlayback中は未来の報酬を利用可能にしない。\n\n帰還時:\n→ 確定済み結果をプレイヤーへ公開 / 利用可能化\n\n帰還時に結果を再計算しない。\n\n---\n\n# 17. Studio実装\n\n## Chapter Editor\n追加:\n- 使用可能Monster一覧\n- 使用可能Random Event一覧\n\n## Section Editor\n追加:\n- adventure_duration_seconds\n- Box Editor\n\nBox Editor:\n- 初期5箱（新規Section）\n- 箱追加\n- 箱削除\n- 並び替え\n- type選択\n- Scene選択\n- Event選択\n\n## Event Editor\nEvent.type = battle時:\n- Monster Master参照固定編成\n- monster_id\n- count\n\n## Monster Master\nEnemy Budget Costを持てる構造を追加。\n\n数値はバランス調整。\n\n---\n\n## Current Return Commit\n\n- Playback中はReward/Flagを正式Saveへ反映しない。\n- 成功時Returnで保存済みreward_resultとFlag差分を一括Commitする。\n- Failureでは途中Rewardを正式資産へ移さない。\n- 二重Commit防止状態をQuestRunへ持つ。\n- ReturnでResolver/Battle/Event/Flagを再実行しない。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-RUN-001"
+      ],
+      "acceptance_criteria": "- PlaybackがQuestRunだけを読む。\n- Scene/Battle詳細閲覧中も時間が進行する。\n- elapsedを現在時刻-playback_started_atで求めCatch-upできる。\n- Returnを二重Commitできない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-STORY-001",
+      "title": "Story / Scene / Quest接続",
+      "status": "Draft",
+      "summary": "Chapter/Section/Sceneの責務とQuest-owned BoxへのCurrent接続。",
+      "body": "# 1. Story\n\nStoryは:\n- Chapter\n- Section\n- Scene\n- Dialogue\n- Story Event Context\n- Flag/Progress参照\nを管理する。\n\n# 2. Current Ownership\n\n旧 `Section owns boxes` はCurrent非採用。\nCurrent:\n```text\nStory / Chapter / Section\n→ Quest参照\n→ Quest owns boxes[]\n```\n\nStoryはQuestを配置/参照できるが、Box実行構造はQuest Domainの正本。\n\n# 3. Scene\n\nSceneは会話/物語表示を担当。\nQuestRun開始時にPlaybackに必要な最小情報をSnapshotする。\n\nPlaybackは現在Scene Masterを再参照しない。\nScene Master更新後も過去Runの会話を維持する。\n\n# 4. Viewer\n\nAdventure LogではStory内容を先に露出しない。\nScene詳細は保存済みSnapshotで再生。\n視聴は任意、Quest進行を停止しない。\nCurrentではScene選択肢を必須機能にしない。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / DISC-R9-GAP-14",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-RUN-002"
+      ],
+      "acceptance_criteria": "- Section-owned BoxをCurrentへ復活させない。\n- Scene Snapshotで過去内容を再生できる。\n- Story定義とQuestRun結果を分離できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-STONE-001",
+      "title": "Stone / Quest Difficulty Modifier",
+      "status": "Draft",
+      "summary": "Stone選択、開始時消費、Budget寄与、Reward補正。",
+      "body": "# 1. Role\n\nStoneはQuestを生成しない。\n既存QuestへPlayer-selected additional start cost / modifierを加える。\n\n# 2. Selection\n\n- 未使用可\n- 任意\n- 複数同時使用可\n\n# 3. Transaction\n\nQuestRun開始成立時に消費。\n開始成立後はsuccess/failure/abandonで返却しない。\nStart自体が失敗した場合は消費しない。\n\n# 4. Difficulty\n\n```text\neffective_enemy_budget\n= base_enemy_budget + stone_budget_delta\n```\n\n複数StoneのdeltaはData-drivenで集約。\n\n# 5. Reward\n\n旧V9:\n```text\nReward Bonus = StoneLevel * 2%\n```\nはBaselineとして保持するがCurrent固定式にはしない。\n\nCurrent Reward Resolverのamount/quality/rarity weight等へDifficulty Snapshotを渡す。\nStone固有Reward effectはDifficulty由来補正と別Modifier。\n\n# 6. V9 Safety Baseline\n\n- StoneLevel max 100\n- EnemyLv max 100\n- Boss Budget max 1000\n- Raid Budget max 5000\n\nCurrent固定値ではなくBalance Baseline。\n\n---\n\n## 根拠・統合元\nBOX-R7-036 Stone v1 / BOX-R7-061 Current Summary / DISC-R9-GAP-12",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-REWARD-001",
+        "SPEC-V9-019-ENEMY-001"
+      ],
+      "acceptance_criteria": "- Start成立時だけStoneを消費できる。\n- effective_enemy_budgetを再現できる。\n- Return時にStone補正を再計算しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-GUILD-001",
+      "title": "Guild / Facility / Unlock",
+      "status": "Draft",
+      "summary": "Guild Level、Facility責務、Unlock Data、未確定Balance。",
+      "body": "ギルド冒険物語\n\nギルド施設システム設計書\n\nVersion 1.1\n\n==================================================\n■ 採用状態\n\n正式採用\n\n監査判断：AUD-002C\n決定ID：DEC-0007\n\n==================================================\n■ 基本方針\n\nギルド施設はプレイヤーの長期成長、利便性、育成、装備管理を担当する。\n\n施設は戦闘能力を直接上昇させない。\n\n役割分担は次のとおりとする。\n\n施設 ＝ 利便性・管理・育成導線\n装備 ＝ 戦闘性能\nスキル ＝ 戦術\n\n==================================================\n■ ギルドレベル\n\nギルドレベルは次の用途に使用する。\n\n・施設の段階的開放\n・倉庫容量の段階的増加\n・依頼開放条件\n・将来の施設強化上限\n\nギルドレベルの最大値、必要ギルド経験値、上昇条件は未確定とする。\n\n==================================================\n■ 施設開放\n\n施設そのものはギルドレベルによって段階的に開放する。\n\n各施設はrequired_guild_levelを持つ。\n\n具体的な開放レベルはバランス設計時に決定する。\n\n初期施設候補\n\n・酒場\n・訓練所\n・倉庫\n・掲示板\n\n将来施設候補\n\n・鍛冶場\n・研究所\n・図書館\n・宿舎\n\n==================================================\n■ 酒場\n\n酒場は冒険者管理施設とする。\n\n機能\n\n・キャラクター雇用\n・冒険者確認\n・パーティ編成\n・転職\n・冒険者解雇\n\nキャラクター雇用は訓練所では行わない。\n\n雇用可能なキャラクターの種類はゲーム進行度と連動する。\n\nストーリー本文を直接参照せず、共通進行度または共通フラグを参照する。\n\n==================================================\n■ 訓練所\n\n訓練所は育成施設とする。\n\n機能\n\n・レベル確認\n・能力値確認\n・スキル習得\n・AI編集\n\nAI機能は進行度による段階開放に対応できる構造とする。\n\nただし、具体的なAI開放段階、対象機能、ノード上限は現時点では未確定とする。\n\n未確定項目は無効データとして保持できる設計とし、PHPへ固定値を埋め込まない。\n\n==================================================\n■ 倉庫\n\n倉庫はアイテム保管施設とする。\n\n保管対象\n\n・装備\n・石板\n・素材\n\n倉庫容量は倉庫施設レベルではなく、ギルドレベル定義と直接連動する。\n\n容量候補\n\n・500\n・1000\n・2000\n・5000\n・10000\n\n上記数値とギルドレベルの具体的な対応はバランス設計時に決定する。\n\n==================================================\n■ 掲示板\n\n掲示板は依頼管理施設とする。\n\n機能\n\n・クエスト選択\n・クエスト確認\n・報酬確認\n\n==================================================\n■ 雇用可能キャラクターと雇用人数上限\n\n次の2要素を分離して管理する。\n\n雇用可能キャラクターの種類\n＝ゲーム進行度または共通フラグで開放\n\n雇用可能人数の上限\n＝ギルドまたは宿舎側の数値として管理\n\n初期雇用人数上限候補は20人とする。\n\n30人、50人、100人への増加候補は保持するが、対応条件は未確定とする。\n\n==================================================\n■ 共通解放条件\n\n施設、キャラクター、AI機能の解放条件は共通の解放条件データで管理する。\n\n対応条件タイプ候補\n\n・GUILD_LEVEL\n・PROGRESS\n・FLAG\n・QUEST_COMPLETED\n・FACILITY_UNLOCKED\n・FACILITY_LEVEL\n\n条件判定は共通サービスを通し、各施設PHPへ個別条件を固定記述しない。\n\n==================================================\n■ 推奨CSV\n\n・guild_levels.csv\n・guild_facilities.csv\n・guild_facility_levels.csv\n・guild_facility_features.csv\n・guild_upgrade_costs.csv\n・unlock_conditions.csv\n\nAI段階開放を独立管理する場合\n\n・ai_unlocks.csv\n\n==================================================\n■ 推奨セーブDB\n\n・player_guild\n・player_guild_facilities\n\n==================================================\n■ 実装方針\n\nCSVが定義を保持し、PHPが機能を実行する。\n\nPHPは次を担当する。\n\n・GuildService\n・FacilityService\n・CharacterUnlockService\n・UnlockConditionService\n・各Repository\n\n施設開放、雇用可能判定、AI機能開放の具体値をPHPへ直接埋め込まない。\n\n==================================================\n■ 未確定事項\n\n・ギルド経験値\n・ギルドレベル上限\n・施設の具体的な開放レベル\n・施設強化費用\n・強化素材\n・倉庫容量と各ギルドレベルの対応\n・雇用人数上限の増加条件\n・AI機能の具体的な段階開放\n・施設の建設時間および強化時間\n\n未確定事項は正式決定まで補完しない。\n\n\n==================================================\n■ 統合注記\n\n本仕様書は旧Version1.0の内容を確認し、重複を整理した統合版である。\nVersion1.0に含まれていた基本方針・施設の役割・施設強化方針は本書に包含されている。\n以後は本仕様書のみを正式仕様として扱い、旧Version1.0は参照しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-037 Guild v1.1",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-CHAR-001",
+        "SPEC-V9-019-EQUIP-001",
+        "SPEC-V9-019-QUEST-001",
+        "SPEC-V9-019-AI-003"
+      ],
+      "acceptance_criteria": "- Tavern/Training/Warehouse/Boardを責務分離できる。\n- Facilityが直接Combat Powerを付与しない。\n- Unlock条件をData-drivenで判定できる。\n- 未確定Level/EXP/Capacityをコードへ補完しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-WORLD-001",
+      "title": "WORLD Structure / ID Reference / Content Boundary",
+      "status": "Draft",
+      "summary": "Region/Hub/Connection/Nation/Faction/RaceとStory分離。",
+      "body": "ギルド冒険物語\n\nWORLD領域構造設計書\n\nVersion 1.0\n\n==================================================\n■ 採用状態\n\n構造のみ正式採用\n内容は保留\n\n監査判断：AUD-002D\n決定ID：DEC-0008\n\n==================================================\n■ 目的\n\nWORLD領域は、物語進行に依存しない世界の固定定義を管理する。\n\n==================================================\n■ 管理対象\n\n・地域\n・拠点\n・地域接続\n・国家\n・勢力\n・種族\n・世界共通用語\n\n==================================================\n■ STORYとの分離\n\nSTORYは章、節、会話、出来事、加入、進行を管理する。\n\nWORLDは地域、拠点、接続、勢力などの固定定義を管理する。\n\nSTORYはWORLDのIDを参照できる。\n\nWORLDは特定の章または節へ依存しない。\n\n==================================================\n■ 初期データ構造\n\n正式採用\n\n・regions.csv\n・region_connections.csv\n\n==================================================\n■ 将来追加候補\n\n内容確定後に必要性を判断する。\n\n・factions.csv\n・faction_relations.csv\n・world_terms.csv\n・region_tags.csv\n\n==================================================\n■ 参照方針\n\nクエスト、イベント、モンスター、ストーリーは、地域名文字列ではなくregion_idを参照する。\n\n地域の存在と接続\n＝WORLD\n\n現在利用可能または移動可能か\n＝進行度、フラグ、クエスト条件などの共通解放条件\n\n==================================================\n■ 推奨PHP\n\n・RegionRepository\n・RegionConnectionRepository\n・RegionService\n\n==================================================\n■ 内容保留項目\n\n・世界地図\n・地域名\n・国家名\n・勢力名\n・種族設定\n・地域接続内容\n・世界用語\n・地域タグ\n・地域別モンスター\n・地域開放順\n・移動時間\n・ワールドマップUI\n\n元資料に存在しない内容を仕様ライブラリ側で補完しない。\n\n---\n\n## 根拠・統合元\nBOX-R10-WORLD-001",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-CORE-001"
+      ],
+      "acceptance_criteria": "- World固定定義とStory進行を分離できる。\n- Quest/Event/Monster/Storyがregion_id等で参照できる。\n- 元資料にないWorld contentを補完しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-AI-001",
+      "title": "Formal AI Node Master / Program / Layout Schema",
+      "status": "Draft",
+      "summary": "Node Master、Program、LayoutのCurrent Formal Schema。",
+      "body": "# 1. Node Master\n\nRequired:\n[\"id\", \"name\", \"node_type\", \"status\", \"data_version\", \"evaluator\", \"ports\", \"parameter_schema\"]\n\nnode_type:\n[\"condition\", \"target\", \"action\"]\n\nstatus:\n[\"draft\", \"active\", \"deprecated\", \"disabled\"]\n\nNodeはinput portを1つ持つ。\n\nCurrent Node Master:\n| ID | Name | Type | Evaluator |\n|---|---|---|---|\n| AIC-0001 | 常に成立 | condition | condition.always |\n| AIC-0002 | 自分HPが指定割合未満 | condition | condition.hp_below |\n| AIC-0003 | 自分MPが指定値以上 | condition | condition.mp_at_least |\n| AIT-0001 | 自分 | target | target.self |\n| AIT-0002 | HPが最も低い味方 | target | target.ally_lowest |\n| AIT-0003 | HPが最も低い敵 | target | target.enemy_lowest |\n| AIA-0001 | 通常攻撃 | action | action.attack |\n| AIA-0002 | スキル使用 | action | action.skill |\n| AIA-0003 | 待機 | action | action.wait |\n\n\n# 2. Formal Program\n\nRequired:\n[\"schema_version\", \"data_version\", \"id\", \"name\", \"version\", \"status\", \"entry_node_id\", \"nodes\", \"edges\", \"subroutines\"]\n\nProgram:\n- schema_version\n- data_version\n- id/name/version/status\n- entry_node_id\n- nodes[]\n- edges[]\n- subroutines[]\n- tags/description\n- compiled metadata\n\nProgram node:\n- instance_id\n- master_node_id\n- master_data_version\n- node_type\n- position\n- parameters\n- comment\n\nEdge:\n- edge_id\n- from endpoint\n- to endpoint\n\n# 3. Node Direction\n\nHuman Approved:\n- CONDITION = input1 / TRUE output1 / FALSE output1\n- ACTION = input1 / output0 / terminal\n- 3/N方向Conditionを作らない。\n- 3条件以上はCondition nodeを連結する。\n\n# 4. Program / Layout\n\nProgram = 実行Logic正本。\nLayout = UI配置正本。\n\nLayout Required:\n[\"layout_version\", \"layout_id\", \"program_id\", \"width\", \"height\", \"chips\", \"extensions\"]\n\nLayoutへ:\n- width/height\n- chips\n- extensions\nを保持する。\n\n座標/rotation/board size/extensionをProgram Runtime Logicへ混在させない。\nExtensionはRuntime Nodeにしない。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / AI schemas / Export ai_nodes",
       "decision_refs": [
         "DEC-V9-AI-001",
         "DEC-V9-AI-002",
-        "DEC-V9-AI-003",
+        "DEC-V9-AI-003"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-CORE-002"
+      ],
+      "acceptance_criteria": "- Node/Program/LayoutをSchema Validationできる。\n- Condition TRUE/FALSE、Action terminalを強制できる。\n- Layout変更がProgram Logicを変更しない。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-AI-002",
+      "title": "Formal AI Connection Resolver / Validator / Compiler",
+      "status": "Draft",
+      "summary": "Board接続からFormal Edge、Validation、Compiled Runtime生成。",
+      "body": "# 1. Single Connection Resolver\n\nBoard接続とProgram `edges[]` を別管理しない。\n同一Resolverから生成する。\n\nRules:\n- output → inputのみ\n- 1 input = 1 source\n- 1 output = 1 target\n- extensionはResolverで畳む\n- dead end = Error\n- cycle = Error\n- ambiguous branch = Error\n\n# 2. Validator\n\n最低限:\n- Master Node存在\n- Node type整合\n- Parameter Schema\n- Port整合\n- Entry存在\n- Edge endpoint存在\n- Condition TRUE/FALSE branch\n- Action terminal\n- Cycle/dead end\n- 必須参照ID\nを検証する。\n\n# 3. Compiler\n\nFormal ProgramをRuntime Instructionへ変換する。\n\nRuntime Required:\n- schema_version\n- data_version\n- program_id\n- program_version\n- compiler_version\n- entry_instruction\n- instructions[]\n- source_map\n- limits\n- content_hash\n\nInstruction op:\n- CONDITION\n- TARGET\n- ACTION\n- CALL\n- WAIT\n- END\n\nInstruction:\n- instruction_id\n- op\n- master_node_id\n- evaluator\n- params\n- next\n- on_true\n- on_false\n\nCompiled Resultはsource_map/content_hashを持ち、\nProgram Versionとの整合を検証できる。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / Connection Resolver / Validator / Compiler",
+      "decision_refs": [
         "DEC-V9-AI-004",
+        "DEC-V9-AI-006"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-AI-001"
+      ],
+      "acceptance_criteria": "- UI接続から一意なedgesを生成できる。\n- Invalid graphをCompile前に拒否できる。\n- ProgramをRuntime InstructionへCompileできる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-AI-003",
+      "title": "Formal AI Runtime / Decision / Trace / Character Binding",
+      "status": "Draft",
+      "summary": "AI判断、Trace、Character Save、Battle境界、Legacy Zero。",
+      "body": "# 1. AI責務\n\n```text\nGame AI UI\n→ Formal Program\n→ Validator\n→ Compiler\n→ Decision Engine\n→ action_id + target_id\n→ Battle\n```\n\nAIは判断まで。\nBattle Action reservation、実行直前Validation、Skill Runtime、Combat計算を再定義しない。\n\n# 2. Decision\n\nAIはCurrent情報を評価する。\n前回のTarget/Skill選択をHidden memoryとして保持しない。\n未来のRandom結果/次行動予定を参照しない。\n同点候補はRandom。\n\nBattle側の再評価タイミング:\n- AG最大値の10%ごと\n- 行動直前に最終再検証\n\n# 3. Trace\n\nTrace Required:\n[\"schema_version\", \"data_version\", \"battle_id\", \"program_id\", \"program_version\", \"actor_id\", \"seed\", \"events\", \"outcome\"]\n\nEvent phase:\n- reservation\n- execution\n- rethink\n\nEvent type:\n- condition\n- target\n- action\n- branch\n- call\n- wait\n- end\n- error\n\n# 4. Character Binding\n\nCharacter Saveは `formalAiBinding` でProgram/Layoutを参照する。\nProgram/Layout/Compiled RuntimeのVersion整合を確認する。\n\n# 5. Shared Core\n\nGame/Studioで共有:\n- Program Model\n- Master Adapter\n- Validator\n- Compiler\n- Decision Engine\n- Trace\n\nGame Bridgeだけが:\n- Save\n- Character binding\n- Battle Unit Snapshot\n- reserveAction\nを担当する。\n\n# 6. Legacy Zero\n\nFormal AI未設定時に旧AIへFallbackしない。\nCharacter Saveへ:\n- aiGraph\n- aiPolicy\n- defaultSkillId\n等を互換目的で残さない。\n旧Saveを自動意味変換しない。\n\n# 7. Monster\n\nCharacter `formalAiBinding` をMonsterへ推測流用しない。\nMonster側はCurrent別Battle path。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / Battle v3 / Human Decisions",
+      "decision_refs": [
         "DEC-V9-AI-005",
         "DEC-V9-AI-006",
-        "DEC-V9-AI-007",
         "DEC-V9-AI-008"
       ],
       "depends_on": [
-        "SPEC-V9R-018-CORE",
-        "SPEC-V9R-018-SKILL"
+        "SPEC-V9-019-AI-002",
+        "SPEC-V9-019-BATTLE-004"
       ],
-      "acceptance_criteria": "- CONDITION TRUE/FALSE、ACTION terminalをSchemaで検証できる。\n    - Program/Layoutを分離しShared Resolverで接続できる。\n    - Compiler→Runtime→action_id+target_idを実行できる。\n    - Character formalAiBindingを検証できる。\n    - Legacy AIへfallbackしない。",
+      "acceptance_criteria": "- Programからaction_id+target_idを決定できる。\n- Traceを保存できる。\n- Character bindingをVersion検証できる。\n- Legacy AIへFallbackしない。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     },
     {
-      "id": "SPEC-V9R-018-STONE",
-      "title": "Stone 実装仕様",
+      "id": "SPEC-V9-019-DATA-001",
+      "title": "AI Data Generation / 1 Writable Category",
       "status": "Draft",
-      "summary": "Quest開始追加コスト、消費、Enemy Budget/Reward寄与。",
-      "body": "# 08 Stone / Guild\n\n## Stone\n\nPlayer-selected additional Quest start cost。\n未使用可、複数可。\n\nQuestRun開始成立後に消費。\nsuccess/failure/abandonで返却なし。\nstart failureなら未消費。\n\n```text\neffective_enemy_budget\n= base_enemy_budget + stone_budget_delta\n```\n\nV9 baseline:\n- enemy_budget_delta = StoneLevel\n- StoneLevel max 100\n- EnemyLv max 100\n- Boss Budget max 1000\n- Raid Budget max 5000\n\n旧Reward Bonus = StoneLevel*2%はV9 baseline。\nCurrent Reward Resolverは `bonus_per_budget=0.02` をactive settingとして持つため、\nCurrent runnable snapshotではReward Resolver設定を優先する。\n\nStone固有Reward effectはdifficulty由来補正と別Modifier。",
-      "decision_refs": [],
-      "depends_on": [
-        "SPEC-V9R-018-CORE"
-      ],
-      "acceptance_criteria": "- Stone未使用/複数使用を扱える。\n    - QuestRun開始成立時だけ消費し、Start失敗時は消費しない。\n    - effective_enemy_budgetへstone_budget_deltaを加算できる。\n    - Current Reward Resolver設定を旧2%固定式より優先する。",
-      "approved_by": "",
-      "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
-    },
-    {
-      "id": "SPEC-V9R-018-GUILD",
-      "title": "Guild Facility 実装仕様",
-      "status": "Draft",
-      "summary": "Tavern/Training/Warehouse/Boardと共通Unlock構造。",
-      "body": "## Guild structure\n\nFacilityは戦闘力を直接上げない。\n\n- Tavern: recruit/party/job change/dismiss\n- Training: stats/skill/AI edit\n- Warehouse: equipment/stone/material\n- Board: quest select/info/reward\n\nUnlockは共通Data:\nGUILD_LEVEL / PROGRESS / FLAG / QUEST_COMPLETED / FACILITY_UNLOCKED / FACILITY_LEVEL。\n\nRecommended data:\nguild_levels / facilities / facility_levels / features / upgrade_costs / unlock_conditions / ai_unlocks。\n\n## Missing Guild Balance\n\n未確定:\n- Guild Level max\n- Guild EXP\n- concrete facility unlock level\n- AI unlock stage/node cap\n- capacity mapping\n- upgrade costs/material/time\n\n候補:\n- warehouse capacity 500/1000/2000/5000/10000\n- initial recruit cap candidate 20\n- later 30/50/100 candidates\n\n候補はProduction確定値として使わない。\nEngine/CSV contractを先に作る。",
-      "decision_refs": [],
-      "depends_on": [
-        "SPEC-V9R-018-CHAR",
-        "SPEC-V9R-018-EQUIP",
-        "SPEC-V9R-018-QUEST",
-        "SPEC-V9R-018-AI"
-      ],
-      "acceptance_criteria": "- Facilityを直接Combat Powerへ加算しない。\n    - Tavern/Training/Warehouse/Boardの責務を分離できる。\n    - required_guild_level/共通Unlock Dataで解放できる。\n    - 未確定Guild Balance値をコードへ固定しない。",
-      "approved_by": "",
-      "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
-    },
-    {
-      "id": "SPEC-V9R-018-DATA",
-      "title": "AI Data Generation / Data Exchange 実装仕様",
-      "status": "Draft",
-      "summary": "1カテゴリwritable、Creative/Runtime分離、Product migration。",
-      "body": "# 09 Data Generation / Exchange / Content Migration\n\n## One writable category\n\n1工程1カテゴリのみwritable。\n依存Dataはread_only。\n後工程が前工程を勝手に変更しない。\n\n不足Tag等は該当工程へ戻す。\n名前からIDを推測しない。\n\n## Recommended production flow\n\nStory\n→ Monster skeleton\n→ Job direction\n→ Tag\n→ Skill concept\n→ Formal Skill validation/compile\n→ Monster assignment\n→ Equipment generation\n→ Quest/Event\n→ Simulation/validation\n→ Product Master commit\n\n## Current exports\n\n`current-exports/` はCurrent repositoryから抽出した。\nただし多くはdemo/test fixture。\n\nProduction migrationでは:\n- R06 Skill\n- 訓練Monster\n- 実機検証Map/Quest/Event\nをProduct contentと混ぜない。\n\n## Content migration status\n\n### Job\nHuman Approved seedあり。実装可。\n\n### Skill\nEngine contractあり。V9 Product Skill DBあり。\nただしLegacy→Formal mappingが全件一意ではない。migration required。\n\n### Equipment\nGenerator/field/coefficientsあり。\nCurrent Product equipment exportは空。生成可能。\n\n### Monster\nV9 seedあり、Current demo exportあり。\n後発7Job方針でProduct master再生成が必要。\n\n### Quest/Story\nRuntime contractあり。\nCurrent exportはdemo/test中心。\nProduct content migrationが必要。\n\n### World\nEngine structureあり。Product content欠落。\n\n### Formal AI\nEngine/Node Masterあり。Product Program exportは空。\n\n## Hash / Revision\n\nGolden Sampleのhash/revisionをコピーしない。\n正式Data Exchange処理で生成する。",
+      "summary": "Story→Monster→Tag→Skill→Equipment等の生成工程と責務分離。",
+      "body": "# 1. 共通原則\n\n1工程につき1カテゴリだけwritable。\n依存カテゴリはread_only。\n\n後工程が前工程の正式Dataを勝手に変更しない。\n不足Categoryを見つけたら該当工程へ戻し、同一出力で複数Categoryを新規生成しない。\n\n正式IDを名前から推測しない。\n\n# 2. Creative / Runtime分離\n\n創作前半:\n- Story\n- Monster骨格\n- Skill concept\n- Tag候補\n等を内容中心で作る。\n\n後半:\n- Formal Schema/Registry\n- Budget\n- Runtime Contract\n- Equipment Generator\nへ適合させる。\n\nRuntime制約を理由に創作初期から不必要に表現を狭めない。\n一方、正式登録時は必ずCurrent Contractを通す。\n\n# 3. Flow\n\n```text\nStory\n→ Story正式登録\n→ Monster骨格\n→ 7Job派生\n→ Tag候補/正式登録\n→ Skill創作\n→ Formal Skill適合/Compile\n→ Monster Skill assignment\n→ Equipment request\n→ Studio Generator\n→ Quest/Event content\n→ Validation\n```\n\n# 4. 数値\n\nAI Monster工程はEnemy Budget/Statsを独自決定しない。\nAI Equipment工程はattack等の正式数値を独自決定しない。\nStudio/Balance Systemへ委譲する。\n\n---\n\n## 根拠・統合元\nBOX-R7-038〜050 AI START/生成マニュアル系列",
       "decision_refs": [
-        "DEC-V9-EQUIP-005",
         "DEC-V9-MONSTER-001",
         "DEC-V9-MONSTER-004",
+        "DEC-V9-EQUIP-005",
         "DEC-V9-AI-007"
       ],
       "depends_on": [
-        "SPEC-V9R-018-SKILL",
-        "SPEC-V9R-018-TAG",
-        "SPEC-V9R-018-EQUIP",
-        "SPEC-V9R-018-MONSTER",
-        "SPEC-V9R-018-QUEST",
-        "SPEC-V9R-018-AI"
+        "SPEC-V9-019-MONSTER-002",
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-EQUIP-003"
       ],
-      "acceptance_criteria": "- 1工程1writable categoryを守れる。\n    - read_only Dataを書き換えない。\n    - 正式ID/Hash/Revisionを推測生成しない。\n    - Demo/Test fixtureをProduct masterへ混入しない。\n    - Legacy→Current変換不能Dataをmigration_requiredとして残せる。",
+      "acceptance_criteria": "- 1カテゴリwritableを機械的に検証できる。\n- AIが正式数値/IDを捏造しない。\n- Creative→Runtime適合を段階分離できる。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-DATA-002",
+      "title": "Data Exchange / JSON / Export / Hash",
+      "status": "Draft",
+      "summary": "Import/Export、read_only、Hash/Revision、Catalog供給。",
+      "body": "# JSON出力規則\n\n## Golden Sample\n\n`samples/`のJSONはGKS-B492から実際にExportされた構造の正本である。\n\n-   Story: `01_STORY_CHAPTERS_GOLDEN.json`\n-   Monster: `02_MONSTERS_GOLDEN.json`\n-   Tag: `03_TAGS_GOLDEN.json`\n-   Skill: `04_SKILLS_GOLDEN.json`\n\n## AIが守ること\n\n-   対象Golden Sampleのキー構造を維持する。\n-   1カテゴリだけwritable。\n-   依存データはread_only。\n-   既存IDを新規IDとして流用しない。\n-   read_onlyレコードを変更しない。\n-   project_idを対象プロジェクトに合わせる。\n-   JSONとして構文エラーを出さない。\n\n## hash / revision\n\nGolden\nSampleの以下を新規データへコピーして整合済みと見なしてはいけない。 -\n`base_project_revision` - `base_hash` - `record_hashes` - `package_hash`\n\nこれらはData Exchange整合性情報である。\n正式な生成方法がStudio側で確定している場合はその方式を優先する。\n不明な場合は「取込保証済み」と断定せず、Studio Dry Runで検証する。\n\n## 提出単位\n\nAIは原則として、 - 生成JSON - 生成件数 - writableカテゴリ -\n参照したread_onlyカテゴリ - 不足・保留事項 を報告する。\n\n\n===== SOURCE 02 =====\nsource_id: MAT-POST-AISTART-V1-07_JSON出力規則\nversion: v1-formal\ndocument: 07_JSON出力規則.md\nsource_status: Approved\npackage: GKS_AI_START正式生成マニュアル_v1(7).zip\nsha256: 24b37ffd8b163c737cbdfe7b581db19afca9f354f0900eb9f4dd931ef7ce5b49\n\n【前版との関係】\n- 旧生成フローマニュアルからAI START正式生成マニュアルへ更新。\n- added_nonblank_lines: 16\n- removed_or_changed_nonblank_lines: 19\n- 追加/変更例:\n  + `samples/` 内のGKS-B492実Exportを構造の正本とする。\n  + ## 原則\n  + -   1ファイルにつきwritableは1カテゴリ\n  + -   read_onlyは変更しない\n  + -   project_idを対象プロジェクトへ合わせる\n  + -   正式IDを推測しない\n  + -   JSONキーを勝手に変更しない\n  + -   新規IDを既存IDと重複させない\n- 削除/置換例:\n  - `samples/`のJSONはGKS-B492から実際にExportされた構造の正本である。\n  - ## AIが守ること\n  - -   対象Golden Sampleのキー構造を維持する。\n  - -   1カテゴリだけwritable。\n  - -   依存データはread_only。\n  - -   既存IDを新規IDとして流用しない。\n  - -   read_onlyレコードを変更しない。\n  - -   project_idを対象プロジェクトに合わせる。\n\n【本文】\n# JSON出力規則\n\n## Golden Sample\n\n`samples/` 内のGKS-B492実Exportを構造の正本とする。\n\n-   Story: `01_STORY_CHAPTERS_GOLDEN.json`\n-   Monster: `02_MONSTERS_GOLDEN.json`\n-   Tag: `03_TAGS_GOLDEN.json`\n-   Skill: `04_SKILLS_GOLDEN.json`\n\n## 原則\n\n-   1ファイルにつきwritableは1カテゴリ\n-   read_onlyは変更しない\n-   project_idを対象プロジェクトへ合わせる\n-   正式IDを推測しない\n-   JSONキーを勝手に変更しない\n-   新規IDを既存IDと重複させない\n\n## hash/revision\n\nGolden Sampleの以下を新規生成データへコピーして整合済みと見なさない。 -\nbase_project_revision - base_hash - record_hashes - package_hash\n\nこれらの正式生成方法はStudio/Data Exchange側の仕様を優先する。\n不明な場合、AIは「実機取込保証済み」と断定しない。\n\n## 出力報告\n\nAIはJSON提出時に以下を報告する。 - writableカテゴリ - 生成件数 -\nread_only参照カテゴリ - 仮定した事項 - 不足/保留事項\n\n## Current追加\n\n- Tag/Skill CatalogはStudio正本Export経由でGameへ供給。\n- GameがStudio localStorageを直接読む経路を正式化しない。\n- Dataが空なら候補IDを捏造しない。\n- Golden Sampleのbase_hash/record_hashes/package_hashをコピーして整合済みと偽装しない。\n- Hash/Revisionは正式Data Exchange処理で生成する。\n- Import前に参照Validation/Dry Runを行う。\n\nOutput時の報告:\n- writable category\n- generated count\n- read_only refs\n- assumptions\n- pending/missing\n\n---\n\n## 根拠・統合元\nBOX-R7-051 JSON出力規則 / BOX-R10-GOLDEN-SAMPLES / Current Data Exchange contracts",
+      "decision_refs": [
+        "DEC-V9-AI-007"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-DATA-001",
+        "SPEC-V9-019-TAG-001"
+      ],
+      "acceptance_criteria": "- read_only Datasetを変更しない。\n- Hash/Revisionを正式処理で生成できる。\n- Game CatalogをStudio Exportから供給できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-MIG-001",
+      "title": "Product Content Migration / Exact Reproduction Gate",
+      "status": "Draft",
+      "summary": "Engine実装とProduct Content完全再現を分離し、未移行Dataを管理する。",
+      "body": "# 1. Purpose\n\nEngineが動くことと、V9 Productと同じゲームを再現できることを別Gateにする。\n\n# 2. Current Migration状態\n\n## Job\nHuman Approved Current seedあり。\nProduct Dataとして登録可能。\n\n## Skill\nFormal Engine Contractあり。\nV9 Skill DB Contentあり。\nただしLegacy POWER/STATUS_RATE/BUFF_POWER等からCurrent Formal Registryへ\n全件一意変換できないため、Skill単位でMigrationが必要。\n\n## Tag\nSystem Contractあり。\nV9 Tag seedあり。\nCurrent Product Tag Catalogへの正式登録が必要。\n\n## Equipment\nGenerator/Field/係数あり。\nProduct ItemはGeneratorで作成可能。\nmagic_weapon_bonus Battle接続はDeferred。\n\n## MOD / Rarity / Unique\nV9具体Catalog/Baselineあり。\nCurrent Master/Balance ConfigへのMigrationが必要。\n\n## Monster\nV9 Monster DBと後発7Job生成規則あり。\nCurrent exportはDemo/Test中心。\nProduct Monster Master再生成/移行が必要。\n\n## Quest / Story\nRuntime/QuestRun Contractあり。\nCurrent exportはDemo/Test中心。\nProduct Quest/Story content migrationが必要。\n\n## World\nStructure Contractあり。\n具体World contentはSource自体が保留。\nExact Product Worldは現資料だけでは再現不能。\n\n## Formal AI\nEngine/Node Masterあり。\nProduct AI Program/Layout contentは別途作成/移行が必要。\n\n## Guild\nStructureあり。\n具体Level/EXP/Unlock/CapacityはBalance未確定。\n\n# 3. Gate\n\n「完全再現」と表記する条件:\n- Product Content MasterがCurrent Schemaへ登録済み\n- Balance Snapshotが確定/Version付き\n- Demo/Test fixture分離済み\n- Legacy→Current Migration unresolved = 0\n- 未確定World/Guild等についてHuman決定または正式Dataが存在\n\n未解決項目を推測で埋めてGateを通してはならない。\n\n---\n\n## 根拠・統合元\nDEV-V9-REORG-018の全Material/Gap監査結果",
+      "decision_refs": [],
+      "depends_on": [
+        "SPEC-V9-019-DATA-002"
+      ],
+      "acceptance_criteria": "- DomainごとにEngine ReadyとProduct Readyを別判定できる。\n- Demo/Test fixtureをRelease Dataへ混ぜない。\n- Migration unresolvedを追跡できる。",
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -2091,6 +2709,13 @@
       "parent_id": "",
       "created_at": "2026-08-19T20:18:00+09:00",
       "updated_at": "2026-08-19T20:18:00+09:00"
+    },
+    {
+      "id": "ARCH-R19-DETAILED-SPECS",
+      "name": "詳細Current Specification登録・レビュー",
+      "parent_id": "",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     }
   ],
   "work_boxes": [
@@ -2797,46 +3422,68 @@
       "body": "Development Project仕様システムへ登録するためのCurrent実装仕様16件。Material本文は既存WorkBoxに保持し、このBoxは登録/レビュー作業だけを管理する。",
       "created_at": "2026-08-19T20:18:00+09:00",
       "updated_at": "2026-08-19T20:18:00+09:00"
+    },
+    {
+      "id": "BOX-R19-DETAILED-SPECS",
+      "node_id": "ARCH-R19-DETAILED-SPECS",
+      "title": "詳細Current Specification登録管理",
+      "body": "51件の詳細Specificationを登録。Material本文は既存WorkBoxに保持し、仕様本文はRuntime/Data/Balance/Content/Validation単位へ分割する。",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     }
   ],
   "tasks": [
     {
-      "id": "TASK-R18-001",
-      "box_id": "BOX-R18-SPEC-REGISTER",
-      "title": "登録した16 SpecificationをDomain横断レビューする",
+      "id": "TASK-R19-001",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "51件の詳細Specificationを実装者視点でレビューする",
       "status": "Doing",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     }
   ],
   "checks": [
     {
-      "id": "CHK-R18-001",
-      "title": "Development Project import compatibility",
+      "id": "CHK-R19-001",
+      "title": "Detailed specification coverage",
       "gate": "General",
       "target_type": "Project",
-      "target_id": "DEV-V9-REORG-018",
+      "target_id": "DEV-V9-REORG-019",
       "status": "Passed",
-      "result": "schema_version 1.2 / Specification required fields / refs / dependencies / task box参照を登録形式へ正規化。",
-      "evidence": "development-project_DEV-V9-REORG-018_registerable-specs.json",
-      "checked_by": "AI",
-      "checked_at": "2026-08-19T20:18:00+09:00",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
-    },
-    {
-      "id": "CHK-R18-002",
-      "title": "Specification approval state",
-      "gate": "General",
-      "target_type": "Project",
-      "target_id": "DEV-V9-REORG-018",
-      "status": "Passed",
-      "result": "Specification 16件は全件Draft。approved_by/approved_atは空。",
+      "result": "短縮16 Draftを51詳細Specificationへ再分割。Battle/Skill/Status/Equipment/MOD/Quest/AI等をRuntime単位まで分離。",
       "evidence": "specifications",
       "checked_by": "AI",
-      "checked_at": "2026-08-19T20:18:00+09:00",
-      "created_at": "2026-08-19T20:18:00+09:00",
-      "updated_at": "2026-08-19T20:18:00+09:00"
+      "checked_at": "2026-08-19T20:26:00+09:00",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "CHK-R19-002",
+      "title": "Material preservation",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "既存Materialを保持。WorkBox合計89件。",
+      "evidence": "work_boxes",
+      "checked_by": "AI",
+      "checked_at": "2026-08-19T20:26:00+09:00",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "CHK-R19-003",
+      "title": "Approval safety",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "全SpecificationはDraft。自動Approvedなし。",
+      "evidence": "specifications",
+      "checked_by": "AI",
+      "checked_at": "2026-08-19T20:26:00+09:00",
+      "created_at": "2026-08-19T20:26:00+09:00",
+      "updated_at": "2026-08-19T20:26:00+09:00"
     }
   ],
   "workflow": {
@@ -2854,8 +3501,8 @@
   },
   "history": [
     {
-      "at": "2026-08-19T20:18:00+09:00",
-      "message": "Human指示により、ゲーム再実装用Implementation仕様をDevelopment Project Specification登録形式へ16 Domainに分割。既存Material/Decisionは保持し、全仕様をDraftで登録可能化。"
+      "at": "2026-08-19T20:26:00+09:00",
+      "message": "Human指摘により018の短縮Draftを破棄し、ゲーム実装に必要な粒度へ再設計。51件の詳細Current Specificationを登録形式で作成。Runtime式、Current Registry、Balance Baseline、Content Migration、Validationまで明記。"
     }
   ]
 }
