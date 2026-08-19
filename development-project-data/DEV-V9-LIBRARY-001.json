@@ -5,17 +5,17 @@
     "name": "V9ライブラリ統合・最新版化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-19T14:45:00+09:00"
+    "updated_at": "2026-08-19T06:47:26.707Z"
   },
   "project_context": {
-    "purpose": "V9ライブラリ v2.0を原本として取り込み、その後に確定した資料を個別機能ごとに精査・統合し、全体整合済みの最新版V9ライブラリを作成する。",
-    "summary": "V9 v2.0 baseline取込済み。Development Git Storeは既存Repository利用可・境界/入出力分離で進行。GKS-B669は更新ZIPにsystem-file-policyが欠落しStudio分類前に停止したため未配置・Superseded。GKS-B670では同policyを内容変更なしで直接更新ZIPへ含め、最終ZIPそのものをExact GKS-B668 baselineへ適用してFullまでPASS。"
+    "purpose": "新システムで大規模かつ散在した仕様を正しく整理・統合できるかを検証する。テスト成果物として、V9ライブラリ v2.0を原本に後発確定資料を機能単位で精査し、競合・旧版・未確定・欠損を区別したうえで全体整合済みの新しい統合版 V9 Library vNext を作成する。",
+    "summary": "本案件は『仕様統合そのもの』と『新システムの仕様整理機能の検証』を同時に行うテスト。散在資料をBaseline/後発/旧版/重複/競合/未確定へ分類し、Decision・Specification・Task・依存関係へ整理して最終的に統合版を出力する。整理の途中で、正しく整理するために必要な機能が新システムに存在するかを確認し、不足している場合は回避で済ませず開発項目として登録する。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-V9-DEVSTORE",
-    "work_box_id": "BOX-V9-DEVSTORE",
-    "theme": "Development Git Store：GKS-B670実配置・Live read/write",
-    "goal": "GKS-B670を配置し、v20をdevelopment-project-data/へGit保存して再読込を確認する。"
+    "architecture_id": "ARCH-V9-INTEGRATION",
+    "work_box_id": "BOX-V9-INTEGRATION",
+    "theme": "V9 Library vNext：散在仕様の統合・整合確認",
+    "goal": "各機能の整理済み/未確定/競合/欠損を正しく分離し、全体整合済みのV9 Library vNextを作成する。"
   },
   "project_rules": [
     {
@@ -278,38 +278,11 @@
       "source_id": "DEC-V9-MONSTER-004",
       "created_at": "2026-08-19T11:13:00+09:00",
       "updated_at": "2026-08-19T11:13:00+09:00"
-    },
-    {
-      "id": "RULE-V9-DEVSTORE-030",
-      "text": "Development VaultはGame/Studioと同一Repositoryを使用可能。ただしentrypoint/source/runtime/data I/Oを分離し、Game/Studioのコード・module・Storage・API・UI・Service Worker・Cache・Schema実装を共有/流用しない。",
-      "status": "Active",
-      "source_type": "HumanDecision",
-      "source_id": "DEC-V9-DEVSTORE-001",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "RULE-V9-DEVSTORE-031",
-      "text": "Game/Studio sourceは参考閲覧に限る。Vaultへのcopy/import/symlink/shared-core化は禁止する。",
-      "status": "Active",
-      "source_type": "HumanDecision",
-      "source_id": "DEC-V9-DEVSTORE-001",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "RULE-V9-DEVSTORE-032",
-      "text": "Development ProjectのGit入出力はVault専用data rootへ限定し、Studio/Game data pathや内部同期処理を経由しない。",
-      "status": "Active",
-      "source_type": "HumanDecision",
-      "source_id": "DEC-V9-DEVSTORE-002",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B665",
-    "game_build": "GA-B486.211",
+    "studio_build": "",
+    "game_build": "",
     "source_label": "V9ライブラリ_v2.0(20260818-235954).zip",
     "source_role": "current_baseline",
     "recorded_at": "2026-08-19T09:15:00+09:00"
@@ -657,32 +630,74 @@
       "updated_at": "2026-08-19T11:13:00+09:00"
     },
     {
-      "id": "DISC-V9-DEVSTORE-001",
-      "title": "Development VaultのRepository分離範囲",
+      "id": "DISC-V9-BATTLE-001",
+      "title": "戦闘仕様まとめ v1→v2→v3 の版関係",
       "status": "Resolved",
-      "summary": "別Repositoryまでは要求せず、既存Repositoryを利用可能とする。完全分離対象はsystem/runtime/data I/O boundary。",
-      "body": "当初、quota回避案として別Repositoryまで分離する案を作成したが、Human訂正により過剰分離と判定。同じRepository内でもVaultを独立entrypoint・独立source・独立runtime・独立data pathで運用すれば要件を満たす。",
+      "summary": "v2を後発Battle基礎版、v3をv2以降の追記差分として扱い、v1は履歴化する。",
+      "body": "v1はDamage/命中/状態異常/DOT/回復/Shield/MPの初期確定事項。v2はこれらを包含し、補正箱、CD、発動成立、吸収/反射、複数Hit、複合効果、誘発、戦闘不能/蘇生、召喚、対象無効まで拡張している。v3は冒頭で『v2以降に確定した事項を追記』と明示し、AI/詠唱/射程/無効/Tick/蘇生/戦闘開始/終了を追加する。",
       "open_questions": "",
-      "conclusion": "既存Game/Studio repositoryを利用してよい。ただしStudio/Game source・module・Storage・API・UI・Service Worker・Schema実装は共有/流用せず、Vault専用入口とVault専用data rootを使う。",
+      "conclusion": "Battle後発資料は v2 + v3差分 を現行統合候補の入力とし、v1はSuperseded履歴として保持する。",
       "related_discussion_ids": [],
-      "artifact_note": "Human correction after unimported v16 draft",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
+      "artifact_note": "戦闘仕様_確定事項まとめ v1/v2/v3",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
     },
     {
-      "id": "DISC-V9-DEVSTORE-002",
-      "title": "Development Projectの入出力窓口",
+      "id": "DISC-V9-BATTLE-002",
+      "title": "V9戦闘計算Interfaceと後発Battle数式・処理詳細の境界",
       "status": "Resolved",
-      "summary": "StudioのDevelopment Project読込/置換/GitHub同期を呼ばず、Vault専用file/Git窓口を用意する。",
-      "body": "Vault inputはlocal JSON fileまたはGitHub APIからVault専用data rootを読む。Vault outputはlocal JSON downloadまたは同data rootへのcommit。同じrepository内でもGame/Studio data pathへwriteしない。",
+      "summary": "V9の共通計算基盤/責務/決定性/ログ構造を保持し、v2/v3の後発詳細をその上へ統合する。",
+      "body": "V9 SPEC-V9-0058はBattle計算をAI/UI/Studioから独立した共通基盤とし、同一Seed/Rule/Dataでの再現、段階ログ、数式・係数・閾値等のBalance分離を構造仕様とする。後発v2/v3は、その保留領域だったDamage/Hit/Resistance/Critical/rounding、Cast、Shield、Absorb/Reflect、multi-hit、trigger、Tick等を具体化している。",
       "open_questions": "",
-      "conclusion": "Vault data rootを `development-project-data/` とし、prototype v1.1ではこのroot外へのGit writeを拒否する。",
+      "conclusion": "後発v2/v3の具体式・cap・丸め・timing値は現行Battle Balance/Detail候補として保持する。共通基盤、Seed決定性、ログ、AI/UI/Studio境界はV9構造を維持し、値をロジックへ散在させない。",
+      "related_discussion_ids": [],
+      "artifact_note": "SPEC-V9-0058/0059/0060/0061 vs Battle v2/v3",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
+    },
+    {
+      "id": "DISC-V9-BATTLE-003",
+      "title": "Battle資料内Legacy parameter名とFormal Skill/Tag境界",
+      "status": "Resolved",
+      "summary": "DOT_INTERVAL等の旧固定キーはMechanic根拠としてのみ読み、Formal最新版のparameter名として復活させない。",
+      "body": "Battle v1/v2はDOTの個別間隔を `DOT_INTERVAL` と記載する。一方、Human確定済みDEC-V9-TAG-001/DEC-V9-SKILL-003により、DOT_POWER/DOT_DURATION/DOT_INTERVAL等のLegacy限定キーはFormal正本へ継承せず、実行に必要な数値はFormal Schema/Registryの汎用parameterとしてCompilerがruntimeContractsへ渡す。",
+      "open_questions": "",
+      "conclusion": "『DOTごとにTick間隔を持つ』『stackごとに独立Tick管理』というMechanicは統合候補へ保持する。ただし `DOT_INTERVAL` という固定キー名は履歴表現に留め、現Formal Schema/Registryの正式parameterへ読み替える。",
       "related_discussion_ids": [
-        "DISC-V9-DEVSTORE-001"
+        "DISC-V9-TAG-001",
+        "DISC-V9-SKILL-001"
       ],
-      "artifact_note": "Development Project Vault v1.1",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
+      "artifact_note": "Battle v1/v2 vs DEC-V9-TAG-001 / DEC-V9-SKILL-003",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
+    },
+    {
+      "id": "DISC-V9-BATTLE-004",
+      "title": "Battle v3 AI記述と8/16 Formal AIの優先関係",
+      "status": "Resolved",
+      "summary": "8/3 Battle v3のAI記述からFormal AI実行仕様を再定義せず、8/16後発Formal AIを優先する。",
+      "body": "Battle v3にはAG最大値10%ごとの再評価、記憶なし、未来予測なし、ヘイト不採用等のAI記述がある。その後の8/16 Formal AI仕様ではAI責務をaction_id+target_id決定までに限定し、行動予約、一定時間ごとの再判定、実行時行動可能判定、Skill Runtime、戦闘計算をBattle側責務としている。",
+      "open_questions": "",
+      "conclusion": "Formal AIのProgram/Validator/Compiler/Decision Engine契約は8/16資料と既存Decisionを優先する。Battle v3からはBattle側の再評価/最終再検証という責務根拠のみ接続し、旧AI挙動を別Runtimeとして復活させない。AG10%等の具体timingはBattle側Detail/Balance候補として扱う。",
+      "related_discussion_ids": [
+        "DISC-V9-AI-001"
+      ],
+      "artifact_note": "Battle v3 2026-08-03 vs Formal AI 2026-08-16",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
+    },
+    {
+      "id": "DISC-V9-BATTLE-005",
+      "title": "Battle v3後も残る詳細未確定事項",
+      "status": "Open",
+      "summary": "再確認対象はv2 §18およびv3後も未解消の詳細だけ。v2/v3の確定本文は再確認しない。",
+      "body": "v2の未確定項目のうち、射程外、詠唱中断、蘇生優先、時間制限無効、Tick順、戦闘開始/終了はv3で具体化された。一方、ノックバック/引き寄せの距離計算・衝突、召喚上限/同種重複、効果解除/浄化の優先順位、BUFF/DEBUFFの更新・延長・上書き、任意移動中の詠唱扱い等はv3本文だけでは確定できない。",
+      "open_questions": "未解消: knockback/pull距離・collision、summon cap/同種重複、cleanse/dispel priority、BUFF/DEBUFF update/extension/overwrite、voluntary movement during cast。該当後発資料があれば機能別に統合する。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "Battle v2 §18 / Battle v3",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:24:00+09:00"
     }
   ],
   "decisions": [
@@ -1185,32 +1200,21 @@
       "updated_at": "2026-08-19T11:13:00+09:00"
     },
     {
-      "id": "DEC-V9-DEVSTORE-001",
-      "title": "Development Vaultは同一Repositoryを許可し境界を完全分離する",
+      "id": "DEC-V9-BATTLE-001",
+      "title": "戦闘仕様v2を基礎、v3を確定追記として統合する",
       "status": "Approved",
-      "text": "Development VaultはGame/Studioと同じGitHub repositoryを使用してよい。ただしVaultは独立entrypoint、独立source、独立runtime、独立data input/output pathを持ち、Game/Studioのコード・module・Storage・API・UI・Service Worker・Cache・内部Schema実装を共有または流用しない。",
-      "rationale": "Humanが『そこまでの分離ではなくていい。境界だけ完全に分離してデータの入出力窓口を分ければ既存のリポジトリを使う』と明示したため。",
+      "text": "後発資料『戦闘仕様 確定事項まとめ v2』をBattleの確定基礎資料、『戦闘仕様 確定事項まとめ v3』を『v2以降に確定した事項』の追記差分として採用する。v2 §18に明示された未確定項目と、v3でも未解消の項目だけを未整理として残す。すでに確定事項として整理されたv2/v3本文をHumanへ再確認しない。ただし後発Human Decision/Formal仕様と衝突する表現は、後発決定を優先して統合する。",
+      "rationale": "v2の文書名自体が『確定事項まとめ』であり、v3冒頭も『v2以降に確定した事項を追記』と明記するため。再確認対象は未確定節または後発仕様との競合点に限定する。",
       "source_discussion_ids": [
-        "DISC-V9-DEVSTORE-001"
+        "DISC-V9-BATTLE-001",
+        "DISC-V9-BATTLE-003",
+        "DISC-V9-BATTLE-004",
+        "DISC-V9-BATTLE-005"
       ],
-      "approved_by": "Human",
-      "approved_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "DEC-V9-DEVSTORE-002",
-      "title": "Vault専用data rootを既存Repository内に設ける",
-      "status": "Approved",
-      "text": "Development Project JSONのGit入出力はVault専用data rootへ限定する。prototype v1.1では `development-project-data/` をrootとし、その外へのwriteを拒否する。Studio/Gameのdata pathやGitHub同期処理を経由しない。",
-      "rationale": "同一Repository利用時にもデータ入出力窓口を完全分離するため。",
-      "source_discussion_ids": [
-        "DISC-V9-DEVSTORE-002"
-      ],
-      "approved_by": "Human",
-      "approved_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
+      "approved_by": "Post-V9 Battle v2/v3 confirmed source",
+      "approved_at": "2026-08-19T15:24:00+09:00",
+      "created_at": "2026-08-19T15:24:00+09:00",
+      "updated_at": "2026-08-19T15:24:00+09:00"
     }
   ],
   "specifications": [
@@ -3145,98 +3149,93 @@
       "updated_at": "2026-08-19T11:13:00+09:00"
     },
     {
-      "id": "SPEC-V9-DEVSTORE-BOUNDARY-001",
-      "title": "[DEVSTORE][APPROVED] Same-Repository Zero-Interference Boundary",
-      "status": "Approved",
-      "summary": "既存Repositoryを利用可能としつつ、Development Vaultのsystem/runtime/data I/O boundaryを完全分離する。",
-      "body": "【Repository】\nGame/Studioと同一GitHub Repositoryを利用可能。\n\n【完全分離する境界】\n- Vault entrypoint\n- Vault source\n- Vault runtime\n- Vault browser state\n- Vault data input/output path\n- Vault Git operation\n\n【共有/流用禁止】\n- Game/Studio JavaScript / PHP / CSS\n- shared module\n- Storage wrapper\n- Studio GitHub同期module\n- Game/Studio API\n- Studio Development Project manager\n- Service Worker / Cache\n- Game/Studio内部Schema実装\n\n【Source reference】\nGame/Studio sourceは参考閲覧のみ可。\ncopy / import / shared-core化は禁止。\n\n【Data window】\nVault data root:\ndevelopment-project-data/\n\nVaultはこのroot外へDevelopment Projectを書き込まない。\n\n【Input】\n1. local JSON file picker\n2. GitHub APIでVault data rootから取得\n\n【Output】\n1. local JSON download\n2. GitHub APIでVault data rootへcommit\n\nStudioの「JSON置換」「GitHub同期」を内部利用しない。\n\n【同一Repositoryの意味】\n同じRepositoryに存在しても、\nimport graph / runtime / storage / data pathが交差しなければ独立systemとして扱う。\n",
-      "decision_refs": [
-        "DEC-V9-DEVSTORE-001",
-        "DEC-V9-DEVSTORE-002"
-      ],
-      "depends_on": [],
-      "acceptance_criteria": "同一Repository利用を許可する。\nGame/Studio runtime/source/storage/API/UI共有0。\nVault専用data root外へのwrite 0。\nStudio内部入出力処理の呼出0。",
-      "approved_by": "Human",
-      "approved_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "SPEC-V9-DEVSTORE-REFERENCE-001",
-      "title": "[DEVSTORE][REFERENCE ONLY] GKS-B665 Source Observation",
-      "status": "Approved",
-      "summary": "GKS-B665 sourceは参考閲覧のみ。Vaultへコード・module・Storage処理を流用しない。",
-      "body": "reference_file: guild-adventure-studio-sub(20260819-022340).zip\nsha256: 31c8dd1c4e296d71f76f7f76d749303956ce582803e6f53bc31067256986ac3c\nusage: reference-only\ncopied_code: 0\nshared_modules: 0\n\n同一Repositoryを利用しても既存Studio GitHub同期moduleは呼ばない。",
-      "decision_refs": [
-        "DEC-V9-DEVSTORE-001"
-      ],
-      "depends_on": [
-        "SPEC-V9-DEVSTORE-BOUNDARY-001"
-      ],
-      "acceptance_criteria": "reference-onlyを維持する。",
-      "approved_by": "Human boundary",
-      "approved_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-001",
-      "title": "[DEVSTORE][PROTOTYPE v1.1] Same-Repository Boundary Prototype",
-      "status": "Review",
-      "summary": "同一Repository利用可・Vault data root強制・ブラウザ永続Storage不使用の独立static web prototype。",
-      "body": "artifact: development-project-vault_v1_1.zip\nsha256: 7247ccb99a7770189653fc453e50b252f382fdc71de701e1466876928eaae643\nversion: 1.1.0-prototype\nrepository_policy: same_repository_allowed\ndata_root: development-project-data/\n\nimplemented:\n- local JSON → memory\n- GitHub Vault data root → memory\n- memory → local JSON\n- memory → Vault data root single-file commit\n- Remote SHA conflict detection\n- Vault data root外write rejection\n- localStorage/sessionStorage/IndexedDB/Service Worker runtime use 0\n\nlocal tests: PASS\nJavaScript syntax: PASS\nLive GitHub test: NOT YET TESTED\n",
-      "decision_refs": [
-        "DEC-V9-DEVSTORE-001",
-        "DEC-V9-DEVSTORE-002"
-      ],
-      "depends_on": [
-        "SPEC-V9-DEVSTORE-BOUNDARY-001"
-      ],
-      "acceptance_criteria": "同一Repositoryで専用data rootへ限定できる。\nGame/Studio source依存0。\nLive repository test完了まではImplementation Completeとしない。",
-      "approved_by": "",
-      "approved_at": "",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-002",
-      "title": "[DEVSTORE][GKS-B669 REVIEW] Development Git Store SOURCE_UPDATE",
+      "id": "SPEC-V9-BATTLE-SRC-V1",
+      "title": "[POST-V9][SUPERSEDED][BATTLE] 戦闘仕様 確定事項まとめ v1",
       "status": "Superseded",
-      "summary": "GKS-B668を正確なbaselineとして、Development Project専用Git入出力をStudioへ追加するSOURCE_UPDATE候補。既存GitHub同期/Development AI公開処理を流用せず、専用data rootへ直接接続する。",
-      "body": "【Artifact】\nStudio_SOURCE_UPDATE_GKS-B669_DevelopmentGitStore.zip\nsha256: dc6b8c72c08dde1f851655154fbdfb8ebe3900a083b9161e43a6d432305dab3d\n\n【Build】\nbaseline: GA-B486.211 / GKS-B668\ntarget:   GA-B486.211 / GKS-B669\n\n【Boundary】\n- Game data change: 0\n- deletion: 0\n- Export inclusion: 0\n- existing Studio GitHub sync module reuse: 0\n- Development AI publish module reuse: 0\n- Development Git Store module内 localStorage payload保存: 0\n- PAT persistence: 0\n\n【Git data window】\ndevelopment-project-data/\n\nGit Storeはこのroot外へのDevelopment Project writeを拒否する。\n\n【Git-backed Project payload】\n- GitHub → Session memory\n- Local JSON → Git commit → Session memory\n- Current Git project → explicit Git commit\n- payloadをDevelopment Project localStorageへ保存しない\n- registryにはstorage_mode / remote metadata等の軽量参照情報のみ保持可能\n- page reload後はGitから明示再読込\n- Remote SHAが読込後に変化していればcommit停止\n\n【Studio browser-local Project】\n既存ブラウザ保存案件は従来どおり利用可能。\n\n【Quota-sensitive operation】\nGit-backed案件では、大型payloadのlocalStorage backupを作成する経路を避け、\n未commit状態なら破壊的操作前に停止/警告する。\nGit履歴を保存履歴として利用する。\n\n【Validation】\n- baseline Quick: 11/11 PASS\n- target Full: 26/26 PASS\n- exact uploaded GKS-B668 baseline Accept: 13/13 PASS\n- Release Gate: 28/28 PASS\n- source diff: add 2 / modify 18 / delete 0\n- update ZIP patch coverage: exact match\n- protected tests: Build/cache token follow only\n- Gate weakening: 0\n\n【Pending】\n実際のRepository/PATを使ったLive GitHub read/writeは未検証。\nStudioへの実配置も未実施。\nしたがってImplementation Completeとはしない。\n",
+      "summary": "後発Battle確定事項の初版。v2で包含・拡張されたため履歴として保持。",
+      "body": "【Source Package】\nfile: 戦闘仕様_確定事項まとめ(8).zip\nsha256: 09e796380d9fefe3f249a71bd4ad2718e8e141be0d1a2a2ef630e2534ccabea8\nrole: post-V9 Battle source\n\n===== SOURCE: 戦闘仕様_確定事項まとめ.md =====\n\n# 戦闘仕様 確定事項まとめ\n\n## ダメージ\n\n-   物理: 攻撃力 × スキル倍率\n-   魔法: 魔法上昇率 × スキル攻撃力\n-   抵抗値で割合軽減（0～75%）\n-   抵抗値はそのまま軽減率（%）\n-   クリティカルは抵抗軽減後に適用\n-   クリティカル率: 0～100%\n-   クリティカルダメージ: 追加0～700%\n-   乱数補正: 枠のみ確保（未設定）\n-   最終ダメージは小数点以下切り捨て\n-   最小ダメージ: 0\n\n## 命中\n\n-   命中率 = 命中値 ÷ (命中値 + 回避値) × 100\n-   下限5%\n-   上限100%\n-   命中失敗時はダメージ・状態異常とも発生しない\n\n## 状態異常\n\n-   攻撃命中時に確定付与\n-   耐性は付与率ではなく持続時間へ影響\n-   最終持続時間 = ceil(基礎持続時間 × (1 - 耐性/100))\n-   状態異常耐性: 0～75%\n\n## DOT\n\n-   固定ダメージ方式\n-   DOTごとにDOT_INTERVALを保持\n-   スタックごとに個別Tick管理\n-   DOTダメージは切り捨て\n\n## 回復\n\n-   基礎回復量 = 魔法上昇率 × スキル回復力\n-   回復量は切り上げ\n\n## シールド\n\n-   スキル・MOD・装備等で共通仕様\n-   参照対象と計算方式で効果量を決定\n-   計算方式: 固定値・割合・その他定義済み方式\n-   シールド量は切り上げ\n-   シールド量は合算\n-   持続時間は付与ごとに個別Tick管理\n-   消費順は古いシールドから\n-   残量は切り捨て\n-   期限切れで残量に関係なく消滅\n-   確定後ダメージをシールドへ適用\n-   シールド無効・貫通は不採用\n-   シールド上限なし\n\n## MP\n\n-   MP不足時はスキル発動不可\n-   AIは再思考（既定仕様）\n",
       "decision_refs": [
-        "DEC-V9-DEVSTORE-001",
-        "DEC-V9-DEVSTORE-002"
+        "DEC-V9-0001",
+        "DEC-V9-0002"
       ],
       "depends_on": [
-        "SPEC-V9-DEVSTORE-BOUNDARY-001",
-        "SPEC-V9-DEVSTORE-IMPLEMENTATION-001"
+        "SPEC-V9-0058"
       ],
-      "acceptance_criteria": "SOURCE_UPDATEがExact baseline AcceptをPASSする。\nGame/Studio既存Git処理を内部依存にしない。\nDevelopment Project Git writeを専用data rootへ限定する。\nGit-backed payloadをDevelopment Project localStorageへ保存しない。\nLive repository read/write確認完了までは実装完了扱いにしない。",
+      "acceptance_criteria": "原資料の確定事項・未確定事項・版関係を変更せず保持し、V9 baselineおよび後発Formal AI/Skill/Tagとの比較根拠として参照できる。",
       "approved_by": "",
       "approved_at": "",
-      "created_at": "2026-08-19T13:04:00+09:00",
-      "updated_at": "2026-08-19T13:31:00+09:00"
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
     },
     {
-      "id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-003",
-      "title": "[DEVSTORE][GKS-B670 REVIEW] Development Git Store + Update Classifier Policy Packaging",
-      "status": "Review",
-      "summary": "B669機能内容を維持し、Studio更新ZIP分類に必須のsystem-file-policy.jsonを直接更新ZIPへ同梱した修正版。B669は未配置のまま撤回。",
-      "body": "【Artifact】\nStudio_SOURCE_UPDATE_GKS-B670_DevelopmentGitStore.zip\nsha256: 171f1de9eea08978a30861888bde66679edd32e6786fd850f18412580e0c3ea6\n\n【Baseline / Target】\nbaseline: GA-B486.211 / GKS-B668\ntarget:   GA-B486.211 / GKS-B670\n\n【B669 packaging defect】\nB669更新ZIPは `shared/integrity/system-file-policy.json` を含めていなかった。\nStudio更新画面は更新ZIP自身から同fileを取得して分類するため、\n「system-file-policy.jsonがないため更新ZIPを分類できません」として配置前に停止した。\n\nB669は配置されていない。\n同一Build別成果物禁止のためB669を再発行せず、B670へ進める。\n\n【B670 correction】\n- B669のDevelopment Git Store機能を維持\n- `shared/integrity/system-file-policy.json` を更新ZIPへ同梱\n- policy内容自体はB668 baselineから変更0\n- policyはStudio classifier用の必要入力\n- changed_pathsには実source差分だけを記録\n- delete 0\n- Game data change 0\n- Export inclusion 0\n- protected test logic change 0\n- test file差分はBuild/cache token追随のみ\n\n【Artifact-direct validation】\n最終B670 ZIPを展開したupdate rootを入力として、\nB668 exact uploaded ZIPへ `check-source-update-application.py --final-gate accept`\nを実行。\n\nresult:\n- source update application: PASS\n- copied persistent: 21\n  - source変更20件\n  - unchanged system-file-policy 1件\n- deletion: 0\n- selected gate: Full\n- applied Full: 26/26 PASS\n\nTarget:\n- Quick 11/11 PASS\n- Full 26/26 PASS\n- Release 28/28 PASS\n\n【Implementation completion】\nLive repository/PAT read/writeと実配置後動作は未検証。\nそのためImplementation Completeとはしない。\n",
+      "id": "SPEC-V9-BATTLE-SRC-V2",
+      "title": "[POST-V9][BATTLE] 戦闘仕様 確定事項まとめ v2",
+      "status": "Approved",
+      "summary": "Battle計算・発動・複合効果・誘発・戦闘不能/蘇生・召喚等をまとめた後発確定資料。v1を包含する基礎版。",
+      "body": "【Source Package】\nfile: 戦闘仕様_確定事項まとめ_v2(9).zip\nsha256: 1579b4fab27e78c52a2aea21046f093a40ee56b242ceb452b33c9375357cd8a3\nrole: post-V9 Battle source\n\n===== SOURCE: 戦闘仕様_確定事項まとめ_v2.md =====\n\n# 戦闘仕様 確定事項まとめ v2\n\n## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = 命中値 / (命中値 + 回避値) × 100`\n\n- 命中率下限：5%\n- 命中率上限：100%\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 5. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 6. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n\n---\n\n## 7. シールド\n\n### 効果量\n- スキル、MOD、装備効果など全発生源で共通仕様。\n- 参照対象と計算方式で効果量を決定。\n- 計算方式は固定値、割合、その他定義済み方式。\n- シールド量は切り上げ。\n\n### 重複・管理\n- シールド効果量は合算。\n- 持続時間は付与ごとに個別Tick管理。\n- 被ダメージ時は古いシールドから消費。\n- シールド残量は切り捨て。\n- 持続時間終了時は残量に関係なく消滅。\n- 合計シールド量に上限なし。\n\n### ダメージ適用\n- 各種補正後の確定ダメージをシールドへ適用。\n- シールドを超えた残余のみHPへ適用。\n- シールド無効・シールド貫通は不採用。\n\n---\n\n## 8. MP・クールダウン\n\n### MP\n- MP不足時はスキル発動不可。\n- AIは再思考へ移行。\n- MP消費量はスキル、装備、MODなど効果発生源側の定義に依存。\n\n`消費後MP = 現在MP - 効果値`\n\n### クールダウン\n- 割合短縮は割合で減少。\n- 固定短縮は固定Tickで減少。\n- 端数は最終計算後に切り上げ。\n- 最小CDは0Tick。\n\n---\n\n## 9. 発動成立\n\n- MP消費とCD開始は発動成立時。\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし、CD開始なし。\n\n処理順：\n1. 使用開始\n2. 詠唱\n3. 中断判定\n4. 詠唱完了\n5. MP消費\n6. CD開始\n7. 効果実行\n\n---\n\n## 10. 吸収・反射\n\n### 共通基準\n- HP吸収、MP吸収、反射などダメージ参照効果は、実際にHPへ通った最終ダメージを基準とする。\n- オーバーキル時は実際に減少したHP量を基準とする。\n\n`参照ダメージ = min(最終ダメージ, ダメージ適用前HP)`\n\n### 吸収\n- 吸収量は切り上げ。\n\n### 反射\n- 反射量は切り捨て。\n- 再反射しない。\n- 反射ダメージには抵抗を再適用しない。\n\n---\n\n## 11. 複数Hit\n\n- Hitごとに完全処理。\n- 各Hitごとに命中、ダメージ、抵抗、クリティカル、シールド、HP、吸収、反射、状態異常を処理。\n- 単体スキルは対象を倒した時点で残りHit終了。\n- 範囲・複数対象スキルは一部対象を倒しても他対象への処理を継続。\n- 対象は発動時に固定。\n- 発動後に範囲へ入った対象は追加しない。\n- 途中で無効になった対象は除外する。\n\n---\n\n## 12. 複合効果の処理順\n\n1. 対象確定\n2. 命中判定\n3. ダメージ計算・適用\n4. ダメージ参照効果\n5. 状態異常・BUFF・DEBUFF付与\n6. 回復・MP回復\n7. シールド付与\n8. 位置・行動制御\n9. 召喚・生成\n10. 撃破時・命中時などの誘発効果\n\n- 同じ段階の複数効果は効果データ記載順。\n- 効果単位で成功・失敗を判定。\n- 失敗した効果だけをスキップし、後続効果は継続。\n- ダメージで対象が戦闘不能になった場合、その対象への後続効果は適用しない。\n\n---\n\n## 13. 誘発効果の処理順\n\n1. 命中時\n2. 被弾時\n3. ダメージ確定後\n4. HP減少後\n5. 撃破時\n6. 戦闘不能時\n7. 処理終了時\n\n- 同一段階では付与・登録が古い順。\n\n---\n\n## 14. 戦闘不能\n\n1. HPが0以下になる\n2. 戦闘不能フラグ付与\n3. 撃破時効果\n4. 戦闘不能時効果\n5. ドロップ・経験値・クエスト進行\n6. フィールド・対象リストから除外\n\n---\n\n## 15. 蘇生\n\n1. 蘇生条件成立\n2. 戦闘不能フラグ解除\n3. HP・MPを指定値まで回復\n4. 状態異常・BUFF・DEBUFFをすべて解除\n5. 戦闘対象リストへ復帰\n6. 蘇生時効果を発動\n\n---\n\n## 16. 召喚物\n\n- 召喚者が戦闘不能になると召喚物は即時消滅。\n- 召喚物は自身の能力値を使用。\n- 通常ユニットと同じ戦闘ルールを適用。\n- BUFF、DEBUFF、状態異常、回復、シールド、命中、回避、抵抗、クリティカルなども通常どおり適用。\n\n---\n\n## 17. 対象無効時\n\n- 発動時に対象を固定。\n- 対象無効時に別対象を再取得しない。\n- 効果は不発。\n- AIは再思考へ移行。\n- プレイヤー操作では自動で別対象へ切り替えない。\n\n---\n\n## 18. 未確定の主な残項目\n\n戦闘コアだけでも、ざっくり以下が残っている。\n\n- 発動後に対象が射程外へ移動した場合\n- 詠唱中の移動・被弾・行動制限\n- ノックバック・引き寄せの距離計算と衝突処理\n- 召喚上限・同種召喚の重複\n- 自動蘇生と通常蘇生の優先順\n- 無敵・無効化・回避不能などの例外処理\n- 戦闘開始・終了時トリガー\n- Tick内での完全同時処理\n- 効果解除・浄化の優先順位\n- バフ・デバフの更新・延長・上書き\n",
       "decision_refs": [
-        "DEC-V9-DEVSTORE-001",
-        "DEC-V9-DEVSTORE-002"
+        "DEC-V9-0001",
+        "DEC-V9-0002"
       ],
       "depends_on": [
-        "SPEC-V9-DEVSTORE-BOUNDARY-001",
-        "SPEC-V9-DEVSTORE-IMPLEMENTATION-002"
+        "SPEC-V9-0058"
       ],
-      "acceptance_criteria": "更新ZIP自身がsystem-file-policyを含みStudio分類可能である。Exact B668 baseline Acceptを最終ZIPそのものでPASSする。Game/Studio境界とDevelopment専用data rootを維持する。Live Git確認までは完了扱いにしない。",
-      "approved_by": "",
-      "approved_at": "",
-      "created_at": "2026-08-19T13:31:00+09:00",
-      "updated_at": "2026-08-19T13:31:00+09:00"
+      "acceptance_criteria": "原資料の確定事項・未確定事項・版関係を変更せず保持し、V9 baselineおよび後発Formal AI/Skill/Tagとの比較根拠として参照できる。",
+      "approved_by": "Source package",
+      "approved_at": "2026-08-19T15:18:00+09:00",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-BATTLE-SRC-V3",
+      "title": "[POST-V9][BATTLE][DELTA] 戦闘仕様 確定事項まとめ v3",
+      "status": "Approved",
+      "summary": "v2以降に確定したAI/詠唱/射程/無効/Tick/蘇生/戦闘開始終了の追記差分。v2へ加算して読む。",
+      "body": "【Source Package】\nfile: 戦闘仕様_確定事項まとめ_v3(8).zip\nsha256: 37e7c7022346adba46b2e035316b91bacb23b0d870c2556a3fe1aa271c57cad4\nrole: post-V9 Battle source\n\n===== SOURCE: 戦闘仕様_確定事項まとめ_v3.md =====\n\n# 戦闘仕様 確定事項まとめ v3\n\nこの版では v2 以降に確定した事項を追記しています。\n\n## AI・アクティブターン\n\n- AIはアクティブターン方式。\n- AIはアクションゲージ最大値の10%ごとに再評価する。\n  - 最大100 → 10ごと\n  - 最大1000 → 100ごと\n- 各再評価では毎回新規に評価する。\n- 前回の予約・ターゲット・スキル選択は保持しない。\n- 同点候補は抽選で決定する。\n- 行動直前に最終再検証を行う。\n- 実行不能なら次回再評価まで待機する。\n- AIは現在の情報のみ参照する。\n- 詠唱中は現在情報として参照可能。\n- 未来予測・乱数結果・次行動予定は参照しない。\n- AIは記憶を持たない。\n- ヘイトシステムは不採用。\n- 挑発・ターゲット固定などのAI介入効果でタンクを実現する。\n\n## 詠唱\n\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし・CDなし。\n- スキル使用不可、または使用中スキル種別を阻害する効果で中断。\n- 通常ダメージ・DOT・反射ダメージでは中断しない。\n- 強制移動で中断する。\n- 強制移動処理順\n  1. 成立判定\n  2. 詠唱中断\n  3. 位置変更\n  4. 射程・対象更新\n  5. AIは次回再評価で再思考\n\n## 射程\n\n- 発動時に対象固定。\n- 詠唱完了時に射程を再確認。\n- 射程外なら不発。\n- 対象再取得はしない。\n- 遮蔽物・射線判定は採用しない。\n\n## 無効\n\n- 恒常無効は原則不採用。\n- 時間制限付き無効のみ採用。\n- 判定位置は命中後・各種計算前。\n\n## Tick\n\n- 同一Tickの処理順はTick開始時に一度だけ抽選。\n- Tick内はその順番を維持。\n- 次Tickで再抽選。\n- Hitごとの再抽選はしない。\n\nTick処理順\n1. 持続時間更新\n2. DOT・HOT\n3. クールダウン更新\n4. 効果終了判定\n5. AI思考\n6. 行動予約\n7. Tick終了\n\n## 蘇生\n\n- 自動蘇生優先。\n- 通常蘇生は次順位。\n- 同種は付与順。\n- 蘇生成功後は他の蘇生は不発。\n- 共通無敵時間なし。\n\n## 戦闘開始\n\n1. パッシブ\n2. 装備\n3. MOD\n4. クエスト\n5. システム\n6. 開始時トリガー\n7. AI開始\n\n## 戦闘終了\n\n1. 終了判定\n2. 終了時トリガー\n3. 戦闘専用BUFF/DEBUFF解除\n4. 戦闘専用召喚物消滅\n5. AI停止\n6. 戦闘状態解除\n",
+      "decision_refs": [
+        "DEC-V9-0001",
+        "DEC-V9-0002"
+      ],
+      "depends_on": [
+        "SPEC-V9-0058"
+      ],
+      "acceptance_criteria": "原資料の確定事項・未確定事項・版関係を変更せず保持し、V9 baselineおよび後発Formal AI/Skill/Tagとの比較根拠として参照できる。",
+      "approved_by": "Source package",
+      "approved_at": "2026-08-19T15:18:00+09:00",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:18:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-BATTLE-INTEGRATED-001",
+      "title": "[BATTLE][INTEGRATED] 戦闘計算・発動・Tick統合最新版",
+      "status": "Approved",
+      "summary": "後発Battle v2確定事項 + v3確定追記を、V9 Battle共通基盤および後発Formal AI/Skill/Tag Decisionと整合して統合。v2 §18等の未確定項目は本仕様の確定範囲から除外して別管理する。",
+      "body": "【位置付け】\nV9 Battle baselineの構造を保持し、後発「戦闘仕様 確定事項まとめ v2」へv3差分を加算した最新版統合候補。\nStatus/Skill/Tag/AIの後発Human Decisionと衝突する旧表現は、そのまま復活させない。\n\n【1. 正式Battle責務】\n- Battle calculationはGame/Studio/AI/UIから独立した共通計算基盤。\n- AIはaction_id + target_id決定まで。予約、再判定、実行時検証、Skill Runtime、戦闘計算はBattle側。\n- 同一入力・Seed・Rule/Data versionで再現可能にする。\n- 中間値・適用Rule・乱数・失敗理由を検証ログへ出せる構造を維持する。\n\n【2. 発動・詠唱・対象】\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし、CD開始なし。\n- 使用不可/使用中Skill種別阻害で中断。\n- 通常Damage/DOT/反射Damageでは中断しない。\n- 強制移動は成立判定→詠唱中断→位置変更→射程/対象更新。\n- 発動時に対象を固定。\n- 詠唱完了時に射程を再確認し、射程外なら不発。\n- 別対象の自動再取得はしない。\n- 遮蔽物/射線判定は不採用。\n\n【3. Damage/Hit/Critical 現行Balance候補】\nPost-V9 v2で以下が具体化されている。\n- 物理基礎Damage = attack × skill multiplier\n- 魔法基礎Damage = magic increase rate × skill attack\n- Resistanceは割合軽減。post-V9現行値は0～75%\n- CriticalはResistance軽減後\n- Critical rate 0～100%\n- Critical damageは追加0～700%、倍率=1+critical_damage/100\n- Hit rate = accuracy / (accuracy + evasion) × 100\n- Hit下限5%、上限100%\n- 最終Damageはfloor、最小0\n- variance枠は存在し、幅未設定時等倍\n\nこれらの式・cap・roundingはV9構造上Balance/Detail dataとして分離管理する。\n75%は既存Human Decisionでも固定ハードコードせずConfig可変。\n\n【4. Status/DOT】\n- Hit失敗時はDamage/Statusとも発生しない。\n- post-V9 v2ではHit成功後のStatus付与は確定、Resistanceは付与率ではなくdurationへ作用。\n- duration = ceil(base_duration × (1 - resistance/100))\n- DOTは固定Damage方式。\n- DOTごとにTick interval概念を持つ。\n- stackごとに独立Tick管理。\n- DOT Damageはfloor。\n- 恒常無効は原則不採用、時間制限付き無効のみ採用。判定位置はHit後・各種計算前。\n\nFormal境界:\n`DOT_INTERVAL`等のLegacy固定キー名は採用しない。\n必要parameterはFormal Schema/Registry→Compiler→runtimeContractsで表現する。\nStatus/BUFF/DEBUFFの最終重複・解除規則はSTATUS統合候補で再照合する。\n\n【5. Heal/Shield】\nHeal:\n- base_heal = magic increase rate × skill heal power\n- rounding = ceil\n\nShield:\n- Skill/MOD/Equipment等の発生源で共通Mechanic\n- fixed/percent/その他定義済み方式から量を決定\n- shield amountはceil\n- 複数Shield量は合算\n- durationは付与ごとに独立Tick\n- 古いShieldから消費\n- remaining amountはfloor\n- 期限切れで残量に関係なく消滅\n- 各種補正後の確定DamageをShieldへ適用し、残余のみHPへ\n- Shield無効/貫通は不採用\n- total shield capなし\n\n【6. MP/CD】\n- MP不足時はSkill発動不可。\n- Cost/CD commitは発動成立時。\n- cast interruptionではCost/CDなし。\n- CD percent reductionは割合、flat reductionは固定Tick。\n- 最終端数ceil、最小0 Tick。\n\n【7. Damage参照効果】\n- HP/MP吸収・反射等は実際にHPへ通った最終Damageを参照。\n- overkill時は実HP減少量を参照。\n- absorb amountはceil。\n- reflect amountはfloor。\n- re-reflectなし。\n- reflect DamageへResistanceを再適用しない。\n\n【8. Multi-hit】\n- HitごとにHit/ Damage/Resistance/Critical/Shield/HP/Absorb/Reflect/Statusを完全処理。\n- 単体Skillは対象撃破時点で残Hit終了。\n- multi-targetは他対象処理を継続。\n- 対象は発動時固定。後から範囲へ入った対象を追加しない。\n- 途中で無効になった対象は除外。\n\n【9. 複合効果順】\n1. target confirm\n2. hit\n3. damage calculation/application\n4. damage-reference effects\n5. status/BUFF/DEBUFF\n6. heal/MP heal\n7. shield\n8. position/action control\n9. summon/generate\n10. kill/hit等のtrigger\n\n同段階はeffect data記載順。\neffect単位で成功/失敗し、失敗effectのみskip。\nDamageで対象がincapacitatedした場合、その対象への後続effectは適用しない。\n\n【10. 誘発順】\n1. on hit\n2. on being hit\n3. after damage confirmed\n4. after HP reduction\n5. on kill\n6. on incapacitation\n7. on process end\n\n同一段階は付与/登録が古い順。\n\n【11. Incapacitation/Resurrection】\nIncapacitation:\nHP<=0 → flag → kill trigger → incapacitation trigger → drop/EXP/quest progress → field/target list remove\n\nResurrection:\ncondition → flag clear → HP/MP recover → status/BUFF/DEBUFF clear → target list return → resurrection trigger\n\nPriority:\n- auto resurrection first\n- normal resurrection next\n- same type: grant order\n- first success makes other resurrection effects fail\n- no common invulnerability window\n\n【12. Summon】\n- Summoner incapacitationでsummon即時消滅。\n- summonは自身のstatsを使用。\n- 通常unitと同じBattle rulesを適用。\n- summon cap/同種重複は未確定。\n\n【13. Tick】\n同一Tickの処理順はTick開始時に一度だけ抽選し、そのTick内では固定。次Tickで再抽選。\nV9決定性要件により、抽選は明示Seed/RNG経路で再現可能にする。\n\nTick order:\n1. duration update\n2. DOT/HOT\n3. cooldown update\n4. effect expiry\n5. AI evaluation\n6. action reservation\n7. Tick end\n\nHitごとの処理順再抽選は行わない。\n\n【14. Battle start/end】\nStart:\nPassive → Equipment → MOD → Quest → System → start trigger → AI start\n\nEnd:\nend judgment → end trigger → battle-only BUFF/DEBUFF clear → battle-only summon delete → AI stop → battle state clear\n\n【15. AI v3記述の扱い】\nv3のAG10%再評価等は8/3時点Battle資料。\n8/16 Formal AIが後発のため、AI Program/Compiler/Decision Engine仕様は8/16を正本とする。\nBattle側が一定時間ごとの再判定/最終再検証を持つ境界のみ接続する。\nAG10%等の具体TimingはBattle Detail/Balance候補であり、Formal AIへ旧挙動を復活させない。\n\n【16. 残未確定】\n- knockback/pull距離計算・collision\n- summon cap / same-type summon duplication\n- cleanse/dispel priority\n- BUFF/DEBUFF update/extension/overwriteの最新版整合\n- voluntary movement during cast\n- Defense/Resistance/Critical等の現行Runtime field/Resolver実装接続\n- 現行BuildでのBattle/AI実装Evidence\n\n【確定範囲と未確定範囲】\nv2/v3で『確定事項』として整理済みの本文は再確認せず確定範囲へ統合する。\nv2 §18およびv3後も未解消の項目だけを未確定として別管理する。\n後発Human Decision/Formal仕様と競合する場合は後発決定を優先する。\n",
+      "decision_refs": [
+        "DEC-V9-0001",
+        "DEC-V9-0002",
+        "DEC-V9-TAG-001",
+        "DEC-V9-SKILL-003",
+        "DEC-V9-AI-005",
+        "DEC-V9-MOD-002",
+        "DEC-V9-BATTLE-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-0058",
+        "SPEC-V9-0059",
+        "SPEC-V9-0060",
+        "SPEC-V9-0061",
+        "SPEC-V9-BATTLE-SRC-V2",
+        "SPEC-V9-BATTLE-SRC-V3",
+        "SPEC-V9-AI-INTEGRATED-001",
+        "SPEC-V9-SKILL-INTEGRATED-001",
+        "SPEC-V9-TAG-INTEGRATED-001"
+      ],
+      "acceptance_criteria": "V9共通Battle責務/Seed/ログ境界を保持する。\nv2を確定基礎、v3を確定追記として統合する。\nv2 §18等の未確定項目は確定範囲へ混入させない。\n8/16 Formal AIを旧v3 AI記述より優先する。\nDOT_INTERVAL等Legacy固定parameterをFormal正本へ戻さない。\n具体式/cap/roundingは後発Human Decisionに従いBalance/Detailと構造を分離する。\n整理済み確定事項をHumanへ再確認しない。",
+      "approved_by": "Post-V9 Battle v2/v3 confirmed source + existing Human Decisions",
+      "approved_at": "2026-08-19T15:24:00+09:00",
+      "created_at": "2026-08-19T15:18:00+09:00",
+      "updated_at": "2026-08-19T15:24:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -3344,13 +3343,6 @@
       "parent_id": "ARCH-V9-ROOT",
       "created_at": "2026-08-19T09:15:00+09:00",
       "updated_at": "2026-08-19T09:15:00+09:00"
-    },
-    {
-      "id": "ARCH-V9-DEVSTORE",
-      "name": "Development Vault（同一Repository・境界完全分離）",
-      "parent_id": "ARCH-V9-ROOT",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
     }
   ],
   "work_boxes": [
@@ -3390,9 +3382,9 @@
       "id": "BOX-V9-BATTLE",
       "node_id": "ARCH-V9-BATTLE",
       "title": "戦闘・AI：V9基準から後発確定資料を統合する",
-      "body": "【機能】戦闘・AI\n\n【V9 baseline】\n15 Specificationを原本として保持。\n\n【今回追加した後発AI資料】\n■ 2026-08-11 / GKS-B527 / GA-B486.100\n- Studio AI asset report\n- Formal AI implementation plan\n- AI production dependency roadmap\n役割: Formal AI制作の前段資産調査・実装ロードマップ。後発8/16資料より古いため最終UI正本ではなく履歴/根拠。\n\n■ 2026-08-16 / GKS-B596 / GA-B486.189\n- AIチップUI 正式仕様 2方向分岐版\n- AIチップUI 依存関係仕様 2方向分岐版\n- AIチップUI 実装計画 2方向分岐版\n- AIチップUI 実装前残タスク仕様\n役割: Formal AI UI/接続の後発基準。\n\n【後発Formal AIの構造候補】\nBoard/Layout\n→ Connection Resolver\n→ Formal AI Program\n→ Validator\n→ Compiler\n→ AI Runtime / Decision Engine\n→ action_id + target_id\n→ 既存Battle予約処理\n\n【確定資料上の主要境界】\n- CONDITION分岐はTRUE/FALSEの2方向のみ。3方向/N方向は実装しない。\n- ACTIONは終端。入口1、出口0。\n- 延長パネルはLayout専用でRuntime nodeにしない。\n- LayoutとFormal Programは分離。\n- 盤面表示接続とFormal Edge生成は同一Resolverを正本にする。\n- AIは判断を担当し、既存Battleの予約・再判定・行動可能判定・Skill Runtime・戦闘計算を再定義しない。\n- Game/Studioは同じFormal AI coreを共有し、Game固有Save/Battle bridgeだけを分離。\n- GameはStudio localStorageを正式Tag/Skill供給元にしない。\n\n【Implementation status注意】\n資料のBuildは現Baseline GKS-B665 / GA-B486.211より古い。\n8/16の『UI実装開始可』『code change pending』は歴史的状態として扱い、現行実装済みとは断定しない。\n\n【Human確定：AI Save Legacy zero】\n- aiGraph / aiPolicy / defaultSkillId を互換目的でも残さない\n- Formal AI未設定時の旧AI fallbackを残さない\n- 旧AI SaveをFormal AIへ自動意味変換しない\n- 必要な旧Save救済は、将来明示的なMigration Tool/Import手順として別仕様化する\n\n【残り】\n- 戦闘計算/ダメージ/Defense/Critical等の後発確定資料\n- 現行BuildでFormal AI実装状況の実ソース確認\n",
+      "body": "【機能】戦闘・AI\n\n【V9 baseline】\n15 Specificationを原本として保持。\nBattle計算構造の主基準:\n- SPEC-V9-0058 戦闘計算インターフェース\n- SPEC-V9-0059 Balance項目\n- SPEC-V9-0060 採用/修正Checklist\n- SPEC-V9-0061 Machine-readable\n\n【後発Battle資料】\n- SPEC-V9-BATTLE-SRC-V1: v1（v2によりSuperseded履歴）\n- SPEC-V9-BATTLE-SRC-V2: 後発Battle基礎版\n- SPEC-V9-BATTLE-SRC-V3: v2以降の追記差分\n\n【Current Battle integrated】\nSPEC-V9-BATTLE-INTEGRATED-001（Approved）\n\n【統合済み整理】\n- V9の共通計算基盤/Seed決定性/ログ/外部責務境界を保持\n- v2 + v3差分からDamage/Hit/Critical/Cast/Shield/Absorb/Reflect/Multi-hit/Trigger/Tick/Start-Endを統合候補化\n- DOT_INTERVAL等Legacy固定parameter名はFormal正本へ戻さない\n- v3 AI記述より8/16 Formal AIを優先\n- Battleは予約/再判定/実行時検証/Skill Runtime/計算を担当\n- v2/v3の具体式/cap/roundingはBattle Balance/Detailとして構造と分離\n\n【後発Formal AI】\n既存SPEC-V9-AI-INTEGRATED-001を継続。\nAIはaction_id + target_id決定まで。\nGame/Studio Formal AI core、Program/Layout分離、Resolver、Legacy zero等の既存Decisionを維持。\n\n【残確認】\n- knockback/pull距離・collision\n- summon cap/同種重複\n- cleanse/dispel priority\n- BUFF/DEBUFF update/extend/overwrite（STATUS統合で再確認）\n- voluntary movement during cast\n- Defense/Resistance/Critical等の現行Runtime field/Resolver接続\n- 現行Build Formal AI/Battle実装Evidence\n\n【再確認しない範囲】\n- 戦闘仕様v2本文の確定事項\n- v3『v2以降に確定した事項』の追記\nこれらは整理済み確定事項として統合済み。\n確認対象はv2 §18等の未確定項目、または後発Formal/Human Decisionとの競合点のみ。\n",
       "created_at": "2026-08-19T09:15:00+09:00",
-      "updated_at": "2026-08-19T10:32:00+09:00"
+      "updated_at": "2026-08-19T15:24:00+09:00"
     },
     {
       "id": "BOX-V9-SKILL",
@@ -3470,17 +3462,9 @@
       "id": "BOX-V9-INTEGRATION",
       "node_id": "ARCH-V9-INTEGRATION",
       "title": "全機能を横断確認して最新版V9ライブラリを出力する",
-      "body": "各機能の統合完了後に実行する。個別仕様→依存関係→採用仕様一覧→統合設計書→INDEX/台帳/AI知識ベースの順で整合させ、旧V9 v2.0を残したままvNextを別出力する。",
+      "body": "【仕様統合のゴール】\n各機能の統合完了後、個別仕様→依存関係→採用仕様一覧→統合設計書→INDEX/台帳/AI知識ベースの順で整合させ、旧V9 v2.0を残したままV9 Library vNextを別出力する。\n\n【新システム検証のゴール】\n- 大量・分散した資料をBaseline/後発/旧版/重複/競合/未確定/欠損へ正しく分類できること\n- 確定事項を再質問せず、未確定・競合・欠損だけを確認対象にできること\n- Human DecisionとSource確定事項を区別して保持できること\n- 依存関係を跨いで後発優先・Formal境界等を追跡できること\n- 統合候補から最終統合版を生成し、Baselineとの差分を追跡できること\n- 上記に必要な機能が不足する場合、その不足を開発項目として登録できること\n",
       "created_at": "2026-08-19T09:15:00+09:00",
-      "updated_at": "2026-08-19T09:15:00+09:00"
-    },
-    {
-      "id": "BOX-V9-DEVSTORE",
-      "node_id": "ARCH-V9-DEVSTORE",
-      "title": "Development Vaultを既存Repository内で境界完全分離する",
-      "body": "【Repository】\n既存Game/Studio repositoryを使用可能。\n\n【完全分離】\nDevelopment Git Store専用entrypoint/module/runtime/data I/O。\n\n【Vault data root】\ndevelopment-project-data/\n\n【Current SOURCE_UPDATE candidate】\nSPEC-V9-DEVSTORE-IMPLEMENTATION-003 / GKS-B670\n\nB669:\n更新ZIPにsystem-file-policyがなくStudio分類前に停止。未配置。Superseded。\n\nB670:\n- system-file-policyを更新ZIP内に同梱（内容変更0）\n- final ZIP direct Accept PASS\n- applied Full 26/26 PASS\n- Release 28/28 PASS\n- delete 0 / Game data 0 / Export 0\n\n【未完了】\n- GKS-B670実配置\n- 実Repository/PATでGit read/write\n- v20をdevelopment-project-data/へ保存\n- Gitからv20を再読込\n",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T13:31:00+09:00"
+      "updated_at": "2026-08-19T15:29:00+09:00"
     }
   ],
   "tasks": [
@@ -3592,25 +3576,25 @@
       "id": "TASK-V9-BATTLE-01",
       "box_id": "BOX-V9-BATTLE",
       "title": "戦闘・AIのV9 baselineを確認する",
-      "status": "Doing",
+      "status": "Done",
       "created_at": "2026-08-19T09:15:00+09:00",
-      "updated_at": "2026-08-19T10:29:00+09:00"
+      "updated_at": "2026-08-19T15:18:00+09:00"
     },
     {
       "id": "TASK-V9-BATTLE-02",
       "box_id": "BOX-V9-BATTLE",
       "title": "戦闘・AIの後発確定資料を精査・差分分類する",
-      "status": "Doing",
+      "status": "Done",
       "created_at": "2026-08-19T09:15:00+09:00",
-      "updated_at": "2026-08-19T10:29:00+09:00"
+      "updated_at": "2026-08-19T15:18:00+09:00"
     },
     {
       "id": "TASK-V9-BATTLE-03",
       "box_id": "BOX-V9-BATTLE",
       "title": "戦闘・AIの最新版仕様を確定し依存関係を確認する",
-      "status": "Todo",
+      "status": "Done",
       "created_at": "2026-08-19T09:15:00+09:00",
-      "updated_at": "2026-08-19T09:15:00+09:00"
+      "updated_at": "2026-08-19T15:24:00+09:00"
     },
     {
       "id": "TASK-V9-SKILL-01",
@@ -4093,68 +4077,12 @@
       "updated_at": "2026-08-19T11:13:00+09:00"
     },
     {
-      "id": "TASK-V9-DEVSTORE-01",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "同一Repository利用・境界完全分離方針を確定する",
-      "status": "Done",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-02",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "Vault v1.1 prototypeで専用data rootを強制する",
-      "status": "Done",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-03",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "既存Repository内のVault独立entrypoint配置を確定する",
+      "id": "TASK-V9-BATTLE-05",
+      "box_id": "BOX-V9-BATTLE",
+      "title": "v2 §18・v3後も未解消のBattle詳細だけを後発資料で確認する",
       "status": "Todo",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-04",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "既存RepositoryでVault専用data root read/writeをLive検証する",
-      "status": "Blocked",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-05",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "v17以降のDevelopment Project正本をVault data rootへ移行する",
-      "status": "Blocked",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-06",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "GKS-B669 SOURCE_UPDATEをStudioへ配置する",
-      "status": "Todo",
-      "created_at": "2026-08-19T13:04:00+09:00",
-      "updated_at": "2026-08-19T13:04:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-07",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "v19をdevelopment-project-data/へGit保存し再読込を確認する",
-      "status": "Blocked",
-      "created_at": "2026-08-19T13:04:00+09:00",
-      "updated_at": "2026-08-19T13:04:00+09:00"
-    },
-    {
-      "id": "TASK-V9-DEVSTORE-08",
-      "box_id": "BOX-V9-DEVSTORE",
-      "title": "GKS-B670をStudioへ配置しGit StoreのLive疎通を確認する",
-      "status": "Todo",
-      "created_at": "2026-08-19T13:31:00+09:00",
-      "updated_at": "2026-08-19T13:31:00+09:00"
+      "created_at": "2026-08-19T15:24:00+09:00",
+      "updated_at": "2026-08-19T15:24:00+09:00"
     }
   ],
   "checks": [
@@ -4717,118 +4645,6 @@
       "checked_at": "",
       "created_at": "2026-08-19T11:13:00+09:00",
       "updated_at": "2026-08-19T11:13:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-001",
-      "title": "同一Repository・境界完全分離 Human確認",
-      "gate": "General",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-BOUNDARY-001",
-      "status": "Passed",
-      "result": "Human確認: 別Repository必須ではない。同一Repository可。完全分離対象は境界とデータ入出力窓口。",
-      "evidence": "Human confirmation",
-      "checked_by": "Human",
-      "checked_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-002",
-      "title": "Vault v1.1 local tests",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-001",
-      "status": "Passed",
-      "result": "core tests PASS / JS syntax PASS / browser persistent storage runtime refs NONE",
-      "evidence": "development-project-vault_v1_1.zip",
-      "checked_by": "Local automated test",
-      "checked_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-003",
-      "title": "Vault data root外write防止",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-001",
-      "status": "Passed",
-      "result": "assertConnectionでdevelopment-project-data/外のpathを拒否するtestをPASS。",
-      "evidence": "tests/test-core.mjs",
-      "checked_by": "Local automated test",
-      "checked_at": "2026-08-19T11:39:00+09:00",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-004",
-      "title": "Existing repository live read/write",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-001",
-      "status": "Pending",
-      "result": "",
-      "evidence": "requires repository deployment/token",
-      "checked_by": "",
-      "checked_at": "",
-      "created_at": "2026-08-19T11:39:00+09:00",
-      "updated_at": "2026-08-19T11:39:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-005",
-      "title": "GKS-B669 exact baseline SOURCE_UPDATE validation",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-002",
-      "status": "Passed",
-      "result": "GKS-B668 exact uploaded baselineに対するAccept 13/13 PASS。Target Full 26/26、Release 28/28、patch coverage exact、delete/Game data/Export 0。",
-      "evidence": "GKS-B669_DevelopmentGitStore_validation.json / GKS-B669_accept_report.json / GKS-B669_release_report.json",
-      "checked_by": "Automated inspection",
-      "checked_at": "2026-08-19T13:04:00+09:00",
-      "created_at": "2026-08-19T13:04:00+09:00",
-      "updated_at": "2026-08-19T13:04:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-006",
-      "title": "Development Git Store Live repository read/write",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-002",
-      "status": "Pending",
-      "result": "",
-      "evidence": "Requires deployed GKS-B669 and user repository/PAT.",
-      "checked_by": "",
-      "checked_at": "",
-      "created_at": "2026-08-19T13:04:00+09:00",
-      "updated_at": "2026-08-19T13:04:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-007",
-      "title": "GKS-B669 Studio update classifier packaging",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-002",
-      "status": "Failed",
-      "result": "Final B669 update ZIP lacked shared/integrity/system-file-policy.json, so Studio rejected it before classification/deployment.",
-      "evidence": "Device Studio message: system-file-policy.jsonがないため更新ZIPを分類できません。",
-      "checked_by": "Device Studio",
-      "checked_at": "2026-08-19T13:31:00+09:00",
-      "created_at": "2026-08-19T13:31:00+09:00",
-      "updated_at": "2026-08-19T13:31:00+09:00"
-    },
-    {
-      "id": "CHK-V9-DEVSTORE-008",
-      "title": "GKS-B670 final ZIP direct exact-baseline Accept",
-      "gate": "Implementation",
-      "target_type": "Artifact",
-      "target_id": "SPEC-V9-DEVSTORE-IMPLEMENTATION-003",
-      "status": "Passed",
-      "result": "Final ZIP contains system-file-policy. Exact B668 baseline application PASS; selected Full; applied Full 26/26 PASS; delete 0.",
-      "evidence": "GKS-B670_accept_exact_artifact.json / GKS-B670_full_target.json / GKS-B670_release_report.json",
-      "checked_by": "Automated inspection",
-      "checked_at": "2026-08-19T13:31:00+09:00",
-      "created_at": "2026-08-19T13:31:00+09:00",
-      "updated_at": "2026-08-19T13:31:00+09:00"
     }
   ],
   "workflow": {
@@ -4930,20 +4746,28 @@
       "message": "Monster統合レビュー開始。V9 Monster DB/Enemy BudgetをBaseline保持し、後発8/9正式生成資料からStory→骨格抽出/重複排除→通常骨格×7Job→自然命名→Budget委譲を候補化。Story固有Monsterは別枠、内部Job/表示名を分離。AI生成工程はMonster数値を独自決定しない。B492 required_tags/candidate_skill_ids/旧AI schemaは後発Formalへ逆流させない。"
     },
     {
-      "at": "2026-08-19T11:39:00+09:00",
-      "message": "Development Vault方針修正。未取込v16の『別Repository必須』は過剰分離として不採用。Human確定により既存Game/Studio repositoryは利用可能とし、Vault独立entrypoint/source/runtime/data I/O boundaryを完全分離。Vault v1.1ではdevelopment-project-data/外へのGit writeを拒否する。"
-    },
-    {
-      "at": "2026-08-19T13:04:00+09:00",
-      "message": "GKS-B668をbaselineにDevelopment Git Store SOURCE_UPDATE GKS-B669を作成。development-project-data/専用Git I/O、Git-backed payloadのSession memory保持、PAT非永続化、Remote SHA競合停止を実装。既存Studio GitHub同期/Development AI公開moduleは非依存。Quick/Full/Exact Accept/Releaseを全PASS。実配置・Live Git read/writeは未実施。"
-    },
-    {
-      "at": "2026-08-19T13:31:00+09:00",
-      "message": "GKS-B669更新ZIPはsystem-file-policy欠落によりStudio分類前に停止。未配置のため撤回し、同一Build別成果物を避けGKS-B670へ前進。B670はunchanged system-file-policyを更新ZIPへ同梱し、final ZIP direct Exact B668 Accept→applied Full 26/26、Release 28/28 PASS。"
-    },
-    {
       "at": "2026-08-19T14:45:00+09:00",
       "message": "Human確定により職業適性の成長値→レベルアップ成長変換式を登録。確定上昇=floor(成長値/10)、追加上昇確率=(成長値%10)×10%、最終上昇値=確定上昇+追加判定成功なら1（失敗なら0）。成長値自体はBalance/Data可変、変換式は構造仕様。TASK-V9-CHAR-08をDoneへ更新。"
+    },
+    {
+      "at": "2026-08-19T15:18:00+09:00",
+      "message": "Battle整理を進行。戦闘仕様まとめv1/v2/v3をsource登録し、v2基礎+v3差分の版関係を確定。V9 Battle Interface、Formal AI/Skill/Tagの既存Decisionと照合し、SPEC-V9-BATTLE-INTEGRATED-001をReview候補として追加。Legacy DOT_INTERVAL等はMechanicのみ継承しFormal固定parameter名として復活させない。TASK-V9-BATTLE-01/02をDone、03をDoingへ更新。"
+    },
+    {
+      "at": "2026-08-19T15:24:00+09:00",
+      "message": "Battle整理方針を訂正。戦闘仕様v2は『確定事項まとめ』、v3は『v2以降に確定した事項の追記』であり、整理済み本文をHumanへ再確認する扱いは誤り。DEC-V9-BATTLE-001をSource確定Decisionとして追加し、SPEC-V9-BATTLE-INTEGRATED-001をApprovedへ更新。Human再確認Taskを削除し、v2 §18等の未解消詳細だけを別Taskへ分離した。"
+    },
+    {
+      "at": "2026-08-19T15:29:00+09:00",
+      "message": "Humanにより本案件の目的を明確化。本案件は大規模・散在仕様を新システムで整理できるかの実証テスト。テスト成果物はV9 v2.0と後発資料を統合したV9 Library vNext。同時に、正確な仕様整理に必要な新システム機能を工程ごとに評価し、不足機能は開発項目として登録する方針をDEC-V9-TEST-001 / RULE-V9-TEST-033へ記録。"
+    },
+    {
+      "at": "2026-08-19T15:38:00+09:00",
+      "message": "Scope cleanup: V9 Library統合と無関係なDevelopment Vault/Git Store実装系のArchitecture/WorkBox/Task/Check/Specification/Decision/Rule/Discussion/Historyを本案件から分離。Current FocusをV9 Library vNext統合へ戻し、Source BaselineのStudio/Game build値を空欄化。新システム機能評価は別のsystem-test-findingsへ分離した。"
+    },
+    {
+      "at": "2026-08-19T06:47:26.707Z",
+      "message": "Development Workspace JSON imported into current project"
     }
   ]
 }
