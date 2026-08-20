@@ -1,7 +1,7 @@
 /**
  * Development Project Impact Analysis.
  * Independent Development Project implementation; no Scenario/CPF runtime/storage/data sharing.
- * GKS-B685
+ * GKS-B686
  */
 (function(root){
 'use strict';
@@ -174,6 +174,78 @@ function openImpactFor(scopeType,id,w=workspace()){
  ));
 }
 
+function candidateImpactGate(candidate,w=workspace()){
+ ensure(w);
+ const systemId=String(candidate?.system_node_id||'');
+ const candidateId=String(candidate?.id||'');
+ const targetSpecId=String(candidate?.target_specification_id||'');
+ const rows=(w.system_impacts||[]).filter(x=>String(x.status||'')==='open'&&(
+  (systemId&&(x.affected_system_ids||[]).map(String).includes(systemId))||
+  (candidateId&&(x.affected_candidate_ids||[]).map(String).includes(candidateId))||
+  (targetSpecId&&(x.affected_specification_ids||[]).map(String).includes(targetSpecId))
+ ));
+ return {ok:rows.length===0,system_id:systemId,impact_ids:rows.map(x=>String(x.id||'')),impacts:rows};
+}
+
+function ensureReorganizationRequest(candidate,w=workspace(),gate=candidateImpactGate(candidate,w)){
+ ensure(w);
+ if(!candidate||gate.ok)return null;
+ const systemId=String(candidate.system_node_id||''),candidateId=String(candidate.id||''),targetSpecId=String(candidate.target_specification_id||''),stamp=now();
+ let row=(w.specification_candidates||[]).find(x=>String(x.status||'')==='reorganization_required'&&String(x.reorganization?.source_candidate_id||'')===candidateId&&String(x.system_node_id||'')===systemId);
+ const payload={source_candidate_id:candidateId,source_target_specification_id:targetSpecId,impact_ids:unique(gate.impact_ids),requested_at:stamp,reason:'OPEN_IMPACT'};
+ if(row){
+  row.reorganization={...(row.reorganization||{}),...payload};
+  row.updated_at=stamp;
+  return row;
+ }
+ row={
+  id:nextId('SPEC-CAND-',w.specification_candidates),
+  category_id:String(candidate.category_id||''),
+  target_specification_id:targetSpecId,
+  status:'reorganization_required',
+  title:`再整理要求: ${candidate.title||targetSpecId||candidateId}`,
+  summary:'未解決ImpactがあるためCurrent Specificationへ昇格できません。Impact確認後、この要求を基準にCandidateを再整理してください。',
+  body:'',
+  acceptance_criteria:String(candidate.acceptance_criteria||''),
+  depends_on:unique(candidate.depends_on),
+  system_node_id:systemId,
+  contract_ids:unique(candidate.contract_ids),
+  material_snapshot:structuredClone(candidate.material_snapshot||{}),
+  base_specification_hash:String(candidate.base_specification_hash||''),
+  candidate_hash:'',
+  created_by:'System',
+  created_at:stamp,
+  updated_at:stamp,
+  approval:{status:'blocked',note:'OPEN_IMPACT',approved_by:'',approved_at:''},
+  reorganization:payload
+ };
+ w.specification_candidates.push(row);
+ try{root.GKSDevelopmentSystemState?.emit?.(w,'SPEC_CANDIDATE_REORGANIZATION_REQUIRED','SpecificationCandidate',row.id,{source_candidate_id:candidateId,system_node_id:systemId,target_specification_id:targetSpecId,impact_ids:payload.impact_ids},{actor:'System'})}catch(_){}
+ return row;
+}
+
+function refreshReorganizationRequests(w=workspace()){
+ ensure(w);
+ const changed=[];
+ for(const row of w.specification_candidates||[]){
+  if(String(row.status||'')!=='reorganization_required')continue;
+  const systemId=String(row.system_node_id||''),targetSpecId=String(row.target_specification_id||''),impactIds=unique(row.reorganization?.impact_ids);
+  const open=(w.system_impacts||[]).filter(x=>String(x.status||'')==='open'&&(
+   impactIds.includes(String(x.id||''))||
+   (systemId&&(x.affected_system_ids||[]).map(String).includes(systemId))||
+   (targetSpecId&&(x.affected_specification_ids||[]).map(String).includes(targetSpecId))
+  ));
+  const next=open.length?'reorganization_required':'reorganization_ready';
+  if(row.status!==next){
+   row.status=next;row.updated_at=now();
+   row.reorganization={...(row.reorganization||{}),resolved_impact_ids:impactIds.filter(id=>!open.some(x=>String(x.id||'')===id)),ready_at:next==='reorganization_ready'?now():''};
+   changed.push(row);
+   try{root.GKSDevelopmentSystemState?.emit?.(w,next==='reorganization_ready'?'SPEC_CANDIDATE_REORGANIZATION_READY':'SPEC_CANDIDATE_REORGANIZATION_REQUIRED','SpecificationCandidate',row.id,{source_candidate_id:row.reorganization?.source_candidate_id||'',system_node_id:systemId,target_specification_id:targetSpecId,impact_ids:open.map(x=>String(x.id||''))},{actor:'System'})}catch(_){}
+  }
+ }
+ return changed;
+}
+
 function syncImpactFlags(w){
  if(!root.GKSDevelopmentSystemState?.setFlag)return [];
  const changed=[];
@@ -199,7 +271,7 @@ function resolveImpact(id,note,actor='Human'){
  note=String(note||'').trim();if(!note)throw new Error('解決メモは必須です。');
  const stamp=now();row.status='resolved';row.resolution_note=note;row.resolved_by=actor;row.resolved_at=stamp;row.updated_at=stamp;
  try{root.GKSDevelopmentSystemState?.emit?.(w,'IMPACT_RESOLVED','Impact',row.id,{resolution_note:note},{actor})}catch(_){}
- syncImpactFlags(w);
+ syncImpactFlags(w);refreshReorganizationRequests(w);
  state.host?.saveWorkspace?.('Development impact resolved');state.host?.refreshWorkspace?.();render();
  return true;
 }
@@ -212,7 +284,7 @@ function reopenImpact(id){
  const w=workspace(),row=(w.system_impacts||[]).find(x=>String(x.id||'')===String(id||''));if(!row||row.status==='open')return;
  row.status='open';row.resolved_by='';row.resolved_at='';row.resolution_note='';row.updated_at=now();
  try{root.GKSDevelopmentSystemState?.emit?.(w,'IMPACT_REOPENED','Impact',row.id,{}, {actor:'Human'})}catch(_){}
- syncImpactFlags(w);state.host?.saveWorkspace?.('Development impact reopened');state.host?.refreshWorkspace?.();render();
+ syncImpactFlags(w);refreshReorganizationRequests(w);state.host?.saveWorkspace?.('Development impact reopened');state.host?.refreshWorkspace?.();render();
 }
 
 function systemLabel(w,id){const n=nodeById(w,id);return n?`${n.name||n.id} / ${n.id}`:id}
@@ -250,6 +322,6 @@ function render(){
 }
 
 function init(host){state.host=host;ensure(workspace());syncImpactFlags(workspace());render();return api}
-const api={init,render,setFilter,select,back,ensure,analyzeMutation,syncImpactFlags,openImpactFor,resolveImpact,resolvePrompt,reopenImpact};
+const api={init,render,setFilter,select,back,ensure,analyzeMutation,syncImpactFlags,openImpactFor,candidateImpactGate,ensureReorganizationRequest,refreshReorganizationRequests,resolveImpact,resolvePrompt,reopenImpact};
 root.GKSDevelopmentSystemImpact=api;
 })(window);

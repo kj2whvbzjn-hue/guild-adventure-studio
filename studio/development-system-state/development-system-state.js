@@ -1,7 +1,7 @@
 /**
  * Development Project System State / Event Log.
  * Independent Development Project implementation; no Scenario/CPF runtime/storage/data sharing.
- * GKS-B685
+ * GKS-B686
  */
 (function(root){
 'use strict';
@@ -115,7 +115,7 @@ function eventLabel(t){
   SYSTEM_CONTRACT_ADDED:'Contract追加',SYSTEM_CONTRACT_UPDATED:'Contract更新',SYSTEM_CONTRACT_DELETED:'Contract削除',
   SYSTEM_CONNECTION_ADDED:'Connection追加',SYSTEM_CONNECTION_UPDATED:'Connection更新',SYSTEM_CONNECTION_DELETED:'Connection削除',
   SPEC_CANDIDATE_ADDED:'Candidate追加',SPEC_CANDIDATE_UPDATED:'Candidate更新',SPEC_CANDIDATE_IMPORTED:'Candidate取込',
-  SPEC_CANDIDATE_APPROVED:'Candidate承認・仕様昇格',SPEC_CANDIDATE_REJECTED:'Candidate却下',
+  SPEC_CANDIDATE_APPROVED:'Candidate承認・仕様昇格',SPEC_CANDIDATE_REJECTED:'Candidate却下',SPEC_CANDIDATE_APPROVAL_BLOCKED:'Candidate承認Gate停止',SPEC_CANDIDATE_REORGANIZATION_REQUIRED:'Candidate再整理要求',SPEC_CANDIDATE_REORGANIZATION_READY:'Candidate再整理可能',
   MATERIAL_ADDED:'Material追加',MATERIAL_UPDATED:'Material更新',MATERIAL_DELETED:'Material削除',
   DECISION_ADDED:'Decision追加',DECISION_UPDATED:'Decision更新',
   SPECIFICATION_ADDED:'Specification追加',SPECIFICATION_UPDATED:'Specification更新',
