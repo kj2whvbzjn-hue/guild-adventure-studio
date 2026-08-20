@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-20T06:29:21.759Z"
+    "updated_at": "2026-08-20T08:12:55.376Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARCH-R19-DETAILED-SPECS",
     "work_box_id": "BOX-R19-DETAILED-SPECS",
     "theme": "System Structure / Impact GateによるCurrent Specification再整理",
-    "goal": "Open Impactを解決し、再整理CandidateをHuman承認してCurrent Specificationを順次置換する。"
+    "goal": "完成ゲームに必要な不足仕様をHuman Decisionで解決し、実装可能なSpecificationへ統合する。"
   },
   "project_rules": [
     {
@@ -80,6 +80,15 @@
       "source_id": "conversation",
       "created_at": "2026-08-20T15:09:00+09:00",
       "updated_at": "2026-08-20T15:09:00+09:00"
+    },
+    {
+      "id": "RULE-REORG-008",
+      "text": "仕様レビューでは、既決事項とBalance可変値を再質問しない。Human判断が必要な未決のシステム構造だけを質問する。Balance可変で解決できる具体数値は未決質問として扱わない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
     }
   ],
   "source_baseline": {
@@ -290,6 +299,32 @@
       "artifact_note": "DEV-V9-REORG-009_reimplementation-audit.md",
       "created_at": "2026-08-19T17:12:00+09:00",
       "updated_at": "2026-08-19T17:45:00+09:00"
+    },
+    {
+      "id": "DISC-R21-GAME-AUDIT-001",
+      "title": "実ゲーム照合による不足仕様洗い出し",
+      "status": "Open",
+      "summary": "実ゲームに存在する処理/UI/保存構造とCurrent 51 Specificationを照合し、完成に必要だが仕様不足の領域を登録。",
+      "body": "【目的】\n実ゲーム側を確認し、Current Specificationだけでは実装者が迷う不足仕様を洗い出す。\n\n【今回登録する不足領域】\n1. Character Progression / Level Up\n2. Skill Acquisition\n3. Adventurer Recruitment / Dismissal\n4. Player Save / Load / Versioning\n5. New Game Initialization\n6. Inventory / Warehouse Ownership\n7. Equipment Contribution → Battle未接続項目\n8. Quest Abandon\n\n【重要ルール】\n- Current Sourceの仮挙動を正式仕様へ昇格しない。\n- 既決事項は再質問しない。\n- Balance可変値は未決質問にしない。\n- Human判断が必要なシステム構造だけOpen Questionにする。\n",
+      "open_questions": "各不足領域のシステム構造をHuman Decisionで確定する必要がある。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "Game audit 2026-08-20",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001",
+      "title": "完成ゲーム監査 第2弾: UI / UX / Presentation / Audio",
+      "status": "Open",
+      "summary": "実ゲームとCurrent仕様を照合し、ゲームロジック以外の完成品要件として不足しているUI・演出・音・操作・導線・アクセシビリティ等を登録する。",
+      "body": "Current Sourceの仮UI/仮演出をそのまま正式採用しない。既決事項とBalance可変値は再質問しない。Human判断が必要な構造・提供機能・Presentation方針のみOpen Impactとする。",
+      "open_questions": "R22 Impactを優先順にHuman Decisionで解決する。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "Completion audit / presentation layer 2026-08-20",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
     }
   ],
   "decisions": [
@@ -898,6 +933,126 @@
       "approved_at": "2026-08-20T15:09:00+09:00",
       "created_at": "2026-08-20T15:09:00+09:00",
       "updated_at": "2026-08-20T15:09:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-BAL-002",
+      "title": "基礎ゲーム数値をBalance可変に統一",
+      "status": "Approved",
+      "text": "Party最大人数の初期値6、Character初期能力値の初期値各10、最大Levelの初期値50、各Jobの具体的成長値はBalance調整項目として外部データから変更可能にする。成長計算方式そのもの等のシステム構造は別扱いとする。",
+      "rationale": "Humanが固定値ではなく変更可能にするよう指定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-BATTLE-BAL-001",
+      "title": "Battle / Status / Skillの具体数値をBalance可変に統一",
+      "status": "Approved",
+      "text": "抵抗上限、命中率上下限、Critical率/倍率上限、状態異常耐性上限、DOT Stack上限、AI再評価間隔、Skill効果の重み・係数等の具体数値はBalance調整項目として変更可能にする。処理順、丸め方式、Buff/Debuff処理、Shield消費順、Target再取得等のシステム規則は数値可変化の対象外とする。",
+      "rationale": "Humanが当該領域の具体数値を変更可能と確定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-EQUIP-009",
+      "title": "Equipment Slot数は10固定、その他の具体数値は可変",
+      "status": "Approved",
+      "text": "Equipment Slot数は10でシステム固定とする。現在のSlot内訳は武器1、武器2、頭、鎧、手袋、足、アミュレット、指輪1、指輪2、ベルト。iLv段階/上限、各係数、要求値、基礎性能、Critical、MOD/Tier/Unique関連の具体数値はBalance可変とする。",
+      "rationale": "Humanが装備Slot数のみ固定し、その他は可変と明示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-QUEST-LOSS-001",
+      "title": "Quest失敗時は途中報酬を全損",
+      "status": "Approved",
+      "text": "Quest失敗時は途中で獲得したGold、Equipment、Material等を正式資産へCommitせず全て失う。成功帰還時のみ保存済みReward ResultをCommitする。",
+      "rationale": "Humanが失敗時に途中報酬を失うルールを明示確認したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-WORLD-001",
+      "title": "WORLD仕様は白紙",
+      "status": "Approved",
+      "text": "SPEC-V9-019-WORLD-001のWORLD構造は正式採用しない。WORLDに関する仕様は現時点で白紙とし、既存資料のRegion/Hub/Connection/Nation/Faction/Race等をHuman決定済み仕様として扱わない。",
+      "rationale": "HumanがWORLD関連は何も決めておらず白紙と明示し、変更範囲をWORLD仕様に限定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-GUILD-001",
+      "title": "初期Guild施設4種を確定",
+      "status": "Approved",
+      "text": "初期施設は酒場、訓練所、倉庫、掲示板の4施設で確定する。",
+      "rationale": "Humanが初期施設候補4種を確定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-GUILD-002",
+      "title": "将来施設候補を削除",
+      "status": "Approved",
+      "text": "鍛冶場、研究所、図書館、宿舎の将来施設候補はCurrent仕様から削除する。",
+      "rationale": "Humanが将来施設候補を削除すると明示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-GUILD-003",
+      "title": "Guild施設はCombat Powerを直接上昇させない",
+      "status": "Approved",
+      "text": "Guild施設はCharacterの戦闘能力を直接上昇させない。",
+      "rationale": "既存資料の方針をHumanが明示確認したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-GUILD-004",
+      "title": "施設強化なし",
+      "status": "Approved",
+      "text": "Current Guild施設には施設Level/施設強化システムを設けない。施設強化費用、強化素材、建設/強化時間等の施設強化前提項目はCurrent仕様から除外する。",
+      "rationale": "Humanが施設強化なしと回答したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-GUILD-005",
+      "title": "Guild Levelは仕様通り維持し具体数値は可変",
+      "status": "Approved",
+      "text": "Guild Levelという仕組みは削除せず既存仕様どおり維持する。Guild Level上限、必要Guild EXP、上昇条件、施設解放Level、倉庫容量との対応等の具体数値はBalance可変とする。",
+      "rationale": "HumanがGuild Level削除を取り消して仕様どおりへ戻し、具体数値は可変と確認したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-20T16:25:00+09:00",
+      "created_at": "2026-08-20T16:25:00+09:00",
+      "updated_at": "2026-08-20T16:25:00+09:00"
     }
   ],
   "specifications": [
@@ -933,7 +1088,9 @@
       "status": "Draft",
       "summary": "ゲームのコンセプト、基本ループ、Party、7能力値、予算制設計。",
       "body": "# 1. コンセプト\n\nギルド運営型ハクスラ自動戦闘RPG。\n\nプレイヤーは冒険者を育成し、依頼を受注してQuestへ派遣する。\n戦闘は自動処理し、AI構築、Equipment収集、育成、Build構築を主要体験とする。\n\n# 2. 基本ゲームループ\n\n```text\nGuild\n→ Quest選択 / 依頼受注\n→ Stone設定（任意）\n→ QuestRun開始\n→ Box / Scene / Event / Battle / Exploration\n→ Reward Result確定\n→ Adventure Playback\n→ Return Commit\n→ Equipment更新\n→ Character育成 / Build更新\n→ 再出撃\n```\n\n# 3. Party\n\n- Party最大人数: 6\n- PartyはQuest開始時にSnapshotする。\n- QuestRun中に元Party/Character Masterが変更されても、開始済みRunの結果へ遡及させない。\n\n# 4. 基本能力値\n\n- STR: 力\n- VIT: 体力\n- AGI: 素早さ\n- DEX: 器用さ\n- INT: 知性\n- MND: 精神\n- LUK: 運\n\nCharacter初期値は全能力10。\nCurrent Level上限は50。\n\n# 5. 条件値と戦闘寄与の分離\n\nEquipment要求値・Skill習得条件等に使う能力値と、\nBattleへ渡すCombat Contributionを同一視しない。\n\nEquipment要求値は装備可否判定専用。\nBattle寄与はCharacter Runtime / Equipment Contribution / Skill / MOD等のOwner Contractを通す。\n\n# 6. 予算制\n\n全Systemを予算制の同一思想で管理する。\n\n- Skill → Skill Budget\n- Enemy → Enemy Budget\n- Equipment → iLv / Generator Config\n- MOD → Rarity / MOD Count / Tier / Config\n- Stone → stone_budget_delta\n- Reward → Reward Resolver Snapshot\n\n強さを予算外のHard-codedボーナスで追加しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-001 コアシステム設計書 / BOX-R7-002 システム設計書統合正式版 / BOX-R7-003 バランス調整指針",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-BAL-002"
+      ],
       "depends_on": [
         "SPEC-V9-019-000"
       ],
@@ -954,7 +1111,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-CORE-002",
@@ -1020,7 +1177,9 @@
       "status": "Draft",
       "summary": "Characterの初期値、保存責務、成長履歴。",
       "body": "# 1. Character基本\n\n- initial_level = 1\n- max_level = 50\n- STR/VIT/AGI/DEX/INT/MND/LUK 初期値 = 各10\n- Jobは現在能力値を上書きしない。\n\n# 2. Characterが保持する情報\n\n最低限:\n- id\n- name\n- level\n- current_job_id\n- stats\n- learned_skill_ids\n- equipped/effective Skill参照\n- equipment\n- job_history\n- growth_history\n- Formal AI binding（Characterのみ）\n- created_at / updated_at\n\n# 3. 成長の原則\n\n現在能力値はCharacter固有の育成結果。\nJob ChangeやBalance Config更新で既存能力値を再計算しない。\n\nLevel Up時に現在Jobの成長値を読み、\n`SPEC-V9-019-JOB-001` の一般変換式で能力値上昇を決定する。\n\n# 4. 保存\n\nGrowth Historyには少なくとも:\n- Level up前後Level\n- 使用Job\n- 各能力growth\n- guaranteed gain\n- extra roll\n- final gain\n- Seed/Random trace（再現が必要な場合）\nを記録可能にする。",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-BAL-002"
+      ],
       "depends_on": [
         "SPEC-V9-019-CORE-002",
         "SPEC-V9-019-JOB-001"
@@ -1040,7 +1199,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-JOB-001",
@@ -1049,6 +1208,7 @@
       "summary": "7Job正式名称、一般成長式、Human Approved Balance seed。",
       "body": "# 1. Current基本7Job\n\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\n旧「弓兵」はCurrentでは「狩人」。\n\n# 2. 一般成長式\n\n各能力値の成長値 `growth` に対して:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\nfinal_gain = guaranteed + (extra_roll_success ? 1 : 0)\n```\n\n内部成長蓄積は行わない。\n\n例:\n- growth 7 → 70%で+1\n- growth 10 → +1確定\n- growth 13 → +1確定、30%で追加+1\n- growth 15 → +1確定、50%で追加+1\n\n# 3. Human Approved仮初期値\n\n| Job | STR | VIT | AGI | DEX | INT | MND | LUK | Total |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| 剣士 | 15 | 13 | 4 | 10 | 7 | 8 | 3 | 60 |\n| 騎士 | 10 | 15 | 3 | 7 | 8 | 13 | 4 | 60 |\n| 盗賊 | 7 | 8 | 15 | 13 | 3 | 4 | 10 | 60 |\n| 狩人 | 8 | 7 | 3 | 15 | 4 | 10 | 13 | 60 |\n| 魔術師 | 4 | 3 | 10 | 8 | 15 | 13 | 7 | 60 |\n| 神官 | 3 | 4 | 7 | 10 | 13 | 15 | 8 | 60 |\n| 冒険家 | 13 | 10 | 8 | 3 | 4 | 7 | 15 | 60 |\n\n\nこの表はHuman ApprovedのBalance仮初期値。\n構造仕様へ固定せずDataとして差し替え可能にする。\n\n旧V9 Job成長率表（各職合計70）はHistorical BaselineとしてMaterialに残すが、\nCurrentの具体初期値には上表を使う。\n\n# 4. Jobの意味\n\nJobは能力値そのものではなく、以後のLevel Up時の成長方向を定義する。\n現在statsをJob Masterから再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-004 ジョブ成長率設計書 / BOX-R12-RECOVER-CHAR-SEED / Human Decisions",
       "decision_refs": [
+        "DEC-REORG-BAL-002",
         "DEC-REORG-CHAR-001",
         "DEC-REORG-CHAR-002",
         "DEC-V9-CHAR-001",
@@ -1071,7 +1231,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-JOB-002",
@@ -1135,7 +1295,9 @@
       "status": "Draft",
       "summary": "Battle計算の数式、補正箱、丸め。",
       "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = 命中値 / (命中値 + 回避値) × 100`\n\n- 命中率下限：5%\n- 命中率上限：100%\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 5. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 6. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-BATTLE-BAL-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-CORE-002",
         "SPEC-V9-019-EQUIP-004",
@@ -1156,7 +1318,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-002",
@@ -1164,7 +1326,9 @@
       "status": "Draft",
       "summary": "MP/CD/詠唱成立、中断、射程再確認、Target無効。",
       "body": "## 8. MP・クールダウン\n\n### MP\n- MP不足時はスキル発動不可。\n- AIは再思考へ移行。\n- MP消費量はスキル、装備、MODなど効果発生源側の定義に依存。\n\n`消費後MP = 現在MP - 効果値`\n\n### クールダウン\n- 割合短縮は割合で減少。\n- 固定短縮は固定Tickで減少。\n- 端数は最終計算後に切り上げ。\n- 最小CDは0Tick。\n\n---\n\n## 9. 発動成立\n\n- MP消費とCD開始は発動成立時。\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし、CD開始なし。\n\n処理順：\n1. 使用開始\n2. 詠唱\n3. 中断判定\n4. 詠唱完了\n5. MP消費\n6. CD開始\n7. 効果実行\n\n---\n\n## 10. 吸収・反射\n\n### 共通基準\n- HP吸収、MP吸収、反射などダメージ参照効果は、実際にHPへ通った最終ダメージを基準とする。\n- オーバーキル時は実際に減少したHP量を基準とする。\n\n`参照ダメージ = min(最終ダメージ, ダメージ適用前HP)`\n\n### 吸収\n- 吸収量は切り上げ。\n\n### 反射\n- 反射量は切り捨て。\n- 再反射しない。\n- 反射ダメージには抵抗を再適用しない。\n\n---\n\n## 詠唱\n\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし・CDなし。\n- スキル使用不可、または使用中スキル種別を阻害する効果で中断。\n- 通常ダメージ・DOT・反射ダメージでは中断しない。\n- 強制移動で中断する。\n- 強制移動処理順\n  1. 成立判定\n  2. 詠唱中断\n  3. 位置変更\n  4. 射程・対象更新\n  5. AIは次回再評価で再思考\n\n## 射程\n\n- 発動時に対象固定。\n- 詠唱完了時に射程を再確認。\n- 射程外なら不発。\n- 対象再取得はしない。\n- 遮蔽物・射線判定は採用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-BATTLE-BAL-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-BATTLE-001",
         "SPEC-V9-019-SKILL-001",
@@ -1184,7 +1348,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-003",
@@ -1192,7 +1356,9 @@
       "status": "Draft",
       "summary": "1Hit完結処理、複合Effect順、Trigger順、戦闘不能、蘇生。",
       "body": "## 11. 複数Hit\n\n- Hitごとに完全処理。\n- 各Hitごとに命中、ダメージ、抵抗、クリティカル、シールド、HP、吸収、反射、状態異常を処理。\n- 単体スキルは対象を倒した時点で残りHit終了。\n- 範囲・複数対象スキルは一部対象を倒しても他対象への処理を継続。\n- 対象は発動時に固定。\n- 発動後に範囲へ入った対象は追加しない。\n- 途中で無効になった対象は除外する。\n\n---\n\n## 12. 複合効果の処理順\n\n1. 対象確定\n2. 命中判定\n3. ダメージ計算・適用\n4. ダメージ参照効果\n5. 状態異常・BUFF・DEBUFF付与\n6. 回復・MP回復\n7. シールド付与\n8. 位置・行動制御\n9. 召喚・生成\n10. 撃破時・命中時などの誘発効果\n\n- 同じ段階の複数効果は効果データ記載順。\n- 効果単位で成功・失敗を判定。\n- 失敗した効果だけをスキップし、後続効果は継続。\n- ダメージで対象が戦闘不能になった場合、その対象への後続効果は適用しない。\n\n---\n\n## 13. 誘発効果の処理順\n\n1. 命中時\n2. 被弾時\n3. ダメージ確定後\n4. HP減少後\n5. 撃破時\n6. 戦闘不能時\n7. 処理終了時\n\n- 同一段階では付与・登録が古い順。\n\n---\n\n## 14. 戦闘不能\n\n1. HPが0以下になる\n2. 戦闘不能フラグ付与\n3. 撃破時効果\n4. 戦闘不能時効果\n5. ドロップ・経験値・クエスト進行\n6. フィールド・対象リストから除外\n\n---\n\n## 15. 蘇生\n\n1. 蘇生条件成立\n2. 戦闘不能フラグ解除\n3. HP・MPを指定値まで回復\n4. 状態異常・BUFF・DEBUFFをすべて解除\n5. 戦闘対象リストへ復帰\n6. 蘇生時効果を発動\n\n---\n\n## 16. 召喚物\n\n- 召喚者が戦闘不能になると召喚物は即時消滅。\n- 召喚物は自身の能力値を使用。\n- 通常ユニットと同じ戦闘ルールを適用。\n- BUFF、DEBUFF、状態異常、回復、シールド、命中、回避、抵抗、クリティカルなども通常どおり適用。\n\n---\n\n## 17. 対象無効時\n\n- 発動時に対象を固定。\n- 対象無効時に別対象を再取得しない。\n- 効果は不発。\n- AIは再思考へ移行。\n- プレイヤー操作では自動で別対象へ切り替えない。\n\n---\n\n## 蘇生\n\n- 自動蘇生優先。\n- 通常蘇生は次順位。\n- 同種は付与順。\n- 蘇生成功後は他の蘇生は不発。\n- 共通無敵時間なし。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-BATTLE-BAL-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-BATTLE-001",
         "SPEC-V9-019-BATTLE-002",
@@ -1209,7 +1375,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-004",
@@ -1217,7 +1383,9 @@
       "status": "Draft",
       "summary": "Tick内順序、Seeded unit order、AI再評価、Start/End順。",
       "body": "## AI・アクティブターン\n\n- AIはアクティブターン方式。\n- AIはアクションゲージ最大値の10%ごとに再評価する。\n  - 最大100 → 10ごと\n  - 最大1000 → 100ごと\n- 各再評価では毎回新規に評価する。\n- 前回の予約・ターゲット・スキル選択は保持しない。\n- 同点候補は抽選で決定する。\n- 行動直前に最終再検証を行う。\n- 実行不能なら次回再評価まで待機する。\n- AIは現在の情報のみ参照する。\n- 詠唱中は現在情報として参照可能。\n- 未来予測・乱数結果・次行動予定は参照しない。\n- AIは記憶を持たない。\n- ヘイトシステムは不採用。\n- 挑発・ターゲット固定などのAI介入効果でタンクを実現する。\n\n## Tick\n\n- 同一Tickの処理順はTick開始時に一度だけ抽選。\n- Tick内はその順番を維持。\n- 次Tickで再抽選。\n- Hitごとの再抽選はしない。\n\nTick処理順\n1. 持続時間更新\n2. DOT・HOT\n3. クールダウン更新\n4. 効果終了判定\n5. AI思考\n6. 行動予約\n7. Tick終了\n\n## 戦闘開始\n\n1. パッシブ\n2. 装備\n3. MOD\n4. クエスト\n5. システム\n6. 開始時トリガー\n7. AI開始\n\n## 戦闘終了\n\n1. 終了判定\n2. 終了時トリガー\n3. 戦闘専用BUFF/DEBUFF解除\n4. 戦闘専用召喚物消滅\n5. AI停止\n6. 戦闘状態解除\n\n## Current非採用\n\n- SUMMON\n- knockback / pull\n- 戦闘中の任意移動\n\n旧Battle v2の召喚節はCurrent Formal Skill Registryに対応Effectがなく、\nV9採用一覧でも将来拡張扱いのためCurrentへ実装しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v3 / BOX-R14-SPEC-READINESS",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-BATTLE-BAL-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-BATTLE-003",
         "SPEC-V9-019-AI-003"
@@ -1234,7 +1402,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-STATUS-001",
@@ -1482,8 +1650,9 @@
       "title": "Equipment Structure / Slots / iLv",
       "status": "Draft",
       "summary": "Equipment三層、10Slot、iLv命名、BaseItem Rarity。",
-      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
+      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1\n\n## 2026-08-20 Human Review\nEquipment Slot数10はシステム固定。それ以外の具体数値はBalance可変。\n",
       "decision_refs": [
+        "DEC-REORG-EQUIP-009",
         "DEC-V9-EQUIP-001",
         "DEC-V9-EQUIP-008"
       ],
@@ -1503,7 +1672,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-002",
@@ -1968,7 +2137,9 @@
       "status": "Draft",
       "summary": "Current Reward Table Schemaと決定的Resolver。",
       "body": "# 1. Reward Result\n\n正規化後:\n- gold\n- items/equipment\n- resources/materials/stones\n\nGold/Countは非負整数へ正規化。\n同一Resourceは `resource_kind + resource_id` で集約する。\n\n# 2. Reward Entry kind\n\n[\"gold\", \"equipment\", \"item\", \"stone\", \"material\"]\n\n# 3. Drop Table\n\nTable:\n- id\n- name\n- enabled/status\n- params\n- groups[]\n- entries[]\n\nGroup:\n- id\n- rolls\n- entries[]\n\nEntry:\n- kind\n- weight / base_weight\n- chance / rate\n- rarity\n- scaling_mode\n- amount/count\n- amount_min / amount_max\n- equipment_id / item_id / stone_id / resource_id / resource_kind\n\nScaling mode:\n[\"none\", \"amount\", \"quality\", \"both\"]\n\n# 4. Weighted / Independent\n\n- groupsがある場合: 各Groupのrolls回、Adjusted Weightで選択。\n- entriesのみ:\n  - mode=weighted → rolls回Weighted draw\n  - その他 → Independent chance/rate判定\n\n# 5. Amount Scaling\n\nReward scaling snapshotから:\n- budget_multiplier\n- reward_modifier_multiplier\n- reward_multiplier\n- budget_delta\n- amount_rounding\n- rarity_weight_bonus_per_budget\n\namount/both:\n```text\namount = round(base_amount * budget_multiplier * reward_modifier_multiplier)\n```\n\nrounding = floor / round / ceil。\n\nquality/both:\n```text\nadjusted_weight\n= base_weight * (1 + budget_delta * rarity_weight_bonus_per_budget[rarity])\n```\n\n# 6. Determinism\n\nResolverはSeeded RNG。\nTable resultへ:\n- contract/version\n- table_id\n- seed\n- apply_difficulty_scaling\n- reward_scaling_snapshot\n- settings_snapshot\n- reward\n- traces\nを保存する。\n\n# 7. Quest統合\n\nQuest本体へ一括固定Rewardを置かない。\nBattle/Event/Exploration結果としてRewardを生成して集約する。\n\nReturn時に再抽選・再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R13-CURRENT-QUEST-REWARD / system-drop_tables.schema.json / adventure-reward-resolver.js",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-QUEST-LOSS-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-QUEST-001",
         "SPEC-V9-019-RUN-001"
@@ -1995,7 +2166,9 @@
       "status": "Draft",
       "summary": "Quest開始時Simulation、完全結果記録、失敗停止。",
       "body": "# 6. Quest開始処理\n\nQuest開始時に結果を完全確定する。\n\n順序:\n\n1. Quest / Section取得\n2. 石板等の開始コスト消費\n3. Party Snapshot\n4. adventure_duration_seconds Snapshot\n5. Seed生成\n6. boxesを順番にAdventure Simulation\n7. Scene Snapshot\n8. Event結果確定\n9. random_event確定\n10. random_battle敵編成確定\n11. Battle Simulation\n12. 報酬確定\n13. Flag / Quest進行結果確定\n14. Timeline at_seconds確定\n15. 成功 / 失敗確定\n16. QuestRun保存\n17. Playback開始\n\n切断しても結果は変わらない。\n\n---\n\n# 7. 失敗処理\n\nSimulation中に失敗が確定した場合:\n\n- その時点で通常boxes処理を停止\n- 後続箱を処理しない\n- QuestRun終了処理へ移行\n\nQuestRunに:\n- 失敗理由\n- 失敗地点\n- 最終状態\nを保存。\n\n将来の失敗専用Sceneは通常boxesとは別系統で追加可能な余地だけ残す。\n\n---\n\n# 8. Scene Snapshot\n\nQuestRun生成時にScene会話内容をSnapshot。\n\n保存:\n- scene_id\n- 会話再生に必要な最小情報\n\n過去QuestRunは現在のSceneマスタを再参照しない。\n\nStudioでSceneを変更しても過去Runは変わらない。\n\n---\n\n# 9. Battle Result\n\nBattle Resultは以下を分離する。\n\n- 勝敗\n- Unit最終状態\n- Seed\n- 戦闘統計\n- 現行デバッグログ\n- 将来のゲーム用戦闘ログ\n- Playback専用イベント列\n\n現行logs[]はデバッグ用途。\n\nBattle詳細画面は文字ログ解析ではなく、\nPlayback専用イベント列を使う。\n\n---\n\n# 10. QuestRun\n\nQuestRunは1回の冒険の完全な確定記録。\n\n最低限保持:\n\n- quest_run_id\n- chapter_id\n- section_id / quest_id\n- party_snapshot\n- seed\n- playback_started_at\n- adventure_duration_seconds\n- timeline_result[]\n- battle_results[]\n- event_results[]\n- scene_snapshots[]\n- reward_results\n- flag/progress_results\n- final_result\n\n---\n\n# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n## Current ownership correction\n\n旧RoadmapのSection-owned boxesはCurrentではQuest-owned `boxes[]` に置換する。\nその他のQuestRun/Snapshot/Simulation責務は保持する。\n\n## Reward\n\n各Event/Battle/Explorationの途中Rewardはreward_historyへ記録可能。\n成功Runのaggregate `reward_result` を固定。\nFailure時は正式Commit対象を空/無効とする。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061 Current Summary",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-QUEST-LOSS-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-QUEST-001",
         "SPEC-V9-019-BOX-001",
@@ -2024,7 +2197,9 @@
       "status": "Draft",
       "summary": "Timeline、時間進行、Viewer、再実行禁止、Commit。",
       "body": "# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n# 12. Playback時間管理\n\n開始時刻基準。\n\nelapsed =\n現在時刻 - playback_started_at\n\nsetInterval積み上げ値を正としない。\n\nScene詳細・Battle詳細を見ている間も進行。\n\n戻った時:\n→ 現在時刻までCatch-up表示。\n\n---\n\n# 13. Adventure Playback\n\nPlaybackはQuestRunだけを読む。\n\n禁止:\n- Battle再計算\n- Event再抽選\n- random_event再抽選\n- random_battle再生成\n- Scene条件再判定\n- 報酬再計算\n- Flag再判定\n\n---\n\n# 14. Scene詳細\n\n冒険ログ:\n\n「ストーリーイベントが発生した [見る]」\n\nログでは内容を伏せる。\n\n別画面:\n→ 保存済みScene Snapshotの会話を再生\n\n仕様:\n- 会話のみ\n- 選択肢なし\n- 視聴任意\n- Quest進行を止めない\n- 専用回想画面なし\n- 冒険ログから再閲覧\n\n---\n\n# 15. Battle詳細\n\n冒険ログ:\n→ 結果要約\n→ [結果を見る]\n\n別画面:\n→ 保存済みBattle Result / Playback Eventsを再生\n\n再戦闘しない。\n\n詳細画面中もQuestは進行。\n\n---\n\n# 16. 報酬・結果の扱い\n\n報酬はQuest一括報酬ではなく、\n\n- Battle結果\n- Event結果\n- 固有イベント結果\n\nとして発生。\n\n結果自体はQuest開始時に確定・保存する。\n\nただしPlayback中は未来の報酬を利用可能にしない。\n\n帰還時:\n→ 確定済み結果をプレイヤーへ公開 / 利用可能化\n\n帰還時に結果を再計算しない。\n\n---\n\n# 17. Studio実装\n\n## Chapter Editor\n追加:\n- 使用可能Monster一覧\n- 使用可能Random Event一覧\n\n## Section Editor\n追加:\n- adventure_duration_seconds\n- Box Editor\n\nBox Editor:\n- 初期5箱（新規Section）\n- 箱追加\n- 箱削除\n- 並び替え\n- type選択\n- Scene選択\n- Event選択\n\n## Event Editor\nEvent.type = battle時:\n- Monster Master参照固定編成\n- monster_id\n- count\n\n## Monster Master\nEnemy Budget Costを持てる構造を追加。\n\n数値はバランス調整。\n\n---\n\n## Current Return Commit\n\n- Playback中はReward/Flagを正式Saveへ反映しない。\n- 成功時Returnで保存済みreward_resultとFlag差分を一括Commitする。\n- Failureでは途中Rewardを正式資産へ移さない。\n- 二重Commit防止状態をQuestRunへ持つ。\n- ReturnでResolver/Battle/Event/Flagを再実行しない。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061",
-      "decision_refs": [],
+      "decision_refs": [
+        "DEC-REORG-QUEST-LOSS-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-RUN-001"
       ],
@@ -2097,9 +2272,15 @@
       "id": "SPEC-V9-019-GUILD-001",
       "title": "Guild / Facility / Unlock",
       "status": "Draft",
-      "summary": "Guild Level、Facility責務、Unlock Data、未確定Balance。",
-      "body": "ギルド冒険物語\n\nギルド施設システム設計書\n\nVersion 1.1\n\n==================================================\n■ 採用状態\n\n正式採用\n\n監査判断：AUD-002C\n決定ID：DEC-0007\n\n==================================================\n■ 基本方針\n\nギルド施設はプレイヤーの長期成長、利便性、育成、装備管理を担当する。\n\n施設は戦闘能力を直接上昇させない。\n\n役割分担は次のとおりとする。\n\n施設 ＝ 利便性・管理・育成導線\n装備 ＝ 戦闘性能\nスキル ＝ 戦術\n\n==================================================\n■ ギルドレベル\n\nギルドレベルは次の用途に使用する。\n\n・施設の段階的開放\n・倉庫容量の段階的増加\n・依頼開放条件\n・将来の施設強化上限\n\nギルドレベルの最大値、必要ギルド経験値、上昇条件は未確定とする。\n\n==================================================\n■ 施設開放\n\n施設そのものはギルドレベルによって段階的に開放する。\n\n各施設はrequired_guild_levelを持つ。\n\n具体的な開放レベルはバランス設計時に決定する。\n\n初期施設候補\n\n・酒場\n・訓練所\n・倉庫\n・掲示板\n\n将来施設候補\n\n・鍛冶場\n・研究所\n・図書館\n・宿舎\n\n==================================================\n■ 酒場\n\n酒場は冒険者管理施設とする。\n\n機能\n\n・キャラクター雇用\n・冒険者確認\n・パーティ編成\n・転職\n・冒険者解雇\n\nキャラクター雇用は訓練所では行わない。\n\n雇用可能なキャラクターの種類はゲーム進行度と連動する。\n\nストーリー本文を直接参照せず、共通進行度または共通フラグを参照する。\n\n==================================================\n■ 訓練所\n\n訓練所は育成施設とする。\n\n機能\n\n・レベル確認\n・能力値確認\n・スキル習得\n・AI編集\n\nAI機能は進行度による段階開放に対応できる構造とする。\n\nただし、具体的なAI開放段階、対象機能、ノード上限は現時点では未確定とする。\n\n未確定項目は無効データとして保持できる設計とし、PHPへ固定値を埋め込まない。\n\n==================================================\n■ 倉庫\n\n倉庫はアイテム保管施設とする。\n\n保管対象\n\n・装備\n・石板\n・素材\n\n倉庫容量は倉庫施設レベルではなく、ギルドレベル定義と直接連動する。\n\n容量候補\n\n・500\n・1000\n・2000\n・5000\n・10000\n\n上記数値とギルドレベルの具体的な対応はバランス設計時に決定する。\n\n==================================================\n■ 掲示板\n\n掲示板は依頼管理施設とする。\n\n機能\n\n・クエスト選択\n・クエスト確認\n・報酬確認\n\n==================================================\n■ 雇用可能キャラクターと雇用人数上限\n\n次の2要素を分離して管理する。\n\n雇用可能キャラクターの種類\n＝ゲーム進行度または共通フラグで開放\n\n雇用可能人数の上限\n＝ギルドまたは宿舎側の数値として管理\n\n初期雇用人数上限候補は20人とする。\n\n30人、50人、100人への増加候補は保持するが、対応条件は未確定とする。\n\n==================================================\n■ 共通解放条件\n\n施設、キャラクター、AI機能の解放条件は共通の解放条件データで管理する。\n\n対応条件タイプ候補\n\n・GUILD_LEVEL\n・PROGRESS\n・FLAG\n・QUEST_COMPLETED\n・FACILITY_UNLOCKED\n・FACILITY_LEVEL\n\n条件判定は共通サービスを通し、各施設PHPへ個別条件を固定記述しない。\n\n==================================================\n■ 推奨CSV\n\n・guild_levels.csv\n・guild_facilities.csv\n・guild_facility_levels.csv\n・guild_facility_features.csv\n・guild_upgrade_costs.csv\n・unlock_conditions.csv\n\nAI段階開放を独立管理する場合\n\n・ai_unlocks.csv\n\n==================================================\n■ 推奨セーブDB\n\n・player_guild\n・player_guild_facilities\n\n==================================================\n■ 実装方針\n\nCSVが定義を保持し、PHPが機能を実行する。\n\nPHPは次を担当する。\n\n・GuildService\n・FacilityService\n・CharacterUnlockService\n・UnlockConditionService\n・各Repository\n\n施設開放、雇用可能判定、AI機能開放の具体値をPHPへ直接埋め込まない。\n\n==================================================\n■ 未確定事項\n\n・ギルド経験値\n・ギルドレベル上限\n・施設の具体的な開放レベル\n・施設強化費用\n・強化素材\n・倉庫容量と各ギルドレベルの対応\n・雇用人数上限の増加条件\n・AI機能の具体的な段階開放\n・施設の建設時間および強化時間\n\n未確定事項は正式決定まで補完しない。\n\n\n==================================================\n■ 統合注記\n\n本仕様書は旧Version1.0の内容を確認し、重複を整理した統合版である。\nVersion1.0に含まれていた基本方針・施設の役割・施設強化方針は本書に包含されている。\n以後は本仕様書のみを正式仕様として扱い、旧Version1.0は参照しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-037 Guild v1.1",
-      "decision_refs": [],
+      "summary": "Guild Level、初期4施設、Facility責務、Unlock Data、Balance可変。Currentでは施設強化なし。",
+      "body": "ギルド冒険物語\n\nギルド施設システム設計書\n\nVersion 1.1\n\n==================================================\n■ 採用状態\n\n正式採用\n\n監査判断：AUD-002C\n決定ID：DEC-0007\n\n==================================================\n■ 基本方針\n\nギルド施設はプレイヤーの長期成長、利便性、育成、装備管理を担当する。\n\n施設は戦闘能力を直接上昇させない。\n\n役割分担は次のとおりとする。\n\n施設 ＝ 利便性・管理・育成導線\n装備 ＝ 戦闘性能\nスキル ＝ 戦術\n\n==================================================\n■ ギルドレベル\n\nギルドレベルは次の用途に使用する。\n\n・施設の段階的開放\n・倉庫容量の段階的増加\n・依頼開放条件\n\nギルドレベルの最大値、必要ギルド経験値、上昇条件は未確定とする。\n\n==================================================\n■ 施設開放\n\n施設そのものはギルドレベルによって段階的に開放する。\n\n各施設はrequired_guild_levelを持つ。\n\n具体的な開放レベルはバランス設計時に決定する。\n\n初期施設（確定）\n\n・酒場\n・訓練所\n・倉庫\n・掲示板\n\n==================================================\n■ 酒場\n\n酒場は冒険者管理施設とする。\n\n機能\n\n・キャラクター雇用\n・冒険者確認\n・パーティ編成\n・転職\n・冒険者解雇\n\nキャラクター雇用は訓練所では行わない。\n\n雇用可能なキャラクターの種類はゲーム進行度と連動する。\n\nストーリー本文を直接参照せず、共通進行度または共通フラグを参照する。\n\n==================================================\n■ 訓練所\n\n訓練所は育成施設とする。\n\n機能\n\n・レベル確認\n・能力値確認\n・スキル習得\n・AI編集\n\nAI機能は進行度による段階開放に対応できる構造とする。\n\nただし、具体的なAI開放段階、対象機能、ノード上限は現時点では未確定とする。\n\n未確定項目は無効データとして保持できる設計とし、PHPへ固定値を埋め込まない。\n\n==================================================\n■ 倉庫\n\n倉庫はアイテム保管施設とする。\n\n保管対象\n\n・装備\n・石板\n・素材\n\n倉庫容量は倉庫施設レベルではなく、ギルドレベル定義と直接連動する。\n\n容量候補\n\n・500\n・1000\n・2000\n・5000\n・10000\n\n上記数値とギルドレベルの具体的な対応はバランス設計時に決定する。\n\n==================================================\n■ 掲示板\n\n掲示板は依頼管理施設とする。\n\n機能\n\n・クエスト選択\n・クエスト確認\n・報酬確認\n\n==================================================\n■ 雇用可能キャラクターと雇用人数上限\n\n次の2要素を分離して管理する。\n\n雇用可能キャラクターの種類\n＝ゲーム進行度または共通フラグで開放\n\n雇用可能人数の上限\n＝ギルドまたは宿舎側の数値として管理\n\n初期雇用人数上限候補は20人とする。\n\n30人、50人、100人への増加候補は保持するが、対応条件は未確定とする。\n\n==================================================\n■ 共通解放条件\n\n施設、キャラクター、AI機能の解放条件は共通の解放条件データで管理する。\n\n対応条件タイプ候補\n\n・GUILD_LEVEL\n・PROGRESS\n・FLAG\n・QUEST_COMPLETED\n・FACILITY_UNLOCKED\n\n条件判定は共通サービスを通し、各施設PHPへ個別条件を固定記述しない。\n\n==================================================\n■ 推奨CSV\n\n・guild_levels.csv\n・guild_facilities.csv\n・guild_facility_features.csv\n・unlock_conditions.csv\n\nAI段階開放を独立管理する場合\n\n・ai_unlocks.csv\n\n==================================================\n■ 推奨セーブDB\n\n・player_guild\n・player_guild_facilities\n\n==================================================\n■ 実装方針\n\nCSVが定義を保持し、PHPが機能を実行する。\n\nPHPは次を担当する。\n\n・GuildService\n・FacilityService\n・CharacterUnlockService\n・UnlockConditionService\n・各Repository\n\n施設開放、雇用可能判定、AI機能開放の具体値をPHPへ直接埋め込まない。\n\n==================================================\n■ 未確定事項\n\n・ギルド経験値\n・ギルドレベル上限\n・施設の具体的な開放レベル\n・倉庫容量と各ギルドレベルの対応\n・雇用人数上限の増加条件\n・AI機能の具体的な段階開放\n\n未確定事項は正式決定まで補完しない。\n\n\n==================================================\n■ 統合注記\n\n本仕様書は旧Version1.0の内容を確認し、重複を整理した統合版である。\nVersion1.0に含まれていた基本方針・施設の役割・施設強化方針は本書に包含されている。\n以後は本仕様書のみを正式仕様として扱い、旧Version1.0は参照しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-037 Guild v1.1\n\n==================================================\n■ 2026-08-20 Human Review反映\n\n・初期施設は酒場 / 訓練所 / 倉庫 / 掲示板の4施設で確定。\n・鍛冶場 / 研究所 / 図書館 / 宿舎の将来施設候補は削除。\n・施設は戦闘能力を直接上昇させない。\n・Currentでは施設Level / 施設強化システムを設けない。\n・Guild Levelは削除せず維持する。\n・Guild Level上限、必要EXP、上昇条件、施設解放Level、倉庫容量対応等の具体数値はBalance可変。\n",
+      "decision_refs": [
+        "DEC-REORG-GUILD-001",
+        "DEC-REORG-GUILD-002",
+        "DEC-REORG-GUILD-003",
+        "DEC-REORG-GUILD-004",
+        "DEC-REORG-GUILD-005"
+      ],
       "depends_on": [
         "SPEC-V9-019-CHAR-001",
         "SPEC-V9-019-EQUIP-001",
@@ -2120,15 +2301,17 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-WORLD-001",
       "title": "WORLD Structure / ID Reference / Content Boundary",
       "status": "Draft",
-      "summary": "Region/Hub/Connection/Nation/Faction/RaceとStory分離。",
-      "body": "ギルド冒険物語\n\nWORLD領域構造設計書\n\nVersion 1.0\n\n==================================================\n■ 採用状態\n\n構造のみ正式採用\n内容は保留\n\n監査判断：AUD-002D\n決定ID：DEC-0008\n\n==================================================\n■ 目的\n\nWORLD領域は、物語進行に依存しない世界の固定定義を管理する。\n\n==================================================\n■ 管理対象\n\n・地域\n・拠点\n・地域接続\n・国家\n・勢力\n・種族\n・世界共通用語\n\n==================================================\n■ STORYとの分離\n\nSTORYは章、節、会話、出来事、加入、進行を管理する。\n\nWORLDは地域、拠点、接続、勢力などの固定定義を管理する。\n\nSTORYはWORLDのIDを参照できる。\n\nWORLDは特定の章または節へ依存しない。\n\n==================================================\n■ 初期データ構造\n\n正式採用\n\n・regions.csv\n・region_connections.csv\n\n==================================================\n■ 将来追加候補\n\n内容確定後に必要性を判断する。\n\n・factions.csv\n・faction_relations.csv\n・world_terms.csv\n・region_tags.csv\n\n==================================================\n■ 参照方針\n\nクエスト、イベント、モンスター、ストーリーは、地域名文字列ではなくregion_idを参照する。\n\n地域の存在と接続\n＝WORLD\n\n現在利用可能または移動可能か\n＝進行度、フラグ、クエスト条件などの共通解放条件\n\n==================================================\n■ 推奨PHP\n\n・RegionRepository\n・RegionConnectionRepository\n・RegionService\n\n==================================================\n■ 内容保留項目\n\n・世界地図\n・地域名\n・国家名\n・勢力名\n・種族設定\n・地域接続内容\n・世界用語\n・地域タグ\n・地域別モンスター\n・地域開放順\n・移動時間\n・ワールドマップUI\n\n元資料に存在しない内容を仕様ライブラリ側で補完しない。\n\n---\n\n## 根拠・統合元\nBOX-R10-WORLD-001",
-      "decision_refs": [],
+      "summary": "Human DecisionによりWORLD仕様はCurrentでは白紙。既存WORLD構造を正式採用しない。",
+      "body": "# Current Decision\n\nWORLD関連は現時点ですべて白紙。\n\n- 既存資料にあるRegion / Hub / Connection / Nation / Faction / Race等の構造をCurrent正式仕様として採用しない。\n- Humanが新たに決定するまでWORLD仕様を補完しない。\n- この変更対象はSPEC-V9-019-WORLD-001のWORLD仕様に限定する。\n",
+      "decision_refs": [
+        "DEC-REORG-WORLD-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-CORE-001"
       ],
@@ -2144,7 +2327,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T16:25:00+09:00"
     },
     {
       "id": "SPEC-V9-019-AI-001",
@@ -4128,7 +4311,30 @@
       "message": "Development Workspace JSON imported into current project"
     },
     {
-      "at": "2026-08-20T06:29:21.759Z",
+      "at": "2026-08-20T06:51:43.775Z",
+      "message": "Development Workspace JSON imported into current project"
+    },
+    {
+      "at": "2026-08-20T16:25:00+09:00",
+      "type": "HumanReviewIntegration",
+      "summary": "2026-08-20レビュー内容を統合。WORLD白紙、Guild初期4施設確定/将来候補削除/施設強化なし/Guild Level維持、Equipment Slot 10固定、各領域の具体数値Balance可変、Quest失敗報酬全損、未決構造のみ質問する運用ルールを反映。"
+    },
+    {
+      "at": "2026-08-20T16:40:00+09:00",
+      "type": "GameAuditGapRegistration",
+      "summary": "実ゲーム照合で不足仕様8件を登録。既決/Balance値は除外し、Human判断が必要なSystem構造だけOpen Impact化。新規/更新Specification Candidate 8件を追加。"
+    },
+    {
+      "at": "2026-08-20T08:04:58.979Z",
+      "message": "Development Workspace JSON imported into current project"
+    },
+    {
+      "at": "2026-08-20T17:10:00+09:00",
+      "type": "CompletionPresentationGapRegistration",
+      "summary": "完成ゲーム監査第2弾としてUI/UX/Presentation/Audio/Navigation/Tutorial/Accessibility/Release境界の不足20件とBattle Presentation Architecture候補を登録。Current Sourceの仮UIを正式採用せず、Human判断が必要な構造のみOpen Impact化。"
+    },
+    {
+      "at": "2026-08-20T08:12:55.376Z",
       "message": "Development Workspace JSON imported into current project"
     }
   ],
@@ -4595,6 +4801,195 @@
       "description": "DEV-V9-REORG-019のCurrent Specificationを構成するSystem Node。関連Specification: Product Content Migration / Exact Reproduction Gate",
       "created_at": "2026-08-20T13:50:00+09:00",
       "updated_at": "2026-08-20T13:50:00+09:00"
+    },
+    {
+      "id": "SYS-V9-PROGRESSION",
+      "name": "Character Progression",
+      "description": "CharacterのEXP/Level Up/成長適用を管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-SKILL-ACQ",
+      "name": "Skill Acquisition",
+      "description": "Skillの習得可否・習得処理・習得結果保存を管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-RECRUIT",
+      "name": "Adventurer Recruitment",
+      "description": "冒険者候補・雇用・解雇・Party/Equipment整合を管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-SAVE",
+      "name": "Player Save",
+      "description": "Player Save/Load/Versioning/Recoveryを管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-NEWGAME",
+      "name": "New Game Initialization",
+      "description": "新規ゲーム開始時のGuild/Roster/Party/Inventory/Progress初期化を管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-INVENTORY",
+      "name": "Inventory / Warehouse",
+      "description": "Inventory/Warehouse/装備中Item/Resourceの所有・容量・移動を管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-ABANDON",
+      "name": "Quest Abandon",
+      "description": "Active QuestRunの放棄・終了・損失処理を管理する不足System Node。",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "SYS-V9-BATTLE-PRESENTATION",
+      "name": "Battle Presentation",
+      "description": "Battle Result / Playback Eventsを視覚演出へ変換する。Battle計算は所有しない。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-BATTLE-CAMERA",
+      "name": "Battle Camera",
+      "description": "戦闘中のCamera/Zoom/Shake/Focus等を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-BATTLE-PLAYBACK-UI",
+      "name": "Battle Playback UI",
+      "description": "再生/停止/速度/送り/Skip/演出切替を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-COMBAT-HUD",
+      "name": "Combat HUD",
+      "description": "戦闘中にPlayerへ公開する状態情報を表示する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-BATTLE-RESULT-UI",
+      "name": "Battle Result UI",
+      "description": "勝敗・報酬・成長・戦闘結果を表示する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-AUDIO",
+      "name": "Audio",
+      "description": "BGM/SEと再生制御を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-GAME-SETTINGS",
+      "name": "Game Settings",
+      "description": "Player向け設定項目と保存を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-NAVIGATION",
+      "name": "Title / Menu / Navigation",
+      "description": "TitleからGuild/各機能への画面遷移を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-TUTORIAL",
+      "name": "Tutorial / Help",
+      "description": "初回導線とHelp再閲覧を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-STORY-PRESENTATION",
+      "name": "Story Presentation",
+      "description": "Scene/DialogueをPlayer向け画面として再生する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-QUEST-PRESENTATION",
+      "name": "Quest Presentation",
+      "description": "派遣から帰還までの冒険進行を表示する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-INVENTORY-UI",
+      "name": "Inventory / Equipment UI",
+      "description": "所持品・装備の閲覧/比較/操作UIを管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-SKILL-UI",
+      "name": "Skill / Passive UI",
+      "description": "Skill/Passiveの閲覧・習得関連表示を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-GUILD-UI",
+      "name": "Guild UI",
+      "description": "酒場/訓練所/倉庫/掲示板へのPlayer UIを管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-FEEDBACK-UI",
+      "name": "Feedback / Error UI",
+      "description": "Player向け成功/失敗/不可理由/Error表示を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-RESPONSIVE-UI",
+      "name": "Responsive / Device UI",
+      "description": "対応画面サイズ・向きとLayout方針を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-ACCESSIBILITY",
+      "name": "Accessibility",
+      "description": "揺れ/点滅/文字/色依存等のAccessibility設定を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-LOADING-RECOVERY",
+      "name": "Loading / Recovery UI",
+      "description": "読込中・失敗・Retry・復帰導線を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-FAILURE-PRESENTATION",
+      "name": "Failure Presentation",
+      "description": "Quest/Battle失敗と損失・帰還・再挑戦導線を表示する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "SYS-V9-RELEASE-SURFACE",
+      "name": "Release / Debug Separation",
+      "description": "製品版UIとDebug/Test/Developer機能の境界を管理する。",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
     }
   ],
   "system_contracts": [
@@ -12951,6 +13346,60 @@
       },
       "actor": "System",
       "created_at": "2026-08-20T13:50:00+09:00"
+    },
+    {
+      "id": "EVT-R21-GAME-AUDIT-001",
+      "type": "GAME_IMPLEMENTATION_GAP_AUDIT_REGISTERED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "open_impacts": [
+          "IMPACT-R21-001",
+          "IMPACT-R21-002",
+          "IMPACT-R21-003",
+          "IMPACT-R21-004",
+          "IMPACT-R21-005",
+          "IMPACT-R21-006",
+          "IMPACT-R21-007",
+          "IMPACT-R21-008"
+        ],
+        "candidate_count": 8
+      },
+      "actor": "AI",
+      "created_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "EVT-R22-COMPLETION-PRESENTATION-AUDIT-001",
+      "type": "GAME_COMPLETION_PRESENTATION_GAPS_REGISTERED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "open_impact_ids": [
+          "IMPACT-R22-001",
+          "IMPACT-R22-002",
+          "IMPACT-R22-003",
+          "IMPACT-R22-004",
+          "IMPACT-R22-005",
+          "IMPACT-R22-006",
+          "IMPACT-R22-007",
+          "IMPACT-R22-008",
+          "IMPACT-R22-009",
+          "IMPACT-R22-010",
+          "IMPACT-R22-011",
+          "IMPACT-R22-012",
+          "IMPACT-R22-013",
+          "IMPACT-R22-014",
+          "IMPACT-R22-015",
+          "IMPACT-R22-016",
+          "IMPACT-R22-017",
+          "IMPACT-R22-018",
+          "IMPACT-R22-019",
+          "IMPACT-R22-020"
+        ],
+        "candidate_count": 21
+      },
+      "actor": "AI",
+      "created_at": "2026-08-20T17:10:00+09:00"
     }
   ],
   "system_impacts": [
@@ -15057,6 +15506,372 @@
       "resolved_by": "Human",
       "resolved_at": "2026-08-20T15:09:00+09:00",
       "resolution_note": "Equipment Rarityの数値をBalanceへ分離。UNIQUE/LEGENDARY/MYTHICはDrop限定、Craft不可としてHuman確定。"
+    }
+  ],
+  "impact_items": [
+    {
+      "id": "IMPACT-R21-001",
+      "title": "Level Up成立条件が未仕様",
+      "target_type": "System",
+      "target_id": "SYS-V9-PROGRESSION",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "職業成長式はあるが、Level Up可能になる条件・EXP所有/付与・成長適用タイミングの実装契約が不足。",
+      "required_human_decision": "Level Upの成立方式を決める。EXP方式か、Quest結果等の別方式か。EXPを採用する場合、誰に付与するか・死亡/不参加時の扱い等の構造を決める。具体EXP値はBalance可変。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-002",
+      "title": "Skill習得方式が未仕様",
+      "target_type": "System",
+      "target_id": "SYS-V9-SKILL-ACQ",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Formal Skillの定義/実行はあるが、PlayerがSkillを習得する正式契約が不足。",
+      "required_human_decision": "Skillをどこで・どの条件で習得するかを決める。能力値条件、訓練所、前提Skill、Cost等の構造を決める。具体Cost/閾値はBalance可変。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-003",
+      "title": "冒険者雇用/解雇契約が不足",
+      "target_type": "System",
+      "target_id": "SYS-V9-RECRUIT",
+      "status": "Open",
+      "severity": "High",
+      "summary": "酒場に雇用/解雇機能はあるが、候補生成・雇用成立・解雇時整合の仕様が不足。",
+      "required_human_decision": "雇用候補の出し方、雇用成立条件、解雇時の装備/Party/進行データ処理を決める。雇用費用等の数値はBalance可変。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-004",
+      "title": "Player Save正本が未仕様",
+      "target_type": "System",
+      "target_id": "SYS-V9-SAVE",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "実ゲームは複数領域をSaveするが、ゲーム全体のSave Schema/Version/Load失敗/Recoveryの正式Owner仕様がない。",
+      "required_human_decision": "Saveの正本構造、Version不一致時の扱い、破損/読込失敗時の扱い、Auto Save/Manual Saveの責務、Active Quest復帰方針を決める。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-005",
+      "title": "New Game初期化契約が未仕様",
+      "target_type": "System",
+      "target_id": "SYS-V9-NEWGAME",
+      "status": "Open",
+      "severity": "High",
+      "summary": "初期Gold/Character/Party/Inventory等の現行処理はあるが、正式なNew Game初期化順序とOwnerがない。",
+      "required_human_decision": "New Gameで必ず生成する領域と初期化順序を決める。具体初期値はBalance/Data可変。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-006",
+      "title": "Inventory/Warehouse所有ルールが不足",
+      "target_type": "System",
+      "target_id": "SYS-V9-INVENTORY",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Equipment/Resourceの保存先とGuild Warehouseの関係、容量満杯、装備中Itemの所有扱いが不足。",
+      "required_human_decision": "InventoryとWarehouseを同一にするか分離するか、容量満杯時のReward/Drop、装備中Itemの容量扱い、Resource stack所有方式を決める。容量数値はBalance可変。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-007",
+      "title": "Equipment ContributionのBattle接続未完成",
+      "target_type": "Specification",
+      "target_id": "SPEC-V9-019-EQUIP-003",
+      "status": "Open",
+      "severity": "High",
+      "summary": "accuracy/evasion/magic_weapon_bonus/base_critical_rate等に未接続が残り、完成ゲームのCombat契約として不足。",
+      "required_human_decision": "各ContributionをBattleのどの判定/計算へ接続するか決める。数式係数はBalance可変。根拠がない式は推測しない。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R21-008",
+      "title": "Quest Abandon正式処理が未仕様",
+      "target_type": "System",
+      "target_id": "SYS-V9-ABANDON",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Stoneは放棄時返却なしと決まっているが、QuestRunをAbandon状態へ遷移させる正式契約が不足。",
+      "required_human_decision": "放棄をFailureと同等に扱うか、専用結果にするか、途中Reward/Flag/Progress/Active Run終了をどう扱うか決める。",
+      "source": "GameAudit",
+      "created_at": "2026-08-20T16:40:00+09:00",
+      "updated_at": "2026-08-20T16:40:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-001",
+      "title": "Battle Presentation / 戦闘演出",
+      "target_type": "System",
+      "target_id": "SYS-V9-BATTLE-PRESENTATION",
+      "status": "Open",
+      "severity": "High",
+      "summary": "通常攻撃、Skill、魔法、Heal、Critical、Miss、Status、Buff/Debuff、Shield、Revive、KO、勝敗、移動、Effect、Damage/Heal数値表示のPresentation仕様が不足。",
+      "required_human_decision": "Battle Playback Eventから何をどう表示するか、演出の基本構造と演出OFF時の最低表示を決める。個別Effect量や時間は調整可能データにする。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-002",
+      "title": "Battle Camera / 画面演出制御",
+      "target_type": "System",
+      "target_id": "SYS-V9-BATTLE-CAMERA",
+      "status": "Open",
+      "severity": "Medium",
+      "summary": "Camera固定/移動、Focus、Zoom、Screen Shake、Flash、Boss登場等の正式方針がない。",
+      "required_human_decision": "Camera演出を採用する範囲と、揺れ/Flash等を無効化した場合の挙動を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-003",
+      "title": "Battle Playback UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-BATTLE-PLAYBACK-UI",
+      "status": "Open",
+      "severity": "High",
+      "summary": "実ゲームに再生/一時停止/速度/1行動送り/演出切替等の仮UIがあるが正式機能範囲が未確定。",
+      "required_human_decision": "再生、一時停止、速度変更、1行動送り、Skip、演出ON/OFFのうち正式提供する機能を決める。Battle再計算は禁止。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-004",
+      "title": "Combat HUD",
+      "target_type": "System",
+      "target_id": "SYS-V9-COMBAT-HUD",
+      "status": "Open",
+      "severity": "High",
+      "summary": "HP/MP/Action Gauge/Status/Buff/Debuff/Shield/Cooldown/予約行動/Targetの公開範囲が未仕様。",
+      "required_human_decision": "戦闘中にPlayerへ常時表示する情報、詳細表示だけに出す情報、非公開情報を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-005",
+      "title": "Battle Result UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-BATTLE-RESULT-UI",
+      "status": "Open",
+      "severity": "High",
+      "summary": "勝敗・Reward・EXP・Level Up・Drop Equipment・戦闘統計の結果表示契約が不足。",
+      "required_human_decision": "Battle終了時とQuest帰還時で何を表示するか、成長/報酬表示の責務分担を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-006",
+      "title": "Audio / BGM / SE",
+      "target_type": "System",
+      "target_id": "SYS-V9-AUDIO",
+      "status": "Open",
+      "severity": "Medium",
+      "summary": "BGM/SEの正式System仕様が不足。",
+      "required_human_decision": "BGMとSEを正式機能として持つか、Scene/Battle/UIでの切替責務を決める。音量数値等は設定可変。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-007",
+      "title": "Game Settings",
+      "target_type": "System",
+      "target_id": "SYS-V9-GAME-SETTINGS",
+      "status": "Open",
+      "severity": "Medium",
+      "summary": "Player向け設定項目と保存契約が不足。",
+      "required_human_decision": "BGM/SE、戦闘速度、演出、文字速度等のうちPlayer設定として公開する項目とSave対象を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-008",
+      "title": "Title / Menu / Navigation",
+      "target_type": "System",
+      "target_id": "SYS-V9-NAVIGATION",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Title/New Game/Continue/Settings/Guild/施設間の全体画面フローが正式仕様化されていない。",
+      "required_human_decision": "起動からゲーム開始、Guild、各施設、QuestへのNavigation構造と戻る操作を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-009",
+      "title": "Tutorial / Help",
+      "target_type": "System",
+      "target_id": "SYS-V9-TUTORIAL",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Party/Quest/Equipment/Skill/Stone/AI等をPlayerへ教える正式導線がない。",
+      "required_human_decision": "Tutorialを必須/任意のどちらにするか、Helpを再閲覧可能にするか、どのSystemを対象にするか決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-010",
+      "title": "Story Presentation",
+      "target_type": "System",
+      "target_id": "SYS-V9-STORY-PRESENTATION",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Scene/Dialogue/stage_directionデータはあるが、立ち絵/背景/話者/選択肢/Auto/Skip/既読等の表示契約が不足。",
+      "required_human_decision": "Story Sceneの基本表示方式とPlayer操作を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-011",
+      "title": "Quest Presentation",
+      "target_type": "System",
+      "target_id": "SYS-V9-QUEST-PRESENTATION",
+      "status": "Open",
+      "severity": "High",
+      "summary": "派遣、冒険進行、Event、探索、Battle、Reward、帰還の見せ方が未仕様。",
+      "required_human_decision": "Quest PlaybackのPlayer向け基本画面とBattle/Sceneへの遷移方式を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-012",
+      "title": "Inventory / Equipment UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-INVENTORY-UI",
+      "status": "Open",
+      "severity": "High",
+      "summary": "装備一覧/比較/MOD/装備不可理由/Sort/Filter/売却/破棄等の正式UI仕様が不足。",
+      "required_human_decision": "Inventory/EquipmentでPlayerが可能な操作と比較表示方式を決める。売却/破棄自体を採用するかもここで決定する。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-013",
+      "title": "Skill / Passive UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-SKILL-UI",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Skill/Passive一覧、詳細、習得条件、使用条件、Loadout等の正式UI仕様が不足。",
+      "required_human_decision": "Skill/Passive画面で閲覧・編集可能な内容とSkill Loadoutを採用するか決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-014",
+      "title": "Guild UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-GUILD-UI",
+      "status": "Open",
+      "severity": "High",
+      "summary": "酒場/訓練所/倉庫/掲示板の機能はあるが、Player UIと施設間Navigationが不足。",
+      "required_human_decision": "4施設をどの画面構造で提供するか決める。施設の戦闘能力直接上昇なし等の既決仕様は再質問しない。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-015",
+      "title": "Feedback / Error UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-FEEDBACK-UI",
+      "status": "Open",
+      "severity": "High",
+      "summary": "保存失敗、装備不可、Skill使用不可、Quest開始不可等をPlayerへどう伝えるか未仕様。",
+      "required_human_decision": "Toast/Dialog/Inline等のError表示体系と、致命/非致命ErrorのPlayer導線を決める。UIは計算せずRuntime理由を表示する。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-016",
+      "title": "Responsive / Device UI",
+      "target_type": "System",
+      "target_id": "SYS-V9-RESPONSIVE-UI",
+      "status": "Open",
+      "severity": "Medium",
+      "summary": "PC/スマホ縦/スマホ横等の正式対応範囲が未決。",
+      "required_human_decision": "正式対応Device/Layout範囲を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-017",
+      "title": "Accessibility",
+      "target_type": "System",
+      "target_id": "SYS-V9-ACCESSIBILITY",
+      "status": "Open",
+      "severity": "Medium",
+      "summary": "Screen Shake OFF、Flash軽減、文字サイズ、色依存回避等が正式仕様化されていない。",
+      "required_human_decision": "最低限提供するAccessibility機能を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-018",
+      "title": "Loading / Recovery",
+      "target_type": "System",
+      "target_id": "SYS-V9-LOADING-RECOVERY",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Loading、読込失敗、Retry、Save失敗、Quest途中復帰等のPlayer向け状態遷移が不足。",
+      "required_human_decision": "Loading/Recovery時にPlayerへ何を表示し、Retry/Title復帰等をどう提供するか決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-019",
+      "title": "Game Over / Failure Presentation",
+      "target_type": "System",
+      "target_id": "SYS-V9-FAILURE-PRESENTATION",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Quest失敗時の報酬全損は既決だが、その表示・帰還・再挑戦導線が未仕様。",
+      "required_human_decision": "Battle敗北/Quest失敗の表示と帰還/再挑戦導線を決める。報酬全損ルール自体は再質問しない。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
+    },
+    {
+      "id": "IMPACT-R22-020",
+      "title": "Release / Debug Separation",
+      "target_type": "System",
+      "target_id": "SYS-V9-RELEASE-SURFACE",
+      "status": "Open",
+      "severity": "High",
+      "summary": "完成版からDebug/Test/Standalone Battle/Developer UIをどう分離するか未仕様。",
+      "required_human_decision": "Release Buildに含めるPlayer機能と除外するDeveloper機能の境界を決める。",
+      "source": "GameCompletionAudit",
+      "created_at": "2026-08-20T17:10:00+09:00",
+      "updated_at": "2026-08-20T17:10:00+09:00"
     }
   ]
 }
