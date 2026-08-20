@@ -1,8 +1,9 @@
-/* GKS-B691 Development Git Store
+/* GKS-B698 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
  * - Writes only under development-project-data/ in the selected repository.
+ * - Development Project data is intentionally outside package_manifest.json so data-only saves cannot invalidate the source-code gate.
  */
 (function(global){
 'use strict';
@@ -93,28 +94,18 @@ async function gitApi(c,path,options={}){
 async function gitBlobText(c,sha){
  const blob=await gitApi(c,`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blobがbase64ではありません。');return base64Utf8(blob.content||'');
 }
-async function rebuildManifestForProject(manifest,path,jsonText){
- if(!manifest||!Array.isArray(manifest.files))throw new Error('GitHub Sourceのpackage_manifest.json: files配列がありません。');
- const bytes=new TextEncoder().encode(jsonText),hash=await sha256Text(jsonText),item={path,size:bytes.length,sha256:hash};
- const files=manifest.files.filter(x=>String(x?.path||'')!==path);files.push(item);files.sort((a,b)=>String(a.path||'').localeCompare(String(b.path||'')));
- return {manifest:{...manifest,generated_at:new Date().toISOString(),file_count:files.length,files},item};
-}
-async function commitProjectWithManifest(c,jsonText,message,expectedProjectSha=''){
+async function commitProjectOnly(c,jsonText,message,expectedProjectSha=''){
  const ref=await gitApi(c,`/git/ref/heads/${branchRefPath(c.branch)}`),headSha=text(ref?.object?.sha);if(!headSha)throw new Error(`Branch HEADを取得できません: ${c.branch}`);
  const commit=await gitApi(c,`/git/commits/${encodeURIComponent(headSha)}`),baseTree=text(commit?.tree?.sha);if(!baseTree)throw new Error('Branch HEADのTreeを取得できません。');
  const tree=await gitApi(c,`/git/trees/${encodeURIComponent(baseTree)}?recursive=1`),entries=Array.isArray(tree?.tree)?tree.tree:[];
  const projectEntry=entries.find(x=>x.type==='blob'&&x.path===c.path)||null;
  if(expectedProjectSha&&text(projectEntry?.sha)!==text(expectedProjectSha))throw new Error(`Remoteが読込後に更新されています。再読込してください。\nloaded=${expectedProjectSha}\nremote=${text(projectEntry?.sha)||'(missing)'}`);
- const manifestEntry=entries.find(x=>x.type==='blob'&&x.path==='package_manifest.json');if(!manifestEntry?.sha)throw new Error('GitHub Source rootにpackage_manifest.jsonがありません。Development Projectだけを単独Commitせず、Source Packageを先に整合させてください。');
- let manifest;try{manifest=JSON.parse(await gitBlobText(c,manifestEntry.sha))}catch(e){throw new Error('GitHub Sourceのpackage_manifest.jsonを解析できません: '+e.message)}
- const rebuilt=await rebuildManifestForProject(manifest,c.path,jsonText),manifestText=JSON.stringify(rebuilt.manifest,null,2)+'\n';
- const verifyHash=await sha256Text(jsonText);if(rebuilt.item.sha256!==verifyHash||rebuilt.item.size!==new TextEncoder().encode(jsonText).length)throw new Error('package_manifest再生成後のProject整合性確認に失敗しました。');
+ const projectSha256=await sha256Text(jsonText),projectSize=new TextEncoder().encode(jsonText).length;
  const projectBlob=await gitApi(c,'/git/blobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:utf8Base64(jsonText),encoding:'base64'})});
- const manifestBlob=await gitApi(c,'/git/blobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:utf8Base64(manifestText),encoding:'base64'})});
- const newTree=await gitApi(c,'/git/trees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:baseTree,tree:[{path:c.path,mode:'100644',type:'blob',sha:projectBlob.sha},{path:'package_manifest.json',mode:'100644',type:'blob',sha:manifestBlob.sha}]})});
- const newCommit=await gitApi(c,'/git/commits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text(message)||'Update Development Project + package_manifest',tree:newTree.sha,parents:[headSha]})});
+ const newTree=await gitApi(c,'/git/trees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:baseTree,tree:[{path:c.path,mode:'100644',type:'blob',sha:projectBlob.sha}]})});
+ const newCommit=await gitApi(c,'/git/commits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text(message)||'Update Development Project',tree:newTree.sha,parents:[headSha]})});
  await gitApi(c,`/git/refs/heads/${branchRefPath(c.branch)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:newCommit.sha,force:false})});
- return {file_sha:text(projectBlob.sha),manifest_blob_sha:text(manifestBlob.sha),commit_sha:text(newCommit.sha),project_sha256:rebuilt.item.sha256,project_size:rebuilt.item.size};
+ return {file_sha:text(projectBlob.sha),commit_sha:text(newCommit.sha),project_sha256:projectSha256,project_size:projectSize};
 }
 async function commitJson(c,jsonText,message,expectedSha=''){
  const latest=await remoteMeta(c);
@@ -163,15 +154,15 @@ async function uploadFile(file){
  if(!file)return;
  try{setBusy(true);const raw=await file.text(),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');if(!state.pathEditing||!normalizePath(byId('devGitPath')?.value))byId('devGitPath').value=defaultPathForProjectId(id);const c=connection(true);
  const meta=await remoteMeta(c);if(meta.exists&&!confirm(`Remoteに既存JSONがあります。\n${c.path}\nSHA ${meta.sha}\n\n新しいCommitで更新しますか？`)){setStatus('Git保存をキャンセルしました。');return;}
- const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;setStatus('Project JSON + package_manifest を同一Atomic CommitでGit保存しています…');const out=await commitProjectWithManifest(c,JSON.stringify(project,null,2)+'\n',`Store Development Project ${id} + package_manifest`,meta.sha);
- state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git保存・案件読込完了: ${id}\nProject + package_manifest Atomic Commit ${out.commit_sha}\nSource ZIPは出力していません。`,'OK');}
+ const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;setStatus('Project JSONをGit保存しています…');const out=await commitProjectOnly(c,JSON.stringify(project,null,2)+'\n',`Store Development Project ${id}`,meta.sha);
+ state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git保存・案件読込完了: ${id}\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');}
  catch(e){setStatus('Git保存失敗: '+e.message,'ERROR');}
  finally{byId('devGitFile').value='';setBusy(false);render();}
 }
 async function saveCurrent(){
  try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git'||!isLoaded(entry.id))throw new Error('Sessionへ読み込まれたGit案件を開いてください。');const ws=currentWorkspace();if(!ws)throw new Error('現在案件データを取得できません。');fillFromEntry(entry);const c=connection(true),remote=entry.git_remote||{};
  if(c.owner!==remote.owner||c.repo!==remote.repo||c.branch!==remote.branch||c.path!==remote.path)throw new Error('現在案件の登録済みGit接続先と入力欄が一致しません。接続先変更はJSONファイル→Git保存から新しい案件として行ってください。');
- setStatus('現在案件 + package_manifest を同一Atomic CommitでGit保存しています…');const out=await commitProjectWithManifest(c,JSON.stringify(ws,null,2)+'\n',`Update Development Project ${entry.id} + package_manifest`,text(remote.sha));state.host.updateGitRemote(entry.id,{...remote,sha:out.file_sha});markClean(entry.id);setStatus(`Git保存完了\nProject + package_manifest Atomic Commit ${out.commit_sha}\nSource ZIPは出力していません。`,'OK');}
+ setStatus('現在案件をGit保存しています…');const out=await commitProjectOnly(c,JSON.stringify(ws,null,2)+'\n',`Update Development Project ${entry.id}`,text(remote.sha));state.host.updateGitRemote(entry.id,{...remote,sha:out.file_sha});markClean(entry.id);setStatus(`Git保存完了\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');}
  catch(e){setStatus('Git保存失敗: '+e.message,'ERROR');}
  finally{setBusy(false);render();}
 }

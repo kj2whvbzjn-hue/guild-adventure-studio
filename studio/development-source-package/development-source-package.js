@@ -1,12 +1,12 @@
 /**
  * Development Project -> validated full Source ZIP builder.
- * GKS-B691
+ * GKS-B698
  *
  * Import path only:
  * - Reads the currently served source package using package_manifest.json.
- * - Allows pre-existing manifest drift only under development-project-data/.
+ * - Development Project JSON is packaged, but intentionally excluded from package_manifest.json.
  * - Overlays imported Development Project JSON files.
- * - Rebuilds package_manifest.json from actual output bytes.
+ * - Rebuilds package_manifest.json only for source-integrity files.
  * - Verifies the rebuilt manifest before downloading a full Source ZIP.
  *
  * This module does not write Git. Git persistence is owned by Development Git Store.
@@ -86,7 +86,7 @@ async function mapLimit(rows,limit,worker){
 }
 function buildManifest(records,persistentPaths){
  const allow=persistentPaths instanceof Set?persistentPaths:new Set();
- const files=[...records].filter(x=>allow.has(x.path)).sort((a,b)=>a.path.localeCompare(b.path)).map(x=>({path:x.path,size:x.bytes.length,sha256:x.sha256}));
+ const files=[...records].filter(x=>allow.has(x.path)&&!x.path.startsWith(DATA_ROOT)).sort((a,b)=>a.path.localeCompare(b.path)).map(x=>({path:x.path,size:x.bytes.length,sha256:x.sha256}));
  return {schema_version:1,generated_at:new Date().toISOString(),file_count:files.length,files};
 }
 async function verifyManifest(manifest,recordMap){
@@ -106,8 +106,8 @@ async function build(items,options={}){
   const projects=normalizeProjects(items),overlay=new Map(projects.map(x=>[x.path,utf8(JSON.stringify(x.project,null,2)+'\n')]));
   setStatus('Source ZIP生成: package_manifestを読み込んでいます…');
   const base=await loadManifest(),baseByPath=new Map(base.files.map(x=>[String(x.path||''),x])),fallbackFiles=await loadFallbackFiles();
-  const persistentPaths=new Set([...base.files.map(x=>String(x.path||'')),...overlay.keys()].filter(Boolean));
-  const paths=[...new Set([...persistentPaths,...Object.keys(fallbackFiles||{})])].filter(Boolean).sort();
+  const persistentPaths=new Set(base.files.map(x=>String(x.path||'')).filter(Boolean));
+  const paths=[...new Set([...persistentPaths,...overlay.keys(),...Object.keys(fallbackFiles||{})])].filter(Boolean).sort();
   let loaded=0;const records=await mapLimit(paths,8,async path=>{
    const expected=baseByPath.get(path),fallbackRow=fallbackFiles?.[path]||null,b=overlay.has(path)?overlay.get(path):await fetchBytes(path,expected,fallbackRow),hash=await sha256(b);
    if(expected&&!path.startsWith(DATA_ROOT)){
