@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B691</title>
+<title>GK Studio GKS-B692</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -468,13 +468,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B691</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B692</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B691</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B692</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1945,9 +1945,10 @@ updateDeployDeleteControl();
       <div class="toolbar dev-data-project-actions">
         <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button>
         <label class="button-like">案件JSONを追加<input id="developmentProjectAddFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentProjectAsNew(this.files[0]);this.value=''"></label>
+        <label class="button-like">現在案件へJSONを統合<input id="developmentMergeImportFile" type="file" accept="application/json,.json" class="hidden" onchange="mergeImportDevelopmentWorkspace(this.files[0]);this.value=''"></label>
         <label class="button-like">現在案件をJSONで置換<input id="developmentImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importDevelopmentWorkspace(this.files[0]);this.value=''"></label>
       </div>
-      <p class="small">「案件JSONを追加」は別案件として登録します。「現在案件をJSONで置換」はこの案件だけをバックアップ後に置き換え、他案件には影響しません。</p>
+      <p class="small">「案件JSONを追加」は別案件として登録します。「現在案件へJSONを統合」はID単位で追加・更新し、Importに含まれない既存登録を残します（削除しません）。「現在案件をJSONで置換」はこの案件だけをバックアップ後に置き換えます。</p>
     </div>
 
     <div id="developmentPane-aipublish" class="card hidden">
@@ -2474,7 +2475,7 @@ updateDeployDeleteControl();
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B691';
+const DISTRIBUTION_BUILD='GKS-B692';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3788,6 +3789,35 @@ async function importAllDevelopmentProjects(file){
  }catch(e){alert('Development Project全案件の復元に失敗しました: '+e.message)}
 }
 function exportDevelopmentWorkspace(){const w=loadDevelopmentWorkspace(),id=String(w?.workspace?.id||activeDevelopmentProjectId||'project').replace(/[^A-Za-z0-9._-]+/g,'_');downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8')}
+// GKS-B692 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_BEGIN
+const DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS=Object.freeze([
+ 'project_rules','implementation_records','discussions','decisions','specifications','specification_candidates',
+ 'system_nodes','system_contracts','system_connections','system_flags','system_events','system_impacts',
+ 'architecture_nodes','work_boxes','tasks','checks'
+]);
+const DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS=Object.freeze(['project_context','current_focus','source_baseline','lifecycle','workflow']);
+function developmentMergeStable(value){if(Array.isArray(value))return value.map(developmentMergeStable);if(value&&typeof value==='object'){const out={};Object.keys(value).sort().forEach(k=>{if(!['created_at','updated_at'].includes(k))out[k]=developmentMergeStable(value[k])});return out}return value}
+function developmentMergeEqual(a,b){return JSON.stringify(developmentMergeStable(a))===JSON.stringify(developmentMergeStable(b))}
+function developmentMergeIncomingIds(rows,key){const seen=new Set(),duplicates=[];for(const row of rows||[]){const id=String(row?.id||'').trim();if(!id)throw new Error(`${key} にIDなしRecordがあります。`);if(seen.has(id))duplicates.push(id);seen.add(id)}if(duplicates.length)throw new Error(`${key} のImport内でIDが重複しています: ${[...new Set(duplicates)].join(', ')}`);return seen}
+function developmentMergeRows(currentRows,incomingRows,key){developmentMergeIncomingIds(incomingRows,key);const byId=new Map((currentRows||[]).map((row,index)=>[String(row?.id||''),{row,index}])),out=(currentRows||[]).map(row=>structuredClone(row));let adds=0,updates=0,same=0;for(const incoming of incomingRows||[]){const id=String(incoming.id),hit=byId.get(id);if(!hit){out.push(structuredClone(incoming));adds++;continue}if(developmentMergeEqual(hit.row,incoming)){same++;continue}out[hit.index]=structuredClone(incoming);updates++}return{rows:out,adds,updates,same,deletes:0}}
+function developmentMergeHistory(currentRows,incomingRows){const out=(currentRows||[]).map(row=>structuredClone(row)),seen=new Set(out.map(row=>JSON.stringify(developmentMergeStable(row))));let adds=0,same=0;for(const row of incomingRows||[]){const key=JSON.stringify(developmentMergeStable(row));if(seen.has(key)){same++;continue}seen.add(key);out.push(structuredClone(row));adds++}return{rows:out,adds,updates:0,same,deletes:0}}
+function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
+ const current=normalizeDevelopmentWorkspace(currentRaw),raw=(incomingRaw&&typeof incomingRaw==='object'&&!Array.isArray(incomingRaw))?structuredClone(incomingRaw):null;if(!raw)throw new Error('Development Project JSONのObjectが必要です。');
+ if(raw.format==='gk-development-project-collection')throw new Error('全案件JSONは現在案件への統合対象ではありません。個別案件JSONを選択してください。');
+ const sourceId=String(raw?.workspace?.id||'').trim();if(sourceId&&sourceId!==String(current.workspace.id||''))throw new Error(`案件IDが一致しません。現在=${current.workspace.id} / Import=${sourceId}`);
+ if(Array.isArray(raw.impact_items)&&!Array.isArray(raw.system_impacts))throw new Error('impact_items は現行Development Project Schema外です。system_impacts 形式へ変換してから統合してください。');
+ const composite=structuredClone(current);for(const key of Object.keys(raw)){if(key==='workspace')composite.workspace={...composite.workspace,...raw.workspace};else composite[key]=structuredClone(raw[key])}
+ composite.workspace={...current.workspace,...(raw.workspace||{}),id:current.workspace.id,name:current.workspace.name};
+ const normalizedIncoming=normalizeDevelopmentWorkspace(composite),merged=structuredClone(current),summary={arrays:{},objects:[],workspace:[],history:{adds:0,updates:0,same:0,deletes:0},total:{adds:0,updates:0,same:0,deletes:0}};
+ for(const key of DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS){if(!Object.prototype.hasOwnProperty.call(raw,key))continue;const result=developmentMergeRows(current[key]||[],normalizedIncoming[key]||[],key);merged[key]=result.rows;summary.arrays[key]={adds:result.adds,updates:result.updates,same:result.same,deletes:0};summary.total.adds+=result.adds;summary.total.updates+=result.updates;summary.total.same+=result.same}
+ if(Object.prototype.hasOwnProperty.call(raw,'history')){const result=developmentMergeHistory(current.history||[],Array.isArray(raw.history)?raw.history:[]);merged.history=result.rows;summary.history=result;summary.total.adds+=result.adds;summary.total.same+=result.same}
+ for(const key of DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS){if(!Object.prototype.hasOwnProperty.call(raw,key))continue;const before=current[key],after=normalizedIncoming[key];if(developmentMergeEqual(before,after)){summary.objects.push({key,changed:false});summary.total.same++}else{merged[key]=structuredClone(after);summary.objects.push({key,changed:true});summary.total.updates++}}
+ if(raw.workspace&&typeof raw.workspace==='object'){for(const key of ['status','ai_attention']){if(!Object.prototype.hasOwnProperty.call(raw.workspace,key))continue;const before=current.workspace[key],after=normalizedIncoming.workspace[key];if(before===after){summary.workspace.push({key,changed:false});summary.total.same++}else{merged.workspace[key]=after;summary.workspace.push({key,changed:true});summary.total.updates++}}}
+ merged.workspace.id=current.workspace.id;merged.workspace.name=current.workspace.name;merged.workspace.updated_at=now();merged.schema_version='1.2';return{merged:normalizeDevelopmentWorkspace(merged),summary};
+}
+function developmentMergeSummaryText(summary){const rows=[];for(const [key,v] of Object.entries(summary.arrays||{}))rows.push(`${key}: 追加${v.adds} / 更新${v.updates} / 同一${v.same}`);if(summary.history?.adds||summary.history?.same)rows.push(`history: 追加${summary.history.adds} / 同一${summary.history.same}`);for(const x of summary.objects||[])rows.push(`${x.key}: ${x.changed?'更新':'同一'}`);for(const x of summary.workspace||[])rows.push(`workspace.${x.key}: ${x.changed?'更新':'同一'}`);return `合計: 追加${summary.total.adds} / 更新${summary.total.updates} / 同一${summary.total.same} / 削除0`+(rows.length?`\n\n${rows.join('\n')}`:'')}
+async function mergeImportDevelopmentWorkspace(file){if(!file)return;try{if(!developmentGitDirtyGuard('現在案件へのJSON統合'))return;const raw=JSON.parse(await file.text()),entry=activeDevelopmentProjectEntry();if(!entry)throw new Error('現在案件がありません。');const current=loadDevelopmentWorkspace(),plan=prepareDevelopmentWorkspaceMerge(current,raw),text=developmentMergeSummaryText(plan.summary);if(!plan.summary.total.adds&&!plan.summary.total.updates){alert(`統合対象の変更はありません。\n\n${text}`);return}if(!confirm(`開発管理JSONを現在案件へ統合します。\n現在: ${entry.id} / ${entry.name}\n\n${text}\n\nImportに含まれない既存登録は残り、削除は行いません。${entry.storage_mode==='git'?'\nGit保管案件はSession上だけ更新し、Git保存は後から任意で実行できます。':''}\n\n統合しますか？`))return;if(entry.storage_mode!=='git')localStorage.setItem(developmentProjectStoreKey(entry.id)+'_backup_'+Date.now(),JSON.stringify(current));developmentWorkspace=plan.merged;if(!saveDevelopmentWorkspace(`Development Workspace JSON merged: add=${plan.summary.total.adds} update=${plan.summary.total.updates} delete=0`))throw new Error('統合後データの保存に失敗しました。');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();try{await window.GKSDevelopmentSourcePackage?.afterImport?.([{entry,project:developmentWorkspace}])}catch(zipError){alert(`現在案件へのJSON統合は完了していますが、Source ZIP生成に失敗しました。\n${zipError.message}`);return}alert(`${entry.storage_mode==='git'?'現在案件へJSONをSession統合しました。Gitにはまだ保存していません。':'現在案件へJSONを統合しました。'}\n${developmentMergeSummaryText(plan.summary)}\npackage_manifest再生成済みSource ZIPも出力しました。`)}catch(e){alert('開発管理JSON統合失敗: '+e.message)}}
+// GKS-B692 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_END
 async function importDevelopmentWorkspace(file){if(!file)return;try{const obj=JSON.parse(await file.text()),candidate=normalizeDevelopmentWorkspace(obj),entry=activeDevelopmentProjectEntry(),count=`議論 ${candidate.discussions.length} / Architecture ${candidate.architecture_nodes.length} / Box ${candidate.work_boxes.length} / Task ${candidate.tasks.length} / 確認 ${(candidate.checks||[]).length} / 決定 ${candidate.decisions.length} / 仕様 ${candidate.specifications.length}`;if(!entry)throw new Error('現在案件がありません。');if(!confirm(`開発管理JSONを現在案件へ読み込みます。\n現在: ${entry.id} / ${entry.name}\n${count}\n\nこの案件だけを置き換えますか？ 他案件には影響しません。${entry.storage_mode==='git'?'\nGit保管案件はSession上だけ更新し、Git保存は後から任意で実行できます。':''}`))return;const current=loadDevelopmentWorkspace();if(entry.storage_mode!=='git')localStorage.setItem(developmentProjectStoreKey(entry.id)+'_backup_'+Date.now(),JSON.stringify(current));candidate.workspace.id=entry.id;candidate.workspace.name=String(candidate.workspace.name||entry.name);developmentWorkspace=candidate;saveDevelopmentWorkspace('Development Workspace JSON imported into current project');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();try{await window.GKSDevelopmentSourcePackage?.afterImport?.([{entry,project:candidate}])}catch(zipError){alert(`${entry.storage_mode==='git'?'現在案件へのSession反映':'現在案件へのJSON読込'}は完了していますが、Source ZIP生成に失敗しました。\n${zipError.message}`);return}alert(entry.storage_mode==='git'?'現在案件へ開発管理JSONをSession反映しました。Gitにはまだ保存していません。\npackage_manifest再生成済みSource ZIPを出力しました。':'現在案件へ開発管理JSONを読み込みました。\npackage_manifest再生成済みSource ZIPを出力しました。')}catch(e){alert('開発管理JSON読込失敗: '+e.message)}}
 function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
 
@@ -9331,7 +9361,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=691',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=692',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
