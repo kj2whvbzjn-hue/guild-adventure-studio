@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-20T11:18:55.676Z"
+    "updated_at": "2026-08-20T11:59:07.909Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -1299,10 +1299,14 @@
       "title": "Balance Baseline管理仕様",
       "status": "Draft",
       "summary": "V9具体値を消さず、Current固定値と可変Baselineを区別する。",
-      "body": "# 1. 方針\n\nBalance値は仕様から削除せず、\n`固定構造 / Current active / Human Approved seed / V9 Baseline / Candidate / Deferred`\nの状態を持たせる。\n\n# 2. V9 Baselineの主要値\n\n## Enemy\n- Enemy Budget = EnemyLv（V9 Baseline）\n- Attack 30%\n- Durability 30%\n- Skill 20%\n- Special 10%\n- AI 10%\n- Elite 150%\n- Champion 200%\n- Boss 300%\n- Raid 1000%\n- Mythic 2000%\n\n後発Enemy Budget正式版ではHP / Attack Performance / Defense Performance / Skill / AI / Utilityへ構造が整理され、\n具体配分値はBalance分離されている。\n上記配分率はCurrent固定値ではなくV9 Baselineとして保持する。\n\n## Stack / Resistance\n- 1 Stack = 5%（V9 Baseline）\n- Max 20 Stack（V9 Baseline）\n- 最大100%（V9 Baseline）\n- Status Resistance cap = 75%\n- Element Resistance cap = 75%\n\n## MP / Battle end\n- Active turn MP自然回復 +3（V9 Baseline）\n- Battle終了時HP全回復（V9 Baseline）\n- Battle終了時MPは全回復しない（V9 Baseline）\n\n## Rarity\n具体値は `SPEC-V9-019-RARITY-001` を正本とする。\n\n# 3. 実装\n\nBalance値をRuntimeロジックへ直書きしない。\nConfig/CSV/JSON等で変更可能にする。\nSnapshotが必要なSystemは、Run開始/生成時の値を保存する。\n\n---\n\n## 根拠・統合元\nBOX-R7-003 バランス調整指針 / Human Approved Balance decisions",
+      "body": "# 1. 方針\n\nBalance値は仕様から削除せず、\n`固定構造 / Current active / Human Approved seed / V9 Baseline / Candidate / Deferred`\nの状態を持たせる。\n\n# 2. V9 Baselineの主要値\n\n## Enemy\n- Enemy Budget = EnemyLv（V9 Baseline）\n- Attack 30%\n- Durability 30%\n- Skill 20%\n- Special 10%\n- AI 10%\n- Elite 150%\n- Champion 200%\n- Boss 300%\n- Raid 1000%\n- Mythic 2000%\n\n後発Enemy Budget正式版ではHP / Attack Performance / Defense Performance / Skill / AI / Utilityへ構造が整理され、\n具体配分値はBalance分離されている。\n上記配分率はCurrent固定値ではなくV9 Baselineとして保持する。\n\n## Stack / Resistance\n- 1 Stack = 5%（V9 Baseline）\n- Max 20 Stack（V9 Baseline）\n- 最大100%（V9 Baseline）\n- Status Resistance cap = 75%\n- Element Resistance cap = 75%\n\n## MP / Battle end\n- Active turn MP自然回復 +3（V9 Baseline）\n- Battle終了時HP全回復（V9 Baseline）\n- Battle終了時MPは全回復しない（V9 Baseline）\n\n## Rarity\n具体値は `SPEC-V9-019-RARITY-001` を正本とする。\n\n# 3. 実装\n\nBalance値をRuntimeロジックへ直書きしない。\nConfig/CSV/JSON等で変更可能にする。\nSnapshotが必要なSystemは、Run開始/生成時の値を保存する。\n\n---\n\n## 根拠・統合元\nBOX-R7-003 バランス調整指針 / Human Approved Balance decisions\n\n---\n\n## R25 Player Presentation / UI 可変値境界\n\n以下はCurrent Structureでは固定値にせず、Balance / Presentation Configとして可変管理する。\n\n- Battle Effect duration\n- Screen Shake intensity / duration\n- Camera Zoom量 / Focus時間\n- Flash duration / intensity\n- BGM / SE default volume\n- BGM fade duration\n- Battle playback speed option\n- Skill Loadout slot count\n- UI animation duration\n- 高Rarity売却/破棄警告の対象閾値\n- Responsive breakpoint / spacing等の表示調整値\n\nこれらの具体値をSpecification本文へ固定しない。\n一方、機能の有無、再計算禁止、Playerへ公開する設定項目、対応Device範囲等はCurrent Ruleとして固定する。\n",
       "decision_refs": [
         "DEC-V9-MOD-002",
-        "DEC-V9-MOD-005"
+        "DEC-V9-MOD-005",
+        "DEC-R24-BATTLE-UX-001",
+        "DEC-R24-AUDIO-SETTINGS-001",
+        "DEC-R24-SKILL-UI-001",
+        "DEC-R24-RESPONSIVE-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-001"
@@ -1314,11 +1318,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T20:54:00+09:00"
     },
     {
       "id": "SPEC-V9-019-CHAR-001",
@@ -1443,9 +1447,10 @@
       "title": "Battle: Damage / Resistance / Hit / Critical / Heal",
       "status": "Draft",
       "summary": "Battle計算の数式、補正箱、丸め。",
-      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = 命中値 / (命中値 + 回避値) × 100`\n\n- 命中率下限：5%\n- 命中率上限：100%\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 5. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 6. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF",
+      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = 命中値 / (命中値 + 回避値) × 100`\n\n- 命中率下限：5%\n- 命中率上限：100%\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 5. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 6. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF\n\n---\n\n## R25 Equipment Contribution → Battle 正式接続\n\nEquipment由来の戦闘Contributionは以下へ接続する。\n\n- `accuracy` → Battleの命中成立判定\n- `evasion` → Battleの回避成立判定\n- `base_critical_rate` → 武器由来の基礎会心率としてCritical判定\n- `magic_weapon_bonus` → 魔法攻撃系効果量計算の武器Contribution\n\n既存の\n`BaseItem Performance → Equipment Contribution → Equipment MOD → Modified Equipment Contribution → Runtime`\n境界を維持する。\n\n旧Demo由来の `STR→accuracy`、`LUK→critical` 等へFallbackしない。\n具体的な係数、換算、cap、roundingはBalance可変とし、本仕様では接続先のみ固定する。\n",
       "decision_refs": [
-        "DEC-REORG-BATTLE-BAL-001"
+        "DEC-REORG-BATTLE-BAL-001",
+        "DEC-R24-EQUIP-BATTLE-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-002",
@@ -1463,11 +1468,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T16:25:00+09:00"
+      "updated_at": "2026-08-20T20:54:00+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-002",
@@ -1883,12 +1888,13 @@
       "title": "Equipment Consumer / Contribution / MOD Boundary",
       "status": "Draft",
       "summary": "Battleへ渡す正式field、旧field廃止、Contribution境界。",
-      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current未接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象。\nCurrent Battleでは計算式未接続。\nBattle contributionを推測しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08",
+      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current未接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象。\nCurrent Battleでは計算式未接続。\nBattle contributionを推測しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-004",
         "DEC-V9-EQUIP-006",
-        "DEC-V9-EQUIP-007"
+        "DEC-V9-EQUIP-007",
+        "DEC-R24-EQUIP-BATTLE-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-003",
@@ -1903,11 +1909,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T20:54:00+09:00"
     },
     {
       "id": "SPEC-V9-019-MOD-001",
@@ -2314,9 +2320,10 @@
       "title": "QuestRun / Adventure Simulation / Result Snapshot",
       "status": "Draft",
       "summary": "Quest開始時Simulation、完全結果記録、失敗停止。",
-      "body": "# 6. Quest開始処理\n\nQuest開始時に結果を完全確定する。\n\n順序:\n\n1. Quest / Section取得\n2. 石板等の開始コスト消費\n3. Party Snapshot\n4. adventure_duration_seconds Snapshot\n5. Seed生成\n6. boxesを順番にAdventure Simulation\n7. Scene Snapshot\n8. Event結果確定\n9. random_event確定\n10. random_battle敵編成確定\n11. Battle Simulation\n12. 報酬確定\n13. Flag / Quest進行結果確定\n14. Timeline at_seconds確定\n15. 成功 / 失敗確定\n16. QuestRun保存\n17. Playback開始\n\n切断しても結果は変わらない。\n\n---\n\n# 7. 失敗処理\n\nSimulation中に失敗が確定した場合:\n\n- その時点で通常boxes処理を停止\n- 後続箱を処理しない\n- QuestRun終了処理へ移行\n\nQuestRunに:\n- 失敗理由\n- 失敗地点\n- 最終状態\nを保存。\n\n将来の失敗専用Sceneは通常boxesとは別系統で追加可能な余地だけ残す。\n\n---\n\n# 8. Scene Snapshot\n\nQuestRun生成時にScene会話内容をSnapshot。\n\n保存:\n- scene_id\n- 会話再生に必要な最小情報\n\n過去QuestRunは現在のSceneマスタを再参照しない。\n\nStudioでSceneを変更しても過去Runは変わらない。\n\n---\n\n# 9. Battle Result\n\nBattle Resultは以下を分離する。\n\n- 勝敗\n- Unit最終状態\n- Seed\n- 戦闘統計\n- 現行デバッグログ\n- 将来のゲーム用戦闘ログ\n- Playback専用イベント列\n\n現行logs[]はデバッグ用途。\n\nBattle詳細画面は文字ログ解析ではなく、\nPlayback専用イベント列を使う。\n\n---\n\n# 10. QuestRun\n\nQuestRunは1回の冒険の完全な確定記録。\n\n最低限保持:\n\n- quest_run_id\n- chapter_id\n- section_id / quest_id\n- party_snapshot\n- seed\n- playback_started_at\n- adventure_duration_seconds\n- timeline_result[]\n- battle_results[]\n- event_results[]\n- scene_snapshots[]\n- reward_results\n- flag/progress_results\n- final_result\n\n---\n\n# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n## Current ownership correction\n\n旧RoadmapのSection-owned boxesはCurrentではQuest-owned `boxes[]` に置換する。\nその他のQuestRun/Snapshot/Simulation責務は保持する。\n\n## Reward\n\n各Event/Battle/Explorationの途中Rewardはreward_historyへ記録可能。\n成功Runのaggregate `reward_result` を固定。\nFailure時は正式Commit対象を空/無効とする。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061 Current Summary",
+      "body": "# 6. Quest開始処理\n\nQuest開始時に結果を完全確定する。\n\n順序:\n\n1. Quest / Section取得\n2. 石板等の開始コスト消費\n3. Party Snapshot\n4. adventure_duration_seconds Snapshot\n5. Seed生成\n6. boxesを順番にAdventure Simulation\n7. Scene Snapshot\n8. Event結果確定\n9. random_event確定\n10. random_battle敵編成確定\n11. Battle Simulation\n12. 報酬確定\n13. Flag / Quest進行結果確定\n14. Timeline at_seconds確定\n15. 成功 / 失敗確定\n16. QuestRun保存\n17. Playback開始\n\n切断しても結果は変わらない。\n\n---\n\n# 7. 失敗処理\n\nSimulation中に失敗が確定した場合:\n\n- その時点で通常boxes処理を停止\n- 後続箱を処理しない\n- QuestRun終了処理へ移行\n\nQuestRunに:\n- 失敗理由\n- 失敗地点\n- 最終状態\nを保存。\n\n将来の失敗専用Sceneは通常boxesとは別系統で追加可能な余地だけ残す。\n\n---\n\n# 8. Scene Snapshot\n\nQuestRun生成時にScene会話内容をSnapshot。\n\n保存:\n- scene_id\n- 会話再生に必要な最小情報\n\n過去QuestRunは現在のSceneマスタを再参照しない。\n\nStudioでSceneを変更しても過去Runは変わらない。\n\n---\n\n# 9. Battle Result\n\nBattle Resultは以下を分離する。\n\n- 勝敗\n- Unit最終状態\n- Seed\n- 戦闘統計\n- 現行デバッグログ\n- 将来のゲーム用戦闘ログ\n- Playback専用イベント列\n\n現行logs[]はデバッグ用途。\n\nBattle詳細画面は文字ログ解析ではなく、\nPlayback専用イベント列を使う。\n\n---\n\n# 10. QuestRun\n\nQuestRunは1回の冒険の完全な確定記録。\n\n最低限保持:\n\n- quest_run_id\n- chapter_id\n- section_id / quest_id\n- party_snapshot\n- seed\n- playback_started_at\n- adventure_duration_seconds\n- timeline_result[]\n- battle_results[]\n- event_results[]\n- scene_snapshots[]\n- reward_results\n- flag/progress_results\n- final_result\n\n---\n\n# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n## Current ownership correction\n\n旧RoadmapのSection-owned boxesはCurrentではQuest-owned `boxes[]` に置換する。\nその他のQuestRun/Snapshot/Simulation責務は保持する。\n\n## Reward\n\n各Event/Battle/Explorationの途中Rewardはreward_historyへ記録可能。\n成功Runのaggregate `reward_result` を固定。\nFailure時は正式Commit対象を空/無効とする。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061 Current Summary\n\n---\n\n## R25 Quest Abandon 正式終了契約\n\nPlayerによるActive QuestRun放棄を正式な終了経路として扱う。\n\nAbandon時:\n\n- final resultは通常Failureと区別して `Abandon` として記録する\n- Active Runを終了する\n- 途中Rewardは全損\n- EXPは正式獲得しない\n- Quest開始成立時に消費済みStoneは返却しない\n- 未Commit Reward / ProgressをPlayer正式資産へ反映しない\n- Battle / Event / Reward / Flag / Random結果を再抽選・再計算しない\n- 放棄までに確定済みの履歴情報はQuestRun履歴用途として保持してよい\n\nAbandonは損失面ではFailureと同等だが、履歴・表示上の結果種別は分離する。\n",
       "decision_refs": [
-        "DEC-REORG-QUEST-LOSS-001"
+        "DEC-REORG-QUEST-LOSS-001",
+        "DEC-R24-QUEST-ABANDON-001"
       ],
       "depends_on": [
         "SPEC-V9-019-QUEST-001",
@@ -2334,20 +2341,23 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T20:54:00+09:00"
     },
     {
       "id": "SPEC-V9-019-RUN-002",
       "title": "Adventure Playback / Timeline / Return Commit",
       "status": "Draft",
       "summary": "Timeline、時間進行、Viewer、再実行禁止、Commit。",
-      "body": "# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n# 12. Playback時間管理\n\n開始時刻基準。\n\nelapsed =\n現在時刻 - playback_started_at\n\nsetInterval積み上げ値を正としない。\n\nScene詳細・Battle詳細を見ている間も進行。\n\n戻った時:\n→ 現在時刻までCatch-up表示。\n\n---\n\n# 13. Adventure Playback\n\nPlaybackはQuestRunだけを読む。\n\n禁止:\n- Battle再計算\n- Event再抽選\n- random_event再抽選\n- random_battle再生成\n- Scene条件再判定\n- 報酬再計算\n- Flag再判定\n\n---\n\n# 14. Scene詳細\n\n冒険ログ:\n\n「ストーリーイベントが発生した [見る]」\n\nログでは内容を伏せる。\n\n別画面:\n→ 保存済みScene Snapshotの会話を再生\n\n仕様:\n- 会話のみ\n- 選択肢なし\n- 視聴任意\n- Quest進行を止めない\n- 専用回想画面なし\n- 冒険ログから再閲覧\n\n---\n\n# 15. Battle詳細\n\n冒険ログ:\n→ 結果要約\n→ [結果を見る]\n\n別画面:\n→ 保存済みBattle Result / Playback Eventsを再生\n\n再戦闘しない。\n\n詳細画面中もQuestは進行。\n\n---\n\n# 16. 報酬・結果の扱い\n\n報酬はQuest一括報酬ではなく、\n\n- Battle結果\n- Event結果\n- 固有イベント結果\n\nとして発生。\n\n結果自体はQuest開始時に確定・保存する。\n\nただしPlayback中は未来の報酬を利用可能にしない。\n\n帰還時:\n→ 確定済み結果をプレイヤーへ公開 / 利用可能化\n\n帰還時に結果を再計算しない。\n\n---\n\n# 17. Studio実装\n\n## Chapter Editor\n追加:\n- 使用可能Monster一覧\n- 使用可能Random Event一覧\n\n## Section Editor\n追加:\n- adventure_duration_seconds\n- Box Editor\n\nBox Editor:\n- 初期5箱（新規Section）\n- 箱追加\n- 箱削除\n- 並び替え\n- type選択\n- Scene選択\n- Event選択\n\n## Event Editor\nEvent.type = battle時:\n- Monster Master参照固定編成\n- monster_id\n- count\n\n## Monster Master\nEnemy Budget Costを持てる構造を追加。\n\n数値はバランス調整。\n\n---\n\n## Current Return Commit\n\n- Playback中はReward/Flagを正式Saveへ反映しない。\n- 成功時Returnで保存済みreward_resultとFlag差分を一括Commitする。\n- Failureでは途中Rewardを正式資産へ移さない。\n- 二重Commit防止状態をQuestRunへ持つ。\n- ReturnでResolver/Battle/Event/Flagを再実行しない。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061",
+      "body": "# 11. Timeline\n\nAdventure Simulation時に発生時刻まで確定する。\n\nQuestRun:\n- adventure_duration_seconds\n- timeline_result[].at_seconds\n\nPlayback開始時に再配置しない。\n\n過去Runの時刻は将来アルゴリズムが変わっても維持。\n\n---\n\n# 12. Playback時間管理\n\n開始時刻基準。\n\nelapsed =\n現在時刻 - playback_started_at\n\nsetInterval積み上げ値を正としない。\n\nScene詳細・Battle詳細を見ている間も進行。\n\n戻った時:\n→ 現在時刻までCatch-up表示。\n\n---\n\n# 13. Adventure Playback\n\nPlaybackはQuestRunだけを読む。\n\n禁止:\n- Battle再計算\n- Event再抽選\n- random_event再抽選\n- random_battle再生成\n- Scene条件再判定\n- 報酬再計算\n- Flag再判定\n\n---\n\n# 14. Scene詳細\n\n冒険ログ:\n\n「ストーリーイベントが発生した [見る]」\n\nログでは内容を伏せる。\n\n別画面:\n→ 保存済みScene Snapshotの会話を再生\n\n仕様:\n- 会話のみ\n- 選択肢なし\n- 視聴任意\n- Quest進行を止めない\n- 専用回想画面なし\n- 冒険ログから再閲覧\n\n---\n\n# 15. Battle詳細\n\n冒険ログ:\n→ 結果要約\n→ [結果を見る]\n\n別画面:\n→ 保存済みBattle Result / Playback Eventsを再生\n\n再戦闘しない。\n\n詳細画面中もQuestは進行。\n\n---\n\n# 16. 報酬・結果の扱い\n\n報酬はQuest一括報酬ではなく、\n\n- Battle結果\n- Event結果\n- 固有イベント結果\n\nとして発生。\n\n結果自体はQuest開始時に確定・保存する。\n\nただしPlayback中は未来の報酬を利用可能にしない。\n\n帰還時:\n→ 確定済み結果をプレイヤーへ公開 / 利用可能化\n\n帰還時に結果を再計算しない。\n\n---\n\n# 17. Studio実装\n\n## Chapter Editor\n追加:\n- 使用可能Monster一覧\n- 使用可能Random Event一覧\n\n## Section Editor\n追加:\n- adventure_duration_seconds\n- Box Editor\n\nBox Editor:\n- 初期5箱（新規Section）\n- 箱追加\n- 箱削除\n- 並び替え\n- type選択\n- Scene選択\n- Event選択\n\n## Event Editor\nEvent.type = battle時:\n- Monster Master参照固定編成\n- monster_id\n- count\n\n## Monster Master\nEnemy Budget Costを持てる構造を追加。\n\n数値はバランス調整。\n\n---\n\n## Current Return Commit\n\n- Playback中はReward/Flagを正式Saveへ反映しない。\n- 成功時Returnで保存済みreward_resultとFlag差分を一括Commitする。\n- Failureでは途中Rewardを正式資産へ移さない。\n- 二重Commit防止状態をQuestRunへ持つ。\n- ReturnでResolver/Battle/Event/Flagを再実行しない。\n\n---\n\n## 根拠・統合元\nBOX-R9-RESTORE-STORY-RUNTIME / BOX-R7-061\n\n---\n\n## R25 Playback / Failure / Abandon Presentation接続\n\nAdventure Playbackは保存済みQuestRun Timelineだけを読む。\n\nPlayerがBattle / Story / Exploration等の詳細画面を閲覧している間もPlayback時間は進行し、冒険進行画面へ戻った時点で現在時刻までCatch-upする。\n\n禁止事項:\n\n- Battle再計算\n- Event再実行\n- Random再抽選\n- Reward再計算\n- Flag再判定\n\nQuest FailureまたはAbandon確定時は、保存済み結果をFailure Presentationへ渡し、結果確認後はGuildへ帰還する。\n同条件の即時Retryは行わず、再出撃は新しいQuestRunとして開始する。\n",
       "decision_refs": [
-        "DEC-REORG-QUEST-LOSS-001"
+        "DEC-REORG-QUEST-LOSS-001",
+        "DEC-R24-QUEST-PRESENTATION-001",
+        "DEC-R24-FAILURE-PRESENTATION-001",
+        "DEC-R24-QUEST-ABANDON-001"
       ],
       "depends_on": [
         "SPEC-V9-019-RUN-001"
@@ -2359,11 +2369,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T20:54:00+09:00"
     },
     {
       "id": "SPEC-V9-019-STORY-001",
@@ -2534,11 +2544,12 @@
       "title": "Formal AI Runtime / Decision / Trace / Character Binding",
       "status": "Draft",
       "summary": "AI判断、Trace、Character Save、Battle境界、Legacy Zero。",
-      "body": "# 1. AI責務\n\n```text\nGame AI UI\n→ Formal Program\n→ Validator\n→ Compiler\n→ Decision Engine\n→ action_id + target_id\n→ Battle\n```\n\nAIは判断まで。\nBattle Action reservation、実行直前Validation、Skill Runtime、Combat計算を再定義しない。\n\n# 2. Decision\n\nAIはCurrent情報を評価する。\n前回のTarget/Skill選択をHidden memoryとして保持しない。\n未来のRandom結果/次行動予定を参照しない。\n同点候補はRandom。\n\nBattle側の再評価タイミング:\n- AG最大値の10%ごと\n- 行動直前に最終再検証\n\n# 3. Trace\n\nTrace Required:\n[\"schema_version\", \"data_version\", \"battle_id\", \"program_id\", \"program_version\", \"actor_id\", \"seed\", \"events\", \"outcome\"]\n\nEvent phase:\n- reservation\n- execution\n- rethink\n\nEvent type:\n- condition\n- target\n- action\n- branch\n- call\n- wait\n- end\n- error\n\n# 4. Character Binding\n\nCharacter Saveは `formalAiBinding` でProgram/Layoutを参照する。\nProgram/Layout/Compiled RuntimeのVersion整合を確認する。\n\n# 5. Shared Core\n\nGame/Studioで共有:\n- Program Model\n- Master Adapter\n- Validator\n- Compiler\n- Decision Engine\n- Trace\n\nGame Bridgeだけが:\n- Save\n- Character binding\n- Battle Unit Snapshot\n- reserveAction\nを担当する。\n\n# 6. Legacy Zero\n\nFormal AI未設定時に旧AIへFallbackしない。\nCharacter Saveへ:\n- aiGraph\n- aiPolicy\n- defaultSkillId\n等を互換目的で残さない。\n旧Saveを自動意味変換しない。\n\n# 7. Monster\n\nCharacter `formalAiBinding` をMonsterへ推測流用しない。\nMonster側はCurrent別Battle path。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / Battle v3 / Human Decisions",
+      "body": "# 1. AI責務\n\n```text\nGame AI UI\n→ Formal Program\n→ Validator\n→ Compiler\n→ Decision Engine\n→ action_id + target_id\n→ Battle\n```\n\nAIは判断まで。\nBattle Action reservation、実行直前Validation、Skill Runtime、Combat計算を再定義しない。\n\n# 2. Decision\n\nAIはCurrent情報を評価する。\n前回のTarget/Skill選択をHidden memoryとして保持しない。\n未来のRandom結果/次行動予定を参照しない。\n同点候補はRandom。\n\nBattle側の再評価タイミング:\n- AG最大値の10%ごと\n- 行動直前に最終再検証\n\n# 3. Trace\n\nTrace Required:\n[\"schema_version\", \"data_version\", \"battle_id\", \"program_id\", \"program_version\", \"actor_id\", \"seed\", \"events\", \"outcome\"]\n\nEvent phase:\n- reservation\n- execution\n- rethink\n\nEvent type:\n- condition\n- target\n- action\n- branch\n- call\n- wait\n- end\n- error\n\n# 4. Character Binding\n\nCharacter Saveは `formalAiBinding` でProgram/Layoutを参照する。\nProgram/Layout/Compiled RuntimeのVersion整合を確認する。\n\n# 5. Shared Core\n\nGame/Studioで共有:\n- Program Model\n- Master Adapter\n- Validator\n- Compiler\n- Decision Engine\n- Trace\n\nGame Bridgeだけが:\n- Save\n- Character binding\n- Battle Unit Snapshot\n- reserveAction\nを担当する。\n\n# 6. Legacy Zero\n\nFormal AI未設定時に旧AIへFallbackしない。\nCharacter Saveへ:\n- aiGraph\n- aiPolicy\n- defaultSkillId\n等を互換目的で残さない。\n旧Saveを自動意味変換しない。\n\n# 7. Monster\n\nCharacter `formalAiBinding` をMonsterへ推測流用しない。\nMonster側はCurrent別Battle path。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / Battle v3 / Human Decisions\n\n---\n\n## R25 Player Skill Loadout Binding\n\nPlayer CharacterのAI RuntimeがSkill行動候補を評価する際、習得済みSkill全体ではなく、現在のSkill Loadoutへ登録されたSkillだけを使用候補とする。\n\nAIの責務は判断であり、Loadout自体の編集・保存責務はPlayer Skill UI / Save側に置く。\nLoadout外SkillをAI Nodeが参照した場合は有効な使用候補として扱わない。\n\nPassiveはSkill Loadoutへ含めない。\nPassiveは既存仕様どおり常時効果として別Runtime経路で評価する。\n\nLoadout slot数はBalance可変であり、本Runtime仕様へ固定しない。\n",
       "decision_refs": [
         "DEC-V9-AI-005",
         "DEC-V9-AI-006",
-        "DEC-V9-AI-008"
+        "DEC-V9-AI-008",
+        "DEC-R24-SKILL-UI-001"
       ],
       "depends_on": [
         "SPEC-V9-019-AI-002",
@@ -2553,11 +2564,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-20T20:54:00+09:00"
     },
     {
       "id": "SPEC-V9-019-DATA-001",
@@ -2640,6 +2651,379 @@
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
       "updated_at": "2026-08-19T20:26:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-PRESENT-001",
+      "title": "Battle Presentation / Combat HUD / Camera",
+      "status": "Draft",
+      "summary": "Battle Result / Playback EventをPlayer向け戦闘演出へ変換する表示契約。",
+      "body": "# 1. Owner\n本仕様はBattleの視覚Presentation、Camera、Combat HUD、Battle Result表示を所有する。\nBattle数式・AI判断・Skill Effect計算は所有しない。\n\n# 2. Battle Layout\n- Unit位置は基本固定。\n- 固定位置を前提に、攻撃対象Focus、Zoom、Screen Shake、Flash等を演出として利用可能。\n- PCとスマホ縦では画面サイズに合わせて配置を再構成してよいが、戦闘結果・対象関係を変更しない。\n\n# 3. Effect\n- 通常攻撃にも最低限の打撃感を持たせる。\n- Skill / 魔法は通常攻撃より明確に強い演出を許可する。\n- Critical / Miss / Heal / Status / Buff / Debuff / Shield / Revive / KO / Boss等を視覚的に識別できる。\n- Damage / Heal等の主要数値変化をPlayerが追える。\n- 個別SkillやBossへ専用演出を追加できるデータ駆動構造とする。\n\n# 4. Combat HUD\n常時表示の基本対象:\n- HP\n- MP\n- 主要Status\n- Buff / Debuff\n- Shield\n- 行動状態\n\nUIはBattle Runtimeの状態を表示し、独自に戦闘判定を再計算しない。\n\n# 5. Battle Result\nBattle単体終了時は勝敗と戦闘内容を表示する。\nEXP / Level Up / Drop等の正式な成長・報酬反映はQuest帰還Presentationへ委譲する。\n\n# 6. Accessibility\nScreen Shake OFF、Flash軽減等の設定をPresentationへ反映する。\n演出軽減時も「誰が・誰へ・何をして・何が起きたか」を判別可能にする。\n\n# 7. Variable Config\nEffect duration、Shake強度、Zoom量、Flash時間等の具体値はPresentation/Balance Configへ分離する。\n",
+      "decision_refs": [
+        "DEC-R24-BATTLE-UX-001",
+        "DEC-R24-FEEDBACK-RECOVERY-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-BATTLE-001"
+      ],
+      "acceptance_criteria": "- Battle計算をPresentation側で再実行しない。\\n- 主要行動/状態変化を視覚識別できる。\\n- 演出軽減時も結果を判別できる。",
+      "system_node_id": "SYS-V9-BATTLE-PRESENTATION",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-PLAYBACK-UI-001",
+      "title": "Battle Playback UI",
+      "status": "Draft",
+      "summary": "Battle PlaybackのPlayer操作範囲を定義する。",
+      "body": "# 1. 正式操作\n- 再生\n- 戦闘速度変更\n- 戦闘Skip\n\n一時停止と1行動送りはCurrent完成版の基本機能にしない。\n\n# 2. 不変条件\n速度変更・SkipはPresentationの再生方法だけを変更する。\nBattle Result、Seed、行動順、Damage、Reward等を変更・再計算してはならない。\n\n# 3. Skip\nSkip時は保存済みBattle Resultの終了地点へ表示を進める。\nRuntime再実行は禁止。\n\n# 4. 可変値\n提供する速度倍率等の具体値は設定データへ分離する。\n",
+      "decision_refs": [
+        "DEC-R24-BATTLE-UX-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-PRESENT-001"
+      ],
+      "acceptance_criteria": "- 再生/速度変更/Skipを提供できる。\\n- Playback操作でBattle Resultが変化しない。",
+      "system_node_id": "SYS-V9-BATTLE-PLAYBACK-UI",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-AUDIO-001",
+      "title": "Audio / BGM / SE",
+      "status": "Draft",
+      "summary": "BGMとSEのPlayer向けAudio契約。",
+      "body": "# 1. 正式機能\n完成版はBGMとSEを正式機能として持つ。\n\n# 2. BGM\nBattle、Guild、Story、主要画面でBGMを切替可能とする。\n画面/Scene/Battle側はAudioへ再生要求を出し、音源実体を直接所有しない。\n\n# 3. SE\n攻撃、Skill、魔法、Heal、Critical、Status、主要UI操作等へSEを設定可能とする。\n\n# 4. Asset\nAudioはAsset参照で管理し、仮音源から正式音源へ後から差し替え可能にする。\n音源制作方法はSystem SpecificationのBlockerにしない。\n\n# 5. Variable\n音源、音量初期値、Fade時間等はContent/Configで可変とする。\n",
+      "decision_refs": [
+        "DEC-R24-AUDIO-SETTINGS-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- BGM/SEをAsset参照で差替え可能。\\n- 主要Scene/Battle/UIからAudio要求可能。",
+      "system_node_id": "SYS-V9-AUDIO",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-SETTINGS-001",
+      "title": "Game Settings / Player Preferences",
+      "status": "Draft",
+      "summary": "Player設定項目とSave境界。",
+      "body": "# 1. Player設定\n最低限以下を公開する。\n- BGM音量\n- SE音量\n- BGM/SE Mute\n- 戦闘速度\n- 戦闘演出軽減\n\n# 2. Save\n設定値はPlayer Save対象とする。\n設定変更によってBattle/Questの確定結果を変更してはならない。\n\n# 3. Presentation接続\n戦闘演出軽減はShake/Flash等のPresentationへ反映する。\n音量設定はAudioへ反映する。\n戦闘速度はPlayback UIへ反映する。\n\n# 4. Variable\n具体的な初期音量、速度倍率、軽減段階はConfig可変。\n",
+      "decision_refs": [
+        "DEC-R24-AUDIO-SETTINGS-001",
+        "DEC-R24-FEEDBACK-RECOVERY-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-AUDIO-001",
+        "SPEC-V9-019-PLAYBACK-UI-001"
+      ],
+      "acceptance_criteria": "- 設定値をSave/Loadできる。\\n- 設定変更でゲーム確定結果を変更しない。",
+      "system_node_id": "SYS-V9-GAME-SETTINGS",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-NAV-001",
+      "title": "Title / Menu / Guild Navigation",
+      "status": "Draft",
+      "summary": "起動からGuild・各施設までのPlayer画面遷移。",
+      "body": "# 1. Title\n基本導線:\n- New Game\n- Continue\n- Settings\n\n# 2. Game Hub\nゲーム開始後の基本拠点はGuildとする。\n\n# 3. Guild施設\nGuildから以下4施設へ移動可能にする。\n- 酒場\n- 訓練所\n- 倉庫\n- 掲示板\n\n施設のゲーム機能はGuild Owner仕様を参照し、本仕様ではNavigationだけを所有する。\n\n# 4. Back\n戻る操作は原則1つ前の画面へ戻る。\n重要な未保存操作がある場合のみ確認Dialogを出す。\n\n# 5. Error\n遷移不能理由をUIが独自計算せず、Owner Runtimeの理由を表示する。\n",
+      "decision_refs": [
+        "DEC-R24-NAV-GUILD-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-GUILD-001"
+      ],
+      "acceptance_criteria": "- TitleからNew Game/Continue/Settingsへ遷移可能。\\n- Guildから4施設へ遷移可能。",
+      "system_node_id": "SYS-V9-NAVIGATION",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-TUTORIAL-001",
+      "title": "Tutorial / Help",
+      "status": "Draft",
+      "summary": "初回必須TutorialとHelp再閲覧契約。",
+      "body": "# 1. 初回Tutorial\n初回プレイは必須Tutorialを段階的に実施する。\n一度に大量説明を表示せず、実操作に合わせて短い案内を出す。\n\n# 2. 最低対象\n- Party編成\n- Quest開始\n- Equipment\n- Skill / Passive\n- Stone\n- AI設定\n- Warehouse / Reward受取\n\n# 3. Skip\nCurrent初期仕様ではTutorial全体の完全Skipを提供しない。\n\n# 4. Help\n学習済み内容はHelpから後で再閲覧可能にする。\nTutorial進行状態はSave可能とする。\n\n# 5. Boundary\nTutorialはゲームルールを再実装せず、既存画面・Runtime操作を案内するだけとする。\n",
+      "decision_refs": [
+        "DEC-R24-TUTORIAL-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- 初回必須Tutorialを段階実行できる。\\n- Helpから再閲覧できる。",
+      "system_node_id": "SYS-V9-TUTORIAL",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-STORY-PRESENT-001",
+      "title": "Story Presentation",
+      "status": "Draft",
+      "summary": "Scene Snapshotを簡易イベント形式でPlayerへ表示する。",
+      "body": "# 1. 基本形式\n制作量を抑えた簡易イベント形式をCurrent基本とする。\n- 背景\n- 会話Window\n- 話者名\n\n立ち絵は重要人物・重要場面など必要箇所だけ使用する。\n\n# 2. 拡張\nデータ上は必要に応じて以下を指定可能にする。\n- 立ち絵\n- 表情差分\n- 背景\n- 演出指定\n\n# 3. Player操作\n- 会話送り\n- Auto\n- 既読部分のSkip\n- 会話履歴\n\n未読部分を自動Skipしない。\n\n# 4. Snapshot\nQuestRun中のStory表示は保存済みScene Snapshotを使用する。\nCurrent Scene Masterを再参照して過去Runの内容を変更しない。\n",
+      "decision_refs": [
+        "DEC-R24-STORY-PRESENTATION-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-STORY-001",
+        "SPEC-V9-019-RUN-002"
+      ],
+      "acceptance_criteria": "- Scene Snapshotを簡易イベント形式で再生できる。\\n- 未読自動Skipを行わない。",
+      "system_node_id": "SYS-V9-STORY-PRESENTATION",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-QUEST-PRESENT-001",
+      "title": "Quest Presentation / Adventure Viewer",
+      "status": "Draft",
+      "summary": "派遣から帰還までのQuestRun Timeline表示契約。",
+      "body": "# 1. Adventure Viewer\nQuest派遣後は保存済みQuestRun Timelineを読む専用冒険進行画面を基本とする。\n\n# 2. Detail\nTimelineイベントに応じて以下へ遷移可能。\n- Battle → Battle Presentation\n- Story → Story Presentation\n- Exploration → Exploration Result表示\n\n詳細完了後はAdventure Viewerへ戻る。\n\n# 3. Time\n詳細画面閲覧中もPlayback時間は進行する。\nViewerへ戻った時点で現在時刻までCatch-up表示する。\n\n# 4. Read Only\nPlaybackは保存済みQuestRunだけを読む。\nBattle/Event/Random/Reward/Flag等の再計算・再抽選は禁止。\n\n# 5. Return\n成功、Failure、Abandon等の確定結果を対応するResult/Failure Presentationへ渡す。\n",
+      "decision_refs": [
+        "DEC-R24-QUEST-PRESENTATION-001",
+        "DEC-R24-FAILURE-PRESENTATION-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-RUN-002"
+      ],
+      "acceptance_criteria": "- QuestRun Timelineを再計算なしで表示できる。\\n- 詳細閲覧後にCatch-upできる。",
+      "system_node_id": "SYS-V9-QUEST-PRESENTATION",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-INVENTORY-UI-001",
+      "title": "Inventory / Equipment UI",
+      "status": "Draft",
+      "summary": "InventoryとEquipmentのPlayer閲覧・比較・処理UI。",
+      "body": "# 1. 基本機能\n- 一覧\n- 装備 / 解除\n- 装備前後比較\n- MOD表示\n- 装備不可理由\n- Sort\n- Filter\n\n# 2. 不要品処理\n売却と破棄の両方を正式採用する。\n- 売却: Gold化\n- 破棄: 無償削除\n\n# 3. Safety\n- 装備中Itemは直接売却/破棄不可\n- Locked Itemは売却/破棄不可\n- 高Rarity Itemは確認\n- 一括売却/一括破棄は対象確認後に実行\n\n# 4. Boundary\nUIはInventory/Equipment Runtimeの所有状態・不可理由を表示する。\n装備可否、所有、売却成立等をUI独自で再計算しない。\n\n# 5. Variable\n売却価格式、高Rarity警告閾値、初期Sort等はOwner/Balance側へ分離する。\n",
+      "decision_refs": [
+        "DEC-R24-INVENTORY-UI-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-EQUIP-001"
+      ],
+      "acceptance_criteria": "- 比較/Sort/Filter/売却/破棄を提供できる。\\n- 装備中/Locked Itemを誤処理しない。",
+      "system_node_id": "SYS-V9-INVENTORY-UI",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-SKILL-UI-001",
+      "title": "Skill / Passive UI / Skill Loadout",
+      "status": "Draft",
+      "summary": "Skill/Passive閲覧とPlayer Skill Loadout編集契約。",
+      "body": "# 1. Skill UI\n- Skill一覧\n- Skill詳細\n- 習得条件\n- 使用条件\n- Skill Loadout編集\n\n# 2. Skill Loadout\n習得済みSkillのうち、戦闘で使用可能にするSkillをLoadoutへ登録する。\nPlayer Character AIはLoadout内Skillだけを使用候補とする。\n\n# 3. Passive\nPassiveはSkill Loadoutへ含めない。\nPassiveは常時効果・手動発動なしの既存仕様を維持し、習得状態・有効状態を確認可能にする。\n\n# 4. Save\nPlayerのLoadout状態をSave対象とする。\n\n# 5. Variable\nLoadout slot数等の具体値はBalance可変。\n",
+      "decision_refs": [
+        "DEC-R24-SKILL-UI-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-PASSIVE-001",
+        "SPEC-V9-019-AI-003"
+      ],
+      "acceptance_criteria": "- Skill Loadoutを編集・保存できる。\\n- PassiveをLoadoutと分離できる。",
+      "system_node_id": "SYS-V9-SKILL-UI",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-FEEDBACK-001",
+      "title": "Feedback / Error UI",
+      "status": "Draft",
+      "summary": "Player向け成功・失敗・操作不可理由の表示体系。",
+      "body": "# 1. 表示種別\n- Inline: その場で修正可能な入力/操作不可理由\n- Dialog: 重要操作の確認、重大な選択\n- Toast: 一時的な成功/通知\n\n# 2. Reason\nUIはOwner Runtimeが返す理由をPlayer向け文言へ変換して表示する。\nUI側でゲーム判定を独自再実装しない。\n\n# 3. Major Error\nSave/Load等の重大失敗はRecovery仕様へ接続し、原因表示と復旧導線を提供する。\n\n# 4. Safety\n破棄、売却、一括操作等の取り返しがつきにくい操作は必要に応じて確認する。\n",
+      "decision_refs": [
+        "DEC-R24-FEEDBACK-RECOVERY-001",
+        "DEC-R24-INVENTORY-UI-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- Inline/Dialog/Toastを用途別に使える。\\n- Runtime不可理由を表示できる。",
+      "system_node_id": "SYS-V9-FEEDBACK-UI",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RECOVERY-001",
+      "title": "Loading / Save-Load Recovery",
+      "status": "Draft",
+      "summary": "Loading・保存/読込失敗時のPlayer向け復旧状態遷移。",
+      "body": "# 1. Loading\n処理中は二重実行を防止する。\n処理完了前に成功状態として見せない。\n\n# 2. Save / Load Error\n失敗時:\n- 原因をPlayerへ表示\n- Retry可能ならRetryを提供\n- 中途半端な成功状態を正式成功として扱わない\n\n# 3. Recovery\n復旧不能な場合は、破損を広げない安全な画面またはTitleへ戻す。\n\n# 4. Quest\nQuestRunは既存Snapshot/決定性契約を優先し、画面復帰によってBattle/Event/Rewardを再実行しない。\n\n# 5. Variable\nRetry回数、Timeout等の技術設定は実装Configへ分離する。\n",
+      "decision_refs": [
+        "DEC-R24-FEEDBACK-RECOVERY-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-CORE-002",
+        "SPEC-V9-019-RUN-002"
+      ],
+      "acceptance_criteria": "- Loading二重実行を防止できる。\\n- Save/Load失敗時にRetry/安全復帰できる。",
+      "system_node_id": "SYS-V9-LOADING-RECOVERY",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-DEVICE-001",
+      "title": "Responsive / Device UI",
+      "status": "Draft",
+      "summary": "完成版の正式対応DeviceとLayout原則。",
+      "body": "# 1. 正式対応\n- PC\n- スマホ縦持ち\n\n# 2. PC\n横幅を利用した複数Column Layoutを基本にできる。\n\n# 3. スマホ縦\n- 1 Column中心\n- 下部操作\n- 折りたたみ\n- Touch可能な操作Size\n- Battle固定配置/HUDを縦画面用に再配置\n\n# 4. スマホ横\n正式対応外。\n必要に応じて縦持ちへの切替案内を出す。\n横向き専用LayoutをCurrent必須制作物にしない。\n\n# 5. Variable\nBreakpoint、余白、具体Pixel値等はUI Config/実装へ分離する。\n",
+      "decision_refs": [
+        "DEC-R24-RESPONSIVE-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- PCとスマホ縦で主要Player機能を操作可能。\\n- スマホ横を必須Layoutにしない。",
+      "system_node_id": "SYS-V9-RESPONSIVE-UI",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-ACCESSIBILITY-001",
+      "title": "Accessibility",
+      "status": "Draft",
+      "summary": "戦闘演出と状態表示の最低限Accessibility契約。",
+      "body": "# 1. 必須提供\n- Screen Shake OFF\n- Flash軽減\n- 色だけに依存しない状態表現\n\n# 2. Battle\n演出軽減時も以下を認識可能にする。\n- 行動主体\n- 対象\n- 行動種別\n- Damage / Heal等の主要結果\n- Status / Buff / Debuff等の状態変化\n\n# 3. Boundary\nAccessibility設定はPresentationを変更してよいが、Battle/Quest Resultを変更してはならない。\n\n# 4. Future\n追加の文字Size等は将来拡張可能とするが、根拠なくCurrent必須項目へ固定しない。\n",
+      "decision_refs": [
+        "DEC-R24-FEEDBACK-RECOVERY-001",
+        "DEC-R24-BATTLE-UX-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-PRESENT-001",
+        "SPEC-V9-019-SETTINGS-001"
+      ],
+      "acceptance_criteria": "- Shake OFF/Flash軽減を適用できる。\\n- 色以外でも主要状態を識別できる。",
+      "system_node_id": "SYS-V9-ACCESSIBILITY",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-FAILURE-PRESENT-001",
+      "title": "Quest Failure / Abandon Presentation",
+      "status": "Draft",
+      "summary": "Battle敗北・Quest Failure・Abandonの結果表示と帰還導線。",
+      "body": "# 1. Result\nFailureまたはAbandon時に、Playerへ少なくとも以下を表示する。\n- 結果種別\n- 失敗/放棄理由\n- 失った報酬等の主要結果\n\n# 2. Loss\nFailure/Abandonの損失ルール自体はQuestRun Owner仕様を参照し、本UIでは再計算しない。\n\n# 3. Return\n結果確認後はGuildへ帰還する。\n\n# 4. Retry\n同条件の即時再挑戦ボタンは提供しない。\nPlayerはGuildでParty、Equipment、Skill Loadout、AI、Stone等を見直し、新しいQuestRunとして再出撃する。\n\n# 5. Abandon\nAbandonは損失面ではFailureと同等だが、表示・履歴上の結果種別を区別する。\n",
+      "decision_refs": [
+        "DEC-R24-FAILURE-PRESENTATION-001",
+        "DEC-R24-QUEST-ABANDON-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-RUN-001",
+        "SPEC-V9-019-NAV-001"
+      ],
+      "acceptance_criteria": "- Failure/Abandonを区別表示できる。\\n- 即時RetryなしでGuildへ帰還できる。",
+      "system_node_id": "SYS-V9-FAILURE-PRESENTATION",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RELEASE-001",
+      "title": "Release / Debug Surface Separation",
+      "status": "Draft",
+      "summary": "完成版Player機能とDeveloper/Test機能の公開境界。",
+      "body": "# 1. Release Player Surface\n完成版の通常Player導線から以下を除外する。\n- Debug UI\n- Test UI\n- Standalone Battle検証画面\n- Developer専用UI\n\n# 2. Internal\n開発・検証上必要な機能がBuild内部に残る場合でも、通常Player Navigationから到達できない境界を設ける。\n\n# 3. Product Gate\nRelease前にPlayer向けNavigation/画面からDeveloper機能へ到達不能であることを確認する。\n\n# 4. Boundary\nDeveloper機能の内部実装を本仕様は所有しない。\n本仕様はRelease Player Surfaceへ公開するか否かの境界だけを所有する。\n",
+      "decision_refs": [
+        "DEC-R24-RELEASE-SURFACE-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-MIG-001"
+      ],
+      "acceptance_criteria": "- Release Player導線からDeveloper/Test機能へ到達できない。",
+      "system_node_id": "SYS-V9-RELEASE-SURFACE",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T20:54:00+09:00",
+      "updated_at": "2026-08-20T20:54:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -4526,6 +4910,15 @@
     {
       "at": "2026-08-20T11:18:55.676Z",
       "message": "Development Workspace JSON merged: add=2 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-20T20:54:00+09:00",
+      "type": "SpecificationIntegration",
+      "summary": "R24確定事項をOwner Specificationへ統合。既存6仕様を更新し、Player向けPresentation/UI/Audio/Settings/Navigation/Tutorial/Recovery/Device等16仕様を新規登録。"
+    },
+    {
+      "at": "2026-08-20T11:59:07.909Z",
+      "message": "Development Workspace JSON merged: add=18 update=6 delete=0"
     }
   ],
   "specification_candidates": [
@@ -13627,6 +14020,43 @@
       },
       "actor": "AI/Human",
       "created_at": "2026-08-20T18:40:00+09:00"
+    },
+    {
+      "id": "EVT-R25-SPEC-INTEGRATION-001",
+      "type": "SPECIFICATION_INTEGRATION_REGISTERED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "updated_specification_ids": [
+          "SPEC-V9-019-BAL-001",
+          "SPEC-V9-019-BATTLE-001",
+          "SPEC-V9-019-EQUIP-004",
+          "SPEC-V9-019-RUN-001",
+          "SPEC-V9-019-RUN-002",
+          "SPEC-V9-019-AI-003"
+        ],
+        "created_specification_ids": [
+          "SPEC-V9-019-PRESENT-001",
+          "SPEC-V9-019-PLAYBACK-UI-001",
+          "SPEC-V9-019-AUDIO-001",
+          "SPEC-V9-019-SETTINGS-001",
+          "SPEC-V9-019-NAV-001",
+          "SPEC-V9-019-TUTORIAL-001",
+          "SPEC-V9-019-STORY-PRESENT-001",
+          "SPEC-V9-019-QUEST-PRESENT-001",
+          "SPEC-V9-019-INVENTORY-UI-001",
+          "SPEC-V9-019-SKILL-UI-001",
+          "SPEC-V9-019-FEEDBACK-001",
+          "SPEC-V9-019-RECOVERY-001",
+          "SPEC-V9-019-DEVICE-001",
+          "SPEC-V9-019-ACCESSIBILITY-001",
+          "SPEC-V9-019-FAILURE-PRESENT-001",
+          "SPEC-V9-019-RELEASE-001"
+        ],
+        "source_decision_batch": "R24"
+      },
+      "actor": "AI",
+      "created_at": "2026-08-20T20:54:00+09:00"
     }
   ],
   "system_impacts": [
