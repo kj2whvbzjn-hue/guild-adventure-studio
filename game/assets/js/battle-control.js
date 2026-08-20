@@ -12,14 +12,15 @@ function scenePosition(u,index,sideCount){
 }
 function reservationView(u){
  if(!u.alive)return{icon:'❌',title:'戦闘不能'};
- const r=u.reservedAction;
- if(!r)return{icon:u.gauge>=GAUGE_MAX?'💦':'⏳',title:u.gauge>=GAUGE_MAX?'AI判断待ち':'行動ゲージ待機'};
+ if(u.castingAction){const c=u.castingAction,remain=Math.max(0,Number(c.completeAt||battle.tick)-battle.tick);return{icon:'✨',title:`${c.label||'スキル'}を詠唱中（残り${remain} Tick）`};}
+ const r=u.reservedAction,max=battleGaugeMax();
+ if(!r)return{icon:u.gauge>=max?'💦':'⏳',title:u.gauge>=max?'AI判断待ち':'行動ゲージ待機'};
  const target=battle.units.find(x=>x.id===r.targetId);
- if(r.status==='cancelled')return{icon:'❌',title:r.failureReason||'予約失敗'};
- if(r.type==='guard')return{icon:'🛡️',title:'防御を予約'};
- if(r.type==='wait')return{icon:'💤',title:'待機を予約'};
- if(r.type==='heal')return{icon:'💚',title:`${target?.name||'味方'}への回復を予約`};
- return{icon:r.icon||'⚔️',title:`${target?.name||'対象'}への${r.label||'スキル'}を予約（Tick ${r.executeAt}）`};
+ if(r.status==='cancelled')return{icon:'❌',title:r.failureReason||'候補失敗'};
+ if(r.type==='guard')return{icon:'🛡️',title:'防御候補'};
+ if(r.type==='wait')return{icon:'💤',title:'待機候補'};
+ if(r.type==='heal')return{icon:'💚',title:`${target?.name||'味方'}への回復候補`};
+ return{icon:r.icon||'⚔️',title:`${target?.name||'対象'}への${r.label||'スキル'}（現在のAI候補）`};
 }
 function ensureSceneUnits(force=false){
  const host=$('sceneUnits');if(!host)return;const signature=battle.units.map(u=>u.id+u.name).join('|')+'|'+sceneLayoutMode();
@@ -55,8 +56,9 @@ function updateSceneControls(){
  if(step)step.disabled=!!battle.running||!!battle.result||!!battle.pendingResult;
 }
 function renderBattle(){
+ const max=battleGaugeMax();GAUGE_MAX=max;
  $('battleTick').textContent=`Tick: ${battle.tick}`;$('battleActions').textContent=`行動回数: ${battle.actions}`;$('battleStatus').textContent=`状態: ${battle.result?'戦闘終了':battle.pendingResult?'最終演出待機':battle.running?'オート進行中':'待機'}`;$('battleResult').textContent=`勝敗: ${battle.result||'未決着'}`;
- $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.reservedAction?Math.max(0,u.reservedAction.executeAt-battle.tick):(u.gauge===0?Math.ceil(GAUGE_MAX/u.agi):Math.ceil(Math.max(0,GAUGE_MAX-u.gauge)/u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.reservedAction?(u.reservedAction.type==='wait'?`${rv.icon} ${u.reservedAction.label}（Tick ${u.reservedAction.executeAt}実行予定）`:`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（Tick ${u.reservedAction.executeAt}実行予定）`):`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${effectiveAttackValue(u)}（基礎${u.attack}）</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${u.gauge} / ${GAUGE_MAX}（毎Tick +${u.alive?u.agi:0}）</div><div class="bar"><i style="width:${Math.min(100,u.gauge)}%"></i></div><div class="small"><b>予約:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small"><b>シールド:</b> ${escapeHtml(shieldStatusText(u))}</div><div class="small"><b>BUFF/DEBUFF:</b> ${escapeHtml(modifierStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
+ $('battleUnits').innerHTML=battle.units.map(u=>{const until=u.alive?(u.castingAction?Math.max(0,Number(u.castingAction.completeAt||battle.tick)-battle.tick):Math.ceil(Math.max(0,max-u.gauge)/Math.max(1,u.agi))):'—';const last=u.lastActionTick==null?'未行動':`Tick ${u.lastActionTick}`;const hpPct=Math.max(0,Math.min(100,u.hp/u.maxHp*100));const gaugePct=Math.max(0,Math.min(100,(Number(u.gauge)||0)/max*100));const rv=reservationView(u);const target=u.reservedAction?battle.units.find(x=>x.id===u.reservedAction.targetId):null;const reservationText=u.castingAction?`${rv.icon} ${rv.title}`:u.reservedAction?(u.reservedAction.type==='wait'?`${rv.icon} ${u.reservedAction.label}（現在候補）`:`${rv.icon} ${u.reservedAction.label} → ${target?.name||'対象なし'}（現在候補）`):`${rv.icon} ${rv.title}`;return `<div class="battle-unit"><div class="name">${escapeHtml(u.name)}${u.alive?'':'（戦闘不能）'}</div><span class="tag">${u.side}</span><span class="tag">AGI ${u.agi}</span><span class="tag">攻撃 ${effectiveAttackValue(u)}（基礎${u.attack}）</span><span class="tag">行動 ${u.actions}回</span><div class="small">HP ${u.hp} / ${u.maxHp}</div><div class="bar"><i style="width:${hpPct}%;background:var(--good)"></i></div><div class="small">Gauge ${Number(u.gauge).toFixed(1).replace(/\.0$/,'')} / ${max}（毎Tick +${u.alive&&!u.castingAction?u.agi:0}）</div><div class="bar"><i style="width:${gaugePct}%"></i></div><div class="small"><b>AI候補/詠唱:</b> ${escapeHtml(reservationText)}</div><div class="small"><b>DOT:</b> ${escapeHtml(dotStatusText(u))}</div><div class="small"><b>シールド:</b> ${escapeHtml(shieldStatusText(u))}</div><div class="small"><b>BUFF/DEBUFF:</b> ${escapeHtml(modifierStatusText(u))}</div><div class="small">次の処理まで約 ${until} Tick ／ 最終行動 ${last} ／ 与ダメージ ${u.damageDealt}</div></div>`}).join('');
  $('battleLog').textContent=battle.log.length?battle.log.slice(-100).join('\n'):'まだ行動はありません。';$('battleLog').scrollTop=$('battleLog').scrollHeight;const publicLog=$('battlePublicLogBody');if(publicLog){const rows=battle.log.filter(x=>/ダメージ|戦闘不能|戦闘終了|TAG\]\[ERROR|TAG\]\[DOT/.test(x)).slice(-5).map(x=>x.replace(/^\[Tick \d+\] /,''));publicLog.textContent=rows.length?rows.join('\n'):'まだ行動はありません。'}ensureSceneUnits();updateSceneControls();populateTagSkillTestUI();
 }
 function chooseTarget(attacker){const opponents=battle.units.filter(u=>u.alive&&u.side!==attacker.side);if(!opponents.length)return null;if(attacker.aiPolicy==='random')return opponents[Math.floor(Math.random()*opponents.length)];if(attacker.aiPolicy==='weakest')return opponents.sort((a,b)=>a.maxHp-b.maxHp||a.order-b.order)[0];return opponents.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp)||a.order-b.order)[0]}
@@ -79,96 +81,83 @@ function formalAiRuntimeForActor(actor){
  if(!actor?.characterId||!window.GKGameAISaveBridge||!window.GKGameAIBattleBridge)return null;
  return GKGameAISaveBridge.runtimeForCharacter(data,actor.characterId);
 }
-function reserveFormalAiAction(actor,runtime){
+function resetAiEvaluationCursor(actor){
+ const max=battleGaugeMax(),step=battleAiReevaluationStep(),g=Math.max(0,Math.min(max,Number(actor?.gauge)||0));
+ if(!actor)return;
+ if(g>=max){actor.nextAiEvaluationGauge=max;actor.lastAiEvaluationGauge=null;return;}
+ const completed=Math.floor((g+1e-9)/step);actor.nextAiEvaluationGauge=Math.min(max,(completed+1)*step);actor.lastAiEvaluationGauge=null;
+}
+function markAiEvaluation(actor,threshold){actor.lastAiEvaluationGauge=Math.min(battleGaugeMax(),Number(threshold)||0);actor.nextAiEvaluationGauge=Math.min(battleGaugeMax(),actor.lastAiEvaluationGauge+battleAiReevaluationStep());}
+function reserveFormalAiAction(actor,runtime,{threshold=actor.gauge,phase='rethink'}={}){
  let decision;
- try{decision=GKGameAIBattleBridge.decide(runtime,{battle_id:String(battleLaunchContext?.source||'battle'),tick:battle.tick,phase:'reservation',seed:battle.p0113TieSeed||battleLaunchContext?.seed||0,actor_id:actor.id,units:battle.units});}
- catch(error){battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI判断に失敗 — ${String(error?.message||error)}`);return false;}
+ try{const evalSeed=`${battle.p0113TieSeed||battleLaunchContext?.seed||0}|ag:${Number(threshold)}|actor:${actor.id}`;decision=GKGameAIBattleBridge.decide(runtime,{battle_id:String(battleLaunchContext?.source||'battle'),tick:battle.tick,phase,seed:evalSeed,actor_id:actor.id,units:battle.units});}
+ catch(error){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI判断に失敗 — ${String(error?.message||error)}`);return false;}
  actor.lastAiDecision=decision;
- const proposal=decision?.proposal||{},base={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,formalAi:true,aiProgramId:String(runtime.program_id||''),reason:'Formal AI ACTION到達',reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
+ const proposal=decision?.proposal||{},base={id:`C-${battle.tick}-${actor.id}-${Number(threshold)}`,formalAi:true,aiProgramId:String(runtime.program_id||''),reason:'Formal AI再評価',reservedAt:battle.tick,evaluatedGauge:Number(threshold),executeAt:battle.tick,status:'candidate',revision:0};
  if(proposal.status==='wait'){
   actor.reservedAction={...base,type:'wait',actionId:'wait',targetId:null,label:'待機',icon:'💤'};actor.lastReservation={...actor.reservedAction};
-  battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AIで「待機」を予約（実行予定 Tick ${actor.reservedAction.executeAt}）`);
-  typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:'wait',target_id:null});return true;
+  battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI再評価で「待機」を候補化（Gauge ${Number(threshold)}）`);
+  typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:'wait',target_id:null,evaluated_gauge:Number(threshold),candidate_only:true});return true;
  }
- if(proposal.status!=='selected'||!proposal.action_id){battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI判断に失敗 — ${proposal.reason||'action_not_selected'}`);return false;}
+ if(proposal.status!=='selected'||!proposal.action_id){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI再評価は候補なし — ${proposal.reason||'action_not_selected'}`);return false;}
  const target=battle.units.find(unit=>unit.alive&&unit.id===String(proposal.target_id||''));
- if(!target){battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI対象が見つかりません`);return false;}
+ if(!target){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI対象が見つかりません`);return false;}
  const actionId=String(proposal.action_id),targetedBase={...base,actionId,targetId:target.id};
  if(actionId==='attack')actor.reservedAction={...targetedBase,type:'attack',label:'通常攻撃',icon:'⚔️'};
  else if(actionId.startsWith('skill:')){
   const skillId=actionId.slice(6),access=window.GKGameSkillLoadout?.skillUseCheck?GKGameSkillLoadout.skillUseCheck({skills:actor.ownedSkillIds||[],equippedSkillId:actor.equippedSkillId||''},skillId,{requireEquipped:true}):{ok:false,reason:'LOADOUT_RUNTIME_UNAVAILABLE'};
-  if(!access.ok){battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI指定Skillは現在使用できません — ${skillId} (${access.reason})`);typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_skill_blocked',{source_id:actor.id,program_id:runtime.program_id,skill_id:skillId,reason:access.reason,equipped_skill_id:actor.equippedSkillId||null,owned_skill_ids:[...(actor.ownedSkillIds||[])]});return false;}
-  const skill=formalBattleSkillExact(skillId);if(!skill){battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI指定Skillが見つかりません — ${skillId}`);return false;}
+  if(!access.ok){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI指定Skillは現在使用できません — ${skillId} (${access.reason})`);typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_skill_blocked',{source_id:actor.id,program_id:runtime.program_id,skill_id:skillId,reason:access.reason,equipped_skill_id:actor.equippedSkillId||null,owned_skill_ids:[...(actor.ownedSkillIds||[])]});return false;}
+  const skill=formalBattleSkillExact(skillId);if(!skill){actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI指定Skillが見つかりません — ${skillId}`);return false;}
   actor.reservedAction={...targetedBase,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️'};
- }else{battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI行動が未対応です — ${actionId}`);return false;}
+ }else{actor.reservedAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}のFormal AI行動が未対応です — ${actionId}`);return false;}
  actor.lastReservation={...actor.reservedAction};
- battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AIで「${actor.reservedAction.label}」を予約 → 対象 ${target.name}（実行予定 Tick ${actor.reservedAction.executeAt}）`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:actionId,target_id:target.id});
+ battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI再評価で「${actor.reservedAction.label}」を候補化 → ${target.name}（Gauge ${Number(threshold)}）`);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('formal_ai_reserved',{source_id:actor.id,program_id:runtime.program_id,action_id:actionId,target_id:target.id,evaluated_gauge:Number(threshold),candidate_only:true});
  return true;
 }
-function reserveAction(actor){
- if(!actor.alive||actor.reservedAction||actor.gauge<GAUGE_MAX||battle.result||battle.pendingResult)return false;
+function reserveAction(actor,{threshold=actor?.gauge,phase=null}={}){
+ const max=battleGaugeMax();GAUGE_MAX=max;if(!actor?.alive||actor.castingAction||battle.result||battle.pendingResult)return false;
+ const evaluationPhase=phase||((actor.lastAiEvaluationGauge==null||Number(threshold)<=battleAiReevaluationStep())?'reservation':'rethink');
+ actor.reservedAction=null;
  if(formalAdventureSimulationDepth>0&&!actor.characterId){
   const target=chooseTarget(actor);if(!target)return false;
-  actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'attack',actionId:'attack',targetId:target.id,label:'通常攻撃',icon:'⚔️',headlessAdventureBasic:true,reason:'Adventure enemy basic attack',reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
-  actor.lastReservation={...actor.reservedAction};return true;
+  actor.reservedAction={id:`C-${battle.tick}-${actor.id}-${Number(threshold)}`,type:'attack',actionId:'attack',targetId:target.id,label:'通常攻撃',icon:'⚔️',headlessAdventureBasic:true,reason:'Adventure enemy basic attack',reservedAt:battle.tick,evaluatedGauge:Number(threshold),executeAt:battle.tick,status:'candidate',revision:0};actor.lastReservation={...actor.reservedAction};return true;
  }
  if(actor.characterId){
   const formalRuntime=formalAiRuntimeForActor(actor);
-  if(!formalRuntime){
-   if(actor.formalAiUnavailableLogged!==true){battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI未設定のため予約しません`);actor.formalAiUnavailableLogged=true;}
-   return false;
-  }
-  actor.formalAiUnavailableLogged=false;
-  return reserveFormalAiAction(actor,formalRuntime);
+  if(!formalRuntime){if(actor.formalAiUnavailableLogged!==true){battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI未設定のため候補を作成しません`);actor.formalAiUnavailableLogged=true;}return false;}
+  actor.formalAiUnavailableLogged=false;return reserveFormalAiAction(actor,formalRuntime,{threshold,phase:evaluationPhase});
  }
  const target=chooseTarget(actor);if(!target)return false;
- const skill=formalBattleSkill(actor.defaultSkillId);if(!skill){battle.log.push(`[Tick ${battle.tick}] [FORMAL-RUNTIME][BLOCK] 正式Production Skillがありません`);return false}actor.reservedAction={id:`R-${battle.tick}-${actor.id}-${battle.actions}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`Gauge ${actor.gauge} が ${GAUGE_MAX} 以上`,reservedAt:battle.tick,executeAt:battle.tick+RESERVATION_DELAY_TICKS,status:'reserved',revision:0};
- actor.lastReservation={...actor.reservedAction};
- battle.log.push(`[Tick ${battle.tick}] ${actor.name}は「${skill.name}」を予約 → 対象 ${target.name}（実行予定 Tick ${actor.reservedAction.executeAt}）`);
- return true;
+ const skill=formalBattleSkill(actor.defaultSkillId);if(!skill){battle.log.push(`[Tick ${battle.tick}] [FORMAL-RUNTIME][BLOCK] 正式Production Skillがありません`);return false;}
+ actor.reservedAction={id:`C-${battle.tick}-${actor.id}-${Number(threshold)}`,type:'skill',skillId:skill.id,label:skill.name,icon:'⚔️',targetId:target.id,reason:`AI再評価 Gauge ${Number(threshold)} / ${max}`,reservedAt:battle.tick,evaluatedGauge:Number(threshold),executeAt:battle.tick,status:'candidate',revision:0};
+ actor.lastReservation={...actor.reservedAction};battle.log.push(`[Tick ${battle.tick}] ${actor.name}は「${skill.name}」を候補化 → ${target.name}（Gauge ${Number(threshold)}）`);return true;
 }
 function cancelReservation(actor,reason,consumeGauge=true){
- const r=actor.reservedAction;if(!r)return;
- r.status='cancelled';r.failureReason=reason;actor.lastReservation={...r};
- battle.log.push(`[Tick ${battle.tick}] ${actor.name}の予約は失敗 — ${reason}`);
- actor.reservedAction=null;if(consumeGauge)actor.gauge=Math.max(0,actor.gauge-50);
+ const r=actor?.reservedAction;if(!r)return;
+ r.status='cancelled';r.failureReason=reason;actor.lastReservation={...r};battle.log.push(`[Tick ${battle.tick}] ${actor.name}の行動候補は実行不成立 — ${reason}`);actor.reservedAction=null;
+ if(consumeGauge)actor.gauge=Math.max(0,Number(actor.gauge||0)-battleGaugeConsumeAmount('failed'));resetAiEvaluationCursor(actor);
 }
-function evaluateActionExecution(actor){
- if(!actor?.alive)return{ok:false,reason:'行動者が戦闘不能',code:'ACTOR_DEAD'};
- if(actor.gauge<GAUGE_MAX)return{ok:false,reason:`Gauge不足 (${actor.gauge}/${GAUGE_MAX})`,code:'GAUGE_SHORTAGE'};
- const target=chooseTarget(actor);if(!target)return{ok:false,reason:'実行時点で有効対象がありません',code:'NO_VALID_TARGET'};
- const skill=formalBattleSkill(actor.defaultSkillId);if(!skill)return{ok:false,reason:'正式Production Skillがありません',code:'NO_FORMAL_PRODUCTION_SKILL'};
+function precheckSkillExecution(actor,r,skill,target){
  const compiled=compileSkillForRuntime(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
- const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action',skillId:compiled.definition.id,cooldown:compiled.definition.parameters.cooldown,compiled}):{ok:true};
- if(!eligibility.ok){const reason=eligibility.reason==='COOLDOWN'?`クールダウン中（残り${eligibility.cooldownRemaining} Tick）`:eligibility.reason==='COST_SHORTAGE'?`MP不足（必要${eligibility.costCheck?.failures?.[0]?.required??'?'} / 現在${eligibility.costCheck?.failures?.[0]?.available??'?'}）`:'行動不能';return{ok:false,reason,code:eligibility.reason||'ACTION_DISABLED',eligibility,skill,compiled}};
- return{ok:true,target,skill,compiled};
+ const conditionResult=evaluateTaggedSkillConditions(actor,compiled,target);if(!conditionResult.ok)return{ok:false,reason:'発動条件不成立',code:'CONDITION_FAILED',skill,compiled,conditionResult};
+ const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action',skillId:compiled.definition.id,cooldown:compiled.definition.parameters.cooldown,compiled}):{ok:true,costCheck:{ok:true,costs:[],failures:[]}};
+ if(!eligibility.ok){const reason=eligibility.reason==='COOLDOWN'?`クールダウン中（残り${eligibility.cooldownRemaining} Tick）`:eligibility.reason==='COST_SHORTAGE'?`MP不足（必要${eligibility.costCheck?.failures?.[0]?.required??'?'} / 現在${eligibility.costCheck?.failures?.[0]?.available??'?'}）`:'行動不能';return{ok:false,reason,code:eligibility.reason||'ACTION_DISABLED',eligibility,skill,compiled,conditionResult};}
+ const resolved=resolveTaggedTargets(actor,target,compiled.definition);if(!resolved.ok)return{ok:false,reason:resolved.reason,code:'NO_VALID_TARGET',skill,compiled,conditionResult,eligibility};
+ const executionSnapshot={checkedAt:battle.tick,skillId:compiled.definition.id,targetIds:resolved.targets.map(x=>x.id),targetStates:resolved.targets.map(x=>({id:x.id,alive:x.alive!==false,hp:Number(x.hp)||0})),presentationTargetId:r?.targetId||target?.id||null,costs:(eligibility.costCheck?.costs||[]).map(x=>({...x})),conditionResult:JSON.parse(JSON.stringify(conditionResult))};
+ return{ok:true,target,skill,compiled,actionKind:'skill',executionSnapshot};
 }
-function evaluateFormalReservationExecution(actor){
- const r=actor?.reservedAction;if(!r?.formalAi)return{ok:false,reason:'Formal AI予約なし',code:'NO_FORMAL_AI_RESERVATION'};
- if(!actor.alive)return{ok:false,reason:'行動者が戦闘不能',code:'ACTOR_DEAD'};
- if(actor.gauge<GAUGE_MAX)return{ok:false,reason:`Gauge不足 (${actor.gauge}/${GAUGE_MAX})`,code:'GAUGE_SHORTAGE'};
+function evaluateCandidateExecution(actor){
+ const r=actor?.reservedAction,max=battleGaugeMax();if(!r)return{ok:false,reason:'AI候補なし',code:'NO_CANDIDATE'};if(!actor.alive)return{ok:false,reason:'行動者が戦闘不能',code:'ACTOR_DEAD'};if(actor.gauge+1e-9<max)return{ok:false,reason:`Gauge不足 (${actor.gauge}/${max})`,code:'GAUGE_SHORTAGE'};
  if(r.type==='wait')return{ok:true,target:null,actionKind:'wait'};
- const target=battle.units.find(unit=>unit.alive&&unit.id===r.targetId);if(!target)return{ok:false,reason:'予約対象が実行時点で無効です',code:'NO_VALID_TARGET'};
- if(r.type==='attack'){
-  if(target.side===actor.side)return{ok:false,reason:'通常攻撃の対象が敵ではありません',code:'INVALID_ATTACK_TARGET'};
-  const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'normal_action'}):{ok:true};
-  if(!eligibility.ok)return{ok:false,reason:'行動不能',code:eligibility.reason||'ACTION_DISABLED',eligibility};
-  return{ok:true,target,actionKind:'attack'};
- }
- if(r.type==='skill'){
-  const skill=formalBattleSkillExact(r.skillId);if(!skill)return{ok:false,reason:'予約した正式Production Skillがありません',code:'NO_FORMAL_PRODUCTION_SKILL'};
-  const compiled=compileSkillForRuntime(skill);if(!compiled.ok)return{ok:false,reason:`スキル定義エラー: ${compiled.errors.join(' / ')}`,code:'INVALID_SKILL',skill,compiled};
-  const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'skill_action',skillId:compiled.definition.id,cooldown:compiled.definition.parameters.cooldown,compiled}):{ok:true};
-  if(!eligibility.ok){const reason=eligibility.reason==='COOLDOWN'?`クールダウン中（残り${eligibility.cooldownRemaining} Tick）`:eligibility.reason==='COST_SHORTAGE'?`MP不足（必要${eligibility.costCheck?.failures?.[0]?.required??'?'} / 現在${eligibility.costCheck?.failures?.[0]?.available??'?'}）`:'行動不能';return{ok:false,reason,code:eligibility.reason||'ACTION_DISABLED',eligibility,skill,compiled};}
-  return{ok:true,target,skill,compiled,actionKind:'skill'};
- }
- return{ok:false,reason:'予約行動種別が不正です',code:'INVALID_FORMAL_ACTION'};
+ const target=battle.units.find(unit=>unit.id===String(r.targetId||''));if(!target||!target.alive)return{ok:false,reason:'候補対象が行動順到達時点で無効です',code:'NO_VALID_TARGET'};
+ if(r.type==='attack'){if(target.side===actor.side)return{ok:false,reason:'通常攻撃の対象が敵ではありません',code:'INVALID_ATTACK_TARGET'};const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'normal_action'}):{ok:true};if(!eligibility.ok)return{ok:false,reason:'行動不能',code:eligibility.reason||'ACTION_DISABLED',eligibility};return{ok:true,target,actionKind:'attack'};}
+ if(r.type==='skill'){const skill=formalBattleSkillExact(r.skillId)||formalBattleSkill(r.skillId);if(!skill)return{ok:false,reason:'候補の正式Production Skillがありません',code:'NO_FORMAL_PRODUCTION_SKILL'};return precheckSkillExecution(actor,r,skill,target);}
+ return{ok:false,reason:'候補行動種別が不正です',code:'INVALID_ACTION'};
 }
-function revalidateReservation(actor){
- if(!actor?.reservedAction)return{ok:false,reason:'予約なし',code:'NO_PRESENTATION_RESERVATION'};
- return evaluateActionExecution(actor);
-}
+function evaluateActionExecution(actor){return evaluateCandidateExecution(actor)}
+function evaluateFormalReservationExecution(actor){return evaluateCandidateExecution(actor)}
+function revalidateReservation(actor){return evaluateCandidateExecution(actor)}
 function waitForSceneIdle(timeout=5000){return new Promise(resolve=>{const started=performance.now();const check=()=>{if((!sceneBusy&&sceneQueue.length===0)||performance.now()-started>=timeout)return resolve();setTimeout(check,25)};check()})}
 async function completeBattleEnding(){
  if(battle.ending||!battle.pendingResult)return;
@@ -189,7 +178,7 @@ function finishIfNeeded(){
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
  const resolved=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
- battle.units.forEach(u=>u.reservedAction=null);processApplyLifecycleCleanup('battle_end');clearAllCoverEffects('battle_end');clearBattleEndCooldowns();
+ battle.units.forEach(u=>{u.reservedAction=null;u.castingAction=null});processApplyLifecycleCleanup('battle_end');clearAllCoverEffects('battle_end');clearBattleEndCooldowns();
  if(formalAdventureSimulationDepth>0){
   battle.result=resolved;battle.pendingResult=null;battle.running=false;
   battle.log.push(`[Tick ${battle.tick}] 戦闘終了 — ${battle.result}`);recordValidationEvent('battle_finished',{result:battle.result});return true;
@@ -200,49 +189,31 @@ function finishIfNeeded(){
  if(battle.timer)cancelAnimationFrame(battle.timer);battle.timer=null;
  renderBattle();completeBattleEnding();return true;
 }
-function performBasicAttack(attacker,target){
+function performBasicAttack(attacker,target,{prechecked=false}={}){
  if(!target)return false;
- const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(attacker,{actionKind:'normal_action'}):{ok:true};if(!eligibility.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:attacker?.id||null,target_id:target?.id||null,action_kind:'normal_action',reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});return false}
+ if(!prechecked){const eligibility=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(attacker,{actionKind:'normal_action'}):{ok:true};if(!eligibility.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:attacker?.id||null,target_id:target?.id||null,action_kind:'normal_action',reason:eligibility.reason,status_instance_id:eligibility.statusInstanceId,status_id:eligibility.statusId});return false}}
+ if(!target.alive)return false;
  const rawDamage=Math.max(1,attacker.attack),shield=consumeShieldDamage(target,rawDamage,{sourceId:attacker.id,damageType:'basic_attack'}),damage=shield.hpDamage;target.hp=Math.max(0,target.hp-damage);
- queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage});
- attacker.damageDealt+=damage;target.damageTaken+=damage;
- battle.log.push(`[Tick ${battle.tick}] ${attacker.name}の通常攻撃 → ${target.name}に${damage}HPダメージ（シールド吸収${shield.absorbed}、残HP ${target.hp}/${target.maxHp}）`);
- recordValidationEvent('basic_attack',{source_id:attacker.id,target_id:target.id,damage,hp_after:target.hp,shield_absorbed:shield.absorbed});
- if(target.hp<=0){target.alive=false;target.gauge=0;target.reservedAction=null;target.shieldEffects=[];recordValidationEvent('basic_attack_ko',{source_id:attacker.id,target_id:target.id});battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
+ queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage});attacker.damageDealt+=damage;target.damageTaken+=damage;
+ battle.log.push(`[Tick ${battle.tick}] ${attacker.name}の通常攻撃 → ${target.name}に${damage}HPダメージ（シールド吸収${shield.absorbed}、残HP ${target.hp}/${target.maxHp}）`);recordValidationEvent('basic_attack',{source_id:attacker.id,target_id:target.id,damage,hp_after:target.hp,shield_absorbed:shield.absorbed});
+ if(target.hp<=0){if(typeof resetCombatantOnDeath==='function')resetCombatantOnDeath(target,{reason:'basic_attack',sourceId:attacker.id});else{target.alive=false;target.gauge=0;target.reservedAction=null;target.castingAction=null;}recordValidationEvent('basic_attack_ko',{source_id:attacker.id,target_id:target.id});battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}
  finishIfNeeded();return true;
 }
+function commitActivatedAction(actor,r,{skillId=null,targetId=null}={}){actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skillId,executedTargetId:targetId};}
+function interruptCasting(actor,reason){const c=actor?.castingAction;if(!c)return false;actor.castingAction=null;battle.log.push(`[Tick ${battle.tick}] ${actor.name}の「${c.label||c.skillId}」は詠唱中断 — ${reason}`);typeof recordValidationEvent==='function'&&recordValidationEvent('skill_cast_interrupted',{source_id:actor.id,skill_id:c.skillId||null,target_id:c.targetId||null,reason,started_at:c.startedAt,interrupted_at:battle.tick});resetAiEvaluationCursor(actor);return true;}
+function activateCasting(actor){const c=actor?.castingAction;if(!c||!actor.alive)return false;actor.castingAction=null;const target=battle.units.find(x=>x.id===c.targetId)||null,skill=formalBattleSkillExact(c.skillId)||formalBattleSkill(c.skillId);if(!skill){battle.log.push(`[Tick ${battle.tick}] ${actor.name}の詠唱Skillが消失 — ${c.skillId}`);return false;}
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_cast_completed',{source_id:actor.id,skill_id:c.skillId,target_id:c.targetId,started_at:c.startedAt,completed_at:battle.tick});
+ const result=executeSkillRuntime(actor,target,skill,{executionSnapshot:c.executionSnapshot,skipExecutionEligibility:true});commitActivatedAction(actor,c.reservation,{skillId:c.skillId,targetId:c.targetId});if(typeof recordValidationEvent==='function'){if(c.reservation?.formalAi)recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill?.id||null,skill_name:skill?.name||null,target_id:c.targetId,presentation_skill_id:c.reservation?.skillId||null,presentation_target_id:c.reservation?.targetId||null,formal_ai:true,activation_tick:battle.tick,cast_duration_ticks:c.durationTicks});else recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,skill_name:skill.name||null,target_id:c.targetId,presentation_skill_id:c.reservation?.skillId||null,presentation_target_id:c.reservation?.targetId||null,activation_tick:battle.tick,cast_duration_ticks:c.durationTicks});}return result?.ok===true;
+}
+function processCastingActions(){for(const actor of battle.units.filter(u=>u?.castingAction)){if(battle.result||battle.pendingResult)break;if(!actor.alive){interruptCasting(actor,'ACTOR_DEAD');continue;}const blocked=typeof actionExecutionEligibility==='function'?actionExecutionEligibility(actor,{actionKind:'casting_interrupt_probe'}):{ok:true};if(!blocked.ok&&blocked.reason==='ACTION_DISABLED'){interruptCasting(actor,'ACTION_DISABLED');continue;}if(Number(actor.castingAction.completeAt)<=battle.tick)activateCasting(actor);}}
 function executeReservation(actor){
- const r=actor.reservedAction;if(!r||r.executeAt>battle.tick)return false;
- if(r.headlessAdventureBasic){
-  const target=battle.units.find(unit=>unit.alive&&unit.id===String(r.targetId||''));if(!target){cancelReservation(actor,'対象が無効です');return false;}
-  actor.gauge=Math.max(0,actor.gauge-GAUGE_MAX);actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;
-  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:null,executedTargetId:target.id};actor.reservedAction=null;
-  return performBasicAttack(actor,target);
- }
- if(r.formalAi){
-  r.status='revalidating';const checked=evaluateFormalReservationExecution(actor);
-  if(!checked.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,reason:checked.code||checked.reason,status_instance_id:checked.eligibility?.statusInstanceId||null,status_id:checked.eligibility?.statusId||null});cancelReservation(actor,checked.reason);return false;}
-  const target=checked.target;r.status='executing';actor.gauge=Math.max(0,actor.gauge-GAUGE_MAX);actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;
-  if(r.type==='wait'){
-   battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI予約「待機」を実行`);
-   typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:null,target_id:null,presentation_skill_id:null,presentation_target_id:null,formal_ai:true,action_kind:'wait'});
-   actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:null,executedTargetId:null};actor.reservedAction=null;return true;
-  }
-  const skill=checked.skill||null,label=r.type==='attack'?'通常攻撃':skill?.name||r.label;
-  battle.log.push(`[Tick ${battle.tick}] ${actor.name}はFormal AI予約「${label}」を実行 → ${target.name}`);
-  typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill?.id||null,skill_name:skill?.name||null,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,formal_ai:true});
-  actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill?.id||null,executedTargetId:target.id};actor.reservedAction=null;
-  return r.type==='attack'?performBasicAttack(actor,target):executeSkillRuntime(actor,target,skill,{skipExecutionEligibility:true}).ok;
- }
- r.status='revalidating';
- const checked=revalidateReservation(actor);
- if(!checked.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,reason:checked.code||checked.reason,status_instance_id:checked.eligibility?.statusInstanceId||null,status_id:checked.eligibility?.statusId||null});cancelReservation(actor,checked.reason);return false}
- const target=checked.target,skill=checked.skill;
- r.status='executing';actor.gauge=Math.max(0,actor.gauge-GAUGE_MAX);actor.actions++;actor.lastActionTick=battle.tick;battle.actions++;
- battle.log.push(`[Tick ${battle.tick}] ${actor.name}は実行時判定で「${skill.name}」を確定 → ${target.name}`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:skill.id,skill_name:skill.name||null,target_id:target.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null});
- actor.lastReservation={...r,status:'completed',completedAt:battle.tick,executedSkillId:skill.id,executedTargetId:target.id};actor.reservedAction=null;
- return executeSkillRuntime(actor,target,skill,{skipExecutionEligibility:true}).ok;
+ const r=actor?.reservedAction;if(!r||actor.castingAction)return false;const checked=evaluateCandidateExecution(actor);
+ if(!checked.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_blocked',{source_id:actor.id,presentation_skill_id:r.skillId||null,presentation_target_id:r.targetId||null,reason:checked.code||checked.reason,status_instance_id:checked.eligibility?.statusInstanceId||null,status_id:checked.eligibility?.statusId||null});cancelReservation(actor,checked.reason,true);return false;}
+ r.status='execution_checked';actor.gauge=Math.max(0,Number(actor.gauge||0)-battleGaugeConsumeAmount('success'));actor.reservedAction=null;resetAiEvaluationCursor(actor);
+ if(r.type==='wait'){battle.log.push(`[Tick ${battle.tick}] ${actor.name}はAI候補「待機」を実行`);commitActivatedAction(actor,r,{skillId:null,targetId:null});typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:null,target_id:null,presentation_skill_id:null,presentation_target_id:null,formal_ai:!!r.formalAi,action_kind:'wait'});return true;}
+ if(r.type==='attack'){const target=checked.target;battle.log.push(`[Tick ${battle.tick}] ${actor.name}はAI候補「通常攻撃」を実行 → ${target.name}`);commitActivatedAction(actor,r,{skillId:null,targetId:target.id});typeof recordValidationEvent==='function'&&recordValidationEvent('action_execution_committed',{source_id:actor.id,skill_id:null,target_id:target.id,presentation_target_id:r.targetId||null,formal_ai:!!r.formalAi,action_kind:'attack'});return performBasicAttack(actor,target,{prechecked:true});}
+ const target=checked.target,skill=checked.skill,durationTicks=Math.max(0,Math.floor(Number(battleDefaultSkillCastingTicks())||0));actor.castingAction={reservation:{...r},skillId:skill.id,label:skill.name,targetId:target?.id||null,startedAt:battle.tick,completeAt:battle.tick+durationTicks,durationTicks,executionSnapshot:checked.executionSnapshot};r.status='casting';battle.log.push(`[Tick ${battle.tick}] ${actor.name}は「${skill.name}」の実行可否を確定${durationTicks?`、詠唱開始（${durationTicks} Tick）`:'、即時発動'}`);typeof recordValidationEvent==='function'&&recordValidationEvent('skill_cast_started',{source_id:actor.id,skill_id:skill.id,target_id:target?.id||null,duration_ticks:durationTicks,complete_at:battle.tick+durationTicks,eligibility_checked_once:true});
+ if(durationTicks===0)return activateCasting(actor);return true;
 }
 function activationPriorityFeatureEnabled(){return true}
 function p0113Hash32(text){let h=2166136261>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h>>>0}
@@ -261,27 +232,27 @@ function assignBattleTieRolls(seed,units=battle.units,hashFn=p0113Hash32){
 function activationPriorityOf(unit){
  if(!activationPriorityFeatureEnabled()||!unit?.alive)return 0;
  if(unit.reservedAction?.formalAi&&unit.reservedAction?.type!=='skill')return 0;
- const prioritySkillId=unit.reservedAction?.formalAi?unit.reservedAction.skillId:unit.defaultSkillId,skill=formalBattleSkillExact(prioritySkillId)||formalBattleSkill(prioritySkillId),compiled=skill?compileSkillForRuntime(skill):null;
+ const prioritySkillId=unit.reservedAction?.skillId||unit.defaultSkillId,skill=formalBattleSkillExact(prioritySkillId)||formalBattleSkill(prioritySkillId),compiled=skill?compileSkillForRuntime(skill):null;
  return compiled?.ok?Number(compiled.definition.parameters.activationPriority)||0:0;
 }
 function fixDueActionOrder(due){
  const rows=due.map((unit,index)=>({unit,index,priority:activationPriorityOf(unit),tieRoll:Number(unit.battleTieRoll)||0}));
  rows.sort((a,b)=>b.priority-a.priority||b.tieRoll-a.tieRoll);
- if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:(x.unit.reservedAction?.formalAi?x.unit.reservedAction.skillId:x.unit.defaultSkillId)||null,priority:x.priority,battle_tie_roll:x.tieRoll||null}))});
+ if(activationPriorityFeatureEnabled()&&typeof recordValidationEvent==='function')recordValidationEvent('activation_order_fixed',{tick:battle.tick,order:rows.map((x,i)=>({rank:i+1,source_id:x.unit.id,skill_id:(x.unit.reservedAction?.skillId||x.unit.defaultSkillId)||null,priority:x.priority,battle_tie_roll:x.tieRoll||null}))});
  return rows.map(x=>x.unit);
+}
+function evaluateCrossedAiThresholds(actor,previousGauge,currentGauge){
+ const max=battleGaugeMax(),step=battleAiReevaluationStep();if(!actor?.alive||actor.castingAction)return;
+ let threshold=Number(actor.nextAiEvaluationGauge);if(!Number.isFinite(threshold)||threshold<=0)threshold=step;
+ while(threshold<=max+1e-9&&previousGauge+1e-9<threshold&&currentGauge+1e-9>=threshold){reserveAction(actor,{threshold,phase:actor.lastAiEvaluationGauge==null?'reservation':'rethink'});markAiEvaluation(actor,threshold);if(threshold>=max-1e-9)break;threshold=Math.min(max,threshold+step);actor.nextAiEvaluationGauge=threshold;}
+ if(currentGauge+1e-9>=max&&actor.lastAiEvaluationGauge!==max&&!actor.castingAction){reserveAction(actor,{threshold:max,phase:actor.lastAiEvaluationGauge==null?'reservation':'rethink'});markAiEvaluation(actor,max);}
 }
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
-  battle.tick++;
-  processApplyLifecycleExpirations();
-  processCooldowns();
-  processCoverEffects();
-  if(battle.result||battle.pendingResult)break;
-  if(battle.validationMode)continue;
-  battle.units.filter(u=>u.alive).forEach(u=>u.gauge+=u.agi);
-  const reservable=battle.units.filter(u=>u.alive&&!u.reservedAction&&u.gauge>=GAUGE_MAX).sort((a,b)=>(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
-  reservable.forEach(reserveAction);
-  const dueBase=battle.units.filter(u=>u.alive&&u.reservedAction&&u.reservedAction.executeAt<=battle.tick).sort((a,b)=>a.reservedAction.executeAt-b.reservedAction.executeAt||(b.gauge-GAUGE_MAX)-(a.gauge-GAUGE_MAX)||b.agi-a.agi||a.order-b.order);
+  battle.tick++;processApplyLifecycleExpirations();processCooldowns();processCoverEffects();processCastingActions();if(battle.result||battle.pendingResult)break;if(battle.validationMode)continue;
+  const max=battleGaugeMax();GAUGE_MAX=max;
+  for(const u of battle.units.filter(u=>u.alive&&!u.castingAction)){const before=Math.max(0,Math.min(max,Number(u.gauge)||0)),after=Math.max(0,Math.min(max,before+Math.max(0,Number(u.agi)||0)));u.gauge=after;evaluateCrossedAiThresholds(u,before,after);}
+  const dueBase=battle.units.filter(u=>u.alive&&!u.castingAction&&u.reservedAction&&u.gauge+1e-9>=max);
   const due=fixDueActionOrder(dueBase);
   for(const u of due){if(battle.result||battle.pendingResult)break;executeReservation(u)}
  }

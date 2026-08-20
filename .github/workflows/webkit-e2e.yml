@@ -1,0 +1,41 @@
+name: Studio WebKit E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  iphone-webkit:
+    name: iPhone WebKit smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright test runner
+        run: npm install --no-package-lock --ignore-scripts
+
+      - name: Install WebKit and Linux dependencies
+        run: npx playwright install --with-deps webkit
+
+      - name: Run Studio iPhone WebKit E2E
+        run: npm run test:e2e
+
+      - name: Upload Playwright report and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-webkit-e2e-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
