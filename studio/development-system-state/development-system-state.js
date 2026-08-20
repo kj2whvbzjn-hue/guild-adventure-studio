@@ -1,7 +1,7 @@
 /**
  * Development Project System State / Event Log.
  * Independent Development Project implementation; no Scenario/CPF runtime/storage/data sharing.
- * GKS-B680
+ * GKS-B681
  */
 (function(root){
 'use strict';
@@ -103,9 +103,11 @@ function recomputeDerivedFlags(w){
  return touched;
 }
 function recordMutation(w,type,targetType,targetId,payload={}){
- ensure(w);emit(w,type,targetType,targetId,payload,{actor:String(payload.actor||'System')});
+ ensure(w);const event=emit(w,type,targetType,targetId,payload,{actor:String(payload.actor||'System')});
  const changed=recomputeDerivedFlags(w);
- return {event:w.system_events[w.system_events.length-1],changed_flags:changed};
+ let impact=null;
+ try{impact=root.GKSDevelopmentSystemImpact?.analyzeMutation?.(w,event)||null;root.GKSDevelopmentSystemImpact?.syncImpactFlags?.(w)}catch(e){console.warn('[DevelopmentSystemImpact]',e)}
+ return {event,changed_flags:changed,impact};
 }
 function eventLabel(t){
  const map={
@@ -117,6 +119,7 @@ function eventLabel(t){
   MATERIAL_ADDED:'Material追加',MATERIAL_UPDATED:'Material更新',MATERIAL_DELETED:'Material削除',
   DECISION_ADDED:'Decision追加',DECISION_UPDATED:'Decision更新',
   SPECIFICATION_ADDED:'Specification追加',SPECIFICATION_UPDATED:'Specification更新',
+  IMPACT_DETECTED:'Impact検出',IMPACT_RESOLVED:'Impact解決',IMPACT_REOPENED:'Impact再オープン',
   FLAG_CHANGED:'Flag変更'
  };return map[t]||t;
 }
