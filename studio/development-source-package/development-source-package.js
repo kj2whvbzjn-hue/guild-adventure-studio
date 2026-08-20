@@ -1,6 +1,6 @@
 /**
  * Development Project -> validated full Source ZIP builder.
- * GKS-B688
+ * GKS-B689
  *
  * Import path only:
  * - Reads the currently served source package using package_manifest.json.
@@ -14,7 +14,8 @@
 (function(global){
 'use strict';
 const DATA_ROOT='development-project-data/';
-const state={busy:false,last:null};
+const FALLBACK_URL='./development-source-package/source-fallback-files.json';
+const state={busy:false,last:null,fallback:null};
 function text(v){return String(v??'').trim()}
 function safeId(v){return text(v).replace(/[^A-Za-z0-9._-]+/g,'_')||'PROJECT'}
 function sourceRoot(){return new URL('../',document.baseURI||location.href)}
@@ -43,8 +44,30 @@ function normalizeProjects(items){
  if(!out.length)throw new Error('Source ZIPへ反映するDevelopment Projectがありません。');
  return out;
 }
-async function fetchBytes(path){
- const res=await fetch(sourceUrl(path),{cache:'no-store'});if(!res.ok)throw new Error(`Source file取得失敗: ${path} / HTTP ${res.status}`);return new Uint8Array(await res.arrayBuffer());
+function base64Bytes(value){
+ const binary=atob(String(value||'').replace(/\s+/g,'')),out=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);return out;
+}
+async function loadFallbackFiles(){
+ if(state.fallback)return state.fallback;
+ const res=await fetch(new URL(FALLBACK_URL,document.baseURI||location.href).toString(),{cache:'no-store'});
+ if(!res.ok)throw new Error(`Source fallback取得失敗: HTTP ${res.status}`);
+ let obj;try{obj=await res.json()}catch(_){throw new Error('Source fallback JSONを解析できません。')}
+ if(!obj||typeof obj.files!=='object'||Array.isArray(obj.files))throw new Error('Source fallback: files objectがありません。');
+ state.fallback=obj.files;return state.fallback;
+}
+async function fallbackBytes(path,expected=null){
+ const files=await loadFallbackFiles(),row=files?.[path];if(!row)throw new Error(`Source file取得失敗: ${path} / 公開URL 404 / fallbackなし`);
+ if(String(row.encoding||'')!=='base64')throw new Error(`Source fallback encoding未対応: ${path}`);
+ const b=base64Bytes(row.content||''),hash=await sha256(b);
+ if(Number(row.size)!==b.length||String(row.sha256||'').toLowerCase()!==hash)throw new Error(`Source fallback自身の整合性エラー: ${path}`);
+ if(expected&&(Number(expected.size)!==b.length||String(expected.sha256||'').toLowerCase()!==hash))throw new Error(`Source fallbackとpackage_manifestが不一致: ${path}`);
+ return b;
+}
+async function fetchBytes(path,expected=null){
+ const res=await fetch(sourceUrl(path),{cache:'no-store'});
+ if(res.ok)return new Uint8Array(await res.arrayBuffer());
+ if(res.status===404)return await fallbackBytes(path,expected);
+ throw new Error(`Source file取得失敗: ${path} / HTTP ${res.status}`);
 }
 async function loadManifest(){
  const res=await fetch(sourceUrl('package_manifest.json'),{cache:'no-store'});if(!res.ok)throw new Error(`package_manifest.json取得失敗: HTTP ${res.status}`);
@@ -80,7 +103,7 @@ async function build(items,options={}){
   const base=await loadManifest(),baseByPath=new Map(base.files.map(x=>[String(x.path||''),x]));
   const paths=[...new Set([...base.files.map(x=>String(x.path||'')),...overlay.keys()])].filter(Boolean).sort();
   let loaded=0;const records=await mapLimit(paths,8,async path=>{
-   const b=overlay.has(path)?overlay.get(path):await fetchBytes(path),hash=await sha256(b),expected=baseByPath.get(path);
+   const expected=baseByPath.get(path),b=overlay.has(path)?overlay.get(path):await fetchBytes(path,expected),hash=await sha256(b);
    if(expected&&!path.startsWith(DATA_ROOT)){
     if(Number(expected.size)!==b.length||String(expected.sha256||'').toLowerCase()!==hash)throw new Error(`Source baseline不整合を検出しました。Development Project以外は自動正当化しません: ${path}`);
    }
