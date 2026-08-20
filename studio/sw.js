@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b678";
+const CACHE_NAME="gks-studio-b679";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=678';
+const OFFLINE_URL='./index.html?appv=679';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=678",
+  "./index.html?appv=679",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
@@ -16,12 +16,14 @@ const APP_SHELL=[
   "./development-workflow/development-workflow.css?v=1",
   "./development-ai-publish/development-ai-publish.css?v=1",
   "./development-git-store/development-git-store.css?v=1",
-  "./development-spec-candidate/development-spec-candidate.css?v=1",
+  "./development-spec-candidate/development-spec-candidate.css?v=2",
+  "./development-system-structure/development-system-structure.css?v=1",
   "./development-architecture/architecture-explorer.js?v=1",
   "./development-workflow/development-workflow.js?v=1",
   "./development-ai-publish/development-ai-publish.js?v=8",
   "./development-git-store/development-git-store.js?v=1",
-  "./development-spec-candidate/development-spec-candidate.js?v=1",
+  "./development-spec-candidate/development-spec-candidate.js?v=2",
+  "./development-system-structure/development-system-structure.js?v=1",
   "../shared/ai/ai-program-model.js?v=1",
   "../shared/ai/ai-layout-model.js?v=1",
   "../shared/ai/ai-master-adapter.js?v=1",
