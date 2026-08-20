@@ -1,4 +1,4 @@
-/* GKS-B699 Development Git Store
+/* GKS-B700 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.

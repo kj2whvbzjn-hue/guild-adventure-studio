@@ -9,8 +9,10 @@ assert(policy.classes.game_data.patterns.includes('Export/**'),'system policy mu
 assert(policy.rules.source_allowed_classes.includes('game_data'),'full source must be allowed to carry bundled Export for local/runtime validation');
 assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct update packages must not carry game_data');
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
+assert.deepStrictEqual(policy.rules.package_manifest_classes,['persistent'],'package manifest must remain persistent-only');
+assert(!policy.rules.package_manifest_classes.includes('development_data'),'Development Project data must not be listed in target package_manifest');
 assert.strictEqual(build.game_build,'GA-B486.211');
-assert.strictEqual(build.studio_build,'GKS-B699');
+assert.strictEqual(build.studio_build,'GKS-B700');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",
@@ -23,6 +25,10 @@ for(const marker of [
   "Studio更新がExport/へ触れようとしたため停止しました",
   "安全停止: Studio更新ではExport/を配置・削除できません。Gameデータ配置を使用してください。",
   "Studio更新では <code>Export/</code> を配置・削除しません。",
+  "target_sourceで検証済みのmanifestを配置時にそのまま使用",
+  "const packaged=studioDeployFiles.find(x=>normalizeDeployPath(x.path)==='package_manifest.json');",
+  "配置manifestとtarget_source.package_manifest SHA-256が一致しません。",
+  "generatedManifest:false",
   "async function verifyStudioDeployBaselineBinding(remote,base,meta)",
   "baseline_source.package_manifest_sha256が不正です。",
   "更新ZIPの基準とGitHub HEADが一致しません。package_manifest SHA-256",
