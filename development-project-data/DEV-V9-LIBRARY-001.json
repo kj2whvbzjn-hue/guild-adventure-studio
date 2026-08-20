@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-20T13:21:58.561Z"
+    "updated_at": "2026-08-20T13:34:29.420Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -339,28 +339,28 @@
     {
       "id": "DISC-R21-GAME-AUDIT-001",
       "title": "実ゲーム照合による不足仕様洗い出し",
-      "status": "Open",
-      "summary": "実ゲーム照合不足8領域のうち、Level Up、Skill習得、雇用/解雇、Save、New Game、所持品/倉庫の6領域をHuman Decisionで解決。Equipment→Battle接続とQuest放棄はOpen。",
+      "status": "Resolved",
+      "summary": "実ゲーム照合不足8領域をすべて解決。最後にEquipment→Battle接続とQuest放棄処理を確定した。",
       "body": "【目的】\n実ゲーム側を確認し、Current Specificationだけでは実装者が迷う不足仕様を洗い出す。\n\n【今回登録する不足領域】\n1. Character Progression / Level Up\n2. Skill Acquisition\n3. Adventurer Recruitment / Dismissal\n4. Player Save / Load / Versioning\n5. New Game Initialization\n6. Inventory / Warehouse Ownership\n7. Equipment Contribution → Battle未接続項目\n8. Quest Abandon\n\n【重要ルール】\n- Current Sourceの仮挙動を正式仕様へ昇格しない。\n- 既決事項は再質問しない。\n- Balance可変値は未決質問にしない。\n- Human判断が必要なシステム構造だけOpen Questionにする。\n",
-      "open_questions": "IMPACT-R21-007 Equipment Contribution→Battle接続、IMPACT-R21-008 Quest放棄処理。",
-      "conclusion": "R21-001〜006は解決。R21-007〜008のみ継続審議。",
+      "open_questions": "",
+      "conclusion": "R21-001〜008をすべてHuman/AI Decisionで解決し、実装可能な構造へ整理完了。",
       "related_discussion_ids": [],
       "artifact_note": "Game audit 2026-08-20",
       "created_at": "2026-08-20T16:40:00+09:00",
-      "updated_at": "2026-08-20T18:40:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00"
     },
     {
       "id": "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001",
       "title": "完成ゲーム監査 第2弾: UI / UX / Presentation / Audio",
-      "status": "Open",
-      "summary": "完成ゲーム監査のうち戦闘演出方針をHuman Decisionで解決。位置固定・派手なエフェクト中心、演出値は可変、Playback結果を再計算しない。その他R22 Impactは継続。",
+      "status": "Resolved",
+      "summary": "完成ゲーム監査のUI/UX/Presentation/Audio領域を解決。固定位置・派手な戦闘演出、簡易Playback、BGM/SE、必須Tutorial、簡易Story表示、Quest Playback、Inventory売却/破棄、Skill Loadout、PC+スマホ縦対応、敗北後Guild帰還等を確定。",
       "body": "Current Sourceの仮UI/仮演出をそのまま正式採用しない。既決事項とBalance可変値は再質問しない。Human判断が必要な構造・提供機能・Presentation方針のみOpen Impactとする。",
-      "open_questions": "R22 Impactを優先順にHuman Decisionで解決する。",
-      "conclusion": "",
+      "open_questions": "",
+      "conclusion": "R22-001〜020の完成ゲームPresentation/UI/UX論点をすべて解決。具体的な数値・演出強度・音量等はBalance/Content可変として実装へ渡す。",
       "related_discussion_ids": [],
       "artifact_note": "Completion audit / presentation layer 2026-08-20",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T18:40:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00"
     }
   ],
   "decisions": [
@@ -1202,6 +1202,202 @@
       "approved_at": "2026-08-20T18:40:00+09:00",
       "created_at": "2026-08-20T18:40:00+09:00",
       "updated_at": "2026-08-20T18:40:00+09:00"
+    },
+    {
+      "id": "DEC-R24-EQUIP-BATTLE-001",
+      "title": "Equipment ContributionのBattle接続先を確定する",
+      "status": "Approved",
+      "text": "EquipmentのaccuracyはBattleの命中成立判定へ、evasionは回避成立判定へ、base_critical_rateは武器由来の基礎会心率として会心判定へ、magic_weapon_bonusは魔法攻撃系の効果量計算へ武器Contributionとして接続する。BaseItem→Equipment Contribution→Equipment MOD→Modified Equipment Contribution→Runtimeの既存境界を維持し、旧デモのSTR→命中、LUK→会心等へ戻さない。具体的な係数、換算式、上限、丸めはBalance可変データとして別管理し、構造仕様へ固定しない。",
+      "rationale": "既存Equipment fieldとContribution境界から接続先は一意に整理でき、具体数値は既存方針どおりBalance項目として分離できるため。",
+      "source_discussion_ids": [
+        "DISC-R21-GAME-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-QUEST-ABANDON-001",
+      "title": "Quest放棄は失敗と同じ損失で専用結果として記録する",
+      "status": "Approved",
+      "text": "Active QuestRunをPlayerが放棄した場合、途中報酬は全損、経験値は獲得しない、開始成立時に消費済みのStoneは返却しない、未CommitのReward/Progressを正式資産へ反映しない。Active Runを終了し、通常Failureとは区別してfinal resultをAbandonとして記録する。放棄時にBattle/Event/Reward/Flag等を再抽選・再計算しない。",
+      "rationale": "HumanがA『失敗と同じ損失扱い』を選択したため。既存のStone非返却・失敗時全損・Playback再計算禁止とも整合する。",
+      "source_discussion_ids": [
+        "DISC-R21-GAME-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-BATTLE-UX-001",
+      "title": "戦闘Camera・再生操作・HUD・結果表示を完成版方針として確定する",
+      "status": "Approved",
+      "text": "戦闘は固定位置を基本とし、攻撃対象Focus、Zoom、Screen Shake、Flash等を演出として使用できる。画面揺れ/Flashは軽減またはOFF可能にする。Battle PlaybackのPlayer操作は再生、速度変更、戦闘Skipを正式提供し、一時停止と1行動送りは基本機能にしない。Skip/速度変更でBattle結果を変更・再計算しない。戦闘は見て楽しいことを重視し、通常攻撃にも打撃感を持たせ、Skill/魔法/Critical/Heal/Status/Buff/Debuff/Shield/Revive/KO/Boss等を視覚的に識別できる派手な演出を用意する。Combat HUDはHP/MP、主要Status、Buff/Debuff、Shield、行動状態など戦闘判断に必要な情報を常時表示する。Battle終了画面は勝敗と戦闘内容を表示し、EXP/Level Up/獲得品等の正式報酬・成長結果はQuest帰還時にまとめて表示する。演出時間・強度・Shake等は可変データとする。",
+      "rationale": "HumanがPlaybackは簡易型Bを選択しつつ、戦闘は演出を入れて見て楽しいものにする方針を明示。固定位置・派手なEffect方針と統合した。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-AUDIO-SETTINGS-001",
+      "title": "BGM/SEとPlayer設定項目を正式採用する",
+      "status": "Approved",
+      "text": "完成版はBGMとSEを正式機能として持つ。Battle、Guild、Story、主要画面でBGMを切替可能とし、攻撃、Skill、魔法、Heal、Critical、Status、UI操作等にSEを設定できる。音源制作方法は実装・制作課題として分離し、仮素材から正式音源へ差し替え可能なデータ駆動構造とする。Game SettingsではBGM音量、SE音量、戦闘速度、戦闘演出軽減をPlayerへ公開し、設定値をSave対象とする。ミュート可能。具体音量値・Fade時間等は可変。",
+      "rationale": "HumanはBGM/SEを入れたい意向を確定し、制作方法が未定である点は仕様採否とは分離した。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-NAV-GUILD-001",
+      "title": "Title/MenuとGuild施設Navigationを確定する",
+      "status": "Approved",
+      "text": "起動時TitleはNew Game、Continue、Settingsを基本導線とする。ゲーム開始後はGuildを拠点画面とし、酒場、訓練所、倉庫、掲示板の4施設へ移動する。戻る操作は原則1つ前の画面へ戻し、未保存の重要操作がある場合のみ確認する。4施設はGuild配下の明確なNavigationとして提供し、既決の各施設責務をUIから利用できるようにする。",
+      "rationale": "既存Guild 4施設仕様と完成ゲームの基本ループから一意に整理できるUI/Navigation事項のため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-TUTORIAL-001",
+      "title": "初回必須チュートリアルと再閲覧Helpを採用する",
+      "status": "Approved",
+      "text": "初回プレイでは必須チュートリアルを段階的に実施する。対象は最低限、Party編成、Quest開始、Equipment、Skill/Passive、Stone、AI設定、Warehouse/Reward受取とする。一度に長文を読ませず、実操作に合わせて短く提示する。完全Skipは初期仕様では提供しない。学習済み内容はHelpから後で再閲覧可能にする。",
+      "rationale": "HumanがA『初回は必須チュートリアル』を選択したため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-STORY-PRESENTATION-001",
+      "title": "Storyは制作量を抑えた簡易イベント形式を基本とする",
+      "status": "Approved",
+      "text": "Story Sceneの基本表示は背景＋会話ウィンドウ＋話者名とし、立ち絵は重要人物・重要場面など必要箇所だけ使用する。将来の拡張余地として立ち絵、表情差分、背景、演出指定をデータ上保持可能にする。会話送り、Auto、既読部分のSkip、会話履歴を提供し、未読部分を自動で飛ばさない。",
+      "rationale": "Humanはノベル形式を希望しつつ制作量を理由にB『簡易イベント形式』を選択したため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-QUEST-PRESENTATION-001",
+      "title": "QuestはQuestRun Timelineを再生する専用冒険進行画面で見せる",
+      "status": "Approved",
+      "text": "Quest派遣後は保存済みQuestRunのTimelineを読む専用冒険進行画面を基本とする。Battle発生時はBattle演出画面、Story EventはStory表示、Explorationは探索結果表示へ遷移し、完了後に冒険進行画面へ戻る。詳細画面表示中もPlayback時間は進行し、復帰時に現在時刻までCatch-upする。Playbackは保存済み結果のみを使用し、Battle/Event/Random/Reward/Flag等を再計算・再抽選しない。",
+      "rationale": "既存QuestRun / Adventure Playback契約から一意に導けるPlayer Presentationであり、ゲーム結果を変更しないUI層として整理した。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-INVENTORY-UI-001",
+      "title": "Inventory/Equipment UIで売却と破棄の両方を採用する",
+      "status": "Approved",
+      "text": "Inventory/Equipment画面では一覧、装備/解除、装備前後比較、MOD表示、装備不可理由、Sort、Filterを提供する。不要装備は売却してGold化でき、無償破棄も可能とする。装備中Itemは直接売却/破棄不可。ロック済みItemは処理不可。高Rarity Itemや一括売却/一括破棄は確認を要求する。UIはRuntime/Inventoryが返す不可理由を表示し、独自にゲーム判定を再計算しない。",
+      "rationale": "HumanがB『売却あり・破棄あり』を選択したため。誤操作防止は安全性UIとして追加した。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-SKILL-UI-001",
+      "title": "Skill Loadoutを採用しPassive UIと分離する",
+      "status": "Approved",
+      "text": "習得済みSkillのうち戦闘で使用可能にするSkillをSkill Loadoutへセットする。AIはLoadoutに入っているSkillだけを戦闘行動候補として扱う。Skill画面では一覧、詳細、習得条件、使用条件、Loadout編集を提供する。Passiveは常時効果・手動発動なしの既存仕様を維持し、通常Skill Loadoutとは分離して習得状態・有効状態を確認できる画面とする。Loadout枠数等の具体値はBalance可変。",
+      "rationale": "HumanがA『Loadoutあり』を選択したため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-FEEDBACK-RECOVERY-001",
+      "title": "Error表示・Accessibility・Loading/Recoveryの最低契約を確定する",
+      "status": "Approved",
+      "text": "その場で修正可能な入力/操作不可理由はInline表示、重要処理の確認はDialog、一時的な通知はToast等を使い分ける。Save/Load等の重大失敗は原因表示とRetry、安全な画面またはTitleへの復帰導線を提供する。Loading中は二重実行を防止する。AccessibilityとしてScreen Shake OFF、Flash軽減、色だけに依存しない状態表示を最低限提供する。演出軽減時も誰が何を行い何が起きたか判別可能にする。UIはRuntimeが返す理由を表示し、ゲーム判定を独自再計算しない。",
+      "rationale": "ゲーム性を変えない安全性・可読性・復旧設計として既存設計思想から確定可能な事項のため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-RESPONSIVE-001",
+      "title": "正式対応DeviceをPCとスマホ縦持ちに限定する",
+      "status": "Approved",
+      "text": "完成版の正式対応はPCとスマホ縦持ちとする。PCは横幅を活かした複数カラム、スマホ縦は1カラム中心・下部操作・折りたたみを基本とする。Battleの固定配置/HUDもスマホ縦用に再配置し、操作ボタンはTouch操作可能なサイズを最低基準とする。スマホ横持ちは正式対応外とし、必要に応じて縦持ちへの切替案内を表示する。",
+      "rationale": "Humanが『PCとスマホ縦持ちに対応』と指定したため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-FAILURE-PRESENTATION-001",
+      "title": "Quest敗北後は即時再挑戦せずGuildへ戻す",
+      "status": "Approved",
+      "text": "Battle敗北またはQuest失敗時は失敗理由と失った報酬等をPlayerへ表示し、即時の同条件再挑戦ボタンは提供しない。結果確認後はいったんGuildへ帰還し、Party、Equipment、Skill Loadout、AI、Stone等を見直してから新しいQuestRunとして再出撃する。失敗時全損ルール自体は既存仕様を維持する。",
+      "rationale": "HumanがB『再挑戦なし』を選択したため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DEC-R24-RELEASE-SURFACE-001",
+      "title": "Release BuildからDeveloper向け機能をPlayer導線から分離する",
+      "status": "Approved",
+      "text": "完成版の通常Player導線にはDebug/Test/Standalone Battle/Developer UIを表示しない。開発・検証機能がコードやBuildに必要な場合でも、Release Player UIから到達できない境界を設ける。Player向け正式機能とDeveloper機能を明示的に分離する。",
+      "rationale": "完成版表面の安全性と制作運用上の責務分離であり、ゲーム体験の選択肢を増やさず確定できるため。",
+      "source_discussion_ids": [
+        "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+      ],
+      "approved_by": "Human/AI",
+      "approved_at": "2026-08-20T20:38:00+09:00",
+      "created_at": "2026-08-20T20:38:00+09:00",
+      "updated_at": "2026-08-20T20:38:00+09:00"
     }
   ],
   "specifications": [
@@ -5162,72 +5358,72 @@
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1: Save / New Game / Player State基盤を実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T12:49:07.937Z",
-      "updated_at": "2026-08-20T21:30:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-002",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 2: Equipment / Skill / Passive / AI接続を実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T12:51:48.077Z",
-      "updated_at": "2026-08-20T21:35:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-003",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 3: QuestRun / Reward / Abandon / Returnを実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T12:54:25.674Z",
-      "updated_at": "2026-08-20T21:40:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-004",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 4: Battle Runtime → Presentation境界を実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T12:56:34.284Z",
-      "updated_at": "2026-08-20T21:45:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-005",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 5: Story / Quest Presentationを実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T13:00:42.276Z",
-      "updated_at": "2026-08-20T21:50:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 6: Guild / Navigation / Inventory / Skill UIを実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T13:10:01.528Z",
-      "updated_at": "2026-08-20T22:00:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-007",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 7: Audio / Settings / Accessibility / Responsiveを実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T13:12:15.013Z",
-      "updated_at": "2026-08-20T22:05:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-008",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 8: Error / Recovery / Release Surfaceを実装可能状態へする",
       "status": "Doing",
-      "created_at": "2026-08-20T13:15:32.587Z",
-      "updated_at": "2026-08-20T22:10:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R29-009",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 9: End-to-End完成ゲーム導線を通しで検証する",
       "status": "Doing",
-      "created_at": "2026-08-20T13:19:19.450Z",
-      "updated_at": "2026-08-20T22:15:00+09:00"
+      "created_at": "2026-08-20T21:25:00+09:00",
+      "updated_at": "2026-08-20T22:20:00+09:00"
     },
     {
       "id": "TASK-R30-001",
@@ -6656,6 +6852,15 @@
     {
       "at": "2026-08-20T13:21:58.561Z",
       "message": "Development Workspace JSON merged: add=13 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-20T20:38:00+09:00",
+      "type": "ConfirmedDecisionMerge",
+      "summary": "R24確定事項を追加登録。R21残2件とR22残19件を解決し、完成ゲームのBattle UX、Audio、Settings、Navigation、Tutorial、Story/Quest Presentation、Inventory/Skill UI、Responsive、Failure/Recovery、Release Surfaceを確定。"
+    },
+    {
+      "at": "2026-08-20T13:34:29.420Z",
+      "message": "Development Workspace JSON imported into current project"
     }
   ],
   "specification_candidates": [
@@ -22645,6 +22850,59 @@
       },
       "actor": "AI",
       "created_at": "2026-08-20T22:20:00+09:00"
+    },
+    {
+      "id": "EVT-R24-COMPLETION-DECISION-BATCH-001",
+      "type": "HUMAN_AI_DECISION_BATCH_REGISTERED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "decision_ids": [
+          "DEC-R24-EQUIP-BATTLE-001",
+          "DEC-R24-QUEST-ABANDON-001",
+          "DEC-R24-BATTLE-UX-001",
+          "DEC-R24-AUDIO-SETTINGS-001",
+          "DEC-R24-NAV-GUILD-001",
+          "DEC-R24-TUTORIAL-001",
+          "DEC-R24-STORY-PRESENTATION-001",
+          "DEC-R24-QUEST-PRESENTATION-001",
+          "DEC-R24-INVENTORY-UI-001",
+          "DEC-R24-SKILL-UI-001",
+          "DEC-R24-FEEDBACK-RECOVERY-001",
+          "DEC-R24-RESPONSIVE-001",
+          "DEC-R24-FAILURE-PRESENTATION-001",
+          "DEC-R24-RELEASE-SURFACE-001"
+        ],
+        "resolved_impact_ids": [
+          "IMPACT-R21-007",
+          "IMPACT-R21-008",
+          "IMPACT-R22-002",
+          "IMPACT-R22-003",
+          "IMPACT-R22-004",
+          "IMPACT-R22-005",
+          "IMPACT-R22-006",
+          "IMPACT-R22-007",
+          "IMPACT-R22-008",
+          "IMPACT-R22-009",
+          "IMPACT-R22-010",
+          "IMPACT-R22-011",
+          "IMPACT-R22-012",
+          "IMPACT-R22-013",
+          "IMPACT-R22-014",
+          "IMPACT-R22-015",
+          "IMPACT-R22-016",
+          "IMPACT-R22-017",
+          "IMPACT-R22-018",
+          "IMPACT-R22-019",
+          "IMPACT-R22-020"
+        ],
+        "resolved_discussion_ids": [
+          "DISC-R21-GAME-AUDIT-001",
+          "DISC-R22-COMPLETION-PRESENTATION-AUDIT-001"
+        ]
+      },
+      "actor": "AI/Human",
+      "created_at": "2026-08-20T20:38:00+09:00"
     }
   ],
   "system_impacts": [
@@ -22755,28 +23013,34 @@
       "title": "Equipment ContributionのBattle接続未完成",
       "target_type": "Specification",
       "target_id": "SPEC-V9-019-EQUIP-003",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "accuracy/evasion/magic_weapon_bonus/base_critical_rate等に未接続が残り、完成ゲームのCombat契約として不足。",
-      "required_human_decision": "各ContributionをBattleのどの判定/計算へ接続するか決める。数式係数はBalance可変。根拠がない式は推測しない。",
+      "required_human_decision": "",
       "source": "GameAudit",
       "created_at": "2026-08-20T16:40:00+09:00",
-      "updated_at": "2026-08-20T18:40:00+09:00",
-      "resolution_note": "ゲームバランス/戦闘ルールへ影響するため、既存根拠またはHuman Decisionなしに数式・接続規則を確定しない。"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolution_note": "Equipment各ContributionのBattle接続先を確定。係数・上限等の具体数値はBalance可変として分離。",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-EQUIP-BATTLE-001"
     },
     {
       "id": "IMPACT-R21-008",
       "title": "Quest Abandon正式処理が未仕様",
       "target_type": "System",
       "target_id": "SYS-V9-ABANDON",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Stoneは放棄時返却なしと決まっているが、QuestRunをAbandon状態へ遷移させる正式契約が不足。",
-      "required_human_decision": "放棄をFailureと同等に扱うか、専用結果にするか、途中Reward/Flag/Progress/Active Run終了をどう扱うか決める。",
+      "required_human_decision": "",
       "source": "GameAudit",
       "created_at": "2026-08-20T16:40:00+09:00",
-      "updated_at": "2026-08-20T18:40:00+09:00",
-      "resolution_note": "放棄時の進行・損失・結果種別はゲーム体験へ影響するため、未確定のまま保持する。"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolution_note": "放棄は失敗同等の損失、結果種別のみAbandonとして記録する方式で確定。",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-QUEST-ABANDON-001"
     },
     {
       "id": "IMPACT-R22-001",
@@ -22800,247 +23064,323 @@
       "title": "Battle Camera / 画面演出制御",
       "target_type": "System",
       "target_id": "SYS-V9-BATTLE-CAMERA",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "Medium",
       "summary": "Camera固定/移動、Focus、Zoom、Screen Shake、Flash、Boss登場等の正式方針がない。",
-      "required_human_decision": "Camera演出を採用する範囲と、揺れ/Flash等を無効化した場合の挙動を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-BATTLE-UX-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-003",
       "title": "Battle Playback UI",
       "target_type": "System",
       "target_id": "SYS-V9-BATTLE-PLAYBACK-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "実ゲームに再生/一時停止/速度/1行動送り/演出切替等の仮UIがあるが正式機能範囲が未確定。",
-      "required_human_decision": "再生、一時停止、速度変更、1行動送り、Skip、演出ON/OFFのうち正式提供する機能を決める。Battle再計算は禁止。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-BATTLE-UX-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-004",
       "title": "Combat HUD",
       "target_type": "System",
       "target_id": "SYS-V9-COMBAT-HUD",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "HP/MP/Action Gauge/Status/Buff/Debuff/Shield/Cooldown/予約行動/Targetの公開範囲が未仕様。",
-      "required_human_decision": "戦闘中にPlayerへ常時表示する情報、詳細表示だけに出す情報、非公開情報を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-BATTLE-UX-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-005",
       "title": "Battle Result UI",
       "target_type": "System",
       "target_id": "SYS-V9-BATTLE-RESULT-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "勝敗・Reward・EXP・Level Up・Drop Equipment・戦闘統計の結果表示契約が不足。",
-      "required_human_decision": "Battle終了時とQuest帰還時で何を表示するか、成長/報酬表示の責務分担を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-BATTLE-UX-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-006",
       "title": "Audio / BGM / SE",
       "target_type": "System",
       "target_id": "SYS-V9-AUDIO",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "Medium",
       "summary": "BGM/SEの正式System仕様が不足。",
-      "required_human_decision": "BGMとSEを正式機能として持つか、Scene/Battle/UIでの切替責務を決める。音量数値等は設定可変。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-AUDIO-SETTINGS-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-007",
       "title": "Game Settings",
       "target_type": "System",
       "target_id": "SYS-V9-GAME-SETTINGS",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "Medium",
       "summary": "Player向け設定項目と保存契約が不足。",
-      "required_human_decision": "BGM/SE、戦闘速度、演出、文字速度等のうちPlayer設定として公開する項目とSave対象を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-AUDIO-SETTINGS-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-008",
       "title": "Title / Menu / Navigation",
       "target_type": "System",
       "target_id": "SYS-V9-NAVIGATION",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Title/New Game/Continue/Settings/Guild/施設間の全体画面フローが正式仕様化されていない。",
-      "required_human_decision": "起動からゲーム開始、Guild、各施設、QuestへのNavigation構造と戻る操作を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-NAV-GUILD-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-009",
       "title": "Tutorial / Help",
       "target_type": "System",
       "target_id": "SYS-V9-TUTORIAL",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Party/Quest/Equipment/Skill/Stone/AI等をPlayerへ教える正式導線がない。",
-      "required_human_decision": "Tutorialを必須/任意のどちらにするか、Helpを再閲覧可能にするか、どのSystemを対象にするか決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-TUTORIAL-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-010",
       "title": "Story Presentation",
       "target_type": "System",
       "target_id": "SYS-V9-STORY-PRESENTATION",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Scene/Dialogue/stage_directionデータはあるが、立ち絵/背景/話者/選択肢/Auto/Skip/既読等の表示契約が不足。",
-      "required_human_decision": "Story Sceneの基本表示方式とPlayer操作を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-STORY-PRESENTATION-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-011",
       "title": "Quest Presentation",
       "target_type": "System",
       "target_id": "SYS-V9-QUEST-PRESENTATION",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "派遣、冒険進行、Event、探索、Battle、Reward、帰還の見せ方が未仕様。",
-      "required_human_decision": "Quest PlaybackのPlayer向け基本画面とBattle/Sceneへの遷移方式を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-QUEST-PRESENTATION-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-012",
       "title": "Inventory / Equipment UI",
       "target_type": "System",
       "target_id": "SYS-V9-INVENTORY-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "装備一覧/比較/MOD/装備不可理由/Sort/Filter/売却/破棄等の正式UI仕様が不足。",
-      "required_human_decision": "Inventory/EquipmentでPlayerが可能な操作と比較表示方式を決める。売却/破棄自体を採用するかもここで決定する。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-INVENTORY-UI-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-013",
       "title": "Skill / Passive UI",
       "target_type": "System",
       "target_id": "SYS-V9-SKILL-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Skill/Passive一覧、詳細、習得条件、使用条件、Loadout等の正式UI仕様が不足。",
-      "required_human_decision": "Skill/Passive画面で閲覧・編集可能な内容とSkill Loadoutを採用するか決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-SKILL-UI-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-014",
       "title": "Guild UI",
       "target_type": "System",
       "target_id": "SYS-V9-GUILD-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "酒場/訓練所/倉庫/掲示板の機能はあるが、Player UIと施設間Navigationが不足。",
-      "required_human_decision": "4施設をどの画面構造で提供するか決める。施設の戦闘能力直接上昇なし等の既決仕様は再質問しない。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-NAV-GUILD-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-015",
       "title": "Feedback / Error UI",
       "target_type": "System",
       "target_id": "SYS-V9-FEEDBACK-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "保存失敗、装備不可、Skill使用不可、Quest開始不可等をPlayerへどう伝えるか未仕様。",
-      "required_human_decision": "Toast/Dialog/Inline等のError表示体系と、致命/非致命ErrorのPlayer導線を決める。UIは計算せずRuntime理由を表示する。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-FEEDBACK-RECOVERY-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-016",
       "title": "Responsive / Device UI",
       "target_type": "System",
       "target_id": "SYS-V9-RESPONSIVE-UI",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "Medium",
       "summary": "PC/スマホ縦/スマホ横等の正式対応範囲が未決。",
-      "required_human_decision": "正式対応Device/Layout範囲を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-RESPONSIVE-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-017",
       "title": "Accessibility",
       "target_type": "System",
       "target_id": "SYS-V9-ACCESSIBILITY",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "Medium",
       "summary": "Screen Shake OFF、Flash軽減、文字サイズ、色依存回避等が正式仕様化されていない。",
-      "required_human_decision": "最低限提供するAccessibility機能を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-FEEDBACK-RECOVERY-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-018",
       "title": "Loading / Recovery",
       "target_type": "System",
       "target_id": "SYS-V9-LOADING-RECOVERY",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Loading、読込失敗、Retry、Save失敗、Quest途中復帰等のPlayer向け状態遷移が不足。",
-      "required_human_decision": "Loading/Recovery時にPlayerへ何を表示し、Retry/Title復帰等をどう提供するか決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-FEEDBACK-RECOVERY-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-019",
       "title": "Game Over / Failure Presentation",
       "target_type": "System",
       "target_id": "SYS-V9-FAILURE-PRESENTATION",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "Quest失敗時の報酬全損は既決だが、その表示・帰還・再挑戦導線が未仕様。",
-      "required_human_decision": "Battle敗北/Quest失敗の表示と帰還/再挑戦導線を決める。報酬全損ルール自体は再質問しない。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-FAILURE-PRESENTATION-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R22-020",
       "title": "Release / Debug Separation",
       "target_type": "System",
       "target_id": "SYS-V9-RELEASE-SURFACE",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "summary": "完成版からDebug/Test/Standalone Battle/Developer UIをどう分離するか未仕様。",
-      "required_human_decision": "Release Buildに含めるPlayer機能と除外するDeveloper機能の境界を決める。",
+      "required_human_decision": "",
       "source": "GameCompletionAudit",
       "created_at": "2026-08-20T17:10:00+09:00",
-      "updated_at": "2026-08-20T17:10:00+09:00"
+      "updated_at": "2026-08-20T20:38:00+09:00",
+      "resolved_by": "Human/AI",
+      "resolved_at": "2026-08-20T20:38:00+09:00",
+      "resolution_decision_id": "DEC-R24-RELEASE-SURFACE-001",
+      "resolution_note": "R24完成ゲームUI/UX・Presentation確定バッチで解決。"
     },
     {
       "id": "IMPACT-R20-001",
