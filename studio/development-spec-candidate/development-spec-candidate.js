@@ -1,7 +1,7 @@
 /**
  * Development Specification Candidate workflow.
  * Independent Development Project implementation; no Scenario/CPF runtime/storage sharing.
- * GKS-B686
+ * GKS-B687
  */
 (function(root){
 'use strict';
