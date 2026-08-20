@@ -1,4 +1,4 @@
-/* GKS-B687 Development Git Store
+/* GKS-B688 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -8,7 +8,7 @@
 'use strict';
 const DATA_ROOT='development-project-data/';
 const API_VERSION='2022-11-28';
-const state={host:null,loaded:new Set(),dirty:new Set(),busy:false};
+const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,pathEditing:false};
 const byId=id=>document.getElementById(id);
 const text=v=>String(v??'').trim();
 const safeId=v=>text(v).replace(/[^A-Za-z0-9._-]+/g,'_')||'development-project';
@@ -20,6 +20,31 @@ function setStatus(message,kind=''){
 }
 function setBusy(flag){state.busy=!!flag;document.querySelectorAll('[data-dev-git-busy]').forEach(el=>{el.disabled=state.busy});}
 function normalizePath(value){return text(value).replace(/^\/+/, '').replace(/\/{2,}/g,'/');}
+function defaultPathForProjectId(id){const key=safeId(id);return key?`${DATA_ROOT}${key}.json`:'';}
+function entryPath(entry){const saved=normalizePath(entry?.git_remote?.path||'');return saved||defaultPathForProjectId(entry?.id||'');}
+function setPathEditing(flag){
+ state.pathEditing=!!flag;
+ const input=byId('devGitPath'),button=byId('devGitPathEdit');
+ if(input){input.readOnly=!state.pathEditing;input.setAttribute('aria-readonly',state.pathEditing?'false':'true');}
+ if(button)button.textContent=state.pathEditing?'Path編集を終了':'Git Pathを編集';
+}
+function refreshPathFromEntry(entry,{force=false}={}){
+ const input=byId('devGitPath');if(!input)return;
+ const next=entryPath(entry);
+ if(force||!state.pathEditing||!normalizePath(input.value))input.value=next;
+ input.placeholder=defaultPathForProjectId(entry?.id||'DEV-PROJ-0001')||`${DATA_ROOT}DEV-PROJ-0001.json`;
+}
+function togglePathEditing(){
+ const entry=currentEntry();
+ if(state.pathEditing){
+  const value=normalizePath(byId('devGitPath')?.value);
+  if(!value)refreshPathFromEntry(entry,{force:true});
+  else if(!value.startsWith(DATA_ROOT)){alert(`Git Pathは ${DATA_ROOT} 配下にしてください。`);return;}
+  setPathEditing(false);
+ }else{
+  refreshPathFromEntry(entry,{force:true});setPathEditing(true);byId('devGitPath')?.focus();byId('devGitPath')?.select();
+ }
+}
 function connection(requireToken=false){
  const owner=text(byId('devGitOwner')?.value),repo=text(byId('devGitRepo')?.value),branch=text(byId('devGitBranch')?.value)||'main',path=normalizePath(byId('devGitPath')?.value),token=text(byId('devGitToken')?.value);
  if(!owner||!repo||!branch)throw new Error('Owner / Repository / Branchを入力してください。');
@@ -109,13 +134,15 @@ function fillFromEntry(entry){
  if(r.owner)byId('devGitOwner').value=r.owner;
  if(r.repo)byId('devGitRepo').value=r.repo;
  if(r.branch)byId('devGitBranch').value=r.branch;
- if(r.path)byId('devGitPath').value=r.path;
+ refreshPathFromEntry(entry,{force:true});
+ setPathEditing(false);
  render();
 }
 function currentEntry(){return state.host?.getActiveEntry?.()||null;}
 function currentWorkspace(){return state.host?.getCurrentWorkspace?.()||null;}
 function render(){
  const entry=currentEntry(),mode=entry?.storage_mode==='git'?'Git':'ブラウザ',loaded=entry?state.loaded.has(entry.id):false,dirty=entry?state.dirty.has(entry.id):false;
+ refreshPathFromEntry(entry);setPathEditing(state.pathEditing);
  const el=byId('devGitCurrent');if(el){
   if(!entry)el.textContent='現在案件なし';
   else el.innerHTML=`<b>${esc(entry.name||entry.id)}</b><br>ID: ${esc(entry.id)} / 保存方式: ${mode}${entry.storage_mode==='git'?` / Session読込: ${loaded?'済':'未'} / Git未保存: ${dirty?'あり':'なし'}`:''}`;
@@ -134,7 +161,7 @@ async function openFromGit(){
 }
 async function uploadFile(file){
  if(!file)return;
- try{setBusy(true);const raw=await file.text(),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');if(!byId('devGitPath').value.trim())byId('devGitPath').value=`${DATA_ROOT}${safeId(id)}.json`;const c=connection(true);
+ try{setBusy(true);const raw=await file.text(),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');if(!state.pathEditing||!normalizePath(byId('devGitPath')?.value))byId('devGitPath').value=defaultPathForProjectId(id);const c=connection(true);
  const meta=await remoteMeta(c);if(meta.exists&&!confirm(`Remoteに既存JSONがあります。\n${c.path}\nSHA ${meta.sha}\n\n新しいCommitで更新しますか？`)){setStatus('Git保存をキャンセルしました。');return;}
  const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;setStatus('Project JSON + package_manifest を同一Atomic CommitでGit保存しています…');const out=await commitProjectWithManifest(c,JSON.stringify(project,null,2)+'\n',`Store Development Project ${id} + package_manifest`,meta.sha);
  state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git保存・案件読込完了: ${id}\nProject + package_manifest Atomic Commit ${out.commit_sha}\nSource ZIPは出力していません。`,'OK');}
@@ -163,9 +190,9 @@ function init(host){
  state.host=host;
  byId('devGitFile')?.addEventListener('change',e=>uploadFile(e.target.files?.[0]));
  global.addEventListener('beforeunload',e=>{if(state.dirty.size){e.preventDefault();e.returnValue='';}});
- render();return api;
+ refreshPathFromEntry(currentEntry(),{force:true});setPathEditing(false);render();return api;
 }
-function focus(){const entry=currentEntry();if(entry?.storage_mode==='git')fillFromEntry(entry);const card=byId('developmentGitStoreCard');card?.scrollIntoView({behavior:'smooth',block:'start'});byId('devGitOwner')?.focus();}
-const api={init,render,focus,fillFromEntry,isLoaded,isDirty,markDirty,markClean,openFromGit,saveCurrent,reloadCurrent,testConnection};
+function focus(){const entry=currentEntry();fillFromEntry(entry);const card=byId('developmentGitStoreCard');card?.scrollIntoView({behavior:'smooth',block:'start'});byId('devGitOwner')?.focus();}
+const api={init,render,focus,fillFromEntry,togglePathEditing,defaultPathForProjectId,isLoaded,isDirty,markDirty,markClean,openFromGit,saveCurrent,reloadCurrent,testConnection};
 global.GKSDevelopmentGitStore=api;
 })(window);
