@@ -1,6 +1,6 @@
 /**
  * Development Project -> validated full Source ZIP builder.
- * GKS-B689
+ * GKS-B690
  *
  * Import path only:
  * - Reads the currently served source package using package_manifest.json.
@@ -56,7 +56,7 @@ async function loadFallbackFiles(){
  state.fallback=obj.files;return state.fallback;
 }
 async function fallbackBytes(path,expected=null){
- const files=await loadFallbackFiles(),row=files?.[path];if(!row)throw new Error(`Source file取得失敗: ${path} / 公開URL 404 / fallbackなし`);
+ const files=await loadFallbackFiles(),row=files?.[path];if(!row)throw new Error(`Source file取得失敗: ${path} / 公開URL 404 / source bundleなし`);
  if(String(row.encoding||'')!=='base64')throw new Error(`Source fallback encoding未対応: ${path}`);
  const b=base64Bytes(row.content||''),hash=await sha256(b);
  if(Number(row.size)!==b.length||String(row.sha256||'').toLowerCase()!==hash)throw new Error(`Source fallback自身の整合性エラー: ${path}`);
