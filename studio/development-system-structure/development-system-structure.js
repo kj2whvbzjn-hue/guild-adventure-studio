@@ -1,7 +1,7 @@
 /**
  * Development Project System Structure.
  * Independent Development Project implementation; Scenario/CPF concepts may be referenced, but runtime/storage/data are not shared.
- * GKS-B681
+ * GKS-B682
  */
 (function(root){
 'use strict';

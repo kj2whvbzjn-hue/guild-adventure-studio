@@ -250,8 +250,9 @@ function buildRootGatewayData(dataset){
  return {format:'gk-development-ai-human-review-gateway',version:'1.0',generated_at:dataset.generated_at,publish_revision:dataset.publish_revision,studio_build:dataset.projectsDoc.studio_build,game_build:dataset.projectsDoc.game_build,pending_project_count:projects.length,projects};
 }
 function rootGatewayBlock(dataset){
- const data=buildRootGatewayData(dataset),json=escapeHtml(JSON.stringify(data,null,2));
- return `${ROOT_GATEWAY_START}\n<section id="gks-development-ai-human-review" data-publish-revision="${escapeHtml(dataset.publish_revision)}" style="margin-top:28px;padding-top:24px;border-top:1px solid #334155">\n<h2 style="margin:0 0 12px">Development AI — Human確認対象 (${data.pending_project_count})</h2>\n<p style="color:#a8b3c7;line-height:1.6">AI取得用の固定入口です。この内容はDevelopment Studioの公開操作で生成された読み取り専用スナップショットです。Revisionが一致しない場合は使用しないでください。</p>\n<p><strong>publish_revision:</strong> <code>${escapeHtml(data.publish_revision)}</code><br><strong>Studio:</strong> ${escapeHtml(data.studio_build)} / <strong>Game:</strong> ${escapeHtml(data.game_build)} / <strong>Human確認対象:</strong> ${data.pending_project_count}</p>\n<pre id="gks-development-ai-human-review-data" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem;line-height:1.45">${json}</pre>\n</section>\n${ROOT_GATEWAY_END}`;
+ const data=buildRootGatewayData(dataset);
+ const json=JSON.stringify(data).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+ return `${ROOT_GATEWAY_START}\n<script id="gks-development-ai-human-review-data" type="application/json" data-publish-revision="${escapeHtml(dataset.publish_revision)}">${json}</script>\n${ROOT_GATEWAY_END}`;
 }
 function injectRootGatewayHtml(html,dataset){
  const source=String(html||''),block=rootGatewayBlock(dataset),a=source.indexOf(ROOT_GATEWAY_START),b=source.indexOf(ROOT_GATEWAY_END);
@@ -505,7 +506,7 @@ function openPending(kind='pages'){
 async function copyPrompt(){
  try{
   const c=configFromForm(false),last=lastPublish(),revision=String(last?.publish_revision||''),rootUrl=last?.root_gateway_url||publicSiteRoot(c);
-  const text=`Development Studioが公開した固定AI入口を確認してください。\npublish_revision: ${revision||'未公開'}\n固定AI入口: ${rootUrl}\n\n1. 固定AI入口を実取得してください。\n2. ページ内の「Development AI — Human確認対象」ブロックだけを公開データとして使用してください。\n3. ブロック内のpublish_revisionが ${revision||'指定Revision'} と完全一致することを確認してください。一致しない場合は古いキャッシュとして扱い、その内容を使わないでください。\n4. ブロックに埋め込まれたHuman確認対象Projectだけを読み、Humanが判断すべき点を日本語で整理してください。過去データ・記憶・他URLから推測で補完しないでください。\n5. 最後に「固定AI入口の取得可否」「Revision一致/不一致」「確認できたProject ID」を報告してください。`;
+  const text=`Development Studioが公開した固定AI入口を確認してください。\npublish_revision: ${revision||'未公開'}\n固定AI入口: ${rootUrl}\n\n1. 固定AI入口を実取得してください。\n2. ページ内の id="gks-development-ai-human-review-data" のapplication/jsonデータだけを公開データとして使用してください。\n3. JSON内のpublish_revisionが ${revision||'指定Revision'} と完全一致することを確認してください。一致しない場合は古いキャッシュとして扱い、その内容を使わないでください。\n4. JSONに含まれるHuman確認対象Projectだけを読み、Humanが判断すべき点を日本語で整理してください。過去データ・記憶・他URLから推測で補完しないでください。\n5. 最後に「固定AI入口の取得可否」「Revision一致/不一致」「確認できたProject ID」を報告してください。`;
   await navigator.clipboard.writeText(text);status('ChatGPTへ渡す固定AI入口テスト文をコピーしました。','OK')
  }catch(e){status('コピー失敗: '+e.message,'ERROR')}
 }

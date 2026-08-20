@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B681</title>
+<title>GK Studio GKS-B682</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -468,13 +468,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B681</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B682</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B681</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B682</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2467,11 +2467,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=681"></script>
+<script src="./layer-controller.js?v=682"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B681';
+const DISTRIBUTION_BUILD='GKS-B682';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -6657,8 +6657,23 @@ function githubRequestError(response,body,attempt){
  error.status=response.status;error.requestId=requestId;error.retryAfter=response.headers.get('retry-after');
  return error;
 }
+function getGhRequestConfig(){
+ const studioView=document.getElementById('view-studiodeploy');
+ const gameView=document.getElementById('view-gamedatadeploy');
+ if(studioView&&!studioView.classList.contains('hidden')){
+  const c={owner:document.getElementById('deployGhOwner')?.value.trim()||'',repo:document.getElementById('deployGhRepo')?.value.trim()||'',branch:document.getElementById('deployGhBranch')?.value.trim()||'main',path:ghPath.value.trim()||'project-data.json',token:document.getElementById('deployGhToken')?.value.trim()||''};
+  if(!c.owner||!c.repo||!c.token)throw new Error('Owner、Repository、Tokenを入力してください。');
+  return c;
+ }
+ if(gameView&&!gameView.classList.contains('hidden')){
+  const c={owner:document.getElementById('gameDeployGhOwner')?.value.trim()||'',repo:document.getElementById('gameDeployGhRepo')?.value.trim()||'',branch:document.getElementById('gameDeployGhBranch')?.value.trim()||'main',path:ghPath.value.trim()||'project-data.json',token:document.getElementById('gameDeployGhToken')?.value.trim()||''};
+  if(!c.owner||!c.repo||!c.token)throw new Error('Owner、Repository、Tokenを入力してください。');
+  return c;
+ }
+ return getGhConfig();
+}
 async function ghRequest(url,options={}){
- const c=getGhConfig();
+ const c=getGhRequestConfig();
  const method=String(options.method||'GET').toUpperCase();
  const retryableMethod=method==='GET'||method==='HEAD';
  const maxAttempts=retryableMethod?GH_READ_RETRY_LIMIT:1;
@@ -6806,7 +6821,7 @@ function syncGameDeployGitHubSettings(source='game'){
  const owner=gameDeployEl('gameDeployGhOwner'),repo=gameDeployEl('gameDeployGhRepo'),branch=gameDeployEl('gameDeployGhBranch'),token=gameDeployEl('gameDeployGhToken');
  if(!owner)return;
  if(source==='legacy'){
-  owner.value=ghOwner.value||'';repo.value=ghRepo.value||'';branch.value=ghBranch.value||'main';token.value=ghToken.value||'';
+  owner.value=ghOwner.value||'';repo.value=ghRepo.value||'';branch.value=ghBranch.value||'main';if(ghToken.value&&!token.value)token.value=ghToken.value;
  }else{
   ghOwner.value=owner.value.trim();ghRepo.value=repo.value.trim();ghBranch.value=branch.value.trim()||'main';ghToken.value=token.value.trim();
  }
@@ -7977,7 +7992,7 @@ function syncDeployGitHubSettings(source='deploy'){
   dOwner.value=ghOwner.value||'';
   dRepo.value=ghRepo.value||'';
   dBranch.value=ghBranch.value||'main';
-  dToken.value=ghToken.value||'';
+  if(ghToken.value&&!dToken.value)dToken.value=ghToken.value;
  }else{
   ghOwner.value=dOwner.value.trim();
   ghRepo.value=dRepo.value.trim();
@@ -9303,7 +9318,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','681');
+    url.searchParams.set('appv','682');
     location.replace(url.toString());
    }
  }
@@ -9312,7 +9327,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=681',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=682',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9331,7 +9346,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','681');
+    url.searchParams.set('appv','682');
     location.replace(url.toString());
    }
   });
