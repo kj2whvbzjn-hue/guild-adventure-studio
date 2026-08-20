@@ -5,7 +5,7 @@ test('iPhone WebKit: Studio起動から開発管理を開ける', async ({ page 
   page.on('pageerror', error => pageErrors.push(error.message));
 
   await page.goto('/studio/', { waitUntil: 'domcontentloaded' });
-  await expect(page).toHaveTitle(/GK Studio GKS-B675/);
+  await expect(page).toHaveTitle(/GK Studio GKS-B676/);
 
   const launcherButton = page.getByRole('button', { name: '開発管理', exact: true }).first();
   await expect(launcherButton).toBeVisible();
