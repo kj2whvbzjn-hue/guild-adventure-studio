@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-20T12:16:47.712Z"
+    "updated_at": "2026-08-20T12:36:52.999Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -3084,6 +3084,191 @@
       "approved_at": "",
       "created_at": "2026-08-20T20:54:00+09:00",
       "updated_at": "2026-08-20T21:07:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-PROGRESSION-001",
+      "title": "Character Progression / EXP / Level Up",
+      "status": "Draft",
+      "summary": "Quest帰還時のEXP正式反映とLevel Up成立契約。",
+      "body": "# 1. EXP仮保持\nQuest中のEXPは正式Character状態へ即時反映せず、QuestRunの結果として仮保持する。\nQuest成功時のみ帰還処理で正式獲得する。\nFailure / Abandon時は正式獲得しない。\n\n# 2. EXP対象\nQuest完了時点で以下を両方満たすCharacterを対象とする。\n- Party所属中\n- 生存中\n\n途中死亡しても蘇生して完了時に生存していれば対象。\n途中離脱して完了時にParty外なら対象外。\n途中加入でも完了時点でParty所属・生存なら対象。\n\n# 3. 分配\n対象Character数で均等分配し、端数は切り捨てる。\n\n# 4. Level Up\n帰還時にEXPを反映し、必要EXPを満たす限り複数Level Up可能。\n余剰EXPは次Levelへ持ち越す。\n最大Levelを持ち、具体値はBalance可変。\n最大Level到達後のEXPは獲得せず破棄する。\n\n# 5. Growth\n複数Level上昇時は上昇Level数分をまとめて成長計算する。\n成長に使用するJobはQuest完了時点のJob。\n今回のLevel Up処理完了後に転職可能とする。\n",
+      "decision_refs": [
+        "DEC-R23-PROGRESSION-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-RUN-002",
+        "SPEC-V9-019-JOB-001"
+      ],
+      "acceptance_criteria": "- Failure/AbandonでEXPを正式反映しない。\n- 成功帰還時に対象Characterだけへ均等分配できる。\n- 複数Level Upと余剰EXP持越しができる。",
+      "system_node_id": "SYS-V9-PROGRESSION",
+      "contract_ids": [
+        "CONTRACT-V9-RUN-TO-PROGRESSION",
+        "CONTRACT-V9-PROGRESSION-TO-CHAR",
+        "CONTRACT-V9-JOB-TO-PROGRESSION",
+        "CONTRACT-V9-SAVE-TO-PROGRESSION"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-SKILL-ACQ-001",
+      "title": "Skill / Passive Acquisition / Respec",
+      "status": "Draft",
+      "summary": "訓練所でのSkill/Passive習得・解除契約。",
+      "body": "# 1. 習得場所\nSkillおよびPassiveは訓練所で習得する。\n\n# 2. 習得条件\n能力値条件方式とする。\n前提Skill必須方式は採用しない。\nJob制限・武器制限は設けない。\nSkill/Passive自身のEXP成長は持たせない。\n\n# 3. 習得Cost\n習得にはCostを必要とする。\n具体値はBalance可変。\n\n# 4. Respec\n以下を可能とする。\n- 任意Skillの個別解除\n- 任意Passiveの個別解除\n- Skill + Passiveの一括全解除\n\nRespecにもCostを必要とし、具体値はBalance可変。\n解除済みSkill/Passiveは通常条件を満たせば再習得可能。\n再習得時は通常の習得Costを支払う。\n過去の習得Costは返却しない。\n\n# 5. 非対象\nRespecでLevel、能力値、Job、Equipment等を変更しない。\n",
+      "decision_refs": [
+        "DEC-R23-SKILL-ACQ-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-SKILL-001",
+        "SPEC-V9-019-PASSIVE-001",
+        "SPEC-V9-019-GUILD-001"
+      ],
+      "acceptance_criteria": "- 訓練所からSkill/Passiveを習得できる。\n- 個別解除と一括全解除ができる。\n- RespecでCharacterの他状態を変更しない。",
+      "system_node_id": "SYS-V9-SKILL-ACQ",
+      "contract_ids": [
+        "CONTRACT-V9-GUILD-TO-SKILL-ACQ",
+        "CONTRACT-V9-SKILL-TO-SKILL-ACQ",
+        "CONTRACT-V9-PASSIVE-TO-SKILL-ACQ",
+        "CONTRACT-V9-SKILL-ACQ-TO-CHAR",
+        "CONTRACT-V9-SAVE-TO-SKILL-ACQ"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-RECRUIT-001",
+      "title": "Adventurer Recruitment / Dismissal",
+      "status": "Draft",
+      "summary": "酒場での冒険者作成・雇用・解雇契約。",
+      "body": "# 1. Recruitment\n酒場では解放済み冒険者Type一覧からPlayerが自由に作成・雇用する。\nRandom候補更新方式は採用しない。\n雇用Costは不要。\n\n# 2. Name\n名前は自動生成する。\nPlayerは自由に変更可能。\n\n# 3. Identity\n解雇した冒険者は復帰不可。\n後から同じType・同じ名前で作成しても別個体として扱う。\n\n# 4. Dismissal\nParty所属中は解雇不可。\n先にPartyから外す必要がある。\n\n解雇時はEquipmentを自動解除し、保管側へ戻す。\n戻し先Capacityが不足する場合は解雇不可。\n\n# 5. Character固有Data\n解雇成立時に以下のCharacter固有Dataを削除する。\n- 習得済みSkill\n- Passive\n- Character固有AI設定\n- 育成履歴\n- Job履歴\n- その他Character個体に属する状態\n",
+      "decision_refs": [
+        "DEC-R23-RECRUIT-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-GUILD-001",
+        "SPEC-V9-019-CHAR-001",
+        "SPEC-V9-019-EQUIP-001"
+      ],
+      "acceptance_criteria": "- Random候補更新を使わず解放済みTypeから雇用できる。\n- Party所属中は解雇できない。\n- Equipment退避Capacity不足時は解雇を拒否できる。",
+      "system_node_id": "SYS-V9-RECRUIT",
+      "contract_ids": [
+        "CONTRACT-V9-GUILD-TO-RECRUIT",
+        "CONTRACT-V9-RECRUIT-TO-CHAR",
+        "CONTRACT-V9-INVENTORY-TO-RECRUIT",
+        "CONTRACT-V9-SAVE-TO-RECRUIT"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-SAVE-001",
+      "title": "Player Save / Load / Versioning / Safety",
+      "status": "Draft",
+      "summary": "1Slot Auto SaveとVersion Migration・破損防止の正本契約。",
+      "body": "# 1. Save方式\nSaveは1SlotのAuto Saveのみとする。\n永続状態の変更が正常確定した直後に自動保存する。\n\n# 2. New Game\n既存Saveがある状態でNew Gameを開始する場合は上書き確認を必須とする。\n\n# 3. Version\nSave VersionがCurrentと異なる場合:\n- 対応Migrationあり → 変換前Backup作成 → 自動変換 → Integrity検証\n- 検証成功時のみ新Versionとして確定\n- 対応Migrationなし / 変換失敗 / 検証失敗 → Load拒否\n\n# 4. Atomic Save\n通常Saveは一時保存 → Integrity確認 → 本保存切替の安全な方式とする。\n直前の正常SaveをBackupとして保持する。\n保存処理を直列化し、関連する複数Data変更は一体で成功または失敗させる。\n\n# 5. Invalid Data\n未知・欠損・不正Dataを黙って初期値化して進行しない。\n安全に復旧できない場合はLoadを停止する。\n\n# 6. Player State\n少なくとも以下の永続状態をSave対象へ接続できる。\n- Character / Guild / Progress\n- Inventory / Equipment\n- Skill / Passive / Skill Loadout\n- AI設定\n- Quest / Flag等の永続進行\n- Game Settings\n- Tutorial進行状態\n\n個別Domainが所有する値の意味や計算をSave側で再定義しない。\n",
+      "decision_refs": [
+        "DEC-R23-SAVE-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-CORE-002"
+      ],
+      "acceptance_criteria": "- 1Slot Auto Saveとして保存できる。\n- Atomic Saveと直前正常Backupを維持できる。\n- 不正Saveを黙って初期化せずLoad拒否できる。",
+      "system_node_id": "SYS-V9-SAVE",
+      "contract_ids": [
+        "CONTRACT-V9-SAVE-TO-PROGRESSION",
+        "CONTRACT-V9-SAVE-TO-INVENTORY",
+        "CONTRACT-V9-SAVE-TO-RECRUIT",
+        "CONTRACT-V9-SAVE-TO-SKILL-ACQ",
+        "CONTRACT-V9-SAVE-TO-AI",
+        "CONTRACT-V9-SAVE-TO-GUILD",
+        "CONTRACT-V9-SAVE-TO-RUN",
+        "CONTRACT-V9-NEWGAME-TO-SAVE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-NEWGAME-001",
+      "title": "New Game Initialization",
+      "status": "Draft",
+      "summary": "New Game開始時の初期化順序と初回Auto Save契約。",
+      "body": "# 1. Start State\nNew Gameは初期冒険者をGuild所属済み、初期Party編成済みの状態から開始する。\n\n# 2. Variable Data\n以下の具体値はBalance/Data可変とし、Codeへ固定しない。\n- 初期冒険者人数\n- 初期Job構成\n- 初期Equipment\n- 初期所持金\n- その他初期Content値\n\n# 3. Initialization Order\n基本順序:\n1. Guild作成\n2. Progress / Flag初期化\n3. 初期冒険者生成\n4. 初期Party編成\n5. Inventory / Warehouse初期化\n6. Skill / Passive / AI等の初期状態生成\n7. Integrity確認\n8. 初回Auto Save\n\n# 4. Existing Save\n既存Saveの上書き確認はPlayer Save Owner仕様へ委譲する。\n\n# 5. Atomicity\n初期化途中の状態を正式Saveとして残さない。\nIntegrity確認成功後に初回Auto Saveを成立させる。\n",
+      "decision_refs": [
+        "DEC-R23-NEWGAME-001",
+        "DEC-R23-SAVE-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-GUILD-001",
+        "SPEC-V9-019-SAVE-001"
+      ],
+      "acceptance_criteria": "- 初期化順序を固定できる。\n- 初期Content値をData/Balanceから変更できる。\n- Integrity成功後だけ初回Saveを確定できる。",
+      "system_node_id": "SYS-V9-NEWGAME",
+      "contract_ids": [
+        "CONTRACT-V9-NEWGAME-TO-GUILD",
+        "CONTRACT-V9-NEWGAME-TO-CHAR",
+        "CONTRACT-V9-NEWGAME-TO-INVENTORY",
+        "CONTRACT-V9-NEWGAME-TO-AI",
+        "CONTRACT-V9-NEWGAME-TO-SAVE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-INVENTORY-001",
+      "title": "Inventory / Warehouse Ownership / Quest Return",
+      "status": "Draft",
+      "summary": "所持品・Guild Warehouse・帰還報酬の所有状態契約。",
+      "body": "# 1. Ownership\nPlayer所持品とGuild Warehouseは分離して管理する。\n両者間の移動はWarehouse施設画面で行う。\n\n# 2. Quest Reward\nQuest中の獲得物をCharacterへ直接正式反映しない。\nQuestRun結果として一時保持する。\n\n成功帰還時に報酬をまとめて受取処理する。\nFailure / Abandonでは既存損失仕様に従い正式受取しない。\n\n# 3. Capacity不足\n帰還時にCapacity不足なら報酬を消失させない。\n整理画面を出し、受入可能になるまで帰還確定を保留する。\n\n# 4. Stack\n同一種類の素材等は数量をまとめて1Slotで管理できる。\n1Slot上限が必要な場合はBalance可変。\n個体差のあるEquipmentはStackしない。\n\n# 5. Equipment Ownership\n装備中Equipmentは保管中Itemとは別の所有状態として扱う。\n\n# 6. Dismissal\n解雇時のEquipment返却先に空きがない場合は解雇不可。\n一時退避Slotは設けない。\n\n# 7. 非採用\n- Quest中にCharacter個別Inventoryへ拾得物を正式格納する方式\n- Character間のReal-time Item受け渡し\nは採用しない。\n",
+      "decision_refs": [
+        "DEC-R23-INVENTORY-001",
+        "DEC-R24-QUEST-ABANDON-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-RUN-002",
+        "SPEC-V9-019-REWARD-001",
+        "SPEC-V9-019-EQUIP-001"
+      ],
+      "acceptance_criteria": "- Quest成功帰還時だけ報酬を正式受取できる。\n- Capacity不足で報酬を消失させない。\n- 個体差EquipmentをStackしない。",
+      "system_node_id": "SYS-V9-INVENTORY",
+      "contract_ids": [
+        "CONTRACT-V9-REWARD-TO-INVENTORY",
+        "CONTRACT-V9-EQUIP-TO-INVENTORY",
+        "CONTRACT-V9-GUILD-TO-INVENTORY",
+        "CONTRACT-V9-INVENTORY-TO-RECRUIT",
+        "CONTRACT-V9-SAVE-TO-INVENTORY"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -4875,6 +5060,20 @@
       "checked_at": "2026-08-20T15:09:00+09:00",
       "created_at": "2026-08-20T13:50:00+09:00",
       "updated_at": "2026-08-20T15:09:00+09:00"
+    },
+    {
+      "id": "CHK-R27-001",
+      "title": "R21 resolved systems specification coverage audit",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "R21-001〜006はHuman DecisionでResolved済みだが、専用System NodeにOwner Specificationが未登録だったため6仕様を補完。Save/Progression/Skill Acquisition/Recruitment/New Game/Inventoryの接続Contractを追加。R24-R26のゲーム体験決定は変更していない。",
+      "evidence": "DEC-R23-PROGRESSION-001 / DEC-R23-SKILL-ACQ-001 / DEC-R23-RECRUIT-001 / DEC-R23-SAVE-001 / DEC-R23-NEWGAME-001 / DEC-R23-INVENTORY-001",
+      "checked_by": "AI",
+      "checked_at": "2026-08-20T21:17:00+09:00",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
     }
   ],
   "workflow": {
@@ -4988,6 +5187,15 @@
     {
       "at": "2026-08-20T12:16:47.712Z",
       "message": "Development Workspace JSON merged: add=62 update=16 delete=0"
+    },
+    {
+      "at": "2026-08-20T21:17:00+09:00",
+      "type": "SpecificationCoverageAudit",
+      "summary": "R26後のSystem coverageを監査し、R21で解決済みだがOwner Specification未登録だったProgression、Skill Acquisition、Recruitment、Save、New Game、Inventoryの6仕様と25 Contract/Connectionを補完。"
+    },
+    {
+      "at": "2026-08-20T12:36:52.999Z",
+      "message": "Development Workspace JSON merged: add=59 update=0 delete=0"
     }
   ],
   "specification_candidates": [
@@ -6744,6 +6952,281 @@
       "definition": "Release Player NavigationからDebug/Test/Standalone Battle/Developer UIへの到達を禁止する公開境界を提供する。",
       "created_at": "2026-08-20T21:07:00+09:00",
       "updated_at": "2026-08-20T21:07:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-RUN-TO-PROGRESSION",
+      "name": "QuestRun → Progression",
+      "producer_system_id": "SYS-V9-RUN",
+      "consumer_system_ids": [
+        "SYS-V9-PROGRESSION"
+      ],
+      "definition": "成功QuestRunのEXP結果と完了時Party/生存SnapshotをProgressionへ渡す。Failure/Abandonは正式EXP反映対象にしない。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-PROGRESSION-TO-CHAR",
+      "name": "Progression → Character",
+      "producer_system_id": "SYS-V9-PROGRESSION",
+      "consumer_system_ids": [
+        "SYS-V9-CHAR"
+      ],
+      "definition": "確定EXP、Level、成長結果をCharacter永続状態へ反映する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-JOB-TO-PROGRESSION",
+      "name": "Job → Progression",
+      "producer_system_id": "SYS-V9-JOB",
+      "consumer_system_ids": [
+        "SYS-V9-PROGRESSION"
+      ],
+      "definition": "Quest完了時Jobの成長係数/成長規則をLevel Up計算へ提供する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-GUILD-TO-SKILL-ACQ",
+      "name": "Guild → Skill Acquisition",
+      "producer_system_id": "SYS-V9-GUILD",
+      "consumer_system_ids": [
+        "SYS-V9-SKILL-ACQ"
+      ],
+      "definition": "訓練所からSkill/Passive習得・Respec機能へ到達させる。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SKILL-TO-SKILL-ACQ",
+      "name": "Skill → Skill Acquisition",
+      "producer_system_id": "SYS-V9-SKILL",
+      "consumer_system_ids": [
+        "SYS-V9-SKILL-ACQ"
+      ],
+      "definition": "Skillの正式習得条件・参照情報をSkill Acquisitionへ提供する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-PASSIVE-TO-SKILL-ACQ",
+      "name": "Passive → Skill Acquisition",
+      "producer_system_id": "SYS-V9-PASSIVE",
+      "consumer_system_ids": [
+        "SYS-V9-SKILL-ACQ"
+      ],
+      "definition": "Passiveの正式習得条件・参照情報をSkill Acquisitionへ提供する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SKILL-ACQ-TO-CHAR",
+      "name": "Skill Acquisition → Character",
+      "producer_system_id": "SYS-V9-SKILL-ACQ",
+      "consumer_system_ids": [
+        "SYS-V9-CHAR"
+      ],
+      "definition": "習得/解除成立後のCharacter固有Skill/Passive状態を反映する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-GUILD-TO-RECRUIT",
+      "name": "Guild → Recruitment",
+      "producer_system_id": "SYS-V9-GUILD",
+      "consumer_system_ids": [
+        "SYS-V9-RECRUIT"
+      ],
+      "definition": "酒場から解放済みAdventurer Typeの作成・雇用・解雇機能へ到達させる。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-RECRUIT-TO-CHAR",
+      "name": "Recruitment → Character",
+      "producer_system_id": "SYS-V9-RECRUIT",
+      "consumer_system_ids": [
+        "SYS-V9-CHAR"
+      ],
+      "definition": "雇用成立時の新規Character個体生成と解雇成立時の個体削除をCharacterへ反映する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-INVENTORY-TO-RECRUIT",
+      "name": "Inventory → Recruitment",
+      "producer_system_id": "SYS-V9-INVENTORY",
+      "consumer_system_ids": [
+        "SYS-V9-RECRUIT"
+      ],
+      "definition": "解雇時Equipment返却Capacityと保管可否をRecruitmentへ提供する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-PROGRESSION",
+      "name": "Save → Progression Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-PROGRESSION"
+      ],
+      "definition": "Character EXP/Level等の永続Progression状態をSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-INVENTORY",
+      "name": "Save → Inventory Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-INVENTORY"
+      ],
+      "definition": "Inventory/Warehouse/Equipment所有状態をSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-RECRUIT",
+      "name": "Save → Recruitment Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-RECRUIT"
+      ],
+      "definition": "雇用済みCharacter個体とRecruitmentに必要な永続状態をSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-SKILL-ACQ",
+      "name": "Save → Skill Acquisition Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-SKILL-ACQ"
+      ],
+      "definition": "Characterごとの習得済みSkill/Passive状態をSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-AI",
+      "name": "Save → AI Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-AI"
+      ],
+      "definition": "Player Character固有AI設定をSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-GUILD",
+      "name": "Save → Guild Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-GUILD"
+      ],
+      "definition": "Guild進行、施設解放等の永続状態をSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-SAVE-TO-RUN",
+      "name": "Save → QuestRun Persistence",
+      "producer_system_id": "SYS-V9-SAVE",
+      "consumer_system_ids": [
+        "SYS-V9-RUN"
+      ],
+      "definition": "Active/History QuestRun、Playback復帰に必要なSnapshotをSave/Loadする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-NEWGAME-TO-GUILD",
+      "name": "New Game → Guild",
+      "producer_system_id": "SYS-V9-NEWGAME",
+      "consumer_system_ids": [
+        "SYS-V9-GUILD"
+      ],
+      "definition": "New Game初期化でGuildと初期進行/施設状態を生成する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-NEWGAME-TO-CHAR",
+      "name": "New Game → Character",
+      "producer_system_id": "SYS-V9-NEWGAME",
+      "consumer_system_ids": [
+        "SYS-V9-CHAR"
+      ],
+      "definition": "初期Adventurer Dataから初期Character個体を生成する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-NEWGAME-TO-INVENTORY",
+      "name": "New Game → Inventory",
+      "producer_system_id": "SYS-V9-NEWGAME",
+      "consumer_system_ids": [
+        "SYS-V9-INVENTORY"
+      ],
+      "definition": "初期Inventory/Warehouse/Equipment所有状態を生成する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-NEWGAME-TO-AI",
+      "name": "New Game → AI",
+      "producer_system_id": "SYS-V9-NEWGAME",
+      "consumer_system_ids": [
+        "SYS-V9-AI"
+      ],
+      "definition": "初期CharacterのAI初期状態を生成・Bindingする。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-NEWGAME-TO-SAVE",
+      "name": "New Game → Save",
+      "producer_system_id": "SYS-V9-NEWGAME",
+      "consumer_system_ids": [
+        "SYS-V9-SAVE"
+      ],
+      "definition": "Integrity確認成功後に初回Auto Saveを要求する。既存Save上書き確認はSave側で管理する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-REWARD-TO-INVENTORY",
+      "name": "Reward → Inventory",
+      "producer_system_id": "SYS-V9-REWARD",
+      "consumer_system_ids": [
+        "SYS-V9-INVENTORY"
+      ],
+      "definition": "成功QuestRunの保存済みreward_resultを帰還時受取対象としてInventoryへ渡す。再抽選・再計算しない。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-EQUIP-TO-INVENTORY",
+      "name": "Equipment → Inventory Ownership",
+      "producer_system_id": "SYS-V9-EQUIP",
+      "consumer_system_ids": [
+        "SYS-V9-INVENTORY"
+      ],
+      "definition": "Equipment個体の装備中/保管中所有状態と個体差情報をInventoryへ提供する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-GUILD-TO-INVENTORY",
+      "name": "Guild → Inventory/Warehouse",
+      "producer_system_id": "SYS-V9-GUILD",
+      "consumer_system_ids": [
+        "SYS-V9-INVENTORY"
+      ],
+      "definition": "Warehouse施設からInventory/Warehouse間移動機能へ到達させる。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
     }
   ],
   "system_connections": [
@@ -7746,6 +8229,256 @@
       "purpose": "R25 Specificationで確定したOwner境界をSystem間接続として明示する。",
       "created_at": "2026-08-20T21:07:00+09:00",
       "updated_at": "2026-08-20T21:07:00+09:00"
+    },
+    {
+      "id": "CONN-V9-RUN-TO-PROGRESSION",
+      "from_system_id": "SYS-V9-RUN",
+      "to_system_id": "SYS-V9-PROGRESSION",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-RUN-TO-PROGRESSION",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-PROGRESSION-TO-CHAR",
+      "from_system_id": "SYS-V9-PROGRESSION",
+      "to_system_id": "SYS-V9-CHAR",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-PROGRESSION-TO-CHAR",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-JOB-TO-PROGRESSION",
+      "from_system_id": "SYS-V9-JOB",
+      "to_system_id": "SYS-V9-PROGRESSION",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-JOB-TO-PROGRESSION",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-GUILD-TO-SKILL-ACQ",
+      "from_system_id": "SYS-V9-GUILD",
+      "to_system_id": "SYS-V9-SKILL-ACQ",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-GUILD-TO-SKILL-ACQ",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SKILL-TO-SKILL-ACQ",
+      "from_system_id": "SYS-V9-SKILL",
+      "to_system_id": "SYS-V9-SKILL-ACQ",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SKILL-TO-SKILL-ACQ",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-PASSIVE-TO-SKILL-ACQ",
+      "from_system_id": "SYS-V9-PASSIVE",
+      "to_system_id": "SYS-V9-SKILL-ACQ",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-PASSIVE-TO-SKILL-ACQ",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SKILL-ACQ-TO-CHAR",
+      "from_system_id": "SYS-V9-SKILL-ACQ",
+      "to_system_id": "SYS-V9-CHAR",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SKILL-ACQ-TO-CHAR",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-GUILD-TO-RECRUIT",
+      "from_system_id": "SYS-V9-GUILD",
+      "to_system_id": "SYS-V9-RECRUIT",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-GUILD-TO-RECRUIT",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-RECRUIT-TO-CHAR",
+      "from_system_id": "SYS-V9-RECRUIT",
+      "to_system_id": "SYS-V9-CHAR",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-RECRUIT-TO-CHAR",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-INVENTORY-TO-RECRUIT",
+      "from_system_id": "SYS-V9-INVENTORY",
+      "to_system_id": "SYS-V9-RECRUIT",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-INVENTORY-TO-RECRUIT",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-PROGRESSION",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-PROGRESSION",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-PROGRESSION",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-INVENTORY",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-INVENTORY",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-INVENTORY",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-RECRUIT",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-RECRUIT",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-RECRUIT",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-SKILL-ACQ",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-SKILL-ACQ",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-SKILL-ACQ",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-AI",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-AI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-AI",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-GUILD",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-GUILD",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-GUILD",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-SAVE-TO-RUN",
+      "from_system_id": "SYS-V9-SAVE",
+      "to_system_id": "SYS-V9-RUN",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-SAVE-TO-RUN",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-NEWGAME-TO-GUILD",
+      "from_system_id": "SYS-V9-NEWGAME",
+      "to_system_id": "SYS-V9-GUILD",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-NEWGAME-TO-GUILD",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-NEWGAME-TO-CHAR",
+      "from_system_id": "SYS-V9-NEWGAME",
+      "to_system_id": "SYS-V9-CHAR",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-NEWGAME-TO-CHAR",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-NEWGAME-TO-INVENTORY",
+      "from_system_id": "SYS-V9-NEWGAME",
+      "to_system_id": "SYS-V9-INVENTORY",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-NEWGAME-TO-INVENTORY",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-NEWGAME-TO-AI",
+      "from_system_id": "SYS-V9-NEWGAME",
+      "to_system_id": "SYS-V9-AI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-NEWGAME-TO-AI",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-NEWGAME-TO-SAVE",
+      "from_system_id": "SYS-V9-NEWGAME",
+      "to_system_id": "SYS-V9-SAVE",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-NEWGAME-TO-SAVE",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-REWARD-TO-INVENTORY",
+      "from_system_id": "SYS-V9-REWARD",
+      "to_system_id": "SYS-V9-INVENTORY",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-REWARD-TO-INVENTORY",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-EQUIP-TO-INVENTORY",
+      "from_system_id": "SYS-V9-EQUIP",
+      "to_system_id": "SYS-V9-INVENTORY",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-EQUIP-TO-INVENTORY",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-GUILD-TO-INVENTORY",
+      "from_system_id": "SYS-V9-GUILD",
+      "to_system_id": "SYS-V9-INVENTORY",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-GUILD-TO-INVENTORY",
+      "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
+      "created_at": "2026-08-20T21:17:00+09:00",
+      "updated_at": "2026-08-20T21:17:00+09:00"
     }
   ],
   "system_flags": [
@@ -14770,6 +15503,86 @@
       },
       "actor": "AI",
       "created_at": "2026-08-20T21:07:00+09:00"
+    },
+    {
+      "id": "EVT-R27-CORE-PLAYER-STATE-SPECS-001",
+      "type": "CORE_PLAYER_STATE_SPECIFICATION_GAPS_FILLED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "created_specification_ids": [
+          "SPEC-V9-019-PROGRESSION-001",
+          "SPEC-V9-019-SKILL-ACQ-001",
+          "SPEC-V9-019-RECRUIT-001",
+          "SPEC-V9-019-SAVE-001",
+          "SPEC-V9-019-NEWGAME-001",
+          "SPEC-V9-019-INVENTORY-001"
+        ],
+        "created_contract_ids": [
+          "CONTRACT-V9-RUN-TO-PROGRESSION",
+          "CONTRACT-V9-PROGRESSION-TO-CHAR",
+          "CONTRACT-V9-JOB-TO-PROGRESSION",
+          "CONTRACT-V9-GUILD-TO-SKILL-ACQ",
+          "CONTRACT-V9-SKILL-TO-SKILL-ACQ",
+          "CONTRACT-V9-PASSIVE-TO-SKILL-ACQ",
+          "CONTRACT-V9-SKILL-ACQ-TO-CHAR",
+          "CONTRACT-V9-GUILD-TO-RECRUIT",
+          "CONTRACT-V9-RECRUIT-TO-CHAR",
+          "CONTRACT-V9-INVENTORY-TO-RECRUIT",
+          "CONTRACT-V9-SAVE-TO-PROGRESSION",
+          "CONTRACT-V9-SAVE-TO-INVENTORY",
+          "CONTRACT-V9-SAVE-TO-RECRUIT",
+          "CONTRACT-V9-SAVE-TO-SKILL-ACQ",
+          "CONTRACT-V9-SAVE-TO-AI",
+          "CONTRACT-V9-SAVE-TO-GUILD",
+          "CONTRACT-V9-SAVE-TO-RUN",
+          "CONTRACT-V9-NEWGAME-TO-GUILD",
+          "CONTRACT-V9-NEWGAME-TO-CHAR",
+          "CONTRACT-V9-NEWGAME-TO-INVENTORY",
+          "CONTRACT-V9-NEWGAME-TO-AI",
+          "CONTRACT-V9-NEWGAME-TO-SAVE",
+          "CONTRACT-V9-REWARD-TO-INVENTORY",
+          "CONTRACT-V9-EQUIP-TO-INVENTORY",
+          "CONTRACT-V9-GUILD-TO-INVENTORY"
+        ],
+        "created_connection_ids": [
+          "CONN-V9-RUN-TO-PROGRESSION",
+          "CONN-V9-PROGRESSION-TO-CHAR",
+          "CONN-V9-JOB-TO-PROGRESSION",
+          "CONN-V9-GUILD-TO-SKILL-ACQ",
+          "CONN-V9-SKILL-TO-SKILL-ACQ",
+          "CONN-V9-PASSIVE-TO-SKILL-ACQ",
+          "CONN-V9-SKILL-ACQ-TO-CHAR",
+          "CONN-V9-GUILD-TO-RECRUIT",
+          "CONN-V9-RECRUIT-TO-CHAR",
+          "CONN-V9-INVENTORY-TO-RECRUIT",
+          "CONN-V9-SAVE-TO-PROGRESSION",
+          "CONN-V9-SAVE-TO-INVENTORY",
+          "CONN-V9-SAVE-TO-RECRUIT",
+          "CONN-V9-SAVE-TO-SKILL-ACQ",
+          "CONN-V9-SAVE-TO-AI",
+          "CONN-V9-SAVE-TO-GUILD",
+          "CONN-V9-SAVE-TO-RUN",
+          "CONN-V9-NEWGAME-TO-GUILD",
+          "CONN-V9-NEWGAME-TO-CHAR",
+          "CONN-V9-NEWGAME-TO-INVENTORY",
+          "CONN-V9-NEWGAME-TO-AI",
+          "CONN-V9-NEWGAME-TO-SAVE",
+          "CONN-V9-REWARD-TO-INVENTORY",
+          "CONN-V9-EQUIP-TO-INVENTORY",
+          "CONN-V9-GUILD-TO-INVENTORY"
+        ],
+        "source_decision_ids": [
+          "DEC-R23-PROGRESSION-001",
+          "DEC-R23-SKILL-ACQ-001",
+          "DEC-R23-RECRUIT-001",
+          "DEC-R23-SAVE-001",
+          "DEC-R23-NEWGAME-001",
+          "DEC-R23-INVENTORY-001"
+        ]
+      },
+      "actor": "AI",
+      "created_at": "2026-08-20T21:17:00+09:00"
     }
   ],
   "system_impacts": [
