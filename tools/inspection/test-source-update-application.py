@@ -206,11 +206,29 @@ def main() -> int:
         if packaged_result.returncode == 0 or "PACKAGED_TEST_CHANGE_APPROVAL_FORBIDDEN" not in (packaged_result.stdout + packaged_result.stderr):
             errors.append("PACKAGED_TEST_APPROVAL_NOT_REJECTED " + (packaged_result.stdout + packaged_result.stderr))
 
+        # Migration repair: the baseline policy already says development-project-data
+        # is nonpersistent, but an older package_manifest still lists one such file.
+        repair_base = base / "repair-baseline"
+        repair_update = base / "repair-update"
+        shutil.copytree(baseline, repair_base)
+        dev = repair_base / "development-project-data/DEV-TEST.json"
+        dev.parent.mkdir(parents=True, exist_ok=True)
+        dev.write_text('{"id":"DEV-TEST"}\n', encoding="utf-8")
+        manifest = json.loads((repair_base / "package_manifest.json").read_text(encoding="utf-8"))
+        blob = dev.read_bytes()
+        manifest["files"].append({"path":"development-project-data/DEV-TEST.json","size":len(blob),"sha256":hashlib.sha256(blob).hexdigest()})
+        manifest["file_count"] = len(manifest["files"])
+        write_json(repair_base / "package_manifest.json", manifest)
+        make_update(repair_update, repair_base, include_exporter=True)
+        repair_result = run_checker(repair_update, repair_base)
+        if repair_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in repair_result.stdout:
+            errors.append("NONPERSISTENT_MANIFEST_REPAIR_REJECTED " + (repair_result.stdout + repair_result.stderr))
+
     if errors:
         print("SOURCE_UPDATE_APPLICATION_REGRESSION_FAIL")
         print("\n".join(errors))
         return 1
-    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=7 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
+    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=8 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
     return 0
 
 
