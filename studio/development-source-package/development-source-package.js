@@ -1,6 +1,6 @@
 /**
  * Development Project -> validated full Source ZIP builder.
- * GKS-B690
+ * GKS-B691
  *
  * Import path only:
  * - Reads the currently served source package using package_manifest.json.
@@ -63,9 +63,13 @@ async function fallbackBytes(path,expected=null){
  if(expected&&(Number(expected.size)!==b.length||String(expected.sha256||'').toLowerCase()!==hash))throw new Error(`Source fallbackとpackage_manifestが不一致: ${path}`);
  return b;
 }
-async function fetchBytes(path,expected=null){
+async function fetchBytes(path,expected=null,fallbackRow=null){
  const res=await fetch(sourceUrl(path),{cache:'no-store'});
- if(res.ok)return new Uint8Array(await res.arrayBuffer());
+ if(res.ok){
+  const b=new Uint8Array(await res.arrayBuffer()),hash=await sha256(b);
+  if(fallbackRow&&(Number(fallbackRow.size)!==b.length||String(fallbackRow.sha256||'').toLowerCase()!==hash))throw new Error(`公開Sourceとsource bundleが不一致: ${path}`);
+  return b;
+ }
  if(res.status===404)return await fallbackBytes(path,expected);
  throw new Error(`Source file取得失敗: ${path} / HTTP ${res.status}`);
 }
@@ -80,8 +84,9 @@ async function mapLimit(rows,limit,worker){
  async function run(){while(true){const i=next++;if(i>=rows.length)return;result[i]=await worker(rows[i],i)}}
  await Promise.all(Array.from({length:Math.max(1,Math.min(Number(limit)||1,rows.length||1))},run));return result;
 }
-function buildManifest(records){
- const files=[...records].sort((a,b)=>a.path.localeCompare(b.path)).map(x=>({path:x.path,size:x.bytes.length,sha256:x.sha256}));
+function buildManifest(records,persistentPaths){
+ const allow=persistentPaths instanceof Set?persistentPaths:new Set();
+ const files=[...records].filter(x=>allow.has(x.path)).sort((a,b)=>a.path.localeCompare(b.path)).map(x=>({path:x.path,size:x.bytes.length,sha256:x.sha256}));
  return {schema_version:1,generated_at:new Date().toISOString(),file_count:files.length,files};
 }
 async function verifyManifest(manifest,recordMap){
@@ -100,17 +105,18 @@ async function build(items,options={}){
  try{
   const projects=normalizeProjects(items),overlay=new Map(projects.map(x=>[x.path,utf8(JSON.stringify(x.project,null,2)+'\n')]));
   setStatus('Source ZIP生成: package_manifestを読み込んでいます…');
-  const base=await loadManifest(),baseByPath=new Map(base.files.map(x=>[String(x.path||''),x]));
-  const paths=[...new Set([...base.files.map(x=>String(x.path||'')),...overlay.keys()])].filter(Boolean).sort();
+  const base=await loadManifest(),baseByPath=new Map(base.files.map(x=>[String(x.path||''),x])),fallbackFiles=await loadFallbackFiles();
+  const persistentPaths=new Set([...base.files.map(x=>String(x.path||'')),...overlay.keys()].filter(Boolean));
+  const paths=[...new Set([...persistentPaths,...Object.keys(fallbackFiles||{})])].filter(Boolean).sort();
   let loaded=0;const records=await mapLimit(paths,8,async path=>{
-   const expected=baseByPath.get(path),b=overlay.has(path)?overlay.get(path):await fetchBytes(path,expected),hash=await sha256(b);
+   const expected=baseByPath.get(path),fallbackRow=fallbackFiles?.[path]||null,b=overlay.has(path)?overlay.get(path):await fetchBytes(path,expected,fallbackRow),hash=await sha256(b);
    if(expected&&!path.startsWith(DATA_ROOT)){
     if(Number(expected.size)!==b.length||String(expected.sha256||'').toLowerCase()!==hash)throw new Error(`Source baseline不整合を検出しました。Development Project以外は自動正当化しません: ${path}`);
    }
    loaded++;if(loaded===paths.length||loaded%40===0)setStatus(`Source ZIP生成: ${loaded}/${paths.length} files`);
    return {path,bytes:b,sha256:hash};
   });
-  const recordMap=new Map(records.map(x=>[x.path,x])),manifest=buildManifest(records),manifestBytes=utf8(JSON.stringify(manifest,null,2)+'\n');
+  const recordMap=new Map(records.map(x=>[x.path,x])),manifest=buildManifest(records,persistentPaths),manifestBytes=utf8(JSON.stringify(manifest,null,2)+'\n');
   await verifyManifest(manifest,recordMap);
   const zip=new JSZip(),rootName=text(options.rootName)||'guild-adventure-studio-sub';
   for(const rec of records)zip.file(`${rootName}/${rec.path}`,rec.bytes);
