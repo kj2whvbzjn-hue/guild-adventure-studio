@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-20T12:36:52.999Z"
+    "updated_at": "2026-08-20T12:43:47.424Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -3269,6 +3269,146 @@
       "approved_at": "",
       "created_at": "2026-08-20T21:17:00+09:00",
       "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-ABANDON-001",
+      "title": "Quest Abandon Command / Transition",
+      "status": "Draft",
+      "summary": "Playerの放棄要求をQuestRunの正式Abandon終了へ接続する境界。",
+      "body": "# 1. Owner\n本仕様はPlayerの放棄要求受付とQuestRunへのAbandon遷移要求だけを所有する。\n損失、Reward、EXP、Stone、履歴の正式ルールはQuestRun Owner仕様を参照し、ここで再定義しない。\n\n# 2. Request\nActive QuestRunだけが放棄対象。\n放棄成立後は同じRunを継続しない。\n\n# 3. Transition\n放棄要求をQuestRunへ渡し、QuestRun側が正式なAbandon final resultを確定する。\n\n# 4. Presentation\n確定したAbandon結果はFailure/Abandon Presentationへ渡す。\nUI側で損失を再計算しない。\n\n# 5. Determinism\n放棄操作を理由にBattle/Event/Reward/Flag/Randomを再実行しない。\n",
+      "decision_refs": [
+        "DEC-R24-QUEST-ABANDON-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-RUN-001",
+        "SPEC-V9-019-FAILURE-PRESENT-001"
+      ],
+      "acceptance_criteria": "- Active QuestRunへAbandon遷移要求を渡せる。\n- Abandon時にゲーム結果を再計算しない。\n- 損失RuleをQuestRun Ownerと二重定義しない。",
+      "system_node_id": "SYS-V9-ABANDON",
+      "contract_ids": [
+        "CONTRACT-V9-ABANDON-TO-RUN",
+        "CONTRACT-V9-RUN-TO-ABANDON"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-BATTLE-CAMERA-001",
+      "title": "Battle Camera Presentation",
+      "status": "Draft",
+      "summary": "固定位置戦闘でFocus/Zoom/Shake等を扱うCamera表示契約。",
+      "body": "# 1. Owner\n本仕様はBattle Presentation配下のCamera演出だけを所有する。\nBattle座標・対象・結果は変更しない。\n\n# 2. Camera\n基本のUnit位置は固定。\n必要に応じて対象Focus、Zoom、Screen ShakeをPresentationとして適用できる。\n\n# 3. Accessibility\nScreen Shake OFF / 演出軽減設定を必ず反映する。\n\n# 4. Variable\nZoom量、Focus時間、Shake強度・時間等はPresentation Config可変。\n",
+      "decision_refs": [
+        "DEC-R24-BATTLE-UX-001",
+        "DEC-R24-FEEDBACK-RECOVERY-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-PRESENT-001",
+        "SPEC-V9-019-ACCESSIBILITY-001"
+      ],
+      "acceptance_criteria": "- 固定位置Battleを壊さずCamera演出を適用できる。\n- Shake OFF設定を反映できる。",
+      "system_node_id": "SYS-V9-BATTLE-CAMERA",
+      "contract_ids": [
+        "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-CAMERA",
+        "CONTRACT-V9-ACCESSIBILITY-TO-BATTLE-CAMERA"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-COMBAT-HUD-001",
+      "title": "Combat HUD",
+      "status": "Draft",
+      "summary": "Battle中に必要なRuntime状態をPlayerへ表示するHUD契約。",
+      "body": "# 1. Owner\n本仕様はBattle中の状態表示を所有する。\nBattle判定・数式を所有しない。\n\n# 2. Display\n最低限以下を表示対象とする。\n- HP\n- MP\n- 主要Status\n- Buff / Debuff\n- Shield\n- 行動状態\n\n# 3. Read Only\nHUDはBattle Runtimeが返す状態を表示するだけとし、命中・Damage・Status成立等を独自計算しない。\n\n# 4. Responsive\nPCとスマホ縦の双方で主要情報を判別可能に配置する。\n\n# 5. Accessibility\n状態を色だけで区別しない。\n",
+      "decision_refs": [
+        "DEC-R24-BATTLE-UX-001",
+        "DEC-R24-RESPONSIVE-001",
+        "DEC-R24-FEEDBACK-RECOVERY-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-PRESENT-001",
+        "SPEC-V9-019-DEVICE-001",
+        "SPEC-V9-019-ACCESSIBILITY-001"
+      ],
+      "acceptance_criteria": "- Battle Runtime状態を再計算なしで表示できる。\n- PC/スマホ縦で主要状態を判別できる。",
+      "system_node_id": "SYS-V9-COMBAT-HUD",
+      "contract_ids": [
+        "CONTRACT-V9-BATTLE-TO-COMBAT-HUD",
+        "CONTRACT-V9-RESPONSIVE-UI-TO-COMBAT-HUD"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-BATTLE-RESULT-UI-001",
+      "title": "Battle Result UI",
+      "status": "Draft",
+      "summary": "Battle単体終了時の勝敗・戦闘内容表示契約。",
+      "body": "# 1. Owner\n本仕様はBattle単体終了時の結果表示だけを所有する。\n\n# 2. Display\n勝敗と戦闘内容をPlayerへ表示する。\n\n# 3. Reward Boundary\nEXP、Level Up、Quest報酬等の正式な成長・資産反映はBattle Result UIで行わない。\nQuest帰還処理と対応Presentationへ委譲する。\n\n# 4. Skip\nBattleをSkipした場合も同じ保存済みBattle Resultを表示対象とする。\n",
+      "decision_refs": [
+        "DEC-R24-BATTLE-UX-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-PRESENT-001",
+        "SPEC-V9-019-PLAYBACK-UI-001"
+      ],
+      "acceptance_criteria": "- Battle勝敗を表示できる。\n- EXP/RewardをBattle Result UIから正式反映しない。\n- Skip有無で結果を変更しない。",
+      "system_node_id": "SYS-V9-BATTLE-RESULT-UI",
+      "contract_ids": [
+        "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-RESULT-UI"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "SPEC-V9-019-GUILD-UI-001",
+      "title": "Guild Facility UI",
+      "status": "Draft",
+      "summary": "Guild拠点と4施設をPlayerへ提示するUI契約。",
+      "body": "# 1. Owner\n本仕様はGuild拠点と酒場・訓練所・倉庫・掲示板のPlayer向け画面表面を所有する。\n各施設のゲーム機能・成立判定は対応Owner Systemを参照する。\n\n# 2. Facilities\nGuild UIから以下へ到達可能にする。\n- 酒場\n- 訓練所\n- 倉庫\n- 掲示板\n\n# 3. Boundary\nUIはRecruitment、Skill Acquisition、Inventory/Warehouse、Quest等のRuntime Ruleを再実装しない。\nOwner Runtimeが返す状態・不可理由を表示する。\n\n# 4. Navigation\n戻る操作、Title/Guild間の基本遷移はNavigation Owner仕様に従う。\n\n# 5. Responsive\nPCとスマホ縦の正式対応Layoutを提供する。\n",
+      "decision_refs": [
+        "DEC-R24-NAV-GUILD-001",
+        "DEC-R24-RESPONSIVE-001"
+      ],
+      "depends_on": [
+        "SPEC-V9-019-NAV-001",
+        "SPEC-V9-019-GUILD-001",
+        "SPEC-V9-019-DEVICE-001"
+      ],
+      "acceptance_criteria": "- Guildから4施設へ到達できる。\n- 各施設RuleをUIで二重実装しない。\n- PC/スマホ縦で操作可能。",
+      "system_node_id": "SYS-V9-GUILD-UI",
+      "contract_ids": [
+        "CONTRACT-V9-NAVIGATION-TO-GUILD-UI",
+        "CONTRACT-V9-GUILD-TO-GUILD-UI"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -5074,6 +5214,20 @@
       "checked_at": "2026-08-20T21:17:00+09:00",
       "created_at": "2026-08-20T21:17:00+09:00",
       "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CHK-R28-001",
+      "title": "System node owner specification coverage",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "R27適用後にOwner Specification未登録だった5 System Node（Quest Abandon / Battle Camera / Combat HUD / Battle Result UI / Guild UI）を既存確定仕様の下位責務として補完。ゲームルール追加なし。",
+      "evidence": "SYS-V9-ABANDON / SYS-V9-BATTLE-CAMERA / SYS-V9-COMBAT-HUD / SYS-V9-BATTLE-RESULT-UI / SYS-V9-GUILD-UI",
+      "checked_by": "AI",
+      "checked_at": "2026-08-20T21:21:00+09:00",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
     }
   ],
   "workflow": {
@@ -5196,6 +5350,15 @@
     {
       "at": "2026-08-20T12:36:52.999Z",
       "message": "Development Workspace JSON merged: add=59 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-20T21:21:00+09:00",
+      "type": "OwnerSpecificationCoverage",
+      "summary": "R27後のSystem Node coverageを監査し、Owner Specification未登録5 Nodeを既存確定ルールの下位責務として補完。"
+    },
+    {
+      "at": "2026-08-20T12:43:47.424Z",
+      "message": "Development Workspace JSON merged: add=26 update=0 delete=0"
     }
   ],
   "specification_candidates": [
@@ -7227,6 +7390,105 @@
       "definition": "Warehouse施設からInventory/Warehouse間移動機能へ到達させる。",
       "created_at": "2026-08-20T21:17:00+09:00",
       "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-ABANDON-TO-RUN",
+      "name": "Quest Abandon → QuestRun",
+      "producer_system_id": "SYS-V9-ABANDON",
+      "consumer_system_ids": [
+        "SYS-V9-RUN"
+      ],
+      "definition": "Playerの放棄要求をActive QuestRunのAbandon遷移要求として渡す。損失・結果確定はQuestRun Ownerが行う。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-RUN-TO-ABANDON",
+      "name": "QuestRun → Quest Abandon Result",
+      "producer_system_id": "SYS-V9-RUN",
+      "consumer_system_ids": [
+        "SYS-V9-ABANDON"
+      ],
+      "definition": "Abandon成立可否と確定final resultを返す。Abandon System側で再計算しない。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-CAMERA",
+      "name": "Battle Presentation → Battle Camera",
+      "producer_system_id": "SYS-V9-BATTLE-PRESENTATION",
+      "consumer_system_ids": [
+        "SYS-V9-BATTLE-CAMERA"
+      ],
+      "definition": "保存済みBattle表示状態と演出CueをCameraへ渡す。CameraはBattle結果を変更しない。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-ACCESSIBILITY-TO-BATTLE-CAMERA",
+      "name": "Accessibility → Battle Camera",
+      "producer_system_id": "SYS-V9-ACCESSIBILITY",
+      "consumer_system_ids": [
+        "SYS-V9-BATTLE-CAMERA"
+      ],
+      "definition": "Screen Shake OFF等の演出軽減条件をCameraへ提供する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-BATTLE-TO-COMBAT-HUD",
+      "name": "Battle → Combat HUD",
+      "producer_system_id": "SYS-V9-BATTLE",
+      "consumer_system_ids": [
+        "SYS-V9-COMBAT-HUD"
+      ],
+      "definition": "HP/MP/Status/Buff/Debuff/Shield/行動状態をRead-only表示情報としてHUDへ渡す。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-RESPONSIVE-UI-TO-COMBAT-HUD",
+      "name": "Responsive UI → Combat HUD",
+      "producer_system_id": "SYS-V9-RESPONSIVE-UI",
+      "consumer_system_ids": [
+        "SYS-V9-COMBAT-HUD"
+      ],
+      "definition": "PC/スマホ縦のHUD配置条件を提供する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-RESULT-UI",
+      "name": "Battle Presentation → Battle Result UI",
+      "producer_system_id": "SYS-V9-BATTLE-PRESENTATION",
+      "consumer_system_ids": [
+        "SYS-V9-BATTLE-RESULT-UI"
+      ],
+      "definition": "保存済みBattle Resultを勝敗・戦闘内容表示へ渡す。EXP/Quest Reward正式反映は含めない。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-NAVIGATION-TO-GUILD-UI",
+      "name": "Navigation → Guild UI",
+      "producer_system_id": "SYS-V9-NAVIGATION",
+      "consumer_system_ids": [
+        "SYS-V9-GUILD-UI"
+      ],
+      "definition": "Guild拠点・施設画面へのPlayer Navigation状態をGuild UIへ渡す。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-GUILD-TO-GUILD-UI",
+      "name": "Guild → Guild UI",
+      "producer_system_id": "SYS-V9-GUILD",
+      "consumer_system_ids": [
+        "SYS-V9-GUILD-UI"
+      ],
+      "definition": "4施設の解放状態・利用可能状態・Owner Runtime理由をGuild UIへ提供する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
     }
   ],
   "system_connections": [
@@ -8479,6 +8741,96 @@
       "purpose": "R21でHuman確定済みのPlayer State仕様を正式Owner Specificationへ接続する。",
       "created_at": "2026-08-20T21:17:00+09:00",
       "updated_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "CONN-V9-ABANDON-TO-RUN",
+      "from_system_id": "SYS-V9-ABANDON",
+      "to_system_id": "SYS-V9-RUN",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-ABANDON-TO-RUN",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-RUN-TO-ABANDON",
+      "from_system_id": "SYS-V9-RUN",
+      "to_system_id": "SYS-V9-ABANDON",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-RUN-TO-ABANDON",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-BATTLE-PRESENTATION-TO-BATTLE-CAMERA",
+      "from_system_id": "SYS-V9-BATTLE-PRESENTATION",
+      "to_system_id": "SYS-V9-BATTLE-CAMERA",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-CAMERA",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-ACCESSIBILITY-TO-BATTLE-CAMERA",
+      "from_system_id": "SYS-V9-ACCESSIBILITY",
+      "to_system_id": "SYS-V9-BATTLE-CAMERA",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-ACCESSIBILITY-TO-BATTLE-CAMERA",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-BATTLE-TO-COMBAT-HUD",
+      "from_system_id": "SYS-V9-BATTLE",
+      "to_system_id": "SYS-V9-COMBAT-HUD",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-BATTLE-TO-COMBAT-HUD",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-RESPONSIVE-UI-TO-COMBAT-HUD",
+      "from_system_id": "SYS-V9-RESPONSIVE-UI",
+      "to_system_id": "SYS-V9-COMBAT-HUD",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-RESPONSIVE-UI-TO-COMBAT-HUD",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-BATTLE-PRESENTATION-TO-BATTLE-RESULT-UI",
+      "from_system_id": "SYS-V9-BATTLE-PRESENTATION",
+      "to_system_id": "SYS-V9-BATTLE-RESULT-UI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-RESULT-UI",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-NAVIGATION-TO-GUILD-UI",
+      "from_system_id": "SYS-V9-NAVIGATION",
+      "to_system_id": "SYS-V9-GUILD-UI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-NAVIGATION-TO-GUILD-UI",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-GUILD-TO-GUILD-UI",
+      "from_system_id": "SYS-V9-GUILD",
+      "to_system_id": "SYS-V9-GUILD-UI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-GUILD-TO-GUILD-UI",
+      "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
+      "created_at": "2026-08-20T21:21:00+09:00",
+      "updated_at": "2026-08-20T21:21:00+09:00"
     }
   ],
   "system_flags": [
@@ -15583,6 +15935,45 @@
       },
       "actor": "AI",
       "created_at": "2026-08-20T21:17:00+09:00"
+    },
+    {
+      "id": "EVT-R28-OWNER-COVERAGE-001",
+      "type": "ORPHAN_SYSTEM_OWNER_SPECIFICATIONS_FILLED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "created_specification_ids": [
+          "SPEC-V9-019-ABANDON-001",
+          "SPEC-V9-019-BATTLE-CAMERA-001",
+          "SPEC-V9-019-COMBAT-HUD-001",
+          "SPEC-V9-019-BATTLE-RESULT-UI-001",
+          "SPEC-V9-019-GUILD-UI-001"
+        ],
+        "created_contract_ids": [
+          "CONTRACT-V9-ABANDON-TO-RUN",
+          "CONTRACT-V9-RUN-TO-ABANDON",
+          "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-CAMERA",
+          "CONTRACT-V9-ACCESSIBILITY-TO-BATTLE-CAMERA",
+          "CONTRACT-V9-BATTLE-TO-COMBAT-HUD",
+          "CONTRACT-V9-RESPONSIVE-UI-TO-COMBAT-HUD",
+          "CONTRACT-V9-BATTLE-PRESENTATION-TO-BATTLE-RESULT-UI",
+          "CONTRACT-V9-NAVIGATION-TO-GUILD-UI",
+          "CONTRACT-V9-GUILD-TO-GUILD-UI"
+        ],
+        "created_connection_ids": [
+          "CONN-V9-ABANDON-TO-RUN",
+          "CONN-V9-RUN-TO-ABANDON",
+          "CONN-V9-BATTLE-PRESENTATION-TO-BATTLE-CAMERA",
+          "CONN-V9-ACCESSIBILITY-TO-BATTLE-CAMERA",
+          "CONN-V9-BATTLE-TO-COMBAT-HUD",
+          "CONN-V9-RESPONSIVE-UI-TO-COMBAT-HUD",
+          "CONN-V9-BATTLE-PRESENTATION-TO-BATTLE-RESULT-UI",
+          "CONN-V9-NAVIGATION-TO-GUILD-UI",
+          "CONN-V9-GUILD-TO-GUILD-UI"
+        ]
+      },
+      "actor": "AI",
+      "created_at": "2026-08-20T21:21:00+09:00"
     }
   ],
   "system_impacts": [
