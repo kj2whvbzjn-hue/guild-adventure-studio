@@ -80,6 +80,7 @@ updateFixedCanvasScale();
 requestAnimationFrame(()=>requestAnimationFrame(()=>settleFixedCanvas(1000)));
 'use strict';
 const SAVE_KEY='guildAdventureV10.save.v3', SAVE_VERSION=3;
+const SAVE_TEMP_KEY=`${SAVE_KEY}.tmp`, SAVE_BACKUP_KEY=`${SAVE_KEY}.backup`, SAVE_INTEGRITY_ALGORITHM='FNV1A32';
 const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
 const FORMAL_JOB_EXPORT_URL=window.GA_PROJECT_CONFIG?.jobExportUrl||'../Export/master/jobs.json';
 const FORMAL_RUNTIME_SETTINGS_EXPORT_URL=window.GA_PROJECT_CONFIG?.adventureSettingsExportUrl||'../Export/system/adventure_settings.json';
@@ -337,9 +338,68 @@ function buildAutoSaveSnapshot(source){
  if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(staged);
  return window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(staged):clone(staged);
 }
+function savePayloadChecksum(payload){
+ let hash=0x811c9dc5;
+ for(let i=0;i<payload.length;i++){hash^=payload.charCodeAt(i);hash=Math.imul(hash,0x01000193)>>>0;}
+ return hash.toString(16).padStart(8,'0');
+}
+function validateSavePayload(payload){
+ if(typeof payload!=='string'||!payload.length)throw new Error('Save Integrity: payload is empty.');
+ let parsed;
+ try{parsed=JSON.parse(payload)}catch(error){throw new Error(`Save Integrity: JSON parse failed (${error?.message||error}).`)}
+ if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Save Integrity: root object is invalid.');
+ if(Number(parsed.saveVersion)!==SAVE_VERSION)throw new Error(`Save Integrity: saveVersion mismatch (${parsed.saveVersion}).`);
+ if(!Array.isArray(parsed.characters)||!Array.isArray(parsed.aiPrograms)||!Array.isArray(parsed.aiLayouts)||!Array.isArray(parsed.aiPresets))throw new Error('Save Integrity: required collections are invalid.');
+ if(window.GKGameAISaveBridge)GKGameAISaveBridge.assertCurrent(clone(parsed));
+ return parsed;
+}
+function buildSaveStageRecord(payload){
+ return JSON.stringify({schema_version:1,algorithm:SAVE_INTEGRITY_ALGORITHM,checksum:savePayloadChecksum(payload),payload});
+}
+function verifySaveStageRecord(raw){
+ let stage;
+ try{stage=JSON.parse(raw)}catch(error){throw new Error(`Save Integrity: stage parse failed (${error?.message||error}).`)}
+ if(!stage||stage.schema_version!==1||stage.algorithm!==SAVE_INTEGRITY_ALGORITHM||typeof stage.payload!=='string')throw new Error('Save Integrity: stage record is invalid.');
+ const actual=savePayloadChecksum(stage.payload);
+ if(stage.checksum!==actual)throw new Error(`Save Integrity: checksum mismatch (${stage.checksum||'missing'} != ${actual}).`);
+ validateSavePayload(stage.payload);
+ return stage.payload;
+}
+let saveCommitInProgress=false;
 function writeAutoSaveSnapshot(snapshot){
- localStorage.setItem(SAVE_KEY,JSON.stringify(snapshot));
- return snapshot;
+ if(saveCommitInProgress)throw new Error('Save commit is already in progress.');
+ saveCommitInProgress=true;
+ const payload=JSON.stringify(snapshot),previous=localStorage.getItem(SAVE_KEY),previousBackup=localStorage.getItem(SAVE_BACKUP_KEY);
+ let mainSwitched=false;
+ try{
+  const stageRecord=buildSaveStageRecord(payload);
+  localStorage.setItem(SAVE_TEMP_KEY,stageRecord);
+  const verifiedPayload=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));
+  if(verifiedPayload!==payload)throw new Error('Save Integrity: staged payload changed before commit.');
+  if(previous!==null){
+   validateSavePayload(previous);
+   localStorage.setItem(SAVE_BACKUP_KEY,previous);
+   if(localStorage.getItem(SAVE_BACKUP_KEY)!==previous)throw new Error('Save Integrity: backup verification failed.');
+  }
+  localStorage.setItem(SAVE_KEY,verifiedPayload);
+  mainSwitched=true;
+  const committed=localStorage.getItem(SAVE_KEY);
+  if(committed!==verifiedPayload)throw new Error('Save Integrity: committed payload verification failed.');
+  validateSavePayload(committed);
+  localStorage.removeItem(SAVE_TEMP_KEY);
+  return snapshot;
+ }catch(error){
+  if(mainSwitched){
+   try{
+    if(previous===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previous);
+   }catch(rollbackError){console.error('Save rollback failed',rollbackError);}
+  }
+  try{
+   if(previousBackup===null)localStorage.removeItem(SAVE_BACKUP_KEY);else localStorage.setItem(SAVE_BACKUP_KEY,previousBackup);
+  }catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError);}
+  try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
+  throw error;
+ }finally{saveCommitInProgress=false;}
 }
 function commitPersistentState(){
  const current=buildAutoSaveSnapshot(data);
@@ -350,10 +410,11 @@ function autoSave(){return commitPersistentState()}
 function loadAutoSave(){
  const raw=localStorage.getItem(SAVE_KEY);
  if(!raw)throw new Error('保存データがありません。');
+ validateSavePayload(raw);
  return normalize(JSON.parse(raw));
 }
 function hasAutoSave(){return localStorage.getItem(SAVE_KEY)!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
