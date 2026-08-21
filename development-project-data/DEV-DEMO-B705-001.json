@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T04:37:01.458Z"
+    "updated_at": "2026-08-21T04:39:58.924Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -215,6 +215,32 @@
       "approved_at": "",
       "created_at": "2026-08-21T13:25:00+09:00",
       "updated_at": "2026-08-21T13:25:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-MERGE-CONTRACT-001",
+      "title": "AI Development統合JSON契約 v1",
+      "status": "Verified",
+      "summary": "AI作業結果を既存Development JSON統合窓口へ安全に投入するため、既存Recordは完全形で更新し、Development更新だけではSource ZIP/manifestを生成しない契約を確定した。",
+      "body": "AI作業結果を既存の「現在案件へJSONを統合」へ安全に投入するためのDevelopment統合JSON契約 v1を確定する。\n\n【基本方針】\n専用AI_WORK_REPORT schemaや別取込窓口は新設しない。\nAIはDevelopment Project schemaに準拠した「統合可能JSON」を作業結果として返す。\n\n【必須トップレベル】\n- schema_version: 現行schemaと一致させる。\n- workspace.id: 作業対象案件IDと完全一致させる。\n\nworkspace.nameはAIが変更しない。\n案件IDが一致しない場合は出力せずFail Closedとする。\n\n【既存ID付きRecordをUPDATEする場合】\n現行mergeはfield patchではなくRecord全体置換なので、AIは更新対象Recordの「完全形」を返す。\n省略フィールドを推測・初期値化してはならない。作業開始時に受領したDevelopment JSONの既存Recordを基準に、変更対象フィールドだけを書き換えた完全Recordを出力する。\n\n対象例:\ntasks / checks / specifications / decisions / discussions / work_boxes /\narchitecture_nodes / implementation_records / project_rules その他ID付き配列。\n\n【新規RecordをADDする場合】\n現行schemaで必須となる全フィールドと参照整合性を満たす完全Recordを返す。\nArchitecture → Work Box → Task等の参照先が存在しない新規Recordを出力しない。\n\n【ObjectをUPDATEする場合】\nproject_context / current_focus / source_baseline / lifecycle / workflow はObject全体置換となるため、更新する場合はObjectの完全形を返す。\n変更不要ならkey自体を出力しない。\n\n【history】\n作業結果の履歴を1件以上追記する。\n既存history全体を返す必要はない。新規履歴のみを返す。\n同一履歴の重複出力を避ける。\n\n【Task結果】\n実行したTaskを更新する場合はTask完全Recordを返す。\nDoneにできるのはAcceptance Criteria、必要Gate/Check、Human Approval等の完了条件を満たした場合のみ。\n未達ならDoingまたはBlockedを保持する。\n\n【Check / Evidence】\n作業の検証結果はchecksへ記録する。\n新規Checkは完全Recordで追加し、target_idは実在対象を参照する。\nテストやGateを実施していないのにPassedを出力してはならない。\n\n【Implementation Record】\nSourceまたはGame実装を実際に変更した場合はimplementation_recordsへ記録する。\n変更していない場合は作成しない。\n\n【Source ZIPとの分離】\nDevelopment統合JSONの生成・統合だけを理由にSource ZIPやpackage_manifest.jsonを生成・変更しない。\nSource変更がTaskで必要な場合のみ、AI_STARTで定義されるSource更新経路に従う。\n\n【禁止事項】\n- 既存Recordを{id,status}等の部分Recordで更新すること。\n- Importに含めない既存Recordを削除対象と解釈すること。\n- 不明な値を推測して埋めること。\n- workspace.id/nameを別案件値へ変更すること。\n- Gate/Test/Approvalを実施せず成功扱いすること。\n- Development JSON更新だけのためにSource ZIPやmanifestを生成すること。\n\n【出力前検証】\n1. workspace.id一致。\n2. 更新する既存Recordは受領時Recordの全fieldを保持。\n3. 新規Recordの必須fieldと参照整合性。\n4. Object更新は完全Object。\n5. Task完了条件。\n6. Check evidenceの実在性。\n7. Source変更有無とimplementation_record/ZIP生成有無の整合。\n1項目でも確認できなければFail Closedで不足情報を報告する。\n\n【将来schema拡張への対応】\nTaskへexecution_order / depends_on / acceptance_criteria / work_type / approval等が追加された後も、完全Record更新方式を維持することで未知の既存field消失を防ぐ。\nStudio側が将来明示的patch semanticsを導入する場合は、この契約をrevisionしてからpatch形式を許可する。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-002",
+        "DEC-AI-PIPELINE-003"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001",
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-SEMANTICS-001"
+      ],
+      "acceptance_criteria": "既存Record完全形更新、Object完全形更新、新規Record参照整合、history追記、Task/Check/Implementation Recordの扱い、Development更新とSource ZIP/manifestの分離、Fail Closed条件が明文化されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:38:00+09:00",
+      "updated_at": "2026-08-21T13:38:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -317,9 +343,9 @@
       "id": "TASK-AI-PIPELINE-040",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "040 Development統合JSONの正式契約を確定する",
-      "status": "Todo",
+      "status": "Done",
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T13:38:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-050",
@@ -396,6 +422,20 @@
       "checked_at": "2026-08-21T13:25:00+09:00",
       "created_at": "2026-08-21T13:25:00+09:00",
       "updated_at": "2026-08-21T13:25:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-040",
+      "title": "TASK-AI-PIPELINE-040 Development統合JSON契約確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-040",
+      "status": "Passed",
+      "result": "TASK-030で確定したfull replacement semanticsを前提に、AI統合JSONの安全な正式契約v1を確定した。既存Record更新は完全形、Object更新は完全形、Development更新だけではSource ZIP/manifestを生成しない。",
+      "evidence": "SPEC-AI-PIPELINE-MERGE-SEMANTICS-001および現在案件のTASK-AI-PIPELINE-030=Doneを前提に契約を定義。",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:38:00+09:00",
+      "created_at": "2026-08-21T13:38:00+09:00",
+      "updated_at": "2026-08-21T13:38:00+09:00"
     }
   ],
   "workflow": {
@@ -466,6 +506,14 @@
     },
     {
       "at": "2026-08-21T04:37:01.458Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:38:00+09:00",
+      "message": "TASK-AI-PIPELINE-040 completed: AI Development統合JSON契約v1を確定。既存Record/Objectは完全形で更新し、Development更新のみではSource ZIP/manifestを生成しない。次工程: TASK-AI-PIPELINE-050。"
+    },
+    {
+      "at": "2026-08-21T04:39:58.924Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
     }
   ]
