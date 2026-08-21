@@ -326,25 +326,34 @@ function normalize(raw){
  raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.211';
  return raw;
 }
-function autoSave(){
- data.saveVersion=SAVE_VERSION;
- data.characters.forEach(normalizeCharacterEquipmentState);
- data.aiPrograms=Array.isArray(data.aiPrograms)?data.aiPrograms:[];
- data.aiLayouts=Array.isArray(data.aiLayouts)?data.aiLayouts:[];
- data.aiPresets=Array.isArray(data.aiPresets)?data.aiPresets:[];
- data.updatedAt=new Date().toISOString();
- if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(data);
- const current=window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(data):clone(data);
- localStorage.setItem(SAVE_KEY,JSON.stringify(current));
- data=current;
+function buildAutoSaveSnapshot(source){
+ const staged=source;
+ staged.saveVersion=SAVE_VERSION;
+ staged.characters.forEach(normalizeCharacterEquipmentState);
+ staged.aiPrograms=Array.isArray(staged.aiPrograms)?staged.aiPrograms:[];
+ staged.aiLayouts=Array.isArray(staged.aiLayouts)?staged.aiLayouts:[];
+ staged.aiPresets=Array.isArray(staged.aiPresets)?staged.aiPresets:[];
+ staged.updatedAt=new Date().toISOString();
+ if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(staged);
+ return window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(staged):clone(staged);
 }
+function writeAutoSaveSnapshot(snapshot){
+ localStorage.setItem(SAVE_KEY,JSON.stringify(snapshot));
+ return snapshot;
+}
+function commitPersistentState(){
+ const current=buildAutoSaveSnapshot(data);
+ data=writeAutoSaveSnapshot(current);
+ return data;
+}
+function autoSave(){return commitPersistentState()}
 function loadAutoSave(){
  const raw=localStorage.getItem(SAVE_KEY);
  if(!raw)throw new Error('保存データがありません。');
  return normalize(JSON.parse(raw));
 }
 function hasAutoSave(){return localStorage.getItem(SAVE_KEY)!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,hasSave:hasAutoSave,load:loadAutoSave,autoSave});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
