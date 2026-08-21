@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T11:34:20.892Z"
+    "updated_at": "2026-08-21T11:47:00.968Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -149,6 +149,20 @@
       "result": "Applied",
       "evidence": "",
       "recorded_at": "2026-08-21T06:35:46.538Z"
+    },
+    {
+      "id": "IMPL-R30-002",
+      "studio_build": "GKS-B718",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-002"
+      ],
+      "result": "Applied",
+      "evidence": "Atomic Save staging + FNV1A32 integrity verification + previous-good backup + serialized commit guard + rollback. Quick 11/11 PASS sha256=b1ee69211a5faf849efb4ee1ab94f21e2bbe49f47037d7e227488530eb9fffa6; Accept 13/13 PASS sha256=29f8d0d61792ef77e3f5c7fb0329989a3e7f2873313787229f85f3e07d6015aa; Release 13/13 PASS sha256=84cb6b98069da5668080355de709c2de25d71f64dc5a5e69b667a5e6f539ef2e; targeted save atomic test 4/4 PASS.",
+      "recorded_at": "2026-08-21T20:42:44+09:00"
     }
   ],
   "discussions": [
@@ -8262,6 +8276,34 @@
       "checked_at": "2026-08-21T20:16:00+09:00",
       "created_at": "2026-08-21T20:16:00+09:00",
       "updated_at": "2026-08-21T20:16:00+09:00"
+    },
+    {
+      "id": "CHK-R30-002-IMPLEMENTATION",
+      "title": "TASK-R30-002 Atomic Save / Backup / Integrity verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-002",
+      "status": "Passed",
+      "result": "一時保存→Integrity確認→本保存切替、直前正常SaveのBackup、commit直列化、Integrity失敗時の本保存非切替/rollbackを実装し、Domain意味とMigration責務は変更していない。",
+      "evidence": "game/assets/js/app-runtime.js; targeted Node test TASK_R30_002_SAVE_ATOMIC_OK cases=4",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T20:42:44+09:00",
+      "created_at": "2026-08-21T20:42:44+09:00",
+      "updated_at": "2026-08-21T20:42:44+09:00"
+    },
+    {
+      "id": "CHK-R30-002-GATES",
+      "title": "TASK-R30-002 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-002",
+      "status": "Passed",
+      "result": "Quick/Accept/ReleaseすべてPASS。Accept/Releaseはbaseline GKS-B717完全Source ZIPを明示し、適用後完成ツリーを検査。warnings=0 timeouts=0。",
+      "evidence": "Quick evidence_sha256=b1ee69211a5faf849efb4ee1ab94f21e2bbe49f47037d7e227488530eb9fffa6; Accept=29f8d0d61792ef77e3f5c7fb0329989a3e7f2873313787229f85f3e07d6015aa; Release=84cb6b98069da5668080355de709c2de25d71f64dc5a5e69b667a5e6f539ef2e; artifact_id=GKS-B718-1d65a52ba82d",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T20:42:44+09:00",
+      "created_at": "2026-08-21T20:42:44+09:00",
+      "updated_at": "2026-08-21T20:42:44+09:00"
     }
   ],
   "workflow": {
@@ -8574,6 +8616,14 @@
     {
       "at": "2026-08-21T11:34:20.892Z",
       "message": "Development Workspace JSON merged: add=2 update=2 delete=0"
+    },
+    {
+      "at": "2026-08-21T20:42:44+09:00",
+      "message": "AI_START実行: TASK-R30-002のみSOURCE_UPDATE。Atomic Save staging / Integrity / previous-good backup / serialized commit / rollbackを実装。GKS-B718へ更新しQuick 11/11、Accept 13/13、Release 13/13、targeted 4/4 PASS。TaskはAwaitingHumanApplyで停止し、TASK-R30-003には未着手。"
+    },
+    {
+      "at": "2026-08-21T11:47:00.968Z",
+      "message": "Development Workspace JSON merged: add=4 update=0 delete=0"
     }
   ],
   "specification_candidates": [
