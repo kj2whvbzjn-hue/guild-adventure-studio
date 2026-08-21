@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T01:53:59.312Z"
+    "updated_at": "2026-08-21T02:53:48.309Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -76,6 +76,19 @@
       "artifact_note": "",
       "created_at": "2026-08-21T10:37:00+09:00",
       "updated_at": "2026-08-21T10:37:00+09:00"
+    },
+    {
+      "id": "DISC-AI-PIPELINE-001",
+      "title": "AI_START起点のゲーム制作パイプライン実装計画",
+      "status": "Open",
+      "summary": "Studio・Game・工程管理を分離した正本として扱い、Source ZIPと必要データを渡して「AI_STARTから読んで作業開始」と指示するだけで、Task選択・実装・Gate・更新ZIP・工程管理統合JSON生成まで成立する仕組みを構築する。",
+      "body": "実装順序:\n1. 現行Development JSON schemaを確定する。\n2. 次の実行可能Taskを機械的に決める規則を確定する。\n3. 現在案件へJSON統合のmerge semanticsを検証する。\n4. Development統合JSONの正式契約を決める。\n5. work_typeによるStudio/Game/Development作業経路を確定する。\n6. AI_START Execution Protocolを正式導入する。\n7. 1実行1Task、Acceptance Criteria、Human Approvalなどの終了条件を固定する。\n8. 実案件でEnd-to-End往復テストを実施する。\n\n必要資料:\n- 最新の正常な完全Source ZIP\n- 実運用対象のDevelopment JSON 1件\n- 現在案件へJSON統合の実装を含むSource（完全Source ZIPに含まれていれば別資料不要）",
+      "open_questions": "Task順序・依存関係を現行schemaのどのフィールドで表現するか。 部分Task JSON統合時に既存フィールドが保持されるか。 work_typeの既存定義が存在するか。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "AI_START_development_pipeline_package.zip の実装計画を工程管理へ登録",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
     }
   ],
   "decisions": [
@@ -92,6 +105,48 @@
       "approved_at": "",
       "created_at": "2026-08-21T10:37:00+09:00",
       "updated_at": "2026-08-21T10:37:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-001",
+      "title": "AI_STARTを唯一の作業入口にする",
+      "status": "Proposed",
+      "text": "Studioは作業方法、Development JSONは工程とTask、Gameは実装状態の正本とし、AI_STARTを唯一の入口として各正本を辿る。",
+      "rationale": "ユーザー指示を「AI_STARTから読んで作業開始」に統一し、毎回の手順説明を不要にするため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-002",
+      "title": "AI作業報告は既存Development JSON統合形式で返す",
+      "status": "Proposed",
+      "text": "専用AI_WORK_REPORT schemaは作らず、現在案件へそのまま統合できるDevelopment JSON差分として作業結果を返す。",
+      "rationale": "新しい取込窓口を増やさず、既存の「現在案件へJSONを統合」を再利用するため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-003",
+      "title": "初期運用は1回のAI実行につき1Task",
+      "status": "Proposed",
+      "text": "初期運用ではAIが1回の実行で処理するTaskを1件に限定し、Acceptance Criteriaと必要なHuman Approvalを満たした場合のみDoneにする。",
+      "rationale": "工程の暴走と複数Taskの不透明な一括変更を防止するため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
     }
   ],
   "specifications": [],
@@ -135,6 +190,14 @@
     {
       "at": "2026-08-21T01:53:59.312Z",
       "message": "Development Workspace JSON merged: add=4 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-21T10:55:00+09:00",
+      "message": "AI_START起点のゲーム制作パイプライン実装計画を登録。実装順序は TASK-AI-PIPELINE-010 → 020 → 030 → 040 → 050 → 060 → 070 → 080。"
+    },
+    {
+      "at": "2026-08-21T02:53:48.309Z",
+      "message": "Development Workspace JSON merged: add=5 update=0 delete=0"
     }
   ]
 }
