@@ -1,4 +1,4 @@
-/* GKS-B722 Development Git Store
+/* GKS-B723 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -93,7 +93,7 @@ function responseBlobSha(res){
  return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
 }
 async function remoteFile(c,{requireSha=false}={}){
- // GKS-B722: one authenticated raw Contents request is the normal read path.
+ // GKS-B723: one authenticated raw Contents request is the normal read path.
  // The same response supplies Project JSON and, when GitHub exposes the blob ETag, the blob SHA.
  const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
  if(res.status===404)return {exists:false,sha:'',size:0,raw:''};
@@ -246,7 +246,7 @@ async function openFromGit(options={}){
  finally{setBusy(false);render();}
 }
 async function refreshRegistry(entries=[]){
- // GKS-B722: project-list rendering must not fan out GitHub API requests.
+ // GKS-B723: project-list rendering must not fan out GitHub API requests.
  // Git registry is a cache and remains unverified until an explicit Open / Remote reload / save flow.
  // This prevents one list render from consuming one or more API calls per project and triggering
  // shared-IP unauthenticated rate limits. Unverified Git projects are excluded from in-progress lists.

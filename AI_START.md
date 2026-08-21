@@ -270,6 +270,8 @@ AIの作業報告専用schemaや専用取込窓口は新設しない。作業結
 - 新規Recordは必須fieldと参照整合性を満たす完全Recordとして追加する。
 - `history`には今回の作業結果を1件以上追記する。
 - 実施した検査は`checks`へ実際の結果とevidenceを記録する。未実施検査を`Passed`にしない。
+- 既存の`Failed` Checkの原因をCorrectionで解消した場合、元の`status: Failed`は履歴として書き換えず、解消を確認した`Passed`または`Waived` Checkの`resolves_check_ids`へ対象Check IDを必ず列挙する。Studioはこの関係を機械的に解決状態へ反映し、元FailedをCurrent Gateのblocking対象から外す。
+- `resolves_check_ids`で参照したCorrection Checkが`Passed`/`Waived`でなくなった場合、Studioは自動解決を解除して元Failedを再びblocking対象に戻す。人間に過去Checkの手動書換えを要求しない。
 - Source / Game実装を変更した場合は`implementation_records`を追加する。変更していない場合は作成しない。
 - Development JSONの生成・統合だけを理由にSource ZIPや`package_manifest.json`を生成・変更しない。
 - 値を安全に確定できない場合は推測せずFail Closedで不足情報を報告する。

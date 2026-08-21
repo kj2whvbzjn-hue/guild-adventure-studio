@@ -29,6 +29,9 @@ function deepRedact(value){
  return out;
 }
 function workflowStage(w){return String(w?.workflow?.stage||w?.workspace?.status||'')}
+function resolvedCheckStatus(status){return status==='Passed'||status==='Waived'}
+function resolvedFailedCheck(c){return String(c?.status||'')==='Failed'&&c?.resolution?.status==='Resolved'}
+function unresolvedCheck(c){const status=String(c?.status||'Pending');return status==='Pending'||(status==='Failed'&&!resolvedFailedCheck(c))}
 function openQuestions(w){
  const rows=[];
  for(const d of w?.discussions||[]){
@@ -41,8 +44,8 @@ function summarizeProject(w){
  const tasks=Array.isArray(w?.tasks)?w.tasks:[];
  const discussions=Array.isArray(w?.discussions)?w.discussions:[];
  const oq=openQuestions(w);
- const pendingChecks=checks.filter(x=>['Pending','Failed'].includes(String(x?.status||'Pending')));
- const failedChecks=checks.filter(x=>String(x?.status||'')==='Failed');
+ const pendingChecks=checks.filter(unresolvedCheck);
+ const failedChecks=checks.filter(x=>String(x?.status||'')==='Failed'&&!resolvedFailedCheck(x));
  const openTasks=tasks.filter(x=>String(x?.status||'Todo')!=='Done');
  const openDiscussions=discussions.filter(x=>['Open','Pending'].includes(String(x?.status||'Open')));
  const pendingDiscussions=discussions.filter(x=>String(x?.status||'')==='Pending');
@@ -222,7 +225,7 @@ function buildRootGatewayData(dataset){
  const projects=[];
  for(const sourceSummary of dataset.pending){
   const detail=detailById.get(String(sourceSummary.id||'')),project=detail?.project||{};
-  const pendingChecks=(project.checks||[]).filter(x=>['Pending','Failed'].includes(String(x?.status||'Pending'))).map(x=>deepRedact(x));
+  const pendingChecks=(project.checks||[]).filter(unresolvedCheck).map(x=>deepRedact(x));
   const targetIds={Architecture:new Set(),WorkBox:new Set(),Task:new Set(),Discussion:new Set()};
   for(const check of pendingChecks){const type=String(check.target_type||''),id=String(check.target_id||'');if(targetIds[type]&&id)targetIds[type].add(id)}
   const openDiscussionIds=new Set((sourceSummary.open_discussions||[]).map(x=>String(x.id||'')));
