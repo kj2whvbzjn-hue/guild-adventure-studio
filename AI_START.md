@@ -183,3 +183,105 @@ Gameデータの「除外」はGitHubファイル物理削除とは別概念だ�
 - 実機確認結果（該当する場合）
 - 未解決事項または判断保留事項
 - 最終成果物と、それぞれの用途・配置経路
+
+## 12. Development Project Execution Protocol
+
+Development Projectを使う作業では、本章を通常の作業憲章に追加して適用する。目的は、ユーザーが完全Source ZIPと必要なDevelopment Projectデータを与え、**「AI_STARTから読んで作業開始」**と指示するだけで、安全に1回分の作業を開始・完了報告できるようにすることである。
+
+### 12.1 正本の分離
+
+- `AI_START.md`と運用文書は「どう作業するか」の正本である。
+- Development Project JSONは「何を、どの順序・依存関係・承認状態で作業するか」の正本である。
+- Source / Game実ファイルは「現在どう実装されているか」の正本である。
+- AIはDevelopment Projectに存在しないTaskを推測で作成・実行せず、既存Taskの順序や依存関係を独自判断で変更しない。
+
+### 12.2 対象Development Projectの決定
+
+1. ユーザーがProject IDまたはDevelopment Project JSONを明示した場合はそれを使用する。
+2. 完全Source内のDevelopment Projectが1件だけであれば、その案件を対象候補にできる。
+3. 複数案件があり対象を一意に決定できない場合は、勝手に選ばず確認を求める。
+4. `workspace.ai_attention`が`Exclude`の案件は自動実行対象にしない。
+5. `lifecycle.status`が`Active`でない案件は自動実行対象にしない。
+
+### 12.3 Development Task work_type
+
+Development Taskの`work_type`は初期正式仕様として次の3種類だけを使用する。
+
+- `DEVELOPMENT_ONLY`: Development Projectの工程・仕様・Decision・Task・Check・History等だけを更新する。
+- `GAME_DATA`: Gameデータ領域だけを変更する。既存の`GAME_DATA_UPDATE`手順へ対応付ける。
+- `SOURCE_UPDATE`: Studio / Gameプログラム本体、AI_START、運用文書、検査基盤等のSource packageを変更する。既存の`SOURCE_UPDATE`手順を使用する。
+
+1つのDevelopment Taskで複数領域を混在させない。作業中に別work_typeが必要と判明した場合は、そのTaskを安全な状態で停止し、Task分割案をDevelopment統合JSONへ記録する。既存の`HYBRID`作業種別はDevelopment Task外の明示作業では維持するが、Development Taskの自動実行には使用しない。
+
+### 12.4 実行可能Taskの選択
+
+正式運用では、Taskは次の条件をすべて満たす場合だけ実行可能とする。
+
+- `status`が`Todo`または`Doing`
+- `box_id`が実在するWork Boxを参照する
+- Work Boxの`node_id`が実在するArchitecture Nodeを参照する
+- `depends_on`に列挙されたTaskがすべて`Done`
+- `requires_human_approval=true`の場合、Task単位承認が`Approved`
+- `work_type`が12.3の正式値のいずれか
+- 対象案件がActiveで、AI実行対象から除外されていない
+- workflowの段階がそのTaskの実行を禁止していない
+
+複数Taskが実行可能な場合は`execution_order`昇順、次にTask ID辞書順で決める。一意に判断できない場合はFail Closedで停止する。
+
+**現行Development schemaに上記実行メタデータが存在しない案件を、AIが一般則で自動実行してはならない。** ユーザーがTaskを明示した場合、または案件内に人間承認済みの一意な暫定順序が明記されている場合だけ、その明示情報を使用できる。schema対応後は暫定順序へ依存しない。
+
+### 12.5 1回の実行範囲
+
+初期運用では、1回のAI作業で実行するDevelopment Taskは原則1件とする。
+
+- 選択Taskを完了しても次Taskへ自動連続着手しない。
+- Acceptance Criteria、必要Gate / Check、必要Human Approvalを確認できないTaskを`Done`にしない。
+- 未完了条件がある場合は`Doing`または`Blocked`として結果を返す。
+- Gate / Test / Security条件をTask完了のために弱体化しない。
+
+### 12.6 work_typeごとの成果物
+
+`DEVELOPMENT_ONLY`:
+- Development統合JSONを必須成果物とする。
+- Source更新ZIP、Game成果物、Build更新、`package_manifest.json`変更を行わない。
+
+`GAME_DATA`:
+- 既存`GAME_DATA_UPDATE`のProject JSON / Gameデータ配置手順を使用する。
+- Development統合JSONも必ず返す。
+- Studio Source更新ZIPへGameデータを混在させない。
+
+`SOURCE_UPDATE`:
+- 本書の既存`SOURCE_UPDATE`手順で直接Studio更新ZIPを作成する。
+- Development統合JSONも必ず返す。
+- SourceまたはGame実装を変更した場合はDevelopment Projectの`implementation_records`へBuild、対象Task、検査証跡を記録する。
+
+### 12.7 Development統合JSON契約
+
+AIの作業報告専用schemaや専用取込窓口は新設しない。作業結果は、Studioの**「現在案件へJSONを統合」へ直接投入できるDevelopment Project JSON**として返す。
+
+必須規則:
+
+- `schema_version`は対象Development Projectの現行schemaに合わせる。
+- `workspace.id`は作業対象案件と完全一致させる。
+- 既存ID付きRecordを更新する場合は、作業開始時に受領したRecordを基準として**完全なRecord**を返す。`{id,status}`等の部分Recordで既存Recordを更新しない。
+- `project_context` / `current_focus` / `source_baseline` / `lifecycle` / `workflow`を更新する場合も完全Objectを返す。変更不要ならkey自体を出力しない。
+- 新規Recordは必須fieldと参照整合性を満たす完全Recordとして追加する。
+- `history`には今回の作業結果を1件以上追記する。
+- 実施した検査は`checks`へ実際の結果とevidenceを記録する。未実施検査を`Passed`にしない。
+- Source / Game実装を変更した場合は`implementation_records`を追加する。変更していない場合は作成しない。
+- Development JSONの生成・統合だけを理由にSource ZIPや`package_manifest.json`を生成・変更しない。
+- 値を安全に確定できない場合は推測せずFail Closedで不足情報を報告する。
+
+現在の「現在案件へJSONを統合」はID単位additive upsertであり、既存IDの更新はfield patchではなくRecord全体置換として扱う。この前提が変更された場合は、本契約を先に改訂してから新しい出力形式を使用する。
+
+### 12.8 Development Task完了報告
+
+Development Taskを実行した完了報告では、通常の11章に加えて次を明示する。
+
+- 対象Development Project ID
+- 実行したTask ID / work_type
+- Taskの最終status
+- Acceptance Criteriaの確認結果
+- Development統合JSONのファイル名とStudioでの取込経路
+- 次のTaskへ自動着手していないこと
+
