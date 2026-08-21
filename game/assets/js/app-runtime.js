@@ -80,7 +80,7 @@ updateFixedCanvasScale();
 requestAnimationFrame(()=>requestAnimationFrame(()=>settleFixedCanvas(1000)));
 'use strict';
 const SAVE_KEY='guildAdventureV10.save.v3', SAVE_VERSION=3;
-const SAVE_TEMP_KEY=`${SAVE_KEY}.tmp`, SAVE_BACKUP_KEY=`${SAVE_KEY}.backup`, SAVE_INTEGRITY_ALGORITHM='FNV1A32';
+const SAVE_TEMP_KEY=`${SAVE_KEY}.tmp`, SAVE_BACKUP_KEY=`${SAVE_KEY}.backup`, SAVE_MIGRATION_BACKUP_KEY=`${SAVE_KEY}.migration-backup`, SAVE_INTEGRITY_ALGORITHM='FNV1A32';
 const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
 const FORMAL_JOB_EXPORT_URL=window.GA_PROJECT_CONFIG?.jobExportUrl||'../Export/master/jobs.json';
 const FORMAL_RUNTIME_SETTINGS_EXPORT_URL=window.GA_PROJECT_CONFIG?.adventureSettingsExportUrl||'../Export/system/adventure_settings.json';
@@ -407,14 +407,64 @@ function commitPersistentState(){
  return data;
 }
 function autoSave(){return commitPersistentState()}
+function parseSaveRoot(raw){
+ if(typeof raw!=='string'||!raw.length)throw new Error('Save Migration: payload is empty.');
+ let parsed;try{parsed=JSON.parse(raw)}catch(error){throw new Error(`Save Migration: JSON parse failed (${error?.message||error}).`)}
+ if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Save Migration: root object is invalid.');
+ if(!Number.isInteger(Number(parsed.saveVersion)))throw new Error('Save Migration: saveVersion is invalid.');
+ return parsed;
+}
+function migrateSaveV2ToV3(source){
+ const next=clone(source);next.saveVersion=SAVE_VERSION;
+ // v2→v3 is intentionally narrow: no missing/unknown field is synthesized or discarded.
+ // The current strict schema must accept the converted payload before it can be committed.
+ return next;
+}
+const SAVE_MIGRATIONS=Object.freeze({2:migrateSaveV2ToV3});
+function migrateSaveToCurrent(raw){
+ const source=parseSaveRoot(raw),fromVersion=Number(source.saveVersion);
+ if(fromVersion===SAVE_VERSION){validateSavePayload(raw);return{migrated:false,save:normalize(source),fromVersion,toVersion:SAVE_VERSION};}
+ let current=source,version=fromVersion;
+ while(version!==SAVE_VERSION){
+  const migrate=SAVE_MIGRATIONS[version];
+  if(typeof migrate!=='function')throw new Error(`Save Migration: Version ${version} から ${SAVE_VERSION} への対応Migrationがありません。`);
+  const next=migrate(current),nextVersion=Number(next?.saveVersion);
+  if(!Number.isInteger(nextVersion)||nextVersion<=version)throw new Error(`Save Migration: Version ${version} の変換結果が不正です。`);
+  current=next;version=nextVersion;
+ }
+ const migratedPayload=JSON.stringify(current);validateSavePayload(migratedPayload);
+ return{migrated:true,save:normalize(current),fromVersion,toVersion:SAVE_VERSION,migratedPayload};
+}
+function commitMigratedSave(raw,result){
+ if(!result?.migrated)return result?.save;
+ const previousMigrationBackup=localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY);
+ try{
+  localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,raw);
+  if(localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY)!==raw)throw new Error('Save Migration: pre-migration backup verification failed.');
+  const current=buildAutoSaveSnapshot(result.save),payload=JSON.stringify(current),stageRecord=buildSaveStageRecord(payload);
+  localStorage.setItem(SAVE_TEMP_KEY,stageRecord);
+  const verifiedPayload=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));
+  if(verifiedPayload!==payload)throw new Error('Save Migration: staged payload changed before commit.');
+  localStorage.setItem(SAVE_KEY,verifiedPayload);
+  if(localStorage.getItem(SAVE_KEY)!==verifiedPayload)throw new Error('Save Migration: committed payload verification failed.');
+  validateSavePayload(localStorage.getItem(SAVE_KEY));
+  localStorage.removeItem(SAVE_TEMP_KEY);
+  return current;
+ }catch(error){
+  try{localStorage.setItem(SAVE_KEY,raw)}catch(rollbackError){console.error('Save migration rollback failed',rollbackError);}
+  try{if(previousMigrationBackup===null)localStorage.removeItem(SAVE_MIGRATION_BACKUP_KEY);else localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,previousMigrationBackup)}catch(backupRollbackError){console.error('Save migration backup rollback failed',backupRollbackError);}
+  try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
+  throw error;
+ }
+}
 function loadAutoSave(){
  const raw=localStorage.getItem(SAVE_KEY);
  if(!raw)throw new Error('保存データがありません。');
- validateSavePayload(raw);
- return normalize(JSON.parse(raw));
+ const result=migrateSaveToCurrent(raw);
+ return result.migrated?commitMigratedSave(raw,result):result.save;
 }
 function hasAutoSave(){return localStorage.getItem(SAVE_KEY)!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
