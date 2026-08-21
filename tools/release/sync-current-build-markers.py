@@ -6,8 +6,6 @@ FILES = [
     'assets/shared/config/runtime-config.js',
     'game/index.html','game/sw.js','studio/index.html','studio/sw.js',
     'studio/development-git-store/development-git-store.js',
-    'studio/development-source-package/development-source-package.js',
-    'studio/development-source-package/source-fallback-files.json',
 ]
 TEST_GLOBS = ['tests/*.js']
 
