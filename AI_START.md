@@ -147,7 +147,7 @@ Gameデータの「除外」はGitHubファイル物理削除とは別概念だ�
 
 `SOURCE_UPDATE`:
 
-- Buildを進めるSOURCE_UPDATEでは、`python3 -S -B tools/release/sync-current-build-tokens.py --write`を`package_manifest.json`再生成前に実行し、current Build assertion/cache tokenを`package-build.json`へ同期する。Release Gateは同toolの`--check`でdriftをFAILにする
+- Buildを進めるSOURCE_UPDATEでは、`python3 -S -B tools/release/sync-current-build-markers.py --write`を`package_manifest.json`再生成前に実行し、current Build assertion/cache tokenを`package-build.json`へ同期する。Release Gateは同toolの`--check`でdriftをFAILにする
 - `package_manifest.json`が実体へ同期している
 - `SOURCE_UPDATE`はQuickと`accept --context update`に合格し、Impact判定がFullを要求した場合は適用後完成ツリーのFullにも合格している
 - 更新Gateには`--baseline-source`または`--baseline-zip`で基準ソースを明示し、`studio-update.json:baseline_source`のBuild / manifest SHA-256 / source tree SHA-256と一致している
