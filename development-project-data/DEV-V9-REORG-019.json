@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T12:41:45.291Z"
+    "updated_at": "2026-08-21T12:49:36.306Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -188,9 +188,9 @@
       "task_ids": [
         "TASK-R30-003"
       ],
-      "result": "Partial",
-      "evidence": "Correction artifact GKS-B720-7683856709a5. Load rejects state that would require implicit Domain normalization, Current Schema validator is mandatory, save.v2 legacy slot is discoverable without deleting the legacy source, and migration rollback restores prior Current slot state. Targeted 7/7 PASS; Quick 11/11 PASS evidence_sha256=4aded29d16659255fc496debd74d2f3ef177da1750d834c1cf0eb84b9aa9eb23; Accept 13/13 PASS evidence_sha256=6f33cc10922db8202db2b8861277c7a8700572c6199788663a441604b4b40afb; Release 13/13 PASS evidence_sha256=35537818aeaaadd5a24ee7d82938e5f85732f1b2d785453b8bdccae93c7d08c2; update ZIP sha256=beee24506844c9b0e7b1912024c2e8717a3ca74161257f7085dcae6024a1656c. Human Apply verification pending.",
-      "recorded_at": "2026-08-21T21:34:10+09:00"
+      "result": "Applied",
+      "evidence": "Correction artifact GKS-B720-7683856709a5 was Human-applied and verified in Current Source. Current package-build.json=GKS-B720 / GA-B486.211; package_manifest SHA-256=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945; B720 update artifact contents match Current Source 634/634 files with 0 missing and 0 hash differences; Current Quick 11/11 PASS evidence_sha256=cd7ff370dd682882529f4186940ef50c8519c86276d2f6aa36651e731a89a50d; game-save-hard-cut-v3 PASS (current_valid=1 invalid_reject=1 unknown_field_reject=1). The correction keeps strict Current Save Schema validation, rejects implicit Domain normalization on Load, discovers legacy save.v2 without deleting the source slot, and preserves migration rollback. Source deletions=0; Game data changes/exclusions=0.",
+      "recorded_at": "2026-08-21T21:48:41+09:00"
     }
   ],
   "discussions": [
@@ -5719,7 +5719,7 @@
       "id": "TASK-R30-003",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save Version MigrationとLoad拒否条件を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 1030,
       "depends_on": [
         "TASK-R30-002"
@@ -5733,13 +5733,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T21:16:00+09:00"
+      "updated_at": "2026-08-21T21:48:41+09:00"
     },
     {
       "id": "TASK-R30-004",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Character / Guild / ProgressionのSave接続を実装する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 1040,
       "depends_on": [
         "TASK-R30-003"
@@ -5753,7 +5753,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T15:05:00+09:00"
+      "updated_at": "2026-08-21T21:48:41+09:00"
     },
     {
       "id": "TASK-R30-005",
@@ -8353,13 +8353,13 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-R30-003",
-      "status": "Failed",
-      "result": "B719実装はVersion 2→3 Migration/Backup/Integrity/rollback自体は存在するが、Current LoadがDomain normalizerによる暗黙補正後も継続でき、legacy save.v2 Slotも探索しないため、Acceptance Criteria「不正Dataを黙って初期値化して継続しない」を完全には満たさないことをHuman反映後再監査で確認した。",
-      "evidence": "Current Source GKS-B719 game/assets/js/app-runtime.js: validateSavePayload→normalize path; normalize() defaults/filters guild/party/inventory/quest/adventure state. Current Quick 11/11 PASS but semantic acceptance is incomplete.",
+      "status": "Passed",
+      "result": "B719で検出した暗黙Domain normalization / legacy save.v2 Slot未探索はGKS-B720で修正済み。Human反映後Current SourceでもB720実装がそのまま存在し、TASK-R30-003のAcceptance Criteriaを満たすことを再確認した。",
+      "evidence": "Current Source GKS-B720 / GA-B486.211; B720 update artifact 634/634 files exact match; package_manifest SHA-256=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945; Current Quick 11/11 PASS evidence_sha256=cd7ff370dd682882529f4186940ef50c8519c86276d2f6aa36651e731a89a50d; game-save-hard-cut-v3 PASS.",
       "checked_by": "AI",
-      "checked_at": "2026-08-21T21:34:10+09:00",
+      "checked_at": "2026-08-21T21:48:41+09:00",
       "created_at": "2026-08-21T21:16:00+09:00",
-      "updated_at": "2026-08-21T21:34:10+09:00"
+      "updated_at": "2026-08-21T21:48:41+09:00"
     },
     {
       "id": "CHK-R30-003-HUMAN-APPLY-VERIFY",
@@ -8367,13 +8367,13 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-R30-003",
-      "status": "Failed",
-      "result": "Human反映後Current SourceはGKS-B719で前回Migration実装を保持しQuick 11/11 PASS。ただしLoad時の暗黙Domain normalizationとlegacy save.v2 Slot未探索を確認したため、TaskをDoneにせずCorrection SOURCE_UPDATEへ継続した。",
-      "evidence": "Current Source package-build.json GKS-B719 / GA-B486.211; app-runtime.js Migration code present; Current Quick 11/11 PASS evidence_sha256=b19057301e39fbda559fbd0bf211b53a37bc31805aaf4e67ab2f0f4acf93203e; acceptance re-audit found implicit normalization path.",
+      "status": "Passed",
+      "result": "Human反映後Current SourceがGKS-B720であることを確認。前回Correction artifactの全配置対象ファイルがCurrent Sourceと完全一致し、Save厳格化実装・Current Schema拒否・legacy save.v2探索・rollbackが保持されているためTASK-R30-003をDone確定した。",
+      "evidence": "package-build.json Studio GKS-B720 / Game GA-B486.211; B720 update ZIP sha256=beee24506844c9b0e7b1912024c2e8717a3ca74161257f7085dcae6024a1656c; update artifact vs Current Source exact match 634/634, missing=0, diff=0; package_manifest SHA-256 exact target match; Quick 11/11 PASS; Save Schema v3 hard-cut test PASS.",
       "checked_by": "AI",
-      "checked_at": "2026-08-21T21:34:10+09:00",
+      "checked_at": "2026-08-21T21:48:41+09:00",
       "created_at": "2026-08-21T21:34:10+09:00",
-      "updated_at": "2026-08-21T21:34:10+09:00"
+      "updated_at": "2026-08-21T21:48:41+09:00"
     },
     {
       "id": "CHK-R30-003-CORRECTION-IMPLEMENTATION",
@@ -8746,6 +8746,14 @@
     {
       "at": "2026-08-21T12:41:45.291Z",
       "message": "Development Workspace JSON merged: add=5 update=2 delete=0"
+    },
+    {
+      "at": "2026-08-21T21:48:41+09:00",
+      "message": "AI_START実行: Human反映後Current Source GKS-B720 / GA-B486.211を再検証。B720 update artifact 634/634 files完全一致、package_manifest target SHA一致、Quick 11/11 PASS、Save Schema v3 strict reject test PASSを確認。TASK-R30-003をDoneへ確定し、依存するTASK-R30-004をTodoへ解放。Source/Gameデータ変更・削除・除外は0件で、TASK-R30-004には未着手。"
+    },
+    {
+      "at": "2026-08-21T12:49:36.306Z",
+      "message": "Development Workspace JSON merged: add=1 update=5 delete=0"
     }
   ],
   "specification_candidates": [
