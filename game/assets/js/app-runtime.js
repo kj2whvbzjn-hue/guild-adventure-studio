@@ -80,6 +80,7 @@ updateFixedCanvasScale();
 requestAnimationFrame(()=>requestAnimationFrame(()=>settleFixedCanvas(1000)));
 'use strict';
 const SAVE_KEY='guildAdventureV10.save.v3', SAVE_VERSION=3;
+const SAVE_LEGACY_KEYS=Object.freeze({2:'guildAdventureV10.save.v2'});
 const SAVE_TEMP_KEY=`${SAVE_KEY}.tmp`, SAVE_BACKUP_KEY=`${SAVE_KEY}.backup`, SAVE_MIGRATION_BACKUP_KEY=`${SAVE_KEY}.migration-backup`, SAVE_INTEGRITY_ALGORITHM='FNV1A32';
 const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
 const FORMAL_JOB_EXPORT_URL=window.GA_PROJECT_CONFIG?.jobExportUrl||'../Export/master/jobs.json';
@@ -350,8 +351,21 @@ function validateSavePayload(payload){
  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Save Integrity: root object is invalid.');
  if(Number(parsed.saveVersion)!==SAVE_VERSION)throw new Error(`Save Integrity: saveVersion mismatch (${parsed.saveVersion}).`);
  if(!Array.isArray(parsed.characters)||!Array.isArray(parsed.aiPrograms)||!Array.isArray(parsed.aiLayouts)||!Array.isArray(parsed.aiPresets))throw new Error('Save Integrity: required collections are invalid.');
- if(window.GKGameAISaveBridge)GKGameAISaveBridge.assertCurrent(clone(parsed));
+ if(!window.GKGameAISaveBridge||typeof GKGameAISaveBridge.assertCurrent!=='function')throw new Error('Save Integrity: Current Save Schema validator is unavailable.');
+ GKGameAISaveBridge.assertCurrent(clone(parsed));
  return parsed;
+}
+function stableSaveValue(value){
+ if(Array.isArray(value))return value.map(stableSaveValue);
+ if(value&&typeof value==='object'){const out={};for(const key of Object.keys(value).sort())out[key]=stableSaveValue(value[key]);return out;}
+ return value;
+}
+function normalizeLoadedSave(source){
+ const before=clone(source),normalized=normalize(source),expected=clone(before);
+ // Build metadata may advance without a Save schema change. Domain state may not be silently repaired.
+ expected.schemaRevision=normalized.schemaRevision;expected.gameVersion=normalized.gameVersion;
+ if(JSON.stringify(stableSaveValue(expected))!==JSON.stringify(stableSaveValue(normalized)))throw new Error('Save Integrity: Load requires implicit data normalization; migration or recovery is required.');
+ return normalized;
 }
 function buildSaveStageRecord(payload){
  return JSON.stringify({schema_version:1,algorithm:SAVE_INTEGRITY_ALGORITHM,checksum:savePayloadChecksum(payload),payload});
@@ -423,7 +437,7 @@ function migrateSaveV2ToV3(source){
 const SAVE_MIGRATIONS=Object.freeze({2:migrateSaveV2ToV3});
 function migrateSaveToCurrent(raw){
  const source=parseSaveRoot(raw),fromVersion=Number(source.saveVersion);
- if(fromVersion===SAVE_VERSION){validateSavePayload(raw);return{migrated:false,save:normalize(source),fromVersion,toVersion:SAVE_VERSION};}
+ if(fromVersion===SAVE_VERSION){validateSavePayload(raw);return{migrated:false,save:normalizeLoadedSave(source),fromVersion,toVersion:SAVE_VERSION};}
  let current=source,version=fromVersion;
  while(version!==SAVE_VERSION){
   const migrate=SAVE_MIGRATIONS[version];
@@ -433,11 +447,11 @@ function migrateSaveToCurrent(raw){
   current=next;version=nextVersion;
  }
  const migratedPayload=JSON.stringify(current);validateSavePayload(migratedPayload);
- return{migrated:true,save:normalize(current),fromVersion,toVersion:SAVE_VERSION,migratedPayload};
+ return{migrated:true,save:normalizeLoadedSave(current),fromVersion,toVersion:SAVE_VERSION,migratedPayload};
 }
-function commitMigratedSave(raw,result){
+function commitMigratedSave(raw,result,{sourceKey=SAVE_KEY}={}){
  if(!result?.migrated)return result?.save;
- const previousMigrationBackup=localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY);
+ const previousCurrent=localStorage.getItem(SAVE_KEY),previousMigrationBackup=localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY);
  try{
   localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,raw);
   if(localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY)!==raw)throw new Error('Save Migration: pre-migration backup verification failed.');
@@ -451,20 +465,28 @@ function commitMigratedSave(raw,result){
   localStorage.removeItem(SAVE_TEMP_KEY);
   return current;
  }catch(error){
-  try{localStorage.setItem(SAVE_KEY,raw)}catch(rollbackError){console.error('Save migration rollback failed',rollbackError);}
+  try{if(previousCurrent===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previousCurrent)}catch(rollbackError){console.error('Save migration rollback failed',rollbackError);}
   try{if(previousMigrationBackup===null)localStorage.removeItem(SAVE_MIGRATION_BACKUP_KEY);else localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,previousMigrationBackup)}catch(backupRollbackError){console.error('Save migration backup rollback failed',backupRollbackError);}
   try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
   throw error;
  }
 }
-function loadAutoSave(){
- const raw=localStorage.getItem(SAVE_KEY);
- if(!raw)throw new Error('保存データがありません。');
- const result=migrateSaveToCurrent(raw);
- return result.migrated?commitMigratedSave(raw,result):result.save;
+function findAutoSaveRecord(){
+ const current=localStorage.getItem(SAVE_KEY);if(current!==null)return{key:SAVE_KEY,expectedVersion:null,raw:current};
+ for(const [version,key] of Object.entries(SAVE_LEGACY_KEYS)){const raw=localStorage.getItem(key);if(raw!==null)return{key,expectedVersion:Number(version),raw};}
+ return null;
 }
-function hasAutoSave(){return localStorage.getItem(SAVE_KEY)!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+function loadAutoSave(){
+ const stored=findAutoSaveRecord();
+ if(!stored)throw new Error('保存データがありません。');
+ const root=parseSaveRoot(stored.raw);
+ if(stored.expectedVersion!=null&&Number(root.saveVersion)!==stored.expectedVersion)throw new Error(`Save Migration: 保存SlotとSave Versionが一致しません (${stored.key}: ${root.saveVersion}).`);
+ const result=migrateSaveToCurrent(stored.raw);
+ if(stored.key!==SAVE_KEY&&!result.migrated)throw new Error(`Save Migration: legacy slot ${stored.key} をCurrentへ変換できません。`);
+ return result.migrated?commitMigratedSave(stored.raw,result,{sourceKey:stored.key}):result.save;
+}
+function hasAutoSave(){return findAutoSaveRecord()!==null}
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
