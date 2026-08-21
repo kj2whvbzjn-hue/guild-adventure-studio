@@ -1,4 +1,4 @@
-/* GKS-B715 Development Git Store
+/* GKS-B716 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -89,7 +89,7 @@ function responseBlobSha(res){
  return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
 }
 async function remoteFile(c,{requireSha=false}={}){
- // GKS-B715: one authenticated raw Contents request is the normal read path.
+ // GKS-B716: one authenticated raw Contents request is the normal read path.
  // The same response supplies Project JSON and, when GitHub exposes the blob ETag, the blob SHA.
  const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
  if(res.status===404)return {exists:false,sha:'',size:0,raw:''};
@@ -126,30 +126,47 @@ async function gitApi(c,path,options={}){
 async function gitBlobText(c,sha){
  const blob=await gitApi(c,`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blobがbase64ではありません。');return base64Utf8(blob.content||'');
 }
-async function duplicateProjectPaths(c,entries,jsonText){
- let projectId='';try{projectId=text(JSON.parse(jsonText)?.workspace?.id);}catch(_){}
- if(!projectId)return [];
- const candidates=entries.filter(x=>x.type==='blob'&&x.path.startsWith(DATA_ROOT)&&x.path.endsWith('.json')&&x.path!==c.path);
- const duplicates=[];
- for(const item of candidates){
-  try{const raw=await gitBlobText(c,item.sha),obj=JSON.parse(raw);if(text(obj?.workspace?.id)===projectId)duplicates.push(item.path);}catch(_){}
+async function listDevelopmentProjectFiles(c){
+ const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${DATA_ROOT.replace(/\/$/,'')}?ref=${encodeURIComponent(c.branch)}`;
+ const res=await fetch(url,{headers:headers(c.token),cache:'no-store'});
+ if(res.status===404)return [];
+ if(!res.ok)return await githubFailure(res,'Development Project一覧取得失敗');
+ const rows=await res.json();return Array.isArray(rows)?rows.filter(x=>x?.type==='file'&&String(x.name||'').endsWith('.json')):[];
+}
+async function duplicateProjectFiles(c,projectId){
+ const files=await listDevelopmentProjectFiles(c),duplicates=[];
+ for(const item of files){
+  const path=normalizePath(item.path);if(!path||path===c.path)continue;
+  try{
+   const file=await remoteFile({...c,path});if(!file.exists)continue;
+   const obj=JSON.parse(file.raw);if(text(obj?.workspace?.id)===projectId)duplicates.push({path,sha:text(item.sha)||file.sha});
+  }catch(_){}
  }
  return duplicates;
 }
+async function deleteProjectFile(c,item,message){
+ const path=normalizePath(item?.path),sha=text(item?.sha);if(!path||!sha)return;
+ const dc={...c,path};
+ const res=await fetch(apiUrl(dc,false),{method:'DELETE',headers:{...headers(c.token),'Content-Type':'application/json'},body:JSON.stringify({message,sha,branch:c.branch})});
+ if(!res.ok)throw new Error(`旧Development Project JSON削除失敗: ${path} / HTTP ${res.status} ${await res.text()}`);
+}
 async function commitProjectOnly(c,jsonText,message,expectedProjectSha=''){
- const ref=await gitApi(c,`/git/ref/heads/${branchRefPath(c.branch)}`),headSha=text(ref?.object?.sha);if(!headSha)throw new Error(`Branch HEADを取得できません: ${c.branch}`);
- const commit=await gitApi(c,`/git/commits/${encodeURIComponent(headSha)}`),baseTree=text(commit?.tree?.sha);if(!baseTree)throw new Error('Branch HEADのTreeを取得できません。');
- const tree=await gitApi(c,`/git/trees/${encodeURIComponent(baseTree)}?recursive=1`),entries=Array.isArray(tree?.tree)?tree.tree:[];
- const projectEntry=entries.find(x=>x.type==='blob'&&x.path===c.path)||null;
- if(expectedProjectSha&&text(projectEntry?.sha)!==text(expectedProjectSha))throw new Error(`Remoteが読込後に更新されています。再読込してください。\nloaded=${expectedProjectSha}\nremote=${text(projectEntry?.sha)||'(missing)'}`);
- const duplicatePaths=await duplicateProjectPaths(c,entries,jsonText);
- const projectSha256=await sha256Text(jsonText),projectSize=new TextEncoder().encode(jsonText).length;
- const projectBlob=await gitApi(c,'/git/blobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:utf8Base64(jsonText),encoding:'base64'})});
- const treeChanges=[{path:c.path,mode:'100644',type:'blob',sha:projectBlob.sha},...duplicatePaths.map(path=>({path,mode:'100644',type:'blob',sha:null}))];
- const newTree=await gitApi(c,'/git/trees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:baseTree,tree:treeChanges})});
- const newCommit=await gitApi(c,'/git/commits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text(message)||'Update Development Project',tree:newTree.sha,parents:[headSha]})});
- await gitApi(c,`/git/refs/heads/${branchRefPath(c.branch)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:newCommit.sha,force:false})});
- return {file_sha:text(projectBlob.sha),commit_sha:text(newCommit.sha),project_sha256:projectSha256,project_size:projectSize,removed_duplicate_paths:duplicatePaths};
+ let projectId='';try{projectId=text(JSON.parse(jsonText)?.workspace?.id);}catch(_){}
+ if(!projectId)throw new Error('保存対象JSONにworkspace.idがありません。');
+ const canonical=defaultPathForProjectId(projectId);if(c.path!==canonical)throw new Error(`Git PathがProject IDの標準Pathと一致しません。\nexpected=${canonical}\nactual=${c.path}`);
+ // B716: Project保存はContents APIの単純な上書きに戻す。
+ // 同一workspace.idの旧Pathは保存後にdevelopment-project-data/だけを確認して削除する。
+ // repository全Tree走査やGit Data APIによる複雑なCommit生成は行わない。
+ const latest=await remoteMeta(c);
+ if(expectedProjectSha&&latest.exists&&latest.sha!==expectedProjectSha)throw new Error(`Remoteが読込後に更新されています。再読込してください。\nloaded=${expectedProjectSha}\nremote=${latest.sha}`);
+ const body={message:text(message)||`Update Development Project ${projectId}`,content:utf8Base64(jsonText),branch:c.branch};
+ if(latest.exists)body.sha=latest.sha;
+ const saveRes=await fetch(apiUrl(c,false),{method:'PUT',headers:{...headers(c.token),'Content-Type':'application/json'},body:JSON.stringify(body)});
+ if(!saveRes.ok)throw new Error(`GitHub Commit失敗: HTTP ${saveRes.status} ${await saveRes.text()}`);
+ const saved=await saveRes.json(),fileSha=text(saved?.content?.sha),commitSha=text(saved?.commit?.sha);
+ const duplicates=await duplicateProjectFiles(c,projectId);
+ for(const item of duplicates)await deleteProjectFile(c,item,`Remove duplicate Development Project path for ${projectId}`);
+ return {file_sha:fileSha,commit_sha:commitSha,project_sha256:await sha256Text(jsonText),project_size:new TextEncoder().encode(jsonText).length,removed_duplicate_paths:duplicates.map(x=>x.path)};
 }
 async function commitJson(c,jsonText,message,expectedSha=''){
  const latest=await remoteMeta(c);
@@ -237,7 +254,7 @@ async function openFromGit(options={}){
  finally{setBusy(false);render();}
 }
 async function refreshRegistry(entries=[]){
- // GKS-B715: project-list rendering must not fan out GitHub API requests.
+ // GKS-B716: project-list rendering must not fan out GitHub API requests.
  // Git registry is a cache and remains unverified until an explicit Open / Remote reload / save flow.
  // This prevents one list render from consuming one or more API calls per project and triggering
  // shared-IP unauthenticated rate limits. Unverified Git projects are excluded from in-progress lists.
