@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T21:14:06.380Z"
+    "updated_at": "2026-08-21T21:24:54.763Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -205,6 +205,20 @@
       "result": "Applied",
       "evidence": "GKS-B721 was Human-applied and verified in Current Source. Current package-build.json=GKS-B721 / GA-B486.211; package_manifest SHA-256=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e; B721 SOURCE_UPDATE payload matches Current Source 635/635 source files with 0 missing and 0 hash differences. The only full-tree difference versus the B721 simulated target is development-project-data/DEV-V9-REORG-019.json, which reflects the later Development Project integration rather than a Source implementation drift. Current Quick 11/11 PASS evidence_sha256=7ac6be9c589133bec10d7ab79b95d5e10e79bf30257ea9f6623f76ae9a92738f; targeted Character/Guild/Progression persistence verification 8/8 PASS. Character core/progression state, partyIds and Guild object remain exact across the Save/Load boundary; later Skill/AI/Equipment domain fields remain outside TASK-R30-004 scope. Source deletions=0; Game data changes/exclusions=0.",
       "recorded_at": "2026-08-21T22:08:33+09:00"
+    },
+    {
+      "id": "IMPL-R30-005",
+      "studio_build": "GKS-B722",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-005"
+      ],
+      "result": "Partial",
+      "evidence": "Inventory / Equipment ownership Save Bridge added without Domain calculations. Root inventory[] and Character ID -> equipment object ownership projection are captured exactly before Save snapshot normalization and compared after snapshot build and Load normalization; any ownership mutation rejects persistence. Equipment requirement/bonus logic, capacity, duplicate policy, Skill/AI and later Domain semantics are not redefined. Targeted 10/10 PASS; Quick 11/11 PASS evidence_sha256=b8aca6f9869b6448c43cd1637b7af46e4038e1c5607028422d970374de100ce4; Accept 13/13 PASS evidence_sha256=e569ecbc4137597cf4026bbcaf727a38575bef322012d4decbe7845aa0e9f417; Release 13/13 PASS evidence_sha256=d043e1626d4b2acc2356bd1e4bc48518147ef0e4800e69dc8df3c81c2f71edde; update ZIP sha256=8018600590e1b207e24383c1d76393371eb97b76d350fd1586a5b2d1ce73ce13; baseline tree=c3f23b5d8677d75342e0d02e96a4f835e0779f8f60314b03d2aa23d5b76518ae target tree=d1c5dde60a1f9a222090ffcd8f6545c55f27617b23c4517fc6f4c35de93b366f. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T06:20:51+09:00"
     }
   ],
   "discussions": [
@@ -5773,7 +5787,7 @@
       "id": "TASK-R30-005",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Inventory / Equipment所有状態のSave接続を実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 1050,
       "depends_on": [
         "TASK-R30-004"
@@ -5787,7 +5801,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T22:08:33+09:00"
+      "updated_at": "2026-08-22T06:20:51+09:00"
     },
     {
       "id": "TASK-R30-006",
@@ -8458,6 +8472,34 @@
       "checked_at": "2026-08-21T22:08:33+09:00",
       "created_at": "2026-08-21T22:08:33+09:00",
       "updated_at": "2026-08-21T22:08:33+09:00"
+    },
+    {
+      "id": "CHK-R30-005-IMPLEMENTATION",
+      "title": "TASK-R30-005 Inventory / Equipment ownership Save persistence verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-005",
+      "status": "Passed",
+      "result": "GKS-B722でInventory / Equipment所有状態をDomainの意味・計算を再定義しない専用Save Bridgeへ接続。inventory[]とCharacter IDごとのequipment objectをSave snapshot作成前後およびLoad前後でexact比較し、所有関係の欠落・移動・個数変化を拒否する。装備条件/補正/所持上限/重複可否等はSave側へ実装しない。",
+      "evidence": "game/assets/js/inventory-equipment-save-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification TASK_R30_005_INVENTORY_EQUIPMENT_SAVE_OK cases=10; source deletions=0; Game data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T06:20:51+09:00",
+      "created_at": "2026-08-22T06:20:51+09:00",
+      "updated_at": "2026-08-22T06:20:51+09:00"
+    },
+    {
+      "id": "CHK-R30-005-GATES",
+      "title": "TASK-R30-005 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-005",
+      "status": "Passed",
+      "result": "今回アップロードされたGKS-B721完全Sourceをexact baselineとして明示したGKS-B722更新はQuick/Accept/ReleaseすべてPASS。ZIP内容hash一致・UTF-8/NFC検査PASS、warning/timeout 0。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifestの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e tree=c3f23b5d8677d75342e0d02e96a4f835e0779f8f60314b03d2aa23d5b76518ae; target manifest=4e187bb807fda8913721f1dbcb70768b13ef704cfccb81ef7af9584e54aeff36 tree=d1c5dde60a1f9a222090ffcd8f6545c55f27617b23c4517fc6f4c35de93b366f; Quick=b8aca6f9869b6448c43cd1637b7af46e4038e1c5607028422d970374de100ce4; Accept=e569ecbc4137597cf4026bbcaf727a38575bef322012d4decbe7845aa0e9f417; Release=d043e1626d4b2acc2356bd1e4bc48518147ef0e4800e69dc8df3c81c2f71edde; ZIP=8018600590e1b207e24383c1d76393371eb97b76d350fd1586a5b2d1ce73ce13; encoding/NFC PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T06:20:51+09:00",
+      "created_at": "2026-08-22T06:20:51+09:00",
+      "updated_at": "2026-08-22T06:20:51+09:00"
     }
   ],
   "workflow": {
@@ -8826,6 +8868,14 @@
     {
       "at": "2026-08-21T21:14:06.380Z",
       "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-22T06:20:51+09:00",
+      "message": "AI_START実行: TASK-R30-005のみSOURCE_UPDATE。Inventory / Equipment所有状態の専用Save Bridgeを追加し、inventory[]とCharacter ID→equipment objectをSave snapshot作成前後・Load前後でexact保持検証する。Domain計算、装備条件/補正、所持上限/重複可否、Skill/AIには未着手。GKS-B722へ更新しTargeted 10/10、Quick 11/11、Accept 13/13、Release 13/13、ZIP hash/encoding/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-006はBlockedを維持。"
+    },
+    {
+      "at": "2026-08-21T21:24:54.763Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ],
   "specification_candidates": [
