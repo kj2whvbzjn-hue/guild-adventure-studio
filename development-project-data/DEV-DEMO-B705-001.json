@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T04:44:08.790Z"
+    "updated_at": "2026-08-21T05:05:33.539Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -49,7 +49,22 @@
     "superseded_by": "",
     "updated_at": "2026-08-21T09:55:00+09:00"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-AI-PIPELINE-060-GKS-B707",
+      "studio_build": "GKS-B707",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-AI-PIPELINE-001"
+      ],
+      "task_ids": [
+        "TASK-AI-PIPELINE-060"
+      ],
+      "result": "Partial",
+      "evidence": "GKS-B707 SOURCE_UPDATE artifact prepared and Gate-verified; pending human Studio deployment and post-deploy GitHub Source verification.",
+      "recorded_at": "2026-08-21T13:58:00+09:00"
+    }
+  ],
   "discussions": [
     {
       "id": "DISC-DEMO-001",
@@ -281,6 +296,34 @@
       "approved_at": "",
       "created_at": "2026-08-21T13:45:00+09:00",
       "updated_at": "2026-08-21T13:45:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-EXECUTION-PROTOCOL-001",
+      "title": "AI_START Development Project Execution Protocol",
+      "status": "Verified",
+      "summary": "GKS-B707 targetへ、AI_STARTを唯一の入口としてDevelopment Taskを1件ずつ選択・ルーティング・実行し、既存統合窓口へ結果JSONを返すExecution Protocolを導入した。",
+      "body": "GKS-B707 target sourceのAI_START.mdへDevelopment Project Execution Protocolを正式導入した。\n\n導入内容:\n- AI_START / Development Project / Source・Game実体の正本分離\n- 対象Development Projectの選択規則\n- Development Task work_type: DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE\n- GAME_DATAから既存GAME_DATA_UPDATE手順への対応付け\n- Development TaskではHYBRIDを自動使用せず、混在が必要ならTask分割してFail Closed\n- 実行可能Taskの依存・承認・execution_order判定\n- 現行schemaで実行メタデータ不足時のFail Closed\n- 初期運用は1回1Task\n- work_type別成果物\n- 既存「現在案件へJSONを統合」を使うDevelopment統合JSON契約\n- 既存Record/Object更新時は完全形を返す規則\n- Development更新だけではSource ZIP/package_manifestを生成しない規則\n- Development Task完了報告にProject ID / Task ID / work_type / final status / Acceptance Criteria / merge JSONを追加\n\nSource変更:\nAI_START.mdのプロトコル追加とGKS-B707 Build同期のみ。\nGameデータ変更なし。\n削除なし。\nGate/Test/Securityの受入基準変更なし。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-001",
+        "DEC-AI-PIPELINE-002",
+        "DEC-AI-PIPELINE-003",
+        "DEC-AI-PIPELINE-004"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-CONTRACT-001",
+        "SPEC-AI-PIPELINE-WORK-TYPE-001"
+      ],
+      "acceptance_criteria": "GKS-B707 targetのAI_STARTに対象案件選択、work_type、Task選択、1実行1Task、成果物ルーティング、Development統合JSON契約、Fail Closed、完了報告規則が入り、Source Gate/Accept/Releaseに合格する。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:58:00+09:00",
+      "updated_at": "2026-08-21T13:58:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -399,9 +442,9 @@
       "id": "TASK-AI-PIPELINE-060",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "060 AI_START Execution Protocolを正式導入する",
-      "status": "Todo",
+      "status": "Doing",
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T13:58:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-070",
@@ -490,6 +533,20 @@
       "checked_at": "2026-08-21T13:45:00+09:00",
       "created_at": "2026-08-21T13:45:00+09:00",
       "updated_at": "2026-08-21T13:45:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-060-PREPARED",
+      "title": "TASK-AI-PIPELINE-060 GKS-B707更新成果物検証",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-060",
+      "status": "Passed",
+      "result": "GKS-B707 target Quick 11/11 PASS、SOURCE_UPDATE Accept 13/13 PASS、Release 28/28 PASS。直接Studio更新ZIPを生成済み。GitHub実配置確認は未完了。",
+      "evidence": "artifact_id=GKS-B707-04b3527ccb80; baseline=GKS-B706; target=GKS-B707; accept passed=13 failed=0 timeouts=0; release passed=28 failed=0 timeouts=0 (timeout-per-test=60s).",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:58:00+09:00",
+      "created_at": "2026-08-21T13:58:00+09:00",
+      "updated_at": "2026-08-21T13:58:00+09:00"
     }
   ],
   "workflow": {
@@ -576,6 +633,14 @@
     },
     {
       "at": "2026-08-21T04:44:08.790Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:58:00+09:00",
+      "message": "TASK-AI-PIPELINE-060 implementation prepared: GKS-B707 direct Studio update ZIP created. Quick 11/11, Accept 13/13, Release 28/28 PASS. Task remains Doing until human deployment and post-deploy Source verification; TASK-070 not started."
+    },
+    {
+      "at": "2026-08-21T05:05:33.539Z",
       "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ]
