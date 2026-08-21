@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T12:49:36.306Z"
+    "updated_at": "2026-08-21T13:05:12.809Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -191,6 +191,20 @@
       "result": "Applied",
       "evidence": "Correction artifact GKS-B720-7683856709a5 was Human-applied and verified in Current Source. Current package-build.json=GKS-B720 / GA-B486.211; package_manifest SHA-256=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945; B720 update artifact contents match Current Source 634/634 files with 0 missing and 0 hash differences; Current Quick 11/11 PASS evidence_sha256=cd7ff370dd682882529f4186940ef50c8519c86276d2f6aa36651e731a89a50d; game-save-hard-cut-v3 PASS (current_valid=1 invalid_reject=1 unknown_field_reject=1). The correction keeps strict Current Save Schema validation, rejects implicit Domain normalization on Load, discovers legacy save.v2 without deleting the source slot, and preserves migration rollback. Source deletions=0; Game data changes/exclusions=0.",
       "recorded_at": "2026-08-21T21:48:41+09:00"
+    },
+    {
+      "id": "IMPL-R30-004",
+      "studio_build": "GKS-B721",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-004"
+      ],
+      "result": "Partial",
+      "evidence": "Character / Guild / Progression Save Bridge added without Domain calculations. Character persistence projection preserves id/name/level/job/stats/jobHistory/growthHistory/createdAt, partyIds and the Guild object exactly across Save/Load; Skill/AI/Equipment are outside this bridge and remain later Task scope. Targeted 8/8 PASS; Quick 11/11 PASS evidence_sha256=07e7d4020b99d9994dce34e1373d4e2817955b6fbf41c4893c7c9cbd41fb5ab1; Accept 13/13 PASS evidence_sha256=8846a7044b8094fea9f588418d54c1956eec5f0c3a5b9fa80e5fce6ab22ed966; Release 13/13 PASS evidence_sha256=f37077491ed878858a554de8a3de2514669959e0b330191c2fc3d7e836d73a4a; update ZIP sha256=56aa6ff76731615ad5e6eb87eb49b26bbb773c6ca53868df70810fe7110a9067; Human Apply verification pending.",
+      "recorded_at": "2026-08-21T22:00:12+09:00"
     }
   ],
   "discussions": [
@@ -5739,7 +5753,7 @@
       "id": "TASK-R30-004",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Character / Guild / ProgressionのSave接続を実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 1040,
       "depends_on": [
         "TASK-R30-003"
@@ -5753,7 +5767,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T21:48:41+09:00"
+      "updated_at": "2026-08-21T22:00:12+09:00"
     },
     {
       "id": "TASK-R30-005",
@@ -8402,6 +8416,34 @@
       "checked_at": "2026-08-21T21:34:10+09:00",
       "created_at": "2026-08-21T21:34:10+09:00",
       "updated_at": "2026-08-21T21:34:10+09:00"
+    },
+    {
+      "id": "CHK-R30-004-IMPLEMENTATION",
+      "title": "TASK-R30-004 Character / Guild / Progression Save persistence verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-004",
+      "status": "Passed",
+      "result": "GKS-B721でCharacter/Guild/ProgressionをDomain値の意味・計算を再定義しないSave Bridgeへ接続。CharacterのCurrent core/progression状態、partyIds、Guild objectを保存前後でexact比較し、差分があれば拒否する。EXP配布、Guild Level計算、Inventory/Equipment、Skill/AIの後続責務は実装しない。",
+      "evidence": "game/assets/js/save-domain-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification TASK_R30_004_DOMAIN_PERSISTENCE_OK cases=8; source deletions=0; Game data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T22:00:12+09:00",
+      "created_at": "2026-08-21T22:00:12+09:00",
+      "updated_at": "2026-08-21T22:00:12+09:00"
+    },
+    {
+      "id": "CHK-R30-004-GATES",
+      "title": "TASK-R30-004 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-004",
+      "status": "Passed",
+      "result": "GKS-B720 exact user-provided baselineを明示したGKS-B721更新はQuick/Accept/ReleaseすべてPASS。ZIP integrity/NFC、warning/timeout 0。保護資産はBuild token追随とcritical-runtime-manifestの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945 tree=d896646ac9226edc02e3879a3e49e88af6028d2f90247e1f69454d503d2b4cd4; target manifest=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e tree=3b41df110b1ad90f688faca958494e3860d847946c5ffb5bb1a65f67bee0ec23; Quick=07e7d4020b99d9994dce34e1373d4e2817955b6fbf41c4893c7c9cbd41fb5ab1; Accept=8846a7044b8094fea9f588418d54c1956eec5f0c3a5b9fa80e5fce6ab22ed966; Release=f37077491ed878858a554de8a3de2514669959e0b330191c2fc3d7e836d73a4a; ZIP=56aa6ff76731615ad5e6eb87eb49b26bbb773c6ca53868df70810fe7110a9067; encoding/NFC PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T22:00:12+09:00",
+      "created_at": "2026-08-21T22:00:12+09:00",
+      "updated_at": "2026-08-21T22:00:12+09:00"
     }
   ],
   "workflow": {
@@ -8754,6 +8796,14 @@
     {
       "at": "2026-08-21T12:49:36.306Z",
       "message": "Development Workspace JSON merged: add=1 update=5 delete=0"
+    },
+    {
+      "at": "2026-08-21T22:00:12+09:00",
+      "message": "AI_START実行: TASK-R30-004のみSOURCE_UPDATE。Character / Guild / ProgressionのSave Bridgeを追加し、Character core/progression状態・partyIds・Guild objectをSave/Load境界でexact保持検証する。Domain計算、EXP配布、Guild Level計算、Inventory/Equipment、Skill/AIには未着手。GKS-B721へ更新しTargeted 8/8、Quick 11/11、Accept 13/13、Release 13/13、ZIP integrity/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-005はBlockedを維持。"
+    },
+    {
+      "at": "2026-08-21T13:05:12.809Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ],
   "specification_candidates": [
