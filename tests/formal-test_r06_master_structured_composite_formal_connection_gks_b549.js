@@ -35,6 +35,6 @@ assert.ok(report.compile_results.every(x=>x.input_source==='master.runtimeContra
 for(const marker of ['r06_master_structured_runtime=runR06MasterStructuredRuntimeFinalRegression()','r06_master_runtime_passed_count','schema_version:\'1.9.0\'','R06_FINAL_MASTER_SKILL_ID_RE','R06_FINAL_MASTER_SKILL_NAME_RE'])assert.ok(src.includes(marker),`missing ${marker}`);
 assert.ok(!src.includes("R06_FINAL_MASTER_SKILL_PREFIX='R06-B547-MASS-'"),'runtime regression must not depend on retired pre-G07 IDs');
 assert.ok(!src.includes('startsWith(R06_FINAL_MASTER_SKILL_PREFIX)'),'R06 selector must not use the retired ID prefix');
-const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486211b720'));
+const html=fs.readFileSync('game/index.html','utf8');assert.ok(html.includes('R06新仕様複合Skill 48件'));assert.ok(html.includes('studio-skill-bridge.js?v=486211b721'));
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');assert.ok(app.includes('[R06 MASTER COMPOSITE]'));
 console.log('PASS GKS-B550 R06 G07-assigned Master SKL 48 structured composite runtime formal-regression connection');
