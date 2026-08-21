@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T06:03:40.609Z"
+    "updated_at": "2026-08-21T06:04:27.342Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -365,15 +365,15 @@
     {
       "id": "DISC-R30-001-WORKTYPE-BOUNDARY",
       "title": "TASK-R30-001 work_type境界不一致",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "GAME_DATAとして割り当てられたTASK-R30-001は、現行Game RuntimeではSave CoreがSource側に固定実装され、Project JSONのgame_runtimeからSave境界を構成できないため、GAME_DATAだけではAcceptance Criteriaを満たせない。",
       "body": "AI_STARTのDevelopment Taskルールに従いFail Closed。現行Sourceでは game/assets/js/app-runtime.js の GKGameSaveCore が mode=AUTO_SAVE / slotCount=1 / slotKey=SAVE_KEY としてSource側で定義され、autoSave()もSource Runtime関数である。一方、Adventure Settingsの game_runtime 正規化はcharacter/growth/battle_actor/battle_flow/equipment_rules/new_game/raritiesを扱うがSave Core設定を取り込まない。したがってProject JSONへsave_core等を追加してもCurrent Runtimeへ接続されず、実装完了とは扱えない。Sourceへ越境して修正することはwork_type=GAME_DATAに反するため実施しない。\n\n提案: Humanが工程管理上のTaskをSOURCE_UPDATEとして再定義する、またはSOURCE_UPDATE Taskを新設してSave Core境界をSource実装し、Game Data設定が本当に必要な場合だけ別GAME_DATA Taskへ分離する。Atomic Save / Backup / Integrityは既存TASK-R30-002の責務を維持する。",
-      "open_questions": "TASK-R30-001をSOURCE_UPDATEへ再分類するか、SOURCE_UPDATEの置換Taskを新設するか。",
-      "conclusion": "",
+      "open_questions": "",
+      "conclusion": "実装境界を再確認し、TASK-R30-001はSOURCE_UPDATEへ再分類する。同じPhase 1の実装Task R30-002〜011もRuntime/Save/UI wiringのSource実装を伴うためSOURCE_UPDATEとする。R30-012は検証専用のためDEVELOPMENT_ONLYとする。",
       "related_discussion_ids": [],
       "artifact_note": "AI_START Fail Closed: work_type boundary mismatch detected before Game JSON modification.",
       "created_at": "2026-08-21T14:49:00+09:00",
-      "updated_at": "2026-08-21T14:49:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     }
   ],
   "decisions": [
@@ -1423,6 +1423,20 @@
       "approved_at": "2026-08-21T14:45:00+09:00",
       "created_at": "2026-08-21T14:45:00+09:00",
       "updated_at": "2026-08-21T14:45:00+09:00"
+    },
+    {
+      "id": "DEC-R41-PHASE1-WORKTYPE-CORRECTION-001",
+      "title": "Phase 1 Save/New Game実装TaskをSource実装境界へ再分類する",
+      "status": "Approved",
+      "text": "TASK-R30-001〜011をSOURCE_UPDATE、Phase 1 E2E検証TASK-R30-012をDEVELOPMENT_ONLYとする。Game JSONに未接続設定を追加して実装済み扱いにせず、Current Runtimeコードを変更するTaskはSOURCE_UPDATE経路を使用する。",
+      "rationale": "TASK-R30-001実行時にCurrent Save Coreがgame/assets/js/app-runtime.jsのSource Runtime側に固定され、Game JSON game_runtimeからSave Core境界を構成する経路がないことが確認されたため。",
+      "source_discussion_ids": [
+        "DISC-R30-001-WORKTYPE-BOUNDARY"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-21T15:05:00+09:00",
+      "created_at": "2026-08-21T15:05:00+09:00",
+      "updated_at": "2026-08-21T15:05:00+09:00"
     }
   ],
   "specifications": [
@@ -5614,11 +5628,11 @@
       "id": "TASK-R30-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save Coreの1Slot Auto Save境界を実装する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 1010,
       "depends_on": [],
       "acceptance_criteria": "- Saveは1Slot Auto Saveのみを正本とする。\n- 永続状態の変更が正常確定した直後にAuto Saveできる境界を実装する。\n- 個別Domainの値の意味・計算をSave Core側で再定義しない。\n- 次工程のAtomic Save / Backup実装を追加できる責務境界になっている。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5626,7 +5640,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:49:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-002",
@@ -5638,7 +5652,7 @@
         "TASK-R30-001"
       ],
       "acceptance_criteria": "- 一時保存 → Integrity確認 → 本保存切替のAtomic Saveを実装する。\n- 直前の正常SaveをBackupとして保持する。\n- 保存処理を直列化し、関連する複数Data変更を一体で成功または失敗させる。\n- Integrity失敗時に壊れた本保存へ切り替えない。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5646,7 +5660,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-003",
@@ -5658,7 +5672,7 @@
         "TASK-R30-002"
       ],
       "acceptance_criteria": "- Save Version不一致時、対応Migrationがあれば変換前Backup → Migration → Integrity検証を行う。\n- Migration/Integrity成功時だけCurrent Versionとして確定する。\n- Migration未対応・変換失敗・Integrity失敗はLoad拒否する。\n- 不正Dataを黙って初期値化して継続しない。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5666,7 +5680,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-004",
@@ -5678,7 +5692,7 @@
         "TASK-R30-003"
       ],
       "acceptance_criteria": "- Character / Guild / Progressionの永続状態をSave/Loadで復元できる。\n- 各Domainが所有する値の意味・計算をSave側で再定義しない。\n- 保存前後でCurrent確定状態が保持される。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5686,7 +5700,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-005",
@@ -5698,7 +5712,7 @@
         "TASK-R30-004"
       ],
       "acceptance_criteria": "- Inventory / Equipment所有状態をSave/Loadで復元できる。\n- 所有状態・装備状態の責務をSave側で再定義しない。\n- 保存前後で所有関係が失われない。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5706,7 +5720,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-006",
@@ -5718,7 +5732,7 @@
         "TASK-R30-005"
       ],
       "acceptance_criteria": "- Skill / Passive / Skill Loadout / AI設定をSave/Loadで復元できる。\n- Legacy AI/Skill形式へFallbackしない。\n- 各Domainの正式データ構造をそのまま永続化境界へ接続する。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5726,7 +5740,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-007",
@@ -5738,7 +5752,7 @@
         "TASK-R30-006"
       ],
       "acceptance_criteria": "- Game SettingsとTutorial進行状態をSave/Loadできる。\n- Settings変更によってゲームの確定結果そのものを変更しない。\n- Tutorial進行が再読込で失われない。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5746,7 +5760,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-008",
@@ -5758,7 +5772,7 @@
         "TASK-R30-007"
       ],
       "acceptance_criteria": "- Active QuestRunを永続化し、切断/再読込後も同じQuestRunへ復帰できる。\n- Scene/Battle/Event/Reward/Flag等の既存Snapshot結果を再抽選・再計算しない。\n- Playbackは保存済みQuestRun/Snapshotを正本として復帰する。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5766,7 +5780,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-009",
@@ -5778,7 +5792,7 @@
         "TASK-R30-008"
       ],
       "acceptance_criteria": "- New Game初期化順序を固定する。\n- 初期Content値はData/Balanceから供給し、未確定値をコードへ固定しない。\n- Integrity成功後だけ初回Auto Saveを確定する。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5786,7 +5800,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-010",
@@ -5798,7 +5812,7 @@
         "TASK-R30-009"
       ],
       "acceptance_criteria": "- 既存Saveがある状態でNew Gameを開始する場合、上書き確認を必須にする。\n- Human/Player確認前に既存Saveを破壊しない。\n- Cancel時は既存Saveと現在状態を維持する。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5806,7 +5820,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-011",
@@ -5818,7 +5832,7 @@
         "TASK-R30-010"
       ],
       "acceptance_criteria": "- Save失敗時にRetryまたは安全復帰できる。\n- Load/Migration/Integrity失敗時に安全停止し、黙って初期化しない。\n- Recovery UIへOwner Runtimeの失敗理由を渡せる。",
-      "work_type": "GAME_DATA",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5826,7 +5840,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-012",
@@ -5838,7 +5852,7 @@
         "TASK-R30-011"
       ],
       "acceptance_criteria": "- New Game → 初回Save → Continue/LoadのPhase 1主要導線をE2Eで確認する。\n- Atomic Save / Backup / Migration / Domain Persistence / Recoveryを含むPhase 1項目を検証する。\n- 失敗系で既存正常Saveを失わない。\n- Phase 1完了を示す検証証跡をDevelopment Checkへ記録する。",
-      "work_type": "GAME_DATA",
+      "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -5846,7 +5860,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R31-001",
@@ -8153,6 +8167,20 @@
       "checked_at": "2026-08-21T14:49:00+09:00",
       "created_at": "2026-08-21T14:49:00+09:00",
       "updated_at": "2026-08-21T14:49:00+09:00"
+    },
+    {
+      "id": "CHK-R41-PHASE1-WORKTYPE-CORRECTION-001",
+      "title": "Phase 1 work_type再分類確認",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "Fail Closed結果を採用し、Phase 1実装Task R30-001〜011をSOURCE_UPDATEへ、検証専用R30-012をDEVELOPMENT_ONLYへ再分類。初期実行TaskはR30-001のみTodoへ戻した。",
+      "evidence": "CHK-R30-001-WORKTYPE-BOUNDARY: Current Save Core is Source Runtime; Game JSON has no connected Save Core configuration path.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T15:05:00+09:00",
+      "created_at": "2026-08-21T15:05:00+09:00",
+      "updated_at": "2026-08-21T15:05:00+09:00"
     }
   ],
   "workflow": {
@@ -8421,6 +8449,14 @@
     {
       "at": "2026-08-21T06:03:40.609Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T15:05:00+09:00",
+      "message": "TASK-R30-001のFail Closedを受け、Phase 1 work_typeを修正。R30-001〜011=SOURCE_UPDATE、R30-012=DEVELOPMENT_ONLY。R30-001をTodoへ戻し、次回AI_STARTから正式SOURCE_UPDATEとして再実行可能にした。"
+    },
+    {
+      "at": "2026-08-21T06:04:27.342Z",
+      "message": "Development Workspace JSON merged: add=3 update=13 delete=0"
     }
   ],
   "specification_candidates": [
