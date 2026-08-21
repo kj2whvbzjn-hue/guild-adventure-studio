@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T06:08:54.302Z"
+    "updated_at": "2026-08-21T06:37:54.099Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -139,7 +139,18 @@
     "superseded_by": "",
     "updated_at": "2026-08-21T06:08:54.284Z"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-R30-001",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [],
+      "task_ids": [],
+      "result": "Applied",
+      "evidence": "",
+      "recorded_at": "2026-08-21T06:35:46.538Z"
+    }
+  ],
   "discussions": [
     {
       "id": "DISC-R9-GAP-02",
@@ -8181,6 +8192,62 @@
       "checked_at": "2026-08-21T15:05:00+09:00",
       "created_at": "2026-08-21T15:05:00+09:00",
       "updated_at": "2026-08-21T15:05:00+09:00"
+    },
+    {
+      "id": "CHK-R30-001-IMPLEMENTATION",
+      "title": "TASK-R30-001 Save Core boundary verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-001",
+      "status": "Passed",
+      "result": "1Slot Auto Saveを維持したまま、snapshot構築・永続書込・Domain確定後commitの責務境界を分離。次工程Atomic Save/Backupがwrite境界を置換できる構造を確認。JS構文検証PASS。",
+      "evidence": "game/assets/js/app-runtime.js buildAutoSaveSnapshot/writeAutoSaveSnapshot/commitPersistentState; node --check PASS",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T15:16:00+09:00",
+      "created_at": "2026-08-21T15:16:00+09:00",
+      "updated_at": "2026-08-21T15:16:00+09:00"
+    },
+    {
+      "id": "CHK-R30-001-SOURCE-QUICK",
+      "title": "TASK-R30-001 corrected SOURCE_UPDATE Quick Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-001",
+      "status": "Passed",
+      "result": "正式SOURCE_UPDATE再生成後のQuick Gateは13/13 PASS。critical_runtime / package_manifest / source_update_applied_stateを含め失敗0、warning 0、timeout 0。",
+      "evidence": "GKS-B709 / artifact_id GKS-B709-6d5a43893d01 / quick evidence SHA-256 f3df437942308edde22aa66e64bceb642970ca0751bb5bb12105670d1462aecc",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T15:26:29+09:00",
+      "created_at": "2026-08-21T15:26:29+09:00",
+      "updated_at": "2026-08-21T15:26:29+09:00"
+    },
+    {
+      "id": "CHK-R30-001-SOURCE-ACCEPT",
+      "title": "TASK-R30-001 corrected SOURCE_UPDATE Accept Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-001",
+      "status": "Passed",
+      "result": "baseline GKS-B708を明示したaccept --context updateは13/13 PASS。Impact判定はfullへ昇格し、適用後完成ツリーFull 26/26 PASS、timeout 0。",
+      "evidence": "baseline tree d38b96845197d43dbfff96c63cd4c3062f29854fd3b29602e12f89cd67520aff / target tree 6d5a43893d013d199a4b63df3a3ed5109ea6c1de8f7cd6701366f808a1264954 / accept evidence SHA-256 6b8317b4e1a7d5b463248e7127ebe095991d626b1415e624348f85de09fa8092",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T15:26:29+09:00",
+      "created_at": "2026-08-21T15:26:29+09:00",
+      "updated_at": "2026-08-21T15:26:29+09:00"
+    },
+    {
+      "id": "CHK-R30-001-SOURCE-RELEASE",
+      "title": "TASK-R30-001 corrected SOURCE_UPDATE Release Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-001",
+      "status": "Passed",
+      "result": "build marker check後のRelease Gateは13/13 PASS。適用後完成ツリーFull 26/26 PASS、failure/warning/timeout 0。",
+      "evidence": "GKS-B709 / target tree 6d5a43893d013d199a4b63df3a3ed5109ea6c1de8f7cd6701366f808a1264954 / release evidence SHA-256 109d86c7753ba919cc4717f6bc2a7ae0d36a60d78652c505ff0c816f8e33eab5",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T15:26:29+09:00",
+      "created_at": "2026-08-21T15:26:29+09:00",
+      "updated_at": "2026-08-21T15:26:29+09:00"
     }
   ],
   "workflow": {
@@ -8461,6 +8528,22 @@
     {
       "at": "2026-08-21T06:08:54.302Z",
       "message": "Project lifecycle changed: Active -> Archived"
+    },
+    {
+      "at": "2026-08-21T15:16:00+09:00",
+      "message": "AI_START実行: TASK-R30-001をSOURCE_UPDATEとして実装。Save Coreをsnapshot/write/commit境界へ分離し、1Slot Auto Saveを維持。Source ZIPとProject JSONをArtifact化し、Human反映待ちで自動停止。"
+    },
+    {
+      "at": "2026-08-21T15:26:29+09:00",
+      "message": "TASK-R30-001修正版SOURCE_UPDATEを再生成。実装内容は維持し、GKS-B709へBuild前進、build marker/critical runtime/package_manifestを同期。Quick 13/13、Accept 13/13（applied Full 26/26）、Release 13/13（applied Full 26/26）PASS。TaskはAwaitingHumanApplyのまま停止し、TASK-R30-002へ進んでいない。"
+    },
+    {
+      "at": "2026-08-21T06:35:52.837Z",
+      "message": "Development Workspace JSON merged: add=7 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-21T06:37:54.099Z",
+      "message": "Development Workspace JSON merged: add=8 update=0 delete=0"
     }
   ],
   "specification_candidates": [
