@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "workspace": {
     "id": "DEV-DEMO-B705-001",
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T05:09:54.055Z"
+    "updated_at": "2026-08-21T05:24:45.519Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -63,6 +63,20 @@
       "result": "Applied",
       "evidence": "GKS-B707 was deployed to GitHub and verified from the exported complete Source ZIP. package-build.json reports GA-B486.211 / GKS-B707; AI_START contains the Development Project Execution Protocol; development-project-data remains outside package_manifest; Quick Gate passed 11/11 with failed=0 warnings=0 timeouts=0.",
       "recorded_at": "2026-08-21T14:08:00+09:00"
+    },
+    {
+      "id": "IMPL-AI-PIPELINE-070-GKS-B708",
+      "studio_build": "GKS-B708",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-AI-PIPELINE-001"
+      ],
+      "task_ids": [
+        "TASK-AI-PIPELINE-070"
+      ],
+      "result": "Partial",
+      "evidence": "GKS-B708 SOURCE_UPDATE prepared. Development Project schema is upgraded to 1.3 in Studio with Task execution metadata: execution_order, depends_on, acceptance_criteria, work_type, requires_human_approval, approval. Task editor/view supports these fields. AI_START completion conditions explicitly require Acceptance Criteria, required Check/Gate, and Human Approval. Quick 11/11 PASS, SOURCE_UPDATE Accept 14/14 PASS, Release 28/28 PASS. Deployment not yet verified.",
+      "recorded_at": "2026-08-21T14:25:00+09:00"
     }
   ],
   "discussions": [
@@ -324,6 +338,32 @@
       "approved_at": "",
       "created_at": "2026-08-21T13:58:00+09:00",
       "updated_at": "2026-08-21T13:58:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-TASK-COMPLETION-001",
+      "title": "Development Task実行メタデータと完了条件 schema 1.3",
+      "status": "Implemented",
+      "summary": "Taskへexecution_order / depends_on / acceptance_criteria / work_type / requires_human_approval / approvalを正式追加し、1実行1TaskとFail Closed完了条件をStudioとAI_STARTへ実装する。",
+      "body": "Development Project schema 1.3でTask実行メタデータを正式保持する。\n- execution_order: nullまたは0以上の整数。複数実行可能Taskの優先順。\n- depends_on: Task ID配列。すべてDoneになるまで実行不可。\n- acceptance_criteria: 完了条件。未検証ならDone不可。\n- work_type: DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE。未設定は自動実行不可。\n- requires_human_approval: trueの場合Human承認必須。\n- approval: {status: Pending|Approved|Rejected, by, at}。\n\n旧schemaのTaskは新項目を安全な未設定値で読み込む。未設定TaskをAIが一般則で自動実行してはならない。\nStudio Task編集UIから新項目を登録・編集でき、Task詳細で実行順序・種別・依存・承認・Acceptance Criteriaを確認できる。\nAI_STARTは1回1Taskを維持し、Acceptance Criteria、必要Gate/Check、必要Human Approvalの全条件を満たすまでDoneにしない。",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-003",
+        "DEC-AI-PIPELINE-004"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-CONTRACT-001",
+        "SPEC-AI-PIPELINE-WORK-TYPE-001"
+      ],
+      "acceptance_criteria": "GKS-B708実配置後の完全Sourceでschema 1.3 Task metadataが保持される。Studio Task UIで実行順序・依存・Acceptance Criteria・work_type・Human Approvalを編集・確認できる。AI_STARTに1実行1Taskと完了条件が明記される。Quick Gateが11/11 PASSする。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T14:25:00+09:00",
+      "updated_at": "2026-08-21T14:25:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -403,6 +443,16 @@
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "010 現行Development JSON schemaを確定する",
       "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T12:15:00+09:00"
     },
@@ -411,6 +461,16 @@
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "020 実行可能Taskの機械判定規則を確定する",
       "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T13:15:00+09:00"
     },
@@ -419,6 +479,16 @@
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "030 現在案件へJSON統合のmerge semanticsを検証する",
       "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T13:25:00+09:00"
     },
@@ -427,6 +497,16 @@
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "040 Development統合JSONの正式契約を確定する",
       "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T13:38:00+09:00"
     },
@@ -435,6 +515,16 @@
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "050 work_typeとStudio・Game・Development作業経路を確定する",
       "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T13:45:00+09:00"
     },
@@ -443,6 +533,16 @@
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "060 AI_START Execution Protocolを正式導入する",
       "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T14:08:00+09:00"
     },
@@ -450,15 +550,35 @@
       "id": "TASK-AI-PIPELINE-070",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "070 1実行1Task・Acceptance Criteria・Human Approvalの終了条件を固定する",
-      "status": "Todo",
+      "status": "Doing",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T14:25:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-080",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "080 実案件でEnd-to-End往復テストを実施する",
       "status": "Todo",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
       "created_at": "2026-08-21T11:58:00+09:00",
       "updated_at": "2026-08-21T11:58:00+09:00"
     }
@@ -561,6 +681,20 @@
       "checked_at": "2026-08-21T14:08:00+09:00",
       "created_at": "2026-08-21T14:08:00+09:00",
       "updated_at": "2026-08-21T14:08:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-070-PREDEPLOY",
+      "title": "TASK-AI-PIPELINE-070 GKS-B708配置前検査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-070",
+      "status": "Passed",
+      "result": "GKS-B708更新成果物の配置前検査に合格。実配置確認前のためTaskはDoingのまま。",
+      "evidence": "Target Quick 11/11 PASS; SOURCE_UPDATE Accept 14/14 PASS; Release 28/28 PASS; artifact_id=GKS-B708-6d57ae674165; deletions=0; game data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T14:25:00+09:00",
+      "created_at": "2026-08-21T14:25:00+09:00",
+      "updated_at": "2026-08-21T14:25:00+09:00"
     }
   ],
   "workflow": {
@@ -664,6 +798,18 @@
     {
       "at": "2026-08-21T05:09:54.055Z",
       "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-21T05:24:38.506Z",
+      "message": "Development Project schema normalized to 1.2"
+    },
+    {
+      "at": "2026-08-21T14:25:00+09:00",
+      "message": "TASK-AI-PIPELINE-070 implementation prepared as GKS-B708. Development Task schema 1.3 execution metadata and completion conditions implemented. All pre-deploy Gates PASS; Task remains Doing until GitHub post-deploy Source is verified."
+    },
+    {
+      "at": "2026-08-21T05:24:45.519Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ]
 }
