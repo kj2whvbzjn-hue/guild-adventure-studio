@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T23:30:53.284Z"
+    "updated_at": "2026-08-21T23:49:42.178Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -264,6 +264,20 @@
       "result": "Partial",
       "evidence": "Development Git first-use defaults implemented. When current-project git_remote, another registered Git project, shared/remembered terminal settings are all unavailable or incomplete, Owner / Repository / Branch fall back to kj2whvbzjn-hue / guild-adventure-studio / sub. Existing project/remembered settings retain priority; PAT remains unsaved. HTML fields also render the same defaults before module initialization. Exact baseline is user-provided GKS-B724 / GA-B486.211: baseline manifest=2fe65e596bd80ce9b746be6186d0a70a47bb770e6d4332e9c2e76dc9b57507d9 tree=f89d0a584283ea1ee6579d3133422d8d60d277a7c5b3da49de0aa4c965c93e7e; target manifest=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f tree=a1e05b6bc3e39464a4dce08318896b47f3209c93dc459982fb428e00f33d0d2c. Targeted B725_GIT_DEFAULT_CONNECTION_PASS cases=3; target source Quick 11/11 PASS evidence_sha256=f9c9091365030b71f28e6b7414c6c23cb91be5674c56b0b7ea14e2e6441ec87f; Accept 13/13 PASS with applied Full 26/26 evidence_sha256=f78612ef591ad3f47627bba862d0d5b841e5d8abb047d3d2f68fa92bdbb97882; Release 13/13 PASS with applied Full 26/26 evidence_sha256=ce684ad3c4d7c01a1aa7f563d5b29aa0d6f6da882b30a10753043668ca6162a8; update ZIP sha256=bad5790a4f8938bf95aff4536b73d8a07769f1900c1fd5d73ff679de5b657c5e. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
       "recorded_at": "2026-08-22T08:13:00+09:00"
+    },
+    {
+      "id": "IMPL-R30-006",
+      "studio_build": "GKS-B726",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-006"
+      ],
+      "result": "Partial",
+      "evidence": "Skill / Passive / Skill Loadout / Formal AI persistence bridge implemented without Domain behavior or Legacy fallback. Existing Character skills/equippedSkillId/formalAiBinding plus root aiPrograms/aiLayouts/aiPresets are captured exactly. passiveIds and skillLoadoutIds are backward-compatible optional Save fields: existing v3 saves are not synthesized or migrated, and when present they are persisted opaquely as ID arrays; acquisition rules, passive effects, loadout slot count/editing and AI candidate selection remain later Domain tasks. Legacy Character AI fields aiGraph/aiPolicy/defaultSkillId remain forbidden by Current Save schema and the persistence bridge. Targeted 12/12 PASS; baseline Quick 11/11 PASS evidence_sha256=96fa11eb15485ac66bbc939138c73af18fafe4880480fcb3dd46ed402b6cf91a; target Quick 11/11 PASS evidence_sha256=b45d00dd8ca8c3689c9e13758f71f0dc1bbbbf46bf1f7eda1f5216560a57582f; Accept 13/13 PASS evidence_sha256=7812dbcfdd095c6a99e7755093eff155da117f8dab6be457598068126f72f968; Release 13/13 PASS evidence_sha256=7726719df9704817a7ceac7b877c7d32c51a4b7be47e389e9a1bf82b12011c39; update ZIP sha256=08acf0e8c208190c579a1d2329bb53b27c3658a154ebecf9b33f8d0b5e8ea383; baseline manifest=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f tree=14098d9ccfc0a90f6568b5e1bf1e829be44856600c4346733f2728ebc5227bc4; target manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=527620df31d19f85aaac9c07c6a86c08085a1f78e7a40364f63b614a4aed52fd. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T08:40:11+09:00"
     }
   ],
   "discussions": [
@@ -5852,7 +5866,7 @@
       "id": "TASK-R30-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive / AI / LoadoutのSave接続を実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 1060,
       "depends_on": [
         "TASK-R30-005"
@@ -5866,7 +5880,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T08:29:47+09:00"
+      "updated_at": "2026-08-22T08:40:11+09:00"
     },
     {
       "id": "TASK-R30-007",
@@ -9006,6 +9020,52 @@
       "blocking": false,
       "created_at": "2026-08-22T08:29:47+09:00",
       "updated_at": "2026-08-22T08:29:47+09:00"
+    },
+    {
+      "id": "CHK-R30-006-IMPLEMENTATION",
+      "title": "TASK-R30-006 Skill / Passive / AI / Loadout Save persistence verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-006",
+      "status": "Passed",
+      "result": "GKS-B726でSkill / Passive / Skill Loadout / Formal AIの専用Save Bridgeを追加。既存Skill/AI状態をexact保持し、Passive/複数枠Loadoutは後方互換な任意fieldとしてSaveが意味を再定義せず保持する。既存v3 Saveへfieldを自動追加せず、Legacy AI fieldへのFallbackも許可しない。",
+      "evidence": "game/assets/js/skill-passive-ai-save-bridge.js; game/assets/js/ai-save-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification TASK_R30_006_SKILL_PASSIVE_AI_SAVE_OK cases=12; source deletions=0; Game data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T08:40:11+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T08:40:11+09:00",
+      "updated_at": "2026-08-22T08:40:11+09:00"
+    },
+    {
+      "id": "CHK-R30-006-GATES",
+      "title": "TASK-R30-006 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-006",
+      "status": "Passed",
+      "result": "今回アップロードされたGKS-B725完全Sourceをexact baselineとしたGKS-B726更新はTarget Quick / Accept / ReleaseすべてPASS。ZIP内容hash一致・UTF-8/NFC検査PASS、warning/timeout 0。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存51 entryの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f tree=14098d9ccfc0a90f6568b5e1bf1e829be44856600c4346733f2728ebc5227bc4; target manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=527620df31d19f85aaac9c07c6a86c08085a1f78e7a40364f63b614a4aed52fd; target Quick=b45d00dd8ca8c3689c9e13758f71f0dc1bbbbf46bf1f7eda1f5216560a57582f; Accept=7812dbcfdd095c6a99e7755093eff155da117f8dab6be457598068126f72f968; Release=7726719df9704817a7ceac7b877c7d32c51a4b7be47e389e9a1bf82b12011c39; ZIP=08acf0e8c208190c579a1d2329bb53b27c3658a154ebecf9b33f8d0b5e8ea383; ZIP files=639; encoding/NFC PASS; Build marker check PASS files=190.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T08:40:11+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T08:40:11+09:00",
+      "updated_at": "2026-08-22T08:40:11+09:00"
     }
   ],
   "workflow": {
@@ -9422,6 +9482,14 @@
     {
       "at": "2026-08-21T23:30:53.284Z",
       "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-22T08:40:11+09:00",
+      "message": "AI_START実行: TASK-R30-006のみSOURCE_UPDATE。Skill / Passive / Skill Loadout / Formal AIのSave Bridgeを追加し、既存Skill/AI状態と任意passiveIds/skillLoadoutIdsをSave/Load境界でexact保持する。既存v3 Saveへ新fieldを強制せず、Legacy AI fieldは拒否。Domainの習得条件・Passive効果・Loadout編集/枠数・AI候補化は未実装。GKS-B726へ更新しTargeted 12/12、Quick 11/11、Accept 13/13、Release 13/13、ZIP hash/encoding/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-007はBlockedを維持。"
+    },
+    {
+      "at": "2026-08-21T23:49:42.178Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ],
   "specification_candidates": [
