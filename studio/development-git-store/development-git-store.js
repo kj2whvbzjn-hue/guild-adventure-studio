@@ -1,4 +1,4 @@
-/* GKS-B710 Development Git Store
+/* GKS-B711 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -151,7 +151,7 @@ async function openFromGit(options={}){
   setBusy(true);const c=connection(false),expectedProjectId=text(options?.expectedProjectId);
   setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');
   const raw=await remoteText(c),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');
-  if(expectedProjectId&&id!==expectedProjectId)throw new Error(`選択案件とGit JSONのworkspace.idが一致しません。\n選択案件: ${expectedProjectId}\nGit JSON: ${id}\nGit Path: ${c.path}\n\nGit Pathが別案件を指していないか確認してください。案件は切り替えていません。`);
+  if(expectedProjectId&&id!==expectedProjectId){state.registryVerified.delete(expectedProjectId);state.host?.markGitRegistryMismatch?.(expectedProjectId,{actual_id:id,path:c.path,sha:meta.sha});throw new Error(`選択案件とGit JSONのworkspace.idが一致しません。\n選択案件: ${expectedProjectId}\nGit JSON: ${id}\nGit Path: ${c.path}\n\nGit Pathが別案件を指していないか確認してください。案件は切り替えていません。`);}
   const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return false;
   state.loaded.add(id);state.dirty.delete(id);state.registryVerified.add(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git案件をSessionへ読込: ${id}\nRemote SHA ${meta.sha}`,'OK');return true;
  }catch(e){setStatus('読込失敗: '+e.message,'ERROR');return false;}
@@ -168,10 +168,12 @@ async function refreshRegistry(entries=[]){
    if(state.registryChecked.has(key))continue;
    const token=text(byId('devGitToken')?.value),c={owner:text(remote.owner),repo:text(remote.repo),branch:text(remote.branch)||'main',path:normalizePath(remote.path),token};
    try{
-    const meta=await remoteMeta(c);state.registryChecked.add(key);if(!meta.exists)continue;
-    if(meta.sha===text(remote.sha)&&entry.lifecycle&&entry.status){state.registryVerified.add(entry.id);continue;}
-    const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);
-    if(id!==entry.id){state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:id,path:c.path,sha:meta.sha});continue;}
+    const meta=await remoteMeta(c);if(!meta.exists){state.registryChecked.add(key);state.registryVerified.delete(entry.id);continue;}
+    // GKS-B711: registry data is only a browser cache. Even when the stored remote SHA
+    // matches, fetch the Project JSON once per browser session and rebuild name/status/lifecycle
+    // from Git. This repairs stale browser registry values after archive/status changes.
+    const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);state.registryChecked.add(key);
+    if(id!==entry.id){state.registryVerified.delete(entry.id);state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:id,path:c.path,sha:meta.sha});changed=true;continue;}
     state.host?.syncGitRegistryProject?.(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});state.registryVerified.add(entry.id);changed=true;
    }catch(_){/* Private/offline repositories remain at the last verified registry state. */}
   }
