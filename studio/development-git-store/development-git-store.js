@@ -1,4 +1,4 @@
-/* GKS-B711 Development Git Store
+/* GKS-B712 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -131,6 +131,31 @@ function fillFromEntry(entry){
 }
 function currentEntry(){return state.host?.getActiveEntry?.()||null;}
 function currentWorkspace(){return state.host?.getCurrentWorkspace?.()||null;}
+async function fetchProjectAtPath(baseConnection,path){
+ const c={...baseConnection,path:normalizePath(path)};const meta=await remoteMeta(c);if(!meta.exists)return {exists:false,c,meta,project:null,id:''};
+ const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);return {exists:true,c,meta,project,id};
+}
+function remoteRecord(c,meta){return {owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:text(meta?.sha)};}
+async function repairRegistryMismatch(expectedProjectId,currentConnection,encounteredProject,encounteredMeta){
+ const expected=text(expectedProjectId),actual=text(encounteredProject?.workspace?.id),canonical=defaultPathForProjectId(expected);
+ if(!expected||!canonical)return {ok:false,reason:'EXPECTED_PROJECT_ID_MISSING'};
+ // If the canonical path itself contains another workspace.id, Git data is ambiguous/corrupt.
+ // Never rename or overwrite Git data automatically in that case.
+ if(normalizePath(currentConnection.path)===canonical)return {ok:false,reason:'CANONICAL_PATH_ID_MISMATCH',actual_id:actual,path:canonical};
+ const resolved=await fetchProjectAtPath(currentConnection,canonical);
+ if(!resolved.exists)return {ok:false,reason:'CANONICAL_PROJECT_NOT_FOUND',actual_id:actual,path:canonical};
+ if(resolved.id!==expected)return {ok:false,reason:'CANONICAL_PROJECT_ID_MISMATCH',actual_id:resolved.id,path:canonical};
+ // The selected registry entry is proven stale: rebuild it from the canonical Git Project JSON.
+ state.host?.syncGitRegistryProject?.(resolved.project,remoteRecord(resolved.c,resolved.meta),{upsert:true});
+ state.registryVerified.add(expected);state.registryChecked.clear();
+ // If the stale path is itself the canonical path of the encountered workspace, also rebuild
+ // that project's registry entry from the same Git object. This separates e.g. 018 and 019.
+ if(actual&&normalizePath(currentConnection.path)===defaultPathForProjectId(actual)){
+  state.host?.syncGitRegistryProject?.(encounteredProject,remoteRecord(currentConnection,encounteredMeta),{upsert:true});
+  state.registryVerified.add(actual);
+ }
+ return {ok:true,project:resolved.project,remote:remoteRecord(resolved.c,resolved.meta),repaired_path:canonical,actual_id:actual};
+}
 function render(){
  const entry=currentEntry(),mode=entry?.storage_mode==='git'?'Git':'ブラウザ',loaded=entry?state.loaded.has(entry.id):false,dirty=entry?state.dirty.has(entry.id):false;
  refreshPathFromEntry(entry);setPathEditing(state.pathEditing);
@@ -151,7 +176,17 @@ async function openFromGit(options={}){
   setBusy(true);const c=connection(false),expectedProjectId=text(options?.expectedProjectId);
   setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');
   const raw=await remoteText(c),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');
-  if(expectedProjectId&&id!==expectedProjectId){state.registryVerified.delete(expectedProjectId);state.host?.markGitRegistryMismatch?.(expectedProjectId,{actual_id:id,path:c.path,sha:meta.sha});throw new Error(`選択案件とGit JSONのworkspace.idが一致しません。\n選択案件: ${expectedProjectId}\nGit JSON: ${id}\nGit Path: ${c.path}\n\nGit Pathが別案件を指していないか確認してください。案件は切り替えていません。`);}
+  if(expectedProjectId&&id!==expectedProjectId){
+   state.registryVerified.delete(expectedProjectId);
+   const repaired=await repairRegistryMismatch(expectedProjectId,c,project,meta);
+   if(repaired.ok){
+    const repairedId=text(repaired.project?.workspace?.id);state.loaded.add(repairedId);state.dirty.delete(repairedId);state.registryVerified.add(repairedId);
+    state.host.openGitProject(repaired.project,repaired.remote);fillFromEntry(state.host.getActiveEntry());
+    setStatus(`Git案件Registryを自動修復してSessionへ読込: ${repairedId}\n修復Path ${repaired.repaired_path}\nRemote SHA ${repaired.remote.sha}`,'OK');return true;
+   }
+   state.host?.markGitRegistryMismatch?.(expectedProjectId,{actual_id:id,path:c.path,sha:meta.sha,reason:repaired.reason});
+   throw new Error(`選択案件とGit JSONのworkspace.idが一致しません。\n選択案件: ${expectedProjectId}\nGit JSON: ${id}\nGit Path: ${c.path}\n標準Path: ${defaultPathForProjectId(expectedProjectId)}\n復旧結果: ${repaired.reason}\n\n標準Pathとworkspace.idを照合できないため案件は切り替えていません。`);
+  }
   const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return false;
   state.loaded.add(id);state.dirty.delete(id);state.registryVerified.add(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git案件をSessionへ読込: ${id}\nRemote SHA ${meta.sha}`,'OK');return true;
  }catch(e){setStatus('読込失敗: '+e.message,'ERROR');return false;}
@@ -169,11 +204,15 @@ async function refreshRegistry(entries=[]){
    const token=text(byId('devGitToken')?.value),c={owner:text(remote.owner),repo:text(remote.repo),branch:text(remote.branch)||'main',path:normalizePath(remote.path),token};
    try{
     const meta=await remoteMeta(c);if(!meta.exists){state.registryChecked.add(key);state.registryVerified.delete(entry.id);continue;}
-    // GKS-B711: registry data is only a browser cache. Even when the stored remote SHA
+    // GKS-B712: registry data is only a browser cache. Even when the stored remote SHA
     // matches, fetch the Project JSON once per browser session and rebuild name/status/lifecycle
     // from Git. This repairs stale browser registry values after archive/status changes.
     const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);state.registryChecked.add(key);
-    if(id!==entry.id){state.registryVerified.delete(entry.id);state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:id,path:c.path,sha:meta.sha});changed=true;continue;}
+    if(id!==entry.id){
+     state.registryVerified.delete(entry.id);const repaired=await repairRegistryMismatch(entry.id,c,project,meta);
+     if(repaired.ok){changed=true;continue;}
+     state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:id,path:c.path,sha:meta.sha,reason:repaired.reason});changed=true;continue;
+    }
     state.host?.syncGitRegistryProject?.(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});state.registryVerified.add(entry.id);changed=true;
    }catch(_){/* Private/offline repositories remain at the last verified registry state. */}
   }
@@ -218,7 +257,13 @@ async function saveCurrent(){
  finally{setBusy(false);render();}
 }
 async function reloadCurrent(){
- try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git案件を選択してください。');if(isDirty(entry.id)&&!confirm('現在案件にGit未保存の変更があります。Remote内容で破棄して再読込しますか？'))return;fillFromEntry(entry);const c=connection(false);setStatus('Remoteから現在案件を再読込しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('Remote JSONがありません。');const raw=await remoteText(c),project=parseProject(raw);if(text(project?.workspace?.id)!==entry.id)throw new Error(`workspace.idが一致しません: ${project?.workspace?.id}`);state.loaded.add(entry.id);state.dirty.delete(entry.id);state.registryVerified.add(entry.id);state.host.replaceGitWorkspace(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});setStatus(`再読込完了\nRemote SHA ${meta.sha}`,'OK');}
+ try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git案件を選択してください。');if(isDirty(entry.id)&&!confirm('現在案件にGit未保存の変更があります。Remote内容で破棄して再読込しますか？'))return;fillFromEntry(entry);const c=connection(false);setStatus('Remoteから現在案件を再読込しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('Remote JSONがありません。');const raw=await remoteText(c),project=parseProject(raw),actualId=text(project?.workspace?.id);
+  if(actualId!==entry.id){
+   state.registryVerified.delete(entry.id);const repaired=await repairRegistryMismatch(entry.id,c,project,meta);
+   if(!repaired.ok){state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:actualId,path:c.path,sha:meta.sha,reason:repaired.reason});throw new Error(`workspace.idが一致しません: ${actualId} / 標準Path復旧失敗: ${repaired.reason}`);}
+   state.loaded.add(entry.id);state.dirty.delete(entry.id);state.registryVerified.add(entry.id);state.host.replaceGitWorkspace(repaired.project,repaired.remote);fillFromEntry(state.host.getActiveEntry());setStatus(`Registry自動修復・再読込完了\n修復Path ${repaired.repaired_path}\nRemote SHA ${repaired.remote.sha}`,'OK');return;
+  }
+  state.loaded.add(entry.id);state.dirty.delete(entry.id);state.registryVerified.add(entry.id);state.host.replaceGitWorkspace(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});setStatus(`再読込完了\nRemote SHA ${meta.sha}`,'OK');}
  catch(e){setStatus('再読込失敗: '+e.message,'ERROR');}
  finally{setBusy(false);render();}
 }
