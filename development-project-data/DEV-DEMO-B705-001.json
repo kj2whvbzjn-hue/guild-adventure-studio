@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T04:14:55.775Z"
+    "updated_at": "2026-08-21T04:19:23.291Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -168,6 +168,29 @@
       "approved_at": "",
       "created_at": "2026-08-21T12:15:00+09:00",
       "updated_at": "2026-08-21T12:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+      "title": "AI実行可能Taskの決定規則",
+      "status": "Verified",
+      "summary": "Development ProjectからAIが今回実行するTaskを一意かつFail Closedで選ぶための判定規則を確定した。",
+      "body": "AI_STARTがDevelopment Projectから「今回実行するTask」を一意に選ぶための機械判定規則を確定する。\n\n【正式判定規則（目標schema）】\nTaskは次の条件をすべて満たす場合のみ executable とする。\n\n1. status が Todo または Doing である。\n   - Done は対象外。\n   - Blocked は対象外。\n2. Taskが参照する box_id が実在するWork Boxである。\n3. Work Boxが参照する node_id が実在するArchitecture Nodeである。\n4. depends_on に列挙されたTaskがすべて Done である。\n5. requires_human_approval=true の場合、task approval が Approved である。\n6. work_type がAI_STARTで定義された実行可能な作業経路のいずれかである。\n7. lifecycle.status が Active である。\n8. workflow.stage がTaskのwork_typeを実行可能な段階である。\n9. ai_attention=Exclude の案件は自動選択しない。\n\n【複数Taskがexecutableの場合の決定順】\n1. execution_order の昇順。\n2. 同値ならTask idの辞書順。\n3. それでも一意でなければ作業を開始せずHuman確認を要求する。\n\n【1回の実行範囲】\n初期運用では選択されたTask 1件だけを実行する。完了後に次Taskへ自動連続着手しない。\n\n【Task完了条件】\nTaskは次の条件をすべて満たした場合だけ Done にできる。\n1. acceptance_criteria をすべて検証済み。\n2. Taskで要求されたGate / CheckがPassedまたは明示的にWaived。\n3. 必要なHuman Approvalが完了。\n4. 作業結果をDevelopment統合JSONへ記録できる。\n未達の場合は Doing または Blocked のままとする。\n\n【現行schema v1.2で不足するTaskフィールド】\n- execution_order\n- depends_on\n- acceptance_criteria\n- work_type\n- requires_human_approval\n- approval status（Task単位）\n\nこれらは現行 normalizeDevelopmentWorkspace のTask正規化では保持されないため、正式運用前にschema拡張が必要。\n\n【現行パイプライン案件だけの暫定順序】\nTASK-AI-PIPELINE-010〜080については、既にWork Box本文に固定された順序をHumanが承認して登録しているため、schema拡張が完了するまでTask IDの数値部分を暫定execution_orderとして扱う。\nこの暫定規則は一般案件には適用しない。\n\n【Fail Closed】\n必要な依存関係、順序、承認状態、work_typeを一意に判断できない場合、AIは推測でTaskを選ばず停止して不足情報を報告する。\nGate・テスト・セキュリティ条件をTask実行のために緩和してはならない。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-003"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001"
+      ],
+      "acceptance_criteria": "Todo/Doing・依存完了・Human Approval・work_type・workflow/lifecycleを判定し、複数候補はexecution_order→Task IDで一意に決定する規則が定義されている。不明時は推測せず停止し、初期運用は1実行1Taskとする。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:15:00+09:00",
+      "updated_at": "2026-08-21T13:15:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -209,9 +232,9 @@
       "id": "TASK-AI-PIPELINE-020",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "020 実行可能Taskの機械判定規則を確定する",
-      "status": "Todo",
+      "status": "Done",
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T13:15:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-030",
@@ -276,6 +299,20 @@
       "checked_at": "2026-08-21T12:15:00+09:00",
       "created_at": "2026-08-21T12:15:00+09:00",
       "updated_at": "2026-08-21T12:15:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-020",
+      "title": "TASK-AI-PIPELINE-020 実行可能Task判定規則確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-020",
+      "status": "Passed",
+      "result": "現行schema v1.2の制約を前提に、正式運用時のTask選択アルゴリズムとFail Closed条件を確定。現行案件の010〜080だけはTask ID数値順を暫定順序として使用し、一般案件には適用しない。",
+      "evidence": "Development Project: TASK-AI-PIPELINE-010=Done, 020=Todo。GKS-B706 studio/index.html normalizeDevelopmentWorkspaceではTask保持項目はid/box_id/title/status/created_at/updated_atのみ。",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:15:00+09:00",
+      "created_at": "2026-08-21T13:15:00+09:00",
+      "updated_at": "2026-08-21T13:15:00+09:00"
     }
   ],
   "workflow": {
@@ -330,6 +367,14 @@
     },
     {
       "at": "2026-08-21T04:14:55.775Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:15:00+09:00",
+      "message": "TASK-AI-PIPELINE-020 completed: AI実行可能Taskの機械判定規則を確定。正式運用は依存関係・execution_order・Acceptance Criteria・work_type・Task単位Human Approvalを使用し、不明時はFail Closed。次工程: TASK-AI-PIPELINE-030。"
+    },
+    {
+      "at": "2026-08-21T04:19:23.291Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
     }
   ]
