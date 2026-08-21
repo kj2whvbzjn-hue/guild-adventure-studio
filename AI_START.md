@@ -228,14 +228,16 @@ Development Taskの`work_type`は初期正式仕様として次の3種類だけ�
 
 複数Taskが実行可能な場合は`execution_order`昇順、次にTask ID辞書順で決める。一意に判断できない場合はFail Closedで停止する。
 
-**現行Development schemaに上記実行メタデータが存在しない案件を、AIが一般則で自動実行してはならない。** ユーザーがTaskを明示した場合、または案件内に人間承認済みの一意な暫定順序が明記されている場合だけ、その明示情報を使用できる。schema対応後は暫定順序へ依存しない。
+Development Project schema 1.3では、Task実行メタデータとして`execution_order` / `depends_on` / `acceptance_criteria` / `work_type` / `requires_human_approval` / `approval`を正式に保持する。旧schemaから読み込んだTaskでこれらが未設定の場合は、AIが一般則で自動実行してはならない。ユーザーがTaskを明示した場合、または案件内に人間承認済みの一意な暫定順序が明記されている場合だけ、その明示情報を使用できる。新規・更新Taskは原則として実行メタデータを設定し、暫定順序へ依存しない。
 
 ### 12.5 1回の実行範囲
 
 初期運用では、1回のAI作業で実行するDevelopment Taskは原則1件とする。
 
 - 選択Taskを完了しても次Taskへ自動連続着手しない。
-- Acceptance Criteria、必要Gate / Check、必要Human Approvalを確認できないTaskを`Done`にしない。
+- `acceptance_criteria`をすべて検証できないTaskを`Done`にしない。
+- Taskに紐付く必要Gate / Checkが`Passed`または明示的`Waived`でない場合は`Done`にしない。
+- `requires_human_approval=true`の場合、`approval.status=Approved`でないTaskを実行開始または`Done`にしない。
 - 未完了条件がある場合は`Doing`または`Blocked`として結果を返す。
 - Gate / Test / Security条件をTask完了のために弱体化しない。
 

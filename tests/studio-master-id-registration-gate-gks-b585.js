@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 
-assert.strictEqual(build.studio_build,'GKS-B707');
+assert.strictEqual(build.studio_build,'GKS-B708');
 assert.ok(html.includes('function masterIdPattern(category)'), 'master ID pattern helper missing');
 assert.ok(html.includes('function validateMasterIdForCategory(category,id)'), 'master ID validation helper missing');
 assert.ok(html.includes('const idError=validateMasterIdForCategory(c,id);if(idError)return alert(idError);'), 'saveMaster must reject invalid category IDs before persistence');

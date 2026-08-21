@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('assert');const fs=require('fs');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B707');
+assert.strictEqual(build.studio_build,'GKS-B708');
 const html=fs.readFileSync('studio/index.html','utf8');
 const skg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 assert.ok(html.includes('id="skgBootDiagnosticsLog"'),'diagnostic log shell missing');
