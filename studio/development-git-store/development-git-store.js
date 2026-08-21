@@ -1,4 +1,4 @@
-/* GKS-B705 Development Git Store
+/* GKS-B706 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -138,7 +138,7 @@ function render(){
   if(!entry)el.textContent='現在案件なし';
   else el.innerHTML=`<b>${esc(entry.name||entry.id)}</b><br>ID: ${esc(entry.id)} / 保存方式: ${mode}${entry.storage_mode==='git'?` / Session読込: ${loaded?'済':'未'} / Git未保存: ${dirty?'あり':'なし'}`:''}`;
  }
- const save=byId('devGitSaveCurrent');if(save)save.disabled=state.busy||!entry||entry.storage_mode!=='git'||!loaded;
+ const save=byId('devGitSaveCurrent');if(save)save.disabled=state.busy||!entry||(entry.storage_mode==='git'&&!loaded);
  const reload=byId('devGitReloadCurrent');if(reload)reload.disabled=state.busy||!entry||entry.storage_mode!=='git';
 }
 function isLoaded(id){return state.loaded.has(String(id||''));}
@@ -160,9 +160,30 @@ async function uploadFile(file){
  finally{byId('devGitFile').value='';setBusy(false);render();}
 }
 async function saveCurrent(){
- try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git'||!isLoaded(entry.id))throw new Error('Sessionへ読み込まれたGit案件を開いてください。');const ws=currentWorkspace();if(!ws)throw new Error('現在案件データを取得できません。');fillFromEntry(entry);const c=connection(true),remote=entry.git_remote||{};
- if(c.owner!==remote.owner||c.repo!==remote.repo||c.branch!==remote.branch||c.path!==remote.path)throw new Error('現在案件の登録済みGit接続先と入力欄が一致しません。接続先変更はJSONファイル→Git保存から新しい案件として行ってください。');
- setStatus('現在案件をGit保存しています…');const out=await commitProjectOnly(c,JSON.stringify(ws,null,2)+'\n',`Update Development Project ${entry.id}`,text(remote.sha));state.host.updateGitRemote(entry.id,{...remote,sha:out.file_sha});markClean(entry.id);setStatus(`Git保存完了\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');}
+ try{
+  setBusy(true);
+  const entry=currentEntry();if(!entry)throw new Error('現在案件を開いてください。');
+  const wasGit=entry.storage_mode==='git';
+  if(wasGit&&!isLoaded(entry.id))throw new Error('Git案件をSessionへ読み込んでください。');
+  const ws=currentWorkspace();if(!ws)throw new Error('現在案件データを取得できません。');
+  fillFromEntry(entry);const c=connection(true),remote=entry.git_remote||{};
+  if(wasGit){
+   if(c.owner!==remote.owner||c.repo!==remote.repo||c.branch!==remote.branch||c.path!==remote.path)throw new Error('現在案件の登録済みGit接続先と入力欄が一致しません。接続先変更はJSONファイル→Git保存から新しい案件として行ってください。');
+   setStatus('現在案件をGit保存しています…');
+   const out=await commitProjectOnly(c,JSON.stringify(ws,null,2)+'\n',`Update Development Project ${entry.id}`,text(remote.sha));
+   state.host.updateGitRemote(entry.id,{...remote,sha:out.file_sha});markClean(entry.id);
+   setStatus(`Git保存完了\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');
+   return;
+  }
+  const meta=await remoteMeta(c);
+  if(meta.exists)throw new Error(`指定Git Pathには既にファイルがあります。既存案件を上書きせず「Gitから案件を開く」で読み込んでください。\n${c.path}\nSHA ${meta.sha}`);
+  setStatus('現在案件をGitへ新規保存しています…');
+  const out=await commitProjectOnly(c,JSON.stringify(ws,null,2)+'\n',`Store Development Project ${entry.id}`,'');
+  state.loaded.add(entry.id);state.dirty.delete(entry.id);
+  state.host.openGitProject(ws,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});
+  fillFromEntry(state.host.getActiveEntry());
+  setStatus(`Git新規保存完了: ${entry.id}\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');
+ }
  catch(e){setStatus('Git保存失敗: '+e.message,'ERROR');}
  finally{setBusy(false);render();}
 }

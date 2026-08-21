@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b705";
+const CACHE_NAME="gks-studio-b706";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=705';
+const OFFLINE_URL='./index.html?appv=706';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=705",
+  "./index.html?appv=706",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
@@ -42,7 +42,7 @@ const APP_SHELL=[
   "./ai-production/ai-simulation-runner.js?v=1",
   "./ai-production/ai-export-adapter.js?v=1",
   "./ai-production/ai-production-ui.js?v=1",
-  "./layer-controller.js?v=705",
+  "./layer-controller.js?v=706",
   "./data-exchange/schemas/ai_program-dataset.schema.json",
   "./data-exchange/full-import-gate.js?v=1",
   "./data-exchange/data-exchange-integrity-validator.js?v=4",
