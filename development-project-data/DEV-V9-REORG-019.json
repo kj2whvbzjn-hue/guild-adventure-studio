@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T23:26:53.074Z"
+    "updated_at": "2026-08-21T23:30:53.284Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -225,9 +225,9 @@
       "task_ids": [
         "TASK-R30-005"
       ],
-      "result": "Partial",
-      "evidence": "Inventory / Equipment ownership Save Bridge added without Domain calculations. Root inventory[] and Character ID -> equipment object ownership projection are captured exactly before Save snapshot normalization and compared after snapshot build and Load normalization; any ownership mutation rejects persistence. Equipment requirement/bonus logic, capacity, duplicate policy, Skill/AI and later Domain semantics are not redefined. Targeted 10/10 PASS; Quick 11/11 PASS evidence_sha256=b8aca6f9869b6448c43cd1637b7af46e4038e1c5607028422d970374de100ce4; Accept 13/13 PASS evidence_sha256=e569ecbc4137597cf4026bbcaf727a38575bef322012d4decbe7845aa0e9f417; Release 13/13 PASS evidence_sha256=d043e1626d4b2acc2356bd1e4bc48518147ef0e4800e69dc8df3c81c2f71edde; update ZIP sha256=8018600590e1b207e24383c1d76393371eb97b76d350fd1586a5b2d1ce73ce13; baseline tree=c3f23b5d8677d75342e0d02e96a4f835e0779f8f60314b03d2aa23d5b76518ae target tree=d1c5dde60a1f9a222090ffcd8f6545c55f27617b23c4517fc6f4c35de93b366f. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T06:20:51+09:00"
+      "result": "Applied",
+      "evidence": "GKS-B722 Inventory / Equipment ownership Save Bridge was Human-applied and remains present in the user-provided Current Source GKS-B725 / GA-B486.211. Current package_manifest SHA-256=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f; game/assets/js/inventory-equipment-save-bridge.js SHA-256=1ba16406175e572ec8b5e989299abb1c7764b1f3d7aacb5a7e964bd8f5d24442 and game/assets/js/app-runtime.js SHA-256=f5c1e4afec99ea12e189103d932450471818eb3af0fe4bd910db3e7a25d0811c are byte-identical to the GKS-B722 update artifact; game/index.html retains the bridge load with only later Build/cache-token advancement to b725. Current Quick 11/11 PASS evidence_sha256=a7f25fb920cf3b998da4d02e6d1d7f9c1e43838baebdb6d44acdc8acdda6cb78; current targeted ownership persistence verification 10/10 PASS plus runtime wiring checks PASS (capture before snapshot, assert after snapshot, assert after load, bridge exposure, script load). Build marker check PASS studio=GKS-B725 files=190. B722 update ZIP SHA-256=8018600590e1b207e24383c1d76393371eb97b76d350fd1586a5b2d1ce73ce13. Inventory and Character ID -> equipment ownership remain exact across Save/Load; Save does not redefine equipment requirements/bonuses/capacity/duplicate policy. Source changes=0 in this verification run; source deletions=0; Game data changes/exclusions=0.",
+      "recorded_at": "2026-08-22T08:29:47+09:00"
     },
     {
       "id": "IMPL-DEV-CHECK-RESOLUTION-001",
@@ -5832,7 +5832,7 @@
       "id": "TASK-R30-005",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Inventory / Equipment所有状態のSave接続を実装する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 1050,
       "depends_on": [
         "TASK-R30-004"
@@ -5846,13 +5846,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T22:08:33+09:00"
+      "updated_at": "2026-08-22T08:29:47+09:00"
     },
     {
       "id": "TASK-R30-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive / AI / LoadoutのSave接続を実装する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 1060,
       "depends_on": [
         "TASK-R30-005"
@@ -5866,7 +5866,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T15:05:00+09:00"
+      "updated_at": "2026-08-22T08:29:47+09:00"
     },
     {
       "id": "TASK-R30-007",
@@ -8983,6 +8983,29 @@
       "blocking": false,
       "created_at": "2026-08-22T08:13:00+09:00",
       "updated_at": "2026-08-22T08:13:00+09:00"
+    },
+    {
+      "id": "CHK-R30-005-HUMAN-APPLY-VERIFY",
+      "title": "TASK-R30-005 Human Apply / Current Source verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-005",
+      "status": "Passed",
+      "result": "Current Source GKS-B725上でGKS-B722のInventory / Equipment所有状態Save Bridgeが維持され、保存前後の所有状態exact保持とRuntime接続を再確認。TASK-R30-005 Acceptance CriteriaをCurrent実体で満たすためDone確定。",
+      "evidence": "Current package-build.json=GKS-B725 / GA-B486.211; package_manifest sha256=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f; bridge/app-runtime byte-identical to GKS-B722 artifact; targeted current verification 10/10 PASS; wiring 5/5 PASS; Quick 11/11 PASS evidence_sha256=a7f25fb920cf3b998da4d02e6d1d7f9c1e43838baebdb6d44acdc8acdda6cb78; build markers check PASS files=190; source/game data/deletion/exclusion changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T08:29:47+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T08:29:47+09:00",
+      "updated_at": "2026-08-22T08:29:47+09:00"
     }
   ],
   "workflow": {
@@ -9391,6 +9414,14 @@
     {
       "at": "2026-08-21T23:26:53.074Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-22T08:29:47+09:00",
+      "message": "AI_START実行: TASK-R30-005のみHuman Apply後Current Source再検証。ユーザー提供Current Source GKS-B725 / GA-B486.211でB722のInventory / Equipment ownership Save Bridgeを確認し、bridge/app-runtimeはB722 artifactとbyte-identical、index.htmlはlater Build token追随のみ。Targeted 10/10、wiring 5/5、Quick 11/11、Build marker check PASS。TASK-R30-005をDoneへ確定しTASK-R30-006をTodoへ解放。Source/Gameデータ変更・削除・除外は0件、TASK-R30-006には未着手。"
+    },
+    {
+      "at": "2026-08-21T23:30:53.284Z",
+      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
     }
   ],
   "specification_candidates": [
