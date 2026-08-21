@@ -1,4 +1,4 @@
-/* GKS-B709 Development Git Store
+/* GKS-B710 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -9,7 +9,7 @@
 'use strict';
 const DATA_ROOT='development-project-data/';
 const API_VERSION='2022-11-28';
-const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,pathEditing:false};
+const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,pathEditing:false,registryRefreshing:false,registryChecked:new Set(),registryVerified:new Set()};
 const byId=id=>document.getElementById(id);
 const text=v=>String(v??'').trim();
 const safeId=v=>text(v).replace(/[^A-Za-z0-9._-]+/g,'_')||'development-project';
@@ -143,19 +143,47 @@ function render(){
 }
 function isLoaded(id){return state.loaded.has(String(id||''));}
 function isDirty(id){return state.dirty.has(String(id||''));}
+function isRegistryVerified(id){return state.registryVerified.has(String(id||''));}
 function markDirty(id){const key=String(id||'');if(!key||!state.loaded.has(key))return;state.dirty.add(key);render();setStatus('現在案件にGit未保存の変更があります。','WARN');}
 function markClean(id){state.dirty.delete(String(id||''));render();}
-async function openFromGit(){
- try{setBusy(true);const c=connection(false);setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');const raw=await remoteText(c),project=parseProject(raw);const id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git案件をSessionへ読込: ${id}\nRemote SHA ${meta.sha}`,'OK');return true;}
- catch(e){setStatus('読込失敗: '+e.message,'ERROR');return false;}
+async function openFromGit(options={}){
+ try{
+  setBusy(true);const c=connection(false),expectedProjectId=text(options?.expectedProjectId);
+  setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');
+  const raw=await remoteText(c),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');
+  if(expectedProjectId&&id!==expectedProjectId)throw new Error(`選択案件とGit JSONのworkspace.idが一致しません。\n選択案件: ${expectedProjectId}\nGit JSON: ${id}\nGit Path: ${c.path}\n\nGit Pathが別案件を指していないか確認してください。案件は切り替えていません。`);
+  const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return false;
+  state.loaded.add(id);state.dirty.delete(id);state.registryVerified.add(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git案件をSessionへ読込: ${id}\nRemote SHA ${meta.sha}`,'OK');return true;
+ }catch(e){setStatus('読込失敗: '+e.message,'ERROR');return false;}
  finally{setBusy(false);render();}
+}
+async function refreshRegistry(entries=[]){
+ if(state.registryRefreshing)return false;
+ const rows=(Array.isArray(entries)?entries:[]).filter(entry=>entry?.storage_mode==='git'&&entry?.git_remote?.owner&&entry?.git_remote?.repo&&entry?.git_remote?.path);
+ if(!rows.length)return false;
+ state.registryRefreshing=true;let changed=false;
+ try{
+  for(const entry of rows){
+   const remote=entry.git_remote||{},key=[entry.id,remote.owner,remote.repo,remote.branch||'main',remote.path,remote.sha||''].join('|');
+   if(state.registryChecked.has(key))continue;
+   const token=text(byId('devGitToken')?.value),c={owner:text(remote.owner),repo:text(remote.repo),branch:text(remote.branch)||'main',path:normalizePath(remote.path),token};
+   try{
+    const meta=await remoteMeta(c);state.registryChecked.add(key);if(!meta.exists)continue;
+    if(meta.sha===text(remote.sha)&&entry.lifecycle&&entry.status){state.registryVerified.add(entry.id);continue;}
+    const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);
+    if(id!==entry.id){state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:id,path:c.path,sha:meta.sha});continue;}
+    state.host?.syncGitRegistryProject?.(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});state.registryVerified.add(entry.id);changed=true;
+   }catch(_){/* Private/offline repositories remain at the last verified registry state. */}
+  }
+ }finally{state.registryRefreshing=false;}
+ return changed;
 }
 async function uploadFile(file){
  if(!file)return;
  try{setBusy(true);const raw=await file.text(),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');if(!state.pathEditing||!normalizePath(byId('devGitPath')?.value))byId('devGitPath').value=defaultPathForProjectId(id);const c=connection(true);
  const meta=await remoteMeta(c);if(meta.exists&&!confirm(`Remoteに既存JSONがあります。\n${c.path}\nSHA ${meta.sha}\n\n新しいCommitで更新しますか？`)){setStatus('Git保存をキャンセルしました。');return;}
  const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id)&&!confirm(`現在のGit案件 ${current.id} にGit未保存の変更があります。\n破棄して ${id} を開きますか？`))return;setStatus('Project JSONをGit保存しています…');const out=await commitProjectOnly(c,JSON.stringify(project,null,2)+'\n',`Store Development Project ${id}`,meta.sha);
- state.loaded.add(id);state.dirty.delete(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git保存・案件読込完了: ${id}\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');}
+ state.loaded.add(id);state.dirty.delete(id);state.registryVerified.add(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});fillFromEntry(state.host.getActiveEntry());setStatus(`Git保存・案件読込完了: ${id}\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');}
  catch(e){setStatus('Git保存失敗: '+e.message,'ERROR');}
  finally{byId('devGitFile').value='';setBusy(false);render();}
 }
@@ -179,7 +207,7 @@ async function saveCurrent(){
   if(meta.exists)throw new Error(`指定Git Pathには既にファイルがあります。既存案件を上書きせず「Gitから案件を開く」で読み込んでください。\n${c.path}\nSHA ${meta.sha}`);
   setStatus('現在案件をGitへ新規保存しています…');
   const out=await commitProjectOnly(c,JSON.stringify(ws,null,2)+'\n',`Store Development Project ${entry.id}`,'');
-  state.loaded.add(entry.id);state.dirty.delete(entry.id);
+  state.loaded.add(entry.id);state.dirty.delete(entry.id);state.registryVerified.add(entry.id);
   state.host.openGitProject(ws,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha});
   fillFromEntry(state.host.getActiveEntry());
   setStatus(`Git新規保存完了: ${entry.id}\nProject data commit ${out.commit_sha}\npackage_manifestは変更しません。Source ZIPは出力していません。`,'OK');
@@ -188,7 +216,7 @@ async function saveCurrent(){
  finally{setBusy(false);render();}
 }
 async function reloadCurrent(){
- try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git案件を選択してください。');if(isDirty(entry.id)&&!confirm('現在案件にGit未保存の変更があります。Remote内容で破棄して再読込しますか？'))return;fillFromEntry(entry);const c=connection(false);setStatus('Remoteから現在案件を再読込しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('Remote JSONがありません。');const raw=await remoteText(c),project=parseProject(raw);if(text(project?.workspace?.id)!==entry.id)throw new Error(`workspace.idが一致しません: ${project?.workspace?.id}`);state.loaded.add(entry.id);state.dirty.delete(entry.id);state.host.replaceGitWorkspace(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});setStatus(`再読込完了\nRemote SHA ${meta.sha}`,'OK');}
+ try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git案件を選択してください。');if(isDirty(entry.id)&&!confirm('現在案件にGit未保存の変更があります。Remote内容で破棄して再読込しますか？'))return;fillFromEntry(entry);const c=connection(false);setStatus('Remoteから現在案件を再読込しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('Remote JSONがありません。');const raw=await remoteText(c),project=parseProject(raw);if(text(project?.workspace?.id)!==entry.id)throw new Error(`workspace.idが一致しません: ${project?.workspace?.id}`);state.loaded.add(entry.id);state.dirty.delete(entry.id);state.registryVerified.add(entry.id);state.host.replaceGitWorkspace(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});setStatus(`再読込完了\nRemote SHA ${meta.sha}`,'OK');}
  catch(e){setStatus('再読込失敗: '+e.message,'ERROR');}
  finally{setBusy(false);render();}
 }
@@ -205,6 +233,6 @@ function init(host){
  refreshPathFromEntry(currentEntry(),{force:true});setPathEditing(false);render();return api;
 }
 function focus(){const entry=currentEntry();fillFromEntry(entry);const card=byId('developmentGitStoreCard');card?.scrollIntoView({behavior:'smooth',block:'start'});byId('devGitOwner')?.focus();}
-const api={init,render,focus,fillFromEntry,togglePathEditing,defaultPathForProjectId,isLoaded,isDirty,markDirty,markClean,openFromGit,saveCurrent,reloadCurrent,testConnection};
+const api={init,render,focus,fillFromEntry,togglePathEditing,defaultPathForProjectId,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,openFromGit,refreshRegistry,saveCurrent,reloadCurrent,testConnection};
 global.GKSDevelopmentGitStore=api;
 })(window);
