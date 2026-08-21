@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T04:19:23.291Z"
+    "updated_at": "2026-08-21T04:37:01.458Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -191,13 +191,82 @@
       "approved_at": "",
       "created_at": "2026-08-21T13:15:00+09:00",
       "updated_at": "2026-08-21T13:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-MERGE-SEMANTICS-001",
+      "title": "現在案件へJSON統合のmerge semantics",
+      "status": "Verified",
+      "summary": "GKS-B706の現在案件JSON統合は、ID単位additive upsert・削除なし・既存ID更新時はRecord全体置換であることを確定した。",
+      "body": "GKS-B706の studio/index.html に実装されている prepareDevelopmentWorkspaceMerge / developmentMergeRows / developmentMergeHistory を確認し、「現在案件へJSONを統合」のmerge semanticsを確定した。\n\n【トップレベルの扱い】\n1. Importに存在しないトップレベルkeyは現在案件を維持する。\n2. schema_versionは統合後に1.2へ固定される。\n3. workspace.id / workspace.name は現在案件の値を必ず維持する。\n4. workspaceでImportから変更できるのは status / ai_attention のみ。\n5. 削除処理は存在せず、常に delete=0。\n\n【ID付き配列】\n対象:\nproject_rules / implementation_records / discussions / decisions / specifications /\nspecification_candidates / system_nodes / system_contracts / system_connections /\nsystem_flags / system_events / system_impacts / architecture_nodes / work_boxes / tasks / checks\n\n挙動:\n- Import側にその配列keyが無ければ現在値を維持する。\n- Import側に配列keyがあれば、ID単位でADD / UPDATE / SAMEを判定する。\n- 未登録IDは追加。\n- 既存IDで同一内容なら変更なし。\n- 既存IDで内容が異なる場合、既存Recordへfield-level patchするのではなく、Import側Recordで「Record全体を置換」する。\n- Importに含まれない既存IDは残る。\n- Import内のID重複はエラー。\n- ID無しRecordはエラー。\n\n【重要な安全上の結論】\n配列RecordのUPDATEは部分更新ではない。\n例として既存Taskに将来 execution_order / depends_on / acceptance_criteria 等を追加した後、\nAIが {id, status} だけを返すと、normalize後のImport Recordで既存Task Record全体が置換される。\nそのため、AI作業結果JSONで既存RecordをUPDATEする場合は、現行実装では「そのRecordの完全形」を返す必要がある。\nTASK-AI-PIPELINE-040では、この事故を防ぐDevelopment統合JSON契約を正式化する必要がある。\n\n【Object key】\nproject_context / current_focus / source_baseline / lifecycle / workflow:\n- Importにkeyが無ければ現在値を維持。\n- Importにkeyがあれば、field-level mergeではなくnormalizeされたObject全体で置換する。\n- したがって部分Objectを返すと、省略fieldが既定値へ戻る可能性がある。\n\n【history】\n- 追記専用。\n- created_at / updated_atを除いたstable比較で同一Recordを判定。\n- 同一なら追加しない。\n- Importに無い既存historyは維持。\n- 削除なし。\n\n【正規化との関係】\nImportは現在案件と一度compositeを作り normalizeDevelopmentWorkspace を通した後にmergeされる。\nこのためArchitecture → Work Box → Taskなどの参照制約はImport側Recordにも適用される。\n無効な参照を持つImport Recordは正規化で落ち、期待した追加・更新にならない可能性がある。\n\n【TASK-030の結論】\n現行「現在案件へJSONを統合」は、\n- additive upsert\n- no delete\n- ID単位\n- Record updateはfull replacement\nという仕様である。\n\nしたがってAI報告をこの窓口へ直接統合する設計は可能だが、\n既存Recordを更新するAI出力は「完全Record」を返す契約にするか、\nStudio側mergeを明示的なfield patch方式へ改修する必要がある。\n安全性とschema拡張耐性を考えると、TASK-040ではAI出力契約を完全Record方式に固定しつつ、将来的にはpatch専用semanticsを別途検討するのが安全。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-002"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001",
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001"
+      ],
+      "acceptance_criteria": "配列ADD/UPDATE/SAME、Object更新、history追記、削除なし、既存Record更新がfield patchではなくfull replacementであることがソース実装に基づき記録され、AI作業結果JSONへの影響が明示されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:25:00+09:00",
+      "updated_at": "2026-08-21T13:25:00+09:00"
     }
   ],
   "specification_candidates": [],
   "system_nodes": [],
   "system_contracts": [],
   "system_connections": [],
-  "system_flags": [],
+  "system_flags": [
+    {
+      "id": "FLAG-00001",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-SCHEMA-001",
+      "key": "SPEC_APPROVED",
+      "value": true,
+      "source": "derived",
+      "note": "Verified",
+      "created_at": "2026-08-21T04:21:11.925Z",
+      "updated_at": "2026-08-21T04:21:11.925Z"
+    },
+    {
+      "id": "FLAG-00002",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+      "key": "SPEC_APPROVED",
+      "value": true,
+      "source": "derived",
+      "note": "Verified",
+      "created_at": "2026-08-21T04:21:11.925Z",
+      "updated_at": "2026-08-21T04:21:11.925Z"
+    },
+    {
+      "id": "FLAG-00003",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-SCHEMA-001",
+      "key": "IMPACT_OPEN",
+      "value": false,
+      "source": "derived",
+      "note": "no open impact",
+      "created_at": "2026-08-21T04:21:13.933Z",
+      "updated_at": "2026-08-21T04:21:13.933Z"
+    },
+    {
+      "id": "FLAG-00004",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+      "key": "IMPACT_OPEN",
+      "value": false,
+      "source": "derived",
+      "note": "no open impact",
+      "created_at": "2026-08-21T04:21:13.933Z",
+      "updated_at": "2026-08-21T04:21:13.933Z"
+    }
+  ],
   "system_events": [],
   "system_impacts": [],
   "architecture_nodes": [
@@ -240,9 +309,9 @@
       "id": "TASK-AI-PIPELINE-030",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "030 現在案件へJSON統合のmerge semanticsを検証する",
-      "status": "Todo",
+      "status": "Done",
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T13:25:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-040",
@@ -313,6 +382,20 @@
       "checked_at": "2026-08-21T13:15:00+09:00",
       "created_at": "2026-08-21T13:15:00+09:00",
       "updated_at": "2026-08-21T13:15:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-030",
+      "title": "TASK-AI-PIPELINE-030 merge semantics確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-030",
+      "status": "Passed",
+      "result": "GKS-B706のprepareDevelopmentWorkspaceMerge/developmentMergeRows/developmentMergeHistoryを確認。ID単位additive upsert、delete=0、既存ID UPDATEはRecord全体置換であることを確定した。",
+      "evidence": "studio/index.html: DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS, developmentMergeRows, developmentMergeHistory, prepareDevelopmentWorkspaceMerge, developmentMergeSummaryText, mergeImportDevelopmentWorkspace.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:25:00+09:00",
+      "created_at": "2026-08-21T13:25:00+09:00",
+      "updated_at": "2026-08-21T13:25:00+09:00"
     }
   ],
   "workflow": {
@@ -375,6 +458,14 @@
     },
     {
       "at": "2026-08-21T04:19:23.291Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:25:00+09:00",
+      "message": "TASK-AI-PIPELINE-030 completed: 現在案件へJSON統合はID単位additive upsert・削除なし・既存Record更新はfull replacementと確定。AI統合JSONは部分Record更新では情報欠落リスクがある。次工程: TASK-AI-PIPELINE-040。"
+    },
+    {
+      "at": "2026-08-21T04:37:01.458Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
     }
   ]
