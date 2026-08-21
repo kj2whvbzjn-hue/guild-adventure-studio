@@ -1,4 +1,4 @@
-/* GKS-B712 Development Git Store
+/* GKS-B713 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -63,18 +63,44 @@ function apiUrl(c,withRef=true){
  const base=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${p}`;
  return withRef?`${base}?ref=${encodeURIComponent(c.branch)}`:base;
 }
-async function remoteMeta(c){
- const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.object+json'),cache:'no-store'});
- if(res.status===404)return {exists:false,sha:'',size:0};
- if(!res.ok)throw new Error(`GitHub metadata取得失敗: HTTP ${res.status} ${await res.text()}`);
- const obj=await res.json();if(obj.type!=='file')throw new Error('指定Git Pathはfileではありません。');
- return {exists:true,sha:text(obj.sha),size:Number(obj.size)||0};
+function responseRateLimit(res,body=''){
+ const remaining=text(res.headers.get('x-ratelimit-remaining')),reset=text(res.headers.get('x-ratelimit-reset'));
+ const limited=res.status===403&&(remaining==='0'||/rate limit/i.test(String(body||'')));
+ return {limited,remaining,reset};
 }
-async function remoteText(c){
+function rateLimitResetLabel(epoch){
+ const n=Number(epoch);if(!Number.isFinite(n)||n<=0)return '';
+ try{return new Date(n*1000).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(_){return ''}
+}
+async function githubFailure(res,label){
+ const body=await res.text(),rate=responseRateLimit(res,body);
+ if(rate.limited){const at=rateLimitResetLabel(rate.reset);throw new Error(`${label}: GitHub API rate limitに到達しました。${at?` ${at}頃まで待つか、`:''}PAT認証を確認してから再実行してください。
+HTTP 403 / Registryは変更していません。`);}
+ throw new Error(`${label}: HTTP ${res.status} ${body}`);
+}
+function responseBlobSha(res){
+ const etag=text(res.headers.get('etag')).replace(/^W\//,'').replace(/^"|"$/g,'');
+ return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
+}
+async function remoteFile(c,{requireSha=false}={}){
+ // GKS-B713: one authenticated raw Contents request is the normal read path.
+ // The same response supplies Project JSON and, when GitHub exposes the blob ETag, the blob SHA.
  const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
- if(!res.ok)throw new Error(`GitHub JSON取得失敗: HTTP ${res.status} ${await res.text()}`);
- return await res.text();
+ if(res.status===404)return {exists:false,sha:'',size:0,raw:''};
+ if(!res.ok)return await githubFailure(res,'GitHub JSON取得失敗');
+ const raw=await res.text(),size=new TextEncoder().encode(raw).length;let sha=responseBlobSha(res);
+ if(requireSha&&!sha){
+  // Explicit save/conflict flows may require the Git blob SHA. Only then pay for one metadata call.
+  const metaRes=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.object+json'),cache:'no-store'});
+  if(metaRes.status===404)return {exists:false,sha:'',size:0,raw:''};
+  if(!metaRes.ok)return await githubFailure(metaRes,'GitHub metadata取得失敗');
+  const obj=await metaRes.json();if(obj.type!=='file')throw new Error('指定Git Pathはfileではありません。');
+  sha=text(obj.sha);return {exists:true,sha,size:Number(obj.size)||size,raw};
+ }
+ return {exists:true,sha,size,raw};
 }
+async function remoteMeta(c){const file=await remoteFile(c,{requireSha:true});return {exists:file.exists,sha:file.sha,size:file.size};}
+async function remoteText(c){const file=await remoteFile(c);if(!file.exists)throw new Error('GitHub JSON取得失敗: 指定Git PathにJSONがありません。');return file.raw;}
 function utf8Base64(value){
  const bytes=new TextEncoder().encode(String(value));let binary='';const step=0x8000;
  for(let i=0;i<bytes.length;i+=step)binary+=String.fromCharCode(...bytes.subarray(i,i+step));
@@ -132,8 +158,8 @@ function fillFromEntry(entry){
 function currentEntry(){return state.host?.getActiveEntry?.()||null;}
 function currentWorkspace(){return state.host?.getCurrentWorkspace?.()||null;}
 async function fetchProjectAtPath(baseConnection,path){
- const c={...baseConnection,path:normalizePath(path)};const meta=await remoteMeta(c);if(!meta.exists)return {exists:false,c,meta,project:null,id:''};
- const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);return {exists:true,c,meta,project,id};
+ const c={...baseConnection,path:normalizePath(path)},file=await remoteFile(c,{requireSha:true});if(!file.exists)return {exists:false,c,meta:{exists:false,sha:'',size:0},project:null,id:''};
+ const project=parseProject(file.raw),id=text(project?.workspace?.id),meta={exists:true,sha:file.sha,size:file.size};return {exists:true,c,meta,project,id};
 }
 function remoteRecord(c,meta){return {owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:text(meta?.sha)};}
 async function repairRegistryMismatch(expectedProjectId,currentConnection,encounteredProject,encounteredMeta){
@@ -174,8 +200,8 @@ function markClean(id){state.dirty.delete(String(id||''));render();}
 async function openFromGit(options={}){
  try{
   setBusy(true);const c=connection(false),expectedProjectId=text(options?.expectedProjectId);
-  setStatus('GitHubからDevelopment Projectを取得しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('指定Git PathにJSONがありません。');
-  const raw=await remoteText(c),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');
+  setStatus('GitHubからDevelopment Projectを取得しています…');const file=await remoteFile(c,{requireSha:true});if(!file.exists)throw new Error('指定Git PathにJSONがありません。');
+  const meta={exists:true,sha:file.sha,size:file.size},project=parseProject(file.raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');
   if(expectedProjectId&&id!==expectedProjectId){
    state.registryVerified.delete(expectedProjectId);
    const repaired=await repairRegistryMismatch(expectedProjectId,c,project,meta);
@@ -193,32 +219,13 @@ async function openFromGit(options={}){
  finally{setBusy(false);render();}
 }
 async function refreshRegistry(entries=[]){
- if(state.registryRefreshing)return false;
- const rows=(Array.isArray(entries)?entries:[]).filter(entry=>entry?.storage_mode==='git'&&entry?.git_remote?.owner&&entry?.git_remote?.repo&&entry?.git_remote?.path);
- if(!rows.length)return false;
- state.registryRefreshing=true;let changed=false;
- try{
-  for(const entry of rows){
-   const remote=entry.git_remote||{},key=[entry.id,remote.owner,remote.repo,remote.branch||'main',remote.path,remote.sha||''].join('|');
-   if(state.registryChecked.has(key))continue;
-   const token=text(byId('devGitToken')?.value),c={owner:text(remote.owner),repo:text(remote.repo),branch:text(remote.branch)||'main',path:normalizePath(remote.path),token};
-   try{
-    const meta=await remoteMeta(c);if(!meta.exists){state.registryChecked.add(key);state.registryVerified.delete(entry.id);continue;}
-    // GKS-B712: registry data is only a browser cache. Even when the stored remote SHA
-    // matches, fetch the Project JSON once per browser session and rebuild name/status/lifecycle
-    // from Git. This repairs stale browser registry values after archive/status changes.
-    const project=parseProject(await remoteText(c)),id=text(project?.workspace?.id);state.registryChecked.add(key);
-    if(id!==entry.id){
-     state.registryVerified.delete(entry.id);const repaired=await repairRegistryMismatch(entry.id,c,project,meta);
-     if(repaired.ok){changed=true;continue;}
-     state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:id,path:c.path,sha:meta.sha,reason:repaired.reason});changed=true;continue;
-    }
-    state.host?.syncGitRegistryProject?.(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:meta.sha});state.registryVerified.add(entry.id);changed=true;
-   }catch(_){/* Private/offline repositories remain at the last verified registry state. */}
-  }
- }finally{state.registryRefreshing=false;}
- return changed;
+ // GKS-B713: project-list rendering must not fan out GitHub API requests.
+ // Git registry is a cache and remains unverified until an explicit Open / Remote reload / save flow.
+ // This prevents one list render from consuming one or more API calls per project and triggering
+ // shared-IP unauthenticated rate limits. Unverified Git projects are excluded from in-progress lists.
+ return false;
 }
+
 async function uploadFile(file){
  if(!file)return;
  try{setBusy(true);const raw=await file.text(),project=parseProject(raw),id=text(project?.workspace?.id);if(!id)throw new Error('workspace.idがありません。');if(!state.pathEditing||!normalizePath(byId('devGitPath')?.value))byId('devGitPath').value=defaultPathForProjectId(id);const c=connection(true);
@@ -257,7 +264,7 @@ async function saveCurrent(){
  finally{setBusy(false);render();}
 }
 async function reloadCurrent(){
- try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git案件を選択してください。');if(isDirty(entry.id)&&!confirm('現在案件にGit未保存の変更があります。Remote内容で破棄して再読込しますか？'))return;fillFromEntry(entry);const c=connection(false);setStatus('Remoteから現在案件を再読込しています…');const meta=await remoteMeta(c);if(!meta.exists)throw new Error('Remote JSONがありません。');const raw=await remoteText(c),project=parseProject(raw),actualId=text(project?.workspace?.id);
+ try{setBusy(true);const entry=currentEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git案件を選択してください。');if(isDirty(entry.id)&&!confirm('現在案件にGit未保存の変更があります。Remote内容で破棄して再読込しますか？'))return;fillFromEntry(entry);const c=connection(false);setStatus('Remoteから現在案件を再読込しています…');const file=await remoteFile(c,{requireSha:true});if(!file.exists)throw new Error('Remote JSONがありません。');const meta={exists:true,sha:file.sha,size:file.size},project=parseProject(file.raw),actualId=text(project?.workspace?.id);
   if(actualId!==entry.id){
    state.registryVerified.delete(entry.id);const repaired=await repairRegistryMismatch(entry.id,c,project,meta);
    if(!repaired.ok){state.host?.markGitRegistryMismatch?.(entry.id,{actual_id:actualId,path:c.path,sha:meta.sha,reason:repaired.reason});throw new Error(`workspace.idが一致しません: ${actualId} / 標準Path復旧失敗: ${repaired.reason}`);}
@@ -268,7 +275,7 @@ async function reloadCurrent(){
  finally{setBusy(false);render();}
 }
 async function testConnection(){
- try{setBusy(true);const c=connection(false);setStatus('接続確認中…');const meta=await remoteMeta(c);setStatus(meta.exists?`接続OK / fileあり / SHA ${meta.sha}`:'接続OK / fileなし（新規保存可能）','OK');}
+ try{setBusy(true);const c=connection(false);setStatus('接続確認中…');const file=await remoteFile(c);setStatus(file.exists?`接続OK / fileあり${file.sha?` / SHA ${file.sha}`:''}`:'接続OK / fileなし（新規保存可能）','OK');}
  catch(e){setStatus('接続失敗: '+e.message,'ERROR');}
  finally{setBusy(false);render();}
 }
