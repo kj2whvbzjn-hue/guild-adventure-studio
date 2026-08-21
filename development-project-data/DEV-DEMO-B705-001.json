@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T04:39:58.924Z"
+    "updated_at": "2026-08-21T04:44:08.790Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -147,6 +147,20 @@
       "approved_at": "",
       "created_at": "2026-08-21T10:55:00+09:00",
       "updated_at": "2026-08-21T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-004",
+      "title": "work_typeは3種に限定し混在Taskを分割する",
+      "status": "Proposed",
+      "text": "初期正式work_typeを DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE の3種に限定し、複数領域を同時に変更するTaskは分割する。",
+      "rationale": "AIが成果物・Gate・Build経路を一意に選択できるようにし、Game変更とStudio Source変更の混在による誤更新を防ぐため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:45:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
     }
   ],
   "specifications": [
@@ -241,6 +255,32 @@
       "approved_at": "",
       "created_at": "2026-08-21T13:38:00+09:00",
       "updated_at": "2026-08-21T13:38:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-WORK-TYPE-001",
+      "title": "work_typeと作業経路",
+      "status": "Verified",
+      "summary": "初期work_typeをDEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATEの3種に限定し、各種別の変更領域・成果物・Build/manifest/Gate・implementation_recordの扱いを確定した。",
+      "body": "AI_STARTがTaskのwork_typeに従って作業経路と成果物を一意に選べるよう、最小work_type集合とルーティング規則を確定する。\n\n【正式work_type】\n1. DEVELOPMENT_ONLY\n2. GAME_DATA\n3. SOURCE_UPDATE\n\nこの3種類を初期正式enumとする。\n複数種別を同時に必要とするTaskは原則として分割し、MIXEDのような曖昧な種別は作らない。\n\n【1. DEVELOPMENT_ONLY】\n対象:\n- Development Project JSONのDiscussion / Decision / Specification / Task / Check / History等だけを更新する作業\n- 工程計画、仕様整理、判定規則確定、作業結果記録など\n\n禁止:\n- Studio source変更\n- Game data変更\n- Source ZIP生成\n- package_manifest.json変更\n- Studio/Game Build更新\n\n成果物:\n- 現在案件へそのまま統合できるDevelopment統合JSONのみ\n- 必要に応じて人向け説明を添付してよいが、工程状態の正本は統合JSON\n\n完了条件:\n- Development統合JSON契約v1を満たす\n- 必要なCheckを記録\n- Source/Gameを変更していないこと\n\n【2. GAME_DATA】\n対象:\n- Gameの実装・設定・データ・アセット等、AI_STARTでGame領域として定義される範囲の変更\n\n原則:\n- Game側の正本とGame更新手順に従う\n- Studio sourceを変更しない\n- Studio source用package_manifestをDevelopment処理の都合で変更しない\n- Game Build更新の要否・成果物形式・GateはAI_STARTのGame手順を正本とする\n\n成果物:\n- AI_STARTが定めるGame更新成果物\n- Development統合JSON\n- 実装した場合はimplementation_recordsへGame Build、Task ID、evidenceを記録\n\n境界:\n- Game変更のためにStudio自体のコード変更が必要になった場合、その時点でTaskをSOURCE_UPDATE Taskとして分離する\n- 1 Task内でGAME_DATAとSOURCE_UPDATEを混在させない\n\n【3. SOURCE_UPDATE】\n対象:\n- Studio本体、Gate、Build/Release tool、共通source、AI_START/作業プロトコル等、Source packageを構成するpersistent sourceの変更\n- Source ZIPの構造やSource更新処理そのものの変更\n\n原則:\n- AI_STARTに定義されたSOURCE_UPDATE手順を必ず使用\n- baseline確認\n- Build更新\n- build token/marker同期\n- package_manifest同期\n- 直接Studio更新ZIP生成\n- Gate/Release検査\n- 保護資産変更時は既存Human Approvalを維持\n- Gate/Test/Securityを作業都合で弱体化しない\n\n成果物:\n- 正式な直接Studio更新ZIP\n- 必要なHuman Approvalファイル（既存ルールが要求する場合）\n- 検査証跡\n- Development統合JSON\n- implementation_recordsへbefore/after Build、Task ID、evidenceを記録\n\n【work_type判定規則】\nTask開始前に「何を変更するか」で判定する。\n- Development Projectだけ → DEVELOPMENT_ONLY\n- Game領域だけ → GAME_DATA\n- Source packageを構成するStudio/source領域 → SOURCE_UPDATE\n- どれか判定不能 → Fail ClosedでHuman確認\n- 複数領域を変更する必要が判明 → 現TaskをDoing/Blockedのまま止め、Task分割案をDevelopment統合JSONへ返す\n\n【成果物マトリクス】\nDEVELOPMENT_ONLY:\n- Source update ZIP: なし\n- Game artifact: なし\n- Development merge JSON: 必須\n- Source manifest変更: 禁止\n- implementation_record: 原則不要\n\nGAME_DATA:\n- Source update ZIP: なし\n- Game artifact: AI_START Game手順に従い必要\n- Development merge JSON: 必須\n- Source manifest変更: Development処理由来では禁止\n- implementation_record: 実装時必須\n\nSOURCE_UPDATE:\n- Source update ZIP: 必須\n- Game artifact: 原則なし\n- Development merge JSON: 必須\n- Source manifest変更: Source変更に伴う正式手順のみ\n- implementation_record: 必須\n\n【Fail Closed】\nwork_typeが無い、未知、または作業中に境界を越える必要が生じた場合、AIは勝手に別経路へ移らない。\nTaskを安全な状態で止め、不足情報またはTask分割案をDevelopment統合JSONへ記録する。\n\n【今回のパイプラインTaskへの適用】\nTASK-AI-PIPELINE-010〜050は設計確定のみなのでDEVELOPMENT_ONLY相当。\nTASK-AI-PIPELINE-060でAI_STARTやStudio sourceを実際に変更する場合はSOURCE_UPDATE。\nTASK-AI-PIPELINE-070は、source変更を伴うschema/UI実装ならSOURCE_UPDATE、設計のみならDEVELOPMENT_ONLY。\nTASK-AI-PIPELINE-080は対象実案件のwork_typeに従う。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-004",
+        "DEC-AI-PIPELINE-002"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001",
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-CONTRACT-001"
+      ],
+      "acceptance_criteria": "3つのwork_typeについて対象領域、禁止事項、成果物、Build/manifest/Gate、implementation_record、Fail Closed、混在Task分割規則が一意に定義されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:45:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -351,9 +391,9 @@
       "id": "TASK-AI-PIPELINE-050",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "050 work_typeとStudio・Game・Development作業経路を確定する",
-      "status": "Todo",
+      "status": "Done",
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T13:45:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-060",
@@ -436,6 +476,20 @@
       "checked_at": "2026-08-21T13:38:00+09:00",
       "created_at": "2026-08-21T13:38:00+09:00",
       "updated_at": "2026-08-21T13:38:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-050",
+      "title": "TASK-AI-PIPELINE-050 work_typeルーティング確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-050",
+      "status": "Passed",
+      "result": "DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATEの3経路を確定し、複数領域変更はTask分割、判定不能はFail Closedとした。",
+      "evidence": "SPEC-AI-PIPELINE-WORK-TYPE-001。Development統合JSON契約v1およびTask選択規則を前提に作業経路を定義。",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:45:00+09:00",
+      "created_at": "2026-08-21T13:45:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
     }
   ],
   "workflow": {
@@ -515,6 +569,14 @@
     {
       "at": "2026-08-21T04:39:58.924Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:45:00+09:00",
+      "message": "TASK-AI-PIPELINE-050 completed: work_typeをDEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATEの3種に限定し、成果物と作業経路を確定。混在Taskは禁止して分割、判定不能はFail Closed。次工程: TASK-AI-PIPELINE-060。"
+    },
+    {
+      "at": "2026-08-21T04:44:08.790Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ]
 }
