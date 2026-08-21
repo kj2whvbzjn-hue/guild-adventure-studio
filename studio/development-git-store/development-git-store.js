@@ -1,4 +1,4 @@
-/* GKS-B724 Development Git Store
+/* GKS-B725 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -10,6 +10,7 @@
 const DATA_ROOT='development-project-data/';
 const API_VERSION='2022-11-28';
 const CONNECTION_SETTINGS_KEY='gks_development_git_connection_v1';
+const DEFAULT_CONNECTION=Object.freeze({owner:'kj2whvbzjn-hue',repo:'guild-adventure-studio',branch:'sub'});
 const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,pathEditing:false,registryRefreshing:false,registryChecked:new Set(),registryVerified:new Set()};
 const byId=id=>document.getElementById(id);
 const text=v=>String(v??'').trim();
@@ -42,21 +43,25 @@ function refreshPathFromEntry(entry,{force=false}={}){
 }
 function togglePathEditing(){refreshPathFromEntry(currentEntry(),{force:true});setPathEditing(false);}
 function rememberedConnection(){
- try{const raw=JSON.parse(localStorage.getItem(CONNECTION_SETTINGS_KEY)||'{}');return {owner:text(raw.owner),repo:text(raw.repo),branch:text(raw.branch)||'main'};}catch(_){return {owner:'',repo:'',branch:'main'}}
+ try{const raw=JSON.parse(localStorage.getItem(CONNECTION_SETTINGS_KEY)||'{}');return {owner:text(raw.owner),repo:text(raw.repo),branch:text(raw.branch)};}catch(_){return {owner:'',repo:'',branch:''}}
 }
 function saveRememberedConnection(){
- const owner=text(byId('devGitOwner')?.value),repo=text(byId('devGitRepo')?.value),branch=text(byId('devGitBranch')?.value)||'main';
+ const owner=text(byId('devGitOwner')?.value),repo=text(byId('devGitRepo')?.value),branch=text(byId('devGitBranch')?.value)||DEFAULT_CONNECTION.branch;
  try{localStorage.setItem(CONNECTION_SETTINGS_KEY,JSON.stringify({owner,repo,branch}));}catch(_){}
 }
 function loadRememberedConnection(){
  let saved=rememberedConnection();
- if(!saved.owner&&!saved.repo){
-  try{const shared=JSON.parse(localStorage.getItem('gas_v4_github_settings_v050')||'{}');saved={owner:text(shared.owner),repo:text(shared.repo),branch:text(shared.branch)||'main'};}catch(_){}
+ if(!saved.owner||!saved.repo||!saved.branch){
+  try{
+   const shared=JSON.parse(localStorage.getItem('gas_v4_github_settings_v050')||'{}');
+   saved={owner:saved.owner||text(shared.owner),repo:saved.repo||text(shared.repo),branch:saved.branch||text(shared.branch)};
+  }catch(_){}
  }
- if(saved.owner)byId('devGitOwner').value=saved.owner;if(saved.repo)byId('devGitRepo').value=saved.repo;if(saved.branch)byId('devGitBranch').value=saved.branch;
+ const initial={owner:saved.owner||DEFAULT_CONNECTION.owner,repo:saved.repo||DEFAULT_CONNECTION.repo,branch:saved.branch||DEFAULT_CONNECTION.branch};
+ byId('devGitOwner').value=initial.owner;byId('devGitRepo').value=initial.repo;byId('devGitBranch').value=initial.branch;
 }
 function connection(requireToken=false){
- const owner=text(byId('devGitOwner')?.value),repo=text(byId('devGitRepo')?.value),branch=text(byId('devGitBranch')?.value)||'main',path=normalizePath(byId('devGitPath')?.value),token=text(byId('devGitToken')?.value);
+ const owner=text(byId('devGitOwner')?.value)||DEFAULT_CONNECTION.owner,repo=text(byId('devGitRepo')?.value)||DEFAULT_CONNECTION.repo,branch=text(byId('devGitBranch')?.value)||DEFAULT_CONNECTION.branch,path=normalizePath(byId('devGitPath')?.value),token=text(byId('devGitToken')?.value);
  saveRememberedConnection();
  if(!owner||!repo||!branch)throw new Error('Owner / Repository / Branchを入力してください。');
  if(!path)throw new Error('Git Pathを入力してください。');
@@ -93,7 +98,7 @@ function responseBlobSha(res){
  return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
 }
 async function remoteFile(c,{requireSha=false}={}){
- // GKS-B724: one authenticated raw Contents request is the normal read path.
+ // GKS-B725: one authenticated raw Contents request is the normal read path.
  // The same response supplies Project JSON and, when GitHub exposes the blob ETag, the blob SHA.
  const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
  if(res.status===404)return {exists:false,sha:'',size:0,raw:''};
@@ -178,16 +183,16 @@ function registeredConnection(entry){
  const fallback=state.host?.getDefaultGitRemote?.(entry?.id)||{};
  const saved=rememberedConnection();
  return {
-  owner:text(direct.owner)||text(fallback.owner)||saved.owner,
-  repo:text(direct.repo)||text(fallback.repo)||saved.repo,
-  branch:text(direct.branch)||text(fallback.branch)||saved.branch||'main'
+  owner:text(direct.owner)||text(fallback.owner)||saved.owner||DEFAULT_CONNECTION.owner,
+  repo:text(direct.repo)||text(fallback.repo)||saved.repo||DEFAULT_CONNECTION.repo,
+  branch:text(direct.branch)||text(fallback.branch)||saved.branch||DEFAULT_CONNECTION.branch
  };
 }
 function fillFromEntry(entry){
  const preferred=registeredConnection(entry);
  byId('devGitOwner').value=preferred.owner||byId('devGitOwner').value||'';
  byId('devGitRepo').value=preferred.repo||byId('devGitRepo').value||'';
- byId('devGitBranch').value=preferred.branch||byId('devGitBranch').value||'main';
+ byId('devGitBranch').value=preferred.branch||byId('devGitBranch').value||DEFAULT_CONNECTION.branch;
  refreshPathFromEntry(entry,{force:true});
  setPathEditing(false);saveRememberedConnection();
  render();
@@ -256,7 +261,7 @@ async function openFromGit(options={}){
  finally{setBusy(false);render();}
 }
 async function refreshRegistry(entries=[]){
- // GKS-B724: project-list rendering must not fan out GitHub API requests.
+ // GKS-B725: project-list rendering must not fan out GitHub API requests.
  // Git registry is a cache and remains unverified until an explicit Open / Remote reload / save flow.
  // Cached lifecycle/status remain usable for list filtering while the card shows Git状態確認中.
  // This prevents one list render from consuming one or more API calls per project and triggering
