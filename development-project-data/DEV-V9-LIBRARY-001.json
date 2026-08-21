@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T05:46:36.436Z"
+    "updated_at": "2026-08-21T06:03:40.609Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -361,6 +361,19 @@
       "artifact_note": "Completion audit / presentation layer 2026-08-20",
       "created_at": "2026-08-20T17:10:00+09:00",
       "updated_at": "2026-08-20T20:38:00+09:00"
+    },
+    {
+      "id": "DISC-R30-001-WORKTYPE-BOUNDARY",
+      "title": "TASK-R30-001 work_type境界不一致",
+      "status": "Open",
+      "summary": "GAME_DATAとして割り当てられたTASK-R30-001は、現行Game RuntimeではSave CoreがSource側に固定実装され、Project JSONのgame_runtimeからSave境界を構成できないため、GAME_DATAだけではAcceptance Criteriaを満たせない。",
+      "body": "AI_STARTのDevelopment Taskルールに従いFail Closed。現行Sourceでは game/assets/js/app-runtime.js の GKGameSaveCore が mode=AUTO_SAVE / slotCount=1 / slotKey=SAVE_KEY としてSource側で定義され、autoSave()もSource Runtime関数である。一方、Adventure Settingsの game_runtime 正規化はcharacter/growth/battle_actor/battle_flow/equipment_rules/new_game/raritiesを扱うがSave Core設定を取り込まない。したがってProject JSONへsave_core等を追加してもCurrent Runtimeへ接続されず、実装完了とは扱えない。Sourceへ越境して修正することはwork_type=GAME_DATAに反するため実施しない。\n\n提案: Humanが工程管理上のTaskをSOURCE_UPDATEとして再定義する、またはSOURCE_UPDATE Taskを新設してSave Core境界をSource実装し、Game Data設定が本当に必要な場合だけ別GAME_DATA Taskへ分離する。Atomic Save / Backup / Integrityは既存TASK-R30-002の責務を維持する。",
+      "open_questions": "TASK-R30-001をSOURCE_UPDATEへ再分類するか、SOURCE_UPDATEの置換Taskを新設するか。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "AI_START Fail Closed: work_type boundary mismatch detected before Game JSON modification.",
+      "created_at": "2026-08-21T14:49:00+09:00",
+      "updated_at": "2026-08-21T14:49:00+09:00"
     }
   ],
   "decisions": [
@@ -5601,7 +5614,7 @@
       "id": "TASK-R30-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save Coreの1Slot Auto Save境界を実装する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 1010,
       "depends_on": [],
       "acceptance_criteria": "- Saveは1Slot Auto Saveのみを正本とする。\n- 永続状態の変更が正常確定した直後にAuto Saveできる境界を実装する。\n- 個別Domainの値の意味・計算をSave Core側で再定義しない。\n- 次工程のAtomic Save / Backup実装を追加できる責務境界になっている。",
@@ -5613,7 +5626,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T14:45:00+09:00"
+      "updated_at": "2026-08-21T14:49:00+09:00"
     },
     {
       "id": "TASK-R30-002",
@@ -8126,6 +8139,20 @@
       "checked_at": "2026-08-21T14:45:00+09:00",
       "created_at": "2026-08-21T14:45:00+09:00",
       "updated_at": "2026-08-21T14:45:00+09:00"
+    },
+    {
+      "id": "CHK-R30-001-WORKTYPE-BOUNDARY",
+      "title": "TASK-R30-001 GAME_DATA実行境界検査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-001",
+      "status": "Failed",
+      "result": "GAME_DATAだけではTASK-R30-001のAcceptance Criteriaを実装できない。Current Save CoreはSource Runtimeに固定され、Project JSON game_runtimeからSave境界を構成する経路がないためFail Closedした。",
+      "evidence": "Source GA-B486.211 / GKS-B708: game/assets/js/app-runtime.js autoSave() and window.GKGameSaveCore={mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,...}; normalizeFormalRuntimeSettingsRecord does not consume save_core/save settings. Source Quick Gate passed 11/11 (failed=0 warnings=0 timeouts=0; evidence_sha256=675c7c37d9f89e11fa86aa555f8495f3be15ab9c0e2312c4372f80335225d014). Baseline Project JSON SHA-256=21b54b8c9eca88f2647dcbe4423f70566425cee29e4e9e2e5239c24253ceadca; no Game JSON changes made.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T14:49:00+09:00",
+      "created_at": "2026-08-21T14:49:00+09:00",
+      "updated_at": "2026-08-21T14:49:00+09:00"
     }
   ],
   "workflow": {
@@ -8386,6 +8413,14 @@
     {
       "at": "2026-08-21T05:46:36.436Z",
       "message": "Development Workspace JSON merged: add=3 update=13 delete=0"
+    },
+    {
+      "at": "2026-08-21T14:49:00+09:00",
+      "message": "AI_START実行: TASK-R30-001を一意に選択したが、work_type=GAME_DATAに対してCurrent Save CoreがSource側固定実装であるため境界不一致を検出。Game JSON/Sourceを変更せずFail Closedし、TaskをBlockedとしてwork_type再分類案を記録。Quick Gate 11/11 PASS。"
+    },
+    {
+      "at": "2026-08-21T06:03:40.609Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
     }
   ],
   "specification_candidates": [
