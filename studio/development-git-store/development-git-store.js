@@ -1,4 +1,4 @@
-/* GKS-B723 Development Git Store
+/* GKS-B724 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -93,7 +93,7 @@ function responseBlobSha(res){
  return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
 }
 async function remoteFile(c,{requireSha=false}={}){
- // GKS-B723: one authenticated raw Contents request is the normal read path.
+ // GKS-B724: one authenticated raw Contents request is the normal read path.
  // The same response supplies Project JSON and, when GitHub exposes the blob ETag, the blob SHA.
  const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
  if(res.status===404)return {exists:false,sha:'',size:0,raw:''};
@@ -173,11 +173,21 @@ function parseProject(raw){
  const obj=JSON.parse(raw);if(!obj||typeof obj!=='object'||Array.isArray(obj))throw new Error('Development Project JSON objectではありません。');
  return state.host.normalizeProject(obj);
 }
+function registeredConnection(entry){
+ const direct=entry?.git_remote&&typeof entry.git_remote==='object'?entry.git_remote:{};
+ const fallback=state.host?.getDefaultGitRemote?.(entry?.id)||{};
+ const saved=rememberedConnection();
+ return {
+  owner:text(direct.owner)||text(fallback.owner)||saved.owner,
+  repo:text(direct.repo)||text(fallback.repo)||saved.repo,
+  branch:text(direct.branch)||text(fallback.branch)||saved.branch||'main'
+ };
+}
 function fillFromEntry(entry){
- const r=entry?.git_remote||{},saved=rememberedConnection();
- byId('devGitOwner').value=r.owner||saved.owner||byId('devGitOwner').value||'';
- byId('devGitRepo').value=r.repo||saved.repo||byId('devGitRepo').value||'';
- byId('devGitBranch').value=r.branch||saved.branch||byId('devGitBranch').value||'main';
+ const preferred=registeredConnection(entry);
+ byId('devGitOwner').value=preferred.owner||byId('devGitOwner').value||'';
+ byId('devGitRepo').value=preferred.repo||byId('devGitRepo').value||'';
+ byId('devGitBranch').value=preferred.branch||byId('devGitBranch').value||'main';
  refreshPathFromEntry(entry,{force:true});
  setPathEditing(false);saveRememberedConnection();
  render();
@@ -246,10 +256,11 @@ async function openFromGit(options={}){
  finally{setBusy(false);render();}
 }
 async function refreshRegistry(entries=[]){
- // GKS-B723: project-list rendering must not fan out GitHub API requests.
+ // GKS-B724: project-list rendering must not fan out GitHub API requests.
  // Git registry is a cache and remains unverified until an explicit Open / Remote reload / save flow.
+ // Cached lifecycle/status remain usable for list filtering while the card shows Git状態確認中.
  // This prevents one list render from consuming one or more API calls per project and triggering
- // shared-IP unauthenticated rate limits. Unverified Git projects are excluded from in-progress lists.
+ // shared-IP unauthenticated rate limits.
  return false;
 }
 
@@ -312,7 +323,9 @@ function init(host){
  byId('devGitFile')?.addEventListener('change',e=>uploadFile(e.target.files?.[0]));
  ['devGitOwner','devGitRepo','devGitBranch'].forEach(id=>{byId(id)?.addEventListener('change',saveRememberedConnection);byId(id)?.addEventListener('blur',saveRememberedConnection);});
  global.addEventListener('beforeunload',e=>{if(state.dirty.size){e.preventDefault();e.returnValue='';}});
- refreshPathFromEntry(currentEntry(),{force:true});setPathEditing(false);render();return api;
+ // Prefer the registered Git remote of the current project at startup. This avoids re-entering
+ // Owner / Repository / Branch after reload even when the remembered connection is unavailable.
+ fillFromEntry(currentEntry());return api;
 }
 function focus(){const entry=currentEntry();fillFromEntry(entry);const card=byId('developmentGitStoreCard');card?.scrollIntoView({behavior:'smooth',block:'start'});byId('devGitOwner')?.focus();}
 const api={init,render,focus,fillFromEntry,togglePathEditing,defaultPathForProjectId,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,openFromGit,refreshRegistry,saveCurrent,reloadCurrent,testConnection};
