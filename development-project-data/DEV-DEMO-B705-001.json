@@ -5,7 +5,7 @@
     "name": "B705 JSON登録デモ",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T03:08:57.282Z"
+    "updated_at": "2026-08-21T04:14:55.775Z"
   },
   "project_context": {
     "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
@@ -149,7 +149,27 @@
       "updated_at": "2026-08-21T10:55:00+09:00"
     }
   ],
-  "specifications": [],
+  "specifications": [
+    {
+      "id": "SPEC-AI-PIPELINE-SCHEMA-001",
+      "title": "Development Project schema v1.2 現行実装確認",
+      "status": "Verified",
+      "summary": "GKS-B706のnormalizeDevelopmentWorkspaceを正本として、AIパイプラインが利用するDevelopment Projectの現行schemaと参照制約を確認した。",
+      "body": "GKS-B706のStudio実装（studio/index.html / normalizeDevelopmentWorkspace）を正本として、Development Project schema_version 1.2 の現行フィールドを確認した。\n\nトップレベル:\nschema_version\nworkspace\nproject_context\ncurrent_focus\nproject_rules\nsource_baseline\nlifecycle\nimplementation_records\ndiscussions\ndecisions\nspecifications\nspecification_candidates\nsystem_nodes\nsystem_contracts\nsystem_connections\nsystem_flags\nsystem_events\nsystem_impacts\narchitecture_nodes\nwork_boxes\ntasks\nchecks\nworkflow\nhistory\n\n主要構造:\nworkspace:\n- id\n- name\n- status\n- ai_attention: Auto | Include | Exclude\n- updated_at\n\nproject_context:\n- purpose\n- summary\n\ncurrent_focus:\n- architecture_id\n- work_box_id\n- theme\n- goal\n\narchitecture_nodes:\n- id\n- name\n- parent_id\n- created_at\n- updated_at\n制約: id必須。存在しないparent_id、自分自身、循環参照はrootへ補正される。\n\nwork_boxes:\n- id\n- node_id\n- title\n- body\n- created_at\n- updated_at\n制約: id必須。node_idは実在するarchitecture_nodeを参照しなければ正規化時に除外される。\n\ntasks:\n- id\n- box_id\n- title\n- status: Todo | Doing | Blocked | Done\n- created_at\n- updated_at\n制約: id必須。box_idは実在するwork_boxを参照しなければ正規化時に除外される。\n現行Taskには execution_order / depends_on / acceptance_criteria / work_type / requires_human_approval 専用フィールドは存在しない。\n\nchecks:\n- id\n- title\n- gate: General | Implementation | Completion\n- target_type: Project | Architecture | WorkBox | Task | Artifact\n- target_id\n- status: Pending | Passed | Failed | Waived\n- result\n- evidence\n- checked_by\n- checked_at\n- created_at\n- updated_at\n\ndiscussions:\n- id, title, status, summary, body, open_questions, conclusion, related_discussion_ids, artifact_note, created_at, updated_at\n\ndecisions:\n- id, title, status, text, rationale, source_discussion_ids, approved_by, approved_at, created_at, updated_at\n\nspecifications:\n- id, title, status, summary, body, decision_refs, depends_on, acceptance_criteria, system_node_id, contract_ids, source_candidate_id, material_snapshot_hash, revision, approved_by, approved_at, created_at, updated_at\n\nworkflow:\n- stage: Discovery | Planning | Implementing | Verifying | Completed\n- implementation_approval {status, by, at}\n- completion_approval {status, by, at}\n\nimplementation_records:\n- id\n- studio_build\n- game_build\n- work_box_ids\n- task_ids\n- result: Applied | Partial | Reverted\n- evidence\n- recorded_at\n\nsource_baseline:\n- studio_build\n- game_build\n- source_label\n- source_role: current_baseline\n- recorded_at\n\n確認結果:\n1. Architecture → Work Box → Task の参照関係が必須。\n2. Task単体では実行順序・Task依存・Acceptance Criteria・作業種別・Human Approvalを表現できない。\n3. Specificationには depends_on と acceptance_criteria が存在するが、これはSpecification用でTask実行順序の正本にはできない。\n4. workflowにはImplementation/Completion approvalがあるが、Task単位approvalは存在しない。\n5. 次工程 TASK-AI-PIPELINE-020 では、この現行schemaを前提に「実行可能Task」を機械判定できる最小拡張を設計する必要がある。",
+      "decision_refs": [],
+      "depends_on": [],
+      "acceptance_criteria": "現行Taskフィールド、Architecture→Work Box→Task参照制約、workflow approval、Specificationのdepends_on/acceptance_criteriaの所在がソース実装と一致して記録されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T12:15:00+09:00",
+      "updated_at": "2026-08-21T12:15:00+09:00"
+    }
+  ],
   "specification_candidates": [],
   "system_nodes": [],
   "system_contracts": [],
@@ -181,9 +201,9 @@
       "id": "TASK-AI-PIPELINE-010",
       "box_id": "BOX-AI-PIPELINE-001",
       "title": "010 現行Development JSON schemaを確定する",
-      "status": "Todo",
+      "status": "Done",
       "created_at": "2026-08-21T11:58:00+09:00",
-      "updated_at": "2026-08-21T11:58:00+09:00"
+      "updated_at": "2026-08-21T12:15:00+09:00"
     },
     {
       "id": "TASK-AI-PIPELINE-020",
@@ -242,7 +262,22 @@
       "updated_at": "2026-08-21T11:58:00+09:00"
     }
   ],
-  "checks": [],
+  "checks": [
+    {
+      "id": "CHECK-AI-PIPELINE-010",
+      "title": "TASK-AI-PIPELINE-010 schema確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-010",
+      "status": "Passed",
+      "result": "GKS-B706のnormalizeDevelopmentWorkspaceとblankDevelopmentProjectSeedを確認し、Development Project schema v1.2の現行構造と参照制約を確定した。Quick Gate 11/11 PASS。",
+      "evidence": "studio/index.html: blankDevelopmentProjectSeed / normalizeDevelopmentWorkspace; package-build.json: GKS-B706; python3 tools/inspection/run.py quick => passed=11 failed=0 warnings=0 timeouts=0",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T12:15:00+09:00",
+      "created_at": "2026-08-21T12:15:00+09:00",
+      "updated_at": "2026-08-21T12:15:00+09:00"
+    }
+  ],
   "workflow": {
     "stage": "Discovery",
     "implementation_approval": {
@@ -288,6 +323,14 @@
     {
       "at": "2026-08-21T03:08:57.282Z",
       "message": "Development Workspace JSON merged: add=11 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-21T12:15:00+09:00",
+      "message": "TASK-AI-PIPELINE-010 completed: Development Project schema v1.2 current implementation confirmed from GKS-B706 source. Quick Gate 11/11 PASS. Next task: TASK-AI-PIPELINE-020."
+    },
+    {
+      "at": "2026-08-21T04:14:55.775Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
     }
   ]
 }
