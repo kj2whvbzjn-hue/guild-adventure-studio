@@ -1,4 +1,4 @@
-/* GKS-B715 Development Git Store
+/* GKS-B716 Development Git Store
  * Development Project data I/O only.
  * - Does not call Studio's existing GitHub sync / Development AI publish modules.
  * - Does not persist Project JSON or PAT in browser storage.
@@ -23,7 +23,11 @@ function setStatus(message,kind=''){
 function setBusy(flag){state.busy=!!flag;document.querySelectorAll('[data-dev-git-busy]').forEach(el=>{el.disabled=state.busy});}
 function normalizePath(value){return text(value).replace(/^\/+/, '').replace(/\/{2,}/g,'/');}
 function defaultPathForProjectId(id){const key=safeId(id);return key?`${DATA_ROOT}${key}.json`:'';}
-function entryPath(entry){return defaultPathForProjectId(entry?.id||'');}
+function entryPath(entry){
+ const registered=normalizePath(entry?.git_remote?.path||'');
+ if(entry?.storage_mode==='git'&&registered.startsWith(DATA_ROOT)&&registered.endsWith('.json'))return registered;
+ return defaultPathForProjectId(entry?.id||'');
+}
 function setPathEditing(){
  state.pathEditing=false;
  const input=byId('devGitPath'),button=byId('devGitPathEdit');
@@ -89,7 +93,7 @@ function responseBlobSha(res){
  return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
 }
 async function remoteFile(c,{requireSha=false}={}){
- // GKS-B715: one authenticated raw Contents request is the normal read path.
+ // GKS-B716: one authenticated raw Contents request is the normal read path.
  // The same response supplies Project JSON and, when GitHub exposes the blob ETag, the blob SHA.
  const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
  if(res.status===404)return {exists:false,sha:'',size:0,raw:''};
@@ -129,6 +133,11 @@ async function gitBlobText(c,sha){
 async function duplicateProjectPaths(c,entries,jsonText){
  let projectId='';try{projectId=text(JSON.parse(jsonText)?.workspace?.id);}catch(_){}
  if(!projectId)return [];
+ // A registered legacy path is authoritative for an existing Git project. Never delete a
+ // canonical/sibling JSON while saving through that legacy path; doing so can discard a newer
+ // copy created by an earlier path-mapping bug. Duplicate cleanup is allowed only when the
+ // current save target is already the canonical path for this workspace.id.
+ if(normalizePath(c.path)!==defaultPathForProjectId(projectId))return [];
  const candidates=entries.filter(x=>x.type==='blob'&&x.path.startsWith(DATA_ROOT)&&x.path.endsWith('.json')&&x.path!==c.path);
  const duplicates=[];
  for(const item of candidates){
@@ -237,7 +246,7 @@ async function openFromGit(options={}){
  finally{setBusy(false);render();}
 }
 async function refreshRegistry(entries=[]){
- // GKS-B715: project-list rendering must not fan out GitHub API requests.
+ // GKS-B716: project-list rendering must not fan out GitHub API requests.
  // Git registry is a cache and remains unverified until an explicit Open / Remote reload / save flow.
  // This prevents one list render from consuming one or more API calls per project and triggering
  // shared-IP unauthenticated rate limits. Unverified Git projects are excluded from in-progress lists.
