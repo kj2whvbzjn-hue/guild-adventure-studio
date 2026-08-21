@@ -1,6 +1,6 @@
 /**
  * Development Project -> validated full Source ZIP builder.
- * GKS-B700
+ * GKS-B701
  *
  * Import path only:
  * - Reads the currently served source package using package_manifest.json.
@@ -15,7 +15,8 @@
 'use strict';
 const DATA_ROOT='development-project-data/';
 const FALLBACK_URL='./development-source-package/source-fallback-files.json';
-const state={busy:false,last:null,fallback:null};
+const POLICY_PATH='shared/integrity/system-file-policy.json';
+const state={busy:false,last:null,fallback:null,policy:null};
 function text(v){return String(v??'').trim()}
 function safeId(v){return text(v).replace(/[^A-Za-z0-9._-]+/g,'_')||'PROJECT'}
 function sourceRoot(){return new URL('../',document.baseURI||location.href)}
@@ -79,14 +80,36 @@ async function loadManifest(){
  if(!manifest||!Array.isArray(manifest.files))throw new Error('package_manifest.json: files配列がありません。');
  return manifest;
 }
+function normalizePolicyPath(value){return String(value||'').replace(/^\/+/, '').replace(/\/{2,}/g,'/')}
+function policyGlobMatch(path,pattern){
+ const p=normalizePolicyPath(path);
+ const escaped=String(pattern||'').replace(/[.+^${}()|[\]\\]/g,'\\$&')
+  .replace(/\*\*/g,'§§DOUBLESTAR§§').replace(/\*/g,'[^/]*').replace(/§§DOUBLESTAR§§/g,'.*').replace(/\?/g,'.');
+ return new RegExp('^'+escaped+'$').test(p);
+}
+function classifySourcePath(path,policy){
+ const rel=normalizePolicyPath(path),fallback=policy?.default_class||'persistent';
+ for(const [name,rule] of Object.entries(policy?.classes||{})){
+  if(name===fallback)continue;
+  if((rule.exact_paths||[]).map(normalizePolicyPath).includes(rel))return name;
+  if((rule.patterns||[]).some(pattern=>policyGlobMatch(rel,pattern)))return name;
+ }
+ return fallback;
+}
+async function loadSystemFilePolicy(){
+ if(state.policy)return state.policy;
+ const res=await fetch(sourceUrl(POLICY_PATH),{cache:'no-store'});if(!res.ok)throw new Error(`system-file-policy取得失敗: HTTP ${res.status}`);
+ let policy;try{policy=await res.json()}catch(_){throw new Error('system-file-policy.jsonを解析できません。')}
+ if(!policy||typeof policy!=='object')throw new Error('system-file-policy.jsonが不正です。');
+ state.policy=policy;return policy;
+}
 async function mapLimit(rows,limit,worker){
  const result=new Array(rows.length);let next=0;
  async function run(){while(true){const i=next++;if(i>=rows.length)return;result[i]=await worker(rows[i],i)}}
  await Promise.all(Array.from({length:Math.max(1,Math.min(Number(limit)||1,rows.length||1))},run));return result;
 }
-function buildManifest(records,persistentPaths){
- const allow=persistentPaths instanceof Set?persistentPaths:new Set();
- const files=[...records].filter(x=>allow.has(x.path)&&!x.path.startsWith(DATA_ROOT)).sort((a,b)=>a.path.localeCompare(b.path)).map(x=>({path:x.path,size:x.bytes.length,sha256:x.sha256}));
+function buildManifest(records,policy){
+ const files=[...records].filter(x=>classifySourcePath(x.path,policy)==='persistent').sort((a,b)=>a.path.localeCompare(b.path)).map(x=>({path:x.path,size:x.bytes.length,sha256:x.sha256}));
  return {schema_version:1,generated_at:new Date().toISOString(),file_count:files.length,files};
 }
 async function verifyManifest(manifest,recordMap){
@@ -105,9 +128,9 @@ async function build(items,options={}){
  try{
   const projects=normalizeProjects(items),overlay=new Map(projects.map(x=>[x.path,utf8(JSON.stringify(x.project,null,2)+'\n')]));
   setStatus('Source ZIP生成: package_manifestを読み込んでいます…');
-  const base=await loadManifest(),baseByPath=new Map(base.files.map(x=>[String(x.path||''),x])),fallbackFiles=await loadFallbackFiles();
-  const persistentPaths=new Set(base.files.map(x=>String(x.path||'')).filter(Boolean));
-  const paths=[...new Set([...persistentPaths,...overlay.keys(),...Object.keys(fallbackFiles||{})])].filter(Boolean).sort();
+  const base=await loadManifest(),policy=await loadSystemFilePolicy(),baseByPath=new Map(base.files.map(x=>[String(x.path||''),x])),fallbackFiles=await loadFallbackFiles();
+  const baselinePaths=new Set(base.files.map(x=>String(x.path||'')).filter(Boolean));
+  const paths=[...new Set([...baselinePaths,...overlay.keys(),...Object.keys(fallbackFiles||{})])].filter(Boolean).sort();
   let loaded=0;const records=await mapLimit(paths,8,async path=>{
    const expected=baseByPath.get(path),fallbackRow=fallbackFiles?.[path]||null,b=overlay.has(path)?overlay.get(path):await fetchBytes(path,expected,fallbackRow),hash=await sha256(b);
    if(expected&&!path.startsWith(DATA_ROOT)){
@@ -116,7 +139,7 @@ async function build(items,options={}){
    loaded++;if(loaded===paths.length||loaded%40===0)setStatus(`Source ZIP生成: ${loaded}/${paths.length} files`);
    return {path,bytes:b,sha256:hash};
   });
-  const recordMap=new Map(records.map(x=>[x.path,x])),manifest=buildManifest(records,persistentPaths),manifestBytes=utf8(JSON.stringify(manifest,null,2)+'\n');
+  const recordMap=new Map(records.map(x=>[x.path,x])),manifest=buildManifest(records,policy),manifestBytes=utf8(JSON.stringify(manifest,null,2)+'\n');
   await verifyManifest(manifest,recordMap);
   const zip=new JSZip(),rootName=text(options.rootName)||'guild-adventure-studio-sub';
   for(const rec of records)zip.file(`${rootName}/${rec.path}`,rec.bytes);
