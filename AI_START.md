@@ -280,7 +280,63 @@ AIの作業報告専用schemaや専用取込窓口は新設しない。作業結
 
 現在の「現在案件へJSONを統合」はID単位additive upsertであり、既存IDの更新はfield patchではなくRecord全体置換として扱う。この前提が変更された場合は、本契約を先に改訂してから新しい出力形式を使用する。
 
-### 12.8 Development Task完了報告
+### 12.8 Autonomous Correction — 正規経路収束 / Compatibility Budget 0
+
+E2E / Gate / TestがSource不具合を検出し、現在のTaskの`work_type`では修正できない場合でも、AIは同じ失敗を無制限に再実行して停止し続けてはならない。ただし自動Correctionは**互換層や例外処理を増やして通す仕組みではなく、Currentの唯一の正規経路へ収束させるための限定例外**として扱う。
+
+#### 自動Correctionを生成できる条件
+
+次をすべて満たす場合だけ、Failed Checkから機械的に`SOURCE_UPDATE` Correction Taskを1件生成できる。この場合に限り12.1の「Development Projectに存在しないTaskを推測で作成・実行しない」の例外とする。
+
+- Failure Signature（対象Test/Case、error type/message、主原因Source path）が再現可能である
+- 原因がCurrent Sourceの決定的な実装欠陥へ一意に追跡できる
+- Currentの既存正式API / Contract / Owner境界へ戻すだけで修正できる
+- ゲーム仕様、Balance、Game Data意味、Schema意味、Security境界を変更しない
+- Test / Gate / acceptance criteriaを変更・弱体化しない
+- ファイル削除を必要としない
+- 同じFailure Signatureの自動Correction試行が2回未満である
+
+条件を1つでも満たさない場合はCorrection Taskを自動生成せずFail Closedとする。
+
+#### Compatibility Budget 0
+
+通常の自動Correctionで新しい互換性を追加してはならない。特に以下を禁止する。
+
+- 旧APIを残して新APIへfallbackする
+- `legacy` / `compat` / `fallback` / `shim` / `adapter` / `alias`として旧経路を延命する
+- 新旧Schemaや新旧Runtime形式の暗黙dual-read / dual-writeを追加する
+- `try new -> catch old`型の互換分岐を追加する
+- 未定義・不正値を空値/初期値へ置換して継続するsilent recoveryを追加する
+- Testだけを通す特別分岐を追加する
+- 廃止APIのwrapperを新設する
+
+Correctionは**旧呼出しをCurrent正規APIへ置換し、旧経路を残さない**ことを原則とする。
+
+既存Save Migrationのようにユーザーデータ保全上本当に互換性が必要な場合は、自動Correctionの例外にしない。Human承認された専用Migration/Compatibility Taskとして分離し、対象Version、正規Current形式、変換入口、終了条件/削除条件を明記する。
+
+#### Exception Budget 0
+
+エラー処理そのものがTaskのAcceptance Criteriaでない限り、自動Correctionはproduction codeの局所`try/catch`を増加させてはならない。
+
+- 既存Owner境界でエラーを伝播/処理する
+- 例外を握り潰す空`catch`やlog-only継続を新設しない
+- 修正対象production fileについて、Correction前後の`catch`数を確認し、増加した場合はFail Closedとする
+- 互換語/分岐についてもCorrection前後を確認し、新設があればFail Closedとする
+
+既存の例外処理を今回のCorrectionと無関係に整理する便乗変更は行わない。
+
+#### Correction実行順
+
+1. Failed CheckからFailure Signatureを固定する。
+2. safe-auto条件とCompatibility / Exception Budgetを判定する。
+3. 元Taskはその`work_type`のまま保持し、別`SOURCE_UPDATE` Correction Taskを生成する。
+4. exact baselineから隔離targetを作り、最小差分でCurrent正規経路へ修正する。
+5. bare旧API、compat/fallback追加、`catch`増加がないことを静的確認する。
+6. Targeted検証 → Quick → `accept --context update` → 必要なFull / Releaseを実行する。
+7. Correction Artifact生成だけでは元Failedを解決しない。Human Apply後のCurrent Sourceで元E2Eを再実行してPASSしたCorrection Checkだけが`resolves_check_ids`を持つ。
+8. 同一Failure Signatureで2回失敗した場合は自動修復を停止しHumanへ原因と試行証跡を提示する。
+
+### 12.9 Development Task完了報告
 
 Development Taskを実行した完了報告では、通常の11章に加えて次を明示する。
 

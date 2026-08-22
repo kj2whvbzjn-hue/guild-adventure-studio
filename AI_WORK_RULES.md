@@ -98,6 +98,14 @@
 
 原因未確定の不具合へ推測変換や自動修復を加えない。`docs/operations/FORENSIC_INSPECTION.md`に従い、対象ZIPと検査結果を証跡で結び付ける。
 
+## 自動Correctionの負債禁止
+
+- 自動CorrectionはCurrentの正規API / Contractへ収束させるためだけに使用し、旧経路を互換層で延命しない。
+- Compatibility Budget 0: `legacy` / `compat` / `fallback` / `shim` / `adapter` / `alias`、dual-read / dual-write、`try new -> catch old`、silent recoveryを新設しない。
+- Exception Budget 0: エラー処理自体がAcceptance Criteriaでない限り、production codeの局所`catch`数を増やさない。
+- 本当に必要なMigration/CompatibilityはHuman承認された専用Taskへ分離し、対象Versionと終了/削除条件を必須とする。
+- 同一Failure Signatureの自動Correctionは最大2回。原因が一意でない、仕様/Data/Schema/Security意味が変わる、Test/Gate変更が必要な場合はFail Closedとする。
+
 ## Full検査の集約
 
 Fullの分割結果は、入力ZIP SHA-256・ツリーSHA-256・contextが一致し、全固定シャードが揃った場合だけ`FULL_PASS`とする。
