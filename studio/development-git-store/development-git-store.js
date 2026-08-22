@@ -1,9 +1,10 @@
-/* Development Git Store — simplified canonical project I/O.
+/* Development Git Store — canonical Git I/O.
  * Git is the persistent authority.
  * Project list uses development-project-data/index.json (title + id only).
  * Project body is fetched only after the user confirms opening a title.
- * The browser keeps exactly one current project body in the Studio host.
- * Concurrent updates are guarded only by the Git blob SHA loaded with the project.
+ * Write operations receive Branch + PAT directly from the operation UI.
+ * Owner / Repository come from the Studio Git connection.
+ * Concurrent updates are guarded by Git blob SHA; no Project revision is used.
  */
 (function(global){
 'use strict';
@@ -11,14 +12,14 @@
 const DATA_ROOT='development-project-data/';
 const INDEX_PATH=DATA_ROOT+'index.json';
 const API_VERSION='2022-11-28';
-const CONNECTION_SETTINGS_KEY='gks_development_git_connection_v2';
 const DEFAULT_CONNECTION=Object.freeze({owner:'kj2whvbzjn-hue',repo:'guild-adventure-studio',branch:'sub'});
-const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,indexRows:[],indexRemote:null,indexRefreshAt:0,indexPromise:null};
+const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,indexRows:[],indexRemote:null,indexRefreshAt:0,indexPromise:null,base:null};
 
 const byId=id=>document.getElementById(id);
 const text=v=>String(v??'').trim();
 const safeId=v=>text(v).replace(/[^A-Za-z0-9._-]+/g,'_');
 const canonicalPath=id=>`${DATA_ROOT}${safeId(id)}.json`;
+const clone=value=>value==null?value:structuredClone(value);
 
 function stable(value){
   if(Array.isArray(value))return value.map(stable);
@@ -33,23 +34,28 @@ function equalProject(a,b){return JSON.stringify(stable(a))===JSON.stringify(sta
 function currentEntry(){return state.host?.getActiveEntry?.()||null;}
 function currentWorkspace(){return state.host?.getCurrentWorkspace?.()||null;}
 function commonGitValue(id){return text(byId(id)?.value);}
-function rememberedConnection(){try{const x=JSON.parse(localStorage.getItem(CONNECTION_SETTINGS_KEY)||'{}');return {owner:text(x.owner),repo:text(x.repo),branch:text(x.branch)}}catch(_){return {owner:'',repo:'',branch:''}}}
 
-function connectionFor(projectId='',requireToken=false,{index=false}={}){
-  const id=text(projectId);
-  const entry=id?state.host?.getRegistryEntry?.(id):null;
-  const fallback=state.host?.getDefaultGitRemote?.(id)||{};
-  const remote=entry?.git_remote||fallback||{},remembered=rememberedConnection();
-  const owner=text(remote.owner)||remembered.owner||commonGitValue('ghOwner')||DEFAULT_CONNECTION.owner;
-  const repo=text(remote.repo)||remembered.repo||commonGitValue('ghRepo')||DEFAULT_CONNECTION.repo;
-  const branch=text(remote.branch)||remembered.branch||DEFAULT_CONNECTION.branch||commonGitValue('ghBranch');
+function studioConnection(projectId='',{index=false}={}){
+  const id=text(projectId),entry=id?state.host?.getRegistryEntry?.(id):null;
+  const remote=entry?.git_remote||{};
+  const owner=commonGitValue('ghOwner')||text(remote.owner)||DEFAULT_CONNECTION.owner;
+  const repo=commonGitValue('ghRepo')||text(remote.repo)||DEFAULT_CONNECTION.repo;
+  const branch=text(remote.branch)||commonGitValue('ghBranch')||DEFAULT_CONNECTION.branch;
   const token=commonGitValue('ghToken');
   const path=index?INDEX_PATH:canonicalPath(id);
-  if(!owner||!repo||!branch)throw new Error('StudioのGitHub接続設定でOwner / Repository / Branchを設定してください。');
+  if(!owner||!repo||!branch)throw new Error('StudioのGitHub接続先がありません。');
   if(!index&&!id)throw new Error('Project IDがありません。');
-  if(requireToken&&!token)throw new Error('StudioのGitHub接続設定でPATを入力してください。');
   return {owner,repo,branch,path,token};
 }
+function writeConnection(projectId,{branch,token,index=false}={}){
+  const base=studioConnection(projectId,{index});
+  const selectedBranch=text(branch),selectedToken=text(token);
+  if(!selectedBranch)throw new Error('Branchを入力してください。');
+  if(!selectedToken)throw new Error('PATを入力してください。');
+  return {...base,branch:selectedBranch,token:selectedToken,path:index?INDEX_PATH:canonicalPath(projectId)};
+}
+function defaultWriteBranch(){return text(currentEntry()?.git_remote?.branch)||commonGitValue('ghBranch')||DEFAULT_CONNECTION.branch;}
+
 function headers(token,accept='application/vnd.github+json'){
   const h={'Accept':accept,'X-GitHub-Api-Version':API_VERSION};
   if(token)h.Authorization=`Bearer ${token}`;
@@ -108,8 +114,7 @@ function assertSameProject(remote,local){
 }
 
 function render(){
-  const entry=currentEntry();
-  const dirty=!!entry&&state.dirty.has(entry.id);
+  const entry=currentEntry(),dirty=!!entry&&state.dirty.has(entry.id);
   byId('developmentDirtyIndicator')?.classList.toggle('hidden',!dirty);
   const save=byId('devProjectSaveButton');if(save)save.disabled=state.busy||!dirty;
 }
@@ -118,7 +123,7 @@ function isDirty(id){return state.dirty.has(text(id));}
 function isRegistryVerified(){return true;}
 function markDirty(id){const key=text(id);if(!key||!state.loaded.has(key))return;state.dirty.add(key);render();}
 function markClean(id){state.dirty.delete(text(id));render();}
-function discardCurrent(){const id=text(currentEntry()?.id);if(id){state.loaded.delete(id);state.dirty.delete(id);}render();}
+function discardCurrent(){const id=text(currentEntry()?.id);if(id){state.loaded.delete(id);state.dirty.delete(id);}state.base=null;render();}
 
 function normalizeIndex(raw){
   const rows=Array.isArray(raw?.projects)?raw.projects:[];
@@ -130,6 +135,12 @@ function normalizeIndex(raw){
   }
   return out.sort((a,b)=>a.title.localeCompare(b.title,'ja'));
 }
+async function readIndex(c){
+  const ic={...c,path:INDEX_PATH};
+  const file=await remoteFile(ic,{requireSha:true});
+  if(!file.exists)return {rows:[],sha:'',connection:ic,exists:false};
+  return {rows:normalizeIndex(JSON.parse(file.raw)),sha:file.sha,connection:ic,exists:true};
+}
 async function refreshProjectIndex({quiet=false,force=false}={}){
   const now=Date.now();
   if(!force&&state.indexPromise)return state.indexPromise;
@@ -137,76 +148,87 @@ async function refreshProjectIndex({quiet=false,force=false}={}){
   state.indexRefreshAt=now;
   state.indexPromise=(async()=>{
     try{
-      const c=connectionFor('',false,{index:true});
-      let rows=[];const file=await remoteFile(c,{requireSha:true});
-      if(!file.exists){state.indexRows=[];state.indexRemote={...c,sha:''};state.host?.replaceProjectIndex?.([],{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:''});return state.indexRows;}
-      const raw=JSON.parse(file.raw);rows=normalizeIndex(raw);
-      state.indexRemote={...c,sha:file.sha};
-      state.indexRows=rows;
-      state.host?.replaceProjectIndex?.(rows,{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:file.sha||''});
-      return rows;
+      const c=studioConnection('',{index:true}),index=await readIndex(c);
+      state.indexRows=index.rows;state.indexRemote={...index.connection,sha:index.sha};
+      state.host?.replaceProjectIndex?.(index.rows,{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:index.sha});
+      return state.indexRows;
     }catch(e){if(!quiet)alert('案件一覧をGitから取得できません: '+e.message);return state.indexRows;}
     finally{state.indexPromise=null;render();}
   })();
   return state.indexPromise;
 }
-async function writeIndex(rows,c){
-  const ic={...c,path:INDEX_PATH};
-  const current=await remoteFile(ic,{requireSha:true});
-  const normalized=normalizeIndex({projects:rows});
+async function writeIndexRows(c,rows,sha){
+  const ic={...c,path:INDEX_PATH},normalized=normalizeIndex({projects:rows});
   const payload=JSON.stringify({schema_version:1,projects:normalized.map(x=>({id:x.id,title:x.title}))},null,2)+'\n';
-  const out=await putFile(ic,payload,'Update Development Project index',current.sha||'');
+  const out=await putFile(ic,payload,'Update Development Project index',sha||'');
   state.indexRows=normalized;state.indexRemote={...ic,sha:out.file_sha};
   state.host?.replaceProjectIndex?.(normalized,{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:out.file_sha});
   return out;
 }
-async function syncIndexEntry(project,c){
-  const id=text(project?.workspace?.id),title=text(project?.workspace?.name);if(!id||!title)return;
-  let rows=await refreshProjectIndex({quiet:true,force:true});
-  rows=Array.isArray(rows)?rows.slice():[];
-  const i=rows.findIndex(x=>x.id===id);if(i>=0)rows[i]={id,title};else rows.push({id,title});
-  await writeIndex(rows,c);
+async function addIndexEntry(project,c){
+  const id=text(project?.workspace?.id),title=text(project?.workspace?.name);
+  const index=await readIndex(c),rows=index.rows.slice(),pos=rows.findIndex(x=>x.id===id);
+  if(pos>=0)rows[pos]={id,title};else rows.push({id,title});
+  return writeIndexRows(c,rows,index.sha);
+}
+async function removeIndexEntry(projectId,c){
+  const index=await readIndex(c),rows=index.rows.filter(x=>x.id!==projectId);
+  if(!index.exists)return true;
+  await writeIndexRows(c,rows,index.sha);return true;
 }
 
 async function openFromGit(options={}){
   try{
     state.busy=true;render();
     const id=text(options.expectedProjectId);if(!id)throw new Error('Project IDがありません。');
-    const c=connectionFor(id,false),file=await remoteFile(c,{requireSha:true});
+    const c=studioConnection(id),file=await remoteFile(c,{requireSha:true});
     if(!file.exists)throw new Error(`Gitに案件がありません: ${c.path}`);
     const project=parseProject(file.raw);
     if(text(project.workspace.id)!==id)throw new Error(`Project ID不一致: expected=${id} / actual=${project.workspace.id}`);
     if(text(project.authority.canonical_path)!==c.path)throw new Error('canonical_pathがGit Pathと一致しません。');
     state.loaded.clear();state.dirty.clear();state.loaded.add(id);
+    state.base={id,branch:c.branch,sha:file.sha,project:clone(project)};
     state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:file.sha});
     return true;
   }catch(e){alert('案件を開けませんでした: '+e.message);return false;}
   finally{state.busy=false;render();}
 }
 
-async function saveCurrent(){
+async function expectedShaForWrite(c,project){
+  const base=state.base;
+  if(base&&base.id===text(project?.workspace?.id)&&base.branch===c.branch&&base.sha)return base.sha;
+  const file=await remoteFile(c,{requireSha:true});
+  if(!file.exists)throw new Error(`選択したBranchに案件がありません: ${c.branch}`);
+  const remote=parseProject(file.raw);assertSameProject(remote,project);
+  if(base?.project&&!equalProject(remote,base.project))throw new Error('選択したBranchの案件が、開いた時点の案件内容と一致しません。上書きしません。');
+  return file.sha;
+}
+async function saveProject(project,{branch,token,message=''}={}){
+  const entry=currentEntry();
+  if(!entry||!isLoaded(entry.id))throw new Error('案件を開いてください。');
+  const local=state.host.normalizeProject(project),c=writeConnection(entry.id,{branch,token});
+  const expectedSha=await expectedShaForWrite(c,local);
+  local.workspace.updated_at=new Date().toISOString();
+  const normalized=state.host.normalizeProject(local);
+  const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',message||`Save Development Project ${entry.id}`,expectedSha);
+  const newSha=out.file_sha||expectedSha;
+  state.base={id:entry.id,branch:c.branch,sha:newSha,project:clone(normalized)};
+  state.host.replaceGitWorkspace(normalized,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:newSha});
+  markClean(entry.id);
+  const status=byId('developmentStoreStatus');if(status)status.textContent=`Gitに保存しました / ${c.branch}`;
+  return normalized;
+}
+async function saveCurrent(credentials={}){
   const entry=currentEntry();
   if(!entry||!isLoaded(entry.id))return alert('案件を開いてください。');
-  if(!isDirty(entry.id))return;
-  try{
-    state.busy=true;render();
-    const local=state.host.normalizeProject(currentWorkspace());
-    const c=connectionFor(entry.id,true),file=await remoteFile(c,{requireSha:true});
-    if(!file.exists)throw new Error('Git上の案件が見つかりません。');
-    const remote=parseProject(file.raw);assertSameProject(remote,local);
-    const loadedSha=text(entry.git_remote?.sha);
-    if(!loadedSha)throw new Error('Git読込時のSHAがありません。案件を開き直してください。');
-    if(!file.sha||loadedSha!==file.sha)throw new Error('案件を開いた後にGit側が更新されています。案件を開き直してください。');
-    local.workspace.updated_at=new Date().toISOString();
-    const normalized=state.host.normalizeProject(local);
-    const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`Save Development Project ${entry.id}`,file.sha);
-    const verify=await remoteFile(c,{requireSha:true});if(!verify.exists)throw new Error('保存後の再取得に失敗しました。');
-    const verified=parseProject(verify.raw);if(!equalProject(verified,normalized))throw new Error('保存後にGitから再取得した内容が一致しません。');
-    state.host.replaceGitWorkspace(verified,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:verify.sha||out.file_sha});
-    markClean(entry.id);
-    try{await syncIndexEntry(verified,c);}catch(e){console.warn('[Development index]',e);}
-    const status=byId('developmentStoreStatus');if(status)status.textContent='Gitに保存しました';
-  }catch(e){alert('保存できませんでした: '+e.message);}
+  if(!isDirty(entry.id))return true;
+  try{state.busy=true;render();await saveProject(currentWorkspace(),credentials);return true;}
+  catch(e){alert('保存できませんでした: '+e.message);return false;}
+  finally{state.busy=false;render();state.host?.refresh?.();}
+}
+async function saveCandidate(project,credentials={}){
+  try{state.busy=true;render();await saveProject(project,credentials);return true;}
+  catch(e){alert('保存できませんでした: '+e.message);return false;}
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
 
@@ -216,80 +238,59 @@ async function reloadCurrent(){
   return openFromGit({expectedProjectId:entry.id});
 }
 
-async function registerNewProject(project,{messagePrefix='Create Development Project'}={}){
+async function registerNewProject(project,{branch,token,messagePrefix='Create Development Project'}={}){
   const normalized=state.host.normalizeProject(project);
   const id=text(normalized?.workspace?.id),title=text(normalized?.workspace?.name);
   if(!id||!title)throw new Error('workspace.id / workspace.nameがありません。');
-  const c=connectionFor(id,true);
+  const c=writeConnection(id,{branch,token});
   if(text(normalized?.authority?.canonical_path)!==c.path)throw new Error(`authority.canonical_pathが正規Pathと一致しません: ${normalized?.authority?.canonical_path||'(missing)'}`);
-  const existing=await remoteFile(c,{requireSha:true});
-  if(existing.exists)throw new Error(`同じIDの案件がGitにあります: ${id}`);
-  const rows=await refreshProjectIndex({quiet:true,force:true});
-  if((rows||[]).some(row=>row.id===id))throw new Error(`同じIDの案件が案件一覧にあります: ${id}`);
   const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`${messagePrefix} ${id}`,'');
-  const verify=await remoteFile(c,{requireSha:true});
-  if(!verify.exists)throw new Error('新規案件の保存後再取得に失敗しました。');
-  const verified=parseProject(verify.raw);
-  if(!equalProject(verified,normalized))throw new Error('新規案件の保存後検証に失敗しました。');
+  const newSha=out.file_sha;
   state.loaded.clear();state.dirty.clear();state.loaded.add(id);
-  state.host.openGitProject(verified,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:verify.sha||out.file_sha});
-  try{
-    await syncIndexEntry(verified,c);
-  }catch(e){
-    throw new Error(`案件本文はGitへ保存されましたが案件一覧の更新に失敗しました。${e.message}`);
-  }
+  state.base={id,branch:c.branch,sha:newSha,project:clone(normalized)};
+  state.host.openGitProject(normalized,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:newSha});
+  try{await addIndexEntry(normalized,c);}
+  catch(e){const err=new Error(`案件本文はGitへ保存されましたが案件一覧の更新に失敗しました。${e.message}`);err.partial=true;throw err;}
   return true;
 }
-
-async function createProject(title){
-  try{
-    state.busy=true;render();
-    await refreshProjectIndex({quiet:true,force:true});
-    const id=state.host.nextProjectId();
-    return await registerNewProject(state.host.createBlankProject(id,text(title)));
-  }catch(e){alert('新規案件を作成できませんでした: '+e.message);return false;}
+async function createProject(title,credentials={}){
+  try{state.busy=true;render();const id=state.host.nextProjectId();return await registerNewProject(state.host.createBlankProject(id,text(title)),credentials);}
+  catch(e){alert((e.partial?'一部保存済み: ':'新規案件を作成できませんでした: ')+e.message);return false;}
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
-
-async function importProjectFile(file){
+async function importProjectFile(file,credentials={}){
   if(!file)return false;
   try{
     state.busy=true;render();
-    const raw=JSON.parse(await file.text());
-    const normalized=state.host.normalizeProject(raw);
+    const raw=JSON.parse(await file.text()),normalized=state.host.normalizeProject(raw);
     const id=text(normalized?.workspace?.id),title=text(normalized?.workspace?.name);
     if(!id||!title)throw new Error('workspace.id / workspace.nameがありません。');
-    if(!confirm(`「${title}」を新規案件としてGitへ登録しますか？\n\nProject ID: ${id}`))return false;
-    const ok=await registerNewProject(normalized,{messagePrefix:'Import Development Project'});
+    const ok=await registerNewProject(normalized,{...credentials,messagePrefix:'Import Development Project'});
     if(ok)alert(`新規案件として登録しました。\n${title}`);
     return ok;
-  }catch(e){alert('新規案件JSONを登録できませんでした: '+e.message);return false;}
+  }catch(e){alert((e.partial?'一部保存済み: ':'新規案件JSONを登録できませんでした: ')+e.message);return false;}
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
 
-async function deleteCurrentProjectCompletely(){
-  const entry=currentEntry();if(!entry)return;
-  const name=entry.name||entry.id;
-  if(!confirm(`「${name}」を削除しますか？\nGit上の案件JSONも削除されます。`))return;
-  const typed=prompt(`削除を確定するには案件名を入力してください。\n${name}`,'');if(typed!==name)return;
+async function deleteCurrentProjectCompletely(credentials={}){
+  const entry=currentEntry();if(!entry)return false;
   try{
     state.busy=true;render();
-    const c=connectionFor(entry.id,true),file=await remoteFile(c,{requireSha:true});
-    if(file.exists)await deleteFile(c,file.sha,`Delete Development Project ${entry.id}`);
-    let rows=await refreshProjectIndex({quiet:true,force:true});rows=rows.filter(x=>x.id!==entry.id);
-    await writeIndex(rows,c);
-    state.loaded.delete(entry.id);state.dirty.delete(entry.id);state.host.removeProjectMetadata(entry.id);
-  }catch(e){alert('案件を削除できませんでした: '+e.message);}
+    const c=writeConnection(entry.id,credentials),project=state.host.normalizeProject(currentWorkspace());
+    const sha=await expectedShaForWrite(c,project);
+    await deleteFile(c,sha,`Delete Development Project ${entry.id}`);
+    try{await removeIndexEntry(entry.id,c);}
+    catch(e){state.loaded.delete(entry.id);state.dirty.delete(entry.id);state.base=null;state.host.removeProjectMetadata(entry.id);const err=new Error(`案件本体はGitから削除されましたが案件一覧の更新に失敗しました。${e.message}`);err.partial=true;throw err;}
+    state.loaded.delete(entry.id);state.dirty.delete(entry.id);state.base=null;state.host.removeProjectMetadata(entry.id);return true;
+  }catch(e){alert((e.partial?'一部削除済み: ':'案件を削除できませんでした: ')+e.message);return false;}
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
 
 async function testConnection(){
-  try{const c=connectionFor('',false,{index:true});const res=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,{headers:headers(c.token),cache:'no-store'});if(!res.ok)return failure(res,'GitHub接続失敗');return true;}catch(e){alert(e.message);return false;}
+  try{const c=studioConnection('',{index:true});const res=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,{headers:headers(c.token),cache:'no-store'});if(!res.ok)return failure(res,'GitHub接続失敗');return true;}catch(e){alert(e.message);return false;}
 }
 function fillFromEntry(){render();}
-function focus(){
-  const gitNav=byId('nav-github');if(gitNav?.click)gitNav.click();
-}
+function focus(){const gitNav=byId('nav-github');if(gitNav?.click)gitNav.click();}
 function init(host){
   if(!host||typeof host.normalizeProject!=='function'||typeof host.openGitProject!=='function'||typeof host.getActiveEntry!=='function')throw new Error('Development Git Store host API is invalid.');
   state.host=host;
@@ -298,6 +299,6 @@ function init(host){
   render();return api;
 }
 
-const api={init,render,focus,fillFromEntry,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,discardCurrent,refreshProjectIndex,openFromGit,saveCurrent,reloadCurrent,createProject,importProjectFile,deleteCurrentProjectCompletely,testConnection};
+const api={init,render,focus,fillFromEntry,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,discardCurrent,refreshProjectIndex,openFromGit,saveCurrent,saveCandidate,reloadCurrent,createProject,importProjectFile,deleteCurrentProjectCompletely,testConnection,defaultWriteBranch};
 global.GKSDevelopmentGitStore=api;
 })(window);
