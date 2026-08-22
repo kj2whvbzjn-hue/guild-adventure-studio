@@ -267,6 +267,8 @@ AIの作業報告専用schemaや専用取込窓口は新設しない。作業結
 - `workspace.id`は作業対象案件と完全一致させる。
 - 既存ID付きRecordを更新する場合は、作業開始時に受領したRecordを基準として**完全なRecord**を返す。`{id,status}`等の部分Recordで既存Recordを更新しない。
 - `project_context` / `current_focus` / `source_baseline` / `lifecycle` / `workflow`を更新する場合も完全Objectを返す。変更不要ならkey自体を出力しない。
+- `workflow`のHuman承認は前進のみを正本とし、AI統合JSONで`Approved`を`Pending`へ戻したり、`Implementing`以降のstageを古いstageへ巻き戻してはならない。明示的に工程を戻す必要がある場合はHumanがStudioのWorkflow操作で実施する。
+- Studioの統合処理はHuman承認済み`workflow`とその互換`workspace.status`を古いAI Snapshotより優先し、通常のJSON統合で後退させない。
 - 新規Recordは必須fieldと参照整合性を満たす完全Recordとして追加する。
 - `history`には今回の作業結果を1件以上追記する。
 - 実施した検査は`checks`へ実際の結果とevidenceを記録する。未実施検査を`Passed`にしない。
