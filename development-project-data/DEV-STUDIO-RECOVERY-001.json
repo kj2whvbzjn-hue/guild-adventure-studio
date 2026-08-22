@@ -5,7 +5,7 @@
     "name": "Studio開発管理・自己修復暴走 復旧",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T08:19:00.404Z"
+    "updated_at": "2026-08-22T08:26:28.380Z"
   },
   "project_context": {
     "purpose": "Studio開発管理システムで発生したDevelopment JSONの状態巻き戻りとAutonomous Correctionの過剰自動変更を、既存開発案件へ変更を加えず独立SOURCE_UPDATEとして修復する。",
@@ -56,11 +56,11 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B735",
+    "studio_build": "GKS-B736",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260822-074311).zip",
+    "source_label": "guild-adventure-studio-sub 2(2).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T17:02:00+09:00"
+    "recorded_at": "2026-08-22T17:24:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -117,7 +117,7 @@
       "id": "TASK-STUDIO-RECOVERY-001",
       "box_id": "BOX-STUDIO-RECOVERY-001",
       "title": "Development管理の巻き戻り防止と自動Correction暴走を修復する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 10,
       "depends_on": [],
       "acceptance_criteria": "- AI_STARTの必須読込順とSOURCE_UPDATE手順に従う。\n- 実行開始時にCurrent Sourceのpackage-build.json / package_manifest.jsonを確認し、本案件のbaseline GKS-B735 / GA-B486.211と一致しない場合は編集せずFail Closedする。\n- Development Project JSON統合で、同一IDの古いIncoming Recordが現在Recordの新しい状態を巻き戻さない。\n- updated_atが現在Recordより古いIncoming更新は自動上書きしない。同時刻または世代判定不能で内容が競合する場合も自動勝利を決めずConflictとして停止する。\n- lifecycle.statusは通常のDevelopment JSON統合からHuman操作を巻き戻さない。既存workflow Human承認の前進保護を維持する。\n- Autonomous Correctionは解析・修正候補提示までとし、Humanの明示指示なしにCorrection Task新規作成、親Task Blocked化、depends_on変更、Check追加・解決、次Task自動着手を行わない。\n- 同一Failure SignatureによるCorrection重複生成を防止し、実データ変更前にFail Closedできる。\n- 既存DEV-V9-REORG-019のTask / Check / Lifecycle / Workflow / Decision / Specificationを変更しない。\n- Game仕様、Game Data、Balance、Export、Save Data意味内容を変更しない。\n- Source削除0件、Game Data変更0件、Export変更0件。\n- 保護Test / Gate / Schema / test registry / integrity policyを変更・削除・新規追加しない。必要になった場合は本TaskをBlockedとして停止し別Human承認Taskへ分離する。\n- production catch、legacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、silent recoveryを新規増加させない。\n- Buildをbaselineより前進させ、current Build marker同期後にpackage_manifest.jsonを再生成する。\n- 正確なbaseline指定付きQuick / accept --context update / Impact判定で必要なFull / ReleaseをPASSする。\n- studio-update.jsonを含みExport/を含まない直接Studio更新ZIPを作成する。\n- 本案件DEV-STUDIO-RECOVERY-001へ統合できるDevelopment統合JSONを別成果物として返す。\n- AIは成果物提出時点で停止し、Human Apply前にTaskをDoneへせず、別Taskへ自動着手しない。\n- Human Apply後の最新Current Sourceで修復効果を独立確認してから完了判定する。",
@@ -129,7 +129,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T17:02:00+09:00",
-      "updated_at": "2026-08-22T17:16:16+09:00"
+      "updated_at": "2026-08-22T17:24:00+09:00"
     }
   ],
   "checks": [
@@ -178,6 +178,29 @@
       "blocking": false,
       "created_at": "2026-08-22T17:16:16+09:00",
       "updated_at": "2026-08-22T17:16:16+09:00"
+    },
+    {
+      "id": "CHK-STUDIO-RECOVERY-CURRENT-VERIFY-001",
+      "title": "Human Apply後 Current Source 修復効果独立確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-STUDIO-RECOVERY-001",
+      "status": "Passed",
+      "result": "Human Apply後のCurrent Source GKS-B736 / GA-B486.211を独立検証。package_manifest 639/639、Build marker driftなし、Current Source Quick 12/12 PASS。Development JSON merge guardは古いupdated_at、同一updated_at競合、世代判定不能競合をFail Closedし、Lifecycle Human authorityを保持。Autonomous Correctionはanalyze read-only、無承認prepare拒否、Human明示承認時のみPending Correction生成、同一Failure Signature重複生成拒否を実動確認。B735 exact baseline (20260822-080504) + GKS-B736 updateの適用検証もQuick PASSしtarget treeを再現。Current Sourceとの差はDevelopment ProjectのGit保存で追加された development-project-data/DEV-STUDIO-RECOVERY-001.json のみで、Export変更・削除なし。",
+      "evidence": "Current ZIP sha256=c91907f72203b8128e42f82a59d48e1f7dc26ee92cca6a1d3ecf3890b35b4a84; package-build=GKS-B736 / GA-B486.211; package_manifest sha256=248523bf36850af241ba5350ca46127eed563821c70ff6c4d1572e713f849a26; PACKAGE_MANIFEST_OK files=639; BUILD_MARKERS_OK studio=GKS-B736 files=190; Current Quick 12/12 PASS evidence_sha256=a3151bf26fb7749647acb8f138deae68339534870adb957f07b512bb3f8e7b11; B735 exact apply baseline tree=e4abe5fab525e8c72cc9a7c5be25e5fba583a91d5185def202aeab917e791909 (guild-adventure-studio-sub(20260822-080504).zip); reapplied target tree=badb98117c022a540534483946987a04de8514f01b3765df9642e6280e28eb81; SOURCE_UPDATE_APPLIED_STATE_OK final_gate=quick selected=quick copied=640 deleted=0, applied Quick 11/11 PASS; Current full tree=5a1769fe80b10b91e8d70e2b2810a9a854cf9781a6486b56c69e18416b2786a1 with one post-apply added Development Project file and no removed files; merge-guard runtime fixture=PASS; autonomous-correction runtime fixture: analyze read-only PASS, prepare without --human-authorized FAIL as required, authorized Pending Correction PASS, duplicate signature FAIL as required.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T17:24:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T17:24:00+09:00",
+      "updated_at": "2026-08-22T17:24:00+09:00"
     }
   ],
   "workflow": {
@@ -227,6 +250,15 @@
     {
       "at": "2026-08-22T08:19:00.404Z",
       "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-22T17:24:00+09:00",
+      "type": "StudioRecoveryHumanApplyCurrentVerified",
+      "summary": "Human Apply後のCurrent Source GKS-B736を独立確認。manifest 639/639、Build marker一致、Current Quick 12/12 PASS。Development JSON巻き戻りGuard/Lifecycle Human authority/Autonomous Correction Human authorization・重複防止を実動確認。TASK-STUDIO-RECOVERY-001のAcceptance Criteriaを満たしたためDone。次Taskへの自動着手なし。"
+    },
+    {
+      "at": "2026-08-22T08:26:28.380Z",
+      "message": "Development Workspace JSON merged: add=2 update=2 delete=0"
     }
   ]
 }
