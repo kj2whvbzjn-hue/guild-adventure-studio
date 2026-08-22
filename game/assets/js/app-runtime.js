@@ -233,7 +233,11 @@ async function loadFormalEquipmentDefinitions(){
 }
 window.GKGameFormalConfig=Object.freeze({bridge:formalGameBridge,jobs:formalJobCatalog,load:loadFormalGameDefinitions,jobDefinition,jobDisplayName,partyMaxSize,characterBattleValues,battleFlowConfig,battleGaugeMax,battleAiReevaluationRatio,battleAiReevaluationStep,battleGaugeConsumeAmount,battleDefaultSkillCastingTicks,weaponStrTwoHandRequirementMultiplier});
 window.GKGameEquipmentRuntime=Object.freeze({bridge:formalEquipmentBridge,slots:CHARACTER_EQUIPMENT_SLOTS,slotLabels:CHARACTER_EQUIPMENT_SLOT_LABEL,slotLabel:equipmentSlotLabel,normalizeRecord:normalizeFormalEquipmentRecord,definition:equipmentDefinition,requirementCheck:equipmentRequirementCheck,bonusLabel:equipmentBonusLabel,requirementLabel:equipmentRequirementLabel,normalizeCharacterState:normalizeCharacterEquipmentState,equipTargets:equipmentEquipTargets,load:loadFormalEquipmentDefinitions});
-let data={saveVersion:SAVE_VERSION,schemaRevision:'1.6.0',gameVersion:'GA-B486.211',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};let selectedId=null;
+const NEW_GAME_INITIALIZATION_ORDER=Object.freeze(['guild','progress_flags','starter_characters','party','inventory_equipment','skill_passive_ai','integrity','first_auto_save']);
+function createEmptyPersistentState(now=new Date().toISOString()){
+ return{saveVersion:SAVE_VERSION,schemaRevision:'1.6.0',gameVersion:'GA-B486.211',createdAt:now,updatedAt:now,characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};
+}
+let data=createEmptyPersistentState();let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
 const formalDefinitionsReady=Promise.all([loadFormalGameDefinitions(),loadFormalEquipmentDefinitions()]);
 const PHASES=['devhome','title','base','event','battle','result'];
@@ -248,12 +252,44 @@ function setPhase(next,options={}){
  if(next==='battle'){sceneSignature='';ensureSceneUnits(true)}
  scrollTo({top:0,behavior:'instant'});
 }
-function seedRoster(){
- if(data.characters.length)return;
- const cfg=requireFormalRuntimeSettings().new_game,created=[];for(const row of cfg.starter_roster){const c=makeCharacter(row.name,row.job_id);data.characters.push(c);created.push(c)}
- data.partyIds=cfg.party_member_indexes.map(i=>created[i]?.id).filter(Boolean).slice(0,partyMaxSize());data.guild.gold=cfg.starting_gold;data.inventory=[...cfg.starter_inventory_ids];selectedId=data.characters[0]?.id||null;autoSave();
+function initializeNewGameGuild(candidate,cfg){
+ candidate.guild={gold:cfg.starting_gold,victories:0,defeats:0,lastBattle:null};
 }
-async function beginNewGame(){try{await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');seedRoster();resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base')}catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad')}}
+function initializeNewGameProgressAndFlags(candidate){
+ candidate.flags={};candidate.quest_progress={completed_quest_ids:[],unlocked_quest_ids:[]};candidate.quest_resources={};candidate.selectedQuestId='';candidate.adventure={quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}};
+}
+function initializeNewGameStarterCharacters(candidate,cfg,now){
+ const created=[];for(const row of cfg.starter_roster){const character=makeCharacterCore(row.name,row.job_id,{now});candidate.characters.push(character);created.push(character)}return created;
+}
+function initializeNewGameParty(candidate,cfg,created){
+ candidate.partyIds=cfg.party_member_indexes.map(index=>created[index]?.id).filter(Boolean).slice(0,partyMaxSize());
+}
+function initializeNewGameInventoryAndEquipment(candidate,cfg){
+ candidate.inventory=[...cfg.starter_inventory_ids];candidate.characters.forEach(initializeCharacterInventoryEquipmentState);
+}
+function initializeNewGameSkillPassiveAi(candidate){
+ candidate.characters=candidate.characters.map(initializeCharacterSkillPassiveAiState);candidate.aiPrograms=[];candidate.aiLayouts=[];candidate.aiPresets=[];
+}
+function prepareNewGameSnapshot(){
+ const settings=requireFormalRuntimeSettings(),cfg=settings.new_game,now=new Date().toISOString(),candidate=createEmptyPersistentState(now);
+ initializeNewGameGuild(candidate,cfg);
+ initializeNewGameProgressAndFlags(candidate);
+ const created=initializeNewGameStarterCharacters(candidate,cfg,now);
+ initializeNewGameParty(candidate,cfg,created);
+ initializeNewGameInventoryAndEquipment(candidate,cfg);
+ initializeNewGameSkillPassiveAi(candidate);
+ const snapshot=buildAutoSaveSnapshot(candidate),payload=JSON.stringify(snapshot);
+ validateSavePayload(payload);
+ normalizeLoadedSave(JSON.parse(payload));
+ return{snapshot,selectedId:snapshot.characters[0]?.id||null,initializationOrder:[...NEW_GAME_INITIALIZATION_ORDER]};
+}
+function commitPreparedNewGame(prepared){
+ if(!prepared||!prepared.snapshot)throw new Error('New Game初期化候補がありません。');
+ const committed=writeAutoSaveSnapshot(prepared.snapshot);
+ data=committed;selectedId=prepared.selectedId||committed.characters[0]?.id||null;
+ return committed;
+}
+async function beginNewGame(){try{await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');const prepared=prepareNewGameSnapshot();commitPreparedNewGame(prepared);resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base')}catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad')}}
 async function continueGame(){
  try{
   await formalDefinitionsReady;
@@ -298,7 +334,10 @@ function renderBattleResult(){
 }
 
 function notify(text,type='ok'){const n=$('notice');if(n){n.textContent=text;n.className=type}}
-function makeCharacter(name,jobRef){const cfg=requireFormalRuntimeSettings().character,job=jobDefinition(jobRef);if(!job)throw new Error(`正式Jobが見つかりません: ${jobRef}`);const skills=[...cfg.starter_skill_ids],equippedSkillId=cfg.starter_equipped_skill_id||skills[0]||'';const c={id:uid(),name,level:cfg.initial_level,job:job.id,stats:{...cfg.initial_stats},skills,equippedSkillId,formalAiBinding:null,equipment:emptyCharacterEquipmentState(),jobHistory:[{job:job.id,level:cfg.initial_level,at:new Date().toISOString()}],growthHistory:[],createdAt:new Date().toISOString()};return window.GKGameSkillLoadout?GKGameSkillLoadout.normalizeCharacterSkillState(c,{fallback:[]}):c}
+function makeCharacterCore(name,jobRef,{now=new Date().toISOString()}={}){const cfg=requireFormalRuntimeSettings().character,job=jobDefinition(jobRef);if(!job)throw new Error(`正式Jobが見つかりません: ${jobRef}`);return{id:uid(),name,level:cfg.initial_level,job:job.id,stats:{...cfg.initial_stats},jobHistory:[{job:job.id,level:cfg.initial_level,at:now}],growthHistory:[],createdAt:now}}
+function initializeCharacterInventoryEquipmentState(character){character.equipment=emptyCharacterEquipmentState();return character}
+function initializeCharacterSkillPassiveAiState(character){const cfg=requireFormalRuntimeSettings().character,skills=[...cfg.starter_skill_ids];character.skills=skills;character.equippedSkillId=cfg.starter_equipped_skill_id||skills[0]||'';character.formalAiBinding=null;return window.GKGameSkillLoadout?GKGameSkillLoadout.normalizeCharacterSkillState(character,{fallback:[]}):character}
+function makeCharacter(name,jobRef){return initializeCharacterSkillPassiveAiState(initializeCharacterInventoryEquipmentState(makeCharacterCore(name,jobRef)))}
 function normalize(raw){
  raw=window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(raw):clone(raw);
  if(window.GKGameQuestRunSaveBridge)GKGameQuestRunSaveBridge.assertStore(raw);
@@ -505,7 +544,7 @@ function loadAutoSave(){
  return result.migrated?commitMigratedSave(stored.raw,result,{sourceKey:stored.key}):result.save;
 }
 function hasAutoSave(){return findAutoSaveRecord()!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
