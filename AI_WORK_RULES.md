@@ -45,6 +45,17 @@
 - `tests/**`、Gate、Schema、test registry、integrity policy等の保護資産を変更・削除・新規追加する場合はTest Integrity Gateを先に通す。Build tokenだけの追随を除き、完全一致パス・旧新SHA-256・理由を持つ**更新ZIP外の**`TEST_CHANGE_APPROVAL.json`とStudio配置時の別人間確認が必要である。承認JSONを更新ZIPへ同梱してはならない。
 - テスト失敗やtimeoutを理由にassert、期待値、skip条件、Gateを変更しない。timeoutは`failure_kind=timeout`としてFAILのまま分類し、原因テストを特定して実装またはテスト性能を直す。
 
+
+## Development Project canonical authority
+
+- Development Project本文の永続正本はGit `development-project-data/<workspace.id>.json` の1系統だけとする。Registryはmetadata、Sessionは一時作業コピー、localStorage/cacheはProject本文の復元元にしない。
+- Project JSONは`authority.version` / `authority.instance_id` / `authority.revision` / `authority.canonical_path`必須。完全削除後に同じ`workspace.id`を再作成しても、別`instance_id`は別世代として扱う。
+- Git open/reload、JSON統合、Session更新、Registry同期は単一authority規則を通す。旧instance、stale/unknown revision、同一revision内容競合、非canonical path、同一`workspace.id`複数候補はFail Closedする。`updated_at`で自動勝敗判定しない。
+- 旧形式ProjectをRuntimeで自動migrationしない。必要な移行はHumanが明示した一回限りの外部JSON置換として行い、migration adapter / dual-read / fallbackをSourceへ残さない。
+- Registry mismatchを別Project本文の読込で自己修復しない。Registry修復はcanonical Projectから得たmetadataの登録だけであり、別SnapshotをSession/canonicalへ昇格させない。
+- 完全削除はHuman明示操作としてGit上の同一`workspace.id`全候補を列挙して削除し、Registry / Session / obsolete browser refsも消去して残存0件を確認する。自動重複削除は行わない。
+- AIが返すDevelopment統合JSONは作業開始時Projectと同じ`authority` revisionを含める。Studioが一致を確認して統合し、Session commitでrevisionを進める。
+
 ## 自律Correction実行規則
 
 - 未解決blocking Failed Checkがある親Taskは、同一失敗を再実行する前に`tools/development/autonomous-correction.py analyze`をread-onlyで実行する。

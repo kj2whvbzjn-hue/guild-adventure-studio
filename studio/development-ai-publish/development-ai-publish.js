@@ -174,8 +174,7 @@ function getProjectWorkspaces(scope){
  for(const entry of targets){
   try{
    let raw=null;
-   if(entry.id===activeDevelopmentProjectId&&typeof loadDevelopmentWorkspace==='function')raw=loadDevelopmentWorkspace();
-   else raw=JSON.parse(localStorage.getItem(developmentProjectStoreKey(entry.id))||'null');
+   if(entry.id===activeDevelopmentProjectId&&typeof loadDevelopmentWorkspace==='function'&&window.GKSDevelopmentGitStore?.isLoaded?.(entry.id))raw=loadDevelopmentWorkspace();
    if(!raw)continue;
    const w=typeof normalizeDevelopmentWorkspace==='function'?normalizeDevelopmentWorkspace(raw):raw;
    if(w?.workspace){w.workspace.id=String(entry.id||w.workspace.id||'');w.workspace.name=String(w.workspace.name||entry.name||entry.id)}
