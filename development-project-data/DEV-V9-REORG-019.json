@@ -3,9 +3,9 @@
   "workspace": {
     "id": "DEV-V9-REORG-019",
     "name": "V9ゲーム再実装・System Structure再整理",
-    "status": "Specifying",
+    "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-21T23:49:42.178Z"
+    "updated_at": "2026-08-22T00:03:09.185Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -134,6 +134,15 @@
       "source_id": "conversation",
       "created_at": "2026-08-22T06:37:00+09:00",
       "updated_at": "2026-08-22T06:37:00+09:00"
+    },
+    {
+      "id": "RULE-REORG-014",
+      "text": "Humanが承認したDevelopment Workflow状態は通常のAI統合JSONで後退させない。implementation_approval/completion_approvalのApprovedは古いPendingへ戻さず、workflow.stageも古いSnapshotによる後退を禁止する。工程を戻す場合はHumanがStudioのWorkflow操作を明示的に実行し、その履歴を正本とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T08:51:00+09:00",
+      "updated_at": "2026-08-22T08:51:00+09:00"
     }
   ],
   "source_baseline": {
@@ -278,6 +287,18 @@
       "result": "Partial",
       "evidence": "Skill / Passive / Skill Loadout / Formal AI persistence bridge implemented without Domain behavior or Legacy fallback. Existing Character skills/equippedSkillId/formalAiBinding plus root aiPrograms/aiLayouts/aiPresets are captured exactly. passiveIds and skillLoadoutIds are backward-compatible optional Save fields: existing v3 saves are not synthesized or migrated, and when present they are persisted opaquely as ID arrays; acquisition rules, passive effects, loadout slot count/editing and AI candidate selection remain later Domain tasks. Legacy Character AI fields aiGraph/aiPolicy/defaultSkillId remain forbidden by Current Save schema and the persistence bridge. Targeted 12/12 PASS; baseline Quick 11/11 PASS evidence_sha256=96fa11eb15485ac66bbc939138c73af18fafe4880480fcb3dd46ed402b6cf91a; target Quick 11/11 PASS evidence_sha256=b45d00dd8ca8c3689c9e13758f71f0dc1bbbbf46bf1f7eda1f5216560a57582f; Accept 13/13 PASS evidence_sha256=7812dbcfdd095c6a99e7755093eff155da117f8dab6be457598068126f72f968; Release 13/13 PASS evidence_sha256=7726719df9704817a7ceac7b877c7d32c51a4b7be47e389e9a1bf82b12011c39; update ZIP sha256=08acf0e8c208190c579a1d2329bb53b27c3658a154ebecf9b33f8d0b5e8ea383; baseline manifest=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f tree=14098d9ccfc0a90f6568b5e1bf1e829be44856600c4346733f2728ebc5227bc4; target manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=527620df31d19f85aaac9c07c6a86c08085a1f78e7a40364f63b614a4aed52fd. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
       "recorded_at": "2026-08-22T08:40:11+09:00"
+    },
+    {
+      "id": "IMPL-DEV-WORKFLOW-ROLLBACK-GUARD-001",
+      "studio_build": "GKS-B727",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [],
+      "result": "Partial",
+      "evidence": "Development Workflow Human approval rollback guard implemented from exact user-provided GKS-B726 / GA-B486.211 baseline. Stale workflow snapshots are self-healed from append-only Human workflow history when the latest relevant event is Human approved implementation start; normal JSON merge preserves Approved implementation/completion approvals and the forward-most workflow stage; workspace.status follows workflow as canonical state. Explicit Human stage-back history remains authoritative and can legitimately reopen an earlier stage. Targeted B727_WORKFLOW_ROLLBACK_GUARD_PASS cases=3; Quick 11/11 PASS evidence_sha256=c98e25577c37cbedcf327ddae161865a2db3710c16428751eafb35ccace5762c; Accept 14/14 PASS evidence_sha256=363c0f26bc553517f5eb28a5adf7283dc419d8082aaf569a97fe1564ecc5e739 with applied Full 26/26 PASS; Release 14/14 PASS evidence_sha256=7f65f9363dcfee2bf1346563183354e3c3a17eaebd1746b110be96b7124e09c6 with applied Full 26/26 PASS; update ZIP sha256=3f9a472e85836d42ed4f0cdfbba404050c5dc8973df1dc8d7f4267812a4a972f; baseline manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=b8ee49bab93213ea8dc97029f718a70fb5ecdfe914e9ee840b0c849b41226747; target manifest=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45 tree=b788cb329f975a483595ede61ecbe07f5ac3334d932d5b662bbf69061b00d1ad. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T08:51:00+09:00"
     }
   ],
   "discussions": [
@@ -9069,11 +9090,11 @@
     }
   ],
   "workflow": {
-    "stage": "Planning",
+    "stage": "Implementing",
     "implementation_approval": {
-      "status": "Pending",
-      "by": "",
-      "at": ""
+      "status": "Approved",
+      "by": "Human",
+      "at": "2026-08-21T22:03:10.347Z"
     },
     "completion_approval": {
       "status": "Pending",
@@ -9490,6 +9511,14 @@
     {
       "at": "2026-08-21T23:49:42.178Z",
       "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-22T08:51:00+09:00",
+      "message": "Human指示によりDevelopment Workflowの巻戻し防止を実装。既存のHuman approved implementation start履歴を正本としてworkflowをImplementing/Approvedへ復元し、通常のAI統合JSONではApproved→Pendingおよびstage後退を禁止。明示的な工程戻しはHumanのWorkflow操作だけで行う。GKS-B727 SOURCE_UPDATEはTargeted/Quick/Accept/Full/Release PASS、Human Apply待ち。"
+    },
+    {
+      "at": "2026-08-22T00:03:09.185Z",
+      "message": "Development Workspace JSON merged: add=3 update=0 delete=0"
     }
   ],
   "specification_candidates": [
