@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.3",
+  "schema_version": "2.0",
   "workspace": {
     "id": "DEV-STUDIO-AUTHORITY-ROOT-001",
     "name": "Development Project正本統一・世代不整合 根絶",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T09:17:18.832Z"
+    "updated_at": "2026-08-22T18:47:00+09:00"
   },
   "project_context": {
     "purpose": "Development Project管理で発生したArchived復活・状態巻き戻り・削除後の旧Snapshot再注入を、個別ケースの例外処理ではなく保存・復元・同期の正本構造そのものを再設計して根絶する。",
@@ -85,7 +85,22 @@
     "superseded_by": "",
     "updated_at": "2026-08-22T18:12:00+09:00"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-STUDIO-AUTHORITY-ROOT-001",
+      "studio_build": "GKS-B738",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-STUDIO-AUTHORITY-ROOT-001"
+      ],
+      "task_ids": [
+        "TASK-STUDIO-AUTHORITY-ROOT-001"
+      ],
+      "result": "Partial",
+      "evidence": "baseline GKS-B737 / GA-B486.211; baseline package_manifest sha256=f79f99f9d11304e2d9b63e34b03295794aa2f9ae4d1830aeae84a8a8586941d2; baseline full tree sha256=57460180dee868fd7cebacb57d2d24364d6e05efe8119a600b8c8241d47a164f; target GKS-B738 / GA-B486.211; target package_manifest sha256=32741c7a18ff7a753566620f0089afae4d37e3144afa5ea1b1b154853d7db743; target full tree sha256=eb87717e5c56340531e9cca871cc42369c89c10808fca9801c36881473fdf058; artifact_id=GKS-B738-eb87717e5c56; update_zip sha256=188f9da33d16c15e5f27cda36dc6027274eeccfc6dd0a1446c262c77ce527661; Quick 12/12 PASS evidence_sha256=a5efe189f59f77d210d9d406aed2a223c90bf7e64cdcf81e3461ab5ee728b074; Full 27/27 PASS evidence_sha256=85fae780bd889dce8c4b0318e7a17f4a68c8e58a7eac2c4cb0c0bf2cfbf6fb49; Accept 14/14 PASS evidence_sha256=cc683a1027954a4cf933e33726acbb7299d1545b4de8899b2d89f8bb65629d05 (applied Full 26/26 PASS, timeout 0); Release 14/14 PASS evidence_sha256=86419847952e4b689b6d6239de3b347855e14e2e9540e8a3ec246bc37aa29bdd (applied Full 26/26 PASS, timeout 0); Test Integrity baseline=336 applied=336 changed=0 added=0 build_only=12 machine_hash_sync=1 approval=no; authority runtime fixture PASS: schema2, old schema reject, authority required, other instance reject, revision mismatch reject, workflow rollback reject, lifecycle JSON mutation reject, additive merge delete=0; static path fixture PASS: canonical path single root, duplicate workspace scan, explicit complete delete, no old body storage in Git store, no registry body self-heal, Session save does not persist Project body, old collection import rejected, old format automatic migration rejected; changed_paths=24; source deletes=0; Game Data changes=0; Export changes=0; protected test logic changes=0 (12 Build token sync only); no legacy/compat/fallback/shim/adapter/alias/dual-read/dual-write/silent recovery added. Human Apply and Current Source root-regression remain pending.",
+      "recorded_at": "2026-08-22T18:47:00+09:00"
+    }
+  ],
   "discussions": [],
   "decisions": [
     {
@@ -133,7 +148,7 @@
       "id": "TASK-STUDIO-AUTHORITY-ROOT-001",
       "box_id": "BOX-STUDIO-AUTHORITY-ROOT-001",
       "title": "Development Projectの複数正本・旧世代復元経路を根絶する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 10,
       "depends_on": [],
       "acceptance_criteria": "- AI_STARTの必須読込順・Pre-flight・SOURCE_UPDATE手順に従う。\n- 実行開始時に最新Current Source ZIPをexact hashで固定する。期待baselineはGKS-B737 / GA-B486.211。Currentが異なる場合は編集せずFail Closedし、Humanへbaseline更新確認を求める。\n- Development Project本文の永続正本をcanonical store 1系統へ統一する。Registry/Session/localStorage/cacheはProject本文の独立復元元にならない。\n- Project作成ごとに論理workspace.idとは別の一意なproject instance/generationを正式管理し、完全削除後に同じworkspace.idを再作成しても旧instanceを同一案件として扱わない。\n- 同一instance内は明示revision/commitで世代管理し、古いrevision・未知revision・複数canonical候補・authority不一致を自動勝敗判定せずFail Closedする。\n- updated_atだけをauthority判定の正本にしない。Lifecycle/Workflowだけを例外保護する方式にも依存せず、Task/Check/Decision/Specification/Historyを含むProject Record全体を同一authority規則で扱う。\n- Gitから開く、Remote再読込、JSON統合、Session復元、Registry同期/自動修復等、Project本文を取り込む全経路を単一authority validator/commit経路へ統合する。\n- Registry mismatch/self-healはmetadata・接続情報だけを修復できるものとし、Project本文を別SnapshotからSession/canonicalへ注入しない。\n- 完全削除は対象instanceのcanonical JSON、Registry entry、Session、local cache/localStorage参照を一貫して消去し、残存0件を検証してから完了する。Git canonical本体を残したまま『全削除』と表示しない。\n- 旧形式/instance情報欠落ProjectをRuntimeで自動migration・推測復元しない。必要な一回限りの移行がある場合はHuman承認された外部/一時migrationとして実施し、移行完了後にmigration runtime/adapterを最終成果物へ残さない。\n- 新canonical経路成立・回帰確認後、旧Git loader、旧whole-record replacement、旧Session restore、旧Registry self-heal本文注入、その他重複復元経路を参照0件確認のうえ物理撤去する。\n- legacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、try new→catch old、silent recovery、廃止API wrapperを最終成果物へ残さない。Compatibility Budget 0 / Exception Budget 0。\n- 既存DEV-V9-REORG-019等のTask/Check/Decision/Specification意味内容を本Source修復に便乗して変更しない。既存案件のcanonical化/完全削除/再登録は対象instanceをHumanが明示承認した別Apply操作として行う。\n- 保護Test/Gate/Schema/test registry/integrity policyの変更・追加・削除が必要な場合、対象とhash/pathを提示しTEST_CHANGE_APPROVAL + Human完全一致承認前には変更しない。Gate/timeout/Pass基準を緩和しない。\n- 旧経路の物理削除が必要な場合、削除候補pathを事前提示しDELETION_POLICYに基づくHuman明示承認を得る。承認なし削除0件。\n- 根絶回帰として少なくとも、完全削除→同一workspace.id再作成→旧Git旧instanceを置いても復活しない、旧instance拒否、古いrevision拒否、未知revision Conflict、複数canonical候補Fail Closed、Registry修復から本文復元されない、Session/cacheから本文がcanonicalへ昇格しない、Human Approved状態を旧Snapshotが復活させない、旧loader参照0件を確認する。\n- Source更新前後で既存Current Projectの正常な保存→閉じる→再度開く→明示更新→再読込が単一canonical/revision経路で成立し、正常系を壊していないことを確認する。\n- Game Data変更0、Export変更0、ゲーム仕様/Balance/Save Data意味変更0。便乗修正0。\n- Buildをbaselineより前進させ、current Build marker同期後にpackage_manifest.jsonを再生成する。\n- exact baseline指定付きQuick / accept --context update / Impact判定で必要なFull / ReleaseをPASSする。\n- studio-update.jsonを含みExport/を含まない直接Studio更新ZIPを作成し、本案件DEV-STUDIO-AUTHORITY-ROOT-001へ統合できるDevelopment JSONを別成果物として返す。\n- SOURCE_UPDATE成果物提出時点で停止し、Human Apply前にTaskをDoneにしない。別Taskへ自動着手しない。\n- Human Apply後の最新Current Sourceで根絶回帰を独立実行し、旧経路が実体・参照とも残っていないことを確認してからDone判定する。",
@@ -145,7 +160,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T18:12:00+09:00",
-      "updated_at": "2026-08-22T18:12:00+09:00"
+      "updated_at": "2026-08-22T18:47:00+09:00"
     }
   ],
   "checks": [
@@ -171,6 +186,29 @@
       "blocking": false,
       "created_at": "2026-08-22T18:12:00+09:00",
       "updated_at": "2026-08-22T09:16:41.298Z"
+    },
+    {
+      "id": "CHK-STUDIO-AUTHORITY-ARTIFACT-001",
+      "title": "Canonical Authority Root SOURCE_UPDATE Artifact / Gate確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-STUDIO-AUTHORITY-ROOT-001",
+      "status": "Passed",
+      "result": "GKS-B737をexact baselineとしてGKS-B738 SOURCE_UPDATEを生成。Development Projectをschema 2.0 canonical authorityへbreaking移行し、instance/revision/canonical_pathを必須化。Project本文のブラウザ永続化・旧whole-record復元・Registry本文self-heal・旧形式自動migrationを撤去し、Git canonical 1正本＋Session作業コピーへ統一。旧instance/revision/authority不一致/複数候補はFail Closed。Quick/Full/Accept/ReleaseすべてPASS。Human Apply後のCurrent Source根絶回帰待ち。",
+      "evidence": "baseline GKS-B737 / GA-B486.211; baseline package_manifest sha256=f79f99f9d11304e2d9b63e34b03295794aa2f9ae4d1830aeae84a8a8586941d2; baseline full tree sha256=57460180dee868fd7cebacb57d2d24364d6e05efe8119a600b8c8241d47a164f; target GKS-B738 / GA-B486.211; target package_manifest sha256=32741c7a18ff7a753566620f0089afae4d37e3144afa5ea1b1b154853d7db743; target full tree sha256=eb87717e5c56340531e9cca871cc42369c89c10808fca9801c36881473fdf058; artifact_id=GKS-B738-eb87717e5c56; update_zip sha256=188f9da33d16c15e5f27cda36dc6027274eeccfc6dd0a1446c262c77ce527661; Quick 12/12 PASS evidence_sha256=a5efe189f59f77d210d9d406aed2a223c90bf7e64cdcf81e3461ab5ee728b074; Full 27/27 PASS evidence_sha256=85fae780bd889dce8c4b0318e7a17f4a68c8e58a7eac2c4cb0c0bf2cfbf6fb49; Accept 14/14 PASS evidence_sha256=cc683a1027954a4cf933e33726acbb7299d1545b4de8899b2d89f8bb65629d05 (applied Full 26/26 PASS, timeout 0); Release 14/14 PASS evidence_sha256=86419847952e4b689b6d6239de3b347855e14e2e9540e8a3ec246bc37aa29bdd (applied Full 26/26 PASS, timeout 0); Test Integrity baseline=336 applied=336 changed=0 added=0 build_only=12 machine_hash_sync=1 approval=no; authority runtime fixture PASS: schema2, old schema reject, authority required, other instance reject, revision mismatch reject, workflow rollback reject, lifecycle JSON mutation reject, additive merge delete=0; static path fixture PASS: canonical path single root, duplicate workspace scan, explicit complete delete, no old body storage in Git store, no registry body self-heal, Session save does not persist Project body, old collection import rejected, old format automatic migration rejected; changed_paths=24; source deletes=0; Game Data changes=0; Export changes=0; protected test logic changes=0 (12 Build token sync only); no legacy/compat/fallback/shim/adapter/alias/dual-read/dual-write/silent recovery added.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T18:47:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T18:47:00+09:00",
+      "updated_at": "2026-08-22T18:47:00+09:00"
     }
   ],
   "workflow": {
@@ -178,7 +216,7 @@
     "implementation_approval": {
       "status": "Approved",
       "by": "Human",
-      "at": "2026-08-22T09:17:18.833Z"
+      "at": "2026-08-22T09:17:18.831Z"
     },
     "completion_approval": {
       "status": "Pending",
@@ -211,6 +249,17 @@
     {
       "at": "2026-08-22T09:17:18.833Z",
       "message": "Human approved implementation start"
+    },
+    {
+      "at": "2026-08-22T18:47:00+09:00",
+      "type": "CanonicalAuthorityRootSourceUpdatePrepared",
+      "summary": "AI_START selected TASK-STUDIO-AUTHORITY-ROOT-001 only. GKS-B737 exact baselineからGKS-B738を生成。Development Project schema 2.0 canonical authorityへbreaking移行し、複数正本・旧世代復元・削除後再注入経路を根本撤去。Compatibility Budget 0 / Exception Budget 0。Quick 12/12、Full 27/27、Accept 14/14（applied Full 26/26）、Release 14/14（applied Full 26/26）PASS、timeout 0。Source削除0、Game Data変更0、Export変更0。Human Apply待ちのためTaskはDoing、次Taskなし。"
     }
-  ]
+  ],
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-a7618dca-7a96-4ec0-aabe-1da1abe16d08",
+    "revision": 1,
+    "canonical_path": "development-project-data/DEV-STUDIO-AUTHORITY-ROOT-001.json"
+  }
 }
