@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T00:09:30.906Z"
+    "updated_at": "2026-08-22T00:20:07.974Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -299,6 +299,20 @@
       "result": "Partial",
       "evidence": "Development Workflow Human approval rollback guard implemented from exact user-provided GKS-B726 / GA-B486.211 baseline. Stale workflow snapshots are self-healed from append-only Human workflow history when the latest relevant event is Human approved implementation start; normal JSON merge preserves Approved implementation/completion approvals and the forward-most workflow stage; workspace.status follows workflow as canonical state. Explicit Human stage-back history remains authoritative and can legitimately reopen an earlier stage. Targeted B727_WORKFLOW_ROLLBACK_GUARD_PASS cases=3; Quick 11/11 PASS evidence_sha256=c98e25577c37cbedcf327ddae161865a2db3710c16428751eafb35ccace5762c; Accept 14/14 PASS evidence_sha256=363c0f26bc553517f5eb28a5adf7283dc419d8082aaf569a97fe1564ecc5e739 with applied Full 26/26 PASS; Release 14/14 PASS evidence_sha256=7f65f9363dcfee2bf1346563183354e3c3a17eaebd1746b110be96b7124e09c6 with applied Full 26/26 PASS; update ZIP sha256=3f9a472e85836d42ed4f0cdfbba404050c5dc8973df1dc8d7f4267812a4a972f; baseline manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=b8ee49bab93213ea8dc97029f718a70fb5ecdfe914e9ee840b0c849b41226747; target manifest=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45 tree=b788cb329f975a483595ede61ecbe07f5ac3334d932d5b662bbf69061b00d1ad. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
       "recorded_at": "2026-08-22T08:51:00+09:00"
+    },
+    {
+      "id": "IMPL-R30-007",
+      "studio_build": "GKS-B728",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-007"
+      ],
+      "result": "Partial",
+      "evidence": "GKS-B728 Game Settings / Tutorial persistence implementation prepared from exact user-provided GKS-B727 / GA-B486.211 baseline. New settings-tutorial-save-bridge preserves optional root gameSettings / tutorialProgress objects exactly across Save snapshot and Load normalization without interpreting Domain-owned values. Current v3 saves without these optional fields remain valid; scalar/array misuse is rejected. No Battle/Quest result logic consumes these fields in the current runtime. Targeted verification 12/12 PASS; target Quick 11/11 PASS evidence_sha256=13a8694f9cd9de07ab2e66392ed5c98357b4cbe86438fc56c5dcc70a482b659c; Accept 14/14 PASS evidence_sha256=f19ca0a7b39bbdf7f9e82b71b4893aa3aee5c2c6258229a26177bb009aa1b48e; Release 14/14 PASS evidence_sha256=a309e5e259ca62787bc7b48d47a46edacab10a1ccc8734014cb65936820874b3; baseline manifest=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45 tree=28527cc972bf73652fe8e47414afc855a60eff1d003b4afa6772ff866cfbd133; target manifest=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072 tree=f67650a6a1f355067b2ad67d259ec0f7362d3e8a9431da6063424dd06a814d3a; artifact_id=GKS-B728-f67650a6a1f3; update ZIP sha256=e3ea6fef3bdc8c516d9c75e36c26f65a1815226ade3845864e70f4e3de7d7e2b. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T09:15:56+09:00"
     }
   ],
   "discussions": [
@@ -5907,7 +5921,7 @@
       "id": "TASK-R30-007",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Game Settings / Tutorial進行のSave接続を実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 1070,
       "depends_on": [
         "TASK-R30-006"
@@ -5921,7 +5935,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T09:05:00+09:00"
+      "updated_at": "2026-08-22T09:15:56+09:00"
     },
     {
       "id": "TASK-R30-008",
@@ -9110,6 +9124,52 @@
       "blocking": false,
       "created_at": "2026-08-22T09:05:00+09:00",
       "updated_at": "2026-08-22T09:05:00+09:00"
+    },
+    {
+      "id": "CHK-R30-007-IMPLEMENTATION",
+      "title": "TASK-R30-007 Game Settings / Tutorial Save persistence verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-007",
+      "status": "Passed",
+      "result": "GKS-B728でGame Settings / Tutorial進行の専用Save Bridgeを追加。Save側は両Domainの意味・具体デフォルト値を再定義せず、gameSettings / tutorialProgressを任意root objectとしてexact保持する。既存v3 Saveへfieldを強制追加せず、存在時だけCurrent schemaでobjectを要求する。Settings/Tutorialは現段階のBattle/Quest確定結果計算へ接続していない。",
+      "evidence": "game/assets/js/settings-tutorial-save-bridge.js; game/assets/js/ai-save-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification R30_007_TARGETED 12/12 PASS (legacy v3 compatibility, optional object validation, exact preservation, mutation rejection, Save/Load wiring, gameplay runtime non-consumption); source deletions=0; Game data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T09:15:56+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T09:15:56+09:00",
+      "updated_at": "2026-08-22T09:15:56+09:00"
+    },
+    {
+      "id": "CHK-R30-007-GATES",
+      "title": "TASK-R30-007 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-007",
+      "status": "Passed",
+      "result": "ユーザー提供GKS-B727 / GA-B486.211完全Sourceをexact baselineとしたGKS-B728更新はTarget Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、UTF-8/NFC・Source ZIP binding・applied-state検証もPASS。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45 tree=28527cc972bf73652fe8e47414afc855a60eff1d003b4afa6772ff866cfbd133; target manifest=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072 tree=f67650a6a1f355067b2ad67d259ec0f7362d3e8a9431da6063424dd06a814d3a; target Quick 11/11 PASS evidence_sha256=13a8694f9cd9de07ab2e66392ed5c98357b4cbe86438fc56c5dcc70a482b659c; Accept 14/14 PASS evidence_sha256=f19ca0a7b39bbdf7f9e82b71b4893aa3aee5c2c6258229a26177bb009aa1b48e; Release 14/14 PASS evidence_sha256=a309e5e259ca62787bc7b48d47a46edacab10a1ccc8734014cb65936820874b3; update ZIP sha256=e3ea6fef3bdc8c516d9c75e36c26f65a1815226ade3845864e70f4e3de7d7e2b files=640; Build marker check PASS files=190.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T09:15:56+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T09:15:56+09:00",
+      "updated_at": "2026-08-22T09:15:56+09:00"
     }
   ],
   "workflow": {
@@ -9550,6 +9610,14 @@
     {
       "at": "2026-08-22T00:09:30.906Z",
       "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-22T09:15:56+09:00",
+      "message": "AI_START実行: TASK-R30-007のみSOURCE_UPDATE。Game Settings / Tutorial進行の専用Save Bridgeを追加し、gameSettings / tutorialProgressをDomain値の意味を再定義せず任意root objectとしてSave/Load境界でexact保持する。既存v3 Saveへfieldを強制せず、Settings/Tutorialは現段階のBattle/Quest確定結果計算へ未接続。GKS-B728へ更新しTargeted 12/12、Quick 11/11、Accept 14/14、Release 14/14、ZIP hash/encoding/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-008はBlockedを維持。"
+    },
+    {
+      "at": "2026-08-22T00:20:07.974Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ],
   "specification_candidates": [
