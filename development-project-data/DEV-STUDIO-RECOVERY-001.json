@@ -1,0 +1,185 @@
+{
+  "schema_version": "1.3",
+  "workspace": {
+    "id": "DEV-STUDIO-RECOVERY-001",
+    "name": "Studio開発管理・自己修復暴走 復旧",
+    "status": "Implementing",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-22T08:08:16.754Z"
+  },
+  "project_context": {
+    "purpose": "Studio開発管理システムで発生したDevelopment JSONの状態巻き戻りとAutonomous Correctionの過剰自動変更を、既存開発案件へ変更を加えず独立SOURCE_UPDATEとして修復する。",
+    "summary": "対象SourceはGKS-B735 / GA-B486.211。既存案件DEV-V9-REORG-019のTask/Check/Lifecycle/Workflow自体は本案件から変更しない。Studioの管理基盤・JSON統合・AI自動Correction境界だけを修復する。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-STUDIO-RECOVERY-001",
+    "work_box_id": "BOX-STUDIO-RECOVERY-001",
+    "theme": "Development管理データ保全 / Autonomous Correction安全化",
+    "goal": "古いDevelopment JSONで状態が巻き戻らず、AIがHuman承認なしにCorrection Task・依存関係・Checkを増殖変更しない状態へ復旧する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-STUDIO-RECOVERY-001",
+      "text": "既存Development Project DEV-V9-REORG-019のTask、Check、Lifecycle、Workflow、Decision、Specificationを本案件から変更しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    },
+    {
+      "id": "RULE-STUDIO-RECOVERY-002",
+      "text": "本案件はSOURCE_UPDATEのみとし、Game Data、Export、ゲーム仕様、Balance、Save Dataの意味内容を変更しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    },
+    {
+      "id": "RULE-STUDIO-RECOVERY-003",
+      "text": "保護Test / Gate / Schema / test registry / integrity policyを変更・削除・新規追加しない。既存検査で不足する場合はFail Closedし、別Human承認Taskへ分離する。",
+      "status": "Active",
+      "source_type": "RecoveryBoundary",
+      "source_id": "TASK-STUDIO-RECOVERY-001",
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    },
+    {
+      "id": "RULE-STUDIO-RECOVERY-004",
+      "text": "Source削除0件、Export変更0件、Game Data変更0件を通常条件とする。便乗修正を行わない。",
+      "status": "Active",
+      "source_type": "RecoveryBoundary",
+      "source_id": "TASK-STUDIO-RECOVERY-001",
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B735",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(20260822-074311).zip",
+    "source_role": "current_baseline",
+    "recorded_at": "2026-08-22T17:02:00+09:00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-22T17:02:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [],
+  "decisions": [],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-STUDIO-RECOVERY-001",
+      "name": "Studio Development Management Recovery",
+      "parent_id": "",
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-STUDIO-RECOVERY-001",
+      "node_id": "ARCH-STUDIO-RECOVERY-001",
+      "title": "開発管理・自己修復安全化",
+      "body": "Development JSON統合の巻き戻り防止とAutonomous CorrectionのHuman Gate境界を修復する。既存開発案件の実データ修復は本Work Boxへ混在させない。",
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-STUDIO-RECOVERY-001",
+      "box_id": "BOX-STUDIO-RECOVERY-001",
+      "title": "Development管理の巻き戻り防止と自動Correction暴走を修復する",
+      "status": "Todo",
+      "execution_order": 10,
+      "depends_on": [],
+      "acceptance_criteria": "- AI_STARTの必須読込順とSOURCE_UPDATE手順に従う。\n- 実行開始時にCurrent Sourceのpackage-build.json / package_manifest.jsonを確認し、本案件のbaseline GKS-B735 / GA-B486.211と一致しない場合は編集せずFail Closedする。\n- Development Project JSON統合で、同一IDの古いIncoming Recordが現在Recordの新しい状態を巻き戻さない。\n- updated_atが現在Recordより古いIncoming更新は自動上書きしない。同時刻または世代判定不能で内容が競合する場合も自動勝利を決めずConflictとして停止する。\n- lifecycle.statusは通常のDevelopment JSON統合からHuman操作を巻き戻さない。既存workflow Human承認の前進保護を維持する。\n- Autonomous Correctionは解析・修正候補提示までとし、Humanの明示指示なしにCorrection Task新規作成、親Task Blocked化、depends_on変更、Check追加・解決、次Task自動着手を行わない。\n- 同一Failure SignatureによるCorrection重複生成を防止し、実データ変更前にFail Closedできる。\n- 既存DEV-V9-REORG-019のTask / Check / Lifecycle / Workflow / Decision / Specificationを変更しない。\n- Game仕様、Game Data、Balance、Export、Save Data意味内容を変更しない。\n- Source削除0件、Game Data変更0件、Export変更0件。\n- 保護Test / Gate / Schema / test registry / integrity policyを変更・削除・新規追加しない。必要になった場合は本TaskをBlockedとして停止し別Human承認Taskへ分離する。\n- production catch、legacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、silent recoveryを新規増加させない。\n- Buildをbaselineより前進させ、current Build marker同期後にpackage_manifest.jsonを再生成する。\n- 正確なbaseline指定付きQuick / accept --context update / Impact判定で必要なFull / ReleaseをPASSする。\n- studio-update.jsonを含みExport/を含まない直接Studio更新ZIPを作成する。\n- 本案件DEV-STUDIO-RECOVERY-001へ統合できるDevelopment統合JSONを別成果物として返す。\n- AIは成果物提出時点で停止し、Human Apply前にTaskをDoneへせず、別Taskへ自動着手しない。\n- Human Apply後の最新Current Sourceで修復効果を独立確認してから完了判定する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T17:02:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-STUDIO-RECOVERY-IMPLEMENTATION-001",
+      "title": "修復SOURCE_UPDATE開始前確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-STUDIO-RECOVERY-001",
+      "status": "Passed",
+      "result": "Passed",
+      "evidence": "Humanが独立修復案件として対象・範囲・baselineを確認後にPASSする。",
+      "checked_by": "Human",
+      "checked_at": "2026-08-22T08:08:08.778Z",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T17:02:00+09:00",
+      "updated_at": "2026-08-22T08:08:08.778Z"
+    }
+  ],
+  "workflow": {
+    "stage": "Implementing",
+    "implementation_approval": {
+      "status": "Approved",
+      "by": "Human",
+      "at": "2026-08-22T08:08:16.752Z"
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-22T17:02:00+09:00",
+      "message": "Development Project created as independent Studio recovery project"
+    },
+    {
+      "at": "2026-08-22T17:02:00+09:00",
+      "type": "IndependentRecoveryTaskPlanned",
+      "summary": "既存DEV-V9-REORG-019へ追加せず、Studio Development管理の巻き戻り防止とAutonomous Correction安全化を独立SOURCE_UPDATE Taskとして登録。"
+    },
+    {
+      "at": "2026-08-22T08:04:11.328Z",
+      "message": "Development Project schema normalized to 1.2"
+    },
+    {
+      "at": "2026-08-22T08:04:12.742Z",
+      "message": "Development Project JSON imported as new project: DEV-STUDIO-RECOVERY-001"
+    },
+    {
+      "at": "2026-08-22T08:08:08.781Z",
+      "message": "Confirmation updated"
+    },
+    {
+      "at": "2026-08-22T08:08:16.754Z",
+      "message": "Human approved implementation start"
+    }
+  ]
+}
