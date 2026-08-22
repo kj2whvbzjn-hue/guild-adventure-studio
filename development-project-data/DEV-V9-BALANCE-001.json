@@ -5,17 +5,17 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T01:41:32.913Z"
+    "updated_at": "2026-08-22T02:06:41.444Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
-    "summary": "実装ラインR30以降のTask状態・Workflow・Source責務を変更しない別案件。DEV-V9-REORG-019のApproved Decision / Current Specificationをread-only authorityとして参照し、Balance値とContent/Test fixtureのみを対象にする。"
+    "summary": "実装ラインR30以降のTask状態・Workflow・Source責務を変更しない別案件。DEV-V9-REORG-019のApproved Decision / Current Specificationをread-only authorityとして参照する。現在はBalance実行計画の設計段階であり、Human Plan Gate承認前はDEVELOPMENT_ONLYの設計Taskだけを実行する。GAME_DATA変更、Current active昇格、Source変更は行わない。"
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-DESIGN-001",
-    "theme": "Game-wide Balance System Map / Formula & Domain Coverage Design",
-    "goal": "Quest中心ではなく、Character/Job、Battle Formula、Skill、Passive、Equipment、MOD/Rarity/Unique、Enemy/AI、Quest/Reward/Stone、Economy/Guild、Presentationまで全Balance調整面を棚卸しし、実行計画を設計する。計画自体はDraftとして保持し、Human承認前に実行計画を確定しない。"
+    "theme": "Game-wide Balance Plan Design / Data Topology / Formula Boundary / Reference Simulation",
+    "goal": "全Balance調整面をCurrent Specificationから棚卸しし、Balance Data Topology、Formula/Parameter Registry、Snapshot/Application Policy、Content/Runtime Readiness、KPI、Reference Simulation、統計/感度/支配解検査、Runtime Conformance、Candidate昇格/rollbackを設計したうえで、最終実行Phase/Task/DependencyをHuman Reviewへ提出する。計画自体はDraftのまま保持し、承認前に実行計画を確定しない。"
   },
   "project_rules": [
     {
@@ -128,20 +128,92 @@
     },
     {
       "id": "RULE-BAL-013",
-      "text": "Balance実行計画がHuman承認されるまでは、DEVELOPMENT_ONLYの計画設計Taskだけを実行対象とする。GAME_DATA変更、Current active昇格、Source変更は行わない。設計上Source側の変更が必要と判明した場合も本案件では要求として記録し、実装ラインへ越境しない。",
+      "text": "Balance実行計画がHuman承認されるまでは、DEVELOPMENT_ONLYの計画設計Taskだけを実行対象とする。旧実行案TASK-BAL-001〜013は最終計画として扱わず、TASK-BAL-PLAN-GATE-001がHuman ApprovedになるまでTASK-BAL-001をBlockedに保ち、その依存系列を開始しない。GAME_DATA変更、Current active昇格、Source変更は行わない。設計上Source側の変更が必要と判明した場合も本案件ではRequirementとして記録し、実装ラインへ越境しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-22 keep plan in design",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-014",
+      "text": "各Balance Keyは値だけでなく、Authority、Storage、Deployment Route、Version、Runtime Consumer、Config/Project JSON上の所在を追跡可能にする。Studio Project JSONが正本のGame DataとSource側Configを混同せず、Exportを編集正本として扱わない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "AI_START.md:GAME_DATA_UPDATE / current Balance design audit",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-015",
+      "text": "Formula調整面は formula topology / formula parameter / curve-cap-clamp / rounding-order に分解する。Current Structure/Contractで固定されている式構造、処理順、丸めをBalance都合だけで変更しない。Formula expression本体の可変化が必要な場合はCandidateとして分離し、Human Decision前にCurrent化しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-BATTLE-001 / RULE-BAL-002",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-016",
+      "text": "各Balance KeyはApplication/Snapshot Policyを持つ。少なくとも live_current / character_creation / level_up / item_generation / quest_start / battle_start のどこで値を固定するかを明示し、Config更新による既存結果への遡及影響を推測しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "RULE-BAL-007 / SPEC-V9-019-CORE-002",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-017",
+      "text": "Balance検証はSpecification準拠Reference SimulationとCurrent Runtime Conformanceを分離する。Runtime実装値やCurrent Sourceの挙動をSpecification確定根拠として使用せず、まずReference結果を正本としてBalance Candidateを評価し、Runtimeは同一InputでConformanceを確認する。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:RULE-REORG-006 / current Balance design audit",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-018",
+      "text": "GAME_DATA系Balance作業を開始する前に、現在のStudio Project JSONと対象Data Versionを必ず取得・記録する。Source ZIP内ExportやRuntime fixtureをGame Data正本として直接更新しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "AI_START.md:Pre-flight / GAME_DATA_UPDATE",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-019",
+      "text": "Balance対象ごとにContent ReadinessとRuntime Readinessを分離する。System FormulaはProduct Content未完成でもReference Fixtureで検証できるが、Product Skill/Equipment/Passive/Monster/Rewardの最終Balanceは正式Content Coverageが不足した状態でCurrent activeへ昇格しない。Test FixtureはProduct Masterへ無条件昇格しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "RULE-BAL-008 / current Balance design audit",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-020",
+      "text": "Candidate昇格Evidenceは最低限 Source Build、Game Build、Source binding、Studio Project/Data Version、Balance Config Version、Formula/Rules Version、Simulator Version、Seed Set、KPI結果、Runtime Conformance結果を一組として追跡可能にする。旧Current active/Baselineは履歴保持しRollback可能にする。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "RULE-BAL-004 / RULE-BAL-006 / current Balance design audit",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-021",
+      "text": "Runtime検証へ進む直前にread-only Current Source baselineを再Bindする。案件作成時のBuildを恒久基準とせず、Current Sourceが前進した場合は新しいSource binding Checkを追加し、旧Passed Checkは履歴として残す。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "AI_START.md:Pre-flight / package-build.json",
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B729",
+    "studio_build": "GKS-B732",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-004114).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-012352).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T10:14:00+09:00"
+    "recorded_at": "2026-08-22T10:55:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -167,16 +239,16 @@
       "id": "DISC-BAL-002",
       "title": "ゲーム全体Balance System Mapと実行計画の再設計",
       "status": "Open",
-      "summary": "既存13TaskはQuest/大分類寄りで粒度が粗く、Weapon / Skill / Passive / Battle Formula等の相互依存を十分に表現できないため、ゲーム全体のBalance調整面を再棚卸しして工程を設計し直す。",
-      "body": "## 目的\nBalance調整をQuest/Stone/Reward中心に捉えず、ゲームの強さ・成長・資源・体験を構成する全レイヤーを対象にする。\n現時点では実行計画の設計Draftであり、最終Task構成・順序・Formula所有境界を確定しない。\n\n## 全体Balance対象 Draft Map\n1. Balance Authority / Ledger\n   - Human Approved seed / V9 Baseline / Candidate / Current active / Deferred\n   - authority / source / version / config path / runtime connection / snapshot policy\n\n2. Character / Job / Progression\n   - 初期Stats、Party規模、最大Lv、必要EXP、Job成長値、成長Curve\n   - Skill/Passive習得条件・Cost、Respec Cost\n   - Character成長と装備要求の整合\n\n3. Battle Core Formula\n   - Physical / Magical Damage\n   - Heal\n   - Hit / Evasion\n   - Critical Rate / Critical Damage\n   - Resistance\n   - DOT / HOT\n   - Shield\n   - Drain / Reflect\n   - MP / Cooldown / Cast\n   - Action Gauge / Tick / Battle duration\n   - Formula expression、係数、Curve、Cap/Floor、Clamp、Probability、Duration、Conversion等を調整面として棚卸しする\n   - 丸め・処理順・Owner Contractとの境界はCurrent仕様との整合を別途確認する\n\n4. Skill\n   - Skill Budget / Skill Level\n   - DAMAGE / HEAL / APPLY / REMOVE / RESOURCE_CHANGE / REVIVE / TARGET_CONTROL / Trigger系\n   - Damage/Heal倍率、MP Cost、Cooldown、Cast、Range、Target数、Multi-hit、Duration、Stack、Shield等\n\n5. Passive\n   - 武器熟練、属性強化、Heal、BUFF/DEBUFF、DOT、Resistance、Accuracy、MP効率、AG等\n   - Skillと別の常時補正源として個別に評価\n   - 非採用効果を復活させない\n\n6. Weapon / Armor / BaseItem\n   - iLv\n   - required STR/DEX/INT、VIT/MND/AGI\n   - attack / accuracy / magic_weapon_bonus / base_critical_rate\n   - hp_bonus / mp_bonus / evasion\n   - 武器種・防具種係数、Growth、Clamp、丸め、Generator Balance Config\n\n7. MOD / Rarity / Unique\n   - Tier値、Flat/%、付与数、抽選率、部位候補、Clamp\n   - Rarity出現率、期待入手時間、Drop限定高Rarity\n   - Uniqueの特殊効果強度と通常数値強度の分離\n\n8. Status / Effect Numeric Surface\n   - Status duration、Resistance、DOT Power/Interval/Duration、Stack上限\n   - BUFF/DEBUFF/Shield等の具体効果量\n   - Lifecycle構造はCurrent Contractを参照し、数値面を分離\n\n9. Enemy / Monster\n   - Monster Level×Job係数\n   - Enemy Budget配分\n   - Skill候補閾値 / Skill Budget\n   - Elite / Champion / Boss等の強度\n   - Party人数、武器/Skill/Passive環境との相対性能\n\n10. AI Balance\n    - AI再評価間隔等の可変値候補\n    - BuildがFormal AIによって引き出せる性能差\n    - 特定AI Patternだけが最適解として固定しないかの評価\n    - AI責務/Decision Engine構造自体は再設計しない\n\n11. Encounter / Quest\n    - effective_enemy_budget\n    - Event強度、Battle数、Resource消耗、成功率、所要時間\n    - Quest単位での連戦・消耗・失敗リスク\n\n12. Reward / Drop / Economy\n    - Gold、Material、Equipment、Drop Table、roll/chance/weight\n    - amount / quality / rarity scaling\n    - 装備更新頻度、Skill/Passive Cost、成長Costとの循環\n    - 時間当たり期待値とRisk調整\n\n13. Stone Endgame\n    - Human確定方針: 明確な高難易度・高報酬のエンドコンテンツ\n    - 通常攻略に必須化せず、完成Build向けChallengeとして設計\n    - stone_budget_delta、成功率低下、消費Risk、Reward優遇、期待値を横断評価\n\n14. Guild / Unlock / Long-term Economy\n    - Guild EXP、Level、施設解放、倉庫容量、雇用上限、AI解放等\n    - 戦闘力を直接無償増加させないCurrent方針と整合\n\n15. Presentation Tuning\n    - Effect duration / intensity、Shake、Camera、BGM/SE、Playback speed、UI animation等\n    - ゲーム結果を変更しないPresentation Configとして分離\n\n16. Cross-System / Meta\n    - Job → Stats → Equipment → Passive → Skill → Formula → Enemy → Quest → Reward → Equipment/成長\n    - Build diversity、支配的最適解、極端Seed、時間効率、Failure率を横断検証\n\n## 調整単位 Draft\n各Balance項目は単純なvalueだけでなく、少なくとも以下の型を候補として持つ。\n- formula_expression\n- coefficient\n- curve\n- cap / floor / clamp\n- probability / weight / distribution\n- cost\n- duration / interval\n- growth\n- conversion\n- threshold\n- validation range\n\n## 実行順 Draft\nAuthority / System Map\n→ Formula / Parameter Registry\n→ Domain Balance Matrix\n→ Reproducible Simulation / Sensitivity Analysis\n→ Domain Candidate作成\n→ Cross-System Simulation\n→ Runtime接続済み領域のGame検証\n→ Human Review\n→ Current active候補昇格\n\nこの順序は設計Draftであり、依存関係調査後に並列化・再分割・順序変更してよい。\n\n## 現時点で確定しないもの\n- 最終Phase数\n- 最終Task数\n- 各Domainの実行順・並列性\n- Formula expressionそのものをBalance Configへ持たせる範囲\n- Current Structure/ContractとFormula可変化の境界\n- Product Game Dataへ反映する時点\n- Current active昇格Gateの詳細\n",
-      "open_questions": "- Damage/Heal/Hit/Critical等のFormula expression本体をどの粒度でBalance所有にするか。\n- 現行の処理順・丸め・Owner Contractのうち、どこまでを固定Structureとして残し、どこからをBalanceへ移すか。\n- Domainごとの依存関係を調査した後、どの工程を並列化できるか。\n- Simulation FixtureとProduct Game Dataの境界をどのArtifactで管理するか。\n- Current active昇格に必要なSimulation / Runtime / Human確認Evidenceをどう定義するか。",
-      "conclusion": "設計Draftとして登録する。既存13Taskを最終計画とは扱わず、全体System Map・Formula Registry・依存関係・評価指標を整理してから実行計画をHuman確認へ出す。",
+      "summary": "既存13TaskはQuest/大分類寄りで粒度が粗く、Weapon/Armor、Skill、Passive、Battle Formula、New Game、Inventory/Economy、Event/Exploration、Data Topology、Snapshot Policy、Reference Simulation、Runtime Conformanceまで含む相互依存を十分に表現できない。全体Coverageと検証方式を再設計してから実行Phaseを確定する。",
+      "body": "## 目的\nBalance調整をQuest/Stone/Reward中心に捉えず、ゲームの強さ・成長・資源・Build・体験を構成する全レイヤーを対象にする。\n現時点では実行計画の設計Draftであり、最終Task構成・順序・Formula所有境界・Product Data反映時点を確定しない。\n\n## Game-wide Balance System Map Draft\n1. Balance Authority / Ledger / Data Topology\n2. Character Base / Job Growth / EXP Curve / Party\n3. New Game Starter Power / Initial Economy\n4. Battle Core Formula\n   - Physical/Magical Damage, Heal, Hit/Evasion, Critical, Resistance\n   - DOT/HOT, Shield, Drain/Reflect\n   - MP/CD/Cast, Action Gauge/Tick, battle duration\n5. Skill Budget / Skill Runtime Values\n6. Skill Acquisition / Respec / Loadout Capacity\n7. Passive\n8. Status / DOT / BUFF / DEBUFF / SHIELD numeric surface\n9. Weapon / Armor / Accessory / BaseItem / Equipment Requirement / Growth\n10. MOD / Rarity / Unique\n11. Inventory / Warehouse / Stack / Sell Value\n12. Enemy / Monster / Enemy Budget / Enemy Skill / Enemy AI Budget\n13. AI performance extraction / Build execution efficiency\n14. Encounter / Event / Exploration probability surface\n15. Quest / effective_enemy_budget / duration / resource attrition\n16. Reward / Drop / Gold / Resource Source-Sink Economy\n17. Stone Endgame\n18. Guild Progression / Unlock / Capacity\n19. Presentation Tuning\n20. Cross-System / Meta / Build Diversity / Dominance / Exploit\n\n## Balance調整型 Draft\n- formula_expression\n- coefficient\n- curve\n- cap / floor / clamp\n- probability / weight / distribution\n- cost\n- duration / interval\n- growth\n- conversion\n- threshold\n- validation range\n\n## Data / Version / Application設計\n各Balance Keyへ以下を持たせる。\n- owner_spec / authority / source\n- storage / config_path / deployment_route / runtime_consumer\n- balance_state\n- config/data/formula version\n- application_snapshot_policy\n- content_readiness / runtime_readiness\n- validation KPI\n- promotion evidence\n\nApplication/Snapshot候補:\n- live_current\n- snapshot_on_character_creation\n- snapshot_on_level_up\n- snapshot_on_item_generation\n- snapshot_on_quest_start\n- snapshot_on_battle_start\n\n## Formula Boundary Draft\nFormulaは一括で「可変/固定」とせず、\n- topology / expression\n- coefficient / curve\n- cap / floor / clamp\n- rounding / processing order\nへ分解する。\nCurrent Contractと衝突するFormula expression変更はCandidateとして隔離し、Human Decision前にCurrent化しない。\n\n## Simulation / Verification Draft\nReference Simulation:\n- Current SpecificationをSource Runtimeから独立して再現する\n- Runtime未接続領域でもCandidate比較可能にする\n\nStatistical Validation:\n- deterministic seed set\n- paired A/B\n- Monte Carlo\n- confidence interval / convergence\n- holdout seed\n- extreme seed\n- sensitivity / interaction analysis\n- build dominance / exploit search\n\nRuntime Conformance:\n- 同一Input/Version/SeedをCurrent Runtimeへ投入\n- Referenceとの差異をRuntime defectとBalance差異へ分類\n- 接続済み領域だけGame WebKit E2E / Traceへ進める\n\n## Product Content Readiness\nSystem FormulaとProduct Content Balanceを分離する。\nProduct Skill/Weapon/Passive/Monster/Reward Catalogが不足している段階ではFixtureでSystem Balanceまで進めるが、\n最終Content Balance / Drop / EndgameはProduct Coverage不足のままCurrent activeへ昇格しない。\n\n## Candidate Promotion\nCandidateはVersion付きで保持し、Current active昇格時にSource/Data/Formula/Simulator/Seed/KPI/Runtime Evidenceを束ねる。\n旧Current active / V9 Baseline / Human Approved seedは削除せずRollback可能にする。\n\n## 実行順 Draft\nSystem Map\n→ Data Topology / Authority\n→ Formula / Parameter Registry\n→ Snapshot / Application Policy\n→ Content & Runtime Readiness\n→ KPI / Domain Evaluation Matrix\n→ Reference Simulation\n→ Statistical / Sensitivity / Dominance / Exploit Validation\n→ Runtime Conformance\n→ Candidate Version / Promotion / Rollback\n→ 実行Phase / Task / Dependency再設計\n→ Human Review Draft\n→ Coverage / Boundary / Readiness Audit\n→ Human Plan Gate\n\nこの順序は設計Draftであり、依存関係調査後に並列化・再分割・順序変更してよい。\n\n## 現時点で確定しないもの\n- 最終Phase数 / 最終Task数\n- Domainごとの直列/並列関係\n- Formula expression本体をBalance Configへ持たせる範囲\n- Current Structure/ContractとFormula可変化の境界\n- Simulation Fixtureの最終Artifact形式\n- Product Game Dataへ反映する時点\n- Current active昇格Gateの最終閾値\n",
+      "open_questions": "- Damage/Heal/Hit/Critical等のFormula expression本体をどの粒度でBalance所有にするか。\n- Current処理順/丸め/Owner Contractのうち、固定StructureとBalance Parameterの境界をどう切るか。\n- Formula/Skill/Equipment/Enemy等の依存Graphを見た後、どのDomainを並列化できるか。\n- Simulation FixtureとProduct Studio Project JSONをどのArtifact/Versionで分離するか。\n- Product Content CoverageをCurrent active昇格条件へどの粒度で要求するか。\n- Candidate PromotionのKPI閾値とHuman Review範囲をどう定義するか。",
+      "conclusion": "設計Draftとして継続する。旧13Taskを最終計画とは扱わず、Data Topology、Formula Boundary、Snapshot Policy、Reference/Runtime二層検証、Content Readiness、統計/支配解検査まで設計してCoverage Auditを通した後にHuman Plan Gateへ出す。",
       "related_discussion_ids": [
         "DISC-BAL-001"
       ],
-      "artifact_note": "Game-wide Balance planning draft; intentionally not finalized",
+      "artifact_note": "Game-wide Balance planning draft revised after coverage / procedure audit; intentionally not finalized",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "decisions": [
@@ -212,15 +284,15 @@
       "id": "DEC-BAL-PLAN-SCOPE-001",
       "title": "Balance計画のゲーム全体Scope再設計",
       "status": "Proposed",
-      "text": "Balance調整ScopeをQuest中心に限定せず、Weapon/Armor、Skill、Passive、Battle Formula、Character/Job、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter、Reward/Economy、Stone、Guild、Presentation、Cross-Systemまで拡張する。Damage等のFormula expression本体もBalance調整面として棚卸し対象に含めるが、Current Structure/Contractとの境界と最終所有方式は設計後に確定する。",
-      "rationale": "Humanが武器・Skill・Passive・Damage計算式を含む全体的なBalance調整計画が必要と指摘したため。計画自体は設計中なのでApprovedにはしない。",
+      "text": "Balance調整ScopeをQuest中心に限定せず、Character/Job/New Game、Battle Formula、Skill/習得/Respec/Loadout、Passive、Status、Weapon/Armor/Accessory、Equipment Requirement/Growth、MOD/Rarity/Unique、Inventory/Sell/Capacity、Enemy/Monster/AI、Encounter/Event/Exploration、Quest、Reward/Drop/Economy、Stone、Guild、Presentation、Cross-Systemまでゲーム全体へ拡張する。さらにBalance Data Topology、Snapshot/Application Policy、Content/Runtime Readiness、Reference Simulation、統計/感度/Build Dominance/Exploit、Runtime Conformance、Candidate Promotion/Rollbackを計画対象とする。Formula expression本体も棚卸し対象に含めるが、Current Structure/Contractとの境界と最終所有方式は設計後に確定する。",
+      "rationale": "Humanが武器・Skill・Passive・Damage計算式を含む全体的Balance調整を要求し、再監査でNew Game、Inventory/Economy、Event/Exploration、Data正本、Snapshot、Reference Simulation、Runtime Conformance、Content Readiness、統計/支配解検査、Promotion Evidenceまで必要と判明したため。計画自体は設計中なのでApprovedにはしない。",
       "source_discussion_ids": [
         "DISC-BAL-002"
       ],
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "specifications": [],
@@ -242,9 +314,9 @@
     {
       "id": "ARCH-V9-BALANCE-DESIGN-001",
       "name": "Balance System Map / Execution Plan Design",
-      "parent_id": "",
+      "parent_id": "ARCH-V9-BALANCE-001",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "work_boxes": [
@@ -308,9 +380,9 @@
       "id": "BOX-V9-BAL-DESIGN-001",
       "node_id": "ARCH-V9-BALANCE-DESIGN-001",
       "title": "Plan Draft: Game-wide Balance System Map / Formula Registry / Execution Design",
-      "body": "既存13Taskを実行する前に、Current Specification全DomainからBalance調整対象を抽出し、Formula/Parameter Registry、Domain別評価Matrix、依存Graph、Simulation/Evidence、Human Gateを設計する。成果はDraftとして保持し、Human確認前に最終計画・Current active・Game Dataへ昇格しない。",
+      "body": "既存13Taskを実行する前に、Current Specification全DomainからBalance対象を抽出し、Data Topology/Authority、Formula/Parameter Registry、Snapshot/Application Policy、Content/Runtime Readiness、KPI Matrix、Reference Simulation、統計/感度/Build Dominance/Exploit、Runtime Conformance、Candidate Version/Promotion/Rollbackを設計する。最後にPhase/Task/Dependencyを再設計し、Coverage Audit後にHuman Plan Gateへ出す。成果はDraftとして保持し、Human承認前にGAME_DATA/Source/Current activeへ進めない。",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "tasks": [
@@ -318,9 +390,11 @@
       "id": "TASK-BAL-001",
       "box_id": "BOX-V9-BAL-FOUNDATION-001",
       "title": "Balance項目・Authority・既存Seedを全件棚卸しする",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 100,
-      "depends_on": [],
+      "depends_on": [
+        "TASK-BAL-PLAN-GATE-001"
+      ],
       "acceptance_criteria": "- DEV-V9-REORG-019のBalance関連Specification/Decision/Materialをread-onlyで参照する。\n- balance_key / domain / value / state / authority / unit / config_path / runtime_connection / snapshot_policyを台帳化する。\n- Source Runtimeの偶然値だけを正本採用しない。\n- 実装ラインのTask/Workflowを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
@@ -330,7 +404,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-22T10:14:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-002",
@@ -579,7 +653,7 @@
       "status": "Todo",
       "execution_order": 10,
       "depends_on": [],
-      "acceptance_criteria": "- Current Specification / Decision / Materialをread-only authorityとして全Balance対象を抽出する。\n- Character/Job、Battle Core Formula、Skill、Passive、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter/Quest、Reward/Economy、Stone、Guild/Unlock、Presentation、Cross-Systemを最低Coverageとする。\n- 各項目にowner spec / authority / state / source / runtime connection / snapshot policy / config candidateを付ける。\n- Formula expressionも棚卸し対象に含める。\n- Source / Game Dataは変更しない。",
+      "acceptance_criteria": "- Current Specification / Approved Decision / Materialをread-only authorityとして全Balance対象を抽出する。\n- Character/Job/New Game、Battle Formula、Skill/Acquisition/Respec/Loadout、Passive、Status、Weapon/Armor/Accessory、Equipment、MOD/Rarity/Unique、Inventory/Sell/Capacity、Enemy/Monster/AI、Encounter/Event/Exploration、Quest、Reward/Drop/Economy、Stone、Guild/Unlock、Presentation、Cross-Systemを最低Coverageとする。\n- 各項目にowner spec / authority / state / source / domain dependency候補を付ける。\n- Formula expressionを棚卸し対象に含めるが、Formula ownershipは確定しない。\n- Source / Game Dataは変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -588,18 +662,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-002",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Formula / Parameter Registry Draftを設計する",
+      "title": "Balance Data Topology / Authority / Deployment Routeを設計する",
       "status": "Blocked",
       "execution_order": 20,
       "depends_on": [
         "TASK-BAL-DESIGN-001"
       ],
-      "acceptance_criteria": "- Damage/Heal/Hit/Critical/Resistance/DOT/Shield/MP/CD/AG等のFormulaをID単位で整理する。\n- formula_expression / coefficient / curve / cap / floor / clamp / probability / duration / growth / conversion / threshold等の調整型を定義する。\n- Currentの処理順・丸め・Owner ContractとFormula可変化が衝突する箇所を明示し、推測で仕様変更しない。\n- Formula本体をBalance所有にできる範囲はCandidateとして記録し、Human承認前に確定しない。",
+      "acceptance_criteria": "- 各Balance KeyにAuthority / Storage / Config path / Deployment Route / Runtime Consumer / Versionを定義する。\n- Studio Project JSON正本、Source側Config、Runtime-only値、Test Fixtureを混同しない。\n- ExportをGame Data編集正本として扱わない。\n- GAME_DATA作業開始時に必要なCurrent Studio Project JSON / Data Version Gateを定義する。\n- Equipment RarityとReward Rarity等、暗黙変換禁止のCross-domain mapping境界を明示する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -608,18 +682,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-003",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Domain Balance Evaluation Matrix Draftを設計する",
+      "title": "Formula / Parameter Registry Draftを設計する",
       "status": "Blocked",
       "execution_order": 30,
       "depends_on": [
         "TASK-BAL-DESIGN-002"
       ],
-      "acceptance_criteria": "- 各Domainで評価するKPI/Distribution/Failure条件を定義する。\n- Weapon/Armor、Skill、Passiveを独立評価対象にし、最終DPS/HPS/EHP/命中/生存/Resource効率への寄与を追跡可能にする。\n- Enemy/Quest/RewardだけでなくPlayer側Build構成要素を同等に扱う。\n- Target Experience Profileとの対応指標を定義する。",
+      "acceptance_criteria": "- Damage/Heal/Hit/Evasion/Critical/Resistance/DOT/Shield/MP/CD/Cast/AG等のFormulaをID単位で整理する。\n- formula topology/expression、coefficient、curve、cap/floor/clamp、probability、duration、growth、conversion、thresholdを分離する。\n- processing order / rounding / Owner Contractを別分類してCurrent固定範囲を明示する。\n- Formula expression可変化がCurrent Contractと衝突する箇所はCandidate/Open Questionとして記録し、推測で仕様変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -628,18 +702,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-004",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Reproducible Simulation / Sensitivity / Cross-System検証計画を設計する",
+      "title": "Balance Snapshot / Application Policyを設計する",
       "status": "Blocked",
       "execution_order": 40,
       "depends_on": [
         "TASK-BAL-DESIGN-003"
       ],
-      "acceptance_criteria": "- 同一Input + Seed + Rules/Data/Config Versionで再現可能なSimulation Evidenceを設計する。\n- 主要係数の感度分析と相互作用分析を計画する。\n- Job→Stats→Equipment→Passive→Skill→Formula→Enemy→Quest→Reward→成長の循環を横断検証できるようにする。\n- Runtime未接続領域と接続済み領域の検証方法を分離する。",
+      "acceptance_criteria": "- 各Balance Keyがいつ値を参照/固定するかをApplication/Snapshot Policyとして定義する。\n- live_current / character_creation / level_up / item_generation / quest_start / battle_startを最低候補とする。\n- Config更新時に既存Character/Equipment/QuestRun/Saveへ何が遡及しないかを明示する。\n- Save/Data/Rules VersionとSnapshot policyの整合を確認できるようにする。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -648,18 +722,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-005",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Balance実行Phase / Task / Dependencyの再設計案を作成する",
+      "title": "Content / Runtime Readiness Matrixを設計する",
       "status": "Blocked",
       "execution_order": 50,
       "depends_on": [
         "TASK-BAL-DESIGN-004"
       ],
-      "acceptance_criteria": "- 現行TASK-BAL-001〜013を最終計画として前提にせず、System MapとDependencyから再分割案を作る。\n- Domainを過度に1Taskへ統合しない。\n- GAME_DATA / DEVELOPMENT_ONLY / Source requirementを混在させない。\n- 並列実行可能な工程と直列Gateを区別する。\n- Draft案として提示し、既存Taskの削除は行わない。",
+      "acceptance_criteria": "- 各Balance Domainへcontent_readiness / runtime_readiness / simulator_readinessを定義する。\n- Product Content未完成でもReference Fixtureで進められる領域と、Product Catalog必須領域を区別する。\n- Test FixtureをProduct Masterへ無条件昇格しない。\n- Runtime未接続領域をCurrent Runtime値でBalance確定しない。\n- Runtime検証直前にCurrent Source baselineを再BindするGateを定義する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -668,18 +742,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-006",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Human Review用Balance計画Draftをまとめる",
+      "title": "Domain KPI / Build / Economy Evaluation Matrix Draftを設計する",
       "status": "Blocked",
       "execution_order": 60,
       "depends_on": [
         "TASK-BAL-DESIGN-005"
       ],
-      "acceptance_criteria": "- System Map / Formula Registry / Evaluation Matrix / Simulation Plan / Task再設計案を1つのReview単位へ整理する。\n- 未確定事項、Current仕様との衝突候補、Human Decisionが必要な事項を明示する。\n- AIが一意に決められる数値・技術事項とHuman体験判断を分離する。\n- このTask完了だけでは実行計画をApprovedにしない。",
+      "acceptance_criteria": "- DomainごとのKPI/Distribution/Failure条件を定義する。\n- DPS/HPS/EHP、Hit/Evasion、Resource効率、TTK、戦闘時間、Failure率、装備更新頻度、成長時間、Gold/Resource Source-Sinkを含める。\n- New Game starter power、Skill/Passive習得Cost、Respec、Loadout slot、Inventory capacity、Sell valueを評価対象に含める。\n- Weapon/Armor/Skill/Passiveを独立評価し、最終性能への寄与を追跡可能にする。\n- Target Experience ProfileとStone Endgame方針へKPIを対応付ける。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -688,18 +762,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "TASK-BAL-PLAN-GATE-001",
       "box_id": "BOX-V9-BAL-DESIGN-001",
       "title": "Balance実行計画の確定可否をHuman確認する",
       "status": "Blocked",
-      "execution_order": 70,
+      "execution_order": 140,
       "depends_on": [
-        "TASK-BAL-DESIGN-006"
+        "TASK-BAL-DESIGN-013"
       ],
-      "acceptance_criteria": "- Game-wide coverage checkがPassedである。\n- Formula ownership/boundaryの未解決事項が一覧化されている。\n- 最終Phase/Task/Dependency案をHumanが確認できる。\n- Humanが明示承認するまでapproval=Pendingを維持し、実行計画を確定しない。\n- 承認後にのみ既存または再設計後の実行TaskをTodoへ解放する。",
+      "acceptance_criteria": "- Game-wide coverage / Formula boundary / Data topology / Snapshot policy / Readiness / Simulation validationのAuditが完了している。\n- Formula ownership/boundaryの未解決事項とHuman Decision候補が一覧化されている。\n- 最終Phase/Task/Dependency案とPromotion GateをHumanが確認できる。\n- Humanが明示承認するまでapproval=Pendingを維持し、実行計画を確定しない。\n- 承認後にのみ再設計後の実行TaskをTodoへ解放する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -708,7 +782,147 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-007",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Specification準拠Reference Simulationを設計する",
+      "status": "Blocked",
+      "execution_order": 70,
+      "depends_on": [
+        "TASK-BAL-DESIGN-006"
+      ],
+      "acceptance_criteria": "- Current SpecificationからReference計算モデルを定義し、Current Source Runtimeから独立して実行できる設計にする。\n- Runtime未接続DomainでもCandidate比較ができるFixture/Model境界を定義する。\n- 同一Input + Seed + Rules/Data/Formula/Config Versionで再現可能にする。\n- Runtime挙動をSpecification根拠として逆採用しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-008",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "統計 / 感度 / Build Dominance / Exploit検証を設計する",
+      "status": "Blocked",
+      "execution_order": 80,
+      "depends_on": [
+        "TASK-BAL-DESIGN-007"
+      ],
+      "acceptance_criteria": "- deterministic seed set、paired A/B、Monte Carlo、confidence interval、convergence、holdout seed、extreme seedを定義する。\n- 主要係数の感度分析と相互作用分析を設計する。\n- Job→Stats→Equipment→Passive→Skill→AI→FormulaのBuild探索を設計する。\n- 明確な劣位選択、広範囲で支配的な最適解、無限/ノーリスク高効率、Economy exploitを検出する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-009",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Runtime Conformance / Game E2E / Trace検証を設計する",
+      "status": "Blocked",
+      "execution_order": 90,
+      "depends_on": [
+        "TASK-BAL-DESIGN-008"
+      ],
+      "acceptance_criteria": "- Reference SimulationとCurrent Runtimeへ同一Input/Seed/Versionを投入するConformance手順を定義する。\n- Referenceとの差異をRuntime defect / data mismatch / balance candidate差へ分類する。\n- Runtime接続済み領域だけGame WebKit E2E / Owner Traceへ進める。\n- Source baseline rebind、Current Studio Project/Data Version、実装BuildをEvidenceへ記録する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-010",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Candidate Version / Promotion / Rollback設計を作成する",
+      "status": "Blocked",
+      "execution_order": 100,
+      "depends_on": [
+        "TASK-BAL-DESIGN-009"
+      ],
+      "acceptance_criteria": "- Candidate / Current active / Baseline / SeedのVersionと昇格履歴を設計する。\n- Promotion Evidence PackにSource Build、Game Build、Source binding、Data Version、Balance/Formula/Simulator Version、Seed Set、KPI、Runtime結果を含める。\n- 未接続・未検証・Content不足の値をCurrent activeへ昇格しない。\n- 旧Current active/Baselineを削除せずRollback可能にする。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-011",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Balance実行Phase / Task / Dependencyの再設計案を作成する",
+      "status": "Blocked",
+      "execution_order": 110,
+      "depends_on": [
+        "TASK-BAL-DESIGN-010"
+      ],
+      "acceptance_criteria": "- 現行TASK-BAL-001〜013を最終計画として前提にせず、System MapとDependencyから再分割する。\n- Formula/System、Product Content、Economy、Endgame、Runtime検証を過度に1Taskへ統合しない。\n- DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE Requirementを混在させない。\n- 並列可能工程と直列Gate、Content/Runtime Readiness Gateを明示する。\n- Draft案として提示し、既存Taskの削除は行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-012",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Human Review用Balance実行計画Draftをまとめる",
+      "status": "Blocked",
+      "execution_order": 120,
+      "depends_on": [
+        "TASK-BAL-DESIGN-011"
+      ],
+      "acceptance_criteria": "- System Map、Data Topology、Formula Registry、Snapshot Policy、Readiness、KPI、Simulation、Statistical Validation、Runtime Conformance、Promotion、Task再設計を1つのReview単位へ整理する。\n- Current仕様との衝突候補とHuman Decisionが必要な事項を明示する。\n- AIが一意に決められる数値/技術事項とゲーム体験判断を分離する。\n- このTask完了だけでは実行計画をApprovedにしない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-013",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Balance Plan Coverage / Boundary / Readiness Auditを実施する",
+      "status": "Blocked",
+      "execution_order": 130,
+      "depends_on": [
+        "TASK-BAL-DESIGN-012"
+      ],
+      "acceptance_criteria": "- CHK-BAL-DESIGN-001〜006を実際に評価し、Passedまたは明示Waivedにできない項目を残したままDoneにしない。\n- Formula ownership未解決、Data正本不明、Snapshot policy欠落、Reference/Runtime混同、Product Content不足の見落としを監査する。\n- 旧TASK-BAL-001〜013へHuman Plan Gateを迂回する実行経路がないことを確認する。\n- Audit結果と残Open QuestionをHuman Reviewへ添付する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "checks": [
@@ -789,7 +1003,7 @@
       "target_id": "DEV-V9-BALANCE-001",
       "status": "Pending",
       "result": "",
-      "evidence": "DISC-BAL-002 / TASK-BAL-DESIGN-001..006",
+      "evidence": "DISC-BAL-002 / TASK-BAL-DESIGN-001 / TASK-BAL-DESIGN-006 / TASK-BAL-DESIGN-013",
       "checked_by": "",
       "checked_at": "",
       "resolves_check_ids": [],
@@ -802,7 +1016,7 @@
       },
       "blocking": false,
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
     },
     {
       "id": "CHK-BAL-DESIGN-002",
@@ -812,7 +1026,7 @@
       "target_id": "DEV-V9-BALANCE-001",
       "status": "Pending",
       "result": "",
-      "evidence": "DEC-BAL-PLAN-SCOPE-001 / TASK-BAL-DESIGN-002",
+      "evidence": "RULE-BAL-015 / DEC-BAL-PLAN-SCOPE-001 / TASK-BAL-DESIGN-003 / TASK-BAL-DESIGN-013",
       "checked_by": "",
       "checked_at": "",
       "resolves_check_ids": [],
@@ -825,7 +1039,122 @@
       },
       "blocking": false,
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-003",
+      "title": "Balance data topology / source-of-truth / snapshot policy coverage",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "RULE-BAL-014 / RULE-BAL-016 / RULE-BAL-018 / TASK-BAL-DESIGN-002 / TASK-BAL-DESIGN-004 / TASK-BAL-DESIGN-013",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-004",
+      "title": "Reference simulation and runtime conformance separation",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "RULE-BAL-017 / TASK-BAL-DESIGN-007 / TASK-BAL-DESIGN-009 / TASK-BAL-DESIGN-013",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-005",
+      "title": "Product content / runtime readiness / GAME_DATA authority coverage",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "RULE-BAL-018 / RULE-BAL-019 / TASK-BAL-DESIGN-005 / TASK-BAL-DESIGN-013",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-006",
+      "title": "Statistical / sensitivity / build dominance / economy coverage",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "TASK-BAL-DESIGN-006 / TASK-BAL-DESIGN-008 / TASK-BAL-DESIGN-013",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-BASELINE-004",
+      "title": "Balance read-only source baseline rebound to Current Source",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Current user-provided source package-build.jsonを確認し、read-only source baselineをGKS-B732 / GA-B486.211へ更新する。",
+      "evidence": "guild-adventure-studio-sub(20260822-012352).zip / package-build.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:55:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:55:00+09:00",
+      "updated_at": "2026-08-22T10:55:00+09:00"
     }
   ],
   "workflow": {
@@ -861,6 +1190,14 @@
     {
       "at": "2026-08-22T01:41:32.913Z",
       "message": "Development Workspace JSON merged: add=18 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-22T10:55:00+09:00",
+      "message": "Balance計画再監査の不足を反映。旧TASK-BAL-001をHuman Plan Gate配下へBlocked化し、Data Topology、Formula Boundary、Snapshot/Application Policy、Content/Runtime Readiness、Reference Simulation、統計/感度/Build Dominance/Exploit、Runtime Conformance、Candidate Promotion/Rollback、Coverage Auditを設計工程へ追加。Current read-only Source baselineをGKS-B732 / GA-B486.211へ再Bind。計画はDraft/Proposedのまま、GAME_DATA/Source変更には未着手。"
+    },
+    {
+      "at": "2026-08-22T02:06:41.444Z",
+      "message": "Development Workspace JSON merged: add=21 update=18 delete=0"
     }
   ]
 }
