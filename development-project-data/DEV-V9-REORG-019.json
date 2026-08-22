@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T01:22:10.319Z"
+    "updated_at": "2026-08-22T01:38:39.260Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -366,9 +366,9 @@
       "task_ids": [
         "TASK-R30-011"
       ],
-      "result": "Partial",
-      "evidence": "GKS-B732 Save/Load Recovery UI connection implemented from exact user-provided Current Source GKS-B731 / GA-B486.211. Added a dedicated Save/Load Recovery dialog and GKGameSaveRecovery boundary. Save failures now pass the Owner Runtime error message/code to Recovery UI, expose Retry, and rethrow the original save failure so callers cannot treat a failed write as success. Continue/Load catches Load/Migration/Integrity failures before replacing live data, shows Recovery UI, and does not silently initialize a new save. Safe return goes to Title and, for Save failures, restores live state from the last validated Current Save when available without synthesizing defaults. Retry uses the original Owner operation. New Game save-commit failure is also connected to the same recovery path. New Game/Continue double execution is blocked while the operation is in progress. Recovery UI only displays Runtime-owned reason/code and does not recalculate game results. Targeted verification 19/19 PASS. Target Quick 11/11 PASS evidence_sha256=e21ce62d73e3c1c8a4327e4eda6369f5a8d7aad56f59b76df61944135cfd5d63; Update Quick 13/13 PASS evidence_sha256=21fb60f5958eeb70fae76da61dd7860f279dd62c42e867ad2bfdcee8cf7e2a92; Update Accept 13/13 PASS evidence_sha256=34533f06f12134e4bd6e4af25c2a1fbd64558d95a98891dc4b545267bba5b7f9; Release 13/13 PASS evidence_sha256=2477bcfef328b1d1ae0037d362922850b6b32d28a444dc4fae25ff0c8368eda4; Build marker check PASS studio=GKS-B732 files=190. Baseline manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=4443e1c9747c14235bd94e178d2ea70f3ae97c90c609045747c71e310810638f; target manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 tree=6efee6e8088889f3016acaa664af5889e6fa106b0f1dd460191a22707d358991; artifact_id=GKS-B732-6efee6e80888; update ZIP sha256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7. ZIP payload 641/641 exact after extraction; persistent payload=639; Export entries=0. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T10:18:23+09:00"
+      "result": "Applied",
+      "evidence": "GKS-B732 Save/Load Recovery UI connection was Human-applied and is present in the user-provided Current Source GKS-B732 / GA-B486.211. Current package_manifest SHA-256=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766. The prior GKS-B732 update ZIP SHA-256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7 is available and its persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html SHA-256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03. Current Phase-1 targeted verification confirms the R30-011 acceptance paths: Save failure rollback + Retry PASS; Save safe-return restores the last validated Current Save and Title PASS; Load/Integrity failure stops before live-state replacement with zero Save-slot rewrite PASS; Recovery UI Owner reason/code passthrough PASS. Current Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Current Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; Build marker check PASS studio=GKS-B732 files=190. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
+      "recorded_at": "2026-08-22T10:23:00+09:00"
     }
   ],
   "discussions": [
@@ -6057,7 +6057,7 @@
       "id": "TASK-R30-011",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save/Load ErrorをRecovery UIへ接続する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 1110,
       "depends_on": [
         "TASK-R30-010"
@@ -6071,13 +6071,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T10:18:23+09:00"
+      "updated_at": "2026-08-22T10:23:00+09:00"
     },
     {
       "id": "TASK-R30-012",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 Save/New Game E2Eを検証する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 1120,
       "depends_on": [
         "TASK-R30-011"
@@ -6091,7 +6091,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T15:05:00+09:00"
+      "updated_at": "2026-08-22T10:23:00+09:00"
     },
     {
       "id": "TASK-R31-001",
@@ -9502,6 +9502,52 @@
       "blocking": false,
       "created_at": "2026-08-22T10:18:23+09:00",
       "updated_at": "2026-08-22T10:18:23+09:00"
+    },
+    {
+      "id": "CHK-R30-011-HUMAN-APPLY-VERIFY",
+      "title": "TASK-R30-011 Human Apply / Current Source verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-011",
+      "status": "Passed",
+      "result": "Current Source GKS-B732上でSave/Load Recovery UI接続を再確認。Save失敗時のrollback/Retry、安全復帰、Load/Integrity失敗時のlive state切替前停止、Recovery UIへのOwner Runtime理由/code引渡しをCurrent実体で確認し、TASK-R30-011をDone確定。",
+      "evidence": "Current source ZIP sha256=5d480b17689eb7fdadb1b4762dcc7768ec1323d65c34205655e1aba368a746e6; package-build=GKS-B732 / GA-B486.211; package_manifest sha256=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766; prior update ZIP sha256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7; persistent payload 639/639 byte-identical, missing=0 diff=0; app-runtime.js sha256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html sha256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03; R30-011 acceptance subset PASS in current Phase-1 E2E; Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; Build marker PASS files=190; source/game-data/deletion/exclusion changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:23:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:23:00+09:00",
+      "updated_at": "2026-08-22T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-R30-012-PHASE1-E2E",
+      "title": "TASK-R30-012 Phase 1 Save/New Game E2E verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-012",
+      "status": "Failed",
+      "result": "Phase 1専用E2Eは10/11 PASS。New Game初回Save、既存Save上書きCancel保全、13領域Domain Persistence、Atomic Save/Backup/rollback、Recovery Retry/安全復帰、v2→v3 Migration、Load Integrity Fail Closed、未対応Migration拒否、Owner reason/code引渡し、Current Save strict schemaはPASS。一方、New Game初回Save直後のTitle Continueが失敗するため主要導線Acceptanceを満たさず、TASK-R30-012はDone不可。",
+      "evidence": "targeted evidence sha256=b85e125c1223c332e3d1b36d01a22e4ce7d8d1b8d48e8efe94a2492aa5e2fbc0 (cases=11 passed=10 failed=1). Failed case=P1-CONTINUE-AFTER-FIRST-SAVE. Root cause: game/assets/js/app-runtime.js reconcileFormalAdventureQuestSelection() selects the first Formal Quest when saved selectedQuestId is empty and calls undefined persist(). The Game source tree contains no function/const/let/var definition for persist; the only formal persist() implementation found is Studio-side. Actual Continue catches the resulting ReferenceError, reports 読込後の初期化に失敗しました: persist is not defined, returns to Title, and returns false. This is a SOURCE_UPDATE correction requirement discovered inside a DEVELOPMENT_ONLY task, so no source edit was made. Current Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Current Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; AI_GAME_SAVE_SCHEMA_V3_OK PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. Required split proposal: keep TASK-R30-012 as DEVELOPMENT_ONLY and create/authorize a separate SOURCE_UPDATE correction for the undefined Game persist() call, then rerun TASK-R30-012 E2E. R39 Phase 1→2 Gate must remain blocked.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:23:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-22T10:23:00+09:00",
+      "updated_at": "2026-08-22T10:23:00+09:00"
     }
   ],
   "workflow": {
@@ -10000,8 +10046,16 @@
       "message": "続けて明示指示によりTASK-R30-011 Save/Load Error Recovery UI接続を1件実装。GKS-B732でOwner Runtime理由表示、Retry、Title安全復帰、Load/Migration/Integrity失敗のlive state切替前停止、暗黙初期化禁止、New Game/Continueの二重実行防止を実装。Targeted 19/19、Target Quick 11/11、Update Quick/Accept/Release 13/13 PASS。TASK-R30-011はHuman Apply待ちDoing、TASK-R30-012はBlocked維持。"
     },
     {
-      "at": "2026-08-22T01:22:10.319Z",
-      "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
+      "at": "2026-08-22T10:23:00+09:00",
+      "message": "AI_STARTからGKS-B732 Human Apply後Current Sourceを検証。前回GKS-B732 persistent payload 639/639完全一致、Recovery受入経路をCurrent実体で再確認し、Quick 11/11 / Full 26/26 / Build marker PASS。TASK-R30-011をDone / IMPL-R30-011をAppliedへ更新。"
+    },
+    {
+      "at": "2026-08-22T10:23:00+09:00",
+      "message": "TASK-R30-012 Phase 1 Save/New Game E2EをDEVELOPMENT_ONLYとして実行。11 cases中10 PASS / 1 FAIL。New Game初回Save直後のTitle ContinueでreconcileFormalAdventureQuestSelection()が未定義persist()を呼び、ReferenceErrorにより主要導線が完了しないことを検出。Atomic/Backup/Migration/Domain Persistence/Recovery/失敗時Save保全はPASS。work_type境界に従いSource修正へ越境せず、TASK-R30-012はDoing、blocking Failed Checkを追加。別SOURCE_UPDATE correctionを作成/承認後にR30-012を再実行する分割案を記録。TASK-R39-001はBlocked維持。"
+    },
+    {
+      "at": "2026-08-22T01:38:39.260Z",
+      "message": "Development Workspace JSON merged: add=104 update=15 delete=0"
     }
   ],
   "specification_candidates": [
