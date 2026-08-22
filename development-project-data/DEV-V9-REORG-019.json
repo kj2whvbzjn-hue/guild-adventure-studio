@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T03:10:21.268Z"
+    "updated_at": "2026-08-22T04:05:09.655Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -152,6 +152,15 @@
       "source_id": "conversation",
       "created_at": "2026-08-22T11:05:00+09:00",
       "updated_at": "2026-08-22T11:05:00+09:00"
+    },
+    {
+      "id": "RULE-REORG-016",
+      "text": "自己修復機能の実動作検証BuildはCurrent Buildをbaselineとし、旧Buildは既知Failure箇所の参照にだけ使用する。今回の検証はGKS-B733をbaseline、GKS-B732を既知persist不具合の参照とし、GKS-B734へそのFailure fixtureと自己修復基盤を導入する。CorrectionはB734と同一Buildで完了させず、Failed Checkから次Buildとして生成する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T12:54:00+09:00",
+      "updated_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "source_baseline": {
@@ -392,6 +401,20 @@
       "result": "Partial",
       "evidence": "Exact baseline GKS-B732 / GA-B486.211 package_manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 source_tree=8473f6110b349cde6d54c6bf11addcd3e9d32e6f8eda60e76a5f48fc7c3e321f; target GKS-B733 / GA-B486.211 package_manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594 source_tree=99c540ea07fc8922dd1bb80a03a054629a79f9f6d4f905f9efc1616b47108508 artifact_id=GKS-B733-99c540ea07fc. Game bare persist calls 5→0. Modified production catch counts app-runtime 46→46, game/index 1→0; compatibility term counts did not increase. Strict correction evidence sha256=d274d983cab6e41b53844d874576abdbc5c11d478fc04f06e64cf5f063483f98. Targeted adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS; AI_GAME_SAVE_SCHEMA_V3_OK PASS. Update Quick 13/13 PASS evidence_sha256=35e50b8cea54c6e9b61e7396bb7b6c7b383234fb37405fbed86bf5f31b34060c; Accept 13/13 PASS evidence_sha256=0d587eff0d9d0e2c4a28cbfe80a4b3e7cecdfc8650b8764e774724e45e299c38; Release 13/13 PASS evidence_sha256=7f2c9f96357a7c597e849535ee24bae213c76bc8491e9f6cde3bb7bd56cc60ae; extracted final ZIP Release 13/13 PASS evidence_sha256=fe260f1eff21ff6fda188054047d36c8368c6f61af08744cd93bb13d13ac5b51; update ZIP sha256=d8587af99a17acfefeaf7c529bb97b8c1f37295ab400f7a337d47a75888f6c1d. Source deletions=0; Game data changes/exclusions=0. Human Apply and original Phase 1 E2E rerun remain pending.",
       "recorded_at": "2026-08-22T11:05:00+09:00"
+    },
+    {
+      "id": "IMPL-DEV-AUTOCORR-B734-VERIFY-001",
+      "studio_build": "GKS-B734",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-DEV-AUTOCORR-B734-VERIFY-001"
+      ],
+      "result": "Partial",
+      "evidence": "Self-heal validation build prepared from exact Current GKS-B733 baseline; GKS-B732 used only as known-defect reference. One bare persist() root-cause line reintroduced, Autonomous Correction Engine installed, correction not executed in B734. Update Quick/Accept/Release 14/14 PASS. Human Apply and fail->auto-correction->next-build->parent-E2E-pass sequence pending.",
+      "recorded_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "discussions": [
@@ -1703,6 +1726,18 @@
       "approved_at": "2026-08-22T11:05:00+09:00",
       "created_at": "2026-08-22T11:05:00+09:00",
       "updated_at": "2026-08-22T11:05:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-AUTOCORR-B734-BASELINE-001",
+      "title": "GKS-B733基準でB734自己修復実動作検証を行う",
+      "status": "Approved",
+      "text": "GKS-B733をexact baselineとする。GKS-B732はP1-CONTINUE-AFTER-FIRST-SAVEの既知persist不具合箇所を再現する参照としてのみ使用し、B734にはその1箇所のFailure fixtureとAutonomous Correction Engineを追加する。B734内ではCorrectionを完了させず、B734適用後のAI_STARTがFailed CheckからCorrection Taskを生成し、次Buildで修正する。",
+      "rationale": "B732をbaselineにするとCurrent GKS-B733へSOURCE_UPDATEを適用できずGateで拒否されるうえ、Current履歴を後退させるため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-22T12:54:00+09:00",
+      "created_at": "2026-08-22T12:54:00+09:00",
+      "updated_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "specifications": [
@@ -8130,6 +8165,26 @@
       },
       "created_at": "2026-08-22T11:05:00+09:00",
       "updated_at": "2026-08-22T11:05:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "B734既知Failureから自己修復Correction生成を実動作検証する",
+      "status": "Todo",
+      "execution_order": 1114,
+      "depends_on": [
+        "TASK-R30-011"
+      ],
+      "acceptance_criteria": "- Current SourceがGKS-B734であることを確認する。\n- P1-CONTINUE-AFTER-FIRST-SAVE相当の経路で、B734へ意図的に再導入した`persist is not defined` Failureを検出しFailed Checkへ記録する。\n- 同じ実行でSourceを直接修正しない。\n- 次回AI_STARTのCorrection preflightがFailure Signatureを固定し、`SOURCE_UPDATE` Correction Taskを自動生成して親TaskをBlockedへ移す。\n- CorrectionはCompatibility Budget 0 / Exception Budget 0を守り、次Buildで既存正規`autoSave()`へ収束する。\n- Correction Human Apply後にこの親Task自身が同じE2Eを独立再実行しPASSした時だけDoneとする。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T12:54:00+09:00",
+      "updated_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "checks": [
@@ -9627,6 +9682,29 @@
       "blocking": false,
       "created_at": "2026-08-22T11:05:00+09:00",
       "updated_at": "2026-08-22T11:05:00+09:00"
+    },
+    {
+      "id": "CHK-DEV-AUTOCORR-B734-ARMED-001",
+      "title": "GKS-B734 self-heal validation armed",
+      "gate": "Implementation",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "GKS-B733 exact baselineからGKS-B734検証Buildを構成。GKS-B732は既知Failure参照だけに使用し、reconcileFormalAdventureQuestSelection()へbare persist()を1箇所だけ再導入。Autonomous Correction Engineを同時導入し、Correctionは未実行・未生成のまま。",
+      "evidence": "baseline=GKS-B733 manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594; target=GKS-B734 manifest=bfd324d10c117283f48bbb9ce784bbe611484d40f0739a2d08c2e3239bd5d2f6; target tree=91b51299b8c5f18c4ed3341d2ebc9e087f0ea8662c4ede59e5360452b536022c; known defect introduced=1 bare persist in reconcileFormalAdventureQuestSelection; autonomous-correction.py installed; Update Quick 14/14, Accept 14/14, Release 14/14 PASS. This Check does not resolve any Phase 1 Failed Check.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T12:54:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T12:54:00+09:00",
+      "updated_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "workflow": {
@@ -10143,6 +10221,15 @@
     {
       "at": "2026-08-22T03:10:21.268Z",
       "message": "Development Workspace JSON merged: add=6 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-22T12:54:00+09:00",
+      "type": "AutonomousCorrectionValidationBuildPrepared",
+      "summary": "GKS-B734 prepared from GKS-B733 baseline. B732 used only as persist defect reference. Known failure + self-heal engine armed; no correction task for TASK-DEV-AUTOCORR-B734-VERIFY-001 pre-created."
+    },
+    {
+      "at": "2026-08-22T04:05:09.655Z",
+      "message": "Development Workspace JSON merged: add=6 update=0 delete=0"
     }
   ],
   "specification_candidates": [
