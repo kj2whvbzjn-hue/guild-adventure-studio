@@ -1,0 +1,866 @@
+{
+  "schema_version": "1.3",
+  "workspace": {
+    "id": "DEV-V9-BALANCE-001",
+    "name": "V9 Balance調整・Baseline確立",
+    "status": "Specifying",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-22T01:41:32.913Z"
+  },
+  "project_context": {
+    "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
+    "summary": "実装ラインR30以降のTask状態・Workflow・Source責務を変更しない別案件。DEV-V9-REORG-019のApproved Decision / Current Specificationをread-only authorityとして参照し、Balance値とContent/Test fixtureのみを対象にする。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
+    "work_box_id": "BOX-V9-BAL-DESIGN-001",
+    "theme": "Game-wide Balance System Map / Formula & Domain Coverage Design",
+    "goal": "Quest中心ではなく、Character/Job、Battle Formula、Skill、Passive、Equipment、MOD/Rarity/Unique、Enemy/AI、Quest/Reward/Stone、Economy/Guild、Presentationまで全Balance調整面を棚卸しし、実行計画を設計する。計画自体はDraftとして保持し、Human承認前に実行計画を確定しない。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-BAL-001",
+      "text": "本案件はDEV-V9-REORG-019の実装ラインと独立して進行し、同案件のTask status / Workflow / Gateを更新しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-002",
+      "text": "Current Structure / Current Contract / 処理順 / 丸め方式 / 所有責務等のゲーム構造はread-onlyとし、Balance調整の都合で再設計しない。Source変更が必要と判明した場合は本案件で越境せず、実装ラインへ要求として返す。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-000,DEC-REORG-BAL-001",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-003",
+      "text": "ゲーム内の具体数値は原則Balance可変としてConfig/CSV/JSON等の外部データで管理する。固定が必要な値だけ例外とし、固定理由を明示する。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:DEC-REORG-BAL-001",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-004",
+      "text": "Balance値は fixed_structure / current_active / human_approved_seed / v9_baseline / candidate / deferred の状態を区別し、V9値や既存Seedを削除せず履歴付きで保持する。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-BAL-001",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-005",
+      "text": "Current Source / Runtime / Export / Testに偶然存在する数値だけを正しいBalance値として採用しない。採用値はSpecification Material、Human Decision、既存Approved seed/Baseline、または本案件のCandidate検証結果へ追跡可能にする。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-CORE-002",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-006",
+      "text": "Randomを含むSimulation/生成は同一Input + Seed + Rules/Data Versionで再現可能にし、Seed/Config Version/結果Snapshotを証跡へ残す。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-CORE-002",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-007",
+      "text": "Balance Config更新で既存QuestRun・既存生成Item・既存Character成長結果を遡及再計算しない。既存結果は保存済みVersion/Config/Seed/Snapshotを正本とする。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-CORE-002,SPEC-V9-019-BAL-001",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-008",
+      "text": "Simulation/Test用Character・Monster・Equipment・Quest等はProduct Masterと分離し、検証fixtureを無条件に本番Contentへ昇格しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:SPEC-V9-019-MONSTER-001,SPEC-V9-019-000",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-009",
+      "text": "既存仕様から一意に整理できる値、技術的安全値、Balance候補の生成・比較はAIが進める。ゲーム体験そのものが変わり複数の妥当な方向性が残る場合だけHuman Decisionへ上げる。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-V9-REORG-019:RULE-REORG-009",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-010",
+      "text": "本案件のGAME_DATA成果物は実装Source更新Artifactと混在させず、Balance Config / Dataset / Simulation Evidenceとして独立管理する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-011",
+      "text": "Balance計画は現在設計中であり、既存TASK-BAL-001〜013を最終実行計画として確定扱いしない。全体Balance System Mapと依存関係の再設計、Human確認が完了するまで既存実行系列へ着手しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-22 game-wide balance plan redesign",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-012",
+      "text": "Balance設計対象はQuest/Rewardだけに限定しない。武器・防具、Skill、Passive、Damage/Heal/Hit/Critical/Resistance等の戦闘計算式、Character/Job成長、Equipment係数、MOD/Rarity/Unique、Enemy/Monster、AI、Encounter、Economy/Guild、Presentationを含むゲーム全体を対象候補として棚卸しする。個別Formulaの式本体をどこまでBalance所有にするかは設計中のため、Current Structure/Contractとの整合を確認してから確定する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-22 weapons skills passives formulas all balance scope",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-013",
+      "text": "Balance実行計画がHuman承認されるまでは、DEVELOPMENT_ONLYの計画設計Taskだけを実行対象とする。GAME_DATA変更、Current active昇格、Source変更は行わない。設計上Source側の変更が必要と判明した場合も本案件では要求として記録し、実装ラインへ越境しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-22 keep plan in design",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B729",
+    "game_build": "GA-B486.211",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-004114).zip",
+    "source_role": "current_baseline",
+    "recorded_at": "2026-08-22T10:14:00+09:00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-22T10:14:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [
+    {
+      "id": "DISC-BAL-001",
+      "title": "Balance調整ラインを実装ラインから分離する",
+      "status": "Resolved",
+      "summary": "Balance調整をDEV-V9-REORG-019とは別案件として管理し、実装Task/Workflowを変更せず並行進行する。",
+      "body": "BalanceはCurrent Structure/Contractをread-only authorityとして参照し、数値・Config・Dataset・Simulation・Runtime検証を担当する。Source側に不足するConfig接続口が見つかった場合は本案件でSourceへ越境せず、実装ラインへRequirementとして返す。",
+      "open_questions": "",
+      "conclusion": "独立案件DEV-V9-BALANCE-001として進行する。",
+      "related_discussion_ids": [],
+      "artifact_note": "Created from Human instruction 2026-08-22",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-002",
+      "title": "ゲーム全体Balance System Mapと実行計画の再設計",
+      "status": "Open",
+      "summary": "既存13TaskはQuest/大分類寄りで粒度が粗く、Weapon / Skill / Passive / Battle Formula等の相互依存を十分に表現できないため、ゲーム全体のBalance調整面を再棚卸しして工程を設計し直す。",
+      "body": "## 目的\nBalance調整をQuest/Stone/Reward中心に捉えず、ゲームの強さ・成長・資源・体験を構成する全レイヤーを対象にする。\n現時点では実行計画の設計Draftであり、最終Task構成・順序・Formula所有境界を確定しない。\n\n## 全体Balance対象 Draft Map\n1. Balance Authority / Ledger\n   - Human Approved seed / V9 Baseline / Candidate / Current active / Deferred\n   - authority / source / version / config path / runtime connection / snapshot policy\n\n2. Character / Job / Progression\n   - 初期Stats、Party規模、最大Lv、必要EXP、Job成長値、成長Curve\n   - Skill/Passive習得条件・Cost、Respec Cost\n   - Character成長と装備要求の整合\n\n3. Battle Core Formula\n   - Physical / Magical Damage\n   - Heal\n   - Hit / Evasion\n   - Critical Rate / Critical Damage\n   - Resistance\n   - DOT / HOT\n   - Shield\n   - Drain / Reflect\n   - MP / Cooldown / Cast\n   - Action Gauge / Tick / Battle duration\n   - Formula expression、係数、Curve、Cap/Floor、Clamp、Probability、Duration、Conversion等を調整面として棚卸しする\n   - 丸め・処理順・Owner Contractとの境界はCurrent仕様との整合を別途確認する\n\n4. Skill\n   - Skill Budget / Skill Level\n   - DAMAGE / HEAL / APPLY / REMOVE / RESOURCE_CHANGE / REVIVE / TARGET_CONTROL / Trigger系\n   - Damage/Heal倍率、MP Cost、Cooldown、Cast、Range、Target数、Multi-hit、Duration、Stack、Shield等\n\n5. Passive\n   - 武器熟練、属性強化、Heal、BUFF/DEBUFF、DOT、Resistance、Accuracy、MP効率、AG等\n   - Skillと別の常時補正源として個別に評価\n   - 非採用効果を復活させない\n\n6. Weapon / Armor / BaseItem\n   - iLv\n   - required STR/DEX/INT、VIT/MND/AGI\n   - attack / accuracy / magic_weapon_bonus / base_critical_rate\n   - hp_bonus / mp_bonus / evasion\n   - 武器種・防具種係数、Growth、Clamp、丸め、Generator Balance Config\n\n7. MOD / Rarity / Unique\n   - Tier値、Flat/%、付与数、抽選率、部位候補、Clamp\n   - Rarity出現率、期待入手時間、Drop限定高Rarity\n   - Uniqueの特殊効果強度と通常数値強度の分離\n\n8. Status / Effect Numeric Surface\n   - Status duration、Resistance、DOT Power/Interval/Duration、Stack上限\n   - BUFF/DEBUFF/Shield等の具体効果量\n   - Lifecycle構造はCurrent Contractを参照し、数値面を分離\n\n9. Enemy / Monster\n   - Monster Level×Job係数\n   - Enemy Budget配分\n   - Skill候補閾値 / Skill Budget\n   - Elite / Champion / Boss等の強度\n   - Party人数、武器/Skill/Passive環境との相対性能\n\n10. AI Balance\n    - AI再評価間隔等の可変値候補\n    - BuildがFormal AIによって引き出せる性能差\n    - 特定AI Patternだけが最適解として固定しないかの評価\n    - AI責務/Decision Engine構造自体は再設計しない\n\n11. Encounter / Quest\n    - effective_enemy_budget\n    - Event強度、Battle数、Resource消耗、成功率、所要時間\n    - Quest単位での連戦・消耗・失敗リスク\n\n12. Reward / Drop / Economy\n    - Gold、Material、Equipment、Drop Table、roll/chance/weight\n    - amount / quality / rarity scaling\n    - 装備更新頻度、Skill/Passive Cost、成長Costとの循環\n    - 時間当たり期待値とRisk調整\n\n13. Stone Endgame\n    - Human確定方針: 明確な高難易度・高報酬のエンドコンテンツ\n    - 通常攻略に必須化せず、完成Build向けChallengeとして設計\n    - stone_budget_delta、成功率低下、消費Risk、Reward優遇、期待値を横断評価\n\n14. Guild / Unlock / Long-term Economy\n    - Guild EXP、Level、施設解放、倉庫容量、雇用上限、AI解放等\n    - 戦闘力を直接無償増加させないCurrent方針と整合\n\n15. Presentation Tuning\n    - Effect duration / intensity、Shake、Camera、BGM/SE、Playback speed、UI animation等\n    - ゲーム結果を変更しないPresentation Configとして分離\n\n16. Cross-System / Meta\n    - Job → Stats → Equipment → Passive → Skill → Formula → Enemy → Quest → Reward → Equipment/成長\n    - Build diversity、支配的最適解、極端Seed、時間効率、Failure率を横断検証\n\n## 調整単位 Draft\n各Balance項目は単純なvalueだけでなく、少なくとも以下の型を候補として持つ。\n- formula_expression\n- coefficient\n- curve\n- cap / floor / clamp\n- probability / weight / distribution\n- cost\n- duration / interval\n- growth\n- conversion\n- threshold\n- validation range\n\n## 実行順 Draft\nAuthority / System Map\n→ Formula / Parameter Registry\n→ Domain Balance Matrix\n→ Reproducible Simulation / Sensitivity Analysis\n→ Domain Candidate作成\n→ Cross-System Simulation\n→ Runtime接続済み領域のGame検証\n→ Human Review\n→ Current active候補昇格\n\nこの順序は設計Draftであり、依存関係調査後に並列化・再分割・順序変更してよい。\n\n## 現時点で確定しないもの\n- 最終Phase数\n- 最終Task数\n- 各Domainの実行順・並列性\n- Formula expressionそのものをBalance Configへ持たせる範囲\n- Current Structure/ContractとFormula可変化の境界\n- Product Game Dataへ反映する時点\n- Current active昇格Gateの詳細\n",
+      "open_questions": "- Damage/Heal/Hit/Critical等のFormula expression本体をどの粒度でBalance所有にするか。\n- 現行の処理順・丸め・Owner Contractのうち、どこまでを固定Structureとして残し、どこからをBalanceへ移すか。\n- Domainごとの依存関係を調査した後、どの工程を並列化できるか。\n- Simulation FixtureとProduct Game Dataの境界をどのArtifactで管理するか。\n- Current active昇格に必要なSimulation / Runtime / Human確認Evidenceをどう定義するか。",
+      "conclusion": "設計Draftとして登録する。既存13Taskを最終計画とは扱わず、全体System Map・Formula Registry・依存関係・評価指標を整理してから実行計画をHuman確認へ出す。",
+      "related_discussion_ids": [
+        "DISC-BAL-001"
+      ],
+      "artifact_note": "Game-wide Balance planning draft; intentionally not finalized",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-BAL-001",
+      "title": "Balance調整を独立案件として進行する",
+      "status": "Approved",
+      "text": "V9 Balance調整はDEV-V9-REORG-019の実装ラインへ混在させず、別案件で並行進行する。現行仕様との互換を維持し、実装ラインのTask/WorkflowをBalance案件から更新しない。",
+      "rationale": "Humanが新しい工程として別案件化を明示したため。",
+      "source_discussion_ids": [
+        "DISC-BAL-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-22T10:14:00+09:00",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-EXPERIENCE-001",
+      "title": "Balance初期Target Experience Profile",
+      "status": "Approved",
+      "text": "通常難易度は準備重視型とし、適正Partyでは通常Questを安定させつつElite/BossではEquipment・Skill Loadout・AI構築を見直す意味を持たせる。成長テンポは中長期型で序盤は比較的速く進行に伴い成長間隔を伸ばす。Lootは適度な更新型で良品を一定期間使える価値を持たせる。Stoneは明確な高難易度・高報酬のエンドコンテンツとし、通常攻略への必須化は避けつつ完成Build向けChallengeとして報酬を優遇する。",
+      "rationale": "Humanが難易度・成長テンポ・Loot方針について推奨案を承認し、Stoneについて高難易度・報酬優遇・エンドコンテンツと明示したため。",
+      "source_discussion_ids": [
+        "DISC-BAL-002"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-22T10:36:00+09:00",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-PLAN-SCOPE-001",
+      "title": "Balance計画のゲーム全体Scope再設計",
+      "status": "Proposed",
+      "text": "Balance調整ScopeをQuest中心に限定せず、Weapon/Armor、Skill、Passive、Battle Formula、Character/Job、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter、Reward/Economy、Stone、Guild、Presentation、Cross-Systemまで拡張する。Damage等のFormula expression本体もBalance調整面として棚卸し対象に含めるが、Current Structure/Contractとの境界と最終所有方式は設計後に確定する。",
+      "rationale": "Humanが武器・Skill・Passive・Damage計算式を含む全体的なBalance調整計画が必要と指摘したため。計画自体は設計中なのでApprovedにはしない。",
+      "source_discussion_ids": [
+        "DISC-BAL-002"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-V9-BALANCE-001",
+      "name": "V9 Balance調整ライン",
+      "parent_id": "",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "ARCH-V9-BALANCE-DESIGN-001",
+      "name": "Balance System Map / Execution Plan Design",
+      "parent_id": "",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-V9-BAL-FOUNDATION-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B0: Balance Authority / Baseline基盤",
+      "body": "全Balance key・状態・根拠・Config・Runtime接続状況を台帳化し、Human Approved seed / V9 Baseline / Candidate / Current activeを区別する。再現可能Simulationの共通Protocolを確立する。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-PLAYER-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B1: Character / Job / Progression",
+      "body": "Character初期値、Party、Level、Job成長値を既存構造のままBalance調整する。既存CharacterをConfig更新で再計算しない。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-BATTLE-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B2: Battle / Status / Skill",
+      "body": "命中・Critical・Resistance・DOT・Skill Budget/係数等の数値を調整する。処理順、丸め、Stack lifecycle、Shield消費順等のCurrent Ruleは変更しない。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-ITEM-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B3: Equipment / MOD / Rarity",
+      "body": "iLv性能曲線、Generator Balance Config、MOD Tier値/確率/上限、Rarity分布を調整する。Generator/抽選順等の構造Ruleは維持する。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-WORLD-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B4: Enemy / Quest / Reward / Guild",
+      "body": "Monster Job係数、Enemy Budget、Skill候補閾値、Stone、Reward Resolver、Guild progression/Unlock等のBalance値を調整する。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-RUNTIME-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B5: Runtime / Cross-Domain検証",
+      "body": "実装ラインで接続済みの領域から同一ConfigをGame Runtimeへ投入し、WebKit E2E/自動Simulation/TraceでCross-Domainの体感指標を検証する。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-PROMOTION-001",
+      "node_id": "ARCH-V9-BALANCE-001",
+      "title": "Phase B6: Candidate Promotion / Regression",
+      "body": "CandidateをCurrent activeへ昇格し、旧Baselineを保持したまま再現性・回帰・Snapshot非遡及を確認する。",
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-DESIGN-001",
+      "node_id": "ARCH-V9-BALANCE-DESIGN-001",
+      "title": "Plan Draft: Game-wide Balance System Map / Formula Registry / Execution Design",
+      "body": "既存13Taskを実行する前に、Current Specification全DomainからBalance調整対象を抽出し、Formula/Parameter Registry、Domain別評価Matrix、依存Graph、Simulation/Evidence、Human Gateを設計する。成果はDraftとして保持し、Human確認前に最終計画・Current active・Game Dataへ昇格しない。",
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-BAL-001",
+      "box_id": "BOX-V9-BAL-FOUNDATION-001",
+      "title": "Balance項目・Authority・既存Seedを全件棚卸しする",
+      "status": "Todo",
+      "execution_order": 100,
+      "depends_on": [],
+      "acceptance_criteria": "- DEV-V9-REORG-019のBalance関連Specification/Decision/Materialをread-onlyで参照する。\n- balance_key / domain / value / state / authority / unit / config_path / runtime_connection / snapshot_policyを台帳化する。\n- Source Runtimeの偶然値だけを正本採用しない。\n- 実装ラインのTask/Workflowを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-002",
+      "box_id": "BOX-V9-BAL-FOUNDATION-001",
+      "title": "Balance Baseline v0 Datasetを作成する",
+      "status": "Blocked",
+      "execution_order": 200,
+      "depends_on": [
+        "TASK-BAL-001"
+      ],
+      "acceptance_criteria": "- Human Approved seedとV9 Baselineを状態付きで保存する。\n- 不明値を推測でCurrent activeへしない。\n- Config/CSV/JSONで変更可能な形へ整理する。\n- Product ContentとTest fixtureを分離する。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-003",
+      "box_id": "BOX-V9-BAL-FOUNDATION-001",
+      "title": "再現可能Balance Simulation Protocolを確立する",
+      "status": "Blocked",
+      "execution_order": 300,
+      "depends_on": [
+        "TASK-BAL-002"
+      ],
+      "acceptance_criteria": "- Input / Seed / Rules Version / Data Version / Config Versionを証跡化する。\n- 同一条件で同一結果を再現できる。\n- Config差分比較を機械的に行える。\n- 既存Run/Item/Characterへ遡及適用しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-004",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "Character / Job / Progression Balanceを調整する",
+      "status": "Blocked",
+      "execution_order": 400,
+      "depends_on": [
+        "TASK-BAL-003"
+      ],
+      "acceptance_criteria": "- Character初期値、Party、Level、Job成長Seedを現行成長構造内で調整する。\n- Job変更やConfig更新で既存statsを再計算しない。\n- Lv帯ごとの平均/分散/Job差をSimulation Evidenceとして残す。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-005",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Battle / Status / Skill Balanceを調整する",
+      "status": "Blocked",
+      "execution_order": 500,
+      "depends_on": [
+        "TASK-BAL-004"
+      ],
+      "acceptance_criteria": "- 命中/Critical/Resistance/DOT/Skill Budget等の数値を調整する。\n- 処理順・丸め方式・Status lifecycle・Shield消費順等のCurrent Ruleを変更しない。\n- 複数Seedで期待値・分散・極端値を検証する。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-006",
+      "box_id": "BOX-V9-BAL-ITEM-001",
+      "title": "Equipment / MOD / Rarity Balanceを調整する",
+      "status": "Blocked",
+      "execution_order": 600,
+      "depends_on": [
+        "TASK-BAL-005"
+      ],
+      "acceptance_criteria": "- iLv性能曲線、Generator Config、MOD Tier/確率/上限、Rarity分布を調整する。\n- 正式数値計算はGenerator/Balance Config経路を迂回しない。\n- MOD抽選順等のCurrent Structureを変更しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-007",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Enemy / Monster Budget Balanceを調整する",
+      "status": "Blocked",
+      "execution_order": 700,
+      "depends_on": [
+        "TASK-BAL-006"
+      ],
+      "acceptance_criteria": "- Monster Level×Job係数、Skill候補閾値、Enemy Budget配分を外部Balance化する。\n- Demo/Test MonsterをProduct Masterへ混入しない。\n- Enemy Level/Budget帯ごとの攻撃・耐久・Skill性能分布を検証する。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-008",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Quest / Stone / Reward Balanceを調整する",
+      "status": "Blocked",
+      "execution_order": 800,
+      "depends_on": [
+        "TASK-BAL-007"
+      ],
+      "acceptance_criteria": "- stone_budget_delta、Reward amount/quality/rarity/weight等を調整する。\n- 旧V9式はBaseline比較に保持しCurrent固定式へ昇格させない。\n- QuestRun開始時Snapshot後にConfig更新で結果を再計算しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-009",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Guild / Economy / Unlock Balanceを調整する",
+      "status": "Blocked",
+      "execution_order": 900,
+      "depends_on": [
+        "TASK-BAL-008"
+      ],
+      "acceptance_criteria": "- Guild EXP、Level、施設解放、倉庫容量、雇用上限、AI解放等を外部Balance/Unlock Dataとして調整する。\n- 施設責務や機能有無等のCurrent Structureを変更しない。\n- 進行速度と資源要求をSimulationで比較する。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-010",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "Runtime接続状況を照合して実ゲームBalance検証を開始する",
+      "status": "Blocked",
+      "execution_order": 1000,
+      "depends_on": [
+        "TASK-BAL-009"
+      ],
+      "acceptance_criteria": "- 実装ラインのCurrent Sourceに接続済みのbalance_keyだけGame Runtime検証へ進める。\n- 未接続keyはCandidateのまま保持しSourceを越境修正しない。\n- Game WebKit E2EまたはOwner Runtime Traceで同一Configの結果を収集する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-011",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "Cross-Domain Balanceを検証する",
+      "status": "Blocked",
+      "execution_order": 1100,
+      "depends_on": [
+        "TASK-BAL-010"
+      ],
+      "acceptance_criteria": "- Character成長→Equipment→Enemy→戦闘時間→Reward→Guild進行の循環を横断検証する。\n- 平均だけでなく分散・極端Seed・失敗率を確認する。\n- 複数の妥当なゲーム体験方向が残る場合だけHuman Decisionへ上げる。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-012",
+      "box_id": "BOX-V9-BAL-PROMOTION-001",
+      "title": "検証済みCandidateをCurrent activeへ昇格する",
+      "status": "Blocked",
+      "execution_order": 1200,
+      "depends_on": [
+        "TASK-BAL-011"
+      ],
+      "acceptance_criteria": "- 各値のauthority/evidence/config versionを記録してCurrent activeへ昇格する。\n- 旧Current active/V9 Baseline/Human Approved seedを削除せず履歴保持する。\n- 未接続・未検証値はCandidateのまま残す。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-013",
+      "box_id": "BOX-V9-BAL-PROMOTION-001",
+      "title": "Balance再現性・非遡及・回帰を最終検証する",
+      "status": "Blocked",
+      "execution_order": 1300,
+      "depends_on": [
+        "TASK-BAL-012"
+      ],
+      "acceptance_criteria": "- 同一Input/Seed/Versionで結果が再現する。\n- Config更新で既存Snapshotが変化しない。\n- Product/Test Data境界が維持される。\n- 実装ラインのSource/Task/Workflowを変更していないことを確認する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-001",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Current Specification全DomainからBalance System Mapを作成する",
+      "status": "Todo",
+      "execution_order": 10,
+      "depends_on": [],
+      "acceptance_criteria": "- Current Specification / Decision / Materialをread-only authorityとして全Balance対象を抽出する。\n- Character/Job、Battle Core Formula、Skill、Passive、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter/Quest、Reward/Economy、Stone、Guild/Unlock、Presentation、Cross-Systemを最低Coverageとする。\n- 各項目にowner spec / authority / state / source / runtime connection / snapshot policy / config candidateを付ける。\n- Formula expressionも棚卸し対象に含める。\n- Source / Game Dataは変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-002",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Formula / Parameter Registry Draftを設計する",
+      "status": "Blocked",
+      "execution_order": 20,
+      "depends_on": [
+        "TASK-BAL-DESIGN-001"
+      ],
+      "acceptance_criteria": "- Damage/Heal/Hit/Critical/Resistance/DOT/Shield/MP/CD/AG等のFormulaをID単位で整理する。\n- formula_expression / coefficient / curve / cap / floor / clamp / probability / duration / growth / conversion / threshold等の調整型を定義する。\n- Currentの処理順・丸め・Owner ContractとFormula可変化が衝突する箇所を明示し、推測で仕様変更しない。\n- Formula本体をBalance所有にできる範囲はCandidateとして記録し、Human承認前に確定しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-003",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Domain Balance Evaluation Matrix Draftを設計する",
+      "status": "Blocked",
+      "execution_order": 30,
+      "depends_on": [
+        "TASK-BAL-DESIGN-002"
+      ],
+      "acceptance_criteria": "- 各Domainで評価するKPI/Distribution/Failure条件を定義する。\n- Weapon/Armor、Skill、Passiveを独立評価対象にし、最終DPS/HPS/EHP/命中/生存/Resource効率への寄与を追跡可能にする。\n- Enemy/Quest/RewardだけでなくPlayer側Build構成要素を同等に扱う。\n- Target Experience Profileとの対応指標を定義する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-004",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Reproducible Simulation / Sensitivity / Cross-System検証計画を設計する",
+      "status": "Blocked",
+      "execution_order": 40,
+      "depends_on": [
+        "TASK-BAL-DESIGN-003"
+      ],
+      "acceptance_criteria": "- 同一Input + Seed + Rules/Data/Config Versionで再現可能なSimulation Evidenceを設計する。\n- 主要係数の感度分析と相互作用分析を計画する。\n- Job→Stats→Equipment→Passive→Skill→Formula→Enemy→Quest→Reward→成長の循環を横断検証できるようにする。\n- Runtime未接続領域と接続済み領域の検証方法を分離する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-005",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Balance実行Phase / Task / Dependencyの再設計案を作成する",
+      "status": "Blocked",
+      "execution_order": 50,
+      "depends_on": [
+        "TASK-BAL-DESIGN-004"
+      ],
+      "acceptance_criteria": "- 現行TASK-BAL-001〜013を最終計画として前提にせず、System MapとDependencyから再分割案を作る。\n- Domainを過度に1Taskへ統合しない。\n- GAME_DATA / DEVELOPMENT_ONLY / Source requirementを混在させない。\n- 並列実行可能な工程と直列Gateを区別する。\n- Draft案として提示し、既存Taskの削除は行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-006",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Human Review用Balance計画Draftをまとめる",
+      "status": "Blocked",
+      "execution_order": 60,
+      "depends_on": [
+        "TASK-BAL-DESIGN-005"
+      ],
+      "acceptance_criteria": "- System Map / Formula Registry / Evaluation Matrix / Simulation Plan / Task再設計案を1つのReview単位へ整理する。\n- 未確定事項、Current仕様との衝突候補、Human Decisionが必要な事項を明示する。\n- AIが一意に決められる数値・技術事項とHuman体験判断を分離する。\n- このTask完了だけでは実行計画をApprovedにしない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-PLAN-GATE-001",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Balance実行計画の確定可否をHuman確認する",
+      "status": "Blocked",
+      "execution_order": 70,
+      "depends_on": [
+        "TASK-BAL-DESIGN-006"
+      ],
+      "acceptance_criteria": "- Game-wide coverage checkがPassedである。\n- Formula ownership/boundaryの未解決事項が一覧化されている。\n- 最終Phase/Task/Dependency案をHumanが確認できる。\n- Humanが明示承認するまでapproval=Pendingを維持し、実行計画を確定しない。\n- 承認後にのみ既存または再設計後の実行TaskをTodoへ解放する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-BAL-PLAN-001",
+      "title": "Balance line is independent from implementation line",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Human指示によりBalance調整をDEV-V9-REORG-019とは別案件として定義。実装Task/Workflowを変更しない。",
+      "evidence": "Human instruction: 新しい工程として別案件で",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:14:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-PLAN-002",
+      "title": "Balance plan preserves Current Structure and authority",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Balance値のみを可変Dataとして扱い、Current Structure/Contractをread-onlyにする計画。Candidate/Current active/Seed/Baselineを区別し、既存Snapshotへ遡及しない。",
+      "evidence": "DEV-V9-REORG-019: DEC-REORG-BAL-001 / SPEC-V9-019-BAL-001 / SPEC-V9-019-CORE-002 / RULE-REORG-009",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:14:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-PLAN-003",
+      "title": "Balance project baseline is bound to current source",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Read-only runtime baselineをuser-provided Current Source GKS-B729 / GA-B486.211へ固定。",
+      "evidence": "package-build.json in guild-adventure-studio-sub(20260822-004114).zip",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:14:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:14:00+09:00",
+      "updated_at": "2026-08-22T10:14:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-001",
+      "title": "Game-wide Balance scope coverage",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "DISC-BAL-002 / TASK-BAL-DESIGN-001..006",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-002",
+      "title": "Formula tuning boundary compatibility",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "DEC-BAL-PLAN-SCOPE-001 / TASK-BAL-DESIGN-002",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:36:00+09:00",
+      "updated_at": "2026-08-22T10:36:00+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-22T10:14:00+09:00",
+      "message": "Human指示によりBalance調整を実装ラインDEV-V9-REORG-019から分離し、新規案件DEV-V9-BALANCE-001として計画。Current Structure/Contractはread-only、Balance Config/Dataset/Simulationを独立進行し、実装ラインのTask/Workflowは変更しない。"
+    },
+    {
+      "at": "2026-08-22T01:17:23.548Z",
+      "message": "Development Project schema normalized to 1.2"
+    },
+    {
+      "at": "2026-08-22T01:17:29.088Z",
+      "message": "Development Project JSON imported as new project: DEV-V9-BALANCE-001"
+    },
+    {
+      "at": "2026-08-22T10:36:00+09:00",
+      "message": "Balance計画のCoverage不足を受け、Quest中心ではなくWeapon/Armor・Skill・Passive・Battle Formulaを含むゲーム全体Scopeの再設計Draftを登録。計画は未確定のためDISC-BAL-002をOpen、DEC-BAL-PLAN-SCOPE-001をProposed、Coverage/Formula境界CheckをPendingとし、既存TASK-BAL-001をHuman Plan Gate配下へBlocked化。実装/ゲームデータ変更には未着手。"
+    },
+    {
+      "at": "2026-08-22T01:41:32.913Z",
+      "message": "Development Workspace JSON merged: add=18 update=1 delete=0"
+    }
+  ]
+}
