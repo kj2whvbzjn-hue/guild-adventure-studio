@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T04:13:49.813Z"
+    "updated_at": "2026-08-22T04:58:45.039Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-DESIGN-001",
-    "theme": "Existing AI Battle Package Capability / Current Specification Gap Audit",
-    "goal": "TASK-BAL-DESIGN-002として、既存Battle PackageのSchema/Runtime/Formula/Generator/ResultをCurrent Specificationと1対1照合し、Formal GapとSOURCE_UPDATE Requirement候補を確定する。"
+    "theme": "Domain Balance Evaluation Matrix Draft",
+    "goal": "TASK-BAL-DESIGN-003として各DomainのKPI/Distribution/Failure条件を定義し、Weapon/Armor、Skill、Passive等のPlayer側Build構成要素を独立評価してDPS/HPS/EHP/命中/生存/Resource効率への寄与とTarget Experience Profileの対応を設計する。"
   },
   "project_rules": [
     {
@@ -137,11 +137,11 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B733",
+    "studio_build": "GKS-B735",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-030342).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-044417).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T12:07:00+09:00"
+    "recorded_at": "2026-08-22T13:58:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -246,6 +246,30 @@
       "approved_at": "",
       "created_at": "2026-08-22T12:07:00+09:00",
       "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SPEC-BAL-PACKAGE-GAP-001",
+      "title": "Existing AI Battle Package Capability / Current Specification Gap Audit Draft",
+      "status": "Draft",
+      "summary": "B735の既存AI Battle PackageをCurrent Specificationと1対1照合し、再利用可能なPackage transportとFormal Combat Referenceを妨げる12 SOURCE_UPDATE Requirement候補を分離した監査Draft。",
+      "body": "# Existing AI Battle Package Capability / Current Specification Gap Audit — Draft\n\n## Work declaration\n```text\npurpose: TASK-BAL-DESIGN-002: 既存AI Battle Package Capability / Current Specification Gapを監査する。\nwork_type: DEVELOPMENT_ONLY\nsource_baseline: GKS-B735 / GA-B486.211 / guild-adventure-studio-sub(20260822-044417).zip\nstudio_project_json_baseline: N/A（Game Dataは変更しない）\ndata_version: N/A\nallowed_scope: DEV-V9-BALANCE-001のPackage Capability/Gap監査、SOURCE_UPDATE Requirement候補、Task/Check/History/current_focus/source_baseline更新のみ。\nprotected_scope: Game/Studio Source、Export、Studio Project Game Data、Workflow Human approval、DEV-V9-REORG-019 Current Specification/Approved Decision。\ndeletion: 0件\nartifact: Development統合JSON 1件\ndeployment_route: Studio > 開発管理 > DEV-V9-BALANCE-001 > 現在案件へJSONを統合\ncompletion_criteria: TASK-BAL-DESIGN-002 Acceptance Criteria全5項目を満たし、Formal GapをBalance値で隠さずSOURCE_UPDATE Requirement候補として記録する。\n```\n\n## Authority / evidence rule\n- Gameplay/spec authorityは `DEV-V9-REORG-019` Current Specification / Approved Decision。\n- B735 Current SourceはPackage CapabilityとImplementation Gapを確認するEvidenceとして使用し、Source実装をSpecification確定根拠へ逆採用しない。\n- GapをBalance値で補正して「適合したこと」にしない。\n- 本TaskはDEVELOPMENT_ONLY。Source / Game Data / Workflowは変更しない。\n\n## Existing Package Capability Map\n\n| Area | Status | Audit result |\n|---|---|---|\n| Package transport / template | **READY** | AI用Template ZIP出力、Package ZIP読込、Path/Size検査、事前Validation、Package実行、Result ZIP出力、Result ZIP再読込が存在。既存Orchestratorは再利用可能。 |\n| manifest.json | **PARTIAL / GAP** | document/package id/version等の基本Validationはあるが、Current studio/game build、package_manifest/source tree、Project Data Version、Formula/Rules/Config Versionのimmutable bindingがない。legacy minimum_build/developmentBuild metadataが残る。 |\n| execution_plan.json | **READY structurally** | jobs配列とjob id/typeをValidationし、battle-test / battle-benchmarkを実行できる。Formal gameplay provenanceのbindingはmanifest側Gapに依存。 |\n| battle-roster | **PARTIAL / GAP** | Master参照と直接unit入力を扱えるが、formal campaign用Character/Job/Equipment/Skill/AI snapshot contractがなく、raw unit/paramsでOwnerを迂回できる。 |\n| battle-test | **READY structurally** | 単一Battle/大量trial実行のResourceとして利用可能。Formal runtime semanticsはBattle Engine Gapに依存。 |\n| battle-opponent-set | **READY structurally** | Benchmark用対戦相手集合として利用可能。Formal Monster/Enemy Budget provenanceは未接続。 |\n| battle-benchmark | **READY structurally** | Roster比較・集計・ランキングが可能。Formal inputとResult KPIが不足。 |\n| formula candidate binding | **GAP** | Package inputにimmutable Formula Config/Rules bindingがなく、実行時のambient Studio UI Battle Formula Configを利用可能。再現性Evidenceとして不足。 |\n| seed determinism | **READY / PARTIAL** | Seeded simulation自体は存在するが、SeedがRules/Data/Formula/Source Versionへ結合されていない。 |\n| result package preservation | **READY** | 入力PackageをResultのinput/へ保持し、execution report/job results/AI summary等をZIP化できる。 |\n| result metrics | **PARTIAL / GAP** | win/loss/draw、ticks、damage/heal/hit/miss/crits等はあるが、formal AI trace、per-skill、Passive/Equipment contribution、Status uptime/stack、MP/CD/Cast、death cause等が不足。 |\n\n## Current Specification 1:1 Formal Domain Audit\n\n| Formal domain | Status | Gap |\n|---|---|---|\n| Character / Job | **GAP** | generic master/unit変換がraw stats/paramsを受け、正式Character→Job→current stats/snapshot owner chainを必須化していない。 |\n| Equipment Contribution | **BLOCKER GAP** | 正式Equipment Generatorはattack/accuracy/magic_weapon_bonus/base_critical_rate/hp_bonus/mp_bonus/evasion/mod_ids等をtop-level出力するが、Battle loadoutは主にparams.stats/legacy keysを合算し、正式Contribution chainを消費しない。 |\n| Formal Skill | **BLOCKER GAP** | Formal Skillはtrigger/conditions/target/effects/resource/runtimeContractsを持つが、Battle側はlegacy type/power/mp_cost/cooldown/effect形式を実行。Skill参照欠落時に通常攻撃fallbackもある。 |\n| Passive | **BLOCKER GAP** | Current Formal PassiveのID/効果をBattle Package unit/loadoutへ適用する正式Contribution pathを確認できない。 |\n| Status | **BLOCKER GAP** | CurrentはHit後Status適用成功・ResistanceはDurationへ作用するが、Studio Battleはstatus chanceへResistanceを掛けてRollし、Durationへ反映しない。stack/tick lifecycleもCurrent Contractと不一致。 |\n| Physical / Hit / Critical / Resistance | **BLOCKER GAP** | StudioはSTR→accuracy、LUK→critical、accuracy-targetEvasion、legacy defense subtraction、critical→resistance、minimumDamage=1等を含む。Current仕様のEquipment由来accuracy/evasion/base_critical_rate、Hit式、Resistance→Critical、minimum 0等と不一致。 |\n| Magical / Heal | **BLOCKER GAP** | Studio magic/heal pipelineはFormal magic_increase_rate×skill power / ceil等のCurrent式を正式入力として消費していない。 |\n| MP / Cooldown / Cast / Multi-hit / Effect order | **BLOCKER GAP** | Battle performSkillはlegacy immediate MP/CD型で、Cast completion/interruption、Current effect order、formal multi-hit/KO/Revive/target validationを完全実装していない。 |\n| Formal AI | **BLOCKER GAP** | legacy condition/action/target inline AIとdefault basic-attack fallbackが存在。Formal AI Program→validator/compiler→decision engine、formalAiBinding、Skill Loadout、Legacy Zeroへ未接続。 |\n| Monster / Enemy Budget | **BLOCKER GAP** | raw enemy unit/generic masterを直接利用でき、Monster Job→Stats/Enemy Budget→Formal AI等のOwner chain/version snapshotを必須化していない。 |\n\n## Assessment\n\n既存Battle Packageの**ZIP transport / validation / execution / result packagingという器は再利用可能**。\n一方、Current Specification準拠のFormal Combat Referenceとしては未Readyである。\n\n特にBlockerは次の4系統:\n1. **Provenance / immutable binding** — Current Build/Data/Formula/Rules/ConfigをPackageへ固定できない。\n2. **Formal generated-data adapter** — Equipment/Skill/Passive/MOD/AI/Monster/Enemy大量CandidateをProduct Masterへ登録せず正式入力するContractがない。\n3. **Combat semantics** — Formula/Status/Skill lifecycle/AIがLegacy実装を含みCurrent Contractと一致しない。\n4. **Evidence** — Result Packageは輸送・保存できるが、Balance Promotionに必要な寄与/KPI/trace/provenanceが不足。\n\nしたがって、現時点ではPackageを捨てて新Orchestratorを作る理由はないが、上記Gap解消前にPackage結果をCurrent active Balance Evidenceとして使用してはならない。\n\n## SOURCE_UPDATE Requirement Candidates\n- **REQ-BAL-PKG-001 — Battle Package Formal Build/Data/Formula Binding** [Blocker]: manifest/resultをCurrent studio_build/game_build、package_manifest/source tree、Studio Project/Data Version、Formula/Rules/Config Versionへimmutable bindingし、実行時mismatchをfail-closedにする。legacy 472.* build metadataをFormal Evidenceから除外する。\n- **REQ-BAL-PKG-002 — Transient Formal Candidate Resource Contract** [Blocker]: Equipment/Skill/Passive/MOD/AI/Monster/Enemyの生成CandidateをProduct Masterへ登録せずBattle Packageへ正式Resource/Snapshotとして渡せるContractを追加する。raw final-number overrideで代替しない。\n- **REQ-BAL-PKG-003 — Formal Roster / Unit Snapshot Adapter** [Blocker]: formal campaign modeではtyped/provenanced Character/Job/Enemy snapshotを要求し、raw QA fixtureと分離する。参照欠落やOwner provenance欠落はfail-closedにする。\n- **REQ-BAL-PKG-004 — Formal Equipment Contribution Adapter** [Blocker]: Equipment Generatorのtop-level正式field/mod_idsをBattleへ接続し、hp_bonus/mp_bonus/evasion/accuracy/base_critical_rate/magic_weapon_bonus等をCurrent Contribution chainで解決する。formal modeではparams.stats legacy fallbackを使用しない。\n- **REQ-BAL-PKG-005 — Formal Skill Runtime Adapter** [Blocker]: Formal Skill runtimeContracts/effects/resource/target/trigger/conditionsをBattle executionへ接続し、missing/nonformal Skill参照をrejectする。{attack,power:1}等のLegacy fallbackをFormal Evidenceで禁止する。\n- **REQ-BAL-PKG-006 — Formal Passive Contribution Pipeline** [Blocker]: Formal Passive ID/能力条件/Effect・ModifierをBattle unitへ適用し、Skill/Equipment/Status等との補正箱ContributionをCurrent Contractどおり集約できるようにする。\n- **REQ-BAL-PKG-007 — Current Battle Formula Core Alignment** [Blocker]: STR→accuracy/LUK→critical等のLegacy fallback、旧Hit/Defense/minimum/演算順をFormal Referenceから除外し、Current Hit/Evasion、Resistance→Critical、Physical/Magical/Heal、rounding/orderのOwner Contractへ適合させる。係数値そのものはBalance Configで可変に保つ。\n- **REQ-BAL-PKG-008 — Current Status / Stack / Duration Lifecycle Alignment** [Blocker]: Hit成立後のStatus適用、Resistance→Duration、stack/refresh/consume/individual tick、BUFF/DEBUFF/DOT/SHIELD lifecycleをCurrent Contractへ適合させる。独立Status成功率RollをFormal Referenceへ持ち込まない。\n- **REQ-BAL-PKG-009 — Formal Battle Lifecycle Adapter** [Blocker]: MP/CD/Cast completion/interruption、multi-hit per-hit処理、Current effect order、KO/Revive、target/range revalidation等をBattle Package Formal Executionへ接続する。\n- **REQ-BAL-PKG-010 — Formal AI Program / Decision Engine Adapter** [Blocker]: Formal AI Program→validator/compiler→decision engineをBattle Packageへ接続し、formalAiBinding/Skill Loadoutを使用する。Formal未設定時にlegacy AIへfallbackせず、PlayerとMonster pathを分離する。\n- **REQ-BAL-PKG-011 — Formal Monster / Enemy Budget Snapshot Adapter** [Blocker]: Monster Job→Stats→Enemy Budget→Skill/AIをversioned snapshotとしてPackageへ渡し、AI/raw unitがFormal Monster Stats/Enemy Budgetを独自決定しないようにする。\n- **REQ-BAL-PKG-012 — Balance Result Evidence Expansion** [High]: Result Packageへper-skill usage、Passive/Equipment contribution、Status uptime/stack/duration、MP/resource efficiency、cast/CD failure、death cause/EHP、Formal AI trace、provenance/versionを追加し、AI Candidate LoopとPromotion Evidenceに必要なKPIを出力する。\n\n## Source evidence summary\n- Current Source: `GKS-B735 / GA-B486.211`\n- ZIP SHA-256: `d0094f336241c8cc3d79f3317f381b8162c52b29ccbe4dca0d542e1a17018d76`\n- `package_manifest.json` SHA-256: `cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34`\n- Current spec authority snapshot: `development-project-data/DEV-V9-REORG-019.json` SHA-256 `92dc8b65ecb5ffcf4a91de2eea548ddf2c554069cd00d83e5d2a727efe80cfcb`\n- Package manifest integrity: PASS (`PACKAGE_MANIFEST_OK files=639`)\n\nPrimary implementation evidence:\n- `studio/index.html`: Package read/validate/execute/result, master→battle unit adapter, Battle formula/runtime/status/AI/metrics.\n- `studio/equipment/equipment-generator.js`: formal Equipment generator outputs.\n- `studio/skill/skill-generator.js` + `assets/shared/js/skill-ai-batch-engine.js`: Formal Skill/G05/G07 outputs and runtimeContracts.\n- `development-project-data/DEV-V9-REORG-019.json`: Current Battle/Skill/Passive/AI/Monster/Data authority.\n\n## Human decision status\n現時点の12 RequirementはCurrent Specificationへ適合させるための技術的/整合性Requirementであり、Human gameplay decisionは要求しない。\nFormula expressionそのものをBalance所有へ移すか等の未確定Gameplay/Structure判断は、本Taskでは確定せず後続Plan Gate候補として保持する。\n",
+      "decision_refs": [
+        "DEC-BAL-001",
+        "DEC-BAL-EXPERIENCE-001"
+      ],
+      "depends_on": [
+        "SPEC-BAL-SYSTEM-MAP-001"
+      ],
+      "acceptance_criteria": "- Template→Import→Validation→Execution→Result Export→Result ImportのCapability Mapがある。\n- manifest/execution_plan/roster/test/opponent_set/benchmark/formula/seed/resultの責務とGapがある。\n- Character/Job、Equipment、Skill、Passive、Status、Battle Formula、Enemy/AIをCurrent Specificationと照合している。\n- Legacy/Demo/Fallback GapをBalance値で補っていない。\n- Source修正が必要なGapをSOURCE_UPDATE Requirement候補として追跡可能にしている。",
+      "system_node_id": "SYS-BAL-GAMEWIDE",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -423,7 +447,164 @@
   "system_connections": [],
   "system_flags": [],
   "system_events": [],
-  "system_impacts": [],
+  "system_impacts": [
+    {
+      "id": "REQ-BAL-PKG-001",
+      "title": "Battle Package Formal Build/Data/Formula Binding",
+      "target_type": "System",
+      "target_id": "SYS-BAL-GOVERNANCE",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "manifest/resultをCurrent studio_build/game_build、package_manifest/source tree、Studio Project/Data Version、Formula/Rules/Config Versionへimmutable bindingし、実行時mismatchをfail-closedにする。legacy 472.* build metadataをFormal Evidenceから除外する。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-002",
+      "title": "Transient Formal Candidate Resource Contract",
+      "target_type": "System",
+      "target_id": "SYS-BAL-GAMEWIDE",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Equipment/Skill/Passive/MOD/AI/Monster/Enemyの生成CandidateをProduct Masterへ登録せずBattle Packageへ正式Resource/Snapshotとして渡せるContractを追加する。raw final-number overrideで代替しない。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-003",
+      "title": "Formal Roster / Unit Snapshot Adapter",
+      "target_type": "System",
+      "target_id": "SYS-BAL-CHAR_JOB",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "formal campaign modeではtyped/provenanced Character/Job/Enemy snapshotを要求し、raw QA fixtureと分離する。参照欠落やOwner provenance欠落はfail-closedにする。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-004",
+      "title": "Formal Equipment Contribution Adapter",
+      "target_type": "System",
+      "target_id": "SYS-BAL-EQUIPMENT",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Equipment Generatorのtop-level正式field/mod_idsをBattleへ接続し、hp_bonus/mp_bonus/evasion/accuracy/base_critical_rate/magic_weapon_bonus等をCurrent Contribution chainで解決する。formal modeではparams.stats legacy fallbackを使用しない。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-005",
+      "title": "Formal Skill Runtime Adapter",
+      "target_type": "System",
+      "target_id": "SYS-BAL-SKILL_FORMAL",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Formal Skill runtimeContracts/effects/resource/target/trigger/conditionsをBattle executionへ接続し、missing/nonformal Skill参照をrejectする。{attack,power:1}等のLegacy fallbackをFormal Evidenceで禁止する。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-006",
+      "title": "Formal Passive Contribution Pipeline",
+      "target_type": "System",
+      "target_id": "SYS-BAL-PASSIVE",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Formal Passive ID/能力条件/Effect・ModifierをBattle unitへ適用し、Skill/Equipment/Status等との補正箱ContributionをCurrent Contractどおり集約できるようにする。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-007",
+      "title": "Current Battle Formula Core Alignment",
+      "target_type": "System",
+      "target_id": "SYS-BAL-BATTLE_FORMULA",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "STR→accuracy/LUK→critical等のLegacy fallback、旧Hit/Defense/minimum/演算順をFormal Referenceから除外し、Current Hit/Evasion、Resistance→Critical、Physical/Magical/Heal、rounding/orderのOwner Contractへ適合させる。係数値そのものはBalance Configで可変に保つ。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-008",
+      "title": "Current Status / Stack / Duration Lifecycle Alignment",
+      "target_type": "System",
+      "target_id": "SYS-BAL-STATUS",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Hit成立後のStatus適用、Resistance→Duration、stack/refresh/consume/individual tick、BUFF/DEBUFF/DOT/SHIELD lifecycleをCurrent Contractへ適合させる。独立Status成功率RollをFormal Referenceへ持ち込まない。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-009",
+      "title": "Formal Battle Lifecycle Adapter",
+      "target_type": "System",
+      "target_id": "SYS-BAL-BATTLE_FORMULA",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "MP/CD/Cast completion/interruption、multi-hit per-hit処理、Current effect order、KO/Revive、target/range revalidation等をBattle Package Formal Executionへ接続する。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-010",
+      "title": "Formal AI Program / Decision Engine Adapter",
+      "target_type": "System",
+      "target_id": "SYS-BAL-AI",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Formal AI Program→validator/compiler→decision engineをBattle Packageへ接続し、formalAiBinding/Skill Loadoutを使用する。Formal未設定時にlegacy AIへfallbackせず、PlayerとMonster pathを分離する。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-011",
+      "title": "Formal Monster / Enemy Budget Snapshot Adapter",
+      "target_type": "System",
+      "target_id": "SYS-BAL-MONSTER",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "Monster Job→Stats→Enemy Budget→Skill/AIをversioned snapshotとしてPackageへ渡し、AI/raw unitがFormal Monster Stats/Enemy Budgetを独自決定しないようにする。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-012",
+      "title": "Balance Result Evidence Expansion",
+      "target_type": "System",
+      "target_id": "SYS-BAL-CROSS_META",
+      "status": "Open",
+      "severity": "High",
+      "summary": "Result Packageへper-skill usage、Passive/Equipment contribution、Status uptime/stack/duration、MP/resource efficiency、cast/CD failure、death cause/EHP、Formal AI trace、provenance/versionを追加し、AI Candidate LoopとPromotion Evidenceに必要なKPIを出力する。",
+      "required_human_decision": "",
+      "source": "SourceAudit",
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    }
+  ],
   "architecture_nodes": [
     {
       "id": "ARCH-V9-BALANCE-001",
@@ -787,7 +968,7 @@
       "id": "TASK-BAL-DESIGN-002",
       "box_id": "BOX-V9-BAL-DESIGN-001",
       "title": "既存AI Battle Package Capability / Current Specification Gapを監査する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 20,
       "depends_on": [
         "TASK-BAL-DESIGN-001"
@@ -801,13 +982,13 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T12:07:00+09:00"
+      "updated_at": "2026-08-22T13:58:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-003",
       "box_id": "BOX-V9-BAL-DESIGN-001",
       "title": "Domain Balance Evaluation Matrix Draftを設計する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 30,
       "depends_on": [
         "TASK-BAL-DESIGN-002"
@@ -821,7 +1002,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T13:58:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-004",
@@ -1065,6 +1246,52 @@
       "blocking": false,
       "created_at": "2026-08-22T12:07:00+09:00",
       "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-PACKAGE-AUDIT-001",
+      "title": "TASK-BAL-DESIGN-002 Existing Battle Package capability / Current-Spec gap audit",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-DESIGN-002",
+      "status": "Passed",
+      "result": "既存Package transport/execution/result workflowを再利用可能と確認。manifest/execution_plan/roster/test/opponent_set/benchmark/formula/seed/resultを監査し、Character/Job、Equipment、Formal Skill、Passive、Status、Battle Formula、Formal AI、Monster/EnemyとのCurrent Specification Gapを分類。12件のSOURCE_UPDATE Requirement候補を記録した。Formal Package ReadinessのPASSは主張せず、GapをBalance値で補正していない。Source/Game Data変更0件。",
+      "evidence": "SPEC-BAL-PACKAGE-GAP-001; REQ-BAL-PKG-001..012; source GKS-B735 / GA-B486.211; package_manifest sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; DEV-V9-REORG-019 snapshot sha256=92dc8b65ecb5ffcf4a91de2eea548ddf2c554069cd00d83e5d2a727efe80cfcb",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T13:58:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-BASELINE-007",
+      "title": "Balance read-only source baseline rebound to B735",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Current complete source is GKS-B735 / GA-B486.211 and package_manifest integrity passed before TASK-BAL-DESIGN-002 audit.",
+      "evidence": "guild-adventure-studio-sub(20260822-044417).zip sha256=d0094f336241c8cc3d79f3317f381b8162c52b29ccbe4dca0d542e1a17018d76; package_manifest.json sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; PACKAGE_MANIFEST_OK files=639",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T13:58:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T13:58:00+09:00",
+      "updated_at": "2026-08-22T13:58:00+09:00"
     }
   ],
   "workflow": {
@@ -1108,6 +1335,14 @@
     {
       "at": "2026-08-22T04:13:49.813Z",
       "message": "Development Workspace JSON merged: add=28 update=4 delete=0"
+    },
+    {
+      "at": "2026-08-22T13:58:00+09:00",
+      "message": "TASK-BAL-DESIGN-002 (DEVELOPMENT_ONLY)を実行。Current SourceをGKS-B735 / GA-B486.211へ再Bindし、既存AI Battle PackageのTemplate/Import/Validation/Execution/Result workflowをCapability Map化。Current SpecificationとCharacter/Job、Equipment、Formal Skill、Passive、Status、Damage/Heal/Hit/Critical/Resistance、Monster/Enemy、Formal AIを1対1監査した。Package transportは再利用可能だがFormal Combat Referenceは未Readyと判定。Formal build/data/formula binding、transient candidate resource、formal roster、Equipment/Skill/Passive adapter、Battle formula/status/lifecycle、Formal AI、Monster/Enemy、Result Evidenceの12 SOURCE_UPDATE Requirement候補をOpen Impactとして記録。GapはBalance値で補正せず、Source変更0 / Game Data変更0 / 削除0 / Workflow変更0。TASK-BAL-DESIGN-002=Done、TASK-BAL-DESIGN-003=Todoへ解放。次Taskへは未着手。"
+    },
+    {
+      "at": "2026-08-22T04:58:45.039Z",
+      "message": "Development Workspace JSON merged: add=16 update=4 delete=0"
     }
   ]
 }
