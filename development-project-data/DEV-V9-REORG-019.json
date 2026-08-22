@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T01:38:39.260Z"
+    "updated_at": "2026-08-22T03:10:21.268Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -143,6 +143,15 @@
       "source_id": "conversation",
       "created_at": "2026-08-22T08:51:00+09:00",
       "updated_at": "2026-08-22T08:51:00+09:00"
+    },
+    {
+      "id": "RULE-REORG-015",
+      "text": "自動CorrectionはCurrentの唯一の正規経路へ収束させるためだけに使用し、Compatibility Budget 0 / Exception Budget 0を適用する。通常の自動Correctionではlegacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、try new→catch old、silent recovery、廃止API wrapperを新設せず、エラー処理自体がAcceptance Criteriaでない限りproduction codeの局所catch数を増やさない。本当に必要な互換性はHuman承認された専用Migration/Compatibility Taskへ分離し、対象Versionと終了・削除条件を必須とする。同一Failure Signatureの自動Correctionは最大2回とし、原因が一意でない場合や仕様・Data・Schema・Security意味を変更する場合はFail Closedする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-22T11:05:00+09:00",
+      "updated_at": "2026-08-22T11:05:00+09:00"
     }
   ],
   "source_baseline": {
@@ -369,6 +378,20 @@
       "result": "Applied",
       "evidence": "GKS-B732 Save/Load Recovery UI connection was Human-applied and is present in the user-provided Current Source GKS-B732 / GA-B486.211. Current package_manifest SHA-256=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766. The prior GKS-B732 update ZIP SHA-256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7 is available and its persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html SHA-256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03. Current Phase-1 targeted verification confirms the R30-011 acceptance paths: Save failure rollback + Retry PASS; Save safe-return restores the last validated Current Save and Title PASS; Load/Integrity failure stops before live-state replacement with zero Save-slot rewrite PASS; Recovery UI Owner reason/code passthrough PASS. Current Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Current Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; Build marker check PASS studio=GKS-B732 files=190. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
       "recorded_at": "2026-08-22T10:23:00+09:00"
+    },
+    {
+      "id": "IMPL-R30-012-CORR-001",
+      "studio_build": "GKS-B733",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-012-CORR-001"
+      ],
+      "result": "Partial",
+      "evidence": "Exact baseline GKS-B732 / GA-B486.211 package_manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 source_tree=8473f6110b349cde6d54c6bf11addcd3e9d32e6f8eda60e76a5f48fc7c3e321f; target GKS-B733 / GA-B486.211 package_manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594 source_tree=99c540ea07fc8922dd1bb80a03a054629a79f9f6d4f905f9efc1616b47108508 artifact_id=GKS-B733-99c540ea07fc. Game bare persist calls 5→0. Modified production catch counts app-runtime 46→46, game/index 1→0; compatibility term counts did not increase. Strict correction evidence sha256=d274d983cab6e41b53844d874576abdbc5c11d478fc04f06e64cf5f063483f98. Targeted adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS; AI_GAME_SAVE_SCHEMA_V3_OK PASS. Update Quick 13/13 PASS evidence_sha256=35e50b8cea54c6e9b61e7396bb7b6c7b383234fb37405fbed86bf5f31b34060c; Accept 13/13 PASS evidence_sha256=0d587eff0d9d0e2c4a28cbfe80a4b3e7cecdfc8650b8764e774724e45e299c38; Release 13/13 PASS evidence_sha256=7f2c9f96357a7c597e849535ee24bae213c76bc8491e9f6cde3bb7bd56cc60ae; extracted final ZIP Release 13/13 PASS evidence_sha256=fe260f1eff21ff6fda188054047d36c8368c6f61af08744cd93bb13d13ac5b51; update ZIP sha256=d8587af99a17acfefeaf7c529bb97b8c1f37295ab400f7a337d47a75888f6c1d. Source deletions=0; Game data changes/exclusions=0. Human Apply and original Phase 1 E2E rerun remain pending.",
+      "recorded_at": "2026-08-22T11:05:00+09:00"
     }
   ],
   "discussions": [
@@ -1668,6 +1691,18 @@
       "approved_at": "2026-08-21T15:05:00+09:00",
       "created_at": "2026-08-21T15:05:00+09:00",
       "updated_at": "2026-08-21T15:05:00+09:00"
+    },
+    {
+      "id": "DEC-R30-AUTONOMOUS-CORRECTION-001",
+      "title": "自動Correctionを正規経路収束・Compatibility Budget 0で運用する",
+      "status": "Approved",
+      "text": "E2E/Gateで決定的なSource不具合が見つかり、現在Taskのwork_typeでは修正不能な場合、safe-auto条件をすべて満たすFailed CheckからだけSOURCE_UPDATE Correction Taskを機械生成できる。Correctionは既存Current API/Contractへ最小差分で収束させ、互換層・旧経路延命・silent recovery・局所catch増加を禁止する。Artifact生成だけでは元Failedを解決せず、Human Apply後に元E2EがPASSしたCorrection Checkだけがresolves_check_idsを持つ。",
+      "rationale": "E2E自動化が不具合検出後にwork_type境界で停止する問題を解消しつつ、AIが互換層や例外処理を増殖させて技術的負債を作ることを防ぐため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-22T11:05:00+09:00",
+      "created_at": "2026-08-22T11:05:00+09:00",
+      "updated_at": "2026-08-22T11:05:00+09:00"
     }
   ],
   "specifications": [
@@ -6077,10 +6112,11 @@
       "id": "TASK-R30-012",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 Save/New Game E2Eを検証する",
-      "status": "Doing",
+      "status": "Blocked",
       "execution_order": 1120,
       "depends_on": [
-        "TASK-R30-011"
+        "TASK-R30-011",
+        "TASK-R30-012-CORR-001"
       ],
       "acceptance_criteria": "- New Game → 初回Save → Continue/LoadのPhase 1主要導線をE2Eで確認する。\n- Atomic Save / Backup / Migration / Domain Persistence / Recoveryを含むPhase 1項目を検証する。\n- 失敗系で既存正常Saveを失わない。\n- Phase 1完了を示す検証証跡をDevelopment Checkへ記録する。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6091,7 +6127,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T10:23:00+09:00"
+      "updated_at": "2026-08-22T11:05:00+09:00"
     },
     {
       "id": "TASK-R31-001",
@@ -8074,6 +8110,26 @@
       },
       "created_at": "2026-08-20T22:30:00+09:00",
       "updated_at": "2026-08-20T22:30:00+09:00"
+    },
+    {
+      "id": "TASK-R30-012-CORR-001",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "Phase 1 E2Eで検出したlegacy persist経路をCurrent Save APIへ収束する",
+      "status": "Doing",
+      "execution_order": 1115,
+      "depends_on": [
+        "TASK-R30-011"
+      ],
+      "acceptance_criteria": "- Current Game production codeのbare `persist()` 呼出しを0件にし、既存正規`autoSave()`へ置換する。\n- 新しいlegacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、silent recovery、廃止API wrapperを追加しない。\n- エラー処理自体を追加目的にせず、変更対象production fileのcatch数を増やさない。\n- Game仕様、Balance、Game Data、Save Schema意味、Security境界、Test/Gateを変更しない。\n- Targeted / Quick / Accept / Release Gateを通し、Human Apply後にTASK-R30-012 E2Eを再実行してPASSを確認する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:05:00+09:00",
+      "updated_at": "2026-08-22T11:05:00+09:00"
     }
   ],
   "checks": [
@@ -9548,6 +9604,29 @@
       "blocking": true,
       "created_at": "2026-08-22T10:23:00+09:00",
       "updated_at": "2026-08-22T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-R30-012-CORR-ARTIFACT-001",
+      "title": "TASK-R30-012 Correction artifact / Compatibility Budget 0 verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-012-CORR-001",
+      "status": "Passed",
+      "result": "GKS-B733 Correction artifactはlegacy bare persistをCurrent autoSaveへ収束し、互換層・局所catchを追加せず、Targeted/Quick/Accept/Releaseを通過した。Artifact生成時点ではHuman Apply後E2E未実施のため元Failedは解決扱いにしない。",
+      "evidence": "Exact baseline GKS-B732 / GA-B486.211 package_manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 source_tree=8473f6110b349cde6d54c6bf11addcd3e9d32e6f8eda60e76a5f48fc7c3e321f; target GKS-B733 / GA-B486.211 package_manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594 source_tree=99c540ea07fc8922dd1bb80a03a054629a79f9f6d4f905f9efc1616b47108508 artifact_id=GKS-B733-99c540ea07fc. Game bare persist calls 5→0. Modified production catch counts app-runtime 46→46, game/index 1→0; compatibility term counts did not increase. Strict correction evidence sha256=d274d983cab6e41b53844d874576abdbc5c11d478fc04f06e64cf5f063483f98. Targeted adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS; AI_GAME_SAVE_SCHEMA_V3_OK PASS. Update Quick 13/13 PASS evidence_sha256=35e50b8cea54c6e9b61e7396bb7b6c7b383234fb37405fbed86bf5f31b34060c; Accept 13/13 PASS evidence_sha256=0d587eff0d9d0e2c4a28cbfe80a4b3e7cecdfc8650b8764e774724e45e299c38; Release 13/13 PASS evidence_sha256=7f2c9f96357a7c597e849535ee24bae213c76bc8491e9f6cde3bb7bd56cc60ae; extracted final ZIP Release 13/13 PASS evidence_sha256=fe260f1eff21ff6fda188054047d36c8368c6f61af08744cd93bb13d13ac5b51; update ZIP sha256=d8587af99a17acfefeaf7c529bb97b8c1f37295ab400f7a337d47a75888f6c1d. Source deletions=0; Game data changes/exclusions=0. Human Apply and original Phase 1 E2E rerun remain pending.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T11:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:05:00+09:00",
+      "updated_at": "2026-08-22T11:05:00+09:00"
     }
   ],
   "workflow": {
@@ -10056,6 +10135,14 @@
     {
       "at": "2026-08-22T01:38:39.260Z",
       "message": "Development Workspace JSON merged: add=104 update=15 delete=0"
+    },
+    {
+      "at": "2026-08-22T11:05:00+09:00",
+      "message": "Human指示により自動CorrectionをCompatibility Budget 0 / Exception Budget 0へ強化。GKS-B732 exact baselineからGKS-B733 SOURCE_UPDATEを再生成し、Game productionのbare persist 5件をCurrent autoSaveへ収束、compat/fallback新設0・catch増加0を確認。Targeted/Quick/Accept/Release PASS。Correction Artifact生成だけでは元Failedを解決せず、TASK-R30-012はHuman Apply後E2E再実行待ちとしてBlockedへ移行。"
+    },
+    {
+      "at": "2026-08-22T03:10:21.268Z",
+      "message": "Development Workspace JSON merged: add=6 update=1 delete=0"
     }
   ],
   "specification_candidates": [
