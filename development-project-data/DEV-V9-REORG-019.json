@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T00:58:06.007Z"
+    "updated_at": "2026-08-22T01:10:34.182Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -338,9 +338,23 @@
       "task_ids": [
         "TASK-R30-009"
       ],
+      "result": "Applied",
+      "evidence": "GKS-B730 New Game initialization sequence was Human-applied and is present in the user-provided Current Source GKS-B730 / GA-B486.211. Current package_manifest SHA-256=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a. The prior GKS-B730 update persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=e21eef81b4c07f87e1362901b3433de05d97ea2f2a61c671a7fc4a8bc7a2b1f0. Current targeted verification 12/12 PASS: the fixed initialization order is retained; initial Gold, starter roster, Party and Inventory are sourced from Formal Runtime Data; the candidate Save is built separately; Save validation and Load no-normalization validation precede the Atomic writer; live state changes only after a successful write; the old seedRoster immediate-save path is absent. Current Quick 12/12 PASS evidence_sha256=d94dee047feb2473234ad291b151639d6ec47eb3429041f173a3a25fa6192f3e; Build marker check PASS studio=GKS-B730 files=190. Prior GKS-B730 update ZIP SHA-256=abb67969437808e42408447527056e22b97a6767e2766dcc68d1e97b9a6ed6d7. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
+      "recorded_at": "2026-08-22T10:04:29+09:00"
+    },
+    {
+      "id": "IMPL-R30-010",
+      "studio_build": "GKS-B731",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-010"
+      ],
       "result": "Partial",
-      "evidence": "GKS-B730 New Game initialization sequence implementation prepared from exact user-provided Current Source GKS-B729 / GA-B486.211. Replaced the previous seedRoster immediate-save path with a fixed staged sequence: Guild -> Progress/Flag -> starter Character core -> Party -> Inventory/Equipment -> Skill/Passive/AI state -> Save Integrity verification -> first Atomic Auto Save. Initial Gold, starter roster/job composition, party membership, inventory IDs, Character initial level/stats and starter Skill data are supplied by the existing Formal Runtime Data; no unspecified starter equipment or other content IDs were synthesized. The candidate Save is built separately from live state, checked through Current Save payload validation plus no-implicit-normalization Load validation, and is written only after those checks succeed. Integrity failure writes nothing and does not replace live state. Targeted verification 18/18 PASS. Target Quick 11/11 PASS evidence_sha256=26ab50699dad1c7c74f946717a6801dea89b1fefa4ee6caaa79262b9787dc062; Update Accept 13/13 PASS evidence_sha256=231bc419f0ce6a655fca7b2d3e6eb153e616493ae3117a02cb984a5fc52a3ae4; Release 13/13 PASS evidence_sha256=510dafdf8537de946883cad85f41b9bea16299e6a9522efdee147b7b0c3b28db; Build marker check PASS studio=GKS-B730 files=190. Baseline manifest=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd tree=e80078b79ae387da13b01be8fa97e5254be5b2622085f1240c27629384ee4c93; target manifest=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a tree=850ff5be3d338f4b8e78caf267c4f06e563b2a0f64c5759e35e939194e8720c7; artifact_id=GKS-B730-850ff5be3d33; update ZIP sha256=abb67969437808e42408447527056e22b97a6767e2766dcc68d1e97b9a6ed6d7. ZIP payload 641/641 exact after extraction; Export entries=0. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T09:49:00+09:00"
+      "evidence": "GKS-B731 existing-Save New Game overwrite confirmation implemented from exact user-provided Current Source GKS-B730 / GA-B486.211. The Title New Game entry now queries the Save Owner before any New Game candidate construction. With no existing Current/legacy Save the B730 initialization sequence proceeds unchanged. With an existing Save, Player confirmation is required exactly before candidate construction; Cancel returns without prepareNewGameSnapshot, commitPreparedNewGame, Save writes, battle reset, render, or phase transition, therefore both the existing Save and live state remain unchanged. Confirmation UI absence/failure fails closed. Approval continues through the existing B730 Integrity-first candidate validation and Atomic Save path. Targeted verification 15/15 PASS. Target Quick 11/11 PASS evidence_sha256=048d5c10df3a6dc795302f0f4889fd0980326030031e3906290a106031f3ca36; Update Quick 13/13 PASS evidence_sha256=a86a6f8ffe39e28e62b514a99d9fda45bd2b85e64330807500a910d83267f2c8; Update Accept 13/13 PASS evidence_sha256=9cb8a7bc6150489529135168eeab3e412c73e599a21934129b4c99c082516f0f; Release 13/13 PASS evidence_sha256=db665ac8ce26d8f67eb6e0639f5ab4409e204bd05cb65e08d382f86d8ee9be10; Build marker check PASS studio=GKS-B731 files=190. Baseline manifest=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a tree=805f380c94a9cecea75477455acfb3df801de97c31d9a8755dee2befed43cac3; target manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=978dbbc87b76a4c4859863c04b240c8c597f3d9c84a5af8f36f4793c5b77b8db; artifact_id=GKS-B731-978dbbc87b76; update ZIP sha256=79f8fcda5d0e543e512155840828c366888e2ea87ffce47d260ffc82f29bddd5. ZIP 641/641 exact after extraction; persistent payload 639/639 exact; Export entries=0. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T10:04:29+09:00"
     }
   ],
   "discussions": [
@@ -5989,7 +6003,7 @@
       "id": "TASK-R30-009",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "New Game初期化Sequenceを実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 1090,
       "depends_on": [
         "TASK-R30-008"
@@ -6003,13 +6017,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T09:49:00+09:00"
+      "updated_at": "2026-08-22T10:04:29+09:00"
     },
     {
       "id": "TASK-R30-010",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "既存SaveありNew Gameの上書き確認を実装する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 1100,
       "depends_on": [
         "TASK-R30-009"
@@ -6023,7 +6037,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T15:05:00+09:00"
+      "updated_at": "2026-08-22T10:04:29+09:00"
     },
     {
       "id": "TASK-R30-011",
@@ -9336,6 +9350,75 @@
       "blocking": false,
       "created_at": "2026-08-22T09:49:00+09:00",
       "updated_at": "2026-08-22T09:49:00+09:00"
+    },
+    {
+      "id": "CHK-R30-009-HUMAN-APPLY-VERIFY",
+      "title": "TASK-R30-009 Human Apply / Current Source verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-009",
+      "status": "Passed",
+      "result": "Current Source GKS-B730上でNew Game初期化Sequenceを再確認。固定初期化順序、Formal Runtime Data由来の初期Content、候補Save分離、Integrity/Load無変更検証後のみAtomic Save、成功後のみlive state切替を確認し、TASK-R30-009 Acceptance Criteriaを満たすためDone確定。",
+      "evidence": "Current package-build.json=GKS-B730 / GA-B486.211; package_manifest sha256=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a; prior update persistent payload 639/639 byte-identical, missing=0 diff=0; app-runtime.js sha256=e21eef81b4c07f87e1362901b3433de05d97ea2f2a61c671a7fc4a8bc7a2b1f0; current targeted verification 12/12 PASS; Current Quick 12/12 PASS evidence_sha256=d94dee047feb2473234ad291b151639d6ec47eb3429041f173a3a25fa6192f3e; Build marker check PASS files=190; source/game data/deletion/exclusion changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:04:29+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:04:29+09:00",
+      "updated_at": "2026-08-22T10:04:29+09:00"
+    },
+    {
+      "id": "CHK-R30-010-IMPLEMENTATION",
+      "title": "TASK-R30-010 Existing Save New Game overwrite confirmation verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-010",
+      "status": "Passed",
+      "result": "GKS-B731でTitle New Game入口をSave Ownerの上書き確認へ接続。Saveなしでは確認不要、SaveありではPlayer確認を必須とし、Cancel時はNew Game候補生成・Save書込み・live state切替・画面遷移を行わない。承認後のみ既存B730のIntegrity-first / Atomic Save初期化経路へ進む。",
+      "evidence": "game/assets/js/app-runtime.js sha256=3dd4d5ef853517899a72930fdf1def0798d3df0bb0849cf503c7b85be75a8010; temporary targeted Node verification TASK_R30_010_TARGETED_PASS cases=15; confirmation occurs before prepareNewGameSnapshot and commitPreparedNewGame; Cancel side effects=0; source deletions=0; Game data changes/exclusions=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:04:29+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:04:29+09:00",
+      "updated_at": "2026-08-22T10:04:29+09:00"
+    },
+    {
+      "id": "CHK-R30-010-GATES",
+      "title": "TASK-R30-010 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-010",
+      "status": "Passed",
+      "result": "ユーザー提供GKS-B730 / GA-B486.211完全Sourceをexact baselineとしたGKS-B731更新はTarget Quick / Update Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、再展開後641/641完全一致、persistent payload 639/639完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a tree=805f380c94a9cecea75477455acfb3df801de97c31d9a8755dee2befed43cac3; target manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=978dbbc87b76a4c4859863c04b240c8c597f3d9c84a5af8f36f4793c5b77b8db; Target Quick 11/11 PASS evidence_sha256=048d5c10df3a6dc795302f0f4889fd0980326030031e3906290a106031f3ca36; Update Quick 13/13 PASS evidence_sha256=a86a6f8ffe39e28e62b514a99d9fda45bd2b85e64330807500a910d83267f2c8; Accept 13/13 PASS evidence_sha256=9cb8a7bc6150489529135168eeab3e412c73e599a21934129b4c99c082516f0f; Release 13/13 PASS evidence_sha256=db665ac8ce26d8f67eb6e0639f5ab4409e204bd05cb65e08d382f86d8ee9be10; update ZIP sha256=79f8fcda5d0e543e512155840828c366888e2ea87ffce47d260ffc82f29bddd5 files=641; Build marker check PASS files=190.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:04:29+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:04:29+09:00",
+      "updated_at": "2026-08-22T10:04:29+09:00"
     }
   ],
   "workflow": {
@@ -9811,6 +9894,18 @@
     },
     {
       "at": "2026-08-22T00:58:06.007Z",
+      "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-22T10:04:29+09:00",
+      "message": "AI_STARTからGKS-B730 Human Apply後Current Sourceを検証。New Game初期化SequenceをCurrent実体で再確認し、前回更新persistent payload 639/639完全一致、Targeted 12/12、Current Quick 12/12、Build marker PASS。TASK-R30-009をDone / IMPL-R30-009をAppliedへ更新。"
+    },
+    {
+      "at": "2026-08-22T10:04:29+09:00",
+      "message": "続けて明示指示によりTASK-R30-010 既存SaveありNew Game上書き確認を1件実装。GKS-B731でSaveあり時のPlayer確認をNew Game候補生成前に必須化し、Cancel時は既存Save/live stateを完全維持。Targeted 15/15、Target Quick 11/11、Update Quick/Accept/Release 13/13 PASS。TASK-R30-010はHuman Apply待ちDoing、TASK-R30-011はBlocked維持。"
+    },
+    {
+      "at": "2026-08-22T01:10:34.182Z",
       "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
     }
   ],
