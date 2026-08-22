@@ -1,77 +1,277 @@
-/* GKS-B740 Development Git Store
- * Development Project canonical authority I/O only.
- * - Project body persistent authority is exactly development-project-data/<workspace.id>.json.
- * - Browser registry is metadata only; Session is working memory only.
- * - authority.instance_id + authority.revision are mandatory.
- * - Old instance / stale revision / canonical authority conflicts fail closed.
- * - No registry self-heal may load another Project body.
- * - No automatic duplicate deletion. Complete deletion is an explicit Human operation.
+/* Development Git Store — simplified canonical project I/O.
+ * Git is the persistent authority.
+ * Project list uses development-project-data/index.json (title + id only).
+ * Project body is fetched only after the user confirms opening a title.
+ * The browser keeps exactly one current project body in the Studio host.
+ * Concurrent updates are guarded only by the Git blob SHA loaded with the project.
  */
 (function(global){
 'use strict';
+
 const DATA_ROOT='development-project-data/';
+const INDEX_PATH=DATA_ROOT+'index.json';
 const API_VERSION='2022-11-28';
 const CONNECTION_SETTINGS_KEY='gks_development_git_connection_v2';
 const DEFAULT_CONNECTION=Object.freeze({owner:'kj2whvbzjn-hue',repo:'guild-adventure-studio',branch:'sub'});
-const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,registryVerified:new Set()};
+const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,indexRows:[],indexRemote:null,indexRefreshAt:0,indexPromise:null};
+
 const byId=id=>document.getElementById(id);
 const text=v=>String(v??'').trim();
-const safeId=v=>text(v).replace(/[^A-Za-z0-9._-]+/g,'_')||'development-project';
-const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function setStatus(message,kind=''){const el=byId('devGitStatus');if(!el)return;el.className='dev-git-status'+(kind?` is-${kind.toLowerCase()}`:'');el.textContent=message;}
-function setBusy(flag){state.busy=!!flag;document.querySelectorAll('[data-dev-git-busy]').forEach(el=>{el.disabled=state.busy});}
-function normalizePath(value){return text(value).replace(/^\/+/, '').replace(/\/{2,}/g,'/');}
-function defaultPathForProjectId(id){const key=safeId(id);return key?`${DATA_ROOT}${key}.json`:'';}
-function projectAuthority(project){const a=project?.authority||{};return {version:Number(a.version),instance_id:text(a.instance_id),revision:Number(a.revision),canonical_path:normalizePath(a.canonical_path)};}
-function assertSameInstance(a,b){const aa=projectAuthority(a),bb=projectAuthority(b);if(text(a?.workspace?.id)!==text(b?.workspace?.id))throw new Error('workspace.id authority mismatch.');if(aa.instance_id!==bb.instance_id)throw new Error(`Project instance mismatch. current=${aa.instance_id} / incoming=${bb.instance_id}`);return {current:aa,incoming:bb};}
-function stable(value){if(Array.isArray(value))return value.map(stable);if(value&&typeof value==='object'){const out={};Object.keys(value).sort().forEach(k=>{out[k]=stable(value[k])});return out}return value;}
+const safeId=v=>text(v).replace(/[^A-Za-z0-9._-]+/g,'_');
+const canonicalPath=id=>`${DATA_ROOT}${safeId(id)}.json`;
+
+function stable(value){
+  if(Array.isArray(value))return value.map(stable);
+  if(value&&typeof value==='object'){
+    const out={};
+    Object.keys(value).sort().forEach(k=>{out[k]=stable(value[k]);});
+    return out;
+  }
+  return value;
+}
 function equalProject(a,b){return JSON.stringify(stable(a))===JSON.stringify(stable(b));}
-function entryPath(entry){return defaultPathForProjectId(entry?.id||'');}
-function refreshPathFromEntry(entry,{force=false}={}){const input=byId('devGitPath');if(!input)return;const next=entryPath(entry);if(force||next)input.value=next;input.placeholder=`${DATA_ROOT}DEV-PROJ-0001.json`;input.readOnly=true;input.setAttribute('aria-readonly','true');const button=byId('devGitPathEdit');if(button)button.hidden=true;}
-function rememberedConnection(){try{const raw=JSON.parse(localStorage.getItem(CONNECTION_SETTINGS_KEY)||'{}');return {owner:text(raw.owner),repo:text(raw.repo),branch:text(raw.branch)}}catch(_){return {owner:'',repo:'',branch:''}}}
-function saveRememberedConnection(){const owner=text(byId('devGitOwner')?.value),repo=text(byId('devGitRepo')?.value),branch=text(byId('devGitBranch')?.value)||DEFAULT_CONNECTION.branch;try{localStorage.setItem(CONNECTION_SETTINGS_KEY,JSON.stringify({owner,repo,branch}))}catch(_){}}
-function loadRememberedConnection(){const saved=rememberedConnection(),initial={owner:saved.owner||DEFAULT_CONNECTION.owner,repo:saved.repo||DEFAULT_CONNECTION.repo,branch:saved.branch||DEFAULT_CONNECTION.branch};byId('devGitOwner').value=initial.owner;byId('devGitRepo').value=initial.repo;byId('devGitBranch').value=initial.branch;}
-function connection(requireToken=false,projectId=''){const owner=text(byId('devGitOwner')?.value)||DEFAULT_CONNECTION.owner,repo=text(byId('devGitRepo')?.value)||DEFAULT_CONNECTION.repo,branch=text(byId('devGitBranch')?.value)||DEFAULT_CONNECTION.branch,token=text(byId('devGitToken')?.value),id=text(projectId)||text(currentEntry()?.id),path=id?defaultPathForProjectId(id):normalizePath(byId('devGitPath')?.value);saveRememberedConnection();if(!owner||!repo||!branch)throw new Error('Owner / Repository / Branchを入力してください。');if(!path)throw new Error('Project IDを確定できません。JSONファイル→Git保存で登録するか、開くProject IDを指定してください。');if(path!==defaultPathForProjectId(id||path.slice(DATA_ROOT.length,-5)))throw new Error('非canonical Git Pathを拒否しました。');if(requireToken&&!token)throw new Error('GitHub PATを入力してください。');return {owner,repo,branch,path,token};}
-function headers(token,accept='application/vnd.github+json'){const h={'Accept':accept,'X-GitHub-Api-Version':API_VERSION};if(token)h.Authorization=`Bearer ${token}`;return h;}
-function apiUrl(c,withRef=true){const p=c.path.split('/').map(encodeURIComponent).join('/'),base=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${p}`;return withRef?`${base}?ref=${encodeURIComponent(c.branch)}`:base;}
-async function githubFailure(res,label){throw new Error(`${label}: HTTP ${res.status} ${await res.text()}`);}
-function responseBlobSha(res){const etag=text(res.headers.get('etag')).replace(/^W\//,'').replace(/^"|"$/g,'');return /^[0-9a-f]{40}$/i.test(etag)?etag:'';}
-async function remoteFile(c,{requireSha=false}={}){const res=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});if(res.status===404)return {exists:false,sha:'',size:0,raw:''};if(!res.ok)return await githubFailure(res,'GitHub JSON取得失敗');const raw=await res.text(),size=new TextEncoder().encode(raw).length;let sha=responseBlobSha(res);if(requireSha&&!sha){const metaRes=await fetch(apiUrl(c,true),{headers:headers(c.token,'application/vnd.github.object+json'),cache:'no-store'});if(!metaRes.ok)return await githubFailure(metaRes,'GitHub metadata取得失敗');const obj=await metaRes.json();sha=text(obj.sha)}return {exists:true,sha,size,raw};}
-function utf8Base64(value){const bytes=new TextEncoder().encode(String(value));let binary='';for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(binary);}
-function base64Utf8(value){const binary=atob(String(value||'').replace(/\s+/g,'')),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new TextDecoder().decode(bytes);}
-function repoApi(c,path=''){return `https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}${path}`;}
-function branchRefPath(branch){return String(branch||'main').split('/').map(encodeURIComponent).join('/');}
-async function gitApi(c,path,options={}){const res=await fetch(repoApi(c,path),{...options,headers:{...headers(c.token),...(options.headers||{})}});if(!res.ok)throw new Error(`GitHub Git API失敗: ${options.method||'GET'} ${path} / HTTP ${res.status} ${await res.text()}`);return res.status===204?null:await res.json();}
-async function gitBlobText(c,sha){const blob=await gitApi(c,`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blobがbase64ではありません。');return base64Utf8(blob.content||'');}
-async function branchTree(c){const ref=await gitApi(c,`/git/ref/heads/${branchRefPath(c.branch)}`),headSha=text(ref?.object?.sha);if(!headSha)throw new Error(`Branch HEADを取得できません: ${c.branch}`);const commit=await gitApi(c,`/git/commits/${encodeURIComponent(headSha)}`),baseTree=text(commit?.tree?.sha);if(!baseTree)throw new Error('Branch HEADのTreeを取得できません。');const tree=await gitApi(c,`/git/trees/${encodeURIComponent(baseTree)}?recursive=1`);return {headSha,baseTree,entries:Array.isArray(tree?.tree)?tree.tree:[]};}
-function parseProject(raw){const obj=JSON.parse(raw);if(!obj||typeof obj!=='object'||Array.isArray(obj))throw new Error('Development Project JSON objectではありません。');return state.host.normalizeProject(obj);}
-async function projectCandidates(c,projectId){const id=text(projectId),tree=await branchTree(c),out=[];for(const item of tree.entries.filter(x=>x.type==='blob'&&x.path.startsWith(DATA_ROOT)&&x.path.endsWith('.json'))){try{const raw=await gitBlobText(c,item.sha),obj=JSON.parse(raw);if(text(obj?.workspace?.id)!==id)continue;let normalized=null,error='';try{normalized=state.host.normalizeProject(obj)}catch(e){error=e.message||String(e)}const a=obj?.authority||{};out.push({path:item.path,sha:item.sha,instance_id:text(a.instance_id)||'(legacy/missing)',revision:Number.isInteger(Number(a.revision))?Number(a.revision):null,valid:!!normalized,error});}catch(e){/* Non-project JSON is irrelevant. */}}return {tree,rows:out};}
-function duplicateMessage(rows){return rows.map(x=>`${x.path} / instance=${x.instance_id} / revision=${x.revision??'(missing)'}${x.valid?'':' / INVALID'}`).join('\n');}
-async function commitProjectOnly(c,jsonText,message,expectedProjectSha=''){const body={message:text(message)||'Update Development Project',content:utf8Base64(jsonText),branch:c.branch};if(expectedProjectSha)body.sha=text(expectedProjectSha);const res=await fetch(apiUrl(c,false),{method:'PUT',headers:{...headers(c.token),'Content-Type':'application/json'},body:JSON.stringify(body)});if(!res.ok)return await githubFailure(res,'Development canonical Git保存失敗');const out=await res.json();const fileSha=text(out?.content?.sha),commitSha=text(out?.commit?.sha);if(!fileSha||!commitSha)throw new Error('GitHub canonical保存応答にSHAがありません。');return {file_sha:fileSha,commit_sha:commitSha};}
-async function commitDeletes(c,paths,message){if(!paths.length)throw new Error('削除対象がありません。');const {headSha,baseTree}=await branchTree(c),newTree=await gitApi(c,'/git/trees',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:baseTree,tree:paths.map(path=>({path,mode:'100644',type:'blob',sha:null}))})}),newCommit=await gitApi(c,'/git/commits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,tree:newTree.sha,parents:[headSha]})});await gitApi(c,`/git/refs/heads/${branchRefPath(c.branch)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:newCommit.sha,force:false})});return {commit_sha:text(newCommit.sha)};}
-function registeredConnection(entry){const direct=entry?.git_remote&&typeof entry.git_remote==='object'?entry.git_remote:{},fallback=state.host?.getDefaultGitRemote?.(entry?.id)||{},saved=rememberedConnection();return {owner:text(direct.owner)||text(fallback.owner)||saved.owner||DEFAULT_CONNECTION.owner,repo:text(direct.repo)||text(fallback.repo)||saved.repo||DEFAULT_CONNECTION.repo,branch:text(direct.branch)||text(fallback.branch)||saved.branch||DEFAULT_CONNECTION.branch};}
-function fillFromEntry(entry){const preferred=registeredConnection(entry);byId('devGitOwner').value=preferred.owner;byId('devGitRepo').value=preferred.repo;byId('devGitBranch').value=preferred.branch;refreshPathFromEntry(entry,{force:true});saveRememberedConnection();render();}
 function currentEntry(){return state.host?.getActiveEntry?.()||null;}
 function currentWorkspace(){return state.host?.getCurrentWorkspace?.()||null;}
-function render(){const entry=currentEntry(),loaded=entry?state.loaded.has(entry.id):false,dirty=entry?state.dirty.has(entry.id):false;refreshPathFromEntry(entry);const el=byId('devGitCurrent');if(el)el.innerHTML=entry?`<b>${esc(entry.name||entry.id)}</b><br>ID: ${esc(entry.id)} / canonical / instance ${esc(entry.authority?.instance_id||'?')} / revision ${esc(entry.authority?.revision??'?')} / Session ${loaded?'読込済':'未読込'} / Git未保存 ${dirty?'あり':'なし'}`:'現在案件なし';const save=byId('devGitSaveCurrent');if(save)save.disabled=state.busy||!entry||!loaded;const reload=byId('devGitReloadCurrent');if(reload)reload.disabled=state.busy||!entry||!loaded;}
-function isLoaded(id){return state.loaded.has(String(id||''));}function isDirty(id){return state.dirty.has(String(id||''));}function isRegistryVerified(id){return state.registryVerified.has(String(id||''));}function markDirty(id){const key=String(id||'');if(!key||!state.loaded.has(key))return;state.dirty.add(key);render();setStatus('canonical SessionにGit未保存のrevisionがあります。','WARN');}function markClean(id){state.dirty.delete(String(id||''));render();}
-async function openFromGit(options={}){try{setBusy(true);let expectedProjectId=text(options?.expectedProjectId)||text(currentEntry()?.id);if(!expectedProjectId){expectedProjectId=text(prompt('開くDevelopment Project IDを入力してください。',''));if(!expectedProjectId)return false;}const c=connection(false,expectedProjectId);byId('devGitPath').value=defaultPathForProjectId(expectedProjectId);setStatus('canonical Git JSON 1件を検証しています…');const file=await remoteFile(c,{requireSha:true});if(!file.exists)throw new Error(`canonical JSONがありません: ${c.path}`);const project=parseProject(file.raw),id=text(project.workspace.id);if(id!==expectedProjectId)throw new Error(`canonical pathのworkspace.id不一致。expected=${expectedProjectId} / actual=${id}`);if(project.authority.canonical_path!==c.path)throw new Error('authority.canonical_path不一致。');const existing=state.host?.getRegistryEntry?.(id);if(existing?.authority?.instance_id&&existing.authority.instance_id!==project.authority.instance_id)throw new Error(`Registry instanceとGit instanceが一致しません。自動修復しません。registry=${existing.authority.instance_id} / git=${project.authority.instance_id}`);const current=currentEntry();if(current&&current.id!==id&&isDirty(current.id))throw new Error(`現在案件 ${current.id} に未保存revisionがあります。先にGit保存してください。`);state.loaded.add(id);state.dirty.delete(id);state.registryVerified.add(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:file.sha});fillFromEntry(state.host.getActiveEntry());setStatus(`canonical Git案件をSessionへ読込: ${id}\ninstance ${project.authority.instance_id} / revision ${project.authority.revision}\nRemote SHA ${file.sha}`,'OK');return true;}catch(e){setStatus('読込失敗: '+e.message,'ERROR');return false}finally{setBusy(false);render();}}
-async function uploadFile(file){if(!file)return;try{setBusy(true);const raw=await file.text(),project=parseProject(raw),id=text(project.workspace.id),canonical=defaultPathForProjectId(id);if(project.authority.canonical_path!==canonical)throw new Error(`authority.canonical_path不一致: ${project.authority.canonical_path} / expected ${canonical}`);const existingRegistry=state.host?.getRegistryEntry?.(id);if(existingRegistry?.authority?.instance_id&&existingRegistry.authority.instance_id!==project.authority.instance_id)throw new Error(`Registryに別instanceが残っています。GitへCommitする前に完全削除で旧metadataを除去してください。registry=${existingRegistry.authority.instance_id} / incoming=${project.authority.instance_id}`);byId('devGitPath').value=canonical;const c=connection(true,id);const remote=await remoteFile(c,{requireSha:true});if(remote.exists){let remoteProject=null;try{remoteProject=parseProject(remote.raw)}catch(e){if(!confirm(`canonical Pathに旧形式または不正Project JSONがあります。自動migrationは行いません。\n${canonical}\n\nHuman明示操作として、今回のauthority付きJSONでこの1ファイルを完全置換しますか？\n旧内容はRuntimeで変換しません。`))return}if(remoteProject){const pair=assertSameInstance(remoteProject,project);if(pair.incoming.revision<=pair.current.revision){if(pair.incoming.revision===pair.current.revision&&equalProject(remoteProject,project)){setStatus('Remoteは同一instance/revision/contentです。変更なし。','OK');return}throw new Error(`revisionが前進していません。remote=${pair.current.revision} / incoming=${pair.incoming.revision}`)}}}const out=await commitProjectOnly(c,JSON.stringify(project,null,2)+'\n',`Register canonical Development Project ${id}`,remote.sha);state.loaded.add(id);state.dirty.delete(id);state.registryVerified.add(id);state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:canonical,sha:out.file_sha});fillFromEntry(state.host.getActiveEntry());setStatus(`canonical登録完了: ${id}\ninstance ${project.authority.instance_id} / revision ${project.authority.revision}\nCommit ${out.commit_sha}`,'OK');}catch(e){setStatus('Git保存失敗: '+e.message,'ERROR')}finally{byId('devGitFile').value='';setBusy(false);render();}}
-async function saveCurrent(){try{setBusy(true);const entry=currentEntry();if(!entry||!isLoaded(entry.id))throw new Error('canonical Git案件をSessionへ読み込んでください。');if(!isDirty(entry.id)){setStatus('Git未保存の変更はありません。','OK');return}const ws=currentWorkspace(),c=connection(true,entry.id);if(c.path!==ws.authority.canonical_path)throw new Error('canonical path mismatch.');const file=await remoteFile(c,{requireSha:true});if(!file.exists)throw new Error('Remote canonical JSONがありません。完全削除後の再登録はJSONファイル→Git保存を使用してください。');const remoteProject=parseProject(file.raw),pair=assertSameInstance(remoteProject,ws);if(pair.current.revision>=pair.incoming.revision)throw new Error(`Remote revisionとSession revisionが競合しています。remote=${pair.current.revision} / session=${pair.incoming.revision}`);if(text(entry.git_remote?.sha)&&text(entry.git_remote.sha)!==text(file.sha))throw new Error(`Remote SHAがSession読込後に変化しました。reloadして競合を解消してください。loaded=${entry.git_remote.sha} / remote=${file.sha}`);const out=await commitProjectOnly(c,JSON.stringify(ws,null,2)+'\n',`Commit Development Project ${entry.id} revision ${ws.authority.revision}`,file.sha);state.host.updateGitRemote(entry.id,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:out.file_sha},ws.authority);markClean(entry.id);setStatus(`canonical Git保存完了\ninstance ${ws.authority.instance_id} / revision ${ws.authority.revision}\nCommit ${out.commit_sha}`,'OK');}catch(e){setStatus('Git保存失敗: '+e.message,'ERROR')}finally{setBusy(false);render();}}
-async function reloadCurrent(){try{setBusy(true);const entry=currentEntry();if(!entry||!isLoaded(entry.id))throw new Error('canonical Git案件をSessionへ読み込んでください。');if(isDirty(entry.id))throw new Error('SessionにGit未保存revisionがあります。Remoteで破棄せず、先に保存または案件を閉じてください。');const local=currentWorkspace(),c=connection(false,entry.id),file=await remoteFile(c,{requireSha:true});if(!file.exists)throw new Error('Remote canonical JSONがありません。');const remoteProject=parseProject(file.raw),pair=assertSameInstance(local,remoteProject);if(remoteProject.authority.canonical_path!==c.path)throw new Error('authority.canonical_path不一致。');if(pair.incoming.revision<pair.current.revision)throw new Error(`Remote stale revisionを拒否しました。session=${pair.current.revision} / remote=${pair.incoming.revision}`);if(pair.incoming.revision===pair.current.revision&&!equalProject(local,remoteProject))throw new Error('同一revisionで内容が異なります。自動勝敗判定せずConflict停止します。');state.loaded.add(entry.id);state.registryVerified.add(entry.id);state.host.replaceGitWorkspace(remoteProject,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:file.sha});setStatus(`Remote再読込完了\nrevision ${remoteProject.authority.revision}\nRemote SHA ${file.sha}`,'OK');}catch(e){setStatus('再読込失敗: '+e.message,'ERROR')}finally{setBusy(false);render();}}
-async function deleteCurrentProjectCompletely(){try{setBusy(true);const entry=currentEntry();let projectId=text(entry?.id);if(!projectId){projectId=text(prompt('完全削除するDevelopment Project IDを入力してください。',''));if(!projectId)return}const c=connection(true,projectId),scan=await projectCandidates(c,projectId),hasRegistry=!!state.host?.getRegistryEntry?.(projectId);if(!scan.rows.length&&!hasRegistry&&!state.loaded.has(projectId))throw new Error(`workspace.id=${projectId} のGit Project / Registry / Session参照はありません。`);const listing=scan.rows.length?duplicateMessage(scan.rows):'(Git Project JSON 0件 / metadata cleanup only)',typed=prompt(`Development Project論理IDを完全削除します。
-Git上で同じworkspace.idを持つ全世代・全Pathを削除し、ブラウザRegistry/Session/旧cache参照も消します。
+function commonGitValue(id){return text(byId(id)?.value);}
+function rememberedConnection(){try{const x=JSON.parse(localStorage.getItem(CONNECTION_SETTINGS_KEY)||'{}');return {owner:text(x.owner),repo:text(x.repo),branch:text(x.branch)}}catch(_){return {owner:'',repo:'',branch:''}}}
 
-対象:
-${listing}
+function connectionFor(projectId='',requireToken=false,{index=false}={}){
+  const id=text(projectId);
+  const entry=id?state.host?.getRegistryEntry?.(id):null;
+  const fallback=state.host?.getDefaultGitRemote?.(id)||{};
+  const remote=entry?.git_remote||fallback||{},remembered=rememberedConnection();
+  const owner=text(remote.owner)||remembered.owner||commonGitValue('ghOwner')||DEFAULT_CONNECTION.owner;
+  const repo=text(remote.repo)||remembered.repo||commonGitValue('ghRepo')||DEFAULT_CONNECTION.repo;
+  const branch=text(remote.branch)||remembered.branch||DEFAULT_CONNECTION.branch||commonGitValue('ghBranch');
+  const token=commonGitValue('ghToken');
+  const path=index?INDEX_PATH:canonicalPath(id);
+  if(!owner||!repo||!branch)throw new Error('StudioのGitHub接続設定でOwner / Repository / Branchを設定してください。');
+  if(!index&&!id)throw new Error('Project IDがありません。');
+  if(requireToken&&!token)throw new Error('StudioのGitHub接続設定でPATを入力してください。');
+  return {owner,repo,branch,path,token};
+}
+function headers(token,accept='application/vnd.github+json'){
+  const h={'Accept':accept,'X-GitHub-Api-Version':API_VERSION};
+  if(token)h.Authorization=`Bearer ${token}`;
+  return h;
+}
+function contentsUrl(c,withRef=true){
+  const p=c.path.split('/').map(encodeURIComponent).join('/');
+  const base=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}/contents/${p}`;
+  return withRef?`${base}?ref=${encodeURIComponent(c.branch)}`:base;
+}
+async function failure(res,label){throw new Error(`${label}: HTTP ${res.status} ${await res.text()}`);}
+function responseSha(res){
+  const etag=text(res.headers.get('etag')).replace(/^W\//,'').replace(/^"|"$/g,'');
+  return /^[0-9a-f]{40}$/i.test(etag)?etag:'';
+}
+async function remoteFile(c,{requireSha=false}={}){
+  const res=await fetch(contentsUrl(c,true),{headers:headers(c.token,'application/vnd.github.raw+json'),cache:'no-store'});
+  if(res.status===404)return {exists:false,sha:'',raw:''};
+  if(!res.ok)return failure(res,'GitHub取得失敗');
+  const raw=await res.text();let sha=responseSha(res);
+  if(requireSha&&!sha){
+    const meta=await fetch(contentsUrl(c,true),{headers:headers(c.token,'application/vnd.github.object+json'),cache:'no-store'});
+    if(!meta.ok)return failure(meta,'GitHub metadata取得失敗');
+    sha=text((await meta.json()).sha);
+  }
+  return {exists:true,sha,raw};
+}
+function utf8Base64(value){
+  const bytes=new TextEncoder().encode(String(value));let binary='';
+  for(let i=0;i<bytes.length;i+=0x8000)binary+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+  return btoa(binary);
+}
+async function putFile(c,content,message,expectedSha=''){
+  const body={message:text(message)||'Update Development Project',content:utf8Base64(content),branch:c.branch};
+  if(expectedSha)body.sha=expectedSha;
+  const res=await fetch(contentsUrl(c,false),{method:'PUT',headers:{...headers(c.token),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok)return failure(res,'GitHub保存失敗');
+  const out=await res.json();
+  return {file_sha:text(out?.content?.sha),commit_sha:text(out?.commit?.sha)};
+}
+async function deleteFile(c,sha,message){
+  const res=await fetch(contentsUrl(c,false),{method:'DELETE',headers:{...headers(c.token),'Content-Type':'application/json'},body:JSON.stringify({message,sha,branch:c.branch})});
+  if(!res.ok)return failure(res,'GitHub削除失敗');
+  return res.json();
+}
+function parseProject(raw){
+  const obj=JSON.parse(raw);
+  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw new Error('Development Project JSONではありません。');
+  return state.host.normalizeProject(obj);
+}
+function assertSameProject(remote,local){
+  const rid=text(remote?.workspace?.id),lid=text(local?.workspace?.id);
+  if(rid!==lid)throw new Error(`workspace.id競合: remote=${rid} / local=${lid}`);
+  const ri=text(remote?.authority?.instance_id),li=text(local?.authority?.instance_id);
+  if(ri!==li)throw new Error(`Project instance競合: remote=${ri} / local=${li}`);
+}
 
-取消不能です。続行するには次を正確に入力してください:
-DELETE ${projectId}`,'');if(typed!==`DELETE ${projectId}`)throw new Error('完全削除確認文字列が一致しません。');const paths=scan.rows.map(x=>x.path);let commitSha='';if(paths.length){const out=await commitDeletes(c,paths,`Delete Development Project authority ${projectId}`);commitSha=out.commit_sha}state.loaded.delete(projectId);state.dirty.delete(projectId);state.registryVerified.delete(projectId);state.host.removeProjectMetadata(projectId);setStatus(`完全削除完了: ${projectId}
-Git削除 ${paths.length}件${commitSha?` / Commit ${commitSha}`:''}
-Registry / Session / obsolete browser refs cleared`,'OK');}catch(e){setStatus('完全削除失敗: '+e.message,'ERROR')}finally{setBusy(false);render();}}
-async function testConnection(){try{setBusy(true);const entry=currentEntry(),c=connection(false,entry?.id||'DEV-PROJ-0001');setStatus('接続確認中…');const file=await remoteFile(c);setStatus(file.exists?'接続OK / canonical path fileあり':'接続OK / canonical path fileなし','OK')}catch(e){setStatus('接続失敗: '+e.message,'ERROR')}finally{setBusy(false);render();}}
-function init(host){if(!host||typeof host.normalizeProject!=='function'||typeof host.openGitProject!=='function'||typeof host.getActiveEntry!=='function')throw new Error('Development Git Store host API is invalid.');state.host=host;loadRememberedConnection();byId('devGitFile')?.addEventListener('change',e=>uploadFile(e.target.files?.[0]));['devGitOwner','devGitRepo','devGitBranch'].forEach(id=>{byId(id)?.addEventListener('change',saveRememberedConnection);byId(id)?.addEventListener('blur',saveRememberedConnection)});global.addEventListener('beforeunload',e=>{if(state.dirty.size){e.preventDefault();e.returnValue=''}});fillFromEntry(currentEntry());return api;}
-function focus(){fillFromEntry(currentEntry());byId('developmentGitStoreCard')?.scrollIntoView({behavior:'smooth',block:'start'});byId('devGitOwner')?.focus();}
-const api={init,render,focus,fillFromEntry,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,openFromGit,saveCurrent,reloadCurrent,deleteCurrentProjectCompletely,testConnection};
+function render(){
+  const entry=currentEntry();
+  const dirty=!!entry&&state.dirty.has(entry.id);
+  byId('developmentDirtyIndicator')?.classList.toggle('hidden',!dirty);
+  const save=byId('devProjectSaveButton');if(save)save.disabled=state.busy||!dirty;
+}
+function isLoaded(id){return state.loaded.has(text(id));}
+function isDirty(id){return state.dirty.has(text(id));}
+function isRegistryVerified(){return true;}
+function markDirty(id){const key=text(id);if(!key||!state.loaded.has(key))return;state.dirty.add(key);render();}
+function markClean(id){state.dirty.delete(text(id));render();}
+function discardCurrent(){const id=text(currentEntry()?.id);if(id){state.loaded.delete(id);state.dirty.delete(id);}render();}
+
+function normalizeIndex(raw){
+  const rows=Array.isArray(raw?.projects)?raw.projects:[];
+  const seen=new Set(),out=[];
+  for(const row of rows){
+    const id=text(row?.id),title=text(row?.title||row?.name);
+    if(!id||!title||seen.has(id))continue;
+    seen.add(id);out.push({id,title});
+  }
+  return out.sort((a,b)=>a.title.localeCompare(b.title,'ja'));
+}
+function localIndexSeed(){
+  return normalizeIndex({projects:state.host?.getProjectIndexSeed?.()||[]});
+}
+async function refreshProjectIndex({quiet=false,force=false}={}){
+  const now=Date.now();
+  if(!force&&state.indexPromise)return state.indexPromise;
+  if(!force&&now-state.indexRefreshAt<5000)return state.indexRows;
+  state.indexRefreshAt=now;
+  state.indexPromise=(async()=>{
+    try{
+      const c=connectionFor('',false,{index:true});
+      let rows=[];const file=await remoteFile(c,{requireSha:true});
+      if(!file.exists){state.indexRows=localIndexSeed();return state.indexRows;}
+      const raw=JSON.parse(file.raw);rows=normalizeIndex(raw);
+      state.indexRemote={...c,sha:file.sha};
+      state.indexRows=rows;
+      state.host?.replaceProjectIndex?.(rows,{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:file.sha||''});
+      return rows;
+    }catch(e){if(!quiet)alert('案件一覧をGitから取得できません: '+e.message);return state.indexRows;}
+    finally{state.indexPromise=null;render();}
+  })();
+  return state.indexPromise;
+}
+async function writeIndex(rows,c){
+  const ic={...c,path:INDEX_PATH};
+  const current=await remoteFile(ic,{requireSha:true});
+  const normalized=normalizeIndex({projects:rows});
+  const payload=JSON.stringify({schema_version:1,projects:normalized.map(x=>({id:x.id,title:x.title}))},null,2)+'\n';
+  const out=await putFile(ic,payload,'Update Development Project index',current.sha||'');
+  state.indexRows=normalized;state.indexRemote={...ic,sha:out.file_sha};
+  state.host?.replaceProjectIndex?.(normalized,{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:out.file_sha});
+  return out;
+}
+async function syncIndexEntry(project,c){
+  const id=text(project?.workspace?.id),title=text(project?.workspace?.name);if(!id||!title)return;
+  let rows=await refreshProjectIndex({quiet:true,force:true});
+  const merged=new Map(localIndexSeed().map(x=>[x.id,x]));
+  for(const row of rows||[])merged.set(row.id,row);
+  rows=[...merged.values()];
+  const i=rows.findIndex(x=>x.id===id);if(i>=0)rows[i]={id,title};else rows.push({id,title});
+  await writeIndex(rows,c);
+}
+
+async function openFromGit(options={}){
+  try{
+    state.busy=true;render();
+    const id=text(options.expectedProjectId);if(!id)throw new Error('Project IDがありません。');
+    const c=connectionFor(id,false),file=await remoteFile(c,{requireSha:true});
+    if(!file.exists)throw new Error(`Gitに案件がありません: ${c.path}`);
+    const project=parseProject(file.raw);
+    if(text(project.workspace.id)!==id)throw new Error(`Project ID不一致: expected=${id} / actual=${project.workspace.id}`);
+    if(text(project.authority.canonical_path)!==c.path)throw new Error('canonical_pathがGit Pathと一致しません。');
+    state.loaded.clear();state.dirty.clear();state.loaded.add(id);
+    state.host.openGitProject(project,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:file.sha});
+    return true;
+  }catch(e){alert('案件を開けませんでした: '+e.message);return false;}
+  finally{state.busy=false;render();}
+}
+
+async function saveCurrent(){
+  const entry=currentEntry();
+  if(!entry||!isLoaded(entry.id))return alert('案件を開いてください。');
+  if(!isDirty(entry.id))return;
+  try{
+    state.busy=true;render();
+    const local=state.host.normalizeProject(currentWorkspace());
+    const c=connectionFor(entry.id,true),file=await remoteFile(c,{requireSha:true});
+    if(!file.exists)throw new Error('Git上の案件が見つかりません。');
+    const remote=parseProject(file.raw);assertSameProject(remote,local);
+    const loadedSha=text(entry.git_remote?.sha);
+    if(!loadedSha)throw new Error('Git読込時のSHAがありません。案件を開き直してください。');
+    if(!file.sha||loadedSha!==file.sha)throw new Error('案件を開いた後にGit側が更新されています。案件を開き直してください。');
+    local.workspace.updated_at=new Date().toISOString();
+    const normalized=state.host.normalizeProject(local);
+    const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`Save Development Project ${entry.id}`,file.sha);
+    const verify=await remoteFile(c,{requireSha:true});if(!verify.exists)throw new Error('保存後の再取得に失敗しました。');
+    const verified=parseProject(verify.raw);if(!equalProject(verified,normalized))throw new Error('保存後にGitから再取得した内容が一致しません。');
+    state.host.replaceGitWorkspace(verified,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:verify.sha||out.file_sha});
+    markClean(entry.id);
+    try{await syncIndexEntry(verified,c);}catch(e){console.warn('[Development index]',e);}
+    const status=byId('developmentStoreStatus');if(status)status.textContent='Gitに保存しました';
+  }catch(e){alert('保存できませんでした: '+e.message);}
+  finally{state.busy=false;render();state.host?.refresh?.();}
+}
+
+async function reloadCurrent(){
+  const entry=currentEntry();if(!entry)return false;
+  if(isDirty(entry.id)&&!confirm('未保存の変更を破棄してGitから読み直しますか？'))return false;
+  return openFromGit({expectedProjectId:entry.id});
+}
+
+async function createProject(title){
+  try{
+    state.busy=true;render();
+    await refreshProjectIndex({quiet:true,force:true});
+    const id=state.host.nextProjectId();
+    const project=state.host.createBlankProject(id,text(title));
+    const c=connectionFor(id,true),existing=await remoteFile(c,{requireSha:true});
+    if(existing.exists)throw new Error(`同じIDの案件がGitにあります: ${id}`);
+    const normalized=state.host.normalizeProject(project);
+    const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`Create Development Project ${id}`,'');
+    const verify=await remoteFile(c,{requireSha:true});const verified=parseProject(verify.raw);
+    if(!equalProject(verified,normalized))throw new Error('新規案件の保存後検証に失敗しました。');
+    state.loaded.clear();state.dirty.clear();state.loaded.add(id);
+    state.host.openGitProject(verified,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:verify.sha||out.file_sha});
+    await syncIndexEntry(verified,c);
+    return true;
+  }catch(e){alert('新規案件を作成できませんでした: '+e.message);return false;}
+  finally{state.busy=false;render();state.host?.refresh?.();}
+}
+
+async function deleteCurrentProjectCompletely(){
+  const entry=currentEntry();if(!entry)return;
+  const name=entry.name||entry.id;
+  if(!confirm(`「${name}」を削除しますか？\nGit上の案件JSONも削除されます。`))return;
+  const typed=prompt(`削除を確定するには案件名を入力してください。\n${name}`,'');if(typed!==name)return;
+  try{
+    state.busy=true;render();
+    const c=connectionFor(entry.id,true),file=await remoteFile(c,{requireSha:true});
+    if(file.exists)await deleteFile(c,file.sha,`Delete Development Project ${entry.id}`);
+    let rows=await refreshProjectIndex({quiet:true,force:true});rows=rows.filter(x=>x.id!==entry.id);
+    await writeIndex(rows,c);
+    state.loaded.delete(entry.id);state.dirty.delete(entry.id);state.host.removeProjectMetadata(entry.id);
+  }catch(e){alert('案件を削除できませんでした: '+e.message);}
+  finally{state.busy=false;render();state.host?.refresh?.();}
+}
+
+async function testConnection(){
+  try{const c=connectionFor('',false,{index:true});const res=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,{headers:headers(c.token),cache:'no-store'});if(!res.ok)return failure(res,'GitHub接続失敗');return true;}catch(e){alert(e.message);return false;}
+}
+function fillFromEntry(){render();}
+function focus(){
+  const gitNav=byId('nav-github');if(gitNav?.click)gitNav.click();
+}
+function init(host){
+  if(!host||typeof host.normalizeProject!=='function'||typeof host.openGitProject!=='function'||typeof host.getActiveEntry!=='function')throw new Error('Development Git Store host API is invalid.');
+  state.host=host;
+  global.addEventListener('beforeunload',e=>{if(state.dirty.size){e.preventDefault();e.returnValue='';}});
+  setTimeout(()=>refreshProjectIndex({quiet:true}),0);
+  render();return api;
+}
+
+const api={init,render,focus,fillFromEntry,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,discardCurrent,refreshProjectIndex,openFromGit,saveCurrent,reloadCurrent,createProject,deleteCurrentProjectCompletely,testConnection};
 global.GKSDevelopmentGitStore=api;
 })(window);

@@ -192,16 +192,16 @@ Development Projectを使う作業では、本章を通常の作業憲章に追�
 
 - `AI_START.md`と運用文書は「どう作業するか」の正本である。
 - Development Project JSONは「何を、どの順序・依存関係・承認状態で作業するか」の正本である。Project本文の永続正本はGit canonical path `development-project-data/<workspace.id>.json` の1系統だけとし、Registry / Session / localStorage / cacheを本文の復元元にしない。
-- Development Projectは`authority.version` / `authority.instance_id` / `authority.revision` / `authority.canonical_path`を必須とする。`workspace.id`だけで旧世代と再作成後を同一案件とみなしてはならない。
-- `authority`欠落、instance不一致、stale/unknown revision、複数canonical候補は自動migration・自動勝敗判定・別Snapshot復元をせずFail Closedする。
+- Development Projectは`authority.version` / `authority.instance_id` / `authority.canonical_path`を必須とする。Project本文の競合検知はGit canonical fileのSHAを使用し、Project独自revisionは持たない。`workspace.id`だけで旧世代と再作成後を同一案件とみなしてはならない。
+- `authority`欠落、instance不一致、Git SHA競合、複数canonical候補は自動migration・自動勝敗判定・別Snapshot復元をせずFail Closedする。
 - Source / Game実ファイルは「現在どう実装されているか」の正本である。
 - AIはDevelopment Projectに存在しないTaskを推測で作成・実行せず、既存Taskの順序や依存関係を独自判断で変更しない。
 
 ### 12.2 対象Development Projectの決定
 
 1. ユーザーがProject IDまたはDevelopment Project JSONを明示した場合はそれを使用する。
-2. 完全Source内のDevelopment Projectを候補にする場合も`authority`を検証し、ユーザーが別途提示した同一`workspace.id` Projectとinstance/revisionが一致しない場合は勝手に選ばずFail Closedする。
-3. 複数案件・複数instance・複数revisionがあり対象を一意に決定できない場合は、勝手に選ばず確認を求める。
+2. 完全Source内のDevelopment Projectを候補にする場合も`authority`を検証し、ユーザーが別途提示した同一`workspace.id` Projectとinstanceが一致しない場合は勝手に選ばずFail Closedする。
+3. 複数案件・複数instanceがあり対象を一意に決定できない場合は、勝手に選ばず確認を求める。
 4. `workspace.ai_attention`が`Exclude`の案件は自動実行対象にしない。
 5. `lifecycle.status`が`Active`でない案件は自動実行対象にしない。
 
@@ -267,12 +267,12 @@ AIの作業報告専用schemaや専用取込窓口は新設しない。作業結
 
 - `schema_version`は対象Development Projectの現行schemaに合わせる。
 - `workspace.id`は作業対象案件と完全一致させる。
-- `authority`を必須で含め、作業開始時に受領した正本と`version` / `instance_id` / `revision` / `canonical_path`を完全一致させる。AIは統合JSON内のrevisionを先に進めない。Studioが同一base revisionを検証して統合し、Session commit時にrevisionを1つ進める。
-- `updated_at`をauthority判定に使用しない。同一`workspace.id`でもinstance不一致、revision不一致、canonical_path不一致なら統合しない。
+- `authority`を必須で含め、作業開始時に受領した正本と`version` / `instance_id` / `canonical_path`を一致させる。Project独自revisionは使用しない。Studio保存時の競合検知は、案件を開いた時に取得したGit SHAと保存直前のRemote SHAの一致だけで行う。
+- `updated_at`をauthority判定に使用しない。同一`workspace.id`でもinstance不一致、canonical_path不一致なら統合しない。
 - 既存ID付きRecordを更新する場合は、作業開始時に受領したRecordを基準として**完全なRecord**を返す。`{id,status}`等の部分Recordで既存Recordを更新しない。
 - `project_context` / `current_focus` / `source_baseline` / `lifecycle` / `workflow`を更新する場合も完全Objectを返す。変更不要ならkey自体を出力しない。
 - `workflow`のHuman承認は前進のみとし、AI統合JSONで`Approved`を`Pending`へ戻したり、stageを後退させてはならない。明示的に工程を戻す必要がある場合はHumanがStudioのWorkflow操作で実施する。
-- Lifecycle変更は通常のAI統合JSONで行わずHumanのLifecycle操作を使用する。stale Snapshot対策の正本は個別field比較ではなく`authority.instance_id/revision`である。
+- Lifecycle変更は通常のAI統合JSONで行わずHumanのLifecycle操作を使用する。別世代Projectの混入防止は`authority.instance_id`、同時更新の競合防止はGit SHAで行う。
 - 新規Recordは必須fieldと参照整合性を満たす完全Recordとして追加する。
 - `history`には今回の作業結果を1件以上追記する。
 - 実施した検査は`checks`へ実際の結果とevidenceを記録する。未実施検査を`Passed`にしない。
@@ -282,7 +282,7 @@ AIの作業報告専用schemaや専用取込窓口は新設しない。作業結
 - Development JSONの生成・統合だけを理由にSource ZIPや`package_manifest.json`を生成・変更しない。
 - 値を安全に確定できない場合は推測せずFail Closedで不足情報を報告する。
 
-現在の「現在案件へJSONを統合」は、まずProject authorityの同一instance・同一base revisionを必須検証し、その後ID単位additive upsertを行う。既存IDの更新はfield patchではなくRecord全体置換として扱い、統合完了時にStudioがProject revisionを1つ進める。旧形式Project、whole-record置換、全案件ブラウザ復元、Registry self-healによるProject本文注入は正規経路ではない。
+現在の「現在案件へJSONを統合」は、まずProject authorityの同一instanceを検証し、その後ID単位additive upsertを行う。既存IDの更新はfield patchではなくRecord全体置換として扱う。Project独自revisionは使用しない。旧形式Project、whole-record置換、全案件ブラウザ復元、Registry self-healによるProject本文注入は正規経路ではない。
 
 ### 12.8 Autonomous Correction — 正規経路収束 / Compatibility Budget 0
 

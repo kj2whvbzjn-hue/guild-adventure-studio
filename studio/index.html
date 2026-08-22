@@ -1,4 +1,4 @@
-/* GKS-B740 development-data/source-integrity separation */
+/* GKS-B741 development-data/source-integrity separation */
 <!doctype html>
 <html lang="ja">
 <head>
@@ -21,7 +21,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B740</title>
+<title>GK Studio GKS-B741</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B740 Story nested Data Exchange + scenario export wording */
+/* GKS-B741 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -240,7 +240,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B740: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B741: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -441,7 +441,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B740: Studio home-aware common header / navigation */
+/* GKS-B741: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -469,13 +469,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B740</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B741</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B740</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B741</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1760,80 +1760,52 @@ updateDeployDeleteControl();
 </section>
 
 <section id="view-development" class="view hidden">
-  <div class="view-heading"><h1>開発管理</h1><span class="status">Development Projects / Workflow / Confirmation / Navigation</span></div>
+  <div class="view-heading"><h1>開発管理</h1></div>
 
   <div id="developmentProjectListView">
-    <div class="card dev-data-gateway">
-      <div class="dev-project-launcher-head">
-        <div><h2>Development canonical authority</h2><p class="small">Project本文の永続正本はGit <code>development-project-data/&lt;workspace.id&gt;.json</code> の1ファイルだけです。Registry / Session / localStorage / cacheからProject本文を復元しません。</p></div>
+    <div class="card dev-phonebook">
+      <div class="dev-phonebook-head">
+        <h2>開発案件</h2>
+        <button class="dev-phonebook-add" type="button" onclick="createDevelopmentProjectDirect()" aria-label="新規案件">＋</button>
       </div>
-      <div class="toolbar dev-data-gateway-actions">
-        <button class="primary" type="button" onclick="createDevelopmentProjectTemplate()">新規canonical案件テンプレート</button>
-        <button type="button" onclick="resetAllDevelopmentProjects()">旧ブラウザ保存情報を削除</button>
-      </div>
-      <div id="developmentAllDataStatus" class="small dev-data-gateway-status"></div>
-            <p class="small">旧全案件バックアップ/復元・ブラウザ本文保存は廃止しました。旧Project JSONは自動migrationしません。authority付きJSONを「JSONファイル→Git保存」で明示登録してください。</p>
-    </div>
-
-    <div id="developmentGitStoreCard" class="card dev-git-store">
-      <div class="dev-project-launcher-head"><div><h2>Git保管 <span class="badge ok">Development専用</span></h2><p class="small">Development Project JSONをGitへ保存・読込します。保存時はDevelopment Project JSONだけを更新します。package_manifest.jsonはソースコード整合性専用のため変更しません。Source ZIPは出力しません。Game / Studioデータ経路、既存GitHub同期、Development AI公開とは処理を共有しません。</p></div></div>
-      <div class="dev-git-boundary small"><b>単一正本:</b> Project本文はGit上の正規Path <code>development-project-data/&lt;workspace.id&gt;.json</code> だけが永続正本です。Project JSONは <code>authority.instance_id / revision / canonical_path</code> 必須。Registryはmetadata、Sessionは一時作業コピーのみです。旧形式・旧世代・古いrevision・複数正本候補は自動復元せずFail Closedします。</div>
-      <div class="dev-git-grid">
-        <div class="field"><label>GitHub Owner</label><input id="devGitOwner" autocomplete="off" value="kj2whvbzjn-hue" placeholder="kj2whvbzjn-hue"></div>
-        <div class="field"><label>Repository</label><input id="devGitRepo" autocomplete="off" value="guild-adventure-studio" placeholder="guild-adventure-studio"></div>
-        <div class="field"><label>Branch</label><input id="devGitBranch" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" value="sub"></div>
-        <div class="field"><label>Git Path <span class="small">（Project IDから自動設定・編集不可）</span></label><input id="devGitPath" name="dev_git_path" autocomplete="url" autocapitalize="none" autocorrect="off" spellcheck="false" readonly aria-readonly="true" placeholder="development-project-data/DEV-PROJ-0001.json"><button id="devGitPathEdit" type="button" hidden aria-hidden="true">Git Pathを編集</button><div class="small">PathはProject IDから一意に決まり変更できません。非canonical Path・同一workspace.idの複数候補を検出した場合は自動修復せず停止します。</div></div>
-      </div>
-      <div class="field"><label>GitHub PAT（毎回入力・保存しません）</label><input id="devGitToken" name="password" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="github_pat_..."></div>
-      <div id="devGitCurrent" class="small">現在案件なし</div>
-      <div class="toolbar">
-        <button type="button" data-dev-git-busy onclick="GKSDevelopmentGitStore.testConnection()">接続確認</button>
-        <button type="button" data-dev-git-busy onclick="GKSDevelopmentGitStore.openFromGit()">Gitから案件を開く</button>
-        <label class="button-like">JSONファイル→Git保存<input id="devGitFile" type="file" accept="application/json,.json" class="hidden"></label>
-        <button id="devGitSaveCurrent" class="primary" type="button" data-dev-git-busy onclick="GKSDevelopmentGitStore.saveCurrent()">現在案件をGit保存</button>
-        <button id="devGitReloadCurrent" type="button" data-dev-git-busy onclick="GKSDevelopmentGitStore.reloadCurrent()">Remoteから再読込</button>
-        <button class="danger" type="button" data-dev-git-busy onclick="GKSDevelopmentGitStore.deleteCurrentProjectCompletely()">現在論理案件を完全削除</button>
-      </div>
-      <div id="devGitStatus" class="dev-git-status">Git保管はまだ実行していません。</div>
-    </div>
-
-    <div class="card">
-      <div class="dev-project-launcher-head">
-        <div><h2>開発案件</h2><p class="small">案件を探して開きます。開いた後はその案件だけを表示します。</p></div>
-        <div class="toolbar"><button class="primary" type="button" onclick="createDevelopmentProjectTemplate()">＋ 新規案件テンプレート</button><button type="button" onclick="toggleDevelopmentProjectSettings()">案件設定</button></div>
-      </div>
-      <div class="dev-project-tools">
-        <input id="developmentProjectSearch" placeholder="案件名・ID・Work Boxを検索" oninput="renderDevelopmentProjectCards()">
-        <select id="developmentProjectFilter" onchange="renderDevelopmentProjectCards()"><option value="in-progress">検討・作業中</option><option value="all">すべて</option><option value="pending">保留</option><option value="finished">完了・保管</option></select>
-      </div>
-      <div id="developmentProjectCards" class="dev-project-cards"></div>
-      <div id="developmentProjectSettings" class="dev-editor-panel hidden">
-        <h3>案件設定</h3>
-        <div class="dev-settings-grid">
-          <div class="field"><label>現在の開発案件</label><select id="developmentProjectSelect" onchange="switchDevelopmentProject(this.value)"></select></div>
-          <div class="field"><label>案件名</label><input id="developmentProjectName" placeholder="開発案件名"></div>
-          <div class="field"><label>Workflow互換状態</label><select id="developmentProjectStatus" disabled><option value="Exploring">検討中</option><option value="Specifying">仕様化中</option><option value="Implementing">実装中</option><option value="Validating">検証中</option><option value="Pending">保留</option><option value="Completed">完了</option></select></div>
-          <div class="field"><label>AI確認対象</label><select id="developmentProjectAIAttention"><option value="Auto">自動判定</option><option value="Include">常に対象</option><option value="Exclude">対象外</option></select></div>
-        </div>
-        <div class="toolbar"><button type="button" onclick="saveDevelopmentProjectSettings()">案件設定を保存</button></div>
-        <p class="small">Workflow互換状態は「進行」画面から更新します。Lifecycleは案件を開いた最初の「現在地」で独立管理します。「AI確認対象: 自動判定」はLifecycleがActiveの案件だけを通常判定し、Paused / Completed / Superseded / Archivedは対象外です。必要なら案件ごとに「常に対象 / 対象外」を指定できます。</p>
-      </div>
-      <div id="developmentProjectRegistryStatus" class="small"></div>
+      <div id="developmentProjectCards" class="dev-project-cards dev-phonebook-list"></div>
     </div>
   </div>
 
   <div id="developmentProjectDetailView" class="hidden">
-    <div class="dev-detail-back"><button type="button" onclick="backToDevelopmentProjectList()">← 案件一覧</button><span id="developmentProjectBreadcrumb" class="small"></span></div>
-    <div id="developmentCurrentProject" class="card">
-      <div class="dev-current-project-head"><div><div class="small">現在の案件</div><div id="developmentCurrentProjectTitle" class="dev-project-current-title"></div><div id="developmentCurrentProjectFocus" class="small"></div></div><div class="toolbar"><button type="button" onclick="continueCurrentDevelopmentProject()">続きから</button><button type="button" onclick="setDevelopmentPane('data')">データ</button><button type="button" onclick="openDevelopmentGitStore()">Git保管</button><button type="button" onclick="openDevelopmentProjectSettingsFromDetail()">案件設定</button></div></div>
-      <div id="developmentStoreStatus" class="small" style="margin-top:10px"></div>
+    <div class="dev-project-topbar">
+      <button type="button" class="dev-project-back" onclick="backToDevelopmentProjectList()">← 案件一覧</button>
+      <div class="dev-project-heading">
+        <div id="developmentCurrentProjectTitle" class="dev-project-current-title"></div>
+        <span id="developmentDirtyIndicator" class="dev-dirty-indicator hidden">未保存</span>
+      </div>
+      <div class="dev-project-actions">
+        <button id="devProjectSaveButton" class="primary" type="button" onclick="GKSDevelopmentGitStore.saveCurrent()">保存</button>
+        <details class="dev-more-menu">
+          <summary aria-label="その他の操作">…</summary>
+          <div class="dev-more-menu-panel">
+            <button type="button" onclick="exportDevelopmentWorkspace()">JSONを書き出す</button>
+            <label class="dev-more-file">JSONを統合<input id="developmentMergeImportFile" type="file" accept="application/json,.json" class="hidden" onchange="mergeImportDevelopmentWorkspace(this.files[0]);this.value=''"></label>
+            <button type="button" onclick="setDevelopmentPane('aipublish')">AI共有</button>
+            <button class="danger" type="button" onclick="GKSDevelopmentGitStore.deleteCurrentProjectCompletely()">案件を削除</button>
+          </div>
+        </details>
+      </div>
     </div>
-    <div class="kpis">
-      <div class="kpi"><span class="small">議論</span><b id="devKpiDiscussions">0</b></div><div class="kpi"><span class="small">Architecture</span><b id="devKpiArchitecture">0</b></div><div class="kpi"><span class="small">Work Box</span><b id="devKpiWorkBoxes">0</b></div><div class="kpi"><span class="small">Task</span><b id="devKpiTasks">0</b></div><div class="kpi"><span class="small">決定</span><b id="devKpiDecisions">0</b></div><div class="kpi"><span class="small">仕様</span><b id="devKpiSpecifications">0</b></div><div class="kpi"><span class="small">確認</span><b id="devKpiChecks">0</b></div><div class="kpi"><span class="small">未決事項</span><b id="devKpiOpenQuestions">0</b></div>
+    <div id="developmentStoreStatus" class="small dev-save-status"></div>
+    <span id="developmentProjectBreadcrumb" class="hidden"></span>
+    <span id="developmentCurrentProjectFocus" class="hidden"></span>
+
+    <div id="developmentPane-home" class="card dev-project-menu-card">
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('context')">概要</button>
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('architecture')">構成・作業</button>
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('discussion')">議論</button>
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('decision')">決定</button>
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('specification')">仕様</button>
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('system')">システム</button>
+      <button type="button" class="dev-project-menu-row" onclick="setDevelopmentPane('workflow')">進行・確認</button>
     </div>
-    <div class="toolbar dev-project-tabs">
-      <button type="button" onclick="setDevelopmentPane('context')">現在地</button><button type="button" onclick="setDevelopmentPane('architecture')">構成</button><button type="button" onclick="setDevelopmentPane('discussion')">議論</button><button type="button" onclick="setDevelopmentPane('decision')">決定</button><button type="button" onclick="setDevelopmentPane('specification')">仕様</button><button type="button" onclick="setDevelopmentPane('system')">システム</button><button type="button" onclick="setDevelopmentPane('state')">状態・履歴</button><button type="button" onclick="setDevelopmentPane('impact')">影響</button><button type="button" onclick="setDevelopmentPane('workflow')">進行</button><button type="button" onclick="setDevelopmentPane('checks')">確認</button><button type="button" onclick="setDevelopmentPane('data')">データ</button><button type="button" onclick="setDevelopmentPane('aipublish')">AI共有</button><button type="button" onclick="setDevelopmentPane('overview')">依存・進捗</button>
-    </div>
+    <div id="developmentSectionBack" class="dev-section-back hidden"><button type="button" onclick="setDevelopmentPane('home')">← 案件メニュー</button></div>
 
     <div id="developmentPane-context" class="card hidden">
       <div class="dev-pane-head"><div><h2>現在地 / Project Context</h2><p class="small">Purpose / Lifecycle / Workflow / Current Focus / Baseline / Active Rules / 最新実装 / Human確認を最初に確認します。</p></div><div class="toolbar"><button type="button" data-dpc-action="edit-context">Purposeを編集</button><button type="button" data-dpc-action="new-record">＋ 実装記録</button></div></div>
@@ -1919,38 +1891,28 @@ updateDeployDeleteControl();
     </div>
 
     <div id="developmentPane-system" class="card hidden">
-      <div class="dev-pane-head"><div><h2>System Structure</h2><p class="small">System Node / Contract / Connectionで、複数Specificationを一つのシステムとして組み上げます。Scenario/CPFとはData・Storage・Runtimeを共有しません。</p></div></div>
+      <div class="dev-pane-head"><div><h2>システム</h2></div><div class="toolbar dev-subnav"><button class="primary" type="button" onclick="setDevelopmentPane('system')">構成</button><button type="button" onclick="setDevelopmentPane('state')">状態</button><button type="button" onclick="setDevelopmentPane('impact')">影響</button></div></div>
       <div id="devSystemStructureMount"></div>
     </div>
 
     <div id="developmentPane-state" class="card hidden">
-      <div class="dev-pane-head"><div><h2>System State / Event</h2><p class="small">Flagは現在状態、Eventは状態変更の履歴として保存します。依存関係そのものはSystem Node / Contract / Connectionが正本です。</p></div></div>
+      <div class="dev-pane-head"><div><h2>システム / 状態</h2></div><div class="toolbar dev-subnav"><button type="button" onclick="setDevelopmentPane('system')">構成</button><button class="primary" type="button" onclick="setDevelopmentPane('state')">状態</button><button type="button" onclick="setDevelopmentPane('impact')">影響</button></div></div>
       <div id="devSystemStateMount"></div>
     </div>
 
     <div id="developmentPane-impact" class="card hidden">
-      <div class="dev-pane-head"><div><h2>Impact Analysis</h2><p class="small">変更EventからSystem Connectionを下流へ辿り、再確認が必要なSystem / Specification / Candidateを保存します。</p></div></div>
+      <div class="dev-pane-head"><div><h2>システム / 影響</h2></div><div class="toolbar dev-subnav"><button type="button" onclick="setDevelopmentPane('system')">構成</button><button type="button" onclick="setDevelopmentPane('state')">状態</button><button class="primary" type="button" onclick="setDevelopmentPane('impact')">影響</button></div></div>
       <div id="devSystemImpactMount"></div>
     </div>
 
-    <div id="developmentPane-workflow" class="card hidden"><div class="dev-pane-head"><div><h2>実装までの進行</h2><p class="small">確認事項とHuman Gateを使い、検討から完了までを段階的に進めます。</p></div></div><div id="devWorkflowStage"></div></div>
+    <div id="developmentPane-workflow" class="card hidden"><div class="dev-pane-head"><div><h2>進行・確認</h2></div><div class="toolbar dev-subnav"><button class="primary" type="button" onclick="setDevelopmentPane('workflow')">進行</button><button type="button" onclick="setDevelopmentPane('checks')">確認事項</button></div></div><div id="devWorkflowStage"></div></div>
     <div id="developmentPane-checks" class="card hidden">
-      <div id="devCheckListView"><div class="dev-pane-head"><div><h2>確認事項</h2><p class="small">何を確認したか、結果、根拠、確認者を保存します。</p></div><button class="primary" type="button" data-dwf-action="new-check">＋ 確認事項</button></div><div id="devCheckList" class="dwf-check-list"></div></div>
+      <div id="devCheckListView"><div class="dev-pane-head"><div><h2>進行・確認 / 確認事項</h2></div><div class="toolbar dev-subnav"><button type="button" onclick="setDevelopmentPane('workflow')">進行</button><button class="primary" type="button" onclick="setDevelopmentPane('checks')">確認事項</button><button type="button" data-dwf-action="new-check">＋</button></div></div><div id="devCheckList" class="dwf-check-list"></div></div>
       <div id="devCheckDetail" class="dev-record-detail hidden"><div class="dev-detail-back"><button type="button" data-dwf-action="back-checks">← 確認一覧</button></div><h2 id="devCheckDetailTitle"></h2><div id="devCheckDetailMeta" class="meta"></div><div class="dwf-detail-grid"><div><h3>確認結果</h3><div id="devCheckDetailResult" class="dwf-detail-block"></div></div><div><h3>根拠 / Evidence</h3><div id="devCheckDetailEvidence" class="dwf-detail-block"></div></div></div><p class="small">確認者: <span id="devCheckDetailBy"></span></p><button type="button" data-dwf-action="edit-check">編集</button></div>
       <div id="devCheckEditorPanel" class="dev-editor-panel hidden"><h3 id="devCheckEditorTitle">確認事項</h3><div class="grid"><div class="field"><label>確認ID</label><input id="devCheckId" readonly></div><div class="field"><label>Gate</label><select id="devCheckGate"><option value="General">一般確認</option><option value="Implementation">実装開始前</option><option value="Completion">完了前</option></select></div></div><div class="field"><label>確認事項</label><input id="devCheckTitle"></div><div class="grid"><div class="field"><label>対象種別</label><select id="devCheckTargetType"><option value="Project">Project</option><option value="Architecture">Architecture</option><option value="WorkBox">Work Box</option><option value="Task">Task</option><option value="Artifact">Artifact</option></select></div><div class="field"><label>対象ID</label><input id="devCheckTargetId"></div></div><div class="field"><label>状態</label><select id="devCheckStatus"><option value="Pending">未確認</option><option value="Passed">PASS</option><option value="Failed">FAIL</option><option value="Waived">免除</option></select></div><div class="field"><label>確認結果</label><textarea id="devCheckResult" rows="5"></textarea></div><div class="field"><label>根拠 / Evidence</label><textarea id="devCheckEvidence" rows="4" placeholder="Build、ファイル、Gate、スクリーンショット、Artifactなど"></textarea></div><div class="field"><label>確認者</label><input id="devCheckCheckedBy" placeholder="Human"></div><div class="dev-form-actions"><button class="primary" type="button" data-dwf-action="save-check">保存</button><button type="button" data-dwf-action="cancel-check">キャンセル</button></div></div>
     </div>
-    <div id="developmentPane-data" class="card hidden">
-      <div class="dev-pane-head"><div><h2>読込・出力</h2><p class="small">現在のcanonical Sessionだけを扱います。JSON統合は同一instanceかつ同一base revisionのみ許可し、統合後revisionを進めます。</p></div></div>
-      <div id="developmentProjectDataSummary" class="dev-view-panel small"></div>
-      <div class="toolbar dev-data-project-actions">
-        <button class="primary" type="button" onclick="exportDevelopmentWorkspace()">現在案件JSONを出力</button>
-        <label class="button-like">現在案件へJSONを統合<input id="developmentMergeImportFile" type="file" accept="application/json,.json" class="hidden" onchange="mergeImportDevelopmentWorkspace(this.files[0]);this.value=''"></label>
-      </div>
-      <p class="small">whole-record置換・ブラウザ本文バックアップ・旧形式自動migrationは廃止しました。別案件の登録は上部Git保管の「JSONファイル→Git保存」を使用します。</p>
-    </div>
-
     <div id="developmentPane-aipublish" class="card hidden">
-      <div class="dev-pane-head"><div><h2>AI共有 <span class="badge ok">Fixed Root + JSON</span></h2><p class="small">Human確認対象を、取得実績のある固定Project Topにも静的HTMLとして埋め込みます。JSON公開・root index.html・package_manifest.jsonは同じAtomic Commit / Revisionで更新します。</p></div></div>
+      <div class="dev-pane-head"><div><h2>AI共有 <span class="badge ok">Fixed Root + JSON</span></h2><p class="small">Human確認対象を、取得実績のある固定Project Topにも静的HTMLとして埋め込みます。JSON公開・root index.html・package_manifest.jsonは同じAtomic Commitで更新します。</p></div></div>
       <div class="daip-warning"><b>公開データです。</b><br>Discussion / Work Box / Confirmation等のProject内容が公開Project詳細JSONへ含まれます。秘密情報や非公開内容を含む案件は公開しないでください。PATは端末へ保存しません。</div>
       <div class="daip-grid" style="margin-top:12px">
         <div class="field"><label>GitHub Owner</label><input id="daipOwner" placeholder="kj2whvbzjn-hue"></div>
@@ -1970,18 +1932,17 @@ updateDeployDeleteControl();
       <h3>公開URL</h3>
       <div class="small">固定AI入口 — Project Top</div><span id="daipRootGatewayUrl" class="daip-url">—</span>
       <div class="daip-actions"><button type="button" onclick="GKSDevelopmentAIPublish.openPending('root')">固定AI入口を開く</button></div>
-      <p class="small">第一入口です。Human確認対象だけの判断用ContextをHTML本文へ直接埋め込みます。Revision不一致時は使用しません。</p>
+      <p class="small">第一入口です。Human確認対象だけの判断用ContextをHTML本文へ直接埋め込みます。</p>
       <div class="small">GitHub Pages Base</div><span id="daipPublicBase" class="daip-url">—</span>
       <div class="small" style="margin-top:8px">Pages Human確認対象入口（診断用）</div><span id="daipPendingUrl" class="daip-url">—</span>
       <div class="small" style="margin-top:8px">GitHub Raw AI入口（診断用）</div><span id="daipPendingRawUrl" class="daip-url">—</span>
       <div class="small" style="margin-top:8px">GitHub表示入口（診断用）</div><span id="daipPendingGithubUrl" class="daip-url">—</span>
       <div class="daip-actions"><button type="button" onclick="GKSDevelopmentAIPublish.openPending('pages')">Pagesを開く</button><button type="button" onclick="GKSDevelopmentAIPublish.openPending('raw')">Rawを開く</button><button type="button" onclick="GKSDevelopmentAIPublish.openPending('github')">GitHub表示を開く</button><button type="button" onclick="GKSDevelopmentAIPublish.copyPrompt()">ChatGPTへ渡す文をコピー</button></div>
-      <p class="small">JSON 3経路は診断・詳細確認用として残します。AI取得テストは固定Project TopのRevision一致を最優先します。</p>
+      <p class="small">JSON 3経路は診断・詳細確認用として残します。AI取得テストは固定Project Topの反映内容を確認します。</p>
       <h3>公開プレビュー</h3><div id="daipPreview" class="daip-preview"><div class="small">まだプレビューしていません。</div></div>
       <h3>最終公開</h3><div id="daipLastPublish" class="small">未公開</div>
       <div id="daipStatus" class="daip-status">Development AI公開はまだ実行していません。</div>
     </div>
-    <div id="developmentPane-overview" class="card hidden"><h2>依存・進捗</h2><p class="small">Specificationの前提関係から着手可能・依存待ちを表示します。</p><div id="devDependencyOverview" class="list"></div><h3>未決事項</h3><div id="devOpenQuestionOverview" class="list"></div></div>
   </div>
 </section>
 
@@ -2469,11 +2430,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=740"></script>
+<script src="./layer-controller.js?v=741"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B740';
+const DISTRIBUTION_BUILD='GKS-B741';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3315,29 +3276,27 @@ const DEVELOPMENT_AUTHORITY_VERSION=1;
 const DEVELOPMENT_CANONICAL_ROOT='development-project-data/';
 const DEVELOPMENT_OBSOLETE_STORAGE_PREFIXES=Object.freeze(['gk_development_project_v1:','gk_development_project_collection_backup_v1:']);
 const DEVELOPMENT_OBSOLETE_STORAGE_KEYS=Object.freeze(['gk_development_workspace_v1','gk_development_project_registry_v1','gk_development_active_project_v1','gk_development_registry_explicitly_empty_v1']);
-let developmentProjectRegistry=null,activeDevelopmentProjectId='',developmentWorkspace=null,developmentPane='context',developmentScreen='projects',editingDevDiscussionId='',editingDevDecisionId='',editingDevSpecId='',selectedDevDiscussionId='',selectedDevDecisionId='',selectedDevSpecId='',developmentProjectListScrollY=0;const developmentRecordScrollY={discussion:0,decision:0,specification:0};
+let developmentProjectRegistry=null,activeDevelopmentProjectId='',developmentWorkspace=null,developmentPane='home',developmentScreen='projects',editingDevDiscussionId='',editingDevDecisionId='',editingDevSpecId='',selectedDevDiscussionId='',selectedDevDecisionId='',selectedDevSpecId='',developmentProjectListScrollY=0;const developmentRecordScrollY={discussion:0,decision:0,specification:0};
 function devRefs(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function developmentCanonicalPath(id){const key=String(id||'').trim().replace(/[^A-Za-z0-9._-]+/g,'_');if(!key)throw new Error('workspace.idがありません。');return `${DEVELOPMENT_CANONICAL_ROOT}${key}.json`}
 function developmentNewInstanceId(){if(!globalThis.crypto?.randomUUID)throw new Error('Project instance IDを安全に生成できない環境です。');return `DPI-${crypto.randomUUID()}`}
 function developmentNormalizeAuthority(raw,projectId){
- const a=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:null;if(!a)throw new Error('authorityがありません。旧Development Projectは自動移行しません。Human承認済みの一回限り移行JSONで再登録してください。');
- const version=Number(a.version),instanceId=String(a.instance_id||'').trim(),revision=Number(a.revision),canonicalPath=String(a.canonical_path||'').trim(),expectedPath=developmentCanonicalPath(projectId);
+ const a=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:null;if(!a)throw new Error('authorityがありません。');
+ const version=Number(a.version),instanceId=String(a.instance_id||'').trim(),canonicalPath=String(a.canonical_path||'').trim(),expectedPath=developmentCanonicalPath(projectId);
  if(version!==DEVELOPMENT_AUTHORITY_VERSION)throw new Error(`未対応authority.versionです: ${a.version??'なし'}`);
  if(!/^DPI-[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(instanceId))throw new Error('authority.instance_idが不正です。');
- if(!Number.isSafeInteger(revision)||revision<1)throw new Error('authority.revisionは1以上の整数が必要です。');
  if(canonicalPath!==expectedPath)throw new Error(`authority.canonical_pathがworkspace.idの正規Pathと一致しません。expected=${expectedPath} / actual=${canonicalPath||'(missing)'}`);
- return {version:DEVELOPMENT_AUTHORITY_VERSION,instance_id:instanceId,revision,canonical_path:canonicalPath};
+ return {version:DEVELOPMENT_AUTHORITY_VERSION,instance_id:instanceId,canonical_path:canonicalPath};
 }
 function developmentAuthorityIdentity(project){const id=String(project?.workspace?.id||'').trim();return developmentNormalizeAuthority(project?.authority,id)}
-function developmentAssertSameAuthority(current,incoming,{requireSameRevision=true}={}){
+function developmentAssertSameAuthority(current,incoming){
  const a=developmentAuthorityIdentity(current),b=developmentAuthorityIdentity(incoming);if(String(current?.workspace?.id||'')!==String(incoming?.workspace?.id||''))throw new Error(`workspace.idが一致しません。current=${current?.workspace?.id||''} / incoming=${incoming?.workspace?.id||''}`);
  if(a.instance_id!==b.instance_id)throw new Error(`Project instanceが一致しません。current=${a.instance_id} / incoming=${b.instance_id}`);
- if(requireSameRevision&&a.revision!==b.revision)throw new Error(`Project revisionが一致しません。current=${a.revision} / incoming=${b.revision}。現在案件を再出力してからやり直してください。`);
  return {current:a,incoming:b};
 }
-function developmentAdvanceRevision(project){const a=developmentAuthorityIdentity(project);project.authority={...a,revision:a.revision+1};return project.authority.revision}
-function blankDevelopmentProjectSeed(id,name){const stamp=now(),projectId=String(id||'').trim();if(!projectId)throw new Error('Project IDが必要です。');return {schema_version:DEVELOPMENT_PROJECT_SCHEMA_VERSION,authority:{version:DEVELOPMENT_AUTHORITY_VERSION,instance_id:developmentNewInstanceId(),revision:1,canonical_path:developmentCanonicalPath(projectId)},workspace:{id:projectId,name:String(name||projectId||'新しい開発案件'),status:'Exploring',ai_attention:'Auto',updated_at:stamp},project_context:{purpose:'',summary:''},current_focus:{architecture_id:'',work_box_id:'',theme:'',goal:''},project_rules:[],source_baseline:{studio_build:'',game_build:'',source_label:'',source_role:'current_baseline',recorded_at:''},lifecycle:{status:'Active',superseded_by:'',updated_at:stamp},implementation_records:[],discussions:[],decisions:[],specifications:[],specification_candidates:[],system_nodes:[],system_contracts:[],system_connections:[],system_flags:[],system_events:[],system_impacts:[],architecture_nodes:[],work_boxes:[],tasks:[],checks:[],workflow:{stage:'Discovery',implementation_approval:{status:'Pending',by:'',at:''},completion_approval:{status:'Pending',by:'',at:''}},history:[{at:stamp,message:'Development Project created'}]}}
+function blankDevelopmentProjectSeed(id,name){const stamp=now(),projectId=String(id||'').trim();if(!projectId)throw new Error('Project IDが必要です。');return {schema_version:DEVELOPMENT_PROJECT_SCHEMA_VERSION,authority:{version:DEVELOPMENT_AUTHORITY_VERSION,instance_id:developmentNewInstanceId(),canonical_path:developmentCanonicalPath(projectId)},workspace:{id:projectId,name:String(name||projectId||'新しい開発案件'),status:'Exploring',ai_attention:'Auto',updated_at:stamp},project_context:{purpose:'',summary:''},current_focus:{architecture_id:'',work_box_id:'',theme:'',goal:''},project_rules:[],source_baseline:{studio_build:'',game_build:'',source_label:'',source_role:'current_baseline',recorded_at:''},lifecycle:{status:'Active',superseded_by:'',updated_at:stamp},implementation_records:[],discussions:[],decisions:[],specifications:[],specification_candidates:[],system_nodes:[],system_contracts:[],system_connections:[],system_flags:[],system_events:[],system_impacts:[],architecture_nodes:[],work_boxes:[],tasks:[],checks:[],workflow:{stage:'Discovery',implementation_approval:{status:'Pending',by:'',at:''},completion_approval:{status:'Pending',by:'',at:''}},history:[{at:stamp,message:'Development Project created'}]}}
 function createDevelopmentProjectTemplate(){const name=String(prompt('新しい開発案件名を入力してください。','新しい開発案件')||'').trim();if(!name)return;const id=devNextProjectId(),w=blankDevelopmentProjectSeed(id,name);downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8');alert('新規Project JSONひな形を出力しました。Project本文はブラウザへ保存していません。Git保管の「JSONファイル→Git登録」から正規Pathへ登録してください。')}
+async function createDevelopmentProjectDirect(){const name=String(prompt('新しい開発案件名を入力してください。','')||'').trim();if(!name)return;await window.GKSDevelopmentGitStore?.createProject?.(name)}
 const DEVELOPMENT_WORKFLOW_STAGE_ORDER=Object.freeze(['Discovery','Planning','Implementing','Verifying','Completed']);
 const DEVELOPMENT_WORKFLOW_STATUS_BY_STAGE=Object.freeze({Discovery:'Exploring',Planning:'Specifying',Implementing:'Implementing',Verifying:'Validating',Completed:'Completed'});
 function developmentWorkflowStageRank(stage){const i=DEVELOPMENT_WORKFLOW_STAGE_ORDER.indexOf(String(stage||''));return i<0?0:i}
@@ -3428,19 +3387,25 @@ function normalizeDevelopmentWorkspace(raw){
  developmentValidateReferences(x);return x;
 }
 function normalizeDevelopmentProjectRegistry(raw){
- if(raw===null||raw===undefined)return [];if(!raw||typeof raw!=='object'||Array.isArray(raw)||Number(raw.schema_version)!==2)throw new Error('Development Registry v2 metadataが不正です。自動修復しません。');
- const rows=Array.isArray(raw.projects)?raw.projects:null;if(!rows)throw new Error('Development Registry projectsがありません。');const seen=new Set(),out=[];
- for(const r of rows){const id=String(r?.id||'').trim();if(!id)throw new Error('Development Registryにidなしentryがあります。');if(seen.has(id))throw new Error(`Development Registry ID重複: ${id}`);if(r?.storage_mode!=='git')throw new Error(`非canonical Registry entryを拒否しました: ${id}`);const authority=developmentNormalizeAuthority(r.authority,id),remote=r?.git_remote&&typeof r.git_remote==='object'&&!Array.isArray(r.git_remote)?r.git_remote:null;if(!remote)throw new Error(`Registry git_remote欠落: ${id}`);const canonical=developmentCanonicalPath(id);if(String(remote.path||'')!==canonical)throw new Error(`Registry noncanonical path: ${id} / ${remote.path||'(missing)'}`);seen.add(id);out.push({id,name:String(r?.name||id).trim()||id,status:developmentProjectStatusValue(r?.status),lifecycle:developmentLifecycleValue(r?.lifecycle),storage_mode:'git',authority,git_remote:{owner:String(remote.owner||''),repo:String(remote.repo||''),branch:String(remote.branch||'main'),path:canonical,sha:String(remote.sha||'')},created_at:String(r?.created_at||r?.updated_at||''),updated_at:String(r?.updated_at||r?.created_at||'')});}
+ if(raw===null||raw===undefined)return [];
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||![2,3].includes(Number(raw.schema_version)))throw new Error('Development Registry metadataが不正です。');
+ const rows=Array.isArray(raw.projects)?raw.projects:[],seen=new Set(),out=[];
+ for(const r of rows){
+  const id=String(r?.id||'').trim();if(!id||seen.has(id))continue;seen.add(id);
+  const remote=r?.git_remote&&typeof r.git_remote==='object'&&!Array.isArray(r.git_remote)?r.git_remote:{};
+  const canonical=developmentCanonicalPath(id);let authority=null;
+  try{if(r?.authority)authority=developmentNormalizeAuthority(r.authority,id)}catch(_){authority=null}
+  out.push({id,name:String(r?.name||r?.title||id).trim()||id,status:developmentProjectStatusValue(r?.status),lifecycle:developmentLifecycleValue(r?.lifecycle),storage_mode:'git',authority,git_remote:{owner:String(remote.owner||''),repo:String(remote.repo||''),branch:String(remote.branch||''),path:canonical,sha:String(remote.sha||'')},created_at:String(r?.created_at||r?.updated_at||''),updated_at:String(r?.updated_at||r?.created_at||'')});
+ }
  return out;
 }
-function saveDevelopmentProjectRegistry(){try{localStorage.setItem(DEVELOPMENT_REGISTRY_KEY,JSON.stringify({schema_version:2,projects:developmentProjectRegistry||[]}));if(activeDevelopmentProjectId)localStorage.setItem(DEVELOPMENT_ACTIVE_PROJECT_KEY,activeDevelopmentProjectId);else localStorage.removeItem(DEVELOPMENT_ACTIVE_PROJECT_KEY);return true}catch(e){alert('Development Registry metadataの保存に失敗しました: '+e.message);return false}}
+function saveDevelopmentProjectRegistry(){try{localStorage.setItem(DEVELOPMENT_REGISTRY_KEY,JSON.stringify({schema_version:3,projects:(developmentProjectRegistry||[]).map(x=>({id:x.id,name:x.name,storage_mode:'git',git_remote:x.git_remote||{},authority:x.authority||null,status:x.status||'Exploring',lifecycle:x.lifecycle||'Active',created_at:x.created_at||'',updated_at:x.updated_at||''}))}));return true}catch(e){console.warn('Development Registry metadata save failed',e);return false}}
 function developmentGitDirtyGuard(action='別の操作'){const entry=activeDevelopmentProjectEntry();if(entry?.storage_mode==='git'&&window.GKSDevelopmentGitStore?.isDirty?.(entry.id))return confirm(`現在のGit案件 ${entry.id} にGit未保存の変更があります。\n${action}を続けるとSession上の未保存変更を失う可能性があります。\n\n破棄して続けますか？`);return true}
 function devNextProjectId(){const used=new Set((developmentProjectRegistry||[]).map(x=>x.id));let n=1,id;do{id='DEV-PROJ-'+String(n++).padStart(4,'0')}while(used.has(id));return id}
 function ensureDevelopmentProjectRegistry(){
- if(developmentProjectRegistry)return developmentProjectRegistry;const rawText=localStorage.getItem(DEVELOPMENT_REGISTRY_KEY);developmentProjectRegistry=rawText?normalizeDevelopmentProjectRegistry(JSON.parse(rawText)):[];
- const requested=String(localStorage.getItem(DEVELOPMENT_ACTIVE_PROJECT_KEY)||'');activeDevelopmentProjectId=developmentProjectRegistry.some(x=>x.id===requested)?requested:(developmentProjectRegistry[0]?.id||'');saveDevelopmentProjectRegistry();return developmentProjectRegistry;
+ if(developmentProjectRegistry)return developmentProjectRegistry;const rawText=localStorage.getItem(DEVELOPMENT_REGISTRY_KEY);developmentProjectRegistry=rawText?normalizeDevelopmentProjectRegistry(JSON.parse(rawText)):[];activeDevelopmentProjectId='';localStorage.removeItem(DEVELOPMENT_ACTIVE_PROJECT_KEY);return developmentProjectRegistry;
 }
-function activeDevelopmentProjectEntry(){ensureDevelopmentProjectRegistry();return developmentProjectRegistry.find(x=>x.id===activeDevelopmentProjectId)||developmentProjectRegistry[0]||null}
+function activeDevelopmentProjectEntry(){ensureDevelopmentProjectRegistry();return developmentProjectRegistry.find(x=>x.id===activeDevelopmentProjectId)||null}
 function developmentProjectStatusValue(value){
  const v=String(value||'').trim();
  if(['Completed','Archived','Done'].includes(v))return 'Completed';
@@ -3468,50 +3433,59 @@ function developmentProjectSnapshot(entry){
  return {entry,w,status,lifecycle,lifecycle_verified:true,latestBox,latestDiscussion,openTasks,openDiscussions,openChecks,updated_at:String(w?.workspace?.updated_at||entry?.updated_at||''),focus};
 }
 function renderDevelopmentProjectSelector(){
- const rows=ensureDevelopmentProjectRegistry(),sel=document.getElementById('developmentProjectSelect'),entry=activeDevelopmentProjectEntry();
- if(sel){sel.innerHTML=rows.map(x=>`<option value="${escAttr(x.id)}">${esc(x.name)} / ${esc(x.id)}</option>`).join('');sel.value=activeDevelopmentProjectId}
- const name=document.getElementById('developmentProjectName');if(name&&entry)name.value=entry.name||'';
- const w=entry?readDevelopmentProjectByEntry(entry):null,statusInput=document.getElementById('developmentProjectStatus');if(statusInput)statusInput.value=developmentProjectStatusValue(w?.workspace?.status||entry?.status);const attentionInput=document.getElementById('developmentProjectAIAttention');if(attentionInput)attentionInput.value=['Auto','Include','Exclude'].includes(String(w?.workspace?.ai_attention||'Auto'))?String(w?.workspace?.ai_attention||'Auto'):'Auto';
- const status=document.getElementById('developmentProjectRegistryStatus');if(status)status.innerHTML=`<b>開発案件:</b> ${rows.length}件 / <b>現在:</b> ${esc(entry?.id||'')} / ${esc(entry?.name||'')}`;
+ const rows=ensureDevelopmentProjectRegistry();
+ const status=document.getElementById('developmentProjectRegistryStatus');
+ if(status)status.textContent=rows.length?`${rows.length}件`:'案件がありません';
 }
 function renderDevelopmentProjectCards(){
  const container=document.getElementById('developmentProjectCards');if(!container)return;
- const registry=ensureDevelopmentProjectRegistry();
- const query=String(document.getElementById('developmentProjectSearch')?.value||'').trim().toLowerCase(),filter=String(document.getElementById('developmentProjectFilter')?.value||'in-progress');
- let rows=registry.map(developmentProjectSnapshot);
- rows=rows.filter(s=>{const hay=[s.entry.id,s.entry.name,s.latestBox?.title,s.latestBox?.body,s.latestDiscussion?.title,s.w?.project_context?.purpose,s.w?.current_focus?.theme].filter(Boolean).join(' ').toLowerCase();if(query&&!hay.includes(query))return false;if(filter==='all')return true;if(filter==='pending')return s.lifecycle==='Paused';if(filter==='finished')return ['Completed','Superseded','Archived'].includes(s.lifecycle);return s.lifecycle==='Active'}).sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at)));
- container.innerHTML=rows.map(s=>`<div class="dev-project-card ${s.entry.id===activeDevelopmentProjectId?'is-active':''}"><div class="dev-project-card-top"><div><div class="dev-project-card-title">${esc(s.entry.name)}</div><div class="dev-project-id">${esc(s.entry.id)}</div></div><div><span class="dev-project-badge">${'Git canonical'}</span> <span class="dev-project-badge ${s.entry.storage_mode==='git'&&!s.lifecycle_verified?'':developmentLifecycleClass(s.lifecycle)}">${esc(s.entry.storage_mode==='git'&&!s.lifecycle_verified?'Git状態確認中':developmentLifecycleLabel(s.lifecycle))}</span> <span class="dev-project-badge ${developmentProjectStatusClass(s.status)}">${esc(developmentProjectStatusLabel(s.status))}</span></div></div><div class="dev-project-card-focus">${esc(s.focus)}</div><div class="dev-project-card-meta"><span>未完了Task ${s.openTasks}</span><span>確認待ち ${s.openChecks}</span><span>検討中Discussion ${s.openDiscussions}</span><span>更新 ${esc(s.updated_at||'不明')}</span></div><div class="dev-project-card-actions"><button class="primary" type="button" onclick="openDevelopmentProject('${escAttr(s.entry.id)}')">開く</button></div></div>`).join('')||'<div class="dev-empty-guide">条件に一致する開発案件がありません。</div>';
+ const rows=[...ensureDevelopmentProjectRegistry()].sort((a,b)=>String(a.name||a.id).localeCompare(String(b.name||b.id),'ja'));
+ container.innerHTML=rows.map(entry=>`<button class="dev-phonebook-row" type="button" onclick="openDevelopmentProject('${escAttr(entry.id)}')"><span class="dev-phonebook-title">${esc(entry.name||entry.id)}</span></button>`).join('')||'<div class="dev-empty-guide">案件がありません。右上の＋から作成できます。</div>';
 }
 function toggleDevelopmentProjectSettings(force){const el=document.getElementById('developmentProjectSettings');if(!el)return;const open=typeof force==='boolean'?force:el.classList.contains('hidden');el.classList.toggle('hidden',!open);if(open)renderDevelopmentProjectSelector()}
 function saveDevelopmentWorkspace(message='update'){
- ensureDevelopmentProjectRegistry();const entry=activeDevelopmentProjectEntry();if(!entry||entry.storage_mode!=='git')return false;
+ const entry=activeDevelopmentProjectEntry();if(!entry||!developmentWorkspace)return false;
  try{
-  const current=normalizeDevelopmentWorkspace(developmentWorkspace);developmentAssertSameAuthority({workspace:{id:entry.id},authority:entry.authority},current,{requireSameRevision:true});
-  current.workspace.updated_at=now();if(message&&message!=='load')current.history.push({at:now(),message});developmentAdvanceRevision(current);developmentWorkspace=normalizeDevelopmentWorkspace(current);
-  entry.name=developmentWorkspace.workspace.name;entry.status=developmentWorkspace.workspace.status;entry.lifecycle=developmentLifecycleValue(developmentWorkspace.lifecycle?.status);entry.authority=structuredClone(developmentWorkspace.authority);entry.updated_at=developmentWorkspace.workspace.updated_at;saveDevelopmentProjectRegistry();window.GKSDevelopmentGitStore?.markDirty?.(entry.id);return true;
- }catch(e){alert('Development canonical Sessionの更新に失敗しました: '+e.message);return false}
+  developmentWorkspace.workspace.updated_at=now();
+  if(message&&message!=='load')developmentWorkspace.history.push({at:now(),message});
+  developmentWorkspace=normalizeDevelopmentWorkspace(developmentWorkspace);
+  entry.name=developmentWorkspace.workspace.name;entry.status=developmentWorkspace.workspace.status;entry.lifecycle=developmentLifecycleValue(developmentWorkspace.lifecycle?.status);entry.authority=structuredClone(developmentWorkspace.authority);entry.updated_at=developmentWorkspace.workspace.updated_at;
+  saveDevelopmentProjectRegistry();window.GKSDevelopmentGitStore?.markDirty?.(entry.id);return true;
+ }catch(e){alert('Development Projectの更新に失敗しました: '+e.message);return false}
 }
 function loadDevelopmentWorkspace(){
- ensureDevelopmentProjectRegistry();const entry=activeDevelopmentProjectEntry();if(!entry)throw new Error('Development Projectが開かれていません。Git canonical JSONを登録または開いてください。');
- if(entry.storage_mode!=='git')throw new Error('非canonical Development Project entryを拒否しました。Git canonical JSONとして再登録してください。');
- if(!developmentWorkspace||!window.GKSDevelopmentGitStore?.isLoaded?.(entry.id))throw new Error(`Development Project ${entry.id} はSession未読込です。Gitから案件を開いてください。`);
- const normalized=normalizeDevelopmentWorkspace(developmentWorkspace);developmentAssertSameAuthority({workspace:{id:entry.id},authority:entry.authority},normalized,{requireSameRevision:false});return normalized;
+ const entry=activeDevelopmentProjectEntry();if(!entry||!developmentWorkspace||!window.GKSDevelopmentGitStore?.isLoaded?.(entry.id))throw new Error('案件本文が未読込です。案件一覧から開き直してください。');
+ if(String(developmentWorkspace.workspace?.id||'')!==String(entry.id||''))throw new Error('現在案件IDと本文が一致しません。');
+ return developmentWorkspace;
 }
 function hideDevelopmentRecordEditors(){['devDiscussionEditorPanel','devDecisionEditorPanel','devSpecEditorPanel'].forEach(id=>document.getElementById(id)?.classList.add('hidden'))}
 function resetDevelopmentEditorsForProjectSwitch(){editingDevDiscussionId='';editingDevDecisionId='';editingDevSpecId='';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';resetDevDiscussionEditor();resetDevDecisionEditor();resetDevSpecEditor();hideDevelopmentRecordEditors();window.GKSDevelopmentProjectContext?.reset?.();window.GKSDevelopmentArchitectureExplorer?.reset?.();window.GKSDevelopmentWorkflow?.reset?.()}
 function switchDevelopmentProject(id){
- ensureDevelopmentProjectRegistry();id=String(id||'');if(!developmentProjectRegistry.some(x=>x.id===id)){renderDevelopmentProjectSelector();return}if(id===activeDevelopmentProjectId){renderDevelopmentWorkspace();return}
- if(!developmentGitDirtyGuard('案件切替')){renderDevelopmentProjectSelector();return}
- if(!confirm('開発案件を切り替えます。入力欄に未保存の内容がある場合は失われます。続けますか？')){renderDevelopmentProjectSelector();return}
- activeDevelopmentProjectId=id;localStorage.setItem(DEVELOPMENT_ACTIVE_PROJECT_KEY,id);developmentWorkspace=null;resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+ id=String(id||'');const entry=ensureDevelopmentProjectRegistry().find(x=>x.id===id);if(!entry)return false;
+ if(activeDevelopmentProjectId&&activeDevelopmentProjectId!==id&&window.GKSDevelopmentGitStore?.isDirty?.(activeDevelopmentProjectId))return false;
+ activeDevelopmentProjectId=id;developmentWorkspace=null;resetDevelopmentEditorsForProjectSwitch();return true;
 }
 function saveDevelopmentProjectSettings(){
  const entry=activeDevelopmentProjectEntry(),input=document.getElementById('developmentProjectName'),statusInput=document.getElementById('developmentProjectStatus'),attentionInput=document.getElementById('developmentProjectAIAttention');if(!entry||!input)return;const name=String(input.value||'').trim();if(!name)return alert('案件名を入力してください。');const status=developmentProjectStatusValue(statusInput?.value||entry.status),aiAttention=['Auto','Include','Exclude'].includes(String(attentionInput?.value||'Auto'))?String(attentionInput?.value||'Auto'):'Auto';entry.name=name;entry.status=status;entry.updated_at=now();const w=loadDevelopmentWorkspace();w.workspace.name=name;w.workspace.status=status;w.workspace.ai_attention=aiAttention;developmentWorkspace=w;saveDevelopmentWorkspace('Development Project settings updated');renderDevelopmentWorkspace();toggleDevelopmentProjectSettings(false);
 }
 function renameDevelopmentProject(){saveDevelopmentProjectSettings()}
 function developmentProjectLatestFocus(entry){const snap=developmentProjectSnapshot(entry);return snap.latestBox?{node_id:snap.latestBox.node_id,box_id:snap.latestBox.id}:null}
-async function openDevelopmentProject(id){developmentProjectListScrollY=window.scrollY||0;id=String(id||'');if(id!==activeDevelopmentProjectId)switchDevelopmentProject(id);if(id!==activeDevelopmentProjectId)return;const entry=activeDevelopmentProjectEntry();if(entry?.storage_mode==='git'&&!window.GKSDevelopmentGitStore?.isLoaded?.(id)){window.GKSDevelopmentGitStore?.fillFromEntry?.(entry);const opened=await window.GKSDevelopmentGitStore?.openFromGit?.({expectedProjectId:id});if(!opened){developmentScreen='projects';renderDevelopmentWorkspace();window.GKSDevelopmentGitStore?.fillFromEntry?.(entry);window.GKSDevelopmentGitStore?.focus?.();return}}developmentScreen='project';developmentPane='context';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0)}
-function backToDevelopmentProjectList(){developmentScreen='projects';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';hideDevelopmentRecordEditors();window.GKSDevelopmentArchitectureExplorer?.reset?.();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:developmentProjectListScrollY||0,behavior:'instant'}),0)}
+async function openDevelopmentProject(id){
+ developmentProjectListScrollY=window.scrollY||0;id=String(id||'');const entry=ensureDevelopmentProjectRegistry().find(x=>x.id===id);if(!entry)return;
+ if(!confirm(`「${entry.name||entry.id}」を開きますか？`))return;
+ if(activeDevelopmentProjectId&&activeDevelopmentProjectId!==id&&window.GKSDevelopmentGitStore?.isDirty?.(activeDevelopmentProjectId)){
+  if(!confirm('現在の案件に未保存の変更があります。破棄して別案件を開きますか？'))return;
+ }
+ activeDevelopmentProjectId=id;developmentWorkspace=null;resetDevelopmentEditorsForProjectSwitch();
+ const opened=await window.GKSDevelopmentGitStore?.openFromGit?.({expectedProjectId:id});
+ if(!opened){developmentScreen='projects';renderDevelopmentWorkspace();return}
+ developmentScreen='project';developmentPane='home';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0);
+}
+function backToDevelopmentProjectList(){
+ if(activeDevelopmentProjectId&&window.GKSDevelopmentGitStore?.isDirty?.(activeDevelopmentProjectId)&&!confirm('保存していない変更があります。破棄して案件一覧へ戻りますか？'))return;
+ if(activeDevelopmentProjectId)window.GKSDevelopmentGitStore?.discardCurrent?.();
+ developmentWorkspace=null;activeDevelopmentProjectId='';developmentScreen='projects';developmentPane='home';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';hideDevelopmentRecordEditors();window.GKSDevelopmentArchitectureExplorer?.reset?.();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:developmentProjectListScrollY||0,behavior:'instant'}),0);
+}
 function openDevelopmentProjectSettingsFromDetail(){backToDevelopmentProjectList();setTimeout(()=>toggleDevelopmentProjectSettings(true),0)}
 function openDevelopmentGitStore(){backToDevelopmentProjectList();setTimeout(()=>window.GKSDevelopmentGitStore?.focus?.(),0)}
 function continueDevelopmentProject(id){id=String(id||'');if(developmentScreen!=='project'||id!==activeDevelopmentProjectId)openDevelopmentProject(id);if(id!==activeDevelopmentProjectId)return;developmentPane='architecture';setDevelopmentPane('architecture');const focus=developmentProjectLatestFocus(activeDevelopmentProjectEntry());if(focus)setTimeout(()=>window.GKSDevelopmentArchitectureExplorer?.focus?.(focus.node_id,focus.box_id),0)}
@@ -3523,7 +3497,13 @@ async function resetAllDevelopmentProjects(){
 }
 
 function devNextId(prefix,rows){const used=new Set((rows||[]).map(x=>x.id));let n=1,id;do{id=prefix+String(n++).padStart(4,'0')}while(used.has(id));return id}
-function setDevelopmentPane(name){developmentPane=name;['context','architecture','discussion','decision','specification','system','state','impact','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==name));renderDevelopmentWorkspace()}
+function setDevelopmentPane(name){
+ developmentPane=String(name||'home');
+ const all=['home','context','architecture','discussion','decision','specification','system','state','impact','workflow','checks','aipublish'];
+ all.forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
+ document.getElementById('developmentSectionBack')?.classList.toggle('hidden',developmentPane==='home');
+ renderDevelopmentWorkspace();
+}
 function resetDevDiscussionEditor(){editingDevDiscussionId='';['devDiscussionId','devDiscussionTitle','devDiscussionSummary','devDiscussionBody','devDiscussionOpenQuestions','devDiscussionConclusion','devDiscussionRelated','devDiscussionArtifact'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});if(document.getElementById('devDiscussionStatus'))devDiscussionStatus.value='Open'}
 function startNewDevDiscussion(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorTitle').textContent='新規Discussion';document.getElementById('devDiscussionEditorPanel')?.classList.remove('hidden');setTimeout(()=>devDiscussionTitle?.focus(),0)}
 function closeDevDiscussionEditor(){resetDevDiscussionEditor();document.getElementById('devDiscussionEditorPanel')?.classList.add('hidden')}
@@ -3568,21 +3548,18 @@ function saveDevSpecification(){const w=loadDevelopmentWorkspace(),title=devSpec
 function developmentOpenQuestions(w){return w.discussions.flatMap(d=>String(d.open_questions||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(text=>({discussion_id:d.id,text})))}
 function renderDevelopmentWorkspace(){
  const root=document.getElementById('view-development');if(!root)return;
- ensureDevelopmentProjectRegistry();const entry=activeDevelopmentProjectEntry();
- renderDevelopmentProjectSelector();renderDevelopmentProjectCards();renderDevelopmentAllDataStatus();
- document.getElementById('developmentProjectListView')?.classList.toggle('hidden',developmentScreen!=='projects');
- document.getElementById('developmentProjectDetailView')?.classList.toggle('hidden',developmentScreen!=='project');
- if(!entry){developmentScreen='projects';document.getElementById('developmentProjectListView')?.classList.remove('hidden');document.getElementById('developmentProjectDetailView')?.classList.add('hidden');window.GKSDevelopmentGitStore?.render?.();return;}
- const w=loadDevelopmentWorkspace(),oq=developmentOpenQuestions(w),snap=developmentProjectSnapshot(entry);
- if(developmentScreen!=='project')return;
- const currentTitle=document.getElementById('developmentCurrentProjectTitle'),currentFocus=document.getElementById('developmentCurrentProjectFocus');
- if(currentTitle)currentTitle.innerHTML=`${esc(entry?.name||w.workspace.name||'')} <span class="dev-project-badge ${developmentLifecycleClass(w.lifecycle?.status)}">${esc(developmentLifecycleLabel(w.lifecycle?.status))}</span> <span class="dev-project-badge ${developmentProjectStatusClass(w.workspace.status)}">${esc(developmentProjectStatusLabel(w.workspace.status))}</span>`;
- if(currentFocus)currentFocus.textContent=`${entry?.id||w.workspace.id||''} / Workflow ${w.workflow?.stage||'Discovery'} / ${snap.focus}`;
- if(document.getElementById('developmentProjectBreadcrumb'))developmentProjectBreadcrumb.textContent=entry?.name||w.workspace.name||'';
- devKpiDiscussions.textContent=w.discussions.length;devKpiArchitecture.textContent=w.architecture_nodes.length;devKpiWorkBoxes.textContent=w.work_boxes.length;devKpiTasks.textContent=w.tasks.length;devKpiDecisions.textContent=w.decisions.length;devKpiSpecifications.textContent=w.specifications.length;devKpiChecks.textContent=(w.checks||[]).length;devKpiOpenQuestions.textContent=oq.length;
- developmentStoreStatus.innerHTML=`<b>更新:</b> ${esc(w.workspace.updated_at||'')} / <b>未完了Task:</b> ${snap.openTasks} / <b>確認待ち:</b> ${snap.openChecks} / <b>検討中Discussion:</b> ${snap.openDiscussions}<br><b>保存:</b> ${`Git canonical / ${window.GKSDevelopmentGitStore?.isDirty?.(entry.id)?'Session変更あり・Git未Commit':'Remote同期済み'} / instance ${w.authority.instance_id} / revision ${w.authority.revision}`}`;
- const dataSummary=document.getElementById('developmentProjectDataSummary');if(dataSummary)dataSummary.innerHTML=`<b>${esc(w.workspace.name||entry?.name||'')}</b><br><b>ID:</b> ${esc(w.workspace.id||entry?.id||'')} / <b>Lifecycle:</b> ${esc(developmentLifecycleLabel(w.lifecycle?.status))} / <b>Workflow:</b> ${esc(w.workflow?.stage||'Discovery')} / <b>互換状態:</b> ${esc(developmentProjectStatusLabel(w.workspace.status))} / <b>更新:</b> ${esc(w.workspace.updated_at||'')}<br><b>内容:</b> Architecture ${w.architecture_nodes.length} / Work Box ${w.work_boxes.length} / Task ${w.tasks.length} / 確認 ${(w.checks||[]).length} / Discussion ${w.discussions.length} / Decision ${w.decisions.length} / Specification ${w.specifications.length} / Candidate ${(w.specification_candidates||[]).length} / System ${(w.system_nodes||[]).length} / Contract ${(w.system_contracts||[]).length} / Connection ${(w.system_connections||[]).length}`;
- ['context','architecture','discussion','decision','specification','system','state','impact','workflow','checks','data','aipublish','overview'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
+ ensureDevelopmentProjectRegistry();renderDevelopmentProjectSelector();renderDevelopmentProjectCards();
+ const listView=document.getElementById('developmentProjectListView'),detailView=document.getElementById('developmentProjectDetailView');
+ listView?.classList.toggle('hidden',developmentScreen!=='projects');detailView?.classList.toggle('hidden',developmentScreen!=='project');
+ if(developmentScreen!=='project'){window.GKSDevelopmentGitStore?.refreshProjectIndex?.({quiet:true});return}
+ const entry=activeDevelopmentProjectEntry();if(!entry||!developmentWorkspace){developmentScreen='projects';renderDevelopmentWorkspace();return}
+ const w=loadDevelopmentWorkspace();
+ const currentTitle=document.getElementById('developmentCurrentProjectTitle');if(currentTitle)currentTitle.textContent=w.workspace.name||entry.name||w.workspace.id;
+ const dirty=!!window.GKSDevelopmentGitStore?.isDirty?.(entry.id),dirtyEl=document.getElementById('developmentDirtyIndicator');dirtyEl?.classList.toggle('hidden',!dirty);
+ const saveButton=document.getElementById('devProjectSaveButton');if(saveButton)saveButton.disabled=!dirty;
+ const storeStatus=document.getElementById('developmentStoreStatus');if(storeStatus)storeStatus.textContent=dirty?'未保存の変更があります':'';
+ ['home','context','architecture','discussion','decision','specification','system','state','impact','workflow','checks','aipublish'].forEach(x=>document.getElementById('developmentPane-'+x)?.classList.toggle('hidden',x!==developmentPane));
+ document.getElementById('developmentSectionBack')?.classList.toggle('hidden',developmentPane==='home');
  if(developmentPane==='context')window.GKSDevelopmentProjectContext?.render();
  if(developmentPane==='architecture')window.GKSDevelopmentArchitectureExplorer?.render();
  if(developmentPane==='workflow'||developmentPane==='checks')window.GKSDevelopmentWorkflow?.render();
@@ -3591,14 +3568,12 @@ function renderDevelopmentWorkspace(){
  if(developmentPane==='system')window.GKSDevelopmentSystemStructure?.render();
  if(developmentPane==='state')window.GKSDevelopmentSystemState?.render();
  if(developmentPane==='impact')window.GKSDevelopmentSystemImpact?.render();
- devDiscussionList.innerHTML=[...w.discussions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b> <span class="badge">${esc(discussionStatusLabel(d.status))}</span><div class="meta">${esc(d.id)} / 未決 ${String(d.open_questions||'').split(/\r?\n/).filter(x=>x.trim()).length}件 / 更新 ${esc(d.updated_at)}</div><p>${esc(d.summary||d.body||'')}</p><button onclick="openDevDiscussion('${escAttr(d.id)}')">開く</button></div>`).join('')||'<div class="dev-empty-guide">Discussionはまだありません。</div>';
- devDecisionList.innerHTML=[...w.decisions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b> <span class="badge ${d.status==='Approved'?'ok':''}">${esc(jpStatus(d.status))}</span><div class="meta">${esc(d.id)} / 根拠: ${esc((d.source_discussion_ids||[]).join(', ')||'なし')}${d.approved_at?' / Human承認 '+esc(d.approved_at):''}</div><p>${esc(d.text)}</p><button onclick="openDevDecision('${escAttr(d.id)}')">開く</button></div>`).join('')||'<div class="dev-empty-guide">Decisionはまだありません。</div>';
- devSpecificationList.innerHTML=[...w.specifications].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>{const missing=(d.depends_on||[]).filter(id=>!w.specifications.some(x=>x.id===id));return `<div class="item"><b>${esc(d.title)}</b> <span class="badge ${['Approved','Implemented','Verified'].includes(d.status)?'ok':''}">${esc(jpStatus(d.status))}</span><div class="meta">${esc(d.id)} / Decision: ${esc((d.decision_refs||[]).join(', ')||'なし')} / 前提: ${esc((d.depends_on||[]).join(', ')||'なし')}${missing.length?' / 不明 '+esc(missing.join(', ')):''}</div><p>${esc(d.summary||d.body||'')}</p><button onclick="openDevSpecification('${escAttr(d.id)}')">開く</button></div>`}).join('')||'<div class="dev-empty-guide">Specificationはまだありません。</div>';
- const dd=w.discussions.find(x=>x.id===selectedDevDiscussionId);if(dd){setDevRecordDetailMode('discussion');devDiscussionDetailTitle.textContent=dd.title||dd.id;devDiscussionDetailMeta.textContent=`${dd.id} / ${discussionStatusLabel(dd.status)} / 更新 ${dd.updated_at||''}`;devDiscussionDetailSummary.textContent=dd.summary||'概要なし';devDiscussionDetailBody.textContent=dd.body||'本文なし';devDiscussionDetailQuestions.textContent=dd.open_questions||'未決事項なし';devDiscussionDetailConclusion.textContent=dd.conclusion||'結論未設定'}else if(!editingDevDiscussionId&&document.getElementById('devDiscussionEditorPanel')?.classList.contains('hidden'))setDevRecordListMode('discussion');
- const dec=w.decisions.find(x=>x.id===selectedDevDecisionId);if(dec){setDevRecordDetailMode('decision');devDecisionDetailTitle.textContent=dec.title||dec.id;devDecisionDetailMeta.textContent=`${dec.id} / ${jpStatus(dec.status)} / 根拠 ${((dec.source_discussion_ids||[]).join(', ')||'なし')}${dec.approved_at?' / Human承認 '+dec.approved_at:''}`;devDecisionDetailText.textContent=dec.text||'内容なし';devDecisionDetailRationale.textContent=dec.rationale||'理由未記入'}else if(!editingDevDecisionId&&document.getElementById('devDecisionEditorPanel')?.classList.contains('hidden'))setDevRecordListMode('decision');
- const spec=w.specifications.find(x=>x.id===selectedDevSpecId);if(spec){setDevRecordDetailMode('specification');devSpecDetailTitle.textContent=spec.title||spec.id;devSpecDetailMeta.textContent=`${spec.id} / ${jpStatus(spec.status)} / Decision ${((spec.decision_refs||[]).join(', ')||'なし')} / 前提 ${((spec.depends_on||[]).join(', ')||'なし')} / System ${esc(spec.system_node_id||'未接続')} / Contract ${esc((spec.contract_ids||[]).join(', ')||'なし')}`;devSpecDetailSummary.textContent=spec.summary||'概要なし';devSpecDetailBody.textContent=spec.body||'本文なし';devSpecDetailAcceptance.textContent=spec.acceptance_criteria||'完了条件未記入'}else if(!editingDevSpecId&&document.getElementById('devSpecEditorPanel')?.classList.contains('hidden'))setDevRecordListMode('specification');
- devDependencyOverview.innerHTML=w.specifications.map(d=>{const deps=d.depends_on||[],ready=deps.every(id=>w.specifications.some(x=>x.id===id&&['Approved','Implemented','Verified'].includes(x.status)));return `<div class="item"><b>${esc(d.id)} / ${esc(d.title)}</b> <span class="badge ${ready?'ok':'warn'}">${ready?'着手可能':'依存待ち'}</span><div class="meta">前提: ${esc(deps.join(', ')||'なし')}</div></div>`}).join('')||'<div class="small">仕様なし</div>';
- devOpenQuestionOverview.innerHTML=oq.map(x=>`<div class="item"><b>${esc(x.discussion_id)}</b><p>${esc(x.text)}</p></div>`).join('')||'<div class="small">未決事項なし</div>';
+ const discussionList=document.getElementById('devDiscussionList');if(discussionList)discussionList.innerHTML=[...w.discussions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b><div class="meta">${esc(discussionStatusLabel(d.status))}</div><button onclick="openDevDiscussion('${escAttr(d.id)}')">開く</button></div>`).join('')||'<div class="dev-empty-guide">Discussionはまだありません。</div>';
+ const decisionList=document.getElementById('devDecisionList');if(decisionList)decisionList.innerHTML=[...w.decisions].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b><div class="meta">${esc(jpStatus(d.status))}</div><button onclick="openDevDecision('${escAttr(d.id)}')">開く</button></div>`).join('')||'<div class="dev-empty-guide">Decisionはまだありません。</div>';
+ const specList=document.getElementById('devSpecificationList');if(specList)specList.innerHTML=[...w.specifications].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).map(d=>`<div class="item"><b>${esc(d.title)}</b><div class="meta">${esc(jpStatus(d.status))}</div><button onclick="openDevSpecification('${escAttr(d.id)}')">開く</button></div>`).join('')||'<div class="dev-empty-guide">Specificationはまだありません。</div>';
+ const dd=w.discussions.find(x=>x.id===selectedDevDiscussionId);if(dd){setDevRecordDetailMode('discussion');devDiscussionDetailTitle.textContent=dd.title||dd.id;devDiscussionDetailMeta.textContent=`${dd.id} / ${discussionStatusLabel(dd.status)}`;devDiscussionDetailSummary.textContent=dd.summary||'概要なし';devDiscussionDetailBody.textContent=dd.body||'本文なし';devDiscussionDetailQuestions.textContent=dd.open_questions||'未決事項なし';devDiscussionDetailConclusion.textContent=dd.conclusion||'結論未設定'}else if(!editingDevDiscussionId&&document.getElementById('devDiscussionEditorPanel')?.classList.contains('hidden'))setDevRecordListMode('discussion');
+ const dec=w.decisions.find(x=>x.id===selectedDevDecisionId);if(dec){setDevRecordDetailMode('decision');devDecisionDetailTitle.textContent=dec.title||dec.id;devDecisionDetailMeta.textContent=`${dec.id} / ${jpStatus(dec.status)}`;devDecisionDetailText.textContent=dec.text||'内容なし';devDecisionDetailRationale.textContent=dec.rationale||'理由未記入'}else if(!editingDevDecisionId&&document.getElementById('devDecisionEditorPanel')?.classList.contains('hidden'))setDevRecordListMode('decision');
+ const spec=w.specifications.find(x=>x.id===selectedDevSpecId);if(spec){setDevRecordDetailMode('specification');devSpecDetailTitle.textContent=spec.title||spec.id;devSpecDetailMeta.textContent=`${spec.id} / ${jpStatus(spec.status)}`;devSpecDetailSummary.textContent=spec.summary||'概要なし';devSpecDetailBody.textContent=spec.body||'本文なし';devSpecDetailAcceptance.textContent=spec.acceptance_criteria||'完了条件未記入'}else if(!editingDevSpecId&&document.getElementById('devSpecEditorPanel')?.classList.contains('hidden'))setDevRecordListMode('specification');
 }
 
 function discussionReturnTemplate(d){
@@ -3694,7 +3669,7 @@ function discussionReturnReportMarkdown(report){
 }
 function validateDiscussionAiReturn(raw){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('JSONルートはobjectである必要があります。');if(raw.format!=='gk-development-discussion-return'||String(raw.version||'')!=='2.0')throw new Error('authority付きDiscussion返却JSON v2.0が必要です。旧形式は受け付けません。');
- const w=loadDevelopmentWorkspace(),projectId=String(raw.target_project_id||'').trim();if(projectId!==w.workspace.id)throw new Error(`target_project_id不一致: ${projectId||'(missing)'}`);developmentAssertSameAuthority(w,{workspace:{id:projectId},authority:raw.project_authority},{requireSameRevision:true});
+ const w=loadDevelopmentWorkspace(),projectId=String(raw.target_project_id||'').trim();if(projectId!==w.workspace.id)throw new Error(`target_project_id不一致: ${projectId||'(missing)'}`);developmentAssertSameAuthority(w,{workspace:{id:projectId},authority:raw.project_authority});
  const target=String(raw.target_discussion_id||'').trim();if(!target)throw new Error('target_discussion_idがありません。');const u=raw.discussion_update;if(!u||typeof u!=='object'||Array.isArray(u))throw new Error('discussion_updateがありません。');const status=String(u.status||'Open');if(!['Open','Pending','Resolved','Archived'].includes(status))throw new Error(`不正なDiscussion状態です: ${status}`);
  return {target_discussion_id:target,discussion_update:{status,summary:String(u.summary??''),body_append:String(u.body_append??''),open_questions:String(u.open_questions??''),conclusion:String(u.conclusion??''),related_discussion_ids:cleanDiscussionReturnArray(u.related_discussion_ids),artifact_note:String(u.artifact_note??'')},ai_report:raw.ai_report&&typeof raw.ai_report==='object'?raw.ai_report:{}};
 }
@@ -3733,7 +3708,7 @@ async function importDiscussionAiReturn(file){
   if(unknownRelated.length)preview+=`\n\n注意: 未登録の関連Discussion IDがあります:\n${unknownRelated.join(', ')}`;
   const activeEntry=activeDevelopmentProjectEntry();
   if(activeEntry?.storage_mode!=='git')throw new Error('非canonical案件へのAI返却取込を拒否しました。');
-  preview+='\n\nauthority/revision一致済みです。Sessionへ反映しrevisionを進めます。Git保存は明示操作です。よろしいですか？';
+  preview+='\n\n同一案件・同一instanceを確認しました。現在の編集内容へ反映します。Git保存は明示操作です。よろしいですか？';
   if(!confirm(preview))return;
 
 
@@ -3759,7 +3734,7 @@ async function importDiscussionAiReturn(file){
   if(!saveDevelopmentWorkspace(`AI Discussion return imported: ${current.id}`))throw new Error('Development Workspaceの保存に失敗しました。');
   renderDevelopmentWorkspace();
   editDevDiscussion(current.id);
-  alert(`AI返却JSONを ${current.id} にcanonical Session反映しました。\nrevision=${developmentWorkspace.authority.revision}\nGitにはまだ保存していません。`);
+  alert(`AI返却JSONを ${current.id} に反映しました。\nGitにはまだ保存していません。`);
  }catch(e){
   alert('AI返却JSONの読込に失敗しました: '+e.message);
  }
@@ -3771,7 +3746,7 @@ function renderDevelopmentAllDataStatus(){
  const gitCount=(developmentProjectRegistry||[]).filter(x=>x.storage_mode==='git').length;el.innerHTML=`<b>全案件:</b> ${rows.length}件 / <b>Git保管:</b> ${gitCount} / <b>検討・作業中:</b> ${inProgress} / <b>保留:</b> ${pending} / <b>完了:</b> ${finished}<br><b>現在案件:</b> ${esc(active?.id||'')} / ${esc(active?.name||'')}`;
 }
 async function exportDevelopmentWorkspace(){const w=loadDevelopmentWorkspace(),id=String(w?.workspace?.id||activeDevelopmentProjectId||'project').replace(/[^A-Za-z0-9._-]+/g,'_');downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8')}
-// GKS-B740 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_BEGIN
+// GKS-B741 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_BEGIN
 const DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS=Object.freeze([
  'project_rules','implementation_records','discussions','decisions','specifications','specification_candidates',
  'system_nodes','system_contracts','system_connections','system_flags','system_events','system_impacts',
@@ -3791,7 +3766,7 @@ function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
  const current=normalizeDevelopmentWorkspace(currentRaw),raw=(incomingRaw&&typeof incomingRaw==='object'&&!Array.isArray(incomingRaw))?structuredClone(incomingRaw):null;if(!raw)throw new Error('Development Project JSONのObjectが必要です。');
  if(raw.format==='gk-development-project-collection')throw new Error('旧全案件JSON形式は廃止されました。');
  const sourceId=String(raw?.workspace?.id||'').trim();if(sourceId!==String(current.workspace.id||''))throw new Error(`案件IDが一致しません。現在=${current.workspace.id} / Import=${sourceId||'(missing)'}`);
- if(!raw.authority)throw new Error('統合JSONにauthorityがありません。旧形式は自動migrationしません。');developmentAssertSameAuthority(current,{workspace:{id:sourceId},authority:raw.authority},{requireSameRevision:true});
+ if(!raw.authority)throw new Error('統合JSONにauthorityがありません。');developmentAssertSameAuthority(current,{workspace:{id:sourceId},authority:raw.authority});
  if(Object.prototype.hasOwnProperty.call(raw,'impact_items'))throw new Error('旧impact_itemsは自動migrationしません。');
  const composite=structuredClone(current);for(const key of Object.keys(raw)){if(key==='workspace')composite.workspace={...composite.workspace,...raw.workspace};else if(key!=='authority')composite[key]=structuredClone(raw[key])}
  composite.workspace={...current.workspace,...(raw.workspace||{}),id:current.workspace.id,name:current.workspace.name};composite.authority=structuredClone(current.authority);
@@ -3806,8 +3781,8 @@ function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
  merged.workspace.id=current.workspace.id;merged.workspace.name=current.workspace.name;merged.workspace.updated_at=current.workspace.updated_at;merged.authority=structuredClone(current.authority);merged.schema_version=DEVELOPMENT_PROJECT_SCHEMA_VERSION;return{merged:normalizeDevelopmentWorkspace(merged),summary};
 }
 function developmentMergeSummaryText(summary){const rows=[];for(const [key,v] of Object.entries(summary.arrays||{}))rows.push(`${key}: 追加${v.adds} / 更新${v.updates} / 同一${v.same}`);if(summary.history?.adds||summary.history?.same)rows.push(`history: 追加${summary.history.adds} / 同一${summary.history.same}`);for(const x of summary.objects||[])rows.push(`${x.key}: ${x.changed?'更新':'同一'}${x.protected_fields?.length?` / 巻戻し保護 ${x.protected_fields.join(',')}`:''}`);for(const x of summary.workspace||[])rows.push(`workspace.${x.key}: ${x.changed?'更新':'同一'}${x.protected?' / Workflow正本を保持':''}`);return `合計: 追加${summary.total.adds} / 更新${summary.total.updates} / 同一${summary.total.same} / 削除0`+(rows.length?`\n\n${rows.join('\n')}`:'')}
-async function mergeImportDevelopmentWorkspace(file){if(!file)return;try{const entry=activeDevelopmentProjectEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git canonical案件を開いてください。');const raw=JSON.parse(await file.text()),current=loadDevelopmentWorkspace(),plan=prepareDevelopmentWorkspaceMerge(current,raw),text=developmentMergeSummaryText(plan.summary);if(!plan.summary.total.adds&&!plan.summary.total.updates){alert(`統合対象の変更はありません。\n\n${text}`);return}if(!confirm(`authority instance/revision一致を確認しました。現在canonical SessionへJSONを統合します。\n現在: ${entry.id} / revision ${current.authority.revision}\n\n${text}\n\n統合後はrevisionを1つ進め、Git保存まで未Commit状態になります。続けますか？`))return;developmentWorkspace=plan.merged;if(!saveDevelopmentWorkspace(`Development Workspace JSON merged: add=${plan.summary.total.adds} update=${plan.summary.total.updates} delete=0`))throw new Error('統合後Sessionの保存に失敗しました。');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`現在canonical SessionへJSONを統合しました。revision=${developmentWorkspace.authority.revision}\nGitにはまだ保存していません。\n${developmentMergeSummaryText(plan.summary)}`)}catch(e){alert('開発管理JSON統合失敗: '+e.message)}}
-// GKS-B740 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_END
+async function mergeImportDevelopmentWorkspace(file){if(!file)return;try{const entry=activeDevelopmentProjectEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git canonical案件を開いてください。');const raw=JSON.parse(await file.text()),current=loadDevelopmentWorkspace(),plan=prepareDevelopmentWorkspaceMerge(current,raw),text=developmentMergeSummaryText(plan.summary);if(!plan.summary.total.adds&&!plan.summary.total.updates){alert(`統合対象の変更はありません。\n\n${text}`);return}if(!confirm(`同一案件・同一instanceを確認しました。現在の案件へJSONを統合します。\n現在: ${entry.id}\n\n${text}\n\nGit保存までは未保存状態です。続けますか？`))return;developmentWorkspace=plan.merged;if(!saveDevelopmentWorkspace(`Development Workspace JSON merged: add=${plan.summary.total.adds} update=${plan.summary.total.updates} delete=0`))throw new Error('統合後Sessionの保存に失敗しました。');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`現在の案件へJSONを統合しました。\nGitにはまだ保存していません。\n${developmentMergeSummaryText(plan.summary)}`)}catch(e){alert('開発管理JSON統合失敗: '+e.message)}}
+// GKS-B741 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_END
 async function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
 
 function addDecision(){
@@ -5660,7 +5635,7 @@ window.addEventListener('DOMContentLoaded',installStudioMobileTouchRouter);
 function studioNavigateHierarchy(route){
  const target=String(route||'');
  if(target==='development/projects'){
-  developmentScreen='projects';developmentPane='context';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';hideDevelopmentRecordEditors();window.GKSDevelopmentArchitectureExplorer?.reset?.();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0);return true;
+  developmentScreen='projects';developmentPane='home';selectedDevDiscussionId='';selectedDevDecisionId='';selectedDevSpecId='';hideDevelopmentRecordEditors();window.GKSDevelopmentArchitectureExplorer?.reset?.();renderDevelopmentWorkspace();setTimeout(()=>window.scrollTo({top:0,behavior:'instant'}),0);return true;
  }
  if(target.startsWith('development/project/')){
   const pane=target.slice('development/project/'.length);
@@ -9409,7 +9384,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','740');
+    url.searchParams.set('appv','741');
     location.replace(url.toString());
    }
  }
@@ -9418,7 +9393,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=740',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=741',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9437,7 +9412,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','740');
+    url.searchParams.set('appv','741');
     location.replace(url.toString());
    }
   });
@@ -9531,7 +9506,7 @@ function applyDesignFormationsToBattle(){try{const a=document.getElementById('de
 setTimeout(loadDesignCards,0);
 
 </script>
-<script src="./development-git-store/development-git-store.js?v=7"></script>
+<script src="./development-git-store/development-git-store.js?v=8"></script>
 <script src="./development-system-impact/development-system-impact.js?v=2"></script>
 <script src="./development-system-state/development-system-state.js?v=3"></script>
 <script src="./development-spec-candidate/development-spec-candidate.js?v=3"></script>
@@ -9541,19 +9516,35 @@ window.GKSDevelopmentGitStore.init({
   normalizeProject:obj=>normalizeDevelopmentWorkspace(obj),
   getActiveEntry:()=>activeDevelopmentProjectEntry(),
   getRegistryEntry:id=>ensureDevelopmentProjectRegistry().find(x=>x.id===String(id||''))||null,
-  getDefaultGitRemote:(preferredId='')=>{const rows=ensureDevelopmentProjectRegistry(),preferred=rows.find(x=>x.id===String(preferredId||'')&&x.git_remote?.owner&&x.git_remote?.repo),current=activeDevelopmentProjectEntry(),fallback=rows.find(x=>x.git_remote?.owner&&x.git_remote?.repo);return {...(preferred?.git_remote||(current?.git_remote?.owner&&current.git_remote?.repo?current.git_remote:(fallback?.git_remote||{})))};},
-  getCurrentWorkspace:()=>loadDevelopmentWorkspace(),
+  getDefaultGitRemote:(preferredId='')=>{const rows=ensureDevelopmentProjectRegistry(),preferred=rows.find(x=>x.id===String(preferredId||'')&&x.git_remote?.owner&&x.git_remote?.repo),fallback=rows.find(x=>x.git_remote?.owner&&x.git_remote?.repo);return {...(preferred?.git_remote||fallback?.git_remote||{})};},
+  getProjectIndexSeed:()=>ensureDevelopmentProjectRegistry().map(x=>({id:x.id,title:x.name||x.id})),
+  getCurrentWorkspace:()=>developmentWorkspace,
+  nextProjectId:()=>devNextProjectId(),
+  createBlankProject:(id,name)=>blankDevelopmentProjectSeed(id,name),
+  refresh:()=>renderDevelopmentWorkspace(),
+  replaceProjectIndex:(rows,remote)=>{
+    const previous=new Map(ensureDevelopmentProjectRegistry().map(x=>[x.id,x]));
+    developmentProjectRegistry=(rows||[]).map(row=>{
+      const old=previous.get(String(row.id||''))||{},id=String(row.id||'').trim();
+      return {id,name:String(row.title||row.name||id),status:old.status||'Exploring',lifecycle:old.lifecycle||'Active',storage_mode:'git',authority:old.authority||null,git_remote:{owner:String(remote?.owner||old.git_remote?.owner||''),repo:String(remote?.repo||old.git_remote?.repo||''),branch:String(remote?.branch||old.git_remote?.branch||''),path:developmentCanonicalPath(id),sha:String(old.git_remote?.sha||'')},created_at:old.created_at||'',updated_at:old.updated_at||''};
+    });
+    saveDevelopmentProjectRegistry();renderDevelopmentProjectCards();renderDevelopmentProjectSelector();
+  },
   openGitProject:(project,remote)=>{
     const candidate=normalizeDevelopmentWorkspace(project),id=String(candidate.workspace.id||'').trim();if(!id)throw new Error('workspace.idがありません。');
     if(remote?.path!==candidate.authority.canonical_path)throw new Error('Git remote pathとauthority.canonical_pathが一致しません。');
-    ensureDevelopmentProjectRegistry();let entry=developmentProjectRegistry.find(x=>x.id===id);const stamp=String(candidate.workspace.updated_at||now());
-    if(entry){if(entry.authority?.instance_id&&entry.authority.instance_id!==candidate.authority.instance_id)throw new Error(`Registry instance mismatch: ${entry.authority.instance_id} / ${candidate.authority.instance_id}`);entry.name=candidate.workspace.name;entry.status=candidate.workspace.status;entry.lifecycle=candidate.lifecycle.status;entry.authority=structuredClone(candidate.authority);entry.git_remote=structuredClone(remote);entry.updated_at=stamp;delete entry.git_state_error}
-    else{entry={id,name:candidate.workspace.name,status:candidate.workspace.status,lifecycle:candidate.lifecycle.status,storage_mode:'git',authority:structuredClone(candidate.authority),git_remote:structuredClone(remote),created_at:stamp,updated_at:stamp};developmentProjectRegistry.push(entry)}
-    activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();developmentScreen='project';developmentPane='context';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+    ensureDevelopmentProjectRegistry();let entry=developmentProjectRegistry.find(x=>x.id===id),stamp=String(candidate.workspace.updated_at||now());
+    if(!entry){entry={id,name:candidate.workspace.name,status:candidate.workspace.status,lifecycle:candidate.lifecycle.status,storage_mode:'git',authority:null,git_remote:{},created_at:stamp,updated_at:stamp};developmentProjectRegistry.push(entry)}
+    entry.name=candidate.workspace.name;entry.status=candidate.workspace.status;entry.lifecycle=candidate.lifecycle.status;entry.authority=structuredClone(candidate.authority);entry.git_remote=structuredClone(remote);entry.updated_at=stamp;
+    activeDevelopmentProjectId=id;developmentWorkspace=candidate;saveDevelopmentProjectRegistry();developmentScreen='project';developmentPane='home';resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
   },
-  replaceGitWorkspace:(project,remote)=>{const entry=activeDevelopmentProjectEntry();if(!entry)throw new Error('現在案件がありません。');const candidate=normalizeDevelopmentWorkspace(project);developmentAssertSameAuthority({workspace:{id:entry.id},authority:entry.authority},candidate,{requireSameRevision:false});if(remote?.path!==candidate.authority.canonical_path)throw new Error('Git remote path mismatch.');developmentWorkspace=candidate;entry.name=candidate.workspace.name;entry.status=candidate.workspace.status;entry.lifecycle=candidate.lifecycle.status;entry.authority=structuredClone(candidate.authority);entry.git_remote=structuredClone(remote);entry.updated_at=candidate.workspace.updated_at;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();},
-  updateGitRemote:(id,remote,authority)=>{const entry=ensureDevelopmentProjectRegistry().find(x=>x.id===String(id||''));if(!entry)return false;if(authority){const normalized=developmentNormalizeAuthority(authority,entry.id);if(normalized.instance_id!==entry.authority?.instance_id)throw new Error('Git保存後instance mismatch.');entry.authority=normalized}entry.git_remote=structuredClone(remote);entry.updated_at=developmentWorkspace?.workspace?.updated_at||entry.updated_at;saveDevelopmentProjectRegistry();renderDevelopmentWorkspace();return true;},
-  removeProjectMetadata:id=>{const key=String(id||'');developmentProjectRegistry=ensureDevelopmentProjectRegistry().filter(x=>x.id!==key);if(activeDevelopmentProjectId===key){activeDevelopmentProjectId=developmentProjectRegistry[0]?.id||'';developmentWorkspace=null}for(let i=localStorage.length-1;i>=0;i--){const storageKey=String(localStorage.key(i)||'');if(DEVELOPMENT_OBSOLETE_STORAGE_KEYS.includes(storageKey)||DEVELOPMENT_OBSOLETE_STORAGE_PREFIXES.some(prefix=>storageKey.startsWith(prefix)))localStorage.removeItem(storageKey)}saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();developmentScreen='projects';renderDevelopmentWorkspace();return true;}
+  replaceGitWorkspace:(project,remote)=>{
+    const candidate=normalizeDevelopmentWorkspace(project),id=String(candidate.workspace.id||'').trim();let entry=ensureDevelopmentProjectRegistry().find(x=>x.id===id);
+    if(!entry){entry={id,name:candidate.workspace.name,status:candidate.workspace.status,lifecycle:candidate.lifecycle.status,storage_mode:'git',authority:null,git_remote:{},created_at:candidate.workspace.updated_at||now(),updated_at:candidate.workspace.updated_at||now()};developmentProjectRegistry.push(entry)}
+    developmentWorkspace=candidate;activeDevelopmentProjectId=id;entry.name=candidate.workspace.name;entry.status=candidate.workspace.status;entry.lifecycle=candidate.lifecycle.status;entry.authority=structuredClone(candidate.authority);entry.git_remote=structuredClone(remote);entry.updated_at=candidate.workspace.updated_at;saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();
+  },
+  updateGitRemote:(id,remote,authority)=>{const entry=ensureDevelopmentProjectRegistry().find(x=>x.id===String(id||''));if(!entry)return false;if(authority)entry.authority=structuredClone(authority);entry.git_remote=structuredClone(remote);entry.updated_at=developmentWorkspace?.workspace?.updated_at||entry.updated_at;saveDevelopmentProjectRegistry();return true;},
+  removeProjectMetadata:id=>{const key=String(id||'');developmentProjectRegistry=ensureDevelopmentProjectRegistry().filter(x=>x.id!==key);if(activeDevelopmentProjectId===key){activeDevelopmentProjectId='';developmentWorkspace=null}saveDevelopmentProjectRegistry();resetDevelopmentEditorsForProjectSwitch();developmentScreen='projects';renderDevelopmentWorkspace();return true;}
 });
 </script>
 <script src="./development-project-context/development-project-context.js?v=4"></script>
