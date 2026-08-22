@@ -10,17 +10,17 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T07:24:00+09:00"
+    "updated_at": "2026-08-22T23:55:48.816Z"
   },
   "project_context": {
     "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存・Git再取得までの保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
-    "summary": "GKS-B743の保存経路再監査で確認した、部分JSONの単体事前検証、検証前のcurrent workspace直接変更、同名CRUD関数の重複定義、Git接続先決定の優先順位不整合、localStorage Registry fallback、Git indexとProject本文の不整合、保存Round-trip専用テスト不足をまとめて是正する。Project本文の正本はGitとし、案件一覧は軽量index、案件本文は選択確認後にGitから取得する。Project revision管理は使用せずGit SHAで競合を検出する。"
+    "summary": "GKS-B745時点のDevelopment↔Git全保存経路を再監査し、残存している旧処理を撤去する。Git Project本文とindexを正本とし、Project revisionは使用せずGit SHAで競合を扱う。新規保存・JSON新規保存・統合保存・編集保存・削除では、BranchとPATを必要判定なしで操作画面に毎回表示し、その入力値で直接Git処理を実行する。Owner/RepoはStudio接続先のみを使用し、Registry値・固定defaultへfallbackしない。操作時BranchはProject処理とindex処理の全工程で同一Branchを使用し、処理後の一覧状態も同Branchを維持する。Git index取得失敗時にlocalStorage案件一覧を表示しない。旧Git管理画面/API/CSS、死んだProject Settings処理、Development CRUD二重定義を撤去する。Project本文成功後のindex更新失敗は部分成功として明示し、その場でindex更新だけ再試行できるようにする。"
   },
   "current_focus": {
     "architecture_id": "ARCH-DEV-SAVE-ROOT",
-    "work_box_id": "BOX-DEV-SAVE-CORE",
-    "theme": "Development管理の保存経路全体再構築",
-    "goal": "open → edit/merge → validate → save → Git re-fetch → reopen の一貫した単一経路を確立する。"
+    "work_box_id": "BOX-DEV-SAVE-GIT",
+    "theme": "B745保存経路監査残件の撤去とGit I/O一本化",
+    "goal": "新規保存・統合・編集・削除をBranch+PAT直接入力の共通Git I/Oへ統一し、localStorage/旧Git UI/旧接続fallback/Branch分裂/部分成功放置を残さない。"
   },
   "project_rules": [
     {
@@ -67,14 +67,59 @@
       "source_id": "GKS-B743-save-path-audit",
       "created_at": "2026-08-23T07:24:00+09:00",
       "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-006",
+      "text": "新規保存・JSON新規保存・統合保存・編集保存・削除では、BranchとPATを必要/不要判定せず毎回その操作画面に表示し、別のGit設定画面へ遷移させない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-007",
+      "text": "操作時に入力したBranchは、その操作に含まれるProject GET/CREATE/PUT/DELETEとindex GET/PUTの全工程で同一値を使用し、処理途中でStudio既定BranchやRegistry Branchへ切り替えない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-008",
+      "text": "Development GitのOwner/RepoはStudio接続先だけを使用し、過去Registry値・固定default・ハードコード接続先へfallbackしない。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "GKS-B745-save-path-audit",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-009",
+      "text": "Git index取得に失敗した場合、localStorage Registryや前回一覧をGit正本として表示しない。失敗は失敗として表示する。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "GKS-B745-save-path-audit",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-010",
+      "text": "Project本文のCREATE/PUT/DELETE成功後にindex更新だけ失敗した場合は部分成功を明示し、その場でindex処理だけ再試行できるようにする。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "GKS-B745-save-path-audit",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B743",
+    "studio_build": "GKS-B745",
     "game_build": "GA-B486.211",
-    "source_label": "GKS-B743 development tree-first source",
+    "source_label": "GKS-B745 development git Branch+PAT save flow",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-23T07:24:00+09:00"
+    "recorded_at": "2026-08-23T08:52:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -119,6 +164,42 @@
       "approved_at": "",
       "created_at": "2026-08-23T07:24:00+09:00",
       "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-004",
+      "title": "Git書込操作はBranch+PATを毎回直接入力する",
+      "status": "Proposed",
+      "text": "新規保存、JSON新規保存、統合保存、編集保存、削除の操作UIにBranchとPATを常時表示する。PATの有無、認証要否、Branch設定済み等の事前条件判定は行わず、入力されたBranch/PATでGit処理を直接実行する。",
+      "rationale": "必要条件を事前判定して別画面へ遷移する経路そのものが無駄であり、操作完了までを一画面に閉じるため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-005",
+      "title": "Git Branchを操作単位で一本化する",
+      "status": "Proposed",
+      "text": "操作画面で入力されたBranchをProject処理とindex処理の両方へそのまま渡す。処理後のDevelopmentセッションも同Branchを現在Branchとして扱い、一覧refreshで別Branchへ戻さない。",
+      "rationale": "Projectを指定Branchへ保存した直後に別Branchのindexを読み、案件が消えたように見える不整合を防ぐため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-006",
+      "title": "旧Development Git経路を残さない",
+      "status": "Proposed",
+      "text": "localStorage案件一覧fallback、Registry由来Git接続fallback、固定default接続先、旧Git管理画面へ遷移するAPI/CSS、死んだProject Settings処理、Development CRUD二重定義を撤去する。",
+      "rationale": "新経路と旧経路の併存による後勝ち上書き・別接続先利用・古い一覧復活を防止するため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "specifications": [
@@ -218,13 +299,13 @@
       "id": "SPEC-DEV-SAVE-005",
       "title": "Git接続先決定仕様",
       "status": "Draft",
-      "summary": "Development保存先はStudio共通Git設定を基準に一意に決定し、過去Registry値や固定defaultで上書きしない。",
-      "body": "owner/repo/branchはStudio共通Git設定を基準に解決する。案件Registryに残る過去のgit_remote値や固定default branchをStudio設定より優先しない。canonical pathは development-project-data/<workspace.id>.json に固定する。",
+      "summary": "DevelopmentのOwner/RepoはStudio接続先のみ、Branchは操作入力値を使用し、Registry/固定defaultへfallbackしない。",
+      "body": "Owner/RepoはStudio共通Git接続先のみを使用する。新規保存・JSON新規保存・統合保存・編集保存・削除では操作画面で入力されたBranchを使用する。案件Registryに残るgit_remote値や固定default owner/repo/branchを使用しない。canonical pathは development-project-data/<workspace.id>.json とする。",
       "decision_refs": [
         "DEC-DEV-SAVE-001"
       ],
       "depends_on": [],
-      "acceptance_criteria": "画面のStudio Git設定と実際のDevelopment GET/PUT先owner/repo/branchが一致する。",
+      "acceptance_criteria": "Git GET/CREATE/PUT/DELETE/index処理のowner/repoがStudio接続先と一致し、書込操作のBranchが入力値と一致し、Registry/固定default fallbackが0件である。",
       "system_node_id": "SYS-DEV-GIT-STORE",
       "contract_ids": [
         "CONTRACT-DEV-GIT-REMOTE"
@@ -235,19 +316,19 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "SPEC-DEV-SAVE-006",
       "title": "案件index整合仕様",
       "status": "Draft",
-      "summary": "軽量案件indexはGit上だけで管理し、localStorage一覧を混ぜない。",
-      "body": "index.jsonはid/titleを中心とした軽量一覧とする。Git index取得失敗時にlocalStorage Registryから古い案件を復元しない。新規作成・名称変更・削除ではProject本文操作とindex更新の結果を個別確認し、部分失敗を成功扱いしない。",
+      "summary": "軽量案件indexはGit上だけで管理し、localStorage一覧を先行表示またはfallbackとして混ぜない。",
+      "body": "index.jsonはGit上の軽量一覧とする。初期一覧表示はGit index取得結果だけで構成する。Git index取得失敗時はlocalStorage Registryや前回キャッシュ一覧を正本として表示しない。Project本文処理とindex更新の片方だけ失敗した場合は部分成功を明示し、indexだけ再試行できる。",
       "decision_refs": [
         "DEC-DEV-SAVE-001"
       ],
       "depends_on": [],
-      "acceptance_criteria": "削除済み案件がlocalStorage情報から一覧へ復活せず、Project本文とindexの片方だけ失敗した場合は明示的に失敗状態が通知される。",
+      "acceptance_criteria": "Git index失敗時に古いlocalStorage案件が表示されず、Project本文/indexの部分失敗が明示され、index処理だけ再試行可能である。",
       "system_node_id": "SYS-DEV-PROJECT-LIST",
       "contract_ids": [
         "CONTRACT-DEV-LIST-GIT"
@@ -258,7 +339,98 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-007",
+      "title": "Git書込操作 Branch+PAT入力仕様",
+      "status": "Draft",
+      "summary": "5つのGit書込操作はBranchとPATを毎回その場で表示して直接実行する。",
+      "body": "対象操作:\n- 新規保存\n- JSON新規保存\n- 統合して保存\n- 編集保存\n- 案件削除\n\n各操作画面にはBranchとPATを常時表示する。PAT設定済み/未設定、認証要否、Branch設定済み等を先に判定して表示を切り替えない。Owner/Repoは表示せずStudio接続先を使用する。Git設定画面へ移動せず、入力後は同じ画面からGit処理を開始する。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-004"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "5操作すべてでBranch+PATが無条件表示され、Git設定画面への遷移・事前必要判定なしで処理を開始できる。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-008",
+      "title": "操作Branch一貫性仕様",
+      "status": "Draft",
+      "summary": "入力BranchをProjectとindexの全Git処理で共有し、途中で別Branchへ切り替えない。",
+      "body": "1. 操作開始時のBranch入力値をoperation contextへ保持する。\n2. Project CREATE/PUT/DELETEは同Branchを使用する。\n3. 続くindex GET/PUTも同Branchを使用する。\n4. index SHA競合時の再GET/再PUTにも同Branchを使用する。\n5. 成功後のDevelopment一覧状態も同Branchを維持する。\n6. Studio既定Branch、Registry Branch、固定defaultへ処理途中でfallbackしない。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-005"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "任意Branchで新規保存・名称変更・削除した直後に、別Branchのindexを取得せず同Branchの一覧状態が維持される。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-009",
+      "title": "旧Git接続・一覧fallback撤去仕様",
+      "status": "Draft",
+      "summary": "Git正本以外の旧fallbackと旧Git管理UI経路を実行コードから撤去する。",
+      "body": "撤去対象:\n- localStorage Registryを案件一覧正本として先行表示/fallbackする処理\n- Registry由来owner/repo/branch fallback\n- Development Git Store内の固定owner/repo/branch default\n- 旧Git管理画面へ移動するfocus/openDevelopmentGitStore等\n- 未使用Git Store UI CSS\n- 死んだDevelopment Project Settings処理\n- 同名Development CRUD/save/load関数の二重定義\n- 現行保存経路から参照されない旧host API\n",
+      "decision_refs": [
+        "DEC-DEV-SAVE-006"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "Git index失敗時にlocalStorage案件が表示されず、Git接続先にRegistry/固定default fallbackがなく、対象旧UI/API/CSS/二重定義が実行コードに残っていない。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-010",
+      "title": "Project/index部分成功回復仕様",
+      "status": "Draft",
+      "summary": "Project処理成功後にindexだけ失敗した場合、Project処理を繰り返さずindexだけ再試行する。",
+      "body": "新規保存/JSON新規保存:\nProject CREATE成功→index PUT失敗なら『案件本文は保存済み / 一覧登録失敗』を表示し、index登録のみ再試行する。\n\n削除:\nProject DELETE成功→index PUT失敗なら『案件本体は削除済み / 一覧更新失敗』を表示し、index削除のみ再試行する。\n\n再試行では最新indexを同じ操作BranchからGETし、対象idの追加/削除を適用してPUTする。",
+      "decision_refs": [],
+      "depends_on": [],
+      "acceptance_criteria": "Project成功/index失敗を成功扱いせず、同一Branch上でindex処理だけを再試行して復旧できる。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-LIST-GIT",
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -294,9 +466,9 @@
     {
       "id": "SYS-DEV-GIT-STORE",
       "name": "Development Git Store",
-      "description": "Development Project/indexのGit GET/PUT、SHA競合判定、保存後再GET検証を担当する。",
+      "description": "Development Project/indexのGit GET/CREATE/PUT/DELETEを担当する。書込操作は画面入力Branch+PATを直接使用し、Owner/RepoはStudio接続先のみを使用する。Git SHAで競合を扱い、Registry/固定default/localStorage正本fallbackを持たない。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "SYS-DEV-GIT-REMOTE",
@@ -314,9 +486,9 @@
       "consumer_system_ids": [
         "SYS-DEV-PROJECT-LIST"
       ],
-      "definition": "Git上のdevelopment-project-data/index.jsonを案件一覧へ供給し、新規・名称変更・削除時だけindexを更新する。",
+      "definition": "Git上のdevelopment-project-data/index.jsonだけを案件一覧正本として扱う。Project CREATE/DELETE/名称変更後は同一操作Branchでindexを更新し、部分失敗時はindexだけ再試行する。localStorage一覧へfallbackしない。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "CONTRACT-DEV-EDITOR-VALIDATOR",
@@ -359,9 +531,9 @@
       "consumer_system_ids": [
         "SYS-DEV-GIT-REMOTE"
       ],
-      "definition": "Studio共通Git設定でowner/repo/branchを決定し、Git SHAを使ってcanonical JSONをGET/PUTする。",
+      "definition": "Owner/RepoはStudio接続先、書込Branch/PATは操作画面入力を使用し、Git SHA付きでDevelopment canonical Project/indexをGET/CREATE/PUT/DELETEする。Registry/固定default接続先へfallbackしない。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "system_connections": [
@@ -457,9 +629,9 @@
       "key": "AUDIT_FINDING",
       "value": "DUPLICATE_CRUD_FUNCTIONS",
       "source": "save-path-audit",
-      "note": "Discussion/Decision/Specification等の同名save/edit関数が複数定義され、後勝ち上書きが発生する。",
+      "note": "B745でもDiscussion/Decision/Specification等の同名CRUD関数二重定義が残っている。後勝ち上書きをなくす。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "FLAG-DEV-SAVE-005",
@@ -468,9 +640,9 @@
       "key": "AUDIT_FINDING",
       "value": "GIT_TARGET_PRECEDENCE",
       "source": "save-path-audit",
-      "note": "Development Git接続先解決で過去Registry値・固定defaultがStudio共通Git設定より優先される経路がある。",
+      "note": "B745でもRegistry値・固定defaultを含むGit接続fallbackが残る。Owner/RepoはStudio接続先のみ、Branchは操作入力値へ統一してfallbackを撤去する。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "FLAG-DEV-SAVE-006",
@@ -479,9 +651,9 @@
       "key": "AUDIT_FINDING",
       "value": "LOCAL_REGISTRY_FALLBACK",
       "source": "save-path-audit",
-      "note": "Git index取得失敗時やindex更新時にlocalStorage Registryを混ぜ、古い案件を復活させる可能性がある。",
+      "note": "B745でもlocalStorage Registryを先に表示し、Git index失敗時に旧一覧が残る経路がある。Git indexだけを案件一覧正本にする。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "FLAG-DEV-SAVE-007",
@@ -490,9 +662,9 @@
       "key": "AUDIT_FINDING",
       "value": "INDEX_PROJECT_PARTIAL_SUCCESS",
       "source": "save-path-audit",
-      "note": "Project本文とindex更新が別処理で、一方失敗時にも保存済み/成功に見える状態が発生し得る。",
+      "note": "B745でもProject CREATE/DELETE成功後のindex PUT失敗がalertだけで終了し、その場のindex-only再試行がない。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "FLAG-DEV-SAVE-008",
@@ -504,6 +676,39 @@
       "note": "open→edit/merge→save→Git再GET→reopenを通すDevelopment保存専用Regressionがない。",
       "created_at": "2026-08-23T07:24:00+09:00",
       "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-009",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "BRANCH_SPLIT_INDEX_REFRESH",
+      "source": "GKS-B745-save-path-audit",
+      "note": "操作画面BranchでProject/indexを書いた後、一覧refreshがStudio既定Branch等を使うと保存直後に案件が消えたように見える。全工程を操作Branchへ統一する。",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-010",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "DEAD_GIT_STORE_UI_PATHS",
+      "source": "GKS-B745-save-path-audit",
+      "note": "旧Git管理画面用reload/test/focus/fill系API、Git Store CSS、Project Settings系の死んだ処理が残っている。現行経路から完全撤去する。",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-011",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "READ_WRITE_AUTH_PATH_SPLIT",
+      "source": "GKS-B745-save-path-audit",
+      "note": "B745では案件一覧/本文GETが旧Studio ghToken系、書込が操作画面PAT系で分裂している。保存経路で使う接続情報の責務を整理し、旧Git UI依存を残さない。",
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "system_events": [],
@@ -613,11 +818,11 @@
     {
       "id": "TASK-DEV-SAVE-001",
       "box_id": "BOX-DEV-SAVE-CORE",
-      "title": "案件一覧をGit indexだけで構成しlocalStorage fallbackを撤去する",
+      "title": "案件一覧をGit indexだけで構成しlocalStorage先行表示/fallbackを撤去する",
       "status": "Todo",
       "execution_order": 10,
       "depends_on": [],
-      "acceptance_criteria": "初期表示ではGit indexだけを取得し、Git index失敗時にlocalStorage案件本文/Registryを一覧正本として使用しない。",
+      "acceptance_criteria": "初期一覧はGit index取得結果だけを表示し、Git index失敗時にlocalStorage Registryや前回一覧を表示しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -626,7 +831,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-002",
@@ -691,13 +896,13 @@
     {
       "id": "TASK-DEV-SAVE-005",
       "box_id": "BOX-DEV-SAVE-GIT",
-      "title": "Development Git接続先解決をStudio共通Git設定へ統一する",
+      "title": "Development Git接続先からRegistry/固定default fallbackを撤去する",
       "status": "Todo",
       "execution_order": 50,
       "depends_on": [
         "TASK-DEV-SAVE-002"
       ],
-      "acceptance_criteria": "実際のGET/PUT owner/repo/branchがStudio共通Git設定と一致し、過去Registry値・固定defaultが優先されない。",
+      "acceptance_criteria": "Owner/RepoはStudio接続先のみ、書込Branchは操作入力値のみを使用し、Registry/固定default fallbackが実行コードに存在しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -706,7 +911,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-006",
@@ -732,14 +937,14 @@
     {
       "id": "TASK-DEV-SAVE-007",
       "box_id": "BOX-DEV-SAVE-GIT",
-      "title": "Project本文と案件indexの更新結果を整合管理する",
+      "title": "Project本文と案件indexの部分成功を回復可能にする",
       "status": "Todo",
       "execution_order": 70,
       "depends_on": [
         "TASK-DEV-SAVE-001",
         "TASK-DEV-SAVE-006"
       ],
-      "acceptance_criteria": "新規作成・名称変更・削除で本文/indexの片方だけ失敗した場合に成功扱いせず、古いlocalStorage一覧から案件が復活しない。",
+      "acceptance_criteria": "CREATE/DELETE成功後のindex失敗を明示し、Project処理を再実行せず同一Branchでindexだけ再試行できる。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -748,12 +953,12 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-008",
       "box_id": "BOX-DEV-SAVE-LEGACY",
-      "title": "Development CRUD/save/loadの重複関数と旧経路を撤去する",
+      "title": "Development保存系の旧UI/API/CSS・重複関数・旧fallbackを撤去する",
       "status": "Todo",
       "execution_order": 80,
       "depends_on": [
@@ -761,7 +966,7 @@
         "TASK-DEV-SAVE-004",
         "TASK-DEV-SAVE-006"
       ],
-      "acceptance_criteria": "同名Development CRUD/save/load関数の重複定義が0件で、旧localStorage authority・Project revision保存経路が実行コードから除去されている。",
+      "acceptance_criteria": "同名Development CRUD/save/load関数の重複定義が0件で、旧Git管理画面用API/CSS、死んだProject Settings、localStorage authority/fallback、Registry/固定default Git接続fallback、Project revision保存経路が実行コードから除去されている。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -770,7 +975,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-009",
@@ -782,9 +987,12 @@
         "TASK-DEV-SAVE-004",
         "TASK-DEV-SAVE-006",
         "TASK-DEV-SAVE-007",
-        "TASK-DEV-SAVE-008"
+        "TASK-DEV-SAVE-008",
+        "TASK-DEV-SAVE-010",
+        "TASK-DEV-SAVE-011",
+        "TASK-DEV-SAVE-012"
       ],
-      "acceptance_criteria": "open→edit→partial merge→save→Git re-fetch→Session破棄→reopenの自動テストがPASSし、invalid reference、stale SHA、index部分失敗も検出できる。",
+      "acceptance_criteria": "新規保存→index、open→edit→save、partial merge→save、delete→index、任意Branch処理、stale SHA、Git index失敗、Project成功/index失敗→index-only再試行、Session破棄→reopenまでの自動テストがPASSする。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -793,7 +1001,69 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-010",
+      "box_id": "BOX-DEV-SAVE-GIT",
+      "title": "5つのGit書込操作をBranch+PAT常時表示の操作内完結UIへ統一する",
+      "status": "Todo",
+      "execution_order": 45,
+      "depends_on": [
+        "TASK-DEV-SAVE-002"
+      ],
+      "acceptance_criteria": "新規保存・JSON新規保存・統合保存・編集保存・削除のすべてでBranch+PATを無条件表示し、Git設定画面への遷移やPAT必要判定なしで直接処理する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-011",
+      "box_id": "BOX-DEV-SAVE-GIT",
+      "title": "Project処理とindex処理のBranchを操作入力値へ一本化する",
+      "status": "Todo",
+      "execution_order": 55,
+      "depends_on": [
+        "TASK-DEV-SAVE-005",
+        "TASK-DEV-SAVE-010"
+      ],
+      "acceptance_criteria": "任意BranchでCREATE/PUT/DELETEした全操作で、続くindex GET/PUT・競合再試行・処理後一覧状態まで同一Branchが使われる。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-012",
+      "box_id": "BOX-DEV-SAVE-GIT",
+      "title": "新規保存・削除のindex部分失敗にindex-only再試行を追加する",
+      "status": "Todo",
+      "execution_order": 75,
+      "depends_on": [
+        "TASK-DEV-SAVE-007",
+        "TASK-DEV-SAVE-011"
+      ],
+      "acceptance_criteria": "Project CREATE/DELETE成功後にindex PUTを失敗させても部分成功が明示され、同一Branchで最新index GET→対象追加/削除→PUTだけを再試行できる。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "checks": [
@@ -957,6 +1227,121 @@
       "blocking": false,
       "created_at": "2026-08-23T07:24:00+09:00",
       "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-008",
+      "title": "5書込操作すべてでBranch+PATが事前判定なしに毎回表示される",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-010",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-009",
+      "title": "任意BranchのProject処理とindex処理が全工程で同一Branchを使用する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-011",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-010",
+      "title": "Git index失敗時にlocalStorage/前回案件一覧へfallbackしない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-011",
+      "title": "Registry/固定default Git接続fallbackと旧Git UI/API/CSSが0件である",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-008",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-012",
+      "title": "CREATE/DELETE成功後のindex失敗をindex-only再試行で復旧できる",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-012",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T08:52:00+09:00",
+      "updated_at": "2026-08-23T08:52:00+09:00"
     }
   ],
   "workflow": {
@@ -976,6 +1361,10 @@
     {
       "at": "2026-08-23T07:24:00+09:00",
       "message": "GKS-B743 Development保存経路の全体再監査結果から修正案件を登録"
+    },
+    {
+      "at": "2026-08-23T08:52:00+09:00",
+      "message": "GKS-B745保存経路監査結果を反映。Branch+PAT常時表示、操作Branch一本化、localStorage/Registry/固定default/旧Git UI経路撤去、index部分失敗再試行を修正対象へ追加。"
     }
   ]
 }
