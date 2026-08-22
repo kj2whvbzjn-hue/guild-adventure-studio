@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T00:25:16.470Z"
+    "updated_at": "2026-08-22T00:38:31.880Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -313,6 +313,20 @@
       "result": "Applied",
       "evidence": "GKS-B728 Game Settings / Tutorial persistence implementation was Human-applied and is present in the user-provided Current Source GKS-B728 / GA-B486.211. Current package_manifest SHA-256=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072. The GKS-B728 update artifact payload matches Current Source 638/638 files with 0 missing and 0 hash differences (studio-update.json / DELETE_MANIFEST.txt are deployment metadata and excluded from payload comparison). game/assets/js/settings-tutorial-save-bridge.js SHA-256=50c4da8ec0cedcba9bf3a49b9ec0a9fdba00f31532b8860f59a882a1742f2dce; game/assets/js/ai-save-bridge.js SHA-256=f94d901dd14f229c10c35c4487e6a015694b350e4549e8bb44011a152f244904; game/assets/js/app-runtime.js SHA-256=c1b051f6baa76fa85defd8e345900b92f06d63ddc93841ec523c857e4f818748; game/index.html SHA-256=0b04144b121c544a47f69ccbd2bc5e65773ad6ab09fa042936e3a5fb0212ffbc. Current targeted persistence verification 12/12 PASS: legacy v3 saves remain valid without optional gameSettings/tutorialProgress synthesis; when present both fields must be objects and are preserved exactly; mutations are rejected; Save snapshot / Load normalization wiring is present; current Battle/Quest result runtime does not consume these fields. Current Quick 11/11 PASS evidence_sha256=f322501f1c90cdab73ef10bc84f0e1daf1dee2a2964f74246710f4b15cfb3267; Build marker check PASS studio=GKS-B728 files=190. GKS-B728 update ZIP SHA-256=e3ea6fef3bdc8c516d9c75e36c26f65a1815226ade3845864e70f4e3de7d7e2b. Source changes=0 in this verification run; source deletions=0; Game data changes/exclusions=0.",
       "recorded_at": "2026-08-22T09:21:00+09:00"
+    },
+    {
+      "id": "IMPL-R30-008",
+      "studio_build": "GKS-B729",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-008"
+      ],
+      "result": "Partial",
+      "evidence": "GKS-B729 QuestRun persistence / Playback resume boundary implementation prepared from exact user-provided GKS-B728 / GA-B486.211 baseline. Added game/assets/js/quest-run-save-bridge.js to validate the stored adventure QuestRun store and preserve the complete adventure object exactly across Save snapshot and Load normalization. The bridge requires unique non-empty quest_run_id values, a valid active_quest_run_id reference, positive history/playback duration, and the Current QuestRun snapshot collections/objects needed by Playback. app-runtime now captures QuestRun state before Save normalization, rejects any Save/Load mutation, fails closed when the bridge is unavailable, and exposes the bridge through GKGameSaveCore. Existing Continue/Playback paths remain the authoritative resume path and read stored timeline/Scene/Battle/Event/Reward/Flag results without rerun. Temporary targeted verification 14/14 PASS. Baseline Quick 11/11 PASS evidence_sha256=c6cbdd29ed548a29b4213cbbd1335736a9ae6a1a843c8859155103210393020d; target Quick 11/11 PASS evidence_sha256=39db3104c573c407f5f818d56c83ebd867ef80c02d942a9962e22e6b917eaf6b; Update Accept 13/13 PASS evidence_sha256=513f801233666ea7b20a2a3f8217503471e130d9f3368da249341cd9f6494d25; Release 13/13 PASS evidence_sha256=e9cdee29a3c5a9cdd55fd85b9e5fc4decfad8dd84b37f35fd73851cc88147f70. Baseline manifest=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072 tree=6644759b679bdff19649e275b55a8ca110e29eb52515149d0565d48d065067ac; target manifest=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd tree=e158b8bacd4d198cf6f3ff5fbd8285d1c0ee73a59407a8d27365d4a6849d4810; artifact_id=GKS-B729-e158b8bacd4d; update ZIP sha256=fc2fddf528056561f7b3b37e51809868e940e0fe13e7f2e18cc05179f976a125. ZIP payload 641/641 exact after extraction; Export entries=0. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T09:28:00+09:00"
     }
   ],
   "discussions": [
@@ -5941,7 +5955,7 @@
       "id": "TASK-R30-008",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "QuestRun永続化とPlayback復帰境界を実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 1080,
       "depends_on": [
         "TASK-R30-007"
@@ -5955,7 +5969,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T09:21:00+09:00"
+      "updated_at": "2026-08-22T09:28:00+09:00"
     },
     {
       "id": "TASK-R30-009",
@@ -9193,6 +9207,52 @@
       "blocking": false,
       "created_at": "2026-08-22T09:21:00+09:00",
       "updated_at": "2026-08-22T09:21:00+09:00"
+    },
+    {
+      "id": "CHK-R30-008-IMPLEMENTATION",
+      "title": "TASK-R30-008 QuestRun persistence / Playback resume verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-008",
+      "status": "Passed",
+      "result": "GKS-B729でQuestRun専用Save Bridgeを追加し、Active QuestRunと保存済みSnapshotをSave/Load境界でexact保持する。Active IDは保存済みQuestRun参照を必須化し、Scene/Battle/Event/Reward/Flag等を含むQuestRun Snapshotの暗黙変更を拒否する。Continue/Playbackは既存の保存済みQuestRun Timeline復帰経路を維持し、Simulation/再抽選/再計算経路は追加していない。",
+      "evidence": "game/assets/js/quest-run-save-bridge.js sha256=0b739d9f235064ba725b34e5f3a5e2fc6d912323b3c302f9bf859e4d3e5b1c09; game/assets/js/app-runtime.js sha256=d09589019f5b03fd70a265768e845df0ec5858eb853f277813a2cd7cfe898e16; game/index.html sha256=3282c952200548270ef32f936c69701830e0f961304e3c072fff40629bdf3854; temporary targeted Node verification TASK_R30_008_TARGETED_PASS cases=14; source deletions=0; Game data changes/exclusions=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T09:28:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T09:28:00+09:00",
+      "updated_at": "2026-08-22T09:28:00+09:00"
+    },
+    {
+      "id": "CHK-R30-008-GATES",
+      "title": "TASK-R30-008 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-008",
+      "status": "Passed",
+      "result": "ユーザー提供GKS-B728 / GA-B486.211完全Sourceをexact baselineとしたGKS-B729更新はTarget Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、展開後payload 641/641が作成元と完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072 tree=6644759b679bdff19649e275b55a8ca110e29eb52515149d0565d48d065067ac; target manifest=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd tree=e158b8bacd4d198cf6f3ff5fbd8285d1c0ee73a59407a8d27365d4a6849d4810; target Quick 11/11 PASS evidence_sha256=39db3104c573c407f5f818d56c83ebd867ef80c02d942a9962e22e6b917eaf6b; Accept 13/13 PASS evidence_sha256=513f801233666ea7b20a2a3f8217503471e130d9f3368da249341cd9f6494d25; Release 13/13 PASS evidence_sha256=e9cdee29a3c5a9cdd55fd85b9e5fc4decfad8dd84b37f35fd73851cc88147f70; update ZIP sha256=fc2fddf528056561f7b3b37e51809868e940e0fe13e7f2e18cc05179f976a125 files=641; Build marker check PASS files=190.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T09:28:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T09:28:00+09:00",
+      "updated_at": "2026-08-22T09:28:00+09:00"
     }
   ],
   "workflow": {
@@ -9649,6 +9709,14 @@
     {
       "at": "2026-08-22T00:25:16.470Z",
       "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-22T09:28:00+09:00",
+      "message": "AI_STARTからTASK-R30-008を1件だけ実装。GKS-B729でQuestRun Save Bridgeを追加し、Active QuestRun参照と保存済みScene/Battle/Event/Reward/Flag等SnapshotのSave/Load exact保持、Playback復帰境界を強化。Targeted 14/14、Quick 11/11、Update Accept 13/13、Release 13/13 PASS。Studio更新ZIPはExportなし・削除0件。TASK-R30-008はHuman Apply確認待ちのためDoingを維持し、TASK-R30-009はBlockedのまま。次Taskへ自動着手していない。"
+    },
+    {
+      "at": "2026-08-22T00:38:31.880Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
     }
   ],
   "specification_candidates": [
