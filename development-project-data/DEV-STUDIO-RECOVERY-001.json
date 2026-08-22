@@ -5,7 +5,7 @@
     "name": "Studio開発管理・自己修復暴走 復旧",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T08:08:16.754Z"
+    "updated_at": "2026-08-22T08:19:00.404Z"
   },
   "project_context": {
     "purpose": "Studio開発管理システムで発生したDevelopment JSONの状態巻き戻りとAutonomous Correctionの過剰自動変更を、既存開発案件へ変更を加えず独立SOURCE_UPDATEとして修復する。",
@@ -67,7 +67,22 @@
     "superseded_by": "",
     "updated_at": "2026-08-22T17:02:00+09:00"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-STUDIO-RECOVERY-001",
+      "studio_build": "GKS-B736",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-STUDIO-RECOVERY-001"
+      ],
+      "task_ids": [
+        "TASK-STUDIO-RECOVERY-001"
+      ],
+      "result": "Applied",
+      "evidence": "baseline game=GA-B486.211 studio=GKS-B735 manifest_sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34 tree_sha256=e4abe5fab525e8c72cc9a7c5be25e5fba583a91d5185def202aeab917e791909; target game=GA-B486.211 studio=GKS-B736 manifest_sha256=248523bf36850af241ba5350ca46127eed563821c70ff6c4d1572e713f849a26 tree_sha256=badb98117c022a540534483946987a04de8514f01b3765df9642e6280e28eb81 artifact_id=GKS-B736-badb98117c02; update_zip_sha256=20ac57d07059c7a14546b48f7da0f9ffb30ee2d2016c8afd110b210722211a1e; Quick evidence_sha256=3540f1656b6c3b7bcc828a2b58ddfabda1d79c84b6cbe225e4d095572a998def 11/11; Accept evidence_sha256=fbaa9d3726c4b993c601b6d2d29a09f108b1e6fa5470964fc4770e051993e846 14/14, applied Full 26/26; Release evidence_sha256=76465c4a0952888e55fca706f08d3d62c384f49c88389641f56d26338f91fdef 14/14, applied Full 26/26; Compatibility/Exception Budget=PASS; changed_paths=24; protected test logic changes=0 (current Build token sync only); critical-runtime-manifest change is machine-derived size/SHA sync only.",
+      "recorded_at": "2026-08-22T17:16:16+09:00"
+    }
+  ],
   "discussions": [],
   "decisions": [],
   "specifications": [],
@@ -102,7 +117,7 @@
       "id": "TASK-STUDIO-RECOVERY-001",
       "box_id": "BOX-STUDIO-RECOVERY-001",
       "title": "Development管理の巻き戻り防止と自動Correction暴走を修復する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 10,
       "depends_on": [],
       "acceptance_criteria": "- AI_STARTの必須読込順とSOURCE_UPDATE手順に従う。\n- 実行開始時にCurrent Sourceのpackage-build.json / package_manifest.jsonを確認し、本案件のbaseline GKS-B735 / GA-B486.211と一致しない場合は編集せずFail Closedする。\n- Development Project JSON統合で、同一IDの古いIncoming Recordが現在Recordの新しい状態を巻き戻さない。\n- updated_atが現在Recordより古いIncoming更新は自動上書きしない。同時刻または世代判定不能で内容が競合する場合も自動勝利を決めずConflictとして停止する。\n- lifecycle.statusは通常のDevelopment JSON統合からHuman操作を巻き戻さない。既存workflow Human承認の前進保護を維持する。\n- Autonomous Correctionは解析・修正候補提示までとし、Humanの明示指示なしにCorrection Task新規作成、親Task Blocked化、depends_on変更、Check追加・解決、次Task自動着手を行わない。\n- 同一Failure SignatureによるCorrection重複生成を防止し、実データ変更前にFail Closedできる。\n- 既存DEV-V9-REORG-019のTask / Check / Lifecycle / Workflow / Decision / Specificationを変更しない。\n- Game仕様、Game Data、Balance、Export、Save Data意味内容を変更しない。\n- Source削除0件、Game Data変更0件、Export変更0件。\n- 保護Test / Gate / Schema / test registry / integrity policyを変更・削除・新規追加しない。必要になった場合は本TaskをBlockedとして停止し別Human承認Taskへ分離する。\n- production catch、legacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、silent recoveryを新規増加させない。\n- Buildをbaselineより前進させ、current Build marker同期後にpackage_manifest.jsonを再生成する。\n- 正確なbaseline指定付きQuick / accept --context update / Impact判定で必要なFull / ReleaseをPASSする。\n- studio-update.jsonを含みExport/を含まない直接Studio更新ZIPを作成する。\n- 本案件DEV-STUDIO-RECOVERY-001へ統合できるDevelopment統合JSONを別成果物として返す。\n- AIは成果物提出時点で停止し、Human Apply前にTaskをDoneへせず、別Taskへ自動着手しない。\n- Human Apply後の最新Current Sourceで修復効果を独立確認してから完了判定する。",
@@ -114,7 +129,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T17:02:00+09:00",
-      "updated_at": "2026-08-22T17:02:00+09:00"
+      "updated_at": "2026-08-22T17:16:16+09:00"
     }
   ],
   "checks": [
@@ -140,6 +155,29 @@
       "blocking": false,
       "created_at": "2026-08-22T17:02:00+09:00",
       "updated_at": "2026-08-22T08:08:08.778Z"
+    },
+    {
+      "id": "CHK-STUDIO-RECOVERY-ARTIFACT-001",
+      "title": "Development管理修復 SOURCE_UPDATE Artifact / Gate確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-STUDIO-RECOVERY-001",
+      "status": "Passed",
+      "result": "GKS-B735 / GA-B486.211をexact baselineとしてStudio GKS-B736更新Artifactを生成。Development JSON統合へupdated_at世代Guard、同時刻/世代不明ConflictのFail Closed、Lifecycle Human正本保護を実装。Autonomous Correctionはanalyzeをread-onlyとし、prepareにHuman明示authorizationを必須化、生成TaskもHuman承認待ち、同一Failure Signature重複生成を拒否。Quick 11/11 PASS、Accept 14/14 PASS（applied Full 26/26 PASS）、Release 14/14 PASS（applied Full 26/26 PASS）、Compatibility/Exception Budget PASS。Source削除0、Game Data変更0、Export変更0。Human Apply待ち。",
+      "evidence": "baseline game=GA-B486.211 studio=GKS-B735 manifest_sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34 tree_sha256=e4abe5fab525e8c72cc9a7c5be25e5fba583a91d5185def202aeab917e791909; target game=GA-B486.211 studio=GKS-B736 manifest_sha256=248523bf36850af241ba5350ca46127eed563821c70ff6c4d1572e713f849a26 tree_sha256=badb98117c022a540534483946987a04de8514f01b3765df9642e6280e28eb81 artifact_id=GKS-B736-badb98117c02; update_zip_sha256=20ac57d07059c7a14546b48f7da0f9ffb30ee2d2016c8afd110b210722211a1e; Quick evidence_sha256=3540f1656b6c3b7bcc828a2b58ddfabda1d79c84b6cbe225e4d095572a998def 11/11; Accept evidence_sha256=fbaa9d3726c4b993c601b6d2d29a09f108b1e6fa5470964fc4770e051993e846 14/14, applied Full 26/26; Release evidence_sha256=76465c4a0952888e55fca706f08d3d62c384f49c88389641f56d26338f91fdef 14/14, applied Full 26/26; Compatibility/Exception Budget=PASS; changed_paths=24; protected test logic changes=0 (current Build token sync only); critical-runtime-manifest change is machine-derived size/SHA sync only.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T17:16:16+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T17:16:16+09:00",
+      "updated_at": "2026-08-22T17:16:16+09:00"
     }
   ],
   "workflow": {
@@ -147,7 +185,7 @@
     "implementation_approval": {
       "status": "Approved",
       "by": "Human",
-      "at": "2026-08-22T08:08:16.752Z"
+      "at": "2026-08-22T08:08:16.754Z"
     },
     "completion_approval": {
       "status": "Pending",
@@ -180,6 +218,15 @@
     {
       "at": "2026-08-22T08:08:16.754Z",
       "message": "Human approved implementation start"
+    },
+    {
+      "at": "2026-08-22T17:16:16+09:00",
+      "type": "StudioRecoverySourceUpdatePrepared",
+      "summary": "AI_START selected TASK-STUDIO-RECOVERY-001 only. GKS-B735 / GA-B486.211をexact baselineとしてStudio GKS-B736更新Artifactを生成。Development JSON統合へupdated_at世代Guard、同時刻/世代不明ConflictのFail Closed、Lifecycle Human正本保護を実装。Autonomous Correctionはanalyzeをread-onlyとし、prepareにHuman明示authorizationを必須化、生成TaskもHuman承認待ち、同一Failure Signature重複生成を拒否。Quick 11/11 PASS、Accept 14/14 PASS（applied Full 26/26 PASS）、Release 14/14 PASS（applied Full 26/26 PASS）、Compatibility/Exception Budget PASS。Source削除0、Game Data変更0、Export変更0。Human Apply待ち。 Artifact=GKS-B736-badb98117c02 / ZIP sha256=20ac57d07059c7a14546b48f7da0f9ffb30ee2d2016c8afd110b210722211a1e. Task remains Doing until Human Apply and Current Source verification; no next Task started."
+    },
+    {
+      "at": "2026-08-22T08:19:00.404Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
     }
   ]
 }
