@@ -1,0 +1,981 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-f26952b3-8ed9-41f8-b7a7-6ac89dd2532d",
+    "canonical_path": "development-project-data/DEV-DEV-SAVE-REBUILD-B743-001.json"
+  },
+  "workspace": {
+    "id": "DEV-DEV-SAVE-REBUILD-B743-001",
+    "name": "Development管理 保存経路再構築・Git正本化",
+    "status": "Specifying",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-23T07:24:00+09:00"
+  },
+  "project_context": {
+    "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存・Git再取得までの保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
+    "summary": "GKS-B743の保存経路再監査で確認した、部分JSONの単体事前検証、検証前のcurrent workspace直接変更、同名CRUD関数の重複定義、Git接続先決定の優先順位不整合、localStorage Registry fallback、Git indexとProject本文の不整合、保存Round-trip専用テスト不足をまとめて是正する。Project本文の正本はGitとし、案件一覧は軽量index、案件本文は選択確認後にGitから取得する。Project revision管理は使用せずGit SHAで競合を検出する。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-DEV-SAVE-ROOT",
+    "work_box_id": "BOX-DEV-SAVE-CORE",
+    "theme": "Development管理の保存経路全体再構築",
+    "goal": "open → edit/merge → validate → save → Git re-fetch → reopen の一貫した単一経路を確立する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-DEV-SAVE-001",
+      "text": "Development Project本文の正本はGit上の development-project-data/<workspace.id>.json とし、localStorage Registryを本文authorityやfallback正本として使用しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-002",
+      "text": "Project revisionによる保存・競合管理は行わず、Git SHAだけでRemote競合を検出する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-003",
+      "text": "部分JSONは単体で完全Project検証せず、現在案件のcloneへ反映した後の完成Project全体を検証する。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "GKS-B743-save-path-audit",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-004",
+      "text": "検証前にcurrent Project本文を直接変更しない。編集・統合はcloneへ適用し、全体検証成功後にだけcurrent Projectを置換する。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "GKS-B743-save-path-audit",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-005",
+      "text": "Development CRUD/save/loadの同名関数を複数定義しない。旧経路・重複経路を残さない。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "GKS-B743-save-path-audit",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B743",
+    "game_build": "GA-B486.211",
+    "source_label": "GKS-B743 development tree-first source",
+    "source_role": "current_baseline",
+    "recorded_at": "2026-08-23T07:24:00+09:00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-23T07:24:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [],
+  "decisions": [
+    {
+      "id": "DEC-DEV-SAVE-001",
+      "title": "GitをDevelopment Project本文の唯一の正本とする",
+      "status": "Proposed",
+      "text": "案件一覧は軽量indexだけを読み、案件選択確認後に対象Project JSONをGitから取得する。Project本文はブラウザRegistryから復元しない。",
+      "rationale": "本文の複製正本をなくし、選択・保存・再読込の参照元をGitへ一本化するため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-002",
+      "title": "競合検知はGit SHAだけを使用する",
+      "status": "Proposed",
+      "text": "Project revisionの比較・加算・保存判定を廃止し、案件を開いた時のGit SHAと保存直前のRemote SHAが一致する場合だけPUTする。",
+      "rationale": "Gitが正本ならSHAでRemote世代を一意に確認でき、独自revision同期を持つ必要がないため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-003",
+      "title": "JSON統合は結合後Project全体を検証する",
+      "status": "Proposed",
+      "text": "incoming部分データを単体完全Projectとして検証しない。current Project cloneへ差分適用後、参照関係を含む完成Project全体を1回検証し、成功時のみcurrentへ反映する。",
+      "rationale": "既存案件内に存在するdepends_on等を部分JSON単体検証が見失い、正常データを誤拒否するため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "specifications": [
+    {
+      "id": "SPEC-DEV-SAVE-001",
+      "title": "案件一覧・案件読込のGit正本仕様",
+      "status": "Draft",
+      "summary": "初期表示は軽量indexのタイトル一覧だけとし、選択確認後に対象案件本文をGit GETする。",
+      "body": "1. 初期表示で development-project-data/index.json を取得する。\n2. 一覧には案件タイトルだけを表示する。\n3. タイトル選択時に確認を表示する。\n4. 承認後に development-project-data/<id>.json をGitから取得する。\n5. 取得したJSONとSHAを現在案件として保持する。\n6. Project本文取得失敗時にlocalStorage本文へfallbackしない。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-001",
+        "DEC-DEV-SAVE-002"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "案件一覧表示時に全Project本文を読まず、案件承認後だけ選択案件本文がGitから取得される。localStorage本文fallbackが存在しない。",
+      "system_node_id": "SYS-DEV-PROJECT-LIST",
+      "contract_ids": [
+        "CONTRACT-DEV-LIST-GIT"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-002",
+      "title": "Current Project安全編集仕様",
+      "status": "Draft",
+      "summary": "編集はcurrent Projectのcloneへ適用し、検証成功時のみcurrentを置換する。",
+      "body": "1. 表示用current Projectから編集用cloneを作る。\n2. CRUD変更はcloneへ適用する。\n3. normalize/reference validationをclone全体へ実行する。\n4. 検証失敗時はcurrent Projectを一切変更しない。\n5. 検証成功時だけcurrent Projectを置換してdirty化する。",
+      "decision_refs": [],
+      "depends_on": [],
+      "acceptance_criteria": "無効な編集を発生させてもcurrent Projectが変更されず、再描画後も変更前データが維持される。",
+      "system_node_id": "SYS-DEV-PROJECT-EDITOR",
+      "contract_ids": [
+        "CONTRACT-DEV-EDITOR-VALIDATOR"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-003",
+      "title": "部分JSON統合仕様",
+      "status": "Draft",
+      "summary": "current cloneへincoming差分を反映してから完成Project全体を検証する。",
+      "body": "1. current Projectをcloneする。\n2. incomingの対象collectionだけをmerge/upsertする。\n3. current側にだけ存在する関連Recordを保持する。\n4. merged Project全体をnormalize/reference validationする。\n5. 成功時だけcurrent Projectをmergedへ置換する。\n6. 失敗時はエラーを表示し、current Projectは変更しない。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-003"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "incoming taskのdepends_onがcurrent案件内の既存Taskを指す場合は正常統合され、merged後にも存在しない依存だけが拒否される。",
+      "system_node_id": "SYS-DEV-JSON-MERGE",
+      "contract_ids": [
+        "CONTRACT-DEV-MERGE-EDITOR"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-004",
+      "title": "Git保存・競合・再取得仕様",
+      "status": "Draft",
+      "summary": "保存はGit SHAを競合判定に使い、PUT後に再GETして内容一致まで確認する。",
+      "body": "1. open時に取得したRemote SHAを保持する。\n2. 保存直前にRemoteを再GETしてSHAを確認する。\n3. SHA不一致なら保存を停止して競合を通知する。\n4. SHA一致ならcurrent Project JSONをPUTする。\n5. PUT後にRemoteを再GETする。\n6. normalize後のRemote内容と保存対象current Projectが一致した場合だけ保存完了とする。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-002"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "Remote変更時は上書きせず停止し、正常保存時は再GETしたProjectが保存対象と一致する。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-EDITOR-GIT",
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-005",
+      "title": "Git接続先決定仕様",
+      "status": "Draft",
+      "summary": "Development保存先はStudio共通Git設定を基準に一意に決定し、過去Registry値や固定defaultで上書きしない。",
+      "body": "owner/repo/branchはStudio共通Git設定を基準に解決する。案件Registryに残る過去のgit_remote値や固定default branchをStudio設定より優先しない。canonical pathは development-project-data/<workspace.id>.json に固定する。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "画面のStudio Git設定と実際のDevelopment GET/PUT先owner/repo/branchが一致する。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-006",
+      "title": "案件index整合仕様",
+      "status": "Draft",
+      "summary": "軽量案件indexはGit上だけで管理し、localStorage一覧を混ぜない。",
+      "body": "index.jsonはid/titleを中心とした軽量一覧とする。Git index取得失敗時にlocalStorage Registryから古い案件を復元しない。新規作成・名称変更・削除ではProject本文操作とindex更新の結果を個別確認し、部分失敗を成功扱いしない。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "削除済み案件がlocalStorage情報から一覧へ復活せず、Project本文とindexの片方だけ失敗した場合は明示的に失敗状態が通知される。",
+      "system_node_id": "SYS-DEV-PROJECT-LIST",
+      "contract_ids": [
+        "CONTRACT-DEV-LIST-GIT"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "specification_candidates": [],
+  "system_nodes": [
+    {
+      "id": "SYS-DEV-PROJECT-LIST",
+      "name": "Development Project List",
+      "description": "Git上の軽量indexから案件タイトル一覧を表示し、選択確認後に案件本文読込を開始する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-PROJECT-EDITOR",
+      "name": "Development Project Editor",
+      "description": "現在開いているDevelopment Project JSONを表示・編集する。編集はclone検証成功後にcurrentへ反映する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-JSON-MERGE",
+      "name": "Development JSON Merge",
+      "description": "AI/外部JSONの部分データをcurrent Project cloneへ統合し、完成Project全体を検証する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-VALIDATOR",
+      "name": "Development Project Validator",
+      "description": "schema 2.0 normalize、ID一意性、Task depends_on、Architecture親子、System Contract/Connection等の全体参照整合を検証する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-GIT-STORE",
+      "name": "Development Git Store",
+      "description": "Development Project/indexのGit GET/PUT、SHA競合判定、保存後再GET検証を担当する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-GIT-REMOTE",
+      "name": "GitHub Remote",
+      "description": "development-project-data配下のDevelopment Project canonical JSONと軽量indexのRemote保存先。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "system_contracts": [
+    {
+      "id": "CONTRACT-DEV-LIST-GIT",
+      "name": "Project List ↔ Git index",
+      "producer_system_id": "SYS-DEV-GIT-STORE",
+      "consumer_system_ids": [
+        "SYS-DEV-PROJECT-LIST"
+      ],
+      "definition": "Git上のdevelopment-project-data/index.jsonを案件一覧へ供給し、新規・名称変更・削除時だけindexを更新する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-EDITOR-VALIDATOR",
+      "name": "Project Editor → Validator",
+      "producer_system_id": "SYS-DEV-PROJECT-EDITOR",
+      "consumer_system_ids": [
+        "SYS-DEV-VALIDATOR"
+      ],
+      "definition": "編集後cloneをcurrentへ反映する前にProject全体のnormalize/reference validationを実行する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-MERGE-EDITOR",
+      "name": "JSON Merge → Project Editor",
+      "producer_system_id": "SYS-DEV-JSON-MERGE",
+      "consumer_system_ids": [
+        "SYS-DEV-PROJECT-EDITOR",
+        "SYS-DEV-VALIDATOR"
+      ],
+      "definition": "incoming差分をcurrent cloneへ反映し、完成Project全体の検証成功時だけEditor current Projectを置換する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-EDITOR-GIT",
+      "name": "Project Editor ↔ Git Store",
+      "producer_system_id": "SYS-DEV-PROJECT-EDITOR",
+      "consumer_system_ids": [
+        "SYS-DEV-GIT-STORE"
+      ],
+      "definition": "案件選択後のProject GET、current Project保存、open時SHA保持、保存後再取得をGit Store経由で行う。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-GIT-REMOTE",
+      "name": "Development Git Store ↔ GitHub",
+      "producer_system_id": "SYS-DEV-GIT-STORE",
+      "consumer_system_ids": [
+        "SYS-DEV-GIT-REMOTE"
+      ],
+      "definition": "Studio共通Git設定でowner/repo/branchを決定し、Git SHAを使ってcanonical JSONをGET/PUTする。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "system_connections": [
+    {
+      "id": "CONN-DEV-LIST-GIT",
+      "from_system_id": "SYS-DEV-GIT-STORE",
+      "to_system_id": "SYS-DEV-PROJECT-LIST",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-DEV-LIST-GIT",
+      "purpose": "軽量案件indexの取得・更新。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONN-DEV-EDITOR-VALIDATOR",
+      "from_system_id": "SYS-DEV-PROJECT-EDITOR",
+      "to_system_id": "SYS-DEV-VALIDATOR",
+      "relation": "REQUIRES",
+      "contract_id": "CONTRACT-DEV-EDITOR-VALIDATOR",
+      "purpose": "編集結果のcurrent反映前全体検証。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONN-DEV-MERGE-EDITOR",
+      "from_system_id": "SYS-DEV-JSON-MERGE",
+      "to_system_id": "SYS-DEV-PROJECT-EDITOR",
+      "relation": "IMPLEMENTS",
+      "contract_id": "CONTRACT-DEV-MERGE-EDITOR",
+      "purpose": "部分JSONをcurrent cloneへ統合して安全に反映する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONN-DEV-EDITOR-GIT",
+      "from_system_id": "SYS-DEV-PROJECT-EDITOR",
+      "to_system_id": "SYS-DEV-GIT-STORE",
+      "relation": "REQUIRES",
+      "contract_id": "CONTRACT-DEV-EDITOR-GIT",
+      "purpose": "案件本文のGit読込・保存。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CONN-DEV-GIT-REMOTE",
+      "from_system_id": "SYS-DEV-GIT-STORE",
+      "to_system_id": "SYS-DEV-GIT-REMOTE",
+      "relation": "REQUIRES",
+      "contract_id": "CONTRACT-DEV-GIT-REMOTE",
+      "purpose": "GitHub canonical JSONのGET/PUTとSHA競合判定。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "system_flags": [
+    {
+      "id": "FLAG-DEV-SAVE-001",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "BASELINE_STUDIO",
+      "value": "GKS-B743",
+      "source": "save-path-audit",
+      "note": "保存経路再監査の基準Studio Build。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-002",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "PARTIAL_JSON_PREVALIDATION",
+      "source": "save-path-audit",
+      "note": "incoming部分JSONを単体完全Projectとして先に検証するため、current案件に存在するdepends_on等を誤って参照切れ判定する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-003",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "DIRECT_MUTATION_BEFORE_VALIDATION",
+      "source": "save-path-audit",
+      "note": "編集がcurrent workspace本体へ先に適用され、後段検証失敗時に変更前へ戻らない経路がある。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-004",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "DUPLICATE_CRUD_FUNCTIONS",
+      "source": "save-path-audit",
+      "note": "Discussion/Decision/Specification等の同名save/edit関数が複数定義され、後勝ち上書きが発生する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-005",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "GIT_TARGET_PRECEDENCE",
+      "source": "save-path-audit",
+      "note": "Development Git接続先解決で過去Registry値・固定defaultがStudio共通Git設定より優先される経路がある。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-006",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "LOCAL_REGISTRY_FALLBACK",
+      "source": "save-path-audit",
+      "note": "Git index取得失敗時やindex更新時にlocalStorage Registryを混ぜ、古い案件を復活させる可能性がある。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-007",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "INDEX_PROJECT_PARTIAL_SUCCESS",
+      "source": "save-path-audit",
+      "note": "Project本文とindex更新が別処理で、一方失敗時にも保存済み/成功に見える状態が発生し得る。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-008",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "AUDIT_FINDING",
+      "value": "MISSING_SAVE_ROUNDTRIP_TEST",
+      "source": "save-path-audit",
+      "note": "open→edit/merge→save→Git再GET→reopenを通すDevelopment保存専用Regressionがない。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-DEV-SAVE-ROOT",
+      "name": "Development管理 保存経路再構築",
+      "parent_id": "",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-SAVE-LOAD",
+      "name": "案件一覧・Git読込",
+      "parent_id": "ARCH-DEV-SAVE-ROOT",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-SAVE-EDIT",
+      "name": "Current Project編集境界",
+      "parent_id": "ARCH-DEV-SAVE-ROOT",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-SAVE-MERGE",
+      "name": "JSON統合・AI反映",
+      "parent_id": "ARCH-DEV-SAVE-ROOT",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-SAVE-GIT",
+      "name": "Git保存・接続先・index",
+      "parent_id": "ARCH-DEV-SAVE-ROOT",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-SAVE-LEGACY",
+      "name": "旧保存経路撤去",
+      "parent_id": "ARCH-DEV-SAVE-ROOT",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-SAVE-TEST",
+      "name": "Round-trip Regression",
+      "parent_id": "ARCH-DEV-SAVE-ROOT",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-DEV-SAVE-CORE",
+      "node_id": "ARCH-DEV-SAVE-LOAD",
+      "title": "Git正本の案件一覧・本文読込",
+      "body": "Git indexだけで案件タイトル一覧を表示し、案件選択確認後に対象Project JSONをGitから取得する。localStorage本文fallbackを廃止する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-EDIT",
+      "node_id": "ARCH-DEV-SAVE-EDIT",
+      "title": "編集のclone→全体検証→置換",
+      "body": "current Project本体へ検証前変更を入れない。clone上で編集し、normalize/reference validation成功時のみcurrentを置換する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-MERGE",
+      "node_id": "ARCH-DEV-SAVE-MERGE",
+      "title": "部分JSON統合経路の再構築",
+      "body": "incoming部分データを単体Projectとして事前検証せず、current cloneへ反映したmerged Project全体を最後に検証する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-GIT",
+      "node_id": "ARCH-DEV-SAVE-GIT",
+      "title": "Git SHA保存・接続先・index整合",
+      "body": "Studio共通Git設定を基準に接続先を決定し、SHA競合判定→PUT→再GET一致確認を行う。indexはGit上だけで管理する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-LEGACY",
+      "node_id": "ARCH-DEV-SAVE-LEGACY",
+      "title": "重複・旧保存経路の撤去",
+      "body": "同名CRUD/save/loadの重複定義、旧Registry authority/fallback、不要なProject revision処理を除去し、保存経路を一本化する。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-TEST",
+      "node_id": "ARCH-DEV-SAVE-TEST",
+      "title": "Development保存Round-trip Gate",
+      "body": "案件をGitから開き、編集・部分統合・保存・Git再取得・再openまでを自動検証し、保存成功表示だけでは合格にしない。",
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-DEV-SAVE-001",
+      "box_id": "BOX-DEV-SAVE-CORE",
+      "title": "案件一覧をGit indexだけで構成しlocalStorage fallbackを撤去する",
+      "status": "Todo",
+      "execution_order": 10,
+      "depends_on": [],
+      "acceptance_criteria": "初期表示ではGit indexだけを取得し、Git index失敗時にlocalStorage案件本文/Registryを一覧正本として使用しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-002",
+      "box_id": "BOX-DEV-SAVE-CORE",
+      "title": "案件選択確認後のGit本文GET経路を一本化する",
+      "status": "Todo",
+      "execution_order": 20,
+      "depends_on": [
+        "TASK-DEV-SAVE-001"
+      ],
+      "acceptance_criteria": "タイトル選択→確認→対象canonical JSON GET→current Project/SHA設定の経路だけで案件を開ける。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-003",
+      "box_id": "BOX-DEV-SAVE-EDIT",
+      "title": "Development編集をclone→全体検証→current置換へ変更する",
+      "status": "Todo",
+      "execution_order": 30,
+      "depends_on": [
+        "TASK-DEV-SAVE-002"
+      ],
+      "acceptance_criteria": "検証失敗する編集を行ってもcurrent Projectが変更されず、成功した編集だけがdirty状態へ反映される。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-004",
+      "box_id": "BOX-DEV-SAVE-MERGE",
+      "title": "JSON統合をcurrent cloneへ先に反映してから全体検証する",
+      "status": "Todo",
+      "execution_order": 40,
+      "depends_on": [
+        "TASK-DEV-SAVE-003"
+      ],
+      "acceptance_criteria": "incomingのdepends_onがcurrent案件既存Taskを指す場合は統合成功し、merged後にも存在しない参照のみ拒否する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-005",
+      "box_id": "BOX-DEV-SAVE-GIT",
+      "title": "Development Git接続先解決をStudio共通Git設定へ統一する",
+      "status": "Todo",
+      "execution_order": 50,
+      "depends_on": [
+        "TASK-DEV-SAVE-002"
+      ],
+      "acceptance_criteria": "実際のGET/PUT owner/repo/branchがStudio共通Git設定と一致し、過去Registry値・固定defaultが優先されない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-006",
+      "box_id": "BOX-DEV-SAVE-GIT",
+      "title": "保存をGit SHA競合判定→PUT→再GET一致確認へ統一する",
+      "status": "Todo",
+      "execution_order": 60,
+      "depends_on": [
+        "TASK-DEV-SAVE-003",
+        "TASK-DEV-SAVE-005"
+      ],
+      "acceptance_criteria": "Remote SHA変更時は上書きせず停止し、正常保存時は再GETしたcanonical JSONが保存対象と一致した場合だけ完了扱いになる。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-007",
+      "box_id": "BOX-DEV-SAVE-GIT",
+      "title": "Project本文と案件indexの更新結果を整合管理する",
+      "status": "Todo",
+      "execution_order": 70,
+      "depends_on": [
+        "TASK-DEV-SAVE-001",
+        "TASK-DEV-SAVE-006"
+      ],
+      "acceptance_criteria": "新規作成・名称変更・削除で本文/indexの片方だけ失敗した場合に成功扱いせず、古いlocalStorage一覧から案件が復活しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-008",
+      "box_id": "BOX-DEV-SAVE-LEGACY",
+      "title": "Development CRUD/save/loadの重複関数と旧経路を撤去する",
+      "status": "Todo",
+      "execution_order": 80,
+      "depends_on": [
+        "TASK-DEV-SAVE-003",
+        "TASK-DEV-SAVE-004",
+        "TASK-DEV-SAVE-006"
+      ],
+      "acceptance_criteria": "同名Development CRUD/save/load関数の重複定義が0件で、旧localStorage authority・Project revision保存経路が実行コードから除去されている。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-009",
+      "box_id": "BOX-DEV-SAVE-TEST",
+      "title": "Development保存Round-trip Regressionを正式Gateへ追加する",
+      "status": "Todo",
+      "execution_order": 90,
+      "depends_on": [
+        "TASK-DEV-SAVE-004",
+        "TASK-DEV-SAVE-006",
+        "TASK-DEV-SAVE-007",
+        "TASK-DEV-SAVE-008"
+      ],
+      "acceptance_criteria": "open→edit→partial merge→save→Git re-fetch→Session破棄→reopenの自動テストがPASSし、invalid reference、stale SHA、index部分失敗も検出できる。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHECK-DEV-SAVE-001",
+      "title": "案件一覧で本文全件読込・localStorage fallbackが発生しない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-002",
+      "title": "検証失敗時にcurrent Projectが不変である",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-003",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-003",
+      "title": "既存Task参照を含む部分JSONがmerged全体では正常統合される",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-004",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-004",
+      "title": "Studio共通Git設定とDevelopment GET/PUT先が一致する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-005",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-005",
+      "title": "stale SHA保存が拒否され正常保存後はGit再GET内容が一致する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-006",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-006",
+      "title": "重複Development CRUD/save/load関数が0件である",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-008",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-007",
+      "title": "Development保存Round-trip Regressionが正式GateでPASSする",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-009",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T07:24:00+09:00",
+      "updated_at": "2026-08-23T07:24:00+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-23T07:24:00+09:00",
+      "message": "GKS-B743 Development保存経路の全体再監査結果から修正案件を登録"
+    }
+  ]
+}
