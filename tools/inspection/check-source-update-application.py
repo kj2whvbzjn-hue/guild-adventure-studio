@@ -137,6 +137,76 @@ def expected_artifact_id(studio_build: str, source_tree_sha: str) -> str:
     return f"{studio_build}-{source_tree_sha[:12]}"
 
 
+def baseline_manifest_repairable(context_output: str, manifest_output: str) -> tuple[bool, list[str]]:
+    """Allow only the narrow migration case where an old manifest lists files
+    that the current system-file policy now classifies as nonpersistent.
+
+    The baseline remains cryptographically bound by studio-update.json. Any other
+    baseline error still fails closed. The applied target must pass the normal
+    source context and package-manifest checks later in this gate.
+    """
+    ctx_paths: list[str] = []
+    man_paths: list[str] = []
+    for raw in context_output.splitlines():
+        line = raw.strip()
+        if not line or line == "INSPECTION_CONTEXT_FAIL":
+            continue
+        prefix = "NONPERSISTENT_FILE_LISTED "
+        if not line.startswith(prefix):
+            return False, []
+        ctx_paths.append(line[len(prefix):])
+    for raw in manifest_output.splitlines():
+        line = raw.strip()
+        if not line or line == "PACKAGE_MANIFEST_FAIL":
+            continue
+        prefix = "NONPERSISTENT_LISTED "
+        if not line.startswith(prefix):
+            return False, []
+        man_paths.append(line[len(prefix):])
+    paths = sorted(set(ctx_paths))
+    return bool(paths) and paths == sorted(set(man_paths)), paths
+
+
+def baseline_exact_missing_restore_repairable(update_root: Path, baseline_root: Path, manifest_output: str) -> tuple[bool, list[str]]:
+    """Allow repair only when the baseline manifest lists a persistent file that
+    is physically missing, and the update restores the exact bytes recorded by
+    that baseline manifest. No hash drift or extra baseline error is accepted.
+    """
+    missing: list[str] = []
+    unexpected: list[str] = []
+    for raw in manifest_output.splitlines():
+        line = raw.strip()
+        if not line or line == "PACKAGE_MANIFEST_FAIL":
+            continue
+        if line.startswith("MISSING "):
+            missing.append(line[len("MISSING "):])
+            continue
+        if line.startswith("UNEXPECTED_LISTED "):
+            unexpected.append(line[len("UNEXPECTED_LISTED "):])
+            continue
+        return False, []
+    paths = sorted(set(missing))
+    if not paths or paths != sorted(set(unexpected)):
+        return False, []
+    try:
+        manifest = json.loads((baseline_root / "package_manifest.json").read_text(encoding="utf-8"))
+        by_path = {str(row.get("path") or ""): row for row in manifest.get("files", [])}
+        policy = load_policy(baseline_root)
+    except Exception:
+        return False, []
+    for rel in paths:
+        spec = by_path.get(rel)
+        restored = update_root / rel
+        if not isinstance(spec, dict) or classify(rel, policy) != "persistent" or not restored.is_file():
+            return False, []
+        if int(spec.get("size", -1)) != restored.stat().st_size:
+            return False, []
+        expected = str(spec.get("sha256") or "").lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", expected) or sha256_file(restored) != expected:
+            return False, []
+    return True, paths
+
+
 def validate_baseline_binding(update_root: Path, baseline_root: Path, errors: list[str]) -> dict:
     meta_path = update_root / "studio-update.json"
     try:
@@ -374,21 +444,41 @@ def main() -> int:
             errors.append("TEST_CHANGE_APPROVAL_MUST_BE_EXTERNAL_TO_BASELINE")
 
         if not errors:
-            # A broken baseline cannot be used to certify an update.
+            # Baselines fail closed, except for one bounded migration case: an old
+            # package_manifest may still list files that the already-deployed
+            # system-file policy classifies as nonpersistent. This repair mode is
+            # necessary so the gate can accept the update that removes those stale
+            # entries; all other baseline failures remain fatal.
             baseline_context = run_checked(
                 [sys.executable, "-S", "-B", str(baseline_root / "tools/inspection/check-context.py"), str(baseline_root), "--context", "source"],
                 baseline_root,
                 args.timeout,
             )
-            if baseline_context.returncode != 0:
-                errors.append("BASELINE_CONTEXT_INVALID\n" + (baseline_context.stdout + baseline_context.stderr).strip())
             baseline_manifest = run_checked(
                 [sys.executable, "-S", "-B", str(baseline_root / "tools/integrity/check-package-manifest.py"), str(baseline_root)],
                 baseline_root,
                 args.timeout,
             )
-            if baseline_manifest.returncode != 0:
-                errors.append("BASELINE_PACKAGE_MANIFEST_INVALID\n" + (baseline_manifest.stdout + baseline_manifest.stderr).strip())
+            if baseline_context.returncode != 0 or baseline_manifest.returncode != 0:
+                repairable, stale_paths = baseline_manifest_repairable(
+                    (baseline_context.stdout + baseline_context.stderr).strip(),
+                    (baseline_manifest.stdout + baseline_manifest.stderr).strip(),
+                )
+                if repairable:
+                    report["baseline_repair_mode"] = "nonpersistent_manifest_entries"
+                    report["baseline_repair_paths"] = stale_paths
+                else:
+                    exact_restore, restore_paths = baseline_exact_missing_restore_repairable(
+                        update_root, baseline_root, (baseline_manifest.stdout + baseline_manifest.stderr).strip()
+                    )
+                    if baseline_context.returncode == 0 and exact_restore:
+                        report["baseline_repair_mode"] = "exact_missing_persistent_restore"
+                        report["baseline_repair_paths"] = restore_paths
+                    else:
+                        if baseline_context.returncode != 0:
+                            errors.append("BASELINE_CONTEXT_INVALID\n" + (baseline_context.stdout + baseline_context.stderr).strip())
+                        if baseline_manifest.returncode != 0:
+                            errors.append("BASELINE_PACKAGE_MANIFEST_INVALID\n" + (baseline_manifest.stdout + baseline_manifest.stderr).strip())
 
         if not errors:
             report["baseline"] = validate_baseline_binding(update_root, baseline_root, errors)

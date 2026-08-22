@@ -80,6 +80,8 @@ updateFixedCanvasScale();
 requestAnimationFrame(()=>requestAnimationFrame(()=>settleFixedCanvas(1000)));
 'use strict';
 const SAVE_KEY='guildAdventureV10.save.v3', SAVE_VERSION=3;
+const SAVE_LEGACY_KEYS=Object.freeze({2:'guildAdventureV10.save.v2'});
+const SAVE_TEMP_KEY=`${SAVE_KEY}.tmp`, SAVE_BACKUP_KEY=`${SAVE_KEY}.backup`, SAVE_MIGRATION_BACKUP_KEY=`${SAVE_KEY}.migration-backup`, SAVE_INTEGRITY_ALGORITHM='FNV1A32';
 const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
 const FORMAL_JOB_EXPORT_URL=window.GA_PROJECT_CONFIG?.jobExportUrl||'../Export/master/jobs.json';
 const FORMAL_RUNTIME_SETTINGS_EXPORT_URL=window.GA_PROJECT_CONFIG?.adventureSettingsExportUrl||'../Export/system/adventure_settings.json';
@@ -249,15 +251,14 @@ function setPhase(next,options={}){
 function seedRoster(){
  if(data.characters.length)return;
  const cfg=requireFormalRuntimeSettings().new_game,created=[];for(const row of cfg.starter_roster){const c=makeCharacter(row.name,row.job_id);data.characters.push(c);created.push(c)}
- data.partyIds=cfg.party_member_indexes.map(i=>created[i]?.id).filter(Boolean).slice(0,partyMaxSize());data.guild.gold=cfg.starting_gold;data.inventory=[...cfg.starter_inventory_ids];selectedId=data.characters[0]?.id||null;persist();
+ data.partyIds=cfg.party_member_indexes.map(i=>created[i]?.id).filter(Boolean).slice(0,partyMaxSize());data.guild.gold=cfg.starting_gold;data.inventory=[...cfg.starter_inventory_ids];selectedId=data.characters[0]?.id||null;autoSave();
 }
 async function beginNewGame(){try{await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');seedRoster();resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base')}catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad')}}
 async function continueGame(){
  try{
   await formalDefinitionsReady;
   if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');
-  const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');
-  const loaded=normalize(JSON.parse(raw));
+  const loaded=window.GKGameSaveCore.load();
   data=loaded;selectedId=data.characters[0]?.id||null;
   const content=await loadAdventureContent();applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();
   if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();render();
@@ -327,22 +328,178 @@ function normalize(raw){
  raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.211';
  return raw;
 }
-function persist(){
- data.saveVersion=SAVE_VERSION;
- data.characters.forEach(normalizeCharacterEquipmentState);
- data.aiPrograms=Array.isArray(data.aiPrograms)?data.aiPrograms:[];
- data.aiLayouts=Array.isArray(data.aiLayouts)?data.aiLayouts:[];
- data.aiPresets=Array.isArray(data.aiPresets)?data.aiPresets:[];
- data.updatedAt=new Date().toISOString();
- if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(data);
- const current=window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(data):clone(data);
- localStorage.setItem(SAVE_KEY,JSON.stringify(current));
- data=current;
+function buildAutoSaveSnapshot(source){
+ const staged=source;
+ if(window.GKGameCharacterGuildProgressionSaveBridge)GKGameCharacterGuildProgressionSaveBridge.capture(staged);
+ const inventoryEquipmentBefore=window.GKGameInventoryEquipmentSaveBridge?GKGameInventoryEquipmentSaveBridge.capture(staged):null;
+ const skillPassiveAiBefore=window.GKGameSkillPassiveAISaveBridge?GKGameSkillPassiveAISaveBridge.capture(staged):null;
+ staged.saveVersion=SAVE_VERSION;
+ staged.characters.forEach(normalizeCharacterEquipmentState);
+ staged.aiPrograms=Array.isArray(staged.aiPrograms)?staged.aiPrograms:[];
+ staged.aiLayouts=Array.isArray(staged.aiLayouts)?staged.aiLayouts:[];
+ staged.aiPresets=Array.isArray(staged.aiPresets)?staged.aiPresets:[];
+ staged.updatedAt=new Date().toISOString();
+ if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(staged);
+ const snapshot=window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(staged):clone(staged);
+ if(inventoryEquipmentBefore&&window.GKGameInventoryEquipmentSaveBridge)GKGameInventoryEquipmentSaveBridge.assertCapturedPreserved(inventoryEquipmentBefore,snapshot);
+ if(skillPassiveAiBefore&&window.GKGameSkillPassiveAISaveBridge)GKGameSkillPassiveAISaveBridge.assertCapturedPreserved(skillPassiveAiBefore,snapshot);
+ return snapshot;
 }
-function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});persist();return stored}
+function savePayloadChecksum(payload){
+ let hash=0x811c9dc5;
+ for(let i=0;i<payload.length;i++){hash^=payload.charCodeAt(i);hash=Math.imul(hash,0x01000193)>>>0;}
+ return hash.toString(16).padStart(8,'0');
+}
+function validateSavePayload(payload){
+ if(typeof payload!=='string'||!payload.length)throw new Error('Save Integrity: payload is empty.');
+ let parsed;
+ try{parsed=JSON.parse(payload)}catch(error){throw new Error(`Save Integrity: JSON parse failed (${error?.message||error}).`)}
+ if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Save Integrity: root object is invalid.');
+ if(Number(parsed.saveVersion)!==SAVE_VERSION)throw new Error(`Save Integrity: saveVersion mismatch (${parsed.saveVersion}).`);
+ if(!Array.isArray(parsed.characters)||!Array.isArray(parsed.aiPrograms)||!Array.isArray(parsed.aiLayouts)||!Array.isArray(parsed.aiPresets))throw new Error('Save Integrity: required collections are invalid.');
+ if(!window.GKGameAISaveBridge||typeof GKGameAISaveBridge.assertCurrent!=='function')throw new Error('Save Integrity: Current Save Schema validator is unavailable.');
+ GKGameAISaveBridge.assertCurrent(clone(parsed));
+ return parsed;
+}
+function stableSaveValue(value){
+ if(Array.isArray(value))return value.map(stableSaveValue);
+ if(value&&typeof value==='object'){const out={};for(const key of Object.keys(value).sort())out[key]=stableSaveValue(value[key]);return out;}
+ return value;
+}
+function normalizeLoadedSave(source){
+ const before=clone(source),normalized=normalize(source),expected=clone(before);
+ if(window.GKGameCharacterGuildProgressionSaveBridge)GKGameCharacterGuildProgressionSaveBridge.assertPreserved(before,normalized);
+ if(window.GKGameInventoryEquipmentSaveBridge)GKGameInventoryEquipmentSaveBridge.assertPreserved(before,normalized);
+ if(window.GKGameSkillPassiveAISaveBridge)GKGameSkillPassiveAISaveBridge.assertPreserved(before,normalized);
+ // Build metadata may advance without a Save schema change. Domain state may not be silently repaired.
+ expected.schemaRevision=normalized.schemaRevision;expected.gameVersion=normalized.gameVersion;
+ if(JSON.stringify(stableSaveValue(expected))!==JSON.stringify(stableSaveValue(normalized)))throw new Error('Save Integrity: Load requires implicit data normalization; migration or recovery is required.');
+ return normalized;
+}
+function buildSaveStageRecord(payload){
+ return JSON.stringify({schema_version:1,algorithm:SAVE_INTEGRITY_ALGORITHM,checksum:savePayloadChecksum(payload),payload});
+}
+function verifySaveStageRecord(raw){
+ let stage;
+ try{stage=JSON.parse(raw)}catch(error){throw new Error(`Save Integrity: stage parse failed (${error?.message||error}).`)}
+ if(!stage||stage.schema_version!==1||stage.algorithm!==SAVE_INTEGRITY_ALGORITHM||typeof stage.payload!=='string')throw new Error('Save Integrity: stage record is invalid.');
+ const actual=savePayloadChecksum(stage.payload);
+ if(stage.checksum!==actual)throw new Error(`Save Integrity: checksum mismatch (${stage.checksum||'missing'} != ${actual}).`);
+ validateSavePayload(stage.payload);
+ return stage.payload;
+}
+let saveCommitInProgress=false;
+function writeAutoSaveSnapshot(snapshot){
+ if(saveCommitInProgress)throw new Error('Save commit is already in progress.');
+ saveCommitInProgress=true;
+ const payload=JSON.stringify(snapshot),previous=localStorage.getItem(SAVE_KEY),previousBackup=localStorage.getItem(SAVE_BACKUP_KEY);
+ let mainSwitched=false;
+ try{
+  const stageRecord=buildSaveStageRecord(payload);
+  localStorage.setItem(SAVE_TEMP_KEY,stageRecord);
+  const verifiedPayload=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));
+  if(verifiedPayload!==payload)throw new Error('Save Integrity: staged payload changed before commit.');
+  if(previous!==null){
+   validateSavePayload(previous);
+   localStorage.setItem(SAVE_BACKUP_KEY,previous);
+   if(localStorage.getItem(SAVE_BACKUP_KEY)!==previous)throw new Error('Save Integrity: backup verification failed.');
+  }
+  localStorage.setItem(SAVE_KEY,verifiedPayload);
+  mainSwitched=true;
+  const committed=localStorage.getItem(SAVE_KEY);
+  if(committed!==verifiedPayload)throw new Error('Save Integrity: committed payload verification failed.');
+  validateSavePayload(committed);
+  localStorage.removeItem(SAVE_TEMP_KEY);
+  return snapshot;
+ }catch(error){
+  if(mainSwitched){
+   try{
+    if(previous===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previous);
+   }catch(rollbackError){console.error('Save rollback failed',rollbackError);}
+  }
+  try{
+   if(previousBackup===null)localStorage.removeItem(SAVE_BACKUP_KEY);else localStorage.setItem(SAVE_BACKUP_KEY,previousBackup);
+  }catch(backupRollbackError){console.error('Save backup rollback failed',backupRollbackError);}
+  try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
+  throw error;
+ }finally{saveCommitInProgress=false;}
+}
+function commitPersistentState(){
+ const current=buildAutoSaveSnapshot(data);
+ data=writeAutoSaveSnapshot(current);
+ return data;
+}
+function autoSave(){return commitPersistentState()}
+function parseSaveRoot(raw){
+ if(typeof raw!=='string'||!raw.length)throw new Error('Save Migration: payload is empty.');
+ let parsed;try{parsed=JSON.parse(raw)}catch(error){throw new Error(`Save Migration: JSON parse failed (${error?.message||error}).`)}
+ if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new Error('Save Migration: root object is invalid.');
+ if(!Number.isInteger(Number(parsed.saveVersion)))throw new Error('Save Migration: saveVersion is invalid.');
+ return parsed;
+}
+function migrateSaveV2ToV3(source){
+ const next=clone(source);next.saveVersion=SAVE_VERSION;
+ // v2→v3 is intentionally narrow: no missing/unknown field is synthesized or discarded.
+ // The current strict schema must accept the converted payload before it can be committed.
+ return next;
+}
+const SAVE_MIGRATIONS=Object.freeze({2:migrateSaveV2ToV3});
+function migrateSaveToCurrent(raw){
+ const source=parseSaveRoot(raw),fromVersion=Number(source.saveVersion);
+ if(fromVersion===SAVE_VERSION){validateSavePayload(raw);return{migrated:false,save:normalizeLoadedSave(source),fromVersion,toVersion:SAVE_VERSION};}
+ let current=source,version=fromVersion;
+ while(version!==SAVE_VERSION){
+  const migrate=SAVE_MIGRATIONS[version];
+  if(typeof migrate!=='function')throw new Error(`Save Migration: Version ${version} から ${SAVE_VERSION} への対応Migrationがありません。`);
+  const next=migrate(current),nextVersion=Number(next?.saveVersion);
+  if(!Number.isInteger(nextVersion)||nextVersion<=version)throw new Error(`Save Migration: Version ${version} の変換結果が不正です。`);
+  current=next;version=nextVersion;
+ }
+ const migratedPayload=JSON.stringify(current);validateSavePayload(migratedPayload);
+ return{migrated:true,save:normalizeLoadedSave(current),fromVersion,toVersion:SAVE_VERSION,migratedPayload};
+}
+function commitMigratedSave(raw,result,{sourceKey=SAVE_KEY}={}){
+ if(!result?.migrated)return result?.save;
+ const previousCurrent=localStorage.getItem(SAVE_KEY),previousMigrationBackup=localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY);
+ try{
+  localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,raw);
+  if(localStorage.getItem(SAVE_MIGRATION_BACKUP_KEY)!==raw)throw new Error('Save Migration: pre-migration backup verification failed.');
+  const current=buildAutoSaveSnapshot(result.save),payload=JSON.stringify(current),stageRecord=buildSaveStageRecord(payload);
+  localStorage.setItem(SAVE_TEMP_KEY,stageRecord);
+  const verifiedPayload=verifySaveStageRecord(localStorage.getItem(SAVE_TEMP_KEY));
+  if(verifiedPayload!==payload)throw new Error('Save Migration: staged payload changed before commit.');
+  localStorage.setItem(SAVE_KEY,verifiedPayload);
+  if(localStorage.getItem(SAVE_KEY)!==verifiedPayload)throw new Error('Save Migration: committed payload verification failed.');
+  validateSavePayload(localStorage.getItem(SAVE_KEY));
+  localStorage.removeItem(SAVE_TEMP_KEY);
+  return current;
+ }catch(error){
+  try{if(previousCurrent===null)localStorage.removeItem(SAVE_KEY);else localStorage.setItem(SAVE_KEY,previousCurrent)}catch(rollbackError){console.error('Save migration rollback failed',rollbackError);}
+  try{if(previousMigrationBackup===null)localStorage.removeItem(SAVE_MIGRATION_BACKUP_KEY);else localStorage.setItem(SAVE_MIGRATION_BACKUP_KEY,previousMigrationBackup)}catch(backupRollbackError){console.error('Save migration backup rollback failed',backupRollbackError);}
+  try{localStorage.removeItem(SAVE_TEMP_KEY)}catch{}
+  throw error;
+ }
+}
+function findAutoSaveRecord(){
+ const current=localStorage.getItem(SAVE_KEY);if(current!==null)return{key:SAVE_KEY,expectedVersion:null,raw:current};
+ for(const [version,key] of Object.entries(SAVE_LEGACY_KEYS)){const raw=localStorage.getItem(key);if(raw!==null)return{key,expectedVersion:Number(version),raw};}
+ return null;
+}
+function loadAutoSave(){
+ const stored=findAutoSaveRecord();
+ if(!stored)throw new Error('保存データがありません。');
+ const root=parseSaveRoot(stored.raw);
+ if(stored.expectedVersion!=null&&Number(root.saveVersion)!==stored.expectedVersion)throw new Error(`Save Migration: 保存SlotとSave Versionが一致しません (${stored.key}: ${root.saveVersion}).`);
+ const result=migrateSaveToCurrent(stored.raw);
+ if(stored.key!==SAVE_KEY&&!result.migrated)throw new Error(`Save Migration: legacy slot ${stored.key} をCurrentへ変換できません。`);
+ return result.migrated?commitMigratedSave(stored.raw,result,{sourceKey:stored.key}):result.save;
+}
+function hasAutoSave(){return findAutoSaveRecord()!==null}
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
-function commitAdventureQuestRun(runId){if(!window.GKAdventureStorySystem)return{applied:false,reason:'story_system_unavailable'};const result=GKAdventureStorySystem.commitStoredQuestRun(data,runId,{applyReward:(save,reward)=>{save.guild=save.guild||{};if(Number(reward.gold))save.guild.gold=Math.max(0,Number(save.guild.gold)||0)+Number(reward.gold);save.inventory=Array.isArray(save.inventory)?save.inventory:[];if(Array.isArray(reward.items))save.inventory.push(...reward.items.map(String).filter(Boolean));save.quest_resources=save.quest_resources&&typeof save.quest_resources==='object'?save.quest_resources:{};for(const row of (Array.isArray(reward.resources)?reward.resources:[])){const id=String(row?.resource_id||'');const count=Math.max(0,Math.floor(Number(row?.count)||0));if(id&&count)save.quest_resources[id]=Math.max(0,Math.floor(Number(save.quest_resources[id])||0))+count;}},applyFlags:(save,flags)=>{save.flags=save.flags&&typeof save.flags==='object'?save.flags:{};Object.assign(save.flags,flags||{});},applyQuestProgress:(save,progress)=>{save.quest_progress=save.quest_progress&&typeof save.quest_progress==='object'?save.quest_progress:{};const completed=new Set((save.quest_progress.completed_quest_ids||[]).map(String)),unlocked=new Set((save.quest_progress.unlocked_quest_ids||[]).map(String));const completeId=String(progress?.complete_quest_id||'');if(completeId)completed.add(completeId);for(const id of progress?.unlock_quest_ids||[]){const qid=String(id||'');if(qid)unlocked.add(qid);}save.quest_progress.completed_quest_ids=[...completed];save.quest_progress.unlocked_quest_ids=[...unlocked];save.flags=save.flags&&typeof save.flags==='object'?save.flags:{};Object.assign(save.flags,progress?.set_flags||{});}});persist();renderGuildSummary();return result}
+function commitAdventureQuestRun(runId){if(!window.GKAdventureStorySystem)return{applied:false,reason:'story_system_unavailable'};const result=GKAdventureStorySystem.commitStoredQuestRun(data,runId,{applyReward:(save,reward)=>{save.guild=save.guild||{};if(Number(reward.gold))save.guild.gold=Math.max(0,Number(save.guild.gold)||0)+Number(reward.gold);save.inventory=Array.isArray(save.inventory)?save.inventory:[];if(Array.isArray(reward.items))save.inventory.push(...reward.items.map(String).filter(Boolean));save.quest_resources=save.quest_resources&&typeof save.quest_resources==='object'?save.quest_resources:{};for(const row of (Array.isArray(reward.resources)?reward.resources:[])){const id=String(row?.resource_id||'');const count=Math.max(0,Math.floor(Number(row?.count)||0));if(id&&count)save.quest_resources[id]=Math.max(0,Math.floor(Number(save.quest_resources[id])||0))+count;}},applyFlags:(save,flags)=>{save.flags=save.flags&&typeof save.flags==='object'?save.flags:{};Object.assign(save.flags,flags||{});},applyQuestProgress:(save,progress)=>{save.quest_progress=save.quest_progress&&typeof save.quest_progress==='object'?save.quest_progress:{};const completed=new Set((save.quest_progress.completed_quest_ids||[]).map(String)),unlocked=new Set((save.quest_progress.unlocked_quest_ids||[]).map(String));const completeId=String(progress?.complete_quest_id||'');if(completeId)completed.add(completeId);for(const id of progress?.unlock_quest_ids||[]){const qid=String(id||'');if(qid)unlocked.add(qid);}save.quest_progress.completed_quest_ids=[...completed];save.quest_progress.unlocked_quest_ids=[...unlocked];save.flags=save.flags&&typeof save.flags==='object'?save.flags:{};Object.assign(save.flags,progress?.set_flags||{});}});autoSave();renderGuildSummary();return result}
 function adventurePlaybackLabel(nowMs=Date.now()){const state=resumeAdventurePlayback(nowMs);if(!state)return'';const p=state.playback,done=p.complete?'帰還可能':'進行中';return`冒険 ${done} ${Math.min(p.elapsed_seconds,p.duration_seconds).toFixed(0)}/${p.duration_seconds.toFixed(0)}秒`;}
 
 let adventurePlaybackHistoryRunId='';
@@ -524,7 +681,7 @@ function setAdventureStoryLoading(){adventureStoryLoadState={...adventureStoryLo
 function setAdventureStoryLoadError(error){const failedAt=new Date().toISOString(),elapsed=adventureStoryLoadElapsedMs(failedAt);adventureStoryLoadState={...adventureStoryLoadState,status:'error',failed_at:failedAt,load_elapsed_ms:elapsed,error_code:adventureStoryLoadErrorCode(error),error_files:Array.isArray(error?.files)?error.files.map(String):[],error_detail:String(error?.detail||'')};}
 function formalAdventureStoryLoadLabel(){const s=adventureStoryLoadState;if(s.status==='error'){const reason=({EXPORT_VERSION_MISMATCH:'Export世代不一致',EXPORT_MANIFEST_LOAD_FAILED:'manifest読込失敗',EXPORT_STORY_JSON_LOAD_FAILED:'Story JSON読込失敗',EXPORT_NETWORK_FAILED:'Export通信失敗'})[s.error_code]||'原因不明',failed=s.failed_at?new Date(s.failed_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—',elapsed=s.load_elapsed_ms>0?` ／ 所要 ${s.load_elapsed_ms}ms`:'';return`読込失敗：${reason} ／ 失敗時刻 ${failed}${elapsed}${s.error_files?.length?` ／ 対象 ${s.error_files.join(', ')}`:''}${s.error_detail?` ／ 詳細 ${s.error_detail}`:''}`;}if(s.status!=='loaded'){const started=s.loading_started_at?new Date(s.loading_started_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';return started?`再読込中 ／ 開始 ${started}`:'読込中';}const time=s.loaded_at?new Date(s.loaded_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—',version=s.data_version||'未設定',generated=formatAdventureExportGeneratedAt(s.generated_at),elapsed=s.load_elapsed_ms>0?` ／ 所要 ${s.load_elapsed_ms}ms`:'';return`Export ${version} ／ ${generated} ／ 最終読込 ${time}${elapsed} ／ 利用可能 ${s.quest_count}件 ／ 除外 ${s.excluded_count}件`;}
 let adventureStoryReloadPromise=null;
-function reloadFormalAdventureQuests(){if(adventureStoryReloadPromise)return adventureStoryReloadPromise;const button=$('reloadStoryQuests');if(button)button.disabled=true;setAdventureStoryLoading();adventureStoryReloadPromise=(async()=>{try{const content=await loadAdventureContent({force:true});applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();persist();renderExpeditionSetup();notify(`Storyデータを再読込しました（Quest ${formalAdventureQuests().length}件）。`,'ok');return{ok:true,count:formalAdventureQuests().length,issues:formalAdventureQuestImportIssues()};}catch(error){setAdventureStoryLoadError(error);renderExpeditionSetup();notify('Storyデータの再読込に失敗しました。Export配置を確認してください。','bad');return{ok:false,error};}finally{const current=$('reloadStoryQuests');if(current)current.disabled=false;}})();adventureStoryReloadPromise.then(()=>{adventureStoryReloadPromise=null},()=>{adventureStoryReloadPromise=null});return adventureStoryReloadPromise;}
+function reloadFormalAdventureQuests(){if(adventureStoryReloadPromise)return adventureStoryReloadPromise;const button=$('reloadStoryQuests');if(button)button.disabled=true;setAdventureStoryLoading();adventureStoryReloadPromise=(async()=>{try{const content=await loadAdventureContent({force:true});applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();autoSave();renderExpeditionSetup();notify(`Storyデータを再読込しました（Quest ${formalAdventureQuests().length}件）。`,'ok');return{ok:true,count:formalAdventureQuests().length,issues:formalAdventureQuestImportIssues()};}catch(error){setAdventureStoryLoadError(error);renderExpeditionSetup();notify('Storyデータの再読込に失敗しました。Export配置を確認してください。','bad');return{ok:false,error};}finally{const current=$('reloadStoryQuests');if(current)current.disabled=false;}})();adventureStoryReloadPromise.then(()=>{adventureStoryReloadPromise=null},()=>{adventureStoryReloadPromise=null});return adventureStoryReloadPromise;}
 function reconcileFormalAdventureQuestSelection(){const quests=formalAdventureQuests();if(!quests.length){data.selectedQuestId='';return null}let selected=quests.find(q=>q.id===data.selectedQuestId);if(!selected){selected=quests[0];data.selectedQuestId=selected.id;persist()}return selected;}
 function resolveAdventureBundle(content,questId){const quest=(content?.quests||[]).find(q=>String(q.id)===String(questId));if(!quest||!assessAdventureQuestImport(content,quest).ready)return null;return{quest,scenes:content.scenes||[],events:content.events||[],monsters:content.monsters||[],tablets:content.tablets||[],maps:content.maps||[],explorationOutcomes:content.explorationOutcomes||[],adventureSettings:content.adventureSettings||[],dropTables:content.dropTables||[]};}
 function adventurePartySnapshot(){const maxParty=partyMaxSize();if(!maxParty)throw new Error('Formal Game Runtimeのparty_max_sizeが未読込です。');return data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,maxParty).map(c=>{const v=characterBattleValues(c);return{character_id:c.id,id:c.id,name:c.name,job:c.job,job_name:jobDisplayName(c.job),level:c.level,max_hp:v.maxHp,max_mp:v.maxMp,mp:v.maxMp,attack:v.attack,agi:v.agi,skills:clone(c.skills||[]),equipped_skill_id:c.equippedSkillId||''};});}
@@ -536,10 +693,10 @@ function resolveAdventureEventReward(args,bundle){const resolver=window.GKAdvent
 function simulateAdventureBattle({formation,seed,encounter_result},bundle,partySnapshot){if(!window.GKGameFormalAdventureBattle?.simulate)throw new Error('Formal Adventure Battle simulation is not loaded');const scaling=encounter_result?.battle_scaling||null,monsterMaster=scaling&&window.GKAdventureEncounterResolver?.applyBattleScaling?GKAdventureEncounterResolver.applyBattleScaling(bundle.monsters,scaling):bundle.monsters;return GKGameFormalAdventureBattle.simulate({party:partySnapshot,formation,monsters:monsterMaster,seed});}
 function adventureStoneSelectionMap(){data.adventure=data.adventure&&typeof data.adventure==='object'?data.adventure:{};data.adventure.stone_selection_by_quest=data.adventure.stone_selection_by_quest&&typeof data.adventure.stone_selection_by_quest==='object'?data.adventure.stone_selection_by_quest:{};return data.adventure.stone_selection_by_quest}
 function adventureSelectedStones(questId,validTablets=null){const raw=adventureStoneSelectionMap()[String(questId||'')]||{},valid=Array.isArray(validTablets)?new Set(validTablets.map(x=>String(x?.id||'')).filter(Boolean)):null;return Object.entries(raw).map(([stone_id,count])=>({stone_id,count:Math.max(0,Math.floor(Number(count)||0))})).filter(x=>x.count>0&&(!valid||valid.has(String(x.stone_id||''))))}
-function setAdventureStoneCount(questId,stoneId,count){const map=adventureStoneSelectionMap(),qid=String(questId||''),id=String(stoneId||'');map[qid]=map[qid]&&typeof map[qid]==='object'?map[qid]:{};const n=Math.max(0,Math.floor(Number(count)||0));if(n)map[qid][id]=n;else delete map[qid][id];persist();renderExpeditionSetup()}
+function setAdventureStoneCount(questId,stoneId,count){const map=adventureStoneSelectionMap(),qid=String(questId||''),id=String(stoneId||'');map[qid]=map[qid]&&typeof map[qid]==='object'?map[qid]:{};const n=Math.max(0,Math.floor(Number(count)||0));if(n)map[qid][id]=n;else delete map[qid][id];autoSave();renderExpeditionSetup()}
 function adventureQuestStartState(quest,bundle={}){const progress=data.quest_progress||{},requirements=GKAdventureStorySystem.questStartRequirements(quest,{completedQuestIds:progress.completed_quest_ids||[],flags:data.flags||{}}),baseCost=GKAdventureStorySystem.normalizeQuestStartCost(quest),selectedStones=adventureSelectedStones(quest?.id,bundle.tablets||[]),stoneCost=GKAdventureStorySystem.stoneResourceCost(selectedStones),cost=GKAdventureStorySystem.mergeQuestStartCosts(baseCost,stoneCost),afford=GKAdventureStorySystem.canAffordQuestStartCost(data,cost),difficulty=GKAdventureStorySystem.resolveAdventureDifficulty({quest,selectedStones,tablets:bundle.tablets||[],adventureSettings:bundle.adventureSettings||[]});return{ok:requirements.ok&&afford.ok,requirements,baseCost,stoneCost,cost,afford,selectedStones,difficulty};}
 function adventureQuestStartFailureMessage(result){if(result.reason==='formal_quest_unavailable')return'正式Story Questが選択されていません。StudioからQuestをExportしてください。';if(result.reason==='quest_prerequisite_missing')return`前提クエスト未達成：${(result.missing_prerequisite_ids||[]).join(', ')}`;if(result.reason==='quest_required_flag_missing')return`開始条件Flag不足：${(result.missing_required_flags||[]).join(', ')}`;if(result.reason==='insufficient_start_cost')return'開始コストまたは選択した石板が不足しています。';if(result.reason==='export_load_failed')return'ストーリーデータを読み込めませんでした。';if(result.reason==='simulation_failed_before_cost')return'冒険生成に失敗しました。石板・開始コストは消費していません。';return'冒険を開始できませんでした。';}
-async function startSelectedQuestAdventure({forceReload=false}={}){if(!window.GKAdventureStorySystem||!window.GKGameFormalAdventureBattle||!window.GKAdventureRewardResolver)return{started:false,reason:'adventure_runtime_unavailable'};const current=currentAdventureQuestRun();if(current)return{started:false,reason:'active_quest_run',run:current};let content;try{content=await loadAdventureContent({force:forceReload});}catch(error){return{started:false,reason:'export_load_failed',error};}const bundle=resolveAdventureBundle(content,data.selectedQuestId);if(!bundle)return{started:false,reason:'formal_quest_unavailable'};const startState=adventureQuestStartState(bundle.quest,bundle);if(startState.requirements.missing_prerequisite_ids.length)return{started:false,reason:'quest_prerequisite_missing',...startState.requirements};if(startState.requirements.missing_required_flags.length)return{started:false,reason:'quest_required_flag_missing',...startState.requirements};if(!startState.afford.ok)return{started:false,reason:'insufficient_start_cost',...startState.afford};const partySnapshot=adventurePartySnapshot();let run;try{run=GKAdventureStorySystem.simulateQuest({quest:bundle.quest,scenes:bundle.scenes,events:bundle.events,monsters:bundle.monsters,tablets:bundle.tablets,adventureSettings:bundle.adventureSettings,selectedStones:startState.selectedStones,difficultySnapshot:startState.difficulty,rewardScalingSnapshot:startState.difficulty.reward_scaling_snapshot,partySnapshot,flags:clone(data.flags||{}),startCostResult:{consumed:false,pending:true,cost:clone(startState.cost),base_cost:clone(startState.baseCost),stone_cost:clone(startState.stoneCost)},checkEventCondition:adventureEventCondition,resolveEvent:adventureEventResult,resolveBattleEncounter:adventureBattleResolverAvailable()?args=>resolveAdventureBattleEncounter(args,bundle):undefined,resolveExploration:adventureExplorationResolverAvailable()?args=>resolveAdventureExploration(args,bundle):undefined,resolveReward:args=>resolveAdventureEventReward(args,bundle),simulateBattle:args=>simulateAdventureBattle(args,bundle,partySnapshot)});run.quest_name=String(bundle.quest?.name||bundle.quest?.id||'');}catch(error){return{started:false,reason:'simulation_failed_before_cost',error,cost:startState.cost};}const consumed=GKAdventureStorySystem.consumeQuestStartCost(data,startState.cost);if(!consumed.consumed)return{started:false,...consumed};run.start_cost_result={consumed:true,cost:clone(consumed.cost),base_cost:clone(startState.baseCost),stone_cost:clone(startState.stoneCost),selected_stones:clone(startState.selectedStones)};data.adventure=data.adventure||{};data.adventure.last_start_cost={quest_id:String(bundle.quest.id||''),consumed_at:new Date().toISOString(),cost:clone(consumed.cost),stone_cost:clone(startState.stoneCost)};const stored=storeAdventureQuestRun(run);persist();return{started:true,run:stored,bundle};}
+async function startSelectedQuestAdventure({forceReload=false}={}){if(!window.GKAdventureStorySystem||!window.GKGameFormalAdventureBattle||!window.GKAdventureRewardResolver)return{started:false,reason:'adventure_runtime_unavailable'};const current=currentAdventureQuestRun();if(current)return{started:false,reason:'active_quest_run',run:current};let content;try{content=await loadAdventureContent({force:forceReload});}catch(error){return{started:false,reason:'export_load_failed',error};}const bundle=resolveAdventureBundle(content,data.selectedQuestId);if(!bundle)return{started:false,reason:'formal_quest_unavailable'};const startState=adventureQuestStartState(bundle.quest,bundle);if(startState.requirements.missing_prerequisite_ids.length)return{started:false,reason:'quest_prerequisite_missing',...startState.requirements};if(startState.requirements.missing_required_flags.length)return{started:false,reason:'quest_required_flag_missing',...startState.requirements};if(!startState.afford.ok)return{started:false,reason:'insufficient_start_cost',...startState.afford};const partySnapshot=adventurePartySnapshot();let run;try{run=GKAdventureStorySystem.simulateQuest({quest:bundle.quest,scenes:bundle.scenes,events:bundle.events,monsters:bundle.monsters,tablets:bundle.tablets,adventureSettings:bundle.adventureSettings,selectedStones:startState.selectedStones,difficultySnapshot:startState.difficulty,rewardScalingSnapshot:startState.difficulty.reward_scaling_snapshot,partySnapshot,flags:clone(data.flags||{}),startCostResult:{consumed:false,pending:true,cost:clone(startState.cost),base_cost:clone(startState.baseCost),stone_cost:clone(startState.stoneCost)},checkEventCondition:adventureEventCondition,resolveEvent:adventureEventResult,resolveBattleEncounter:adventureBattleResolverAvailable()?args=>resolveAdventureBattleEncounter(args,bundle):undefined,resolveExploration:adventureExplorationResolverAvailable()?args=>resolveAdventureExploration(args,bundle):undefined,resolveReward:args=>resolveAdventureEventReward(args,bundle),simulateBattle:args=>simulateAdventureBattle(args,bundle,partySnapshot)});run.quest_name=String(bundle.quest?.name||bundle.quest?.id||'');}catch(error){return{started:false,reason:'simulation_failed_before_cost',error,cost:startState.cost};}const consumed=GKAdventureStorySystem.consumeQuestStartCost(data,startState.cost);if(!consumed.consumed)return{started:false,...consumed};run.start_cost_result={consumed:true,cost:clone(consumed.cost),base_cost:clone(startState.baseCost),stone_cost:clone(startState.stoneCost),selected_stones:clone(startState.selectedStones)};data.adventure=data.adventure||{};data.adventure.last_start_cost={quest_id:String(bundle.quest.id||''),consumed_at:new Date().toISOString(),cost:clone(consumed.cost),stone_cost:clone(startState.stoneCost)};const stored=storeAdventureQuestRun(run);autoSave();return{started:true,run:stored,bundle};}
 async function beginSelectedAdventure(){if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');return}const result=await startSelectedQuestAdventure();if(!result.started){if(result.reason==='active_quest_run'){openAdventurePlayback(result.run);return}notify(adventureQuestStartFailureMessage(result),'bad');return}openAdventurePlayback(result.run);}
 function render(){
  const roster=$('roster');$('empty').classList.toggle('hidden',data.characters.length>0);roster.innerHTML=data.characters.map(c=>`<button class="unit adventurer-row ${c.id===selectedId?'selected':''}" data-id="${c.id}"><div><div class="name">${escapeHtml(c.name)}</div><span class="tag">Lv ${c.level}</span><span class="tag">${escapeHtml(jobDisplayName(c.job))}</span></div><span class="adventurer-arrow">›</span></button>`).join('');
@@ -578,8 +735,8 @@ function renderCharacterSkillView(){
  current.innerHTML=`<div class="skill-loadout-current"><b>装着中</b><div class="name">${escapeHtml(equippedName)}</div><div class="small">${equippedReady?'戦闘ではこのスキルをAIが予約・実行します。':'Skill IDはSaveに保持されています。正式Exportを読み込めるまで実行しません。'}</div></div>`;
  const ownedRows=(c.skills||[]).map(id=>({id,skill:findSkill(id)}));
  list.innerHTML=ownedRows.length?ownedRows.map(row=>{const skill=row.skill,compiled=skill?compileSkillForRuntime(skill):null,selected=row.id===c.equippedSkillId;if(!skill||!compiled?.ok)return `<div class="skill-choice ${selected?'selected':''}"><div><b>${escapeHtml(row.id)}</b><div class="small">正式Skill定義を現在取得できません。所有IDは削除せず保持します。</div></div><button type="button" disabled>${selected?'装着ID保持中':'利用不可'}</button></div>`;const tags=skillDisplayTags(skill,compiled);return `<div class="skill-choice ${selected?'selected':''}"><div><b>${escapeHtml(skill.name)}</b><div class="small">${escapeHtml(compiled.definition.logicOrder.join(' → '))} ／ 対象 ${escapeHtml(compiled.definition.target.side)}・${escapeHtml(compiled.definition.target.range)}</div><div class="skill-tags">${tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div></div><button type="button" class="${selected?'good':'primary'}" data-equip-skill="${skill.id}" ${selected?'disabled':''}>${selected?'装着中':'装着する'}</button></div>`}).join(''):'<div class="skill-empty">所持スキルがありません。</div>';
- list.querySelectorAll('[data-equip-skill]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.equipSkill,result=window.GKGameSkillLoadout?GKGameSkillLoadout.equipOwnedSkill(c,id,findSkill,compileSkillForRuntime):{ok:false};if(!result.ok){notify(`スキルを装着できません: ${result.reason||'INVALID_SKILL'}`,'bad');return}persist();render();renderCharacterSkillView();notify(`${c.name}が${result.skill?.name||id}を装着しました。`)});
- if(catalog){const candidates=(typeof SKILLS!=='undefined'?SKILLS:[]).filter(skill=>window.GKGameSkillLoadout?.formalProductionSkillCheck(skill,compileSkillForRuntime).ok&&!c.skills.includes(skill.id));catalog.innerHTML=candidates.length?`<div class="small">Studio正式Exportから読み込んだProduction Skillを、このSaveの冒険者へ永続割当します。獲得条件・コストはP02-04以降で別途実装します。</div>${candidates.map(skill=>`<button type="button" class="unit" data-assign-formal-skill="${skill.id}"><b>${escapeHtml(skill.name)}</b><span class="tag">${escapeHtml(skill.id)}</span><div class="small">この冒険者へ割当</div></button>`).join('')}`:'<div class="small">未割当の正式Production Skillはありません。Export読込状態も確認してください。</div>';catalog.querySelectorAll('[data-assign-formal-skill]').forEach(btn=>btn.onclick=()=>{const skill=findSkill(btn.dataset.assignFormalSkill),result=window.GKGameSkillLoadout?GKGameSkillLoadout.assignFormalProductionSkill(c,skill,compileSkillForRuntime):{ok:false,reason:'LOADOUT_RUNTIME_UNAVAILABLE'};if(!result.ok){notify(`正式Skillを割当できません: ${result.reason}`,'bad');return}persist();render();renderCharacterSkillView();notify(`${c.name}へ${skill.name}を永続割当しました。`)});}
+ list.querySelectorAll('[data-equip-skill]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.equipSkill,result=window.GKGameSkillLoadout?GKGameSkillLoadout.equipOwnedSkill(c,id,findSkill,compileSkillForRuntime):{ok:false};if(!result.ok){notify(`スキルを装着できません: ${result.reason||'INVALID_SKILL'}`,'bad');return}autoSave();render();renderCharacterSkillView();notify(`${c.name}が${result.skill?.name||id}を装着しました。`)});
+ if(catalog){const candidates=(typeof SKILLS!=='undefined'?SKILLS:[]).filter(skill=>window.GKGameSkillLoadout?.formalProductionSkillCheck(skill,compileSkillForRuntime).ok&&!c.skills.includes(skill.id));catalog.innerHTML=candidates.length?`<div class="small">Studio正式Exportから読み込んだProduction Skillを、このSaveの冒険者へ永続割当します。獲得条件・コストはP02-04以降で別途実装します。</div>${candidates.map(skill=>`<button type="button" class="unit" data-assign-formal-skill="${skill.id}"><b>${escapeHtml(skill.name)}</b><span class="tag">${escapeHtml(skill.id)}</span><div class="small">この冒険者へ割当</div></button>`).join('')}`:'<div class="small">未割当の正式Production Skillはありません。Export読込状態も確認してください。</div>';catalog.querySelectorAll('[data-assign-formal-skill]').forEach(btn=>btn.onclick=()=>{const skill=findSkill(btn.dataset.assignFormalSkill),result=window.GKGameSkillLoadout?GKGameSkillLoadout.assignFormalProductionSkill(c,skill,compileSkillForRuntime):{ok:false,reason:'LOADOUT_RUNTIME_UNAVAILABLE'};if(!result.ok){notify(`正式Skillを割当できません: ${result.reason}`,'bad');return}autoSave();render();renderCharacterSkillView();notify(`${c.name}へ${skill.name}を永続割当しました。`)});}
 }
 function selectedQuest(){const formal=formalAdventureQuests();return formal.find(q=>q.id===data.selectedQuestId)||formal[0]||null}
 function equipmentBonus(c){return characterEquipmentEntries(c).reduce((a,row)=>{const e=equipmentDefinition(row.ref),b=e?.bonuses;if(b){a.attack+=Number(b.attack)||0;a.maxHp+=Number(b.maxHp)||0;a.maxMp+=Number(b.maxMp)||0;a.agi+=Number(b.agi)||0;a.accuracy+=Number(b.accuracy)||0;a.evasion+=Number(b.evasion)||0;a.magicWeaponBonus+=Number(b.magicWeaponBonus)||0;a.baseCriticalRate+=Number(b.baseCriticalRate)||0}return a},{attack:0,maxHp:0,maxMp:0,agi:0,accuracy:0,evasion:0,magicWeaponBonus:0,baseCriticalRate:0})}
@@ -608,14 +765,14 @@ function renderAdventureStonePicker(quest){
 }
 function characterAiEditorSummary(c){const formal=window.GKGameAISaveBridge?GKGameAISaveBridge.loadForCharacter(data,c?.id):null;return formal?`${formal.program.nodes.length}チップ / Formal`:'AI未設定'; }
 function renderExpeditionSetup(){
- const party=$('partyEditor');if(party){party.innerHTML=data.characters.map(c=>`<div class="unit"><label><input type="checkbox" data-party="${c.id}" ${data.partyIds.includes(c.id)?'checked':''}> <b>${escapeHtml(c.name)}</b> <span class="tag">${escapeHtml(jobDisplayName(c.job))}</span></label><div><button type="button" data-open-ai="${c.id}">AIチップ編集</button> <span class="small">${characterAiEditorSummary(c)}</span></div><div class="small">装備: ${characterEquipmentEntries(c).map(row=>`${escapeHtml(row.label)}: ${escapeHtml(equipmentDisplayName(row.ref))} <button type="button" class="mini" data-unequip="${c.id}:${row.slot}">外す</button>`).join(' / ')||'なし'}</div></div>`).join('')||'<p class="small">冒険者を作成してください。</p>';party.querySelectorAll('[data-party]').forEach(el=>el.onchange=()=>{const maxParty=partyMaxSize();if(!maxParty){el.checked=false;notify('Formal Game Runtime設定を読み込めません。','bad');return}if(el.checked&&data.partyIds.length>=maxParty){el.checked=false;notify(`パーティは最大${maxParty}人です。`,'warn');return}data.partyIds=el.checked?[...data.partyIds,el.dataset.party]:data.partyIds.filter(id=>id!==el.dataset.party);persist();renderExpeditionSetup()});party.querySelectorAll('[data-open-ai]').forEach(btn=>btn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===btn.dataset.openAi)));party.querySelectorAll('[data-unequip]').forEach(btn=>btn.onclick=e=>{e.preventDefault();const [id,slot]=btn.dataset.unequip.split(':'),c=data.characters.find(x=>x.id===id);if(c&&c.equipment?.[slot]){const returned=unequipCharacterEquipmentSlot(c,slot);if(returned.length)data.inventory.push(...returned);persist();render();notify(`${c.name}の装備を外しました。`)}})}
- const ql=$('questList'),formalQuests=formalAdventureQuests(),importIssues=formalAdventureQuestImportIssues();if(ql){const issueNotice=importIssues.length?`<details class="small warn"><summary>${importIssues.length}件のQuestを参照不整合のため除外</summary><ul>${importIssues.map(issue=>`<li><b>${escapeHtml(issue.quest_id)}</b>：${escapeHtml(formalAdventureQuestImportIssueMessage(issue))}</li>`).join('')}</ul><p>StudioのExport検証でQuest Box / Scene / Event参照を確認してください。</p></details>`:'';ql.innerHTML=(formalQuests.length?formalQuests.map(q=>`<label class="unit quest-card ${q.id===data.selectedQuestId?'selected':''}"><input type="radio" name="quest" value="${q.id}" ${q.id===data.selectedQuestId?'checked':''}> <b>${escapeHtml(q.name)}</b> <span class="tag">Story</span><div class="small">推奨Lv ${q.recommendedLevel}</div><p>${escapeHtml(q.description)}</p></label>`).join(''):'<p class="small">P7-Bで実行可能なStory Questがありません。StudioでQuest Box / Map / Event条件を設定してExportしてください。</p>')+issueNotice+`<div class="small" id="storyDataLoadStatus">${escapeHtml(formalAdventureStoryLoadLabel())}</div><div class="toolbar"><button type="button" id="reloadStoryQuests">Storyデータを再読込</button></div>`;ql.querySelectorAll('input[name=quest]').forEach(el=>el.onchange=()=>{data.selectedQuestId=el.value;persist();renderExpeditionSetup()});$('reloadStoryQuests').onclick=reloadFormalAdventureQuests}
+ const party=$('partyEditor');if(party){party.innerHTML=data.characters.map(c=>`<div class="unit"><label><input type="checkbox" data-party="${c.id}" ${data.partyIds.includes(c.id)?'checked':''}> <b>${escapeHtml(c.name)}</b> <span class="tag">${escapeHtml(jobDisplayName(c.job))}</span></label><div><button type="button" data-open-ai="${c.id}">AIチップ編集</button> <span class="small">${characterAiEditorSummary(c)}</span></div><div class="small">装備: ${characterEquipmentEntries(c).map(row=>`${escapeHtml(row.label)}: ${escapeHtml(equipmentDisplayName(row.ref))} <button type="button" class="mini" data-unequip="${c.id}:${row.slot}">外す</button>`).join(' / ')||'なし'}</div></div>`).join('')||'<p class="small">冒険者を作成してください。</p>';party.querySelectorAll('[data-party]').forEach(el=>el.onchange=()=>{const maxParty=partyMaxSize();if(!maxParty){el.checked=false;notify('Formal Game Runtime設定を読み込めません。','bad');return}if(el.checked&&data.partyIds.length>=maxParty){el.checked=false;notify(`パーティは最大${maxParty}人です。`,'warn');return}data.partyIds=el.checked?[...data.partyIds,el.dataset.party]:data.partyIds.filter(id=>id!==el.dataset.party);autoSave();renderExpeditionSetup()});party.querySelectorAll('[data-open-ai]').forEach(btn=>btn.onclick=()=>openAiEditorFor(data.characters.find(x=>x.id===btn.dataset.openAi)));party.querySelectorAll('[data-unequip]').forEach(btn=>btn.onclick=e=>{e.preventDefault();const [id,slot]=btn.dataset.unequip.split(':'),c=data.characters.find(x=>x.id===id);if(c&&c.equipment?.[slot]){const returned=unequipCharacterEquipmentSlot(c,slot);if(returned.length)data.inventory.push(...returned);autoSave();render();notify(`${c.name}の装備を外しました。`)}})}
+ const ql=$('questList'),formalQuests=formalAdventureQuests(),importIssues=formalAdventureQuestImportIssues();if(ql){const issueNotice=importIssues.length?`<details class="small warn"><summary>${importIssues.length}件のQuestを参照不整合のため除外</summary><ul>${importIssues.map(issue=>`<li><b>${escapeHtml(issue.quest_id)}</b>：${escapeHtml(formalAdventureQuestImportIssueMessage(issue))}</li>`).join('')}</ul><p>StudioのExport検証でQuest Box / Scene / Event参照を確認してください。</p></details>`:'';ql.innerHTML=(formalQuests.length?formalQuests.map(q=>`<label class="unit quest-card ${q.id===data.selectedQuestId?'selected':''}"><input type="radio" name="quest" value="${q.id}" ${q.id===data.selectedQuestId?'checked':''}> <b>${escapeHtml(q.name)}</b> <span class="tag">Story</span><div class="small">推奨Lv ${q.recommendedLevel}</div><p>${escapeHtml(q.description)}</p></label>`).join(''):'<p class="small">P7-Bで実行可能なStory Questがありません。StudioでQuest Box / Map / Event条件を設定してExportしてください。</p>')+issueNotice+`<div class="small" id="storyDataLoadStatus">${escapeHtml(formalAdventureStoryLoadLabel())}</div><div class="toolbar"><button type="button" id="reloadStoryQuests">Storyデータを再読込</button></div>`;ql.querySelectorAll('input[name=quest]').forEach(el=>el.onchange=()=>{data.selectedQuestId=el.value;autoSave();renderExpeditionSetup()});$('reloadStoryQuests').onclick=reloadFormalAdventureQuests}
  const qs=$('questSummary'),q=formalQuests.find(x=>x.id===data.selectedQuestId)||null;if(qs){const activeLabel=adventurePlaybackLabel();qs.textContent=q?`選択中：${q.name} ／ 編成人数 ${data.partyIds.length}人${activeLabel?' ／ '+activeLabel:''}`:`正式Story Quest未選択 ／ 編成人数 ${data.partyIds.length}人${activeLabel?' ／ '+activeLabel:''}`;}
  renderAdventureStonePicker(q?((adventureContentCache?.quests||[]).find(x=>String(x.id)===String(q.id))||q):null);
  renderAdventureHistory();
  const inv=$('inventoryList');if(inv){
   inv.innerHTML=data.inventory.length?data.inventory.map((ref,i)=>{const e=equipmentDefinition(ref);if(!e)return `<div class="unit loot-card rarity-unclassified"><b>${escapeHtml(ref)}</b> <span class="tag">正式装備定義未読込</span><div class="small">Reward ResultのIDはSaveへ保持されています。Equipment Exportを取得できるまで装備しません。状態: ${escapeHtml(formalEquipmentBridge.status)}</div></div>`;const rarity=rarityView(e.rarity),targets=data.characters.flatMap(c=>equipmentEquipTargets(c,e));return `<div class="unit loot-card rarity-${escapeHtml(e.rarity||'unclassified')}"><b>${escapeHtml(rarity.label)} ${escapeHtml(e.name)}</b> <span class="tag">${escapeHtml(rarity.name)}</span><span class="tag">${escapeHtml(e.slotLabel||e.slot||'部位未定義')}</span><div class="small">${escapeHtml(equipmentBonusLabel(e))}<br>装備条件: ${escapeHtml(equipmentRequirementLabel(e))}${e.slot==='weapon'?`<br>STR不足時のみ、設定倍率以内なら両手持ちで武器1・武器2の2枠を使用。STR以外の要求は緩和しません。`:''}${e.description?`<br>${escapeHtml(e.description)}`:''}</div>${e.slot?`<label>装備先<select data-equip-index="${i}"><option value="">選択</option>${targets.map(t=>`<option value="${escapeHtml(t.value)}" ${t.disabled?'disabled':''}>${escapeHtml(t.label)}</option>`).join('')}</select></label>`:'<div class="small warn">この装備の部位は現在のGame Runtimeでは未接続です。IDを保持します。</div>'}</div>`}).join(''):'<p class="small">装備はまだありません。依頼を達成して戦利品を集めましょう。</p>';
-  inv.querySelectorAll('[data-equip-index]').forEach(el=>el.onchange=()=>{if(!el.value)return;const [characterId,targetSlot]=el.value.split('|'),c=data.characters.find(x=>x.id===characterId),result=equipInventoryItemToCharacter(c,Number(el.dataset.equipIndex),targetSlot);if(!result.ok){notify(`装備できません: ${equipmentRequirementFailureLabel(result)}`,'bad');renderExpeditionSetup();return}persist();render();notify(`${c.name}が${result.equipment.name}を${result.twoHanded?'両手持ちで':'装備'}しました。`)})
+  inv.querySelectorAll('[data-equip-index]').forEach(el=>el.onchange=()=>{if(!el.value)return;const [characterId,targetSlot]=el.value.split('|'),c=data.characters.find(x=>x.id===characterId),result=equipInventoryItemToCharacter(c,Number(el.dataset.equipIndex),targetSlot);if(!result.ok){notify(`装備できません: ${equipmentRequirementFailureLabel(result)}`,'bad');renderExpeditionSetup();return}autoSave();render();notify(`${c.name}が${result.equipment.name}を${result.twoHanded?'両手持ちで':'装備'}しました。`)})
  }
  renderGuildSummary();
  refreshMobileHome();
@@ -641,16 +798,14 @@ function createCharacterFromForm(){
  }catch(error){console.error('character creation failed',error);notify(`冒険者を作成できません: ${error.message}`,'bad')}
 }
 $('createBtn').onclick=createCharacterFromForm;
-$('levelBtn').onclick=()=>{try{const c=data.characters.find(x=>x.id===selectedId),cfg=requireFormalRuntimeSettings();if(!c||c.level>=cfg.character.max_level)return;const job=jobDefinition(c.job);if(!job)throw new Error(`正式Jobが見つかりません: ${c.job}`);const gained=[],growth={};STATS.forEach(stat=>{const amount=rollGrowth(job.aptitudes[stat]);growth[stat]=amount;if(amount>0){c.stats[stat]+=amount;gained.push(`${stat} +${amount}`)}});const from=c.level;c.level++;c.growthHistory.push({fromLevel:from,toLevel:c.level,job:job.id,growth,gained,ruleRevision:cfg.growth.rule_revision,at:new Date().toISOString()});persist();render();notify(`${c.name}がLv${c.level}になりました。${gained.length?' 上昇: '+gained.join(', '):' 能力値上昇なし'}`)}catch(error){notify(`レベルアップできません: ${error.message}`,'bad')}};
+$('levelBtn').onclick=()=>{try{const c=data.characters.find(x=>x.id===selectedId),cfg=requireFormalRuntimeSettings();if(!c||c.level>=cfg.character.max_level)return;const job=jobDefinition(c.job);if(!job)throw new Error(`正式Jobが見つかりません: ${c.job}`);const gained=[],growth={};STATS.forEach(stat=>{const amount=rollGrowth(job.aptitudes[stat]);growth[stat]=amount;if(amount>0){c.stats[stat]+=amount;gained.push(`${stat} +${amount}`)}});const from=c.level;c.level++;c.growthHistory.push({fromLevel:from,toLevel:c.level,job:job.id,growth,gained,ruleRevision:cfg.growth.rule_revision,at:new Date().toISOString()});autoSave();render();notify(`${c.name}がLv${c.level}になりました。${gained.length?' 上昇: '+gained.join(', '):' 能力値上昇なし'}`)}catch(error){notify(`レベルアップできません: ${error.message}`,'bad')}};
 function growthRankGrid(jobRef){const job=jobDefinition(jobRef);if(!job)return '<div class="small">正式Jobデータ未読込</div>';return `<div class="growth-grid">${STATS.map(stat=>{const r=growthRank(job.aptitudes[stat]);return `<div class="growth-cell"><span class="small">${stat}</span><b class="rank-${escapeHtml(r)}">${escapeHtml(r)}</b></div>`}).join('')}</div>`}
 function openJobChangeModal(){const c=data.characters.find(x=>x.id===selectedId);if(!c)return;const current=jobDefinition(c.job);$('jobChangeCurrent').innerHTML=`現在：<b>${escapeHtml(current?.name||c.job)}</b>`;$('jobChangeList').innerHTML=[...formalJobCatalog.values()].map(job=>`<div class="job-option ${job.id===c.job?'selected':''}" data-job-option="${escapeHtml(job.id)}"><div class="job-option-name">${escapeHtml(job.name)}${job.id===c.job?'（現在）':''}</div>${growthRankGrid(job.id)}<button class="primary job-confirm" data-job-confirm="${escapeHtml(job.id)}" ${job.id===c.job?'disabled':''}>${job.id===c.job?'現在の職業':'この職業へ転職'}</button></div>`).join('');$('jobChangeModal').classList.add('open');$('jobChangeModal').setAttribute('aria-hidden','false');document.body.style.overflow='hidden';document.querySelectorAll('[data-job-confirm]').forEach(btn=>btn.onclick=()=>confirmJobChange(btn.dataset.jobConfirm))}
 function closeJobChangeModal(){$('jobChangeModal').classList.remove('open');$('jobChangeModal').setAttribute('aria-hidden','true');document.body.style.overflow=''}
-function confirmJobChange(next){const c=data.characters.find(x=>x.id===selectedId),job=jobDefinition(next);if(!c||!job||job.id===c.job)return;const old=c.job;c.job=job.id;c.jobHistory.push({job:job.id,level:c.level,from:old,at:new Date().toISOString()});persist();render();closeJobChangeModal();notify(`${c.name}は${jobDisplayName(old)}から${job.name}へ転職しました。次回以降の能力成長テーブルが変わります。`)}
+function confirmJobChange(next){const c=data.characters.find(x=>x.id===selectedId),job=jobDefinition(next);if(!c||!job||job.id===c.job)return;const old=c.job;c.job=job.id;c.jobHistory.push({job:job.id,level:c.level,from:old,at:new Date().toISOString()});autoSave();render();closeJobChangeModal();notify(`${c.name}は${jobDisplayName(old)}から${job.name}へ転職しました。次回以降の能力成長テーブルが変わります。`)}
 $('openJobChange').onclick=openJobChangeModal;$('jobChangeClose').onclick=closeJobChangeModal;$('jobChangeModal').onclick=e=>{if(e.target===$('jobChangeModal'))closeJobChangeModal()};
 
-$('deleteBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c)return;if(!confirm(`${c.name}を削除しますか？`))return;data.characters=data.characters.filter(x=>x.id!==selectedId);data.partyIds=data.partyIds.filter(id=>id!==selectedId);selectedId=null;persist();render();notify('キャラクターを削除しました。','warn')};
-$('saveBtn').onclick=()=>{persist();notify('ブラウザへ保存しました。')};
-$('loadBtn').onclick=()=>{try{const raw=localStorage.getItem(SAVE_KEY);if(!raw)throw new Error('保存データがありません。');data=normalize(JSON.parse(raw));window.GKGameAIEditorUI?.resetSessions();selectedId=data.characters[0]?.id||null;render();notify('ブラウザ保存を読み込みました。')}catch(e){notify(e.message,'bad')}};
+$('deleteBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);if(!c)return;if(!confirm(`${c.name}を削除しますか？`))return;data.characters=data.characters.filter(x=>x.id!==selectedId);data.partyIds=data.partyIds.filter(id=>id!==selectedId);selectedId=null;autoSave();render();notify('キャラクターを削除しました。','warn')};
 
 $('titleStart').onclick=beginNewGame;
 $('titleContinue').onclick=continueGame;
@@ -667,9 +822,6 @@ document.querySelectorAll('[data-open-base-view]').forEach(btn=>btn.onclick=()=>
 const mobileDepart=$('mobileDepart');if(mobileDepart)mobileDepart.onclick=async()=>{if(!data.partyIds.length){notify('遠征パーティを1人以上選んでください。','bad');setBaseView('party');return}await beginSelectedAdventure()};
 loadAdventureContent().then(content=>{applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();}).catch(error=>{adventureQuestCatalog=[];setAdventureStoryLoadError(error);if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();});
 ensureAdventurePlaybackTicker();
-$('exportBtn').onclick=()=>{persist();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`guild-adventure-v9-save-v2-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);notify('JSONを書き出しました。')};
-$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{data=normalize(JSON.parse(await file.text()));window.GKGameAIEditorUI?.resetSessions();selectedId=data.characters[0]?.id||null;persist();render();notify('JSONを読み込みました。')}catch(err){notify(err.message,'bad')}finally{e.target.value=''}};
-$('clearBtn').onclick=()=>{if(!confirm('正式版Phase Aの全データを初期化しますか？'))return;data={saveVersion:SAVE_VERSION,schemaRevision:'1.6.0',gameVersion:'GA-B486.211',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}}};selectedId=null;persist();render();notify('全データを初期化しました。','warn')};
 
 const DOT_LOG_SCHEMA_VERSION='1.0.0';
 function ensureValidationState(){
@@ -1178,7 +1330,7 @@ function openAiEditorFor(c){
    if(!stored)throw new Error('保存対象Formal AI Programが見つかりません。');
    stored.compiled=clone(runtime);
    const errors=GKGameAISaveBridge.validateCurrent(staged.save);if(errors.length)throw new Error(`Formal AI保存後の検証に失敗しました。\n${errors.join('\n')}`);
-   data=staged.save;persist();render();return staged;
+   data=staged.save;autoSave();render();return staged;
   },
   onPresetAction:async(payload)=>{
    let result;
@@ -1187,7 +1339,7 @@ function openAiEditorFor(c){
    else if(payload.action==='rename')result=GKGameAISaveBridge.renameUserPreset(data,payload.preset_id,payload.name);
    else if(payload.action==='delete')result=GKGameAISaveBridge.deleteUserPreset(data,payload.preset_id);
    else throw new Error('未対応のPreset操作です。');
-   data=result.save;persist();render();return {presets:GKGameAISaveBridge.userPresets(data)};
+   data=result.save;autoSave();render();return {presets:GKGameAISaveBridge.userPresets(data)};
   }
  }).catch(error=>notify(String(error?.message||error),'bad'));
 }

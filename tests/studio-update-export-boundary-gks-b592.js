@@ -9,8 +9,10 @@ assert(policy.classes.game_data.patterns.includes('Export/**'),'system policy mu
 assert(policy.rules.source_allowed_classes.includes('game_data'),'full source must be allowed to carry bundled Export for local/runtime validation');
 assert(!policy.rules.update_allowed_classes.includes('game_data'),'Studio direct update packages must not carry game_data');
 assert.deepStrictEqual(policy.rules.studio_upload_classes,['persistent'],'Studio GitHub upload must be persistent-only');
+assert.deepStrictEqual(policy.rules.package_manifest_classes,['persistent'],'package manifest must remain persistent-only');
+assert(!policy.rules.package_manifest_classes.includes('development_data'),'Development Project data must not be listed in target package_manifest');
 assert.strictEqual(build.game_build,'GA-B486.211');
-assert.strictEqual(build.studio_build,'GKS-B676');
+assert.strictEqual(build.studio_build,'GKS-B727');
 for(const marker of [
   "function isStudioDeployGameDataPath(path)",
   "return normalized==='Export'||normalized.startsWith('Export/');",
@@ -23,6 +25,10 @@ for(const marker of [
   "Studio更新がExport/へ触れようとしたため停止しました",
   "安全停止: Studio更新ではExport/を配置・削除できません。Gameデータ配置を使用してください。",
   "Studio更新では <code>Export/</code> を配置・削除しません。",
+  "target_sourceで検証済みのmanifestを配置時にそのまま使用",
+  "const packaged=studioDeployFiles.find(x=>normalizeDeployPath(x.path)==='package_manifest.json');",
+  "配置manifestとtarget_source.package_manifest SHA-256が一致しません。",
+  "generatedManifest:false",
   "async function verifyStudioDeployBaselineBinding(remote,base,meta)",
   "baseline_source.package_manifest_sha256が不正です。",
   "更新ZIPの基準とGitHub HEADが一致しません。package_manifest SHA-256",
@@ -58,4 +64,4 @@ assert(registryRunner.includes('if context not in contexts:'),'test registry che
 const inspectionRunner=fs.readFileSync('tools/inspection/run.py','utf8');
 assert(inspectionRunner.includes('"--context", context'),'inspection runner must pass context to active test gate');
 
-console.log('PASS GKS-B676 Studio SOURCE_UPDATE gate hard-excludes root Export/, verifies exact baseline, and rejects non-forward/same-Build artifact reuse');
+console.log('PASS GKS-B691 Studio SOURCE_UPDATE gate hard-excludes root Export/, verifies exact baseline, and rejects non-forward/same-Build artifact reuse');

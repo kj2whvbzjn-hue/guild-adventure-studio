@@ -29,6 +29,9 @@ function deepRedact(value){
  return out;
 }
 function workflowStage(w){return String(w?.workflow?.stage||w?.workspace?.status||'')}
+function resolvedCheckStatus(status){return status==='Passed'||status==='Waived'}
+function resolvedFailedCheck(c){return String(c?.status||'')==='Failed'&&c?.resolution?.status==='Resolved'}
+function unresolvedCheck(c){const status=String(c?.status||'Pending');return status==='Pending'||(status==='Failed'&&!resolvedFailedCheck(c))}
 function openQuestions(w){
  const rows=[];
  for(const d of w?.discussions||[]){
@@ -41,8 +44,8 @@ function summarizeProject(w){
  const tasks=Array.isArray(w?.tasks)?w.tasks:[];
  const discussions=Array.isArray(w?.discussions)?w.discussions:[];
  const oq=openQuestions(w);
- const pendingChecks=checks.filter(x=>['Pending','Failed'].includes(String(x?.status||'Pending')));
- const failedChecks=checks.filter(x=>String(x?.status||'')==='Failed');
+ const pendingChecks=checks.filter(unresolvedCheck);
+ const failedChecks=checks.filter(x=>String(x?.status||'')==='Failed'&&!resolvedFailedCheck(x));
  const openTasks=tasks.filter(x=>String(x?.status||'Todo')!=='Done');
  const openDiscussions=discussions.filter(x=>['Open','Pending'].includes(String(x?.status||'Open')));
  const pendingDiscussions=discussions.filter(x=>String(x?.status||'')==='Pending');
@@ -222,7 +225,7 @@ function buildRootGatewayData(dataset){
  const projects=[];
  for(const sourceSummary of dataset.pending){
   const detail=detailById.get(String(sourceSummary.id||'')),project=detail?.project||{};
-  const pendingChecks=(project.checks||[]).filter(x=>['Pending','Failed'].includes(String(x?.status||'Pending'))).map(x=>deepRedact(x));
+  const pendingChecks=(project.checks||[]).filter(unresolvedCheck).map(x=>deepRedact(x));
   const targetIds={Architecture:new Set(),WorkBox:new Set(),Task:new Set(),Discussion:new Set()};
   for(const check of pendingChecks){const type=String(check.target_type||''),id=String(check.target_id||'');if(targetIds[type]&&id)targetIds[type].add(id)}
   const openDiscussionIds=new Set((sourceSummary.open_discussions||[]).map(x=>String(x.id||'')));
@@ -250,8 +253,9 @@ function buildRootGatewayData(dataset){
  return {format:'gk-development-ai-human-review-gateway',version:'1.0',generated_at:dataset.generated_at,publish_revision:dataset.publish_revision,studio_build:dataset.projectsDoc.studio_build,game_build:dataset.projectsDoc.game_build,pending_project_count:projects.length,projects};
 }
 function rootGatewayBlock(dataset){
- const data=buildRootGatewayData(dataset),json=escapeHtml(JSON.stringify(data,null,2));
- return `${ROOT_GATEWAY_START}\n<section id="gks-development-ai-human-review" data-publish-revision="${escapeHtml(dataset.publish_revision)}" style="margin-top:28px;padding-top:24px;border-top:1px solid #334155">\n<h2 style="margin:0 0 12px">Development AI — Human確認対象 (${data.pending_project_count})</h2>\n<p style="color:#a8b3c7;line-height:1.6">AI取得用の固定入口です。この内容はDevelopment Studioの公開操作で生成された読み取り専用スナップショットです。Revisionが一致しない場合は使用しないでください。</p>\n<p><strong>publish_revision:</strong> <code>${escapeHtml(data.publish_revision)}</code><br><strong>Studio:</strong> ${escapeHtml(data.studio_build)} / <strong>Game:</strong> ${escapeHtml(data.game_build)} / <strong>Human確認対象:</strong> ${data.pending_project_count}</p>\n<pre id="gks-development-ai-human-review-data" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:.78rem;line-height:1.45">${json}</pre>\n</section>\n${ROOT_GATEWAY_END}`;
+ const data=buildRootGatewayData(dataset);
+ const json=JSON.stringify(data).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+ return `${ROOT_GATEWAY_START}\n<script id="gks-development-ai-human-review-data" type="application/json" data-publish-revision="${escapeHtml(dataset.publish_revision)}">${json}</script>\n${ROOT_GATEWAY_END}`;
 }
 function injectRootGatewayHtml(html,dataset){
  const source=String(html||''),block=rootGatewayBlock(dataset),a=source.indexOf(ROOT_GATEWAY_START),b=source.indexOf(ROOT_GATEWAY_END);
@@ -324,6 +328,27 @@ async function readRemotePackageManifestAt(c,refSha){
  if(!Array.isArray(manifest.files))throw new Error('GitHub Sourceのpackage_manifest.json: files がありません。');
  return manifest;
 }
+function manifestPolicyGlobMatch(path,pattern){
+ const p=cleanPath(path);
+ const escaped=String(pattern||'').replace(/[.+^${}()|[\]\\]/g,'\\$&')
+  .replace(/\*\*/g,'§§DOUBLESTAR§§').replace(/\*/g,'[^/]*').replace(/§§DOUBLESTAR§§/g,'.*').replace(/\?/g,'.');
+ return new RegExp('^'+escaped+'$').test(p);
+}
+function manifestFileClass(path,policy){
+ const rel=cleanPath(path),fallback=policy?.default_class||'persistent';
+ for(const [name,rule] of Object.entries(policy?.classes||{})){
+  if(name===fallback)continue;
+  if((rule.exact_paths||[]).map(cleanPath).includes(rel))return name;
+  if((rule.patterns||[]).some(pattern=>manifestPolicyGlobMatch(rel,pattern)))return name;
+ }
+ return fallback;
+}
+async function readRemoteSystemFilePolicyAt(c,refSha){
+ const raw=await readRemoteTextAt(c,'shared/integrity/system-file-policy.json',refSha);
+ let policy;try{policy=JSON.parse(raw)}catch(_){throw new Error('GitHub Sourceのsystem-file-policy.jsonを解析できません。')}
+ if(!policy||typeof policy!=='object')throw new Error('GitHub Sourceのsystem-file-policy.jsonが不正です。');
+ return policy;
+}
 async function readRemoteCriticalRuntimeManifestAt(c,refSha){
  const path='shared/integrity/critical-runtime-manifest.json',remote=await getRemoteAtRef(c,path,refSha);if(!remote?.content)throw new Error(`GitHub Sourceの${path}を読めません。root index.html更新時のIntegrity同期を維持できないため停止しました。`);
  let manifest;try{manifest=JSON.parse(base64ToUtf8(remote.content))}catch(_){throw new Error(`GitHub Sourceの${path}を解析できません。`)}
@@ -339,9 +364,12 @@ async function makeCriticalRuntimeManifestText(manifest,published){
  if(!synced.includes('index.html'))throw new Error('critical-runtime-manifest.jsonにindex.html entryがありません。root index.htmlを安全にAtomic更新できません。');
  return {text:jsonText(next),synced_paths:synced};
 }
-async function makePackageManifestText(manifest,published){
- const next=clone(manifest),byPath=new Map((next.files||[]).map(row=>[String(row.path||''),row]));
- for(const row of published){const bytes=new TextEncoder().encode(row.text);byPath.set(row.path,{path:row.path,size:bytes.length,sha256:await sha256Text(row.text)})}
+async function makePackageManifestText(manifest,published,policy){
+ const next=clone(manifest),byPath=new Map((next.files||[]).filter(row=>manifestFileClass(String(row?.path||''),policy)==='persistent').map(row=>[String(row.path||''),row]));
+ for(const row of published){
+  if(manifestFileClass(row.path,policy)!=='persistent')continue;
+  const bytes=new TextEncoder().encode(row.text);byPath.set(row.path,{path:row.path,size:bytes.length,sha256:await sha256Text(row.text)});
+ }
  next.files=Array.from(byPath.values()).filter(row=>row.path).sort((a,b)=>String(a.path).localeCompare(String(b.path)));next.file_count=next.files.length;next.generated_at=iso();
  return jsonText(next);
 }
@@ -356,11 +384,11 @@ function buildPublicFiles(dataset,root){
 async function createTextBlob(c,text){return github(c,apiRepo(c)+'/git/blobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,encoding:'utf-8'})})}
 async function readBlobText(c,sha){const blob=await github(c,apiRepo(c)+`/git/blobs/${encodeURIComponent(sha)}`);if(blob?.encoding!=='base64')throw new Error('GitHub blob encodingが想定外です。');return base64ToUtf8(blob.content||'')}
 async function atomicCommit(c,dataset){
- const root=cleanPath(c.base_path),head=await readGitHead(c),remoteManifest=await readRemotePackageManifestAt(c,head.head_sha),remoteCriticalManifest=await readRemoteCriticalRuntimeManifestAt(c,head.head_sha),publicFiles=buildPublicFiles(dataset,root);
+ const root=cleanPath(c.base_path),head=await readGitHead(c),remoteManifest=await readRemotePackageManifestAt(c,head.head_sha),systemFilePolicy=await readRemoteSystemFilePolicyAt(c,head.head_sha),remoteCriticalManifest=await readRemoteCriticalRuntimeManifestAt(c,head.head_sha),publicFiles=buildPublicFiles(dataset,root);
  const remoteRootIndex=await readRemoteTextAt(c,'index.html',head.head_sha),rootGatewayText=injectRootGatewayHtml(remoteRootIndex,dataset);
  publicFiles.push({path:'index.html',text:rootGatewayText,kind:'root_gateway'});
  const criticalSync=await makeCriticalRuntimeManifestText(remoteCriticalManifest,publicFiles),criticalManifestFile={path:'shared/integrity/critical-runtime-manifest.json',text:criticalSync.text,kind:'critical_runtime_manifest'};
- const packageManifestText=await makePackageManifestText(remoteManifest,[...publicFiles,criticalManifestFile]),allFiles=[...publicFiles,criticalManifestFile,{path:'package_manifest.json',text:packageManifestText,kind:'package_manifest'}];
+ const packageManifestText=await makePackageManifestText(remoteManifest,[...publicFiles,criticalManifestFile],systemFilePolicy),allFiles=[...publicFiles,criticalManifestFile,{path:'package_manifest.json',text:packageManifestText,kind:'package_manifest'}];
  const blobs=[];
  for(let i=0;i<allFiles.length;i++){
   const row=allFiles[i];status(`Atomic Commit準備 ${i+1}/${allFiles.length}\nBlob: ${row.path}`);
@@ -505,7 +533,7 @@ function openPending(kind='pages'){
 async function copyPrompt(){
  try{
   const c=configFromForm(false),last=lastPublish(),revision=String(last?.publish_revision||''),rootUrl=last?.root_gateway_url||publicSiteRoot(c);
-  const text=`Development Studioが公開した固定AI入口を確認してください。\npublish_revision: ${revision||'未公開'}\n固定AI入口: ${rootUrl}\n\n1. 固定AI入口を実取得してください。\n2. ページ内の「Development AI — Human確認対象」ブロックだけを公開データとして使用してください。\n3. ブロック内のpublish_revisionが ${revision||'指定Revision'} と完全一致することを確認してください。一致しない場合は古いキャッシュとして扱い、その内容を使わないでください。\n4. ブロックに埋め込まれたHuman確認対象Projectだけを読み、Humanが判断すべき点を日本語で整理してください。過去データ・記憶・他URLから推測で補完しないでください。\n5. 最後に「固定AI入口の取得可否」「Revision一致/不一致」「確認できたProject ID」を報告してください。`;
+  const text=`Development Studioが公開した固定AI入口を確認してください。\npublish_revision: ${revision||'未公開'}\n固定AI入口: ${rootUrl}\n\n1. 固定AI入口を実取得してください。\n2. ページ内の id="gks-development-ai-human-review-data" のapplication/jsonデータだけを公開データとして使用してください。\n3. JSON内のpublish_revisionが ${revision||'指定Revision'} と完全一致することを確認してください。一致しない場合は古いキャッシュとして扱い、その内容を使わないでください。\n4. JSONに含まれるHuman確認対象Projectだけを読み、Humanが判断すべき点を日本語で整理してください。過去データ・記憶・他URLから推測で補完しないでください。\n5. 最後に「固定AI入口の取得可否」「Revision一致/不一致」「確認できたProject ID」を報告してください。`;
   await navigator.clipboard.writeText(text);status('ChatGPTへ渡す固定AI入口テスト文をコピーしました。','OK')
  }catch(e){status('コピー失敗: '+e.message,'ERROR')}
 }

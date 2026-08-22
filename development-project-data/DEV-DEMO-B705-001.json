@@ -1,0 +1,859 @@
+{
+  "schema_version": "1.3",
+  "workspace": {
+    "id": "DEV-DEMO-B705-001",
+    "name": "B705 JSON登録デモ",
+    "status": "Exploring",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-21T05:35:39.323Z"
+  },
+  "project_context": {
+    "purpose": "Development JSON登録時にSource ZIPやpackage_manifest.jsonが生成・変更されないことを確認するためのデモ案件。",
+    "summary": "B705のJSON登録動作確認専用。ソースコードやGameデータの変更を目的としない。"
+  },
+  "current_focus": {
+    "architecture_id": "",
+    "work_box_id": "",
+    "theme": "JSON登録の回帰確認",
+    "goal": "JSON登録後もSource ZIPが出力されず、source manifestが変化しないことを確認する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-DEMO-001",
+      "text": "この案件はB705のDevelopment JSON登録確認専用とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "demo",
+      "created_at": "2026-08-21T09:55:00+09:00",
+      "updated_at": "2026-08-21T09:55:00+09:00"
+    },
+    {
+      "id": "RULE-DEMO-MERGE-001",
+      "text": "このレコードは現在案件へのJSON統合動作を確認するために追加されたデモルール。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "merge-demo",
+      "created_at": "2026-08-21T10:37:00+09:00",
+      "updated_at": "2026-08-21T10:37:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B708",
+    "game_build": "GA-B486.211",
+    "source_label": "GKS-B708 Development Task execution metadata deployed",
+    "source_role": "current_baseline",
+    "recorded_at": "2026-08-21T14:30:00+09:00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-21T09:55:00+09:00"
+  },
+  "implementation_records": [
+    {
+      "id": "IMPL-AI-PIPELINE-060-GKS-B707",
+      "studio_build": "GKS-B707",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-AI-PIPELINE-001"
+      ],
+      "task_ids": [
+        "TASK-AI-PIPELINE-060"
+      ],
+      "result": "Applied",
+      "evidence": "GKS-B707 was deployed to GitHub and verified from the exported complete Source ZIP. package-build.json reports GA-B486.211 / GKS-B707; AI_START contains the Development Project Execution Protocol; development-project-data remains outside package_manifest; Quick Gate passed 11/11 with failed=0 warnings=0 timeouts=0.",
+      "recorded_at": "2026-08-21T14:08:00+09:00"
+    },
+    {
+      "id": "IMPL-AI-PIPELINE-070-GKS-B708",
+      "studio_build": "GKS-B708",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-AI-PIPELINE-001"
+      ],
+      "task_ids": [
+        "TASK-AI-PIPELINE-070"
+      ],
+      "result": "Applied",
+      "evidence": "Post-deploy complete Source verified from guild-adventure-studio-sub(20260821-052535).zip. package-build.json reports GA-B486.211 / GKS-B708. Development Project schema is 1.3. Task records retain execution_order, depends_on, acceptance_criteria, work_type, requires_human_approval and approval. AI_START contains Development Project Execution Protocol. development-project-data remains outside package_manifest. Quick Gate passed 11/11 with failed=0 warnings=0 timeouts=0.",
+      "recorded_at": "2026-08-21T14:30:00+09:00"
+    }
+  ],
+  "discussions": [
+    {
+      "id": "DISC-DEMO-001",
+      "title": "B705 JSON登録確認",
+      "status": "Open",
+      "summary": "",
+      "body": "このデータを案件JSON追加で登録し、ZIPが自動生成されないことを確認する。",
+      "open_questions": "",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "",
+      "created_at": "2026-08-21T09:55:00+09:00",
+      "updated_at": "2026-08-21T09:55:00+09:00"
+    },
+    {
+      "id": "DISC-DEMO-MERGE-001",
+      "title": "JSON統合デモ",
+      "status": "Open",
+      "summary": "既存のDEV-DEMO-B705-001へ追加データだけを統合できることを確認する。",
+      "body": "「現在案件へJSONを統合」からこのファイルを選択し、既存データを残したままDiscussionが1件追加されることを確認する。",
+      "open_questions": "",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "",
+      "created_at": "2026-08-21T10:37:00+09:00",
+      "updated_at": "2026-08-21T10:37:00+09:00"
+    },
+    {
+      "id": "DISC-AI-PIPELINE-001",
+      "title": "AI_START起点のゲーム制作パイプライン実装計画",
+      "status": "Open",
+      "summary": "Studio・Game・工程管理を分離した正本として扱い、Source ZIPと必要データを渡して「AI_STARTから読んで作業開始」と指示するだけで、Task選択・実装・Gate・更新ZIP・工程管理統合JSON生成まで成立する仕組みを構築する。",
+      "body": "実装順序:\n1. 現行Development JSON schemaを確定する。\n2. 次の実行可能Taskを機械的に決める規則を確定する。\n3. 現在案件へJSON統合のmerge semanticsを検証する。\n4. Development統合JSONの正式契約を決める。\n5. work_typeによるStudio/Game/Development作業経路を確定する。\n6. AI_START Execution Protocolを正式導入する。\n7. 1実行1Task、Acceptance Criteria、Human Approvalなどの終了条件を固定する。\n8. 実案件でEnd-to-End往復テストを実施する。\n\n必要資料:\n- 最新の正常な完全Source ZIP\n- 実運用対象のDevelopment JSON 1件\n- 現在案件へJSON統合の実装を含むSource（完全Source ZIPに含まれていれば別資料不要）",
+      "open_questions": "Task順序・依存関係を現行schemaのどのフィールドで表現するか。 部分Task JSON統合時に既存フィールドが保持されるか。 work_typeの既存定義が存在するか。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "AI_START_development_pipeline_package.zip の実装計画を工程管理へ登録",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-DEMO-MERGE-001",
+      "title": "統合後も既存案件データを保持する",
+      "status": "Proposed",
+      "text": "JSON統合ではImportに含まれない既存レコードを削除せず、ID単位で追加・更新する。",
+      "rationale": "既存案件への追記テストとして、置換ではなく統合動作を確認するため。",
+      "source_discussion_ids": [
+        "DISC-DEMO-MERGE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:37:00+09:00",
+      "updated_at": "2026-08-21T10:37:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-001",
+      "title": "AI_STARTを唯一の作業入口にする",
+      "status": "Proposed",
+      "text": "Studioは作業方法、Development JSONは工程とTask、Gameは実装状態の正本とし、AI_STARTを唯一の入口として各正本を辿る。",
+      "rationale": "ユーザー指示を「AI_STARTから読んで作業開始」に統一し、毎回の手順説明を不要にするため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-002",
+      "title": "AI作業報告は既存Development JSON統合形式で返す",
+      "status": "Proposed",
+      "text": "専用AI_WORK_REPORT schemaは作らず、現在案件へそのまま統合できるDevelopment JSON差分として作業結果を返す。",
+      "rationale": "新しい取込窓口を増やさず、既存の「現在案件へJSONを統合」を再利用するため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-003",
+      "title": "初期運用は1回のAI実行につき1Task",
+      "status": "Proposed",
+      "text": "初期運用ではAIが1回の実行で処理するTaskを1件に限定し、Acceptance Criteriaと必要なHuman Approvalを満たした場合のみDoneにする。",
+      "rationale": "工程の暴走と複数Taskの不透明な一括変更を防止するため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T10:55:00+09:00",
+      "updated_at": "2026-08-21T10:55:00+09:00"
+    },
+    {
+      "id": "DEC-AI-PIPELINE-004",
+      "title": "work_typeは3種に限定し混在Taskを分割する",
+      "status": "Proposed",
+      "text": "初期正式work_typeを DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE の3種に限定し、複数領域を同時に変更するTaskは分割する。",
+      "rationale": "AIが成果物・Gate・Build経路を一意に選択できるようにし、Game変更とStudio Source変更の混在による誤更新を防ぐため。",
+      "source_discussion_ids": [
+        "DISC-AI-PIPELINE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:45:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
+    }
+  ],
+  "specifications": [
+    {
+      "id": "SPEC-AI-PIPELINE-SCHEMA-001",
+      "title": "Development Project schema v1.2 現行実装確認",
+      "status": "Verified",
+      "summary": "GKS-B706のnormalizeDevelopmentWorkspaceを正本として、AIパイプラインが利用するDevelopment Projectの現行schemaと参照制約を確認した。",
+      "body": "GKS-B706のStudio実装（studio/index.html / normalizeDevelopmentWorkspace）を正本として、Development Project schema_version 1.2 の現行フィールドを確認した。\n\nトップレベル:\nschema_version\nworkspace\nproject_context\ncurrent_focus\nproject_rules\nsource_baseline\nlifecycle\nimplementation_records\ndiscussions\ndecisions\nspecifications\nspecification_candidates\nsystem_nodes\nsystem_contracts\nsystem_connections\nsystem_flags\nsystem_events\nsystem_impacts\narchitecture_nodes\nwork_boxes\ntasks\nchecks\nworkflow\nhistory\n\n主要構造:\nworkspace:\n- id\n- name\n- status\n- ai_attention: Auto | Include | Exclude\n- updated_at\n\nproject_context:\n- purpose\n- summary\n\ncurrent_focus:\n- architecture_id\n- work_box_id\n- theme\n- goal\n\narchitecture_nodes:\n- id\n- name\n- parent_id\n- created_at\n- updated_at\n制約: id必須。存在しないparent_id、自分自身、循環参照はrootへ補正される。\n\nwork_boxes:\n- id\n- node_id\n- title\n- body\n- created_at\n- updated_at\n制約: id必須。node_idは実在するarchitecture_nodeを参照しなければ正規化時に除外される。\n\ntasks:\n- id\n- box_id\n- title\n- status: Todo | Doing | Blocked | Done\n- created_at\n- updated_at\n制約: id必須。box_idは実在するwork_boxを参照しなければ正規化時に除外される。\n現行Taskには execution_order / depends_on / acceptance_criteria / work_type / requires_human_approval 専用フィールドは存在しない。\n\nchecks:\n- id\n- title\n- gate: General | Implementation | Completion\n- target_type: Project | Architecture | WorkBox | Task | Artifact\n- target_id\n- status: Pending | Passed | Failed | Waived\n- result\n- evidence\n- checked_by\n- checked_at\n- created_at\n- updated_at\n\ndiscussions:\n- id, title, status, summary, body, open_questions, conclusion, related_discussion_ids, artifact_note, created_at, updated_at\n\ndecisions:\n- id, title, status, text, rationale, source_discussion_ids, approved_by, approved_at, created_at, updated_at\n\nspecifications:\n- id, title, status, summary, body, decision_refs, depends_on, acceptance_criteria, system_node_id, contract_ids, source_candidate_id, material_snapshot_hash, revision, approved_by, approved_at, created_at, updated_at\n\nworkflow:\n- stage: Discovery | Planning | Implementing | Verifying | Completed\n- implementation_approval {status, by, at}\n- completion_approval {status, by, at}\n\nimplementation_records:\n- id\n- studio_build\n- game_build\n- work_box_ids\n- task_ids\n- result: Applied | Partial | Reverted\n- evidence\n- recorded_at\n\nsource_baseline:\n- studio_build\n- game_build\n- source_label\n- source_role: current_baseline\n- recorded_at\n\n確認結果:\n1. Architecture → Work Box → Task の参照関係が必須。\n2. Task単体では実行順序・Task依存・Acceptance Criteria・作業種別・Human Approvalを表現できない。\n3. Specificationには depends_on と acceptance_criteria が存在するが、これはSpecification用でTask実行順序の正本にはできない。\n4. workflowにはImplementation/Completion approvalがあるが、Task単位approvalは存在しない。\n5. 次工程 TASK-AI-PIPELINE-020 では、この現行schemaを前提に「実行可能Task」を機械判定できる最小拡張を設計する必要がある。",
+      "decision_refs": [],
+      "depends_on": [],
+      "acceptance_criteria": "現行Taskフィールド、Architecture→Work Box→Task参照制約、workflow approval、Specificationのdepends_on/acceptance_criteriaの所在がソース実装と一致して記録されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T12:15:00+09:00",
+      "updated_at": "2026-08-21T12:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+      "title": "AI実行可能Taskの決定規則",
+      "status": "Verified",
+      "summary": "Development ProjectからAIが今回実行するTaskを一意かつFail Closedで選ぶための判定規則を確定した。",
+      "body": "AI_STARTがDevelopment Projectから「今回実行するTask」を一意に選ぶための機械判定規則を確定する。\n\n【正式判定規則（目標schema）】\nTaskは次の条件をすべて満たす場合のみ executable とする。\n\n1. status が Todo または Doing である。\n   - Done は対象外。\n   - Blocked は対象外。\n2. Taskが参照する box_id が実在するWork Boxである。\n3. Work Boxが参照する node_id が実在するArchitecture Nodeである。\n4. depends_on に列挙されたTaskがすべて Done である。\n5. requires_human_approval=true の場合、task approval が Approved である。\n6. work_type がAI_STARTで定義された実行可能な作業経路のいずれかである。\n7. lifecycle.status が Active である。\n8. workflow.stage がTaskのwork_typeを実行可能な段階である。\n9. ai_attention=Exclude の案件は自動選択しない。\n\n【複数Taskがexecutableの場合の決定順】\n1. execution_order の昇順。\n2. 同値ならTask idの辞書順。\n3. それでも一意でなければ作業を開始せずHuman確認を要求する。\n\n【1回の実行範囲】\n初期運用では選択されたTask 1件だけを実行する。完了後に次Taskへ自動連続着手しない。\n\n【Task完了条件】\nTaskは次の条件をすべて満たした場合だけ Done にできる。\n1. acceptance_criteria をすべて検証済み。\n2. Taskで要求されたGate / CheckがPassedまたは明示的にWaived。\n3. 必要なHuman Approvalが完了。\n4. 作業結果をDevelopment統合JSONへ記録できる。\n未達の場合は Doing または Blocked のままとする。\n\n【現行schema v1.2で不足するTaskフィールド】\n- execution_order\n- depends_on\n- acceptance_criteria\n- work_type\n- requires_human_approval\n- approval status（Task単位）\n\nこれらは現行 normalizeDevelopmentWorkspace のTask正規化では保持されないため、正式運用前にschema拡張が必要。\n\n【現行パイプライン案件だけの暫定順序】\nTASK-AI-PIPELINE-010〜080については、既にWork Box本文に固定された順序をHumanが承認して登録しているため、schema拡張が完了するまでTask IDの数値部分を暫定execution_orderとして扱う。\nこの暫定規則は一般案件には適用しない。\n\n【Fail Closed】\n必要な依存関係、順序、承認状態、work_typeを一意に判断できない場合、AIは推測でTaskを選ばず停止して不足情報を報告する。\nGate・テスト・セキュリティ条件をTask実行のために緩和してはならない。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-003"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001"
+      ],
+      "acceptance_criteria": "Todo/Doing・依存完了・Human Approval・work_type・workflow/lifecycleを判定し、複数候補はexecution_order→Task IDで一意に決定する規則が定義されている。不明時は推測せず停止し、初期運用は1実行1Taskとする。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:15:00+09:00",
+      "updated_at": "2026-08-21T13:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-MERGE-SEMANTICS-001",
+      "title": "現在案件へJSON統合のmerge semantics",
+      "status": "Verified",
+      "summary": "GKS-B706の現在案件JSON統合は、ID単位additive upsert・削除なし・既存ID更新時はRecord全体置換であることを確定した。",
+      "body": "GKS-B706の studio/index.html に実装されている prepareDevelopmentWorkspaceMerge / developmentMergeRows / developmentMergeHistory を確認し、「現在案件へJSONを統合」のmerge semanticsを確定した。\n\n【トップレベルの扱い】\n1. Importに存在しないトップレベルkeyは現在案件を維持する。\n2. schema_versionは統合後に1.2へ固定される。\n3. workspace.id / workspace.name は現在案件の値を必ず維持する。\n4. workspaceでImportから変更できるのは status / ai_attention のみ。\n5. 削除処理は存在せず、常に delete=0。\n\n【ID付き配列】\n対象:\nproject_rules / implementation_records / discussions / decisions / specifications /\nspecification_candidates / system_nodes / system_contracts / system_connections /\nsystem_flags / system_events / system_impacts / architecture_nodes / work_boxes / tasks / checks\n\n挙動:\n- Import側にその配列keyが無ければ現在値を維持する。\n- Import側に配列keyがあれば、ID単位でADD / UPDATE / SAMEを判定する。\n- 未登録IDは追加。\n- 既存IDで同一内容なら変更なし。\n- 既存IDで内容が異なる場合、既存Recordへfield-level patchするのではなく、Import側Recordで「Record全体を置換」する。\n- Importに含まれない既存IDは残る。\n- Import内のID重複はエラー。\n- ID無しRecordはエラー。\n\n【重要な安全上の結論】\n配列RecordのUPDATEは部分更新ではない。\n例として既存Taskに将来 execution_order / depends_on / acceptance_criteria 等を追加した後、\nAIが {id, status} だけを返すと、normalize後のImport Recordで既存Task Record全体が置換される。\nそのため、AI作業結果JSONで既存RecordをUPDATEする場合は、現行実装では「そのRecordの完全形」を返す必要がある。\nTASK-AI-PIPELINE-040では、この事故を防ぐDevelopment統合JSON契約を正式化する必要がある。\n\n【Object key】\nproject_context / current_focus / source_baseline / lifecycle / workflow:\n- Importにkeyが無ければ現在値を維持。\n- Importにkeyがあれば、field-level mergeではなくnormalizeされたObject全体で置換する。\n- したがって部分Objectを返すと、省略fieldが既定値へ戻る可能性がある。\n\n【history】\n- 追記専用。\n- created_at / updated_atを除いたstable比較で同一Recordを判定。\n- 同一なら追加しない。\n- Importに無い既存historyは維持。\n- 削除なし。\n\n【正規化との関係】\nImportは現在案件と一度compositeを作り normalizeDevelopmentWorkspace を通した後にmergeされる。\nこのためArchitecture → Work Box → Taskなどの参照制約はImport側Recordにも適用される。\n無効な参照を持つImport Recordは正規化で落ち、期待した追加・更新にならない可能性がある。\n\n【TASK-030の結論】\n現行「現在案件へJSONを統合」は、\n- additive upsert\n- no delete\n- ID単位\n- Record updateはfull replacement\nという仕様である。\n\nしたがってAI報告をこの窓口へ直接統合する設計は可能だが、\n既存Recordを更新するAI出力は「完全Record」を返す契約にするか、\nStudio側mergeを明示的なfield patch方式へ改修する必要がある。\n安全性とschema拡張耐性を考えると、TASK-040ではAI出力契約を完全Record方式に固定しつつ、将来的にはpatch専用semanticsを別途検討するのが安全。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-002"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001",
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001"
+      ],
+      "acceptance_criteria": "配列ADD/UPDATE/SAME、Object更新、history追記、削除なし、既存Record更新がfield patchではなくfull replacementであることがソース実装に基づき記録され、AI作業結果JSONへの影響が明示されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:25:00+09:00",
+      "updated_at": "2026-08-21T13:25:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-MERGE-CONTRACT-001",
+      "title": "AI Development統合JSON契約 v1",
+      "status": "Verified",
+      "summary": "AI作業結果を既存Development JSON統合窓口へ安全に投入するため、既存Recordは完全形で更新し、Development更新だけではSource ZIP/manifestを生成しない契約を確定した。",
+      "body": "AI作業結果を既存の「現在案件へJSONを統合」へ安全に投入するためのDevelopment統合JSON契約 v1を確定する。\n\n【基本方針】\n専用AI_WORK_REPORT schemaや別取込窓口は新設しない。\nAIはDevelopment Project schemaに準拠した「統合可能JSON」を作業結果として返す。\n\n【必須トップレベル】\n- schema_version: 現行schemaと一致させる。\n- workspace.id: 作業対象案件IDと完全一致させる。\n\nworkspace.nameはAIが変更しない。\n案件IDが一致しない場合は出力せずFail Closedとする。\n\n【既存ID付きRecordをUPDATEする場合】\n現行mergeはfield patchではなくRecord全体置換なので、AIは更新対象Recordの「完全形」を返す。\n省略フィールドを推測・初期値化してはならない。作業開始時に受領したDevelopment JSONの既存Recordを基準に、変更対象フィールドだけを書き換えた完全Recordを出力する。\n\n対象例:\ntasks / checks / specifications / decisions / discussions / work_boxes /\narchitecture_nodes / implementation_records / project_rules その他ID付き配列。\n\n【新規RecordをADDする場合】\n現行schemaで必須となる全フィールドと参照整合性を満たす完全Recordを返す。\nArchitecture → Work Box → Task等の参照先が存在しない新規Recordを出力しない。\n\n【ObjectをUPDATEする場合】\nproject_context / current_focus / source_baseline / lifecycle / workflow はObject全体置換となるため、更新する場合はObjectの完全形を返す。\n変更不要ならkey自体を出力しない。\n\n【history】\n作業結果の履歴を1件以上追記する。\n既存history全体を返す必要はない。新規履歴のみを返す。\n同一履歴の重複出力を避ける。\n\n【Task結果】\n実行したTaskを更新する場合はTask完全Recordを返す。\nDoneにできるのはAcceptance Criteria、必要Gate/Check、Human Approval等の完了条件を満たした場合のみ。\n未達ならDoingまたはBlockedを保持する。\n\n【Check / Evidence】\n作業の検証結果はchecksへ記録する。\n新規Checkは完全Recordで追加し、target_idは実在対象を参照する。\nテストやGateを実施していないのにPassedを出力してはならない。\n\n【Implementation Record】\nSourceまたはGame実装を実際に変更した場合はimplementation_recordsへ記録する。\n変更していない場合は作成しない。\n\n【Source ZIPとの分離】\nDevelopment統合JSONの生成・統合だけを理由にSource ZIPやpackage_manifest.jsonを生成・変更しない。\nSource変更がTaskで必要な場合のみ、AI_STARTで定義されるSource更新経路に従う。\n\n【禁止事項】\n- 既存Recordを{id,status}等の部分Recordで更新すること。\n- Importに含めない既存Recordを削除対象と解釈すること。\n- 不明な値を推測して埋めること。\n- workspace.id/nameを別案件値へ変更すること。\n- Gate/Test/Approvalを実施せず成功扱いすること。\n- Development JSON更新だけのためにSource ZIPやmanifestを生成すること。\n\n【出力前検証】\n1. workspace.id一致。\n2. 更新する既存Recordは受領時Recordの全fieldを保持。\n3. 新規Recordの必須fieldと参照整合性。\n4. Object更新は完全Object。\n5. Task完了条件。\n6. Check evidenceの実在性。\n7. Source変更有無とimplementation_record/ZIP生成有無の整合。\n1項目でも確認できなければFail Closedで不足情報を報告する。\n\n【将来schema拡張への対応】\nTaskへexecution_order / depends_on / acceptance_criteria / work_type / approval等が追加された後も、完全Record更新方式を維持することで未知の既存field消失を防ぐ。\nStudio側が将来明示的patch semanticsを導入する場合は、この契約をrevisionしてからpatch形式を許可する。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-002",
+        "DEC-AI-PIPELINE-003"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001",
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-SEMANTICS-001"
+      ],
+      "acceptance_criteria": "既存Record完全形更新、Object完全形更新、新規Record参照整合、history追記、Task/Check/Implementation Recordの扱い、Development更新とSource ZIP/manifestの分離、Fail Closed条件が明文化されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:38:00+09:00",
+      "updated_at": "2026-08-21T13:38:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-WORK-TYPE-001",
+      "title": "work_typeと作業経路",
+      "status": "Verified",
+      "summary": "初期work_typeをDEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATEの3種に限定し、各種別の変更領域・成果物・Build/manifest/Gate・implementation_recordの扱いを確定した。",
+      "body": "AI_STARTがTaskのwork_typeに従って作業経路と成果物を一意に選べるよう、最小work_type集合とルーティング規則を確定する。\n\n【正式work_type】\n1. DEVELOPMENT_ONLY\n2. GAME_DATA\n3. SOURCE_UPDATE\n\nこの3種類を初期正式enumとする。\n複数種別を同時に必要とするTaskは原則として分割し、MIXEDのような曖昧な種別は作らない。\n\n【1. DEVELOPMENT_ONLY】\n対象:\n- Development Project JSONのDiscussion / Decision / Specification / Task / Check / History等だけを更新する作業\n- 工程計画、仕様整理、判定規則確定、作業結果記録など\n\n禁止:\n- Studio source変更\n- Game data変更\n- Source ZIP生成\n- package_manifest.json変更\n- Studio/Game Build更新\n\n成果物:\n- 現在案件へそのまま統合できるDevelopment統合JSONのみ\n- 必要に応じて人向け説明を添付してよいが、工程状態の正本は統合JSON\n\n完了条件:\n- Development統合JSON契約v1を満たす\n- 必要なCheckを記録\n- Source/Gameを変更していないこと\n\n【2. GAME_DATA】\n対象:\n- Gameの実装・設定・データ・アセット等、AI_STARTでGame領域として定義される範囲の変更\n\n原則:\n- Game側の正本とGame更新手順に従う\n- Studio sourceを変更しない\n- Studio source用package_manifestをDevelopment処理の都合で変更しない\n- Game Build更新の要否・成果物形式・GateはAI_STARTのGame手順を正本とする\n\n成果物:\n- AI_STARTが定めるGame更新成果物\n- Development統合JSON\n- 実装した場合はimplementation_recordsへGame Build、Task ID、evidenceを記録\n\n境界:\n- Game変更のためにStudio自体のコード変更が必要になった場合、その時点でTaskをSOURCE_UPDATE Taskとして分離する\n- 1 Task内でGAME_DATAとSOURCE_UPDATEを混在させない\n\n【3. SOURCE_UPDATE】\n対象:\n- Studio本体、Gate、Build/Release tool、共通source、AI_START/作業プロトコル等、Source packageを構成するpersistent sourceの変更\n- Source ZIPの構造やSource更新処理そのものの変更\n\n原則:\n- AI_STARTに定義されたSOURCE_UPDATE手順を必ず使用\n- baseline確認\n- Build更新\n- build token/marker同期\n- package_manifest同期\n- 直接Studio更新ZIP生成\n- Gate/Release検査\n- 保護資産変更時は既存Human Approvalを維持\n- Gate/Test/Securityを作業都合で弱体化しない\n\n成果物:\n- 正式な直接Studio更新ZIP\n- 必要なHuman Approvalファイル（既存ルールが要求する場合）\n- 検査証跡\n- Development統合JSON\n- implementation_recordsへbefore/after Build、Task ID、evidenceを記録\n\n【work_type判定規則】\nTask開始前に「何を変更するか」で判定する。\n- Development Projectだけ → DEVELOPMENT_ONLY\n- Game領域だけ → GAME_DATA\n- Source packageを構成するStudio/source領域 → SOURCE_UPDATE\n- どれか判定不能 → Fail ClosedでHuman確認\n- 複数領域を変更する必要が判明 → 現TaskをDoing/Blockedのまま止め、Task分割案をDevelopment統合JSONへ返す\n\n【成果物マトリクス】\nDEVELOPMENT_ONLY:\n- Source update ZIP: なし\n- Game artifact: なし\n- Development merge JSON: 必須\n- Source manifest変更: 禁止\n- implementation_record: 原則不要\n\nGAME_DATA:\n- Source update ZIP: なし\n- Game artifact: AI_START Game手順に従い必要\n- Development merge JSON: 必須\n- Source manifest変更: Development処理由来では禁止\n- implementation_record: 実装時必須\n\nSOURCE_UPDATE:\n- Source update ZIP: 必須\n- Game artifact: 原則なし\n- Development merge JSON: 必須\n- Source manifest変更: Source変更に伴う正式手順のみ\n- implementation_record: 必須\n\n【Fail Closed】\nwork_typeが無い、未知、または作業中に境界を越える必要が生じた場合、AIは勝手に別経路へ移らない。\nTaskを安全な状態で止め、不足情報またはTask分割案をDevelopment統合JSONへ記録する。\n\n【今回のパイプラインTaskへの適用】\nTASK-AI-PIPELINE-010〜050は設計確定のみなのでDEVELOPMENT_ONLY相当。\nTASK-AI-PIPELINE-060でAI_STARTやStudio sourceを実際に変更する場合はSOURCE_UPDATE。\nTASK-AI-PIPELINE-070は、source変更を伴うschema/UI実装ならSOURCE_UPDATE、設計のみならDEVELOPMENT_ONLY。\nTASK-AI-PIPELINE-080は対象実案件のwork_typeに従う。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-004",
+        "DEC-AI-PIPELINE-002"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-SCHEMA-001",
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-CONTRACT-001"
+      ],
+      "acceptance_criteria": "3つのwork_typeについて対象領域、禁止事項、成果物、Build/manifest/Gate、implementation_record、Fail Closed、混在Task分割規則が一意に定義されている。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:45:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-EXECUTION-PROTOCOL-001",
+      "title": "AI_START Development Project Execution Protocol",
+      "status": "Verified",
+      "summary": "GKS-B707 targetへ、AI_STARTを唯一の入口としてDevelopment Taskを1件ずつ選択・ルーティング・実行し、既存統合窓口へ結果JSONを返すExecution Protocolを導入した。",
+      "body": "GKS-B707 target sourceのAI_START.mdへDevelopment Project Execution Protocolを正式導入した。\n\n導入内容:\n- AI_START / Development Project / Source・Game実体の正本分離\n- 対象Development Projectの選択規則\n- Development Task work_type: DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE\n- GAME_DATAから既存GAME_DATA_UPDATE手順への対応付け\n- Development TaskではHYBRIDを自動使用せず、混在が必要ならTask分割してFail Closed\n- 実行可能Taskの依存・承認・execution_order判定\n- 現行schemaで実行メタデータ不足時のFail Closed\n- 初期運用は1回1Task\n- work_type別成果物\n- 既存「現在案件へJSONを統合」を使うDevelopment統合JSON契約\n- 既存Record/Object更新時は完全形を返す規則\n- Development更新だけではSource ZIP/package_manifestを生成しない規則\n- Development Task完了報告にProject ID / Task ID / work_type / final status / Acceptance Criteria / merge JSONを追加\n\nSource変更:\nAI_START.mdのプロトコル追加とGKS-B707 Build同期のみ。\nGameデータ変更なし。\n削除なし。\nGate/Test/Securityの受入基準変更なし。\n",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-001",
+        "DEC-AI-PIPELINE-002",
+        "DEC-AI-PIPELINE-003",
+        "DEC-AI-PIPELINE-004"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-CONTRACT-001",
+        "SPEC-AI-PIPELINE-WORK-TYPE-001"
+      ],
+      "acceptance_criteria": "GKS-B707 targetのAI_STARTに対象案件選択、work_type、Task選択、1実行1Task、成果物ルーティング、Development統合JSON契約、Fail Closed、完了報告規則が入り、Source Gate/Accept/Releaseに合格する。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T13:58:00+09:00",
+      "updated_at": "2026-08-21T13:58:00+09:00"
+    },
+    {
+      "id": "SPEC-AI-PIPELINE-TASK-COMPLETION-001",
+      "title": "Development Task実行メタデータと完了条件 schema 1.3",
+      "status": "Implemented",
+      "summary": "Taskへexecution_order / depends_on / acceptance_criteria / work_type / requires_human_approval / approvalを正式追加し、1実行1TaskとFail Closed完了条件をStudioとAI_STARTへ実装する。",
+      "body": "Development Project schema 1.3でTask実行メタデータを正式保持する。\n- execution_order: nullまたは0以上の整数。複数実行可能Taskの優先順。\n- depends_on: Task ID配列。すべてDoneになるまで実行不可。\n- acceptance_criteria: 完了条件。未検証ならDone不可。\n- work_type: DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATE。未設定は自動実行不可。\n- requires_human_approval: trueの場合Human承認必須。\n- approval: {status: Pending|Approved|Rejected, by, at}。\n\n旧schemaのTaskは新項目を安全な未設定値で読み込む。未設定TaskをAIが一般則で自動実行してはならない。\nStudio Task編集UIから新項目を登録・編集でき、Task詳細で実行順序・種別・依存・承認・Acceptance Criteriaを確認できる。\nAI_STARTは1回1Taskを維持し、Acceptance Criteria、必要Gate/Check、必要Human Approvalの全条件を満たすまでDoneにしない。",
+      "decision_refs": [
+        "DEC-AI-PIPELINE-003",
+        "DEC-AI-PIPELINE-004"
+      ],
+      "depends_on": [
+        "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+        "SPEC-AI-PIPELINE-MERGE-CONTRACT-001",
+        "SPEC-AI-PIPELINE-WORK-TYPE-001"
+      ],
+      "acceptance_criteria": "GKS-B708実配置後の完全Sourceでschema 1.3 Task metadataが保持される。Studio Task UIで実行順序・依存・Acceptance Criteria・work_type・Human Approvalを編集・確認できる。AI_STARTに1実行1Taskと完了条件が明記される。Quick Gateが11/11 PASSする。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-21T14:25:00+09:00",
+      "updated_at": "2026-08-21T14:25:00+09:00"
+    }
+  ],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [
+    {
+      "id": "FLAG-00001",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-SCHEMA-001",
+      "key": "SPEC_APPROVED",
+      "value": true,
+      "source": "derived",
+      "note": "Verified",
+      "created_at": "2026-08-21T04:21:11.925Z",
+      "updated_at": "2026-08-21T04:21:11.925Z"
+    },
+    {
+      "id": "FLAG-00002",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+      "key": "SPEC_APPROVED",
+      "value": true,
+      "source": "derived",
+      "note": "Verified",
+      "created_at": "2026-08-21T04:21:11.925Z",
+      "updated_at": "2026-08-21T04:21:11.925Z"
+    },
+    {
+      "id": "FLAG-00003",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-SCHEMA-001",
+      "key": "IMPACT_OPEN",
+      "value": false,
+      "source": "derived",
+      "note": "no open impact",
+      "created_at": "2026-08-21T04:21:13.933Z",
+      "updated_at": "2026-08-21T04:21:13.933Z"
+    },
+    {
+      "id": "FLAG-00004",
+      "scope_type": "Specification",
+      "scope_id": "SPEC-AI-PIPELINE-TASK-SELECTION-001",
+      "key": "IMPACT_OPEN",
+      "value": false,
+      "source": "derived",
+      "note": "no open impact",
+      "created_at": "2026-08-21T04:21:13.933Z",
+      "updated_at": "2026-08-21T04:21:13.933Z"
+    }
+  ],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-AI-PIPELINE-001",
+      "name": "AI_START起点ゲーム制作パイプライン",
+      "parent_id": "",
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T11:58:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-AI-PIPELINE-001",
+      "node_id": "ARCH-AI-PIPELINE-001",
+      "title": "AI_START起点パイプライン実装",
+      "body": "Studio・Game・工程管理を連携し、Source ZIPと必要データを渡して「AI_STARTから読んで作業開始」と指示するだけで成立するパイプラインを実装する。\n\n現行Task schemaにはexecution_order / depends_on / acceptance_criteria専用フィールドがないため、初期実装計画の順序はTask IDの番号で固定する。\n\n実行順序:\n010 現行Development JSON schema確定\n020 実行可能Taskの機械判定規則確定\n030 JSON統合のmerge semantics検証\n040 Development統合JSON契約確定\n050 work_typeと作業経路確定\n060 AI_START Execution Protocol正式導入\n070 1実行1Task・Acceptance Criteria・Human Approval終了条件固定\n080 End-to-End往復テスト\n\n重要: 前工程が完了するまで後工程へ進まない。Gate・テスト・セキュリティ判定を弱体化しない。",
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T11:58:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-AI-PIPELINE-010",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "010 現行Development JSON schemaを確定する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T12:15:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-020",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "020 実行可能Taskの機械判定規則を確定する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T13:15:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-030",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "030 現在案件へJSON統合のmerge semanticsを検証する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T13:25:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-040",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "040 Development統合JSONの正式契約を確定する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T13:38:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-050",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "050 work_typeとStudio・Game・Development作業経路を確定する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-060",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "060 AI_START Execution Protocolを正式導入する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T14:08:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-070",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "070 1実行1Task・Acceptance Criteria・Human Approvalの終了条件を固定する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T14:30:00+09:00"
+    },
+    {
+      "id": "TASK-AI-PIPELINE-080",
+      "box_id": "BOX-AI-PIPELINE-001",
+      "title": "080 実案件でEnd-to-End往復テストを実施する",
+      "status": "Done",
+      "execution_order": null,
+      "depends_on": [],
+      "acceptance_criteria": "",
+      "work_type": "",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-21T11:58:00+09:00",
+      "updated_at": "2026-08-21T14:31:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHECK-AI-PIPELINE-010",
+      "title": "TASK-AI-PIPELINE-010 schema確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-010",
+      "status": "Passed",
+      "result": "GKS-B706のnormalizeDevelopmentWorkspaceとblankDevelopmentProjectSeedを確認し、Development Project schema v1.2の現行構造と参照制約を確定した。Quick Gate 11/11 PASS。",
+      "evidence": "studio/index.html: blankDevelopmentProjectSeed / normalizeDevelopmentWorkspace; package-build.json: GKS-B706; python3 tools/inspection/run.py quick => passed=11 failed=0 warnings=0 timeouts=0",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T12:15:00+09:00",
+      "created_at": "2026-08-21T12:15:00+09:00",
+      "updated_at": "2026-08-21T12:15:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-020",
+      "title": "TASK-AI-PIPELINE-020 実行可能Task判定規則確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-020",
+      "status": "Passed",
+      "result": "現行schema v1.2の制約を前提に、正式運用時のTask選択アルゴリズムとFail Closed条件を確定。現行案件の010〜080だけはTask ID数値順を暫定順序として使用し、一般案件には適用しない。",
+      "evidence": "Development Project: TASK-AI-PIPELINE-010=Done, 020=Todo。GKS-B706 studio/index.html normalizeDevelopmentWorkspaceではTask保持項目はid/box_id/title/status/created_at/updated_atのみ。",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:15:00+09:00",
+      "created_at": "2026-08-21T13:15:00+09:00",
+      "updated_at": "2026-08-21T13:15:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-030",
+      "title": "TASK-AI-PIPELINE-030 merge semantics確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-030",
+      "status": "Passed",
+      "result": "GKS-B706のprepareDevelopmentWorkspaceMerge/developmentMergeRows/developmentMergeHistoryを確認。ID単位additive upsert、delete=0、既存ID UPDATEはRecord全体置換であることを確定した。",
+      "evidence": "studio/index.html: DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS, developmentMergeRows, developmentMergeHistory, prepareDevelopmentWorkspaceMerge, developmentMergeSummaryText, mergeImportDevelopmentWorkspace.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:25:00+09:00",
+      "created_at": "2026-08-21T13:25:00+09:00",
+      "updated_at": "2026-08-21T13:25:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-040",
+      "title": "TASK-AI-PIPELINE-040 Development統合JSON契約確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-040",
+      "status": "Passed",
+      "result": "TASK-030で確定したfull replacement semanticsを前提に、AI統合JSONの安全な正式契約v1を確定した。既存Record更新は完全形、Object更新は完全形、Development更新だけではSource ZIP/manifestを生成しない。",
+      "evidence": "SPEC-AI-PIPELINE-MERGE-SEMANTICS-001および現在案件のTASK-AI-PIPELINE-030=Doneを前提に契約を定義。",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:38:00+09:00",
+      "created_at": "2026-08-21T13:38:00+09:00",
+      "updated_at": "2026-08-21T13:38:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-050",
+      "title": "TASK-AI-PIPELINE-050 work_typeルーティング確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-050",
+      "status": "Passed",
+      "result": "DEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATEの3経路を確定し、複数領域変更はTask分割、判定不能はFail Closedとした。",
+      "evidence": "SPEC-AI-PIPELINE-WORK-TYPE-001。Development統合JSON契約v1およびTask選択規則を前提に作業経路を定義。",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:45:00+09:00",
+      "created_at": "2026-08-21T13:45:00+09:00",
+      "updated_at": "2026-08-21T13:45:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-060-PREPARED",
+      "title": "TASK-AI-PIPELINE-060 GKS-B707更新成果物検証",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-060",
+      "status": "Passed",
+      "result": "GKS-B707 target Quick 11/11 PASS、SOURCE_UPDATE Accept 13/13 PASS、Release 28/28 PASS。直接Studio更新ZIPを生成済み。GitHub実配置確認は未完了。",
+      "evidence": "artifact_id=GKS-B707-04b3527ccb80; baseline=GKS-B706; target=GKS-B707; accept passed=13 failed=0 timeouts=0; release passed=28 failed=0 timeouts=0 (timeout-per-test=60s).",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T13:58:00+09:00",
+      "created_at": "2026-08-21T13:58:00+09:00",
+      "updated_at": "2026-08-21T13:58:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-060-DEPLOYED",
+      "title": "TASK-AI-PIPELINE-060 GKS-B707実配置確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-060",
+      "status": "Passed",
+      "result": "GitHubから再取得した完全SourceでGKS-B707実配置を確認。AI_STARTにDevelopment Project Execution Protocolが存在し、Quick Gate 11/11 PASS。",
+      "evidence": "guild-adventure-studio-sub(20260821-050724).zip: package-build.json studio_build=GKS-B707 game_build=GA-B486.211; AI_START.md contains Development Project Execution Protocol; package_manifest development-project-data entries=0; python tools/inspection/run.py quick => passed=11 failed=0 warnings=0 timeouts=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T14:08:00+09:00",
+      "created_at": "2026-08-21T14:08:00+09:00",
+      "updated_at": "2026-08-21T14:08:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-070-PREDEPLOY",
+      "title": "TASK-AI-PIPELINE-070 GKS-B708配置前検査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-070",
+      "status": "Passed",
+      "result": "GKS-B708更新成果物の配置前検査に合格。実配置確認前のためTaskはDoingのまま。",
+      "evidence": "Target Quick 11/11 PASS; SOURCE_UPDATE Accept 14/14 PASS; Release 28/28 PASS; artifact_id=GKS-B708-6d57ae674165; deletions=0; game data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T14:25:00+09:00",
+      "created_at": "2026-08-21T14:25:00+09:00",
+      "updated_at": "2026-08-21T14:25:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-070-DEPLOYED",
+      "title": "TASK-AI-PIPELINE-070 GKS-B708実配置確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-070",
+      "status": "Passed",
+      "result": "GitHubから再取得した完全SourceでGKS-B708実配置、schema 1.3、Task execution metadata保持、AI_START完了条件、Quick Gate 11/11 PASSを確認した。",
+      "evidence": "guild-adventure-studio-sub(20260821-052535).zip: studio_build=GKS-B708, game_build=GA-B486.211, schema_version=1.3; Task fields execution_order/depends_on/acceptance_criteria/work_type/requires_human_approval/approval present; package_manifest development-project-data entries=0; python tools/inspection/run.py quick => passed=11 failed=0 warnings=0 timeouts=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T14:30:00+09:00",
+      "created_at": "2026-08-21T14:30:00+09:00",
+      "updated_at": "2026-08-21T14:30:00+09:00"
+    },
+    {
+      "id": "CHECK-AI-PIPELINE-080-E2E",
+      "title": "TASK-AI-PIPELINE-080 End-to-End往復テスト",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-AI-PIPELINE-080",
+      "status": "Passed",
+      "result": "完全Source ZIPとDevelopment Project JSONを受領し、AI_START起点で対象案件・次Taskを決定、DEVELOPMENT_ONLYとして1 Taskだけ実行し、Source/Gameを変更せずDevelopment統合JSONを生成できることを確認した。Quick Gate 11/11 PASS。",
+      "evidence": "baseline source guild-adventure-studio-sub(20260821-053102).zip sha256=0b3966d39dcab5838af7c8296c7ed13e4bb3c9c1eb0ba63e0283be3f26ba09fa; package-build.json GA-B486.211 / GKS-B708; input Development JSON equals development-project-data/DEV-DEMO-B705-001.json; package_manifest development-project-data entries=0; package_manifest sha256=95a3fb646b7c79294bb5e5bd69b5079a0880572c88f44a266b09a98e2a8d7c09 before/after; python3 tools/inspection/run.py quick => passed=11 failed=0 warnings=0 timeouts=0; Development merge JSON contains full TASK-AI-PIPELINE-080 record + new Check + history only.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-21T14:31:00+09:00",
+      "created_at": "2026-08-21T14:31:00+09:00",
+      "updated_at": "2026-08-21T14:31:00+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Discovery",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-21T09:55:00+09:00",
+      "message": "B705 JSON registration demo created"
+    },
+    {
+      "at": "2026-08-21T01:32:40.515Z",
+      "message": "Development Project JSON imported as new project: DEV-DEMO-B705-001"
+    },
+    {
+      "at": "2026-08-21T10:37:00+09:00",
+      "message": "Merge demo data prepared for DEV-DEMO-B705-001"
+    },
+    {
+      "at": "2026-08-21T01:53:59.312Z",
+      "message": "Development Workspace JSON merged: add=4 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-21T10:55:00+09:00",
+      "message": "AI_START起点のゲーム制作パイプライン実装計画を登録。実装順序は TASK-AI-PIPELINE-010 → 020 → 030 → 040 → 050 → 060 → 070 → 080。"
+    },
+    {
+      "at": "2026-08-21T02:53:48.309Z",
+      "message": "Development Workspace JSON merged: add=5 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-21T11:58:00+09:00",
+      "message": "AIパイプライン実装計画のTask登録を修正。現行schemaに合わせ、Architecture Node → Work Box → Task の参照関係を追加。実行順序は TASK-AI-PIPELINE-010 → 020 → 030 → 040 → 050 → 060 → 070 → 080。"
+    },
+    {
+      "at": "2026-08-21T03:08:57.282Z",
+      "message": "Development Workspace JSON merged: add=11 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-21T12:15:00+09:00",
+      "message": "TASK-AI-PIPELINE-010 completed: Development Project schema v1.2 current implementation confirmed from GKS-B706 source. Quick Gate 11/11 PASS. Next task: TASK-AI-PIPELINE-020."
+    },
+    {
+      "at": "2026-08-21T04:14:55.775Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:15:00+09:00",
+      "message": "TASK-AI-PIPELINE-020 completed: AI実行可能Taskの機械判定規則を確定。正式運用は依存関係・execution_order・Acceptance Criteria・work_type・Task単位Human Approvalを使用し、不明時はFail Closed。次工程: TASK-AI-PIPELINE-030。"
+    },
+    {
+      "at": "2026-08-21T04:19:23.291Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:25:00+09:00",
+      "message": "TASK-AI-PIPELINE-030 completed: 現在案件へJSON統合はID単位additive upsert・削除なし・既存Record更新はfull replacementと確定。AI統合JSONは部分Record更新では情報欠落リスクがある。次工程: TASK-AI-PIPELINE-040。"
+    },
+    {
+      "at": "2026-08-21T04:37:01.458Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:38:00+09:00",
+      "message": "TASK-AI-PIPELINE-040 completed: AI Development統合JSON契約v1を確定。既存Record/Objectは完全形で更新し、Development更新のみではSource ZIP/manifestを生成しない。次工程: TASK-AI-PIPELINE-050。"
+    },
+    {
+      "at": "2026-08-21T04:39:58.924Z",
+      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:45:00+09:00",
+      "message": "TASK-AI-PIPELINE-050 completed: work_typeをDEVELOPMENT_ONLY / GAME_DATA / SOURCE_UPDATEの3種に限定し、成果物と作業経路を確定。混在Taskは禁止して分割、判定不能はFail Closed。次工程: TASK-AI-PIPELINE-060。"
+    },
+    {
+      "at": "2026-08-21T04:44:08.790Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T13:58:00+09:00",
+      "message": "TASK-AI-PIPELINE-060 implementation prepared: GKS-B707 direct Studio update ZIP created. Quick 11/11, Accept 13/13, Release 28/28 PASS. Task remains Doing until human deployment and post-deploy Source verification; TASK-070 not started."
+    },
+    {
+      "at": "2026-08-21T05:05:33.539Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T14:08:00+09:00",
+      "message": "TASK-AI-PIPELINE-060 completed: GKS-B707 was deployed and verified from the post-deploy complete Source. AI_START Development Project Execution Protocol is active; Quick Gate 11/11 PASS. Source baseline advanced to GKS-B707. Next task: TASK-AI-PIPELINE-070."
+    },
+    {
+      "at": "2026-08-21T05:09:54.055Z",
+      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-21T05:24:38.506Z",
+      "message": "Development Project schema normalized to 1.2"
+    },
+    {
+      "at": "2026-08-21T14:25:00+09:00",
+      "message": "TASK-AI-PIPELINE-070 implementation prepared as GKS-B708. Development Task schema 1.3 execution metadata and completion conditions implemented. All pre-deploy Gates PASS; Task remains Doing until GitHub post-deploy Source is verified."
+    },
+    {
+      "at": "2026-08-21T05:24:45.519Z",
+      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-21T14:30:00+09:00",
+      "message": "TASK-AI-PIPELINE-070 completed: GKS-B708 post-deploy Source verified. Development Project schema 1.3 Task execution metadata and completion conditions are active. Quick Gate 11/11 PASS. Source baseline advanced to GKS-B708. Next task: TASK-AI-PIPELINE-080."
+    },
+    {
+      "at": "2026-08-21T05:29:02.147Z",
+      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-21T14:31:00+09:00",
+      "message": "TASK-AI-PIPELINE-080 completed: AI_START起点のEnd-to-End往復テストを実施。Source ZIP + Development JSONから対象Taskを選択し、DEVELOPMENT_ONLYとしてSource/Game/Build/manifestを変更せず、Development統合JSONを生成。Quick Gate 11/11 PASS。次Taskへ自動着手していない。"
+    },
+    {
+      "at": "2026-08-21T05:35:39.323Z",
+      "message": "Development Workspace JSON merged: add=2 update=1 delete=0"
+    }
+  ]
+}

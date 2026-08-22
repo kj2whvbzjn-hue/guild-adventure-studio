@@ -206,11 +206,64 @@ def main() -> int:
         if packaged_result.returncode == 0 or "PACKAGED_TEST_CHANGE_APPROVAL_FORBIDDEN" not in (packaged_result.stdout + packaged_result.stderr):
             errors.append("PACKAGED_TEST_APPROVAL_NOT_REJECTED " + (packaged_result.stdout + packaged_result.stderr))
 
+        # Migration repair: the baseline policy already says development-project-data
+        # is nonpersistent, but an older package_manifest still lists one such file.
+        repair_base = base / "repair-baseline"
+        repair_update = base / "repair-update"
+        shutil.copytree(baseline, repair_base)
+        dev = repair_base / "development-project-data/DEV-TEST.json"
+        dev.parent.mkdir(parents=True, exist_ok=True)
+        dev.write_text('{"id":"DEV-TEST"}\n', encoding="utf-8")
+        manifest = json.loads((repair_base / "package_manifest.json").read_text(encoding="utf-8"))
+        blob = dev.read_bytes()
+        manifest["files"].append({"path":"development-project-data/DEV-TEST.json","size":len(blob),"sha256":hashlib.sha256(blob).hexdigest()})
+        manifest["file_count"] = len(manifest["files"])
+        write_json(repair_base / "package_manifest.json", manifest)
+        make_update(repair_update, repair_base, include_exporter=True)
+        repair_result = run_checker(repair_update, repair_base)
+        if repair_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in repair_result.stdout:
+            errors.append("NONPERSISTENT_MANIFEST_REPAIR_REJECTED " + (repair_result.stdout + repair_result.stderr))
+
+        # Exact missing persistent repair: baseline manifest records a file that is
+        # physically absent; only an update restoring the exact recorded bytes may pass.
+        missing_base = base / "missing-persistent-baseline"
+        missing_update = base / "missing-persistent-update"
+        shutil.copytree(baseline, missing_base)
+        missing_path = missing_base / "restore-me.txt"
+        missing_path.write_text("restore exact bytes\n", encoding="utf-8")
+        rebuild_manifest(missing_base)
+        expected_bytes = missing_path.read_bytes()
+        missing_path.unlink()
+        make_update(missing_update, missing_base, include_exporter=True)
+        restored = missing_update / "restore-me.txt"
+        restored.write_bytes(expected_bytes)
+        rebuild_manifest(missing_update)
+        simulated = base / "missing-persistent-simulated"
+        simulate_applied(missing_update, missing_base, simulated)
+        meta = json.loads((missing_update / "studio-update.json").read_text(encoding="utf-8"))
+        meta["target_source"]["package_manifest_sha256"] = sha256_file(simulated / "package_manifest.json")
+        meta["target_source"]["source_tree_sha256"] = tree_sha(simulated)
+        meta["artifact_id"] = f"GKS-B101-{tree_sha(simulated)[:12]}"
+        meta["baseline_source"]["package_manifest_sha256"] = sha256_file(missing_base / "package_manifest.json")
+        meta["baseline_source"]["source_tree_sha256"] = tree_sha(missing_base)
+        write_json(missing_update / "studio-update.json", meta)
+        shutil.rmtree(simulated)
+        exact_result = run_checker(missing_update, missing_base)
+        if exact_result.returncode != 0 or "SOURCE_UPDATE_APPLIED_STATE_OK" not in exact_result.stdout:
+            errors.append("EXACT_MISSING_PERSISTENT_RESTORE_REJECTED " + (exact_result.stdout + exact_result.stderr))
+
+        tampered_update = base / "missing-persistent-tampered-update"
+        shutil.copytree(missing_update, tampered_update)
+        (tampered_update / "restore-me.txt").write_text("different bytes\n", encoding="utf-8")
+        tampered_result = run_checker(tampered_update, missing_base)
+        if tampered_result.returncode == 0 or "BASELINE_PACKAGE_MANIFEST_INVALID" not in (tampered_result.stdout + tampered_result.stderr):
+            errors.append("TAMPERED_MISSING_PERSISTENT_RESTORE_NOT_REJECTED " + (tampered_result.stdout + tampered_result.stderr))
+
     if errors:
         print("SOURCE_UPDATE_APPLICATION_REGRESSION_FAIL")
         print("\n".join(errors))
         return 1
-    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=7 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
+    print("SOURCE_UPDATE_APPLICATION_REGRESSION_OK cases=10 nested_export=persistent omitted_file=detected same_build=blocked artifact_id=tree_bound")
     return 0
 
 

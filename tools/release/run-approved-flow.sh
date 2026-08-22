@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+python3 -S -B "$ROOT/tools/release/sync-current-build-markers.py" --check --root "$ROOT"
 ZIP_PATH="${1:-}"
 if [[ -n "$ZIP_PATH" ]]; then
   python3 - "$ZIP_PATH" <<'PY'

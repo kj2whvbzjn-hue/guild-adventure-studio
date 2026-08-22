@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b676";
+const CACHE_NAME="gks-studio-b727";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=676';
+const OFFLINE_URL='./index.html?appv=727';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=676",
+  "./index.html?appv=727",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
@@ -16,10 +16,18 @@ const APP_SHELL=[
   "./development-workflow/development-workflow.css?v=1",
   "./development-ai-publish/development-ai-publish.css?v=1",
   "./development-git-store/development-git-store.css?v=1",
+  "./development-spec-candidate/development-spec-candidate.css?v=2",
+  "./development-system-structure/development-system-structure.css?v=1",
+  "./development-system-state/development-system-state.css?v=1",
+  "./development-system-impact/development-system-impact.css?v=1",
   "./development-architecture/architecture-explorer.js?v=1",
   "./development-workflow/development-workflow.js?v=1",
   "./development-ai-publish/development-ai-publish.js?v=8",
-  "./development-git-store/development-git-store.js?v=1",
+  "./development-git-store/development-git-store.js?v=2",
+  "./development-system-impact/development-system-impact.js?v=1",
+  "./development-system-state/development-system-state.js?v=2",
+  "./development-spec-candidate/development-spec-candidate.js?v=3",
+  "./development-system-structure/development-system-structure.js?v=2",
   "../shared/ai/ai-program-model.js?v=1",
   "../shared/ai/ai-layout-model.js?v=1",
   "../shared/ai/ai-master-adapter.js?v=1",
@@ -34,7 +42,7 @@ const APP_SHELL=[
   "./ai-production/ai-simulation-runner.js?v=1",
   "./ai-production/ai-export-adapter.js?v=1",
   "./ai-production/ai-production-ui.js?v=1",
-  "./layer-controller.js?v=671",
+  "./layer-controller.js?v=727",
   "./data-exchange/schemas/ai_program-dataset.schema.json",
   "./data-exchange/full-import-gate.js?v=1",
   "./data-exchange/data-exchange-integrity-validator.js?v=4",
