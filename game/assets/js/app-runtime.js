@@ -301,6 +301,7 @@ function notify(text,type='ok'){const n=$('notice');if(n){n.textContent=text;n.c
 function makeCharacter(name,jobRef){const cfg=requireFormalRuntimeSettings().character,job=jobDefinition(jobRef);if(!job)throw new Error(`正式Jobが見つかりません: ${jobRef}`);const skills=[...cfg.starter_skill_ids],equippedSkillId=cfg.starter_equipped_skill_id||skills[0]||'';const c={id:uid(),name,level:cfg.initial_level,job:job.id,stats:{...cfg.initial_stats},skills,equippedSkillId,formalAiBinding:null,equipment:emptyCharacterEquipmentState(),jobHistory:[{job:job.id,level:cfg.initial_level,at:new Date().toISOString()}],growthHistory:[],createdAt:new Date().toISOString()};return window.GKGameSkillLoadout?GKGameSkillLoadout.normalizeCharacterSkillState(c,{fallback:[]}):c}
 function normalize(raw){
  raw=window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(raw):clone(raw);
+ if(window.GKGameQuestRunSaveBridge)GKGameQuestRunSaveBridge.assertStore(raw);
  if(!raw||raw.saveVersion!==SAVE_VERSION||!Array.isArray(raw.characters))throw new Error(`Save Data Version ${SAVE_VERSION}ではありません。`);
  if(!Array.isArray(raw.aiPrograms)||!Array.isArray(raw.aiLayouts)||!Array.isArray(raw.aiPresets))throw new Error('Formal AI保存領域が不正です。');
  raw.characters.forEach(c=>{
@@ -334,6 +335,7 @@ function buildAutoSaveSnapshot(source){
  const inventoryEquipmentBefore=window.GKGameInventoryEquipmentSaveBridge?GKGameInventoryEquipmentSaveBridge.capture(staged):null;
  const skillPassiveAiBefore=window.GKGameSkillPassiveAISaveBridge?GKGameSkillPassiveAISaveBridge.capture(staged):null;
  const settingsTutorialBefore=window.GKGameSettingsTutorialSaveBridge?GKGameSettingsTutorialSaveBridge.capture(staged):null;
+ const questRunBefore=window.GKGameQuestRunSaveBridge?GKGameQuestRunSaveBridge.capture(staged):null;
  staged.saveVersion=SAVE_VERSION;
  staged.characters.forEach(normalizeCharacterEquipmentState);
  staged.aiPrograms=Array.isArray(staged.aiPrograms)?staged.aiPrograms:[];
@@ -341,10 +343,12 @@ function buildAutoSaveSnapshot(source){
  staged.aiPresets=Array.isArray(staged.aiPresets)?staged.aiPresets:[];
  staged.updatedAt=new Date().toISOString();
  if(window.GKAdventureStorySystem)GKAdventureStorySystem.ensureQuestRunStore(staged);
+ if(questRunBefore&&window.GKGameQuestRunSaveBridge)GKGameQuestRunSaveBridge.assertCapturedPreserved(questRunBefore,staged);
  const snapshot=window.GKGameAISaveBridge?GKGameAISaveBridge.assertCurrent(staged):clone(staged);
  if(inventoryEquipmentBefore&&window.GKGameInventoryEquipmentSaveBridge)GKGameInventoryEquipmentSaveBridge.assertCapturedPreserved(inventoryEquipmentBefore,snapshot);
  if(skillPassiveAiBefore&&window.GKGameSkillPassiveAISaveBridge)GKGameSkillPassiveAISaveBridge.assertCapturedPreserved(skillPassiveAiBefore,snapshot);
  if(settingsTutorialBefore&&window.GKGameSettingsTutorialSaveBridge)GKGameSettingsTutorialSaveBridge.assertCapturedPreserved(settingsTutorialBefore,snapshot);
+ if(questRunBefore&&window.GKGameQuestRunSaveBridge)GKGameQuestRunSaveBridge.assertCapturedPreserved(questRunBefore,snapshot);
  return snapshot;
 }
 function savePayloadChecksum(payload){
@@ -361,6 +365,8 @@ function validateSavePayload(payload){
  if(!Array.isArray(parsed.characters)||!Array.isArray(parsed.aiPrograms)||!Array.isArray(parsed.aiLayouts)||!Array.isArray(parsed.aiPresets))throw new Error('Save Integrity: required collections are invalid.');
  if(!window.GKGameAISaveBridge||typeof GKGameAISaveBridge.assertCurrent!=='function')throw new Error('Save Integrity: Current Save Schema validator is unavailable.');
  GKGameAISaveBridge.assertCurrent(clone(parsed));
+ if(!window.GKGameQuestRunSaveBridge||typeof GKGameQuestRunSaveBridge.assertStore!=='function')throw new Error('Save Integrity: QuestRun Save Bridge is unavailable.');
+ GKGameQuestRunSaveBridge.assertStore(clone(parsed));
  return parsed;
 }
 function stableSaveValue(value){
@@ -374,6 +380,7 @@ function normalizeLoadedSave(source){
  if(window.GKGameInventoryEquipmentSaveBridge)GKGameInventoryEquipmentSaveBridge.assertPreserved(before,normalized);
  if(window.GKGameSkillPassiveAISaveBridge)GKGameSkillPassiveAISaveBridge.assertPreserved(before,normalized);
  if(window.GKGameSettingsTutorialSaveBridge)GKGameSettingsTutorialSaveBridge.assertPreserved(before,normalized);
+ if(window.GKGameQuestRunSaveBridge)GKGameQuestRunSaveBridge.assertPreserved(before,normalized);
  // Build metadata may advance without a Save schema change. Domain state may not be silently repaired.
  expected.schemaRevision=normalized.schemaRevision;expected.gameVersion=normalized.gameVersion;
  if(JSON.stringify(stableSaveValue(expected))!==JSON.stringify(stableSaveValue(normalized)))throw new Error('Save Integrity: Load requires implicit data normalization; migration or recovery is required.');
@@ -498,7 +505,7 @@ function loadAutoSave(){
  return result.migrated?commitMigratedSave(stored.raw,result,{sourceKey:stored.key}):result.save;
 }
 function hasAutoSave(){return findAutoSaveRecord()!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
