@@ -5,17 +5,17 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T02:34:30.482Z"
+    "updated_at": "2026-08-22T03:02:48.907Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
-    "summary": "実装ラインR30以降のTask状態・Workflow・Source責務を変更しない別案件。DEV-V9-REORG-019のApproved Decision / Current Specificationをread-only authorityとして参照する。既存Studio AI Battle PackageワークフローをCombat Balanceの標準実行基盤として再利用し、別Orchestrator/別Simulatorを重複新設しない。現在はPackage内部のCurrent Specification適合、Data/Formula/Result契約、Game-wide上位Campaignとの接続を含む実行計画の設計段階であり、Human Plan Gate承認前はDEVELOPMENT_ONLYの設計Taskだけを実行する。"
+    "summary": "実装ラインDEV-V9-REORG-019とは独立したBalance案件。Current Specificationをread-only authorityとして参照する。Studioに既存のEquipment大量生成、Skill AI一括生成、AI Battle Package大量実行を利用し、AIがCandidate/探索戦略を作成、Studioが正式Generator/Resolver/Validation/Simulationを担当する反復型Balance Pipelineを構築する。実行計画はConcrete Draftとして登録するが、Human Plan Gate承認前は実行しない。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-DESIGN-001",
-    "theme": "Existing AI Battle Package as Formal Combat Balance Harness / Current-Spec Alignment",
-    "goal": "既存のAI用Template ZIP→AI作成Battle Package読込→Package実行→Result Package出力→Result Package再読込のワークフローをBalance実行基盤として正式利用し、Package内部の計算・入力・Result EvidenceをCurrent Specificationへ適合させる計画を設計する。Battle PackageをCombat Balance Engineの核とし、Character/Job、Skill、Passive、Equipment、MOD、Enemy、AIを統合し、Quest/Reward/Economy/Stoneは上位Campaignとして接続する。計画はDraftのまま保持する。"
+    "architecture_id": "ARCH-V9-BALANCE-EXECUTION-001",
+    "work_box_id": "BOX-V9-BAL-EXEC-READINESS-001",
+    "theme": "Concrete Draft: Mass Generation → Battle Package → AI Iteration",
+    "goal": "B733既存Pipelineを前提に、Equipment 308件Baseline Matrix、Skill 330件Core Calibration Matrix、段階式Battle Package検証、上位Quest/Reward/Economy/Stone Campaign、Product Game Data反映、Game Runtime Conformanceまでを具体的なTask/Dependencyへ落とす。本計画はHuman Plan GateまでProposed/Draftとして保持する。"
   },
   "project_rules": [
     {
@@ -260,14 +260,77 @@
       "source_id": "RULE-BAL-001 / RULE-BAL-002 / conversation:2026-08-22",
       "created_at": "2026-08-22T11:30:00+09:00",
       "updated_at": "2026-08-22T11:30:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-028",
+      "text": "Equipment CalibrationではB733 Active Equipment Config EQUIPMENT-BASE-V2 v2.1.0のiLv1〜11を基準に、武器13種×11=143、防具3カテゴリ×4部位×11=132、アクセサリ3種×11=33、合計308件をBaseline Matrixとして一括生成する。これはCalibration FixtureでありProduct Masterへ自動登録しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "studio/equipment/equipment-balance-config.json / equipment-generator.js",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-029",
+      "text": "Skill Core CalibrationではCurrent G05 AI Batch Generatorが正式生成可能なON_USE・conditionsなし・resource初期値の範囲をBaselineとして使い、22構造Archetype（DAMAGE 3 / HEAL 1 / APPLY 10 / REMOVE 1 / RESOURCE_CHANGE 2 / REVIVE 2 / TARGET_CONTROL 3）×Skill Level 5点[1,10,25,50,100]×Strength 3点[LOW,MEDIUM,HIGH] = 330 Skillを初回Calibration Matrixとする。Trigger/Condition/Resource拡張は別Gap/拡張Taskで扱う。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "assets/shared/js/skill-ai-batch-engine.js / skill-registry.json / skill-ai-generation-rules.json",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-030",
+      "text": "Battle Candidate検証は段階式に行う。Screeningは原則100 Seed/Matchupで最大500 Matchup、Refinementは1000 Seed/Matchupで上位最大100 Matchup、Final/Holdoutは10000 Seed/Matchupで上位最大40 Matchupを基準とし、1つのExperiment/Packageで総戦闘数1,000,000を超えない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "studio/index.html battle batch/experiment limits",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-031",
+      "text": "大量生成したEquipment/Skill/BuildはCalibration Candidateとして管理し、結果が良いことだけを理由にProduct Game Dataへ登録しない。Candidate→Product Candidate→Current activeを分離し、Product反映時だけCurrent Studio Project JSON/Data Versionを正本としてGAME_DATA手順を使用する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "current Balance workflow",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-032",
+      "text": "Equipment/Skill以外のPassive/MODについても大量検証の穴を残さない。既存Batch/Generator能力を監査し、正式大量生成・Contribution検証経路が不足する場合はBalance値で代替せず、実装ラインへSOURCE_UPDATE Requirementを返す。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-22 equipment and skill pipelines already exist",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-033",
+      "text": "Equipment Generator出力、Formal Skill、Passive、MOD、Formal AI、Monster/EnemyがBattle PackageのCurrent Specification準拠入力として接続されるまで、そのDomainのBattle結果をCurrent active昇格Evidenceとして使用しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "RULE-BAL-023 / RULE-BAL-027",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-034",
+      "text": "AIはCandidate Config、Skill Intent/Structure、Build/Fixture、Enemy Set、Parameter探索範囲、次Round選択を担当する。Studioは正式生成、Validation、Seeded大量実行、Benchmark、Result Evidenceを担当する。大量Candidateの最終戦闘数値をAIが直接正式Dataへ書き込まない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "DEC-BAL-PACKAGE-001 / existing Equipment and Skill pipelines",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B732",
+    "studio_build": "GKS-B733",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-012352).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-023525).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T10:55:00+09:00"
+    "recorded_at": "2026-08-22T11:45:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -303,6 +366,21 @@
       "artifact_note": "Plan revised to reuse existing AI Battle Package workflow; package internals/spec alignment remain under design",
       "created_at": "2026-08-22T10:36:00+09:00",
       "updated_at": "2026-08-22T11:30:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-003",
+      "title": "既存Equipment/Skill/Battle Packageを使う具体的Balance実行計画",
+      "status": "Open",
+      "summary": "既存StudioのEquipment大量生成、Skill AI一括生成、AI Battle Package大量実行を一つの反復Pipelineとして使用する。Baseline Matrix→Candidate大量生成→段階式Battle→AI解析→再生成→上位Campaign→Product反映の具体TaskをDraft登録する。",
+      "body": "## 前提\n- Current Source: GKS-B733 / GA-B486.211\n- Equipment Generator: GKS_EQUIPMENT_GENERATION_REQUEST\n- Skill Generator: GKS_SKILL_AI_BATCH_REQUEST\n- Battle: AI Battle Package Template / Import / Execute / Result Export / Result Import\n- 実行計画全体はまだHuman Plan Gate前であり、ここではConcrete Draftとして登録する。\n\n## Phase E0 Formal Readiness\n1. Equipment / Skill / Passive / MOD / Formal AI / MonsterからBattle PackageまでCurrent Specification接続を監査する。\n2. Legacy/Demo/Fallback GapはBalance値で補わずSOURCE_UPDATE Requirementへ分離する。\n3. 修正済Sourceを再Bindし、Package Formal Reference Readyを確認する。\n\n## Phase E1 Baseline / KPI\n1. Human Approved seed / V9 Baseline / Candidate状態をBalance Ledgerへ集約する。\n2. Approved Experience ProfileをKPIへ変換する。\n3. deterministic seed set / holdout seed set / representative build setを固定する。\n\n## Phase E2 Equipment Mass Calibration\n### Baseline\nActive Config:\n- EQUIPMENT-BASE-V2\n- config_version 2.1.0\n- iLv 1〜11\n\n生成件数:\n- Weapon: 13種 × 11 = 143\n- Armor: 3カテゴリ × 4部位 × 11 = 132\n- Accessory: 3種 × 11 = 33\n- Total: 308\n\n308件を一括生成し、Requirement/Attack/Accuracy/Critical/HP/MP/Evasion等のCurveを集計する。\n\n### Candidate Round 1\nBaseline感度分析で影響の大きいParameter群を抽出し、AIが12 Config Candidateを生成する。\n各Candidateで308件を再生成するため、Round 1は3696 Equipment Candidate。\nBaselineを含む観測総数は4004件。\n\n静的Curve/Requirement/支配関係で不適切Candidateを除外し、Combat投入候補を最大3 Configへ絞る。\n\n## Phase E3 Skill Mass Calibration\nCurrent G05が数値生成できるCore Archetype:\n- DAMAGE: PHYSICAL / MAGICAL / FIXED = 3\n- HEAL = 1\n- APPLY Registry Effect = 10\n- REMOVE STATUS = 1\n- RESOURCE_CHANGE MP GAIN / LOSS = 2\n- REVIVE RATE / FIXED = 2\n- TARGET_CONTROL PERSISTENT / USES / DURATION = 3\nTotal 22\n\nSkill Level:\n[1, 10, 25, 50, 100]\n\ndesiredStrength:\n[LOW, MEDIUM, HIGH]\n\n22 × 5 × 3 = 330 Core Calibration Skillsを生成する。\nG07正式ValidationでACCEPT/REJECTを記録する。\n\nCurrent G05が固定しているON_USE / conditions=[] / mpCost=0 / cooldown=0等はCore Baselineとし、\n9 Trigger、8 Condition、Resource Cost/CD等のFormal全域は別Gap/拡張TaskでCurrent仕様対応を確認する。\n\n## Phase E4 Passive / MOD\n- 既存Batch/Generatorの有無とFormal Battle Contribution接続を監査する。\n- 同等の大量Candidate検証経路が不足する場合はSource Requirement化する。\n- Fixture手書きでProduct仕様を代替しない。\n\n## Phase E5 Combat Candidate Loop\n1. AIがEquipment/Skill/Passive/MOD/AI/EnemyからBuild Rosterを作る。\n2. Screening: 100 Seed/Matchup、最大500 Matchup。\n3. Result PackageをAI解析し、Sensitivity/Dominance/Exploitで候補削減。\n4. Refinement: 1000 Seed/Matchup、上位最大100 Matchup。\n5. Final/Holdout: 10000 Seed/Matchup、上位最大40 Matchup。\n6. Holdout Seed/Build/EnemyはCandidate選定に使わず最終汎化確認に使う。\n\nKPI:\n- win/loss/draw\n- ticks / TTK\n- DPS / HPS / EHP\n- hit / evasion / critical\n- damage dealt / taken\n- MP/resource efficiency\n- skill usage / cast/cooldown\n- passive / equipment contribution\n- status uptime\n- survivors / death cause\n- error / trace\n\n## Phase E6 Upper Campaign\nCombatが収束した後に:\n- New Game starter power\n- Quest / Encounter / Event\n- Reward / Drop\n- Gold / Resource Source-Sink\n- Equipment acquisition interval\n- Guild progression\n- Stone Endgame\nを調整する。\n\nStoneはHuman Approved方針:\n- 明確な高難易度\n- 高報酬\n- Endgame\n- 通常攻略へ必須化しない\n\n## Phase E7 Product / Runtime\n1. Calibration WinnerからProduct Candidateを選ぶ。\n2. Current Studio Project JSON / Data Versionを取得する。\n3. GAME_DATA Project JSONへCandidateを反映しPre-flight。\n4. Human Apply / Game Data配置後にGame Runtime/WebKit/TraceでConformance。\n5. PackageとGame Runtimeが一致しない場合はBalanceを変えずRuntime/Adapter defectとして切り分ける。\n6. Holdout/Runtime合格後だけCurrent active昇格候補とする。\n\n## 計画状態\nこの実行案はConcrete Draft。\nHuman Plan Gate承認前にはTASK-BAL-EXEC-*を実行開始しない。\n",
+      "open_questions": "- Passive/MODにEquipment/Skill同等の正式Batch Pipelineが現Sourceで十分か。\n- Equipment/Skill正式生成値がBattle Packageへ完全にFormal接続されているか。\n- G05のTrigger/Condition/Resource拡張を既存Request Contract拡張で行うか別Request Versionにするか。\n- Product Content量が最終Economy/Drop/Stone調整に十分になる時点をどのReadiness条件で判定するか。",
+      "conclusion": "大量生成可能なEquipment/Skill PipelineとBattle Packageを中心に、Candidateを使い捨て可能なCalibration資産として大量生成し、Studioで大量実行、AIで解析・再生成する具体Pipelineを採用候補とする。計画はHuman Plan Gateまで未確定。",
+      "related_discussion_ids": [
+        "DISC-BAL-002"
+      ],
+      "artifact_note": "Concrete execution draft using existing mass-generation pipelines; not yet approved",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "decisions": [
@@ -361,6 +439,20 @@
       "approved_at": "2026-08-22T11:30:00+09:00",
       "created_at": "2026-08-22T11:30:00+09:00",
       "updated_at": "2026-08-22T11:30:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-EXECUTION-001",
+      "title": "大量生成Pipelineを利用する具体Balance実行案",
+      "status": "Proposed",
+      "text": "Equipment 308件Baseline Matrix、Skill 330件Core Calibration Matrixを起点に、AIがCandidateを生成しStudioの正式Generator/Validator/Battle Packageで大量検証する。Combatは100→1000→10000 Seedの段階式Screening/Refinement/Holdoutで絞り込み、Combat収束後にQuest/Reward/Economy/Stone等の上位Campaignへ進む。Product反映はCalibrationと分離しCurrent Studio Project JSON/Data Versionを使用する。",
+      "rationale": "HumanがEquipmentとSkillにも既存大量生成Pipelineがあることを明示し、既存Battle Packageと合わせた具体的実行計画の登録を要求したため。Human Plan Gate前のため実行計画全体はProposedに留める。",
+      "source_discussion_ids": [
+        "DISC-BAL-003"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "specifications": [],
@@ -385,6 +477,13 @@
       "parent_id": "ARCH-V9-BALANCE-001",
       "created_at": "2026-08-22T10:36:00+09:00",
       "updated_at": "2026-08-22T10:55:00+09:00"
+    },
+    {
+      "id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "name": "Concrete Balance Execution Draft",
+      "parent_id": "ARCH-V9-BALANCE-001",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "work_boxes": [
@@ -451,6 +550,62 @@
       "body": "既存AI Battle PackageワークフローをCombat Balance Harnessの正規基盤として再利用する。Package Capability/Current-Spec Gap、Data Topology/Readiness、Formula/Parameter、Formal Reference Execution、Snapshot Policy、KPI/Result Evidence、統計/感度/Dominance/Exploit/Holdout、Game Runtime Conformance、Product Content/Quest/Economy/Stone上位Campaign、Promotion/Rollbackを設計し、最終Phase/TaskをHuman Reviewへ出す。Package自体の重複新設は行わず、必要Source修正は実装ラインRequirementへ分離する。",
       "created_at": "2026-08-22T10:36:00+09:00",
       "updated_at": "2026-08-22T11:30:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-READINESS-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E0: Formal Pipeline Readiness",
+      "body": "Equipment/Skill/Passive/MOD/AI/Enemy→Battle PackageのFormal接続を監査し、Gapを実装ラインRequirementへ分離。修正済SourceでReference Readyを確認する。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-BASELINE-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E1: Baseline / KPI / Seed Set",
+      "body": "Balance Ledger、Target Experience KPI、deterministic/holdout Seed、代表Build/Enemy Setを固定する。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-EQUIPMENT-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E2: Equipment Mass Calibration",
+      "body": "B733 Active Equipment Configから308件Baseline Matrixを生成し、12 Candidate Config×308件の初回感度探索を行う。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-SKILL-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E3-E4: Skill / Passive / MOD Mass Calibration",
+      "body": "Skill 330件Core Calibrationを生成し、Trigger/Condition/Resource拡張、Passive/MOD Batch readinessを整備する。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-COMBAT-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E5: AI Candidate Loop / Battle Package",
+      "body": "AI Candidate→Studio大量Battle→Result Package→AI解析を100/1000/10000 Seedの段階式で反復する。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-UPPER-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E6: Quest / Reward / Economy / Stone Upper Campaign",
+      "body": "Combat結果を基礎にNew Game、Quest/Event/Encounter、Reward/Drop、Economy、Guild、Stone Endgameを調整する。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "BOX-V9-BAL-EXEC-PROMOTION-001",
+      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
+      "title": "E7: Product Candidate / Runtime Conformance / Promotion",
+      "body": "Calibration WinnerをCurrent Studio Project JSONへCandidate反映し、Human Apply後にGame Runtime ConformanceとCurrent active昇格を行う。",
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "tasks": [
@@ -991,6 +1146,389 @@
       },
       "created_at": "2026-08-22T10:55:00+09:00",
       "updated_at": "2026-08-22T11:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-001",
+      "box_id": "BOX-V9-BAL-EXEC-READINESS-001",
+      "title": "Equipment / Skill / Passive / MOD / AI / Enemy→Battle Package Formal接続を監査する",
+      "status": "Blocked",
+      "execution_order": 2000,
+      "depends_on": [
+        "TASK-BAL-PLAN-GATE-001"
+      ],
+      "acceptance_criteria": "- GKS-B733をCurrent Sourceとして使用する。\n- Equipment正式field、Formal Skill effects/resource/runtimeContracts、Passive、MOD、Formal AI、Monster/EnemyのBattle Package入力経路をCurrent Specificationと照合する。\n- Legacy/Demo/Fallback経路をGapとして列挙する。\n- GapをBalance値で補わない。\n- Source修正が必要な項目を実装ライン向けSOURCE_UPDATE Requirementとして整理する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-002",
+      "box_id": "BOX-V9-BAL-EXEC-READINESS-001",
+      "title": "修正済Sourceを再BindしてFormal Package Readinessを確認する",
+      "status": "Blocked",
+      "execution_order": 2010,
+      "depends_on": [
+        "TASK-BAL-EXEC-001"
+      ],
+      "acceptance_criteria": "- 必要Source Requirementが0件、またはHuman Apply済みCurrent Sourceへ反映済みである。\n- package-build / source bindingを再記録する。\n- Equipment/Skill/Passive/MOD/AI/Enemyの対象DomainでFormal Package入力が成立する。\n- CHK-BAL-PACKAGE-002とCHK-BAL-EXEC-004をPassedまたは明示Waivedにできる。\n- Readiness未達ならCalibration Battleへ進まない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-003",
+      "box_id": "BOX-V9-BAL-EXEC-BASELINE-001",
+      "title": "Balance Ledger / KPI / Seed / Representative Setを固定する",
+      "status": "Blocked",
+      "execution_order": 2100,
+      "depends_on": [
+        "TASK-BAL-EXEC-002"
+      ],
+      "acceptance_criteria": "- Human Approved seed / V9 Baseline / Candidate / Current activeを区別したLedgerを作る。\n- Approved Experience ProfileをKPI候補へ変換する。\n- deterministic seed set、holdout seed set、extreme seed setを分離する。\n- 代表Player Build / Enemy / Level-iLv帯を定義する。\n- 数値Target bandが複数の妥当なゲーム体験を生む場合だけHumanへ上げる。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-004",
+      "box_id": "BOX-V9-BAL-EXEC-EQUIPMENT-001",
+      "title": "Equipment Baseline Matrix 308件を一括生成・集計する",
+      "status": "Blocked",
+      "execution_order": 2200,
+      "depends_on": [
+        "TASK-BAL-EXEC-003"
+      ],
+      "acceptance_criteria": "- EQUIPMENT-BASE-V2 v2.1.0 / iLv1〜11を基準にする。\n- Weapon 143 / Armor 132 / Accessory 33 / Total 308件をGKS_EQUIPMENT_GENERATION_REQUESTで生成する。\n- Product Masterへ登録しない。\n- Requirement / Attack / Accuracy / Critical / HP / MP / Evasion等をtype/iLv別に集計する。\n- invalid=0、生成metadata/config versionをEvidence化する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-005",
+      "box_id": "BOX-V9-BAL-EXEC-EQUIPMENT-001",
+      "title": "Equipment Candidate Config Round 1を12案×308件で実行する",
+      "status": "Blocked",
+      "execution_order": 2210,
+      "depends_on": [
+        "TASK-BAL-EXEC-004"
+      ],
+      "acceptance_criteria": "- Baseline感度分析から影響の大きいParameter群をAIが選ぶ。\n- 12 Candidate Configを作成し各308件、計3696件を生成する。\n- Baseline込み4004観測を比較する。\n- iLv curve破綻、Requirement不整合、明確な支配/劣位、invalidを除外する。\n- Combat投入候補を最大3 Configへ絞る。\n- Candidate ConfigをProduct activeへしない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-006",
+      "box_id": "BOX-V9-BAL-EXEC-SKILL-001",
+      "title": "Skill Core Calibration Matrix 330件を一括生成・G07検証する",
+      "status": "Blocked",
+      "execution_order": 2300,
+      "depends_on": [
+        "TASK-BAL-EXEC-003"
+      ],
+      "acceptance_criteria": "- 22 Core Archetypeを使用する。\n- Skill Level [1,10,25,50,100] × Strength [LOW,MEDIUM,HIGH]で330件生成する。\n- GKS_SKILL_AI_BATCH_REQUESTを使用しAIは完成戦闘数値を指定しない。\n- Studio G05生成後、G07正式Registry/Budget/Compiler/runtimeContracts検査を実行する。\n- ACCEPT/REJECT理由とBudget使用率をEvidence化する。\n- Product Skill Masterへ自動登録しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-007",
+      "box_id": "BOX-V9-BAL-EXEC-SKILL-001",
+      "title": "Skill Formal拡張CoverageをTrigger / Condition / Resourceまで広げる",
+      "status": "Blocked",
+      "execution_order": 2310,
+      "depends_on": [
+        "TASK-BAL-EXEC-006"
+      ],
+      "acceptance_criteria": "- Current G05固定のON_USE / conditions=[] / mpCost=0 / cooldown=0境界を確認する。\n- Registry 9 Trigger、8 Condition、Formal Resource fields、6 Range等について少なくとも各Registry entryを覆う代表ケースを定義する。\n- 現行Request Contractで表現できない項目はSOURCE_UPDATE Requirement化する。\n- 全Cartesian productを無条件生成せず、仕様Coverageを満たす最小代表Matrix＋境界Caseを設計する。\n- Formal拡張がBattle Packageへ接続するまでCurrent active Evidenceに使用しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-008",
+      "box_id": "BOX-V9-BAL-EXEC-SKILL-001",
+      "title": "Passive / MOD大量Candidate PipelineとBattle Contribution Readinessを確立する",
+      "status": "Blocked",
+      "execution_order": 2320,
+      "depends_on": [
+        "TASK-BAL-EXEC-003"
+      ],
+      "acceptance_criteria": "- PassiveとMODについて既存Batch/Generator/Import能力を監査する。\n- 正式ID、数値生成、Validation、Battle Contribution、Result Evidenceを確認する。\n- Equipment/Skill同等の大量Candidate経路が不足する場合はSOURCE_UPDATE Requirement化する。\n- Test Fixtureの手書き最終値でProduct仕様を代替しない。\n- ReadyになったDomainだけCombat Candidate Loopへ投入する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-009",
+      "box_id": "BOX-V9-BAL-EXEC-COMBAT-001",
+      "title": "Calibration Build Roster / Enemy Set / Battle Package Round 0を生成する",
+      "status": "Blocked",
+      "execution_order": 2400,
+      "depends_on": [
+        "TASK-BAL-EXEC-005",
+        "TASK-BAL-EXEC-006",
+        "TASK-BAL-EXEC-007",
+        "TASK-BAL-EXEC-008"
+      ],
+      "acceptance_criteria": "- Equipment最大3 Config、Skill Calibration候補、Passive/MOD Ready候補、Formal AI、Enemy Setから代表Buildを組む。\n- Build/Enemy/Formula/Data/Seed VersionをPackage manifestへ結び付ける。\n- 明確な役割別Buildと極端Buildを含める。\n- Holdout Build/EnemyはCandidate選定用Packageから分離する。\n- Package Validation ERROR=0である。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-010",
+      "box_id": "BOX-V9-BAL-EXEC-COMBAT-001",
+      "title": "Combat Screeningを100 Seed/Matchupで実行する",
+      "status": "Blocked",
+      "execution_order": 2410,
+      "depends_on": [
+        "TASK-BAL-EXEC-009"
+      ],
+      "acceptance_criteria": "- 原則100 Seed/Matchup、最大500 Matchup、総戦闘数50,000以下を初期Screening目安とする。\n- win/loss/draw、ticks/TTK、damage/heal、hit/crit、resource、survivor等を集計する。\n- invalid/errorを候補性能として扱わない。\n- AIがSensitivity、明確な劣位、支配候補、Exploit候補を分類する。\n- Refinement対象を最大100 Matchupへ絞る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-011",
+      "box_id": "BOX-V9-BAL-EXEC-COMBAT-001",
+      "title": "Combat Refinementを1000 Seed/Matchupで実行する",
+      "status": "Blocked",
+      "execution_order": 2420,
+      "depends_on": [
+        "TASK-BAL-EXEC-010"
+      ],
+      "acceptance_criteria": "- 上位最大100 Matchupを1000 Seed/Matchupで実行する。\n- paired A/BでCandidate差を比較する。\n- DPS/HPS/EHP、resource efficiency、Skill usage、Passive/Equipment contribution、Status uptime、death causeを可能な範囲で集計する。\n- Result PackageからAIが次Candidateを生成し、必要ならScreening→Refinementを反復する。\n- Final/Holdout対象を最大40 Matchupへ絞る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-012",
+      "box_id": "BOX-V9-BAL-EXEC-COMBAT-001",
+      "title": "Combat Final / Holdoutを10000 Seed/Matchupで実行する",
+      "status": "Blocked",
+      "execution_order": 2430,
+      "depends_on": [
+        "TASK-BAL-EXEC-011"
+      ],
+      "acceptance_criteria": "- 上位最大40 Matchupを10000 Seed/Matchupで実行する。\n- Candidate選定に未使用のholdout seed/build/enemyを使用する。\n- 総戦闘数は400,000目安かつ1 Package/Experiment 1,000,000以下とする。\n- extreme seed、支配的Build、無限/ノーリスク高効率、異常Failureを確認する。\n- Combat Winner Candidateと不採用理由をEvidence化する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-013",
+      "box_id": "BOX-V9-BAL-EXEC-UPPER-001",
+      "title": "New Game / Progression / Guildの成長・初期経済Campaignを実行する",
+      "status": "Blocked",
+      "execution_order": 2500,
+      "depends_on": [
+        "TASK-BAL-EXEC-012"
+      ],
+      "acceptance_criteria": "- 初期冒険者/Job/Equipment/所持金等のNew Game Balanceを対象にする。\n- EXP curve、Skill/Passive習得Cost、Respec、Loadout capacity、Inventory/Warehouse、Guild progressionを横断する。\n- Approved中長期成長ProfileへKPIを対応させる。\n- Combat Candidateとの強さ/要求値整合を確認する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-014",
+      "box_id": "BOX-V9-BAL-EXEC-UPPER-001",
+      "title": "Quest / Encounter / Event / Reward / Drop / Economy Campaignを実行する",
+      "status": "Blocked",
+      "execution_order": 2510,
+      "depends_on": [
+        "TASK-BAL-EXEC-013"
+      ],
+      "acceptance_criteria": "- Combat結果をQuest単位のBattle数、消耗、所要時間、Failure率へ変換する。\n- Reward amount/quality/rarity、Drop分布、装備更新間隔、Gold/Resource Source-Sinkを評価する。\n- Equipment RarityとReward Rarityを暗黙変換しない。\n- 通常QuestはApproved準備重視Profile、Lootは適度な更新Profileへ合わせる。\n- Product Content不足時は最終Economy確定を保留する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-015",
+      "box_id": "BOX-V9-BAL-EXEC-UPPER-001",
+      "title": "Stone Endgame Risk / Reward Campaignを実行する",
+      "status": "Blocked",
+      "execution_order": 2520,
+      "depends_on": [
+        "TASK-BAL-EXEC-014"
+      ],
+      "acceptance_criteria": "- Stoneを明確な高難易度・高報酬Endgameとして調整する。\n- stone_budget_delta、成功率、所要時間、消費Risk、Reward scalingを評価する。\n- failure-adjusted expected valueを通常Endgameと比較する。\n- 通常攻略へStoneを必須化しない。\n- Build完成度による攻略可能帯とReward優位性を確認する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-016",
+      "box_id": "BOX-V9-BAL-EXEC-PROMOTION-001",
+      "title": "Calibration WinnerからProduct Candidate Studio Project JSONを作成する",
+      "status": "Blocked",
+      "execution_order": 2600,
+      "depends_on": [
+        "TASK-BAL-EXEC-015"
+      ],
+      "acceptance_criteria": "- 作業開始時にCurrent Studio Project JSONとData Versionを取得する。\n- Calibration Fixtureを無条件移植せず、正式Product Content/Balance Candidateだけを反映する。\n- 既存ID/参照/未変更Dataを保持する。\n- 全件読込Pre-flight ERROR=0である。\n- Candidate状態であり、このTaskだけではCurrent activeへ昇格しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-017",
+      "box_id": "BOX-V9-BAL-EXEC-PROMOTION-001",
+      "title": "Product CandidateのHuman Apply / Game Data配置確認を行う",
+      "status": "Blocked",
+      "execution_order": 2610,
+      "depends_on": [
+        "TASK-BAL-EXEC-016"
+      ],
+      "acceptance_criteria": "- HumanがStudioでCandidate Project JSONを確認・反映する。\n- Data Version進行、Gameデータ配置の追加/差替え/除外が意図どおりである。\n- 意図しない除外0件、GitHubファイル削除0件を通常条件とする。\n- Human Apply確認前に次のRuntime Conformanceへ進まない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-018",
+      "box_id": "BOX-V9-BAL-EXEC-PROMOTION-001",
+      "title": "Game Runtime / WebKit / TraceでProduct Candidate Conformanceを検証する",
+      "status": "Blocked",
+      "execution_order": 2620,
+      "depends_on": [
+        "TASK-BAL-EXEC-017"
+      ],
+      "acceptance_criteria": "- Formal Battle PackageとGame Runtimeへ同一Build/Input/Seed/Versionを投入する。\n- PackageとRuntimeの差をRuntime defect / data mismatch / balance差へ分類する。\n- 差異がRuntime defectならBalance値を変更せず実装ラインへCorrection/Requirementを返す。\n- New Game→対象Content→Quest/Battle→Save/Reloadを必要範囲で確認する。\n- Runtime Conformance PASSまでCurrent activeへ昇格しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-EXEC-019",
+      "box_id": "BOX-V9-BAL-EXEC-PROMOTION-001",
+      "title": "検証済みProduct CandidateをCurrent activeへ昇格しRollback Evidenceを固定する",
+      "status": "Blocked",
+      "execution_order": 2630,
+      "depends_on": [
+        "TASK-BAL-EXEC-018"
+      ],
+      "acceptance_criteria": "- Source/Game Build、Project/Data Version、Balance/Formula/Package Version、Seed Set、KPI、Holdout、Runtime結果をPromotion Evidence Packへ束ねる。\n- 旧Current active / Human Approved seed / V9 Baselineを履歴保持する。\n- Rollback可能な旧Versionを記録する。\n- Humanが最終昇格を明示承認するまでCurrent activeを更新しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "checks": [
@@ -1269,6 +1807,167 @@
       "blocking": false,
       "created_at": "2026-08-22T11:30:00+09:00",
       "updated_at": "2026-08-22T11:30:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EXEC-001",
+      "title": "B733 Equipment mass-generation capability",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "B733 Equipment GeneratorはGKS_EQUIPMENT_GENERATION_REQUESTを受け、Active Config iLv1〜11、Weapon 13種、Armor 3カテゴリ×4部位、Accessory 3種をBatch展開できる。Baseline Matrixは308件。",
+      "evidence": "studio/equipment/equipment-generator.js / equipment-balance-config.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T11:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EXEC-002",
+      "title": "B733 Skill AI batch-generation capability",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "B733 G05 Skill AI BatchはGKS_SKILL_AI_BATCH_REQUEST requests[]を受け、AIのIntent/StructureからStudio側で完成数値を決定する。Current Core構造22 ArchetypeをCalibration対象として構成可能。",
+      "evidence": "studio/skill/skill-generator.js / assets/shared/js/skill-ai-batch-engine.js / skill-registry.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T11:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EXEC-003",
+      "title": "B733 Battle staged-volume capability",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Battle検証は1 Caseあたり最大10000 trials、Experiment総戦闘数最大1,000,000。100/1000/10000 Seedの段階式Screening/Refinement/Holdout計画は容量内に構成可能。",
+      "evidence": "studio/index.html battleBatchCount / validateBattleExperimentRequest",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T11:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EXEC-004",
+      "title": "Formal generated-data to Battle Package connection readiness",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "TASK-BAL-EXEC-001 / TASK-BAL-EXEC-002 / RULE-BAL-033",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EXEC-005",
+      "title": "Passive / MOD mass-candidate pipeline readiness",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "TASK-BAL-EXEC-008 / RULE-BAL-032",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EXEC-006",
+      "title": "Concrete execution plan coverage and gate integrity",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "DISC-BAL-003 / DEC-BAL-EXECUTION-001 / TASK-BAL-EXEC-001..019 / TASK-BAL-DESIGN-013",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-BASELINE-005",
+      "title": "Balance read-only source baseline rebound to B733",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Current user-provided full source package-build.json confirms GKS-B733 / GA-B486.211. Balance source_baseline is rebound to this complete source.",
+      "evidence": "guild-adventure-studio-sub(20260822-023525).zip sha256=bd1ed2cdab77f414b286184a46eea7b8568ea1e449357febf715f4ba31ee0e20; package_manifest.json sha256=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T11:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T11:45:00+09:00",
+      "updated_at": "2026-08-22T11:45:00+09:00"
     }
   ],
   "workflow": {
@@ -1320,6 +2019,14 @@
     {
       "at": "2026-08-22T02:34:30.483Z",
       "message": "Development Workspace JSON merged: add=10 update=26 delete=0"
+    },
+    {
+      "at": "2026-08-22T11:45:00+09:00",
+      "message": "Human指示により、Equipment/Skill既存大量生成PipelineとAI Battle Packageを結合したConcrete Execution Draftを登録。B733 Sourceへ再Bind。Equipment 308件Baseline、12 Config×308件Round1、Skill 330件Core Calibration、100→1000→10000 Seed段階式Combat、Quest/Reward/Economy/Stone上位Campaign、Product Candidate→Human Apply→Game Runtime Conformance→Current active PromotionまでTASK-BAL-EXEC-001〜019へ具体化。実行計画はDEC-BAL-EXECUTION-001 Proposed、Human Plan Gate Pendingのままで、Source/Game Data変更には未着手。"
+    },
+    {
+      "at": "2026-08-22T03:02:48.907Z",
+      "message": "Development Workspace JSON merged: add=44 update=3 delete=0"
     }
   ]
 }
