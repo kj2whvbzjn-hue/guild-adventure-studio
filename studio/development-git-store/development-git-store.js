@@ -1,4 +1,4 @@
-/* GKS-B739 Development Git Store
+/* GKS-B740 Development Git Store
  * Development Project canonical authority I/O only.
  * - Project body persistent authority is exactly development-project-data/<workspace.id>.json.
  * - Browser registry is metadata only; Session is working memory only.
