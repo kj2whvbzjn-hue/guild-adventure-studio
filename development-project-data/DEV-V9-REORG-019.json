@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T01:10:34.182Z"
+    "updated_at": "2026-08-22T01:22:10.319Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -352,9 +352,23 @@
       "task_ids": [
         "TASK-R30-010"
       ],
+      "result": "Applied",
+      "evidence": "GKS-B731 existing-Save New Game overwrite confirmation was Human-applied and is present in the user-provided Current Source GKS-B731 / GA-B486.211. Current package_manifest SHA-256=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab. The prior GKS-B731 update persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=3dd4d5ef853517899a72930fdf1def0798d3df0bb0849cf503c7b85be75a8010. Current targeted overwrite-confirmation verification 10/10 PASS: existing Save detection is authoritative, confirmation occurs before Formal Runtime wait/candidate preparation, Cancel returns before candidate creation or commit, missing confirmation UI fails closed, and the Save Core exposes the confirmation boundary. Current Quick 11/11 PASS evidence_sha256=4dd2fd250b22cd606592f9727dfd9ef5e6712a0aec5d87aad1623be6d9f636fe; Build marker check PASS studio=GKS-B731 files=190. Prior GKS-B731 update ZIP SHA-256=79f8fcda5d0e543e512155840828c366888e2ea87ffce47d260ffc82f29bddd5. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
+      "recorded_at": "2026-08-22T10:18:23+09:00"
+    },
+    {
+      "id": "IMPL-R30-011",
+      "studio_build": "GKS-B732",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-R30-011"
+      ],
       "result": "Partial",
-      "evidence": "GKS-B731 existing-Save New Game overwrite confirmation implemented from exact user-provided Current Source GKS-B730 / GA-B486.211. The Title New Game entry now queries the Save Owner before any New Game candidate construction. With no existing Current/legacy Save the B730 initialization sequence proceeds unchanged. With an existing Save, Player confirmation is required exactly before candidate construction; Cancel returns without prepareNewGameSnapshot, commitPreparedNewGame, Save writes, battle reset, render, or phase transition, therefore both the existing Save and live state remain unchanged. Confirmation UI absence/failure fails closed. Approval continues through the existing B730 Integrity-first candidate validation and Atomic Save path. Targeted verification 15/15 PASS. Target Quick 11/11 PASS evidence_sha256=048d5c10df3a6dc795302f0f4889fd0980326030031e3906290a106031f3ca36; Update Quick 13/13 PASS evidence_sha256=a86a6f8ffe39e28e62b514a99d9fda45bd2b85e64330807500a910d83267f2c8; Update Accept 13/13 PASS evidence_sha256=9cb8a7bc6150489529135168eeab3e412c73e599a21934129b4c99c082516f0f; Release 13/13 PASS evidence_sha256=db665ac8ce26d8f67eb6e0639f5ab4409e204bd05cb65e08d382f86d8ee9be10; Build marker check PASS studio=GKS-B731 files=190. Baseline manifest=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a tree=805f380c94a9cecea75477455acfb3df801de97c31d9a8755dee2befed43cac3; target manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=978dbbc87b76a4c4859863c04b240c8c597f3d9c84a5af8f36f4793c5b77b8db; artifact_id=GKS-B731-978dbbc87b76; update ZIP sha256=79f8fcda5d0e543e512155840828c366888e2ea87ffce47d260ffc82f29bddd5. ZIP 641/641 exact after extraction; persistent payload 639/639 exact; Export entries=0. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T10:04:29+09:00"
+      "evidence": "GKS-B732 Save/Load Recovery UI connection implemented from exact user-provided Current Source GKS-B731 / GA-B486.211. Added a dedicated Save/Load Recovery dialog and GKGameSaveRecovery boundary. Save failures now pass the Owner Runtime error message/code to Recovery UI, expose Retry, and rethrow the original save failure so callers cannot treat a failed write as success. Continue/Load catches Load/Migration/Integrity failures before replacing live data, shows Recovery UI, and does not silently initialize a new save. Safe return goes to Title and, for Save failures, restores live state from the last validated Current Save when available without synthesizing defaults. Retry uses the original Owner operation. New Game save-commit failure is also connected to the same recovery path. New Game/Continue double execution is blocked while the operation is in progress. Recovery UI only displays Runtime-owned reason/code and does not recalculate game results. Targeted verification 19/19 PASS. Target Quick 11/11 PASS evidence_sha256=e21ce62d73e3c1c8a4327e4eda6369f5a8d7aad56f59b76df61944135cfd5d63; Update Quick 13/13 PASS evidence_sha256=21fb60f5958eeb70fae76da61dd7860f279dd62c42e867ad2bfdcee8cf7e2a92; Update Accept 13/13 PASS evidence_sha256=34533f06f12134e4bd6e4af25c2a1fbd64558d95a98891dc4b545267bba5b7f9; Release 13/13 PASS evidence_sha256=2477bcfef328b1d1ae0037d362922850b6b32d28a444dc4fae25ff0c8368eda4; Build marker check PASS studio=GKS-B732 files=190. Baseline manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=4443e1c9747c14235bd94e178d2ea70f3ae97c90c609045747c71e310810638f; target manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 tree=6efee6e8088889f3016acaa664af5889e6fa106b0f1dd460191a22707d358991; artifact_id=GKS-B732-6efee6e80888; update ZIP sha256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7. ZIP payload 641/641 exact after extraction; persistent payload=639; Export entries=0. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
+      "recorded_at": "2026-08-22T10:18:23+09:00"
     }
   ],
   "discussions": [
@@ -6023,7 +6037,7 @@
       "id": "TASK-R30-010",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "既存SaveありNew Gameの上書き確認を実装する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 1100,
       "depends_on": [
         "TASK-R30-009"
@@ -6037,13 +6051,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T10:04:29+09:00"
+      "updated_at": "2026-08-22T10:18:23+09:00"
     },
     {
       "id": "TASK-R30-011",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save/Load ErrorをRecovery UIへ接続する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 1110,
       "depends_on": [
         "TASK-R30-010"
@@ -6057,7 +6071,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T15:05:00+09:00"
+      "updated_at": "2026-08-22T10:18:23+09:00"
     },
     {
       "id": "TASK-R30-012",
@@ -9419,6 +9433,75 @@
       "blocking": false,
       "created_at": "2026-08-22T10:04:29+09:00",
       "updated_at": "2026-08-22T10:04:29+09:00"
+    },
+    {
+      "id": "CHK-R30-010-HUMAN-APPLY-VERIFY",
+      "title": "TASK-R30-010 Human Apply / Current Source verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-010",
+      "status": "Passed",
+      "result": "Current Source GKS-B731上で既存SaveありNew Game上書き確認を再確認。Save有無判定、候補生成前の確認、Cancel時の候補生成/Commit不実行、確認UI欠落時Fail Closedを確認し、TASK-R30-010をDone確定。",
+      "evidence": "Current package-build.json=GKS-B731 / GA-B486.211; package_manifest sha256=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab; prior update persistent payload 639/639 byte-identical, missing=0 diff=0; app-runtime.js sha256=3dd4d5ef853517899a72930fdf1def0798d3df0bb0849cf503c7b85be75a8010; current targeted verification 10/10 PASS; Current Quick 11/11 PASS evidence_sha256=4dd2fd250b22cd606592f9727dfd9ef5e6712a0aec5d87aad1623be6d9f636fe; Build marker check PASS files=190; source/game data/deletion/exclusion changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:18:23+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:18:23+09:00",
+      "updated_at": "2026-08-22T10:18:23+09:00"
+    },
+    {
+      "id": "CHK-R30-011-IMPLEMENTATION",
+      "title": "TASK-R30-011 Save/Load Recovery UI connection verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-R30-011",
+      "status": "Passed",
+      "result": "GKS-B732でSave/Load専用Recovery UIとGKGameSaveRecoveryを追加。Save失敗はOwner Runtime理由を表示してRetry可能、Load/Migration/Integrity失敗はlive state切替前に停止して暗黙初期化せず、Recovery UIからRetry/Title安全復帰を選択できる。処理中のNew Game/Continue二重実行も防止する。",
+      "evidence": "game/assets/js/app-runtime.js sha256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html sha256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03; temporary targeted Node verification TASK_R30_011_TARGETED_PASS cases=19; Save failure rethrow=PASS; Load assignment after successful Owner load=PASS; silent new-state fallback absent=PASS; Recovery reason/code passthrough=PASS; Retry/safe return/double-execution guard=PASS; source deletions=0; Game data changes/exclusions=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:18:23+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:18:23+09:00",
+      "updated_at": "2026-08-22T10:18:23+09:00"
+    },
+    {
+      "id": "CHK-R30-011-GATES",
+      "title": "TASK-R30-011 SOURCE_UPDATE Gate verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-R30-011",
+      "status": "Passed",
+      "result": "ユーザー提供GKS-B731 / GA-B486.211完全Sourceをexact baselineとしたGKS-B732更新はTarget Quick / Update Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、再展開後641/641完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
+      "evidence": "baseline manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=4443e1c9747c14235bd94e178d2ea70f3ae97c90c609045747c71e310810638f; target manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 tree=6efee6e8088889f3016acaa664af5889e6fa106b0f1dd460191a22707d358991; Target Quick 11/11 PASS evidence_sha256=e21ce62d73e3c1c8a4327e4eda6369f5a8d7aad56f59b76df61944135cfd5d63; Update Quick 13/13 PASS evidence_sha256=21fb60f5958eeb70fae76da61dd7860f279dd62c42e867ad2bfdcee8cf7e2a92; Accept 13/13 PASS evidence_sha256=34533f06f12134e4bd6e4af25c2a1fbd64558d95a98891dc4b545267bba5b7f9; Release 13/13 PASS evidence_sha256=2477bcfef328b1d1ae0037d362922850b6b32d28a444dc4fae25ff0c8368eda4; update ZIP sha256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7 files=641; Build marker check PASS files=190.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T10:18:23+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T10:18:23+09:00",
+      "updated_at": "2026-08-22T10:18:23+09:00"
     }
   ],
   "workflow": {
@@ -9906,6 +9989,18 @@
     },
     {
       "at": "2026-08-22T01:10:34.182Z",
+      "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
+    },
+    {
+      "at": "2026-08-22T10:18:23+09:00",
+      "message": "AI_STARTからGKS-B731 Human Apply後Current Sourceを検証。既存SaveありNew Game上書き確認をCurrent実体で再確認し、前回更新persistent payload 639/639完全一致、Targeted 10/10、Current Quick 11/11、Build marker PASS。TASK-R30-010をDone / IMPL-R30-010をAppliedへ更新。"
+    },
+    {
+      "at": "2026-08-22T10:18:23+09:00",
+      "message": "続けて明示指示によりTASK-R30-011 Save/Load Error Recovery UI接続を1件実装。GKS-B732でOwner Runtime理由表示、Retry、Title安全復帰、Load/Migration/Integrity失敗のlive state切替前停止、暗黙初期化禁止、New Game/Continueの二重実行防止を実装。Targeted 19/19、Target Quick 11/11、Update Quick/Accept/Release 13/13 PASS。TASK-R30-011はHuman Apply待ちDoing、TASK-R30-012はBlocked維持。"
+    },
+    {
+      "at": "2026-08-22T01:22:10.319Z",
       "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
     }
   ],
