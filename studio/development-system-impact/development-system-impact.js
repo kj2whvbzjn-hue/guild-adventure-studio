@@ -321,7 +321,7 @@ function render(){
  <div class="impact-list">${rows.map(r=>`<button class="impact-item" onclick="GKSDevelopmentSystemImpact.select('${attr(r.id)}')"><span><b>${esc(r.id)}</b><small>${esc(triggerLabel(r))}</small></span><span>${r.affected_system_ids?.length||0} System<br><small>${r.affected_specification_ids?.length||0} Spec / ${r.affected_candidate_ids?.length||0} Candidate</small></span><span class="badge ${r.status==='open'?'warn':'ok'}">${r.status==='open'?'OPEN':'RESOLVED'}</span></button>`).join('')||'<div class="small">該当するImpactはありません。</div>'}</div>`;
 }
 
-function init(host){state.host=host;ensure(workspace());syncImpactFlags(workspace());render();return api}
+function init(host){if(!host||typeof host.getWorkspace!=='function'||typeof host.saveWorkspace!=='function')throw new Error('Development System Impact host API is invalid.');state.host=host;return api}
 const api={init,render,setFilter,select,back,ensure,analyzeMutation,syncImpactFlags,openImpactFor,candidateImpactGate,ensureReorganizationRequest,refreshReorganizationRequests,resolveImpact,resolvePrompt,reopenImpact};
 root.GKSDevelopmentSystemImpact=api;
 })(window);

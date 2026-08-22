@@ -200,7 +200,7 @@ function render(){
  if(state.tab==='flags')renderFlags(w,mount);else if(state.tab==='events')renderEvents(w,mount);else renderOverview(w,mount);
 }
 function recomputeAndSave(){const w=workspace(),changed=recomputeDerivedFlags(w);if(changed.length){emit(w,'FLAG_CHANGED','Project',w.workspace?.id||'',{derived_count:changed.length});state.host.saveWorkspace('Development derived flags recomputed');state.host.refreshWorkspace()}render()}
-function init(host){state.host=host;ensure(workspace());render();return api}
+function init(host){if(!host||typeof host.getWorkspace!=='function'||typeof host.saveWorkspace!=='function')throw new Error('Development System State host API is invalid.');state.host=host;return api}
 const api={init,render,setTab,startFlag,saveManualFlag,deleteManualFlag,recomputeAndSave,ensure,setFlag,emit,recomputeDerivedFlags,recordMutation};
 root.GKSDevelopmentSystemState=api;
 })(window);
