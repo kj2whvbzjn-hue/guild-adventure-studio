@@ -296,19 +296,27 @@ function requestNewGameOverwriteConfirmation({confirmFn=window.confirm}={}){
  const approved=Boolean(confirmFn('既存のセーブデータを上書きして新規ゲームを開始しますか？'));
  return{required:true,approved};
 }
-async function beginNewGame(){try{const overwrite=requestNewGameOverwriteConfirmation();if(!overwrite.approved){notify('新規ゲームをキャンセルしました。');return false}await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');const prepared=prepareNewGameSnapshot();commitPreparedNewGame(prepared);resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true}catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad');return false}}
-async function continueGame(){
+async function beginNewGame(){
+ if(saveLoadOperationInProgress)return false;setSaveLoadOperationBusy(true);
  try{
-  await formalDefinitionsReady;
-  if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');
-  const loaded=window.GKGameSaveCore.load();
-  data=loaded;selectedId=data.characters[0]?.id||null;
+  const overwrite=requestNewGameOverwriteConfirmation();if(!overwrite.approved){notify('新規ゲームをキャンセルしました。');return false}
+  await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');const prepared=prepareNewGameSnapshot();
+  try{commitPreparedNewGame(prepared)}catch(error){showSaveRecovery('save',error,{retry:()=>{commitPreparedNewGame(prepared);resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true}});return false}
+  hideSaveRecovery();resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true
+ }catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad');return false}
+ finally{setSaveLoadOperationBusy(false)}
+}
+async function continueGame(){
+ if(saveLoadOperationInProgress)return false;setSaveLoadOperationBusy(true);
+ try{
+  await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');
+  let loaded;try{loaded=window.GKGameSaveCore.load()}catch(error){showSaveRecovery('load',error,{retry:continueGame});return false}
+  data=loaded;selectedId=data.characters[0]?.id||null;hideSaveRecovery();
   const content=await loadAdventureContent();applyAdventureFlagDefaults(content);registerAdventureQuestCards(content);reconcileFormalAdventureQuestSelection();
-  if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();render();
-  if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();
-  const activeRun=currentAdventureQuestRun();if(activeRun)openAdventurePlayback(activeRun);else setPhase('base');
-  notify('セーブデータを読み込みました。');
- }catch(error){notify(`読込失敗: ${error.message}`,'bad');}
+  if(typeof renderExpeditionSetup==='function')renderExpeditionSetup();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();
+  const activeRun=currentAdventureQuestRun();if(activeRun)openAdventurePlayback(activeRun);else setPhase('base');notify('セーブデータを読み込みました。');return true
+ }catch(error){notify(`読込後の初期化に失敗しました: ${error.message}`,'bad');setPhase('title');return false}
+ finally{setSaveLoadOperationBusy(false)}
 }
 
 
@@ -485,7 +493,9 @@ function commitPersistentState(){
  data=writeAutoSaveSnapshot(current);
  return data;
 }
-function autoSave(){return commitPersistentState()}
+function autoSave(){
+ try{return commitPersistentState()}catch(error){showSaveRecovery('save',error,{retry:()=>commitPersistentState()});throw error}
+}
 function parseSaveRoot(raw){
  if(typeof raw!=='string'||!raw.length)throw new Error('Save Migration: payload is empty.');
  let parsed;try{parsed=JSON.parse(raw)}catch(error){throw new Error(`Save Migration: JSON parse failed (${error?.message||error}).`)}
@@ -551,7 +561,35 @@ function loadAutoSave(){
  return result.migrated?commitMigratedSave(stored.raw,result,{sourceKey:stored.key}):result.save;
 }
 function hasAutoSave(){return findAutoSaveRecord()!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,requestNewGameOverwriteConfirmation,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+let saveRecoveryState={visible:false,operation:'',code:'',reason:'',retry:null,busy:false};
+let saveLoadOperationInProgress=false;
+function saveRecoveryOperationLabel(operation){return operation==='save'?'セーブ':operation==='load'?'ロード':'保存・読込';}
+function saveOwnerFailure(error){return{code:String(error?.code||''),reason:String(error?.message||error||'原因不明')};}
+function currentSaveRecoveryState(){return{visible:saveRecoveryState.visible,operation:saveRecoveryState.operation,code:saveRecoveryState.code,reason:saveRecoveryState.reason,retryable:typeof saveRecoveryState.retry==='function',busy:saveRecoveryState.busy};}
+function renderSaveRecovery(){
+ const panel=$('saveRecoveryModal');if(!panel)return;const visible=saveRecoveryState.visible;panel.classList.toggle('open',visible);panel.setAttribute('aria-hidden',visible?'false':'true');
+ if(!visible)return;const label=saveRecoveryOperationLabel(saveRecoveryState.operation),title=$('saveRecoveryTitle'),reason=$('saveRecoveryReason'),code=$('saveRecoveryCode'),retry=$('saveRecoveryRetry'),safe=$('saveRecoverySafeReturn');
+ if(title)title.textContent=`${label}に失敗しました`;if(reason)reason.textContent=saveRecoveryState.reason;if(code){code.textContent=saveRecoveryState.code?`Runtime code: ${saveRecoveryState.code}`:'Runtime code: なし';code.classList.toggle('hidden',!saveRecoveryState.code)}
+ if(retry){retry.disabled=saveRecoveryState.busy||typeof saveRecoveryState.retry!=='function';retry.textContent=saveRecoveryState.busy?'再試行中…':'再試行'}if(safe)safe.disabled=saveRecoveryState.busy;
+}
+function showSaveRecovery(operation,error,{retry=null}={}){
+ const failure=saveOwnerFailure(error);saveRecoveryState={visible:true,operation:String(operation||''),code:failure.code,reason:failure.reason,retry:typeof retry==='function'?retry:null,busy:false};renderSaveRecovery();return currentSaveRecoveryState();
+}
+function hideSaveRecovery(){saveRecoveryState={visible:false,operation:'',code:'',reason:'',retry:null,busy:false};renderSaveRecovery()}
+function restoreLastCommittedCurrentSave(){
+ const raw=localStorage.getItem(SAVE_KEY);if(raw===null)return false;const root=parseSaveRoot(raw);if(Number(root.saveVersion)!==SAVE_VERSION)return false;validateSavePayload(raw);data=normalizeLoadedSave(root);selectedId=data.characters[0]?.id||null;return true;
+}
+async function retrySaveRecovery(){
+ if(saveRecoveryState.busy||typeof saveRecoveryState.retry!=='function')return false;const operation=saveRecoveryState.operation,retry=saveRecoveryState.retry;saveRecoveryState.busy=true;renderSaveRecovery();
+ try{const result=await retry();if(result===false)return false;hideSaveRecovery();notify(`${saveRecoveryOperationLabel(operation)}を再試行して復旧しました。`);return true}catch(error){showSaveRecovery(operation,error,{retry});return false}
+ finally{if(saveRecoveryState.visible){saveRecoveryState.busy=false;renderSaveRecovery()}}
+}
+function safeReturnFromSaveRecovery(){
+ if(saveRecoveryState.busy)return false;if(saveRecoveryState.operation==='save'){try{restoreLastCommittedCurrentSave()}catch(error){console.error('Save recovery restore failed',error)}}hideSaveRecovery();setPhase('title');return true;
+}
+function setSaveLoadOperationBusy(busy){saveLoadOperationInProgress=Boolean(busy);for(const id of ['titleStart','titleContinue']){const button=$(id);if(button)button.disabled=saveLoadOperationInProgress}return saveLoadOperationInProgress}
+window.GKGameSaveRecovery=Object.freeze({current:currentSaveRecoveryState,show:showSaveRecovery,hide:hideSaveRecovery,retry:retrySaveRecovery,safeReturn:safeReturnFromSaveRecovery});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,recovery:window.GKGameSaveRecovery,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,requestNewGameOverwriteConfirmation,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
@@ -865,6 +903,7 @@ $('deleteBtn').onclick=()=>{const c=data.characters.find(x=>x.id===selectedId);i
 
 $('titleStart').onclick=beginNewGame;
 $('titleContinue').onclick=continueGame;
+if($('saveRecoveryRetry'))$('saveRecoveryRetry').onclick=retrySaveRecovery;if($('saveRecoverySafeReturn'))$('saveRecoverySafeReturn').onclick=safeReturnFromSaveRecovery;
 $('titleSettings').onclick=()=>alert('設定画面は後続Buildで独立フェーズとして接続します。');
 if($('baseToTitle'))$('baseToTitle').onclick=()=>setPhase('title');
 $('baseDepart').onclick=$('baseDepartSide').onclick=beginSelectedAdventure;

@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ギルド冒険物語 V9 正式版 GA-B486.211</title>
 
-<script src="../assets/shared/config/runtime-config.js?v=486211b731"></script>
+<script src="../assets/shared/config/runtime-config.js?v=486211b732"></script>
 <script src="../assets/shared/js/game-shell-common.js?v=486211"></script>
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486211"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486211"></script>
@@ -524,6 +524,13 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 @media(min-width:800px){.ai-formal-cell{width:82px;height:82px}.ai-board{gap:8px}.ai-editor-screen{left:auto;width:430px;border-left:1px solid var(--line)}.ai-formal-main{padding-right:0}}
 </style>
 
+
+<style id="save-load-recovery-ui">
+.save-recovery-modal{position:fixed;inset:0;z-index:15000;display:none;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));background:rgba(5,10,18,.88)}
+.save-recovery-modal.open{display:flex}.save-recovery-panel{width:min(520px,100%);padding:20px;border:1px solid #6c8298;border-radius:14px;background:#101b29;color:#eef4ff;box-shadow:0 18px 60px rgba(0,0,0,.45)}
+.save-recovery-panel h2{margin:0 0 10px}.save-recovery-reason{padding:12px;border-radius:9px;background:#28161a;border:1px solid #7d3b45;color:#ffdfe3;white-space:pre-wrap;overflow-wrap:anywhere}.save-recovery-code{margin-top:8px;color:var(--muted);font-size:11px}.save-recovery-code.hidden{display:none}.save-recovery-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.save-recovery-actions button{min-height:46px}@media(max-width:560px){.save-recovery-actions{grid-template-columns:1fr}}
+</style>
+
 </head>
 <body>
 <style id="ga-project-nav-style">
@@ -533,7 +540,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/" aria-current="page">ゲーム</a><a href="../studio/">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B731</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/" aria-current="page">ゲーム</a><a href="../studio/">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B732</span></nav>
 
 <div class="ai-editor-overlay" id="aiEditor" aria-hidden="true">
  <div class="ai-editor-head"><button id="aiEditorClose" type="button">戻る</button><strong id="aiEditorTitle">AIチップ編集</strong><button id="aiEditorSave" class="primary" type="button" disabled>保存</button></div>
@@ -653,6 +660,17 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 </div>
 </div></div>
 
+
+<div id="saveRecoveryModal" class="save-recovery-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="saveRecoveryTitle">
+ <div class="save-recovery-panel">
+  <h2 id="saveRecoveryTitle">保存・読込に失敗しました</h2>
+  <p class="small">処理は成功扱いにしていません。Runtimeが返した失敗理由を確認し、再試行するか安全にタイトルへ戻ってください。</p>
+  <div id="saveRecoveryReason" class="save-recovery-reason" role="alert" aria-live="assertive"></div>
+  <div id="saveRecoveryCode" class="save-recovery-code hidden"></div>
+  <div class="save-recovery-actions"><button type="button" class="primary" id="saveRecoveryRetry">再試行</button><button type="button" id="saveRecoverySafeReturn">タイトルへ戻る</button></div>
+ </div>
+</div>
+
 <div id="jobChangeModal" class="job-modal" aria-hidden="true">
  <div class="job-modal-panel">
   <div class="job-modal-head"><button id="jobChangeClose">戻る</button><strong>転職</strong><span></span></div>
@@ -666,32 +684,32 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
  <button class="mobile-auto-start" id="mobileAutoStart" type="button">▶ オート開始</button>
 </div>
 <div id="canvasScaleBadge" aria-hidden="true">1600×900 / 100%</div>
-<script src="./assets/js/tag-skill-runtime.js?v=486211b731"></script>
-<script src="./assets/js/studio-skill-bridge.js?v=486211b731"></script>
+<script src="./assets/js/tag-skill-runtime.js?v=486211b732"></script>
+<script src="./assets/js/studio-skill-bridge.js?v=486211b732"></script>
 <script src="../assets/shared/js/adventure-story-system.js?v=11"></script>
 <script src="../assets/shared/js/adventure-encounter-resolver.js?v=3"></script>
 <script src="../assets/shared/js/adventure-reward-resolver.js?v=1"></script>
 <script src="../assets/shared/js/adventure-battle-core.js?v=5"></script>
-<script src="../shared/ai/ai-program-model.js?v=486211b731"></script>
-<script src="../shared/ai/ai-layout-model.js?v=486211b731"></script>
-<script src="../shared/ai/ai-master-adapter.js?v=486211b731"></script>
-<script src="../shared/ai/ai-connection-resolver.js?v=486211b731"></script>
-<script src="../shared/ai/ai-program-validator.js?v=486211b731"></script>
-<script src="../shared/ai/ai-program-compiler.js?v=486211b731"></script>
-<script src="../shared/ai/ai-program-trace.js?v=486211b731"></script>
-<script src="../shared/ai/ai-decision-engine.js?v=486211b731"></script>
-<script src="./assets/js/ai-catalog-loader.js?v=486211b731"></script>
-<script src="./assets/js/ai-save-bridge.js?v=486211b731"></script>
-<script src="./assets/js/ai-battle-bridge.js?v=486211b731"></script>
-<script src="./assets/js/ai-editor-ui.js?v=486211b731"></script>
-<script src="./assets/js/skill-loadout-runtime.js?v=486211b731"></script>
-<script src="./assets/js/save-domain-bridge.js?v=486211b731"></script>
-<script src="./assets/js/inventory-equipment-save-bridge.js?v=486211b731"></script>
-<script src="./assets/js/skill-passive-ai-save-bridge.js?v=486211b731"></script>
-<script src="./assets/js/settings-tutorial-save-bridge.js?v=486211b731"></script>
-<script src="./assets/js/quest-run-save-bridge.js?v=486211b731"></script>
-<script src="./assets/js/app-runtime.js?v=486211b731"></script>
-<script src="./assets/js/battle-control.js?v=486211b731"></script>
+<script src="../shared/ai/ai-program-model.js?v=486211b732"></script>
+<script src="../shared/ai/ai-layout-model.js?v=486211b732"></script>
+<script src="../shared/ai/ai-master-adapter.js?v=486211b732"></script>
+<script src="../shared/ai/ai-connection-resolver.js?v=486211b732"></script>
+<script src="../shared/ai/ai-program-validator.js?v=486211b732"></script>
+<script src="../shared/ai/ai-program-compiler.js?v=486211b732"></script>
+<script src="../shared/ai/ai-program-trace.js?v=486211b732"></script>
+<script src="../shared/ai/ai-decision-engine.js?v=486211b732"></script>
+<script src="./assets/js/ai-catalog-loader.js?v=486211b732"></script>
+<script src="./assets/js/ai-save-bridge.js?v=486211b732"></script>
+<script src="./assets/js/ai-battle-bridge.js?v=486211b732"></script>
+<script src="./assets/js/ai-editor-ui.js?v=486211b732"></script>
+<script src="./assets/js/skill-loadout-runtime.js?v=486211b732"></script>
+<script src="./assets/js/save-domain-bridge.js?v=486211b732"></script>
+<script src="./assets/js/inventory-equipment-save-bridge.js?v=486211b732"></script>
+<script src="./assets/js/skill-passive-ai-save-bridge.js?v=486211b732"></script>
+<script src="./assets/js/settings-tutorial-save-bridge.js?v=486211b732"></script>
+<script src="./assets/js/quest-run-save-bridge.js?v=486211b732"></script>
+<script src="./assets/js/app-runtime.js?v=486211b732"></script>
+<script src="./assets/js/battle-control.js?v=486211b732"></script>
 <script src="./assets/js/ui-bootstrap.js?v=486211"></script>
 <script src="../assets/shared/js/device-game-test-harness.js?v=486211"></script>
 
