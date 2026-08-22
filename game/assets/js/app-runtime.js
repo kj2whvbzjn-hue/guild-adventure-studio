@@ -289,7 +289,14 @@ function commitPreparedNewGame(prepared){
  data=committed;selectedId=prepared.selectedId||committed.characters[0]?.id||null;
  return committed;
 }
-async function beginNewGame(){try{await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');const prepared=prepareNewGameSnapshot();commitPreparedNewGame(prepared);resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base')}catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad')}}
+function requestNewGameOverwriteConfirmation({confirmFn=window.confirm}={}){
+ const required=hasAutoSave();
+ if(!required)return{required:false,approved:true};
+ if(typeof confirmFn!=='function')throw new Error('既存セーブの上書き確認を表示できません。');
+ const approved=Boolean(confirmFn('既存のセーブデータを上書きして新規ゲームを開始しますか？'));
+ return{required:true,approved};
+}
+async function beginNewGame(){try{const overwrite=requestNewGameOverwriteConfirmation();if(!overwrite.approved){notify('新規ゲームをキャンセルしました。');return false}await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');const prepared=prepareNewGameSnapshot();commitPreparedNewGame(prepared);resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true}catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad');return false}}
 async function continueGame(){
  try{
   await formalDefinitionsReady;
@@ -544,7 +551,7 @@ function loadAutoSave(){
  return result.migrated?commitMigratedSave(stored.raw,result,{sourceKey:stored.key}):result.save;
 }
 function hasAutoSave(){return findAutoSaveRecord()!==null}
-window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
+window.GKGameSaveCore=Object.freeze({mode:'AUTO_SAVE',slotCount:1,slotKey:SAVE_KEY,legacySlotKeys:Object.freeze({...SAVE_LEGACY_KEYS}),tempKey:SAVE_TEMP_KEY,backupKey:SAVE_BACKUP_KEY,migrationBackupKey:SAVE_MIGRATION_BACKUP_KEY,integrityAlgorithm:SAVE_INTEGRITY_ALGORITHM,domainPersistenceBridge:window.GKGameCharacterGuildProgressionSaveBridge||null,inventoryEquipmentPersistenceBridge:window.GKGameInventoryEquipmentSaveBridge||null,skillPassiveAiPersistenceBridge:window.GKGameSkillPassiveAISaveBridge||null,settingsTutorialPersistenceBridge:window.GKGameSettingsTutorialSaveBridge||null,questRunPersistenceBridge:window.GKGameQuestRunSaveBridge||null,newGameInitializationOrder:NEW_GAME_INITIALIZATION_ORDER,requestNewGameOverwriteConfirmation,prepareNewGameSnapshot,commitPreparedNewGame,hasSave:hasAutoSave,load:loadAutoSave,commitPersistentState,autoSave});
 function storeAdventureQuestRun(run,{startedAt=new Date().toISOString()}={}){if(!window.GKAdventureStorySystem)throw new Error('Adventure Story System is not loaded');const stored=GKAdventureStorySystem.startQuestRunPlayback(data,run,{startedAt});autoSave();return stored}
 function currentAdventureQuestRun(){return window.GKAdventureStorySystem?GKAdventureStorySystem.activeQuestRun(data):null}
 function resumeAdventurePlayback(nowMs=Date.now()){return window.GKAdventureStorySystem?GKAdventureStorySystem.resumeQuestRun(data,nowMs):null}
