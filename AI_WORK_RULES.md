@@ -47,8 +47,10 @@
 
 ## 自律Correction実行規則
 
-- 未解決blocking Failed Checkがある親Taskは、同一失敗を再実行する前に`tools/development/autonomous-correction.py analyze`を実行する。
-- `safe_auto_candidate`かつCurrent正規経路を一意に証明できる場合だけ`prepare`でCorrection Taskを生成する。
+- 未解決blocking Failed Checkがある親Taskは、同一失敗を再実行する前に`tools/development/autonomous-correction.py analyze`をread-onlyで実行する。
+- `correction_candidate`かつCurrent正規経路を一意に証明できても、Humanの明示指示なしにCorrection Task生成、親Task Blocked化、depends_on変更、Check追加・解決を行わない。候補を提示してFail Closedで停止する。
+- HumanがCorrection Task生成を明示指示した場合だけ`prepare --human-authorized --human-instruction "<Humanの明示指示>"`を使用する。生成Taskは`requires_human_approval=true`のまま別Human承認を待つ。
+- 同一Failure SignatureのCorrection Taskが既に存在する場合は重複生成しない。
 - Correction候補は`budget`でCompatibility Budget 0 / Exception Budget 0を機械検査する。
 - 自己修復の検証Buildは**現在のBuildをbaseline**とし、旧Buildは既知Failureの参照だけに使う。旧Buildをbaselineへ戻してGateを通してはならない。
 - 自己修復基盤を追加したBuildでは既知Failureをその場でCorrection完了させない。次BuildのCorrectionとして分離する。

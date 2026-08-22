@@ -286,7 +286,7 @@ E2E / Gate / TestがSource不具合を検出し、現在のTaskの`work_type`で
 
 #### 自動Correctionを生成できる条件
 
-次をすべて満たす場合だけ、Failed Checkから機械的に`SOURCE_UPDATE` Correction Taskを1件生成できる。この場合に限り12.1の「Development Projectに存在しないTaskを推測で作成・実行しない」の例外とする。
+次をすべて満たす場合だけ、Failed Checkを`SOURCE_UPDATE` Correctionの**候補として提示**できる。解析はread-onlyであり、Humanの明示指示なしにCorrection Taskを生成してはならない。12.1の「Development Projectに存在しないTaskを推測で作成・実行しない」に自動例外は設けない。
 
 - Failure Signature（対象Test/Case、error type/message、主原因Source path）が再現可能である
 - 原因がCurrent Sourceの決定的な実装欠陥へ一意に追跡できる
@@ -296,7 +296,7 @@ E2E / Gate / TestがSource不具合を検出し、現在のTaskの`work_type`で
 - ファイル削除を必要としない
 - 同じFailure Signatureの自動Correction試行が2回未満である
 
-条件を1つでも満たさない場合はCorrection Taskを自動生成せずFail Closedとする。
+条件を1つでも満たさない場合はCorrection候補化せずFail Closedとする。条件を満たしてもHuman明示指示まではTask生成・親Task変更を行わない。
 
 #### Compatibility Budget 0
 
@@ -333,11 +333,13 @@ Correctionは**旧呼出しをCurrent正規APIへ置換し、旧経路を残さ�
 python3 -S -B tools/development/autonomous-correction.py analyze --project <Development Project JSON> --check-id <Failed Check ID>
 ```
 
-`safe_auto_candidate`の場合でもAI自身がCurrent Sourceを調査して正規経路を一意に証明する。Correction Taskを生成する場合は次を使用する。
+`correction_candidate`の場合でもAI自身がCurrent Sourceを調査して正規経路を一意に証明する。ここでは候補内容をHumanへ提示して停止する。HumanがCorrection Task生成を明示指示した場合だけ、指示文を記録して次を使用する。
 
 ```sh
-python3 -S -B tools/development/autonomous-correction.py prepare --project <Development Project JSON> --check-id <Failed Check ID> --output-project <working Development Project JSON>
+python3 -S -B tools/development/autonomous-correction.py prepare --project <Development Project JSON> --check-id <Failed Check ID> --output-project <working Development Project JSON> --human-authorized --human-instruction "<Humanの明示指示>"
 ```
+
+生成されたCorrection Taskは`requires_human_approval=true` / `approval=Pending`とし、Task実行にも別途Human承認を要求する。
 
 Correction候補のSource差分には次を実行し、Compatibility Budget 0 / Exception Budget 0がPASSしなければ破棄する。
 
@@ -347,13 +349,13 @@ python3 -S -B tools/development/autonomous-correction.py budget --baseline-sourc
 
 #### Correction preflightの優先順位
 
-通常Task選択の前に、実行対象Taskへ紐づく未解決blocking Failed Checkが存在する場合は同じTaskを再実行する前にAutonomous Correction analyzeを行う。safe-auto条件を満たす場合はCorrection Taskを生成して親TaskをBlockedへ移し、そのCorrectionを次の実行候補とする。同一Failure Signatureを無意味に再実行してはならない。
+通常Task選択の前に、実行対象Taskへ紐づく未解決blocking Failed Checkが存在する場合は同じTaskを再実行する前にAutonomous Correction analyzeを行う。候補条件を満たす場合もTask生成・親TaskのBlocked化・depends_on変更は行わず、Failure Signatureと修正候補をHumanへ提示してFail Closedで停止する。Humanが明示的に生成を指示した次回作業だけ`prepare`を実行できる。同一Failure SignatureのCorrection Taskが既に存在する場合は重複生成せずFail Closedとする。
 
 #### Correction実行順
 
 1. Failed CheckからFailure Signatureを固定する。
 2. safe-auto条件とCompatibility / Exception Budgetを判定する。
-3. 元Taskはその`work_type`のまま保持し、別`SOURCE_UPDATE` Correction Taskを生成する。
+3. Humanの明示指示を記録した場合だけ、元Taskはその`work_type`のまま保持し、別`SOURCE_UPDATE` Correction Taskを生成する。生成TaskはTask単位Human承認待ちとする。
 4. exact baselineから隔離targetを作り、最小差分でCurrent正規経路へ修正する。
 5. bare旧API、compat/fallback追加、`catch`増加がないことを静的確認する。
 6. Targeted検証 → Quick → `accept --context update` → 必要なFull / Releaseを実行する。

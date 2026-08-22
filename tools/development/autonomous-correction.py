@@ -3,13 +3,14 @@
 
 This tool does NOT patch production source. It only:
   * derives a stable Failure Signature from an unresolved Failed Check,
-  * decides whether the failure is eligible for safe-auto correction,
-  * prepares a SOURCE_UPDATE Correction Task when explicitly requested,
+  * decides whether the failure is eligible for a correction proposal,
+  * prepares a SOURCE_UPDATE Correction Task only with explicit Human authorization,
   * enforces Compatibility Budget 0 / Exception Budget 0 between source trees.
 
 The actual source correction remains an AI_START SOURCE_UPDATE action and must
-converge to an already-existing Current canonical path. Unknown/ambiguous cases
-fail closed.
+converge to an already-existing Current canonical path. Analysis is read-only.
+Task generation and parent-task mutation require explicit Human authorization.
+Unknown/ambiguous cases fail closed.
 """
 from __future__ import annotations
 import argparse, copy, hashlib, json, re, sys
@@ -93,6 +94,18 @@ def existing_correction_count(project, parent_id):
     return sum(1 for t in project.get("tasks", []) if str(t.get("id") or "").startswith(prefix))
 
 
+def existing_correction_ids_for_signature(project, signature):
+    needle = str(signature or "")
+    if not needle:
+        return []
+    matches = []
+    for task in project.get("tasks", []):
+        text = "\n".join([str(task.get("title") or ""), str(task.get("acceptance_criteria") or "")])
+        if needle in text:
+            matches.append(str(task.get("id") or ""))
+    return sorted(x for x in matches if x)
+
+
 def analyze(project, check_id=None):
     checks = project.get("checks", []) if isinstance(project.get("checks"), list) else []
     if check_id:
@@ -111,6 +124,8 @@ def analyze(project, check_id=None):
         if not failure["source_paths"]: reasons.append("source_path_not_identified")
         if PROTECTED_MEANING_RE.search(failure["root_cause"]): reasons.append("protected_meaning_change_possible")
         retries = existing_correction_count(project, failure["target_id"])
+        duplicate_ids = existing_correction_ids_for_signature(project, failure["signature"])
+        if duplicate_ids: reasons.append("failure_signature_already_has_correction")
         if retries >= 2: reasons.append("retry_budget_exhausted")
         results.append({
             "check_id": str(check.get("id") or ""),
@@ -118,7 +133,8 @@ def analyze(project, check_id=None):
             "failure": failure,
             "retry_count": retries,
             "max_retries": 2,
-            "decision": "safe_auto_candidate" if not reasons else "fail_closed",
+            "existing_same_signature_task_ids": duplicate_ids,
+            "decision": "correction_candidate" if not reasons else "fail_closed",
             "reasons": reasons,
             "required_ai_proof": [
                 "cause_is_unique_and_reproducible",
@@ -141,13 +157,16 @@ def next_correction_id(project, parent_id):
     return ""
 
 
-def prepare(project, check_id):
+def prepare(project, check_id, human_instruction):
     rows = analyze(project, check_id)
     if len(rows) != 1:
         raise SystemExit("AUTOCORR_PREPARE_FAIL expected exactly one check")
     row = rows[0]
-    if row["decision"] != "safe_auto_candidate":
+    if row["decision"] != "correction_candidate":
         raise SystemExit("AUTOCORR_PREPARE_FAIL " + ",".join(row["reasons"]))
+    instruction = str(human_instruction or "").strip()
+    if not instruction:
+        raise SystemExit("AUTOCORR_PREPARE_FAIL explicit Human instruction is required")
     parent = find_task(project, row["parent_task_id"])
     cid = next_correction_id(project, parent["id"])
     if not cid:
@@ -178,7 +197,7 @@ def prepare(project, check_id):
             "- Human Apply後に親Taskを再開し、親Task自身が同一E2Eを独立再実行してPassed Checkから元Failedをresolveする。"
         ),
         "work_type": "SOURCE_UPDATE",
-        "requires_human_approval": False,
+        "requires_human_approval": True,
         "approval": {"status": "Pending", "by": "", "at": ""},
         "created_at": stamp,
         "updated_at": stamp,
@@ -194,7 +213,7 @@ def prepare(project, check_id):
     project.setdefault("history", []).append({
         "at": stamp,
         "type": "AutonomousCorrectionTaskGenerated",
-        "summary": f"{row['check_id']} -> {cid}; failure_signature={signature}; safe_auto_candidate; parent={parent['id']}; source edit not yet executed."
+        "summary": f"{row['check_id']} -> {cid}; failure_signature={signature}; Human-authorized proposal; parent={parent['id']}; source edit not yet executed; human_instruction={instruction}"
     })
     return project, {**row, "generated_task_id": cid}
 
@@ -248,6 +267,8 @@ def main():
     p.add_argument("--project", required=True, type=Path)
     p.add_argument("--check-id", required=True)
     p.add_argument("--output-project", required=True, type=Path)
+    p.add_argument("--human-authorized", action="store_true")
+    p.add_argument("--human-instruction")
     p.add_argument("--json-output", type=Path)
     b = sp.add_parser("budget")
     b.add_argument("--baseline-source", required=True, type=Path)
@@ -257,7 +278,9 @@ def main():
     if args.cmd == "analyze":
         result = {"schema_version": 1, "results": analyze(load_json(args.project), args.check_id)}
     elif args.cmd == "prepare":
-        project, decision = prepare(load_json(args.project), args.check_id)
+        if not args.human_authorized:
+            raise SystemExit("AUTOCORR_PREPARE_FAIL --human-authorized is required after explicit Human instruction")
+        project, decision = prepare(load_json(args.project), args.check_id, args.human_instruction)
         write_json(args.output_project, project)
         result = {"schema_version": 1, "decision": decision, "output_project": str(args.output_project)}
     else:
