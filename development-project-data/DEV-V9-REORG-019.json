@@ -3,9 +3,9 @@
   "workspace": {
     "id": "DEV-V9-REORG-019",
     "name": "V9ゲーム再実装・System Structure再整理",
-    "status": "Implementing",
+    "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T07:14:02.625Z"
+    "updated_at": "2026-08-22T07:20:25.504Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -125,42 +125,6 @@
       "source_id": "conversation",
       "created_at": "2026-08-20T20:20:00+09:00",
       "updated_at": "2026-08-20T20:20:00+09:00"
-    },
-    {
-      "id": "RULE-REORG-013",
-      "text": "AIが既存Failed Checkの原因をCorrectionで解消した場合、元Failedのstatusは履歴として保持し、解消を確認したPassed/Waived Checkのresolves_check_idsへ対象Check IDを記録する。Studioはこの関係からresolutionを機械的に更新し、解決済みFailedをCurrent Gateのblocking対象から外す。Resolverが未解決へ戻った場合は自動的にblockingを復帰し、人間に過去Checkの手動書換えを要求しない。",
-      "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation",
-      "created_at": "2026-08-22T06:37:00+09:00",
-      "updated_at": "2026-08-22T06:37:00+09:00"
-    },
-    {
-      "id": "RULE-REORG-014",
-      "text": "Humanが承認したDevelopment Workflow状態は通常のAI統合JSONで後退させない。implementation_approval/completion_approvalのApprovedは古いPendingへ戻さず、workflow.stageも古いSnapshotによる後退を禁止する。工程を戻す場合はHumanがStudioのWorkflow操作を明示的に実行し、その履歴を正本とする。",
-      "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation",
-      "created_at": "2026-08-22T08:51:00+09:00",
-      "updated_at": "2026-08-22T08:51:00+09:00"
-    },
-    {
-      "id": "RULE-REORG-015",
-      "text": "自動CorrectionはCurrentの唯一の正規経路へ収束させるためだけに使用し、Compatibility Budget 0 / Exception Budget 0を適用する。通常の自動Correctionではlegacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、try new→catch old、silent recovery、廃止API wrapperを新設せず、エラー処理自体がAcceptance Criteriaでない限りproduction codeの局所catch数を増やさない。本当に必要な互換性はHuman承認された専用Migration/Compatibility Taskへ分離し、対象Versionと終了・削除条件を必須とする。同一Failure Signatureの自動Correctionは最大2回とし、原因が一意でない場合や仕様・Data・Schema・Security意味を変更する場合はFail Closedする。",
-      "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation",
-      "created_at": "2026-08-22T11:05:00+09:00",
-      "updated_at": "2026-08-22T11:05:00+09:00"
-    },
-    {
-      "id": "RULE-REORG-016",
-      "text": "自己修復機能の実動作検証BuildはCurrent Buildをbaselineとし、旧Buildは既知Failure箇所の参照にだけ使用する。今回の検証はGKS-B733をbaseline、GKS-B732を既知persist不具合の参照とし、GKS-B734へそのFailure fixtureと自己修復基盤を導入する。CorrectionはB734と同一Buildで完了させず、Failed Checkから次Buildとして生成する。",
-      "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation",
-      "created_at": "2026-08-22T12:54:00+09:00",
-      "updated_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "source_baseline": {
@@ -171,9 +135,9 @@
     "recorded_at": "2026-08-19T16:22:00+09:00"
   },
   "lifecycle": {
-    "status": "Active",
+    "status": "Archived",
     "superseded_by": "",
-    "updated_at": "2026-08-22T07:12:33.467Z"
+    "updated_at": "2026-08-21T06:08:54.284Z"
   },
   "implementation_records": [
     {
@@ -187,222 +151,6 @@
       "recorded_at": "2026-08-21T06:35:46.538Z"
     },
     {
-      "id": "IMPL-DEV-AUTOCORR-B735-CORR-001",
-      "studio_build": "GKS-B735",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001"
-      ],
-      "result": "Applied",
-      "evidence": "artifact_id=GKS-B735-001fbbec0e96; update ZIP sha256=5b6a92ea775d930dfd9e0ed089f365d5811e20af003c1849d1cce29c1cb151a0; baseline manifest=bfd324d10c117283f48bbb9ce784bbe611484d40f0739a2d08c2e3239bd5d2f6 tree=f0d02ae1e311248ba6a7b654a3a5ef73dc90d604b3c849360b5dfe33f75c5a89; target manifest=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34 tree=001fbbec0e96ad4fe078e4a4d3d78325eb2bf5a9c8caa73feeb9a7378673504e; app-runtime sha256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; bare persist=0; autoSave definition=1; Budget PASS sha256=84d26e879580a423d52e5bd134b655aa5596a56519891aaf3b9e544e4350dfb3; targeted P1-equivalent PASS; source Quick 11/11 PASS; update Quick 13/13 PASS; Accept 13/13 PASS with applied Full 26/26; Release 13/13 PASS with applied Full 26/26; extracted final ZIP Release 14/14 PASS with applied Full 26/26. Source deletions=0; Game data changes/exclusions=0. resolves_check_ids intentionally empty until Human Apply後に親Task自身がE2E PASSを確認する。 Human Apply verification pending; Correction Task remains Doing and parent remains Blocked. Human Apply verified from user-provided Current Source GKS-B735 / GA-B486.211: package_manifest SHA-256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; manifest entries 639/639 verified with 0 missing/hash differences; game/assets/js/app-runtime.js SHA-256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; bare persist calls=0 and reconcileFormalAdventureQuestSelection() uses Current autoSave(); Current Quick 11/11 PASS evidence_sha256=ca57edbaf059de6551a7ad893a852e3bc040d4d5cfa53dffc82433b1c424dcc9; adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. Correction Task is complete. Parent E2E was not executed in this run; parent task is only unblocked for the next AI_START.",
-      "recorded_at": "2026-08-22T15:10:27+09:00"
-    },
-    {
-      "id": "IMPL-R30-002",
-      "studio_build": "GKS-B718",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-002"
-      ],
-      "result": "Applied",
-      "evidence": "Atomic Save staging + FNV1A32 integrity verification + previous-good backup + serialized commit guard + rollback. Quick 11/11 PASS sha256=b1ee69211a5faf849efb4ee1ab94f21e2bbe49f47037d7e227488530eb9fffa6; Accept 13/13 PASS sha256=29f8d0d61792ef77e3f5c7fb0329989a3e7f2873313787229f85f3e07d6015aa; Release 13/13 PASS sha256=84cb6b98069da5668080355de709c2de25d71f64dc5a5e69b667a5e6f539ef2e; targeted save atomic test 4/4 PASS.",
-      "recorded_at": "2026-08-21T20:42:44+09:00"
-    },
-    {
-      "id": "IMPL-R30-003",
-      "studio_build": "GKS-B719",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-003"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B719 was Human-applied and is present in Current Source. Subsequent acceptance re-audit found TASK-R30-003 incomplete because Load could still continue after implicit Domain normalization and the legacy save.v2 slot was not discovered. B719 is therefore applied history but does not complete TASK-R30-003; correction continues in GKS-B720.",
-      "recorded_at": "2026-08-21T21:16:00+09:00"
-    },
-    {
-      "id": "IMPL-R30-003-FIX-001",
-      "studio_build": "GKS-B720",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-003"
-      ],
-      "result": "Applied",
-      "evidence": "Correction artifact GKS-B720-7683856709a5 was Human-applied and verified in Current Source. Current package-build.json=GKS-B720 / GA-B486.211; package_manifest SHA-256=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945; B720 update artifact contents match Current Source 634/634 files with 0 missing and 0 hash differences; Current Quick 11/11 PASS evidence_sha256=cd7ff370dd682882529f4186940ef50c8519c86276d2f6aa36651e731a89a50d; game-save-hard-cut-v3 PASS (current_valid=1 invalid_reject=1 unknown_field_reject=1). The correction keeps strict Current Save Schema validation, rejects implicit Domain normalization on Load, discovers legacy save.v2 without deleting the source slot, and preserves migration rollback. Source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-21T21:48:41+09:00"
-    },
-    {
-      "id": "IMPL-R30-004",
-      "studio_build": "GKS-B721",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-004"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B721 was Human-applied and verified in Current Source. Current package-build.json=GKS-B721 / GA-B486.211; package_manifest SHA-256=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e; B721 SOURCE_UPDATE payload matches Current Source 635/635 source files with 0 missing and 0 hash differences. The only full-tree difference versus the B721 simulated target is development-project-data/DEV-V9-REORG-019.json, which reflects the later Development Project integration rather than a Source implementation drift. Current Quick 11/11 PASS evidence_sha256=7ac6be9c589133bec10d7ab79b95d5e10e79bf30257ea9f6623f76ae9a92738f; targeted Character/Guild/Progression persistence verification 8/8 PASS. Character core/progression state, partyIds and Guild object remain exact across the Save/Load boundary; later Skill/AI/Equipment domain fields remain outside TASK-R30-004 scope. Source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-21T22:08:33+09:00"
-    },
-    {
-      "id": "IMPL-R30-005",
-      "studio_build": "GKS-B722",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-005"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B722 Inventory / Equipment ownership Save Bridge was Human-applied and remains present in the user-provided Current Source GKS-B725 / GA-B486.211. Current package_manifest SHA-256=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f; game/assets/js/inventory-equipment-save-bridge.js SHA-256=1ba16406175e572ec8b5e989299abb1c7764b1f3d7aacb5a7e964bd8f5d24442 and game/assets/js/app-runtime.js SHA-256=f5c1e4afec99ea12e189103d932450471818eb3af0fe4bd910db3e7a25d0811c are byte-identical to the GKS-B722 update artifact; game/index.html retains the bridge load with only later Build/cache-token advancement to b725. Current Quick 11/11 PASS evidence_sha256=a7f25fb920cf3b998da4d02e6d1d7f9c1e43838baebdb6d44acdc8acdda6cb78; current targeted ownership persistence verification 10/10 PASS plus runtime wiring checks PASS (capture before snapshot, assert after snapshot, assert after load, bridge exposure, script load). Build marker check PASS studio=GKS-B725 files=190. B722 update ZIP SHA-256=8018600590e1b207e24383c1d76393371eb97b76d350fd1586a5b2d1ce73ce13. Inventory and Character ID -> equipment ownership remain exact across Save/Load; Save does not redefine equipment requirements/bonuses/capacity/duplicate policy. Source changes=0 in this verification run; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T08:29:47+09:00"
-    },
-    {
-      "id": "IMPL-DEV-CHECK-RESOLUTION-001",
-      "studio_build": "GKS-B723",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [],
-      "result": "Partial",
-      "evidence": "Development Workflow check-resolution lifecycle implemented. SOURCE_UPDATE baseline GKS-B722 reconstructed from uploaded GKS-B722 persistent payload + unchanged GA-B486.211 Export + latest provided DEV-V9-REORG-019 development data. Baseline manifest=4e187bb807fda8913721f1dbcb70768b13ef704cfccb81ef7af9584e54aeff36 tree=b0854f75ab71436f602610439c5b30b962302c62efd1c1d0c81537fa18f7771d; target manifest=7af0a53ec43b49df94988e0700c846ab7e6bd1632dd969603ec2dff3b95349d3 tree=040e24e5175ecb2bfde12fef02f32fdfb917ee6245e19f68a1bf2372803548e7. Targeted resolution/reopen test PASS; final ZIP Quick 14/14 PASS evidence_sha256=35902a9884e31ec06024dcf4783edd6dbf10b69abbb727712e51723b85c17c93; Accept 13/13 PASS evidence_sha256=c02093bacb8eb227492b4746afd52b3a431ca0119c16807f9edd687dac8c9d58; applied Full 26/26 PASS evidence_sha256=c0d8f40f449b05644c8ff3b8ed033b8440e9ab3c7de263f76e00eb3ddc75a3f4; Release 13/13 PASS evidence_sha256=4a42c9e202826b4df228092fe815180d7f5df16e248cecae52b2ee93ec268024; update ZIP sha256=cbff9df9c4ec1259e1aec8a3bf1c65ac0b21fc3a97365bbc0109235d191578b4. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T06:37:00+09:00"
-    },
-    {
-      "id": "IMPL-DEV-GIT-UX-001",
-      "studio_build": "GKS-B724",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [],
-      "result": "Applied",
-      "evidence": "Development Git UX correction. Git project cards remain visible in the in-progress filter while Remote verification is pending, using cached registry lifecycle/status and retaining the Git状態確認中 badge. Git Owner / Repository / Branch are auto-filled from the current project git_remote, then another registered Git project, then remembered terminal settings; PAT remains unsaved. Targeted B724_GIT_AUTOFILL_PASS + B724_PROJECT_FILTER_PASS; source Quick 11/11 PASS evidence_sha256=cf0c0cc3bc419b0be6d91776fed27226e42c9b99af1b55cd15893e28eab8339f; update Quick 13/13 PASS evidence_sha256=c636411ad8e198409afecc55e8ac4a51d373bbd652efcb7aa5a0cf126d2590fa; Accept 13/13 PASS with applied Full 26/26 evidence_sha256=98584c4eba9f63262733bc86a0b426c39c3fc11def0d55b732fe3ef6717655e1; Release 13/13 PASS with applied Full 26/26 evidence_sha256=c141e634ff516250956da59d4ce3f205bb1c8946c4c49a2bdce6bce4267d02bb; baseline manifest=7af0a53ec43b49df94988e0700c846ab7e6bd1632dd969603ec2dff3b95349d3 tree=71a154b215b85beaca5d4a93a84e423f637e10f873c3e830c053081c955cb362; target manifest=2fe65e596bd80ce9b746be6186d0a70a47bb770e6d4332e9c2e76dc9b57507d9 tree=d032a0639220e392d49d4623b54f4743a776899856d2e97a79102942800a231f; update ZIP sha256=c9626a9144eab55f61c262719d0ad80cea482c6781018f7f08084685f9363a9d. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending. Human Apply verified from the user-provided Current Source GKS-B724 / GA-B486.211 used as the exact B725 baseline; package_manifest SHA-256=2fe65e596bd80ce9b746be6186d0a70a47bb770e6d4332e9c2e76dc9b57507d9 and the B724 Development Git UX implementation is present in Current Source.",
-      "recorded_at": "2026-08-22T08:13:00+09:00"
-    },
-    {
-      "id": "IMPL-DEV-GIT-DEFAULTS-001",
-      "studio_build": "GKS-B725",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [],
-      "result": "Partial",
-      "evidence": "Development Git first-use defaults implemented. When current-project git_remote, another registered Git project, shared/remembered terminal settings are all unavailable or incomplete, Owner / Repository / Branch fall back to kj2whvbzjn-hue / guild-adventure-studio / sub. Existing project/remembered settings retain priority; PAT remains unsaved. HTML fields also render the same defaults before module initialization. Exact baseline is user-provided GKS-B724 / GA-B486.211: baseline manifest=2fe65e596bd80ce9b746be6186d0a70a47bb770e6d4332e9c2e76dc9b57507d9 tree=f89d0a584283ea1ee6579d3133422d8d60d277a7c5b3da49de0aa4c965c93e7e; target manifest=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f tree=a1e05b6bc3e39464a4dce08318896b47f3209c93dc459982fb428e00f33d0d2c. Targeted B725_GIT_DEFAULT_CONNECTION_PASS cases=3; target source Quick 11/11 PASS evidence_sha256=f9c9091365030b71f28e6b7414c6c23cb91be5674c56b0b7ea14e2e6441ec87f; Accept 13/13 PASS with applied Full 26/26 evidence_sha256=f78612ef591ad3f47627bba862d0d5b841e5d8abb047d3d2f68fa92bdbb97882; Release 13/13 PASS with applied Full 26/26 evidence_sha256=ce684ad3c4d7c01a1aa7f563d5b29aa0d6f6da882b30a10753043668ca6162a8; update ZIP sha256=bad5790a4f8938bf95aff4536b73d8a07769f1900c1fd5d73ff679de5b657c5e. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T08:13:00+09:00"
-    },
-    {
-      "id": "IMPL-R30-006",
-      "studio_build": "GKS-B726",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-006"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B726 Skill / Passive / Skill Loadout / Formal AI persistence implementation was Human-applied and remains present in the user-provided Current Source GKS-B727 / GA-B486.211. Current package_manifest SHA-256=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45. game/assets/js/skill-passive-ai-save-bridge.js SHA-256=9f74e20b57fe3eff9651dd71eeaf14b558fddf0b65db5f8a4f44168a73534314, game/assets/js/ai-save-bridge.js SHA-256=fa8dbfa8651712f91357eeb053cf44e14f15875f830975df0595722dfaef9a30, and game/assets/js/app-runtime.js SHA-256=d28ff569822e0b630f869251f7b2932e161db408e782bf8d1c68f55d7987d8d1 are byte-identical to the GKS-B726 update artifact; game/index.html retains the skill-passive-ai-save-bridge load and differs from B726 only by GKS-B727 Build/cache-token synchronization. Current targeted persistence verification 12/12 PASS: existing v3 saves remain valid without optional passiveIds/skillLoadoutIds synthesis; when present these fields, Character skills/equippedSkillId/formalAiBinding, and root aiPrograms/aiLayouts/aiPresets remain exact across the Save/Load boundary; any mutation is rejected; legacy aiGraph/aiPolicy/defaultSkillId remains forbidden by both bridge and Current schema. Current Quick 11/11 PASS evidence_sha256=58c385c3736b7c3388a5b204776bdee5f4715f6dacd9bfd575c6e62e80169aa0; Build marker check PASS studio=GKS-B727 files=190. GKS-B726 update ZIP SHA-256=08acf0e8c208190c579a1d2329bb53b27c3658a154ebecf9b33f8d0b5e8ea383. Source changes=0 in this verification run; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T09:05:00+09:00"
-    },
-    {
-      "id": "IMPL-DEV-WORKFLOW-ROLLBACK-GUARD-001",
-      "studio_build": "GKS-B727",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [],
-      "result": "Partial",
-      "evidence": "Development Workflow Human approval rollback guard implemented from exact user-provided GKS-B726 / GA-B486.211 baseline. Stale workflow snapshots are self-healed from append-only Human workflow history when the latest relevant event is Human approved implementation start; normal JSON merge preserves Approved implementation/completion approvals and the forward-most workflow stage; workspace.status follows workflow as canonical state. Explicit Human stage-back history remains authoritative and can legitimately reopen an earlier stage. Targeted B727_WORKFLOW_ROLLBACK_GUARD_PASS cases=3; Quick 11/11 PASS evidence_sha256=c98e25577c37cbedcf327ddae161865a2db3710c16428751eafb35ccace5762c; Accept 14/14 PASS evidence_sha256=363c0f26bc553517f5eb28a5adf7283dc419d8082aaf569a97fe1564ecc5e739 with applied Full 26/26 PASS; Release 14/14 PASS evidence_sha256=7f65f9363dcfee2bf1346563183354e3c3a17eaebd1746b110be96b7124e09c6 with applied Full 26/26 PASS; update ZIP sha256=3f9a472e85836d42ed4f0cdfbba404050c5dc8973df1dc8d7f4267812a4a972f; baseline manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=b8ee49bab93213ea8dc97029f718a70fb5ecdfe914e9ee840b0c849b41226747; target manifest=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45 tree=b788cb329f975a483595ede61ecbe07f5ac3334d932d5b662bbf69061b00d1ad. Source deletions=0; Game data changes/exclusions=0. Human Apply verification pending.",
-      "recorded_at": "2026-08-22T08:51:00+09:00"
-    },
-    {
-      "id": "IMPL-R30-007",
-      "studio_build": "GKS-B728",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-007"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B728 Game Settings / Tutorial persistence implementation was Human-applied and is present in the user-provided Current Source GKS-B728 / GA-B486.211. Current package_manifest SHA-256=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072. The GKS-B728 update artifact payload matches Current Source 638/638 files with 0 missing and 0 hash differences (studio-update.json / DELETE_MANIFEST.txt are deployment metadata and excluded from payload comparison). game/assets/js/settings-tutorial-save-bridge.js SHA-256=50c4da8ec0cedcba9bf3a49b9ec0a9fdba00f31532b8860f59a882a1742f2dce; game/assets/js/ai-save-bridge.js SHA-256=f94d901dd14f229c10c35c4487e6a015694b350e4549e8bb44011a152f244904; game/assets/js/app-runtime.js SHA-256=c1b051f6baa76fa85defd8e345900b92f06d63ddc93841ec523c857e4f818748; game/index.html SHA-256=0b04144b121c544a47f69ccbd2bc5e65773ad6ab09fa042936e3a5fb0212ffbc. Current targeted persistence verification 12/12 PASS: legacy v3 saves remain valid without optional gameSettings/tutorialProgress synthesis; when present both fields must be objects and are preserved exactly; mutations are rejected; Save snapshot / Load normalization wiring is present; current Battle/Quest result runtime does not consume these fields. Current Quick 11/11 PASS evidence_sha256=f322501f1c90cdab73ef10bc84f0e1daf1dee2a2964f74246710f4b15cfb3267; Build marker check PASS studio=GKS-B728 files=190. GKS-B728 update ZIP SHA-256=e3ea6fef3bdc8c516d9c75e36c26f65a1815226ade3845864e70f4e3de7d7e2b. Source changes=0 in this verification run; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T09:21:00+09:00"
-    },
-    {
-      "id": "IMPL-R30-008",
-      "studio_build": "GKS-B729",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-008"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B729 QuestRun persistence / Playback resume boundary was Human-applied and is present in the user-provided Current Source GKS-B729 / GA-B486.211. Current package_manifest SHA-256=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd. The prior GKS-B729 update artifact persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences; Development Project integration is outside that persistent payload. game/assets/js/quest-run-save-bridge.js SHA-256=0b739d9f235064ba725b34e5f3a5e2fc6d912323b3c302f9bf859e4d3e5b1c09; game/assets/js/app-runtime.js SHA-256=d09589019f5b03fd70a265768e845df0ec5858eb853f277813a2cd7cfe898e16; game/index.html SHA-256=3282c952200548270ef32f936c69701830e0f961304e3c072fff40629bdf3854. Current targeted verification 8/8 PASS: stored Active QuestRun reference remains valid, saved Scene/Battle/Event/Reward/Flag snapshots are preserved exactly, mutation is rejected, dangling active IDs are rejected, and Continue/Playback wiring resumes the stored Active QuestRun without adding rerun paths. Current Quick 11/11 PASS evidence_sha256=430f68062d212cd77089130652e494d4b59ae71cde2db2e6cb47b697322ab421. GKS-B729 update ZIP SHA-256=fc2fddf528056561f7b3b37e51809868e940e0fe13e7f2e18cc05179f976a125. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T09:49:00+09:00"
-    },
-    {
-      "id": "IMPL-R30-009",
-      "studio_build": "GKS-B730",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-009"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B730 New Game initialization sequence was Human-applied and is present in the user-provided Current Source GKS-B730 / GA-B486.211. Current package_manifest SHA-256=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a. The prior GKS-B730 update persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=e21eef81b4c07f87e1362901b3433de05d97ea2f2a61c671a7fc4a8bc7a2b1f0. Current targeted verification 12/12 PASS: the fixed initialization order is retained; initial Gold, starter roster, Party and Inventory are sourced from Formal Runtime Data; the candidate Save is built separately; Save validation and Load no-normalization validation precede the Atomic writer; live state changes only after a successful write; the old seedRoster immediate-save path is absent. Current Quick 12/12 PASS evidence_sha256=d94dee047feb2473234ad291b151639d6ec47eb3429041f173a3a25fa6192f3e; Build marker check PASS studio=GKS-B730 files=190. Prior GKS-B730 update ZIP SHA-256=abb67969437808e42408447527056e22b97a6767e2766dcc68d1e97b9a6ed6d7. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T10:04:29+09:00"
-    },
-    {
-      "id": "IMPL-R30-010",
-      "studio_build": "GKS-B731",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-010"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B731 existing-Save New Game overwrite confirmation was Human-applied and is present in the user-provided Current Source GKS-B731 / GA-B486.211. Current package_manifest SHA-256=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab. The prior GKS-B731 update persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=3dd4d5ef853517899a72930fdf1def0798d3df0bb0849cf503c7b85be75a8010. Current targeted overwrite-confirmation verification 10/10 PASS: existing Save detection is authoritative, confirmation occurs before Formal Runtime wait/candidate preparation, Cancel returns before candidate creation or commit, missing confirmation UI fails closed, and the Save Core exposes the confirmation boundary. Current Quick 11/11 PASS evidence_sha256=4dd2fd250b22cd606592f9727dfd9ef5e6712a0aec5d87aad1623be6d9f636fe; Build marker check PASS studio=GKS-B731 files=190. Prior GKS-B731 update ZIP SHA-256=79f8fcda5d0e543e512155840828c366888e2ea87ffce47d260ffc82f29bddd5. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T10:18:23+09:00"
-    },
-    {
-      "id": "IMPL-R30-011",
-      "studio_build": "GKS-B732",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-R30-011"
-      ],
-      "result": "Applied",
-      "evidence": "GKS-B732 Save/Load Recovery UI connection was Human-applied and is present in the user-provided Current Source GKS-B732 / GA-B486.211. Current package_manifest SHA-256=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766. The prior GKS-B732 update ZIP SHA-256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7 is available and its persistent payload matches Current Source 639/639 files with 0 missing and 0 hash differences. game/assets/js/app-runtime.js SHA-256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html SHA-256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03. Current Phase-1 targeted verification confirms the R30-011 acceptance paths: Save failure rollback + Retry PASS; Save safe-return restores the last validated Current Save and Title PASS; Load/Integrity failure stops before live-state replacement with zero Save-slot rewrite PASS; Recovery UI Owner reason/code passthrough PASS. Current Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Current Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; Build marker check PASS studio=GKS-B732 files=190. Source changes=0 in this Human Apply verification; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T10:23:00+09:00"
-    },
-    {
       "id": "IMPL-R30-012-CORR-001",
       "studio_build": "GKS-B733",
       "game_build": "GA-B486.211",
@@ -412,23 +160,9 @@
       "task_ids": [
         "TASK-R30-012-CORR-001"
       ],
-      "result": "Partial",
-      "evidence": "Exact baseline GKS-B732 / GA-B486.211 package_manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 source_tree=8473f6110b349cde6d54c6bf11addcd3e9d32e6f8eda60e76a5f48fc7c3e321f; target GKS-B733 / GA-B486.211 package_manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594 source_tree=99c540ea07fc8922dd1bb80a03a054629a79f9f6d4f905f9efc1616b47108508 artifact_id=GKS-B733-99c540ea07fc. Game bare persist calls 5→0. Modified production catch counts app-runtime 46→46, game/index 1→0; compatibility term counts did not increase. Strict correction evidence sha256=d274d983cab6e41b53844d874576abdbc5c11d478fc04f06e64cf5f063483f98. Targeted adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS; AI_GAME_SAVE_SCHEMA_V3_OK PASS. Update Quick 13/13 PASS evidence_sha256=35e50b8cea54c6e9b61e7396bb7b6c7b383234fb37405fbed86bf5f31b34060c; Accept 13/13 PASS evidence_sha256=0d587eff0d9d0e2c4a28cbfe80a4b3e7cecdfc8650b8764e774724e45e299c38; Release 13/13 PASS evidence_sha256=7f2c9f96357a7c597e849535ee24bae213c76bc8491e9f6cde3bb7bd56cc60ae; extracted final ZIP Release 13/13 PASS evidence_sha256=fe260f1eff21ff6fda188054047d36c8368c6f61af08744cd93bb13d13ac5b51; update ZIP sha256=d8587af99a17acfefeaf7c529bb97b8c1f37295ab400f7a337d47a75888f6c1d. Source deletions=0; Game data changes/exclusions=0. Human Apply and original Phase 1 E2E rerun remain pending.",
-      "recorded_at": "2026-08-22T11:05:00+09:00"
-    },
-    {
-      "id": "IMPL-DEV-AUTOCORR-B734-VERIFY-001",
-      "studio_build": "GKS-B735",
-      "game_build": "GA-B486.211",
-      "work_box_ids": [
-        "BOX-R19-DETAILED-SPECS"
-      ],
-      "task_ids": [
-        "TASK-DEV-AUTOCORR-B734-VERIFY-001"
-      ],
       "result": "Applied",
-      "evidence": "Self-heal validation build GKS-B734 confirmed from the user-provided Current Source. package_manifest SHA-256=bfd324d10c117283f48bbb9ce784bbe611484d40f0739a2d08c2e3239bd5d2f6; 639/639 manifest entries verified with 0 missing and 0 hash differences. Known Failure fixture reproduced by exact-function P1-CONTINUE-AFTER-FIRST-SAVE-equivalent harness: ReferenceError: persist is not defined; evidence_sha256=6b18e4890aa68ae752fc9e1fbbe4702160f559e85b7b774b086ffb66a5c8b8d9; app-runtime sha256=3b2510f46d0912e5cd3fd852d528b4fdc5ad7f8192886d7e5a9f1d4860faf412. Current Quick 11/11 PASS evidence_sha256=e7d6824751518fa72a8ecbe7e6f0f8a09dc35bd19b3d8b0e5635d25b84a30939; adventure-formal-quest-runtime-integration PASS. Current source ZIP sha256=bd5ea6e15d29dd03458ee23e585356511f68697f88f1e064e0d7dc8a18b9b1bb. Source changes=0; source deletions=0; Game data changes/exclusions=0. CHK-DEV-AUTOCORR-B734-FAIL-001 added as unresolved blocking Failed Check. Correction was not generated or executed in this run by design; next AI_START must run autonomous Correction preflight, generate a separate SOURCE_UPDATE Correction Task if safe-auto proof succeeds, and only a later parent E2E PASS may complete this task. Autonomous Correction preflight executed on Current GKS-B734: failure_signature=cc702ccb758b232bcc10; decision=safe_auto_candidate; retry_count=0/2; generated SOURCE_UPDATE task=TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001; parent TASK-DEV-AUTOCORR-B734-VERIFY-001 moved to Blocked and depends on generated correction. Current Quick 12/12 PASS evidence_sha256=6203ca19def2c73f6ec43b884f0c14fdc544c46644a3d7113988103b2803cbbb. Source changes=0; source deletions=0; Game data changes/exclusions=0. Failed Check remains unresolved by design; correction source edit and parent E2E are not executed in this run. Parent E2E independently rerun after B735 Human Apply and PASS. Current Source GKS-B735 / GA-B486.211; source ZIP sha256=777bf69ca07b44f1a32acf762996699b88dfb075f0511bc059b4fd4b443bb0f5; package_manifest sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34 with 639/639 manifest entries verified; app-runtime sha256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; autonomous-correction analyze retry_count=1/2 decision=safe_auto_candidate evidence_sha256=68328e4d0b74ed4d2e08c9ac16320a77f0463aebc8afe7cad4f0dc54dc27e96e; exact-function P1-CONTINUE-AFTER-FIRST-SAVE-equivalent PASS function_sha256=25d4f3351fba5d31298b4739189115e74a584ae717d6275ab5827f360272597e evidence_sha256=4ac500c455d08477d1ef7250e2753b7d2aef8e9ce2941c8ba3b4bc8df78c49d8; bare persist calls=0; Current autoSave path present; Current Quick 11/11 PASS evidence_sha256=8cd7f7b7fc5d19ca7afa186071ee34bed56d2433bafe88c46fef51fa37875b20; adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. Parent task acceptance complete; resolver Check closes the historical B734 Failed Check while preserving status=Failed as history. Source changes=0; source deletions=0; Game data changes/exclusions=0.",
-      "recorded_at": "2026-08-22T15:14:00+09:00"
+      "evidence": "Exact baseline GKS-B732 / GA-B486.211 package_manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 source_tree=8473f6110b349cde6d54c6bf11addcd3e9d32e6f8eda60e76a5f48fc7c3e321f; target GKS-B733 / GA-B486.211 package_manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594 source_tree=99c540ea07fc8922dd1bb80a03a054629a79f9f6d4f905f9efc1616b47108508 artifact_id=GKS-B733-99c540ea07fc. Game bare persist calls 5→0. Modified production catch counts app-runtime 46→46, game/index 1→0; compatibility term counts did not increase. Strict correction evidence sha256=d274d983cab6e41b53844d874576abdbc5c11d478fc04f06e64cf5f063483f98. Targeted adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS; AI_GAME_SAVE_SCHEMA_V3_OK PASS. Update Quick 13/13 PASS evidence_sha256=35e50b8cea54c6e9b61e7396bb7b6c7b383234fb37405fbed86bf5f31b34060c; Accept 13/13 PASS evidence_sha256=0d587eff0d9d0e2c4a28cbfe80a4b3e7cecdfc8650b8764e774724e45e299c38; Release 13/13 PASS evidence_sha256=7f2c9f96357a7c597e849535ee24bae213c76bc8491e9f6cde3bb7bd56cc60ae; extracted final ZIP Release 13/13 PASS evidence_sha256=fe260f1eff21ff6fda188054047d36c8368c6f61af08744cd93bb13d13ac5b51; update ZIP sha256=d8587af99a17acfefeaf7c529bb97b8c1f37295ab400f7a337d47a75888f6c1d. Source deletions=0; Game data changes/exclusions=0. Human Apply and original Phase 1 E2E rerun remain pending. Human Apply verified on Current Source GKS-B735 / GA-B486.211. Current source ZIP sha256=777bf69ca07b44f1a32acf762996699b88dfb075f0511bc059b4fd4b443bb0f5; package_manifest SHA-256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34 with 639/639 entries verified; game/assets/js/app-runtime.js SHA-256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; Current Game production bare persist calls=0 and reconcileFormalAdventureQuestSelection() uses Current autoSave(); Current Quick 11/11 PASS evidence_sha256=2368edb345f292ad3041c3e7ad2bfa5523e2763448aa4f1848b4f5bcb9a35f82; adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. The B733 correction semantics remain applied through B735. Correction Task complete; TASK-R30-012 is unblocked for an independent Phase 1 E2E rerun on the next AI_START. Historical CHK-R30-012-PHASE1-E2E remains unresolved until that rerun passes. Source changes=0 in this verification run; source deletions=0; Game data changes/exclusions=0.",
+      "recorded_at": "2026-08-22T16:15:00+09:00"
     }
   ],
   "discussions": [
@@ -1728,30 +1462,6 @@
       "approved_at": "2026-08-21T15:05:00+09:00",
       "created_at": "2026-08-21T15:05:00+09:00",
       "updated_at": "2026-08-21T15:05:00+09:00"
-    },
-    {
-      "id": "DEC-R30-AUTONOMOUS-CORRECTION-001",
-      "title": "自動Correctionを正規経路収束・Compatibility Budget 0で運用する",
-      "status": "Approved",
-      "text": "E2E/Gateで決定的なSource不具合が見つかり、現在Taskのwork_typeでは修正不能な場合、safe-auto条件をすべて満たすFailed CheckからだけSOURCE_UPDATE Correction Taskを機械生成できる。Correctionは既存Current API/Contractへ最小差分で収束させ、互換層・旧経路延命・silent recovery・局所catch増加を禁止する。Artifact生成だけでは元Failedを解決せず、Human Apply後に元E2EがPASSしたCorrection Checkだけがresolves_check_idsを持つ。",
-      "rationale": "E2E自動化が不具合検出後にwork_type境界で停止する問題を解消しつつ、AIが互換層や例外処理を増殖させて技術的負債を作ることを防ぐため。",
-      "source_discussion_ids": [],
-      "approved_by": "Human",
-      "approved_at": "2026-08-22T11:05:00+09:00",
-      "created_at": "2026-08-22T11:05:00+09:00",
-      "updated_at": "2026-08-22T11:05:00+09:00"
-    },
-    {
-      "id": "DEC-DEV-AUTOCORR-B734-BASELINE-001",
-      "title": "GKS-B733基準でB734自己修復実動作検証を行う",
-      "status": "Approved",
-      "text": "GKS-B733をexact baselineとする。GKS-B732はP1-CONTINUE-AFTER-FIRST-SAVEの既知persist不具合箇所を再現する参照としてのみ使用し、B734にはその1箇所のFailure fixtureとAutonomous Correction Engineを追加する。B734内ではCorrectionを完了させず、B734適用後のAI_STARTがFailed CheckからCorrection Taskを生成し、次Buildで修正する。",
-      "rationale": "B732をbaselineにするとCurrent GKS-B733へSOURCE_UPDATEを適用できずGateで拒否されるうえ、Current履歴を後退させるため。",
-      "source_discussion_ids": [],
-      "approved_by": "Human",
-      "approved_at": "2026-08-22T12:54:00+09:00",
-      "created_at": "2026-08-22T12:54:00+09:00",
-      "updated_at": "2026-08-22T12:54:00+09:00"
     }
   ],
   "specifications": [
@@ -5943,7 +5653,7 @@
       "id": "TASK-R30-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save Coreの1Slot Auto Save境界を実装する",
-      "status": "Done",
+      "status": "Todo",
       "execution_order": 1010,
       "depends_on": [],
       "acceptance_criteria": "- Saveは1Slot Auto Saveのみを正本とする。\n- 永続状態の変更が正常確定した直後にAuto Saveできる境界を実装する。\n- 個別Domainの値の意味・計算をSave Core側で再定義しない。\n- 次工程のAtomic Save / Backup実装を追加できる責務境界になっている。",
@@ -5955,13 +5665,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T20:16:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-002",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Atomic Save / Backup / Integrity検証を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1020,
       "depends_on": [
         "TASK-R30-001"
@@ -5975,13 +5685,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T20:50:15+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-003",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save Version MigrationとLoad拒否条件を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1030,
       "depends_on": [
         "TASK-R30-002"
@@ -5995,13 +5705,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T21:48:41+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-004",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Character / Guild / ProgressionのSave接続を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1040,
       "depends_on": [
         "TASK-R30-003"
@@ -6015,13 +5725,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-21T22:08:33+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-005",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Inventory / Equipment所有状態のSave接続を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1050,
       "depends_on": [
         "TASK-R30-004"
@@ -6035,13 +5745,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T08:29:47+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-006",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Skill / Passive / AI / LoadoutのSave接続を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1060,
       "depends_on": [
         "TASK-R30-005"
@@ -6055,13 +5765,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T09:05:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-007",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Game Settings / Tutorial進行のSave接続を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1070,
       "depends_on": [
         "TASK-R30-006"
@@ -6075,13 +5785,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T09:21:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-008",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "QuestRun永続化とPlayback復帰境界を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1080,
       "depends_on": [
         "TASK-R30-007"
@@ -6095,13 +5805,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T09:49:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-009",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "New Game初期化Sequenceを実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1090,
       "depends_on": [
         "TASK-R30-008"
@@ -6115,13 +5825,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T10:04:29+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-010",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "既存SaveありNew Gameの上書き確認を実装する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1100,
       "depends_on": [
         "TASK-R30-009"
@@ -6135,13 +5845,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T10:18:23+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-011",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Save/Load ErrorをRecovery UIへ接続する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 1110,
       "depends_on": [
         "TASK-R30-010"
@@ -6155,13 +5865,13 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T10:23:00+09:00"
+      "updated_at": "2026-08-21T15:05:00+09:00"
     },
     {
       "id": "TASK-R30-012",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 Save/New Game E2Eを検証する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 1120,
       "depends_on": [
         "TASK-R30-011",
@@ -6176,7 +5886,7 @@
         "at": ""
       },
       "created_at": "2026-08-20T21:30:00+09:00",
-      "updated_at": "2026-08-22T11:05:00+09:00"
+      "updated_at": "2026-08-22T16:15:00+09:00"
     },
     {
       "id": "TASK-R31-001",
@@ -8161,51 +7871,10 @@
       "updated_at": "2026-08-20T22:30:00+09:00"
     },
     {
-      "id": "TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001",
-      "box_id": "BOX-R19-DETAILED-SPECS",
-      "title": "Auto Correction cc702ccb758b232bcc10: Current正規経路へ収束する",
-      "status": "Done",
-      "execution_order": 1113,
-      "depends_on": [
-        "TASK-R30-011"
-      ],
-      "acceptance_criteria": "- Failure Signature `cc702ccb758b232bcc10` / `CHK-DEV-AUTOCORR-B734-FAIL-001` の一意な原因だけを修正する。\n- 検出symbol `persist`、source `game/assets/js/app-runtime.js` を既存Current正規経路へ収束し、互換wrapper/fallbackを作らない。\n- Compatibility Budget 0 / Exception Budget 0。legacy/compat/fallback/shim/adapter/alias、dual-read/dual-write、silent recovery、廃止API wrapperを新設しない。\n- エラー処理自体が修正目的でない限り、変更production fileのcatch数を増やさない。\n- Game仕様、Balance、Game Data、Save Schema意味、Security境界、Test/Gateを変更しない。\n- Targeted / Quick / Accept / Releaseを通す。Correction Task自身は親E2Eを実行・resolveしない。\n- Human Apply後に親Taskを再開し、親Task自身が同一E2Eを独立再実行してPassed Checkから元Failedをresolveする。",
-      "work_type": "SOURCE_UPDATE",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T13:19:56+09:00",
-      "updated_at": "2026-08-22T15:10:27+09:00"
-    },
-    {
-      "id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
-      "box_id": "BOX-R19-DETAILED-SPECS",
-      "title": "B734既知Failureから自己修復Correction生成を実動作検証する",
-      "status": "Done",
-      "execution_order": 1114,
-      "depends_on": [
-        "TASK-R30-011",
-        "TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001"
-      ],
-      "acceptance_criteria": "- Current SourceがGKS-B734であることを確認する。\n- P1-CONTINUE-AFTER-FIRST-SAVE相当の経路で、B734へ意図的に再導入した`persist is not defined` Failureを検出しFailed Checkへ記録する。\n- 同じ実行でSourceを直接修正しない。\n- 次回AI_STARTのCorrection preflightがFailure Signatureを固定し、`SOURCE_UPDATE` Correction Taskを自動生成して親TaskをBlockedへ移す。\n- CorrectionはCompatibility Budget 0 / Exception Budget 0を守り、次Buildで既存正規`autoSave()`へ収束する。\n- Correction Human Apply後にこの親Task自身が同じE2Eを独立再実行しPASSした時だけDoneとする。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T12:54:00+09:00",
-      "updated_at": "2026-08-22T15:14:00+09:00"
-    },
-    {
       "id": "TASK-R30-012-CORR-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 E2Eで検出したlegacy persist経路をCurrent Save APIへ収束する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 1115,
       "depends_on": [
         "TASK-R30-011"
@@ -8219,7 +7888,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T11:05:00+09:00",
-      "updated_at": "2026-08-22T11:05:00+09:00"
+      "updated_at": "2026-08-22T16:15:00+09:00"
     }
   ],
   "checks": [
@@ -8868,867 +8537,16 @@
       "updated_at": "2026-08-21T15:26:29+09:00"
     },
     {
-      "id": "CHK-DEV-AUTOCORR-B735-APPLY-001",
-      "title": "GKS-B735 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001",
-      "status": "Passed",
-      "result": "GKS-B735 CorrectionのHuman ApplyをCurrent Source実体で確認。Correction TaskのArtifact条件とCurrent適用状態が一致し、親Taskの独立E2Eへ進める状態になった。親FailedはこのCheckでは解決しない。",
-      "evidence": "Current package-build.json=GKS-B735 / GA-B486.211; package_manifest SHA-256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; package manifest 639/639 PASS; app-runtime SHA-256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; bare persist=0; reconcileFormalAdventureQuestSelection() -> autoSave(); Current Quick 11/11 PASS evidence_sha256=ca57edbaf059de6551a7ad893a852e3bc040d4d5cfa53dffc82433b1c424dcc9; adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. resolves_check_ids intentionally empty because TASK-DEV-AUTOCORR-B734-VERIFY-001 parent E2E is not executed by the Correction Task.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T15:10:27+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T15:10:27+09:00",
-      "updated_at": "2026-08-22T15:10:27+09:00"
-    },
-    {
-      "id": "CHK-R30-001-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-001 Human Apply / current source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-001",
-      "status": "Passed",
-      "result": "Human反映後のCurrent Source GKS-B717でSave Coreの1Slot Auto Save境界（buildAutoSaveSnapshot / writeAutoSaveSnapshot / commitPersistentState）が維持され、Current Source Quick Gate 11/11 PASSを確認。既存IMPL-R30-001=Appliedおよび前回SOURCE_UPDATE Quick/Accept/Release PASS証跡と整合するためTASK-R30-001をDoneへ確定し、依存するTASK-R30-002をTodoへ解放した。",
-      "evidence": "Current Source package-build.json: GA-B486.211 / GKS-B717; game/assets/js/app-runtime.js Save Core boundary present; current source quick 11/11 PASS evidence_sha256=d2c719cd3807ee97ff9b8ab2e390c6623d08c9afeff3c4d4406f31b7d607a79f; IMPL-R30-001 result=Applied; prior CHK-R30-001-SOURCE-QUICK/ACCEPT/RELEASE=Passed.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T20:16:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T20:16:00+09:00",
-      "updated_at": "2026-08-21T20:16:00+09:00"
-    },
-    {
-      "id": "CHK-R30-002-IMPLEMENTATION",
-      "title": "TASK-R30-002 Atomic Save / Backup / Integrity verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-002",
-      "status": "Passed",
-      "result": "一時保存→Integrity確認→本保存切替、直前正常SaveのBackup、commit直列化、Integrity失敗時の本保存非切替/rollbackを実装し、Domain意味とMigration責務は変更していない。",
-      "evidence": "game/assets/js/app-runtime.js; targeted Node test TASK_R30_002_SAVE_ATOMIC_OK cases=4",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T20:42:44+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T20:42:44+09:00",
-      "updated_at": "2026-08-21T20:42:44+09:00"
-    },
-    {
-      "id": "CHK-R30-002-GATES",
-      "title": "TASK-R30-002 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-002",
-      "status": "Passed",
-      "result": "Quick/Accept/ReleaseすべてPASS。Accept/Releaseはbaseline GKS-B717完全Source ZIPを明示し、適用後完成ツリーを検査。warnings=0 timeouts=0。",
-      "evidence": "Quick evidence_sha256=b1ee69211a5faf849efb4ee1ab94f21e2bbe49f47037d7e227488530eb9fffa6; Accept=29f8d0d61792ef77e3f5c7fb0329989a3e7f2873313787229f85f3e07d6015aa; Release=84cb6b98069da5668080355de709c2de25d71f64dc5a5e69b667a5e6f539ef2e; artifact_id=GKS-B718-1d65a52ba82d",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T20:42:44+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T20:42:44+09:00",
-      "updated_at": "2026-08-21T20:42:44+09:00"
-    },
-    {
-      "id": "CHK-R30-002-APPLIED-VERIFY",
-      "title": "TASK-R30-002 Human Apply後Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-002",
-      "status": "Passed",
-      "result": "Human反映後のCurrent Source GKS-B718でAtomic Save staging / Integrity検証 / previous-good backup / serialized commit / rollbackが維持され、Current Source Quick Gate 11/11 PASSを確認。既存IMPL-R30-002=Appliedおよび実装・Gate証跡と整合するためTASK-R30-002をDoneへ確定し、依存するTASK-R30-003をTodoへ解放した。",
-      "evidence": "Current Source package-build.json Studio GKS-B718 / Game GA-B486.211; game/assets/js/app-runtime.js SAVE_TEMP_KEY/SAVE_BACKUP_KEY/writeAutoSaveSnapshot/commitPersistentState; Quick 11/11 PASS failed=0 warnings=0 timeouts=0 evidence_sha256=de33a2e2c786b530e41839a9e85fd7572ff0a7caa51e8dc25138473edaee49fa; existing IMPL-R30-002 result=Applied.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T20:50:15+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T20:50:15+09:00",
-      "updated_at": "2026-08-21T20:50:15+09:00"
-    },
-    {
-      "id": "CHK-R30-003-IMPLEMENTATION",
-      "title": "TASK-R30-003 Save Version Migration / Load rejection",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-003",
-      "status": "Passed",
-      "result": "B719で検出した暗黙Domain normalization / legacy save.v2 Slot未探索はGKS-B720で修正済み。Human反映後Current SourceでもB720実装がそのまま存在し、TASK-R30-003のAcceptance Criteriaを満たすことを再確認した。",
-      "evidence": "Current Source GKS-B720 / GA-B486.211; B720 update artifact 634/634 files exact match; package_manifest SHA-256=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945; Current Quick 11/11 PASS evidence_sha256=cd7ff370dd682882529f4186940ef50c8519c86276d2f6aa36651e731a89a50d; game-save-hard-cut-v3 PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T21:48:41+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T21:16:00+09:00",
-      "updated_at": "2026-08-21T21:48:41+09:00"
-    },
-    {
-      "id": "CHK-R30-003-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-003 Human Apply後Current Source acceptance re-audit",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-003",
-      "status": "Passed",
-      "result": "Human反映後Current SourceがGKS-B720であることを確認。前回Correction artifactの全配置対象ファイルがCurrent Sourceと完全一致し、Save厳格化実装・Current Schema拒否・legacy save.v2探索・rollbackが保持されているためTASK-R30-003をDone確定した。",
-      "evidence": "package-build.json Studio GKS-B720 / Game GA-B486.211; B720 update ZIP sha256=beee24506844c9b0e7b1912024c2e8717a3ca74161257f7085dcae6024a1656c; update artifact vs Current Source exact match 634/634, missing=0, diff=0; package_manifest SHA-256 exact target match; Quick 11/11 PASS; Save Schema v3 hard-cut test PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T21:48:41+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T21:34:10+09:00",
-      "updated_at": "2026-08-21T21:48:41+09:00"
-    },
-    {
-      "id": "CHK-R30-003-CORRECTION-IMPLEMENTATION",
-      "title": "TASK-R30-003 Save Migration strict correction verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-003",
-      "status": "Passed",
-      "result": "GKS-B720でCurrent Save Schema validatorを必須化し、Load結果がDomain normalizerで暗黙変更される場合はLoad拒否。v2 payloadのCurrent Slot Migrationに加えlegacy save.v2 Slot探索を追加し、旧Slotは削除せず保持。Migration失敗時はCurrent Slot/専用Backup/Tempをrollbackする。",
-      "evidence": "game/assets/js/app-runtime.js; temporary targeted Node verification TASK_R30_003_SAVE_MIGRATION_STRICT_OK cases=7; source deletions=0; Game data changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T21:34:10+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T21:34:10+09:00",
-      "updated_at": "2026-08-21T21:34:10+09:00"
-    },
-    {
-      "id": "CHK-R30-003-CORRECTION-GATES",
-      "title": "TASK-R30-003 correction SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-003",
-      "status": "Passed",
-      "result": "GKS-B719 exact baselineを明示したGKS-B720 correctionはQuick/Accept/ReleaseすべてPASS。encoding ZIP検査もPASS、warning/timeout 0。保護資産変更はcritical-runtime-manifestの機械派生size/hash同期とBuild token同期のみ。",
-      "evidence": "baseline manifest=830b9292d67c4ca704b40ef4ce1c0fe92cc5cdf4d9fc1a7c983ec803bd424140 tree=5c64cc1d7c82d8d06fb8c84e39c7416d40b5b7a576cc7fb899330ef04030c1b6; target manifest=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945 tree=7683856709a5a0d59eeb2720359f56ff07406b6abc371864cc8a749d871a42c3; Quick=4aded29d16659255fc496debd74d2f3ef177da1750d834c1cf0eb84b9aa9eb23; Accept=6f33cc10922db8202db2b8861277c7a8700572c6199788663a441604b4b40afb; Release=35537818aeaaadd5a24ee7d82938e5f85732f1b2d785453b8bdccae93c7d08c2; ZIP encoding PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T21:34:10+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T21:34:10+09:00",
-      "updated_at": "2026-08-21T21:34:10+09:00"
-    },
-    {
-      "id": "CHK-R30-004-IMPLEMENTATION",
-      "title": "TASK-R30-004 Character / Guild / Progression Save persistence verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-004",
-      "status": "Passed",
-      "result": "GKS-B721でCharacter/Guild/ProgressionをDomain値の意味・計算を再定義しないSave Bridgeへ接続。CharacterのCurrent core/progression状態、partyIds、Guild objectを保存前後でexact比較し、差分があれば拒否する。EXP配布、Guild Level計算、Inventory/Equipment、Skill/AIの後続責務は実装しない。",
-      "evidence": "game/assets/js/save-domain-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification TASK_R30_004_DOMAIN_PERSISTENCE_OK cases=8; source deletions=0; Game data changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T22:00:12+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T22:00:12+09:00",
-      "updated_at": "2026-08-21T22:00:12+09:00"
-    },
-    {
-      "id": "CHK-R30-004-GATES",
-      "title": "TASK-R30-004 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-004",
-      "status": "Passed",
-      "result": "GKS-B720 exact user-provided baselineを明示したGKS-B721更新はQuick/Accept/ReleaseすべてPASS。ZIP integrity/NFC、warning/timeout 0。保護資産はBuild token追随とcritical-runtime-manifestの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=0c92b8209849eb7db2da81740dec49ef5dff59c77995038a8056b08427d9d945 tree=d896646ac9226edc02e3879a3e49e88af6028d2f90247e1f69454d503d2b4cd4; target manifest=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e tree=3b41df110b1ad90f688faca958494e3860d847946c5ffb5bb1a65f67bee0ec23; Quick=07e7d4020b99d9994dce34e1373d4e2817955b6fbf41c4893c7c9cbd41fb5ab1; Accept=8846a7044b8094fea9f588418d54c1956eec5f0c3a5b9fa80e5fce6ab22ed966; Release=f37077491ed878858a554de8a3de2514669959e0b330191c2fc3d7e836d73a4a; ZIP=56aa6ff76731615ad5e6eb87eb49b26bbb773c6ca53868df70810fe7110a9067; encoding/NFC PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T22:00:12+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T22:00:12+09:00",
-      "updated_at": "2026-08-21T22:00:12+09:00"
-    },
-    {
-      "id": "CHK-R30-004-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-004 Human Apply後Current Source acceptance verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-004",
-      "status": "Passed",
-      "result": "Human反映後Current SourceがGKS-B721であることを確認。B721更新Source payloadがCurrent Sourceと635/635完全一致し、Character / Guild / Progression Save Bridgeの保持・差分拒否をCurrent実体で再検証したためTASK-R30-004をDone確定した。",
-      "evidence": "Current Source package-build.json GKS-B721 / GA-B486.211; package_manifest SHA-256=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e; B721 update payload exact match 635/635, missing=0, diff=0; Current Quick 11/11 PASS evidence_sha256=7ac6be9c589133bec10d7ab79b95d5e10e79bf30257ea9f6623f76ae9a92738f; targeted persistence verification 8/8 PASS. Full-tree comparison differs only at development-project-data/DEV-V9-REORG-019.json due subsequent Development Project integration.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-21T22:08:33+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-21T22:08:33+09:00",
-      "updated_at": "2026-08-21T22:08:33+09:00"
-    },
-    {
-      "id": "CHK-R30-005-IMPLEMENTATION",
-      "title": "TASK-R30-005 Inventory / Equipment ownership Save persistence verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-005",
-      "status": "Passed",
-      "result": "GKS-B722でInventory / Equipment所有状態をDomainの意味・計算を再定義しない専用Save Bridgeへ接続。inventory[]とCharacter IDごとのequipment objectをSave snapshot作成前後およびLoad前後でexact比較し、所有関係の欠落・移動・個数変化を拒否する。装備条件/補正/所持上限/重複可否等はSave側へ実装しない。",
-      "evidence": "game/assets/js/inventory-equipment-save-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification TASK_R30_005_INVENTORY_EQUIPMENT_SAVE_OK cases=10; source deletions=0; Game data changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T06:20:51+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T06:20:51+09:00",
-      "updated_at": "2026-08-22T06:20:51+09:00"
-    },
-    {
-      "id": "CHK-R30-005-GATES",
-      "title": "TASK-R30-005 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-005",
-      "status": "Passed",
-      "result": "今回アップロードされたGKS-B721完全Sourceをexact baselineとして明示したGKS-B722更新はQuick/Accept/ReleaseすべてPASS。ZIP内容hash一致・UTF-8/NFC検査PASS、warning/timeout 0。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifestの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=7cfad928782ca030bef3744c05338d31ebb459a8a2b5bedf8ecd83b2485b6b2e tree=c3f23b5d8677d75342e0d02e96a4f835e0779f8f60314b03d2aa23d5b76518ae; target manifest=4e187bb807fda8913721f1dbcb70768b13ef704cfccb81ef7af9584e54aeff36 tree=d1c5dde60a1f9a222090ffcd8f6545c55f27617b23c4517fc6f4c35de93b366f; Quick=b8aca6f9869b6448c43cd1637b7af46e4038e1c5607028422d970374de100ce4; Accept=e569ecbc4137597cf4026bbcaf727a38575bef322012d4decbe7845aa0e9f417; Release=d043e1626d4b2acc2356bd1e4bc48518147ef0e4800e69dc8df3c81c2f71edde; ZIP=8018600590e1b207e24383c1d76393371eb97b76d350fd1586a5b2d1ce73ce13; encoding/NFC PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T06:20:51+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T06:20:51+09:00",
-      "updated_at": "2026-08-22T06:20:51+09:00"
-    },
-    {
-      "id": "CHK-DEV-WORKFLOW-RESOLUTION-001",
-      "title": "Failed Check自動解決・Gate再計算検証",
-      "gate": "General",
-      "target_type": "Project",
-      "target_id": "DEV-V9-REORG-019",
-      "status": "Passed",
-      "result": "Passed/Waived Correctionのresolves_check_idsをStudioが機械的に反映し、元Failedのstatus履歴を保持したままresolution=Resolved / blocking=falseへ更新する。Resolverが再び未解決になれば元Failedをblockingへ戻す。AI公開用pending/failed集計も解決済みFailedを除外する。",
-      "evidence": "GKS-B723 targeted CHECK_RESOLUTION_TARGETED_PASS; final ZIP Quick 14/14 PASS (source_zip_binding included) evidence_sha256=35902a9884e31ec06024dcf4783edd6dbf10b69abbb727712e51723b85c17c93; Accept 13/13 PASS evidence_sha256=c02093bacb8eb227492b4746afd52b3a431ca0119c16807f9edd687dac8c9d58; applied Full 26/26 PASS evidence_sha256=c0d8f40f449b05644c8ff3b8ed033b8440e9ab3c7de263f76e00eb3ddc75a3f4; Release 13/13 PASS evidence_sha256=4a42c9e202826b4df228092fe815180d7f5df16e248cecae52b2ee93ec268024; update ZIP sha256=cbff9df9c4ec1259e1aec8a3bf1c65ac0b21fc3a97365bbc0109235d191578b4; baseline tree=b0854f75ab71436f602610439c5b30b962302c62efd1c1d0c81537fa18f7771d; target tree=040e24e5175ecb2bfde12fef02f32fdfb917ee6245e19f68a1bf2372803548e7.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T06:37:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T06:37:00+09:00",
-      "updated_at": "2026-08-22T06:37:00+09:00"
-    },
-    {
-      "id": "CHK-DEV-GIT-UX-001",
-      "title": "Development Git接続自動補完・案件一覧表示検証",
-      "gate": "General",
-      "target_type": "Project",
-      "target_id": "DEV-V9-REORG-019",
-      "status": "Passed",
-      "result": "Git Remote未検証中でもcached lifecycleがActiveなら「検討・作業中」一覧へ表示し、Git状態確認中バッジだけを残す。Git接続欄は現在案件git_remoteを最優先にOwner / Repository / Branchを自動補完し、現在案件に接続情報がない場合も登録済みGit案件→端末記憶値の順で補完する。PATは保存しない。",
-      "evidence": "Targeted B724_GIT_AUTOFILL_PASS / B724_PROJECT_FILTER_PASS; source Quick 11/11=cf0c0cc3bc419b0be6d91776fed27226e42c9b99af1b55cd15893e28eab8339f; update Quick 13/13=c636411ad8e198409afecc55e8ac4a51d373bbd652efcb7aa5a0cf126d2590fa; Accept 13/13 + applied Full 26/26=98584c4eba9f63262733bc86a0b426c39c3fc11def0d55b732fe3ef6717655e1; Release 13/13 + applied Full 26/26=c141e634ff516250956da59d4ce3f205bb1c8946c4c49a2bdce6bce4267d02bb; ZIP=c9626a9144eab55f61c262719d0ad80cea482c6781018f7f08084685f9363a9d; encoding/NFC/ZIP integrity PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T07:10:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T07:10:00+09:00",
-      "updated_at": "2026-08-22T07:10:00+09:00"
-    },
-    {
-      "id": "CHK-DEV-GIT-DEFAULTS-B725-001",
-      "title": "Development Git初回接続既定値・優先順位検証",
-      "gate": "General",
-      "target_type": "Project",
-      "target_id": "DEV-V9-REORG-019",
-      "status": "Passed",
-      "result": "Git接続情報が未登録の初回でも Owner=kj2whvbzjn-hue / Repository=guild-adventure-studio / Branch=sub を自動入力する。現在案件git_remote、登録済みGit案件、端末記憶値が存在する場合はそれらを優先し、既定値は最後のfallbackに限定する。PATは保存しない。",
-      "evidence": "B725_GIT_DEFAULT_CONNECTION_PASS cases=3; target Quick 11/11=f9c9091365030b71f28e6b7414c6c23cb91be5674c56b0b7ea14e2e6441ec87f; Accept 13/13 + applied Full 26/26=f78612ef591ad3f47627bba862d0d5b841e5d8abb047d3d2f68fa92bdbb97882; Release 13/13 + applied Full 26/26=ce684ad3c4d7c01a1aa7f563d5b29aa0d6f6da882b30a10753043668ca6162a8; ZIP=bad5790a4f8938bf95aff4536b73d8a07769f1900c1fd5d73ff679de5b657c5e; encoding/NFC/ZIP integrity PASS.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T08:13:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T08:13:00+09:00",
-      "updated_at": "2026-08-22T08:13:00+09:00"
-    },
-    {
-      "id": "CHK-R30-005-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-005 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-005",
-      "status": "Passed",
-      "result": "Current Source GKS-B725上でGKS-B722のInventory / Equipment所有状態Save Bridgeが維持され、保存前後の所有状態exact保持とRuntime接続を再確認。TASK-R30-005 Acceptance CriteriaをCurrent実体で満たすためDone確定。",
-      "evidence": "Current package-build.json=GKS-B725 / GA-B486.211; package_manifest sha256=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f; bridge/app-runtime byte-identical to GKS-B722 artifact; targeted current verification 10/10 PASS; wiring 5/5 PASS; Quick 11/11 PASS evidence_sha256=a7f25fb920cf3b998da4d02e6d1d7f9c1e43838baebdb6d44acdc8acdda6cb78; build markers check PASS files=190; source/game data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T08:29:47+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T08:29:47+09:00",
-      "updated_at": "2026-08-22T08:29:47+09:00"
-    },
-    {
-      "id": "CHK-R30-006-IMPLEMENTATION",
-      "title": "TASK-R30-006 Skill / Passive / AI / Loadout Save persistence verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-006",
-      "status": "Passed",
-      "result": "GKS-B726でSkill / Passive / Skill Loadout / Formal AIの専用Save Bridgeを追加。既存Skill/AI状態をexact保持し、Passive/複数枠Loadoutは後方互換な任意fieldとしてSaveが意味を再定義せず保持する。既存v3 Saveへfieldを自動追加せず、Legacy AI fieldへのFallbackも許可しない。",
-      "evidence": "game/assets/js/skill-passive-ai-save-bridge.js; game/assets/js/ai-save-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification TASK_R30_006_SKILL_PASSIVE_AI_SAVE_OK cases=12; source deletions=0; Game data changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T08:40:11+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T08:40:11+09:00",
-      "updated_at": "2026-08-22T08:40:11+09:00"
-    },
-    {
-      "id": "CHK-R30-006-GATES",
-      "title": "TASK-R30-006 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-006",
-      "status": "Passed",
-      "result": "今回アップロードされたGKS-B725完全Sourceをexact baselineとしたGKS-B726更新はTarget Quick / Accept / ReleaseすべてPASS。ZIP内容hash一致・UTF-8/NFC検査PASS、warning/timeout 0。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存51 entryの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=ec7af6621dc258a53d35e0896e75f41b1b80eca0b7c2a2136fd42f1f88a9b70f tree=14098d9ccfc0a90f6568b5e1bf1e829be44856600c4346733f2728ebc5227bc4; target manifest=36fdfe2e258936478dc168ab11721499ba9cf7e7184250e57177851f950440ac tree=527620df31d19f85aaac9c07c6a86c08085a1f78e7a40364f63b614a4aed52fd; target Quick=b45d00dd8ca8c3689c9e13758f71f0dc1bbbbf46bf1f7eda1f5216560a57582f; Accept=7812dbcfdd095c6a99e7755093eff155da117f8dab6be457598068126f72f968; Release=7726719df9704817a7ceac7b877c7d32c51a4b7be47e389e9a1bf82b12011c39; ZIP=08acf0e8c208190c579a1d2329bb53b27c3658a154ebecf9b33f8d0b5e8ea383; ZIP files=639; encoding/NFC PASS; Build marker check PASS files=190.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T08:40:11+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T08:40:11+09:00",
-      "updated_at": "2026-08-22T08:40:11+09:00"
-    },
-    {
-      "id": "CHK-R30-006-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-006 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-006",
-      "status": "Passed",
-      "result": "Current Source GKS-B727上でGKS-B726のSkill / Passive / Skill Loadout / Formal AI Save接続が維持され、既存v3互換、任意Passive/Loadout fieldのexact保持、Formal AI状態保持、Legacy fallback拒否を再確認。TASK-R30-006 Acceptance CriteriaをCurrent実体で満たすためDone確定。",
-      "evidence": "Current package-build.json=GKS-B727 / GA-B486.211; package_manifest sha256=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45; skill-passive-ai-save-bridge.js / ai-save-bridge.js / app-runtime.js byte-identical to GKS-B726 artifact; game/index.html bridge load retained with only b727 Build/cache token advancement; targeted current verification 12/12 PASS; Quick 11/11 PASS evidence_sha256=58c385c3736b7c3388a5b204776bdee5f4715f6dacd9bfd575c6e62e80169aa0; build markers check PASS files=190; source/game data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:05:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:05:00+09:00",
-      "updated_at": "2026-08-22T09:05:00+09:00"
-    },
-    {
-      "id": "CHK-R30-007-IMPLEMENTATION",
-      "title": "TASK-R30-007 Game Settings / Tutorial Save persistence verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-007",
-      "status": "Passed",
-      "result": "GKS-B728でGame Settings / Tutorial進行の専用Save Bridgeを追加。Save側は両Domainの意味・具体デフォルト値を再定義せず、gameSettings / tutorialProgressを任意root objectとしてexact保持する。既存v3 Saveへfieldを強制追加せず、存在時だけCurrent schemaでobjectを要求する。Settings/Tutorialは現段階のBattle/Quest確定結果計算へ接続していない。",
-      "evidence": "game/assets/js/settings-tutorial-save-bridge.js; game/assets/js/ai-save-bridge.js; game/assets/js/app-runtime.js; game/index.html; temporary targeted Node verification R30_007_TARGETED 12/12 PASS (legacy v3 compatibility, optional object validation, exact preservation, mutation rejection, Save/Load wiring, gameplay runtime non-consumption); source deletions=0; Game data changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:15:56+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:15:56+09:00",
-      "updated_at": "2026-08-22T09:15:56+09:00"
-    },
-    {
-      "id": "CHK-R30-007-GATES",
-      "title": "TASK-R30-007 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-007",
-      "status": "Passed",
-      "result": "ユーザー提供GKS-B727 / GA-B486.211完全Sourceをexact baselineとしたGKS-B728更新はTarget Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、UTF-8/NFC・Source ZIP binding・applied-state検証もPASS。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=f88f785e66021878ee104f2b5d5c92df0bacd4576f0eb3d320a1d71a44c74e45 tree=28527cc972bf73652fe8e47414afc855a60eff1d003b4afa6772ff866cfbd133; target manifest=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072 tree=f67650a6a1f355067b2ad67d259ec0f7362d3e8a9431da6063424dd06a814d3a; target Quick 11/11 PASS evidence_sha256=13a8694f9cd9de07ab2e66392ed5c98357b4cbe86438fc56c5dcc70a482b659c; Accept 14/14 PASS evidence_sha256=f19ca0a7b39bbdf7f9e82b71b4893aa3aee5c2c6258229a26177bb009aa1b48e; Release 14/14 PASS evidence_sha256=a309e5e259ca62787bc7b48d47a46edacab10a1ccc8734014cb65936820874b3; update ZIP sha256=e3ea6fef3bdc8c516d9c75e36c26f65a1815226ade3845864e70f4e3de7d7e2b files=640; Build marker check PASS files=190.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:15:56+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:15:56+09:00",
-      "updated_at": "2026-08-22T09:15:56+09:00"
-    },
-    {
-      "id": "CHK-R30-007-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-007 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-007",
-      "status": "Passed",
-      "result": "Current Source GKS-B728上でGKS-B728のGame Settings / Tutorial進行Save接続を再確認。gameSettings / tutorialProgressの任意object exact保持、既存v3後方互換、型不正拒否、Save/Load wiring、Battle/Quest確定結果Runtimeでの非参照をCurrent実体で確認し、TASK-R30-007 Acceptance Criteriaを満たすためDone確定。",
-      "evidence": "Current package-build.json=GKS-B728 / GA-B486.211; package_manifest sha256=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072; GKS-B728 update payload 638/638 byte-identical to Current Source, missing=0 diff=0; settings-tutorial-save-bridge.js sha256=50c4da8ec0cedcba9bf3a49b9ec0a9fdba00f31532b8860f59a882a1742f2dce; targeted current verification 12/12 PASS; Quick 11/11 PASS evidence_sha256=f322501f1c90cdab73ef10bc84f0e1daf1dee2a2964f74246710f4b15cfb3267; build markers check PASS files=190; source/game data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:21:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:21:00+09:00",
-      "updated_at": "2026-08-22T09:21:00+09:00"
-    },
-    {
-      "id": "CHK-R30-008-IMPLEMENTATION",
-      "title": "TASK-R30-008 QuestRun persistence / Playback resume verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-008",
-      "status": "Passed",
-      "result": "GKS-B729でQuestRun専用Save Bridgeを追加し、Active QuestRunと保存済みSnapshotをSave/Load境界でexact保持する。Active IDは保存済みQuestRun参照を必須化し、Scene/Battle/Event/Reward/Flag等を含むQuestRun Snapshotの暗黙変更を拒否する。Continue/Playbackは既存の保存済みQuestRun Timeline復帰経路を維持し、Simulation/再抽選/再計算経路は追加していない。",
-      "evidence": "game/assets/js/quest-run-save-bridge.js sha256=0b739d9f235064ba725b34e5f3a5e2fc6d912323b3c302f9bf859e4d3e5b1c09; game/assets/js/app-runtime.js sha256=d09589019f5b03fd70a265768e845df0ec5858eb853f277813a2cd7cfe898e16; game/index.html sha256=3282c952200548270ef32f936c69701830e0f961304e3c072fff40629bdf3854; temporary targeted Node verification TASK_R30_008_TARGETED_PASS cases=14; source deletions=0; Game data changes/exclusions=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:28:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:28:00+09:00",
-      "updated_at": "2026-08-22T09:28:00+09:00"
-    },
-    {
-      "id": "CHK-R30-008-GATES",
-      "title": "TASK-R30-008 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-008",
-      "status": "Passed",
-      "result": "ユーザー提供GKS-B728 / GA-B486.211完全Sourceをexact baselineとしたGKS-B729更新はTarget Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、展開後payload 641/641が作成元と完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=2a745cc348e881d841ec42706d53a51a4b98b886e039379ee36eab3e3000c072 tree=6644759b679bdff19649e275b55a8ca110e29eb52515149d0565d48d065067ac; target manifest=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd tree=e158b8bacd4d198cf6f3ff5fbd8285d1c0ee73a59407a8d27365d4a6849d4810; target Quick 11/11 PASS evidence_sha256=39db3104c573c407f5f818d56c83ebd867ef80c02d942a9962e22e6b917eaf6b; Accept 13/13 PASS evidence_sha256=513f801233666ea7b20a2a3f8217503471e130d9f3368da249341cd9f6494d25; Release 13/13 PASS evidence_sha256=e9cdee29a3c5a9cdd55fd85b9e5fc4decfad8dd84b37f35fd73851cc88147f70; update ZIP sha256=fc2fddf528056561f7b3b37e51809868e940e0fe13e7f2e18cc05179f976a125 files=641; Build marker check PASS files=190.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:28:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:28:00+09:00",
-      "updated_at": "2026-08-22T09:28:00+09:00"
-    },
-    {
-      "id": "CHK-R30-008-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-008 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-008",
-      "status": "Passed",
-      "result": "Current Source GKS-B729上でQuestRun永続化とPlayback復帰境界を再確認し、Active QuestRun参照、保存済みScene/Battle/Event/Reward/Flag Snapshot exact保持、Snapshot改変拒否、dangling Active ID拒否、保存済みActive QuestRunへのContinue/Playback復帰を確認したためTASK-R30-008をDone確定。",
-      "evidence": "Current package-build.json=GKS-B729 / GA-B486.211; package_manifest sha256=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd; prior update persistent payload 639/639 byte-identical, missing=0 diff=0; quest-run-save-bridge.js sha256=0b739d9f235064ba725b34e5f3a5e2fc6d912323b3c302f9bf859e4d3e5b1c09; current targeted verification 8/8 PASS; Current Quick 11/11 PASS evidence_sha256=430f68062d212cd77089130652e494d4b59ae71cde2db2e6cb47b697322ab421; source/game data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:49:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:49:00+09:00",
-      "updated_at": "2026-08-22T09:49:00+09:00"
-    },
-    {
-      "id": "CHK-R30-009-IMPLEMENTATION",
-      "title": "TASK-R30-009 New Game initialization sequence verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-009",
-      "status": "Passed",
-      "result": "GKS-B730でNew Gameを別候補Saveとして固定順序で構築し、Formal Runtime Dataから初期Contentを取得する。Save IntegrityとLoad無変更検証成功後だけAtomic Auto Saveへ進み、Integrity失敗時は書込みもlive state切替も行わない。",
-      "evidence": "game/assets/js/app-runtime.js sha256=e21eef81b4c07f87e1362901b3433de05d97ea2f2a61c671a7fc4a8bc7a2b1f0; temporary targeted Node verification TASK_R30_009_TARGETED_PASS cases=18; initialization order=guild,progress_flags,starter_characters,party,inventory_equipment,skill_passive_ai,integrity,first_auto_save; source deletions=0; Game data changes/exclusions=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:49:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:49:00+09:00",
-      "updated_at": "2026-08-22T09:49:00+09:00"
-    },
-    {
-      "id": "CHK-R30-009-GATES",
-      "title": "TASK-R30-009 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-009",
-      "status": "Passed",
-      "result": "ユーザー提供GKS-B729 / GA-B486.211完全Sourceをexact baselineとしたGKS-B730更新はTarget Quick / Update Accept / ReleaseすべてPASS。更新ZIPはExport/を含まず、再展開後641/641完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=6be6bc5f57f48f1171e4d44d13812e73a861223ca60eece5ccca6a81a9b03fcd tree=e80078b79ae387da13b01be8fa97e5254be5b2622085f1240c27629384ee4c93; target manifest=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a tree=850ff5be3d338f4b8e78caf267c4f06e563b2a0f64c5759e35e939194e8720c7; target Quick 11/11 PASS evidence_sha256=26ab50699dad1c7c74f946717a6801dea89b1fefa4ee6caaa79262b9787dc062; Accept 13/13 PASS evidence_sha256=231bc419f0ce6a655fca7b2d3e6eb153e616493ae3117a02cb984a5fc52a3ae4; Release 13/13 PASS evidence_sha256=510dafdf8537de946883cad85f41b9bea16299e6a9522efdee147b7b0c3b28db; update ZIP sha256=abb67969437808e42408447527056e22b97a6767e2766dcc68d1e97b9a6ed6d7 files=641; Build marker check PASS files=190.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T09:49:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T09:49:00+09:00",
-      "updated_at": "2026-08-22T09:49:00+09:00"
-    },
-    {
-      "id": "CHK-R30-009-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-009 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-009",
-      "status": "Passed",
-      "result": "Current Source GKS-B730上でNew Game初期化Sequenceを再確認。固定初期化順序、Formal Runtime Data由来の初期Content、候補Save分離、Integrity/Load無変更検証後のみAtomic Save、成功後のみlive state切替を確認し、TASK-R30-009 Acceptance Criteriaを満たすためDone確定。",
-      "evidence": "Current package-build.json=GKS-B730 / GA-B486.211; package_manifest sha256=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a; prior update persistent payload 639/639 byte-identical, missing=0 diff=0; app-runtime.js sha256=e21eef81b4c07f87e1362901b3433de05d97ea2f2a61c671a7fc4a8bc7a2b1f0; current targeted verification 12/12 PASS; Current Quick 12/12 PASS evidence_sha256=d94dee047feb2473234ad291b151639d6ec47eb3429041f173a3a25fa6192f3e; Build marker check PASS files=190; source/game data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:04:29+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:04:29+09:00",
-      "updated_at": "2026-08-22T10:04:29+09:00"
-    },
-    {
-      "id": "CHK-R30-010-IMPLEMENTATION",
-      "title": "TASK-R30-010 Existing Save New Game overwrite confirmation verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-010",
-      "status": "Passed",
-      "result": "GKS-B731でTitle New Game入口をSave Ownerの上書き確認へ接続。Saveなしでは確認不要、SaveありではPlayer確認を必須とし、Cancel時はNew Game候補生成・Save書込み・live state切替・画面遷移を行わない。承認後のみ既存B730のIntegrity-first / Atomic Save初期化経路へ進む。",
-      "evidence": "game/assets/js/app-runtime.js sha256=3dd4d5ef853517899a72930fdf1def0798d3df0bb0849cf503c7b85be75a8010; temporary targeted Node verification TASK_R30_010_TARGETED_PASS cases=15; confirmation occurs before prepareNewGameSnapshot and commitPreparedNewGame; Cancel side effects=0; source deletions=0; Game data changes/exclusions=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:04:29+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:04:29+09:00",
-      "updated_at": "2026-08-22T10:04:29+09:00"
-    },
-    {
-      "id": "CHK-R30-010-GATES",
-      "title": "TASK-R30-010 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-010",
-      "status": "Passed",
-      "result": "ユーザー提供GKS-B730 / GA-B486.211完全Sourceをexact baselineとしたGKS-B731更新はTarget Quick / Update Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、再展開後641/641完全一致、persistent payload 639/639完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=1774d5e8d0d21af9addbcf82e701c17f5824f8f4c8ecc8fa601366817cc38f0a tree=805f380c94a9cecea75477455acfb3df801de97c31d9a8755dee2befed43cac3; target manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=978dbbc87b76a4c4859863c04b240c8c597f3d9c84a5af8f36f4793c5b77b8db; Target Quick 11/11 PASS evidence_sha256=048d5c10df3a6dc795302f0f4889fd0980326030031e3906290a106031f3ca36; Update Quick 13/13 PASS evidence_sha256=a86a6f8ffe39e28e62b514a99d9fda45bd2b85e64330807500a910d83267f2c8; Accept 13/13 PASS evidence_sha256=9cb8a7bc6150489529135168eeab3e412c73e599a21934129b4c99c082516f0f; Release 13/13 PASS evidence_sha256=db665ac8ce26d8f67eb6e0639f5ab4409e204bd05cb65e08d382f86d8ee9be10; update ZIP sha256=79f8fcda5d0e543e512155840828c366888e2ea87ffce47d260ffc82f29bddd5 files=641; Build marker check PASS files=190.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:04:29+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:04:29+09:00",
-      "updated_at": "2026-08-22T10:04:29+09:00"
-    },
-    {
-      "id": "CHK-R30-010-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-010 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-010",
-      "status": "Passed",
-      "result": "Current Source GKS-B731上で既存SaveありNew Game上書き確認を再確認。Save有無判定、候補生成前の確認、Cancel時の候補生成/Commit不実行、確認UI欠落時Fail Closedを確認し、TASK-R30-010をDone確定。",
-      "evidence": "Current package-build.json=GKS-B731 / GA-B486.211; package_manifest sha256=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab; prior update persistent payload 639/639 byte-identical, missing=0 diff=0; app-runtime.js sha256=3dd4d5ef853517899a72930fdf1def0798d3df0bb0849cf503c7b85be75a8010; current targeted verification 10/10 PASS; Current Quick 11/11 PASS evidence_sha256=4dd2fd250b22cd606592f9727dfd9ef5e6712a0aec5d87aad1623be6d9f636fe; Build marker check PASS files=190; source/game data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:18:23+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:18:23+09:00",
-      "updated_at": "2026-08-22T10:18:23+09:00"
-    },
-    {
-      "id": "CHK-R30-011-IMPLEMENTATION",
-      "title": "TASK-R30-011 Save/Load Recovery UI connection verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-011",
-      "status": "Passed",
-      "result": "GKS-B732でSave/Load専用Recovery UIとGKGameSaveRecoveryを追加。Save失敗はOwner Runtime理由を表示してRetry可能、Load/Migration/Integrity失敗はlive state切替前に停止して暗黙初期化せず、Recovery UIからRetry/Title安全復帰を選択できる。処理中のNew Game/Continue二重実行も防止する。",
-      "evidence": "game/assets/js/app-runtime.js sha256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html sha256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03; temporary targeted Node verification TASK_R30_011_TARGETED_PASS cases=19; Save failure rethrow=PASS; Load assignment after successful Owner load=PASS; silent new-state fallback absent=PASS; Recovery reason/code passthrough=PASS; Retry/safe return/double-execution guard=PASS; source deletions=0; Game data changes/exclusions=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:18:23+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:18:23+09:00",
-      "updated_at": "2026-08-22T10:18:23+09:00"
-    },
-    {
-      "id": "CHK-R30-011-GATES",
-      "title": "TASK-R30-011 SOURCE_UPDATE Gate verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-011",
-      "status": "Passed",
-      "result": "ユーザー提供GKS-B731 / GA-B486.211完全Sourceをexact baselineとしたGKS-B732更新はTarget Quick / Update Quick / Update Accept / ReleaseすべてPASS。直接Studio更新ZIPはExport/を含まず、再展開後641/641完全一致。削除0件、Game data変更/除外0件。保護資産差分はBuild token追随とcritical-runtime-manifest既存entryの機械派生size/hash同期のみ。",
-      "evidence": "baseline manifest=114895efc9a6f38bb14c50e1e12070630d2696294a213fd8823b4fdafc2b65ab tree=4443e1c9747c14235bd94e178d2ea70f3ae97c90c609045747c71e310810638f; target manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 tree=6efee6e8088889f3016acaa664af5889e6fa106b0f1dd460191a22707d358991; Target Quick 11/11 PASS evidence_sha256=e21ce62d73e3c1c8a4327e4eda6369f5a8d7aad56f59b76df61944135cfd5d63; Update Quick 13/13 PASS evidence_sha256=21fb60f5958eeb70fae76da61dd7860f279dd62c42e867ad2bfdcee8cf7e2a92; Accept 13/13 PASS evidence_sha256=34533f06f12134e4bd6e4af25c2a1fbd64558d95a98891dc4b545267bba5b7f9; Release 13/13 PASS evidence_sha256=2477bcfef328b1d1ae0037d362922850b6b32d28a444dc4fae25ff0c8368eda4; update ZIP sha256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7 files=641; Build marker check PASS files=190.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:18:23+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:18:23+09:00",
-      "updated_at": "2026-08-22T10:18:23+09:00"
-    },
-    {
-      "id": "CHK-R30-011-HUMAN-APPLY-VERIFY",
-      "title": "TASK-R30-011 Human Apply / Current Source verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-R30-011",
-      "status": "Passed",
-      "result": "Current Source GKS-B732上でSave/Load Recovery UI接続を再確認。Save失敗時のrollback/Retry、安全復帰、Load/Integrity失敗時のlive state切替前停止、Recovery UIへのOwner Runtime理由/code引渡しをCurrent実体で確認し、TASK-R30-011をDone確定。",
-      "evidence": "Current source ZIP sha256=5d480b17689eb7fdadb1b4762dcc7768ec1323d65c34205655e1aba368a746e6; package-build=GKS-B732 / GA-B486.211; package_manifest sha256=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766; prior update ZIP sha256=0db22a25615b47afbfb86c7862a0517c5a5ce63f1a83f53e465a97ce58ea9df7; persistent payload 639/639 byte-identical, missing=0 diff=0; app-runtime.js sha256=3ae3bce01a15f3623b10f9dd9312362d4790ade19bde6f46edb1dc57eb60d8ea; game/index.html sha256=f7f88352a3d4e44561df995cef3949f6d502b0f0d1acf6c9b54c7e19f93c6f03; R30-011 acceptance subset PASS in current Phase-1 E2E; Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; Build marker PASS files=190; source/game-data/deletion/exclusion changes=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:23:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T10:23:00+09:00",
-      "updated_at": "2026-08-22T10:23:00+09:00"
-    },
-    {
-      "id": "CHK-R30-012-PHASE1-E2E",
-      "title": "TASK-R30-012 Phase 1 Save/New Game E2E verification",
-      "gate": "General",
-      "target_type": "Task",
-      "target_id": "TASK-R30-012",
-      "status": "Failed",
-      "result": "Phase 1専用E2Eは10/11 PASS。New Game初回Save、既存Save上書きCancel保全、13領域Domain Persistence、Atomic Save/Backup/rollback、Recovery Retry/安全復帰、v2→v3 Migration、Load Integrity Fail Closed、未対応Migration拒否、Owner reason/code引渡し、Current Save strict schemaはPASS。一方、New Game初回Save直後のTitle Continueが失敗するため主要導線Acceptanceを満たさず、TASK-R30-012はDone不可。",
-      "evidence": "targeted evidence sha256=b85e125c1223c332e3d1b36d01a22e4ce7d8d1b8d48e8efe94a2492aa5e2fbc0 (cases=11 passed=10 failed=1). Failed case=P1-CONTINUE-AFTER-FIRST-SAVE. Root cause: game/assets/js/app-runtime.js reconcileFormalAdventureQuestSelection() selects the first Formal Quest when saved selectedQuestId is empty and calls undefined persist(). The Game source tree contains no function/const/let/var definition for persist; the only formal persist() implementation found is Studio-side. Actual Continue catches the resulting ReferenceError, reports 読込後の初期化に失敗しました: persist is not defined, returns to Title, and returns false. This is a SOURCE_UPDATE correction requirement discovered inside a DEVELOPMENT_ONLY task, so no source edit was made. Current Quick 11/11 PASS evidence_sha256=478aa2f0a94b6f54914cfb825dbe8b568cc9d1f19525753e081189064be289e4; Current Full 26/26 PASS evidence_sha256=370bc770b87bb7fbfce647e196dd669df0e233818f18de5ba1cd108a34d7c5c3; AI_GAME_SAVE_SCHEMA_V3_OK PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. Required split proposal: keep TASK-R30-012 as DEVELOPMENT_ONLY and create/authorize a separate SOURCE_UPDATE correction for the undefined Game persist() call, then rerun TASK-R30-012 E2E. R39 Phase 1→2 Gate must remain blocked.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T10:23:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": true,
-      "created_at": "2026-08-22T10:23:00+09:00",
-      "updated_at": "2026-08-22T10:23:00+09:00"
-    },
-    {
-      "id": "CHK-R30-012-CORR-ARTIFACT-001",
-      "title": "TASK-R30-012 Correction artifact / Compatibility Budget 0 verification",
+      "id": "CHK-R30-012-CORR-HUMAN-APPLY-VERIFY",
+      "title": "TASK-R30-012 Correction Human Apply / Current Source verification",
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-R30-012-CORR-001",
       "status": "Passed",
-      "result": "GKS-B733 Correction artifactはlegacy bare persistをCurrent autoSaveへ収束し、互換層・局所catchを追加せず、Targeted/Quick/Accept/Releaseを通過した。Artifact生成時点ではHuman Apply後E2E未実施のため元Failedは解決扱いにしない。",
-      "evidence": "Exact baseline GKS-B732 / GA-B486.211 package_manifest=05f263b996028e425866ab56a7c44e3aedfcde06097619244a5d2e9443377766 source_tree=8473f6110b349cde6d54c6bf11addcd3e9d32e6f8eda60e76a5f48fc7c3e321f; target GKS-B733 / GA-B486.211 package_manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594 source_tree=99c540ea07fc8922dd1bb80a03a054629a79f9f6d4f905f9efc1616b47108508 artifact_id=GKS-B733-99c540ea07fc. Game bare persist calls 5→0. Modified production catch counts app-runtime 46→46, game/index 1→0; compatibility term counts did not increase. Strict correction evidence sha256=d274d983cab6e41b53844d874576abdbc5c11d478fc04f06e64cf5f063483f98. Targeted adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS; AI_GAME_SAVE_SCHEMA_V3_OK PASS. Update Quick 13/13 PASS evidence_sha256=35e50b8cea54c6e9b61e7396bb7b6c7b383234fb37405fbed86bf5f31b34060c; Accept 13/13 PASS evidence_sha256=0d587eff0d9d0e2c4a28cbfe80a4b3e7cecdfc8650b8764e774724e45e299c38; Release 13/13 PASS evidence_sha256=7f2c9f96357a7c597e849535ee24bae213c76bc8491e9f6cde3bb7bd56cc60ae; extracted final ZIP Release 13/13 PASS evidence_sha256=fe260f1eff21ff6fda188054047d36c8368c6f61af08744cd93bb13d13ac5b51; update ZIP sha256=d8587af99a17acfefeaf7c529bb97b8c1f37295ab400f7a337d47a75888f6c1d. Source deletions=0; Game data changes/exclusions=0. Human Apply and original Phase 1 E2E rerun remain pending.",
+      "result": "GKS-B733で生成したPhase 1 persist Correctionの効果がCurrent GKS-B735にも保持されていることを確認。production bare persist=0、正規autoSave経路、Current Quick/関連Targeted PASS。Correction TaskをDoneとし、TASK-R30-012を独立E2E再実行用に解放する。元Phase 1 Failed CheckはこのCheckでは解決しない。",
+      "evidence": "Current package-build.json=GKS-B735 / GA-B486.211; source ZIP sha256=777bf69ca07b44f1a32acf762996699b88dfb075f0511bc059b4fd4b443bb0f5; package_manifest sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; manifest 639/639 PASS; app-runtime sha256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; Game production bare persist=0; reconcileFormalAdventureQuestSelection()->autoSave(); Current Quick 11/11 PASS evidence_sha256=2368edb345f292ad3041c3e7ad2bfa5523e2763448aa4f1848b4f5bcb9a35f82; adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. Existing CHK-R30-012-CORR-ARTIFACT-001 already records B733 Targeted/Quick/Accept/Release and Compatibility Budget 0 evidence. resolves_check_ids intentionally empty until TASK-R30-012 itself reruns the Phase 1 E2E.",
       "checked_by": "AI",
-      "checked_at": "2026-08-22T11:05:00+09:00",
+      "checked_at": "2026-08-22T16:15:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -9738,133 +8556,16 @@
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-22T11:05:00+09:00",
-      "updated_at": "2026-08-22T11:05:00+09:00"
-    },
-    {
-      "id": "CHK-DEV-AUTOCORR-B734-ARMED-001",
-      "title": "GKS-B734 self-heal validation armed",
-      "gate": "Implementation",
-      "target_type": "Project",
-      "target_id": "DEV-V9-REORG-019",
-      "status": "Passed",
-      "result": "GKS-B733 exact baselineからGKS-B734検証Buildを構成。GKS-B732は既知Failure参照だけに使用し、reconcileFormalAdventureQuestSelection()へbare persist()を1箇所だけ再導入。Autonomous Correction Engineを同時導入し、Correctionは未実行・未生成のまま。",
-      "evidence": "baseline=GKS-B733 manifest=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594; target=GKS-B734 manifest=bfd324d10c117283f48bbb9ce784bbe611484d40f0739a2d08c2e3239bd5d2f6; target tree=91b51299b8c5f18c4ed3341d2ebc9e087f0ea8662c4ede59e5360452b536022c; known defect introduced=1 bare persist in reconcileFormalAdventureQuestSelection; autonomous-correction.py installed; Update Quick 14/14, Accept 14/14, Release 14/14 PASS. This Check does not resolve any Phase 1 Failed Check.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T12:54:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T12:54:00+09:00",
-      "updated_at": "2026-08-22T12:54:00+09:00"
-    },
-    {
-      "id": "CHK-DEV-AUTOCORR-B734-FAIL-001",
-      "title": "GKS-B734 known persist failure reproduced",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
-      "status": "Failed",
-      "result": "P1-CONTINUE-AFTER-FIRST-SAVE相当経路で、B734へ意図的に再導入した `persist is not defined` Failureを再現。親TaskのAcceptance Criteriaは未完了のためDone不可。",
-      "evidence": "Failed case=P1-CONTINUE-AFTER-FIRST-SAVE. Root cause: game/assets/js/app-runtime.js reconcileFormalAdventureQuestSelection() selects the first Formal Quest when selectedQuestId is empty and calls undefined persist(). ReferenceError: persist is not defined. Exact-function harness app-runtime sha256=3b2510f46d0912e5cd3fd852d528b4fdc5ad7f8192886d7e5a9f1d4860faf412; target-function sha256=daf0fd12bbc0999a33ece2df996a054bb9ee6a2543ffc6e2a0184168a7b7c74d; evidence sha256=6b18e4890aa68ae752fc9e1fbbe4702160f559e85b7b774b086ffb66a5c8b8d9; persist definition=0; autoSave definition=1. adventure-formal-quest-runtime-integration PASS. Current Quick 11/11 PASS evidence_sha256=e7d6824751518fa72a8ecbe7e6f0f8a09dc35bd19b3d8b0e5635d25b84a30939. Current Source GKS-B734 / GA-B486.211; package_manifest 639/639 SHA-256 verified. Source changes=0; deletions=0; Game data changes/exclusions=0. Correction analyze/prepare/source edit was intentionally not executed in this run; next AI_START preflight must consume this unresolved blocking Failed Check.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T13:09:56+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Resolved",
-        "resolved_by": "CHK-DEV-AUTOCORR-B735-PARENT-E2E-001",
-        "resolved_at": "2026-08-22T15:14:00+09:00",
-        "reason": "B735 Human Apply後、親Task自身がP1-CONTINUE-AFTER-FIRST-SAVE相当経路を独立再実行してPASS。B734で記録したpersist未定義FailureはCurrent autoSave経路への収束後に再現せず、元Failed Checkを解決する。",
-        "mode": "automatic"
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T13:09:56+09:00",
-      "updated_at": "2026-08-22T15:14:00+09:00"
-    },
-    {
-      "id": "CHK-DEV-AUTOCORR-B735-CORR-ARTIFACT-001",
-      "title": "GKS-B735 autonomous correction artifact / Budget 0 verification",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001",
-      "status": "Passed",
-      "result": "Failure Signature cc702ccb758b232bcc10 の一意原因を既存Current autoSave()へ収束。Compatibility Budget 0 / Exception Budget 0、Targeted / Quick / Accept / Release PASS。Human Apply前のため親Failedは未解決。",
-      "evidence": "artifact_id=GKS-B735-001fbbec0e96; update ZIP sha256=5b6a92ea775d930dfd9e0ed089f365d5811e20af003c1849d1cce29c1cb151a0; baseline manifest=bfd324d10c117283f48bbb9ce784bbe611484d40f0739a2d08c2e3239bd5d2f6 tree=f0d02ae1e311248ba6a7b654a3a5ef73dc90d604b3c849360b5dfe33f75c5a89; target manifest=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34 tree=001fbbec0e96ad4fe078e4a4d3d78325eb2bf5a9c8caa73feeb9a7378673504e; app-runtime sha256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; bare persist=0; autoSave definition=1; Budget PASS sha256=84d26e879580a423d52e5bd134b655aa5596a56519891aaf3b9e544e4350dfb3; targeted P1-equivalent PASS; source Quick 11/11 PASS; update Quick 13/13 PASS; Accept 13/13 PASS with applied Full 26/26; Release 13/13 PASS with applied Full 26/26; extracted final ZIP Release 14/14 PASS with applied Full 26/26. Source deletions=0; Game data changes/exclusions=0. resolves_check_ids intentionally empty until Human Apply後に親Task自身がE2E PASSを確認する。",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T13:31:30+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T13:31:30+09:00",
-      "updated_at": "2026-08-22T13:31:30+09:00"
-    },
-    {
-      "id": "CHK-DEV-AUTOCORR-B735-PARENT-E2E-001",
-      "title": "GKS-B735 parent self-heal E2E independent rerun",
-      "gate": "Implementation",
-      "target_type": "Task",
-      "target_id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
-      "status": "Passed",
-      "result": "B735 Human Apply後、親Task自身がP1-CONTINUE-AFTER-FIRST-SAVE相当経路を独立再実行してPASS。B734で記録したpersist未定義FailureはCurrent autoSave経路への収束後に再現せず、元Failed Checkを解決する。",
-      "evidence": "Current Source GKS-B735 / GA-B486.211; source ZIP sha256=777bf69ca07b44f1a32acf762996699b88dfb075f0511bc059b4fd4b443bb0f5; package_manifest sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; manifest 639/639 PASS; app-runtime sha256=9e991a10696ecf7e3bae0adfbe9cbbfe5f2763ddc5caa3ec982759d11db3b05d; autonomous-correction analyze retry_count=1/2 decision=safe_auto_candidate evidence_sha256=68328e4d0b74ed4d2e08c9ac16320a77f0463aebc8afe7cad4f0dc54dc27e96e; exact-function P1-equivalent PASS function_sha256=25d4f3351fba5d31298b4739189115e74a584ae717d6275ab5827f360272597e evidence_sha256=4ac500c455d08477d1ef7250e2753b7d2aef8e9ce2941c8ba3b4bc8df78c49d8; bare persist=0; autoSave path=1; Current Quick 11/11 PASS evidence_sha256=8cd7f7b7fc5d19ca7afa186071ee34bed56d2433bafe88c46fef51fa37875b20; adventure-formal-quest-runtime-integration PASS; adventure-quest-run-runtime-integration PASS; adventure-quest-return-progress-runtime-integration PASS. Source changes=0; source deletions=0; Game data changes/exclusions=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T15:14:00+09:00",
-      "resolves_check_ids": [
-        "CHK-DEV-AUTOCORR-B734-FAIL-001"
-      ],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T15:14:00+09:00",
-      "updated_at": "2026-08-22T15:14:00+09:00"
-    },
-    {
-      "id": "CHK-DEV-STATE-ROLLBACK-RESTORE-001",
-      "title": "Development Project stale snapshot rollback restoration",
-      "gate": "General",
-      "target_type": "Project",
-      "target_id": "DEV-V9-REORG-019",
-      "status": "Passed",
-      "result": "Current JSON had regressed to an older Archived/Planning snapshot. Later authoritative history (Archived→Active, Human implementation approval) and forward-only workflow rule prove the regression is stale-state rollback, so missing records and forward workflow state are restored without deletion.",
-      "evidence": "Current input lifecycle=Archived updated_at=2026-08-21T06:08:54.284Z and workflow=Planning/Pending, while prior complete authoritative project records lifecycle Archived→Active at 2026-08-21T11:29:03.750Z and Human approved implementation start at 2026-08-21T22:03:10.347Z. Current input also lost 4 project_rules, 17 implementation_records, 2 decisions, 1 task and 40 checks relative to that later full state; B735 apply verification deltas are preserved. Recovery uses ID merge only, delete=0.",
-      "checked_by": "AI",
-      "checked_at": "2026-08-22T15:14:00+09:00",
-      "resolves_check_ids": [],
-      "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
-      },
-      "blocking": false,
-      "created_at": "2026-08-22T15:14:00+09:00",
-      "updated_at": "2026-08-22T15:14:00+09:00"
+      "created_at": "2026-08-22T16:15:00+09:00",
+      "updated_at": "2026-08-22T16:15:00+09:00"
     }
   ],
   "workflow": {
-    "stage": "Implementing",
+    "stage": "Planning",
     "implementation_approval": {
-      "status": "Approved",
-      "by": "Human",
-      "at": "2026-08-21T22:03:10.347Z"
+      "status": "Pending",
+      "by": "",
+      "at": ""
     },
     "completion_approval": {
       "status": "Pending",
@@ -10159,283 +8860,13 @@
       "message": "Development Project JSON imported as new project: DEV-V9-REORG-019"
     },
     {
-      "at": "2026-08-22T15:10:27+09:00",
-      "type": "AutonomousCorrectionHumanApplyVerified",
-      "summary": "AI_START selected TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001 only. User-provided Current Source verified as GKS-B735; manifest 639/639, Current Quick 11/11, targeted Quest Runtime tests PASS. Correction Task -> Done; parent TASK-DEV-AUTOCORR-B734-VERIFY-001 -> Todo (unblocked only). Parent E2E and Failed Check resolution were not executed in this run."
+      "at": "2026-08-22T16:15:00+09:00",
+      "type": "R30Phase1CorrectionHumanApplyVerified",
+      "summary": "AI_START selected TASK-R30-012-CORR-001 only. Current Source GKS-B735 was verified to retain the B733 correction semantics: manifest 639/639, Game production bare persist=0, Current autoSave path present, Quick 11/11 and three Quest Runtime targeted tests PASS. TASK-R30-012-CORR-001 -> Done; TASK-R30-012 -> Todo only. Parent Phase 1 E2E and CHK-R30-012-PHASE1-E2E resolution were not executed in this run."
     },
     {
-      "at": "2026-08-22T06:13:02.031Z",
-      "message": "Development Workspace JSON merged: add=5 update=0 delete=0"
-    },
-    {
-      "at": "2026-08-22T07:12:33.490Z",
-      "message": "Project lifecycle changed: Archived -> Active"
-    },
-    {
-      "at": "2026-08-21T11:29:03.750Z",
-      "message": "Project lifecycle changed: Archived -> Active"
-    },
-    {
-      "at": "2026-08-21T20:16:00+09:00",
-      "message": "AI_START実行: Human反映済みCurrent Source GKS-B717とDevelopment ProjectのIMPL-R30-001=Appliedを再照合。TASK-R30-001のSave Core境界が維持され、Current Source Quick 11/11 PASSを確認したためR30-001をDoneへ確定し、依存するR30-002をTodoへ解放。Source/Game Dataは変更せず、R30-002へは自動着手していない。"
-    },
-    {
-      "at": "2026-08-21T11:34:20.892Z",
-      "message": "Development Workspace JSON merged: add=2 update=2 delete=0"
-    },
-    {
-      "at": "2026-08-21T20:42:44+09:00",
-      "message": "AI_START実行: TASK-R30-002のみSOURCE_UPDATE。Atomic Save staging / Integrity / previous-good backup / serialized commit / rollbackを実装。GKS-B718へ更新しQuick 11/11、Accept 13/13、Release 13/13、targeted 4/4 PASS。TaskはAwaitingHumanApplyで停止し、TASK-R30-003には未着手。"
-    },
-    {
-      "at": "2026-08-21T11:47:00.968Z",
-      "message": "Development Workspace JSON merged: add=4 update=0 delete=0"
-    },
-    {
-      "at": "2026-08-21T11:50:15.000Z",
-      "message": "AI_START実行: Human反映済みCurrent Source GKS-B718とDevelopment ProjectのIMPL-R30-002=Appliedを再照合。Atomic Save / Integrity / previous-good backup / serialized commit / rollbackが維持され、Current Source Quick 11/11 PASSを確認したためTASK-R30-002をDoneへ確定し、依存するTASK-R30-003をTodoへ解放。Source/Game Dataは変更せず、R30-003へは自動着手していない。"
-    },
-    {
-      "at": "2026-08-21T11:51:23.874Z",
-      "message": "Development Workspace JSON merged: add=2 update=2 delete=0"
-    },
-    {
-      "at": "2026-08-21T21:16:00+09:00",
-      "message": "AI_START実行: TASK-R30-003のみSOURCE_UPDATE。Save Version 2→3の限定Migration、変換前Backup、Migration後Integrity検証、未対応/失敗時Load拒否とrollbackを実装。GKS-B719へ更新しQuick 11/11、Accept 13/13、Release 13/13 PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-004には未着手。"
-    },
-    {
-      "at": "2026-08-21T12:18:41.248Z",
-      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-21T21:34:10+09:00",
-      "message": "AI_START実行: TASK-R30-003 Human Apply後再監査でGKS-B719の暗黙Domain normalization/legacy save.v2 Slot未探索を検出しDoneを保留。TASK-R30-003のみCorrection SOURCE_UPDATEを継続しGKS-B720を生成。Targeted 7/7、Quick 11/11、Accept 13/13、Release 13/13、ZIP encoding PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-004には未着手。"
-    },
-    {
-      "at": "2026-08-21T12:41:45.291Z",
-      "message": "Development Workspace JSON merged: add=5 update=2 delete=0"
-    },
-    {
-      "at": "2026-08-21T21:48:41+09:00",
-      "message": "AI_START実行: Human反映後Current Source GKS-B720 / GA-B486.211を再検証。B720 update artifact 634/634 files完全一致、package_manifest target SHA一致、Quick 11/11 PASS、Save Schema v3 strict reject test PASSを確認。TASK-R30-003をDoneへ確定し、依存するTASK-R30-004をTodoへ解放。Source/Gameデータ変更・削除・除外は0件で、TASK-R30-004には未着手。"
-    },
-    {
-      "at": "2026-08-21T12:49:36.306Z",
-      "message": "Development Workspace JSON merged: add=1 update=5 delete=0"
-    },
-    {
-      "at": "2026-08-21T22:00:12+09:00",
-      "message": "AI_START実行: TASK-R30-004のみSOURCE_UPDATE。Character / Guild / ProgressionのSave Bridgeを追加し、Character core/progression状態・partyIds・Guild objectをSave/Load境界でexact保持検証する。Domain計算、EXP配布、Guild Level計算、Inventory/Equipment、Skill/AIには未着手。GKS-B721へ更新しTargeted 8/8、Quick 11/11、Accept 13/13、Release 13/13、ZIP integrity/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-005はBlockedを維持。"
-    },
-    {
-      "at": "2026-08-21T13:05:12.809Z",
+      "at": "2026-08-22T07:20:25.504Z",
       "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-21T22:08:33+09:00",
-      "message": "AI_START実行: Human反映後Current Source GKS-B721 / GA-B486.211を再検証。B721更新Source payload 635/635完全一致、package_manifest target SHA一致、Current Quick 11/11 PASS、Character/Guild/Progression persistence 8/8 PASSを確認。TASK-R30-004をDoneへ確定し、依存するTASK-R30-005をTodoへ解放。Source/Gameデータ変更・削除・除外は0件で、TASK-R30-005には未着手。"
-    },
-    {
-      "at": "2026-08-21T21:14:06.380Z",
-      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T06:20:51+09:00",
-      "message": "AI_START実行: TASK-R30-005のみSOURCE_UPDATE。Inventory / Equipment所有状態の専用Save Bridgeを追加し、inventory[]とCharacter ID→equipment objectをSave snapshot作成前後・Load前後でexact保持検証する。Domain計算、装備条件/補正、所持上限/重複可否、Skill/AIには未着手。GKS-B722へ更新しTargeted 10/10、Quick 11/11、Accept 13/13、Release 13/13、ZIP hash/encoding/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-006はBlockedを維持。"
-    },
-    {
-      "at": "2026-08-21T21:24:54.763Z",
-      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T06:37:00+09:00",
-      "message": "Human指示によりCheck resolution lifecycleを実装。Correction Checkのresolves_check_idsから元Failedを機械的にResolved/non-blocking化し、status Failed自体は履歴として保持する。Resolverが未解決へ戻った場合は自動再blocking。CHK-R30-001-WORKTYPE-BOUNDARYはCHK-R41-PHASE1-WORKTYPE-CORRECTION-001により解決済みとして関連付けた。GKS-B723 SOURCE_UPDATEはTargeted/Quick/Accept/Full/Release PASS、Human Apply待ち。"
-    },
-    {
-      "at": "2026-08-21T21:58:22.480Z",
-      "message": "Development Workspace JSON merged: add=4 update=2 delete=0"
-    },
-    {
-      "at": "2026-08-21T22:03:10.347Z",
-      "message": "Human approved implementation start"
-    },
-    {
-      "at": "2026-08-22T07:10:00+09:00",
-      "message": "Human指示によりDevelopment Git UXを修正。Remote未検証Git案件をcached lifecycleで案件フィルタへ表示し、Git状態確認中バッジは維持。Owner / Repository / Branchは現在案件git_remote→登録済みGit案件→端末記憶値の順で自動補完し、PATは保存しない。GKS-B724 SOURCE_UPDATEはTargeted/Quick/Accept/Full/Release PASS、Human Apply待ち。"
-    },
-    {
-      "at": "2026-08-21T22:48:52.010Z",
-      "message": "Development Workspace JSON merged: add=3 update=2 delete=0"
-    },
-    {
-      "at": "2026-08-21T23:09:34.888Z",
-      "message": "Development Workspace JSON merged: add=0 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T08:13:00+09:00",
-      "message": "Human指示によりDevelopment Gitの初回入力を不要化。未登録時の既定接続を kj2whvbzjn-hue / guild-adventure-studio / sub とし、現在案件git_remote→登録済みGit案件→端末記憶値→既定接続の優先順位で自動入力する。PATは保存しない。ユーザー提供Current Source GKS-B724をexact baselineとしてB724 Human Applyも確認。GKS-B725 SOURCE_UPDATEはTargeted/Quick/Accept/Full/Release/Encoding PASS、Human Apply待ち。"
-    },
-    {
-      "at": "2026-08-21T23:26:53.074Z",
-      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T08:29:47+09:00",
-      "message": "AI_START実行: TASK-R30-005のみHuman Apply後Current Source再検証。ユーザー提供Current Source GKS-B725 / GA-B486.211でB722のInventory / Equipment ownership Save Bridgeを確認し、bridge/app-runtimeはB722 artifactとbyte-identical、index.htmlはlater Build token追随のみ。Targeted 10/10、wiring 5/5、Quick 11/11、Build marker check PASS。TASK-R30-005をDoneへ確定しTASK-R30-006をTodoへ解放。Source/Gameデータ変更・削除・除外は0件、TASK-R30-006には未着手。"
-    },
-    {
-      "at": "2026-08-21T23:30:53.284Z",
-      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T08:40:11+09:00",
-      "message": "AI_START実行: TASK-R30-006のみSOURCE_UPDATE。Skill / Passive / Skill Loadout / Formal AIのSave Bridgeを追加し、既存Skill/AI状態と任意passiveIds/skillLoadoutIdsをSave/Load境界でexact保持する。既存v3 Saveへ新fieldを強制せず、Legacy AI fieldは拒否。Domainの習得条件・Passive効果・Loadout編集/枠数・AI候補化は未実装。GKS-B726へ更新しTargeted 12/12、Quick 11/11、Accept 13/13、Release 13/13、ZIP hash/encoding/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-007はBlockedを維持。"
-    },
-    {
-      "at": "2026-08-21T23:49:42.178Z",
-      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T08:51:00+09:00",
-      "message": "Human指示によりDevelopment Workflowの巻戻し防止を実装。既存のHuman approved implementation start履歴を正本としてworkflowをImplementing/Approvedへ復元し、通常のAI統合JSONではApproved→Pendingおよびstage後退を禁止。明示的な工程戻しはHumanのWorkflow操作だけで行う。GKS-B727 SOURCE_UPDATEはTargeted/Quick/Accept/Full/Release PASS、Human Apply待ち。"
-    },
-    {
-      "at": "2026-08-22T00:03:09.185Z",
-      "message": "Development Workspace JSON merged: add=3 update=0 delete=0"
-    },
-    {
-      "at": "2026-08-22T09:05:00+09:00",
-      "message": "AI_STARTからTASK-R30-006のHuman Apply後Current Sourceを検証。GKS-B727上でGKS-B726のSkill / Passive / Skill Loadout / Formal AI Save接続、既存v3後方互換、Legacy fallback拒否を確認し、targeted 12/12・Quick 11/11・Build marker 190 files PASS。TASK-R30-006をDone確定し、依存解除によりTASK-R30-007をTodoへ更新。Source/Game Data変更・削除・除外は0件で、次Task実装には未着手。"
-    },
-    {
-      "at": "2026-08-22T00:09:30.906Z",
-      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T09:15:56+09:00",
-      "message": "AI_START実行: TASK-R30-007のみSOURCE_UPDATE。Game Settings / Tutorial進行の専用Save Bridgeを追加し、gameSettings / tutorialProgressをDomain値の意味を再定義せず任意root objectとしてSave/Load境界でexact保持する。既存v3 Saveへfieldを強制せず、Settings/Tutorialは現段階のBattle/Quest確定結果計算へ未接続。GKS-B728へ更新しTargeted 12/12、Quick 11/11、Accept 14/14、Release 14/14、ZIP hash/encoding/NFC PASS。TaskはDoingのままHuman Apply待ちで停止し、TASK-R30-008はBlockedを維持。"
-    },
-    {
-      "at": "2026-08-22T00:20:07.974Z",
-      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T09:21:00+09:00",
-      "message": "AI_STARTからTASK-R30-007のHuman Apply後Current Sourceを検証。GKS-B728 / GA-B486.211でGame Settings / Tutorial進行Save接続を確認し、更新Artifact payload 638/638完全一致、Targeted 12/12、Quick 11/11、Build marker 190 files PASS。TASK-R30-007をDone確定し、依存解除によりTASK-R30-008をTodoへ更新。Source/Game Data変更・削除・除外は0件で、次Task実装には未着手。"
-    },
-    {
-      "at": "2026-08-22T00:25:16.470Z",
-      "message": "Development Workspace JSON merged: add=2 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T09:28:00+09:00",
-      "message": "AI_STARTからTASK-R30-008を1件だけ実装。GKS-B729でQuestRun Save Bridgeを追加し、Active QuestRun参照と保存済みScene/Battle/Event/Reward/Flag等SnapshotのSave/Load exact保持、Playback復帰境界を強化。Targeted 14/14、Quick 11/11、Update Accept 13/13、Release 13/13 PASS。Studio更新ZIPはExportなし・削除0件。TASK-R30-008はHuman Apply確認待ちのためDoingを維持し、TASK-R30-009はBlockedのまま。次Taskへ自動着手していない。"
-    },
-    {
-      "at": "2026-08-22T00:38:31.880Z",
-      "message": "Development Workspace JSON merged: add=4 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T09:49:00+09:00",
-      "message": "AI_STARTからGKS-B729 Human Apply後Current Sourceを検証。QuestRun永続化/Playback復帰をCurrent実体で再確認し、更新payload 639/639完全一致、Targeted 8/8、Quick 11/11 PASS。TASK-R30-008をDone / IMPL-R30-008をAppliedへ更新。"
-    },
-    {
-      "at": "2026-08-22T09:49:00+09:00",
-      "message": "続けて明示指示によりTASK-R30-009 New Game初期化Sequenceを1件実装。GKS-B730で固定初期化順序、Formal Runtime Data由来初期Content、Integrity成功後のみ初回Atomic Auto Saveを実装。Targeted 18/18、Quick 11/11、Accept 13/13、Release 13/13 PASS。TASK-R30-009はHuman Apply待ちDoing、TASK-R30-010はBlocked維持。"
-    },
-    {
-      "at": "2026-08-22T00:58:06.007Z",
-      "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T10:04:29+09:00",
-      "message": "AI_STARTからGKS-B730 Human Apply後Current Sourceを検証。New Game初期化SequenceをCurrent実体で再確認し、前回更新persistent payload 639/639完全一致、Targeted 12/12、Current Quick 12/12、Build marker PASS。TASK-R30-009をDone / IMPL-R30-009をAppliedへ更新。"
-    },
-    {
-      "at": "2026-08-22T10:04:29+09:00",
-      "message": "続けて明示指示によりTASK-R30-010 既存SaveありNew Game上書き確認を1件実装。GKS-B731でSaveあり時のPlayer確認をNew Game候補生成前に必須化し、Cancel時は既存Save/live stateを完全維持。Targeted 15/15、Target Quick 11/11、Update Quick/Accept/Release 13/13 PASS。TASK-R30-010はHuman Apply待ちDoing、TASK-R30-011はBlocked維持。"
-    },
-    {
-      "at": "2026-08-22T01:10:34.182Z",
-      "message": "Development Workspace JSON merged: add=6 update=3 delete=0"
-    },
-    {
-      "at": "2026-08-22T10:18:23+09:00",
-      "message": "AI_STARTからGKS-B731 Human Apply後Current Sourceを検証。既存SaveありNew Game上書き確認をCurrent実体で再確認し、前回更新persistent payload 639/639完全一致、Targeted 10/10、Current Quick 11/11、Build marker PASS。TASK-R30-010をDone / IMPL-R30-010をAppliedへ更新。"
-    },
-    {
-      "at": "2026-08-22T10:18:23+09:00",
-      "message": "続けて明示指示によりTASK-R30-011 Save/Load Error Recovery UI接続を1件実装。GKS-B732でOwner Runtime理由表示、Retry、Title安全復帰、Load/Migration/Integrity失敗のlive state切替前停止、暗黙初期化禁止、New Game/Continueの二重実行防止を実装。Targeted 19/19、Target Quick 11/11、Update Quick/Accept/Release 13/13 PASS。TASK-R30-011はHuman Apply待ちDoing、TASK-R30-012はBlocked維持。"
-    },
-    {
-      "at": "2026-08-22T10:23:00+09:00",
-      "message": "AI_STARTからGKS-B732 Human Apply後Current Sourceを検証。前回GKS-B732 persistent payload 639/639完全一致、Recovery受入経路をCurrent実体で再確認し、Quick 11/11 / Full 26/26 / Build marker PASS。TASK-R30-011をDone / IMPL-R30-011をAppliedへ更新。"
-    },
-    {
-      "at": "2026-08-22T10:23:00+09:00",
-      "message": "TASK-R30-012 Phase 1 Save/New Game E2EをDEVELOPMENT_ONLYとして実行。11 cases中10 PASS / 1 FAIL。New Game初回Save直後のTitle ContinueでreconcileFormalAdventureQuestSelection()が未定義persist()を呼び、ReferenceErrorにより主要導線が完了しないことを検出。Atomic/Backup/Migration/Domain Persistence/Recovery/失敗時Save保全はPASS。work_type境界に従いSource修正へ越境せず、TASK-R30-012はDoing、blocking Failed Checkを追加。別SOURCE_UPDATE correctionを作成/承認後にR30-012を再実行する分割案を記録。TASK-R39-001はBlocked維持。"
-    },
-    {
-      "at": "2026-08-22T01:38:39.260Z",
-      "message": "Development Workspace JSON merged: add=104 update=15 delete=0"
-    },
-    {
-      "at": "2026-08-22T11:05:00+09:00",
-      "message": "Human指示により自動CorrectionをCompatibility Budget 0 / Exception Budget 0へ強化。GKS-B732 exact baselineからGKS-B733 SOURCE_UPDATEを再生成し、Game productionのbare persist 5件をCurrent autoSaveへ収束、compat/fallback新設0・catch増加0を確認。Targeted/Quick/Accept/Release PASS。Correction Artifact生成だけでは元Failedを解決せず、TASK-R30-012はHuman Apply後E2E再実行待ちとしてBlockedへ移行。"
-    },
-    {
-      "at": "2026-08-22T03:10:21.268Z",
-      "message": "Development Workspace JSON merged: add=6 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T12:54:00+09:00",
-      "type": "AutonomousCorrectionValidationBuildPrepared",
-      "summary": "GKS-B734 prepared from GKS-B733 baseline. B732 used only as persist defect reference. Known failure + self-heal engine armed; no correction task for TASK-DEV-AUTOCORR-B734-VERIFY-001 pre-created."
-    },
-    {
-      "at": "2026-08-22T04:05:09.655Z",
-      "message": "Development Workspace JSON merged: add=6 update=0 delete=0"
-    },
-    {
-      "at": "2026-08-22T13:09:56+09:00",
-      "type": "AutonomousCorrectionValidationFailureObserved",
-      "summary": "GKS-B734 Current Source verified; P1-CONTINUE-AFTER-FIRST-SAVE-equivalent reproduced ReferenceError: persist is not defined; CHK-DEV-AUTOCORR-B734-FAIL-001 recorded as unresolved blocking Failed Check. Source edit/correction generation intentionally deferred to next AI_START."
-    },
-    {
-      "at": "2026-08-22T04:12:00.519Z",
-      "message": "Development Workspace JSON merged: add=121 update=15 delete=0"
-    },
-    {
-      "at": "2026-08-22T13:19:56+09:00",
-      "type": "AutonomousCorrectionTaskGenerated",
-      "summary": "CHK-DEV-AUTOCORR-B734-FAIL-001 -> TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001; failure_signature=cc702ccb758b232bcc10; safe_auto_candidate; parent=TASK-DEV-AUTOCORR-B734-VERIFY-001; source edit not yet executed."
-    },
-    {
-      "at": "2026-08-22T04:24:18.419Z",
-      "message": "Development Workspace JSON merged: add=124 update=15 delete=0"
-    },
-    {
-      "at": "2026-08-22T13:31:30+09:00",
-      "type": "AutonomousCorrectionArtifactGenerated",
-      "summary": "TASK-DEV-AUTOCORR-B734-VERIFY-001-CORR-001 executed from exact GKS-B734 baseline. GKS-B735 artifact GKS-B735-001fbbec0e96 generated; undefined persist() converged to existing autoSave(); Budget 0 + Targeted/Quick/Accept/Release PASS. Human Apply pending; parent Failed remains unresolved and parent Task remains Blocked."
-    },
-    {
-      "at": "2026-08-22T04:37:31.515Z",
-      "message": "Development Workspace JSON merged: add=3 update=1 delete=0"
-    },
-    {
-      "at": "2026-08-22T15:14:00+09:00",
-      "type": "DevelopmentStateRollbackRestored",
-      "summary": "AI_START detected stale Development Project snapshot regression (Archived/Planning with lost later records). Restored later authoritative Active/Implementing+Human Approved state and missing ID records without deletion; preserved B735 Human Apply verification deltas."
-    },
-    {
-      "at": "2026-08-22T15:14:00+09:00",
-      "type": "AutonomousCorrectionParentE2EPassed",
-      "summary": "TASK-DEV-AUTOCORR-B734-VERIFY-001 independently reran P1-CONTINUE-AFTER-FIRST-SAVE-equivalent on Current GKS-B735 after Correction Human Apply and PASS. CHK-DEV-AUTOCORR-B735-PARENT-E2E-001 resolves historical CHK-DEV-AUTOCORR-B734-FAIL-001; parent Task -> Done. Next Task is not auto-started."
-    },
-    {
-      "at": "2026-08-22T07:14:02.625Z",
-      "message": "Development Workspace JSON merged: add=130 update=15 delete=0"
     }
   ],
   "specification_candidates": [
