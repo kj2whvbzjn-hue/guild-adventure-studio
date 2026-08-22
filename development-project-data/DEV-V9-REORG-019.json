@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T04:05:09.655Z"
+    "updated_at": "2026-08-22T04:12:00.519Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -413,8 +413,8 @@
         "TASK-DEV-AUTOCORR-B734-VERIFY-001"
       ],
       "result": "Partial",
-      "evidence": "Self-heal validation build prepared from exact Current GKS-B733 baseline; GKS-B732 used only as known-defect reference. One bare persist() root-cause line reintroduced, Autonomous Correction Engine installed, correction not executed in B734. Update Quick/Accept/Release 14/14 PASS. Human Apply and fail->auto-correction->next-build->parent-E2E-pass sequence pending.",
-      "recorded_at": "2026-08-22T12:54:00+09:00"
+      "evidence": "Self-heal validation build GKS-B734 confirmed from the user-provided Current Source. package_manifest SHA-256=bfd324d10c117283f48bbb9ce784bbe611484d40f0739a2d08c2e3239bd5d2f6; 639/639 manifest entries verified with 0 missing and 0 hash differences. Known Failure fixture reproduced by exact-function P1-CONTINUE-AFTER-FIRST-SAVE-equivalent harness: ReferenceError: persist is not defined; evidence_sha256=6b18e4890aa68ae752fc9e1fbbe4702160f559e85b7b774b086ffb66a5c8b8d9; app-runtime sha256=3b2510f46d0912e5cd3fd852d528b4fdc5ad7f8192886d7e5a9f1d4860faf412. Current Quick 11/11 PASS evidence_sha256=e7d6824751518fa72a8ecbe7e6f0f8a09dc35bd19b3d8b0e5635d25b84a30939; adventure-formal-quest-runtime-integration PASS. Current source ZIP sha256=bd5ea6e15d29dd03458ee23e585356511f68697f88f1e064e0d7dc8a18b9b1bb. Source changes=0; source deletions=0; Game data changes/exclusions=0. CHK-DEV-AUTOCORR-B734-FAIL-001 added as unresolved blocking Failed Check. Correction was not generated or executed in this run by design; next AI_START must run autonomous Correction preflight, generate a separate SOURCE_UPDATE Correction Task if safe-auto proof succeeds, and only a later parent E2E PASS may complete this task.",
+      "recorded_at": "2026-08-22T13:09:56+09:00"
     }
   ],
   "discussions": [
@@ -8170,7 +8170,7 @@
       "id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "B734既知Failureから自己修復Correction生成を実動作検証する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 1114,
       "depends_on": [
         "TASK-R30-011"
@@ -8184,7 +8184,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T12:54:00+09:00",
-      "updated_at": "2026-08-22T12:54:00+09:00"
+      "updated_at": "2026-08-22T13:09:56+09:00"
     }
   ],
   "checks": [
@@ -9705,6 +9705,29 @@
       "blocking": false,
       "created_at": "2026-08-22T12:54:00+09:00",
       "updated_at": "2026-08-22T12:54:00+09:00"
+    },
+    {
+      "id": "CHK-DEV-AUTOCORR-B734-FAIL-001",
+      "title": "GKS-B734 known persist failure reproduced",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-AUTOCORR-B734-VERIFY-001",
+      "status": "Failed",
+      "result": "P1-CONTINUE-AFTER-FIRST-SAVE相当経路で、B734へ意図的に再導入した `persist is not defined` Failureを再現。親TaskのAcceptance Criteriaは未完了のためDone不可。",
+      "evidence": "Failed case=P1-CONTINUE-AFTER-FIRST-SAVE. Root cause: game/assets/js/app-runtime.js reconcileFormalAdventureQuestSelection() selects the first Formal Quest when selectedQuestId is empty and calls undefined persist(). ReferenceError: persist is not defined. Exact-function harness app-runtime sha256=3b2510f46d0912e5cd3fd852d528b4fdc5ad7f8192886d7e5a9f1d4860faf412; target-function sha256=daf0fd12bbc0999a33ece2df996a054bb9ee6a2543ffc6e2a0184168a7b7c74d; evidence sha256=6b18e4890aa68ae752fc9e1fbbe4702160f559e85b7b774b086ffb66a5c8b8d9; persist definition=0; autoSave definition=1. adventure-formal-quest-runtime-integration PASS. Current Quick 11/11 PASS evidence_sha256=e7d6824751518fa72a8ecbe7e6f0f8a09dc35bd19b3d8b0e5635d25b84a30939. Current Source GKS-B734 / GA-B486.211; package_manifest 639/639 SHA-256 verified. Source changes=0; deletions=0; Game data changes/exclusions=0. Correction analyze/prepare/source edit was intentionally not executed in this run; next AI_START preflight must consume this unresolved blocking Failed Check.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T13:09:56+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-22T13:09:56+09:00",
+      "updated_at": "2026-08-22T13:09:56+09:00"
     }
   ],
   "workflow": {
@@ -10230,6 +10253,15 @@
     {
       "at": "2026-08-22T04:05:09.655Z",
       "message": "Development Workspace JSON merged: add=6 update=0 delete=0"
+    },
+    {
+      "at": "2026-08-22T13:09:56+09:00",
+      "type": "AutonomousCorrectionValidationFailureObserved",
+      "summary": "GKS-B734 Current Source verified; P1-CONTINUE-AFTER-FIRST-SAVE-equivalent reproduced ReferenceError: persist is not defined; CHK-DEV-AUTOCORR-B734-FAIL-001 recorded as unresolved blocking Failed Check. Source edit/correction generation intentionally deferred to next AI_START."
+    },
+    {
+      "at": "2026-08-22T04:12:00.519Z",
+      "message": "Development Workspace JSON merged: add=121 update=15 delete=0"
     }
   ],
   "specification_candidates": [
