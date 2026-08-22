@@ -3,9 +3,9 @@
   "workspace": {
     "id": "DEV-V9-BALANCE-001",
     "name": "V9 Balance調整・Baseline確立",
-    "status": "Implementing",
+    "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T06:09:37.142Z"
+    "updated_at": "2026-08-22T06:18:23.558Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-EXECUTION-001",
-    "work_box_id": "BOX-V9-BAL-EXEC-P1-001",
-    "theme": "P1 Equipment Static Calibration — approved execution start",
-    "goal": "Human Plan Gate承認済み。1回1Task規則に従い、次はTASK-BAL-EXEC-P1-EQUIPMENT-001を実行する。P2 Skill Static CalibrationとP3 Requirement登録も承認済みTodoだが、このrunでは未着手。"
+    "work_box_id": "BOX-V9-BAL-EXEC-P2-001",
+    "theme": "P2 Skill Static Calibration — reuse-first execution",
+    "goal": "次回はTASK-BAL-EXEC-P2-SKILL-001を1件だけ実行し、既存GKS_SKILL_AI_BATCH_REQUEST→G05→G07で330件Core Calibrationを行う。P3 Requirement dispatchは承認済みTodoだがP2より後のexecution_orderのため未着手。"
   },
   "project_rules": [
     {
@@ -110,12 +110,12 @@
     },
     {
       "id": "RULE-BAL-011",
-      "text": "Human Plan Gateでreuse-first P0〜P9実行計画が承認された。旧TASK-BAL-001〜013は粗粒度の旧計画として履歴保持し、Current execution planとして実行しない。旧TaskはBlockedのまま保持し、明示的Human再承認なしに再開しない。Current executionはTASK-BAL-EXEC-P1-*〜TASK-BAL-EXEC-P9-*を正本とする。",
+      "text": "Balance計画は現在設計中であり、既存TASK-BAL-001〜013を最終実行計画として確定扱いしない。全体Balance System Mapと依存関係の再設計、Human確認が完了するまで既存実行系列へ着手しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-22 game-wide balance plan redesign",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "updated_at": "2026-08-22T10:36:00+09:00"
     },
     {
       "id": "RULE-BAL-012",
@@ -136,21 +136,21 @@
       "updated_at": "2026-08-22T10:36:00+09:00"
     },
     {
-      "id": "RULE-BAL-PLAN-APPROVAL-001",
-      "text": "Human Plan Gate承認によりP1 Equipment Static Calibration、P2 Skill Static Calibration、P3実装ラインRequirement送付を開始できる。P6/P7 Product Candidate Apply/Game Data配置とP9 Current-active Promotionは今回承認の範囲外であり、各Taskの別Human approvalを必須とする。",
+      "id": "RULE-BAL-PARALLEL-001",
+      "text": "Balance P1/P2のDEVELOPMENT_ONLY Static CalibrationはSource/Game Dataを変更しないため、実装ラインと同時進行してよい。Evidenceは実行時のstudio_build/game_build/package_manifest/config versionへ固定する。Balance案件専用の長期Source branchは作らない。P3以降にSource変更が必要な場合はDEV-V9-REORG-019へRequirementとして渡し、実装ライン側の最新HEADをbaselineにSOURCE_UPDATE Task単位で実装する。Source作業を並列化する場合だけ、実装ライン側で短命feature branch/worktreeをTask単位に分け、統合後はBalance側が最新Current Sourceへ再BindしてからP4 Formal Combatへ進む。",
       "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-22 HD-1..HD-3 all approved",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "source_type": "AIPlanning",
+      "source_id": "TASK-BAL-EXEC-P1-EQUIPMENT-001 concurrency/branch strategy",
+      "created_at": "2026-08-22T15:11:00+09:00",
+      "updated_at": "2026-08-22T15:11:00+09:00"
     }
   ],
   "source_baseline": {
     "studio_build": "GKS-B735",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-053118).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-061045).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T14:37:00+09:00"
+    "recorded_at": "2026-08-22T15:11:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -220,60 +220,16 @@
     {
       "id": "DEC-BAL-PLAN-SCOPE-001",
       "title": "Balance計画のゲーム全体Scope再設計",
-      "status": "Approved",
-      "text": "Balance調整ScopeをWeapon/Armor、Skill、Passive、Battle Formula、Character/Job、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter、Reward/Economy、Stone、Guild、Presentation、Cross-Systemまで対象とする。実行基盤は既存Studio Pipelineをreuse-firstとし、Battle Package、Equipment Generator、Skill AI Batch/G05/G07、fixed-seed component runner、Reward Resolver、Studio Project JSON/Gameデータ配置を利用する。Current Specification未適合箇所だけを既存SystemへのSOURCE_UPDATE Requirementとして扱い、重複Systemを新設しない。Formula expressionのBalance所有境界と最終実行計画はHuman Plan GateまでProposedとする。",
-      "rationale": "Game-wide Balance scopeに加え、AI引継ぎ時にも既存System再利用が失われないことを明文化する必要がある。Current ProjectではBattle Package再利用はDraft本文にある一方、Package Decision recordとEquipment/Skill正式大量生成入口の明示が不足していたため。",
+      "status": "Proposed",
+      "text": "Balance調整ScopeをQuest中心に限定せず、Weapon/Armor、Skill、Passive、Battle Formula、Character/Job、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter、Reward/Economy、Stone、Guild、Presentation、Cross-Systemまで拡張する。Damage等のFormula expression本体もBalance調整面として棚卸し対象に含めるが、Current Structure/Contractとの境界と最終所有方式は設計後に確定する。",
+      "rationale": "Humanが武器・Skill・Passive・Damage計算式を含む全体的なBalance調整計画が必要と指摘したため。計画自体は設計中なのでApprovedにはしない。",
       "source_discussion_ids": [
         "DISC-BAL-002"
       ],
-      "approved_by": "Human",
-      "approved_at": "2026-08-22T14:37:00+09:00",
+      "approved_by": "",
+      "approved_at": "",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "DEC-BAL-EXECUTION-001",
-      "title": "Reuse-first Balance実行Phase / Dependency Plan",
-      "status": "Approved",
-      "text": "Human Plan Gate承認後の実行は、(A)既存System Static Calibration、(B)既存SystemのCurrent-Spec Gap解消、(C)Formal Battle PackageによるCombat Candidate Loop、(D)Quest/Reward/Economy/Stone上位Campaign、(E)Current Studio Project JSONへのProduct Candidate反映、(F)Game Runtime Conformance、(G)Human Promotionの順を基本とする。Equipment/Skill/Battle等の既存Systemを作り直さず、必要ExtensionだけをSource Requirementとして分離する。",
-      "rationale": "TASK-BAL-DESIGN-005のPhase/Task/Dependency再設計Draft。",
-      "source_discussion_ids": [
-        "DISC-BAL-003"
-      ],
-      "approved_by": "Human",
-      "approved_at": "2026-08-22T14:37:00+09:00",
-      "created_at": "2026-08-22T14:12:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "DEC-BAL-FORMULA-BOUNDARY-001",
-      "title": "Formula topologyは固定Structure、数値ParameterをBalance所有とする境界",
-      "status": "Approved",
-      "text": "Current Specificationが明示的にBalance可変とする場合を除き、formula topology/expression、processing order、rounding、owner responsibilityはfixed_structureとして保持する。Balanceはcoefficient/curve/cap/floor/clamp/probability/weight/cost/duration/interval/growth/conversion/threshold等の具体数値Parameterを所有する。Expression変更が必要と判明した場合はBalance Configへ直接移さず、Current Specification/Source Requirementとして扱う。",
-      "rationale": "RULE-BAL-002/003と整合し、Balance都合でCurrent Structure/Contractを再設計しないため。Formula ownershipは既存Open itemのためHuman Plan Gateで明示確認する。",
-      "source_discussion_ids": [
-        "DISC-BAL-002",
-        "DISC-BAL-003"
-      ],
-      "approved_by": "Human",
-      "approved_at": "2026-08-22T14:37:00+09:00",
-      "created_at": "2026-08-22T14:23:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "DEC-BAL-PLAN-GATE-001",
-      "title": "Human Plan Gate HD-1〜HD-3承認",
-      "status": "Approved",
-      "text": "HumanはHD-1 Game-wide scope / reuse-first P0〜P9実行計画、HD-2 Formula ownership boundary、HD-3 Gate後のP1 Equipment / P2 Skill Static Calibration開始およびP3 Source Requirementの実装ライン送付を全て承認した。この承認はP6/P7 Product ApplyまたはP9 Current-active Promotionの承認を兼ねず、これらは別Human Gateとして維持する。",
-      "rationale": "Human message 2026-08-22: 「全て承認」",
-      "source_discussion_ids": [
-        "DISC-BAL-002",
-        "DISC-BAL-003"
-      ],
-      "approved_by": "Human",
-      "approved_at": "2026-08-22T14:37:00+09:00",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "updated_at": "2026-08-22T10:36:00+09:00"
     }
   ],
   "specifications": [],
@@ -295,16 +251,9 @@
     {
       "id": "ARCH-V9-BALANCE-DESIGN-001",
       "name": "Balance System Map / Execution Plan Design",
-      "parent_id": "ARCH-V9-BALANCE-001",
+      "parent_id": "",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T14:12:00+09:00"
-    },
-    {
-      "id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "name": "Approved Reuse-first Balance Execution P1-P9",
-      "parent_id": "ARCH-V9-BALANCE-001",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "updated_at": "2026-08-22T10:36:00+09:00"
     }
   ],
   "work_boxes": [
@@ -368,57 +317,9 @@
       "id": "BOX-V9-BAL-DESIGN-001",
       "node_id": "ARCH-V9-BALANCE-DESIGN-001",
       "title": "Plan Draft: Game-wide Balance System Map / Formula Registry / Execution Design",
-      "body": "Current Specification全DomainのBalance System Map、Package Gap、Evaluation Matrix、Simulation Plan、reuse-first Execution Phase/Task/Dependency、AI handoff minimum context、Human Gateを設計する。既存Battle Package/Equipment Generator/Skill Generator等を再利用し、Current仕様GapだけをSource Requirementへ分離する。Human確認前に実行Task・Current active・Game Dataへ昇格しない。",
+      "body": "既存13Taskを実行する前に、Current Specification全DomainからBalance調整対象を抽出し、Formula/Parameter Registry、Domain別評価Matrix、依存Graph、Simulation/Evidence、Human Gateを設計する。成果はDraftとして保持し、Human確認前に最終計画・Current active・Game Dataへ昇格しない。",
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T14:12:00+09:00"
-    },
-    {
-      "id": "BOX-V9-BAL-EXEC-P1-001",
-      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "title": "P1: Equipment Static Calibration",
-      "body": "既存GKS_EQUIPMENT_GENERATION_REQUEST / Equipment Generatorを再利用し、308件Baseline MatrixとSensitivity CandidateをSTATIC_GENERATOR_REFERENCEとして検証する。Product Masterへ自動登録しない。",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "BOX-V9-BAL-EXEC-P2-001",
-      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "title": "P2: Skill Static Calibration",
-      "body": "既存GKS_SKILL_AI_BATCH_REQUEST→G05→G07を再利用し、330件Core Calibration MatrixとFormal coverage gapをSTATIC_GENERATOR_REFERENCEとして検証する。",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "BOX-V9-BAL-EXEC-P3-001",
-      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "title": "P3: Existing System Current-Spec Alignment",
-      "body": "REQ-BAL-PKG-001..012およびREQ-BAL-AUTH-001を実装ラインへRequirementとして送り、既存Battle/Equipment/Skill/Passive/AI/Monster/Result系をCurrent仕様へ最小拡張する。Balance案件からSourceへ越境しない。",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "BOX-V9-BAL-EXEC-P4-001",
-      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "title": "P4: Formal Combat Candidate Loop",
-      "body": "Formal Readiness PASS後に既存AI Battle Packageを使用し、100→1,000→10,000 SeedのScreen/Refine/HoldoutでCombat Candidateを比較する。",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "BOX-V9-BAL-EXEC-P5-001",
-      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "title": "P5: Upper Campaign",
-      "body": "Combat CandidateをNew Game/Progression/Quest/Event/Reward/Economy/Guild/Stoneへ接続し、Human Approved Target Experienceへ適合させる。Reward Resolver等の既存Systemを再利用する。",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "BOX-V9-BAL-EXEC-P6P9-001",
-      "node_id": "ARCH-V9-BALANCE-EXECUTION-001",
-      "title": "P6-P9: Product / Runtime / Promotion",
-      "body": "Current Studio Project JSONからProduct Candidateを作成し、別Human Apply、Game Runtime Conformance、別Human Current-active Promotionを順に行う。Calibration FixtureとProduct Masterを分離する。",
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "updated_at": "2026-08-22T10:36:00+09:00"
     }
   ],
   "tasks": [
@@ -426,10 +327,10 @@
       "id": "TASK-BAL-001",
       "box_id": "BOX-V9-BAL-FOUNDATION-001",
       "title": "Balance項目・Authority・既存Seedを全件棚卸しする",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 100,
       "depends_on": [],
-      "acceptance_criteria": "[Legacy coarse plan / superseded] Human Plan Gateで承認されたTASK-BAL-EXEC-P1-*〜P9-*をCurrent execution planとするため、本Taskは履歴保持のみとし実行しない。明示的Human再承認なしにTodoへ戻さない。\n- DEV-V9-REORG-019のBalance関連Specification/Decision/Materialをread-onlyで参照する。\n- balance_key / domain / value / state / authority / unit / config_path / runtime_connection / snapshot_policyを台帳化する。\n- Source Runtimeの偶然値だけを正本採用しない。\n- 実装ラインのTask/Workflowを変更しない。",
+      "acceptance_criteria": "- DEV-V9-REORG-019のBalance関連Specification/Decision/Materialをread-onlyで参照する。\n- balance_key / domain / value / state / authority / unit / config_path / runtime_connection / snapshot_policyを台帳化する。\n- Source Runtimeの偶然値だけを正本採用しない。\n- 実装ラインのTask/Workflowを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -438,7 +339,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "updated_at": "2026-08-22T10:14:00+09:00"
     },
     {
       "id": "TASK-BAL-002",
@@ -802,223 +703,21 @@
       "id": "TASK-BAL-PLAN-GATE-001",
       "box_id": "BOX-V9-BAL-DESIGN-001",
       "title": "Balance実行計画の確定可否をHuman確認する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 70,
       "depends_on": [
         "TASK-BAL-DESIGN-006"
       ],
-      "acceptance_criteria": "- Game-wide coverage / Package Gap / Evaluation / Simulation / Reuse-first Execution PlanのReviewが完了している。\n- Existing System Reuse Matrixと、各Open Requirementが『既存System extension』として対応付いている。\n- Formula ownership/boundary等のHuman Decision候補が一覧化されている。\n- 最終Phase/Task/Dependency案とHandoff Minimum AnswerをHumanが確認できる。\n- Humanが明示承認するまでapproval=Pendingを維持し、Balance実行Task/GAME_DATA/SOURCE_UPDATEを開始しない。\n- 承認後にのみ再設計後Executionを解放する。",
+      "acceptance_criteria": "- Game-wide coverage checkがPassedである。\n- Formula ownership/boundaryの未解決事項が一覧化されている。\n- 最終Phase/Task/Dependency案をHumanが確認できる。\n- Humanが明示承認するまでapproval=Pendingを維持し、実行計画を確定しない。\n- 承認後にのみ既存または再設計後の実行TaskをTodoへ解放する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Approved",
-        "by": "Human",
-        "at": "2026-08-22T14:37:00+09:00"
+        "status": "Pending",
+        "by": "",
+        "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P1-EQUIPMENT-001",
-      "box_id": "BOX-V9-BAL-EXEC-P1-001",
-      "title": "既存Equipment Generatorで308件Baseline Static Calibrationを実行する",
-      "status": "Todo",
-      "execution_order": 80,
-      "depends_on": [
-        "TASK-BAL-PLAN-GATE-001"
-      ],
-      "acceptance_criteria": "- GKS_EQUIPMENT_GENERATION_REQUEST / EQUIPMENT-BASE-V2 v2.1.0を使用する。\n- Weapon 143 + Armor 132 + Accessory 33 = 308件を生成する。\n- AIは最終battle numericを直書きしない。\n- iLv curve / requirement / attack / accuracy / critical / hp/mp/evasion / invalid / dominanceを集計する。\n- 結果はSTATIC_GENERATOR_REFERENCEとして保持しProduct Masterへ登録しない。\n- Source/Game Data/Current activeを変更しない。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P2-SKILL-001",
-      "box_id": "BOX-V9-BAL-EXEC-P2-001",
-      "title": "既存Skill AI Batch/G05/G07で330件Core Static Calibrationを実行する",
-      "status": "Todo",
-      "execution_order": 90,
-      "depends_on": [
-        "TASK-BAL-PLAN-GATE-001"
-      ],
-      "acceptance_criteria": "- GKS_SKILL_AI_BATCH_REQUEST→G05 numeric generation→G07 validationを使用する。\n- 22 Core archetype × Level[1,10,25,50,100] × Strength[LOW,MEDIUM,HIGH] = 330件を生成・検証する。\n- AIはfinal numericを直書きしない。\n- ACCEPT/REJECT、Budget使用率、dead/dominance候補をEvidence化する。\n- Trigger/Condition/Resource coverage不足は既存Skill Pipeline extension Requirementへ分離する。\n- Product Skill Masterへ自動登録しない。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P3-REQ-001",
-      "box_id": "BOX-V9-BAL-EXEC-P3-001",
-      "title": "REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001を実装ラインへ登録する",
-      "status": "Todo",
-      "execution_order": 100,
-      "depends_on": [
-        "TASK-BAL-PLAN-GATE-001"
-      ],
-      "acceptance_criteria": "- Balance案件のOpen RequirementをCurrent Source/Current Specificationに再照合する。\n- DEV-V9-REORG-019向けDevelopment統合JSONとして既存System extension Task/Checkへ落とす。\n- 新Orchestrator/Generator/Simulatorを新設しない。\n- Balance案件自身のSource/Workflowを越境更新しない。\n- 登録後もFormal ReadinessはHuman Apply済みSource確認までPassedにしない。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P3-READY-001",
-      "box_id": "BOX-V9-BAL-EXEC-P3-001",
-      "title": "Human Apply済みSourceへ再BindしFormal Package Readinessを確認する",
-      "status": "Blocked",
-      "execution_order": 110,
-      "depends_on": [
-        "TASK-BAL-EXEC-P3-REQ-001"
-      ],
-      "acceptance_criteria": "- 実装ラインの必要RequirementがHuman Apply済みCurrent Sourceへ反映されている。\n- Current source build/manifestを再Bindする。\n- Equipment/Skill/Passive/Status/Formula/AI/Monster/Enemy/ResultのFormal pathをfail-closedで確認する。\n- REQ-BAL-PKG-001..012とREQ-BAL-AUTH-001の必要範囲がresolver Checkで解決している。\n- 未解決Blockerが1件でもあればP4を解放しない。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P4-COMBAT-001",
-      "box_id": "BOX-V9-BAL-EXEC-P4-001",
-      "title": "Formal Battle PackageでCombat Candidate Loopを実行する",
-      "status": "Blocked",
-      "execution_order": 120,
-      "depends_on": [
-        "TASK-BAL-EXEC-P1-EQUIPMENT-001",
-        "TASK-BAL-EXEC-P2-SKILL-001",
-        "TASK-BAL-EXEC-P3-READY-001"
-      ],
-      "acceptance_criteria": "- Existing AI Battle Packageを使用する。\n- Screen 100 paired seeds、Refine 1,000、Final/Holdout 10,000 disjoint seedsを基準とする。\n- win/lossだけでなくDPS/HPS/EHP/TTK/resource/status/skill/passive/equipment/AI trace等を評価する。\n- Legacy fallbackまたはversion/provenance欠落があればCandidate Evidenceから除外する。\n- HoldoutをCandidate選抜に再利用しない。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P5-UPPER-001",
-      "box_id": "BOX-V9-BAL-EXEC-P5-001",
-      "title": "New Game / Progression / Quest / Reward / Economy / Guild / Stone Upper Campaignを実行する",
-      "status": "Blocked",
-      "execution_order": 130,
-      "depends_on": [
-        "TASK-BAL-EXEC-P4-COMBAT-001"
-      ],
-      "acceptance_criteria": "- Human Approved Target ExperienceをKPIへ適用する。\n- New Game、成長、Quest/Event、Reward/Drop、Economy、Guild、StoneをCross-Systemで評価する。\n- Reward deterministic componentは既存adventure-reward-resolver.jsを再利用する。\n- Loot更新間隔、成長テンポ、failure-adjusted EV、Stone risk/rewardを検証する。\n- 複数の妥当なGameplay方向が残る場合だけHuman Decisionへ上げる。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P6-PRODUCT-001",
-      "box_id": "BOX-V9-BAL-EXEC-P6P9-001",
-      "title": "検証済みWinnerからProduct Candidate Studio Project JSONを作成する",
-      "status": "Blocked",
-      "execution_order": 140,
-      "depends_on": [
-        "TASK-BAL-EXEC-P5-UPPER-001"
-      ],
-      "acceptance_criteria": "- 作業開始時点のCurrent Studio Project JSONとData Versionを正本として取得する。\n- Calibration Fixtureを無条件移植せず、検証済みProduct Candidateだけを反映する。\n- 既存ID/参照/未変更Dataを保持する。\n- JSON全件読込Pre-flight ERROR=0を満たす。\n- このTaskだけではGame Data配置もCurrent active昇格も行わない。",
-      "work_type": "GAME_DATA",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P7-APPLY-001",
-      "box_id": "BOX-V9-BAL-EXEC-P6P9-001",
-      "title": "Product CandidateのHuman Apply / Game Data配置を確認する",
-      "status": "Blocked",
-      "execution_order": 150,
-      "depends_on": [
-        "TASK-BAL-EXEC-P6-PRODUCT-001"
-      ],
-      "acceptance_criteria": "- HumanがProduct Candidate内容を明示確認する。\n- Data Version進行とGameデータ配置の追加/差替え/除外を確認する。\n- 意図しない差替え/除外0件、GitHubファイル削除0件を通常条件とする。\n- Human approvalなしに配置しない。",
-      "work_type": "GAME_DATA",
-      "requires_human_approval": true,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P8-RUNTIME-001",
-      "box_id": "BOX-V9-BAL-EXEC-P6P9-001",
-      "title": "Formal PackageとGame RuntimeのConformanceを検証する",
-      "status": "Blocked",
-      "execution_order": 160,
-      "depends_on": [
-        "TASK-BAL-EXEC-P7-APPLY-001"
-      ],
-      "acceptance_criteria": "- Formal PackageとGame Runtimeへ同一Input/Seed/Versionを投入する。\n- WebKit/Trace/Save-Reload等で必要Scenarioを確認する。\n- 差異をRuntime defect / data mismatch / balance differenceへ分類する。\n- Runtime/Adapter defectをBalance値で隠さない。\n- Conformance PASSまでP9を解放しない。",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
-    },
-    {
-      "id": "TASK-BAL-EXEC-P9-PROMOTE-001",
-      "box_id": "BOX-V9-BAL-EXEC-P6P9-001",
-      "title": "検証済みProduct CandidateをCurrent activeへHuman承認で昇格する",
-      "status": "Blocked",
-      "execution_order": 170,
-      "depends_on": [
-        "TASK-BAL-EXEC-P8-RUNTIME-001"
-      ],
-      "acceptance_criteria": "- Holdout / Runtime Conformance / Version / KPI / Rollback Evidence Packが揃っている。\n- 旧Current active / Human Approved seed / V9 Baselineを履歴保持する。\n- Humanが最終昇格を明示承認する。\n- 今回のPlan Gate承認をP9承認として代用しない。",
-      "work_type": "GAME_DATA",
-      "requires_human_approval": true,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "updated_at": "2026-08-22T10:36:00+09:00"
     }
   ],
   "checks": [
@@ -1138,16 +837,16 @@
       "updated_at": "2026-08-22T10:36:00+09:00"
     },
     {
-      "id": "CHK-BAL-PLAN-GATE-001",
-      "title": "Human Plan Gate HD-1〜HD-3 approval",
+      "id": "CHK-BAL-P1-EQUIPMENT-001",
+      "title": "P1 Equipment 308 Baseline Generator execution",
       "gate": "General",
       "target_type": "Task",
-      "target_id": "TASK-BAL-PLAN-GATE-001",
+      "target_id": "TASK-BAL-EXEC-P1-EQUIPMENT-001",
       "status": "Passed",
-      "result": "Human explicitly approved all three Plan Gate items: HD-1 Game-wide/reuse-first execution plan, HD-2 Formula ownership boundary, and HD-3 authorization to start P1/P2 and dispatch P3 requirements. Product Apply and Current-active Promotion remain separate Human gates.",
-      "evidence": "Human message 2026-08-22T14:37+09:00: 「全て承認」; SPEC-BAL-HUMAN-REVIEW-001",
+      "result": "Existing GKS_EQUIPMENT_GENERATION_REQUEST / Equipment Generator generated 308 baseline rows: weapon 143, armor 132, accessory 33. Valid 308, invalid 0. AI supplied only allowed request structure/seed/range; formal numeric fields were generated by EQUIPMENT-BASE-V2.",
+      "evidence": "P1_equipment_308_static_calibration_evidence.json; P1_equipment_308_generator_work.json; tests/test_equipment_pipeline_gks_b495.js=PASS; tests/test_equipment_json_pipeline_gks_b497.js=PASS",
       "checked_by": "AI",
-      "checked_at": "2026-08-22T14:37:00+09:00",
+      "checked_at": "2026-08-22T15:11:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -1157,20 +856,43 @@
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "created_at": "2026-08-22T15:11:00+09:00",
+      "updated_at": "2026-08-22T15:11:00+09:00"
     },
     {
-      "id": "CHK-BAL-EXECUTION-TASKSET-001",
-      "title": "Approved P1-P9 execution taskset instantiated without legacy-task leakage",
+      "id": "CHK-BAL-P1-EQUIPMENT-CURVE-001",
+      "title": "P1 Equipment static curve / dead / duplicate diagnostics",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-EXEC-P1-EQUIPMENT-001",
+      "status": "Passed",
+      "result": "iLv1..11 nondecreasing curve failures=0; zero-metric candidates=0. Strict-increase exceptions=13, all caused by weapon base_critical_rate staying constant at 0.05. Duplicate static-profile groups=77 across iLv; these are diagnostics, not gameplay dominance conclusions. Notable repeated groups include 片手剣/片手斧/槍/大弓/盾, 大剣/大斧, 短剣/弓/矢筒, ワンド/魔導書, and armor 頭/手/足 within each category. Formal dominance remains a P4 battle-evidence question.",
+      "evidence": "P1_equipment_308_static_calibration_evidence.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T15:11:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T15:11:00+09:00",
+      "updated_at": "2026-08-22T15:11:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-BASELINE-011",
+      "title": "Latest B735 source baseline verified for P1 execution",
       "gate": "General",
       "target_type": "Project",
       "target_id": "DEV-V9-BALANCE-001",
       "status": "Passed",
-      "result": "Approved reuse-first execution was instantiated as TASK-BAL-EXEC-P1..P9 tasks. P1/P2/P3 requirement dispatch are Todo after Plan Gate; downstream Formal Combat/Product/Runtime/Promotion are dependency-blocked. Legacy TASK-BAL-001 is changed from Todo to Blocked so the superseded coarse plan cannot become the next executable task. P7 Product Apply and P9 Current-active Promotion retain separate Human approval requirements.",
-      "evidence": "DEC-BAL-PLAN-GATE-001; RULE-BAL-011; RULE-BAL-PLAN-APPROVAL-001; TASK-BAL-EXEC-P1-*..P9-*",
+      "result": "Current source 061045 is GKS-B735 / GA-B486.211. package_manifest listed 639 files; listed size/SHA mismatches=0.",
+      "evidence": "guild-adventure-studio-sub(20260822-061045).zip sha256=9e9987ee5b4deb73ce1b2bbe3270136b2065839f34a018aebaa8467402fe4464; package_manifest.json sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; PACKAGE_MANIFEST_LISTED_FILES_OK=639",
       "checked_by": "AI",
-      "checked_at": "2026-08-22T14:37:00+09:00",
+      "checked_at": "2026-08-22T15:11:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -1180,20 +902,20 @@
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "created_at": "2026-08-22T15:11:00+09:00",
+      "updated_at": "2026-08-22T15:11:00+09:00"
     },
     {
-      "id": "CHK-BAL-BASELINE-010",
-      "title": "Latest B735 source baseline verified at Human Plan Gate",
+      "id": "CHK-BAL-P3-HANDOFF-001",
+      "title": "P3 Requirement records self-containedness preflight",
       "gate": "General",
-      "target_type": "Project",
-      "target_id": "DEV-V9-BALANCE-001",
-      "status": "Passed",
-      "result": "Current source guild-adventure-studio-sub(20260822-053118).zip is GKS-B735 / GA-B486.211. package_manifest listed 639 files and all listed size/SHA-256 values matched.",
-      "evidence": "guild-adventure-studio-sub(20260822-053118).zip sha256=6ccc08156d2ae24ee937b6874e707f3f820732f8a70b010b1b4dd7375d5a4ec9; package_manifest.json sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34; PACKAGE_MANIFEST_LISTED_FILES_OK=639",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-EXEC-P3-REQ-001",
+      "status": "Pending",
+      "result": "Current exported Development Project references REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001 in P3, but current system_impacts/specifications arrays are empty. Before P3 completes, requirement records must be reconstructed/re-registered from Current Specification + Source audit so the handoff is self-contained. This does not block P1/P2 static calibration.",
+      "evidence": "development-project_DEV-V9-BALANCE-001(10).json: system_impacts=[]; specifications=[]; TASK-BAL-EXEC-P3-REQ-001 acceptance references REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001",
       "checked_by": "AI",
-      "checked_at": "2026-08-22T14:37:00+09:00",
+      "checked_at": "2026-08-22T15:11:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -1203,16 +925,16 @@
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-22T14:37:00+09:00",
-      "updated_at": "2026-08-22T14:37:00+09:00"
+      "created_at": "2026-08-22T15:11:00+09:00",
+      "updated_at": "2026-08-22T15:11:00+09:00"
     }
   ],
   "workflow": {
-    "stage": "Implementing",
+    "stage": "Planning",
     "implementation_approval": {
-      "status": "Approved",
-      "by": "Human",
-      "at": "2026-08-22T14:37:00+09:00"
+      "status": "Pending",
+      "by": "",
+      "at": ""
     },
     "completion_approval": {
       "status": "Pending",
@@ -1242,12 +964,12 @@
       "message": "Development Workspace JSON merged: add=18 update=1 delete=0"
     },
     {
-      "at": "2026-08-22T14:37:00+09:00",
-      "message": "HumanがPlan Gate HD-1〜HD-3を全承認。TASK-BAL-PLAN-GATE-001をApproved/Done、DEC-BAL-PLAN-SCOPE-001 / DEC-BAL-EXECUTION-001 / DEC-BAL-FORMULA-BOUNDARY-001をApprovedへ更新し、workflowをPlanning→Implementing、workspaceをSpecifying→Implementingへ前進。Approved P1-P9 execution tasksetを登録し、P1 Equipment / P2 Skill / P3 Requirement dispatchをTodoとして解放。P4以降はFormal Readiness/依存関係でBlocked、P7 Product ApplyとP9 Current-active Promotionは別Human approval Pendingを維持。旧TASK-BAL-001はsuperseded legacyとしてBlocked化。最新Source 053118はGKS-B735/GA-B486.211、manifest 639件全一致。Source変更0 / Game Data変更0 / Current active変更0 / 削除0。次Taskはexecution_order最小のTASK-BAL-EXEC-P1-EQUIPMENT-001。"
+      "at": "2026-08-22T15:11:00+09:00",
+      "message": "TASK-BAL-EXEC-P1-EQUIPMENT-001 (DEVELOPMENT_ONLY)を実行。AI_START必須読込/Pre-flight後、最新061045 SourceをGKS-B735/GA-B486.211として検証しmanifest 639件全一致。既存GKS_EQUIPMENT_GENERATION_REQUEST / EQUIPMENT-BASE-V2 v2.1.0でWeapon 143 + Armor 132 + Accessory 33 = 308件を生成し全308件Valid。iLv1..11の非減少curve failure=0、zero metric candidate=0。base_critical_rate 0.05固定によるstrict increase例外13件、同一static profile group 77件をdiagnosticとして記録。Product Master/Game Data/Source/Current active変更0件。TASK-BAL-EXEC-P1-EQUIPMENT-001=Done、次TASK-BAL-EXEC-P2-SKILL-001=Todo。実装ラインとの同時進行方針をRULE-BAL-PARALLEL-001として追加: P1/P2はread-only並行可、Source変更はBalance専用長期branchではなく実装ラインTaskへ返し、必要時のみ短命feature branch/worktreeをTask単位で使用する。なおCurrent Project exportでP3が参照するREQ recordが欠落しているため、P3前にself-contained requirement recordを復元する必要がある。"
     },
     {
-      "at": "2026-08-22T06:09:37.142Z",
-      "message": "Development Workspace JSON merged: add=25 update=10 delete=0"
+      "at": "2026-08-22T06:18:23.558Z",
+      "message": "Development Workspace JSON merged: add=6 update=2 delete=0"
     }
   ]
 }
