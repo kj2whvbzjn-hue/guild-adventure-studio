@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T06:18:23.558Z"
+    "updated_at": "2026-08-22T07:09:04.263Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -143,6 +143,15 @@
       "source_id": "TASK-BAL-EXEC-P1-EQUIPMENT-001 concurrency/branch strategy",
       "created_at": "2026-08-22T15:11:00+09:00",
       "updated_at": "2026-08-22T15:11:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-EVIDENCE-001",
+      "text": "Development EvidenceはStudio/Git側のDevelopment専用Artifact Storeを正本とし、外部AIへはHuman承認されたread-only downloadだけを許可する。AIからStudio/GitへのEvidence/Source/Project upload・update・deleteは行わない。Evidence保存はSource/Game Data/Product Master/Build/package_manifestと分離する。REQ-BAL-EVIDENCE-001はP2/P4以降のEvidence増加前に実装ラインで優先解消する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-22 evidence store/read-only gateway approved",
+      "created_at": "2026-08-22T16:04:00+09:00",
+      "updated_at": "2026-08-22T16:04:00+09:00"
     }
   ],
   "source_baseline": {
@@ -230,16 +239,72 @@
       "approved_at": "",
       "created_at": "2026-08-22T10:36:00+09:00",
       "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-EVIDENCE-STORE-001",
+      "title": "Development Evidence Store + Human-approved AI Read-only Download Gatewayを採用する",
+      "status": "Approved",
+      "text": "Evidence ArtifactはDevelopment専用Storeへ保管し、Development ProjectからArtifact ID/SHA-256/Task/Check/Source・Config bindingを追跡可能にする。Artifactはimmutableとし、修正版は別Artifact IDで履歴保持する。Project参照更新とArtifact保存は同一atomic commitを基本とする。EvidenceはSource Build/Game Data/Product Master/package_manifestから分離する。外部AIへのアクセスはHumanが明示許可したread-only download sessionだけとし、対象Project/Source/Evidence scope・有効期限・監査ログを持つ。AI向けupload/PUT/PATCH/DELETEおよびStudio/Git書込権限は提供しない。AIへGitHub PAT等の広域credentialを直接渡さない。現行AI Gateway v0.8のread-only/human-approval設計を再利用し、外部AIから到達可能な安全なread transportとEvidence取得routeを最小拡張する。AIが生成したSource update / Development integration / Game Data等のStudio反映は従来どおりHuman確認・Human取込を必須とする。",
+      "rationale": "HumanはEvidenceのStudio保管を優先実装したいとし、AIからのuploadは不可、Human承認後のdownloadは許可という権限境界を明示した。Human message 2026-08-22: 「それで承認」。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-22T16:04:00+09:00",
+      "created_at": "2026-08-22T16:04:00+09:00",
+      "updated_at": "2026-08-22T16:04:00+09:00"
     }
   ],
-  "specifications": [],
+  "specifications": [
+    {
+      "id": "SPEC-BAL-EVIDENCE-STORE-001",
+      "title": "Development Evidence Store / Human-approved AI Read-only Download Gateway v1",
+      "status": "Approved",
+      "summary": "Development Evidenceをimmutable Artifact SetとしてGit保管し、Task/CheckからSHA付き参照する。外部AIはHuman承認されたread sessionでSource/Project/Evidenceをdownload-only取得でき、AIからStudio/Gitへのwrite/upload/deleteは不可とする。",
+      "body": "# Development Evidence Store / Human-approved AI Read-only Download Gateway — Approved v1\n\n## 1. Purpose\nDevelopment Task/CheckをDone/Passedにした根拠ファイルをStudio側の正本として保持し、Evidence紛失・AI間引継ぎ漏れ・参照先の改変を防ぐ。外部AIへの自動書込みは許可せず、Human承認後のread-only downloadだけを許可する。\n\n## 2. Reuse-first architecture\n- 新しい独立Storage/AI Gatewayを重複新設しない。\n- 既存Development Git StoreをEvidence persistenceの基盤として拡張する。\n- 既存AI Gateway v0.8のBearer認証、origin allowlist、human approval gate、read-only GET、request-id/security headers、explicit Studio sync思想を再利用する。\n- 現行Gatewayはlocal bridge/allowlisted file read中心のため、外部AIから到達可能な安全なread transportとDevelopment Evidence routeだけを追加する。\n\n## 3. Storage boundary\nEvidence本体はDevelopment専用領域へ保存する。\n\n`development-project-artifacts/<PROJECT_ID>/<ARTIFACT_ID>/...`\n\n- Source package / Export / Game Data / Product Masterには含めない。\n- Evidence追加だけでGKS/GA BuildまたはGame Data Versionを進めない。\n- Source `package_manifest.json`のmemberにはしない。\n- Calibration FixtureをProduct Contentとして取り込まない。\n\n## 4. Artifact set\n1 Task/CheckのEvidenceを単一ファイルではなくArtifact Setとして管理する。\nArtifact metadataは最低限次を持つ。\n\n- artifact_id\n- project_id\n- title / kind\n- task_ids[] / check_ids[]\n- files[]: role, relative_path, media_type, bytes, sha256\n- source_binding: studio_build, game_build, package_manifest_sha256, source_tree/commit if available\n- data/config/rules/generator/runtime version binding as applicable\n- created_at / created_by\n- storage_path / git_commit\n- state: active / superseded\n\n## 5. Immutability\n- 登録済みArtifact IDへ異なるbytesを上書きしない。\n- 同一Artifact ID + 同一SHAはidempotentとして扱える。\n- 同一Artifact ID + 異なるSHAはFAIL CLOSED。\n- 修正Evidenceは新Artifact IDを発行し、旧Artifactを削除せずsuperseded関係を記録する。\n\n## 6. Atomic persistence\nEvidence file保存とDevelopment Projectのartifact reference更新は同一Git commitを基本とする。\nどちらか一方だけ成功した状態をTask完了Evidenceとして扱わない。保存後はread-back SHA-256を照合する。\n\n## 7. Project linkage\nDevelopment ProjectはEvidence本体を巨大inline dataとして保持せず、Artifact参照を正式Recordとして保持する。\nTask/Checkからartifact_idを追跡できること。\nEvidence requiredなTask/CheckではArtifact missing / SHA mismatch / inaccessibleをEvidence Brokenとして扱い、必要Gateをfail-closedにできること。\n\n## 8. Human-approved AI read session\n外部AIは常時アクセスできない。HumanがStudioでread sessionを明示許可した場合だけdownload可能とする。\nRead sessionは最低限次を持つ。\n\n- session_id\n- approved_by / approved_at\n- allowed_project_ids[]\n- source_access: none / current_source\n- project_access: selected projects only\n- evidence_access: none / referenced artifacts / selected artifacts\n- expires_at\n- read-only credential/token\n- request audit log\n\n期限切れ・scope外・未承認は403/401でfail-closedとする。\n\n## 9. AI read API surface\nAI向けはGET/read-onlyだけを正式提供する。名称は実装時に既存Gateway命名へ統合してよいが、能力は以下を満たす。\n\n- current source identity/read: build, manifest SHA, commit/tree identity, allowed source file download/read\n- current Development Project read\n- project Artifact list/metadata read\n- Artifact file download/read/range read\n- health/status/capability read\n\nAI向けに以下を提供しない。\n\n- Evidence upload\n- Project update\n- Source update\n- PUT / PATCH / DELETE\n- AI起点のGit commit/deploy\n- broad GitHub PAT exposure\n\n`/bridge/snapshot`等のHuman/Studio側明示操作はAI read APIとは別権限のまま維持する。\n\n## 10. Human control boundary\n- AIはSource/Project/EvidenceをHuman許可scope内でdownloadできる。\n- AIが作成したDevelopment統合JSON、SOURCE_UPDATE ZIP、GAME_DATA成果物、Evidence等はHumanへ返却する。\n- Studio/Gitへの取込・配置・Current active promotionは既存Human Gateを維持する。\n- read permissionをwrite permissionへ暗黙昇格しない。\n\n## 11. Audit / security\n- 全AI read requestにrequest/session idを付ける。\n- artifact_id/path/result/bytes/hash/timeを監査可能にする。\n- path traversal禁止、allowlisted project/artifact scopeのみ。\n- secrets/token/PAT/config secretをArtifact/API responseへ含めない。\n- HTTPS/reachable transportの具体方式は実装ラインでCurrent hosting/security制約に合わせて一意な最小構成を選ぶ。\n\n## 12. Size / retention\n容量上限はHuman gameplay decisionではなく運用Configとする。初期実装では無制限にせず、Git運用に安全なfile/artifact上限を設定し、超過時はsilent truncationせずFAIL CLOSEDまたは明示的external-storage requirementへ分離する。Artifact削除は通常行わない。\n\n## 13. Acceptance\n- P1のようなEvidence JSON + Generator Workを1 Artifact SetとしてDevelopment専用Storeへ保存できる。\n- Project/Task/CheckからArtifactを一意に追跡できる。\n- save + project refがatomicで、read-back SHA一致を確認できる。\n- 同ID異SHA上書きを拒否できる。\n- Human未承認の外部AI readを拒否できる。\n- Human承認scope内では外部AIがSource/Project/Evidenceをdownload/readできる。\n- AI向けwrite/upload/update/delete経路が存在しない、または機械的に拒否される。\n- Source/Game Data/Product Master/package manifest/buildをEvidence保存だけで変更しない。\n- 既存AI Gateway/Development Git Storeをreuseし、重複Gateway/Storageを新設しない。\n",
+      "decision_refs": [
+        "DEC-BAL-EVIDENCE-STORE-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- Existing Development Git Store / AI Gatewayをreuse-firstで拡張する。\n- Artifact immutable + SHA/read-back + atomic Project linkageを実装する。\n- Human-approved scoped/expiring read sessionで外部AI downloadを許可する。\n- AI write/upload/update/delete権限を与えない。\n- Evidence保存だけでSource/Game Data/Build/manifestを変更しない。",
+      "system_node_id": "SYS-BAL-EVIDENCE-INFRA-001",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-08-22T16:04:00+09:00",
+      "created_at": "2026-08-22T16:04:00+09:00",
+      "updated_at": "2026-08-22T16:04:00+09:00"
+    }
+  ],
   "specification_candidates": [],
-  "system_nodes": [],
+  "system_nodes": [
+    {
+      "id": "SYS-BAL-EVIDENCE-INFRA-001",
+      "name": "Development Evidence Store / Human-approved AI Read-only Download Gateway",
+      "description": "Development Task/CheckのEvidence ArtifactをSource/Game Dataから分離して保管し、Humanが許可したread sessionに限り外部AIがProject/Source/Evidenceをdownload-onlyで取得できるDevelopment infrastructure。既存Development Git StoreとAI Gateway v0.8のread-only設計をreuse-firstで拡張し、AIからStudio/Gitへのupload/update/deleteは提供しない。",
+      "created_at": "2026-08-22T16:04:00+09:00",
+      "updated_at": "2026-08-22T16:04:00+09:00"
+    }
+  ],
   "system_contracts": [],
   "system_connections": [],
   "system_flags": [],
   "system_events": [],
-  "system_impacts": [],
+  "system_impacts": [
+    {
+      "id": "REQ-BAL-EVIDENCE-001",
+      "title": "Priority Source Requirement — Development Evidence Store + Human-approved AI Read-only Download Gateway",
+      "target_type": "System",
+      "target_id": "SYS-BAL-EVIDENCE-INFRA-001",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "P2/P4以降で増加するEvidenceを確実に保管するため、P3の他Battle Package gapより先に実装ラインへ送る優先Requirement。Existing Development Git StoreとAI Gateway v0.8を拡張し、immutable Evidence Artifact Store、atomic Project linkage、Human-approved scoped/expiring AI read-only downloadを追加する。AI upload/write/deleteは禁止。Source/Game Data/Build/package_manifestからEvidence storageを分離する。",
+      "required_human_decision": "Approved by Human 2026-08-22T16:04:00+09:00; no further product/gameplay decision required for the approved v1 boundary.",
+      "source": "HumanInstruction + SourceAudit(GKS-B735 AI Gateway v0.8)",
+      "created_at": "2026-08-22T16:04:00+09:00",
+      "updated_at": "2026-08-22T16:04:00+09:00"
+    }
+  ],
   "architecture_nodes": [
     {
       "id": "ARCH-V9-BALANCE-001",
@@ -927,6 +992,29 @@
       "blocking": false,
       "created_at": "2026-08-22T15:11:00+09:00",
       "updated_at": "2026-08-22T15:11:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-EVIDENCE-SPEC-001",
+      "title": "Evidence Store / AI read-only boundary Human approval and current-source reuse audit",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Human approved the v1 boundary: Studio/Git Evidence persistence; immutable/atomic artifact linkage; Human-approved scoped/expiring download-only AI access; no AI upload/write/delete. Current GKS-B735 source contains AI Gateway v0.8 with humanApprovalRequired=true and read-only GET endpoints, so the requirement is reuse-first rather than a duplicate gateway. Current source package manifest listed 639 files with size/SHA mismatches=0.",
+      "evidence": "Human message 2026-08-22T16:04+09:00: 「それで承認」; ai-gateway-manifest.json gatewayVersion=0.8.0, humanApprovalRequired=true; ai-gateway-server/README.md read-only API; ai-gateway-server/router.php GET/read-only mode; guild-adventure-studio-sub(20260822-061045).zip sha256=9e9987ee5b4deb73ce1b2bbe3270136b2065839f34a018aebaa8467402fe4464; package_manifest sha256=cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T16:04:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T16:04:00+09:00",
+      "updated_at": "2026-08-22T16:04:00+09:00"
     }
   ],
   "workflow": {
@@ -970,6 +1058,14 @@
     {
       "at": "2026-08-22T06:18:23.558Z",
       "message": "Development Workspace JSON merged: add=6 update=2 delete=0"
+    },
+    {
+      "at": "2026-08-22T16:04:00+09:00",
+      "message": "HumanがDevelopment Evidence Store + Human-approved AI Read-only Download Gateway v1を承認。EvidenceをDevelopment専用immutable Artifact Setとして保存しProject/Task/CheckからSHA付き参照、save+Project ref atomic commit、read-back hash検証を行う。外部AIはHuman承認済みscope/expiry付きread sessionでSource/Project/Evidenceをdownload-only取得可能とし、AI upload/write/update/deleteは禁止。Current GKS-B735のAI Gateway v0.8 / Development Git Storeをreuse-firstで拡張し、重複基盤は新設しない。REQ-BAL-EVIDENCE-001をP2/P4以降のEvidence増加前に実装ラインへ送る優先Blocker Requirementとして登録。今回は仕様承認のDEVELOPMENT_ONLY記録だけで、Source/Game Data/Build/manifest/Current active変更0、削除0。"
+    },
+    {
+      "at": "2026-08-22T07:09:04.263Z",
+      "message": "Development Workspace JSON merged: add=7 update=0 delete=0"
     }
   ]
 }
