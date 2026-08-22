@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T01:41:32.913Z"
+    "updated_at": "2026-08-22T04:13:49.813Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-DESIGN-001",
-    "theme": "Game-wide Balance System Map / Formula & Domain Coverage Design",
-    "goal": "Quest中心ではなく、Character/Job、Battle Formula、Skill、Passive、Equipment、MOD/Rarity/Unique、Enemy/AI、Quest/Reward/Stone、Economy/Guild、Presentationまで全Balance調整面を棚卸しし、実行計画を設計する。計画自体はDraftとして保持し、Human承認前に実行計画を確定しない。"
+    "theme": "Existing AI Battle Package Capability / Current Specification Gap Audit",
+    "goal": "TASK-BAL-DESIGN-002として、既存Battle PackageのSchema/Runtime/Formula/Generator/ResultをCurrent Specificationと1対1照合し、Formal GapとSOURCE_UPDATE Requirement候補を確定する。"
   },
   "project_rules": [
     {
@@ -137,11 +137,11 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B729",
+    "studio_build": "GKS-B733",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-004114).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-030342).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T10:14:00+09:00"
+    "recorded_at": "2026-08-22T12:07:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -223,9 +223,202 @@
       "updated_at": "2026-08-22T10:36:00+09:00"
     }
   ],
-  "specifications": [],
+  "specifications": [
+    {
+      "id": "SPEC-BAL-SYSTEM-MAP-001",
+      "title": "Game-wide Balance System Map Draft",
+      "status": "Draft",
+      "summary": "Current Specification全DomainのBalance surface、固定構造境界、owner、状態、Data候補、依存候補を横断整理する計画用System Map。",
+      "body": "# Game-wide Balance System Map — Draft\n\n## Authority\n- Read-only gameplay/spec authority: `DEV-V9-REORG-019` Current Specification / Approved Decision.\n- Current Source / Runtime / Export / TestはImplementation evidenceであり、Specification確定根拠として逆採用しない。\n- このMapはBalance案件の計画用Draftであり、Current gameplay Specificationを変更しない。\n- Formula expression本体のBalance所有範囲は未確定。ここではFormulaを棚卸し対象に含めるだけで、後続`TASK-BAL-DESIGN-004`で境界を設計する。\n\n## Execution boundary\n- **Combat Package candidate scope**: Character/Job runtime input, Battle Formula, Status, Formal Skill, Passive, Equipment/MOD, Monster/Enemy, Formal AI。\n- **Upper Campaign scope**: New Game, Progression, Inventory/Economy, Encounter/Event/QuestRun, Reward/Drop, Stone, Guild, Presentation。\n- **Cross-cutting**: Balance Governance/Version/Snapshot、Data/Save/Migration、Cross-System KPI。\n- Combatに入るDomainでも、既存Battle PackageがCurrent Specification準拠かどうかは未確認。次Task `TASK-BAL-DESIGN-002` で監査する。\n\n## Domain Ledger\n\n| Domain | Owner / Authority | Balance surface | Current fixed boundary | State | Data/source candidate | Dependency candidates |\n|---|---|---|---|---|---|---|\n| **Balance Governance / Version / Snapshot** | SPEC-V9-019-000 [Draft], SPEC-V9-019-CORE-002 [Approved], SPEC-V9-019-BAL-001 [Draft] | balance_state, rules/data/config version, seed, snapshot, current_active / baseline / candidate / deferred | Current Source/Runtime値だけでSpecificationを確定しない。同一Input+Seed+Rules/Data Versionで再現し、既存生成物へConfig変更を遡及しない。 | Cross-cutting / authority boundary | Development Project authority。Runtime/ExportはImplementation evidenceのみ。 | 全Domain |\n| **Character Base / Job Growth / Job Change** | SPEC-V9-019-CORE-001 [Draft], SPEC-V9-019-CHAR-001 [Draft], SPEC-V9-019-JOB-001 [Draft], SPEC-V9-019-JOB-002 [Approved] | Party最大人数(initial 6), 初期7能力(initial 10), 最大Level(initial 50), Job別growth値, Job適性seed | Job Changeで既存Statsを再計算しない。Level Up時のgrowth変換式・履歴保持は構造Rule。 | Human Approved seed + Balance variable | Current authoring topologyは未確定。Development authorityを優先。 | NEWGAME, PROGRESSION, EQUIPMENT, SKILL_ACQ, COMBAT |\n| **New Game Starter Power / Initial Economy** | SPEC-V9-019-NEWGAME-001 [Draft] | 初期冒険者人数, 初期Job構成, 初期Equipment, 初期所持金, 初期Content値 | Guild→Progress/Flag→Character→Party→Inventory/Warehouse→Skill/Passive/AI→Integrity→First Auto Saveの順序。 | Balance/Data variable; structure fixed | Current Studio Project JSON/Data VersionがGAME_DATA開始時の正本。 | CHAR_JOB, PROGRESSION, INVENTORY, SKILL_ACQ, AI, GUILD |\n| **EXP / Level / Growth / Long-term Character Progression** | SPEC-V9-019-PROGRESSION-001 [Draft], SPEC-V9-019-CHAR-001 [Draft], SPEC-V9-019-JOB-001 [Draft] | 必要EXP curve, 最大Level, Quest EXP量, 成長値seed | Quest成功時のみ正式EXP、対象人数均等分配floor、複数Level Up、余剰EXP持越し、完了時Jobで成長。 | Formula structure fixed; concrete curve/value Balance | Topology未調査（TASK-BAL-DESIGN-003）。 | CHAR_JOB, QUEST_RUN, REWARD_ECONOMY, GUILD |\n| **Battle Core Formula** | SPEC-V9-019-BATTLE-001 [Draft], SPEC-V9-019-BATTLE-002 [Draft], SPEC-V9-019-BATTLE-003 [Draft], SPEC-V9-019-BATTLE-004 [Draft] | damage/heal coefficients, random width, Resistance cap, Hit clamp, Critical rate/damage, MP/CD/Cast values, AG/Tick-related numeric parameters | Current formula topology候補: Physical=Attack×SkillMultiplier; Magical=MagicIncreaseRate×SkillAttackPower; Hit=Accuracy/(Accuracy+Evasion); Resistance→Critical順; Damage floor / Heal ceil。丸め・処理順の所有境界は後続Formula Registryで確定。 | Formula topology Draft; numeric variability Approved policy | schemas/battle-simulation-rules.json, Studio Battle Package engine（Implementation evidence only）。 | EQUIPMENT, SKILL_FORMAL, PASSIVE, STATUS, ENEMY, AI |\n| **Status / DOT / BUFF / DEBUFF / Shield** | SPEC-V9-019-STATUS-001 [Draft], SPEC-V9-019-STATUS-002 [Draft], SPEC-V9-019-STATUS-003 [Draft] | base duration, Resistance, DOT power/interval, stack gain/max, BUFF/DEBUFF/Shield amount/duration | 独立付与成功率Rollなし。Status Resistanceはdurationへ作用。Stack lifecycle/refresh/consume/orderはOwner Rule。 | Lifecycle structural; amounts/durations/caps Balance | assets/shared/config/skill-registry.json（Effect registry evidence）。 | SKILL_FORMAL, PASSIVE, BATTLE_FORMULA, MOD |\n| **Formal Skill / Skill Budget / Range / Runtime Parameters** | SPEC-V9-019-SKILL-001 [Draft], SPEC-V9-019-SKILL-002 [Draft], SPEC-V9-019-SKILL-003 [Draft], SPEC-V9-019-RANGE-001 [Draft] | skillLevel/Budget, power/heal, mpCost, cooldown, cast, duration, range cost, target count, multi-hit, resource/revive/target-control parameters | Formal Registry/Compiler/runtimeContractsを正本としLegacy固定Runtimeへ戻さない。旧Range BudgetをCurrent Budgetへ二重加算しない。 | Formal structure current; concrete Budget/parameters Balance | assets/shared/config/skill-budget-rules.json, skill-ai-generation-rules.json, skill-registry.json | BATTLE_FORMULA, STATUS, RANGE/TARGET, EQUIPMENT, PASSIVE, AI |\n| **Skill / Passive Acquisition / Respec / Loadout Capacity** | SPEC-V9-019-SKILL-ACQ-001 [Draft], SPEC-V9-019-SKILL-UI-001 [Draft], SPEC-V9-019-AI-003 [Draft] | 習得Cost, Respec Cost, Skill Loadout slot数, 能力条件閾値 | Job/武器制限なし、Skill/Passive自身のEXP成長なし、RespecでCharacter Level/Stats/Job/Equipmentを変更しない。 | Structure fixed by Approved Decision; concrete costs/slots Balance | Current Studio Project JSON / Formal Skill master at GAME_DATA stage。 | CHAR_JOB, SKILL_FORMAL, PASSIVE, AI, GUILD |\n| **Passive** | SPEC-V9-019-PASSIVE-001 [Approved] | weapon/attribute/heal/buff/debuff/DOT/resistance/accuracy/rare-find/MP efficiency等の個別効果量 | 常時効果、手動発動なし、能力条件方式、Job/武器制限なし。旧Status成功率上昇はCurrent非採用。 | Catalog seed Approved; effect amounts Balance Data | Formal master topology未調査。game/assets/js/skill-passive-ai-save-bridge.jsは保存Evidenceのみ。 | CHAR_JOB, BATTLE_FORMULA, STATUS, EQUIPMENT, SKILL_ACQ |\n| **Weapon / Armor / Accessory / BaseItem Generator / Contribution** | SPEC-V9-019-EQUIP-001..004 [Draft] | iLv, requirement coefficients, attack/accuracy/magic coefficients, base_critical_rate(initial 5%), armor HP/MP/Evasion growth, per-type/slot coefficients | 10 Equipment slots固定。Requirementは装備可否専用。BaseItem→Contribution→MOD→Modified Contribution→Runtime境界を維持。 | Generator topology fixed candidate; coefficients/curves Balance | studio/equipment/equipment-balance-config.json, equipment-generation-rules.json, equipment-generator.js | CHAR_JOB, MOD_RARITY, BATTLE_FORMULA, INVENTORY |\n| **MOD / Rarity / Unique** | SPEC-V9-019-MOD-001 [Draft], MOD-002 [Draft], MOD-003 [Approved], RARITY-001 [Approved], UNIQUE-001 [Draft] | MOD effect amount/probability/cap/tier, MOD count, rarity rates, drop count, acquisition time, Unique special-effect numeric strength | Rarity→MOD数→攻防枠→Category→MOD→Tier等の採用済み構造を維持。Equipment RarityとMOD Tierは別概念。UNIQUE/LEGENDARY/MYTHICはDrop限定。 | Catalog/Baseline preserved; concrete values Balance | Export/equipment/mods.jsonはpublic evidenceのみ。Authoring topologyはTASK-BAL-DESIGN-003で確定。 | EQUIPMENT, REWARD_ECONOMY, BATTLE_FORMULA, STATUS |\n| **Inventory / Warehouse / Stack / Sell** | SPEC-V9-019-INVENTORY-001 [Draft], SPEC-V9-019-INVENTORY-UI-001 [Draft] | Warehouse/Inventory capacity, 1Slot stack cap, sell price formula, high-rarity warning threshold | Player InventoryとGuild Warehouse分離。Capacity不足でReward消失禁止。Equipmentは非Stack。 | Ownership structural; capacities/formulas/thresholds Balance | Studio Project JSON at GAME_DATA stage; Save bridge is implementation evidence only。 | NEWGAME, REWARD_ECONOMY, GUILD, EQUIPMENT |\n| **Monster Generation / Monster Job / Skill Candidate** | SPEC-V9-019-MONSTER-001 [Approved], SPEC-V9-019-MONSTER-002 [Draft] | Monster Level×Job coefficients, skill selection thresholds, enemy budget cost, skill tier/candidate numeric gates | Monster内部Jobと表示名を分離。AI生成工程がStats/Enemy Budgetを独自決定しない。正式ID参照。 | Contract Approved; coefficients/thresholds Balance | Export/monster/monsters.jsonはpublic evidence only; authoring topology later。 | ENEMY, SKILL_FORMAL, AI, EQUIPMENT/MOD |\n| **Enemy Budget** | SPEC-V9-019-ENEMY-001 [Draft] | total budget, HP/Attack/Defense/Skill/AI/Utility allocation, conversion coefficients, difficulty/level/rank modifiers | 6 Budget category構造を維持。V9配分はBaselineでCurrent固定値ではない。 | Structure formalized; allocations/conversions Balance | Studio/Balance authoring topology未調査。 | MONSTER, BATTLE_FORMULA, SKILL_FORMAL, AI, ENCOUNTER |\n| **Formal AI / Decision Performance** | SPEC-V9-019-AI-001..003 [Draft] | re-evaluation interval候補, AI Budget conversion, loadout slot数(owned by Skill UI), tie/random performance exposure | AIは判断まで。Battle実行仕様を再定義しない。Formal未設定時Legacy AIへFallbackしない。 | Decision architecture fixed candidate; numeric performance knobs Balance only if owner allows | shared/ai/ai-master-adapter.js, Studio AI production pipeline（implementation evidence）。 | SKILL_ACQ, SKILL_FORMAL, ENEMY, BATTLE_FORMULA |\n| **Encounter / Formation / Event / Exploration** | SPEC-V9-019-ENCOUNTER-001 [Draft], SPEC-V9-019-EVENT-001 [Draft], SPEC-V9-019-EVENT-002 [Draft] | enemy_budget_cost/spawn_weight, event weight, none-event weight, exploration success/rarity numeric surfaces where defined | Encounterはeffective_enemy_budget内でFormation生成。Random EventはSeeded。固定百分率表をCurrentへ復活させない。 | Generation/seed structure fixed candidate; weights/costs Balance | Quest/Event Product data topologyはCurrent Studio Project JSONで後続確認。 | ENEMY, MONSTER, QUEST_RUN, REWARD_ECONOMY |\n| **Quest / QuestRun / Difficulty / Duration / Failure** | SPEC-V9-019-QUEST-001 [Draft], SPEC-V9-019-RUN-001 [Draft], RUN-002 [Draft], ABANDON-001 [Draft] | base_enemy_budget, effective_enemy_budget, adventure_duration_seconds, encounter composition numeric inputs | Difficultyはラベルではなくeffective_enemy_budget。QuestRun開始後のBattle/Event/Reward/Flag/Random結果を再抽選・再計算しない。Failure/Abandonは途中Reward/EXPを正式獲得しない。 | Run ownership/snapshot structural; budget/duration Balance | Export/system/adventure_settings.jsonはpublic evidence only。 | ENCOUNTER_EVENT, ENEMY, STONE, REWARD_ECONOMY, PROGRESSION |\n| **Reward / Drop / Gold / Resource Economy** | SPEC-V9-019-REWARD-001 [Draft], SPEC-V9-019-RARITY-001 [Approved], SPEC-V9-019-INVENTORY-001 [Draft] | rolls, weight/chance/rate, amount/count ranges, budget_multiplier, reward_modifier_multiplier, rarity_weight_bonus_per_budget, gold/material/stone/equipment expected value | Seeded Resolver。RewardはBattle/Event/Exploration結果から集約しReturnで再抽選しない。Equipment Rarityへの暗黙変換禁止。 | Resolver structure current candidate; rates/weights/amounts Balance | assets/shared/js/adventure-reward-resolver.js, Export/system/drop_tables.json/public evidence | QUEST_RUN, ENCOUNTER_EVENT, MOD_RARITY, INVENTORY, PROGRESSION, STONE |\n| **Stone Endgame Risk / Reward** | SPEC-V9-019-STONE-001 [Draft], DEC-BAL-EXPERIENCE-001 [Human Approved target] | stone_budget_delta, Stone acquisition/consumption economy, reward amount/quality/rarity modifiers, level/budget safety baselines | StoneはQuest生成せず任意追加開始Cost。開始成立後はSuccess/Failure/Abandonで返却しない。Difficultyはbase+delta。 | Human target: high difficulty / high reward / endgame; concrete scaling Candidate | Export/stone/stones.json / stone_mods.jsonはpublic evidence only。 | QUEST_RUN, ENEMY, REWARD_ECONOMY, INVENTORY |\n| **Guild / Unlock / Recruitment / Capacity** | SPEC-V9-019-GUILD-001 [Draft], SPEC-V9-019-RECRUIT-001 [Draft] | Guild Level cap, required EXP, unlock levels, warehouse capacity mapping, recruitment capacity, AI unlock stages/node limits | 初期施設4種。施設はCombat Powerを直接上昇させない。Currentでは施設Level/強化なし。Recruit costなし。 | Structure Human Approved; concrete progression/capacity Balance | Authoring topology未調査。推奨Dataはguild_levels / facilities / unlock_conditions等。 | PROGRESSION, INVENTORY, SKILL_ACQ, AI, QUEST_RUN |\n| **Presentation / Playback / Audio / Settings** | SPEC-V9-019-PRESENT-001, PLAYBACK-UI-001, AUDIO-001, SETTINGS-001, BATTLE-CAMERA-001 [Draft] | effect duration/intensity, shake, zoom/focus, flash, BGM fade/volume defaults, playback speed, UI animation duration, accessibility/reduction level | PresentationはBattle/Reward結果を変更・再計算しない。 | Presentation Config variable; non-gameplay unless a value changes gameplay | Export/system/game_settings.jsonはpublic evidence only。 | BATTLE_FORMULA(result only), QUEST_RUN(snapshot only), SETTINGS |\n| **Data Exchange / Save / Migration Boundary** | SPEC-V9-019-DATA-001 [Draft], DATA-002 [Draft], SAVE-001 [Draft], MIG-001 [Draft], CORE-002 [Approved] | Version bindings / no primary gameplay number. Balance versions and snapshots are metadata inputs. | Studio Project JSONをGame Data正本としExportを逆輸入しない。Save/QuestRun/Generated Itemは必要Version/Config/Seed/Snapshotを保持。 | Cross-cutting integrity boundary | Current Studio Project JSON/Data Version required before GAME_DATA. | 全Data-bearing Domain |\n| **Cross-System / Build Diversity / Dominance / Exploit** | Derived planning layer from CORE-001/002 + all domain owner specs; not a gameplay owner | DPS/HPS/EHP/TTK, resource efficiency, build dominance, acquisition time, reward/time, failure-adjusted EV, progression pacing | 新しいゲームルールをここで作らない。Owner DomainのCurrent Structure/Contractを横断評価するだけ。 | Balance evaluation layer | AI Candidate + Studio Package Result + Runtime Conformance evidence | CHAR_JOB, BATTLE_FORMULA, SKILL_FORMAL, PASSIVE, EQUIPMENT, MOD_RARITY, ENEMY, AI, QUEST_RUN, REWARD_ECONOMY, STONE, GUILD |\n\n## Formula expressions included in the Map\n\nFormulaはBalance棚卸し対象へ含めるが、式構造を可変化すると確定していない。\n\nCurrent Specification上で明示されている主要式:\n- Physical base damage: `attack * skill_multiplier`\n- Magical base damage: `magic_increase_rate * skill_attack_power`\n- Resistance modifier: `1 - resistance / 100`\n- Critical multiplier: `1 + critical_damage / 100`\n- Hit rate: `accuracy / (accuracy + evasion) * 100`\n- Status effective duration: `ceil(base_duration * (1 - resistance / 100))`\n- Heal: `magic_increase_rate * skill_heal_power`\n- Equipment requirement: `iLv * requirement_coefficient`\n- Reward amount: `round(base_amount * budget_multiplier * reward_modifier_multiplier)`\n- Reward rarity adjusted weight: `base_weight * (1 + budget_delta * rarity_weight_bonus_per_budget[rarity])`\n- Stone difficulty: `effective_enemy_budget = base_enemy_budget + stone_budget_delta`\n- Job growth: `floor(growth/10) + Bernoulli((growth % 10) * 10%)`\n\n`rounding / processing order / formula topology` と `coefficient / curve / cap / probability` を同一Balance Keyとして扱わず、後続Formula Registryで分離する。\n\n## Explicit non-owners / exclusions\n- Story/WORLDはContent/ID接続Ownerであり、Balance数値を推測追加しない。\n- TagはEffect/Condition分類の構造部品であり、Legacy固定数値TagをBalance値として復活させない。\n- Save/Data Exchange/MigrationはBalance値のOwnerではなく、Version/Snapshot/Data正本境界を保持する。\n- UI/Presentation値は原則Presentation Config。Gameplay結果を変える値は該当Gameplay Ownerへ戻す。\n\n## Open items carried forward\n1. Existing AI Battle PackageがFormal Equipment/Skill/Passive/Status/Enemy/AIをCurrent仕様どおり評価できるか。\n2. Passive/MODの大量生成・Formal Contribution経路。\n3. Formula expression本体をBalance所有へ移す必要があるか。\n4. 各Balance Keyの正本Storage/Deployment Route/Application Snapshot Policy。\n5. Product Content readinessとRuntime readiness。\nこれらは後続Design Taskで解消し、Human判断が必要なものだけPlan Gateへ集約する。\n",
+      "decision_refs": [
+        "DEC-BAL-001",
+        "DEC-BAL-EXPERIENCE-001",
+        "DEC-BAL-PACKAGE-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- Character/Job/New Game、Battle、Skill、Passive、Status、Equipment/MOD/Rarity/Unique、Inventory/Economy、Enemy/AI、Encounter/Event/Quest、Reward/Stone、Guild、PresentationをCoverageする。\n- 各DomainにBalance Key、owner specification/authority、Current固定Rule、state、data/source candidate、dependency candidateを持つ。\n- Combat Package候補Scope、Upper Campaign Scope、Cross-cutting Scopeを分離する。\n- Formula expressionを棚卸し対象に含めるが、Formula ownershipは確定しない。\n- Current gameplay Specification、Source、Game Dataを変更しない。",
+      "system_node_id": "SYS-BAL-GAMEWIDE",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    }
+  ],
   "specification_candidates": [],
-  "system_nodes": [],
+  "system_nodes": [
+    {
+      "id": "SYS-BAL-GAMEWIDE",
+      "name": "Game-wide Balance System Map",
+      "description": "DEV-V9-REORG-019 Current Specificationをread-only authorityとして、Balance調整対象と固定構造境界を横断整理するRoot。新しいGameplay仕様は追加しない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-GOVERNANCE",
+      "name": "Balance Governance / Version / Snapshot",
+      "description": "Owner: SPEC-V9-019-000 [Draft], SPEC-V9-019-CORE-002 [Approved], SPEC-V9-019-BAL-001 [Draft] / Balance: balance_state, rules/data/config version, seed, snapshot, current_active / baseline / candidate / deferred / Fixed: Current Source/Runtime値だけでSpecificationを確定しない。同一Input+Seed+Rules/Data Versionで再現し、既存生成物へConfig変更を遡及しない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-CHAR_JOB",
+      "name": "Character Base / Job Growth / Job Change",
+      "description": "Owner: SPEC-V9-019-CORE-001 [Draft], SPEC-V9-019-CHAR-001 [Draft], SPEC-V9-019-JOB-001 [Draft], SPEC-V9-019-JOB-002 [Approved] / Balance: Party最大人数(initial 6), 初期7能力(initial 10), 最大Level(initial 50), Job別growth値, Job適性seed / Fixed: Job Changeで既存Statsを再計算しない。Level Up時のgrowth変換式・履歴保持は構造Rule。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-NEWGAME",
+      "name": "New Game Starter Power / Initial Economy",
+      "description": "Owner: SPEC-V9-019-NEWGAME-001 [Draft] / Balance: 初期冒険者人数, 初期Job構成, 初期Equipment, 初期所持金, 初期Content値 / Fixed: Guild→Progress/Flag→Character→Party→Inventory/Warehouse→Skill/Passive/AI→Integrity→First Auto Saveの順序。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-PROGRESSION",
+      "name": "EXP / Level / Growth / Long-term Character Progression",
+      "description": "Owner: SPEC-V9-019-PROGRESSION-001 [Draft], SPEC-V9-019-CHAR-001 [Draft], SPEC-V9-019-JOB-001 [Draft] / Balance: 必要EXP curve, 最大Level, Quest EXP量, 成長値seed / Fixed: Quest成功時のみ正式EXP、対象人数均等分配floor、複数Level Up、余剰EXP持越し、完了時Jobで成長。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-BATTLE_FORMULA",
+      "name": "Battle Core Formula",
+      "description": "Owner: SPEC-V9-019-BATTLE-001 [Draft], SPEC-V9-019-BATTLE-002 [Draft], SPEC-V9-019-BATTLE-003 [Draft], SPEC-V9-019-BATTLE-004 [Draft] / Balance: damage/heal coefficients, random width, Resistance cap, Hit clamp, Critical rate/damage, MP/CD/Cast values, AG/Tick-related numeric parameters / Fixed: Current formula topology候補: Physical=Attack×SkillMultiplier; Magical=MagicIncreaseRate×SkillAttackPower; Hit=Accuracy/(Accuracy+Evasion); Resistance→Critical順; Damage floor / Heal ceil。丸め・処理順の所有境界は後続Formula Registryで確定。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-STATUS",
+      "name": "Status / DOT / BUFF / DEBUFF / Shield",
+      "description": "Owner: SPEC-V9-019-STATUS-001 [Draft], SPEC-V9-019-STATUS-002 [Draft], SPEC-V9-019-STATUS-003 [Draft] / Balance: base duration, Resistance, DOT power/interval, stack gain/max, BUFF/DEBUFF/Shield amount/duration / Fixed: 独立付与成功率Rollなし。Status Resistanceはdurationへ作用。Stack lifecycle/refresh/consume/orderはOwner Rule。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-SKILL_FORMAL",
+      "name": "Formal Skill / Skill Budget / Range / Runtime Parameters",
+      "description": "Owner: SPEC-V9-019-SKILL-001 [Draft], SPEC-V9-019-SKILL-002 [Draft], SPEC-V9-019-SKILL-003 [Draft], SPEC-V9-019-RANGE-001 [Draft] / Balance: skillLevel/Budget, power/heal, mpCost, cooldown, cast, duration, range cost, target count, multi-hit, resource/revive/target-control parameters / Fixed: Formal Registry/Compiler/runtimeContractsを正本としLegacy固定Runtimeへ戻さない。旧Range BudgetをCurrent Budgetへ二重加算しない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-SKILL_ACQ",
+      "name": "Skill / Passive Acquisition / Respec / Loadout Capacity",
+      "description": "Owner: SPEC-V9-019-SKILL-ACQ-001 [Draft], SPEC-V9-019-SKILL-UI-001 [Draft], SPEC-V9-019-AI-003 [Draft] / Balance: 習得Cost, Respec Cost, Skill Loadout slot数, 能力条件閾値 / Fixed: Job/武器制限なし、Skill/Passive自身のEXP成長なし、RespecでCharacter Level/Stats/Job/Equipmentを変更しない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-PASSIVE",
+      "name": "Passive",
+      "description": "Owner: SPEC-V9-019-PASSIVE-001 [Approved] / Balance: weapon/attribute/heal/buff/debuff/DOT/resistance/accuracy/rare-find/MP efficiency等の個別効果量 / Fixed: 常時効果、手動発動なし、能力条件方式、Job/武器制限なし。旧Status成功率上昇はCurrent非採用。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-EQUIPMENT",
+      "name": "Weapon / Armor / Accessory / BaseItem Generator / Contribution",
+      "description": "Owner: SPEC-V9-019-EQUIP-001..004 [Draft] / Balance: iLv, requirement coefficients, attack/accuracy/magic coefficients, base_critical_rate(initial 5%), armor HP/MP/Evasion growth, per-type/slot coefficients / Fixed: 10 Equipment slots固定。Requirementは装備可否専用。BaseItem→Contribution→MOD→Modified Contribution→Runtime境界を維持。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-MOD_RARITY",
+      "name": "MOD / Rarity / Unique",
+      "description": "Owner: SPEC-V9-019-MOD-001 [Draft], MOD-002 [Draft], MOD-003 [Approved], RARITY-001 [Approved], UNIQUE-001 [Draft] / Balance: MOD effect amount/probability/cap/tier, MOD count, rarity rates, drop count, acquisition time, Unique special-effect numeric strength / Fixed: Rarity→MOD数→攻防枠→Category→MOD→Tier等の採用済み構造を維持。Equipment RarityとMOD Tierは別概念。UNIQUE/LEGENDARY/MYTHICはDrop限定。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-INVENTORY",
+      "name": "Inventory / Warehouse / Stack / Sell",
+      "description": "Owner: SPEC-V9-019-INVENTORY-001 [Draft], SPEC-V9-019-INVENTORY-UI-001 [Draft] / Balance: Warehouse/Inventory capacity, 1Slot stack cap, sell price formula, high-rarity warning threshold / Fixed: Player InventoryとGuild Warehouse分離。Capacity不足でReward消失禁止。Equipmentは非Stack。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-MONSTER",
+      "name": "Monster Generation / Monster Job / Skill Candidate",
+      "description": "Owner: SPEC-V9-019-MONSTER-001 [Approved], SPEC-V9-019-MONSTER-002 [Draft] / Balance: Monster Level×Job coefficients, skill selection thresholds, enemy budget cost, skill tier/candidate numeric gates / Fixed: Monster内部Jobと表示名を分離。AI生成工程がStats/Enemy Budgetを独自決定しない。正式ID参照。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-ENEMY",
+      "name": "Enemy Budget",
+      "description": "Owner: SPEC-V9-019-ENEMY-001 [Draft] / Balance: total budget, HP/Attack/Defense/Skill/AI/Utility allocation, conversion coefficients, difficulty/level/rank modifiers / Fixed: 6 Budget category構造を維持。V9配分はBaselineでCurrent固定値ではない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-AI",
+      "name": "Formal AI / Decision Performance",
+      "description": "Owner: SPEC-V9-019-AI-001..003 [Draft] / Balance: re-evaluation interval候補, AI Budget conversion, loadout slot数(owned by Skill UI), tie/random performance exposure / Fixed: AIは判断まで。Battle実行仕様を再定義しない。Formal未設定時Legacy AIへFallbackしない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-ENCOUNTER_EVENT",
+      "name": "Encounter / Formation / Event / Exploration",
+      "description": "Owner: SPEC-V9-019-ENCOUNTER-001 [Draft], SPEC-V9-019-EVENT-001 [Draft], SPEC-V9-019-EVENT-002 [Draft] / Balance: enemy_budget_cost/spawn_weight, event weight, none-event weight, exploration success/rarity numeric surfaces where defined / Fixed: Encounterはeffective_enemy_budget内でFormation生成。Random EventはSeeded。固定百分率表をCurrentへ復活させない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-QUEST_RUN",
+      "name": "Quest / QuestRun / Difficulty / Duration / Failure",
+      "description": "Owner: SPEC-V9-019-QUEST-001 [Draft], SPEC-V9-019-RUN-001 [Draft], RUN-002 [Draft], ABANDON-001 [Draft] / Balance: base_enemy_budget, effective_enemy_budget, adventure_duration_seconds, encounter composition numeric inputs / Fixed: Difficultyはラベルではなくeffective_enemy_budget。QuestRun開始後のBattle/Event/Reward/Flag/Random結果を再抽選・再計算しない。Failure/Abandonは途中Reward/EXPを正式獲得しない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-REWARD_ECONOMY",
+      "name": "Reward / Drop / Gold / Resource Economy",
+      "description": "Owner: SPEC-V9-019-REWARD-001 [Draft], SPEC-V9-019-RARITY-001 [Approved], SPEC-V9-019-INVENTORY-001 [Draft] / Balance: rolls, weight/chance/rate, amount/count ranges, budget_multiplier, reward_modifier_multiplier, rarity_weight_bonus_per_budget, gold/material/stone/equipment expected value / Fixed: Seeded Resolver。RewardはBattle/Event/Exploration結果から集約しReturnで再抽選しない。Equipment Rarityへの暗黙変換禁止。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-STONE",
+      "name": "Stone Endgame Risk / Reward",
+      "description": "Owner: SPEC-V9-019-STONE-001 [Draft], DEC-BAL-EXPERIENCE-001 [Human Approved target] / Balance: stone_budget_delta, Stone acquisition/consumption economy, reward amount/quality/rarity modifiers, level/budget safety baselines / Fixed: StoneはQuest生成せず任意追加開始Cost。開始成立後はSuccess/Failure/Abandonで返却しない。Difficultyはbase+delta。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-GUILD",
+      "name": "Guild / Unlock / Recruitment / Capacity",
+      "description": "Owner: SPEC-V9-019-GUILD-001 [Draft], SPEC-V9-019-RECRUIT-001 [Draft] / Balance: Guild Level cap, required EXP, unlock levels, warehouse capacity mapping, recruitment capacity, AI unlock stages/node limits / Fixed: 初期施設4種。施設はCombat Powerを直接上昇させない。Currentでは施設Level/強化なし。Recruit costなし。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-PRESENTATION",
+      "name": "Presentation / Playback / Audio / Settings",
+      "description": "Owner: SPEC-V9-019-PRESENT-001, PLAYBACK-UI-001, AUDIO-001, SETTINGS-001, BATTLE-CAMERA-001 [Draft] / Balance: effect duration/intensity, shake, zoom/focus, flash, BGM fade/volume defaults, playback speed, UI animation duration, accessibility/reduction level / Fixed: PresentationはBattle/Reward結果を変更・再計算しない。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-DATA_SAVE",
+      "name": "Data Exchange / Save / Migration Boundary",
+      "description": "Owner: SPEC-V9-019-DATA-001 [Draft], DATA-002 [Draft], SAVE-001 [Draft], MIG-001 [Draft], CORE-002 [Approved] / Balance: Version bindings / no primary gameplay number. Balance versions and snapshots are metadata inputs. / Fixed: Studio Project JSONをGame Data正本としExportを逆輸入しない。Save/QuestRun/Generated Itemは必要Version/Config/Seed/Snapshotを保持。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "SYS-BAL-CROSS_META",
+      "name": "Cross-System / Build Diversity / Dominance / Exploit",
+      "description": "Owner: Derived planning layer from CORE-001/002 + all domain owner specs; not a gameplay owner / Balance: DPS/HPS/EHP/TTK, resource efficiency, build dominance, acquisition time, reward/time, failure-adjusted EV, progression pacing / Fixed: 新しいゲームルールをここで作らない。Owner DomainのCurrent Structure/Contractを横断評価するだけ。",
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    }
+  ],
   "system_contracts": [],
   "system_connections": [],
   "system_flags": [],
@@ -575,11 +768,11 @@
     {
       "id": "TASK-BAL-DESIGN-001",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Current Specification全DomainからBalance System Mapを作成する",
-      "status": "Todo",
+      "title": "Current Specification全DomainからGame-wide Balance System Mapを作成する",
+      "status": "Done",
       "execution_order": 10,
       "depends_on": [],
-      "acceptance_criteria": "- Current Specification / Decision / Materialをread-only authorityとして全Balance対象を抽出する。\n- Character/Job、Battle Core Formula、Skill、Passive、Equipment、MOD/Rarity/Unique、Status、Enemy/Monster、AI、Encounter/Quest、Reward/Economy、Stone、Guild/Unlock、Presentation、Cross-Systemを最低Coverageとする。\n- 各項目にowner spec / authority / state / source / runtime connection / snapshot policy / config candidateを付ける。\n- Formula expressionも棚卸し対象に含める。\n- Source / Game Dataは変更しない。",
+      "acceptance_criteria": "- Character/Job/New Game、Battle、Skill、Passive、Status、Equipment/MOD/Rarity/Unique、Inventory/Economy、Enemy/AI、Encounter/Event/Quest、Reward/Stone、Guild、Presentationを最低Coverageとする。\n- 各DomainのBalance Key、owner spec、依存関係、Current固定Rule、Data候補を棚卸しする。\n- Battle Packageで扱えるCombat領域と上位Campaign領域を区別する。\n- Source / Game Dataは変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -588,18 +781,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T12:07:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-002",
       "box_id": "BOX-V9-BAL-DESIGN-001",
-      "title": "Formula / Parameter Registry Draftを設計する",
-      "status": "Blocked",
+      "title": "既存AI Battle Package Capability / Current Specification Gapを監査する",
+      "status": "Todo",
       "execution_order": 20,
       "depends_on": [
         "TASK-BAL-DESIGN-001"
       ],
-      "acceptance_criteria": "- Damage/Heal/Hit/Critical/Resistance/DOT/Shield/MP/CD/AG等のFormulaをID単位で整理する。\n- formula_expression / coefficient / curve / cap / floor / clamp / probability / duration / growth / conversion / threshold等の調整型を定義する。\n- Currentの処理順・丸め・Owner ContractとFormula可変化が衝突する箇所を明示し、推測で仕様変更しない。\n- Formula本体をBalance所有にできる範囲はCandidateとして記録し、Human承認前に確定しない。",
+      "acceptance_criteria": "- Template ZIP→AI作成Package読込→事前Validation→Job実行→Result Package出力→Result再読込の既存WorkflowをCapability Map化する。\n- manifest / execution_plan / roster / test / opponent_set / benchmark / formula / seed / resultのSchemaと責務を整理する。\n- Character/Job、Equipment Contribution、Skill、Passive、Status、Damage/Heal/Hit/Critical/Resistance、Enemy/AIをCurrent Specificationと1対1照合する。\n- Legacy/Demo/Fallback計算をGapとして列挙し、Balance値で埋めない。\n- Source修正が必要なGapはSOURCE_UPDATE Requirement候補として記録する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -608,7 +801,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:36:00+09:00",
-      "updated_at": "2026-08-22T10:36:00+09:00"
+      "updated_at": "2026-08-22T12:07:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-003",
@@ -826,6 +1019,52 @@
       "blocking": false,
       "created_at": "2026-08-22T10:36:00+09:00",
       "updated_at": "2026-08-22T10:36:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-MAP-001",
+      "title": "TASK-BAL-DESIGN-001 Game-wide Balance System Map coverage",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-DESIGN-001",
+      "status": "Passed",
+      "result": "System Map Draftを23 Domain + Rootで作成。指定Coverage、Balance Key、Owner/Authority、Current固定Rule、State、Data候補、依存候補を記録し、Combat Package / Upper Campaign / Cross-cuttingを分離。Formula expressionは棚卸し対象に含めたが所有範囲は未確定のまま保持。Source/Game Data変更0件。",
+      "evidence": "SPEC-BAL-SYSTEM-MAP-001; SYS-BAL-GAMEWIDE + SYS-BAL-* nodes; authority=development-project-data/DEV-V9-REORG-019.json sha256=3da26e8bc7f0a8d42c148bd26f0122b9975cfde5cbccc441b7f6abdfa1e5bcb3; source package_manifest sha256=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T12:07:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-BASELINE-006",
+      "title": "Balance read-only source baseline verified for planning task",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Current complete source package is GKS-B733 / GA-B486.211 and package_manifest integrity passed before Development-only planning work.",
+      "evidence": "guild-adventure-studio-sub(20260822-030342).zip sha256=ecbca7ecfcbbc23dd230f640fc92756a513ee5b16306e27903952ebabdb7892b; package_manifest.json sha256=e5a0b3f5e65241ce50e039acc80e2958bcf9d754247f899a3bfc73cf77b62594; check-package-manifest: PACKAGE_MANIFEST_OK files=638",
+      "checked_by": "AI",
+      "checked_at": "2026-08-22T12:07:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-22T12:07:00+09:00",
+      "updated_at": "2026-08-22T12:07:00+09:00"
     }
   ],
   "workflow": {
@@ -861,6 +1100,14 @@
     {
       "at": "2026-08-22T01:41:32.913Z",
       "message": "Development Workspace JSON merged: add=18 update=1 delete=0"
+    },
+    {
+      "at": "2026-08-22T12:07:00+09:00",
+      "message": "TASK-BAL-DESIGN-001 (DEVELOPMENT_ONLY)を実行。AI_START必須読込とPre-flightを完了し、GKS-B733 / GA-B486.211 Current Sourceのpackage_manifest integrityを確認。DEV-V9-REORG-019 Current Specification/Approved Decisionをread-only authorityとして23 DomainのGame-wide Balance System Map Draftを作成。Combat Package / Upper Campaign / Cross-cuttingを分離し、Formula expressionは棚卸し対象に含めたが所有範囲は未確定。TASK-BAL-DESIGN-001=Done、次TASK-BAL-DESIGN-002=Todoへ解放。Source変更0 / Game Data変更0 / 削除0。次Taskへは未着手。"
+    },
+    {
+      "at": "2026-08-22T04:13:49.813Z",
+      "message": "Development Workspace JSON merged: add=28 update=4 delete=0"
     }
   ]
 }
