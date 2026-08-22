@@ -45,6 +45,14 @@
 - `tests/**`、Gate、Schema、test registry、integrity policy等の保護資産を変更・削除・新規追加する場合はTest Integrity Gateを先に通す。Build tokenだけの追随を除き、完全一致パス・旧新SHA-256・理由を持つ**更新ZIP外の**`TEST_CHANGE_APPROVAL.json`とStudio配置時の別人間確認が必要である。承認JSONを更新ZIPへ同梱してはならない。
 - テスト失敗やtimeoutを理由にassert、期待値、skip条件、Gateを変更しない。timeoutは`failure_kind=timeout`としてFAILのまま分類し、原因テストを特定して実装またはテスト性能を直す。
 
+## 自律Correction実行規則
+
+- 未解決blocking Failed Checkがある親Taskは、同一失敗を再実行する前に`tools/development/autonomous-correction.py analyze`を実行する。
+- `safe_auto_candidate`かつCurrent正規経路を一意に証明できる場合だけ`prepare`でCorrection Taskを生成する。
+- Correction候補は`budget`でCompatibility Budget 0 / Exception Budget 0を機械検査する。
+- 自己修復の検証Buildは**現在のBuildをbaseline**とし、旧Buildは既知Failureの参照だけに使う。旧Buildをbaselineへ戻してGateを通してはならない。
+- 自己修復基盤を追加したBuildでは既知Failureをその場でCorrection完了させない。次BuildのCorrectionとして分離する。
+
 ## 成果物提出
 
 - `SOURCE_UPDATE`は`studio-update.json`を含む直接のStudio更新ZIPとして提出する。

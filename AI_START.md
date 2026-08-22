@@ -325,6 +325,30 @@ Correctionは**旧呼出しをCurrent正規APIへ置換し、旧経路を残さ�
 
 既存の例外処理を今回のCorrectionと無関係に整理する便乗変更は行わない。
 
+#### 機械判定ツール
+
+未解決Failed Checkを自動Correction候補へ昇格する前に、次を必須実行する。
+
+```sh
+python3 -S -B tools/development/autonomous-correction.py analyze --project <Development Project JSON> --check-id <Failed Check ID>
+```
+
+`safe_auto_candidate`の場合でもAI自身がCurrent Sourceを調査して正規経路を一意に証明する。Correction Taskを生成する場合は次を使用する。
+
+```sh
+python3 -S -B tools/development/autonomous-correction.py prepare --project <Development Project JSON> --check-id <Failed Check ID> --output-project <working Development Project JSON>
+```
+
+Correction候補のSource差分には次を実行し、Compatibility Budget 0 / Exception Budget 0がPASSしなければ破棄する。
+
+```sh
+python3 -S -B tools/development/autonomous-correction.py budget --baseline-source <Correction baseline> --target-source <Correction target>
+```
+
+#### Correction preflightの優先順位
+
+通常Task選択の前に、実行対象Taskへ紐づく未解決blocking Failed Checkが存在する場合は同じTaskを再実行する前にAutonomous Correction analyzeを行う。safe-auto条件を満たす場合はCorrection Taskを生成して親TaskをBlockedへ移し、そのCorrectionを次の実行候補とする。同一Failure Signatureを無意味に再実行してはならない。
+
 #### Correction実行順
 
 1. Failed CheckからFailure Signatureを固定する。
@@ -335,6 +359,12 @@ Correctionは**旧呼出しをCurrent正規APIへ置換し、旧経路を残さ�
 6. Targeted検証 → Quick → `accept --context update` → 必要なFull / Releaseを実行する。
 7. Correction Artifact生成だけでは元Failedを解決しない。Human Apply後のCurrent Sourceで元E2Eを再実行してPASSしたCorrection Checkだけが`resolves_check_ids`を持つ。
 8. 同一Failure Signatureで2回失敗した場合は自動修復を停止しHumanへ原因と試行証跡を提示する。
+
+#### 自己修復基盤の実動作検証
+
+自己修復基盤を検証するBuildでは、Current baselineを正本にし、既知不具合の旧Buildは不具合箇所を再現する参照にのみ使用する。baselineそのものを旧Buildへ戻してはならない。
+
+検証順は `Current baseline -> 次Buildで既知Failure fixture + 自己修復基盤 -> Failed Checkから自動Correction -> 次Buildで修正 -> 親E2E独立PASS` とする。自己修復基盤追加とCorrection完了を同一Buildで済ませてはならない。
 
 ### 12.9 Development Task完了報告
 
