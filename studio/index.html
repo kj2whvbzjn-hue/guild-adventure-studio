@@ -1,4 +1,4 @@
-/* GKS-B743 development-data/source-integrity separation */
+/* GKS-B744 development-data/source-integrity separation */
 <!doctype html>
 <html lang="ja">
 <head>
@@ -21,7 +21,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B743</title>
+<title>GK Studio GKS-B744</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B743 Story nested Data Exchange + scenario export wording */
+/* GKS-B744 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -240,7 +240,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B743: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B744: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -441,7 +441,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B743: Studio home-aware common header / navigation */
+/* GKS-B744: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -469,13 +469,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B743</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B744</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B743</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B744</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1766,7 +1766,12 @@ updateDeployDeleteControl();
     <div class="card dev-phonebook">
       <div class="dev-phonebook-head">
         <h2>開発案件</h2>
-        <button class="dev-phonebook-add" type="button" onclick="createDevelopmentProjectDirect()" aria-label="新規案件">＋</button>
+        <button class="dev-phonebook-add" type="button" onclick="toggleDevelopmentProjectCreateMenu()" aria-label="案件を追加">＋</button>
+      </div>
+      <div id="developmentProjectCreateMenu" class="dev-phonebook-create-menu hidden">
+        <button type="button" onclick="toggleDevelopmentProjectCreateMenu(false);createDevelopmentProjectDirect()">新規作成</button>
+        <button type="button" onclick="document.getElementById('developmentNewProjectImportFile').click()">JSONを取り込む</button>
+        <input id="developmentNewProjectImportFile" type="file" accept="application/json,.json" class="hidden" onchange="importNewDevelopmentProjectJson(this.files[0]);this.value=''">
       </div>
       <div id="developmentProjectCards" class="dev-project-cards dev-phonebook-list"></div>
     </div>
@@ -2430,11 +2435,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=743"></script>
+<script src="./layer-controller.js?v=744"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B743';
+const DISTRIBUTION_BUILD='GKS-B744';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3303,7 +3308,9 @@ function developmentAssertSameAuthority(current,incoming){
 }
 function blankDevelopmentProjectSeed(id,name){const stamp=now(),projectId=String(id||'').trim();if(!projectId)throw new Error('Project IDが必要です。');return {schema_version:DEVELOPMENT_PROJECT_SCHEMA_VERSION,authority:{version:DEVELOPMENT_AUTHORITY_VERSION,instance_id:developmentNewInstanceId(),canonical_path:developmentCanonicalPath(projectId)},workspace:{id:projectId,name:String(name||projectId||'新しい開発案件'),status:'Exploring',ai_attention:'Auto',updated_at:stamp},project_context:{purpose:'',summary:''},current_focus:{architecture_id:'',work_box_id:'',theme:'',goal:''},project_rules:[],source_baseline:{studio_build:'',game_build:'',source_label:'',source_role:'current_baseline',recorded_at:''},lifecycle:{status:'Active',superseded_by:'',updated_at:stamp},implementation_records:[],discussions:[],decisions:[],specifications:[],specification_candidates:[],system_nodes:[],system_contracts:[],system_connections:[],system_flags:[],system_events:[],system_impacts:[],architecture_nodes:[],work_boxes:[],tasks:[],checks:[],workflow:{stage:'Discovery',implementation_approval:{status:'Pending',by:'',at:''},completion_approval:{status:'Pending',by:'',at:''}},history:[{at:stamp,message:'Development Project created'}]}}
 function createDevelopmentProjectTemplate(){const name=String(prompt('新しい開発案件名を入力してください。','新しい開発案件')||'').trim();if(!name)return;const id=devNextProjectId(),w=blankDevelopmentProjectSeed(id,name);downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8');alert('新規Project JSONひな形を出力しました。Project本文はブラウザへ保存していません。Git保管の「JSONファイル→Git登録」から正規Pathへ登録してください。')}
+function toggleDevelopmentProjectCreateMenu(force){const el=document.getElementById('developmentProjectCreateMenu');if(!el)return;const open=typeof force==='boolean'?force:el.classList.contains('hidden');el.classList.toggle('hidden',!open)}
 async function createDevelopmentProjectDirect(){const name=String(prompt('新しい開発案件名を入力してください。','')||'').trim();if(!name)return;await window.GKSDevelopmentGitStore?.createProject?.(name)}
+async function importNewDevelopmentProjectJson(file){if(!file)return;toggleDevelopmentProjectCreateMenu(false);await window.GKSDevelopmentGitStore?.importProjectFile?.(file)}
 const DEVELOPMENT_WORKFLOW_STAGE_ORDER=Object.freeze(['Discovery','Planning','Implementing','Verifying','Completed']);
 const DEVELOPMENT_WORKFLOW_STATUS_BY_STAGE=Object.freeze({Discovery:'Exploring',Planning:'Specifying',Implementing:'Implementing',Verifying:'Validating',Completed:'Completed'});
 function developmentWorkflowStageRank(stage){const i=DEVELOPMENT_WORKFLOW_STAGE_ORDER.indexOf(String(stage||''));return i<0?0:i}
@@ -3756,7 +3763,7 @@ function renderDevelopmentAllDataStatus(){
  const gitCount=(developmentProjectRegistry||[]).filter(x=>x.storage_mode==='git').length;el.innerHTML=`<b>全案件:</b> ${rows.length}件 / <b>Git保管:</b> ${gitCount} / <b>検討・作業中:</b> ${inProgress} / <b>保留:</b> ${pending} / <b>完了:</b> ${finished}<br><b>現在案件:</b> ${esc(active?.id||'')} / ${esc(active?.name||'')}`;
 }
 async function exportDevelopmentWorkspace(){const w=loadDevelopmentWorkspace(),id=String(w?.workspace?.id||activeDevelopmentProjectId||'project').replace(/[^A-Za-z0-9._-]+/g,'_');downloadText(`development-project_${id}.json`,JSON.stringify(w,null,2),'application/json;charset=utf-8')}
-// GKS-B743 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_BEGIN
+// GKS-B744 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_BEGIN
 const DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS=Object.freeze([
  'project_rules','implementation_records','discussions','decisions','specifications','specification_candidates',
  'system_nodes','system_contracts','system_connections','system_flags','system_events','system_impacts',
@@ -3792,7 +3799,7 @@ function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
 }
 function developmentMergeSummaryText(summary){const rows=[];for(const [key,v] of Object.entries(summary.arrays||{}))rows.push(`${key}: 追加${v.adds} / 更新${v.updates} / 同一${v.same}`);if(summary.history?.adds||summary.history?.same)rows.push(`history: 追加${summary.history.adds} / 同一${summary.history.same}`);for(const x of summary.objects||[])rows.push(`${x.key}: ${x.changed?'更新':'同一'}${x.protected_fields?.length?` / 巻戻し保護 ${x.protected_fields.join(',')}`:''}`);for(const x of summary.workspace||[])rows.push(`workspace.${x.key}: ${x.changed?'更新':'同一'}${x.protected?' / Workflow正本を保持':''}`);return `合計: 追加${summary.total.adds} / 更新${summary.total.updates} / 同一${summary.total.same} / 削除0`+(rows.length?`\n\n${rows.join('\n')}`:'')}
 async function mergeImportDevelopmentWorkspace(file){if(!file)return;try{const entry=activeDevelopmentProjectEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git canonical案件を開いてください。');const raw=JSON.parse(await file.text()),current=loadDevelopmentWorkspace(),plan=prepareDevelopmentWorkspaceMerge(current,raw),text=developmentMergeSummaryText(plan.summary);if(!plan.summary.total.adds&&!plan.summary.total.updates){alert(`統合対象の変更はありません。\n\n${text}`);return}if(!confirm(`同一案件・同一instanceを確認しました。現在の案件へJSONを統合します。\n現在: ${entry.id}\n\n${text}\n\nGit保存までは未保存状態です。続けますか？`))return;developmentWorkspace=plan.merged;if(!saveDevelopmentWorkspace(`Development Workspace JSON merged: add=${plan.summary.total.adds} update=${plan.summary.total.updates} delete=0`))throw new Error('統合後Sessionの保存に失敗しました。');resetDevelopmentEditorsForProjectSwitch();renderDevelopmentWorkspace();alert(`現在の案件へJSONを統合しました。\nGitにはまだ保存していません。\n${developmentMergeSummaryText(plan.summary)}`)}catch(e){alert('開発管理JSON統合失敗: '+e.message)}}
-// GKS-B743 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_END
+// GKS-B744 DEVELOPMENT_WORKSPACE_MERGE_IMPORT_END
 async function discussionStatusLabel(value){return ({Open:'検討中',Pending:'保留',Resolved:'結論あり',Archived:'保管'})[value]||value}
 
 function addDecision(){
@@ -9394,7 +9401,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','743');
+    url.searchParams.set('appv','744');
     location.replace(url.toString());
    }
  }
@@ -9403,7 +9410,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=743',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=744',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9422,7 +9429,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','743');
+    url.searchParams.set('appv','744');
     location.replace(url.toString());
    }
   });
@@ -9516,7 +9523,7 @@ function applyDesignFormationsToBattle(){try{const a=document.getElementById('de
 setTimeout(loadDesignCards,0);
 
 </script>
-<script src="./development-git-store/development-git-store.js?v=8"></script>
+<script src="./development-git-store/development-git-store.js?v=9"></script>
 <script src="./development-system-impact/development-system-impact.js?v=2"></script>
 <script src="./development-system-state/development-system-state.js?v=3"></script>
 <script src="./development-spec-candidate/development-spec-candidate.js?v=3"></script>

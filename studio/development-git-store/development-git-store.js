@@ -130,9 +130,6 @@ function normalizeIndex(raw){
   }
   return out.sort((a,b)=>a.title.localeCompare(b.title,'ja'));
 }
-function localIndexSeed(){
-  return normalizeIndex({projects:state.host?.getProjectIndexSeed?.()||[]});
-}
 async function refreshProjectIndex({quiet=false,force=false}={}){
   const now=Date.now();
   if(!force&&state.indexPromise)return state.indexPromise;
@@ -142,7 +139,7 @@ async function refreshProjectIndex({quiet=false,force=false}={}){
     try{
       const c=connectionFor('',false,{index:true});
       let rows=[];const file=await remoteFile(c,{requireSha:true});
-      if(!file.exists){state.indexRows=localIndexSeed();return state.indexRows;}
+      if(!file.exists){state.indexRows=[];state.indexRemote={...c,sha:''};state.host?.replaceProjectIndex?.([],{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:''});return state.indexRows;}
       const raw=JSON.parse(file.raw);rows=normalizeIndex(raw);
       state.indexRemote={...c,sha:file.sha};
       state.indexRows=rows;
@@ -166,9 +163,7 @@ async function writeIndex(rows,c){
 async function syncIndexEntry(project,c){
   const id=text(project?.workspace?.id),title=text(project?.workspace?.name);if(!id||!title)return;
   let rows=await refreshProjectIndex({quiet:true,force:true});
-  const merged=new Map(localIndexSeed().map(x=>[x.id,x]));
-  for(const row of rows||[])merged.set(row.id,row);
-  rows=[...merged.values()];
+  rows=Array.isArray(rows)?rows.slice():[];
   const i=rows.findIndex(x=>x.id===id);if(i>=0)rows[i]={id,title};else rows.push({id,title});
   await writeIndex(rows,c);
 }
@@ -221,23 +216,54 @@ async function reloadCurrent(){
   return openFromGit({expectedProjectId:entry.id});
 }
 
+async function registerNewProject(project,{messagePrefix='Create Development Project'}={}){
+  const normalized=state.host.normalizeProject(project);
+  const id=text(normalized?.workspace?.id),title=text(normalized?.workspace?.name);
+  if(!id||!title)throw new Error('workspace.id / workspace.nameがありません。');
+  const c=connectionFor(id,true);
+  if(text(normalized?.authority?.canonical_path)!==c.path)throw new Error(`authority.canonical_pathが正規Pathと一致しません: ${normalized?.authority?.canonical_path||'(missing)'}`);
+  const existing=await remoteFile(c,{requireSha:true});
+  if(existing.exists)throw new Error(`同じIDの案件がGitにあります: ${id}`);
+  const rows=await refreshProjectIndex({quiet:true,force:true});
+  if((rows||[]).some(row=>row.id===id))throw new Error(`同じIDの案件が案件一覧にあります: ${id}`);
+  const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`${messagePrefix} ${id}`,'');
+  const verify=await remoteFile(c,{requireSha:true});
+  if(!verify.exists)throw new Error('新規案件の保存後再取得に失敗しました。');
+  const verified=parseProject(verify.raw);
+  if(!equalProject(verified,normalized))throw new Error('新規案件の保存後検証に失敗しました。');
+  state.loaded.clear();state.dirty.clear();state.loaded.add(id);
+  state.host.openGitProject(verified,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:verify.sha||out.file_sha});
+  try{
+    await syncIndexEntry(verified,c);
+  }catch(e){
+    throw new Error(`案件本文はGitへ保存されましたが案件一覧の更新に失敗しました。${e.message}`);
+  }
+  return true;
+}
+
 async function createProject(title){
   try{
     state.busy=true;render();
     await refreshProjectIndex({quiet:true,force:true});
     const id=state.host.nextProjectId();
-    const project=state.host.createBlankProject(id,text(title));
-    const c=connectionFor(id,true),existing=await remoteFile(c,{requireSha:true});
-    if(existing.exists)throw new Error(`同じIDの案件がGitにあります: ${id}`);
-    const normalized=state.host.normalizeProject(project);
-    const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`Create Development Project ${id}`,'');
-    const verify=await remoteFile(c,{requireSha:true});const verified=parseProject(verify.raw);
-    if(!equalProject(verified,normalized))throw new Error('新規案件の保存後検証に失敗しました。');
-    state.loaded.clear();state.dirty.clear();state.loaded.add(id);
-    state.host.openGitProject(verified,{owner:c.owner,repo:c.repo,branch:c.branch,path:c.path,sha:verify.sha||out.file_sha});
-    await syncIndexEntry(verified,c);
-    return true;
+    return await registerNewProject(state.host.createBlankProject(id,text(title)));
   }catch(e){alert('新規案件を作成できませんでした: '+e.message);return false;}
+  finally{state.busy=false;render();state.host?.refresh?.();}
+}
+
+async function importProjectFile(file){
+  if(!file)return false;
+  try{
+    state.busy=true;render();
+    const raw=JSON.parse(await file.text());
+    const normalized=state.host.normalizeProject(raw);
+    const id=text(normalized?.workspace?.id),title=text(normalized?.workspace?.name);
+    if(!id||!title)throw new Error('workspace.id / workspace.nameがありません。');
+    if(!confirm(`「${title}」を新規案件としてGitへ登録しますか？\n\nProject ID: ${id}`))return false;
+    const ok=await registerNewProject(normalized,{messagePrefix:'Import Development Project'});
+    if(ok)alert(`新規案件として登録しました。\n${title}`);
+    return ok;
+  }catch(e){alert('新規案件JSONを登録できませんでした: '+e.message);return false;}
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
 
@@ -272,6 +298,6 @@ function init(host){
   render();return api;
 }
 
-const api={init,render,focus,fillFromEntry,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,discardCurrent,refreshProjectIndex,openFromGit,saveCurrent,reloadCurrent,createProject,deleteCurrentProjectCompletely,testConnection};
+const api={init,render,focus,fillFromEntry,isLoaded,isDirty,isRegistryVerified,markDirty,markClean,discardCurrent,refreshProjectIndex,openFromGit,saveCurrent,reloadCurrent,createProject,importProjectFile,deleteCurrentProjectCompletely,testConnection};
 global.GKSDevelopmentGitStore=api;
 })(window);
