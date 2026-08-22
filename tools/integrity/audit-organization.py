@@ -2,7 +2,7 @@
 """Generate a non-destructive organization audit for the current project."""
 from __future__ import annotations
 import hashlib, json, re, sys
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 
 args = sys.argv[1:]
@@ -45,19 +45,69 @@ for digest, group in by_hash.items():
 duplicates.sort(key=lambda x:(-x['bytes'],x['paths']))
 
 # Conservative filename reference scan. This is advisory only.
-text=''
+# Count all candidate basenames in one streaming pass. The previous implementation
+# rescanned the complete concatenated text once per candidate, which made this
+# audit sensitive to host load and could exceed the fixed inspection timeout.
+def count_literal_occurrences(patterns):
+    patterns=sorted(set(patterns))
+    if not patterns: return {}
+    transitions=[{}]
+    failures=[0]
+    outputs=[[]]
+    for index, pattern in enumerate(patterns):
+        state=0
+        for ch in pattern:
+            nxt=transitions[state].get(ch)
+            if nxt is None:
+                nxt=len(transitions)
+                transitions[state][ch]=nxt
+                transitions.append({})
+                failures.append(0)
+                outputs.append([])
+            state=nxt
+        outputs[state].append(index)
+    queue=deque(transitions[0].values())
+    while queue:
+        state=queue.popleft()
+        for ch, nxt in transitions[state].items():
+            queue.append(nxt)
+            fallback=failures[state]
+            while fallback and ch not in transitions[fallback]:
+                fallback=failures[fallback]
+            failures[nxt]=transitions[fallback].get(ch,0)
+            outputs[nxt].extend(outputs[failures[nxt]])
+    counts=[0]*len(patterns)
+    for rec in files:
+        path=ROOT/rec['path']
+        if path.suffix.lower() not in TEXT_EXTS or path.stat().st_size >= 2_000_000:
+            continue
+        try:
+            text=path.read_text(encoding='utf-8', errors='ignore')
+        except OSError:
+            continue
+        state=0
+        for ch in text:
+            while state and ch not in transitions[state]:
+                state=failures[state]
+            state=transitions[state].get(ch,0)
+            for index in outputs[state]:
+                counts[index]+=1
+    return dict(zip(patterns,counts))
+
+candidate_names=[]
 for rec in files:
-    p=ROOT/rec['path']
-    if p.suffix.lower() in TEXT_EXTS and p.stat().st_size < 2_000_000:
-        try: text += '\n' + p.read_text(encoding='utf-8', errors='ignore')
-        except OSError: pass
+    rel=Path(rec['path'])
+    if rec['category'] not in {'root-or-support','documentation'}: continue
+    if rel.name in GENERATED_NAMES or rel.name in {'index.html','README.md','DELETE_MANIFEST.txt'}: continue
+    if len(rel.name) >= 8: candidate_names.append(rel.name)
+reference_counts=count_literal_occurrences(candidate_names)
 unused_candidates=[]
 for rec in files:
     rel=Path(rec['path'])
     if rec['category'] not in {'root-or-support','documentation'}: continue
     if rel.name in GENERATED_NAMES or rel.name in {'index.html','README.md','DELETE_MANIFEST.txt'}: continue
     # Only mark as candidate if basename is unique enough and absent elsewhere.
-    if len(rel.name) >= 8 and len(re.findall(re.escape(rel.name), text)) <= 1:
+    if len(rel.name) >= 8 and reference_counts.get(rel.name,0) <= 1:
         unused_candidates.append({'path':rec['path'],'bytes':rec['bytes'],'reason':'filename not referenced by other scanned text; review only'})
 unused_candidates.sort(key=lambda x:(-x['bytes'],x['path']))
 
