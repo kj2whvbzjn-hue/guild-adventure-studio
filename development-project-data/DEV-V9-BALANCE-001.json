@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T10:41:29.194Z"
+    "updated_at": "2026-08-23T11:18:05.651Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "Apply GKS-B759 P3-5 Battle Package update, then start P3-6",
-    "goal": "TASK-BAL-018 is complete. Apply DEV-V9-BALANCE-001_TASK-BAL-018_GKS-B759_STUDIO-UPDATE.zip through Studio > 更新ZIP and reacquire fresh Current Source. Do not start TASK-BAL-019 until GKS-B759 deployment is verified. Source/Game Data/Current active changes beyond the B759 source artifact: 0."
+    "theme": "TASK-BAL-019 P3-6 blocked by fixed-formation scaling null-bound issue",
+    "goal": "GKS-B759 deployment/fresh-source verification passed and TASK-BAL-019 started. During P3-6 Monster owner-chain validation, existing assets/shared/js/adventure-encounter-resolver.js was found to treat fixed_formation_scaling.max_multiplier=null as numeric 0, collapsing fixed-formation hp/attack/agi multipliers to 0. RULE-BAL-ISSUE-GATE-001 stops unplanned repair in this run. No SOURCE_UPDATE artifact is authorized. Human review/plan authorization is required before any correction. Do not start TASK-BAL-020."
   },
   "project_rules": [
     {
@@ -236,14 +236,14 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B758",
+    "studio_build": "GKS-B759",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260823-095201).zip",
-    "source_role": "current_baseline_pending_B759_application",
-    "recorded_at": "2026-08-23T19:24:00+09:00",
-    "package_manifest_sha256": "450e1496d6f05d041e9b2a2c7fe949078b8ae9eae86f7ffc87156cf0c5ee4025",
-    "source_tree_sha256": "3abfd17a2df40ed2c98f8d136b927dc407f1ceae056f35e8e5139100fc7f5e9b",
-    "source_zip_sha256": "d6c991b7b20b7f2617abd948ad33e3ec15e1622e5d51db89c694289b793aec06"
+    "source_label": "guild-adventure-studio-sub.zip",
+    "source_role": "current_B759_verified_TASK-BAL-019_issue_gate",
+    "recorded_at": "2026-08-23T20:02:01+09:00",
+    "package_manifest_sha256": "3ba2f0e42be0118550eed83c533621a6757f33f4c2ea91d036eb18e18642eed6",
+    "source_tree_sha256": "707434adbf4200d75d8f0198d72fe2207c527a15c92bdd324f39ccc89df93d5b",
+    "source_zip_sha256": "954db03aa8d46653a24fa31aa995f66ed969655a8efc751bf0475e220b035cd8"
   },
   "lifecycle": {
     "status": "Active",
@@ -5706,11 +5706,11 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-BAL-019",
-      "status": "Pending",
-      "result": "TASK-BAL-018 GKS-B759 artifact is complete and release-gated, but B759 is not yet confirmed as deployed Current Source. Keep TASK-BAL-019 Blocked until Human applies the direct Studio update ZIP and fresh Current Source is reacquired/verified.",
-      "evidence": "pending deployment of DEV-V9-BALANCE-001_TASK-BAL-018_GKS-B759_STUDIO-UPDATE.zip sha256=0e484d3039a28a1e0933feff4a3807197f57139c649020f6c57827d25d49922f",
+      "status": "Passed",
+      "result": "Human-provided fresh Current Source is GKS-B759 / GA-B486.211. package_manifest SHA-256 exactly matches TASK-BAL-018 target (3ba2f0e42be0118550eed83c533621a6757f33f4c2ea91d036eb18e18642eed6), PACKAGE_MANIFEST_OK files=642, source ZIP SHA-256=954db03aa8d46653a24fa31aa995f66ed969655a8efc751bf0475e220b035cd8, and Current Source Quick gate passes 11/11. B759 deployment prerequisite for TASK-BAL-019 is verified.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-019_BLOCKED-EVIDENCE.zip sha256=f8d338c5d706d85ef8165b1bce9b49929a4fe3ea4e4c8a4f1422112a1586d482",
       "checked_by": "AI",
-      "checked_at": "2026-08-23T19:24:00+09:00",
+      "checked_at": "2026-08-23T20:02:01+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -5721,7 +5721,30 @@
       },
       "blocking": false,
       "created_at": "2026-08-23T19:24:00+09:00",
-      "updated_at": "2026-08-23T19:24:00+09:00"
+      "updated_at": "2026-08-23T20:02:01+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001",
+      "title": "P3-6 fixed-formation null max scaling blocker",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-019",
+      "status": "Failed",
+      "result": "Failed case=P3-6-FIXED-FORMATION-NULL-MAX. Root cause: assets/shared/js/adventure-encounter-resolver.js fixedFormationScaling() preserves max_multiplier=null, but shared clamp() evaluates Number(null) as finite 0 and applies it as an upper bound. Reproduction base_enemy_budget=10, effective_enemy_budget=20, hp_per_ratio=1, attack_per_ratio=0.5, agi_per_ratio=0, min_multiplier=1, max_multiplier=null returns hp/attack/agi multipliers 0/0/0 and applyBattleScaling collapses a 120 HP / 18 ATK / 9 AGI probe Monster to 1 HP / 0 ATK / 1 AGI. The same input with max_multiplier=3 returns 2/1.5/1. TASK-BAL-019 cannot certify Monster owner snapshots while the existing owner resolver can produce this invalid fixed-formation scaling. RULE-BAL-ISSUE-GATE-001 requires stop before unplanned repair.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-019_BLOCKED-EVIDENCE.zip sha256=f8d338c5d706d85ef8165b1bce9b49929a4fe3ea4e4c8a4f1422112a1586d482",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T20:02:01+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-23T20:02:01+09:00",
+      "updated_at": "2026-08-23T20:02:01+09:00"
     }
   ],
   "workflow": {
@@ -5909,6 +5932,10 @@
     {
       "at": "2026-08-23T19:24:00+09:00",
       "message": "Fresh GKS-B758 Current Source verified. TASK-BAL-018 P3-5 completed as GKS-B759 using the existing AI Battle Package formal executor. REQ-BAL-PKG-007/008/009=Closed. Formal Golden 22/22 PASS and runBattleSimulation formal integration PASS with legacy fallback not called. Quick 11/11; Accept 14/14 + applied Full 26/26; Release 14/14 + applied Full 26/26; warnings/timeouts=0. Artifact=DEV-V9-BALANCE-001_TASK-BAL-018_GKS-B759_STUDIO-UPDATE.zip sha256=0e484d3039a28a1e0933feff4a3807197f57139c649020f6c57827d25d49922f; Evidence=DEV-V9-BALANCE-001_TASK-BAL-018_P3-5-PACKAGE-EVIDENCE.zip sha256=ea1689544fc2c7fd5102326ee57c34f179f30651557f3cb2ad36caad0bbe68fe. Changed source files=21; feature paths=2; protected test logic changes=0; critical-runtime membership changes=0; deletions=0; Game Data/Current active changes=0. TASK-BAL-018=Done. TASK-BAL-019 remains Blocked until B759 application/fresh-source verification."
+    },
+    {
+      "at": "2026-08-23T20:02:01+09:00",
+      "message": "AI_START実行: Human提供のfresh SourceでGKS-B759 / GA-B486.211適用を確認し、package_manifest SHA-256一致・PACKAGE_MANIFEST_OK 642 files・Quick 11/11 PASSのためCHK-BAL-P3-6-B759-APPLY-001=Passed。TASK-BAL-019 P3-6を開始し、既存Formal AI / Monster owner chainをreuse-firstで監査・接続検討。検証中、assets/shared/js/adventure-encounter-resolver.jsのfixed_formation_scaling.max_multiplier=nullがclamp()で0上限として扱われ、base=10/effective=20のfixed formationでhp/attack/agi multiplierが0/0/0になる未計画不具合を再現。RULE-BAL-ISSUE-GATE-001に従い同一runの追加修正を停止し、探索的Source編集は全て破棄してexact B759へ復元。CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001=Failed/blocking、TASK-BAL-019=Blocked。Source更新Artifact/Build更新/Game Data/Current active/削除=0。TASK-BAL-020へ未着手。Evidence=DEV-V9-BALANCE-001_TASK-BAL-019_BLOCKED-EVIDENCE.zip sha256=f8d338c5d706d85ef8165b1bce9b49929a4fe3ea4e4c8a4f1422112a1586d482 Autonomous Correction analyzeはfailure_signature=88986153dfadf2ff0635 / decision=fail_closed / reason=failure_kind_not_safe_auto。Human明示指示前のCorrection Task生成・親depends_on変更は行っていない。"
     }
   ],
   "authority": {
