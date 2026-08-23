@@ -10,7 +10,7 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T00:11:16.999Z"
+    "updated_at": "2026-08-23T00:16:22.563Z"
   },
   "project_context": {
     "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存・Git再取得までの保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
@@ -18,9 +18,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-DEV-SAVE-LEGACY",
-    "work_box_id": "BOX-DEV-SAVE-PRE-REMOVE",
-    "theme": "旧保存経路撤去前の依存・復旧情報固定",
-    "goal": "旧処理を削除する前に、B745の正確な依存関係・復旧元・削除順序・不具合症状別の戻し方をDevelopment管理へ固定する。"
+    "work_box_id": "BOX-DEV-SAVE-EXEC-P0",
+    "theme": "GKS-B745保存経路再構築 実行計画",
+    "goal": "撤去前挙動を固定してから、死コードのみ先行撤去し、現役依存は代替経路を完成・検証してから除去する。各PhaseのGateをPASSするまで次Phaseへ進まない。"
   },
   "project_rules": [
     {
@@ -164,6 +164,21 @@
       "artifact_note": "Recovery baseline: guild-adventure-studio-sub(20260822-234438).zip / SHA256 e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4",
       "created_at": "2026-08-23T09:05:00+09:00",
       "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-SAVE-EXEC-001",
+      "title": "GKS-B745 保存経路再構築 実行計画",
+      "status": "Resolved",
+      "summary": "撤去前実態固定、死コードのみ撤去、現役経路の代替実装、全Git経路回帰、置換済み旧処理の物理撤去をPhase Gate付きで順番に実施する。",
+      "body": "【実行原則】\n1. 一括削除しない。\n2. 各Phaseの開始前に前Phase GateがPASSしていること。\n3. 既存機能を推測で作り直さない。B745実装実態を先に記録する。\n4. 呼出元0の死コードと、現役依存コードを同じ変更に混ぜない。\n5. Project本文成功/index失敗では成功済みProject操作を再実行しない。\n6. Branch変更を伴う操作ではProjectとindexを必ず同一Branchで扱う。\n7. 不具合時はDISC-DEV-SAVE-PRE-REMOVE-001のB745復旧基準から最小単位だけ戻す。\n\n【Phase 0: 撤去前固定】\nTASK-018:\n既存TASK-001〜012をGKS-B745コードと照合し、Implemented / Partial / Missingを記録する。\nコード変更は禁止。\n\nTASK-019:\nGit API mockで現行I/O sequenceを固定する。\n対象:\n- index GET\n- Project GET/open\n- 新規CREATE + index\n- JSON新規CREATE + index\n- 編集PUT\n- 統合→検証→PUT\n- DELETE + index\n- stale SHA\n- Project成功/index失敗\n- Branch A/B\nこのテストは「現行動作を記録するテスト」であり、現時点の旧挙動を正しい仕様として承認するものではない。\n\n【Phase 1: 死コードだけ撤去】\nTASK-020:\nstudio/index.htmlの呼出元0旧UI/旧Settings/旧補助関数を撤去。\n削除対象は撤去前台帳Aで列挙済みのものだけ。\n\nTASK-021:\nDiscussion/Decision/Specificationの二重定義は旧側3610-3623だけ撤去。\n現行側3631-3649は変更禁止。\n\nTASK-022:\ndevelopment-git-store.jsの未使用reloadCurrent/testConnection/fillFromEntry/focus、\nhost未使用API getDefaultGitRemote/getProjectIndexSeed/updateGitRemote、\nDEVELOPMENT_EMPTY_REGISTRY_KEYを撤去。\nGit Store CSSはindex.html / studio/sw.jsの参照だけ解除し、ファイル本体は残す。\n\nTASK-014をPhase 1 Gateとして使う。\nQuick + syntax + characterization testを実行し、保存I/OがPhase 0から変化していないことを確認する。\nFAILならPhase 2へ進まない。\n\n【Phase 2: 現役保存経路を先に置換】\nTASK-023:\nGit operation contextを導入。\n最低保持値:\n- owner\n- repo\n- branch\n- token/PAT\n- projectSha\n- indexSha\nOwner/RepoはStudio接続先。\n書込Branch/PATは操作画面入力。\n旧fallbackはこの時点では残してよいが、新経路から参照しない。\n\nTASK-024:\n新規保存、JSON新規保存、編集保存、統合保存、削除をoperation context経由へ統一。\nBranch+PATは必要判定なしで各操作UIに常時表示。\n別Git設定画面への遷移は行わない。\n\nTASK-025:\nProject CREATE/PUT/DELETEと、その後のindex GET/PUT/再試行/refreshを同一operation branchへ固定。\n処理途中でghBranch、Registry branch、DEFAULT branchへ切り替わらない。\n\nTASK-026:\n案件一覧をGit index GET→memory registry→UIへ変更。\nlocalStorage Registryを先行表示/fallback正本として使わない。\nただし既存developmentProjectRegistryメモリ構造はUI互換のためこの段階では残す。\nlocalStorage writer/parser/keyの物理削除はまだしない。\n\nTASK-027:\nread path（index GET / Project GET）のbranch/token供給元を1本に固定する。\nこのタスク完了まではghToken読込依存を削除禁止。\nPrivate repository相当でindex/openが成功することを確認する。\nread path確定時もRegistry branch / DEFAULT_CONNECTIONへfallbackしない。\n\nTASK-028:\n編集と統合をcurrent clone→全体validation→Git成功後current反映へ統一。\ninvalid merge/saveではcurrentを変更しない。\nGit SHA競合時は上書きしない。\n\nTASK-029:\n新規/JSON新規/削除のProject成功-index失敗にindex-only recoveryを実装。\n最新indexを同一BranchからGET→必要なid/title追加またはid削除→SHA付きPUT。\n成功済みCREATE/DELETEを再実行しない。\n\nTASK-015をPhase 2 Gateとして使う。\nTASK-023〜029と既存TASK-001〜007/010〜012の受入条件を照合し、未達があればPhase 3へ進まない。\n\n【Phase 3: 回帰】\nTASK-030:\n全経路Regression。\n最低ケース:\n- Git indexのみで一覧\n- 選択確認→Project GET\n- 新規保存\n- JSON新規保存\n- 編集保存\n- JSON統合保存\n- 削除\n- stale Project SHA\n- stale index SHA\n- CREATE成功/index失敗 recovery\n- DELETE成功/index失敗 recovery\n- Branch A / Branch B\n- read authあり\n- invalid mergeでcurrent不変\n- 保存後reopen一致\n\nTASK-031:\n復旧dry-run。\nB745 hash台帳とdiffし、意図的に1経路を壊したテストコピーで\n「症状→対象symbol特定→最小復元→再PASS」が可能か確認する。\n本番Sourceへ故障を入れない。\n\nTASK-016をPhase 3 Gateとして使う。\nFull GateとRound-trip結果を証拠化し、PASSしなければ旧処理物理削除禁止。\n\n【Phase 4: 旧処理物理撤去】\nTASK-032:\nPhase 2で未参照になった旧処理をsymbol単位で再scanし、\n参照0件を確認したものだけ物理削除する。\n対象候補:\n- localStorage Registry read/write/key/parser\n- Registry Git remote fallback\n- getRegistryEntry（参照0になった場合のみ）\n- DEFAULT_CONNECTION（参照0になった場合のみ）\n- 旧read token経路（代替read pathがPASSした場合のみ）\n一つでも参照が残るものは削除しない。\n\nTASK-033:\n最終Reference Scan + Full Gate。\n同名CRUD/save/load重複0、\n旧Git UI入口0、\nRegistry/default接続fallback0、\nProject revision保存経路0、\nGit index→localStorage fallback0を確認する。\nCSS物理削除は別更新。機能上不要なら参照なしのまま残してよい。\n\nTASK-017をPhase 4 Gateとして使う。\nその後TASK-008（旧経路撤去完了監査）→TASK-009（正式Round-trip Gate）の順で終了する。\n\n【停止条件】\n- 前Phase Gate FAIL\n- Branchが途中で変わる\n- Project/indexのRemote状態が不明\n- current Projectがvalidation失敗後に変化\n- Private repo相当でread不能\n- 削除対象symbolに参照が1件でも残る\n上記のどれかが出たら削除を止め、B745復旧台帳から原因箇所だけ戻す。\n",
+      "open_questions": "read path（index GET / Project GET）のbranch/token供給元はTASK-027で既存挙動と要件を照合して1本化する。それまでは現行read authを削除しない。",
+      "conclusion": "TASK-018→019→020→021→022→Phase1 Gate(014)→023→024→025→026→027→028→029→Phase2 Gate(015)→030→031→Phase3 Gate(016)→032→033→Phase4 Gate(017)→008→009の順で実行する。",
+      "related_discussion_ids": [
+        "DISC-DEV-SAVE-PRE-REMOVE-001"
+      ],
+      "artifact_note": "Execution baseline: GKS-B745 pre-removal recovery ledger",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
     }
   ],
   "decisions": [
@@ -252,6 +267,20 @@
       "approved_at": "",
       "created_at": "2026-08-23T09:05:00+09:00",
       "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-008",
+      "title": "各Phase Gate PASS前に次の撤去段階へ進まない",
+      "status": "Proposed",
+      "text": "Phase 0で挙動固定、Phase 1で死コードのみ撤去、Phase 2で現役経路を置換、Phase 3で全経路回帰、Phase 4で置換済み旧処理を物理撤去する。各Phase GateがPASSしない限り次Phaseの削除を開始しない。",
+      "rationale": "一括削除による複数故障の同時発生を避け、原因と復旧単位を常に1段階へ限定するため。",
+      "source_discussion_ids": [
+        "DISC-DEV-SAVE-EXEC-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
     }
   ],
   "specifications": [
@@ -1009,6 +1038,46 @@
       "body": "GKS-B745撤去前Sourceを復旧基準として固定し、旧処理を『呼出元0で先に削除可』『現役依存で置換後削除』へ分類する。削除後の不具合はDISC-DEV-SAVE-PRE-REMOVE-001の症状別手順で最小復旧する。",
       "created_at": "2026-08-23T09:05:00+09:00",
       "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-EXEC-P0",
+      "node_id": "ARCH-DEV-SAVE-LEGACY",
+      "title": "Phase 0 実装実態・撤去前挙動固定",
+      "body": "GKS-B745で既存TASK-001〜012の実装済み/部分実装/未実装をソースと実動作で確定する。さらにDevelopment↔Gitの現行I/Oシーケンスをcharacterization testとして固定し、以後の削除・置換で意図しない挙動差が出た場所を特定できるようにする。",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-EXEC-P1",
+      "node_id": "ARCH-DEV-SAVE-LEGACY",
+      "title": "Phase 1 死コードのみ安全撤去",
+      "body": "撤去前台帳で呼出元0と確認済みの旧UI/API/定数と、JavaScript後勝ちで無効な旧側CRUD定義だけを削除する。Registry/localStorage/Git接続/read authには触れない。CSSは参照解除までで、ファイル物理削除はしない。",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-EXEC-P2",
+      "node_id": "ARCH-DEV-SAVE-GIT",
+      "title": "Phase 2 現役保存経路の置換",
+      "body": "Branch+PAT、Owner/Repo、Project SHA、index SHAを共通Git operation contextへ集約する。Project処理とindex処理を同一Branchへ統一し、Git index→memory registryへ切替える。旧fallbackはまだ物理削除せず、代替経路が全保存操作で動作する状態を先に作る。",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-EXEC-P3",
+      "node_id": "ARCH-DEV-SAVE-TEST",
+      "title": "Phase 3 全Git経路回帰・復旧確認",
+      "body": "案件一覧、open、新規、JSON新規、編集保存、統合保存、削除、SHA競合、index部分失敗、任意Branch、認証ありRepository相当を通し、B745撤去前基準と比較する。障害復旧台帳による限定復旧もdry-run確認する。",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-EXEC-P4",
+      "node_id": "ARCH-DEV-SAVE-LEGACY",
+      "title": "Phase 4 置換済み旧処理の物理撤去",
+      "body": "Phase 3 PASS後にだけlocalStorage Registry read/write、Registry Git fallback、DEFAULT_CONNECTION、旧read auth依存など置換済みコードを物理削除する。削除前後でsymbol参照0件とFull Gateを確認する。未参照CSSファイルは別更新とし、機能上不要ならこのPhaseでは削除しない。",
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
     }
   ],
   "tasks": [
@@ -1157,11 +1226,8 @@
       "box_id": "BOX-DEV-SAVE-LEGACY",
       "title": "Development保存系の旧UI/API/CSS・重複関数・旧fallbackを撤去する",
       "status": "Todo",
-      "execution_order": 100,
+      "execution_order": 104,
       "depends_on": [
-        "TASK-DEV-SAVE-003",
-        "TASK-DEV-SAVE-004",
-        "TASK-DEV-SAVE-006",
         "TASK-DEV-SAVE-017"
       ],
       "acceptance_criteria": "同名Development CRUD/save/load関数の重複定義が0件で、旧Git管理画面用API/CSS、死んだProject Settings、localStorage authority/fallback、Registry/固定default Git接続fallback、Project revision保存経路が実行コードから除去されている。",
@@ -1173,22 +1239,16 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T09:05:00+09:00"
+      "updated_at": "2026-08-23T09:12:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-009",
       "box_id": "BOX-DEV-SAVE-TEST",
       "title": "Development保存Round-trip Regressionを正式Gateへ追加する",
       "status": "Todo",
-      "execution_order": 110,
+      "execution_order": 105,
       "depends_on": [
-        "TASK-DEV-SAVE-004",
-        "TASK-DEV-SAVE-006",
-        "TASK-DEV-SAVE-007",
-        "TASK-DEV-SAVE-008",
-        "TASK-DEV-SAVE-010",
-        "TASK-DEV-SAVE-011",
-        "TASK-DEV-SAVE-012"
+        "TASK-DEV-SAVE-008"
       ],
       "acceptance_criteria": "新規保存→index、open→edit→save、partial merge→save、delete→index、任意Branch処理、stale SHA、Git index失敗、Project成功/index失敗→index-only再試行、Session破棄→reopenまでの自動テストがPASSする。",
       "work_type": "SOURCE_UPDATE",
@@ -1199,7 +1259,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T09:05:00+09:00"
+      "updated_at": "2026-08-23T09:12:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-010",
@@ -1283,14 +1343,17 @@
     },
     {
       "id": "TASK-DEV-SAVE-014",
-      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
-      "title": "Phase 1: 呼出元0の死コードと旧側重複定義だけ撤去する",
+      "box_id": "BOX-DEV-SAVE-EXEC-P1",
+      "title": "Phase 1 Gate: 死コード撤去後に既存Git I/O無変更を確認する",
       "status": "Todo",
-      "execution_order": 80,
+      "execution_order": 83,
       "depends_on": [
-        "TASK-DEV-SAVE-013"
+        "TASK-DEV-SAVE-019",
+        "TASK-DEV-SAVE-020",
+        "TASK-DEV-SAVE-021",
+        "TASK-DEV-SAVE-022"
       ],
-      "acceptance_criteria": "呼出元0と確認済みのsymbolだけ削除し、二重CRUDは3610-3623側だけを削除する。現行3631-3649側は残す。",
+      "acceptance_criteria": "Quick/syntax/characterization testがPASSし、Phase 0で固定したDevelopment↔Git request sequenceに意図しない差分がない。FAIL時はPhase 2へ進まない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1299,20 +1362,24 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:05:00+09:00",
-      "updated_at": "2026-08-23T09:05:00+09:00"
+      "updated_at": "2026-08-23T09:12:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-015",
-      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
-      "title": "Phase 2: 現役Registry・Git接続・読込認証を代替経路へ置換する",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "Phase 2 Gate: 新保存経路が旧fallbackなしで成立することを確認する",
       "status": "Todo",
-      "execution_order": 85,
+      "execution_order": 93,
       "depends_on": [
-        "TASK-DEV-SAVE-013",
-        "TASK-DEV-SAVE-010",
-        "TASK-DEV-SAVE-011"
+        "TASK-DEV-SAVE-023",
+        "TASK-DEV-SAVE-024",
+        "TASK-DEV-SAVE-025",
+        "TASK-DEV-SAVE-026",
+        "TASK-DEV-SAVE-027",
+        "TASK-DEV-SAVE-028",
+        "TASK-DEV-SAVE-029"
       ],
-      "acceptance_criteria": "Git index→memory registry、Owner/Repo=Studio、Branch=operation/session、read authの確定経路が動作し、旧localStorage/Registry remote/default/read token依存を削除可能な状態になる。",
+      "acceptance_criteria": "Branch+PAT書込、同一Branch index、Git index→memory registry、read path、clone validation、SHA保存、index-only recoveryが個別にPASSし、未置換の旧依存を削除せずに新経路が成立している。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1321,20 +1388,19 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:05:00+09:00",
-      "updated_at": "2026-08-23T09:05:00+09:00"
+      "updated_at": "2026-08-23T09:12:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-016",
-      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
-      "title": "Phase 3: 撤去前後の全Development↔Git経路を回帰確認する",
+      "box_id": "BOX-DEV-SAVE-EXEC-P3",
+      "title": "Phase 3 Gate: 全Git経路Regressionと復旧dry-runをPASSする",
       "status": "Todo",
-      "execution_order": 90,
+      "execution_order": 98,
       "depends_on": [
-        "TASK-DEV-SAVE-014",
-        "TASK-DEV-SAVE-015",
-        "TASK-DEV-SAVE-012"
+        "TASK-DEV-SAVE-030",
+        "TASK-DEV-SAVE-031"
       ],
-      "acceptance_criteria": "一覧/open/編集保存/統合保存/新規/JSON新規/削除/index部分失敗/任意Branch/Private repo相当認証を確認し、B745基準から意図しない機能欠落がない。",
+      "acceptance_criteria": "全Git経路RegressionとB745最小復旧dry-runがPASSし、保存/open/index/Branch/auth/current不変条件に未解決不具合がない。PASS前は旧処理物理撤去禁止。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1343,18 +1409,19 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:05:00+09:00",
-      "updated_at": "2026-08-23T09:05:00+09:00"
+      "updated_at": "2026-08-23T09:12:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-017",
-      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
-      "title": "Phase 4-5: 置換済み旧処理を物理削除し未参照CSSは別更新で撤去する",
+      "box_id": "BOX-DEV-SAVE-EXEC-P4",
+      "title": "Phase 4 Gate: 置換済み旧処理の物理撤去と最終Full Gateを完了する",
       "status": "Todo",
-      "execution_order": 95,
+      "execution_order": 103,
       "depends_on": [
-        "TASK-DEV-SAVE-016"
+        "TASK-DEV-SAVE-032",
+        "TASK-DEV-SAVE-033"
       ],
-      "acceptance_criteria": "回帰確認済みの旧処理だけを物理削除し、CSSファイル削除はindex.html/studio/sw.js参照解除がPASSした後の別更新で行う。",
+      "acceptance_criteria": "削除対象symbolが参照0または代替検証済みで、最終Reference ScanとFull GateがPASSする。CSSファイル物理削除は別更新とし、必要性がなければ実施しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1363,7 +1430,337 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:05:00+09:00",
-      "updated_at": "2026-08-23T09:05:00+09:00"
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-018",
+      "box_id": "BOX-DEV-SAVE-EXEC-P0",
+      "title": "GKS-B745で既存保存タスク001〜012の実装実態を照合する",
+      "status": "Todo",
+      "execution_order": 77,
+      "depends_on": [
+        "TASK-DEV-SAVE-013"
+      ],
+      "acceptance_criteria": "TASK-001〜012をImplemented/Partial/Missingに分類し、各判定にソース位置または動作証拠が付く。コード変更は0件。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-019",
+      "box_id": "BOX-DEV-SAVE-EXEC-P0",
+      "title": "撤去前Development↔Git I/O Characterization Testを固定する",
+      "status": "Todo",
+      "execution_order": 78,
+      "depends_on": [
+        "TASK-DEV-SAVE-018"
+      ],
+      "acceptance_criteria": "index GET/open/new/import/save/merge/delete/SHA競合/index部分失敗/Branch A-Bの現行Git request sequenceをmockで再現し、撤去前基準としてPASSする。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-020",
+      "box_id": "BOX-DEV-SAVE-EXEC-P1",
+      "title": "呼出元0の旧Development UI・Settings・補助関数だけ撤去する",
+      "status": "Todo",
+      "execution_order": 80,
+      "depends_on": [
+        "TASK-DEV-SAVE-019"
+      ],
+      "acceptance_criteria": "撤去前台帳Aに列挙されたstudio/index.htmlの呼出元0 symbolだけを削除し、Registry/localStorage/Git接続/read authには変更を入れない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-021",
+      "box_id": "BOX-DEV-SAVE-EXEC-P1",
+      "title": "Discussion/Decision/Specification二重定義の旧側だけ撤去する",
+      "status": "Todo",
+      "execution_order": 81,
+      "depends_on": [
+        "TASK-DEV-SAVE-020"
+      ],
+      "acceptance_criteria": "旧側3610-3623相当だけが削除され、現行側3631-3649相当のselectedDev*/detail/list/Specification Candidate制約が保持される。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-022",
+      "box_id": "BOX-DEV-SAVE-EXEC-P1",
+      "title": "未使用Git Store/host APIを撤去し旧CSSは参照だけ解除する",
+      "status": "Todo",
+      "execution_order": 82,
+      "depends_on": [
+        "TASK-DEV-SAVE-021"
+      ],
+      "acceptance_criteria": "未使用reloadCurrent/testConnection/fillFromEntry/focus、未使用host API、DEVELOPMENT_EMPTY_REGISTRY_KEYを削除。Git Store CSSはindex.htmlとstudio/sw.jsの参照のみ解除し、ファイル本体は残す。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-023",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "Development Git operation contextを追加し接続値を一箇所へ集約する",
+      "status": "Todo",
+      "execution_order": 86,
+      "depends_on": [
+        "TASK-DEV-SAVE-014"
+      ],
+      "acceptance_criteria": "owner/repo/branch/token/projectSha/indexShaを1つのoperation contextで扱え、Owner/RepoはStudio接続先、書込Branch/PATは操作入力から供給される。旧fallbackはまだ削除しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-024",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "新規・JSON新規・編集・統合・削除をBranch+PAT直接入力の共通書込経路へ統一する",
+      "status": "Todo",
+      "execution_order": 87,
+      "depends_on": [
+        "TASK-DEV-SAVE-023",
+        "TASK-DEV-SAVE-010"
+      ],
+      "acceptance_criteria": "5書込操作すべてでBranch+PATを無条件表示し、別Git設定画面へ遷移せずoperation context経由でGit処理を開始する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-025",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "Project処理・index処理・refreshを同一操作Branchへ固定する",
+      "status": "Todo",
+      "execution_order": 88,
+      "depends_on": [
+        "TASK-DEV-SAVE-024",
+        "TASK-DEV-SAVE-011"
+      ],
+      "acceptance_criteria": "CREATE/PUT/DELETE後のindex GET/PUT、index競合再試行、処理後一覧refreshまで入力Branchが変化せず、Registry/default branchへ切り替わらない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-026",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "案件一覧をGit index→memory registryへ切替えlocalStorage fallbackを停止する",
+      "status": "Todo",
+      "execution_order": 89,
+      "depends_on": [
+        "TASK-DEV-SAVE-025",
+        "TASK-DEV-SAVE-001"
+      ],
+      "acceptance_criteria": "初期一覧はGit index結果だけで構成され、Git index失敗時にlocalStorage/前回一覧を成功表示しない。developmentProjectRegistryはメモリ互換層として残し、旧storageコードはまだ物理削除しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-027",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "index GET・Project GETのread branch/token経路を一本化して固定する",
+      "status": "Todo",
+      "execution_order": 90,
+      "depends_on": [
+        "TASK-DEV-SAVE-026",
+        "TASK-DEV-SAVE-002",
+        "TASK-DEV-SAVE-005"
+      ],
+      "acceptance_criteria": "index GETとProject GETが同じ明示read contextを使用し、Registry branch/DEFAULT_CONNECTIONへfallbackしない。認証ありRepository相当で一覧取得とopenが成功するまで旧ghToken依存を削除しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-028",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "編集・JSON統合をclone→全体検証→Git成功後current反映へ統一する",
+      "status": "Todo",
+      "execution_order": 91,
+      "depends_on": [
+        "TASK-DEV-SAVE-027",
+        "TASK-DEV-SAVE-003",
+        "TASK-DEV-SAVE-004",
+        "TASK-DEV-SAVE-006"
+      ],
+      "acceptance_criteria": "invalid edit/mergeまたはGit失敗時にcurrent Projectが不変で、正常時だけSHA付きPUT成功後にcurrent/remoteSha/dirty状態が更新される。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-029",
+      "box_id": "BOX-DEV-SAVE-EXEC-P2",
+      "title": "Project成功-index失敗のindex-only recoveryを実装する",
+      "status": "Todo",
+      "execution_order": 92,
+      "depends_on": [
+        "TASK-DEV-SAVE-028",
+        "TASK-DEV-SAVE-007",
+        "TASK-DEV-SAVE-012"
+      ],
+      "acceptance_criteria": "CREATE/DELETE成功後のindex失敗で、同一Branchの最新indexを再GETし追加/削除だけをSHA付きPUTでき、成功済みProject CREATE/DELETEを再実行しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-030",
+      "box_id": "BOX-DEV-SAVE-EXEC-P3",
+      "title": "Development↔Git全経路Regressionを実行する",
+      "status": "Todo",
+      "execution_order": 96,
+      "depends_on": [
+        "TASK-DEV-SAVE-015"
+      ],
+      "acceptance_criteria": "一覧/open/new/import/edit save/merge save/delete/stale Project SHA/stale index SHA/index-only recovery/Branch A-B/read auth/invalid merge/reopen一致の全ケースがPASSする。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-031",
+      "box_id": "BOX-DEV-SAVE-EXEC-P3",
+      "title": "B745復旧台帳を使った最小復旧dry-runを確認する",
+      "status": "Todo",
+      "execution_order": 97,
+      "depends_on": [
+        "TASK-DEV-SAVE-030"
+      ],
+      "acceptance_criteria": "テストコピー上の単一障害で、症状→対象symbol→B745基準から最小復元→再PASSまで実行でき、本番Sourceを壊さない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-032",
+      "box_id": "BOX-DEV-SAVE-EXEC-P4",
+      "title": "置換済み旧Registry・接続fallback・旧read authを参照0確認後に物理撤去する",
+      "status": "Todo",
+      "execution_order": 101,
+      "depends_on": [
+        "TASK-DEV-SAVE-016"
+      ],
+      "acceptance_criteria": "localStorage Registry read/write/key/parser、Registry remote fallback、getRegistryEntry、DEFAULT_CONNECTION、旧read authの各候補を再scanし、参照0または代替経路検証済みのものだけ削除する。参照が残るものは削除しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-033",
+      "box_id": "BOX-DEV-SAVE-EXEC-P4",
+      "title": "旧経路Reference Scanと最終Full Gateを実行する",
+      "status": "Todo",
+      "execution_order": 102,
+      "depends_on": [
+        "TASK-DEV-SAVE-032"
+      ],
+      "acceptance_criteria": "同名CRUD/save/load重複0、旧Git UI入口0、Registry/default接続fallback0、Project revision保存経路0、Git index→localStorage fallback0を確認し、Full GateがPASSする。CSS物理削除はこのタスクに含めない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
     }
   ],
   "checks": [
@@ -1803,6 +2200,305 @@
       "blocking": false,
       "created_at": "2026-08-23T09:05:00+09:00",
       "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-020",
+      "title": "既存TASK-001〜012のB745実装実態が証拠付きで分類される",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-018",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-021",
+      "title": "撤去前Git I/O characterization testが固定される",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-019",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-022",
+      "title": "Phase 1で現役Registry/Git接続/read authを変更していない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-014",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-023",
+      "title": "書込5操作が同一operation contextとBranch+PAT入力を使用する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-024",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-024",
+      "title": "Project/index/retry/refreshが同一操作Branchを使用する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-025",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-025",
+      "title": "Git index失敗時にlocalStorage/前回一覧へfallbackしない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-026",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-026",
+      "title": "index GETとProject GETのread branch/token経路が一本化される",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-027",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-027",
+      "title": "invalid edit/mergeまたはGit失敗時にcurrent Projectが不変である",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-028",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-028",
+      "title": "Project成功-index失敗をindex-only recoveryで復旧できる",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-029",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-029",
+      "title": "全Development↔Git RegressionケースがPASSする",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-030",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-030",
+      "title": "B745復旧台帳から最小復旧dry-runが成功する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-031",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-031",
+      "title": "旧処理物理削除対象は参照0または代替検証済みである",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-032",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-032",
+      "title": "最終Reference ScanとFull GateがPASSする",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-033",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:12:00+09:00",
+      "updated_at": "2026-08-23T09:12:00+09:00"
     }
   ],
   "workflow": {
@@ -1830,6 +2526,10 @@
     {
       "at": "2026-08-23T09:05:00+09:00",
       "message": "旧保存経路の撤去前にGKS-B745 Source hash、死コード/現役依存分類、段階撤去順序、症状別復旧手順をDISC-DEV-SAVE-PRE-REMOVE-001として固定。"
+    },
+    {
+      "at": "2026-08-23T09:12:00+09:00",
+      "message": "GKS-B745保存経路再構築の実行計画を登録。Phase 0実態固定→Phase 1死コードのみ撤去→Phase 2現役経路置換→Phase 3全経路回帰/復旧dry-run→Phase 4旧処理物理撤去→最終Gateの順へ固定。"
     }
   ]
 }
