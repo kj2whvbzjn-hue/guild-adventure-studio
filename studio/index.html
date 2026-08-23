@@ -1,4 +1,4 @@
-/* GKS-B750 development-data/source-integrity separation */
+/* GKS-B752 development-data/source-integrity separation */
 <!doctype html>
 <html lang="ja">
 <head>
@@ -21,7 +21,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B750</title>
+<title>GK Studio GKS-B752</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B750 Story nested Data Exchange + scenario export wording */
+/* GKS-B752 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -240,7 +240,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B750: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B752: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -441,7 +441,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B750: Studio home-aware common header / navigation */
+/* GKS-B752: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -459,6 +459,7 @@ updateDeployDeleteControl();
 </script>
   <script src="export-core.js?v=334"></script>
   <script src="../assets/shared/js/adventure-story-system.js?v=11"></script>
+  <script src="../assets/shared/js/battle-package-formal-envelope.js?v=1"></script>
   <script src="./adventure-entity-json-import.js?v=588"></script>
 </head>
 <body>
@@ -469,13 +470,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B750</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B752</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B750</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B752</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2470,11 +2471,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=750"></script>
+<script src="./layer-controller.js?v=752"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B750';
+const DISTRIBUTION_BUILD='GKS-B752';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -4518,12 +4519,20 @@ function battleSystemLimits(){
  return {max_allies:numberOrNull(src.max_allies),max_enemies:numberOrNull(src.max_enemies),max_total_units:numberOrNull(src.max_total_units)};
 }
 function battleRosterSideCount(entries){return (entries||[]).reduce((sum,x)=>sum+Math.max(1,Math.floor(Number(x&&x.count)||1)),0)}
-function validateBattleRosterEntries(entries,label){
+function validateBattleRosterEntries(entries,label,options={}){
  if(!Array.isArray(entries))throw new Error(`battle-rosterには${label}配列が必要です。`);
+ const formalMode=options.formalMode===true;
  entries.forEach((entry,index)=>{
   if(!entry||typeof entry!=='object'||Array.isArray(entry))throw new Error(`${label}[${index}]はオブジェクトにしてください。`);
   const count=Number(entry.count==null?1:entry.count);
   if(!Number.isInteger(count)||count<1)throw new Error(`${label}[${index}].countは1以上の整数にしてください。`);
+  if(formalMode){
+   const ref=entry.snapshot_ref;
+   if(!ref||typeof ref!=='object'||Array.isArray(ref))throw new Error(`${label}[${index}]にはformal snapshot_refが必要です。`);
+   if(String(ref.candidate_type||'')!=='unit_snapshot'||!String(ref.candidate_id||'').trim())throw new Error(`${label}[${index}].snapshot_refはcandidate_type=unit_snapshotとcandidate_idが必要です。`);
+   if(entry.unit||entry.master_id||entry.id||entry.overrides)throw new Error(`${label}[${index}]はFormal modeでraw unit/master/overrideを使用できません。`);
+   return;
+  }
   const hasUnit=entry.unit&&typeof entry.unit==='object'&&!Array.isArray(entry.unit);
   const hasMaster=String(entry.master_id||'').trim();
   const hasDirect=String(entry.id||'').trim()&&(entry.hp!=null||entry.maxHp!=null||entry.attack!=null);
@@ -4540,7 +4549,7 @@ function validateBattleRosterCapacity(payload){
  if(issues.length&&policy==='error')throw new Error('人数上限超過：'+issues.join(' / '));
  return {allies,enemies,total:allies+enemies,limits,warnings:issues};
 }
-function validateBattleVerificationEnvelope(doc){
+function validateBattleVerificationEnvelope(doc,options={}){
  if(!doc||typeof doc!=='object'||Array.isArray(doc))throw new Error('JSONの最上位はオブジェクトにしてください。');
  if(doc.format!=='guild-adventure-studio-battle-test')throw new Error('戦闘検証専用フォーマットではありません。');
  if(String(doc.version||'')!=='1.0.0')throw new Error('未対応のフォーマットversionです：'+String(doc.version||'未指定'));
@@ -4550,8 +4559,13 @@ function validateBattleVerificationEnvelope(doc){
  if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('dataオブジェクトがありません。');
  if(!String(payload.id||'').trim())throw new Error('data.idが必要です。');
  if(type==='battle-roster'){
-  validateBattleRosterEntries(payload.allies,'allies');
-  validateBattleRosterEntries(payload.enemies,'enemies');
+  const formalMode=options.formalMode===true;
+  if(formalMode){
+   if(!window.GKSBattleFormalEnvelope)throw new Error('Formal Battle Package validatorを読み込めません。');
+   window.GKSBattleFormalEnvelope.validateFormalRoster(payload);
+  }
+  validateBattleRosterEntries(payload.allies,'allies',{formalMode});
+  validateBattleRosterEntries(payload.enemies,'enemies',{formalMode});
   validateBattleRosterCapacity(payload);
  }
  if(type==='battle-test'&&!String(payload.roster_id||'').trim())throw new Error('battle-testにはroster_idが必要です。');
@@ -4603,6 +4617,14 @@ function battlePackageSetStatus(message,isError=false,summary=''){
  if(status){status.className=isError?'item error':'item';status.innerHTML=`<b>Battle Package：</b>${esc(message)}`}
  if(box)box.textContent=summary||'';
 }
+const BATTLE_PACKAGE_FORMAL_RULE_CONFIG_PATHS=Object.freeze([
+ 'schemas/battle-simulation-rules.json',
+ 'assets/shared/config/skill-budget-rules.json',
+ 'assets/shared/config/skill-ai-generation-rules.json',
+ 'assets/shared/config/skill-registry.json',
+ 'studio/equipment/equipment-balance-config.json',
+ 'studio/equipment/equipment-generation-rules.json'
+]);
 function validateBattlePackageManifest(manifest){
  if(!manifest||typeof manifest!=='object')throw Object.assign(new Error('manifest.jsonがオブジェクトではありません。'),{code:'BATTLE_PACKAGE_MANIFEST_INVALID'});
  if(manifest.format!=='guild-adventure-studio-battle-verification-package')throw Object.assign(new Error('Battle Package形式ではありません。'),{code:'BATTLE_PACKAGE_FORMAT_UNSUPPORTED'});
@@ -4610,7 +4632,90 @@ function validateBattlePackageManifest(manifest){
  if(!String(manifest.package_id||'').trim())throw Object.assign(new Error('manifest.jsonにpackage_idが必要です。'),{code:'BATTLE_PACKAGE_ID_REQUIRED'});
  const version=String(manifest.package_version||'');
  if(!/^1\./.test(version))throw Object.assign(new Error(`未対応のpackage_versionです: ${version||'未指定'}`),{code:'BATTLE_PACKAGE_VERSION_UNSUPPORTED'});
+ try{
+  if(window.GKSBattleFormalEnvelope)window.GKSBattleFormalEnvelope.validateFormalManifest(manifest);
+  else if(manifest.formal?.mode==='formal')throw new Error('Formal Battle Package validatorを読み込めません。');
+ }catch(error){throw Object.assign(new Error(error.message),{code:'BATTLE_FORMAL_MANIFEST_INVALID'});}
  return manifest;
+}
+function battlePackageFormalMode(manifest){return !!window.GKSBattleFormalEnvelope?.isFormalManifest(manifest)}
+function battlePackageRootUrl(path){
+ const rel=String(path||'').replace(/^\/+/, '');
+ if(rel.startsWith('studio/'))return new URL('./'+rel.slice('studio/'.length),location.href).href;
+ return new URL('../'+rel,location.href).href;
+}
+async function battlePackageFetchRootBytes(path){
+ const response=await fetch(battlePackageRootUrl(path),{cache:'no-store'});
+ if(!response.ok)throw Object.assign(new Error(`Current Source bindingを取得できません: ${path} (${response.status})`),{code:'BATTLE_FORMAL_BINDING_SOURCE_UNAVAILABLE',path});
+ return new Uint8Array(await response.arrayBuffer());
+}
+async function battlePackageFetchRootJson(path){
+ const bytes=await battlePackageFetchRootBytes(path);
+ try{return JSON.parse(new TextDecoder().decode(bytes))}catch(error){throw Object.assign(new Error(`Current Source JSONを解析できません: ${path}`),{code:'BATTLE_FORMAL_BINDING_SOURCE_INVALID',path});}
+}
+function battlePackageProjectDataVersion(){
+ const explicit=String(data?.project?.data_version||data?.data_version||'').trim();
+ if(explicit)return explicit;
+ const stamp=String(data?.project?.updated_at||'').trim();
+ return stamp?`snapshot:${stamp}`:'snapshot:unversioned';
+}
+async function battlePackageCurrentFormalBinding(){
+ if(!window.GKSBattleFormalEnvelope)throw Object.assign(new Error('Formal Battle Package validatorを読み込めません。'),{code:'BATTLE_FORMAL_VALIDATOR_MISSING'});
+ const build=await battlePackageFetchRootJson('package-build.json');
+ const manifestBytes=await battlePackageFetchRootBytes('package_manifest.json');
+ const projectSnapshot=window.GKSBattleFormalEnvelope.canonicalStringify(data);
+ const formula=readBattleFormulaConfig();
+ const formulaSnapshot=window.GKSBattleFormalEnvelope.canonicalStringify(formula);
+ const files=[];
+ for(const path of BATTLE_PACKAGE_FORMAL_RULE_CONFIG_PATHS){
+  const bytes=await battlePackageFetchRootBytes(path);
+  files.push({path,sha256:await sha256BytesHex(bytes)});
+ }
+ return {
+  source:{game_build:String(build.game_build||''),studio_build:String(build.studio_build||''),package_manifest_sha256:await sha256BytesHex(manifestBytes)},
+  data:{project_id:String(data?.project?.id||currentProjectId||''),data_version:battlePackageProjectDataVersion(),snapshot_sha256:await sha256TextHex(projectSnapshot)},
+  formula:{version:String(formula.version||''),snapshot_sha256:await sha256TextHex(formulaSnapshot)},
+  rules_config:{files}
+ };
+}
+async function battlePackageValidateFormalBinding(manifest){
+ if(!battlePackageFormalMode(manifest))return null;
+ const expected=structuredClone(manifest.formal.bindings),actual=await battlePackageCurrentFormalBinding();
+ const mismatches=window.GKSBattleFormalEnvelope.compareBindings(expected,actual);
+ if(mismatches.length){
+  const detail=mismatches.slice(0,8).map(x=>`${x.path}: expected=${x.expected??'(missing)'} actual=${x.actual??'(missing)'}`).join('\n');
+  throw Object.assign(new Error(`Formal Battle Package bindingがCurrent環境と一致しません。\n${detail}`),{code:'BATTLE_FORMAL_BINDING_MISMATCH',mismatches,expected,actual});
+ }
+ return {expected,actual,checked_at:now()};
+}
+async function battlePackageLoadFormalCandidates(reader){
+ const map=new Map(),paths=new Map();
+ if(!window.GKSBattleFormalEnvelope)throw Object.assign(new Error('Formal Candidate validatorを読み込めません。'),{code:'BATTLE_FORMAL_VALIDATOR_MISSING'});
+ const entries=reader.entries.filter(e=>e.path.startsWith('resources/candidates/')&&e.path.toLowerCase().endsWith('.json'));
+ for(const entry of entries){
+  let checked;
+  try{checked=window.GKSBattleFormalEnvelope.validateCandidateEnvelope(await reader.getJson(entry.path));}
+  catch(error){throw Object.assign(new Error(`${entry.path}: ${error.message}`),{code:'BATTLE_FORMAL_CANDIDATE_INVALID',path:entry.path});}
+  const actualHash=await sha256TextHex(window.GKSBattleFormalEnvelope.canonicalStringify(checked.data));
+  if(actualHash.toLowerCase()!==checked.payload_sha256.toLowerCase())throw Object.assign(new Error(`${entry.path}: payload_sha256がdataと一致しません。`),{code:'BATTLE_FORMAL_CANDIDATE_HASH_MISMATCH',path:entry.path,candidate_id:checked.candidate_id});
+  if(map.has(checked.candidate_id))throw Object.assign(new Error(`Candidate IDが重複しています: ${checked.candidate_id}`),{code:'BATTLE_FORMAL_CANDIDATE_ID_DUPLICATE',candidate_id:checked.candidate_id,path:entry.path});
+  map.set(checked.candidate_id,checked);paths.set(checked.candidate_id,entry.path);
+ }
+ return {map,paths};
+}
+function battlePackageResolveFormalRoster(roster,candidates){
+ window.GKSBattleFormalEnvelope.validateFormalRoster(roster);
+ const out=structuredClone(roster);
+ for(const label of ['allies','enemies']){
+  out[label]=out[label].map((entry,index)=>{
+   const ref=entry.snapshot_ref,candidate=candidates.get(String(ref.candidate_id||''));
+   if(!candidate)throw Object.assign(new Error(`Formal roster ${label}[${index}]が存在しないCandidateを参照しています: ${ref.candidate_id||''}`),{code:'BATTLE_FORMAL_SNAPSHOT_REFERENCE_MISSING',candidate_id:ref.candidate_id||''});
+   if(candidate.candidate_type!=='unit_snapshot')throw Object.assign(new Error(`Formal roster ${label}[${index}]はunit_snapshotだけを参照できます: ${candidate.candidate_type}`),{code:'BATTLE_FORMAL_SNAPSHOT_TYPE_MISMATCH',candidate_id:candidate.candidate_id});
+   return {count:Number(entry.count||1),unit:{...structuredClone(candidate.data),__formal_snapshot:{candidate_id:candidate.candidate_id,candidate_type:candidate.candidate_type,payload_sha256:candidate.payload_sha256,provenance:structuredClone(candidate.provenance)}}};
+  });
+ }
+ out.__formal_roster={snapshot:structuredClone(roster.formal_snapshot)};
+ return out;
 }
 function validateBattleExecutionPlan(plan){
  if(!plan||typeof plan!=='object'||plan.document_type!=='battle-execution-plan')throw Object.assign(new Error('execution_plan.jsonの形式が不正です。'),{code:'BATTLE_EXECUTION_PLAN_INVALID'});
@@ -4627,7 +4732,7 @@ function validateBattleExecutionPlan(plan){
 function battlePackageAllowedPath(path){
  if(path==='manifest.json'||path==='execution_plan.json'||path==='README_AI.md'||path==='SPECIFICATION.md')return true;
  if(/^ai\/[A-Za-z0-9_.\-/]+\.(?:md|json)$/i.test(path))return true;
- if(/^resources\/(?:rosters|tests|opponent_sets|benchmarks)\/[A-Za-z0-9_.\-]+\.(?:json|md)$/i.test(path))return true;
+ if(/^resources\/(?:rosters|tests|opponent_sets|benchmarks|candidates)\/[A-Za-z0-9_.\-]+\.(?:json|md)$/i.test(path))return true;
  return false;
 }
 async function inspectBattlePackage(file){
@@ -4645,9 +4750,19 @@ async function inspectBattlePackage(file){
  if(!paths.has('execution_plan.json'))diagnostics.push(battlePackageDiagnostic('FATAL','BATTLE_EXECUTION_PLAN_MISSING','execution_plan.jsonがありません。'));
  if(diagnostics.some(x=>x.severity==='FATAL'))throw Object.assign(new Error(diagnostics.find(x=>x.severity==='FATAL').message),{code:'BATTLE_PACKAGE_FATAL',diagnostics});
  const manifest=validateBattlePackageManifest(await reader.getJson('manifest.json'));
+ const formalMode=battlePackageFormalMode(manifest);
+ let formalBinding=null;
+ try{formalBinding=await battlePackageValidateFormalBinding(manifest);}
+ catch(error){diagnostics.push(battlePackageDiagnostic('FATAL',error.code||'BATTLE_FORMAL_BINDING_INVALID',error.message,{mismatches:error.mismatches||[]}));}
+ if(diagnostics.some(x=>x.severity==='FATAL'))throw Object.assign(new Error(diagnostics.find(x=>x.severity==='FATAL').message),{code:'BATTLE_PACKAGE_FATAL',diagnostics});
  const executionPlan=validateBattleExecutionPlan(await reader.getJson('execution_plan.json'));
- const resources={rosters:new Map(),tests:new Map(),opponent_sets:new Map(),benchmarks:new Map()};
- const resourcePaths={rosters:new Map(),tests:new Map(),opponent_sets:new Map(),benchmarks:new Map()};
+ const resources={rosters:new Map(),tests:new Map(),opponent_sets:new Map(),benchmarks:new Map(),candidates:new Map()};
+ const resourcePaths={rosters:new Map(),tests:new Map(),opponent_sets:new Map(),benchmarks:new Map(),candidates:new Map()};
+ if(formalMode){
+  const loaded=await battlePackageLoadFormalCandidates(reader);
+  resources.candidates=loaded.map;resourcePaths.candidates=loaded.paths;
+  diagnostics.push(battlePackageDiagnostic('INFO','BATTLE_FORMAL_BINDING_OK','Formal bindingはCurrent Build/Data/Formula/Rules/Configと一致しています。',{candidate_count:resources.candidates.size}));
+ }
  const skippedJobs=[];
  for(const job of executionPlan.jobs){
   if(job&&job.enabled===false){
@@ -4668,11 +4783,12 @@ async function inspectBattlePackage(file){
    const rosterCandidates=reader.entries.filter(e=>e.path.startsWith('resources/rosters/')&&e.path.toLowerCase().endsWith('.json'));
    async function loadPackageResources(candidates,expectedType,collection,pathCollection){
     for(const entry of candidates){
-     const parsed=await reader.getJson(entry.path),checked=validateBattleVerificationEnvelope(parsed);
+     const parsed=await reader.getJson(entry.path),checked=validateBattleVerificationEnvelope(parsed,{formalMode});
      if(checked.type!==expectedType)throw Object.assign(new Error(`${entry.path}は${expectedType}ではありません。`),{code:'BATTLE_RESOURCE_TYPE_MISMATCH',path:entry.path});
      const rid=String(checked.payload.id||'');
      if(collection.has(rid)&&pathCollection.get(rid)!==entry.path)throw Object.assign(new Error(`リソースIDが重複しています: ${rid}`),{code:'BATTLE_RESOURCE_ID_DUPLICATE',resource_id:rid,path:entry.path});
-     collection.set(rid,checked.payload);pathCollection.set(rid,entry.path);
+     const payload=formalMode&&expectedType==='battle-roster'?battlePackageResolveFormalRoster(checked.payload,resources.candidates):checked.payload;
+     collection.set(rid,payload);pathCollection.set(rid,entry.path);
     }
    }
    let benchmark=null,set=null,base=null,targets=[];
@@ -4712,14 +4828,15 @@ async function inspectBattlePackage(file){
    if(collection.has(id))return collection.get(id);
    for(const entry of candidates){
     const parsed=await reader.getJson(entry.path);
-    const checked=validateBattleVerificationEnvelope(parsed);
+    const checked=validateBattleVerificationEnvelope(parsed,{formalMode});
     if(checked.type!==expectedType)throw Object.assign(new Error(`${entry.path}は${expectedType}ではありません。`),{code:'BATTLE_RESOURCE_TYPE_MISMATCH',path:entry.path});
     const rid=String(checked.payload.id||'');
     if(collection.has(rid)){
      if(pathCollection.get(rid)!==entry.path)throw Object.assign(new Error(`リソースIDが重複しています: ${rid}`),{code:'BATTLE_RESOURCE_ID_DUPLICATE',resource_id:rid});
      continue;
     }
-    collection.set(rid,checked.payload);pathCollection.set(rid,entry.path);
+    const payload=formalMode&&expectedType==='battle-roster'?battlePackageResolveFormalRoster(checked.payload,resources.candidates):checked.payload;
+    collection.set(rid,payload);pathCollection.set(rid,entry.path);
    }
    return collection.get(id)||null;
   }
@@ -4744,9 +4861,10 @@ async function inspectBattlePackage(file){
   rosters:reader.entries.filter(e=>e.path.startsWith('resources/rosters/')&&e.path.toLowerCase().endsWith('.json')).length,
   tests:reader.entries.filter(e=>e.path.startsWith('resources/tests/')&&e.path.toLowerCase().endsWith('.json')).length,
   opponent_sets:reader.entries.filter(e=>e.path.startsWith('resources/opponent_sets/')&&e.path.toLowerCase().endsWith('.json')).length,
-  benchmarks:reader.entries.filter(e=>e.path.startsWith('resources/benchmarks/')&&e.path.toLowerCase().endsWith('.json')).length
+  benchmarks:reader.entries.filter(e=>e.path.startsWith('resources/benchmarks/')&&e.path.toLowerCase().endsWith('.json')).length,
+  candidates:reader.entries.filter(e=>e.path.startsWith('resources/candidates/')&&e.path.toLowerCase().endsWith('.json')).length
  };
- return {fileName:file.name||'',reader,manifest,executionPlan,resources,resourcePaths,activeJobs,skippedJobs,plannedJobCount:executionPlan.jobs.length,estimatedTrials,diagnostics,allResourceCounts,inspected_at:now()};
+ return {fileName:file.name||'',reader,manifest,formalMode,formalBinding,executionPlan,resources,resourcePaths,activeJobs,skippedJobs,plannedJobCount:executionPlan.jobs.length,estimatedTrials,diagnostics,allResourceCounts,inspected_at:now()};
 }
 async function importBattlePackageFile(file){
  if(!file)return;
@@ -4760,7 +4878,8 @@ async function importBattlePackageFile(file){
   const summary=[
    `パッケージ: ${session.manifest.name||session.manifest.package_id}`,
    `Package ID: ${session.manifest.package_id}`,
-   `ZIP内リソース: 編成 ${session.allResourceCounts.rosters} / テスト ${session.allResourceCounts.tests} / 対象集合 ${session.allResourceCounts.opponent_sets} / Benchmark ${session.allResourceCounts.benchmarks}`,
+   `ZIP内リソース: 編成 ${session.allResourceCounts.rosters} / テスト ${session.allResourceCounts.tests} / 対象集合 ${session.allResourceCounts.opponent_sets} / Benchmark ${session.allResourceCounts.benchmarks} / Candidate ${session.allResourceCounts.candidates||0}`,
+   `Formal binding: ${session.formalMode?'PASS':'Legacy/QA mode'}`,
    `実行計画: 全${session.executionPlan.jobs.length}件 / 実行可能 ${session.activeJobs.length}件`,
    `予定総試行: ${session.estimatedTrials.toLocaleString()}戦`,
    `診断: FATAL ${fatal} / JOB_ERROR ${jobErrors} / WARNING ${warnings}`,
@@ -4953,6 +5072,7 @@ async function exportBattlePackageResult(){
   execution_id:executionId,status:session.execution.status,partial:session.execution.status==='cancelled'||session.execution.status==='failed',
   started_at:session.execution.started_at,finished_at:session.execution.finished_at,
   build_version:loadBuildSettings().developmentBuild,formula_version:readBattleFormulaConfig().version,
+  formal_binding:session.formalBinding?structuredClone(session.formalBinding):null,
   jobs_planned:session.execution.jobs_planned,jobs_requested:session.execution.jobs_requested,jobs_completed:session.execution.jobs_completed,jobs_failed:session.execution.jobs_failed,jobs_skipped:session.execution.jobs_skipped||0,jobs_not_run:session.execution.jobs_not_run||0,
   trials_requested:session.execution.trials_requested,trials_completed:session.execution.trials_completed,error_count:session.execution.error_count,
   diagnostics:structuredClone(session.diagnostics||[])
@@ -4967,8 +5087,8 @@ async function exportBattlePackageResult(){
  const resultManifest={
   format:'guild-adventure-studio-battle-verification-result-package',package_version:'1.0.0',package_type:'result',
   package_id:`BVR-${executionId}`,name:`${session.manifest.name||sourcePackageId} 実行結果`,created_at:createdAt,created_by:'GK Studio',
-  source:{package_id:sourcePackageId,package_version:session.manifest.package_version,execution_id:executionId},
-  target:{build:loadBuildSettings().developmentBuild,formula_version:readBattleFormulaConfig().version},
+  source:{package_id:sourcePackageId,package_version:session.manifest.package_version,execution_id:executionId,formal_mode:session.formalMode===true},
+  target:{build:loadBuildSettings().developmentBuild,formula_version:readBattleFormulaConfig().version,formal_binding:session.formalBinding?structuredClone(session.formalBinding):null},
   execution:{status:session.execution.status,partial:executionReport.partial,jobs_completed:session.execution.jobs_completed,jobs_failed:session.execution.jobs_failed,trials_completed:session.execution.trials_completed,error_count:session.execution.error_count},
   contents:{input_files:session.reader.entries.length,job_results:session.results.length,ai_summaries:1+(benchmarkResults.length?1:0),metric_files:benchmarkResults.length?1:0},files:fileManifest
  };
@@ -5034,8 +5154,8 @@ function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプ�
 function battleTestTemplateData(){return {id:'BT-SAMPLE-001',name:'サンプル単発検証',roster_id:'BRT-SAMPLE-001',purpose:'validation',execution:{mode:'single',trials:1,seed_start:12345,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','skill_usage','errors'],expectations:{error_count:{max:0}},tags:[]}}
 async function exportBattleAiPackageTemplate(){
  if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。再読み込みしてください。');
- const packageVersion='1.0.0';
- const createdAt=now();
+ const packageVersion='1.1.0';
+ const createdAt=now(),formalBindings=await battlePackageCurrentFormalBinding();
  const manifest={
   format:'guild-adventure-studio-battle-verification-package',
   package_version:packageVersion,
@@ -5044,10 +5164,10 @@ async function exportBattleAiPackageTemplate(){
   name:'AI作成用 Battle Package ひな形',
   created_at:createdAt,
   created_by:'studio-template',
-  schemas:{manifest:'1.0.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0'},
-  target:{minimum_build:'472.32'},
-  contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,jobs:0},
-  validation:{allow_unused_resources:true},
+  schemas:{manifest:'1.1.0',execution_plan:'1.0.0',battle_roster:'1.0.0',battle_test:'1.0.0',battle_opponent_set:'1.0.0',battle_benchmark:'1.0.0',battle_candidate:'1.0.0'},
+  formal:{mode:'formal',bindings:formalBindings},
+  contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,candidates:0,jobs:0},
+  validation:{allow_unused_resources:true,fail_closed:true},
   instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
  };
  const executionPlan={
@@ -5058,8 +5178,8 @@ async function exportBattleAiPackageTemplate(){
   execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true},
   jobs:[]
  };
- const readme=`# AI向け Battle Package ひな形\n\nこのZIPは、Guild Adventure Studioへ読み込ませる戦闘検証データをAIが作成するための空パッケージです。\n\n## AIへの依頼方法\n\nこのZIPをAIへ渡し、「このZIPに○○の戦闘テストデータを作成してください」と依頼してください。\n\n## 必須作業\n\n1. 必要な編成JSONを resources/rosters/ へ追加する。\n2. 必要なテストJSONを resources/tests/ へ追加する。\n3. 必要に応じて対象集合・Benchmarkを対応フォルダへ追加する。\n4. execution_plan.json の jobs に、実行対象だけを記載する。\n5. manifest.json の contents 件数、package_id、name、created_at を更新する。\n6. 完成したZIPのフォルダ構造を変更せず、そのまま返す。\n\n未使用リソースが含まれていてもエラーではありません。実行対象は execution_plan.json の jobs のみです。\n`;
- const specification=`# Battle Package 基本仕様 v1.0\n\n## 必須ファイル\n- manifest.json\n- execution_plan.json\n\n## リソース配置\n- resources/rosters/*.json : battle-roster\n- resources/tests/*.json : battle-test\n- resources/opponent_sets/*.json : battle-opponent-set\n- resources/benchmarks/*.json : battle-benchmark\n\n## 実行原則\n- execution_plan.jsonに記載されたenabled=trueのjobだけが実行対象です。\n- 対応job_typeは battle-test / battle-benchmark です。\n- 未使用リソースは正常です。\n- 参照先がないjobはエラーです。\n- IDはパッケージ内で重複させないでください。\n- 人数は固定ではありません。編成配列とcountで表現してください。\n\n## battle-test job例\n\n{\n  "job_id": "JOB-001",\n  "job_type": "battle-test",\n  "job_version": "1.0.0",\n  "required": true,\n  "enabled": true,\n  "resource_refs": {\n    "roster_id": "BRT-001",\n    "test_id": "BT-001"\n  },\n  "output_policy": {"level": "representative"}\n}\n`;
+ const readme=`# AI向け Battle Package ひな形\n\nこのZIPは、Guild Adventure Studioへ読み込ませるFormal戦闘検証データをAIが作成するための空パッケージです。\n\n## AIへの依頼方法\n\nこのZIPをAIへ渡し、「このZIPに○○の戦闘テストデータを作成してください」と依頼してください。\n\n## 必須作業\n\n1. Formal unit snapshotを resources/candidates/ へ typed Candidate JSONとして追加する。\n2. 編成JSONはraw unit/master/overrideを記述せず、unit_snapshot Candidateをsnapshot_refで参照する。\n3. 必要なテストJSONを resources/tests/ へ追加する。\n4. 必要に応じて対象集合・Benchmarkを対応フォルダへ追加する。\n5. execution_plan.json の jobs に、実行対象だけを記載する。\n6. manifest.json のformal.bindingsは変更しない。contents件数、package_id、name、created_atだけを更新する。\n7. 完成したZIPのフォルダ構造を変更せず、そのまま返す。\n\nFormal PackageはBuild/Data/Formula/Rules/Config binding不一致、raw roster、owner provenance欠落をfail-closedで拒否します。\n`;
+ const specification=`# Battle Package 基本仕様 v1.0\n\n## 必須ファイル\n- manifest.json\n- execution_plan.json\n\n## リソース配置\n- resources/candidates/*.json : typed transient candidate（Formal unit snapshot等）\n- resources/rosters/*.json : battle-roster\n- resources/tests/*.json : battle-test\n- resources/opponent_sets/*.json : battle-opponent-set\n- resources/benchmarks/*.json : battle-benchmark\n\n## Formal Input原則\n- manifest.formal.bindingsはTemplate出力時のCurrent Build/Data/Formula/Rules/Configへ固定されます。\n- Studio読込時に1項目でも不一致なら実行前に停止します。\n- Formal rosterはmode=\"formal\"とformal_snapshotを持ち、各unitはresources/candidatesのunit_snapshotをsnapshot_refで参照します。\n- raw unit / master_id / direct stats / overridesはFormal rosterでは使用できません。\n- Candidateはcandidate_type / candidate_id / owner provenance / payload_sha256が必須です。\n\n## 実行原則\n- execution_plan.jsonに記載されたenabled=trueのjobだけが実行対象です。\n- 対応job_typeは battle-test / battle-benchmark です。\n- 未使用リソースは正常です。\n- 参照先がないjobはエラーです。\n- IDはパッケージ内で重複させないでください。\n- 人数は固定ではありません。編成配列とcountで表現してください。\n\n## battle-test job例\n\n{\n  "job_id": "JOB-001",\n  "job_type": "battle-test",\n  "job_version": "1.0.0",\n  "required": true,\n  "enabled": true,\n  "resource_refs": {\n    "roster_id": "BRT-001",\n    "test_id": "BT-001"\n  },\n  "output_policy": {"level": "representative"}\n}\n`;
  const prompt=`# AIへの依頼テンプレート\n\nこのBattle Packageひな形ZIPを編集し、次の検証データを作成してください。\n\n## 目的\n（ここに検証したい内容を書く）\n\n## 条件\n（使用する編成、敵、試行数、Seed、期待値などを書く）\n\n## 出力条件\n- ZIP内部のREADME_AI.mdとSPECIFICATION.mdに従う。\n- 実行対象はexecution_plan.jsonへ記載する。\n- 完成したBattle PackageをZIPのまま返す。\n`;
  const writer=GKZipCore.writer.create();
  writer.addJson('manifest.json',manifest);
@@ -5067,6 +5187,7 @@ async function exportBattleAiPackageTemplate(){
  writer.addText('README_AI.md',readme);
  writer.addText('SPECIFICATION.md',specification);
  writer.addText('ai/REQUEST_TEMPLATE.md',prompt);
+ writer.addText('resources/candidates/PLACE_JSON_HERE.md','# Formal typed Candidate JSONを配置\n');
  writer.addText('resources/rosters/PLACE_JSON_HERE.md','# battle-roster JSONを配置\n');
  writer.addText('resources/tests/PLACE_JSON_HERE.md','# battle-test JSONを配置\n');
  writer.addText('resources/opponent_sets/PLACE_JSON_HERE.md','# battle-opponent-set JSONを配置\n');
@@ -9463,7 +9584,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','750');
+    url.searchParams.set('appv','752');
     location.replace(url.toString());
    }
  }
@@ -9472,7 +9593,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=750',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=752',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9491,7 +9612,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','750');
+    url.searchParams.set('appv','752');
     location.replace(url.toString());
    }
   });
