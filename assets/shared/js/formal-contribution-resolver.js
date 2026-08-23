@@ -74,12 +74,23 @@
     }
     return out;
   }
-  function resolveEquipmentContribution(record,modCandidatesById={}){
+  function resolveEquipmentContribution(record,modCandidatesById={},options={}){
     const checked=validateFormalEquipment(record),ids=checked.mod_ids||[];
     if(new Set(ids).size!==ids.length)throw new Error(`Equipment ${checked.id}に同一MODが重複しています。`);
     const mods=ids.map(id=>{const v=modCandidatesById instanceof Map?modCandidatesById.get(id):modCandidatesById[id];if(!v)throw new Error(`Equipment ${checked.id}が参照するMOD Candidateがありません: ${id}`);return v});
-    const base=baseEquipmentContribution(checked),modified=applyEquipmentMods(base,mods);
-    return {equipment_id:checked.id,base,modified,mod_ids:ids.slice()};
+    const staticMods=[],runtimeModifiers=[];
+    for(const item of mods){
+      const candidate=validateModCandidate(item),d=candidate.definition,field=TARGET_TO_FIELD[d.target];
+      if(d.effect_type!=='numeric_modifier'||!field){
+        if(options.deferRuntimeTargets===true){runtimeModifiers.push(candidate);continue}
+        return {equipment_id:checked.id,base:baseEquipmentContribution(checked),modified:applyEquipmentMods(baseEquipmentContribution(checked),mods),mod_ids:ids.slice()};
+      }
+      if(d.target==='CRITICAL_RATE'&&d.operation!=='RELATIVE_PERCENT')throw new Error(`CRITICAL_RATE MOD ${d.id}はRELATIVE_PERCENTだけを使用できます。`);
+      if(d.target!=='CRITICAL_RATE'&&!['RELATIVE_PERCENT','FLAT_ADD'].includes(d.operation))throw new Error(`Equipment performance MOD ${d.id}はRELATIVE_PERCENT/FLAT_ADDだけを使用できます。`);
+      staticMods.push(item);
+    }
+    const base=baseEquipmentContribution(checked),modified=applyEquipmentMods(base,staticMods);
+    return {equipment_id:checked.id,base,modified,mod_ids:ids.slice(),runtime_modifiers:runtimeModifiers};
   }
   function validateFormalPassive(record,options={}){
     if(!object(record))throw new Error('Passive recordが必要です。');
