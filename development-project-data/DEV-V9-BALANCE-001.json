@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T11:18:05.651Z"
+    "updated_at": "2026-08-23T11:41:59.734Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "TASK-BAL-019 P3-6 blocked by fixed-formation scaling null-bound issue",
-    "goal": "GKS-B759 deployment/fresh-source verification passed and TASK-BAL-019 started. During P3-6 Monster owner-chain validation, existing assets/shared/js/adventure-encounter-resolver.js was found to treat fixed_formation_scaling.max_multiplier=null as numeric 0, collapsing fixed-formation hp/attack/agi multipliers to 0. RULE-BAL-ISSUE-GATE-001 stops unplanned repair in this run. No SOURCE_UPDATE artifact is authorized. Human review/plan authorization is required before any correction. Do not start TASK-BAL-020."
+    "theme": "Apply GKS-B760 null-max correction, then resume TASK-BAL-019 P3-6",
+    "goal": "TASK-BAL-025 correction is complete and release-gated. Apply DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip through Studio > 更新ZIP, reacquire fresh Current Source, rerun CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001, and only then resume TASK-BAL-019. Do not start TASK-BAL-020. Current Source/Game Data/Current active remain GKS-B759/unchanged until Human apply."
   },
   "project_rules": [
     {
@@ -630,6 +630,50 @@
       "summary": "Existing Studio AI Battle Package formal executor was aligned to the Current Battle Formula / Status / Action Lifecycle contract and Game Runtime semantics. Formal Golden 22/22 and runBattleSimulation integration pass with no legacy fallback. Quick/Accept/Release and applied Full gates pass. No duplicate simulator, gameplay-spec change, Game Data change, Current active change, or deletion.",
       "created_at": "2026-08-23T19:24:00+09:00",
       "updated_at": "2026-08-23T19:24:00+09:00"
+    },
+    {
+      "id": "IMP-BAL-P3-6-NULL-MAX-001",
+      "title": "P3-6 fixed-formation null max bound semantics correction",
+      "status": "Completed",
+      "task_id": "TASK-BAL-025",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B760",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-RUNTIME-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-025"
+      ],
+      "result": "Applied",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-025_FIXED-FORMATION-NULL-MAX-EVIDENCE.zip sha256=d5be2274c3a0903ef42b98516e0b6bd04078e4f48d172b32d722c92d18ac9ba1",
+      "recorded_at": "2026-08-23T20:28:00+09:00",
+      "baseline": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B759",
+        "source_zip": "guild-adventure-studio-sub.zip",
+        "source_zip_sha256": "954db03aa8d46653a24fa31aa995f66ed969655a8efc751bf0475e220b035cd8",
+        "package_manifest_sha256": "3ba2f0e42be0118550eed83c533621a6757f33f4c2ea91d036eb18e18642eed6",
+        "source_tree_sha256": "707434adbf4200d75d8f0198d72fe2207c527a15c92bdd324f39ccc89df93d5b"
+      },
+      "target": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B760",
+        "package_manifest_sha256": "662ff776db954a36c67c886873a407539d89ebfdc610ab767c6893f6407972dc",
+        "source_tree_sha256": "69221182d75574c8f71f53dd36a3ad0331cf709c0c4f6acb7ec9ed778b028433",
+        "artifact_id": "GKS-B760-69221182d755"
+      },
+      "artifact": {
+        "file": "DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip",
+        "sha256": "0b1e2b29fcaaf3e5349e3e3980873bcd494f52f6f092dfaeb3dd35a0948ff8ad",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "summary": "fixed_formation_scaling.max_multiplier=null is preserved as an unbounded sentinel. clamp no longer treats null bounds as numeric zero. Finite max behavior is unchanged. No gameplay formula, Balance value, Game Data, Current active, protected test logic, or deletion changes."
     }
   ],
   "discussions": [
@@ -932,6 +976,18 @@
       "approved_at": "2026-08-23T18:11:00+09:00",
       "created_at": "2026-08-23T18:01:00+09:00",
       "updated_at": "2026-08-23T18:11:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P3-6-NULL-MAX-SEMANTICS-001",
+      "title": "fixed formation max_multiplier=nullを上限なしsentinelとして保持する",
+      "status": "Approved",
+      "text": "fixed_formation_scaling.max_multiplier=nullは不正値ではなく「上限なし」を表す正式なsentinelとして扱う。nullをNumber(null)=0へ変換して上限0として適用しない。有限の数値max_multiplierが指定された場合だけ従来どおり上限制約を適用する。Gameplay Formula、Balance値、Game Data、Current activeは変更しない。",
+      "rationale": "Humanが今回のケースではnullの意味を守って処理する必要があると明示し、その理解で進めるよう承認したため。以前のGame Runtime numeric coercion問題は実装上の類似前例として参照するが、今回はnull自体が正式sentinelである点を区別する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T20:28:00+09:00",
+      "created_at": "2026-08-23T20:28:00+09:00",
+      "updated_at": "2026-08-23T20:28:00+09:00"
     }
   ],
   "specifications": [
@@ -4228,7 +4284,8 @@
       "status": "Blocked",
       "execution_order": 180,
       "depends_on": [
-        "TASK-BAL-018"
+        "TASK-BAL-018",
+        "TASK-BAL-025"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-010/011を対象に既存Formal AI adapter/decision engineとMonster owner chainをBattle Packageへ接続する。\n- Monster Job→Stats→Enemy Budget→Skill/Equipment/Passive/AIをversioned snapshotとして固定する。\n- formal modeでAI/raw fixtureが最終Monster Stats/Budgetを独自決定できない。\n- missing Formal AI / owner provenanceはfail-closedにする。\n- 新AI engine / Monster generatorを作らない。",
       "work_type": "SOURCE_UPDATE",
@@ -4239,7 +4296,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T14:47:00+09:00"
+      "updated_at": "2026-08-23T20:28:00+09:00"
     },
     {
       "id": "TASK-BAL-020",
@@ -4340,6 +4397,26 @@
       },
       "created_at": "2026-08-23T18:01:00+09:00",
       "updated_at": "2026-08-23T18:42:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-025",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P3-6 fixed formation null max bound semanticsを修正・検証する",
+      "status": "Done",
+      "execution_order": 175,
+      "depends_on": [
+        "TASK-BAL-018"
+      ],
+      "acceptance_criteria": "- fixed_formation_scaling.max_multiplier=nullを「上限なし」として保持し、0へ暗黙変換しない。\n- 有限max_multiplierでは従来どおり上限Clampを行う。\n- nullを含むsettings snapshotの意味を変更しない。\n- base=10/effective=20の再現fixtureで倍率2/1.5/1、120 HP/18 ATK/9 AGIが240/27/9になることを確認する。\n- Gameplay Formula / Balance値 / Game Data / Current activeを変更しない。\n- protected test logicを変更しない。\n- Quick / Accept update / Release update / applied FullをPASSする。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-23T20:28:00+09:00"
+      },
+      "created_at": "2026-08-23T20:28:00+09:00",
+      "updated_at": "2026-08-23T20:28:00+09:00"
     }
   ],
   "checks": [
@@ -5745,6 +5822,52 @@
       "blocking": true,
       "created_at": "2026-08-23T20:02:01+09:00",
       "updated_at": "2026-08-23T20:02:01+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-6-NULL-MAX-B760-001",
+      "title": "GKS-B760 fixed-formation null max correction regression",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-025",
+      "status": "Passed",
+      "result": "Human-approved null=unbounded semantics implemented. Baseline reproduces 0/0/0 multipliers and 1/0/1 collapsed Monster; B760 target returns 2/1.5/1 and 240/27/9. Finite max=1.25 remains 1.25/1.25/1. Existing adventure P7B PASS. Compatibility/Exception Budget PASS. Quick 11/11, Accept update 13/13, Release update 13/13, applied Full 26/26; warnings/timeouts=0. Protected test logic changes=0; build-token synchronization only.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-025_FIXED-FORMATION-NULL-MAX-EVIDENCE.zip sha256=d5be2274c3a0903ef42b98516e0b6bd04078e4f48d172b32d722c92d18ac9ba1",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T20:28:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T20:28:00+09:00",
+      "updated_at": "2026-08-23T20:28:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-6-B760-APPLY-001",
+      "title": "GKS-B760 correction application and fresh-source reacquisition",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-019",
+      "status": "Pending",
+      "result": "TASK-BAL-025 GKS-B760 correction artifact is release-gated, but Current Source remains B759 until Human applies the update ZIP. Do not resolve CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001 or resume TASK-BAL-019 until GKS-B760 is applied and the original reproduction passes on fresh Current Source.",
+      "evidence": "pending deployment of DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip sha256=0b1e2b29fcaaf3e5349e3e3980873bcd494f52f6f092dfaeb3dd35a0948ff8ad",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T20:28:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T20:28:00+09:00",
+      "updated_at": "2026-08-23T20:28:00+09:00"
     }
   ],
   "workflow": {
@@ -5936,6 +6059,10 @@
     {
       "at": "2026-08-23T20:02:01+09:00",
       "message": "AI_START実行: Human提供のfresh SourceでGKS-B759 / GA-B486.211適用を確認し、package_manifest SHA-256一致・PACKAGE_MANIFEST_OK 642 files・Quick 11/11 PASSのためCHK-BAL-P3-6-B759-APPLY-001=Passed。TASK-BAL-019 P3-6を開始し、既存Formal AI / Monster owner chainをreuse-firstで監査・接続検討。検証中、assets/shared/js/adventure-encounter-resolver.jsのfixed_formation_scaling.max_multiplier=nullがclamp()で0上限として扱われ、base=10/effective=20のfixed formationでhp/attack/agi multiplierが0/0/0になる未計画不具合を再現。RULE-BAL-ISSUE-GATE-001に従い同一runの追加修正を停止し、探索的Source編集は全て破棄してexact B759へ復元。CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001=Failed/blocking、TASK-BAL-019=Blocked。Source更新Artifact/Build更新/Game Data/Current active/削除=0。TASK-BAL-020へ未着手。Evidence=DEV-V9-BALANCE-001_TASK-BAL-019_BLOCKED-EVIDENCE.zip sha256=f8d338c5d706d85ef8165b1bce9b49929a4fe3ea4e4c8a4f1422112a1586d482 Autonomous Correction analyzeはfailure_signature=88986153dfadf2ff0635 / decision=fail_closed / reason=failure_kind_not_safe_auto。Human明示指示前のCorrection Task生成・親depends_on変更は行っていない。"
+    },
+    {
+      "at": "2026-08-23T20:28:00+09:00",
+      "message": "Human confirmed fixed_formation_scaling.max_multiplier=null means no upper bound and authorized proceeding on that basis. TASK-BAL-025 added/approved/executed as SOURCE_UPDATE on exact GKS-B759 baseline. clamp now skips null min/max bounds instead of treating Number(null)=0 as a finite boundary. Baseline reproduction 0/0/0 -> target 2/1.5/1; probe Monster 1/0/1 -> 240/27/9; finite max=1.25 unchanged. Quick 11/11; Accept update 13/13; Release update 13/13; applied Full 26/26; warnings/timeouts=0; Compatibility/Exception Budget PASS; protected test logic changes=0; deletions/Game Data/Current active changes=0. Artifact=DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip sha256=0b1e2b29fcaaf3e5349e3e3980873bcd494f52f6f092dfaeb3dd35a0948ff8ad; Evidence=DEV-V9-BALANCE-001_TASK-BAL-025_FIXED-FORMATION-NULL-MAX-EVIDENCE.zip sha256=d5be2274c3a0903ef42b98516e0b6bd04078e4f48d172b32d722c92d18ac9ba1. Original Failed Check remains unresolved until Human applies B760 and fresh Current Source passes the original reproduction. TASK-BAL-019 remains Blocked; TASK-BAL-020 not started."
     }
   ],
   "authority": {
