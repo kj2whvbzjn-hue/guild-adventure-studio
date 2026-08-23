@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T05:48:21.851Z"
+    "updated_at": "2026-08-23T06:23:37.982Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
     "theme": "P3-2 Active Skill Authoring / Runtime Alignment — Next Development Task",
-    "goal": "P3後続Taskのwork_type分類修正はHuman承認済み。TASK-BAL-015はSOURCE_UPDATE / Todoへ解放。次の1 Development TaskはTASK-BAL-015のみ。この承認反映runではSource/Game Data/Current activeを変更せず、自動着手しない。"
+    "goal": "Current authorityでcast contractが確定し、TASK-BAL-015開始阻害要因は解消。TASK-BAL-015はSOURCE_UPDATE / Todo。RANDOM/Trigger/Condition/Resource/mpCost/cooldown/activationPriority/castTime、G07/runtimeContracts/Battle fail-closedを元のScopeどおり整合する。この状態更新runではSource/Game Data/Current active変更0件、自動着手しない。"
   },
   "project_rules": [
     {
@@ -496,6 +496,30 @@
       "approved_at": "2026-08-23T14:47:00+09:00",
       "created_at": "2026-08-23T14:46:00+09:00",
       "updated_at": "2026-08-23T14:47:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P3-CAST-CONTRACT-BOUNDARY-001",
+      "title": "Formal Skill cast authoring contract boundary",
+      "status": "Superseded",
+      "text": "Superseded before approval. DEV-V9-REORG-019 now formally defines cast in DEC-R42-CAST-001 / revised Current Skill/Battle/Range specifications. TASK-BAL-015 therefore retains cast within its original approved implementation scope.",
+      "rationale": "The proposal existed only because Current Formal Skill authoring had no cast field. Current authority now defines resource.castTime and its lifecycle, so separation is no longer required.",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T14:49:00+09:00",
+      "updated_at": "2026-08-23T15:22:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-CAST-AUTHORITY-001",
+      "title": "Current cast contractをBalance実装境界として採用する",
+      "status": "Approved",
+      "text": "DEV-V9-REORG-019 DEC-R42-CAST-001をCurrent gameplay authorityとして参照する。Formal Skill cast fieldはresource.castTime、単位Tick、integer>=0、0=instant。Cast start/Target lockはinitial validation後のaction execution start。Completionではfixed targetsのみ再検証しretarget/refillしない。Interruptはskill-unavailable/category-blocking effect/forced movement。Normal damage/DOT/reflectionはinterruptしない。Interrupt/fizzleではCost/Cooldown/effectを発生させず、final validation成功後にCost→Cooldown→Effectとする。",
+      "rationale": "Current Specification側でcast contractが正式確定したため、Balance側は推測せずそのContractへ実装を合わせる。",
+      "source_discussion_ids": [],
+      "approved_by": "CurrentSpecificationAuthority",
+      "approved_at": "2026-08-23T15:12:00+09:00",
+      "created_at": "2026-08-23T15:22:00+09:00",
+      "updated_at": "2026-08-23T15:22:00+09:00"
     }
   ],
   "specifications": [
@@ -3822,6 +3846,26 @@
       },
       "created_at": "2026-08-23T13:58:00+09:00",
       "updated_at": "2026-08-23T14:47:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-021",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P3-5前 Formal Skill Cast ContractをHuman/Specification Gateで確定する",
+      "status": "Todo",
+      "execution_order": 165,
+      "depends_on": [
+        "TASK-BAL-017"
+      ],
+      "acceptance_criteria": "- Current Skill/Range/Battle Specificationを根拠にcast authoring field名と単位を確定する。\n- Activation時Target固定、Cast完了時Range再検証、不発時cost/CD、interrupt責務との境界を明示する。\n- Schema/Registry/Compiler/Runtimeへ追加するContractをHuman承認する。\n- このTask自体ではSource/Game Dataを変更しない。\n- 2026-08-23: DEV-V9-REORG-019 DEC-R42-CAST-001でcast contractが正式確定したため、この独立Gate Taskは実行せずCancelled。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T14:49:00+09:00",
+      "updated_at": "2026-08-23T15:22:00+09:00"
     }
   ],
   "checks": [
@@ -4560,6 +4604,29 @@
       "blocking": false,
       "created_at": "2026-08-23T14:46:00+09:00",
       "updated_at": "2026-08-23T14:47:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-CAST-CONTRACT-GATE-001",
+      "title": "Formal Skill cast contract boundary Human Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-015",
+      "status": "Passed",
+      "result": "DEV-V9-REORG-019でcast contractが正式確定。Field=resource.castTime、Unit=Tick(integer>=0,0=instant)。Cast startはinitial validation後のaction execution start、同時にTarget lock。Completion時はfixed targetのみ再検証し、invalid/dead/out-of-rangeを除外、retarget/refillなし。Interruptはskill-unavailable/category-blocking effect/forced movement。通常damage/DOT/reflectionはinterruptしない。Interrupt/fizzleはCost/CD/effectなし。Final validation成功後にCost→Cooldown→Effect。よってTASK-BAL-015はcastを含む元のScopeで実装可能。",
+      "evidence": "DEV-V9-REORG-019_CAST-CONFIRMED_change-summary(1).txt; DEC-R42-CAST-001; SPEC-V9-019-SKILL-001 rev1; SPEC-V9-019-BATTLE-002 rev1; SPEC-V9-019-RANGE-001 rev1",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T15:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CurrentSpecificationAuthority",
+        "resolved_at": "2026-08-23T15:22:00+09:00",
+        "reason": "DEV-V9-REORG-019 formally defined the cast authoring/runtime contract.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T14:49:00+09:00",
+      "updated_at": "2026-08-23T15:22:00+09:00"
     }
   ],
   "workflow": {
@@ -4683,6 +4750,14 @@
     {
       "at": "2026-08-23T05:48:06.776Z",
       "message": "Development workflow moved to Verifying"
+    },
+    {
+      "at": "2026-08-23T14:49:00+09:00",
+      "message": "TASK-BAL-015 SOURCE_UPDATE開始前にAI_START順序とCurrent Skill Specificationを再確認。SPEC-V9-019-SKILL-001はFormal Resource fieldをmpCost/cooldown/activationPriorityまで定義し、cast field/単位は未定義。SPEC-V9-019-RANGE-001はCast完了時Range再検証を定義するがauthoring fieldは定義しない。TASK-BAL-015 acceptanceのcastをその場で推測実装するとGameplay Contract変更になるためRULE-BAL-ISSUE-GATE-001に従い停止。DEC-BAL-P3-CAST-CONTRACT-BOUNDARY-001をProposed、TASK-BAL-021をP3-5前のDEVELOPMENT_ONLY/Human Gate候補として登録。Source/Game Data/Current active変更0件。"
+    },
+    {
+      "at": "2026-08-23T15:22:00+09:00",
+      "message": "Human提供のDEV-V9-REORG-019 Cast確定change summaryを確認。DEC-R42-CAST-001およびSPEC-V9-019-SKILL-001/BATTLE-002/RANGE-001 rev1によりresource.castTimeとcast lifecycleがCurrent authorityで正式確定。旧DEC-BAL-P3-CAST-CONTRACT-BOUNDARY-001は承認前にSuperseded、TASK-BAL-021はCancelled。CHK-BAL-P3-CAST-CONTRACT-GATE-001=Passed。TASK-BAL-015=Todoへ復帰し元のcast含有Scopeを維持。Source/Game Data/Current active変更0件。"
     }
   ],
   "authority": {
