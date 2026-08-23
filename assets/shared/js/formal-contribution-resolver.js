@@ -13,7 +13,7 @@
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function object(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
   function req(v,label){const s=String(v??'').trim();if(!s)throw new Error(label+'が必要です。');return s}
-  function finite(v,label){const n=Number(v);if(!Number.isFinite(n))throw new Error(label+'は有限数で指定してください。');return n}
+  function finite(v,label){if(typeof v!=='number'||!Number.isFinite(v))throw new Error(label+'は有限なnumber型で指定してください。');return v}
   function strings(v,label){if(v==null)return[];if(!Array.isArray(v))throw new Error(label+'は配列で指定してください。');const out=v.map((x,i)=>req(x,`${label}[${i}]`));if(new Set(out).size!==out.length)throw new Error(label+'に重複があります。');return out}
   function containsDeprecatedStatusSuccess(value){return /status[_ -]?success|状態異常成功率/i.test(JSON.stringify(value??{}))}
   function validateFormalEquipment(record){
@@ -22,7 +22,7 @@
     const hasFormal=EQUIPMENT_FIELDS.some(k=>Object.prototype.hasOwnProperty.call(record,k));
     if(!hasFormal&&object(record.params?.stats))throw Object.assign(new Error(`Formal Equipment ${id}はlegacy params.statsを使用できません。`),{code:'FORMAL_EQUIPMENT_LEGACY_STATS_FORBIDDEN'});
     if(!hasFormal)throw new Error(`Formal Equipment ${id}に正式Contribution fieldがありません。`);
-    for(const key of [...EQUIPMENT_FIELDS,...REQUIREMENT_FIELDS])if(record[key]!=null)finite(record[key],`equipment.${key}`);
+    for(const key of [...EQUIPMENT_FIELDS,...REQUIREMENT_FIELDS])if(Object.prototype.hasOwnProperty.call(record,key))finite(record[key],`equipment.${key}`);
     const modIds=strings(record.mod_ids,'equipment.mod_ids');
     return {...clone(record),id,mod_ids:modIds};
   }
@@ -49,7 +49,7 @@
   function validateModCandidate(data,options={}){
     if(!object(data))throw new Error('MOD Candidate dataが必要です。');
     const definition=validateModDefinition(data.definition||data,options);
-    const balance=object(data.balance)?clone(data.balance):null;
+    const balance=object(data.balance)?data.balance:null;
     if(!balance)throw Object.assign(new Error(`MOD Candidate ${definition.id}にBalance値がありません。Definitionの数値を推測しません。`),{code:'FORMAL_MOD_BALANCE_REQUIRED'});
     const key=req(balance.balance_key||balance.key,'mod.balance.balance_key');
     if(key!==definition.balance_key)throw new Error(`MOD ${definition.id}のbalance_keyがDefinitionとCandidateで一致しません。`);
@@ -83,13 +83,15 @@
   }
   function validateFormalPassive(record,options={}){
     if(!object(record))throw new Error('Passive recordが必要です。');
+    const rawParams=object(record.params)?record.params:{};
+    const rawConditions=rawParams.ability_conditions==null?[]:rawParams.ability_conditions;
+    if(!Array.isArray(rawConditions))throw new Error(`Passive ${req(record.id,'passive.id')}.params.ability_conditionsは配列にしてください。`);
+    const checkedConditions=rawConditions.map((c,i)=>{if(!object(c))throw new Error(`Passive ${req(record.id,'passive.id')}.ability_conditions[${i}]が不正です。`);const stat=req(c.stat,`passive.ability_conditions[${i}].stat`).toUpperCase();if(!PASSIVE_STATS.includes(stat))throw new Error(`Passive ${req(record.id,'passive.id')}の能力条件statが不正です: ${stat}`);return {stat,min:finite(c.min,`passive.ability_conditions[${i}].min`)};});
     const out=clone(record);out.id=req(out.id,'passive.id');out.name=req(out.name,'passive.name');out.tags=strings(out.tags,'passive.tags');
     out.params=object(out.params)?out.params:{};
-    if(containsDeprecatedStatusSuccess(out))throw Object.assign(new Error(`Passive ${out.id}はCurrent非採用の状態異常成功率上昇を使用できません。`),{code:'FORMAL_PASSIVE_STATUS_SUCCESS_FORBIDDEN'});
-    for(const key of ['level','passive_level','plv','exp','experience'])if(Object.prototype.hasOwnProperty.call(out.params,key))throw new Error(`Passive ${out.id}は自身の成長fieldを持てません: params.${key}`);
-    const conditions=out.params.ability_conditions==null?[]:out.params.ability_conditions;
-    if(!Array.isArray(conditions))throw new Error(`Passive ${out.id}.params.ability_conditionsは配列にしてください。`);
-    out.params.ability_conditions=conditions.map((c,i)=>{if(!object(c))throw new Error(`Passive ${out.id}.ability_conditions[${i}]が不正です。`);const stat=req(c.stat,`passive.ability_conditions[${i}].stat`).toUpperCase();if(!PASSIVE_STATS.includes(stat))throw new Error(`Passive ${out.id}の能力条件statが不正です: ${stat}`);return {stat,min:finite(c.min,`passive.ability_conditions[${i}].min`)};});
+    if(containsDeprecatedStatusSuccess(record))throw Object.assign(new Error(`Passive ${out.id}はCurrent非採用の状態異常成功率上昇を使用できません。`),{code:'FORMAL_PASSIVE_STATUS_SUCCESS_FORBIDDEN'});
+    for(const key of ['level','passive_level','plv','exp','experience'])if(Object.prototype.hasOwnProperty.call(rawParams,key))throw new Error(`Passive ${out.id}は自身の成長fieldを持てません: params.${key}`);
+    out.params.ability_conditions=checkedConditions;
     out.params.mod_ids=strings(out.params.mod_ids,'passive.params.mod_ids');out.params.effect_ids=strings(out.params.effect_ids,'passive.params.effect_ids');
     const tagIds=options.tagIds instanceof Set?options.tagIds:null;if(tagIds)for(const tag of out.tags)if(!tagIds.has(tag))throw new Error(`Passive ${out.id}が未登録Tagを参照しています: ${tag}`);
     return out;
