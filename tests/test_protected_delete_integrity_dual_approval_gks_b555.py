@@ -10,7 +10,7 @@ def write_json(p,v):
     p.write_text(json.dumps(v,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
 def run(tmp):
-    return subprocess.run([sys.executable,'-B',str(CHECKER),str(tmp)],text=True,capture_output=True)
+    return subprocess.run([sys.executable,'-S','-B',str(CHECKER),str(tmp)],text=True,capture_output=True)
 
 with tempfile.TemporaryDirectory(prefix='protected-delete-dual-') as td:
     base=Path(td)

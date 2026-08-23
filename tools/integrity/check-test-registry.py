@@ -5,6 +5,7 @@ sys.dont_write_bytecode = True
 
 from pathlib import Path
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -99,15 +100,19 @@ passed = 0
 skipped = 0
 timeouts = 0
 results = []
-for item in registry.get("release_gate", []):
+
+# Tests that orchestrate nested subprocess/file fixtures remain serial. They are
+# already isolated, but keeping them out of the worker pool removes avoidable
+# contention while the remaining independent test processes run concurrently.
+SERIAL_RELEASE_TESTS = {
+    "tools/test_source_zip_binding.py",
+    "tests/test_protected_delete_integrity_dual_approval_gks_b555.py",
+    "php-runtime/tests/run.php",
+}
+MAX_PARALLEL_TESTS = 4
+
+def run_release_test(index: int, item: dict) -> dict:
     rel = item["path"]
-    contexts = item.get("contexts", ["source", "update"])
-    if context not in contexts:
-        skipped += 1
-        continue
-    if selection is not None and rel not in selection:
-        skipped += 1
-        continue
     runtime = item["runtime"]
     if runtime in ("python", "python3", "py"):
         command = [sys.executable, "-S", "-B", str(root / rel)]
@@ -116,38 +121,104 @@ for item in registry.get("release_gate", []):
     started = time.time()
     try:
         proc = subprocess.run(command, cwd=root, env=env, text=True, capture_output=True, timeout=args.timeout_per_test)
-        timed_out = False
+        duration_ms = round((time.time() - started) * 1000)
+        return {
+            "index": index, "path": rel,
+            "status": "pass" if proc.returncode == 0 else "fail",
+            "duration_ms": duration_ms, "returncode": proc.returncode,
+            "stdout": proc.stdout, "stderr": proc.stderr,
+        }
     except subprocess.TimeoutExpired as exc:
-        timed_out = True
-        proc = None
-        stdout = exc.stdout if isinstance(exc.stdout, str) else ''
-        stderr = exc.stderr if isinstance(exc.stderr, str) else ''
-    duration_ms = round((time.time() - started) * 1000)
-    if timed_out:
+        duration_ms = round((time.time() - started) * 1000)
+        return {
+            "index": index, "path": rel, "status": "timeout",
+            "duration_ms": duration_ms, "returncode": 124,
+            "timeout_seconds": args.timeout_per_test,
+            "stdout": exc.stdout if isinstance(exc.stdout, str) else "",
+            "stderr": exc.stderr if isinstance(exc.stderr, str) else "",
+        }
+    except OSError as exc:
+        duration_ms = round((time.time() - started) * 1000)
+        return {
+            "index": index, "path": rel, "status": "fail",
+            "duration_ms": duration_ms, "returncode": 127,
+            "stdout": "", "stderr": str(exc),
+        }
+
+active = []
+for index, item in enumerate(registry.get("release_gate", [])):
+    rel = item["path"]
+    contexts = item.get("contexts", ["source", "update"])
+    if context not in contexts:
+        skipped += 1
+        continue
+    if selection is not None and rel not in selection:
+        skipped += 1
+        continue
+    active.append((index, item))
+
+serial = [(index, item) for index, item in active if item["path"] in SERIAL_RELEASE_TESTS]
+parallel = [(index, item) for index, item in active if item["path"] not in SERIAL_RELEASE_TESTS]
+collected = [run_release_test(index, item) for index, item in serial]
+if parallel:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PARALLEL_TESTS, thread_name_prefix="release-test") as executor:
+        future_map = {executor.submit(run_release_test, index, item): (index, item) for index, item in parallel}
+        for future in concurrent.futures.as_completed(future_map):
+            index, item = future_map[future]
+            try:
+                collected.append(future.result())
+            except Exception as exc:
+                collected.append({
+                    "index": index, "path": item["path"], "status": "fail",
+                    "duration_ms": 0, "returncode": 1, "stdout": "",
+                    "stderr": f"RELEASE_TEST_RUNNER_EXCEPTION {type(exc).__name__}: {exc}",
+                })
+
+# Missing worker results are themselves a fail-closed test-runner error.
+returned = {x["index"] for x in collected}
+for index, item in active:
+    if index not in returned:
+        collected.append({
+            "index": index, "path": item["path"], "status": "fail",
+            "duration_ms": 0, "returncode": 1, "stdout": "",
+            "stderr": "RELEASE_TEST_RESULT_MISSING",
+        })
+
+# Restore registry order so report contents stay deterministic.
+collected.sort(key=lambda x: x["index"])
+for result in collected:
+    rel = result["path"]
+    public = {k: v for k, v in result.items() if k not in {"index", "stdout", "stderr"}}
+    results.append(public)
+    if result["status"] == "pass":
+        passed += 1
+        continue
+    if result["status"] == "timeout":
         timeouts += 1
-        results.append({'path': rel, 'status': 'timeout', 'duration_ms': duration_ms, 'timeout_seconds': args.timeout_per_test})
-        print(f"RELEASE_TEST_TIMEOUT {rel} timeout={args.timeout_per_test}s duration_ms={duration_ms}")
-        if stdout: print(stdout.rstrip())
-        if stderr: print(stderr.rstrip())
-        if args.json_output:
-            args.json_output.parent.mkdir(parents=True, exist_ok=True)
-            args.json_output.write_text(json.dumps({'status':'fail','failure_kind':'timeout','results':results}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
-        raise SystemExit(124)
-    if proc.returncode:
-        results.append({'path': rel, 'status': 'fail', 'duration_ms': duration_ms, 'returncode': proc.returncode})
+        print(f"RELEASE_TEST_TIMEOUT {rel} timeout={args.timeout_per_test}s duration_ms={result['duration_ms']}")
+    else:
         print(f"RELEASE_TEST_FAIL {rel}")
-        if proc.stdout:
-            print(proc.stdout.rstrip())
-        if proc.stderr:
-            print(proc.stderr.rstrip())
-        if args.json_output:
-            args.json_output.parent.mkdir(parents=True, exist_ok=True)
-            args.json_output.write_text(json.dumps({'status':'fail','failure_kind':'assertion','results':results}, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
-        raise SystemExit(1)
-    passed += 1
-    results.append({'path': rel, 'status': 'pass', 'duration_ms': duration_ms})
+    if result.get("stdout"):
+        print(result["stdout"].rstrip())
+    if result.get("stderr"):
+        print(result["stderr"].rstrip())
+
+if timeouts or any(x["status"] == "fail" for x in results):
+    failure_kind = "timeout" if timeouts else "assertion"
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        args.json_output.write_text(json.dumps({
+            "status": "fail", "failure_kind": failure_kind,
+            "mode": "impact" if selection is not None else "full", "context": context,
+            "release_gate": passed, "skipped": skipped,
+            "historical_gap": len(registry.get("historical_gap", [])), "timeouts": timeouts,
+            "timeout_per_test_seconds": args.timeout_per_test,
+            "max_parallel_tests": MAX_PARALLEL_TESTS, "results": results,
+        }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    raise SystemExit(124 if timeouts else 1)
+
 mode = 'impact' if selection is not None else 'full'
-summary = {'status':'pass','mode':mode,'context':context,'release_gate':passed,'skipped':skipped,'historical_gap':len(registry.get('historical_gap', [])),'timeouts':timeouts,'timeout_per_test_seconds':args.timeout_per_test,'results':results}
+summary = {'status':'pass','mode':mode,'context':context,'release_gate':passed,'skipped':skipped,'historical_gap':len(registry.get('historical_gap', [])),'timeouts':timeouts,'timeout_per_test_seconds':args.timeout_per_test,'max_parallel_tests':MAX_PARALLEL_TESTS,'results':results}
 if args.json_output:
     args.json_output.parent.mkdir(parents=True, exist_ok=True)
     args.json_output.write_text(json.dumps(summary, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
