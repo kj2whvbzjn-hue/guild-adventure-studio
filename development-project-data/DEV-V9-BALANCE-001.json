@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T05:43:33.566Z"
+    "updated_at": "2026-08-23T05:47:57.205Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
     "theme": "P3-2 Active Skill Authoring / Runtime Alignment — Next Development Task",
-    "goal": "GKS-B752の適用とfresh Current Source再取得を確認済み。TASK-BAL-014のtarget package_manifestとCurrent Sourceが完全一致し、manifest integrityもPASS。次の1 Development TaskはTASK-BAL-015（Active Skill Authoring / Runtime Alignment）。この確認runではSource改修を行わず、TASK-BAL-015へ自動着手しない。"
+    "goal": "P3後続Taskのwork_type分類修正はHuman承認済み。TASK-BAL-015はSOURCE_UPDATE / Todoへ解放。次の1 Development TaskはTASK-BAL-015のみ。この承認反映runではSource/Game Data/Current activeを変更せず、自動着手しない。"
   },
   "project_rules": [
     {
@@ -484,6 +484,18 @@
       "approved_at": "2026-08-23T13:58:00+09:00",
       "created_at": "2026-08-23T13:58:00+09:00",
       "updated_at": "2026-08-23T13:58:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P3-WORKTYPE-CORRECTION-001",
+      "title": "P3後続Taskのwork_type分類修正",
+      "status": "Approved",
+      "text": "AI_START Development Project Execution Protocol 12.3に従い、Source packageを変更するTaskはSOURCE_UPDATE、Development Project/検証のみのTaskはDEVELOPMENT_ONLYへ分類する。承認後の正しい分類は TASK-BAL-015=SOURCE_UPDATE、TASK-BAL-016=SOURCE_UPDATE、TASK-BAL-017=DEVELOPMENT_ONLY、TASK-BAL-018=SOURCE_UPDATE、TASK-BAL-019=SOURCE_UPDATE、TASK-BAL-020=SOURCE_UPDATE とする。Taskの目的・順序・依存関係は変更しない。",
+      "rationale": "TASK-BAL-015等はacceptance criteria上Source改修を要求する一方、現在work_type=DEVELOPMENT_ONLYであり、AI_START 12.3の『DEVELOPMENT_ONLYはDevelopment Projectだけを更新する』規則と矛盾するため。TASK-BAL-014で同種の誤分類が既に発生しているため、後続Taskを一括監査して再発防止する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T14:47:00+09:00",
+      "created_at": "2026-08-23T14:46:00+09:00",
+      "updated_at": "2026-08-23T14:47:00+09:00"
     }
   ],
   "specifications": [
@@ -3701,15 +3713,15 @@
         "TASK-BAL-014"
       ],
       "acceptance_criteria": "- REQ-BAL-SKILL-AUTH-001 / REQ-BAL-PKG-005を対象に既存G05/G07/Compiler/Runtimeを最小改修する。\n- RANDOM、Trigger、Condition、Resource、mpCost、cooldown、cast等を正式contractで生成・検証できる。\n- P2 330 core matrixのcontract-shape rejectを解消し、追加coverage batchをG07で検証する。\n- formal BattleではG07-approved runtimeContractsのみ使用し、missing/nonformal Skillをfail-closedにする。\n- 新Skill Generatorを作らない。",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-23T14:47:00+09:00"
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T14:42:00+09:00"
+      "updated_at": "2026-08-23T14:47:00+09:00"
     },
     {
       "id": "TASK-BAL-016",
@@ -3721,7 +3733,7 @@
         "TASK-BAL-015"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-004/006 / REQ-BAL-AUTH-001を対象に既存Equipment/Studio authoring/Tag-Modifier経路を拡張する。\n- Equipment formal fields→Contribution→MOD→RuntimeをCurrent Contractへ接続する。\n- Passive正式authoring/snapshot/contribution入口を既存Studio/Data Exchange/Tag-Modifier architectureへ追加する。\n- MOD batch/simulation入口を既存masters.mods ownerへ追加する。\n- 独立Equipment/Passive/MOD Generatorや重複Modifier engineを作らない。",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -3729,7 +3741,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T14:03:00+09:00"
+      "updated_at": "2026-08-23T14:47:00+09:00"
     },
     {
       "id": "TASK-BAL-017",
@@ -3761,7 +3773,7 @@
         "TASK-BAL-017"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-007/008/009を対象に既存Battle Package executorをCurrent Contractへ適合する。\n- Physical/Magical/Heal/Hit/Evasion/Resistance/Critical、Status duration/stack、MP/CD/Cast、multi-hit、KO/Revive、target lifecycleをGolden Caseで検証する。\n- Current formula topology / processing order / roundingを変更しない。\n- formal modeからlegacy fallbackを除外する。\n- Gameplay Specification変更が必要と判明した場合はその項目を停止しIssue Gateへ戻す。",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -3769,7 +3781,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-23T14:47:00+09:00"
     },
     {
       "id": "TASK-BAL-019",
@@ -3781,7 +3793,7 @@
         "TASK-BAL-018"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-010/011を対象に既存Formal AI adapter/decision engineとMonster owner chainをBattle Packageへ接続する。\n- Monster Job→Stats→Enemy Budget→Skill/Equipment/Passive/AIをversioned snapshotとして固定する。\n- formal modeでAI/raw fixtureが最終Monster Stats/Budgetを独自決定できない。\n- missing Formal AI / owner provenanceはfail-closedにする。\n- 新AI engine / Monster generatorを作らない。",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -3789,7 +3801,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-23T14:47:00+09:00"
     },
     {
       "id": "TASK-BAL-020",
@@ -3801,7 +3813,7 @@
         "TASK-BAL-019"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-012を対象に既存Result PackageへSkill/Passive/Equipment attribution、Status、Resource、cast/CD failure、Death/EHP、Formal AI trace、provenanceを追加する。\n- P1/P2/P3 fixtureを使い、same input + same seed + same versionでFormal end-to-end resultが再現する。\n- P3で対象とした14 Requirementのclosure evidenceをTask Evidence ZIPへまとめる。\n- legacy fallbackがFormal Evidenceへ混入しないことを確認する。\n- P4へ自動着手しない。",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -3809,7 +3821,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-23T14:47:00+09:00"
     }
   ],
   "checks": [
@@ -4525,6 +4537,29 @@
       "blocking": false,
       "created_at": "2026-08-23T14:32:00+09:00",
       "updated_at": "2026-08-23T14:42:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-WORKTYPE-CORRECTION-GATE-001",
+      "title": "P3 work_type correction Human Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-015",
+      "status": "Passed",
+      "result": "Human承認によりP3後続Taskのwork_typeをAI_START 12.3/12.4へ整合。TASK-BAL-015/016/018/019/020=SOURCE_UPDATE、TASK-BAL-017=DEVELOPMENT_ONLY。Task目的・順序・依存関係は変更なし。TASK-BAL-015のみTodoへ解放し、Source改修にはまだ着手していない。",
+      "evidence": "AI_START.md 12.3 / 12.4 + current Development Project TASK-BAL-015..020 definitions",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T14:47:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-23T14:47:00+09:00",
+        "reason": "Human explicitly approved the P3 work_type correction.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T14:46:00+09:00",
+      "updated_at": "2026-08-23T14:47:00+09:00"
     }
   ],
   "workflow": {
@@ -4636,6 +4671,14 @@
     {
       "at": "2026-08-23T14:42:00+09:00",
       "message": "HumanがTASK-BAL-014 corrected Studio更新ZIPを適用後、fresh Current Sourceを再提出。GKS-B752 / GA-B486.211、package_manifest sha256=9107e56315e74dbcd6d4f02cf810c1c45cd20b4431bda899346da44b53eb72b9はapproved targetと完全一致。manifest 640件を全件再検証しmissing/size/hash mismatch=0。CHK-BAL-P3-1-B752-APPLY-001=Passed、TASK-BAL-015をTodoへ解放。このrunではSource/Game Data/Current active変更0件、TASK-BAL-015へ自動着手していない。"
+    },
+    {
+      "at": "2026-08-23T14:46:00+09:00",
+      "message": "TASK-BAL-015開始前にAI_START必須手順を再確認。TASK-BAL-015/016/018/019/020はSource改修Taskにもかかわらずwork_type=DEVELOPMENT_ONLYで、Development Project Execution Protocol 12.3と矛盾することを検出。TASK-BAL-017はStatic CalibrationのためDEVELOPMENT_ONLYが正しい。RULE-BAL-ISSUE-GATE-001に従い実装を停止し、DEC-BAL-P3-WORKTYPE-CORRECTION-001をProposedとして登録。TASK-BAL-015=Blocked。Source/Game Data/Current active変更0件。"
+    },
+    {
+      "at": "2026-08-23T14:47:00+09:00",
+      "message": "HumanがDEC-BAL-P3-WORKTYPE-CORRECTION-001を承認。TASK-BAL-015/016/018/019/020をSOURCE_UPDATE、TASK-BAL-017をDEVELOPMENT_ONLYへ修正。Taskの目的・順序・依存関係は維持。CHK-BAL-P3-WORKTYPE-CORRECTION-GATE-001=Passed。TASK-BAL-015=Todoへ解放し、後続TASK-BAL-016〜020はBlocked維持。このrunではSource/Game Data/Current active変更0件、TASK-BAL-015へ自動着手していない。"
     }
   ],
   "authority": {
