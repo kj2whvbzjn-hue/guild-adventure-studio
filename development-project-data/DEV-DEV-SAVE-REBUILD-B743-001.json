@@ -10,7 +10,7 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T01:17:19.111Z"
+    "updated_at": "2026-08-23T01:35:14.027Z"
   },
   "project_context": {
     "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-DEV-SAVE-LEGACY",
     "work_box_id": "BOX-DEV-SAVE-EXEC-P1",
-    "theme": "TASK-DEV-SAVE-021 Accept Gate解消",
-    "goal": "旧側CRUD二重定義12件の撤去実装は完了。正式AcceptラッパーのタイムアウトをGate失敗として保持し、原因を確定・解消するまでTASK-022へ進まない。"
+    "theme": "Phase 1 TASK-DEV-SAVE-022",
+    "goal": "TASK-021正式Accept PASSを確認済み。次は未使用Git Store/host API撤去と旧Git Store CSS参照解除を実施し、Phase 1 Gate(TASK-014)へ進む。"
   },
   "project_rules": [
     {
@@ -142,11 +142,11 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B746",
+    "studio_build": "GKS-B747",
     "game_build": "GA-B486.211",
-    "source_label": "GKS-B746 TASK-DEV-SAVE-020 dead Development UI cleanup target",
+    "source_label": "GKS-B747 TASK-DEV-SAVE-021 accepted current full source",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-23T09:49:00+09:00"
+    "recorded_at": "2026-08-23T10:21:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -208,8 +208,8 @@
         "TASK-DEV-SAVE-021"
       ],
       "result": "Applied",
-      "evidence": "Candidate implementation complete. Removed only the first/obsolete definitions of start/close/edit/save for Discussion, Decision, Specification (12 definitions total) from studio/index.html. Remaining navigation-aware definitions each occur once and preserve selectedDev* state, showDevRecordEditor/detail/list navigation, and Specification Candidate approval guard. development-git-store.js unchanged; Registry/localStorage/Git connection/read auth unchanged; file deletion=0. Candidate artifact_id=GKS-B747-ed0914f36c88; artifact ZIP SHA256=c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025; verification SHA256=11aafe19a474d2ff5cb4b735f08b61bebab36ffc0a9af67d7e1da0cf56f04be9; sharded Full aggregate SHA256=07b13914b51c992cc35417b013cf04457e45458a0ec63839fee628c388444199. Update Quick 13/13 PASS, Test Integrity PASS, Impact Plan mode=full, Sharded Full FULL_PASS. Official accept wrapper did not complete within execution environment timeout and is not recorded as PASS.",
-      "recorded_at": "2026-08-23T10:03:00+09:00"
+      "evidence": "GKS-B747 TASK-021 implementation verified and accepted. Old duplicate Discussion/Decision/Specification CRUD definitions removed; modern definitions retained once each. No Git Store/Registry/localStorage/read-auth change; file deletion=0. Baseline Quick 11/11 PASS; target Quick 11/11 PASS; update Quick 13/13 PASS; Test Integrity PASS; Impact mode=full; sharded Full FULL_PASS 5/5 / 25/25. Original background Accept log later confirmed rc=0 with INSPECTION_PASS 13/13, source_update_applied_state=38632ms. Independent rerun also PASS 13/13 with source_update_applied_state=38374ms; report SHA256=6facc52b1381becdcc5760cd07c8a0dfd13d91b5e138247fff3e17252373e5cd. artifact ZIP SHA256=c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025. Current downloaded B747 full source ZIP SHA256=7608f3142a658010e27537c28027040f0ab375bba69dae98e7e83ae2055280a9, manifest SHA256=b26d697b7e6c7a41fd7938913df4f57f7e5a0a02898ed54b9042558dac22419a, source tree SHA256=ed0914f36c88c766b7f33a035c8a1515f49caa33531714630bb6c9b70bd1a1de.",
+      "recorded_at": "2026-08-23T10:21:00+09:00"
     }
   ],
   "discussions": [
@@ -277,19 +277,35 @@
     {
       "id": "DISC-DEV-SAVE-TASK021-001",
       "title": "TASK-DEV-SAVE-021 実装完了・Accept Gate保留",
-      "status": "Open",
-      "summary": "旧側Discussion/Decision/Specification CRUD二重定義12件の撤去は完了したが、正式SOURCE_UPDATE Acceptラッパーが実行環境側で完了せず、TASK-021をBlockedで停止した。",
+      "status": "Resolved",
+      "summary": "旧側CRUD二重定義12件の撤去は正式Accept済み。前回Blocked判定はforeground実行環境のwall-clock timeoutをAccept失敗と誤認した記録上の問題だった。",
       "body": "【実装】\n- studio/index.htmlの旧側重複定義12件だけ撤去。\n- 現行側start/close/edit/saveはDiscussion/Decision/Specificationそれぞれ各1定義を保持。\n- selectedDev*、showDevRecordEditor、detail/list navigationを保持。\n- Specification Candidate承認ガードを保持。\n- development-git-store.js変更0。\n- Registry/localStorage/Git接続/read auth変更0。\n- GitHubファイル物理削除0。\n\n【Candidate】\nStudio Build: GKS-B747\nartifact_id: GKS-B747-ed0914f36c88\nbaseline source tree: ef23f4f358b985bacb2f86fb5b7c2f192887d4c2bc9fd329047d9a398c3fb67f\ntarget source tree: ed0914f36c88c766b7f33a035c8a1515f49caa33531714630bb6c9b70bd1a1de\nartifact ZIP SHA256: c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025\n\n【成功した検査】\n- B746 baseline Quick: 11/11 PASS\n- B747 target source Quick: 11/11 PASS\n- Update Quick: 13/13 PASS\n- Test Integrity: PASS / protected substantive changes 0\n- Impact Plan: PASS / mode=full / studio/index.html unclassified\n- Official Sharded Full: FULL_PASS / 5/5 shards / 25/25 source-context steps\n\n【未完了】\n- run.py accept --context update のラッパー実行が外側実行時間制限内に完了しなかった。\n- timeoutをPASSへ読み替えない。\n- CHECK-DEV-SAVE-034をblocking Failedとして追加。\n- TASK-022へは進まない。\n\n【次回】\n同じAccept失敗を再試行する前に、自律Correction規則に従い原因解析を行う。Source実装を推測変更せず、Accept orchestrationのどの段階が長時間化しているかを特定する。",
-      "open_questions": "Acceptラッパー長時間化の原因が検査オーケストレーションか、適用後Full内の特定stepかを証跡で特定する。",
-      "conclusion": "実装自体はAcceptance内容を満たすが、必須Accept Gate未完了のためTASK-021はDoneにせずBlocked。TASK-022未着手。",
+      "open_questions": "",
+      "conclusion": "TASK-DEV-SAVE-021はDone。Acceptは13/13 PASSで再現済み。原因はStudio検査コードではなく、長時間コマンドをforeground tool callの完了可否だけで判定した実行手順。今後Accept/Fullは十分な外側実行時間を与えるか、processを開始後pollしてreturn code/reportで判定する。",
       "related_discussion_ids": [
         "DISC-DEV-SAVE-PRE-REMOVE-001",
         "DISC-DEV-SAVE-EXEC-001",
         "DISC-DEV-SAVE-TASK020-001"
       ],
-      "artifact_note": "GKS-B747-TASK-DEV-SAVE-021-duplicate-crud-cleanup-update.zip / sha256=c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025 / deployment hold until CHECK-DEV-SAVE-034 resolved",
+      "artifact_note": "GKS-B747-TASK-DEV-SAVE-021-duplicate-crud-cleanup-update.zip / sha256=c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025; accept rerun report sha256=6facc52b1381becdcc5760cd07c8a0dfd13d91b5e138247fff3e17252373e5cd",
       "created_at": "2026-08-23T10:03:00+09:00",
-      "updated_at": "2026-08-23T10:03:00+09:00"
+      "updated_at": "2026-08-23T10:21:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-SAVE-ACCEPT-DIAG-001",
+      "title": "TASK-021 Acceptタイムアウト原因特定",
+      "status": "Resolved",
+      "summary": "Accept自体は正常で、前回のBlockedは外側foreground tool実行の時間制限と結果確認不足による誤判定。",
+      "body": "【証拠1: 前回実行済みログ】\n/mnt/data/task021_accept_bg.out に INSPECTION_PASS profile=accept passed=13 failed=0 warnings=0 timeouts=0 が残っていた。\n/mnt/data/task021_accept_bg.rc は 0。\nsource_update_applied_state は 38632ms、quick_syntaxは3519ms。\n\n【証拠2: 同条件再実行】\nGKS-B747更新ZIPをexact GKS-B746 baselineへ重ねるrun.py acceptを再実行。\n13/13 PASS / failed=0 / warnings=0 / timeouts=0。\nsource_update_applied_state=38374ms、quick_syntax=3214ms。\nAccept全体はおよそ43秒で終了。\n\n【原因】\n前回はforegroundのツール呼出が外側wall-clockで終了したため、子processが継続して最終的にrc=0となった事実を確認する前に『Accept未完了』と記録した。run.py内部の120秒step timeoutには到達しておらず、Project側検査ロジックのtimeoutではない。\n\n【再発防止】\n- Accept/Fullの成功判定はtool callの表示結果ではなくprocess return code + inspection reportで行う。\n- 長時間Gateは外側実行時間を十分に取る、またはprocessを開始してpollする。\n- foreground call timeoutだけをGate FAILへ変換しない。processが残っている場合は終了結果を確認する。\n- 内部reportのfailure_kind=timeoutが存在する場合だけ検査timeoutとして扱う。",
+      "open_questions": "",
+      "conclusion": "Source修正不要。TASK-021のAccept GateをPassedへ訂正し、TASK-022へ進行可能。",
+      "related_discussion_ids": [
+        "DISC-DEV-SAVE-TASK021-001",
+        "DISC-DEV-SAVE-EXEC-001"
+      ],
+      "artifact_note": "run_accept_report.json sha256=6facc52b1381becdcc5760cd07c8a0dfd13d91b5e138247fff3e17252373e5cd",
+      "created_at": "2026-08-23T10:21:00+09:00",
+      "updated_at": "2026-08-23T10:21:00+09:00"
     }
   ],
   "decisions": [
@@ -1102,12 +1118,23 @@
       "id": "FLAG-DEV-SAVE-022",
       "scope_type": "Project",
       "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
-      "key": "TASK021_ACCEPT_GATE_TIMEOUT",
-      "value": "BLOCKING",
-      "source": "GKS-B747-task021",
-      "note": "B747 candidateはQuick/Test Integrity/Impact/Sharded FullがPASS。正式accept wrapperのみ完了せず、CHECK-DEV-SAVE-034解決までTASK-022へ進まない。",
+      "key": "TASK021_ACCEPT_GATE_RESOLVED",
+      "value": "PASS",
+      "source": "GKS-B747-accept-diagnosis",
+      "note": "前回background acceptはrc=0で既にPASSしており、独立再実行でも13/13 PASSを確認。前回のBlockedは外側foreground tool timeoutの誤判定。Source修正不要。",
       "created_at": "2026-08-23T10:03:00+09:00",
-      "updated_at": "2026-08-23T10:03:00+09:00"
+      "updated_at": "2026-08-23T10:21:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-023",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "CURRENT_B747_FULL_SOURCE_BINDING",
+      "value": "ed0914f36c88c766b7f33a035c8a1515f49caa33531714630bb6c9b70bd1a1de",
+      "source": "GKS-B747-accept-diagnosis",
+      "note": "Downloaded full source ZIP sha256=7608f3142a658010e27537c28027040f0ab375bba69dae98e7e83ae2055280a9; package_manifest sha256=b26d697b7e6c7a41fd7938913df4f57f7e5a0a02898ed54b9042558dac22419a; source tree equals TASK-021 target exactly.",
+      "created_at": "2026-08-23T10:21:00+09:00",
+      "updated_at": "2026-08-23T10:21:00+09:00"
     }
   ],
   "system_events": [],
@@ -1677,7 +1704,7 @@
       "id": "TASK-DEV-SAVE-021",
       "box_id": "BOX-DEV-SAVE-EXEC-P1",
       "title": "Discussion/Decision/Specification二重定義の旧側だけ撤去する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 81,
       "depends_on": [
         "TASK-DEV-SAVE-020"
@@ -1691,7 +1718,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T10:03:00+09:00"
+      "updated_at": "2026-08-23T10:21:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-022",
@@ -2711,22 +2738,22 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-DEV-SAVE-021",
-      "status": "Failed",
-      "result": "TIMEOUT",
-      "evidence": "実装検証: old duplicate CRUD 12件撤去、現行12定義を各1件保持。Baseline Quick 11/11 PASS; Target Quick 11/11 PASS; Update Quick 13/13 PASS; Test Integrity PASS(protected_changed=0, build_only=12, machine_hash_sync=1); Impact Plan PASS mode=full; official sharded Full FULL_PASS 5/5 shards, 25/25 source-context steps. ただし python3 tools/inspection/run.py accept --context update --baseline-source <B746> は外側実行制限内に完了せず、正式Accept成功とは扱わない。",
-      "checked_by": "AI implementation",
-      "checked_at": "2026-08-23T10:03:00+09:00",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "原因再調査で前回生成済み /mnt/data/task021_accept_bg.out と task021_accept_bg.rc を確認。前回background acceptは既に rc=0 / INSPECTION_PASS profile=accept passed=13 failed=0 warnings=0 timeouts=0。source_update_applied_state=38632ms。さらに同一B747 update + exact B746 baselineでrun.py acceptを再実行し、13/13 PASS / warnings=0 / timeouts=0、source_update_applied_state=38374ms、quick_syntax=3214msを再現。rerun report SHA256=6facc52b1381becdcc5760cd07c8a0dfd13d91b5e138247fff3e17252373e5cd。",
+      "checked_by": "AI accept timeout diagnosis",
+      "checked_at": "2026-08-23T10:21:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI accept timeout diagnosis",
+        "resolved_at": "2026-08-23T10:21:00+09:00",
+        "reason": "前回のforeground tool executionが外部wall-clockで終了した後もAccept processは継続し、実際には約43秒で正常終了していた。Project側Accept wrapperのtimeoutではない。",
         "mode": ""
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-23T10:03:00+09:00",
-      "updated_at": "2026-08-23T10:03:00+09:00"
+      "updated_at": "2026-08-23T10:21:00+09:00"
     }
   ],
   "workflow": {
@@ -2770,6 +2797,10 @@
     {
       "at": "2026-08-23T10:03:00+09:00",
       "message": "TASK-DEV-SAVE-021の旧側CRUD重複12定義撤去をGKS-B747候補として実装。Update Quick/Test Integrity/Impact/Sharded FullはPASSしたが、正式Acceptラッパーが実行時間制限内に完了せずCHECK-DEV-SAVE-034をblocking Failedとして追加。TASK-021はBlocked、TASK-022未着手。"
+    },
+    {
+      "at": "2026-08-23T10:21:00+09:00",
+      "message": "TASK-021 Accept timeout原因を特定。前回background acceptは実際にrc=0 / 13/13 PASSで完了済み、再実行も13/13 PASS。前回Blockedは外側foreground tool wall-clockと結果確認不足による誤判定。TASK-021をDone、CHECK-034をPassedへ訂正し、current baselineをexact GKS-B747 full sourceへ更新。"
     }
   ]
 }
