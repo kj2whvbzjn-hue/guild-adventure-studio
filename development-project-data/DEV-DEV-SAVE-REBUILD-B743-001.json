@@ -10,7 +10,7 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T00:31:17.276Z"
+    "updated_at": "2026-08-23T00:53:20.208Z"
   },
   "project_context": {
     "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
@@ -20,7 +20,7 @@
     "architecture_id": "ARCH-DEV-SAVE-LEGACY",
     "work_box_id": "BOX-DEV-SAVE-EXEC-P1",
     "theme": "Phase 1 死コードのみ安全撤去",
-    "goal": "Phase 0完了・保存GET仕様修正・read auth先行削除Blocking済み。呼出元0の死コードだけを撤去しPhase 1 Gateへ進む。"
+    "goal": "TASK-DEV-SAVE-020完了。次はTASK-DEV-SAVE-021のDiscussion/Decision/Specification二重定義旧側だけを撤去する。TASK-022以降へ自動着手しない。"
   },
   "project_rules": [
     {
@@ -142,11 +142,11 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B745",
+    "studio_build": "GKS-B746",
     "game_build": "GA-B486.211",
-    "source_label": "GKS-B745 development git Branch+PAT save flow",
+    "source_label": "GKS-B746 TASK-DEV-SAVE-020 dead Development UI cleanup target",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-23T08:52:00+09:00"
+    "recorded_at": "2026-08-23T09:49:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -182,6 +182,20 @@
       "result": "Applied",
       "evidence": "Current exact source ZIP SHA256=1e4008b447d4d693f228c6964a751d507eeb42363b700e899de83e756fa1dcad; tree SHA256=d4c07206e7001e361c67c9d515045e45903e769a7afb72a8a2e50f59f489770f; Quick PASS 12/12 warnings=0 timeouts=0 evidence=152e38850c0f7490cffdbdf99af526e1d784fa850d4dcb797b0b85fab86d9e84; TASK-018 matrix SHA256=6634717d877abc8890fffbb182e2f2dc608bf8fb1ad3755348227df79a880213; TASK-019 characterization SHA256=448804bc6099b622eaadcb03af13a7d0d7fbfca5c62ae6afafdf09e7842ce0b5. No Studio Source files modified.",
       "recorded_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "IMPL-DEV-SAVE-TASK020-B746-001",
+      "studio_build": "GKS-B746",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-DEV-SAVE-EXEC-P1"
+      ],
+      "task_ids": [
+        "TASK-DEV-SAVE-020"
+      ],
+      "result": "Applied",
+      "evidence": "Baseline Full Source guild-adventure-studio-sub(20260823-003214).zip SHA256=9c07eba3fe71c33ed5ef8ed4761b916f96f03c68248ffe1e08e3e07bcfa9d62e; baseline tree=cd396f6150eed3eb5a1971a260254acf5a3a53b0f40a7d2e323e1b4dcd47f331; target tree=e97f0512293e7796e7b2fed29d2335fe4fa80088e349afad83eeff137bedd134; target manifest SHA256=e84eb3dbaf94f59d21cfb849ec354903f492ec3456320e8d4dcccbf513b59981; artifact_id=GKS-B746-e97f0512293e; artifact ZIP SHA256=aa608d553a0873cd446a3a3cde3acb29d586c21fe5307015e8be1ced7c02f52c; Quick update 13/13 PASS evidence=63e9834b1fb9a4b087b4e3c42abe63d020a94f099f49774f80b8c0636c62ebc2; Accept update 13/13 PASS evidence=41e1ad2139aca1860c353901f4941ac5aa695d939a6efb3db290512ce5016565; applied Full 26/26 PASS; Git I/O characterization PASS; file deletion=0.",
+      "recorded_at": "2026-08-23T09:49:00+09:00"
     }
   ],
   "discussions": [
@@ -228,6 +242,23 @@
       "artifact_note": "TASK018 matrix=GKS-B745-TASK-018-IMPLEMENTATION-MATRIX.json sha256=6634717d877abc8890fffbb182e2f2dc608bf8fb1ad3755348227df79a880213; TASK019 characterization=GKS-B745-TASK-019-CHARACTERIZATION-RESULT.json sha256=448804bc6099b622eaadcb03af13a7d0d7fbfca5c62ae6afafdf09e7842ce0b5",
       "created_at": "2026-08-23T09:24:00+09:00",
       "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-SAVE-TASK020-001",
+      "title": "TASK-DEV-SAVE-020 実施結果 — 呼出元0旧Development UI撤去",
+      "status": "Resolved",
+      "summary": "撤去前台帳AのうちTASK-020担当のstudio/index.html未参照UI/Settings/補助関数11個だけを撤去し、現役Registry/localStorage/Git接続/read authとTASK-021/022対象には触れていない。",
+      "body": "【撤去したsymbol 11件】\n- createDevelopmentProjectTemplate\n- toggleDevelopmentProjectSettings\n- switchDevelopmentProject\n- saveDevelopmentProjectSettings\n- renameDevelopmentProject\n- openDevelopmentProjectSettingsFromDetail\n- openDevelopmentGitStore\n- continueDevelopmentProject\n- continueCurrentDevelopmentProject\n- resetAllDevelopmentProjects\n- renderDevelopmentAllDataStatus\n\n【変更していないもの】\n- development-git-store.js: baselineとtargetで同一bytes\n- DEVELOPMENT_REGISTRY_KEY / saveDevelopmentProjectRegistry / ensureDevelopmentProjectRegistry\n- getRegistryEntry / DEFAULT_CONNECTION / ghToken read auth\n- Discussion/Decision/Specification二重定義（TASK-021）\n- Git Store未使用API / host API / CSS参照（TASK-022）\n- GitHubファイル物理削除: 0件\n\n【Build追随】\nStudio Build GKS-B745 → GKS-B746。sync-current-build-markers.py --writeでBuild tokenを同期し、critical-runtime-manifestは変更実体からsize/SHA-256だけ機械同期した。Test Integrityはbuild_only=12 / machine_hash_sync=1 / substantive protected change=0。\n\n【検査】\n- TASK-019 Git I/O characterization: PASS。Git Store無変更のため撤去前sequenceを維持。\n- SOURCE_UPDATE Quick: 13/13 PASS / warnings 0 / timeouts 0。\n- SOURCE_UPDATE Accept: 13/13 PASS / warnings 0 / timeouts 0。Impactはstudio/index.htmlをunclassifiedとしてFullへ昇格。\n- Applied-state Full: 26/26 PASS / warnings 0 / timeouts 0。\n- applied tree SHA256: e97f0512293e7796e7b2fed29d2335fe4fa80088e349afad83eeff137bedd134\n- artifact_id: GKS-B746-e97f0512293e\n",
+      "open_questions": "",
+      "conclusion": "TASK-DEV-SAVE-020のAcceptance Criteriaを満たした。次Taskへ自動着手しない。Phase 1 Gate(TASK-014)はTASK-021/022完了後に実行する。",
+      "related_discussion_ids": [
+        "DISC-DEV-SAVE-PRE-REMOVE-001",
+        "DISC-DEV-SAVE-EXEC-001",
+        "DISC-DEV-SAVE-PREFLIGHT-001"
+      ],
+      "artifact_note": "GKS-B746-TASK-DEV-SAVE-020-dead-development-ui-cleanup-update.zip / sha256=aa608d553a0873cd446a3a3cde3acb29d586c21fe5307015e8be1ced7c02f52c",
+      "created_at": "2026-08-23T09:49:00+09:00",
+      "updated_at": "2026-08-23T09:49:00+09:00"
     }
   ],
   "decisions": [
@@ -1584,7 +1615,7 @@
       "id": "TASK-DEV-SAVE-020",
       "box_id": "BOX-DEV-SAVE-EXEC-P1",
       "title": "呼出元0の旧Development UI・Settings・補助関数だけ撤去する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 80,
       "depends_on": [
         "TASK-DEV-SAVE-019"
@@ -1598,7 +1629,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:49:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-021",
@@ -2631,6 +2662,29 @@
       "blocking": false,
       "created_at": "2026-08-23T09:24:00+09:00",
       "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-034",
+      "title": "TASK-020対象の未参照symbolだけが撤去され現役Git/Registry経路が保持される",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-020",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "11対象symbolはtarget studio/index.htmlから0件。development-git-store.jsはbaseline/target byte-identical。Registry/localStorage/Git connection/read authは未変更。Git I/O characterization PASS。Update Quick 13/13 PASS; Accept 13/13 PASS; applied Full 26/26 PASS; physical file deletion=0.",
+      "checked_by": "AI TASK-020 implementation",
+      "checked_at": "2026-08-23T09:49:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI TASK-020 implementation",
+        "resolved_at": "2026-08-23T09:49:00+09:00",
+        "reason": "TASK-020 acceptance criteria and mandatory SOURCE_UPDATE gates passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:49:00+09:00",
+      "updated_at": "2026-08-23T09:49:00+09:00"
     }
   ],
   "workflow": {
@@ -2666,6 +2720,10 @@
     {
       "at": "2026-08-23T09:24:00+09:00",
       "message": "実行前3ブロッカーを閉塞。TASK-018/019完了、通常保存pre/post GET旧仕様を修正、ghToken/read auth先行削除にBlocking Gateを追加。Source変更・削除は0件。"
+    },
+    {
+      "at": "2026-08-23T09:49:00+09:00",
+      "message": "TASK-DEV-SAVE-020完了: 呼出元0の旧Development UI/Settings/補助関数11件のみ撤去。GKS-B746。Quick 13/13・Accept 13/13・Applied Full 26/26 PASS。GitHubファイル削除0件。次Taskへ未着手。"
     }
   ]
 }
