@@ -10,7 +10,7 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T00:53:20.208Z"
+    "updated_at": "2026-08-23T01:17:19.111Z"
   },
   "project_context": {
     "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-DEV-SAVE-LEGACY",
     "work_box_id": "BOX-DEV-SAVE-EXEC-P1",
-    "theme": "Phase 1 死コードのみ安全撤去",
-    "goal": "TASK-DEV-SAVE-020完了。次はTASK-DEV-SAVE-021のDiscussion/Decision/Specification二重定義旧側だけを撤去する。TASK-022以降へ自動着手しない。"
+    "theme": "TASK-DEV-SAVE-021 Accept Gate解消",
+    "goal": "旧側CRUD二重定義12件の撤去実装は完了。正式AcceptラッパーのタイムアウトをGate失敗として保持し、原因を確定・解消するまでTASK-022へ進まない。"
   },
   "project_rules": [
     {
@@ -196,6 +196,20 @@
       "result": "Applied",
       "evidence": "Baseline Full Source guild-adventure-studio-sub(20260823-003214).zip SHA256=9c07eba3fe71c33ed5ef8ed4761b916f96f03c68248ffe1e08e3e07bcfa9d62e; baseline tree=cd396f6150eed3eb5a1971a260254acf5a3a53b0f40a7d2e323e1b4dcd47f331; target tree=e97f0512293e7796e7b2fed29d2335fe4fa80088e349afad83eeff137bedd134; target manifest SHA256=e84eb3dbaf94f59d21cfb849ec354903f492ec3456320e8d4dcccbf513b59981; artifact_id=GKS-B746-e97f0512293e; artifact ZIP SHA256=aa608d553a0873cd446a3a3cde3acb29d586c21fe5307015e8be1ced7c02f52c; Quick update 13/13 PASS evidence=63e9834b1fb9a4b087b4e3c42abe63d020a94f099f49774f80b8c0636c62ebc2; Accept update 13/13 PASS evidence=41e1ad2139aca1860c353901f4941ac5aa695d939a6efb3db290512ce5016565; applied Full 26/26 PASS; Git I/O characterization PASS; file deletion=0.",
       "recorded_at": "2026-08-23T09:49:00+09:00"
+    },
+    {
+      "id": "IMPL-DEV-SAVE-TASK021-B747-001",
+      "studio_build": "GKS-B747",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-DEV-SAVE-EXEC-P1"
+      ],
+      "task_ids": [
+        "TASK-DEV-SAVE-021"
+      ],
+      "result": "Applied",
+      "evidence": "Candidate implementation complete. Removed only the first/obsolete definitions of start/close/edit/save for Discussion, Decision, Specification (12 definitions total) from studio/index.html. Remaining navigation-aware definitions each occur once and preserve selectedDev* state, showDevRecordEditor/detail/list navigation, and Specification Candidate approval guard. development-git-store.js unchanged; Registry/localStorage/Git connection/read auth unchanged; file deletion=0. Candidate artifact_id=GKS-B747-ed0914f36c88; artifact ZIP SHA256=c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025; verification SHA256=11aafe19a474d2ff5cb4b735f08b61bebab36ffc0a9af67d7e1da0cf56f04be9; sharded Full aggregate SHA256=07b13914b51c992cc35417b013cf04457e45458a0ec63839fee628c388444199. Update Quick 13/13 PASS, Test Integrity PASS, Impact Plan mode=full, Sharded Full FULL_PASS. Official accept wrapper did not complete within execution environment timeout and is not recorded as PASS.",
+      "recorded_at": "2026-08-23T10:03:00+09:00"
     }
   ],
   "discussions": [
@@ -259,6 +273,23 @@
       "artifact_note": "GKS-B746-TASK-DEV-SAVE-020-dead-development-ui-cleanup-update.zip / sha256=aa608d553a0873cd446a3a3cde3acb29d586c21fe5307015e8be1ced7c02f52c",
       "created_at": "2026-08-23T09:49:00+09:00",
       "updated_at": "2026-08-23T09:49:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-SAVE-TASK021-001",
+      "title": "TASK-DEV-SAVE-021 実装完了・Accept Gate保留",
+      "status": "Open",
+      "summary": "旧側Discussion/Decision/Specification CRUD二重定義12件の撤去は完了したが、正式SOURCE_UPDATE Acceptラッパーが実行環境側で完了せず、TASK-021をBlockedで停止した。",
+      "body": "【実装】\n- studio/index.htmlの旧側重複定義12件だけ撤去。\n- 現行側start/close/edit/saveはDiscussion/Decision/Specificationそれぞれ各1定義を保持。\n- selectedDev*、showDevRecordEditor、detail/list navigationを保持。\n- Specification Candidate承認ガードを保持。\n- development-git-store.js変更0。\n- Registry/localStorage/Git接続/read auth変更0。\n- GitHubファイル物理削除0。\n\n【Candidate】\nStudio Build: GKS-B747\nartifact_id: GKS-B747-ed0914f36c88\nbaseline source tree: ef23f4f358b985bacb2f86fb5b7c2f192887d4c2bc9fd329047d9a398c3fb67f\ntarget source tree: ed0914f36c88c766b7f33a035c8a1515f49caa33531714630bb6c9b70bd1a1de\nartifact ZIP SHA256: c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025\n\n【成功した検査】\n- B746 baseline Quick: 11/11 PASS\n- B747 target source Quick: 11/11 PASS\n- Update Quick: 13/13 PASS\n- Test Integrity: PASS / protected substantive changes 0\n- Impact Plan: PASS / mode=full / studio/index.html unclassified\n- Official Sharded Full: FULL_PASS / 5/5 shards / 25/25 source-context steps\n\n【未完了】\n- run.py accept --context update のラッパー実行が外側実行時間制限内に完了しなかった。\n- timeoutをPASSへ読み替えない。\n- CHECK-DEV-SAVE-034をblocking Failedとして追加。\n- TASK-022へは進まない。\n\n【次回】\n同じAccept失敗を再試行する前に、自律Correction規則に従い原因解析を行う。Source実装を推測変更せず、Accept orchestrationのどの段階が長時間化しているかを特定する。",
+      "open_questions": "Acceptラッパー長時間化の原因が検査オーケストレーションか、適用後Full内の特定stepかを証跡で特定する。",
+      "conclusion": "実装自体はAcceptance内容を満たすが、必須Accept Gate未完了のためTASK-021はDoneにせずBlocked。TASK-022未着手。",
+      "related_discussion_ids": [
+        "DISC-DEV-SAVE-PRE-REMOVE-001",
+        "DISC-DEV-SAVE-EXEC-001",
+        "DISC-DEV-SAVE-TASK020-001"
+      ],
+      "artifact_note": "GKS-B747-TASK-DEV-SAVE-021-duplicate-crud-cleanup-update.zip / sha256=c338755e88153cef28a92cf96bd785ee9e2d0b40b46aa53a0404a018040fd025 / deployment hold until CHECK-DEV-SAVE-034 resolved",
+      "created_at": "2026-08-23T10:03:00+09:00",
+      "updated_at": "2026-08-23T10:03:00+09:00"
     }
   ],
   "decisions": [
@@ -876,9 +907,9 @@
       "key": "AUDIT_FINDING",
       "value": "DUPLICATE_CRUD_FUNCTIONS",
       "source": "save-path-audit",
-      "note": "B745でもDiscussion/Decision/Specification等の同名CRUD関数二重定義が残っている。後勝ち上書きをなくす。",
+      "note": "GKS-B747候補で旧側Discussion/Decision/Specification CRUD二重定義12件を撤去し、現行側を各1定義へ整理済み。ただし正式Accept Gate未完了のため、配置済み解消とはまだ扱わない。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T08:52:00+09:00"
+      "updated_at": "2026-08-23T10:03:00+09:00"
     },
     {
       "id": "FLAG-DEV-SAVE-005",
@@ -1066,6 +1097,17 @@
       "note": "現行ghToken/read authの先行削除を禁止するBlocking条件。",
       "created_at": "2026-08-23T09:24:00+09:00",
       "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-022",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "TASK021_ACCEPT_GATE_TIMEOUT",
+      "value": "BLOCKING",
+      "source": "GKS-B747-task021",
+      "note": "B747 candidateはQuick/Test Integrity/Impact/Sharded FullがPASS。正式accept wrapperのみ完了せず、CHECK-DEV-SAVE-034解決までTASK-022へ進まない。",
+      "created_at": "2026-08-23T10:03:00+09:00",
+      "updated_at": "2026-08-23T10:03:00+09:00"
     }
   ],
   "system_events": [],
@@ -1635,7 +1677,7 @@
       "id": "TASK-DEV-SAVE-021",
       "box_id": "BOX-DEV-SAVE-EXEC-P1",
       "title": "Discussion/Decision/Specification二重定義の旧側だけ撤去する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 81,
       "depends_on": [
         "TASK-DEV-SAVE-020"
@@ -1649,7 +1691,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T10:03:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-022",
@@ -2665,26 +2707,26 @@
     },
     {
       "id": "CHECK-DEV-SAVE-034",
-      "title": "TASK-020対象の未参照symbolだけが撤去され現役Git/Registry経路が保持される",
+      "title": "TASK-021 SOURCE_UPDATE正式Acceptが完了する",
       "gate": "Implementation",
       "target_type": "Task",
-      "target_id": "TASK-DEV-SAVE-020",
-      "status": "Passed",
-      "result": "PASS",
-      "evidence": "11対象symbolはtarget studio/index.htmlから0件。development-git-store.jsはbaseline/target byte-identical。Registry/localStorage/Git connection/read authは未変更。Git I/O characterization PASS。Update Quick 13/13 PASS; Accept 13/13 PASS; applied Full 26/26 PASS; physical file deletion=0.",
-      "checked_by": "AI TASK-020 implementation",
-      "checked_at": "2026-08-23T09:49:00+09:00",
+      "target_id": "TASK-DEV-SAVE-021",
+      "status": "Failed",
+      "result": "TIMEOUT",
+      "evidence": "実装検証: old duplicate CRUD 12件撤去、現行12定義を各1件保持。Baseline Quick 11/11 PASS; Target Quick 11/11 PASS; Update Quick 13/13 PASS; Test Integrity PASS(protected_changed=0, build_only=12, machine_hash_sync=1); Impact Plan PASS mode=full; official sharded Full FULL_PASS 5/5 shards, 25/25 source-context steps. ただし python3 tools/inspection/run.py accept --context update --baseline-source <B746> は外側実行制限内に完了せず、正式Accept成功とは扱わない。",
+      "checked_by": "AI implementation",
+      "checked_at": "2026-08-23T10:03:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Resolved",
-        "resolved_by": "AI TASK-020 implementation",
-        "resolved_at": "2026-08-23T09:49:00+09:00",
-        "reason": "TASK-020 acceptance criteria and mandatory SOURCE_UPDATE gates passed.",
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
         "mode": ""
       },
-      "blocking": false,
-      "created_at": "2026-08-23T09:49:00+09:00",
-      "updated_at": "2026-08-23T09:49:00+09:00"
+      "blocking": true,
+      "created_at": "2026-08-23T10:03:00+09:00",
+      "updated_at": "2026-08-23T10:03:00+09:00"
     }
   ],
   "workflow": {
@@ -2724,6 +2766,10 @@
     {
       "at": "2026-08-23T09:49:00+09:00",
       "message": "TASK-DEV-SAVE-020完了: 呼出元0の旧Development UI/Settings/補助関数11件のみ撤去。GKS-B746。Quick 13/13・Accept 13/13・Applied Full 26/26 PASS。GitHubファイル削除0件。次Taskへ未着手。"
+    },
+    {
+      "at": "2026-08-23T10:03:00+09:00",
+      "message": "TASK-DEV-SAVE-021の旧側CRUD重複12定義撤去をGKS-B747候補として実装。Update Quick/Test Integrity/Impact/Sharded FullはPASSしたが、正式Acceptラッパーが実行時間制限内に完了せずCHECK-DEV-SAVE-034をblocking Failedとして追加。TASK-021はBlocked、TASK-022未着手。"
     }
   ]
 }
