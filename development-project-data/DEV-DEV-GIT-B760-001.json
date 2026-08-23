@@ -10,7 +10,7 @@
     "name": "Development案件 Git正本参照・ブラウザ分岐修正",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T12:54:00.588Z"
+    "updated_at": "2026-08-23T12:58:16.950Z"
   },
   "project_context": {
     "purpose": "GKS-B760で同一Sourceを開いているにもかかわらず、ブラウザごとにDevelopment案件一覧が異なる問題を独立修正案件として管理する。Git上のdevelopment-project-data/index.jsonとProject JSONを正本とし、ブラウザ固有のbranch設定/localStorage状態が正本選択へ介入しない構造へ修正する。",
@@ -133,12 +133,12 @@
     },
     {
       "id": "RULE-DEV-GIT-B760-013",
-      "text": "今回のSOURCE_UPDATEはCurrent B760で確認した既存接続点を最小変更し、development-git-store.js / studio/index.html / development-workspace-ui.css以外へ変更範囲を広げない。追加変更が必要と判明した場合は当該Taskを停止しHumanへ戻る。tests/**は既存Regression実行対象とし、保護テストの変更・追加は別Human承認なしに行わない。",
+      "text": "今回のSOURCE_UPDATEの機能修正対象はCurrent B760で確認した既存接続点へ限定し、studio/development-git-store/development-git-store.js / studio/index.html / studio/development-workspace-ui.css以外へ機能変更範囲を広げない。ただし、Studio Build番号更新、Build marker同期、package_manifest.json再生成など、SOURCE_UPDATE成果物生成に必須の管理ファイル更新は機能変更とは別枠の例外として許可する。追加の機能Source変更が必要と判明した場合は当該Taskを停止しHumanへ戻る。tests/**は既存Regression実行対象とし、保護テストの変更・追加は別Human承認なしに行わない。",
       "status": "Active",
       "source_type": "SourceAudit+Governance",
       "source_id": "DISC-DEV-GIT-B760-004",
       "created_at": "2026-08-23T21:48:00+09:00",
-      "updated_at": "2026-08-23T21:48:00+09:00"
+      "updated_at": "2026-08-23T21:57:00+09:00"
     }
   ],
   "source_baseline": {
@@ -163,12 +163,12 @@
       "status": "Resolved",
       "summary": "同一Build表示でもDevelopment案件一覧が1件/6件に分岐する現象を確認した。B760 SourceのGit indexは6案件であり、1件表示側はCurrent Git index正常取得結果とは一致しない。",
       "body": "Human提供画像では両ブラウザともGame GA-B486.211 / Studio GKS-B760。Browser Aは『V9 Balance調整・Baseline確立』1件のみ、Browser Bは『Development Project正本統一・世代不整合 根絶』『Development管理 保存経路再構築・Git正本化』『GKS-B740 現行システム構造・依存関係・処理解説』『V9 Balance調整・Baseline確立』『V9ゲーム再実装・System Structure再整理』『修正計画』の6件を表示。Current Source ZIPのdevelopment-project-data/index.jsonは6案件を登録している。",
-      "open_questions": "実装時にCurrent Source上でGit repository default branch取得経路と、既存Development Git Storeへの最小接続点をsource traceで確認する。",
+      "open_questions": "",
       "conclusion": "Development authority branchはbrowser-local ghBranchや固定subでは決定しない。同期開始時にGit repository側default branchを取得し、その処理中だけbranchを固定する。Development localStorage Registryは完全に使用しない。",
       "related_discussion_ids": [],
       "artifact_note": "Human screenshots + GKS-B760 source audit",
       "created_at": "2026-08-23T21:06:00+09:00",
-      "updated_at": "2026-08-23T21:43:00+09:00"
+      "updated_at": "2026-08-23T21:57:00+09:00"
     },
     {
       "id": "DISC-DEV-GIT-B760-002",
@@ -545,9 +545,9 @@
       "key": "SOURCE_EDIT_AUTHORIZED",
       "value": "false",
       "source": "HumanInstruction",
-      "note": "Implementation dependency/task preparation completed; Source implementation remains unapproved.",
+      "note": "Implementation preparation complete; Source implementation remains unapproved.",
       "created_at": "2026-08-23T21:06:00+09:00",
-      "updated_at": "2026-08-23T21:48:00+09:00"
+      "updated_at": "2026-08-23T21:57:00+09:00"
     },
     {
       "id": "FLAG-DEV-GIT-B760-006",
@@ -619,12 +619,12 @@
       "id": "FLAG-DEV-GIT-B760-012",
       "scope_type": "Project",
       "scope_id": "DEV-DEV-GIT-B760-001",
-      "key": "IMPLEMENTATION_SOURCE_FILES",
+      "key": "FUNCTIONAL_IMPLEMENTATION_SOURCE_FILES",
       "value": "studio/development-git-store/development-git-store.js|studio/index.html|studio/development-workspace-ui.css",
       "source": "GKS-B760 SourceAudit",
-      "note": "Current confirmed minimum implementation scope.",
+      "note": "機能修正のCurrent confirmed minimum scope。Studio Build/Build marker/package_manifest等のSOURCE_UPDATE必須管理ファイル更新は別枠で許可。",
       "created_at": "2026-08-23T21:48:00+09:00",
-      "updated_at": "2026-08-23T21:48:00+09:00"
+      "updated_at": "2026-08-23T21:57:00+09:00"
     },
     {
       "id": "FLAG-DEV-GIT-B760-013",
@@ -1187,6 +1187,10 @@
     {
       "at": "2026-08-23T21:48:00+09:00",
       "message": "Baselineでstudio-common-header-gks-b571.js / studio-home-aware-common-navigation-gks-b572.js PASS。tests/**は保護資産のため準備Taskでは変更なし。SOURCE_EDIT_AUTHORIZED=false / implementation approval Pendingを維持。"
+    },
+    {
+      "at": "2026-08-23T21:57:00+09:00",
+      "message": "Human承認によりSOURCE_UPDATE変更範囲を明確化。機能修正はdevelopment-git-store.js / studio/index.html / development-workspace-ui.cssの3ファイルに限定し、Studio Build番号、Build marker、package_manifest等の成果物生成に必須の管理ファイル更新は別枠例外として許可する。Git default branch取得経路の旧open questionはDISC-DEV-GIT-B760-004で確認済みのため解消。Source実装は未開始。"
     }
   ]
 }
