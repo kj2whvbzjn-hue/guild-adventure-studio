@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T04:12:29.526Z"
+    "updated_at": "2026-08-23T04:19:41.810Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
     "theme": "P2 Static Skill Calibration — Next Approved Execution Task",
-    "goal": "TASK-BAL-001 P1 Static Equipment Calibrationは308/308 Valid・再現性確認・curve/dead-zone/dominance/sensitivity評価まで完了。次の1TaskはTASK-BAL-002（P2 Static Skill Calibration）。TASK-BAL-003もTodoだが自動連続着手せず、1回のAI作業では1Taskのみ実行する。"
+    "goal": "TASK-BAL-001 P1 Static Equipment Calibrationは完了。P1詳細Evidenceは`DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip` (sha256=0fbe6a00909ba8003719c19209cbf12e2dba159b2d4e3f30d85f0bcb5870e019) をHumanが外部保管する正式証跡とし、Development Project JSONには要約/Hash/保持ルールのみを保持する。Raw EvidenceがProject JSON内に無いことを削除と解釈しない。次の1TaskはTASK-BAL-002（P2 Static Skill Calibration）。TASK-BAL-003もTodoだが自動連続着手しない。"
   },
   "project_rules": [
     {
@@ -197,6 +197,15 @@
       "source_id": "conversation:2026-08-22 verify reuse in plan",
       "created_at": "2026-08-22T14:12:00+09:00",
       "updated_at": "2026-08-22T14:12:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-EVIDENCE-001",
+      "text": "実行Taskの詳細EvidenceはTask単位Evidence ZIPを正式な外部保管単位としHumanが保持する。Development Project JSONにはRaw Evidenceを全面複製せず、ZIP/File名・SHA-256・役割・Retention/Custodianを索引として保持する。別AIは外部Evidenceを破棄済みと推定せず、必要時はHumanへ当該ZIPの提示を求める。EvidenceはProduct Master/GAME_DATA/Source/Current activeと分離する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-23 evidence retention and ZIP policy",
+      "created_at": "2026-08-23T13:17:00+09:00",
+      "updated_at": "2026-08-23T13:17:00+09:00"
     }
   ],
   "source_baseline": {
@@ -356,6 +365,18 @@
       "approved_at": "2026-08-23T12:59:00+09:00",
       "created_at": "2026-08-22T14:23:00+09:00",
       "updated_at": "2026-08-23T12:59:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-EVIDENCE-RETENTION-001",
+      "title": "Task EvidenceはHuman保管ZIPを正式証跡として外部保持する",
+      "status": "Approved",
+      "text": "DEVELOPMENT_ONLYの詳細EvidenceはDevelopment Project JSONへ生データを重複内包せず、Task単位のEvidence ZIPとしてHumanが保管する。Development Project JSONにはTask状態・結論・ZIP名・SHA-256・構成ファイル名/Hash・保持ルールを記録する。別AIはProject JSONにRaw Evidenceが無いことを削除・欠落と解釈せず、詳細検証が必要な場合はHuman保管ZIPの再提示を前提とする。Evidence ZIPはProduct Master / GAME_DATA / Source / Current activeではない。",
+      "rationale": "Human指示により、案件管理JSONの肥大化とEvidence重複を避けつつ、他AIへの引継ぎ・再現・監査可能性を維持するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T13:17:00+09:00",
+      "created_at": "2026-08-23T13:17:00+09:00",
+      "updated_at": "2026-08-23T13:17:00+09:00"
     }
   ],
   "specifications": [
@@ -3951,7 +3972,7 @@
       "target_id": "TASK-BAL-001",
       "status": "Passed",
       "result": "Existing GKS_EQUIPMENT_GENERATION_REQUEST / equipment-generator.jsでEQUIPMENT-BASE-V2 v2.1.0のiLv1..11 Baseline 308件（Weapon 143 / Armor 132 / Accessory 33）を生成し308/308 Valid。時刻metaを除く再実行Core Hash一致。Dynamic weapon/armor curvesは全て線形増加、adjacent-level dead zone 0。±10% OAT sensitivityは99 knobs中88 active / 11 zero（weapon growth disabled）。Product Master/Game Data/Current active/Source変更0件。",
-      "evidence": "p1-equipment-static-evidence.json sha256=91d60a5f4bf31b30fa41f1034bc61cbcf1aa41d1874c6406a90cba53aa9e43b3; p1-equipment-static-baseline-full.json sha256=5e8c04151caa28560f3a56b53b4cbe121ee667811ce5df98d93f347032548fa7; p1-equipment-sensitivity.json sha256=02986a9265bd5342e442558c149acf17bd71244ac27db7cf7474549f9f9f88f0; request sha256=de07270125c7adc40df5f3768047b69dd43e394d0ef8afc100c2ea1895c1e399; deterministic_core_sha256=b296a6ad368c75f66fa77e8ba338fb8b3f8c8d88cd3912c06455fe662df96044",
+      "evidence": "canonical_external_archive=DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip sha256=0fbe6a00909ba8003719c19209cbf12e2dba159b2d4e3f30d85f0bcb5870e019; custodian=Human; retention=KEEP; raw_evidence_not_embedded_in_project_json; p1-equipment-static-evidence.json sha256=91d60a5f4bf31b30fa41f1034bc61cbcf1aa41d1874c6406a90cba53aa9e43b3; p1-equipment-static-baseline-full.json sha256=5e8c04151caa28560f3a56b53b4cbe121ee667811ce5df98d93f347032548fa7; p1-equipment-sensitivity.json sha256=02986a9265bd5342e442558c149acf17bd71244ac27db7cf7474549f9f9f88f0; p1-equipment-generation-request.json sha256=de07270125c7adc40df5f3768047b69dd43e394d0ef8afc100c2ea1895c1e399; deterministic_core_sha256=b296a6ad368c75f66fa77e8ba338fb8b3f8c8d88cd3912c06455fe662df96044",
       "checked_by": "AI",
       "checked_at": "2026-08-23T13:08:00+09:00",
       "resolves_check_ids": [],
@@ -3964,7 +3985,30 @@
       },
       "blocking": false,
       "created_at": "2026-08-23T13:08:00+09:00",
-      "updated_at": "2026-08-23T13:08:00+09:00"
+      "updated_at": "2026-08-23T13:17:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P1-EVIDENCE-ARCHIVE-001",
+      "title": "TASK-BAL-001 external Evidence archive / handoff retention",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-001",
+      "status": "Passed",
+      "result": "P1 detailed Evidence is intentionally externalized and retained by Human as DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip. Project JSON keeps the archive/file hashes and interpretation rules only. Other AI must not treat absence of raw files inside Project JSON as deletion and must request the retained ZIP when raw evidence is needed.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip sha256=0fbe6a00909ba8003719c19209cbf12e2dba159b2d4e3f30d85f0bcb5870e019; P1-EVIDENCE-MANIFEST.json sha256=f6b6dcda38c1e7050c6bbe9a2a39f0afdb2a2a45e8391f0a2208ff075bad478a; files=4; custodian=Human; retention=KEEP",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:17:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:17:00+09:00",
+      "updated_at": "2026-08-23T13:17:00+09:00"
     }
   ],
   "workflow": {
@@ -4044,6 +4088,10 @@
     {
       "at": "2026-08-23T13:08:00+09:00",
       "message": "TASK-BAL-001 P1 Static Equipment Calibrationを実行。既存GKS_EQUIPMENT_GENERATION_REQUEST / equipment-generator.jsのみを使用し、EQUIPMENT-BASE-V2 v2.1.0 / iLv1..11でWeapon 143 + Armor 132 + Accessory 33 = 308件を生成、308/308 Valid。再実行Core Hash一致。curve/dead-zone/dominance/sensitivityをSTATIC_REFERENCEとして評価し、Source/Game Data/Product Master/Current active変更0件。Evidence=p1-equipment-static-evidence.json sha256=91d60a5f4bf31b30fa41f1034bc61cbcf1aa41d1874c6406a90cba53aa9e43b3。TASK-BAL-001=Done。次TaskはTASK-BAL-002 P2 Static Skill Calibration。"
+    },
+    {
+      "at": "2026-08-23T13:17:00+09:00",
+      "message": "Human指示によりEvidence管理方針を明確化。TASK-BAL-001の詳細Evidence 4 JSONをDEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zipへ集約しHuman保管の正式外部証跡とした (zip sha256=0fbe6a00909ba8003719c19209cbf12e2dba159b2d4e3f30d85f0bcb5870e019)。Development Project JSONにはRaw Evidenceを重複内包せず、Task状態/結論/ZIP名/Hash/構成file hash/Retentionを索引として保持する。別AIはProject JSONにRaw Evidenceがないことを破棄・欠落と解釈せず、詳細検証時はHuman保管ZIPを再提示してもらう。EvidenceはProduct Master/GAME_DATA/Source/Current activeではない。"
     }
   ],
   "authority": {
