@@ -2,7 +2,7 @@
  * Git is the persistent authority.
  * Project list uses development-project-data/index.json (title + id only).
  * Project body is fetched only after the user confirms opening a title.
- * Write operations receive Branch + PAT directly from the operation UI.
+ * Development operations resolve the repository default branch once at operation start; write PAT comes from the operation UI.
  * Owner / Repository come from the Studio Git connection.
  * Concurrent updates are guarded by Git blob SHA; no Project revision is used.
  */
@@ -12,7 +12,8 @@
 const DATA_ROOT='development-project-data/';
 const INDEX_PATH=DATA_ROOT+'index.json';
 const API_VERSION='2022-11-28';
-const DEFAULT_CONNECTION=Object.freeze({owner:'kj2whvbzjn-hue',repo:'guild-adventure-studio',branch:'sub'});
+const DEFAULT_CONNECTION=Object.freeze({owner:'kj2whvbzjn-hue',repo:'guild-adventure-studio'});
+const WRITE_BRANCH_HINT='sub';
 const state={host:null,loaded:new Set(),dirty:new Set(),busy:false,indexRows:[],indexRemote:null,indexRefreshAt:0,indexPromise:null,base:null};
 
 const byId=id=>document.getElementById(id);
@@ -35,26 +36,32 @@ function currentEntry(){return state.host?.getActiveEntry?.()||null;}
 function currentWorkspace(){return state.host?.getCurrentWorkspace?.()||null;}
 function commonGitValue(id){return text(byId(id)?.value);}
 
-function studioConnection(projectId='',{index=false}={}){
+function repositoryConnection(projectId='',{index=false,token=''}={}){
   const id=text(projectId),entry=id?state.host?.getRegistryEntry?.(id):null;
   const remote=entry?.git_remote||{};
   const owner=commonGitValue('ghOwner')||text(remote.owner)||DEFAULT_CONNECTION.owner;
   const repo=commonGitValue('ghRepo')||text(remote.repo)||DEFAULT_CONNECTION.repo;
-  const branch=text(remote.branch)||commonGitValue('ghBranch')||DEFAULT_CONNECTION.branch;
-  const token=commonGitValue('ghToken');
+  const selectedToken=text(token)||commonGitValue('ghToken');
   const path=index?INDEX_PATH:canonicalPath(id);
-  if(!owner||!repo||!branch)throw new Error('StudioのGitHub接続先がありません。');
+  if(!owner||!repo)throw new Error('StudioのGitHub接続先がありません。');
   if(!index&&!id)throw new Error('Project IDがありません。');
-  return {owner,repo,branch,path,token};
+  return {owner,repo,path,token:selectedToken};
 }
-function writeConnection(projectId,{branch,token,index=false}={}){
-  const base=studioConnection(projectId,{index});
-  const selectedBranch=text(branch),selectedToken=text(token);
-  if(!selectedBranch)throw new Error('Branchを入力してください。');
-  if(!selectedToken)throw new Error('PATを入力してください。');
-  return {...base,branch:selectedBranch,token:selectedToken,path:index?INDEX_PATH:canonicalPath(projectId)};
+async function resolveRepositoryDefaultBranch(c){
+  const url=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`;
+  const res=await fetch(url,{headers:headers(c.token),cache:'no-store'});
+  if(!res.ok)return failure(res,'GitHub repository取得失敗');
+  const branch=text((await res.json())?.default_branch);
+  if(!branch)throw new Error('GitHub repositoryのdefault branchを取得できません。');
+  return branch;
 }
-function defaultWriteBranch(){return text(currentEntry()?.git_remote?.branch)||commonGitValue('ghBranch')||DEFAULT_CONNECTION.branch;}
+async function operationConnection(projectId='',{index=false,token='',requireToken=false}={}){
+  const base=repositoryConnection(projectId,{index,token});
+  if(requireToken&&!base.token)throw new Error('PATを入力してください。');
+  const branch=await resolveRepositoryDefaultBranch(base);
+  return Object.freeze({...base,branch,path:index?INDEX_PATH:canonicalPath(projectId)});
+}
+function defaultWriteBranch(){return commonGitValue('ghBranch')||WRITE_BRANCH_HINT;}
 
 function headers(token,accept='application/vnd.github+json'){
   const h={'Accept':accept,'X-GitHub-Api-Version':API_VERSION};
@@ -148,7 +155,7 @@ async function refreshProjectIndex({quiet=false,force=false}={}){
   state.indexRefreshAt=now;
   state.indexPromise=(async()=>{
     try{
-      const c=studioConnection('',{index:true}),index=await readIndex(c);
+      const c=await operationConnection('',{index:true}),index=await readIndex(c);
       state.indexRows=index.rows;state.indexRemote={...index.connection,sha:index.sha};
       state.host?.replaceProjectIndex?.(index.rows,{owner:c.owner,repo:c.repo,branch:c.branch,path:INDEX_PATH,sha:index.sha});
       return state.indexRows;
@@ -181,7 +188,7 @@ async function openFromGit(options={}){
   try{
     state.busy=true;render();
     const id=text(options.expectedProjectId);if(!id)throw new Error('Project IDがありません。');
-    const c=studioConnection(id),file=await remoteFile(c,{requireSha:true});
+    const c=await operationConnection(id),file=await remoteFile(c,{requireSha:true});
     if(!file.exists)throw new Error(`Gitに案件がありません: ${c.path}`);
     const project=parseProject(file.raw);
     if(text(project.workspace.id)!==id)throw new Error(`Project ID不一致: expected=${id} / actual=${project.workspace.id}`);
@@ -198,15 +205,15 @@ async function expectedShaForWrite(c,project){
   const base=state.base;
   if(base&&base.id===text(project?.workspace?.id)&&base.branch===c.branch&&base.sha)return base.sha;
   const file=await remoteFile(c,{requireSha:true});
-  if(!file.exists)throw new Error(`選択したBranchに案件がありません: ${c.branch}`);
+  if(!file.exists)throw new Error(`Git repositoryのdefault branchに案件がありません: ${c.branch}`);
   const remote=parseProject(file.raw);assertSameProject(remote,project);
-  if(base?.project&&!equalProject(remote,base.project))throw new Error('選択したBranchの案件が、開いた時点の案件内容と一致しません。上書きしません。');
+  if(base?.project&&!equalProject(remote,base.project))throw new Error('Git repositoryのdefault branch上の案件が、開いた時点の案件内容と一致しません。上書きしません。');
   return file.sha;
 }
 async function saveProject(project,{branch,token,message=''}={}){
   const entry=currentEntry();
   if(!entry||!isLoaded(entry.id))throw new Error('案件を開いてください。');
-  const local=state.host.normalizeProject(project),c=writeConnection(entry.id,{branch,token});
+  const local=state.host.normalizeProject(project),c=await operationConnection(entry.id,{token,requireToken:true});
   const expectedSha=await expectedShaForWrite(c,local);
   local.workspace.updated_at=new Date().toISOString();
   const normalized=state.host.normalizeProject(local);
@@ -242,7 +249,7 @@ async function registerNewProject(project,{branch,token,messagePrefix='Create De
   const normalized=state.host.normalizeProject(project);
   const id=text(normalized?.workspace?.id),title=text(normalized?.workspace?.name);
   if(!id||!title)throw new Error('workspace.id / workspace.nameがありません。');
-  const c=writeConnection(id,{branch,token});
+  const c=await operationConnection(id,{token,requireToken:true});
   if(text(normalized?.authority?.canonical_path)!==c.path)throw new Error(`authority.canonical_pathが正規Pathと一致しません: ${normalized?.authority?.canonical_path||'(missing)'}`);
   const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`${messagePrefix} ${id}`,'');
   const newSha=out.file_sha;
@@ -276,7 +283,7 @@ async function deleteCurrentProjectCompletely(credentials={}){
   const entry=currentEntry();if(!entry)return false;
   try{
     state.busy=true;render();
-    const c=writeConnection(entry.id,credentials),project=state.host.normalizeProject(currentWorkspace());
+    const c=await operationConnection(entry.id,{token:credentials.token,requireToken:true}),project=state.host.normalizeProject(currentWorkspace());
     const sha=await expectedShaForWrite(c,project);
     await deleteFile(c,sha,`Delete Development Project ${entry.id}`);
     try{await removeIndexEntry(entry.id,c);}
@@ -287,7 +294,7 @@ async function deleteCurrentProjectCompletely(credentials={}){
 }
 
 async function testConnection(){
-  try{const c=studioConnection('',{index:true});const res=await fetch(`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,{headers:headers(c.token),cache:'no-store'});if(!res.ok)return failure(res,'GitHub接続失敗');return true;}catch(e){alert(e.message);return false;}
+  try{await operationConnection('',{index:true});return true;}catch(e){alert(e.message);return false;}
 }
 function fillFromEntry(){render();}
 function focus(){const gitNav=byId('nav-github');if(gitNav?.click)gitNav.click();}
