@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T06:15:06.507Z"
+    "updated_at": "2026-08-23T06:21:31.711Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -20008,6 +20008,34 @@
       },
       "actor": "Human/AI",
       "created_at": "2026-08-23T15:12:00+09:00"
+    },
+    {
+      "id": "EVT-R42-CAST-TASK-001",
+      "type": "IMPLEMENTATION_TASK_REGISTERED_FROM_HUMAN_DECISION",
+      "target_type": "Task",
+      "target_id": "TASK-R42-001",
+      "payload": {
+        "phase": 2,
+        "decision_id": "DEC-R42-CAST-001",
+        "specification_ids": [
+          "SPEC-V9-019-SKILL-001",
+          "SPEC-V9-019-BATTLE-002",
+          "SPEC-V9-019-RANGE-001"
+        ],
+        "scope": [
+          "Cast Schema",
+          "Formal Skill Compiler",
+          "Battle Runtime",
+          "Range completion revalidation"
+        ],
+        "depends_on": [
+          "TASK-R39-001"
+        ],
+        "work_type": "SOURCE_UPDATE",
+        "rule_change": false
+      },
+      "actor": "AI/HumanInstruction",
+      "created_at": "2026-08-23T15:19:00+09:00"
     }
   ],
   "system_impacts": [
@@ -26851,6 +26879,26 @@
       },
       "created_at": "2026-08-22T13:19:56+09:00",
       "updated_at": "2026-08-23T07:08:03+09:00"
+    },
+    {
+      "id": "TASK-R42-001",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "Cast Schema / Compiler / Battle Runtime / Range再検証を実装する",
+      "status": "Blocked",
+      "execution_order": 2010,
+      "depends_on": [
+        "TASK-R39-001"
+      ],
+      "acceptance_criteria": "- Formal Skill Schema / Authoringで `resource.castTime` をOptional fieldとして扱い、0以上の整数Tickだけを受理する。`0` は即時発動とする。\n- Formal Skill Compilerが `resource.castTime` を `runtimeContracts.resourceContract.castTime` へ欠落・暗黙変換なく保持する。未指定時の扱いはCurrent Formal SchemaのOptional field契約に従い、Legacy/Generic/Fallback fieldを追加しない。\n- Battle RuntimeはAI予約時にはCastを開始せずTargetも固定しない。行動実行開始時の開始時Validation成功後にbase TargetとRANGE展開後のfinal target setを固定し、Castを開始する。\n- Cast中はSkill使用不可・使用中Skill種別を阻害する効果・強制移動で中断し、通常Damage・DOT・反射Damageでは中断しない。中断時はCost消費・Cooldown開始・効果実行を行わない。\n- Cast完了時は固定Targetだけを再検証し、無効・死亡・Range外Targetを除外する。別Targetへの再取得、欠員補充、新規Target追加を行わない。\n- Cast完了時に有効Targetが残らない、または最終Validationに失敗した場合は不発とし、Cost/CDを発生させない。\n- 最終Validation成功時だけ Cost (`mpCost`) 消費 → Cooldown開始 → 効果実行の順で発動成立させる。`castTime=0` でもTarget固定と最終Validation境界を省略しない。\n- `SPEC-V9-019-SKILL-001` / `SPEC-V9-019-BATTLE-002` / `SPEC-V9-019-RANGE-001` と `DEC-R42-CAST-001` を正本として実装し、Balance値、LOS/遮蔽物、任意移動、Target再取得など未承認ルールを追加しない。\n- Schema/Compiler/Battle Runtime/Range再検証を対象にTargeted testを追加し、Quick / Accept / Release Gateで既存Current挙動を退行させない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T15:19:00+09:00",
+      "updated_at": "2026-08-23T15:19:00+09:00"
     }
   ],
   "checks": [
@@ -29037,6 +29085,11 @@
       "at": "2026-08-23T15:12:00+09:00",
       "type": "SpecificationIntegration",
       "summary": "DEC-R42-CAST-001をSPEC-V9-019-SKILL-001 / BATTLE-002 / RANGE-001へ統合。3仕様は他内容を含むためDraft状態を維持し、revisionを各+1した。Source Runtime/Game Data/Workflowは変更していない。"
+    },
+    {
+      "at": "2026-08-23T15:19:00+09:00",
+      "type": "ImplementationTaskRegistered",
+      "summary": "Human指示によりDEC-R42-CAST-001の実装Task TASK-R42-001をPhase 2 SOURCE_UPDATEとして追加。Schema/Compiler/Battle Runtime/Range完了時再検証を1 Taskに統合し、Phase 1→2 Gate (TASK-R39-001) 完了までBlockedとした。既存Task status/Workflow/Specificationは変更していない。"
     }
   ],
   "authority": {
