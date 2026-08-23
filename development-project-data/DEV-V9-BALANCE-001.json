@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T06:23:37.982Z"
+    "updated_at": "2026-08-23T06:48:26.353Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "P3-2 Active Skill Authoring / Runtime Alignment — Next Development Task",
-    "goal": "Current authorityでcast contractが確定し、TASK-BAL-015開始阻害要因は解消。TASK-BAL-015はSOURCE_UPDATE / Todo。RANDOM/Trigger/Condition/Resource/mpCost/cooldown/activationPriority/castTime、G07/runtimeContracts/Battle fail-closedを元のScopeどおり整合する。この状態更新runではSource/Game Data/Current active変更0件、自動着手しない。"
+    "theme": "P3-2 Active Skill Authoring / Runtime Alignment — Resume Approved",
+    "goal": "castTime互換修正案はHuman承認済み。TASK-BAL-015はSOURCE_UPDATE / Todoへ復帰。次の1 Development Taskでは、既存Skillの省略castTime互換を維持しながらdraft B753を修正し、P2 Core 330件、dedicated coverage、Formal Battle adapter、Quick/Accept/Release/Full Gateを再実行する。この承認反映runではSource/Game Data/Current activeを変更せず、自動着手しない。"
   },
   "project_rules": [
     {
@@ -290,6 +290,27 @@
       "result": "Applied",
       "evidence": "",
       "recorded_at": ""
+    },
+    {
+      "id": "IMP-BAL-P3-2-BLOCKED-001",
+      "title": "P3-2 pre-deployment validation stopped by castTime compatibility gate",
+      "status": "Blocked",
+      "task_id": "TASK-BAL-015",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B752",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-BATTLE-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-015"
+      ],
+      "result": "Applied",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-015_BLOCKED-EVIDENCE.zip sha256=d3522acfb5454371d6662a3289fe9655a5131c42a0d8d974b8c534c73460eca1",
+      "recorded_at": "2026-08-23T15:24:00+09:00",
+      "summary": "Draft P3-2 source changes passed G05/G07 and Quick checks, but Applied Full Gate found one existing Production Skill runtimeContracts compatibility mismatch caused by unconditional castTime=0 synthesis. No B753 artifact is authorized for deployment.",
+      "created_at": "2026-08-23T15:24:00+09:00",
+      "updated_at": "2026-08-23T15:24:00+09:00"
     }
   ],
   "discussions": [
@@ -520,6 +541,18 @@
       "approved_at": "2026-08-23T15:12:00+09:00",
       "created_at": "2026-08-23T15:22:00+09:00",
       "updated_at": "2026-08-23T15:22:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P3-CAST-OPTIONAL-COMPAT-001",
+      "title": "Optional castTime compatibility normalization",
+      "status": "Approved",
+      "text": "TASK-BAL-015のcastTime互換処理として、resource.castTimeはCurrent ContractどおりAuthoring Optionalを維持する。AuthoringにcastTimeが明示されている場合だけCompilerはruntimeContracts.resourceContract.castTimeへ保持する。既存SkillのようにAuthoringでcastTimeが省略されている場合はCompilerがcastTime=0 keyを新規合成せず、Runtime側はmissingを0(instant)として解釈する。G05/新規Manual AuthoringはcastTime=0を明示生成するため、新規/再authoring SkillではcastTime fieldを正式保持する。Product Game Data migrationとprotected test変更は行わない。",
+      "rationale": "Applied-state Gateで、既存Production SkillのruntimeContractsにcastTime keyが無い一方、新Compilerが省略入力にもcastTime=0を無条件追加したため互換性検査が失敗した。castTimeはCurrent Skill authoring上Optionalであるため、未指定=instantの互換解釈をRuntimeで維持し、既存Product data shapeをTASK-BAL-015で書き換えない案が最小かつreuse-first。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T15:47:00+09:00",
+      "created_at": "2026-08-23T15:24:00+09:00",
+      "updated_at": "2026-08-23T15:47:00+09:00"
     }
   ],
   "specifications": [
@@ -4627,6 +4660,29 @@
       "blocking": false,
       "created_at": "2026-08-23T14:49:00+09:00",
       "updated_at": "2026-08-23T15:22:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-2-CAST-COMPAT-GATE-001",
+      "title": "P3-2 castTime optional compatibility Human Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-015",
+      "status": "Passed",
+      "result": "Humanがoptional castTime compatibility normalizationを承認。AuthoringにcastTimeがある場合のみruntimeContractsへ保持し、省略された既存SkillにはCompilerがcastTime=0 keyを新規合成しない。Runtimeはmissing castTimeを0(instant)として解釈する。新規G05/Manual authoringはcastTime=0を明示生成する。Product Game Data migrationとprotected test変更は行わない。",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-015_BLOCKED-EVIDENCE.zip sha256=d3522acfb5454371d6662a3289fe9655a5131c42a0d8d974b8c534c73460eca1",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T15:47:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-23T15:47:00+09:00",
+        "reason": "Human explicitly approved the optional castTime compatibility normalization.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T15:24:00+09:00",
+      "updated_at": "2026-08-23T15:47:00+09:00"
     }
   ],
   "workflow": {
@@ -4758,6 +4814,14 @@
     {
       "at": "2026-08-23T15:22:00+09:00",
       "message": "Human提供のDEV-V9-REORG-019 Cast確定change summaryを確認。DEC-R42-CAST-001およびSPEC-V9-019-SKILL-001/BATTLE-002/RANGE-001 rev1によりresource.castTimeとcast lifecycleがCurrent authorityで正式確定。旧DEC-BAL-P3-CAST-CONTRACT-BOUNDARY-001は承認前にSuperseded、TASK-BAL-021はCancelled。CHK-BAL-P3-CAST-CONTRACT-GATE-001=Passed。TASK-BAL-015=Todoへ復帰し元のcast含有Scopeを維持。Source/Game Data/Current active変更0件。"
+    },
+    {
+      "at": "2026-08-23T15:24:00+09:00",
+      "message": "TASK-BAL-015実行中、P2 Core G05/G07 330/330、dedicated coverage G05/G07 5/5、Formal Battle adapter、Source Quick 11/11をPASS。Applied Full Gateは25 PASS / 1 FAIL。唯一のFAILは既存Production SkillのruntimeContracts.resourceContractにcastTime keyが無いのに、draft Compilerが省略入力へcastTime=0を無条件合成したことによるshape互換差。protected production compatibility testは変更せず、RULE-BAL-ISSUE-GATE-001に従いSource追加修正を停止。DEC-BAL-P3-CAST-OPTIONAL-COMPAT-001をProposed、CHK-BAL-P3-2-CAST-COMPAT-GATE-001をPending/Blockingとして登録。Blocked Evidence=DEV-V9-BALANCE-001_TASK-BAL-015_BLOCKED-EVIDENCE.zip sha256=d3522acfb5454371d6662a3289fe9655a5131c42a0d8d974b8c534c73460eca1。B753 draftは未適用・提出禁止。Current SourceはGKS-B752。Game Data/Current active変更0件。"
+    },
+    {
+      "at": "2026-08-23T15:47:00+09:00",
+      "message": "HumanがDEC-BAL-P3-CAST-OPTIONAL-COMPAT-001を承認。CHK-BAL-P3-2-CAST-COMPAT-GATE-001=Passed/Resolved。TASK-BAL-015をTodoへ復帰。互換方針は、明示castTimeのみruntimeContractsへ保持し、既存省略Skillはshape維持、Runtimeはmissing=0(instant)、新規G05/Manual authoringはcastTime=0明示。Product Game Data migration/protected test変更なし。このrunではSource/Game Data/Current active変更0件。"
     }
   ],
   "authority": {
