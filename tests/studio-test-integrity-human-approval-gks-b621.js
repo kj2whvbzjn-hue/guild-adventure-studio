@@ -5,7 +5,7 @@ const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
 const html=fs.readFileSync('studio/index.html','utf8');
 const policy=JSON.parse(fs.readFileSync('shared/integrity/test-integrity-policy.json','utf8'));
 const systemPolicy=JSON.parse(fs.readFileSync('shared/integrity/system-file-policy.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B757');
+assert.strictEqual(build.studio_build,'GKS-B758');
 assert.strictEqual(policy.baseline_policy_authoritative,true);
 assert.strictEqual(policy.protection_scope_strategy,'union_baseline_and_applied_patterns');
 assert.strictEqual(policy.new_protected_files_require_approval,true);

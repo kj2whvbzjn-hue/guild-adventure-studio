@@ -166,7 +166,7 @@ function resolveTaggedTargets(actor,target,definition){
  const side=definition.target.side,range=definition.target.range,isRevive=definition.logicOrder.includes('REVIVE');
  let candidates=[];
  if(isRevive){
-  if(side!=='ally')return{ok:false,reason:'REVIVEの対象陣営が無効です',targets:[]};
+  if(!['ally','corpse'].includes(side))return{ok:false,reason:'REVIVEの対象陣営が無効です',targets:[]};
   candidates=battle.units.filter(x=>!x.alive&&x.hp<=0&&x.side===actor.side);
  }else if(side==='self')candidates=[actor];
  else if(side==='ally')candidates=battle.units.filter(x=>x.alive&&x.side===actor.side);
@@ -341,7 +341,7 @@ let statusEffectSequence=0;
 function ensureStatusEffects(target){if(!Array.isArray(target.statusEffects))target.statusEffects=[];return target.statusEffects}
 function statusSnapshot(target){return ensureStatusEffects(target).map(x=>({instance_id:x.instanceId,status_id:x.statusId,source_id:x.sourceId,target_id:x.targetId,skill_id:x.skillId,applied_tick:x.appliedTick,base_duration_tick:x.baseDurationTick,effective_duration_tick:x.effectiveDurationTick,expires_tick:x.expiresTick,target_resistance:x.targetResistance,stack_policy:x.stackPolicy,payload:x.payload}))}
 function statusResistance(target,statusId){const raw=Number(target?.statusResistance?.[statusId]??target?.statusResistance??0);return Math.max(0,Math.min(75,Number.isFinite(raw)?raw:0))}
-function effectiveStatusDuration(baseDuration,resistance){return Math.max(1,Math.floor(Math.max(1,Number(baseDuration)||1)*(1-Math.max(0,Math.min(75,Number(resistance)||0))/100)))}
+function effectiveStatusDuration(baseDuration,resistance){return Math.max(1,Math.ceil(Math.max(1,Number(baseDuration)||1)*(1-Math.max(0,Math.min(75,Number(resistance)||0))/100)))}
 function resolveStatusUniqueRefreshLifecyclePolicy(lifecycle){
  const policy=lifecycle&&typeof lifecycle==='object'?lifecycle:null;if(!policy)return{ok:false,reason:'STATUS lifecycle契約がありません'};
  const stackRule=String(policy.stackRule||'').toUpperCase(),refreshRule=String(policy.refreshRule||'').toUpperCase();
@@ -416,24 +416,41 @@ function calculateTaggedAttackDamage(attacker,definition){
  if(definition.parameters.damageType==='fixed')return Math.max(0,Math.floor(rate));
  return Math.max(0,Math.floor(effectiveAttackValue(attacker)*(rate/100)));
 }
-function resolveRuntimeDamageContract(compiled){
- const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='DAMAGE')||null;
- if(!contract)return{formal:false,ok:true,contract:null};
- const damageType=contract.damageType==null?null:String(contract.damageType).toUpperCase();
- if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_POWER_INVALID',contract};
- if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType))return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_TYPE_INVALID',contract};
- return{formal:true,ok:true,contract:{type:'DAMAGE',power:contract.power,damageType}};
+function currentBattleFinite(value,fallback=0){return typeof value==='number'&&Number.isFinite(value)?value:fallback}
+function currentBattleAccuracy(unit){return Math.max(0,currentBattleFinite(unit?.accuracy,0))}
+function currentBattleEvasion(unit){return Math.max(0,currentBattleFinite(unit?.evasion,0))}
+function currentBattleHitRatePercent(attacker,target){const accuracy=currentBattleAccuracy(attacker),evasion=currentBattleEvasion(target),denominator=accuracy+evasion;if(denominator<=0)return 100;return Math.max(5,Math.min(100,(accuracy/denominator)*100))}
+function currentBattleCriticalRatePercent(unit){const explicit=currentBattleFinite(unit?.criticalRate??unit?.critical_rate,NaN);if(Number.isFinite(explicit))return Math.max(0,Math.min(100,explicit));const weaponRate=currentBattleFinite(unit?.baseCriticalRate??unit?.base_critical_rate,0);return Math.max(0,Math.min(100,weaponRate*100))}
+function currentBattleCriticalDamagePercent(unit){return Math.max(0,Math.min(700,currentBattleFinite(unit?.criticalDamage??unit?.critical_damage,0)))}
+function currentBattleMagicIncreaseRate(unit){const rate=currentBattleFinite(unit?.magicIncreaseRate??unit?.magic_increase_rate,1);return Math.max(0,rate)}
+function currentBattleRoll(source,target,skillId,purpose,index=0){const sequence=Math.max(0,Math.floor(Number(battle.formalRandomSequence)||0));battle.formalRandomSequence=sequence+1;const seed=String(battle.p0113TieSeed??'FORMAL-BATTLE');const text=`${seed}|${battle.tick}|${source?.id||''}|${target?.id||''}|${skillId||''}|${purpose}|${index}|${sequence}`;let hash;if(typeof p0113Hash32==='function')hash=p0113Hash32(text);else{hash=2166136261>>>0;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619)>>>0}}return(hash>>>0)/4294967296}
+function resolveRuntimeDamageContracts(compiled){
+ const contracts=(compiled?.definition?.runtimeContracts?.effectContracts||[]).filter(x=>x?.type==='DAMAGE');
+ if(!contracts.length)return{formal:false,ok:true,contracts:[]};
+ const checked=[];
+ for(const contract of contracts){const damageType=contract.damageType==null?null:String(contract.damageType).toUpperCase();if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_POWER_INVALID',contract};if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType))return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_TYPE_INVALID',contract};checked.push({type:'DAMAGE',power:contract.power,damageType:damageType||'PHYSICAL'});}
+ return{formal:true,ok:true,contracts:checked};
 }
-function calculateSkillDamage(attacker,contract){
- if(contract.damageType==='FIXED')return Math.max(0,Math.floor(contract.power));
- return Math.max(0,Math.floor(effectiveAttackValue(attacker)*(contract.power/100)));
+function calculateCurrentSkillBaseDamage(attacker,contract){
+ if(contract.damageType==='FIXED')return Math.max(0,contract.power);
+ if(contract.damageType==='MAGICAL')return Math.max(0,currentBattleMagicIncreaseRate(attacker)*contract.power);
+ return Math.max(0,effectiveAttackValue(attacker)*(contract.power/100));
+}
+function applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{hitIndex=0}={}){
+ if(!target?.alive)return{ok:false,miss:false,reason:'TARGET_DEAD',hitIndex};
+ const hitRate=currentBattleHitRatePercent(attacker,target),hitRoll=currentBattleRoll(attacker,target,compiled?.definition?.id,'hit',hitIndex)*100,hit=hitRoll<hitRate;
+ if(!hit){queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:true,damage:0});typeof recordValidationEvent==='function'&&recordValidationEvent('attack_missed',{source_id:attacker.id,target_id:target.id,skill_id:compiled?.definition?.id||null,hit_index:hitIndex,accuracy:currentBattleAccuracy(attacker),evasion:currentBattleEvasion(target),hit_rate:hitRate,hit_roll:hitRoll});battle.log.push(`[Tick ${battle.tick}] [TAG][MISS] ${attacker.name}の${compiled.definition.name} → ${target.name}（命中率${hitRate.toFixed(2)}%）`);return{ok:false,miss:true,damage:0,baseDamage,hitIndex,hitRate,hitRoll}}
+ const resistance=effectiveDamageResist(target),postResistance=Math.max(0,baseDamage*(1-resistance/100)),criticalRate=currentBattleCriticalRatePercent(attacker),criticalRoll=currentBattleRoll(attacker,target,compiled?.definition?.id,'critical',hitIndex)*100,critical=criticalRoll<criticalRate,criticalDamage=currentBattleCriticalDamagePercent(attacker),criticalMultiplier=critical?1+criticalDamage/100:1,finalDamage=Math.max(0,Math.floor(postResistance*criticalMultiplier));
+ const before=target.hp,shield=consumeShieldDamage(target,finalDamage,{sourceId:attacker.id,skillId:compiled.definition.id,damageType:'formal_skill'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage:applied});attacker.damageDealt+=applied;target.damageTaken+=applied;
+ battle.log.push(`[Tick ${battle.tick}] [TAG][ATTACK] ${attacker.name}の${compiled.definition.name} Hit${hitIndex+1} → ${target.name}に${applied}HPダメージ（基礎${baseDamage}、耐性${resistance}%、Crit${critical?'ON':'OFF'}、シールド吸収${shield.absorbed}、残HP ${target.hp}/${target.maxHp}）`);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('formal_attack',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,hit_index:hitIndex,damage_type:contract.damageType,power:contract.power,accuracy:currentBattleAccuracy(attacker),evasion:currentBattleEvasion(target),hit_rate:hitRate,hit_roll:hitRoll,base_damage:baseDamage,resistance,post_resistance_damage:postResistance,critical_rate:criticalRate,critical_roll:criticalRoll,critical,critical_damage:criticalDamage,critical_multiplier:criticalMultiplier,final_damage:finalDamage,shield_absorbed:shield.absorbed,damage:applied,hp_before:before,hp_after:target.hp});
+ if(target.hp<=0){resetCombatantOnDeath(target,{reason:'formal_skill_damage',sourceId:attacker.id});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}finishIfNeeded();return{ok:true,miss:false,damage:applied,baseDamage,resistance,postResistanceDamage:postResistance,critical,criticalRate,criticalRoll,criticalDamage,finalDamage,shieldAbsorbed:shield.absorbed,beforeHp:before,afterHp:target.hp,hitIndex,hitRate,hitRoll};
 }
 function executeRuntimeDamageRuntime(attacker,target,compiled){
- const resolved=resolveRuntimeDamageContract(compiled);if(!resolved.formal)return null;
+ const resolved=resolveRuntimeDamageContracts(compiled);if(!resolved.formal)return null;
  if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_rejected',{source_id:attacker?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
- const calculated=calculateSkillDamage(attacker,resolved.contract),result=applyTaggedDamage(attacker,target,calculated,compiled.definition);
- typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,damage_type:resolved.contract.damageType,calculated_damage:calculated,applied_damage:result.damage});
- return{...result,runtimeContracts:true,effectContract:{...resolved.contract},calculatedDamage:calculated};
+ const hits=[];let totalDamage=0,anyHit=false;for(let i=0;i<resolved.contracts.length;i++){if(!target?.alive)break;const contract=resolved.contracts[i],baseDamage=calculateCurrentSkillBaseDamage(attacker,contract),result=applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{hitIndex:i});hits.push({...result,effectContract:{...contract}});if(result.ok)anyHit=true;totalDamage+=Number(result.damage)||0;typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,hit_index:i,power:contract.power,damage_type:contract.damageType,base_damage:baseDamage,applied_damage:result.damage,miss:result.miss===true,critical:result.critical===true});}
+ const first=hits[0]||{};return{...first,ok:anyHit,miss:!anyHit&&hits.some(x=>x.miss),runtimeContracts:true,effectContracts:resolved.contracts.map(x=>({...x})),hits,totalDamage,damage:totalDamage};
 }
 function resolveRuntimeHealContract(compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='HEAL')||null;
@@ -444,9 +461,9 @@ function resolveRuntimeHealContract(compiled){
 function executeRuntimeHealRuntime(source,target,compiled){
  const resolved=resolveRuntimeHealContract(compiled);if(!resolved.formal)return null;
  if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
- const requested=Math.max(0,Math.floor(resolved.contract.power)),result=applyTaggedHeal(source,target,compiled,requested);
- typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
- return{...result,runtimeContracts:true,effectContract:{...resolved.contract}};
+ const magicIncreaseRate=currentBattleMagicIncreaseRate(source),requested=Math.max(0,Math.ceil(magicIncreaseRate*resolved.contract.power)),result=applyTaggedHeal(source,target,compiled,requested);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,magic_increase_rate:magicIncreaseRate,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
+ return{...result,runtimeContracts:true,effectContract:{...resolved.contract},magicIncreaseRate};
 }
 function applyTaggedDamage(attacker,target,damage,skill){
  const before=target.hp,defense=applyDefenseResistance(target,damage),shield=consumeShieldDamage(target,defense.damage,{sourceId:attacker.id,skillId:skill.id,damageType:'tag_attack'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;
@@ -547,9 +564,9 @@ function reviveTarget(actor,target,compiled){
  if(mode==='rate'&&(!Number.isFinite(reviveValue)||reviveValue<=0||reviveValue>1))return{ok:false,reason:'REVIVE_HP_RATEが無効です'};
  const before=target.hp,maxHp=Math.max(1,Math.floor(Number(target.maxHp)||1));
  const after=mode==='rate'?Math.max(1,Math.floor(maxHp*reviveValue)):Math.min(reviveValue,maxHp);
- target.hp=after;target.alive=true;target.gauge=0;target.reservedAction=null;target.castingAction=null;target.lastAiEvaluationGauge=null;target.nextAiEvaluationGauge=typeof battleAiReevaluationStep==='function'?battleAiReevaluationStep():target.nextAiEvaluationGauge;
+ const clearedOnRevive={statuses:ensureStatusEffects(target).length,modifiers:ensureModifierStackList(target).length};target.statusEffects=[];target.modifierStacks=[];target.hp=after;target.alive=true;target.gauge=0;target.reservedAction=null;target.castingAction=null;target.lastAiEvaluationGauge=null;target.nextAiEvaluationGauge=typeof battleAiReevaluationStep==='function'?battleAiReevaluationStep():target.nextAiEvaluationGauge;
  battle.log.push(`[Tick ${battle.tick}] [TAG][REVIVE] ${actor.name}の${compiled.definition.name} → ${target.name}がHP${after}で復活（${mode==='rate'?`割合${reviveValue}`:`固定${reviveValue}`}）`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('revive',{source_id:actor.id,target_id:target.id,skill_id:compiled.definition.id,hp_before:before,hp_after:after,max_hp:maxHp,mode,revive_value:reviveValue});
+ typeof recordValidationEvent==='function'&&recordValidationEvent('revive',{source_id:actor.id,target_id:target.id,skill_id:compiled.definition.id,hp_before:before,hp_after:after,max_hp:maxHp,mode,revive_value:reviveValue,cleared_statuses:clearedOnRevive.statuses,cleared_modifiers:clearedOnRevive.modifiers});
  return{ok:true,targetId:target.id,hpBefore:before,hpAfter:after,maxHp,reviveMode:mode,reviveValue,gauge:target.gauge};
 }
 
@@ -604,13 +621,15 @@ function consumeSkillCosts(unit,compiled){
  return{ok:true,consumed,costs:checked.costs,failures:[]};
 }
 function consumePrecheckedSkillCosts(unit,compiled,executionSnapshot){
- const costs=Array.isArray(executionSnapshot?.costs)?executionSnapshot.costs:normalizedSkillCosts(compiled),consumed=[];
- for(const cost of costs){if(cost?.type==='mp'){const before=Math.max(0,Number(unit?.mp)||0),amount=Math.max(0,Number(cost.amount)||0);unit.mp=Math.max(0,before-amount);const row={type:'mp',amount,before,after:unit.mp,prechecked:true};consumed.push(row);typeof recordValidationEvent==='function'&&recordValidationEvent('cost_consumed',{source_id:unit.id,skill_id:compiled?.definition?.id||null,cost_type:'mp',amount,before,after:unit.mp,consume_timing:cost.consumeTiming||'activation_established',prechecked_at:executionSnapshot?.checkedAt??null,no_recheck:true});}}
+ const costs=Array.isArray(executionSnapshot?.costs)?executionSnapshot.costs:normalizedSkillCosts(compiled),failures=[];
+ for(const cost of costs){if(cost?.type==='mp'){const available=Math.max(0,Number(unit?.mp)||0),required=Math.max(0,Number(cost.amount)||0);if(available<required)failures.push({type:'mp',required,available,shortage:required-available,reason:cost.failureReason||'MP_SHORTAGE'});}else failures.push({type:cost?.type||'unknown',required:Number(cost?.amount)||0,available:null,shortage:null,reason:'UNSUPPORTED_COST_TYPE'});}
+ if(failures.length)return{ok:false,consumed:[],costs,failures,reason:failures[0].reason,prechecked:true};
+ const consumed=[];for(const cost of costs){if(cost?.type==='mp'){const before=Math.max(0,Number(unit?.mp)||0),amount=Math.max(0,Number(cost.amount)||0);unit.mp=before-amount;const row={type:'mp',amount,before,after:unit.mp,prechecked:true};consumed.push(row);typeof recordValidationEvent==='function'&&recordValidationEvent('cost_consumed',{source_id:unit.id,skill_id:compiled?.definition?.id||null,cost_type:'mp',amount,before,after:unit.mp,consume_timing:cost.consumeTiming||'activation_established',prechecked_at:executionSnapshot?.checkedAt??null,activation_rechecked:true});}}
  return{ok:true,consumed,costs,failures:[],prechecked:true};
 }
 function ensureCooldownState(unit){if(!unit||typeof unit!=='object')return{};if(!unit.cooldowns||typeof unit.cooldowns!=='object'||Array.isArray(unit.cooldowns))unit.cooldowns={};return unit.cooldowns}
 function skillCooldownRemaining(unit,skillId){if(!unit||!skillId)return 0;const state=ensureCooldownState(unit),entry=state[skillId];if(!entry)return 0;const remaining=Math.max(0,Number(entry.expiresAt||0)-Number(battle.tick||0));if(remaining<=0)delete state[skillId];return remaining}
-function startSkillCooldown(unit,compiled){const skillId=compiled?.definition?.id||null,duration=Math.max(0,Number(compiled?.definition?.parameters?.cooldown)||0);if(!unit||!skillId||duration<=0)return{started:false,skillId,duration,expiresAt:null};const state=ensureCooldownState(unit),entry={skillId,duration,startedAt:battle.tick,expiresAt:battle.tick+duration};state[skillId]=entry;typeof recordValidationEvent==='function'&&recordValidationEvent('cooldown_started',{source_id:unit.id,skill_id:skillId,duration,started_at:entry.startedAt,expires_at:entry.expiresAt});return{started:true,...entry}}
+function startSkillCooldown(unit,compiled){const skillId=compiled?.definition?.id||null,duration=Math.max(0,Math.ceil(Number(compiled?.definition?.parameters?.cooldown)||0));if(!unit||!skillId||duration<=0)return{started:false,skillId,duration,expiresAt:null};const state=ensureCooldownState(unit),entry={skillId,duration,startedAt:battle.tick,expiresAt:battle.tick+duration};state[skillId]=entry;typeof recordValidationEvent==='function'&&recordValidationEvent('cooldown_started',{source_id:unit.id,skill_id:skillId,duration,started_at:entry.startedAt,expires_at:entry.expiresAt});return{started:true,...entry}}
 function processCooldowns(){for(const unit of battle.units){const state=ensureCooldownState(unit);for(const [skillId,entry] of Object.entries({...state})){if(Number(entry?.expiresAt||0)>battle.tick)continue;delete state[skillId];typeof recordValidationEvent==='function'&&recordValidationEvent('cooldown_expired',{source_id:unit.id,skill_id:skillId,duration:Number(entry?.duration)||0,started_at:Number(entry?.startedAt)||0,expired_at:battle.tick})}}}
 function actionExecutionEligibility(unit,{actionKind='skill_action',skillId=null,cooldown=null,compiled=null}={}){
  if(!unit?.alive)return{ok:false,reason:'ACTOR_DEAD',actionKind,skillId};
