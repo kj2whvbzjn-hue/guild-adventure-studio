@@ -10,17 +10,17 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-22T23:55:48.816Z"
+    "updated_at": "2026-08-23T00:11:16.999Z"
   },
   "project_context": {
     "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存・Git再取得までの保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
-    "summary": "GKS-B745時点のDevelopment↔Git全保存経路を再監査し、残存している旧処理を撤去する。Git Project本文とindexを正本とし、Project revisionは使用せずGit SHAで競合を扱う。新規保存・JSON新規保存・統合保存・編集保存・削除では、BranchとPATを必要判定なしで操作画面に毎回表示し、その入力値で直接Git処理を実行する。Owner/RepoはStudio接続先のみを使用し、Registry値・固定defaultへfallbackしない。操作時BranchはProject処理とindex処理の全工程で同一Branchを使用し、処理後の一覧状態も同Branchを維持する。Git index取得失敗時にlocalStorage案件一覧を表示しない。旧Git管理画面/API/CSS、死んだProject Settings処理、Development CRUD二重定義を撤去する。Project本文成功後のindex更新失敗は部分成功として明示し、その場でindex更新だけ再試行できるようにする。"
+    "summary": "GKS-B745時点のDevelopment↔Git全保存経路を再監査し、残存している旧処理を撤去する。Git Project本文とindexを正本とし、Project revisionは使用せずGit SHAで競合を扱う。新規保存・JSON新規保存・統合保存・編集保存・削除では、BranchとPATを必要判定なしで操作画面に毎回表示し、その入力値で直接Git処理を実行する。Owner/RepoはStudio接続先のみを使用し、Registry値・固定defaultへfallbackしない。操作時BranchはProject処理とindex処理の全工程で同一Branchを使用し、処理後の一覧状態も同Branchを維持する。Git index取得失敗時にlocalStorage案件一覧を表示しない。旧Git管理画面/API/CSS、死んだProject Settings処理、Development CRUD二重定義を撤去する。Project本文成功後のindex更新失敗は部分成功として明示し、その場でindex更新だけ再試行できるようにする。 撤去作業に入る前にGKS-B745の旧処理依存・ソース位置・SHA256・安全削除候補・置換必須箇所・障害症状別の復旧手順を記録し、削除後に不具合が出た場合は推測で再実装せずB745撤去前状態へ戻せるようにする。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-DEV-SAVE-ROOT",
-    "work_box_id": "BOX-DEV-SAVE-GIT",
-    "theme": "B745保存経路監査残件の撤去とGit I/O一本化",
-    "goal": "新規保存・統合・編集・削除をBranch+PAT直接入力の共通Git I/Oへ統一し、localStorage/旧Git UI/旧接続fallback/Branch分裂/部分成功放置を残さない。"
+    "architecture_id": "ARCH-DEV-SAVE-LEGACY",
+    "work_box_id": "BOX-DEV-SAVE-PRE-REMOVE",
+    "theme": "旧保存経路撤去前の依存・復旧情報固定",
+    "goal": "旧処理を削除する前に、B745の正確な依存関係・復旧元・削除順序・不具合症状別の戻し方をDevelopment管理へ固定する。"
   },
   "project_rules": [
     {
@@ -112,6 +112,15 @@
       "source_id": "GKS-B745-save-path-audit",
       "created_at": "2026-08-23T08:52:00+09:00",
       "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-011",
+      "text": "旧Development保存経路の撤去は一括削除しない。撤去前B745ソースと依存台帳を固定し、呼出元0の死コードのみを先に除去する。実行中のRegistry/localStorage/Git接続/認証経路は代替経路を実装・検証してから除去する。不具合時は撤去前B745の記録済みコードへ戻し、別方式を推測追加して復旧しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "source_baseline": {
@@ -126,8 +135,37 @@
     "superseded_by": "",
     "updated_at": "2026-08-23T07:24:00+09:00"
   },
-  "implementation_records": [],
-  "discussions": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-DEV-SAVE-PRE-REMOVE-B745-001",
+      "studio_build": "GKS-B745",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-DEV-SAVE-PRE-REMOVE"
+      ],
+      "task_ids": [
+        "TASK-DEV-SAVE-013"
+      ],
+      "result": "Applied",
+      "evidence": "Pre-removal audit captured before source deletion. Full Source=guild-adventure-studio-sub(20260822-234438).zip SHA256=e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4; source tree SHA256=72137e965cff53871f3abbd9913f9842bb364d94c1616f119924ae45699018ed; Quick source gate PASS 11/11; evidence SHA256=289d5dbc880001123d9ce5dea39f4de4ab9ffd35418340da65dfaa07e25bb2e8. Detailed dependency/recovery ledger=DISC-DEV-SAVE-PRE-REMOVE-001.",
+      "recorded_at": "2026-08-23T09:05:00+09:00"
+    }
+  ],
+  "discussions": [
+    {
+      "id": "DISC-DEV-SAVE-PRE-REMOVE-001",
+      "title": "GKS-B745 撤去前 旧処理依存・障害復旧台帳",
+      "status": "Resolved",
+      "summary": "旧処理を削除する前に、B745の正確なソース位置、依存状態、削除可否、段階撤去順序、症状別の復旧方法を固定する。",
+      "body": "【撤去前基準】\nStudio Build: GKS-B745\nGame Build: GA-B486.211\n基準Full Source: guild-adventure-studio-sub(20260822-234438).zip\nFull Source ZIP SHA256: e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4\nSource tree SHA256: 72137e965cff53871f3abbd9913f9842bb364d94c1616f119924ae45699018ed\nBaseline Quick: PASS 11/11 / warnings 0 / timeouts 0\nQuick evidence SHA256: 289d5dbc880001123d9ce5dea39f4de4ab9ffd35418340da65dfaa07e25bb2e8\n\n【主要ファイルの撤去前SHA256】\nstudio/index.html\na1cab3a2e26e052d8b925ba6d230b26cf72c14684a6238830df2c81810e2e310\n\nstudio/development-git-store/development-git-store.js\nedcafab023d5e6bf52c0b1d7a20bab7146cd3ddd581d119350d5cd30c8195cbf\n\nstudio/development-git-store/development-git-store.css\na4f99bbfd57ac004916575298c589e0563127b8a494d3b3e62a5035f3a7ab5ab\n\nstudio/sw.js\na38167740b1c0c5e5fa3261711f410a3027c49583e1e71d0834c5f09fecc90c8\n\n【A: 呼出元0・先に撤去可能な候補】\n1. studio/index.html:3347 createDevelopmentProjectTemplate()\n   - 定義のみ。呼出元0。\n   - 旧「JSONひな形をダウンロードして後でGit登録」経路。\n   - 現行の新規保存/JSON新規保存とは別経路。\n   - 削除後に新規保存自体が壊れた場合、この関数を戻すのではなく現行createProject/importProjectFile側を調べる。\n\n2. studio/index.html:3546 toggleDevelopmentProjectSettings()\n   studio/index.html:3569 saveDevelopmentProjectSettings()\n   studio/index.html:3572 renameDevelopmentProject()\n   studio/index.html:3590 openDevelopmentProjectSettingsFromDetail()\n   - 現行DOMにdevelopmentProjectSettings / developmentProjectName等が存在せず、外部呼出元0。\n   - 相互参照だけの死んだ旧Settings群。\n   - ただし案件名称変更機能を将来戻す場合は現行Project PUT + index PUT経路で再実装し、この旧群を復活させない。\n\n3. studio/index.html:3564 switchDevelopmentProject()\n   - 定義のみ。外部呼出元0。\n\n4. studio/index.html:3591 openDevelopmentGitStore()\n   - window.GKSDevelopmentGitStore.focus()へ遷移する旧Git管理画面入口。\n   - 呼出元0。\n\n5. studio/index.html:3592 continueDevelopmentProject()\n   studio/index.html:3593 continueCurrentDevelopmentProject()\n   - 相互利用だけで外部呼出元0。\n\n6. studio/index.html:3594 resetAllDevelopmentProjects()\n   - 呼出元0。\n   - 旧localStorage cleanupを含むため、現行Git案件管理からは直接使われていない。\n\n7. studio/index.html:3847 renderDevelopmentAllDataStatus()\n   - 定義のみ。対応表示経路なし。\n\n8. studio/development-git-store/development-git-store.js:235 reloadCurrent()\n   - API公開のみ。現行UI呼出元0。\n\n9. development-git-store.js:289 testConnection()\n   - Development Git Store版の呼出元0。\n   - AI Publish等の別testConnectionとは別物なので、名前一致だけで他moduleを削除しない。\n\n10. development-git-store.js:292 fillFromEntry()\n    - API公開のみ。呼出元0。\n\n11. development-git-store.js:293 focus()\n    - openDevelopmentGitStore()からしか参照されず、その親も呼出元0。\n\n12. studio/index.html host API:\n    - 9635 getDefaultGitRemote\n    - 9636 getProjectIndexSeed\n    - 9662 updateGitRemote\n    現行development-git-store.jsから呼ばれていない。\n\n13. studio/index.html:3322 DEVELOPMENT_EMPTY_REGISTRY_KEY\n    - 定義のみ。使用箇所0。\n\n14. 旧Git Store CSS\n    - studio/index.html:16 でCSS参照。\n    - studio/sw.js:18 でcache対象。\n    - CSS selector自体を使用する現行DOM/JSは確認されていない。\n    - 参照解除は可能だが、CSSファイル物理削除は別段階にする。\n\n【B: 二重定義。削除する側を間違えるとUI破損する】\nstudio/index.html:\n旧側 3610-3623\n現行側 3631-3649\n\n対象:\nstartNewDevDiscussion\ncloseDevDiscussionEditor\neditDevDiscussion\nsaveDevDiscussion\nstartNewDevDecision\ncloseDevDecisionEditor\neditDevDecision\nsaveDevDecision\nstartNewDevSpecification\ncloseDevSpecEditor\neditDevSpecification\nsaveDevSpecification\n\nJavaScriptは後勝ちなので、現在実行されているのは3631-3649側。\n撤去するのは3610-3623側だけ。\n3631-3649側はselectedDev*、showDevRecordEditor()、setDevRecordDetailMode()/ListMode()、\nSpecification Candidate承認制約等を含む現行UI実装なので削除禁止。\n\n【C: 現在も実行依存があり、代替完成前に削除禁止】\n1. localStorage Registry\n   - studio/index.html:3320 DEVELOPMENT_REGISTRY_KEY\n   - 3503 saveDevelopmentProjectRegistry()\n   - 3506-3507 ensureDevelopmentProjectRegistry()\n   - 3507でlocalStorage.getItem(DEVELOPMENT_REGISTRY_KEY)\n   - activeDevelopmentProjectEntry、一覧描画、open、host API等がdevelopmentProjectRegistryメモリ構造に依存。\n   - 不要なのはlocalStorageを正本/fallbackにする部分であり、developmentProjectRegistryメモリ構造そのものを先に消してはいけない。\n   - 先に「Git index GET → memory registry → UI」へ置換し、localStorage read/writeを無効化して全経路確認後にkey/writer/parserを撤去する。\n\n2. getRegistryEntry\n   - studio/index.html:9634でhost API公開。\n   - development-git-store.js:39 studioConnection()が現役で参照。\n   - Registry接続fallbackを消す場合、studioConnection()を先にStudio Owner/Repo + 明示Branchへ変更してからhost APIを削除する。\n\n3. DEFAULT_CONNECTION\n   - development-git-store.js:15\n   - owner fallback:41\n   - repo fallback:42\n   - branch fallback:43\n   - defaultWriteBranch fallback:57\n   - 先にOwner/Repo=Studio接続先のみ、Branch=操作/session明示値へ置換してから削除する。\n   - 単純削除すると未設定時の例外箇所やdefaultWriteBranch()が壊れる。\n\n4. ghToken読込\n   - development-git-store.js:44 studioConnection()でread tokenに使用。\n   - refreshProjectIndex()、openFromGit()の読込はstudioConnection()経由。\n   - B745は「読込=ghToken / 書込=操作画面PAT」に分裂している。\n   - Private RepositoryではghToken依存を先に消すとindex GET/Project GETが401/403になる可能性がある。\n   - 読込認証をどうするかを確定・実装してから旧ghToken依存を撤去する。\n\n5. refreshProjectIndex()失敗時の旧一覧残留\n   - development-git-store.js:144-158\n   - 151でstudioConnection('', {index:true})\n   - 155で失敗時state.indexRowsを返す。\n   - localStorage先行一覧と組み合わさると古い一覧が残る。\n   - Git index失敗時は一覧をGit正本として成功表示せず、明示失敗状態にする。\n\n【D: Branch不整合の復旧ポイント】\n- 書込はwriteConnection(projectId,{branch,token})で操作入力Branchを使用。\n- 一方refreshProjectIndex()はstudioConnection('',{index:true})を使用。\n- studioConnection()のbranchはRegistry branch → ghBranch → DEFAULT_CONNECTION.branch。\n- 任意BranchへCREATE/DELETE後にrefreshが別Branchを読めば「保存した案件が消えた」「削除した案件が復活した」ように見える。\n- 修正時はoperation contextのBranchをProject処理、index GET/PUT、競合再試行、処理後一覧refreshまで引き回す。\n\n【E: Project/index部分成功の復旧ポイント】\n新規:\nregisterNewProject()\n  Project PUT成功: development-git-store.js:247\n  index追加:252\n  index失敗:253でpartial error\n現状はalertで終了。\n復旧は同Branchの最新index GET → 対象{id,title}追加/upsert → index SHA付きPUT。\nProject CREATEは再実行しない。\n\n削除:\ndeleteCurrentProjectCompletely()\n  Project DELETE成功:281\n  index削除:282\n  index失敗:283でProject metadataまで除去してpartial error\n復旧は同Branchの最新index GET → 対象id削除 → index SHA付きPUT。\nProject DELETEは再実行しない。\n\n【F: 不具合症状別の第一確認・復旧】\n1. Developmentを開いて案件一覧が空/取得失敗\n   確認: refreshProjectIndex(), readIndex(), studioConnection()のowner/repo/branch/token。\n   特にPrivate repoならread token経路を確認。\n   復旧: B745基準のstudioConnection()/refreshProjectIndex()を参照し、削除したread auth/branch供給だけを限定復元する。\n   localStorage正本fallbackを恒久復活させない。\n\n2. 案件を押しても開けない\n   確認: openFromGit() 180-195、canonical path、Branch、token、remote SHA。\n   復旧: B745 openFromGit()とstudioConnection()を比較し、GET経路だけを戻す。\n\n3. 保存は成功表示だが一覧から消える\n   確認: saveProject()/registerNewProject()で使ったc.branchとrefreshProjectIndex()のbranch。\n   復旧: Projectを戻さず、同Branchのindexを修復し一覧refreshのBranchを統一する。\n\n4. 削除した案件が一覧に残る\n   確認: Git上Projectファイルの有無と同Branch index.json。\n   Projectが削除済みならDELETEを再実行しない。\n   indexからidだけ除去してPUTする。\n\n5. 新規案件本文はGitにあるが一覧に出ない\n   Project CREATEを再実行しない。\n   同Branch indexへid/titleを追加する。\n\n6. Discussion/Decision/Specification編集UIが壊れた\n   最初に「旧側3610-3623ではなく現行側3631-3649を誤削除していないか」を確認。\n   現行側をB745基準からそのまま復元する。\n   旧側を戻して二重定義に戻すのは最後の緊急回避に限定。\n\n7. Git設定画面へ移動する機能だけ消えた\n   現行要件では意図した撤去。\n   保存/新規/統合/削除がBranch+PAT入力で完結していれば復旧不要。\n\n8. CSS削除後にStudio起動/cacheで異常\n   studio/index.html:16とstudio/sw.js:18の参照整合を確認。\n   必要ならB745のCSSを同一SHAの内容で戻し、参照も同時に復元する。\n\n【G: 撤去順序】\nPhase 0: 本台帳とB745 hashesを保存。\nPhase 1: 呼出元0の死コード、旧側重複関数だけ撤去。CSSは参照解除まで。\nPhase 2: localStorage Registry・Registry remote・DEFAULT_CONNECTION・read authを新経路へ置換。まだ旧コードを物理削除しない。\nPhase 3: 新規/JSON新規/open/edit save/merge save/delete/index failure/Private repo/任意Branchを回帰確認。\nPhase 4: 置換済み旧コードだけ物理削除。\nPhase 5: Full Gate後に未参照CSS等のファイル削除を別更新として行う。\n\n【復旧原則】\n- 不具合時は症状に対応する最小単位だけ戻す。\n- B745 Full Sourceと上記SHAを復旧元とする。\n- Project本文をlocalStorage正本へ戻さない。\n- Project revisionを復活させない。\n- 別Branchへ勝手にfallbackしない。\n- Project/index部分成功時は成功済みProject操作を再実行しない。\n",
+      "open_questions": "読込GET（index / Project）のPATを操作時入力へ統一するか、Development session credentialとして保持するかは、実装前に経路を確定する。CSSファイル物理削除は参照解除後の別更新にする。",
+      "conclusion": "一括削除は禁止。呼出元0の死コードと旧側重複定義だけ先行撤去し、Registry/localStorage/Git connection/read authは代替経路完成・回帰確認後に削除する。障害時はGKS-B745基準へ最小単位で戻す。",
+      "related_discussion_ids": [],
+      "artifact_note": "Recovery baseline: guild-adventure-studio-sub(20260822-234438).zip / SHA256 e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    }
+  ],
   "decisions": [
     {
       "id": "DEC-DEV-SAVE-001",
@@ -200,6 +238,20 @@
       "approved_at": "",
       "created_at": "2026-08-23T08:52:00+09:00",
       "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-007",
+      "title": "旧保存経路は段階撤去し、B745撤去前状態を復旧基準として固定する",
+      "status": "Proposed",
+      "text": "旧処理撤去はPhase 0記録→Phase 1死コードのみ撤去→Phase 2現役依存の代替実装→Phase 3全保存経路回帰→Phase 4旧コード物理削除→Phase 5未参照ファイル削除の順で行う。不具合時はB745の記録済みソースから症状に必要な最小処理だけ復元する。",
+      "rationale": "localStorage Registry、getRegistryEntry、DEFAULT_CONNECTION、ghToken読込などは現行コードから参照されており、死コードと同時に消すと一覧・open・Private repo・Branch・index整合が同時破損する可能性があるため。",
+      "source_discussion_ids": [
+        "DISC-DEV-SAVE-PRE-REMOVE-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "specifications": [
@@ -431,6 +483,77 @@
       "approved_at": "",
       "created_at": "2026-08-23T08:52:00+09:00",
       "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-011",
+      "title": "撤去前B745復旧基準固定仕様",
+      "status": "Draft",
+      "summary": "撤去前Source・主要ファイルSHA・旧処理位置・依存状態をDevelopment管理に残す。",
+      "body": "復旧元はGKS-B745 Full Source guild-adventure-studio-sub(20260822-234438).zipとする。ZIP SHA256、source tree SHA256、studio/index.html、development-git-store.js、development-git-store.css、studio/sw.jsのSHA256をDISC-DEV-SAVE-PRE-REMOVE-001へ固定する。削除前に対象symbolの現行行位置・呼出有無・置換先を記録し、障害時はこの基準とdiffして原因を限定する。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-007"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "削除後に不具合が発生しても、GKS-B745撤去前ファイルとsymbol単位の復旧位置を特定でき、推測で旧機能を再生成する必要がない。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-012",
+      "title": "旧処理段階撤去仕様",
+      "status": "Draft",
+      "summary": "死コードと現役依存コードを分離し、現役依存は代替経路確認前に削除しない。",
+      "body": "Phase 1で削除可能なのは呼出元0の旧UI/API/定数と、二重定義のうち後勝ちで無効な旧側3610-3623のみ。localStorage Registry、save/ensureDevelopmentProjectRegistry、getRegistryEntry、DEFAULT_CONNECTION、ghToken読込は現役依存なのでPhase 2で代替経路を完成させるまで残す。development-git-store.cssは先にindex/sw参照を外して動作確認し、物理削除は別更新にする。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-007"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "各削除対象について『呼出元0』または『代替経路検証済み』のどちらかの証拠があり、未置換の現役依存を物理削除しない。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-SAVE-013",
+      "title": "旧処理撤去後 障害復旧仕様",
+      "status": "Draft",
+      "summary": "症状から復旧対象を限定し、成功済みGit操作や廃止した正本方式を巻き戻さない。",
+      "body": "案件一覧不可→refreshProjectIndex/readIndex/studioConnectionのBranch・read authを確認。案件open不可→openFromGit/canonical path/Branch/tokenを確認。保存後一覧消失→Project保存Branchとindex refresh Branchを比較。削除後一覧残留→Project DELETEを再実行せずindexだけ修復。新規本文のみ存在→CREATEを再実行せずindexだけ追加。Discussion/Decision/Specification UI破損→現行側3631-3649の誤削除を最初に確認。CSS/cache異常→index.htmlとstudio/sw.jsの参照を同時確認する。",
+      "decision_refs": [
+        "DEC-DEV-SAVE-007"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "不具合ごとに復旧対象が1経路へ限定され、localStorage正本・Project revision・別Branch fallbackを恒久復活させず復旧できる。",
+      "system_node_id": "SYS-DEV-GIT-STORE",
+      "contract_ids": [
+        "CONTRACT-DEV-LIST-GIT",
+        "CONTRACT-DEV-EDITOR-GIT",
+        "CONTRACT-DEV-GIT-REMOTE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 0,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -709,6 +832,72 @@
       "note": "B745では案件一覧/本文GETが旧Studio ghToken系、書込が操作画面PAT系で分裂している。保存経路で使う接続情報の責務を整理し、旧Git UI依存を残さない。",
       "created_at": "2026-08-23T08:52:00+09:00",
       "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-012",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "PRE_REMOVAL_SOURCE_ZIP_SHA256",
+      "value": "e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4",
+      "source": "GKS-B745-pre-removal-audit",
+      "note": "GKS-B745撤去前Full Source guild-adventure-studio-sub(20260822-234438).zip",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-013",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "PRE_REMOVAL_SOURCE_TREE_SHA256",
+      "value": "72137e965cff53871f3abbd9913f9842bb364d94c1616f119924ae45699018ed",
+      "source": "GKS-B745-pre-removal-audit",
+      "note": "GKS-B745撤去前Source tree hash。",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-014",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "PRE_REMOVAL_INDEX_HTML_SHA256",
+      "value": "a1cab3a2e26e052d8b925ba6d230b26cf72c14684a6238830df2c81810e2e310",
+      "source": "GKS-B745-pre-removal-audit",
+      "note": "studio/index.html撤去前hash。",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-015",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "PRE_REMOVAL_GIT_STORE_JS_SHA256",
+      "value": "edcafab023d5e6bf52c0b1d7a20bab7146cd3ddd581d119350d5cd30c8195cbf",
+      "source": "GKS-B745-pre-removal-audit",
+      "note": "studio/development-git-store/development-git-store.js撤去前hash。",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-016",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "PRE_REMOVAL_GIT_STORE_CSS_SHA256",
+      "value": "a4f99bbfd57ac004916575298c589e0563127b8a494d3b3e62a5035f3a7ab5ab",
+      "source": "GKS-B745-pre-removal-audit",
+      "note": "studio/development-git-store/development-git-store.css撤去前hash。",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-017",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "PRE_REMOVAL_STUDIO_SW_SHA256",
+      "value": "a38167740b1c0c5e5fa3261711f410a3027c49583e1e71d0834c5f09fecc90c8",
+      "source": "GKS-B745-pre-removal-audit",
+      "note": "studio/sw.js撤去前hash。",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "system_events": [],
@@ -812,6 +1001,14 @@
       "body": "案件をGitから開き、編集・部分統合・保存・Git再取得・再openまでを自動検証し、保存成功表示だけでは合格にしない。",
       "created_at": "2026-08-23T07:24:00+09:00",
       "updated_at": "2026-08-23T07:24:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-SAVE-PRE-REMOVE",
+      "node_id": "ARCH-DEV-SAVE-LEGACY",
+      "title": "撤去前依存・復旧台帳固定",
+      "body": "GKS-B745撤去前Sourceを復旧基準として固定し、旧処理を『呼出元0で先に削除可』『現役依存で置換後削除』へ分類する。削除後の不具合はDISC-DEV-SAVE-PRE-REMOVE-001の症状別手順で最小復旧する。",
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "tasks": [
@@ -960,11 +1157,12 @@
       "box_id": "BOX-DEV-SAVE-LEGACY",
       "title": "Development保存系の旧UI/API/CSS・重複関数・旧fallbackを撤去する",
       "status": "Todo",
-      "execution_order": 80,
+      "execution_order": 100,
       "depends_on": [
         "TASK-DEV-SAVE-003",
         "TASK-DEV-SAVE-004",
-        "TASK-DEV-SAVE-006"
+        "TASK-DEV-SAVE-006",
+        "TASK-DEV-SAVE-017"
       ],
       "acceptance_criteria": "同名Development CRUD/save/load関数の重複定義が0件で、旧Git管理画面用API/CSS、死んだProject Settings、localStorage authority/fallback、Registry/固定default Git接続fallback、Project revision保存経路が実行コードから除去されている。",
       "work_type": "SOURCE_UPDATE",
@@ -975,14 +1173,14 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T08:52:00+09:00"
+      "updated_at": "2026-08-23T09:05:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-009",
       "box_id": "BOX-DEV-SAVE-TEST",
       "title": "Development保存Round-trip Regressionを正式Gateへ追加する",
       "status": "Todo",
-      "execution_order": 90,
+      "execution_order": 110,
       "depends_on": [
         "TASK-DEV-SAVE-004",
         "TASK-DEV-SAVE-006",
@@ -1001,7 +1199,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T08:52:00+09:00"
+      "updated_at": "2026-08-23T09:05:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-010",
@@ -1064,6 +1262,108 @@
       },
       "created_at": "2026-08-23T08:52:00+09:00",
       "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-013",
+      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
+      "title": "GKS-B745撤去前Source・SHA・依存・復旧台帳を固定する",
+      "status": "Done",
+      "execution_order": 76,
+      "depends_on": [],
+      "acceptance_criteria": "B745 Full Sourceと主要ファイルSHA、削除可否、現役依存、症状別復旧方法がDevelopment管理に登録されている。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-014",
+      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
+      "title": "Phase 1: 呼出元0の死コードと旧側重複定義だけ撤去する",
+      "status": "Todo",
+      "execution_order": 80,
+      "depends_on": [
+        "TASK-DEV-SAVE-013"
+      ],
+      "acceptance_criteria": "呼出元0と確認済みのsymbolだけ削除し、二重CRUDは3610-3623側だけを削除する。現行3631-3649側は残す。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-015",
+      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
+      "title": "Phase 2: 現役Registry・Git接続・読込認証を代替経路へ置換する",
+      "status": "Todo",
+      "execution_order": 85,
+      "depends_on": [
+        "TASK-DEV-SAVE-013",
+        "TASK-DEV-SAVE-010",
+        "TASK-DEV-SAVE-011"
+      ],
+      "acceptance_criteria": "Git index→memory registry、Owner/Repo=Studio、Branch=operation/session、read authの確定経路が動作し、旧localStorage/Registry remote/default/read token依存を削除可能な状態になる。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-016",
+      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
+      "title": "Phase 3: 撤去前後の全Development↔Git経路を回帰確認する",
+      "status": "Todo",
+      "execution_order": 90,
+      "depends_on": [
+        "TASK-DEV-SAVE-014",
+        "TASK-DEV-SAVE-015",
+        "TASK-DEV-SAVE-012"
+      ],
+      "acceptance_criteria": "一覧/open/編集保存/統合保存/新規/JSON新規/削除/index部分失敗/任意Branch/Private repo相当認証を確認し、B745基準から意図しない機能欠落がない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-SAVE-017",
+      "box_id": "BOX-DEV-SAVE-PRE-REMOVE",
+      "title": "Phase 4-5: 置換済み旧処理を物理削除し未参照CSSは別更新で撤去する",
+      "status": "Todo",
+      "execution_order": 95,
+      "depends_on": [
+        "TASK-DEV-SAVE-016"
+      ],
+      "acceptance_criteria": "回帰確認済みの旧処理だけを物理削除し、CSSファイル削除はindex.html/studio/sw.js参照解除がPASSした後の別更新で行う。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "checks": [
@@ -1342,6 +1642,167 @@
       "blocking": false,
       "created_at": "2026-08-23T08:52:00+09:00",
       "updated_at": "2026-08-23T08:52:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-013",
+      "title": "撤去前B745 Source・主要SHA・Quick基準が記録されている",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-013",
+      "status": "Passed",
+      "result": "GKS-B745 baseline and hashes captured before removal.",
+      "evidence": "Full Source ZIP SHA256=e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4; source tree SHA256=72137e965cff53871f3abbd9913f9842bb364d94c1616f119924ae45699018ed; Quick PASS 11/11; evidence SHA256=289d5dbc880001123d9ce5dea39f4de4ab9ffd35418340da65dfaa07e25bb2e8.",
+      "checked_by": "AI audit",
+      "checked_at": "2026-08-23T09:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-014",
+      "title": "Phase 1削除候補は呼出元0または後勝ちで無効な旧側定義に限定されている",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-014",
+      "status": "Passed",
+      "result": "Removal candidates classified by symbol reference scan.",
+      "evidence": "createDevelopmentProjectTemplate / Project Settings群 / switch / openDevelopmentGitStore / continue群 / resetAllDevelopmentProjects / renderDevelopmentAllDataStatus / Git Store reloadCurrent,testConnection,fillFromEntry,focus / host getDefaultGitRemote,getProjectIndexSeed,updateGitRemote / DEVELOPMENT_EMPTY_REGISTRY_KEY は外部呼出元0。CRUD重複は3610-3623が旧側、3631-3649が現行側。",
+      "checked_by": "AI audit",
+      "checked_at": "2026-08-23T09:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-015",
+      "title": "Registry/localStorage/getRegistryEntry/DEFAULT_CONNECTION/ghTokenは代替完成前に削除されない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-015",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-016",
+      "title": "任意BranchでProject処理とindex処理・処理後一覧が同一Branchを維持する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-016",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-017",
+      "title": "新規/削除のProject成功-index失敗をProject再実行なしで復旧できる",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-016",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-018",
+      "title": "Discussion/Decision/Specification現行CRUD 3631-3649が撤去後も動作する",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-016",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-019",
+      "title": "CSS物理削除前にindex.htmlとstudio/sw.jsの参照解除・起動確認が完了している",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-017",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:05:00+09:00",
+      "updated_at": "2026-08-23T09:05:00+09:00"
     }
   ],
   "workflow": {
@@ -1365,6 +1826,10 @@
     {
       "at": "2026-08-23T08:52:00+09:00",
       "message": "GKS-B745保存経路監査結果を反映。Branch+PAT常時表示、操作Branch一本化、localStorage/Registry/固定default/旧Git UI経路撤去、index部分失敗再試行を修正対象へ追加。"
+    },
+    {
+      "at": "2026-08-23T09:05:00+09:00",
+      "message": "旧保存経路の撤去前にGKS-B745 Source hash、死コード/現役依存分類、段階撤去順序、症状別復旧手順をDISC-DEV-SAVE-PRE-REMOVE-001として固定。"
     }
   ]
 }
