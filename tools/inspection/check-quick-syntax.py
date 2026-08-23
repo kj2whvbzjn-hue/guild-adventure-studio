@@ -4,8 +4,8 @@
 Quick checks only critical JavaScript runtime files plus inspection/integrity Python.
 Full retains the exhaustive JS/PHP/Python syntax sweep.
 
-Runtime startup is batched: all critical JavaScript files are parsed by one Node
-process and all critical PHP files by one PHP process. The checked file set and
+Runtime startup is batched for critical JavaScript. Critical PHP preserves the
+exact per-file `php -l` semantics used before batching. The checked file set and
 fail-closed behavior remain unchanged.
 """
 from __future__ import annotations
@@ -53,24 +53,16 @@ if(errors.length){for(const e of errors)console.error(e);process.exit(1);}
             except Exception: rel=raw
             errors.append(f'JAVASCRIPT_SYNTAX {rel} {message if sep else line}')
 
-missing_php=[path for path in php_files if not path.is_file()]
-for path in missing_php:
-    errors.append(f'CRITICAL_PHP_MISSING {path.relative_to(root).as_posix()}')
-existing_php=[path for path in php_files if path.is_file()]
 php=shutil.which('php')
 if php_files and not php:
     errors.append('PHP_RUNTIME_MISSING')
-elif php and existing_php:
-    php_batch='$errors=[]; foreach(array_slice($argv,1) as $path){ try { token_get_all((string)file_get_contents($path), TOKEN_PARSE); } catch (ParseError $e) { $errors[]=$path."\\t".$e->getMessage(); }} if($errors){fwrite(STDERR,implode("\\n",$errors)."\\n");exit(1);}'
-    proc=subprocess.run([php,'-r',php_batch,'--',*map(str,existing_php)],cwd=root,text=True,capture_output=True)
-    if proc.returncode:
-        for line in proc.stderr.splitlines():
-            if not line.strip():
-                continue
-            raw,sep,message=line.partition('\t')
-            try: rel=Path(raw).resolve().relative_to(root).as_posix()
-            except Exception: rel=raw
-            errors.append(f'PHP_SYNTAX {rel} {message if sep else line}')
+elif php:
+    for path in php_files:
+        if not path.is_file():
+            errors.append(f'CRITICAL_PHP_MISSING {path.relative_to(root).as_posix()}');continue
+        proc=subprocess.run([php,'-l',str(path)],cwd=root,text=True,capture_output=True)
+        if proc.returncode:
+            errors.append(f'PHP_SYNTAX {path.relative_to(root).as_posix()} {proc.stderr.strip()}')
 
 py_files=[]
 for base in ('tools/inspection','tools/integrity'):
