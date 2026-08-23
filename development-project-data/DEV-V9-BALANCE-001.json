@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T07:59:17.705Z"
+    "updated_at": "2026-08-23T08:10:14.542Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-ITEM-001",
-    "theme": "P3-4 Formal Contribution numeric validation fix — TASK-BAL-022 Ready",
-    "goal": "Human承認済みTASK-BAL-022を次の1 Development Taskとして実行可能。対象はFormal Contribution validatorのstrict finite-number化のみ。TASK-BAL-017はB755 successor適用後に再実行する。Game Runtimeにも別経路でnull/empty string/false→0の類似coercionが見つかったが、未計画問題としてTASK-BAL-022へ自動混在させず別Human判断待ち。この承認反映runではSource/Game Data/Current active変更0件。"
+    "theme": "Apply GKS-B756 strict numeric validation update, then rerun P3-4",
+    "goal": "TASK-BAL-022 is complete and DEV-V9-BALANCE-001_TASK-BAL-022_GKS-B756_STUDIO-UPDATE.zip passed all gates. Apply GKS-B756 and reacquire fresh Current Source. TASK-BAL-017 remains Blocked until B756 application is verified, then rerun P3-4 Static Calibration from the beginning. The separate Game Runtime numeric coercion issue remains Proposed/Pending and was not changed by TASK-BAL-022."
   },
   "project_rules": [
     {
@@ -239,10 +239,10 @@
     "studio_build": "GKS-B755",
     "game_build": "GA-B486.211",
     "source_label": "guild-adventure-studio-sub(20260823-074325).zip",
-    "source_role": "current_baseline",
-    "recorded_at": "2026-08-23T16:43:00+09:00",
+    "source_role": "current_baseline_pending_B756_application",
+    "recorded_at": "2026-08-23T17:03:00+09:00",
     "package_manifest_sha256": "109e00feb6babfad4dc743b8f9de284623f9387b103eff8a769f364b64894cc0",
-    "source_tree_sha256": "41651a3c9b97a82e1d9d22cf5d1ba1fa4d01c125d246d3bfe81a145233d1a9fb",
+    "source_tree_sha256": "c81c22324958ae3227fc8d6e87fd953f9fce60213badd74dd6dded8186ec8edf",
     "source_zip_sha256": "23249cc0ee515b44dff528e129628129eb7d84d4875853df82a6cbdc39dbd1b4"
   },
   "lifecycle": {
@@ -425,6 +425,52 @@
       "summary": "B755 application verified. Partial static matrix reached 80 MOD tier candidates and 24 representative Passive candidates, but invalid-value probing exposed silent numeric coercion in the Formal Contribution validator. TASK-BAL-017 is not completion-ready until a separate SOURCE_UPDATE fixes fail-closed numeric typing and the matrix is rerun.",
       "created_at": "2026-08-23T16:43:00+09:00",
       "updated_at": "2026-08-23T16:43:00+09:00"
+    },
+    {
+      "id": "IMP-BAL-P3-4-NUMERIC-001",
+      "title": "P3-4 Formal Contribution strict numeric validation correction",
+      "status": "Completed",
+      "task_id": "TASK-BAL-022",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B756",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-ITEM-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-022"
+      ],
+      "result": "Applied",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-022_STRICT-NUMERIC-EVIDENCE.zip sha256=c780aa621255b94b0dd6cf7ed90b4f28116aadc435b557b419f69d0c6528aa01",
+      "recorded_at": "2026-08-23T17:03:00+09:00",
+      "baseline": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B755",
+        "source_zip": "guild-adventure-studio-sub(20260823-074325).zip",
+        "source_zip_sha256": "23249cc0ee515b44dff528e129628129eb7d84d4875853df82a6cbdc39dbd1b4",
+        "package_manifest_sha256": "109e00feb6babfad4dc743b8f9de284623f9387b103eff8a769f364b64894cc0",
+        "source_tree_sha256": "c81c22324958ae3227fc8d6e87fd953f9fce60213badd74dd6dded8186ec8edf"
+      },
+      "target": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B756",
+        "package_manifest_sha256": "5a43304454a6ac13de83cc9ec5b2be2550d6fb7f226ed3dd5cf662d89ad07c9b",
+        "source_tree_sha256": "59dc975ed5c999dbc29d85f8c48f35214e59c3cb5cddcb3de128f0104a3d6d49",
+        "artifact_id": "GKS-B756-59dc975ed5c9"
+      },
+      "artifact": {
+        "file": "DEV-V9-BALANCE-001_TASK-BAL-022_GKS-B756_STUDIO-UPDATE.zip",
+        "sha256": "4f9863b6f65044aeb4f6c6d02a8de6573940a524f0591f79e30bd287eba1334b",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "summary": "Formal Contribution numeric inputs are now strict finite JavaScript numbers. Malformed-value probe improved from 51 unexpected accepts to 0 while P3-3 normal Contribution regressions and all Quick/Accept/Release/Full gates pass. Game Runtime numeric coercion remains outside this task.",
+      "created_at": "2026-08-23T17:03:00+09:00",
+      "updated_at": "2026-08-23T17:03:00+09:00"
     }
   ],
   "discussions": [
@@ -4042,7 +4088,7 @@
       "id": "TASK-BAL-022",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "P3-4 Formal Contribution numeric type validationを修正・検証する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 155,
       "depends_on": [
         "TASK-BAL-016"
@@ -4056,7 +4102,7 @@
         "at": "2026-08-23T16:55:00+09:00"
       },
       "created_at": "2026-08-23T16:43:00+09:00",
-      "updated_at": "2026-08-23T16:55:00+09:00"
+      "updated_at": "2026-08-23T17:03:00+09:00"
     }
   ],
   "checks": [
@@ -5071,6 +5117,75 @@
       "blocking": false,
       "created_at": "2026-08-23T16:55:00+09:00",
       "updated_at": "2026-08-23T16:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-4-STRICT-NUMERIC-001",
+      "title": "P3-4 strict numeric validator regression",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-022",
+      "status": "Passed",
+      "result": "B755 baseline focused probe accepted 51 malformed numeric values. GKS-B756 accepts 0. null/string/boolean/NaN/Infinity fail closed for Passive ability condition min, MOD balance.value and present Equipment/Requirement numeric fields. Omitted optional Equipment fields remain valid. P3-3 normal core/Data Exchange/Formal Adapter regressions PASS.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-022_STRICT-NUMERIC-EVIDENCE.zip sha256=c780aa621255b94b0dd6cf7ed90b4f28116aadc435b557b419f69d0c6528aa01",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T17:03:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T17:03:00+09:00",
+      "updated_at": "2026-08-23T17:03:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-4-B756-RELEASE-001",
+      "title": "P3-4 GKS-B756 Quick / Accept / Release gates",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-022",
+      "status": "Passed",
+      "result": "Quick source 11/11 PASS. Accept update 14/14 PASS with applied Full 26/26 PASS. Release update 14/14 PASS with applied Full 26/26 PASS. warnings=0, timeouts=0. Protected test differences are Build-token synchronization only.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-022_STRICT-NUMERIC-EVIDENCE.zip sha256=c780aa621255b94b0dd6cf7ed90b4f28116aadc435b557b419f69d0c6528aa01; artifact=DEV-V9-BALANCE-001_TASK-BAL-022_GKS-B756_STUDIO-UPDATE.zip sha256=4f9863b6f65044aeb4f6c6d02a8de6573940a524f0591f79e30bd287eba1334b",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T17:03:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T17:03:00+09:00",
+      "updated_at": "2026-08-23T17:03:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-4-B756-APPLY-001",
+      "title": "GKS-B756 application and fresh-source reacquisition",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-017",
+      "status": "Pending",
+      "result": "TASK-BAL-022 artifact is ready, but GKS-B756 is not yet confirmed as deployed Current Source. Keep TASK-BAL-017 Blocked until Human applies the direct Studio update ZIP and a fresh Current Source is reacquired and verified.",
+      "evidence": "pending deployment of DEV-V9-BALANCE-001_TASK-BAL-022_GKS-B756_STUDIO-UPDATE.zip sha256=4f9863b6f65044aeb4f6c6d02a8de6573940a524f0591f79e30bd287eba1334b",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T17:03:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T17:03:00+09:00",
+      "updated_at": "2026-08-23T17:03:00+09:00"
     }
   ],
   "workflow": {
@@ -5230,6 +5345,10 @@
     {
       "at": "2026-08-23T16:55:00+09:00",
       "message": "HumanがDEC-BAL-P3-4-STRICT-NUMERIC-VALIDATION-001 / TASK-BAL-022を承認。TASK-BAL-022=Todo、CHK-BAL-P3-4-NUMERIC-TYPE-GATE-001=Passed/Resolved、TASK-BAL-017はTASK-BAL-022依存でBlocked。同時にB755 Game Runtimeを監査し、P3-4 Formal Contribution resolver自体はGame Runtime未接続だが、game/assets/js/app-runtime.js finiteNumber()にもNumber(value) coercionがありnull/empty string/falseが0化し得ることを確認。これは別実行経路の新規IssueのためTASK-BAL-022へ自動追加せず、DEC-BAL-GAME-NUMERIC-COERCION-BOUNDARY-001=Proposed / CHK-BAL-GAME-NUMERIC-COERCION-AUDIT-001=Pendingとして記録。Source/Game Data/Current active変更0件。"
+    },
+    {
+      "at": "2026-08-23T17:03:00+09:00",
+      "message": "TASK-BAL-022 completed on exact fresh GKS-B755 baseline. Formal Contribution numeric validation now requires strict finite number input and validates Passive/MOD raw numeric fields before lossy clone. Focused malformed-value probe improved 51 unexpected ACCEPT -> 0. P3-3 normal regressions PASS. Quick 11/11; Accept 14/14 + applied Full 26/26; Release 14/14 + applied Full 26/26; warnings/timeouts=0. Artifact=DEV-V9-BALANCE-001_TASK-BAL-022_GKS-B756_STUDIO-UPDATE.zip sha256=4f9863b6f65044aeb4f6c6d02a8de6573940a524f0591f79e30bd287eba1334b; Evidence=DEV-V9-BALANCE-001_TASK-BAL-022_STRICT-NUMERIC-EVIDENCE.zip sha256=c780aa621255b94b0dd6cf7ed90b4f28116aadc435b557b419f69d0c6528aa01. Deletions=0, Game Data=0, Current active=0. Game Runtime coercion issue remains separate and unchanged. TASK-BAL-017 remains Blocked until B756 apply verification."
     }
   ],
   "authority": {
