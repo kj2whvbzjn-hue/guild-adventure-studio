@@ -10,17 +10,17 @@
     "name": "Development管理 保存経路再構築・Git正本化",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T00:16:22.563Z"
+    "updated_at": "2026-08-23T00:31:17.276Z"
   },
   "project_context": {
-    "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存・Git再取得までの保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
+    "purpose": "Development管理の案件選択・Git読込・編集・JSON統合・検証・保存経路を一本化し、部分修正の積み重ねで再発している保存不具合を根本解消する。",
     "summary": "GKS-B745時点のDevelopment↔Git全保存経路を再監査し、残存している旧処理を撤去する。Git Project本文とindexを正本とし、Project revisionは使用せずGit SHAで競合を扱う。新規保存・JSON新規保存・統合保存・編集保存・削除では、BranchとPATを必要判定なしで操作画面に毎回表示し、その入力値で直接Git処理を実行する。Owner/RepoはStudio接続先のみを使用し、Registry値・固定defaultへfallbackしない。操作時BranchはProject処理とindex処理の全工程で同一Branchを使用し、処理後の一覧状態も同Branchを維持する。Git index取得失敗時にlocalStorage案件一覧を表示しない。旧Git管理画面/API/CSS、死んだProject Settings処理、Development CRUD二重定義を撤去する。Project本文成功後のindex更新失敗は部分成功として明示し、その場でindex更新だけ再試行できるようにする。 撤去作業に入る前にGKS-B745の旧処理依存・ソース位置・SHA256・安全削除候補・置換必須箇所・障害症状別の復旧手順を記録し、削除後に不具合が出た場合は推測で再実装せずB745撤去前状態へ戻せるようにする。"
   },
   "current_focus": {
     "architecture_id": "ARCH-DEV-SAVE-LEGACY",
-    "work_box_id": "BOX-DEV-SAVE-EXEC-P0",
-    "theme": "GKS-B745保存経路再構築 実行計画",
-    "goal": "撤去前挙動を固定してから、死コードのみ先行撤去し、現役依存は代替経路を完成・検証してから除去する。各PhaseのGateをPASSするまで次Phaseへ進まない。"
+    "work_box_id": "BOX-DEV-SAVE-EXEC-P1",
+    "theme": "Phase 1 死コードのみ安全撤去",
+    "goal": "Phase 0完了・保存GET仕様修正・read auth先行削除Blocking済み。呼出元0の死コードだけを撤去しPhase 1 Gateへ進む。"
   },
   "project_rules": [
     {
@@ -121,6 +121,24 @@
       "source_id": "conversation",
       "created_at": "2026-08-23T09:05:00+09:00",
       "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-012",
+      "text": "通常のProject保存では事前Remote GET・保存後Remote GETを行わない。同一Branchはopen時SHA付きPUTを直接実行し、別Branchまたは対象SHA未保持時だけSHA取得/instance確認に必要なGETを行う。PUT成功時はresponse content.shaを保持する。Regression testの検証GETはproduction保存経路とは別に許可する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-SAVE-013",
+      "text": "現行index GET / Project GETが依存するghToken/read auth経路は、TASK-DEV-SAVE-027で代替read branch/token経路が実装・認証ありRepository相当で検証され、かつPhase 3 GateがPASSするまで削除・無効化・参照解除しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
     }
   ],
   "source_baseline": {
@@ -149,6 +167,21 @@
       "result": "Applied",
       "evidence": "Pre-removal audit captured before source deletion. Full Source=guild-adventure-studio-sub(20260822-234438).zip SHA256=e753d198a110433e05c3fad2aee5f59fbd389d9ac54336d619ed88f430d0b6d4; source tree SHA256=72137e965cff53871f3abbd9913f9842bb364d94c1616f119924ae45699018ed; Quick source gate PASS 11/11; evidence SHA256=289d5dbc880001123d9ce5dea39f4de4ab9ffd35418340da65dfaa07e25bb2e8. Detailed dependency/recovery ledger=DISC-DEV-SAVE-PRE-REMOVE-001.",
       "recorded_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "IMPL-DEV-SAVE-PHASE0-B745-001",
+      "studio_build": "GKS-B745",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-DEV-SAVE-EXEC-P0"
+      ],
+      "task_ids": [
+        "TASK-DEV-SAVE-018",
+        "TASK-DEV-SAVE-019"
+      ],
+      "result": "Applied",
+      "evidence": "Current exact source ZIP SHA256=1e4008b447d4d693f228c6964a751d507eeb42363b700e899de83e756fa1dcad; tree SHA256=d4c07206e7001e361c67c9d515045e45903e769a7afb72a8a2e50f59f489770f; Quick PASS 12/12 warnings=0 timeouts=0 evidence=152e38850c0f7490cffdbdf99af526e1d784fa850d4dcb797b0b85fab86d9e84; TASK-018 matrix SHA256=6634717d877abc8890fffbb182e2f2dc608bf8fb1ad3755348227df79a880213; TASK-019 characterization SHA256=448804bc6099b622eaadcb03af13a7d0d7fbfca5c62ae6afafdf09e7842ce0b5. No Studio Source files modified.",
+      "recorded_at": "2026-08-23T09:24:00+09:00"
     }
   ],
   "discussions": [
@@ -179,6 +212,22 @@
       "artifact_note": "Execution baseline: GKS-B745 pre-removal recovery ledger",
       "created_at": "2026-08-23T09:12:00+09:00",
       "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-SAVE-PREFLIGHT-001",
+      "title": "実行前3ブロッカー閉塞報告",
+      "status": "Resolved",
+      "summary": "Phase 1開始前の3危険点（Phase 0未実施、旧保存pre/post GET仕様、ghToken先行削除）を閉塞した。",
+      "body": "【1. Phase 0完了】\n最新Source ZIP SHA256=1e4008b447d4d693f228c6964a751d507eeb42363b700e899de83e756fa1dcad\nSource tree SHA256=d4c07206e7001e361c67c9d515045e45903e769a7afb72a8a2e50f59f489770f\nQuick=12/12 PASS / warnings=0 / timeouts=0\nTASK-018分類: 001=Partial, 002=Implemented, 003=Missing, 004=Implemented, 005=Partial, 006=ImplementedAfterSpecCorrection, 007=Partial, 008=Missing, 009=Missing, 010=Implemented, 011=Partial, 012=Missing\nTASK-019 characterization=PASS / result SHA256=448804bc6099b622eaadcb03af13a7d0d7fbfca5c62ae6afafdf09e7842ce0b5\n重要な現行I/O: same-branch save=PUT 1回、other-branch save=GET+PUT、CREATE=PUT+index GET+index PUT、DELETE=DELETE+index GET+index PUT、stale SHA=PUT 409拒否、CREATE後index失敗はretryなし、CREATE後一覧refreshはstudio-mainへ戻る現象を再現。\n\n【2. 古い保存仕様修正】\nDEC-002 / SPEC-004 / TASK-006 / CONTRACT-DEV-EDITOR-GIT / BOX-DEV-SAVE-GITを修正。同一Branch保存はopen時SHA付きPUTを直接実行。別Branch/対象SHAなしだけ必要GET。通常保存後のProject再GETは禁止。テストのRemote確認GETはproduction経路外として許可。\n\n【3. ghToken先行削除をBlocking】\nRULE-013 / DEC-009 / CHECK-033(blocking)を追加。TASK-027のread pathが認証ありRepository相当でPASSし、Phase 3 Gate(TASK-016)もPASSするまでghToken/read authを削除しない。TASK-032へTASK-027を明示依存として追加。",
+      "open_questions": "read branch/token供給元そのものの最終形はTASK-027で確定する。それまでは現行read authを保持する。",
+      "conclusion": "3危険点は閉塞済み。Source削除はまだ0件。Phase 1はTASK-020から開始可能だが、Phase 1 GateをPASSするまでPhase 2へ進まない。",
+      "related_discussion_ids": [
+        "DISC-DEV-SAVE-PRE-REMOVE-001",
+        "DISC-DEV-SAVE-EXEC-001"
+      ],
+      "artifact_note": "TASK018 matrix=GKS-B745-TASK-018-IMPLEMENTATION-MATRIX.json sha256=6634717d877abc8890fffbb182e2f2dc608bf8fb1ad3755348227df79a880213; TASK019 characterization=GKS-B745-TASK-019-CHARACTERIZATION-RESULT.json sha256=448804bc6099b622eaadcb03af13a7d0d7fbfca5c62ae6afafdf09e7842ce0b5",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
     }
   ],
   "decisions": [
@@ -196,15 +245,15 @@
     },
     {
       "id": "DEC-DEV-SAVE-002",
-      "title": "競合検知はGit SHAだけを使用する",
+      "title": "競合検知はGit SHAだけを使用し通常保存で余計なGETを行わない",
       "status": "Proposed",
-      "text": "Project revisionの比較・加算・保存判定を廃止し、案件を開いた時のGit SHAと保存直前のRemote SHAが一致する場合だけPUTする。",
-      "rationale": "Gitが正本ならSHAでRemote世代を一意に確認でき、独自revision同期を持つ必要がないため。",
+      "text": "案件open時に取得したGit SHAを保持し、同一Branchへの通常保存はそのSHA付きPUTを直接実行する。GitがSHA不一致を返した場合は競合として停止する。対象Branchがopen時Branchと異なる、または対象BranchのSHAを保持していない場合だけ、そのBranchの現行SHA/instance確認に必要なGETを1回行う。正常PUT後はresponse content.shaを新SHAとして保持し、通常経路でProject再GETしない。",
+      "rationale": "Git Contents APIのSHA付きPUT自体が競合guardになるため、同一Branchの通常保存前GETと保存後確認GETは不要。必要なGETは対象BranchのSHAが手元にない場合に限定する。",
       "source_discussion_ids": [],
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "DEC-DEV-SAVE-003",
@@ -281,6 +330,21 @@
       "approved_at": "",
       "created_at": "2026-08-23T09:12:00+09:00",
       "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-SAVE-009",
+      "title": "現行ghToken read経路は代替read経路の検証完了まで保持する",
+      "status": "Proposed",
+      "text": "B745のrefreshProjectIndex/openFromGitはstudioConnection()経由でghTokenをread認証に使用している。TASK-027でread branch/token供給元を一本化し、認証ありRepository相当のindex GET/Project GETがPASSするまではghToken依存を物理削除しない。Phase 3 Gate PASS後、TASK-032の参照0再scanで削除可否を決める。",
+      "rationale": "先に削除するとPrivate Repository等で案件一覧とopenが同時に失敗する可能性があるため。",
+      "source_discussion_ids": [
+        "DISC-DEV-SAVE-PRE-REMOVE-001",
+        "DISC-DEV-SAVE-EXEC-001"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
     }
   ],
   "specifications": [
@@ -354,15 +418,15 @@
     },
     {
       "id": "SPEC-DEV-SAVE-004",
-      "title": "Git保存・競合・再取得仕様",
+      "title": "Git保存・SHA競合・必要時GET仕様",
       "status": "Draft",
-      "summary": "保存はGit SHAを競合判定に使い、PUT後に再GETして内容一致まで確認する。",
-      "body": "1. open時に取得したRemote SHAを保持する。\n2. 保存直前にRemoteを再GETしてSHAを確認する。\n3. SHA不一致なら保存を停止して競合を通知する。\n4. SHA一致ならcurrent Project JSONをPUTする。\n5. PUT後にRemoteを再GETする。\n6. normalize後のRemote内容と保存対象current Projectが一致した場合だけ保存完了とする。",
+      "summary": "同一Branchの通常保存はopen時SHA付きPUTを直接実行し、GETは対象Branch SHAが手元にない場合と明示的reload/testだけに限定する。",
+      "body": "1. open時にProject JSONとそのBranchのGit SHAを保持する。\n2. 保存Branchがopen時Branchと同じで保持SHAがある場合、Remote pre-GETを行わずSHA付きPUTを直接実行する。\n3. 保存Branchが異なる、または対象BranchのSHAを保持していない場合だけ、対象BranchのProjectをGETしてSHAとinstanceを確認する。\n4. SHA付きPUTがGit側で競合拒否された場合は上書きせず停止する。\n5. PUT成功時はresponse content.shaを新しいcurrent SHAとして保持する。\n6. 通常保存後にProjectを再GETしない。再GETは明示reload、診断、またはRegression testのRemote確認に限定する。",
       "decision_refs": [
         "DEC-DEV-SAVE-002"
       ],
       "depends_on": [],
-      "acceptance_criteria": "Remote変更時は上書きせず停止し、正常保存時は再GETしたProjectが保存対象と一致する。",
+      "acceptance_criteria": "同一Branchかつ保持SHAありの保存はProject PUT 1回で完了し、stale SHAはGit側で拒否される。別Branch/対象SHAなしの場合だけ必要なProject GET後にPUTする。通常保存後のProject再GETは0回で、成功レスポンスSHAがcurrent SHAになる。",
       "system_node_id": "SYS-DEV-GIT-STORE",
       "contract_ids": [
         "CONTRACT-DEV-EDITOR-GIT",
@@ -374,7 +438,7 @@
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "SPEC-DEV-SAVE-005",
@@ -672,9 +736,9 @@
       "consumer_system_ids": [
         "SYS-DEV-GIT-STORE"
       ],
-      "definition": "案件選択後のProject GET、current Project保存、open時SHA保持、保存後再取得をGit Store経由で行う。",
+      "definition": "案件選択後のProject GETでProject本文とopen時SHAを保持する。同一Branch保存は保持SHA付きPUTを直接実行し、別Branch/対象SHAなしの場合だけ必要なGETを行う。PUT成功レスポンスSHAを保持し、通常保存後のProject再GETは行わない。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "CONTRACT-DEV-GIT-REMOTE",
@@ -927,6 +991,50 @@
       "note": "studio/sw.js撤去前hash。",
       "created_at": "2026-08-23T09:05:00+09:00",
       "updated_at": "2026-08-23T09:05:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-018",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "EXECUTION_BASELINE_ZIP_SHA256",
+      "value": "1e4008b447d4d693f228c6964a751d507eeb42363b700e899de83e756fa1dcad",
+      "source": "GKS-B745-phase0-preflight",
+      "note": "実行開始時の最新Full Source: guild-adventure-studio-sub(20260823-001724).zip",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-019",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "EXECUTION_BASELINE_TREE_SHA256",
+      "value": "d4c07206e7001e361c67c9d515045e45903e769a7afb72a8a2e50f59f489770f",
+      "source": "GKS-B745-phase0-preflight",
+      "note": "tools/inspection/run.py quick --context source が記録した実行開始時Source tree SHA256。",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-020",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "EXECUTION_BASELINE_QUICK",
+      "value": "PASS 12/12 warnings=0 timeouts=0 evidence=152e38850c0f7490cffdbdf99af526e1d784fa850d4dcb797b0b85fab86d9e84",
+      "source": "GKS-B745-phase0-preflight",
+      "note": "実行前にSource不変状態でQuick Gateを再実行した結果。",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-SAVE-021",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "key": "READ_AUTH_DELETE_BLOCKED",
+      "value": "TASK-DEV-SAVE-027 + TASK-DEV-SAVE-016 PASS required",
+      "source": "GKS-B745-phase0-preflight",
+      "note": "現行ghToken/read authの先行削除を禁止するBlocking条件。",
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
     }
   ],
   "system_events": [],
@@ -1011,9 +1119,9 @@
       "id": "BOX-DEV-SAVE-GIT",
       "node_id": "ARCH-DEV-SAVE-GIT",
       "title": "Git SHA保存・接続先・index整合",
-      "body": "Studio共通Git設定を基準に接続先を決定し、SHA競合判定→PUT→再GET一致確認を行う。indexはGit上だけで管理する。",
+      "body": "Owner/RepoはStudio接続先、書込Branch/PATは操作入力を使用する。open時SHAを保持し、同一Branch保存はSHA付きPUTを直接実行する。対象Branch SHAがない場合だけGETする。PUT成功レスポンスSHAを保持し、通常保存後のProject再GETは行わない。indexはGit上だけで管理する。",
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "BOX-DEV-SAVE-LEGACY",
@@ -1182,14 +1290,14 @@
     {
       "id": "TASK-DEV-SAVE-006",
       "box_id": "BOX-DEV-SAVE-GIT",
-      "title": "保存をGit SHA競合判定→PUT→再GET一致確認へ統一する",
+      "title": "保存を保持SHA付き直接PUT・必要時だけGETへ統一する",
       "status": "Todo",
       "execution_order": 60,
       "depends_on": [
         "TASK-DEV-SAVE-003",
         "TASK-DEV-SAVE-005"
       ],
-      "acceptance_criteria": "Remote SHA変更時は上書きせず停止し、正常保存時は再GETしたcanonical JSONが保存対象と一致した場合だけ完了扱いになる。",
+      "acceptance_criteria": "同一Branchかつopen時SHA保持ありはProject PUT 1回、別Branch/対象SHAなしは必要なProject GET 1回後にPUTする。stale SHAは上書きせず停止し、正常PUTではresponse content.shaを保持する。通常保存後Project GETは0回。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1198,7 +1306,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-007",
@@ -1436,13 +1544,13 @@
       "id": "TASK-DEV-SAVE-018",
       "box_id": "BOX-DEV-SAVE-EXEC-P0",
       "title": "GKS-B745で既存保存タスク001〜012の実装実態を照合する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 77,
       "depends_on": [
         "TASK-DEV-SAVE-013"
       ],
       "acceptance_criteria": "TASK-001〜012をImplemented/Partial/Missingに分類し、各判定にソース位置または動作証拠が付く。コード変更は0件。",
-      "work_type": "SOURCE_UPDATE",
+      "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -1450,19 +1558,19 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-019",
       "box_id": "BOX-DEV-SAVE-EXEC-P0",
       "title": "撤去前Development↔Git I/O Characterization Testを固定する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 78,
       "depends_on": [
         "TASK-DEV-SAVE-018"
       ],
-      "acceptance_criteria": "index GET/open/new/import/save/merge/delete/SHA競合/index部分失敗/Branch A-Bの現行Git request sequenceをmockで再現し、撤去前基準としてPASSする。",
-      "work_type": "SOURCE_UPDATE",
+      "acceptance_criteria": "Source外mockでindex GET/open/new/import/save/other-branch save/delete/SHA競合/index部分失敗/post-create refresh Branchの現行Git request sequenceを再現し、撤去前基準としてPASSする。",
+      "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -1470,7 +1578,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-020",
@@ -1626,7 +1734,7 @@
         "TASK-DEV-SAVE-002",
         "TASK-DEV-SAVE-005"
       ],
-      "acceptance_criteria": "index GETとProject GETが同じ明示read contextを使用し、Registry branch/DEFAULT_CONNECTIONへfallbackしない。認証ありRepository相当で一覧取得とopenが成功するまで旧ghToken依存を削除しない。",
+      "acceptance_criteria": "index GETとProject GETが同じ明示read contextを使用し、Registry branch/DEFAULT_CONNECTIONへfallbackしない。認証ありRepository相当で一覧取得とopenが成功する。ここがPASSするまでは現行ghToken/read authを削除・無効化しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1635,7 +1743,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-028",
@@ -1729,9 +1837,10 @@
       "status": "Todo",
       "execution_order": 101,
       "depends_on": [
-        "TASK-DEV-SAVE-016"
+        "TASK-DEV-SAVE-016",
+        "TASK-DEV-SAVE-027"
       ],
-      "acceptance_criteria": "localStorage Registry read/write/key/parser、Registry remote fallback、getRegistryEntry、DEFAULT_CONNECTION、旧read authの各候補を再scanし、参照0または代替経路検証済みのものだけ削除する。参照が残るものは削除しない。",
+      "acceptance_criteria": "localStorage Registry read/write/key/parser、Registry remote fallback、getRegistryEntry、DEFAULT_CONNECTION、旧read authの各候補を再scanし、参照0または代替経路検証済みのものだけ削除する。ghToken/read authはTASK-027とPhase 3 Gate(TASK-016)の両方がPASSするまで削除禁止。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -1740,7 +1849,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "TASK-DEV-SAVE-033",
@@ -1858,7 +1967,7 @@
     },
     {
       "id": "CHECK-DEV-SAVE-005",
-      "title": "stale SHA保存が拒否され正常保存後はGit再GET内容が一致する",
+      "title": "stale SHA保存が拒否され通常保存に不要なpre/post GETがない",
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-DEV-SAVE-006",
@@ -1877,7 +1986,7 @@
       },
       "blocking": false,
       "created_at": "2026-08-23T07:24:00+09:00",
-      "updated_at": "2026-08-23T07:24:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "CHECK-DEV-SAVE-006",
@@ -2207,22 +2316,22 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-DEV-SAVE-018",
-      "status": "Pending",
-      "result": "",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "TASK-001〜012 implementation matrix作成済み。matrix SHA256=6634717d877abc8890fffbb182e2f2dc608bf8fb1ad3755348227df79a880213",
+      "checked_by": "AI phase0 audit",
+      "checked_at": "2026-08-23T09:24:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI phase0 audit",
+        "resolved_at": "2026-08-23T09:24:00+09:00",
+        "reason": "Acceptance criteria satisfied before any source deletion.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "CHECK-DEV-SAVE-021",
@@ -2230,22 +2339,22 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-DEV-SAVE-019",
-      "status": "Pending",
-      "result": "",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Source外characterization PASS。result SHA256=448804bc6099b622eaadcb03af13a7d0d7fbfca5c62ae6afafdf09e7842ce0b5; Source tree unchanged=true; Quick 12/12 PASS.",
+      "checked_by": "AI phase0 audit",
+      "checked_at": "2026-08-23T09:24:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI phase0 audit",
+        "resolved_at": "2026-08-23T09:24:00+09:00",
+        "reason": "Acceptance criteria satisfied before any source deletion.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-23T09:12:00+09:00",
-      "updated_at": "2026-08-23T09:12:00+09:00"
+      "updated_at": "2026-08-23T09:24:00+09:00"
     },
     {
       "id": "CHECK-DEV-SAVE-022",
@@ -2499,6 +2608,29 @@
       "blocking": false,
       "created_at": "2026-08-23T09:12:00+09:00",
       "updated_at": "2026-08-23T09:12:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-SAVE-033",
+      "title": "ghToken/read authは代替read経路とPhase 3 Gate PASS前に削除されない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-SAVE-032",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T09:24:00+09:00",
+      "updated_at": "2026-08-23T09:24:00+09:00"
     }
   ],
   "workflow": {
@@ -2530,6 +2662,10 @@
     {
       "at": "2026-08-23T09:12:00+09:00",
       "message": "GKS-B745保存経路再構築の実行計画を登録。Phase 0実態固定→Phase 1死コードのみ撤去→Phase 2現役経路置換→Phase 3全経路回帰/復旧dry-run→Phase 4旧処理物理撤去→最終Gateの順へ固定。"
+    },
+    {
+      "at": "2026-08-23T09:24:00+09:00",
+      "message": "実行前3ブロッカーを閉塞。TASK-018/019完了、通常保存pre/post GET旧仕様を修正、ghToken/read auth先行削除にBlocking Gateを追加。Source変更・削除は0件。"
     }
   ]
 }
