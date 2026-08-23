@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T03:29:48.573Z"
+    "updated_at": "2026-08-23T06:15:06.507Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -1698,6 +1698,18 @@
       "approved_at": "2026-08-22T12:54:00+09:00",
       "created_at": "2026-08-22T12:54:00+09:00",
       "updated_at": "2026-08-22T12:54:00+09:00"
+    },
+    {
+      "id": "DEC-R42-CAST-001",
+      "title": "Cast Field・Target固定・完了時再検証・Cost/CD発生境界を確定する",
+      "status": "Approved",
+      "text": "Current Formal SkillのCast fieldは `resource.castTime` とし、単位はTick、0以上の整数、0は即時発動とする。詠唱開始はAI予約時ではなく行動実行開始時とし、使用者・Skill使用可能・Cost支払可能・Cooldown・Target適格性・Rangeの開始時Validation成功後にCastへ入る。Targetはこの行動実行開始時に固定し、複数対象Skillはその時点のbase targetおよびRANGE展開後のfinal target setを固定上限とする。Cast完了時に固定Targetだけを再検証し、無効・死亡・Range外のTargetは除外するが、新規Targetの再取得・補充・追加はしない。固定Targetが成立しない場合は不発とする。詠唱中は、Skill使用不可または使用中Skill種別を阻害する効果、および強制移動で中断する。通常Damage・DOT・反射Damageでは中断しない。中断時およびCast完了時の最終Validation失敗時は効果を実行せず、Costを消費せず、Cooldownを開始しない。Cast完了後の最終Validationが成功した瞬間を発動成立とし、Current FormalのCost (`mpCost`) 消費→Cooldown開始→効果実行の順で処理する。`castTime=0` も同じ境界を使用し、開始時Target固定後に同一実行内で最終Validation→Cost/CD→効果実行へ進む。",
+      "rationale": "AI予約と実行時Target固定を分離して既存の再評価契約を維持し、Cast中の位置・状態変化を完了時再検証へ反映しつつ、中断・Range外・Target無効でCost/CDだけが失われる不整合を避けるため。Cast時間の具体値はBalance Dataとして可変に保つ。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T15:12:00+09:00",
+      "created_at": "2026-08-23T15:12:00+09:00",
+      "updated_at": "2026-08-23T15:12:00+09:00"
     }
   ],
   "specifications": [
@@ -1975,16 +1987,17 @@
       "title": "Battle: MP / Cooldown / Cast / Target再検証",
       "status": "Draft",
       "summary": "MP/CD/詠唱成立、中断、射程再確認、Target無効。",
-      "body": "## 8. MP・クールダウン\n\n### MP\n- MP不足時はスキル発動不可。\n- AIは再思考へ移行。\n- MP消費量はスキル、装備、MODなど効果発生源側の定義に依存。\n\n`消費後MP = 現在MP - 効果値`\n\n### クールダウン\n- 割合短縮は割合で減少。\n- 固定短縮は固定Tickで減少。\n- 端数は最終計算後に切り上げ。\n- 最小CDは0Tick。\n\n---\n\n## 9. 発動成立\n\n- MP消費とCD開始は発動成立時。\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし、CD開始なし。\n\n処理順：\n1. 使用開始\n2. 詠唱\n3. 中断判定\n4. 詠唱完了\n5. MP消費\n6. CD開始\n7. 効果実行\n\n---\n\n## 10. 吸収・反射\n\n### 共通基準\n- HP吸収、MP吸収、反射などダメージ参照効果は、実際にHPへ通った最終ダメージを基準とする。\n- オーバーキル時は実際に減少したHP量を基準とする。\n\n`参照ダメージ = min(最終ダメージ, ダメージ適用前HP)`\n\n### 吸収\n- 吸収量は切り上げ。\n\n### 反射\n- 反射量は切り捨て。\n- 再反射しない。\n- 反射ダメージには抵抗を再適用しない。\n\n---\n\n## 詠唱\n\n- 発動成立は詠唱完了時。\n- 詠唱中断時はMP消費なし・CDなし。\n- スキル使用不可、または使用中スキル種別を阻害する効果で中断。\n- 通常ダメージ・DOT・反射ダメージでは中断しない。\n- 強制移動で中断する。\n- 強制移動処理順\n  1. 成立判定\n  2. 詠唱中断\n  3. 位置変更\n  4. 射程・対象更新\n  5. AIは次回再評価で再思考\n\n## 射程\n\n- 発動時に対象固定。\n- 詠唱完了時に射程を再確認。\n- 射程外なら不発。\n- 対象再取得はしない。\n- 遮蔽物・射線判定は採用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
+      "body": "## 8. MP・クールダウン\n\n### MP\n- MP不足時はスキル発動不可。\n- AIは再思考へ移行。\n- MP消費量はスキル、装備、MODなど効果発生源側の定義に依存。\n\n`消費後MP = 現在MP - 効果値`\n\n### クールダウン\n- 割合短縮は割合で減少。\n- 固定短縮は固定Tickで減少。\n- 端数は最終計算後に切り上げ。\n- 最小CDは0Tick。\n\n---\n\n## 9. 発動成立\n\n- Cast fieldは `resource.castTime`。\n- 単位はTick、0以上の整数。`0` は即時発動。\n- Cast時間の具体値はBalance Dataとして可変。\n- AI予約時にはCastを開始せず、Targetも固定しない。\n- 行動実行開始時に開始時Validationを行い、成功した場合だけTargetを固定してCastを開始する。\n- 発動成立はCast完了後の最終Validation成功時。\n- 発動成立時にCost消費、CD開始、効果実行の順で処理する。\n- Cast中断時および最終Validation失敗時はCost消費なし、CD開始なし、効果実行なし。\n\n処理順：\n1. 行動実行開始\n2. 開始時Validation\n   - 使用者が行動可能\n   - Skill使用可能\n   - Cost支払可能\n   - Cooldown中ではない\n   - Target適格\n   - Range内\n3. base Target / final target set固定\n4. Cast開始\n5. Cast中断判定\n6. Cast完了\n7. 固定Targetの最終Validation\n8. Cost消費\n9. CD開始\n10. 効果実行\n\n`castTime=0` でも同じ境界を使用し、Target固定後に同一実行内で7〜10へ進む。\n\n---\n\n## 10. 吸収・反射\n\n### 共通基準\n- HP吸収、MP吸収、反射などダメージ参照効果は、実際にHPへ通った最終ダメージを基準とする。\n- オーバーキル時は実際に減少したHP量を基準とする。\n\n`参照ダメージ = min(最終ダメージ, ダメージ適用前HP)`\n\n### 吸収\n- 吸収量は切り上げ。\n\n### 反射\n- 反射量は切り捨て。\n- 再反射しない。\n- 反射ダメージには抵抗を再適用しない。\n\n---\n\n## 詠唱\n\n- 行動実行開始時の開始時Validation成功後にCastを開始する。\n- Target固定はCast開始と同じ境界で行う。\n- Cast中断時はCost消費なし・CDなし・効果なし。\n- スキル使用不可、または使用中スキル種別を阻害する効果で中断。\n- 通常ダメージ・DOT・反射ダメージでは中断しない。\n- 強制移動で中断する。\n- 強制移動処理順\n  1. 成立判定\n  2. Cast中断\n  3. 位置変更\n  4. 射程・対象状態更新\n  5. AIは次回再評価で再思考\n\n## 射程・Target完了時再検証\n\n- 行動実行開始時にbase TargetとRANGE展開後のfinal target setを固定する。\n- Cast完了時に固定Targetだけを再検証する。\n- 無効・死亡・Range外のTargetは除外する。\n- 新規Targetの再取得・補充・追加はしない。\n- 有効Targetが残らない場合は不発。\n- 不発時はCost消費なし・CD開始なし。\n- 遮蔽物・射線判定は採用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
       "decision_refs": [
-        "DEC-REORG-BATTLE-BAL-001"
+        "DEC-REORG-BATTLE-BAL-001",
+        "DEC-R42-CAST-001"
       ],
       "depends_on": [
         "SPEC-V9-019-BATTLE-001",
         "SPEC-V9-019-SKILL-001",
         "SPEC-V9-019-RANGE-001"
       ],
-      "acceptance_criteria": "- Cast中断時はMP/CDを消費しない。\n- Cast完了時にRangeを再確認し、Range外は不発。\n- Target再取得をしない。\n- LOS/遮蔽物判定をCurrentへ追加しない。",
+      "acceptance_criteria": "- `resource.castTime` をTick単位・0以上の整数として扱い、0を即時発動として処理できる。\n- AI予約時ではなく行動実行開始時に開始時Validationを行い、その成功後にTarget固定とCast開始を行う。\n- Cast中断時はCost/CD/効果を発生させない。\n- Cast完了時に固定TargetだけのRange/適格性を再確認し、無効・死亡・Range外を除外する。\n- Target再取得・補充・新規追加をしない。\n- 完了時再検証失敗または有効Targetなしは不発とし、Cost/CDを発生させない。\n- 最終Validation成功時にCost消費→CD開始→効果実行の順を守る。\n- LOS/遮蔽物判定をCurrentへ追加しない。",
       "system_node_id": "SYS-V9-BATTLE",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-RANGE",
@@ -1994,11 +2007,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T16:25:00+09:00"
+      "updated_at": "2026-08-23T15:12:00+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-003",
@@ -2134,16 +2147,17 @@
       "title": "Formal Skill Authoring / Skill Master Schema",
       "status": "Draft",
       "summary": "Current Formal Skill Authoring fieldとMaster保存契約。",
-      "body": "# 1. Canonical Path\n\n```text\nFormal Skill Authoring\n→ Formal Skill Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n```\n\nGeneric/Legacy/compileTaggedSkill/Fallbackを最終経路に残さない。\n\n# 2. Authoring root\n\nRequired:\n[]\n\nOptional:\n[]\n\n正式基礎Field:\n- schemaVersion\n- id\n- name\n- skillLevel\n- trigger\n- conditions\n- target\n- effects\n- resource\n\n# 3. Trigger\n\nRequired:\n- type\n- scope\n\nOptional:\n- priority\n\n# 4. Condition\n\nRequired:\n- property\n- operator\n- value\n\nOptional:\n- scope\n\nOperator:\n= / != / > / >= / < / <=\n\nValue type:\n- number\n- rate 0..1\n- non_negative_integer\n- predicate\n\n# 5. Target\n\nRequired:\n- side\n- range\n\nOptional:\n- randomCount\n- excludeSelf\n\n# 6. Resource\n\nOptional:\n- mpCost\n- cooldown\n- activationPriority\n\n# 7. Skill Master\n\nAuthoring内容とCompiler生成済み `runtimeContracts` を保存する。\nGame RuntimeはruntimeContractsを正規入力として使用する。\n\nUnknown Fieldを場当たり追加しない。\nSchema/Registry更新を先に行う。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / assets/shared/js/skill-schema.js / skill-registry.json",
+      "body": "# 1. Canonical Path\n\n```text\nFormal Skill Authoring\n→ Formal Skill Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n```\n\nGeneric/Legacy/compileTaggedSkill/Fallbackを最終経路に残さない。\n\n# 2. Authoring root\n\nRequired:\n[]\n\nOptional:\n[]\n\n正式基礎Field:\n- schemaVersion\n- id\n- name\n- skillLevel\n- trigger\n- conditions\n- target\n- effects\n- resource\n\n# 3. Trigger\n\nRequired:\n- type\n- scope\n\nOptional:\n- priority\n\n# 4. Condition\n\nRequired:\n- property\n- operator\n- value\n\nOptional:\n- scope\n\nOperator:\n= / != / > / >= / < / <=\n\nValue type:\n- number\n- rate 0..1\n- non_negative_integer\n- predicate\n\n# 5. Target\n\nRequired:\n- side\n- range\n\nOptional:\n- randomCount\n- excludeSelf\n\n# 6. Resource\n\nOptional:\n- mpCost\n- cooldown\n- activationPriority\n- castTime\n\n`castTime`:\n- 単位はTick。\n- 0以上の整数。\n- `0` は即時発動。\n- 具体値はBalance Dataとして可変。\n- Compilerは `runtimeContracts.resourceContract.castTime` へ保持する。\n- Castの開始・Target固定・完了時再検証・中断・Cost/CD発生境界は `SPEC-V9-019-BATTLE-002` をOwnerとする。\n\n# 7. Skill Master\n\nAuthoring内容とCompiler生成済み `runtimeContracts` を保存する。\nGame RuntimeはruntimeContractsを正規入力として使用する。\n\nUnknown Fieldを場当たり追加しない。\nSchema/Registry更新を先に行う。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / assets/shared/js/skill-schema.js / skill-registry.json",
       "decision_refs": [
         "DEC-V9-SKILL-001",
         "DEC-V9-SKILL-002",
-        "DEC-V9-SKILL-003"
+        "DEC-V9-SKILL-003",
+        "DEC-R42-CAST-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-002"
       ],
-      "acceptance_criteria": "- Authoring SkillをFormal SchemaでValidationできる。\n- MasterへruntimeContractsを保持できる。\n- Legacy/Generic Skill fieldにFallbackしない。",
+      "acceptance_criteria": "- Authoring SkillをFormal SchemaでValidationできる。\n- MasterへruntimeContractsを保持できる。\n- Legacy/Generic Skill fieldにFallbackしない。\n- `resource.castTime` を0以上の整数TickとしてValidationし、runtimeContractsへ保持できる。",
       "system_node_id": "SYS-V9-SKILL",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-SKILL",
@@ -2153,11 +2167,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-23T15:12:00+09:00"
     },
     {
       "id": "SPEC-V9-019-SKILL-002",
@@ -2219,13 +2233,15 @@
       "title": "RANGE / Target Expansion",
       "status": "Draft",
       "summary": "base targetからfinal target setを生成する共通Range System。",
-      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n# 2. Current Formal Range\n\n- SINGLE\n- ALL\n- FRONT\n- BACK\n- RANDOM\n- PIERCE\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n# 3. Castとの関係\n\nTargetはActivation時に固定。\nCast完了時にRangeを再確認する。\nRange外なら不発。\n別Targetへ再取得しない。\n発動後に範囲へ入った対象を追加しない。\n\n# 4. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 5. Future\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n\n---\n\n## 根拠・統合元\nBOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版 / Current Formal Registry",
-      "decision_refs": [],
+      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n# 2. Current Formal Range\n\n- SINGLE\n- ALL\n- FRONT\n- BACK\n- RANDOM\n- PIERCE\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n# 3. Castとの関係\n\nAI予約時にはTargetを固定しない。\n行動実行開始時の開始時Validation成功後、Cast開始と同じ境界でbase TargetとRANGE展開後のfinal target setを固定する。\nCast完了時は固定Targetだけを再検証する。\n無効・死亡・Range外のTargetはfinal target setから除外する。\n別Targetへの再取得、欠員補充、新規Target追加はしない。\nCast開始後にRangeへ入った対象は追加しない。\n有効Targetが残らない場合は不発とし、Cost/CDを発生させない。\n`castTime=0` でもTarget固定→完了時再検証の境界は省略しない。\n\n# 4. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 5. Future\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n\n---\n\n## 根拠・統合元\nBOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版 / Current Formal Registry",
+      "decision_refs": [
+        "DEC-R42-CAST-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-SKILL-003",
         "SPEC-V9-019-BATTLE-002"
       ],
-      "acceptance_criteria": "- Current 6 Range typeをTarget expansionとして実装できる。\n- Cast完了Range再検証とTarget固定を守る。\n- 旧Range CostをCurrent Budgetへ二重適用しない。",
+      "acceptance_criteria": "- Current 6 Range typeをTarget expansionとして実装できる。\n- AI予約時にはTarget固定せず、行動実行開始時のCast開始境界でbase Target / final target setを固定する。\n- Cast完了時に固定Targetだけを再検証し、無効・死亡・Range外を除外できる。\n- Target再取得・欠員補充・新規追加をしない。\n- 有効Targetなしの不発ではCost/CDを発生させない。\n- 旧Range CostをCurrent Budgetへ二重適用しない。",
       "system_node_id": "SYS-V9-RANGE",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-RANGE",
@@ -2234,11 +2250,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-23T15:12:00+09:00"
     },
     {
       "id": "SPEC-V9-019-TAG-001",
@@ -19969,6 +19985,29 @@
       },
       "actor": "AI/HumanPolicy",
       "created_at": "2026-08-20T22:30:00+09:00"
+    },
+    {
+      "id": "EVT-R42-CAST-DECISION-001",
+      "type": "HUMAN_CAST_CONTRACT_REGISTERED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "decision_id": "DEC-R42-CAST-001",
+        "affected_specification_ids": [
+          "SPEC-V9-019-SKILL-001",
+          "SPEC-V9-019-BATTLE-002",
+          "SPEC-V9-019-RANGE-001"
+        ],
+        "field": "resource.castTime",
+        "unit": "Tick",
+        "target_lock": "action_execution_start_after_initial_validation",
+        "completion_revalidation": true,
+        "retarget": false,
+        "cost_cooldown_boundary": "final_validation_success",
+        "rule_change": true
+      },
+      "actor": "Human/AI",
+      "created_at": "2026-08-23T15:12:00+09:00"
     }
   ],
   "system_impacts": [
@@ -28988,6 +29027,16 @@
       "at": "2026-08-23T12:28:16+09:00",
       "type": "AutonomousCorrectionParentE2EPassed",
       "summary": "AI_STARTからCurrent GKS-B750 / GA-B486.211を検証。既存Correction Taskの重複生成を行わず、親TASK-DEV-AUTOCORR-B734-VERIFY-001自身でP1-CONTINUE-AFTER-FIRST-SAVE相当E2Eを独立再実行してPASS。CHK-DEV-AUTOCORR-B734-PARENT-E2E-001がCHK-DEV-AUTOCORR-B734-FAIL-001をresolves_check_idsで解決し、親TaskをDoneへ更新。Targeted 4件とCurrent Quick 11/11 PASS。Source変更0・削除0・Game Data変更/除外0。次Taskへは自動着手していない。"
+    },
+    {
+      "at": "2026-08-23T15:12:00+09:00",
+      "type": "ConfirmedDecisionMerge",
+      "summary": "Human確定によりCast契約を登録。resource.castTime=Tick整数/0即時、行動実行開始時にTarget固定・Cast開始、完了時に固定Targetのみ再検証、中断/不発時Cost/CDなし、最終Validation成功時にCost→CD→効果実行を確定。"
+    },
+    {
+      "at": "2026-08-23T15:12:00+09:00",
+      "type": "SpecificationIntegration",
+      "summary": "DEC-R42-CAST-001をSPEC-V9-019-SKILL-001 / BATTLE-002 / RANGE-001へ統合。3仕様は他内容を含むためDraft状態を維持し、revisionを各+1した。Source Runtime/Game Data/Workflowは変更していない。"
     }
   ],
   "authority": {
