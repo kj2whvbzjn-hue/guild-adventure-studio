@@ -2,7 +2,8 @@
  * Git is the persistent authority.
  * Project list uses development-project-data/index.json (title + id only).
  * Project body is fetched only after the user confirms opening a title.
- * Development operations resolve the repository default branch once at operation start; write PAT comes from the operation UI.
+ * Development read operations resolve the repository default branch once at operation start.
+ * JSON merge-save writes use the branch selected in the operation UI; write PAT comes from the operation UI.
  * Owner / Repository come from the Studio Git connection.
  * Concurrent updates are guarded by Git blob SHA; no Project revision is used.
  */
@@ -60,6 +61,13 @@ async function operationConnection(projectId='',{index=false,token='',requireTok
   if(requireToken&&!base.token)throw new Error('PATを入力してください。');
   const branch=await resolveRepositoryDefaultBranch(base);
   return Object.freeze({...base,branch,path:index?INDEX_PATH:canonicalPath(projectId)});
+}
+function selectedWriteConnection(projectId='',{branch='',token='',requireToken=false}={}){
+  const base=repositoryConnection(projectId,{token});
+  if(requireToken&&!base.token)throw new Error('PATを入力してください。');
+  const selectedBranch=text(branch);
+  if(!selectedBranch)throw new Error('保存先Branchを入力してください。');
+  return Object.freeze({...base,branch:selectedBranch,path:canonicalPath(projectId)});
 }
 function defaultWriteBranch(){return commonGitValue('ghBranch')||WRITE_BRANCH_HINT;}
 
@@ -201,20 +209,20 @@ async function openFromGit(options={}){
   finally{state.busy=false;render();}
 }
 
-async function expectedShaForWrite(c,project){
+async function expectedShaForWrite(c,project,{forceRemoteCheck=false}={}){
   const base=state.base;
-  if(base&&base.id===text(project?.workspace?.id)&&base.branch===c.branch&&base.sha)return base.sha;
+  if(!forceRemoteCheck&&base&&base.id===text(project?.workspace?.id)&&base.branch===c.branch&&base.sha)return base.sha;
   const file=await remoteFile(c,{requireSha:true});
-  if(!file.exists)throw new Error(`Git repositoryのdefault branchに案件がありません: ${c.branch}`);
+  if(!file.exists)throw new Error(`Git repositoryの選択Branchに案件がありません: ${c.branch}`);
   const remote=parseProject(file.raw);assertSameProject(remote,project);
-  if(base?.project&&!equalProject(remote,base.project))throw new Error('Git repositoryのdefault branch上の案件が、開いた時点の案件内容と一致しません。上書きしません。');
+  if(base?.project&&base.branch===c.branch&&!equalProject(remote,base.project))throw new Error(`Git repositoryのBranch ${c.branch} 上の案件が、開いた時点の案件内容と一致しません。上書きしません。`);
   return file.sha;
 }
-async function saveProject(project,{branch,token,message=''}={}){
+async function saveProject(project,{branch,token,message='',selectedBranch=false,forceRemoteCheck=false}={}){
   const entry=currentEntry();
   if(!entry||!isLoaded(entry.id))throw new Error('案件を開いてください。');
-  const local=state.host.normalizeProject(project),c=await operationConnection(entry.id,{token,requireToken:true});
-  const expectedSha=await expectedShaForWrite(c,local);
+  const local=state.host.normalizeProject(project),c=selectedBranch?selectedWriteConnection(entry.id,{branch,token,requireToken:true}):await operationConnection(entry.id,{token,requireToken:true});
+  const expectedSha=await expectedShaForWrite(c,local,{forceRemoteCheck});
   local.workspace.updated_at=new Date().toISOString();
   const normalized=state.host.normalizeProject(local);
   const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',message||`Save Development Project ${entry.id}`,expectedSha);
@@ -234,7 +242,7 @@ async function saveCurrent(credentials={}){
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
 async function saveCandidate(project,credentials={}){
-  try{state.busy=true;render();await saveProject(project,credentials);return true;}
+  try{state.busy=true;render();await saveProject(project,{...credentials,selectedBranch:true,forceRemoteCheck:true});return true;}
   catch(e){alert('保存できませんでした: '+e.message);return false;}
   finally{state.busy=false;render();state.host?.refresh?.();}
 }
