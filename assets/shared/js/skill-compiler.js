@@ -198,13 +198,14 @@ function compileSkill(skill,registry){
  if(own(res,'mpCost')&&(!num(res.mpCost)||res.mpCost<0))error(errors,'INVALID_MP_COST','resource.mpCost','mpCostは0以上の有限数が必要です');
  if(own(res,'cooldown')&&(!Number.isInteger(res.cooldown)||res.cooldown<0))error(errors,'INVALID_COOLDOWN','resource.cooldown','cooldownは0以上の整数が必要です');
  if(own(res,'activationPriority')&&!Number.isInteger(res.activationPriority))error(errors,'INVALID_ACTIVATION_PRIORITY','resource.activationPriority','activationPriorityは整数が必要です');
+ if(own(res,'castTime')&&(!Number.isInteger(res.castTime)||res.castTime<0))error(errors,'INVALID_CAST_TIME','resource.castTime','castTimeは0以上の整数Tickが必要です');
  return finish();
  function finish(){
   const runtimeContracts={
    schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),
    targetContract:{side:String(skill?.target?.side||''),range:String(skill?.target?.range||''),randomCount:skill?.target?.randomCount??null,excludeSelf:skill?.target?.excludeSelf===true},
    conditionContracts:[...conditionContracts],effectContracts:[...effectContracts],applyContracts:applyContracts.map(c=>({...c,lifecycle:c.lifecycle?{...c.lifecycle}:null})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null,
-   resourceContract:{mpCost:skill?.resource?.mpCost??0,cooldown:skill?.resource?.cooldown??0,activationPriority:skill?.resource?.activationPriority??0}
+   resourceContract:{mpCost:skill?.resource?.mpCost??0,cooldown:skill?.resource?.cooldown??0,activationPriority:skill?.resource?.activationPriority??0,...(own(skill?.resource,'castTime')?{castTime:skill.resource.castTime}:{})}
   };
   const compiledSkill={schemaVersion:SUPPORTED_SCHEMA,id:String(skill?.id||''),name:String(skill?.name||''),skillLevel:skill?.skillLevel??null,trigger:skill?.trigger?{...skill.trigger}:null,conditions:Array.isArray(skill?.conditions)?skill.conditions.map(x=>({...x})):[],target:skill?.target?{...skill.target}:null,effects:Array.isArray(skill?.effects)?skill.effects.map(x=>({...x})):[],resource:skill?.resource?{...skill.resource}:{},runtimeContracts};
   return{ok:errors.length===0,version:VERSION,errors,warnings,compiledSkill};

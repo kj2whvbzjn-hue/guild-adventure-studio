@@ -6,7 +6,7 @@ const AUTHORING=Object.freeze({
  trigger:Object.freeze(['type','scope','priority']),
  condition:Object.freeze(['scope','property','operator','value']),
  target:Object.freeze(['side','range','randomCount','excludeSelf']),
- resource:Object.freeze(['mpCost','cooldown','activationPriority'])
+ resource:Object.freeze(['mpCost','cooldown','activationPriority','castTime'])
 });
 const MASTER=Object.freeze([
  'schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts',

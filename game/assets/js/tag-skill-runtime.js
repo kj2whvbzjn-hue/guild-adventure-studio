@@ -20,12 +20,15 @@ function compileSkillRuntime(skill){
  if(!targetSide)errors.push(`runtimeContracts target.sideが無効です: ${targetSource.side||'(なし)'}`);
  if(!range)errors.push(`runtimeContracts target.rangeが無効です: ${targetSource.range||'(なし)'}`);
 
+ const castTime=runtime.resourceContract?.castTime??skill.resource?.castTime??0;
+ if(!Number.isInteger(castTime)||castTime<0)errors.push('runtimeContracts.resourceContract.castTimeは0以上の整数Tickが必要です');
  const logicOrder=[],addLogic=logic=>{if(logic&&!logicOrder.includes(logic))logicOrder.push(logic)};
  const parameters={
   damageType:null,
   mpCost:Number(runtime.resourceContract?.mpCost??skill.resource?.mpCost??0),
   activationPriority:Number(runtime.resourceContract?.activationPriority??skill.resource?.activationPriority??0),
   cooldown:Number(runtime.resourceContract?.cooldown??skill.resource?.cooldown??0),
+  castTime:Number(runtime.resourceContract?.castTime??skill.resource?.castTime??0),
   damage:null,heal:null,shield:null,shieldDuration:null,dotPower:null,dotDuration:null,dotInterval:null,stackGain:null,
   modifierStat:null,modifierPower:null,modifierDuration:null,followUpTrigger:null,followUpCondition:null,
   statusId:null,statusDuration:null,statusStackPolicy:'refresh',statusPayload:{},

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "aiGenerationRuleVersion": "G05-AI-GENERATION-V1",
+  "aiGenerationRuleVersion": "G05-AI-GENERATION-V2",
   "phase": "G05",
-  "purpose": "Deterministic Studio-side conversion from AI intent requests to Skill numeric values. AI requests may choose structure and desired strength, but may not supply final battle numeric values.",
+  "purpose": "Deterministic Studio-side conversion from AI intent/structure and formal calibration inputs to Skill effect numeric values. AI requests may choose formal Trigger/Condition/Target/Resource calibration inputs, while final Effect battle numeric values remain Studio-owned.",
   "desired_strength": {
     "min": 0.1,
     "max": 1.0,
@@ -24,7 +24,8 @@
     "target_control_mode": "COVER",
     "target_control_trigger": "DIRECT_ATTACK",
     "target_control_priority": 0,
-    "target_control_removable": true
+    "target_control_removable": true,
+    "random_count": 1
   },
   "numeric_allocation": {
     "apply_power_share": 0.6,
@@ -44,19 +45,68 @@
     "hp",
     "hpRate",
     "uses",
-    "priority",
-    "mpCost",
-    "cooldown",
-    "activationPriority"
+    "priority"
   ],
   "request_effect_structural_fields": {
-    "DAMAGE": ["type", "damageType"],
-    "HEAL": ["type"],
-    "APPLY": ["type", "effectId"],
-    "REMOVE": ["type", "category"],
-    "RESOURCE_CHANGE": ["type", "resource", "direction"],
-    "REVIVE": ["type", "mode"],
-    "TARGET_CONTROL": ["type", "mode", "trigger", "removable", "lifetime"],
-    "SPECIAL": ["type"]
+    "DAMAGE": [
+      "type",
+      "damageType"
+    ],
+    "HEAL": [
+      "type"
+    ],
+    "APPLY": [
+      "type",
+      "effectId"
+    ],
+    "REMOVE": [
+      "type",
+      "category"
+    ],
+    "RESOURCE_CHANGE": [
+      "type",
+      "resource",
+      "direction"
+    ],
+    "REVIVE": [
+      "type",
+      "mode"
+    ],
+    "TARGET_CONTROL": [
+      "type",
+      "mode",
+      "trigger",
+      "removable",
+      "lifetime"
+    ],
+    "SPECIAL": [
+      "type"
+    ]
+  },
+  "request_optional_fields": [
+    "trigger",
+    "conditions",
+    "randomCount",
+    "excludeSelf",
+    "resource"
+  ],
+  "request_resource_fields": {
+    "mpCost": {
+      "type": "finite_number",
+      "min": 0
+    },
+    "cooldown": {
+      "type": "integer",
+      "min": 0,
+      "unit": "tick"
+    },
+    "activationPriority": {
+      "type": "integer"
+    },
+    "castTime": {
+      "type": "integer",
+      "min": 0,
+      "unit": "tick"
+    }
   }
 }

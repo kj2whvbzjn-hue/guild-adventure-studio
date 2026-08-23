@@ -1,4 +1,4 @@
-/* GKS-B752 development-data/source-integrity separation */
+/* GKS-B754 development-data/source-integrity separation */
 <!doctype html>
 <html lang="ja">
 <head>
@@ -21,7 +21,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B752</title>
+<title>GK Studio GKS-B754</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -180,7 +180,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B752 Story nested Data Exchange + scenario export wording */
+/* GKS-B754 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -240,7 +240,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B752: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B754: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -441,7 +441,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B752: Studio home-aware common header / navigation */
+/* GKS-B754: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -470,13 +470,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B752</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B754</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B752</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B754</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2471,11 +2471,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=752"></script>
+<script src="./layer-controller.js?v=754"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B752';
+const DISTRIBUTION_BUILD='GKS-B754';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -4703,16 +4703,35 @@ async function battlePackageLoadFormalCandidates(reader){
  }
  return {map,paths};
 }
-function battlePackageResolveFormalRoster(roster,candidates){
+async function battlePackageValidateFormalUnitSkill(skill,label,index,skillIndex){
+ if(!window.GKSSkillGenerator?.g07ValidateFormalSkillRuntime)throw Object.assign(new Error('G07 Formal Skill validatorを読み込めません。'),{code:'BATTLE_FORMAL_SKILL_VALIDATOR_MISSING'});
+ if(!skill||typeof skill!=='object'||Array.isArray(skill))throw Object.assign(new Error(`Formal roster ${label}[${index}].skills[${skillIndex}]は正式Skill objectが必要です。`),{code:'BATTLE_FORMAL_SKILL_OBJECT_REQUIRED'});
+ if(!String(skill.id||'').trim())throw Object.assign(new Error(`Formal roster ${label}[${index}].skills[${skillIndex}]にSkill IDがありません。`),{code:'BATTLE_FORMAL_SKILL_ID_REQUIRED'});
+ if(!skill.runtimeContracts)throw Object.assign(new Error(`Formal Skill ${skill.id}にG07 runtimeContractsがありません。`),{code:'BATTLE_FORMAL_SKILL_RUNTIME_CONTRACTS_REQUIRED',skill_id:String(skill.id)});
+ try{
+  const checked=await window.GKSSkillGenerator.g07ValidateFormalSkillRuntime(skill);
+  return {...structuredClone(checked.skill),__formal_g07_validated:true,__formal_budget:structuredClone(checked.budget)};
+ }catch(error){throw Object.assign(new Error(`Formal Skill ${skill.id||skillIndex}はG07正式契約を通過しません: ${error.message}`),{code:error.code||'BATTLE_FORMAL_SKILL_G07_REJECTED',skill_id:String(skill.id||''),cause:error});}
+}
+async function battlePackageResolveFormalRoster(roster,candidates){
  window.GKSBattleFormalEnvelope.validateFormalRoster(roster);
  const out=structuredClone(roster);
  for(const label of ['allies','enemies']){
-  out[label]=out[label].map((entry,index)=>{
-   const ref=entry.snapshot_ref,candidate=candidates.get(String(ref.candidate_id||''));
+  const resolved=[];
+  for(let index=0;index<out[label].length;index++){
+   const entry=out[label][index],ref=entry.snapshot_ref,candidate=candidates.get(String(ref.candidate_id||''));
    if(!candidate)throw Object.assign(new Error(`Formal roster ${label}[${index}]が存在しないCandidateを参照しています: ${ref.candidate_id||''}`),{code:'BATTLE_FORMAL_SNAPSHOT_REFERENCE_MISSING',candidate_id:ref.candidate_id||''});
    if(candidate.candidate_type!=='unit_snapshot')throw Object.assign(new Error(`Formal roster ${label}[${index}]はunit_snapshotだけを参照できます: ${candidate.candidate_type}`),{code:'BATTLE_FORMAL_SNAPSHOT_TYPE_MISMATCH',candidate_id:candidate.candidate_id});
-   return {count:Number(entry.count||1),unit:{...structuredClone(candidate.data),__formal_snapshot:{candidate_id:candidate.candidate_id,candidate_type:candidate.candidate_type,payload_sha256:candidate.payload_sha256,provenance:structuredClone(candidate.provenance)}}};
-  });
+   const unit=structuredClone(candidate.data);
+   if(Array.isArray(unit.skill_ids)&&unit.skill_ids.length)throw Object.assign(new Error(`Formal unit_snapshot ${candidate.candidate_id}はskill_ids参照を使用できません。G07済み正式Skill objectをskillsへ固定してください。`),{code:'BATTLE_FORMAL_SKILL_ID_ONLY_FORBIDDEN',candidate_id:candidate.candidate_id});
+   if(unit.skills!=null&&!Array.isArray(unit.skills))throw Object.assign(new Error(`Formal unit_snapshot ${candidate.candidate_id}のskillsは配列が必要です。`),{code:'BATTLE_FORMAL_SKILLS_INVALID',candidate_id:candidate.candidate_id});
+   const validatedSkills=[];
+   for(let skillIndex=0;skillIndex<(unit.skills||[]).length;skillIndex++)validatedSkills.push(await battlePackageValidateFormalUnitSkill(unit.skills[skillIndex],label,index,skillIndex));
+   unit.skills=validatedSkills;
+   unit.__formal_snapshot={candidate_id:candidate.candidate_id,candidate_type:candidate.candidate_type,payload_sha256:candidate.payload_sha256,provenance:structuredClone(candidate.provenance)};
+   resolved.push({count:Number(entry.count||1),unit});
+  }
+  out[label]=resolved;
  }
  out.__formal_roster={snapshot:structuredClone(roster.formal_snapshot)};
  return out;
@@ -4787,7 +4806,7 @@ async function inspectBattlePackage(file){
      if(checked.type!==expectedType)throw Object.assign(new Error(`${entry.path}は${expectedType}ではありません。`),{code:'BATTLE_RESOURCE_TYPE_MISMATCH',path:entry.path});
      const rid=String(checked.payload.id||'');
      if(collection.has(rid)&&pathCollection.get(rid)!==entry.path)throw Object.assign(new Error(`リソースIDが重複しています: ${rid}`),{code:'BATTLE_RESOURCE_ID_DUPLICATE',resource_id:rid,path:entry.path});
-     const payload=formalMode&&expectedType==='battle-roster'?battlePackageResolveFormalRoster(checked.payload,resources.candidates):checked.payload;
+     const payload=formalMode&&expectedType==='battle-roster'?await battlePackageResolveFormalRoster(checked.payload,resources.candidates):checked.payload;
      collection.set(rid,payload);pathCollection.set(rid,entry.path);
     }
    }
@@ -4835,7 +4854,7 @@ async function inspectBattlePackage(file){
      if(pathCollection.get(rid)!==entry.path)throw Object.assign(new Error(`リソースIDが重複しています: ${rid}`),{code:'BATTLE_RESOURCE_ID_DUPLICATE',resource_id:rid});
      continue;
     }
-    const payload=formalMode&&expectedType==='battle-roster'?battlePackageResolveFormalRoster(checked.payload,resources.candidates):checked.payload;
+    const payload=formalMode&&expectedType==='battle-roster'?await battlePackageResolveFormalRoster(checked.payload,resources.candidates):checked.payload;
     collection.set(rid,payload);pathCollection.set(rid,entry.path);
    }
    return collection.get(id)||null;
@@ -5179,7 +5198,7 @@ async function exportBattleAiPackageTemplate(){
   jobs:[]
  };
  const readme=`# AI向け Battle Package ひな形\n\nこのZIPは、Guild Adventure Studioへ読み込ませるFormal戦闘検証データをAIが作成するための空パッケージです。\n\n## AIへの依頼方法\n\nこのZIPをAIへ渡し、「このZIPに○○の戦闘テストデータを作成してください」と依頼してください。\n\n## 必須作業\n\n1. Formal unit snapshotを resources/candidates/ へ typed Candidate JSONとして追加する。\n2. 編成JSONはraw unit/master/overrideを記述せず、unit_snapshot Candidateをsnapshot_refで参照する。\n3. 必要なテストJSONを resources/tests/ へ追加する。\n4. 必要に応じて対象集合・Benchmarkを対応フォルダへ追加する。\n5. execution_plan.json の jobs に、実行対象だけを記載する。\n6. manifest.json のformal.bindingsは変更しない。contents件数、package_id、name、created_atだけを更新する。\n7. 完成したZIPのフォルダ構造を変更せず、そのまま返す。\n\nFormal PackageはBuild/Data/Formula/Rules/Config binding不一致、raw roster、owner provenance欠落をfail-closedで拒否します。\n`;
- const specification=`# Battle Package 基本仕様 v1.0\n\n## 必須ファイル\n- manifest.json\n- execution_plan.json\n\n## リソース配置\n- resources/candidates/*.json : typed transient candidate（Formal unit snapshot等）\n- resources/rosters/*.json : battle-roster\n- resources/tests/*.json : battle-test\n- resources/opponent_sets/*.json : battle-opponent-set\n- resources/benchmarks/*.json : battle-benchmark\n\n## Formal Input原則\n- manifest.formal.bindingsはTemplate出力時のCurrent Build/Data/Formula/Rules/Configへ固定されます。\n- Studio読込時に1項目でも不一致なら実行前に停止します。\n- Formal rosterはmode=\"formal\"とformal_snapshotを持ち、各unitはresources/candidatesのunit_snapshotをsnapshot_refで参照します。\n- raw unit / master_id / direct stats / overridesはFormal rosterでは使用できません。\n- Candidateはcandidate_type / candidate_id / owner provenance / payload_sha256が必須です。\n\n## 実行原則\n- execution_plan.jsonに記載されたenabled=trueのjobだけが実行対象です。\n- 対応job_typeは battle-test / battle-benchmark です。\n- 未使用リソースは正常です。\n- 参照先がないjobはエラーです。\n- IDはパッケージ内で重複させないでください。\n- 人数は固定ではありません。編成配列とcountで表現してください。\n\n## battle-test job例\n\n{\n  "job_id": "JOB-001",\n  "job_type": "battle-test",\n  "job_version": "1.0.0",\n  "required": true,\n  "enabled": true,\n  "resource_refs": {\n    "roster_id": "BRT-001",\n    "test_id": "BT-001"\n  },\n  "output_policy": {"level": "representative"}\n}\n`;
+ const specification=`# Battle Package 基本仕様 v1.0\n\n## 必須ファイル\n- manifest.json\n- execution_plan.json\n\n## リソース配置\n- resources/candidates/*.json : typed transient candidate（Formal unit snapshot等）\n- resources/rosters/*.json : battle-roster\n- resources/tests/*.json : battle-test\n- resources/opponent_sets/*.json : battle-opponent-set\n- resources/benchmarks/*.json : battle-benchmark\n\n## Formal Input原則\n- manifest.formal.bindingsはTemplate出力時のCurrent Build/Data/Formula/Rules/Configへ固定されます。\n- Studio読込時に1項目でも不一致なら実行前に停止します。\n- Formal rosterはmode=\"formal\"とformal_snapshotを持ち、各unitはresources/candidatesのunit_snapshotをsnapshot_refで参照します。\n- raw unit / master_id / direct stats / overridesはFormal rosterでは使用できません。\n- Candidateはcandidate_type / candidate_id / owner provenance / payload_sha256が必須です。\n- Formal unit_snapshotのskillsはG07でcompile済みの正式Skill objectを直接保持し、runtimeContractsを必須とします。skill_idsだけの参照やLegacy Skill recordは使用できません。\n- Studio読込時に各Formal SkillをG07で再検証し、runtimeContractsが再生成結果と一致しない場合は実行前に停止します。\n- 後続Lifecycle工程が未接続のTrigger / Cast / Effect / Target semanticsはLegacyへfallbackせず明示REJECTします。\n\n## 実行原則\n- execution_plan.jsonに記載されたenabled=trueのjobだけが実行対象です。\n- 対応job_typeは battle-test / battle-benchmark です。\n- 未使用リソースは正常です。\n- 参照先がないjobはエラーです。\n- IDはパッケージ内で重複させないでください。\n- 人数は固定ではありません。編成配列とcountで表現してください。\n\n## battle-test job例\n\n{\n  "job_id": "JOB-001",\n  "job_type": "battle-test",\n  "job_version": "1.0.0",\n  "required": true,\n  "enabled": true,\n  "resource_refs": {\n    "roster_id": "BRT-001",\n    "test_id": "BT-001"\n  },\n  "output_policy": {"level": "representative"}\n}\n`;
  const prompt=`# AIへの依頼テンプレート\n\nこのBattle Packageひな形ZIPを編集し、次の検証データを作成してください。\n\n## 目的\n（ここに検証したい内容を書く）\n\n## 条件\n（使用する編成、敵、試行数、Seed、期待値などを書く）\n\n## 出力条件\n- ZIP内部のREADME_AI.mdとSPECIFICATION.mdに従う。\n- 実行対象はexecution_plan.jsonへ記載する。\n- 完成したBattle PackageをZIPのまま返す。\n`;
  const writer=GKZipCore.writer.create();
  writer.addJson('manifest.json',manifest);
@@ -5998,7 +6017,26 @@ function seededRandom(seed){let x=(Number(seed)||1)>>>0;return ()=>{x=(x+0x6D2B7
 function battleMasterById(category,id){return (data.masters&&data.masters[category]||[]).find(x=>x.id===id)||null}
 function battleStatBlock(rec){const p=rec&&rec.params&&typeof rec.params==='object'?rec.params:{};return p.stats&&typeof p.stats==='object'?p.stats:p}
 function resolveBattleLoadout(u){const totals={hp:0,mp:0,mp_regen:0,agi:0,str:0,luk:0,attack:0,defense:0,accuracy:0,crit:0,damage_resist:0,status_resist:0},sources=[],missing=[];const add=(rec,kind)=>{if(!rec)return;const st=battleStatBlock(rec);Object.keys(totals).forEach(k=>totals[k]+=Number(st[k])||0);sources.push({id:rec.id,name:rec.name,kind});const nested=Array.isArray(rec.params&&rec.params.mod_ids)?rec.params.mod_ids:[];nested.forEach(id=>{const m=battleMasterById('mods',id);if(m)add(m,'mod');else missing.push(id)})};(Array.isArray(u.equipment_ids)?u.equipment_ids:[]).forEach(id=>{const rec=battleMasterById('equipment',id);if(rec)add(rec,'equipment');else missing.push(id)});(Array.isArray(u.mod_ids)?u.mod_ids:[]).forEach(id=>{const rec=battleMasterById('mods',id);if(rec)add(rec,'mod');else missing.push(id)});return {totals,sources,missing}}
-function normalizeBattleUnits(rows,side){if(!Array.isArray(rows))throw new Error(side+'は配列で入力してください。');if(side==='味方'&&rows.length>6)throw new Error('味方は最大6人です。');const cfg=battleFormulaConfig;return rows.map((u,i)=>{const loadout=resolveBattleLoadout(u),b=loadout.totals,hp=Math.max(1,(Number(u.hp)||100)+b.hp),mp=Math.max(0,(Number(u.mp)||0)+b.mp),ai=Array.isArray(u.ai)&&u.ai.length?u.ai:[{condition:'always',action:'attack',target:'enemy_random'}];if(loadout.missing.length)throw new Error((u.name||u.id||side+(i+1))+'の装備・MOD参照が見つかりません: '+loadout.missing.join(', '));if(ai.length>20)throw new Error((u.name||u.id||side+(i+1))+'のAIノードは最大20件です。');const str=Math.max(0,(Number(u.str)||0)+b.str),luk=Math.max(0,(Number(u.luk)||0)+b.luk);const equipmentAccuracy=Number(b.accuracy)||0;const explicitAccuracy=Number.isFinite(Number(u.accuracy))?Number(u.accuracy):null;const forceFormulaAccuracy=!!(battleExperimentContext&&battleExperimentContext.forceFormulaAccuracy);const accuracyBase=cfg.accuracySource==='equipment'?(forceFormulaAccuracy?cfg.equipmentAccuracy:(equipmentAccuracy||explicitAccuracy||cfg.equipmentAccuracy)):(forceFormulaAccuracy?cfg.characterAccuracy:(explicitAccuracy??cfg.characterAccuracy)+equipmentAccuracy);const accuracy=Math.max(0,Math.min(100,accuracyBase+str*cfg.strAccuracyCoefficient));const crit=Math.max(0,Math.min(100,cfg.baseCrit+(Number(b.crit)||0)+(Number(u.crit_bonus)||0)+luk*cfg.lukCritCoefficient));return {id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),str,luk,attack:Math.max(1,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy,crit,damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist:Math.max(0,Math.min(75,(Number(u.status_resist)||0)+b.status_resist)),skills:Array.isArray(u.skills)?u.skills:[],ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,statuses:[],cooldowns:{},ag:0,actions:0,alive:true,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0}})}
+function formalBattleSkillExecutionView(skill){
+ if(!skill?.__formal_g07_validated||!skill.runtimeContracts)throw Object.assign(new Error(`Formal Skill ${skill?.id||'(unknown)'}はG07検証済みruntimeContractsが必要です。`),{code:'BATTLE_FORMAL_SKILL_NOT_G07_VALIDATED',skill_id:String(skill?.id||'')});
+ const rc=skill.runtimeContracts,trigger=rc.triggerContract||{},target=rc.targetContract||{},resource=rc.resourceContract||{},effects=Array.isArray(rc.effectContracts)?rc.effectContracts:[],apply=Array.isArray(rc.applyContracts)?rc.applyContracts:[];
+ if(String(trigger.type||'')!=='ON_USE')throw Object.assign(new Error(`Formal Skill ${skill.id}のTrigger ${trigger.type||'(なし)'}は現在のBattle Package直接行動では実行しません。イベントTrigger実行は後続Lifecycle工程で接続します。`),{code:'BATTLE_FORMAL_TRIGGER_EXECUTION_UNSUPPORTED',skill_id:String(skill.id),trigger:String(trigger.type||'')});
+ if(Number(resource.castTime||0)>0)throw Object.assign(new Error(`Formal Skill ${skill.id}はcastTime=${resource.castTime}のため、Cast lifecycle接続前のBattle Packageでは実行できません。`),{code:'BATTLE_FORMAL_CAST_LIFECYCLE_PENDING',skill_id:String(skill.id),cast_time:Number(resource.castTime)});
+ if(apply.length||rc.auraEffectContract)throw Object.assign(new Error(`Formal Skill ${skill.id}はAPPLY/AURA lifecycleを含むため、Status/Lifecycle接続前のBattle Packageでは実行できません。`),{code:'BATTLE_FORMAL_APPLY_LIFECYCLE_PENDING',skill_id:String(skill.id)});
+ if(effects.length!==1)throw Object.assign(new Error(`Formal Skill ${skill.id}はEffect ${effects.length}件です。Multi-effect順序接続前は1件だけ実行可能です。`),{code:'BATTLE_FORMAL_MULTI_EFFECT_LIFECYCLE_PENDING',skill_id:String(skill.id),effect_count:effects.length});
+ const effect=effects[0],type=String(effect?.type||'').toUpperCase();
+ if(!['DAMAGE','HEAL'].includes(type))throw Object.assign(new Error(`Formal Skill ${skill.id}の${type||'(unknown)'}は後続Battle Lifecycle工程の対象です。Legacy fallbackは使用しません。`),{code:'BATTLE_FORMAL_EFFECT_EXECUTION_UNSUPPORTED',skill_id:String(skill.id),effect_type:type});
+ const range=String(target.range||'').toUpperCase(),side=String(target.side||'').toUpperCase();
+ if(!['SELF','ALLY','ENEMY'].includes(side)||!['SINGLE','ALL','RANDOM'].includes(range))throw Object.assign(new Error(`Formal Skill ${skill.id}のTarget ${side}/${range}は現在のBattle Package execution adapterで未対応です。`),{code:'BATTLE_FORMAL_TARGET_EXECUTION_UNSUPPORTED',skill_id:String(skill.id),side,range});
+ if(range==='RANDOM'&&(!Number.isInteger(target.randomCount)||target.randomCount<1))throw Object.assign(new Error(`Formal Skill ${skill.id}のRANDOM randomCountが不正です。`),{code:'BATTLE_FORMAL_RANDOM_COUNT_INVALID',skill_id:String(skill.id)});
+ const damageType=String(effect.damageType||'PHYSICAL').toUpperCase();
+ if(type==='DAMAGE'&&!['PHYSICAL','MAGICAL'].includes(damageType))throw Object.assign(new Error(`Formal Skill ${skill.id}のDamageType ${damageType}は現在のBattle Package adapterで未対応です。`),{code:'BATTLE_FORMAL_DAMAGE_TYPE_EXECUTION_UNSUPPORTED',skill_id:String(skill.id),damage_type:damageType});
+ return{id:String(skill.id),name:String(skill.name||skill.id),type:type==='HEAL'?'heal':'attack',power:Number(effect.power),damage_type:type==='DAMAGE'?damageType.toLowerCase():null,mp_cost:Number(resource.mpCost||0),cooldown:Number(resource.cooldown||0),cast_time:Number(resource.castTime||0),target:{side,range,randomCount:target.randomCount??null,excludeSelf:target.excludeSelf===true},formal_conditions:structuredClone(rc.conditionContracts||[]),runtimeContracts:structuredClone(rc),__formal_runtime:true,__formal_source_skill:skill};
+}
+function normalizeBattleUnits(rows,side){
+ if(!Array.isArray(rows))throw new Error(side+'は配列で入力してください。');if(side==='味方'&&rows.length>6)throw new Error('味方は最大6人です。');const cfg=battleFormulaConfig;
+ return rows.map((u,i)=>{const formalMode=!!u.__formal_snapshot,loadout=resolveBattleLoadout(u),b=loadout.totals,hp=Math.max(1,(Number(u.hp)||100)+b.hp),mp=Math.max(0,(Number(u.mp)||0)+b.mp),ai=Array.isArray(u.ai)&&u.ai.length?u.ai:[{condition:'always',action:'attack',target:'enemy_random'}];if(loadout.missing.length)throw new Error((u.name||u.id||side+(i+1))+'の装備・MOD参照が見つかりません: '+loadout.missing.join(', '));if(ai.length>20)throw new Error((u.name||u.id||side+(i+1))+'のAIノードは最大20件です。');const sourceSkills=Array.isArray(u.skills)?u.skills:[],skills=formalMode?sourceSkills.map(formalBattleSkillExecutionView):sourceSkills;if(formalMode){const ids=new Set(skills.map(x=>String(x.id)));for(const [ri,rule] of ai.entries()){const action=String(rule?.action||'');if(action.startsWith('skill:')){const skillId=action.slice(6);if(!ids.has(skillId))throw Object.assign(new Error(`Formal unit ${u.name||u.id||side+(i+1)}のAI node#${ri+1}が存在しないSkillを参照しています: ${skillId}`),{code:'BATTLE_FORMAL_SKILL_REFERENCE_MISSING',skill_id:skillId});}}}const str=Math.max(0,(Number(u.str)||0)+b.str),luk=Math.max(0,(Number(u.luk)||0)+b.luk);const equipmentAccuracy=Number(b.accuracy)||0;const explicitAccuracy=Number.isFinite(Number(u.accuracy))?Number(u.accuracy):null;const forceFormulaAccuracy=!!(battleExperimentContext&&battleExperimentContext.forceFormulaAccuracy);const accuracyBase=cfg.accuracySource==='equipment'?(forceFormulaAccuracy?cfg.equipmentAccuracy:(equipmentAccuracy||explicitAccuracy||cfg.equipmentAccuracy)):(forceFormulaAccuracy?cfg.characterAccuracy:(explicitAccuracy??cfg.characterAccuracy)+equipmentAccuracy);const accuracy=Math.max(0,Math.min(100,accuracyBase+str*cfg.strAccuracyCoefficient));const crit=Math.max(0,Math.min(100,cfg.baseCrit+(Number(b.crit)||0)+(Number(u.crit_bonus)||0)+luk*cfg.lukCritCoefficient));return{id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),str,luk,attack:Math.max(1,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy,crit,damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist:Math.max(0,Math.min(75,(Number(u.status_resist)||0)+b.status_resist)),skills,ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,statuses:[],cooldowns:{},ag:0,actions:0,alive:true,formalMode,formalSnapshot:formalMode?structuredClone(u.__formal_snapshot):null,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0};});
+}
 function seedEquipmentBattleSample(){data.masters.equipment=data.masters.equipment||[];data.masters.mods=data.masters.mods||[];const upsert=(c,r)=>{const i=data.masters[c].findIndex(x=>x.id===r.id);if(i>=0)data.masters[c][i]=r;else data.masters[c].push(r)};upsert('mods',{id:'MOD-BTL-ATK',name:'攻撃強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{attack:12,crit:3}},description:'装備連携確認用',updated_at:now()});upsert('mods',{id:'MOD-BTL-RES',name:'守護強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{hp:60,defense:6,damage_resist:5}},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-SWORD',name:'試作騎士剣',status:'approved',tags:['武器','戦闘サンプル'],params:{stats:{attack:18,accuracy:3},mod_ids:['MOD-BTL-ATK']},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-ARMOR',name:'試作騎士鎧',status:'approved',tags:['鎧','戦闘サンプル'],params:{stats:{hp:80,defense:10,status_resist:5},mod_ids:['MOD-BTL-RES']},description:'装備連携確認用',updated_at:now()});const allies=JSON.parse(JSON.stringify(BATTLE_SAMPLE_ALLIES));allies[0].equipment_ids=['EQP-BTL-SWORD','EQP-BTL-ARMOR'];battleAllies.value=JSON.stringify(allies,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);persist('battle equipment sample');battleSummary.innerHTML='装備・MODマスターと連携するサンプルを登録しました。'}
 
 // BUILD415_RULE_NUMBER_TAG_BEGIN
@@ -6057,6 +6095,50 @@ function runCompiledAiDecision(runtime,u,units,tick,seed,phase='reservation'){
 }
 function battleConditionOk(rule,u,units){const c=String(rule.condition||'always');if(c==='always')return true;if(c.startsWith('mp_at_least:'))return u.mp>=Number(c.split(':')[1]||0);if(c.startsWith('hp_below:'))return u.hp/u.maxHp*100<Number(c.split(':')[1]||0);if(c.startsWith('ally_hp_below:'))return units.some(x=>x.side===u.side&&x.alive&&x.hp/x.maxHp*100<Number(c.split(':')[1]||0));if(c.startsWith('enemy_count_at_most:'))return units.filter(x=>x.side!==u.side&&x.alive).length<=Number(c.split(':')[1]||0);return false}
 function battleTargets(kind,u,units,rnd){const allies=units.filter(x=>x.side===u.side&&x.alive),enemies=units.filter(x=>x.side!==u.side&&x.alive);const pool=String(kind||'enemy_random').startsWith('ally')||kind==='self'?allies:enemies;if(!pool.length)return[];if(kind==='self')return[u];if(kind==='ally_lowest'||kind==='enemy_lowest')return[pool.slice().sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0]];if(kind==='enemy_highest')return[pool.slice().sort((a,b)=>b.hp/b.maxHp-a.hp/a.maxHp)[0]];if(kind==='enemy_defense_lowest')return[pool.slice().sort((a,b)=>a.defense-b.defense)[0]];if(kind==='ally_all'||kind==='enemy_all')return pool;return[pool[Math.floor(rnd()*pool.length)]]}
+function formalBattleTargets(skill,selector,u,units,rnd){
+ const target=skill?.runtimeContracts?.targetContract||skill?.target||{},side=String(target.side||'').toUpperCase(),range=String(target.range||'').toUpperCase();
+ if(side==='SELF')return[u];
+ let pool=units.filter(x=>x.alive&&(side==='ALLY'?x.side===u.side:x.side!==u.side));
+ if(side==='ALLY'&&target.excludeSelf===true)pool=pool.filter(x=>x.id!==u.id);
+ if(!pool.length)return[];
+ if(range==='ALL')return pool;
+ if(range==='RANDOM'){
+  const count=Math.min(pool.length,Math.max(1,Number(target.randomCount)||1)),copy=pool.slice(),out=[];
+  while(out.length<count&&copy.length){const i=Math.floor(rnd()*copy.length);out.push(copy.splice(i,1)[0]);}
+  return out;
+ }
+ if(range!=='SINGLE')throw Object.assign(new Error(`Formal target range ${range}はこのBattle Package adapterで未対応です。`),{code:'BATTLE_FORMAL_TARGET_EXECUTION_UNSUPPORTED',skill_id:String(skill?.id||''),range});
+ const requested=String(selector||'').trim();
+ if(requested){
+  const isAlly=requested==='self'||requested.startsWith('ally_'),isEnemy=requested.startsWith('enemy_');
+  if((side==='ALLY'&&!isAlly)||(side==='ENEMY'&&!isEnemy)||requested.endsWith('_all'))throw Object.assign(new Error(`Formal Skill ${skill.id}のTarget Contract ${side}/SINGLEとAI target=${requested}が一致しません。`),{code:'BATTLE_FORMAL_AI_TARGET_CONTRACT_MISMATCH',skill_id:String(skill.id),selector:requested});
+  const selected=battleTargets(requested,u,units,rnd).filter(x=>pool.some(p=>p.id===x.id));
+  if(selected.length)return[selected[0]];
+ }
+ return[pool[Math.floor(rnd()*pool.length)]];
+}
+function formalBattleCompare(actual,operator,expected){if(operator==='=')return actual===expected;if(operator==='!=')return actual!==expected;if(operator==='>')return actual>expected;if(operator==='>=')return actual>=expected;if(operator==='<')return actual<expected;if(operator==='<=')return actual<=expected;return false;}
+function formalBattleSkillConditionsOk(skill,u,units,tick,target){
+ const conditions=Array.isArray(skill?.formal_conditions)?skill.formal_conditions:[];
+ for(const c of conditions){
+  const property=String(c?.property||'').toUpperCase();
+  if(c?.enginePredicate==='target_poisoned'||property==='TARGET_POISONED'){
+   if(!target||!Array.isArray(target.statuses)||!target.statuses.some(x=>String(x?.type||'').toLowerCase()==='poison'))return false;
+   continue;
+  }
+  let actual;
+  if(property==='SELF_HP')actual=u.hp;
+  else if(property==='SELF_HP_RATE')actual=u.maxHp>0?u.hp/u.maxHp:0;
+  else if(property==='SELF_MP')actual=u.mp;
+  else if(property==='SELF_MP_RATE')actual=u.maxMp>0?u.mp/u.maxMp:0;
+  else if(property==='ENEMY_COUNT')actual=units.filter(x=>x.side!==u.side&&x.alive).length;
+  else if(property==='ALLY_COUNT')actual=units.filter(x=>x.side===u.side&&x.alive).length;
+  else if(property==='BATTLE_TICK')actual=tick;
+  else throw Object.assign(new Error(`Formal Skill ${skill.id}のCondition ${property||'(unknown)'}はBattle Package adapterで未対応です。`),{code:'BATTLE_FORMAL_CONDITION_EXECUTION_UNSUPPORTED',skill_id:String(skill.id),property});
+  if(!formalBattleCompare(actual,c.operator,c.value))return false;
+ }
+ return true;
+}
 function recoveryScale(tick){return tick>=800?.2:tick>=500?.5:1}
 function battleLogPush(logs,limit,text){if(logs.length<limit)logs.push(text)}
 function applyBattleStatus(target,effect,tick,rnd,logs,limit,source){const baseChance=Math.max(0,Math.min(100,Number((effect&&effect.chance)??100))),finalChance=baseChance*(1-target.statusResist/100);if(!effect||rnd()*100>finalChance){if(effect&&effect.type)battleLogPush(logs,limit,`[${tick}] ${target.name}は状態異常に抵抗`);return false;}const type=String(effect.type||'');if(!type)return false;const status={type,remaining:Math.max(1,Number(effect.duration)||100),interval:Math.max(1,Number(effect.interval)||100),nextTick:tick+Math.max(1,Number(effect.interval)||100),potency:Math.max(0,Number(effect.potency)||0),source:source.name};target.statuses=target.statuses.filter(x=>x.type!==type);target.statuses.push(status);if(source)source.statusApplied=(source.statusApplied||0)+1;battleLogPush(logs,limit,`[${tick}] ${target.name}に${({poison:'毒',burn:'火傷',regen:'再生',stun:'スタン'})[type]||type}付与`);return true}
@@ -6069,6 +6151,19 @@ function recordDamagePipeline(trace,logs,limit,tick,u,target,label,p,hitRoll,eff
 function performBasicAttack(u,target,tick,rnd,logs,limit,power=1,accuracy=u.accuracy,label='通常攻撃',effect=null,trace=[]){const cfg=battleFormulaConfig,effectiveAccuracy=Math.max(0,Math.min(100,accuracy-cfg.targetEvasionPercent)),hitRoll=rnd()*100;if(hitRoll>=effectiveAccuracy){u.misses++;tracePush(trace,{kind:'attack_miss',tick,attacker:u.name,target:target.name,label,hit_roll:hitRoll,accuracy:effectiveAccuracy});return}u.hits++;const critical=rnd()*100<u.crit,spread=Math.max(0,Math.min(.9,cfg.variance)),variance=(1-spread)+rnd()*(spread*2),p=calculatePhysicalDamagePipeline({attack:u.attack,power,defense:target.defense,variance,critical,resistance:target.damageResist},cfg);p.wasCritical=critical;if(critical)u.crits++;u.damageDealt+=p.damage;target.damageTaken+=p.damage;target.hp=Math.max(0,target.hp-p.damage);recordDamagePipeline(trace,logs,limit,tick,u,target,label,p,hitRoll,effectiveAccuracy);if(effect&&target.alive)applyBattleStatus(target,effect,tick,rnd,logs,limit,u);if(target.hp<=0)target.alive=false}
 function performMagicAttack(u,skill,target,tick,rnd,logs,limit,trace=[]){const cfg=battleFormulaConfig,fixed=(battleExperimentContext&&battleExperimentContext.fixed)||{},accuracy=Math.max(0,Math.min(100,(Number(skill.accuracy)||u.accuracy)-cfg.targetEvasionPercent)),hitRoll=rnd()*100;if(hitRoll>=accuracy){u.misses++;tracePush(trace,{kind:'attack_miss',tick,attacker:u.name,target:target.name,label:String(skill.name||skill.id||'魔法'),hit_roll:hitRoll,accuracy});return}u.hits++;const basePower=Math.max(0,Number.isFinite(Number(fixed.skillBasePower))?Number(fixed.skillBasePower):(Number(skill.base_power)||100)),power=Math.max(0,Number.isFinite(Number(fixed.skillPowerRate))?Number(fixed.skillPowerRate):(Number(skill.power_multiplier)||Number(skill.power)||1)),elementBonus=(Number.isFinite(Number(fixed.elementBonusPercent))?Number(fixed.elementBonusPercent):cfg.elementDamageBonusPercent)/100,critical=rnd()*100<Math.max(0,Math.min(100,Number.isFinite(Number(fixed.criticalRatePercent))?Number(fixed.criticalRatePercent):u.crit)),spread=Math.max(0,Math.min(.9,cfg.variance)),variance=(1-spread)+rnd()*(spread*2),resistance=Number.isFinite(Number(fixed.enemyResistancePercent))?Number(fixed.enemyResistancePercent):target.damageResist,p=calculateMagicDamagePipeline({basePower,power,elementBonus,critical,variance,resistance},cfg);p.wasCritical=critical;if(critical)u.crits++;u.damageDealt+=p.damage;target.damageTaken+=p.damage;target.hp=Math.max(0,target.hp-p.damage);recordDamagePipeline(trace,logs,limit,tick,u,target,String(skill.name||skill.id||'魔法'),p,hitRoll,accuracy);if(skill.effect&&target.alive)applyBattleStatus(target,skill.effect,tick,rnd,logs,limit,u);if(target.hp<=0)target.alive=false}
 function performSkill(u,skill,target,tick,rnd,logs,limit,trace=[]){const cfg=battleFormulaConfig,cost=Math.max(0,(Number(skill.mp_cost)||0)*Math.max(0,cfg.mpCostMultiplier)),id=String(skill.id||skill.name||'skill'),readyAt=Number(u.cooldowns[id]||0);if(u.mp<cost||tick<readyAt)return false;u.mp-=cost;u.skillUses++;const cooldown=Math.max(0,(Number(skill.cooldown)||0)*Math.max(0,cfg.cooldownMultiplier));if(cooldown)u.cooldowns[id]=tick+cooldown;const type=String(skill.type||'attack'),name=String(skill.name||skill.id||'スキル');if(type==='heal'){const amount=Math.max(1,Math.floor((Number(skill.power)||50)*(1+cfg.healingBonusPercent/100)*recoveryScale(tick)));const before=target.hp;target.hp=Math.min(target.maxHp,target.hp+amount);u.healingDone+=target.hp-before}else if(type==='status'){applyBattleStatus(target,skill.effect||{},tick,rnd,logs,limit,u)}else{const fixed=(battleExperimentContext&&battleExperimentContext.fixed)||{},isMagic=String(skill.damage_type||'').toLowerCase()==='magical'||String(skill.damage_type||'').toLowerCase()==='magic'||String(skill.type||'').toLowerCase()==='magic'||skill.magic===true||Number.isFinite(Number(skill.base_power))||Number.isFinite(Number(fixed.skillBasePower));if(isMagic)performMagicAttack(u,skill,target,tick,rnd,logs,limit,trace);else performBasicAttack(u,target,tick,rnd,logs,limit,Math.max(.1,Number(skill.power)||1),Math.max(1,Math.min(100,Number(skill.accuracy)||u.accuracy)),name,skill.effect||null,trace)}return true}
+function performFormalSkill(u,skill,targets,tick,rnd,logs,limit,trace=[]){
+ if(!skill?.__formal_runtime)throw Object.assign(new Error('performFormalSkillにはFormal runtime skillが必要です。'),{code:'BATTLE_FORMAL_SKILL_RUNTIME_REQUIRED'});
+ const cfg=battleFormulaConfig,cost=Math.max(0,Number(skill.mp_cost||0)*Math.max(0,cfg.mpCostMultiplier)),id=String(skill.id),readyAt=Number(u.cooldowns[id]||0);
+ if(u.mp<cost||tick<readyAt||!Array.isArray(targets)||!targets.length)return false;
+ u.mp-=cost;u.skillUses++;
+ const cooldown=Math.max(0,Number(skill.cooldown||0)*Math.max(0,cfg.cooldownMultiplier));if(cooldown)u.cooldowns[id]=tick+cooldown;
+ for(const target of targets){
+  if(skill.type==='heal'){const amount=Math.max(1,Math.floor(Number(skill.power||0)*(1+cfg.healingBonusPercent/100)*recoveryScale(tick))),before=target.hp;target.hp=Math.min(target.maxHp,target.hp+amount);u.healingDone+=target.hp-before;continue;}
+  const isMagic=String(skill.damage_type||'').toLowerCase()==='magical';
+  if(isMagic)performMagicAttack(u,skill,target,tick,rnd,logs,limit,trace);else performBasicAttack(u,target,tick,rnd,logs,limit,Math.max(.1,Number(skill.power)||1),u.accuracy,String(skill.name||skill.id),null,trace);
+ }
+ return true;
+}
 function battleUnitMetrics(u){return {id:u.id,name:u.name,side:u.side,alive:u.alive,hp:u.hp,maxHp:u.maxHp,mp:u.mp,maxMp:u.maxMp,str:u.str,luk:u.luk,accuracy:u.accuracy,crit_rate:u.crit,actions:u.actions,damage_dealt:u.damageDealt,damage_taken:u.damageTaken,healing_done:u.healingDone,hits:u.hits,misses:u.misses,crits:u.crits,skill_uses:u.skillUses,status_applied:u.statusApplied}}
 function battleTotals(units,side){const rows=units.filter(u=>u.side===side),sum=k=>rows.reduce((n,u)=>n+Number(u[k]||0),0);return {survivors:rows.filter(u=>u.alive).length,units:rows.length,actions:sum('actions'),damage_dealt:sum('damageDealt'),damage_taken:sum('damageTaken'),healing_done:sum('healingDone'),hits:sum('hits'),misses:sum('misses'),crits:sum('crits'),skill_uses:sum('skillUses'),status_applied:sum('statusApplied')}}
 function renderBattleMetrics(result){if(!result||!result.metrics)return battleMetrics.innerHTML='戦闘実行後に表示します。';const rows=[...(result.metrics.units||[])];battleMetrics.innerHTML=`<div style="overflow:auto"><table><thead><tr><th>陣営</th><th>ユニット</th><th>生存</th><th>行動</th><th>与ダメ</th><th>被ダメ</th><th>回復</th><th>命中/外れ</th><th>クリ</th><th>スキル</th><th>状態付与</th></tr></thead><tbody>${rows.map(u=>`<tr><td>${esc(u.side)}</td><td>${esc(u.name)}</td><td>${u.alive?'○':'×'}</td><td>${u.actions}</td><td>${u.damage_dealt}</td><td>${u.damage_taken}</td><td>${u.healing_done}</td><td>${u.hits}/${u.misses}</td><td>${u.crits}</td><td>${u.skill_uses}</td><td>${u.status_applied}</td></tr>`).join('')}</tbody></table></div>`}
@@ -6107,7 +6202,7 @@ function runBattleSimulation(input={},options={}){
           const rule=u.ai[ri],ok=battleConditionOk(rule,u,units);
           if(battleTraceOptions.ai)battleLogPush(logs,logLimit,`[${tick}] AI ${u.name} node#${ri+1} condition=${rule.condition||'always'} => ${ok?'TRUE':'FALSE'}`);
           if(!ok)continue;
-          const action=String(rule.action||'attack'),skillId=action.startsWith('skill:')?action.slice(6):'',skill=u.skills.find(x=>x.id===skillId),targetKind=rule.target||(skill&&skill.target)||'enemy_random',targets=battleTargets(targetKind,u,units,rnd);
+          const action=String(rule.action||'attack'),skillId=action.startsWith('skill:')?action.slice(6):'',skill=u.skills.find(x=>x.id===skillId),targetKind=skill?.__formal_runtime?'formal:'+String(skill.runtimeContracts?.targetContract?.side||'')+'/'+String(skill.runtimeContracts?.targetContract?.range||''):(rule.target||(skill&&skill.target)||'enemy_random'),targets=skill?.__formal_runtime?formalBattleTargets(skill,rule.target,u,units,rnd):battleTargets(targetKind,u,units,rnd);
           if(battleTraceOptions.ai)battleLogPush(logs,logLimit,`  ACTION ${action} / target=${targetKind} / candidates=${targets.map(x=>x.name).join(',')||'none'}`);
           if(!targets.length)continue;
           if(skillId){
@@ -6115,7 +6210,11 @@ function runBattleSimulation(input={},options={}){
               if(battleTraceOptions.ai)battleLogPush(logs,logLimit,'  SKIP skill unavailable');
               continue;
             }
-            for(const target of targets)performSkill(u,skill,target,tick,rnd,logs,logLimit,trace);
+            if(skill.__formal_runtime&&!formalBattleSkillConditionsOk(skill,u,units,tick,targets[0]||null)){
+              if(battleTraceOptions.ai)battleLogPush(logs,logLimit,'  SKIP formal skill conditions not met');
+              continue;
+            }
+            if(skill.__formal_runtime)performFormalSkill(u,skill,targets,tick,rnd,logs,logLimit,trace);else for(const target of targets)performSkill(u,skill,target,tick,rnd,logs,logLimit,trace);
             acted=true;
           }else{
             performBasicAttack(u,targets[0],tick,rnd,logs,logLimit,1,u.accuracy,'通常攻撃',null,trace);
@@ -9584,7 +9683,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','752');
+    url.searchParams.set('appv','754');
     location.replace(url.toString());
    }
  }
@@ -9593,7 +9692,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=752',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=754',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -9612,7 +9711,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','752');
+    url.searchParams.set('appv','754');
     location.replace(url.toString());
    }
   });
