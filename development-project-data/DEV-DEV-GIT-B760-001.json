@@ -10,17 +10,17 @@
     "name": "Development案件 Git正本参照・ブラウザ分岐修正",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T21:44:59.794Z"
+    "updated_at": "2026-08-23T22:02:53.062Z"
   },
   "project_context": {
     "purpose": "GKS-B760で同一Sourceを開いているにもかかわらず、ブラウザごとにDevelopment案件一覧が異なる問題を独立修正案件として管理する。Git上のdevelopment-project-data/index.jsonとProject JSONを正本とし、ブラウザ固有のbranch設定/localStorage状態が正本選択へ介入しない構造へ修正する。",
     "summary": "Human提供の同時刻スクリーンショットでは、同じGame GA-B486.211 / Studio GKS-B760表示にもかかわらず、一方のブラウザはV9 Balance案件1件のみ、他方は6案件を表示した。Current B760 Sourceのdevelopment-project-data/index.jsonは6案件を保持する。Source監査ではDevelopment Git Store既定branch=subに対しStudio一般Git設定UIのghBranch初期値=mainが存在し、Development側studioConnection()がRegistry branch→ghBranch→DEFAULT_CONNECTION.branchの順でbranchを決定する。またブラウザlocalStorageにDevelopment Registryを保持する。これによりブラウザ固有状態とGit branch文脈がDevelopment案件一覧へ混入し得る。既存DEV-DEV-SAVE-REBUILD-B743-001と設計上の重複を避け、その既存知見を再利用しつつB760で再現した残存/回帰問題として扱う。 追加UI要件として、Studioホームでは旧来の上部共通ナビゲーション（入口/ゲーム/Studio/資料）とGame/Studio Build表示を復旧し、ホーム位置では不要な『もどる』『とじる』を表示しない。一方、下位画面の『もどる』『とじる』は共通レイアウトとして現状維持し修正対象外とする。また画面最上部に誤表示されている『/* GKS-B760 development-data/source-integrity separation */』をUIから除去する。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-DEV-GIT-B760-UI",
-    "work_box_id": "BOX-DEV-GIT-B760-UI",
-    "theme": "TASK-DEV-GIT-B760-006完了・全登録Task Done・completion approval待ち",
-    "goal": "GKS-B763 fresh Current SourceでStudio Home/下位common navigation最終Regressionを完了。登録済みTASK-001〜007はすべてDone。新規Taskは自動作成せず、Human completion approvalを待つ。"
+    "architecture_id": "ARCH-DEV-GIT-B760-READ",
+    "work_box_id": "BOX-DEV-GIT-B760-SOURCE",
+    "theme": "TASK-008完了・merge-save Branch username属性GKS-B764反映・保存先branch分離TASK-009未着手",
+    "goal": "developmentMergeSaveBranchのpassword-manager username属性はGKS-B764で完了。次はHuman訂正仕様に基づき、JSON統合保存をユーザー選択branchへ保存しdefault branch強制を解除するTASK-009だが、本runでは未着手。"
   },
   "project_rules": [
     {
@@ -34,12 +34,12 @@
     },
     {
       "id": "RULE-DEV-GIT-B760-002",
-      "text": "Development同期開始時にGit repository側のdefault branchを取得し、その1回の処理ではProject本文GET、必要なindex操作、書込、retry、処理完了まで同一branch context（owner/repo/branch/auth）を使用する。branchは永続固定せず、次の同期開始時にGit側default branchを再取得する。",
+      "text": "DevelopmentのGit読込開始時にGit repository側のdefault branchを取得し、その1回の読込処理ではProject本文GET、index GET、retry、処理完了まで同一branch context（owner/repo/branch/auth）を使用する。branchは永続固定せず、次の独立読込開始時にGit側default branchを再取得する。このRuleはユーザーが保存先として選択したbranchをdefault branchへ強制する根拠にはしない。",
       "status": "Active",
       "source_type": "HumanApprovedDesign",
       "source_id": "conversation:2026-08-23 Git default branch + operation-scoped branch pinning",
       "created_at": "2026-08-23T21:06:00+09:00",
-      "updated_at": "2026-08-23T21:43:00+09:00"
+      "updated_at": "2026-08-24T07:00:11+09:00"
     },
     {
       "id": "RULE-DEV-GIT-B760-003",
@@ -139,14 +139,32 @@
       "source_id": "DISC-DEV-GIT-B760-004",
       "created_at": "2026-08-23T21:48:00+09:00",
       "updated_at": "2026-08-23T21:57:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-014",
+      "text": "Developmentの「JSONを統合して保存」Branch入力 developmentMergeSaveBranch は、PATのパスワード管理とBranchをusernameとして連携できるよう name=\"username\" / autocomplete=\"username\" を持つ。今回のTaskではPAT属性や保存先branch処理は変更しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 developmentMergeSaveBranch username attribute",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-015",
+      "text": "Developmentの「JSONを統合して保存」の保存先branchは画面Branch欄でユーザーが選択・入力したbranchとする。Git repository default branchは読込authorityに使用するが、merge-saveの保存先をdefault branchへ強制しない。保存前の競合確認GETとPUTは選択した同一保存branchで完結させる。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 read default branch != selected save branch",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
     }
   ],
   "source_baseline": {
     "studio_build": "GKS-B763",
     "game_build": "GA-B486.211",
     "source_label": "guild-adventure-studio-sub(9).zip",
-    "source_role": "TASK-DEV-GIT-B760-006 exact regression baseline",
-    "recorded_at": "2026-08-24T06:41:00+09:00",
+    "source_role": "TASK-DEV-GIT-B760-008 exact implementation baseline",
+    "recorded_at": "2026-08-24T07:00:11+09:00",
     "package_manifest_sha256": "f8497ca199d177d173d625c111e1d45f9d09747aa2bc80ffb52d35dd27002ce3",
     "source_tree_sha256": "7ff68d6e1c14526e642b2d394ffab1ce89c409087804b5772e7c96aa949aec89",
     "source_zip_sha256": "babde74611cf3a2e897ca35ebfb86379101dad4121c257dee5bb162130e6eb40"
@@ -452,6 +470,77 @@
       "created_at": "2026-08-24T06:41:00+09:00",
       "updated_at": "2026-08-24T06:41:00+09:00",
       "evidence": "TASK-DEV-GIT-B760-006_REGRESSION-EVIDENCE.json sha256=9cbf661a87c420da76deff177e0e7ea5774b15148e03f8c4edc71e9835469bef"
+    },
+    {
+      "id": "IMP-DEV-GIT-B760-008",
+      "title": "Development merge-save Branch password-manager username attributes",
+      "status": "Completed",
+      "task_id": "TASK-DEV-GIT-B760-008",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B764",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-DEV-GIT-B760-UI"
+      ],
+      "task_ids": [
+        "TASK-DEV-GIT-B760-008"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-24T07:00:11+09:00",
+      "baseline": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B763",
+        "source_zip": "guild-adventure-studio-sub(9).zip",
+        "source_zip_sha256": "babde74611cf3a2e897ca35ebfb86379101dad4121c257dee5bb162130e6eb40",
+        "package_manifest_sha256": "f8497ca199d177d173d625c111e1d45f9d09747aa2bc80ffb52d35dd27002ce3",
+        "source_tree_sha256": "7ff68d6e1c14526e642b2d394ffab1ce89c409087804b5772e7c96aa949aec89"
+      },
+      "target": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B764",
+        "package_manifest_sha256": "35dddf66463066769c8658cb2db2634f040b34a301a759b304f1b34168107e15",
+        "source_tree_sha256": "14329b17ba15b9bd47d35624532da090920334507e2cf4803f131657e9311d10",
+        "artifact_id": "GKS-B764-14329b17ba15"
+      },
+      "artifact": {
+        "file": "DEV-DEV-GIT-B760-001_TASK-008_GKS-B764_STUDIO-UPDATE.zip",
+        "sha256": "322aa463b4b1f4cb168b41b4af03ac0f1db94d1179a5e0b22e96cf32ff495ecf",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "contains_development_project_data": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "changed_scope": {
+        "functional_source": [
+          "studio/index.html"
+        ],
+        "functional_source_sha256_before": "bc0fde0d64657546da2fe7d80c6d30f0bccc893551eb81e5fbd0d2e49a8dc4f3",
+        "functional_source_sha256_after": "903dd160774c0b965d7ce575ee1a5babb44a2e8ef0a1c9be0afab605fdc00c10",
+        "functional_change_summary": "developmentMergeSaveBranchのautocomplete=offをautocomplete=usernameへ変更し、name=usernameを追加。PAT属性と保存branch処理は未変更。",
+        "build_marker_sync_changed_files": 17,
+        "protected_test_changes": "build-token-only",
+        "protected_test_changed_count": 12,
+        "critical_runtime_manifest_change": "machine-derived size/sha sync only",
+        "github_file_deletions": 0
+      },
+      "verification": {
+        "baseline_quick": "12/12 PASS warnings=0 timeouts=0 report_sha256=29b3efe8ecbaf617bc823f71ddec6d740a78127b62327ba87802561aab3e1ac6",
+        "target_quick": "11/11 PASS warnings=0 timeouts=0 report_sha256=53d6888f4075aada15cb28a652010538980939b7fdb555060268ba2fd90e62d3",
+        "protected_regression": "studio-common-header-gks-b571.js PASS; studio-home-aware-common-navigation-gks-b572.js PASS",
+        "task008_attribute": "PASS developmentMergeSaveBranch name=username autocomplete=username; PAT/save routing unchanged",
+        "update_quick": "14/14 PASS; applied Quick 11/11 PASS warnings=0 timeouts=0 report_sha256=6af0722cf8ffaa88cd346aa18b2ed96ba407fae6a528ba0434aaae931cd5241b",
+        "update_accept": "14/14 PASS; applied-state Full 26/26 PASS warnings=0 timeouts=0 report_sha256=cdfa0b75cbd985a543be9bccb09f4fc3f53c702dcf9fd537babe2c734c4b7f5c",
+        "update_release": "14/14 PASS; applied-state Full 26/26 PASS warnings=0 timeouts=0 report_sha256=6f1ae2e9afac0ca3204650bca9480d8febf6b098128843dc7e4852191ade1d30",
+        "artifact_zip_binding": "PASS files=645 zip_sha256=322aa463b4b1f4cb168b41b4af03ac0f1db94d1179a5e0b22e96cf32ff495ecf",
+        "artifact_encoding": "PASS UTF-8/NFC warnings=0"
+      },
+      "summary": "developmentMergeSaveBranchをpassword managerのusername欄として認識できる属性へ変更した。保存先branchのdefault branch強制問題は本Taskでは変更せず、Human訂正仕様に基づくTASK-009として分離した。",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00",
+      "evidence": "SOURCE_UPDATE Quick/Accept/Release + protected tests + exact attribute assertion"
     }
   ],
   "discussions": [
@@ -627,6 +716,32 @@
       "approved_at": "2026-08-23T21:43:00+09:00",
       "created_at": "2026-08-23T21:43:00+09:00",
       "updated_at": "2026-08-23T21:43:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-009",
+      "title": "Development読込default branchとmerge-save保存branchを分離する",
+      "status": "Approved",
+      "text": "index/Projectの読込authorityはGit repository default branchを使用する。一方「JSONを統合して保存」はBranch欄でユーザーが選択・入力したbranchへ保存し、default branchへ強制しない。",
+      "rationale": "Humanが「インデックスの読み込みはgitの設定ブランチ使うとはいったが保存もそれにしろとはいっていない。保存先は選択して保存する」と明示したため。",
+      "source_discussion_ids": [
+        "DISC-DEV-GIT-B760-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T07:00:11+09:00",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-010",
+      "title": "merge-save Branchをpassword manager usernameとして扱う",
+      "status": "Approved",
+      "text": "developmentMergeSaveBranchへ name=\"username\" / autocomplete=\"username\" を付与し、PATのパスワード管理選択時にBranchがusername側として反応できる属性構成にする。",
+      "rationale": "HumanがdevelopmentMergeSaveBranch側にもusername属性を付けるよう明示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T07:00:11+09:00",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
     }
   ],
   "specifications": [
@@ -634,8 +749,8 @@
       "id": "SPEC-DEV-GIT-B760-001",
       "title": "Development Project Git Authority / Browser Independence Draft",
       "status": "Approved",
-      "summary": "Git repository側default branchへの追随、処理単位branch固定、localStorage Registry完全不使用、初回index取得とopen時Project取得を定めるDevelopment Git同期仕様。",
-      "body": "## Authority\n- 案件一覧正本: development-project-data/index.json\n- 案件本文正本: development-project-data/<project-id>.json\n- Development localStorage Registryは使用しない。\n\n## Branch resolution\n1. Development同期開始時にGit repository側のdefault branchを取得する。\n2. sub/main等のbranchをSourceへ永続固定しない。\n3. browser-local ghBranchをDevelopment正本branch決定に使用しない。\n4. 1回の処理中は開始時に解決したbranchを固定し、途中で別branchへ切り替えない。\n5. 次の同期開始時にGit repository側default branchを再取得する。\n\n## Index behavior\n1. Development管理の初回表示時にindex.jsonをGitから取得する。\n2. 取得成功した一覧はセッション中そのまま表示する。\n3. 通常操作のためのindex一覧再読込は行わない。\n4. localStorage Registryから一覧を復元しない。\n\n## Project behavior\n1. 案件を開くたびにdevelopment-project-data/<project-id>.jsonをGitから取得する。\n2. Project本文取得失敗時はその案件のopenを失敗として扱う。\n3. Project本文取得失敗によって、すでに表示済みのindex一覧を消去しない。\n\n## Cache\n- Development localStorage Registryはread/write/fallbackすべて禁止。\n- Git取得結果を表示中に保持する場合はメモリのみ使用する。\n- Git認証情報や一般UI設定の保存方式は今回の対象外。\n\n## Reuse / scope\n- 既存DEV-DEV-SAVE-REBUILD-B743-001のGit Store/operation-context設計をreuse-firstとする。\n- 新しいGit Store、Registry、保存Orchestratorを重複実装しない。\n- 複数ブラウザ同時編集時の競合方式など、今回の修正内容に直接関係しない保存仕様は変更しない。\n",
+      "summary": "Git repository側default branchへの読込追随、読込処理単位branch固定、localStorage Registry完全不使用、初回index取得/open時Project取得、およびmerge-saveのユーザー選択保存branch分離を定めるDevelopment Git同期仕様。",
+      "body": "## Authority\n- 案件一覧正本: development-project-data/index.json\n- 案件本文正本: development-project-data/<project-id>.json\n- Development localStorage Registryは使用しない。\n\n## Branch resolution\n1. Developmentのindex / Project読込開始時にGit repository側のdefault branchを取得する。\n2. sub/main等の読込branchをSourceへ永続固定しない。\n3. browser-local ghBranchをDevelopment読込authority branch決定に使用しない。\n4. 1回の読込処理中は開始時に解決したdefault branchを固定し、途中で別branchへ切り替えない。\n5. 次の独立読込開始時にGit repository側default branchを再取得する。\n6. 「JSONを統合して保存」の保存先branchは画面Branch欄でユーザーが選択・入力したbranchとし、default branchへ強制しない。保存前競合確認GETとPUTはその選択branchで統一する。\n\n## Index behavior\n1. Development管理の初回表示時にindex.jsonをGitから取得する。\n2. 取得成功した一覧はセッション中そのまま表示する。\n3. 通常操作のためのindex一覧再読込は行わない。\n4. localStorage Registryから一覧を復元しない。\n\n## Project behavior\n1. 案件を開くたびにdevelopment-project-data/<project-id>.jsonをGitから取得する。\n2. Project本文取得失敗時はその案件のopenを失敗として扱う。\n3. Project本文取得失敗によって、すでに表示済みのindex一覧を消去しない。\n\n## Cache\n- Development localStorage Registryはread/write/fallbackすべて禁止。\n- Git取得結果を表示中に保持する場合はメモリのみ使用する。\n- Git認証情報や一般UI設定の保存方式は今回の対象外。\n\n## Reuse / scope\n- 既存DEV-DEV-SAVE-REBUILD-B743-001のGit Store/operation-context設計をreuse-firstとする。\n- 新しいGit Store、Registry、保存Orchestratorを重複実装しない。\n- 複数ブラウザ同時編集時の競合方式など、今回の修正内容に直接関係しない保存仕様は変更しない。\n",
       "decision_refs": [
         "DEC-DEV-GIT-B760-001",
         "DEC-DEV-GIT-B760-002",
@@ -644,7 +759,7 @@
         "DEC-DEV-GIT-B760-008"
       ],
       "depends_on": [],
-      "acceptance_criteria": "Git repository側default branchがDevelopment正本branchとして使用され、browser-local branch差で一覧が分岐しない。同一処理中はbranchが変化せず、Development localStorage Registryへのread/write/fallbackがない。初回index取得後は一覧をセッション表示し、案件open時はProject JSONをGitから取得する。",
+      "acceptance_criteria": "Git repository側default branchがDevelopment読込authority branchとして使用され、browser-local branch差で一覧が分岐しない。同一読込処理中はbranchが変化せず、Development localStorage Registryへのread/write/fallbackがない。初回index取得後は一覧をセッション表示し、案件open時はProject JSONをGitから取得する。JSON統合保存はユーザーがBranch欄で選択した保存branchをdefault branchへ強制せず使用する。",
       "system_node_id": "SYS-DEV-GIT-B760-AUTHORITY",
       "contract_ids": [
         "CONTRACT-DEV-GIT-B760-AUTHORITY",
@@ -652,11 +767,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "Human",
       "approved_at": "2026-08-23T21:43:00+09:00",
       "created_at": "2026-08-23T21:06:00+09:00",
-      "updated_at": "2026-08-23T21:43:00+09:00"
+      "updated_at": "2026-08-24T07:00:11+09:00"
     },
     {
       "id": "SPEC-DEV-GIT-B760-UI-001",
@@ -843,9 +958,9 @@
       "key": "SOURCE_EDIT_AUTHORIZED",
       "value": "true",
       "source": "HumanInstruction",
-      "note": "Project-level implementation approval active. TASK-002/003/005 SOURCE_UPDATE、TASK-004/006 Regressionを含む全登録Task完了。completion approvalはPending。",
+      "note": "Project-level implementation approval active. TASK-008 username-attribute SOURCE_UPDATE completed. TASK-009 selected save-branch routing remains Todo/Pending and was not executed in this run.",
       "created_at": "2026-08-23T21:06:00+09:00",
-      "updated_at": "2026-08-24T06:41:00+09:00"
+      "updated_at": "2026-08-24T07:00:11+09:00"
     },
     {
       "id": "FLAG-DEV-GIT-B760-006",
@@ -945,6 +1060,28 @@
       "note": "No file deletion is required for the approved repair.",
       "created_at": "2026-08-23T21:48:00+09:00",
       "updated_at": "2026-08-23T21:48:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-015",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "MERGE_SAVE_BRANCH_PASSWORD_MANAGER_ROLE",
+      "value": "username",
+      "source": "HumanInstruction",
+      "note": "developmentMergeSaveBranch uses name=username / autocomplete=username.",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-016",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "MERGE_SAVE_DESTINATION_POLICY",
+      "value": "user_selected_branch",
+      "source": "HumanInstruction",
+      "note": "Specification corrected; implementation remains TASK-009 Todo/Pending.",
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
     }
   ],
   "system_events": [],
@@ -1124,7 +1261,7 @@
       "id": "TASK-DEV-GIT-B760-006",
       "box_id": "BOX-DEV-GIT-B760-UI",
       "title": "Studio Home / 下位common navigation Regressionと既存保護testを確認する",
-      "status": "Done",
+      "status": "Todo",
       "execution_order": 60,
       "depends_on": [
         "TASK-DEV-GIT-B760-005"
@@ -1133,12 +1270,12 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Approved",
-        "by": "AI (human approval not required)",
-        "at": "2026-08-24T06:41:00+09:00"
+        "status": "Pending",
+        "by": "",
+        "at": ""
       },
       "created_at": "2026-08-23T21:23:00+09:00",
-      "updated_at": "2026-08-24T06:41:00+09:00"
+      "updated_at": "2026-08-23T21:48:00+09:00"
     },
     {
       "id": "TASK-DEV-GIT-B760-007",
@@ -1159,6 +1296,46 @@
       },
       "created_at": "2026-08-23T21:48:00+09:00",
       "updated_at": "2026-08-23T21:48:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-008",
+      "box_id": "BOX-DEV-GIT-B760-UI",
+      "title": "developmentMergeSaveBranchをpassword manager username属性へ対応する",
+      "status": "Done",
+      "execution_order": 70,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-006"
+      ],
+      "acceptance_criteria": "studio/index.htmlのdevelopmentMergeSaveBranchが name=\"username\" / autocomplete=\"username\" を持ち、autocapitalize/autocorrect/spellcheckの既存抑制を維持する。PAT属性、Git read authority、保存先branch処理には機能変更を加えない。SOURCE_UPDATE Gateが全PASSする。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T06:56:00+09:00"
+      },
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-009",
+      "box_id": "BOX-DEV-GIT-B760-SOURCE",
+      "title": "JSON統合保存をユーザー選択branchへ保存しdefault branch強制を解除する",
+      "status": "Todo",
+      "execution_order": 80,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-008"
+      ],
+      "acceptance_criteria": "DevelopmentのJSON統合保存でdevelopmentMergeSaveBranchの値を実保存先branchとして使用する。保存前の競合確認GETとPUTを同じ選択branchで行い、Git repository default_branchへ保存先を強制しない。index初回取得とProject openの読込authorityは既存どおりGit default branchを維持する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
     }
   ],
   "checks": [
@@ -1329,22 +1506,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-DEV-GIT-B760-006",
-      "status": "Passed",
-      "result": "fresh GKS-B763でStudio Home/下位common navigation回帰を確認。Homeでは既存ga-project-navの入口/ゲーム/Studio/資料とGA-B486.211 / GKS-B763を保持し、Development Home中だけ下位common もどる/とじるを非表示。下位Developmentではもどる/とじるを維持し、Backは直前childへ、CloseはStudio Homeへ戻る。source-integrity literalなし。既存protected tests 2本はB760基準とbyte-identicalのままPASS。Source変更0件。",
-      "evidence": "TASK-DEV-GIT-B760-006_REGRESSION-EVIDENCE.json sha256=9cbf661a87c420da76deff177e0e7ea5774b15148e03f8c4edc71e9835469bef; task006 ad-hoc log sha256=38d3dcd18d487561b69bf46402a475c98e07aea8a994c094a419519579d94bd5",
-      "checked_by": "AI",
-      "checked_at": "2026-08-24T06:41:00+09:00",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Resolved",
-        "resolved_by": "AI",
-        "resolved_at": "2026-08-24T06:41:00+09:00",
-        "reason": "Task acceptance criteria verified",
-        "mode": "automatic"
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-23T21:23:00+09:00",
-      "updated_at": "2026-08-24T06:41:00+09:00"
+      "updated_at": "2026-08-23T21:23:00+09:00"
     },
     {
       "id": "CHECK-DEV-GIT-B760-009",
@@ -1578,26 +1755,49 @@
     },
     {
       "id": "CHECK-DEV-GIT-B760-019",
-      "title": "TASK-DEV-GIT-B760-006 fresh GKS-B763 Source / Quick / protected Regression確認",
+      "title": "TASK-008 fresh GKS-B763 baseline / Human attribute instruction確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-008",
+      "status": "Passed",
+      "result": "fresh guild-adventure-studio-sub(9).zip / GA-B486.211 / GKS-B763、authority instance一致、baseline Quick 12/12 PASSを確認。HumanがdevelopmentMergeSaveBranch側にもusername属性を付与するよう明示した。",
+      "evidence": "source_zip_sha256=babde74611cf3a2e897ca35ebfb86379101dad4121c257dee5bb162130e6eb40; baseline quick report sha256=29b3efe8ecbaf617bc823f71ddec6d740a78127b62327ba87802561aab3e1ac6",
+      "checked_by": "Human+AI",
+      "checked_at": "2026-08-24T07:00:11+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human+AI",
+        "resolved_at": "2026-08-24T07:00:11+09:00",
+        "reason": "Task-specific instruction and fresh baseline verified",
+        "mode": "manual"
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-020",
+      "title": "TASK-008 merge-save Branch username属性 acceptance",
       "gate": "General",
       "target_type": "Task",
-      "target_id": "TASK-DEV-GIT-B760-006",
+      "target_id": "TASK-DEV-GIT-B760-008",
       "status": "Passed",
-      "result": "fresh Current Source guild-adventure-studio-sub(9).zipを確認。GA-B486.211 / GKS-B763、authority.instance_id一致。package_manifest SHA-256=f8497ca199d177d173d625c111e1d45f9d09747aa2bc80ffb52d35dd27002ce3、source tree SHA-256=7ff68d6e1c14526e642b2d394ffab1ce89c409087804b5772e7c96aa949aec89でTASK-005 targetと一致。Quick + source ZIP binding 12/12 PASS warnings=0 timeouts=0。protected tests 2本とTask006専用Regression PASS。Source変更0件。",
-      "evidence": "source_zip_sha256=babde74611cf3a2e897ca35ebfb86379101dad4121c257dee5bb162130e6eb40; Quick evidence_sha256=b457f293c22c8349a489c5c490321f55d4284c763653088b55359acceb53db60; regression evidence sha256=9cbf661a87c420da76deff177e0e7ea5774b15148e03f8c4edc71e9835469bef",
+      "result": "developmentMergeSaveBranchへ name=username / autocomplete=usernameを追加し、既存autocapitalize/autocorrect/spellcheck抑制を維持。PAT属性と保存branch処理には機能変更なし。GKS-B764 SOURCE_UPDATE Quick/Accept/Release、applied Full、保護testが全PASS。",
+      "evidence": "artifact_id=GKS-B764-14329b17ba15; artifact sha256=322aa463b4b1f4cb168b41b4af03ac0f1db94d1179a5e0b22e96cf32ff495ecf",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T06:41:00+09:00",
+      "checked_at": "2026-08-24T07:00:11+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Resolved",
         "resolved_by": "AI",
-        "resolved_at": "2026-08-24T06:41:00+09:00",
-        "reason": "Fresh GKS-B763 final regression baseline verified",
+        "resolved_at": "2026-08-24T07:00:11+09:00",
+        "reason": "Task acceptance criteria verified",
         "mode": "automatic"
       },
       "blocking": false,
-      "created_at": "2026-08-24T06:41:00+09:00",
-      "updated_at": "2026-08-24T06:41:00+09:00"
+      "created_at": "2026-08-24T07:00:11+09:00",
+      "updated_at": "2026-08-24T07:00:11+09:00"
     }
   ],
   "workflow": {
@@ -1745,6 +1945,22 @@
     {
       "at": "2026-08-24T06:41:00+09:00",
       "message": "TASK-DEV-GIT-B760-006 Done。登録済みTASK-001〜007は全件Done。新規Taskへ自動着手せず、workflow completion approval PendingのままHuman確認待ちで停止。"
+    },
+    {
+      "at": "2026-08-24T07:00:11+09:00",
+      "message": "HumanがdevelopmentMergeSaveBranch側にもusername属性を付けるよう明示。fresh guild-adventure-studio-sub(9).zip / GA-B486.211 / GKS-B763をAI_STARTから確認し、TASK-008としてSOURCE_UPDATEを実行。"
+    },
+    {
+      "at": "2026-08-24T07:00:11+09:00",
+      "message": "TASK-008完了。studio/index.htmlのdevelopmentMergeSaveBranchへ name=username / autocomplete=usernameを追加。PAT属性・Git read authority・保存先branch処理は本Taskで変更していない。Studio Build GKS-B763→GKS-B764。削除0、Game Data/Export変更0。"
+    },
+    {
+      "at": "2026-08-24T07:00:11+09:00",
+      "message": "Human訂正仕様「読込はGit default branch、JSON統合保存はユーザー選択branch」を管理仕様へ反映。保存先default branch強制解除はTASK-009 Todo/Pendingとして分離し、本runでは未着手。"
+    },
+    {
+      "at": "2026-08-24T07:00:11+09:00",
+      "message": "GKS-B764直接Studio更新ZIP作成。Baseline Quick 12/12、Target Quick 11/11、Update Quick 14/14 + applied Quick 11/11、Accept/Release各14/14 + applied Full 26/26、保護test 2本PASS、artifact binding/encoding PASS。"
     }
   ]
 }
