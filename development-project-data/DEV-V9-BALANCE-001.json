@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T11:41:59.734Z"
+    "updated_at": "2026-08-23T11:48:03.817Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "Apply GKS-B760 null-max correction, then resume TASK-BAL-019 P3-6",
-    "goal": "TASK-BAL-025 correction is complete and release-gated. Apply DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip through Studio > 更新ZIP, reacquire fresh Current Source, rerun CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001, and only then resume TASK-BAL-019. Do not start TASK-BAL-020. Current Source/Game Data/Current active remain GKS-B759/unchanged until Human apply."
+    "theme": "GKS-B760 verified; TASK-BAL-019 P3-6 ready to resume",
+    "goal": "GKS-B760 null-max correction is applied and verified on fresh Current Source. CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001 is resolved and TASK-BAL-019 is returned to Todo. Resume TASK-BAL-019 in the next AI run only; do not start TASK-BAL-020 until TASK-BAL-019 is completed."
   },
   "project_rules": [
     {
@@ -236,14 +236,14 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B759",
+    "studio_build": "GKS-B760",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub.zip",
-    "source_role": "current_B759_verified_TASK-BAL-019_issue_gate",
-    "recorded_at": "2026-08-23T20:02:01+09:00",
-    "package_manifest_sha256": "3ba2f0e42be0118550eed83c533621a6757f33f4c2ea91d036eb18e18642eed6",
-    "source_tree_sha256": "707434adbf4200d75d8f0198d72fe2207c527a15c92bdd324f39ccc89df93d5b",
-    "source_zip_sha256": "954db03aa8d46653a24fa31aa995f66ed969655a8efc751bf0475e220b035cd8"
+    "source_label": "guild-adventure-studio-sub(2).zip",
+    "source_role": "current_B760_verified_TASK-BAL-019_ready",
+    "recorded_at": "2026-08-23T20:43:00+09:00",
+    "package_manifest_sha256": "662ff776db954a36c67c886873a407539d89ebfdc610ab767c6893f6407972dc",
+    "source_tree_sha256": "17df856d55daec14e6357e8e74b86836ae12d7bf85685db96b3ba33deaa0938d",
+    "source_zip_sha256": "cf5cfa695af8ec2d65c485a48ecd66c0d3655629bc55b9c9f3226c257aed4109"
   },
   "lifecycle": {
     "status": "Active",
@@ -4281,7 +4281,7 @@
       "id": "TASK-BAL-019",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "P3-6 Formal AI / Monster-Enemy Snapshotを接続・検証する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 180,
       "depends_on": [
         "TASK-BAL-018",
@@ -4296,7 +4296,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T20:28:00+09:00"
+      "updated_at": "2026-08-23T20:43:00+09:00"
     },
     {
       "id": "TASK-BAL-020",
@@ -5813,15 +5813,15 @@
       "checked_at": "2026-08-23T20:02:01+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-P3-6-B760-APPLY-001",
+        "resolved_at": "2026-08-23T20:43:00+09:00",
+        "reason": "Fresh Current Source verified at GKS-B760 / GA-B486.211. package_manifest SHA-256 exactly matches TASK-BAL-025 target and all 642 manifest entries pass missing/size/hash validation. Original null-max reproduction passes: max_multiplier=null remains null, fixed-formation multipliers are 2/1.5/1, and 120 HP / 18 ATK / 9 AGI scales to 240 / 27 / 9. Finite max_multiplier=1.25 remains 1.25/1.25/1. Fresh-source Quick passes 12/12 with warnings=0/timeouts=0. Compared with the exact B759+GKS-B760 applied target tree, the only current-tree difference is development-project-data/DEV-V9-BALANCE-001.json from the separate Development Project merge route.",
+        "mode": "automatic"
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-23T20:02:01+09:00",
-      "updated_at": "2026-08-23T20:02:01+09:00"
+      "updated_at": "2026-08-23T20:43:00+09:00"
     },
     {
       "id": "CHK-BAL-P3-6-NULL-MAX-B760-001",
@@ -5852,22 +5852,24 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-BAL-019",
-      "status": "Pending",
-      "result": "TASK-BAL-025 GKS-B760 correction artifact is release-gated, but Current Source remains B759 until Human applies the update ZIP. Do not resolve CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001 or resume TASK-BAL-019 until GKS-B760 is applied and the original reproduction passes on fresh Current Source.",
-      "evidence": "pending deployment of DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip sha256=0b1e2b29fcaaf3e5349e3e3980873bcd494f52f6f092dfaeb3dd35a0948ff8ad",
+      "status": "Passed",
+      "result": "Fresh Current Source verified at GKS-B760 / GA-B486.211. package_manifest SHA-256 exactly matches TASK-BAL-025 target and all 642 manifest entries pass missing/size/hash validation. Original null-max reproduction passes: max_multiplier=null remains null, fixed-formation multipliers are 2/1.5/1, and 120 HP / 18 ATK / 9 AGI scales to 240 / 27 / 9. Finite max_multiplier=1.25 remains 1.25/1.25/1. Fresh-source Quick passes 12/12 with warnings=0/timeouts=0. Compared with the exact B759+GKS-B760 applied target tree, the only current-tree difference is development-project-data/DEV-V9-BALANCE-001.json from the separate Development Project merge route.",
+      "evidence": "guild-adventure-studio-sub(2).zip sha256=cf5cfa695af8ec2d65c485a48ecd66c0d3655629bc55b9c9f3226c257aed4109; package_manifest sha256=662ff776db954a36c67c886873a407539d89ebfdc610ab767c6893f6407972dc; files=642; current_source_tree sha256=17df856d55daec14e6357e8e74b86836ae12d7bf85685db96b3ba33deaa0938d; Quick=12/12 PASS",
       "checked_by": "AI",
-      "checked_at": "2026-08-23T20:28:00+09:00",
-      "resolves_check_ids": [],
+      "checked_at": "2026-08-23T20:43:00+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-P3-6-FIXED-FORMATION-NULL-MAX-001"
+      ],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-23T20:43:00+09:00",
+        "reason": "Human-applied GKS-B760 was reacquired as fresh Current Source and the original blocking reproduction now passes without changing null sentinel semantics.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-23T20:28:00+09:00",
-      "updated_at": "2026-08-23T20:28:00+09:00"
+      "updated_at": "2026-08-23T20:43:00+09:00"
     }
   ],
   "workflow": {
@@ -6063,6 +6065,14 @@
     {
       "at": "2026-08-23T20:28:00+09:00",
       "message": "Human confirmed fixed_formation_scaling.max_multiplier=null means no upper bound and authorized proceeding on that basis. TASK-BAL-025 added/approved/executed as SOURCE_UPDATE on exact GKS-B759 baseline. clamp now skips null min/max bounds instead of treating Number(null)=0 as a finite boundary. Baseline reproduction 0/0/0 -> target 2/1.5/1; probe Monster 1/0/1 -> 240/27/9; finite max=1.25 unchanged. Quick 11/11; Accept update 13/13; Release update 13/13; applied Full 26/26; warnings/timeouts=0; Compatibility/Exception Budget PASS; protected test logic changes=0; deletions/Game Data/Current active changes=0. Artifact=DEV-V9-BALANCE-001_TASK-BAL-025_GKS-B760_STUDIO-UPDATE.zip sha256=0b1e2b29fcaaf3e5349e3e3980873bcd494f52f6f092dfaeb3dd35a0948ff8ad; Evidence=DEV-V9-BALANCE-001_TASK-BAL-025_FIXED-FORMATION-NULL-MAX-EVIDENCE.zip sha256=d5be2274c3a0903ef42b98516e0b6bd04078e4f48d172b32d722c92d18ac9ba1. Original Failed Check remains unresolved until Human applies B760 and fresh Current Source passes the original reproduction. TASK-BAL-019 remains Blocked; TASK-BAL-020 not started."
+    },
+    {
+      "id": "HIST-BAL-P3-6-B760-APPLY-VERIFIED-001",
+      "title": "GKS-B760 application verified and TASK-BAL-019 unblocked",
+      "summary": "Fresh GKS-B760 Current Source matches the approved package manifest; null max bound semantics now pass the original reproduction and Quick 12/12. TASK-BAL-019 was returned from Blocked to Todo without starting its implementation.",
+      "task_id": "TASK-BAL-019",
+      "created_at": "2026-08-23T20:43:00+09:00",
+      "updated_at": "2026-08-23T20:43:00+09:00"
     }
   ],
   "authority": {
