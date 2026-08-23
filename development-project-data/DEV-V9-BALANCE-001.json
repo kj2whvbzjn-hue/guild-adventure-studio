@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T04:19:41.810Z"
+    "updated_at": "2026-08-23T04:30:35.175Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "P2 Static Skill Calibration — Next Approved Execution Task",
-    "goal": "TASK-BAL-001 P1 Static Equipment Calibrationは完了。P1詳細Evidenceは`DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip` (sha256=0fbe6a00909ba8003719c19209cbf12e2dba159b2d4e3f30d85f0bcb5870e019) をHumanが外部保管する正式証跡とし、Development Project JSONには要約/Hash/保持ルールのみを保持する。Raw EvidenceがProject JSON内に無いことを削除と解釈しない。次の1TaskはTASK-BAL-002（P2 Static Skill Calibration）。TASK-BAL-003もTodoだが自動連続着手しない。"
+    "work_box_id": "BOX-V9-BAL-FOUNDATION-001",
+    "theme": "P3 Existing System Current-Spec Alignment Requirement Handoff — Next Approved Execution Task",
+    "goal": "TASK-BAL-002 P2 Static Skill Calibrationは完了。P2 Evidenceは`DEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip` (sha256=f4740e97d341a55d2d35e27c1890dac4e0e5fa87773e4de7c9ad40bc7eeb9d8b) をHumanが外部保管する正式証跡とする。B750 P2でG05/G07 authoring coverage gapをREQ-BAL-SKILL-AUTH-001として追加。次の1TaskはTASK-BAL-003で、REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001 / REQ-BAL-SKILL-AUTH-001をreuse-first SOURCE_UPDATE Requirement setとして実装ラインへ引き渡せる状態にする。Balance案件内でSourceを変更しない。"
   },
   "project_rules": [
     {
@@ -209,11 +209,11 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B735",
+    "studio_build": "GKS-B750",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260822-052245).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260823-042106).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-22T14:23:00+09:00"
+    "recorded_at": "2026-08-23T13:22:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -3045,6 +3045,19 @@
       "source": "SourceAudit",
       "created_at": "2026-08-22T14:23:00+09:00",
       "updated_at": "2026-08-22T14:23:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-SKILL-AUTH-001",
+      "title": "Existing G05/G07 Skill Authoring Contract Alignment",
+      "target_type": "System",
+      "target_id": "SYS-BAL-SKILL_FORMAL",
+      "status": "Open",
+      "severity": "High",
+      "summary": "B750 P2 Static Skill Calibrationで既存G05→G07経路のcoverage gapを確認。G05はRANDOM range要求でtarget.randomCountを生成せずG07が15/15 REJECT。G05 AI generationは全件trigger=ON_USE / conditions=[] / mpCost=0 / cooldown=0 / activationPriority=0固定で、Current Trigger/Condition/Resource surfaceをmass calibrationできない。さらにREMOVE/PERSISTENT COVER/REVIVE cap等でdesiredStrength/Levelが数値へ十分写像されないdead zoneがあり、multi-effect DAMAGE+STUNではLv1 HIGHがG04 Budget超過。新Skill Generatorは作らず、既存GKS_SKILL_AI_BATCH_REQUEST / G05 rules/engine / G07 contractを最小拡張して整合させる。",
+      "required_human_decision": "",
+      "source": "P2StaticCalibration",
+      "created_at": "2026-08-23T13:22:00+09:00",
+      "updated_at": "2026-08-23T13:22:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -3152,7 +3165,7 @@
       "id": "TASK-BAL-002",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "P2 Static Skill Calibrationを実行する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 110,
       "depends_on": [],
       "acceptance_criteria": "- Existing `GKS_SKILL_AI_BATCH_REQUEST` → G05 numeric generation → G07 validationだけを使用し、別Skill Generatorを作らない。\n- 22 core archetype × Skill Level [1,10,25,50,100] × Strength [LOW,MEDIUM,HIGH] = 330件Core matrixを生成・検証する。\n- DAMAGE/HEAL/APPLY/REMOVE/RESOURCE_CHANGE/REVIVE/TARGET_CONTROLをStatic Calibrationし、Trigger/Condition/Resource coverage gapを明示する。\n- Product Skill Master / Game Data / Current activeへ反映しない。\n- Config/Rules/Seed/Input/Validation/Result hashをEvidenceへ残す。",
@@ -3164,7 +3177,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-23T13:22:00+09:00"
     },
     {
       "id": "TASK-BAL-003",
@@ -3173,7 +3186,7 @@
       "status": "Todo",
       "execution_order": 120,
       "depends_on": [],
-      "acceptance_criteria": "- REQ-BAL-PKG-001..012とREQ-BAL-AUTH-001を、既存System extensionとして実装ラインへ引き渡せる自己完結Requirement setにする。\n- 各Requirementで reuse_system / reuse_entrypoint / current_gap / required_extension / forbidden_duplicate を追跡する。\n- Balance案件内でSourceを変更しない。実装はDEV-V9-REORG-019等の実装ライン側SOURCE_UPDATEとして行う。\n- Formal Battle readinessをLegacy fallbackで代替しない。\n- P4を解放する条件（Current Source再取得、Requirement closure、Formal readiness checks）を明示する。",
+      "acceptance_criteria": "- REQ-BAL-PKG-001..012、REQ-BAL-AUTH-001、REQ-BAL-SKILL-AUTH-001を、既存System extensionとして実装ラインへ引き渡せる自己完結Requirement setにする。\n- 各Requirementで reuse_system / reuse_entrypoint / current_gap / required_extension / forbidden_duplicate を追跡する。\n- Balance案件内でSourceを変更しない。実装はDEV-V9-REORG-019等の実装ライン側SOURCE_UPDATEとして行う。\n- Formal Battle readinessをLegacy fallbackで代替しない。\n- P4を解放する条件（Current Source再取得、Requirement closure、Formal readiness checks）を明示する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -3182,7 +3195,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-23T13:22:00+09:00"
     },
     {
       "id": "TASK-BAL-004",
@@ -4009,6 +4022,75 @@
       "blocking": false,
       "created_at": "2026-08-23T13:17:00+09:00",
       "updated_at": "2026-08-23T13:17:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-BASELINE-B750-001",
+      "title": "B750 read-only source baseline verified before P2",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "User-provided source is GKS-B750 / GA-B486.211. package_manifest listed 639 files; missing=0 and size/SHA mismatch=0. P1 B735 evidence remains historical and is not recomputed.",
+      "evidence": "guild-adventure-studio-sub(20260823-042106).zip sha256=3ad9299a844ebebd687f714ba1938dd681e75be5fbb2a4fb90c62bdd62f9033d; package_manifest.json sha256=88cd91d97bb57fbac2ac51a17996e987851e428f88431be7be12eb2f117614a2; PACKAGE_MANIFEST_LISTED_FILES_OK=639",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:22:00+09:00",
+      "updated_at": "2026-08-23T13:22:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P2-SKILL-001",
+      "title": "TASK-BAL-002 P2 Static Skill Calibration evidence",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-002",
+      "status": "Passed",
+      "result": "B750 Existing GKS_SKILL_AI_BATCH_REQUEST→G05→G07のみで22 archetype×Level[1,10,25,50,100]×Strength[LOW,MEDIUM,HIGH]=330件を生成・検証。G05=330/330 ACCEPT、G07=314 ACCEPT / 16 REJECT。REJECTはRANDOM_COUNT_REQUIRED 15件、SKILL_BUDGET_EXCEEDED 1件。再実行でG05/G07 raw artifact SHA-256一致。Numeric monotonic reversal=0。REMOVE/PERSISTENT COVER/REVIVE cap等のstrength/level dead zoneと、Trigger/Condition/Resource mass-generation coverage不足を確認。GapはREQ-BAL-SKILL-AUTH-001としてP3へ送り、Balance値で補正しない。Product Skill Master/Game Data/Current active/Source変更0件。",
+      "evidence": "canonical_external_archive=DEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip sha256=f4740e97d341a55d2d35e27c1890dac4e0e5fa87773e4de7c9ad40bc7eeb9d8b; P2-EVIDENCE-MANIFEST.json sha256=1bda3a6ee2ca779c506d38734d2ccc0e64c7fc7c812ea62d0efec88edb566189; G05 total=330 accepted=330 rejected=0; G07 total=330 accepted=314 rejected=16; G05 raw sha256=34428194b5e124b5b2ed69ee00104fb8fa0c3a6b7f88baa91f0dbcbda24cc882; G07 raw sha256=389c3d18fd2a7bcba2743dd49735eb9013db52b45f9718c327a6897e43f0f11b",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:22:00+09:00",
+      "updated_at": "2026-08-23T13:22:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P2-EVIDENCE-ARCHIVE-001",
+      "title": "TASK-BAL-002 external Evidence archive / handoff retention",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-002",
+      "status": "Passed",
+      "result": "P2 detailed Evidence is externalized as DEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip and retained by Human. Project JSON keeps archive/file hashes, P2 conclusions, new Requirement and interpretation rules only. Other AI must request the Human-retained ZIP when raw P2 evidence is needed.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip sha256=f4740e97d341a55d2d35e27c1890dac4e0e5fa87773e4de7c9ad40bc7eeb9d8b; P2-EVIDENCE-MANIFEST.json sha256=1bda3a6ee2ca779c506d38734d2ccc0e64c7fc7c812ea62d0efec88edb566189; files=7; custodian=Human; retention=KEEP",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:22:00+09:00",
+      "updated_at": "2026-08-23T13:22:00+09:00"
     }
   ],
   "workflow": {
@@ -4092,6 +4174,10 @@
     {
       "at": "2026-08-23T13:17:00+09:00",
       "message": "Human指示によりEvidence管理方針を明確化。TASK-BAL-001の詳細Evidence 4 JSONをDEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zipへ集約しHuman保管の正式外部証跡とした (zip sha256=0fbe6a00909ba8003719c19209cbf12e2dba159b2d4e3f30d85f0bcb5870e019)。Development Project JSONにはRaw Evidenceを重複内包せず、Task状態/結論/ZIP名/Hash/構成file hash/Retentionを索引として保持する。別AIはProject JSONにRaw Evidenceがないことを破棄・欠落と解釈せず、詳細検証時はHuman保管ZIPを再提示してもらう。EvidenceはProduct Master/GAME_DATA/Source/Current activeではない。"
+    },
+    {
+      "at": "2026-08-23T13:22:00+09:00",
+      "message": "Current Sourceをuser-provided GKS-B750 / GA-B486.211へ更新してmanifest 639件全一致を確認し、TASK-BAL-002 P2 Static Skill Calibrationを実行。既存GKS_SKILL_AI_BATCH_REQUEST→G05→G07のみで22 archetype×5 Level×3 Strength=330件を生成。G05 330/330 ACCEPT、G07 314 ACCEPT/16 REJECT。15件はRANDOM target.randomCount欠落、1件はLv1 HIGH DAMAGE+STUNのG04 Budget超過。G05がtrigger=ON_USE / conditions=[] / resource zero固定であること、REMOVE/PERSISTENT COVER/REVIVE cap等のdead zoneも確認。これらをREQ-BAL-SKILL-AUTH-001として既存Skill Pipeline extensionへ分離。Source/Game Data/Product Skill Master/Current active変更0件。P2詳細EvidenceはDEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip sha256=f4740e97d341a55d2d35e27c1890dac4e0e5fa87773e4de7c9ad40bc7eeb9d8bとしてHuman外部保管。TASK-BAL-002=Done。次TaskはTASK-BAL-003。"
     }
   ],
   "authority": {
