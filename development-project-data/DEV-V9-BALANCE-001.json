@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T09:00:59.435Z"
+    "updated_at": "2026-08-23T09:13:29.725Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "P3-5 Battle Formula / Status / Action Lifecycle — Next Development Task",
-    "goal": "TASK-BAL-017 P3-4 Static CalibrationはGKS-B757上で完了。MOD/Passiveの未接続effectは推測せず、既に承認済み順序のTASK-BAL-018 / P3-5へ引き継ぐ。次の1 Development TaskはTASK-BAL-018のみ。このrunではTASK-BAL-018へ自動着手していない。Source / Product Master / Game Data / Current active変更0件。"
+    "theme": "P3-5 Game Runtime Current-Contract Conformance — TASK-BAL-024 Human Gate",
+    "goal": "Formal multi-hit表現はHuman承認済みOption Aで確定。複数DAMAGE effectContractを各1 Hitとして扱い、各HitごとにCurrent Battle lifecycleを完結する。残るBlockerはTASK-BAL-024のHuman承認のみ。承認前はSource変更せず、TASK-BAL-018はBlockedを維持する。"
   },
   "project_rules": [
     {
@@ -517,6 +517,27 @@
       "summary": "Game Runtime finiteNumber() no longer coerces non-number values through Number(value). 162 malformed probes improved from 82 unexpected accepts to 0 while current exported runtime/job values remain unchanged. Separate implementation-line report: DEV-V9-BALANCE-001_GAME-RUNTIME-NUMERIC-COERCION_IMPLEMENTATION-LINE-HANDOFF.zip sha256=f1cded9250824e46f8d233b1c173f56188f5e0a187c609da226e46a7ba93083e.",
       "created_at": "2026-08-23T17:11:00+09:00",
       "updated_at": "2026-08-23T17:11:00+09:00"
+    },
+    {
+      "id": "IMP-BAL-P3-5-BLOCKED-001",
+      "title": "P3-5 stopped before source edit by Runtime/Multi-hit contract gate",
+      "status": "Blocked",
+      "task_id": "TASK-BAL-018",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B757",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-RUNTIME-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-018"
+      ],
+      "result": "Applied",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-018_BLOCKED-EVIDENCE.zip sha256=0a4f9e48630cff73c03156953aa3c5b35a1754f18feed28870830b159037f4e2",
+      "recorded_at": "2026-08-23T18:01:00+09:00",
+      "summary": "B757 baseline integrity passed. Before source editing, audit found Game Runtime cast/status/damage/heal behavior diverges from Current Contract and Formal Skill has no defined multi-hit representation. No source changes were made.",
+      "created_at": "2026-08-23T18:01:00+09:00",
+      "updated_at": "2026-08-23T18:01:00+09:00"
     }
   ],
   "discussions": [
@@ -795,6 +816,30 @@
       "approved_at": "2026-08-23T17:11:00+09:00",
       "created_at": "2026-08-23T17:11:00+09:00",
       "updated_at": "2026-08-23T17:11:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P3-5-RUNTIME-CONFORMANCE-SPLIT-001",
+      "title": "P3-5前にGame Runtime Current-Contract Conformance Taskを挿入する",
+      "status": "Proposed",
+      "text": "TASK-BAL-018のPackage Golden Case前に、既存Game RuntimeのcastTime、Physical/Magical/Heal、Hit/Evasion、Resistance→Critical、Status duration/lifecycle、MP/CD/KO/Revive/target lifecycleをCurrent Contractへ合わせるSOURCE_UPDATE Taskを分離する。新Battle engine/Simulatorは作らず既存game/assets/jsのownerを修正する。",
+      "rationale": "B757 Source監査でGame Runtime自身がCurrent Contractと異なり、PackageだけをCurrentへ合わせるとRuntime conformanceを証明できないため。",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T18:01:00+09:00",
+      "updated_at": "2026-08-23T18:01:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P3-5-MULTIHIT-CONTRACT-001",
+      "title": "Formal Skill multi-hitの正式データ表現を確定する",
+      "status": "Approved",
+      "text": "HumanはOption Aを承認。Formal Skillで同一activation内に複数のDAMAGE effectContractが存在する場合、各DAMAGE effectContractを独立した1 Hitとして扱う。各HitはCurrent Battle multi-hit lifecycleに従い、命中判定、Damage計算、Resistance、Critical、rounding/clamp、HP適用、KO確定をHit単位で完結してから次Hitへ進む。新しいhitCount/multiHit fieldは追加しない。非DAMAGE effectContractを暗黙にHitへ変換しない。",
+      "rationale": "HumanがAを選択したため。既存Formal SkillのeffectContracts配列を再利用でき、新しいSkill field/schemaを増やさずCurrent Battleのper-hit lifecycleを明示できる。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T18:11:00+09:00",
+      "created_at": "2026-08-23T18:01:00+09:00",
+      "updated_at": "2026-08-23T18:11:00+09:00"
     }
   ],
   "specifications": [
@@ -4067,10 +4112,11 @@
       "id": "TASK-BAL-018",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "P3-5 Battle Formula / Status / Action LifecycleをCurrent Contractへ適合する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 170,
       "depends_on": [
-        "TASK-BAL-017"
+        "TASK-BAL-017",
+        "TASK-BAL-024"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-007/008/009を対象に既存Battle Package executorをCurrent Contractへ適合する。\n- Physical/Magical/Heal/Hit/Evasion/Resistance/Critical、Status duration/stack、MP/CD/Cast、multi-hit、KO/Revive、target lifecycleをGolden Caseで検証する。\n- Current formula topology / processing order / roundingを変更しない。\n- formal modeからlegacy fallbackを除外する。\n- Gameplay Specification変更が必要と判明した場合はその項目を停止しIssue Gateへ戻す。",
       "work_type": "SOURCE_UPDATE",
@@ -4081,7 +4127,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T17:32:00+09:00"
+      "updated_at": "2026-08-23T18:01:00+09:00"
     },
     {
       "id": "TASK-BAL-019",
@@ -4182,6 +4228,26 @@
       },
       "created_at": "2026-08-23T17:11:00+09:00",
       "updated_at": "2026-08-23T17:11:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-024",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P3-5 Current Game Runtime Battle Core / LifecycleをCurrent Contractへ適合する",
+      "status": "Blocked",
+      "execution_order": 165,
+      "depends_on": [
+        "TASK-BAL-017"
+      ],
+      "acceptance_criteria": "- 既存Game Runtime ownerだけを修正しCurrent Contractへ適合する。\n- resource.castTimeを正式Cast時間として使用し、開始/完了/中断/Cost/CD境界をCurrent Contractへ合わせる。\n- Physical/Magical/Heal/Hit/Evasion/Resistance/Criticalとrounding/orderをCurrent Contractへ合わせる。\n- Status durationはceil、独立成功率Rollなし、既存stack/refresh/consume lifecycleをCurrent Contractへ合わせる。\n- KO/Revive/target revalidation/MP/CDをGolden Caseで検証する。\n- 新Battle engine/Simulator、Gameplay Specification変更、Game Data/Current active変更を行わない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T18:01:00+09:00",
+      "updated_at": "2026-08-23T18:01:00+09:00"
     }
   ],
   "checks": [
@@ -5380,6 +5446,52 @@
       "blocking": false,
       "created_at": "2026-08-23T17:32:00+09:00",
       "updated_at": "2026-08-23T17:32:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-5-RUNTIME-CONFORMANCE-GATE-001",
+      "title": "P3-5 Game Runtime Current Contract Human Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-018",
+      "status": "Pending",
+      "result": "B757 audit found deployed Game Runtime cast/status/damage/heal semantics diverge from Current Contract. Proposed TASK-BAL-024 must be Human-approved and completed before Package Golden conformance can be claimed.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-018_BLOCKED-EVIDENCE.zip sha256=0a4f9e48630cff73c03156953aa3c5b35a1754f18feed28870830b159037f4e2",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T18:01:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T18:01:00+09:00",
+      "updated_at": "2026-08-23T18:01:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-5-MULTIHIT-CONTRACT-GATE-001",
+      "title": "P3-5 Formal multi-hit representation Human/Specification Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-018",
+      "status": "Passed",
+      "result": "HumanがOption Aを承認。複数DAMAGE effectContractを各1 Hitとして扱い、各HitごとにCurrent Battle lifecycleを完結する。hitCount/multiHit fieldは追加しない。",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-018_BLOCKED-EVIDENCE.zip sha256=0a4f9e48630cff73c03156953aa3c5b35a1754f18feed28870830b159037f4e2",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T18:11:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-23T18:11:00+09:00",
+        "reason": "Human selected Option A for Formal multi-hit representation.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T18:01:00+09:00",
+      "updated_at": "2026-08-23T18:11:00+09:00"
     }
   ],
   "workflow": {
@@ -5551,6 +5663,14 @@
     {
       "at": "2026-08-23T17:32:00+09:00",
       "message": "Fresh GKS-B757 / GA-B486.211を確認しCHK-BAL-GAME-NUMERIC-B757-APPLY-001=Passed/Resolved。TASK-BAL-017 P3-4 Static CalibrationをB757上で最初から再実行。MOD 16 archetype×5 Tier=80/80 valid/deterministic、Passive代表8 archetype×3 Strength=24/24 valid/deterministic、ability condition 7 stat×4 finite sample=28/28、invalid 22/22 expected reject。Tier ordering 16/16 expected、unexpected cross-archetype dominance=0。Current Resistance cap=75 pointsでELEMENT_RESIST/STATUS_RESIST T1は4部位、T2は5部位でsaturation。zero-base dead zoneをconnected relative MOD 3 archetypeで確認。65/80 MOD CandidateとPassive HEAL/BUFF/DEBUFF/DOT/special等の未接続はApproved Plan上TASK-BAL-018 P3-5範囲としてDeferredし、Gameplay意味やProduct値を推測していない。Passive self Level/PLv/EXPは不採用を確認。TASK-BAL-017=Done、TASK-BAL-018=Todo。Evidence=DEV-V9-BALANCE-001_TASK-BAL-017_P3-4-EVIDENCE.zip sha256=29bfb98dc6565fe5d756f7f676f6ee087bf45f630f41d5fc0820b4b695bbeea0。Source/Product Master/Game Data/Current active変更0件、削除0件。TASK-BAL-018には未着手。"
+    },
+    {
+      "at": "2026-08-23T18:01:00+09:00",
+      "message": "TASK-BAL-018開始前Current Contract監査で2 Blockerを検出しRULE-BAL-ISSUE-GATE-001により停止。1) B757 Game RuntimeはcastTimeではなくdefault casting ticks、Status duration floor、Formal DAMAGE/HEAL簡易式がCurrent Contractと不一致。2) Battle multi-hit仕様はあるがFormal Skill authoring/runtimeContractsに正式表現がない。DEC-BAL-P3-5-RUNTIME-CONFORMANCE-SPLIT-001 / DEC-BAL-P3-5-MULTIHIT-CONTRACT-001をProposed、TASK-BAL-024をHuman approval pendingで追加、TASK-BAL-018=Blocked。Evidence=DEV-V9-BALANCE-001_TASK-BAL-018_BLOCKED-EVIDENCE.zip sha256=0a4f9e48630cff73c03156953aa3c5b35a1754f18feed28870830b159037f4e2。Source/Game Data/Current active変更0件。"
+    },
+    {
+      "at": "2026-08-23T18:11:00+09:00",
+      "message": "HumanがP3-5 Formal multi-hit Option Aを承認。DEC-BAL-P3-5-MULTIHIT-CONTRACT-001=Approved、CHK-BAL-P3-5-MULTIHIT-CONTRACT-GATE-001=Passed/Resolved。同一activation内の複数DAMAGE effectContractを各独立1 Hitとして扱い、Hit単位でCurrent Battle lifecycleを完結する。hitCount/multiHit fieldは追加しない。TASK-BAL-024はHuman approval Pendingのまま、TASK-BAL-018もBlocked。Source/Game Data/Current active変更0件。"
     }
   ],
   "authority": {
