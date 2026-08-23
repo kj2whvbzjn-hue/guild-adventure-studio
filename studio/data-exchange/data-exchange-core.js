@@ -9,7 +9,7 @@
   const VERSION='1.0.0-draft';
   const VOLATILE_DEFAULT=['updated_at','created_at','generated_at'];
   const ID_PREFIXES=Object.freeze({
-    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',mods:'MOD',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',ai_programs:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
+    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',passives:'PAS',mods:'MOD',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',ai_programs:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
   });
   const ID_RULES=Object.fromEntries(Object.entries(ID_PREFIXES).map(([dataset,prefix])=>[dataset,{prefix,pattern:new RegExp('^'+prefix+'-\\d{4}$'),example:prefix+'-0001'}]));
 
@@ -34,6 +34,7 @@
     adventure_settings:{path:['masters','adventure_settings'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     jobs:{path:['masters','jobs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     equipment:{path:['masters','equipment'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','mod_ids','params.mod_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['mod_ids','params.mod_ids']}]},
+    passives:{path:['masters','passives'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.mod_ids','params.effect_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['params.mod_ids']}]},
     mods:{path:['masters','mods'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
@@ -490,7 +491,8 @@
     skills:new Set(FORMAL_SKILL_MASTER_FIELDS),
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
-    mods:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    passives:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
+    mods:new Set(['id','name','status','tags','params','description','created_at','updated_at','category','effect_type','target','operation','parameters','balance_key','enabled','schema_version']),
     ai_conditions:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_targets:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_actions:new Set(FORMAL_AI_MASTER_FIELDS),
@@ -644,5 +646,18 @@
     if(!value.permissions||!Array.isArray(value.permissions.writable)||!Array.isArray(value.permissions.read_only))errors.push('permissionsが不正です。');
     return {ok:errors.length===0,errors};
   }
-  return {FORMAT,VERSION,REGISTRY,ID_PREFIXES,ID_RULES,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+
+  async function buildFormalCandidateBatch(options){
+    const rootData=options?.rootData||{},dataset=String(options?.dataset||''),typeMap={equipment:'equipment',passives:'passive',mods:'mod'};
+    const candidateType=typeMap[dataset];if(!candidateType)throw new Error('Formal Candidate batchはequipment/passives/modsだけに対応します。');
+    const ids=uniqueStrings(options?.ids),rowsById=new Map(records(rootData,dataset).map(row=>[String(row?.id||''),row]));
+    const version=String(options?.version||options?.studioVersion||'').trim()||'unknown',owner=String(options?.owner||'studio').trim()||'studio',ownerId=String(options?.owner_id||rootData?.project?.id||'studio').trim()||'studio';
+    const balanceValues=options?.balanceValues&&typeof options.balanceValues==='object'?options.balanceValues:{};const out=[];
+    for(const id of ids){const record=rowsById.get(id);if(!record)throw new Error(`${dataset} Candidate対象が見つかりません: ${id}`);let payload=clone(record);
+      if(dataset==='mods')payload={definition:clone(record),balance:Object.prototype.hasOwnProperty.call(balanceValues,id)?{balance_key:String(record.balance_key||''),value:Number(balanceValues[id]),version:String(options?.balanceVersion||version)}:null};
+      const canonical=stableStringify(payload),hash=await sha256Hex(canonical);out.push({format:'guild-adventure-studio-battle-candidate',version:'1.0.0',candidate_type:candidateType,candidate_id:id,provenance:{owner,owner_id:ownerId,source_type:'studio_master',source_id:id,version},payload_sha256:hash,data:payload});
+    }
+    return out;
+  }
+  return {FORMAT,VERSION,REGISTRY,ID_PREFIXES,ID_RULES,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildFormalCandidateBatch,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });
