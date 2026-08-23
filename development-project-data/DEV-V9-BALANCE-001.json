@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T05:03:21.353Z"
+    "updated_at": "2026-08-23T05:41:25.676Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-FOUNDATION-001",
-    "theme": "P3-1 Provenance / Formal Input Envelope — Next Development Task",
-    "goal": "P3 Recovery Planと実行順序再設計はHuman承認済み。P1 Equipment / P2 Active Skillは完了。Passive/MOD Static CalibrationはP3-4へ正式追加。次の1 Development TaskはTASK-BAL-014（P3-1）。このPlan更新runではSource変更を行っておらず、TASK-BAL-014へ自動着手しない。"
+    "work_box_id": "BOX-V9-BAL-BATTLE-001",
+    "theme": "Apply corrected GKS-B752 update, then reacquire Current Source",
+    "goal": "TASK-BAL-014 is correctly completed as SOURCE_UPDATE. Apply `DEV-V9-BALANCE-001_TASK-BAL-014_GKS-B752_STUDIO-UPDATE.zip` through Studio > 更新ZIP. Until GKS-B752 deployment is confirmed and a fresh Current Source is reacquired, TASK-BAL-015 remains Blocked. Do not use the invalid GKS-B751 full-source ZIP."
   },
   "project_rules": [
     {
@@ -238,16 +238,58 @@
   "source_baseline": {
     "studio_build": "GKS-B750",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260823-043215).zip",
-    "source_role": "current_baseline",
-    "recorded_at": "2026-08-23T13:32:00+09:00"
+    "source_label": "guild-adventure-studio-sub(20260823-050411).zip",
+    "source_role": "current_baseline_pending_B752_application",
+    "recorded_at": "2026-08-23T14:32:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
     "superseded_by": "",
     "updated_at": "2026-08-22T10:14:00+09:00"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMP-BAL-P3-1-002",
+      "title": "Corrected P3-1 Formal Provenance / Input Envelope",
+      "status": "Completed",
+      "task_id": "TASK-BAL-014",
+      "work_type": "SOURCE_UPDATE",
+      "baseline": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B750",
+        "source_zip": "guild-adventure-studio-sub(20260823-050411).zip",
+        "source_zip_sha256": "881e8431b268e9f02eec8573c4eb538cde1b8a71839a77e6e59a012cdb7c4a9f",
+        "package_manifest_sha256": "88cd91d97bb57fbac2ac51a17996e987851e428f88431be7be12eb2f117614a2",
+        "source_tree_sha256": "b7e579c54e6cc4fafcbfa695caf2e113c3bb54f3aaa6fc8a4eaa1b447498f9e5"
+      },
+      "target": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B752",
+        "artifact_id": "GKS-B752-9fa6b045556e",
+        "package_manifest_sha256": "9107e56315e74dbcd6d4f02cf810c1c45cd20b4431bda899346da44b53eb72b9",
+        "source_tree_sha256": "9fa6b045556e12e9e179c5feac24a9a4f0ffd93fd53f9b645ed3095025f8deb8"
+      },
+      "artifact": {
+        "file": "DEV-V9-BALANCE-001_TASK-BAL-014_GKS-B752_STUDIO-UPDATE.zip",
+        "sha256": "1296f223cc4c3e647a96ba846ddac9d931c09ead1fd81969bff78630bcfd5dab",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0
+      },
+      "summary": "The invalid GKS-B751 full-source submission was not adopted. The intended P3-1 implementation was rebased on exact GKS-B750 and reissued as fresh GKS-B752 using the formal SOURCE_UPDATE route. The unapproved new protected test was removed; protected test differences are Build-token synchronization only.",
+      "created_at": "2026-08-23T14:32:00+09:00",
+      "updated_at": "2026-08-23T14:32:00+09:00",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [],
+      "task_ids": [],
+      "result": "Applied",
+      "evidence": "",
+      "recorded_at": ""
+    }
+  ],
   "discussions": [
     {
       "id": "DISC-BAL-001",
@@ -2971,39 +3013,39 @@
       "title": "Battle Package Formal Build/Data/Formula Binding",
       "target_type": "System",
       "target_id": "SYS-BAL-GOVERNANCE",
-      "status": "Open",
+      "status": "Closed",
       "severity": "Blocker",
-      "summary": "manifest/resultをCurrent studio_build/game_build、package_manifest/source tree、Studio Project/Data Version、Formula/Rules/Config Versionへimmutable bindingし、実行時mismatchをfail-closedにする。legacy 472.* build metadataをFormal Evidenceから除外する。\n\n[P3 HANDOFF]\nreuse_system: Existing AI Battle Package manifest / import / execution / result workflow + Current build/config authorities\nreuse_entrypoint: studio/index.html::validateBattlePackageManifest | studio/index.html::inspectBattlePackage | studio/index.html::exportBattlePackageResult | package-build.json | package_manifest.json\ncurrent_gap: Input manifest currently validates format/package_type/package_id/package_version only. Result target records developmentBuild/formula_version but does not immutable-bind studio_build/game_build, package_manifest/source tree, Studio Project/Data Version, or Rules/Config hashes; mismatch is therefore not fail-closed.\nrequired_extension: Extend the existing Battle Package input/result manifest and import preflight to bind exact studio_build, game_build, package_manifest/source identity, Studio Project/Data Version, Formula/Rules/Config versions/hashes. Reject any mismatch before execution and echo the same binding in Result Package.\nforbidden_duplicate: Do not create another package format, provenance sidecar workflow, or parallel battle orchestrator.\nclosure_check: A deliberately mismatched build/data/formula/rules/config package is rejected before any trial; a valid run Result Package reproduces the complete immutable binding.",
+      "summary": "manifest/resultをCurrent studio_build/game_build、package_manifest/source tree、Studio Project/Data Version、Formula/Rules/Config Versionへimmutable bindingし、実行時mismatchをfail-closedにする。legacy 472.* build metadataをFormal Evidenceから除外する。\n\n[P3 HANDOFF]\nreuse_system: Existing AI Battle Package manifest / import / execution / result workflow + Current build/config authorities\nreuse_entrypoint: studio/index.html::validateBattlePackageManifest | studio/index.html::inspectBattlePackage | studio/index.html::exportBattlePackageResult | package-build.json | package_manifest.json\ncurrent_gap: Input manifest currently validates format/package_type/package_id/package_version only. Result target records developmentBuild/formula_version but does not immutable-bind studio_build/game_build, package_manifest/source tree, Studio Project/Data Version, or Rules/Config hashes; mismatch is therefore not fail-closed.\nrequired_extension: Extend the existing Battle Package input/result manifest and import preflight to bind exact studio_build, game_build, package_manifest/source identity, Studio Project/Data Version, Formula/Rules/Config versions/hashes. Reject any mismatch before execution and echo the same binding in Result Package.\nforbidden_duplicate: Do not create another package format, provenance sidecar workflow, or parallel battle orchestrator.\nclosure_check: A deliberately mismatched build/data/formula/rules/config package is rejected before any trial; a valid run Result Package reproduces the complete immutable binding.\n\n[TASK-BAL-014 CORRECTED CLOSURE]\nCorrected SOURCE_UPDATE GKS-B752 implements Formal manifest v1.1 immutable Build/Data/Formula/Rules/Config binding and fail-closed mismatch validation before execution.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:32:00+09:00"
+      "updated_at": "2026-08-23T14:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-002",
       "title": "Transient Formal Candidate Resource Contract",
       "target_type": "System",
       "target_id": "SYS-BAL-GAMEWIDE",
-      "status": "Open",
+      "status": "Closed",
       "severity": "Blocker",
-      "summary": "Equipment/Skill/Passive/MOD/AI/Monster/Enemyの生成CandidateをProduct Masterへ登録せずBattle Packageへ正式Resource/Snapshotとして渡せるContractを追加する。raw final-number overrideで代替しない。\n\n[P3 HANDOFF]\nreuse_system: Existing AI Battle Package resource loader / validation\nreuse_entrypoint: studio/index.html::battlePackageAllowedPath | studio/index.html::inspectBattlePackage | studio/index.html::loadPackageResources\ncurrent_gap: Allowed formal resources are only rosters/tests/opponent_sets/benchmarks. There is no typed transient resource contract for generated Equipment/Skill/Passive/MOD/AI/Monster/Enemy candidates, so raw unit/master overrides can bypass owner provenance.\nrequired_extension: Add typed, hashed, version-bound transient candidate resources inside the existing Battle Package and reference them from roster/jobs without registering them into Product Master.\nforbidden_duplicate: Do not create a parallel temporary master database, separate candidate package, or AI-owned final-number registry.\nclosure_check: A formal package can carry generated candidate snapshots with type/provenance/hash, resolve them through existing package validation, and rejects raw/untyped candidate overrides.",
+      "summary": "Equipment/Skill/Passive/MOD/AI/Monster/Enemyの生成CandidateをProduct Masterへ登録せずBattle Packageへ正式Resource/Snapshotとして渡せるContractを追加する。raw final-number overrideで代替しない。\n\n[P3 HANDOFF]\nreuse_system: Existing AI Battle Package resource loader / validation\nreuse_entrypoint: studio/index.html::battlePackageAllowedPath | studio/index.html::inspectBattlePackage | studio/index.html::loadPackageResources\ncurrent_gap: Allowed formal resources are only rosters/tests/opponent_sets/benchmarks. There is no typed transient resource contract for generated Equipment/Skill/Passive/MOD/AI/Monster/Enemy candidates, so raw unit/master overrides can bypass owner provenance.\nrequired_extension: Add typed, hashed, version-bound transient candidate resources inside the existing Battle Package and reference them from roster/jobs without registering them into Product Master.\nforbidden_duplicate: Do not create a parallel temporary master database, separate candidate package, or AI-owned final-number registry.\nclosure_check: A formal package can carry generated candidate snapshots with type/provenance/hash, resolve them through existing package validation, and rejects raw/untyped candidate overrides.\n\n[TASK-BAL-014 CORRECTED CLOSURE]\nCorrected SOURCE_UPDATE GKS-B752 adds typed transient resources/candidates with candidate type, owner provenance, and canonical payload SHA-256 without Product Master registration.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:32:00+09:00"
+      "updated_at": "2026-08-23T14:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-003",
       "title": "Formal Roster / Unit Snapshot Adapter",
       "target_type": "System",
       "target_id": "SYS-BAL-CHAR_JOB",
-      "status": "Open",
+      "status": "Closed",
       "severity": "Blocker",
-      "summary": "formal campaign modeではtyped/provenanced Character/Job/Enemy snapshotを要求し、raw QA fixtureと分離する。参照欠落やOwner provenance欠落はfail-closedにする。\n\n[P3 HANDOFF]\nreuse_system: Existing battle-roster / master-to-unit conversion\nreuse_entrypoint: studio/index.html::masterRecordToBattleUnit | studio/index.html::expandBattleRosterEntry | studio/index.html::expandBattleRoster\ncurrent_gap: Roster entries may contain direct unit objects or generic master records; defaults/raw stats can be accepted without Character/Job/Monster/Enemy owner-chain provenance.\nrequired_extension: Add a formal campaign roster mode requiring typed Character/Job/Monster/Enemy snapshots and their owner/version provenance; missing references or provenance must fail closed.\nforbidden_duplicate: Do not build a second roster engine or a Balance-side Character/Monster stat generator.\nclosure_check: Formal mode rejects direct raw unit fixtures and incomplete owner snapshots while non-formal QA fixtures remain clearly separated.",
+      "summary": "formal campaign modeではtyped/provenanced Character/Job/Enemy snapshotを要求し、raw QA fixtureと分離する。参照欠落やOwner provenance欠落はfail-closedにする。\n\n[P3 HANDOFF]\nreuse_system: Existing battle-roster / master-to-unit conversion\nreuse_entrypoint: studio/index.html::masterRecordToBattleUnit | studio/index.html::expandBattleRosterEntry | studio/index.html::expandBattleRoster\ncurrent_gap: Roster entries may contain direct unit objects or generic master records; defaults/raw stats can be accepted without Character/Job/Monster/Enemy owner-chain provenance.\nrequired_extension: Add a formal campaign roster mode requiring typed Character/Job/Monster/Enemy snapshots and their owner/version provenance; missing references or provenance must fail closed.\nforbidden_duplicate: Do not build a second roster engine or a Balance-side Character/Monster stat generator.\nclosure_check: Formal mode rejects direct raw unit fixtures and incomplete owner snapshots while non-formal QA fixtures remain clearly separated.\n\n[TASK-BAL-014 CORRECTED CLOSURE]\nCorrected SOURCE_UPDATE GKS-B752 requires formal roster/unit snapshot_ref to unit_snapshot candidates and rejects raw unit/master/direct override input in formal mode.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:32:00+09:00"
+      "updated_at": "2026-08-23T14:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-004",
@@ -3631,13 +3673,13 @@
       "id": "TASK-BAL-014",
       "box_id": "BOX-V9-BAL-FOUNDATION-001",
       "title": "P3-1 Provenance / Formal Input Envelopeを改修・検証する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 130,
       "depends_on": [
         "TASK-BAL-003"
       ],
       "acceptance_criteria": "- REQ-BAL-PKG-001/002/003を対象に、既存Battle PackageへBuild/Data/Formula/Rules/Config immutable bindingを追加する。\n- typed transient candidate resourceとformal roster/unit snapshotを既存resource/roster経路へ追加する。\n- formal modeではmismatch/raw/untyped/owner provenance欠落をfail-closedにする。\n- 既存Package transport/orchestrationを再利用し、新Package/Orchestratorを作らない。\n- Source Artifact、Task Evidence ZIP、更新Development Project JSONを出し、次Taskへ自動着手しない。",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Approved",
@@ -3645,7 +3687,7 @@
         "at": "2026-08-23T13:58:00+09:00"
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-23T14:32:00+09:00"
     },
     {
       "id": "TASK-BAL-015",
@@ -4412,6 +4454,75 @@
       "blocking": false,
       "created_at": "2026-08-23T13:53:00+09:00",
       "updated_at": "2026-08-23T13:58:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-1-CORRECTED-ARTIFACT-001",
+      "title": "TASK-BAL-014 corrected SOURCE_UPDATE artifact contract",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-014",
+      "status": "Passed",
+      "result": "Direct Studio update ZIP contract satisfied: studio-update.json present at ZIP root, Export/ absent, DELETE_MANIFEST has 0 deletions, baseline GKS-B750 bound to target GKS-B752, artifact_id bound to target source tree.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-014_GKS-B752_STUDIO-UPDATE.zip sha256=1296f223cc4c3e647a96ba846ddac9d931c09ead1fd81969bff78630bcfd5dab; artifact_id=GKS-B752-9fa6b045556e",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T14:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T14:32:00+09:00",
+      "updated_at": "2026-08-23T14:32:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-1-CORRECTED-GATES-001",
+      "title": "TASK-BAL-014 corrected Quick / Accept / Release gates",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-014",
+      "status": "Passed",
+      "result": "Quick 11/11 PASS; Accept 14/14 PASS; Release 14/14 PASS. Applied-state Full PASS 26/26; no warnings or timeouts.",
+      "evidence": "quick.json; accept-zip.json; release-zip.json; external formal-envelope regression FORMAL_ENVELOPE_REGRESSION_OK cases=8",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T14:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T14:32:00+09:00",
+      "updated_at": "2026-08-23T14:32:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-1-B752-APPLY-001",
+      "title": "GKS-B752 application and fresh-source reacquisition",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-015",
+      "status": "Pending",
+      "result": "TASK-BAL-014 update artifact is ready, but GKS-B752 has not yet been confirmed as the deployed Current Source. Keep TASK-BAL-015 Blocked until Human applies the Studio update and provides/reacquires the fresh current source.",
+      "evidence": "pending deployment of DEV-V9-BALANCE-001_TASK-BAL-014_GKS-B752_STUDIO-UPDATE.zip",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T14:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T14:32:00+09:00",
+      "updated_at": "2026-08-23T14:32:00+09:00"
     }
   ],
   "workflow": {
@@ -4515,6 +4626,10 @@
     {
       "at": "2026-08-23T14:03:00+09:00",
       "message": "JSON統合時にTASK-BAL-015=BOX-V9-BAL-SKILL-001、TASK-BAL-016=BOX-V9-BAL-EQUIPMENT-001という未定義work_box_idを使用していたため修正。TASK-BAL-015を既存BOX-V9-BAL-BATTLE-001、TASK-BAL-016を既存BOX-V9-BAL-ITEM-001へ再割当。Task順序・status・依存・Human承認・Source/Game Data/Current activeは変更なし。"
+    },
+    {
+      "at": "2026-08-23T14:32:00+09:00",
+      "message": "AI_START手順再確認後、TASK-BAL-014の提出形式/work_type誤りをHuman指示『修正して』により是正。旧GKS-B751完全Source ZIPは正式適用物として不採用。正確なGKS-B750をbaselineとして意図したP3-1 production変更だけを再適用し、未承認の新規tests/battle-package-formal-envelope-gks-b751.jsは除外。保護tests差分はBuild token同期のみ。fresh target GKS-B752を作成し、studio-update.jsonをrootに持ちExport/を含まない直接Studio更新ZIPとして再発行。Quick PASS、Accept(update + exact baseline ZIP + artifact ZIP binding) PASS、Release(update) PASS、applied-state Full 26/26 PASS。削除0件、Game Data変更0件。TASK-BAL-014 work_type=SOURCE_UPDATE / Done。TASK-BAL-015はGKS-B752適用とfresh Current Source再取得までBlocked。"
     }
   ],
   "authority": {
