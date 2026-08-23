@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T04:03:37.575Z"
+    "updated_at": "2026-08-23T04:12:29.526Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-ITEM-001",
-    "theme": "P1 Static Equipment Calibration — Approved Execution Start",
-    "goal": "Human Plan Gate承認済み。次の実行TaskはTASK-BAL-001（P1 Static Equipment Calibration）。P2 Static Skill CalibrationとP3 Source Requirement Handoffも承認済みでTodoとして解放するが、1回のAI作業では1Taskのみ実行し自動連続着手しない。"
+    "work_box_id": "BOX-V9-BAL-BATTLE-001",
+    "theme": "P2 Static Skill Calibration — Next Approved Execution Task",
+    "goal": "TASK-BAL-001 P1 Static Equipment Calibrationは308/308 Valid・再現性確認・curve/dead-zone/dominance/sensitivity評価まで完了。次の1TaskはTASK-BAL-002（P2 Static Skill Calibration）。TASK-BAL-003もTodoだが自動連続着手せず、1回のAI作業では1Taskのみ実行する。"
   },
   "project_rules": [
     {
@@ -3113,7 +3113,7 @@
       "id": "TASK-BAL-001",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "P1 Static Equipment Calibrationを実行する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 100,
       "depends_on": [],
       "acceptance_criteria": "- Existing `GKS_EQUIPMENT_GENERATION_REQUEST` / `studio/equipment/equipment-generator.js`だけを使用し、別Equipment Generatorを作らない。\n- EQUIPMENT-BASE-V2 v2.1.0 / iLv1..11でWeapon 143 + Armor 132 + Accessory 33 = 308件Baseline matrixを再現可能Seed付きで生成・保存する。\n- required stats / attack / accuracy / magic_weapon_bonus / base_critical_rate / hp/mp/evasion等のcurve・dead zone・dominance・sensitivityをSTATIC_REFERENCEとして評価する。\n- Product Master / Game Data / Current activeへ反映しない。\n- Config/Rules/Seed/Input/Result hashをEvidenceへ残す。",
@@ -3125,7 +3125,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-23T13:08:00+09:00"
     },
     {
       "id": "TASK-BAL-002",
@@ -3942,6 +3942,29 @@
       "blocking": false,
       "created_at": "2026-08-23T12:59:00+09:00",
       "updated_at": "2026-08-23T12:59:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P1-EQUIPMENT-001",
+      "title": "TASK-BAL-001 P1 Static Equipment Calibration evidence",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-001",
+      "status": "Passed",
+      "result": "Existing GKS_EQUIPMENT_GENERATION_REQUEST / equipment-generator.jsでEQUIPMENT-BASE-V2 v2.1.0のiLv1..11 Baseline 308件（Weapon 143 / Armor 132 / Accessory 33）を生成し308/308 Valid。時刻metaを除く再実行Core Hash一致。Dynamic weapon/armor curvesは全て線形増加、adjacent-level dead zone 0。±10% OAT sensitivityは99 knobs中88 active / 11 zero（weapon growth disabled）。Product Master/Game Data/Current active/Source変更0件。",
+      "evidence": "p1-equipment-static-evidence.json sha256=91d60a5f4bf31b30fa41f1034bc61cbcf1aa41d1874c6406a90cba53aa9e43b3; p1-equipment-static-baseline-full.json sha256=5e8c04151caa28560f3a56b53b4cbe121ee667811ce5df98d93f347032548fa7; p1-equipment-sensitivity.json sha256=02986a9265bd5342e442558c149acf17bd71244ac27db7cf7474549f9f9f88f0; request sha256=de07270125c7adc40df5f3768047b69dd43e394d0ef8afc100c2ea1895c1e399; deterministic_core_sha256=b296a6ad368c75f66fa77e8ba338fb8b3f8c8d88cd3912c06455fe662df96044",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:08:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:08:00+09:00",
+      "updated_at": "2026-08-23T13:08:00+09:00"
     }
   ],
   "workflow": {
@@ -4017,6 +4040,10 @@
     {
       "at": "2026-08-23T12:59:00+09:00",
       "message": "HumanがHuman Plan GateのHD-1〜HD-3を『全て承認』。DEC-BAL-PLAN-SCOPE-001 / DEC-BAL-EXECUTION-001 / DEC-BAL-FORMULA-BOUNDARY-001をApproved、TASK-BAL-PLAN-GATE-001をDone/Approved、CHK-BAL-PLAN-GATE-001(Implementation)=PassedとしてWorkflowをImplementingへ移行。承認済みP1〜P9に合わせ、旧Draft TASK-BAL-001〜013を同IDの実行Taskへ再マッピングし、P1 Equipment / P2 Skill / P3 Requirement HandoffをTodoとして解放。次の一意な実行Taskはexecution_order最小のTASK-BAL-001。P7 Product ApplyとP9 Current-active Promotionは別Human Gateとしてapproval Pendingを維持。Source/Game Data/Current active変更0件。次Taskへ自動着手していない。"
+    },
+    {
+      "at": "2026-08-23T13:08:00+09:00",
+      "message": "TASK-BAL-001 P1 Static Equipment Calibrationを実行。既存GKS_EQUIPMENT_GENERATION_REQUEST / equipment-generator.jsのみを使用し、EQUIPMENT-BASE-V2 v2.1.0 / iLv1..11でWeapon 143 + Armor 132 + Accessory 33 = 308件を生成、308/308 Valid。再実行Core Hash一致。curve/dead-zone/dominance/sensitivityをSTATIC_REFERENCEとして評価し、Source/Game Data/Product Master/Current active変更0件。Evidence=p1-equipment-static-evidence.json sha256=91d60a5f4bf31b30fa41f1034bc61cbcf1aa41d1874c6406a90cba53aa9e43b3。TASK-BAL-001=Done。次TaskはTASK-BAL-002 P2 Static Skill Calibration。"
     }
   ],
   "authority": {
