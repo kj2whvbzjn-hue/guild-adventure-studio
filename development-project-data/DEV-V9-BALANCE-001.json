@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T05:41:25.676Z"
+    "updated_at": "2026-08-23T05:43:33.566Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "Apply corrected GKS-B752 update, then reacquire Current Source",
-    "goal": "TASK-BAL-014 is correctly completed as SOURCE_UPDATE. Apply `DEV-V9-BALANCE-001_TASK-BAL-014_GKS-B752_STUDIO-UPDATE.zip` through Studio > 更新ZIP. Until GKS-B752 deployment is confirmed and a fresh Current Source is reacquired, TASK-BAL-015 remains Blocked. Do not use the invalid GKS-B751 full-source ZIP."
+    "theme": "P3-2 Active Skill Authoring / Runtime Alignment — Next Development Task",
+    "goal": "GKS-B752の適用とfresh Current Source再取得を確認済み。TASK-BAL-014のtarget package_manifestとCurrent Sourceが完全一致し、manifest integrityもPASS。次の1 Development TaskはTASK-BAL-015（Active Skill Authoring / Runtime Alignment）。この確認runではSource改修を行わず、TASK-BAL-015へ自動着手しない。"
   },
   "project_rules": [
     {
@@ -236,11 +236,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B750",
+    "studio_build": "GKS-B752",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260823-050411).zip",
-    "source_role": "current_baseline_pending_B752_application",
-    "recorded_at": "2026-08-23T14:32:00+09:00"
+    "source_label": "guild-adventure-studio-sub(20260823-054200).zip",
+    "source_role": "current_baseline",
+    "recorded_at": "2026-08-23T14:42:00+09:00",
+    "package_manifest_sha256": "9107e56315e74dbcd6d4f02cf810c1c45cd20b4431bda899346da44b53eb72b9",
+    "source_zip_sha256": "39d217219f1aff37992041bd2a99ba32ca1b36619b85040364d953c58be53c22"
   },
   "lifecycle": {
     "status": "Active",
@@ -3693,7 +3695,7 @@
       "id": "TASK-BAL-015",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "P3-2 Active Skill Authoring / Runtime Alignmentを改修・検証する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 140,
       "depends_on": [
         "TASK-BAL-014"
@@ -3707,7 +3709,7 @@
         "at": ""
       },
       "created_at": "2026-08-23T13:58:00+09:00",
-      "updated_at": "2026-08-23T14:03:00+09:00"
+      "updated_at": "2026-08-23T14:42:00+09:00"
     },
     {
       "id": "TASK-BAL-016",
@@ -4507,22 +4509,22 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-BAL-015",
-      "status": "Pending",
-      "result": "TASK-BAL-014 update artifact is ready, but GKS-B752 has not yet been confirmed as the deployed Current Source. Keep TASK-BAL-015 Blocked until Human applies the Studio update and provides/reacquires the fresh current source.",
-      "evidence": "pending deployment of DEV-V9-BALANCE-001_TASK-BAL-014_GKS-B752_STUDIO-UPDATE.zip",
+      "status": "Passed",
+      "result": "Human適用後のfresh Current Sourceを確認。GKS-B752 / GA-B486.211で、package_manifest SHA-256がTASK-BAL-014 targetと完全一致。manifest 640件を再検証し missing=0 / size mismatch=0 / hash mismatch=0。TASK-BAL-015をTodoへ解放する。",
+      "evidence": "guild-adventure-studio-sub(20260823-054200).zip sha256=39d217219f1aff37992041bd2a99ba32ca1b36619b85040364d953c58be53c22; package_manifest sha256=9107e56315e74dbcd6d4f02cf810c1c45cd20b4431bda899346da44b53eb72b9; files=640",
       "checked_by": "AI",
-      "checked_at": "2026-08-23T14:32:00+09:00",
+      "checked_at": "2026-08-23T14:42:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-23T14:42:00+09:00",
+        "reason": "Fresh deployed Current Source exactly matches the approved GKS-B752 target package manifest.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-23T14:32:00+09:00",
-      "updated_at": "2026-08-23T14:32:00+09:00"
+      "updated_at": "2026-08-23T14:42:00+09:00"
     }
   ],
   "workflow": {
@@ -4630,6 +4632,10 @@
     {
       "at": "2026-08-23T14:32:00+09:00",
       "message": "AI_START手順再確認後、TASK-BAL-014の提出形式/work_type誤りをHuman指示『修正して』により是正。旧GKS-B751完全Source ZIPは正式適用物として不採用。正確なGKS-B750をbaselineとして意図したP3-1 production変更だけを再適用し、未承認の新規tests/battle-package-formal-envelope-gks-b751.jsは除外。保護tests差分はBuild token同期のみ。fresh target GKS-B752を作成し、studio-update.jsonをrootに持ちExport/を含まない直接Studio更新ZIPとして再発行。Quick PASS、Accept(update + exact baseline ZIP + artifact ZIP binding) PASS、Release(update) PASS、applied-state Full 26/26 PASS。削除0件、Game Data変更0件。TASK-BAL-014 work_type=SOURCE_UPDATE / Done。TASK-BAL-015はGKS-B752適用とfresh Current Source再取得までBlocked。"
+    },
+    {
+      "at": "2026-08-23T14:42:00+09:00",
+      "message": "HumanがTASK-BAL-014 corrected Studio更新ZIPを適用後、fresh Current Sourceを再提出。GKS-B752 / GA-B486.211、package_manifest sha256=9107e56315e74dbcd6d4f02cf810c1c45cd20b4431bda899346da44b53eb72b9はapproved targetと完全一致。manifest 640件を全件再検証しmissing/size/hash mismatch=0。CHK-BAL-P3-1-B752-APPLY-001=Passed、TASK-BAL-015をTodoへ解放。このrunではSource/Game Data/Current active変更0件、TASK-BAL-015へ自動着手していない。"
     }
   ],
   "authority": {
