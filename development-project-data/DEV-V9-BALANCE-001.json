@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T04:30:35.175Z"
+    "updated_at": "2026-08-23T04:42:59.712Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-FOUNDATION-001",
-    "theme": "P3 Existing System Current-Spec Alignment Requirement Handoff — Next Approved Execution Task",
-    "goal": "TASK-BAL-002 P2 Static Skill Calibrationは完了。P2 Evidenceは`DEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip` (sha256=f4740e97d341a55d2d35e27c1890dac4e0e5fa87773e4de7c9ad40bc7eeb9d8b) をHumanが外部保管する正式証跡とする。B750 P2でG05/G07 authoring coverage gapをREQ-BAL-SKILL-AUTH-001として追加。次の1TaskはTASK-BAL-003で、REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001 / REQ-BAL-SKILL-AUTH-001をreuse-first SOURCE_UPDATE Requirement setとして実装ラインへ引き渡せる状態にする。Balance案件内でSourceを変更しない。"
+    "work_box_id": "BOX-V9-BAL-RUNTIME-001",
+    "theme": "P4 Formal Combat Runtime Readiness — Blocked pending implementation-line closure",
+    "goal": "TASK-BAL-003 P3 Requirement Handoffは完了。14 Requirementは既存System extensionとして自己完結化し、`DEV-V9-BALANCE-001_TASK-BAL-003_P3-EVIDENCE-HANDOFF.zip` (sha256=fef428575d6e1fb7a3efaf9e3c6c0a2a0e9ef51d4f71a2d19593d76da04975bb) をHuman保管の正式Handoff/Evidenceとする。Current GKS-B750実装Sourceは直前B750から変更がないためRequirementは全てOpen。TASK-BAL-004はBlockedのまま。実装ラインからRequirement closure済みのfresh Current Sourceが戻るまでFormal Combatを開始しない。"
   },
   "project_rules": [
     {
@@ -211,9 +211,9 @@
   "source_baseline": {
     "studio_build": "GKS-B750",
     "game_build": "GA-B486.211",
-    "source_label": "user-provided current source guild-adventure-studio-sub(20260823-042106).zip",
+    "source_label": "user-provided current source guild-adventure-studio-sub(20260823-043215).zip",
     "source_role": "current_baseline",
-    "recorded_at": "2026-08-23T13:22:00+09:00"
+    "recorded_at": "2026-08-23T13:32:00+09:00"
   },
   "lifecycle": {
     "status": "Active",
@@ -2884,11 +2884,11 @@
       "target_id": "SYS-BAL-GOVERNANCE",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "manifest/resultをCurrent studio_build/game_build、package_manifest/source tree、Studio Project/Data Version、Formula/Rules/Config Versionへimmutable bindingし、実行時mismatchをfail-closedにする。legacy 472.* build metadataをFormal Evidenceから除外する。",
+      "summary": "manifest/resultをCurrent studio_build/game_build、package_manifest/source tree、Studio Project/Data Version、Formula/Rules/Config Versionへimmutable bindingし、実行時mismatchをfail-closedにする。legacy 472.* build metadataをFormal Evidenceから除外する。\n\n[P3 HANDOFF]\nreuse_system: Existing AI Battle Package manifest / import / execution / result workflow + Current build/config authorities\nreuse_entrypoint: studio/index.html::validateBattlePackageManifest | studio/index.html::inspectBattlePackage | studio/index.html::exportBattlePackageResult | package-build.json | package_manifest.json\ncurrent_gap: Input manifest currently validates format/package_type/package_id/package_version only. Result target records developmentBuild/formula_version but does not immutable-bind studio_build/game_build, package_manifest/source tree, Studio Project/Data Version, or Rules/Config hashes; mismatch is therefore not fail-closed.\nrequired_extension: Extend the existing Battle Package input/result manifest and import preflight to bind exact studio_build, game_build, package_manifest/source identity, Studio Project/Data Version, Formula/Rules/Config versions/hashes. Reject any mismatch before execution and echo the same binding in Result Package.\nforbidden_duplicate: Do not create another package format, provenance sidecar workflow, or parallel battle orchestrator.\nclosure_check: A deliberately mismatched build/data/formula/rules/config package is rejected before any trial; a valid run Result Package reproduces the complete immutable binding.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-002",
@@ -2897,11 +2897,11 @@
       "target_id": "SYS-BAL-GAMEWIDE",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Equipment/Skill/Passive/MOD/AI/Monster/Enemyの生成CandidateをProduct Masterへ登録せずBattle Packageへ正式Resource/Snapshotとして渡せるContractを追加する。raw final-number overrideで代替しない。",
+      "summary": "Equipment/Skill/Passive/MOD/AI/Monster/Enemyの生成CandidateをProduct Masterへ登録せずBattle Packageへ正式Resource/Snapshotとして渡せるContractを追加する。raw final-number overrideで代替しない。\n\n[P3 HANDOFF]\nreuse_system: Existing AI Battle Package resource loader / validation\nreuse_entrypoint: studio/index.html::battlePackageAllowedPath | studio/index.html::inspectBattlePackage | studio/index.html::loadPackageResources\ncurrent_gap: Allowed formal resources are only rosters/tests/opponent_sets/benchmarks. There is no typed transient resource contract for generated Equipment/Skill/Passive/MOD/AI/Monster/Enemy candidates, so raw unit/master overrides can bypass owner provenance.\nrequired_extension: Add typed, hashed, version-bound transient candidate resources inside the existing Battle Package and reference them from roster/jobs without registering them into Product Master.\nforbidden_duplicate: Do not create a parallel temporary master database, separate candidate package, or AI-owned final-number registry.\nclosure_check: A formal package can carry generated candidate snapshots with type/provenance/hash, resolve them through existing package validation, and rejects raw/untyped candidate overrides.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-003",
@@ -2910,11 +2910,11 @@
       "target_id": "SYS-BAL-CHAR_JOB",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "formal campaign modeではtyped/provenanced Character/Job/Enemy snapshotを要求し、raw QA fixtureと分離する。参照欠落やOwner provenance欠落はfail-closedにする。",
+      "summary": "formal campaign modeではtyped/provenanced Character/Job/Enemy snapshotを要求し、raw QA fixtureと分離する。参照欠落やOwner provenance欠落はfail-closedにする。\n\n[P3 HANDOFF]\nreuse_system: Existing battle-roster / master-to-unit conversion\nreuse_entrypoint: studio/index.html::masterRecordToBattleUnit | studio/index.html::expandBattleRosterEntry | studio/index.html::expandBattleRoster\ncurrent_gap: Roster entries may contain direct unit objects or generic master records; defaults/raw stats can be accepted without Character/Job/Monster/Enemy owner-chain provenance.\nrequired_extension: Add a formal campaign roster mode requiring typed Character/Job/Monster/Enemy snapshots and their owner/version provenance; missing references or provenance must fail closed.\nforbidden_duplicate: Do not build a second roster engine or a Balance-side Character/Monster stat generator.\nclosure_check: Formal mode rejects direct raw unit fixtures and incomplete owner snapshots while non-formal QA fixtures remain clearly separated.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-004",
@@ -2923,11 +2923,11 @@
       "target_id": "SYS-BAL-EQUIPMENT",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Equipment Generatorのtop-level正式field/mod_idsをBattleへ接続し、hp_bonus/mp_bonus/evasion/accuracy/base_critical_rate/magic_weapon_bonus等をCurrent Contribution chainで解決する。formal modeではparams.stats legacy fallbackを使用しない。",
+      "summary": "Equipment Generatorのtop-level正式field/mod_idsをBattleへ接続し、hp_bonus/mp_bonus/evasion/accuracy/base_critical_rate/magic_weapon_bonus等をCurrent Contribution chainで解決する。formal modeではparams.stats legacy fallbackを使用しない。\n\n[P3 HANDOFF]\nreuse_system: Existing Equipment Generator + existing Battle loadout resolution\nreuse_entrypoint: studio/equipment/equipment-generator.js | studio/index.html::battleStatBlock | studio/index.html::resolveBattleLoadout | studio/data-exchange/data-exchange-core.js::equipment/mods datasets\ncurrent_gap: Equipment Generator emits formal top-level fields (required stats, attack, accuracy, magic_weapon_bonus, base_critical_rate, hp/mp/evasion, mod_ids), while Battle loadout aggregation primarily reads params.stats/params-style legacy blocks and does not enforce the Current BaseItem→Contribution→MOD→Runtime chain.\nrequired_extension: Extend the existing loadout path with a formal Equipment Contribution adapter that consumes generator top-level fields plus MOD references and resolves Current contribution semantics. Disable params.stats legacy fallback in formal mode.\nforbidden_duplicate: Do not create another Equipment Generator or a parallel contribution calculator.\nclosure_check: Known generated equipment snapshots produce the same formal contribution in Package and Current Runtime; formal mode rejects legacy-only params.stats equipment.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-005",
@@ -2936,11 +2936,11 @@
       "target_id": "SYS-BAL-SKILL_FORMAL",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Formal Skill runtimeContracts/effects/resource/target/trigger/conditionsをBattle executionへ接続し、missing/nonformal Skill参照をrejectする。{attack,power:1}等のLegacy fallbackをFormal Evidenceで禁止する。",
+      "summary": "Formal Skill runtimeContracts/effects/resource/target/trigger/conditionsをBattle executionへ接続し、missing/nonformal Skill参照をrejectする。{attack,power:1}等のLegacy fallbackをFormal Evidenceで禁止する。\n\n[P3 HANDOFF]\nreuse_system: Existing Skill AI Batch / G05 / G07 + shared Formal Skill compiler/runtimeContracts + existing Battle Package execution\nreuse_entrypoint: studio/skill/skill-generator.js | assets/shared/js/skill-ai-batch-engine.js | assets/shared/js/skill-compile-service.js | assets/shared/js/skill-compiler.js | studio/index.html::masterRecordToBattleUnit | studio/index.html::performSkill\ncurrent_gap: Battle Package converts skill master params into legacy runtime-shaped records and even falls back to {type:'attack', power:1} when a skill reference is missing; formal runtimeContracts/effects/resource/target/trigger/conditions are not the enforced execution contract.\nrequired_extension: Route formal Package skills through the existing G07-approved compiler/runtimeContracts and fail closed on missing/nonformal skills. Adapt the existing Battle Package execution path rather than implementing a second Skill runtime.\nforbidden_duplicate: Do not create a new Skill Generator, compiler, or parallel Skill runtime.\nclosure_check: Every formal Package skill is G07-valid and executed from runtimeContracts; missing or legacy-only skill references are rejected.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-006",
@@ -2949,11 +2949,11 @@
       "target_id": "SYS-BAL-PASSIVE",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Formal Passive ID/能力条件/Effect・ModifierをBattle unitへ適用し、Skill/Equipment/Status等との補正箱ContributionをCurrent Contractどおり集約できるようにする。",
+      "summary": "Formal Passive ID/能力条件/Effect・ModifierをBattle unitへ適用し、Skill/Equipment/Status等との補正箱ContributionをCurrent Contractどおり集約できるようにする。\n\n[P3 HANDOFF]\nreuse_system: Current Passive specification + existing Skill/Passive persistence + existing Tag/Modifier runtime primitives + Studio master/data-exchange architecture\nreuse_entrypoint: DEV-V9-REORG-019::SPEC-V9-019-PASSIVE-001 | game/assets/js/skill-passive-ai-save-bridge.js | game/assets/js/tag-skill-runtime.js | studio/index.html generic master architecture | studio/data-exchange/data-exchange-core.js\ncurrent_gap: B750 source contains passiveIds persistence but no dedicated Passive master/dataset/export authoring route and no Battle Package passive contribution application. The current save bridge explicitly preserves Passive state without defining its gameplay effect.\nrequired_extension: Extend the existing Studio master/data-exchange architecture and shared Tag/Modifier contribution primitives so formal Passive records (ability conditions + Tag/Effect/Modifier) can be authored, snapshotted, validated and applied to Battle units.\nforbidden_duplicate: Do not create a standalone Passive Generator, separate Passive runtime, or duplicate Tag/Modifier engine.\nclosure_check: A formal Passive ID can be authored/validated, snapshotted, persisted and applied as a deterministic Battle contribution; unsupported/deprecated status-success mechanics remain rejected.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-007",
@@ -2962,11 +2962,11 @@
       "target_id": "SYS-BAL-BATTLE_FORMULA",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "STR→accuracy/LUK→critical等のLegacy fallback、旧Hit/Defense/minimum/演算順をFormal Referenceから除外し、Current Hit/Evasion、Resistance→Critical、Physical/Magical/Heal、rounding/orderのOwner Contractへ適合させる。係数値そのものはBalance Configで可変に保つ。",
+      "summary": "STR→accuracy/LUK→critical等のLegacy fallback、旧Hit/Defense/minimum/演算順をFormal Referenceから除外し、Current Hit/Evasion、Resistance→Critical、Physical/Magical/Heal、rounding/orderのOwner Contractへ適合させる。係数値そのものはBalance Configで可変に保つ。\n\n[P3 HANDOFF]\nreuse_system: Existing Battle Package executor aligned to Current Battle/Skill runtime contract\nreuse_entrypoint: studio/index.html::calculatePhysicalDamagePipeline | studio/index.html::calculateMagicDamagePipeline | studio/index.html::performBasicAttack | studio/index.html::performMagicAttack | game/assets/js/tag-skill-runtime.js\ncurrent_gap: Studio Battle still contains legacy semantics such as target-evasion subtraction, defense subtraction and legacy stat/fallback assumptions rather than the approved Current formula/order owner contract.\nrequired_extension: Align the formal mode of the existing Package executor to Current Physical/Magical/Heal/Hit/Evasion/Resistance/Critical/rounding/order semantics while keeping coefficients/curves in Balance Config.\nforbidden_duplicate: Do not create a separate Formal Combat Simulator or hard-code Balance coefficients into source.\nclosure_check: Golden cases for Physical/Magical/Heal/Hit/Critical/Resistance match Current contract exactly, including processing order and rounding.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-008",
@@ -2975,11 +2975,11 @@
       "target_id": "SYS-BAL-STATUS",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Hit成立後のStatus適用、Resistance→Duration、stack/refresh/consume/individual tick、BUFF/DEBUFF/DOT/SHIELD lifecycleをCurrent Contractへ適合させる。独立Status成功率RollをFormal Referenceへ持ち込まない。",
+      "summary": "Hit成立後のStatus適用、Resistance→Duration、stack/refresh/consume/individual tick、BUFF/DEBUFF/DOT/SHIELD lifecycleをCurrent Contractへ適合させる。独立Status成功率RollをFormal Referenceへ持ち込まない。\n\n[P3 HANDOFF]\nreuse_system: Existing Battle Package execution + Current Status/Modifier lifecycle\nreuse_entrypoint: studio/index.html::applyBattleStatus | studio/index.html::processBattleStatuses | game/assets/js/tag-skill-runtime.js::status/modifier lifecycle\ncurrent_gap: Package status application performs an independent success roll modified by status resistance and uses a simplified remaining-duration model; Current contract applies Status after hit and uses Resistance for effective duration with formal stack/refresh/consume/tick lifecycle.\nrequired_extension: Make formal Package status handling reuse/adapter-match the Current lifecycle: hit-gated application, Resistance→duration, approved stack/refresh/consume/tick semantics, BUFF/DEBUFF/DOT/SHIELD lifecycle.\nforbidden_duplicate: Do not introduce a second Status engine or revive the deprecated independent Status success-rate mechanic.\nclosure_check: Formal status golden cases match Current Runtime snapshot/lifecycle; no separate status-success RNG exists.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-009",
@@ -2988,11 +2988,11 @@
       "target_id": "SYS-BAL-BATTLE_FORMULA",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "MP/CD/Cast completion/interruption、multi-hit per-hit処理、Current effect order、KO/Revive、target/range revalidation等をBattle Package Formal Executionへ接続する。",
+      "summary": "MP/CD/Cast completion/interruption、multi-hit per-hit処理、Current effect order、KO/Revive、target/range revalidation等をBattle Package Formal Executionへ接続する。\n\n[P3 HANDOFF]\nreuse_system: Existing Battle Package executor + Formal Skill runtime lifecycle\nreuse_entrypoint: studio/index.html::performSkill | assets/shared/js/skill-compiler.js | game/assets/js/tag-skill-runtime.js\ncurrent_gap: Package performSkill is an immediate MP/CD legacy path and does not enforce the full Current cast completion/interruption, per-hit multi-hit, target/range revalidation, KO/Revive and formal effect order.\nrequired_extension: Connect the existing Package execution path to Current formal action/Skill lifecycle contracts, including resource reservation/use, cast, cooldown, per-hit processing and final target validity.\nforbidden_duplicate: Do not build a separate Skill lifecycle scheduler for Balance simulation.\nclosure_check: Lifecycle golden tests cover MP/CD/Cast/multi-hit/effect order/KO/Revive/target invalidation and match Current Runtime.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-010",
@@ -3001,11 +3001,11 @@
       "target_id": "SYS-BAL-AI",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Formal AI Program→validator/compiler→decision engineをBattle Packageへ接続し、formalAiBinding/Skill Loadoutを使用する。Formal未設定時にlegacy AIへfallbackせず、PlayerとMonster pathを分離する。",
+      "summary": "Formal AI Program→validator/compiler→decision engineをBattle Packageへ接続し、formalAiBinding/Skill Loadoutを使用する。Formal未設定時にlegacy AIへfallbackせず、PlayerとMonster pathを分離する。\n\n[P3 HANDOFF]\nreuse_system: Existing Formal AI Program / validator / compiler / decision engine / Battle adapter\nreuse_entrypoint: studio/ai-production/ai-battle-adapter.js | shared/ai/ai-decision-engine.js | studio/index.html::runCompiledAiDecision | game/assets/js/ai-battle-bridge.js\ncurrent_gap: A Formal AI adapter exists, but Package roster/master paths still permit inline/legacy AI-shaped data and raw unit fallback; formalAiBinding + Skill Loadout is not mandatory in formal campaign mode.\nrequired_extension: Require Formal AI binding/loadout snapshots for formal Package units and execute only through the existing Formal AI adapter/decision engine. Fail closed when Formal AI is absent/invalid.\nforbidden_duplicate: Do not create a second AI decision engine, inline Balance AI policy, or legacy fallback.\nclosure_check: Formal Player/Monster decisions produce traceable action_id/target_id through the shared engine; missing Formal AI never falls back.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-011",
@@ -3014,11 +3014,11 @@
       "target_id": "SYS-BAL-MONSTER",
       "status": "Open",
       "severity": "Blocker",
-      "summary": "Monster Job→Stats→Enemy Budget→Skill/AIをversioned snapshotとしてPackageへ渡し、AI/raw unitがFormal Monster Stats/Enemy Budgetを独自決定しないようにする。",
+      "summary": "Monster Job→Stats→Enemy Budget→Skill/AIをversioned snapshotとしてPackageへ渡し、AI/raw unitがFormal Monster Stats/Enemy Budgetを独自決定しないようにする。\n\n[P3 HANDOFF]\nreuse_system: Existing Monster master/data-exchange + Current encounter/enemy-budget owners + Battle Package roster resources\nreuse_entrypoint: studio/data-exchange/data-exchange-core.js::monsters dataset | studio/index.html Monster master / skill candidate evaluation | assets/shared/js/adventure-encounter-resolver.js | studio/index.html::masterRecordToBattleUnit\ncurrent_gap: Package can consume generic/raw monster units without requiring the Current Monster Job→Stats→Enemy Budget→Skill/AI owner chain or an immutable versioned snapshot.\nrequired_extension: Add a formal Monster/Enemy snapshot adapter to the existing Package resource path. Snapshot must carry owner/version provenance for Job, generated stats, enemy budget, skills/equipment/MOD and Formal AI.\nforbidden_duplicate: Do not let Balance AI invent final Monster stats/enemy budget and do not create a second Monster generator.\nclosure_check: Formal Package rejects monsters lacking Current owner-chain provenance and reproduces the same monster snapshot as the Current owner pipeline.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-PKG-012",
@@ -3027,11 +3027,11 @@
       "target_id": "SYS-BAL-CROSS_META",
       "status": "Open",
       "severity": "High",
-      "summary": "Result Packageへper-skill usage、Passive/Equipment contribution、Status uptime/stack/duration、MP/resource efficiency、cast/CD failure、death cause/EHP、Formal AI trace、provenance/versionを追加し、AI Candidate LoopとPromotion Evidenceに必要なKPIを出力する。",
+      "summary": "Result Packageへper-skill usage、Passive/Equipment contribution、Status uptime/stack/duration、MP/resource efficiency、cast/CD failure、death cause/EHP、Formal AI trace、provenance/versionを追加し、AI Candidate LoopとPromotion Evidenceに必要なKPIを出力する。\n\n[P3 HANDOFF]\nreuse_system: Existing Battle Package Result Package / metrics / trace\nreuse_entrypoint: studio/index.html::battlePackageAiSummary | studio/index.html::exportBattlePackageResult | studio/index.html::battleUnitMetrics | studio/index.html::battleTotals\ncurrent_gap: Current result output centers on win/loss/draw, ticks, basic damage/heal/hit/miss/crit/skill-use/status counts and representative runs. It lacks the attribution/provenance needed for Balance promotion.\nrequired_extension: Extend existing job results/AI summary/result manifest with per-skill usage/output, Passive/Equipment contribution, Status uptime/stack/duration, MP/resource efficiency, cast/CD failures, death cause/EHP, Formal AI trace and complete provenance.\nforbidden_duplicate: Do not build a separate analytics simulator or result pipeline detached from the Package that executed the trials.\nclosure_check: Result Package contains machine-readable attribution + provenance sufficient for paired A/B, sensitivity, interaction and promotion audit.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-22T13:58:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-AUTH-001",
@@ -3040,11 +3040,11 @@
       "target_id": "SYS-BAL-GAMEWIDE",
       "status": "Open",
       "severity": "High",
-      "summary": "Current B735でEquipment/Skill相当の専用Passive/MOD mass-generation entrypointを確認できない。P3で既存Studio authoring ownerを確定し、Candidate大量検証に必要なbatch/simulation入口が不足する場合は既存authoring architectureへ最小拡張する。独立Passive/MOD Generatorは新設しない。",
+      "summary": "Current B735でEquipment/Skill相当の専用Passive/MOD mass-generation entrypointを確認できない。P3で既存Studio authoring ownerを確定し、Candidate大量検証に必要なbatch/simulation入口が不足する場合は既存authoring architectureへ最小拡張する。独立Passive/MOD Generatorは新設しない。\n\n[P3 HANDOFF]\nreuse_system: Existing Studio MOD master/data-exchange/export route + existing Passive persistence/Tag-Modifier infrastructure\nreuse_entrypoint: studio/index.html generic master editor: masters.mods | studio/data-exchange/data-exchange-core.js::mods dataset | studio/data-exchange/schemas/mod-dataset.schema.json | studio/export-core.js::equipment/monster/stone MOD exports | game/assets/js/skill-passive-ai-save-bridge.js | game/assets/js/tag-skill-runtime.js\ncurrent_gap: MOD has an existing generic authoring/data-exchange/export owner but no Equipment/Skill-equivalent batch/simulation entrypoint. Passive has no dedicated Studio master/dataset/export authoring route in B750; only persistence and Current specification/contracts are present.\nrequired_extension: For MOD, add batch/simulation candidate entry to the existing masters.mods owner. For Passive, extend the existing Studio master/data-exchange architecture with a formal Passive dataset bound to Current Tag/Effect/Modifier contracts and provide batch/simulation candidate input there.\nforbidden_duplicate: Do not create independent Passive/MOD generators, stores, export pipelines or duplicate Modifier semantics.\nclosure_check: Both Passive and MOD candidates can be batch-authored/snapshotted/validated through existing Studio owners without Product registration; output is consumable by the formal Package adapters.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T14:23:00+09:00",
-      "updated_at": "2026-08-22T14:23:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "REQ-BAL-SKILL-AUTH-001",
@@ -3053,11 +3053,11 @@
       "target_id": "SYS-BAL-SKILL_FORMAL",
       "status": "Open",
       "severity": "High",
-      "summary": "B750 P2 Static Skill Calibrationで既存G05→G07経路のcoverage gapを確認。G05はRANDOM range要求でtarget.randomCountを生成せずG07が15/15 REJECT。G05 AI generationは全件trigger=ON_USE / conditions=[] / mpCost=0 / cooldown=0 / activationPriority=0固定で、Current Trigger/Condition/Resource surfaceをmass calibrationできない。さらにREMOVE/PERSISTENT COVER/REVIVE cap等でdesiredStrength/Levelが数値へ十分写像されないdead zoneがあり、multi-effect DAMAGE+STUNではLv1 HIGHがG04 Budget超過。新Skill Generatorは作らず、既存GKS_SKILL_AI_BATCH_REQUEST / G05 rules/engine / G07 contractを最小拡張して整合させる。",
+      "summary": "B750 P2 Static Skill Calibrationで既存G05→G07経路のcoverage gapを確認。G05はRANDOM range要求でtarget.randomCountを生成せずG07が15/15 REJECT。G05 AI generationは全件trigger=ON_USE / conditions=[] / mpCost=0 / cooldown=0 / activationPriority=0固定で、Current Trigger/Condition/Resource surfaceをmass calibrationできない。さらにREMOVE/PERSISTENT COVER/REVIVE cap等でdesiredStrength/Levelが数値へ十分写像されないdead zoneがあり、multi-effect DAMAGE+STUNではLv1 HIGHがG04 Budget超過。新Skill Generatorは作らず、既存GKS_SKILL_AI_BATCH_REQUEST / G05 rules/engine / G07 contractを最小拡張して整合させる。\n\n[P3 HANDOFF]\nreuse_system: Existing GKS_SKILL_AI_BATCH_REQUEST → G05 numeric generation → G07 validation pipeline\nreuse_entrypoint: studio/skill/skill-generator.js | assets/shared/js/skill-ai-batch-engine.js | assets/shared/config/skill-ai-generation-rules.json | assets/shared/config/skill-budget-rules.json | assets/shared/js/skill-compile-service.js\ncurrent_gap: P2 B750 evidence: G05 generated 330/330, but G07 rejected 15 RANDOM range records because target.randomCount was missing and rejected one Lv1/HIGH DAMAGE+STUN for G04 budget overflow. G05 mass generation also fixed all outputs to ON_USE / conditions=[] / mpCost=0 / cooldown=0 / activationPriority=0, leaving Trigger/Condition/Resource surfaces uncovered; several capped archetypes show strength/level dead zones.\nrequired_extension: Extend G05 input/rules/output within the existing pipeline to generate G07-required RANDOM fields, support formal Trigger/Condition/Resource/cost/cooldown/cast calibration inputs, and allocate multi-effect budgets without invalid overflow while preserving G07 as the final gate.\nforbidden_duplicate: Do not bypass G07, directly write final Skill numerics, or create a second Skill generator.\nclosure_check: The same 330 core matrix plus dedicated Trigger/Condition/Resource coverage batches validate through G07 with no contract-shape rejection; expected caps/dead zones are explicitly classified rather than silently flattened.",
       "required_human_decision": "",
       "source": "P2StaticCalibration",
       "created_at": "2026-08-23T13:22:00+09:00",
-      "updated_at": "2026-08-23T13:22:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -3183,7 +3183,7 @@
       "id": "TASK-BAL-003",
       "box_id": "BOX-V9-BAL-FOUNDATION-001",
       "title": "P3 Existing System Current-Spec Alignment Requirement Handoffを確定する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 120,
       "depends_on": [],
       "acceptance_criteria": "- REQ-BAL-PKG-001..012、REQ-BAL-AUTH-001、REQ-BAL-SKILL-AUTH-001を、既存System extensionとして実装ラインへ引き渡せる自己完結Requirement setにする。\n- 各Requirementで reuse_system / reuse_entrypoint / current_gap / required_extension / forbidden_duplicate を追跡する。\n- Balance案件内でSourceを変更しない。実装はDEV-V9-REORG-019等の実装ライン側SOURCE_UPDATEとして行う。\n- Formal Battle readinessをLegacy fallbackで代替しない。\n- P4を解放する条件（Current Source再取得、Requirement closure、Formal readiness checks）を明示する。",
@@ -3195,7 +3195,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T13:22:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "TASK-BAL-004",
@@ -3208,7 +3208,7 @@
         "TASK-BAL-002",
         "TASK-BAL-003"
       ],
-      "acceptance_criteria": "- P1/P2/P3完了後、Current SourceでREQ-BAL-PKG-001..012およびREQ-BAL-AUTH-001の必要範囲が解消済みか確認する。\n- Build/Data/Formula/Rules/Config binding、typed roster/resource、Equipment/Skill/Passive、Formula/Status/Lifecycle、Formal AI、Monster/Enemy、Result EvidenceをCurrent Contractへ照合する。\n- Blockerが1件でもOpenならFormal Combat Candidate Loopを開始せずBlockedを維持する。\n- Legacy simulator/resultをFormal Evidenceとして代用しない。",
+      "acceptance_criteria": "- P1/P2/P3完了後、fresh Current SourceでREQ-BAL-PKG-001..011をFormal Blockerとして全件Closure確認し、REQ-BAL-PKG-012 / REQ-BAL-AUTH-001 / REQ-BAL-SKILL-AUTH-001もP4 Candidateに必要な範囲でClosure確認する。\n- Build/Data/Formula/Rules/Config binding、typed roster/resource、Equipment/Skill/Passive、Formula/Status/Lifecycle、Formal AI、Monster/Enemy、Result EvidenceをCurrent Contractへ照合する。\n- Blockerが1件でもOpenならFormal Combat Candidate Loopを開始せずBlockedを維持する。\n- Legacy simulator/result/fallbackをFormal Evidenceとして代用しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -3217,7 +3217,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-23T13:32:00+09:00"
     },
     {
       "id": "TASK-BAL-005",
@@ -4091,6 +4091,75 @@
       "blocking": false,
       "created_at": "2026-08-23T13:22:00+09:00",
       "updated_at": "2026-08-23T13:22:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-HANDOFF-001",
+      "title": "TASK-BAL-003 implementation-line Requirement handoff completeness",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-003",
+      "status": "Passed",
+      "result": "REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001 / REQ-BAL-SKILL-AUTH-001の14件について、reuse_system / reuse_entrypoint / current_gap / required_extension / forbidden_duplicate / closure_checkをCurrent B750 source evidenceから確定。実装Sourceは変更せず、DEV-V9-REORG-019等の実装ラインへ渡す自己完結Handoffとした。",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-003_P3-EVIDENCE-HANDOFF.zip sha256=fef428575d6e1fb7a3efaf9e3c6c0a2a0e9ef51d4f71a2d19593d76da04975bb; P3-EVIDENCE-MANIFEST.json sha256=9374d6fe7baf5f5d158399b315d5cfbbda737b380ffdf69d4d867ae4fea0f9f9; source_zip sha256=08577db052733d6e817cd700e6827d0086685ce6578634dbd6e3d372c15fcfd1; package_manifest sha256=88cd91d97bb57fbac2ac51a17996e987851e428f88431be7be12eb2f117614a2; requirements=14",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:32:00+09:00",
+      "updated_at": "2026-08-23T13:32:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P3-SOURCE-NO-CLOSURE-001",
+      "title": "P3 Current B750 source refresh contains no implementation closure",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "043215 B750を直前042106 B750と全721ファイル比較し、差分はdevelopment-project-data/DEV-V9-BALANCE-001.jsonのみ。実装Source codeに差分がないためP3 RequirementをResolvedへ変更する根拠はなく、14件全てOpenを維持する。",
+      "evidence": "current_zip sha256=08577db052733d6e817cd700e6827d0086685ce6578634dbd6e3d372c15fcfd1; previous_zip sha256=3ad9299a844ebebd687f714ba1938dd681e75be5fbb2a4fb90c62bdd62f9033d; package_manifest sha256=88cd91d97bb57fbac2ac51a17996e987851e428f88431be7be12eb2f117614a2; changed_files=development-project-data/DEV-V9-BALANCE-001.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:32:00+09:00",
+      "updated_at": "2026-08-23T13:32:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-RELEASE-001",
+      "title": "P4 release condition after P3 handoff",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-004",
+      "status": "Pending",
+      "result": "P3 Handoffは完了したが、Current Source上でFormal Blocker closureは未確認。REQ-BAL-PKG-001..011を中心とする必要Requirementが実装ラインで解消され、fresh Current Source再取得とFormal readiness checksがPASSするまでTASK-BAL-004はBlockedを維持する。",
+      "evidence": "P3-P4-RELEASE-GATE.json inside DEV-V9-BALANCE-001_TASK-BAL-003_P3-EVIDENCE-HANDOFF.zip sha256=fef428575d6e1fb7a3efaf9e3c6c0a2a0e9ef51d4f71a2d19593d76da04975bb",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T13:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T13:32:00+09:00",
+      "updated_at": "2026-08-23T13:32:00+09:00"
     }
   ],
   "workflow": {
@@ -4178,6 +4247,10 @@
     {
       "at": "2026-08-23T13:22:00+09:00",
       "message": "Current Sourceをuser-provided GKS-B750 / GA-B486.211へ更新してmanifest 639件全一致を確認し、TASK-BAL-002 P2 Static Skill Calibrationを実行。既存GKS_SKILL_AI_BATCH_REQUEST→G05→G07のみで22 archetype×5 Level×3 Strength=330件を生成。G05 330/330 ACCEPT、G07 314 ACCEPT/16 REJECT。15件はRANDOM target.randomCount欠落、1件はLv1 HIGH DAMAGE+STUNのG04 Budget超過。G05がtrigger=ON_USE / conditions=[] / resource zero固定であること、REMOVE/PERSISTENT COVER/REVIVE cap等のdead zoneも確認。これらをREQ-BAL-SKILL-AUTH-001として既存Skill Pipeline extensionへ分離。Source/Game Data/Product Skill Master/Current active変更0件。P2詳細EvidenceはDEV-V9-BALANCE-001_TASK-BAL-002_P2-EVIDENCE.zip sha256=f4740e97d341a55d2d35e27c1890dac4e0e5fa87773e4de7c9ad40bc7eeb9d8bとしてHuman外部保管。TASK-BAL-002=Done。次TaskはTASK-BAL-003。"
+    },
+    {
+      "at": "2026-08-23T13:32:00+09:00",
+      "message": "TASK-BAL-003 P3 Existing System Current-Spec Alignment Requirement Handoffを実行。user-provided 043215 SourceはGKS-B750 / GA-B486.211、package_manifest 639件 missing/size/hash mismatch=0。直前042106 B750と全721ファイル比較し差分はembedded development-project-data/DEV-V9-BALANCE-001.jsonのみで実装Source差分0。REQ-BAL-PKG-001..012 / REQ-BAL-AUTH-001 / REQ-BAL-SKILL-AUTH-001の14件へreuse_system/reuse_entrypoint/current_gap/required_extension/forbidden_duplicate/closure_checkを明記し、DEV-V9-REORG-019等の実装ラインへ渡せる自己完結Handoffを作成。Balance案件内Source変更0件。Evidence/Handoff=DEV-V9-BALANCE-001_TASK-BAL-003_P3-EVIDENCE-HANDOFF.zip sha256=fef428575d6e1fb7a3efaf9e3c6c0a2a0e9ef51d4f71a2d19593d76da04975bb。TASK-BAL-003=Done。Requirementは全Open、TASK-BAL-004はBlockedを維持。"
     }
   ],
   "authority": {
