@@ -10,17 +10,17 @@
     "name": "Development案件 Git正本参照・ブラウザ分岐修正",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T21:06:00+09:00"
+    "updated_at": "2026-08-23T12:25:07.289Z"
   },
   "project_context": {
     "purpose": "GKS-B760で同一Sourceを開いているにもかかわらず、ブラウザごとにDevelopment案件一覧が異なる問題を独立修正案件として管理する。Git上のdevelopment-project-data/index.jsonとProject JSONを正本とし、ブラウザ固有のbranch設定/localStorage状態が正本選択へ介入しない構造へ修正する。",
-    "summary": "Human提供の同時刻スクリーンショットでは、同じGame GA-B486.211 / Studio GKS-B760表示にもかかわらず、一方のブラウザはV9 Balance案件1件のみ、他方は6案件を表示した。Current B760 Sourceのdevelopment-project-data/index.jsonは6案件を保持する。Source監査ではDevelopment Git Store既定branch=subに対しStudio一般Git設定UIのghBranch初期値=mainが存在し、Development側studioConnection()がRegistry branch→ghBranch→DEFAULT_CONNECTION.branchの順でbranchを決定する。またブラウザlocalStorageにDevelopment Registryを保持する。これによりブラウザ固有状態とGit branch文脈がDevelopment案件一覧へ混入し得る。既存DEV-DEV-SAVE-REBUILD-B743-001と設計上の重複を避け、その既存知見を再利用しつつB760で再現した残存/回帰問題として扱う。"
+    "summary": "Human提供の同時刻スクリーンショットでは、同じGame GA-B486.211 / Studio GKS-B760表示にもかかわらず、一方のブラウザはV9 Balance案件1件のみ、他方は6案件を表示した。Current B760 Sourceのdevelopment-project-data/index.jsonは6案件を保持する。Source監査ではDevelopment Git Store既定branch=subに対しStudio一般Git設定UIのghBranch初期値=mainが存在し、Development側studioConnection()がRegistry branch→ghBranch→DEFAULT_CONNECTION.branchの順でbranchを決定する。またブラウザlocalStorageにDevelopment Registryを保持する。これによりブラウザ固有状態とGit branch文脈がDevelopment案件一覧へ混入し得る。既存DEV-DEV-SAVE-REBUILD-B743-001と設計上の重複を避け、その既存知見を再利用しつつB760で再現した残存/回帰問題として扱う。 追加UI要件として、Studioホームでは旧来の上部共通ナビゲーション（入口/ゲーム/Studio/資料）とGame/Studio Build表示を復旧し、ホーム位置では不要な『もどる』『とじる』を表示しない。一方、下位画面の『もどる』『とじる』は共通レイアウトとして現状維持し修正対象外とする。また画面最上部に誤表示されている『/* GKS-B760 development-data/source-integrity separation */』をUIから除去する。"
   },
   "current_focus": {
     "architecture_id": "ARCH-DEV-GIT-B760-ROOT",
-    "work_box_id": "BOX-DEV-GIT-B760-ISSUE",
-    "theme": "B760 cross-browser Development project list divergence registered; source edit not started",
-    "goal": "現象・原因候補・修正境界・既存案件との関係を管理JSONへ固定する。SOURCE_UPDATEはHumanの実装承認後にのみ開始する。"
+    "work_box_id": "BOX-DEV-GIT-B760-UI",
+    "theme": "B760 Git authority divergence + Studio home navigation/UI regression requirements fixed; source edit not started",
+    "goal": "Git正本参照のbrowser independence修正に加え、Studioホームの上部共通導線/Build表示復旧、ホーム限定のもどる・とじる非表示、不要なsource-integrityコメント表示除去を修正要件として固定する。下位画面の共通もどる・とじるレイアウトは変更しない。SOURCE_UPDATEはHuman実装承認後にのみ開始する。"
   },
   "project_rules": [
     {
@@ -76,6 +76,42 @@
       "source_id": "project execution convention",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-007",
+      "text": "Studioホームは機能ランチャー階層をHome位置とし、このHome画面では『もどる』『とじる』を表示しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-23 Studio home is home position",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-008",
+      "text": "Studio下位画面の『もどる』『とじる』は既存の共通レイアウトとして保持し、今回の修正では変更しない。Home限定の非表示実装で下位画面の共通導線へ副作用を出さない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-23 lower screen common layout protected",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-009",
+      "text": "Studioホーム上部にIndex/入口へ戻れる共通ナビゲーション『入口 / ゲーム / Studio / 資料』と現在のGame/Studio Build番号を確認できる表示を復旧する。Studio位置は選択状態として識別可能にする。",
+      "status": "Active",
+      "source_type": "HumanInstruction+VisualReference",
+      "source_id": "conversation:2026-08-23 old GKS-B741 Studio header reference",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-010",
+      "text": "画面上に誤表示されている文字列『/* GKS-B760 development-data/source-integrity separation */』をユーザー向けUIから除去する。他の正規Build表示やStudioタイトルは削除しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-23 unwanted literal comment",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "source_baseline": {
@@ -121,6 +157,21 @@
       "artifact_note": "DEV-DEV-SAVE-REBUILD-B743-001 reuse reference",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-GIT-B760-003",
+      "title": "Studioホーム上部導線・Build表示・Home navigation回帰",
+      "status": "Resolved",
+      "summary": "B760 Studioホームで旧来の上部Index導線とBuild確認領域が失われ、Home位置にも『もどる』『とじる』が表示され、さらにsource-integrityコメント文字列が画面へ漏出している。Humanが旧B741画面を参照例として復旧要件を確定した。",
+      "body": "Human提供画像により、旧GKS-B741ではStudio上部に『入口 / ゲーム / Studio / 資料』と『GA-B486.211 / GKS-B741』が表示されていたことを確認。Current B760のStudioホームではこの上部導線/Build確認が欠落し、機能ランチャーHome位置に『もどる』『とじる』が表示されている。HomeはStudio内の基準位置であるためHomeでは両ボタンを不要とする。ただし下位画面の『もどる』『とじる』は共通レイアウトであり必要なため修正しない。加えて『/* GKS-B760 development-data/source-integrity separation */』が画面最上部へ文字列として描画されており、これだけを不要表記として除去する。",
+      "open_questions": "",
+      "conclusion": "Studioホームのみ上部UIを復旧しHome限定navigationを整理する。下位画面共通layoutはprotected scopeとする。",
+      "related_discussion_ids": [
+        "DISC-DEV-GIT-B760-001"
+      ],
+      "artifact_note": "Human screenshots: current B760 Studio home/lower screens + old GKS-B741 Studio header reference",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "decisions": [
@@ -164,6 +215,48 @@
       "approved_at": "",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-004",
+      "title": "Studioホームの上部共通導線とBuild表示を復旧する",
+      "status": "Approved",
+      "text": "Studioホームに『入口 / ゲーム / Studio / 資料』の上部共通ナビゲーションと現在のGame/Studio Build表示を復旧する。旧GKS-B741の上部構成を参照例とし、Studio位置を選択状態として識別可能にする。",
+      "rationale": "Humanが旧画面を示し、StudioからIndexへの導線とBuild番号確認を復旧するよう明示したため。",
+      "source_discussion_ids": [
+        "DISC-DEV-GIT-B760-003"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T21:23:00+09:00",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-005",
+      "title": "Homeだけ『もどる』『とじる』を非表示にし下位共通layoutは保護する",
+      "status": "Approved",
+      "text": "機能ランチャー階層をStudio Homeとし、Homeでは『もどる』『とじる』を表示しない。下位画面の『もどる』『とじる』は必要な共通レイアウトなので今回の修正対象外とし、既存挙動を維持する。",
+      "rationale": "HumanがHome位置と下位画面の要否を明確に区別したため。",
+      "source_discussion_ids": [
+        "DISC-DEV-GIT-B760-003"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T21:23:00+09:00",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-006",
+      "title": "source-integrityコメント文字列のUI漏出を除去する",
+      "status": "Approved",
+      "text": "画面最上部へ表示されている『/* GKS-B760 development-data/source-integrity separation */』をユーザー向けUIから除去する。正規のBuild番号表示やStudioタイトルは保持する。",
+      "rationale": "Humanが不要表記を当該1行に限定して明示したため。",
+      "source_discussion_ids": [
+        "DISC-DEV-GIT-B760-003"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T21:23:00+09:00",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "specifications": [
@@ -192,6 +285,32 @@
       "approved_at": "",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "SPEC-DEV-GIT-B760-UI-001",
+      "title": "Studio Home Header / Navigation Restoration",
+      "status": "Approved",
+      "summary": "Studio Homeだけを対象に上部共通ナビ/Build表示を復旧し、Home限定で戻る/閉じるを非表示、不要コメント文字列を除去する。下位画面の共通戻る/閉じるlayoutは変更しない。",
+      "body": "## Target\n- Studio機能ランチャー(Home)画面。\n\n## Required behavior\n1. Home上部に『入口 / ゲーム / Studio / 資料』の共通ナビゲーションを表示する。\n2. Home上部で現在のGame Build / Studio Buildを確認できる。\n3. Studioは現在位置として選択状態を示す。\n4. Homeでは『もどる』『とじる』を表示しない。\n5. 『/* GKS-B760 development-data/source-integrity separation */』を画面へ描画しない。\n\n## Protected scope\n- Studio下位画面の共通『もどる』『とじる』layout / behavior。\n- 下位画面の戻る/閉じる処理。\n- 正規のGame/Studio Build表示。\n- Development Project schema / gameplay / Balance / Game Data。\n\n## Reference\n- Human提示の旧GKS-B741 Studio画面の上部『入口 / ゲーム / Studio / 資料』+ Build表示をUI参照例とする。\n",
+      "decision_refs": [
+        "DEC-DEV-GIT-B760-004",
+        "DEC-DEV-GIT-B760-005",
+        "DEC-DEV-GIT-B760-006"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "Studio Homeで上部共通ナビとGame/Studio Buildが確認でき、Homeには『もどる』『とじる』が出ず、不要コメント文字列が表示されない。Studio下位画面の既存『もどる』『とじる』は変更前と同じ挙動を維持する。",
+      "system_node_id": "SYS-DEV-GIT-B760-STUDIO-HOME",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-B760-STUDIO-HOME",
+        "CONTRACT-DEV-GIT-B760-LOWER-NAV-PROTECTED"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T21:23:00+09:00",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -216,6 +335,20 @@
       "description": "ghBranch等のUI接続設定とDevelopment local cache。正本ではなく補助状態に限定する。",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-GIT-B760-STUDIO-HOME",
+      "name": "Studio Home Header / Navigation",
+      "description": "Studio機能ランチャーHomeの上部共通ナビゲーション、Build表示、Home限定navigation visibilityを所有する。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-GIT-B760-LOWER-NAV",
+      "name": "Studio Lower Screen Common Navigation",
+      "description": "Studio下位画面で利用する既存の共通『もどる』『とじる』layout。今回のUI修正ではprotected scope。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "system_contracts": [
@@ -240,6 +373,28 @@
       "definition": "localStorage/memory cacheは補助表示・一時状態としてのみ利用可能で、Git未確認時に正本案件一覧として成功扱いしない。",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-GIT-B760-STUDIO-HOME",
+      "name": "Studio Home header visibility contract",
+      "producer_system_id": "SYS-DEV-GIT-B760-STUDIO-HOME",
+      "consumer_system_ids": [
+        "SYS-DEV-GIT-B760-UI"
+      ],
+      "definition": "Studio Homeでは上部共通ナビ/Build表示を提供し、Home限定で『もどる』『とじる』を非表示とする。不要source-integrityコメント文字列を描画しない。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-GIT-B760-LOWER-NAV-PROTECTED",
+      "name": "Studio lower-screen common navigation protection",
+      "producer_system_id": "SYS-DEV-GIT-B760-LOWER-NAV",
+      "consumer_system_ids": [
+        "SYS-DEV-GIT-B760-UI"
+      ],
+      "definition": "下位画面の『もどる』『とじる』共通layout/behaviorは今回の修正で変更しない。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "system_connections": [
@@ -319,6 +474,39 @@
       "note": "このrunでは管理JSONのみ。",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-006",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "STUDIO_HOME_HEADER_RESTORE",
+      "value": "入口|ゲーム|Studio|資料 + Game/Studio Build",
+      "source": "HumanInstruction",
+      "note": "旧GKS-B741画面を参照例として復旧。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-007",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "HOME_BACK_CLOSE",
+      "value": "hidden_home_only",
+      "source": "HumanInstruction",
+      "note": "下位画面共通layoutは変更しない。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-008",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "UNWANTED_LITERAL_UI_TEXT",
+      "value": "/* GKS-B760 development-data/source-integrity separation */",
+      "source": "HumanInstruction",
+      "note": "この文字列だけをUIから除去。正規Build表示は保持。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "system_events": [],
@@ -351,6 +539,13 @@
       "parent_id": "ARCH-DEV-GIT-B760-ROOT",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-GIT-B760-UI",
+      "name": "Studio Home UI restoration",
+      "parent_id": "ARCH-DEV-GIT-B760-ROOT",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "work_boxes": [
@@ -377,6 +572,14 @@
       "body": "新規browser profileを含む複数ブラウザで同一Git authority indexが同じ一覧を返し、failure時はstale local listを成功表示しないことを確認する。",
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-GIT-B760-UI",
+      "node_id": "ARCH-DEV-GIT-B760-UI",
+      "title": "Studio Home上部UI回帰修正",
+      "body": "Studio Homeに旧来の上部共通ナビゲーションとGame/Studio Build表示を復旧する。Homeだけ『もどる』『とじる』を非表示とし、下位画面の共通layoutは触らない。画面最上部へ漏出したsource-integrityコメント文字列を除去する。Source変更はHuman implementation approval後。",
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "tasks": [
@@ -458,6 +661,46 @@
       },
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-005",
+      "box_id": "BOX-DEV-GIT-B760-UI",
+      "title": "Studio Home上部共通ナビ/Build表示を復旧しHome限定navigationを整理する",
+      "status": "Todo",
+      "execution_order": 50,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-001"
+      ],
+      "acceptance_criteria": "Studio Homeに『入口 / ゲーム / Studio / 資料』とGame/Studio Build表示が復旧し、Studioが現在位置として識別できる。Homeでは『もどる』『とじる』を表示しない。『/* GKS-B760 development-data/source-integrity separation */』がUIに表示されない。下位画面の共通『もどる』『とじる』layout/behaviorには差分を出さない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-006",
+      "box_id": "BOX-DEV-GIT-B760-UI",
+      "title": "Studio Home/下位画面Navigation回帰を確認する",
+      "status": "Todo",
+      "execution_order": 60,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-005"
+      ],
+      "acceptance_criteria": "Studio Homeでは上部共通ナビ/Build表示があり『もどる』『とじる』がない。下位画面では既存の『もどる』『とじる』が従来どおり表示・動作する。不要source-integrityコメント文字列が全対象画面で表示されない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "checks": [
@@ -575,6 +818,75 @@
       "blocking": false,
       "created_at": "2026-08-23T21:06:00+09:00",
       "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-006",
+      "title": "Studio Home UI修正要件がHuman指示どおり固定されている",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-005",
+      "status": "Passed",
+      "result": "Home上部共通ナビ/Build復旧、Home限定もどる/とじる非表示、下位共通layout保護、不要source-integrityコメント除去を管理JSONへ登録。",
+      "evidence": "conversation screenshots/instructions 2026-08-23",
+      "checked_by": "Human+AI",
+      "checked_at": "2026-08-23T21:23:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-007",
+      "title": "Studio Home UI Source修正開始にはHuman approvalが必要",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-005",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-008",
+      "title": "Home変更で下位画面共通もどる/とじるへ差分がない",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-006",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:23:00+09:00",
+      "updated_at": "2026-08-23T21:23:00+09:00"
     }
   ],
   "workflow": {
@@ -602,6 +914,18 @@
     {
       "at": "2026-08-23T21:06:00+09:00",
       "message": "既存DEV-DEV-SAVE-REBUILD-B743-001の同種Git正本化設計をreuse-firstとする。Source変更はHuman指示どおり未着手、implementation approval Pending。"
+    },
+    {
+      "at": "2026-08-23T21:23:00+09:00",
+      "message": "Human指示によりStudio Home UI回帰を同案件へ追加。旧GKS-B741を参照例として『入口 / ゲーム / Studio / 資料』とGame/Studio Build表示をHome上部へ復旧する要件を固定。"
+    },
+    {
+      "at": "2026-08-23T21:23:00+09:00",
+      "message": "Studio Homeは機能ランチャー階層をHome位置とし、Homeだけ『もどる』『とじる』を非表示とする。下位画面の共通『もどる』『とじる』layout/behaviorはprotected scopeとして変更しない。"
+    },
+    {
+      "at": "2026-08-23T21:23:00+09:00",
+      "message": "画面上に漏出している『/* GKS-B760 development-data/source-integrity separation */』を不要表記としてUIから除去する要件を追加。Source変更は引き続き未着手、implementation approval Pending。"
     }
   ]
 }
