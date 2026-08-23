@@ -7,7 +7,7 @@ const controllerSource=fs.readFileSync('studio/layer-controller.js','utf8');
 const dx=fs.readFileSync('studio/data-exchange/data-exchange-ui.js','utf8');
 const guide=fs.readFileSync('modules/verification/verification-guide.js','utf8');
 
-assert.strictEqual(build.studio_build,'GKS-B756');
+assert.strictEqual(build.studio_build,'GKS-B757');
 const studioBuildNumber=String(build.studio_build).match(/GKS-B(\d+)/)?.[1];
 assert.ok(studioBuildNumber,'studio build number must be available');
 assert.ok(html.includes(`<script src="./layer-controller.js?v=${studioBuildNumber}"></script>`),'common layer controller must load before Studio app logic');

@@ -91,7 +91,7 @@ let formalRuntimeSettings=null;
 const formalGameBridge={status:'idle',jobs_url:FORMAL_JOB_EXPORT_URL,settings_url:FORMAL_RUNTIME_SETTINGS_EXPORT_URL,schema_version:null,data_version:null,generated_by:null,loaded_at:null,job_ids:[],settings_id:null,errors:[]};
 const formalEquipmentBridge={status:'idle',source_url:FORMAL_EQUIPMENT_EXPORT_URL,schema_version:null,data_version:null,generated_by:null,loaded_at:null,imported_ids:[],errors:[]};
 function envelopeData(payload){if(Array.isArray(payload))return payload;return payload&&Object.prototype.hasOwnProperty.call(payload,'data')?payload.data:payload}
-function finiteNumber(value,path,{integer=false,min=null,max=null}={}){const n=Number(value);if(!Number.isFinite(n)||(integer&&!Number.isInteger(n))||(min!=null&&n<min)||(max!=null&&n>max))throw new Error(`${path} が不正です。`);return n}
+function finiteNumber(value,path,{integer=false,min=null,max=null}={}){if(typeof value!=='number'||!Number.isFinite(value)||(integer&&!Number.isInteger(value))||(min!=null&&value<min)||(max!=null&&value>max))throw new Error(`${path} が不正です。`);return value}
 function objectValue(value,path){if(!value||typeof value!=='object'||Array.isArray(value))throw new Error(`${path} が必要です。`);return value}
 function stringArray(value,path){if(!Array.isArray(value))throw new Error(`${path} は配列である必要があります。`);const rows=value.map((x,i)=>{const id=String(x||'').trim();if(!id)throw new Error(`${path}[${i}] が空です。`);return id});return[...new Set(rows)]}
 function normalizeFormalJobRecord(record){
