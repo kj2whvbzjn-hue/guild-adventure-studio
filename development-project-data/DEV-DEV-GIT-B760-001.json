@@ -1,0 +1,607 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-629fec20-e3fb-49bd-914f-acca86826db0",
+    "canonical_path": "development-project-data/DEV-DEV-GIT-B760-001.json"
+  },
+  "workspace": {
+    "id": "DEV-DEV-GIT-B760-001",
+    "name": "Development案件 Git正本参照・ブラウザ分岐修正",
+    "status": "Specifying",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-23T21:06:00+09:00"
+  },
+  "project_context": {
+    "purpose": "GKS-B760で同一Sourceを開いているにもかかわらず、ブラウザごとにDevelopment案件一覧が異なる問題を独立修正案件として管理する。Git上のdevelopment-project-data/index.jsonとProject JSONを正本とし、ブラウザ固有のbranch設定/localStorage状態が正本選択へ介入しない構造へ修正する。",
+    "summary": "Human提供の同時刻スクリーンショットでは、同じGame GA-B486.211 / Studio GKS-B760表示にもかかわらず、一方のブラウザはV9 Balance案件1件のみ、他方は6案件を表示した。Current B760 Sourceのdevelopment-project-data/index.jsonは6案件を保持する。Source監査ではDevelopment Git Store既定branch=subに対しStudio一般Git設定UIのghBranch初期値=mainが存在し、Development側studioConnection()がRegistry branch→ghBranch→DEFAULT_CONNECTION.branchの順でbranchを決定する。またブラウザlocalStorageにDevelopment Registryを保持する。これによりブラウザ固有状態とGit branch文脈がDevelopment案件一覧へ混入し得る。既存DEV-DEV-SAVE-REBUILD-B743-001と設計上の重複を避け、その既存知見を再利用しつつB760で再現した残存/回帰問題として扱う。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-DEV-GIT-B760-ROOT",
+    "work_box_id": "BOX-DEV-GIT-B760-ISSUE",
+    "theme": "B760 cross-browser Development project list divergence registered; source edit not started",
+    "goal": "現象・原因候補・修正境界・既存案件との関係を管理JSONへ固定する。SOURCE_UPDATEはHumanの実装承認後にのみ開始する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-DEV-GIT-B760-001",
+      "text": "Development案件一覧と案件本文のpersistent authorityはGit上のdevelopment-project-data/index.jsonおよびdevelopment-project-data/<id>.jsonとする。ブラウザlocalStorageをpersistent authorityとして扱わない。",
+      "status": "Active",
+      "source_type": "HumanInstruction+SourceAudit",
+      "source_id": "conversation:2026-08-23 cross-browser divergence / GKS-B760",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-002",
+      "text": "Project本文GET、index GET/PUT、書込、競合再試行、処理後refreshは同一の明示的Git connection context（owner/repo/branch/auth）を共有し、ブラウザごとの別branchへ暗黙分岐しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "GKS-B760:studio/development-git-store/development-git-store.js",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-003",
+      "text": "Git index取得失敗時にlocalStorage Registryや前回成功一覧をGit正本の成功結果として表示しない。失敗は明示し、正本未確認状態をユーザーへ識別可能にする。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-DEV-SAVE-REBUILD-B743-001 existing audit + GKS-B760 current source",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-004",
+      "text": "既存DEV-DEV-SAVE-REBUILD-B743-001のGit正本化設計・Task知見をreuse-firstとし、新しいGit Store、Project Registry、保存Orchestratorを重複実装しない。",
+      "status": "Active",
+      "source_type": "SourceAudit",
+      "source_id": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-005",
+      "text": "本管理JSON作成runではSource変更を行わない。SOURCE_UPDATEはimplementation_approval=Approved後に開始する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-23 まだソースは書かずに管理jsonを出して",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "RULE-DEV-GIT-B760-006",
+      "text": "1回のAI runにつきDevelopment Taskを1件だけ実行し、未計画問題が見つかった場合は追加修正へ進まず問題整理とHuman確認へ戻る。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "project execution convention",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B760",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(4).zip",
+    "source_role": "issue_reproduction_and_planning_baseline_only",
+    "recorded_at": "2026-08-23T21:06:00+09:00",
+    "package_manifest_sha256": "662ff776db954a36c67c886873a407539d89ebfdc610ab767c6893f6407972dc",
+    "source_zip_sha256": "add2f800d19dbce894fb4050b0a4b7571c2bf1a5e5edef32792047f12b8995e4"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-23T21:06:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [
+    {
+      "id": "DISC-DEV-GIT-B760-001",
+      "title": "同一GKS-B760でDevelopment案件一覧がブラウザ間分岐する",
+      "status": "Resolved",
+      "summary": "同一Build表示でもDevelopment案件一覧が1件/6件に分岐する現象を確認した。B760 SourceのGit indexは6案件であり、1件表示側はCurrent Git index正常取得結果とは一致しない。",
+      "body": "Human提供画像では両ブラウザともGame GA-B486.211 / Studio GKS-B760。Browser Aは『V9 Balance調整・Baseline確立』1件のみ、Browser Bは『Development Project正本統一・世代不整合 根絶』『Development管理 保存経路再構築・Git正本化』『GKS-B740 現行システム構造・依存関係・処理解説』『V9 Balance調整・Baseline確立』『V9ゲーム再実装・System Structure再整理』『修正計画』の6件を表示。Current Source ZIPのdevelopment-project-data/index.jsonは6案件を登録している。",
+      "open_questions": "- 1件表示側がmain branchの古いindexを取得したのか、Git取得失敗後のbrowser-local Registryを表示したのかを実機traceで切り分ける。\n- read connectionのbranch/authを一般Git設定と分離するか、全Development操作で共通operation contextへ一本化するかを実装前に確定する。",
+      "conclusion": "Gitからタイトルを読む設計だけではBrowser independenceは成立していない。branch selectionとlocalStorage fallback/先行表示を含めてGit正本契約を修正対象とする。",
+      "related_discussion_ids": [],
+      "artifact_note": "Human screenshots + GKS-B760 source audit",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "DISC-DEV-GIT-B760-002",
+      "title": "既存DEV-DEV-SAVE-REBUILD-B743-001との関係",
+      "status": "Resolved",
+      "summary": "既存案件は同種のbranch/index/localStorage問題をすでに設計・Task化しているが、Current B760でも症状が再現したため、本案件はB760残存/回帰Issueとして独立追跡する。",
+      "body": "DEV-DEV-SAVE-REBUILD-B743-001には『Project処理・index処理・refreshを同一操作Branchへ固定』『案件一覧をGit index→memory registryへ切替えlocalStorage fallbackを停止』『index GET・Project GETのread branch/token経路を一本化』等の未完Taskが存在する。本案件ではそれらの設計を再利用し、同等機構を新設しない。",
+      "open_questions": "既存案件を将来supersede/mergeするかはSource修正方針確定後にHuman判断する。現時点ではどちらの管理JSONも削除・統合しない。",
+      "conclusion": "重複実装は禁止し、既存設計をB760 current sourceへrebaseする修正案件として扱う。",
+      "related_discussion_ids": [
+        "DISC-DEV-GIT-B760-001"
+      ],
+      "artifact_note": "DEV-DEV-SAVE-REBUILD-B743-001 reuse reference",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-DEV-GIT-B760-001",
+      "title": "B760のブラウザ間Development一覧分岐を独立修正案件として管理する",
+      "status": "Approved",
+      "text": "GKS-B760で再現したDevelopment案件一覧のブラウザ間分岐をDEV-DEV-GIT-B760-001として独立追跡する。既存Balance案件やV9実装案件へ混在させない。",
+      "rationale": "Humanが修正案件として作成するよう明示したため。",
+      "source_discussion_ids": [
+        "DISC-DEV-GIT-B760-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T21:06:00+09:00",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-002",
+      "title": "Source修正は管理JSON作成後の別承認に分離する",
+      "status": "Approved",
+      "text": "本runでは管理JSONだけを作成しSourceコードを変更しない。実装TaskはTodoとして登録し、HumanがSource修正開始を明示承認した後に実行する。",
+      "rationale": "Humanが『まだソースは書かずに管理jsonを出して』と明示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-23T21:06:00+09:00",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "DEC-DEV-GIT-B760-003",
+      "title": "Git正本契約をBrowser independentにする",
+      "status": "Proposed",
+      "text": "Development案件のread/write/refreshは同一Git connection contextへ一本化し、一般Git UIのbrowser-local branch設定やDevelopment localStorage Registryをpersistent authority判断へ使用しない。Git取得失敗は明示失敗とする。",
+      "rationale": "B760 source auditとcross-browser再現が示す原因境界。Source実装承認時に最終確定する。",
+      "source_discussion_ids": [
+        "DISC-DEV-GIT-B760-001",
+        "DISC-DEV-GIT-B760-002"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "specifications": [
+    {
+      "id": "SPEC-DEV-GIT-B760-001",
+      "title": "Development Project Git Authority / Browser Independence Draft",
+      "status": "Draft",
+      "summary": "Development案件一覧・本文のGit正本取得をbrowser-local stateから分離するための最小修正仕様。",
+      "body": "## Authority\n- 案件一覧正本: development-project-data/index.json\n- 案件本文正本: development-project-data/<project-id>.json\n- localStorage Registryはpersistent authorityではない。\n\n## Required behavior\n1. 一覧GET・本文GET・CREATE/UPDATE/DELETE・index更新・retry・refreshは同一branch contextを使用する。\n2. browser-local ghBranchの既定値差だけでDevelopment正本branchが変わらない。\n3. Git index取得失敗時にlocalStorage/previous listを成功結果として表示しない。\n4. Git成功結果からmemory cacheを再構築してよいが、cacheからGit正本を逆決定しない。\n5. 別ブラウザ/新規ブラウザで同一repository+authority branchを開いた場合、同じindex SHAなら同じ案件タイトル集合を表示する。\n6. 既存DEV-DEV-SAVE-REBUILD-B743-001のGit Store/operation-context設計を再利用し、新規parallel implementationを作らない。\n\n## Non-goals\n- GitHub repository構造の全面再設計。\n- Development Project schemaの変更。\n- Balance/V9 gameplay Sourceの変更。\n- Source修正承認前のコード編集。",
+      "decision_refs": [
+        "DEC-DEV-GIT-B760-001",
+        "DEC-DEV-GIT-B760-002",
+        "DEC-DEV-GIT-B760-003"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "同一Git authorityを参照する2つ以上のbrowser profileで案件一覧が一致し、Git index GET失敗時はstale local listを正本として表示せず、read/write/refreshのbranchが一意にtrace可能である。",
+      "system_node_id": "SYS-DEV-GIT-B760-AUTHORITY",
+      "contract_ids": [
+        "CONTRACT-DEV-GIT-B760-AUTHORITY",
+        "CONTRACT-DEV-GIT-B760-CACHE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "specification_candidates": [],
+  "system_nodes": [
+    {
+      "id": "SYS-DEV-GIT-B760-AUTHORITY",
+      "name": "Development Git Authority",
+      "description": "development-project-data/index.jsonとProject JSONを同一Git connection contextで取得・更新する正本Owner。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-GIT-B760-UI",
+      "name": "Development Project List UI",
+      "description": "Git authorityから得た案件indexを表示するConsumer。stale browser-local Registryを正本表示しない。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "SYS-DEV-GIT-B760-BROWSER",
+      "name": "Browser Local Settings / Cache",
+      "description": "ghBranch等のUI接続設定とDevelopment local cache。正本ではなく補助状態に限定する。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "system_contracts": [
+    {
+      "id": "CONTRACT-DEV-GIT-B760-AUTHORITY",
+      "name": "Development Git authority context",
+      "producer_system_id": "SYS-DEV-GIT-B760-AUTHORITY",
+      "consumer_system_ids": [
+        "SYS-DEV-GIT-B760-UI"
+      ],
+      "definition": "Project list/body/read/write/index refreshは同一のowner/repo/branch/auth contextを使用し、browser-local default差でauthority branchを変更しない。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CONTRACT-DEV-GIT-B760-CACHE",
+      "name": "Browser cache non-authority contract",
+      "producer_system_id": "SYS-DEV-GIT-B760-BROWSER",
+      "consumer_system_ids": [
+        "SYS-DEV-GIT-B760-UI"
+      ],
+      "definition": "localStorage/memory cacheは補助表示・一時状態としてのみ利用可能で、Git未確認時に正本案件一覧として成功扱いしない。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "system_connections": [
+    {
+      "id": "CONN-DEV-GIT-B760-AUTH-UI",
+      "from_system_id": "SYS-DEV-GIT-B760-AUTHORITY",
+      "to_system_id": "SYS-DEV-GIT-B760-UI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-DEV-GIT-B760-AUTHORITY",
+      "purpose": "Git正本の案件index/Project本文をUIへ供給する。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CONN-DEV-GIT-B760-CACHE-UI",
+      "from_system_id": "SYS-DEV-GIT-B760-BROWSER",
+      "to_system_id": "SYS-DEV-GIT-B760-UI",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-DEV-GIT-B760-CACHE",
+      "purpose": "browser-local補助状態を提供するがauthorityを上書きしない。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "system_flags": [
+    {
+      "id": "FLAG-DEV-GIT-B760-001",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "BASELINE_STUDIO",
+      "value": "GKS-B760",
+      "source": "current-source-audit",
+      "note": "Cross-browser divergence確認時のStudio Build。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-002",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "OBSERVED_GIT_INDEX_PROJECT_COUNT",
+      "value": "6",
+      "source": "guild-adventure-studio-sub(4).zip:development-project-data/index.json",
+      "note": "Current B760 Sourceに含まれるDevelopment案件index件数。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-003",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "DEFECT_CLASS",
+      "value": "BROWSER_LOCAL_BRANCH_AND_REGISTRY_AUTHORITY_DIVERGENCE",
+      "source": "cross-browser reproduction",
+      "note": "同一Buildでもbrowser-local stateにより案件一覧が分岐する症状。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-004",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "RELATED_PROJECT",
+      "value": "DEV-DEV-SAVE-REBUILD-B743-001",
+      "source": "source-audit",
+      "note": "同種問題の既存設計/Taskをreuseする。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "FLAG-DEV-GIT-B760-005",
+      "scope_type": "Project",
+      "scope_id": "DEV-DEV-GIT-B760-001",
+      "key": "SOURCE_EDIT_AUTHORIZED",
+      "value": "false",
+      "source": "HumanInstruction",
+      "note": "このrunでは管理JSONのみ。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-DEV-GIT-B760-ROOT",
+      "name": "Development Git正本・Browser Independence修正",
+      "parent_id": "",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-GIT-B760-READ",
+      "name": "Git read / index authority",
+      "parent_id": "ARCH-DEV-GIT-B760-ROOT",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-GIT-B760-CACHE",
+      "name": "Browser local state separation",
+      "parent_id": "ARCH-DEV-GIT-B760-ROOT",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "ARCH-DEV-GIT-B760-VERIFY",
+      "name": "Cross-browser regression",
+      "parent_id": "ARCH-DEV-GIT-B760-ROOT",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-DEV-GIT-B760-ISSUE",
+      "node_id": "ARCH-DEV-GIT-B760-ROOT",
+      "title": "B760再現事実・修正境界固定",
+      "body": "Human screenshotsとCurrent Sourceを基に、案件一覧1件/6件分岐、Current index=6、branch/default/localStorage経路、既存修正案件との関係を管理JSONへ固定する。Source変更は行わない。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-GIT-B760-SOURCE",
+      "node_id": "ARCH-DEV-GIT-B760-READ",
+      "title": "Git authority context / local fallback修正",
+      "body": "Human実装承認後、既存Development Git Storeを最小修正し、read/write/index/refresh branch contextを一本化しlocalStorage authority fallbackを停止する。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "BOX-DEV-GIT-B760-VERIFY",
+      "node_id": "ARCH-DEV-GIT-B760-VERIFY",
+      "title": "複数ブラウザ回帰確認",
+      "body": "新規browser profileを含む複数ブラウザで同一Git authority indexが同じ一覧を返し、failure時はstale local listを成功表示しないことを確認する。",
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-DEV-GIT-B760-001",
+      "box_id": "BOX-DEV-GIT-B760-ISSUE",
+      "title": "B760ブラウザ間案件一覧分岐を管理案件として固定する",
+      "status": "Done",
+      "execution_order": 10,
+      "depends_on": [],
+      "acceptance_criteria": "同一B760で1件/6件表示の再現事実、Current Git index=6、branch/localStorage原因境界、既存DEV-DEV-SAVE-REBUILD-B743-001との関係、Source未変更が管理JSONから一意に読める。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-23T21:06:00+09:00"
+      },
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-002",
+      "box_id": "BOX-DEV-GIT-B760-SOURCE",
+      "title": "Development Git read/write/index/refreshのconnection contextを一本化する",
+      "status": "Todo",
+      "execution_order": 20,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-001"
+      ],
+      "acceptance_criteria": "Development Project本文GET、index GET/PUT、write/retry/refreshが同一branch contextを使用し、一般Git UIのbrowser-local default差だけでauthority branchが変わらない。既存Git Storeを再利用しparallel implementationを作らない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-003",
+      "box_id": "BOX-DEV-GIT-B760-SOURCE",
+      "title": "Development案件一覧のlocalStorage authority fallbackを停止する",
+      "status": "Todo",
+      "execution_order": 30,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-002"
+      ],
+      "acceptance_criteria": "Git index未確認/取得失敗時にlocalStorage Registryや前回一覧をGit正本の成功結果として表示しない。Git成功後のmemory cache利用はauthorityを上書きしない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "TASK-DEV-GIT-B760-004",
+      "box_id": "BOX-DEV-GIT-B760-VERIFY",
+      "title": "B760後継Buildでcross-browser Development一覧Regressionを実行する",
+      "status": "Todo",
+      "execution_order": 40,
+      "depends_on": [
+        "TASK-DEV-GIT-B760-002",
+        "TASK-DEV-GIT-B760-003"
+      ],
+      "acceptance_criteria": "少なくとも既存browser profileと新規browser profileで同一Git index SHA→同一案件集合を確認する。Git index failure testではstale local listをauthority表示しない。Project open/save後refreshも同一branchを維持する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHECK-DEV-GIT-B760-001",
+      "title": "Current B760 Git indexは6案件を保持する",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-001",
+      "status": "Passed",
+      "result": "guild-adventure-studio-sub(4).zip内development-project-data/index.jsonに6案件を確認。",
+      "evidence": "GKS-B760 source audit",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T21:06:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-002",
+      "title": "同一GKS-B760表示で1件/6件のbrowser divergenceが存在する",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-001",
+      "status": "Passed",
+      "result": "Human提供の2画像で同一Game/Studio Build表示かつDevelopment案件一覧が1件/6件に分岐。",
+      "evidence": "conversation screenshots 2026-08-23 21:01 JST",
+      "checked_by": "Human+AI",
+      "checked_at": "2026-08-23T21:06:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-003",
+      "title": "B760 Sourceにbranch/defaultとbrowser-local registryの分岐要因が存在する",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-001",
+      "status": "Passed",
+      "result": "development-git-store.js DEFAULT_CONNECTION.branch=sub、studio/index.html ghBranch UI default=main、studioConnection() branch優先順位、DEVELOPMENT_REGISTRY_KEY localStorage定義を確認。",
+      "evidence": "GKS-B760 source audit",
+      "checked_by": "AI",
+      "checked_at": "2026-08-23T21:06:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-004",
+      "title": "Source修正開始にはHuman approvalが必要",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-002",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    },
+    {
+      "id": "CHECK-DEV-GIT-B760-005",
+      "title": "Cross-browser regressionで同一Git index SHAが同一案件集合を返す",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-DEV-GIT-B760-004",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-23T21:06:00+09:00",
+      "updated_at": "2026-08-23T21:06:00+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-23T21:06:00+09:00",
+      "message": "Human提供のcross-browser screenshotsとGKS-B760 Current Sourceを基に、Development案件一覧が1件/6件へ分岐する問題を独立修正案件DEV-DEV-GIT-B760-001として登録。"
+    },
+    {
+      "at": "2026-08-23T21:06:00+09:00",
+      "message": "Current B760 development-project-data/index.jsonは6案件。development-git-store既定branch=sub、Studio一般Git UI ghBranch初期値=main、browser-local Development Registryが存在することを確認。"
+    },
+    {
+      "at": "2026-08-23T21:06:00+09:00",
+      "message": "既存DEV-DEV-SAVE-REBUILD-B743-001の同種Git正本化設計をreuse-firstとする。Source変更はHuman指示どおり未着手、implementation approval Pending。"
+    }
+  ]
+}
