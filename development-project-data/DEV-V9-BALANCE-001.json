@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T08:42:49.645Z"
+    "updated_at": "2026-08-24T08:59:34.616Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-ITEM-001",
-    "theme": "Physical-first / Magic-after-Skill R4 approved; TASK-BAL-048P start approval wait",
-    "goal": "Current next measurement is TASK-BAL-048P Physical Equipment Performance only. Magic performance is forbidden until TASK-BAL-050 Skill and TASK-BAL-052 Formula are complete. Then TASK-BAL-048B measures Magic Equipment Performance, followed by TASK-BAL-049 Player Power."
+    "work_box_id": "BOX-V9-BAL-PLAYER-001",
+    "theme": "TASK-BAL-048P Direct Physical PASS; TASK-BAL-050 Skill start approval wait",
+    "goal": "Direct physical Equipment iLv effect is complete under guaranteed-hit/no-critical scope. Next is TASK-BAL-050 Formal Skill. Magic Equipment Performance remains forbidden until Skill+Formula completion."
   },
   "project_rules": [
     {
@@ -992,6 +992,19 @@
       "artifact_note": "TASK-BAL-047_PRECHECK-JOINT-PROBABILITY-ISSUE.json",
       "created_at": "2026-08-24T17:03:00+09:00",
       "updated_at": "2026-08-24T17:13:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-008",
+      "title": "M3-P Formal Basic AttackがEquipment命中/会心/回避を通らない",
+      "status": "Resolved",
+      "summary": "Fresh GKS-B770でFormal Basic Attackがattack直適用となり、Current Physical contribution pathを通らないことをM3-P preflightで検出。",
+      "body": "Current Battle owner contractではaccuracy/evasion/base_critical_rateはHit/Evasion/Criticalへ接続する。Fresh sourceのperformFormalBasicAttackはHit RNG、Evasion、Critical、Resistanceを使わずattackを直接damageへ適用する。formalBattleApplyDamage側はCurrent Physical pathを実装済み。",
+      "open_questions": "M3-PをPlan既定のPhysical Reference Actionへ切替えて進めるか、Formal Basic Attackを先にSOURCE_UPDATE修正するか。",
+      "conclusion": "M3-P narrowed to direct Attack/HP contribution. Basic Attack Accuracy/Critical/Evasion bypass is non-blocking here and retained as a separate implementation mismatch.",
+      "related_discussion_ids": [],
+      "artifact_note": "TASK-BAL-048P_PRECHECK-FORMAL-BASIC-ATTACK-ISSUE.json",
+      "created_at": "2026-08-24T17:43:00+09:00",
+      "updated_at": "2026-08-24T17:59:00+09:00"
     }
   ],
   "decisions": [
@@ -5899,7 +5912,7 @@
       "id": "TASK-BAL-048P",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "M3-P Physical Equipment iLv1..11 Battle Performanceを測定する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 225,
       "depends_on": [
         "TASK-BAL-048"
@@ -5908,12 +5921,13 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T17:59:00+09:00"
       },
       "created_at": "2026-08-24T17:40:00+09:00",
-      "updated_at": "2026-08-24T17:40:00+09:00"
+      "updated_at": "2026-08-24T17:59:00+09:00",
+      "result_scope": "DIRECT_PHYSICAL_ONLY: Weapon Attack-derived direct damage and Armor HP-derived direct endurance. Accuracy/Critical/Evasion/Resistance/Skill/Magic excluded."
     }
   ],
   "checks": [
@@ -8529,6 +8543,75 @@
       "blocking": false,
       "created_at": "2026-08-24T17:40:00+09:00",
       "updated_at": "2026-08-24T17:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK048P-FORMAL-BASIC-ATTACK-001",
+      "title": "TASK-BAL-048P Formal Basic Attack contribution-path preflight",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-048P",
+      "status": "Passed",
+      "result": "TASK-BAL-048P scope was narrowed by Human to direct Attack/HP contribution. The Basic Attack Accuracy/Critical/Evasion bypass therefore does not block this task. Mismatch retained separately for later Formula/Runtime verification.",
+      "evidence": "TASK-BAL-048P_PRECHECK-FORMAL-BASIC-ATTACK-ISSUE.json; TASK-BAL-048P_SOURCE-AUDIT.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T17:43:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T17:59:00+09:00",
+        "reason": "Affected channels removed from current M3-P scope.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T17:43:00+09:00",
+      "updated_at": "2026-08-24T17:59:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-RUNTIME-BASIC-ATTACK-CONTRIBUTION-MISMATCH-001",
+      "title": "Formal Basic Attack contribution-path implementation mismatch",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Failed",
+      "result": "Fresh GKS-B770 Formal Basic Attack bypasses Accuracy/Critical/Evasion/Resistance. Non-blocking for TASK-BAL-048P direct Attack/HP scope, but must be revisited when those channels are tested.",
+      "evidence": "TASK-BAL-048P_PRECHECK-FORMAL-BASIC-ATTACK-ISSUE.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T17:59:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T17:59:00+09:00",
+      "updated_at": "2026-08-24T17:59:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK048P-DIRECT-PHYSICAL-001",
+      "title": "TASK-BAL-048P Direct Physical Equipment iLv Curve",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-048P",
+      "status": "Passed",
+      "result": "PASS. Weapon records=143, types=13, non-monotonic damage curves=0. Armor records=132, type-slot curves=12, non-monotonic HP curves=0. Accuracy/Critical/Evasion/Resistance/Skill/Magic intentionally excluded.",
+      "evidence": "TASK-BAL-048P_COMPLETION-REPORT.json; TASK-BAL-048P_PHYSICAL-WEAPON-DIRECT-CURVE.csv; TASK-BAL-048P_PHYSICAL-ARMOR-DIRECT-CURVE.csv; TASK-BAL-048P_SCOPE-CORRECTION.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T17:59:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T17:59:00+09:00",
+        "reason": "Human-approved narrowed direct-physical scope completed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T17:59:00+09:00",
+      "updated_at": "2026-08-24T17:59:00+09:00"
     }
   ],
   "workflow": {
@@ -9064,6 +9147,22 @@
       "task_id": "TASK-BAL-DESIGN-010",
       "created_at": "2026-08-24T17:40:00+09:00",
       "updated_at": "2026-08-24T17:40:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK048P-PRECHECK-BASIC-ATTACK-ISSUE-001",
+      "title": "TASK-BAL-048P PrecheckでFormal Basic Attack contribution bypassを検出",
+      "summary": "Human開始承認後、Fresh GKS-B770をPreflight。Formal Basic Attackはattackを直接HPへ適用し、accuracy/evasion/base_critical_rate/resistanceを通らない。Formal PHYSICAL DAMAGE経路は正規Hit/Evasion/Resistance/Criticalを保持。誤ったWeapon/Armor物理性能Evidenceを作らないため実測前にIssue Gate停止。Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-048P",
+      "created_at": "2026-08-24T17:43:00+09:00",
+      "updated_at": "2026-08-24T17:43:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK048P-DIRECT-PHYSICAL-COMPLETE-001",
+      "title": "TASK-BAL-048P Direct Physical Equipment Performance完了",
+      "summary": "Human指示により必中・Criticalなしのdirect physical scopeで完了。Weapon 143 records / 13 types、Armor 132 records / 12 type-slot curvesを測定し、iLv逆転0。Accuracy/Critical/Evasion/Resistanceは後段、MagicはSkill完成後へ送る。Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-048P",
+      "created_at": "2026-08-24T17:59:00+09:00",
+      "updated_at": "2026-08-24T17:59:00+09:00"
     }
   ],
   "authority": {
