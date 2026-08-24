@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T12:54:12.583Z"
+    "updated_at": "2026-08-24T13:21:35.646Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073B Monster HP Sizing Matrix PASS; TASK-BAL-074 Skill Balance start approval wait",
-    "goal": "Pre-Skill Level×Job basic-attack throughput has been converted into a neutral Monster HP sizing matrix. Current starter 6-Job party total HP pools are retained for 10/25/50/100 Tick windows, and equal-HP enemy-count sensitivity 1..6 is derived without fixing Difficulty/TTK. Per-job solo HP references and DPS spread are retained so Thief/dual-wield outlier effects are visible instead of hidden in one average. TASK-BAL-074 must not start until separate Human approval."
+    "theme": "TASK-BAL-071-FIX-002 GKS-B773 target complete; Human apply / fresh-source verification wait",
+    "goal": "Do not use TASK-BAL-073A/073B DPS/Monster-HP references for downstream balance: weapon_shield offense was over-counted because shield Attack/Accuracy/Critical were included in the sword strike. Human applies GKS-B773 Studio update and supplies a fresh complete source. After fresh verification, generate TASK-BAL-073C physical 5-Job real-device DPS input packages. Skill Balance TASK-BAL-074 remains blocked until corrected real-device DPS/HP and affected shield-dependent references are refreshed."
   },
   "project_rules": [
     {
@@ -332,6 +332,15 @@
       "source_id": "conversation:2026-08-24 resume monster hp sizing",
       "created_at": "2026-08-24T21:47:00+09:00",
       "updated_at": "2026-08-24T21:47:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-PER-STRIKE-WEAPON-CONTRIBUTION-001",
+      "text": "Basic AttackのAttack/Accuracy/Criticalは、そのstrikeを発生させた攻撃武器のContributionだけを使用する。dual_wieldはmain/off hand各1strikeで各手Contributionを独立使用し、Accuracy/Criticalを合算しない。weapon_shieldは攻撃武器1本だけが1strikeを発生させ、盾はattack_count=0としてBasic AttackのAttack/Accuracy/CriticalへContributionしない。two_handは1武器1strikeで、STR×2は装備Requirementだけに適用する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 shield attack count zero and per-strike accuracy/critical",
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00"
     }
   ],
   "source_baseline": {
@@ -1652,6 +1661,18 @@
       "approved_at": "2026-08-24T21:35:00+09:00",
       "created_at": "2026-08-24T21:35:00+09:00",
       "updated_at": "2026-08-24T21:35:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-WEAPON-SHIELD-OFFENSE-001",
+      "title": "weapon_shieldのBasic Attackでは盾のoffensive contributionを攻撃武器へ合算しない",
+      "status": "Approved",
+      "text": "weapon_shieldは1行動1strike。盾のattack_countは0であり、盾自身のAttack/Accuracy/base_critical_rateを攻撃武器strikeへ合算しない。Basic Attackは非盾側武器のAttack/Accuracy/Criticalだけを使用する。盾の防御Balance値はこのDecisionでは変更・新設しない。",
+      "rationale": "Human clarification: 命中/Criticalは武器間合算ではなくstrike単位。攻撃回数0の盾がDPSを増やすのは不正なため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T22:08:00+09:00",
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00"
     }
   ],
   "specifications": [
@@ -6289,8 +6310,8 @@
         "at": "2026-08-24T21:12:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:12:00+09:00",
-      "result_scope": "PASS. BAL-R5-MONSTER-CORE-001 frozen from 350 primary Bare Player Job×Level references using same-level/same-job neutral mathematical parity; 350 Monster Core rows, 2450 cross-job analytical matchups, same-job parity failures=0, level regressions=0. Current Product Monster fixtures rejected as Balance baseline because formal Level×Job is absent. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82. Source/Game Data/Current active changes=0."
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "PASS. BAL-R5-MONSTER-CORE-001 frozen from 350 primary Bare Player Job×Level references using same-level/same-job neutral mathematical parity; 350 Monster Core rows, 2450 cross-job analytical matchups, same-job parity failures=0, level regressions=0. Current Product Monster fixtures rejected as Balance baseline because formal Level×Job is absent. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82. Source/Game Data/Current active changes=0. PARTIALLY_INVALIDATED_BY_TASK-BAL-071-FIX-002: Knight Monster Core offensive values inherited the stale weapon_shield over-count. Other Job rows and structural method remain historical evidence. Knight offense must be refreshed before Skill Balance."
     },
     {
       "id": "TASK-BAL-073",
@@ -6310,17 +6331,17 @@
         "at": "2026-08-24T21:25:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:25:00+09:00",
-      "result_scope": "PASS. BAL-R5-CORE-ENEMY-BUDGET-001 frozen as a normalized DEVELOPMENT_ONLY conversion: category_performance_multiplier = 1 + budget_points*0.01. One HP point, Attack Performance point, and Defense Performance point each yield x1.01 normalized duel-pressure value. Coefficient selected without experience target by V9/formal cap alignment: Lv50 × Mythic 2000% => Budget1000; legacy durability 30%=300; 300 Defense points => EHP x4 => Resistance-only 75% cap exactly. 350 conversion rows / 2450 cross-job checks PASS; sign reversals=0; normalized level dependence=0. Total Enemy Budget/allocation rates/rank modifiers and Skill/AI/Utility conversion remain unfrozen/deferred. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4. Source/Game Data/Current active changes=0."
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "PASS. BAL-R5-CORE-ENEMY-BUDGET-001 frozen as a normalized DEVELOPMENT_ONLY conversion: category_performance_multiplier = 1 + budget_points*0.01. One HP point, Attack Performance point, and Defense Performance point each yield x1.01 normalized duel-pressure value. Coefficient selected without experience target by V9/formal cap alignment: Lv50 × Mythic 2000% => Budget1000; legacy durability 30%=300; 300 Defense points => EHP x4 => Resistance-only 75% cap exactly. 350 conversion rows / 2450 cross-job checks PASS; sign reversals=0; normalized level dependence=0. Total Enemy Budget/allocation rates/rank modifiers and Skill/AI/Utility conversion remain unfrozen/deferred. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4. Source/Game Data/Current active changes=0. CONVERSION_RULE_RETAINED_BUT_SHIELD_DEPENDENT_REFERENCE_ROWS_STALE: normalized 1%/point conversion formula is not changed by this correction, but any raw Knight offense reference row derived from stale Monster Core must be refreshed before downstream use."
     },
     {
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
       "status": "Blocked",
-      "execution_order": 255,
+      "execution_order": 258,
       "depends_on": [
-        "TASK-BAL-073B",
+        "TASK-BAL-073D",
         "TASK-BAL-050"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。",
@@ -6332,15 +6353,15 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00",
-      "result_scope": "DEPENDENCY_READY; WAIT_HUMAN_START_APPROVAL. Pre-Skill offense/HP sizing input is TASK-BAL-073B. TASK-BAL-050 remains Formal Skill qualification-only."
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "BLOCKED_BY_SHIELD_DPS_CORRECTION. Wait for TASK-BAL-073D corrected physical DPS/Monster HP reference; TASK-BAL-050 remains Formal Skill qualification-only."
     },
     {
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
       "status": "Blocked",
-      "execution_order": 256,
+      "execution_order": 259,
       "depends_on": [
         "TASK-BAL-074",
         "TASK-BAL-070"
@@ -6354,14 +6375,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-076",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "R5-P9 Passive / MOD / Rarity / Unique Contributionを確定する",
       "status": "Blocked",
-      "execution_order": 257,
+      "execution_order": 260,
       "depends_on": [
         "TASK-BAL-075"
       ],
@@ -6374,14 +6395,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-077",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P10 Formal AI Performance + Full 6-category Enemy Budgetを確定する",
       "status": "Blocked",
-      "execution_order": 258,
+      "execution_order": 261,
       "depends_on": [
         "TASK-BAL-076",
         "TASK-BAL-073"
@@ -6395,14 +6416,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-078",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P11 Full Player Build Set / Full Monster Setを確定する",
       "status": "Blocked",
-      "execution_order": 259,
+      "execution_order": 262,
       "depends_on": [
         "TASK-BAL-077"
       ],
@@ -6415,14 +6436,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-079",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P12 Formation / Encounter / Quest Mathematical Baselineを確定する",
       "status": "Blocked",
-      "execution_order": 260,
+      "execution_order": 263,
       "depends_on": [
         "TASK-BAL-078"
       ],
@@ -6435,14 +6456,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-080",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P13A EXP / Level / Equipment-Skill-Passive Acquisition Pacingを確定する",
       "status": "Blocked",
-      "execution_order": 261,
+      "execution_order": 264,
       "depends_on": [
         "TASK-BAL-079"
       ],
@@ -6455,14 +6476,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-081",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13B Reward / Drop / Loot Cadenceを確定する",
       "status": "Blocked",
-      "execution_order": 262,
+      "execution_order": 265,
       "depends_on": [
         "TASK-BAL-080"
       ],
@@ -6475,14 +6496,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-082",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13C Gold / Material Economy / Inventory / Guild Pacingを確定する",
       "status": "Blocked",
-      "execution_order": 263,
+      "execution_order": 266,
       "depends_on": [
         "TASK-BAL-081"
       ],
@@ -6495,14 +6516,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-083",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13D Stone Endgame Mathematical Deltaを確定する",
       "status": "Blocked",
-      "execution_order": 264,
+      "execution_order": 267,
       "depends_on": [
         "TASK-BAL-082"
       ],
@@ -6515,14 +6536,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-084",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P14 Level1→Endgame Full Mathematical BaselineをFreezeする",
       "status": "Blocked",
-      "execution_order": 265,
+      "execution_order": 268,
       "depends_on": [
         "TASK-BAL-083"
       ],
@@ -6535,14 +6556,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-085",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P15 Human Experience Target Band / Difficulty / Tempo Tuningを確定する",
       "status": "Blocked",
-      "execution_order": 266,
+      "execution_order": 269,
       "depends_on": [
         "TASK-BAL-084"
       ],
@@ -6555,14 +6576,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-086",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P15-P Presentation TuningをGameplay非影響条件で確定する",
       "status": "Blocked",
-      "execution_order": 267,
+      "execution_order": 270,
       "depends_on": [
         "TASK-BAL-085"
       ],
@@ -6575,14 +6596,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-087",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P16 Cross-System Holdout / Human Real-device / Promotion Readiness",
       "status": "Blocked",
-      "execution_order": 268,
+      "execution_order": 271,
       "depends_on": [
         "TASK-BAL-086"
       ],
@@ -6595,7 +6616,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-071-CORR-001",
@@ -6636,9 +6657,9 @@
         "by": "Human",
         "at": "2026-08-24T20:15:00+09:00"
       },
-      "result_scope": "PASS. Fresh GKS-B772 verified; 350 Job×Level rows / 700 loadout variants frozen. dual_wield=2 independent strikes; two_hand=1 strike; weapon_shield=1 strike. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1. Source/Game Data/Current active changes=0.",
+      "result_scope": "PASS. Fresh GKS-B772 verified; 350 Job×Level rows / 700 loadout variants frozen. dual_wield=2 independent strikes; two_hand=1 strike; weapon_shield=1 strike. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1. Source/Game Data/Current active changes=0. PARTIALLY_INVALIDATED_BY_TASK-BAL-071-FIX-002: loadout/equipability and non-shield Job rows remain useful, but weapon_shield Basic Attack strike profile for Knight over-counted shield Attack/Accuracy/Critical. Do not use Knight offensive profile downstream; refresh after GKS-B773 Current verification.",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T21:09:03+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00"
     },
     {
       "id": "TASK-BAL-071-FIX-001",
@@ -6680,8 +6701,8 @@
         "at": "2026-08-24T21:35:00+09:00"
       },
       "created_at": "2026-08-24T21:35:00+09:00",
-      "updated_at": "2026-08-24T21:35:00+09:00",
-      "result_scope": "PASS. 7 Jobs×Lv1..50=350 Primary Bare Player rows converted to pre-Skill basic-attack throughput using Current Game Runtime discrete action gauge: gauge max=100; action_interval_ticks=ceil(100/AGI). Canonical metric=DPT because no fixed authoritative wall-clock seconds-per-Tick exists. Neutral HP-sizing target uses Evasion=0, Damage Resistance=0, Shield=0 so HP and Defense stay separate. Dual-wield=2 independent strikes/action; weapon+shield and two-hand=1 strike/action. Critical multiplier excluded because criticalDamage is not frozen. Current starter party is 6 Jobs (JOB-0001..0006); 10/25/50/100 Tick cumulative basic damage retained as Monster HP reference only, not final Difficulty/TTK. Canonical retained reference=DEV-V9-BALANCE-001_TASK-BAL-073A_DPS-HP-REFERENCE.zip sha256=76e6e11ec17ca73cfb7a970b402837ae4996fd166db149fbbb2bc7bfa36fc824. Source/Game Data/Current active changes=0."
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "PASS. 7 Jobs×Lv1..50=350 Primary Bare Player rows converted to pre-Skill basic-attack throughput using Current Game Runtime discrete action gauge: gauge max=100; action_interval_ticks=ceil(100/AGI). Canonical metric=DPT because no fixed authoritative wall-clock seconds-per-Tick exists. Neutral HP-sizing target uses Evasion=0, Damage Resistance=0, Shield=0 so HP and Defense stay separate. Dual-wield=2 independent strikes/action; weapon+shield and two-hand=1 strike/action. Critical multiplier excluded because criticalDamage is not frozen. Current starter party is 6 Jobs (JOB-0001..0006); 10/25/50/100 Tick cumulative basic damage retained as Monster HP reference only, not final Difficulty/TTK. Canonical retained reference=DEV-V9-BALANCE-001_TASK-BAL-073A_DPS-HP-REFERENCE.zip sha256=76e6e11ec17ca73cfb7a970b402837ae4996fd166db149fbbb2bc7bfa36fc824. Source/Game Data/Current active changes=0. INVALIDATED_FOR_DOWNSTREAM_BY_TASK-BAL-071-FIX-002: Level×Job DPT and starter-party HP guide over-counted Knight shield offensive contribution. Do not use the prior DPS/HP artifact as balance authority."
     },
     {
       "id": "TASK-BAL-073B",
@@ -6701,8 +6722,71 @@
         "at": "2026-08-24T21:47:00+09:00"
       },
       "created_at": "2026-08-24T21:47:00+09:00",
-      "updated_at": "2026-08-24T21:47:00+09:00",
-      "result_scope": "PASS. TASK-BAL-073A starter 6-Job pre-Skill basic-attack output was converted into 10/25/50/100-Tick total enemy HP pools for Lv1..50. Equal-HP enemy-count sensitivity 1..6 uses ceil(pool/count) as the integer per-monster guide. All 7 Jobs retain solo HP references so Job throughput spread is visible. No Difficulty/Normal/Elite/Boss/TTK target was frozen; HP remains separated from Defense. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073B_MONSTER-HP-SIZING-REFERENCE.zip sha256=1ece79f3f8946d819e395d9a14518ca34ed8c11d8405dad74ba0d87665d5c05e. Source/Game Data/Current active changes=0."
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "PASS. TASK-BAL-073A starter 6-Job pre-Skill basic-attack output was converted into 10/25/50/100-Tick total enemy HP pools for Lv1..50. Equal-HP enemy-count sensitivity 1..6 uses ceil(pool/count) as the integer per-monster guide. All 7 Jobs retain solo HP references so Job throughput spread is visible. No Difficulty/Normal/Elite/Boss/TTK target was frozen; HP remains separated from Defense. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073B_MONSTER-HP-SIZING-REFERENCE.zip sha256=1ece79f3f8946d819e395d9a14518ca34ed8c11d8405dad74ba0d87665d5c05e. Source/Game Data/Current active changes=0. INVALIDATED_FOR_DOWNSTREAM_BY_TASK-BAL-071-FIX-002: Monster HP sizing matrix inherits the invalid Knight DPT from TASK-BAL-073A. Do not use it as balance authority; regenerate from real-device physical DPS results."
+    },
+    {
+      "id": "TASK-BAL-071-FIX-002",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "R5-P4 weapon_shield Basic Attack offensive contributionを攻撃武器だけへ分離する",
+      "status": "Done",
+      "execution_order": 255,
+      "depends_on": [
+        "TASK-BAL-071-FIX-001"
+      ],
+      "acceptance_criteria": "- Humanの「盾は攻撃回数0、命中/Criticalは攻撃武器strike単位」指示を開始承認/仕様Authorityとする。\n- SOURCE_UPDATE。BaselineはFresh GKS-B772 / GA-B486.211。\n- weapon_shieldは1strike、非盾側武器だけのAttack/Accuracy/base_critical_rateをBasic Attackへ使用する。盾Contributionを攻撃strikeへ合算しない。\n- dual_wieldは既存どおり各手独立2strike、two_handは1strike/STR×2 Requirement only。\n- Studio Formal BattleとGame Runtimeを同じsemanticsへ揃える。盾の防御Balance numeric、Equipment Master、Formula topology/order/roundingは変更しない。\n- Game Data/Current active変更0、削除0。Build tokenとmachine-derived critical runtime hash同期以外のTest/Gate変更を行わない。\n- Target functional、Quick、SOURCE_UPDATE Accept、applied-state FullをPASSする。Human apply/fresh source確認前に実機DPS package生成へ進まない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T22:08:00+09:00"
+      },
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "TARGET_SOURCE_COMPLETE_NOT_YET_CURRENT. GKS-B773 isolates weapon_shield Basic Attack offensive fields to the non-shield attacking weapon only; shield attack_count=0 and no shield Attack/Accuracy/Critical is inherited by the strike. Dual-wield/two-hand semantics unchanged. External functional 20 checks PASS; target Quick 11/11 PASS; SOURCE_UPDATE Accept 13/13 PASS; applied-state Full 26/26 PASS; warnings=0; timeouts=0; deletions=0; Game Data changes=0. Artifact=DEV-V9-BALANCE-001_TASK-BAL-071-FIX-002_GKS-B773_STUDIO-UPDATE.zip sha256=35a183b287aff908bf3d21a851ba7b9cae0391f1518bbf3a86daab63942a5fcc; baseline manifest=2b673a693cd3befd50a1c1389f75b0c268016358366e0b3f4dddb12339886857; baseline tree=f747ad462bf3137372d50a01b94aea683728ec4385ecd67de8f05c900b779a24; target manifest=44ae31643fae270b0fc1c36697919f6cb0b0d3252307097b3a44726967eb989f; target tree=d2132ced32c210940c4909eaffea9b3830d2c7b7845827579b5e371ad0e8eed4. Human Apply/Fresh Source verification pending."
+    },
+    {
+      "id": "TASK-BAL-073C",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "R5-P6C 物理5職 Lv1..50 Real-device DPS入力Packageを生成する",
+      "status": "Blocked",
+      "execution_order": 256,
+      "depends_on": [
+        "TASK-BAL-071-FIX-002"
+      ],
+      "acceptance_criteria": "- GKS-B773をHumanがStudioへ適用し、Fresh complete SourceでFIX-002一致確認後だけ開始する。\n- Human開始承認を得る。\n- 対象5職: 剣士=大剣two_hand、騎士=片手剣+盾weapon_shield(盾attack_count=0)、盗賊=短剣×2 dual_wield、狩人=弓、冒険家=片手剣。\n- Lv1..50を対象にし、Skill/Passive/MOD/特殊AIを外したBasic Attack測定入力を作る。\n- dual_wieldは2strike各手Hit/Critical独立。weapon_shieldは攻撃武器1strikeのみ。\n- 各Level×Job条件は最低30試行を取得できる実機Batchへし、必要ならLv1-10/11-20/21-30/31-40/41-50の5Packageへ分割する。\n- AIは入力Package生成まで。Human実機実行を代替しない。Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "PLANNED; BLOCKED until Human applies GKS-B773 and Fresh Source verification passes."
+    },
+    {
+      "id": "TASK-BAL-073D",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "R5-P6D Human実機物理DPS結果を解析しMonster HP Referenceを再確定する",
+      "status": "Blocked",
+      "execution_order": 257,
+      "depends_on": [
+        "TASK-BAL-073C"
+      ],
+      "acceptance_criteria": "- Human実機Result ZIPを正式Evidenceとして使用し、各Level×Job最低30試行の成立を確認する。\n- 物理5職Lv1..50のDamage/Tick、Damage/Action、Hit率、Crit率、strike数、分散を集計する。\n- weapon_shieldの盾がDamage/Hit/Crit strikeへ寄与していないこと、dual_wieldが独立2strikeであることをtraceで確認する。\n- stale TASK-BAL-071-CORR-002 Knight offense / TASK-BAL-072 Knight Monster Core / TASK-BAL-073A/B DPS・HP referenceを必要範囲で再計算し、旧ArtifactをSuperseded扱いにする。\n- Monster HPの数学Referenceを再生成するが、Normal/Elite/Boss最終Difficulty/TTKは確定しない。\n- Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "result_scope": "PLANNED; requires Human real-device output from TASK-BAL-073C."
     }
   ],
   "checks": [
@@ -9830,6 +9914,75 @@
       "blocking": false,
       "created_at": "2026-08-24T21:47:00+09:00",
       "updated_at": "2026-08-24T21:47:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK071-FIX002-TARGET-001",
+      "title": "GKS-B773 weapon_shield offensive isolation target gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-FIX-002",
+      "status": "Passed",
+      "result": "PASS target. weapon_shield produces one Basic Attack profile from the non-shield weapon only; shield Attack/Accuracy/Critical excluded. dual_wield and two_hand semantics unchanged. Functional 20 checks PASS; Quick 11/11; SOURCE_UPDATE Accept 13/13; applied-state Full 26/26; warnings/timeouts 0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-071-FIX-002_GKS-B773_STUDIO-UPDATE.zip sha256=35a183b287aff908bf3d21a851ba7b9cae0391f1518bbf3a86daab63942a5fcc; target package_manifest sha256=44ae31643fae270b0fc1c36697919f6cb0b0d3252307097b3a44726967eb989f; target source_tree sha256=d2132ced32c210940c4909eaffea9b3830d2c7b7845827579b5e371ad0e8eed4",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T22:08:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T22:08:00+09:00",
+        "reason": "Human explicitly defined shield attack_count=0 and per-strike Accuracy/Critical semantics.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK071-FIX002-FRESH-GKS-B773-001",
+      "title": "Human-applied GKS-B773 Fresh Source verification before real-device DPS package",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073C",
+      "status": "Failed",
+      "result": "BLOCKING until Human applies GKS-B773 Studio update and provides a fresh complete source whose build/manifest/changed implementation match the approved target. AI target validation is not a substitute for Human apply.",
+      "evidence": "target artifact DEV-V9-BALANCE-001_TASK-BAL-071-FIX-002_GKS-B773_STUDIO-UPDATE.zip sha256=35a183b287aff908bf3d21a851ba7b9cae0391f1518bbf3a86daab63942a5fcc",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T22:08:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073AB-WEAPON-SHIELD-OVERCOUNT-001",
+      "title": "Prior DPS/Monster HP reference invalidation by shield offensive over-count",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073D",
+      "status": "Failed",
+      "result": "BLOCKING downstream use of TASK-BAL-073A/073B. Knight weapon_shield Basic Attack incorrectly inherited shield Attack/Accuracy/Critical in GKS-B772-derived calculations; prior DPT and Monster HP sizing artifacts must be regenerated from corrected GKS-B773/Human real-device results.",
+      "evidence": "Human clarification 2026-08-24; GKS-B772 characterBasicAttackProfiles/formal Basic Attack profile used aggregate weapon_shield contribution.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T22:08:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00"
     }
   ],
   "workflow": {
@@ -10477,6 +10630,14 @@
       "task_id": "TASK-BAL-073B",
       "created_at": "2026-08-24T21:47:00+09:00",
       "updated_at": "2026-08-24T21:47:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK071-FIX002-001",
+      "title": "weapon_shield攻撃Contribution分離 GKS-B773 target完成",
+      "summary": "Human clarificationにより、盾attack_count=0かつHit/Criticalはstrike武器単位と確定。GKS-B773 targetでGame Runtime/Studio Formal Battleのweapon_shield Basic Attackを非盾武器1strikeへ修正。盾Attack/Accuracy/CriticalはBasic Attackへ合算しない。dual_wield/two_handは変更なし。functional 20 checks、Quick 11/11、Accept 13/13、applied Full 26/26 PASS。旧TASK-BAL-073A/073B DPS/HP referenceはdownstream無効化。Human Apply/Fresh Source後に物理5職Real-device Packageへ進む。削除/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-071-FIX-002",
+      "created_at": "2026-08-24T22:08:00+09:00",
+      "updated_at": "2026-08-24T22:08:00+09:00"
     }
   ],
   "authority": {
