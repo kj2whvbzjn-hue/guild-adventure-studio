@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T14:08:33.418Z"
+    "updated_at": "2026-08-24T14:29:41.392Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073C-CORR-002 Lv1-10 package binding corrected; Human real-device validation wait",
-    "goal": "Validate CORR-002 Lv1-10 package on Human GKS-B773 Studio. CORR-001 failed before job preparation because manifest formal data.snapshot_sha256 was set to a recomputed PRJ-GAS-V4 file hash instead of the Current Studio formal snapshot hash. Human Studio reported actual=7aee5b92...7566. CORR-002 changes only that manifest binding; battle inputs and the corrected EQP-* candidate references remain unchanged. Do not generate Lv11-50 corrections until Lv1-10 imports and reaches execution preparation with JOB_ERROR=0."
+    "theme": "TASK-BAL-073C Lv1-10 Human real-device PASS; corrected Lv11-50 packages ready",
+    "goal": "Human Lv1-10 result validates the corrected physical DPS package path: 50/50 jobs completed, 1500/1500 trials, error 0. Knight weapon_shield is one sword strike with shield attack_count=0; Thief dual_wield is two independent strikes. Run CORR-003 Lv11-20/21-30/31-40/41-50 packages on Human GKS-B773 Studio and export Result ZIPs. After all four Results arrive, TASK-BAL-073D will compile Lv1-50 measured physical DPT and Monster HP sizing reference. TASK-BAL-074 remains blocked."
   },
   "project_rules": [
     {
@@ -6775,7 +6775,7 @@
       "execution_order": 257,
       "depends_on": [
         "TASK-BAL-073C",
-        "TASK-BAL-073C-CORR-002"
+        "TASK-BAL-073C-CORR-003"
       ],
       "acceptance_criteria": "- Human実機Result ZIPを正式Evidenceとして使用し、各Level×Job最低30試行の成立を確認する。\n- 物理5職Lv1..50のDamage/Tick、Damage/Action、Hit率、Crit率、strike数、分散を集計する。\n- weapon_shieldの盾がDamage/Hit/Crit strikeへ寄与していないこと、dual_wieldが独立2strikeであることをtraceで確認する。\n- stale TASK-BAL-071-CORR-002 Knight offense / TASK-BAL-072 Knight Monster Core / TASK-BAL-073A/B DPS・HP referenceを必要範囲で再計算し、旧ArtifactをSuperseded扱いにする。\n- Monster HPの数学Referenceを再生成するが、Normal/Elite/Boss最終Difficulty/TTKは確定しない。\n- Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6787,7 +6787,7 @@
       },
       "created_at": "2026-08-24T22:08:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00",
-      "result_scope": "WAIT_HUMAN_REAL_DEVICE_RESULT. First validate CORR-002 Lv1-10 package: import must pass Formal binding and job preparation must reach JOB_ERROR=0. Only after that, regenerate the same CORR-002 binding/reference corrections for Lv11-50 and collect all Result ZIPs."
+      "result_scope": "WAIT_HUMAN_REAL_DEVICE_RESULT: Lv1-10 PASS received; waiting Lv11-20, Lv21-30, Lv31-40, Lv41-50 CORR-003 Result ZIPs before measured Lv1-50 physical DPT compilation."
     },
     {
       "id": "TASK-BAL-073C-CORR-001",
@@ -6830,6 +6830,27 @@
       "created_at": "2026-08-24T23:07:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00",
       "result_scope": "PASS PACKAGE-BINDING CORRECTION. Human GKS-B773 Studio import reported formal data.snapshot_sha256 mismatch: package expected=106c7edbc7f1593b7dbedf24dea9a5c431edee9bb63a338f16de6a0d0e028f76, Current Studio actual=7aee5b92aeda379261ffd766378c810f3e597ef8c818cb03ed9b33ee52b57566. Root cause: CORR-001 used a recomputed uploaded PRJ-GAS-V4 JSON content hash as the formal snapshot binding, but Studio validates against its stored Current formal snapshot hash. CORR-002 patches only manifest.formal.bindings.data.snapshot_sha256 to 7aee5b92aeda379261ffd766378c810f3e597ef8c818cb03ed9b33ee52b57566; all battle candidates, corrected EQP-* candidate IDs, rosters, tests, AI and execution plan remain unchanged. Artifact=DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-002_PHYS-DPS_LV01-10.zip sha256=88837574e7d802a98fde4ce6deabc5cdb43fbc09c67c909f47d891b697e3fe77. Source/Game Data/Current active changes=0."
+    },
+    {
+      "id": "TASK-BAL-073C-CORR-003",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Lv1-10実機PASSを受けてPhysical DPS修正版をLv11-50へ展開する",
+      "status": "Done",
+      "execution_order": 257,
+      "depends_on": [
+        "TASK-BAL-073C-CORR-002"
+      ],
+      "acceptance_criteria": "- Human Result ZIPでLv1-10 50/50 Job、1500/1500 trial、error 0を確認する。\n- 騎士weapon_shieldは剣1strike/盾0strike、盗賊dual_wieldは独立2strikeをFormal Evidenceで確認する。\n- 同じEquipment candidate_id=EQP-*修正とCurrent Formal data snapshot bindingをLv11-50へ展開する。\n- 戦闘条件・30 trial・200 Tick・Neutral dummy・Skill/Passive/MODなしを維持する。\n- Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T23:07:00+09:00"
+      },
+      "created_at": "2026-08-24T23:07:00+09:00",
+      "updated_at": "2026-08-24T23:07:00+09:00",
+      "result_scope": "PASS. Human Result=GK_BattleVerification_Result_BVP-BAL073C-CORR001-PHYS-DPS-L01-10_BEX-1787580453353.zip sha256=a92a77393df87fa6de44fdcdfb8514b68d609a6326dbdd23d5919d641db3efc7; execution completed jobs=50/50, trials=1500/1500, errors=0, partial=false. Formal evidence confirms Knight weapon_shield one attacking sword profile and one hit/action; Thief dual_wield two weapon profiles and two hits/action. Generated corrected remaining four packages with exact EQP-* candidate IDs and Current Studio formal data snapshot binding. DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV11-20.zip sha256=444a6ca88c2dfe2ec5970c84d134f028ef8bc13074dfaf2804068c254809e5f3; DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV21-30.zip sha256=7ad8b2ce0d00f0ad3c5dd0357c846372edfcf017323ed7d49094638649a9c459; DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV31-40.zip sha256=3cb47440e0b2e143fd1d8788a6f9b27c44ec6b7b32f5b2cc71b1fd8a0268cb88; DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV41-50.zip sha256=6c744bfb87224ea5ea17a7c8339cc04edf07199c9959ea7e344ac597ff3821c4. Source/Game Data/Current active changes=0."
     }
   ],
   "checks": [
@@ -10120,6 +10141,29 @@
       "blocking": false,
       "created_at": "2026-08-24T23:07:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073C-LV01-10-HUMAN-RUNTIME-001",
+      "title": "Physical DPS Lv1-10 Human real-device validation",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073C-CORR-003",
+      "status": "Passed",
+      "result": "PASS. Human GKS-B773 Result completed 50/50 jobs, 1500/1500 trials, failed=0, error_count=0, partial=false. Formal-only=true, legacy fallback=false. Knight shield does not create an attack strike; Thief dual-wield executes two strikes/action.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL073C-CORR001-PHYS-DPS-L01-10_BEX-1787580453353.zip sha256=a92a77393df87fa6de44fdcdfb8514b68d609a6326dbdd23d5919d641db3efc7",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T23:07:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T23:07:00+09:00",
+        "reason": "Human supplied completed real-device Result ZIP.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T23:07:00+09:00",
+      "updated_at": "2026-08-24T23:07:00+09:00"
     }
   ],
   "workflow": {
@@ -10797,6 +10841,14 @@
       "title": "Physical DPS Lv1-10 package Formal data binding corrected",
       "summary": "Human GKS-B773 Studio import rejected CORR-001 before execution because data.snapshot_sha256 expected 106c7edb... did not match Current Studio actual 7aee5b92... . CORR-002 changes only the package formal data binding to the Studio-reported actual value. Battle conditions and Equipment candidate reference fix are unchanged. Source/Game Data/Current active changes=0.",
       "task_id": "TASK-BAL-073C-CORR-002",
+      "created_at": "2026-08-24T23:07:00+09:00",
+      "updated_at": "2026-08-24T23:07:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073C-CORR003-001",
+      "title": "Physical DPS Lv1-10実機PASS・Lv11-50修正版展開",
+      "summary": "Human GKS-B773実機でLv1-10の50 Job/1500 trialがerror 0で完走。盾0strike/盗賊2strikeのFormal Evidenceを確認し、同一修正をLv11-50の4 Packageへ展開。Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-073C-CORR-003",
       "created_at": "2026-08-24T23:07:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00"
     }
