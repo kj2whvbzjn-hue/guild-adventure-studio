@@ -8,6 +8,8 @@
   const REQUIREMENT_FIELDS=Object.freeze(['required_str','required_dex','required_int','required_vit','required_mnd','required_agi']);
   const MOD_FIELDS=Object.freeze(['id','category','tags','effect_type','target','operation','parameters','balance_key','enabled','schema_version']);
   const PASSIVE_STATS=Object.freeze(['STR','VIT','AGI','DEX','INT','MND','LUK']);
+  const PASSIVE_COMBAT_CAPABILITIES=Object.freeze(['DUAL_WIELD']);
+  const PASSIVE_COMBAT_CAPABILITY_OWNER=Object.freeze({DUAL_WIELD:'PAS-DUAL-WIELD-001'});
   const NUMERIC_OPERATIONS=Object.freeze(['RELATIVE_PERCENT','FLAT_ADD','ADDITIVE_POINT','SUBTRACTIVE_POINT']);
   const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion',CRITICAL_RATE:'base_critical_rate'});
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
@@ -104,13 +106,15 @@
     for(const key of ['level','passive_level','plv','exp','experience'])if(Object.prototype.hasOwnProperty.call(rawParams,key))throw new Error(`Passive ${out.id}は自身の成長fieldを持てません: params.${key}`);
     out.params.ability_conditions=checkedConditions;
     out.params.mod_ids=strings(out.params.mod_ids,'passive.params.mod_ids');out.params.effect_ids=strings(out.params.effect_ids,'passive.params.effect_ids');
+    out.params.combat_capabilities=strings(out.params.combat_capabilities,'passive.params.combat_capabilities').map(x=>x.toUpperCase());
+    for(const capability of out.params.combat_capabilities){if(!PASSIVE_COMBAT_CAPABILITIES.includes(capability))throw new Error(`Passive ${out.id}のcombat capabilityはCurrent未対応です: ${capability}`);const owner=PASSIVE_COMBAT_CAPABILITY_OWNER[capability];if(owner&&out.id!==owner)throw new Error(`Combat capability ${capability}は${owner}だけが所有できます: ${out.id}`);}
     const tagIds=options.tagIds instanceof Set?options.tagIds:null;if(tagIds)for(const tag of out.tags)if(!tagIds.has(tag))throw new Error(`Passive ${out.id}が未登録Tagを参照しています: ${tag}`);
     return out;
   }
   function resolvePassiveContribution(record,modCandidatesById={}){
     const checked=validateFormalPassive(record),modifiers=checked.params.mod_ids.map(id=>{const data=modCandidatesById instanceof Map?modCandidatesById.get(id):modCandidatesById[id];if(!data)throw new Error(`Passive ${checked.id}が参照するMOD Candidateがありません: ${id}`);return validateModCandidate(data)});
-    return {passive_id:checked.id,tags:checked.tags.slice(),ability_conditions:clone(checked.params.ability_conditions),modifier_ids:checked.params.mod_ids.slice(),modifiers,effect_ids:checked.params.effect_ids.slice()};
+    return {passive_id:checked.id,tags:checked.tags.slice(),ability_conditions:clone(checked.params.ability_conditions),modifier_ids:checked.params.mod_ids.slice(),modifiers,effect_ids:checked.params.effect_ids.slice(),combat_capabilities:checked.params.combat_capabilities.slice()};
   }
   function sumEquipmentContributions(rows){const total=Object.fromEntries(EQUIPMENT_FIELDS.map(k=>[k,0]));for(const row of rows||[])for(const k of EQUIPMENT_FIELDS)total[k]+=Number(row?.modified?.[k])||0;return total}
-  return Object.freeze({EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
+  return Object.freeze({EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,PASSIVE_COMBAT_CAPABILITY_OWNER,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
 });

@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B773</title>
+<title>GK Studio GKS-B774</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -179,7 +179,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B773 Story nested Data Exchange + scenario export wording */
+/* GKS-B774 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -239,7 +239,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B773: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B774: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -440,7 +440,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B773: Studio home-aware common header / navigation */
+/* GKS-B774: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -460,6 +460,7 @@ updateDeployDeleteControl();
   <script src="../assets/shared/js/adventure-story-system.js?v=11"></script>
   <script src="../assets/shared/js/battle-package-formal-envelope.js?v=1"></script>
   <script src="../assets/shared/js/formal-contribution-resolver.js?v=1"></script>
+  <script src="../assets/shared/js/combat-capability-runtime.js?v=1"></script>
   <script src="./adventure-entity-json-import.js?v=588"></script>
 </head>
 <body>
@@ -470,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B773</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B774</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B773</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B774</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2473,11 +2474,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=773"></script>
+<script src="./layer-controller.js?v=774"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B773';
+const DISTRIBUTION_BUILD='GKS-B774';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -6228,6 +6229,10 @@ function formalBattleAbilityStats(u){
 function formalBattlePassiveActive(passive,abilityStats){
  return (passive?.ability_conditions||[]).every(c=>Number(abilityStats?.[String(c.stat||'').toUpperCase()]||0)>=Number(c.min));
 }
+function formalBattleActiveCombatCapabilities(formal,abilityStats){
+ if(!window.GKSCombatCapabilityRuntime)throw Object.assign(new Error('Combat Capability Runtimeを読み込めません。'),{code:'BATTLE_COMBAT_CAPABILITY_RUNTIME_MISSING'});
+ return new Set(window.GKSCombatCapabilityRuntime.activeCapabilitiesFromFormalPassives(formal?.passives||[],p=>formalBattlePassiveActive(p,abilityStats)));
+}
 function formalBattleModifierBoxAdd(box,target,operation,value){
  if(!box[target])box[target]={RELATIVE_PERCENT:0,FLAT_ADD:0,ADDITIVE_POINT:0,SUBTRACTIVE_POINT:0};
  if(!(operation in box[target]))throw Object.assign(new Error(`Formal runtime MOD operation ${operation}は未対応です。`),{code:'BATTLE_FORMAL_MOD_OPERATION_UNSUPPORTED',target,operation});
@@ -6256,16 +6261,17 @@ function formalBattleApplyModifierTarget(base,target,modifierBoxes){
  }
  return value;
 }
-function formalBattleWeaponLayout(u){
+function formalBattleWeaponLayout(u,activeCapabilities=new Set()){
  const raw=u?.weapon_layout;if(raw==null)return null;if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Object.assign(new Error('Formal unit weapon_layoutはobjectが必要です。'),{code:'BATTLE_FORMAL_WEAPON_LAYOUT_INVALID'});
  const style=String(raw.style||'').trim(),allowed=new Set(['single','dual_wield','two_hand','weapon_shield']);if(!allowed.has(style))throw Object.assign(new Error(`Formal unit weapon_layout.styleが不正です: ${style||'(empty)'}`),{code:'BATTLE_FORMAL_WEAPON_STYLE_INVALID',style});
  const weapon1Id=raw.weapon1_id==null?null:String(raw.weapon1_id),weapon2Id=raw.weapon2_id==null?null:String(raw.weapon2_id);
  if(style==='dual_wield'&&(!weapon1Id||!weapon2Id))throw Object.assign(new Error('dual_wieldはweapon1_id / weapon2_idの2本が必要です。'),{code:'BATTLE_FORMAL_DUAL_WIELD_WEAPONS_REQUIRED'});
+ if(style==='dual_wield'&&!activeCapabilities.has('DUAL_WIELD'))throw Object.assign(new Error('dual_wieldにはDUAL_WIELD capabilityを持つ有効Passiveが必要です。'),{code:'BATTLE_FORMAL_DUAL_WIELD_PASSIVE_REQUIRED',required_capability:'DUAL_WIELD'});
  if(style==='two_hand'&&!weapon1Id)throw Object.assign(new Error('two_handはweapon1_idが必要です。'),{code:'BATTLE_FORMAL_TWO_HAND_WEAPON_REQUIRED'});
  return{style,weapon1Id,weapon2Id};
 }
-function formalBattleWeaponAttackProfiles(u,loadout,runtimeMods){
- const layout=formalBattleWeaponLayout(u);if(!layout||!['dual_wield','weapon_shield'].includes(layout.style))return null;
+function formalBattleWeaponAttackProfiles(u,loadout,runtimeMods,activeCapabilities){
+ const layout=formalBattleWeaponLayout(u,activeCapabilities);if(!layout||!['dual_wield','weapon_shield'].includes(layout.style))return null;
  const rows=Array.isArray(loadout?.formal?.equipment)?loadout.formal.equipment:[],used=new Set(),take=id=>{for(let i=0;i<rows.length;i++){if(used.has(i))continue;if(String(rows[i]?.equipment_id||'')===String(id)){used.add(i);return rows[i];}}return null;},hand1=take(layout.weapon1Id),hand2=take(layout.weapon2Id);
  if(!hand1||!hand2)throw Object.assign(new Error(`${layout.style}の武器がequipment_idsへ必要数含まれていません: ${layout.weapon1Id} / ${layout.weapon2Id}`),{code:layout.style==='dual_wield'?'BATTLE_FORMAL_DUAL_WIELD_EQUIPMENT_BINDING_MISMATCH':'BATTLE_FORMAL_WEAPON_SHIELD_EQUIPMENT_BINDING_MISMATCH'});
  const weaponRows=[[hand1,layout.weapon1Id,'weapon1'],[hand2,layout.weapon2Id,'weapon2']],attackRows=layout.style==='dual_wield'?weaponRows:weaponRows.filter(([hand])=>String(hand?.base_item_type||'')!=='盾');
@@ -6303,7 +6309,7 @@ function normalizeBattleUnits(rows,side){
    const accuracyBase=cfg.accuracySource==='equipment'?(forceFormulaAccuracy?cfg.equipmentAccuracy:(equipmentAccuracy||explicitAccuracy||cfg.equipmentAccuracy)):(forceFormulaAccuracy?cfg.characterAccuracy:(explicitAccuracy??cfg.characterAccuracy)+equipmentAccuracy);
    accuracy=Math.max(0,Math.min(100,accuracyBase+str*cfg.strAccuracyCoefficient));evasion=Math.max(0,Number(u.evasion)||0);crit=Math.max(0,Math.min(100,cfg.baseCrit+(Number(b.crit)||0)+(Number(u.crit_bonus)||0)+luk*cfg.lukCritCoefficient));
   }
-  const baseStatusResist=Math.max(0,(Number(u.status_resist??u.statusResistance)||0)+b.status_resist),statusResist=formalMode?Math.max(0,Math.min(75,formalBattleApplyModifierTarget(baseStatusResist,'STATUS_RESIST',runtimeMods.boxes))):Math.max(0,Math.min(75,baseStatusResist)),weaponLayout=formalMode?formalBattleWeaponLayout(u):null,formalBasicAttackProfiles=formalMode?formalBattleWeaponAttackProfiles(u,loadout,runtimeMods):null;
+  const baseStatusResist=Math.max(0,(Number(u.status_resist??u.statusResistance)||0)+b.status_resist),statusResist=formalMode?Math.max(0,Math.min(75,formalBattleApplyModifierTarget(baseStatusResist,'STATUS_RESIST',runtimeMods.boxes))):Math.max(0,Math.min(75,baseStatusResist)),activeCombatCapabilities=formalMode?formalBattleActiveCombatCapabilities(loadout.formal,abilityStats):new Set(),weaponLayout=formalMode?formalBattleWeaponLayout(u,activeCombatCapabilities):null,formalBasicAttackProfiles=formalMode?formalBattleWeaponAttackProfiles(u,loadout,runtimeMods,activeCombatCapabilities):null;
   return{id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),str,luk,abilityStats,attack:Math.max(0,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy,evasion,crit,weaponStyle:weaponLayout?.style||'single',formalWeaponLayout:weaponLayout?structuredClone(weaponLayout):null,formalBasicAttackProfiles,criticalDamage:Math.max(0,Math.min(700,formalMode?formalBattleApplyModifierTarget(Number(u.critical_damage??u.criticalDamage)||0,'CRITICAL_DAMAGE',runtimeMods.boxes):(Number(u.critical_damage??u.criticalDamage)||0))),magicIncreaseRate:Math.max(0,Number.isFinite(Number(u.magic_increase_rate??u.magicIncreaseRate))?Number(u.magic_increase_rate??u.magicIncreaseRate):1),magicWeaponBonus:Number(b.magic_weapon_bonus)||0,damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist,skills,ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,equipmentContribution:formalMode?structuredClone(loadout.formal?.equipment_total||{}):null,passiveContributions:formalMode?structuredClone(loadout.formal?.passives||[]):[],formalModifierChannels:formalMode?structuredClone([...(loadout.formal?.equipment_runtime_modifiers||[]),...(loadout.formal?.direct_modifiers||[])]):[],formalModifierBoxes:formalMode?structuredClone(runtimeMods.boxes):null,formalUnresolvedModifierTargets:formalMode?structuredClone(runtimeMods.unresolved):[],statuses:[],cooldowns:{},ag:0,actions:0,alive:true,formalMode,formalSnapshot:formalMode?structuredClone(u.__formal_snapshot):null,formalAiRuntime:formalAi?structuredClone(formalAi.runtime):null,formalAiBinding:formalAi?structuredClone(formalAi.binding):null,formalAiSkillLoadoutIds:formalAi?structuredClone(formalAi.skillLoadoutIds):[],formalAiProgramCandidate:formalAi?structuredClone(formalAi.program_candidate):null,formalAiMasterSnapshotCandidate:formalAi?structuredClone(formalAi.master_snapshot_candidate):null,formalAiLastTrace:null,formalMonsterOwner:formalMonsterOwner?structuredClone(formalMonsterOwner):null,formalCasting:null,formalStatusEffects:[],formalDotStacks:[],formalModifierStacks:[],formalShields:[],formalSequence:0,formalEvidenceStart:formalMode?{hp,mp}:null,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0};
  });
 }
@@ -10010,7 +10016,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','773');
+    url.searchParams.set('appv','774');
     location.replace(url.toString());
    }
  }
@@ -10019,7 +10025,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=773',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=774',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10038,7 +10044,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','773');
+    url.searchParams.set('appv','774');
     location.replace(url.toString());
    }
   });

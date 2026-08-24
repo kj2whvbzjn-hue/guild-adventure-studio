@@ -7,7 +7,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(Program,Layout){
   'use strict';
   if(!Program||!Layout)throw new Error('Formal AI save dependencies are required');
-  const SAVE_VERSION=3;
+  const SAVE_VERSION=4;
   const PRESET_ID_PATTERN=/^AIPR-([0-9]+)$/;
   const SAVE_KEYS=new Set(['saveVersion','schemaRevision','gameVersion','createdAt','updatedAt','characters','aiPrograms','aiLayouts','aiPresets','partyIds','selectedQuestId','inventory','guild','flags','quest_progress','quest_resources','adventure','gameSettings','tutorialProgress']);
   const SAVE_REQUIRED=Object.freeze(['saveVersion','schemaRevision','gameVersion','createdAt','updatedAt','characters','aiPrograms','aiLayouts','aiPresets','partyIds','selectedQuestId','inventory','guild','flags','quest_progress','quest_resources','adventure']);

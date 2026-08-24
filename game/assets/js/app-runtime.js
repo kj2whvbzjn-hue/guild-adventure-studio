@@ -79,8 +79,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)settleFixe
 updateFixedCanvasScale();
 requestAnimationFrame(()=>requestAnimationFrame(()=>settleFixedCanvas(1000)));
 'use strict';
-const SAVE_KEY='guildAdventureV10.save.v3', SAVE_VERSION=3;
-const SAVE_LEGACY_KEYS=Object.freeze({2:'guildAdventureV10.save.v2'});
+const SAVE_KEY='guildAdventureV10.save.v4', SAVE_VERSION=4;
+const SAVE_LEGACY_KEYS=Object.freeze({3:'guildAdventureV10.save.v3',2:'guildAdventureV10.save.v2'});
 const SAVE_TEMP_KEY=`${SAVE_KEY}.tmp`, SAVE_BACKUP_KEY=`${SAVE_KEY}.backup`, SAVE_MIGRATION_BACKUP_KEY=`${SAVE_KEY}.migration-backup`, SAVE_INTEGRITY_ALGORITHM='FNV1A32';
 const STATS=['STR','VIT','AGI','DEX','INT','MND','LUK'];
 const FORMAL_JOB_EXPORT_URL=window.GA_PROJECT_CONFIG?.jobExportUrl||'../Export/master/jobs.json';
@@ -165,12 +165,16 @@ function equipmentDefinition(ref){return formalEquipmentCatalog.get(String(ref||
 function equipmentDisplayName(ref){return equipmentDefinition(ref)?.name||String(ref||'')}
 function emptyCharacterEquipmentState(){return Object.fromEntries(CHARACTER_EQUIPMENT_SLOTS.map(slot=>[slot,null]))}
 const CHARACTER_WEAPON_STYLES=Object.freeze(['single','dual_wield','two_hand','weapon_shield']);
+const DUAL_WIELD_PASSIVE_ID='PAS-DUAL-WIELD-001';
+function characterCombatCapabilities(character){if(!window.GKSCombatCapabilityRuntime)throw new Error('Combat Capability Runtimeを読み込めません。');return new Set(window.GKSCombatCapabilityRuntime.capabilitiesFromPassiveIds(character?.passiveIds||[]))}
+function characterHasCombatCapability(character,capability){return characterCombatCapabilities(character).has(String(capability||'').toUpperCase())}
+function characterCanDualWield(character){return characterHasCombatCapability(character,'DUAL_WIELD')}
 function equipmentBaseItemType(equipment){return String(equipment?.generation?.base_item_type??equipment?.generation?.generation_input?.base_item_type??'').trim()}
 function equipmentIsShield(equipment){return equipmentBaseItemType(equipment)==='盾'}
 function inferCharacterWeaponStyle(character){
  const w1=String(character?.equipment?.weapon1||''),w2=String(character?.equipment?.weapon2||'');
  if(w1&&w2&&w1===w2)return'two_hand';
- if(w1&&w2){const e1=equipmentDefinition(w1),e2=equipmentDefinition(w2);return equipmentIsShield(e1)||equipmentIsShield(e2)?'weapon_shield':'dual_wield';}
+ if(w1&&w2){const e1=equipmentDefinition(w1),e2=equipmentDefinition(w2);if(equipmentIsShield(e1)||equipmentIsShield(e2))return'weapon_shield';if(!characterCanDualWield(character))throw Object.assign(new Error(`${character?.name||character?.id||'キャラクター'}は二刀流パッシブを所持していません。`),{code:'DUAL_WIELD_PASSIVE_REQUIRED',passive_id:DUAL_WIELD_PASSIVE_ID});return'dual_wield';}
  return'single';
 }
 function characterWeaponStyle(character){const explicit=String(character?.weaponStyle||'').trim();return CHARACTER_WEAPON_STYLES.includes(explicit)?explicit:inferCharacterWeaponStyle(character)}
@@ -185,11 +189,12 @@ function normalizeCharacterEquipmentState(character){
  if(missing.length)throw new Error(`${character.name||character.id||'キャラクター'}の装備スロットが不足しています: ${missing.join(', ')}`);
  for(const slot of CHARACTER_EQUIPMENT_SLOTS){const value=source[slot];if(value!=null&&typeof value!=='string')throw new Error(`${character.name||character.id||'キャラクター'}の${slot}が不正です。`);}
  if(character.weaponStyle!=null&&!CHARACTER_WEAPON_STYLES.includes(String(character.weaponStyle)))throw new Error(`${character.name||character.id||'キャラクター'}のweaponStyleが不正です。`);
+ if(character.passiveIds!=null&&(!Array.isArray(character.passiveIds)||character.passiveIds.some(id=>!String(id||'').trim())))throw new Error(`${character.name||character.id||'キャラクター'}のpassiveIdsが不正です。`);
  character.equipment=Object.fromEntries(CHARACTER_EQUIPMENT_SLOTS.map(slot=>[slot,source[slot]||null]));
- if(character.weaponStyle!=null){const style=String(character.weaponStyle),w1=!!character.equipment.weapon1,w2=!!character.equipment.weapon2,count=Number(w1)+Number(w2);if(style==='single'&&count>1)throw new Error(`${character.name||character.id||'キャラクター'}のsingle weaponStyleに武器が2本あります。`);if(style==='dual_wield'&&count!==2)throw new Error(`${character.name||character.id||'キャラクター'}のdual_wieldは武器2本が必要です。`);if(style==='two_hand'&&count!==1)throw new Error(`${character.name||character.id||'キャラクター'}のtwo_handは武器1本を両手使用する状態が必要です。`);if(style==='weapon_shield'&&count!==2)throw new Error(`${character.name||character.id||'キャラクター'}のweapon_shieldは武器枠2件が必要です。`);}
+ if(character.weaponStyle!=null){const style=String(character.weaponStyle),w1=!!character.equipment.weapon1,w2=!!character.equipment.weapon2,count=Number(w1)+Number(w2);if(style==='single'&&count>1)throw new Error(`${character.name||character.id||'キャラクター'}のsingle weaponStyleに武器が2本あります。`);if(style==='dual_wield'&&!characterCanDualWield(character))throw Object.assign(new Error(`${character.name||character.id||'キャラクター'}のdual_wieldには二刀流パッシブが必要です。`),{code:'DUAL_WIELD_PASSIVE_REQUIRED',passive_id:DUAL_WIELD_PASSIVE_ID});if(style==='dual_wield'&&count!==2)throw new Error(`${character.name||character.id||'キャラクター'}のdual_wieldは武器2本が必要です。`);if(style==='two_hand'&&count!==1)throw new Error(`${character.name||character.id||'キャラクター'}のtwo_handは武器1本を両手使用する状態が必要です。`);if(style==='weapon_shield'&&count!==2)throw new Error(`${character.name||character.id||'キャラクター'}のweapon_shieldは武器枠2件が必要です。`);}
  return character;
 }
-function setCharacterWeaponStyle(character,style){if(!CHARACTER_WEAPON_STYLES.includes(style))throw new Error(`weaponStyleが不正です: ${style}`);character.weaponStyle=style;return style}
+function setCharacterWeaponStyle(character,style){if(!CHARACTER_WEAPON_STYLES.includes(style))throw new Error(`weaponStyleが不正です: ${style}`);if(style==='dual_wield'&&!characterCanDualWield(character))throw Object.assign(new Error(`${character.name||character.id||'キャラクター'}のdual_wieldには二刀流パッシブが必要です。`),{code:'DUAL_WIELD_PASSIVE_REQUIRED',passive_id:DUAL_WIELD_PASSIVE_ID});character.weaponStyle=style;return style}
 function twoHandedWeaponRef(character){normalizeCharacterEquipmentState(character);if(characterWeaponStyle(character)!=='two_hand')return null;const w1=String(character.equipment.weapon1||''),w2=String(character.equipment.weapon2||'');return w1||w2||null;}
 function equipmentRequirementCheck(character,equipment){
  if(!equipment)return{ok:false,reason:'EQUIPMENT_NOT_FOUND',missing:[]};if(!equipment.slot)return{ok:false,reason:'EQUIPMENT_SLOT_UNSUPPORTED',missing:[]};
@@ -221,7 +226,7 @@ function equipmentEquipTargets(character,equipment){
  if(equipment.slot!=='weapon')return[{value:`${id}|${equipment.slot}`,label:character.name,disabled:false,gate}];
  normalizeCharacterEquipmentState(character);
  if(gate.handsRequired===2)return[{value:`${id}|twohand`,label:`${character.name}（両手持ち / 武器1を使用）`,disabled:false,gate}];
- const twoHandedRef=twoHandedWeaponRef(character);return['weapon1','weapon2'].map(slot=>{const current=twoHandedRef||character.equipment[slot];return{value:`${id}|${slot}`,label:`${character.name} / ${weaponSlotLabel(slot)}${current?`（入替: ${equipmentDisplayName(current)}）`:''}`,disabled:false,gate}});
+ const twoHandedRef=twoHandedWeaponRef(character);return['weapon1','weapon2'].map(slot=>{const current=twoHandedRef||character.equipment[slot],otherSlot=slot==='weapon1'?'weapon2':'weapon1',otherRef=twoHandedRef?null:character.equipment[otherSlot],otherEquipment=equipmentDefinition(otherRef),requiresDual=!!otherRef&&!equipmentIsShield(equipment)&&!equipmentIsShield(otherEquipment),dualBlocked=requiresDual&&!characterCanDualWield(character);return{value:`${id}|${slot}`,label:`${character.name} / ${weaponSlotLabel(slot)}${current?`（入替: ${equipmentDisplayName(current)}）`:''}${dualBlocked?'（二刀流パッシブが必要）':''}`,disabled:dualBlocked,gate}});
 }
 function equipInventoryItemToCharacter(character,index,targetSlot=''){
  const ref=String(data.inventory[index]||''),equipment=equipmentDefinition(ref);if(!equipment)return{ok:false,reason:'EQUIPMENT_NOT_FOUND',ref};const gate=equipmentRequirementCheck(character,equipment);if(!gate.ok)return{ok:false,...gate,equipment,ref};
@@ -229,8 +234,9 @@ function equipInventoryItemToCharacter(character,index,targetSlot=''){
  if(equipment.slot==='weapon'){
   if(gate.handsRequired===2){returned.push(...removeEquippedWeaponState(character));character.equipment.weapon1=ref;character.equipment.weapon2=null;setCharacterWeaponStyle(character,'two_hand');targetSlot='twohand';}
   else{
-   const slot=['weapon1','weapon2'].includes(targetSlot)?targetSlot:'weapon1';
+   const slot=['weapon1','weapon2'].includes(targetSlot)?targetSlot:'weapon1',otherSlot=slot==='weapon1'?'weapon2':'weapon1';
    if(characterWeaponStyle(character)==='two_hand')returned.push(...removeEquippedWeaponState(character));
+   const otherRef=character.equipment[otherSlot],otherEquipment=equipmentDefinition(otherRef);if(otherRef&&!equipmentIsShield(equipment)&&!equipmentIsShield(otherEquipment)&&!characterCanDualWield(character))return{ok:false,reason:'DUAL_WIELD_PASSIVE_REQUIRED',passive_id:DUAL_WIELD_PASSIVE_ID,equipment,ref};
    const previous=character.equipment[slot];if(previous)returned.push(previous);character.equipment[slot]=ref;targetSlot=slot;refreshCharacterWeaponStyle(character);
   }
  }else{
@@ -246,10 +252,10 @@ async function loadFormalEquipmentDefinitions(){
  try{const response=await fetch(FORMAL_EQUIPMENT_EXPORT_URL,{cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]),next=new Map(),errors=[];for(const raw of rows){const record=normalizeFormalEquipmentRecord(raw);if(!record){errors.push(`Equipment record invalid: ${String(raw?.id||'(no id)')}`);continue}if(next.has(record.id)){errors.push(`Equipment ID duplicated: ${record.id}`);continue}next.set(record.id,record)}if(errors.length)throw new Error(errors.join(' / '));formalEquipmentCatalog.clear();for(const [id,row] of next)formalEquipmentCatalog.set(id,row);formalEquipmentBridge.status='loaded';formalEquipmentBridge.schema_version=payload?.schema_version||null;formalEquipmentBridge.data_version=payload?.data_version||null;formalEquipmentBridge.generated_by=payload?.generated_by||null;formalEquipmentBridge.loaded_at=new Date().toISOString();formalEquipmentBridge.imported_ids=[...formalEquipmentCatalog.keys()];return formalEquipmentBridge;}catch(error){formalEquipmentCatalog.clear();formalEquipmentBridge.status='failed';formalEquipmentBridge.errors=[String(error?.message||error)];return formalEquipmentBridge;}
 }
 window.GKGameFormalConfig=Object.freeze({bridge:formalGameBridge,jobs:formalJobCatalog,load:loadFormalGameDefinitions,jobDefinition,jobDisplayName,partyMaxSize,characterBattleValues,battleFlowConfig,battleGaugeMax,battleAiReevaluationRatio,battleAiReevaluationStep,battleGaugeConsumeAmount,battleDefaultSkillCastingTicks,weaponStrTwoHandRequirementMultiplier});
-window.GKGameEquipmentRuntime=Object.freeze({bridge:formalEquipmentBridge,slots:CHARACTER_EQUIPMENT_SLOTS,slotLabels:CHARACTER_EQUIPMENT_SLOT_LABEL,slotLabel:equipmentSlotLabel,weaponStyles:CHARACTER_WEAPON_STYLES,weaponStyle:characterWeaponStyle,normalizeRecord:normalizeFormalEquipmentRecord,definition:equipmentDefinition,requirementCheck:equipmentRequirementCheck,bonusLabel:equipmentBonusLabel,requirementLabel:equipmentRequirementLabel,normalizeCharacterState:normalizeCharacterEquipmentState,equipTargets:equipmentEquipTargets,basicAttackProfiles:characterBasicAttackProfiles,load:loadFormalEquipmentDefinitions});
+window.GKGameEquipmentRuntime=Object.freeze({bridge:formalEquipmentBridge,slots:CHARACTER_EQUIPMENT_SLOTS,slotLabels:CHARACTER_EQUIPMENT_SLOT_LABEL,slotLabel:equipmentSlotLabel,weaponStyles:CHARACTER_WEAPON_STYLES,weaponStyle:characterWeaponStyle,normalizeRecord:normalizeFormalEquipmentRecord,definition:equipmentDefinition,requirementCheck:equipmentRequirementCheck,bonusLabel:equipmentBonusLabel,requirementLabel:equipmentRequirementLabel,normalizeCharacterState:normalizeCharacterEquipmentState,equipTargets:equipmentEquipTargets,basicAttackProfiles:characterBasicAttackProfiles,combatCapabilities:characterCombatCapabilities,canDualWield:characterCanDualWield,dualWieldPassiveId:DUAL_WIELD_PASSIVE_ID,load:loadFormalEquipmentDefinitions});
 const NEW_GAME_INITIALIZATION_ORDER=Object.freeze(['guild','progress_flags','starter_characters','party','inventory_equipment','skill_passive_ai','integrity','first_auto_save']);
 function createEmptyPersistentState(now=new Date().toISOString()){
- return{saveVersion:SAVE_VERSION,schemaRevision:'1.6.0',gameVersion:'GA-B486.211',createdAt:now,updatedAt:now,characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};
+ return{saveVersion:SAVE_VERSION,schemaRevision:'1.7.0',gameVersion:'GA-B486.211',createdAt:now,updatedAt:now,characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};
 }
 let data=createEmptyPersistentState();let selectedId=null;
 const $=id=>document.getElementById(id), clone=o=>JSON.parse(JSON.stringify(o)), uid=()=>`C-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
@@ -518,12 +524,17 @@ function parseSaveRoot(raw){
  return parsed;
 }
 function migrateSaveV2ToV3(source){
- const next=clone(source);next.saveVersion=SAVE_VERSION;
+ const next=clone(source);next.saveVersion=3;
  // v2→v3 is intentionally narrow: no missing/unknown field is synthesized or discarded.
  // The current strict schema must accept the converted payload before it can be committed.
  return next;
 }
-const SAVE_MIGRATIONS=Object.freeze({2:migrateSaveV2ToV3});
+function migrateSaveV3ToV4(source){
+ const next=clone(source);next.saveVersion=4;
+ for(const character of Array.isArray(next.characters)?next.characters:[]){if(String(character?.weaponStyle||'')!=='dual_wield')continue;const ids=Array.isArray(character.passiveIds)?character.passiveIds.slice():[];if(!ids.includes(DUAL_WIELD_PASSIVE_ID))ids.push(DUAL_WIELD_PASSIVE_ID);character.passiveIds=ids;}
+ return next;
+}
+const SAVE_MIGRATIONS=Object.freeze({2:migrateSaveV2ToV3,3:migrateSaveV3ToV4});
 function migrateSaveToCurrent(raw){
  const source=parseSaveRoot(raw),fromVersion=Number(source.saveVersion);
  if(fromVersion===SAVE_VERSION){validateSavePayload(raw);return{migrated:false,save:normalizeLoadedSave(source),fromVersion,toVersion:SAVE_VERSION};}
