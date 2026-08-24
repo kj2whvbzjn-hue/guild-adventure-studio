@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T04:12:44.182Z"
+    "updated_at": "2026-08-24T04:34:29.501Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "P4 Human実機テスト完了確定; Candidate Loop separate start approval wait",
-    "goal": "Fresh 32 JobによるHuman実機テストとAI/Human照合を完了し、Human最終確認により実機テスト完了を正式確定。 次候補はTASK-BAL-005 P4 Formal Combat Candidate Loopだが、この確定は実行承認ではない。 TASK-BAL-005開始前に目的/work_type/基準Source/変更範囲/成果物/完了条件を報告し、別途Human明示承認を得る。"
+    "work_box_id": "BOX-V9-BAL-BATTLE-001",
+    "theme": "P4 Candidate Loop plan corrected: AI reference / Human real-device / AI comparison split; execution paused for fresh task approval",
+    "goal": "Playwright/WebKit等の自動Browser実機確認を前提にしない。P4 Candidate LoopはScreen/Refine/Final各段階をAI Package+Reference作成→Human実機Studio手動実行→AI Result照合に分割する。旧TASK-BAL-005開始承認は修正前計画に対するものとして再利用せず、次Task TASK-BAL-036の開始前報告とHuman明示承認から再開する。"
   },
   "project_rules": [
     {
@@ -242,6 +242,15 @@
       "source_id": "conversation:2026-08-24 approval-before-each-task",
       "created_at": "2026-08-24T10:23:00+09:00",
       "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-HUMAN-REAL-DEVICE-001",
+      "text": "AIはPlaywright/WebKitその他のBrowser/UI自動操作をHuman実機確認の代替に使用しない。AIはCandidate生成、非UIのdeterministic/reference計算、Package/Checklist作成、Human出力Result/Evidenceの解析・照合を担当する。Studio/Gameの実機取込・Validation・実行・Result出力・Save/Reload等の実Runtime確認はHumanが実機上で行い、そのHuman出力を正式なreal-device evidenceとする。AI側reference結果だけを実機PASSとして扱わない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 no Playwright human real-device verification",
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
     }
   ],
   "source_baseline": {
@@ -1217,6 +1226,30 @@
       "approved_at": "2026-08-24T12:52:00+09:00",
       "created_at": "2026-08-24T12:52:00+09:00",
       "updated_at": "2026-08-24T12:52:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001",
+      "title": "実機確認はHuman実機手動実行を正式経路とする",
+      "status": "Approved",
+      "text": "Playwright/WebKit等による自動Browser操作を実機確認の前提にしない。AI環境ではCandidate作成・deterministic/reference計算・Package/期待Evidence作成を行ってよいが、それはAI referenceでありreal-device evidenceではない。Studio/Game上の実機Import/Validation/Execute/Result Export/Save-Reload等はHumanが手動実行し、Humanが出力したResult/Trace/SnapshotをAIが照合して実機判定する。",
+      "rationale": "HumanがPlaywright等は利用できず実機確認はHumanが行うと明示し、自動実行前提なら計画修正するよう指示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T13:30:00+09:00",
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P4-CANDIDATE-HUMAN-STAGE-SPLIT-001",
+      "title": "P4 Candidate LoopをAI作成→Human実機→AI照合の段階工程へ分割する",
+      "status": "Approved",
+      "text": "P4 Formal Combat Candidate LoopのScreen 100 / Refine 1,000 / Final-Holdout 10,000は試行数として維持するが、各段階を(1) AI Candidate Package + AI reference Result作成、(2) Human実機Studioで同一Packageを手動Import/Validate/ExecuteしResult Package出力、(3) AIがHuman ResultをAI referenceと照合し次段階候補を決定、の3Taskへ分割する。各Taskは1 AI run=1 Development Taskと開始前Human承認を維持し、AI referenceだけで次段階や実機PASSへ自動進行しない。",
+      "rationale": "既存TASK-BAL-005はTemplate→Import→Validate→Execute→Result Package→ImportをAI側で一連実行するよう読め、Human実機境界が不明確だったため。既存32 Job preflightで確立したAI→Human→AI照合方式をCandidate Loop本体にも適用する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T13:30:00+09:00",
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
     }
   ],
   "specifications": [
@@ -1296,7 +1329,7 @@
       "title": "Reproducible Simulation / Sensitivity / Cross-System Validation Plan Draft",
       "status": "Draft",
       "summary": "Reuse-firstで既存Equipment/Skill/AI/Reward/Battle資産を使用し、再現性Envelope、paired A/B、Sensitivity/Interaction、Cross-System loop、Evidence class/Runtime readinessを定義する。",
-      "body": "# Reproducible Simulation / Sensitivity / Cross-System Validation Plan — Reuse-first Draft\n\n## Work declaration\n```text\npurpose: TASK-BAL-DESIGN-004を修正版handoff/reuse contractに基づいて再設計し、欠落していたSimulation Planを自己完結させる。\nwork_type: DEVELOPMENT_ONLY\nsource_baseline: GKS-B735 / GA-B486.211 / guild-adventure-studio-sub(20260822-052245).zip\nstudio_project_json_baseline: N/A（Game Dataは変更しない）\ndata_version: N/A\nallowed_scope: Simulation/Evidence protocol、既存System reuse binding、Sensitivity/Interaction/Cross-System設計、Project metadata/check/historyの更新。\nprotected_scope: Game/Studio Source、Export、Studio Project Game Data、Current active、workflow Human approval、DEV-V9-REORG-019 Current Specification/Approved Decision。\ndeletions: 0\nforbidden_duplicate: 新Battle Orchestrator、新Equipment/Skill Generator、新独立Combat Simulator、新Reward Resolverを作らない。\n```\n\n## 1. Authority / reuse invariant\n- Gameplay/structure authorityは`DEV-V9-REORG-019` Current Specification / Approved Decision。\n- `RULE-BAL-REUSE-001..006`と`DEC-BAL-PACKAGE-001` / `DEC-BAL-PIPELINE-REUSE-001`を実行基盤の正本とする。\n- SimulationのためにCurrent Structure、処理順、丸め、Owner Contractを再設計しない。\n- Formal未接続領域をLegacy Runtime結果で穴埋めしない。\n- AIはCandidate/探索戦略/比較条件を作り、正式数値生成・Validation・実行・Result生成は可能な限り既存Studio Systemへ委譲する。\n\n## 2. Evidence class separation\n| Evidence class | Purpose | Reused system | Formal promotion use |\n|---|---|---|---|\n| `STATIC_GENERATOR_REFERENCE` | Equipment/Skill等の生成curve、dead option、invalid、分布の静的評価 | Equipment Generator / Skill AI Batch G05/G07 | Combat Current-active Evidenceには単独使用不可 |\n| `DETERMINISTIC_COMPONENT` | Formal AI decision component、Reward resolver等のseeded比較 | ai-simulation-runner.js / adventure-reward-resolver.js | 対象componentのEvidenceのみ。Combat全体の代替不可 |\n| `FORMAL_COMBAT_PACKAGE` | Build/Enemy/Skill/Passive/Formula/Status/AIをCurrent Contractで比較 | Existing AI Battle Package | REQ-BAL-PKG-001..012解消 + Formal Readiness PASS後のみ利用可 |\n| `UPPER_CAMPAIGN_REFERENCE` | New Game/Progression/Quest/Reward/Economy/Guild/Stone循環 | Owner contracts + existing resolver + Formal Combat result | Product Content readiness前はCandidate Evidence |\n| `GAME_RUNTIME_CONFORMANCE` | Formal Packageと実Game Runtimeの一致確認 | Existing Game Runtime/WebKit/Trace/Save-Reload | Product Apply後のPromotion必須Evidence |\n\nEvidence classを跨いで不足値を推定合成しない。\n\n## 3. Reproducibility envelope\n全Experimentは最低限以下をimmutableに記録する。\n- experiment_id / candidate_id / domain / evidence_class\n- studio_build / game_build / package_manifest_sha256\n- Current Specification authority snapshot identifier\n- input_snapshot_sha256\n- rules_version / data_version / config_id / config_version\n- generator/compiler/runtime contract version（該当時）\n- root_seed + derived_seed namespace\n- exact seed set identifier / trial count\n- execution plan/resource snapshot hash（Battle Package時）\n- result artifact hash + summary KPI + invalid/error count\n- baseline/candidate pair id\n\n`same input + same seed set + same rules/data/config/source binding => same component/result`を再現性Checkとする。非決定要因が残る場合はEvidence classをPromotion不可に落とす。\n\n## 4. Seed protocol / paired A-B\n- Root seedから`domain/scenario/candidate/trial` namespaceでderived seedを決定する。\n- A/B比較ではCandidate以外のInput/Version/Seed配列を完全一致させる。\n- Random generationを含むEquipment/Skill/Reward/AI/Battleはseed listそのものをEvidenceへ保存する。\n- Candidate screeningとholdoutはseed集合を分離し、holdoutをCandidate選択に再利用しない。\n- 途中でtrialを追加する場合も既存seed順を変更せずappendする。\n\nDefault technical batch（Gameplay targetではない）:\n- Screen: 100 paired seeds\n- Refine: 1,000 paired seeds\n- Final/Holdout: 10,000 disjoint seeds\n低頻度事象は必要試行数を増やし、trial count自体をEvidenceへ記録する。\n\n## 5. Existing-system calibration entrypoints\n### Equipment\n- Entry: `GKS_EQUIPMENT_GENERATION_REQUEST` / `studio/equipment/equipment-generator.js`\n- Baseline: iLv1..11、Weapon 13種=143、Armor 3 category×4 slot=132、Accessory 3種=33、計308件。\n- AIはkind/type/iLv/seed/config Candidateを与え、required stats / attack / accuracy / magic / critical / hp/mp/evasion等を直書きしない。\n- Product Masterへ自動登録しない。\n\n### Skill\n- Entry: `GKS_SKILL_AI_BATCH_REQUEST` → G05 numeric generation → G07 validation。\n- Core matrix: 22 archetype × Level[1,10,25,50,100] × Strength[LOW,MEDIUM,HIGH] = 330件。\n- Trigger/Condition/Resource等のCurrent coverage不足は既存Skill Pipeline extensionとして記録し、別Generatorを作らない。\n\n### AI component / Reward\n- AI decision/componentのfixed-seed比較は既存`studio/ai-production/ai-simulation-runner.js`を使える範囲で使用。\n- Reward deterministic comparisonは既存`assets/shared/js/adventure-reward-resolver.js`を使用。\n- どちらもFormal Combat全体の代替にはしない。\n\n### Passive / MOD\nCurrent B735監査ではEquipment/Skill相当の専用mass-generation entrypointを確認できず、Equipment Generatorはbase itemの`mod_ids=[]`までを生成する。したがって独立Generatorは新設せず、既存Studio authoring ownerへのbatch/simulation入口の有無をP3で確定し、不足時は`REQ-BAL-AUTH-001`として既存authoring architectureを最小拡張する。\n\n## 6. Sensitivity design\nBalance Key typeごとに変化方法を分ける。\n- coefficient/growth/conversion: baseline近傍の相対perturbation +広域sweep\n- cap/floor/clamp/threshold: 境界直前/直後 + neighboring valid values\n- probability/weight/distribution: normalized constraintを維持したpaired perturbation\n- cost/duration/interval: 離散合法値でneighbor sweep\n- formula_expression / rounding / processing order: Balance sensitivity対象に自動投入しない。`fixed_structure`候補として扱い、変更必要性が出た場合はHuman/Source Requirementへ戻す。\n\n各sweepでmeanだけでなくmedian/IQR/p10/p90/failure tail/invalid rateを保持し、local slope・nonlinearity・cap saturation・dead zoneを検出する。\n\n## 7. Interaction design\n優先2-way interaction:\n1. Job Growth × Equipment Requirement/Contribution\n2. Equipment × Skill\n3. Skill × Passive\n4. Formula coefficient × Equipment/Skill output\n5. Status × Resistance/Battle duration\n6. Player Build × Enemy Budget/Monster Skill\n7. AI × Skill Loadout\n8. Quest difficulty × Resource attrition\n9. Reward scaling × Equipment update cadence\n10. Stone difficulty × failure-adjusted reward EV\n\n単体寄与の和とFull Build差分を比較し、synergy/antagonism residualを保存する。Runaway interaction、strict dominance、dead optionをFailureとして扱う。\n\n## 8. Cross-System loop\n同一Version familyで次のcheckpointを接続する。\n`Job → Stats → Equipment eligibility/contribution → Passive → Skill → Formula/Status → Enemy/AI → Quest/Encounter → Reward/Economy → Equipment/Skill acquisition / Character growth`\n\n各checkpointは入力snapshotと出力snapshotをhashし、途中でConfigを差し替えない。既存QuestRun/Generated Item/Character成長結果を新Configで遡及再計算しない。\n\n評価軸:\n- power/progression: DPS/HPS/EHP/TTK、level interval、required-stat reachability\n- preparation value: normal vs underprepared、Elite/Bossでのloadout/equipment/AI見直し効果\n- loot cadence: acquisition time、upgrade interval、rarity/MOD marginal value\n- economy: reward/time、failure-adjusted EV、source/sink\n- diversity: Pareto frontier、dominance rate、counter coverage\n- endgame: Stone success/resource loss/reward EVのnormal endgame比\n\n## 9. Runtime readiness gates\n- P1/P2 Static Calibration: Formal Combat未Readyでも実施可能。ただし`STATIC_GENERATOR_REFERENCE`限定。\n- P3 SOURCE_UPDATE: REQ-BAL-PKG-001..012 + 必要なauthoring extensionを実装ラインで既存Systemへ適用。\n- P4 Formal Combat: Current Formula/Status/Skill/Passive/Equipment/AI/Monster bindingがfail-closedで確認されるまで開始不可。\n- P6/P7 Product Data: Current Studio Project JSON/Data Version + Product Content readinessが必要。\n- P8 Game Runtime: Formal Packageと同一Input/Seed/VersionでConformance比較。\n- P9 Promotion: Holdout + Runtime Conformance + Human approvalが必須。\n\n## 10. Failure / stop conditions\n- version/provenance欠落\n- owner bypass / raw final-number override\n- Legacy fallback混入\n- paired seed mismatch\n- result hash/replay不一致\n- Formal KPI未接続を推定値で代用\n- dominance/dead/runaway/tail failure\n- Product fixtureとMasterの混同\n- Package vs Game Runtime conformance failure\n\nいずれかが発生したExperimentはCandidate選抜から除外し、Source defectはBalance値で隠さずRequirementへ戻す。\n\n## 11. Output contract\nSimulation EvidenceはProduct Game DataやSource Artifactと混在させず、Experiment Manifest / Candidate Config / Input Snapshot / Seed Set / Result Snapshot / KPI Summary / Failure Report / Provenanceを独立保存する。\n",
+      "body": "# Reproducible Simulation / Sensitivity / Cross-System Validation Plan — Reuse-first Draft\n\n## Work declaration\n```text\npurpose: TASK-BAL-DESIGN-004を修正版handoff/reuse contractに基づいて再設計し、欠落していたSimulation Planを自己完結させる。\nwork_type: DEVELOPMENT_ONLY\nsource_baseline: GKS-B735 / GA-B486.211 / guild-adventure-studio-sub(20260822-052245).zip\nstudio_project_json_baseline: N/A（Game Dataは変更しない）\ndata_version: N/A\nallowed_scope: Simulation/Evidence protocol、既存System reuse binding、Sensitivity/Interaction/Cross-System設計、Project metadata/check/historyの更新。\nprotected_scope: Game/Studio Source、Export、Studio Project Game Data、Current active、workflow Human approval、DEV-V9-REORG-019 Current Specification/Approved Decision。\ndeletions: 0\nforbidden_duplicate: 新Battle Orchestrator、新Equipment/Skill Generator、新独立Combat Simulator、新Reward Resolverを作らない。\n```\n\n## 1. Authority / reuse invariant\n- Gameplay/structure authorityは`DEV-V9-REORG-019` Current Specification / Approved Decision。\n- `RULE-BAL-REUSE-001..006`と`DEC-BAL-PACKAGE-001` / `DEC-BAL-PIPELINE-REUSE-001`を実行基盤の正本とする。\n- SimulationのためにCurrent Structure、処理順、丸め、Owner Contractを再設計しない。\n- Formal未接続領域をLegacy Runtime結果で穴埋めしない。\n- AIはCandidate/探索戦略/比較条件を作り、正式数値生成・Validation・実行・Result生成は可能な限り既存Studio Systemへ委譲する。\n\n## 2. Evidence class separation\n| Evidence class | Purpose | Reused system | Formal promotion use |\n|---|---|---|---|\n| `STATIC_GENERATOR_REFERENCE` | Equipment/Skill等の生成curve、dead option、invalid、分布の静的評価 | Equipment Generator / Skill AI Batch G05/G07 | Combat Current-active Evidenceには単独使用不可 |\n| `DETERMINISTIC_COMPONENT` | Formal AI decision component、Reward resolver等のseeded比較 | ai-simulation-runner.js / adventure-reward-resolver.js | 対象componentのEvidenceのみ。Combat全体の代替不可 |\n| `FORMAL_COMBAT_PACKAGE` | Build/Enemy/Skill/Passive/Formula/Status/AIをCurrent Contractで比較 | Existing AI Battle Package | REQ-BAL-PKG-001..012解消 + Formal Readiness PASS後のみ利用可 |\n| `UPPER_CAMPAIGN_REFERENCE` | New Game/Progression/Quest/Reward/Economy/Guild/Stone循環 | Owner contracts + existing resolver + Formal Combat result | Product Content readiness前はCandidate Evidence |\n| `GAME_RUNTIME_CONFORMANCE` | Formal Packageと実Game Runtimeの一致確認 | Human実機 Game Runtime / Human出力Trace / Save-Reload evidence + AI比較 | Product Apply後のPromotion必須Evidence |\n\nEvidence classを跨いで不足値を推定合成しない。\n\n## 3. Reproducibility envelope\n全Experimentは最低限以下をimmutableに記録する。\n- experiment_id / candidate_id / domain / evidence_class\n- studio_build / game_build / package_manifest_sha256\n- Current Specification authority snapshot identifier\n- input_snapshot_sha256\n- rules_version / data_version / config_id / config_version\n- generator/compiler/runtime contract version（該当時）\n- root_seed + derived_seed namespace\n- exact seed set identifier / trial count\n- execution plan/resource snapshot hash（Battle Package時）\n- result artifact hash + summary KPI + invalid/error count\n- baseline/candidate pair id\n\n`same input + same seed set + same rules/data/config/source binding => same component/result`を再現性Checkとする。非決定要因が残る場合はEvidence classをPromotion不可に落とす。\n\n## 4. Seed protocol / paired A-B\n- Root seedから`domain/scenario/candidate/trial` namespaceでderived seedを決定する。\n- A/B比較ではCandidate以外のInput/Version/Seed配列を完全一致させる。\n- Random generationを含むEquipment/Skill/Reward/AI/Battleはseed listそのものをEvidenceへ保存する。\n- Candidate screeningとholdoutはseed集合を分離し、holdoutをCandidate選択に再利用しない。\n- 途中でtrialを追加する場合も既存seed順を変更せずappendする。\n\nDefault technical batch（Gameplay targetではない）:\n- Screen: 100 paired seeds\n- Refine: 1,000 paired seeds\n- Final/Holdout: 10,000 disjoint seeds\n低頻度事象は必要試行数を増やし、trial count自体をEvidenceへ記録する。\n\n## 5. Existing-system calibration entrypoints\n### Equipment\n- Entry: `GKS_EQUIPMENT_GENERATION_REQUEST` / `studio/equipment/equipment-generator.js`\n- Baseline: iLv1..11、Weapon 13種=143、Armor 3 category×4 slot=132、Accessory 3種=33、計308件。\n- AIはkind/type/iLv/seed/config Candidateを与え、required stats / attack / accuracy / magic / critical / hp/mp/evasion等を直書きしない。\n- Product Masterへ自動登録しない。\n\n### Skill\n- Entry: `GKS_SKILL_AI_BATCH_REQUEST` → G05 numeric generation → G07 validation。\n- Core matrix: 22 archetype × Level[1,10,25,50,100] × Strength[LOW,MEDIUM,HIGH] = 330件。\n- Trigger/Condition/Resource等のCurrent coverage不足は既存Skill Pipeline extensionとして記録し、別Generatorを作らない。\n\n### AI component / Reward\n- AI decision/componentのfixed-seed比較は既存`studio/ai-production/ai-simulation-runner.js`を使える範囲で使用。\n- Reward deterministic comparisonは既存`assets/shared/js/adventure-reward-resolver.js`を使用。\n- どちらもFormal Combat全体の代替にはしない。\n\n### Passive / MOD\nCurrent B735監査ではEquipment/Skill相当の専用mass-generation entrypointを確認できず、Equipment Generatorはbase itemの`mod_ids=[]`までを生成する。したがって独立Generatorは新設せず、既存Studio authoring ownerへのbatch/simulation入口の有無をP3で確定し、不足時は`REQ-BAL-AUTH-001`として既存authoring architectureを最小拡張する。\n\n## 6. Sensitivity design\nBalance Key typeごとに変化方法を分ける。\n- coefficient/growth/conversion: baseline近傍の相対perturbation +広域sweep\n- cap/floor/clamp/threshold: 境界直前/直後 + neighboring valid values\n- probability/weight/distribution: normalized constraintを維持したpaired perturbation\n- cost/duration/interval: 離散合法値でneighbor sweep\n- formula_expression / rounding / processing order: Balance sensitivity対象に自動投入しない。`fixed_structure`候補として扱い、変更必要性が出た場合はHuman/Source Requirementへ戻す。\n\n各sweepでmeanだけでなくmedian/IQR/p10/p90/failure tail/invalid rateを保持し、local slope・nonlinearity・cap saturation・dead zoneを検出する。\n\n## 7. Interaction design\n優先2-way interaction:\n1. Job Growth × Equipment Requirement/Contribution\n2. Equipment × Skill\n3. Skill × Passive\n4. Formula coefficient × Equipment/Skill output\n5. Status × Resistance/Battle duration\n6. Player Build × Enemy Budget/Monster Skill\n7. AI × Skill Loadout\n8. Quest difficulty × Resource attrition\n9. Reward scaling × Equipment update cadence\n10. Stone difficulty × failure-adjusted reward EV\n\n単体寄与の和とFull Build差分を比較し、synergy/antagonism residualを保存する。Runaway interaction、strict dominance、dead optionをFailureとして扱う。\n\n## 8. Cross-System loop\n同一Version familyで次のcheckpointを接続する。\n`Job → Stats → Equipment eligibility/contribution → Passive → Skill → Formula/Status → Enemy/AI → Quest/Encounter → Reward/Economy → Equipment/Skill acquisition / Character growth`\n\n各checkpointは入力snapshotと出力snapshotをhashし、途中でConfigを差し替えない。既存QuestRun/Generated Item/Character成長結果を新Configで遡及再計算しない。\n\n評価軸:\n- power/progression: DPS/HPS/EHP/TTK、level interval、required-stat reachability\n- preparation value: normal vs underprepared、Elite/Bossでのloadout/equipment/AI見直し効果\n- loot cadence: acquisition time、upgrade interval、rarity/MOD marginal value\n- economy: reward/time、failure-adjusted EV、source/sink\n- diversity: Pareto frontier、dominance rate、counter coverage\n- endgame: Stone success/resource loss/reward EVのnormal endgame比\n\n## 9. Runtime readiness gates\n- P1/P2 Static Calibration: Formal Combat未Readyでも実施可能。ただし`STATIC_GENERATOR_REFERENCE`限定。\n- P3 SOURCE_UPDATE: REQ-BAL-PKG-001..012 + 必要なauthoring extensionを実装ラインで既存Systemへ適用。\n- P4 Formal Combat: Current Formula/Status/Skill/Passive/Equipment/AI/Monster bindingがfail-closedで確認されるまで開始不可。\n- P6/P7 Product Data: Current Studio Project JSON/Data Version + Product Content readinessが必要。\n- P8 Game Runtime: AIが同一Input/Seed/Versionのreference/checklistを作成し、Humanが実機Runtimeを手動実行してEvidenceを出力、AIがConformance比較する。Playwright/WebKit自動実機実行を前提にしない。\n- P9 Promotion: Holdout + Runtime Conformance + Human approvalが必須。\n\n## 10. Failure / stop conditions\n- version/provenance欠落\n- owner bypass / raw final-number override\n- Legacy fallback混入\n- paired seed mismatch\n- result hash/replay不一致\n- Formal KPI未接続を推定値で代用\n- dominance/dead/runaway/tail failure\n- Product fixtureとMasterの混同\n- Package vs Game Runtime conformance failure\n\nいずれかが発生したExperimentはCandidate選抜から除外し、Source defectはBalance値で隠さずRequirementへ戻す。\n\n## 11. Output contract\nSimulation EvidenceはProduct Game DataやSource Artifactと混在させず、Experiment Manifest / Candidate Config / Input Snapshot / Seed Set / Result Snapshot / KPI Summary / Failure Report / Provenanceを独立保存する。\n\n\n## 2026-08-24 Human real-device execution amendment\n実行actorについては `SPEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001` を優先する。AI側executionはreference生成/解析に限定し、Human実機確認を代替しない。\n",
       "decision_refs": [
         "DEC-BAL-001",
         "DEC-BAL-EXPERIENCE-001",
@@ -1313,18 +1346,18 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-22T14:23:00+09:00",
-      "updated_at": "2026-08-22T14:23:00+09:00"
+      "updated_at": "2026-08-24T13:30:00+09:00"
     },
     {
       "id": "SPEC-BAL-EXECUTION-REDESIGN-001",
       "title": "Reuse-first Balance Execution Phase / Task / Dependency Draft",
       "status": "Draft",
       "summary": "AI引継ぎ完全性と既存System再利用を前提にPhase/Task/Dependencyを再設計。Battle Package、Equipment Generator、Skill AI Batch/G05/G07、fixed-seed runner、Reward Resolver、Studio Project JSON/Gameデータ配置を再利用し、Current-Spec Gapだけを既存System extensionへ分離する。",
-      "body": "# Balance Execution Phase / Task / Dependency Redesign — Handoff & Reuse Draft\n\n## Work declaration\n```text\npurpose: TASK-BAL-DESIGN-005として現在計画のAI引継ぎ完全性と既存Studioシステム再利用を監査し、不足している再利用前提をPhase/Task/Dependency Draftへ明記する。\nwork_type: DEVELOPMENT_ONLY\nsource_baseline: GKS-B735 / GA-B486.211 / guild-adventure-studio-sub(20260822-045946).zip\nstudio_project_json_baseline: N/A（Game Dataは変更しない）\ndata_version: N/A\nallowed_scope: DEV-V9-BALANCE-001のProject Context / Rule / Decision / Discussion / Specification / Design Task / Check / Historyの更新。既存システムのCapability確認はCurrent SourceをImplementation evidenceとして使用する。\nprotected_scope: Game/Studio Source、Export、Studio Project Game Data、workflow Human approval、DEV-V9-REORG-019 Current Specification / Approved Decision、既存Human Approved Target Experience。\ndeletion: 0件\nartifact: Development統合JSON 1件\ndeployment_route: Studio > 開発管理 > DEV-V9-BALANCE-001 > 現在案件へJSONを統合\ncompletion_criteria: 他AIがProject JSONだけで既存System再利用方針・未解決Gap・禁止される重複開発・Phase/Task/Dependencyを一意に復元でき、Human Plan Gate前に実行Taskを解放しない。\n```\n\n## 1. Handoff audit conclusion\n\n**現状の引継ぎは部分成功で、完全ではなかった。**\n\n保持できていたもの:\n- 案件はSpecifyingのまま。\n- TASK-BAL-DESIGN-001〜004はDone、TASK-BAL-DESIGN-005が次のTodo。\n- Human Approved Target Experienceは保持。\n- Battle Package transport/template/import/validation/execution/result workflowは再利用可能と監査済み。\n- Formal Combat Referenceを妨げるREQ-BAL-PKG-001〜012はOpenのまま保持。\n- Simulation PlanはFormal Runtime未Ready時にLegacy結果へfallbackしない。\n\n不足していたもの:\n- SPEC-BAL-SYSTEM-MAP-001がDEC-BAL-PACKAGE-001を参照しているが、decisions配列にそのRecordが存在しない。\n- Battle Package再利用はSpecification本文に存在するが、Human Approved Decision/Top-level Ruleとして自己完結していない。\n- Equipment大量生成の正式入口GKS_EQUIPMENT_GENERATION_REQUESTがProject計画に明記されていない。\n- Skill大量生成の正式入口GKS_SKILL_AI_BATCH_REQUESTとG05/G07利用がProject計画に十分明記されていない。\n- 既存Generator/Package/Simulation/Reward Resolverを優先利用し、重複Orchestrator/Generator/Simulatorを新設しないという全体Ruleがない。\n- 以前検討したEquipment 308件Baseline、Skill 330件Core Calibration、段階式Battle検証がCurrent ProjectのPhase/Task Draftへ残っていない。\n\n本Draftで、missing Decision、reuse-first Rule、正式Generator entrypoint、Concrete mass-calibration、重複開発禁止をProjectへ明記する。\n\n## 2. Mandatory Existing-System Reuse Matrix\n\n| Existing system | Existing entrypoint | Reuse plan | Current gap | Required extension | Do NOT build |\n|---|---|---|---|---|---|\n| **AI Battle Package** | studio/index.html: exportBattleAiPackageTemplate / importBattlePackageFile / runBattlePackageExecution / exportBattlePackageResult / importBattleBenchmarkResultPackage | Template→Import→Validate→Execute→Result ZIP→Result Importをそのまま利用 | REQ-BAL-PKG-001..003,007..012 | manifest/version binding、formal resource/roster、Current formula/status/lifecycle/AI、metrics | 別Battle Orchestrator / 別Formal Combat Simulatorの重複新設 |\n| **Equipment Generator** | GKS_EQUIPMENT_GENERATION_REQUEST / studio/equipment/equipment-generator.js / EQUIPMENT-BASE-V2 v2.1.0 | AIはkind/type/iLv/seedを要求しStudioが正式数値生成。iLv1〜11、13 Weapon、3 Armor category×4 slot、3 AccessoryでBaseline 308件を生成可能 | REQ-BAL-PKG-002,004 | Transient Candidate Resource + Formal Equipment Contribution Adapter | AIがrequired/attack/accuracy等の最終値を直書きする別Generator |\n| **Skill AI Batch / G05 / G07** | GKS_SKILL_AI_BATCH_REQUEST / studio/skill/skill-generator.js / assets/shared/js/skill-ai-batch-engine.js | AI Intent/Structure/desiredStrength→Studio numeric generation→Registry/Budget/Compiler/runtimeContracts validation | REQ-BAL-PKG-002,005,009,012 | Formal Skill Resource/Runtime Adapter。Current G05 default ON_USE/conditions=[]/mpCost=0/cooldown=0のCoverage拡張は既存Contract extension | 別Skill Generator / AIによるfinal numeric直書き |\n| **AI fixed-seed Simulation Runner** | studio/ai-production/ai-simulation-runner.js | Formal AI decision/componentのfixed-seed trial/compareに使用 | Formal Combat全体を表現しない | 必要なら既存Formal AI pipelineとの接続を拡張 | これをCurrent Combat Referenceと誤認、または同等runnerを重複作成 |\n| **Reward Resolver** | assets/shared/js/adventure-reward-resolver.js | Seeded Reward component / expected-value validationに利用 | Quest/Economy/Product Content上位Campaignは別検証が必要 | Experiment provenance/evidence binding | RewardをAI側独自乱数/独自式で再実装 |\n| **Studio Project JSON / Gameデータ配置** | Current Studio Project JSON → JSON全件読込 → Human確認 → Data Version → Gameデータ配置 | Product Candidate反映の唯一のGame Data正規経路 | Calibration FixtureはProduct Masterではない | なし。既存Data deploymentを使用 | Export直接編集/逆輸入、Source ZIPへGame Data同梱 |\n\n### Reuse invariant\n\n新しいAIは「必要な機能が計画に書かれている」ことを「新しいSystemを作るTask」と解釈してはならない。\nまず上表の既存Systemへ対応付け、Current Specification Gapだけを既存SystemのExtensionとしてSOURCE_UPDATE Requirementへ落とす。\n\n特に:\n- Battle PackageのZIP往復/実行/Result生成は完成済みのtransport/orchestrationとして再利用する。\n- Equipment大量生成は`GKS_EQUIPMENT_GENERATION_REQUEST`を使う。\n- Skill大量生成は`GKS_SKILL_AI_BATCH_REQUEST`→G05 numeric generation→G07 validationを使う。\n- fixed-seed AI decision/component比較は既存`ai-simulation-runner.js`を使える範囲で使う。\n- Reward deterministic componentは既存`adventure-reward-resolver.js`を使う。\n- Product Game DataはCurrent Studio Project JSON→JSON全件読込→Gameデータ配置の既存経路だけを使う。\n\n## 3. Current B735 capability evidence\n\n- Source: `GKS-B735 / GA-B486.211`\n- ZIP SHA-256: `167d5628f26529c1a342fe59ffedc86e3e0cea37490f6fed49805b6023f6ab95`\n- `package_manifest.json` SHA-256: `cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34`\n- Manifest integrity: `PACKAGE_MANIFEST_OK files=639`\n\nExisting implementation evidence:\n- `studio/index.html` SHA-256 `e049b02523dbd027db299f73449945476eacd85935abbeed1510a88fe6a3bef7`\n- `studio/equipment/equipment-generator.js` SHA-256 `a311bd014069c5e97a93a4bc84a9104fb5f1ddef76fed31af334501abc55ee2e`\n- `studio/skill/skill-generator.js` SHA-256 `d3ec1e27ec58c694bd4cfe2853a69d0fccea8491b16d45c882b2ea5a6557fa76`\n- `assets/shared/js/skill-ai-batch-engine.js` SHA-256 `1bd3c288ad741e00933dc5a0e48654282a09bad78260420ab3c18a74630fb7ad`\n- `studio/ai-production/ai-simulation-runner.js` SHA-256 `f82a35c3aa111031f7a9bcff2112c0d9f44c91f360a8360d767368413b5dfc51`\n- `assets/shared/js/adventure-reward-resolver.js` SHA-256 `04c99a7da63f977f83a32517bb0361e349e9f169fe0a645fa64830cb97b83cfe`\n\nこれらはImplementation capability evidenceであり、Current gameplay Specificationの正本ではない。\n\n## 4. Concrete mass-production reuse\n\n### Equipment\nCurrent Active Config:\n- `EQUIPMENT-BASE-V2`\n- config version `2.1.0`\n- iLv `1..11`\n\nBaseline complete matrix:\n- Weapon: 13種 × 11 = **143**\n- Armor: 3 category × 4 slot × 11 = **132**\n- Accessory: 3種 × 11 = **33**\n- Total = **308**\n\nAIは最終数値を書かず、Generator Requestを作る。\nBaseline後のCandidate Config数はSimulation/Sensitivity結果から選定し、Product Masterへ自動登録しない。\n\n### Skill\nCurrent G05でCore Calibrationに使える代表構造:\n- DAMAGE: PHYSICAL / MAGICAL / FIXED = 3\n- HEAL = 1\n- APPLY registered effects = 10\n- REMOVE = 1\n- RESOURCE_CHANGE MP gain/loss = 2\n- REVIVE fixed/rate = 2\n- TARGET_CONTROL persistent/uses/duration = 3\n- Total = **22**\n\nInitial Core Matrix:\n- 22 archetype × Skill Level `[1,10,25,50,100]` × Strength `[LOW,MEDIUM,HIGH]`\n- Total = **330**\n\nCurrent G05 defaultの`ON_USE / conditions=[] / mpCost=0 / cooldown=0`は「仕様全域完了」と見なさず、\nTrigger/Condition/ResourceのFormal coverageを既存Skill PipelineのExtensionとして扱う。\n\n## 5. Phase / Task / Dependency Draft\n\n| Phase | Lane | Task scope | Dependency | Parallel policy | Output | Existing system reused |\n|---|---|---|---|---|---|---|\n| **P0 Handoff / Reuse Gate** | DEVELOPMENT_ONLY | Project self-contained check / Decision refs / reusable-system inventory / Open REQ binding | Human Plan Gate前のDesignのみ | 不可（最初に固定） | handoff snapshot + reuse matrix | AI_START + Development Project + Current Source capability inventory |\n| **P1 Static Equipment Calibration** | DEVELOPMENT_ONLY evidence | EQUIPMENT-BASE-V2で308件Baseline→感度Candidate ConfigをGeneratorへ投入→curve/dead/dominance静的評価 | Human Plan Gate承認後。Formal Battle blocker解消前でもSTATIC_REFERENCEとして可 | P2 / P3 source alignmentと並列可 | Equipment Candidate evidence。Product Masterへ自動登録しない | GKS_EQUIPMENT_GENERATION_REQUEST |\n| **P2 Static Skill Calibration** | DEVELOPMENT_ONLY evidence | 22 Core archetype×Level[1,10,25,50,100]×Strength[LOW,MEDIUM,HIGH]=330件をG05生成/G07検証。Trigger/Condition/Resource coverage Gapを記録 | Human Plan Gate承認後。Combat利用はREQ-BAL-PKG-005/009解消後 | P1 / P3 source alignmentと並列可 | Skill Calibration evidence。Product Skill Masterへ自動登録しない | GKS_SKILL_AI_BATCH_REQUEST + G05/G07 |\n| **P3 Formal Runtime Source Alignment** | SOURCE_UPDATE（実装ラインへRequirement） | REQ-BAL-PKG-001〜012を既存System extensionとして解消。Package/Equipment/Skill/Passive/Formula/Status/AI/Monster/ResultをCurrent仕様へ接続 | Human Plan Gate承認後。Balance案件内でSourceを越境変更しない | 独立Requirement群は実装ラインで並列化可 | Human Apply済みCurrent Source + resolver Checks | 既存Battle Package/Generator/AI/Monster subsystemを修正 |\n| **P4 Formal Combat Candidate Loop** | DEVELOPMENT_ONLY evidence | AI Candidate→既存Generator→Battle Package→Result Package→AI解析。Screen 100 seed、Refine 1000、Final/Holdout 10000を基準 | P3 Formal Readiness PASS + P1/P2 Candidate | Domain別Candidate群は同一version binding内で並列可 | Combat winner / rejected evidence / holdout | AI Battle Package + Result Package |\n| **P5 Upper Campaign** | DEVELOPMENT_ONLY evidence / Product Data参照はGAME_DATA前提 | New Game/Progression/Quest/Event/Reward/Drop/Economy/Guild/StoneをCombat結果へ接続。Reward Resolver再利用 | P4 Combat candidateが安定 | Quest/Economy/Guildのreference analysisは依存がない範囲で並列 | Target Experience適合Candidate | adventure-reward-resolver + Current owner contracts |\n| **P6 Product Candidate** | GAME_DATA | Current Studio Project JSON/Data Version取得→勝者だけをProduct Candidateへ反映→全件読込Pre-flight | P5 + Product Content readiness | 不可（Current Project JSON正本へ直列） | 全件読込用Project JSON | Studio Project JSON / JSON全件読込 |\n| **P7 Human Apply / Game Data Deploy** | GAME_DATA + Human Gate | Human内容確認→Data Version→Gameデータ配置→追加/差替え/除外確認 | P6 | 不可 | 配置済みCurrent Game Data | 既存Gameデータ配置 |\n| **P8 Game Runtime Conformance** | DEVELOPMENT_ONLY verification / Source defectはSOURCE_UPDATEへ戻す | Formal PackageとGame Runtimeへ同一Input/Seed/Version→WebKit/Trace/Save-Reload。差異はBalance変更で隠さない | P7 | Scenario shardは並列可 | Runtime conformance evidence | Formal Package result + existing Game Runtime/E2E |\n| **P9 Current active Promotion** | Human Gate | Evidence Pack確認→Human明示承認→Current active昇格 / rollback binding | P8 + Holdout + readiness checks | 不可 | Approved Current active / rollback record | Balance state/version ledger |\n\n## 6. SOURCE_UPDATE Requirement mapping\n\n既存`REQ-BAL-PKG-001..012`を「新Systemを作る要求」ではなく、既存SystemのFormal化として扱う。\n\n- 001: Battle Package manifest/build/data/formula bindingを拡張。\n- 002–003: Existing Package resource/rosterへTransient Candidate + typed snapshotを追加。\n- 004: Existing Equipment Generator outputをFormal Battle Contributionへ接続。\n- 005/009: Existing Formal Skill/G05/G07 outputをBattle Runtime/Lifecycleへ接続。\n- 006: Existing Passive master/contractからFormal contribution pathを接続。不足するbatch productionは既存authoring architectureへ追加。\n- 007–008: Existing Battle Package execution semanticsをCurrent Formula/Status Contractへ修正。\n- 010: Existing Formal AI Program/Decision EngineをPackageへ接続。\n- 011: Existing Monster/Enemy owner chainをPackage snapshotへ接続。\n- 012: Existing Result PackageへBalance KPI/Trace/Provenanceを追加。\n\n## 7. Handoff minimum answer\n\n別AIへこのProjectを渡した場合、少なくとも次を回答できなければ引継ぎ不成立とする。\n\n1. 現在は`Specifying`で、Human Plan Gate前。\n2. 既存Battle Packageは再利用し、新Orchestratorを作らない。\n3. Equipmentは`GKS_EQUIPMENT_GENERATION_REQUEST`、Skillは`GKS_SKILL_AI_BATCH_REQUEST`+G05/G07を使う。\n4. Formal Battle PackageはREQ-BAL-PKG-001..012解消前はCurrent active Evidenceに使わない。\n5. Static Equipment/Skill CalibrationはProduct Masterと分離する。\n6. Product反映はCurrent Studio Project JSON→Human確認→Gameデータ配置。\n7. Humanが決めるのはPlan Gate、Product Apply、Current-active Promotion、およびAIで一意に決まらないGameplay方向だけ。\n8. Existing Systemで可能な機能を重複実装しない。\n\n## 8. Human decision status\n\nこのTaskで追加承認を要求しない。\nReuse-first方針はHumanの既存明示指示としてProjectへ復元する。\nFormula ownership等の未解決Gameplay/Structure選択はTASK-BAL-DESIGN-006でHuman Review項目へ整理する。\n\n## 9. Next task\n\n`TASK-BAL-DESIGN-006`でSystem Map / Package Gap / Evaluation Matrix / Simulation Plan / 本Execution Redesignを1つのReview単位へ統合し、\nHumanに必要な承認事項だけを抽出する。\n",
+      "body": "# Balance Execution Phase / Task / Dependency Redesign — Handoff & Reuse Draft\n\n## Work declaration\n```text\npurpose: TASK-BAL-DESIGN-005として現在計画のAI引継ぎ完全性と既存Studioシステム再利用を監査し、不足している再利用前提をPhase/Task/Dependency Draftへ明記する。\nwork_type: DEVELOPMENT_ONLY\nsource_baseline: GKS-B735 / GA-B486.211 / guild-adventure-studio-sub(20260822-045946).zip\nstudio_project_json_baseline: N/A（Game Dataは変更しない）\ndata_version: N/A\nallowed_scope: DEV-V9-BALANCE-001のProject Context / Rule / Decision / Discussion / Specification / Design Task / Check / Historyの更新。既存システムのCapability確認はCurrent SourceをImplementation evidenceとして使用する。\nprotected_scope: Game/Studio Source、Export、Studio Project Game Data、workflow Human approval、DEV-V9-REORG-019 Current Specification / Approved Decision、既存Human Approved Target Experience。\ndeletion: 0件\nartifact: Development統合JSON 1件\ndeployment_route: Studio > 開発管理 > DEV-V9-BALANCE-001 > 現在案件へJSONを統合\ncompletion_criteria: 他AIがProject JSONだけで既存System再利用方針・未解決Gap・禁止される重複開発・Phase/Task/Dependencyを一意に復元でき、Human Plan Gate前に実行Taskを解放しない。\n```\n\n## 1. Handoff audit conclusion\n\n**現状の引継ぎは部分成功で、完全ではなかった。**\n\n保持できていたもの:\n- 案件はSpecifyingのまま。\n- TASK-BAL-DESIGN-001〜004はDone、TASK-BAL-DESIGN-005が次のTodo。\n- Human Approved Target Experienceは保持。\n- Battle Package transport/template/import/validation/execution/result workflowは再利用可能と監査済み。\n- Formal Combat Referenceを妨げるREQ-BAL-PKG-001〜012はOpenのまま保持。\n- Simulation PlanはFormal Runtime未Ready時にLegacy結果へfallbackしない。\n\n不足していたもの:\n- SPEC-BAL-SYSTEM-MAP-001がDEC-BAL-PACKAGE-001を参照しているが、decisions配列にそのRecordが存在しない。\n- Battle Package再利用はSpecification本文に存在するが、Human Approved Decision/Top-level Ruleとして自己完結していない。\n- Equipment大量生成の正式入口GKS_EQUIPMENT_GENERATION_REQUESTがProject計画に明記されていない。\n- Skill大量生成の正式入口GKS_SKILL_AI_BATCH_REQUESTとG05/G07利用がProject計画に十分明記されていない。\n- 既存Generator/Package/Simulation/Reward Resolverを優先利用し、重複Orchestrator/Generator/Simulatorを新設しないという全体Ruleがない。\n- 以前検討したEquipment 308件Baseline、Skill 330件Core Calibration、段階式Battle検証がCurrent ProjectのPhase/Task Draftへ残っていない。\n\n本Draftで、missing Decision、reuse-first Rule、正式Generator entrypoint、Concrete mass-calibration、重複開発禁止をProjectへ明記する。\n\n## 2. Mandatory Existing-System Reuse Matrix\n\n| Existing system | Existing entrypoint | Reuse plan | Current gap | Required extension | Do NOT build |\n|---|---|---|---|---|---|\n| **AI Battle Package** | studio/index.html: exportBattleAiPackageTemplate / importBattlePackageFile / runBattlePackageExecution / exportBattlePackageResult / importBattleBenchmarkResultPackage | Template→Import→Validate→Execute→Result ZIP→Result Importをそのまま利用 | REQ-BAL-PKG-001..003,007..012 | manifest/version binding、formal resource/roster、Current formula/status/lifecycle/AI、metrics | 別Battle Orchestrator / 別Formal Combat Simulatorの重複新設 |\n| **Equipment Generator** | GKS_EQUIPMENT_GENERATION_REQUEST / studio/equipment/equipment-generator.js / EQUIPMENT-BASE-V2 v2.1.0 | AIはkind/type/iLv/seedを要求しStudioが正式数値生成。iLv1〜11、13 Weapon、3 Armor category×4 slot、3 AccessoryでBaseline 308件を生成可能 | REQ-BAL-PKG-002,004 | Transient Candidate Resource + Formal Equipment Contribution Adapter | AIがrequired/attack/accuracy等の最終値を直書きする別Generator |\n| **Skill AI Batch / G05 / G07** | GKS_SKILL_AI_BATCH_REQUEST / studio/skill/skill-generator.js / assets/shared/js/skill-ai-batch-engine.js | AI Intent/Structure/desiredStrength→Studio numeric generation→Registry/Budget/Compiler/runtimeContracts validation | REQ-BAL-PKG-002,005,009,012 | Formal Skill Resource/Runtime Adapter。Current G05 default ON_USE/conditions=[]/mpCost=0/cooldown=0のCoverage拡張は既存Contract extension | 別Skill Generator / AIによるfinal numeric直書き |\n| **AI fixed-seed Simulation Runner** | studio/ai-production/ai-simulation-runner.js | Formal AI decision/componentのfixed-seed trial/compareに使用 | Formal Combat全体を表現しない | 必要なら既存Formal AI pipelineとの接続を拡張 | これをCurrent Combat Referenceと誤認、または同等runnerを重複作成 |\n| **Reward Resolver** | assets/shared/js/adventure-reward-resolver.js | Seeded Reward component / expected-value validationに利用 | Quest/Economy/Product Content上位Campaignは別検証が必要 | Experiment provenance/evidence binding | RewardをAI側独自乱数/独自式で再実装 |\n| **Studio Project JSON / Gameデータ配置** | Current Studio Project JSON → JSON全件読込 → Human確認 → Data Version → Gameデータ配置 | Product Candidate反映の唯一のGame Data正規経路 | Calibration FixtureはProduct Masterではない | なし。既存Data deploymentを使用 | Export直接編集/逆輸入、Source ZIPへGame Data同梱 |\n\n### Reuse invariant\n\n新しいAIは「必要な機能が計画に書かれている」ことを「新しいSystemを作るTask」と解釈してはならない。\nまず上表の既存Systemへ対応付け、Current Specification Gapだけを既存SystemのExtensionとしてSOURCE_UPDATE Requirementへ落とす。\n\n特に:\n- Battle PackageのZIP往復/実行/Result生成は完成済みのtransport/orchestrationとして再利用する。\n- Equipment大量生成は`GKS_EQUIPMENT_GENERATION_REQUEST`を使う。\n- Skill大量生成は`GKS_SKILL_AI_BATCH_REQUEST`→G05 numeric generation→G07 validationを使う。\n- fixed-seed AI decision/component比較は既存`ai-simulation-runner.js`を使える範囲で使う。\n- Reward deterministic componentは既存`adventure-reward-resolver.js`を使う。\n- Product Game DataはCurrent Studio Project JSON→JSON全件読込→Gameデータ配置の既存経路だけを使う。\n\n## 3. Current B735 capability evidence\n\n- Source: `GKS-B735 / GA-B486.211`\n- ZIP SHA-256: `167d5628f26529c1a342fe59ffedc86e3e0cea37490f6fed49805b6023f6ab95`\n- `package_manifest.json` SHA-256: `cc9c99338a705587f5f661b2228283bea8daac53d58bbe642885da6149f06b34`\n- Manifest integrity: `PACKAGE_MANIFEST_OK files=639`\n\nExisting implementation evidence:\n- `studio/index.html` SHA-256 `e049b02523dbd027db299f73449945476eacd85935abbeed1510a88fe6a3bef7`\n- `studio/equipment/equipment-generator.js` SHA-256 `a311bd014069c5e97a93a4bc84a9104fb5f1ddef76fed31af334501abc55ee2e`\n- `studio/skill/skill-generator.js` SHA-256 `d3ec1e27ec58c694bd4cfe2853a69d0fccea8491b16d45c882b2ea5a6557fa76`\n- `assets/shared/js/skill-ai-batch-engine.js` SHA-256 `1bd3c288ad741e00933dc5a0e48654282a09bad78260420ab3c18a74630fb7ad`\n- `studio/ai-production/ai-simulation-runner.js` SHA-256 `f82a35c3aa111031f7a9bcff2112c0d9f44c91f360a8360d767368413b5dfc51`\n- `assets/shared/js/adventure-reward-resolver.js` SHA-256 `04c99a7da63f977f83a32517bb0361e349e9f169fe0a645fa64830cb97b83cfe`\n\nこれらはImplementation capability evidenceであり、Current gameplay Specificationの正本ではない。\n\n## 4. Concrete mass-production reuse\n\n### Equipment\nCurrent Active Config:\n- `EQUIPMENT-BASE-V2`\n- config version `2.1.0`\n- iLv `1..11`\n\nBaseline complete matrix:\n- Weapon: 13種 × 11 = **143**\n- Armor: 3 category × 4 slot × 11 = **132**\n- Accessory: 3種 × 11 = **33**\n- Total = **308**\n\nAIは最終数値を書かず、Generator Requestを作る。\nBaseline後のCandidate Config数はSimulation/Sensitivity結果から選定し、Product Masterへ自動登録しない。\n\n### Skill\nCurrent G05でCore Calibrationに使える代表構造:\n- DAMAGE: PHYSICAL / MAGICAL / FIXED = 3\n- HEAL = 1\n- APPLY registered effects = 10\n- REMOVE = 1\n- RESOURCE_CHANGE MP gain/loss = 2\n- REVIVE fixed/rate = 2\n- TARGET_CONTROL persistent/uses/duration = 3\n- Total = **22**\n\nInitial Core Matrix:\n- 22 archetype × Skill Level `[1,10,25,50,100]` × Strength `[LOW,MEDIUM,HIGH]`\n- Total = **330**\n\nCurrent G05 defaultの`ON_USE / conditions=[] / mpCost=0 / cooldown=0`は「仕様全域完了」と見なさず、\nTrigger/Condition/ResourceのFormal coverageを既存Skill PipelineのExtensionとして扱う。\n\n## 5. Phase / Task / Dependency Draft\n\n| Phase | Lane | Task scope | Dependency | Parallel policy | Output | Existing system reused |\n|---|---|---|---|---|---|---|\n| **P0 Handoff / Reuse Gate** | DEVELOPMENT_ONLY | Project self-contained check / Decision refs / reusable-system inventory / Open REQ binding | Human Plan Gate前のDesignのみ | 不可（最初に固定） | handoff snapshot + reuse matrix | AI_START + Development Project + Current Source capability inventory |\n| **P1 Static Equipment Calibration** | DEVELOPMENT_ONLY evidence | EQUIPMENT-BASE-V2で308件Baseline→感度Candidate ConfigをGeneratorへ投入→curve/dead/dominance静的評価 | Human Plan Gate承認後。Formal Battle blocker解消前でもSTATIC_REFERENCEとして可 | P2 / P3 source alignmentと並列可 | Equipment Candidate evidence。Product Masterへ自動登録しない | GKS_EQUIPMENT_GENERATION_REQUEST |\n| **P2 Static Skill Calibration** | DEVELOPMENT_ONLY evidence | 22 Core archetype×Level[1,10,25,50,100]×Strength[LOW,MEDIUM,HIGH]=330件をG05生成/G07検証。Trigger/Condition/Resource coverage Gapを記録 | Human Plan Gate承認後。Combat利用はREQ-BAL-PKG-005/009解消後 | P1 / P3 source alignmentと並列可 | Skill Calibration evidence。Product Skill Masterへ自動登録しない | GKS_SKILL_AI_BATCH_REQUEST + G05/G07 |\n| **P3 Formal Runtime Source Alignment** | SOURCE_UPDATE（実装ラインへRequirement） | REQ-BAL-PKG-001〜012を既存System extensionとして解消。Package/Equipment/Skill/Passive/Formula/Status/AI/Monster/ResultをCurrent仕様へ接続 | Human Plan Gate承認後。Balance案件内でSourceを越境変更しない | 独立Requirement群は実装ラインで並列化可 | Human Apply済みCurrent Source + resolver Checks | 既存Battle Package/Generator/AI/Monster subsystemを修正 |\n| **P4 Formal Combat Candidate Loop** | DEVELOPMENT_ONLY evidence | AI Candidate→既存Generator→Battle Package+AI reference→Human実機Studio手動実行/Result Package出力→AI照合。Screen 100 seed、Refine 1000、Final/Holdout 10000を基準 | P3 Formal Readiness PASS + P1/P2 Candidate | Domain別Candidate群は同一version binding内で並列可 | Combat winner / rejected evidence / holdout | AI Battle Package + Result Package |\n| **P5 Upper Campaign** | DEVELOPMENT_ONLY evidence / Product Data参照はGAME_DATA前提 | New Game/Progression/Quest/Event/Reward/Drop/Economy/Guild/StoneをCombat結果へ接続。Reward Resolver再利用 | P4 Combat candidateが安定 | Quest/Economy/Guildのreference analysisは依存がない範囲で並列 | Target Experience適合Candidate | adventure-reward-resolver + Current owner contracts |\n| **P6 Product Candidate** | GAME_DATA | Current Studio Project JSON/Data Version取得→勝者だけをProduct Candidateへ反映→全件読込Pre-flight | P5 + Product Content readiness | 不可（Current Project JSON正本へ直列） | 全件読込用Project JSON | Studio Project JSON / JSON全件読込 |\n| **P7 Human Apply / Game Data Deploy** | GAME_DATA + Human Gate | Human内容確認→Data Version→Gameデータ配置→追加/差替え/除外確認 | P6 | 不可 | 配置済みCurrent Game Data | 既存Gameデータ配置 |\n| **P8 Game Runtime Conformance** | DEVELOPMENT_ONLY verification / Source defectはSOURCE_UPDATEへ戻す | AIがFormal Package reference/checklistを作成→HumanがGame Runtime実機で同一Input/Seed/Versionを手動実行しTrace/Save-Reload evidenceを出力→AIが照合。差異はBalance変更で隠さない | P7 | Scenario shardは並列可 | Runtime conformance evidence | Formal Package result + existing Game Runtime/E2E |\n| **P9 Current active Promotion** | Human Gate | Evidence Pack確認→Human明示承認→Current active昇格 / rollback binding | P8 + Holdout + readiness checks | 不可 | Approved Current active / rollback record | Balance state/version ledger |\n\n## 6. SOURCE_UPDATE Requirement mapping\n\n既存`REQ-BAL-PKG-001..012`を「新Systemを作る要求」ではなく、既存SystemのFormal化として扱う。\n\n- 001: Battle Package manifest/build/data/formula bindingを拡張。\n- 002–003: Existing Package resource/rosterへTransient Candidate + typed snapshotを追加。\n- 004: Existing Equipment Generator outputをFormal Battle Contributionへ接続。\n- 005/009: Existing Formal Skill/G05/G07 outputをBattle Runtime/Lifecycleへ接続。\n- 006: Existing Passive master/contractからFormal contribution pathを接続。不足するbatch productionは既存authoring architectureへ追加。\n- 007–008: Existing Battle Package execution semanticsをCurrent Formula/Status Contractへ修正。\n- 010: Existing Formal AI Program/Decision EngineをPackageへ接続。\n- 011: Existing Monster/Enemy owner chainをPackage snapshotへ接続。\n- 012: Existing Result PackageへBalance KPI/Trace/Provenanceを追加。\n\n## 7. Handoff minimum answer\n\n別AIへこのProjectを渡した場合、少なくとも次を回答できなければ引継ぎ不成立とする。\n\n1. 現在は`Specifying`で、Human Plan Gate前。\n2. 既存Battle Packageは再利用し、新Orchestratorを作らない。\n3. Equipmentは`GKS_EQUIPMENT_GENERATION_REQUEST`、Skillは`GKS_SKILL_AI_BATCH_REQUEST`+G05/G07を使う。\n4. Formal Battle PackageはREQ-BAL-PKG-001..012解消前はCurrent active Evidenceに使わない。\n5. Static Equipment/Skill CalibrationはProduct Masterと分離する。\n6. Product反映はCurrent Studio Project JSON→Human確認→Gameデータ配置。\n7. Humanが決めるのはPlan Gate、Product Apply、Current-active Promotion、およびAIで一意に決まらないGameplay方向だけ。\n8. Existing Systemで可能な機能を重複実装しない。\n\n## 8. Human decision status\n\nこのTaskで追加承認を要求しない。\nReuse-first方針はHumanの既存明示指示としてProjectへ復元する。\nFormula ownership等の未解決Gameplay/Structure選択はTASK-BAL-DESIGN-006でHuman Review項目へ整理する。\n\n## 9. Next task\n\n`TASK-BAL-DESIGN-006`でSystem Map / Package Gap / Evaluation Matrix / Simulation Plan / 本Execution Redesignを1つのReview単位へ統合し、\nHumanに必要な承認事項だけを抽出する。\n\n\n## 2026-08-24 Human real-device execution amendment\n実行actorについては `SPEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001` を優先する。AI側executionはreference生成/解析に限定し、Human実機確認を代替しない。\n",
       "decision_refs": [
         "DEC-BAL-001",
         "DEC-BAL-EXPERIENCE-001",
@@ -1344,18 +1377,18 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-22T14:12:00+09:00",
-      "updated_at": "2026-08-22T14:12:00+09:00"
+      "updated_at": "2026-08-24T13:30:00+09:00"
     },
     {
       "id": "SPEC-BAL-HUMAN-REVIEW-001",
       "title": "Human Review Pack: Game-wide Balance / Reuse-first Execution Draft",
       "status": "Approved",
       "summary": "System Map / Package Gap / Evaluation Matrix / Simulation Plan / Execution Redesignを統合し、Handoff Minimum Answer、Existing System Reuse、Open Requirement、Human Decision候補をPlan Gate用に集約する。",
-      "body": "# Human Review Pack — Game-wide Balance Plan / Reuse-first Execution Draft\n\n## 1. Current state\n- Workspace: `Specifying` / Workflow: `Planning`。\n- Design 001 System Map、002 Package Gap、003 Evaluation Matrix、004 Simulation Plan、005 Reuse-first Execution RedesignをReview inputとする。\n- Source/Game Data/Current active/Workflow approvalは未変更。\n- Human Plan Gate承認前にP1以降のExecutionを開始しない。\n\n## 2. Handoff minimum answer\n1. 現在はHuman Plan Gate前。\n2. Existing AI Battle Packageを再利用し、別Orchestrator/Combat Simulatorを作らない。\n3. Equipmentは`GKS_EQUIPMENT_GENERATION_REQUEST`、Skillは`GKS_SKILL_AI_BATCH_REQUEST`+G05/G07を使う。\n4. Formal BattleはREQ-BAL-PKG-001..012解消前にCurrent-active Evidenceへ使わない。\n5. Static Equipment/Skill calibration fixtureはProduct Masterと分離する。\n6. Product反映はCurrent Studio Project JSON→全件読込/Human確認→Data Version→既存Gameデータ配置経路のみ。\n7. Human判断はPlan Gate、Product Apply、Current-active Promotion、複数の妥当なGameplay方向が残る事項。\n8. Existing Systemで可能な機能を重複実装しない。\n\n## 3. Mandatory reuse matrix\n- Battle transport/orchestration: Existing AI Battle Package。\n- Equipment mass generation: Existing Equipment Generator、308 baseline matrix。\n- Skill mass generation: Existing Skill AI Batch/G05/G07、330 core matrix。\n- AI deterministic component: Existing fixed-seed runner（Combat Reference代替不可）。\n- Reward deterministic component: Existing Reward Resolver。\n- Product Data deployment: Existing Studio Project JSON/Gameデータ配置。\n- Passive/MODの専用mass authoring入口はCurrent B735で未確認。独立Generatorを作らず、既存authoring ownerの最小extension候補`REQ-BAL-AUTH-001`として扱う。\n\n## 4. Execution phase draft\n- P0 Handoff/Reuse Gate\n- P1 Static Equipment Calibration（P2/P3と並列可）\n- P2 Static Skill Calibration（P1/P3と並列可）\n- P3 Existing System Current-Spec Alignment（SOURCE_UPDATEは実装ラインへ）\n- P4 Formal Combat Candidate Loop（100→1,000→10,000 holdout基準）\n- P5 Upper Campaign / Progression / Quest / Reward / Economy / Stone\n- P6 Product Candidate（GAME_DATA、Current Studio Project JSON正本）\n- P7 Human Apply / Game Data Deploy\n- P8 Game Runtime Conformance\n- P9 Human Current-active Promotion\n\n## 5. Open SOURCE_UPDATE requirements\n### Existing Package formalization\n`REQ-BAL-PKG-001..012`は全て新Systemではなく既存System extensionとして扱う。\n- provenance/version binding\n- transient candidate/typed roster\n- Equipment contribution\n- Formal Skill runtime/lifecycle\n- Passive contribution\n- Formula/Status alignment\n- Formal AI\n- Monster/Enemy snapshot\n- Result KPI/trace/provenance\n\n### Authoring gap\n`REQ-BAL-AUTH-001`: Passive/MOD Candidate Authoring Route。\nCurrent B735ではEquipment/Skill相当の専用mass-generation入口を確認できない。P3で既存Studio authoring ownerを確定し、必要ならそこへbatch/simulation入口を追加する。新しい独立Generatorは作らない。\n\n## 6. Human decision candidates\n### HD-1 — Game-wide scope / reuse-first execution\n`DEC-BAL-PLAN-SCOPE-001`と`DEC-BAL-EXECUTION-001`を承認するか。\nRecommended: 承認。既存Systemを正規経路として使い、GapだけをSource Requirementへ返す。\n\n### HD-2 — Formula ownership boundary\n`DEC-BAL-FORMULA-BOUNDARY-001`を承認するか。\nRecommended default:\n- formula topology/expression、processing order、rounding、owner responsibility = `fixed_structure`\n- coefficient / curve / cap / floor / clamp / probability / weight / cost / duration / interval / growth / conversion / threshold = Balance variable\n- expression変更が必要と判明した場合はBalance Configで勝手に差替えず、Current Specification/Source Requirementへ戻す。\n\n理由: `RULE-BAL-002/003`と整合し、Balance都合でStructureを再設計しないため。\n\n### HD-3 — Plan execution authorization\nP0〜P9 Draftを「実行計画」として承認し、Gate後にP1/P2をDEVELOPMENT_ONLY evidenceとして開始し、P3 Requirementを実装ラインへ送ることを許可するか。\nこの承認はP6/P7のProduct ApplyやP9 Current-active Promotionの承認を兼ねない。それらは別Human Gateを維持する。\n\n## 7. Not Human decisions\n以下はAI/technical executionで決定・検証し、複数のGameplay方向が残る場合だけHumanへ上げる。\n- Equipment 308 / Skill 330のstatic baseline実行\n- Seed derivation / paired A-B / holdout protocol\n- KPI distribution / invalid/dominance/dead-option detection\n- REQ-BAL-PKGの技術的実装詳細\n- Product Content readinessの機械的Pre-flight\n- Passive/MOD authoring ownerのSource audit\n- Candidate band生成（Human Approved Experienceを変えない範囲）\n\n## 8. Gate recommendation\n現時点でHumanへ要求するのはHD-1〜HD-3のみ。承認されるまでは`TASK-BAL-PLAN-GATE-001`のapprovalをPendingのまま保ち、Execution/GAME_DATA/SOURCE_UPDATEを開始しない。\n\n\n## 8. Human Plan Gate result\n- Approved by Human: `2026-08-23T12:59:00+09:00`\n- HD-1: Approved — Game-wide scope / reuse-first execution.\n- HD-2: Approved — Formula topology/expression, processing order, rounding, owner responsibility are fixed_structure unless Current Specification explicitly defines otherwise; concrete numeric parameters are Balance variables.\n- HD-3: Approved — P1/P2 DEVELOPMENT_ONLY calibration may start and P3 SOURCE_UPDATE Requirement handoff may be prepared/sent to the implementation line.\n- This approval does **not** approve P7 Product Apply / Game Data Deploy or P9 Current-active Promotion; those remain separate Human Gates.\n",
+      "body": "# Human Review Pack — Game-wide Balance Plan / Reuse-first Execution Draft\n\n## 1. Current state\n- Workspace: `Specifying` / Workflow: `Planning`。\n- Design 001 System Map、002 Package Gap、003 Evaluation Matrix、004 Simulation Plan、005 Reuse-first Execution RedesignをReview inputとする。\n- Source/Game Data/Current active/Workflow approvalは未変更。\n- Human Plan Gate承認前にP1以降のExecutionを開始しない。\n\n## 2. Handoff minimum answer\n1. 現在はHuman Plan Gate前。\n2. Existing AI Battle Packageを再利用し、別Orchestrator/Combat Simulatorを作らない。\n3. Equipmentは`GKS_EQUIPMENT_GENERATION_REQUEST`、Skillは`GKS_SKILL_AI_BATCH_REQUEST`+G05/G07を使う。\n4. Formal BattleはREQ-BAL-PKG-001..012解消前にCurrent-active Evidenceへ使わない。\n5. Static Equipment/Skill calibration fixtureはProduct Masterと分離する。\n6. Product反映はCurrent Studio Project JSON→全件読込/Human確認→Data Version→既存Gameデータ配置経路のみ。\n7. Human判断はPlan Gate、Product Apply、Current-active Promotion、複数の妥当なGameplay方向が残る事項。\n8. Existing Systemで可能な機能を重複実装しない。\n\n## 3. Mandatory reuse matrix\n- Battle transport/orchestration: Existing AI Battle Package。\n- Equipment mass generation: Existing Equipment Generator、308 baseline matrix。\n- Skill mass generation: Existing Skill AI Batch/G05/G07、330 core matrix。\n- AI deterministic component: Existing fixed-seed runner（Combat Reference代替不可）。\n- Reward deterministic component: Existing Reward Resolver。\n- Product Data deployment: Existing Studio Project JSON/Gameデータ配置。\n- Passive/MODの専用mass authoring入口はCurrent B735で未確認。独立Generatorを作らず、既存authoring ownerの最小extension候補`REQ-BAL-AUTH-001`として扱う。\n\n## 4. Execution phase draft\n- P0 Handoff/Reuse Gate\n- P1 Static Equipment Calibration（P2/P3と並列可）\n- P2 Static Skill Calibration（P1/P3と並列可）\n- P3 Existing System Current-Spec Alignment（SOURCE_UPDATEは実装ラインへ）\n- P4 Formal Combat Candidate Loop（各段階 AI Package/reference → Human実機手動実行 → AI照合。100→1,000→10,000 holdout基準）\n- P5 Upper Campaign / Progression / Quest / Reward / Economy / Stone\n- P6 Product Candidate（GAME_DATA、Current Studio Project JSON正本）\n- P7 Human Apply / Game Data Deploy\n- P8 Human実機 Game Runtime Conformance（AIは手順/reference作成と結果照合。Playwright/WebKit自動実機確認は使用しない）\n- P9 Human Current-active Promotion\n\n## 5. Open SOURCE_UPDATE requirements\n### Existing Package formalization\n`REQ-BAL-PKG-001..012`は全て新Systemではなく既存System extensionとして扱う。\n- provenance/version binding\n- transient candidate/typed roster\n- Equipment contribution\n- Formal Skill runtime/lifecycle\n- Passive contribution\n- Formula/Status alignment\n- Formal AI\n- Monster/Enemy snapshot\n- Result KPI/trace/provenance\n\n### Authoring gap\n`REQ-BAL-AUTH-001`: Passive/MOD Candidate Authoring Route。\nCurrent B735ではEquipment/Skill相当の専用mass-generation入口を確認できない。P3で既存Studio authoring ownerを確定し、必要ならそこへbatch/simulation入口を追加する。新しい独立Generatorは作らない。\n\n## 6. Human decision candidates\n### HD-1 — Game-wide scope / reuse-first execution\n`DEC-BAL-PLAN-SCOPE-001`と`DEC-BAL-EXECUTION-001`を承認するか。\nRecommended: 承認。既存Systemを正規経路として使い、GapだけをSource Requirementへ返す。\n\n### HD-2 — Formula ownership boundary\n`DEC-BAL-FORMULA-BOUNDARY-001`を承認するか。\nRecommended default:\n- formula topology/expression、processing order、rounding、owner responsibility = `fixed_structure`\n- coefficient / curve / cap / floor / clamp / probability / weight / cost / duration / interval / growth / conversion / threshold = Balance variable\n- expression変更が必要と判明した場合はBalance Configで勝手に差替えず、Current Specification/Source Requirementへ戻す。\n\n理由: `RULE-BAL-002/003`と整合し、Balance都合でStructureを再設計しないため。\n\n### HD-3 — Plan execution authorization\nP0〜P9 Draftを「実行計画」として承認し、Gate後にP1/P2をDEVELOPMENT_ONLY evidenceとして開始し、P3 Requirementを実装ラインへ送ることを許可するか。\nこの承認はP6/P7のProduct ApplyやP9 Current-active Promotionの承認を兼ねない。それらは別Human Gateを維持する。\n\n## 7. Not Human decisions\n以下はAI/technical executionで決定・検証し、複数のGameplay方向が残る場合だけHumanへ上げる。\n- Equipment 308 / Skill 330のstatic baseline実行\n- Seed derivation / paired A-B / holdout protocol\n- KPI distribution / invalid/dominance/dead-option detection\n- REQ-BAL-PKGの技術的実装詳細\n- Product Content readinessの機械的Pre-flight\n- Passive/MOD authoring ownerのSource audit\n- Candidate band生成（Human Approved Experienceを変えない範囲）\n\n## 8. Gate recommendation\n現時点でHumanへ要求するのはHD-1〜HD-3のみ。承認されるまでは`TASK-BAL-PLAN-GATE-001`のapprovalをPendingのまま保ち、Execution/GAME_DATA/SOURCE_UPDATEを開始しない。\n\n\n## 8. Human Plan Gate result\n- Approved by Human: `2026-08-23T12:59:00+09:00`\n- HD-1: Approved — Game-wide scope / reuse-first execution.\n- HD-2: Approved — Formula topology/expression, processing order, rounding, owner responsibility are fixed_structure unless Current Specification explicitly defines otherwise; concrete numeric parameters are Balance variables.\n- HD-3: Approved — P1/P2 DEVELOPMENT_ONLY calibration may start and P3 SOURCE_UPDATE Requirement handoff may be prepared/sent to the implementation line.\n- This approval does **not** approve P7 Product Apply / Game Data Deploy or P9 Current-active Promotion; those remain separate Human Gates.\n\n\n## 2026-08-24 Human real-device execution amendment\n実行actorについては `SPEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001` を優先する。AI側executionはreference生成/解析に限定し、Human実機確認を代替しない。\n",
       "decision_refs": [
         "DEC-BAL-001",
         "DEC-BAL-EXPERIENCE-001",
@@ -1377,11 +1410,11 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "Human",
       "approved_at": "2026-08-23T12:59:00+09:00",
       "created_at": "2026-08-22T14:23:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-24T13:30:00+09:00"
     },
     {
       "id": "SPEC-BAL-P3-RECOVERY-PLAN-001",
@@ -1408,6 +1441,32 @@
       "approved_at": "2026-08-23T13:58:00+09:00",
       "created_at": "2026-08-23T13:53:00+09:00",
       "updated_at": "2026-08-23T13:58:00+09:00"
+    },
+    {
+      "id": "SPEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001",
+      "title": "Human Real-device Execution Boundary / Candidate Loop Amendment",
+      "status": "Approved",
+      "summary": "AI reference計算とHuman実機Evidenceを分離し、P4/P8のBrowser/Runtime確認actorをHuman実機へ固定する計画修正。",
+      "body": "# Human Real-device Execution Boundary — Approved Amendment\n\n## Authority\n- `DEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001` と `DEC-BAL-P4-CANDIDATE-HUMAN-STAGE-SPLIT-001` を実行actorの優先Authorityとする。\n- 既存計画に `WebKit E2E`、`Template→Import→Validate→Execute→Result Package→Import` 等の記述があっても、**実機/UI操作actorはHuman** と解釈する。\n- AIが非UI環境で既存Formal executorを呼び出して得た結果は `AI_REFERENCE` であり、`HUMAN_REAL_DEVICE` Evidenceではない。\n\n## P4 Candidate Loop\n各Stageを3工程へ分割する。\n1. AI: Candidate/Seed/Input/Package/Checklist/AI reference Resultを作成する。\n2. Human: Current Studio実機でPackageを手動Import→Validation→Execute→Result Package Exportする。Playwright/WebKit/browser automationを使わない。\n3. AI: Human ResultをAI referenceと照合し、binding/JOB_ERROR/replay/formal evidence/KPIを確認して次Stage候補を決める。\n\nStage trial countは Screen=100、Refine=1,000、Final/Holdout=10,000 disjoint seedsを維持する。これはtrial countであってUI自動化指示ではない。HumanはStudioの既存Batch executionを手動開始してよい。AIはHuman操作を代行しない。\n\n## P8 Game Runtime Conformance\n- AI: 同一Input/Seed/Rules/Data/Config Version、期待結果、Owner Trace観点、Save/Reload手順を準備する。\n- Human: 実Game/Studio実機で指定scenarioを手動実行し、Result/Trace/Save-Reload evidenceを出力・提示する。\n- AI: Formal Package referenceとHuman実機evidenceを比較する。\n- 自動WebKit/Playwright実行の成功をRuntime Conformance PASS根拠にしない。\n\n## Stop rule\nHuman実機とAI referenceの不一致、JOB_ERROR、provenance/replay mismatch、必要Evidence欠落が1件でもあればそのStageで停止し、Issue Gateへ戻る。",
+      "decision_refs": [
+        "DEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001",
+        "DEC-BAL-P4-CANDIDATE-HUMAN-STAGE-SPLIT-001",
+        "DEC-BAL-PACKAGE-001"
+      ],
+      "depends_on": [
+        "SPEC-BAL-SIMULATION-PLAN-001",
+        "SPEC-BAL-EXECUTION-REDESIGN-001"
+      ],
+      "acceptance_criteria": "- AI referenceとHuman real-device evidenceを明示分離する。\n- P4 Screen/Refine/FinalをAI→Human→AIの段階Taskへ分割する。\n- P8 Runtime ConformanceでPlaywright/WebKit自動実機確認を前提にしない。\n- Human実機Resultなしに実機PASS/Promotionへ進めない。",
+      "system_node_id": "SYS-BAL-CROSS_META",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T13:30:00+09:00",
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -4102,22 +4161,22 @@
     {
       "id": "TASK-BAL-005",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "P4 Formal Combat Candidate Loopを実行する",
-      "status": "Todo",
-      "execution_order": 210,
+      "title": "P4 Formal Combat Candidate Loop（Human実機分割方式）を完了判定する",
+      "status": "Blocked",
+      "execution_order": 220,
       "depends_on": [
-        "TASK-BAL-035"
+        "TASK-BAL-044"
       ],
-      "acceptance_criteria": "- Existing AI Battle PackageのTemplate→Import→Validate→Execute→Result Package→Import経路を使用する。\n- 同一Input/Seed/Versionでpaired A/B、Sensitivity、2-way interactionを実施する。\n- Screen 100 seed → Refine 1,000 → Final/Holdout 10,000を基準に段階評価する。\n- Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを残し、Current activeへは昇格しない。\n- TASK-BAL-030でHuman実機ResultとAI基準の一致を確認し、『実機テスト完了』GateがPassedするまで開始しない。",
+      "acceptance_criteria": "- TASK-BAL-036〜044のScreen/Refine/Final-Holdout各工程が完了している。\n- 各StageでAI referenceとHuman実機ResultのBuild/Template/Package/Input/Seed/Job binding、JOB_ERROR、replay_fingerprint、formal evidenceを照合済みである。\n- Screen 100 → Refine 1,000 → Final/Holdout 10,000 disjoint seedを段階評価し、Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを保持し、Current activeへは昇格しない。\n- AI referenceだけをHuman実機PASSとして扱わない。Playwright/WebKit/browser automationをHuman実機確認の代替にしない。\n- 本Task開始前に修正後計画としてHuman明示承認を改めて得る。",
       "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
+      "requires_human_approval": true,
       "approval": {
         "status": "Pending",
         "by": "",
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T13:09:00+09:00"
+      "updated_at": "2026-08-24T13:30:00+09:00"
     },
     {
       "id": "TASK-BAL-006",
@@ -4228,16 +4287,16 @@
       "depends_on": [
         "TASK-BAL-010"
       ],
-      "acceptance_criteria": "- Formal Battle PackageとGame Runtimeへ同一Input/Seed/Rules/Data/Config Versionを投入し、WebKit E2E/Owner Trace/Save-Reloadで照合する。\n- ReferenceとRuntimeの差異をBalance値で隠さず、Source defectなら実装ラインRequirementへ戻す。\n- QuestRun/Generated Item/Character growth snapshotの非遡及を確認する。\n- Runtime conformance evidenceが揃うまでP9を解放しない。",
+      "acceptance_criteria": "- AIがFormal Battle Package reference、同一Input/Seed/Rules/Data/Config Version、Owner Trace観点、Save-Reload手順を準備する。\n- Humanが実Game/Studio実機を手動操作して指定Scenarioを実行し、Result/Trace/Save-Reload evidenceをAIへ提示する。Playwright/WebKit/browser automationを実機確認の代替にしない。\n- AIがFormal referenceとHuman実機Evidenceを照合し、差異をBalance値で隠さずSource defectならRequirementへ戻す。\n- QuestRun/Generated Item/Character growth snapshotの非遡及をHuman実機Evidenceと保存Snapshotで確認する。\n- Human実機Runtime conformance evidenceが揃うまでP9を解放しない。",
       "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
+      "requires_human_approval": true,
       "approval": {
         "status": "Pending",
         "by": "",
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-24T13:30:00+09:00"
     },
     {
       "id": "TASK-BAL-012",
@@ -4268,16 +4327,16 @@
       "depends_on": [
         "TASK-BAL-012"
       ],
-      "acceptance_criteria": "- Current active昇格後も同一Input+Seed+Rules/Data/Config Versionで再現できることを確認する。\n- 既存QuestRun・既存生成Item・既存Character成長結果が遡及再計算されていないことを確認する。\n- Runtime/Game Data/Result provenance、rollback path、主要KPI regressionを確認する。\n- 問題があればCompletionへ進めずCandidate/Requirementへ戻す。",
+      "acceptance_criteria": "- Current active昇格後も同一Input+Seed+Rules/Data/Config Versionで再現できることを確認する。\n- 実Game Runtimeの再確認が必要な項目はHumanが実機で手動実行し、AIはResult/Trace/Snapshotを照合する。Playwright/WebKit/browser automationをHuman実機確認の代替にしない。\n- 既存QuestRun・既存生成Item・既存Character成長結果が遡及再計算されていないことを確認する。\n- Runtime/Game Data/Result provenance、rollback path、主要KPI regressionを確認する。\n- 問題があればCompletionへ進めずCandidate/Requirementへ戻す。",
       "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
+      "requires_human_approval": true,
       "approval": {
         "status": "Pending",
         "by": "",
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-24T13:30:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-001",
@@ -4839,6 +4898,186 @@
       },
       "created_at": "2026-08-24T12:52:00+09:00",
       "updated_at": "2026-08-24T13:09:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-036",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Screen 100: AI Candidate Package / Referenceを作成する",
+      "status": "Blocked",
+      "execution_order": 211,
+      "depends_on": [
+        "TASK-BAL-035"
+      ],
+      "acceptance_criteria": "- 開始前に目的/work_type/基準Source/変更範囲/成果物/完了条件を報告しHuman明示承認を得る。\n- P1/P2/P3-4の既存Calibration EvidenceからScreen Candidateを選び、同一Input/Versionで100 paired seedsのBattle Packageを作成する。\n- AI環境で可能な非UI Formal executorによるreference Resultを作成してよいが、AI_REFERENCEとして保存しHuman実機PASS扱いしない。\n- Human実機用ChecklistにBuild/Template/Package hash/Input/Seed/Job IDと期待Evidenceを固定する。\n- Source/Game Data/Current activeを変更しない。AI referenceでJOB_ERROR/validation errorが残る場合はTASK-BAL-037へ進めない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-037",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Screen 100: Human実機でCandidate Packageを実行する",
+      "status": "Blocked",
+      "execution_order": 212,
+      "depends_on": [
+        "TASK-BAL-036"
+      ],
+      "acceptance_criteria": "- 開始前にHumanが実機実行開始を明示承認する。\n- HumanがCurrent Studio実機を手動操作し、TASK-BAL-036のexact PackageをImport→Validate→Execute→Result Package Exportする。\n- Playwright/WebKit/browser automationを使用しない。AIはUI操作を代行しない。\n- 指定100 paired seed trialをStudioの既存Batch executionで実行し、JOB_ERROR/runtime/validation errorを保存する。\n- 不具合時はその場で修正せずResult/再現条件を保存して停止する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-038",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Screen 100: AI/Human Resultを照合しRefine候補を選ぶ",
+      "status": "Blocked",
+      "execution_order": 213,
+      "depends_on": [
+        "TASK-BAL-037"
+      ],
+      "acceptance_criteria": "- 開始前にHuman明示承認を得る。\n- Human実機ResultとTASK-BAL-036 AI referenceのBuild/Template/Package/Input/Seed/Job bindingを照合する。\n- JOB_ERROR=0、replay/formal_only/legacy_fallback/formal evidence/KPIを確認する。\n- paired A/B、Sensitivity、2-way interaction、marginal contribution/distribution/failure taxonomyからRefine候補を選ぶ。\n- 不一致が1件でもあればTASK-BAL-039へ進めずIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-039",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Refine 1,000: AI Candidate Package / Referenceを作成する",
+      "status": "Blocked",
+      "execution_order": 214,
+      "depends_on": [
+        "TASK-BAL-038"
+      ],
+      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Screen PASS候補だけを用い、同一Input/Versionで1,000 paired seedsのRefine PackageとAI_REFERENCEを作成する。\n- Screen seed順序/結果を上書きせず、Refine seed setをEvidenceへ固定する。\n- Human実機Checklistを作成し、Source/Game Data/Current activeを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-040",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Refine 1,000: Human実機でCandidate Packageを実行する",
+      "status": "Blocked",
+      "execution_order": 215,
+      "depends_on": [
+        "TASK-BAL-039"
+      ],
+      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- HumanがCurrent Studio実機でexact Refine Packageを手動Import→Validate→Execute→Result Exportする。\n- Playwright/WebKit/browser automationを使用しない。\n- 1,000 paired seed trialのResultを保存し、error/inconsistency時は停止してAIへ提示する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-041",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Refine 1,000: AI/Human Resultを照合しFinal候補を選ぶ",
+      "status": "Blocked",
+      "execution_order": 216,
+      "depends_on": [
+        "TASK-BAL-040"
+      ],
+      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Human Refine ResultをAI referenceと照合し、binding/JOB_ERROR/replay/formal evidence/KPIを確認する。\n- Refine distribution/tail/dominance/runaway/dead-option failureを評価しFinal/Holdout候補を選ぶ。\n- 不一致・新GapがあればTASK-BAL-042へ進めずIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-042",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Final/Holdout 10,000: AI Candidate Package / Referenceを作成する",
+      "status": "Blocked",
+      "execution_order": 217,
+      "depends_on": [
+        "TASK-BAL-041"
+      ],
+      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Refine選抜候補に対し、Calibration/Screen/Refineで未使用の10,000 disjoint holdout seedsを固定する。\n- Final/Holdout Package、AI_REFERENCE、Human実機Checklistを作成する。\n- Holdout結果を候補再調整へ流用しない。Source/Game Data/Current activeを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-043",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Final/Holdout 10,000: Human実機でCandidate Packageを実行する",
+      "status": "Blocked",
+      "execution_order": 218,
+      "depends_on": [
+        "TASK-BAL-042"
+      ],
+      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- HumanがCurrent Studio実機でexact Final/Holdout Packageを手動Import→Validate→Execute→Result Exportする。\n- Playwright/WebKit/browser automationを使用しない。\n- 10,000 disjoint holdout trialsのResultを保存し、error/inconsistency時は停止する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-044",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "P4 Final/Holdout: AI/Human Resultを照合しCandidate winner/rejected evidenceを確定する",
+      "status": "Blocked",
+      "execution_order": 219,
+      "depends_on": [
+        "TASK-BAL-043"
+      ],
+      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Human Final/Holdout ResultとAI referenceを全binding/replay/formal evidence/KPIで照合する。\n- Holdoutのmarginal contribution/distribution/tail/dominance/counter/runaway failureを評価しwinner/rejected evidenceを確定する。\n- Human実機ResultなしにFinal PASSを宣言しない。\n- Current active/Game Dataへ昇格せず、TASK-BAL-005完了判定用Evidenceを作成する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
     }
   ],
   "checks": [
@@ -6892,6 +7131,52 @@
       "blocking": false,
       "created_at": "2026-08-24T13:07:00+09:00",
       "updated_at": "2026-08-24T13:07:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-HUMAN-REAL-DEVICE-EXECUTION-BOUNDARY-001",
+      "title": "Human real-device execution boundary plan correction",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "Human instruction applied. Playwright/WebKit/browser automation is not a valid substitute for real-device verification. P4 Candidate Loop is split into AI Package/reference → Human real-device manual execution → AI comparison for Screen/Refine/Final-Holdout. P8 Runtime Conformance actor is also corrected to Human real-device execution + AI comparison. No Source/Game Data/Current active changes.",
+      "evidence": "DEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001; DEC-BAL-P4-CANDIDATE-HUMAN-STAGE-SPLIT-001; SPEC-BAL-HUMAN-REAL-DEVICE-EXECUTION-001",
+      "checked_by": "Human+AI",
+      "checked_at": "2026-08-24T13:30:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T13:30:00+09:00",
+        "reason": "Human explicitly instructed that real-device verification is performed by Human and automation assumptions must be corrected.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK036-START-APPROVAL-001",
+      "title": "P4 corrected Candidate Loop Screen start approval",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-036",
+      "status": "Pending",
+      "result": "Corrected plan is registered. TASK-BAL-036 remains non-running until AI presents the corrected task declaration and Human explicitly approves TASK-BAL-036 start. Prior TASK-BAL-005 approval does not auto-transfer to the changed plan.",
+      "evidence": "RULE-BAL-HUMAN-REAL-DEVICE-001; TASK-BAL-036",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
     }
   ],
   "workflow": {
@@ -7235,6 +7520,22 @@
       "task_id": "TASK-BAL-035",
       "created_at": "2026-08-24T13:09:00+09:00",
       "updated_at": "2026-08-24T13:09:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK005-AUTOMATION-ASSUMPTION-ISSUE-001",
+      "title": "TASK-BAL-005 execution-actor ambiguity detected and stopped",
+      "summary": "During approved TASK-BAL-005 startup, Human clarified that Playwright/WebKit/browser automation cannot be used for real-device verification and Human performs real-device checks. Audit confirmed the current TASK-BAL-005 wording could be read as AI automatically performing Template→Import→Validate→Execute→Result→Import. Candidate execution was stopped before formal candidate run; no Source/Game Data/Current active changes were made.",
+      "task_id": "TASK-BAL-005",
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-HUMAN-REAL-DEVICE-PLAN-CORRECTION-001",
+      "title": "P4/P8 plan corrected to Human real-device execution boundary",
+      "summary": "Human-approved plan correction registered. P4 Screen/Refine/Final-Holdout are split into TASK-BAL-036..044: AI package/reference, Human real-device manual execution, AI comparison. P8 Game Runtime Conformance is corrected to Human real-device execution + AI comparison; Playwright/WebKit/browser automation cannot satisfy real-device evidence. Prior TASK-BAL-005 start approval is not reused because the execution plan changed; next start gate is TASK-BAL-036.",
+      "task_id": "TASK-BAL-036",
+      "created_at": "2026-08-24T13:30:00+09:00",
+      "updated_at": "2026-08-24T13:30:00+09:00"
     }
   ],
   "authority": {
