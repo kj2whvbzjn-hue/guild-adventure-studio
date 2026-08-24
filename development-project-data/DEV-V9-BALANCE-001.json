@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T12:12:26.184Z"
+    "updated_at": "2026-08-24T12:25:37.252Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-PLAYER-001",
-    "theme": "TASK-BAL-071-CORR-002 Multi-Loadout Issue Gate; dual-wield/shield correction decision wait",
-    "goal": "Do not start TASK-BAL-072. Preserve swordsman greatsword/two-hand reference and hunter bow availability, but resolve Current same-ID dual-wield representation and shield contribution semantics before freezing Multi-Loadout Bare Player Reference. No Source correction is authorized in this run."
+    "work_box_id": "BOX-V9-BAL-WORLD-001",
+    "theme": "TASK-BAL-072 Monster Core PASS; TASK-BAL-073 Core Enemy Budget start approval wait",
+    "goal": "Use BAL-R5-MONSTER-CORE-001 and the retained TASK-BAL-071-CORR-002 Multi-Loadout Bare Player Reference as the only P6 inputs. TASK-BAL-073 must not start until separate Human approval. Skill remains after Monster Core/Core Enemy Budget. No Product Monster Master, Source, Game Data, or Current active mutation was made in TASK-BAL-072."
   },
   "project_rules": [
     {
@@ -308,14 +308,14 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B771",
+    "studio_build": "GKS-B772",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260824-111459).zip",
-    "source_role": "fresh_GKS-B771_current_canonical_project_TASK-BAL-071-CORR-002_issue_gate_baseline",
-    "recorded_at": "2026-08-24T20:15:00+09:00",
-    "package_manifest_sha256": "a60ed7082fb7d7c19b1c2a9ff8e685a8ae0b8cba09a1813464173335c5604347",
-    "source_tree_sha256": "196b4cc9e6d06957cd50a7e899678d8c1a4978d36b7c3541c2dca371e19ae8e2",
-    "source_zip_sha256": "fc661cea5dd8300ada916678f289bf7bf1a502a6ea1224a40e8b6c0c61aa9cff"
+    "source_label": "guild-adventure-studio-sub(20260824-115939).zip",
+    "source_role": "fresh_GKS-B772_current_weapon_style_verified_TASK-BAL-071-CORR-002_baseline",
+    "recorded_at": "2026-08-24T21:09:03+09:00",
+    "package_manifest_sha256": "2b673a693cd3befd50a1c1389f75b0c268016358366e0b3f4dddb12339886857",
+    "source_tree_sha256": "f747ad462bf3137372d50a01b94aea683728ec4385ecd67de8f05c900b779a24",
+    "source_zip_sha256": "869c87453b8beceb84a1b8992e9efb46512e9b0bc136bf93cd9efd592ced7e21"
   },
   "lifecycle": {
     "status": "Active",
@@ -1156,18 +1156,18 @@
     },
     {
       "id": "DISC-BAL-010",
-      "title": "Bare Player Multi-Loadoutで二刀流同一IDと盾ContributionのCurrent Gapを検出",
-      "status": "Open",
-      "summary": "TASK-BAL-071-CORR-002実行中に、盗賊同一武器二刀流と騎士片手剣+盾をCurrent Runtimeへ正しく表現できないBlocking Gapを検出したためIssue Gate停止。",
-      "body": "Problem 1 — 同一Equipment ID二刀流の表現衝突:\n- Current Saveのweapon1/weapon2はEquipment master ID文字列を保持する。\n- game/assets/js/app-runtime.js twoHandedWeaponRef() は weapon1===weapon2 を両手持ちと判定する。\n- characterEquipmentEntries() は同一IDを1件へ畳み、equipmentBonus()も1武器分だけContributionを加算する。\n- よって短剣EQP-xxxxを2個所持してweapon1/weapon2へ同じmaster IDで装備しても、短剣×2ではなく両手持ち1本として扱われる。片手剣×2も同じ。\nImpact: 盗賊二刀流をMonster Core入力として正規Runtime再現できず、二刀流Attack/Accuracy/Crit等を推測加算してReference化できない。\n\nProblem 2 — 盾のCurrent Contribution意味が未成立:\n- P1 Equipment Generator / EQUIPMENT-BASE-V2では「盾」はweapon base_item_typeで、iLv1盾は required_str=6/required_dex=3/required_int=1, attack=12, accuracy=6, magic_weapon_bonus=6, base_critical_rate=0.05。\n- hp_bonus/evasion/resistance等の盾防御ContributionはCurrent P1 recordに存在しない。\n- Runtimeでは盾もweapon slotへ入り、片手剣+盾は2つのweapon Contributionを単純加算する。\nImpact: 騎士Referenceを片手剣+盾にすると「防御型」ではなく攻撃/Accuracy/Crit等を二重加算するLoadoutになり、Monster Core基準を歪める。\n\nConfirmed non-blocking observation — 狩人の弓:\n- 弓はCurrent P1に正式weapon recordがあり、Basic Combat contribution/要求判定のReferenceとして使用可能。\n- iLv1弓は短剣と同じrequirement/performance係数(STR3/DEX6/INT1, Attack6, Accuracy12, Magic3, Crit5%)。Range固有戦闘効果は本Taskでは推測しない。\n\nCorrection options:\nA. 推奨: weapon1/weapon2のmaster ID一致を両手判定に使わず、両手占有状態を明示的に保持できるCurrent正規表現へ改修し、同一master IDの複数個体を二刀流可能にする。Save/Inventory表現との整合も同時に定義する。\nB. 二刀流Referenceだけ異なるiLv/異なる武器IDで代替する。これは短剣×2/片手剣×2の要求を満たさず、Balance Referenceとして非推奨。\nC. AI側で2本分を手計算する。Runtime非再現なので禁止。\nShield options: Current正式Shield defense contributionをSpecification/Equipment ownerで確定してGenerator→Contribution→Runtimeへ接続するか、盾の正式役割が確定するまで騎士shield ReferenceをDeferredにする。\n\nRecommended order: 1) 二刀流/両手占有のCurrent表現を確定・Source correction、2) Shield正式Contributionを確定/実装、3) Fresh Sourceで再検証、4) TASK-BAL-071-CORR-002を再開してMulti-Loadout Freeze、5) TASK-BAL-072へ進む。",
-      "open_questions": "二刀流の同一master Equipment 2個を識別する正規Save/Inventory表現、およびShieldの正式防御Contributionをどう定義/実装するか。",
-      "conclusion": "Issue Gate open. HumanがCorrection方針を承認するまでTASK-BAL-071-CORR-002/TASK-BAL-072を進めない。",
+      "title": "Bare Player Multi-Loadout: same-ID dual-wield representation correction and shield semantics decision",
+      "status": "Resolved",
+      "summary": "Human approved explicit Weapon Style. Dual wield is two independent attack resolutions, not summed Accuracy/Critical. GKS-B772 target correction completed; Current GKS-B771 remains blocked until Human apply/fresh verification. Shield Current numeric is retained and defensive tuning deferred.",
+      "body": "Approved canonical behavior:\n- weapon style is explicit: single / dual_wield / two_hand / weapon_shield. Equipment master ID equality is no longer the canonical two-hand discriminator.\n- dual_wield: main/off hand are two owned weapons, including same master ID x2. One action produces two independent Basic Attack strikes. Each strike uses that hand weapon contribution and independently resolves Hit/Critical; Accuracy/Critical are not summed into one roll. If strike 1 KOs the target, strike 2 does not occur.\n- two_hand: one owned weapon, one Basic Attack strike. STR x2 applies only to equipment requirement; no Attack doubling or second strike.\n- weapon_shield: sword+shield occupies two weapon positions but performs one Basic Attack strike. Current shield weapon contribution remains as defined; no defensive numeric is invented here. Defensive shield identity/tuning is deferred to later Equipment Balance.\n- save compatibility: weaponStyle is optional for old Save v3. Legacy same-ID pair without weaponStyle is interpreted as old two-hand state; new explicit same-ID dual wield is preserved as two copies.\n- Inventory Instance refactor is not required for this correction. Same master ID may occur twice in Inventory/equipment. Unequip must preserve multiplicity.\nImplementation target:\n- GKS-B772 implements this behavior in Game Runtime, Save/Equipment bridge, and Studio Formal Battle. Formal Evidence records weapon style/layout and per-hand profiles.\n- Target validation: functional 18/18, Quick 11/11, SOURCE_UPDATE Accept 13/13, applied Full 26/26; warning/timeout 0.\nDeployment gate:\n- Current remains GKS-B771 until Human applies the Studio update ZIP and supplies a fresh complete source. Corr002/Monster Core remain blocked until that verification.",
+      "open_questions": "None for source behavior. Balance values for shield defensive identity and any future off-hand damage/timing modifier remain deferred to their proper Balance phases.",
+      "conclusion": "Source correction target GKS-B772 complete. Human Apply/Fresh Source verification is required before resuming TASK-BAL-071-CORR-002; TASK-BAL-072 must not start.",
       "related_discussion_ids": [
         "DISC-BAL-009"
       ],
-      "artifact_note": "Development Project JSON only; no redundant external evidence artifact.",
+      "artifact_note": "Development Project JSON + required Studio update ZIP only; no redundant Evidence ZIP/completion-report JSON.",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-24T20:35:00+09:00"
     }
   ],
   "decisions": [
@@ -1578,13 +1578,13 @@
       "id": "DEC-BAL-BARE-PLAYER-SWORDSMAN-GREATSWORD-001",
       "title": "Bare Player剣士Referenceは大剣・正式両手STR倍率を使用する",
       "status": "Approved",
-      "text": "TASK-BAL-071 Bare Playerの剣士Primary Referenceは片手剣から大剣へ補正する。Current formal equipment rule str_requirement_two_hand_multiplier=2をSTR要求だけに適用し、DEX/INTは緩和しない。Runtime表現に合わせ同一大剣IDをweapon1/weapon2へbindする。これはMonster Core用Referenceの選定でありProduct Job装備制限やSkill/Experience Targetを決定しない。",
+      "text": "TASK-BAL-071 Bare Playerの剣士Primary Referenceは大剣を使用し、Current formal equipment rule str_requirement_two_hand_multiplier=2をSTR要求だけに適用し、DEX/INTは緩和しない。GKS-B772以降の正規表現では weaponStyle='two_hand', weapon1=<greatsword>, weapon2=null とし、1武器・1攻撃判定とする。旧GKS-B771向けReferenceで使用した同一大剣IDのweapon1/weapon2重複bindはlegacy表現であり、Multi-Loadout再生成時に置換する。これはMonster Core用Referenceの選定でありProduct Job装備制限やSkill/Experience Targetを決定しない。",
       "rationale": "Human指示「力2倍ルールは考慮してる　剣士は大剣でテストしといた方がいい」。旧TASK-BAL-071はtwo-hand relaxationを明示的に使用せず、Formal Equipment Ruleの重要branchをMonster入力から外していたため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-24T20:05:00+09:00",
       "created_at": "2026-08-24T20:05:00+09:00",
-      "updated_at": "2026-08-24T20:05:00+09:00"
+      "updated_at": "2026-08-24T20:35:00+09:00"
     },
     {
       "id": "DEC-BAL-BARE-PLAYER-MULTILOADOUT-001",
@@ -6229,14 +6229,14 @@
         "at": "2026-08-24T19:42:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T20:05:00+09:00",
-      "result_scope": "R5_BARE_PLAYER_REFERENCE_FROZEN_WITH_CORRECTION; canonical downstream artifact is TASK-BAL-071-CORR-001_BARE-PLAYER-REFERENCE; JOB-0001 uses 大剣/two-hand STR×2; other 300 rows retain TASK-BAL-071 values."
+      "updated_at": "2026-08-24T21:09:03+09:00",
+      "result_scope": "R5_BARE_PLAYER_MULTI_LOADOUT_FROZEN; canonical downstream artifact is DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1. TASK-BAL-071-CORR-001 retained as predecessor only."
     },
     {
       "id": "TASK-BAL-072",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P5 Monster Core Level×Job Curveを確定する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 251,
       "depends_on": [
         "TASK-BAL-071-CORR-002"
@@ -6245,12 +6245,13 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T21:12:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-24T21:12:00+09:00",
+      "result_scope": "PASS. BAL-R5-MONSTER-CORE-001 frozen from 350 primary Bare Player Job×Level references using same-level/same-job neutral mathematical parity; 350 Monster Core rows, 2450 cross-job analytical matchups, same-job parity failures=0, level regressions=0. Current Product Monster fixtures rejected as Balance baseline because formal Level×Job is absent. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82. Source/Game Data/Current active changes=0."
     },
     {
       "id": "TASK-BAL-073",
@@ -6270,7 +6271,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:12:00+09:00",
+      "result_scope": "DEPENDENCY_READY; WAIT_HUMAN_START_APPROVAL. Required Monster Core input=DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82."
     },
     {
       "id": "TASK-BAL-074",
@@ -6572,20 +6574,21 @@
         "by": "Human",
         "at": "2026-08-24T20:05:00+09:00"
       },
-      "result_scope": "R5_BARE_PLAYER_SINGLE_REFERENCE_CORRECTED_BUT_SUPERSEDED_FOR_DOWNSTREAM_BY_OPEN_MULTI_LOADOUT_CORRECTION; JOB-0001 greatsword/two-hand reference remains valid as one loadout, but TASK-BAL-071-CORR-002 must resolve dual-wield/shield gaps before Monster Core.",
+      "result_scope": "R5_NUMERIC_PREDECESSOR_SUPERSEDED_FOR_DOWNSTREAM_BY_TASK-BAL-071-CORR-002. Greatsword/STR×2 numeric result retained, but legacy same-ID two-hand layout encoding is not downstream canonical.",
       "created_at": "2026-08-24T20:05:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-24T21:09:03+09:00"
     },
     {
       "id": "TASK-BAL-071-CORR-002",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P4 Bare Player Multi-Loadout Reference補正",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 250,
       "depends_on": [
-        "TASK-BAL-071-CORR-001"
+        "TASK-BAL-071-CORR-001",
+        "TASK-BAL-071-FIX-001"
       ],
-      "acceptance_criteria": "- Human指示に基づき1職1Referenceを廃止し、Jobごとの代表合法Loadoutを複数検討する。\n- 剣士大剣両手、騎士片手剣+盾、盗賊短剣×2/片手剣×2、狩人弓系を最低検討対象とする。\n- Current Equipment slot/requirement/contribution contractだけを使用し、存在しない二刀流/盾性能を推測しない。\n- 各Loadoutのweapon1/weapon2 binding、hands mode、装備可能性、Basic Combat contributionを再現可能にする。\n- 新規Current実装Gapを検出した場合はRULE-BAL-ISSUE-GATE-001で停止し、同runでSource修正しない。\n- Source/Game Data/Current activeを変更しない。\n- 完了後だけTASK-BAL-072へMulti-Loadout Referenceを渡す。",
+      "acceptance_criteria": "- Human指示に基づき1職1Referenceを廃止し、Jobごとの代表合法Loadoutを複数検討する。\n- GKS-B772 Fresh Source確認後に再開し、剣士=大剣two_hand、騎士=片手剣+盾(weapon_shield)、盗賊=短剣×2/片手剣×2(dual_wield)、狩人=弓系を最低検討対象とする。\n- dual_wieldは1行動内の独立2strikeとして各手Hit/Criticalを別判定し、Accuracy/Criticalを合算1判定しない。\n- two_handはSTR×2 Requirementのみ、1武器/1strike。weapon_shieldは1strikeでCurrent shield contributionを使い、防御性能を推測追加しない。\n- 各Loadoutのweapon layout、所有数、装備可能性、Basic Combat contribution/strikeを再現可能にする。\n- Source correctionのFresh Source verification後だけMulti-Loadout ReferenceをFreezeする。Source/Game Data/Current activeを変更しない。\n- 完了後だけTASK-BAL-072へMulti-Loadout Referenceを渡す。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -6593,9 +6596,9 @@
         "by": "Human",
         "at": "2026-08-24T20:15:00+09:00"
       },
-      "result_scope": "ISSUE_GATE_STOPPED. Multi-loadout direction is approved, but Current Runtime cannot distinguish same-equipment-ID dual wield from two-hand, and P1/current shield record behaves as an offensive weapon contribution rather than an established defensive shield. No Multi-Loadout Reference was frozen; no Source/Game Data/Current active change.",
+      "result_scope": "PASS. Fresh GKS-B772 verified; 350 Job×Level rows / 700 loadout variants frozen. dual_wield=2 independent strikes; two_hand=1 strike; weapon_shield=1 strike. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1. Source/Game Data/Current active changes=0.",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-24T21:09:03+09:00"
     },
     {
       "id": "TASK-BAL-071-FIX-001",
@@ -6614,9 +6617,9 @@
         "by": "Human",
         "at": "2026-08-24T20:35:00+09:00"
       },
-      "result_scope": "TARGET_SOURCE_COMPLETE_NOT_YET_CURRENT. GKS-B772 implements explicit weapon styles and independent dual-wield strikes. Target validation passed; Human Studio Apply and fresh-source verification are still required. Current baseline remains GKS-B771, so the original same-ID dual-wield Current check remains open and TASK-BAL-071-CORR-002/TASK-BAL-072 remain blocked.",
+      "result_scope": "FRESH_SOURCE_VERIFIED_CURRENT. Human-applied GKS-B772 is Current; package manifest and update payload exact-match target and Current Quick 11/11 PASS. Explicit weapon styles and independent dual-wield strikes are available to Corr002/downstream.",
       "created_at": "2026-08-24T20:35:00+09:00",
-      "updated_at": "2026-08-24T20:35:00+09:00"
+      "updated_at": "2026-08-24T21:09:03+09:00"
     }
   ],
   "checks": [
@@ -9497,21 +9500,21 @@
       "target_type": "Task",
       "target_id": "TASK-BAL-071-CORR-002",
       "status": "Failed",
-      "result": "FAIL / BLOCKING. Current game Runtime identifies weapon1===weapon2 as a two-handed weapon. characterEquipmentEntries collapses that pair to one entry and equipmentBonus counts the contribution once. Therefore two copies of the same dagger/sword master ID cannot be represented as dual wield; the exact Human-requested 短剣×2/片手剣×2 reference is not runtime-reproducible.",
-      "evidence": "Fresh GKS-B771 game/assets/js/app-runtime.js: twoHandedWeaponRef, characterEquipmentEntries, equipmentBonus; source zip sha256=fc661cea5dd8300ada916678f289bf7bf1a502a6ea1224a40e8b6c0c61aa9cff",
+      "result": "FAIL / BLOCKING ON CURRENT GKS-B771. Current Runtime still infers weapon1===weapon2 as two-hand and cannot represent same-ID dual wield. GKS-B772 target correction now exists and passes target validation with explicit weaponStyle and independent two-strike dual wield, but this Current-source check must remain open until Human applies GKS-B772 and a fresh complete source confirms the corrected behavior.",
+      "evidence": "Current fresh GKS-B771 source zip sha256=fc661cea5dd8300ada916678f289bf7bf1a502a6ea1224a40e8b6c0c61aa9cff; target update DEV-V9-BALANCE-001_TASK-BAL-071-FIX-001_GKS-B772_STUDIO-UPDATE.zip sha256=27ffda781382220ab1527a0e742326f127416a820dfce8092cd25f1b7877e613",
       "checked_by": "AI",
       "checked_at": "2026-08-24T20:15:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-R5-DUALWIELD-SAME-EQUIPMENT-ID-PASS-001",
+        "resolved_at": "2026-08-24T21:09:03+09:00",
+        "reason": "PASS. Fresh Current source is GKS-B772 / GA-B486.211. package_manifest matches the B772 target exactly; all update payload files present in Current match target hashes; Current Quick 11/11 PASS with warnings=0/timeouts=0. dual_wield is explicit, same-ID two copies are preserved, and Basic Attack executes two independent per-hand strike profiles.",
+        "mode": "automatic"
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-24T21:09:03+09:00"
     },
     {
       "id": "CHK-BAL-R5-SHIELD-CONTRIBUTION-SEMANTICS-001",
@@ -9519,22 +9522,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-071-CORR-002",
-      "status": "Failed",
-      "result": "FAIL / BLOCKING. Current P1 Equipment record treats 盾 as a weapon with offensive fields. At iLv1: required STR6/DEX3/INT1, attack12, accuracy6, magic_weapon_bonus6, base_critical_rate5%; no shield HP/evasion/resistance contribution exists. Runtime places it in a weapon slot and sums its offensive contribution with the sword. A knight sword+shield defensive reference therefore cannot be inferred from Current data.",
+      "status": "Passed",
+      "result": "PASS / NON-BLOCKING BY APPROVED DESIGN. Current shield is a valid weapon BaseItem contribution under the existing Equipment contract. For a sword+shield weapon_shield layout, shield does not create a second Basic Attack strike; the one strike uses Current aggregate contribution semantics. No HP/Evasion/Resistance or other defensive shield numeric is invented in this source correction. Shield defensive identity/tuning is deferred to the later Equipment Balance phase.",
       "evidence": "DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip p1-equipment-static-baseline-full.json + Fresh GKS-B771 equipment runtime",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T20:15:00+09:00",
+      "checked_at": "2026-08-24T20:35:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T20:35:00+09:00",
+        "reason": "Human approved the weapon-style design; shield Current numeric semantics are retained and defensive tuning is deferred instead of treated as an implementation defect.",
         "mode": ""
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-24T20:35:00+09:00"
     },
     {
       "id": "CHK-BAL-R5-HUNTER-BOW-REFERENCE-001",
@@ -9581,6 +9584,100 @@
       "blocking": false,
       "created_at": "2026-08-24T20:35:00+09:00",
       "updated_at": "2026-08-24T20:35:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-R5-DUALWIELD-SAME-EQUIPMENT-ID-PASS-001",
+      "title": "R5 Fresh GKS-B772 same-ID dual-wield Current gate cleared",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-002",
+      "status": "Passed",
+      "result": "PASS. Fresh Current source is GKS-B772 / GA-B486.211. package_manifest matches the B772 target exactly; all update payload files present in Current match target hashes; Current Quick 11/11 PASS with warnings=0/timeouts=0. dual_wield is explicit, same-ID two copies are preserved, and Basic Attack executes two independent per-hand strike profiles.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1; source_zip_sha256=869c87453b8beceb84a1b8992e9efb46512e9b0bc136bf93cd9efd592ced7e21; package_manifest_sha256=2b673a693cd3befd50a1c1389f75b0c268016358366e0b3f4dddb12339886857",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:09:03+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-R5-DUALWIELD-SAME-EQUIPMENT-ID-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T21:09:03+09:00",
+        "reason": "Fresh-source weapon-style prerequisite passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:09:03+09:00",
+      "updated_at": "2026-08-24T21:09:03+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK071-CORR002-MULTILOADOUT-001",
+      "title": "TASK-BAL-071-CORR-002 Multi-Loadout Bare Player gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-002",
+      "status": "Passed",
+      "result": "PASS. 7 Jobs × Lv1..50 = 350 Job-Level rows and 700 representative loadout variants. P50 illegal=0; exact joint equipability<50%=0; iLv regressions=0. dual_wield rows use two independent strikes and preserve duplicate equipment IDs/copy count; two_hand and weapon_shield use one strike. Primary Monster-Core loadouts: 剣士=大剣two_hand, 騎士=片手剣+盾, 盗賊=短剣×2, 狩人=弓, 魔術師=ワンド, 神官=ワンド, 冒険家=片手剣. Source/Game Data/Current active changes=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:09:03+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T21:09:03+09:00",
+        "reason": "Human-directed Multi-Loadout reference correction completed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:09:03+09:00",
+      "updated_at": "2026-08-24T21:09:03+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK072-MONSTER-CORE-001",
+      "title": "TASK-BAL-072 Monster Core Level×Job mathematical gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072",
+      "status": "Passed",
+      "result": "PASS. Current Product Monster fixtures were not used as the Balance authority. 7 Jobs × Lv1..50 = 350 Monster Core rows were frozen against the primary Multi-Loadout Bare Player references using a neutral same-Level/same-Job parity anchor. Same-job parity 350/350, cross-job analytical matchups 2450, factor reconstruction exact, level regressions 0, synthetic coefficient amplification 0. Skills/Special AI/Utility/Monster Equipment/Enemy Budget were excluded. Source/Game Data/Current active changes=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82; input TASK-BAL-071-CORR-002 sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1; source_zip_sha256=869c87453b8beceb84a1b8992e9efb46512e9b0bc136bf93cd9efd592ced7e21",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:12:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T21:12:00+09:00",
+        "reason": "R5-P5 Monster Core mathematical gate passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:12:00+09:00",
+      "updated_at": "2026-08-24T21:12:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK072-CURRENT-MONSTER-BASELINE-001",
+      "title": "TASK-BAL-072 Current Product Monster baseline authority check",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072",
+      "status": "Passed",
+      "result": "PASS/REJECT-AS-BASELINE. Current Export/monster/monsters.json has 4 training/demo rows and 0 rows with both formal job_id and level. They remain implementation fixtures and were not promoted to Balance authority.",
+      "evidence": "GKS-B772 source_zip_sha256=869c87453b8beceb84a1b8992e9efb46512e9b0bc136bf93cd9efd592ced7e21; Export/monster/monsters.json read-only audit",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:12:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T21:12:00+09:00",
+        "reason": "Arbitrary raw Product Monster values were excluded from the R5 Monster Core baseline.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:12:00+09:00",
+      "updated_at": "2026-08-24T21:12:00+09:00"
     }
   ],
   "workflow": {
@@ -10188,6 +10285,22 @@
       "task_id": "TASK-BAL-071-FIX-001",
       "created_at": "2026-08-24T20:35:00+09:00",
       "updated_at": "2026-08-24T20:35:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK071-CORR-002",
+      "title": "TASK-BAL-071 Multi-Loadout Bare Player Reference補正完了",
+      "summary": "Fresh GKS-B772をCurrentとして確認し、B772 target payload完全一致 + Quick 11/11 PASSでsame-ID dual-wield Gateを解消。7 Job×Lv1-50の350基準行へ各2 Loadout、計700 variantsを確定。二刀流は1行動2独立strikeで各手Hit/Criticalを別判定し、同一IDは2所有/2 equipment_idsを保持。two_handは1所有/1strike/STR要求×2のみ、weapon_shieldは1strikeでCurrent aggregate contributionを保持。剣士大剣、騎士片手剣+盾、盗賊短剣×2、狩人弓をPrimaryへ反映。Source/Game Data/Current active変更0。次はTASK-BAL-072別Human開始承認待ち。",
+      "task_id": "TASK-BAL-071-CORR-002",
+      "created_at": "2026-08-24T21:09:03+09:00",
+      "updated_at": "2026-08-24T21:09:03+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK072-COMPLETE-001",
+      "title": "TASK-BAL-072 Monster Core Level×Job Curve完了",
+      "summary": "Human start approval received. Current Product training/demo Monster values were rejected as Balance baseline. Primary Multi-Loadout Bare Player references were converted into BAL-R5-MONSTER-CORE-001 using same-Level/same-Job neutral parity without experience target. 350 Monster Core rows and 2450 cross-job analytical matchups passed; no level regressions. Skills/AI/Utility/Monster Equipment/Enemy Budget excluded. Canonical retained artifact sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82. Source/Game Data/Current active changes=0. Next TASK-BAL-073 awaits separate Human approval.",
+      "task_id": "TASK-BAL-072",
+      "created_at": "2026-08-24T21:12:00+09:00",
+      "updated_at": "2026-08-24T21:12:00+09:00"
     }
   ],
   "authority": {
