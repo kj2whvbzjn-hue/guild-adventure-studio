@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T03:45:13.077Z"
+    "updated_at": "2026-08-24T03:54:26.631Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "TASK-BAL-029 Human実機実行完了; TASK-BAL-030 equivalence approval wait",
-    "goal": "Human実機でCurrent B770 Demoの4 Job実行とResult Package出力まで完了。次はTASK-BAL-030でHuman Resultを補正版AI基準Resultと正式照合し、全条件PASS時のみ実機テスト完了を確定する。TASK-BAL-030は別TaskのためHuman明示開始承認前に進まない。"
+    "theme": "P4 final real-device completion threshold raised to fresh 32-job retest",
+    "goal": "Existing 4-job PASS is preliminary only. Next formal task is TASK-BAL-033: create a fresh 32-job Demo/AI baseline (16 Character + 16 Monster; 8 seeds x2 each). Human device execution and final equivalence follow in TASK-BAL-034/035. No task execution begins until separate Human start approval."
   },
   "project_rules": [
     {
@@ -1205,6 +1205,18 @@
       "approved_at": "2026-08-24T11:40:00+09:00",
       "created_at": "2026-08-24T11:40:00+09:00",
       "updated_at": "2026-08-24T11:40:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P4-32JOB-REAL-DEVICE-RETEST-001",
+      "title": "P4実機テスト完了条件を32 Job再テストへ引き上げる",
+      "status": "Approved",
+      "text": "既存4 JobのAI/Human技術照合PASSだけではP4 Human実機テスト完了としない。最終完了判定には、新規拡張Battle Packageで30件以上をHuman実機にて再実行し、AI基準Resultとの全件一致を要求する。具体的には32 Jobを採用し、Character Formal AI 16 Job、Monster owner経路16 Jobとする。各系統8 distinct seedsを2回ずつ実行し、seed variationとsame-seed deterministic replayの両方を検証する。既存4 Jobは予備確認Evidenceとして保持するが、32 Job完了条件には算入しない。",
+      "rationale": "Human判断により、4件では最終実機テストとしてサンプル数が不足するとされたため。32 Jobへ拡張し、両主要Formal実行経路を均等に検証しつつ、同一Seed再現性も反復確認する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T12:52:00+09:00",
+      "created_at": "2026-08-24T12:52:00+09:00",
+      "updated_at": "2026-08-24T12:52:00+09:00"
     }
   ],
   "specifications": [
@@ -4094,7 +4106,7 @@
       "status": "Blocked",
       "execution_order": 210,
       "depends_on": [
-        "TASK-BAL-030"
+        "TASK-BAL-035"
       ],
       "acceptance_criteria": "- Existing AI Battle PackageのTemplate→Import→Validate→Execute→Result Package→Import経路を使用する。\n- 同一Input/Seed/Versionでpaired A/B、Sensitivity、2-way interactionを実施する。\n- Screen 100 seed → Refine 1,000 → Final/Holdout 10,000を基準に段階評価する。\n- Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを残し、Current activeへは昇格しない。\n- TASK-BAL-030でHuman実機ResultとAI基準の一致を確認し、『実機テスト完了』GateがPassedするまで開始しない。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -4105,7 +4117,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T10:23:00+09:00"
+      "updated_at": "2026-08-24T12:52:00+09:00"
     },
     {
       "id": "TASK-BAL-006",
@@ -4717,16 +4729,16 @@
       "depends_on": [
         "TASK-BAL-029"
       ],
-      "acceptance_criteria": "- HumanからTASK-BAL-029で実機出力したResult Package ZIPを受領し、開始前にTASK-BAL-030照合開始の明示承認を得る。\n- Human実機とAI基準でBuild/Template/Package/Input/Seed/Job ID bindingが一致していることを確認する。\n- Human実機Resultの全Jobが成功し、JOB_ERROR=0、Formal validation error=0であることを確認する。\n- 同一Seed反復Jobのreplay_fingerprintが決定的に一致し、AI基準とHuman実機の再現対象Result/Evidenceが一致することを確認する。\n- legacy_fallback_used=false、Formal AI trace、Monster owner provenance、Skill/Status/Resource/Cast-CD/Contribution/Death-EHP等の要求Evidenceを照合する。\n- 全比較PASSかつHumanが実機テスト完了を確認した時だけ、本追加工程をCompletedとしてTASK-BAL-005を次run開始可能状態へ戻す。\n- 1項目でも不一致ならTASK-BAL-005をBlockedのまま維持し、原因・再現・影響・修正候補を報告してHuman承認へ戻る。",
+      "acceptance_criteria": "- HumanからTASK-BAL-029で実機出力したResult Package ZIPを受領し、開始前にTASK-BAL-030照合開始の明示承認を得る。\n- Human実機とAI基準でBuild/Template/Package/Input/Seed/Job ID bindingが一致していることを確認する。\n- Human実機Resultの全Jobが成功し、JOB_ERROR=0、Formal validation error=0であることを確認する。\n- 同一Seed反復Jobのreplay_fingerprintが決定的に一致し、AI基準とHuman実機の再現対象Result/Evidenceが一致することを確認する。\n- legacy_fallback_used=false、Formal AI trace、Monster owner provenance、Skill/Status/Resource/Cast-CD/Contribution/Death-EHP等の要求Evidenceを照合する。\n- 全比較PASSかつHumanが実機テスト完了を確認した時だけ、本追加工程をCompletedとしてTASK-BAL-005を次run開始可能状態へ戻す。\n- 1項目でも不一致ならTASK-BAL-005をBlockedのまま維持し、原因・再現・影響・修正候補を報告してHuman承認へ戻る。\n- Humanの追加完了条件により、既存4 Job技術照合PASSだけでは完了不可。DEC-BAL-P4-32JOB-REAL-DEVICE-RETEST-001に従いTASK-BAL-033→034→035の32 Job再テスト完了を待つ。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T12:45:00+09:00"
       },
       "created_at": "2026-08-24T10:23:00+09:00",
-      "updated_at": "2026-08-24T10:23:00+09:00"
+      "updated_at": "2026-08-24T12:52:00+09:00"
     },
     {
       "id": "TASK-BAL-031",
@@ -4767,6 +4779,66 @@
       },
       "created_at": "2026-08-24T11:40:00+09:00",
       "updated_at": "2026-08-24T12:37:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-033",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Retest: 32 Job拡張DemoとAI基準Resultを作成する",
+      "status": "Blocked",
+      "execution_order": 202,
+      "depends_on": [
+        "TASK-BAL-032"
+      ],
+      "acceptance_criteria": "- 開始前にHumanへ目的/work_type/基準Source/許可・禁止範囲/成果物/完了条件を報告し、明示開始承認を得る。\n- Fresh Current GKS-B770 / Template v1.3.0を正本に、既存4 Jobとは別の32 Job拡張Battle Packageを作成する。\n- Character Formal AI 16 Job、Monster owner 16 Job。各系統8 distinct seeds × 2 repeatで構成する。\n- 既存4 Jobは32 Jobへ算入しない。\n- Package-local ai_master_snapshotのみをFormal AI Masterとして使用し、ambient AI master fallbackを使用しない。\n- AI環境で32/32 completed、failed=0、error_count=0、formal validation error=0。\n- 各same-seed pairでreplay_fingerprint完全一致。全Job formal_only=true、legacy_fallback_used=false。\n- Formal AI trace / Monster provenance / Skill / Status-DOT / Resource / Cast-CD / Contribution / Death-EHP evidenceを保存する。\n- Source / Build / Game Data / Current activeは変更しない。\n- 未計画問題を検出した場合はIssue Gateへ戻り停止する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T12:52:00+09:00",
+      "updated_at": "2026-08-24T12:52:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-034",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Retest: 32 JobをHuman実機で再実行する",
+      "status": "Blocked",
+      "execution_order": 203,
+      "depends_on": [
+        "TASK-BAL-033"
+      ],
+      "acceptance_criteria": "- TASK-BAL-033の32 Job拡張DemoとAI基準Resultが確定済みである。\n- 開始前にHumanへ作業内容を報告し、明示開始承認を得る。\n- Human実機Current Studioで32 Job拡張Demoをそのまま読み込む。\n- Import時JOB_ERROR=0、実行可能Job=32。\n- 32/32 JobをHuman実機で実際に実行し、failed=0、error_count=0、partial=false。\n- Human実機Result Packageを正式出力する。\n- このTask完了はResult Package出力までであり、AI基準一致/実機テスト完了確定はTASK-BAL-035で行う。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T12:52:00+09:00",
+      "updated_at": "2026-08-24T12:52:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-035",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Retest: 32 Job ResultをAI基準と照合し実機テスト完了を確定する",
+      "status": "Blocked",
+      "execution_order": 203,
+      "depends_on": [
+        "TASK-BAL-034"
+      ],
+      "acceptance_criteria": "- 開始前にHumanへ照合範囲を報告し、明示開始承認を得る。\n- Build / Template / Package / Input / Job / roster / test / seed bindingを全32 Jobで確認する。\n- Human 32/32 completed、failed=0、error_count=0、formal validation error=0。\n- AI基準とHuman実機で全32 Jobの勝敗/ticks/summary/formal_evidence/replay_fingerprintが一致する。\n- Character 8 seed pairsおよびMonster 8 seed pairsのsame-seed deterministic replayがすべて一致する。\n- 全32 Job formal_only=true、legacy_fallback_used=false。\n- Formal AI trace、Monster provenance、Skill、Status/DOT、Resource、Cast/Cooldown、Equipment/Passive contribution、Death/EHP evidenceを確認する。\n- 全条件PASS後に結果をHumanへ報告し、Humanが最終確認した場合のみ『実機テスト完了』を確定する。\n- 1件でも不一致なら完了扱いせずIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T12:52:00+09:00",
+      "updated_at": "2026-08-24T12:52:00+09:00"
     }
   ],
   "checks": [
@@ -6504,10 +6576,10 @@
       "target_type": "Task",
       "target_id": "TASK-BAL-030",
       "status": "Pending",
-      "result": "TASK-BAL-029 Human device execution is complete. AI/Human equivalence and final 実機テスト完了 remain pending TASK-BAL-030 separate start approval.",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "result": "Prior 4-job technical equivalence PASS is retained as preliminary evidence only. Human requires a fresh 32-job retest before final 実機テスト完了. Final equivalence gate therefore remains Pending until TASK-BAL-035.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-030_TECHNICAL-EQUIVALENCE-EVIDENCE.zip sha256=009196139d345869a0e718cf5289b2f167fd1921d71b3d983f41983fa16a5011",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T12:45:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -6518,7 +6590,7 @@
       },
       "blocking": false,
       "created_at": "2026-08-24T10:23:00+09:00",
-      "updated_at": "2026-08-24T12:42:00+09:00"
+      "updated_at": "2026-08-24T12:52:00+09:00"
     },
     {
       "id": "CHK-BAL-P4-CANDIDATE-HUMAN-PREFLIGHT-GATE-001",
@@ -6705,6 +6777,52 @@
       "blocking": false,
       "created_at": "2026-08-24T12:26:00+09:00",
       "updated_at": "2026-08-24T12:37:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-HUMAN-DEVICE-EQUIVALENCE-TECHNICAL-001",
+      "title": "P4 Human Real-device vs AI Environment Technical Equivalence Review",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-030",
+      "status": "Passed",
+      "result": "Technical AI/Human equivalence PASS. Fresh Source GKS-B770 / APP_VERSION 1.43.0 / manifest 642/642. Template v1.3.0, Demo, Human Result, and corrected AI baseline formal bindings match. Human embedded input is exact Demo bytes. Human and AI 4/4 complete, error_count=0, no formal validation ERROR. Character seed 424242 fingerprint FNV1A32-0a152053 x2; Monster seed 777777 fingerprint FNV1A32-748a5e78 x2. All summaries, formal_evidence, and deterministic run cores match. formal_only=true, legacy_fallback_used=false. Required AI trace/Monster provenance/Skill/Status/Resource/Cast-CD/Contribution/Death-EHP evidence PASS. Final Human confirmation is still required before TASK-BAL-030 Done / 実機テスト完了.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-030_TECHNICAL-EQUIVALENCE-EVIDENCE.zip sha256=009196139d345869a0e718cf5289b2f167fd1921d71b3d983f41983fa16a5011",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T12:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T12:45:00+09:00",
+        "reason": "All technical AI/Human equivalence criteria passed; awaiting only explicit Human final confirmation.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T12:45:00+09:00",
+      "updated_at": "2026-08-24T12:45:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-32JOB-REAL-DEVICE-RETEST-GATE-001",
+      "title": "P4 32 Job Human Real-device Retest Final Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-035",
+      "status": "Pending",
+      "result": "Human raised the completion threshold: prior 4-job PASS is preliminary evidence only. Final 実機テスト完了 requires a new 32-job Human device retest and exact AI/Human equivalence across all 32 jobs.",
+      "evidence": "Human requirement 2026-08-24 12:52 JST",
+      "checked_by": "Human",
+      "checked_at": "2026-08-24T12:52:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T12:52:00+09:00",
+      "updated_at": "2026-08-24T12:52:00+09:00"
     }
   ],
   "workflow": {
@@ -7000,6 +7118,22 @@
       "task_id": "TASK-BAL-029",
       "created_at": "2026-08-24T12:42:00+09:00",
       "updated_at": "2026-08-24T12:42:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK030-TECHNICAL-EQUIVALENCE-PASS-001",
+      "title": "TASK-BAL-030 AI/Human技術照合PASS・Human最終確認待ち",
+      "summary": "Human-approved TASK-BAL-030 technical review completed. Fresh B770 source, Template v1.3.0, exact Demo input, corrected AI baseline, and Human Result were compared. 4/4 jobs, zero errors, deterministic replay, all formal_evidence, formal_only/legacy fallback, Formal AI trace, Monster provenance, Skill/Status/Resource/Cast-CD/Contribution/Death-EHP all PASS. TASK-BAL-030 remains Blocked only for the explicit final Human confirmation required by its acceptance criteria. TASK-BAL-005 remains Blocked. Source/Build/Game Data/Demo/Result changes=0.",
+      "task_id": "TASK-BAL-030",
+      "created_at": "2026-08-24T12:45:00+09:00",
+      "updated_at": "2026-08-24T12:45:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-P4-32JOB-RETEST-REQUIREMENT-001",
+      "title": "Human判断でP4実機テスト完了条件を4 Jobから32 Job再テストへ引き上げ",
+      "summary": "Existing 4-job AI/Human technical equivalence remains valid preliminary evidence but is insufficient for final completion. Human requires >=30 fresh real-device tests. Plan adopts 32 jobs: Character Formal AI 16 and Monster owner 16, each using 8 distinct seeds repeated twice. Existing 4 jobs are not counted. Added TASK-BAL-033/034/035 and rewired TASK-BAL-005 to depend on TASK-BAL-035. This plan update performs no Source/Demo/test execution.",
+      "task_id": "TASK-BAL-033",
+      "created_at": "2026-08-24T12:52:00+09:00",
+      "updated_at": "2026-08-24T12:52:00+09:00"
     }
   ],
   "authority": {
