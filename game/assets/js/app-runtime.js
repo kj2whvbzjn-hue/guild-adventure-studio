@@ -851,6 +851,12 @@ function equipmentBonusFromRows(rows){return rows.reduce((a,row)=>{const e=equip
 function equipmentBonus(c){return equipmentBonusFromRows(characterEquipmentEntries(c))}
 function characterBasicAttackProfiles(character){
  normalizeCharacterEquipmentState(character);const style=characterWeaponStyle(character),cfg=requireFormalRuntimeSettings().battle_actor,allRows=characterEquipmentEntries(character);
+ if(style==='weapon_shield'){
+  const nonWeapon=equipmentBonusFromRows(allRows.filter(row=>!['weapon1','weapon2'].includes(row.slot))),baseAttack=evaluateRuntimeFormula(cfg.attack,character)+nonWeapon.attack,baseAccuracy=nonWeapon.accuracy,baseCriticalRate=nonWeapon.baseCriticalRate,attackSlots=['weapon1','weapon2'].filter(slot=>{const ref=character.equipment[slot];return !!ref&&!equipmentIsShield(equipmentDefinition(ref))});
+  if(attackSlots.length!==1)throw new Error(`${character.name||character.id||'キャラクター'}のweapon_shieldは攻撃武器1本と盾1枚が必要です。`);
+  const slot=attackSlots[0],ref=character.equipment[slot],b=equipmentDefinition(ref)?.bonuses||{};
+  return[{weaponStyle:'weapon_shield',weaponSlot:slot,weaponId:ref,attack:baseAttack+(Number(b.attack)||0),accuracy:baseAccuracy+(Number(b.accuracy)||0),baseCriticalRate:baseCriticalRate+(Number(b.baseCriticalRate)||0)}];
+ }
  if(style!=='dual_wield')return[{weaponStyle:style,weaponSlot:twoHandedWeaponRef(character)?'weapon1':(character.equipment.weapon1?'weapon1':character.equipment.weapon2?'weapon2':null),weaponId:twoHandedWeaponRef(character)||character.equipment.weapon1||character.equipment.weapon2||null,...(()=>{const v=characterBattleValues(character);return{attack:v.attack,accuracy:v.accuracy,baseCriticalRate:v.baseCriticalRate}})()}];
  const nonWeapon=equipmentBonusFromRows(allRows.filter(row=>!['weapon1','weapon2'].includes(row.slot))),baseAttack=evaluateRuntimeFormula(cfg.attack,character)+nonWeapon.attack,baseAccuracy=nonWeapon.accuracy,baseCriticalRate=nonWeapon.baseCriticalRate,profiles=[];
  for(const slot of ['weapon1','weapon2']){const ref=character.equipment[slot];if(!ref)continue;const b=equipmentDefinition(ref)?.bonuses||{};profiles.push({weaponStyle:'dual_wield',weaponSlot:slot,weaponId:ref,attack:baseAttack+(Number(b.attack)||0),accuracy:baseAccuracy+(Number(b.accuracy)||0),baseCriticalRate:baseCriticalRate+(Number(b.baseCriticalRate)||0)});}
