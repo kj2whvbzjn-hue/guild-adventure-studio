@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T12:33:01.283Z"
+    "updated_at": "2026-08-24T12:54:12.583Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073 Core Enemy Budget PASS; TASK-BAL-074 Skill Balance start approval wait",
-    "goal": "Use BAL-R5-CORE-ENEMY-BUDGET-001 as the P7 normalized enemy-budget performance unit: 1 point = +1% linear category performance from frozen Monster Core. TASK-BAL-074 must use Monster Core + this conversion + Formal Skill qualification and must not start until separate Human approval. HP/Attack/Defense allocation rates and total Enemy Budget are not Product-frozen by P6; Skill/AI/Utility Budget remain deferred."
+    "theme": "TASK-BAL-073B Monster HP Sizing Matrix PASS; TASK-BAL-074 Skill Balance start approval wait",
+    "goal": "Pre-Skill Level×Job basic-attack throughput has been converted into a neutral Monster HP sizing matrix. Current starter 6-Job party total HP pools are retained for 10/25/50/100 Tick windows, and equal-HP enemy-count sensitivity 1..6 is derived without fixing Difficulty/TTK. Per-job solo HP references and DPS spread are retained so Thief/dual-wield outlier effects are visible instead of hidden in one average. TASK-BAL-074 must not start until separate Human approval."
   },
   "project_rules": [
     {
@@ -314,6 +314,24 @@
       "source_id": "TASK-BAL-073",
       "created_at": "2026-08-24T21:25:00+09:00",
       "updated_at": "2026-08-24T21:25:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-MONSTER-HP-DPT-001",
+      "text": "Monster HPの前段数学ReferenceはSkill/Passive/MODを除いたPrimary Bare PlayerのLevel×Job Basic Attack DPTから作る。DPT算定はCurrent Game Runtimeの離散Action Gaugeを使用し、wall-clock秒へ換算しない。HP基準ではNeutral Evasion0/Resistance0/Shield0を使用してDefenseと分離する。二刀流は各手独立2strike、盾/両手は1strike。最終Difficulty/TTKはFull Mathematical Baseline後のHuman Experience phaseまで凍結しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 level-by-job dps for monster hp",
+      "created_at": "2026-08-24T21:35:00+09:00",
+      "updated_at": "2026-08-24T21:35:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-MONSTER-HP-POOL-001",
+      "text": "Skill前のMonster HP検討では、Current starter 6-Job partyのLevel別Basic Attack累積Damageを総Enemy HP Pool尺度として保持する。敵数Nの個体HP目安はEqual-HP sensitivityとしてpool/Nを参照するが、これはEncounter Difficulty/AI/targeting/overkillを含む最終Simulationではない。Job別solo referenceを併記し、最大DPS職のみからUniversal Monster HPを決めない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 resume monster hp sizing",
+      "created_at": "2026-08-24T21:47:00+09:00",
+      "updated_at": "2026-08-24T21:47:00+09:00"
     }
   ],
   "source_baseline": {
@@ -1622,6 +1640,18 @@
       "approved_at": "2026-08-24T20:35:00+09:00",
       "created_at": "2026-08-24T20:35:00+09:00",
       "updated_at": "2026-08-24T20:35:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-MONSTER-HP-BASIC-DPS-001",
+      "title": "Monster HP初期目安はSkill前のLevel×Job基本攻撃Throughputから作る",
+      "status": "Approved",
+      "text": "Monster HPの数学的初期目安は、各Level×JobのPrimary Bare Player通常攻撃Throughputから作る。時間軸はCurrent RuntimeのTickを正本としDPTを使用する。HP算定時はEvasion=0/Resistance=0のNeutral targetを使い、Defense Budgetと分離する。Current starter 6-Job partyの10/25/50/100 Tick累積DamageをHP reference bandとして保持する。これはNormal/Elite/Bossの最終TTKや体験難易度を確定するDecisionではない。Skill Balanceはこの基準の後に行う。",
+      "rationale": "Skillを先に基準化せず、まずLevel×Jobの素の攻撃量からMonster HPの尺度を作ることで、HPとDefenseを独立に調整できるため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T21:35:00+09:00",
+      "created_at": "2026-08-24T21:35:00+09:00",
+      "updated_at": "2026-08-24T21:35:00+09:00"
     }
   ],
   "specifications": [
@@ -6288,9 +6318,9 @@
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
       "status": "Blocked",
-      "execution_order": 253,
+      "execution_order": 255,
       "depends_on": [
-        "TASK-BAL-073",
+        "TASK-BAL-073B",
         "TASK-BAL-050"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。",
@@ -6302,15 +6332,15 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:25:00+09:00",
-      "result_scope": "DEPENDENCY_READY; WAIT_HUMAN_START_APPROVAL. Required Core Enemy Budget input=DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4; conversion=1 point => +1% linear normalized category performance. TASK-BAL-050 remains qualification-only."
+      "updated_at": "2026-08-24T21:47:00+09:00",
+      "result_scope": "DEPENDENCY_READY; WAIT_HUMAN_START_APPROVAL. Pre-Skill offense/HP sizing input is TASK-BAL-073B. TASK-BAL-050 remains Formal Skill qualification-only."
     },
     {
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
       "status": "Blocked",
-      "execution_order": 254,
+      "execution_order": 256,
       "depends_on": [
         "TASK-BAL-074",
         "TASK-BAL-070"
@@ -6324,14 +6354,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-076",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "R5-P9 Passive / MOD / Rarity / Unique Contributionを確定する",
       "status": "Blocked",
-      "execution_order": 255,
+      "execution_order": 257,
       "depends_on": [
         "TASK-BAL-075"
       ],
@@ -6344,14 +6374,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-077",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P10 Formal AI Performance + Full 6-category Enemy Budgetを確定する",
       "status": "Blocked",
-      "execution_order": 256,
+      "execution_order": 258,
       "depends_on": [
         "TASK-BAL-076",
         "TASK-BAL-073"
@@ -6365,14 +6395,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-078",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P11 Full Player Build Set / Full Monster Setを確定する",
       "status": "Blocked",
-      "execution_order": 257,
+      "execution_order": 259,
       "depends_on": [
         "TASK-BAL-077"
       ],
@@ -6385,14 +6415,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-079",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P12 Formation / Encounter / Quest Mathematical Baselineを確定する",
       "status": "Blocked",
-      "execution_order": 258,
+      "execution_order": 260,
       "depends_on": [
         "TASK-BAL-078"
       ],
@@ -6405,14 +6435,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-080",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P13A EXP / Level / Equipment-Skill-Passive Acquisition Pacingを確定する",
       "status": "Blocked",
-      "execution_order": 259,
+      "execution_order": 261,
       "depends_on": [
         "TASK-BAL-079"
       ],
@@ -6425,14 +6455,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-081",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13B Reward / Drop / Loot Cadenceを確定する",
       "status": "Blocked",
-      "execution_order": 260,
+      "execution_order": 262,
       "depends_on": [
         "TASK-BAL-080"
       ],
@@ -6445,14 +6475,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-082",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13C Gold / Material Economy / Inventory / Guild Pacingを確定する",
       "status": "Blocked",
-      "execution_order": 261,
+      "execution_order": 263,
       "depends_on": [
         "TASK-BAL-081"
       ],
@@ -6465,14 +6495,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-083",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13D Stone Endgame Mathematical Deltaを確定する",
       "status": "Blocked",
-      "execution_order": 262,
+      "execution_order": 264,
       "depends_on": [
         "TASK-BAL-082"
       ],
@@ -6485,14 +6515,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-084",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P14 Level1→Endgame Full Mathematical BaselineをFreezeする",
       "status": "Blocked",
-      "execution_order": 263,
+      "execution_order": 265,
       "depends_on": [
         "TASK-BAL-083"
       ],
@@ -6505,14 +6535,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-085",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P15 Human Experience Target Band / Difficulty / Tempo Tuningを確定する",
       "status": "Blocked",
-      "execution_order": 264,
+      "execution_order": 266,
       "depends_on": [
         "TASK-BAL-084"
       ],
@@ -6525,14 +6555,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-086",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P15-P Presentation TuningをGameplay非影響条件で確定する",
       "status": "Blocked",
-      "execution_order": 265,
+      "execution_order": 267,
       "depends_on": [
         "TASK-BAL-085"
       ],
@@ -6545,14 +6575,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-087",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P16 Cross-System Holdout / Human Real-device / Promotion Readiness",
       "status": "Blocked",
-      "execution_order": 266,
+      "execution_order": 268,
       "depends_on": [
         "TASK-BAL-086"
       ],
@@ -6565,7 +6595,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:47:00+09:00"
     },
     {
       "id": "TASK-BAL-071-CORR-001",
@@ -6630,6 +6660,49 @@
       "result_scope": "FRESH_SOURCE_VERIFIED_CURRENT. Human-applied GKS-B772 is Current; package manifest and update payload exact-match target and Current Quick 11/11 PASS. Explicit weapon styles and independent dual-wield strikes are available to Corr002/downstream.",
       "created_at": "2026-08-24T20:35:00+09:00",
       "updated_at": "2026-08-24T21:09:03+09:00"
+    },
+    {
+      "id": "TASK-BAL-073A",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "R5-P6A Level×Job Basic Attack DPT / Monster HP Referenceを確定する",
+      "status": "Done",
+      "execution_order": 253,
+      "depends_on": [
+        "TASK-BAL-073",
+        "TASK-BAL-071-CORR-002"
+      ],
+      "acceptance_criteria": "- Human指示を開始承認として扱う。\n- Decision Question: Skill前のLevel×Job基本攻撃Throughputを、Monster HPをDefenseと分離して決める基準にできるか。\n- Required Inputs: Multi-Loadout Bare Player、GKS-B772 Basic Combat、Monster Core、Core Enemy Budget、Current action gauge。\n- Measurements: Primary loadoutのAGI、action interval、strike数、damage/action、DPT、10/25/50/100 Tick累積Damage。二刀流は独立2strike。\n- Required Numeric Output: 7 Job×Lv1..50 DPT Table + Current starter 6-Job party HP guide。\n- Gate: wall-clock秒を捏造しない。HPとDefenseを混ぜない。Crit Damage/Skill/Passive/MODを先取りしない。Difficulty/TTKを最終決定しない。\n- Downstream: TASK-BAL-074 Skill Balance。Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T21:35:00+09:00"
+      },
+      "created_at": "2026-08-24T21:35:00+09:00",
+      "updated_at": "2026-08-24T21:35:00+09:00",
+      "result_scope": "PASS. 7 Jobs×Lv1..50=350 Primary Bare Player rows converted to pre-Skill basic-attack throughput using Current Game Runtime discrete action gauge: gauge max=100; action_interval_ticks=ceil(100/AGI). Canonical metric=DPT because no fixed authoritative wall-clock seconds-per-Tick exists. Neutral HP-sizing target uses Evasion=0, Damage Resistance=0, Shield=0 so HP and Defense stay separate. Dual-wield=2 independent strikes/action; weapon+shield and two-hand=1 strike/action. Critical multiplier excluded because criticalDamage is not frozen. Current starter party is 6 Jobs (JOB-0001..0006); 10/25/50/100 Tick cumulative basic damage retained as Monster HP reference only, not final Difficulty/TTK. Canonical retained reference=DEV-V9-BALANCE-001_TASK-BAL-073A_DPS-HP-REFERENCE.zip sha256=76e6e11ec17ca73cfb7a970b402837ae4996fd166db149fbbb2bc7bfa36fc824. Source/Game Data/Current active changes=0."
+    },
+    {
+      "id": "TASK-BAL-073B",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "R5-P6B Monster HP Sizing MatrixをLevel×Enemy Countで確定する",
+      "status": "Done",
+      "execution_order": 254,
+      "depends_on": [
+        "TASK-BAL-073A"
+      ],
+      "acceptance_criteria": "- Humanの『再開』を分割済みTASK-BAL-073Bの開始承認として扱う。\n- Decision Question: Level×Job Basic DPTから、Skill前のMonster HPを検討できる数学的HP Pool / per-monster目安を作れるか。\n- Required Inputs: TASK-BAL-073A DPT/HP Reference。\n- Measurements: Starter6総DPT、10/25/50/100 Tick exact cumulative damage、enemy count 1..6 equal split、各Job solo HP reference、Job DPS spread。\n- Required Numeric Output: Level1..50 HP Pool Table + enemy-count split + solo Job sensitivity。\n- Gate: Difficulty名/最終TTKを固定しない。HPとDefenseを混ぜない。最大DPS職だけをUniversal基準にしない。二刀流2strikeを維持する。\n- Downstream: TASK-BAL-074 Skill Balance。Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T21:47:00+09:00"
+      },
+      "created_at": "2026-08-24T21:47:00+09:00",
+      "updated_at": "2026-08-24T21:47:00+09:00",
+      "result_scope": "PASS. TASK-BAL-073A starter 6-Job pre-Skill basic-attack output was converted into 10/25/50/100-Tick total enemy HP pools for Lv1..50. Equal-HP enemy-count sensitivity 1..6 uses ceil(pool/count) as the integer per-monster guide. All 7 Jobs retain solo HP references so Job throughput spread is visible. No Difficulty/Normal/Elite/Boss/TTK target was frozen; HP remains separated from Defense. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073B_MONSTER-HP-SIZING-REFERENCE.zip sha256=1ece79f3f8946d819e395d9a14518ca34ed8c11d8405dad74ba0d87665d5c05e. Source/Game Data/Current active changes=0."
     }
   ],
   "checks": [
@@ -9711,6 +9784,52 @@
       "blocking": false,
       "created_at": "2026-08-24T21:25:00+09:00",
       "updated_at": "2026-08-24T21:25:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073A-DPS-HP-001",
+      "title": "Level×Job Basic DPT / Monster HP Reference gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073A",
+      "status": "Passed",
+      "result": "PASS. 7 Jobs×Lv1..50=350 rows. DPT uses Current Game Runtime action_interval=ceil(100/AGI). No wall-clock conversion, no Skill/Passive/MOD, neutral target keeps HP and Defense separate. Current starter 6-Job party HP guide generated for 10/25/50/100 Tick.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073A_DPS-HP-REFERENCE.zip",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:35:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T21:35:00+09:00",
+        "reason": "Human requested Level×Job DPS as Monster HP reference.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:35:00+09:00",
+      "updated_at": "2026-08-24T21:35:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073B-HP-SIZING-001",
+      "title": "Monster HP Sizing Matrix gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073B",
+      "status": "Passed",
+      "result": "PASS. Lv1..50 starter 6-Job total HP pools generated for 10/25/50/100 Tick; enemy-count 1..6 equal-split guides and 7-Job solo sensitivity retained. No final difficulty/TTK frozen and HP remains separate from Defense.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073B_MONSTER-HP-SIZING-REFERENCE.zip",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:47:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T21:47:00+09:00",
+        "reason": "Human resumed the split DPS→Monster HP sizing work.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:47:00+09:00",
+      "updated_at": "2026-08-24T21:47:00+09:00"
     }
   ],
   "workflow": {
@@ -10342,6 +10461,22 @@
       "task_id": "TASK-BAL-073",
       "created_at": "2026-08-24T21:25:00+09:00",
       "updated_at": "2026-08-24T21:25:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073A-001",
+      "title": "Level×Job Basic DPT / Monster HP Reference確定",
+      "summary": "Skill Balance前にLevel×JobのPrimary Bare Player基本攻撃Throughputを算出。Current Runtimeは固定秒/Tickを持たないためDPTを正本化。Neutral targetでHPとDefenseを分離し、Starter 6-Job partyの10/25/50/100 Tick累積DamageをMonster HPの数学Referenceとして登録。Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-073A",
+      "created_at": "2026-08-24T21:35:00+09:00",
+      "updated_at": "2026-08-24T21:35:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073B-001",
+      "title": "Monster HP Sizing Matrix確定",
+      "summary": "Starter 6-Job pre-Skill basic attackの10/25/50/100 Tick累積DamageをLv1..50 Enemy HP Poolへ変換し、敵数1..6のequal-split個体HP目安を作成。Job別solo referenceとDPS spreadも保持。Difficulty/TTKは未確定、Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-073B",
+      "created_at": "2026-08-24T21:47:00+09:00",
+      "updated_at": "2026-08-24T21:47:00+09:00"
     }
   ],
   "authority": {
