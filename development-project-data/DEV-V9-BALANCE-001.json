@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T08:03:13.162Z"
+    "updated_at": "2026-08-24T08:32:14.680Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-ITEM-001",
-    "theme": "TASK-BAL-046-CORR-001 corrected M1 PASS; TASK-BAL-047 start approval wait",
-    "goal": "Corrected M1 authority is Human Approved total-60 Job growth seed, not Current Export historical total-70 values. Old TASK-BAL-046 M1 evidence is superseded. Corrected exact curves are authoritative for downstream M2. Current Job Export mismatch is separately recorded for later implementation/data alignment. TASK-BAL-047 remains blocked pending separate Human start approval."
+    "theme": "Magic validation order R3 approved; TASK-BAL-048 M3-A Raw Equipment start approval wait",
+    "goal": "Magic Equipment Battle validation order is corrected. Next is TASK-BAL-048 M3-A Raw Equipment iLv Curve only. After that: TASK-BAL-052 Formula → TASK-BAL-050 Skill → TASK-BAL-048B Equipment Battle Effect → TASK-BAL-049 Player Power. No battle measurement was executed in this correction task."
   },
   "project_rules": [
     {
@@ -977,6 +977,21 @@
       "artifact_note": "TASK-BAL-046-CORR-001_CURRENT-IMPLEMENTATION-MISMATCH.json",
       "created_at": "2026-08-24T16:40:00+09:00",
       "updated_at": "2026-08-24T16:40:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-007",
+      "title": "M2 joint equipabilityに必要な能力間growth roll依存関係",
+      "status": "Resolved",
+      "summary": "TASK-BAL-047で複数required statの同時達成率を計算する際、Human Approved Job growth仕様に能力間extra rollの独立/相関Ruleがないことを検出。",
+      "body": "独立性を仮定せず各Statのexact marginalからFréchet boundsを計算。Weapon/Armor 1925 Job×Equipment pairs中、50% threshold 136件、90% threshold 14件が1 Level幅で一意に決まらない。大半はdependency-robustに確定するが、全件Matrixを正本化するにはdependency Ruleが必要。",
+      "open_questions": "各正式Statのextra growth rollをStatごと・Level-up growth stepごとに独立判定とするか。",
+      "conclusion": "Issue was a false positive. Existing Level-up logic already defines a per-Stat growth judgment; M2 uses that process directly. Full equipability matrix completed without adding a new gameplay rule.",
+      "related_discussion_ids": [
+        "DISC-BAL-006"
+      ],
+      "artifact_note": "TASK-BAL-047_PRECHECK-JOINT-PROBABILITY-ISSUE.json",
+      "created_at": "2026-08-24T17:03:00+09:00",
+      "updated_at": "2026-08-24T17:13:00+09:00"
     }
   ],
   "decisions": [
@@ -1344,6 +1359,18 @@
       "approved_at": "2026-08-24T16:13:00+09:00",
       "created_at": "2026-08-24T16:13:00+09:00",
       "updated_at": "2026-08-24T16:13:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-MAGIC-VALIDATION-ORDER-001",
+      "title": "Magic Equipment Battle検証をFormula/Skill後へ移動する",
+      "status": "Approved",
+      "text": "Equipment iLv testをM3-A Raw Equipment CurveとM3-B Battle Effect Curveへ分割する。M3-A後にM7 Formula/Status/Resource、次にM5 Skillを実施し、その後M3-BでPhysical/Magic EquipmentのBattle Effectを測る。M4 Player Level PowerはM3-B後に確定する。Magic weapon bonusをFormula/Skill未検証のBattle結果でBalance判定しない。",
+      "rationale": "Human指示『魔法は順番を変えないと検証できない』により、Magic damageの依存順を正すため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T17:28:00+09:00",
+      "created_at": "2026-08-24T17:28:00+09:00",
+      "updated_at": "2026-08-24T17:28:00+09:00"
     }
   ],
   "specifications": [
@@ -1566,8 +1593,8 @@
       "id": "SPEC-BAL-MEASUREMENT-REDESIGN-001",
       "title": "Measurement-first Game Balance Test Master Plan",
       "status": "Approved",
-      "summary": "Generic Candidate比較を廃止し、Job期待Stats→Equipment装備可能Level→iLv性能→Player Power→Monster/Quest/Economyの依存順で各Testの目的と必要数値を定義。Revision 2ではJob履歴依存、joint equip probability、Equipment intrinsic/progression curve分離、upstream invalidationを明文化。",
-      "body": "# Measurement-first Game Balance Test Master Plan\n\n## 0. 目的\n\nこの計画の目的は「候補を順位付けすること」ではない。\n**ゲームを成立させるために必要な基準数値を、依存関係順に確定すること**である。\n\n全てのTestは次の6項目を持つ。\n\n1. **Decision Question** — 何を決めるためのTestか\n2. **Required Inputs** — 先に確定していなければならない数値\n3. **Measurements** — 実際に測るKPI / 分布\n4. **Required Numeric Output** — ゲーム制作へ渡す数値表・Curve\n5. **Gate / Target Authority** — AIで決められるか、Human Target承認が必要か\n6. **Downstream Consumer** — 次のどのTestがこの数値を使うか\n\nGenericな「強い候補を探す」Testは禁止する。\n100 / 1,000 / 10,000 seedはStage名ではなく、必要な統計精度を得るための手段として使う。\n\n---\n\n## 1. 数値の依存関係\n\n`Job Growth`\n→ `Character Levelごとの期待Stats分布`\n→ `Equipment Requirement`\n→ `予測装備可能Level`\n→ `Equipment iLv性能Curve`\n→ `Player Level Power Curve`\n→ `Skill / Passive / MOD / Rarity / Formula / AI寄与`\n→ `Canonical Player Build`\n→ `Monster Level / Job Curve`\n→ `Enemy Budget conversion`\n→ `Normal / Elite / Boss Target Band`\n→ `Encounter / Quest Attrition`\n→ `EXP / Acquisition Pacing`\n→ `Reward / Loot / Economy`\n→ `Stone / Guild`\n→ `Cross-System Campaign`\n→ `Product Candidate / Runtime / Promotion`\n\n後段から前段へ数値を逆算して正本化しない。\n\n---\n\n## 2. ゲームを作るために必要な主要数値表\n\n### A. Character / Job Expected Stat Table\n必要列:\n- Job ID\n- Character Level 1..Current Max\n- STR / DEX / INT / VIT / MND / AGI / その他Current正式Stat\n- mean / p10 / p50 / p90\n- level-to-level expected gain\n- growth variance / tail\n- Job変更履歴を使う場合は履歴別checkpoint\n\n用途:\nEquipment requirement、Player Power、Skill条件、Monster比較の基準。\n\n### B. Equipment Equipability Matrix\n必要列:\n- Equipment kind/type/slot\n- iLv\n- required STR/DEX/INT等\n- Jobごとの `P(equippable | Character Level)`\n- median equip level (>=50%)\n- safe equip level (>=90%)\n- never/late reachability flag\n\n用途:\n「iLv5装備を何LevelのPlayerが使う想定か」を定義する。\n武器なし vs iLv5をLevel無視で比較しない。\n\n### C. Equipment Power Curve\nWeapon:\n- iLv1..11各段階の Attack / Accuracy / Magic bonus / Critical\n- Damage per successful hit\n- expected damage per action\n- damage per tick\n- Hit / Crit\n- TTK\n- adjacent iLv absolute gain\n- **adjacent iLv percent gain**\n- iLv1→11 cumulative gain\n\nArmor/Accessory:\n- HP/MP/Evasion等Contribution\n- damage taken / EHP / survival\n- adjacent iLv EHP gain\n- slot/category contribution\n\n縦比較: 同一typeのiLv1→11\n横比較: 同一iLvの全武器type / armor category / slot\n\n### D. Player Level Power Curve\n各Levelまたは正式checkpointごと:\n- realistic Job Stat\n- realistic equippable Equipment iLv\n- Basic attack output\n- DPS / damage per tick\n- HPS\n- EHP\n- Hit / Crit / Evasion / Resistance\n- MP pool / sustainable turns\n- representative Skill/Passive/AI込みBuild power\n\n用途:\nMonster/Questの「相手となるPlayer」を固定する。\n\n### E. Skill Efficiency Table\n- Skill archetype / level / budget / strength\n- damage/heal/utility per use\n- damage/heal per tick\n- MP efficiency\n- cooldown/cast occupancy\n- target-count efficiency\n- status contribution\n- basic/reference actionに対するmarginal gain\n- zero-use / dead-option rate\n\n### F. Passive / MOD / Rarity / Unique Contribution Table\n- condition activation rate\n- marginal DPS/HPS/EHP/Hit/Resource gain\n- Tier-to-Tier slope\n- MOD count interaction\n- rarity power delta\n- Unique scalar powerとstrategic utilityを分離\n- runaway / dead / dominance flag\n\n### G. Battle Formula / Status / Resource Sensitivity Table\nCurrent formula topologyは固定し、数値Parameterだけを測る。\n- Attack/Skill multiplier elasticity\n- Accuracy/Evasion→Hit response\n- Critical rate/damage response\n- Resistance response\n- Status duration / stack / DOT-HOT\n- Shield\n- MP / Cooldown / Cast\n- cap/floor/clamp saturation\n- small parameter change → output change\n\n### H. Formal AI Performance Extraction Table\n- same BuildでAIだけ変更\n- valid action rate\n- idle/waste\n- target quality\n- MP/resource waste\n- performance extraction ratio\n- reference AIを後続Testで固定\n\n### I. Monster / Enemy Power Table\n- Monster Level\n- Monster Job\n- HP / Attack / Defense / Skill / AI / Utility Budget\n- DPS / EHP / Hit / Crit / utility\n- Player Power ratio\n- budget-to-output conversion\n\n### J. Difficulty Target Table\nHuman Approved Target Experienceを数値Bandへ落とす。\nAIがBaseline分布からBand候補を提示し、Humanが承認してからEnemy/Quest係数調整を開始する。\n\n必要候補:\n- Normal: success / TTK / survivor / resource attrition band\n- Elite: preparation-change gain / success / TTK band\n- Boss: preparation requirement / resource / failure risk\n- Stone: endgame success / failure / reward delta\n\nこのBandをHuman承認する前に「敵が妥当」と宣言しない。\n\n### K. Quest / Progression / Economy Tables\nQuest:\n- battles/run\n- cumulative HP/MP attrition\n- success/failure\n- duration\n- effective enemy budget\n\nProgression:\n- Quest/時間 per Level\n- early/mid/late interval\n- equipment unlock timing\n- Skill/Passive unlock timing\n\nReward/Economy:\n- reward/time\n- failure-adjusted EV\n- Gold/material source-sink\n- equipment replacement interval\n- rarity acquisition time\n- inventory/warehouse pressure\n\n---\n\n## 2.1 Measurement separation rules — Revision 2\n\n### Character / Job path dependence\nCharacter StatsはCurrent Jobだけでなく成長履歴に依存する。\nM1は最低限次の2層を分離して出力する。\n\n1. **Pure-Job Baseline** — Level 1から対象Jobを継続した場合の期待Stats分布。\n2. **Job-History Envelope** — Current Job Change contractで成立する代表的なJob変更履歴について、\n   同Level/Current JobでもStatsがどれだけ変わり得るかを示す範囲・代表checkpoint。\n\nEquipment eligibilityやMonster基準では、どのPlayer populationを基準にするかを明示し、\nPure-JobとJob-history結果を混ぜない。\n\n### Joint equipment eligibility\nEquipmentが複数能力値を同時要求する場合、\n`P(STR達成)`, `P(DEX達成)`, `P(INT達成)` を個別に出すだけで装備可能率とみなさない。\n\n正式なequipabilityは、\n**全required stat条件を同時に満たすjoint probability**\n`P(all equipment requirements satisfied | Job, Character Level, growth path policy)`\nとして計算する。\n\n解析的にjoint distributionを求められる場合はexact/DPを優先し、\n困難な場合だけdeterministic seeded population simulationで推定する。\n\n### Equipment intrinsic curve vs progression curve\nEquipment iLv性能は次の2種類を必ず分離する。\n\n#### A. Intrinsic Equipment iLv Curve\n目的: **装備そのものを1 iLv上げた時の性能増加率**を測る。\n\n- Character Stats / Skill / Passive / AI / Enemy / Battle Formulaを固定する。\n- iLv1→2→...→11でEquipmentだけを差し替える。\n- requirementは装備可否判定結果(M2)とは別に扱い、比較用Characterは全対象iLvを装備可能な固定reference statsを使用する。\n- 出力:\n  - Attack/Accuracy等のraw contribution差\n  - damage per successful hit\n  - expected damage per action\n  - damage per tick\n  - Hit/Crit\n  - adjacent iLv absolute gain\n  - **adjacent iLv percent gain**\n  - cumulative iLv1→11 gain\n\nこのCurveにはCharacter Level上昇分を混ぜない。\n\n#### B. Progression-Realistic Equipment Curve\n目的: **実際の成長過程で、装備更新時にPlayer総戦力が何%上がるか**を測る。\n\n- M2で算出した予測装備可能Levelを使う。\n- そのLevelのM1 Expected Statsを使用する。\n- Character成長によるPower増加とEquipment更新によるPower増加をdecompositionして保存する。\n- 「Lvが上がったから強くなった」と「装備が更新されたから強くなった」を分離する。\n\n武器なし→iLv1はequipment acquisition onsetとして別項目に残し、\niLv1→11のgrowth slopeへ混ぜない。\n\n### Upstream invalidation\n後続の確定済み数値が前段の変更で無効になることを防ぐ。\n\n次のいずれかを正式Candidateとして変更した場合、依存するDownstream Tableを再計算してから次Gateへ進む。\n\n- Job growth / initial Stats → M1以降\n- Equipment requirement coefficient → M2以降\n- Equipment contribution/growth coefficient → M3以降\n- Battle Formula numeric parameter → Player/Skill/Passive/Monster/Questの該当Table\n- Difficulty Target Band → Enemy/Quest/Rewardの該当Table\n\nSensitivity Testで「変えたらどうなるか」を測るだけではinvalidateしない。\nCandidate値を採用する時点でinvalidate/recomputeを発生させる。\n\n---\n\n## 3. Test Phase\n\n### M0 — Measurement Contract / Numeric Registry\n目的:\n全Domainについて「必要数値」と「決定Question」を登録し、TargetのないTestを禁止する。\n\n### M1 — Character / Job Growth\n目的:\n各Job・各LevelでPlayerが実際に持つStats分布を確定する。\n\nCurrent authorityにある初期能力・最大Level・Job growth formulaを使用する。\nPure-Job BaselineとJob-History Envelopeを分離する。\n可能な項目は解析計算/確率DPを優先し、Random growthのquantileと履歴分布だけSeeded simulationで確認する。\n\n### M2 — Equipment Eligibility\n目的:\nEquipment iLvがCharacter progressionのどのLevel帯に対応するかを確定する。\n\n`requirement = iLv × requirement coefficient` とM1のStats分布を重ね、\n複数required statを**同時に満たすjoint equip probability**を算出する。\n50% / 90% equip probability LevelをJob/成長path policy別に出す。\n\n### M3 — Equipment iLv Power\n目的:\n「装備そのものを1 iLv上げたら何%増えるか」と\n「実際のLevel進行で装備更新したら総戦力が何%増えるか」を混同せず測る。\n\nCurrent P1 matrix:\n- Weapon 13 type × iLv1..11\n- Armor 3 category × 4 slot × iLv1..11\n- Accessory 3 type × iLv1..11\n\nA. **Intrinsic Equipment iLv Curve**:\nCharacter/Skill/Passive/AI/Enemyを固定し、EquipmentだけiLv1→11へ差し替える。\nこれを正式な「1 iLvあたり性能上昇率」とする。\n\nB. **Progression-Realistic Equipment Curve**:\nM2の予測装備可能LevelとM1のExpected Statsを使い、\nCharacter growth分とEquipment upgrade分をdecompositionする。\n\n武器なし→iLv1は「装備開始時の寄与」別項目とし、iLv成長率へ混ぜない。\n\n### M4 — Player Level Power Curve\n目的:\nM1〜M3から「Level Xの現実的なPlayerの強さ」を作る。\n\nMonster TestはこのCurveなしに開始しない。\n\n### M5 — Skill\n目的:\nPlayer Level Powerに対しSkill Budget/Costがどの程度の性能差を作るか測る。\n\n### M6 — Passive / MOD / Rarity / Unique\n目的:\n常時/条件付き/Item modifierがPlayer Powerをどの程度動かすか測る。\n\n### M7 — Formula / Status / Resource\n目的:\n固定Formula topology内でBalance Parameterの感度・cap・dead zoneを測る。\n\n### M8 — AI\n目的:\n同じBuildからAIがどれだけ性能を引き出すかを測り、後続Monster/Quest Testのreference AIを固定する。\n\n### M9 — Canonical Player Builds\n目的:\nLevel帯ごとに複数の現実的Buildを固定し、Monster Testの入力集合を作る。\n単一Buildだけを基準にしない。\n\n### M10 — Monster Job / Stats\n目的:\nMonster Level×Job係数が、同Level Player Powerに対してどの相対性能になるか測る。\n\n### M11 — Enemy Budget\n目的:\nHP / Attack / Defense / Skill / AI / Utilityの各Budget 1点が実戦性能をどれだけ変えるか測る。\n\n### M12 — Difficulty Target Human Gate\n目的:\nNormal / Elite / Boss / Stoneについて「何を妥当と呼ぶか」を数値BandでHuman承認する。\nこのGate前にEnemy係数のwinnerを決定しない。\n\n### M13 — Enemy Calibration\n目的:\nApproved Target BandへMonster/Enemy Budgetを合わせる。\n\n### M14 — Formation / Party / Encounter Unit Test\n目的:\n1体だけでなく複数敵、party人数、fixed formation scaling、counter関係を確認する。\n\n### M15 — New Game Starter\n目的:\n開始時Party/Equipment/Skill/Goldで最初の適正Contentが成立するか測る。\n\n### M16 — Quest Attrition\n目的:\n単戦でなくQuest連戦として成功率、HP/MP消耗、時間、survivorを測る。\n\n### M17 — EXP / Acquisition\n目的:\nQuest出力を入力にLevel up、Equipment unlock、Skill/Passive acquisitionの時間軸を決める。\n\n### M18 — Reward / Loot\n目的:\n難度・時間・失敗Riskに対してDrop/Gold/Material/Equipment更新頻度が妥当か測る。\n\n### M19 — Economy / Inventory\n目的:\nGold/Material source-sink、売却、容量、overflow、保管負荷を測る。\n\n### M20 — Stone\n目的:\n完成Build向け高難度・高報酬EndgameとしてNormal endgameとの差を測る。\n\n### M21 — Guild\n目的:\nGuild Level/Unlock/Capacityが中長期progressionの節目として妥当か測る。\n\n### M22 — Presentation\n目的:\nBattle結果を変えず、effect duration/playback/readability等を調整する。\n\n### M23 — Full Campaign\n目的:\nNew Game→Level capまでPower/Equipment/Quest/Reward/Unlockが途切れず循環するか測る。\n\n### M24 — Holdout / Stress\n目的:\n未使用Seed/Build/Enemy/Questでoverfit、strict dominance、runaway、risk-free farm、extreme tailを検出する。\n\nHoldoutは「良いCandidateを探す場所」ではなく、\n既に決めたCandidateが未知条件でも壊れないことを確認する場所とする。\n\n---\n\n## 4. Trial Count Policy\n\n### Exact / analytical first\n式と入力が確定している項目は乱数Battleを使わずexact計算する。\n例:\n- Expected Job growth\n- Equipment requirement\n- adjacent iLv stat slope\n\n### Static enumeration\n合法な全type/iLv/slotを列挙できるものは全件測る。\nサンプル化しない。\n\n### Seeded stochastic measurement\nRandom growth / Battle / Reward等のみSeedを使う。\n\nTrial数は目的で変える。\n- smoke/validity: small deterministic set\n- distribution estimate: 必要精度に応じる\n- rare/tail: 発生率に応じて増やす\n- holdout: Candidate固定後の未使用集合\n\n従来の100→1,000→10,000を全Domainへ機械適用しない。\n\n---\n\n## 5. Existing Evidence Reclassification\n\nTASK-BAL-036〜040:\n- Formal Packageのinput/version binding\n- AI/Human Resultの再現一致\n- Damage/Hit/Hit rate等KPI取得可能性\n- 100/1,000 seed batch execution\n\nを証明した **Measurement Pipeline Qualification Evidence** として保持する。\n\nただし、\n- Job expected Stat\n- Equipment expected equip Level\n- Player Level Power\n- Level-matched Monster\nを入力にしていないため、現行Weapon/Armor/Skill/Passive値のBalance winner証拠にはしない。\n\n旧TASK-BAL-041〜044 Generic Final/Holdoutは実行しない。\n\n---\n\n## 6. Human Gate\n\nHuman判断が必要なもの:\n1. 本Measurement-first Planの承認\n2. Qualitative Target Experienceを数値Bandへ変換するM12\n3. Product Game Data Apply\n4. Current active Promotion\n5. AIで一意に決まらないGameplay方向\n\nAIが進めるもの:\n- Current formula/contractから一意に算出できるexpected value\n- full matrix生成\n- equip probability\n- sensitivity\n- distribution\n- candidate探索\n- regression\n- provenance/replay検証\n\n---\n\n## 7. 最終成果\n\n最終的に必要なのは「勝率ランキング」ではなく、次の一貫したGame Balance Modelである。\n\n`Character Level`\n→ `Expected Job Stats`\n→ `Expected Equip iLv`\n→ `Expected Player Power`\n→ `Expected Monster Power`\n→ `Quest Difficulty / Attrition`\n→ `EXP / Loot / Reward`\n→ `Next Character / Equipment Power`\n\nこのLoopがLevel 1からEndgameまで破綻せず、\nHuman Approved Target Experienceを満たすことを最終Goalとする。\n",
+      "summary": "Measurement-first Revision 3. Revision 2の依存順を維持しつつ、Magic EquipmentのBattle検証順序を修正。M3をRaw EquipmentとBattle Effectへ分割し、Raw→M7 Formula→M5 Skill→M3-B Battle Effect→M4 Player Powerの順にする。Stage/Metric IDは互換維持。",
+      "body": "# Measurement-first Game Balance Test Master Plan\n\n## 0. 目的\n\nこの計画の目的は「候補を順位付けすること」ではない。\n**ゲームを成立させるために必要な基準数値を、依存関係順に確定すること**である。\n\n全てのTestは次の6項目を持つ。\n\n1. **Decision Question** — 何を決めるためのTestか\n2. **Required Inputs** — 先に確定していなければならない数値\n3. **Measurements** — 実際に測るKPI / 分布\n4. **Required Numeric Output** — ゲーム制作へ渡す数値表・Curve\n5. **Gate / Target Authority** — AIで決められるか、Human Target承認が必要か\n6. **Downstream Consumer** — 次のどのTestがこの数値を使うか\n\nGenericな「強い候補を探す」Testは禁止する。\n100 / 1,000 / 10,000 seedはStage名ではなく、必要な統計精度を得るための手段として使う。\n\n---\n\n## 1. 数値の依存関係\n\n`Job Growth`\n→ `Character Levelごとの期待Stats分布`\n→ `Equipment Requirement`\n→ `予測装備可能Level`\n→ `Equipment iLv性能Curve`\n→ `Player Level Power Curve`\n→ `Skill / Passive / MOD / Rarity / Formula / AI寄与`\n→ `Canonical Player Build`\n→ `Monster Level / Job Curve`\n→ `Enemy Budget conversion`\n→ `Normal / Elite / Boss Target Band`\n→ `Encounter / Quest Attrition`\n→ `EXP / Acquisition Pacing`\n→ `Reward / Loot / Economy`\n→ `Stone / Guild`\n→ `Cross-System Campaign`\n→ `Product Candidate / Runtime / Promotion`\n\n後段から前段へ数値を逆算して正本化しない。\n\n---\n\n## 2. ゲームを作るために必要な主要数値表\n\n### A. Character / Job Expected Stat Table\n必要列:\n- Job ID\n- Character Level 1..Current Max\n- STR / DEX / INT / VIT / MND / AGI / その他Current正式Stat\n- mean / p10 / p50 / p90\n- level-to-level expected gain\n- growth variance / tail\n- Job変更履歴を使う場合は履歴別checkpoint\n\n用途:\nEquipment requirement、Player Power、Skill条件、Monster比較の基準。\n\n### B. Equipment Equipability Matrix\n必要列:\n- Equipment kind/type/slot\n- iLv\n- required STR/DEX/INT等\n- Jobごとの `P(equippable | Character Level)`\n- median equip level (>=50%)\n- safe equip level (>=90%)\n- never/late reachability flag\n\n用途:\n「iLv5装備を何LevelのPlayerが使う想定か」を定義する。\n武器なし vs iLv5をLevel無視で比較しない。\n\n### C. Equipment Power Curve\nWeapon:\n- iLv1..11各段階の Attack / Accuracy / Magic bonus / Critical\n- Damage per successful hit\n- expected damage per action\n- damage per tick\n- Hit / Crit\n- TTK\n- adjacent iLv absolute gain\n- **adjacent iLv percent gain**\n- iLv1→11 cumulative gain\n\nArmor/Accessory:\n- HP/MP/Evasion等Contribution\n- damage taken / EHP / survival\n- adjacent iLv EHP gain\n- slot/category contribution\n\n縦比較: 同一typeのiLv1→11\n横比較: 同一iLvの全武器type / armor category / slot\n\n### D. Player Level Power Curve\n各Levelまたは正式checkpointごと:\n- realistic Job Stat\n- realistic equippable Equipment iLv\n- Basic attack output\n- DPS / damage per tick\n- HPS\n- EHP\n- Hit / Crit / Evasion / Resistance\n- MP pool / sustainable turns\n- representative Skill/Passive/AI込みBuild power\n\n用途:\nMonster/Questの「相手となるPlayer」を固定する。\n\n### E. Skill Efficiency Table\n- Skill archetype / level / budget / strength\n- damage/heal/utility per use\n- damage/heal per tick\n- MP efficiency\n- cooldown/cast occupancy\n- target-count efficiency\n- status contribution\n- basic/reference actionに対するmarginal gain\n- zero-use / dead-option rate\n\n### F. Passive / MOD / Rarity / Unique Contribution Table\n- condition activation rate\n- marginal DPS/HPS/EHP/Hit/Resource gain\n- Tier-to-Tier slope\n- MOD count interaction\n- rarity power delta\n- Unique scalar powerとstrategic utilityを分離\n- runaway / dead / dominance flag\n\n### G. Battle Formula / Status / Resource Sensitivity Table\nCurrent formula topologyは固定し、数値Parameterだけを測る。\n- Attack/Skill multiplier elasticity\n- Accuracy/Evasion→Hit response\n- Critical rate/damage response\n- Resistance response\n- Status duration / stack / DOT-HOT\n- Shield\n- MP / Cooldown / Cast\n- cap/floor/clamp saturation\n- small parameter change → output change\n\n### H. Formal AI Performance Extraction Table\n- same BuildでAIだけ変更\n- valid action rate\n- idle/waste\n- target quality\n- MP/resource waste\n- performance extraction ratio\n- reference AIを後続Testで固定\n\n### I. Monster / Enemy Power Table\n- Monster Level\n- Monster Job\n- HP / Attack / Defense / Skill / AI / Utility Budget\n- DPS / EHP / Hit / Crit / utility\n- Player Power ratio\n- budget-to-output conversion\n\n### J. Difficulty Target Table\nHuman Approved Target Experienceを数値Bandへ落とす。\nAIがBaseline分布からBand候補を提示し、Humanが承認してからEnemy/Quest係数調整を開始する。\n\n必要候補:\n- Normal: success / TTK / survivor / resource attrition band\n- Elite: preparation-change gain / success / TTK band\n- Boss: preparation requirement / resource / failure risk\n- Stone: endgame success / failure / reward delta\n\nこのBandをHuman承認する前に「敵が妥当」と宣言しない。\n\n### K. Quest / Progression / Economy Tables\nQuest:\n- battles/run\n- cumulative HP/MP attrition\n- success/failure\n- duration\n- effective enemy budget\n\nProgression:\n- Quest/時間 per Level\n- early/mid/late interval\n- equipment unlock timing\n- Skill/Passive unlock timing\n\nReward/Economy:\n- reward/time\n- failure-adjusted EV\n- Gold/material source-sink\n- equipment replacement interval\n- rarity acquisition time\n- inventory/warehouse pressure\n\n---\n\n## 2.1 Measurement separation rules — Revision 2\n\n### Character / Job path dependence\nCharacter StatsはCurrent Jobだけでなく成長履歴に依存する。\nM1は最低限次の2層を分離して出力する。\n\n1. **Pure-Job Baseline** — Level 1から対象Jobを継続した場合の期待Stats分布。\n2. **Job-History Envelope** — Current Job Change contractで成立する代表的なJob変更履歴について、\n   同Level/Current JobでもStatsがどれだけ変わり得るかを示す範囲・代表checkpoint。\n\nEquipment eligibilityやMonster基準では、どのPlayer populationを基準にするかを明示し、\nPure-JobとJob-history結果を混ぜない。\n\n### Joint equipment eligibility\nEquipmentが複数能力値を同時要求する場合、\n`P(STR達成)`, `P(DEX達成)`, `P(INT達成)` を個別に出すだけで装備可能率とみなさない。\n\n正式なequipabilityは、\n**全required stat条件を同時に満たすjoint probability**\n`P(all equipment requirements satisfied | Job, Character Level, growth path policy)`\nとして計算する。\n\n解析的にjoint distributionを求められる場合はexact/DPを優先し、\n困難な場合だけdeterministic seeded population simulationで推定する。\n\n### Equipment intrinsic curve vs progression curve\nEquipment iLv性能は次の2種類を必ず分離する。\n\n#### A. Intrinsic Equipment iLv Curve\n目的: **装備そのものを1 iLv上げた時の性能増加率**を測る。\n\n- Character Stats / Skill / Passive / AI / Enemy / Battle Formulaを固定する。\n- iLv1→2→...→11でEquipmentだけを差し替える。\n- requirementは装備可否判定結果(M2)とは別に扱い、比較用Characterは全対象iLvを装備可能な固定reference statsを使用する。\n- 出力:\n  - Attack/Accuracy等のraw contribution差\n  - damage per successful hit\n  - expected damage per action\n  - damage per tick\n  - Hit/Crit\n  - adjacent iLv absolute gain\n  - **adjacent iLv percent gain**\n  - cumulative iLv1→11 gain\n\nこのCurveにはCharacter Level上昇分を混ぜない。\n\n#### B. Progression-Realistic Equipment Curve\n目的: **実際の成長過程で、装備更新時にPlayer総戦力が何%上がるか**を測る。\n\n- M2で算出した予測装備可能Levelを使う。\n- そのLevelのM1 Expected Statsを使用する。\n- Character成長によるPower増加とEquipment更新によるPower増加をdecompositionして保存する。\n- 「Lvが上がったから強くなった」と「装備が更新されたから強くなった」を分離する。\n\n武器なし→iLv1はequipment acquisition onsetとして別項目に残し、\niLv1→11のgrowth slopeへ混ぜない。\n\n### Upstream invalidation\n後続の確定済み数値が前段の変更で無効になることを防ぐ。\n\n次のいずれかを正式Candidateとして変更した場合、依存するDownstream Tableを再計算してから次Gateへ進む。\n\n- Job growth / initial Stats → M1以降\n- Equipment requirement coefficient → M2以降\n- Equipment contribution/growth coefficient → M3以降\n- Battle Formula numeric parameter → Player/Skill/Passive/Monster/Questの該当Table\n- Difficulty Target Band → Enemy/Quest/Rewardの該当Table\n\nSensitivity Testで「変えたらどうなるか」を測るだけではinvalidateしない。\nCandidate値を採用する時点でinvalidate/recomputeを発生させる。\n\n---\n\n## 2.2 Magic / Equipment battle validation order — Revision 3\n\nEquipment iLv検証は **Raw数値Curve** と **Battle Effect Curve** を分離する。\n\n### Execution order\n1. **M3-A Equipment Raw iLv Curve**\n   - Equipment Generatorの正式出力だけを使い、Attack / Accuracy / Critical / magic_weapon_bonus / HP / MP / Evasion等の\n     iLv1→11 raw contributionとadjacent iLv増加率を測る。\n   - Character / Skill / Enemy / Battle outcomeを混ぜない。\n   - magic_weapon_bonusはここではRaw値だけを検証する。\n\n2. **M7 Formula / Status / Resource**\n   - Current固定Formula topology/order/roundingを変更せず、\n     Physical pathとMagic pathの入力→最終出力経路、Resistance、Critical、Hit、Status、Resource responseを検証する。\n   - Magic Equipment Battle Testより先に、magic weapon contributionがどのFormal Formula経路へ入るかを確定する。\n\n3. **M5 Skill**\n   - Formula検証済みのcontrolled reference profileでPhysical Skill / Magic Skill / Heal / Utilityを測る。\n   - Player Level Power Curveを前提にせず、固定reference Stats/Equipment/Enemy profileを使用する。\n   - Magic Equipment Battle Testに使う代表Magic Skill/Resistance profileを固定する。\n\n4. **M3-B Equipment Battle Effect Curve**\n   - M3-A + M7 + M5を入力に、EquipmentだけiLv1→11へ変更して実戦効果を測る。\n   - Physical WeaponはBasic/Physical reference action、Magic WeaponはFormal Magic Skill、\n     ArmorはPhysical/Magic hostile reference actionを分離する。\n   - Damage per successful hit / Expected damage per action / Damage per tick / Hit / Crit / EHP /\n     Damage taken / TTK / adjacent iLv battle gainを算出する。\n   - Progression-Realistic CurveではM1/M2を使い、Character成長分とEquipment更新分をdecompositionする。\n\n5. **M4 Player Level Power**\n   - M1/M2/M3-A/M7/M5/M3-Bが揃った後にLevel別Player Powerを確定する。\n\n### Dependency rule\nMagic WeaponのBalance判定を、Formula/Skill検証前のBattle結果から行ってはいけない。\nRaw Equipment CurveはFormula/Skill前に測定できるが、Battle Effect CurveはFormula/Skill後にのみ測定する。\n\nStage ID / Metric IDはEvidence互換性のため維持し、**execution orderとproducer taskを分割する**。\n\n---\n\n## 3. Test Phase\n\n### M0 — Measurement Contract / Numeric Registry\n目的:\n全Domainについて「必要数値」と「決定Question」を登録し、TargetのないTestを禁止する。\n\n### M1 — Character / Job Growth\n目的:\n各Job・各LevelでPlayerが実際に持つStats分布を確定する。\n\nCurrent authorityにある初期能力・最大Level・Job growth formulaを使用する。\nPure-Job BaselineとJob-History Envelopeを分離する。\n可能な項目は解析計算/確率DPを優先し、Random growthのquantileと履歴分布だけSeeded simulationで確認する。\n\n### M2 — Equipment Eligibility\n目的:\nEquipment iLvがCharacter progressionのどのLevel帯に対応するかを確定する。\n\n`requirement = iLv × requirement coefficient` とM1のStats分布を重ね、\n複数required statを**同時に満たすjoint equip probability**を算出する。\n50% / 90% equip probability LevelをJob/成長path policy別に出す。\n\n### M3 — Equipment iLv Power\n目的:\nEquipmentのRaw数値成長と実戦効果を分離し、魔法系をFormula/Skill検証前にBattle評価しない。\n\n**M3-A Raw Equipment Curve**:\n- Weapon 13 type × iLv1..11\n- Armor 3 category × 4 slot × iLv1..11\n- Accessory 3 type × iLv1..11\nについて、Equipment Generator正式出力のraw contribution、adjacent iLv absolute/percent gain、同一iLv横比較を出す。\nmagic_weapon_bonusはRaw値まで。\n\n**M3-B Equipment Battle Effect Curve**:\nM7 FormulaとM5 Skill完了後に実施する。\nCharacter/Skill/Passive/AI/Enemyをcontrolled referenceとして固定し、EquipmentだけiLv1→11へ差し替える。\nPhysical / Magic / Armor受け側を分離してDamage/Hit/Damage per Tick/EHP/TTK等を測る。\n\n**Progression-Realistic Equipment Curve**:\nM1/M2の予測装備可能LevelとExpected Statsを使い、\nCharacter growth分とEquipment upgrade分をdecompositionする。\n\n武器なし→iLv1はequipment acquisition onsetとして別項目に残し、iLv1→11 growth slopeへ混ぜない。\n\n### M4 — Player Level Power Curve\n目的:\nM1/M2/M3-A/M7/M5/M3-Bから「Level Xの現実的なPlayerの強さ」を作る。\n\nFormula/Skill/Magic Equipment Battle Effectが未検証の状態ではPlayer Powerを確定しない。\nMonster TestはこのCurveなしに開始しない。\n\n### M5 — Skill\n目的:\nFormula検証済みのcontrolled reference profileでSkill Budget/Costがどの程度の性能差を作るか測る。\n\nM4 Player Level Powerを前提にせず、M3-A Raw EquipmentとM7 Formulaを入力にする。\nPhysical Skill / Magic Skill / Heal / Utilityを分離し、\nM3-B Magic Equipment Battle Curveへ渡す代表Magic Skill/Resistance profileを固定する。\n\n### M6 — Passive / MOD / Rarity / Unique\n目的:\n常時/条件付き/Item modifierがPlayer Powerをどの程度動かすか測る。\n\n### M7 — Formula / Status / Resource\n目的:\n固定Formula topology内でPhysical/Magic/Heal/Status/Resourceの正式経路とBalance Parameter感度・cap・dead zoneを測る。\n\nM3-Bより前に実行し、特にMagic pathではStats / Skill / magic weapon contribution / Resistanceが\nどのFormal経路で最終出力へ反映されるかを確認する。\nFormula expression/order/roundingは変更しない。\n\n### M8 — AI\n目的:\n同じBuildからAIがどれだけ性能を引き出すかを測り、後続Monster/Quest Testのreference AIを固定する。\n\n### M9 — Canonical Player Builds\n目的:\nLevel帯ごとに複数の現実的Buildを固定し、Monster Testの入力集合を作る。\n単一Buildだけを基準にしない。\n\n### M10 — Monster Job / Stats\n目的:\nMonster Level×Job係数が、同Level Player Powerに対してどの相対性能になるか測る。\n\n### M11 — Enemy Budget\n目的:\nHP / Attack / Defense / Skill / AI / Utilityの各Budget 1点が実戦性能をどれだけ変えるか測る。\n\n### M12 — Difficulty Target Human Gate\n目的:\nNormal / Elite / Boss / Stoneについて「何を妥当と呼ぶか」を数値BandでHuman承認する。\nこのGate前にEnemy係数のwinnerを決定しない。\n\n### M13 — Enemy Calibration\n目的:\nApproved Target BandへMonster/Enemy Budgetを合わせる。\n\n### M14 — Formation / Party / Encounter Unit Test\n目的:\n1体だけでなく複数敵、party人数、fixed formation scaling、counter関係を確認する。\n\n### M15 — New Game Starter\n目的:\n開始時Party/Equipment/Skill/Goldで最初の適正Contentが成立するか測る。\n\n### M16 — Quest Attrition\n目的:\n単戦でなくQuest連戦として成功率、HP/MP消耗、時間、survivorを測る。\n\n### M17 — EXP / Acquisition\n目的:\nQuest出力を入力にLevel up、Equipment unlock、Skill/Passive acquisitionの時間軸を決める。\n\n### M18 — Reward / Loot\n目的:\n難度・時間・失敗Riskに対してDrop/Gold/Material/Equipment更新頻度が妥当か測る。\n\n### M19 — Economy / Inventory\n目的:\nGold/Material source-sink、売却、容量、overflow、保管負荷を測る。\n\n### M20 — Stone\n目的:\n完成Build向け高難度・高報酬EndgameとしてNormal endgameとの差を測る。\n\n### M21 — Guild\n目的:\nGuild Level/Unlock/Capacityが中長期progressionの節目として妥当か測る。\n\n### M22 — Presentation\n目的:\nBattle結果を変えず、effect duration/playback/readability等を調整する。\n\n### M23 — Full Campaign\n目的:\nNew Game→Level capまでPower/Equipment/Quest/Reward/Unlockが途切れず循環するか測る。\n\n### M24 — Holdout / Stress\n目的:\n未使用Seed/Build/Enemy/Questでoverfit、strict dominance、runaway、risk-free farm、extreme tailを検出する。\n\nHoldoutは「良いCandidateを探す場所」ではなく、\n既に決めたCandidateが未知条件でも壊れないことを確認する場所とする。\n\n---\n\n## 4. Trial Count Policy\n\n### Exact / analytical first\n式と入力が確定している項目は乱数Battleを使わずexact計算する。\n例:\n- Expected Job growth\n- Equipment requirement\n- adjacent iLv stat slope\n\n### Static enumeration\n合法な全type/iLv/slotを列挙できるものは全件測る。\nサンプル化しない。\n\n### Seeded stochastic measurement\nRandom growth / Battle / Reward等のみSeedを使う。\n\nTrial数は目的で変える。\n- smoke/validity: small deterministic set\n- distribution estimate: 必要精度に応じる\n- rare/tail: 発生率に応じて増やす\n- holdout: Candidate固定後の未使用集合\n\n従来の100→1,000→10,000を全Domainへ機械適用しない。\n\n---\n\n## 5. Existing Evidence Reclassification\n\nTASK-BAL-036〜040:\n- Formal Packageのinput/version binding\n- AI/Human Resultの再現一致\n- Damage/Hit/Hit rate等KPI取得可能性\n- 100/1,000 seed batch execution\n\nを証明した **Measurement Pipeline Qualification Evidence** として保持する。\n\nただし、\n- Job expected Stat\n- Equipment expected equip Level\n- Player Level Power\n- Level-matched Monster\nを入力にしていないため、現行Weapon/Armor/Skill/Passive値のBalance winner証拠にはしない。\n\n旧TASK-BAL-041〜044 Generic Final/Holdoutは実行しない。\n\n---\n\n## 6. Human Gate\n\nHuman判断が必要なもの:\n1. 本Measurement-first Planの承認\n2. Qualitative Target Experienceを数値Bandへ変換するM12\n3. Product Game Data Apply\n4. Current active Promotion\n5. AIで一意に決まらないGameplay方向\n\nAIが進めるもの:\n- Current formula/contractから一意に算出できるexpected value\n- full matrix生成\n- equip probability\n- sensitivity\n- distribution\n- candidate探索\n- regression\n- provenance/replay検証\n\n---\n\n## 7. 最終成果\n\n最終的に必要なのは「勝率ランキング」ではなく、次の一貫したGame Balance Modelである。\n\n`Character Level`\n→ `Expected Job Stats`\n→ `Expected Equip iLv`\n→ `Expected Player Power`\n→ `Expected Monster Power`\n→ `Quest Difficulty / Attrition`\n→ `EXP / Loot / Reward`\n→ `Next Character / Equipment Power`\n\nこのLoopがLevel 1からEndgameまで破綻せず、\nHuman Approved Target Experienceを満たすことを最終Goalとする。\n",
       "decision_refs": [
         "DEC-BAL-MEASUREMENT-ORDER-001",
         "DEC-BAL-P4-EVIDENCE-RECLASSIFY-001",
@@ -1585,18 +1612,18 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "Human",
-      "approved_at": "2026-08-24T16:13:00+09:00",
+      "approved_at": "2026-08-24T17:28:00+09:00",
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T16:13:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "SPEC-BAL-MEASUREMENT-REGISTRY-001",
       "title": "Game Balance Measurement Contract / Required Numeric Registry",
       "status": "Approved",
-      "summary": "TASK-BAL-045 Measurement Registry Revision 2. M0-M24に233 Metricを登録。Current正式Character Stat STR/VIT/AGI/DEX/INT/MND/LUKの7/7すべてにM1 Expected Stat Metricを持つ。LUKはBAL-M1-010として追加し既存Metric IDは変更していない。",
-      "body": "Canonical external task artifact: DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-REGISTRY-R2.json sha256=f242d198a95b83325f8e9a4cffdea40df1d4fcdc037977f6227ceb436391507d\nHuman-readable contract: DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-CONTRACT-R2.md sha256=9134f3e1a45f3668404e63d8ff0c9b434fd1231cff5a008fa5f906f647239088\nCorrection evidence: DEV-V9-BALANCE-001_TASK-BAL-045_LUK-REGISTRY-CORRECTION.json sha256=304a763f150a77fa3942329bfa62c0e5af97fe4ef9e5f915a9b5a6595a559b09",
+      "summary": "Measurement Registry Revision 3. 233 Metric ID/definitionは維持し、M3 producer mappingとexecution dependencyだけを更新。M3-A Raw→M7 Formula→M5 Skill→M3-B Battle Effect→M4 Player Powerを正本Execution orderとする。",
+      "body": "Canonical external registry: DEV-V9-BALANCE-001_MEASUREMENT-REGISTRY-R3.json sha256=5ff99bef2c786e63535c8d02ba4d5d13f5e2a3df5c4b722e18f7604b938f475b\nGoverning plan: DEV-V9-BALANCE-001_MEASUREMENT-FIRST_TEST-MASTER-PLAN-R3.md sha256=7b18de651c7c0b7918586cacecff99167aff0dcc6e0a92f30d9a64071988e75e",
       "decision_refs": [
         "DEC-BAL-MEASUREMENT-PLAN-R2-APPROVAL-001",
         "DEC-BAL-MEASUREMENT-ORDER-001"
@@ -1609,11 +1636,11 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "Human",
-      "approved_at": "2026-08-24T16:28:00+09:00",
+      "approved_at": "2026-08-24T17:28:00+09:00",
       "created_at": "2026-08-24T16:15:00+09:00",
-      "updated_at": "2026-08-24T16:28:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -5312,7 +5339,7 @@
       "id": "TASK-BAL-047",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "M2 Equipment Requirement → 予測装備可能Level Matrixを算出する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 223,
       "depends_on": [
         "TASK-BAL-046"
@@ -5321,23 +5348,23 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T17:13:00+09:00"
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:55:00+09:00"
+      "updated_at": "2026-08-24T17:13:00+09:00"
     },
     {
       "id": "TASK-BAL-048",
       "box_id": "BOX-V9-BAL-ITEM-001",
-      "title": "M3 Equipment iLv1..11 Performance Curveを測定する",
+      "title": "M3-A Equipment Raw iLv1..11 Curveを測定する",
       "status": "Blocked",
       "execution_order": 224,
       "depends_on": [
         "TASK-BAL-047"
       ],
-      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question A: Character条件固定時、Equipmentだけ1 iLv上げると性能が何%増えるか。\n- Decision Question B: 実際の予測装備Levelで装備更新した時、Player総戦力が何%増え、その内訳がCharacter成長/Equipmentのどちらか。\n- Required Inputs: M1/M2、P1 Current Equipment Generator matrix。\n- Measurements A: Weapon 13種×iLv1..11、Armor 3category×4slot×iLv1..11、Accessory 3種×iLv1..11を固定reference Characterで比較。raw contribution、Damage/hit、Damage/tick、Hit/Crit、EHP、adjacent iLv gain%。\n- Measurements B: M2の予測装備Level + M1 Expected StatsでProgression-Realistic powerを測り、Character growthとEquipment upgradeをdecompositionする。\n- Required Numeric Output: Intrinsic Equipment iLv Curve + Progression-Realistic Equipment Curve + 同一iLv横比較表。\n- Gate: 武器なし→iLv1は初期寄与として分離。dead/step jump/dominance/不自然なgrowth slopeを検出する。\n- Downstream: Player Power Curve、Loot価値。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Equipmentそのもののraw contributionはiLv1→11でどのように増えるか。\n- Required Inputs: P1 Current Equipment Generator 308件、M2 equipment classification/eligibility context。\n- Measurements: Weapon 13種×iLv1..11、Armor 3category×4slot×iLv1..11、Accessory 3種×iLv1..11のAttack/Accuracy/Critical/magic_weapon_bonus/HP/MP/Evasion等raw contribution、adjacent absolute/percent gain、同一iLv横比較。\n- magic_weapon_bonusはRaw値まで。Damage/Hit/Damage per Tick等Battle KPIは測らない。\n- Output: M3-A Raw Equipment Curve。\n- Source/Game Data/Current activeを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5346,18 +5373,18 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:55:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-049",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "M4 Player Level Power Curveを確定する",
       "status": "Blocked",
-      "execution_order": 225,
+      "execution_order": 228,
       "depends_on": [
-        "TASK-BAL-048"
+        "TASK-BAL-048B"
       ],
-      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Level X時点で現実的に作れるPlayerはどの程度の戦闘力か。\n- Required Inputs: M1 Expected Stats、M2 equip Level、M3 Equipment Curve。\n- Measurements: Level checkpointごとのBasic damage/hit、Damage/tick、HPS、EHP、Hit/Crit/Evasion/Resistance、MP sustainability。\n- Required Numeric Output: Player Level Power Curve。\n- Gate: Monster Testでraw arbitrary Player fixtureを使わず、このCurveを基準入力にする。\n- Downstream: Skill/Passive/Formula/AI、Monster/Enemy。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Level X時点で現実的に作れるPlayerはどの程度の戦闘力か。\n- Required Inputs: M1 Expected Stats、M2 Equipability、M3-A Raw Equipment、M7 Formula、M5 Skill、M3-B Battle Effect。\n- Measurements: Basic/Skill Damage、Damage/Tick、HPS、EHP、Hit/Crit/Evasion/Resistance、MP sustainability。\n- Output: Player Level Power Curve。\n- Monster Testでraw arbitrary Player fixtureを使わず、このCurveを正式基準入力にする。\n- Source/Game Data/Current activeを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5366,18 +5393,19 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-050",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "M5 Skill Budget / Power / Cost Curveを測定する",
+      "title": "M5 Skill Budget / Power / Cost CurveをPhysical/Magic別に測定する",
       "status": "Blocked",
       "execution_order": 226,
       "depends_on": [
-        "TASK-BAL-049"
+        "TASK-BAL-048",
+        "TASK-BAL-052"
       ],
-      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: SkillがPlayer基準行動に対してどの程度の追加価値を持つか。\n- Required Inputs: Player Power Curve、P2 G05/G07 Formal Skill Calibration。\n- Measurements: archetype/level/strength別damage/heal/utility per use、per tick、MP efficiency、cooldown/cast occupancy、target efficiency、usage/dead rate。\n- Required Numeric Output: Skill Efficiency TableとLevel/Budget Curve。\n- Gate: 同Budgetで恒常的大差、低Cost高Output loop、dead Skillを検出する。\n- Downstream: Canonical Builds、Monster/Quest。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Formula検証済みcontrolled profileでSkill Budget/Costがどの程度の性能を作るか。\n- Player Level Powerを前提にせず、固定reference Stats/Equipment/Enemyを使用する。\n- Physical Skill / Magic Skill / Heal / Utilityを分離し、damage/heal/use、per tick、MP効率、CD/Cast、target効率、dead rateを測る。\n- M3-B Magic Equipment Battle Testに使用する代表Magic Skill/Resistance profileを固定する。\n- Source/Game Data/Current activeを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5386,16 +5414,18 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-051",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "M6 Passive / MOD / Rarity / Unique Contribution Curveを測定する",
       "status": "Blocked",
-      "execution_order": 227,
+      "execution_order": 229,
       "depends_on": [
-        "TASK-BAL-050"
+        "TASK-BAL-049",
+        "TASK-BAL-050",
+        "TASK-BAL-052"
       ],
       "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Passive/MOD/Rarity/Uniqueが現実的Buildへ何%のPowerを追加するか。\n- Required Inputs: Player/Skill Curve、P3-4 Formal Contribution Calibration。\n- Measurements: activation rate、marginal DPS/HPS/EHP/Hit/resource、Tier slope、MOD count interaction、rarity delta、Unique utility。\n- Required Numeric Output: Contribution Table。\n- Gate: dead、condition-never、strict dominance、runaway interactionを検出する。\n- Downstream: Canonical Builds、Loot/Reward。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -5406,18 +5436,18 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-052",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "M7 Battle Formula / Status / Resource Parameter Sensitivityを測定する",
+      "title": "M7 Formula / Status / ResourceをPhysical/Magic経路別に検証する",
       "status": "Blocked",
-      "execution_order": 228,
+      "execution_order": 225,
       "depends_on": [
-        "TASK-BAL-051"
+        "TASK-BAL-048"
       ],
-      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Current固定Formula topology内の各Balance Parameterが結果をどれだけ動かすか。\n- Required Inputs: Canonical Player tiers、Current formula/status/resource contract。\n- Measurements: coefficient elasticity、Hit/Evasion、Crit、Resistance、Status duration/stack/DOT/HOT/Shield、MP/CD/Cast、cap/floor/clamp saturation。\n- Required Numeric Output: Parameter Sensitivity Table。\n- Gate: Formula expression/order/roundingは変更しない。変更必要ならIssue Gate。\n- Downstream: Player Build、Enemy calibration。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Current固定Formula topologyでPhysical/Magic/Heal/Status/Resource入力が最終結果へどう反映されるか。\n- Physical pathとMagic pathを分離し、Stats/Equipment/Skill/Resistance/Crit/Hit/Status/MP/CD/Castのresponseを測る。\n- magic weapon contributionがMagic Skill最終Damageへ入るFormal経路をM3-Bより先に確定する。\n- Formula expression/order/roundingは変更しない。変更必要ならIssue Gate。\n- Output: Formula/Status/Resource Sensitivity & Execution Contract。\n- Source/Game Data/Current activeを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5426,16 +5456,16 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-053",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "M8 Formal AI Performance Extractionを測定しReference AIを固定する",
       "status": "Blocked",
-      "execution_order": 229,
+      "execution_order": 230,
       "depends_on": [
-        "TASK-BAL-052"
+        "TASK-BAL-051"
       ],
       "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 同じBuildでAI差がどれだけ戦闘性能を変えるか。後続Testで使うReference AIは何か。\n- Required Inputs: Player/Skill/Passive curves、Formal AI。\n- Measurements: valid action、idle/waste、target quality、resource waste、performance extraction ratio。\n- Required Numeric Output: AI Extraction Table + Reference AI binding。\n- Gate: AI差がBuild差を隠す場合は後続Testを開始しない。\n- Downstream: Canonical Builds、Monster/Quest。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -5446,14 +5476,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-054",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "M9 Canonical Player Build SetをLevel帯ごとに確定する",
       "status": "Blocked",
-      "execution_order": 230,
+      "execution_order": 231,
       "depends_on": [
         "TASK-BAL-053"
       ],
@@ -5466,14 +5496,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-055",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M10 Monster Level / Job Power Curveを測定する",
       "status": "Blocked",
-      "execution_order": 231,
+      "execution_order": 232,
       "depends_on": [
         "TASK-BAL-054"
       ],
@@ -5486,14 +5516,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-056",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M11 Enemy Budget category→実戦性能Conversionを測定する",
       "status": "Blocked",
-      "execution_order": 232,
+      "execution_order": 233,
       "depends_on": [
         "TASK-BAL-055"
       ],
@@ -5506,14 +5536,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-057",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M12 Normal / Elite / Boss / Stone Target BandをHuman決定する",
       "status": "Blocked",
-      "execution_order": 233,
+      "execution_order": 234,
       "depends_on": [
         "TASK-BAL-056"
       ],
@@ -5526,14 +5556,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-058",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M13 Monster / EnemyをApproved Difficulty BandへCalibrationする",
       "status": "Blocked",
-      "execution_order": 234,
+      "execution_order": 235,
       "depends_on": [
         "TASK-BAL-057"
       ],
@@ -5546,14 +5576,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-059",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M14 Formation / Party Size / Encounter Unit Scalingを測定する",
       "status": "Blocked",
-      "execution_order": 235,
+      "execution_order": 236,
       "depends_on": [
         "TASK-BAL-058"
       ],
@@ -5566,14 +5596,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-060",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "M15 New Game Starter Powerを検証する",
       "status": "Blocked",
-      "execution_order": 236,
+      "execution_order": 237,
       "depends_on": [
         "TASK-BAL-059"
       ],
@@ -5586,14 +5616,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-061",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M16 Quest / Encounter累積AttritionとDurationを測定する",
       "status": "Blocked",
-      "execution_order": 237,
+      "execution_order": 238,
       "depends_on": [
         "TASK-BAL-060"
       ],
@@ -5606,14 +5636,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-062",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "M17 EXP / Skill-Passive Acquisition / Equipment Unlock Pacingを測定する",
       "status": "Blocked",
-      "execution_order": 238,
+      "execution_order": 239,
       "depends_on": [
         "TASK-BAL-061"
       ],
@@ -5626,14 +5656,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-063",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M18 Reward / Drop / Loot Update Cadenceを測定する",
       "status": "Blocked",
-      "execution_order": 239,
+      "execution_order": 240,
       "depends_on": [
         "TASK-BAL-062"
       ],
@@ -5646,14 +5676,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-064",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M19 Gold / Material Economy / Inventory Pressureを測定する",
       "status": "Blocked",
-      "execution_order": 240,
+      "execution_order": 241,
       "depends_on": [
         "TASK-BAL-063"
       ],
@@ -5666,14 +5696,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-065",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M20 Stone Endgame Difficulty / Reward Deltaを測定する",
       "status": "Blocked",
-      "execution_order": 241,
+      "execution_order": 242,
       "depends_on": [
         "TASK-BAL-064",
         "TASK-BAL-057"
@@ -5687,14 +5717,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-066",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "M21 Guild / Unlock / Capacity Pacingを測定する",
       "status": "Blocked",
-      "execution_order": 242,
+      "execution_order": 243,
       "depends_on": [
         "TASK-BAL-064"
       ],
@@ -5707,14 +5737,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-067",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "M22 Presentation TuningをGameplay非影響条件で検証する",
       "status": "Blocked",
-      "execution_order": 243,
+      "execution_order": 244,
       "depends_on": [
         "TASK-BAL-058"
       ],
@@ -5727,14 +5757,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-068",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "M23 New Game→Endgame Full Campaign Power/Economy Loopを検証する",
       "status": "Blocked",
-      "execution_order": 244,
+      "execution_order": 245,
       "depends_on": [
         "TASK-BAL-065",
         "TASK-BAL-066",
@@ -5749,14 +5779,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-069",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "M24 Cross-System Holdout / Stressを未使用条件で検証する",
       "status": "Blocked",
-      "execution_order": 245,
+      "execution_order": 246,
       "depends_on": [
         "TASK-BAL-068"
       ],
@@ -5769,7 +5799,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-24T17:28:00+09:00"
     },
     {
       "id": "TASK-BAL-046-CORR-001",
@@ -5790,6 +5820,48 @@
       },
       "created_at": "2026-08-24T16:40:00+09:00",
       "updated_at": "2026-08-24T16:40:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-009",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Magic Equipment検証順序をRaw→Formula→Skill→Battle Effectへ修正する",
+      "status": "Done",
+      "execution_order": 97,
+      "depends_on": [
+        "TASK-BAL-047"
+      ],
+      "acceptance_criteria": "- M3 Equipment TestをRaw CurveとBattle Effect Curveへ分割する。\n- Magic Equipment Battle EffectはM7 FormulaとM5 Magic Skill検証後にのみ実行する。\n- M4 Player PowerはM3-B完了後に実行する。\n- Stage/Metric IDを破壊せずExecution dependencyだけを修正する。\n- Source/Game Data/Current active/Gameplay数値を変更しない。\n- Human指示『魔法は順番を変えないと検証できない』を正本計画へ反映する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T17:28:00+09:00"
+      },
+      "created_at": "2026-08-24T17:28:00+09:00",
+      "updated_at": "2026-08-24T17:28:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-048B",
+      "box_id": "BOX-V9-BAL-ITEM-001",
+      "title": "M3-B Equipment Battle Effect CurveをPhysical/Magic別に測定する",
+      "status": "Blocked",
+      "execution_order": 227,
+      "depends_on": [
+        "TASK-BAL-048",
+        "TASK-BAL-052",
+        "TASK-BAL-050"
+      ],
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Formula/Skill検証後、Equipmentだけ1 iLv上げた時に実戦性能が何%増えるか。\n- Physical Weapon: Basic/Physical reference actionでDamage/Hit、Expected Damage/Action、Damage/Tick、Hit/Crit、TTKを測る。\n- Magic Weapon: Formal Magic SkillとResistance profileを固定し、magic_weapon_bonusを含むMagic Damage/Hit・Damage/Tick・TTKを測る。\n- Armor: Physical/Magic hostile reference actionを分離し、Damage Taken/EHP/Survival系を測る。\n- iLv1→11 adjacent battle gain%、iLv1→11 cumulative gain、same-iLv type spreadを出す。\n- Progression-Realistic CurveはM1/M2を使いCharacter growth分とEquipment upgrade分をdecompositionする。\n- 武器なし→iLv1はacquisition onsetとして別管理する。\n- Source/Game Data/Current activeを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T17:28:00+09:00",
+      "updated_at": "2026-08-24T17:28:00+09:00"
     }
   ],
   "checks": [
@@ -8290,6 +8362,75 @@
       "blocking": true,
       "created_at": "2026-08-24T16:40:00+09:00",
       "updated_at": "2026-08-24T16:53:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK047-CROSS-STAT-DEPENDENCY-001",
+      "title": "TASK-BAL-047 joint equipability blocked by undefined cross-stat growth dependency",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-047",
+      "status": "Passed",
+      "result": "Prior Issue Gate was a false positive. Existing Level-up processing already performs a growth judgment for each formal Stat, and runtime verification invokes rollGrowth(job.aptitudes[stat]) separately per Stat. No new gameplay dependency rule is required. TASK-BAL-047 was resumed and the full exact equipability matrix was completed.",
+      "evidence": "TASK-BAL-047_FALSE-ISSUE-CORRECTION.json sha256=aef8d573eee1fd71e202b22aaf7b297717d13f668444500fdea644bbdbc6e1ab; TASK-BAL-047_COMPLETION-REPORT.json sha256=ef550a9368aaa947d277736f0de8442c5b7352b8c91f913151a7905dffdf55fb",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T17:13:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T17:13:00+09:00",
+        "reason": "Existing Level-up contract was sufficient; previous block over-constrained the specification.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T17:03:00+09:00",
+      "updated_at": "2026-08-24T17:13:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK047-M2-EQUIPABILITY-001",
+      "title": "TASK-BAL-047 M2 Equipment Equipability Matrix Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-047",
+      "status": "Passed",
+      "result": "PASS. Corrected M1 + P1 Equipment Generator 308/308 valid records produced 2156 Job×Equipment equipability records. Weapon/Armor unreached by Lv50: 50%=646, 90%=769. Equipability iLv order violations: 50%=0, 90%=0. Accessory stat-requirement absent pairs=231; therefore accessory iLv progression is not inferred from stat requirements alone.",
+      "evidence": "TASK-BAL-047_M2_EQUIPABILITY-MATRIX.json sha256=4569cf94c6d43cb20fe72e3a00b768421f23a44d7cab17fb49ef5536e172028e; TASK-BAL-047_M2_EQUIPABILITY-MATRIX.csv sha256=ab74737e67c6cda5a7a40ae32e13b701733d48f1286aa311ae1cb308c9c43692",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T17:13:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T17:13:00+09:00",
+        "reason": "All M2 required outputs produced under corrected M1 and formal P1 requirement data.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T17:13:00+09:00",
+      "updated_at": "2026-08-24T17:13:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-DESIGN-009-MAGIC-ORDER-001",
+      "title": "Magic Equipment validation execution-order correction",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-DESIGN-009",
+      "status": "Passed",
+      "result": "PASS. M3 was split into Raw Equipment and Battle Effect. Execution is now TASK-BAL-048 Raw → TASK-BAL-052 Formula → TASK-BAL-050 Skill → TASK-BAL-048B Equipment Battle Effect → TASK-BAL-049 Player Power. Magic weapon bonus is not battle-evaluated before Formula and Magic Skill verification. 233 Metric IDs are preserved; Source/Game Data/Current active changes=0.",
+      "evidence": "TASK-BAL-DESIGN-009_MAGIC-VALIDATION-ORDER-CORRECTION.json; DEV-V9-BALANCE-001_MEASUREMENT-FIRST_TEST-MASTER-PLAN-R3.md; DEV-V9-BALANCE-001_MEASUREMENT-REGISTRY-R3.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T17:28:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T17:28:00+09:00",
+        "reason": "Human-approved plan correction applied.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T17:28:00+09:00",
+      "updated_at": "2026-08-24T17:28:00+09:00"
     }
   ],
   "workflow": {
@@ -8785,6 +8926,30 @@
       "task_id": "TASK-BAL-046-CORR-001",
       "created_at": "2026-08-24T16:53:00+09:00",
       "updated_at": "2026-08-24T16:53:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK047-PRECHECK-JOINT-ISSUE-001",
+      "title": "TASK-BAL-047開始Precheckでcross-stat joint probability Gapを検出",
+      "summary": "Humanの進行指示でTASK-BAL-047開始。Corrected M1とP1 Equipment Generator 308件を再利用。複数能力要求のjoint equipabilityを独立仮定なしでFréchet bounds評価したところ、Weapon/Armor 1925 pairs中50% threshold 136件、90% threshold 14件が1 Level幅で未確定。Human Approved growth authorityに能力間extra roll依存関係が無いためIssue Gateで停止。Source/Game Data/Current active/Gameplay numeric変更0。",
+      "task_id": "TASK-BAL-047",
+      "created_at": "2026-08-24T17:03:00+09:00",
+      "updated_at": "2026-08-24T17:03:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK047-M2-COMPLETE-001",
+      "title": "TASK-BAL-047 M2 Equipment Equipability Matrix完了",
+      "summary": "Human指示でTASK-BAL-047再開。前回cross-stat dependency Issue Gateは既存Level-up各Stat判定を過剰に再解釈した誤検出として解消。 Corrected M1とP1 Equipment Generator 308件を使い、7 Jobとの2156組合せについてLv1-50 joint equipability、50%/90% predicted equip levelを算出。 Weapon/Armor iLv順序逆転は50%=0、90%=0。 AccessoryはStat requirementを持たない231 pairsのためStat閾値ではprogression Levelを定義しない。 Source/Game Data/Current active/Gameplay numeric変更0。",
+      "task_id": "TASK-BAL-047",
+      "created_at": "2026-08-24T17:13:00+09:00",
+      "updated_at": "2026-08-24T17:13:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-DESIGN-009-MAGIC-ORDER-001",
+      "title": "Magic Equipment検証順序をRaw→Formula→Skill→Battle Effectへ修正",
+      "summary": "HumanがMagicは現在順序では検証不能と指摘。TASK-BAL-DESIGN-009でM3をRaw/Battleへ分割し、M3-A Raw Equipment→M7 Formula→M5 Skill→M3-B Equipment Battle Effect→M4 Player PowerへExecution dependencyを修正。Stage/Metric IDは互換維持、RegistryはR3 producer mappingのみ更新。Source/Game Data/Current active/Gameplay数値変更0。",
+      "task_id": "TASK-BAL-DESIGN-009",
+      "created_at": "2026-08-24T17:28:00+09:00",
+      "updated_at": "2026-08-24T17:28:00+09:00"
     }
   ],
   "authority": {
