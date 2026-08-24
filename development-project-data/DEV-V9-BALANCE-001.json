@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T10:56:46.106Z"
+    "updated_at": "2026-08-24T11:13:12.877Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-071 Bare Player PASS; TASK-BAL-072 Monster Core start approval wait",
-    "goal": "Bare Player 7 Job×Lv1-50 reference and standard equipment binding are frozen under R5. Next is TASK-BAL-072 Monster Core. Do not start TASK-BAL-072 until separate Human start approval. Skill remains after Monster Core/Core Enemy Budget."
+    "theme": "TASK-BAL-071-CORR-001 Bare Player correction PASS; TASK-BAL-072 Monster Core start approval wait",
+    "goal": "Corrected Bare Player reference is frozen: 剣士 uses 大剣 with Current formal STR×2 two-hand requirement across Lv1-50; other Jobs retain prior reference. Next is TASK-BAL-072 Monster Core using the correction artifact. Do not start TASK-BAL-072 until separate Human start approval."
   },
   "project_rules": [
     {
@@ -1512,6 +1512,18 @@
       "approved_at": "2026-08-24T19:13:00+09:00",
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-BARE-PLAYER-SWORDSMAN-GREATSWORD-001",
+      "title": "Bare Player剣士Referenceは大剣・正式両手STR倍率を使用する",
+      "status": "Approved",
+      "text": "TASK-BAL-071 Bare Playerの剣士Primary Referenceは片手剣から大剣へ補正する。Current formal equipment rule str_requirement_two_hand_multiplier=2をSTR要求だけに適用し、DEX/INTは緩和しない。Runtime表現に合わせ同一大剣IDをweapon1/weapon2へbindする。これはMonster Core用Referenceの選定でありProduct Job装備制限やSkill/Experience Targetを決定しない。",
+      "rationale": "Human指示「力2倍ルールは考慮してる　剣士は大剣でテストしといた方がいい」。旧TASK-BAL-071はtwo-hand relaxationを明示的に使用せず、Formal Equipment Ruleの重要branchをMonster入力から外していたため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T20:05:00+09:00",
+      "created_at": "2026-08-24T20:05:00+09:00",
+      "updated_at": "2026-08-24T20:05:00+09:00"
     }
   ],
   "specifications": [
@@ -6128,8 +6140,8 @@
         "at": "2026-08-24T19:42:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:42:00+09:00",
-      "result_scope": "R5_BARE_PLAYER_REFERENCE_FROZEN; 350 Level×Job rows; standard equipment binding uses requirement-compatibility + exact M2 median equipability; no Source/Game Data/Current active change."
+      "updated_at": "2026-08-24T20:05:00+09:00",
+      "result_scope": "R5_BARE_PLAYER_REFERENCE_FROZEN_WITH_CORRECTION; canonical downstream artifact is TASK-BAL-071-CORR-001_BARE-PLAYER-REFERENCE; JOB-0001 uses 大剣/two-hand STR×2; other 300 rows retain TASK-BAL-071 values."
     },
     {
       "id": "TASK-BAL-072",
@@ -6138,7 +6150,7 @@
       "status": "Blocked",
       "execution_order": 251,
       "depends_on": [
-        "TASK-BAL-071"
+        "TASK-BAL-071-CORR-001"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Skill/特殊AI/UtilityなしのMonster Level×JobがBare Playerに対してどの基礎HP/Attack/Defense関係を持つか。\n- Required Inputs: Bare Player Reference、Current Monster Level/Job coefficients/owner contract。\n- Measurements: HP/Attack/Defense系、basic damage exchange、hit/crit/evasion/resistance、Level slope、Job spread。\n- Required Numeric Output: Monster Core Table。Baseline→Candidate→再計算→数学Gate→Freezeを完了する。\n- Gate: Level逆行、Job係数暴走、基礎交換比の不連続を排除。Skill/AIで補正して隠さない。\n- Downstream: TASK-BAL-073 Core Enemy Budget。Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6149,7 +6161,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T20:05:00+09:00"
     },
     {
       "id": "TASK-BAL-073",
@@ -6453,6 +6465,27 @@
       },
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-071-CORR-001",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "R5-P4 Bare Player剣士大剣・両手STR倍率Reference補正",
+      "status": "Done",
+      "execution_order": 250,
+      "depends_on": [
+        "TASK-BAL-071"
+      ],
+      "acceptance_criteria": "- Human指示に基づきTASK-BAL-071の剣士Primary Referenceを大剣へ補正する。\n- Current formal str_requirement_two_hand_multiplier=2をSTR要求だけに適用し、DEX/INTを緩和しない。\n- 同一大剣IDをweapon1/weapon2へbindし、Equipment contributionは1武器分として算出する。\n- Lv1〜50のP50 statsでFormal two-hand requirementを満たし、joint equipability>=50%のhighest common iLvを使用する。\n- 他6 Jobの300 rowsは変更しない。Source/Game Data/Current activeを変更しない。\n- Level/iLv逆行0、装備不能0を確認し、TASK-BAL-072用Referenceを差し替える。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T20:05:00+09:00"
+      },
+      "result_scope": "R5_BARE_PLAYER_REFERENCE_CORRECTED; JOB-0001 剣士 50 rows use 大剣 with formal STR×2 two-hand requirement; same iLv/equipability sequence as prior sword reference, higher greatsword Attack contribution; other 300 rows unchanged; no Source/Game Data/Current active change.",
+      "created_at": "2026-08-24T20:05:00+09:00",
+      "updated_at": "2026-08-24T20:05:00+09:00"
     }
   ],
   "checks": [
@@ -9302,6 +9335,29 @@
       "blocking": false,
       "created_at": "2026-08-24T19:42:00+09:00",
       "updated_at": "2026-08-24T19:42:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK071-CORR-TWOHAND-GREATSWORD-001",
+      "title": "TASK-BAL-071 correction: Swordsman greatsword / two-hand STR multiplier gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-001",
+      "status": "Passed",
+      "result": "PASS. JOB-0001 50/50 rows now use 大剣 with formal STR×2 requirement relaxation only on STR; DEX/INT unchanged. Raw STR requirement is unmet by P50 on 50/50 rows while effective two-hand STR requirement is met on 50/50. Selected iLv changed 0/50 and equipability probability changed 0/50 versus the prior 片手剣 reference because 大剣 STR requirement is exactly 2× while DEX/INT are equal. Lv1 Basic Attack 54→66; Lv50 491→623. Other 300 rows unchanged. Global level/iLv/probability gates all PASS. Source/Game Data/Current active changes=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-071-CORR-001_BARE-PLAYER-REFERENCE.zip sha256=20f0c0267d72f42ac0602f733a0e4d19bd239d73ba4a26a439b5e7146b5f80a7",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T20:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T20:05:00+09:00",
+        "reason": "Human-directed reference correction validated.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T20:05:00+09:00",
+      "updated_at": "2026-08-24T20:05:00+09:00"
     }
   ],
   "workflow": {
@@ -9885,6 +9941,14 @@
       "task_id": "TASK-BAL-071",
       "created_at": "2026-08-24T19:42:00+09:00",
       "updated_at": "2026-08-24T19:42:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK071-CORR-GREATSWORD-001",
+      "title": "TASK-BAL-071 Bare Player剣士Referenceを大剣・両手STR倍率へ補正",
+      "summary": "Human指示により旧Bare Playerの剣士=片手剣Referenceを補正。Current formal equipment rule str_requirement_two_hand_multiplier=2をSTR要求だけに適用し、剣士Lv1〜50のPrimary Referenceを大剣へ変更した。同一大剣IDをweapon1/weapon2へbind。大剣は片手剣のSTR要求2倍・DEX/INT同値のため、正式両手倍率適用後の装備可能iLv/probabilityは旧Referenceと一致し、Attack/magic_weapon_bonus contributionのみ大剣値へ上昇。50 rows補正、他300 rows不変、Level/iLv逆行0、Source/Game Data/Current active変更0。TASK-BAL-072はCorrection artifactを入力とする。",
+      "task_id": "TASK-BAL-071-CORR-001",
+      "created_at": "2026-08-24T20:05:00+09:00",
+      "updated_at": "2026-08-24T20:05:00+09:00"
     }
   ],
   "authority": {
