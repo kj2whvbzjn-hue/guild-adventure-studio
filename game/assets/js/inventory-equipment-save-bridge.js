@@ -22,7 +22,7 @@
       const characterId=String(character.id||'');
       if(!characterId)throw new Error(`Inventory / Equipment Save Bridge: characters[${index}].id is required.`);
       if(!isObject(character.equipment))throw new Error(`Inventory / Equipment Save Bridge: characters[${index}].equipment object is required.`);
-      return{characterId,equipment:clone(character.equipment)};
+      return{characterId,equipment:clone(character.equipment),weaponStyle:character.weaponStyle==null?null:String(character.weaponStyle)};
     });
     return{inventory:clone(save.inventory),characterEquipment};
   }

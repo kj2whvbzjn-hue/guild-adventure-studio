@@ -164,6 +164,16 @@ function normalizeFormalEquipmentRecord(record){
 function equipmentDefinition(ref){return formalEquipmentCatalog.get(String(ref||''))||null}
 function equipmentDisplayName(ref){return equipmentDefinition(ref)?.name||String(ref||'')}
 function emptyCharacterEquipmentState(){return Object.fromEntries(CHARACTER_EQUIPMENT_SLOTS.map(slot=>[slot,null]))}
+const CHARACTER_WEAPON_STYLES=Object.freeze(['single','dual_wield','two_hand','weapon_shield']);
+function equipmentBaseItemType(equipment){return String(equipment?.generation?.base_item_type??equipment?.generation?.generation_input?.base_item_type??'').trim()}
+function equipmentIsShield(equipment){return equipmentBaseItemType(equipment)==='盾'}
+function inferCharacterWeaponStyle(character){
+ const w1=String(character?.equipment?.weapon1||''),w2=String(character?.equipment?.weapon2||'');
+ if(w1&&w2&&w1===w2)return'two_hand';
+ if(w1&&w2){const e1=equipmentDefinition(w1),e2=equipmentDefinition(w2);return equipmentIsShield(e1)||equipmentIsShield(e2)?'weapon_shield':'dual_wield';}
+ return'single';
+}
+function characterWeaponStyle(character){const explicit=String(character?.weaponStyle||'').trim();return CHARACTER_WEAPON_STYLES.includes(explicit)?explicit:inferCharacterWeaponStyle(character)}
 function normalizeCharacterEquipmentState(character){
  if(!character||typeof character!=='object')return character;
  const source=character.equipment&&typeof character.equipment==='object'&&!Array.isArray(character.equipment)?character.equipment:null;
@@ -174,10 +184,13 @@ function normalizeCharacterEquipmentState(character){
  if(unknown.length)throw new Error(`${character.name||character.id||'キャラクター'}の装備スロットが仕様外です: ${unknown.join(', ')}`);
  if(missing.length)throw new Error(`${character.name||character.id||'キャラクター'}の装備スロットが不足しています: ${missing.join(', ')}`);
  for(const slot of CHARACTER_EQUIPMENT_SLOTS){const value=source[slot];if(value!=null&&typeof value!=='string')throw new Error(`${character.name||character.id||'キャラクター'}の${slot}が不正です。`);}
+ if(character.weaponStyle!=null&&!CHARACTER_WEAPON_STYLES.includes(String(character.weaponStyle)))throw new Error(`${character.name||character.id||'キャラクター'}のweaponStyleが不正です。`);
  character.equipment=Object.fromEntries(CHARACTER_EQUIPMENT_SLOTS.map(slot=>[slot,source[slot]||null]));
+ if(character.weaponStyle!=null){const style=String(character.weaponStyle),w1=!!character.equipment.weapon1,w2=!!character.equipment.weapon2,count=Number(w1)+Number(w2);if(style==='single'&&count>1)throw new Error(`${character.name||character.id||'キャラクター'}のsingle weaponStyleに武器が2本あります。`);if(style==='dual_wield'&&count!==2)throw new Error(`${character.name||character.id||'キャラクター'}のdual_wieldは武器2本が必要です。`);if(style==='two_hand'&&count!==1)throw new Error(`${character.name||character.id||'キャラクター'}のtwo_handは武器1本を両手使用する状態が必要です。`);if(style==='weapon_shield'&&count!==2)throw new Error(`${character.name||character.id||'キャラクター'}のweapon_shieldは武器枠2件が必要です。`);}
  return character;
 }
-function twoHandedWeaponRef(character){normalizeCharacterEquipmentState(character);const w1=String(character.equipment.weapon1||''),w2=String(character.equipment.weapon2||'');return w1&&w1===w2?w1:null;}
+function setCharacterWeaponStyle(character,style){if(!CHARACTER_WEAPON_STYLES.includes(style))throw new Error(`weaponStyleが不正です: ${style}`);character.weaponStyle=style;return style}
+function twoHandedWeaponRef(character){normalizeCharacterEquipmentState(character);if(characterWeaponStyle(character)!=='two_hand')return null;const w1=String(character.equipment.weapon1||''),w2=String(character.equipment.weapon2||'');return w1||w2||null;}
 function equipmentRequirementCheck(character,equipment){
  if(!equipment)return{ok:false,reason:'EQUIPMENT_NOT_FOUND',missing:[]};if(!equipment.slot)return{ok:false,reason:'EQUIPMENT_SLOT_UNSUPPORTED',missing:[]};
  const stats=character?.stats&&typeof character.stats==='object'?character.stats:{},missing=[];let twoHanded=false;
@@ -197,27 +210,28 @@ function equipmentBonusLabel(equipment){const b=equipment?.bonuses||{},rows=[];i
 function equipmentRequirementFailureLabel(gate){return(gate?.missing||[]).map(x=>x.stat==='STR'&&x.twoHandLimit!=null?`${x.stat} ${x.actual}/${x.required}（両手持ち上限 ${Math.floor(x.twoHandLimit)}）`:`${x.stat} ${x.actual}/${x.required}`).join(', ')||gate?.reason||'EQUIPMENT_REQUIREMENTS_NOT_MET'}
 function equipmentSlotLabel(slot){return CHARACTER_EQUIPMENT_SLOT_LABEL[slot]||String(slot||'')}
 function weaponSlotLabel(slot){return equipmentSlotLabel(slot)}
-function characterEquipmentEntries(character){normalizeCharacterEquipmentState(character);const twoHandedRef=twoHandedWeaponRef(character),rows=[];if(twoHandedRef)rows.push({slot:'weapon1',ref:twoHandedRef,label:`${equipmentSlotLabel('weapon1')}＋${equipmentSlotLabel('weapon2')}（両手持ち）`});else for(const slot of ['weapon1','weapon2']){const ref=character.equipment[slot];if(ref)rows.push({slot,ref,label:equipmentSlotLabel(slot)});}for(const slot of CHARACTER_EQUIPMENT_SLOTS.slice(2)){const ref=character.equipment[slot];if(ref)rows.push({slot,ref,label:equipmentSlotLabel(slot)})}return rows;}
-function removeEquippedWeaponState(character){normalizeCharacterEquipmentState(character);const returned=[...new Set([character.equipment.weapon1,character.equipment.weapon2].filter(Boolean))];character.equipment.weapon1=null;character.equipment.weapon2=null;return returned;}
-function unequipCharacterEquipmentSlot(character,slot){normalizeCharacterEquipmentState(character);if(!character?.equipment)return[];if(['weapon1','weapon2'].includes(slot)&&twoHandedWeaponRef(character))return removeEquippedWeaponState(character);const ref=character.equipment[slot];if(!ref)return[];character.equipment[slot]=null;return[ref];}
+function characterEquipmentEntries(character){normalizeCharacterEquipmentState(character);const style=characterWeaponStyle(character),twoHandedRef=twoHandedWeaponRef(character),rows=[];if(twoHandedRef)rows.push({slot:'weapon1',ref:twoHandedRef,label:`${equipmentSlotLabel('weapon1')}＋${equipmentSlotLabel('weapon2')}（両手持ち）`});else for(const slot of ['weapon1','weapon2']){const ref=character.equipment[slot];if(ref)rows.push({slot,ref,label:`${equipmentSlotLabel(slot)}${style==='dual_wield'?'（二刀流）':style==='weapon_shield'&&equipmentIsShield(equipmentDefinition(ref))?'（盾）':''}`});}for(const slot of CHARACTER_EQUIPMENT_SLOTS.slice(2)){const ref=character.equipment[slot];if(ref)rows.push({slot,ref,label:equipmentSlotLabel(slot)})}return rows;}
+function removeEquippedWeaponState(character){normalizeCharacterEquipmentState(character);const style=characterWeaponStyle(character),w1=character.equipment.weapon1,w2=character.equipment.weapon2,returned=[];if(style==='two_hand'){const ref=w1||w2;if(ref)returned.push(ref);}else{if(w1)returned.push(w1);if(w2)returned.push(w2);}character.equipment.weapon1=null;character.equipment.weapon2=null;setCharacterWeaponStyle(character,'single');return returned;}
+function refreshCharacterWeaponStyle(character){normalizeCharacterEquipmentState(character);const w1=String(character.equipment.weapon1||''),w2=String(character.equipment.weapon2||'');if(!w1&&!w2)return setCharacterWeaponStyle(character,'single');if(w1&&w2){const e1=equipmentDefinition(w1),e2=equipmentDefinition(w2);return setCharacterWeaponStyle(character,equipmentIsShield(e1)||equipmentIsShield(e2)?'weapon_shield':'dual_wield');}return setCharacterWeaponStyle(character,'single')}
+function unequipCharacterEquipmentSlot(character,slot){normalizeCharacterEquipmentState(character);if(!character?.equipment)return[];if(['weapon1','weapon2'].includes(slot)&&characterWeaponStyle(character)==='two_hand')return removeEquippedWeaponState(character);const ref=character.equipment[slot];if(!ref)return[];character.equipment[slot]=null;if(['weapon1','weapon2'].includes(slot))refreshCharacterWeaponStyle(character);return[ref];}
 function equipmentEquipTargets(character,equipment){
  const gate=equipmentRequirementCheck(character,equipment),id=String(character?.id||'');if(!id)return[];
  if(!gate.ok)return[{value:'',label:`${character.name}（${equipmentRequirementFailureLabel(gate)}）`,disabled:true,gate}];
  if(equipment.slot==='ring'){normalizeCharacterEquipmentState(character);return['ring1','ring2'].map(slot=>{const current=character.equipment[slot];return{value:`${id}|${slot}`,label:`${character.name} / ${equipmentSlotLabel(slot)}${current?`（入替: ${equipmentDisplayName(current)}）`:''}`,disabled:false,gate}});}
  if(equipment.slot!=='weapon')return[{value:`${id}|${equipment.slot}`,label:character.name,disabled:false,gate}];
  normalizeCharacterEquipmentState(character);
- if(gate.handsRequired===2)return[{value:`${id}|twohand`,label:`${character.name}（両手持ち / 武器1＋武器2）`,disabled:false,gate}];
+ if(gate.handsRequired===2)return[{value:`${id}|twohand`,label:`${character.name}（両手持ち / 武器1を使用）`,disabled:false,gate}];
  const twoHandedRef=twoHandedWeaponRef(character);return['weapon1','weapon2'].map(slot=>{const current=twoHandedRef||character.equipment[slot];return{value:`${id}|${slot}`,label:`${character.name} / ${weaponSlotLabel(slot)}${current?`（入替: ${equipmentDisplayName(current)}）`:''}`,disabled:false,gate}});
 }
 function equipInventoryItemToCharacter(character,index,targetSlot=''){
  const ref=String(data.inventory[index]||''),equipment=equipmentDefinition(ref);if(!equipment)return{ok:false,reason:'EQUIPMENT_NOT_FOUND',ref};const gate=equipmentRequirementCheck(character,equipment);if(!gate.ok)return{ok:false,...gate,equipment,ref};
  normalizeCharacterEquipmentState(character);const returned=[];
  if(equipment.slot==='weapon'){
-  if(gate.handsRequired===2){returned.push(...removeEquippedWeaponState(character));character.equipment.weapon1=ref;character.equipment.weapon2=ref;targetSlot='twohand';}
+  if(gate.handsRequired===2){returned.push(...removeEquippedWeaponState(character));character.equipment.weapon1=ref;character.equipment.weapon2=null;setCharacterWeaponStyle(character,'two_hand');targetSlot='twohand';}
   else{
    const slot=['weapon1','weapon2'].includes(targetSlot)?targetSlot:'weapon1';
-   if(twoHandedWeaponRef(character))returned.push(...removeEquippedWeaponState(character));
-   const previous=character.equipment[slot];if(previous)returned.push(previous);character.equipment[slot]=ref;targetSlot=slot;
+   if(characterWeaponStyle(character)==='two_hand')returned.push(...removeEquippedWeaponState(character));
+   const previous=character.equipment[slot];if(previous)returned.push(previous);character.equipment[slot]=ref;targetSlot=slot;refreshCharacterWeaponStyle(character);
   }
  }else{
   const slot=equipment.slot==='ring'&&['ring1','ring2'].includes(targetSlot)?targetSlot:equipment.slot;
@@ -232,7 +246,7 @@ async function loadFormalEquipmentDefinitions(){
  try{const response=await fetch(FORMAL_EQUIPMENT_EXPORT_URL,{cache:'no-store'});if(!response.ok)throw new Error(`HTTP ${response.status}`);const payload=await response.json(),rows=Array.isArray(payload)?payload:(Array.isArray(payload?.data)?payload.data:[]),next=new Map(),errors=[];for(const raw of rows){const record=normalizeFormalEquipmentRecord(raw);if(!record){errors.push(`Equipment record invalid: ${String(raw?.id||'(no id)')}`);continue}if(next.has(record.id)){errors.push(`Equipment ID duplicated: ${record.id}`);continue}next.set(record.id,record)}if(errors.length)throw new Error(errors.join(' / '));formalEquipmentCatalog.clear();for(const [id,row] of next)formalEquipmentCatalog.set(id,row);formalEquipmentBridge.status='loaded';formalEquipmentBridge.schema_version=payload?.schema_version||null;formalEquipmentBridge.data_version=payload?.data_version||null;formalEquipmentBridge.generated_by=payload?.generated_by||null;formalEquipmentBridge.loaded_at=new Date().toISOString();formalEquipmentBridge.imported_ids=[...formalEquipmentCatalog.keys()];return formalEquipmentBridge;}catch(error){formalEquipmentCatalog.clear();formalEquipmentBridge.status='failed';formalEquipmentBridge.errors=[String(error?.message||error)];return formalEquipmentBridge;}
 }
 window.GKGameFormalConfig=Object.freeze({bridge:formalGameBridge,jobs:formalJobCatalog,load:loadFormalGameDefinitions,jobDefinition,jobDisplayName,partyMaxSize,characterBattleValues,battleFlowConfig,battleGaugeMax,battleAiReevaluationRatio,battleAiReevaluationStep,battleGaugeConsumeAmount,battleDefaultSkillCastingTicks,weaponStrTwoHandRequirementMultiplier});
-window.GKGameEquipmentRuntime=Object.freeze({bridge:formalEquipmentBridge,slots:CHARACTER_EQUIPMENT_SLOTS,slotLabels:CHARACTER_EQUIPMENT_SLOT_LABEL,slotLabel:equipmentSlotLabel,normalizeRecord:normalizeFormalEquipmentRecord,definition:equipmentDefinition,requirementCheck:equipmentRequirementCheck,bonusLabel:equipmentBonusLabel,requirementLabel:equipmentRequirementLabel,normalizeCharacterState:normalizeCharacterEquipmentState,equipTargets:equipmentEquipTargets,load:loadFormalEquipmentDefinitions});
+window.GKGameEquipmentRuntime=Object.freeze({bridge:formalEquipmentBridge,slots:CHARACTER_EQUIPMENT_SLOTS,slotLabels:CHARACTER_EQUIPMENT_SLOT_LABEL,slotLabel:equipmentSlotLabel,weaponStyles:CHARACTER_WEAPON_STYLES,weaponStyle:characterWeaponStyle,normalizeRecord:normalizeFormalEquipmentRecord,definition:equipmentDefinition,requirementCheck:equipmentRequirementCheck,bonusLabel:equipmentBonusLabel,requirementLabel:equipmentRequirementLabel,normalizeCharacterState:normalizeCharacterEquipmentState,equipTargets:equipmentEquipTargets,basicAttackProfiles:characterBasicAttackProfiles,load:loadFormalEquipmentDefinitions});
 const NEW_GAME_INITIALIZATION_ORDER=Object.freeze(['guild','progress_flags','starter_characters','party','inventory_equipment','skill_passive_ai','integrity','first_auto_save']);
 function createEmptyPersistentState(now=new Date().toISOString()){
  return{saveVersion:SAVE_VERSION,schemaRevision:'1.6.0',gameVersion:'GA-B486.211',createdAt:now,updatedAt:now,characters:[],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:[],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};
@@ -350,7 +364,7 @@ function renderBattleResult(){
 
 function notify(text,type='ok'){const n=$('notice');if(n){n.textContent=text;n.className=type}}
 function makeCharacterCore(name,jobRef,{now=new Date().toISOString()}={}){const cfg=requireFormalRuntimeSettings().character,job=jobDefinition(jobRef);if(!job)throw new Error(`正式Jobが見つかりません: ${jobRef}`);return{id:uid(),name,level:cfg.initial_level,job:job.id,stats:{...cfg.initial_stats},jobHistory:[{job:job.id,level:cfg.initial_level,at:now}],growthHistory:[],createdAt:now}}
-function initializeCharacterInventoryEquipmentState(character){character.equipment=emptyCharacterEquipmentState();return character}
+function initializeCharacterInventoryEquipmentState(character){character.equipment=emptyCharacterEquipmentState();character.weaponStyle='single';return character}
 function initializeCharacterSkillPassiveAiState(character){const cfg=requireFormalRuntimeSettings().character,skills=[...cfg.starter_skill_ids];character.skills=skills;character.equippedSkillId=cfg.starter_equipped_skill_id||skills[0]||'';character.formalAiBinding=null;return window.GKGameSkillLoadout?GKGameSkillLoadout.normalizeCharacterSkillState(character,{fallback:[]}):character}
 function makeCharacter(name,jobRef){return initializeCharacterSkillPassiveAiState(initializeCharacterInventoryEquipmentState(makeCharacterCore(name,jobRef)))}
 function normalize(raw){
@@ -833,7 +847,15 @@ function renderCharacterSkillView(){
  if(catalog){const candidates=(typeof SKILLS!=='undefined'?SKILLS:[]).filter(skill=>window.GKGameSkillLoadout?.formalProductionSkillCheck(skill,compileSkillForRuntime).ok&&!c.skills.includes(skill.id));catalog.innerHTML=candidates.length?`<div class="small">Studio正式Exportから読み込んだProduction Skillを、このSaveの冒険者へ永続割当します。獲得条件・コストはP02-04以降で別途実装します。</div>${candidates.map(skill=>`<button type="button" class="unit" data-assign-formal-skill="${skill.id}"><b>${escapeHtml(skill.name)}</b><span class="tag">${escapeHtml(skill.id)}</span><div class="small">この冒険者へ割当</div></button>`).join('')}`:'<div class="small">未割当の正式Production Skillはありません。Export読込状態も確認してください。</div>';catalog.querySelectorAll('[data-assign-formal-skill]').forEach(btn=>btn.onclick=()=>{const skill=findSkill(btn.dataset.assignFormalSkill),result=window.GKGameSkillLoadout?GKGameSkillLoadout.assignFormalProductionSkill(c,skill,compileSkillForRuntime):{ok:false,reason:'LOADOUT_RUNTIME_UNAVAILABLE'};if(!result.ok){notify(`正式Skillを割当できません: ${result.reason}`,'bad');return}autoSave();render();renderCharacterSkillView();notify(`${c.name}へ${skill.name}を永続割当しました。`)});}
 }
 function selectedQuest(){const formal=formalAdventureQuests();return formal.find(q=>q.id===data.selectedQuestId)||formal[0]||null}
-function equipmentBonus(c){return characterEquipmentEntries(c).reduce((a,row)=>{const e=equipmentDefinition(row.ref),b=e?.bonuses;if(b){a.attack+=Number(b.attack)||0;a.maxHp+=Number(b.maxHp)||0;a.maxMp+=Number(b.maxMp)||0;a.agi+=Number(b.agi)||0;a.accuracy+=Number(b.accuracy)||0;a.evasion+=Number(b.evasion)||0;a.magicWeaponBonus+=Number(b.magicWeaponBonus)||0;a.baseCriticalRate+=Number(b.baseCriticalRate)||0}return a},{attack:0,maxHp:0,maxMp:0,agi:0,accuracy:0,evasion:0,magicWeaponBonus:0,baseCriticalRate:0})}
+function equipmentBonusFromRows(rows){return rows.reduce((a,row)=>{const e=equipmentDefinition(row.ref),b=e?.bonuses;if(b){a.attack+=Number(b.attack)||0;a.maxHp+=Number(b.maxHp)||0;a.maxMp+=Number(b.maxMp)||0;a.agi+=Number(b.agi)||0;a.accuracy+=Number(b.accuracy)||0;a.evasion+=Number(b.evasion)||0;a.magicWeaponBonus+=Number(b.magicWeaponBonus)||0;a.baseCriticalRate+=Number(b.baseCriticalRate)||0}return a},{attack:0,maxHp:0,maxMp:0,agi:0,accuracy:0,evasion:0,magicWeaponBonus:0,baseCriticalRate:0})}
+function equipmentBonus(c){return equipmentBonusFromRows(characterEquipmentEntries(c))}
+function characterBasicAttackProfiles(character){
+ normalizeCharacterEquipmentState(character);const style=characterWeaponStyle(character),cfg=requireFormalRuntimeSettings().battle_actor,allRows=characterEquipmentEntries(character);
+ if(style!=='dual_wield')return[{weaponStyle:style,weaponSlot:twoHandedWeaponRef(character)?'weapon1':(character.equipment.weapon1?'weapon1':character.equipment.weapon2?'weapon2':null),weaponId:twoHandedWeaponRef(character)||character.equipment.weapon1||character.equipment.weapon2||null,...(()=>{const v=characterBattleValues(character);return{attack:v.attack,accuracy:v.accuracy,baseCriticalRate:v.baseCriticalRate}})()}];
+ const nonWeapon=equipmentBonusFromRows(allRows.filter(row=>!['weapon1','weapon2'].includes(row.slot))),baseAttack=evaluateRuntimeFormula(cfg.attack,character)+nonWeapon.attack,baseAccuracy=nonWeapon.accuracy,baseCriticalRate=nonWeapon.baseCriticalRate,profiles=[];
+ for(const slot of ['weapon1','weapon2']){const ref=character.equipment[slot];if(!ref)continue;const b=equipmentDefinition(ref)?.bonuses||{};profiles.push({weaponStyle:'dual_wield',weaponSlot:slot,weaponId:ref,attack:baseAttack+(Number(b.attack)||0),accuracy:baseAccuracy+(Number(b.accuracy)||0),baseCriticalRate:baseCriticalRate+(Number(b.baseCriticalRate)||0)});}
+ return profiles.length?profiles:[{weaponStyle:'single',weaponSlot:null,weaponId:null,attack:baseAttack,accuracy:baseAccuracy,baseCriticalRate}];
+}
 
 let activeBaseView='home';
 function setBaseView(view,opts={}){
@@ -1403,7 +1425,7 @@ function launchStandaloneBattle(){resetBattle(standaloneBattleContext());setPhas
 function makeCombatant(base){const maxMp=Math.max(0,Number(base.maxMp??100)||0),ownedSkillIds=window.GKGameSkillLoadout?GKGameSkillLoadout.normalizeSkillIds(base.ownedSkillIds||base.skills,{fallback:[]}):[...new Set((base.ownedSkillIds||base.skills||[]).map(id=>String(id||'').trim()).filter(Boolean))],equippedSkillId=String(base.equippedSkillId||base.equipped_skill_id||'').trim(),defaultSkillId=String(base.defaultSkillId||equippedSkillId||ownedSkillIds[0]||'SKL-TEST-ATTACK'),step=battleAiReevaluationStep();GAUGE_MAX=battleGaugeMax();return {...base,hp:base.maxHp,maxMp,mp:Math.max(0,Math.min(maxMp,Number(base.mp??maxMp)||0)),alive:true,damageDealt:0,damageTaken:0,dotStacks:[],modifierStacks:[],reservedAction:null,lastReservation:null,castingAction:null,nextAiEvaluationGauge:step,lastAiEvaluationGauge:null,ownedSkillIds,equippedSkillId,defaultSkillId}}
 function makeBattleUnits(){
  const maxParty=partyMaxSize(),members=data.partyIds.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean).slice(0,maxParty||0);
- const allies=members.map((c,i)=>{const v=characterBattleValues(c),e2e=developerE2EOverrideSkillId(c.id);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',ownedSkillIds:clone(c.skills||[]),equippedSkillId:c.equippedSkillId||'',defaultSkillId:e2e||c.equippedSkillId||c.skills?.[0]||'',agi:v.agi,attack:v.attack,accuracy:v.accuracy,evasion:v.evasion,magicWeaponBonus:v.magicWeaponBonus,baseCriticalRate:v.baseCriticalRate,maxHp:v.maxHp,maxMp:v.maxMp,gauge:0,actions:0,order:i,lastActionTick:null})});
+ const allies=members.map((c,i)=>{const v=characterBattleValues(c),e2e=developerE2EOverrideSkillId(c.id),basicAttackProfiles=characterBasicAttackProfiles(c);return makeCombatant({id:`A${i}`,characterId:c.id,name:c.name,side:'味方',ownedSkillIds:clone(c.skills||[]),equippedSkillId:c.equippedSkillId||'',defaultSkillId:e2e||c.equippedSkillId||c.skills?.[0]||'',agi:v.agi,attack:v.attack,accuracy:v.accuracy,evasion:v.evasion,magicWeaponBonus:v.magicWeaponBonus,baseCriticalRate:v.baseCriticalRate,basicAttackProfiles,weaponStyle:characterWeaponStyle(c),maxHp:v.maxHp,maxMp:v.maxMp,gauge:0,actions:0,order:i,lastActionTick:null})});
  if(!allies.length)allies.push(makeCombatant({id:'A0',name:'検証剣士',side:'味方',aiPolicy:'lowestHp',defaultSkillId:'SKL-TEST-POISON',agi:11,attack:48,maxHp:360,gauge:0,actions:0,order:0,lastActionTick:null}));
  if(!battleLaunchContext?.formation?.length||!window.GKAdventureBattleCore)throw new Error('Standalone Battle fixture is unavailable');
  const expanded=GKAdventureBattleCore.expandFormation(battleLaunchContext.formation,battleLaunchContext.monsters||[]);
