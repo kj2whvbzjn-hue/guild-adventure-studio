@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T13:52:58.981Z"
+    "updated_at": "2026-08-24T14:08:33.418Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073C physical 5-Job real-device DPS input packages complete; Human real-device Result ZIP wait",
-    "goal": "Run the five TASK-BAL-073C GKS-B773 Formal Battle Packages on Human current Studio and export Result ZIPs. Each package covers 5 physical Jobs × 10 Levels, 30 trials per condition, 200 Tick, Basic Attack only. Do not use stale TASK-BAL-073A/073B DPS/HP references. TASK-BAL-073D analyzes Human Result ZIPs and regenerates physical DPS/Monster HP reference. TASK-BAL-074 Skill Balance remains blocked."
+    "theme": "TASK-BAL-073C-CORR-002 Lv1-10 package binding corrected; Human real-device validation wait",
+    "goal": "Validate CORR-002 Lv1-10 package on Human GKS-B773 Studio. CORR-001 failed before job preparation because manifest formal data.snapshot_sha256 was set to a recomputed PRJ-GAS-V4 file hash instead of the Current Studio formal snapshot hash. Human Studio reported actual=7aee5b92...7566. CORR-002 changes only that manifest binding; battle inputs and the corrected EQP-* candidate references remain unchanged. Do not generate Lv11-50 corrections until Lv1-10 imports and reaches execution preparation with JOB_ERROR=0."
   },
   "project_rules": [
     {
@@ -6774,7 +6774,8 @@
       "status": "Blocked",
       "execution_order": 257,
       "depends_on": [
-        "TASK-BAL-073C"
+        "TASK-BAL-073C",
+        "TASK-BAL-073C-CORR-002"
       ],
       "acceptance_criteria": "- Human実機Result ZIPを正式Evidenceとして使用し、各Level×Job最低30試行の成立を確認する。\n- 物理5職Lv1..50のDamage/Tick、Damage/Action、Hit率、Crit率、strike数、分散を集計する。\n- weapon_shieldの盾がDamage/Hit/Crit strikeへ寄与していないこと、dual_wieldが独立2strikeであることをtraceで確認する。\n- stale TASK-BAL-071-CORR-002 Knight offense / TASK-BAL-072 Knight Monster Core / TASK-BAL-073A/B DPS・HP referenceを必要範囲で再計算し、旧ArtifactをSuperseded扱いにする。\n- Monster HPの数学Referenceを再生成するが、Normal/Elite/Boss最終Difficulty/TTKは確定しない。\n- Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6785,8 +6786,50 @@
         "at": ""
       },
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T22:22:00+09:00",
-      "result_scope": "INPUT_READY; WAIT_HUMAN_REAL_DEVICE_RESULT. Requires Result ZIPs from all five TASK-BAL-073C packages. Primary aggregate for physical DPS is each job result summary.average_ally_damage / summary.average_ticks over 30 trials. Representative formal evidence is used to verify weapon_style/basic_attack_profiles and shield/dual-wield semantics. Do not start TASK-BAL-074 before corrected DPS/HP reference is regenerated."
+      "updated_at": "2026-08-24T23:07:00+09:00",
+      "result_scope": "WAIT_HUMAN_REAL_DEVICE_RESULT. First validate CORR-002 Lv1-10 package: import must pass Formal binding and job preparation must reach JOB_ERROR=0. Only after that, regenerate the same CORR-002 binding/reference corrections for Lv11-50 and collect all Result ZIPs."
+    },
+    {
+      "id": "TASK-BAL-073C-CORR-001",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Physical DPS Battle PackageのEquipment Candidate参照不一致を補正する",
+      "status": "Done",
+      "execution_order": 256,
+      "depends_on": [
+        "TASK-BAL-073C"
+      ],
+      "acceptance_criteria": "- Human実機で全50 JOB_ERRORとなった共通Failureを特定する。\n- Current GKS-B773 Formal resolverの参照契約に合わせ、unit_snapshot.equipment_idsのEQP-*が同一candidate_idのEquipment Candidateへ解決されるようPackageを補正する。\n- Human提供Current PRJ-GAS-V4 JSONをFormal data binding正本として使用する。\n- Lv1-10の50 Jobだけを先行補正し、Human実機でJOB_ERROR 0を確認するまでLv11-50を再生成しない。\n- Source/Game Data/Current activeを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T22:56:00+09:00"
+      },
+      "created_at": "2026-08-24T22:56:00+09:00",
+      "updated_at": "2026-08-24T22:56:00+09:00",
+      "result_scope": "PASS INPUT CORRECTION. Root cause confirmed: Current battlePackageResolveFormalStaticContribution resolves each unit.equipment_ids entry by direct candidate_id; prior package used candidate_id=CAND-EQP-* while unit equipment_ids=EQP-*, causing one Equipment Candidate missing error per Job (50/50). CORR-001 changes all 38 Equipment candidate_ids in Lv1-10 package to exact EQP-* IDs, retains payload hashes, and rebinds data to Human current PRJ-GAS-V4 snapshot sha256=106c7edbc7f1593b7dbedf24dea9a5c431edee9bb63a338f16de6a0d0e028f76. Static Current-contract validation PASS: candidates=92, rosters=50, tests=50, units=100, jobs=50, Equipment direct refs=38; AI compile and weapon bindings PASS. Artifact=DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-001_PHYS-DPS_LV01-10.zip sha256=09fecb06e2eefa9b7f09d8f790a79bf6322b812b1aed3bb914246817707ee8d0. Source/Game Data/Current active changes=0."
+    },
+    {
+      "id": "TASK-BAL-073C-CORR-002",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Physical DPS PackageのFormal data snapshot bindingをCurrent Studio値へ補正する",
+      "status": "Done",
+      "execution_order": 256,
+      "depends_on": [
+        "TASK-BAL-073C-CORR-001"
+      ],
+      "acceptance_criteria": "- Human GKS-B773 Studioが表示したFormal binding mismatchを正式Evidenceとして扱う。\n- CORR-001のdata.snapshot_sha256 expected=106c7edb...を、Current Studio actual=7aee5b92...へ補正する。\n- Equipment Candidate ID修正、Roster/Test/AI/Unit/戦闘条件は変更しない。\n- Lv1-10だけを再出力し、Human実機でImport/Job preparationを確認するまでLv11-50へ展開しない。\n- Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T23:07:00+09:00"
+      },
+      "created_at": "2026-08-24T23:07:00+09:00",
+      "updated_at": "2026-08-24T23:07:00+09:00",
+      "result_scope": "PASS PACKAGE-BINDING CORRECTION. Human GKS-B773 Studio import reported formal data.snapshot_sha256 mismatch: package expected=106c7edbc7f1593b7dbedf24dea9a5c431edee9bb63a338f16de6a0d0e028f76, Current Studio actual=7aee5b92aeda379261ffd766378c810f3e597ef8c818cb03ed9b33ee52b57566. Root cause: CORR-001 used a recomputed uploaded PRJ-GAS-V4 JSON content hash as the formal snapshot binding, but Studio validates against its stored Current formal snapshot hash. CORR-002 patches only manifest.formal.bindings.data.snapshot_sha256 to 7aee5b92aeda379261ffd766378c810f3e597ef8c818cb03ed9b33ee52b57566; all battle candidates, corrected EQP-* candidate IDs, rosters, tests, AI and execution plan remain unchanged. Artifact=DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-002_PHYS-DPS_LV01-10.zip sha256=88837574e7d802a98fde4ce6deabc5cdb43fbc09c67c909f47d891b697e3fe77. Source/Game Data/Current active changes=0."
     }
   ],
   "checks": [
@@ -10006,6 +10049,77 @@
       "blocking": false,
       "created_at": "2026-08-24T22:22:00+09:00",
       "updated_at": "2026-08-24T22:22:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073C-HUMAN-JOBERROR-001",
+      "title": "TASK-BAL-073C Human real-device package preparation failure",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073C",
+      "status": "Failed",
+      "result": "Human GKS-B773 Studio loaded the package but execution preparation reported JOB_ERROR 50/50. Root cause: Equipment Candidate candidate_id mismatch (CAND-EQP-* vs required direct EQP-*).",
+      "evidence": "Human screenshot 2026-08-24 22:54 JST; GKS-B773; 'JOB_ERROR: 50件'",
+      "checked_by": "Human",
+      "checked_at": "2026-08-24T22:56:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-TASK073C-CORR001-STATIC-001",
+        "resolved_at": "2026-08-24T22:56:00+09:00",
+        "reason": "PASS. Equipment candidate direct IDs fixed. 92 candidates / 50 rosters / 50 tests / 100 unit resolutions / 50 jobs validated. Package-local Formal AI compile and Equipment/weapon bindings pass under GKS-B773 source modules.",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T22:56:00+09:00",
+      "updated_at": "2026-08-24T22:56:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073C-CORR001-STATIC-001",
+      "title": "Corrected Lv1-10 physical DPS package Current-contract static validation",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073C-CORR-001",
+      "status": "Passed",
+      "result": "PASS. Equipment candidate direct IDs fixed. 92 candidates / 50 rosters / 50 tests / 100 unit resolutions / 50 jobs validated. Package-local Formal AI compile and Equipment/weapon bindings pass under GKS-B773 source modules.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-001_PHYS-DPS_LV01-10.zip sha256=09fecb06e2eefa9b7f09d8f790a79bf6322b812b1aed3bb914246817707ee8d0; Human current PRJ-GAS-V4 snapshot sha256=106c7edbc7f1593b7dbedf24dea9a5c431edee9bb63a338f16de6a0d0e028f76",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T22:56:00+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-TASK073C-HUMAN-JOBERROR-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T22:56:00+09:00",
+        "reason": "Corrected package matches Current direct equipment candidate reference contract.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T22:56:00+09:00",
+      "updated_at": "2026-08-24T22:56:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073C-CORR001-FORMAL-DATA-BINDING-001",
+      "title": "CORR-001 Formal data snapshot binding mismatch",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073C-CORR-002",
+      "status": "Passed",
+      "result": "Resolved by package correction. Human GKS-B773 Studio showed expected=106c7edbc7f1593b7dbedf24dea9a5c431edee9bb63a338f16de6a0d0e028f76, actual=7aee5b92aeda379261ffd766378c810f3e597ef8c818cb03ed9b33ee52b57566. CORR-002 now binds to the exact Current Studio actual snapshot hash. No runtime/source change.",
+      "evidence": "Human screenshot 2026-08-24 23:04 JST; Current Studio GKS-B773 binding mismatch dialog",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T23:07:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T23:07:00+09:00",
+        "reason": "Package manifest binding corrected to Human Studio-reported actual snapshot hash.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T23:07:00+09:00",
+      "updated_at": "2026-08-24T23:07:00+09:00"
     }
   ],
   "workflow": {
@@ -10669,6 +10783,22 @@
       "task_id": "TASK-BAL-073C",
       "created_at": "2026-08-24T22:22:00+09:00",
       "updated_at": "2026-08-24T22:22:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073C-CORR001-001",
+      "title": "Physical DPS Package 50 JOB_ERROR root cause corrected",
+      "summary": "Human実機で50/50 JOB_ERROR。Current GKS-B773 resolverを確認し、Equipment candidate_idをCAND-EQP-*としていたPackage生成誤りを特定。EQP-* direct candidate_idへ補正し、Human提供Current PRJ-GAS-V4へFormal data bindingを更新。まずLv1-10だけ再提出。Source/Game Data変更0。",
+      "task_id": "TASK-BAL-073C-CORR-001",
+      "created_at": "2026-08-24T22:56:00+09:00",
+      "updated_at": "2026-08-24T22:56:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073C-CORR002-001",
+      "title": "Physical DPS Lv1-10 package Formal data binding corrected",
+      "summary": "Human GKS-B773 Studio import rejected CORR-001 before execution because data.snapshot_sha256 expected 106c7edb... did not match Current Studio actual 7aee5b92... . CORR-002 changes only the package formal data binding to the Studio-reported actual value. Battle conditions and Equipment candidate reference fix are unchanged. Source/Game Data/Current active changes=0.",
+      "task_id": "TASK-BAL-073C-CORR-002",
+      "created_at": "2026-08-24T23:07:00+09:00",
+      "updated_at": "2026-08-24T23:07:00+09:00"
     }
   ],
   "authority": {
