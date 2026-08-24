@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T13:21:35.646Z"
+    "updated_at": "2026-08-24T13:52:58.981Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-FIX-002 GKS-B773 target complete; Human apply / fresh-source verification wait",
-    "goal": "Do not use TASK-BAL-073A/073B DPS/Monster-HP references for downstream balance: weapon_shield offense was over-counted because shield Attack/Accuracy/Critical were included in the sword strike. Human applies GKS-B773 Studio update and supplies a fresh complete source. After fresh verification, generate TASK-BAL-073C physical 5-Job real-device DPS input packages. Skill Balance TASK-BAL-074 remains blocked until corrected real-device DPS/HP and affected shield-dependent references are refreshed."
+    "theme": "TASK-BAL-073C physical 5-Job real-device DPS input packages complete; Human real-device Result ZIP wait",
+    "goal": "Run the five TASK-BAL-073C GKS-B773 Formal Battle Packages on Human current Studio and export Result ZIPs. Each package covers 5 physical Jobs × 10 Levels, 30 trials per condition, 200 Tick, Basic Attack only. Do not use stale TASK-BAL-073A/073B DPS/HP references. TASK-BAL-073D analyzes Human Result ZIPs and regenerates physical DPS/Monster HP reference. TASK-BAL-074 Skill Balance remains blocked."
   },
   "project_rules": [
     {
@@ -6750,7 +6750,7 @@
       "id": "TASK-BAL-073C",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P6C 物理5職 Lv1..50 Real-device DPS入力Packageを生成する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 256,
       "depends_on": [
         "TASK-BAL-071-FIX-002"
@@ -6759,13 +6759,13 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T22:22:00+09:00"
       },
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "PLANNED; BLOCKED until Human applies GKS-B773 and Fresh Source verification passes."
+      "updated_at": "2026-08-24T22:22:00+09:00",
+      "result_scope": "PASS INPUT-GENERATION ONLY; Human real-device execution pending separately. Fresh complete source verified GKS-B773 / GA-B486.211, package manifest 642/642. Generated five Formal Battle Package ZIPs for physical Jobs 剣士/騎士/狩人/盗賊/冒険家, Lv1..50. Each package: 50 conditions, 30 trials/condition, 1,500 trials, max_ticks=200; total=250 conditions / 7,500 trials. Basic Attack only; Skill/Passive/MOD/special AI excluded. 剣士=two_hand 1 strike; 騎士=weapon_shield sword-only 1 strike and shield attack_count=0; 盗賊=dual_wield 2 independent strikes with per-hand Hit/Critical; 狩人=bow 1 strike; 冒険家=sword 1 strike. Neutral target Evasion=0/Resistance=0/Shield=0. critical_damage=0 because CriticalDamage is not frozen at this stage; packages measure raw pre-critical-multiplier physical throughput. Formal data binding uses last Human-verified PRJ-GAS-V4 snapshot 7aee5b92...7566 and current GKS-B773 source/rules/formula. If Human Studio data binding changed, package must fail closed and a fresh Template/Project snapshot is required. Source/Game Data/Current active changes=0. Packages: DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV01-10.zip sha256=9ea68cba352e037f6767f4ac2f81c111b27864b43a5fcd9e90be2e56aaa34524; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV11-20.zip sha256=bbc7cbc3cb734c5f0d41b802355385b22da5ec0aa7f3895cb6b9de05f1087173; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV21-30.zip sha256=387b46463cbf24e5cee386930655be836b50b93c4ffed2e8406ef90d752f1997; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV31-40.zip sha256=5ee9ee42c8c044e1526561a10c343da8c7889012576d28c9dbbb28eca696ba78; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV41-50.zip sha256=c98b1bc16604d791c2f3ef7955cad2661324a1423479636d9c2392b194d2fbfb Static package validation PASS: Current formal envelope/candidate hash, all Equipment candidates, package-local AI master definitions/program compile, 250 Formal rosters/tests/job refs, weapon_shield and same-ID dual-wield bindings."
     },
     {
       "id": "TASK-BAL-073D",
@@ -6785,8 +6785,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "PLANNED; requires Human real-device output from TASK-BAL-073C."
+      "updated_at": "2026-08-24T22:22:00+09:00",
+      "result_scope": "INPUT_READY; WAIT_HUMAN_REAL_DEVICE_RESULT. Requires Result ZIPs from all five TASK-BAL-073C packages. Primary aggregate for physical DPS is each job result summary.average_ally_damage / summary.average_ticks over 30 trials. Representative formal evidence is used to verify weapon_style/basic_attack_profiles and shield/dual-wield semantics. Do not start TASK-BAL-074 before corrected DPS/HP reference is regenerated."
     }
   ],
   "checks": [
@@ -9944,22 +9944,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-073C",
-      "status": "Failed",
-      "result": "BLOCKING until Human applies GKS-B773 Studio update and provides a fresh complete source whose build/manifest/changed implementation match the approved target. AI target validation is not a substitute for Human apply.",
-      "evidence": "target artifact DEV-V9-BALANCE-001_TASK-BAL-071-FIX-002_GKS-B773_STUDIO-UPDATE.zip sha256=35a183b287aff908bf3d21a851ba7b9cae0391f1518bbf3a86daab63942a5fcc",
+      "status": "Passed",
+      "result": "PASS. Human supplied fresh complete source guild-adventure-studio-sub(20260824-132250).zip. package-build=GKS-B773 / GA-B486.211. package_manifest 642/642 files verified with missing=0 and hash mismatch=0; package_manifest SHA256=44ae31643fae270b0fc1c36697919f6cb0b0d3252307097b3a44726967eb989f, matching TASK-BAL-071-FIX-002 target.",
+      "evidence": "Fresh complete source guild-adventure-studio-sub(20260824-132250).zip; package_manifest SHA256=44ae31643fae270b0fc1c36697919f6cb0b0d3252307097b3a44726967eb989f",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T22:08:00+09:00",
+      "checked_at": "2026-08-24T22:22:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T22:22:00+09:00",
+        "reason": "Human fresh source exactly matches GKS-B773 target and complete package manifest.",
         "mode": ""
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-24T22:22:00+09:00"
     },
     {
       "id": "CHK-BAL-TASK073AB-WEAPON-SHIELD-OVERCOUNT-001",
@@ -9983,6 +9983,29 @@
       "blocking": true,
       "created_at": "2026-08-24T22:08:00+09:00",
       "updated_at": "2026-08-24T22:08:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073C-PACKAGE-GENERATION-001",
+      "title": "TASK-BAL-073C physical DPS real-device input package generation",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073C",
+      "status": "Passed",
+      "result": "PASS. Five direct Formal Battle Package ZIPs generated and statically validated with Current formal envelope / Equipment contribution validator / AI master adapter / AI program compiler. Totals: packages=5, candidates=485, equipment candidate validations=215, unit snapshots=255, rosters=250, tests=250, jobs=250. Every test is 30 trials / 200 Tick, so planned Human real-device total=7,500 trials. Weapon semantics checked: weapon_shield contains exactly one shield and remains one attacking hand; same-ID dual_wield carries two owned copies. Candidate payload hashes exactly match Current JS canonicalStringify SHA-256. Source/Game Data/Current active changes=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV01-10.zip sha256=9ea68cba352e037f6767f4ac2f81c111b27864b43a5fcd9e90be2e56aaa34524; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV11-20.zip sha256=bbc7cbc3cb734c5f0d41b802355385b22da5ec0aa7f3895cb6b9de05f1087173; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV21-30.zip sha256=387b46463cbf24e5cee386930655be836b50b93c4ffed2e8406ef90d752f1997; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV31-40.zip sha256=5ee9ee42c8c044e1526561a10c343da8c7889012576d28c9dbbb28eca696ba78; DEV-V9-BALANCE-001_TASK-BAL-073C_PHYS-DPS_LV41-50.zip sha256=c98b1bc16604d791c2f3ef7955cad2661324a1423479636d9c2392b194d2fbfb",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T22:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T22:22:00+09:00",
+        "reason": "All five input packages and their retained condition indexes were generated from verified GKS-B773 inputs.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T22:22:00+09:00",
+      "updated_at": "2026-08-24T22:22:00+09:00"
     }
   ],
   "workflow": {
@@ -10638,6 +10661,14 @@
       "task_id": "TASK-BAL-071-FIX-002",
       "created_at": "2026-08-24T22:08:00+09:00",
       "updated_at": "2026-08-24T22:08:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073C-001",
+      "title": "Physical 5-Job Lv1..50 Human real-device DPS input packages generated",
+      "summary": "Fresh GKS-B773 complete source verified. Generated five Formal Battle Packages covering 5 physical Jobs × Lv1..50, 30 trials per condition and 200 Tick per trial (7,500 planned trials total). Packages preserve explicit two-hand/weapon-shield/dual-wield semantics; shield is not an attacking hand and dual-wield Hit/Critical are not combined. Human real-device execution remains required before TASK-BAL-073D. Source/Game Data/Current active changes=0.",
+      "task_id": "TASK-BAL-073C",
+      "created_at": "2026-08-24T22:22:00+09:00",
+      "updated_at": "2026-08-24T22:22:00+09:00"
     }
   ],
   "authority": {
