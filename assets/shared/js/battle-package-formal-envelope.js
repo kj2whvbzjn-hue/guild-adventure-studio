@@ -6,7 +6,7 @@
   'use strict';
   const HEX64=/^[0-9a-f]{64}$/i;
   const CANDIDATE_TYPES=Object.freeze([
-    'unit_snapshot','character','job','equipment','skill','passive','mod','ai_program','monster','enemy_snapshot'
+    'unit_snapshot','character','job','equipment','skill','passive','mod','ai_program','ai_master_snapshot','monster','enemy_snapshot'
   ]);
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function canonicalize(value){
@@ -67,6 +67,29 @@
     }
     return mismatches;
   }
+  function validateAiMasterSnapshotData(data){
+    if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('ai_master_snapshot dataはオブジェクトが必要です。');
+    requiredString(data.id,'ai_master_snapshot.data.id');
+    requiredString(data.version,'ai_master_snapshot.data.version');
+    requiredString(data.data_version,'ai_master_snapshot.data.data_version');
+    if(!Array.isArray(data.nodes)||data.nodes.length===0)throw new Error('ai_master_snapshot.data.nodesは1件以上必要です。');
+    const seen=new Set(),allowedTypes=new Set(['condition','target','action']);
+    data.nodes.forEach((node,index)=>{
+      if(!node||typeof node!=='object'||Array.isArray(node))throw new Error(`ai_master_snapshot.data.nodes[${index}]が不正です。`);
+      const id=requiredString(node.id,`ai_master_snapshot.data.nodes[${index}].id`);
+      if(seen.has(id))throw new Error(`ai_master_snapshot.data.nodes.idが重複しています: ${id}`);
+      seen.add(id);
+      const type=requiredString(node.node_type,`ai_master_snapshot.data.nodes[${index}].node_type`);
+      if(!allowedTypes.has(type))throw new Error(`ai_master_snapshot.data.nodes[${index}].node_typeが未対応です: ${type}`);
+      requiredString(node.name,`ai_master_snapshot.data.nodes[${index}].name`);
+      requiredString(node.status,`ai_master_snapshot.data.nodes[${index}].status`);
+      requiredString(node.data_version,`ai_master_snapshot.data.nodes[${index}].data_version`);
+      requiredString(node.evaluator,`ai_master_snapshot.data.nodes[${index}].evaluator`);
+      if(!node.ports||typeof node.ports!=='object'||Array.isArray(node.ports))throw new Error(`ai_master_snapshot.data.nodes[${index}].portsが必要です。`);
+      if(!node.parameter_schema||typeof node.parameter_schema!=='object'||Array.isArray(node.parameter_schema)||node.parameter_schema.type!=='object')throw new Error(`ai_master_snapshot.data.nodes[${index}].parameter_schemaはobject Schemaが必要です。`);
+    });
+    return clone(data);
+  }
   function validateCandidateEnvelope(doc){
     if(!doc||typeof doc!=='object'||Array.isArray(doc))throw new Error('Candidate resourceの最上位はオブジェクトにしてください。');
     if(doc.format!=='guild-adventure-studio-battle-candidate')throw new Error('Candidate resource formatが不正です。');
@@ -79,7 +102,8 @@
     ['owner','owner_id','source_type','source_id','version'].forEach(k=>requiredString(provenance[k],`provenance.${k}`));
     const payloadSha256=requiredHash(doc.payload_sha256,'payload_sha256');
     if(!doc.data||typeof doc.data!=='object'||Array.isArray(doc.data))throw new Error('Candidate resource dataオブジェクトが必要です。');
-    return {candidate_type:candidateType,candidate_id:candidateId,provenance:clone(provenance),payload_sha256:payloadSha256,data:clone(doc.data)};
+    const data=candidateType==='ai_master_snapshot'?validateAiMasterSnapshotData(doc.data):clone(doc.data);
+    return {candidate_type:candidateType,candidate_id:candidateId,provenance:clone(provenance),payload_sha256:payloadSha256,data};
   }
   function validateFormalRoster(payload){
     if(!payload||typeof payload!=='object'||Array.isArray(payload))throw new Error('Formal roster dataが不正です。');
@@ -102,5 +126,5 @@
     }
     return clone(payload);
   }
-  return Object.freeze({CANDIDATE_TYPES,canonicalize,canonicalStringify,isFormalManifest,validateFormalManifest,compareBindings,validateCandidateEnvelope,validateFormalRoster});
+  return Object.freeze({CANDIDATE_TYPES,canonicalize,canonicalStringify,isFormalManifest,validateFormalManifest,compareBindings,validateAiMasterSnapshotData,validateCandidateEnvelope,validateFormalRoster});
 });
