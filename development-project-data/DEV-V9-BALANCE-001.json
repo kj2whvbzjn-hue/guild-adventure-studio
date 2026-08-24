@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T07:32:10.888Z"
+    "updated_at": "2026-08-24T08:03:13.162Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-PLAYER-001",
-    "theme": "TASK-BAL-045 LUK Registry correction PASS; TASK-BAL-046 resume approval wait",
-    "goal": "Measurement Registry Revision 2 now has 233 metrics and complete 7/7 Current formal Character Stat Expected-Metric coverage (STR/VIT/AGI/DEX/INT/MND/LUK). The TASK-BAL-046 precheck issue is resolved. TASK-BAL-046 remains blocked and was not automatically resumed. No Source/Game Data/Current active/Formula/Gameplay numeric changes."
+    "work_box_id": "BOX-V9-BAL-ITEM-001",
+    "theme": "TASK-BAL-046-CORR-001 corrected M1 PASS; TASK-BAL-047 start approval wait",
+    "goal": "Corrected M1 authority is Human Approved total-60 Job growth seed, not Current Export historical total-70 values. Old TASK-BAL-046 M1 evidence is superseded. Corrected exact curves are authoritative for downstream M2. Current Job Export mismatch is separately recorded for later implementation/data alignment. TASK-BAL-047 remains blocked pending separate Human start approval."
   },
   "project_rules": [
     {
@@ -961,6 +961,22 @@
       "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-046_PRECHECK-ISSUE-LUK-REGISTRY.json",
       "created_at": "2026-08-24T16:22:00+09:00",
       "updated_at": "2026-08-24T16:28:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-006",
+      "title": "M1 Job growth Authority mismatch: old 70-point Export vs Human Approved 60-point seed",
+      "status": "Resolved",
+      "summary": "Human pointed out that TASK-BAL-046 used old Job correction data. Reference DEV-V9-REORG-019 confirms old total-70 table is Historical Baseline and Human Approved total-60 table is Current provisional Balance seed.",
+      "body": "RULE-REORG-006 forbids using Current Source/Runtime/Export/Test to establish Specification authority. DEC-V9-CHAR-002 and SPEC-V9-019-JOB-001 provide the Human Approved Job growth seed. TASK-BAL-046-CORR-001 invalidated the old M1 Balance evidence and recomputed exact Pure-Job distributions from the 60-point table.",
+      "open_questions": "Current GKS-B770 Export/master/jobs.json still contains the historical total-70 table and old name 弓兵. This is an implementation/data-alignment issue, not fixed in this DEVELOPMENT_ONLY correction.",
+      "conclusion": "Use TASK-BAL-046-CORR-001 outputs as the only authoritative M1 input for M2. Do not use old TASK-BAL-046 M1 artifacts.",
+      "related_discussion_ids": [
+        "DISC-BAL-004",
+        "DISC-BAL-005"
+      ],
+      "artifact_note": "TASK-BAL-046-CORR-001_CURRENT-IMPLEMENTATION-MISMATCH.json",
+      "created_at": "2026-08-24T16:40:00+09:00",
+      "updated_at": "2026-08-24T16:40:00+09:00"
     }
   ],
   "decisions": [
@@ -5274,7 +5290,7 @@
       "id": "TASK-BAL-046",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "M1 Character / Job Expected Stat Curveを算出する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 222,
       "depends_on": [
         "TASK-BAL-045"
@@ -5285,10 +5301,12 @@
       "approval": {
         "status": "Approved",
         "by": "Human",
-        "at": "2026-08-24T16:22:00+09:00"
+        "at": "2026-08-24T16:32:00+09:00"
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T16:22:00+09:00"
+      "updated_at": "2026-08-24T16:40:00+09:00",
+      "corrected_by_task_id": "TASK-BAL-046-CORR-001",
+      "result_authority": "TASK-BAL-046-CORR-001 corrected outputs only"
     },
     {
       "id": "TASK-BAL-047",
@@ -5752,6 +5770,26 @@
       },
       "created_at": "2026-08-24T15:45:00+09:00",
       "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-046-CORR-001",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "TASK-BAL-046 Authority correction: Human Approved Job growth seedでM1を再計算する",
+      "status": "Done",
+      "execution_order": 222,
+      "depends_on": [
+        "TASK-BAL-046"
+      ],
+      "acceptance_criteria": "- 旧70点Export値をBalance authorityとして使ったM1 EvidenceをSuperseded/Invalidatedとして記録する。\n- DEV-V9-REORG-019 Human Approved 60点Job growth seedと一般成長式でPure-Job M1を再計算する。\n- 7 Job × Lv1-50 × 7 Statsをexact distributionで出力する。\n- 任意Job履歴の確率分布を捏造せず、history envelopeを分離する。\n- Current Exportとの不一致はImplementation Verification issueとして記録しSource/Game Dataは変更しない。\n- TASK-BAL-047を自動開始しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T16:40:00+09:00"
+      },
+      "created_at": "2026-08-24T16:40:00+09:00",
+      "updated_at": "2026-08-24T16:40:00+09:00"
     }
   ],
   "checks": [
@@ -8156,6 +8194,102 @@
       "blocking": false,
       "created_at": "2026-08-24T16:28:00+09:00",
       "updated_at": "2026-08-24T16:28:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK046-M1-EXPECTED-STAT-001",
+      "title": "TASK-BAL-046 M1 Character / Job Expected Stat Curve Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-046",
+      "status": "Passed",
+      "result": "PASS. Fresh Source GKS-B770/GA-B486.211 manifest 642/642. Formal 7 Stats × 7 Jobs × 50 Levels = 2450 Pure-Job rows, all exact analytical distributions. All Jobs have aptitude total 70 and multiset 7..13, so expected total growth is +7.0 stats/level and Lv50 expected total=413.0 for every Job. Job change preserves accumulated stats and only changes subsequent growth, so Current Job/Level alone does not determine accumulated stats; unrestricted history envelope is recorded and downstream M2 must keep growth_path_policy explicit. No balance winner/target judgment, Source/Game Data/Current active changes=0.",
+      "evidence": "TASK-BAL-046_COMPLETION-REPORT.json sha256=2eff9c200c3f7dac63379585699ebcec1e638a8873f38da72768d09569b11e77; TASK-BAL-046_M1_PURE-JOB-EXACT-DISTRIBUTIONS.json sha256=15a63981f5c29f6e54b6595875391cdb28c4beaf57f6e341b79400e55d9976ed; TASK-BAL-046_M1_JOB-HISTORY-ENVELOPE.csv sha256=7269897a435b90a9ac8972951e43a68955570da6aebe8be7dcb687811fa2881a",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T16:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T16:32:00+09:00",
+        "reason": "All TASK-BAL-046 M1 required outputs and path-dependence diagnostics produced.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T16:32:00+09:00",
+      "updated_at": "2026-08-24T16:40:00+09:00",
+      "superseded_by_check_id": "CHK-BAL-TASK046-CORR-001",
+      "current_authority_valid": false
+    },
+    {
+      "id": "CHK-BAL-TASK046-AUTHORITY-MISMATCH-001",
+      "title": "TASK-BAL-046 M1 Job growth authority mismatch",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-046",
+      "status": "Failed",
+      "result": "The prior M1 run used Current Export historical 70-point Job growth values. Human Approved authority requires the 60-point seed and explicitly says the old 70-point table is Historical Baseline. Prior M1 Balance evidence is invalidated.",
+      "evidence": "TASK-BAL-046-CORR-001_SUPERSESSION.json sha256=2c96e48ea20590b82b7c3570906b9af0b46aa78d06930754fc359338c984637d; development-project_DEV-V9-REORG-019(1).json sha256=49c818fb35665e9b06513d37b17aa1e07f76e2bdc4876bee0121dc448ac72df4",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T16:40:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-TASK046-CORR-001",
+        "resolved_at": "2026-08-24T16:40:00+09:00",
+        "reason": "PASS. Human Approved 60-point Job growth seed applied to all 7 Jobs and 7 formal Stats over Levels 1-50. 2450 Pure-Job rows and 2450 history-envelope rows produced by exact analytical distribution. Expected total growth is +6.0 stats/level and Lv50 expected total=364.0 for every Pure-Job baseline. No cross-stat total quantiles were asserted because independence is not explicit in authority. Current Export remains an implementation mismatch and was not used as Balance authority.",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T16:40:00+09:00",
+      "updated_at": "2026-08-24T16:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK046-CORR-001",
+      "title": "TASK-BAL-046 corrected M1 Character / Job Expected Stat Curve Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-046-CORR-001",
+      "status": "Passed",
+      "result": "PASS. Human Approved 60-point Job growth seed applied to all 7 Jobs and 7 formal Stats over Levels 1-50. 2450 Pure-Job rows and 2450 history-envelope rows produced by exact analytical distribution. Expected total growth is +6.0 stats/level and Lv50 expected total=364.0 for every Pure-Job baseline. No cross-stat total quantiles were asserted because independence is not explicit in authority. Current Export remains an implementation mismatch and was not used as Balance authority.",
+      "evidence": "TASK-BAL-046-CORR-001_COMPLETION-REPORT.json sha256=662704ffa625a9520fb5e87b71576c7f2e41d8800b45b99f9f8d13bf16cf4162; TASK-BAL-046-CORR-001_M1_PURE-JOB-EXACT-DISTRIBUTIONS.json sha256=9729ecb44301d6b85b2580af6a2c36299ac6598aff22dc3eff40eb844c9b0922; TASK-BAL-046-CORR-001_AUTHORITY-CONTRACT.json sha256=e996161c59b8f026681f00f10951f7e08a5976f1f95f2c22b088b1d1e6dfc28f",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T16:40:00+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-TASK046-AUTHORITY-MISMATCH-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T16:40:00+09:00",
+        "reason": "Corrected authority and recalculation completed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T16:40:00+09:00",
+      "updated_at": "2026-08-24T16:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-JOB-DATA-IMPLEMENTATION-MISMATCH-001",
+      "title": "Current Job Export does not match Human Approved Balance seed",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Failed",
+      "result": "SYS-BAL-CHAR_JOB implementation/data verification mismatch: Fresh GKS-B770/GA-B486.211 Export/master/jobs.json is still the historical 70-point table; 7/7 approved Jobs mismatch and Hunter is exported under old name 弓兵. This does not change M1 analytical authority but must be resolved before Product/Runtime conformance/promotion. The Check itself is Project-targeted because Development Check schema uses Project/Task targets; SYS-BAL-CHAR_JOB remains the affected System Node context.",
+      "evidence": "TASK-BAL-046-CORR-001_CURRENT-IMPLEMENTATION-MISMATCH.json sha256=205bb63390f7627bca84ef7e83d81d1e9ec3c3ba14f3fd3426c9969d8a511e19",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T16:40:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T16:40:00+09:00",
+      "updated_at": "2026-08-24T16:53:00+09:00"
     }
   ],
   "workflow": {
@@ -8627,6 +8761,30 @@
       "task_id": "TASK-BAL-045",
       "created_at": "2026-08-24T16:28:00+09:00",
       "updated_at": "2026-08-24T16:28:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK046-M1-EXPECTED-STAT-001",
+      "title": "TASK-BAL-046 M1 Character / Job Expected Stat Curve完了",
+      "summary": "Human再開承認後、Fresh Current SourceからFormal 7 Stats、7 Jobs、Level1-50、FORMAL-GROWTH-DATA-1を読み、Pure-Job 2450 stat-level rowsをMonte Carloなしのexact binomial分布として算出。適性7..13の期待成長は+0.7..+1.3/level。全Jobは適性値合計70かつ7..13を1回ずつ持つため、期待総Stat増加は全Job+7.0/level、Lv50期待総Stats=413.0で一致。Job Changeは蓄積Statsを再計算せず次回以降の成長だけ変更するため、Current Job/LevelだけではStatsを一意に決められない。Current sourceにはPlayer Job-choice確率Modelが無いため任意Job履歴のquantileは捏造せず、Pure-Job exact distributionとunrestricted formal-history expected envelopeを分離した。Source/Game Data/Current active/Gameplay値変更0。",
+      "task_id": "TASK-BAL-046",
+      "created_at": "2026-08-24T16:32:00+09:00",
+      "updated_at": "2026-08-24T16:32:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK046-CORR-001",
+      "title": "TASK-BAL-046 Authority correction: Human Approved 60-point Job growthでM1再計算",
+      "summary": "Human指摘と参考資料により、旧M1がCurrent ExportのHistorical total-70 Job tableを誤ってBalance authorityとして使用していたことを確認。 旧EvidenceをSuperseded/Invalidatedとし、Human Approved total-60 Job growth seedと一般成長式で7 Job×Lv1-50×7 Statsをexact再計算。 期待総成長は+6.0/level、Lv50期待総Stats=364.0。Current Exportは7/7 Job mismatchで狩人名も弓兵のままのためImplementation mismatchとして別記録。 Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-046-CORR-001",
+      "created_at": "2026-08-24T16:40:00+09:00",
+      "updated_at": "2026-08-24T16:40:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK046-CORR-001-CHECK-TARGET-SCHEMA-FIX",
+      "title": "TASK-BAL-046-CORR-001 Development JSON Check target schema修正",
+      "summary": "Studio統合時にCHK-BAL-JOB-DATA-IMPLEMENTATION-MISMATCH-001がSystem targetを使用していたため拒否された。Check targetをProject / DEV-V9-BALANCE-001へ修正し、affected System Node SYS-BAL-CHAR_JOBはresult本文で保持。全checksをProject/Task target整合、Task参照存在、resolves_check_ids存在について再監査しPASS。Gameplay/Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-046-CORR-001",
+      "created_at": "2026-08-24T16:53:00+09:00",
+      "updated_at": "2026-08-24T16:53:00+09:00"
     }
   ],
   "authority": {
