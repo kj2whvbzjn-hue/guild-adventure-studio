@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T11:13:12.877Z"
+    "updated_at": "2026-08-24T11:22:30.936Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-071-CORR-001 Bare Player correction PASS; TASK-BAL-072 Monster Core start approval wait",
-    "goal": "Corrected Bare Player reference is frozen: 剣士 uses 大剣 with Current formal STR×2 two-hand requirement across Lv1-50; other Jobs retain prior reference. Next is TASK-BAL-072 Monster Core using the correction artifact. Do not start TASK-BAL-072 until separate Human start approval."
+    "work_box_id": "BOX-V9-BAL-PLAYER-001",
+    "theme": "TASK-BAL-071-CORR-002 Multi-Loadout Issue Gate; dual-wield/shield correction decision wait",
+    "goal": "Do not start TASK-BAL-072. Preserve swordsman greatsword/two-hand reference and hunter bow availability, but resolve Current same-ID dual-wield representation and shield contribution semantics before freezing Multi-Loadout Bare Player Reference. No Source correction is authorized in this run."
   },
   "project_rules": [
     {
@@ -310,12 +310,12 @@
   "source_baseline": {
     "studio_build": "GKS-B771",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260824-104240).zip",
-    "source_role": "fresh_GKS-B771_human_applied_TASK-BAL-070_verified_TASK-BAL-071_baseline",
-    "recorded_at": "2026-08-24T19:42:00+09:00",
+    "source_label": "guild-adventure-studio-sub(20260824-111459).zip",
+    "source_role": "fresh_GKS-B771_current_canonical_project_TASK-BAL-071-CORR-002_issue_gate_baseline",
+    "recorded_at": "2026-08-24T20:15:00+09:00",
     "package_manifest_sha256": "a60ed7082fb7d7c19b1c2a9ff8e685a8ae0b8cba09a1813464173335c5604347",
-    "source_tree_sha256": "0bef3a42fe5e22590c54b371c30b0ad2962ac27b82f43865b311f46a07f505ba",
-    "source_zip_sha256": "cc2664fac67492a1e20ae7326109c13d85887d3db020dc6f3cea686c1e903c12"
+    "source_tree_sha256": "196b4cc9e6d06957cd50a7e899678d8c1a4978d36b7c3541c2dca371e19ae8e2",
+    "source_zip_sha256": "fc661cea5dd8300ada916678f289bf7bf1a502a6ea1224a40e8b6c0c61aa9cff"
   },
   "lifecycle": {
     "status": "Active",
@@ -1107,6 +1107,21 @@
       "artifact_note": "Development Project JSON embedded Zero-base R5 plan",
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-010",
+      "title": "Bare Player Multi-Loadoutで二刀流同一IDと盾ContributionのCurrent Gapを検出",
+      "status": "Open",
+      "summary": "TASK-BAL-071-CORR-002実行中に、盗賊同一武器二刀流と騎士片手剣+盾をCurrent Runtimeへ正しく表現できないBlocking Gapを検出したためIssue Gate停止。",
+      "body": "Problem 1 — 同一Equipment ID二刀流の表現衝突:\n- Current Saveのweapon1/weapon2はEquipment master ID文字列を保持する。\n- game/assets/js/app-runtime.js twoHandedWeaponRef() は weapon1===weapon2 を両手持ちと判定する。\n- characterEquipmentEntries() は同一IDを1件へ畳み、equipmentBonus()も1武器分だけContributionを加算する。\n- よって短剣EQP-xxxxを2個所持してweapon1/weapon2へ同じmaster IDで装備しても、短剣×2ではなく両手持ち1本として扱われる。片手剣×2も同じ。\nImpact: 盗賊二刀流をMonster Core入力として正規Runtime再現できず、二刀流Attack/Accuracy/Crit等を推測加算してReference化できない。\n\nProblem 2 — 盾のCurrent Contribution意味が未成立:\n- P1 Equipment Generator / EQUIPMENT-BASE-V2では「盾」はweapon base_item_typeで、iLv1盾は required_str=6/required_dex=3/required_int=1, attack=12, accuracy=6, magic_weapon_bonus=6, base_critical_rate=0.05。\n- hp_bonus/evasion/resistance等の盾防御ContributionはCurrent P1 recordに存在しない。\n- Runtimeでは盾もweapon slotへ入り、片手剣+盾は2つのweapon Contributionを単純加算する。\nImpact: 騎士Referenceを片手剣+盾にすると「防御型」ではなく攻撃/Accuracy/Crit等を二重加算するLoadoutになり、Monster Core基準を歪める。\n\nConfirmed non-blocking observation — 狩人の弓:\n- 弓はCurrent P1に正式weapon recordがあり、Basic Combat contribution/要求判定のReferenceとして使用可能。\n- iLv1弓は短剣と同じrequirement/performance係数(STR3/DEX6/INT1, Attack6, Accuracy12, Magic3, Crit5%)。Range固有戦闘効果は本Taskでは推測しない。\n\nCorrection options:\nA. 推奨: weapon1/weapon2のmaster ID一致を両手判定に使わず、両手占有状態を明示的に保持できるCurrent正規表現へ改修し、同一master IDの複数個体を二刀流可能にする。Save/Inventory表現との整合も同時に定義する。\nB. 二刀流Referenceだけ異なるiLv/異なる武器IDで代替する。これは短剣×2/片手剣×2の要求を満たさず、Balance Referenceとして非推奨。\nC. AI側で2本分を手計算する。Runtime非再現なので禁止。\nShield options: Current正式Shield defense contributionをSpecification/Equipment ownerで確定してGenerator→Contribution→Runtimeへ接続するか、盾の正式役割が確定するまで騎士shield ReferenceをDeferredにする。\n\nRecommended order: 1) 二刀流/両手占有のCurrent表現を確定・Source correction、2) Shield正式Contributionを確定/実装、3) Fresh Sourceで再検証、4) TASK-BAL-071-CORR-002を再開してMulti-Loadout Freeze、5) TASK-BAL-072へ進む。",
+      "open_questions": "二刀流の同一master Equipment 2個を識別する正規Save/Inventory表現、およびShieldの正式防御Contributionをどう定義/実装するか。",
+      "conclusion": "Issue Gate open. HumanがCorrection方針を承認するまでTASK-BAL-071-CORR-002/TASK-BAL-072を進めない。",
+      "related_discussion_ids": [
+        "DISC-BAL-009"
+      ],
+      "artifact_note": "Development Project JSON only; no redundant external evidence artifact.",
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
     }
   ],
   "decisions": [
@@ -1524,6 +1539,20 @@
       "approved_at": "2026-08-24T20:05:00+09:00",
       "created_at": "2026-08-24T20:05:00+09:00",
       "updated_at": "2026-08-24T20:05:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-BARE-PLAYER-MULTILOADOUT-001",
+      "title": "Monster Core入力はJobごとの代表戦闘Loadoutを複数検討する",
+      "status": "Approved",
+      "text": "TASK-BAL-071 Bare Playerを1職1装備形に固定せず、Currentで成立する代表戦闘Loadoutを複数持たせる。最低検討対象は、剣士=大剣両手を維持、騎士=片手剣+盾、盗賊=短剣×2および片手剣×2、狩人=弓系。Monster Coreは単一装備形だけへ合わせず、代表Loadout幅を入力にする。これはProductの職業別装備制限やSkill/Experience Targetの確定ではない。",
+      "rationale": "Human instruction 2026-08-24: 二刀流、盗賊の短剣×2/片手剣×2、騎士の片手剣+盾、狩人の弓等も検討する。",
+      "source_discussion_ids": [
+        "DISC-BAL-010"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T20:15:00+09:00",
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
     }
   ],
   "specifications": [
@@ -6150,7 +6179,7 @@
       "status": "Blocked",
       "execution_order": 251,
       "depends_on": [
-        "TASK-BAL-071-CORR-001"
+        "TASK-BAL-071-CORR-002"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Skill/特殊AI/UtilityなしのMonster Level×JobがBare Playerに対してどの基礎HP/Attack/Defense関係を持つか。\n- Required Inputs: Bare Player Reference、Current Monster Level/Job coefficients/owner contract。\n- Measurements: HP/Attack/Defense系、basic damage exchange、hit/crit/evasion/resistance、Level slope、Job spread。\n- Required Numeric Output: Monster Core Table。Baseline→Candidate→再計算→数学Gate→Freezeを完了する。\n- Gate: Level逆行、Job係数暴走、基礎交換比の不連続を排除。Skill/AIで補正して隠さない。\n- Downstream: TASK-BAL-073 Core Enemy Budget。Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6161,7 +6190,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T20:05:00+09:00"
+      "updated_at": "2026-08-24T20:15:00+09:00"
     },
     {
       "id": "TASK-BAL-073",
@@ -6483,9 +6512,30 @@
         "by": "Human",
         "at": "2026-08-24T20:05:00+09:00"
       },
-      "result_scope": "R5_BARE_PLAYER_REFERENCE_CORRECTED; JOB-0001 剣士 50 rows use 大剣 with formal STR×2 two-hand requirement; same iLv/equipability sequence as prior sword reference, higher greatsword Attack contribution; other 300 rows unchanged; no Source/Game Data/Current active change.",
+      "result_scope": "R5_BARE_PLAYER_SINGLE_REFERENCE_CORRECTED_BUT_SUPERSEDED_FOR_DOWNSTREAM_BY_OPEN_MULTI_LOADOUT_CORRECTION; JOB-0001 greatsword/two-hand reference remains valid as one loadout, but TASK-BAL-071-CORR-002 must resolve dual-wield/shield gaps before Monster Core.",
       "created_at": "2026-08-24T20:05:00+09:00",
-      "updated_at": "2026-08-24T20:05:00+09:00"
+      "updated_at": "2026-08-24T20:15:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-071-CORR-002",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "R5-P4 Bare Player Multi-Loadout Reference補正",
+      "status": "Blocked",
+      "execution_order": 250,
+      "depends_on": [
+        "TASK-BAL-071-CORR-001"
+      ],
+      "acceptance_criteria": "- Human指示に基づき1職1Referenceを廃止し、Jobごとの代表合法Loadoutを複数検討する。\n- 剣士大剣両手、騎士片手剣+盾、盗賊短剣×2/片手剣×2、狩人弓系を最低検討対象とする。\n- Current Equipment slot/requirement/contribution contractだけを使用し、存在しない二刀流/盾性能を推測しない。\n- 各Loadoutのweapon1/weapon2 binding、hands mode、装備可能性、Basic Combat contributionを再現可能にする。\n- 新規Current実装Gapを検出した場合はRULE-BAL-ISSUE-GATE-001で停止し、同runでSource修正しない。\n- Source/Game Data/Current activeを変更しない。\n- 完了後だけTASK-BAL-072へMulti-Loadout Referenceを渡す。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T20:15:00+09:00"
+      },
+      "result_scope": "ISSUE_GATE_STOPPED. Multi-loadout direction is approved, but Current Runtime cannot distinguish same-equipment-ID dual wield from two-hand, and P1/current shield record behaves as an offensive weapon contribution rather than an established defensive shield. No Multi-Loadout Reference was frozen; no Source/Game Data/Current active change.",
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
     }
   ],
   "checks": [
@@ -9358,6 +9408,75 @@
       "blocking": false,
       "created_at": "2026-08-24T20:05:00+09:00",
       "updated_at": "2026-08-24T20:05:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-R5-DUALWIELD-SAME-EQUIPMENT-ID-001",
+      "title": "R5 Multi-Loadout same-ID dual-wield representation gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-002",
+      "status": "Failed",
+      "result": "FAIL / BLOCKING. Current game Runtime identifies weapon1===weapon2 as a two-handed weapon. characterEquipmentEntries collapses that pair to one entry and equipmentBonus counts the contribution once. Therefore two copies of the same dagger/sword master ID cannot be represented as dual wield; the exact Human-requested 短剣×2/片手剣×2 reference is not runtime-reproducible.",
+      "evidence": "Fresh GKS-B771 game/assets/js/app-runtime.js: twoHandedWeaponRef, characterEquipmentEntries, equipmentBonus; source zip sha256=fc661cea5dd8300ada916678f289bf7bf1a502a6ea1224a40e8b6c0c61aa9cff",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T20:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-R5-SHIELD-CONTRIBUTION-SEMANTICS-001",
+      "title": "R5 Knight sword+shield contribution semantics gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-002",
+      "status": "Failed",
+      "result": "FAIL / BLOCKING. Current P1 Equipment record treats 盾 as a weapon with offensive fields. At iLv1: required STR6/DEX3/INT1, attack12, accuracy6, magic_weapon_bonus6, base_critical_rate5%; no shield HP/evasion/resistance contribution exists. Runtime places it in a weapon slot and sums its offensive contribution with the sword. A knight sword+shield defensive reference therefore cannot be inferred from Current data.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip p1-equipment-static-baseline-full.json + Fresh GKS-B771 equipment runtime",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T20:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-R5-HUNTER-BOW-REFERENCE-001",
+      "title": "R5 Hunter bow Bare Player reference availability",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-002",
+      "status": "Passed",
+      "result": "PASS / NON-BLOCKING. Current P1 contains bow BaseItems iLv1..11 and Current Runtime can equip/evaluate them as weapon records. Bow iLv1 requirement/performance is STR3/DEX6/INT1, Attack6, Accuracy12, Magic Weapon Bonus3, Crit5%, matching dagger coefficients. Range-specific mechanics are not inferred in Bare Player scope.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-001_P1-EVIDENCE.zip p1-equipment-static-baseline-full.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T20:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T20:15:00+09:00",
+        "reason": "Current P1/Runtime path exists for bow basic contribution reference.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
     }
   ],
   "workflow": {
@@ -9949,6 +10068,14 @@
       "task_id": "TASK-BAL-071-CORR-001",
       "created_at": "2026-08-24T20:05:00+09:00",
       "updated_at": "2026-08-24T20:05:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK071-CORR-002-ISSUE-GATE-001",
+      "title": "TASK-BAL-071-CORR-002 Multi-Loadout補正をIssue Gateで停止",
+      "summary": "Human指示でBare PlayerをMulti-Loadout化し、剣士大剣、騎士片手剣+盾、盗賊短剣×2/片手剣×2、狩人弓系を検討開始。Fresh GKS-B771で、同一Equipment master IDをweapon1/weapon2へ入れると両手持ち扱いとなりContributionが1本分に畳まれるため、同一武器二刀流が正規Runtime再現不能と判明。またP1の盾はweapon扱いでAttack/Accuracy/Magic/Critを持ち、防御Contributionが未定義のため、騎士片手剣+盾を防御型基準として使用不可。狩人弓はCurrent record/requirement/basic contribution pathを確認できた。RULE-BAL-ISSUE-GATE-001に従いReference Freeze/Source修正をせず停止。Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-071-CORR-002",
+      "created_at": "2026-08-24T20:15:00+09:00",
+      "updated_at": "2026-08-24T20:15:00+09:00"
     }
   ],
   "authority": {
