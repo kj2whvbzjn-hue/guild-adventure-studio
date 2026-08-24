@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T06:24:38.052Z"
+    "updated_at": "2026-08-24T06:54:26.985Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
-    "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-039 Refine1000 AI_REFERENCE PASS; Human real-device TASK-BAL-040 start approval wait",
-    "goal": "TASK-BAL-039 completed using only Screen PASS candidates. Candidate and roster resources are byte-identical to TASK-BAL-036 Fresh-Rebase Screen input (28/28); Refine uses a new disjoint paired seed set 2039001..2040000. AI Formal executor completed 8 jobs / 8,000 trials with jobs_failed=0, error_count=0, partial=false, formal binding expected=actual, formal_only=true, legacy_fallback_used=false, and exact deterministic replay 8,000/8,000 fingerprints. Enhanced reference metrics include damage/tick, damage/activation, damage/successful-hit, hit rate and crit rate. This remains AI_REFERENCE only. TASK-BAL-040 is blocked pending separate Human approval for manual real-device execution. Source/Game Data/Current active/Candidate numeric changes=0."
+    "work_box_id": "BOX-V9-BAL-DESIGN-001",
+    "theme": "Measurement-first全Balance Test再設計Draft完了; Human Plan Review待ち",
+    "goal": "TASK-BAL-041以降の旧Generic Candidate/Final-Holdout系列を停止し、Character/Job expected stats→Equipment equipability→iLv performance→Player Power→Skill/Passive/Formula/AI→Monster/Enemy→Difficulty target→Quest/Progression/Reward/Economy→Stone/Guild→Cross-Systemの依存順へ全Testを再設計した。TASK-BAL-036〜040はMeasurement Pipeline Qualification Evidenceとして保持しBalance winner根拠には使わない。次はTASK-BAL-DESIGN-008 Human Plan Reviewのみ。承認前にTASK-BAL-045以降を開始しない。"
   },
   "project_rules": [
     {
@@ -251,6 +251,15 @@
       "source_id": "conversation:2026-08-24 no Playwright human real-device verification",
       "created_at": "2026-08-24T13:30:00+09:00",
       "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-MEASUREMENT-PURPOSE-001",
+      "text": "Balance実行Testは、実行前に必ず (1)何を決めるためのTestか、(2)入力として確定済みでなければならない数値、(3)測定するKPI/分布、(4)算出するBalance数値/表、(5)合否またはHuman判断が必要なTarget、(6)次工程へ渡すOutput を明示する。依存する基準値が未確定のままGenericな勝率比較・Candidate順位付けを行わない。100/1,000/10,000 seedは目的ではなく、対象KPIの不確実性に応じた測定手段としてのみ使用する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 measurement-first full test redesign",
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "source_baseline": {
@@ -921,6 +930,22 @@
       "artifact_note": "TASK-BAL-DESIGN-005 handoff/reuse correction and execution redesign draft",
       "created_at": "2026-08-22T14:12:00+09:00",
       "updated_at": "2026-08-22T14:12:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-004",
+      "title": "Balance Testの目的欠落と依存順序逆転を是正する",
+      "status": "Resolved",
+      "summary": "Humanレビューで、P4 Generic Candidate LoopはJob期待Stats・装備可能Level・Player Power基準を先に確定しておらず、武器なし対iLv5等の比較からゲーム制作に必要な係数妥当性を判断できないと判明した。",
+      "body": "既存System Mapは本来 Job→Stats→Equipment→Passive→Skill→Formula→Enemy→Quest→Reward→成長の順を持っていたが、Execution TaskがCombat Candidate Loopを先行させていた。Humanは、まずJob補正から期待Statsを算出し、Equipment requirementから予測装備可能Levelを出し、その時点のPlayer Powerを確定してからMonster妥当性を評価するよう指示した。さらに全Testについてゲーム制作に必要な数値と測定目的を明示するよう要求した。",
+      "open_questions": "- M12でNormal/Elite/Boss/Stoneの数値Target Bandをどこに置くかはBaseline分布取得後にHuman Reviewする。\n- Product Contentの実データが不足するDomainはfixtureとProduct readinessを分離してGateする。",
+      "conclusion": "Measurement-first Test Planへ全面再設計する。旧Generic Final/Holdoutを停止し、既存P4 Evidenceは測定基盤Qualificationとして保持する。",
+      "related_discussion_ids": [
+        "DISC-BAL-002",
+        "DISC-BAL-003"
+      ],
+      "artifact_note": "Human-directed measurement-first redesign 2026-08-24",
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "decisions": [
@@ -1250,6 +1275,30 @@
       "approved_at": "2026-08-24T13:30:00+09:00",
       "created_at": "2026-08-24T13:30:00+09:00",
       "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-MEASUREMENT-ORDER-001",
+      "title": "Balance Testを依存数値順のMeasurement-first方式へ再設計する",
+      "status": "Approved",
+      "text": "Balance調整の正本順序を Character/Job期待Stats → Equipment requirementと予測装備可能Level → Equipment iLv性能Curve → Player Level Power Curve → Skill/Passive/MOD/Rarity/Formula/AI寄与 → Monster/Enemy power Curve → Normal/Elite/Boss基準 → Encounter/Quest → EXP/Acquisition → Reward/Loot/Economy → Stone/Guild/Presentation → Cross-System Holdout → Product/Runtime/Promotion とする。後段のTestは前段で確定した数値表を入力にし、何を求めるTestかを明示する。",
+      "rationale": "Humanが、武器なし対iLv5等の単発比較ではゲーム制作に必要な数値が定まらず、まずJob補正→期待Stats→装備閾値→予測装備可能Level→Player強度→Monster妥当性の順で設計すべきと明示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T15:45:00+09:00",
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P4-EVIDENCE-RECLASSIFY-001",
+      "title": "TASK-BAL-036〜040をBalance採否ではなく測定基盤Qualification Evidenceとして保持する",
+      "status": "Approved",
+      "text": "既存TASK-BAL-036〜040のScreen100/Refine1000は、Formal Package実行、Damage/KPI Evidence取得、AI/Human exact input・replay・formal evidence一致を証明するMeasurement Pipeline Qualificationとして保持する。Character/Job期待Stats、Equipment eligibility、Player Level Power Curveを入力にしていないため、Weapon/Armor/Skill/Passive等のBalance採否・Final winner決定根拠には使用しない。TASK-BAL-041〜044の旧Generic Final/Holdout系列は新Measurement-first Plan承認後も実行しない。",
+      "rationale": "Humanが現在のテストにはゲーム制作上の目的値がなく、依存関係を踏まえて全テストを再設計するよう指示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T15:45:00+09:00",
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "specifications": [
@@ -1467,6 +1516,35 @@
       "approved_at": "2026-08-24T13:30:00+09:00",
       "created_at": "2026-08-24T13:30:00+09:00",
       "updated_at": "2026-08-24T13:30:00+09:00"
+    },
+    {
+      "id": "SPEC-BAL-MEASUREMENT-REDESIGN-001",
+      "title": "Measurement-first Game Balance Test Master Plan",
+      "status": "Draft",
+      "summary": "Generic Candidate比較を廃止し、Job期待Stats→Equipment装備可能Level→iLv性能→Player Power→Monster/Quest/Economyの依存順で、各TestのDecision Question・必要入力・測定KPI・必要数値Output・Gateを明示する全体再設計Draft。",
+      "body": "# Measurement-first Game Balance Test Master Plan\n\n## 0. 目的\n\nこの計画の目的は「候補を順位付けすること」ではない。\n**ゲームを成立させるために必要な基準数値を、依存関係順に確定すること**である。\n\n全てのTestは次の6項目を持つ。\n\n1. **Decision Question** — 何を決めるためのTestか\n2. **Required Inputs** — 先に確定していなければならない数値\n3. **Measurements** — 実際に測るKPI / 分布\n4. **Required Numeric Output** — ゲーム制作へ渡す数値表・Curve\n5. **Gate / Target Authority** — AIで決められるか、Human Target承認が必要か\n6. **Downstream Consumer** — 次のどのTestがこの数値を使うか\n\nGenericな「強い候補を探す」Testは禁止する。\n100 / 1,000 / 10,000 seedはStage名ではなく、必要な統計精度を得るための手段として使う。\n\n---\n\n## 1. 数値の依存関係\n\n`Job Growth`\n→ `Character Levelごとの期待Stats分布`\n→ `Equipment Requirement`\n→ `予測装備可能Level`\n→ `Equipment iLv性能Curve`\n→ `Player Level Power Curve`\n→ `Skill / Passive / MOD / Rarity / Formula / AI寄与`\n→ `Canonical Player Build`\n→ `Monster Level / Job Curve`\n→ `Enemy Budget conversion`\n→ `Normal / Elite / Boss Target Band`\n→ `Encounter / Quest Attrition`\n→ `EXP / Acquisition Pacing`\n→ `Reward / Loot / Economy`\n→ `Stone / Guild`\n→ `Cross-System Campaign`\n→ `Product Candidate / Runtime / Promotion`\n\n後段から前段へ数値を逆算して正本化しない。\n\n---\n\n## 2. ゲームを作るために必要な主要数値表\n\n### A. Character / Job Expected Stat Table\n必要列:\n- Job ID\n- Character Level 1..Current Max\n- STR / DEX / INT / VIT / MND / AGI / その他Current正式Stat\n- mean / p10 / p50 / p90\n- level-to-level expected gain\n- growth variance / tail\n- Job変更履歴を使う場合は履歴別checkpoint\n\n用途:\nEquipment requirement、Player Power、Skill条件、Monster比較の基準。\n\n### B. Equipment Equipability Matrix\n必要列:\n- Equipment kind/type/slot\n- iLv\n- required STR/DEX/INT等\n- Jobごとの `P(equippable | Character Level)`\n- median equip level (>=50%)\n- safe equip level (>=90%)\n- never/late reachability flag\n\n用途:\n「iLv5装備を何LevelのPlayerが使う想定か」を定義する。\n武器なし vs iLv5をLevel無視で比較しない。\n\n### C. Equipment Power Curve\nWeapon:\n- iLv1..11各段階の Attack / Accuracy / Magic bonus / Critical\n- Damage per successful hit\n- expected damage per action\n- damage per tick\n- Hit / Crit\n- TTK\n- adjacent iLv absolute gain\n- **adjacent iLv percent gain**\n- iLv1→11 cumulative gain\n\nArmor/Accessory:\n- HP/MP/Evasion等Contribution\n- damage taken / EHP / survival\n- adjacent iLv EHP gain\n- slot/category contribution\n\n縦比較: 同一typeのiLv1→11\n横比較: 同一iLvの全武器type / armor category / slot\n\n### D. Player Level Power Curve\n各Levelまたは正式checkpointごと:\n- realistic Job Stat\n- realistic equippable Equipment iLv\n- Basic attack output\n- DPS / damage per tick\n- HPS\n- EHP\n- Hit / Crit / Evasion / Resistance\n- MP pool / sustainable turns\n- representative Skill/Passive/AI込みBuild power\n\n用途:\nMonster/Questの「相手となるPlayer」を固定する。\n\n### E. Skill Efficiency Table\n- Skill archetype / level / budget / strength\n- damage/heal/utility per use\n- damage/heal per tick\n- MP efficiency\n- cooldown/cast occupancy\n- target-count efficiency\n- status contribution\n- basic/reference actionに対するmarginal gain\n- zero-use / dead-option rate\n\n### F. Passive / MOD / Rarity / Unique Contribution Table\n- condition activation rate\n- marginal DPS/HPS/EHP/Hit/Resource gain\n- Tier-to-Tier slope\n- MOD count interaction\n- rarity power delta\n- Unique scalar powerとstrategic utilityを分離\n- runaway / dead / dominance flag\n\n### G. Battle Formula / Status / Resource Sensitivity Table\nCurrent formula topologyは固定し、数値Parameterだけを測る。\n- Attack/Skill multiplier elasticity\n- Accuracy/Evasion→Hit response\n- Critical rate/damage response\n- Resistance response\n- Status duration / stack / DOT-HOT\n- Shield\n- MP / Cooldown / Cast\n- cap/floor/clamp saturation\n- small parameter change → output change\n\n### H. Formal AI Performance Extraction Table\n- same BuildでAIだけ変更\n- valid action rate\n- idle/waste\n- target quality\n- MP/resource waste\n- performance extraction ratio\n- reference AIを後続Testで固定\n\n### I. Monster / Enemy Power Table\n- Monster Level\n- Monster Job\n- HP / Attack / Defense / Skill / AI / Utility Budget\n- DPS / EHP / Hit / Crit / utility\n- Player Power ratio\n- budget-to-output conversion\n\n### J. Difficulty Target Table\nHuman Approved Target Experienceを数値Bandへ落とす。\nAIがBaseline分布からBand候補を提示し、Humanが承認してからEnemy/Quest係数調整を開始する。\n\n必要候補:\n- Normal: success / TTK / survivor / resource attrition band\n- Elite: preparation-change gain / success / TTK band\n- Boss: preparation requirement / resource / failure risk\n- Stone: endgame success / failure / reward delta\n\nこのBandをHuman承認する前に「敵が妥当」と宣言しない。\n\n### K. Quest / Progression / Economy Tables\nQuest:\n- battles/run\n- cumulative HP/MP attrition\n- success/failure\n- duration\n- effective enemy budget\n\nProgression:\n- Quest/時間 per Level\n- early/mid/late interval\n- equipment unlock timing\n- Skill/Passive unlock timing\n\nReward/Economy:\n- reward/time\n- failure-adjusted EV\n- Gold/material source-sink\n- equipment replacement interval\n- rarity acquisition time\n- inventory/warehouse pressure\n\n---\n\n## 3. Test Phase\n\n### M0 — Measurement Contract / Numeric Registry\n目的:\n全Domainについて「必要数値」と「決定Question」を登録し、TargetのないTestを禁止する。\n\n### M1 — Character / Job Growth\n目的:\n各Job・各LevelでPlayerが実際に持つStats分布を確定する。\n\nCurrent authorityにある初期能力・最大Level・Job growth formulaを使用する。\n可能な項目は解析計算し、Random growthのquantileだけSeeded simulationで確認する。\n\n### M2 — Equipment Eligibility\n目的:\nEquipment iLvがCharacter progressionのどのLevel帯に対応するかを確定する。\n\n`requirement = iLv × requirement coefficient` とM1のStats分布を重ね、\n50% / 90% equip probability Levelを出す。\n\n### M3 — Equipment iLv Power\n目的:\n「1 iLv上がったら実戦性能が何%増えるか」を武器/防具/Accessoryで測る。\n\nCurrent P1 matrix:\n- Weapon 13 type × iLv1..11\n- Armor 3 category × 4 slot × iLv1..11\n- Accessory 3 type × iLv1..11\n\n武器なしは「装備開始時の寄与」別項目とし、iLv成長率へ混ぜない。\n\n### M4 — Player Level Power Curve\n目的:\nM1〜M3から「Level Xの現実的なPlayerの強さ」を作る。\n\nMonster TestはこのCurveなしに開始しない。\n\n### M5 — Skill\n目的:\nPlayer Level Powerに対しSkill Budget/Costがどの程度の性能差を作るか測る。\n\n### M6 — Passive / MOD / Rarity / Unique\n目的:\n常時/条件付き/Item modifierがPlayer Powerをどの程度動かすか測る。\n\n### M7 — Formula / Status / Resource\n目的:\n固定Formula topology内でBalance Parameterの感度・cap・dead zoneを測る。\n\n### M8 — AI\n目的:\n同じBuildからAIがどれだけ性能を引き出すかを測り、後続Monster/Quest Testのreference AIを固定する。\n\n### M9 — Canonical Player Builds\n目的:\nLevel帯ごとに複数の現実的Buildを固定し、Monster Testの入力集合を作る。\n単一Buildだけを基準にしない。\n\n### M10 — Monster Job / Stats\n目的:\nMonster Level×Job係数が、同Level Player Powerに対してどの相対性能になるか測る。\n\n### M11 — Enemy Budget\n目的:\nHP / Attack / Defense / Skill / AI / Utilityの各Budget 1点が実戦性能をどれだけ変えるか測る。\n\n### M12 — Difficulty Target Human Gate\n目的:\nNormal / Elite / Boss / Stoneについて「何を妥当と呼ぶか」を数値BandでHuman承認する。\nこのGate前にEnemy係数のwinnerを決定しない。\n\n### M13 — Enemy Calibration\n目的:\nApproved Target BandへMonster/Enemy Budgetを合わせる。\n\n### M14 — Formation / Party / Encounter Unit Test\n目的:\n1体だけでなく複数敵、party人数、fixed formation scaling、counter関係を確認する。\n\n### M15 — New Game Starter\n目的:\n開始時Party/Equipment/Skill/Goldで最初の適正Contentが成立するか測る。\n\n### M16 — Quest Attrition\n目的:\n単戦でなくQuest連戦として成功率、HP/MP消耗、時間、survivorを測る。\n\n### M17 — EXP / Acquisition\n目的:\nQuest出力を入力にLevel up、Equipment unlock、Skill/Passive acquisitionの時間軸を決める。\n\n### M18 — Reward / Loot\n目的:\n難度・時間・失敗Riskに対してDrop/Gold/Material/Equipment更新頻度が妥当か測る。\n\n### M19 — Economy / Inventory\n目的:\nGold/Material source-sink、売却、容量、overflow、保管負荷を測る。\n\n### M20 — Stone\n目的:\n完成Build向け高難度・高報酬EndgameとしてNormal endgameとの差を測る。\n\n### M21 — Guild\n目的:\nGuild Level/Unlock/Capacityが中長期progressionの節目として妥当か測る。\n\n### M22 — Presentation\n目的:\nBattle結果を変えず、effect duration/playback/readability等を調整する。\n\n### M23 — Full Campaign\n目的:\nNew Game→Level capまでPower/Equipment/Quest/Reward/Unlockが途切れず循環するか測る。\n\n### M24 — Holdout / Stress\n目的:\n未使用Seed/Build/Enemy/Questでoverfit、strict dominance、runaway、risk-free farm、extreme tailを検出する。\n\nHoldoutは「良いCandidateを探す場所」ではなく、\n既に決めたCandidateが未知条件でも壊れないことを確認する場所とする。\n\n---\n\n## 4. Trial Count Policy\n\n### Exact / analytical first\n式と入力が確定している項目は乱数Battleを使わずexact計算する。\n例:\n- Expected Job growth\n- Equipment requirement\n- adjacent iLv stat slope\n\n### Static enumeration\n合法な全type/iLv/slotを列挙できるものは全件測る。\nサンプル化しない。\n\n### Seeded stochastic measurement\nRandom growth / Battle / Reward等のみSeedを使う。\n\nTrial数は目的で変える。\n- smoke/validity: small deterministic set\n- distribution estimate: 必要精度に応じる\n- rare/tail: 発生率に応じて増やす\n- holdout: Candidate固定後の未使用集合\n\n従来の100→1,000→10,000を全Domainへ機械適用しない。\n\n---\n\n## 5. Existing Evidence Reclassification\n\nTASK-BAL-036〜040:\n- Formal Packageのinput/version binding\n- AI/Human Resultの再現一致\n- Damage/Hit/Hit rate等KPI取得可能性\n- 100/1,000 seed batch execution\n\nを証明した **Measurement Pipeline Qualification Evidence** として保持する。\n\nただし、\n- Job expected Stat\n- Equipment expected equip Level\n- Player Level Power\n- Level-matched Monster\nを入力にしていないため、現行Weapon/Armor/Skill/Passive値のBalance winner証拠にはしない。\n\n旧TASK-BAL-041〜044 Generic Final/Holdoutは実行しない。\n\n---\n\n## 6. Human Gate\n\nHuman判断が必要なもの:\n1. 本Measurement-first Planの承認\n2. Qualitative Target Experienceを数値Bandへ変換するM12\n3. Product Game Data Apply\n4. Current active Promotion\n5. AIで一意に決まらないGameplay方向\n\nAIが進めるもの:\n- Current formula/contractから一意に算出できるexpected value\n- full matrix生成\n- equip probability\n- sensitivity\n- distribution\n- candidate探索\n- regression\n- provenance/replay検証\n\n---\n\n## 7. 最終成果\n\n最終的に必要なのは「勝率ランキング」ではなく、次の一貫したGame Balance Modelである。\n\n`Character Level`\n→ `Expected Job Stats`\n→ `Expected Equip iLv`\n→ `Expected Player Power`\n→ `Expected Monster Power`\n→ `Quest Difficulty / Attrition`\n→ `EXP / Loot / Reward`\n→ `Next Character / Equipment Power`\n\nこのLoopがLevel 1からEndgameまで破綻せず、\nHuman Approved Target Experienceを満たすことを最終Goalとする。\n",
+      "decision_refs": [
+        "DEC-BAL-MEASUREMENT-ORDER-001",
+        "DEC-BAL-P4-EVIDENCE-RECLASSIFY-001",
+        "DEC-BAL-EXPERIENCE-001",
+        "DEC-BAL-FORMULA-BOUNDARY-001",
+        "DEC-BAL-PIPELINE-REUSE-001"
+      ],
+      "depends_on": [
+        "SPEC-BAL-SYSTEM-MAP-001",
+        "SPEC-BAL-EVAL-MATRIX-001",
+        "SPEC-BAL-SIMULATION-PLAN-001"
+      ],
+      "acceptance_criteria": "- 全主要DomainでDecision Question / Required Inputs / Measurements / Required Numeric Output / Gate / Downstream Consumerが定義されている。\n- Character/Job expected statsをEquipment/Monsterより先に確定する。\n- EquipmentはiLv1..11の縦Curveと同一iLv横比較を行い、adjacent iLv性能上昇率を出す。\n- Player Level Power CurveをMonster/Questの正式入力にする。\n- Difficultyの『妥当』はHuman承認済み数値Target Bandができるまで宣言しない。\n- 100/1,000/10,000 seedを目的化せず、KPI精度に応じて試行数を選ぶ。\n- TASK-BAL-036〜040は測定基盤Qualification Evidenceとして保持し、Balance winner根拠へ再利用しない。",
+      "system_node_id": "SYS-BAL-GAMEWIDE",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -4161,13 +4239,13 @@
     {
       "id": "TASK-BAL-005",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "P4 Formal Combat Candidate Loop（Human実機分割方式）を完了判定する",
+      "title": "旧計画・実行禁止: P4 Formal Combat Candidate Loop（Human実機分割方式）を完了判定する",
       "status": "Blocked",
       "execution_order": 220,
       "depends_on": [
         "TASK-BAL-044"
       ],
-      "acceptance_criteria": "- TASK-BAL-036〜044のScreen/Refine/Final-Holdout各工程が完了している。\n- 各StageでAI referenceとHuman実機ResultのBuild/Template/Package/Input/Seed/Job binding、JOB_ERROR、replay_fingerprint、formal evidenceを照合済みである。\n- Screen 100 → Refine 1,000 → Final/Holdout 10,000 disjoint seedを段階評価し、Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを保持し、Current activeへは昇格しない。\n- AI referenceだけをHuman実機PASSとして扱わない。Playwright/WebKit/browser automationをHuman実機確認の代替にしない。\n- 本Task開始前に修正後計画としてHuman明示承認を改めて得る。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- TASK-BAL-036〜044のScreen/Refine/Final-Holdout各工程が完了している。\n- 各StageでAI referenceとHuman実機ResultのBuild/Template/Package/Input/Seed/Job binding、JOB_ERROR、replay_fingerprint、formal evidenceを照合済みである。\n- Screen 100 → Refine 1,000 → Final/Holdout 10,000 disjoint seedを段階評価し、Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを保持し、Current activeへは昇格しない。\n- AI referenceだけをHuman実機PASSとして扱わない。Playwright/WebKit/browser automationをHuman実機確認の代替にしない。\n- 本Task開始前に修正後計画としてHuman明示承認を改めて得る。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -4176,18 +4254,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-006",
       "box_id": "BOX-V9-BAL-PLAYER-001",
-      "title": "P5 Character / Job / New Game / Progressionを検証する",
+      "title": "旧計画・実行禁止: P5 Character / Job / New Game / Progressionを検証する",
       "status": "Blocked",
       "execution_order": 300,
       "depends_on": [
         "TASK-BAL-005"
       ],
-      "acceptance_criteria": "- Approved Target Experienceに対しCharacter/Job growth、EXP curve、starter power、Equipment eligibility、Skill/Passive acquisitionをcampaign checkpointで評価する。\n- early/mid/late progression、required-stat到達、成長間隔、Build path差をSeeded simulationで比較する。\n- Config更新による既存Character/QuestRun/生成Itemの遡及再計算を行わない。\n- Product Game Dataを変更しない。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- Approved Target Experienceに対しCharacter/Job growth、EXP curve、starter power、Equipment eligibility、Skill/Passive acquisitionをcampaign checkpointで評価する。\n- early/mid/late progression、required-stat到達、成長間隔、Build path差をSeeded simulationで比較する。\n- Config更新による既存Character/QuestRun/生成Itemの遡及再計算を行わない。\n- Product Game Dataを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -4196,18 +4274,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-007",
       "box_id": "BOX-V9-BAL-WORLD-001",
-      "title": "P5 Quest / Encounter / Reward / Economy / Stone / Guildを検証する",
+      "title": "旧計画・実行禁止: P5 Quest / Encounter / Reward / Economy / Stone / Guildを検証する",
       "status": "Blocked",
       "execution_order": 310,
       "depends_on": [
         "TASK-BAL-006"
       ],
-      "acceptance_criteria": "- Quest/Encounter/Event/Reward/Drop/Economy/Guild/StoneをFormal Combat結果へ接続し、成功率・消耗・時間・reward/time・failure-adjusted EVを評価する。\n- Existing `adventure-reward-resolver.js`をSeeded Reward componentとして再利用する。\n- Lootは適度な更新、Stoneは高難度・高報酬Endgameかつ通常攻略非必須というApproved Experienceへ照合する。\n- Product Master / Current activeへ反映しない。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- Quest/Encounter/Event/Reward/Drop/Economy/Guild/StoneをFormal Combat結果へ接続し、成功率・消耗・時間・reward/time・failure-adjusted EVを評価する。\n- Existing `adventure-reward-resolver.js`をSeeded Reward componentとして再利用する。\n- Lootは適度な更新、Stoneは高難度・高報酬Endgameかつ通常攻略非必須というApproved Experienceへ照合する。\n- Product Master / Current activeへ反映しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -4216,18 +4294,18 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-008",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
-      "title": "P5 Cross-System / Meta Holdoutを検証する",
+      "title": "旧計画・実行禁止: P5 Cross-System / Meta Holdoutを検証する",
       "status": "Blocked",
       "execution_order": 320,
       "depends_on": [
         "TASK-BAL-007"
       ],
-      "acceptance_criteria": "- Job→Stats→Equipment→Passive→Skill→Formula→Enemy→Quest→Reward→成長の循環をholdout/stress partitionで横断評価する。\n- Build diversity、Pareto frontier、strict dominance、counter coverage、runaway interaction、極端Seed、risk-free farmを確認する。\n- Calibrationで使用したholdoutを再調整へ流用しない。\n- AIで一意に決まらず複数の妥当なGameplay方向が残る場合だけHuman Decisionへ上げる。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- Job→Stats→Equipment→Passive→Skill→Formula→Enemy→Quest→Reward→成長の循環をholdout/stress partitionで横断評価する。\n- Build diversity、Pareto frontier、strict dominance、counter coverage、runaway interaction、極端Seed、risk-free farmを確認する。\n- Calibrationで使用したholdoutを再調整へ流用しない。\n- AIで一意に決まらず複数の妥当なGameplay方向が残る場合だけHuman Decisionへ上げる。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -4236,7 +4314,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-009",
@@ -4245,9 +4323,9 @@
       "status": "Blocked",
       "execution_order": 400,
       "depends_on": [
-        "TASK-BAL-008"
+        "TASK-BAL-069"
       ],
-      "acceptance_criteria": "- Current Studio Project JSON / Data Versionを正本として取得してから開始する。\n- Simulation winnerだけをProduct Candidateへ反映し、fixture/test dataをProduct Masterへ無条件昇格しない。\n- JSON全件読込Pre-flightで追加/差替え/除外を確認可能なProject JSONを作る。\n- Source ZIP / Exportを直接編集しない。\n- P7 Human Apply前にGameデータ配置を実行しない。",
+      "acceptance_criteria": "- M1〜M24で確定したHuman-approved/validated Candidateだけを対象とする。\n- Current Studio Project JSON / Data Versionを正本として取得してから開始する。\n- Character/Job、Equipment、Skill/Passive、Enemy、Quest/Reward/Economy等の数値表とProduct差分のtraceabilityを保持する。\n- fixture/test dataをProduct Masterへ無条件昇格しない。\n- JSON全件読込Pre-flightで追加/差替え/除外を確認可能なProject JSONを作る。\n- Source ZIP / Exportを直接編集しない。P7 Human Apply前にGameデータ配置しない。",
       "work_type": "GAME_DATA",
       "requires_human_approval": false,
       "approval": {
@@ -4256,7 +4334,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-010",
@@ -4267,7 +4345,7 @@
       "depends_on": [
         "TASK-BAL-009"
       ],
-      "acceptance_criteria": "- P6 Product Candidateの全件読込差分をHumanが確認し、Task approval=Approvedになってから開始する。\n- Data Versionを確定し、既存Studio Gameデータ配置経路だけを使用する。\n- 追加/差替え/除外の意図しない差分が1件でもあれば配置しない。\n- この承認はCurrent-active Promotionを兼ねない。",
+      "acceptance_criteria": "- TASK-BAL-009 Product Candidateの全件読込差分とMeasurement TraceをHumanが確認し、Task approval=Approved後に開始する。\n- Data Versionを確定し、既存Studio Gameデータ配置経路だけを使用する。\n- 追加/差替え/除外の意図しない差分が1件でもあれば配置しない。\n- この承認はCurrent-active Promotionを兼ねない。",
       "work_type": "GAME_DATA",
       "requires_human_approval": true,
       "approval": {
@@ -4276,7 +4354,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-011",
@@ -4287,7 +4365,7 @@
       "depends_on": [
         "TASK-BAL-010"
       ],
-      "acceptance_criteria": "- AIがFormal Battle Package reference、同一Input/Seed/Rules/Data/Config Version、Owner Trace観点、Save-Reload手順を準備する。\n- Humanが実Game/Studio実機を手動操作して指定Scenarioを実行し、Result/Trace/Save-Reload evidenceをAIへ提示する。Playwright/WebKit/browser automationを実機確認の代替にしない。\n- AIがFormal referenceとHuman実機Evidenceを照合し、差異をBalance値で隠さずSource defectならRequirementへ戻す。\n- QuestRun/Generated Item/Character growth snapshotの非遡及をHuman実機Evidenceと保存Snapshotで確認する。\n- Human実機Runtime conformance evidenceが揃うまでP9を解放しない。",
+      "acceptance_criteria": "- M24 HoldoutとProduct Candidateで使用した代表Level/Build/Monster/Quest ScenarioをFormal referenceとして固定する。\n- Humanが実Game/Studio実機を手動操作し、同一Version/Scenarioを実行する。\n- AIがDamage/Hit/EHP/TTK/Quest/Reward/Progression等、Measurement-firstで確定した主要数値をFormal referenceと照合する。\n- Save-Reload、QuestRun/Generated Item/Character growthのsnapshot非遡及を確認する。\n- 差異をBalance値で隠さず、Source defectならIssue/Requirementへ戻す。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -4296,7 +4374,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-012",
@@ -4307,7 +4385,7 @@
       "depends_on": [
         "TASK-BAL-011"
       ],
-      "acceptance_criteria": "- P4 Final/Holdout、P5 Cross-System、P8 Runtime ConformanceのEvidence PackをHumanが確認し、Task approval=Approvedになってから開始する。\n- CandidateをCurrent activeへ昇格し、旧Baseline/V9/Approved seedを削除せずrollback bindingを保持する。\n- Config/Rules/Data Version/Seed/Snapshot provenanceをPromotion recordへ固定する。\n- Human承認なしに自動昇格しない。",
+      "acceptance_criteria": "- M24 Holdout、Product Apply、Runtime ConformanceのEvidence Packと、主要Balance数値表をHumanが確認しTask approval=Approved後に開始する。\n- CandidateをCurrent activeへ昇格し、旧Baseline/V9/Approved seedを削除せずrollback bindingを保持する。\n- Config/Rules/Data Version/Seed/SnapshotとMeasurement Table revisionをPromotion recordへ固定する。\n- Human承認なしに自動昇格しない。",
       "work_type": "GAME_DATA",
       "requires_human_approval": true,
       "approval": {
@@ -4316,7 +4394,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-013",
@@ -4327,7 +4405,7 @@
       "depends_on": [
         "TASK-BAL-012"
       ],
-      "acceptance_criteria": "- Current active昇格後も同一Input+Seed+Rules/Data/Config Versionで再現できることを確認する。\n- 実Game Runtimeの再確認が必要な項目はHumanが実機で手動実行し、AIはResult/Trace/Snapshotを照合する。Playwright/WebKit/browser automationをHuman実機確認の代替にしない。\n- 既存QuestRun・既存生成Item・既存Character成長結果が遡及再計算されていないことを確認する。\n- Runtime/Game Data/Result provenance、rollback path、主要KPI regressionを確認する。\n- 問題があればCompletionへ進めずCandidate/Requirementへ戻す。",
+      "acceptance_criteria": "- Promotion後も同一Input+Seed+Rules/Data/Config Versionで再現できる。\n- Character Stat Curve、Equipability、Equipment Power、Player Power、Enemy/Quest/Reward等の主要KPIがPromotion前Evidenceと一致する。\n- Human実機が必要な代表Scenarioは手動再実行する。\n- 既存QuestRun・既存生成Item・既存Character成長結果が遡及再計算されていない。\n- rollback pathと主要KPI regressionを確認し、問題時はCompletionせず該当Domainへ戻す。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -4336,7 +4414,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-001",
@@ -4983,7 +5061,7 @@
       "id": "TASK-BAL-040",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "P4 Refine 1,000: Human実機でCandidate Packageを実行する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 215,
       "depends_on": [
         "TASK-BAL-039"
@@ -4992,23 +5070,23 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T15:26:00+09:00"
       },
       "created_at": "2026-08-24T13:30:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:26:00+09:00"
     },
     {
       "id": "TASK-BAL-041",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "P4 Refine 1,000: AI/Human Resultを照合しFinal候補を選ぶ",
+      "title": "旧計画・実行禁止: P4 Refine 1,000: AI/Human Resultを照合しFinal候補を選ぶ",
       "status": "Blocked",
       "execution_order": 216,
       "depends_on": [
         "TASK-BAL-040"
       ],
-      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Human Refine ResultをAI referenceと照合し、binding/JOB_ERROR/replay/formal evidence/KPIを確認する。\n- Refine distribution/tail/dominance/runaway/dead-option failureを評価しFinal/Holdout候補を選ぶ。\n- 不一致・新GapがあればTASK-BAL-042へ進めずIssue Gateへ戻る。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- 開始前Human明示承認を得る。\n- Human Refine ResultをAI referenceと照合し、binding/JOB_ERROR/replay/formal evidence/KPIを確認する。\n- Refine distribution/tail/dominance/runaway/dead-option failureを評価しFinal/Holdout候補を選ぶ。\n- 不一致・新GapがあればTASK-BAL-042へ進めずIssue Gateへ戻る。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5017,18 +5095,18 @@
         "at": ""
       },
       "created_at": "2026-08-24T13:30:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-042",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "P4 Final/Holdout 10,000: AI Candidate Package / Referenceを作成する",
+      "title": "旧計画・実行禁止: P4 Final/Holdout 10,000: AI Candidate Package / Referenceを作成する",
       "status": "Blocked",
       "execution_order": 217,
       "depends_on": [
         "TASK-BAL-041"
       ],
-      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Refine選抜候補に対し、Calibration/Screen/Refineで未使用の10,000 disjoint holdout seedsを固定する。\n- Final/Holdout Package、AI_REFERENCE、Human実機Checklistを作成する。\n- Holdout結果を候補再調整へ流用しない。Source/Game Data/Current activeを変更しない。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- 開始前Human明示承認を得る。\n- Refine選抜候補に対し、Calibration/Screen/Refineで未使用の10,000 disjoint holdout seedsを固定する。\n- Final/Holdout Package、AI_REFERENCE、Human実機Checklistを作成する。\n- Holdout結果を候補再調整へ流用しない。Source/Game Data/Current activeを変更しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5037,18 +5115,18 @@
         "at": ""
       },
       "created_at": "2026-08-24T13:30:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-043",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "P4 Final/Holdout 10,000: Human実機でCandidate Packageを実行する",
+      "title": "旧計画・実行禁止: P4 Final/Holdout 10,000: Human実機でCandidate Packageを実行する",
       "status": "Blocked",
       "execution_order": 218,
       "depends_on": [
         "TASK-BAL-042"
       ],
-      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- HumanがCurrent Studio実機でexact Final/Holdout Packageを手動Import→Validate→Execute→Result Exportする。\n- Playwright/WebKit/browser automationを使用しない。\n- 10,000 disjoint holdout trialsのResultを保存し、error/inconsistency時は停止する。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- 開始前Human明示承認を得る。\n- HumanがCurrent Studio実機でexact Final/Holdout Packageを手動Import→Validate→Execute→Result Exportする。\n- Playwright/WebKit/browser automationを使用しない。\n- 10,000 disjoint holdout trialsのResultを保存し、error/inconsistency時は停止する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5057,18 +5135,18 @@
         "at": ""
       },
       "created_at": "2026-08-24T13:30:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
     },
     {
       "id": "TASK-BAL-044",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "P4 Final/Holdout: AI/Human Resultを照合しCandidate winner/rejected evidenceを確定する",
+      "title": "旧計画・実行禁止: P4 Final/Holdout: AI/Human Resultを照合しCandidate winner/rejected evidenceを確定する",
       "status": "Blocked",
       "execution_order": 219,
       "depends_on": [
         "TASK-BAL-043"
       ],
-      "acceptance_criteria": "- 開始前Human明示承認を得る。\n- Human Final/Holdout ResultとAI referenceを全binding/replay/formal evidence/KPIで照合する。\n- Holdoutのmarginal contribution/distribution/tail/dominance/counter/runaway failureを評価しwinner/rejected evidenceを確定する。\n- Human実機ResultなしにFinal PASSを宣言しない。\n- Current active/Game Dataへ昇格せず、TASK-BAL-005完了判定用Evidenceを作成する。",
+      "acceptance_criteria": "- 【Measurement-first redesign】Human 2026-08-24指示によりこの旧計画Taskは実行しない。既存Evidenceは履歴/Measurement Pipeline Qualificationとして保持し、新TASK-BAL-045以降を正本とする。\n- 開始前Human明示承認を得る。\n- Human Final/Holdout ResultとAI referenceを全binding/replay/formal evidence/KPIで照合する。\n- Holdoutのmarginal contribution/distribution/tail/dominance/counter/runaway failureを評価しwinner/rejected evidenceを確定する。\n- Human実機ResultなしにFinal PASSを宣言しない。\n- Current active/Game Dataへ昇格せず、TASK-BAL-005完了判定用Evidenceを作成する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -5077,7 +5155,550 @@
         "at": ""
       },
       "created_at": "2026-08-24T13:30:00+09:00",
-      "updated_at": "2026-08-24T13:30:00+09:00"
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-007",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Measurement-first全Balance Test再設計Draftを作成する",
+      "status": "Done",
+      "execution_order": 95,
+      "depends_on": [
+        "TASK-BAL-040"
+      ],
+      "acceptance_criteria": "- Human指示を受け、全Domain Testの目的・必要入力・測定値・必要数値Output・Gate・下流依存を再定義する。\n- Job expected stats→Equipment eligibility→Player Power→Monster→Quest→Rewardの依存順を正本化する。\n- 旧TASK-BAL-041〜044を開始しない。\n- Source/Game Data/Current activeを変更しない。\n- Human Review用Master PlanとDevelopment merge JSONを作成する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Approved",
+        "by": "HumanInstruction",
+        "at": "2026-08-24T15:45:00+09:00"
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-DESIGN-008",
+      "box_id": "BOX-V9-BAL-DESIGN-001",
+      "title": "Measurement-first全Balance Test PlanをHuman Review/承認する",
+      "status": "Blocked",
+      "execution_order": 96,
+      "depends_on": [
+        "TASK-BAL-DESIGN-007"
+      ],
+      "acceptance_criteria": "- SPEC-BAL-MEASUREMENT-REDESIGN-001をHumanが確認する。\n- Test順序、必要数値Output、M12 Difficulty Target Human Gate、旧P4 Evidence再分類を確認する。\n- Human明示承認後のみTASK-BAL-045を開始可能にする。\n- このTaskはPlan承認だけでありBalance値/Product Data/Current activeを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-045",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "M0 Measurement Contract / Required Numeric Registryを確定する",
+      "status": "Blocked",
+      "execution_order": 221,
+      "depends_on": [
+        "TASK-BAL-DESIGN-008"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: ゲーム完成までに各Domainで確定すべき数値は何か。\n- Required Inputs: Current Specification / Approved Decisions /既存P1-P3 Evidence。\n- Measurements: なし。Authority/owner/state/dependencyを棚卸しする。\n- Required Numeric Output: Character Stat Table、Equipability Matrix、Equipment Power Curve、Player Power Curve、Skill/Passive/Formula/AI、Monster/Enemy、Quest/Progression/Reward/Economy等の必須列・単位・version contract。\n- Gate: Target値とderived値を分離し、Target未定義Testを開始不可にする。\n- Downstream: TASK-BAL-046以降。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-046",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "M1 Character / Job Expected Stat Curveを算出する",
+      "status": "Blocked",
+      "execution_order": 222,
+      "depends_on": [
+        "TASK-BAL-045"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 各JobのCharacterは各LevelでどのStats分布を持つか。\n- Required Inputs: 初期Stats、最大Level、Current Job growth値、Current growth formula。\n- Measurements: Job×Level全件のmean/p10/p50/p90、隣接Level増加量、variance/tail。解析可能部分はexact計算、Random部分はSeeded検証。\n- Required Numeric Output: Character/Job Expected Stat Table。\n- Gate: required StatがLevelに対して逆行/到達不能/異常tailなら停止。\n- Downstream: Equipment eligibility、Player Power、Skill条件、Monster比較。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-047",
+      "box_id": "BOX-V9-BAL-ITEM-001",
+      "title": "M2 Equipment Requirement → 予測装備可能Level Matrixを算出する",
+      "status": "Blocked",
+      "execution_order": 223,
+      "depends_on": [
+        "TASK-BAL-046"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 各Jobは各Equipment iLvを何Levelで現実的に装備できるか。\n- Required Inputs: M1 Expected Stat Table、Current Equipment requirement coefficients、iLv1..11。\n- Measurements: Job×Equipment type×iLvのequip probability by Level、50%/90%到達Level。\n- Required Numeric Output: Equipment Equipability Matrix。\n- Gate: iLv順序逆転、never reachable、極端なJob偏りを検出する。\n- Downstream: Equipment iLv Power、Player Level Power、Loot progression。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-048",
+      "box_id": "BOX-V9-BAL-ITEM-001",
+      "title": "M3 Equipment iLv1..11 Performance Curveを測定する",
+      "status": "Blocked",
+      "execution_order": 224,
+      "depends_on": [
+        "TASK-BAL-047"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 1 iLv上昇でEquipment性能は実戦上何%増えるか。武器種/防具種差は妥当か。\n- Required Inputs: M1/M2、P1 Current Equipment Generator matrix。\n- Measurements: Weapon 13種×iLv1..11、Armor 3category×4slot×iLv1..11、Accessory 3種×iLv1..11。Damage/hit、Damage/tick、Hit/Crit、EHP、damage taken、adjacent iLv gain%。\n- Required Numeric Output: 縦iLv Curve + 同一iLv横比較表。\n- Gate: 武器なし→iLv1は初期寄与として分離し、iLv成長率へ混ぜない。dead/step jump/dominanceを検出する。\n- Downstream: Player Power Curve、Loot価値。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-049",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "M4 Player Level Power Curveを確定する",
+      "status": "Blocked",
+      "execution_order": 225,
+      "depends_on": [
+        "TASK-BAL-048"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Level X時点で現実的に作れるPlayerはどの程度の戦闘力か。\n- Required Inputs: M1 Expected Stats、M2 equip Level、M3 Equipment Curve。\n- Measurements: Level checkpointごとのBasic damage/hit、Damage/tick、HPS、EHP、Hit/Crit/Evasion/Resistance、MP sustainability。\n- Required Numeric Output: Player Level Power Curve。\n- Gate: Monster Testでraw arbitrary Player fixtureを使わず、このCurveを基準入力にする。\n- Downstream: Skill/Passive/Formula/AI、Monster/Enemy。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-050",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "M5 Skill Budget / Power / Cost Curveを測定する",
+      "status": "Blocked",
+      "execution_order": 226,
+      "depends_on": [
+        "TASK-BAL-049"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: SkillがPlayer基準行動に対してどの程度の追加価値を持つか。\n- Required Inputs: Player Power Curve、P2 G05/G07 Formal Skill Calibration。\n- Measurements: archetype/level/strength別damage/heal/utility per use、per tick、MP efficiency、cooldown/cast occupancy、target efficiency、usage/dead rate。\n- Required Numeric Output: Skill Efficiency TableとLevel/Budget Curve。\n- Gate: 同Budgetで恒常的大差、低Cost高Output loop、dead Skillを検出する。\n- Downstream: Canonical Builds、Monster/Quest。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-051",
+      "box_id": "BOX-V9-BAL-ITEM-001",
+      "title": "M6 Passive / MOD / Rarity / Unique Contribution Curveを測定する",
+      "status": "Blocked",
+      "execution_order": 227,
+      "depends_on": [
+        "TASK-BAL-050"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Passive/MOD/Rarity/Uniqueが現実的Buildへ何%のPowerを追加するか。\n- Required Inputs: Player/Skill Curve、P3-4 Formal Contribution Calibration。\n- Measurements: activation rate、marginal DPS/HPS/EHP/Hit/resource、Tier slope、MOD count interaction、rarity delta、Unique utility。\n- Required Numeric Output: Contribution Table。\n- Gate: dead、condition-never、strict dominance、runaway interactionを検出する。\n- Downstream: Canonical Builds、Loot/Reward。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-052",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "M7 Battle Formula / Status / Resource Parameter Sensitivityを測定する",
+      "status": "Blocked",
+      "execution_order": 228,
+      "depends_on": [
+        "TASK-BAL-051"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Current固定Formula topology内の各Balance Parameterが結果をどれだけ動かすか。\n- Required Inputs: Canonical Player tiers、Current formula/status/resource contract。\n- Measurements: coefficient elasticity、Hit/Evasion、Crit、Resistance、Status duration/stack/DOT/HOT/Shield、MP/CD/Cast、cap/floor/clamp saturation。\n- Required Numeric Output: Parameter Sensitivity Table。\n- Gate: Formula expression/order/roundingは変更しない。変更必要ならIssue Gate。\n- Downstream: Player Build、Enemy calibration。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-053",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "M8 Formal AI Performance Extractionを測定しReference AIを固定する",
+      "status": "Blocked",
+      "execution_order": 229,
+      "depends_on": [
+        "TASK-BAL-052"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 同じBuildでAI差がどれだけ戦闘性能を変えるか。後続Testで使うReference AIは何か。\n- Required Inputs: Player/Skill/Passive curves、Formal AI。\n- Measurements: valid action、idle/waste、target quality、resource waste、performance extraction ratio。\n- Required Numeric Output: AI Extraction Table + Reference AI binding。\n- Gate: AI差がBuild差を隠す場合は後続Testを開始しない。\n- Downstream: Canonical Builds、Monster/Quest。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-054",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "M9 Canonical Player Build SetをLevel帯ごとに確定する",
+      "status": "Blocked",
+      "execution_order": 230,
+      "depends_on": [
+        "TASK-BAL-053"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 各Level帯でゲーム上現実的なPlayer Build集合は何か。\n- Required Inputs: M1〜M8。\n- Measurements: Job/weapon/armor/skill/passive/AI組合せのDPS/HPS/EHP/resource/Pareto。\n- Required Numeric Output: Level-tier Canonical Build Set（複数archetype）。\n- Gate: 単一BuildだけをMonster基準にしない。明確なstrict dominanceは記録する。\n- Downstream: Monster/Enemy all tests。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-055",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M10 Monster Level / Job Power Curveを測定する",
+      "status": "Blocked",
+      "execution_order": 231,
+      "depends_on": [
+        "TASK-BAL-054"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Monster Level×Job係数は同LevelのCanonical Playerに対してどの相対Powerか。\n- Required Inputs: Canonical Player Build Set、Current Monster owner/job coefficients。\n- Measurements: HP/DPS/EHP/Hit/Crit/utility、Player Power ratio、Level slope。\n- Required Numeric Output: Monster Power Table。\n- Gate: arbitrary raw Monster statsを基準にしない。\n- Downstream: Enemy Budget、Difficulty band。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-056",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M11 Enemy Budget category→実戦性能Conversionを測定する",
+      "status": "Blocked",
+      "execution_order": 232,
+      "depends_on": [
+        "TASK-BAL-055"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: HP/Attack/Defense/Skill/AI/Utility Budget 1点は戦闘性能をどれだけ変えるか。\n- Required Inputs: Monster Power Table、Canonical Players。\n- Measurements: category one-at-a-time perturbation、TTK、damage、survival、utility、budget efficiency。\n- Required Numeric Output: Enemy Budget Conversion Table。\n- Gate: 1 category支配、同Budget強度ばらつき過大を検出する。\n- Downstream: Difficulty Target/Enemy calibration。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-057",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M12 Normal / Elite / Boss / Stone Target BandをHuman決定する",
+      "status": "Blocked",
+      "execution_order": 233,
+      "depends_on": [
+        "TASK-BAL-056"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 何を『妥当な難易度』と呼ぶか。\n- Required Inputs: Player/Monster/Budget baseline distributions、Human Approved qualitative Target Experience。\n- Measurements: AIがsuccess/TTK/resource/survivor/preparation-gain等の数値Band候補を作る。\n- Required Numeric Output: Human Approved Difficulty Target Table。\n- Gate: Human明示承認必須。承認前にEnemy winnerを決めない。\n- Downstream: Enemy/Quest/Stone tuning。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-058",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M13 Monster / EnemyをApproved Difficulty BandへCalibrationする",
+      "status": "Blocked",
+      "execution_order": 234,
+      "depends_on": [
+        "TASK-BAL-057"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: どのMonster/Enemy coefficients・Budget allocationがApproved Bandを満たすか。\n- Required Inputs: Human Approved Target Table、Canonical Builds。\n- Measurements: matched-level Normal/Elite/Boss paired simulation、TTK/success/attrition/tail/counter coverage。\n- Required Numeric Output: Enemy Calibration Candidate Config。\n- Gate: Band適合、tail、hard-counter、runawayを確認する。\n- Downstream: Encounter/Quest。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-059",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M14 Formation / Party Size / Encounter Unit Scalingを測定する",
+      "status": "Blocked",
+      "execution_order": 235,
+      "depends_on": [
+        "TASK-BAL-058"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 単体で妥当なEnemyが複数Formation/Party条件でも妥当か。\n- Required Inputs: Calibrated Enemy、Canonical party。\n- Measurements: enemy count/composition、fixed formation scaling、party size、focus fire、counter combinations。\n- Required Numeric Output: Formation/Encounter scaling table。\n- Gate: 人数増加による不連続/無限有利/不利を検出。\n- Downstream: New Game / Quest。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-060",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "M15 New Game Starter Powerを検証する",
+      "status": "Blocked",
+      "execution_order": 236,
+      "depends_on": [
+        "TASK-BAL-059"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: New Game開始時のParty/Job/Equipment/Skill/Goldで最初の適正Contentが成立するか。\n- Required Inputs: Player/Enemy/Formation tables、Current New Game contract。\n- Measurements: starter DPS/EHP、equipment eligibility、first quest success/attrition、初期購買力。\n- Required Numeric Output: Starter Power Table / Candidate。\n- Gate: 開始直後の構造的不可能/自動勝利を防ぐ。\n- Downstream: Quest/Progression。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-061",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M16 Quest / Encounter累積AttritionとDurationを測定する",
+      "status": "Blocked",
+      "execution_order": 237,
+      "depends_on": [
+        "TASK-BAL-060"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 単戦ではなくQuest一周として難度が妥当か。\n- Required Inputs: Approved Enemy/Formation、Starter/Level Player。\n- Measurements: battles/run、success/failure、cumulative HP/MP、survivors、duration/ticks、seed tail。\n- Required Numeric Output: Quest Difficulty/Attrition Table。\n- Gate: 単戦適正でも連戦必敗/無消耗ならFail。\n- Downstream: EXP/Reward。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-062",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "M17 EXP / Skill-Passive Acquisition / Equipment Unlock Pacingを測定する",
+      "status": "Blocked",
+      "execution_order": 238,
+      "depends_on": [
+        "TASK-BAL-061"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Playerは何Quest/何時間でLevel・Equipment・Skill/Passiveの次段階へ進むか。\n- Required Inputs: Quest success/time、Job growth、Equipability Matrix、Acquisition cost。\n- Measurements: early/mid/late Quest-to-level/time-to-level、unlock interval、respec recovery、slot saturation。\n- Required Numeric Output: Progression Timeline。\n- Gate: early<mid<lateのHuman方針、停滞/瞬間解放を検出。\n- Downstream: Reward/Economy/Guild。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-063",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M18 Reward / Drop / Loot Update Cadenceを測定する",
+      "status": "Blocked",
+      "execution_order": 239,
+      "depends_on": [
+        "TASK-BAL-062"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Quest難度/時間/Riskに対して報酬と装備更新頻度は妥当か。\n- Required Inputs: Quest table、Equipment power/rarity contribution、Progression timeline。\n- Measurements: reward/time、failure-adjusted EV、equipment upgrade interval、rarity acquisition time、drop distribution。\n- Required Numeric Output: Reward/Loot Table。\n- Gate: 毎Quest更新/長期無更新、特定farm支配を検出。\n- Downstream: Economy/Inventory/Stone。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-064",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M19 Gold / Material Economy / Inventory Pressureを測定する",
+      "status": "Blocked",
+      "execution_order": 240,
+      "depends_on": [
+        "TASK-BAL-063"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Source/Sinkと保管容量が進行テンポを壊さないか。\n- Required Inputs: Reward/Loot、Acquisition/respec costs、capacity/sell rules。\n- Measurements: source-sink ledger、gold balance、sell share、overflow、stack/capacity pressure。\n- Required Numeric Output: Economy/Inventory Table。\n- Gate: 必須支出不能、通貨過剰、Reward lossを検出。\n- Downstream: Stone/Guild/Campaign。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-065",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M20 Stone Endgame Difficulty / Reward Deltaを測定する",
+      "status": "Blocked",
+      "execution_order": 241,
+      "depends_on": [
+        "TASK-BAL-064",
+        "TASK-BAL-057"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Stoneが通常攻略非必須の高難度・高報酬Endgameになっているか。\n- Required Inputs: Approved Stone target band、completed-build power、Reward/Economy。\n- Measurements: no-Stone vs Stone success/attrition/TTK、consumption risk、reward/time、failure-adjusted EV。\n- Required Numeric Output: Stone difficulty/reward table。\n- Gate: 通常進行必須化、risk-free farm、通常Endgame以下EVをFail。\n- Downstream: Full Campaign。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-066",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "M21 Guild / Unlock / Capacity Pacingを測定する",
+      "status": "Blocked",
+      "execution_order": 242,
+      "depends_on": [
+        "TASK-BAL-064"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Guild progression/Unlockが中長期成長の節目として妥当か。\n- Required Inputs: Progression timeline、Economy。\n- Measurements: unlock time、guild level interval、capacity/AI/recruit utility、dead unlock rate。\n- Required Numeric Output: Guild Unlock Timeline。\n- Gate: Combat Power直接無償増加や極端な遅速を検出。\n- Downstream: Full Campaign。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-067",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "M22 Presentation TuningをGameplay非影響条件で検証する",
+      "status": "Blocked",
+      "execution_order": 243,
+      "depends_on": [
+        "TASK-BAL-058"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Effect/Camera/Playback/UI timingが読みやすく、Gameplay結果を変えないか。\n- Required Inputs: Representative battle results、Current Presentation contract。\n- Measurements: duration/intensity/readability/reduced-motion equivalence、result hash unchanged。\n- Required Numeric Output: Presentation Config Candidate。\n- Gate: Gameplay result/timing再計算を起こしたらFail。\n- Downstream: Product Candidate。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-068",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "M23 New Game→Endgame Full Campaign Power/Economy Loopを検証する",
+      "status": "Blocked",
+      "execution_order": 244,
+      "depends_on": [
+        "TASK-BAL-065",
+        "TASK-BAL-066",
+        "TASK-BAL-067"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: Level1からEndgameまでPower・装備・Quest・Reward・Unlockの循環が連続して成立するか。\n- Required Inputs: M1〜M22全確定Table/Candidate。\n- Measurements: progression-to-power、quest success/attrition、upgrade interval、economy、build diversity、Stone entry timing。\n- Required Numeric Output: Full Campaign Balance Report。\n- Gate: progression gap、dominance、economy break、mandatory Stone等をFail。\n- Downstream: Holdout/Stress。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-069",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "M24 Cross-System Holdout / Stressを未使用条件で検証する",
+      "status": "Blocked",
+      "execution_order": 245,
+      "depends_on": [
+        "TASK-BAL-068"
+      ],
+      "acceptance_criteria": "- 開始前に目的/Required Inputs/測定KPI/Required Numeric Output/Gate/DownstreamをHumanへ報告し明示開始承認を得る。\n- Decision Question: 確定Candidateが未知Seed/Build/Enemy/Questでも壊れないか。\n- Required Inputs: Full Campaign Candidateを事前固定。\n- Measurements: unseen seed/build/enemy/quest、extreme tail、strict dominance、counter coverage、runaway、risk-free farm。\n- Required Numeric Output: Promotion前 Holdout Evidence。\n- Gate: Holdoutを再調整用trainingへ流用しない。不合格なら対応Domainへ戻る。\n- Downstream: Product Candidate TASK-BAL-009。\n- Source/Game Data/Current activeを変更しない。未計画Gapが出た場合はIssue Gateへ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "checks": [
@@ -7342,6 +7963,52 @@
       "blocking": false,
       "created_at": "2026-08-24T14:43:00+09:00",
       "updated_at": "2026-08-24T14:43:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK040-REFINE1000-HUMAN-DEVICE-001",
+      "title": "TASK-BAL-040 Refine1000 Human Real-Device Execution Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-040",
+      "status": "Passed",
+      "result": "TASK-BAL-040 PASS. Human Current Studio executed the exact TASK-BAL-039 Refine1000 package. Embedded input is 39/39 byte-for-byte identical to the approved Refine package. Formal binding expected=actual. 8/8 jobs and 8,000/8,000 trials completed; jobs_failed=0, error_count=0, partial=false. Every job formal_only=true and legacy_fallback_used=false. Result Package manifest integrity 51/51 PASS. AI/Human replay/KPI comparison and Final candidate selection are intentionally deferred to TASK-BAL-041.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-040_HUMAN-DEVICE-EXECUTION-EVIDENCE.zip sha256=5c1863a2933a56e42b83ad93db493cec967d92ac1e77c77cb904500a70cafb81; Human Result=GK_BattleVerification_Result_BVP-P4-REFINE1000-T039_BEX-1787552780376.zip sha256=76dc0f11807724b3f209a36f81c92176a9dd6960b0278867c5927861540ec672; exact Refine Package sha256=382eb9c1952a83eedfd99c87c4f8afc8eb0bb5f13530bfa15192fc3efc1f5813; input identity=39/39; trials=8000/8000; result manifest=51/51",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T15:26:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T15:26:00+09:00",
+        "reason": "All TASK-BAL-040 exact-package Human real-device execution criteria passed; TASK-BAL-041 remains separately approval-gated.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T15:26:00+09:00",
+      "updated_at": "2026-08-24T15:26:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-MEASUREMENT-REDESIGN-DRAFT-001",
+      "title": "Measurement-first full Balance Test redesign coverage",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-DESIGN-007",
+      "status": "Passed",
+      "result": "Human指示に基づきGeneric Candidate testを停止し、M0〜M24でCharacter/Job→Equipment→Player Power→Skill/Passive/Formula/AI→Monster/Enemy→Quest/Progression/Reward/Economy→Stone/Guild/Presentation→Cross-Systemを再設計。全TaskにDecision purpose / inputs / measurements / numeric output / gate / downstreamを明記。旧TASK-BAL-005..008/041..044はBlockedの旧計画として実行禁止。TASK-BAL-036〜040は測定基盤Qualificationへ再分類。",
+      "evidence": "SPEC-BAL-MEASUREMENT-REDESIGN-001; DEC-BAL-MEASUREMENT-ORDER-001; RULE-BAL-MEASUREMENT-PURPOSE-001",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T15:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T15:45:00+09:00",
+        "reason": "Full redesign draft created; execution remains blocked pending Human Plan Review.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "workflow": {
@@ -7757,6 +8424,22 @@
       "task_id": "TASK-BAL-039",
       "created_at": "2026-08-24T14:43:00+09:00",
       "updated_at": "2026-08-24T14:43:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK040-REFINE1000-HUMAN-DEVICE-EXECUTION-001",
+      "title": "TASK-BAL-040 Refine1000 Human real-device execution completed",
+      "summary": "Human instructed continuation and supplied the Current Studio Refine1000 Result Package. AI verified that the embedded input is byte-for-byte identical to the exact TASK-BAL-039 Refine package (39/39 files), Formal binding expected=actual, and Studio completed all 8 jobs / 8,000 trials with jobs_failed=0, error_count=0 and partial=false. All jobs are formal_only=true with legacy_fallback_used=false. Result Package manifest integrity passed 51/51. This task records Human real-device execution only; AI/Human fingerprint/formal evidence/KPI comparison and Final/Holdout candidate selection are deferred to separately approval-gated TASK-BAL-041. No Source/Game Data/Current active/Candidate numeric changes.",
+      "task_id": "TASK-BAL-040",
+      "created_at": "2026-08-24T15:26:00+09:00",
+      "updated_at": "2026-08-24T15:26:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-MEASUREMENT-FIRST-REDESIGN-001",
+      "title": "Human指示でBalance TestをMeasurement-first方式へ全面再設計",
+      "summary": "Humanは、Job補正→期待Stats→Equipment iLv閾値/予測装備Level→その時点のPlayer強度→Monster妥当性の順で数値を確定しなければ現在のGeneric battle comparisonは目的が不明だと指摘し、全Testの目的と必要数値を明確化するよう指示。AIはM0〜M24 Master Planを作成し、旧P4 Generic Final/Holdoutを停止、TASK-BAL-036〜040をMeasurement Pipeline Qualification Evidenceへ再分類。新ExecutionはHuman Plan Review TASK-BAL-DESIGN-008承認待ち。Source/Game Data/Current active変更0。",
+      "task_id": "TASK-BAL-DESIGN-007",
+      "created_at": "2026-08-24T15:45:00+09:00",
+      "updated_at": "2026-08-24T15:45:00+09:00"
     }
   ],
   "authority": {
