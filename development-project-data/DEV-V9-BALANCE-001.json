@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T00:07:03.917Z"
+    "updated_at": "2026-08-24T01:29:29.302Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "TASK-BAL-020 P3-7 completed; GKS-B767 awaiting Studio apply/fresh-source verification",
-    "goal": "TASK-BAL-020 completed on verified fresh GKS-B766. Existing Result Package now emits Formal Skill/Passive/Equipment attribution, Status/Resource/Cast-CD/Death-EHP/Formal AI trace/owner provenance and deterministic replay fingerprints with legacy fallback excluded. All 14 P3 Gap Requirements have closure evidence. Do not start TASK-BAL-004 P4 Runtime Readiness Preflight until Human applies GKS-B767 and a fresh Current Source passes the B767 application check."
+    "theme": "P4前Human実機テスト工程を追加済み; TASK-BAL-027開始承認待ち",
+    "goal": "P4 Candidate Loopを停止し、TASK-BAL-027→028→029→030の順でTemplate修正からHuman実機テスト完了までを実施する。現在は計画登録のみ完了。TASK-BAL-027を含む各Taskは開始前にHuman個別承認が必要。TASK-BAL-030でHuman実機ResultとAI基準の一致を確認しHuman実機テスト完了を確定するまでTASK-BAL-005を開始しない。"
   },
   "project_rules": [
     {
@@ -233,17 +233,26 @@
       "source_id": "conversation:one-development-task-per-run",
       "created_at": "2026-08-23T13:58:00+09:00",
       "updated_at": "2026-08-23T13:58:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-HUMAN-START-APPROVAL-001",
+      "text": "P4開始前のHuman実機テスト追加工程では、計画登録・Task登録そのものを実装開始承認と解釈しない。各Development Taskは開始前にAIが目的、work_type、基準Source、変更許可範囲、変更禁止範囲、成果物、完了条件を報告し、Humanから当該Taskを開始してよいという明示承認を得るまでSource変更・デモ生成・実機テスト評価・次Task着手を行わない。未計画問題が出た場合はRULE-BAL-ISSUE-GATE-001に従い、その場で停止して報告・再承認へ戻る。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 approval-before-each-task",
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B766",
+    "studio_build": "GKS-B767",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260823-234918).zip",
-    "source_role": "current_GKS-B766_verified_TASK-BAL-020_baseline_pending_B767_application",
-    "recorded_at": "2026-08-24T08:49:00+09:00",
-    "package_manifest_sha256": "f541dc12c7c291340724d0b496dafe6f6d100ecf6749224d24e51617ec20fd8b",
-    "source_tree_sha256": "e0a652017784b1cd87833737aad457c0c820f8bcbe92fa5d29b6f75a2520f77b",
-    "source_zip_sha256": "87a4b78ea867ad24747daedad0bb93ff2cf9af77f455bd9c07ae9378f5df90a6"
+    "source_label": "guild-adventure-studio-sub(20260824-001425).zip",
+    "source_role": "fresh_GKS-B767_verified_P4_runtime_readiness_passed",
+    "recorded_at": "2026-08-24T09:14:00+09:00",
+    "package_manifest_sha256": "020991f78a861b86415c655f7febd5404dcd76ea6f64b365aea122dbccf4c205",
+    "source_tree_sha256": "7caa146144bd36b921a79c025886bbb2fdacd534c397b59b8c358752d7264295",
+    "source_zip_sha256": "8ee40e85a4ac8bb38d1337a8d717917ae6ad3b4520c380a5bbbfb77f304550d0"
   },
   "lifecycle": {
     "status": "Active",
@@ -1080,6 +1089,18 @@
       "approved_at": "2026-08-23T20:28:00+09:00",
       "created_at": "2026-08-23T20:28:00+09:00",
       "updated_at": "2026-08-23T20:28:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P4-HUMAN-REAL-DEVICE-TEST-001",
+      "title": "P4開始前にTemplate修正からHuman実機テスト完了までを追加する",
+      "status": "Approved",
+      "text": "P4 Formal Combat Candidate Loop開始前に追加工程を挿入する。正本順序は、(1) Current Studio Battle Package Template生成/説明/Import-Execution契約を監査して確認済み差分だけを修正、(2) 修正適用後のfresh Current Templateを基準にAI側同条件デモPackageと基準Result/Evidenceを作成、(3) Humanが実機StudioでCurrent Template取得→デモPackage取込→全指定Job実行→Result Package出力まで実施、(4) Human実機Result PackageをAI基準Resultと照合し、JOB_ERROR=0、同一Seed再現、Formal provenance/trace、legacy fallback不使用等が一致した時点で『実機テスト完了』とする。実機で単に画面が動くことやPackageが読み込めることを完了条件にしない。不一致・JOB_ERROR・provenance mismatch・replay mismatchが1件でもあればP4 Candidate Loopは開始せず、問題報告→Human承認→別Correction Taskへ戻る。先に未承認で生成されたTASK-BAL-026/GKS-B768関連Artifactは正式成果物・baseline・Evidenceとして採用しない。誤採用防止のためTASK-BAL-026はProjectへ登録せず、正式追加TaskはTASK-BAL-027から開始する。",
+      "rationale": "HumanがP4へ入る前にStudio実機とAI環境の一致確認を要求し、さらに作業開始前の報告・Human承認を必須としたため。Humanは表現を『実機稼働』ではなく『実機テスト完了』へ明示修正しており、完了は実行と結果照合までを含む。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T10:23:00+09:00",
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
     }
   ],
   "specifications": [
@@ -3754,13 +3775,13 @@
       "title": "Balance Result Evidence Expansion",
       "target_type": "System",
       "target_id": "SYS-BAL-CROSS_META",
-      "status": "Open",
+      "status": "Closed",
       "severity": "High",
-      "summary": "Result Packageへper-skill usage、Passive/Equipment contribution、Status uptime/stack/duration、MP/resource efficiency、cast/CD failure、death cause/EHP、Formal AI trace、provenance/versionを追加し、AI Candidate LoopとPromotion Evidenceに必要なKPIを出力する。\n\n[P3 HANDOFF]\nreuse_system: Existing Battle Package Result Package / metrics / trace\nreuse_entrypoint: studio/index.html::battlePackageAiSummary | studio/index.html::exportBattlePackageResult | studio/index.html::battleUnitMetrics | studio/index.html::battleTotals\ncurrent_gap: Current result output centers on win/loss/draw, ticks, basic damage/heal/hit/miss/crit/skill-use/status counts and representative runs. It lacks the attribution/provenance needed for Balance promotion.\nrequired_extension: Extend existing job results/AI summary/result manifest with per-skill usage/output, Passive/Equipment contribution, Status uptime/stack/duration, MP/resource efficiency, cast/CD failures, death cause/EHP, Formal AI trace and complete provenance.\nforbidden_duplicate: Do not build a separate analytics simulator or result pipeline detached from the Package that executed the trials.\nclosure_check: Result Package contains machine-readable attribution + provenance sufficient for paired A/B, sensitivity, interaction and promotion audit.",
+      "summary": "Result Packageへper-skill usage、Passive/Equipment contribution、Status uptime/stack/duration、MP/resource efficiency、cast/CD failure、death cause/EHP、Formal AI trace、provenance/versionを追加し、AI Candidate LoopとPromotion Evidenceに必要なKPIを出力する。\n\n[P3 HANDOFF]\nreuse_system: Existing Battle Package Result Package / metrics / trace\nreuse_entrypoint: studio/index.html::battlePackageAiSummary | studio/index.html::exportBattlePackageResult | studio/index.html::battleUnitMetrics | studio/index.html::battleTotals\ncurrent_gap: Current result output centers on win/loss/draw, ticks, basic damage/heal/hit/miss/crit/skill-use/status counts and representative runs. It lacks the attribution/provenance needed for Balance promotion.\nrequired_extension: Extend existing job results/AI summary/result manifest with per-skill usage/output, Passive/Equipment contribution, Status uptime/stack/duration, MP/resource efficiency, cast/CD failures, death cause/EHP, Formal AI trace and complete provenance.\nforbidden_duplicate: Do not build a separate analytics simulator or result pipeline detached from the Package that executed the trials.\nclosure_check: Result Package contains machine-readable attribution + provenance sufficient for paired A/B, sensitivity, interaction and promotion audit.\n\n[TASK-BAL-020 / TASK-BAL-004 VERIFIED CLOSURE]\nGKS-B767 Result Package emits machine-readable Formal Skill attribution, Equipment/Passive contribution, Status/Resource/Cast-CD/Death-EHP/Formal AI trace, owner provenance and deterministic replay fingerprints. TASK-BAL-020 P3-7 evidence records all 14 P3 requirements Closed; fresh B767 manifest identity, static audit, Quick/Full inspection and P4 preflight confirm the implementation is present. The prior Open value was a Development Project status synchronization omission, not an open Source gap.",
       "required_human_decision": "",
       "source": "SourceAudit",
       "created_at": "2026-08-22T13:58:00+09:00",
-      "updated_at": "2026-08-23T13:32:00+09:00"
+      "updated_at": "2026-08-24T09:14:00+09:00"
     },
     {
       "id": "REQ-BAL-AUTH-001",
@@ -3933,7 +3954,7 @@
       "id": "TASK-BAL-004",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "P4 Formal Combat Runtime Readiness Preflightを実行する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 200,
       "depends_on": [
         "TASK-BAL-020"
@@ -3947,7 +3968,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T13:58:00+09:00"
+      "updated_at": "2026-08-24T09:14:00+09:00"
     },
     {
       "id": "TASK-BAL-005",
@@ -3956,9 +3977,9 @@
       "status": "Blocked",
       "execution_order": 210,
       "depends_on": [
-        "TASK-BAL-004"
+        "TASK-BAL-030"
       ],
-      "acceptance_criteria": "- Existing AI Battle PackageのTemplate→Import→Validate→Execute→Result Package→Import経路を使用する。\n- 同一Input/Seed/Versionでpaired A/B、Sensitivity、2-way interactionを実施する。\n- Screen 100 seed → Refine 1,000 → Final/Holdout 10,000を基準に段階評価する。\n- Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを残し、Current activeへは昇格しない。",
+      "acceptance_criteria": "- Existing AI Battle PackageのTemplate→Import→Validate→Execute→Result Package→Import経路を使用する。\n- 同一Input/Seed/Versionでpaired A/B、Sensitivity、2-way interactionを実施する。\n- Screen 100 seed → Refine 1,000 → Final/Holdout 10,000を基準に段階評価する。\n- Weapon/Armor/Skill/Passive/AI/Enemy等のmarginal contribution、distribution、failure taxonomyを保存する。\n- Candidate winner/rejected evidenceを残し、Current activeへは昇格しない。\n- TASK-BAL-030でHuman実機ResultとAI基準の一致を確認し、『実機テスト完了』GateがPassedするまで開始しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -3967,7 +3988,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-23T12:59:00+09:00"
+      "updated_at": "2026-08-24T10:23:00+09:00"
     },
     {
       "id": "TASK-BAL-006",
@@ -4509,6 +4530,86 @@
       },
       "created_at": "2026-08-23T20:28:00+09:00",
       "updated_at": "2026-08-23T20:28:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-027",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Preflight: Current Battle Package Templateを監査・修正する",
+      "status": "Blocked",
+      "execution_order": 201,
+      "depends_on": [
+        "TASK-BAL-004"
+      ],
+      "acceptance_criteria": "- 開始前にHumanへ作業宣言を提示し、TASK-BAL-027の明示開始承認を得る。\n- fresh Current SourceからStudioが実際に出力するAI Battle Package Templateと、Current Import/Validation/Execution/Result契約を比較する。\n- P3-5/P3-6/P3-7で追加・変更されたFormal Lifecycle、Character/Monster経路、Result Evidence/replay/provenance等について、Template生成物の未追随箇所を列挙する。\n- 確認できたTemplate生成/説明/契約追随差分だけを既存Battle Package Template generatorへ最小修正する。戦闘式、Balance値、Gameplay Specification、Game Data、Current activeは変更しない。\n- 修正後TemplateをStudio自身から再出力し、Import validatorとCurrent Formal Contractに整合することを確認する。\n- SOURCE_UPDATEのQuick/Accept/Release/Applied Fullを通し、直接Studio更新ZIPとEvidenceを作成する。\n- 新しい未計画問題を発見した場合は追加修正せず停止し、RULE-BAL-ISSUE-GATE-001へ戻る。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-028",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Preflight: AI同条件デモPackageと基準Resultを作成する",
+      "status": "Blocked",
+      "execution_order": 202,
+      "depends_on": [
+        "TASK-BAL-027"
+      ],
+      "acceptance_criteria": "- TASK-BAL-027修正がHumanによりStudioへ適用され、fresh Current Source/Current Templateとして再取得・確認済みである。\n- 開始前にHumanへ作業宣言を提示し、TASK-BAL-028の明示開始承認を得る。\n- fresh Current Templateを正本にしてHuman実機取込用Battle Packageを作成し、Template binding/schemaを手作業で旧形式へ戻さない。\n- Character Formal AIとMonster owner snapshotを含む同一Input/Seedの反復Jobを定義し、AI環境でImport/Validation/Executionを完走する。\n- AI基準Result Package、replay_fingerprint、job status、Formal AI trace、Monster owner provenance、formal evidence、legacy_fallback_usedを保存する。\n- Human比較用チェックリストに、同一Build/Template/Package hash/Seed/Job IDと期待結果を固定する。\n- JOB_ERRORまたはFormal validation errorがAI環境で残る場合はHuman実機テストへ進めない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-029",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Preflight: Human実機でBattle Packageテストを実行する",
+      "status": "Blocked",
+      "execution_order": 203,
+      "depends_on": [
+        "TASK-BAL-028"
+      ],
+      "acceptance_criteria": "- 開始前にHumanがTASK-BAL-029実機テスト開始を明示承認する。\n- Human実機上のCurrent StudioからAI用Template ZIPを実際に出力し、TASK-BAL-028の期待Current TemplateとBuild/Version/主要bindingが一致することを確認する。\n- TASK-BAL-028のHuman取込用Battle Packageを実機Studioへ取り込み、Validation完了時点でJOB_ERROR=0であることを確認する。\n- 指定された全Jobを実機で実行し、途中でJOB_ERROR/runtime error/validation errorを残さない。\n- 実機StudioからResult Package ZIPを正式出力し、HumanがAIへ提示できる状態にする。\n- このTaskの完了は『Result Packageを出力できた』までであり、AI環境との一致判定はTASK-BAL-030で行う。\n- 実機で不具合・不一致を発見した場合、その場で修正せず実行結果/再現条件を保存して停止する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-030",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Preflight: Human実機ResultをAI基準と照合して実機テスト完了を確定する",
+      "status": "Blocked",
+      "execution_order": 204,
+      "depends_on": [
+        "TASK-BAL-029"
+      ],
+      "acceptance_criteria": "- HumanからTASK-BAL-029で実機出力したResult Package ZIPを受領し、開始前にTASK-BAL-030照合開始の明示承認を得る。\n- Human実機とAI基準でBuild/Template/Package/Input/Seed/Job ID bindingが一致していることを確認する。\n- Human実機Resultの全Jobが成功し、JOB_ERROR=0、Formal validation error=0であることを確認する。\n- 同一Seed反復Jobのreplay_fingerprintが決定的に一致し、AI基準とHuman実機の再現対象Result/Evidenceが一致することを確認する。\n- legacy_fallback_used=false、Formal AI trace、Monster owner provenance、Skill/Status/Resource/Cast-CD/Contribution/Death-EHP等の要求Evidenceを照合する。\n- 全比較PASSかつHumanが実機テスト完了を確認した時だけ、本追加工程をCompletedとしてTASK-BAL-005を次run開始可能状態へ戻す。\n- 1項目でも不一致ならTASK-BAL-005をBlockedのまま維持し、原因・再現・影響・修正候補を報告してHuman承認へ戻る。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
     }
   ],
   "checks": [
@@ -5116,22 +5217,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-004",
-      "status": "Pending",
-      "result": "P3-1〜P3-7 implementation and closure evidence are complete through TASK-BAL-020. P4 is still Blocked pending Human application/fresh-source verification of GKS-B767 via CHK-BAL-P4-B767-APPLY-001, followed by a separate TASK-BAL-004 Runtime Readiness Preflight run.",
-      "evidence": "P3-P4-RELEASE-GATE.json inside DEV-V9-BALANCE-001_TASK-BAL-003_P3-EVIDENCE-HANDOFF.zip sha256=fef428575d6e1fb7a3efaf9e3c6c0a2a0e9ef51d4f71a2d19593d76da04975bb",
+      "status": "Passed",
+      "result": "P4 Runtime Readiness Preflight passed on fresh GKS-B767. REQ-BAL-PKG-001..012, REQ-BAL-AUTH-001 and REQ-BAL-SKILL-AUTH-001 are all verified Closed for the Candidate Loop. No unresolved blocking Failed Check, provenance mismatch, or Formal legacy fallback remains. TASK-BAL-005 may start in the next AI run; it was not started here.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-004_P4-READINESS-EVIDENCE.zip sha256=b25563715358977de37b8e21490e8ca08c6bc6abb5159bc3cc238b9a138370c8; 14/14 requirement matrix PASS",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T08:49:00+09:00",
+      "checked_at": "2026-08-24T09:14:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T09:14:00+09:00",
+        "reason": "P4 Formal Combat Runtime Readiness acceptance criteria satisfied.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-23T13:32:00+09:00",
-      "updated_at": "2026-08-24T08:49:00+09:00"
+      "updated_at": "2026-08-24T09:14:00+09:00"
     },
     {
       "id": "CHK-BAL-P3-RECOVERY-PLAN-GATE-001",
@@ -6107,11 +6208,80 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-BAL-004",
-      "status": "Pending",
-      "result": "GKS-B767 direct Studio update artifact is release-ready but has not yet been verified from a fresh Human-applied Current Source. TASK-BAL-004 P4 Runtime Readiness Preflight must remain blocked until Human applies GKS-B767 and a fresh Current Source verifies build/manifest/tree and Formal Result Evidence paths.",
-      "evidence": "artifact=DEV-V9-BALANCE-001_TASK-BAL-020_GKS-B767_STUDIO-UPDATE.zip sha256=dc63b3d857f576865d2e9c5d9b07b5d9ead3026c9875ef6719518c927ace8d13; target manifest=020991f78a861b86415c655f7febd5404dcd76ea6f64b365aea122dbccf4c205; target tree=141adabdad5df4d334e91c0fcbadbdaafa4a927a6f27ac376068f6ba22235ea0",
+      "status": "Passed",
+      "result": "Fresh Current Source verified as GKS-B767 / GA-B486.211. package_manifest SHA-256 exactly matches TASK-BAL-020 target, all 642 manifest entries pass size/hash validation, and manifest-covered Source matches the approved B767 target. The only full-tree difference is the separately managed canonical Development Project JSON. Fresh Quick 11/11 and Full 26/26 pass with warnings=0/timeouts=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-004_P4-READINESS-EVIDENCE.zip sha256=b25563715358977de37b8e21490e8ca08c6bc6abb5159bc3cc238b9a138370c8; source_zip sha256=8ee40e85a4ac8bb38d1337a8d717917ae6ad3b4520c380a5bbbfb77f304550d0; package_manifest sha256=020991f78a861b86415c655f7febd5404dcd76ea6f64b365aea122dbccf4c205; current_tree sha256=7caa146144bd36b921a79c025886bbb2fdacd534c397b59b8c358752d7264295",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T08:49:00+09:00",
+      "checked_at": "2026-08-24T09:14:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T09:14:00+09:00",
+        "reason": "Human-applied GKS-B767 was reacquired and verified from fresh Current Source.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T08:49:00+09:00",
+      "updated_at": "2026-08-24T09:14:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-RUNTIME-READINESS-001",
+      "title": "P4 Formal Combat Runtime Readiness Preflight",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-004",
+      "status": "Passed",
+      "result": "Fresh GKS-B767: manifest 642/642 PASS, Quick 11/11 PASS, Full 26/26 PASS, Formal envelope/contribution smoke 8/8 PASS. All 14 approved P3 Gap Requirements are verified Closed; Formal Result Evidence contains attribution/provenance/replay fingerprint and legacy_fallback_used=false in the retained exact-target E2E evidence. Open Formal blockers=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-004_P4-READINESS-EVIDENCE.zip sha256=b25563715358977de37b8e21490e8ca08c6bc6abb5159bc3cc238b9a138370c8",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T09:14:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T09:14:00+09:00",
+        "reason": "TASK-BAL-004 acceptance criteria satisfied.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T09:14:00+09:00",
+      "updated_at": "2026-08-24T09:14:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-HUMAN-PREFLIGHT-PLAN-001",
+      "title": "P4前Human実機テスト追加工程 Plan Gate",
+      "gate": "Implementation",
+      "target_type": "Project",
+      "target_id": "DEV-V9-BALANCE-001",
+      "status": "Passed",
+      "result": "HumanがTemplate修正からHuman実機テスト完了までをP4前追加工程として登録することを承認。完了の意味は実機稼働ではなく、実機で全Jobを実行してResult Packageを出力し、AI基準との一致確認まで完了すること。各追加Taskの実行開始は別途Human明示承認が必要。",
+      "evidence": "Human instruction 2026-08-24 10:23 JST",
+      "checked_by": "Human",
+      "checked_at": "2026-08-24T10:23:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T10:23:00+09:00",
+        "reason": "Human explicitly approved adding the plan, not executing the tasks.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-TEMPLATE-SYNC-GATE-001",
+      "title": "P4 Human Preflight Template Current-sync Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-027",
+      "status": "Pending",
+      "result": "TASK-BAL-027はHumanの個別開始承認前。Source修正禁止。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -6121,8 +6291,100 @@
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-24T08:49:00+09:00",
-      "updated_at": "2026-08-24T08:49:00+09:00"
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-AI-REFERENCE-GATE-001",
+      "title": "P4 Human Preflight AI Reference Package Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-028",
+      "status": "Pending",
+      "result": "TASK-BAL-027完了・適用確認・Human個別開始承認を待つ。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-HUMAN-DEVICE-EXECUTION-001",
+      "title": "P4 Human Real-device Battle Package Test Execution Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-029",
+      "status": "Pending",
+      "result": "Human実機でCurrent Template取得、Package取込、全Job実行、Result Package出力が完了するまでPending。",
+      "evidence": "",
+      "checked_by": "Human",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-HUMAN-DEVICE-EQUIVALENCE-001",
+      "title": "P4 Human Real-device vs AI Environment Equivalence / Test Completion Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-030",
+      "status": "Pending",
+      "result": "Human実機Result PackageとAI基準ResultのBuild/Input/Seed/Job/replay/provenance/trace/formal evidence一致を確認し、Human実機テスト完了を確定するまでPending。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-CANDIDATE-HUMAN-PREFLIGHT-GATE-001",
+      "title": "P4 Candidate Loop Human Real-device Test Completion Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-005",
+      "status": "Pending",
+      "result": "TASK-BAL-030 PassedかつHuman実機テスト完了確認までTASK-BAL-005をBlockedとする。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
     }
   ],
   "workflow": {
@@ -6338,6 +6600,22 @@
       "task_id": "TASK-BAL-020",
       "created_at": "2026-08-24T08:49:00+09:00",
       "updated_at": "2026-08-24T08:49:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-P4-RUNTIME-READINESS-001",
+      "title": "P4 Formal Combat Runtime Readiness passed",
+      "summary": "Fresh GKS-B767 was verified after Human application. All 14 P3 requirements were confirmed closed, including synchronization of REQ-BAL-PKG-012 from Open to Closed based on TASK-BAL-020 GKS-B767 evidence. Quick 11/11, Full 26/26 and Formal envelope/contribution smoke 8/8 passed. TASK-BAL-004 is Done and TASK-BAL-005 is Todo for the next AI run only.",
+      "task_id": "TASK-BAL-004",
+      "created_at": "2026-08-24T09:14:00+09:00",
+      "updated_at": "2026-08-24T09:14:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-P4-HUMAN-REAL-DEVICE-TEST-PLAN-001",
+      "title": "P4前Template修正→Human実機テスト完了工程を追加",
+      "summary": "Human指示によりP4 Candidate Loop前へ4 Taskを追加。TASK-BAL-027 Template Current-sync SOURCE_UPDATE、TASK-BAL-028 AI同条件デモ/基準Result、TASK-BAL-029 Human実機で全Job実行/Result出力、TASK-BAL-030 Human実機ResultとAI環境の一致照合/実機テスト完了Gate。『実機稼働』ではなく『実機テスト完了』を終点とする。各Taskは個別Human承認までBlocked。先の未承認TASK-BAL-026/GKS-B768 Artifactは正本へ採用しない。Source/Game Data/Current active変更はこのPlan登録runでは0件。",
+      "task_id": "TASK-BAL-027",
+      "created_at": "2026-08-24T10:23:00+09:00",
+      "updated_at": "2026-08-24T10:23:00+09:00"
     }
   ],
   "authority": {
