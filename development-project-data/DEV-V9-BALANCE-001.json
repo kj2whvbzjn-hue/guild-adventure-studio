@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T07:21:25.097Z"
+    "updated_at": "2026-08-24T07:28:53.830Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-PLAYER-001",
-    "theme": "TASK-BAL-045 Measurement Contract PASS; TASK-BAL-046 M1 Character/Job Expected Stat Curve start approval wait",
-    "goal": "TASK-BAL-045 completed: 232 metrics registered across M0-M24 with definition/unit/method/input/authority/distribution/downstream/invalidation contracts. No gameplay balance value was measured or changed. Next is TASK-BAL-046 M1 Character/Job Expected Stat Curve, blocked pending separate Human start approval."
+    "theme": "TASK-BAL-046 blocked by M1 Expected LUK Registry gap",
+    "goal": "TASK-BAL-046 was Human-approved to start, but Fresh source precheck found Expected LUK missing from TASK-BAL-045 M1 Measurement Registry. Issue Gate is active. No M1 curve calculation or gameplay changes were performed. Recommended next action is a separately Human-approved TASK-BAL-045 Measurement Registry correction adding stable BAL-M1-010 Expected LUK, then resume TASK-BAL-046 in a later AI run."
   },
   "project_rules": [
     {
@@ -946,6 +946,21 @@
       "artifact_note": "Human-directed measurement-first redesign 2026-08-24",
       "created_at": "2026-08-24T15:45:00+09:00",
       "updated_at": "2026-08-24T15:45:00+09:00"
+    },
+    {
+      "id": "DISC-BAL-005",
+      "title": "M1 Expected Stat RegistryのLUK漏れ",
+      "status": "Open",
+      "summary": "TASK-BAL-046開始Pre-flightで、Current formal Character Statは7種だがM0 Registryの個別Expected Stat Metricは6種で、LUKが漏れていることを検出。",
+      "body": "Fresh GKS-B770 sourceではapp-runtime.jsのSTATS、Job Master aptitude、Adventure Settings initial_statsのすべてにLUKが存在する。TASK-BAL-045 RegistryではExpected STR/DEX/INT/VIT/MND/AGIだけが個別Metric化され、Expected LUKが未登録。M1をこのまま実行するとMeasurement ContractとCurrent正式Stat集合が不一致になるためIssue Gateで停止した。",
+      "open_questions": "- BAL-M1-010 Expected LUKを追加するTASK-BAL-045 Registry correctionをHuman承認するか。\n- 修正完了後、TASK-BAL-046を別AI runで再開する。",
+      "conclusion": "",
+      "related_discussion_ids": [
+        "DISC-BAL-004"
+      ],
+      "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-046_PRECHECK-ISSUE-LUK-REGISTRY.json",
+      "created_at": "2026-08-24T16:22:00+09:00",
+      "updated_at": "2026-08-24T16:22:00+09:00"
     }
   ],
   "decisions": [
@@ -5268,12 +5283,12 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T16:22:00+09:00"
       },
       "created_at": "2026-08-24T15:45:00+09:00",
-      "updated_at": "2026-08-24T15:55:00+09:00"
+      "updated_at": "2026-08-24T16:22:00+09:00"
     },
     {
       "id": "TASK-BAL-047",
@@ -8093,6 +8108,29 @@
       "blocking": false,
       "created_at": "2026-08-24T16:15:00+09:00",
       "updated_at": "2026-08-24T16:15:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK046-PRECHECK-LUK-REGISTRY-001",
+      "title": "TASK-BAL-046 precheck: Current formal LUK is missing from M1 Expected Stat Registry",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-046",
+      "status": "Failed",
+      "result": "Fresh source preflight passed, but Current formal STATS are STR/VIT/AGI/DEX/INT/MND/LUK while TASK-BAL-045 Measurement Registry explicitly defines Expected STR/DEX/INT/VIT/MND/AGI only. Expected LUK is missing. RULE-BAL-ISSUE-GATE-001 requires stopping before M1 calculation or registry correction.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-046_PRECHECK-ISSUE-LUK-REGISTRY.json sha256=418f40a9fb31c6d8b2725b518a19fd40e19269c425172e2911809395a91298ca",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T16:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T16:22:00+09:00",
+      "updated_at": "2026-08-24T16:22:00+09:00"
     }
   ],
   "workflow": {
@@ -8548,6 +8586,14 @@
       "task_id": "TASK-BAL-045",
       "created_at": "2026-08-24T16:15:00+09:00",
       "updated_at": "2026-08-24T16:15:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK046-PRECHECK-LUK-ISSUE-001",
+      "title": "TASK-BAL-046開始Pre-flightでLUK Registry Gapを検出しIssue Gate停止",
+      "summary": "HumanのTASK-BAL-046開始承認後、Fresh GKS-B770/GA-B486.211 sourceをPre-flight。manifest 642/642 PASS。Current formal Character StatsはSTR/VIT/AGI/DEX/INT/MND/LUKだが、TASK-BAL-045 Registryの個別Expected Stat MetricにLUKがないことを検出。RULE-BAL-ISSUE-GATE-001に従いM1算出へ進まず停止。Source/Game Data/Current active/Gameplay numeric変更0。",
+      "task_id": "TASK-BAL-046",
+      "created_at": "2026-08-24T16:22:00+09:00",
+      "updated_at": "2026-08-24T16:22:00+09:00"
     }
   ],
   "authority": {
