@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T12:25:37.252Z"
+    "updated_at": "2026-08-24T12:33:01.283Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072 Monster Core PASS; TASK-BAL-073 Core Enemy Budget start approval wait",
-    "goal": "Use BAL-R5-MONSTER-CORE-001 and the retained TASK-BAL-071-CORR-002 Multi-Loadout Bare Player Reference as the only P6 inputs. TASK-BAL-073 must not start until separate Human approval. Skill remains after Monster Core/Core Enemy Budget. No Product Monster Master, Source, Game Data, or Current active mutation was made in TASK-BAL-072."
+    "work_box_id": "BOX-V9-BAL-BATTLE-001",
+    "theme": "TASK-BAL-073 Core Enemy Budget PASS; TASK-BAL-074 Skill Balance start approval wait",
+    "goal": "Use BAL-R5-CORE-ENEMY-BUDGET-001 as the P7 normalized enemy-budget performance unit: 1 point = +1% linear category performance from frozen Monster Core. TASK-BAL-074 must use Monster Core + this conversion + Formal Skill qualification and must not start until separate Human approval. HP/Attack/Defense allocation rates and total Enemy Budget are not Product-frozen by P6; Skill/AI/Utility Budget remain deferred."
   },
   "project_rules": [
     {
@@ -305,6 +305,15 @@
       "source_id": "conversation:2026-08-24 zero-base balance redesign approval",
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-CORE-ENEMY-BUDGET-POINT-001",
+      "text": "TASK-BAL-073で確定したCore Enemy Budget 1 pointはraw stat 1ではなく、Frozen Monster Coreから対象category performanceをlinearに+1%する正規化単位とする。 HPはdurability、Attack Performanceはexpected basic offense、Defense PerformanceはEHPを基準に換算する。 DefenseをResistance/Evasion等へ、Attack PerformanceをAttack/Accuracy/AGI等へ具体配分することは別Balance判断であり、P6の1 point換算から自動推定しない。 Skill/AI/Utility Budgetへこの係数を自動流用しない。",
+      "status": "Active",
+      "source_type": "DevelopmentTaskResult",
+      "source_id": "TASK-BAL-073",
+      "created_at": "2026-08-24T21:25:00+09:00",
+      "updated_at": "2026-08-24T21:25:00+09:00"
     }
   ],
   "source_baseline": {
@@ -6257,7 +6266,7 @@
       "id": "TASK-BAL-073",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P6 HP / Attack / Defense Core Enemy Budget Conversionを確定する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 252,
       "depends_on": [
         "TASK-BAL-072"
@@ -6266,13 +6275,13 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T21:25:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:12:00+09:00",
-      "result_scope": "DEPENDENCY_READY; WAIT_HUMAN_START_APPROVAL. Required Monster Core input=DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82."
+      "updated_at": "2026-08-24T21:25:00+09:00",
+      "result_scope": "PASS. BAL-R5-CORE-ENEMY-BUDGET-001 frozen as a normalized DEVELOPMENT_ONLY conversion: category_performance_multiplier = 1 + budget_points*0.01. One HP point, Attack Performance point, and Defense Performance point each yield x1.01 normalized duel-pressure value. Coefficient selected without experience target by V9/formal cap alignment: Lv50 × Mythic 2000% => Budget1000; legacy durability 30%=300; 300 Defense points => EHP x4 => Resistance-only 75% cap exactly. 350 conversion rows / 2450 cross-job checks PASS; sign reversals=0; normalized level dependence=0. Total Enemy Budget/allocation rates/rank modifiers and Skill/AI/Utility conversion remain unfrozen/deferred. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4. Source/Game Data/Current active changes=0."
     },
     {
       "id": "TASK-BAL-074",
@@ -6293,7 +6302,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T21:25:00+09:00",
+      "result_scope": "DEPENDENCY_READY; WAIT_HUMAN_START_APPROVAL. Required Core Enemy Budget input=DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4; conversion=1 point => +1% linear normalized category performance. TASK-BAL-050 remains qualification-only."
     },
     {
       "id": "TASK-BAL-075",
@@ -9678,6 +9688,29 @@
       "blocking": false,
       "created_at": "2026-08-24T21:12:00+09:00",
       "updated_at": "2026-08-24T21:12:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073-CORE-ENEMY-BUDGET-001",
+      "title": "TASK-BAL-073 HP / Attack / Defense Core Enemy Budget conversion gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073",
+      "status": "Passed",
+      "result": "PASS. Core performance point frozen at +1% linear category performance. 350 Monster Core rows and 2450 Level×cross-job normalized checks confirm HP/Attack/Defense 1-point exchange x1.01, sign reversals 0, normalized level dependence 0. V9/formal cap calibration selects 1%: max retained seed Budget1000 × legacy durability30%=300 points, whose Defense EHP x4 maps to exactly 75% resistance cap. 2%/5% candidates exceed the cap; 0.5% underuses the tested max range. Evasion-only conversion is matchup-dependent and remains non-canonical. No Source/Game Data/Current active mutation.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4; input TASK-BAL-072 sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T21:25:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T21:25:00+09:00",
+        "reason": "R5-P6 mathematical conversion gate passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T21:25:00+09:00",
+      "updated_at": "2026-08-24T21:25:00+09:00"
     }
   ],
   "workflow": {
@@ -10301,6 +10334,14 @@
       "task_id": "TASK-BAL-072",
       "created_at": "2026-08-24T21:12:00+09:00",
       "updated_at": "2026-08-24T21:12:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073-COMPLETE-001",
+      "title": "TASK-BAL-073 Core Enemy Budget Conversion完了",
+      "summary": "Human start approval received. HP/Attack/DefenseのCore Enemy Budgetをdimensionless performance pointへ正規化し、1 point=Frozen Monster Core比+1% linear category performanceを確定。 V9/formal calibrationではLv50×Mythic2000%=Budget1000、legacy durability30%=300 pointsと75% Resistance capを使用し、300 Defense points=EHP x4=Resistance75%となる1%/pointを選定。 350 rows / 2450 cross-job checks PASS、符号逆転0、normalized level dependence 0。Evasion-onlyはmatchup依存のためcanonical化せず、HP/Defense allocation、総Budget、Rank/Difficulty、Skill/AI/Utilityは後段へ保持。 Canonical retained artifact sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4. Source/Game Data/Current active changes=0. Next TASK-BAL-074 awaits separate Human approval.",
+      "task_id": "TASK-BAL-073",
+      "created_at": "2026-08-24T21:25:00+09:00",
+      "updated_at": "2026-08-24T21:25:00+09:00"
     }
   ],
   "authority": {
