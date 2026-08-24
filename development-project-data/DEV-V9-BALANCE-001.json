@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T10:20:06.359Z"
+    "updated_at": "2026-08-24T10:37:12.191Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "Zero-base Balance Plan R5 Human Approved; TASK-BAL-070 Basic Combat start approval wait",
-    "goal": "旧M4〜M24系列には着手しない。次の実行候補はTASK-BAL-070で、Formal Basic Attackを含むBasic Combat PrimitiveをCurrent Contractどおり成立させる。Skill BalanceはMonster Core/Core Enemy Budget完成後。Human Experience/Difficulty TargetはFull Mathematical Baseline完成後まで確定しない。TASK-BAL-070は別Human開始承認を得るまでSource変更・実測を開始しない。"
+    "theme": "TASK-BAL-070 target PASS; GKS-B771 Human apply / fresh-source verification wait",
+    "goal": "Basic Combat PrimitiveのGKS-B771 target artifactはCurrent Contract整合GateをPASS。Current SourceはまだGKS-B770のため、HumanがStudio更新ZIPを適用しfresh-source verificationで既存Basic Attack mismatchを解消確認するまでTASK-BAL-071を開始しない。"
   },
   "project_rules": [
     {
@@ -930,6 +930,48 @@
       "summary": "Existing Battle Package/Formal AI pipeline was minimally extended with typed/versioned ai_master_snapshot Candidate support. Character Formal AI binds program/layout/master snapshot, compile uses Package-local AI Condition/Target/Action definitions and transient skills, and ambient Studio Project AI Master fallback is not used. Snapshot reference/version/data_version mismatches fail closed. Formal Evidence includes AI Master Snapshot candidate provenance. Template contract advances to v1.3.0. No duplicate AI system, gameplay formula, Balance value, Game Data, Current active, AI semantics, or deletion change.",
       "created_at": "2026-08-24T11:44:00+09:00",
       "updated_at": "2026-08-24T11:44:00+09:00"
+    },
+    {
+      "id": "IMP-BAL-R5-P3-BASIC-COMBAT-001",
+      "title": "R5-P3 Basic Combat Primitive / Formal Basic Attack Current-Contract Alignment",
+      "status": "Completed",
+      "task_id": "TASK-BAL-070",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B771",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-BATTLE-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-070"
+      ],
+      "result": "Partial",
+      "evidence": "GKS-B771 target artifact prepared. Studio update ZIP sha256=2b4247a196be41e9f4c35957465bd6e900528569744349c8d3f6fb03b6270f93; Evidence ZIP sha256=5287ab30d6d15daeefd362dbe2bf20b296a57d7945557fa5d65a3da5d0493f38; Golden 413/413 PASS; Quick 11/11 PASS; SOURCE_UPDATE Accept 13/13 PASS; applied-state Full 26/26 PASS. Human Studio Apply/fresh-source verification pending.",
+      "recorded_at": "2026-08-24T19:31:24+09:00",
+      "baseline": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B770",
+        "package_manifest_sha256": "abfa0198c34f54e6a8c00cf65204cfc275b0938d3c5b67d4111e75fab674b2a2",
+        "source_tree_sha256": "1d2b724c80d81e5e71eaa451e22d53169714e5fbaca6add472b73a548eb2fdda"
+      },
+      "target": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B771",
+        "package_manifest_sha256": "a60ed7082fb7d7c19b1c2a9ff8e685a8ae0b8cba09a1813464173335c5604347",
+        "source_tree_sha256": "8c14222b1044d90dbafa8972d841664581ad1cc8d8ba7b4e12fc37bb6eac25d3",
+        "artifact_id": "GKS-B771-8c14222b1044"
+      },
+      "artifact": {
+        "file": "DEV-V9-BALANCE-001_TASK-BAL-070_GKS-B771_STUDIO-UPDATE.zip",
+        "sha256": "2b4247a196be41e9f4c35957465bd6e900528569744349c8d3f6fb03b6270f93",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "summary": "Basic AttackをStudio Formal PackageとGame Runtimeの両方でCurrent Battle contractへ整合。Accuracy/(Accuracy+Evasion) clamp 5..100、Damage Resistance 0..75、Resistance後Critical、最終floor/min0、KO cleanupを通常攻撃へ接続。Equipment由来accuracy/evasion/base_critical_rateは既存正式bindingから反映。Gameplay formula topology/order/rounding/Balance係数は変更なし。Current SourceへのHuman Applyは未実施のためimplementation resultはPartial。"
     }
   ],
   "discussions": [
@@ -6048,7 +6090,7 @@
       "id": "TASK-BAL-070",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P3 Basic Combat Primitive / Formal Basic Attack Current-Contract Alignment",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 249,
       "depends_on": [
         "TASK-BAL-DESIGN-011",
@@ -6058,12 +6100,13 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T19:21:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T19:31:24+09:00",
+      "result_scope": "TARGET_ARTIFACT_PASS; GKS-B771 prepared and fully gated; Current Source apply/fresh verification pending before TASK-BAL-071."
     },
     {
       "id": "TASK-BAL-071",
@@ -9055,8 +9098,8 @@
       "target_type": "Project",
       "target_id": "DEV-V9-BALANCE-001",
       "status": "Failed",
-      "result": "Fresh GKS-B770 Formal Basic Attack bypasses Accuracy/Critical/Evasion/Resistance. Issue remains OPEN and is now the planned scope of TASK-BAL-070. It is not treated as a global blocker for the correction task itself; Bare Player/downstream execution is blocked until TASK-BAL-070 passes.",
-      "evidence": "TASK-BAL-048P_PRECHECK-FORMAL-BASIC-ATTACK-ISSUE.json",
+      "result": "Current GKS-B770 mismatch remains OPEN. TASK-BAL-070 produced GKS-B771 target where Basic Attack now uses Current Hit/Evasion, Resistance→Critical, final floor/min0 and KO paths; target Golden 413/413 and applied-state Full 26/26 PASS. Do not resolve this Current-Source check until Human applies B771 and a fresh-source rerun passes.",
+      "evidence": "TASK-BAL-048P_PRECHECK-FORMAL-BASIC-ATTACK-ISSUE.json; TASK-BAL-070_COMPLETION-REPORT.json; DEV-V9-BALANCE-001_TASK-BAL-070_GKS-B771_STUDIO-UPDATE.zip",
       "checked_by": "AI",
       "checked_at": "2026-08-24T17:59:00+09:00",
       "resolves_check_ids": [],
@@ -9069,7 +9112,7 @@
       },
       "blocking": true,
       "created_at": "2026-08-24T17:59:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T19:31:24+09:00"
     },
     {
       "id": "CHK-BAL-TASK048P-DIRECT-PHYSICAL-001",
@@ -9124,8 +9167,8 @@
       "target_type": "Task",
       "target_id": "TASK-BAL-071",
       "status": "Failed",
-      "result": "TASK-BAL-071 and all downstream R5 balance execution are blocked until TASK-BAL-070 resolves the open Formal Basic Attack contribution mismatch and Basic Combat Primitive passes Current-Contract conformance.",
-      "evidence": "CHK-BAL-RUNTIME-BASIC-ATTACK-CONTRIBUTION-MISMATCH-001; DEC-BAL-ZEROBASE-R5-APPROVAL-001",
+      "result": "GKS-B771 target artifact passes TASK-BAL-070 gates, but Current Source is still GKS-B770. TASK-BAL-071 and all downstream R5 execution remain blocked until Human applies B771 and fresh-source verification resolves CHK-BAL-RUNTIME-BASIC-ATTACK-CONTRIBUTION-MISMATCH-001.",
+      "evidence": "TASK-BAL-070_COMPLETION-REPORT.json; CHK-BAL-RUNTIME-BASIC-ATTACK-CONTRIBUTION-MISMATCH-001; DEC-BAL-ZEROBASE-R5-APPROVAL-001",
       "checked_by": "AI",
       "checked_at": "2026-08-24T19:13:00+09:00",
       "resolves_check_ids": [],
@@ -9138,7 +9181,7 @@
       },
       "blocking": true,
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-24T19:31:24+09:00"
     },
     {
       "id": "CHK-BAL-ZEROBASE-R5-PLAN-CONSISTENCY-001",
@@ -9162,6 +9205,29 @@
       "blocking": false,
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK070-TARGET-BASIC-COMBAT-001",
+      "title": "TASK-BAL-070 GKS-B771 Basic Combat target artifact gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-070",
+      "status": "Passed",
+      "result": "PASS. GKS-B771 target: deterministic Basic Combat Golden 413/413 PASS; target Quick 11/11 PASS; targeted regressions 5/5 PASS; SOURCE_UPDATE Accept 13/13 PASS with applied-state Full 26/26 PASS, warnings=0 timeouts=0. Functional changes are studio/index.html and game/assets/js/battle-control.js; Export unchanged, deletions=0, Game Data changes=0. Current GKS-B770 check intentionally remains unresolved until Human Apply + fresh-source verification.",
+      "evidence": "TASK-BAL-070_COMPLETION-REPORT.json sha256=de1cfc71ef09d040d0ac08610b9dc63017625ac082f17300f00a9a40e0ddb34c; DEV-V9-BALANCE-001_TASK-BAL-070_GKS-B771_STUDIO-UPDATE.zip sha256=2b4247a196be41e9f4c35957465bd6e900528569744349c8d3f6fb03b6270f93; DEV-V9-BALANCE-001_TASK-BAL-070_BASIC-COMBAT-EVIDENCE.zip sha256=5287ab30d6d15daeefd362dbe2bf20b296a57d7945557fa5d65a3da5d0493f38",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T19:31:24+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T19:31:24+09:00",
+        "reason": "Target artifact and applied-state source gate passed. Human Apply remains a separate Current-Source gate.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T19:31:24+09:00",
+      "updated_at": "2026-08-24T19:31:24+09:00"
     }
   ],
   "workflow": {
@@ -9729,6 +9795,14 @@
       "task_id": "TASK-BAL-DESIGN-011",
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK070-TARGET-COMPLETE-001",
+      "title": "TASK-BAL-070 GKS-B771 target completion",
+      "summary": "Human開始承認後、TASK-BAL-070のみを実行。Basic AttackのFormal/Game Runtime Current-Contract alignmentをGKS-B771として作成し、Golden 413/413、Quick 11/11、Update Accept 13/13、applied-state Full 26/26をPASS。Export/Game Data変更0、削除0。Current GKS-B770へのHuman Apply/fresh-source verificationは次回確認事項でありTASK-BAL-071は未着手。",
+      "task_id": "TASK-BAL-070",
+      "created_at": "2026-08-24T19:31:24+09:00",
+      "updated_at": "2026-08-24T19:31:24+09:00"
     }
   ],
   "authority": {
