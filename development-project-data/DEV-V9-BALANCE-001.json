@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T07:28:53.830Z"
+    "updated_at": "2026-08-24T07:32:10.888Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-PLAYER-001",
-    "theme": "TASK-BAL-046 blocked by M1 Expected LUK Registry gap",
-    "goal": "TASK-BAL-046 was Human-approved to start, but Fresh source precheck found Expected LUK missing from TASK-BAL-045 M1 Measurement Registry. Issue Gate is active. No M1 curve calculation or gameplay changes were performed. Recommended next action is a separately Human-approved TASK-BAL-045 Measurement Registry correction adding stable BAL-M1-010 Expected LUK, then resume TASK-BAL-046 in a later AI run."
+    "theme": "TASK-BAL-045 LUK Registry correction PASS; TASK-BAL-046 resume approval wait",
+    "goal": "Measurement Registry Revision 2 now has 233 metrics and complete 7/7 Current formal Character Stat Expected-Metric coverage (STR/VIT/AGI/DEX/INT/MND/LUK). The TASK-BAL-046 precheck issue is resolved. TASK-BAL-046 remains blocked and was not automatically resumed. No Source/Game Data/Current active/Formula/Gameplay numeric changes."
   },
   "project_rules": [
     {
@@ -950,17 +950,17 @@
     {
       "id": "DISC-BAL-005",
       "title": "M1 Expected Stat RegistryのLUK漏れ",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "TASK-BAL-046開始Pre-flightで、Current formal Character Statは7種だがM0 Registryの個別Expected Stat Metricは6種で、LUKが漏れていることを検出。",
       "body": "Fresh GKS-B770 sourceではapp-runtime.jsのSTATS、Job Master aptitude、Adventure Settings initial_statsのすべてにLUKが存在する。TASK-BAL-045 RegistryではExpected STR/DEX/INT/VIT/MND/AGIだけが個別Metric化され、Expected LUKが未登録。M1をこのまま実行するとMeasurement ContractとCurrent正式Stat集合が不一致になるためIssue Gateで停止した。",
       "open_questions": "- BAL-M1-010 Expected LUKを追加するTASK-BAL-045 Registry correctionをHuman承認するか。\n- 修正完了後、TASK-BAL-046を別AI runで再開する。",
-      "conclusion": "",
+      "conclusion": "Human approved the registry-only correction. BAL-M1-010 Expected LUK was added without renumbering existing metrics. Formal Character Stat Expected-Metric coverage now passes 7/7. TASK-BAL-046 was not resumed automatically.",
       "related_discussion_ids": [
         "DISC-BAL-004"
       ],
       "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-046_PRECHECK-ISSUE-LUK-REGISTRY.json",
       "created_at": "2026-08-24T16:22:00+09:00",
-      "updated_at": "2026-08-24T16:22:00+09:00"
+      "updated_at": "2026-08-24T16:28:00+09:00"
     }
   ],
   "decisions": [
@@ -1578,9 +1578,9 @@
     {
       "id": "SPEC-BAL-MEASUREMENT-REGISTRY-001",
       "title": "Game Balance Measurement Contract / Required Numeric Registry",
-      "status": "Draft",
-      "summary": "TASK-BAL-045 output. M0-M24に232 Metricを登録し、各数値の定義・単位・測定法・入力・Target/Derived区分・authority・distribution・downstream・invalidationを固定した実行Contract。Gameplay Target値そのものは含まず、M12 Human Gate前に難易度妥当性を宣言しない。",
-      "body": "Canonical external task artifact: DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-REGISTRY.json sha256=335448dc0a6528156d4d168b0c0bca50f1c3b37c8e7f2606be72df1211151efc\nHuman-readable contract: DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-CONTRACT.md sha256=fb0fc495a41e918592844b9dc0c334a9a38ecac8eb85917fda34409cac8c3e9b",
+      "status": "Approved",
+      "summary": "TASK-BAL-045 Measurement Registry Revision 2. M0-M24に233 Metricを登録。Current正式Character Stat STR/VIT/AGI/DEX/INT/MND/LUKの7/7すべてにM1 Expected Stat Metricを持つ。LUKはBAL-M1-010として追加し既存Metric IDは変更していない。",
+      "body": "Canonical external task artifact: DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-REGISTRY-R2.json sha256=f242d198a95b83325f8e9a4cffdea40df1d4fcdc037977f6227ceb436391507d\nHuman-readable contract: DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-CONTRACT-R2.md sha256=9134f3e1a45f3668404e63d8ff0c9b434fd1231cff5a008fa5f906f647239088\nCorrection evidence: DEV-V9-BALANCE-001_TASK-BAL-045_LUK-REGISTRY-CORRECTION.json sha256=304a763f150a77fa3942329bfa62c0e5af97fe4ef9e5f915a9b5a6595a559b09",
       "decision_refs": [
         "DEC-BAL-MEASUREMENT-PLAN-R2-APPROVAL-001",
         "DEC-BAL-MEASUREMENT-ORDER-001"
@@ -1588,16 +1588,16 @@
       "depends_on": [
         "SPEC-BAL-MEASUREMENT-REDESIGN-001"
       ],
-      "acceptance_criteria": "- M0-M24すべてに1件以上の登録Metricがある。\n- 各Metricはdefinition/unit/method/input/authority/downstream/invalidationを持つ。\n- TARGET MetricはHuman authorityを要求する。\n- Equipment eligibilityはjoint probability、iLv性能はIntrinsic/Progressionを分離する。\n- Source/Game Data/Current activeを変更しない。",
+      "acceptance_criteria": "- M0-M24すべてに1件以上の登録Metricがある。\n- 各Metricはdefinition/unit/method/input/authority/downstream/invalidationを持つ。\n- TARGET MetricはHuman authorityを要求する。\n- Current正式Character Stat STR/VIT/AGI/DEX/INT/MND/LUKの7種すべてにM1 Expected Stat Metricを持つ。\n- Equipment eligibilityはjoint probability、iLv性能はIntrinsic/Progressionを分離する。\n- Source/Game Data/Current activeを変更しない。",
       "system_node_id": "SYS-BAL-GAMEWIDE",
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
-      "approved_by": "",
-      "approved_at": "",
+      "revision": 2,
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T16:28:00+09:00",
       "created_at": "2026-08-24T16:15:00+09:00",
-      "updated_at": "2026-08-24T16:15:00+09:00"
+      "updated_at": "2026-08-24T16:28:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -8115,22 +8115,47 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-046",
-      "status": "Failed",
-      "result": "Fresh source preflight passed, but Current formal STATS are STR/VIT/AGI/DEX/INT/MND/LUK while TASK-BAL-045 Measurement Registry explicitly defines Expected STR/DEX/INT/VIT/MND/AGI only. Expected LUK is missing. RULE-BAL-ISSUE-GATE-001 requires stopping before M1 calculation or registry correction.",
-      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-046_PRECHECK-ISSUE-LUK-REGISTRY.json sha256=418f40a9fb31c6d8b2725b518a19fd40e19269c425172e2911809395a91298ca",
+      "status": "Passed",
+      "result": "Registry correction completed. BAL-M1-010 Expected LUK was added without renumbering existing Metric IDs. Current formal Character Stats STR/VIT/AGI/DEX/INT/MND/LUK now have 7/7 explicit M1 Expected Stat coverage. Registry completeness audit passed. TASK-BAL-046 remains blocked until separate Human resume approval.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-045_LUK-REGISTRY-CORRECTION.json sha256=304a763f150a77fa3942329bfa62c0e5af97fe4ef9e5f915a9b5a6595a559b09; DEV-V9-BALANCE-001_TASK-BAL-045_MEASUREMENT-REGISTRY-R2.json sha256=f242d198a95b83325f8e9a4cffdea40df1d4fcdc037977f6227ceb436391507d",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T16:22:00+09:00",
+      "checked_at": "2026-08-24T16:28:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human+AI",
+        "resolved_at": "2026-08-24T16:28:00+09:00",
+        "reason": "Human approved TASK-BAL-045 LUK Registry correction; correction and audit completed.",
         "mode": ""
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-24T16:22:00+09:00",
-      "updated_at": "2026-08-24T16:22:00+09:00"
+      "updated_at": "2026-08-24T16:28:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK045-LUK-REGISTRY-CORRECTION-001",
+      "title": "TASK-BAL-045 LUK Measurement Registry correction",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-045",
+      "status": "Passed",
+      "result": "PASS. Added BAL-M1-010 Expected LUK to Measurement Registry. Existing Metric IDs unchanged. Formal Character Stat Expected-Metric coverage is now 7/7. Registry metric count 232→233; M1 count 9→10. Required-field, unique-ID, stage coverage and Target authority audits all pass.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-045_LUK-REGISTRY-CORRECTION.json sha256=304a763f150a77fa3942329bfa62c0e5af97fe4ef9e5f915a9b5a6595a559b09",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T16:28:00+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-TASK046-PRECHECK-LUK-REGISTRY-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T16:28:00+09:00",
+        "reason": "Approved registry-only correction completed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T16:28:00+09:00",
+      "updated_at": "2026-08-24T16:28:00+09:00"
     }
   ],
   "workflow": {
@@ -8594,6 +8619,14 @@
       "task_id": "TASK-BAL-046",
       "created_at": "2026-08-24T16:22:00+09:00",
       "updated_at": "2026-08-24T16:22:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK045-LUK-REGISTRY-CORRECTION-001",
+      "title": "TASK-BAL-045 LUK Measurement Registry修正完了",
+      "summary": "Human承認に基づき、TASK-BAL-046 Pre-flightで検出したM1 Expected LUK漏れをRegistry-only correctionで解消。BAL-M1-010 Expected LUKを追加し、既存Metric IDは変更せず、Registry metric countを232→233、M1 metric countを9→10へ更新。Current正式Character Stat STR/VIT/AGI/DEX/INT/MND/LUKのExpected Stat coverageは7/7 PASS。Source/Game Data/Current active/Formula/Gameplay数値変更0。TASK-BAL-046は自動再開せずBlockedを維持。",
+      "task_id": "TASK-BAL-045",
+      "created_at": "2026-08-24T16:28:00+09:00",
+      "updated_at": "2026-08-24T16:28:00+09:00"
     }
   ],
   "authority": {
