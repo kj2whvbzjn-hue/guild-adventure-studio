@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T14:29:41.392Z"
+    "updated_at": "2026-08-24T15:29:12.026Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073C Lv1-10 Human real-device PASS; corrected Lv11-50 packages ready",
-    "goal": "Human Lv1-10 result validates the corrected physical DPS package path: 50/50 jobs completed, 1500/1500 trials, error 0. Knight weapon_shield is one sword strike with shield attack_count=0; Thief dual_wield is two independent strikes. Run CORR-003 Lv11-20/21-30/31-40/41-50 packages on Human GKS-B773 Studio and export Result ZIPs. After all four Results arrive, TASK-BAL-073D will compile Lv1-50 measured physical DPT and Monster HP sizing reference. TASK-BAL-074 remains blocked."
+    "theme": "TASK-BAL-073E AG candidate packages payload hash corrected; Human real-device Result ZIP wait",
+    "goal": "Run corrected TASK-BAL-073E packages on Human GKS-B773 Studio. The prior import failure was caused only by candidate payload_sha256 canonical numeric serialization mismatch. All candidate hashes are now rebuilt with the exact Current GKS-B773 JS canonicalStringify. AG candidate=(100+AGI)/10, battle conditions, weapon semantics and Formal bindings are unchanged. TASK-BAL-073F remains blocked until all five Result ZIPs are supplied."
   },
   "project_rules": [
     {
@@ -341,6 +341,15 @@
       "source_id": "conversation:2026-08-24 shield attack count zero and per-strike accuracy/critical",
       "created_at": "2026-08-24T22:08:00+09:00",
       "updated_at": "2026-08-24T22:08:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-MONSTER-HP-DPT-R2-001",
+      "text": "Physical Monster HP sizingはTASK-BAL-073D Human real-device DPTを使用する。各Levelの職別値とmin/median/mean/max/stddevを保持し、medianをNeutral centerlineとする。HP換算はEvasion0/Resistance0/Shield0のNeutral targetでDefenseと分離する。physical5 totalは集計Referenceに限り、Magic/Heal/Skill統合前に最終Party HP基準へ昇格しない。Normal/Elite/Boss/Stoneの最終TTK/DifficultyはHuman Experience phaseまで確定しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-24 physical DPS real-device monster HP",
+      "created_at": "2026-08-24T23:53:00+09:00",
+      "updated_at": "2026-08-24T23:53:00+09:00"
     }
   ],
   "source_baseline": {
@@ -1653,14 +1662,14 @@
     {
       "id": "DEC-BAL-MONSTER-HP-BASIC-DPS-001",
       "title": "Monster HP初期目安はSkill前のLevel×Job基本攻撃Throughputから作る",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "Monster HPの数学的初期目安は、各Level×JobのPrimary Bare Player通常攻撃Throughputから作る。時間軸はCurrent RuntimeのTickを正本としDPTを使用する。HP算定時はEvasion=0/Resistance=0のNeutral targetを使い、Defense Budgetと分離する。Current starter 6-Job partyの10/25/50/100 Tick累積DamageをHP reference bandとして保持する。これはNormal/Elite/Bossの最終TTKや体験難易度を確定するDecisionではない。Skill Balanceはこの基準の後に行う。",
       "rationale": "Skillを先に基準化せず、まずLevel×Jobの素の攻撃量からMonster HPの尺度を作ることで、HPとDefenseを独立に調整できるため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-24T21:35:00+09:00",
       "created_at": "2026-08-24T21:35:00+09:00",
-      "updated_at": "2026-08-24T21:35:00+09:00"
+      "updated_at": "2026-08-25T00:00:00+09:00"
     },
     {
       "id": "DEC-BAL-WEAPON-SHIELD-OFFENSE-001",
@@ -1673,6 +1682,30 @@
       "approved_at": "2026-08-24T22:08:00+09:00",
       "created_at": "2026-08-24T22:08:00+09:00",
       "updated_at": "2026-08-24T22:08:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-MONSTER-HP-PHYS-REALDEVICE-001",
+      "title": "Monster HP前段ReferenceはHuman実機物理5職DPTの中央値中心線と職別Envelopeで保持する",
+      "status": "Approved",
+      "text": "Monster HPの前段数学ReferenceはTASK-BAL-073D-A Human実機Formal Basic Attack DPTをAuthorityとする。各Levelで物理5職の職別DPT、min/median/mean/max/stddev/totalを保持し、neutral centerlineにはmedianを用いる。medianのみを最終Monster HPへ固定せず、10/25/50/100/200 TickのNeutral HP-equivalent bandを出力する。physical5 totalは物理5職集計Referenceであり、Magic/Heal/Skill未統合のため最終6人Party基準ではない。Normal/Elite/Boss/Stoneの最終HP/TTK/Difficultyは後段Human Experienceまで確定しない。",
+      "rationale": "盗賊の高DPTで平均値が上方へ引かれるため、最大値や平均値だけでUniversal Monster HPを作らず、実機中央値を中心線としつつ職差全体を保持するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T23:53:00+09:00",
+      "created_at": "2026-08-24T23:53:00+09:00",
+      "updated_at": "2026-08-24T23:53:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-AG-CANDIDATE-100PLUS-001",
+      "title": "AG増加式 (100+AGI)/10 をDevelopment-only比較候補として実機評価する",
+      "status": "Approved",
+      "text": "Current AG式をProduct採用変更せず、候補 AG増加/Tick=(100+AGI)/10 を物理5職Lv1..50のBasic Attack DPTで比較評価する。GKS-B773 Basic BattleではAGIのBattle用途がAction Gauge増加に限定されるため、評価Packageではunit.agiを候補式出力へ置換して同じTimingを再現する。比較完了後にHumanが採否を決めるまでCurrent Formula authorityは変更しない。",
+      "rationale": "高AGI職の後半DPT拡大を、Source Formulaを先に変更せずCurrent実機Baselineと同条件で評価するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T00:05:00+09:00",
+      "created_at": "2026-08-25T00:05:00+09:00",
+      "updated_at": "2026-08-25T00:05:00+09:00"
     }
   ],
   "specifications": [
@@ -4658,7 +4691,7 @@
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "旧計画・実行禁止: P5 Character / Job / New Game / Progressionを検証する",
       "status": "Blocked",
-      "execution_order": 300,
+      "execution_order": 303,
       "depends_on": [
         "TASK-BAL-005"
       ],
@@ -4671,14 +4704,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-007",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "旧計画・実行禁止: P5 Quest / Encounter / Reward / Economy / Stone / Guildを検証する",
       "status": "Blocked",
-      "execution_order": 310,
+      "execution_order": 313,
       "depends_on": [
         "TASK-BAL-006"
       ],
@@ -4691,14 +4724,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-008",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "旧計画・実行禁止: P5 Cross-System / Meta Holdoutを検証する",
       "status": "Blocked",
-      "execution_order": 320,
+      "execution_order": 323,
       "depends_on": [
         "TASK-BAL-007"
       ],
@@ -4711,14 +4744,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-009",
       "box_id": "BOX-V9-BAL-PROMOTION-001",
       "title": "P6 検証勝者をProduct Candidate Project JSONへ反映する",
       "status": "Blocked",
-      "execution_order": 400,
+      "execution_order": 403,
       "depends_on": [
         "TASK-BAL-087"
       ],
@@ -4731,14 +4764,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-010",
       "box_id": "BOX-V9-BAL-PROMOTION-001",
       "title": "P7 Human Apply / Game Data Deployを実行する",
       "status": "Blocked",
-      "execution_order": 500,
+      "execution_order": 503,
       "depends_on": [
         "TASK-BAL-009"
       ],
@@ -4751,14 +4784,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-011",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "P8 Game Runtime Conformanceを検証する",
       "status": "Blocked",
-      "execution_order": 600,
+      "execution_order": 603,
       "depends_on": [
         "TASK-BAL-010"
       ],
@@ -4771,14 +4804,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-012",
       "box_id": "BOX-V9-BAL-PROMOTION-001",
       "title": "P9 CandidateをCurrent activeへPromotionする",
       "status": "Blocked",
-      "execution_order": 700,
+      "execution_order": 703,
       "depends_on": [
         "TASK-BAL-011"
       ],
@@ -4791,14 +4824,14 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-013",
       "box_id": "BOX-V9-BAL-PROMOTION-001",
       "title": "P9後の再現性・非遡及・回帰を最終検証する",
       "status": "Blocked",
-      "execution_order": 800,
+      "execution_order": 803,
       "depends_on": [
         "TASK-BAL-012"
       ],
@@ -4811,7 +4844,7 @@
         "at": ""
       },
       "created_at": "2026-08-22T10:14:00+09:00",
-      "updated_at": "2026-08-24T15:45:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-DESIGN-001",
@@ -6310,8 +6343,8 @@
         "at": "2026-08-24T21:12:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "PASS. BAL-R5-MONSTER-CORE-001 frozen from 350 primary Bare Player Job×Level references using same-level/same-job neutral mathematical parity; 350 Monster Core rows, 2450 cross-job analytical matchups, same-job parity failures=0, level regressions=0. Current Product Monster fixtures rejected as Balance baseline because formal Level×Job is absent. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-072_MONSTER-CORE.zip sha256=bb9aaf5f449524334e547fdd44bdf77c019926fbcd3ccf1c12b22845f8db5e82. Source/Game Data/Current active changes=0. PARTIALLY_INVALIDATED_BY_TASK-BAL-071-FIX-002: Knight Monster Core offensive values inherited the stale weapon_shield over-count. Other Job rows and structural method remain historical evidence. Knight offense must be refreshed before Skill Balance."
+      "updated_at": "2026-08-25T00:00:00+09:00",
+      "result_scope": "R5_MONSTER_CORE_PARTIALLY_SUPERSEDED_BY_TASK-BAL-073D. HP/Evasion/Resistance/identity/Level×Job structure remain usable. For physical five jobs, attack_action_total and expected basic offense fields from TASK-BAL-072 are not downstream authority; TASK-BAL-073D Human measured DPT/Formal profiles are authority."
     },
     {
       "id": "TASK-BAL-073",
@@ -6331,17 +6364,17 @@
         "at": "2026-08-24T21:25:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "PASS. BAL-R5-CORE-ENEMY-BUDGET-001 frozen as a normalized DEVELOPMENT_ONLY conversion: category_performance_multiplier = 1 + budget_points*0.01. One HP point, Attack Performance point, and Defense Performance point each yield x1.01 normalized duel-pressure value. Coefficient selected without experience target by V9/formal cap alignment: Lv50 × Mythic 2000% => Budget1000; legacy durability 30%=300; 300 Defense points => EHP x4 => Resistance-only 75% cap exactly. 350 conversion rows / 2450 cross-job checks PASS; sign reversals=0; normalized level dependence=0. Total Enemy Budget/allocation rates/rank modifiers and Skill/AI/Utility conversion remain unfrozen/deferred. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-073_CORE-ENEMY-BUDGET.zip sha256=24fae30f9745d3d658bc083da7f71830c54edb87b1bee0cb61848c1bd622fbb4. Source/Game Data/Current active changes=0. CONVERSION_RULE_RETAINED_BUT_SHIELD_DEPENDENT_REFERENCE_ROWS_STALE: normalized 1%/point conversion formula is not changed by this correction, but any raw Knight offense reference row derived from stale Monster Core must be refreshed before downstream use."
+      "updated_at": "2026-08-25T00:00:00+09:00",
+      "result_scope": "R5_CORE_ENEMY_BUDGET_NORMALIZATION_VALID_WITH_OFFENSE_OVERLAY. 1 Core Enemy Budget point = +1% normalized HP/Attack/Defense performance remains frozen. For the physical five jobs, raw Attack Performance equivalents from the original TASK-BAL-073 rows are superseded by TASK-BAL-073D measured DPT/per-strike overlay. HP/Defense one-point equivalents remain usable."
     },
     {
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
       "status": "Blocked",
-      "execution_order": 258,
+      "execution_order": 262,
       "depends_on": [
-        "TASK-BAL-073D",
+        "TASK-BAL-073F",
         "TASK-BAL-050"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。",
@@ -6353,15 +6386,15 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "BLOCKED_BY_SHIELD_DPS_CORRECTION. Wait for TASK-BAL-073D corrected physical DPS/Monster HP reference; TASK-BAL-050 remains Formal Skill qualification-only."
+      "updated_at": "2026-08-25T00:05:00+09:00",
+      "result_scope": "BLOCKED pending TASK-BAL-073F AG candidate comparison/Human decision. Do not start Skill Balance while basic-action action-gauge scaling is under evaluation."
     },
     {
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
       "status": "Blocked",
-      "execution_order": 259,
+      "execution_order": 263,
       "depends_on": [
         "TASK-BAL-074",
         "TASK-BAL-070"
@@ -6375,14 +6408,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-076",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "R5-P9 Passive / MOD / Rarity / Unique Contributionを確定する",
       "status": "Blocked",
-      "execution_order": 260,
+      "execution_order": 264,
       "depends_on": [
         "TASK-BAL-075"
       ],
@@ -6395,14 +6428,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-077",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P10 Formal AI Performance + Full 6-category Enemy Budgetを確定する",
       "status": "Blocked",
-      "execution_order": 261,
+      "execution_order": 265,
       "depends_on": [
         "TASK-BAL-076",
         "TASK-BAL-073"
@@ -6416,14 +6449,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-078",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P11 Full Player Build Set / Full Monster Setを確定する",
       "status": "Blocked",
-      "execution_order": 262,
+      "execution_order": 266,
       "depends_on": [
         "TASK-BAL-077"
       ],
@@ -6436,14 +6469,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-079",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P12 Formation / Encounter / Quest Mathematical Baselineを確定する",
       "status": "Blocked",
-      "execution_order": 263,
+      "execution_order": 267,
       "depends_on": [
         "TASK-BAL-078"
       ],
@@ -6456,14 +6489,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-080",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P13A EXP / Level / Equipment-Skill-Passive Acquisition Pacingを確定する",
       "status": "Blocked",
-      "execution_order": 264,
+      "execution_order": 268,
       "depends_on": [
         "TASK-BAL-079"
       ],
@@ -6476,14 +6509,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-081",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13B Reward / Drop / Loot Cadenceを確定する",
       "status": "Blocked",
-      "execution_order": 265,
+      "execution_order": 269,
       "depends_on": [
         "TASK-BAL-080"
       ],
@@ -6496,14 +6529,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-082",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13C Gold / Material Economy / Inventory / Guild Pacingを確定する",
       "status": "Blocked",
-      "execution_order": 266,
+      "execution_order": 270,
       "depends_on": [
         "TASK-BAL-081"
       ],
@@ -6516,14 +6549,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-083",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P13D Stone Endgame Mathematical Deltaを確定する",
       "status": "Blocked",
-      "execution_order": 267,
+      "execution_order": 271,
       "depends_on": [
         "TASK-BAL-082"
       ],
@@ -6536,14 +6569,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-084",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P14 Level1→Endgame Full Mathematical BaselineをFreezeする",
       "status": "Blocked",
-      "execution_order": 268,
+      "execution_order": 272,
       "depends_on": [
         "TASK-BAL-083"
       ],
@@ -6556,14 +6589,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-085",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P15 Human Experience Target Band / Difficulty / Tempo Tuningを確定する",
       "status": "Blocked",
-      "execution_order": 269,
+      "execution_order": 273,
       "depends_on": [
         "TASK-BAL-084"
       ],
@@ -6576,14 +6609,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-086",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P15-P Presentation TuningをGameplay非影響条件で確定する",
       "status": "Blocked",
-      "execution_order": 270,
+      "execution_order": 274,
       "depends_on": [
         "TASK-BAL-085"
       ],
@@ -6596,14 +6629,14 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-087",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "R5-P16 Cross-System Holdout / Human Real-device / Promotion Readiness",
       "status": "Blocked",
-      "execution_order": 271,
+      "execution_order": 275,
       "depends_on": [
         "TASK-BAL-086"
       ],
@@ -6616,7 +6649,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:05:00+09:00"
     },
     {
       "id": "TASK-BAL-071-CORR-001",
@@ -6657,9 +6690,9 @@
         "by": "Human",
         "at": "2026-08-24T20:15:00+09:00"
       },
-      "result_scope": "PASS. Fresh GKS-B772 verified; 350 Job×Level rows / 700 loadout variants frozen. dual_wield=2 independent strikes; two_hand=1 strike; weapon_shield=1 strike. Canonical downstream artifact=DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1. Source/Game Data/Current active changes=0. PARTIALLY_INVALIDATED_BY_TASK-BAL-071-FIX-002: loadout/equipability and non-shield Job rows remain useful, but weapon_shield Basic Attack strike profile for Knight over-counted shield Attack/Accuracy/Critical. Do not use Knight offensive profile downstream; refresh after GKS-B773 Current verification.",
+      "result_scope": "R5_MULTI_LOADOUT_STRUCTURE_VALID; OFFENSE_INTERPRETATION_OVERLAID_BY_TASK-BAL-073D. Loadout/equipability/weapon style references remain valid. For weapon_shield, aggregate equipment Attack/Accuracy/Crit fields are not Basic Attack strike authority; use GKS-B773 Formal Basic Attack profiles / TASK-BAL-073D. For dual_wield, each hand remains an independent strike.",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-25T00:00:00+09:00"
     },
     {
       "id": "TASK-BAL-071-FIX-001",
@@ -6701,8 +6734,8 @@
         "at": "2026-08-24T21:35:00+09:00"
       },
       "created_at": "2026-08-24T21:35:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "PASS. 7 Jobs×Lv1..50=350 Primary Bare Player rows converted to pre-Skill basic-attack throughput using Current Game Runtime discrete action gauge: gauge max=100; action_interval_ticks=ceil(100/AGI). Canonical metric=DPT because no fixed authoritative wall-clock seconds-per-Tick exists. Neutral HP-sizing target uses Evasion=0, Damage Resistance=0, Shield=0 so HP and Defense stay separate. Dual-wield=2 independent strikes/action; weapon+shield and two-hand=1 strike/action. Critical multiplier excluded because criticalDamage is not frozen. Current starter party is 6 Jobs (JOB-0001..0006); 10/25/50/100 Tick cumulative basic damage retained as Monster HP reference only, not final Difficulty/TTK. Canonical retained reference=DEV-V9-BALANCE-001_TASK-BAL-073A_DPS-HP-REFERENCE.zip sha256=76e6e11ec17ca73cfb7a970b402837ae4996fd166db149fbbb2bc7bfa36fc824. Source/Game Data/Current active changes=0. INVALIDATED_FOR_DOWNSTREAM_BY_TASK-BAL-071-FIX-002: Level×Job DPT and starter-party HP guide over-counted Knight shield offensive contribution. Do not use the prior DPS/HP artifact as balance authority."
+      "updated_at": "2026-08-25T00:00:00+09:00",
+      "result_scope": "SUPERSEDED_FOR_DOWNSTREAM_BY_TASK-BAL-073D. Historical evidence retained only; do not use its calculated DPS/Monster HP values."
     },
     {
       "id": "TASK-BAL-073B",
@@ -6722,8 +6755,8 @@
         "at": "2026-08-24T21:47:00+09:00"
       },
       "created_at": "2026-08-24T21:47:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00",
-      "result_scope": "PASS. TASK-BAL-073A starter 6-Job pre-Skill basic-attack output was converted into 10/25/50/100-Tick total enemy HP pools for Lv1..50. Equal-HP enemy-count sensitivity 1..6 uses ceil(pool/count) as the integer per-monster guide. All 7 Jobs retain solo HP references so Job throughput spread is visible. No Difficulty/Normal/Elite/Boss/TTK target was frozen; HP remains separated from Defense. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073B_MONSTER-HP-SIZING-REFERENCE.zip sha256=1ece79f3f8946d819e395d9a14518ca34ed8c11d8405dad74ba0d87665d5c05e. Source/Game Data/Current active changes=0. INVALIDATED_FOR_DOWNSTREAM_BY_TASK-BAL-071-FIX-002: Monster HP sizing matrix inherits the invalid Knight DPT from TASK-BAL-073A. Do not use it as balance authority; regenerate from real-device physical DPS results."
+      "updated_at": "2026-08-25T00:00:00+09:00",
+      "result_scope": "SUPERSEDED_FOR_DOWNSTREAM_BY_TASK-BAL-073D. Historical evidence retained only; do not use its calculated DPS/Monster HP values."
     },
     {
       "id": "TASK-BAL-071-FIX-002",
@@ -6770,24 +6803,23 @@
     {
       "id": "TASK-BAL-073D",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "R5-P6D Human実機物理DPS結果を解析しMonster HP Referenceを再確定する",
-      "status": "Blocked",
-      "execution_order": 257,
+      "title": "R5-P6D-B 実機物理DPSからMonster HP Referenceと依存Baselineを再確定する",
+      "status": "Done",
+      "execution_order": 259,
       "depends_on": [
-        "TASK-BAL-073C",
-        "TASK-BAL-073C-CORR-003"
+        "TASK-BAL-073D-A"
       ],
-      "acceptance_criteria": "- Human実機Result ZIPを正式Evidenceとして使用し、各Level×Job最低30試行の成立を確認する。\n- 物理5職Lv1..50のDamage/Tick、Damage/Action、Hit率、Crit率、strike数、分散を集計する。\n- weapon_shieldの盾がDamage/Hit/Crit strikeへ寄与していないこと、dual_wieldが独立2strikeであることをtraceで確認する。\n- stale TASK-BAL-071-CORR-002 Knight offense / TASK-BAL-072 Knight Monster Core / TASK-BAL-073A/B DPS・HP referenceを必要範囲で再計算し、旧ArtifactをSuperseded扱いにする。\n- Monster HPの数学Referenceを再生成するが、Normal/Elite/Boss最終Difficulty/TTKは確定しない。\n- Source/Game Data/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- TASK-BAL-073D-Aの実機物理DPTを唯一の物理攻撃Authorityとして使う。\n- stale TASK-BAL-071-CORR-002 Knight offense / TASK-BAL-072 Knight Monster Core / TASK-BAL-073A/B DPS・HP referenceの依存箇所を再計算・Supersedeする。\n- Monster HPの数学Referenceを物理DPTから再生成するが、HPとDefenseを混ぜない。\n- 最大DPS職だけをUniversal基準にしない。職別値/平均/中央値/分散を保持する。\n- Normal/Elite/Boss最終Difficulty/TTKは確定しない。\n- Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T23:53:00+09:00"
       },
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T23:07:00+09:00",
-      "result_scope": "WAIT_HUMAN_REAL_DEVICE_RESULT: Lv1-10 PASS received; waiting Lv11-20, Lv21-30, Lv31-40, Lv41-50 CORR-003 Result ZIPs before measured Lv1-50 physical DPT compilation."
+      "updated_at": "2026-08-24T23:53:00+09:00",
+      "result_scope": "PASS. Rebuilt Monster HP sizing from TASK-BAL-073D-A Human real-device physical DPT authority (250 Level×Job conditions / 7,500 trials / error 0). No final Difficulty/TTK is frozen. For each Lv1..50, retains per-job DPT plus physical5 min/median/mean/max/stddev/total and neutral HP-equivalent windows at 10/25/50/100/200 Tick. physical5 median is the neutral centerline reference; physical5 total is aggregate-only until Magic/Heal/Skill party contribution exists. Corrected physical offense overlay uses Human Formal Basic Attack profiles: Knight weapon_shield=1 sword strike and shield 0 strike; Thief dual_wield=2 independent strikes. TASK-BAL-072 HP/Evasion/Resistance remain usable, but physical offense fields are superseded for physical jobs. TASK-BAL-073 normalized 1%/point remains valid; raw physical Attack equivalents are superseded. TASK-BAL-073A/B remain downstream-invalid. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073D_MONSTER-HP-REFERENCE.zip sha256=f2f81f4962a0cdf5f44c3d80672ddacbc7536663c29cf83fd42642a9614d5dec. Source/Game Data/Current active changes=0."
     },
     {
       "id": "TASK-BAL-073C-CORR-001",
@@ -6851,6 +6883,69 @@
       "created_at": "2026-08-24T23:07:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00",
       "result_scope": "PASS. Human Result=GK_BattleVerification_Result_BVP-BAL073C-CORR001-PHYS-DPS-L01-10_BEX-1787580453353.zip sha256=a92a77393df87fa6de44fdcdfb8514b68d609a6326dbdd23d5919d641db3efc7; execution completed jobs=50/50, trials=1500/1500, errors=0, partial=false. Formal evidence confirms Knight weapon_shield one attacking sword profile and one hit/action; Thief dual_wield two weapon profiles and two hits/action. Generated corrected remaining four packages with exact EQP-* candidate IDs and Current Studio formal data snapshot binding. DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV11-20.zip sha256=444a6ca88c2dfe2ec5970c84d134f028ef8bc13074dfaf2804068c254809e5f3; DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV21-30.zip sha256=7ad8b2ce0d00f0ad3c5dd0357c846372edfcf017323ed7d49094638649a9c459; DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV31-40.zip sha256=3cb47440e0b2e143fd1d8788a6f9b27c44ec6b7b32f5b2cc71b1fd8a0268cb88; DEV-V9-BALANCE-001_TASK-BAL-073C-CORR-003_PHYS-DPS_LV41-50.zip sha256=6c744bfb87224ea5ea17a7c8339cc04edf07199c9959ea7e344ac597ff3821c4. Source/Game Data/Current active changes=0."
+    },
+    {
+      "id": "TASK-BAL-073D-A",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Human実機物理5職 Lv1..50 Basic Attack DPTを正式集計する",
+      "status": "Done",
+      "execution_order": 258,
+      "depends_on": [
+        "TASK-BAL-073C-CORR-003"
+      ],
+      "acceptance_criteria": "- Human Result ZIP 5本を正式Evidenceとして使用する。\n- 5職×Lv1..50=250条件、各30試行、計7,500試行の完了を確認する。\n- Damage/Tickをaverage_ally_damage/average_ticksで集計する。\n- 騎士はweapon_shield 1strike、盗賊はdual_wield 2strike独立を実機Evidenceで確認する。\n- Formal only / Legacy fallback 0 / error 0をGateとする。\n- CriticalDamage=0の基礎HP-sizing火力であり、最終期待DPSやDifficultyを意味しない。\n- Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T23:29:00+09:00"
+      },
+      "created_at": "2026-08-24T23:29:00+09:00",
+      "updated_at": "2026-08-24T23:29:00+09:00",
+      "result_scope": "PASS. Human real-device results integrated for 5 physical Jobs × Lv1..50=250 conditions. All 250 jobs completed; 7,500/7,500 trials; error=0; Formal only=true; legacy fallback=false. Runtime action/strike validation found 0 semantic errors: Knight weapon_shield=1 attacking strike/action with shield 0 strike; Thief dual_wield=2 independent strikes/action; other physical references=1 strike/action. DPT authority=result.summary.average_ally_damage/result.summary.average_ticks. Critical rolls remain observable but critical_damage=0, so this is pre-critical-damage HP-sizing Basic Attack throughput. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073D-A_PHYSICAL-DPS-REFERENCE.zip sha256=29451ecc2c6e655cd9d8bd9083088c03f64b783620dd1d6112293bc6a03842af. Source/Game Data/Current active changes=0."
+    },
+    {
+      "id": "TASK-BAL-073E",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "AG候補 (100+AGI)/10 の物理5職実機再計算Inputを作成する",
+      "status": "Done",
+      "execution_order": 260,
+      "depends_on": [
+        "TASK-BAL-073D"
+      ],
+      "acceptance_criteria": "- Human指示のAG候補 (100+AGI)/10 をDevelopment-only評価対象とする。\n- Product/Current Formulaをまだ変更しない。\n- GKS-B773 Basic BattleではAGIがAction Gauge増加以外に使われないことを確認し、unit.agi=(100+original_AGI)/10で候補式を実機再現する。\n- 物理5職×Lv1..50=250条件、各30試行、合計7,500試行のFormal Battle Packageを5分割で作る。\n- Weapon semantics / Neutral Dummy / CriticalDamage=0はTASK-BAL-073D-Aと同一に固定する。\n- Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-25T00:05:00+09:00"
+      },
+      "created_at": "2026-08-25T00:05:00+09:00",
+      "updated_at": "2026-08-25T00:21:00+09:00",
+      "result_scope": "PASS after artifact correction. Initial TASK-BAL-073E packages failed import because Python JSON numeric serialization produced payload hashes inconsistent with Current GKS-B773 JS canonicalStringify for effective AGI values such as 11.0 -> JS canonical 11. Fresh source verified GKS-B773 / GA-B486.211, package_manifest 642/642 with missing=0/hash_mismatch=0. Rebuilt 485 candidate hashes with exact Current JS canonicalizer; 28 required correction; post-check bad=0. AG formula candidate and all battle conditions are unchanged. Corrected artifacts: DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV01-10.zip sha256=24dbc70834b3794216bed12a179102c6f464bd1ca32ea2d0106617a022aeefb2; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV11-20.zip sha256=17bee3451e0ddc5ebccd21e658e5e22a147a6da7e22fd5d6f7bd49be3e03bc58; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV21-30.zip sha256=acf4bf516811603ee63b494449b1fcc4022ae2e30d6348234f874177fd7a4be0; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV31-40.zip sha256=76674786157ebce48c43f27a2497885bed995dfcc08dcc042ee17b089e9255e9; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV41-50.zip sha256=4872c81ecdf4d00b8c65faed2e5afd623f0f6af2cebad4514fb094d6af101227. Source/Game Data/Current active changes=0."
+    },
+    {
+      "id": "TASK-BAL-073F",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "AG候補 (100+AGI)/10 実機DPTを現行AG基準と比較する",
+      "status": "Blocked",
+      "execution_order": 261,
+      "depends_on": [
+        "TASK-BAL-073E"
+      ],
+      "acceptance_criteria": "- 開始前にHuman実機Result ZIP 5本を受領する。\n- 250条件/7,500試行/error0/Formal onlyを確認する。\n- Current TASK-BAL-073D-AとLevel×JobでDPT比、職間max/min、盗賊/中央値、冒険家/剣士等を比較する。\n- Monster HP Referenceの再生成はHumanがAG候補の採否を決めた後に行う。\n- Source/Game Data/Current active変更禁止。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-25T00:05:00+09:00",
+      "updated_at": "2026-08-25T00:05:00+09:00",
+      "result_scope": "WAIT_HUMAN_REAL_DEVICE_RESULT. Requires all five TASK-BAL-073E Result ZIPs."
     }
   ],
   "checks": [
@@ -10164,6 +10259,123 @@
       "blocking": false,
       "created_at": "2026-08-24T23:07:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073D-A-HUMAN-DPS-001",
+      "title": "Human real-device physical 5-Job Lv1..50 DPT gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073D-A",
+      "status": "Passed",
+      "result": "PASS. 5 Result Packages; 250/250 Level×Job jobs completed; 7,500/7,500 trials; error 0; Formal only; Legacy fallback 0. Representative runtime evidence confirms 1 strike/action for Knight weapon_shield and 2 independent strikes/action for Thief dual_wield with no action-to-strike mismatches.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL073C-CORR001-PHYS-DPS-L01-10_BEX-1787580453353.zip sha256=a92a77393df87fa6de44fdcdfb8514b68d609a6326dbdd23d5919d641db3efc7; GK_BattleVerification_Result_BVP-BAL073C-CORR003-PHYS-DPS-L11-20_BEX-1787581657051.zip sha256=83492b23c9a73f34ba07000d9f7f09c826cf45592309df2bb0c8c86ec2bbfb62; GK_BattleVerification_Result_BVP-BAL073C-CORR003-PHYS-DPS-L21-30_BEX-1787581674595.zip sha256=5a467c3ea0894cd0a582634c302a071c94a0ec14c6e9837ec075b45048a2fe36; GK_BattleVerification_Result_BVP-BAL073C-CORR003-PHYS-DPS-L31-40_BEX-1787581708808.zip sha256=c938793fb129815ddbfdb23039d1d6c67579391d4318e32a55f8e22aa9138a1d; GK_BattleVerification_Result_BVP-BAL073C-CORR003-PHYS-DPS-L41-50_BEX-1787581729316.zip sha256=3be9a00b70bca8f0f29ee87022bcc3c9c75cb5fe87c9603888f8c00d190eabd3; retained=DEV-V9-BALANCE-001_TASK-BAL-073D-A_PHYSICAL-DPS-REFERENCE.zip sha256=29451ecc2c6e655cd9d8bd9083088c03f64b783620dd1d6112293bc6a03842af",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T23:29:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T23:29:00+09:00",
+        "reason": "Human executed and supplied all five real-device Result ZIPs.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T23:29:00+09:00",
+      "updated_at": "2026-08-24T23:29:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073D-MONSTER-HP-REF-001",
+      "title": "Human physical DPT -> Monster HP / offense baseline regeneration gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073D",
+      "status": "Passed",
+      "result": "PASS. 50 levels × 5 physical jobs; Human real-device DPT authority integrated. Neutral HP-equivalent bands generated at 10/25/50/100/200 Tick with per-job and min/median/mean/max/stddev/total. Knight shield strike=0 preserved; Thief independent dual strikes preserved. No final difficulty/TTK chosen. TASK-BAL-073A/B superseded; TASK-BAL-072 offense and TASK-BAL-073 raw Attack equivalents overlaid, normalized 1%/point retained.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073D_MONSTER-HP-REFERENCE.zip sha256=f2f81f4962a0cdf5f44c3d80672ddacbc7536663c29cf83fd42642a9614d5dec",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T23:53:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-24T23:53:00+09:00",
+        "reason": "Human instructed continuation after physical DPT authority was fixed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T23:53:00+09:00",
+      "updated_at": "2026-08-24T23:53:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073E-AG-EMULATION-001",
+      "title": "AG candidate Development-only emulation validity",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073E",
+      "status": "Passed",
+      "result": "PASS for TASK-BAL-073E Basic Attack DPS scope. GKS-B773 Battle unit AGI is consumed by Action Gauge increment u.ag += u.agi * agiGaugeCoefficient * actionSpeedMultiplier; no other Basic Battle AGI consumption was found. With Current coefficients both 1, replacing unit.agi with (100+original_AGI)/10 exactly reproduces candidate AG increment timing. This does not validate/adopt a Product Formula change.",
+      "evidence": "GKS-B773 studio/index.html normalizeBattleUnits + runBattleSimulation action gauge path; generated TASK-BAL-073E packages",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T00:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-25T00:05:00+09:00",
+        "reason": "Scope-limited mathematical equivalence verified for Basic Attack DPS evaluation.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T00:05:00+09:00",
+      "updated_at": "2026-08-25T00:05:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073E-PAYLOAD-HASH-FAIL-001",
+      "title": "TASK-BAL-073E candidate payload SHA mismatch on Human Studio import",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073E",
+      "status": "Failed",
+      "result": "Human GKS-B773 Studio rejected TASK-BAL-073E package at import. Example: resources/candidates/CAND-UNIT-BAL073E-ADV-L01.json payload_sha256 did not match data.",
+      "evidence": "Human screenshot 2026-08-25 00:10 JST",
+      "checked_by": "Human",
+      "checked_at": "2026-08-25T00:21:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-TASK073E-PAYLOAD-HASH-CORR-001",
+        "resolved_at": "2026-08-25T00:21:00+09:00",
+        "reason": "PASS. Exact Current GKS-B773 battle-package-formal-envelope.js canonicalStringify used. Candidates checked=485, corrected=28, remaining mismatch=0. Fresh source package_manifest verified 642/642. No battle condition or formula-candidate change.",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T00:21:00+09:00",
+      "updated_at": "2026-08-25T00:21:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073E-PAYLOAD-HASH-CORR-001",
+      "title": "TASK-BAL-073E payload SHA exact Current-JS canonicalization correction",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073E",
+      "status": "Passed",
+      "result": "PASS. Exact Current GKS-B773 battle-package-formal-envelope.js canonicalStringify used. Candidates checked=485, corrected=28, remaining mismatch=0. Fresh source package_manifest verified 642/642. No battle condition or formula-candidate change.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV01-10.zip sha256=24dbc70834b3794216bed12a179102c6f464bd1ca32ea2d0106617a022aeefb2; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV11-20.zip sha256=17bee3451e0ddc5ebccd21e658e5e22a147a6da7e22fd5d6f7bd49be3e03bc58; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV21-30.zip sha256=acf4bf516811603ee63b494449b1fcc4022ae2e30d6348234f874177fd7a4be0; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV31-40.zip sha256=76674786157ebce48c43f27a2497885bed995dfcc08dcc042ee17b089e9255e9; DEV-V9-BALANCE-001_TASK-BAL-073E-CORR-001_AG100-PHYS-DPS_LV41-50.zip sha256=4872c81ecdf4d00b8c65faed2e5afd623f0f6af2cebad4514fb094d6af101227",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T00:21:00+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-TASK073E-PAYLOAD-HASH-FAIL-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-25T00:21:00+09:00",
+        "reason": "Candidate hashes rebuilt with the exact Current Studio canonical JSON implementation.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T00:21:00+09:00",
+      "updated_at": "2026-08-25T00:21:00+09:00"
     }
   ],
   "workflow": {
@@ -10851,6 +11063,38 @@
       "task_id": "TASK-BAL-073C-CORR-003",
       "created_at": "2026-08-24T23:07:00+09:00",
       "updated_at": "2026-08-24T23:07:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073D-A-001",
+      "title": "Physical 5-Job Lv1..50 Human real-device DPT authority fixed",
+      "summary": "Human supplied all five Formal Result Packages. 250 Level×Job conditions and 7,500 trials completed with error 0. Measured DPT now supersedes stale calculated TASK-BAL-073A/073B values. Knight shield produces no attack strike; Thief dual-wield produces two independent strikes. Monster HP regeneration is separated into TASK-BAL-073D and remains pending Human start approval.",
+      "task_id": "TASK-BAL-073D-A",
+      "created_at": "2026-08-24T23:29:00+09:00",
+      "updated_at": "2026-08-24T23:29:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073D-001",
+      "title": "Human physical DPT based Monster HP and offense baseline regenerated",
+      "summary": "TASK-BAL-073D-A Human real-device physical DPT was used to rebuild Monster HP sizing bands and correct physical offense interpretation. Median DPT is the neutral centerline with full job envelope retained; physical5 total is aggregate-only. Knight shield attack contribution is excluded from strike offense; Thief remains two independent strikes. TASK-BAL-073A/B are superseded for downstream. TASK-BAL-074 is dependency-ready but awaits separate Human start approval. Source/Game Data/Current active changes=0.",
+      "task_id": "TASK-BAL-073D",
+      "created_at": "2026-08-24T23:53:00+09:00",
+      "updated_at": "2026-08-24T23:53:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073E-001",
+      "title": "AG候補 (100+AGI)/10 実機比較Input生成",
+      "summary": "Human指定のAction Gauge候補をProduct Formula変更前のDevelopment-only比較として登録。 GKS-B773を変更せず、unit AGIを候補式のAG増加量へ置換して物理5職×Lv1..50、合計7,500試行のFormal Packageを生成。 Current AG実機BaselineはTASK-BAL-073D-Aとして保持し、結果比較後までSkill BalanceをBlockedとした。",
+      "task_id": "TASK-BAL-073E",
+      "created_at": "2026-08-25T00:05:00+09:00",
+      "updated_at": "2026-08-25T00:05:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073E-HASH-CORR-001",
+      "title": "AG候補Package payload SHA canonicalization補正",
+      "summary": "Human Studio importでCandidate payload SHA mismatchを検出。原因はPythonとCurrent JSの整数値相当floatのJSON数値表現差。 Fresh GKS-B773から正式canonicalStringifyを取得し、5 Package全Candidate hashを再生成。 AG候補式・Battle条件・Source/Game Dataは変更していない。",
+      "task_id": "TASK-BAL-073E",
+      "created_at": "2026-08-25T00:21:00+09:00",
+      "updated_at": "2026-08-25T00:21:00+09:00"
     }
   ],
   "authority": {
