@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T03:32:28.331Z"
+    "updated_at": "2026-08-24T03:41:18.996Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "Human実機Demoは4/4成功; TASK-BAL-032 AI基準ResultのAPP_VERSION指定ミスをIssue Gateで停止",
-    "goal": "Human実機側・Demo Package・Battle Sourceを修正せず、AI基準Result生成artifactだけのversion binding correction方針についてHuman承認を得る。承認前はAI baseline再生成、TASK-BAL-029/030、P4 Candidate Loopを開始しない。"
+    "theme": "TASK-BAL-032 corrected AI reference complete; next task approval wait",
+    "goal": "TASK-BAL-032完了。Human実機Resultと補正AI基準Resultの決定論Evidence一致を確認済み。TASK-BAL-029/030とP4 Candidate LoopはBlockedのままとし、別TaskのHuman明示開始承認前に進まない。"
   },
   "project_rules": [
     {
@@ -4752,7 +4752,7 @@
       "id": "TASK-BAL-032",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "P4 Human Preflight: Snapshot内包版DemoとAI基準Resultを再作成する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 202,
       "depends_on": [
         "TASK-BAL-031"
@@ -4766,7 +4766,7 @@
         "at": "2026-08-24T12:07:00+09:00"
       },
       "created_at": "2026-08-24T11:40:00+09:00",
-      "updated_at": "2026-08-24T12:26:00+09:00"
+      "updated_at": "2026-08-24T12:37:00+09:00"
     }
   ],
   "checks": [
@@ -6667,8 +6667,8 @@
       "target_type": "Task",
       "target_id": "TASK-BAL-032",
       "status": "Passed",
-      "result": "GKS-B770 Template v1.3.0 bindings preserved. 12 Candidates including ai_master_snapshot. AI run used ambient AI Master count=0 and Package-local AIMS-HUMAN-E2E only. 4/4 jobs completed with error_count=0; Character fingerprint=FNV1A32-d171263d; Monster fingerprint=FNV1A32-79d9cb46; formal_only=true; legacy_fallback_used=false; snapshot provenance present.",
-      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-032_AI-SNAPSHOT-REFERENCE-EVIDENCE.zip sha256=d7883eff35e5b903141cda11a6a35c06af3a930c8d68c90c0afaed777ee168a5; demo sha256=85f68b21c4ffa160739fe15590971723d36f41373d1a50badea60b01e4bbe73a; baseline result sha256=0d95e663af6fa9fe769efe42f7170bcad64cf2630d790983af8cb0788d1e348a",
+      "result": "Authoritative corrected TASK-BAL-032 AI reference PASS. Package-local ai_master_snapshot only; AI 4/4 complete, error_count=0, formal_only=true, legacy_fallback_used=false. Character FNV1A32-0a152053 x2; Monster FNV1A32-748a5e78 x2.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-032_GKS-B770_AI-BASELINE-RESULT_CORRECTED.zip sha256=742e8695e1554461286419b4bcc748b8e155b760530047036a9b07549afc5752",
       "checked_by": "AI",
       "checked_at": "2026-08-24T12:07:00+09:00",
       "resolves_check_ids": [],
@@ -6681,7 +6681,7 @@
       },
       "blocking": false,
       "created_at": "2026-08-24T12:07:00+09:00",
-      "updated_at": "2026-08-24T12:07:00+09:00"
+      "updated_at": "2026-08-24T12:37:00+09:00"
     },
     {
       "id": "CHK-BAL-P4-TASK032-AI-BASELINE-VERSION-BINDING-001",
@@ -6689,22 +6689,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-032",
-      "status": "Failed",
-      "result": "Human device Result is healthy: exact Demo input, 4/4 completed, error_count=0, formal_only=true, legacy_fallback_used=false, same-seed pairs deterministic. However TASK-BAL-032 AI baseline helper used APP_VERSION=GKS-B770 instead of Current runtime APP_VERSION=1.43.0. replay_fingerprint includes APP_VERSION as formal_evidence.studio_build, causing AI/Human fingerprint mismatch. Read-only recalculation changing only studio_build to 1.43.0 matches Human fingerprints for all four jobs. No Source/Game Data/Human device correction is indicated. AI baseline regeneration is blocked pending Human approval under Issue Gate.",
-      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-032_HUMAN-RESULT-ISSUE-GATE-EVIDENCE.zip sha256=6003b230a977c81e82cdd2b8d9bf9affa556d0679fc9768c4694e38d2ac47bec; Human Result sha256=3f966b62547b95c8e4e4fd72ced0713722c4f48d41cf337b0caa53d4a9a2334a",
+      "status": "Passed",
+      "result": "Human-approved DEVELOPMENT_ONLY correction completed. Corrected AI rerun uses APP_VERSION=1.43.0 while DISTRIBUTION_BUILD/source binding remains GKS-B770. AI 4/4 complete, error_count=0. Human exact-Demo Result 4/4 complete, error_count=0. All four summaries, formal_evidence, deterministic run cores, and replay fingerprints match exactly. Character FNV1A32-0a152053; Monster FNV1A32-748a5e78. Fresh B770 source package manifest 642/642 PASS. Source/Demo/Game Data/Human Result changes=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-032_AI-BASELINE-CORRECTION-EVIDENCE.zip sha256=4b9ff0eb21a14687a893db007306fd14f53713a65c3e3c8f662bc902ef60ac20",
       "checked_by": "AI",
-      "checked_at": "2026-08-24T12:26:00+09:00",
+      "checked_at": "2026-08-24T12:37:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI with Human approval",
+        "resolved_at": "2026-08-24T12:37:00+09:00",
+        "reason": "Corrected APP_VERSION binding and actually reran AI baseline; exact Human equivalence confirmed.",
         "mode": ""
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-24T12:26:00+09:00",
-      "updated_at": "2026-08-24T12:26:00+09:00"
+      "updated_at": "2026-08-24T12:37:00+09:00"
     }
   ],
   "workflow": {
@@ -6984,6 +6984,14 @@
       "task_id": "TASK-BAL-032",
       "created_at": "2026-08-24T12:26:00+09:00",
       "updated_at": "2026-08-24T12:26:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK032-AI-BASELINE-CORRECTED-001",
+      "title": "TASK-BAL-032 AI基準Result APP_VERSION補正・再実行完了",
+      "summary": "Approved correction only. AI runtime APP_VERSION corrected to 1.43.0; GKS-B770 remains distribution/source binding. Actual AI rerun 4/4 complete, error_count=0. Human exact-Demo Result also 4/4 complete, error_count=0. All deterministic evidence and fingerprints match exactly. Former baseline is historical invalid equivalence evidence. Source/Demo/Game Data/Human Result changes=0. TASK-BAL-032 Done; TASK-BAL-029 remains Blocked pending separate approval.",
+      "task_id": "TASK-BAL-032",
+      "created_at": "2026-08-24T12:37:00+09:00",
+      "updated_at": "2026-08-24T12:37:00+09:00"
     }
   ],
   "authority": {
