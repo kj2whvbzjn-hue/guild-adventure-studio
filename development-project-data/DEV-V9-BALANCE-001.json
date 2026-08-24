@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T01:44:42.508Z"
+    "updated_at": "2026-08-24T02:43:26.181Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-001",
     "work_box_id": "BOX-V9-BAL-RUNTIME-001",
-    "theme": "TASK-BAL-027 complete; GKS-B769 Human apply / fresh Template acquisition pending",
-    "goal": "Apply the approved TASK-BAL-027 GKS-B769 Studio update, then reacquire fresh Current Source and export the Current AI Battle Package Template from the Human device. TASK-BAL-028 remains Blocked and must not start until GKS-B769 application/current Template identity are verified and Human separately approves TASK-BAL-028."
+    "theme": "Formal AI Master外部依存を診断確定; Package-local snapshot correction計画承認済み",
+    "goal": "P4 Candidate LoopとHuman実機本テストを停止し、REQ-BAL-PKG-013をTASK-BAL-031で解消する。Formal AI Target/Action等の必要MasterをBattle Package内typed/versioned snapshotとして自己完結させ、その後TASK-BAL-032でHuman実機Demo/AI基準Resultを再作成する。現在は構成方針と計画のみ承認済みで、TASK-BAL-031実装開始は別途Human承認待ち。"
   },
   "project_rules": [
     {
@@ -245,14 +245,14 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B767",
+    "studio_build": "GKS-B769",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260824-013007).zip",
-    "source_role": "current_GKS-B767_TASK-BAL-027_artifact_ready_pending_human_apply",
-    "recorded_at": "2026-08-24T10:30:00+09:00",
-    "package_manifest_sha256": "020991f78a861b86415c655f7febd5404dcd76ea6f64b365aea122dbccf4c205",
-    "source_tree_sha256": "1700c79d0fd4763caf0f737239a1b8f568de44a72cc2aec480b57d225e21d253",
-    "source_zip_sha256": "8892e21970e46f6e99798ac5c4b1399dc76d51badea105263de6927cd80d8f36"
+    "source_label": "guild-adventure-studio-sub(20260824-014552).zip",
+    "source_role": "fresh_GKS-B769_verified_TASK-BAL-028_AI_reference_complete",
+    "recorded_at": "2026-08-24T10:48:00+09:00",
+    "package_manifest_sha256": "2b37f0f97605ee1d675c136248207b43a977e3cf4f45ecfbae3776a10a35fac3",
+    "source_tree_sha256": "703c52d7466a775990f9eddfe0463a5c7ecfeda2bb88780be7d16e8d5cf9c9c5",
+    "source_zip_sha256": "2f8bacfc84359df83a16ac6f94a5e07476a5c9b37fc32e32f873c8113d7514e7"
   },
   "lifecycle": {
     "status": "Active",
@@ -1147,6 +1147,18 @@
       "approved_at": "2026-08-24T10:23:00+09:00",
       "created_at": "2026-08-24T10:23:00+09:00",
       "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-P4-FORMAL-AI-MASTER-SNAPSHOT-001",
+      "title": "Formal AI MasterをBattle Package内versioned snapshotとして自己完結させる",
+      "status": "Approved",
+      "text": "P4 Human実機検証用Formal Battle Packageでは、Formal AI Programが参照するAI Target / AI Action等のFormal AI Master依存をHuman実機Studioのambient Current Project登録状態へ委ねない。必要なAI Master要素をtyped/versioned snapshotとしてBattle Package内へ含め、Formal execution時のAI Compiler/Decision EngineはPackage-local snapshotから解決する。Formal Package内で必要参照が欠落する場合はfail-closedとし、ambient Current Project AI Masterへのsilent fallbackをFormal Evidenceでは禁止する。Equipment/Skill/Passive/MOD/Monsterと同様に、同一Package + Input + Seed + VersionでAI環境とHuman実機が再現可能な構成にする。",
+      "rationale": "Human実機診断でDIAG-01 JOB_ERROR=0、DIAG-02 JOB_ERROR=0、DIAG-03 JOB_ERROR=1となり、Reader/Executor、Equipment/Skill/Passive/MOD/Monster owner経路は成立する一方、Formal Character AI経路だけがCurrent Studio Project AI Master外部依存で失敗することを切り分けたため。HumanはAI MasterもPackage内へ含める自己完結構成を承認した。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-24T11:40:00+09:00",
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
     }
   ],
   "specifications": [
@@ -3854,6 +3866,19 @@
       "source": "P2StaticCalibration",
       "created_at": "2026-08-23T13:22:00+09:00",
       "updated_at": "2026-08-23T15:49:00+09:00"
+    },
+    {
+      "id": "REQ-BAL-PKG-013",
+      "title": "Formal AI Master Snapshot Self-contained Package Contract",
+      "target_type": "System",
+      "target_id": "SYS-BAL-AI",
+      "status": "Open",
+      "severity": "Blocker",
+      "summary": "P4 Human実機診断で、Formal Character AI ProgramのAI Target/Action参照がPackage内で自己完結せず、Human実機StudioのCurrent Project masters.ai_targets / ai_actionsへ外部依存していることを確認した。DIAG-01 legacy Executor QA=JOB_ERROR 0、DIAG-02 Formal Monster-only=JOB_ERROR 0、DIAG-03 Formal Character AI minimal=JOB_ERROR 1。元4-job Human demoが4件全てJOB_ERRORとなる挙動とも整合する。\n\n[P4 CORRECTION PLAN]\nreuse_system: Existing Battle Package transient candidate/formal envelope + Existing Formal AI Validator/Compiler/Decision Engine\nreuse_entrypoint: studio/index.html Battle Package import/execution | shared/ai/ai-program-validator.js | shared/ai/ai-program-compiler.js | shared/ai/ai-decision-engine.js\ncurrent_gap: Formal AI Program CandidateはPackage内にあるが、Programが参照するAI Target/Action master nodesはambient Studio Projectから解決されるため、同一PackageでもAI環境とHuman実機でCurrent Project登録状態が異なるとJOB_ERRORになる。\nrequired_extension: Formal AI Target/Action等の必要Master要素をtyped/versioned Package-local snapshotとして含め、Formal execution時にそのsnapshotだけでcompile/decision可能にする。必要参照欠落はfail-closed。Formal Evidenceではambient Project AI Master fallbackを禁止する。\nforbidden_duplicate: 新AI Engine、別AI Compiler、別Battle Orchestrator、Product Game Dataへの事前登録を作らない。\nclosure_check: Human実機StudioでAI Master未登録状態でもSnapshot内包PackageがJOB_ERROR=0で全指定Jobを実行でき、AI環境とHuman実機でFormal AI trace/replay/provenanceが一致する。",
+      "required_human_decision": "Approved by DEC-BAL-P4-FORMAL-AI-MASTER-SNAPSHOT-001",
+      "source": "P4HumanRealDeviceDiagnostic",
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -4601,7 +4626,7 @@
       "id": "TASK-BAL-028",
       "box_id": "BOX-V9-BAL-RUNTIME-001",
       "title": "P4 Human Preflight: AI同条件デモPackageと基準Resultを作成する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 202,
       "depends_on": [
         "TASK-BAL-027"
@@ -4610,12 +4635,12 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-24T10:48:00+09:00"
       },
       "created_at": "2026-08-24T10:23:00+09:00",
-      "updated_at": "2026-08-24T10:23:00+09:00"
+      "updated_at": "2026-08-24T10:48:00+09:00"
     },
     {
       "id": "TASK-BAL-029",
@@ -4624,9 +4649,9 @@
       "status": "Blocked",
       "execution_order": 203,
       "depends_on": [
-        "TASK-BAL-028"
+        "TASK-BAL-032"
       ],
-      "acceptance_criteria": "- 開始前にHumanがTASK-BAL-029実機テスト開始を明示承認する。\n- Human実機上のCurrent StudioからAI用Template ZIPを実際に出力し、TASK-BAL-028の期待Current TemplateとBuild/Version/主要bindingが一致することを確認する。\n- TASK-BAL-028のHuman取込用Battle Packageを実機Studioへ取り込み、Validation完了時点でJOB_ERROR=0であることを確認する。\n- 指定された全Jobを実機で実行し、途中でJOB_ERROR/runtime error/validation errorを残さない。\n- 実機StudioからResult Package ZIPを正式出力し、HumanがAIへ提示できる状態にする。\n- このTaskの完了は『Result Packageを出力できた』までであり、AI環境との一致判定はTASK-BAL-030で行う。\n- 実機で不具合・不一致を発見した場合、その場で修正せず実行結果/再現条件を保存して停止する。",
+      "acceptance_criteria": "- 開始前にHumanがTASK-BAL-029実機テスト開始を明示承認する。\n- Human実機上のCurrent StudioからAI用Template ZIPを実際に出力し、TASK-BAL-028の期待Current TemplateとBuild/Version/主要bindingが一致することを確認する。\n- TASK-BAL-028のHuman取込用Battle Packageを実機Studioへ取り込み、Validation完了時点でJOB_ERROR=0であることを確認する。\n- 指定された全Jobを実機で実行し、途中でJOB_ERROR/runtime error/validation errorを残さない。\n- 実機StudioからResult Package ZIPを正式出力し、HumanがAIへ提示できる状態にする。\n- このTaskの完了は『Result Packageを出力できた』までであり、AI環境との一致判定はTASK-BAL-030で行う。\n- 実機で不具合・不一致を発見した場合、その場で修正せず実行結果/再現条件を保存して停止する。\n- TASK-BAL-032でFormal AI Master Snapshot内包版のHuman実機Demo/AI基準Resultを再作成するまで開始しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -4635,7 +4660,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T10:23:00+09:00",
-      "updated_at": "2026-08-24T10:23:00+09:00"
+      "updated_at": "2026-08-24T11:40:00+09:00"
     },
     {
       "id": "TASK-BAL-030",
@@ -4656,6 +4681,46 @@
       },
       "created_at": "2026-08-24T10:23:00+09:00",
       "updated_at": "2026-08-24T10:23:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-031",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Preflight: Formal AI Master SnapshotをBattle Packageへ内包する",
+      "status": "Blocked",
+      "execution_order": 202,
+      "depends_on": [
+        "TASK-BAL-028"
+      ],
+      "acceptance_criteria": "- 開始前に目的/work_type/基準Source/変更許可・禁止範囲/成果物/完了条件をHumanへ報告し、TASK-BAL-031の明示開始承認を得る。\n- Existing Battle Package formal envelope / transient candidate / Formal AI Validator-Compiler-Decision Engineをreuseし、新AI Engine/別Orchestratorを作らない。\n- Formal AI Programが参照するAI Target / AI Action等の必要Master要素をtyped/versioned Package-local snapshotとして表現・Import Validationできる。\n- Formal execution時はPackage-local AI Master snapshotから参照を解決し、ambient Current Studio Project AI Masterへのsilent fallbackをFormal Evidenceで使用しない。\n- Snapshot参照欠落、型不正、version/provenance mismatchはfail-closedにする。\n- Template export/import説明・Formal binding/evidenceへ新snapshot contractをCurrent仕様として反映する。\n- Gameplay Formula、Balance値、Game Data、Current active、Formal AI decision semantics自体は変更しない。\n- SOURCE_UPDATE Quick/Accept/Release/Applied Fullを通し、更新ZIPとEvidenceを作成する。\n- 未計画問題が出た場合はその場で停止し、RULE-BAL-ISSUE-GATE-001へ戻る。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
+    },
+    {
+      "id": "TASK-BAL-032",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "P4 Human Preflight: Snapshot内包版DemoとAI基準Resultを再作成する",
+      "status": "Blocked",
+      "execution_order": 202,
+      "depends_on": [
+        "TASK-BAL-031"
+      ],
+      "acceptance_criteria": "- TASK-BAL-031 Source更新がHumanにより適用され、fresh Current Source / Current Templateを再取得して一致確認済みである。\n- 開始前にHumanへ作業宣言を提示し、TASK-BAL-032の明示開始承認を得る。\n- fresh Current Templateを正本に、Formal AI Master Snapshotを含むHuman実機用Demo Packageを再生成する。\n- AI環境ではambient Project AI Masterを必要としない条件でImport/Validation/Executionを完走し、Package自己完結性を証明する。\n- Character Formal AI Seed 424242×2、Monster owner Seed 777777×2等のHuman比較条件を再固定する。\n- JOB_ERROR=0、Formal validation error=0、legacy_fallback_used=false、replay_fingerprint反復一致、Formal AI trace/Monster owner provenance等の基準Resultを保存する。\n- TASK-BAL-028旧Demo/AI基準Resultは診断前Evidenceとして履歴保持するが、Human実機一致判定の正本には使用しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
     }
   ],
   "checks": [
@@ -6346,22 +6411,22 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-BAL-028",
-      "status": "Pending",
-      "result": "TASK-BAL-027完了・適用確認・Human個別開始承認を待つ。",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "TASK-BAL-028 AI reference PASS. Exact Human Template bindings preserved; 11 Candidate / 2 Roster / 4 Test / 4 Job. Current G07/Formal AI/Monster owner/Contribution resolution PASS; 4/4 jobs completed, error_count=0. Character pair fingerprint=FNV1A32-df0343f0; Monster pair fingerprint=FNV1A32-f0120d87; formal_only=true; legacy_fallback_used=false. TASK-BAL-029 not started. [POST-DIAGNOSTIC NOTE] AI-side reference construction passed its original AI-environment criteria, but Human-device diagnostics found an ambient Formal AI Master dependency. Its TASK-BAL-028 artifacts are retained as historical evidence only and are not eligible as the final Human-device equivalence reference. TASK-BAL-032 will regenerate the authoritative reference after REQ-BAL-PKG-013 closure.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-028_AI-REFERENCE-EVIDENCE.zip sha256=c45124f73e6f1b42f163200b9e4a611e00aa5af26bc89c5ada582963a92d7972; demo sha256=cba7ab078d29a65224f1be951cebb451bf7d3c8643c6e5329ae7423a756a55fb; baseline result sha256=ea4842d1566f7f2f2e3feba37535d077859d14033216caff86557ec8fdfffb8f",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T10:48:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T10:48:00+09:00",
+        "reason": "TASK-BAL-028 acceptance criteria satisfied. Human device execution remains a separate approved-plan task.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-24T10:23:00+09:00",
-      "updated_at": "2026-08-24T10:23:00+09:00"
+      "updated_at": "2026-08-24T11:40:00+09:00"
     },
     {
       "id": "CHK-BAL-P4-HUMAN-DEVICE-EXECUTION-001",
@@ -6370,7 +6435,7 @@
       "target_type": "Task",
       "target_id": "TASK-BAL-029",
       "status": "Pending",
-      "result": "Human実機でCurrent Template取得、Package取込、全Job実行、Result Package出力が完了するまでPending。",
+      "result": "TASK-BAL-032 Snapshot内包版Demo/AI基準Result完了までHuman実機本テストを開始しない。",
       "evidence": "",
       "checked_by": "Human",
       "checked_at": "",
@@ -6384,7 +6449,7 @@
       },
       "blocking": false,
       "created_at": "2026-08-24T10:23:00+09:00",
-      "updated_at": "2026-08-24T10:23:00+09:00"
+      "updated_at": "2026-08-24T11:40:00+09:00"
     },
     {
       "id": "CHK-BAL-P4-HUMAN-DEVICE-EQUIVALENCE-001",
@@ -6438,11 +6503,80 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-028",
+      "status": "Passed",
+      "result": "Fresh Current Source verified as GKS-B769 / GA-B486.211 and Human-device Studio-exported Template v1.2.0 verified. Source package_manifest sha256=2b37f0f97605ee1d675c136248207b43a977e3cf4f45ecfbae3776a10a35fac3; Template sha256=32052ce608aa3855db49251cb23620836502b6e8bb57d90142dcf0a03f00eb55. TASK-BAL-028 precondition satisfied.",
+      "evidence": "GK_BattleVerification_AI_Template_v1.2.0.zip sha256=32052ce608aa3855db49251cb23620836502b6e8bb57d90142dcf0a03f00eb55; guild-adventure-studio-sub(20260824-014552).zip sha256=2f8bacfc84359df83a16ac6f94a5e07476a5c9b37fc32e32f873c8113d7514e7",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T10:48:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T10:48:00+09:00",
+        "reason": "Human-applied GKS-B769 and fresh Template v1.2.0 were reacquired and verified before TASK-BAL-028 start.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:30:00+09:00",
+      "updated_at": "2026-08-24T10:48:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-AI-REFERENCE-EXECUTION-001",
+      "title": "P4 Human Preflight AI same-condition reference execution",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-028",
+      "status": "Passed",
+      "result": "Final demo Package sha256=cba7ab078d29a65224f1be951cebb451bf7d3c8643c6e5329ae7423a756a55fb. Four AI reference jobs completed with zero errors. Character seed 424242 repeats fingerprint FNV1A32-df0343f0; Monster seed 777777 repeats fingerprint FNV1A32-f0120d87. formal_only=true, legacy_fallback_used=false; Character Formal AI trace and Monster owner provenance present.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-028_AI-REFERENCE-EVIDENCE.zip sha256=c45124f73e6f1b42f163200b9e4a611e00aa5af26bc89c5ada582963a92d7972; DEV-V9-BALANCE-001_TASK-BAL-028_GKS-B769_AI-BASELINE-RESULT.zip sha256=ea4842d1566f7f2f2e3feba37535d077859d14033216caff86557ec8fdfffb8f",
+      "checked_by": "AI",
+      "checked_at": "2026-08-24T10:48:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-24T10:48:00+09:00",
+        "reason": "AI reference run is deterministic and comparison-ready.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-24T10:48:00+09:00",
+      "updated_at": "2026-08-24T10:48:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-FORMAL-AI-MASTER-EXTERNAL-DEPENDENCY-001",
+      "title": "Formal AI Master ambient Project dependency detected on Human device",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-029",
+      "status": "Failed",
+      "result": "Human device diagnostic: DIAG-01 JOB_ERROR=0, DIAG-02 JOB_ERROR=0, DIAG-03 JOB_ERROR=1. Reader/Executor and Formal Monster/Equipment/Skill/Passive/MOD paths are load-ready; Formal Character AI minimal path alone fails. Current design leaves AI Target/Action master resolution dependent on ambient Studio Project data. Human test cannot proceed until Package-local Formal AI Master snapshot correction and regenerated reference package are complete.",
+      "evidence": "DIAG-01 sha256=4fd68627e40f0f758dd41b909cd50f06c1429e0d0d5e01ef788768cb8fcd0410; DIAG-02 sha256=3400f417e8f13404829d35882b3f269069d2db44186a8fdb1e0430fc0e67a904; DIAG-03 sha256=c1f522404084a6f426ccc13943b85b59e150f424138d384d6042d2aa972716e1; Human screenshots 2026-08-24 11:34-11:35 JST",
+      "checked_by": "Human+AI",
+      "checked_at": "2026-08-24T11:40:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-P4-FORMAL-AI-MASTER-SNAPSHOT-CORRECTION-001",
+      "title": "Formal AI Master Snapshot correction task gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-031",
       "status": "Pending",
-      "result": "TASK-BAL-027 GKS-B769 update has been generated but Human application and fresh Current Template export have not yet been verified. TASK-BAL-028 must remain Blocked until both are confirmed.",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "result": "Architecture/approach is Human-approved by DEC-BAL-P4-FORMAL-AI-MASTER-SNAPSHOT-001. TASK-BAL-031 implementation itself has not started and requires a separate explicit start approval after work declaration.",
+      "evidence": "Human approval 2026-08-24 11:40 JST",
+      "checked_by": "Human",
+      "checked_at": "2026-08-24T11:40:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -6452,8 +6586,8 @@
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-24T10:30:00+09:00",
-      "updated_at": "2026-08-24T10:30:00+09:00"
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
     }
   ],
   "workflow": {
@@ -6693,6 +6827,22 @@
       "task_id": "TASK-BAL-027",
       "created_at": "2026-08-24T10:30:00+09:00",
       "updated_at": "2026-08-24T10:30:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-P4-AI-REFERENCE-001",
+      "title": "TASK-BAL-028 AI同条件デモPackage / 基準Resultを確定",
+      "summary": "Human-exported GKS-B769 Template v1.2.0 was used unchanged for formal.bindings. Final Human demo Package sha256=cba7ab078d29a65224f1be951cebb451bf7d3c8643c6e5329ae7423a756a55fb. AI Current runtime validation/execution completed 4/4 jobs with zero errors. Character replay fingerprint FNV1A32-df0343f0; Monster replay fingerprint FNV1A32-f0120d87; formal_only=true and legacy_fallback_used=false. Complete Human Studio project-data snapshot is not embedded in the Template, so Human environment equivalence is intentionally deferred to TASK-BAL-029/030. TASK-BAL-029 remains Blocked/Pending Human approval. Source/Game Data/Current active changes=0.",
+      "task_id": "TASK-BAL-028",
+      "created_at": "2026-08-24T10:48:00+09:00",
+      "updated_at": "2026-08-24T10:48:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-P4-FORMAL-AI-MASTER-DEPENDENCY-PLAN-001",
+      "title": "Human実機診断でFormal AI Master外部依存を確定し自己完結Correctionを計画",
+      "summary": "Human device diagnostics: DIAG-01=JOB_ERROR 0, DIAG-02=0, DIAG-03=1. Equipment/Skill/Passive/MOD/Monster owner未登録が原因ではなく、Formal Character AI compileがambient Studio Project AI Target/Action masterへ依存するGapを特定。HumanはAI MasterもBattle Package内versioned snapshotへ含める構成を承認。REQ-BAL-PKG-013、TASK-BAL-031/032を追加し、TASK-BAL-029はTASK-BAL-032依存へ変更。TASK-BAL-028 artifactsは履歴保持するがHuman実機一致判定の正本から除外。この計画更新runではSource/Game Data/Current active変更0。TASK-BAL-031は未開始。",
+      "task_id": "TASK-BAL-031",
+      "created_at": "2026-08-24T11:40:00+09:00",
+      "updated_at": "2026-08-24T11:40:00+09:00"
     }
   ],
   "authority": {
