@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-23T06:21:31.711Z"
+    "updated_at": "2026-08-25T04:44:13.518Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -514,14 +514,14 @@
       "id": "DISC-R9-GAP-08",
       "title": "Equipment 再実装不足",
       "status": "Resolved",
-      "summary": "判定: CurrentExplicitlyUnconnected",
-      "body": "`magic_weapon_bonus` は正式Equipment fieldとして生成・保存・MOD Contribution対象に残す。\n一方Current Gameは『魔法武器値（戦闘式未接続）』と明示しており、後発Equipment v1.1もRuntime未完成としている。\n\nCurrent Specificationでは『Battle効果未接続』を正式な現状態として記載し、存在しない式を推測しない。",
+      "summary": "判定: ResolvedByHumanConnectionDecision",
+      "body": "`magic_weapon_bonus` は正式Equipment fieldとして生成・保存・MOD Contribution対象に残す。\n\n旧監査時点ではBattle未接続だったが、後続Human Decisionで接続先を確定した。\nCurrentは `magic_weapon_bonus` を武器種別で分岐させず、Modified Equipment Contributionから魔法攻撃系の既存 `MAGIC_DAMAGE` 入力へ直接接続する。\n杖・ワンド・魔導書を含め、`magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n回復量へは接続しない。\n\nこの変更は新しい魔法計算式の追加ではなく、既存Equipment Contributionの接続漏れCorrectionとして扱う。",
       "open_questions": "",
-      "conclusion": "CurrentではEquipment fieldとして保持、Battle効果なし。将来接続は別Discussion。",
+      "conclusion": "Equipment magic_weapon_bonusのBattle接続先はMAGIC_DAMAGEで確定。武器種別の別Channel分岐は行わず、Healへ接続しない。",
       "related_discussion_ids": [],
       "artifact_note": "DEV-V9-REORG-009_reimplementation-audit.md",
       "created_at": "2026-08-19T17:12:00+09:00",
-      "updated_at": "2026-08-19T18:33:00+09:00"
+      "updated_at": "2026-08-25T13:33:00+09:00"
     },
     {
       "id": "DISC-R9-GAP-09",
@@ -1710,6 +1710,68 @@
       "approved_at": "2026-08-23T15:12:00+09:00",
       "created_at": "2026-08-23T15:12:00+09:00",
       "updated_at": "2026-08-23T15:12:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-AG-FORMULA-ADOPTION-001",
+      "title": "Action Gauge増加式 (100+AGI)/10 をCurrent Formulaとして採用する",
+      "status": "Approved",
+      "text": "Action Gaugeの正式増加式を AG gain per Tick = (100 + AGI) / 10 とする。Game Runtimeはこの値を基本AG増加量として使用する。Studio Formal Battleは同じ基本式に既存の agiGaugeCoefficient と actionSpeedMultiplier を後段倍率として適用する。Defaultは両方1.0。旧式 AG gain=AGI はCurrent Formula authorityから外す。",
+      "rationale": "HumanがBalance実機比較後にCurrent Formulaとして採用したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T01:00:00+09:00",
+      "created_at": "2026-08-25T01:00:00+09:00",
+      "updated_at": "2026-08-25T13:33:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-HIT-RATIO-001",
+      "title": "Basic命中率をAccuracy / Evasionへ変更する",
+      "status": "Approved",
+      "text": "HitRate = Accuracy / Evasion。百分率は×100。Evasion<=0は100%として扱う。旧Accuracy/(Accuracy+Evasion)は使用しない。最低命中率・明示上限ClampはCurrentへ追加しない。",
+      "rationale": "Human instruction in Balance redesign conversation.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T10:12:00+09:00",
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T13:33:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-EVASION-NO-HP-SLOT-001",
+      "title": "EvasionからHP/MP防具部位係数を外す",
+      "status": "Approved",
+      "text": "Armor Evasion生成ではHP/MP用の防具部位係数を使用しない。Current基準は evasion = required_agi × evasionGrowth とし、evasionGrowthのCurrent seedは1.0。具体値はBalance Dataとして可変にする。",
+      "rationale": "Human instruction in Balance redesign conversation.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T10:12:00+09:00",
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T13:33:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-JOB-GROWTH-CORR-002",
+      "title": "狩人・魔術師・神官のAGI/DEX/MND成長率を補正する",
+      "status": "Approved",
+      "text": "狩人=STR8/VIT7/DEX15/AGI10/INT4/MND3/LUK13。魔術師=STR4/VIT3/DEX10/AGI8/INT15/MND13/LUK7。神官=STR3/VIT4/DEX7/AGI10/INT13/MND15/LUK8。各60点。",
+      "rationale": "HumanがSkill/Monster評価へ使うJob成長内訳を補正したため。合計60だけでは新旧を判別できないため内訳を正本とする。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T10:12:00+09:00",
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T13:33:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-EQUIP-MAGIC-DIRECT-001",
+      "title": "magic_weapon_bonusをMAGIC_DAMAGEへ直接接続する",
+      "status": "Approved",
+      "text": "Equipmentのmagic_weapon_bonusは武器種別で別Channelへ振り分けず、魔法攻撃系の既存MAGIC_DAMAGE入力へそのまま接続する。杖・ワンド・魔導書を含め、magic_weapon_bonusを持つ武器は同じ接続を使用する。magic_weapon_bonusを回復量へ接続しない。新しいEquipment数値・新しいMagic channel・新しい計算式は追加しない。既存Equipment ContributionのBattle接続漏れCorrectionとして扱う。",
+      "rationale": "Humanが既存MAGIC_DAMAGEだけを使用し、武器性能は既存計算へそのまま接続する方針を確定したため。",
+      "source_discussion_ids": [
+        "DISC-R9-GAP-08"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T12:47:00+09:00",
+      "created_at": "2026-08-25T12:47:00+09:00",
+      "updated_at": "2026-08-25T13:33:00+09:00"
     }
   ],
   "specifications": [
@@ -1867,18 +1929,19 @@
       "title": "Job成長率・Human Approved適性値",
       "status": "Draft",
       "summary": "7Job正式名称、一般成長式、Human Approved Balance seed。",
-      "body": "# 1. Current基本7Job\n\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\n旧「弓兵」はCurrentでは「狩人」。\n\n# 2. 一般成長式\n\n各能力値の成長値 `growth` に対して:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\nfinal_gain = guaranteed + (extra_roll_success ? 1 : 0)\n```\n\n内部成長蓄積は行わない。\n\n例:\n- growth 7 → 70%で+1\n- growth 10 → +1確定\n- growth 13 → +1確定、30%で追加+1\n- growth 15 → +1確定、50%で追加+1\n\n# 3. Human Approved仮初期値\n\n| Job | STR | VIT | AGI | DEX | INT | MND | LUK | Total |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| 剣士 | 15 | 13 | 4 | 10 | 7 | 8 | 3 | 60 |\n| 騎士 | 10 | 15 | 3 | 7 | 8 | 13 | 4 | 60 |\n| 盗賊 | 7 | 8 | 15 | 13 | 3 | 4 | 10 | 60 |\n| 狩人 | 8 | 7 | 3 | 15 | 4 | 10 | 13 | 60 |\n| 魔術師 | 4 | 3 | 10 | 8 | 15 | 13 | 7 | 60 |\n| 神官 | 3 | 4 | 7 | 10 | 13 | 15 | 8 | 60 |\n| 冒険家 | 13 | 10 | 8 | 3 | 4 | 7 | 15 | 60 |\n\n\nこの表はHuman ApprovedのBalance仮初期値。\n構造仕様へ固定せずDataとして差し替え可能にする。\n\n旧V9 Job成長率表（各職合計70）はHistorical BaselineとしてMaterialに残すが、\nCurrentの具体初期値には上表を使う。\n\n# 4. Jobの意味\n\nJobは能力値そのものではなく、以後のLevel Up時の成長方向を定義する。\n現在statsをJob Masterから再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-004 ジョブ成長率設計書 / BOX-R12-RECOVER-CHAR-SEED / Human Decisions",
+      "body": "# 1. Current基本7Job\n\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\n旧「弓兵」はCurrentでは「狩人」。\n\n# 2. 一般成長式\n\n各能力値の成長値 `growth` に対して:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\nfinal_gain = guaranteed + (extra_roll_success ? 1 : 0)\n```\n\n内部成長蓄積は行わない。\n\n例:\n- growth 7 → 70%で+1\n- growth 10 → +1確定\n- growth 13 → +1確定、30%で追加+1\n- growth 15 → +1確定、50%で追加+1\n\n# 3. Human Approved Current Balance seed\n\n| Job | STR | VIT | AGI | DEX | INT | MND | LUK | Total |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| 剣士 | 15 | 13 | 4 | 10 | 7 | 8 | 3 | 60 |\n| 騎士 | 10 | 15 | 3 | 7 | 8 | 13 | 4 | 60 |\n| 盗賊 | 7 | 8 | 15 | 13 | 3 | 4 | 10 | 60 |\n| 狩人 | 8 | 7 | 10 | 15 | 4 | 3 | 13 | 60 |\n| 魔術師 | 4 | 3 | 8 | 10 | 15 | 13 | 7 | 60 |\n| 神官 | 3 | 4 | 10 | 7 | 13 | 15 | 8 | 60 |\n| 冒険家 | 13 | 10 | 8 | 3 | 4 | 7 | 15 | 60 |\n\n2026-08-25補正では合計60を維持したまま、狩人・魔術師・神官の内訳を更新した。\n総計だけで新旧を判定せず、各能力値の内訳を正本として扱う。\nこの表はBalance Dataであり、構造へ固定せずDataとして差し替え可能にする。\n\n旧V9 Job成長率表（各職合計70）および補正前の旧60点内訳はHistorical BaselineとしてMaterialに残すが、Currentの具体初期値には上表を使う。\n\n# 4. Jobの意味\n\nJobは能力値そのものではなく、以後のLevel Up時の成長方向を定義する。\n現在statsをJob Masterから再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-004 ジョブ成長率設計書 / BOX-R12-RECOVER-CHAR-SEED / Human Decisions\n",
       "decision_refs": [
         "DEC-REORG-BAL-002",
         "DEC-REORG-CHAR-001",
         "DEC-REORG-CHAR-002",
         "DEC-V9-CHAR-001",
-        "DEC-V9-CHAR-002"
+        "DEC-V9-CHAR-002",
+        "DEC-BAL-JOB-GROWTH-CORR-002"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- 7Jobを正式名称で扱える。\n- 7〜15等の任意growth値へ一般式を適用できる。\n- Human Approved seedをDataとして読み込める。\n- 旧弓兵名/旧70点表をCurrent初期値へ誤採用しない。",
+      "acceptance_criteria": "- 7Jobを正式名称で扱える。\n- 7〜15等の任意growth値へ一般式を適用できる。\n- Human Approved Current seedをDataとして読み込める。\n- 狩人=STR8/VIT7/AGI10/DEX15/INT4/MND3/LUK13、魔術師=STR4/VIT3/AGI8/DEX10/INT15/MND13/LUK7、神官=STR3/VIT4/AGI10/DEX7/INT13/MND15/LUK8を再現できる。\n- 旧弓兵名/旧70点表および補正前の旧60点内訳をCurrent初期値へ誤採用しない。",
       "system_node_id": "SYS-V9-JOB",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-JOB",
@@ -1888,11 +1951,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T16:25:00+09:00"
+      "updated_at": "2026-08-25T13:33:00+09:00"
     },
     {
       "id": "SPEC-V9-019-JOB-002",
@@ -1955,17 +2018,20 @@
       "title": "Battle: Damage / Resistance / Hit / Critical / Heal",
       "status": "Draft",
       "summary": "Battle計算の数式、補正箱、丸め。",
-      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = 命中値 / (命中値 + 回避値) × 100`\n\n- 命中率下限：5%\n- 命中率上限：100%\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 5. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 6. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF\n\n---\n\n## R25 Equipment Contribution → Battle 正式接続\n\nEquipment由来の戦闘Contributionは以下へ接続する。\n\n- `accuracy` → Battleの命中成立判定\n- `evasion` → Battleの回避成立判定\n- `base_critical_rate` → 武器由来の基礎会心率としてCritical判定\n- `magic_weapon_bonus` → 魔法攻撃系効果量計算の武器Contribution\n\n既存の\n`BaseItem Performance → Equipment Contribution → Equipment MOD → Modified Equipment Contribution → Runtime`\n境界を維持する。\n\n旧Demo由来の `STR→accuracy`、`LUK→critical` 等へFallbackしない。\n具体的な係数、換算、cap、roundingはBalance可変とし、本仕様では接続先のみ固定する。\n",
+      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\nEquipmentの `magic_weapon_bonus` は、MOD適用後のEquipment Contributionから魔法攻撃系の既存 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` はHealへ接続しない。\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = Accuracy / Evasion × 100`\n\n- `Evasion <= 0` の場合は命中率100%として扱う。\n- 旧式 `Accuracy / (Accuracy + Evasion)` は使用しない。\n- Currentでは最低命中率5%を設けない。\n- Currentでは明示的な100%上限Clampを追加しない。\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. Action Gauge\n\n基本増加量は1 Tickあたり:\n\n`AG gain per Tick = (100 + AGI) / 10`\n\n- 旧式 `AG gain = AGI` はCurrent Formulaとして使用しない。\n- Studio Formal Battleでは、この基本値に `agiGaugeCoefficient` と `actionSpeedMultiplier` を後段倍率として適用する。\n- 両倍率のDefaultは1.0。\n- UIはRuntime結果を表示し、別のAction Gauge式を持たない。\n\n---\n\n## 5. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 6. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 7. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n- `magic_weapon_bonus` は回復量へ接続しない。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF / Human Approved Balance Decisions\n\n---\n\n## R25 Equipment Contribution → Battle 正式接続\n\nEquipment由来の戦闘Contributionは以下へ接続する。\n\n- `accuracy` → Battleの命中成立判定\n- `evasion` → Battleの回避成立判定\n- `base_critical_rate` → 武器由来の基礎会心率としてCritical判定\n- `magic_weapon_bonus` → 魔法攻撃系 `MAGIC_DAMAGE` の武器Contribution\n\n既存の\n`BaseItem Performance → Equipment Contribution → Equipment MOD → Modified Equipment Contribution → Runtime`\n境界を維持する。\n\n旧Demo由来の `STR→accuracy`、`LUK→critical` 等へFallbackしない。\n具体的な係数、換算、cap、roundingはBalance可変とし、本仕様では接続先のみ固定する。\n",
       "decision_refs": [
         "DEC-REORG-BATTLE-BAL-001",
-        "DEC-R24-EQUIP-BATTLE-001"
+        "DEC-R24-EQUIP-BATTLE-001",
+        "DEC-BAL-AG-FORMULA-ADOPTION-001",
+        "DEC-BAL-HIT-RATIO-001",
+        "DEC-REORG-EQUIP-MAGIC-DIRECT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-002",
         "SPEC-V9-019-EQUIP-004",
         "SPEC-V9-019-STATUS-001"
       ],
-      "acceptance_criteria": "- Resistance 0〜75%、Hit 5〜100%、Critical順序を再現できる。\n- Damageは最終floor、Healはceil。\n- 同一補正箱加算・別箱乗算を再現できる。",
+      "acceptance_criteria": "- Resistance 0〜75%、Hit=Accuracy/Evasion×100（Evasion<=0は100%）、Critical適用順を再現できる。\n- Current Hitに旧5%下限および明示100%上限Clampを追加しない。\n- Action Gauge基本増加式 `(100+AGI)/10` を再現できる。\n- magic_weapon_bonusを武器種別分岐なしでMAGIC_DAMAGEへ接続し、Healへ混入させない。\n- Damageは最終floor、Healはceil。\n- 同一補正箱加算・別箱乗算を再現できる。",
       "system_node_id": "SYS-V9-BATTLE",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-PASSIVE",
@@ -1976,11 +2042,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T20:54:00+09:00"
+      "updated_at": "2026-08-25T13:33:00+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-002",
@@ -2345,28 +2411,29 @@
       "title": "Equipment BaseItem Generator / Coefficients",
       "status": "Draft",
       "summary": "Weapon/Armor要求値、正式Performance field、Growth。",
-      "body": "# 4. 武器BaseItem\n\n## 4.1 要求値\n\n```text\nrequired_str = iLv × STR係数\nrequired_dex = iLv × DEX係数\nrequired_int = iLv × INT係数\n```\n\n要求値は装備可否判定専用。\n\n## 4.2 基礎性能\n\nV9正本の生成思想を継承し、後工程で確定した正式fieldへ接続する。\n\n```text\nattack\n= required_str × attack係数\n\naccuracy\n= required_dex × accuracy係数\n\nmagic_weapon_bonus\n= required_int × magic算出係数\n```\n\nV9初期値:\n- attack係数 = 2\n- accuracy係数 = 2\n- V9の魔法上昇力式 = `INT要求閾値 × STR係数`\n\nただし係数はBalance Configへ分離し、コード固定しない。\n\n正式field名:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n\n基礎クリティカル率5%は**武器側からBattleへ持ち込む正式な戦闘寄与値**として採用する。\n\n```text\nbase_critical_rate = 0.05\n```\n\nこれはBattle側の共通初期Critical 5%ではなく、武器BaseItem由来の値。\nEquipment Contributionを経由してBattleへ渡す。\n\nBattle側でSTR/LUK等から再計算しない。\nCritical Damage倍率とは別概念として扱う。\n\n## 4.3 武器係数\n\n- 片手剣 STR6 / DEX3 / INT1\n- 大剣 STR12 / DEX3 / INT1\n- 短剣 STR3 / DEX6 / INT1\n- 片手斧 STR6 / DEX3 / INT1\n- 大斧 STR12 / DEX3 / INT1\n- 槍 STR6 / DEX3 / INT1\n- 弓 STR3 / DEX6 / INT1\n- 大弓 STR6 / DEX3 / INT1\n- 杖 STR3 / DEX1 / INT6\n- ワンド STR1 / DEX3 / INT6\n- 魔導書 STR1 / DEX3 / INT6\n- 盾 STR6 / DEX3 / INT1\n- 矢筒 STR3 / DEX6 / INT1\n\n杖タグ: `WEAPON_STAFF`\n\n---\n\n# 5. 防具BaseItem\n\n防具要求系統は武器と分離する。\n\n正式要求field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9カテゴリ:\n- 重装: VIT6 / MND3 / AGI1\n- スカウト: AGI6 / VIT3 / MND1\n- ローブ: MND6 / INT3 / VIT1\n\n正式確定:\n防具の要求ステータス系統は **VIT / MND / AGI** とする。\n\n正式field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9ローブに記載されていた `MND6 / INT3 / VIT1` のINT要求は旧仕様として不採用。\n正式Generatorでは防具要求値としてINTを使用しない。\n\n各防具カテゴリ/部位の係数テーブルも、VIT / MND / AGIの3系統へ統一して管理する。\n\n正式BaseItem性能:\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\nBattle RuntimeでVIT/MND/AGIから再計算しない。\n\n---\n\n# 6. 防具iLv追加成長\n\n攻撃Skill等のインフレに追従できるよう、防具性能は要求閾値とは別に追加成長を持てる。\n\n```text\n基礎性能\n= 要求閾値 × 装備/部位係数\n\n最終BaseItem基礎性能\n= 基礎性能 × categoryGrowthMultiplier\n```\n\n防具は初期状態から有効。\n\n個別設定:\n```text\narmor_growth:\n  hp: iLv別設定\n  mp: iLv別設定\n  evasion: iLv別設定\n```\n\n武器側にも同じ拡張点を持てるが初期運用は `1.0` / disabled相当。\n通常UIでは不要な武器Growth設定を露出させない。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
+      "body": "# 4. 武器BaseItem\n\n## 4.1 要求値\n\n```text\nrequired_str = iLv × STR係数\nrequired_dex = iLv × DEX係数\nrequired_int = iLv × INT係数\n```\n\n要求値は装備可否判定専用。\n\n## 4.2 基礎性能\n\nV9正本の生成思想を継承し、後工程で確定した正式fieldへ接続する。\n\n```text\nattack\n= required_str × attack係数\n\naccuracy\n= required_dex × accuracy係数\n\nmagic_weapon_bonus\n= required_int × magic算出係数\n```\n\nV9初期値:\n- attack係数 = 2\n- accuracy係数 = 2\n- V9の魔法上昇力式 = `INT要求閾値 × STR係数`\n\nただし係数はBalance Configへ分離し、コード固定しない。\n\n正式field名:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n\n基礎クリティカル率5%は**武器側からBattleへ持ち込む正式な戦闘寄与値**として採用する。\n\n```text\nbase_critical_rate = 0.05\n```\n\nこれはBattle側の共通初期Critical 5%ではなく、武器BaseItem由来の値。\nEquipment Contributionを経由してBattleへ渡す。\n\nBattle側でSTR/LUK等から再計算しない。\nCritical Damage倍率とは別概念として扱う。\n\n## 4.3 武器係数\n\n- 片手剣 STR6 / DEX3 / INT1\n- 大剣 STR12 / DEX3 / INT1\n- 短剣 STR3 / DEX6 / INT1\n- 片手斧 STR6 / DEX3 / INT1\n- 大斧 STR12 / DEX3 / INT1\n- 槍 STR6 / DEX3 / INT1\n- 弓 STR3 / DEX6 / INT1\n- 大弓 STR6 / DEX3 / INT1\n- 杖 STR3 / DEX1 / INT6\n- ワンド STR1 / DEX3 / INT6\n- 魔導書 STR1 / DEX3 / INT6\n- 盾 STR6 / DEX3 / INT1\n- 矢筒 STR3 / DEX6 / INT1\n\n杖タグ: `WEAPON_STAFF`\n\n---\n\n# 5. 防具BaseItem\n\n防具要求系統は武器と分離する。\n\n正式要求field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9カテゴリ:\n- 重装: VIT6 / MND3 / AGI1\n- スカウト: AGI6 / VIT3 / MND1\n- ローブ: MND6 / INT3 / VIT1\n\n正式確定:\n防具の要求ステータス系統は **VIT / MND / AGI** とする。\n\n正式field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9ローブに記載されていた `MND6 / INT3 / VIT1` のINT要求は旧仕様として不採用。\n正式Generatorでは防具要求値としてINTを使用しない。\n\n各防具カテゴリ/部位の係数テーブルも、VIT / MND / AGIの3系統へ統一して管理する。\n\n正式BaseItem性能:\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\nEvasionはHP/MP用の防具部位係数を使用しない。\n\n```text\nevasion = required_agi × evasionGrowth\n```\n\nCurrent Balance seedでは `evasionGrowth = 1.0`。\n`evasionGrowth` はBalance Dataとして可変にし、HP/MP用slot coefficientをEvasionへ流用しない。\nBattle RuntimeでVIT/MND/AGIから再計算しない。\n\n---\n\n# 6. 防具iLv追加成長\n\n攻撃Skill等のインフレに追従できるよう、防具性能は要求閾値とは別に追加成長を持てる。\n\nHP/MPはそれぞれの正式Generator係数・Growth設定を使用する。\nEvasionだけはHP/MP用の部位係数を共有せず、`required_agi × evasionGrowth` を正本とする。\n\n防具Growthは初期状態から有効。\n\n個別設定:\n```text\narmor_growth:\n  hp: iLv別設定\n  mp: iLv別設定\n  evasion: iLv別設定\n```\n\n武器側にも同じ拡張点を持てるが初期運用は `1.0` / disabled相当。\n通常UIでは不要な武器Growth設定を露出させない。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-003",
-        "DEC-V9-EQUIP-006"
+        "DEC-V9-EQUIP-006",
+        "DEC-BAL-EVASION-NO-HP-SLOT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-001",
         "SPEC-V9-019-CHAR-001"
       ],
-      "acceptance_criteria": "- Weapon要求値とattack/accuracy/magic_weapon_bonusをConfig係数で生成できる。\n- Armor要求値をVIT/MND/AGIだけで生成できる。\n- base_critical_rate 0.05をWeapon Contributionとして扱える。",
+      "acceptance_criteria": "- Weapon要求値とattack/accuracy/magic_weapon_bonusをConfig係数で生成できる。\n- Armor要求値をVIT/MND/AGIだけで生成できる。\n- Armor Evasionを `required_agi × evasionGrowth` で生成し、HP/MP用slot coefficientを混入させない。\n- base_critical_rate 0.05をWeapon Contributionとして扱える。",
       "system_node_id": "SYS-V9-EQUIP",
       "contract_ids": [
         "CONTRACT-V9-CHAR-TO-EQUIP"
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-25T13:33:00+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-003",
@@ -2400,19 +2467,20 @@
       "title": "Equipment Consumer / Contribution / MOD Boundary",
       "status": "Draft",
       "summary": "Battleへ渡す正式field、旧field廃止、Contribution境界。",
-      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current未接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象。\nCurrent Battleでは計算式未接続。\nBattle contributionを推測しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
+      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象とし、Modified Equipment ContributionからBattleの魔法攻撃系 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` は回復量へ接続しない。\nこれは新しい計算式ではなく、既存Contributionの接続漏れCorrectionである。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-004",
         "DEC-V9-EQUIP-006",
         "DEC-V9-EQUIP-007",
-        "DEC-R24-EQUIP-BATTLE-001"
+        "DEC-R24-EQUIP-BATTLE-001",
+        "DEC-REORG-EQUIP-MAGIC-DIRECT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-003",
         "SPEC-V9-019-MOD-001"
       ],
-      "acceptance_criteria": "- 旧base_attack/base_defense/defenseへFallbackしない。\n- Equipment ContributionをMOD処理前後で分離する。\n- magic_weapon_bonusを未接続のまま保持できる。",
+      "acceptance_criteria": "- 旧base_attack/base_defense/defenseへFallbackしない。\n- Equipment ContributionをMOD処理前後で分離する。\n- magic_weapon_bonusをModified Equipment ContributionからMAGIC_DAMAGEへ直接接続できる。\n- magic_weapon_bonusをHealへ混入させない。",
       "system_node_id": "SYS-V9-EQUIP",
       "contract_ids": [
         "CONTRACT-V9-EQUIP-TO-BATTLE",
@@ -2421,11 +2489,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T20:54:00+09:00"
+      "updated_at": "2026-08-25T13:33:00+09:00"
     },
     {
       "id": "SPEC-V9-019-MOD-001",
@@ -29090,6 +29158,11 @@
       "at": "2026-08-23T15:19:00+09:00",
       "type": "ImplementationTaskRegistered",
       "summary": "Human指示によりDEC-R42-CAST-001の実装Task TASK-R42-001をPhase 2 SOURCE_UPDATEとして追加。Schema/Compiler/Battle Runtime/Range完了時再検証を1 Taskに統合し、Phase 1→2 Gate (TASK-R39-001) 完了までBlockedとした。既存Task status/Workflow/Specificationは変更していない。"
+    },
+    {
+      "at": "2026-08-25T13:33:00+09:00",
+      "type": "SpecificationIntegration",
+      "summary": "Human確定のBalance変更をCurrent Specificationへ同期。Job成長内訳（狩人/魔術師/神官）、Action Gauge=(100+AGI)/10、Hit=Accuracy/Evasion、Armor EvasionのHP/MP slot係数分離、magic_weapon_bonus→既存MAGIC_DAMAGE直接接続を反映。ゲームデータ、Source、Workflow、Task状態は変更していない。"
     }
   ],
   "authority": {
