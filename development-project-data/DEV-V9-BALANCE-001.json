@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-24T22:06:18.015Z"
+    "updated_at": "2026-08-25T01:32:46.841Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073H Human real-device PASS; Thief baseline/passive split fixed; TASK-BAL-073J approval wait",
-    "goal": "TASK-BAL-073H complete on Current GKS-B775 with adopted AG=(100+AGI)/10. 100/100 conditions, 3,000/3,000 trials, error 0, Formal only, Legacy fallback 0, weapon semantic mismatch 0. Thief no-passive one-dagger is the Job Basic Attack baseline. PAS-DUAL-WIELD-001 same-ID dual dagger is a separate Passive-active reference and is exactly 2.000x at every Lv1..50. TASK-BAL-073J Monster HP regeneration is next but requires separate Human start approval."
+    "theme": "TASK-BAL-073K Player基準装備相当Monster Basic成立性 Human実機待ち",
+    "goal": "PlayerとMonsterで同Level・同Jobの基礎Stats/基準装備補正を一致させた物理Basic Attack成立性を実機確認する。GKS-B776 test sourceでHitRate=Accuracy/Evasion、Armor EvasionからHP/MP slot係数を除外。物理5職 Lv10/20/30/40/50、同Job duel 25 + Physical5 mirror party 5 = 30条件×30試行=900。真の連戦carry-overはVerifier未対応のため、まず1戦消耗を測定する。TASK-BAL-074は本結果までBlocked。"
   },
   "project_rules": [
     {
@@ -1747,6 +1747,42 @@
       "approved_at": "2026-08-25T01:00:00+09:00",
       "created_at": "2026-08-25T01:00:00+09:00",
       "updated_at": "2026-08-25T01:00:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-HIT-RATIO-001",
+      "title": "Basic命中率をAccuracy / Evasionへ変更する",
+      "status": "Approved",
+      "text": "HitRate = Accuracy / Evasion。百分率は×100。旧Accuracy/(Accuracy+Evasion)は使用しない。最低命中率・明示上限Clamp・Evasion=0例外以外の追加仕様は未確定。",
+      "rationale": "Human instruction in Balance redesign conversation.",
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T10:12:00+09:00",
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T10:12:00+09:00",
+      "source_discussion_ids": []
+    },
+    {
+      "id": "DEC-BAL-EVASION-NO-HP-SLOT-001",
+      "title": "EvasionからHP/MP防具部位係数を外す",
+      "status": "Approved",
+      "text": "Armor Evasion生成でHP/MP用slot coefficient 20/10/10/10を使用しない。Test currentは required_agi × evasionGrowth(1)。",
+      "rationale": "Human instruction in Balance redesign conversation.",
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T10:12:00+09:00",
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T10:12:00+09:00",
+      "source_discussion_ids": []
+    },
+    {
+      "id": "DEC-BAL-JOB-GROWTH-CORR-002",
+      "title": "狩人・魔術師・神官のAGI/DEX/MND成長率を補正する",
+      "status": "Approved",
+      "text": "狩人=STR8/VIT7/DEX15/AGI10/INT4/MND3/LUK13。魔術師=STR4/VIT3/DEX10/AGI8/INT15/MND13/LUK7。神官=STR3/VIT4/DEX7/AGI10/INT13/MND15/LUK8。各60点。",
+      "rationale": "Human instruction in Balance redesign conversation.",
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T10:12:00+09:00",
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T10:12:00+09:00",
+      "source_discussion_ids": []
     }
   ],
   "specifications": [
@@ -6416,7 +6452,8 @@
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-073J",
-        "TASK-BAL-050"
+        "TASK-BAL-050",
+        "TASK-BAL-073K"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6427,8 +6464,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T01:00:00+09:00",
-      "result_scope": "BLOCKED. Wait for Fresh GKS-B775 Thief baseline/passive split and adopted-AG Monster HP regeneration before Skill Balance."
+      "updated_at": "2026-08-25T10:12:00+09:00",
+      "result_scope": "BLOCKED. TASK-BAL-073K must validate corrected Player/Monster physical baseline before Formal Skill Balance. TASK-BAL-073J is historical-only for current downstream after equipment/Job/Evasion/Hit corrections."
     },
     {
       "id": "TASK-BAL-075",
@@ -6859,8 +6896,8 @@
         "at": "2026-08-24T23:53:00+09:00"
       },
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-25T01:00:00+09:00",
-      "result_scope": "PASS. Rebuilt Monster HP sizing from TASK-BAL-073D-A Human real-device physical DPT authority (250 Level×Job conditions / 7,500 trials / error 0). No final Difficulty/TTK is frozen. For each Lv1..50, retains per-job DPT plus physical5 min/median/mean/max/stddev/total and neutral HP-equivalent windows at 10/25/50/100/200 Tick. physical5 median is the neutral centerline reference; physical5 total is aggregate-only until Magic/Heal/Skill party contribution exists. Corrected physical offense overlay uses Human Formal Basic Attack profiles: Knight weapon_shield=1 sword strike and shield 0 strike; Thief dual_wield=2 independent strikes. TASK-BAL-072 HP/Evasion/Resistance remain usable, but physical offense fields are superseded for physical jobs. TASK-BAL-073 normalized 1%/point remains valid; raw physical Attack equivalents are superseded. TASK-BAL-073A/B remain downstream-invalid. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073D_MONSTER-HP-REFERENCE.zip sha256=f2f81f4962a0cdf5f44c3d80672ddacbc7536663c29cf83fd42642a9614d5dec. Source/Game Data/Current active changes=0. PROVISIONAL_AFTER_DUAL_WIELD_PASSIVE_ADOPTION: Monster HP sizing must be checked/recomputed after TASK-BAL-073H because the previous Primary Thief reference implicitly included dual-wield capability. LEGACY_AG_FORMULA_SUPERSEDED: Produced under AG gain=AGI and not Current Formula authority after DEC-BAL-AG-FORMULA-ADOPTION-001."
+      "updated_at": "2026-08-25T07:06:00+09:00",
+      "result_scope": "PASS. Rebuilt Monster HP sizing from TASK-BAL-073D-A Human real-device physical DPT authority (250 Level×Job conditions / 7,500 trials / error 0). No final Difficulty/TTK is frozen. For each Lv1..50, retains per-job DPT plus physical5 min/median/mean/max/stddev/total and neutral HP-equivalent windows at 10/25/50/100/200 Tick. physical5 median is the neutral centerline reference; physical5 total is aggregate-only until Magic/Heal/Skill party contribution exists. Corrected physical offense overlay uses Human Formal Basic Attack profiles: Knight weapon_shield=1 sword strike and shield 0 strike; Thief dual_wield=2 independent strikes. TASK-BAL-072 HP/Evasion/Resistance remain usable, but physical offense fields are superseded for physical jobs. TASK-BAL-073 normalized 1%/point remains valid; raw physical Attack equivalents are superseded. TASK-BAL-073A/B remain downstream-invalid. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073D_MONSTER-HP-REFERENCE.zip sha256=f2f81f4962a0cdf5f44c3d80672ddacbc7536663c29cf83fd42642a9614d5dec. Source/Game Data/Current active changes=0. PROVISIONAL_AFTER_DUAL_WIELD_PASSIVE_ADOPTION: Monster HP sizing must be checked/recomputed after TASK-BAL-073H because the previous Primary Thief reference implicitly included dual-wield capability. LEGACY_AG_FORMULA_SUPERSEDED: Produced under AG gain=AGI and not Current Formula authority after DEC-BAL-AG-FORMULA-ADOPTION-001. SUPERSEDED_BY_TASK-BAL-073J: Current downstream Monster HP sizing must use adopted AG formula and no-passive Thief baseline from TASK-BAL-073J."
     },
     {
       "id": "TASK-BAL-073C-CORR-001",
@@ -7056,7 +7093,7 @@
       "id": "TASK-BAL-073J",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "Adopted AG Formula / Thief Passive分離後のMonster HP Referenceを再確定する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 265,
       "depends_on": [
         "TASK-BAL-073H"
@@ -7065,13 +7102,34 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-25T07:06:00+09:00"
       },
       "created_at": "2026-08-25T01:00:00+09:00",
-      "updated_at": "2026-08-25T07:06:00+09:00",
-      "result_scope": "READY_FOR_HUMAN_START_APPROVAL. TASK-BAL-073H PASS provides Current-GKS-B775 Thief no-passive Basic Attack baseline and separate PAS-DUAL-WIELD-001 active reference. Regenerate adopted-AG Monster HP Reference using no-passive Job baselines; keep Dual Wield Passive contribution separate and do not freeze final Normal/Elite/Boss TTK."
+      "updated_at": "2026-08-25T10:12:00+09:00",
+      "result_scope": "PASS. Rebuilt Current Monster HP mathematical reference from adopted AG formula and no-passive Physical5 Basic Attack baselines. Baseline evidence=250 Level×Job rows / 7,500 Human trials equivalent to Current formula: non-Thief 4 jobs use TASK-BAL-073F Human adopted-AG equivalence evidence (6,000 trials); Thief uses Fresh GKS-B775 TASK-BAL-073H no-passive one-dagger authority (1,500 trials). 073F adopted-AG Thief dual series exactly matches Fresh B775 073H dual series at 50/50 Levels, mismatch=0, validating formula-timing equivalence. PAS-DUAL-WIELD-001 performance is kept as a separate +100% Thief Basic Attack sensitivity and is not included in baseline median/mean/total. Current physical5 median DPT representative: Lv1=5.94, Lv10=13.53, Lv20=21.275, Lv30=31.20, Lv40=43.065, Lv50=55.44. Current neutral 50-Tick solo-median HP-equivalent: Lv1=297, Lv10=676.5, Lv20=1063.75, Lv30=1560, Lv40=2153.25, Lv50=2772. Lv50 physical5 max/min baseline=2.167x; with Thief Dual Wield Passive sensitivity=2.967x. TASK-BAL-073D is superseded for Current downstream. HP/Defense remain separate; final Normal/Elite/Boss TTK/Difficulty not frozen. Retained reference=DEV-V9-BALANCE-001_TASK-BAL-073J_MONSTER-HP-REFERENCE.zip sha256=936671754b69810373df92f5a6a14d762ffdc31d1789021a87b145ea18902897; workbook=DEV-V9-BALANCE-001_TASK-BAL-073J_MONSTER-HP-REFERENCE.xlsx sha256=4e9a769eb62a8325bdb59ead1d73550df2e436630b9f4dde9bd3f81ba3441627. Source/Game Data/Current active changes=0. INVALIDATED_FOR_CURRENT_DOWNSTREAM_BY_TASK-BAL-073K: later Human corrections changed independent equipment binding, Hunter AGI/MND growth, Evasion generation and HitRate topology. Retain 073J as historical evidence only until physical baseline is revalidated."
+    },
+    {
+      "id": "TASK-BAL-073K",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Player基準装備相当MonsterのBasic Attack成立性を実機検証する",
+      "status": "Blocked",
+      "execution_order": 265,
+      "depends_on": [
+        "TASK-BAL-073J"
+      ],
+      "acceptance_criteria": "- Human開始承認済み。\n- Player/Monster双方を同Level・同Job・同基礎Stats・同基準装備補正にする。\n- 狩人は補正後成長率 STR8/VIT7/DEX15/AGI10/INT4/MND3/LUK13を使用する。\n- Accuracy=weapon required_dex×2。\n- Armor Evasionはrequired_agi×evasionGrowth(1)で、HP/MP用slot係数を掛けない。\n- HitRate=Accuracy/Evasion。Evasion<=0は100%。最低命中率や明示100% clampはこのTestで追加しない。\n- AG=(100+AGI)/10。\n- 物理5職×Lv10/20/30/40/50のsame-job duel 25条件 + Physical5 mirror party 5条件、30 trials/condition、計900 trial。\n- Skill/Passive/Resistance/Shieldなし、CriticalDamage=0。\n- Error=0 / Formal only / Legacy fallback=falseを必須とし、勝率・平均Tick・命中実績・与被Damage・生存数から1戦消耗を評価する。\n- BattleVerifierは戦闘間HP carry-over非対応のため、このTaskは連戦前段の1戦消耗測定。\n- Game Data/Current active変更なし。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-25T10:12:00+09:00"
+      },
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T10:12:00+09:00",
+      "result_scope": "INPUT_READY / HUMAN_REAL_DEVICE_WAIT. Test source GKS-B776 / GA-B486.211 prepared. Source changes limited to HitRate=Accuracy/Evasion, Evasion generator removing armor slot coefficient, formula semantics 0.4.0-universal; Game Data changes=0. Test package has 30 conditions / 900 trials. Source ZIP=DEV-V9-BALANCE-001_TASK-BAL-073K_GKS-B776_HIT-EVASION_TEST-SOURCE.zip sha256=5faa04377741c7edf552ebbc09dfb7f012990254e4a2c53313dfa773d9e5d79c; Test ZIP=DEV-V9-BALANCE-001_TASK-BAL-073K_PLAYER-EQUIV-MONSTER_BASIC-FEASIBILITY.zip sha256=ff8059c82bb6d59ac8a9e290fd651ecb8b64f0e89ba3fcf9ac1e15308d48320c. Do not complete until Human Result ZIP passes."
     }
   ],
   "checks": [
@@ -10663,6 +10721,75 @@
       "blocking": false,
       "created_at": "2026-08-25T07:06:00+09:00",
       "updated_at": "2026-08-25T07:06:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073J-MONSTER-HP-REF-001",
+      "title": "TASK-BAL-073J adopted-AG / no-passive Monster HP reference gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073J",
+      "status": "Passed",
+      "result": "PASS. Current formula=(100+AGI)/10. Physical5 baseline has 250 Level×Job rows backed by 7,500 Human trials; Thief is Fresh B775 no-passive one-dagger. 073F adopted-AG Thief and Fresh B775 dual Thief match 50/50 Levels exactly, mismatch 0. Dual Wield Passive excluded from baseline and retained separately. Level distributions and 10/25/50/100/200 Tick HP-equivalent windows regenerated. TASK-BAL-073D superseded. No final Difficulty/TTK frozen.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073J_MONSTER-HP-REFERENCE.zip sha256=936671754b69810373df92f5a6a14d762ffdc31d1789021a87b145ea18902897",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T07:06:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-25T07:06:00+09:00",
+        "reason": "Human approved TASK-BAL-073J start; all required current baseline inputs were available and reference regeneration passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T07:06:00+09:00",
+      "updated_at": "2026-08-25T07:06:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073K-INPUT-001",
+      "title": "TASK-BAL-073K source/test input static gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073K",
+      "status": "Passed",
+      "result": "PASS INPUT. GKS-B776 package_manifest 643/643 hashes valid; key JS syntax passes; Formal test package validates 133 unique Candidate envelopes, 30 rosters, 30 tests, 30 jobs, 900 trials. Source binding/formula/rules hashes match GKS-B776 package.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-073K_GKS-B776_HIT-EVASION_TEST-SOURCE.zip sha256=5faa04377741c7edf552ebbc09dfb7f012990254e4a2c53313dfa773d9e5d79c; DEV-V9-BALANCE-001_TASK-BAL-073K_PLAYER-EQUIV-MONSTER_BASIC-FEASIBILITY.zip sha256=ff8059c82bb6d59ac8a9e290fd651ecb8b64f0e89ba3fcf9ac1e15308d48320c",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T10:12:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-25T10:12:00+09:00",
+        "reason": "Static/input validation completed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T10:12:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073K-HUMAN-RESULT-001",
+      "title": "TASK-BAL-073K Human real-device result gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073K",
+      "status": "Pending",
+      "result": "Wait for Human execution of all 30 conditions / 900 trials on GKS-B776.",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T10:12:00+09:00",
+      "updated_at": "2026-08-25T10:12:00+09:00"
     }
   ],
   "workflow": {
@@ -11420,6 +11547,14 @@
       "title": "盗賊1刀Baseline / 二刀流Passive 実機分離完了",
       "summary": "Current GKS-B775・採用AG式で盗賊Lv1..50をHuman実機3,000試行。Passiveなし短剣1刀をJob Basic Attack baselineへ確定し、PAS-DUAL-WIELD-001同一短剣×2をPassive-active referenceへ分離。全50Levelで二刀流DPTは1刀の正確に2.000倍。次はMonster HP Reference再計算のHuman開始承認待ち。",
       "task_id": "TASK-BAL-073H",
+      "created_at": "2026-08-25T07:06:00+09:00",
+      "updated_at": "2026-08-25T07:06:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073J-001",
+      "title": "採用AG式 / Passive分離後Monster HP Reference再確定",
+      "summary": "Current AG=(100+AGI)/10と盗賊Passiveなし1刀BaselineでPhysical5 Monster HP数学Referenceを再生成。 二刀流Passiveは別Sensitivityへ分離。旧TASK-BAL-073DをCurrent downstream向けにSupersede。 Median/Mean/Min/Max/StdDevと10/25/50/100/200 Tick HP-equivalentを保持し、最終Difficulty/TTKは未確定。",
+      "task_id": "TASK-BAL-073J",
       "created_at": "2026-08-25T07:06:00+09:00",
       "updated_at": "2026-08-25T07:06:00+09:00"
     }
