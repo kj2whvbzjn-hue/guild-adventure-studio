@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T21:43:49.690Z"
+    "updated_at": "2026-08-25T21:49:27.936Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 SLv→Damage matchup sensitivity awaiting Human approval",
-    "goal": "SWD単一攻撃Jobと盾性能未確定KNTの影響を分離する。次はTHF等の別攻撃Jobを含むmatchup sensitivity planをHuman承認後に検証し、その後にC_Damage(Power) / k判断へ戻る。"
+    "theme": "TASK-BAL-074 THF Control placement replan awaiting Human approval",
+    "goal": "Attacker-job sensitivity is confirmed: SWD60% vs THF91% against same provisional KNT Lv28. Before THF Power-response testing, move THF Control into 10%-90% using the minimal next placement KNT Lv29, same seed 100 trials, pending Human approval."
   },
   "project_rules": [
     {
@@ -2227,6 +2227,18 @@
       "approved_at": "2026-08-26T06:45:00+09:00",
       "created_at": "2026-08-26T06:45:00+09:00",
       "updated_at": "2026-08-26T06:45:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-THF-CONTROL-SCREEN-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Humanの「進めて」によりmatchup sensitivityの最小Control screenのみ実行承認。Attacker=盗賊Lv20、Defender=現在の暫定騎士Lv28、Skillなし、Passive/MODなし、前回SWD Controlと同一Seed 749500000..749500099、100戦。THF Controlが10%-90%帯に入るか確認する。帯外ならk候補を実行せず停止。騎士は盾性能未確定のためFreeze Authorityとして扱わない。",
+      "rationale": "SWD単一攻撃JobでのSLv→Damage結果から普遍式を判断できないため、同一暫定KNT相手で攻撃JobだけをTHFへ変更し、matchup sensitivityを切り分ける。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T07:00:00+09:00",
+      "created_at": "2026-08-26T07:00:00+09:00",
+      "updated_at": "2026-08-26T07:00:00+09:00"
     }
   ],
   "specifications": [
@@ -6908,8 +6920,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T06:55:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. The 34-job / 3,400-battle SLv→Damage execution is valid, but universal formula interpretation is INCONCLUSIVE. SWD was the only attacker, and current KNT shield performance is not finalized; therefore current SWD/KNT saturation cannot reject the linear SLv→Power formula. No k selected, no Test2, no standalone Evidence. Next requires Human-approved matchup-sensitivity testing.",
+      "updated_at": "2026-08-26T07:05:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. THF Lv20 vs the same provisional KNT Lv28 yielded Control=91% under the same seed range where SWD Lv20 yielded 60%, a +31pp attacker-job effect. This confirms matchup/job sensitivity but THF Control is 1pp above the 10%-90% band, so no THF Power-response/k test may run yet. KNT shield performance remains unresolved; no standalone Evidence. Next proposed minimal screen is THF Lv20 vs provisional KNT Lv29, 100 same-seed trials, pending Human approval.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6920,14 +6932,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Previous linear-formula Issue Gate withdrawn. Result is matchup-confounded. Await Human approval for attacker-job / defender-authority sensitivity plan.",
+        "current_step": "THF attacker Control sensitivity result evaluated: Formal PASS / Control-band FAIL at 91%. Attacker-job sensitivity confirmed (+31pp vs SWD same defender/same seed). THF vs KNT Lv29 minimal replan proposed; awaiting Human approval.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No Evidence. Existing 3,400-battle result remains screening only.",
+        "next_evidence": "No Evidence. Screening only.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7428,6 +7440,70 @@
           "execution_authorized": false,
           "standalone_evidence_planned": false,
           "proposed_at": "2026-08-26T06:55:00+09:00"
+        },
+        "matchup_sensitivity_control_thf": {
+          "status": "HumanResultEvaluated",
+          "execution_decision_id": "DEC-BAL-TASK074-THF-CONTROL-SCREEN-001",
+          "package_file": "TASK-BAL-074-THFControl.zip",
+          "package_sha256": "c7306ba0c602914f1687fc20a44686e89a2f2efea740dac050b0963b2223f565",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-THF-CONTROL-B782_BEX-1787694439512.zip",
+          "result_sha256": "ee20f06b8b14d869ed0ed5a0fe84a21cc3b32ce34a6ee2265555ab5dc067d1c2",
+          "execution_id": "BEX-1787694439512",
+          "formal_execution_gate": "PASS",
+          "formal_binding_match": true,
+          "jobs_completed": "1/1",
+          "trials_completed": "100/100",
+          "error_count": 0,
+          "formal_only": true,
+          "legacy_fallback_used": false,
+          "same_seed_range": "749500000..749500099",
+          "attacker": "THF Lv20",
+          "defender": "KNT Lv28 provisional",
+          "control_win_rate": 0.91,
+          "pass_band": "10%-90%",
+          "measurement_gate": "FAIL_REPLAN_REQUIRED",
+          "comparison_to_swd_same_defender_same_seed": {
+            "SWD_control_win_rate": 0.6,
+            "THF_control_win_rate": 0.91,
+            "difference_pp": 31,
+            "interpretation": "Changing attacker job from SWD Lv20 to THF Lv20 against the same provisional KNT Lv28 changes Control win rate by +31pp under the same seed range. This confirms material matchup/job sensitivity."
+          },
+          "authority_limit": "KNT shield performance is unresolved. This screen establishes attacker-job sensitivity only; it does not Freeze KNT heavy-defense balance or C_Damage(Power).",
+          "standalone_evidence_retained": false,
+          "evaluated_at": "2026-08-26T07:05:00+09:00"
+        },
+        "matchup_sensitivity_control_thf_replan": {
+          "status": "PlanProposed_AwaitingHumanApproval",
+          "purpose": "Move THF attacker Control from 91% into the 10%-90% discrimination band before any Power-response test.",
+          "attacker": {
+            "job": "THF",
+            "level": 20
+          },
+          "defender": {
+            "job": "KNT",
+            "level": 29,
+            "authority": "PROVISIONAL_ONLY_SHIELD_PERFORMANCE_UNRESOLVED"
+          },
+          "skill": "none",
+          "passive_mod": "none",
+          "trials": 100,
+          "seed_start": 749500000,
+          "seed_end": 749500099,
+          "conditions": 1,
+          "total_trials": 100,
+          "primary_kpi": "Control win rate",
+          "pass_gate": "10%-90%",
+          "rationale": "THF Lv20 vs KNT Lv28 reached 91%, only 1pp above the upper gate. The smallest integer defender adjustment is KNT Lv29.",
+          "stop_conditions": [
+            "Formal binding mismatch",
+            "error_count > 0",
+            "formal_only=false or legacy fallback used",
+            "Control remains outside 10%-90%",
+            "Do not include any k candidate in this screen"
+          ],
+          "execution_authorized": false,
+          "standalone_evidence_planned": false,
+          "proposed_at": "2026-08-26T07:05:00+09:00"
         }
       },
       "evidence_refs": [
@@ -12371,6 +12447,29 @@
       "blocking": false,
       "created_at": "2026-08-26T06:50:00+09:00",
       "updated_at": "2026-08-26T06:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-THF-CONTROL-SCREEN-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Failed",
+      "result": "Execution PASS / Control-band FAIL. THF Lv20 vs provisional KNT Lv28 completed 1/1 job, 100/100 trials, error0, Formal PASS, Control=91%. This is 31pp above the same-seed SWD Lv20 Control=60%, confirming material attacker-job sensitivity, but 91% exceeds the 10%-90% band by 1pp.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL074-THF-CONTROL-B782_BEX-1787694439512.zip sha256=ee20f06b8b14d869ed0ed5a0fe84a21cc3b32ce34a6ee2265555ab5dc067d1c2",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T07:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T07:05:00+09:00",
+      "updated_at": "2026-08-26T07:05:00+09:00"
     }
   ],
   "workflow": {
@@ -13322,6 +13421,11 @@
       "at": "2026-08-26T06:55:00+09:00",
       "type": "SLvDamageInterpretationCorrected",
       "summary": "Human指摘により前回の『線形式そのものが破綻』というAI結論を撤回。SWD単一攻撃Jobと盾性能未確定KNTによるmatchup confoundとして再分類。3,400戦結果はscreening扱い。k未選定、Test2停止、Evidence化なし。"
+    },
+    {
+      "at": "2026-08-26T07:05:00+09:00",
+      "type": "THFAttackerControlSensitivityEvaluated",
+      "summary": "THF Lv20 vs provisional KNT Lv28 Human result: 91%. Same defender/same seed SWD Lv20 was 60%, showing +31pp attacker-job sensitivity. 91% is outside 10%-90% band, so k test remains blocked. Proposed next screen: THF Lv20 vs KNT Lv29, 1 condition/100 trials. Evidence JSON not created."
     }
   ],
   "authority": {
