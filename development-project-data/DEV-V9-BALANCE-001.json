@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T22:43:13.456Z"
+    "updated_at": "2026-08-25T22:49:05.508Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Damage level-gap robustness awaiting Human result",
-    "goal": "THF Lv20 vs HNT/狩人 Lv23/24/25でControl+P102/P110/P120/P140をsame-seed各100、15条件/1,500戦で実機測定し、DAMAGE_COST_LINEAR_2のLevel-gap robustnessを判定する。Test3へ自動進行しない。"
+    "theme": "TASK-BAL-074 HNT single-hit Damage validated; next Development Task requires Human approval",
+    "goal": "DAMAGE_COST_LINEAR_2はHNT Tier7 Level-gapでPASSした。KNT盾未確定のためUniversal final Freezeは保留し、Test3 multi-hit compositionは別Human開始承認まで実行しない。"
   },
   "project_rules": [
     {
@@ -7005,8 +7005,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T07:45:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. DAMAGE_COST_LINEAR_2 remains NOT_FROZEN. Prepared exact Human-approved Level-gap robustness package: THF Lv20 vs HNT/狩人 Lv23/24/25, each Control+P102/P110/P120/P140, 15 conditions / 1,500 same-seed battles (749600000..749600099). Defender runtimes are reused exactly from the prior Human-executed HNT Control Batch. PASS requires Formal integrity, valid Control rows, nondecreasing Damage and ΔWinRate, and <=15pp P120/P140 cross-level spread. KNT shield remains unresolved; no final Heavy cross-defense Freeze. Test3 is not automatically authorized. No new standalone Evidence at package-preparation stage.",
+      "updated_at": "2026-08-26T07:45:02+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. DAMAGE_COST_LINEAR_2 Level-gap Human result PASS: 15/15 jobs, 1,500/1,500 trials, error0. HNT Lv23/24/25 Controls=72/62/51%. ΔWR P102/P110/P120/P140 = Lv23 0/7/17/24pp, Lv24 6/16/18/29pp, Lv25 0/15/22/31pp. All Controls valid; average ally damage and ΔWR are nondecreasing; P120/P140 cross-level spreads are 5/7pp <=15pp. C_Damage_1Hit=(Power-100)/2 is therefore HNT-level-gap validated, but NOT universally/finally frozen because Heavy/shield authority remains unresolved. Result retained as dedicated numeric Evidence. Test3 is not authorized and no next package is generated.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7017,14 +7017,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "DAMAGE_COST_LINEAR_2 Level-gap robustness package prepared; awaiting Human real-device result. Test3 remains unauthorized.",
+        "current_step": "DAMAGE_COST_LINEAR_2 HNT Level-gap robustness PASS. Single-hit candidate is HNT-supported but NOT final/universal frozen. Stop here; Test3 multi-hit work requires a separate Human-approved Development Task.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No Evidence in package-preparation step. Create dedicated Evidence only if Human result becomes reusable level-gap numeric authority.",
+        "next_evidence": "EVD-BAL-074-DAMAGE-LVGAP-001",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7034,7 +7034,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanRealDeviceResult",
+        "next_evidence_status": "Retained_NumericAuthority",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -9008,7 +9008,7 @@
           "completed_at": "2026-08-26T07:40:00+09:00"
         },
         "damage_cost_curve_design_result": {
-          "status": "CandidateReadyForValidation_NotFrozen",
+          "status": "HNTLevelGapValidated_NotFinalFrozen",
           "scope": "PHYSICAL / 1Hit / SINGLE / MP0 / CD0 / Cast0 / Passive-MODなし",
           "measurement_axis": "Unique Power directly",
           "authoritative_input": {
@@ -9165,7 +9165,11 @@
               "Low SLv remains measurable through continuous damage KPI even when binary WinRate does not move."
             ],
             "freeze_status": "NOT_FROZEN",
-            "reason_not_frozen": "Level-gap robustness has not been executed and KNT shield performance remains unresolved as final Heavy authority."
+            "reason_not_frozen": "Level-gap robustness has not been executed and KNT shield performance remains unresolved as final Heavy authority.",
+            "validation_status": "HNT_LEVEL_GAP_PASS",
+            "validation_evidence_id": "EVD-BAL-074-DAMAGE-LVGAP-001",
+            "validation_evidence_file": "BAL074-E05.json",
+            "validation_evidence_sha256": "45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab"
           },
           "composition_limit": {
             "status": "DoNotApplyPerHitYet",
@@ -9174,7 +9178,7 @@
           "designed_at": "2026-08-26T07:40:00+09:00"
         },
         "damage_level_gap_robustness_plan": {
-          "status": "PackagePrepared",
+          "status": "Executed_PASS",
           "decision_question": "Does DAMAGE_COST_LINEAR_2 preserve monotonic and comparable practical value across the already identified non-saturated level-gap band, without relying on a single HNT26/KNT33 matchup?",
           "candidate_under_test": {
             "cost": "C_Damage_1Hit(Power) = max(0,(Power-100)/2)",
@@ -9279,7 +9283,7 @@
             "P120/P140 cross-level ΔWinRate spread exceeds 15pp",
             "Do not auto-generate Test3 or execute another package"
           ],
-          "execution_authorized": true,
+          "execution_authorized": false,
           "standalone_evidence_planned": "Only if the result becomes a reusable level-gap numeric authority; failed/replan results remain management-only.",
           "proposed_at": "2026-08-26T07:40:00+09:00",
           "execution_decision_id": "DEC-BAL-TASK074-DAMAGE-LVGAP-001",
@@ -9290,8 +9294,348 @@
           "current_source_sha256": "02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728",
           "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 21/21 PASS",
           "human_real_device_required": true,
-          "result_pending": true,
-          "prepared_at": "2026-08-26T07:45:00+09:00"
+          "result_pending": false,
+          "prepared_at": "2026-08-26T07:45:00+09:00",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-DAMAGE-LVGAP-B782_BEX-1787697741095.zip",
+          "result_sha256": "0fcfe840d60aa3be44938772a634d09211249d13d2bd6a8f5bff391ff11dc508",
+          "completed_at": "2026-08-26T07:45:02+09:00"
+        },
+        "damage_level_gap_robustness_result": {
+          "status": "HumanResultEvaluated_PASS",
+          "package_file": "TASK-BAL-074-LvGap.zip",
+          "package_sha256": "3f29ad6697a3d49ee417e831b9b6a7c4962a1247a191a76cdaf6d7445e49af27",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-DAMAGE-LVGAP-B782_BEX-1787697741095.zip",
+          "result_sha256": "0fcfe840d60aa3be44938772a634d09211249d13d2bd6a8f5bff391ff11dc508",
+          "execution_id": "BEX-1787697741095",
+          "formal_execution_gate": "PASS",
+          "formal_binding_match": true,
+          "jobs_completed": "15/15",
+          "trials_completed": "1500/1500",
+          "error_count": 0,
+          "formal_only": "15/15",
+          "legacy_fallback_used": false,
+          "same_seed_range": "749600000..749600099",
+          "by_level": {
+            "23": {
+              "control": {
+                "win_rate": 0.72,
+                "average_ticks": 131.46,
+                "average_ally_damage": 1331.25,
+                "average_enemy_damage": 1365.94
+              },
+              "power_response": [
+                {
+                  "power": 102,
+                  "damage_budget": 1,
+                  "win_rate": 0.72,
+                  "delta_win_rate_pp": 0,
+                  "average_ticks": 131.46,
+                  "average_ally_damage": 1335.63,
+                  "average_ally_damage_delta": 4.38,
+                  "average_ally_damage_delta_percent": 0.329014,
+                  "skill_metrics": {
+                    "activations": 1799,
+                    "hits": 908,
+                    "misses": 891,
+                    "hit_rate": 0.504725,
+                    "critical_hits": 36,
+                    "damage": 133563,
+                    "damage_per_hit": 147.095815
+                  }
+                },
+                {
+                  "power": 110,
+                  "damage_budget": 5,
+                  "win_rate": 0.79,
+                  "delta_win_rate_pp": 7,
+                  "average_ticks": 122.99,
+                  "average_ally_damage": 1357,
+                  "average_ally_damage_delta": 25.75,
+                  "average_ally_damage_delta_percent": 1.934272,
+                  "skill_metrics": {
+                    "activations": 1685,
+                    "hits": 857,
+                    "misses": 828,
+                    "hit_rate": 0.508605,
+                    "critical_hits": 36,
+                    "damage": 135700,
+                    "damage_per_hit": 158.343057
+                  }
+                },
+                {
+                  "power": 120,
+                  "damage_budget": 10,
+                  "win_rate": 0.89,
+                  "delta_win_rate_pp": 17,
+                  "average_ticks": 112.51,
+                  "average_ally_damage": 1374.18,
+                  "average_ally_damage_delta": 42.93,
+                  "average_ally_damage_delta_percent": 3.224789,
+                  "skill_metrics": {
+                    "activations": 1543,
+                    "hits": 780,
+                    "misses": 763,
+                    "hit_rate": 0.505509,
+                    "critical_hits": 32,
+                    "damage": 137418,
+                    "damage_per_hit": 176.176923
+                  }
+                },
+                {
+                  "power": 140,
+                  "damage_budget": 20,
+                  "win_rate": 0.96,
+                  "delta_win_rate_pp": 24,
+                  "average_ticks": 100.39,
+                  "average_ally_damage": 1390.64,
+                  "average_ally_damage_delta": 59.39,
+                  "average_ally_damage_delta_percent": 4.461221,
+                  "skill_metrics": {
+                    "activations": 1378,
+                    "hits": 691,
+                    "misses": 687,
+                    "hit_rate": 0.501451,
+                    "critical_hits": 25,
+                    "damage": 139064,
+                    "damage_per_hit": 201.250362
+                  }
+                }
+              ]
+            },
+            "24": {
+              "control": {
+                "win_rate": 0.62,
+                "average_ticks": 130.69,
+                "average_ally_damage": 1319.15,
+                "average_enemy_damage": 1426.92
+              },
+              "power_response": [
+                {
+                  "power": 102,
+                  "damage_budget": 1,
+                  "win_rate": 0.68,
+                  "delta_win_rate_pp": 6,
+                  "average_ticks": 127.99,
+                  "average_ally_damage": 1324.55,
+                  "average_ally_damage_delta": 5.4,
+                  "average_ally_damage_delta_percent": 0.409355,
+                  "skill_metrics": {
+                    "activations": 1749,
+                    "hits": 885,
+                    "misses": 864,
+                    "hit_rate": 0.506003,
+                    "critical_hits": 39,
+                    "damage": 132455,
+                    "damage_per_hit": 149.666667
+                  }
+                },
+                {
+                  "power": 110,
+                  "damage_budget": 5,
+                  "win_rate": 0.78,
+                  "delta_win_rate_pp": 16,
+                  "average_ticks": 121.09,
+                  "average_ally_damage": 1348.65,
+                  "average_ally_damage_delta": 29.5,
+                  "average_ally_damage_delta_percent": 2.236289,
+                  "skill_metrics": {
+                    "activations": 1657,
+                    "hits": 840,
+                    "misses": 817,
+                    "hit_rate": 0.50694,
+                    "critical_hits": 38,
+                    "damage": 134865,
+                    "damage_per_hit": 160.553571
+                  }
+                },
+                {
+                  "power": 120,
+                  "damage_budget": 10,
+                  "win_rate": 0.8,
+                  "delta_win_rate_pp": 18,
+                  "average_ticks": 117.54,
+                  "average_ally_damage": 1368.66,
+                  "average_ally_damage_delta": 49.51,
+                  "average_ally_damage_delta_percent": 3.753174,
+                  "skill_metrics": {
+                    "activations": 1608,
+                    "hits": 816,
+                    "misses": 792,
+                    "hit_rate": 0.507463,
+                    "critical_hits": 37,
+                    "damage": 136866,
+                    "damage_per_hit": 167.727941
+                  }
+                },
+                {
+                  "power": 140,
+                  "damage_budget": 20,
+                  "win_rate": 0.91,
+                  "delta_win_rate_pp": 29,
+                  "average_ticks": 99.13,
+                  "average_ally_damage": 1395.42,
+                  "average_ally_damage_delta": 76.27,
+                  "average_ally_damage_delta_percent": 5.781753,
+                  "skill_metrics": {
+                    "activations": 1358,
+                    "hits": 681,
+                    "misses": 677,
+                    "hit_rate": 0.501473,
+                    "critical_hits": 28,
+                    "damage": 139542,
+                    "damage_per_hit": 204.907489
+                  }
+                }
+              ]
+            },
+            "25": {
+              "control": {
+                "win_rate": 0.51,
+                "average_ticks": 130.28,
+                "average_ally_damage": 1278.06,
+                "average_enemy_damage": 1520.22
+              },
+              "power_response": [
+                {
+                  "power": 102,
+                  "damage_budget": 1,
+                  "win_rate": 0.51,
+                  "delta_win_rate_pp": 0,
+                  "average_ticks": 130.28,
+                  "average_ally_damage": 1285.44,
+                  "average_ally_damage_delta": 7.38,
+                  "average_ally_damage_delta_percent": 0.577438,
+                  "skill_metrics": {
+                    "activations": 1766,
+                    "hits": 861,
+                    "misses": 905,
+                    "hit_rate": 0.487542,
+                    "critical_hits": 34,
+                    "damage": 128544,
+                    "damage_per_hit": 149.296167
+                  }
+                },
+                {
+                  "power": 110,
+                  "damage_budget": 5,
+                  "win_rate": 0.66,
+                  "delta_win_rate_pp": 15,
+                  "average_ticks": 121.88,
+                  "average_ally_damage": 1320.53,
+                  "average_ally_damage_delta": 42.47,
+                  "average_ally_damage_delta_percent": 3.323005,
+                  "skill_metrics": {
+                    "activations": 1657,
+                    "hits": 810,
+                    "misses": 847,
+                    "hit_rate": 0.488835,
+                    "critical_hits": 33,
+                    "damage": 132053,
+                    "damage_per_hit": 163.028395
+                  }
+                },
+                {
+                  "power": 120,
+                  "damage_budget": 10,
+                  "win_rate": 0.73,
+                  "delta_win_rate_pp": 22,
+                  "average_ticks": 119.16,
+                  "average_ally_damage": 1349.54,
+                  "average_ally_damage_delta": 71.48,
+                  "average_ally_damage_delta_percent": 5.592852,
+                  "skill_metrics": {
+                    "activations": 1624,
+                    "hits": 794,
+                    "misses": 830,
+                    "hit_rate": 0.488916,
+                    "critical_hits": 33,
+                    "damage": 134954,
+                    "damage_per_hit": 169.967254
+                  }
+                },
+                {
+                  "power": 140,
+                  "damage_budget": 20,
+                  "win_rate": 0.82,
+                  "delta_win_rate_pp": 31,
+                  "average_ticks": 100.54,
+                  "average_ally_damage": 1387.64,
+                  "average_ally_damage_delta": 109.58,
+                  "average_ally_damage_delta_percent": 8.573932,
+                  "skill_metrics": {
+                    "activations": 1373,
+                    "hits": 668,
+                    "misses": 705,
+                    "hit_rate": 0.486526,
+                    "critical_hits": 24,
+                    "damage": 138764,
+                    "damage_per_hit": 207.730539
+                  }
+                }
+              ]
+            }
+          },
+          "gate_result": {
+            "control_valid_10_90": {
+              "23": true,
+              "24": true,
+              "25": true
+            },
+            "average_ally_damage_monotonic": {
+              "23": true,
+              "24": true,
+              "25": true
+            },
+            "delta_win_rate_monotonic": {
+              "23": true,
+              "24": true,
+              "25": true
+            },
+            "cross_level_spread": {
+              "120": {
+                "values_by_level": {
+                  "23": 17,
+                  "24": 18,
+                  "25": 22
+                },
+                "min_pp": 17,
+                "max_pp": 22,
+                "spread_pp": 5,
+                "gate_max_pp": 15,
+                "pass": true
+              },
+              "140": {
+                "values_by_level": {
+                  "23": 24,
+                  "24": 29,
+                  "25": 31
+                },
+                "min_pp": 24,
+                "max_pp": 31,
+                "spread_pp": 7,
+                "gate_max_pp": 15,
+                "pass": true
+              }
+            },
+            "overall": "PASS"
+          },
+          "candidate_assessment": {
+            "candidate": "DAMAGE_COST_LINEAR_2",
+            "single_hit_cost_formula": "C_Damage_1Hit(Power)=max(0,(Power-100)/2)",
+            "inverse_formula": "Power=JS_Math.round(100+2*B_Damage)",
+            "status": "HNT_LEVEL_GAP_VALIDATED_NOT_FINAL_FROZEN",
+            "HNT_level_gap_supported": true,
+            "universal_final_freeze": false,
+            "blocking_reason": "Final Heavy-defense/shield authority remains unresolved."
+          },
+          "retained_evidence": {
+            "evidence_id": "EVD-BAL-074-DAMAGE-LVGAP-001",
+            "file": "BAL074-E05.json",
+            "sha256": "45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab",
+            "role": "HNT_LEVEL_GAP_NUMERIC_AUTHORITY_FOR_SINGLE_HIT_DAMAGE_BUDGET"
+          },
+          "test3_authorized": false,
+          "evaluated_at": "2026-08-26T07:45:02+09:00"
         }
       },
       "evidence_refs": [
@@ -9330,6 +9674,15 @@
           "role": "HNT_UNIQUE_POWER_NUMERIC_INPUT_FOR_C_DAMAGE_CALIBRATION",
           "status": "PreparedForRegistration",
           "recorded_at": "2026-08-26T07:35:02+09:00"
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-DAMAGE-LVGAP",
+          "file": "BAL074-E05.json",
+          "sha256": "45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab",
+          "evidence_id": "EVD-BAL-074-DAMAGE-LVGAP-001",
+          "role": "HNT_LEVEL_GAP_NUMERIC_AUTHORITY_FOR_SINGLE_HIT_DAMAGE_BUDGET",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-26T07:45:02+09:00"
         }
       ],
       "blocked_reason": ""
@@ -14384,6 +14737,29 @@
       "blocking": false,
       "created_at": "2026-08-26T07:40:00+09:00",
       "updated_at": "2026-08-26T07:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-DAMAGE-LVGAP-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Human real-device level-gap robustness PASS. 15/15 jobs, 1,500/1,500 trials, error0, Formal PASS. Controls Lv23/24/25=72/62/51%. ΔWR P102/P110/P120/P140: Lv23=0/7/17/24pp, Lv24=6/16/18/29pp, Lv25=0/15/22/31pp. Average ally damage and ΔWR nondecreasing on all rows. P120 spread=5pp, P140 spread=7pp <=15pp gate. DAMAGE_COST_LINEAR_2 is HNT-level-gap validated but not universally frozen.",
+      "evidence": "BAL074-E05.json sha256=45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T07:45:02+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T07:45:02+09:00",
+        "reason": "All exact Human-approved Level-gap gates passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T07:45:02+09:00",
+      "updated_at": "2026-08-26T07:45:02+09:00"
     }
   ],
   "workflow": {
@@ -15375,6 +15751,11 @@
       "at": "2026-08-26T07:45:00+09:00",
       "type": "DamageLevelGapRobustnessPackagePrepared",
       "summary": "Human承認によりDAMAGE_COST_LINEAR_2 Level-gap robustness Packageを準備。THF20 vs HNT23/24/25、各Control/P102/P110/P120/P140、same-seed各100、15条件/1500戦。HNT runtimeはHuman実行済みControl Batchと完全同一。Studio実機Result待ち。Test3未承認、Evidence新規作成なし。"
+    },
+    {
+      "at": "2026-08-26T07:45:02+09:00",
+      "type": "DamageLevelGapRobustnessEvaluated",
+      "summary": "THF Lv20 vs HNT Lv23/24/25 Level-gap Human実機結果PASS。Control=72/62/51%。ΔWRはLv23 0/7/17/24、Lv24 6/16/18/29、Lv25 0/15/22/31pp。Damage/ΔWR単調性PASS、P120/P140 spread=5/7pp<=15pp。DAMAGE_COST_LINEAR_2をHNT-level-gap validatedとしたがUniversal Freezeはせず、BAL074-E05.jsonへ再利用数値Authorityとして保存。Test3未承認のため停止。"
     }
   ],
   "authority": {
