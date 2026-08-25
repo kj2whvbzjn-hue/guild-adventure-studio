@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T06:26:31.893Z"
+    "updated_at": "2026-08-25T08:00:00.473Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-ITEM-001",
-    "theme": "TASK-BAL-075 complete; TASK-BAL-076 Human start approval gate",
-    "goal": "P8 Formula/Equipment mathematical baseline is frozen on GKS-B779 with Base Critical Damage=50% (1.5x crit event). MAGIC_SUPPORT remains formally abolished. TASK-BAL-076 is ready only for separate Human start approval; do not execute it automatically."
+    "work_box_id": "BOX-V9-BAL-BATTLE-001",
+    "theme": "TASK-BAL-074 redo: Physical Skill Budget baseline evidence reproduction",
+    "goal": "B780適用済み。Physicalのみ継続。次はBare Player Physical / Basic Attack baseline Evidence再生産。"
   },
   "project_rules": [
     {
@@ -201,11 +201,12 @@
     {
       "id": "RULE-BAL-EVIDENCE-001",
       "text": "実行Taskの詳細EvidenceはTask単位Evidence ZIPを正式な外部保管単位としHumanが保持する。Development Project JSONにはRaw Evidenceを全面複製せず、ZIP/File名・SHA-256・役割・Retention/Custodianを索引として保持する。別AIは外部Evidenceを破棄済みと推定せず、必要時はHumanへ当該ZIPの提示を求める。EvidenceはProduct Master/GAME_DATA/Source/Current activeと分離する。",
-      "status": "Active",
+      "status": "Inactive",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-23 evidence retention and ZIP policy",
       "created_at": "2026-08-23T13:17:00+09:00",
-      "updated_at": "2026-08-23T13:17:00+09:00"
+      "updated_at": "2026-08-25T16:56:00+09:00",
+      "superseded_by": "RULE-BAL-EVIDENCE-JSON-001"
     },
     {
       "id": "RULE-BAL-VERIFICATION-INFRA-001",
@@ -416,13 +417,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B779",
+    "studio_build": "GKS-B780",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260825-044605).zip",
-    "source_role": "Human-applied Current verified; TASK-BAL-075 P8 baseline",
-    "recorded_at": "2026-08-25T14:05:05+09:00",
-    "package_manifest_sha256": "20def760eb53d0a82cdd7fe71dff662411108ced53b38e3f2f57d3a262620318",
-    "source_zip_sha256": "1874c69dee450a2e42eff142f03f5099df2605ef458a71ae0767a6605e7635c9"
+    "source_label": "guild-adventure-studio-sub(20260825-074935).zip",
+    "source_role": "Human-applied Current verified; Development JSON stale-merge guard recovery",
+    "recorded_at": "2026-08-25T16:53:00+09:00",
+    "package_manifest_sha256": "5973da222cc7a4f412d9c4a78e81532ab08fff4efa940535474ad2be6ad13c8f",
+    "source_zip_sha256": "b9dafc9ba516310ceb641d629ab4aebc194bf677aed1095a3d77207d5cd04604"
   },
   "lifecycle": {
     "status": "Active",
@@ -1238,6 +1239,26 @@
       "summary": "Human-applied GKS-B779 verified. Production Game/Studio Formal paths use existing magic_weapon_bonus directly in MAGICAL damage through MAGIC_DAMAGE; no production MAGIC_SUPPORT channel remains. Staff/Wand/Book are not split by weapon type for this contribution. HEAL does not consume magic_weapon_bonus. MAGIC_SUPPORT is formally abolished and old B778 split-channel artifact is superseded.",
       "created_at": "2026-08-25T13:48:31+09:00",
       "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "IMP-BAL-074-INFRA-GUARD-B780-001",
+      "title": "TASK-BAL-074 Development JSON stale merge guard recovery",
+      "status": "Completed",
+      "task_id": "TASK-BAL-074-INFRA-001",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B780",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-RUNTIME-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-074-INFRA-001"
+      ],
+      "result": "Applied",
+      "evidence": "artifact_id=GKS-B780-87a63a88b703; update_zip_sha256=6f0084c0ce80f38c823d8f7561723a763d473aa0776376a6885c26e2ce9a347d; fresh_source_sha256=b9dafc9ba516310ceb641d629ab4aebc194bf677aed1095a3d77207d5cd04604; target_manifest=5973da222cc7a4f412d9c4a78e81532ab08fff4efa940535474ad2be6ad13c8f; targeted=11/11 PASS; update Accept=14/14 PASS; applied Full=26/26 PASS.",
+      "recorded_at": "2026-08-25T16:56:00+09:00",
+      "created_at": "2026-08-25T16:45:00+09:00",
+      "updated_at": "2026-08-25T16:56:00+09:00"
     }
   ],
   "discussions": [
@@ -1519,14 +1540,14 @@
     {
       "id": "DEC-BAL-EVIDENCE-RETENTION-001",
       "title": "Task EvidenceはHuman保管ZIPを正式証跡として外部保持する",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "DEVELOPMENT_ONLYの詳細EvidenceはDevelopment Project JSONへ生データを重複内包せず、Task単位のEvidence ZIPとしてHumanが保管する。Development Project JSONにはTask状態・結論・ZIP名・SHA-256・構成ファイル名/Hash・保持ルールを記録する。別AIはProject JSONにRaw Evidenceが無いことを削除・欠落と解釈せず、詳細検証が必要な場合はHuman保管ZIPの再提示を前提とする。Evidence ZIPはProduct Master / GAME_DATA / Source / Current activeではない。",
       "rationale": "Human指示により、案件管理JSONの肥大化とEvidence重複を避けつつ、他AIへの引継ぎ・再現・監査可能性を維持するため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-23T13:17:00+09:00",
       "created_at": "2026-08-23T13:17:00+09:00",
-      "updated_at": "2026-08-23T13:17:00+09:00"
+      "updated_at": "2026-08-25T16:56:00+09:00"
     },
     {
       "id": "DEC-BAL-VERIFICATION-INFRA-OWNERSHIP-001",
@@ -2053,6 +2074,18 @@
       "approved_at": "2026-08-25T14:12:46+09:00",
       "created_at": "2026-08-25T14:12:46+09:00",
       "updated_at": "2026-08-25T14:12:46+09:00"
+    },
+    {
+      "id": "DEC-BAL-DEVELOPMENT-MERGE-STALE-GUARD-001",
+      "title": "Development Project JSON統合の世代Guardを回復する",
+      "status": "Approved",
+      "text": "Development Project JSON統合で同一ID Recordが競合する場合、updated_at→recorded_at→checked_at→approved_at→created_atの順で世代判定し、古いIncoming、同一世代競合、世代判定不能競合はFail Closedする。より新しいIncomingだけ更新可能とする。Humanの明示的後退は新しいtimestampを持つRecordまたはStudio Human操作で行う。",
+      "rationale": "GKS-B779で世代Guard回帰を確認し、影響監査後GKS-B780で回復したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T16:32:00+09:00",
+      "created_at": "2026-08-25T16:56:00+09:00",
+      "updated_at": "2026-08-25T16:56:00+09:00"
     }
   ],
   "specifications": [
@@ -6718,12 +6751,12 @@
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Done",
+      "status": "Doing",
       "execution_order": 266,
       "depends_on": [
-        "TASK-BAL-073J",
-        "TASK-BAL-050",
-        "TASK-BAL-073K"
+        "TASK-BAL-073",
+        "TASK-BAL-073K",
+        "TASK-BAL-050"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -6734,14 +6767,44 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T11:27:00+09:00",
-      "result_scope": "PASS DEVELOPMENT CANDIDATE FREEZE. Human-approved stat-affinity and deliberate same-family strict-upgrade policy applied. Current GKS-B777 G05 generated 21/21 candidates ACCEPT; Current G07 formal revalidation semantics (formal master fields + G04 Budget + Formal Compiler + runtimeContracts regeneration match) 21/21 ACCEPT; mathematical gates 11/11 PASS. Frozen families: STR_SINGLE 110/130/150% physical (MP4); AGI_MULTI 65x2 / 45x3 / 35x4 independent hits (MP4); DEX_POISON direct+POISON T1/T2/T3 with duration>=100 first DOT tick; DEX_STUN 10/15/20 Tick, MP6, CD100; INT_MAGIC_ALL 70/90/110 raw per target, MP8, Cast4; MND_HEAL_SINGLE 80/110/140, MP6; VIT_BARRIER 50/100/150, MP6, CD50. Same-family intended obsolescence is allowed and not a dead-option failure. Offensive skills have nonzero MP; STUN/CD and Magic/Cast remain meaningful. Flat MAGICAL/HEAL/BARRIER Level×Equipment scaling is explicitly downstream TASK-BAL-075; exact stat thresholds/acquisition cost/timing remain TASK-BAL-080. LUK-specific family not frozen here. Human also approved retaining TASK-BAL-073K-CORR001 Monster model despite 97.3% single-battle Player win because Quest is consecutive battles; no extra Monster base-stat normalization. Evidence=DEV-V9-BALANCE-001_TASK-BAL-074_SKILL-BALANCE-FREEZE-EVIDENCE.zip sha256=c2d4174a6eea4f033c11566507b81cd156906cca3b565741286b175a41e08566. Source/Game Data/Current active changes=0."
+      "updated_at": "2026-08-25T16:56:00+09:00",
+      "result_scope": "REDO IN PROGRESS. Skill作成ではなくSkill Budget Formulaのゼロベース検証。旧TASK-BAL-074の具体数値・候補・順位・Freeze結果は入力にも比較にも使用しない。Physicalのみ許可済み。現在はP0 Baseline Evidence再生産。GKS-B780 stale-merge guardはHuman Apply済みCurrentとして確認済み。",
+      "historical_invalid_completion": {
+        "status": "Invalidated",
+        "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
+        "prior_result_scope": "PASS DEVELOPMENT CANDIDATE FREEZE. Human-approved stat-affinity and deliberate same-family strict-upgrade policy applied. Current GKS-B777 G05 generated 21/21 candidates ACCEPT; Current G07 formal revalidation semantics (formal master fields + G04 Budget + Formal Compiler + runtimeContracts regeneration match) 21/21 ACCEPT; mathematical gates 11/11 PASS. Frozen families: STR_SINGLE 110/130/150% physical (MP4); AGI_MULTI 65x2 / 45x3 / 35x4 independent hits (MP4); DEX_POISON direct+POISON T1/T2/T3 with duration>=100 first DOT tick; DEX_STUN 10/15/20 Tick, MP6, CD100; INT_MAGIC_ALL 70/90/110 raw per target, MP8, Cast4; MND_HEAL_SINGLE 80/110/140, MP6; VIT_BARRIER 50/100/150, MP6, CD50. Same-family intended obsolescence is allowed and not a dead-option failure. Offensive skills have nonzero MP; STUN/CD and Magic/Cast remain meaningful. Flat MAGICAL/HEAL/BARRIER Level×Equipment scaling is explicitly downstream TASK-BAL-075; exact stat thresholds/acquisition cost/timing remain TASK-BAL-080. LUK-specific family not frozen here. Human also approved retaining TASK-BAL-073K-CORR001 Monster model despite 97.3% single-battle Player win because Quest is consecutive battles; no extra Monster base-stat normalization. Evidence=DEV-V9-BALANCE-001_TASK-BAL-074_SKILL-BALANCE-FREEZE-EVIDENCE.zip sha256=c2d4174a6eea4f033c11566507b81cd156906cca3b565741286b175a41e08566. Source/Game Data/Current active changes=0.",
+        "use_as_input": false,
+        "use_as_comparison": false,
+        "recorded_at": "2026-08-25T16:56:00+09:00"
+      },
+      "redo_scope": {
+        "primary_goal": "Physical Skill Budget Formulaを作るための基準Evidence再生産と物理Budget式検証",
+        "current_step": "P0 Baseline Evidence reproduction",
+        "old_task_074_numeric_results_allowed": false,
+        "old_task_074_numeric_results_as_comparison_allowed": false,
+        "spec_numeric_values_are_authority": false,
+        "spec_numeric_values_role": "temporary_reference_only",
+        "approved_execution_scope": "Physical only",
+        "physical_then_magic_split_required": true,
+        "next_evidence": "Bare Player Physical / Basic Attack baseline"
+      },
+      "evidence_refs": [
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074",
+          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-074.json",
+          "sha256": "796d09068d60976fdcfdaadcb9abe956db72d75bd136c31f6bafbc030439251c",
+          "evidence_id": "EVD-BAL-074-PHYSICAL-BASELINE-EXPECTED-STATS-001",
+          "role": "PHYSICAL_BASELINE_EXPECTED_STATS_LEVEL1_50_7JOBS",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-25T16:16:00+09:00"
+        }
+      ]
     },
     {
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-074",
@@ -6756,14 +6819,16 @@
         "at": "2026-08-25T11:55:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T14:12:46+09:00",
-      "result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval."
+      "updated_at": "2026-08-25T16:56:00+09:00",
+      "result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval.",
+      "historical_result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval.",
+      "blocked_reason": "TASK-BAL-074 zero-base Skill Budget Formula redo is incomplete."
     },
     {
       "id": "TASK-BAL-076",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "R5-P9 Passive / MOD / Rarity / Unique Contributionを確定する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 267,
       "depends_on": [
         "TASK-BAL-075"
@@ -6777,7 +6842,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T14:12:46+09:00"
+      "updated_at": "2026-08-25T16:56:00+09:00",
+      "blocked_reason": "TASK-BAL-074 zero-base Skill Budget Formula redo is incomplete."
     },
     {
       "id": "TASK-BAL-077",
@@ -7422,6 +7488,36 @@
       "created_at": "2026-08-25T12:25:00+09:00",
       "updated_at": "2026-08-25T13:48:31+09:00",
       "result_scope": "SUPERSEDED / CLOSED. The B778 split-channel proposal is not Current and must not be applied or reused. Human formally abolished MAGIC_SUPPORT. Current Human-applied GKS-B779 routes all weapon magic_weapon_bonus directly into existing MAGIC_DAMAGE and leaves HEAL unaffected. Historical B778 evidence is retained only as superseded history."
+    },
+    {
+      "id": "TASK-BAL-074-INFRA-001",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "TASK-BAL-074 Evidence運用を阻害するDevelopment JSON巻き戻りGuard回帰を修復する",
+      "status": "Done",
+      "execution_order": 266,
+      "depends_on": [],
+      "acceptance_criteria": "- GKS-B779のDevelopment Project JSON merge影響範囲を監査する。\n- stale/equal/unknown generation conflictをFail Closedする。\n- newer explicit updateは許可する。\n- workflow/lifecycle Human保護とGit SHA guardを維持する。\n- Human Apply後fresh Current SourceでGKS-B780を確認する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-25T16:32:00+09:00"
+      },
+      "created_at": "2026-08-25T16:45:00+09:00",
+      "updated_at": "2026-08-25T16:56:00+09:00",
+      "result_scope": "PASS/APPLIED. Fresh source is GKS-B780 / GA-B486.211. package_manifest=5973da222cc7a4f412d9c4a78e81532ab08fff4efa940535474ad2be6ad13c8f; Human Apply確認済み。",
+      "evidence_refs": [
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-INFRA-001",
+          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-074-INFRA-001.json",
+          "sha256": "316338eb7218076d3c48aef014f8878ce42ac7eb41629fbe966b6e511bc60b7c",
+          "evidence_id": "EVD-BAL-074-INFRA-MERGE-GUARD-001",
+          "role": "DEVELOPMENT_MERGE_STALE_GUARD_RECOVERY_GKS_B780",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-25T16:56:00+09:00"
+        }
+      ]
     }
   ],
   "checks": [
@@ -11383,6 +11479,29 @@
       "blocking": false,
       "created_at": "2026-08-25T14:12:46+09:00",
       "updated_at": "2026-08-25T14:12:46+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-INFRA-GUARD-B780-APPLY-001",
+      "title": "GKS-B780 Human Apply / Fresh Source確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074-INFRA-001",
+      "status": "Passed",
+      "result": "Human-applied Current is GKS-B780 / GA-B486.211. stale-merge guard recovery is Current.",
+      "evidence": "fresh_source=guild-adventure-studio-sub(20260825-074935).zip sha256=b9dafc9ba516310ceb641d629ab4aebc194bf677aed1095a3d77207d5cd04604",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T16:56:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "TASK-BAL-074-INFRA-001",
+        "resolved_at": "2026-08-25T16:56:00+09:00",
+        "reason": "Human Apply and fresh source verified.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T16:56:00+09:00",
+      "updated_at": "2026-08-25T16:56:00+09:00"
     }
   ],
   "workflow": {
@@ -12254,6 +12373,11 @@
       "task_id": "",
       "created_at": "2026-08-25T15:24:00+09:00",
       "updated_at": "2026-08-25T15:24:00+09:00"
+    },
+    {
+      "at": "2026-08-25T16:56:00+09:00",
+      "type": "DevelopmentMergeGuardHumanApplyVerified",
+      "summary": "Current GKS-B780確認済み。INFRA-001 Done、TASK-BAL-074 Doingへ再開、075/076はBlocked。"
     }
   ],
   "authority": {
