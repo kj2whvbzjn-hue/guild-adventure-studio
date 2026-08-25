@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T21:03:23.970Z"
+    "updated_at": "2026-08-25T21:11:21.080Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical Skill Level→Budget allocation formula calibration",
-    "goal": "Skill Budget=SLvのPhysical allocation formulaを確定する。Test1 SLv→Damage変換Packageは準備済み。Human実機GKS-B782で34条件/3,400戦を実行しResult Packageを返却後、same-seed Control差を評価する。Physicalのみ。"
+    "theme": "TASK-BAL-074 Test1 measurement gate FAIL / level-gap replan",
+    "goal": "Skill Budget=SLv Physical allocation formula。Test1はFormal実行PASSだがLv30 Control床飽和によりk未選定。Test2へ進まず、両Defense archetypeで比較可能なno-skill Control帯を得るLevel-gap再計画をHuman承認後に行う。"
   },
   "project_rules": [
     {
@@ -432,6 +432,19 @@
       "source_id": "conversation:2026-08-25 test-plan-approval-before-execution",
       "created_at": "2026-08-25T20:53:00+09:00",
       "updated_at": "2026-08-25T20:53:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-EVIDENCE-RETENTION-001",
+      "title": "Balance Evidence保存対象を後工程で再利用するAuthorityに限定する",
+      "status": "Active",
+      "text": "Balance Evidenceは、後工程で再利用する固定Baseline、正式数値Authority、Freeze根拠、または将来の再計算/比較に必要な実測値だけを独立Evidenceとして保存する。失敗Test、飽和条件、探索途中のscreening結果、切り分け用一時結果、再利用しない中間値はEvidence化しない。それらは工程管理JSONのTask result_scope / Check / Historyへ最小限の結論だけを残す。Evidence化の判定基準は『後のTaskで数値または契約Authorityとして再参照する必要があるか』とする。",
+      "rationale": "Human instruction: 後に使う残す必要なものだけEvidenceにし、何でもEvidence化しない。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T06:08:00+09:00",
+      "created_at": "2026-08-26T06:08:00+09:00",
+      "updated_at": "2026-08-26T06:08:00+09:00",
+      "source_type": "",
+      "source_id": ""
     }
   ],
   "source_baseline": {
@@ -6834,8 +6847,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T21:49:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Final objective is Skill Budget=SLv based Physical Skill Level allocation formula. Physical component conversion values remain unfrozen. Old same-Job/high-winrate probes remain execution-path evidence only. Next planned evidence is Test 1 SLv→Damage conversion; no Simulation/Test has been executed under the revised plan yet.",
+      "updated_at": "2026-08-26T06:08:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Test1 Formal execution integrity PASS, but measurement gate FAIL_REPLAN_REQUIRED. The failed/saturated Test1 result is NOT retained as standalone Evidence under RULE-BAL-EVIDENCE-RETENTION-001. Only the management conclusion remains: Lv30 HEAVY Control=6% and EVASION Control=0% are invalid calibration bands; k is not selected; Test2 is not authorized; level-gap replan requires Human approval.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6846,14 +6859,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Test 1 Formal Battle Package prepared; awaiting Human real-device execution/result package",
+        "current_step": "Test1 Human real-device result evaluated: execution PASS / measurement gate FAIL_REPLAN_REQUIRED",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "Test 1: SLv→Physical Damage conversion screen (k=0.5/1/2/4, SLv=1/5/10/20, Lv20 vs Lv30, heavy/evasion, same-seed Control)",
+        "next_evidence": "No Test2 execution. Replan level-gap to find a discriminating no-skill Control region for both required defense archetypes.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6863,7 +6876,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanRealDeviceResult",
+        "next_evidence_status": "AwaitingHumanTestPlanApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -6991,20 +7004,21 @@
         "allocation_decision_id": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001",
         "superseded_calculation_decision_id": "DEC-BAL-PHYSICAL-SKILL-BUDGET-CALC-001",
         "test1_execution": {
-          "status": "PackagePrepared",
+          "status": "HumanResultEvaluated",
           "decision_id": "DEC-BAL-TASK074-TEST1-EXECUTION-001",
-          "package_file": "TASK-BAL-074-Test1.zip",
-          "package_sha256": "8d167f26eb0fabe7ba2bc526c4d51484d209d787f779e1b3ca26f60139362fdb",
-          "required_studio_build": "GKS-B782",
-          "conditions": 34,
-          "trials_per_condition": 100,
-          "total_trials": 3400,
-          "seed_start": 749100000,
-          "seed_step": 1,
-          "human_real_device_required": true,
-          "ai_reference_result_is_real_device_evidence": false,
-          "result_pending": true,
-          "prepared_at": "2026-08-25T21:49:00+09:00"
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-T1-SLV-DAMAGE-B782_BEX-1787691719648.zip",
+          "result_sha256": "2f3547bea4cdedf65054290cf160f9af5c6aa7bad47db57a20ddfa09843cb766",
+          "execution_id": "BEX-1787691719648",
+          "formal_execution_gate": "PASS",
+          "measurement_gate": "FAIL_REPLAN_REQUIRED",
+          "k_selected": null,
+          "top_two_k_selected": [],
+          "test2_authorized": false,
+          "heavy_control_win_rate": 0.06,
+          "evasion_control_win_rate": 0,
+          "evaluated_at": "2026-08-26T06:02:00+09:00",
+          "standalone_evidence_retained": false,
+          "retention_reason": "Test1 is a failed/saturated screening result and will not be reused as numeric authority. Only the conclusion 'Lv30 control band invalid; replan level-gap; k not selected' remains in management JSON."
         }
       },
       "evidence_refs": [
@@ -11785,6 +11799,52 @@
       "blocking": false,
       "created_at": "2026-08-25T16:56:00+09:00",
       "updated_at": "2026-08-25T16:56:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-SLV-T1-EXECUTION-001",
+      "title": "TASK-BAL-074 Test1 Formal execution integrity gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "PASS. 34/34 jobs, 3,400/3,400 trials, error0, Formal binding match, formal_only 34/34, legacy fallback 0, same seed 749100000..749100099.",
+      "evidence": "Human real-device Result Package GK_BattleVerification_Result_BVP-BAL074-T1-SLV-DAMAGE-B782_BEX-1787691719648.zip sha256=2f3547bea4cdedf65054290cf160f9af5c6aa7bad47db57a20ddfa09843cb766",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T06:02:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T06:02:00+09:00",
+        "reason": "Human real-device Test1 execution integrity and Formal provenance are complete.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T06:02:00+09:00",
+      "updated_at": "2026-08-26T06:08:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-SLV-T1-MEASUREMENT-001",
+      "title": "TASK-BAL-074 Test1 SLv→Damage measurement gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Failed",
+      "result": "FAIL_REPLAN_REQUIRED. HEAVY Control=6%, EVASION Control=0% are floor-saturated. HEAVY reaches 93% at Power110 and 100% at Power120 while EVASION remains near floor. No k in {0.5,1,2,4} satisfies the registered cross-defense non-saturation gate; k not selected.",
+      "evidence": "TASK-BAL-074 Test1 management result only; standalone Evidence intentionally not retained. Result Package sha256=2f3547bea4cdedf65054290cf160f9af5c6aa7bad47db57a20ddfa09843cb766",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T06:02:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T06:02:00+09:00",
+      "updated_at": "2026-08-26T06:08:00+09:00"
     }
   ],
   "workflow": {
@@ -12696,6 +12756,11 @@
       "at": "2026-08-25T20:53:00+09:00",
       "type": "TestPlanPreapprovalGateEstablished",
       "summary": "Human established a mandatory pre-approval gate for all Balance Simulation/Test/verification. AI must define and report the test purpose, comparison/control, inputs and rationale, KPIs, judgment/Freeze criteria, outputs/next-use, and stop conditions before execution. No simulation, demo generation, real-device test request, result evaluation, or unplanned additional test may start until Human explicitly approves that test plan."
+    },
+    {
+      "at": "2026-08-26T06:08:00+09:00",
+      "type": "EvidenceRetentionPolicyApplied",
+      "summary": "Human指示によりEvidence保存基準を厳格化。Test1の失敗/飽和screening結果は独立Evidenceから除外し、工程JSONに『Lv30 calibration band invalid / k未選定 / replan required』のみ保持。"
     }
   ],
   "authority": {
