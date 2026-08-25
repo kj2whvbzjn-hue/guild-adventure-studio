@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T01:45:19.814Z"
+    "updated_at": "2026-08-25T02:06:00.563Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-073K corrected GKS-B777 source package ready; Human Studio apply + real-device battle result wait",
-    "goal": "Rejected GKS-B776 artifact was not deployed. AI_START preflight found missing artifact_id/baseline tree binding and forbidden Export content. A fresh non-reused build GKS-B777 was rebuilt from exact Human-provided GKS-B775 baseline. Direct Studio update contains no Export/development data, deletions 0, Game Data changes 0; Quick 11/11, Accept 13/13, Full 26/26 PASS. GKS-B777-bound 30-condition/900-trial battle package is ready. TASK-BAL-073K remains Blocked until Human applies B777 and returns Result ZIP."
+    "theme": "TASK-BAL-073K CORR001 PASS: Monster初期ALL10なしではPlayer基準装備補正共通でもPlayerが明確に優勢",
+    "goal": "Corrected Human real-device model is authoritative for the intended no-initial-10 Monster comparison. 30/30 conditions, 900/900 trials, error 0, Formal only, Legacy fallback 0. Physical5 Party: Player 146/150 wins = 97.3%; previous exact mirror was 52.0%. Therefore Player-equivalent equipment contributions alone do not restore parity after removing initial ALL10 from Monster base Stats. Keep Player reference equipment correction as the equipment-equivalent layer, but decide separately how Monster base Stats are normalized before consecutive encounter tuning. Do not start another task automatically."
   },
   "project_rules": [
     {
@@ -6510,8 +6510,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T10:12:00+09:00",
-      "result_scope": "BLOCKED. TASK-BAL-073K must validate corrected Player/Monster physical baseline before Formal Skill Balance. TASK-BAL-073J is historical-only for current downstream after equipment/Job/Evasion/Hit corrections."
+      "updated_at": "2026-08-25T10:44:00+09:00",
+      "result_scope": "WAIT. TASK-BAL-073K completed, but Human is evaluating Monster consecutive-encounter scaling before Formal Skill Balance. Do not auto-start. Separate Human approval required."
     },
     {
       "id": "TASK-BAL-075",
@@ -7160,7 +7160,7 @@
       "id": "TASK-BAL-073K",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "Player基準装備相当MonsterのBasic Attack成立性を実機検証する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 265,
       "depends_on": [
         "TASK-BAL-073J"
@@ -7174,8 +7174,8 @@
         "at": "2026-08-25T10:12:00+09:00"
       },
       "created_at": "2026-08-25T10:12:00+09:00",
-      "updated_at": "2026-08-25T10:33:00+09:00",
-      "result_scope": "INPUT_READY / HUMAN_STUDIO_APPLY_AND_REAL_DEVICE_WAIT. Previous GKS-B776 artifact was rejected before deployment: studio-update.json lacked artifact_id and baseline_source.source_tree_sha256, and the ZIP incorrectly contained Export/. Per AI_START no same-build artifact reuse; corrected target advances from exact GKS-B775 baseline directly to fresh GKS-B777 / GA-B486.211. Functional scope unchanged: HitRate=Accuracy/Evasion (Evasion<=0=>100%, no explicit min floor/max clamp), armor Evasion=required_agi*evasionGrowth without HP/MP slot coefficient, formula semantics 0.4.0-universal. Corrected direct Studio update: DEV-V9-BALANCE-001_TASK-BAL-073K_GKS-B777_HIT-EVASION_STUDIO-UPDATE.zip sha256=910a87f482e5431ac0d9429c8e1fcd8642674073fddd1ed6ee48607f22dd1c4c. Source gates: Quick 11/11 PASS; SOURCE_UPDATE Accept 13/13 PASS; applied target Full 26/26 PASS; warnings/timeouts=0. Export included=0; development-project-data included=0; deletions=0; Game Data changes=0. Corrected Human test package: DEV-V9-BALANCE-001_TASK-BAL-073K_PLAYER-EQUIV-MONSTER_BASIC-FEASIBILITY_GKS-B777.zip sha256=428aadef88a33a4e52a6cac9160be80e144d69b0b45b7e5995c0fe1c183c2237; 30 conditions / 900 trials; Formal source binding GKS-B777 package_manifest=cbb7ca3651c622c2b257d2b0e8d8e5ab3e80990d1723fdc8010afdeec9d930aa; Candidate payload hash mismatch=0/133; Formula hash match. Do not complete until Human Result ZIP passes."
+      "updated_at": "2026-08-25T11:01:00+09:00",
+      "result_scope": "PASS HUMAN REAL-DEVICE CORR001. Intended Monster model validated: all seven Monster base Stats are Player benchmark Stats - 10; same Player reference equipment contributions retained. 30/30 conditions, 900/900 trials, error=0, Formal only=true, Legacy fallback=false, semantic mismatch=0. Physical5 Party: Player 146/150 wins = 97.3%; weighted avg=168.0 Tick; winner remaining HP=44.0%; Player survivors=2.64/5, Monster survivors=0.03/5. Previous identical-Stats mirror was Player 52.0% with winner remaining HP 18.6%; that result is retained only as parity diagnostic. Same-job duels: Player 719/750 wins = 95.9%. Conclusion: removing initial ALL10 materially weakens Monster even when it receives the same Job/Level Player equipment-equivalent correction. Player reference equipment correction can remain as the Monster equipment layer, but a separate Monster base-stat normalization decision is required before normal consecutive encounter scaling. Reference=DEV-V9-BALANCE-001_TASK-BAL-073K-CORR001_BASIC-FEASIBILITY-REFERENCE.zip sha256=fa57509ad1688ed71d787d1b1602760c992ce0cec9197affc6efca526cb41bd2. No additional Source/Game Data changes."
     }
   ],
   "checks": [
@@ -10816,26 +10816,26 @@
     },
     {
       "id": "CHK-BAL-TASK073K-HUMAN-RESULT-001",
-      "title": "TASK-BAL-073K Human real-device result gate",
+      "title": "TASK-BAL-073K Human real-device Basic feasibility gate",
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-073K",
-      "status": "Pending",
-      "result": "Wait for Human execution of all 30 conditions / 900 trials on GKS-B776.",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS measurement gate: 30/30 conditions, 900/900 trials, error 0, Formal only, Legacy fallback 0. Design result: Player-equivalent 100% Monster is near parity in 5v5 win rate but causes severe one-fight attrition, so it is a reference ceiling/anchor rather than normal consecutive-encounter target. NOTE: This result applies only to the identical-Stats mirror model and is not the acceptance result for the intended no-initial-10 Monster model.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL073K-PLAYER-EQUIV-MONSTER-B777_BEX-1787622271292.zip sha256=b3dcbd4ac7ac6d77b30b53645ca4fa9f6ad74ce05a064ab039313deaec43e2d9; DEV-V9-BALANCE-001_TASK-BAL-073K_BASIC-FEASIBILITY-REFERENCE.zip sha256=e143dec39ddd83076bd8be3964e0bfe7c8bb90420591271b518f33019f445fe7",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T10:44:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-25T10:44:00+09:00",
+        "reason": "Human executed GKS-B777 package and supplied Result ZIP.",
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-25T10:12:00+09:00",
-      "updated_at": "2026-08-25T10:12:00+09:00"
+      "created_at": "2026-08-25T10:44:00+09:00",
+      "updated_at": "2026-08-25T10:56:00+09:00"
     },
     {
       "id": "CHK-BAL-TASK073K-SOURCE-B777-001",
@@ -10859,6 +10859,29 @@
       "blocking": false,
       "created_at": "2026-08-25T10:33:00+09:00",
       "updated_at": "2026-08-25T10:33:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK073K-CORR001-HUMAN-RESULT-001",
+      "title": "TASK-BAL-073K-CORR001 Monster no-initial-10 Human real-device gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-073K",
+      "status": "Passed",
+      "result": "PASS. 30/30 conditions, 900/900 trials, error 0, Formal only, Legacy fallback 0, Monster no-initial10 semantic mismatch 0. Physical5 Player wins 146/150 (97.3%). Player-equivalent equipment contribution alone is insufficient for parity after Monster initial ALL10 removal.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL073K-CORR001-MONSTER-NOINIT10-B777_BEX-1787623245406.zip sha256=bb3dd92781a2e9f1d1d2b59174ae3b68b704ead2f53499c3b9f27e0d141d2da8; DEV-V9-BALANCE-001_TASK-BAL-073K-CORR001_BASIC-FEASIBILITY-REFERENCE.zip sha256=fa57509ad1688ed71d787d1b1602760c992ce0cec9197affc6efca526cb41bd2",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T11:01:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-25T11:01:00+09:00",
+        "reason": "Human executed corrected GKS-B777 no-initial-10 package and supplied Result ZIP.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T10:56:00+09:00",
+      "updated_at": "2026-08-25T11:01:00+09:00"
     }
   ],
   "workflow": {
@@ -11626,6 +11649,30 @@
       "task_id": "TASK-BAL-073J",
       "created_at": "2026-08-25T07:06:00+09:00",
       "updated_at": "2026-08-25T07:06:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073K-RESULT-001",
+      "title": "Player基準装備相当Monster Basic実機成立性を測定",
+      "summary": "GKS-B777 Human実機900試行。Physical5 full mirrorは全Lv合計52.0% Player勝で概ねParityだが、勝者残HPは平均18.6%、生存1.59/5。 Player-equivalent Monsterを100% Referenceとして保持し、通常連戦Encounterには下げ幅探索が必要と確定。 同値・同速・確定命中の1v1はPlayer側先手biasを確認。",
+      "task_id": "TASK-BAL-073K",
+      "created_at": "2026-08-25T10:44:00+09:00",
+      "updated_at": "2026-08-25T10:44:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073K-CORR001-INPUT-001",
+      "title": "073K実機条件補正: Monster初期ALL10を除外",
+      "summary": "前回Mirror実機はMonsterにもPlayer初期ALL10を含めていたため目的条件と不一致。Monster7 StatsをPlayer基準値-10とし、Player基準装備補正は共通のまま、同Seed・30条件・900試行のCORR001を発行。",
+      "task_id": "TASK-BAL-073K",
+      "created_at": "2026-08-25T10:56:00+09:00",
+      "updated_at": "2026-08-25T10:56:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK073K-CORR001-RESULT-001",
+      "title": "Monster初期ALL10なし Basic実機比較完了",
+      "summary": "Human実機900試行。Player基準装備補正をMonsterへ共通適用しても、初期ALL10を除外するとPhysical5 PartyはPlayer 146/150勝 (97.3%)。 前回完全Mirror 52.0%とは明確に異なり、初期10除外の影響が大きい。Monster装備相当層と基礎Stat正規化を分離して設計する必要がある。",
+      "task_id": "TASK-BAL-073K",
+      "created_at": "2026-08-25T11:01:00+09:00",
+      "updated_at": "2026-08-25T11:01:00+09:00"
     }
   ],
   "authority": {
