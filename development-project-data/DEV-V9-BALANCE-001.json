@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T10:59:43.644Z"
+    "updated_at": "2026-08-25T11:49:46.596Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical Skill Budget formula derivation",
-    "goal": "Physical Player↔Monster exchange baselineまでHuman実機Evidence PASS。次はこのEvidenceからPhysical Skill Budget式候補を導出し、予測値とFormal Battle実測を比較する。魔法側には進まない。"
+    "theme": "TASK-BAL-074 Physical Skill Budget cross-defense / level-gap calibration",
+    "goal": "Physical Skill Budgetは同Jobミラーや95%超の勝率飽和帯をFreeze根拠にしない。攻撃側Playerと防御側Monsterを分離し、Level差と高耐久・高回避の防御特性を横断して、同一条件・同一SeedのSkillなしControlに対する勝率変化と補助KPIからSkill影響量を測定する。Physicalのみを対象とし、Magic/Heal/Status/Utilityへは進まない。"
   },
   "project_rules": [
     {
@@ -414,6 +414,15 @@
       "source_id": "conversation:2026-08-25 filename policy reset",
       "created_at": "2026-08-25T15:24:00+09:00",
       "updated_at": "2026-08-25T15:24:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-SKILL-BUDGET-CALIBRATION-001",
+      "text": "Physical Skill Budgetの数値評価では、同Job同士・同Level付近でPlayer勝率が95%超に飽和する条件を主要Freeze根拠に使用しない。攻撃側Playerと防御側Monsterを分離し、Monster LevelをPlayerより上げたLevel差ladderと、防御特性の異なる高耐久・重装型／高回避・軽装型を横断して比較する。各Skill候補は同一条件・同一SeedのSkillなしControlと直接比較し、主KPIを勝率差ΔWinRate(pp)とする。平均戦闘Tick、与Damage/被Damage、Hit率、Action数等を補助KPIとして保持する。同Jobミラーは必要な局所診断には使えても、Physical Skill BudgetのUniversal換算根拠として単独使用しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-25 physical skill budget cross-defense level-gap calibration",
+      "created_at": "2026-08-25T20:47:00+09:00",
+      "updated_at": "2026-08-25T20:47:00+09:00"
     }
   ],
   "source_baseline": {
@@ -2086,6 +2095,18 @@
       "approved_at": "2026-08-25T16:32:00+09:00",
       "created_at": "2026-08-25T16:56:00+09:00",
       "updated_at": "2026-08-25T16:56:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-PHYSICAL-CALIBRATION-MATRIX-001",
+      "title": "Physical Skill BudgetをLevel差×防御特性横断の勝率変化で評価する",
+      "status": "Approved",
+      "text": "TASK-BAL-074 Physical Skill Budgetの再検証は、攻撃側Playerと防御側Monsterを同Jobミラーに固定しない。基準構造はPlayer Levelを固定した上でMonster Levelを上げるLevel差比較とし、初期比較ladderとしてMonster=L+5/L+10/L+15を使用する。Control勝率がなお天井/床へ飽和する場合は、Skill差が観測できる範囲へMonster Level差を調整する。防御側は少なくとも高耐久・重装型と高回避・軽装型を別系列として比較する。各Player×Monster条件でSkillなしControlとSkill使用条件を同一Seedで実行し、Skill影響量をΔWinRate(pp)=Skill使用時勝率-Control勝率として測る。平均Tick、与Damage/被Damage、Hit率、Action数を補助KPIとし、Skill強度がどのLevel差・防御特性をどれだけ埋めるかをPhysical Budget換算の根拠にする。95%超の同Jobミラー勝率帯だけからPhysical Budget値をFreezeしない。",
+      "rationale": "Humanが、95%超の勝率相手ではSkill上昇率の影響を比較できず、Player Lvに対してMonster Lvを上げた勝率差でSkill効果を見る必要があると指摘。さらに同Job比較では重装の高耐久と軽装の高回避という防御特性差を評価できないため、それぞれを横断比較するよう指示した。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T20:47:00+09:00",
+      "created_at": "2026-08-25T20:47:00+09:00",
+      "updated_at": "2026-08-25T20:47:00+09:00"
     }
   ],
   "specifications": [
@@ -6758,7 +6779,7 @@
         "TASK-BAL-073K",
         "TASK-BAL-050"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -6767,8 +6788,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T19:54:55+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Expected Stats Evidence、Current-runtime Equipped Basic Attack Evidence、Player↔Monster Physical Exchange EvidenceがPASS。ExchangeはGKS-B782で50 conditions / 1,500 trials / error0。MonsterStat=Level×expected_gain_per_level、Player初期ALL10なし、same Player-reference equipment、weapon Crit 5%、Knight shield 0 Strikeを実機確認。Physical Skill Budget Formula自体は未確定。",
+      "updated_at": "2026-08-25T20:47:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Expected Stats、Current-runtime Equipped Basic Attack、Player↔Monster Physical Exchangeの基準Evidenceは保持する。Physical Skill Budget Formulaは未確定。旧同Jobミラー/高勝率飽和帯のSkill probeはFormal Skill実行経路の技術確認に限定し、Budget数値Freeze根拠には使用しない。今後はLevel差×防御特性横断の同一Seed Control比較で再評価する。",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6779,14 +6800,14 @@
       },
       "redo_scope": {
         "primary_goal": "Physical Skill Budget Formulaを作るための基準Evidence再生産と物理Budget式検証",
-        "current_step": "P2 Player↔Monster physical exchange baseline evidence PASS",
+        "current_step": "P3 Physical Skill Budget level-gap × defense-archetype calibration redesign registered",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "Physical Skill Budget formula candidate derivation and predicted-vs-actual validation",
+        "next_evidence": "Physical Skill Budget level-gap × defense-archetype same-seed control matrix",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6796,7 +6817,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "Ready",
+        "next_evidence_status": "PlanRegistered",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -6870,6 +6891,55 @@
           },
           "balance_interpretation": "Measured baseline only; no 50% target or Skill Budget value frozen.",
           "recorded_at": "2026-08-25T19:54:55+09:00"
+        },
+        "physical_skill_budget_calibration_policy": {
+          "status": "HumanApproved",
+          "decision_id": "DEC-BAL-TASK074-PHYSICAL-CALIBRATION-MATRIX-001",
+          "rule_id": "RULE-BAL-SKILL-BUDGET-CALIBRATION-001",
+          "scope": "Physical only",
+          "same_job_mirror_as_universal_authority": false,
+          "high_winrate_ceiling_as_freeze_authority": false,
+          "initial_level_gap_ladder": [
+            "L+5",
+            "L+10",
+            "L+15"
+          ],
+          "level_gap_adjustment_rule": "If no-skill Control is saturated near ceiling/floor, move Monster level gap to a discriminating win-rate region.",
+          "defense_archetypes_required": [
+            "high_durability_heavy_armor",
+            "high_evasion_light_armor"
+          ],
+          "comparison": "same condition + same seed: no-skill Control vs Skill candidate",
+          "primary_kpi": "delta_win_rate_percentage_points",
+          "supporting_kpis": [
+            "average_ticks",
+            "dealt_damage",
+            "received_damage",
+            "hit_rate",
+            "action_count"
+          ],
+          "interpretation": "Quantify how much Skill strength offsets Monster level disadvantage across different defensive archetypes.",
+          "recorded_at": "2026-08-25T20:47:00+09:00"
+        },
+        "previous_physical_skill_probe": {
+          "status": "ExecutionPathPASS_NotBudgetFreezeAuthority",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-PHYSICAL-SKILL-BUDGET-FORMULA-G07_BEX-1787657515963.zip",
+          "result_sha256": "e325b3cd5312f8f59b8dda388d7730ece461b075d38f75e9ae5505ce26f8e56a",
+          "studio_build": "GKS-B782",
+          "conditions": 200,
+          "trials": 6000,
+          "execution_quality": "200/200 conditions, 6000/6000 trials, error0, formal_only, legacy_fallback=0",
+          "skill_probes": [
+            "101%",
+            "105%",
+            "110%",
+            "125%"
+          ],
+          "use_as_formula_freeze": false,
+          "use_as_numeric_calibration_authority": false,
+          "retained_role": "Formal G05→G07 Skill execution / runtime sanity evidence only",
+          "exclusion_reason": "Opponent matrix was dominated by same-job/high-win-rate conditions and had no same-condition no-skill Control, so it cannot quantify Skill impact across level disadvantage and defensive archetypes.",
+          "recorded_at": "2026-08-25T20:47:00+09:00"
         }
       },
       "evidence_refs": [
@@ -12551,6 +12621,11 @@
       "at": "2026-08-25T19:54:55+09:00",
       "type": "PhysicalPlayerMonsterExchangeEvidencePass",
       "summary": "TASK-BAL-074 GKS-B782 Player↔Monster Physical Exchange PASS: 50/50 jobs, 1500/1500 trials, error0. Monster Stat=Level×Job correction, no Player initial ALL10, weapon Crit 5%, Knight shield 0 Strike validated. Overall Player wins 1443/1500 (96.2%)."
+    },
+    {
+      "at": "2026-08-25T20:47:00+09:00",
+      "type": "PhysicalSkillBudgetCalibrationPolicyRedesigned",
+      "summary": "Human approved TASK-BAL-074 Physical Skill Budget redesign: discard same-job/high-win-rate ceiling probes as numeric Freeze authority; evaluate same-seed no-skill Control vs Skill across Monster level gaps and high-durability heavy-armor / high-evasion light-armor archetypes. Primary KPI is ΔWinRate(pp), with ticks/damage/hit/actions as supporting KPIs. Previous 6000-trial probe retained only as Formal execution-path sanity evidence."
     }
   ],
   "authority": {
