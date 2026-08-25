@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T05:10:47.209Z"
+    "updated_at": "2026-08-25T05:14:30.479Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-075 Human Decision Gate: Base Critical Damage",
-    "goal": "P8 Formula/Equipment mathematical pre-freeze is complete on GKS-B779. MAGIC_SUPPORT remains formally abolished. Decide Base Critical Damage numeric, then finalize TASK-BAL-075 only; do not start TASK-BAL-076 in the same run."
+    "work_box_id": "BOX-V9-BAL-ITEM-001",
+    "theme": "TASK-BAL-075 complete; TASK-BAL-076 Human start approval gate",
+    "goal": "P8 Formula/Equipment mathematical baseline is frozen on GKS-B779 with Base Critical Damage=50% (1.5x crit event). MAGIC_SUPPORT remains formally abolished. TASK-BAL-076 is ready only for separate Human start approval; do not execute it automatically."
   },
   "project_rules": [
     {
@@ -1378,15 +1378,15 @@
     {
       "id": "DISC-BAL-TASK075-BASE-CRITICAL-DAMAGE-001",
       "title": "Base Critical Damage Balance値のHuman決定",
-      "status": "Open",
-      "summary": "Critical処理順/表現/rangeは確定しているが、Base Critical Damageの具体値がCurrent仕様に存在しないためP8最終Freezeのみ停止。",
+      "status": "Resolved",
+      "summary": "HumanがBase Critical Damageを50%で確定。Critical時倍率1.5xとしてP8 Balance baselineをFreeze。",
       "body": "Current Formalはcritical_damageを追加割合として扱い、Resistance後に(1 + critical_damage/100)を掛け、最終floorする。武器base_critical_rate=5%は確定。仕様はCRITICAL_DAMAGE MODを既存Base Critical Damageへのrelative percentと定義する一方、そのBase数値を定義していない。25/50/75/100%のSensitivityを作成。5% Crit時の平均期待上昇はそれぞれ1.25/2.50/3.75/5.00%。AI first candidateは50%だがHuman未承認なのでFreezeしない。",
-      "open_questions": "Base Critical Damageを 25% / 50% / 75% / 100% のどれでP8 Balance baselineとしてFreezeするか。別値指定も可。",
-      "conclusion": "Human Decision待ち。決定後、同じP8 Evidenceへ値を反映してTASK-BAL-075をDoneにできる。",
+      "open_questions": "",
+      "conclusion": "Base Critical Damage=50%（追加割合）をHuman Approved P8 Balance baselineとしてFreezeする。Resistance→Critical→final floorの処理順、0..700 range、武器base critical rate 5%は変更しない。",
       "related_discussion_ids": [],
       "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip",
       "created_at": "2026-08-25T14:05:05+09:00",
-      "updated_at": "2026-08-25T14:05:05+09:00"
+      "updated_at": "2026-08-25T14:12:46+09:00"
     }
   ],
   "decisions": [
@@ -2012,6 +2012,20 @@
       "approved_at": "2026-08-25T13:48:31+09:00",
       "created_at": "2026-08-25T13:48:31+09:00",
       "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "DEC-BAL-BASE-CRITICAL-DAMAGE-001",
+      "title": "Base Critical Damageを50%に確定する",
+      "status": "Approved",
+      "text": "Base Critical Damageは50%（追加割合）とする。Critical成立時の倍率は 1 + 50/100 = 1.5倍。武器由来base_critical_rateのCurrent Baseline 5%とは別パラメータとして扱い、5% Critのみを前提にした平均期待倍率は1.025（平均+2.5%）となる。Resistance適用後にCriticalを掛け、最終floorする既存処理順・表現・許容rangeは変更しない。この50%はP8 Human Approved Balance baselineとして後続Balance計算へ渡すが、本TaskではSource/Game Data/Current activeへ書き込まない。",
+      "rationale": "HumanがTASK-BAL-075 Human Decision Gateに対して「50%で確定」と明示したため。",
+      "source_discussion_ids": [
+        "DISC-BAL-TASK075-BASE-CRITICAL-DAMAGE-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T14:12:46+09:00",
+      "created_at": "2026-08-25T14:12:46+09:00",
+      "updated_at": "2026-08-25T14:12:46+09:00"
     }
   ],
   "specifications": [
@@ -6700,7 +6714,7 @@
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-074",
@@ -6715,14 +6729,14 @@
         "at": "2026-08-25T11:55:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T14:05:05+09:00",
-      "result_scope": "P8 MATHEMATICAL PREFREEZE COMPLETE ON GKS-B779; HUMAN DECISION GATE. Formula contract verification 9/9 PASS; current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 curve and all current intrinsic nonzero curves are monotone/consistent; Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables produced. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT formally abolished; HEAL unaffected. Current equipment candidate C1.00 retained as mathematical baseline pending later Human Experience tuning; no Product/Game Data/Current active change. Remaining blocker: Base Critical Damage numeric is absent from approved specification. Options 25/50/75/100% were quantified; AI recommends 50% as first candidate but does not freeze without Human approval. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2. TASK-BAL-076 not started."
+      "updated_at": "2026-08-25T14:12:46+09:00",
+      "result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval."
     },
     {
       "id": "TASK-BAL-076",
       "box_id": "BOX-V9-BAL-ITEM-001",
       "title": "R5-P9 Passive / MOD / Rarity / Unique Contributionを確定する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 267,
       "depends_on": [
         "TASK-BAL-075"
@@ -6736,7 +6750,7 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T01:00:00+09:00"
+      "updated_at": "2026-08-25T14:12:46+09:00"
     },
     {
       "id": "TASK-BAL-077",
@@ -11303,22 +11317,45 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-075",
-      "status": "Pending",
-      "result": "Pending Human decision. Specification fixes Critical ordering/range/representation and weapon base Crit 5%, but no Base Critical Damage numeric exists. 25/50/75/100% sensitivity prepared; AI recommends 50% first candidate.",
+      "status": "Passed",
+      "result": "PASS. Human approved Base Critical Damage=50% additional. Critical event multiplier=1.5x. With current 5% weapon base Critical Rate, expected average multiplier=1.025 (+2.5%). P8 final Freeze may complete; Source/Game Data/Current active unchanged.",
       "evidence": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2; critical-damage-decision.json",
-      "checked_by": "AI",
-      "checked_at": "2026-08-25T14:05:05+09:00",
+      "checked_by": "Human",
+      "checked_at": "2026-08-25T14:12:46+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-25T14:12:46+09:00",
+        "reason": "Human explicitly selected 50% at TASK-BAL-075 Critical Damage Decision Gate.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-08-25T14:05:05+09:00",
-      "updated_at": "2026-08-25T14:05:05+09:00"
+      "updated_at": "2026-08-25T14:12:46+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK075-FINAL-FREEZE-001",
+      "title": "TASK-BAL-075 P8 final Formula / Equipment freeze gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-075",
+      "status": "Passed",
+      "result": "PASS. Formula contract 9/9, Equipment mathematical curve gate PASS, Human Critical Damage decision PASS at 50%. P8 outputs are frozen for downstream TASK-BAL-076. MAGIC_SUPPORT remains formally abolished; Source/Game Data/Current active changes=0.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T14:12:46+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-25T14:12:46+09:00",
+        "reason": "All TASK-BAL-075 acceptance gates are complete after Human Critical Damage decision.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T14:12:46+09:00",
+      "updated_at": "2026-08-25T14:12:46+09:00"
     }
   ],
   "workflow": {
@@ -12174,6 +12211,14 @@
       "task_id": "TASK-BAL-075",
       "created_at": "2026-08-25T14:05:05+09:00",
       "updated_at": "2026-08-25T14:05:05+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK075-COMPLETE-001",
+      "title": "TASK-BAL-075 Base Critical Damage 50%確定・P8最終Freeze完了",
+      "summary": "HumanがBase Critical Damage=50%を確定。Critical成立時1.5x、Current 5% base Crit時の平均期待増加+2.5%としてP8 Balance baselineへFreeze。Formula contract 9/9、Equipment 308-row iLv1..11 mathematical curve gate、Magic direct binding/Heal noninteractionを含むP8全Gateが完了。MAGIC_SUPPORTは正式廃止のまま。Source/Game Data/Current active変更0。Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646。TASK-BAL-075 Done。TASK-BAL-076はTodo/開始承認Pendingへ解放しただけで未開始。",
+      "task_id": "TASK-BAL-075",
+      "created_at": "2026-08-25T14:12:46+09:00",
+      "updated_at": "2026-08-25T14:12:46+09:00"
     }
   ],
   "authority": {
