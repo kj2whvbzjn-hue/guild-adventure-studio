@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T22:49:05.508Z"
+    "updated_at": "2026-08-25T23:25:09.223Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 HNT single-hit Damage validated; next Development Task requires Human approval",
-    "goal": "DAMAGE_COST_LINEAR_2はHNT Tier7 Level-gapでPASSした。KNT盾未確定のためUniversal final Freezeは保留し、Test3 multi-hit compositionは別Human開始承認まで実行しない。"
+    "theme": "TASK-BAL-074 Test3 multi-hit awaiting Human result",
+    "goal": "THF Lv20 vs HNT Lv23/24/25でTP110/120をH2/H3/H4へ分割し、E05 single-hit Authorityとの差からmulti-hit追加価値とP_eq/C_MultiHit_estを測定する。H-only固定Costは結果報告後の別Decisionとし、MP/CD/Cast/Rangeへ自動進行しない。"
   },
   "project_rules": [
     {
@@ -2324,6 +2324,18 @@
       "approved_at": "2026-08-26T07:45:00+09:00",
       "created_at": "2026-08-26T07:45:00+09:00",
       "updated_at": "2026-08-26T07:45:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-MULTIHIT-TEST3-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Humanの「進めて」によりTASK-BAL-074 Test3 multi-hit追加価値測定を実行承認。THF/盗賊Lv20 vs HNT/狩人Lv23/24/25（Current JOB-0004/弓兵、全Tier7）。各LvでControl、TotalPower110のH2/H3/H4、TotalPower120のH2/H3/H4をsame-seed 749600000..749600099で各100戦、21条件2,100戦。P110/P120 single-hitはBAL074-E05 Authorityを再利用し再実行しない。Current Formal multi-hit contractどおり複数DAMAGE effectContractを独立Hitとして使用する。per-hit PowerへC_Damage_1Hitを直接適用しない。H-only C_MultiHit(H)は本Testだけで自動Freezeせず、結果のTP110/120推定差を報告後に別Decisionとする。",
+      "rationale": "HNT Level-gapでsingle-hit Damage conversionが検証済みとなったため、Hit分割そのものの追加価値をsingle-hit基準から分離して測定する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T08:20:00+09:00",
+      "created_at": "2026-08-26T08:20:00+09:00",
+      "updated_at": "2026-08-26T08:20:00+09:00"
     }
   ],
   "specifications": [
@@ -7005,8 +7017,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T07:45:02+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. DAMAGE_COST_LINEAR_2 Level-gap Human result PASS: 15/15 jobs, 1,500/1,500 trials, error0. HNT Lv23/24/25 Controls=72/62/51%. ΔWR P102/P110/P120/P140 = Lv23 0/7/17/24pp, Lv24 6/16/18/29pp, Lv25 0/15/22/31pp. All Controls valid; average ally damage and ΔWR are nondecreasing; P120/P140 cross-level spreads are 5/7pp <=15pp. C_Damage_1Hit=(Power-100)/2 is therefore HNT-level-gap validated, but NOT universally/finally frozen because Heavy/shield authority remains unresolved. Result retained as dedicated numeric Evidence. Test3 is not authorized and no next package is generated.",
+      "updated_at": "2026-08-26T08:20:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Test3 multi-hit additional-value package prepared after Human approval. THF Lv20 vs HNT/狩人 Lv23/24/25; each Control + TP110 H2/H3/H4 + TP120 H2/H3/H4; 21 conditions / 2,100 same-seed battles (749600000..749600099). P110/P120 single-hit values are reused from BAL074-E05 and not rerun. Multi-hit uses multiple independent DAMAGE effectContracts under Current Formal Contract. Analysis will derive P_eq only by interpolation inside the retained E05 single-hit range and C_MultiHit_est=(P_eq-TotalPower)/2. No extrapolation and no automatic H-only cost Freeze because no numeric TP110-vs-TP120 consistency tolerance was approved. KNT shield remains unresolved; no universal Freeze. MP/CD/Cast/Range are not authorized.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7017,14 +7029,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "DAMAGE_COST_LINEAR_2 HNT Level-gap robustness PASS. Single-hit candidate is HNT-supported but NOT final/universal frozen. Stop here; Test3 multi-hit work requires a separate Human-approved Development Task.",
+        "current_step": "Test3 multi-hit package prepared. Awaiting Human real-device result. No H-only C_MultiHit Freeze and no MP/CD/Cast/Range advancement.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "EVD-BAL-074-DAMAGE-LVGAP-001",
+        "next_evidence": "No new Evidence at package preparation. Retain only if the Human result becomes reusable multi-hit numeric authority.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7034,7 +7046,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "Retained_NumericAuthority",
+        "next_evidence_status": "AwaitingHumanRealDeviceResult",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -9636,6 +9648,149 @@
           },
           "test3_authorized": false,
           "evaluated_at": "2026-08-26T07:45:02+09:00"
+        },
+        "damage_multihit_test3_plan": {
+          "status": "PackagePrepared",
+          "decision_question": "Measure the additional practical value of H=2/3/4 independent physical DAMAGE hits at fixed TotalPower 110 and 120, relative to retained E05 single-hit P110/P120.",
+          "execution_decision_id": "DEC-BAL-TASK074-MULTIHIT-TEST3-001",
+          "contract_basis": "Current Formal multi-hit = multiple DAMAGE effectContracts in one activation; each DAMAGE effectContract is one independent hit. No hitCount/multiHit field is added.",
+          "single_hit_authority": {
+            "evidence_id": "EVD-BAL-074-DAMAGE-LVGAP-001",
+            "file": "BAL074-E05.json",
+            "sha256": "45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab"
+          },
+          "attacker": {
+            "job": "THF",
+            "name": "盗賊",
+            "level": 20
+          },
+          "defenders": {
+            "evidence_job_code": "HNT",
+            "evidence_name": "狩人",
+            "current_job_id": "JOB-0004",
+            "current_display_name": "弓兵",
+            "levels": [
+              23,
+              24,
+              25
+            ],
+            "item_tier": 7
+          },
+          "variants": [
+            {
+              "total_power": 110,
+              "hit_count": 2,
+              "hit_powers": [
+                55,
+                55
+              ],
+              "single_ref_power": 110,
+              "single_ref_budget": 5
+            },
+            {
+              "total_power": 110,
+              "hit_count": 3,
+              "hit_powers": [
+                37,
+                37,
+                36
+              ],
+              "single_ref_power": 110,
+              "single_ref_budget": 5
+            },
+            {
+              "total_power": 110,
+              "hit_count": 4,
+              "hit_powers": [
+                28,
+                28,
+                27,
+                27
+              ],
+              "single_ref_power": 110,
+              "single_ref_budget": 5
+            },
+            {
+              "total_power": 120,
+              "hit_count": 2,
+              "hit_powers": [
+                60,
+                60
+              ],
+              "single_ref_power": 120,
+              "single_ref_budget": 10
+            },
+            {
+              "total_power": 120,
+              "hit_count": 3,
+              "hit_powers": [
+                40,
+                40,
+                40
+              ],
+              "single_ref_power": 120,
+              "single_ref_budget": 10
+            },
+            {
+              "total_power": 120,
+              "hit_count": 4,
+              "hit_powers": [
+                30,
+                30,
+                30,
+                30
+              ],
+              "single_ref_power": 120,
+              "single_ref_budget": 10
+            }
+          ],
+          "conditions": 21,
+          "trials_per_condition": 100,
+          "total_trials": 2100,
+          "seed_start": 749600000,
+          "seed_end": 749600099,
+          "same_as_E05_seeds": true,
+          "primary_kpis": [
+            "same-package Control win rate",
+            "MultiHit ΔWinRate(pp) versus same-package Control",
+            "ΔΔWinRate(pp) versus retained E05 single-hit at the same TotalPower",
+            "Equivalent single-hit Power P_eq from E05 piecewise-linear ΔWinRate curve",
+            "C_MultiHit_est=(P_eq-TotalPower)/2 when P_eq is inside measured E05 range"
+          ],
+          "supporting_kpis": [
+            "average ally damage",
+            "average ticks",
+            "skill activations",
+            "per-hit hits/misses/hit-rate",
+            "critical hits",
+            "damage per hit/action where available"
+          ],
+          "exact_measurement_gate": [
+            "Formal binding exact match; 21/21 jobs; 2100/2100 trials; error0; formal_only; no legacy fallback.",
+            "The three same-package Controls must reproduce the retained E05 Control outcomes exactly under identical runtime/seeds: Lv23=72%, Lv24=62%, Lv25=51%.",
+            "For each hit count H=2/3/4, average ally damage at TotalPower120 must be >= the same H at TotalPower110 on every valid defender row.",
+            "For each measured MultiHit condition, P_eq may be computed only by interpolation inside the retained E05 measured single-hit Power range; no extrapolation.",
+            "If P_eq cannot be obtained inside the measured E05 range, mark that condition out-of-range and do not invent C_MultiHit_est."
+          ],
+          "fixed_H_only_cost_decision_rule": "This execution does not automatically Freeze an H-only C_MultiHit(H), because the approved plan did not set a numeric tolerance for how close the TotalPower110 and TotalPower120 estimates must be. Report both estimates and their difference for each H; fixed H-only cost adoption requires a later explicit design/Human decision.",
+          "stop_conditions": [
+            "Any Formal binding/error/formal_only/legacy failure",
+            "Any Control mismatch versus E05 under the identical seeds/runtime",
+            "Average ally damage decreases from TotalPower110 to TotalPower120 for the same H on any defender row",
+            "Do not auto-generate or execute MP/CD/Cast/Range tests",
+            "Do not Universal-Freeze multi-hit or single-hit while Heavy/shield authority remains unresolved"
+          ],
+          "package_file": "TASK-BAL-074-MultiHit.zip",
+          "package_sha256": "310b6318712da10eaf09dcb24bb8c7f7d2a60565496c47565b289bf492b1ead5",
+          "required_studio_build": "GKS-B782",
+          "current_source_file": "guild-adventure-studio-sub(20260825-213025).zip",
+          "current_source_sha256": "02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728",
+          "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 25/25 PASS",
+          "execution_authorized": true,
+          "human_real_device_required": true,
+          "result_pending": true,
+          "standalone_evidence_planned": "Only if Human result becomes a reusable numeric authority for multi-hit composition.",
+          "prepared_at": "2026-08-26T08:20:00+09:00"
         }
       },
       "evidence_refs": [
@@ -15756,6 +15911,11 @@
       "at": "2026-08-26T07:45:02+09:00",
       "type": "DamageLevelGapRobustnessEvaluated",
       "summary": "THF Lv20 vs HNT Lv23/24/25 Level-gap Human実機結果PASS。Control=72/62/51%。ΔWRはLv23 0/7/17/24、Lv24 6/16/18/29、Lv25 0/15/22/31pp。Damage/ΔWR単調性PASS、P120/P140 spread=5/7pp<=15pp。DAMAGE_COST_LINEAR_2をHNT-level-gap validatedとしたがUniversal Freezeはせず、BAL074-E05.jsonへ再利用数値Authorityとして保存。Test3未承認のため停止。"
+    },
+    {
+      "at": "2026-08-26T08:20:00+09:00",
+      "type": "MultiHitTest3PackagePrepared",
+      "summary": "Human承認によりTest3 multi-hit Packageを準備。THF20 vs HNT23/24/25、各Control + TP110 H2/H3/H4 + TP120 H2/H3/H4、same-seed各100、21条件/2100戦。Single P110/P120はBAL074-E05を再利用。Current Formalの複数DAMAGE effectContractを独立Hitとして使用。H-only C_MultiHit Freezeなし、Evidence新規作成なし、Human実機Result待ち。"
     }
   ],
   "authority": {
