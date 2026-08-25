@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T21:11:21.080Z"
+    "updated_at": "2026-08-25T21:16:44.121Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Test1 measurement gate FAIL / level-gap replan",
-    "goal": "Skill Budget=SLv Physical allocation formula。Test1はFormal実行PASSだがLv30 Control床飽和によりk未選定。Test2へ進まず、両Defense archetypeで比較可能なno-skill Control帯を得るLevel-gap再計画をHuman承認後に行う。"
+    "theme": "TASK-BAL-074 L+5 Control-band screening",
+    "goal": "Lv20剣士 vs Lv25騎士/盗賊のSkillなしControl 2条件200戦で両防御型が10%-90%の非飽和帯に入るか確認する。帯外ならk候補Testへ進まない。"
   },
   "project_rules": [
     {
@@ -443,6 +443,19 @@
       "approved_at": "2026-08-26T06:08:00+09:00",
       "created_at": "2026-08-26T06:08:00+09:00",
       "updated_at": "2026-08-26T06:08:00+09:00",
+      "source_type": "",
+      "source_id": ""
+    },
+    {
+      "id": "RULE-FILE-NAME-TITLE-CONSISTENCY-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Active",
+      "text": "AIがHumanへ提出する管理JSON/Evidence JSONその他の保存対象ファイルは、Humanへ提示する名称、実際のファイル名、保存後にStudio/UIへ表示されるタイトル名を完全一致させる。JSONではworkspace.nameを実ファイル名と同一文字列にする。別名・省略名・説明用タイトルを提出名として使用しない。",
+      "rationale": "Human instruction: 提示名・ファイル名・保存後タイトル名を一致させる。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T06:10:00+09:00",
+      "created_at": "2026-08-26T06:10:00+09:00",
+      "updated_at": "2026-08-26T06:10:00+09:00",
       "source_type": "",
       "source_id": ""
     }
@@ -2166,6 +2179,18 @@
       "approved_at": "2026-08-25T21:49:00+09:00",
       "created_at": "2026-08-25T21:49:00+09:00",
       "updated_at": "2026-08-25T21:49:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-CONTROL-BAND-L25-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Human承認により、Player剣士Lv20 vs Monster Lv25騎士/盗賊のSkillなしControlのみをsame-seed各100、計2条件200戦で実行する。両Control勝率10%-90%を次Calibration利用条件とし、いずれか帯外ならk候補Testを実行せず停止する。",
+      "rationale": "Lv30 Test1でHEAVY=6%、EVASION=0%と床飽和したため、L+5へ1段戻して比較可能Control帯を確認する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T06:14:00+09:00",
+      "created_at": "2026-08-26T06:14:00+09:00",
+      "updated_at": "2026-08-26T06:14:00+09:00"
     }
   ],
   "specifications": [
@@ -6847,7 +6872,7 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T06:08:00+09:00",
+      "updated_at": "2026-08-26T06:14:00+09:00",
       "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Test1 Formal execution integrity PASS, but measurement gate FAIL_REPLAN_REQUIRED. The failed/saturated Test1 result is NOT retained as standalone Evidence under RULE-BAL-EVIDENCE-RETENTION-001. Only the management conclusion remains: Lv30 HEAVY Control=6% and EVASION Control=0% are invalid calibration bands; k is not selected; Test2 is not authorized; level-gap replan requires Human approval.",
       "historical_invalid_completion": {
         "status": "Invalidated",
@@ -6859,14 +6884,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Test1 Human real-device result evaluated: execution PASS / measurement gate FAIL_REPLAN_REQUIRED",
+        "current_step": "L+5 Control-band package prepared; awaiting Human real-device result",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No Test2 execution. Replan level-gap to find a discriminating no-skill Control region for both required defense archetypes.",
+        "next_evidence": "Screening result only; no standalone Evidence JSON",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6876,7 +6901,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanTestPlanApproval",
+        "next_evidence_status": "AwaitingHumanRealDeviceResult",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -7019,6 +7044,27 @@
           "evaluated_at": "2026-08-26T06:02:00+09:00",
           "standalone_evidence_retained": false,
           "retention_reason": "Test1 is a failed/saturated screening result and will not be reused as numeric authority. Only the conclusion 'Lv30 control band invalid; replan level-gap; k not selected' remains in management JSON."
+        },
+        "control_band_l25": {
+          "status": "PackagePrepared",
+          "decision_id": "DEC-BAL-TASK074-CONTROL-BAND-L25-001",
+          "package_file": "TASK-BAL-074-ControlBand.zip",
+          "package_sha256": "61584cebcc261473f993d6a0f7e48eea7685b3e40f13476125165849f82f8b99",
+          "player_level": 20,
+          "monster_level": 25,
+          "archetypes": [
+            "HEAVY",
+            "EVASION"
+          ],
+          "skills": "none",
+          "conditions": 2,
+          "trials_per_condition": 100,
+          "total_trials": 200,
+          "seed_start": 749200000,
+          "seed_end": 749200099,
+          "pass_band": "10%-90% Control win rate for BOTH archetypes",
+          "standalone_evidence_planned": false,
+          "prepared_at": "2026-08-26T06:14:00+09:00"
         }
       },
       "evidence_refs": [
@@ -12761,6 +12807,11 @@
       "at": "2026-08-26T06:08:00+09:00",
       "type": "EvidenceRetentionPolicyApplied",
       "summary": "Human指示によりEvidence保存基準を厳格化。Test1の失敗/飽和screening結果は独立Evidenceから除外し、工程JSONに『Lv30 calibration band invalid / k未選定 / replan required』のみ保持。"
+    },
+    {
+      "at": "2026-08-26T06:10:00+09:00",
+      "type": "SubmittedFileNameTitleUnified",
+      "summary": "提出名・実ファイル名・workspace.nameを development-project_DEV-V9-BALANCE-001.json に完全一致。以後RULE-FILE-NAME-TITLE-CONSISTENCY-001を適用する。"
     }
   ],
   "authority": {
