@@ -419,7 +419,7 @@ function calculateTaggedAttackDamage(attacker,definition){
 function currentBattleFinite(value,fallback=0){return typeof value==='number'&&Number.isFinite(value)?value:fallback}
 function currentBattleAccuracy(unit){return Math.max(0,currentBattleFinite(unit?.accuracy,0))}
 function currentBattleEvasion(unit){return Math.max(0,currentBattleFinite(unit?.evasion,0))}
-function currentBattleHitRatePercent(attacker,target){const accuracy=currentBattleAccuracy(attacker),evasion=currentBattleEvasion(target),denominator=accuracy+evasion;if(denominator<=0)return 100;return Math.max(5,Math.min(100,(accuracy/denominator)*100))}
+function currentBattleHitRatePercent(attacker,target){const accuracy=currentBattleAccuracy(attacker),evasion=currentBattleEvasion(target);if(evasion<=0)return 100;return Math.max(0,(accuracy/evasion)*100)}
 function currentBattleCriticalRatePercent(unit){const explicit=currentBattleFinite(unit?.criticalRate??unit?.critical_rate,NaN);if(Number.isFinite(explicit))return Math.max(0,Math.min(100,explicit));const weaponRate=currentBattleFinite(unit?.baseCriticalRate??unit?.base_critical_rate,0);return Math.max(0,Math.min(100,weaponRate*100))}
 function currentBattleCriticalDamagePercent(unit){return Math.max(0,Math.min(700,currentBattleFinite(unit?.criticalDamage??unit?.critical_damage,0)))}
 function currentBattleMagicIncreaseRate(unit){const rate=currentBattleFinite(unit?.magicIncreaseRate??unit?.magic_increase_rate,1);return Math.max(0,rate)}

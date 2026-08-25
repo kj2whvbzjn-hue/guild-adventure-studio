@@ -122,8 +122,8 @@ function generateArmor(input){
   const slotCoefficient=Number(config.armor.slot_coefficients?.[slot]);if(!finite(slotCoefficient))throw new Error('未定義の防具部位です: '+slot);
   const required_vit=i*Number(c.vit),required_mnd=i*Number(c.mnd),required_agi=i*Number(c.agi);
   const hpGrowth=growthMultiplier('armor','hp',i),mpGrowth=growthMultiplier('armor','mp',i),evasionGrowth=growthMultiplier('armor','evasion',i);
-  const hp_bonus=required_vit*slotCoefficient*hpGrowth,mp_bonus=required_mnd*slotCoefficient*mpGrowth,evasion=required_agi*slotCoefficient*evasionGrowth;
-  const trace=[`armor_category=${type}`,`armor_slot=${slot}`,`required_vit=${i}*${c.vit}=${required_vit}`,`required_mnd=${i}*${c.mnd}=${required_mnd}`,`required_agi=${i}*${c.agi}=${required_agi}`,`slot_coefficient=${slotCoefficient}`,`hp_bonus=${required_vit}*${slotCoefficient}*growth(${hpGrowth})=${hp_bonus}`,`mp_bonus=${required_mnd}*${slotCoefficient}*growth(${mpGrowth})=${mp_bonus}`,`evasion=${required_agi}*${slotCoefficient}*growth(${evasionGrowth})=${evasion}`];
+  const hp_bonus=required_vit*slotCoefficient*hpGrowth,mp_bonus=required_mnd*slotCoefficient*mpGrowth,evasion=required_agi*evasionGrowth;
+  const trace=[`armor_category=${type}`,`armor_slot=${slot}`,`required_vit=${i}*${c.vit}=${required_vit}`,`required_mnd=${i}*${c.mnd}=${required_mnd}`,`required_agi=${i}*${c.agi}=${required_agi}`,`slot_coefficient=${slotCoefficient}`,`hp_bonus=${required_vit}*${slotCoefficient}*growth(${hpGrowth})=${hp_bonus}`,`mp_bonus=${required_mnd}*${slotCoefficient}*growth(${mpGrowth})=${mp_bonus}`,`evasion=${required_agi}*growth(${evasionGrowth})=${evasion}`];
   const baseName=formalBaseName('armor',type,i);
   const out={id:String(input.id||''),name:String(input.name||`${baseName}${type}${slot}`),status:'draft',tags:Array.isArray(input.tags)?clone(input.tags):[],params:{},description:String(input.description||''),mod_ids:[],item_level:i,armor_category:type,armor_slot:slot,required_vit,required_mnd,required_agi,hp_bonus,mp_bonus,evasion};
   out.generation=generationMeta({...input,base_item_type:type},trace);return out;
