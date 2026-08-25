@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T03:42:06.132Z"
+    "updated_at": "2026-08-25T04:51:59.095Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-075-CORR-001 GKS-B778 Magic Contribution Channel correction ready; Human Apply pending",
-    "goal": "Apply GKS-B778 in Studio and verify fresh Current Source. Staff/Wand magic_weapon_bonus must feed MAGIC_DAMAGE; Book must feed generic MAGIC_SUPPORT with HEAL as first consumer. After fresh-source verification only, resume TASK-BAL-075 detailed Formula/Equipment/Skill-generation evaluation tests. Do not start TASK-BAL-076."
+    "theme": "TASK-BAL-075 resumed on Human-applied GKS-B779; MAGIC_SUPPORT formally abolished",
+    "goal": "Use Current GKS-B779 / GA-B486.211. MAGIC_SUPPORT is formally abolished and must not be restored. All weapon magic_weapon_bonus, including Staff/Wand/Book, feeds existing MAGIC_DAMAGE only and does not affect HEAL. Resume TASK-BAL-075 detailed Formula/Equipment evaluation from the post-correction preflight. Do not start TASK-BAL-076."
   },
   "project_rules": [
     {
@@ -377,16 +377,25 @@
       "source_id": "conversation:2026-08-25 skill stat affinity and strict upgrade",
       "created_at": "2026-08-25T11:18:00+09:00",
       "updated_at": "2026-08-25T11:27:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-MAGIC-SUPPORT-ABOLISHED-001",
+      "text": "MAGIC_SUPPORTはCurrentで正式廃止。Balance/Source検証/Equipment/Modifier/Heal/将来拡張のいずれでも、別の明示Human DecisionなしにMAGIC_SUPPORTを復活・再利用しない。magic_weapon_bonusを持つ武器は杖・ワンド・魔導書を含め武器種別で分岐せず既存MAGIC_DAMAGEへ直接接続し、HEALへは接続しない。旧B778分離Channel案はHistorical/Supersededとしてのみ保持する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-25 formal MAGIC_SUPPORT abolition",
+      "created_at": "2026-08-25T13:48:31+09:00",
+      "updated_at": "2026-08-25T13:48:31+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B777",
+    "studio_build": "GKS-B779",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260825-020642).zip",
-    "source_role": "Human-applied Current verified; TASK-BAL-075 Issue Gate baseline",
-    "recorded_at": "2026-08-25T11:55:00+09:00",
-    "package_manifest_sha256": "cbb7ca3651c622c2b257d2b0e8d8e5ab3e80990d1723fdc8010afdeec9d930aa",
-    "source_zip_sha256": "e412b6de8c3647f72ea9f2a122181278a05ffb04195a02e21f689263923c852d"
+    "source_label": "guild-adventure-studio-sub(20260825-044605).zip",
+    "source_role": "Human-applied Current verified; TASK-BAL-075 resumed after direct magic_weapon_bonus→MAGIC_DAMAGE correction",
+    "recorded_at": "2026-08-25T13:48:31+09:00",
+    "package_manifest_sha256": "20def760eb53d0a82cdd7fe71dff662411108ced53b38e3f2f57d3a262620318",
+    "source_zip_sha256": "1874c69dee450a2e42eff142f03f5099df2605ef458a71ae0767a6605e7635c9"
   },
   "lifecycle": {
     "status": "Active",
@@ -1150,7 +1159,7 @@
       "task_ids": [
         "TASK-BAL-075-CORR-001"
       ],
-      "result": "Partial",
+      "result": "Applied",
       "evidence": "DEV-V9-BALANCE-001_TASK-BAL-075-CORR-001_MAGIC-CHANNEL-EVIDENCE.zip sha256=a9f8d6a6c6c3331608e4a29f44008424539d7594d627b1da3677dfc2077e4616",
       "recorded_at": "2026-08-25T12:25:00+09:00",
       "baseline": {
@@ -1178,9 +1187,30 @@
         "deletions": 0,
         "game_data_changes": 0
       },
-      "summary": "Existing magic_weapon_bonus was connected without adding a new equipment numeric. A shared weapon-role split routes Staff/Wand to MAGIC_DAMAGE and Book to generic MAGIC_SUPPORT. HEAL consumes MAGIC_SUPPORT; MAGIC_DAMAGE and MAGIC_SUPPORT remain independent. Other weapon types are not guessed and remain unrouted. Game/Studio deterministic checks pass; Quick 11/11, final ZIP Release 14/14 and applied Full 26/26 PASS. Human Studio Apply/fresh-source verification pending; Current source remains GKS-B777.",
+      "summary": "Existing magic_weapon_bonus was connected without adding a new equipment numeric. A shared weapon-role split routes Staff/Wand to MAGIC_DAMAGE and Book to generic MAGIC_SUPPORT. HEAL consumes MAGIC_SUPPORT; MAGIC_DAMAGE and MAGIC_SUPPORT remain independent. Other weapon types are not guessed and remain unrouted. Game/Studio deterministic checks pass; Quick 11/11, final ZIP Release 14/14 and applied Full 26/26 PASS. Human Studio Apply/fresh-source verification pending; Current source remains GKS-B777. Human later formally abolished MAGIC_SUPPORT. This B778 artifact is historical only and must not be applied/reused; Current is GKS-B779 direct magic_weapon_bonus→MAGIC_DAMAGE.",
       "created_at": "2026-08-25T12:25:00+09:00",
-      "updated_at": "2026-08-25T12:25:00+09:00"
+      "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "IMP-BAL-R5-P8-MAGIC-DIRECT-B779-001",
+      "title": "R5-P8 magic_weapon_bonus direct MAGIC_DAMAGE correction / MAGIC_SUPPORT abolition",
+      "status": "Completed",
+      "task_id": "TASK-BAL-075",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B779",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-BATTLE-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-075"
+      ],
+      "result": "Applied",
+      "evidence": "Human-provided Current Source guild-adventure-studio-sub(20260825-044605).zip sha256=1874c69dee450a2e42eff142f03f5099df2605ef458a71ae0767a6605e7635c9; package_manifest sha256=20def760eb53d0a82cdd7fe71dff662411108ced53b38e3f2f57d3a262620318; Current Quick 11/11 PASS evidence_sha256=0dc44440c7fcc511a91aa3a1164977afb28d3d87e5a362d808ba0b188c70678a.",
+      "recorded_at": "2026-08-25T13:48:31+09:00",
+      "summary": "Human-applied GKS-B779 verified. Production Game/Studio Formal paths use existing magic_weapon_bonus directly in MAGICAL damage through MAGIC_DAMAGE; no production MAGIC_SUPPORT channel remains. Staff/Wand/Book are not split by weapon type for this contribution. HEAL does not consume magic_weapon_bonus. MAGIC_SUPPORT is formally abolished and old B778 split-channel artifact is superseded.",
+      "created_at": "2026-08-25T13:48:31+09:00",
+      "updated_at": "2026-08-25T13:48:31+09:00"
     }
   ],
   "discussions": [
@@ -1949,14 +1979,26 @@
     {
       "id": "DEC-BAL-MAGIC-WEAPON-CHANNEL-001",
       "title": "magic_weapon_bonusを魔法攻撃/魔法支援Channelへ武器種別振分する",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "既存Equipment数値magic_weapon_bonusを新しい装備数値へ分裂させず、武器種別で正式Battle Contribution Channelへ振り分ける。杖・ワンドはMAGIC_DAMAGEへ接続し魔法攻撃効果量を強化する。魔導書は魔法攻撃とは別の汎用非攻撃魔法効果Channel MAGIC_SUPPORTへ接続し、CurrentではHEALを最初のconsumerとする。MAGIC_SUPPORTは回復専用名/専用構造にせず、将来の非Damage魔法効果へ拡張可能な箱として保持する。magicIncreaseRate自体へ武器補正を混在させない。その他武器種に存在するmagic_weapon_bonusの意味はこのDecisionで推測せずunroutedとして保持する。",
-      "rationale": "Humanが「今後の拡張もあるので回復に限定しない魔法攻撃とは違う箱を用意して接続して」と明示し、杖/ワンド=魔法攻撃、魔導書=回復系という既存役割確認を踏まえて、既存数値を用途別Channelへ接続する方針を確定したため。",
+      "rationale": "Humanが「今後の拡張もあるので回復に限定しない魔法攻撃とは違う箱を用意して接続して」と明示し、杖/ワンド=魔法攻撃、魔導書=回復系という既存役割確認を踏まえて、既存数値を用途別Channelへ接続する方針を確定したため。 Human later explicitly abolished MAGIC_SUPPORT and replaced this routing with direct magic_weapon_bonus→MAGIC_DAMAGE for all weapons. Current authority is DEC-BAL-MAGIC-SUPPORT-ABOLISH-001.",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-25T12:25:00+09:00",
       "created_at": "2026-08-25T12:25:00+09:00",
-      "updated_at": "2026-08-25T12:25:00+09:00"
+      "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "DEC-BAL-MAGIC-SUPPORT-ABOLISH-001",
+      "title": "MAGIC_SUPPORTを正式廃止しmagic_weapon_bonusをMAGIC_DAMAGEへ一本化する",
+      "status": "Approved",
+      "text": "MAGIC_SUPPORTはCurrentのBattle Contribution Channelとして正式に廃止する。今後、Modifier target、Equipment routing、Heal入力、非攻撃魔法効果の共通箱として使用・復活させない。杖・ワンド・魔導書を含め、magic_weapon_bonusを持つ武器は武器種別で分岐せず既存MAGIC_DAMAGE入力へそのまま接続する。magic_weapon_bonusはHEALへ接続しない。新しいMagic Channelや新しいEquipment数値は追加しない。過去のGKS-B778 MAGIC_SUPPORT案はHistorical/Superseded evidenceとしてのみ保持し、Current実装・Balance判断・後続AIの再利用対象にしない。将来別の魔法効果Channelが必要になった場合も、新しい明示Human DecisionなしにMAGIC_SUPPORTを復活させない。",
+      "rationale": "Humanが「MAGIC_SUPPORTの変更は廃止」「MAGIC_DAMAGEだけをつかう」「武器もそのまま接続する」「魔導書もMAGIC_DAMAGEを持たせる」に続き、「正式に廃止として」と明示したため。Current GKS-B779も直接MAGIC_DAMAGE接続で一致している。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T13:48:31+09:00",
+      "created_at": "2026-08-25T13:48:31+09:00",
+      "updated_at": "2026-08-25T13:48:31+09:00"
     }
   ],
   "specifications": [
@@ -6645,7 +6687,7 @@
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-074",
@@ -6660,8 +6702,8 @@
         "at": "2026-08-25T11:55:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T12:25:00+09:00",
-      "result_scope": "BLOCKED UNTIL HUMAN APPLY/FRESH-SOURCE VERIFY. P8 Issue Gate root cause has an approved SOURCE_UPDATE correction artifact GKS-B778. Existing magic_weapon_bonus is split by weapon role without new numeric fields: Staff/Wand→MAGIC_DAMAGE; Book→generic MAGIC_SUPPORT, with HEAL as first consumer. Automated target gates pass, but Current Source remains GKS-B777 until Human Studio Apply. No P8 numeric Candidate/Freeze is authorized before fresh-source verification. TASK-BAL-076 not started."
+      "updated_at": "2026-08-25T13:48:31+09:00",
+      "result_scope": "RESUMED ON VERIFIED CURRENT GKS-B779. Prior Formal magic_weapon_bonus binding issue is corrected by direct all-weapon magic_weapon_bonus→MAGIC_DAMAGE routing. MAGIC_SUPPORT is formally abolished by DEC-BAL-MAGIC-SUPPORT-ABOLISH-001 and must not be restored; HEAL remains unaffected by magic_weapon_bonus. Current Source Quick 11/11 PASS. Resume P8 numeric Formula/Equipment Candidate loop from post-correction preflight. No Balance Freeze completed yet in this resumed segment. TASK-BAL-076 not started."
     },
     {
       "id": "TASK-BAL-076",
@@ -7309,13 +7351,13 @@
     {
       "id": "TASK-BAL-075-CORR-001",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "Magic Equipment ContributionをMAGIC_DAMAGE/MAGIC_SUPPORTへ分離接続する",
-      "status": "Doing",
+      "title": "[Superseded] B778 MAGIC_DAMAGE/MAGIC_SUPPORT分離接続案",
+      "status": "Done",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-075"
       ],
-      "acceptance_criteria": "- Human開始承認済み。\n- 新しいEquipment数値を追加せず既存magic_weapon_bonusを再利用する。\n- 杖/ワンドのmagic_weapon_bonusはMAGIC_DAMAGEへ、魔導書は汎用非攻撃魔法効果Channel MAGIC_SUPPORTへ振り分ける。\n- MAGIC_SUPPORTは回復専用に固定せず、CurrentではHEALを最初のconsumerとして接続する。\n- 杖/ワンド補正はHEALへ入らず、魔導書補正はMAGICAL Damageへ入らない。\n- magicIncreaseRateへ武器補正を混在させない。その他武器種のmagic_weapon_bonusは意味を推測せずunroutedとしてEvidenceへ残す。\n- Game Runtime / Studio Formalで同一結果を再現する。\n- Formula order/rounding/Skill Balance/Equipment numeric/GAME_DATA/Current activeを変更しない。削除0。\n- GKS-B778 targetでQuick/Accept/Release/applied FullをPASSする。Human Studio Apply + fresh-source verification後にのみ親TASK-BAL-075を再開する。",
+      "acceptance_criteria": "- このTaskのB778 MAGIC_SUPPORT案はHuman Decision DEC-BAL-MAGIC-SUPPORT-ABOLISH-001により正式失効。\n- GKS-B778 artifactをCurrentへ再適用・再利用しない。\n- Current authorityはGKS-B779の全magic_weapon_bonus→MAGIC_DAMAGE直接接続。\n- MAGIC_SUPPORTを復活させない。\n- Historical evidenceは削除せず経緯として保持する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -7324,8 +7366,8 @@
         "at": "2026-08-25T12:25:00+09:00"
       },
       "created_at": "2026-08-25T12:25:00+09:00",
-      "updated_at": "2026-08-25T12:25:00+09:00",
-      "result_scope": "ARTIFACT READY / HUMAN APPLY PENDING. GKS-B778 source update prepared from Current GKS-B777. Existing magic_weapon_bonus is routed by weapon type: Staff/Wand→MAGIC_DAMAGE, Book→generic MAGIC_SUPPORT; HEAL is first MAGIC_SUPPORT consumer. No new equipment numeric, no formula order/rounding/Balance/Game Data/Current active change, deletions=0. Deterministic behavior: Staff+30 makes magic 100→130 and does not raise heal; Book+40 leaves magic 100 and makes heal 100→140; MAGIC_SUPPORT +25 makes heal 100→125. Source Quick 11/11 PASS; SOURCE_UPDATE Release 14/14 PASS with applied Full 26/26 PASS. Human Studio Apply/fresh-source verification pending; parent TASK-BAL-075 remains Blocked."
+      "updated_at": "2026-08-25T13:48:31+09:00",
+      "result_scope": "SUPERSEDED / CLOSED. The B778 split-channel proposal is not Current and must not be applied or reused. Human formally abolished MAGIC_SUPPORT. Current Human-applied GKS-B779 routes all weapon magic_weapon_bonus directly into existing MAGIC_DAMAGE and leaves HEAL unaffected. Historical B778 evidence is retained only as superseded history."
     }
   ],
   "checks": [
@@ -11161,15 +11203,40 @@
       "checked_at": "2026-08-25T11:55:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-TASK075-MAGIC-DIRECT-B779-001",
+        "resolved_at": "2026-08-25T13:48:31+09:00",
+        "reason": "Current Human-applied GKS-B779 verified. Game Formal reads magicWeaponBonus and MAGICAL base multiplies by (1 + magicWeaponBonus/100) before MAGIC_DAMAGE modifier application; Studio Formal mirrors this. Production code contains no MAGIC_SUPPORT channel. HEAL remains separate and does not consume magic_weapon_bonus. Current Quick 11/11 PASS. This resolves the B777 no-op binding failure.",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T11:55:00+09:00",
+      "updated_at": "2026-08-25T11:55:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK075-MAGIC-DIRECT-B779-001",
+      "title": "TASK-BAL-075 B779 direct magic_weapon_bonus→MAGIC_DAMAGE verification",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-075",
+      "status": "Passed",
+      "result": "Current Human-applied GKS-B779 verified. Game Formal reads magicWeaponBonus and MAGICAL base multiplies by (1 + magicWeaponBonus/100) before MAGIC_DAMAGE modifier application; Studio Formal mirrors this. Production code contains no MAGIC_SUPPORT channel. HEAL remains separate and does not consume magic_weapon_bonus. Current Quick 11/11 PASS. This resolves the B777 no-op binding failure.",
+      "evidence": "guild-adventure-studio-sub(20260825-044605).zip sha256=1874c69dee450a2e42eff142f03f5099df2605ef458a71ae0767a6605e7635c9; package_manifest sha256=20def760eb53d0a82cdd7fe71dff662411108ced53b38e3f2f57d3a262620318; Quick evidence_sha256=0dc44440c7fcc511a91aa3a1164977afb28d3d87e5a362d808ba0b188c70678a",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T13:48:31+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-TASK075-MAGIC-WEAPON-FORMAL-BINDING-001"
+      ],
+      "resolution": {
         "status": "Open",
         "resolved_by": "",
         "resolved_at": "",
         "reason": "",
         "mode": ""
       },
-      "blocking": true,
-      "created_at": "2026-08-25T11:55:00+09:00",
-      "updated_at": "2026-08-25T11:55:00+09:00"
+      "blocking": false,
+      "created_at": "2026-08-25T13:48:31+09:00",
+      "updated_at": "2026-08-25T13:48:31+09:00"
     }
   ],
   "workflow": {
@@ -12001,6 +12068,22 @@
       "task_id": "TASK-BAL-075-CORR-001",
       "created_at": "2026-08-25T12:25:00+09:00",
       "updated_at": "2026-08-25T12:25:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-MAGIC-SUPPORT-ABOLISH-001",
+      "title": "MAGIC_SUPPORTを正式廃止",
+      "summary": "HumanがMAGIC_SUPPORTを一時不採用ではなく正式廃止と確定。旧DEC-BAL-MAGIC-WEAPON-CHANNEL-001およびB778分離Channel案をSuperseded化。今後のCurrentではMAGIC_SUPPORTをModifier/Equipment/Heal/将来拡張Channelとして復活させない。全武器magic_weapon_bonusは既存MAGIC_DAMAGEへ直接接続し、HEALへは接続しない。",
+      "task_id": "TASK-BAL-075",
+      "created_at": "2026-08-25T13:48:31+09:00",
+      "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK075-B779-RESUME-001",
+      "title": "GKS-B779 fresh-source確認後TASK-BAL-075再開",
+      "summary": "Human提供Current Source GKS-B779 / GA-B486.211を確認。package_manifest 643/643整合、Quick 11/11 PASS。Production MAGIC_SUPPORT残存0、Game/Studio Formalでmagic_weapon_bonus→MAGIC_DAMAGE直接接続を確認。旧B777 binding Failed Checkをresolver Checkで解消し、TASK-BAL-075をDoingへ戻した。TASK-BAL-076は未開始。",
+      "task_id": "TASK-BAL-075",
+      "created_at": "2026-08-25T13:48:31+09:00",
+      "updated_at": "2026-08-25T13:48:31+09:00"
     }
   ],
   "authority": {
