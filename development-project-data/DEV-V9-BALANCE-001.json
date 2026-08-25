@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T08:49:07.451Z"
+    "updated_at": "2026-08-25T09:43:51.983Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 redo: Physical equipped baseline",
-    "goal": "装備込みPhysical Basic Attack実機Evidenceは7,500/7,500 trial PASS。次はPlayer↔Monster physical exchange baseline。魔法以降には進まない。"
+    "theme": "TASK-BAL-074 Physical baseline / Current Formal Monster owner gap",
+    "goal": "訂正版Equipped Basic Attack EvidenceはPASS。Player↔Monster交換BaselineはFormal Monster weapon_layout owner gapを解消するまで停止し、補正値を捏造しない。"
   },
   "project_rules": [
     {
@@ -6751,7 +6751,7 @@
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Doing",
+      "status": "Blocked",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-073",
@@ -6767,8 +6767,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T17:46:30+09:00",
-      "result_scope": "REDO IN PROGRESS. Physical only. Expected Stats Evidence and Human real-device Equipped Basic Attack Evidence are available. Valid equipped baseline covers Human-bound physical loadouts for 5 jobs, Lv1-50, 7,500 trials on GKS-B780. Prior no-equipment DPT evidence is excluded from Task evidence references and must not be used for Skill Budget. Player↔Monster physical exchange value and Physical Skill Budget Formula are not yet frozen.",
+      "updated_at": "2026-08-25T18:27:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Current Game runtime-rounding corrected Equipped Basic Attack Evidence PASS: 250/250 jobs, 7,500/7,500 trials, error 0, Formal binding match. Next Player↔Monster physical exchange is BLOCKED because GKS-B780 Formal Monster owner reconstruction drops weapon_layout; Knight sword+shield cannot preserve approved shield 0-Strike semantics without inventing a compensation. No synthetic workaround is authorized.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6779,14 +6779,14 @@
       },
       "redo_scope": {
         "primary_goal": "Physical Skill Budget Formulaを作るための基準Evidence再生産と物理Budget式検証",
-        "current_step": "P1 Physical Equipped Basic Attack baseline evidence PASS",
+        "current_step": "P1 corrected Physical Equipped Basic Attack baseline evidence PASS",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "Player↔Monster physical exchange baseline using equipped Player reference",
+        "next_evidence": "Player↔Monster physical exchange baseline",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6795,6 +6795,16 @@
           "use_as_input": false,
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
+        },
+        "next_evidence_status": "Blocked by Current Formal Monster weapon_layout owner gap",
+        "source_gap": {
+          "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
+          "status": "Open",
+          "source": "GKS-B780 studio/index.html battlePackageResolveFormalMonsterUnit",
+          "missing_owner_field": "weapon_layout",
+          "affected_loadout": "騎士=片手剣+盾 weapon_shield",
+          "approved_semantics": "weapon_shield=片手剣1 Strike / 盾0 Strike",
+          "synthetic_compensation_allowed": false
         }
       },
       "evidence_refs": [
@@ -6809,14 +6819,15 @@
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PHYSICAL-EQUIPPED",
-          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-074-PHYSICAL-EQUIPPED.json",
-          "sha256": "7d181a3734e4d44aecffb571e95f9b7edd34702eaead2227cd056f4e568edaa7",
-          "evidence_id": "EVD-BAL-074-PHYSICAL-EQUIPPED-BASIC-ATTACK-001",
-          "role": "PHYSICAL_EQUIPPED_BASIC_ATTACK_BASELINE_5JOBS_LV1_50",
+          "file": "001.json",
+          "sha256": "8d54766d7a0feed25619255bf99557c647f52637320ec2587015686e7961f60d",
+          "evidence_id": "EVD-BAL-074-PHYSICAL-EQUIPPED-BASIC-ATTACK-002",
+          "role": "PHYSICAL_EQUIPPED_BASIC_ATTACK_BASELINE_CURRENT_RUNTIME_ROUNDING",
           "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-25T17:46:30+09:00"
+          "recorded_at": "2026-08-25T18:41:30+09:00"
         }
-      ]
+      ],
+      "blocked_reason": "GKS-B780 battlePackageResolveFormalMonsterUnit does not propagate weapon_layout from Monster owner data. Formal Monster therefore cannot represent Knight weapon_shield sword-only 1 Strike while retaining the same Player-equivalent equipment set."
     },
     {
       "id": "TASK-BAL-075",
@@ -12396,6 +12407,16 @@
       "at": "2026-08-25T16:56:00+09:00",
       "type": "DevelopmentMergeGuardHumanApplyVerified",
       "summary": "Current GKS-B780確認済み。INFRA-001 Done、TASK-BAL-074 Doingへ再開、075/076はBlocked。"
+    },
+    {
+      "at": "2026-08-25T18:27:00+09:00",
+      "type": "PhysicalRuntimeRoundingEvidencePassAndMonsterOwnerGap",
+      "summary": "TASK-BAL-074 corrected equipped baseline PASS (250/250 jobs, 7500/7500 trials, error0). Detected Current GKS-B780 Formal Monster owner gap: weapon_layout is not propagated, blocking authoritative Knight weapon_shield exchange test. No compensation workaround applied."
+    },
+    {
+      "at": "2026-08-25T18:41:30+09:00",
+      "type": "VisibleNameUnified",
+      "summary": "実ファイル名・案内名・Studio表示名を 002.json に統一。workspace.idおよびProject identityは変更しない。"
     }
   ],
   "authority": {
