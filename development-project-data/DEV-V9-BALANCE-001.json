@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T10:05:02.389Z"
+    "updated_at": "2026-08-25T10:50:43.280Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical / Formal Monster weapon_layout source correction",
-    "goal": "GKS-B781 correction is prepared and gate-passed. Apply source update, reconfirm fresh GKS-B781, then run Player↔Monster physical exchange baseline. Do not advance to Magic."
+    "theme": "TASK-BAL-074 Physical Player↔Monster exchange correction",
+    "goal": "GKS-B782 Critical Rate owner correctionをHuman適用後、MonsterStat=Level×expected_gain_per_levelの再交換テストを実行する。旧PlayerExpected-10結果はEvidenceに使用しない。"
   },
   "project_rules": [
     {
@@ -417,13 +417,14 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B780",
+    "studio_build": "GKS-B781",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260825-074935).zip",
-    "source_role": "Human-applied Current verified; Development JSON stale-merge guard recovery",
-    "recorded_at": "2026-08-25T16:53:00+09:00",
-    "package_manifest_sha256": "5973da222cc7a4f412d9c4a78e81532ab08fff4efa940535474ad2be6ad13c8f",
-    "source_zip_sha256": "b9dafc9ba516310ceb641d629ab4aebc194bf677aed1095a3d77207d5cd04604"
+    "source_label": "guild-adventure-studio-sub(20260825-100534).zip",
+    "source_role": "Human-applied Current verified source after Formal Monster weapon_layout correction",
+    "recorded_at": "2026-08-25T19:38:00+09:00",
+    "package_manifest_sha256": "7b9fa5b4c2099f7f3eb297eaa759413c50a78976379cfa5a58d618c9ddf133cf",
+    "source_zip_sha256": "a8c1c253c73f783576e7f9e983195777116857baba0057ef8265ff96e15bf3ad",
+    "source_tree_sha256": "ce1c8226cbf561edb9855a4c492025d791d1829de51383469c5e1ae16aa6dad5"
   },
   "lifecycle": {
     "status": "Active",
@@ -6767,8 +6768,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T18:46:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Runtime-rounding corrected Equipped Basic Attack Evidence PASS. GKS-B781 source correction for Formal Monster weapon_layout preservation is prepared and Quick/accept update gates PASS. Player↔Monster physical exchange remains blocked until Human applies the source update and fresh Current Source confirms GKS-B781. No synthetic compensation is authorized.",
+      "updated_at": "2026-08-25T19:38:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Corrected Equipped Basic Attack Evidence remains PASS. First Player↔Monster exchange run is INVALID as Balance Evidence because Human clarified Monster base Stats are Level × Job correction value, not Player Expected Stat - 10; the same run also exposed GKS-B781 Formal Monster owner masking weapon base critical rate with explicit 0%. GKS-B782 source correction and a replacement exchange package using Evidence expected_gain_per_level × Level are prepared. No invalid exchange result is registered as Evidence.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6779,14 +6780,14 @@
       },
       "redo_scope": {
         "primary_goal": "Physical Skill Budget Formulaを作るための基準Evidence再生産と物理Budget式検証",
-        "current_step": "P1 Equipped Basic Attack evidence PASS / Formal Monster weapon_layout source correction prepared",
+        "current_step": "P2 Player↔Monster exchange correction prepared / waiting Human apply of GKS-B782",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "Player↔Monster physical exchange baseline",
+        "next_evidence": "Player↔Monster physical exchange baseline using MonsterStat = Level × expected_gain_per_level",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6796,17 +6797,64 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "Waiting for Human Apply of GKS-B781 source correction",
+        "next_evidence_status": "Waiting for Human Apply of GKS-B782, then corrected Battle Verification run",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
-          "status": "CorrectionPrepared",
+          "status": "ResolvedInCurrentGKS-B781",
           "baseline_build": "GKS-B780",
           "target_build": "GKS-B781",
           "source_update_file": "TASK-BAL-074 Formal Monster weapon_layout修正.zip",
           "sha256": "00562e86e431e87244aa39858ccfed6868b456339b18598d38516102ca117535",
           "artifact_id": "GKS-B781-6ae8c5716fc9",
-          "human_apply_required": true,
+          "human_apply_required": false,
           "synthetic_compensation_allowed": false
+        },
+        "monster_stat_rule": {
+          "status": "HumanCorrected",
+          "formula": "MonsterStat = Level × job_correction_value",
+          "job_correction_value_source": "EVD-BAL-074-PHYSICAL-BASELINE-EXPECTED-STATS-001.expected_gain_per_level",
+          "definition": "Human-approved growth / 10",
+          "player_initial_all10_applied": false,
+          "rejected_formula": "PlayerExpectedStat - 10",
+          "recorded_at": "2026-08-25T19:38:00+09:00"
+        },
+        "invalid_exchange_result": {
+          "status": "ExcludedFromEvidence",
+          "file": "GK_BattleVerification_Result_BVP-BAL074-PLAYER-MONSTER-PHYSICAL-EXCHANGE_BEX-1787653193305.zip",
+          "sha256": "348e965a94081ba8514fa2460e9371e2fd46ad69d1c148aaf8aa86cfcc44570a",
+          "execution_id": "BEX-1787653193305",
+          "reasons": [
+            "Monster Stat formula used PlayerExpectedStat - 10 instead of Human-corrected Level × job correction value",
+            "GKS-B781 Formal Monster owner wrote critical_rate=0 when unspecified, masking Current weapon base critical rate"
+          ],
+          "use_as_input": false,
+          "use_as_comparison": false,
+          "recorded_at": "2026-08-25T19:38:00+09:00"
+        },
+        "source_gap_critical_rate": {
+          "id": "GAP-BAL-074-MONSTER-CRITICAL-RATE-001",
+          "status": "CorrectionPrepared",
+          "baseline_build": "GKS-B781",
+          "target_build": "GKS-B782",
+          "source_update_file": "TASK-BAL-074 Formal Monster Critical Rate修正.zip",
+          "sha256": "c9c88b78e2d23c08daff7263f756be0d8237f4a0c2d202acbcfe0735e5fdce2d",
+          "artifact_id": "GKS-B782-db7c8c1e479a",
+          "fix": "Omit Formal Monster critical_rate when owner has no explicit value so existing Equipment base_critical_rate path remains authoritative.",
+          "balance_numeric_changes": 0,
+          "game_data_changes": 0,
+          "deletions": 0,
+          "human_apply_required": true
+        },
+        "replacement_test_package": {
+          "file": "TASK-BAL-074 Player↔Monster物理交換Baseline.zip",
+          "sha256": "08737b0df758c3761dda29b16814bcf6683020520d22c3e3307cbd2cb28bb5a8",
+          "required_studio_build": "GKS-B782",
+          "conditions": 50,
+          "trials": 1500,
+          "monster_stat_formula": "Level × expected_gain_per_level",
+          "player_initial_all10_applied_to_monster": false,
+          "monster_explicit_critical_rate": false,
+          "status": "Prepared"
         }
       },
       "evidence_refs": [
@@ -12469,6 +12517,11 @@
       "at": "2026-08-25T18:46:00+09:00",
       "type": "FormalMonsterWeaponLayoutSourceCorrectionPrepared",
       "summary": "TASK-BAL-074 Formal Monster weapon_layout修正.zip prepared. GKS-B780 -> GKS-B781. Quick/accept update PASS; Balance numeric changes 0; Game Data changes 0; deletion 0. TASK-BAL-074 remains Blocked until Human Apply/fresh-source confirmation."
+    },
+    {
+      "at": "2026-08-25T19:38:00+09:00",
+      "type": "PhysicalExchangeCorrectionPrepared",
+      "summary": "Human corrected Monster base stat rule to Level × job correction value. Job correction authority is Expected Stats Evidence expected_gain_per_level (growth/10); Player initial ALL10 is not applied. BEX-1787653193305 excluded from Evidence. GKS-B781 also exposed Formal Monster explicit critical_rate=0 masking weapon base crit; GKS-B782 correction prepared and Quick/Accept/Release PASS. Replacement 50-condition/1500-trial package prepared for GKS-B782."
     }
   ],
   "authority": {
