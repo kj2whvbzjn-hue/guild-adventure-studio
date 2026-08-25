@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B779</title>
+<title>GK Studio GKS-B780</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -179,7 +179,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B779 Story nested Data Exchange + scenario export wording */
+/* GKS-B780 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -239,7 +239,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B779: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B780: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -440,7 +440,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B779: Studio home-aware common header / navigation */
+/* GKS-B780: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -471,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B779</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B780</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B779</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B780</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2474,11 +2474,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=779"></script>
+<script src="./layer-controller.js?v=780"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B779';
+const DISTRIBUTION_BUILD='GKS-B780';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3828,9 +3828,32 @@ const DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS=Object.freeze(['project_context','
 function developmentMergeStable(value){if(Array.isArray(value))return value.map(developmentMergeStable);if(value&&typeof value==='object'){const out={};Object.keys(value).sort().forEach(k=>{if(!['created_at','updated_at'].includes(k))out[k]=developmentMergeStable(value[k])});return out}return value}
 function developmentMergeEqual(a,b){return JSON.stringify(developmentMergeStable(a))===JSON.stringify(developmentMergeStable(b))}
 function developmentMergeIncomingIds(rows,key){const seen=new Set(),duplicates=[];for(const row of rows||[]){const id=String(row?.id||'').trim();if(!id)throw new Error(`${key} にIDなしRecordがあります。`);if(seen.has(id))duplicates.push(id);seen.add(id)}if(duplicates.length)throw new Error(`${key} のImport内でIDが重複しています: ${[...new Set(duplicates)].join(', ')}`);return seen}
+const DEVELOPMENT_MERGE_RECORD_STAMP_FIELDS=Object.freeze(['updated_at','recorded_at','checked_at','approved_at','created_at']);
+function developmentMergeGeneration(record){
+ for(const field of DEVELOPMENT_MERGE_RECORD_STAMP_FIELDS){
+  const raw=String(record?.[field]||'').trim();if(!raw)continue;
+  const at=Date.parse(raw);return {ok:Number.isFinite(at),field,raw,at};
+ }
+ return {ok:false,field:'',raw:'',at:NaN};
+}
+function developmentMergeRequireNewerRecord(current,incoming,key,id){
+ const currentGen=developmentMergeGeneration(current),incomingGen=developmentMergeGeneration(incoming),label=`${key}.${id}`;
+ if(!currentGen.ok||!incomingGen.ok)throw new Error(`${label} は世代判定できない競合です。current=${currentGen.raw||'(missing)'} / incoming=${incomingGen.raw||'(missing)'}`);
+ if(incomingGen.at<currentGen.at)throw new Error(`${label} のIncoming Recordが現在より古いため統合を停止しました。current ${currentGen.field}=${currentGen.raw} / incoming ${incomingGen.field}=${incomingGen.raw}`);
+ if(incomingGen.at===currentGen.at)throw new Error(`${label} は同一世代で内容が競合しています。自動上書きせず停止します。${currentGen.field}=${currentGen.raw}`);
+ return true;
+}
+function developmentMergeWorkspaceGeneration(workspace,label){
+ const raw=String(workspace?.updated_at||'').trim(),at=Date.parse(raw);if(!raw||!Number.isFinite(at))throw new Error(`${label} workspace.updated_atで世代判定できません: ${raw||'(missing)'}`);return {raw,at};
+}
+function developmentMergeRequireFreshSnapshot(currentWorkspace,incomingWorkspace,label){
+ const currentGen=developmentMergeWorkspaceGeneration(currentWorkspace,'current'),incomingGen=developmentMergeWorkspaceGeneration(incomingWorkspace,'incoming');
+ if(incomingGen.at<currentGen.at)throw new Error(`${label} は古いDevelopment Project Snapshotからの変更です。current workspace.updated_at=${currentGen.raw} / incoming=${incomingGen.raw}`);
+ return true;
+}
 function developmentMergeRows(currentRows,incomingRows,key){
  developmentMergeIncomingIds(incomingRows,key);const byId=new Map((currentRows||[]).map((row,index)=>[String(row?.id||''),{row,index}])),out=(currentRows||[]).map(row=>structuredClone(row));let adds=0,updates=0,same=0;
- for(const incoming of incomingRows||[]){const id=String(incoming.id),hit=byId.get(id);if(!hit){out.push(structuredClone(incoming));adds++;continue}if(developmentMergeEqual(hit.row,incoming)){same++;continue}out[hit.index]=structuredClone(incoming);updates++}
+ for(const incoming of incomingRows||[]){const id=String(incoming.id),hit=byId.get(id);if(!hit){out.push(structuredClone(incoming));adds++;continue}if(developmentMergeEqual(hit.row,incoming)){same++;continue}developmentMergeRequireNewerRecord(hit.row,incoming,key,id);out[hit.index]=structuredClone(incoming);updates++}
  return{rows:out,adds,updates,same,deletes:0};
 }
 function developmentMergeHistory(currentRows,incomingRows){const out=(currentRows||[]).map(row=>structuredClone(row)),seen=new Set(out.map(row=>JSON.stringify(developmentMergeStable(row))));let adds=0,same=0;for(const row of incomingRows||[]){const key=JSON.stringify(developmentMergeStable(row));if(seen.has(key)){same++;continue}seen.add(key);out.push(structuredClone(row));adds++}return{rows:out,adds,updates:0,same,deletes:0}}
@@ -3843,13 +3866,14 @@ function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
  const composite=structuredClone(current);for(const key of Object.keys(raw)){if(key==='workspace')composite.workspace={...composite.workspace,...raw.workspace};else if(key!=='authority')composite[key]=structuredClone(raw[key])}
  composite.workspace={...current.workspace,...(raw.workspace||{}),id:current.workspace.id,name:current.workspace.name};composite.authority=structuredClone(current.authority);
  const normalizedIncoming=normalizeDevelopmentWorkspace(composite),merged=structuredClone(current),summary={arrays:{},objects:[],workspace:[],history:{adds:0,updates:0,same:0,deletes:0},total:{adds:0,updates:0,same:0,deletes:0}};
+ if(Object.prototype.hasOwnProperty.call(raw,'workflow')&&!developmentMergeEqual(current.workflow,normalizedIncoming.workflow))developmentMergeRequireFreshSnapshot(current.workspace,raw.workspace,'workflow変更');
  developmentValidateWorkflowIncoming(current.workflow,normalizedIncoming.workflow);
  if(Object.prototype.hasOwnProperty.call(raw,'lifecycle')&&!developmentMergeEqual(current.lifecycle,normalizedIncoming.lifecycle))throw new Error('lifecycle変更はDevelopment JSON統合では実行できません。HumanのLifecycle操作を使用してください。');
  for(const key of DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS){if(!Object.prototype.hasOwnProperty.call(raw,key))continue;const result=developmentMergeRows(current[key]||[],normalizedIncoming[key]||[],key);merged[key]=result.rows;summary.arrays[key]={adds:result.adds,updates:result.updates,same:result.same,deletes:0};summary.total.adds+=result.adds;summary.total.updates+=result.updates;summary.total.same+=result.same}
  if(Object.prototype.hasOwnProperty.call(raw,'history')){const result=developmentMergeHistory(current.history||[],Array.isArray(raw.history)?raw.history:[]);merged.history=result.rows;summary.history=result;summary.total.adds+=result.adds;summary.total.same+=result.same}
- for(const key of DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS){if(key==='lifecycle'||!Object.prototype.hasOwnProperty.call(raw,key))continue;const before=current[key],after=normalizedIncoming[key];if(developmentMergeEqual(before,after)){summary.objects.push({key,changed:false});summary.total.same++}else{merged[key]=structuredClone(after);summary.objects.push({key,changed:true});summary.total.updates++}}
+ for(const key of DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS){if(key==='lifecycle'||!Object.prototype.hasOwnProperty.call(raw,key))continue;const before=current[key],after=normalizedIncoming[key];if(developmentMergeEqual(before,after)){summary.objects.push({key,changed:false});summary.total.same++}else{developmentMergeRequireFreshSnapshot(current.workspace,raw.workspace,`${key}変更`);merged[key]=structuredClone(after);summary.objects.push({key,changed:true});summary.total.updates++}}
  if(Object.prototype.hasOwnProperty.call(raw,'workflow')){const before=current.workflow,after=normalizedIncoming.workflow;if(developmentMergeEqual(before,after)){summary.objects.push({key:'workflow',changed:false});summary.total.same++}else{merged.workflow=structuredClone(after);summary.objects.push({key:'workflow',changed:true});summary.total.updates++}}
- if(raw.workspace&&typeof raw.workspace==='object'){for(const key of ['status','ai_attention']){if(!Object.prototype.hasOwnProperty.call(raw.workspace,key))continue;const before=current.workspace[key],after=normalizedIncoming.workspace[key];if(before===after){summary.workspace.push({key,changed:false});summary.total.same++}else{merged.workspace[key]=after;summary.workspace.push({key,changed:true});summary.total.updates++}}}
+ if(raw.workspace&&typeof raw.workspace==='object'){for(const key of ['status','ai_attention']){if(!Object.prototype.hasOwnProperty.call(raw.workspace,key))continue;const before=current.workspace[key],after=normalizedIncoming.workspace[key];if(before===after){summary.workspace.push({key,changed:false});summary.total.same++}else{developmentMergeRequireFreshSnapshot(current.workspace,raw.workspace,`workspace.${key}変更`);merged.workspace[key]=after;summary.workspace.push({key,changed:true});summary.total.updates++}}}
  merged.workspace.id=current.workspace.id;merged.workspace.name=current.workspace.name;merged.workspace.updated_at=current.workspace.updated_at;merged.authority=structuredClone(current.authority);merged.schema_version=DEVELOPMENT_PROJECT_SCHEMA_VERSION;return{merged:normalizeDevelopmentWorkspace(merged),summary};
 }
 function developmentMergeSummaryText(summary){const rows=[];for(const [key,v] of Object.entries(summary.arrays||{}))rows.push(`${key}: 追加${v.adds} / 更新${v.updates} / 同一${v.same}`);if(summary.history?.adds||summary.history?.same)rows.push(`history: 追加${summary.history.adds} / 同一${summary.history.same}`);for(const x of summary.objects||[])rows.push(`${x.key}: ${x.changed?'更新':'同一'}${x.protected_fields?.length?` / 巻戻し保護 ${x.protected_fields.join(',')}`:''}`);for(const x of summary.workspace||[])rows.push(`workspace.${x.key}: ${x.changed?'更新':'同一'}${x.protected?' / Workflow正本を保持':''}`);return `合計: 追加${summary.total.adds} / 更新${summary.total.updates} / 同一${summary.total.same} / 削除0`+(rows.length?`\n\n${rows.join('\n')}`:'')}
@@ -10017,7 +10041,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','779');
+    url.searchParams.set('appv','780');
     location.replace(url.toString());
    }
  }
@@ -10026,7 +10050,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=779',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=780',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10045,7 +10069,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','779');
+    url.searchParams.set('appv','780');
     location.replace(url.toString());
    }
   });
