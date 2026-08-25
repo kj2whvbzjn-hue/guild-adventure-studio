@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T09:43:51.983Z"
+    "updated_at": "2026-08-25T10:05:02.389Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical baseline / Current Formal Monster owner gap",
-    "goal": "訂正版Equipped Basic Attack EvidenceはPASS。Player↔Monster交換BaselineはFormal Monster weapon_layout owner gapを解消するまで停止し、補正値を捏造しない。"
+    "theme": "TASK-BAL-074 Physical / Formal Monster weapon_layout source correction",
+    "goal": "GKS-B781 correction is prepared and gate-passed. Apply source update, reconfirm fresh GKS-B781, then run Player↔Monster physical exchange baseline. Do not advance to Magic."
   },
   "project_rules": [
     {
@@ -6767,8 +6767,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T18:27:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Current Game runtime-rounding corrected Equipped Basic Attack Evidence PASS: 250/250 jobs, 7,500/7,500 trials, error 0, Formal binding match. Next Player↔Monster physical exchange is BLOCKED because GKS-B780 Formal Monster owner reconstruction drops weapon_layout; Knight sword+shield cannot preserve approved shield 0-Strike semantics without inventing a compensation. No synthetic workaround is authorized.",
+      "updated_at": "2026-08-25T18:46:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Runtime-rounding corrected Equipped Basic Attack Evidence PASS. GKS-B781 source correction for Formal Monster weapon_layout preservation is prepared and Quick/accept update gates PASS. Player↔Monster physical exchange remains blocked until Human applies the source update and fresh Current Source confirms GKS-B781. No synthetic compensation is authorized.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6779,7 +6779,7 @@
       },
       "redo_scope": {
         "primary_goal": "Physical Skill Budget Formulaを作るための基準Evidence再生産と物理Budget式検証",
-        "current_step": "P1 corrected Physical Equipped Basic Attack baseline evidence PASS",
+        "current_step": "P1 Equipped Basic Attack evidence PASS / Formal Monster weapon_layout source correction prepared",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
@@ -6796,14 +6796,16 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "Blocked by Current Formal Monster weapon_layout owner gap",
+        "next_evidence_status": "Waiting for Human Apply of GKS-B781 source correction",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
-          "status": "Open",
-          "source": "GKS-B780 studio/index.html battlePackageResolveFormalMonsterUnit",
-          "missing_owner_field": "weapon_layout",
-          "affected_loadout": "騎士=片手剣+盾 weapon_shield",
-          "approved_semantics": "weapon_shield=片手剣1 Strike / 盾0 Strike",
+          "status": "CorrectionPrepared",
+          "baseline_build": "GKS-B780",
+          "target_build": "GKS-B781",
+          "source_update_file": "TASK-BAL-074 Formal Monster weapon_layout修正.zip",
+          "sha256": "00562e86e431e87244aa39858ccfed6868b456339b18598d38516102ca117535",
+          "artifact_id": "GKS-B781-6ae8c5716fc9",
+          "human_apply_required": true,
           "synthetic_compensation_allowed": false
         }
       },
@@ -6819,15 +6821,15 @@
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PHYSICAL-EQUIPPED",
-          "file": "001.json",
-          "sha256": "8d54766d7a0feed25619255bf99557c647f52637320ec2587015686e7961f60d",
+          "file": "TASK-BAL-074 Evidence・装備込み Physical Basic Attack基準.json",
+          "sha256": "961801f8a44b9bec5d24a848265940f1c96ec099611b4658eac3ca4b30338909",
           "evidence_id": "EVD-BAL-074-PHYSICAL-EQUIPPED-BASIC-ATTACK-002",
           "role": "PHYSICAL_EQUIPPED_BASIC_ATTACK_BASELINE_CURRENT_RUNTIME_ROUNDING",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-25T18:41:30+09:00"
+          "status": "PreparedForMerge",
+          "recorded_at": "2026-08-25T18:46:00+09:00"
         }
       ],
-      "blocked_reason": "GKS-B780 battlePackageResolveFormalMonsterUnit does not propagate weapon_layout from Monster owner data. Formal Monster therefore cannot represent Knight weapon_shield sword-only 1 Strike while retaining the same Player-equivalent equipment set."
+      "blocked_reason": "GKS-B780 drops unit_snapshot.weapon_layout during Formal Monster owner reconstruction. GKS-B781 correction package is prepared and gate-passed, but Human Apply/fresh source confirmation is still required before Player↔Monster exchange testing."
     },
     {
       "id": "TASK-BAL-075",
@@ -7547,6 +7549,51 @@
           "recorded_at": "2026-08-25T16:56:00+09:00"
         }
       ]
+    },
+    {
+      "id": "TASK-BAL-074-INFRA-002",
+      "box_id": "BOX-V9-BAL-RUNTIME-001",
+      "title": "TASK-BAL-074 Formal Monster weapon_layout owner保持を修復する",
+      "status": "Doing",
+      "execution_order": 266,
+      "depends_on": [
+        "TASK-BAL-074-INFRA-001"
+      ],
+      "acceptance_criteria": "- GKS-B780 Formal Monster owner再構成でunit_snapshot.weapon_layoutが失われるGapをCurrent Sourceで確認する。\n- Character/Monsterの数値式を変更せず、既存Formal weapon_layout structural bindingだけをMonster owner解決後Unitへ保持する。\n- Balance数値変更0、Gameデータ変更0、削除0。\n- Quickとaccept --context updateをPASSする。\n- Human Apply後のfresh Current SourceでGKS-B781を確認し、騎士weapon_shieldの盾0 Strikeを実機Formal Battleで再確認する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-25T18:46:00+09:00"
+      },
+      "created_at": "2026-08-25T18:46:00+09:00",
+      "updated_at": "2026-08-25T18:46:00+09:00",
+      "result_scope": "PREPARED FOR HUMAN APPLY. TASK-BAL-074 Formal Monster weapon_layout修正.zip / SHA-256 00562e86e431e87244aa39858ccfed6868b456339b18598d38516102ca117535. Baseline GA-B486.211 / GKS-B780 -> Target GA-B486.211 / GKS-B781. Quick PASS, accept update PASS. Balance numeric changes=0, Game Data changes=0, deletions=0. Completion waits for Human Apply and fresh Current Source confirmation.",
+      "source_update": {
+        "file": "TASK-BAL-074 Formal Monster weapon_layout修正.zip",
+        "sha256": "00562e86e431e87244aa39858ccfed6868b456339b18598d38516102ca117535",
+        "artifact_id": "GKS-B781-6ae8c5716fc9",
+        "baseline_source": {
+          "game_build": "GA-B486.211",
+          "studio_build": "GKS-B780",
+          "package_manifest_sha256": "5973da222cc7a4f412d9c4a78e81532ab08fff4efa940535474ad2be6ad13c8f",
+          "source_tree_sha256": "a35049ba0b7775737f8a7b2216120a75a7eb915911ff0b973693f02e645829c0"
+        },
+        "target_source": {
+          "game_build": "GA-B486.211",
+          "studio_build": "GKS-B781",
+          "package_manifest_sha256": "7b9fa5b4c2099f7f3eb297eaa759413c50a78976379cfa5a58d618c9ddf133cf",
+          "source_tree_sha256": "6ae8c5716fc9e2986ec509e3ddb8f3072932fba58fe4e535c4638b116627ff0a"
+        },
+        "gates": {
+          "quick": "PASS",
+          "accept_update": "PASS"
+        },
+        "deletions": 0,
+        "game_data_changes": 0,
+        "balance_numeric_changes": 0
+      }
     }
   ],
   "checks": [
@@ -12417,6 +12464,11 @@
       "at": "2026-08-25T18:41:30+09:00",
       "type": "VisibleNameUnified",
       "summary": "実ファイル名・案内名・Studio表示名を 002.json に統一。workspace.idおよびProject identityは変更しない。"
+    },
+    {
+      "at": "2026-08-25T18:46:00+09:00",
+      "type": "FormalMonsterWeaponLayoutSourceCorrectionPrepared",
+      "summary": "TASK-BAL-074 Formal Monster weapon_layout修正.zip prepared. GKS-B780 -> GKS-B781. Quick/accept update PASS; Balance numeric changes 0; Game Data changes 0; deletion 0. TASK-BAL-074 remains Blocked until Human Apply/fresh-source confirmation."
     }
   ],
   "authority": {
