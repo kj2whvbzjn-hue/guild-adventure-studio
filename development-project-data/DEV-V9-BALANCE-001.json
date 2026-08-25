@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T12:40:47.788Z"
+    "updated_at": "2026-08-25T21:03:23.970Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -15,7 +15,7 @@
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
     "theme": "TASK-BAL-074 Physical Skill Level→Budget allocation formula calibration",
-    "goal": "Skill Budget=SLvを総Budget Authorityとし、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ実測換算して振り分ける式を確定する。Rangeは乗算M_Rangeで扱いTargetCostを二重加算しない。まずSLv→Damage変換Test 1の実行承認待ち。Physicalのみ。"
+    "goal": "Skill Budget=SLvのPhysical allocation formulaを確定する。Test1 SLv→Damage変換Packageは準備済み。Human実機GKS-B782で34条件/3,400戦を実行しResult Packageを返却後、same-seed Control差を評価する。Physicalのみ。"
   },
   "project_rules": [
     {
@@ -2141,6 +2141,18 @@
       "approved_at": "2026-08-25T21:37:00+09:00",
       "created_at": "2026-08-25T21:37:00+09:00",
       "updated_at": "2026-08-25T21:37:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-TEST1-EXECUTION-001",
+      "title": "TASK-BAL-074 Test1 SLv→Physical Damage変換テストの実行を承認する",
+      "status": "Approved",
+      "text": "Humanの「進めて」により、登録済みTest1のみ実行承認。Player=剣士Lv20、Opponent=Lv30騎士高耐久/重装およびLv30盗賊高回避/軽装、SLv=1/5/10/20、k=0.5/1/2/4、SkillなしControl、全比較same-seed、100 seeds/condition、34 conditions=3,400 battles。目的はSkill Budget=SLvのSLv→Physical Damage変換候補を絞ること。承認外条件・追加Seed・追加テストは禁止。",
+      "rationale": "RULE-BAL-TEST-PLAN-APPROVAL-001に基づき、事前登録済みTest1計画へHumanが明示的に実行指示したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T21:49:00+09:00",
+      "created_at": "2026-08-25T21:49:00+09:00",
+      "updated_at": "2026-08-25T21:49:00+09:00"
     }
   ],
   "specifications": [
@@ -6822,7 +6834,7 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T21:37:00+09:00",
+      "updated_at": "2026-08-25T21:49:00+09:00",
       "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Final objective is Skill Budget=SLv based Physical Skill Level allocation formula. Physical component conversion values remain unfrozen. Old same-Job/high-winrate probes remain execution-path evidence only. Next planned evidence is Test 1 SLv→Damage conversion; no Simulation/Test has been executed under the revised plan yet.",
       "historical_invalid_completion": {
         "status": "Invalidated",
@@ -6834,7 +6846,7 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Physical Skill Level allocation formula plan registered; next is Test 1 SLv→Damage conversion concrete execution approval",
+        "current_step": "Test 1 Formal Battle Package prepared; awaiting Human real-device execution/result package",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
@@ -6851,7 +6863,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanTestExecutionApproval",
+        "next_evidence_status": "AwaitingHumanRealDeviceResult",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -6977,7 +6989,23 @@
         },
         "skill_budget_authority": "Skill Budget = SLv",
         "allocation_decision_id": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001",
-        "superseded_calculation_decision_id": "DEC-BAL-PHYSICAL-SKILL-BUDGET-CALC-001"
+        "superseded_calculation_decision_id": "DEC-BAL-PHYSICAL-SKILL-BUDGET-CALC-001",
+        "test1_execution": {
+          "status": "PackagePrepared",
+          "decision_id": "DEC-BAL-TASK074-TEST1-EXECUTION-001",
+          "package_file": "TASK-BAL-074-Test1.zip",
+          "package_sha256": "8d167f26eb0fabe7ba2bc526c4d51484d209d787f779e1b3ca26f60139362fdb",
+          "required_studio_build": "GKS-B782",
+          "conditions": 34,
+          "trials_per_condition": 100,
+          "total_trials": 3400,
+          "seed_start": 749100000,
+          "seed_step": 1,
+          "human_real_device_required": true,
+          "ai_reference_result_is_real_device_evidence": false,
+          "result_pending": true,
+          "prepared_at": "2026-08-25T21:49:00+09:00"
+        }
       },
       "evidence_refs": [
         {
