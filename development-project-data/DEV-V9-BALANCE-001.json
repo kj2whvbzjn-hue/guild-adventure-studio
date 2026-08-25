@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T22:00:55.194Z"
+    "updated_at": "2026-08-25T22:05:22.986Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 THF Power-response awaiting Human result",
-    "goal": "THF Lv20 vs provisional KNT Lv33でControl + k0.5/1/2/4×SLv1/5/10/20をsame-seed各100、17条件/1,700戦で測定し、same-package ΔWinRate(pp)とPower反応形をSWD時と比較する。KNT盾未確定のためFreezeせず、Test2へ自動進行しない。"
+    "theme": "TASK-BAL-074 separate-job evasion Control batch awaiting Human approval",
+    "goal": "THF Power-responseでmatchup依存とunique-Power測定の必要性を確認。 次はTHF Lv20 attackerに対し、同Job THF defenderを避け、HNT Lv20-30を一括11条件/1,100戦でControl screeningし、 10%-90%帯内で50%に最も近いseparate-job high-evasion/light-defense候補を選ぶ。"
   },
   "project_rules": [
     {
@@ -6957,8 +6957,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T07:25:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. THF/KNT batch selected provisional KNT Lv33=46% Control, with strong Tier6→7 discontinuity and unresolved shield performance. Prepared THF attacker Power-response sensitivity: Control1 + 16 candidates, 17 conditions / 1,700 same-seed battles. Purpose is response-shape comparison with prior SWD screening only. No k/C_Damage Freeze, no Test2, no standalone Evidence.",
+      "updated_at": "2026-08-26T07:35:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. THF Power-response execution PASS: 17/17 jobs, 1,700/1,700 trials, error0. Same-package Control=46%; P101=47, P105=50, P110=51, P120=64, P140=75, P180=94. Duplicate k×SLv pairs resolving to identical Power produced identical summaries, so future Damage calibration should use unique Power as the measurement axis. Practical Power→WinRate response is strongly matchup-dependent; no k/C_Damage Freeze and no Test2. Next proposed screen is THF Lv20 vs HNT Lv20-30 Control batch (11 conditions/1,100 same-seed), avoiding same-job evasion comparison.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6969,14 +6969,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "THF Power-response package prepared; awaiting Human real-device result",
+        "current_step": "THF Power-response Human result evaluated. Matchup dependence and duplicate-Power invariance confirmed. Next proposed: THF Lv20 vs HNT Lv20-30 separate-job evasion Control batch, 11 conditions / 1,100 battles.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No standalone Evidence until a reusable formula/value is actually justified",
+        "next_evidence": "No standalone Evidence. Current results remain screening/sensitivity data.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6986,7 +6986,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanRealDeviceResult",
+        "next_evidence_status": "AwaitingHumanTestPlanApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -7825,7 +7825,7 @@
           "evaluated_at": "2026-08-26T07:20:00+09:00"
         },
         "thf_power_response_provisional_plan": {
-          "status": "PackagePrepared",
+          "status": "Executed_HumanResultEvaluated",
           "purpose": "Measure how the same SLv→Power candidates respond when the attacker is THF instead of SWD, using a non-saturated provisional KNT control placement.",
           "attacker": {
             "job": "THF",
@@ -7910,7 +7910,7 @@
             "same-package Control falls outside 10%-90%",
             "Do not advance to Test2 automatically"
           ],
-          "execution_authorized": true,
+          "execution_authorized": false,
           "standalone_evidence_planned": false,
           "proposed_at": "2026-08-26T07:20:00+09:00",
           "execution_decision_id": "DEC-BAL-TASK074-THF-POWER-001",
@@ -7923,8 +7923,436 @@
           "seed_end": 749500099,
           "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 39/39 PASS",
           "human_real_device_required": true,
-          "result_pending": true,
-          "prepared_at": "2026-08-26T07:25:00+09:00"
+          "result_pending": false,
+          "prepared_at": "2026-08-26T07:25:00+09:00",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-THF-POWER-B782_BEX-1787695205031.zip",
+          "result_sha256": "52a1b509d25d02aa98a19e148f6fb9f6a9bfc678300f33a49244a1de9b505257"
+        },
+        "thf_power_response_provisional_result": {
+          "status": "HumanResultEvaluated",
+          "package_file": "TASK-BAL-074-THFPower.zip",
+          "package_sha256": "7100f927a50b4e3b7786cac1e41933dba499f16d88f810b67c29e1b94b6058f9",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-THF-POWER-B782_BEX-1787695205031.zip",
+          "result_sha256": "52a1b509d25d02aa98a19e148f6fb9f6a9bfc678300f33a49244a1de9b505257",
+          "execution_id": "BEX-1787695205031",
+          "formal_execution_gate": "PASS",
+          "formal_binding_match": true,
+          "jobs_completed": "17/17",
+          "trials_completed": "1700/1700",
+          "error_count": 0,
+          "formal_only": "17/17",
+          "legacy_fallback_used": false,
+          "same_seed_range": "749500000..749500099",
+          "same_package_control_win_rate": 0.46,
+          "power_response": {
+            "101": {
+              "win_rate": 0.47,
+              "delta_win_rate_pp": 1,
+              "average_ticks": 183.37,
+              "average_ally_damage": 3819.65,
+              "average_enemy_damage": 1542.82,
+              "condition_count": 2,
+              "all_duplicate_summaries_identical": true
+            },
+            "102": {
+              "win_rate": 0.47,
+              "delta_win_rate_pp": 1,
+              "average_ticks": 183.37,
+              "average_ally_damage": 3831.48,
+              "average_enemy_damage": 1542.82,
+              "condition_count": 1,
+              "all_duplicate_summaries_identical": true
+            },
+            "103": {
+              "win_rate": 0.49,
+              "delta_win_rate_pp": 3,
+              "average_ticks": 181.77,
+              "average_ally_damage": 3854.37,
+              "average_enemy_damage": 1534.64,
+              "condition_count": 1,
+              "all_duplicate_summaries_identical": true
+            },
+            "104": {
+              "win_rate": 0.49,
+              "delta_win_rate_pp": 3,
+              "average_ticks": 181.77,
+              "average_ally_damage": 3865.62,
+              "average_enemy_damage": 1534.64,
+              "condition_count": 1,
+              "all_duplicate_summaries_identical": true
+            },
+            "105": {
+              "win_rate": 0.5,
+              "delta_win_rate_pp": 4,
+              "average_ticks": 179.94,
+              "average_ally_damage": 3887,
+              "average_enemy_damage": 1533.14,
+              "condition_count": 2,
+              "all_duplicate_summaries_identical": true
+            },
+            "110": {
+              "win_rate": 0.51,
+              "delta_win_rate_pp": 5,
+              "average_ticks": 176.33,
+              "average_ally_damage": 3961,
+              "average_enemy_damage": 1513.51,
+              "condition_count": 3,
+              "all_duplicate_summaries_identical": true
+            },
+            "120": {
+              "win_rate": 0.64,
+              "delta_win_rate_pp": 18,
+              "average_ticks": 166.09,
+              "average_ally_damage": 4091.1,
+              "average_enemy_damage": 1416.29,
+              "condition_count": 3,
+              "all_duplicate_summaries_identical": true
+            },
+            "140": {
+              "win_rate": 0.75,
+              "delta_win_rate_pp": 29,
+              "average_ticks": 148.95,
+              "average_ally_damage": 4265.56,
+              "average_enemy_damage": 1306.53,
+              "condition_count": 2,
+              "all_duplicate_summaries_identical": true
+            },
+            "180": {
+              "win_rate": 0.94,
+              "delta_win_rate_pp": 48,
+              "average_ticks": 118.74,
+              "average_ally_damage": 4391.98,
+              "average_enemy_damage": 1042.33,
+              "condition_count": 1,
+              "all_duplicate_summaries_identical": true
+            }
+          },
+          "k_results": {
+            "0.5": [
+              {
+                "skill_level": 1,
+                "power": 101,
+                "win_rate": 0.47,
+                "delta_win_rate_pp": 1
+              },
+              {
+                "skill_level": 5,
+                "power": 103,
+                "win_rate": 0.49,
+                "delta_win_rate_pp": 3
+              },
+              {
+                "skill_level": 10,
+                "power": 105,
+                "win_rate": 0.5,
+                "delta_win_rate_pp": 4
+              },
+              {
+                "skill_level": 20,
+                "power": 110,
+                "win_rate": 0.51,
+                "delta_win_rate_pp": 5
+              }
+            ],
+            "1.0": [
+              {
+                "skill_level": 1,
+                "power": 101,
+                "win_rate": 0.47,
+                "delta_win_rate_pp": 1
+              },
+              {
+                "skill_level": 5,
+                "power": 105,
+                "win_rate": 0.5,
+                "delta_win_rate_pp": 4
+              },
+              {
+                "skill_level": 10,
+                "power": 110,
+                "win_rate": 0.51,
+                "delta_win_rate_pp": 5
+              },
+              {
+                "skill_level": 20,
+                "power": 120,
+                "win_rate": 0.64,
+                "delta_win_rate_pp": 18
+              }
+            ],
+            "2.0": [
+              {
+                "skill_level": 1,
+                "power": 102,
+                "win_rate": 0.47,
+                "delta_win_rate_pp": 1
+              },
+              {
+                "skill_level": 5,
+                "power": 110,
+                "win_rate": 0.51,
+                "delta_win_rate_pp": 5
+              },
+              {
+                "skill_level": 10,
+                "power": 120,
+                "win_rate": 0.64,
+                "delta_win_rate_pp": 18
+              },
+              {
+                "skill_level": 20,
+                "power": 140,
+                "win_rate": 0.75,
+                "delta_win_rate_pp": 29
+              }
+            ],
+            "4.0": [
+              {
+                "skill_level": 1,
+                "power": 104,
+                "win_rate": 0.49,
+                "delta_win_rate_pp": 3
+              },
+              {
+                "skill_level": 5,
+                "power": 120,
+                "win_rate": 0.64,
+                "delta_win_rate_pp": 18
+              },
+              {
+                "skill_level": 10,
+                "power": 140,
+                "win_rate": 0.75,
+                "delta_win_rate_pp": 29
+              },
+              {
+                "skill_level": 20,
+                "power": 180,
+                "win_rate": 0.94,
+                "delta_win_rate_pp": 48
+              }
+            ]
+          },
+          "duplicate_power_invariant": {
+            "status": "CONFIRMED",
+            "groups": [
+              {
+                "power": 101,
+                "conditions": [
+                  {
+                    "skill_level": 1,
+                    "k": 0.5,
+                    "condition_no": 2
+                  },
+                  {
+                    "skill_level": 1,
+                    "k": 1,
+                    "condition_no": 3
+                  }
+                ],
+                "summaries_identical": true
+              },
+              {
+                "power": 105,
+                "conditions": [
+                  {
+                    "skill_level": 5,
+                    "k": 1,
+                    "condition_no": 7
+                  },
+                  {
+                    "skill_level": 10,
+                    "k": 0.5,
+                    "condition_no": 10
+                  }
+                ],
+                "summaries_identical": true
+              },
+              {
+                "power": 110,
+                "conditions": [
+                  {
+                    "skill_level": 5,
+                    "k": 2,
+                    "condition_no": 8
+                  },
+                  {
+                    "skill_level": 10,
+                    "k": 1,
+                    "condition_no": 11
+                  },
+                  {
+                    "skill_level": 20,
+                    "k": 0.5,
+                    "condition_no": 14
+                  }
+                ],
+                "summaries_identical": true
+              },
+              {
+                "power": 120,
+                "conditions": [
+                  {
+                    "skill_level": 5,
+                    "k": 4,
+                    "condition_no": 9
+                  },
+                  {
+                    "skill_level": 10,
+                    "k": 2,
+                    "condition_no": 12
+                  },
+                  {
+                    "skill_level": 20,
+                    "k": 1,
+                    "condition_no": 15
+                  }
+                ],
+                "summaries_identical": true
+              },
+              {
+                "power": 140,
+                "conditions": [
+                  {
+                    "skill_level": 10,
+                    "k": 4,
+                    "condition_no": 13
+                  },
+                  {
+                    "skill_level": 20,
+                    "k": 2,
+                    "condition_no": 16
+                  }
+                ],
+                "summaries_identical": true
+              }
+            ],
+            "conclusion": "Within identical attacker/defender/runtime/seed conditions, conditions that resolve to the same Power produced identical summaries. Future C_Damage(Power) calibration should therefore test unique Power points directly rather than duplicate k×SLv combinations."
+          },
+          "comparison_with_prior_swd": {
+            "THF_attacker_vs_provisional_KNT33": {
+              "control": 0.46,
+              "power_to_win_rate": {
+                "101": 0.47,
+                "102": 0.47,
+                "103": 0.49,
+                "104": 0.49,
+                "105": 0.5,
+                "110": 0.51,
+                "120": 0.64,
+                "140": 0.75,
+                "180": 0.94
+              }
+            },
+            "prior_SWD_attacker_HEAVY_provisional_KNT28": {
+              "control": 0.6,
+              "powers": {
+                "101": 0.6,
+                "102": 0.74,
+                "103": 0.74,
+                "104": 0.74,
+                "105": 0.74,
+                "110": 1,
+                "120": 1,
+                "140": 1,
+                "180": 1
+              }
+            },
+            "prior_SWD_attacker_EVASION_THF20": {
+              "control": 0.52,
+              "powers": {
+                "101": 0.52,
+                "102": 0.52,
+                "103": 0.52,
+                "104": 0.52,
+                "105": 0.52,
+                "110": 0.56,
+                "120": 0.56,
+                "140": 0.75,
+                "180": 0.89
+              }
+            },
+            "interpretation_limit": "Response curves demonstrate matchup dependence, but THF/KNT33 versus SWD/KNT28 is not a pure attacker-job isolation because defender level/equipment tier differ. Same-defender Control testing already established SWD60% vs THF91% at KNT28."
+          },
+          "measurement_conclusion": "THF/KNT33 shows a gradual monotonic Power response: Control46%, P101=47%, P105=50%, P110=51%, P120=64%, P140=75%, P180=94%. This differs substantially from prior SWD-heavy and SWD-evasion responses, confirming that practical win-rate impact is matchup-dependent. The prior claim that the linear formula itself was structurally broken remains withdrawn.",
+          "k_selected": null,
+          "formula_frozen": false,
+          "test2_authorized": false,
+          "authority_limit": "KNT shield performance remains unresolved and KNT33 is Tier7-dependent. This result is screening/sensitivity data only and cannot Freeze k or C_Damage(Power).",
+          "standalone_evidence_retained": false,
+          "evaluated_at": "2026-08-26T07:35:00+09:00"
+        },
+        "damage_power_unique_point_method": {
+          "status": "MethodProposed_AwaitingHumanApproval",
+          "reason": "The THF 17-condition grid contained duplicated Power values generated by different k×SLv pairs. All duplicate-Power groups produced identical battle summaries under the same seeds.",
+          "unique_power_points_observed": [
+            101,
+            102,
+            103,
+            104,
+            105,
+            110,
+            120,
+            140,
+            180
+          ],
+          "future_test_axis": "Power directly",
+          "future_inverse_use": "After practical impact is calibrated as C_Damage(Power), derive/invert f_Damage(Budget) and then allocate Skill Budget=SLv. Do not treat k×SLv as the primary measurement axis.",
+          "execution_authorized": false,
+          "proposed_at": "2026-08-26T07:35:00+09:00"
+        },
+        "thf_hnt_evasion_control_batch_plan": {
+          "status": "PlanProposed_AwaitingHumanApproval",
+          "purpose": "Create a separate-job high-evasion/light-defense Control placement for THF attacker, avoiding THF-vs-THF same-job comparison.",
+          "attacker": {
+            "job": "THF",
+            "level": 20
+          },
+          "defender_candidate": {
+            "job": "HNT",
+            "name": "狩人",
+            "levels": [
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30
+            ],
+            "basis": "HNT is a separate physical job with high Evasion in current reusable Physical Exchange data (Lv20 Evasion96 versus THF144, higher than SWD20/KNT24/ADV16) and no shield.",
+            "authority": "SCREENING_CANDIDATE_ONLY"
+          },
+          "equipment_tier_steps": {
+            "20-22": 6,
+            "23-26": 7,
+            "27-30": 8
+          },
+          "skill": "none",
+          "passive_mod": "none",
+          "conditions": 11,
+          "trials_per_condition": 100,
+          "total_trials": 1100,
+          "same_seed_required": true,
+          "seed_start": 749500000,
+          "seed_end": 749500099,
+          "primary_kpi": "Control win rate by HNT level",
+          "selection_rule": "Among 10%-90% levels, select the level closest to 50%. Evaluate the full Lv20-30 curve and equipment-tier discontinuities in one batch; do not probe levels sequentially.",
+          "downstream_if_pass": "Use the selected HNT control placement in a later unique-Power response test, not a duplicated k×SLv grid.",
+          "stop_conditions": [
+            "Formal binding mismatch",
+            "error_count > 0",
+            "formal_only=false or legacy fallback used",
+            "Do not include Power/Skill candidates in this Control batch",
+            "If all levels are outside 10%-90%, define a new wider batch rather than one-level probing"
+          ],
+          "execution_authorized": false,
+          "standalone_evidence_planned": false,
+          "proposed_at": "2026-08-26T07:35:00+09:00"
         }
       },
       "evidence_refs": [
@@ -12916,6 +13344,29 @@
       "blocking": false,
       "created_at": "2026-08-26T07:20:00+09:00",
       "updated_at": "2026-08-26T07:20:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-THF-POWER-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Execution PASS / sensitivity measurement PASS. 17/17 jobs, 1,700/1,700 trials, error0, Formal PASS. Same-package THF Control=46%. Power response: 101=47%, 102=47%, 103=49%, 104=49%, 105=50%, 110=51%, 120=64%, 140=75%, 180=94%. Duplicate k×SLv conditions resolving to the same Power produced identical summaries. No k or C_Damage Freeze is authorized.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL074-THF-POWER-B782_BEX-1787695205031.zip sha256=52a1b509d25d02aa98a19e148f6fb9f6a9bfc678300f33a49244a1de9b505257",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T07:35:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T07:35:00+09:00",
+        "reason": "THF response curve measured successfully; result retained as screening only.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T07:35:00+09:00",
+      "updated_at": "2026-08-26T07:35:00+09:00"
     }
   ],
   "workflow": {
@@ -13882,6 +14333,11 @@
       "at": "2026-08-26T07:20:00+09:00",
       "type": "THFKNTBatchControlEvaluated",
       "summary": "THF Lv20 vs provisional KNT batch result: Lv29=89%, Lv30=87%, Lv31=85%, Lv32=85%, Lv33=46%. Ruleに従い50%に最も近いLv33をprovisional Controlとして選定。Lv32→33=-39ppはTier6→7切替と一致。 盾性能未確定のためFreeze Authorityにはしない。次のTHF Power-response 17条件/1700戦は未承認Planのみ登録。"
+    },
+    {
+      "at": "2026-08-26T07:35:00+09:00",
+      "type": "THFPowerResponseEvaluated",
+      "summary": "THF Lv20 vs provisional KNT Lv33 Human result PASS。Control46%、Power101=47、105=50、110=51、120=64、140=75、180=94%。 同一Powerへ収束する別k×SLv条件はsummary完全一致し、今後はunique Power直接測定へ方法修正を提案。 matchup依存を再確認し、k/C_Damage Freezeなし、Test2停止。次はHNT Lv20-30 separate-job evasion Control batchを未承認Plan登録。"
     }
   ],
   "authority": {
