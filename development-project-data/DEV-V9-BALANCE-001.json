@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T22:35:35.449Z"
+    "updated_at": "2026-08-25T22:43:13.456Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 single-hit Damage level-gap robustness awaiting Human approval",
-    "goal": "DAMAGE_COST_LINEAR_2 candidateをTHF Lv20 vs HNT Lv23/24/25の非飽和Tier7 bandでControl+P102/P110/P120/P140の15条件/1,500戦により検証する。HNT26 retained authorityとprovisional KNT33 curveを比較に使うが、KNT盾未確定のため最終Heavy Freezeはしない。"
+    "theme": "TASK-BAL-074 Damage level-gap robustness awaiting Human result",
+    "goal": "THF Lv20 vs HNT/狩人 Lv23/24/25でControl+P102/P110/P120/P140をsame-seed各100、15条件/1,500戦で実機測定し、DAMAGE_COST_LINEAR_2のLevel-gap robustnessを判定する。Test3へ自動進行しない。"
   },
   "project_rules": [
     {
@@ -2312,6 +2312,18 @@
       "approved_at": "2026-08-26T07:40:00+09:00",
       "created_at": "2026-08-26T07:40:00+09:00",
       "updated_at": "2026-08-26T07:40:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-DAMAGE-LVGAP-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Humanの「進めて」によりDAMAGE_COST_LINEAR_2 Level-gap robustnessのみ実行承認。THF/盗賊Lv20 vs HNT/狩人Lv23/24/25（Current JOB-0004/弓兵、全Tier7）。各LvでControl/P102/P110/P120/P140、same-seed 749600000..749600099を各100戦、15条件1,500戦。主KPIはΔWinRate単調性、Damage単調性、P120/P140のLevel間spread。spread上限15pp。Test3へ自動進行せず、KNT盾未確定のため最終Heavy Freezeを行わない。",
+      "rationale": "C_Damage_1Hit=(Power-100)/2 Candidateを、既に非飽和と判明しているHNT Tier7 bandで検証するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T07:45:00+09:00",
+      "created_at": "2026-08-26T07:45:00+09:00",
+      "updated_at": "2026-08-26T07:45:00+09:00"
     }
   ],
   "specifications": [
@@ -6993,8 +7005,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T07:40:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Design-only step completed from direct unique-Power data. Selected validation candidate: C_Damage_1Hit(Power)=max(0,(Power-100)/2), inverse Power=JS Math.round(100+2*B_Damage). SLv1/5/10/20 full-Damage allocation maps to P102/P110/P120/P140; measured P180 is B40 near-saturation headroom. This is not a k/Formula Freeze and must not yet be applied independently per hit to multi-hit powers below 100. Exact next proposed execution: THF20 vs HNT23/24/25, each Control+P102/P110/P120/P140, 15 conditions/1,500 same-seed trials. No package generated; Test3/Test2 execution not authorized until Human approval.",
+      "updated_at": "2026-08-26T07:45:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. DAMAGE_COST_LINEAR_2 remains NOT_FROZEN. Prepared exact Human-approved Level-gap robustness package: THF Lv20 vs HNT/狩人 Lv23/24/25, each Control+P102/P110/P120/P140, 15 conditions / 1,500 same-seed battles (749600000..749600099). Defender runtimes are reused exactly from the prior Human-executed HNT Control Batch. PASS requires Formal integrity, valid Control rows, nondecreasing Damage and ΔWinRate, and <=15pp P120/P140 cross-level spread. KNT shield remains unresolved; no final Heavy cross-defense Freeze. Test3 is not automatically authorized. No new standalone Evidence at package-preparation stage.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7005,14 +7017,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Single-hit Damage Budget design completed. DAMAGE_COST_LINEAR_2 selected as validation candidate; Level-gap robustness plan is awaiting Human approval. No Battle package generated.",
+        "current_step": "DAMAGE_COST_LINEAR_2 Level-gap robustness package prepared; awaiting Human real-device result. Test3 remains unauthorized.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No new Evidence from design-only work. Retain EVD-BAL-074-HNT-UNIQUE-POWER-001 as numeric input.",
+        "next_evidence": "No Evidence in package-preparation step. Create dedicated Evidence only if Human result becomes reusable level-gap numeric authority.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7022,7 +7034,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanTestPlanApproval",
+        "next_evidence_status": "AwaitingHumanRealDeviceResult",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -9162,7 +9174,7 @@
           "designed_at": "2026-08-26T07:40:00+09:00"
         },
         "damage_level_gap_robustness_plan": {
-          "status": "PlanProposed_AwaitingHumanApproval",
+          "status": "PackagePrepared",
           "decision_question": "Does DAMAGE_COST_LINEAR_2 preserve monotonic and comparable practical value across the already identified non-saturated level-gap band, without relying on a single HNT26/KNT33 matchup?",
           "candidate_under_test": {
             "cost": "C_Damage_1Hit(Power) = max(0,(Power-100)/2)",
@@ -9267,9 +9279,19 @@
             "P120/P140 cross-level ΔWinRate spread exceeds 15pp",
             "Do not auto-generate Test3 or execute another package"
           ],
-          "execution_authorized": false,
+          "execution_authorized": true,
           "standalone_evidence_planned": "Only if the result becomes a reusable level-gap numeric authority; failed/replan results remain management-only.",
-          "proposed_at": "2026-08-26T07:40:00+09:00"
+          "proposed_at": "2026-08-26T07:40:00+09:00",
+          "execution_decision_id": "DEC-BAL-TASK074-DAMAGE-LVGAP-001",
+          "package_file": "TASK-BAL-074-LvGap.zip",
+          "package_sha256": "3f29ad6697a3d49ee417e831b9b6a7c4962a1247a191a76cdaf6d7445e49af27",
+          "required_studio_build": "GKS-B782",
+          "current_source_file": "guild-adventure-studio-sub(20260825-213025).zip",
+          "current_source_sha256": "02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728",
+          "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 21/21 PASS",
+          "human_real_device_required": true,
+          "result_pending": true,
+          "prepared_at": "2026-08-26T07:45:00+09:00"
         }
       },
       "evidence_refs": [
@@ -15348,6 +15370,11 @@
       "at": "2026-08-26T07:40:00+09:00",
       "type": "DamageCostCurveDesigned",
       "summary": "Human承認によりBattle実行なしでC_Damage設計を実施。unique Power直接実測からslope1/2/4を比較し、validation candidateとしてC_Damage_1Hit=(Power-100)/2、inverse Power=round(100+2B)を選定。SLv1/5/10/20→P102/110/120/140。P180=B40 near-saturation reference。multi-hitへper-hit適用は禁止。次のHNT Lv23-25 level-gap 15条件/1500戦は未承認Planのみ登録。"
+    },
+    {
+      "at": "2026-08-26T07:45:00+09:00",
+      "type": "DamageLevelGapRobustnessPackagePrepared",
+      "summary": "Human承認によりDAMAGE_COST_LINEAR_2 Level-gap robustness Packageを準備。THF20 vs HNT23/24/25、各Control/P102/P110/P120/P140、same-seed各100、15条件/1500戦。HNT runtimeはHuman実行済みControl Batchと完全同一。Studio実機Result待ち。Test3未承認、Evidence新規作成なし。"
     }
   ],
   "authority": {
