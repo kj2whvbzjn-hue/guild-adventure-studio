@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T04:51:59.095Z"
+    "updated_at": "2026-08-25T05:10:47.209Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-075 resumed on Human-applied GKS-B779; MAGIC_SUPPORT formally abolished",
-    "goal": "Use Current GKS-B779 / GA-B486.211. MAGIC_SUPPORT is formally abolished and must not be restored. All weapon magic_weapon_bonus, including Staff/Wand/Book, feeds existing MAGIC_DAMAGE only and does not affect HEAL. Resume TASK-BAL-075 detailed Formula/Equipment evaluation from the post-correction preflight. Do not start TASK-BAL-076."
+    "theme": "TASK-BAL-075 Human Decision Gate: Base Critical Damage",
+    "goal": "P8 Formula/Equipment mathematical pre-freeze is complete on GKS-B779. MAGIC_SUPPORT remains formally abolished. Decide Base Critical Damage numeric, then finalize TASK-BAL-075 only; do not start TASK-BAL-076 in the same run."
   },
   "project_rules": [
     {
@@ -392,8 +392,8 @@
     "studio_build": "GKS-B779",
     "game_build": "GA-B486.211",
     "source_label": "guild-adventure-studio-sub(20260825-044605).zip",
-    "source_role": "Human-applied Current verified; TASK-BAL-075 resumed after direct magic_weapon_bonus→MAGIC_DAMAGE correction",
-    "recorded_at": "2026-08-25T13:48:31+09:00",
+    "source_role": "Human-applied Current verified; TASK-BAL-075 P8 baseline",
+    "recorded_at": "2026-08-25T14:05:05+09:00",
     "package_manifest_sha256": "20def760eb53d0a82cdd7fe71dff662411108ced53b38e3f2f57d3a262620318",
     "source_zip_sha256": "1874c69dee450a2e42eff142f03f5099df2605ef458a71ae0767a6605e7635c9"
   },
@@ -1365,15 +1365,28 @@
     {
       "id": "DISC-BAL-TASK075-MAGIC-WEAPON-BINDING-001",
       "title": "Formal magic_weapon_bonus Battle binding correction",
-      "status": "Open",
-      "summary": "P8で必要なmagic_weapon_bonus実戦評価をCurrent B777 Formal executorが実行できない。",
-      "body": "DEC-R24ではmagic_weapon_bonusを魔法攻撃系効果量へ接続し、係数/換算/cap/roundingをBalance可変とする。Current B777はContribution/snapshotまで値を運ぶが、Studio/Game Formal MAGICAL DamageはmagicIncreaseRate×powerのみでmagic_weapon_bonusを未消費。HealもmagicIncreaseRateを使用するため、magic_weapon_bonusをmagicIncreaseRateへ単純合算するとHealまで増える。Correctionは既存MAGICAL Damage pathへ専用Equipment Contributionとして接続し、HEALと分離し、Balance Dataで換算係数を可変化する方向が最小。Source修正は本runでは未実施。",
-      "open_questions": "Correction Source Taskの承認後、magic_weapon_bonusの換算係数CandidateをP8で0ベース比較する。Gameplay topologyは変更しない。",
-      "conclusion": "Issue Gate。Correctionを先にHuman承認し、Fresh Source verification後にTASK-BAL-075を再開する。",
+      "status": "Resolved",
+      "summary": "GKS-B779 direct magic_weapon_bonus→MAGIC_DAMAGE connection verified; prior B777 Issue Gate resolved. MAGIC_SUPPORT is formally abolished.",
+      "body": "The B777 no-op was corrected by GKS-B779. All weapon magic_weapon_bonus contributions use the existing MAGIC_DAMAGE path without weapon-type channel branching. HEAL remains independent. The former B778 MAGIC_SUPPORT proposal is Superseded/Historical only and must not be restored.",
+      "open_questions": "",
+      "conclusion": "Resolved on verified Current GKS-B779; resume P8 numeric work.",
       "related_discussion_ids": [],
-      "artifact_note": "TASK-BAL-075 preflight issue",
+      "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip",
       "created_at": "2026-08-25T11:55:00+09:00",
-      "updated_at": "2026-08-25T11:55:00+09:00"
+      "updated_at": "2026-08-25T14:05:05+09:00"
+    },
+    {
+      "id": "DISC-BAL-TASK075-BASE-CRITICAL-DAMAGE-001",
+      "title": "Base Critical Damage Balance値のHuman決定",
+      "status": "Open",
+      "summary": "Critical処理順/表現/rangeは確定しているが、Base Critical Damageの具体値がCurrent仕様に存在しないためP8最終Freezeのみ停止。",
+      "body": "Current Formalはcritical_damageを追加割合として扱い、Resistance後に(1 + critical_damage/100)を掛け、最終floorする。武器base_critical_rate=5%は確定。仕様はCRITICAL_DAMAGE MODを既存Base Critical Damageへのrelative percentと定義する一方、そのBase数値を定義していない。25/50/75/100%のSensitivityを作成。5% Crit時の平均期待上昇はそれぞれ1.25/2.50/3.75/5.00%。AI first candidateは50%だがHuman未承認なのでFreezeしない。",
+      "open_questions": "Base Critical Damageを 25% / 50% / 75% / 100% のどれでP8 Balance baselineとしてFreezeするか。別値指定も可。",
+      "conclusion": "Human Decision待ち。決定後、同じP8 Evidenceへ値を反映してTASK-BAL-075をDoneにできる。",
+      "related_discussion_ids": [],
+      "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip",
+      "created_at": "2026-08-25T14:05:05+09:00",
+      "updated_at": "2026-08-25T14:05:05+09:00"
     }
   ],
   "decisions": [
@@ -6687,7 +6700,7 @@
       "id": "TASK-BAL-075",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P8 Formula / Status / Resource + Equipment Full Performanceを確定する",
-      "status": "Doing",
+      "status": "Blocked",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-074",
@@ -6702,8 +6715,8 @@
         "at": "2026-08-25T11:55:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T13:48:31+09:00",
-      "result_scope": "RESUMED ON VERIFIED CURRENT GKS-B779. Prior Formal magic_weapon_bonus binding issue is corrected by direct all-weapon magic_weapon_bonus→MAGIC_DAMAGE routing. MAGIC_SUPPORT is formally abolished by DEC-BAL-MAGIC-SUPPORT-ABOLISH-001 and must not be restored; HEAL remains unaffected by magic_weapon_bonus. Current Source Quick 11/11 PASS. Resume P8 numeric Formula/Equipment Candidate loop from post-correction preflight. No Balance Freeze completed yet in this resumed segment. TASK-BAL-076 not started."
+      "updated_at": "2026-08-25T14:05:05+09:00",
+      "result_scope": "P8 MATHEMATICAL PREFREEZE COMPLETE ON GKS-B779; HUMAN DECISION GATE. Formula contract verification 9/9 PASS; current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 curve and all current intrinsic nonzero curves are monotone/consistent; Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables produced. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT formally abolished; HEAL unaffected. Current equipment candidate C1.00 retained as mathematical baseline pending later Human Experience tuning; no Product/Game Data/Current active change. Remaining blocker: Base Critical Damage numeric is absent from approved specification. Options 25/50/75/100% were quantified; AI recommends 50% as first candidate but does not freeze without Human approval. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2. TASK-BAL-076 not started."
     },
     {
       "id": "TASK-BAL-076",
@@ -11237,6 +11250,75 @@
       "blocking": false,
       "created_at": "2026-08-25T13:48:31+09:00",
       "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK075-FORMULA-CONTRACT-B779-001",
+      "title": "TASK-BAL-075 B779 Formula contract pre-freeze gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-075",
+      "status": "Passed",
+      "result": "PASS. B779 formula contract verification 9/9: AG, Hit ratio, direct MAGIC_DAMAGE weapon bonus in Studio/Game, Heal noninteraction, no production MAGIC_SUPPORT, Status ceil, DOT fixed lifecycle, CriticalDamage range.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2; formula-contract-verification.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T14:05:05+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-25T14:05:05+09:00",
+        "reason": "Current GKS-B779 formula topology matches approved P8 prerequisites.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T14:05:05+09:00",
+      "updated_at": "2026-08-25T14:05:05+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK075-EQUIPMENT-CURVE-001",
+      "title": "TASK-BAL-075 Full Equipment mathematical curve gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-075",
+      "status": "Passed",
+      "result": "PASS. 308 Current Equipment rows across iLv1..11 were evaluated. All intrinsic nonzero curves are monotone and step-consistent; accessory intrinsic base values remain zero/deferred to P9 MOD/Rarity. Armor full-set HP/MP/Evasion and magic/hit tradeoff sensitivity were calculated. C1.00 Current config retained as mathematical baseline, not Product promotion.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2; full-equipment-performance-curve.csv; equipment-monotonicity-gates.csv; armor-ehp-sensitivity.csv",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T14:05:05+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-25T14:05:05+09:00",
+        "reason": "Mathematical curve gates passed; Human Experience tuning remains later by plan.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T14:05:05+09:00",
+      "updated_at": "2026-08-25T14:05:05+09:00"
+    },
+    {
+      "id": "CHK-BAL-TASK075-CRITICAL-DAMAGE-DECISION-001",
+      "title": "TASK-BAL-075 Base Critical Damage Human Decision Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-075",
+      "status": "Pending",
+      "result": "Pending Human decision. Specification fixes Critical ordering/range/representation and weapon base Crit 5%, but no Base Critical Damage numeric exists. 25/50/75/100% sensitivity prepared; AI recommends 50% first candidate.",
+      "evidence": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2; critical-damage-decision.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-25T14:05:05+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-25T14:05:05+09:00",
+      "updated_at": "2026-08-25T14:05:05+09:00"
     }
   ],
   "workflow": {
@@ -12084,6 +12166,14 @@
       "task_id": "TASK-BAL-075",
       "created_at": "2026-08-25T13:48:31+09:00",
       "updated_at": "2026-08-25T13:48:31+09:00"
+    },
+    {
+      "id": "HIST-BAL-TASK075-P8-PREFREEZE-001",
+      "title": "TASK-BAL-075 Formula/Equipment mathematical pre-freeze completed",
+      "summary": "Human continuation approval under verified GKS-B779. DEVELOPMENT_ONLY P8 analysis completed without Source/Game Data/Current active changes. Formula contract 9/9 PASS; 308-row Equipment iLv1..11 Full Curve and Formula Sensitivity generated; current C1.00 config retained as mathematical baseline. MAGIC_SUPPORT remains formally abolished and all magic_weapon_bonus→MAGIC_DAMAGE. Remaining single Human Decision is Base Critical Damage numeric; 25/50/75/100% quantified, AI recommends 50% but did not Freeze. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip sha256=40c9612b2db728bac6cd706f1599f1e7f1c369c08774af762553f2b8dbf91ec2. TASK-BAL-076 not started.",
+      "task_id": "TASK-BAL-075",
+      "created_at": "2026-08-25T14:05:05+09:00",
+      "updated_at": "2026-08-25T14:05:05+09:00"
     }
   ],
   "authority": {
