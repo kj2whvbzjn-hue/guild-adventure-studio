@@ -12,7 +12,6 @@
   const PASSIVE_COMBAT_CAPABILITY_OWNER=Object.freeze({DUAL_WIELD:'PAS-DUAL-WIELD-001'});
   const NUMERIC_OPERATIONS=Object.freeze(['RELATIVE_PERCENT','FLAT_ADD','ADDITIVE_POINT','SUBTRACTIVE_POINT']);
   const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion',CRITICAL_RATE:'base_critical_rate'});
-  const MAGIC_WEAPON_CHANNEL_BY_BASE_ITEM_TYPE=Object.freeze({'杖':'MAGIC_DAMAGE','ワンド':'MAGIC_DAMAGE','魔導書':'MAGIC_SUPPORT'});
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function object(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
   function req(v,label){const s=String(v??'').trim();if(!s)throw new Error(label+'が必要です。');return s}
@@ -32,20 +31,6 @@
   function baseEquipmentContribution(record){
     const checked=validateFormalEquipment(record),out={};
     EQUIPMENT_FIELDS.forEach(k=>out[k]=checked[k]==null?0:finite(checked[k],`equipment.${k}`));
-    return out;
-  }
-  function magicWeaponChannelForBaseItemType(baseItemType){return MAGIC_WEAPON_CHANNEL_BY_BASE_ITEM_TYPE[String(baseItemType||'').trim()]||null;}
-  function splitMagicWeaponContribution(rows){
-    const out={magic_damage_bonus:0,magic_support_bonus:0,unrouted:[]};
-    for(const row of Array.isArray(rows)?rows:[]){
-      const baseItemType=String(row?.base_item_type??row?.generation?.base_item_type??row?.generation?.generation_input?.base_item_type??'').trim();
-      const raw=row?.modified?.magic_weapon_bonus??row?.bonuses?.magicWeaponBonus??row?.magic_weapon_bonus??0;
-      const value=raw==null?0:finite(raw,`equipment.${baseItemType||'unknown'}.magic_weapon_bonus`);
-      const channel=magicWeaponChannelForBaseItemType(baseItemType);
-      if(channel==='MAGIC_DAMAGE')out.magic_damage_bonus+=value;
-      else if(channel==='MAGIC_SUPPORT')out.magic_support_bonus+=value;
-      else if(value!==0)out.unrouted.push({base_item_type:baseItemType,value});
-    }
     return out;
   }
   function validateModDefinition(definition,options={}){
@@ -131,5 +116,5 @@
     return {passive_id:checked.id,tags:checked.tags.slice(),ability_conditions:clone(checked.params.ability_conditions),modifier_ids:checked.params.mod_ids.slice(),modifiers,effect_ids:checked.params.effect_ids.slice(),combat_capabilities:checked.params.combat_capabilities.slice()};
   }
   function sumEquipmentContributions(rows){const total=Object.fromEntries(EQUIPMENT_FIELDS.map(k=>[k,0]));for(const row of rows||[])for(const k of EQUIPMENT_FIELDS)total[k]+=Number(row?.modified?.[k])||0;return total}
-  return Object.freeze({EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,PASSIVE_COMBAT_CAPABILITY_OWNER,NUMERIC_OPERATIONS,TARGET_TO_FIELD,MAGIC_WEAPON_CHANNEL_BY_BASE_ITEM_TYPE,validateFormalEquipment,baseEquipmentContribution,magicWeaponChannelForBaseItemType,splitMagicWeaponContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
+  return Object.freeze({EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,PASSIVE_COMBAT_CAPABILITY_OWNER,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
 });

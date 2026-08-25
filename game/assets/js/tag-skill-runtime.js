@@ -423,8 +423,7 @@ function currentBattleHitRatePercent(attacker,target){const accuracy=currentBatt
 function currentBattleCriticalRatePercent(unit){const explicit=currentBattleFinite(unit?.criticalRate??unit?.critical_rate,NaN);if(Number.isFinite(explicit))return Math.max(0,Math.min(100,explicit));const weaponRate=currentBattleFinite(unit?.baseCriticalRate??unit?.base_critical_rate,0);return Math.max(0,Math.min(100,weaponRate*100))}
 function currentBattleCriticalDamagePercent(unit){return Math.max(0,Math.min(700,currentBattleFinite(unit?.criticalDamage??unit?.critical_damage,0)))}
 function currentBattleMagicIncreaseRate(unit){const rate=currentBattleFinite(unit?.magicIncreaseRate??unit?.magic_increase_rate,1);return Math.max(0,rate)}
-function currentBattleMagicDamageWeaponBonus(unit){return Math.max(0,currentBattleFinite(unit?.magicDamageWeaponBonus??unit?.magic_damage_weapon_bonus,0))}
-function currentBattleMagicSupportWeaponBonus(unit){return Math.max(0,currentBattleFinite(unit?.magicSupportWeaponBonus??unit?.magic_support_weapon_bonus,0))}
+function currentBattleMagicWeaponBonus(unit){return Math.max(0,currentBattleFinite(unit?.magicWeaponBonus??unit?.magic_weapon_bonus,0))}
 function currentBattleRoll(source,target,skillId,purpose,index=0){const sequence=Math.max(0,Math.floor(Number(battle.formalRandomSequence)||0));battle.formalRandomSequence=sequence+1;const seed=String(battle.p0113TieSeed??'FORMAL-BATTLE');const text=`${seed}|${battle.tick}|${source?.id||''}|${target?.id||''}|${skillId||''}|${purpose}|${index}|${sequence}`;let hash;if(typeof p0113Hash32==='function')hash=p0113Hash32(text);else{hash=2166136261>>>0;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619)>>>0}}return(hash>>>0)/4294967296}
 function resolveRuntimeDamageContracts(compiled){
  const contracts=(compiled?.definition?.runtimeContracts?.effectContracts||[]).filter(x=>x?.type==='DAMAGE');
@@ -435,7 +434,7 @@ function resolveRuntimeDamageContracts(compiled){
 }
 function calculateCurrentSkillBaseDamage(attacker,contract){
  if(contract.damageType==='FIXED')return Math.max(0,contract.power);
- if(contract.damageType==='MAGICAL')return Math.max(0,currentBattleMagicIncreaseRate(attacker)*contract.power*(1+currentBattleMagicDamageWeaponBonus(attacker)/100));
+ if(contract.damageType==='MAGICAL')return Math.max(0,currentBattleMagicIncreaseRate(attacker)*contract.power*(1+currentBattleMagicWeaponBonus(attacker)/100));
  return Math.max(0,effectiveAttackValue(attacker)*(contract.power/100));
 }
 function applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{hitIndex=0}={}){
@@ -463,9 +462,9 @@ function resolveRuntimeHealContract(compiled){
 function executeRuntimeHealRuntime(source,target,compiled){
  const resolved=resolveRuntimeHealContract(compiled);if(!resolved.formal)return null;
  if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
- const magicIncreaseRate=currentBattleMagicIncreaseRate(source),magicSupportWeaponBonus=currentBattleMagicSupportWeaponBonus(source),requested=Math.max(0,Math.ceil(magicIncreaseRate*resolved.contract.power*(1+magicSupportWeaponBonus/100))),result=applyTaggedHeal(source,target,compiled,requested);
- typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,magic_increase_rate:magicIncreaseRate,magic_support_weapon_bonus:magicSupportWeaponBonus,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
- return{...result,runtimeContracts:true,effectContract:{...resolved.contract},magicIncreaseRate,magicSupportWeaponBonus};
+ const magicIncreaseRate=currentBattleMagicIncreaseRate(source),requested=Math.max(0,Math.ceil(magicIncreaseRate*resolved.contract.power)),result=applyTaggedHeal(source,target,compiled,requested);
+ typeof recordValidationEvent==='function'&&recordValidationEvent('skill_heal_executed',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,power:resolved.contract.power,magic_increase_rate:magicIncreaseRate,requested_heal:requested,applied_heal:result.healed,overheal:result.overheal});
+ return{...result,runtimeContracts:true,effectContract:{...resolved.contract},magicIncreaseRate};
 }
 function applyTaggedDamage(attacker,target,damage,skill){
  const before=target.hp,defense=applyDefenseResistance(target,damage),shield=consumeShieldDamage(target,defense.damage,{sourceId:attacker.id,skillId:skill.id,damageType:'tag_attack'});target.hp=Math.max(0,target.hp-shield.hpDamage);const applied=before-target.hp;
