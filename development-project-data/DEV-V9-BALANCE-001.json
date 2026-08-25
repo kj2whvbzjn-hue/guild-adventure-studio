@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T12:29:22.747Z"
+    "updated_at": "2026-08-25T12:40:47.788Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical Skill Budget cross-defense / level-gap calibration",
-    "goal": "Physical Skill Budgetは同Jobミラーや95%超の勝率飽和帯をFreeze根拠にしない。攻撃側Playerと防御側Monsterを分離し、Level差と高耐久・高回避の防御特性を横断して、同一条件・同一SeedのSkillなしControlに対する勝率変化と補助KPIからSkill影響量を測定する。Physicalのみを対象とし、Magic/Heal/Status/Utilityへは進まない。"
+    "theme": "TASK-BAL-074 Physical Skill Level→Budget allocation formula calibration",
+    "goal": "Skill Budget=SLvを総Budget Authorityとし、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ実測換算して振り分ける式を確定する。Rangeは乗算M_Rangeで扱いTargetCostを二重加算しない。まずSLv→Damage変換Test 1の実行承認待ち。Physicalのみ。"
   },
   "project_rules": [
     {
@@ -2120,14 +2120,27 @@
     {
       "id": "DEC-BAL-PHYSICAL-SKILL-BUDGET-CALC-001",
       "title": "Physical Skill Budget算出方法を段階換算方式とする",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "TASK-BAL-074のPhysical Skill BudgetはDamage倍率だけで決めない。通常攻撃1 actionを共通基準とし、Current RuntimeのHit/Evasion、Resistance、Critical、rounding/floor、HP適用まで通った実Damageと、同一Player/Monster/Equipment/Seed条件のSkillなしControlに対するdelta WinRate(pp)をpaired comparisonする。算出順は (1) DAMAGE_POINT: 1Hit/single target/MP0/CD0/Cast0に分離し、PhysicalPower%=round(100+k*DamageBudget) のk候補0.5/1/2/4% per pointをBudget 1/10/25で測定し、1-point識別可能性、単調性、高Budgetでの非暴走、勝率飽和回避、Level差および高耐久/高回避間の安定性からDamage Budget 1 point換算を決める。(2) MULTI_HIT_EQUIVALENCE: single-hit基準とmulti-hitの実戦性能が等価になるtotal Powerを求め、MultiHitCost(H)=DamageBudget(P_single_reference)-DamageBudget(P_multi_equivalent) とする。(3) MP_CREDIT: MPだけを変更し、MP0基準と同等性能へ戻すために必要なequivalent Powerから MPCredit(M)=DamageBudget(P_equivalent_with_MP)-DamageBudget(P_reference_MP0) を求める。MPが実際の使用回数/Basic Action置換へ影響しない条件ではMP価値を決めない。非線形ならtable/curveとする。(4) COOLDOWN_CREDIT: CDだけを変更し、CD0基準と同等性能へ戻すequivalent Powerから CooldownCredit(CD)=DamageBudget(P_equivalent_with_CD)-DamageBudget(P_reference_CD0) を求める。再使用機会を制限しないCDはcredit 0とする。(5) CAST_CREDIT: Castだけを変更し、Cast0基準と同等性能へ戻すequivalent Powerから CastCredit(T)=DamageBudget(P_equivalent_with_Cast)-DamageBudget(P_reference_Cast0) を求める。Cast occupancy、使用回数、interrupt/fizzleを補助KPIとする。(6) TARGET_COUNT_COST: 1対1では算出せず、複数Monster formationでsingle-target基準と等価になる1体当たりPowerを求め、TargetCost(N)=DamageBudget(P_single_reference)-DamageBudget(P_multi_target_equivalent_per_target) とする。total damage、overkill、kill数、enemy action減少、battle tick、delta WinRateを併用する。(7) TOTAL_PHYSICAL_BUDGET: 概念式 PhysicalSkillBudget=DamageBudget+MultiHitCost+TargetCost-MPCredit-CooldownCredit-CastCredit で統合する。(8) SAME_BUDGET_EQUIVALENCE: 高Damage/高MP/長CD/multi-hit/multi-target/長Cast等の異構成Skillを同Budgetに調整し、同一Level差・防御型・Seed Controlで等価性を検証する。同Budget許容差は任意の勝率ppで先決めせず、DAMAGE_POINT段階で実測した1 Budget point相当の実戦差を基準とする。Gate超過時は試行数だけを増やさず、乖離原因の換算table/係数へ戻る。本Decisionは算出方法の登録のみであり、k、MultiHitCost、MPCredit、CooldownCredit、CastCredit、TargetCost、総Budget係数、等価許容差の数値は未Freeze。各段階のSimulation/Demo/実機テスト/Result評価はRULE-BAL-TEST-PLAN-APPROVAL-001に従い、具体テスト計画をHumanが別途明示承認するまで実行しない。Magic/Heal/Status/UtilityはこのPhysical算出工程へ混在させない。",
-      "rationale": "HumanがPhysical BudgetをDamageだけでなくMulti-hit、MP、Cooldown、Cast、Target数まで含めて算出する方法を確認し、この内容を管理JSONへ登録するよう明示したため。数値係数の採用およびテスト実行承認とは分離する。",
+      "rationale": "HumanがPhysical BudgetをDamageだけでなくMulti-hit、MP、Cooldown、Cast、Target数まで含めて算出する方法を確認し、この内容を管理JSONへ登録するよう明示したため。数値係数の採用およびテスト実行承認とは分離する。 Human clarification 2026-08-25: 実際の目的はPhysical componentを独立Budgetとして終わらせることではなく、正式構造 Skill Budget = SLv を入力としてDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を作ること。また旧DecisionのTargetCost加算はCurrent Skill BudgetのRange multiplierと二重計上になるため、新Decisionへ置換する。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-25T21:17:00+09:00",
       "created_at": "2026-08-25T21:24:00+09:00",
-      "updated_at": "2026-08-25T21:24:00+09:00"
+      "updated_at": "2026-08-25T21:37:00+09:00",
+      "superseded_by": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001"
+    },
+    {
+      "id": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001",
+      "title": "Skill LevelをPhysical Skill性能へ振り分けるBudget式を確定する",
+      "status": "Approved",
+      "text": "TASK-BAL-074 Physical redoの最終目的は、Physical Budget 1 pointの単独換算だけではなく、正式構造『Skill Budget = SLv』を入力として、Skill Levelの総BudgetをDamage、Multi-hit、MP、Cooldown、Cast、Rangeへ一意に振り分けられるPhysical Skill Level allocation formulaを作ることである。Physical onlyの基本制約は B_spent = SLv。Current Budget構造に合わせ、Range/対象範囲は加算TargetCostではなく乗算 M_Range で扱い、二重課金しない。概念式は SLv = M_Range * (sum(C_Damage(Power_i)) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)。逆算時は EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit とし、残Budgetを各DAMAGE Hitへ配分して Power = f_Damage(B_Damage) を求める。Damage、Multi-hit、MP、Cooldown、Cast、Rangeの各変換関数/表は実測前に固定しない。同じSLvなら構成が異なっても概ね同価値、かつ同一構成ではSLv上昇に従い実戦価値が単調増加することを最終Gateとする。Skill Level 5/10/20等で等価性を確認し、SLv5 < SLv10 < SLv20 の順序が構成横断で成立することを確認する。本DecisionはPhysical only。Magic/Heal/Status/Utilityは含めない。具体的な能力値requirement閾値・習得Cost・unlock timingはTASK-BAL-080の責務であり、本式へ混在させない。各Simulation/TestはRULE-BAL-TEST-PLAN-APPROVAL-001に従い、個別計画のHuman明示承認なしに実行しない。",
+      "rationale": "Humanが『実際はスキルレベルというものがあり、それの振り分けの式を作る』ことを明示し、さらに今回提示した算出テスト計画をこの理解で進めるよう承認したため。旧Physical Budget計画はSLvを総BudgetのAuthorityとして中心化しておらず、RangeをTargetCost加算で扱っていたため修正する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-25T21:37:00+09:00",
+      "created_at": "2026-08-25T21:37:00+09:00",
+      "updated_at": "2026-08-25T21:37:00+09:00"
     }
   ],
   "specifications": [
@@ -6800,7 +6813,7 @@
         "TASK-BAL-073K",
         "TASK-BAL-050"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。\n- Physical Budget Calculation Plan (DEC-BAL-PHYSICAL-SKILL-BUDGET-CALC-001):\n  1. DAMAGE_POINT: 1Hit/single/MP0/CD0/Cast0でDamage Budget 1 point→Physical Power%換算を確定する。\n  2. MULTI_HIT_EQUIVALENCE: single-hitと等価になるmulti-hit total Powerを逆算しHit数補正をDamage Budget point化する。\n  3. MP_CREDIT: MP制約による性能低下を同等性能へ戻す追加Damage量からBudget credit化する。実際に制約しないMP条件は係数根拠にしない。\n  4. COOLDOWN_CREDIT: Skill再使用頻度を実際に下げるCDだけを、同等性能へ戻す追加Damage量からBudget credit化する。\n  5. CAST_CREDIT: Cast occupancy/interrupt/fizzleを含む性能低下を、同等性能へ戻す追加Damage量からBudget credit化する。\n  6. TARGET_COUNT_COST: 複数Monster Formationでsingle-targetと等価になる1体当たりPowerを逆算しTarget数価値をDamage Budget point化する。\n  7. TOTAL_PHYSICAL_BUDGET: DamageBudget + MultiHitCost + TargetCost - MPCredit - CooldownCredit - CastCredit を統合枠とする。係数は実測前にFreezeしない。\n  8. SAME_BUDGET_EQUIVALENCE: 異構成の同Budget Skillを同一Level差/防御型/Seed Controlで比較し、1 Budget point実測価値を基準に等価性Gateを行う。\n- このCalculation Plan登録はテスト実行承認ではない。各段階はRULE-BAL-TEST-PLAN-APPROVAL-001に従い、具体条件・KPI・Seed・試行数・停止条件を事前報告しHuman明示承認後にのみ実行する。\n- Physical only。Magic/Heal/Status/Utilityへは進まない。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。\n## TASK-BAL-074 Physical Skill Level allocation formula plan\n- Final Goal: 正式構造 Skill Budget = SLv を入力とし、Physical SkillのDamage / Multi-hit / MP / Cooldown / Cast / Rangeへ総Budgetを振り分ける式を確定する。\n- Budget identity: B_spent = SLv。Physical BudgetをSLvと独立した別スケールとして最終化しない。\n- Allocation framework (DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001):\n  - SLv = M_Range * (ΣC_Damage(Power_i) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)\n  - EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit(H)\n  - 残EffectBudgetをDAMAGE Hitへ配分し、Power = f_Damage(B_Damage)で最終Physical Powerを算出する。\n  - Range/対象範囲はCurrent Budget構造に従う乗算M_Rangeで扱い、加算TargetCostを別途加えて二重課金しない。\n- Test 1 / SLv→Damage conversion:\n  - Isolate: 1Hit / SINGLE / MP0 / CD0 / Cast0 / Physical / Passive-MODなし。\n  - Candidate: Power = round(100 + k × SLv), k={0.5,1,2,4}%/SLv。\n  - Initial screen: Player Lv20、Monster Lv30、high_durability_heavy_armor + high_evasion_light_armor、SLv={1,5,10,20}、SkillなしControl、same seed。\n  - Initial scale: 34 conditions × 100 seeds = 3,400 battles。\n  - KPI: ΔWinRate(pp)、SLv 1増加あたりΔWinRate slope、actual damage/use、Hit率、average ticks、Action数。\n  - Gate: SLv1が丸めで消えない、SLv増加で単調増加、SLv20で即飽和しない、防御型の片側だけに極端偏重しない。上位候補だけTest 2へ進める。\n- Test 2 / level-gap robustness:\n  - Test 1上位2候補のみ。\n  - Player Lv20、Monster Lv25/30/35、high_durability_heavy_armor / high_evasion_light_armor、SLv={1,5,10,20}、same-seed Control。\n  - 目的: SLv→Damage変換がLevel差で崩れないか確認し、C_Damage(Power)と逆関数f_Damage(Budget)のFreeze候補を1本に絞る。\n- Test 3 / Multi-hit cost:\n  - 同一SLvで1/2/3/4 Hitを比較し、single-hit基準と同等の実戦価値となるmulti-hit total Powerを逆算する。\n  - C_MultiHit(H) = DamageBudget(P_single_reference) - DamageBudget(P_multi_equivalent)。\n  - Current formal multi-hitの各DAMAGE effectContract独立Hit semanticsをそのまま使用する。\n- Test 4 / MP refund:\n  - 同一SLvでMP={0,2,4,6,8}を比較し、MP0基準と等価に戻すため必要な追加Damage Budgetを逆算する。\n  - R_MP(M) = DamageBudget(P_equivalent_with_MP) - DamageBudget(P_reference_MP0)。\n  - MP不足/使用回数/Basic Action置換へ実際に影響しないMP条件は係数根拠にしない。非線形ならtable/curveにする。\n- Test 5 / Cooldown refund:\n  - 同一SLvでCD={0,25,50,100}を比較し、CD0基準と等価に戻す追加Damage BudgetからR_CD(CD)を求める。\n  - 再使用機会を制限せずSkill使用頻度が変わらないCDはrefund 0。\n- Test 6 / Cast refund:\n  - 同一SLvでCast={0,2,4,8}を比較し、Cast0基準と等価に戻す追加Damage BudgetからR_Cast(T)を求める。\n  - Cast occupancy、Skill発動回数、interrupt/fizzle、ΔWinRate、actual damageを併記する。\n- Test 7 / Range multiplier:\n  - 1対1では算出しない。複数Monster Formation専用テストを別Human承認後に実施する。\n  - SINGLE / FRONT / RANDOM N / ALLで同一SLvの等価per-target Powerを探索し、M_Rangeを逆算する。\n  - total damage、overkill、kill数、enemy action減少、battle ticks、ΔWinRateを併用する。\n- Test 8 / Skill Level allocation formula validation:\n  - 同一SLvで high-damage/no-cost、multi-hit、MP型、CD型、MP+CD型、multi-target等の異構成Skillをallocation formulaだけで生成する。\n  - SLv={5,10,20}で比較し、同じSLvなら異構成Skillが1 Budget point相当以内の実戦差に収まること、かつSLv5 < SLv10 < SLv20が構成横断で成立することをGateとする。\n  - Gate超過時は試行数だけを増やさず、C_Damage / C_MultiHit / R_MP / R_CD / R_Cast / M_Rangeのどこが乖離原因か特定して該当Testへ戻る。\n- Execution Gate: この登録は計画登録。個別TestのSimulation/Demo/実機依頼/Result評価は、RULE-BAL-TEST-PLAN-APPROVAL-001に従いそのTestの実行承認を別途得るまで開始しない。\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -6809,8 +6822,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T21:24:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Expected Stats、Current-runtime Equipped Basic Attack、Player↔Monster Physical Exchangeの基準Evidenceは保持する。Physical Skill Budget Formulaは未確定。旧同Jobミラー/高勝率飽和帯のSkill probeはFormal Skill実行経路の技術確認に限定し、Budget数値Freeze根拠には使用しない。今後はLevel差×防御特性横断の同一Seed Control比較で再評価する。",
+      "updated_at": "2026-08-25T21:37:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Final objective is Skill Budget=SLv based Physical Skill Level allocation formula. Physical component conversion values remain unfrozen. Old same-Job/high-winrate probes remain execution-path evidence only. Next planned evidence is Test 1 SLv→Damage conversion; no Simulation/Test has been executed under the revised plan yet.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -6820,15 +6833,15 @@
         "recorded_at": "2026-08-25T16:56:00+09:00"
       },
       "redo_scope": {
-        "primary_goal": "Physical Skill Budget Formulaを作るための基準Evidence再生産と物理Budget式検証",
-        "current_step": "P3 Physical Skill Budget calculation methodology registered; next is DAMAGE_POINT concrete test planning, execution not authorized",
+        "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
+        "current_step": "Physical Skill Level allocation formula plan registered; next is Test 1 SLv→Damage conversion concrete execution approval",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "Physical DAMAGE Budget 1-point conversion calibration after separate Human approval of the concrete test plan",
+        "next_evidence": "Test 1: SLv→Physical Damage conversion screen (k=0.5/1/2/4, SLv=1/5/10/20, Lv20 vs Lv30, heavy/evasion, same-seed Control)",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -6838,7 +6851,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanTestPlanApproval",
+        "next_evidence_status": "AwaitingHumanTestExecutionApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -6961,7 +6974,10 @@
           "retained_role": "Formal G05→G07 Skill execution / runtime sanity evidence only",
           "exclusion_reason": "Opponent matrix was dominated by same-job/high-win-rate conditions and had no same-condition no-skill Control, so it cannot quantify Skill impact across level disadvantage and defensive archetypes.",
           "recorded_at": "2026-08-25T20:47:00+09:00"
-        }
+        },
+        "skill_budget_authority": "Skill Budget = SLv",
+        "allocation_decision_id": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001",
+        "superseded_calculation_decision_id": "DEC-BAL-PHYSICAL-SKILL-BUDGET-CALC-001"
       },
       "evidence_refs": [
         {
