@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T00:18:19.571Z"
+    "updated_at": "2026-08-26T00:27:27.514Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 multi-hit model-form design awaiting Human approval",
-    "goal": "THF BAL074-E06とSWD BAL074-E07のpaired実測から、HitCountだけの固定Costを使わず、Accuracy/TotalPower依存をどう表現するかを設計する。次の設計/実行はHuman承認まで停止。"
+    "theme": "TASK-BAL-074 multi-hit composition + single-reference extension awaiting Human approval",
+    "goal": "TotalPower/effective-hit-count static premium modelの構造採否をHuman確認し、承認された場合のみTHF/SWDのP160/P180/P200 single-reference 18条件で既存E06/E07のP_eq上限不足を一括解消する。"
   },
   "project_rules": [
     {
@@ -2360,6 +2360,18 @@
       "approved_at": "2026-08-26T08:45:00+09:00",
       "created_at": "2026-08-26T08:45:00+09:00",
       "updated_at": "2026-08-26T08:45:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-MULTIHIT-MODEL-DESIGN-START-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Humanの「進めて」により、retained THF BAL074-E06 + SWD BAL074-E07だけを使ったmulti-hit model-form比較をDEVELOPMENT_ONLYで実施する。新Battle/Simulation、Package生成、C_MultiHit Freeze、MP/CD/Cast/Range開始は承認しない。",
+      "rationale": "SWD cross-accuracy測定完了後に登録されていたnext_required_decisionを実行するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T09:22:40+09:00",
+      "created_at": "2026-08-26T09:22:40+09:00",
+      "updated_at": "2026-08-26T09:22:40+09:00"
     }
   ],
   "specifications": [
@@ -7041,8 +7053,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T09:15:31+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. SWD low-accuracy multi-hit Human result PASS: 33/33 jobs, 3300/3300 trials, error0, Controls Lv23/24/25=48/43/36%. SWD multi-hit observed hit-rate mean=29.09% versus THF E06 mean=49.31%. TP110 shows materially larger SWD multi-hit advantage than THF across H2/H3/H4, confirming strong low-accuracy benefit in that band. TP120 differences are mixed, so the value is not explained by HitCount alone or by a simple universal low-accuracy uplift. Universal fixed C_MultiHit(H) is rejected; Accuracy/TotalPower-aware model-form selection is required. No C_MultiHit Freeze, no MP/CD/Cast/Range execution, and no new Battle Package is authorized.",
+      "updated_at": "2026-08-26T09:22:40+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. E06/E07 design-only model comparison completed. Runtime Accuracy/Evasion-dependent Skill Cost is rejected because Skill Budget=SLv is static; Accuracy difference is retained as a calibration envelope. Fixed additive H-only C_MultiHit remains rejected. Selected validation candidate: T=ΣPower_i; H_eff=T^2/Σ(Power_i^2); C_Damage_Total=max(0,(T-100)/2); C_MultiHit=(T/100)*K(H_eff); C_Effect=C_Damage_Total+C_MultiHit. K(1)=0, K>=0 and nondecreasing. This composition is NOT adopted/frozen because it changes the previously approved per-hit ΣC_Damage composition. Next proposed calibration bridge is THF20+SWD20 vs HNT23/24/25, Single P160/P180/P200 only, 18 conditions/1800 battles, seeds 749600000..749600099. No Battle Package, no new Evidence, no MP/CD/Cast/Range authorization.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7053,14 +7065,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "SWD low-accuracy cross-accuracy Human result evaluated PASS. Paired THF E06 + SWD E07 reject a universal H-only fixed C_MultiHit. Stop here; next is model-form design only after separate Human approval. No new Battle Package authorized.",
+        "current_step": "Multi-hit model-form design completed. Selected validation candidate uses TotalPower + effective hit count and a static K(H_eff); runtime Accuracy is calibration context only. Structural adoption and numeric K are NOT approved/frozen. Exact 18-condition P160/P180/P200 single-reference extension is awaiting Human approval; no package generated.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "EVD-BAL-074-MULTIHIT-SWD-001",
+        "next_evidence": "BAL074-E06 + BAL074-E07 remain the current reusable authorities. No new Evidence from design-only work.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7070,7 +7082,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "CrossAccuracyAuthorityRetained_ModelDesignAwaitingHumanApproval",
+        "next_evidence_status": "AwaitingHumanStructuralAndSingleReferencePlanApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -11473,6 +11485,242 @@
             "role": "SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN"
           },
           "evaluated_at": "2026-08-26T08:50:00+09:00"
+        },
+        "multi_hit_model_form_design": {
+          "status": "DesignExecuted_CandidateSelected_StructuralApprovalPending",
+          "design_execution_decision_id": "DEC-BAL-TASK074-MULTIHIT-MODEL-DESIGN-START-001",
+          "inputs": [
+            {
+              "evidence_id": "EVD-BAL-074-MULTIHIT-THF-001",
+              "file": "BAL074-E06.json",
+              "sha256": "e5ec8be1cf779abcc85dcc83baf62a8a1151b22153c254c88a5e1cd0241416ed",
+              "role": "medium-accuracy (~50% hit) retained numeric authority"
+            },
+            {
+              "evidence_id": "EVD-BAL-074-MULTIHIT-SWD-001",
+              "file": "BAL074-E07.json",
+              "sha256": "5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
+              "role": "low-accuracy (~30% hit) retained numeric authority"
+            }
+          ],
+          "observed_design_facts": {
+            "THF_observed_multi_hit_rate_mean": 0.4930961438888889,
+            "SWD_observed_multi_hit_rate_mean": 0.2909033555555556,
+            "accuracy_effect_is_material": true,
+            "binary_winrate_totalpower_effect_is_unstable": true,
+            "continuous_damage_uplift_totalpower_stability": {
+              "THF": {
+                "H2": {
+                  "TP110_uplift_percent": 0.416,
+                  "TP120_uplift_percent": 1.165,
+                  "absolute_difference_pp": 0.75
+                },
+                "H3": {
+                  "TP110_uplift_percent": 3.509,
+                  "TP120_uplift_percent": 3.073,
+                  "absolute_difference_pp": 0.436
+                },
+                "H4": {
+                  "TP110_uplift_percent": 3.357,
+                  "TP120_uplift_percent": 3.068,
+                  "absolute_difference_pp": 0.288
+                }
+              },
+              "SWD": {
+                "H2": {
+                  "TP110_uplift_percent": 2.364,
+                  "TP120_uplift_percent": 2.115,
+                  "absolute_difference_pp": 0.249
+                },
+                "H3": {
+                  "TP110_uplift_percent": 6.882,
+                  "TP120_uplift_percent": 6.12,
+                  "absolute_difference_pp": 0.762
+                },
+                "H4": {
+                  "TP110_uplift_percent": 9.621,
+                  "TP120_uplift_percent": 8.839,
+                  "absolute_difference_pp": 0.783
+                }
+              }
+            },
+            "max_TP110_vs_TP120_continuous_uplift_difference_pp": 0.783,
+            "interpretation": "ΔWinRateはTP110/120で閾値影響が大きい一方、same-TotalPower Single比のaverage ally damage upliftは各Role×HでTP110/120差が最大0.783 percentage pointに留まる。したがってTotalPowerごとの完全別tableより、TotalPowerに比例するpremium formを先に検証する方が現在Evidenceに対してparsimonious。"
+          },
+          "model_comparison": [
+            {
+              "id": "MH-MODEL-A-H-ONLY-FIXED",
+              "form": "C_MultiHit = K_H",
+              "status": "Rejected",
+              "reason": "E06/E07でAccuracy帯による実戦価値差が確認され、固定加算だけではunder/over-priceが大きい。またmulti-hitのreliabilityは攻撃全体のTotalPowerへ作用する。"
+            },
+            {
+              "id": "MH-MODEL-B-RUNTIME-HITRATE",
+              "form": "C_MultiHit = F(TotalPower, H, runtime HitRate)",
+              "status": "RejectedForStaticSkillBudget",
+              "reason": "Skill Budget=SLvはSkill固有のauthoring budgetであり、実戦相手のEvasionや使用者Accuracyで同じSkillの必要SLvが変化するmodelはstatic budget authorityと整合しない。Accuracy差はformula inputではなくcalibration envelopeとして使用する。"
+            },
+            {
+              "id": "MH-MODEL-C-TOTALPOWER-H",
+              "form": "C_MultiHit = (TotalPower / 100) * K_H",
+              "status": "SupersededByEffectiveHitCountVariant",
+              "reason": "balanced splitには適合するが、109+1のような偏った2Hitと55+55を同額にしてしまい、Current contractが許す任意Power配列を正しく価格化できない。"
+            },
+            {
+              "id": "MH-MODEL-D-TOTALPOWER-HEFF",
+              "form": "T = sum(Power_i); H_eff = T^2 / sum(Power_i^2); C_MultiHit = (T / 100) * K(H_eff)",
+              "status": "SelectedValidationCandidate",
+              "reason": "Skill固有のstatic costを維持し、TotalPower全体へpremiumを掛け、Hit配分が均等なほど独立Hitによる分散低減が大きいことをPower配列から表現できる。equal splitではH_eff=H、1Hitまたは極端な偏りではH_eff→1となる。",
+              "mathematical_basis": "同一hit probability pで独立Hitとした場合、landed-power varianceはp(1-p)*sum(Power_i^2)。同じTotalPower Tの1Hit varianceはp(1-p)*T^2。H_eff=T^2/sum(Power_i^2)はrelative variance reductionを表すeffective hit count。"
+            }
+          ],
+          "selected_validation_candidate": {
+            "id": "MULTIHIT_STATIC_POWER_SCALED_HEFF",
+            "domain": {
+              "physical_damage_only": true,
+              "total_power_min": 100,
+              "measured_effective_hit_count_range": [
+                1,
+                4
+              ],
+              "runtime_accuracy_is_formula_input": false
+            },
+            "definitions": {
+              "TotalPower_T": "T = Σ Power_i",
+              "effective_hit_count": "H_eff = T^2 / Σ(Power_i^2)",
+              "single_damage_cost": "C_Damage_Total(T) = max(0, (T - 100) / 2)",
+              "multi_hit_premium": "C_MultiHit(T,Power_i...) = (T / 100) * K(H_eff)",
+              "effect_cost_candidate": "C_Effect = C_Damage_Total(T) + C_MultiHit(T,Power_i...)"
+            },
+            "constraints": [
+              "K(1)=0",
+              "K(H_eff)>=0",
+              "K must be nondecreasing over the calibrated H_eff range",
+              "No negative multi-hit refund",
+              "Actual runtime Accuracy/Evasion does not change Skill Level cost",
+              "THF(~50%) and SWD(~30%) are calibration/validation envelopes, not formula inputs",
+              "Do not apply C_Damage_1Hit independently to per-hit Power values below100"
+            ],
+            "coefficient_status": "UNSET",
+            "freeze_status": "NOT_FROZEN",
+            "structural_status": "AWAITING_HUMAN_APPROVAL",
+            "reason_structural_approval_required": "Previously approved allocation structure used Σ C_Damage(Power_i). The selected candidate instead prices the DAMAGE group by TotalPower and adds a distribution-aware premium. This resolves the negative per-hit-cost defect but is a composition change and must not be silently adopted."
+          },
+          "design_result": "Accuracy dependency is real, but runtime Accuracy/Evasion is not a valid direct Skill-Budget input. Selected validation candidate is a static TotalPower-scaled, effective-hit-count premium. Numeric K(H_eff) is intentionally not selected from the current truncated P_eq range.",
+          "designed_at": "2026-08-26T09:22:40+09:00"
+        },
+        "multi_hit_single_reference_extension_plan": {
+          "status": "PlanProposed_AwaitingHumanApproval",
+          "execution_authorized": false,
+          "decision_question": "Can the retained THF E06 + SWD E07 multi-hit outcomes be fully bracketed by an extended same-runtime single-hit Power curve so equivalent single Power and candidate K(H_eff) can be calculated without extrapolation?",
+          "confirmed_inputs": {
+            "attackers": [
+              {
+                "job": "THF",
+                "name": "盗賊",
+                "level": 20,
+                "accuracy": 60
+              },
+              {
+                "job": "SWD",
+                "name": "剣士",
+                "level": 20,
+                "accuracy": 36
+              }
+            ],
+            "defender": {
+              "job_code": "HNT",
+              "evidence_name": "狩人",
+              "current_job_id": "JOB-0004",
+              "current_display_name": "弓兵",
+              "levels": [
+                23,
+                24,
+                25
+              ],
+              "item_tier": 7,
+              "evasion": 120
+            },
+            "retained_existing_single_points": [
+              102,
+              110,
+              120,
+              140
+            ],
+            "new_single_points": [
+              160,
+              180,
+              200
+            ],
+            "seed_start": 749600000,
+            "seed_end": 749600099,
+            "trials_per_condition": 100,
+            "required_studio_build": "GKS-B782"
+          },
+          "control_candidate_hypothesis": {
+            "control": "No new Control rerun. Exact same-source/same-seed Controls are already retained in E05/E07; this test only extends the single-hit reference axis.",
+            "candidates": [
+              "Single P160",
+              "Single P180",
+              "Single P200"
+            ],
+            "hypothesis": "The 140 upper bound, not a Formal execution defect, caused the three high SWD P_eq out-of-range rows. A batched P160/P180/P200 extension should bracket those retained multi-hit outcomes without rerunning multi-hit."
+          },
+          "exact_conditions": {
+            "attacker_count": 2,
+            "defender_levels": [
+              23,
+              24,
+              25
+            ],
+            "powers": [
+              160,
+              180,
+              200
+            ],
+            "condition_count": 18,
+            "trials_per_condition": 100,
+            "total_trials": 1800,
+            "same_seed_required": true,
+            "candidate_isolation": "Physical / 1Hit / SINGLE / MP0 / CD0 / Cast0 / Passive none / MOD none"
+          },
+          "primary_kpis": [
+            "Single Power→ΔWinRate curve extension P140→P160→P180→P200 for each attacker×defender row",
+            "Single Power→average ally damage continuous curve extension",
+            "P_eq for every retained E06/E07 multi-hit row by interpolation only",
+            "C_eq=max(0,(P_eq-TotalPower)/2)",
+            "K_est = 100*C_eq/TotalPower for the selected static power-scaled model",
+            "K_est grouped by effective hit count H_eff≈2/3/4 and by THF/SWD calibration envelope"
+          ],
+          "supporting_kpis": [
+            "average ticks",
+            "skill activations",
+            "hits/misses/observed hit rate",
+            "critical hits",
+            "skill damage"
+          ],
+          "pass_fail_freeze_criteria": [
+            "Formal exact: 18/18 jobs, 1800/1800 trials, error0, formal_only, no legacy fallback.",
+            "At every attacker×defender row, average ally damage must be nondecreasing from retained P140 through P160/P180/P200.",
+            "ΔWinRate must be nondecreasing from retained P140 through P160/P180/P200; ties allowed.",
+            "All three previously high out-of-range SWD multi-hit rows must become bracketed by P200. If any remain above range, STOP and propose another batch; do not extrapolate.",
+            "Negative/under-range empirical multi-hit estimates do not create a refund; record C_eq=0 candidate floor.",
+            "This test does not Freeze K(H_eff), C_MultiHit, or the structural composition change.",
+            "No MP/CD/Cast/Range execution."
+          ],
+          "downstream_use": "Produce a complete equivalent-single table from retained E06/E07 without rerunning multi-hit. Then choose numeric K(2), K(3), K(4) and prepare a separate equal-budget validation plan.",
+          "stop_conditions": [
+            "Any Formal binding/error/formal_only/legacy failure",
+            "Any monotonicity failure in the extended single reference",
+            "Any retained high multi-hit outcome still outside P200",
+            "Do not add more Power points in the same run",
+            "Do not generate a Battle Package until Human explicitly approves this exact 18-condition plan",
+            "Do not start MP/CD/Cast/Range"
+          ],
+          "battle_package_generated": false,
+          "standalone_evidence_planned": false,
+          "evidence_reason": "This extension is a calibration bridge. Retain new Evidence only if its completed numeric table becomes required as a later Freeze/recomputation authority.",
+          "proposed_at": "2026-08-26T09:22:40+09:00"
         }
       },
       "evidence_refs": [
@@ -16684,6 +16932,29 @@
       "blocking": false,
       "created_at": "2026-08-26T08:50:00+09:00",
       "updated_at": "2026-08-26T08:50:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-MULTIHIT-MODEL-DESIGN-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Design-only comparison completed from retained E06/E07. Runtime HitRate pricing rejected for static-budget incompatibility; fixed H-only additive cost remains rejected. Selected validation candidate is C_Effect=max(0,(T-100)/2)+(T/100)*K(H_eff), H_eff=T^2/ΣPower_i^2. Numeric K and structural adoption are not frozen. Exact 18-condition single-reference extension is proposed but unauthorized.",
+      "evidence": "BAL074-E06.json sha256=e5ec8be1cf779abcc85dcc83baf62a8a1151b22153c254c88a5e1cd0241416ed; BAL074-E07.json sha256=5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T09:22:40+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T09:22:40+09:00",
+        "reason": "Approved design-only model comparison completed without new execution.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T09:22:40+09:00",
+      "updated_at": "2026-08-26T09:22:40+09:00"
     }
   ],
   "workflow": {
@@ -17710,6 +17981,11 @@
       "at": "2026-08-26T08:50:00+09:00",
       "type": "SWDMultiHitCrossAccuracyResultEvaluated",
       "summary": "SWD20 low-accuracy Single+MultiHit Human実機33条件/3300戦PASS。TP110ではSWDのmulti-hit優位がTHFより大きいが、TP120では差が混在。H-only Universal fixed C_MultiHitを不採用とし、SWD実測をBAL074-E07へ保存。Accuracy/TotalPower-aware model設計は別Human承認待ちで停止。"
+    },
+    {
+      "at": "2026-08-26T09:22:40+09:00",
+      "type": "MultiHitModelFormDesignCompleted",
+      "summary": "Human承認のdesign-only stepを実施。E06/E07からruntime Accuracy依存Costはstatic Skill Budgetと不整合のため不採用。 Per-hit negative-cost問題と任意Hit配分を同時に扱う候補として T=ΣPower, H_eff=T^2/ΣPower^2, C_MultiHit=(T/100)*K(H_eff)を選定。 構造変更・K係数は未承認/未Freeze。P160/P180/P200 Single extension 18条件/1800戦Planを未承認で登録。"
     }
   ],
   "authority": {
