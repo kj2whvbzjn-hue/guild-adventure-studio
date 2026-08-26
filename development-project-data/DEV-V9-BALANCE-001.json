@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T00:50:57.997Z"
+    "updated_at": "2026-08-26T01:11:37.207Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 K(H_eff) coefficient design awaiting Human approval",
-    "goal": "E06/E07/E08のcomplete K_est tableを入力に、非減少K(H_eff)制約を守るK(2)/K(3)/K(4)の選定方式を別Human承認のDESIGN_ONLY工程で決める。現時点では係数選定・Freeze・Battle実行を行わない。"
+    "theme": "TASK-BAL-071-CORR-003 Equipment戦闘仕様完成の開始承認待ち",
+    "goal": "盾・弓を含むEquipment combat identityを未確定0件まで完成してBare Playerを再Freezeする。その後にMonster Job Equipment CoefficientでMonster Coreを再構築する。TASK-BAL-074 Skill数値検証はそれまで停止。"
   },
   "project_rules": [
     {
@@ -2384,6 +2384,42 @@
       "approved_at": "2026-08-26T09:31:57+09:00",
       "created_at": "2026-08-26T09:31:57+09:00",
       "updated_at": "2026-08-26T09:31:57+09:00"
+    },
+    {
+      "id": "DEC-BAL-EQUIPMENT-COMPLETENESS-CORR-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Equipment工程は、下流のMonster/Skill Balanceで使用する代表装備種の戦闘上の役割・Contribution仕様が確定するまで完了/Freeze扱いにしない。少なくとも盾は攻撃回数0という既確定挙動に加えて防御Contributionのowner/channel/係数を確定し、弓は通常攻撃・Range/Targetingとの境界を含む戦闘Identityを確定する。『後段へDeferred』のままBare Player/Monster Coreへ渡さない。盾・弓以外も同様に、下流性能へ影響する未確定Equipment仕様を全件棚卸ししてからEquipment Referenceを再Freezeする。",
+      "rationale": "Human correction: Equipment工程が存在したのに盾・弓等の仕様が未確定のまま下流へ進んでいるのは工程不整合。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:10:23+09:00",
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00"
+    },
+    {
+      "id": "DEC-BAL-MONSTER-EQUIPMENT-MODEL-CORR-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Monsterの正式Balance構造は、(1) Monster Level × Job補正値でMonster基礎Statusを決定し、(2) Monster Status × Job別Monster装備係数でMonster戦闘力/戦闘用Statusを決定する。MonsterへPlayer用Equipment item/CandidateやPlayer基準Equipment Contributionを装着・加算して正式Monster性能を作らない。Player-equivalent equipmentは比較fixtureとしてのみ使用でき、Monster Balance AuthorityまたはSkill Calibration Authorityへ昇格しない。",
+      "rationale": "Human correction: TASK-BAL-073K以降でPlayer標準装備ContributionをMonster装備層の代用にしたのは本来のMonster設計と異なるため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:10:23+09:00",
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-K-MONOTONIC-RETRACTION-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "TASK-BAL-074 multi-hit設計でK(2)<=K(3)<=K(4)またはK(H_eff) nondecreasingを必須条件としない。H2/H3/H4は異なるSkill構造であり、H3>H4をそれ自体で異常/不合格としない。同一Skill構造でPowerだけを上げるSingle Power ladderの単調性Gateは別物なので維持する。",
+      "rationale": "Human correction: 対象となるSkill構造自体が変化するH間に非減少性を要求する数学的根拠がないため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:10:23+09:00",
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00"
     }
   ],
   "specifications": [
@@ -6984,7 +7020,7 @@
       "id": "TASK-BAL-071",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P4 Bare Player ReferenceをLevel×Jobで確定する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 250,
       "depends_on": [
         "TASK-BAL-070",
@@ -7000,14 +7036,14 @@
         "at": "2026-08-24T19:42:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T21:09:03+09:00",
-      "result_scope": "R5_BARE_PLAYER_MULTI_LOADOUT_FROZEN; canonical downstream artifact is DEV-V9-BALANCE-001_TASK-BAL-071-CORR-002_MULTI-LOADOUT-REFERENCE.zip sha256=6579e641e70d885166e24eeaf1048af85f3351e5d6a0800f0a0bf9c49799aad1. TASK-BAL-071-CORR-001 retained as predecessor only."
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "PRIOR FREEZE INVALIDATED FOR DOWNSTREAM. Existing loadout/equipability/weapon-style measurements remain historical inputs, but Equipment phase is incomplete because combat-relevant specifications were deferred, notably shield defensive identity and bow range/combat identity. Do not use TASK-BAL-071 as a frozen Bare Player authority until TASK-BAL-071-CORR-003 completes."
     },
     {
       "id": "TASK-BAL-072",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P5 Monster Core Level×Job Curveを確定する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 251,
       "depends_on": [
         "TASK-BAL-071-CORR-002"
@@ -7021,14 +7057,14 @@
         "at": "2026-08-24T21:12:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T00:00:00+09:00",
-      "result_scope": "R5_MONSTER_CORE_PARTIALLY_SUPERSEDED_BY_TASK-BAL-073D. HP/Evasion/Resistance/identity/Level×Job structure remain usable. For physical five jobs, attack_action_total and expected basic offense fields from TASK-BAL-072 are not downstream authority; TASK-BAL-073D Human measured DPT/Formal profiles are authority."
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "PRIOR MONSTER CORE DOWNSTREAM AUTHORITY INVALIDATED. Level×Job base-stat structure may be retained as structural input, but final Monster combat performance must be rebuilt after Equipment combat identity is complete and the formal Monster Job Equipment Coefficient layer is defined. Player equipment contribution must not be used as the Monster equipment layer."
     },
     {
       "id": "TASK-BAL-073",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P6 HP / Attack / Defense Core Enemy Budget Conversionを確定する",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 252,
       "depends_on": [
         "TASK-BAL-072"
@@ -7042,14 +7078,14 @@
         "at": "2026-08-24T21:25:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T00:00:00+09:00",
-      "result_scope": "R5_CORE_ENEMY_BUDGET_NORMALIZATION_VALID_WITH_OFFENSE_OVERLAY. 1 Core Enemy Budget point = +1% normalized HP/Attack/Defense performance remains frozen. For the physical five jobs, raw Attack Performance equivalents from the original TASK-BAL-073 rows are superseded by TASK-BAL-073D measured DPT/per-strike overlay. HP/Defense one-point equivalents remain usable."
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "UPSTREAM INVALIDATED / REVALIDATION REQUIRED. The abstract 1-point normalized HP/Attack/Defense concept is retained as a candidate normalization definition, but concrete Monster equivalents and downstream authority must be revalidated after TASK-BAL-072-CORR-001 rebuilds Monster Core from Monster Job Equipment Coefficients."
     },
     {
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Doing",
+      "status": "Blocked",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-073",
@@ -7065,8 +7101,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T09:49:37+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Single Reference Extension Human real-device result PASS: 18/18 jobs, 1800/1800 trials, error0, exact binding, formal_only, no legacy. THF/SWD × HNT23/24/25 P140→P160→P180→P200 is nondecreasing for both ΔWinRate and average ally damage. All 3 previously upper-out-of-range SWD multi-hit rows are bracketed without extrapolation, so the P_eq reference-range gap is closed. E08 now contains the complete floor-zero C_eq/K_est recomputation input. However K coefficients are NOT selected: descriptive K_est is unstable across envelopes and THF median H3>H4 conflicts with the candidate nondecreasing K(H_eff) constraint. A separate Human-approved DESIGN-ONLY coefficient-selection step is required. No C_MultiHit/final structure Freeze, no new Battle execution, and no MP/CD/Cast/Range progression.",
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "BLOCKED / PHYSICAL REDO NUMERIC AUTHORITY INVALIDATED BY UPSTREAM MODEL CORRECTION. Formal Battle executions and raw measurements from the HNT/THF/SWD test fixtures remain historical diagnostics only. E04/E05/E06/E07/E08-derived Power-response, P_eq, C_eq and K_est must not be used to Freeze Skill Budget because the opponent Monster combat stats were built from Player-equivalent equipment rather than the formal Monster Job Equipment Coefficient layer. The prior K(H_eff) nondecreasing requirement is also retracted independently. No K selection, C_MultiHit Freeze, new Battle, MP/CD/Cast/Range progression, or Skill formula continuation until Equipment and Monster Core are corrected.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7077,14 +7113,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Single Reference Extension Human result registered PASS. P_eq reference upper range is closed with no extrapolation. E08 is the reusable recomputation authority. Stop here: K(2)/K(3)/K(4) coefficient selection requires a separate Human-approved DESIGN-ONLY decision because descriptive K_est does not satisfy a stable monotonic sequence. No Battle Package, K Freeze, or MP/CD/Cast/Range execution is authorized.",
+        "current_step": "STOP. Upstream correction required. First complete Equipment combat identity (TASK-BAL-071-CORR-003), including shield and bow specifications. Then rebuild Monster Core using Monster Level×Job correction followed by Monster Job Equipment Coefficients (TASK-BAL-072-CORR-001), revalidate Core Enemy Budget, and only then restart TASK-BAL-074 Physical calibration.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "EVD-BAL-074-SINGLE-REF-EXT-001",
+        "next_evidence": "",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7094,7 +7130,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "E08Retained_AwaitingHumanKCoefficientDesignApproval",
+        "next_evidence_status": "NO_NEW_EVIDENCE_UPSTREAM_REBUILD_REQUIRED",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -11499,7 +11535,7 @@
           "evaluated_at": "2026-08-26T08:50:00+09:00"
         },
         "multi_hit_model_form_design": {
-          "status": "StructureValidationInputComplete_CoefficientDesignBlocked",
+          "status": "BLOCKED_BY_EQUIPMENT_AND_MONSTER_AUTHORITY_CORRECTION",
           "design_execution_decision_id": "DEC-BAL-TASK074-MULTIHIT-MODEL-DESIGN-START-001",
           "inputs": [
             {
@@ -11607,20 +11643,25 @@
             "constraints": [
               "K(1)=0",
               "K(H_eff)>=0",
-              "K must be nondecreasing over the calibrated H_eff range",
               "No negative multi-hit refund",
               "Actual runtime Accuracy/Evasion does not change Skill Level cost",
               "THF(~50%) and SWD(~30%) are calibration/validation envelopes, not formula inputs",
-              "Do not apply C_Damage_1Hit independently to per-hit Power values below100"
+              "Do not apply C_Damage_1Hit independently to per-hit Power values below100",
+              "No monotonic ordering is assumed across H2/H3/H4 because they are different Skill structures"
             ],
-            "coefficient_status": "UNSET_REFERENCE_COMPLETE_DESIGN_DECISION_REQUIRED",
+            "coefficient_status": "INVALIDATED_PENDING_CORRECT_MONSTER_BASELINE",
             "freeze_status": "NOT_FROZEN",
             "structural_status": "HUMAN_APPROVED_FOR_VALIDATION_NOT_FROZEN",
             "reason_structural_approval_required": "Previously approved allocation structure used Σ C_Damage(Power_i). The selected candidate instead prices the DAMAGE group by TotalPower and adds a distribution-aware premium. This resolves the negative per-hit-cost defect but is a composition change and must not be silently adopted.",
             "approval_decision_id": "DEC-BAL-TASK074-MULTIHIT-SREF-APPROVAL-001",
             "approved_for_validation_at": "2026-08-26T09:31:57+09:00",
             "reference_extension_status": "PASS_RANGE_CLOSED",
-            "coefficient_selection_blocker": "Direct descriptive K_est does not provide a stable monotonic coefficient sequence across retained THF/SWD envelopes. THF median K_est has H3 > H4; SWD median H3 and H4 are close but the full spread is wide. No automatic median/mean fit or monotonic projection is authorized."
+            "coefficient_selection_blocker": "Direct descriptive K_est does not provide a stable monotonic coefficient sequence across retained THF/SWD envelopes. THF median K_est has H3 > H4; SWD median H3 and H4 are close but the full spread is wide. No automatic median/mean fit or monotonic projection is authorized.",
+            "monotonicity_requirement": {
+              "status": "RETRACTED",
+              "decision_id": "DEC-BAL-TASK074-K-MONOTONIC-RETRACTION-001"
+            },
+            "upstream_numeric_authority_status": "INVALIDATED"
           },
           "design_result": "Accuracy dependency is real, but runtime Accuracy/Evasion is not a valid direct Skill-Budget input. Selected validation candidate is a static TotalPower-scaled, effective-hit-count premium. Numeric K(H_eff) is intentionally not selected from the current truncated P_eq range.",
           "designed_at": "2026-08-26T09:22:40+09:00"
@@ -11976,6 +12017,24 @@
           },
           "evaluated_at": "2026-08-26T09:45:04+09:00",
           "registered_at": "2026-08-26T09:49:37+09:00"
+        },
+        "upstream_authority_correction": {
+          "status": "BLOCKING",
+          "equipment_decision_id": "DEC-BAL-EQUIPMENT-COMPLETENESS-CORR-001",
+          "monster_decision_id": "DEC-BAL-MONSTER-EQUIPMENT-MODEL-CORR-001",
+          "K_monotonic_retraction_decision_id": "DEC-BAL-TASK074-K-MONOTONIC-RETRACTION-001",
+          "invalid_monster_fixture": "TASK-BAL-073K/CORR001 Player-equivalent equipment Monster",
+          "invalid_for_skill_numeric_authority": [
+            "BAL074-E04",
+            "BAL074-E05",
+            "BAL074-E06",
+            "BAL074-E07",
+            "BAL074-E08"
+          ],
+          "formal_execution_integrity_retained": true,
+          "numeric_skill_freeze_authority_retained": false,
+          "new_battle_authorized": false,
+          "updated_at": "2026-08-26T10:10:23+09:00"
         }
       },
       "evidence_refs": [
@@ -12002,57 +12061,69 @@
           "file": "TASK-BAL-074 Evidence・Player↔Monster物理交換Baseline.json",
           "sha256": "d14555f5f1c10b720bc0b9619d89e6e01cb0ca016332636a3536fefffe0b7072",
           "evidence_id": "EVD-BAL-074-PHYSICAL-PLAYER-MONSTER-EXCHANGE-001",
-          "role": "PHYSICAL_PLAYER_MONSTER_EXCHANGE_BASELINE",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-25T19:54:55+09:00"
+          "role": "HISTORICAL_DIAGNOSTIC_ONLY__PHYSICAL_PLAYER_MONSTER_EXCHANGE_BASELINE",
+          "status": "InvalidatedForBalanceAuthority",
+          "recorded_at": "2026-08-25T19:54:55+09:00",
+          "invalidated_at": "2026-08-26T10:10:23+09:00",
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-HNT-POWER",
           "file": "BAL074-E04.json",
           "sha256": "b7b7dc4ae9bdcc80f6eecb9278b4dc67dc24289a3b50a2f8f97c358b82d58813",
           "evidence_id": "EVD-BAL-074-HNT-UNIQUE-POWER-001",
-          "role": "HNT_UNIQUE_POWER_NUMERIC_INPUT_FOR_C_DAMAGE_CALIBRATION",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-26T07:35:02+09:00"
+          "role": "HISTORICAL_DIAGNOSTIC_ONLY__HNT_UNIQUE_POWER_NUMERIC_INPUT_FOR_C_DAMAGE_CALIBRATION",
+          "status": "InvalidatedForBalanceAuthority",
+          "recorded_at": "2026-08-26T07:35:02+09:00",
+          "invalidated_at": "2026-08-26T10:10:23+09:00",
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-DAMAGE-LVGAP",
           "file": "BAL074-E05.json",
           "sha256": "45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab",
           "evidence_id": "EVD-BAL-074-DAMAGE-LVGAP-001",
-          "role": "HNT_LEVEL_GAP_NUMERIC_AUTHORITY_FOR_SINGLE_HIT_DAMAGE_BUDGET",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-26T07:45:02+09:00"
+          "role": "HISTORICAL_DIAGNOSTIC_ONLY__HNT_LEVEL_GAP_NUMERIC_AUTHORITY_FOR_SINGLE_HIT_DAMAGE_BUDGET",
+          "status": "InvalidatedForBalanceAuthority",
+          "recorded_at": "2026-08-26T07:45:02+09:00",
+          "invalidated_at": "2026-08-26T10:10:23+09:00",
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-THF",
           "file": "BAL074-E06.json",
           "sha256": "e5ec8be1cf779abcc85dcc83baf62a8a1151b22153c254c88a5e1cd0241416ed",
           "evidence_id": "EVD-BAL-074-MULTIHIT-THF-001",
-          "role": "THF_MULTIHIT_NUMERIC_INPUT_FOR_SWD_CROSS_ACCURACY_COMPARISON",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-26T08:20:02+09:00"
+          "role": "HISTORICAL_DIAGNOSTIC_ONLY__THF_MULTIHIT_NUMERIC_INPUT_FOR_SWD_CROSS_ACCURACY_COMPARISON",
+          "status": "InvalidatedForBalanceAuthority",
+          "recorded_at": "2026-08-26T08:20:02+09:00",
+          "invalidated_at": "2026-08-26T10:10:23+09:00",
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-SWD",
           "file": "BAL074-E07.json",
           "sha256": "5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
           "evidence_id": "EVD-BAL-074-MULTIHIT-SWD-001",
-          "role": "SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-26T08:50:00+09:00"
+          "role": "HISTORICAL_DIAGNOSTIC_ONLY__SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN",
+          "status": "InvalidatedForBalanceAuthority",
+          "recorded_at": "2026-08-26T08:50:00+09:00",
+          "invalidated_at": "2026-08-26T10:10:23+09:00",
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-SINGLE-REF-EXT",
           "file": "BAL074-E08.json",
           "sha256": "b366766f4cd36377ce11d62d4dfb53a81c9d5c1dfd52080a00b757bbd04ae401",
           "evidence_id": "EVD-BAL-074-SINGLE-REF-EXT-001",
-          "role": "SINGLE_REFERENCE_EXTENSION_AND_COMPLETE_MULTIHIT_K_RECOMPUTATION_AUTHORITY",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-26T09:45:04+09:00"
+          "role": "HISTORICAL_DIAGNOSTIC_ONLY__SINGLE_REFERENCE_EXTENSION_AND_COMPLETE_MULTIHIT_K_RECOMPUTATION_AUTHORITY",
+          "status": "InvalidatedForBalanceAuthority",
+          "recorded_at": "2026-08-26T09:45:04+09:00",
+          "invalidated_at": "2026-08-26T10:10:23+09:00",
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         }
       ],
-      "blocked_reason": ""
+      "blocked_reason": "Upstream Equipment/Monster authority invalidated: Equipment combat identity is incomplete (shield/bow etc.), and TASK-BAL-073K used Player-equivalent equipment contribution instead of the formal Monster Job Equipment Coefficient layer. TASK-BAL-071-CORR-003 -> TASK-BAL-072-CORR-001 -> TASK-BAL-073 revalidation must complete before Skill calibration restarts."
     },
     {
       "id": "TASK-BAL-075",
@@ -12073,10 +12144,10 @@
         "at": "2026-08-25T11:55:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T16:56:00+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00",
       "result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval.",
       "historical_result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval.",
-      "blocked_reason": "TASK-BAL-074 zero-base Skill Budget Formula redo is incomplete."
+      "blocked_reason": "TASK-BAL-071/072 upstream correction and TASK-BAL-074 redo are incomplete."
     },
     {
       "id": "TASK-BAL-076",
@@ -12096,8 +12167,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T16:56:00+09:00",
-      "blocked_reason": "TASK-BAL-074 zero-base Skill Budget Formula redo is incomplete."
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "blocked_reason": "TASK-BAL-071/072 upstream correction and TASK-BAL-074 redo are incomplete."
     },
     {
       "id": "TASK-BAL-077",
@@ -12345,7 +12416,7 @@
       "id": "TASK-BAL-071-CORR-002",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P4 Bare Player Multi-Loadout Reference補正",
-      "status": "Done",
+      "status": "Blocked",
       "execution_order": 250,
       "depends_on": [
         "TASK-BAL-071-CORR-001",
@@ -12359,9 +12430,9 @@
         "by": "Human",
         "at": "2026-08-24T20:15:00+09:00"
       },
-      "result_scope": "R5_MULTI_LOADOUT_STRUCTURE_VALID; OFFENSE_INTERPRETATION_OVERLAID_BY_TASK-BAL-073D. Loadout/equipability/weapon style references remain valid. For weapon_shield, aggregate equipment Attack/Accuracy/Crit fields are not Basic Attack strike authority; use GKS-B773 Formal Basic Attack profiles / TASK-BAL-073D. For dual_wield, each hand remains an independent strike.",
+      "result_scope": "PARTIAL/HISTORICAL ONLY. Multi-loadout structure and explicit weapon-style semantics remain valid, but the prior completion incorrectly treated shield defensive tuning and bow range-specific mechanics as deferable while downstream Monster/Skill Balance depended on representative equipment performance. Full Equipment combat identity must be completed before re-freeze.",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-25T00:00:00+09:00"
+      "updated_at": "2026-08-26T10:10:23+09:00"
     },
     {
       "id": "TASK-BAL-071-FIX-001",
@@ -12719,8 +12790,8 @@
         "at": "2026-08-25T10:12:00+09:00"
       },
       "created_at": "2026-08-25T10:12:00+09:00",
-      "updated_at": "2026-08-25T11:27:00+09:00",
-      "result_scope": "PASS HUMAN REAL-DEVICE CORR001. Intended Monster model validated: all seven Monster base Stats are Player benchmark Stats - 10; same Player reference equipment contributions retained. 30/30 conditions, 900/900 trials, error=0, Formal only=true, Legacy fallback=false, semantic mismatch=0. Physical5 Party: Player 146/150 wins = 97.3%; weighted avg=168.0 Tick; winner remaining HP=44.0%; Player survivors=2.64/5, Monster survivors=0.03/5. Previous identical-Stats mirror was Player 52.0% with winner remaining HP 18.6%; that result is retained only as parity diagnostic. Same-job duels: Player 719/750 wins = 95.9%. Conclusion: removing initial ALL10 materially weakens Monster even when it receives the same Job/Level Player equipment-equivalent correction. Player reference equipment correction can remain as the Monster equipment layer, but a separate Monster base-stat normalization decision is required before normal consecutive encounter scaling. Reference=DEV-V9-BALANCE-001_TASK-BAL-073K-CORR001_BASIC-FEASIBILITY-REFERENCE.zip sha256=fa57509ad1688ed71d787d1b1602760c992ce0cec9197affc6efca526cb41bd2. No additional Source/Game Data changes. HUMAN_SUPERSEDED_FOLLOWUP: DEC-BAL-TASK073K-QUEST-CONTEXT-001 approved no additional Monster base-stat normalization; 97.3% single-battle Player win is accepted because Quest difficulty is consecutive-battle attrition and is evaluated downstream."
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "HISTORICAL DIAGNOSTIC ONLY / INVALID AS MONSTER BALANCE AUTHORITY. Formal real-device execution itself remains valid for the tested fixture, but that fixture intentionally applied Player-equivalent equipment contributions to Monster. Human has now confirmed the formal Monster model is Level×Job correction followed by Monster Job Equipment Coefficient, not Player equipment. Do not use TASK-BAL-073K/CORR001 win rates or combat stats as Monster or Skill numeric authority."
     },
     {
       "id": "TASK-BAL-075-CORR-001",
@@ -12817,6 +12888,49 @@
         "game_data_changes": 0,
         "balance_numeric_changes": 0
       }
+    },
+    {
+      "id": "TASK-BAL-071-CORR-003",
+      "box_id": "BOX-V9-BAL-PLAYER-001",
+      "title": "R5-P4 Equipment戦闘Identity / 盾・弓等未確定仕様を完成する",
+      "status": "Todo",
+      "execution_order": 250,
+      "depends_on": [
+        "TASK-BAL-071-CORR-002",
+        "TASK-BAL-071-FIX-002"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Decision Question: Monster/Skillへ渡す前に、各代表Equipment typeの戦闘Identity/Contributionは一意に定義されているか。\n- 全Weapon/Shield/Armor typeを棚卸しし、downstream performanceへ影響する未確定/Deferred項目を0件にする。\n- 盾: 既確定のattack_count=0 / offensive contribution非加算を維持しつつ、防御Contributionのowner、対象Stat/channel、係数/growthを確定する。\n- 弓: Basic Attack上の武器IdentityとRange/Targetingとの責務境界を確定し、Rangeを無視した近接武器同等扱いを暗黙採用しない。\n- two_hand / single / dual_wield / weapon_shieldを含む各代表Loadoutについて、Requirement、攻撃回数、Attack/Accuracy/Critical、防御系、Range等の使用項目をEquipment Combat Identity Tableとして出力する。\n- Current Sourceに表現経路がない仕様が必要なら、このTask内で推測実装せずIssue GateでSource/Gameplay仕様判断へ戻す。\n- 完了時のみBare Player Referenceを再Freezeし、TASK-BAL-072-CORR-001へ渡す。\n- このTask登録自体はSimulation/Package/Source変更の承認ではない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "PLAN REGISTERED ONLY. Equipment phase correction required before Monster Core. No numeric specification, Battle execution, Source change, Game Data change, or Current active change authorized."
+    },
+    {
+      "id": "TASK-BAL-072-CORR-001",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "R5-P5 Monster Job装備係数でMonster Coreを再構築する",
+      "status": "Todo",
+      "execution_order": 251,
+      "depends_on": [
+        "TASK-BAL-071-CORR-003"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Formal structure: Monster基礎Status = Monster Level × Job補正値。\n- Monster戦闘力/戦闘用StatusはMonster基礎Status × Job別Monster装備係数の正式層から生成する。\n- Player Equipment item/Candidate/ContributionをMonsterへ装着・加算して代用しない。\n- 全JobについてMonster Job Equipment Coefficientの対象Stat/category、係数、Level/Tier依存有無を明示する。\n- Equipment仕様完成後のBare Player Referenceと比較し、HP/Attack/Defense/Hit/Evasion/Critical等のMonster Core Tableを再構築する。\n- Level逆行、Tier由来の意図しない不連続、Job係数暴走をGateする。\n- 完了後にCore Enemy Budget(TASK-BAL-073)を再検証し、その後だけSkill(TASK-BAL-074)へ進む。\n- このTask登録自体はSimulation/Package/Source/Game Data変更の承認ではない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00",
+      "result_scope": "PLAN REGISTERED ONLY. Correct Monster equipment-layer model pending. No coefficient values, Battle execution, Package, Source, Game Data, or Current active change authorized."
     }
   ],
   "checks": [
@@ -17265,6 +17379,52 @@
       "blocking": false,
       "created_at": "2026-08-26T09:49:37+09:00",
       "updated_at": "2026-08-26T09:49:37+09:00"
+    },
+    {
+      "id": "CHK-BAL-EQUIPMENT-COMPLETENESS-CORR-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071",
+      "status": "Failed",
+      "result": "FAIL / PRIOR FREEZE INVALIDATED. Shield defensive combat specification and bow range/combat identity were explicitly deferred while downstream Monster/Skill Balance required representative Equipment performance. Equipment phase is incomplete.",
+      "evidence": "Current Development Project TASK-BAL-071-CORR-002 / shield and bow checks",
+      "checked_by": "HumanCorrection",
+      "checked_at": "2026-08-26T10:10:23+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00"
+    },
+    {
+      "id": "CHK-BAL-MONSTER-EQUIPMENT-MODEL-CORR-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072",
+      "status": "Failed",
+      "result": "FAIL / PRIOR DOWNSTREAM MODEL INVALIDATED. TASK-BAL-073K used Player-equivalent Equipment Contribution for Monster. Human-confirmed model requires Monster Level×Job correction followed by Monster Job Equipment Coefficient.",
+      "evidence": "TASK-BAL-073K acceptance/result + Human correction",
+      "checked_by": "HumanCorrection",
+      "checked_at": "2026-08-26T10:10:23+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T10:10:23+09:00"
     }
   ],
   "workflow": {
@@ -18306,6 +18466,11 @@
       "at": "2026-08-26T09:49:37+09:00",
       "type": "SingleReferenceExtensionResultRegistered",
       "summary": "Human実機Single Reference Extension 18条件/1800戦PASSを最新Studio正本へ登録。P140→P200のΔWR/average ally damage単調性PASS、E07上限外3条件を3/3外挿なしでbracket。BAL074-E08を再計算Authorityとして参照追加。K_estはTHF H3>H4 median等の不安定性があり、K(2)/K(3)/K(4)は未選定・未Freeze。次は別Human承認のdesign-only係数選定まで停止。"
+    },
+    {
+      "at": "2026-08-26T10:10:23+09:00",
+      "type": "EquipmentMonsterSkillUpstreamAuthorityCorrected",
+      "summary": "Human correctionにより、Equipment工程の盾/弓等未確定仕様を理由にTASK-BAL-071 Freezeを撤回。Monster正式構造をLevel×Job補正→Monster Job Equipment Coefficientへ訂正し、Player-equivalent equipment MonsterをBalance Authorityから除外。TASK-BAL-072/073/074をBlockし、E04-E08のSkill数値Authorityを停止。K(H_eff) nondecreasing制約も撤回。次はTASK-BAL-071-CORR-003の別開始承認待ち。"
     }
   ],
   "authority": {
