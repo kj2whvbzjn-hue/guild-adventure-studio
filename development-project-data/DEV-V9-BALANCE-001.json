@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T04:56:46.736Z"
+    "updated_at": "2026-08-26T06:17:42.554Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-071-CORR-004完了 — Current GKS-B783確認済み / TASK-BAL-072-CORR-001開始承認待ち",
-    "goal": "Human Studio Apply後のfresh complete sourceを検証し、GKS-B783 / GA-B486.211が TASK-BAL-071-CORR-004 update artifactのtarget_sourceと完全一致することを確認済み。fresh Currentに対するBuild marker、package manifest、source tree、Quick 11/11、Full 26/26は全PASS、warning/timeout 0。TASK-BAL-071-CORR-004はDone。次候補TASK-BAL-072-CORR-001はTodo / Human開始承認Pendingであり、このrunでは開始しない。"
+    "theme": "TASK-BAL-072-CORR-001完了 — 装備可能人型Monster Core 350行Freeze / Body Type装備制約は別Task待ち",
+    "goal": "Current GKS-B783を基準にMonster基礎Status×既存Job装備係数で7 Job×Lv1..50の人型Monster CoreをFreeze済み。Player Equipment/iLvは不使用。盾BlockはJob能力値依存式、Bow+QuiverはCurrent combat identityで確定。獣型等の装備不可Body TypeはTASK-BAL-072-CORR-002へ分離し、このrunでは開始しない。TASK-BAL-073/074も開始しない。"
   },
   "project_rules": [
     {
@@ -2680,6 +2680,18 @@
       "approved_at": "2026-08-26T12:54:24+09:00",
       "created_at": "2026-08-26T12:54:24+09:00",
       "updated_at": "2026-08-26T12:54:24+09:00"
+    },
+    {
+      "id": "DEC-BAL-MONSTER-JOB-EQUIPMENT-CORE-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "装備可能な人型Monster Coreでは、Monster基礎Status=Level×Job補正値とし、既存Equipment requirement coefficientをMonster自身の対応能力値へ直接乗算して戦闘値を作る。Player Equipment/iLvは介在させない。盾のoffensive係数は加算せず、ShieldScale=min(STR/6,DEX/3,INT/1)、BlockRate=20%+2pp×(max(1,ShieldScale)-1)、BlockDamageCutRate=30%、追加capなし。Bow+Quiverは非Critical係数を合算し、CriticalはBowのみ、Bow1 Strike/Quiver0 Strike。この決定は装備可能な人型Monster向けであり、獣型等の装備不可Body Typeへ無条件適用しない。",
+      "rationale": "Human corrections and approvals in TASK-BAL-072-CORR-001: direct Monster Stat×existing equipment coefficient model; Job-dependent shield Block; non-humanoid equipment restrictions deferred.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T15:05:54+09:00",
+      "created_at": "2026-08-26T15:16:48+09:00",
+      "updated_at": "2026-08-26T15:16:48+09:00"
     }
   ],
   "specifications": [
@@ -13248,7 +13260,7 @@
       "id": "TASK-BAL-072-CORR-001",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P5 Monster Job装備係数でMonster Coreを再構築する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 251,
       "depends_on": [
         "TASK-BAL-071-CORR-003",
@@ -13259,13 +13271,24 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-26T15:05:54+09:00"
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T13:45:04+09:00",
-      "result_scope": "READY FOR SEPARATE HUMAN START APPROVAL. Dependencies TASK-BAL-071-CORR-003/004/005 are resolved; Current source is verified GKS-B783 / GA-B486.211. This run did not start Monster Core reconstruction, did not choose Monster Job Equipment coefficients, and did not execute Simulation/Package/Source/Game Data/Current active changes."
+      "updated_at": "2026-08-26T15:16:48+09:00",
+      "result_scope": "DONE / FROZEN EQUIPMENT-CAPABLE HUMANOID MONSTER CORE. Current GKS-B783 / GA-B486.211. 7 Jobs x Lv1..50 = 350 rows. Monster base Stats = Level x Human-approved Job expected_gain_per_level; Player initial ALL10 is not added. Existing Equipment requirement coefficients are reused directly as Monster Job Equipment coefficients: Attack=STR*weapon.str, Accuracy=DEX*weapon.dex, Magic=INT*weapon.int, HP=VIT*armor.vit, MP=MND*armor.mnd, Evasion=AGI*armor.agi. No Player Equipment item/Candidate/Contribution or iLv/Tier layer is used. Profiles: SWD Greatsword; KNT One-hand Sword+Shield; THF Dagger+Shield; HNT Bow+Quiver; Mage Wand+Shield; Cleric Wand+Shield; Adventurer One-hand Sword+Shield. Bow+Quiver sums non-critical coefficients to STR6/DEX12/INT2; Bow-only Critical=5%, Bow 1 Strike/Quiver 0 Strike. Shield offensive coefficients are excluded. ShieldScale=min(STR/6,DEX/3,INT); BlockRate=0.20+0.02*(max(1,ShieldScale)-1), BlockDamageCutRate=0.30, no new cap. No direct raw Defense coefficient is invented; defense field=0 and defensive contribution is HP/Evasion/Block for downstream normalization. Gates: 350/350 rows, level regressions=0, tier discontinuities=0, Player equipment usage=0. Scope is equipment-capable humanoid/job-equipment Monster Core only. Beast/non-humanoid monsters that cannot equip shield/weapon/armor are explicitly excluded and deferred to TASK-BAL-072-CORR-002. No Simulation/Package/Source/GAME_DATA/Current active changes. TASK-BAL-073/074 not started.",
+      "evidence_refs": [
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-072-MONSTER-CORE",
+          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-072-MONSTER-CORE.json",
+          "sha256": "9c386746e389aab0e48ddce8a8fc6732e27bb23fd46e9ef8a6d4c73276262ceb",
+          "evidence_id": "EVD-BAL-072-CORR-001-HUMANOID-MONSTER-CORE-001",
+          "role": "FROZEN_EQUIPMENT_CAPABLE_HUMANOID_MONSTER_CORE_7JOBS_LV1_50",
+          "status": "FrozenAuthority",
+          "recorded_at": "2026-08-26T15:05:54+09:00"
+        }
+      ]
     },
     {
       "id": "TASK-BAL-071-CORR-004",
@@ -13390,6 +13413,27 @@
           "EQUIP_QUIVER": "TAG-0003"
         }
       }
+    },
+    {
+      "id": "TASK-BAL-072-CORR-002",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "R5-P5 Monster Body Type装備制約別Coreを作成する",
+      "status": "Todo",
+      "execution_order": 251,
+      "depends_on": [
+        "TASK-BAL-072-CORR-001"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- TASK-BAL-072-CORR-001の装備可能人型Monster Coreを基準にする。\n- 獣型等、盾・武器・防具を装備できないBody Typeへ人型装備Profileを無条件適用しない。\n- Body Typeごとの正式な装備可能/不可範囲をAuthorityから確認し、推測でSpecies/装備制約を追加しない。\n- 盾不可Body TypeではShieldScale/Blockを適用しない。その他の武器/防具不可も同様に正式制約へ従う。\n- 必要なMonster Core variantと後工程への影響を整理する。\n- Simulation/Package/Source/GAME_DATA/Current active変更は別承認なしに行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T15:16:48+09:00",
+      "updated_at": "2026-08-26T15:16:48+09:00",
+      "result_scope": "REGISTERED ONLY by Human instruction. Beast/non-humanoid equipment restrictions are deferred from TASK-BAL-072-CORR-001. Not started in this run."
     }
   ],
   "checks": [
@@ -17875,15 +17919,15 @@
       "checked_at": "2026-08-26T10:10:23+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
+        "status": "Resolved",
+        "resolved_by": "CHK-BAL-072-CORR-001-HUMANOID-CORE-001",
+        "resolved_at": "2026-08-26T15:05:54+09:00",
+        "reason": "PASS. Equipment-capable humanoid Monster Core frozen: 7 Jobs x Lv1..50 = 350 rows; level regressions 0; tier discontinuities 0; Player Equipment/iLv usage 0. Existing direct weapon/armor coefficients reused. Shield Block is Job-stat dependent and Bow+Quiver uses Current B783 identity.",
+        "mode": "automatic"
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00"
+      "updated_at": "2026-08-26T15:16:48+09:00"
     },
     {
       "id": "CHK-BAL-071-BOW-QUIVER-SPEC-001",
@@ -18094,6 +18138,31 @@
       "blocking": false,
       "created_at": "2026-08-26T13:38:17+09:00",
       "updated_at": "2026-08-26T13:45:04+09:00"
+    },
+    {
+      "id": "CHK-BAL-072-CORR-001-HUMANOID-CORE-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072-CORR-001",
+      "status": "Passed",
+      "result": "PASS. Equipment-capable humanoid Monster Core frozen: 7 Jobs x Lv1..50 = 350 rows; level regressions 0; tier discontinuities 0; Player Equipment/iLv usage 0. Existing direct weapon/armor coefficients reused. Shield Block is Job-stat dependent and Bow+Quiver uses Current B783 identity.",
+      "evidence": "development-project_DEV-V9-BALANCE-EVIDENCE-072-MONSTER-CORE.json sha256=9c386746e389aab0e48ddce8a8fc6732e27bb23fd46e9ef8a6d4c73276262ceb",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T15:05:54+09:00",
+      "resolves_check_ids": [
+        "CHK-BAL-MONSTER-EQUIPMENT-MODEL-CORR-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T15:05:54+09:00",
+        "reason": "Correction core replaced the invalid Player-equivalent Monster equipment model for the equipment-capable humanoid scope.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T15:16:48+09:00",
+      "updated_at": "2026-08-26T15:16:48+09:00"
     }
   ],
   "workflow": {
@@ -19205,6 +19274,16 @@
       "at": "2026-08-26T13:45:04+09:00",
       "type": "HumanAppliedFreshSourceVerified",
       "summary": "Human supplied fresh complete source after applying TASK-BAL-071-CORR-004 update. Fresh source is GKS-B783 / GA-B486.211 and exactly matches target package manifest/source tree. Build marker check PASS; Quick 11/11 PASS; Full 26/26 PASS; warnings/timeouts 0. TASK-BAL-071-CORR-004 marked Done. TASK-BAL-072-CORR-001 remains Todo/Pending Human start approval."
+    },
+    {
+      "at": "2026-08-26T15:05:54+09:00",
+      "type": "MonsterJobEquipmentHumanoidCoreFrozen",
+      "summary": "TASK-BAL-072-CORR-001 completed for equipment-capable humanoid scope. 350 rows frozen using Monster Stat x existing equipment coefficients. Shield Block uses Human-approved Job-stat dependent formula; Bow+Quiver uses Current B783 identity."
+    },
+    {
+      "at": "2026-08-26T15:05:54+09:00",
+      "type": "MonsterBodyTypeEquipmentRestrictionDeferred",
+      "summary": "Human clarified that beast/non-humanoid monsters may be unable to equip shields or other equipment. This concern is excluded from the completed humanoid core and registered as TASK-BAL-072-CORR-002 Todo/Pending only."
     }
   ],
   "authority": {
