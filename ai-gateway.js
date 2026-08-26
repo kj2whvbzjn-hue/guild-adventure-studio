@@ -1,9 +1,11 @@
 (function(){
 'use strict';
 
-const GATEWAY_VERSION='0.8.0';
+const GATEWAY_VERSION='1.0.0';
 const MANIFEST_URL='./ai-gateway-manifest.json';
-const REQUIRED_GOVERNANCE_FILES=['AI_START.md','AI_PROJECT_INDEX.json','AI_PROJECT_STATUS.json','AI_WORK_RULES.md','docs/operations/ARTIFACT_SUBMISSION_POLICY.md','shared/integrity/artifact-submission-policy.json'];
+const FALLBACK_SEMANTIC_ENTRYPOINT='AI_START.md';
+const FALLBACK_OPERATING_POLICY='shared/integrity/ai-operating-policy.json';
+const FALLBACK_MACHINE_PRELOAD=['package-build.json',FALLBACK_OPERATING_POLICY];
 let manifestCache=null;
 let sourceIndexCache=null;
 
@@ -65,33 +67,49 @@ function projectSummary(project){
 
 async function loadGovernance(){
   const manifest=await loadManifest();
-  const configured=Array.isArray(manifest.requiredGovernanceFiles)?manifest.requiredGovernanceFiles:REQUIRED_GOVERNANCE_FILES;
-  const files=[];
-  for(const path of configured){
-    if(!manifest.allowedFiles.includes(path))throw new Error('Required governance file is not allowlisted: '+path);
-    const item=await getFile(path);
-    if(!item.content.trim())throw new Error('Required governance file is empty: '+path);
-    files.push(item);
+  const semanticEntrypoint=String(manifest.aiSemanticEntrypoint||FALLBACK_SEMANTIC_ENTRYPOINT);
+  const operatingPolicyFile=String(manifest.operatingPolicyFile||FALLBACK_OPERATING_POLICY);
+  const machinePreload=Array.isArray(manifest.gatewayMachinePreloadFiles)?manifest.gatewayMachinePreloadFiles:FALLBACK_MACHINE_PRELOAD;
+  const required=[semanticEntrypoint,...machinePreload];
+  for(const path of required){
+    if(!manifest.allowedFiles.includes(path))throw new Error('Governance file is not allowlisted: '+path);
   }
+  const entrypoint=await getFile(semanticEntrypoint);
+  if(!entrypoint.content.trim())throw new Error('AI semantic entrypoint is empty: '+semanticEntrypoint);
+  const preloadFiles=[];
+  const preloadJson={};
+  for(const path of machinePreload){
+    const item=await getFile(path);
+    if(!item.content.trim())throw new Error('Machine preload file is empty: '+path);
+    preloadFiles.push(item);
+    if(path.endsWith('.json')){
+      try{preloadJson[path]=JSON.parse(item.content);}catch(error){throw new Error('Machine preload JSON is invalid: '+path+' ('+error.message+')');}
+    }
+  }
+  const policy=preloadJson[operatingPolicyFile];
+  if(!policy||policy.authority?.normative!==true)throw new Error('Canonical AI operating policy is unavailable or non-normative: '+operatingPolicyFile);
+  if(policy.authority?.canonical_source!==operatingPolicyFile)throw new Error('Canonical AI operating policy path mismatch.');
+  if(policy.authority?.fail_closed_when_unavailable!==true)throw new Error('Canonical AI operating policy must fail closed.');
   return {
     status:'required',
     loaded:true,
-    requiredFiles:configured,
-    files,
-    artifactSubmission:{routing:'by_work_type',sourceUpdate:'direct_studio_update_zip',gameDataUpdate:'studio_project_json_then_game_data_deploy',hybrid:'separate_artifacts',outerWrapperZip:false},
+    semanticEntrypoint,
+    machinePreloadFiles:clone(machinePreload),
+    conditionalFiles:Array.isArray(manifest.conditionalGovernanceFiles)?clone(manifest.conditionalGovernanceFiles):[],
+    conditionalMachinePolicyFiles:Array.isArray(manifest.conditionalMachinePolicyFiles)?clone(manifest.conditionalMachinePolicyFiles):[],
+    files:[entrypoint,...preloadFiles],
+    policySource:operatingPolicyFile,
+    policy:clone(policy),
+    artifactSubmission:clone(policy.artifact_submission||{}),
     acknowledgementRequired:true,
     operatingContract:{
-      decisionPriority:['data_preservation','runtime_stability','specification_stability','explicit_user_instruction','new_features'],
-      preflightRequired:true,
-      workDeclarationRequired:true,
-      scopeRestrictionRequired:true,
-      deletionDefault:'prohibited',
-      artifactRouting:'by_work_type',
-      sourceUpdateArtifact:'direct_studio_update_zip',
-      gameDataArtifact:'studio_project_json',
-      hybridArtifactsMustBeSeparate:true,
-      completionReportRequired:true,
-      failClosedWhenGovernanceUnavailable:true
+      authority:clone(policy.authority||{}),
+      startup:clone(policy.startup||{}),
+      workModes:clone(policy.work_modes||{}),
+      workTypes:clone(policy.work_types||{}),
+      deletion:clone(policy.deletion||{}),
+      testAndGateIntegrity:clone(policy.test_and_gate_integrity||{}),
+      completion:clone(policy.completion||{})
     }
   };
 }

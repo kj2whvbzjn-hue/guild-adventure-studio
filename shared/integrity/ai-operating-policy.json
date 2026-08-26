@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "policy_id": "AI-OPERATING-POLICY-001",
+  "authority": {
+    "normative": true,
+    "canonical_source": "shared/integrity/ai-operating-policy.json",
+    "human_markdown_role": "informative_only",
+    "javascript_role": "validation_and_execution_only",
+    "fail_closed_when_unavailable": true
+  },
+  "startup": {
+    "ai_semantic_entrypoint": "AI_START.md",
+    "gateway_machine_preload_files": [
+      "package-build.json",
+      "shared/integrity/ai-operating-policy.json"
+    ],
+    "advisory_metadata_files": [
+      "AI_PROJECT_INDEX.json",
+      "AI_PROJECT_STATUS.json"
+    ],
+    "package_manifest": {
+      "file": "package_manifest.json",
+      "ai_startup_full_read_required": false,
+      "validation_mode": "machine_gate",
+      "validation_command": "python3 -S -B tools/integrity/check-package-manifest.py <source-root>"
+    }
+  },
+  "decision_priority": [
+    "data_preservation",
+    "runtime_stability",
+    "specification_stability",
+    "explicit_user_instruction",
+    "new_features"
+  ],
+  "work_modes": {
+    "READ_ONLY": {
+      "changes_allowed": false,
+      "work_type_required": false,
+      "detailed_work_declaration_required": false
+    },
+    "EDIT": {
+      "changes_allowed": true,
+      "work_type_required_for_source_or_game_data": true,
+      "scope_declaration_required": true,
+      "completion_report_required": true
+    }
+  },
+  "work_types": {
+    "SOURCE_UPDATE": {
+      "artifact": {
+        "kind": "direct_studio_update_zip",
+        "requires": [
+          "studio-update.json"
+        ],
+        "forbids": [
+          "Export/**",
+          "outer_wrapper_zip"
+        ],
+        "deployment": "Studio update ZIP"
+      },
+      "validation": {
+        "quick_required": true,
+        "accept_update_required": true,
+        "exact_baseline_required": true,
+        "applied_state_source_gate_required": true,
+        "full": "impact_driven_fail_closed",
+        "release": "when_required"
+      }
+    },
+    "GAME_DATA_UPDATE": {
+      "artifact": {
+        "kind": "studio_project_json",
+        "direct_file_allowed": true,
+        "forbids": [
+          "direct_export_as_authoritative_source"
+        ],
+        "deployment": "Studio full JSON import -> Game data deployment -> Export/"
+      }
+    },
+    "HYBRID": {
+      "artifacts": [
+        "direct_studio_update_zip",
+        "studio_project_json"
+      ],
+      "must_be_separate": true,
+      "forbids": [
+        "outer_wrapper_zip",
+        "Export/** in Studio update ZIP"
+      ],
+      "validation": "both_work_types_independently"
+    }
+  },
+  "deletion": {
+    "default": "prohibited",
+    "general_instruction_counts_as_approval": false,
+    "machine_policy": "shared/integrity/delete-policy.json"
+  },
+  "test_and_gate_integrity": {
+    "relaxation_for_startup_optimization": false,
+    "required_failure_result": "FAIL",
+    "timeout_result": "FAIL",
+    "timeout_failure_kind": "timeout",
+    "protected_change_requires_external_human_approval": true,
+    "machine_policy": "shared/integrity/test-integrity-policy.json",
+    "impact_policy": "shared/integrity/impact-test-policy.json"
+  },
+  "artifact_submission": {
+    "routing": "by_work_type",
+    "outer_wrapper_zip_default": false,
+    "fail_closed_when_policy_unavailable": true
+  },
+  "authoritative_sources": {
+    "current_source": "latest GitHub source archive/checkout or explicit Human baseline",
+    "component_builds": "package-build.json",
+    "studio_project_data": "current Studio Project JSON",
+    "public_game_data": "Studio-generated Export/ deployed through Game data deployment"
+  },
+  "conditional_documents": [
+    {
+      "condition": "source_edit",
+      "path": "AI_WORK_RULES.md",
+      "role": "informative_workflow_guide"
+    },
+    {
+      "condition": "artifact_generation_or_submission",
+      "path": "docs/operations/ARTIFACT_SUBMISSION_POLICY.md",
+      "role": "informative_workflow_guide"
+    },
+    {
+      "condition": "deletion_or_public_game_data_exclusion",
+      "path": "docs/operations/DELETION_POLICY.md",
+      "role": "human_procedure",
+      "machine_policy": "shared/integrity/delete-policy.json"
+    },
+    {
+      "condition": "game_data_edit_or_deployment",
+      "path": "docs/operations/GAME_DATA_DEPLOYMENT_MANUAL.md",
+      "role": "human_procedure"
+    },
+    {
+      "condition": "development_project",
+      "path": "docs/operations/DEVELOPMENT_PROJECT_AI_PROTOCOL.md",
+      "role": "human_procedure"
+    },
+    {
+      "condition": "protected_test_gate_schema_integrity_change",
+      "path": "docs/operations/TEST_INTEGRITY_AND_IMPACT_GATE.md",
+      "role": "human_procedure",
+      "machine_policy": "shared/integrity/test-integrity-policy.json"
+    },
+    {
+      "condition": "source_update_applied_state_validation",
+      "path": "docs/operations/SOURCE_UPDATE_APPLIED_STATE_GATE.md",
+      "role": "human_procedure"
+    },
+    {
+      "condition": "zip_csv_or_non_ascii_filename_generation",
+      "path": "docs/operations/ENCODING_POLICY.md",
+      "role": "human_procedure",
+      "machine_policy": "shared/integrity/encoding-policy.json"
+    },
+    {
+      "condition": "sharded_full_inspection",
+      "path": "docs/operations/SHARDED_FULL_INSPECTION.md",
+      "role": "human_procedure",
+      "machine_policy": "shared/integrity/full-inspection-shards.json"
+    },
+    {
+      "condition": "forensic_inspection",
+      "path": "docs/operations/FORENSIC_INSPECTION.md",
+      "role": "human_procedure"
+    },
+    {
+      "condition": "system_update_only_game_data_classification",
+      "path": "docs/operations/SYSTEM_FILE_POLICY.md",
+      "role": "human_procedure",
+      "machine_policy": "shared/integrity/system-file-policy.json"
+    }
+  ],
+  "completion": {
+    "undeclared_changes_forbidden": true,
+    "required_checks_must_pass": true,
+    "deletions_exclusions_and_unresolved_items_must_be_reported": true
+  }
+}

@@ -119,10 +119,12 @@ python3 tools/inspection/run.py full --context update --fail-fast
 `--timeout`は各工程の上限秒数、`--fail-fast`は最初の必須失敗で停止する指定です。タイムアウトは終了コード124としてレポートに記録されます。
 ## AIルールの自動引き継ぎ
 
-AI GatewayとStudioのAIエクスポートは、`AI_START.md`、`AI_PROJECT_INDEX.json`、`AI_PROJECT_STATUS.json`、`AI_WORK_RULES.md`、成果物提出ポリシー、機械ポリシーを必須コンテキストとして実内容ごと渡す。取得できない場合はAI用成果物の生成を停止する。成果物は作業種別と配置先に応じて分離し、`SOURCE_UPDATE`は`studio-update.json`を含む直接のStudio更新ZIP、`GAME_DATA_UPDATE`はStudioへ戻すProject JSON、`HYBRID`は両者を別成果物として提出する。配置経路を持たない複数の管理資料・仕様書・検査資料は原則1つの資料ZIPへまとめる。
+AIの意味上の入口は`AI_START.md`、規範的な運用ルールの唯一の正本は`shared/integrity/ai-operating-policy.json`です。AI Gatewayの機械preloadとAIが最初に読む文書は別概念で、`ai-gateway-manifest.json`の`aiSemanticEntrypoint`と`gatewayMachinePreloadFiles`で明示的に分離されています。条件文書は規範JSONから必要時だけ参照し、MarkdownやJavaScriptへ同じポリシー値を再定義しません。
+
+StudioのAIエクスポートもGateway manifestから引き継ぎ対象を取得し、規範JSONを同梱します。必要な規範ポリシーを取得できない場合はFail Closedとします。
 ## AI作業憲章
 
-AIは最初に`AI_START.md`を読み、役割優先順位、Pre-flight、作業宣言、変更範囲、完了条件、ZIP提出、完了報告の順で作業する。AI GatewayとStudioのAI用ZIPはこの憲章を必須コンテキストとして提供し、接続漏れは検査で不合格になる。
+`AI_START.md`は人間・AI向けの説明入口です。READ_ONLY/EDITの詳細、成果物経路、削除既定、Test/Gate要件などの判定値は`shared/integrity/ai-operating-policy.json`を参照します。
 
 ## システムファイル分類
 `docs/operations/SYSTEM_FILE_POLICY.md`を参照してください。

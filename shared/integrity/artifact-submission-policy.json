@@ -1,53 +1,9 @@
 {
-  "schema_version": 2,
-  "policy_id": "ARTIFACT-SUBMISSION-ROUTED-002",
-  "default": "route_by_work_type",
-  "work_types": {
-    "SOURCE_UPDATE": {
-      "final_artifact": "direct_studio_update_zip",
-      "requires": "studio-update.json",
-      "forbids": [
-        "Export/**",
-        "outer_wrapper_zip"
-      ],
-      "deployment": "Studio update ZIP",
-      "acceptance_gate": "accept --context update with exact baseline; auto-escalates to full on safety-critical or uncertain impact",
-      "protected_test_changes": "external TEST_CHANGE_APPROVAL.json exact hashes for protected add/modify/delete plus deployment-time separate human confirmation; packaged approval forbidden"
-    },
-    "GAME_DATA_UPDATE": {
-      "final_artifact": "studio_project_json",
-      "direct_file_allowed": true,
-      "forbids": [
-        "direct_export_as_authoritative_source"
-      ],
-      "deployment": "Studio full JSON import -> Game data deployment -> Export/"
-    },
-    "HYBRID": {
-      "final_artifacts": [
-        "direct_studio_update_zip",
-        "studio_project_json"
-      ],
-      "must_be_separate": true,
-      "forbids": [
-        "outer_wrapper_zip",
-        "Export/** in Studio update ZIP"
-      ]
-    }
-  },
-  "documents": {
-    "multiple_files_default": "one_documentation_zip",
-    "direct_format_allowed_when": "user_explicitly_requests_that_format_or_tool_requires_direct_file"
-  },
-  "ai_requirements": {
-    "must_read": [
-      "AI_WORK_RULES.md",
-      "docs/operations/ARTIFACT_SUBMISSION_POLICY.md"
-    ],
-    "must_embed_in_ai_context": true,
-    "fail_closed_when_rules_unavailable": true,
-    "must_declare_work_type": true,
-    "must_state_artifact_route": true,
-    "single_final_zip": false,
-    "individual_files_as_final_artifact": "allowed_when_route_requires_direct_file"
-  }
+  "schema_version": 3,
+  "policy_id": "ARTIFACT-SUBMISSION-COMPAT-003",
+  "authority": "informative_compatibility_pointer",
+  "normative": false,
+  "canonical_source": "shared/integrity/ai-operating-policy.json",
+  "canonical_section": "work_types + artifact_submission",
+  "note": "Do not define or edit artifact-routing rules in this file. Consumers must load the canonical AI operating policy."
 }

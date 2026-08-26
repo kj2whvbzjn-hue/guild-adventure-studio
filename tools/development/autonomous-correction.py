@@ -157,7 +157,7 @@ def next_correction_id(project, parent_id):
     return ""
 
 
-def prepare(project, check_id, human_instruction):
+def prepare(project, check_id, human_instruction, approve_execution=False):
     rows = analyze(project, check_id)
     if len(rows) != 1:
         raise SystemExit("AUTOCORR_PREPARE_FAIL expected exactly one check")
@@ -198,7 +198,11 @@ def prepare(project, check_id, human_instruction):
         ),
         "work_type": "SOURCE_UPDATE",
         "requires_human_approval": True,
-        "approval": {"status": "Pending", "by": "", "at": ""},
+        "approval": {
+            "status": "Approved" if approve_execution else "Pending",
+            "by": "human_instruction" if approve_execution else "",
+            "at": stamp if approve_execution else "",
+        },
         "created_at": stamp,
         "updated_at": stamp,
     }
@@ -213,7 +217,7 @@ def prepare(project, check_id, human_instruction):
     project.setdefault("history", []).append({
         "at": stamp,
         "type": "AutonomousCorrectionTaskGenerated",
-        "summary": f"{row['check_id']} -> {cid}; failure_signature={signature}; Human-authorized proposal; parent={parent['id']}; source edit not yet executed; human_instruction={instruction}"
+        "summary": f"{row['check_id']} -> {cid}; failure_signature={signature}; Human-authorized proposal; execution_approval={'Approved' if approve_execution else 'Pending'}; parent={parent['id']}; source edit not yet executed; human_instruction={instruction}"
     })
     return project, {**row, "generated_task_id": cid}
 
@@ -269,6 +273,7 @@ def main():
     p.add_argument("--output-project", required=True, type=Path)
     p.add_argument("--human-authorized", action="store_true")
     p.add_argument("--human-instruction")
+    p.add_argument("--human-approve-execution", action="store_true", help="Use only when the same explicit Human instruction authorizes execution of the generated Correction Task.")
     p.add_argument("--json-output", type=Path)
     b = sp.add_parser("budget")
     b.add_argument("--baseline-source", required=True, type=Path)
@@ -280,7 +285,7 @@ def main():
     elif args.cmd == "prepare":
         if not args.human_authorized:
             raise SystemExit("AUTOCORR_PREPARE_FAIL --human-authorized is required after explicit Human instruction")
-        project, decision = prepare(load_json(args.project), args.check_id, args.human_instruction)
+        project, decision = prepare(load_json(args.project), args.check_id, args.human_instruction, args.human_approve_execution)
         write_json(args.output_project, project)
         result = {"schema_version": 1, "decision": decision, "output_project": str(args.output_project)}
     else:
