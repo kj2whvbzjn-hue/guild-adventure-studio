@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T10:17:35.950Z"
+    "updated_at": "2026-08-26T10:30:33.755Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "Bow+Quiver → Sword+Shield主要動作PASS / Miss→no Block未検証でIssue Gate",
-    "goal": "GKS-B784 Human実機100試行でBow 1 Strike / Quiver 0 Strike / Shield 0 Strike、Block owner、Block成功/非Block、30% Damage Cut、Block→SHIELD順を確認済み。ただしAccuracy360対Evasion10.5で全攻撃が命中し、Miss時Block非判定を確認できなかった。Formal Skill Balanceは開始しない。次はBalance Authorityを変更しない機能検証fixtureで意図的にMissを発生させる最小再テスト計画をHuman承認後に実行する。"
+    "theme": "Bow+Quiver / Shield Block実機検証完了 — Formal Skill Balance Screening開始待ち",
+    "goal": "GKS-B784 Human実機でBow+Quiver→Sword+Shield Basic AttackのHit/Block/Miss全分岐を確認済み。TASK-BAL-074-INFRA-004はDone。次はHuman承認済みPhysical Skill Screening計画に従い、Current Monster Coreを相手にControlとSkill Candidateを同一Seed比較する別Development Taskを開始する。このrunではSkill Battle Package生成/Simulationを開始しない。"
   },
   "project_rules": [
     {
@@ -551,14 +551,14 @@
     "studio_build": "GKS-B784",
     "game_build": "GA-B486.211",
     "source_label": "guild-adventure-studio-sub(20260826-094059).zip",
-    "source_role": "Human-applied Current source after TASK-BAL-074-INFRA-003; Bow/Shield real-device verification baseline",
-    "recorded_at": "2026-08-26T19:12:00+09:00",
+    "source_role": "Human-applied Current source; Bow+Quiver/Sword+Shield Basic Attack Block runtime conformance verified",
+    "recorded_at": "2026-08-26T19:27:00+09:00",
     "package_manifest_sha256": "a9c76d5d88ed2ec43f322c88affb70a6a43df5d8cd6872411c438e0da8837c33",
-    "result_zip_sha256": "3684c11fa108660ff4760dbc3ef4448c34795f59689cadb709c32865d6c4d607",
+    "result_zip_sha256": "a09125b5bc82cfe5c618e20c51dabfcdaa87a0856013f54ee909d2be20ef03b8",
     "source_zip_sha256": "d536417bfd11132e0cff8972c286c058925e74ee299ebad7b32893063f2ad91c",
     "source_tree_sha256": "aba5a6b8abe248627f254c62c87b4a57b95a431d77e3ecd990ab8c12d5a92e88",
     "prior_formal_result_zip_sha256": "1c34d8388f3cbe6debd7f8ee17f23d3f3be0830226bdffbf601df478d5ca2b9f",
-    "result_zip_note": "Bow+Quiver→Sword+Shield Human real-device Result is partial functional verification only; not retained as numeric Balance authority because Miss branch remains unverified."
+    "result_zip_note": "Latest Human runtime is forced-Miss branch completion. Combined authority is indexed by development-project_DEV-V9-BALANCE-EVIDENCE-074-BOW-SHIELD.json sha256=36619fea89dacdeb38bba19ed4c4ee5e5b29d621a60a32a31a1303512f618854."
   },
   "lifecycle": {
     "status": "Active",
@@ -1503,7 +1503,7 @@
       ],
       "result": "Applied",
       "evidence": "Direct Studio update ZIP TASK-BAL-074-INFRA-003.zip sha256=c365096a584cfafd5264ea5ef59c2514e0ded155c12d2dc7e3e7ea6faa7fb0e9; artifact_id=GKS-B784-ff6b437b5f47; targeted TDZ order PASS; Quick 11/11; Accept 13/13 with applied Full 26/26; Release 13/13 with applied Full 26/26; final extracted ZIP Release evidence_set_sha256=f30279a1645d402b921a19d06b1f987f970dee88766111789cbcd68f6d6903c7.",
-      "recorded_at": "2026-08-26T19:12:00+09:00",
+      "recorded_at": "2026-08-26T19:27:00+09:00",
       "baseline": {
         "game_build": "GA-B486.211",
         "studio_build": "GKS-B783",
@@ -1529,9 +1529,9 @@
         "deletions": 0,
         "game_data_changes": 0
       },
-      "summary": "GKS-B784 declaration-order correction is Human-applied and verified in fresh complete source. Subsequent Bow→Shield Human runtime confirmed Bow/Quiver and Block main paths; Miss branch remains a separate test issue, not a source-apply failure.",
+      "summary": "GKS-B784 declaration-order correction is Human-applied. Subsequent Human runtime conformance verifies Bow+Quiver Basic Attack and Sword+Shield Block hit/miss branches. No further source correction is required.",
       "created_at": "2026-08-26T18:29:06+09:00",
-      "updated_at": "2026-08-26T19:12:00+09:00"
+      "updated_at": "2026-08-26T19:27:00+09:00"
     }
   ],
   "discussions": [
@@ -7543,7 +7543,6 @@
       "depends_on": [
         "TASK-BAL-072-CORR-001",
         "TASK-BAL-050",
-        "TASK-BAL-074-INFRA-003",
         "TASK-BAL-074-INFRA-004"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とCurrent仕様に適合したMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、TASK-BAL-072-CORR-001 Frozen Humanoid Monster Core、Formal Skill qualification(TASK-BAL-050)。\n- Monster Budgetのenemy_budget_costはFormation Costであり、このSkill Balanceの換算基準・必須前工程として使用しない。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。\n## TASK-BAL-074 Physical Skill Level allocation formula plan\n- Final Goal: 正式構造 Skill Budget = SLv を入力とし、Physical SkillのDamage / Multi-hit / MP / Cooldown / Cast / Rangeへ総Budgetを振り分ける式を確定する。\n- Budget identity: B_spent = SLv。Physical BudgetをSLvと独立した別スケールとして最終化しない。\n- Allocation framework (DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001):\n  - SLv = M_Range * (ΣC_Damage(Power_i) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)\n  - EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit(H)\n  - 残EffectBudgetをDAMAGE Hitへ配分し、Power = f_Damage(B_Damage)で最終Physical Powerを算出する。\n  - Range/対象範囲はCurrent Budget構造に従う乗算M_Rangeで扱い、加算TargetCostを別途加えて二重課金しない。\n- Test 1 / SLv→Damage conversion:\n  - Isolate: 1Hit / SINGLE / MP0 / CD0 / Cast0 / Physical / Passive-MODなし。\n  - Candidate: Power = round(100 + k × SLv), k={0.5,1,2,4}%/SLv。\n  - Initial screen: Player Lv20、Monster Lv30、high_durability_heavy_armor + high_evasion_light_armor、SLv={1,5,10,20}、SkillなしControl、same seed。\n  - Initial scale: 34 conditions × 100 seeds = 3,400 battles。\n  - KPI: ΔWinRate(pp)、SLv 1増加あたりΔWinRate slope、actual damage/use、Hit率、average ticks、Action数。\n  - Gate: SLv1が丸めで消えない、SLv増加で単調増加、SLv20で即飽和しない、防御型の片側だけに極端偏重しない。上位候補だけTest 2へ進める。\n- Test 2 / level-gap robustness:\n  - Test 1上位2候補のみ。\n  - Player Lv20、Monster Lv25/30/35、high_durability_heavy_armor / high_evasion_light_armor、SLv={1,5,10,20}、same-seed Control。\n  - 目的: SLv→Damage変換がLevel差で崩れないか確認し、C_Damage(Power)と逆関数f_Damage(Budget)のFreeze候補を1本に絞る。\n- Test 3 / Multi-hit cost:\n  - 同一SLvで1/2/3/4 Hitを比較し、single-hit基準と同等の実戦価値となるmulti-hit total Powerを逆算する。\n  - C_MultiHit(H) = DamageBudget(P_single_reference) - DamageBudget(P_multi_equivalent)。\n  - Current formal multi-hitの各DAMAGE effectContract独立Hit semanticsをそのまま使用する。\n- Test 4 / MP refund:\n  - 同一SLvでMP={0,2,4,6,8}を比較し、MP0基準と等価に戻すため必要な追加Damage Budgetを逆算する。\n  - R_MP(M) = DamageBudget(P_equivalent_with_MP) - DamageBudget(P_reference_MP0)。\n  - MP不足/使用回数/Basic Action置換へ実際に影響しないMP条件は係数根拠にしない。非線形ならtable/curveにする。\n- Test 5 / Cooldown refund:\n  - 同一SLvでCD={0,25,50,100}を比較し、CD0基準と等価に戻す追加Damage BudgetからR_CD(CD)を求める。\n  - 再使用機会を制限せずSkill使用頻度が変わらないCDはrefund 0。\n- Test 6 / Cast refund:\n  - 同一SLvでCast={0,2,4,8}を比較し、Cast0基準と等価に戻す追加Damage BudgetからR_Cast(T)を求める。\n  - Cast occupancy、Skill発動回数、interrupt/fizzle、ΔWinRate、actual damageを併記する。\n- Test 7 / Range multiplier:\n  - 1対1では算出しない。複数Monster Formation専用テストを別Human承認後に実施する。\n  - SINGLE / FRONT / RANDOM N / ALLで同一SLvの等価per-target Powerを探索し、M_Rangeを逆算する。\n  - total damage、overkill、kill数、enemy action減少、battle ticks、ΔWinRateを併用する。\n- Test 8 / Skill Level allocation formula validation:\n  - 同一SLvで high-damage/no-cost、multi-hit、MP型、CD型、MP+CD型、multi-target等の異構成Skillをallocation formulaだけで生成する。\n  - SLv={5,10,20}で比較し、同じSLvなら異構成Skillが1 Budget point相当以内の実戦差に収まること、かつSLv5 < SLv10 < SLv20が構成横断で成立することをGateとする。\n  - Gate超過時は試行数だけを増やさず、C_Damage / C_MultiHit / R_MP / R_CD / R_Cast / M_Rangeのどこが乖離原因か特定して該当Testへ戻る。\n- Execution Gate: この登録は計画登録。個別TestのSimulation/Demo/実機依頼/Result評価は、RULE-BAL-TEST-PLAN-APPROVAL-001に従いそのTestの実行承認を別途得るまで開始しない。\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。",
@@ -7555,8 +7554,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T19:12:00+09:00",
-      "result_scope": "READY FOR CORRECTED SKILL REDO PLAN. Obsolete Core Enemy Budget and TASK-BAL-073K Player-equivalent Monster fixture dependencies are removed. Current prerequisite is Frozen TASK-BAL-072-CORR-001 Monster Core + TASK-BAL-050 Formal Skill qualification. Prior invalid numeric outputs remain historical diagnostics only. No Simulation/Test is authorized by this management correction; a Human-approved test plan is required before execution.",
+      "updated_at": "2026-08-26T19:27:00+09:00",
+      "result_scope": "READY FOR FORMAL SKILL BALANCE SCREENING. Current prerequisites are Frozen TASK-BAL-072-CORR-001 Monster Core, TASK-BAL-050 Formal Skill qualification, and completed TASK-BAL-074-INFRA-004 Bow/Shield runtime conformance. Obsolete Enemy Budget conversion and historical invalid Monster fixture outputs remain excluded. Human already approved the Physical Skill screening plan; execution must still start as a separate Development Task/run.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12577,7 +12576,7 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         }
       ],
-      "blocked_reason": "Bow+Quiver→Sword+Shield Basic Attack/Block実機検証が未完了。主要Bow/Block動作はPASSしたが、Miss時Block非判定の実機確認が残っている。"
+      "blocked_reason": ""
     },
     {
       "id": "TASK-BAL-075",
@@ -13588,21 +13587,21 @@
         "at": "2026-08-26T17:44:00+09:00"
       },
       "created_at": "2026-08-26T18:29:06+09:00",
-      "updated_at": "2026-08-26T19:12:00+09:00",
-      "result_scope": "DONE / HUMAN APPLY + FRESH SOURCE VERIFIED. Human supplied fresh complete GKS-B784 / GA-B486.211 source. Fresh Source Quick 11/11 PASS, warning=0, timeout=0. normalizeBattleUnits bowQuiverState declaration-order fix is present. No gameplay numeric/formula, Bow/Quiver semantics, Block formula/order, Game Runtime, GAME_DATA or Current active change.",
+      "updated_at": "2026-08-26T19:27:00+09:00",
+      "result_scope": "DONE / HUMAN APPLY + FRESH SOURCE VERIFIED. Current GKS-B784 / GA-B486.211. Fresh Source Quick 11/11 PASS and bowQuiverState declaration-order correction verified.",
       "blocked_reason": ""
     },
     {
       "id": "TASK-BAL-074-INFRA-004",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "Bow+Quiver → Sword+Shield Basic Attack / Block実機検証",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 265,
       "depends_on": [
         "TASK-BAL-074-INFRA-003",
         "TASK-BAL-072-CORR-001"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Fresh GKS-B784 Battle Verification Templateを使用する。\n- Bow+Quiver攻撃側からSword+Shield防御側へBasic Attackのみを実行する。\n- Bow 1 Strike / Quiver 0 StrikeをFormal Evidenceで確認する。\n- Shield 0 StrikeをFormal Evidenceで確認する。\n- Shield Block ownerとしてblock_rate / block_damage_cut_rateがFormal Evidenceへ保持される。\n- 命中した直接DamageでBlock成功と非Blockの両方を実機Resultで確認する。\n- Block成功時 blocked_damage=floor(final_damage*(1-block_damage_cut_rate)) を確認する。\n- Miss時にBlock判定が発生しないことを実機Resultで確認する。\n- Block処理が既存SHIELD(BARRIER)より前であることをtraceで確認する。\n- formal_only=true / legacy_fallback_used=false / JOB_ERROR=0。\n- 全項目確認完了までFormal Skill Balanceへ進まない。",
+      "acceptance_criteria": "- Fresh GKS-B784 Battle Verification Templateを使用する。\n- Bow+Quiver→Sword+ShieldのBasic AttackでBow 1 Strike / Quiver 0 Strike / Shield 0 Strikeを確認する。\n- Hit直接DamageでBlock成功と非Blockを確認する。\n- Block成功時 floor(finalDamage*(1-block_damage_cut_rate)) を確認する。\n- Block処理がSHIELD(BARRIER)より前であることを確認する。\n- Miss時Block判定が発生しないことを専用fixtureで確認する。\n- formal_only=true / legacy_fallback_used=false / JOB_ERROR=0。\n- 機能検証fixture数値をBalance Authorityへ昇格しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -13611,9 +13610,20 @@
         "at": "2026-08-26T18:58:00+09:00"
       },
       "created_at": "2026-08-26T18:58:00+09:00",
-      "updated_at": "2026-08-26T19:12:00+09:00",
-      "blocked_reason": "Human real-device Result completed 100/100 with error_count=0, but no miss occurred. Hunter Accuracy=360 vs Knight Evasion=10.5 produced trace hit_rate=3428.5714%, so the required Miss→no Block branch was not observed. Test-plan change is required before further execution.",
-      "result_scope": "PARTIAL PASS / ISSUE GATE. Human Result=GK_BattleVerification_Result_BVP-BOW-SHIELD-B784-001_BEX-1787739038434.zip; sha256=3684c11fa108660ff4760dbc3ef4448c34795f59689cadb709c32865d6c4d607. Execution BEX-1787739038434: 1 job, 100/100 trials, error_count=0, formal_only=true, legacy_fallback_used=false. Verified: Hunter weaponStyle=bow_quiver; exactly one Basic Attack profile using EQ-BOW-CORE-H20; no Quiver attack profile; Knight weaponStyle=weapon_shield with exactly one Sword attack profile and no Shield strike; Knight block_rate=0.296666666667; block_damage_cut_rate=0.3; blocked=true and blocked=false are both present in representative Formal trace; blocked normal hit final_damage=96 -> blocked_damage=67 = floor(96*0.70); shield_absorbed field follows blocked_damage in trace. Not verified: Miss branch. Representative runs have misses=0 and hit_rate=3428.5714285714284%, so no formal_basic_attack_miss row exists. Do not mark Bow/Block verification complete and do not start Skill Balance until a Human-approved forced-miss functional retest confirms Miss→no Block."
+      "updated_at": "2026-08-26T19:27:00+09:00",
+      "blocked_reason": "",
+      "result_scope": "DONE / HUMAN RUNTIME PASS. Hit-path Result GK_BattleVerification_Result_BVP-BOW-SHIELD-B784-001_BEX-1787739038434.zip sha256=3684c11fa108660ff4760dbc3ef4448c34795f59689cadb709c32865d6c4d607: 100/100 trials, error0, Formal-only, legacy fallback false; Bow1/Quiver0/Shield0, Block success/non-block, block_rate=0.296666666667 transport, cut=0.30, representative finalDamage96->blockedDamage67, Block-before-SHIELD confirmed. Miss-path Result GK_BattleVerification_Result_BVP-BOW-SHIELD-MISS-B784-001_BEX-1787739876997.zip sha256=a09125b5bc82cfe5c618e20c51dabfcdaa87a0856013f54ee909d2be20ef03b8: 30/30 trials, error0, Formal-only; Accuracy0 functional fixture produced 120 misses per checked representative run, all trace rows are formal_basic_attack_miss with no block_roll/blocked/block_damage_cut_rate/blocked_damage/shield_absorbed fields; Knight block_evidence attempts=0 and decisions=[] while shield owner values remain present. Bow+Quiver / Shield Block Basic Attack conformance is complete. Accuracy0 and enemy_budget_cost=1 remain fixture-only.",
+      "evidence_refs": [
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-BOW-SHIELD",
+          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-074-BOW-SHIELD.json",
+          "sha256": "36619fea89dacdeb38bba19ed4c4ee5e5b29d621a60a32a31a1303512f618854",
+          "evidence_id": "EVD-BAL-074-INFRA-004-BOW-SHIELD-CONFORMANCE-001",
+          "role": "FORMAL_BOW_QUIVER_SWORD_SHIELD_BLOCK_HUMAN_RUNTIME_CONFORMANCE",
+          "status": "FrozenConformanceAuthority",
+          "recorded_at": "2026-08-26T19:27:00+09:00"
+        }
+      ]
     }
   ],
   "checks": [
@@ -18419,22 +18429,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-074-INFRA-004",
-      "status": "Pending",
-      "result": "PARTIAL PASS. 100/100 trials, error0, Formal-only. Bow1/Quiver0/Shield0, Block owner, Block success/non-block, 30% cut and Block-before-Shield trace are confirmed. Miss branch is NOT confirmed because all observed attacks hit.",
-      "evidence": "GK_BattleVerification_Result_BVP-BOW-SHIELD-B784-001_BEX-1787739038434.zip sha256=3684c11fa108660ff4760dbc3ef4448c34795f59689cadb709c32865d6c4d607; execution_id=BEX-1787739038434. Representative Formal trace: hit_rate=3428.5714285714284%, misses=0; blocked example final_damage=96, block_roll=0.11973587446846068, block_rate=0.296666666667, blocked_damage=67, shield_absorbed=0.",
+      "status": "Passed",
+      "result": "PASS. Combined Human runtime evidence completes all required branches: Bow1/Quiver0/Shield0; Block success/non-block; 30% cut; Block-before-SHIELD; forced Miss→no Block; Formal-only; errors0.",
+      "evidence": "Hit-path: GK_BattleVerification_Result_BVP-BOW-SHIELD-B784-001_BEX-1787739038434.zip sha256=3684c11fa108660ff4760dbc3ef4448c34795f59689cadb709c32865d6c4d607, BEX-1787739038434, 100/100 error0. Miss-path: GK_BattleVerification_Result_BVP-BOW-SHIELD-MISS-B784-001_BEX-1787739876997.zip sha256=a09125b5bc82cfe5c618e20c51dabfcdaa87a0856013f54ee909d2be20ef03b8, BEX-1787739876997, 30/30 error0. Evidence project: development-project_DEV-V9-BALANCE-EVIDENCE-074-BOW-SHIELD.json sha256=36619fea89dacdeb38bba19ed4c4ee5e5b29d621a60a32a31a1303512f618854.",
       "checked_by": "AI",
-      "checked_at": "2026-08-26T19:12:00+09:00",
+      "checked_at": "2026-08-26T19:27:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human runtime + AI comparison",
+        "resolved_at": "2026-08-26T19:27:00+09:00",
+        "reason": "Hit/Block and Miss/no-Block branches are both confirmed.",
         "mode": ""
       },
       "blocking": false,
-      "created_at": "2026-08-26T19:12:00+09:00",
-      "updated_at": "2026-08-26T19:12:00+09:00"
+      "created_at": "2026-08-26T19:27:00+09:00",
+      "updated_at": "2026-08-26T19:27:00+09:00"
     }
   ],
   "workflow": {
@@ -19606,6 +19616,14 @@
       "task_id": "TASK-BAL-074-INFRA-004",
       "created_at": "2026-08-26T19:12:00+09:00",
       "updated_at": "2026-08-26T19:12:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-INFRA-004-BOW-SHIELD-DONE-001",
+      "title": "Bow+Quiver → Sword+Shield Basic Attack / Block実機検証完了",
+      "summary": "Hit-path 100 trialsとforced-Miss 30 trialsをHuman実機で完了。Bow1/Quiver0/Shield0、Block成功/非Block、30% cut、Block→SHIELD、Miss→no Blockを全て確認。Formal conformance Evidenceをdevelopment-project_DEV-V9-BALANCE-EVIDENCE-074-BOW-SHIELD.json sha256=36619fea89dacdeb38bba19ed4c4ee5e5b29d621a60a32a31a1303512f618854として保存対象化。Accuracy0/enemy_budget_cost=1はfixture-onlyでBalance Authority化しない。Skill Balanceは次runまで未開始。",
+      "task_id": "TASK-BAL-074-INFRA-004",
+      "created_at": "2026-08-26T19:27:00+09:00",
+      "updated_at": "2026-08-26T19:27:00+09:00"
     }
   ],
   "authority": {
