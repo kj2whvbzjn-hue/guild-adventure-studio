@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T23:32:40.023Z"
+    "updated_at": "2026-08-26T00:03:01.182Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 SWD low-accuracy Control screen awaiting Human result",
-    "goal": "SWD/剣士 Lv20 vs HNT Lv23-30をControl-only一括screenし、10%-90%の非飽和same-tier bandを選ぶ。Tier7 Lv23-26を優先し、Tier8は別帯として扱う。SWD multi-hitへ自動進行しない。"
+    "theme": "TASK-BAL-074 SWD multi-hit cross-accuracy test plan awaiting Human approval",
+    "goal": "THF BAL074-E06と同じHNT Lv23/24/25・Tier7/Evasion120・same-seedでSWD Lv20低命中側を測定し、SWD自身のSingle Power曲線からP_eqを求めてmulti-hit価値のAccuracy依存を判定する。33条件Planは未承認で停止。"
   },
   "project_rules": [
     {
@@ -7029,8 +7029,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T08:30:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. THF multi-hit measurement PASS is retained as BAL074-E06 but C_MultiHit remains NOT FROZEN. Human-required SWD/剣士 low-accuracy branch is active. Exact SWD Control-only batch package prepared: SWD Lv20 vs HNT Lv23-30, 8 conditions / 800 same-seed battles (749600000..749600099). Tier7 Lv23-26 is preferred for same-Evasion comparison; Tier8 Lv27-30 is evaluated separately. This screen selects a non-saturated band only. No SWD multi-hit, MP/CD/Cast/Range execution, or formula Freeze is authorized after this package without a new Human-approved plan.",
+      "updated_at": "2026-08-26T08:40:00+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. SWD low-accuracy Control screen Human result PASS: HNT23=48%, HNT24=43%, HNT25=36%, HNT26=36%, HNT27=9%, HNT28=6%, HNT29=5%, HNT30=4%. Tier7 Lv23-26 is the valid non-saturated band; Tier8 is excluded. For exact THF-vs-SWD multi-hit comparison, Lv23/24/25 are selected because THF BAL074-E06 already measured those same defenders. Next proposed test is SWD20 × HNT23/24/25 with Control + Single P102/P110/P120/P140 + TP110 H2/H3/H4 + TP120 H2/H3/H4, 33 conditions / 3300 battles, seeds 749600000..749600099. This plan is NOT authorized yet. No C_MultiHit Freeze, no MP/CD/Cast/Range execution, no new Evidence for the Control screen.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7041,14 +7041,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "SWD low-accuracy Control screen package prepared; awaiting Human real-device result. No SWD multi-hit execution yet.",
+        "current_step": "SWD Control batch Human result PASS. HNT Lv23/24/25 selected for exact THF-vs-SWD cross-accuracy comparison. 33-condition / 3300-battle SWD multi-hit plan is proposed and awaiting Human approval; no package generated.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No new Evidence for Control screening. Existing BAL074-E06 is retained only as THF comparison authority.",
+        "next_evidence": "None for Control screen. Next Evidence only if approved SWD multi-hit Human result is required as reusable cross-accuracy numeric authority.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7058,7 +7058,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanSWDControlResult",
+        "next_evidence_status": "AwaitingHumanSWDMultiHitPlanApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -10192,7 +10192,7 @@
           "evaluated_at": "2026-08-26T08:20:02+09:00"
         },
         "multihit_accuracy_crosscheck_requirement": {
-          "status": "HumanRequired",
+          "status": "SWDControlBandEstablished_AwaitingMultiHitPlanApproval",
           "instruction": "多段系は低命中Characterの方が恩恵が大きくなり得るため、C_MultiHitを決める前にSWD/剣士でも測定する。",
           "comparison_attackers": {
             "THF": {
@@ -10212,10 +10212,16 @@
           },
           "freeze_rule": "No C_MultiHit(H) Freeze from THF-only result.",
           "required_by": "Human",
-          "registered_at": "2026-08-26T08:20:02+09:00"
+          "registered_at": "2026-08-26T08:20:02+09:00",
+          "selected_swd_defender_levels": [
+            23,
+            24,
+            25
+          ],
+          "updated_at": "2026-08-26T08:40:00+09:00"
         },
         "swd_multihit_control_screen_plan": {
-          "status": "PackagePrepared",
+          "status": "HumanResultEvaluated_PASS",
           "decision_question": "Find a non-saturated HNT defender band for SWD/剣士 Lv20 low-accuracy multi-hit cross-check without floor/ceiling distortion.",
           "execution_decision_id": "DEC-BAL-TASK074-SWD-CONTROL-SCREEN-001",
           "attacker": {
@@ -10306,10 +10312,381 @@
           "current_source_file": "guild-adventure-studio-sub(20260825-213025).zip",
           "current_source_sha256": "02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728",
           "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 28/28 PASS",
-          "execution_authorized": true,
+          "execution_authorized": false,
           "human_real_device_required": true,
-          "result_pending": true,
-          "prepared_at": "2026-08-26T08:30:00+09:00"
+          "result_pending": false,
+          "prepared_at": "2026-08-26T08:30:00+09:00",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-SWD-CONTROL-B782_BEX-1787700785851.zip",
+          "result_sha256": "ffc978e4ae3918fc4f67c9d19cb9d294bff6cbac850c48119344895b7e9be89f",
+          "execution_id": "BEX-1787700785851",
+          "formal_execution_gate": "PASS",
+          "completed_at": "2026-08-26T08:40:00+09:00"
+        },
+        "swd_multihit_control_screen_result": {
+          "status": "PASS",
+          "formal": {
+            "jobs": "8/8",
+            "trials": "800/800",
+            "error_count": 0,
+            "formal_binding_match": true,
+            "formal_only": "8/8",
+            "legacy_fallback": "0/8",
+            "seed_start": 749600000,
+            "seed_end": 749600099
+          },
+          "by_level": [
+            {
+              "defender_level": 23,
+              "item_tier": 7,
+              "evasion": 120,
+              "expected_base_hit_rate": 0.3,
+              "win_rate": 0.48,
+              "average_ticks": 119.54,
+              "average_ally_damage": 1188.96,
+              "average_enemy_damage": 2205.54,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 24,
+              "item_tier": 7,
+              "evasion": 120,
+              "expected_base_hit_rate": 0.3,
+              "win_rate": 0.43,
+              "average_ticks": 116.44,
+              "average_ally_damage": 1183.25,
+              "average_enemy_damage": 2228.43,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 25,
+              "item_tier": 7,
+              "evasion": 120,
+              "expected_base_hit_rate": 0.3,
+              "win_rate": 0.36,
+              "average_ticks": 112.82,
+              "average_ally_damage": 1152.33,
+              "average_enemy_damage": 2249.83,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 26,
+              "item_tier": 7,
+              "evasion": 120,
+              "expected_base_hit_rate": 0.3,
+              "win_rate": 0.36,
+              "average_ticks": 112.54,
+              "average_ally_damage": 1160.97,
+              "average_enemy_damage": 2265.97,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 27,
+              "item_tier": 8,
+              "evasion": 144,
+              "expected_base_hit_rate": 0.25,
+              "win_rate": 0.09,
+              "average_ticks": 113.18,
+              "average_ally_damage": 976.39,
+              "average_enemy_damage": 2440.26,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 28,
+              "item_tier": 8,
+              "evasion": 144,
+              "expected_base_hit_rate": 0.25,
+              "win_rate": 0.06,
+              "average_ticks": 107.6,
+              "average_ally_damage": 934.56,
+              "average_enemy_damage": 2459.28,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 29,
+              "item_tier": 8,
+              "evasion": 144,
+              "expected_base_hit_rate": 0.25,
+              "win_rate": 0.05,
+              "average_ticks": 104.17,
+              "average_ally_damage": 902.05,
+              "average_enemy_damage": 2461.79,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            },
+            {
+              "defender_level": 30,
+              "item_tier": 8,
+              "evasion": 144,
+              "expected_base_hit_rate": 0.25,
+              "win_rate": 0.04,
+              "average_ticks": 103.69,
+              "average_ally_damage": 907.67,
+              "average_enemy_damage": 2476.89,
+              "runs": 100,
+              "formal_only": true,
+              "legacy_fallback_used": false,
+              "seed_start": 749600000,
+              "seed_end": 749600099
+            }
+          ],
+          "tier7_valid_levels": [
+            23,
+            24,
+            25,
+            26
+          ],
+          "tier7_win_rates": {
+            "23": 0.48,
+            "24": 0.43,
+            "25": 0.36,
+            "26": 0.36
+          },
+          "tier8_win_rates": {
+            "27": 0.09,
+            "28": 0.06,
+            "29": 0.05,
+            "30": 0.04
+          },
+          "closest_to_50": {
+            "level": 23,
+            "win_rate": 0.48,
+            "distance_pp": 2
+          },
+          "tier_discontinuity": {
+            "from_level": 26,
+            "to_level": 27,
+            "from_tier": 7,
+            "to_tier": 8,
+            "win_rate_change_pp": -27
+          },
+          "selected_cross_accuracy_levels": [
+            23,
+            24,
+            25
+          ],
+          "selection_reason": "Lv23-25 are all valid Tier7/Evasion120 controls and exactly match the defender levels already measured in THF BAL074-E06. Using the same defender levels, tier, evasion, and seeds isolates the attacker Accuracy/job-side difference far better than mixing Tier8.",
+          "standalone_evidence_created": false,
+          "evidence_reason": "Control placement/screening result only; retain concise management result per RULE-BAL-EVIDENCE-RETENTION-001.",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-SWD-CONTROL-B782_BEX-1787700785851.zip",
+          "result_sha256": "ffc978e4ae3918fc4f67c9d19cb9d294bff6cbac850c48119344895b7e9be89f",
+          "evaluated_at": "2026-08-26T08:40:00+09:00"
+        },
+        "swd_multihit_cross_accuracy_test_plan": {
+          "status": "PlanProposed_AwaitingHumanApproval",
+          "execution_authorized": false,
+          "decision_question": "Quantify how multi-hit practical value changes for low-accuracy SWD/剣士 Lv20 versus the retained THF Lv20 measurement, while building a SWD-specific single-hit Power response curve so P_eq is interpolated from SWD data rather than THF data.",
+          "confirmed_inputs": {
+            "attacker": {
+              "job": "SWD",
+              "name": "剣士",
+              "level": 20,
+              "runtime": {
+                "hp": 2494,
+                "mp": 850,
+                "attack": 309,
+                "agi": 17,
+                "accuracy": 36,
+                "evasion": 20,
+                "critical_rate": 5,
+                "critical_damage": 50
+              }
+            },
+            "defender": {
+              "job_code": "HNT",
+              "evidence_name": "狩人",
+              "current_job_id": "JOB-0004",
+              "current_display_name": "弓兵",
+              "levels": [
+                23,
+                24,
+                25
+              ],
+              "item_tier": 7,
+              "evasion": 120,
+              "control_win_rates_from_screen": {
+                "23": 0.48,
+                "24": 0.43,
+                "25": 0.36
+              }
+            },
+            "retained_thf_reference": {
+              "evidence_id": "EVD-BAL-074-MULTIHIT-THF-001",
+              "file": "BAL074-E06.json",
+              "role": "same HNT Lv23/24/25 + same seed medium-accuracy comparison"
+            },
+            "seed_start": 749600000,
+            "seed_end": 749600099,
+            "trials_per_condition": 100
+          },
+          "control_candidate_hypothesis": {
+            "control": "No Skill / Basic Attack only.",
+            "single_candidates": [
+              {
+                "power": 102,
+                "hit_count": 1
+              },
+              {
+                "power": 110,
+                "hit_count": 1
+              },
+              {
+                "power": 120,
+                "hit_count": 1
+              },
+              {
+                "power": 140,
+                "hit_count": 1
+              }
+            ],
+            "multi_candidates": [
+              {
+                "total_power": 110,
+                "hit_count": 2,
+                "hit_powers": [
+                  55,
+                  55
+                ]
+              },
+              {
+                "total_power": 110,
+                "hit_count": 3,
+                "hit_powers": [
+                  37,
+                  37,
+                  36
+                ]
+              },
+              {
+                "total_power": 110,
+                "hit_count": 4,
+                "hit_powers": [
+                  28,
+                  28,
+                  27,
+                  27
+                ]
+              },
+              {
+                "total_power": 120,
+                "hit_count": 2,
+                "hit_powers": [
+                  60,
+                  60
+                ]
+              },
+              {
+                "total_power": 120,
+                "hit_count": 3,
+                "hit_powers": [
+                  40,
+                  40,
+                  40
+                ]
+              },
+              {
+                "total_power": 120,
+                "hit_count": 4,
+                "hit_powers": [
+                  30,
+                  30,
+                  30,
+                  30
+                ]
+              }
+            ],
+            "hypothesis": "At lower Accuracy, splitting fixed TotalPower across independent hits may change practical outcome relative to a single hit. The effect may depend on H and Accuracy; therefore an H-only universal C_MultiHit must not be assumed before comparison."
+          },
+          "exact_conditions": {
+            "per_defender_level": [
+              "Control",
+              "Single P102",
+              "Single P110",
+              "Single P120",
+              "Single P140",
+              "Multi TP110 H2 = 55+55",
+              "Multi TP110 H3 = 37+37+36",
+              "Multi TP110 H4 = 28+28+27+27",
+              "Multi TP120 H2 = 60+60",
+              "Multi TP120 H3 = 40+40+40",
+              "Multi TP120 H4 = 30+30+30+30"
+            ],
+            "defender_levels": [
+              23,
+              24,
+              25
+            ],
+            "conditions_per_level": 11,
+            "condition_count": 33,
+            "trials_per_condition": 100,
+            "total_trials": 3300,
+            "candidate_isolation": "Physical / SINGLE target / MP0 / CD0 / Cast0 / Passive none / MOD none. Multi-hit is multiple independent DAMAGE effectContracts per Current Formal contract.",
+            "reason_for_single_powers": "P102/P110/P120/P140 spans below/at/above the TP110/120 region so equivalent single Power can be interpolated on SWD's own measured curve without relying on THF's curve.",
+            "reason_for_levels": "HNT Lv23/24/25 are all non-saturated Tier7 controls for SWD and are exactly the same defender rows retained in THF BAL074-E06."
+          },
+          "primary_kpis": [
+            "Same-package SWD Control WinRate by level",
+            "SWD Single Power→ΔWinRate curve for P102/P110/P120/P140",
+            "Each MultiHit ΔWinRate(pp) versus same-package Control",
+            "ΔΔWinRate(pp) versus SWD Single at the same TotalPower (P110 or P120)",
+            "Equivalent SWD single-hit Power P_eq by interpolation inside the measured SWD single curve only",
+            "C_MultiHit_est=(P_eq-TotalPower)/2 only when interpolation is in-range",
+            "THF(E06) vs SWD difference for identical Level × TotalPower × HitCount"
+          ],
+          "supporting_kpis": [
+            "Skill hits/misses and observed hit rate",
+            "average ally damage",
+            "average ticks",
+            "skill activations",
+            "critical hits",
+            "action count / damage per use where available"
+          ],
+          "pass_fail_freeze_criteria": [
+            "Formal binding exact match; 33/33 jobs; 3300/3300 trials; error0; formal_only; no legacy fallback.",
+            "Same-package Controls must remain inside 10%-90% at all three selected defender levels.",
+            "P_eq is interpolation-only inside the measured SWD Single P102..P140 response. No extrapolation.",
+            "Do not interpret unchanged binary WinRate as zero effect if continuous damage metrics change.",
+            "This execution does NOT Freeze universal C_MultiHit.",
+            "After result, determine whether H-only Cost is defensible or an Accuracy-dependent term/model is required; that design decision requires a separate explicit Human approval."
+          ],
+          "downstream_use": "Cross-accuracy comparison with THF BAL074-E06. Use the paired THF/SWD results to design the multi-hit cost model before MP/CD/Cast/Range. No automatic progression beyond result evaluation.",
+          "stop_conditions": [
+            "Any Formal binding mismatch, execution error, non-formal result, or legacy fallback.",
+            "Any selected same-package Control outside 10%-90%.",
+            "SWD Single response cannot provide an interpolation range around relevant multi-hit outcomes; report the gap and re-plan instead of extrapolating.",
+            "Do not auto-generate/execute another Battle Package after this result.",
+            "Do not start MP/CD/Cast/Range.",
+            "Do not Freeze C_MultiHit or universal Physical Skill formula from this test alone."
+          ],
+          "battle_package_generated": false,
+          "standalone_evidence_planned": "Only if the Human result becomes a required reusable numeric authority for the cross-accuracy multi-hit model.",
+          "proposed_at": "2026-08-26T08:40:00+09:00"
         }
       },
       "evidence_refs": [
@@ -15466,6 +15843,29 @@
       "blocking": false,
       "created_at": "2026-08-26T08:20:02+09:00",
       "updated_at": "2026-08-26T08:20:02+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-SWD-CONTROL-SCREEN-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Human real-device SWD Control screen PASS: 8/8 jobs, 800/800 trials, error0, exact Formal binding, formal_only, no legacy fallback. Tier7 Lv23-26 are all valid 10%-90%; Tier8 Lv27-30 are below 10%. Selected next comparison rows are Lv23/24/25 because they exactly match THF BAL074-E06 defenders.",
+      "evidence": "GK_BattleVerification_Result_BVP-BAL074-SWD-CONTROL-B782_BEX-1787700785851.zip sha256=ffc978e4ae3918fc4f67c9d19cb9d294bff6cbac850c48119344895b7e9be89f",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T08:40:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T08:40:00+09:00",
+        "reason": "Approved Control-only screening gates passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T08:40:00+09:00",
+      "updated_at": "2026-08-26T08:40:00+09:00"
     }
   ],
   "workflow": {
@@ -16477,6 +16877,11 @@
       "at": "2026-08-26T08:30:00+09:00",
       "type": "SWDLowAccuracyControlScreenPackagePrepared",
       "summary": "Human承認によりSWD20 vs HNT23-30 Control-only一括screen Packageを準備。8条件/800戦、same seeds 749600000..749600099。Tier7優先、Tier8別帯。SWD multi-hit自動実行なし。"
+    },
+    {
+      "at": "2026-08-26T08:40:00+09:00",
+      "type": "SWDControlScreenResultAndMultiHitPlanRegistered",
+      "summary": "SWD20 vs HNT23-30 Control-only Human result PASS. Tier7 Lv23-26 valid; Tier8 invalid below 10%; Lv23-25 selected to match THF E06 exactly. Next SWD multi-hit plan proposed: 3 levels × 11 conditions = 33 conditions / 3300 battles, same seeds. Plan is awaiting Human approval; no Battle Package or new Evidence generated."
     }
   ],
   "authority": {
