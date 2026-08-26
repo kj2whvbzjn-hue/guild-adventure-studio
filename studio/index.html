@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B784</title>
+<title>GK Studio GKS-B785</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -179,7 +179,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B784 Story nested Data Exchange + scenario export wording */
+/* GKS-B785 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -239,7 +239,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B784: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B785: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -440,7 +440,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B784: Studio home-aware common header / navigation */
+/* GKS-B785: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -471,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B784</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B785</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B784</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B785</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2474,11 +2474,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=784"></script>
+<script src="./layer-controller.js?v=785"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B784';
+const DISTRIBUTION_BUILD='GKS-B785';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -6217,10 +6217,12 @@ function resetBattleSample(){battleAllies.value=JSON.stringify(BATTLE_SAMPLE_ALL
 function seededRandom(seed){let x=(Number(seed)||1)>>>0;return ()=>{x=(x+0x6D2B79F5)|0;let t=Math.imul(x^x>>>15,1|x);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
 function battleMasterById(category,id){return (data.masters&&data.masters[category]||[]).find(x=>x.id===id)||null}
 function battleStatBlock(rec){const p=rec&&rec.params&&typeof rec.params==='object'?rec.params:{};return p.stats&&typeof p.stats==='object'?p.stats:p}
+function formalBattleEquipmentRowCombatContribution(row,key){return String(row?.base_item_type||'')==='矢筒'?0:(Number(row?.modified?.[key])||0)}
+function formalBattleEffectiveEquipmentTotal(formal){const total=structuredClone(formal?.equipment_total||{}),fields=['attack','accuracy','magic_weapon_bonus','base_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion'];for(const row of (Array.isArray(formal?.equipment)?formal.equipment:[])){if(String(row?.base_item_type||'')!=='矢筒')continue;for(const key of fields){const next=(Number(total[key])||0)-(Number(row?.modified?.[key])||0);total[key]=Math.abs(next)<1e-12?0:next}}return total}
 function resolveBattleLoadout(u){
  const totals={hp:0,mp:0,mp_regen:0,agi:0,str:0,luk:0,attack:0,defense:0,accuracy:0,evasion:0,base_critical_rate:0,magic_weapon_bonus:0,block_rate:0,block_damage_cut_rate:0,crit:0,damage_resist:0,status_resist:0},sources=[],missing=[];
  if(u&&u.__formal_contribution){
-  const c=u.__formal_contribution.equipment_total||{};
+  const c=formalBattleEffectiveEquipmentTotal(u.__formal_contribution);
   totals.hp=Number(c.hp_bonus)||0;totals.mp=Number(c.mp_bonus)||0;totals.attack=Number(c.attack)||0;totals.accuracy=Number(c.accuracy)||0;totals.evasion=Number(c.evasion)||0;totals.base_critical_rate=Number(c.base_critical_rate)||0;totals.magic_weapon_bonus=Number(c.magic_weapon_bonus)||0;totals.block_rate=Number(c.block_rate)||0;totals.block_damage_cut_rate=Number(c.block_damage_cut_rate)||0;
   (u.__formal_contribution.equipment||[]).forEach(x=>sources.push({id:x.equipment_id,name:x.equipment_id,kind:'formal_equipment'}));
   (u.__formal_contribution.passives||[]).forEach(x=>sources.push({id:x.passive_id,name:x.passive_id,kind:'formal_passive'}));
@@ -6302,10 +6304,10 @@ function formalBattleWeaponAttackProfiles(u,loadout,runtimeMods,activeCapabiliti
  if(!hand1||!hand2)throw Object.assign(new Error(`${layout.style}の武器がequipment_idsへ必要数含まれていません: ${layout.weapon1Id} / ${layout.weapon2Id}`),{code:layout.style==='dual_wield'?'BATTLE_FORMAL_DUAL_WIELD_EQUIPMENT_BINDING_MISMATCH':'BATTLE_FORMAL_WEAPON_SHIELD_EQUIPMENT_BINDING_MISMATCH'});
  const weaponRows=[[hand1,layout.weapon1Id,'weapon1'],[hand2,layout.weapon2Id,'weapon2']],bowRows=weaponRows.filter(([hand])=>['弓','大弓'].includes(String(hand?.base_item_type||''))),quiverRows=weaponRows.filter(([hand])=>String(hand?.base_item_type||'')==='矢筒'),attackRows=layout.style==='dual_wield'?weaponRows:layout.style==='bow_quiver'?bowRows:weaponRows.filter(([hand])=>String(hand?.base_item_type||'')!=='盾');
  if(layout.style==='weapon_shield'&&attackRows.length!==1)throw Object.assign(new Error(`weapon_shieldは攻撃武器1本と盾1枚が必要です: ${layout.weapon1Id} / ${layout.weapon2Id}`),{code:'BATTLE_FORMAL_WEAPON_SHIELD_ROLE_INVALID'});if(layout.style==='bow_quiver'&&(bowRows.length!==1||quiverRows.length!==1))throw Object.assign(new Error(`bow_quiverは弓/大弓1件と矢筒1件が必要です: ${layout.weapon1Id} / ${layout.weapon2Id}`),{code:'BATTLE_FORMAL_BOW_QUIVER_ROLE_INVALID'});
- const total=loadout.formal?.equipment_total||{},subtract=(key)=>{let v=Number(total[key])||0;for(const [hand] of weaponRows)v-=Number(hand.modified?.[key])||0;return v;},baseAttack=Number(u.attack)||10,baseAccuracy=Number.isFinite(Number(u.accuracy))?Number(u.accuracy):0,explicitCrit=Number.isFinite(Number(u.critical_rate))?Number(u.critical_rate):Number.isFinite(Number(u.criticalRate))?Number(u.criticalRate):null;
- if(layout.style==='bow_quiver'){const [bow,bowId,bowSlot]=bowRows[0],[quiver]=quiverRows[0],attack=Math.max(0,baseAttack+subtract('attack')+(Number(bow.modified?.attack)||0)+(Number(quiver.modified?.attack)||0)),rawAccuracy=baseAccuracy+subtract('accuracy')+(Number(bow.modified?.accuracy)||0)+(Number(quiver.modified?.accuracy)||0),accuracy=Math.max(0,formalBattleApplyModifierTarget(rawAccuracy,'ACCURACY',runtimeMods.boxes)),critBase=explicitCrit!=null?explicitCrit:Math.max(0,(subtract('base_critical_rate')+(Number(bow.modified?.base_critical_rate)||0))*100),crit=Math.max(0,Math.min(100,formalBattleApplyModifierTarget(critBase,'CRITICAL_RATE',runtimeMods.boxes)));return[{weaponStyle:'bow_quiver',weaponSlot:bowSlot,weaponId:bowId,strikeIndex:0,attack,accuracy,crit}]}
+ const total=loadout.totals||{},subtract=(key)=>{let v=Number(total[key])||0;for(const [hand] of weaponRows)v-=formalBattleEquipmentRowCombatContribution(hand,key);return v;},baseAttack=Number(u.attack)||10,baseAccuracy=Number.isFinite(Number(u.accuracy))?Number(u.accuracy):0,explicitCrit=Number.isFinite(Number(u.critical_rate))?Number(u.critical_rate):Number.isFinite(Number(u.criticalRate))?Number(u.criticalRate):null;
+ if(layout.style==='bow_quiver'){const [bow,bowId,bowSlot]=bowRows[0],attack=Math.max(0,baseAttack+subtract('attack')+formalBattleEquipmentRowCombatContribution(bow,'attack')),rawAccuracy=baseAccuracy+subtract('accuracy')+formalBattleEquipmentRowCombatContribution(bow,'accuracy'),accuracy=Math.max(0,formalBattleApplyModifierTarget(rawAccuracy,'ACCURACY',runtimeMods.boxes)),critBase=explicitCrit!=null?explicitCrit:Math.max(0,(subtract('base_critical_rate')+formalBattleEquipmentRowCombatContribution(bow,'base_critical_rate'))*100),crit=Math.max(0,Math.min(100,formalBattleApplyModifierTarget(critBase,'CRITICAL_RATE',runtimeMods.boxes)));return[{weaponStyle:'bow_quiver',weaponSlot:bowSlot,weaponId:bowId,strikeIndex:0,attack,accuracy,crit}]}
  return attackRows.map(([hand,weaponId,weaponSlot],strikeIndex)=>{
-  const attack=Math.max(0,baseAttack+subtract('attack')+(Number(hand.modified?.attack)||0)),rawAccuracy=baseAccuracy+subtract('accuracy')+(Number(hand.modified?.accuracy)||0),accuracy=Math.max(0,formalBattleApplyModifierTarget(rawAccuracy,'ACCURACY',runtimeMods.boxes)),critBase=explicitCrit!=null?explicitCrit:Math.max(0,(subtract('base_critical_rate')+(Number(hand.modified?.base_critical_rate)||0))*100),crit=Math.max(0,Math.min(100,formalBattleApplyModifierTarget(critBase,'CRITICAL_RATE',runtimeMods.boxes)));
+  const attack=Math.max(0,baseAttack+subtract('attack')+formalBattleEquipmentRowCombatContribution(hand,'attack')),rawAccuracy=baseAccuracy+subtract('accuracy')+formalBattleEquipmentRowCombatContribution(hand,'accuracy'),accuracy=Math.max(0,formalBattleApplyModifierTarget(rawAccuracy,'ACCURACY',runtimeMods.boxes)),critBase=explicitCrit!=null?explicitCrit:Math.max(0,(subtract('base_critical_rate')+formalBattleEquipmentRowCombatContribution(hand,'base_critical_rate'))*100),crit=Math.max(0,Math.min(100,formalBattleApplyModifierTarget(critBase,'CRITICAL_RATE',runtimeMods.boxes)));
   return{weaponStyle:layout.style,weaponSlot,weaponId,strikeIndex,attack,accuracy,crit};
  });
 }
@@ -6334,7 +6336,7 @@ function normalizeBattleUnits(rows,side){
    accuracy=Math.max(0,formalBattleApplyModifierTarget(rawAccuracy,'ACCURACY',runtimeMods.boxes));
    evasion=Math.max(0,formalBattleApplyModifierTarget(rawEvasion,'EVASION',runtimeMods.boxes));
    const explicitCrit=Number.isFinite(Number(u.critical_rate))?Number(u.critical_rate):Number.isFinite(Number(u.criticalRate))?Number(u.criticalRate):null;
-   const quiverCrit=formalMode?(bowQuiverState?.quivers||[]).reduce((n,row)=>n+(Number(row?.modified?.base_critical_rate)||0),0):0,critBase=explicitCrit!=null?explicitCrit:Math.max(0,((Number(b.base_critical_rate)||0)-quiverCrit)*100);
+   const critBase=explicitCrit!=null?explicitCrit:Math.max(0,(Number(b.base_critical_rate)||0)*100);
    crit=Math.max(0,Math.min(100,formalBattleApplyModifierTarget(critBase,'CRITICAL_RATE',runtimeMods.boxes)));
   }else{
    const equipmentAccuracy=Number(b.accuracy)||0,explicitAccuracy=Number.isFinite(Number(u.accuracy))?Number(u.accuracy):null,forceFormulaAccuracy=!!(battleExperimentContext&&battleExperimentContext.forceFormulaAccuracy);
@@ -6342,7 +6344,7 @@ function normalizeBattleUnits(rows,side){
    accuracy=Math.max(0,Math.min(100,accuracyBase+str*cfg.strAccuracyCoefficient));evasion=Math.max(0,Number(u.evasion)||0);crit=Math.max(0,Math.min(100,cfg.baseCrit+(Number(b.crit)||0)+(Number(u.crit_bonus)||0)+luk*cfg.lukCritCoefficient));
   }
   const baseStatusResist=Math.max(0,(Number(u.status_resist??u.statusResistance)||0)+b.status_resist),statusResist=formalMode?Math.max(0,Math.min(75,formalBattleApplyModifierTarget(baseStatusResist,'STATUS_RESIST',runtimeMods.boxes))):Math.max(0,Math.min(75,baseStatusResist)),activeCombatCapabilities=formalMode?formalBattleActiveCombatCapabilities(loadout.formal,abilityStats):new Set(),weaponLayout=formalMode?formalBattleWeaponLayout(u,activeCombatCapabilities):null,formalBasicAttackProfiles=formalMode?formalBattleWeaponAttackProfiles(u,loadout,runtimeMods,activeCombatCapabilities):null;if(formalMode&&bowQuiverState.bows.length&&bowQuiverState.quivers.length&&weaponLayout?.style!=='bow_quiver')throw Object.assign(new Error(`${u.name||u.id||side+(i+1)}のBow+Quiverはweapon_layout.style=bow_quiverが必要です。`),{code:'BATTLE_FORMAL_BOW_QUIVER_LAYOUT_REQUIRED'});
-  return{id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),str,luk,abilityStats,attack:Math.max(0,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy,evasion,crit,weaponStyle:weaponLayout?.style||'single',formalWeaponLayout:weaponLayout?structuredClone(weaponLayout):null,formalBasicAttackProfiles,criticalDamage:Math.max(0,Math.min(700,formalMode?formalBattleApplyModifierTarget(Number(u.critical_damage??u.criticalDamage)||0,'CRITICAL_DAMAGE',runtimeMods.boxes):(Number(u.critical_damage??u.criticalDamage)||0))),magicIncreaseRate:Math.max(0,Number.isFinite(Number(u.magic_increase_rate??u.magicIncreaseRate))?Number(u.magic_increase_rate??u.magicIncreaseRate):1),magicWeaponBonus:Number(b.magic_weapon_bonus)||0,blockRate:Number(b.block_rate)||0,blockDamageCutRate:Number(b.block_damage_cut_rate)||0,equipmentTagIds:formalMode?formalBattleEquipmentTagIds(loadout):[],basicAttackUnavailableReason:formalMode?bowQuiverState.reason:'',damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist,skills,ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,equipmentContribution:formalMode?structuredClone(loadout.formal?.equipment_total||{}):null,passiveContributions:formalMode?structuredClone(loadout.formal?.passives||[]):[],formalModifierChannels:formalMode?structuredClone([...(loadout.formal?.equipment_runtime_modifiers||[]),...(loadout.formal?.direct_modifiers||[])]):[],formalModifierBoxes:formalMode?structuredClone(runtimeMods.boxes):null,formalUnresolvedModifierTargets:formalMode?structuredClone(runtimeMods.unresolved):[],statuses:[],cooldowns:{},ag:0,actions:0,alive:true,formalMode,formalSnapshot:formalMode?structuredClone(u.__formal_snapshot):null,formalAiRuntime:formalAi?structuredClone(formalAi.runtime):null,formalAiBinding:formalAi?structuredClone(formalAi.binding):null,formalAiSkillLoadoutIds:formalAi?structuredClone(formalAi.skillLoadoutIds):[],formalAiProgramCandidate:formalAi?structuredClone(formalAi.program_candidate):null,formalAiMasterSnapshotCandidate:formalAi?structuredClone(formalAi.master_snapshot_candidate):null,formalAiLastTrace:null,formalMonsterOwner:formalMonsterOwner?structuredClone(formalMonsterOwner):null,formalCasting:null,formalStatusEffects:[],formalDotStacks:[],formalModifierStacks:[],formalShields:[],formalSequence:0,formalEvidenceStart:formalMode?{hp,mp}:null,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0};
+  return{id:String(u.id||side+'-'+(i+1)),name:String(u.name||u.id||side+(i+1)),side,hp,maxHp:hp,mp,maxMp:mp,mpRegen:Math.max(0,(Number(u.mp_regen)||0)+b.mp_regen),agi:Math.max(1,(Number(u.agi)||10)+b.agi),str,luk,abilityStats,attack:Math.max(0,(Number(u.attack)||10)+b.attack),defense:Math.max(0,(Number(u.defense)||0)+b.defense),accuracy,evasion,crit,weaponStyle:weaponLayout?.style||'single',formalWeaponLayout:weaponLayout?structuredClone(weaponLayout):null,formalBasicAttackProfiles,criticalDamage:Math.max(0,Math.min(700,formalMode?formalBattleApplyModifierTarget(Number(u.critical_damage??u.criticalDamage)||0,'CRITICAL_DAMAGE',runtimeMods.boxes):(Number(u.critical_damage??u.criticalDamage)||0))),magicIncreaseRate:Math.max(0,Number.isFinite(Number(u.magic_increase_rate??u.magicIncreaseRate))?Number(u.magic_increase_rate??u.magicIncreaseRate):1),magicWeaponBonus:Number(b.magic_weapon_bonus)||0,blockRate:Number(b.block_rate)||0,blockDamageCutRate:Number(b.block_damage_cut_rate)||0,equipmentTagIds:formalMode?formalBattleEquipmentTagIds(loadout):[],basicAttackUnavailableReason:formalMode?bowQuiverState.reason:'',damageResist:Math.max(0,Math.min(75,(Number(u.damage_resist)||0)+b.damage_resist)),statusResist,skills,ai,equipmentIds:Array.isArray(u.equipment_ids)?u.equipment_ids:[],modIds:Array.isArray(u.mod_ids)?u.mod_ids:[],loadoutSources:loadout.sources,equipmentContribution:formalMode?structuredClone(loadout.totals||{}):null,passiveContributions:formalMode?structuredClone(loadout.formal?.passives||[]):[],formalModifierChannels:formalMode?structuredClone([...(loadout.formal?.equipment_runtime_modifiers||[]),...(loadout.formal?.direct_modifiers||[])]):[],formalModifierBoxes:formalMode?structuredClone(runtimeMods.boxes):null,formalUnresolvedModifierTargets:formalMode?structuredClone(runtimeMods.unresolved):[],statuses:[],cooldowns:{},ag:0,actions:0,alive:true,formalMode,formalSnapshot:formalMode?structuredClone(u.__formal_snapshot):null,formalAiRuntime:formalAi?structuredClone(formalAi.runtime):null,formalAiBinding:formalAi?structuredClone(formalAi.binding):null,formalAiSkillLoadoutIds:formalAi?structuredClone(formalAi.skillLoadoutIds):[],formalAiProgramCandidate:formalAi?structuredClone(formalAi.program_candidate):null,formalAiMasterSnapshotCandidate:formalAi?structuredClone(formalAi.master_snapshot_candidate):null,formalAiLastTrace:null,formalMonsterOwner:formalMonsterOwner?structuredClone(formalMonsterOwner):null,formalCasting:null,formalStatusEffects:[],formalDotStacks:[],formalModifierStacks:[],formalShields:[],formalSequence:0,formalEvidenceStart:formalMode?{hp,mp}:null,damageDealt:0,damageTaken:0,healingDone:0,hits:0,misses:0,crits:0,skillUses:0,statusApplied:0};
  });
 }
 function seedEquipmentBattleSample(){data.masters.equipment=data.masters.equipment||[];data.masters.mods=data.masters.mods||[];const upsert=(c,r)=>{const i=data.masters[c].findIndex(x=>x.id===r.id);if(i>=0)data.masters[c][i]=r;else data.masters[c].push(r)};upsert('mods',{id:'MOD-BTL-ATK',name:'攻撃強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{attack:12,crit:3}},description:'装備連携確認用',updated_at:now()});upsert('mods',{id:'MOD-BTL-RES',name:'守護強化',status:'approved',tags:['戦闘サンプル'],params:{stats:{hp:60,defense:6,damage_resist:5}},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-SWORD',name:'試作騎士剣',status:'approved',tags:['武器','戦闘サンプル'],params:{stats:{attack:18,accuracy:3},mod_ids:['MOD-BTL-ATK']},description:'装備連携確認用',updated_at:now()});upsert('equipment',{id:'EQP-BTL-ARMOR',name:'試作騎士鎧',status:'approved',tags:['鎧','戦闘サンプル'],params:{stats:{hp:80,defense:10,status_resist:5},mod_ids:['MOD-BTL-RES']},description:'装備連携確認用',updated_at:now()});const allies=JSON.parse(JSON.stringify(BATTLE_SAMPLE_ALLIES));allies[0].equipment_ids=['EQP-BTL-SWORD','EQP-BTL-ARMOR'];battleAllies.value=JSON.stringify(allies,null,2);battleEnemies.value=JSON.stringify(BATTLE_SAMPLE_ENEMIES,null,2);persist('battle equipment sample');battleSummary.innerHTML='装備・MODマスターと連携するサンプルを登録しました。'}
@@ -10048,7 +10050,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','784');
+    url.searchParams.set('appv','785');
     location.replace(url.toString());
    }
  }
@@ -10057,7 +10059,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=784',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=785',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10076,7 +10078,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','784');
+    url.searchParams.set('appv','785');
     location.replace(url.toString());
    }
   });
