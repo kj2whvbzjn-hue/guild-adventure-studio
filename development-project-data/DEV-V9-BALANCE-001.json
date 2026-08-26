@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T01:11:37.207Z"
+    "updated_at": "2026-08-26T01:39:27.571Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-CORR-003 Equipment戦闘仕様完成の開始承認待ち",
-    "goal": "盾・弓を含むEquipment combat identityを未確定0件まで完成してBare Playerを再Freezeする。その後にMonster Job Equipment CoefficientでMonster Coreを再構築する。TASK-BAL-074 Skill数値検証はそれまで停止。"
+    "theme": "TASK-BAL-071-CORR-003 Equipment仕様整理 — 弓確定 / 盾・残Equipment未決",
+    "goal": "Human確定済みの弓+矢筒Combat Identityとtwo_hand分類撤回を正本として保持し、次に盾の防御Identityおよび残Equipment typeの未決仕様を整理して未確定0件にする。Source変更/Battle実行はTASK-BAL-071-CORR-003の別開始承認まで行わない。"
   },
   "project_rules": [
     {
@@ -318,12 +318,12 @@
     },
     {
       "id": "RULE-BAL-MONSTER-HP-DPT-001",
-      "text": "Monster HPの前段数学ReferenceはSkill/Passive/MODを除いたPrimary Bare PlayerのLevel×Job Basic Attack DPTから作る。DPT算定はCurrent Game Runtimeの離散Action Gaugeを使用し、wall-clock秒へ換算しない。HP基準ではNeutral Evasion0/Resistance0/Shield0を使用してDefenseと分離する。二刀流は各手独立2strike、盾/両手は1strike。最終Difficulty/TTKはFull Mathematical Baseline後のHuman Experience phaseまで凍結しない。",
+      "text": "Monster HPの前段数学ReferenceはSkill/Passive/MODを除いたPrimary Bare PlayerのLevel×Job Basic Attack DPTから作る。DPT算定はCurrent Game Runtimeの離散Action Gaugeを使用し、wall-clock秒へ換算しない。HP基準ではNeutral Evasion0/Resistance0/Shield0を使用してDefenseと分離する。二刀流は各手独立2strike、weapon_shieldは攻撃武器1strike・盾0strike、弓セットは弓1strike・矢筒0strike。その他は正式Equipment Combat Identityのattack_countに従う。two_handカテゴリは使用しない。最終Difficulty/TTKはFull Mathematical Baseline後のHuman Experience phaseまで凍結しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-24 level-by-job dps for monster hp",
+      "source_id": "conversation:2026-08-26 equipment identity correction",
       "created_at": "2026-08-24T21:35:00+09:00",
-      "updated_at": "2026-08-24T21:35:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00"
     },
     {
       "id": "RULE-BAL-MONSTER-HP-POOL-001",
@@ -336,12 +336,12 @@
     },
     {
       "id": "RULE-BAL-PER-STRIKE-WEAPON-CONTRIBUTION-001",
-      "text": "Basic AttackのAttack/Accuracy/Criticalは、そのstrikeを発生させた攻撃武器のContributionだけを使用する。dual_wieldはmain/off hand各1strikeで各手Contributionを独立使用し、Accuracy/Criticalを合算しない。weapon_shieldは攻撃武器1本だけが1strikeを発生させ、盾はattack_count=0としてBasic AttackのAttack/Accuracy/CriticalへContributionしない。two_handは1武器1strikeで、STR×2は装備Requirementだけに適用する。",
+      "text": "Basic AttackのAttack/Accuracy/Criticalは原則としてそのstrikeを発生させた攻撃武器のContributionを使用する。dual_wieldはmain/off hand各1strikeで各手Contributionを独立使用し、Accuracy/Criticalを合算しない。weapon_shieldは攻撃武器1本だけがstrikeを発生させ、盾はattack_count=0としてoffensive contributionを加算しない。弓は明示例外として弓+矢筒が1セットを構成し、弓attack_count=1・矢筒attack_count=0。Criticalは弓側のみ、Critical以外のCombat Contributionは弓+矢筒を合算する。two_handカテゴリは使用しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-24 shield attack count zero and per-strike accuracy/critical",
+      "source_id": "conversation:2026-08-26 bow/quiver and no-two-hand correction",
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00"
     },
     {
       "id": "RULE-BAL-MONSTER-HP-DPT-R2-001",
@@ -354,12 +354,12 @@
     },
     {
       "id": "RULE-BAL-DUAL-WIELD-PASSIVE-001",
-      "text": "二刀流の正式CapabilityはPAS-DUAL-WIELD-001 / DUAL_WIELDとする。PassiveなしのCharacterは二本の非盾武器をdual_wieldとして使用できない。 二刀流有効時のみMain/Off Handの独立2 Strikeを発生させる。盾は攻撃回数0、両手持ちは1 Strike。 Balance測定ではThiefの1刀BaselineとDual Wield Passive装着性能を分離し、二刀流装着値をJob裸Baselineへ混ぜない。",
+      "text": "二刀流の正式CapabilityはPAS-DUAL-WIELD-001 / DUAL_WIELDとする。PassiveなしのCharacterは二本の非盾武器をdual_wieldとして使用できない。二刀流有効時のみMain/Off Handの独立2 Strikeを発生させる。盾はattack_count=0。Balance測定ではThiefの1刀BaselineとDual Wield Passive装着性能を分離し、二刀流装着値をJob裸Baselineへ混ぜない。two_handカテゴリは使用しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-25 dual wield passive adopted",
+      "source_id": "conversation:2026-08-26 no-two-hand correction",
       "created_at": "2026-08-25T00:40:00+09:00",
-      "updated_at": "2026-08-25T00:40:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00"
     },
     {
       "id": "RULE-BAL-AG-FORMULA-001",
@@ -471,6 +471,32 @@
       "updated_at": "2026-08-26T07:10:00+09:00",
       "source_type": "",
       "source_id": ""
+    },
+    {
+      "id": "RULE-BAL-BOW-QUIVER-COMBAT-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Active",
+      "text": "弓（仕様選定中は弓/大弓を同条件として一括呼称）と矢筒は個別装備可能だが、弓攻撃/弓Skillの使用には両方の装備を要求する。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。装備画面では不足側スロットを警告色で示す。弓attack_count=1、矢筒attack_count=0。Criticalは弓側のみを使用し、Critical以外のCombat Contributionは弓+矢筒を合算する。弓EquipmentのWeapon属性は射撃。Range/射程/TargetingはEquipment ownerではない。",
+      "rationale": "Human-approved Bow/Quiver combat and UI contract.",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:38:34+09:00",
+      "created_at": "2026-08-26T10:38:34+09:00",
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-26 bow/quiver specification"
+    },
+    {
+      "id": "RULE-BAL-EQUIPMENT-NO-TWO-HAND-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Active",
+      "text": "Equipmentの正式分類・Combat Identityとしてtwo_hand/両手武器カテゴリを使用しない。個別武器種のRequirementやattack_countをtwo_handカテゴリから推定しない。既存Source/Taskに残るtwo_hand表現はHistorical implementationであり、Current Equipment Authorityへ使用しない。",
+      "rationale": "Human instruction: 両手武器というものはない。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:38:34+09:00",
+      "created_at": "2026-08-26T10:38:34+09:00",
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-26 no-two-hand specification"
     }
   ],
   "source_baseline": {
@@ -1182,7 +1208,9 @@
       },
       "summary": "Replaced implicit weapon1===weapon2 two-hand semantics with explicit weapon styles. Dual wield now executes two per-hand independent Basic Attack resolutions in one action, with independent Hit/Critical and no Accuracy/Crit summing. Same-ID x2 ownership is preserved through equip/unequip. Two-hand is one weapon/one strike and keeps STR×2 only for Requirement. Weapon+shield is one strike; Current shield numeric is unchanged. Save v3 remains backward compatible. Studio Formal Battle mirrors Game Runtime. No Balance numeric/formula topology/order/rounding/Game Data/Current active/deletion change.",
       "created_at": "2026-08-24T20:35:00+09:00",
-      "updated_at": "2026-08-24T20:35:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "current_authority_status": "Historical_SupersededForTwoHandClassification",
+      "current_authority_note": "Human later confirmed no formal two_hand weapon/category exists. B772 remains applied implementation history; its two_hand representation is not Current Equipment specification authority."
     },
     {
       "id": "IMP-BAL-R5-PHYSICAL-MIRROR-B777-001",
@@ -1901,19 +1929,21 @@
     {
       "id": "DEC-BAL-BARE-PLAYER-SWORDSMAN-GREATSWORD-001",
       "title": "Bare Player剣士Referenceは大剣・正式両手STR倍率を使用する",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "TASK-BAL-071 Bare Playerの剣士Primary Referenceは大剣を使用し、Current formal equipment rule str_requirement_two_hand_multiplier=2をSTR要求だけに適用し、DEX/INTは緩和しない。GKS-B772以降の正規表現では weaponStyle='two_hand', weapon1=<greatsword>, weapon2=null とし、1武器・1攻撃判定とする。旧GKS-B771向けReferenceで使用した同一大剣IDのweapon1/weapon2重複bindはlegacy表現であり、Multi-Loadout再生成時に置換する。これはMonster Core用Referenceの選定でありProduct Job装備制限やSkill/Experience Targetを決定しない。",
       "rationale": "Human指示「力2倍ルールは考慮してる　剣士は大剣でテストしといた方がいい」。旧TASK-BAL-071はtwo-hand relaxationを明示的に使用せず、Formal Equipment Ruleの重要branchをMonster入力から外していたため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-24T20:05:00+09:00",
       "created_at": "2026-08-24T20:05:00+09:00",
-      "updated_at": "2026-08-24T20:35:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "superseded_by": "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
+      "supersession_note": "Human correction 2026-08-26: no formal two_hand weapon/category exists. Historical measurements remain history; any still-valid dual_wield/shield/loadout portions are retained only through their independent Decisions/Rules, not through the two_hand classification."
     },
     {
       "id": "DEC-BAL-BARE-PLAYER-MULTILOADOUT-001",
       "title": "Monster Core入力はJobごとの代表戦闘Loadoutを複数検討する",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "TASK-BAL-071 Bare Playerを1職1装備形に固定せず、Currentで成立する代表戦闘Loadoutを複数持たせる。最低検討対象は、剣士=大剣両手を維持、騎士=片手剣+盾、盗賊=短剣×2および片手剣×2、狩人=弓系。Monster Coreは単一装備形だけへ合わせず、代表Loadout幅を入力にする。これはProductの職業別装備制限やSkill/Experience Targetの確定ではない。",
       "rationale": "Human instruction 2026-08-24: 二刀流、盗賊の短剣×2/片手剣×2、騎士の片手剣+盾、狩人の弓等も検討する。",
       "source_discussion_ids": [
@@ -1922,12 +1952,14 @@
       "approved_by": "Human",
       "approved_at": "2026-08-24T20:15:00+09:00",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-24T20:15:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "superseded_by": "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
+      "supersession_note": "Human correction 2026-08-26: no formal two_hand weapon/category exists. Historical measurements remain history; any still-valid dual_wield/shield/loadout portions are retained only through their independent Decisions/Rules, not through the two_hand classification."
     },
     {
       "id": "DEC-BAL-WEAPON-STYLE-001",
       "title": "武器Styleを装備IDから分離し二刀流を独立2攻撃判定として扱う",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "Weapon Styleをsingle / dual_wield / two_hand / weapon_shieldとして装備IDと分離する。dual_wieldは1行動内でmain hand/off handの2回の独立Basic Attack判定を行い、各手ごとにAttack/Accuracy/Criticalを評価しHit/Criticalを個別rollする。2武器のAccuracy/Criticalを合算して1回判定しない。同一Equipment master IDを2個所有している場合もdual_wieldを許可する。two_handは1武器・1攻撃判定とし、STR×2は装備Requirement判定だけへ使用する。Attack倍化や2回攻撃はしない。weapon_shieldは1攻撃判定とし、盾は2発目を発生させない。Current盾数値は本Source correctionで変更せず、防御Identity/Balance tuningは後段Equipment BalanceへDeferredする。Inventory Instance modelへの全面移行は行わず、現Save/Inventoryの同一master ID複数所有を保持する。",
       "rationale": "Human clarified that dual wield means two attack resolutions and does not sum Critical/Accuracy, then approved implementation with 「進めて」. This also resolves the same-ID dual-wield/two-hand representation conflict without inventing shield balance values.",
       "source_discussion_ids": [
@@ -1936,7 +1968,9 @@
       "approved_by": "Human",
       "approved_at": "2026-08-24T20:35:00+09:00",
       "created_at": "2026-08-24T20:35:00+09:00",
-      "updated_at": "2026-08-24T20:35:00+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "superseded_by": "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
+      "supersession_note": "Human correction 2026-08-26: no formal two_hand weapon/category exists. Historical measurements remain history; any still-valid dual_wield/shield/loadout portions are retained only through their independent Decisions/Rules, not through the two_hand classification."
     },
     {
       "id": "DEC-BAL-MONSTER-HP-BASIC-DPS-001",
@@ -2420,6 +2454,30 @@
       "approved_at": "2026-08-26T10:10:23+09:00",
       "created_at": "2026-08-26T10:10:23+09:00",
       "updated_at": "2026-08-26T10:10:23+09:00"
+    },
+    {
+      "id": "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Equipment仕様に『両手武器』『two_hand weapon style/category』という正式分類は存在しない。大剣等の個別武器種をtwo_handという共通カテゴリへ変換して装備・攻撃・Requirementを決めない。既存の大剣STR×2 Requirement判断自体は本Decisionで数値否定せず、two_handカテゴリ依存ではなく実際の武器種/Requirement ownerへ再表現する必要がある。single/dual_wield/weapon_shield等の既決挙動は、two_hand分類撤回部分を除き別DecisionのAuthorityに従う。",
+      "rationale": "Human instruction: 『両手武器なんてものはない』。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:38:34+09:00",
+      "created_at": "2026-08-26T10:38:34+09:00",
+      "updated_at": "2026-08-26T10:38:34+09:00"
+    },
+    {
+      "id": "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "弓系Equipmentの正式Combat Identityを次で確定する。仕様選定中は弓と大弓を同条件としてまとめて『弓』と呼ぶ（Product上の名称統合ではない）。弓と矢筒は個別には装備可能であり、片側だけの装備状態も合法とする。ただし弓による通常攻撃および弓を必要とするSkillは、弓と矢筒の両方が装備されている場合だけ使用可能。弓のみの場合は『矢筒が装備されていません』、矢筒のみの場合は『弓が装備されていません』と理由表示する。片側のみの場合、装備画面では不足している側の武器スロットを赤系の警告状態等で明示し、『装備不可』ではなく『セット条件未成立』であることをUI上区別する。弓のattack_count=1、矢筒のattack_count=0。セット成立時、弓と矢筒が持つCombat ContributionはCritical系を除いて合算する。Attack、Accuracy、magic_weapon_bonusその他のContributionは弓+矢筒を使用し、Critical/base_critical_rateは合算せず弓側だけを使用する。矢筒は独立Strike/Critical判定を発生させない。弓Equipmentが所有するのはWeapon属性『射撃』であり、EquipmentはRange/射程/対象範囲を決定・補正しない。Range/Targetingは既存Skill/Battle側ownerに従う。",
+      "rationale": "Human confirmed Bow/Greatbow common handling during specification selection, Bow+Quiver combat requirement, incomplete-set UI behavior, contribution aggregation, Bow-side Critical, Quiver attack_count=0, and that Equipment has no Range authority.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:38:34+09:00",
+      "created_at": "2026-08-26T10:38:34+09:00",
+      "updated_at": "2026-08-26T10:38:34+09:00"
     }
   ],
   "specifications": [
@@ -2689,6 +2747,29 @@
       "approved_at": "2026-08-24T19:13:00+09:00",
       "created_at": "2026-08-24T16:15:00+09:00",
       "updated_at": "2026-08-24T19:13:00+09:00"
+    },
+    {
+      "id": "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001",
+      "title": "Equipment Combat Identity — Bow/Quiver and Weapon Category",
+      "status": "Approved",
+      "summary": "弓+矢筒の装備/使用条件、UI警告、attack_count、Contribution合成、Critical owner、射撃属性とRange owner境界、およびtwo_handカテゴリ不存在をHuman Approved仕様として確定。",
+      "body": "# Equipment Combat Identity — Bow / Quiver & Weapon Category Correction\n\n## Scope / status\nこのSpecificationはEquipment戦闘Identityのうち、Humanが確定した弓・矢筒およびtwo_hand分類撤回だけをCurrent Authorityとしてまとめる。\n盾の防御Identityやその他未決Equipment仕様はTASK-BAL-071-CORR-003で引き続き未決とする。\n\n## Terminology\n- 仕様選定中は「弓」と「大弓」を同一条件としてまとめて「弓」と呼ぶ。\n- これはProduct Master上の名称統合・種類削除を意味しない。\n- 「両手武器 / two_hand」というEquipment分類は存在しない。\n\n## Equip state / combat availability\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 使用可否はCombat側の条件であり、片側だけの状態をEquip Validationで不正として排除しない。\n\n## UI\n- 弓のみ: 「矢筒が装備されていません」。\n- 矢筒のみ: 「弓が装備されていません」。\n- 片側だけのときは、装備画面で不足している側の武器スロットを赤系警告状態等で明示する。\n- UIは「装備不可」と「セット条件未成立」を区別する。\n\n## Strike / contribution\n- Bow attack_count = 1.\n- Quiver attack_count = 0.\n- Quiverは独立Strike/Critical rollを発生させない。\n- セット成立時、Critical系以外のCombat ContributionはBow + Quiverを合算する。\n- Attack = Bow.Attack + Quiver.Attack.\n- Accuracy = Bow.Accuracy + Quiver.Accuracy.\n- magic_weapon_bonusその他Critical以外のContributionも同じ合算規則。\n- Critical/base_critical_rateは合算しない。Bow側だけを使用する。\n\n## Range ownership\n- 弓Equipmentが持つWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達等を決定・補正しない。\n- Range/Targetingは既存Skill/Battle ownerに従う。\n\n## Explicit exclusion\n- two_hand/両手武器カテゴリをLoadout/Requirement/attack_countの決定根拠にしない。\n- 大剣等の既存個別Requirement Ruleが必要な場合は、実武器種ownerへ再表現する。\n- 旧two_hand Source/TaskはHistorical implementationとしてのみ保持し、Current Authorityとして使用しない。\n\n## Remaining open Equipment specifications\n- 盾の防御Contribution owner / channel / coefficient/growth。\n- その他Weapon/Armor typeのdownstream combat identity棚卸し。\n- Current Sourceが本Specificationを表現できるかのConformance確認。\n",
+      "decision_refs": [
+        "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
+        "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
+        "DEC-BAL-WEAPON-SHIELD-OFFENSE-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- 弓/矢筒単体を合法Equip stateとして保持し、Combat availabilityだけをセット条件で制御する。\n- 不足理由メッセージ2種と装備画面警告を保持する。\n- Bow=1 strike / Quiver=0 strike、CriticalはBowのみ、その他Contributionは合算する。\n- EquipmentにRange ownershipを持たせない。\n- two_handカテゴリをCurrent Authorityから除外する。\n- Source/Runtime conformanceは別開始承認後に検証する。",
+      "system_node_id": "SYS-BAL-GAMEWIDE",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T10:38:34+09:00",
+      "created_at": "2026-08-26T10:38:34+09:00",
+      "updated_at": "2026-08-26T10:38:34+09:00"
     }
   ],
   "specification_candidates": [],
@@ -7036,8 +7117,8 @@
         "at": "2026-08-24T19:42:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
-      "result_scope": "PRIOR FREEZE INVALIDATED FOR DOWNSTREAM. Existing loadout/equipability/weapon-style measurements remain historical inputs, but Equipment phase is incomplete because combat-relevant specifications were deferred, notably shield defensive identity and bow range/combat identity. Do not use TASK-BAL-071 as a frozen Bare Player authority until TASK-BAL-071-CORR-003 completes."
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "result_scope": "PRIOR FREEZE INVALIDATED FOR DOWNSTREAM. Existing loadout/equipability/weapon-style measurements remain historical inputs, but Equipment phase is incomplete because combat-relevant specifications were deferred, notably shield defensive identity and incomplete bow/quiver combat identity. Do not use TASK-BAL-071 as a frozen Bare Player authority until TASK-BAL-071-CORR-003 completes."
     },
     {
       "id": "TASK-BAL-072",
@@ -12430,9 +12511,9 @@
         "by": "Human",
         "at": "2026-08-24T20:15:00+09:00"
       },
-      "result_scope": "PARTIAL/HISTORICAL ONLY. Multi-loadout structure and explicit weapon-style semantics remain valid, but the prior completion incorrectly treated shield defensive tuning and bow range-specific mechanics as deferable while downstream Monster/Skill Balance depended on representative equipment performance. Full Equipment combat identity must be completed before re-freeze.",
+      "result_scope": "PARTIAL/HISTORICAL ONLY. Multi-loadout structure and explicit weapon-style semantics remain valid, but the prior completion incorrectly treated shield defensive tuning and incomplete bow/quiver set semantics as deferable while downstream Monster/Skill Balance depended on representative equipment performance. Full Equipment combat identity must be completed before re-freeze.",
       "created_at": "2026-08-24T20:15:00+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00"
     },
     {
       "id": "TASK-BAL-071-FIX-001",
@@ -12453,7 +12534,9 @@
       },
       "result_scope": "FRESH_SOURCE_VERIFIED_CURRENT. Human-applied GKS-B772 is Current; package manifest and update payload exact-match target and Current Quick 11/11 PASS. Explicit weapon styles and independent dual-wield strikes are available to Corr002/downstream.",
       "created_at": "2026-08-24T20:35:00+09:00",
-      "updated_at": "2026-08-24T21:09:03+09:00"
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "authority_status": "HistoricalImplementation_SupersededForTwoHandClassification",
+      "authority_note": "GKS-B772 implementation history is retained, but its explicit two_hand style is not Current Equipment Authority after DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001. Source conformance correction must be handled only after a separately approved TASK-BAL-071-CORR-003 implementation/conformance plan."
     },
     {
       "id": "TASK-BAL-073A",
@@ -12899,7 +12982,7 @@
         "TASK-BAL-071-CORR-002",
         "TASK-BAL-071-FIX-002"
       ],
-      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Decision Question: Monster/Skillへ渡す前に、各代表Equipment typeの戦闘Identity/Contributionは一意に定義されているか。\n- 全Weapon/Shield/Armor typeを棚卸しし、downstream performanceへ影響する未確定/Deferred項目を0件にする。\n- 盾: 既確定のattack_count=0 / offensive contribution非加算を維持しつつ、防御Contributionのowner、対象Stat/channel、係数/growthを確定する。\n- 弓: Basic Attack上の武器IdentityとRange/Targetingとの責務境界を確定し、Rangeを無視した近接武器同等扱いを暗黙採用しない。\n- two_hand / single / dual_wield / weapon_shieldを含む各代表Loadoutについて、Requirement、攻撃回数、Attack/Accuracy/Critical、防御系、Range等の使用項目をEquipment Combat Identity Tableとして出力する。\n- Current Sourceに表現経路がない仕様が必要なら、このTask内で推測実装せずIssue GateでSource/Gameplay仕様判断へ戻す。\n- 完了時のみBare Player Referenceを再Freezeし、TASK-BAL-072-CORR-001へ渡す。\n- このTask登録自体はSimulation/Package/Source変更の承認ではない。",
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Decision Question: Monster/Skillへ渡す前に、各Equipment typeの戦闘Identity/Contributionは一意に定義されているか。\n- 全Weapon/Shield/Armor typeを棚卸しし、downstream performanceへ影響する未確定/Deferred項目を0件にする。\n- Current Authority: two_hand/両手武器カテゴリは存在しない。旧two_hand表現を新Referenceへ使用しない。\n- Current Authority: 仕様選定中は弓/大弓を同条件の『弓』として扱う。弓+矢筒でのみ弓通常攻撃/弓Skill使用可。\n- 弓/矢筒は単体装備可能。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。不足側武器スロットを警告表示する。\n- Bow attack_count=1 / Quiver attack_count=0。CriticalはBowのみ、Critical以外のCombat ContributionはBow+Quiver合算。\n- 弓EquipmentのWeapon属性は射撃。Range/射程/TargetingをEquipment仕様として設計しない。\n- 盾: 既確定のattack_count=0 / offensive contribution非加算を維持しつつ、防御Contributionのowner、対象Stat/channel、係数/growthを確定する。\n- その他Equipment typeについてRequirement、attack_count、Contribution owner、組合せ条件をEquipment Combat Identity Tableへ整理する。\n- 大剣STR×2等、旧two_handカテゴリに結び付いた個別Requirementは数値を勝手に廃止せず、正式な武器種ownerへ再表現できるか確認する。\n- Current Sourceに本Human Approved仕様の表現経路がない場合は推測実装せずIssue Gateとして記録する。\n- 完了時のみBare Player Referenceを再Freezeし、TASK-BAL-072-CORR-001へ渡す。\n- このTask登録/仕様登録自体はSimulation/Package/Source変更の承認ではない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12908,8 +12991,11 @@
         "at": ""
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
-      "result_scope": "PLAN REGISTERED ONLY. Equipment phase correction required before Monster Core. No numeric specification, Battle execution, Source change, Game Data change, or Current active change authorized."
+      "updated_at": "2026-08-26T10:38:34+09:00",
+      "result_scope": "PLAN REGISTERED ONLY / HUMAN SPEC PARTIALLY FIXED. Bow/Quiver combat identity and no-two-hand category are now Human Approved Authority via SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001. Shield defensive identity and remaining Equipment combat identities are still unresolved. Task execution approval remains Pending. No Source/Battle/Game Data change authorized.",
+      "confirmed_spec_refs": [
+        "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001"
+      ]
     },
     {
       "id": "TASK-BAL-072-CORR-001",
@@ -17425,6 +17511,29 @@
       "blocking": true,
       "created_at": "2026-08-26T10:10:23+09:00",
       "updated_at": "2026-08-26T10:10:23+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-BOW-QUIVER-SPEC-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-003",
+      "status": "Passed",
+      "result": "PASS / HUMAN SPEC CONFIRMED. Bow+Quiver set requirement, incomplete-set UI messages/warning, Bow1/Quiver0 attack_count, non-Critical contribution aggregation, Bow-only Critical, shooting attribute, no Equipment Range ownership, and no formal two_hand category are registered.",
+      "evidence": "Human decisions in current conversation; no new numeric Evidence.",
+      "checked_by": "HumanDecisionRegistration",
+      "checked_at": "2026-08-26T10:38:34+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-26T10:38:34+09:00",
+        "reason": "Human directly specified the Equipment structure.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T10:38:34+09:00",
+      "updated_at": "2026-08-26T10:38:34+09:00"
     }
   ],
   "workflow": {
@@ -18471,6 +18580,11 @@
       "at": "2026-08-26T10:10:23+09:00",
       "type": "EquipmentMonsterSkillUpstreamAuthorityCorrected",
       "summary": "Human correctionにより、Equipment工程の盾/弓等未確定仕様を理由にTASK-BAL-071 Freezeを撤回。Monster正式構造をLevel×Job補正→Monster Job Equipment Coefficientへ訂正し、Player-equivalent equipment MonsterをBalance Authorityから除外。TASK-BAL-072/073/074をBlockし、E04-E08のSkill数値Authorityを停止。K(H_eff) nondecreasing制約も撤回。次はTASK-BAL-071-CORR-003の別開始承認待ち。"
+    },
+    {
+      "at": "2026-08-26T10:38:34+09:00",
+      "type": "BowQuiverEquipmentSpecificationRegistered",
+      "summary": "Human Approved Equipment仕様を登録。two_hand/両手武器カテゴリをCurrent Authorityから撤回。仕様選定中はBow/Greatbowを『弓』として同条件扱い。Bow/Quiver単体Equipは合法だが弓攻撃/弓Skillは両方必須。不足理由UIと不足側slot警告、Bow attack_count=1、Quiver=0、CriticalはBowのみ、その他Contribution合算、Equipmentは射撃属性のみ所有しRangeを所有しない。TASK-BAL-071-CORR-003は未開始/Pendingのまま。"
     }
   ],
   "authority": {
