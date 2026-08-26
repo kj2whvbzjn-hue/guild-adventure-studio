@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T02:48:31.904Z"
+    "updated_at": "2026-08-26T02:53:37.450Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-CORR-003 Source Conformance監査 — Issue Gate: Bow Skill requirement representation",
-    "goal": "Equipment gameplay semanticsは確定。GKS-B782静的監査でBow/QuiverとBlockのSource Conformance Gapをowner単位で確定した。ただしbow-required SkillをFormal Skill上で識別するSchema/Registry表現がCurrent Authorityに存在しないためIssue Gate停止中。Human/specificationがgeneric use-requirement contract方針を承認するまでSource修正、Package生成、Simulation、Bare Player再Freezeへ進まない。"
+    "theme": "TASK-BAL-071-CORR-004 Equipment/Bow/Block/Use Requirement Source Conformance — 開始承認待ち",
+    "goal": "Human承認済み汎用Formal Skill useRequirementsを含むCurrent Specificationを正本化済み。次はGKS-B782既存Systemをreuse-firstでBow/Quiver、Block、useRequirementsへ適合させるSOURCE_UPDATE。TASK-BAL-071-CORR-004の明示開始承認まではSource変更・更新ZIP生成・Battle/Simulation実行を行わない。"
   },
   "project_rules": [
     {
@@ -1563,30 +1563,30 @@
     {
       "id": "DISC-BAL-071-EQUIPMENT-CONFORMANCE-001",
       "title": "Equipment Current Specification → GKS-B782 Conformance Audit",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Human-approved static audit completed. Bow/Quiver and Block have concrete owner-level implementation gaps. Internal two_hand is a loadout state and not itself a category violation. A blocking Formal Skill schema gap prevents authoritative identification of bow-required Skills.",
       "body": "## Audit authorization / boundary\n\nHuman start approval: `2026-08-26T11:32:00+09:00`\n\nTask: `TASK-BAL-071-CORR-003`\nWork type: `DEVELOPMENT_ONLY`\n\nAllowed in this run:\n- Read Current Specification / Current source.\n- Identify owner-level conformance gaps.\n- Update Development Project JSON.\n\nNot executed:\n- Source edit\n- Studio update ZIP generation\n- Battle Package generation/execution\n- Simulation\n- Human real-device request\n- GAME_DATA / Current active change\n\nCurrent source:\n- Studio: `GKS-B782`\n- Game: `GA-B486.211`\n- ZIP: `guild-adventure-studio-sub(20260825-213025).zip`\n- ZIP SHA-256: `02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728`\n\n## Conformance matrix\n\n### 1. Equipment Generator — FAIL / Block\nOwners:\n- `studio/equipment/equipment-balance-config.json`\n- `studio/equipment/equipment-generation-rules.json`\n- `studio/equipment/equipment-generator.js`\n\nCurrent:\n- Weapon performance supports attack / accuracy / magic_weapon_bonus / base_critical_rate.\n- `block_rate` / `block_damage_cut_rate` are absent from Balance Config, generated record, validation, AI forbidden numeric list, and Generator UI/config controls.\n\nRequired:\n- Shield BaseItem carries `block_rate` / `block_damage_cut_rate`.\n- Current initial Balance seed: iLv1 20%, +2pp/iLv, cut 30%.\n- Values remain Balance Data, not code-fixed gameplay constants.\n\nRepair owner:\n- Existing Equipment Generator only. Do not create a second generator.\n\n### 2. Equipment Data Exchange — FAIL / Block field registration\nOwners:\n- `studio/data-exchange/data-exchange-core.js`\n- `studio/data-exchange/schemas/equipment-dataset.schema.json`\n\nCurrent:\n- Equipment safe top-level field registry does not list the two Block fields.\n- Dataset schema does not define them.\n- Unknown incoming fields can therefore fail the formal import path even though some downstream JSON schemas allow additional properties.\n\nRequired:\n- Register both Block fields through the existing formal Equipment Data Exchange path.\n\n### 3. Formal Equipment Contribution — FAIL / Block\nOwner:\n- `assets/shared/js/formal-contribution-resolver.js`\n\nCurrent:\n- `EQUIPMENT_FIELDS` has attack / accuracy / magic_weapon_bonus / base_critical_rate / hp_bonus / mp_bonus / evasion only.\n- Block fields are neither validated nor preserved into formal Contribution.\n\nRequired:\n- Preserve formal Block contribution from the valid equipped Shield owner.\n- Do not invent arbitrary multi-shield Block stacking.\n\n### 4. Game Equipment / Bow+Quiver — FAIL\nOwner:\n- `game/assets/js/app-runtime.js`\n\nCurrent:\n- Any two different non-shield weapons are interpreted as `dual_wield` and require DUAL_WIELD.\n- Bow and Quiver have no dedicated role helpers/set state.\n- Bow+Quiver can therefore be rejected for no Dual Wield Passive or treated as two-strike dual wield.\n- Equipment aggregation adds Critical from all equipped weapons in generic paths.\n- Exact Bow-only / Quiver-only warning messages and missing-slot warning are absent.\n\nRequired:\n- Bow+Quiver remains legal as a dedicated set independent of DUAL_WIELD.\n- Bow 1 Strike / Quiver 0 Strike.\n- Critical from Bow only; other ordinary contributions summed.\n- Bow-only/Quiver-only equip remains legal but Bow action unavailable with exact reason text.\n\n### 5. Game Runtime Block — FAIL\nOwners:\n- `game/assets/js/app-runtime.js`\n- `game/assets/js/battle-control.js`\n- `game/assets/js/tag-skill-runtime.js`\n\nCurrent:\n- Unit snapshot/battle values do not transport Block fields.\n- Basic Attack resolves `finalDamage` then directly consumes existing SHIELD(BARRIER).\n- Formal direct Skill damage does the same.\n- DOT directly consumes SHIELD(BARRIER).\n\nRequired:\n- Direct Basic/Skill Physical/Magical: finalDamage -> Block roll -> successful Block cut -> floor -> SHIELD(BARRIER) -> HP.\n- Multi-hit: independent Block per hit.\n- Miss: no Block.\n- DOT: retain no Block and continue to SHIELD(BARRIER).\n\n### 6. Studio Formal Battle / Battle Package executor — FAIL\nOwner:\n- `studio/index.html`\n\nCurrent:\n- Formal layout supports single / dual_wield / two_hand / weapon_shield only.\n- No Bow+Quiver dedicated set resolution.\n- No Block fields in normalized formal combatant.\n- Formal Basic Attack/Skill damage goes finalDamage -> SHIELD(BARRIER) directly.\n- DOT goes directly to SHIELD(BARRIER), which is the correct branch to preserve for DOT.\n- Result trace has SHIELD absorption but no Block decision/outcome fields.\n\nRequired:\n- Mirror Game semantics for Bow+Quiver and Block.\n- Result trace/evidence must expose enough Block decision/outcome data to verify Human real-device/replay conformance.\n- Reuse existing Battle Package executor; no duplicate simulator.\n\n### 7. Battle Package envelope — REUSE / no new package format required\nOwner:\n- `assets/shared/js/battle-package-formal-envelope.js`\n\nCurrent:\n- Equipment Candidate data is transported through existing typed Candidate/envelope infrastructure.\n- Semantic validation is delegated to formal Equipment contribution/Studio executor.\n\nAssessment:\n- No separate package format is needed.\n- Extend existing formal Equipment validation/execution owners after Schema Issue Gate is resolved.\n\n### 8. `two_hand` internal state — PASS as loadout state\nOwners:\n- `game/assets/js/app-runtime.js`\n- `studio/index.html`\n\nCurrent:\n- `two_hand` is used as a character/formal weapon-layout state.\n- It represents one weapon / one strike and STR Requirement relief.\n- Static audit did not find it used as a BaseItem type or weapon coefficient category.\n\nAssessment:\n- Internal state label is compatible with “no two-hand weapon category” so long as it remains a loadout rule.\n- Legacy same-ID inference is compatibility behavior, not Equipment authority.\n\n## Blocking Issue Gate\n\nEquipment authority says:\n- Bow Basic Attack and **bow-required Skills** require Bow+Quiver.\n\nTag authority says:\n- Formal Skill may reference Tag IDs conceptually.\n- Known equipment Tag baseline includes `WEAPON_BOW`, `WEAPON_GREATBOW`, `EQUIP_QUIVER`.\n\nBut Formal Skill authority `SPEC-V9-019-SKILL-001` defines authoring fields only as:\n`schemaVersion / id / name / skillLevel / trigger / conditions / target / effects / resource`\n\nIt also explicitly says:\n- Unknown Field must not be added ad hoc.\n- Schema/Registry update comes first.\n\nGKS-B782 `assets/shared/js/skill-schema.js` mirrors that exact root and has no Equipment-use requirement field.\nGKS-B782 `actionExecutionEligibility()` checks action-disabled/cost/cooldown lifecycle but does not inspect Equipment.\n\nTherefore:\n**Current Formal Skill data has no authoritative representation that identifies which Skill is “bow-required”.**\n\nThis cannot be repaired by:\n- Skill name matching\n- Job matching\n- damage type guessing\n- legacy `tags` fallback\n- hard-coded Skill IDs\n\nThose would invent authority.\n\nRequired next decision:\n- Define a generic Formal Skill use-requirement contract in the existing Skill Schema/Registry that can reference formal Equipment/Tag conditions.\n- Bow/Quiver then becomes the first consumer of that generic contract.\n- Exact field/schema design must be approved by the Specification owner before Source repair.\n\nPer `RULE-BAL-ISSUE-GATE-001`, this run stops here.\n",
-      "open_questions": "Formal Skill Schema/Registryへ、Equipment/Tagを参照できるgeneric use-requirement contractを追加する方針を承認するか。具体field名やshapeは承認後のSpecification correction Taskで既存Schema/Registry構造に合わせて定義する。",
-      "conclusion": "TASK-BAL-071-CORR-003 static audit is complete but Blocked by Issue Gate. Do not start Source repair until the Formal Skill use-requirement representation is approved. After that decision, perform one separately approved SOURCE_UPDATE task to align existing Generator/Data Exchange/Contribution/Game/Studio/Battle Package owners without duplicate systems.",
+      "open_questions": "",
+      "conclusion": "Static audit complete and schema Issue Gate resolved by Human approval of generic useRequirements. Implementation gaps are transferred to TASK-BAL-071-CORR-004 SOURCE_UPDATE, which remains Pending explicit start approval.",
       "related_discussion_ids": [],
       "artifact_note": "Development Project JSON only. No Source update ZIP. No Evidence JSON. No Battle Package/Simulation.",
       "created_at": "2026-08-26T11:45:30+09:00",
-      "updated_at": "2026-08-26T11:45:30+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     },
     {
       "id": "DISC-BAL-071-BOW-SKILL-REQUIREMENT-GAP-001",
       "title": "Bow-required Skill Formal representation Issue Gate",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Bow+Quiver requirement for bow-required Skills is approved gameplay semantics, but Current Formal Skill schema/runtime cannot represent which Skill has that requirement.",
       "body": "## Conflict\n- Equipment: bow-required Skills require Bow+Quiver.\n- TAG: Formal Skill can conceptually reference Tag IDs; WEAPON_BOW/WEAPON_GREATBOW/EQUIP_QUIVER exist in V9 baseline.\n- SKILL-001: Formal authoring root has no tag/equipment-use-requirement field and forbids ad-hoc Unknown Fields.\n- GKS-B782 skill-schema.js mirrors this shape.\n- GKS-B782 actionExecutionEligibility() has no Equipment condition input.\n\n## Impact\nBow Basic Attack and UI can be specified completely, but bow-required Skill gating cannot be implemented authoritatively. Guessing from names, Job, damage type, or legacy tags is prohibited.\n\n## Repair candidates\nA. Extend the existing Formal Skill Schema/Registry with a generic use-requirement contract that references formal Equipment/Tag conditions. Bow/Quiver uses that general contract.\nB. Add a bow-specific Skill field. This is narrower but creates weapon-specific schema coupling and is not recommended as the default.\n\nRecommended direction: A, because it reuses existing Tag/Registry ownership and can support future Equipment-gated Skills without one-off fields. This recommendation is not an approval and no schema was changed.",
-      "open_questions": "Generic Formal Skill use-requirement contract (Equipment/Tag condition reference) を採用するか。",
-      "conclusion": "Issue Gate open. Human/specification approval is required before any Source correction.",
+      "open_questions": "",
+      "conclusion": "Human approved generic Formal Skill use-requirement contract. Authoring optional field `useRequirements`, Current type `EQUIPMENT_TAGS`, scope SELF, allTags/anyTags Tag-ID semantics are the implementation authority. Bow-required Skills use allTags=[EQUIP_QUIVER], anyTags=[WEAPON_BOW,WEAPON_GREATBOW]. Source implementation remains a separate approval-gated task.",
       "related_discussion_ids": [
         "DISC-BAL-071-EQUIPMENT-CONFORMANCE-001"
       ],
       "artifact_note": "Specification representation gap only; no implementation performed.",
       "created_at": "2026-08-26T11:45:30+09:00",
-      "updated_at": "2026-08-26T11:45:30+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     }
   ],
   "decisions": [
@@ -2569,6 +2569,20 @@
       "approved_at": "2026-08-26T11:28:04+09:00",
       "created_at": "2026-08-26T11:28:04+09:00",
       "updated_at": "2026-08-26T11:28:04+09:00"
+    },
+    {
+      "id": "DEC-BAL-SKILL-USE-REQUIREMENT-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "GKS-B782 Issue Gate解消方針として、Formal Skillへ汎用使用条件Contract `useRequirements` を採用する。Current initial typeは `EQUIPMENT_TAGS`。`scope=SELF`、`allTags` は全件必須、`anyTags` は1件以上必須とし、Tag Registryの正式Tag IDを参照する。`useRequirements` は既存 `conditions` と分離し、Skill BudgetのCondition refundへ算入しない。Action eligibilityでTarget/MP/CD/Cast/Effectより前に評価し、未成立時は`USE_REQUIREMENT_FAILED` としてCost/Cooldown/Cast/Effectなしでfail-closedする。Bow-required Skillは allTags=[EQUIP_QUIVER], anyTags=[WEAPON_BOW,WEAPON_GREATBOW] を使用する。",
+      "rationale": "Human approved 汎用使用条件. Bow専用fieldではなく既存Skill Schema/Tag Registryをreuseし、今後のEquipment-gated Skillも同じContractで表現できるようにする。",
+      "source_discussion_ids": [
+        "DISC-BAL-071-BOW-SKILL-REQUIREMENT-GAP-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:51:02+09:00",
+      "created_at": "2026-08-26T11:51:02+09:00",
+      "updated_at": "2026-08-26T11:51:02+09:00"
     }
   ],
   "specifications": [
@@ -2844,14 +2858,15 @@
       "title": "Equipment Combat Identity — Current Authority Sync",
       "status": "Approved",
       "summary": "DEV-V9-REORG-019のEquipment/Battle Current AuthorityとHuman確定事項を同期。Weapon action identity、Bow/Quiver、Block、Armor/Accessory owner境界を整理し、追加Human構造未決0件を確認。",
-      "body": "# Equipment Combat Identity — Current Authority Sync\n\n## 1. Authority / audit result\n本SpecificationはDEV-V9-REORG-019のCurrent Equipment/Battle仕様と、DEV-V9-BALANCE-001内のHuman Approved Decisionを同期する。\n仕様質問の前に情報源を確認し、既決事項・Balance可変値・Source Conformance GapをHuman未決として再質問しない。\n\nEquipmentについて追加Human判断が必要な構造未決: **0件**。\n\nこれはCurrent Sourceが実装済みという意味ではない。\nSource/Studio/Battle Packageとの差はConformance Gapとして別管理する。\n\n## 2. Weapon action identity\n- Single: 通常の単一攻撃武器は1 Actionにつき1 Strike。\n- Dual Wield: `PAS-DUAL-WIELD-001 / DUAL_WIELD`成立時のみMain/Off Handの独立2 Strike。Attack/Accuracy/Critical/Hit/Damageを各手独立評価し、Accuracy/Criticalを合算しない。1st StrikeでKOなら残Strikeを実行しない。\n- 両手持ち: 「両手武器 / two_hand weapon category」は存在しない。両手持ちは独立装備ルール。1武器・1 Strike。既存STR Requirement救済はRequirementだけへ作用し、Attack倍化・2 Strikeを発生させない。\n- Weapon + Shield: 攻撃武器1 Strike、盾0 Strike。盾のAttack/Accuracy/base_critical_rateを攻撃武器へ加算しない。\n\n## 3. Bow / Quiver\n仕様選定上、弓と大弓を同条件としてまとめて「弓」と呼ぶ。Product Master上の統合ではない。\n\n### Equip / action\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 片側のみをEquip Validationの不正状態として排除しない。\n\n### UI\n- 弓のみ: `矢筒が装備されていません`\n- 矢筒のみ: `弓が装備されていません`\n- 不足側武器スロットを警告状態で示し、「装備不可」と「セット条件未成立」を区別する。\n\n### Strike / contribution\n- Bow attack_count = 1\n- Quiver attack_count = 0\n- Critical/base_critical_rateはBow側だけを使用し、合算しない。\n- Critical以外のCombat ContributionはBow + Quiverを合算する。\n- attack / accuracy / magic_weapon_bonus等はセット合算。\n- Quiverは独立Strike/Critical rollを発生させない。\n\n### Range\n- 弓EquipmentのWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達、Target Expansionを決定しない。\n- Range/TargetingはRANGE/Skill/Battle Owner。\n\n## 4. Block\n\n### Formal fields\n- `block_rate`\n- `block_damage_cut_rate`\n\nBlockは既存Effect kind `SHIELD` / BARRIERとは別概念。\nBlock用field名に`shield_*`を使用しない。\n\n### Current initial Balance seed\n- iLv1 `block_rate = 20%`\n- Item Level +1ごとに `block_rate +2 percentage points`\n- `block_rate(iLv) = 20% + 2pp × (iLv - 1)`\n- `block_damage_cut_rate = 30%`\n- 両値はBalance可変\n- `block_damage_cut_rate`のiLv成長式は未設定\n- `block_rate`上限は未設定\n\n### Target\n対象:\n- Basic Attackの直接Damage\n- Skillの直接Damage\n- Physical / Magical\n\n非対象:\n- MissしたHit\n- DOT等の継続Damage\n\nMulti-hitは各Hitごとに独立Block判定。\n\n### Damage processing\n`blocked_damage = floor(finalDamage × (1 - block_damage_cut_rate))`\n\n処理順:\n`finalDamage確定 → Block判定 → Block Damage Cut → floor → existing SHIELD(BARRIER) → HP`\n\n固定するのは処理構造とfloor。\nDamage残存倍率を固定値としてロジックへ埋め込まない。\n\n## 5. Re-question禁止範囲\n\n### Weapon BaseItem\nCurrent Equipment Generator/Specificationが所有:\n- required_str / required_dex / required_int\n- attack / accuracy / magic_weapon_bonus / base_critical_rate\n- 13 Weapon type coefficient table\n- 具体係数はBalance可変\nRequirement値をBattle statへ直接加算しない。\n\n### Armor\nCurrent Equipment Specificationが所有:\n- Requirement: required_vit / required_mnd / required_agi\n- Combat Contribution: hp_bonus / mp_bonus / evasion\n- Heavy / Scout(Light) / Robeの既存系統\n- EvasionはHP/MP用slot coefficientを使わず `required_agi × evasionGrowth`\n- hp/mp/evasion Growth具体値はBalance可変\nArmor category/slotの既存役割を再質問しない。\n\n### Accessory\n- 10Slot構造にAmulet / Ring1 / Ring2 / Beltを含む。\n- Amulet / Ring / Beltは初期BaseItem Generator対象。\n- Accessoryへ新しい固有Battle Base Statを追加することを未決質問として扱わない。\n- MOD/Tier/Rarity等の既存Ownerで性能を作る。\n- 新しいAccessory専用Combat Contributionを追加する場合だけ新Specification Decisionが必要。\n\n## 6. Owner boundaries\n- Requirement → Equipability専用。\n- Equipment Contribution → BaseItem PerformanceからBattleへ渡す正式Contribution。\n- MOD → Modified Equipment Contribution。\n- magic_weapon_bonus → MAGIC_DAMAGE。Healへ接続しない。\n- Range/Targeting → Equipment Ownerではない。\n- Block → existing SHIELD(BARRIER)とは別。\n- 具体数値 → 原則Balance可変。\n- Formula topology / processing order / rounding / owner responsibility → Current Specification固定。\n\n## 7. Static GKS-B782 conformance observation\nこの監査はSource変更・Simulation・Battle Package実行ではない。\n\n1. Bow/Quiver:\nCurrent GKS-B782には弓+矢筒の専用セット成立判定、片側理由表示、専用Contribution合算が見当たらない。\n二本の非盾Weaponは既存dual_wield経路へ入るためConformance確認/修正が必要。\n\n2. Block:\nCurrent GKS-B782 Equipment Consumerに`block_rate` / `block_damage_cut_rate`がない。\nBasic Attack/Skill直接DamageはfinalDamage後にexisting SHIELD(BARRIER)へ直接渡され、Block処理がない。\nEquipment Generator / Contribution / Game Runtime / Studio Formal Battle / Battle Packageへの接続確認・修正が必要。\n\n3. 両手持ち表現:\nCurrent Sourceには内部`weaponStyle='two_hand'`等の表現が存在する。\nこれは「両手武器カテゴリ」のAuthorityにはしない。\n両手持ち装備ルールの実装表現としてCurrent Specificationへ適合するかをConformance Taskで確認する。\n\n以上はHuman仕様未決ではなくImplementation Conformance Gap。\n",
+      "body": "# Equipment Combat Identity — Current Authority Sync\n\n## 1. Authority / audit result\n本SpecificationはDEV-V9-REORG-019のCurrent Equipment/Battle仕様と、DEV-V9-BALANCE-001内のHuman Approved Decisionを同期する。\n仕様質問の前に情報源を確認し、既決事項・Balance可変値・Source Conformance GapをHuman未決として再質問しない。\n\nEquipmentについて追加Human判断が必要な構造未決: **0件**。\n\nこれはCurrent Sourceが実装済みという意味ではない。\nSource/Studio/Battle Packageとの差はConformance Gapとして別管理する。\n\n## 2. Weapon action identity\n- Single: 通常の単一攻撃武器は1 Actionにつき1 Strike。\n- Dual Wield: `PAS-DUAL-WIELD-001 / DUAL_WIELD`成立時のみMain/Off Handの独立2 Strike。Attack/Accuracy/Critical/Hit/Damageを各手独立評価し、Accuracy/Criticalを合算しない。1st StrikeでKOなら残Strikeを実行しない。\n- 両手持ち: 「両手武器 / two_hand weapon category」は存在しない。両手持ちは独立装備ルール。1武器・1 Strike。既存STR Requirement救済はRequirementだけへ作用し、Attack倍化・2 Strikeを発生させない。\n- Weapon + Shield: 攻撃武器1 Strike、盾0 Strike。盾のAttack/Accuracy/base_critical_rateを攻撃武器へ加算しない。\n\n## 3. Bow / Quiver\n仕様選定上、弓と大弓を同条件としてまとめて「弓」と呼ぶ。Product Master上の統合ではない。\n\n### Equip / action\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 片側のみをEquip Validationの不正状態として排除しない。\n\n### UI\n- 弓のみ: `矢筒が装備されていません`\n- 矢筒のみ: `弓が装備されていません`\n- 不足側武器スロットを警告状態で示し、「装備不可」と「セット条件未成立」を区別する。\n\n### Strike / contribution\n- Bow attack_count = 1\n- Quiver attack_count = 0\n- Critical/base_critical_rateはBow側だけを使用し、合算しない。\n- Critical以外のCombat ContributionはBow + Quiverを合算する。\n- attack / accuracy / magic_weapon_bonus等はセット合算。\n- Quiverは独立Strike/Critical rollを発生させない。\n\n## 3.1 Bow-required Formal Skill use requirement\n\nFormal Skillの装備使用条件はSkill Schema ownerの汎用 `useRequirements` を使用する。\nBow専用field、Skill名推測、Job推測を使用しない。\n\n```json\n{\n  \"type\": \"EQUIPMENT_TAGS\",\n  \"scope\": \"SELF\",\n  \"allTags\": [\"EQUIP_QUIVER\"],\n  \"anyTags\": [\"WEAPON_BOW\", \"WEAPON_GREATBOW\"]\n}\n```\n\n- `allTags`: 全件必須。\n- `anyTags`: 1件以上必須。\n- Tag Registryの正式IDだけを使用。\n- `conditions` / Skill Budget refundとは別。\n- Target/MP/CD/Cast/Effect前のAction eligibilityで評価。\n- 不成立は `USE_REQUIREMENT_FAILED`。Cost/CD/Cast/Effectなし。\n\n### Range\n- 弓EquipmentのWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達、Target Expansionを決定しない。\n- Range/TargetingはRANGE/Skill/Battle Owner。\n\n## 4. Block\n\n### Formal fields\n- `block_rate`\n- `block_damage_cut_rate`\n\nBlockは既存Effect kind `SHIELD` / BARRIERとは別概念。\nBlock用field名に`shield_*`を使用しない。\n\n### Current initial Balance seed\n- iLv1 `block_rate = 20%`\n- Item Level +1ごとに `block_rate +2 percentage points`\n- `block_rate(iLv) = 20% + 2pp × (iLv - 1)`\n- `block_damage_cut_rate = 30%`\n- 両値はBalance可変\n- `block_damage_cut_rate`のiLv成長式は未設定\n- `block_rate`上限は未設定\n\n### Target\n対象:\n- Basic Attackの直接Damage\n- Skillの直接Damage\n- Physical / Magical\n\n非対象:\n- MissしたHit\n- DOT等の継続Damage\n\nMulti-hitは各Hitごとに独立Block判定。\n\n### Damage processing\n`blocked_damage = floor(finalDamage × (1 - block_damage_cut_rate))`\n\n処理順:\n`finalDamage確定 → Block判定 → Block Damage Cut → floor → existing SHIELD(BARRIER) → HP`\n\n固定するのは処理構造とfloor。\nDamage残存倍率を固定値としてロジックへ埋め込まない。\n\n## 5. Re-question禁止範囲\n\n### Weapon BaseItem\nCurrent Equipment Generator/Specificationが所有:\n- required_str / required_dex / required_int\n- attack / accuracy / magic_weapon_bonus / base_critical_rate\n- 13 Weapon type coefficient table\n- 具体係数はBalance可変\nRequirement値をBattle statへ直接加算しない。\n\n### Armor\nCurrent Equipment Specificationが所有:\n- Requirement: required_vit / required_mnd / required_agi\n- Combat Contribution: hp_bonus / mp_bonus / evasion\n- Heavy / Scout(Light) / Robeの既存系統\n- EvasionはHP/MP用slot coefficientを使わず `required_agi × evasionGrowth`\n- hp/mp/evasion Growth具体値はBalance可変\nArmor category/slotの既存役割を再質問しない。\n\n### Accessory\n- 10Slot構造にAmulet / Ring1 / Ring2 / Beltを含む。\n- Amulet / Ring / Beltは初期BaseItem Generator対象。\n- Accessoryへ新しい固有Battle Base Statを追加することを未決質問として扱わない。\n- MOD/Tier/Rarity等の既存Ownerで性能を作る。\n- 新しいAccessory専用Combat Contributionを追加する場合だけ新Specification Decisionが必要。\n\n## 6. Owner boundaries\n- Requirement → Equipability専用。\n- Equipment Contribution → BaseItem PerformanceからBattleへ渡す正式Contribution。\n- MOD → Modified Equipment Contribution。\n- magic_weapon_bonus → MAGIC_DAMAGE。Healへ接続しない。\n- Range/Targeting → Equipment Ownerではない。\n- Block → existing SHIELD(BARRIER)とは別。\n- 具体数値 → 原則Balance可変。\n- Formula topology / processing order / rounding / owner responsibility → Current Specification固定。\n\n## 7. Static GKS-B782 conformance observation\nこの監査はSource変更・Simulation・Battle Package実行ではない。\n\n1. Bow/Quiver:\nCurrent GKS-B782には弓+矢筒の専用セット成立判定、片側理由表示、専用Contribution合算が見当たらない。\n二本の非盾Weaponは既存dual_wield経路へ入るためConformance確認/修正が必要。\n\n2. Block:\nCurrent GKS-B782 Equipment Consumerに`block_rate` / `block_damage_cut_rate`がない。\nBasic Attack/Skill直接DamageはfinalDamage後にexisting SHIELD(BARRIER)へ直接渡され、Block処理がない。\nEquipment Generator / Contribution / Game Runtime / Studio Formal Battle / Battle Packageへの接続確認・修正が必要。\n\n3. 両手持ち表現:\nCurrent Sourceには内部`weaponStyle='two_hand'`等の表現が存在する。\nこれは「両手武器カテゴリ」のAuthorityにはしない。\n両手持ち装備ルールの実装表現としてCurrent Specificationへ適合するかをConformance Taskで確認する。\n\n以上はHuman仕様未決ではなくImplementation Conformance Gap。\n",
       "decision_refs": [
         "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
         "DEC-BAL-EQUIPMENT-ACTION-IDENTITY-SYNC-001",
         "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
         "DEC-BAL-WEAPON-SHIELD-OFFENSE-001",
         "DEC-BAL-DUAL-WIELD-PASSIVE-001",
-        "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001"
+        "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001",
+        "DEC-BAL-SKILL-USE-REQUIREMENT-001"
       ],
       "depends_on": [],
       "acceptance_criteria": "- Equipment仕様について追加Human構造未決を0件として区別できる。\n- 両手武器カテゴリを作らず、両手持ち装備ルールを保持する。\n- single / dual_wield / 両手持ち / weapon+shield / Bow+QuiverのStrike/Contribution境界を一意に扱える。\n- Bow/Quiver片側装備を合法Equip stateとして保持し、Action availability/UI警告を分離する。\n- Bow=1 Strike / Quiver=0 Strike、CriticalはBowのみ、Critical以外はセット合算する。\n- block_rate / block_damage_cut_rateをBalance Dataとして保持する。\n- Direct Physical/Magical DamageへHit単位Blockを適用し、Miss/DOTではBlockしない。\n- Block成功時は finalDamage → Block Damage Cut → floor → SHIELD(BARRIER) → HP の順で処理する。\n- Armor/Accessoryの既存Owner事項を未決として再質問しない。\n- Source差分はHuman仕様未決ではなくConformance Gapとして分離する。",
@@ -2859,11 +2874,11 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 3,
+      "revision": 4,
       "approved_by": "Human",
       "approved_at": "2026-08-26T11:28:04+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     }
   ],
   "specification_candidates": [],
@@ -13111,7 +13126,7 @@
       "id": "TASK-BAL-071-CORR-003",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P4 Equipment戦闘Identity / 盾・弓等未確定仕様を完成する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 250,
       "depends_on": [
         "TASK-BAL-071-CORR-002",
@@ -13126,8 +13141,8 @@
         "at": "2026-08-26T11:32:00+09:00"
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T11:45:30+09:00",
-      "result_scope": "DEVELOPMENT_ONLY STATIC CONFORMANCE AUDIT EXECUTED / ISSUE GATE. Human approved TASK-BAL-071-CORR-003 start at 2026-08-26T11:32+09:00. GKS-B782 was inspected without Source edit, Battle Package generation, Simulation, or Game Data change. Confirmed implementation gaps: (1) Bow/Quiver set equip/action/contribution/UI is not represented by current Game/Studio paths; (2) block_rate / block_damage_cut_rate are absent from Equipment Generator/Data Exchange/Formal Contribution/Game Runtime/Studio Formal Battle/Result trace; (3) internal two_hand is currently a loadout state and is not by itself a forbidden Equipment category. A new blocking specification/schema gap was found: Current Formal Skill schema has no representation that identifies a bow-required Skill, while Current Equipment authority requires such Skills to be unavailable unless Bow+Quiver are both equipped. Per RULE-BAL-ISSUE-GATE-001, no repair was started in this run.",
+      "updated_at": "2026-08-26T11:51:02+09:00",
+      "result_scope": "DONE / STATIC CONFORMANCE AUDIT + ISSUE GATE RESOLVED. Human approved generic Formal Skill useRequirements after the GKS-B782 audit. Equipment gameplay semantics and required Skill representation are now specified. Implementation conformance gaps remain for Bow/Quiver, Block, and useRequirements, and are moved to TASK-BAL-071-CORR-004. No Source/Battle/Simulation/Game Data change was performed in TASK-BAL-071-CORR-003.",
       "confirmed_spec_refs": [
         "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001"
       ]
@@ -13139,7 +13154,8 @@
       "status": "Todo",
       "execution_order": 251,
       "depends_on": [
-        "TASK-BAL-071-CORR-003"
+        "TASK-BAL-071-CORR-003",
+        "TASK-BAL-071-CORR-004"
       ],
       "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Formal structure: Monster基礎Status = Monster Level × Job補正値。\n- Monster戦闘力/戦闘用StatusはMonster基礎Status × Job別Monster装備係数の正式層から生成する。\n- Player Equipment item/Candidate/ContributionをMonsterへ装着・加算して代用しない。\n- 全JobについてMonster Job Equipment Coefficientの対象Stat/category、係数、Level/Tier依存有無を明示する。\n- Equipment仕様完成後のBare Player Referenceと比較し、HP/Attack/Defense/Hit/Evasion/Critical等のMonster Core Tableを再構築する。\n- Level逆行、Tier由来の意図しない不連続、Job係数暴走をGateする。\n- 完了後にCore Enemy Budget(TASK-BAL-073)を再検証し、その後だけSkill(TASK-BAL-074)へ進む。\n- このTask登録自体はSimulation/Package/Source/Game Data変更の承認ではない。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -13150,8 +13166,34 @@
         "at": ""
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
-      "result_scope": "PLAN REGISTERED ONLY. Correct Monster equipment-layer model pending. No coefficient values, Battle execution, Package, Source, Game Data, or Current active change authorized."
+      "updated_at": "2026-08-26T11:51:02+09:00",
+      "result_scope": "PLAN REGISTERED ONLY. Blocked by TASK-BAL-071-CORR-004 Current-Spec Equipment/Skill conformance before Monster reconstruction. No coefficient values, Battle execution, Package, Source, Game Data, or Current active change authorized."
+    },
+    {
+      "id": "TASK-BAL-071-CORR-004",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "R5-P4 Equipment/Bow/Block/Skill Use Requirement Current-Spec Conformance SOURCE_UPDATE",
+      "status": "Todo",
+      "execution_order": 250,
+      "depends_on": [
+        "TASK-BAL-071-CORR-003"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- 基準SourceはHuman提供Current GKS-B782 / GA-B486.211。\n- 既存System reuse-first。新Equipment Generator、新Battle engine、新Skill systemを作らない。\n- Equipment Generator/Balance Config/Data Exchangeへblock_rate / block_damage_cut_rateを正式接続する。\n- Formal Equipment ContributionでBlock fieldをstrict validationしRuntimeへ保持する。\n- Bow+Quiverをdual_wieldとは別のdedicated setとして扱い、DUAL_WIELD Passiveを要求しない。\n- Bow-only/Quiver-onlyは合法Equip state。Action不可理由と不足Slot警告をCurrent仕様どおり実装する。\n- Bow=1 Strike / Quiver=0 Strike。CriticalはBowのみ、Critical以外のContributionはセット合算する。\n- Formal Skill Schema/Registryへoptional `useRequirements` を追加する。\n- Current initial requirement typeは EQUIPMENT_TAGS / scope SELF / allTags / anyTags。Unknown type/Tagはfail-closed。\n- useRequirementsをconditionsやSkill Budget refundへ混入させない。\n- Bow-required Skillは allTags=[EQUIP_QUIVER], anyTags=[WEAPON_BOW,WEAPON_GREATBOW] で表現する。\n- Game Runtime/Studio Formal Battle/Battle PackageでuseRequirementsをTarget/Cost/CD/Cast/Effect前に評価する。\n- BlockはDirect Basic/Skill Physical/Magicalの各HitでfinalDamage後に判定。Miss/DOTはBlockしない。\n- Block成功時 blocked_damage=floor(finalDamage*(1-block_damage_cut_rate)) → existing SHIELD(BARRIER) → HP。\n- Result Evidence/traceでBlock判定・結果とUse Requirement fail理由を検証可能にする。\n- internal two_handはloadout stateとして維持可。BaseItem weapon category authorityへ昇格させない。\n- Gameplay formula topology、既存SHIELD lifecycle、Balance seed以外の数値、GAME_DATA、Current activeを変更しない。\n- 新しい未定義Gameplay/Schema Gapを発見した場合はIssue Gateで停止し、同一runでScope追加しない。\n- Source修正後、targeted tests + Quick + SOURCE_UPDATE Accept + applied Full相当GateをPASSした更新ZIPを作る。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T11:51:02+09:00",
+      "updated_at": "2026-08-26T11:51:02+09:00",
+      "result_scope": "PLAN REGISTERED ONLY. Source conformance repair is not started. No update ZIP, Package execution, Simulation, Game Data, or Current active change authorized.",
+      "reuse_system": "Current Equipment Generator/Data Exchange/Formal Contribution/Game Runtime/Studio Formal Skill/Studio Formal Battle/AI Battle Package",
+      "reuse_entrypoint": "GKS_EQUIPMENT_GENERATION_REQUEST; Current Formal Skill Authoring/Compiler/Registry; Current Game Runtime; Current Studio Formal Battle Package executor",
+      "current_gap": "Bow/Quiver dedicated set missing; Block fields/execution missing; Formal Skill useRequirements missing.",
+      "required_extension": "Minimal Current-Spec extension to existing owners for Bow/Quiver, Block, and generic Equipment Tag use requirements.",
+      "forbidden_duplicate": "No duplicate generator, battle engine, simulator, Skill compiler, Tag registry, or package format."
     }
   ],
   "checks": [
@@ -17745,22 +17787,22 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-BAL-071-CORR-003",
-      "status": "Failed",
-      "result": "FAIL / BLOCKING SPECIFICATION REPRESENTATION GAP. Equipment authority requires bow-required Skills to be unusable unless Bow+Quiver are both equipped. Current Formal Skill authoring schema contains only schemaVersion/id/name/skillLevel/trigger/conditions/target/effects/resource and explicitly forbids ad-hoc Unknown Fields. Current skill-schema.js likewise has no Equipment/weapon/tag-use requirement field, and actionExecutionEligibility() does not inspect Equipment. Therefore Current Formal data cannot identify which Skill is bow-required without a Schema/Registry decision.",
+      "status": "Passed",
+      "result": "PASS / SPECIFICATION ISSUE RESOLVED. Human approved generic Formal Skill `useRequirements`. Current initial type EQUIPMENT_TAGS uses SELF + allTags/anyTags formal Tag IDs; it is separate from conditions/Budget refund and is evaluated before Target/Cost/CD/Cast/Effect. Bow-required Skills use (WEAPON_BOW OR WEAPON_GREATBOW) AND EQUIP_QUIVER.",
       "evidence": "DEV-V9-REORG-019 SPEC-V9-019-EQUIP-001/004 and SPEC-V9-019-SKILL-001/TAG-001/TAG-002; GKS-B782 assets/shared/js/skill-schema.js sha256=03fc7fe170025b321ec2e390f47d22050a68eb58c848de8e22766fcad3ae9fb6; game/assets/js/tag-skill-runtime.js sha256=19cd2a8c82ea1820ecb7851a48dbfd402ab87e6582e119790776a682ce8e9430",
       "checked_by": "StaticSourceAndSpecificationAudit",
       "checked_at": "2026-08-26T11:45:30+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-26T11:51:02+09:00",
+        "reason": "Human approved generic use requirement contract.",
         "mode": ""
       },
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-26T11:45:30+09:00",
-      "updated_at": "2026-08-26T11:45:30+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     },
     {
       "id": "CHK-BAL-071-TWO-HAND-STATE-CONFORMANCE-001",
@@ -18855,6 +18897,11 @@
       "at": "2026-08-26T11:45:30+09:00",
       "type": "EquipmentSourceConformanceIssueGate",
       "summary": "GKS-B782 static conformance audit completed. Bow/Quiver dedicated set semantics and Block are missing across existing owners. Internal two_hand is confirmed as loadout-state representation, not a BaseItem category violation. New blocking gap: Formal Skill schema cannot represent which Skill is bow-required; SKILL-001 forbids ad-hoc unknown fields. TASK-BAL-071-CORR-003 stopped at Issue Gate with no Source edit."
+    },
+    {
+      "at": "2026-08-26T11:51:02+09:00",
+      "type": "SpecificationIssueGateResolved",
+      "summary": "Human approved generic Formal Skill use requirements. `useRequirements` is separate from conditions/Budget refund; Current EQUIPMENT_TAGS uses SELF/allTags/anyTags formal Tag IDs and fails before Target/Cost/CD/Cast/Effect. Bow-required Skills use allTags=[EQUIP_QUIVER], anyTags=[WEAPON_BOW,WEAPON_GREATBOW]. TASK-BAL-071-CORR-003 marked Done; implementation moved to TASK-BAL-071-CORR-004 Todo/Pending. No Source change."
     }
   ],
   "authority": {
