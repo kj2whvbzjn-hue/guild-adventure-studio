@@ -90,6 +90,18 @@
     });
     return clone(data);
   }
+  function candidateReferenceId(candidateType,data){
+    const type=String(candidateType||'');
+    if(type==='equipment'||type==='passive')return String(data?.id||'').trim();
+    if(type==='mod')return String(data?.definition?.id||data?.id||'').trim();
+    return '';
+  }
+  function validateCandidateReferenceIdentity(candidateType,candidateId,data){
+    const referenceId=candidateReferenceId(candidateType,data);
+    if(!referenceId)return null;
+    if(String(candidateId)!==referenceId)throw Object.assign(new Error(`${candidateType} Candidateのcandidate_idは参照元data IDと完全一致させてください: candidate_id=${candidateId} / data_id=${referenceId}。CAND-等の独自prefixを追加しないでください。`),{code:'BATTLE_FORMAL_CANDIDATE_REFERENCE_ID_MISMATCH',candidate_type:String(candidateType),candidate_id:String(candidateId),data_id:referenceId});
+    return referenceId;
+  }
   function validateCandidateEnvelope(doc){
     if(!doc||typeof doc!=='object'||Array.isArray(doc))throw new Error('Candidate resourceの最上位はオブジェクトにしてください。');
     if(doc.format!=='guild-adventure-studio-battle-candidate')throw new Error('Candidate resource formatが不正です。');
@@ -103,6 +115,7 @@
     const payloadSha256=requiredHash(doc.payload_sha256,'payload_sha256');
     if(!doc.data||typeof doc.data!=='object'||Array.isArray(doc.data))throw new Error('Candidate resource dataオブジェクトが必要です。');
     const data=candidateType==='ai_master_snapshot'?validateAiMasterSnapshotData(doc.data):clone(doc.data);
+    validateCandidateReferenceIdentity(candidateType,candidateId,data);
     return {candidate_type:candidateType,candidate_id:candidateId,provenance:clone(provenance),payload_sha256:payloadSha256,data};
   }
   function validateFormalRoster(payload){
@@ -126,5 +139,5 @@
     }
     return clone(payload);
   }
-  return Object.freeze({CANDIDATE_TYPES,canonicalize,canonicalStringify,isFormalManifest,validateFormalManifest,compareBindings,validateAiMasterSnapshotData,validateCandidateEnvelope,validateFormalRoster});
+  return Object.freeze({CANDIDATE_TYPES,canonicalize,canonicalStringify,isFormalManifest,validateFormalManifest,compareBindings,validateAiMasterSnapshotData,candidateReferenceId,validateCandidateReferenceIdentity,validateCandidateEnvelope,validateFormalRoster});
 });

@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B787</title>
+<title>GK Studio GKS-B789</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -179,7 +179,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B787 Story nested Data Exchange + scenario export wording */
+/* GKS-B789 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -239,7 +239,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B787: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B789: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -440,7 +440,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B787: Studio home-aware common header / navigation */
+/* GKS-B789: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -471,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B787</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B789</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B787</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B789</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2474,11 +2474,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=787"></script>
+<script src="./layer-controller.js?v=789"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B787';
+const DISTRIBUTION_BUILD='GKS-B789';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -4638,6 +4638,30 @@ ID: ${checked.payload.id}${detail?'\n'+detail:''}`);
 const BATTLE_PACKAGE_LIMIT_POLICY=Object.freeze({maxFiles:1000,maxFileBytes:5*1024*1024,maxTotalBytes:50*1024*1024});
 let battlePackageSession=null;
 function battlePackageDiagnostic(severity,code,message,details={}){return {severity,code,message,...details}}
+function battlePackageDiagnosticRootKey(item){
+ const stable={severity:String(item?.severity||''),code:String(item?.code||''),path:String(item?.path||''),candidate_id:String(item?.candidate_id||''),candidate_type:String(item?.candidate_type||''),resource_id:String(item?.resource_id||''),data_id:String(item?.data_id||''),message:String(item?.message||'')};
+ return JSON.stringify(stable);
+}
+function battlePackageDiagnosticGroups(diagnostics,severities=['FATAL','JOB_ERROR']){
+ const wanted=new Set(severities),groups=new Map();
+ for(const item of diagnostics||[]){
+  if(!wanted.has(String(item?.severity||'')))continue;
+  const key=battlePackageDiagnosticRootKey(item);let group=groups.get(key);
+  if(!group){group={severity:String(item.severity||''),code:String(item.code||''),message:String(item.message||''),path:String(item.path||''),candidate_id:String(item.candidate_id||''),candidate_type:String(item.candidate_type||''),resource_id:String(item.resource_id||''),count:0,required_count:0,job_ids:new Set()};groups.set(key,group);}
+  group.count++;if(item.required!==false)group.required_count++;if(item.job_id)group.job_ids.add(String(item.job_id));
+ }
+ return [...groups.values()].map(group=>({...group,job_ids:[...group.job_ids]}));
+}
+function battlePackageDiagnosticSummary(diagnostics){
+ const rows=diagnostics||[],fatal=rows.filter(x=>x.severity==='FATAL').length,jobErrors=rows.filter(x=>x.severity==='JOB_ERROR').length,warnings=rows.filter(x=>x.severity==='WARNING').length,groups=battlePackageDiagnosticGroups(rows),jobGroups=groups.filter(x=>x.severity==='JOB_ERROR'),affectedJobs=new Set();
+ jobGroups.forEach(group=>group.job_ids.forEach(id=>affectedJobs.add(id)));
+ return {fatal,jobErrors,warnings,rootCauses:groups.length,jobRootCauses:jobGroups.length,affectedJobs:affectedJobs.size,groups};
+}
+function battlePackageDiagnosticPreview(diagnostics,max=3){
+ const summary=battlePackageDiagnosticSummary(diagnostics),lines=summary.groups.slice(0,max).map((group,index)=>{const impact=group.job_ids.length?` / 影響Job ${group.job_ids.length}件`:'';return `${index+1}. [${group.code||group.severity}] ${group.message}${impact}`;});
+ if(summary.groups.length>max)lines.push(`…ほか ${summary.groups.length-max}件`);
+ return {summary,text:lines.join('\n')};
+}
 function battlePackageBlockingJobErrors(session){return (session?.diagnostics||[]).filter(x=>x.severity==='JOB_ERROR'&&x.required!==false).length}
 function battlePackageSkippedResult(item){return {job_id:item.job_id,job_type:item.job_type||'',status:'skipped',skip_reason:item.reason||'skipped',required:item.required!==false,executed_at:null,execution:{trials:0,elapsed_ms:0},summary:null,assessment:null,errors:[],representative_runs:[]}}
 function battlePackageSetStatus(message,isError=false,summary=''){
@@ -4713,7 +4737,7 @@ async function battlePackageValidateFormalBinding(manifest){
  const mismatches=window.GKSBattleFormalEnvelope.compareBindings(expected,actual);
  if(mismatches.length){
   const detail=mismatches.slice(0,8).map(x=>`${x.path}: expected=${x.expected??'(missing)'} actual=${x.actual??'(missing)'}`).join('\n');
-  throw Object.assign(new Error(`Formal Battle Package bindingがCurrent環境と一致しません。\n${detail}`),{code:'BATTLE_FORMAL_BINDING_MISMATCH',mismatches,expected,actual});
+  throw Object.assign(new Error(`Formal Battle Package bindingがCurrent環境と一致しません。\n${detail}\nCurrent StudioからAI用テンプレートZIPを再ダウンロードし、そのテンプレートを基準にPackageを再生成してください。formal.bindingsを手作業で書き換えないでください。`),{code:'BATTLE_FORMAL_BINDING_MISMATCH',mismatches,expected,actual});
  }
  return {expected,actual,checked_at:now()};
 }
@@ -4724,9 +4748,9 @@ async function battlePackageLoadFormalCandidates(reader){
  for(const entry of entries){
   let checked;
   try{checked=window.GKSBattleFormalEnvelope.validateCandidateEnvelope(await reader.getJson(entry.path));}
-  catch(error){throw Object.assign(new Error(`${entry.path}: ${error.message}`),{code:'BATTLE_FORMAL_CANDIDATE_INVALID',path:entry.path});}
+  catch(error){throw Object.assign(new Error(`${entry.path}: ${error.message}`),{code:error.code||'BATTLE_FORMAL_CANDIDATE_INVALID',path:entry.path,candidate_id:error.candidate_id||'',candidate_type:error.candidate_type||'',data_id:error.data_id||''});}
   const actualHash=await sha256TextHex(window.GKSBattleFormalEnvelope.canonicalStringify(checked.data));
-  if(actualHash.toLowerCase()!==checked.payload_sha256.toLowerCase())throw Object.assign(new Error(`${entry.path}: payload_sha256がdataと一致しません。`),{code:'BATTLE_FORMAL_CANDIDATE_HASH_MISMATCH',path:entry.path,candidate_id:checked.candidate_id});
+  if(actualHash.toLowerCase()!==checked.payload_sha256.toLowerCase())throw Object.assign(new Error(`${entry.path}: payload_sha256がdataと一致しません。\n宣言値: ${checked.payload_sha256}\nCurrent JS canonical data SHA-256: ${actualHash}\npayload_sha256にはCurrent JSのcanonicalStringify(data)のSHA-256を設定してください。`),{code:'BATTLE_FORMAL_CANDIDATE_HASH_MISMATCH',path:entry.path,candidate_id:checked.candidate_id,declared_sha256:checked.payload_sha256,actual_sha256:actualHash});
   if(map.has(checked.candidate_id))throw Object.assign(new Error(`Candidate IDが重複しています: ${checked.candidate_id}`),{code:'BATTLE_FORMAL_CANDIDATE_ID_DUPLICATE',candidate_id:checked.candidate_id,path:entry.path});
   map.set(checked.candidate_id,checked);paths.set(checked.candidate_id,entry.path);
  }
@@ -5022,9 +5046,8 @@ async function importBattlePackageFile(file){
  try{
   const session=await inspectBattlePackage(file);
   battlePackageSession=session;
-  const fatal=session.diagnostics.filter(x=>x.severity==='FATAL').length;
-  const jobErrors=session.diagnostics.filter(x=>x.severity==='JOB_ERROR').length;
-  const warnings=session.diagnostics.filter(x=>x.severity==='WARNING').length;
+  const diagnosticPreview=battlePackageDiagnosticPreview(session.diagnostics,3),diagnosticSummary=diagnosticPreview.summary;
+  const fatal=diagnosticSummary.fatal,jobErrors=diagnosticSummary.jobErrors,warnings=diagnosticSummary.warnings;
   const summary=[
    `パッケージ: ${session.manifest.name||session.manifest.package_id}`,
    `Package ID: ${session.manifest.package_id}`,
@@ -5033,19 +5056,35 @@ async function importBattlePackageFile(file){
    `実行計画: 全${session.executionPlan.jobs.length}件 / 実行可能 ${session.activeJobs.length}件`,
    `予定総試行: ${session.estimatedTrials.toLocaleString()}戦`,
    `診断: FATAL ${fatal} / JOB_ERROR ${jobErrors} / WARNING ${warnings}`,
+   `根本原因: ${diagnosticSummary.rootCauses}件${diagnosticSummary.affectedJobs?` / 影響Job ${diagnosticSummary.affectedJobs}件`:''}`,
+   ...(diagnosticPreview.text?[`主な原因:
+${diagnosticPreview.text}`]:[]),
    '現時点では検証用セッションに保持しており、既存データへ登録していません。'
   ].join('\n');
   const ready=fatal===0&&jobErrors===0&&session.activeJobs.length>0;
   const empty=fatal===0&&jobErrors===0&&session.executionPlan.jobs.length===0;
   battlePackageSetStatus(ready?'読込・事前検証が完了しました。':empty?'空のひな形パッケージを確認しました。':'読込しましたが、実行できないジョブがあります。',!ready&&!empty,summary);
   renderBattlePackageExecutionState(session);
-  alert(ready?`Battle Packageを確認しました。\n実行可能ジョブ: ${session.activeJobs.length}件\n予定総試行: ${session.estimatedTrials.toLocaleString()}戦\n\nまだ既存データへ登録していません。`:empty?'空のBattle Packageひな形を確認しました。\nAIがリソースと実行ジョブを追加したZIPを読み込んでください。':`Battle Packageを読み込みましたが、実行準備は未完了です。\nJOB_ERROR: ${jobErrors}件`);
+  alert(ready?`Battle Packageを確認しました。
+実行可能ジョブ: ${session.activeJobs.length}件
+予定総試行: ${session.estimatedTrials.toLocaleString()}戦
+
+まだ既存データへ登録していません。`:empty?`空のBattle Packageひな形を確認しました。
+AIがリソースと実行ジョブを追加したZIPを読み込んでください。`:`Battle Packageを読み込みましたが、実行準備は未完了です。
+根本原因: ${diagnosticSummary.rootCauses}件${diagnosticSummary.affectedJobs?`
+影響Job: ${diagnosticSummary.affectedJobs}/${session.executionPlan.jobs.length}件`:''}${diagnosticPreview.text?`
+
+${diagnosticPreview.text}`:''}`);
  }catch(error){
   battlePackageSession=null;
   renderBattlePackageExecutionState(null);
-  const details=Array.isArray(error.diagnostics)?error.diagnostics.map(x=>`[${x.severity}] ${x.message}`).slice(0,8).join('\n'):'';
-  battlePackageSetStatus('読込に失敗しました。',true,`${error.message}${details?'\n'+details:''}`);
-  alert(`Battle Packageの読込に失敗しました。\n${error.message}`);
+  const diagnosticPreview=Array.isArray(error.diagnostics)?battlePackageDiagnosticPreview(error.diagnostics,3):null;
+  const details=diagnosticPreview?.text||'';
+  battlePackageSetStatus('読込に失敗しました。',true,`${error.message}${details&&details!==error.message?'\n'+details:''}`);
+  alert(`Battle Packageの読込に失敗しました。
+${error.message}${diagnosticPreview?.summary?.rootCauses?`
+
+根本原因: ${diagnosticPreview.summary.rootCauses}件${diagnosticPreview.summary.affectedJobs?` / 影響Job ${diagnosticPreview.summary.affectedJobs}件`:''}`:''}`);
  }
 }
 
@@ -5127,7 +5166,7 @@ async function runBattlePackageExecution(){
  const session=battlePackageSession,el=battlePackageExecutionElements();
  if(!session||!session.activeJobs.length)return alert('実行可能なBattle Packageを先に読み込んでください。');
  const fatal=session.diagnostics.filter(x=>x.severity==='FATAL').length,jobErrors=session.diagnostics.filter(x=>x.severity==='JOB_ERROR').length,blockingJobErrors=battlePackageBlockingJobErrors(session);
- if(fatal||blockingJobErrors)return alert(`事前検証エラーがあるため実行できません。\nFATAL ${fatal} / 必須JOB_ERROR ${blockingJobErrors} / 全JOB_ERROR ${jobErrors}`);
+ if(fatal||blockingJobErrors){const preview=battlePackageDiagnosticPreview(session.diagnostics,3),summary=preview.summary;return alert(`事前検証エラーがあるため実行できません。\n根本原因 ${summary.rootCauses}件${summary.affectedJobs?` / 影響Job ${summary.affectedJobs}件`:''}${preview.text?`\n\n${preview.text}`:''}`);}
  if(session.execution?.status==='running')return alert('Battle Packageを実行中です。');
  if(!confirm(`Battle Packageを実行します。\n\n${session.manifest.name||session.manifest.package_id}\nジョブ: ${session.activeJobs.length}件\n予定総試行: ${session.estimatedTrials.toLocaleString()}戦\n\n実行結果は検証セッションにだけ保持し、既存データへ登録しません。`))return;
  if(session.estimatedTrials>100000&&!confirm(`予定総試行は${session.estimatedTrials.toLocaleString()}戦です。iPhoneでは時間がかかる可能性があります。続行しますか？`))return;
@@ -5307,7 +5346,7 @@ function battleRosterTemplateData(){return {id:'BRT-SAMPLE-001',name:'サンプ�
 function battleTestTemplateData(){return {id:'BT-SAMPLE-001',name:'サンプル単発検証',roster_id:'BRT-SAMPLE-001',purpose:'validation',execution:{mode:'single',trials:1,seed_start:12345,seed_step:1,max_ticks:1000},metrics:['win_rate','average_ticks','skill_usage','errors'],expectations:{error_count:{max:0}},tags:[]}}
 async function exportBattleAiPackageTemplate(){
  if(typeof JSZip==='undefined')return alert('ZIP生成ライブラリを読み込めませんでした。再読み込みしてください。');
- const packageVersion='1.3.0';
+ const packageVersion='1.4.0';
  const createdAt=now(),formalBindings=await battlePackageCurrentFormalBinding();
  const manifest={
   format:'guild-adventure-studio-battle-verification-package',
@@ -5321,7 +5360,7 @@ async function exportBattleAiPackageTemplate(){
   formal:{mode:'formal',bindings:formalBindings},
   contents:{rosters:0,tests:0,opponent_sets:0,benchmarks:0,candidates:0,jobs:0},
   validation:{allow_unused_resources:true,fail_closed:true},
-  instructions:'README_AI.mdを読み、必要なJSONとexecution_planのjobsを追加してください。'
+  instructions:'README_AI.md / SPECIFICATION.md / ai/FORMAL_CANDIDATE_CONTRACT.jsonを読み、必要なJSONとexecution_planのjobsを追加してください。'
  };
  const executionPlan={
   document_type:'battle-execution-plan',
@@ -5331,8 +5370,8 @@ async function exportBattleAiPackageTemplate(){
   execution_policy:{continue_on_error:true,save_partial_results:true,stop_on_fatal_error:true},
   jobs:[]
  };
- const readme=`# AI向け Battle Package ひな形 v1.3.0\n\nこのZIPは、Guild Adventure Studioへ読み込ませるCurrent Formal戦闘検証データをAIが作成するための空パッケージです。\n\n## AIへの依頼方法\n\nこのZIPをAIへ渡し、「このZIPに○○の戦闘テストデータを作成してください」と依頼してください。\n\n## 必須作業\n\n1. Formal unit snapshotを resources/candidates/ へ typed Candidate JSONとして追加する。\n2. 編成JSONはraw unit/master/overrideを記述せず、unit_snapshot Candidateをsnapshot_refで参照する。\n3. 必要なテストJSONを resources/tests/ へ追加する。\n4. 必要に応じて対象集合・Benchmarkを対応フォルダへ追加する。\n5. execution_plan.json の jobs に、実行対象だけを記載する。\n6. manifest.json のformal.bindingsは変更しない。contents件数、package_id、name、created_atだけを更新する。\n7. CharacterはformalAiBinding（program_id/layout_id/master_snapshot_id）+ skillLoadoutIdsを使用し、参照AI Target/Action/Condition定義をai_master_snapshot CandidateとしてPackage内へ固定する。\n8. Formal AIはPackage-local ai_master_snapshotだけでcompileし、Human実機Studioのambient AI Master登録へ依存させない。\n9. Monsterはmonster_ref + enemy_snapshot_refのCurrent別経路を維持する。\n10. 完成したZIPのフォルダ構造を変更せず、そのまま返す。\n\nFormal PackageはBuild/Data/Formula/Rules/Config binding不一致、raw roster、owner provenance欠落、Legacy fallbackをfail-closedで拒否します。\n\n## Result Packageで確認するもの\n\nFormal実行ではResult Packageの metrics/formal_evidence.json と各Jobのformal_evidenceを確認します。\n同一Input/Seed/Versionの再実行では replay_fingerprint が一致すること、integrity.formal_only=true、integrity.legacy_fallback_used=false を確認してください。\nSkill/Equipment/Passive/Status/Resource/Cast-CD/Death-EHP/Formal AI trace/owner provenanceもFormal Evidenceへ記録されます。\n`;
- const specification=`# Battle Package 基本仕様 v1.3.0
+ const readme=`# AI向け Battle Package ひな形 v1.4.0\n\nこのZIPは、Guild Adventure Studioへ読み込ませるCurrent Formal戦闘検証データをAIが作成するための空パッケージです。\n\n## AIへの依頼方法\n\nこのZIPをAIへ渡し、「このZIPに○○の戦闘テストデータを作成してください」と依頼してください。\n\n## 必須作業\n\n1. Formal unit snapshotを resources/candidates/ へ typed Candidate JSONとして追加する。\n2. 編成JSONはraw unit/master/overrideを記述せず、unit_snapshot Candidateをsnapshot_refで参照する。\n3. 必要なテストJSONを resources/tests/ へ追加する。\n4. 必要に応じて対象集合・Benchmarkを対応フォルダへ追加する。\n5. execution_plan.json の jobs に、実行対象だけを記載する。\n6. manifest.json のformal.bindingsは変更しない。contents件数、package_id、name、created_atだけを更新する。\n7. CharacterはformalAiBinding（program_id/layout_id/master_snapshot_id）+ skillLoadoutIdsを使用し、参照AI Target/Action/Condition定義をai_master_snapshot CandidateとしてPackage内へ固定する。\n8. Formal AIはPackage-local ai_master_snapshotだけでcompileし、Human実機Studioのambient AI Master登録へ依存させない。\n9. Monsterはmonster_ref + enemy_snapshot_refのCurrent別経路を維持する。\n10. equipment / passive / mod Candidateのcandidate_idは参照元data IDと完全一致させる。CAND-等の独自prefixを追加しない。equipment=data.id、passive=data.id、mod=data.definition.id。\n11. payload_sha256はai/FORMAL_CANDIDATE_CONTRACT.jsonのcanonicalizationに従い、Current JS canonicalStringify(data)のSHA-256を設定する。Python等の別JSON serializer出力をそのままhashしない。\n12. 完成したZIPのフォルダ構造を変更せず、そのまま返す。\n\nFormal PackageはBuild/Data/Formula/Rules/Config binding不一致、raw roster、owner provenance欠落、Legacy fallbackをfail-closedで拒否します。\n\n## Result Packageで確認するもの\n\nFormal実行ではResult Packageの metrics/formal_evidence.json と各Jobのformal_evidenceを確認します。\n同一Input/Seed/Versionの再実行では replay_fingerprint が一致すること、integrity.formal_only=true、integrity.legacy_fallback_used=false を確認してください。\nSkill/Equipment/Passive/Status/Resource/Cast-CD/Death-EHP/Formal AI trace/owner provenanceもFormal Evidenceへ記録されます。\n`;
+ const specification=`# Battle Package 基本仕様 v1.4.0
 
 ## 必須ファイル
 - manifest.json
@@ -5351,6 +5390,8 @@ async function exportBattleAiPackageTemplate(){
 - Formal rosterはmode="formal"とformal_snapshotを持ち、各unitはresources/candidatesのunit_snapshotをsnapshot_refで参照します。
 - raw unit / master_id / direct stats / overridesはFormal rosterでは使用できません。
 - Candidateはcandidate_type / candidate_id / owner provenance / payload_sha256が必須です。
+- equipment / passive / mod Candidateは、Battle unit内のID参照をそのままcandidate_idとして解決します。したがって **equipment: candidate_id=data.id / passive: candidate_id=data.id / mod: candidate_id=data.definition.id** を必須とします。CAND-等の独自prefixを付けてはいけません。
+- payload_sha256は SHA-256(GKSBattleFormalEnvelope.canonicalStringify(data)) です。object keyを再帰的に辞書順へ並べ、array順序を保持し、最後はJavaScript JSON.stringify の値表現でserializeします。特に数値表現が異なる別言語のJSON serializerをそのままhash入力にしないでください。機械可読の完全規則は ai/FORMAL_CANDIDATE_CONTRACT.json を参照してください。
 - Formal unit_snapshotのskillsはG07でcompile済みの正式Skill objectを直接保持し、runtimeContractsを必須とします。skill_idsだけの参照やLegacy Skill recordは使用できません。
 - Studio読込時に各Formal SkillをG07で再検証し、runtimeContractsが再生成結果と一致しない場合は実行前に停止します。
 - Character unit_snapshotはCurrent形式のformalAiBinding（program_id/layout_id/master_snapshot_id）とskillLoadoutIdsを必須とし、ai_program Candidateとai_master_snapshot Candidateを既存Validator/Compiler/Decision Engineで再compileします。ai_master_snapshotは参照するAI Condition/Target/Action定義をtyped/versioned snapshotとしてPackage内へ固定します。Formal compileではambient Current Studio ProjectのAI Masterへfallbackせず、Snapshot参照欠落・Master version/data_version/provenance不一致・inline/legacy ai・Loadout外Skill参照を実行前にfail-closedで停止します。
@@ -5373,6 +5414,8 @@ async function exportBattleAiPackageTemplate(){
 - 未使用リソースは正常です。
 - 参照先がないjobはエラーです。
 - IDはパッケージ内で重複させないでください。
+- BATTLE_FORMAL_CANDIDATE_REFERENCE_ID_MISMATCH はCandidate名の付け方の問題です。参照元data IDへcandidate_idを合わせてください。
+- BATTLE_FORMAL_CANDIDATE_HASH_MISMATCH はdataとpayload_sha256の不一致です。Studioのエラーに表示されるCurrent JS canonical SHA-256を確認してください。
 - 人数は固定ではありません。編成配列とcountで表現してください。
 - Formal実行でOwner/Binding/Contract不一致がある場合はJOB_ERRORとして実行準備または実行をfail-closedにします。
 
@@ -5399,13 +5442,33 @@ async function exportBattleAiPackageTemplate(){
   "output_policy": {"level": "representative"}
 }
 `;
- const prompt=`# AIへの依頼テンプレート\n\nこのBattle Packageひな形ZIPを編集し、次の検証データを作成してください。\n\n## 目的\n（ここに検証したい内容を書く）\n\n## 条件\n（使用する編成、敵、試行数、Seed、期待値などを書く）\n\n## 出力条件\n- ZIP内部のREADME_AI.mdとSPECIFICATION.mdに従う。\n- 実行対象はexecution_plan.jsonへ記載する。\n- 完成したBattle PackageをZIPのまま返す。\n`;
+ const prompt=`# AIへの依頼テンプレート\n\nこのBattle Packageひな形ZIPを編集し、次の検証データを作成してください。\n\n## 目的\n（ここに検証したい内容を書く）\n\n## 条件\n（使用する編成、敵、試行数、Seed、期待値などを書く）\n\n## 出力条件\n- ZIP内部のREADME_AI.md、SPECIFICATION.md、ai/FORMAL_CANDIDATE_CONTRACT.jsonに従う。\n- equipment/passive/modのcandidate_idへCAND-等の独自prefixを追加しない。\n- payload_sha256はCurrent JS canonicalStringify(data)規則で算出する。\n- 実行対象はexecution_plan.jsonへ記載する。\n- 完成したBattle PackageをZIPのまま返す。\n`;
+ const candidateContract={
+  schema_version:1,
+  purpose:'Formal CandidateをAI/外部ツールがCurrent Studioと同一規則で生成するための機械可読契約',
+  candidate_reference_identity:{
+   equipment:{candidate_id_equals:'data.id',example:{candidate_id:'EQP-001',data_id:'EQP-001'},forbidden_example:{candidate_id:'CAND-EQP-001',data_id:'EQP-001'}},
+   passive:{candidate_id_equals:'data.id',example:{candidate_id:'PAS-001',data_id:'PAS-001'},forbidden_example:{candidate_id:'CAND-PAS-001',data_id:'PAS-001'}},
+   mod:{candidate_id_equals:'data.definition.id',example:{candidate_id:'MOD-001',data_definition_id:'MOD-001'},forbidden_example:{candidate_id:'CAND-MOD-001',data_definition_id:'MOD-001'}}
+  },
+  payload_sha256:{
+   algorithm:'SHA-256',
+   input:'canonicalStringify(data)',
+   current_reference:'GKSBattleFormalEnvelope.canonicalStringify(data)',
+   canonicalization:{objects:'sort keys recursively in ascending JavaScript string order; omit properties whose value is undefined',arrays:'preserve array order and recursively canonicalize elements',serialization:'JavaScript JSON.stringify',numbers:'use JavaScript JSON.stringify number serialization'},
+   warning:'Do not hash Python json.dumps or another serializer output unless the resulting UTF-8 JSON text is byte-for-byte identical to Current JavaScript canonicalStringify(data).',
+   studio_mismatch_behavior:'BATTLE_FORMAL_CANDIDATE_HASH_MISMATCH reports both declared payload_sha256 and Current JS canonical data SHA-256.'
+  },
+  validation_order:['candidate envelope shape','direct-reference candidate identity','payload_sha256 vs Current JS canonical data','resource/job references'],
+  failure_codes:{BATTLE_FORMAL_CANDIDATE_REFERENCE_ID_MISMATCH:'candidate_id differs from the direct-reference data ID',BATTLE_FORMAL_CANDIDATE_HASH_MISMATCH:'payload_sha256 differs from Current JS canonical data SHA-256'}
+ };
  const writer=GKZipCore.writer.create();
  writer.addJson('manifest.json',manifest);
  writer.addJson('execution_plan.json',executionPlan);
  writer.addText('README_AI.md',readme);
  writer.addText('SPECIFICATION.md',specification);
  writer.addText('ai/REQUEST_TEMPLATE.md',prompt);
+ writer.addJson('ai/FORMAL_CANDIDATE_CONTRACT.json',candidateContract);
  writer.addText('resources/candidates/PLACE_JSON_HERE.md','# Formal typed Candidate JSONを配置\n');
  writer.addText('resources/rosters/PLACE_JSON_HERE.md','# battle-roster JSONを配置\n');
  writer.addText('resources/tests/PLACE_JSON_HERE.md','# battle-test JSONを配置\n');
@@ -10050,7 +10113,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','787');
+    url.searchParams.set('appv','789');
     location.replace(url.toString());
    }
  }
@@ -10059,7 +10122,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=787',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=789',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10078,7 +10141,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','787');
+    url.searchParams.set('appv','789');
     location.replace(url.toString());
    }
   });
