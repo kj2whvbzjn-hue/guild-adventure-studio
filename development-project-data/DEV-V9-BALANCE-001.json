@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T06:29:39.133Z"
+    "updated_at": "2026-08-26T06:39:00.803Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-001完了 — 装備可能人型Monster Core 350行Freeze / Body Type装備制約は別Task待ち",
-    "goal": "Current GKS-B783を基準にMonster基礎Status×既存Job装備係数で7 Job×Lv1..50の人型Monster CoreをFreeze済み。Player Equipment/iLvは不使用。盾BlockはJob能力値依存式、Bow+QuiverはCurrent combat identityで確定。獣型等の装備不可Body TypeはTASK-BAL-072-CORR-002へ分離し、このrunでは開始しない。TASK-BAL-073/074も開始しない。"
+    "theme": "TASK-BAL-072-CORR-002凍結 — 人型Monster Core Authority維持 / 獣型Body Type設計は保留",
+    "goal": "Human判断により獣型/非人型のBody Type別装備制約Coreは凍結する。現時点で獣型の盾不可・Block禁止を新仕様化しない。Block自体は矛盾しないため、Current GKS-B783の既存Block trace/logで発生・block_rate・damage cut・適用Damageを確認する。TASK-BAL-072-CORR-001の350行人型Monster Coreを現在の正式数値Authorityとして維持する。TASK-BAL-073/074はこのrunでは開始・変更しない。"
   },
   "project_rules": [
     {
@@ -13418,7 +13418,7 @@
       "id": "TASK-BAL-072-CORR-002",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "R5-P5 Monster Body Type装備制約別Coreを作成する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 251,
       "depends_on": [
         "TASK-BAL-072-CORR-001"
@@ -13432,8 +13432,8 @@
         "at": ""
       },
       "created_at": "2026-08-26T15:16:48+09:00",
-      "updated_at": "2026-08-26T15:16:48+09:00",
-      "result_scope": "REGISTERED ONLY by Human instruction. Beast/non-humanoid equipment restrictions are deferred from TASK-BAL-072-CORR-001. Not started in this run."
+      "updated_at": "2026-08-26T15:40:00+09:00",
+      "result_scope": "FROZEN BY HUMAN. Beast/non-humanoid Body Type specific Monster Core and equipment restriction design is not performed at this stage. Do not introduce a rule that beast-type monsters inherently cannot Block or must have block_rate=0. Block itself is not contradictory for these monsters; occurrence, configured block_rate, damage cut, and resulting damage are covered by the existing Current GKS-B783 Block trace/log. TASK-BAL-072-CORR-001 equipment-capable humanoid Monster Core remains the current frozen numeric authority. This task is non-blocking for the current balance line unless Human explicitly reopens Body Type-specific design. No Simulation/Package/Source/GAME_DATA/Current active change was performed."
     }
   ],
   "checks": [
@@ -19284,6 +19284,11 @@
       "at": "2026-08-26T15:05:54+09:00",
       "type": "MonsterBodyTypeEquipmentRestrictionDeferred",
       "summary": "Human clarified that beast/non-humanoid monsters may be unable to equip shields or other equipment. This concern is excluded from the completed humanoid core and registered as TASK-BAL-072-CORR-002 Todo/Pending only."
+    },
+    {
+      "at": "2026-08-26T15:34:53+09:00",
+      "type": "MonsterBodyTypeCoreFrozenByHuman",
+      "summary": "Human froze TASK-BAL-072-CORR-002. Beast/non-humanoid Body Type-specific equipment restriction and dedicated Core design are deferred indefinitely for the current line. No inherent no-Block rule is introduced; Block remains allowed and is covered by existing GKS-B783 Block trace/log. TASK-BAL-072-CORR-001 humanoid Core remains the frozen numeric authority."
     }
   ],
   "authority": {
