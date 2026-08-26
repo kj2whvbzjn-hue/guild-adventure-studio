@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T00:43:38.015Z"
+    "updated_at": "2026-08-26T00:50:57.997Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 SingleRef extension Human real-device Result pending",
-    "goal": "Execute exactly TASK-BAL-074-SingleExt.zip on Human Studio and return Result. Then evaluate P160/P180/P200 monotonicity/bracketing and derive interpolation-only P_eq/K_est; no automatic Freeze or next domain."
+    "theme": "TASK-BAL-074 K(H_eff) coefficient design awaiting Human approval",
+    "goal": "E06/E07/E08のcomplete K_est tableを入力に、非減少K(H_eff)制約を守るK(2)/K(3)/K(4)の選定方式を別Human承認のDESIGN_ONLY工程で決める。現時点では係数選定・Freeze・Battle実行を行わない。"
   },
   "project_rules": [
     {
@@ -7065,8 +7065,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T09:31:57+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Human approved the TotalPower/effective-hit-count multi-hit composition for validation only: T=ΣPower_i; H_eff=T^2/Σ(Power_i^2); C_Damage_Total=max(0,(T-100)/2); C_MultiHit=(T/100)*K(H_eff). K remains unset and neither K nor final composition is Frozen. Exact SingleRef extension package prepared: THF20+SWD20 vs HNT23/24/25, Single P160/P180/P200 only, 18 conditions/1800 battles, seeds 749600000..749600099. No Controls or multi-hit rerun. Package preflight: formal manifest PASS, candidate hash/envelope 23/23 PASS, formal roster 18/18 PASS. Human real-device Result pending. No new Evidence; MP/CD/Cast/Range not authorized.",
+      "updated_at": "2026-08-26T09:49:37+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Single Reference Extension Human real-device result PASS: 18/18 jobs, 1800/1800 trials, error0, exact binding, formal_only, no legacy. THF/SWD × HNT23/24/25 P140→P160→P180→P200 is nondecreasing for both ΔWinRate and average ally damage. All 3 previously upper-out-of-range SWD multi-hit rows are bracketed without extrapolation, so the P_eq reference-range gap is closed. E08 now contains the complete floor-zero C_eq/K_est recomputation input. However K coefficients are NOT selected: descriptive K_est is unstable across envelopes and THF median H3>H4 conflicts with the candidate nondecreasing K(H_eff) constraint. A separate Human-approved DESIGN-ONLY coefficient-selection step is required. No C_MultiHit/final structure Freeze, no new Battle execution, and no MP/CD/Cast/Range progression.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7077,14 +7077,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Human-approved SingleRef extension package prepared. Await Human real-device execution/result only: THF20+SWD20 vs HNT23/24/25, P160/P180/P200, 18 conditions/1800 trials, same seeds. Do not add conditions, rerun Controls/multi-hit, extrapolate, select/freeze K, or start MP/CD/Cast/Range.",
+        "current_step": "Single Reference Extension Human result registered PASS. P_eq reference upper range is closed with no extrapolation. E08 is the reusable recomputation authority. Stop here: K(2)/K(3)/K(4) coefficient selection requires a separate Human-approved DESIGN-ONLY decision because descriptive K_est does not satisfy a stable monotonic sequence. No Battle Package, K Freeze, or MP/CD/Cast/Range execution is authorized.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "No new Evidence at package-preparation stage. Retained E05/E06/E07 remain analysis authorities.",
+        "next_evidence": "EVD-BAL-074-SINGLE-REF-EXT-001",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7094,7 +7094,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanSingleReferenceExtensionResult",
+        "next_evidence_status": "E08Retained_AwaitingHumanKCoefficientDesignApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -11499,7 +11499,7 @@
           "evaluated_at": "2026-08-26T08:50:00+09:00"
         },
         "multi_hit_model_form_design": {
-          "status": "DesignExecuted_StructureApprovedForValidation_CoefficientsUnset",
+          "status": "StructureValidationInputComplete_CoefficientDesignBlocked",
           "design_execution_decision_id": "DEC-BAL-TASK074-MULTIHIT-MODEL-DESIGN-START-001",
           "inputs": [
             {
@@ -11613,19 +11613,21 @@
               "THF(~50%) and SWD(~30%) are calibration/validation envelopes, not formula inputs",
               "Do not apply C_Damage_1Hit independently to per-hit Power values below100"
             ],
-            "coefficient_status": "UNSET",
+            "coefficient_status": "UNSET_REFERENCE_COMPLETE_DESIGN_DECISION_REQUIRED",
             "freeze_status": "NOT_FROZEN",
             "structural_status": "HUMAN_APPROVED_FOR_VALIDATION_NOT_FROZEN",
             "reason_structural_approval_required": "Previously approved allocation structure used Σ C_Damage(Power_i). The selected candidate instead prices the DAMAGE group by TotalPower and adds a distribution-aware premium. This resolves the negative per-hit-cost defect but is a composition change and must not be silently adopted.",
             "approval_decision_id": "DEC-BAL-TASK074-MULTIHIT-SREF-APPROVAL-001",
-            "approved_for_validation_at": "2026-08-26T09:31:57+09:00"
+            "approved_for_validation_at": "2026-08-26T09:31:57+09:00",
+            "reference_extension_status": "PASS_RANGE_CLOSED",
+            "coefficient_selection_blocker": "Direct descriptive K_est does not provide a stable monotonic coefficient sequence across retained THF/SWD envelopes. THF median K_est has H3 > H4; SWD median H3 and H4 are close but the full spread is wide. No automatic median/mean fit or monotonic projection is authorized."
           },
           "design_result": "Accuracy dependency is real, but runtime Accuracy/Evasion is not a valid direct Skill-Budget input. Selected validation candidate is a static TotalPower-scaled, effective-hit-count premium. Numeric K(H_eff) is intentionally not selected from the current truncated P_eq range.",
           "designed_at": "2026-08-26T09:22:40+09:00"
         },
         "multi_hit_single_reference_extension_plan": {
-          "status": "PackagePrepared_AwaitingHumanRealDeviceResult",
-          "execution_authorized": true,
+          "status": "HumanResultEvaluated_PASS_ReferenceRangeClosed_CoefficientDesignPending",
+          "execution_authorized": false,
           "decision_question": "Can the retained THF E06 + SWD E07 multi-hit outcomes be fully bracketed by an extended same-runtime single-hit Power curve so equivalent single Power and candidate K(H_eff) can be calculated without extrapolation?",
           "confirmed_inputs": {
             "attackers": [
@@ -11736,7 +11738,7 @@
           "evidence_reason": "This extension is a calibration bridge. Retain new Evidence only if its completed numeric table becomes required as a later Freeze/recomputation authority.",
           "proposed_at": "2026-08-26T09:22:40+09:00",
           "human_real_device_required": true,
-          "result_pending": true,
+          "result_pending": false,
           "approved_by": "Human",
           "approved_at": "2026-08-26T09:31:57+09:00",
           "approval_decision_id": "DEC-BAL-TASK074-MULTIHIT-SREF-APPROVAL-001",
@@ -11746,7 +11748,234 @@
           "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 23/23 PASS",
           "formal_roster_validation": "GKS-B782 validateFormalRoster: 18/18 PASS",
           "manifest_formal_validation": "GKS-B782 validateFormalManifest: PASS",
-          "prepared_at": "2026-08-26T09:31:57+09:00"
+          "prepared_at": "2026-08-26T09:31:57+09:00",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-SINGLE-EXT-B782_BEX-1787704964806.zip",
+          "result_sha256": "1e90d31362b91ba016f5548f8f68252de17b0f37b5c1352d9f04eddfc3c23efb",
+          "execution_id": "BEX-1787704964806",
+          "formal_execution_gate": "PASS",
+          "completed_at": "2026-08-26T09:49:37+09:00"
+        },
+        "multi_hit_single_reference_extension_result": {
+          "status": "PASS_REFERENCE_RANGE_CLOSED_K_COEFFICIENT_SELECTION_BLOCKED",
+          "formal": {
+            "status": "PASS",
+            "formal_binding_match": true,
+            "jobs_completed": "18/18",
+            "trials_completed": "1800/1800",
+            "error_zero": true,
+            "formal_only": "18/18",
+            "legacy_fallback_not_used": "18/18",
+            "seed_start": 749600000,
+            "seed_end": 749600099
+          },
+          "extension_gate": {
+            "overall": "PASS",
+            "all_six_attacker_defender_rows_damage_nondecreasing": true,
+            "all_six_attacker_defender_rows_delta_win_rate_nondecreasing": true,
+            "previous_high_out_of_range_SWD_rows_bracketed": "3/3",
+            "remaining_high_out_of_range_rows": 0,
+            "extrapolation_used": false
+          },
+          "newly_resolved_P_eq": [
+            {
+              "attacker": "SWD",
+              "defender_level": 23,
+              "total_power": 120,
+              "hit_count": 3,
+              "multi_delta_win_rate_pp": 29,
+              "equivalent_single_power": 146.25,
+              "C_eq_budget": 13.125,
+              "K_est": 10.9375
+            },
+            {
+              "attacker": "SWD",
+              "defender_level": 23,
+              "total_power": 120,
+              "hit_count": 4,
+              "multi_delta_win_rate_pp": 34,
+              "equivalent_single_power": 152.5,
+              "C_eq_budget": 16.25,
+              "K_est": 13.541666666666666
+            },
+            {
+              "attacker": "SWD",
+              "defender_level": 24,
+              "total_power": 120,
+              "hit_count": 4,
+              "multi_delta_win_rate_pp": 33,
+              "equivalent_single_power": 147.3684210526316,
+              "C_eq_budget": 13.684210526315795,
+              "K_est": 11.403508771929829
+            }
+          ],
+          "K_est_summary_by_accuracy_envelope_and_hit_count": [
+            {
+              "attacker": "SWD",
+              "hit_count": 2,
+              "effective_hit_count_nominal": 2,
+              "n": 6,
+              "min": 0,
+              "median": 0.5244755249999984,
+              "mean": 0.9522422022727263,
+              "max": 2.5,
+              "values": [
+                2.5,
+                0,
+                2.1645021636363606,
+                0,
+                1.0489510499999968,
+                0
+              ]
+            },
+            {
+              "attacker": "SWD",
+              "hit_count": 3,
+              "effective_hit_count_nominal": 3,
+              "n": 6,
+              "min": 0,
+              "median": 3.674242424999999,
+              "mean": 4.757065851010101,
+              "max": 10.9375,
+              "values": [
+                4.318181818181818,
+                10.9375,
+                3.0303030318181805,
+                8.333333333333334,
+                1.923076922727276,
+                0
+              ]
+            },
+            {
+              "attacker": "SWD",
+              "hit_count": 4,
+              "effective_hit_count_nominal": 4,
+              "n": 6,
+              "min": 0.8741258727272726,
+              "median": 3.547979798674242,
+              "mean": 5.9187772506878,
+              "max": 13.541666666666666,
+              "values": [
+                4.318181818181818,
+                13.541666666666666,
+                2.597402595454545,
+                11.403508771929829,
+                0.8741258727272726,
+                2.7777777791666654
+              ]
+            },
+            {
+              "attacker": "THF",
+              "hit_count": 2,
+              "effective_hit_count_nominal": 2,
+              "n": 6,
+              "min": 0,
+              "median": 0,
+              "mean": 0.15151515151515152,
+              "max": 0.9090909090909091,
+              "values": [
+                0.9090909090909091,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "attacker": "THF",
+              "hit_count": 3,
+              "effective_hit_count_nominal": 3,
+              "n": 6,
+              "min": 1.2987012999999983,
+              "median": 5.3374655657197,
+              "mean": 5.58106315719697,
+              "max": 9.740259740909094,
+              "values": [
+                9.740259740909094,
+                7.142857141666663,
+                5.37190082727273,
+                5.30303030416667,
+                1.2987012999999983,
+                4.629629629166666
+              ]
+            },
+            {
+              "attacker": "THF",
+              "hit_count": 4,
+              "effective_hit_count_nominal": 4,
+              "n": 6,
+              "min": 1.9480519500000006,
+              "median": 3.679653679166665,
+              "mean": 3.843594677398989,
+              "max": 6.4814814833333285,
+              "values": [
+                2.727272727272727,
+                3.5714285708333313,
+                4.545454545454546,
+                3.7878787874999986,
+                1.9480519500000006,
+                6.4814814833333285
+              ]
+            }
+          ],
+          "K_est_summary_combined_by_hit_count": [
+            {
+              "hit_count": 2,
+              "n": 12,
+              "min": 0,
+              "median": 0,
+              "mean": 0.5518786768939389,
+              "max": 2.5
+            },
+            {
+              "hit_count": 3,
+              "n": 12,
+              "min": 0,
+              "median": 4.9663299666666685,
+              "mean": 5.1690645041035355,
+              "max": 10.9375
+            },
+            {
+              "hit_count": 4,
+              "n": 12,
+              "min": 0.8741258727272726,
+              "median": 3.679653679166665,
+              "mean": 4.881185964043394,
+              "max": 13.541666666666666
+            }
+          ],
+          "coefficient_selection_issue": {
+            "present": true,
+            "detail": "The completed K_est table is not sufficiently stable to select K(2)/K(3)/K(4) automatically. For THF, median K_est(H3) exceeds median K_est(H4), while the selected candidate requires nondecreasing K(H_eff). SWD shows the expected H2<H3<H4 median ordering, but spread is wide. Therefore this result closes the reference-range gap but does not itself justify coefficient Freeze.",
+            "THF_medians": {
+              "2": 0,
+              "3": 5.3374655657197,
+              "4": 3.679653679166665
+            },
+            "SWD_medians": {
+              "2": 0.5244755249999984,
+              "3": 3.674242424999999,
+              "4": 3.547979798674242
+            }
+          },
+          "conclusion": {
+            "reference_range_closed": true,
+            "remaining_high_out_of_range_rows": 0,
+            "extrapolation_used": false,
+            "K_coefficients_selected": false,
+            "C_MultiHit_frozen": false,
+            "multi_hit_structure_final_frozen": false,
+            "next_required_decision": "A separate Human-approved design step is required to decide how K(2)/K(3)/K(4) should be estimated under the nondecreasing K(H_eff) constraint, because the completed descriptive K_est table is not stable enough for automatic coefficient selection. No new Battle execution is authorized."
+          },
+          "retained_evidence": {
+            "evidence_id": "EVD-BAL-074-SINGLE-REF-EXT-001",
+            "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-SINGLE-REF-EXT",
+            "file": "BAL074-E08.json",
+            "sha256": "b366766f4cd36377ce11d62d4dfb53a81c9d5c1dfd52080a00b757bbd04ae401",
+            "role": "SINGLE_REFERENCE_EXTENSION_AND_COMPLETE_MULTIHIT_K_RECOMPUTATION_AUTHORITY"
+          },
+          "evaluated_at": "2026-08-26T09:45:04+09:00",
+          "registered_at": "2026-08-26T09:49:37+09:00"
         }
       },
       "evidence_refs": [
@@ -11812,6 +12041,15 @@
           "role": "SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN",
           "status": "PreparedForRegistration",
           "recorded_at": "2026-08-26T08:50:00+09:00"
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-SINGLE-REF-EXT",
+          "file": "BAL074-E08.json",
+          "sha256": "b366766f4cd36377ce11d62d4dfb53a81c9d5c1dfd52080a00b757bbd04ae401",
+          "evidence_id": "EVD-BAL-074-SINGLE-REF-EXT-001",
+          "role": "SINGLE_REFERENCE_EXTENSION_AND_COMPLETE_MULTIHIT_K_RECOMPUTATION_AUTHORITY",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-26T09:45:04+09:00"
         }
       ],
       "blocked_reason": ""
@@ -17004,6 +17242,29 @@
       "blocking": false,
       "created_at": "2026-08-26T09:31:57+09:00",
       "updated_at": "2026-08-26T09:31:57+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-SINGLE-REF-EXT-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Human real-device Single Reference Extension PASS: 18/18 jobs, 1800/1800 trials, error0, exact Formal binding, formal_only, no legacy fallback. All THF/SWD × HNT23/24/25 rows are nondecreasing for both ΔWinRate and average ally damage from retained P140 through P160/P180/P200. All 3 previously upper-out-of-range SWD multi-hit outcomes are now bracketed without extrapolation. Reference-range gap is closed; K coefficients remain unselected.",
+      "evidence": "BAL074-E08.json sha256=b366766f4cd36377ce11d62d4dfb53a81c9d5c1dfd52080a00b757bbd04ae401",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T09:49:37+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T09:49:37+09:00",
+        "reason": "All exact approved Single Reference Extension execution and bracketing gates passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T09:49:37+09:00",
+      "updated_at": "2026-08-26T09:49:37+09:00"
     }
   ],
   "workflow": {
@@ -18040,6 +18301,11 @@
       "at": "2026-08-26T09:31:57+09:00",
       "type": "MultiHitSingleReferenceExtensionPackagePrepared",
       "summary": "Human承認によりmulti-hit TotalPower/effective-hit-count構造をvalidation用に採用し、THF20+SWD20 vs HNT23/24/25のSingle P160/P180/P200拡張Packageを準備。18条件/1800戦、same seeds 749600000..749600099。Control/multi-hit再実行なし。Candidate 23/23 hash+envelope PASS、Roster 18/18 PASS。K/構造最終Freezeなし、新規Evidenceなし。"
+    },
+    {
+      "at": "2026-08-26T09:49:37+09:00",
+      "type": "SingleReferenceExtensionResultRegistered",
+      "summary": "Human実機Single Reference Extension 18条件/1800戦PASSを最新Studio正本へ登録。P140→P200のΔWR/average ally damage単調性PASS、E07上限外3条件を3/3外挿なしでbracket。BAL074-E08を再計算Authorityとして参照追加。K_estはTHF H3>H4 median等の不安定性があり、K(2)/K(3)/K(4)は未選定・未Freeze。次は別Human承認のdesign-only係数選定まで停止。"
     }
   ],
   "authority": {
