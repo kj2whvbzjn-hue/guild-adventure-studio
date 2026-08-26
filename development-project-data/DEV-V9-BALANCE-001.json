@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T10:41:51.818Z"
+    "updated_at": "2026-08-26T11:22:42.769Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "Bow+Quiver / Shield Block実機検証完了 — Formal Skill Balance Screening開始待ち",
-    "goal": "GKS-B784 Human実機でBow+Quiver→Sword+Shield Basic AttackのHit/Block/Miss全分岐を確認済み。TASK-BAL-074-INFRA-004はDone。次はHuman承認済みPhysical Skill Screening計画に従い、Current Monster Coreを相手にControlとSkill Candidateを同一Seed比較する別Development Taskを開始する。このrunではSkill Battle Package生成/Simulationを開始しない。"
+    "theme": "Bow/Quiver Combat ContributionをBow-onlyへ仕様同期済み — Source修正開始待ち",
+    "goal": "Human確定によりBow+Quiver両装備要求・Bow1/Quiver0は維持しつつ、Basic Attack/弓Required SkillのEquipment Combat ContributionをBow側だけへ変更した。Current GKS-B784は旧セット合算実装のため、TASK-BAL-071-CORR-006 SOURCE_UPDATEを別Development TaskとしてHuman開始承認後に実施する。そのFresh SourceをTASK-BAL-074-INFRA-005でHuman実機再検証するまでFormal Skill Balance Screeningは停止する。"
   },
   "project_rules": [
     {
@@ -336,12 +336,12 @@
     },
     {
       "id": "RULE-BAL-PER-STRIKE-WEAPON-CONTRIBUTION-001",
-      "text": "Basic AttackのAttack/Accuracy/Criticalは原則としてそのstrikeを発生させた攻撃武器のContributionを使用する。dual_wieldはmain/off hand各1strikeで各手Contributionを独立使用し、Accuracy/Criticalを合算しない。weapon_shieldは攻撃武器1本だけがstrikeを発生させ、盾はattack_count=0としてoffensive contributionを加算しない。弓は明示例外として弓+矢筒が1セットを構成し、弓attack_count=1・矢筒attack_count=0。Criticalは弓側のみ、Critical以外のCombat Contributionは弓+矢筒を合算する。two_handカテゴリは使用しない。",
+      "text": "Basic AttackのAttack/Accuracy/Criticalは原則としてそのstrikeを発生させた攻撃武器のContributionを使用する。dual_wieldはmain/off hand各1strikeで各手Contributionを独立使用し、Accuracy/Criticalを合算しない。weapon_shieldは攻撃武器1本だけがstrikeを発生させ、盾はattack_count=0としてoffensive contributionを加算しない。弓+矢筒は専用セットとして両装備を弓Action成立条件に要求するが、strikeは弓1・矢筒0。Basic AttackのAttack/Accuracy/Criticalその他Combat Contributionは弓側だけを使用し、矢筒Contributionを合算しない。two_handカテゴリは使用しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-26 bow/quiver and no-two-hand correction",
+      "source_id": "conversation:2026-08-26 bow-only quiver contribution correction",
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00"
+      "updated_at": "2026-08-26T20:08:30+09:00"
     },
     {
       "id": "RULE-BAL-MONSTER-HP-DPT-R2-001",
@@ -476,14 +476,14 @@
       "id": "RULE-BAL-BOW-QUIVER-COMBAT-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Active",
-      "text": "弓（仕様選定中は弓/大弓を同条件として一括呼称）と矢筒は個別装備可能だが、弓攻撃/弓Skillの使用には両方の装備を要求する。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。装備画面では不足側スロットを警告色で示す。弓attack_count=1、矢筒attack_count=0。Criticalは弓側のみを使用し、Critical以外のCombat Contributionは弓+矢筒を合算する。弓EquipmentのWeapon属性は射撃。Range/射程/TargetingはEquipment ownerではない。",
-      "rationale": "Human-approved Bow/Quiver combat and UI contract.",
+      "text": "弓（仕様選定中は弓/大弓を同条件として一括呼称）と矢筒は個別装備可能だが、弓攻撃/弓Skillの使用には両方の装備を要求する。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。装備画面では不足側スロットを警告色で示す。弓attack_count=1、矢筒attack_count=0。弓通常攻撃および弓を必要とするSkillのEquipment Combat Contributionは弓側だけを使用する。矢筒のattack / accuracy / magic_weapon_bonus / base_critical_rateその他Combat Contributionを弓側へ合算しない。矢筒は弓Action成立条件となる装備/Tag/Slotを提供するが、独立Strike/Critical/Combat Contributionを発生させない。弓EquipmentのWeapon属性は射撃。Range/射程/TargetingはEquipment ownerではない。",
+      "rationale": "Human-approved correction 2026-08-26: Bow+Quiverは使用成立条件として維持するが、Combat Contribution合算を廃止しBow側能力だけを使用する。",
       "approved_by": "Human",
-      "approved_at": "2026-08-26T10:38:34+09:00",
+      "approved_at": "2026-08-26T20:02:00+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T20:08:30+09:00",
       "source_type": "CurrentSpecificationAuthority",
-      "source_id": "DEV-V9-REORG-019:DEC-REORG-EQUIP-BOW-QUIVER-001"
+      "source_id": "DEV-V9-REORG-019:DEC-REORG-EQUIP-BOW-QUIVER-001 / Human correction 2026-08-26"
     },
     {
       "id": "RULE-BAL-EQUIPMENT-NO-TWO-HAND-001",
@@ -528,14 +528,14 @@
       "id": "RULE-BAL-EQUIPMENT-ACTION-IDENTITY-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Active",
-      "text": "Weapon Basic AttackはCurrent Equipment Combat Identityに従う。single=1 Strike。dual_wield=DUAL_WIELD capability成立時のみ各手独立2 Strike。両手持ち=独立装備ルールとして1武器1 Strike。weapon+shield=攻撃武器1 Strike/盾0 Strike。Bow+Quiver=Bow 1 Strike/Quiver 0 Strike、CriticalはBowのみ、Critical以外のContributionはセット合算。『両手武器カテゴリ』を作らない。",
-      "rationale": "Current Equipment action identityを後工程で再質問・再推定しないための同期Rule。",
-      "approved_by": "CurrentSpecificationAuthority",
-      "approved_at": "2026-08-26T11:28:04+09:00",
+      "text": "Weapon Basic AttackはCurrent Equipment Combat Identityに従う。single=1 Strike。dual_wield=DUAL_WIELD capability成立時のみ各手独立2 Strike。両手持ち=独立装備ルールとして1武器1 Strike。weapon+shield=攻撃武器1 Strike/盾0 Strike。Bow+Quiver=Bow 1 Strike/Quiver 0 Strikeで、弓Action成立には両装備を要求するが、Attack/Accuracy/Criticalその他Combat ContributionはBow側のみを使用しQuiverを合算しない。『両手武器カテゴリ』を作らない。",
+      "rationale": "Current Bow/Quiver correctionを後工程で再推定しないための同期Rule。両装備要求とStrike構造は維持し、性能合算だけを廃止する。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T20:02:00+09:00",
       "created_at": "2026-08-26T11:28:04+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T20:08:30+09:00",
       "source_type": "AuthoritySync",
-      "source_id": "DEV-V9-REORG-019 + existing DEV-V9-BALANCE-001 Human Approved decisions"
+      "source_id": "DEV-V9-REORG-019 + Human correction 2026-08-26"
     },
     {
       "id": "RULE-BAL-MONSTER-BUDGET-CURRENT-001",
@@ -2720,13 +2720,13 @@
       "id": "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Approved",
-      "text": "弓系Equipmentの正式Combat Identityを次で確定する。仕様選定中は弓と大弓を同条件としてまとめて『弓』と呼ぶ（Product上の名称統合ではない）。弓と矢筒は個別には装備可能であり、片側だけの装備状態も合法とする。ただし弓による通常攻撃および弓を必要とするSkillは、弓と矢筒の両方が装備されている場合だけ使用可能。弓のみの場合は『矢筒が装備されていません』、矢筒のみの場合は『弓が装備されていません』と理由表示する。片側のみの場合、装備画面では不足している側の武器スロットを赤系の警告状態等で明示し、『装備不可』ではなく『セット条件未成立』であることをUI上区別する。弓のattack_count=1、矢筒のattack_count=0。セット成立時、弓と矢筒が持つCombat ContributionはCritical系を除いて合算する。Attack、Accuracy、magic_weapon_bonusその他のContributionは弓+矢筒を使用し、Critical/base_critical_rateは合算せず弓側だけを使用する。矢筒は独立Strike/Critical判定を発生させない。弓Equipmentが所有するのはWeapon属性『射撃』であり、EquipmentはRange/射程/対象範囲を決定・補正しない。Range/Targetingは既存Skill/Battle側ownerに従う。",
-      "rationale": "Human confirmed Bow/Greatbow common handling during specification selection, Bow+Quiver combat requirement, incomplete-set UI behavior, contribution aggregation, Bow-side Critical, Quiver attack_count=0, and that Equipment has no Range authority.",
+      "text": "弓系Equipmentの正式Combat Identityを次で確定する。仕様選定中は弓と大弓を同条件としてまとめて『弓』と呼ぶ（Product上の名称統合ではない）。弓と矢筒は個別には装備可能であり、片側だけの装備状態も合法とする。ただし弓による通常攻撃および弓を必要とするSkillは、弓と矢筒の両方が装備されている場合だけ使用可能。弓のみの場合は『矢筒が装備されていません』、矢筒のみの場合は『弓が装備されていません』と理由表示する。片側のみの場合、装備画面では不足している側の武器スロットを警告状態で明示し、『装備不可』ではなく『セット条件未成立』であることをUI上区別する。弓のattack_count=1、矢筒のattack_count=0。セット成立時も、弓通常攻撃および弓を必要とするSkillのEquipment Combat Contributionは弓側だけを使用する。Attack、Accuracy、magic_weapon_bonus、base_critical_rateその他のCombat Contributionへ矢筒分を合算しない。矢筒は弓Actionの成立条件となる装備/Tag/Slotを提供するが、独立Strike/Critical判定/Combat Contributionを発生させない。弓Equipmentが所有するのはWeapon属性『射撃』であり、EquipmentはRange/射程/対象範囲を決定・補正しない。Range/Targetingは既存Skill/Battle側ownerに従う。",
+      "rationale": "Human correction 2026-08-26: 従来の『Critical以外はBow+Quiver合算』を廃止。Bow+Quiver両装備要求は維持し、戦闘性能はBow側だけを使用する。",
       "source_discussion_ids": [],
       "approved_by": "Human",
-      "approved_at": "2026-08-26T10:38:34+09:00",
+      "approved_at": "2026-08-26T20:02:00+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00"
+      "updated_at": "2026-08-26T20:08:30+09:00"
     },
     {
       "id": "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001",
@@ -2744,13 +2744,13 @@
       "id": "DEC-BAL-EQUIPMENT-ACTION-IDENTITY-SYNC-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Approved",
-      "text": "既存Human Approved/Current Specificationを統合し、Weapon action identityを次として再表現する。通常の単一攻撃武器は1 Actionにつき1 Strike。二刀流はPAS-DUAL-WIELD-001 / DUAL_WIELD成立時のみMain/Off Handの独立2 Strikeで、各手Attack/Accuracy/Criticalを独立判定する。両手持ちは武器カテゴリではなく装備ルールであり、1武器・1 Strike。既存STR Requirement救済はRequirementだけへ作用し、Attack倍化や2 Strikeを発生させない。武器+盾は攻撃武器1 Strike、盾0 Strikeで盾のoffensive Contributionを加算しない。弓は弓+矢筒の専用セット規則を使用し、弓1 Strike/矢筒0 Strike、Criticalは弓のみ、Critical以外はセット合算する。このDecisionは既存Authorityの同期であり、新しい武器カテゴリ、Job制限、数値係数を追加しない。",
-      "rationale": "DEV-V9-REORG-019の両手持ち/弓仕様、既存DEC-BAL-DUAL-WIELD-PASSIVE-001、DEC-BAL-WEAPON-SHIELD-OFFENSE-001および既存Human Approved weapon behaviorを一つのCurrent handoff recordへ再表現。",
+      "text": "既存Human Approved/Current Specificationを統合し、Weapon action identityを次として再表現する。通常の単一攻撃武器は1 Actionにつき1 Strike。二刀流はPAS-DUAL-WIELD-001 / DUAL_WIELD成立時のみMain/Off Handの独立2 Strikeで、各手Attack/Accuracy/Criticalを独立判定する。両手持ちは武器カテゴリではなく装備ルールであり、1武器・1 Strike。既存STR Requirement救済はRequirementだけへ作用し、Attack倍化や2 Strikeを発生させない。武器+盾は攻撃武器1 Strike、盾0 Strikeで盾のoffensive Contributionを加算しない。弓は弓+矢筒の専用セット規則を使用し、両装備を弓Action成立条件として要求する。弓1 Strike/矢筒0 Strikeで、Attack/Accuracy/Criticalその他Combat Contributionは弓側だけを使用し、矢筒Contributionを合算しない。このDecisionは既存Authorityの同期であり、新しい武器カテゴリ、Job制限、数値係数を追加しない。",
+      "rationale": "DEV-V9-REORG-019 Current Bow/Quiver correctionと既存Weapon Identity Authorityを同期。旧セット合算だけを廃止し、両装備要求・Strike構造・他Weapon semanticsは変更しない。",
       "source_discussion_ids": [],
-      "approved_by": "CurrentSpecificationAuthority",
-      "approved_at": "2026-08-26T11:28:04+09:00",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T20:02:00+09:00",
       "created_at": "2026-08-26T11:28:04+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00"
+      "updated_at": "2026-08-26T20:08:30+09:00"
     },
     {
       "id": "DEC-BAL-SKILL-USE-REQUIREMENT-001",
@@ -7538,12 +7538,13 @@
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-072-CORR-001",
         "TASK-BAL-050",
-        "TASK-BAL-074-INFRA-004"
+        "TASK-BAL-074-INFRA-004",
+        "TASK-BAL-074-INFRA-005"
       ],
       "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とCurrent仕様に適合したMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、TASK-BAL-072-CORR-001 Frozen Humanoid Monster Core、Formal Skill qualification(TASK-BAL-050)。\n- Monster Budgetのenemy_budget_costはFormation Costであり、このSkill Balanceの換算基準・必須前工程として使用しない。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。\n## TASK-BAL-074 Physical Skill Level allocation formula plan\n- Final Goal: 正式構造 Skill Budget = SLv を入力とし、Physical SkillのDamage / Multi-hit / MP / Cooldown / Cast / Rangeへ総Budgetを振り分ける式を確定する。\n- Budget identity: B_spent = SLv。Physical BudgetをSLvと独立した別スケールとして最終化しない。\n- Allocation framework (DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001):\n  - SLv = M_Range * (ΣC_Damage(Power_i) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)\n  - EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit(H)\n  - 残EffectBudgetをDAMAGE Hitへ配分し、Power = f_Damage(B_Damage)で最終Physical Powerを算出する。\n  - Range/対象範囲はCurrent Budget構造に従う乗算M_Rangeで扱い、加算TargetCostを別途加えて二重課金しない。\n- Test 1 / SLv→Damage conversion:\n  - Isolate: 1Hit / SINGLE / MP0 / CD0 / Cast0 / Physical / Passive-MODなし。\n  - Candidate: Power = round(100 + k × SLv), k={0.5,1,2,4}%/SLv。\n  - Initial screen: Player Lv20、Monster Lv30、high_durability_heavy_armor + high_evasion_light_armor、SLv={1,5,10,20}、SkillなしControl、same seed。\n  - Initial scale: 34 conditions × 100 seeds = 3,400 battles。\n  - KPI: ΔWinRate(pp)、SLv 1増加あたりΔWinRate slope、actual damage/use、Hit率、average ticks、Action数。\n  - Gate: SLv1が丸めで消えない、SLv増加で単調増加、SLv20で即飽和しない、防御型の片側だけに極端偏重しない。上位候補だけTest 2へ進める。\n- Test 2 / level-gap robustness:\n  - Test 1上位2候補のみ。\n  - Player Lv20、Monster Lv25/30/35、high_durability_heavy_armor / high_evasion_light_armor、SLv={1,5,10,20}、same-seed Control。\n  - 目的: SLv→Damage変換がLevel差で崩れないか確認し、C_Damage(Power)と逆関数f_Damage(Budget)のFreeze候補を1本に絞る。\n- Test 3 / Multi-hit cost:\n  - 同一SLvで1/2/3/4 Hitを比較し、single-hit基準と同等の実戦価値となるmulti-hit total Powerを逆算する。\n  - C_MultiHit(H) = DamageBudget(P_single_reference) - DamageBudget(P_multi_equivalent)。\n  - Current formal multi-hitの各DAMAGE effectContract独立Hit semanticsをそのまま使用する。\n- Test 4 / MP refund:\n  - 同一SLvでMP={0,2,4,6,8}を比較し、MP0基準と等価に戻すため必要な追加Damage Budgetを逆算する。\n  - R_MP(M) = DamageBudget(P_equivalent_with_MP) - DamageBudget(P_reference_MP0)。\n  - MP不足/使用回数/Basic Action置換へ実際に影響しないMP条件は係数根拠にしない。非線形ならtable/curveにする。\n- Test 5 / Cooldown refund:\n  - 同一SLvでCD={0,25,50,100}を比較し、CD0基準と等価に戻す追加Damage BudgetからR_CD(CD)を求める。\n  - 再使用機会を制限せずSkill使用頻度が変わらないCDはrefund 0。\n- Test 6 / Cast refund:\n  - 同一SLvでCast={0,2,4,8}を比較し、Cast0基準と等価に戻す追加Damage BudgetからR_Cast(T)を求める。\n  - Cast occupancy、Skill発動回数、interrupt/fizzle、ΔWinRate、actual damageを併記する。\n- Test 7 / Range multiplier:\n  - 1対1では算出しない。複数Monster Formation専用テストを別Human承認後に実施する。\n  - SINGLE / FRONT / RANDOM N / ALLで同一SLvの等価per-target Powerを探索し、M_Rangeを逆算する。\n  - total damage、overkill、kill数、enemy action減少、battle ticks、ΔWinRateを併用する。\n- Test 8 / Skill Level allocation formula validation:\n  - 同一SLvで high-damage/no-cost、multi-hit、MP型、CD型、MP+CD型、multi-target等の異構成Skillをallocation formulaだけで生成する。\n  - SLv={5,10,20}で比較し、同じSLvなら異構成Skillが1 Budget point相当以内の実戦差に収まること、かつSLv5 < SLv10 < SLv20が構成横断で成立することをGateとする。\n  - Gate超過時は試行数だけを増やさず、C_Damage / C_MultiHit / R_MP / R_CD / R_Cast / M_Rangeのどこが乖離原因か特定して該当Testへ戻る。\n- Execution Gate: この登録は計画登録。個別TestのSimulation/Demo/実機依頼/Result評価は、RULE-BAL-TEST-PLAN-APPROVAL-001に従いそのTestの実行承認を別途得るまで開始しない。\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -7554,8 +7555,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T19:27:00+09:00",
-      "result_scope": "READY FOR FORMAL SKILL BALANCE SCREENING. Current prerequisites are Frozen TASK-BAL-072-CORR-001 Monster Core, TASK-BAL-050 Formal Skill qualification, and completed TASK-BAL-074-INFRA-004 Bow/Shield runtime conformance. Obsolete Enemy Budget conversion and historical invalid Monster fixture outputs remain excluded. Human already approved the Physical Skill screening plan; execution must still start as a separate Development Task/run.",
+      "updated_at": "2026-08-26T20:08:30+09:00",
+      "result_scope": "BLOCKED BY NEW CURRENT EQUIPMENT CONTRACT. Physical Skill Screening plan remains approved, but execution is suspended. Monster Core and Shield Block authority are not revoked; only Bow/Quiver contribution-dependent runtime/input assumptions require correction/revalidation.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12576,7 +12577,7 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         }
       ],
-      "blocked_reason": ""
+      "blocked_reason": "Human-approved Bow/Quiver Current contract changed from legacy set aggregation to Bow-only Combat Contribution. Current GKS-B784 and prior Bow/Shield runtime evidence were produced under the old aggregation semantics. Complete TASK-BAL-071-CORR-006 SOURCE_UPDATE and TASK-BAL-074-INFRA-005 Human runtime revalidation before Skill Screening."
     },
     {
       "id": "TASK-BAL-075",
@@ -13624,6 +13625,50 @@
           "recorded_at": "2026-08-26T19:27:00+09:00"
         }
       ]
+    },
+    {
+      "id": "TASK-BAL-071-CORR-006",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Bow/Quiver Combat ContributionをBow-onlyへ修正する SOURCE_UPDATE",
+      "status": "Todo",
+      "execution_order": 251,
+      "depends_on": [
+        "TASK-BAL-071-CORR-004"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- 基準SourceはCurrent GKS-B784 / GA-B486.211。\n- 既存Bow+Quiver dedicated set / EQUIPMENT_TAGS useRequirements / UI不足警告 / Range ownerをreuseし、新Systemを作らない。\n- Bow+Quiver両装備を弓通常攻撃・弓Required Skillの成立条件として維持する。\n- Bow=1 Strike / Quiver=0 Strikeを維持する。\n- Basic AttackのAttack/Accuracy/Criticalその他Equipment Combat ContributionはBow側だけを使用する。\n- Bow-required SkillのEquipment Combat ContributionもBow側だけを使用する。\n- Quiverのattack / accuracy / magic_weapon_bonus / base_critical_rateその他Combat ContributionをBowへ合算しない。\n- Quiverは独立Strike/Critical/Combat Contributionを発生させない。\n- Shield Block、dual_wield、weapon_shield、two-hand loadout semantics、Skill Budget、Range/Targetingは変更しない。\n- Equipment Generatorの既存Quiver生成数値をBalance値として変更しない。本TaskはConsumer semantics修正である。\n- GAME_DATA / Product Master / Current active Balance値を変更しない。\n- targeted tests + Source Quick + SOURCE_UPDATE Accept + applied Full相当GateをPASSした更新ZIPを作る。\n- Human Apply/Fresh Source確認まではDoneにしない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T20:08:30+09:00",
+      "updated_at": "2026-08-26T20:08:30+09:00",
+      "blocked_reason": "",
+      "result_scope": "PLANNED ONLY. Human approved Current specification correction is registered, but Source edit has not started. Current GKS-B784 still implements legacy Bow+Quiver non-critical contribution aggregation."
+    },
+    {
+      "id": "TASK-BAL-074-INFRA-005",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Bow-only Contribution / Sword+Shield Human Runtime再検証",
+      "status": "Todo",
+      "execution_order": 265,
+      "depends_on": [
+        "TASK-BAL-071-CORR-006"
+      ],
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Human Apply済みFresh Sourceと同Build Battle Verification Templateを使用する。\n- Bow+Quiver→Sword+Shield Basic AttackでBow 1 Strike / Quiver 0 Strike / Shield 0 Strikeを確認する。\n- Formal trace/snapshotでBow attack/accuracy/base_critical_rateを使用し、Quiver contributionが加算されていないことを確認する。\n- Bow-required Skill pathでもQuiver Combat Contributionが加算されないことを必要に応じて別fixtureで確認する。\n- 既確認のBlock success/non-block / 30% cut / Miss→no Block契約を壊していないことを確認する。\n- formal_only=true / legacy_fallback_used=false / JOB_ERROR=0。\n- 検証fixture数値をBalance Authorityへ昇格しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T20:08:30+09:00",
+      "updated_at": "2026-08-26T20:08:30+09:00",
+      "blocked_reason": "Upstream SOURCE_UPDATE TASK-BAL-071-CORR-006 must be Human-applied and fresh-source verified first.",
+      "result_scope": "PLANNED ONLY. Previous GKS-B784 Bow/Shield evidence remains historical authority for Shield Block hit/miss mechanics, but it cannot validate the new Bow-only Equipment Contribution contract because it was executed under legacy aggregation."
     }
   ],
   "checks": [
@@ -19624,6 +19669,11 @@
       "task_id": "TASK-BAL-074-INFRA-004",
       "created_at": "2026-08-26T19:27:00+09:00",
       "updated_at": "2026-08-26T19:27:00+09:00"
+    },
+    {
+      "at": "2026-08-26T20:08:30+09:00",
+      "type": "HumanDecisionCorrection",
+      "summary": "Human correction: 矢筒性能はBowへ合算しない。Bow+Quiver両装備要求、Bow1 Strike/Quiver0 Strike、不足UI、Tag useRequirements、Range ownerは維持。Basic Attack/弓Required Skillのattack/accuracy/magic_weapon_bonus/base_critical_rateその他Equipment Combat ContributionはBow側だけを使用する。Balance Current Rule 3件/Decision 2件を同期。Current GKS-B784は旧合算実装のためSOURCE_UPDATE TASK-BAL-071-CORR-006とHuman runtime再検証TASK-BAL-074-INFRA-005を登録し、TASK-BAL-074 Skill Screeningを一時Block。過去Bow/Shield EvidenceはShield Block hit/miss mechanicsの履歴として保持するが、新Bow-only ContributionのConformance Authorityには使用しない。Source/GAME_DATA/Current active/Simulation変更0。"
     }
   ],
   "authority": {
