@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T02:20:38.792Z"
+    "updated_at": "2026-08-26T02:53:07.010Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -1808,6 +1808,18 @@
       "approved_at": "2026-08-26T11:19:10+09:00",
       "created_at": "2026-08-26T11:19:10+09:00",
       "updated_at": "2026-08-26T11:19:10+09:00"
+    },
+    {
+      "id": "DEC-REORG-SKILL-USE-REQUIREMENT-001",
+      "title": "Formal Skillの汎用使用条件Contractを採用する",
+      "status": "Approved",
+      "text": "Formal Skillに、発動時の戦況Conditionとは別の『使用可否前提』を表す汎用Contractを追加する。Authoring rootのOptional fieldを `useRequirements` とし、Current initial requirement typeは `EQUIPMENT_TAGS` とする。Equipment固有Skillごとの専用fieldを増やさず、Tag Registryの正式Tag IDで装備条件を表現する。useRequirementsはSkill Budgetのcondition count/refundへ算入せず、Trigger Condition、Target Condition、Effect条件としても扱わない。RuntimeはTarget確定・MP/CD/Cast/Effectより前のAction eligibilityで使用条件を評価し、未成立時はCost/Cooldown/Cast/Effectを発生させずfail-closedする。Bow-required Skillは `(WEAPON_BOW OR WEAPON_GREATBOW) AND EQUIP_QUIVER` をこの汎用Contractで表す。",
+      "rationale": "Human approved generic use requirements after GKS-B782 conformance audit found that Bow+Quiver Skill gating had no Formal Skill representation. A bow-specific field would couple Skill schema to one weapon family and is avoided.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:51:02+09:00",
+      "created_at": "2026-08-26T11:51:02+09:00",
+      "updated_at": "2026-08-26T11:51:02+09:00"
     }
   ],
   "specifications": [
@@ -2252,18 +2264,19 @@
       "id": "SPEC-V9-019-SKILL-001",
       "title": "Formal Skill Authoring / Skill Master Schema",
       "status": "Draft",
-      "summary": "Current Formal Skill Authoring fieldとMaster保存契約。",
-      "body": "# 1. Canonical Path\n\n```text\nFormal Skill Authoring\n→ Formal Skill Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n```\n\nGeneric/Legacy/compileTaggedSkill/Fallbackを最終経路に残さない。\n\n# 2. Authoring root\n\nRequired:\n[]\n\nOptional:\n[]\n\n正式基礎Field:\n- schemaVersion\n- id\n- name\n- skillLevel\n- trigger\n- conditions\n- target\n- effects\n- resource\n\n# 3. Trigger\n\nRequired:\n- type\n- scope\n\nOptional:\n- priority\n\n# 4. Condition\n\nRequired:\n- property\n- operator\n- value\n\nOptional:\n- scope\n\nOperator:\n= / != / > / >= / < / <=\n\nValue type:\n- number\n- rate 0..1\n- non_negative_integer\n- predicate\n\n# 5. Target\n\nRequired:\n- side\n- range\n\nOptional:\n- randomCount\n- excludeSelf\n\n# 6. Resource\n\nOptional:\n- mpCost\n- cooldown\n- activationPriority\n- castTime\n\n`castTime`:\n- 単位はTick。\n- 0以上の整数。\n- `0` は即時発動。\n- 具体値はBalance Dataとして可変。\n- Compilerは `runtimeContracts.resourceContract.castTime` へ保持する。\n- Castの開始・Target固定・完了時再検証・中断・Cost/CD発生境界は `SPEC-V9-019-BATTLE-002` をOwnerとする。\n\n# 7. Skill Master\n\nAuthoring内容とCompiler生成済み `runtimeContracts` を保存する。\nGame RuntimeはruntimeContractsを正規入力として使用する。\n\nUnknown Fieldを場当たり追加しない。\nSchema/Registry更新を先に行う。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / assets/shared/js/skill-schema.js / skill-registry.json",
+      "summary": "Current Formal Skill Authoring field、汎用Use Requirement、Master保存契約。",
+      "body": "# 1. Canonical Path\n\n```text\nFormal Skill Authoring\n→ Formal Skill Compiler\n→ runtimeContracts\n→ Skill Master\n→ Formal Runtime\n```\n\nGeneric/Legacy/compileTaggedSkill/Fallbackを最終経路に残さない。\n\n# 2. Authoring root\n\nRequired:\n[]\n\nOptional:\n[]\n\n正式基礎Field:\n- schemaVersion\n- id\n- name\n- skillLevel\n- trigger\n- conditions\n- target\n- effects\n- resource\n- useRequirements\n\n# 3. Trigger\n\nRequired:\n- type\n- scope\n\nOptional:\n- priority\n\n# 4. Condition\n\nRequired:\n- property\n- operator\n- value\n\nOptional:\n- scope\n\nOperator:\n= / != / > / >= / < / <=\n\nValue type:\n- number\n- rate 0..1\n- non_negative_integer\n- predicate\n\n# 4.1 Use Requirement\n\n`useRequirements` はAuthoring rootのOptional field。\nこれは `conditions` と別の使用可否前提であり、Skill BudgetのCondition refundへ算入しない。\n\nCurrent initial schema:\n\n```text\nuseRequirements: [\n  {\n    type: \"EQUIPMENT_TAGS\",\n    scope: \"SELF\",\n    allTags: [TagID, ...],\n    anyTags: [TagID, ...]\n  }\n]\n```\n\nRule:\n- `type`: Currentは `EQUIPMENT_TAGS` のみ。\n- `scope`: Currentは `SELF` のみ。\n- `allTags`: 配列内のTag IDをすべて満たす。\n- `anyTags`: 空でなければ、配列内のTag IDを1件以上満たす。\n- `allTags` / `anyTags` の少なくとも一方は非空。\n- Tag IDはTag Registryで正式解決する。名前推測・Skill名推測・Job推測を行わない。\n- Unknown requirement type / Unknown Tag IDはfail-closed。\n- 複数 `useRequirements` entryはすべて成立を要求する。\n- equipped Equipment recordの正式Tag IDだけを判定対象とする。\n- Equipment name、legacy parameter、表示名を条件判定に使用しない。\n\nCompilerは `runtimeContracts.useRequirementContracts` へ正規化して保持する。\n\nAction lifecycle:\n1. SkillがAction候補として選択される。\n2. `useRequirementContracts` をactorのCurrent Equipment Snapshotに対して評価。\n3. 不成立なら `USE_REQUIREMENT_FAILED` として使用不可。\n4. 未成立時はTarget lock / MP Cost / Cooldown / Cast / Effectを発生させない。\n5. 成立後だけ既存Target / Resource / Cast / Effect lifecycleへ進む。\n\n`useRequirements` は:\n- 戦況Conditionではない。\n- Trigger Conditionではない。\n- Skill Budget refund対象ではない。\n- Skill取得条件ではない。\n- AIのSkill選択意味論を自動変更しない。AIはAction eligibilityの結果として使用不可Skillを選択不能にする。\n\nBow-required Skillの正規表現:\n\n```json\n{\n  \"type\": \"EQUIPMENT_TAGS\",\n  \"scope\": \"SELF\",\n  \"allTags\": [\"EQUIP_QUIVER\"],\n  \"anyTags\": [\"WEAPON_BOW\", \"WEAPON_GREATBOW\"]\n}\n```\n\nこれにより `(弓 OR 大弓) AND 矢筒` を満たした場合だけ使用可能。\n\n# 5. Target\n\nRequired:\n- side\n- range\n\nOptional:\n- randomCount\n- excludeSelf\n\n# 6. Resource\n\nOptional:\n- mpCost\n- cooldown\n- activationPriority\n- castTime\n\n`castTime`:\n- 単位はTick。\n- 0以上の整数。\n- `0` は即時発動。\n- 具体値はBalance Dataとして可変。\n- Compilerは `runtimeContracts.resourceContract.castTime` へ保持する。\n- Castの開始・Target固定・完了時再検証・中断・Cost/CD発生境界は `SPEC-V9-019-BATTLE-002` をOwnerとする。\n\n# 7. Skill Master\n\nAuthoring内容とCompiler生成済み `runtimeContracts` を保存する。\nGame RuntimeはruntimeContractsを正規入力として使用する。\n\nUnknown Fieldを場当たり追加しない。\nSchema/Registry更新を先に行う。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-SKILL / assets/shared/js/skill-schema.js / skill-registry.json",
       "decision_refs": [
         "DEC-V9-SKILL-001",
         "DEC-V9-SKILL-002",
         "DEC-V9-SKILL-003",
-        "DEC-R42-CAST-001"
+        "DEC-R42-CAST-001",
+        "DEC-REORG-SKILL-USE-REQUIREMENT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-002"
       ],
-      "acceptance_criteria": "- Authoring SkillをFormal SchemaでValidationできる。\n- MasterへruntimeContractsを保持できる。\n- Legacy/Generic Skill fieldにFallbackしない。\n- `resource.castTime` を0以上の整数TickとしてValidationし、runtimeContractsへ保持できる。",
+      "acceptance_criteria": "- Authoring SkillをFormal SchemaでValidationできる。\n- MasterへruntimeContractsを保持できる。\n- Legacy/Generic Skill fieldにFallbackしない。\n- `resource.castTime` を0以上の整数TickとしてValidationし、runtimeContractsへ保持できる。\n- useRequirementsをconditionsと別のAction eligibility contractとしてAuthoring/Compiler/Runtimeへ保持できる。\n- EQUIPMENT_TAGSはTag Registry IDだけを参照し、allTags/anyTagsで装備条件を表現できる。\n- useRequirementsをSkill Budget Condition refundへ算入しない。\n- requirement不成立時はCost/CD/Cast/Effect前にfail-closedできる。",
       "system_node_id": "SYS-V9-SKILL",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-SKILL",
@@ -2273,11 +2286,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-23T15:12:00+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     },
     {
       "id": "SPEC-V9-019-SKILL-002",
@@ -2368,11 +2381,12 @@
       "title": "Tag Master / Registry / Data Exchange",
       "status": "Draft",
       "summary": "Current Tag Master構造、解決、検証、参照。",
-      "body": "# 1. Tag Master\n\nTagは独立Master Dataset。\n必須:\n- id\n- name\n\nOptional/管理:\n- status\n- category_id\n- parent_id\n- description\n- enabled\n- aliases[]\n- deprecated\n- replacement_tag_id\n- recommended_replacement_tag_id\n- order\n- created_at\n- updated_at\n\n# 2. Registry\n\n必須機能:\n- ID resolve\n- name resolve\n- alias resolve\n- duplicate validation\n- reference validation\n- parent cycle validation\n- deprecated/replacement validation\n\nparent/childは管理Metadata。\nGameplay Effectを自動継承しない。\n\n# 3. Runtime Boundary\n\nTagは:\n- 性質\n- 分類\n- 対象判定\n- 相互作用判定\n- 適合/生成Filter\nに使う。\n\nTag自体をDAMAGE/HEAL/DOT等の実行命令にしない。\nFormal SkillはTag IDを参照し、Compiler/RegistryがruntimeContractsを作る。\n\n# 4. Content\n\nProduct個別Tag CatalogはContent Master。\n存在しないIDを名前から推測生成しない。\n\n---\n\n## 根拠・統合元\nBOX-R13-CURRENT-TAG-CONTRACT / BOX-R12-CURRENT-IMPL-EVIDENCE",
+      "body": "# 1. Tag Master\n\nTagは独立Master Dataset。\n必須:\n- id\n- name\n\nOptional/管理:\n- status\n- category_id\n- parent_id\n- description\n- enabled\n- aliases[]\n- deprecated\n- replacement_tag_id\n- recommended_replacement_tag_id\n- order\n- created_at\n- updated_at\n\n# 2. Registry\n\n必須機能:\n- ID resolve\n- name resolve\n- alias resolve\n- duplicate validation\n- reference validation\n- parent cycle validation\n- deprecated/replacement validation\n\nparent/childは管理Metadata。\nGameplay Effectを自動継承しない。\n\n# 3. Runtime Boundary\n\nTagは:\n- 性質\n- 分類\n- 対象判定\n- 相互作用判定\n- 適合/生成Filter\nに使う。\n\nTag自体をDAMAGE/HEAL/DOT等の実行命令にしない。\nFormal SkillはTag IDを参照し、Compiler/RegistryがruntimeContractsを作る。\n\n# 4. Content\n\nProduct個別Tag CatalogはContent Master。\n存在しないIDを名前から推測生成しない。\n\n---\n\n## 根拠・統合元\nBOX-R13-CURRENT-TAG-CONTRACT / BOX-R12-CURRENT-IMPL-EVIDENCE\n\n# 5. Formal Skill Use Requirement\n\nFormal Skill `useRequirements` の `EQUIPMENT_TAGS` は本Tag Registryの正式Tag IDを参照する。\n\n- Tagは装備の性質を識別するだけで、Skill Effectを実行しない。\n- `allTags` / `anyTags` はFormal Skill側のUse Requirement評価規則。\n- Unknown Tag IDを名前から推測生成しない。\n- Product Master未登録Tagは正式登録後に使用する。\n- Bow-required SkillのCurrent baseline参照は `WEAPON_BOW` / `WEAPON_GREATBOW` / `EQUIP_QUIVER`。\n",
       "decision_refs": [
         "DEC-V9-TAG-001",
         "DEC-V9-TAG-002",
-        "DEC-V9-AI-007"
+        "DEC-V9-AI-007",
+        "DEC-REORG-SKILL-USE-REQUIREMENT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-000"
@@ -2388,11 +2402,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     },
     {
       "id": "SPEC-V9-019-TAG-002",
@@ -2423,13 +2437,14 @@
       "title": "Equipment Structure / Slots / iLv",
       "status": "Draft",
       "summary": "Equipment三層、10Slot、iLv命名、BaseItem Rarity、武器装備状態の基本規則。",
-      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n## 2.1 両手持ちと武器カテゴリ\n\n- 「両手武器 / two_hand」という正式な武器カテゴリは設けない。\n- 両手持ちは武器カテゴリではなく独立した装備ルール。\n- Requirement、攻撃回数、Combat Contributionを「両手武器カテゴリ」から推定しない。\n- 大剣等の個別武器種は個別武器種自身の仕様として扱う。\n\n## 2.2 弓 / 矢筒の装備状態\n\n仕様選定上、弓と大弓は同条件としてまとめて「弓」と呼ぶ。\nこれはProduct Master上の種類統合・名称統合を意味しない。\n\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 片側だけの状態はEquip Validation上の不正状態にはしない。\n- Combat Action availabilityで弓+矢筒の成立を確認する。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1\n\n## 2026-08-20 Human Review\nEquipment Slot数10はシステム固定。それ以外の具体数値はBalance可変。\n",
+      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n## 2.1 両手持ちと武器カテゴリ\n\n- 「両手武器 / two_hand」という正式な武器カテゴリは設けない。\n- 両手持ちは武器カテゴリではなく独立した装備ルール。\n- Requirement、攻撃回数、Combat Contributionを「両手武器カテゴリ」から推定しない。\n- 大剣等の個別武器種は個別武器種自身の仕様として扱う。\n\n## 2.2 弓 / 矢筒の装備状態\n\n仕様選定上、弓と大弓は同条件としてまとめて「弓」と呼ぶ。\nこれはProduct Master上の種類統合・名称統合を意味しない。\n\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 片側だけの状態はEquip Validation上の不正状態にはしない。\n- Combat Action availabilityで弓+矢筒の成立を確認する。\n- 弓を必要とするFormal Skillの識別・使用条件表現は `SPEC-V9-019-SKILL-001` の汎用useRequirementsをOwnerとし、Equipment側でSkill名/Job/Effectから推測しない。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1\n\n## 2026-08-20 Human Review\nEquipment Slot数10はシステム固定。それ以外の具体数値はBalance可変。\n",
       "decision_refs": [
         "DEC-REORG-EQUIP-009",
         "DEC-V9-EQUIP-001",
         "DEC-V9-EQUIP-008",
         "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001",
-        "DEC-REORG-EQUIP-BOW-QUIVER-001"
+        "DEC-REORG-EQUIP-BOW-QUIVER-001",
+        "DEC-REORG-SKILL-USE-REQUIREMENT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-001"
@@ -2443,11 +2458,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-26T11:19:10+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-002",
@@ -2512,7 +2527,7 @@
       "title": "Equipment Consumer / Contribution / MOD Boundary",
       "status": "Draft",
       "summary": "Battleへ渡す正式field、旧field廃止、Contribution境界。",
-      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n- `block_rate`（盾Block）\n- `block_damage_cut_rate`（Block成功時Damage Cut）\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象とし、Modified Equipment ContributionからBattleの魔法攻撃系 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` は回復量へ接続しない。\nこれは新しい計算式ではなく、既存Contributionの接続漏れCorrectionである。\n\n\n## Bow / Quiver Combat Identity\n\n- 仕様選定上、弓/大弓は同条件の「弓」として扱う。\n- 弓通常攻撃・弓を必要とするSkillは、弓+矢筒の両方を装備している場合だけ使用可能。\n- 弓は1 Strike、矢筒は0 Strike。\n- Bow/QuiverセットのCritical/base_critical_rateは弓側だけを使用し、加算しない。\n- Critical以外の通常Combat Contributionは弓+矢筒を合算する。\n  - attack = Bow.attack + Quiver.attack\n  - accuracy = Bow.accuracy + Quiver.accuracy\n  - magic_weapon_bonus等のCritical以外のContributionも同じ合算規則。\n- 弓EquipmentのWeapon属性は「射撃」。\n- EquipmentはRange/射程/Targetingを決定しない。Range/TargetingはRANGE/Battle Ownerへ委譲する。\n\n## Shield offense / Block output\n\n- 盾は通常攻撃の独立Strikeを発生させない（0 Strike）。\n- 盾のAttack/Accuracy/base_critical_rateを攻撃武器Strikeへ加算しない。\n- 盾は防御用として `block_rate` / `block_damage_cut_rate` をBattleへ渡す。\n- Block用fieldは既存SHIELD(BARRIER)と区別し、`shield_*` 名を使用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
+      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n- `block_rate`（盾Block）\n- `block_damage_cut_rate`（Block成功時Damage Cut）\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象とし、Modified Equipment ContributionからBattleの魔法攻撃系 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` は回復量へ接続しない。\nこれは新しい計算式ではなく、既存Contributionの接続漏れCorrectionである。\n\n\n## Bow / Quiver Combat Identity\n\n- 仕様選定上、弓/大弓は同条件の「弓」として扱う。\n- 弓通常攻撃・弓を必要とするSkillは、弓+矢筒の両方を装備している場合だけ使用可能。\n- 弓を必要とするFormal Skillは `SPEC-V9-019-SKILL-001` の `useRequirements` で`(WEAPON_BOW OR WEAPON_GREATBOW) AND EQUIP_QUIVER` を表現する。\n- 弓は1 Strike、矢筒は0 Strike。\n- Bow/QuiverセットのCritical/base_critical_rateは弓側だけを使用し、加算しない。\n- Critical以外の通常Combat Contributionは弓+矢筒を合算する。\n  - attack = Bow.attack + Quiver.attack\n  - accuracy = Bow.accuracy + Quiver.accuracy\n  - magic_weapon_bonus等のCritical以外のContributionも同じ合算規則。\n- 弓EquipmentのWeapon属性は「射撃」。\n- EquipmentはRange/射程/Targetingを決定しない。Range/TargetingはRANGE/Battle Ownerへ委譲する。\n\n## Shield offense / Block output\n\n- 盾は通常攻撃の独立Strikeを発生させない（0 Strike）。\n- 盾のAttack/Accuracy/base_critical_rateを攻撃武器Strikeへ加算しない。\n- 盾は防御用として `block_rate` / `block_damage_cut_rate` をBattleへ渡す。\n- Block用fieldは既存SHIELD(BARRIER)と区別し、`shield_*` 名を使用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-004",
@@ -2522,7 +2537,8 @@
         "DEC-REORG-EQUIP-MAGIC-DIRECT-001",
         "DEC-REORG-EQUIP-BOW-QUIVER-001",
         "DEC-REORG-EQUIP-BLOCK-001",
-        "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001"
+        "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001",
+        "DEC-REORG-SKILL-USE-REQUIREMENT-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-003",
@@ -2537,11 +2553,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 3,
+      "revision": 4,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-26T11:19:10+09:00"
+      "updated_at": "2026-08-26T11:51:02+09:00"
     },
     {
       "id": "SPEC-V9-019-MOD-001",
@@ -29222,6 +29238,11 @@
       "at": "2026-08-26T11:19:10+09:00",
       "type": "SpecificationIntegration",
       "summary": "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001 / DEC-REORG-EQUIP-BOW-QUIVER-001 / DEC-REORG-EQUIP-BLOCK-001をCurrent Specificationへ統合。更新対象: EQUIP-001/002/003/004、BATTLE-001/003、STATUS-002、RANGE-001、INVENTORY-UI-001、CONTRACT-V9-EQUIP-TO-BATTLE。数値20%/+2pp/30%はBalance可変のCurrent初期seedとして保持。Source/Game Data/Workflow/Task状態は変更していない。"
+    },
+    {
+      "at": "2026-08-26T11:51:02+09:00",
+      "type": "ConfirmedDecisionMerge",
+      "summary": "Human approved generic Formal Skill use requirements. SKILL-001 now owns optional `useRequirements`; Current initial type EQUIPMENT_TAGS uses Tag Registry IDs with allTags/anyTags, is separate from battle conditions/Skill Budget refund, and fails before Target/Cost/CD/Cast/Effect. Bow-required Skills use (WEAPON_BOW OR WEAPON_GREATBOW) AND EQUIP_QUIVER. No Source/Workflow/Task change."
     }
   ],
   "authority": {
