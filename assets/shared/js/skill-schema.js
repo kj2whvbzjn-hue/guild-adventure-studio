@@ -2,14 +2,14 @@
 'use strict';
 const VERSION='1.0.0';
 const AUTHORING=Object.freeze({
- skill:Object.freeze(['schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource']),
+ skill:Object.freeze(['schemaVersion','id','name','skillLevel','trigger','conditions','useRequirements','target','effects','resource']),
  trigger:Object.freeze(['type','scope','priority']),
  condition:Object.freeze(['scope','property','operator','value']),
  target:Object.freeze(['side','range','randomCount','excludeSelf']),
  resource:Object.freeze(['mpCost','cooldown','activationPriority','castTime'])
 });
 const MASTER=Object.freeze([
- 'schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts',
+ 'schemaVersion','id','name','skillLevel','trigger','conditions','useRequirements','target','effects','resource','runtimeContracts',
  'status','description','created_at','updated_at'
 ]);
 const BATCH=Object.freeze({

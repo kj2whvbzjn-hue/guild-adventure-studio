@@ -25,7 +25,7 @@
       {dataset:'ai_actions',paths:['params.ai.action_id']}
     ]},
     tags:{path:['tags'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['aliases'],dependencies:[]},
-    skills:{path:['masters','skills'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.required_tags'],dependencies:[{dataset:'tags',paths:['tags','params.required_tags']}]},
+    skills:{path:['masters','skills'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.required_tags','useRequirements[].allTags','useRequirements[].anyTags'],dependencies:[{dataset:'tags',paths:['tags','params.required_tags','useRequirements[].allTags','useRequirements[].anyTags']}]},
     stats:{path:['masters','stats'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     status_effects:{path:['masters','status_effects'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     tablets:{path:['masters','tablets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
@@ -467,7 +467,7 @@
     return reasons;
   }
   const FORMAL_SKILL_MASTER_FIELDS=Object.freeze([
-    'schemaVersion','id','name','skillLevel','trigger','conditions','target','effects','resource','runtimeContracts',
+    'schemaVersion','id','name','skillLevel','trigger','conditions','useRequirements','target','effects','resource','runtimeContracts',
     'status','description','created_at','updated_at'
   ]);
   const FORMAL_AI_MASTER_FIELDS=Object.freeze([
@@ -490,7 +490,7 @@
     tags:new Set(['id','name','status','category_id','parent_id','description','enabled','aliases','deprecated','replacement_tag_id','recommended_replacement_tag_id','order','created_at','updated_at']),
     skills:new Set(FORMAL_SKILL_MASTER_FIELDS),
     jobs:new Set(['id','name','status','tags','params','description','created_at','updated_at','str','vit','agi','dex','int','mnd','luk']),
-    equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
+    equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_weapon_bonus','base_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     passives:new Set(['id','name','status','tags','params','description','created_at','updated_at']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at','category','effect_type','target','operation','parameters','balance_key','enabled','schema_version']),
     ai_conditions:new Set(FORMAL_AI_MASTER_FIELDS),

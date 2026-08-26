@@ -91,6 +91,7 @@ async function g07ValidateFormalSkillRuntime(skill){
  if(!budgetRules)await loadBudgetRules();
  if(!skill||typeof skill!=='object'||Array.isArray(skill))throw Object.assign(new Error('正式Skill objectが必要です'),{code:'G07_SKILL_OBJECT_REQUIRED'});
  for(const key of g07FormalSkillUnknownFields(skill))throw Object.assign(new Error(`正式Skill Masterの未知フィールドです: ${key}`),{code:'G07_UNKNOWN_SKILL_FIELD',path:key});
+ const tagIds=new Set((hostData()?.tags||[]).filter(t=>t?.enabled!==false&&t?.deprecated!==true).map(t=>String(t?.id||'')));for(const [i,r] of (Array.isArray(skill.useRequirements)?skill.useRequirements:[]).entries())for(const key of ['allTags','anyTags'])for(const tag of (Array.isArray(r?.[key])?r[key]:[]))if(!tagIds.has(String(tag)))throw Object.assign(new Error(`useRequirementsが未登録Tagを参照しています: ${tag}`),{code:'G07_USE_REQUIREMENT_TAG_UNKNOWN',path:`useRequirements[${i}].${key}`,tag_id:String(tag)});
  const budget=calculateSkillBudget(skill);
  if(!budget?.ok)throw Object.assign(new Error((budget?.errors||[]).join(' / ')||'Skill Budget REJECT'),{code:(budget?.errors||[]).some(x=>String(x).startsWith('SKILL_BUDGET_EXCEEDED'))?'SKILL_BUDGET_EXCEEDED':'G07_BUDGET_REJECT',budget:clone(budget)});
  const compiled=await compileSkillDraft(skill);

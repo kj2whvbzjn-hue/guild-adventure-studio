@@ -4,7 +4,9 @@
   if(root)root.GKSFormalContribution=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const EQUIPMENT_FIELDS=Object.freeze(['attack','accuracy','magic_weapon_bonus','base_critical_rate','hp_bonus','mp_bonus','evasion']);
+  const EQUIPMENT_FIELDS=Object.freeze(['attack','accuracy','magic_weapon_bonus','base_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion']);
+  const BLOCK_FIELDS=Object.freeze(['block_rate','block_damage_cut_rate']);
+  const ADDITIVE_EQUIPMENT_FIELDS=Object.freeze(EQUIPMENT_FIELDS.filter(k=>!BLOCK_FIELDS.includes(k)));
   const REQUIREMENT_FIELDS=Object.freeze(['required_str','required_dex','required_int','required_vit','required_mnd','required_agi']);
   const MOD_FIELDS=Object.freeze(['id','category','tags','effect_type','target','operation','parameters','balance_key','enabled','schema_version']);
   const PASSIVE_STATS=Object.freeze(['STR','VIT','AGI','DEX','INT','MND','LUK']);
@@ -25,6 +27,7 @@
     if(!hasFormal&&object(record.params?.stats))throw Object.assign(new Error(`Formal Equipment ${id}はlegacy params.statsを使用できません。`),{code:'FORMAL_EQUIPMENT_LEGACY_STATS_FORBIDDEN'});
     if(!hasFormal)throw new Error(`Formal Equipment ${id}に正式Contribution fieldがありません。`);
     for(const key of [...EQUIPMENT_FIELDS,...REQUIREMENT_FIELDS])if(Object.prototype.hasOwnProperty.call(record,key))finite(record[key],`equipment.${key}`);
+    const type=String(record?.generation?.base_item_type??record?.generation?.generation_input?.base_item_type??'');if(type!=='盾'&&BLOCK_FIELDS.some(k=>(Number(record?.[k])||0)>0))throw Object.assign(new Error('Block性能は盾Equipmentだけが所有できます。'),{code:'FORMAL_EQUIPMENT_BLOCK_OWNER_INVALID'});
     const modIds=strings(record.mod_ids,'equipment.mod_ids');
     return {...clone(record),id,mod_ids:modIds};
   }
@@ -115,6 +118,6 @@
     const checked=validateFormalPassive(record),modifiers=checked.params.mod_ids.map(id=>{const data=modCandidatesById instanceof Map?modCandidatesById.get(id):modCandidatesById[id];if(!data)throw new Error(`Passive ${checked.id}が参照するMOD Candidateがありません: ${id}`);return validateModCandidate(data)});
     return {passive_id:checked.id,tags:checked.tags.slice(),ability_conditions:clone(checked.params.ability_conditions),modifier_ids:checked.params.mod_ids.slice(),modifiers,effect_ids:checked.params.effect_ids.slice(),combat_capabilities:checked.params.combat_capabilities.slice()};
   }
-  function sumEquipmentContributions(rows){const total=Object.fromEntries(EQUIPMENT_FIELDS.map(k=>[k,0]));for(const row of rows||[])for(const k of EQUIPMENT_FIELDS)total[k]+=Number(row?.modified?.[k])||0;return total}
-  return Object.freeze({EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,PASSIVE_COMBAT_CAPABILITY_OWNER,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
+  function sumEquipmentContributions(rows){const total=Object.fromEntries(EQUIPMENT_FIELDS.map(k=>[k,0])),blockOwners=[];for(const row of rows||[]){for(const k of ADDITIVE_EQUIPMENT_FIELDS)total[k]+=Number(row?.modified?.[k])||0;if(BLOCK_FIELDS.some(k=>(Number(row?.modified?.[k])||0)>0))blockOwners.push(row);}if(blockOwners.length>1)throw Object.assign(new Error('Block性能を持つEquipmentを複数合算できません。'),{code:'FORMAL_EQUIPMENT_MULTI_BLOCK_SOURCE_FORBIDDEN',count:blockOwners.length});if(blockOwners.length===1)for(const k of BLOCK_FIELDS)total[k]=Number(blockOwners[0]?.modified?.[k])||0;return total}
+  return Object.freeze({EQUIPMENT_FIELDS,BLOCK_FIELDS,ADDITIVE_EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,PASSIVE_COMBAT_CAPABILITY_OWNER,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
 });

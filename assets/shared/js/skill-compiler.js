@@ -156,7 +156,7 @@ function compileEffect(effect,index,skill,registry,errors){
  return null;
 }
 function compileSkill(skill,registry){
- const errors=[],warnings=[],conditionContracts=[],effectContracts=[],applyContracts=[];
+ const errors=[],warnings=[],conditionContracts=[],useRequirementContracts=[],effectContracts=[],applyContracts=[];
  registry=registry&&typeof registry==='object'?registry:null;
  if(!registry){error(errors,'REGISTRY_REQUIRED','registry','Skill Registryが必要です');return finish()}
  if(!skill||typeof skill!=='object'||Array.isArray(skill)){error(errors,'INVALID_SKILL','$','Skill objectが必要です');return finish()}
@@ -168,6 +168,19 @@ function compileSkill(skill,registry){
  if(!registry.targets?.sides?.[skill.target?.side])error(errors,'UNKNOWN_TARGET_SIDE','target.side',`未定義対象: ${skill.target?.side||'(なし)'}`);
  if(!registry.targets?.ranges?.[skill.target?.range])error(errors,'UNKNOWN_TARGET_RANGE','target.range',`未定義範囲: ${skill.target?.range||'(なし)'}`);
  if(skill.target?.range==='RANDOM'&&(!Number.isInteger(skill.target?.randomCount)||skill.target.randomCount<1))error(errors,'RANDOM_COUNT_REQUIRED','target.randomCount','RANDOMには1以上のrandomCountが必要です');
+ const useRequirements=skill.useRequirements==null?[]:skill.useRequirements;
+ if(!Array.isArray(useRequirements))error(errors,'USE_REQUIREMENTS_ARRAY_REQUIRED','useRequirements','useRequirementsは配列が必要です');
+ else for(const [i,r] of useRequirements.entries()){
+  const path=`useRequirements[${i}]`;
+  if(!r||typeof r!=='object'||Array.isArray(r)){error(errors,'USE_REQUIREMENT_OBJECT_REQUIRED',path,'useRequirementはobjectが必要です');continue}
+  const type=String(r.type||'').toUpperCase(),scope=String(r.scope||'SELF').toUpperCase();
+  if(type!=='EQUIPMENT_TAGS'){error(errors,'USE_REQUIREMENT_TYPE_UNKNOWN',`${path}.type`,`未対応useRequirement type: ${type||'(なし)'}`);continue}
+  if(scope!=='SELF')error(errors,'USE_REQUIREMENT_SCOPE_UNSUPPORTED',`${path}.scope`,'EQUIPMENT_TAGSはscope=SELFのみ対応です');
+  const normalizeTags=(value,key)=>{if(value==null)return[];if(!Array.isArray(value)){error(errors,'USE_REQUIREMENT_TAG_ARRAY_REQUIRED',`${path}.${key}`,`${key}はTag ID配列が必要です`);return[]}const out=[];for(const [j,raw] of value.entries()){const id=String(raw||'').trim();if(!/^TAG-\d{4}$/.test(id))error(errors,'USE_REQUIREMENT_TAG_ID_INVALID',`${path}.${key}[${j}]`,`Formal Tag ID(TAG-####)が必要です: ${id||'(なし)'}`);else if(!out.includes(id))out.push(id)}return out};
+  const allTags=normalizeTags(r.allTags,'allTags'),anyTags=normalizeTags(r.anyTags,'anyTags');
+  if(!allTags.length&&!anyTags.length)error(errors,'USE_REQUIREMENT_TAGS_REQUIRED',path,'allTagsまたはanyTagsを1件以上指定してください');
+  useRequirementContracts.push({type:'EQUIPMENT_TAGS',scope:'SELF',allTags,anyTags});
+ }
  for(const [i,c] of (Array.isArray(skill.conditions)?skill.conditions:[]).entries()){
   const path=`conditions[${i}]`,def=registry.conditions?.[c?.property];
   if(!def){error(errors,'UNKNOWN_CONDITION',`${path}.property`,`未定義Condition: ${c?.property||'(なし)'}`);continue}
@@ -204,10 +217,10 @@ function compileSkill(skill,registry){
   const runtimeContracts={
    schemaVersion:1,registryPhase:String(registry?.phase||''),triggerContract:buildTriggerContract(skill,triggerDef),
    targetContract:{side:String(skill?.target?.side||''),range:String(skill?.target?.range||''),randomCount:skill?.target?.randomCount??null,excludeSelf:skill?.target?.excludeSelf===true},
-   conditionContracts:[...conditionContracts],effectContracts:[...effectContracts],applyContracts:applyContracts.map(c=>({...c,lifecycle:c.lifecycle?{...c.lifecycle}:null})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null,
+   conditionContracts:[...conditionContracts],...(skill?.useRequirements!=null?{useRequirementContracts:useRequirementContracts.map(x=>({...x,allTags:[...x.allTags],anyTags:[...x.anyTags]}))}:{}),effectContracts:[...effectContracts],applyContracts:applyContracts.map(c=>({...c,lifecycle:c.lifecycle?{...c.lifecycle}:null})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null,
    resourceContract:{mpCost:skill?.resource?.mpCost??0,cooldown:skill?.resource?.cooldown??0,activationPriority:skill?.resource?.activationPriority??0,...(own(skill?.resource,'castTime')?{castTime:skill.resource.castTime}:{})}
   };
-  const compiledSkill={schemaVersion:SUPPORTED_SCHEMA,id:String(skill?.id||''),name:String(skill?.name||''),skillLevel:skill?.skillLevel??null,trigger:skill?.trigger?{...skill.trigger}:null,conditions:Array.isArray(skill?.conditions)?skill.conditions.map(x=>({...x})):[],target:skill?.target?{...skill.target}:null,effects:Array.isArray(skill?.effects)?skill.effects.map(x=>({...x})):[],resource:skill?.resource?{...skill.resource}:{},runtimeContracts};
+  const compiledSkill={schemaVersion:SUPPORTED_SCHEMA,id:String(skill?.id||''),name:String(skill?.name||''),skillLevel:skill?.skillLevel??null,trigger:skill?.trigger?{...skill.trigger}:null,conditions:Array.isArray(skill?.conditions)?skill.conditions.map(x=>({...x})):[],...(skill?.useRequirements!=null?{useRequirements:Array.isArray(skill.useRequirements)?skill.useRequirements.map(x=>({...x,allTags:Array.isArray(x?.allTags)?[...x.allTags]:x?.allTags,anyTags:Array.isArray(x?.anyTags)?[...x.anyTags]:x?.anyTags})):skill.useRequirements}:{}),target:skill?.target?{...skill.target}:null,effects:Array.isArray(skill?.effects)?skill.effects.map(x=>({...x})):[],resource:skill?.resource?{...skill.resource}:{},runtimeContracts};
   return{ok:errors.length===0,version:VERSION,errors,warnings,compiledSkill};
  }
 }
