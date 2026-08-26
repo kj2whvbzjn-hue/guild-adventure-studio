@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T22:19:22.918Z"
+    "updated_at": "2026-08-26T23:52:17.931Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -554,6 +554,15 @@
       "source_id": "conversation:2026-08-27 monster continuous equipment-equivalent formula",
       "created_at": "2026-08-27T05:38:30+09:00",
       "updated_at": "2026-08-27T05:38:30+09:00"
+    },
+    {
+      "id": "RULE-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
+      "text": "Monster Generation Equipment Profile（Monster生成装備プロフィール）はMonster自動生成専用の参照データとする。Player Jobの装備制限、Player Equipment装備可否、Player Skill使用条件、Player Runtimeの装備選択へ接続してはならない。Monster GeneratorはMonster.job_idから本Profileを選び、Profileが指定する代表Weapon/Secondary Equipment/Armor TypeからCurrent Equipment Requirementを参照してrequired_* fieldを認識する。Job名からSTR/DEX/INT等を直接決め打ちしない。Player側は従来のCurrent Equipment Requirement/正式装備条件だけで装備可否を判定し、本Profileに拘束されない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-27T08:51:43+09:00",
+      "updated_at": "2026-08-27T08:51:43+09:00"
     }
   ],
   "source_baseline": {
@@ -2868,6 +2877,18 @@
       "approved_at": "2026-08-27T05:38:30+09:00",
       "created_at": "2026-08-27T05:38:30+09:00",
       "updated_at": "2026-08-27T05:38:30+09:00"
+    },
+    {
+      "id": "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
+      "title": "Monster生成専用装備プロフィールを7Jobへ登録する",
+      "status": "Approved",
+      "text": "Monster自動生成で代表装備を決めるため、Player Job装備制限とは独立したMonster Generation Equipment Profile（Monster生成装備プロフィール）を使用する。初期Profileは、剣士=大剣/副装備なし/重装、騎士=片手剣/盾/重装、盗賊=短剣/盾/軽装、狩人=弓/矢筒/軽装、魔術師=ワンド/盾/ローブ、神官=ワンド/盾/ローブ、冒険家=片手剣/盾/重装とする。このProfileはMonster生成時の代表Equipment Type選択にだけ使用し、Playerの装備可能武器・防具を制限しない。Monster Generatorは選択されたEquipment TypeのCurrent Requirement semanticsからrequired_*を取得して参照Statを認識し、Job名からSTR等の固定対応を持たない。内部Equipment Type ID/Tag IDはCurrent Masterから実装時に解決し、存在しないIDを推測登録しない。Bow+Quiverは使用構成としてProfileに保持するが、CurrentのBow-only Monster Combat Contributionを維持してQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical/Block等の非Stat-linked値はDEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001どおり別Human承認までNumeric Freezeしない。",
+      "rationale": "Monster生成器がSTR等の参照Statを自力で認識するには、Jobごとの代表Equipment構成からEquipment Requirementへ辿る必要がある。一方、この情報はMonster生成のためだけのものであり、Player側のJob装備制約として扱うと既存のPlayer Equipment契約を不当に制限するため、名称・Owner・Consumerを明確に分離する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T08:51:43+09:00",
+      "created_at": "2026-08-27T08:51:43+09:00",
+      "updated_at": "2026-08-27T08:51:43+09:00"
     }
   ],
   "specifications": [
@@ -3164,6 +3185,28 @@
       "approved_at": "2026-08-26T11:28:04+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
       "updated_at": "2026-08-26T11:51:02+09:00"
+    },
+    {
+      "id": "SPEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
+      "title": "Monster Generation Equipment Profile",
+      "status": "Approved",
+      "summary": "Monster自動生成専用の7Job代表装備Profile。Player Job装備制限とは完全分離し、Equipment Type→Current Requirementから参照Statを認識する。",
+      "body": "# Monster Generation Equipment Profile\n\n## 1. Owner / Consumer\n正式名称: **Monster Generation Equipment Profile**\n日本語名: **Monster生成装備プロフィール**\n\nConsumerは **Monster Generator only**。\nPlayer Jobの装備制限、Player Equipment装備可否、Player Skill使用条件、Player Runtimeの装備選択には接続しない。\n\n## 2. 目的\nMonster.job_idから、そのJobのMonsterを生成するときだけ使う代表Equipment構成を決定する。\nMonster GeneratorはProfileのEquipment TypeをCurrent Equipment Masterへ解決し、そのRequirement定義\n(required_str / required_dex / required_int / required_vit / required_mnd / required_agi等)を読み、\nどのStatを参照するかを機械的に認識する。\n\n禁止:\n- Job名からSTR/DEX/INT等を直接決め打ちする。\n- 実Playerの装備・Save・Runtime Statusを参照する。\n- 本ProfileをPlayer Jobの装備可能カテゴリとして使用する。\n- Current Masterに存在しないEquipment Type ID / Tag IDを推測して作る。\n\n## 3. Initial Profiles\n\n| profile_id | Job | Primary Weapon | Secondary Equipment | Armor Type |\n|---|---|---|---|---|\n| MGEP-SWORDSMAN | 剣士 | 大剣 | なし | 重装 |\n| MGEP-KNIGHT | 騎士 | 片手剣 | 盾 | 重装 |\n| MGEP-THIEF | 盗賊 | 短剣 | 盾 | 軽装 |\n| MGEP-HUNTER | 狩人 | 弓 | 矢筒 | 軽装 |\n| MGEP-MAGE | 魔術師 | ワンド | 盾 | ローブ |\n| MGEP-CLERIC | 神官 | ワンド | 盾 | ローブ |\n| MGEP-ADVENTURER | 冒険家 | 片手剣 | 盾 | 重装 |\n\n## 4. Generator connection\nMonster.job_id\n→ Monster Generation Equipment Profile\n→ Primary/Secondary/Armor Type\n→ Current Equipment Master / Requirement semantics\n→ required_* fieldを認識\n→ 対応するJob growthを使用して装備基準Statを生成\n→ fractional Virtual iLv\n→ Existing Player Equipment performance formula\n→ Monster equipment-equivalent contribution\n\n## 5. Player separation\n本Profileが例えば「剣士=大剣/重装」であっても、Player剣士を大剣/重装へ制限する意味を持たない。\nPlayer EquipmentはCurrentのEquipment Requirementおよび正式装備条件だけをOwnerとする。\n\n## 6. Special identity\n- 狩人Profileは弓+矢筒を使用構成として保持する。\n- Bow+QuiverはCurrentのBow-only Monster Combat Contributionを維持し、Quiver性能を加算しない。\n- Shield offensive contributionは加算しない。\n- Critical / Block Rate / Block Damage Cut等の非Stat-linked値は\n  DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001に従い、別Human承認までNumeric Freezeしない。\n\n## 7. ID policy\n上表のprofile_idはBalance管理上のProfile ID。\n実Equipment Masterの内部Type ID/Tag IDとは別物であり、Current Source/Game Data確認前に内部IDを推測しない。\n",
+      "decision_refs": [
+        "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
+        "DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "- 7JobすべてにMonster生成専用Primary Weapon / Secondary Equipment / Armor Typeが存在する。\n- ProfileはMonster GeneratorだけがConsumerで、Player装備可否・Player Skill条件へ接続されない。\n- GeneratorはJob名から参照Statを決め打ちせず、Current Equipment Requirementのrequired_*から認識する。\n- Current Equipment Masterの内部ID/Tag IDを推測しない。\n- Bow+Quiver / Shield / 非Stat-linked値はCurrent Authorityの境界を維持する。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T08:51:43+09:00",
+      "created_at": "2026-08-27T08:51:43+09:00",
+      "updated_at": "2026-08-27T08:51:43+09:00"
     }
   ],
   "specification_candidates": [],
@@ -19806,6 +19849,12 @@
       "title": "Monster装備相当性能の計算式をRequirement直乗算から連続Player参照式へ補正",
       "summary": "Human clarification: 旧Monster Coreの基礎Status式 M_s=L×G/10 と、実物装備更新の段差を除去する目的は維持。破綻していたのはEquipment requirement coefficientをMonster Combat倍率として直接使用した層。Player Equipment multiplier=2廃止案は撤回し既存Player式を維持。新Authorityはfractional Virtual iLv + existing Player Equipment formula + Monster/Player corresponding-stat ratio。旧TASK-BAL-072-CORR-001 / DEV-V9-BALANCE-EVIDENCE-072-HUMANOID-COREの直接係数Numeric値はHistorical onlyとし、新Core再構築までBalance/Skill numeric authorityに使用しない。Bow-only runtime package 002.zip sha256=2c42a6e3a171eaf726cc2ea6462bd05ac0ac39e29d84d04fcba1a79f9a032843 と Result BEX-1787768527042 sha256=c83ab9c0928bbf64cc27f0a72c9c03650d2c2a9f6e81c668a1d9772b3e90867b は、旧Monster/Equipment numeric前提を含むためBow-only numeric conformance authorityへ昇格しない。この管理更新ではSource/Game Data/Simulation/Testを実行していない。",
       "recorded_at": "2026-08-27T05:38:30+09:00"
+    },
+    {
+      "id": "HIST-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
+      "title": "Monster生成専用装備プロフィールを管理JSONへ登録",
+      "summary": "Human clarificationにより、Jobごとの代表武器/副装備/防具タイプはMonster Generator専用Profileとして登録し、Player Job装備制限とは完全分離した。7Job Profileを登録。Monster GeneratorはProfile→Current Equipment Requirement→required_*の順で参照Statを認識し、Job名からSTR等を固定対応しない。内部Equipment Type/Tag IDはCurrent Master確認前に推測しない。Source/Game Data/Simulation/Testは実行していない。Evidence JSONは生成しない。",
+      "recorded_at": "2026-08-27T08:51:43+09:00"
     }
   ],
   "authority": {
