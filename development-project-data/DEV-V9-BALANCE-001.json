@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T00:03:01.182Z"
+    "updated_at": "2026-08-26T00:18:19.571Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 SWD multi-hit cross-accuracy test plan awaiting Human approval",
-    "goal": "THF BAL074-E06と同じHNT Lv23/24/25・Tier7/Evasion120・same-seedでSWD Lv20低命中側を測定し、SWD自身のSingle Power曲線からP_eqを求めてmulti-hit価値のAccuracy依存を判定する。33条件Planは未承認で停止。"
+    "theme": "TASK-BAL-074 multi-hit model-form design awaiting Human approval",
+    "goal": "THF BAL074-E06とSWD BAL074-E07のpaired実測から、HitCountだけの固定Costを使わず、Accuracy/TotalPower依存をどう表現するかを設計する。次の設計/実行はHuman承認まで停止。"
   },
   "project_rules": [
     {
@@ -2348,6 +2348,18 @@
       "approved_at": "2026-08-26T08:30:00+09:00",
       "created_at": "2026-08-26T08:30:00+09:00",
       "updated_at": "2026-08-26T08:30:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-SWD-MULTIHIT-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Humanの「進めて」によりSWD/剣士 Lv20 low-accuracy multi-hit cross-accuracy Testを実行承認。HNT/狩人 Lv23/24/25（Current JOB-0004/弓兵、Tier7/Evasion120）を使用し、各LvでControl、Single P102/P110/P120/P140、TP110 H2/H3/H4、TP120 H2/H3/H4をsame-seed 749600000..749600099で各100戦、33条件3,300戦。P_eqはSWD自身のSingle曲線内補間のみとし外挿しない。THF BAL074-E06と同一 Level×TotalPower×HitCountで比較する。本TestだけでC_MultiHitをFreezeせず、MP/CD/Cast/Rangeへ自動進行しない。",
+      "rationale": "低命中側でmulti-hit価値が変化するというHuman指摘を、THFと同一Defender/Seed条件で直接比較するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T08:45:00+09:00",
+      "created_at": "2026-08-26T08:45:00+09:00",
+      "updated_at": "2026-08-26T08:45:00+09:00"
     }
   ],
   "specifications": [
@@ -7029,8 +7041,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T08:40:00+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. SWD low-accuracy Control screen Human result PASS: HNT23=48%, HNT24=43%, HNT25=36%, HNT26=36%, HNT27=9%, HNT28=6%, HNT29=5%, HNT30=4%. Tier7 Lv23-26 is the valid non-saturated band; Tier8 is excluded. For exact THF-vs-SWD multi-hit comparison, Lv23/24/25 are selected because THF BAL074-E06 already measured those same defenders. Next proposed test is SWD20 × HNT23/24/25 with Control + Single P102/P110/P120/P140 + TP110 H2/H3/H4 + TP120 H2/H3/H4, 33 conditions / 3300 battles, seeds 749600000..749600099. This plan is NOT authorized yet. No C_MultiHit Freeze, no MP/CD/Cast/Range execution, no new Evidence for the Control screen.",
+      "updated_at": "2026-08-26T09:15:31+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. SWD low-accuracy multi-hit Human result PASS: 33/33 jobs, 3300/3300 trials, error0, Controls Lv23/24/25=48/43/36%. SWD multi-hit observed hit-rate mean=29.09% versus THF E06 mean=49.31%. TP110 shows materially larger SWD multi-hit advantage than THF across H2/H3/H4, confirming strong low-accuracy benefit in that band. TP120 differences are mixed, so the value is not explained by HitCount alone or by a simple universal low-accuracy uplift. Universal fixed C_MultiHit(H) is rejected; Accuracy/TotalPower-aware model-form selection is required. No C_MultiHit Freeze, no MP/CD/Cast/Range execution, and no new Battle Package is authorized.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7041,14 +7053,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "SWD Control batch Human result PASS. HNT Lv23/24/25 selected for exact THF-vs-SWD cross-accuracy comparison. 33-condition / 3300-battle SWD multi-hit plan is proposed and awaiting Human approval; no package generated.",
+        "current_step": "SWD low-accuracy cross-accuracy Human result evaluated PASS. Paired THF E06 + SWD E07 reject a universal H-only fixed C_MultiHit. Stop here; next is model-form design only after separate Human approval. No new Battle Package authorized.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "None for Control screen. Next Evidence only if approved SWD multi-hit Human result is required as reusable cross-accuracy numeric authority.",
+        "next_evidence": "EVD-BAL-074-MULTIHIT-SWD-001",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7058,7 +7070,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanSWDMultiHitPlanApproval",
+        "next_evidence_status": "CrossAccuracyAuthorityRetained_ModelDesignAwaitingHumanApproval",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -10192,7 +10204,7 @@
           "evaluated_at": "2026-08-26T08:20:02+09:00"
         },
         "multihit_accuracy_crosscheck_requirement": {
-          "status": "SWDControlBandEstablished_AwaitingMultiHitPlanApproval",
+          "status": "SWDMeasurementCompleted_ModelDesignPending",
           "instruction": "多段系は低命中Characterの方が恩恵が大きくなり得るため、C_MultiHitを決める前にSWD/剣士でも測定する。",
           "comparison_attackers": {
             "THF": {
@@ -10218,7 +10230,8 @@
             24,
             25
           ],
-          "updated_at": "2026-08-26T08:40:00+09:00"
+          "updated_at": "2026-08-26T09:15:31+09:00",
+          "completed_evidence_id": "EVD-BAL-074-MULTIHIT-SWD-001"
         },
         "swd_multihit_control_screen_plan": {
           "status": "HumanResultEvaluated_PASS",
@@ -10499,7 +10512,7 @@
           "evaluated_at": "2026-08-26T08:40:00+09:00"
         },
         "swd_multihit_cross_accuracy_test_plan": {
-          "status": "PlanProposed_AwaitingHumanApproval",
+          "status": "HumanResultEvaluated_PASS_ModelFormDecisionPending",
           "execution_authorized": false,
           "decision_question": "Quantify how multi-hit practical value changes for low-accuracy SWD/剣士 Lv20 versus the retained THF Lv20 measurement, while building a SWD-specific single-hit Power response curve so P_eq is interpolated from SWD data rather than THF data.",
           "confirmed_inputs": {
@@ -10684,9 +10697,782 @@
             "Do not start MP/CD/Cast/Range.",
             "Do not Freeze C_MultiHit or universal Physical Skill formula from this test alone."
           ],
-          "battle_package_generated": false,
+          "battle_package_generated": true,
           "standalone_evidence_planned": "Only if the Human result becomes a required reusable numeric authority for the cross-accuracy multi-hit model.",
-          "proposed_at": "2026-08-26T08:40:00+09:00"
+          "proposed_at": "2026-08-26T08:40:00+09:00",
+          "execution_decision_id": "DEC-BAL-TASK074-SWD-MULTIHIT-001",
+          "package_file": "TASK-BAL-074-SWDMultiHit.zip",
+          "package_sha256": "b43ce04d63d4db0dc26f31aea37c96e4b3179ff90b701fed26227fc0ef209e8f",
+          "required_studio_build": "GKS-B782",
+          "current_source_file": "guild-adventure-studio-sub(20260825-213025).zip",
+          "current_source_sha256": "02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728",
+          "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 33/33 PASS",
+          "human_real_device_required": true,
+          "result_pending": false,
+          "prepared_at": "2026-08-26T08:45:00+09:00",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-SWD-MULTIHIT-B782_BEX-1787702843111.zip",
+          "result_sha256": "ec8d6517263146803c5c354303d4849bb9a3fa083bdf879cc1152ab5d8207c70",
+          "execution_id": "BEX-1787702843111",
+          "formal_execution_gate": "PASS",
+          "completed_at": "2026-08-26T08:50:00+09:00"
+        },
+        "swd_multihit_cross_accuracy_result": {
+          "status": "PASS_MEASUREMENT_H_ONLY_MODEL_REJECTED",
+          "formal": {
+            "jobs": "33/33",
+            "trials": "3300/3300",
+            "error_count": 0,
+            "formal_binding_match": true,
+            "formal_only": "33/33",
+            "legacy_fallback": "0/33",
+            "seed_start": 749600000,
+            "seed_end": 749600099
+          },
+          "controls": {
+            "23": 0.48,
+            "24": 0.43,
+            "25": 0.36
+          },
+          "SWD_multi_hit_rate_band": {
+            "min": 0.28571429,
+            "max": 0.29704424,
+            "mean": 0.2909033555555556
+          },
+          "by_level": {
+            "23": {
+              "control": {
+                "win_rate": 0.48,
+                "average_ally_damage": 1188.96,
+                "average_ticks": 119.54
+              },
+              "single_curve": [
+                {
+                  "power": 102,
+                  "win_rate": 0.5,
+                  "delta_win_rate_pp": 2,
+                  "average_ally_damage": 1198.68,
+                  "average_ticks": 117.45,
+                  "observed_hit_rate": 0.2920354
+                },
+                {
+                  "power": 110,
+                  "win_rate": 0.5,
+                  "delta_win_rate_pp": 2,
+                  "average_ally_damage": 1236.64,
+                  "average_ticks": 117.45,
+                  "observed_hit_rate": 0.2920354
+                },
+                {
+                  "power": 120,
+                  "win_rate": 0.7,
+                  "delta_win_rate_pp": 22,
+                  "average_ally_damage": 1270.04,
+                  "average_ticks": 103.67,
+                  "observed_hit_rate": 0.29583333
+                },
+                {
+                  "power": 140,
+                  "win_rate": 0.72,
+                  "delta_win_rate_pp": 24,
+                  "average_ally_damage": 1316.16,
+                  "average_ticks": 102.54,
+                  "observed_hit_rate": 0.29401853
+                }
+              ],
+              "multi_hit": [
+                {
+                  "total_power": 110,
+                  "hit_count": 2,
+                  "hit_powers": [
+                    55,
+                    55
+                  ],
+                  "win_rate": 0.61,
+                  "delta_win_rate_pp": 13,
+                  "same_total_power_single_delta_win_rate_pp": 2,
+                  "delta_delta_win_rate_pp": 11,
+                  "equivalent_single_power": 115.5,
+                  "C_MultiHit_est_budget": 2.75,
+                  "average_ally_damage": 1271.01,
+                  "average_ticks": 116.82,
+                  "observed_hit_rate": 0.28614232,
+                  "critical_hits": 41
+                },
+                {
+                  "total_power": 110,
+                  "hit_count": 3,
+                  "hit_powers": [
+                    37,
+                    37,
+                    36
+                  ],
+                  "win_rate": 0.69,
+                  "delta_win_rate_pp": 21,
+                  "same_total_power_single_delta_win_rate_pp": 2,
+                  "delta_delta_win_rate_pp": 19,
+                  "equivalent_single_power": 119.5,
+                  "C_MultiHit_est_budget": 4.75,
+                  "average_ally_damage": 1323.76,
+                  "average_ticks": 118.39,
+                  "observed_hit_rate": 0.2892725,
+                  "critical_hits": 56
+                },
+                {
+                  "total_power": 110,
+                  "hit_count": 4,
+                  "hit_powers": [
+                    28,
+                    28,
+                    27,
+                    27
+                  ],
+                  "win_rate": 0.69,
+                  "delta_win_rate_pp": 21,
+                  "same_total_power_single_delta_win_rate_pp": 2,
+                  "delta_delta_win_rate_pp": 19,
+                  "equivalent_single_power": 119.5,
+                  "C_MultiHit_est_budget": 4.75,
+                  "average_ally_damage": 1359.28,
+                  "average_ticks": 120.3,
+                  "observed_hit_rate": 0.29704424,
+                  "critical_hits": 58
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 2,
+                  "hit_powers": [
+                    60,
+                    60
+                  ],
+                  "win_rate": 0.69,
+                  "delta_win_rate_pp": 21,
+                  "same_total_power_single_delta_win_rate_pp": 22,
+                  "delta_delta_win_rate_pp": -1,
+                  "equivalent_single_power": 119.5,
+                  "C_MultiHit_est_budget": -0.25,
+                  "average_ally_damage": 1304.13,
+                  "average_ticks": 110.59,
+                  "observed_hit_rate": 0.28571429,
+                  "critical_hits": 41
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 3,
+                  "hit_powers": [
+                    40,
+                    40,
+                    40
+                  ],
+                  "win_rate": 0.77,
+                  "delta_win_rate_pp": 29,
+                  "same_total_power_single_delta_win_rate_pp": 22,
+                  "delta_delta_win_rate_pp": 7,
+                  "equivalent_single_power": null,
+                  "C_MultiHit_est_budget": null,
+                  "average_ally_damage": 1350.8,
+                  "average_ticks": 111.86,
+                  "observed_hit_rate": 0.28979806,
+                  "critical_hits": 54
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 4,
+                  "hit_powers": [
+                    30,
+                    30,
+                    30,
+                    30
+                  ],
+                  "win_rate": 0.82,
+                  "delta_win_rate_pp": 34,
+                  "same_total_power_single_delta_win_rate_pp": 22,
+                  "delta_delta_win_rate_pp": 12,
+                  "equivalent_single_power": null,
+                  "C_MultiHit_est_budget": null,
+                  "average_ally_damage": 1383.38,
+                  "average_ticks": 113.3,
+                  "observed_hit_rate": 0.29572816,
+                  "critical_hits": 53
+                }
+              ]
+            },
+            "24": {
+              "control": {
+                "win_rate": 0.43,
+                "average_ally_damage": 1183.25,
+                "average_ticks": 116.44
+              },
+              "single_curve": [
+                {
+                  "power": 102,
+                  "win_rate": 0.43,
+                  "delta_win_rate_pp": 0,
+                  "average_ally_damage": 1194.32,
+                  "average_ticks": 116.44,
+                  "observed_hit_rate": 0.29228487
+                },
+                {
+                  "power": 110,
+                  "win_rate": 0.46,
+                  "delta_win_rate_pp": 3,
+                  "average_ally_damage": 1235.67,
+                  "average_ticks": 114.44,
+                  "observed_hit_rate": 0.29358491
+                },
+                {
+                  "power": 120,
+                  "win_rate": 0.67,
+                  "delta_win_rate_pp": 24,
+                  "average_ally_damage": 1277.36,
+                  "average_ticks": 102.08,
+                  "observed_hit_rate": 0.2972973
+                },
+                {
+                  "power": 140,
+                  "win_rate": 0.69,
+                  "delta_win_rate_pp": 26,
+                  "average_ally_damage": 1329.54,
+                  "average_ticks": 101.05,
+                  "observed_hit_rate": 0.29522184
+                }
+              ],
+              "multi_hit": [
+                {
+                  "total_power": 110,
+                  "hit_count": 2,
+                  "hit_powers": [
+                    55,
+                    55
+                  ],
+                  "win_rate": 0.56,
+                  "delta_win_rate_pp": 13,
+                  "same_total_power_single_delta_win_rate_pp": 3,
+                  "delta_delta_win_rate_pp": 10,
+                  "equivalent_single_power": 114.76190476,
+                  "C_MultiHit_est_budget": 2.38095238,
+                  "average_ally_damage": 1265.05,
+                  "average_ticks": 114.26,
+                  "observed_hit_rate": 0.28625954,
+                  "critical_hits": 40
+                },
+                {
+                  "total_power": 110,
+                  "hit_count": 3,
+                  "hit_powers": [
+                    37,
+                    37,
+                    36
+                  ],
+                  "win_rate": 0.6,
+                  "delta_win_rate_pp": 17,
+                  "same_total_power_single_delta_win_rate_pp": 3,
+                  "delta_delta_win_rate_pp": 14,
+                  "equivalent_single_power": 116.66666667,
+                  "C_MultiHit_est_budget": 3.33333333,
+                  "average_ally_damage": 1319.39,
+                  "average_ticks": 117.8,
+                  "observed_hit_rate": 0.28991597,
+                  "critical_hits": 54
+                },
+                {
+                  "total_power": 110,
+                  "hit_count": 4,
+                  "hit_powers": [
+                    28,
+                    28,
+                    27,
+                    27
+                  ],
+                  "win_rate": 0.58,
+                  "delta_win_rate_pp": 15,
+                  "same_total_power_single_delta_win_rate_pp": 3,
+                  "delta_delta_win_rate_pp": 12,
+                  "equivalent_single_power": 115.71428571,
+                  "C_MultiHit_est_budget": 2.85714286,
+                  "average_ally_damage": 1356.56,
+                  "average_ticks": 118.45,
+                  "observed_hit_rate": 0.29617953,
+                  "critical_hits": 56
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 2,
+                  "hit_powers": [
+                    60,
+                    60
+                  ],
+                  "win_rate": 0.67,
+                  "delta_win_rate_pp": 24,
+                  "same_total_power_single_delta_win_rate_pp": 24,
+                  "delta_delta_win_rate_pp": 0,
+                  "equivalent_single_power": 120,
+                  "C_MultiHit_est_budget": 0,
+                  "average_ally_damage": 1303.27,
+                  "average_ticks": 108.67,
+                  "observed_hit_rate": 0.28605769,
+                  "critical_hits": 40
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 3,
+                  "hit_powers": [
+                    40,
+                    40,
+                    40
+                  ],
+                  "win_rate": 0.69,
+                  "delta_win_rate_pp": 26,
+                  "same_total_power_single_delta_win_rate_pp": 24,
+                  "delta_delta_win_rate_pp": 2,
+                  "equivalent_single_power": 140,
+                  "C_MultiHit_est_budget": 10,
+                  "average_ally_damage": 1354.25,
+                  "average_ticks": 112.88,
+                  "observed_hit_rate": 0.28822768,
+                  "critical_hits": 54
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 4,
+                  "hit_powers": [
+                    30,
+                    30,
+                    30,
+                    30
+                  ],
+                  "win_rate": 0.76,
+                  "delta_win_rate_pp": 33,
+                  "same_total_power_single_delta_win_rate_pp": 24,
+                  "delta_delta_win_rate_pp": 9,
+                  "equivalent_single_power": null,
+                  "C_MultiHit_est_budget": null,
+                  "average_ally_damage": 1392.04,
+                  "average_ticks": 111.94,
+                  "observed_hit_rate": 0.29594038,
+                  "critical_hits": 53
+                }
+              ]
+            },
+            "25": {
+              "control": {
+                "win_rate": 0.36,
+                "average_ally_damage": 1152.33,
+                "average_ticks": 112.82
+              },
+              "single_curve": [
+                {
+                  "power": 102,
+                  "win_rate": 0.36,
+                  "delta_win_rate_pp": 0,
+                  "average_ally_damage": 1164.57,
+                  "average_ticks": 112.82,
+                  "observed_hit_rate": 0.29402638
+                },
+                {
+                  "power": 110,
+                  "win_rate": 0.38,
+                  "delta_win_rate_pp": 2,
+                  "average_ally_damage": 1212.07,
+                  "average_ticks": 110.6,
+                  "observed_hit_rate": 0.2943038
+                },
+                {
+                  "power": 120,
+                  "win_rate": 0.64,
+                  "delta_win_rate_pp": 28,
+                  "average_ally_damage": 1264.74,
+                  "average_ticks": 100.17,
+                  "observed_hit_rate": 0.29835212
+                },
+                {
+                  "power": 140,
+                  "win_rate": 0.67,
+                  "delta_win_rate_pp": 31,
+                  "average_ally_damage": 1319.26,
+                  "average_ticks": 98.56,
+                  "observed_hit_rate": 0.29779736
+                }
+              ],
+              "multi_hit": [
+                {
+                  "total_power": 110,
+                  "hit_count": 2,
+                  "hit_powers": [
+                    55,
+                    55
+                  ],
+                  "win_rate": 0.44,
+                  "delta_win_rate_pp": 8,
+                  "same_total_power_single_delta_win_rate_pp": 2,
+                  "delta_delta_win_rate_pp": 6,
+                  "equivalent_single_power": 112.30769231,
+                  "C_MultiHit_est_budget": 1.15384615,
+                  "average_ally_damage": 1235.51,
+                  "average_ticks": 112.52,
+                  "observed_hit_rate": 0.28868814,
+                  "critical_hits": 37
+                },
+                {
+                  "total_power": 110,
+                  "hit_count": 3,
+                  "hit_powers": [
+                    37,
+                    37,
+                    36
+                  ],
+                  "win_rate": 0.49,
+                  "delta_win_rate_pp": 13,
+                  "same_total_power_single_delta_win_rate_pp": 2,
+                  "delta_delta_win_rate_pp": 11,
+                  "equivalent_single_power": 114.23076923,
+                  "C_MultiHit_est_budget": 2.11538462,
+                  "average_ally_damage": 1294.79,
+                  "average_ticks": 114.53,
+                  "observed_hit_rate": 0.29168805,
+                  "critical_hits": 47
+                },
+                {
+                  "total_power": 110,
+                  "hit_count": 4,
+                  "hit_powers": [
+                    28,
+                    28,
+                    27,
+                    27
+                  ],
+                  "win_rate": 0.43,
+                  "delta_win_rate_pp": 7,
+                  "same_total_power_single_delta_win_rate_pp": 2,
+                  "delta_delta_win_rate_pp": 5,
+                  "equivalent_single_power": 111.92307692,
+                  "C_MultiHit_est_budget": 0.96153846,
+                  "average_ally_damage": 1323.14,
+                  "average_ticks": 116.25,
+                  "observed_hit_rate": 0.29532993,
+                  "critical_hits": 59
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 2,
+                  "hit_powers": [
+                    60,
+                    60
+                  ],
+                  "win_rate": 0.57,
+                  "delta_win_rate_pp": 21,
+                  "same_total_power_single_delta_win_rate_pp": 28,
+                  "delta_delta_win_rate_pp": -7,
+                  "equivalent_single_power": 117.30769231,
+                  "C_MultiHit_est_budget": -1.34615385,
+                  "average_ally_damage": 1285.38,
+                  "average_ticks": 106.21,
+                  "observed_hit_rate": 0.2874376,
+                  "critical_hits": 37
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 3,
+                  "hit_powers": [
+                    40,
+                    40,
+                    40
+                  ],
+                  "win_rate": 0.63,
+                  "delta_win_rate_pp": 27,
+                  "same_total_power_single_delta_win_rate_pp": 28,
+                  "delta_delta_win_rate_pp": -1,
+                  "equivalent_single_power": 119.61538462,
+                  "C_MultiHit_est_budget": -0.19230769,
+                  "average_ally_damage": 1340.38,
+                  "average_ticks": 109.9,
+                  "observed_hit_rate": 0.29133226,
+                  "critical_hits": 47
+                },
+                {
+                  "total_power": 120,
+                  "hit_count": 4,
+                  "hit_powers": [
+                    30,
+                    30,
+                    30,
+                    30
+                  ],
+                  "win_rate": 0.65,
+                  "delta_win_rate_pp": 29,
+                  "same_total_power_single_delta_win_rate_pp": 28,
+                  "delta_delta_win_rate_pp": 1,
+                  "equivalent_single_power": 126.66666667,
+                  "C_MultiHit_est_budget": 3.33333333,
+                  "average_ally_damage": 1373.69,
+                  "average_ticks": 111.13,
+                  "observed_hit_rate": 0.29550406,
+                  "critical_hits": 58
+                }
+              ]
+            }
+          },
+          "out_of_range_P_eq_conditions": [
+            {
+              "level": 23,
+              "total_power": 120,
+              "hit_count": 3,
+              "delta_win_rate_pp": 29
+            },
+            {
+              "level": 23,
+              "total_power": 120,
+              "hit_count": 4,
+              "delta_win_rate_pp": 34
+            },
+            {
+              "level": 24,
+              "total_power": 120,
+              "hit_count": 4,
+              "delta_win_rate_pp": 33
+            }
+          ],
+          "cross_accuracy_vs_THF_E06": {
+            "paired_rows": [
+              {
+                "level": 23,
+                "total_power": 110,
+                "hit_count": 2,
+                "SWD_delta_delta_win_rate_pp": 11,
+                "THF_delta_delta_win_rate_pp": 2,
+                "SWD_minus_THF_multi_advantage_pp": 9,
+                "SWD_observed_hit_rate": 0.28614232,
+                "THF_observed_hit_rate": 0.48592979
+              },
+              {
+                "level": 23,
+                "total_power": 110,
+                "hit_count": 3,
+                "SWD_delta_delta_win_rate_pp": 19,
+                "THF_delta_delta_win_rate_pp": 14,
+                "SWD_minus_THF_multi_advantage_pp": 5,
+                "SWD_observed_hit_rate": 0.2892725,
+                "THF_observed_hit_rate": 0.50226601
+              },
+              {
+                "level": 23,
+                "total_power": 110,
+                "hit_count": 4,
+                "SWD_delta_delta_win_rate_pp": 19,
+                "THF_delta_delta_win_rate_pp": 6,
+                "SWD_minus_THF_multi_advantage_pp": 13,
+                "SWD_observed_hit_rate": 0.29704424,
+                "THF_observed_hit_rate": 0.49237916
+              },
+              {
+                "level": 23,
+                "total_power": 120,
+                "hit_count": 2,
+                "SWD_delta_delta_win_rate_pp": -1,
+                "THF_delta_delta_win_rate_pp": 0,
+                "SWD_minus_THF_multi_advantage_pp": -1,
+                "SWD_observed_hit_rate": 0.28571429,
+                "THF_observed_hit_rate": 0.48529412
+              },
+              {
+                "level": 23,
+                "total_power": 120,
+                "hit_count": 3,
+                "SWD_delta_delta_win_rate_pp": 7,
+                "THF_delta_delta_win_rate_pp": 6,
+                "SWD_minus_THF_multi_advantage_pp": 1,
+                "SWD_observed_hit_rate": 0.28979806,
+                "THF_observed_hit_rate": 0.50222883
+              },
+              {
+                "level": 23,
+                "total_power": 120,
+                "hit_count": 4,
+                "SWD_delta_delta_win_rate_pp": 12,
+                "THF_delta_delta_win_rate_pp": 3,
+                "SWD_minus_THF_multi_advantage_pp": 9,
+                "SWD_observed_hit_rate": 0.29572816,
+                "THF_observed_hit_rate": 0.49770024
+              },
+              {
+                "level": 24,
+                "total_power": 110,
+                "hit_count": 2,
+                "SWD_delta_delta_win_rate_pp": 10,
+                "THF_delta_delta_win_rate_pp": -18,
+                "SWD_minus_THF_multi_advantage_pp": 28,
+                "SWD_observed_hit_rate": 0.28625954,
+                "THF_observed_hit_rate": 0.48292968
+              },
+              {
+                "level": 24,
+                "total_power": 110,
+                "hit_count": 3,
+                "SWD_delta_delta_win_rate_pp": 14,
+                "THF_delta_delta_win_rate_pp": 3,
+                "SWD_minus_THF_multi_advantage_pp": 11,
+                "SWD_observed_hit_rate": 0.28991597,
+                "THF_observed_hit_rate": 0.49783379
+              },
+              {
+                "level": 24,
+                "total_power": 110,
+                "hit_count": 4,
+                "SWD_delta_delta_win_rate_pp": 12,
+                "THF_delta_delta_win_rate_pp": 2,
+                "SWD_minus_THF_multi_advantage_pp": 10,
+                "SWD_observed_hit_rate": 0.29617953,
+                "THF_observed_hit_rate": 0.49510306
+              },
+              {
+                "level": 24,
+                "total_power": 120,
+                "hit_count": 2,
+                "SWD_delta_delta_win_rate_pp": 0,
+                "THF_delta_delta_win_rate_pp": -8,
+                "SWD_minus_THF_multi_advantage_pp": 8,
+                "SWD_observed_hit_rate": 0.28605769,
+                "THF_observed_hit_rate": 0.48439914
+              },
+              {
+                "level": 24,
+                "total_power": 120,
+                "hit_count": 3,
+                "SWD_delta_delta_win_rate_pp": 2,
+                "THF_delta_delta_win_rate_pp": 7,
+                "SWD_minus_THF_multi_advantage_pp": -5,
+                "SWD_observed_hit_rate": 0.28822768,
+                "THF_observed_hit_rate": 0.49863187
+              },
+              {
+                "level": 24,
+                "total_power": 120,
+                "hit_count": 4,
+                "SWD_delta_delta_win_rate_pp": 9,
+                "THF_delta_delta_win_rate_pp": 5,
+                "SWD_minus_THF_multi_advantage_pp": 4,
+                "SWD_observed_hit_rate": 0.29594038,
+                "THF_observed_hit_rate": 0.4966083
+              },
+              {
+                "level": 25,
+                "total_power": 110,
+                "hit_count": 2,
+                "SWD_delta_delta_win_rate_pp": 6,
+                "THF_delta_delta_win_rate_pp": -9,
+                "SWD_minus_THF_multi_advantage_pp": 15,
+                "SWD_observed_hit_rate": 0.28868814,
+                "THF_observed_hit_rate": 0.48429704
+              },
+              {
+                "level": 25,
+                "total_power": 110,
+                "hit_count": 3,
+                "SWD_delta_delta_win_rate_pp": 11,
+                "THF_delta_delta_win_rate_pp": 2,
+                "SWD_minus_THF_multi_advantage_pp": 9,
+                "SWD_observed_hit_rate": 0.29168805,
+                "THF_observed_hit_rate": 0.49756667
+              },
+              {
+                "level": 25,
+                "total_power": 110,
+                "hit_count": 4,
+                "SWD_delta_delta_win_rate_pp": 5,
+                "THF_delta_delta_win_rate_pp": 3,
+                "SWD_minus_THF_multi_advantage_pp": 2,
+                "SWD_observed_hit_rate": 0.29532993,
+                "THF_observed_hit_rate": 0.49475066
+              },
+              {
+                "level": 25,
+                "total_power": 120,
+                "hit_count": 2,
+                "SWD_delta_delta_win_rate_pp": -7,
+                "THF_delta_delta_win_rate_pp": -3,
+                "SWD_minus_THF_multi_advantage_pp": -4,
+                "SWD_observed_hit_rate": 0.2874376,
+                "THF_observed_hit_rate": 0.48376121
+              },
+              {
+                "level": 25,
+                "total_power": 120,
+                "hit_count": 3,
+                "SWD_delta_delta_win_rate_pp": -1,
+                "THF_delta_delta_win_rate_pp": 5,
+                "SWD_minus_THF_multi_advantage_pp": -6,
+                "SWD_observed_hit_rate": 0.29133226,
+                "THF_observed_hit_rate": 0.49702442
+              },
+              {
+                "level": 25,
+                "total_power": 120,
+                "hit_count": 4,
+                "SWD_delta_delta_win_rate_pp": 1,
+                "THF_delta_delta_win_rate_pp": 7,
+                "SWD_minus_THF_multi_advantage_pp": -6,
+                "SWD_observed_hit_rate": 0.29550406,
+                "THF_observed_hit_rate": 0.4970266
+              }
+            ],
+            "aggregate_by_total_power_hit_count": [
+              {
+                "total_power": 110,
+                "hit_count": 2,
+                "SWD_mean_multi_advantage_pp": 9,
+                "THF_mean_multi_advantage_pp": -8.333333,
+                "SWD_minus_THF_mean_pp": 17.333333
+              },
+              {
+                "total_power": 110,
+                "hit_count": 3,
+                "SWD_mean_multi_advantage_pp": 14.666667,
+                "THF_mean_multi_advantage_pp": 6.333333,
+                "SWD_minus_THF_mean_pp": 8.333333
+              },
+              {
+                "total_power": 110,
+                "hit_count": 4,
+                "SWD_mean_multi_advantage_pp": 12,
+                "THF_mean_multi_advantage_pp": 3.666667,
+                "SWD_minus_THF_mean_pp": 8.333333
+              },
+              {
+                "total_power": 120,
+                "hit_count": 2,
+                "SWD_mean_multi_advantage_pp": -2.666667,
+                "THF_mean_multi_advantage_pp": -3.666667,
+                "SWD_minus_THF_mean_pp": 1
+              },
+              {
+                "total_power": 120,
+                "hit_count": 3,
+                "SWD_mean_multi_advantage_pp": 2.666667,
+                "THF_mean_multi_advantage_pp": 6,
+                "SWD_minus_THF_mean_pp": -3.333333
+              },
+              {
+                "total_power": 120,
+                "hit_count": 4,
+                "SWD_mean_multi_advantage_pp": 7.333333,
+                "THF_mean_multi_advantage_pp": 5,
+                "SWD_minus_THF_mean_pp": 2.333333
+              }
+            ]
+          },
+          "conclusion": {
+            "H_only_universal_fixed_cost_supported": false,
+            "accuracy_dependence_material": true,
+            "total_power_dependence_material": true,
+            "C_MultiHit_frozen": false,
+            "next_required_decision": "Select and validate a multi-hit cost model form using paired THF E06 + SWD E07. Requires separate Human approval before design/freeze or any new execution."
+          },
+          "retained_evidence": {
+            "evidence_id": "EVD-BAL-074-MULTIHIT-SWD-001",
+            "file": "BAL074-E07.json",
+            "sha256": "5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
+            "role": "SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN"
+          },
+          "evaluated_at": "2026-08-26T08:50:00+09:00"
         }
       },
       "evidence_refs": [
@@ -10743,6 +11529,15 @@
           "role": "THF_MULTIHIT_NUMERIC_INPUT_FOR_SWD_CROSS_ACCURACY_COMPARISON",
           "status": "PreparedForRegistration",
           "recorded_at": "2026-08-26T08:20:02+09:00"
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-SWD",
+          "file": "BAL074-E07.json",
+          "sha256": "5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
+          "evidence_id": "EVD-BAL-074-MULTIHIT-SWD-001",
+          "role": "SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-26T08:50:00+09:00"
         }
       ],
       "blocked_reason": ""
@@ -15866,6 +16661,29 @@
       "blocking": false,
       "created_at": "2026-08-26T08:40:00+09:00",
       "updated_at": "2026-08-26T08:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-SWD-MULTIHIT-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "SWD low-accuracy cross-accuracy measurement PASS: 33/33 jobs, 3300/3300 trials, error0, exact Formal binding, formal_only, no legacy. Controls Lv23/24/25=48/43/36% and all remain 10%-90%. SWD own Single curve and TP110/120 H2/H3/H4 were measured. Paired THF comparison rejects a universal H-only fixed C_MultiHit; Accuracy/TotalPower-aware model selection remains pending.",
+      "evidence": "BAL074-E07.json sha256=5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T08:50:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T08:50:00+09:00",
+        "reason": "All exact approved execution gates passed; model-form question answered as H-only fixed cost unsupported.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T08:50:00+09:00",
+      "updated_at": "2026-08-26T08:50:00+09:00"
     }
   ],
   "workflow": {
@@ -16882,6 +17700,16 @@
       "at": "2026-08-26T08:40:00+09:00",
       "type": "SWDControlScreenResultAndMultiHitPlanRegistered",
       "summary": "SWD20 vs HNT23-30 Control-only Human result PASS. Tier7 Lv23-26 valid; Tier8 invalid below 10%; Lv23-25 selected to match THF E06 exactly. Next SWD multi-hit plan proposed: 3 levels × 11 conditions = 33 conditions / 3300 battles, same seeds. Plan is awaiting Human approval; no Battle Package or new Evidence generated."
+    },
+    {
+      "at": "2026-08-26T08:45:00+09:00",
+      "type": "SWDMultiHitCrossAccuracyPackagePrepared",
+      "summary": "Human承認によりSWD20 vs HNT23/24/25のSingle+MultiHit cross-accuracy Packageを準備。各Lv11条件、33条件/3300戦、same seeds 749600000..749600099。P_eqはSWD Single曲線内補間のみ。THF E06とpaired比較。C_MultiHit Freezeなし、Evidence新規作成なし。"
+    },
+    {
+      "at": "2026-08-26T08:50:00+09:00",
+      "type": "SWDMultiHitCrossAccuracyResultEvaluated",
+      "summary": "SWD20 low-accuracy Single+MultiHit Human実機33条件/3300戦PASS。TP110ではSWDのmulti-hit優位がTHFより大きいが、TP120では差が混在。H-only Universal fixed C_MultiHitを不採用とし、SWD実測をBAL074-E07へ保存。Accuracy/TotalPower-aware model設計は別Human承認待ちで停止。"
     }
   ],
   "authority": {
