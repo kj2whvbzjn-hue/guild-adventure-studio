@@ -3,7 +3,7 @@
  * Project list uses development-project-data/index.json (title + id only).
  * Project body is fetched only after the user confirms opening a title.
  * Development read operations resolve the repository default branch once at operation start.
- * JSON merge-save writes use the branch selected in the operation UI; write PAT comes from the operation UI.
+ * New-project and JSON merge-save writes use the branch selected in the operation UI; write PAT comes from the operation UI.
  * Owner / Repository come from the Studio Git connection.
  * Concurrent updates are guarded by Git blob SHA; no Project revision is used.
  */
@@ -257,7 +257,7 @@ async function registerNewProject(project,{branch,token,messagePrefix='Create De
   const normalized=state.host.normalizeProject(project);
   const id=text(normalized?.workspace?.id),title=text(normalized?.workspace?.name);
   if(!id||!title)throw new Error('workspace.id / workspace.nameがありません。');
-  const c=await operationConnection(id,{token,requireToken:true});
+  const c=selectedWriteConnection(id,{branch,token,requireToken:true});
   if(text(normalized?.authority?.canonical_path)!==c.path)throw new Error(`authority.canonical_pathが正規Pathと一致しません: ${normalized?.authority?.canonical_path||'(missing)'}`);
   const out=await putFile(c,JSON.stringify(normalized,null,2)+'\n',`${messagePrefix} ${id}`,'');
   const newSha=out.file_sha;
