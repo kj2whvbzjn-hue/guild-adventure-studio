@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T01:39:27.571Z"
+    "updated_at": "2026-08-26T02:02:10.950Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-CORR-003 Equipment仕様整理 — 弓確定 / 盾・残Equipment未決",
-    "goal": "Human確定済みの弓+矢筒Combat Identityとtwo_hand分類撤回を正本として保持し、次に盾の防御Identityおよび残Equipment typeの未決仕様を整理して未確定0件にする。Source変更/Battle実行はTASK-BAL-071-CORR-003の別開始承認まで行わない。"
+    "theme": "TASK-BAL-071-CORR-003 Equipment仕様整理 — 弓・盾確定 / 残Equipment未決",
+    "goal": "Human確定済みの弓+矢筒Combat Identity、盾Block Identity、two_hand分類撤回を正本として保持し、残Equipment typeの未決仕様を情報源/戦闘ロジックから先に整理してHuman判断事項だけを残す。Source変更/Battle実行はTASK-BAL-071-CORR-003の別開始承認まで行わない。"
   },
   "project_rules": [
     {
@@ -497,6 +497,19 @@
       "updated_at": "2026-08-26T10:38:34+09:00",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-26 no-two-hand specification"
+    },
+    {
+      "id": "RULE-BAL-SHIELD-BLOCK-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Active",
+      "text": "盾のBase防御性能はBlockで表現する。初期BalanceはiLv1 Block Rate=20%、Block Rate成長=+2 percentage points / Item Level、Damage Cut Rate=30%。Block成功時はfinalDamageに割合Cutを適用してfloorし、その結果を既存SHIELD/Barrier→HP処理へ渡す。BlockRate(iLv)=20%+2pp×(iLv-1)、BlockedDamage=floor(finalDamage×(1-DamageCutRate))。Block RateとDamage Cut RateはBalance可変値。盾attack_count=0、盾のoffensive contributionは通常攻撃へ加算しない。未指定のCapや追加成長式をAIが推測追加しない。",
+      "rationale": "Human-approved Shield Block combat identity and initial Balance values.",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:00:58+09:00",
+      "created_at": "2026-08-26T11:00:58+09:00",
+      "updated_at": "2026-08-26T11:00:58+09:00",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-26 shield block specification"
     }
   ],
   "source_baseline": {
@@ -2478,6 +2491,18 @@
       "approved_at": "2026-08-26T10:38:34+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
       "updated_at": "2026-08-26T10:38:34+09:00"
+    },
+    {
+      "id": "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "盾のBase Combat IdentityとしてBlockを正式採用する。盾はBlock RateとBlock成功時Damage Cut Rateを持つ。初期Balance値はItem Level 1でBlock Rate=20%、Damage Cut Rate=30%。Block RateはItem Levelが1上昇するごとに+2 percentage pointsとし、BlockRate(iLv)=20%+2pp×(iLv-1) を初期Balance式とする。Damage Cut Rateは現時点30%を初期値とし、Item Level成長は指定しない。Block Rate / Damage Cut RateはいずれもBalance調整項目であり、Gameplay topologyとして固定値化しない。Block成功時は既存Damage pipelineで確定したfinalDamageから盾のDamage Cut Rateを割合減算し、BlockedDamage=floor(finalDamage×(1-DamageCutRate)) とする。初期30%ではBlockedDamage=floor(finalDamage×0.70)。その後、既存SHIELD/Barrier吸収処理が存在する場合はBlockedDamageを入力として処理し、残値をHPへ適用する。盾のattack_count=0および通常攻撃へのAttack/Accuracy/Critical非加算は既存Human Approved仕様を維持する。Block Rate上限、Damage Cut RateのItem Level成長、Block対象Damage種別の追加制約は本Decisionでは新設しない。",
+      "rationale": "Human instruction: 盾はブロック率を持つ。成功時は盾設定Damage Cut%をfinalDamageから割合減算。初期Block Rate 20%、Damage Cut 30%、Block RateはItem Levelごと+2pp、軽減後は切り捨て。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:00:58+09:00",
+      "created_at": "2026-08-26T11:00:58+09:00",
+      "updated_at": "2026-08-26T11:00:58+09:00"
     }
   ],
   "specifications": [
@@ -2750,26 +2775,27 @@
     },
     {
       "id": "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001",
-      "title": "Equipment Combat Identity — Bow/Quiver and Weapon Category",
+      "title": "Equipment Combat Identity — Bow/Quiver, Shield Block, Weapon Category",
       "status": "Approved",
-      "summary": "弓+矢筒の装備/使用条件、UI警告、attack_count、Contribution合成、Critical owner、射撃属性とRange owner境界、およびtwo_handカテゴリ不存在をHuman Approved仕様として確定。",
-      "body": "# Equipment Combat Identity — Bow / Quiver & Weapon Category Correction\n\n## Scope / status\nこのSpecificationはEquipment戦闘Identityのうち、Humanが確定した弓・矢筒およびtwo_hand分類撤回だけをCurrent Authorityとしてまとめる。\n盾の防御Identityやその他未決Equipment仕様はTASK-BAL-071-CORR-003で引き続き未決とする。\n\n## Terminology\n- 仕様選定中は「弓」と「大弓」を同一条件としてまとめて「弓」と呼ぶ。\n- これはProduct Master上の名称統合・種類削除を意味しない。\n- 「両手武器 / two_hand」というEquipment分類は存在しない。\n\n## Equip state / combat availability\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 使用可否はCombat側の条件であり、片側だけの状態をEquip Validationで不正として排除しない。\n\n## UI\n- 弓のみ: 「矢筒が装備されていません」。\n- 矢筒のみ: 「弓が装備されていません」。\n- 片側だけのときは、装備画面で不足している側の武器スロットを赤系警告状態等で明示する。\n- UIは「装備不可」と「セット条件未成立」を区別する。\n\n## Strike / contribution\n- Bow attack_count = 1.\n- Quiver attack_count = 0.\n- Quiverは独立Strike/Critical rollを発生させない。\n- セット成立時、Critical系以外のCombat ContributionはBow + Quiverを合算する。\n- Attack = Bow.Attack + Quiver.Attack.\n- Accuracy = Bow.Accuracy + Quiver.Accuracy.\n- magic_weapon_bonusその他Critical以外のContributionも同じ合算規則。\n- Critical/base_critical_rateは合算しない。Bow側だけを使用する。\n\n## Range ownership\n- 弓Equipmentが持つWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達等を決定・補正しない。\n- Range/Targetingは既存Skill/Battle ownerに従う。\n\n## Explicit exclusion\n- two_hand/両手武器カテゴリをLoadout/Requirement/attack_countの決定根拠にしない。\n- 大剣等の既存個別Requirement Ruleが必要な場合は、実武器種ownerへ再表現する。\n- 旧two_hand Source/TaskはHistorical implementationとしてのみ保持し、Current Authorityとして使用しない。\n\n## Remaining open Equipment specifications\n- 盾の防御Contribution owner / channel / coefficient/growth。\n- その他Weapon/Armor typeのdownstream combat identity棚卸し。\n- Current Sourceが本Specificationを表現できるかのConformance確認。\n",
+      "summary": "弓+矢筒の装備/使用条件、UI警告、attack_count、Contribution合成、Critical owner、射撃属性とRange owner境界、two_handカテゴリ不存在に加え、盾Base防御性能をBlock Rate + Block Damage CutとしてHuman Approved確定。",
+      "body": "# Equipment Combat Identity — Bow / Quiver / Shield Block / Weapon Category\n\n## Scope / status\nHumanが確定したEquipment Combat IdentityをCurrent Authorityとしてまとめる。\nこのRevisionでは弓・矢筒、盾Block、two_hand分類撤回を確定済みとする。\nその他Equipment typeの未決仕様はTASK-BAL-071-CORR-003で継続する。\n\n## Terminology / weapon category\n- 仕様選定中は「弓」と「大弓」を同一条件としてまとめて「弓」と呼ぶ。\n- Product Master上の名称統合・種類削除を意味しない。\n- 「両手武器 / two_hand」というEquipment分類は存在しない。\n- 個別武器種のRequirement/attack_countをtwo_handカテゴリから推定しない。\n\n## Bow / Quiver equip state and combat availability\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 使用可否はCombat側条件であり、片側だけの状態をEquip Validationで不正として排除しない。\n\n## Bow / Quiver UI\n- 弓のみ: 「矢筒が装備されていません」。\n- 矢筒のみ: 「弓が装備されていません」。\n- 片側だけのときは装備画面で不足している側の武器スロットを赤系警告状態等で明示する。\n- UIは「装備不可」と「セット条件未成立」を区別する。\n\n## Bow / Quiver strike and contribution\n- Bow attack_count = 1.\n- Quiver attack_count = 0.\n- Quiverは独立Strike/Critical rollを発生させない。\n- セット成立時、Critical系以外のCombat ContributionはBow + Quiverを合算する。\n- Attack = Bow.Attack + Quiver.Attack.\n- Accuracy = Bow.Accuracy + Quiver.Accuracy.\n- magic_weapon_bonusその他Critical以外のContributionも合算。\n- Critical/base_critical_rateは合算せずBow側だけを使用する。\n\n## Bow Range ownership\n- 弓Equipmentが持つWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達等を決定・補正しない。\n- Range/Targetingは既存Skill/Battle ownerに従う。\n\n## Shield offensive identity\n- Shield attack_count = 0.\n- Shieldは通常攻撃のAttack/Accuracy/CriticalへContributionしない。\n- Shieldは独立Strikeを発生させない。\n\n## Shield defensive identity — Block\n- ShieldはBlock Rateを持つ。\n- ShieldはBlock成功時Damage Cut Rateを持つ。\n- Initial Balance:\n  - Item Level 1 Block Rate = 20%.\n  - Block Rate growth = +2 percentage points / Item Level.\n  - Damage Cut Rate = 30%.\n- Initial Block formula:\n  BlockRate(iLv) = 20% + 2pp × (iLv - 1)\n- Block Rate / Damage Cut RateはいずれもBalance調整項目。\n- Damage Cut RateのItem Level成長は現時点では指定しない。\n- Block Rate上限は現時点では指定しない。\n\n## Shield Block damage processing\n- 既存Damage計算でfinalDamageを確定する。\n- Block判定に成功した場合、盾Damage Cut RateをfinalDamageへ割合適用する。\n- BlockedDamage = floor(finalDamage × (1 - DamageCutRate))\n- 初期30%では BlockedDamage = floor(finalDamage × 0.70)\n- 軽減後の小数は切り捨て。\n- 既存SHIELD/Barrier吸収がある場合はBlockedDamageを入力として処理し、その残値をHPへ適用する。\n- 処理順:\n  finalDamage → Shield Block判定 → 成功時割合Cut → floor → existing SHIELD/Barrier → HP\n\n## Explicit non-inference\n- Block Rate capをAIが追加しない。\n- Damage Cut RateのiLv成長式をAIが追加しない。\n- Block対象Damage種別に追加制約をAIが推測追加しない。\n- Source/Runtimeに本Contractが未実装の場合は、仕様を変更せずConformance Gapとして扱う。\n\n## Remaining Equipment work\n- その他Weapon/Armor typeのdownstream Combat Identity棚卸し。\n- Current Sourceが本Specificationを表現できるかのConformance確認。\n- 未実装の場合のSource変更はTASK-BAL-071-CORR-003のHuman開始承認後、Issue Gate/Source scopeに従う。\n",
       "decision_refs": [
         "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
         "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
-        "DEC-BAL-WEAPON-SHIELD-OFFENSE-001"
+        "DEC-BAL-WEAPON-SHIELD-OFFENSE-001",
+        "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001"
       ],
       "depends_on": [],
-      "acceptance_criteria": "- 弓/矢筒単体を合法Equip stateとして保持し、Combat availabilityだけをセット条件で制御する。\n- 不足理由メッセージ2種と装備画面警告を保持する。\n- Bow=1 strike / Quiver=0 strike、CriticalはBowのみ、その他Contributionは合算する。\n- EquipmentにRange ownershipを持たせない。\n- two_handカテゴリをCurrent Authorityから除外する。\n- Source/Runtime conformanceは別開始承認後に検証する。",
+      "acceptance_criteria": "- 弓/矢筒単体を合法Equip stateとして保持し、Combat availabilityだけをセット条件で制御する。\n- 不足理由メッセージ2種と装備画面警告を保持する。\n- Bow=1 strike / Quiver=0 strike、CriticalはBowのみ、その他Contributionは合算する。\n- EquipmentにRange ownershipを持たせない。\n- Shield=0 strike / offensive contribution非加算を維持する。\n- Shield Block初期値 iLv1=20%、+2pp/iLv、Damage Cut=30% をBalance値として保持する。\n- Block成功時は finalDamage に割合Cut→floor→existing SHIELD/Barrier→HP の順で処理する。\n- 未指定Cap/成長式/対象制約を推測追加しない。\n- two_handカテゴリをCurrent Authorityから除外する。\n- Source/Runtime conformanceは別開始承認後に検証する。",
       "system_node_id": "SYS-BAL-GAMEWIDE",
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "Human",
-      "approved_at": "2026-08-26T10:38:34+09:00",
+      "approved_at": "2026-08-26T11:00:58+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00"
+      "updated_at": "2026-08-26T11:00:58+09:00"
     }
   ],
   "specification_candidates": [],
@@ -12982,7 +13008,7 @@
         "TASK-BAL-071-CORR-002",
         "TASK-BAL-071-FIX-002"
       ],
-      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Decision Question: Monster/Skillへ渡す前に、各Equipment typeの戦闘Identity/Contributionは一意に定義されているか。\n- 全Weapon/Shield/Armor typeを棚卸しし、downstream performanceへ影響する未確定/Deferred項目を0件にする。\n- Current Authority: two_hand/両手武器カテゴリは存在しない。旧two_hand表現を新Referenceへ使用しない。\n- Current Authority: 仕様選定中は弓/大弓を同条件の『弓』として扱う。弓+矢筒でのみ弓通常攻撃/弓Skill使用可。\n- 弓/矢筒は単体装備可能。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。不足側武器スロットを警告表示する。\n- Bow attack_count=1 / Quiver attack_count=0。CriticalはBowのみ、Critical以外のCombat ContributionはBow+Quiver合算。\n- 弓EquipmentのWeapon属性は射撃。Range/射程/TargetingをEquipment仕様として設計しない。\n- 盾: 既確定のattack_count=0 / offensive contribution非加算を維持しつつ、防御Contributionのowner、対象Stat/channel、係数/growthを確定する。\n- その他Equipment typeについてRequirement、attack_count、Contribution owner、組合せ条件をEquipment Combat Identity Tableへ整理する。\n- 大剣STR×2等、旧two_handカテゴリに結び付いた個別Requirementは数値を勝手に廃止せず、正式な武器種ownerへ再表現できるか確認する。\n- Current Sourceに本Human Approved仕様の表現経路がない場合は推測実装せずIssue Gateとして記録する。\n- 完了時のみBare Player Referenceを再Freezeし、TASK-BAL-072-CORR-001へ渡す。\n- このTask登録/仕様登録自体はSimulation/Package/Source変更の承認ではない。",
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Decision Question: Monster/Skillへ渡す前に、各Equipment typeの戦闘Identity/Contributionは一意に定義されているか。\n- 全Weapon/Shield/Armor typeを棚卸しし、downstream performanceへ影響する未確定/Deferred項目を0件にする。\n- Current Authority: two_hand/両手武器カテゴリは存在しない。旧two_hand表現を新Referenceへ使用しない。\n- Current Authority: 仕様選定中は弓/大弓を同条件の『弓』として扱う。弓+矢筒でのみ弓通常攻撃/弓Skill使用可。\n- 弓/矢筒は単体装備可能。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。不足側武器スロットを警告表示する。\n- Bow attack_count=1 / Quiver attack_count=0。CriticalはBowのみ、Critical以外のCombat ContributionはBow+Quiver合算。\n- 弓EquipmentのWeapon属性は射撃。Range/射程/TargetingをEquipment仕様として設計しない。\n- Current Authority: Shield attack_count=0、通常攻撃へoffensive contribution非加算。\n- Current Authority: Shield Block iLv1=20%、+2pp/iLv、Damage Cut=30%。成功時 finalDamage×(1-cut) をfloorし、existing SHIELD/Barrier→HPへ渡す。\n- Shield Block Rate / Damage Cut RateはBalance可変。未指定のCap、Damage Cut成長式、対象Damage追加制約を推測しない。\n- その他Equipment typeについてRequirement、attack_count、Contribution owner、組合せ条件をEquipment Combat Identity Tableへ整理する。\n- 大剣STR×2等、旧two_handカテゴリに結び付いた個別Requirementは数値を勝手に廃止せず、正式な武器種ownerへ再表現できるか確認する。\n- Current Sourceに本Human Approved仕様の表現経路がない場合は推測実装せずIssue Gateとして記録する。\n- 完了時のみBare Player Referenceを再Freezeし、TASK-BAL-072-CORR-001へ渡す。\n- このTask登録/仕様登録自体はSimulation/Package/Source変更の承認ではない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12991,8 +13017,8 @@
         "at": ""
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00",
-      "result_scope": "PLAN REGISTERED ONLY / HUMAN SPEC PARTIALLY FIXED. Bow/Quiver combat identity and no-two-hand category are now Human Approved Authority via SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001. Shield defensive identity and remaining Equipment combat identities are still unresolved. Task execution approval remains Pending. No Source/Battle/Game Data change authorized.",
+      "updated_at": "2026-08-26T11:00:58+09:00",
+      "result_scope": "PLAN REGISTERED ONLY / HUMAN SPEC PARTIALLY FIXED. Bow/Quiver and Shield Block combat identities are Human Approved Authority via SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 2. Remaining Equipment type identities and Source/Runtime conformance are still unresolved. Task execution approval remains Pending. No Source/Battle/Game Data change authorized.",
       "confirmed_spec_refs": [
         "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001"
       ]
@@ -17534,6 +17560,29 @@
       "blocking": false,
       "created_at": "2026-08-26T10:38:34+09:00",
       "updated_at": "2026-08-26T10:38:34+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-SHIELD-BLOCK-SPEC-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-003",
+      "status": "Passed",
+      "result": "PASS / HUMAN SPEC CONFIRMED. Shield attack_count=0/offensive isolation retained. Base defense is Block: iLv1 20%, +2pp per iLv, 30% damage cut; successful block applies percentage cut to finalDamage then floor, before existing SHIELD/Barrier and HP.",
+      "evidence": "Human specification decision in current conversation; no standalone Evidence JSON generated.",
+      "checked_by": "HumanDecisionRegistration",
+      "checked_at": "2026-08-26T11:00:58+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-26T11:00:58+09:00",
+        "reason": "Human directly specified shield Block topology and initial Balance values.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T11:00:58+09:00",
+      "updated_at": "2026-08-26T11:00:58+09:00"
     }
   ],
   "workflow": {
@@ -18585,6 +18634,11 @@
       "at": "2026-08-26T10:38:34+09:00",
       "type": "BowQuiverEquipmentSpecificationRegistered",
       "summary": "Human Approved Equipment仕様を登録。two_hand/両手武器カテゴリをCurrent Authorityから撤回。仕様選定中はBow/Greatbowを『弓』として同条件扱い。Bow/Quiver単体Equipは合法だが弓攻撃/弓Skillは両方必須。不足理由UIと不足側slot警告、Bow attack_count=1、Quiver=0、CriticalはBowのみ、その他Contribution合算、Equipmentは射撃属性のみ所有しRangeを所有しない。TASK-BAL-071-CORR-003は未開始/Pendingのまま。"
+    },
+    {
+      "at": "2026-08-26T11:00:58+09:00",
+      "type": "ShieldBlockEquipmentSpecificationRegistered",
+      "summary": "Human Approved Shield Block仕様を登録。Shield attack_count=0/offensive contribution非加算を維持。iLv1 Block Rate=20%、+2pp/iLv、Damage Cut=30%。Block成功時はfinalDamageへ割合Cut後floorし、existing SHIELD/Barrier→HPの順。Block Rate/Damage CutはBalance可変。TASK-BAL-071-CORR-003は残Equipment整理とSource conformanceが未完のためTodo/Pendingを維持。"
     }
   ],
   "authority": {
