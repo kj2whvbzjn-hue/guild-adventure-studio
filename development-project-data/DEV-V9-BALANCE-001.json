@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T02:31:32.260Z"
+    "updated_at": "2026-08-26T02:48:31.904Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-CORR-003 Equipment仕様同期完了 — Human未決0 / Source Conformance待ち",
-    "goal": "DEV-V9-REORG-019のCurrent Equipment/Battle仕様とHuman確定事項をBalance正本へ同期済み。Equipmentについて追加Human判断が必要な構造未決は0件。次工程はCurrent GKS-B782のBow/Quiver・Block等のSource/Studio/Battle Package Conformance Gapを、別Human開始承認後に既存System reuse-firstで解消する。Simulation/Package実行、Source変更、GAME_DATA変更は未承認のまま行わない。"
+    "theme": "TASK-BAL-071-CORR-003 Source Conformance監査 — Issue Gate: Bow Skill requirement representation",
+    "goal": "Equipment gameplay semanticsは確定。GKS-B782静的監査でBow/QuiverとBlockのSource Conformance Gapをowner単位で確定した。ただしbow-required SkillをFormal Skill上で識別するSchema/Registry表現がCurrent Authorityに存在しないためIssue Gate停止中。Human/specificationがgeneric use-requirement contract方針を承認するまでSource修正、Package生成、Simulation、Bare Player再Freezeへ進まない。"
   },
   "project_rules": [
     {
@@ -1562,16 +1562,31 @@
     },
     {
       "id": "DISC-BAL-071-EQUIPMENT-CONFORMANCE-001",
-      "title": "Equipment Current Specification → GKS-B782 Conformance Gap",
+      "title": "Equipment Current Specification → GKS-B782 Conformance Audit",
       "status": "Open",
-      "summary": "Equipment Human仕様未決は0件。静的Source監査ではBow/Quiver専用セット処理とBlock実装がCurrent GKS-B782に未接続。両手持ち内部表現はカテゴリAuthorityと分離してConformance確認が必要。",
-      "body": "## Authority\n- DEV-V9-REORG-019: EQUIP-001/002/003/004, BATTLE-001/003, STATUS-002, RANGE-001, INVENTORY-UI-001\n- DEV-V9-BALANCE-001: SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 3\n\n## Static GKS-B782 observations\n1. Bow/Quiver専用のセット成立・片側Action拒否理由・専用Contribution合算がSource上確認できない。二本の非盾Weaponは既存dual_wield判定へ入る。\n2. Equipment Consumerにblock_rate / block_damage_cut_rateがなく、Basic AttackのfinalDamageは既存SHIELD(BARRIER)へ直接渡される。Formal Skill/Studio Battle Packageを含むBlock接続も未確認。\n3. Source内部にweaponStyle='two_hand'等がある。Current仕様では両手持ちは装備ルールであって『両手武器カテゴリ』ではないため、内部表現がこの境界を破っていないかをConformance Taskで確認する。\n\n## Boundary\nこれは仕様再質問ではなくImplementation Conformance。Source変更・Package生成・Simulationは別Human開始承認まで行わない。",
-      "open_questions": "",
-      "conclusion": "Human gameplay-structure decisionは不要。次の実行対象は既存System reuse-firstのSource/Studio/Battle Package Conformance確認・修正。TASK-BAL-071-CORR-003 approvalはPendingのまま。",
+      "summary": "Human-approved static audit completed. Bow/Quiver and Block have concrete owner-level implementation gaps. Internal two_hand is a loadout state and not itself a category violation. A blocking Formal Skill schema gap prevents authoritative identification of bow-required Skills.",
+      "body": "## Audit authorization / boundary\n\nHuman start approval: `2026-08-26T11:32:00+09:00`\n\nTask: `TASK-BAL-071-CORR-003`\nWork type: `DEVELOPMENT_ONLY`\n\nAllowed in this run:\n- Read Current Specification / Current source.\n- Identify owner-level conformance gaps.\n- Update Development Project JSON.\n\nNot executed:\n- Source edit\n- Studio update ZIP generation\n- Battle Package generation/execution\n- Simulation\n- Human real-device request\n- GAME_DATA / Current active change\n\nCurrent source:\n- Studio: `GKS-B782`\n- Game: `GA-B486.211`\n- ZIP: `guild-adventure-studio-sub(20260825-213025).zip`\n- ZIP SHA-256: `02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728`\n\n## Conformance matrix\n\n### 1. Equipment Generator — FAIL / Block\nOwners:\n- `studio/equipment/equipment-balance-config.json`\n- `studio/equipment/equipment-generation-rules.json`\n- `studio/equipment/equipment-generator.js`\n\nCurrent:\n- Weapon performance supports attack / accuracy / magic_weapon_bonus / base_critical_rate.\n- `block_rate` / `block_damage_cut_rate` are absent from Balance Config, generated record, validation, AI forbidden numeric list, and Generator UI/config controls.\n\nRequired:\n- Shield BaseItem carries `block_rate` / `block_damage_cut_rate`.\n- Current initial Balance seed: iLv1 20%, +2pp/iLv, cut 30%.\n- Values remain Balance Data, not code-fixed gameplay constants.\n\nRepair owner:\n- Existing Equipment Generator only. Do not create a second generator.\n\n### 2. Equipment Data Exchange — FAIL / Block field registration\nOwners:\n- `studio/data-exchange/data-exchange-core.js`\n- `studio/data-exchange/schemas/equipment-dataset.schema.json`\n\nCurrent:\n- Equipment safe top-level field registry does not list the two Block fields.\n- Dataset schema does not define them.\n- Unknown incoming fields can therefore fail the formal import path even though some downstream JSON schemas allow additional properties.\n\nRequired:\n- Register both Block fields through the existing formal Equipment Data Exchange path.\n\n### 3. Formal Equipment Contribution — FAIL / Block\nOwner:\n- `assets/shared/js/formal-contribution-resolver.js`\n\nCurrent:\n- `EQUIPMENT_FIELDS` has attack / accuracy / magic_weapon_bonus / base_critical_rate / hp_bonus / mp_bonus / evasion only.\n- Block fields are neither validated nor preserved into formal Contribution.\n\nRequired:\n- Preserve formal Block contribution from the valid equipped Shield owner.\n- Do not invent arbitrary multi-shield Block stacking.\n\n### 4. Game Equipment / Bow+Quiver — FAIL\nOwner:\n- `game/assets/js/app-runtime.js`\n\nCurrent:\n- Any two different non-shield weapons are interpreted as `dual_wield` and require DUAL_WIELD.\n- Bow and Quiver have no dedicated role helpers/set state.\n- Bow+Quiver can therefore be rejected for no Dual Wield Passive or treated as two-strike dual wield.\n- Equipment aggregation adds Critical from all equipped weapons in generic paths.\n- Exact Bow-only / Quiver-only warning messages and missing-slot warning are absent.\n\nRequired:\n- Bow+Quiver remains legal as a dedicated set independent of DUAL_WIELD.\n- Bow 1 Strike / Quiver 0 Strike.\n- Critical from Bow only; other ordinary contributions summed.\n- Bow-only/Quiver-only equip remains legal but Bow action unavailable with exact reason text.\n\n### 5. Game Runtime Block — FAIL\nOwners:\n- `game/assets/js/app-runtime.js`\n- `game/assets/js/battle-control.js`\n- `game/assets/js/tag-skill-runtime.js`\n\nCurrent:\n- Unit snapshot/battle values do not transport Block fields.\n- Basic Attack resolves `finalDamage` then directly consumes existing SHIELD(BARRIER).\n- Formal direct Skill damage does the same.\n- DOT directly consumes SHIELD(BARRIER).\n\nRequired:\n- Direct Basic/Skill Physical/Magical: finalDamage -> Block roll -> successful Block cut -> floor -> SHIELD(BARRIER) -> HP.\n- Multi-hit: independent Block per hit.\n- Miss: no Block.\n- DOT: retain no Block and continue to SHIELD(BARRIER).\n\n### 6. Studio Formal Battle / Battle Package executor — FAIL\nOwner:\n- `studio/index.html`\n\nCurrent:\n- Formal layout supports single / dual_wield / two_hand / weapon_shield only.\n- No Bow+Quiver dedicated set resolution.\n- No Block fields in normalized formal combatant.\n- Formal Basic Attack/Skill damage goes finalDamage -> SHIELD(BARRIER) directly.\n- DOT goes directly to SHIELD(BARRIER), which is the correct branch to preserve for DOT.\n- Result trace has SHIELD absorption but no Block decision/outcome fields.\n\nRequired:\n- Mirror Game semantics for Bow+Quiver and Block.\n- Result trace/evidence must expose enough Block decision/outcome data to verify Human real-device/replay conformance.\n- Reuse existing Battle Package executor; no duplicate simulator.\n\n### 7. Battle Package envelope — REUSE / no new package format required\nOwner:\n- `assets/shared/js/battle-package-formal-envelope.js`\n\nCurrent:\n- Equipment Candidate data is transported through existing typed Candidate/envelope infrastructure.\n- Semantic validation is delegated to formal Equipment contribution/Studio executor.\n\nAssessment:\n- No separate package format is needed.\n- Extend existing formal Equipment validation/execution owners after Schema Issue Gate is resolved.\n\n### 8. `two_hand` internal state — PASS as loadout state\nOwners:\n- `game/assets/js/app-runtime.js`\n- `studio/index.html`\n\nCurrent:\n- `two_hand` is used as a character/formal weapon-layout state.\n- It represents one weapon / one strike and STR Requirement relief.\n- Static audit did not find it used as a BaseItem type or weapon coefficient category.\n\nAssessment:\n- Internal state label is compatible with “no two-hand weapon category” so long as it remains a loadout rule.\n- Legacy same-ID inference is compatibility behavior, not Equipment authority.\n\n## Blocking Issue Gate\n\nEquipment authority says:\n- Bow Basic Attack and **bow-required Skills** require Bow+Quiver.\n\nTag authority says:\n- Formal Skill may reference Tag IDs conceptually.\n- Known equipment Tag baseline includes `WEAPON_BOW`, `WEAPON_GREATBOW`, `EQUIP_QUIVER`.\n\nBut Formal Skill authority `SPEC-V9-019-SKILL-001` defines authoring fields only as:\n`schemaVersion / id / name / skillLevel / trigger / conditions / target / effects / resource`\n\nIt also explicitly says:\n- Unknown Field must not be added ad hoc.\n- Schema/Registry update comes first.\n\nGKS-B782 `assets/shared/js/skill-schema.js` mirrors that exact root and has no Equipment-use requirement field.\nGKS-B782 `actionExecutionEligibility()` checks action-disabled/cost/cooldown lifecycle but does not inspect Equipment.\n\nTherefore:\n**Current Formal Skill data has no authoritative representation that identifies which Skill is “bow-required”.**\n\nThis cannot be repaired by:\n- Skill name matching\n- Job matching\n- damage type guessing\n- legacy `tags` fallback\n- hard-coded Skill IDs\n\nThose would invent authority.\n\nRequired next decision:\n- Define a generic Formal Skill use-requirement contract in the existing Skill Schema/Registry that can reference formal Equipment/Tag conditions.\n- Bow/Quiver then becomes the first consumer of that generic contract.\n- Exact field/schema design must be approved by the Specification owner before Source repair.\n\nPer `RULE-BAL-ISSUE-GATE-001`, this run stops here.\n",
+      "open_questions": "Formal Skill Schema/Registryへ、Equipment/Tagを参照できるgeneric use-requirement contractを追加する方針を承認するか。具体field名やshapeは承認後のSpecification correction Taskで既存Schema/Registry構造に合わせて定義する。",
+      "conclusion": "TASK-BAL-071-CORR-003 static audit is complete but Blocked by Issue Gate. Do not start Source repair until the Formal Skill use-requirement representation is approved. After that decision, perform one separately approved SOURCE_UPDATE task to align existing Generator/Data Exchange/Contribution/Game/Studio/Battle Package owners without duplicate systems.",
       "related_discussion_ids": [],
-      "artifact_note": "Management JSON static audit only; no update ZIP / no Evidence JSON.",
-      "created_at": "2026-08-26T11:28:04+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00"
+      "artifact_note": "Development Project JSON only. No Source update ZIP. No Evidence JSON. No Battle Package/Simulation.",
+      "created_at": "2026-08-26T11:45:30+09:00",
+      "updated_at": "2026-08-26T11:45:30+09:00"
+    },
+    {
+      "id": "DISC-BAL-071-BOW-SKILL-REQUIREMENT-GAP-001",
+      "title": "Bow-required Skill Formal representation Issue Gate",
+      "status": "Open",
+      "summary": "Bow+Quiver requirement for bow-required Skills is approved gameplay semantics, but Current Formal Skill schema/runtime cannot represent which Skill has that requirement.",
+      "body": "## Conflict\n- Equipment: bow-required Skills require Bow+Quiver.\n- TAG: Formal Skill can conceptually reference Tag IDs; WEAPON_BOW/WEAPON_GREATBOW/EQUIP_QUIVER exist in V9 baseline.\n- SKILL-001: Formal authoring root has no tag/equipment-use-requirement field and forbids ad-hoc Unknown Fields.\n- GKS-B782 skill-schema.js mirrors this shape.\n- GKS-B782 actionExecutionEligibility() has no Equipment condition input.\n\n## Impact\nBow Basic Attack and UI can be specified completely, but bow-required Skill gating cannot be implemented authoritatively. Guessing from names, Job, damage type, or legacy tags is prohibited.\n\n## Repair candidates\nA. Extend the existing Formal Skill Schema/Registry with a generic use-requirement contract that references formal Equipment/Tag conditions. Bow/Quiver uses that general contract.\nB. Add a bow-specific Skill field. This is narrower but creates weapon-specific schema coupling and is not recommended as the default.\n\nRecommended direction: A, because it reuses existing Tag/Registry ownership and can support future Equipment-gated Skills without one-off fields. This recommendation is not an approval and no schema was changed.",
+      "open_questions": "Generic Formal Skill use-requirement contract (Equipment/Tag condition reference) を採用するか。",
+      "conclusion": "Issue Gate open. Human/specification approval is required before any Source correction.",
+      "related_discussion_ids": [
+        "DISC-BAL-071-EQUIPMENT-CONFORMANCE-001"
+      ],
+      "artifact_note": "Specification representation gap only; no implementation performed.",
+      "created_at": "2026-08-26T11:45:30+09:00",
+      "updated_at": "2026-08-26T11:45:30+09:00"
     }
   ],
   "decisions": [
@@ -5378,6 +5393,47 @@
       "source": "P4HumanRealDeviceDiagnostic",
       "created_at": "2026-08-24T11:40:00+09:00",
       "updated_at": "2026-08-24T11:44:00+09:00"
+    },
+    {
+      "id": "IMPACT-BAL-071-EQUIPMENT-CONFORMANCE-001",
+      "title": "GKS-B782 Equipment conformance owner impact",
+      "status": "Open",
+      "source_id": "TASK-BAL-071-CORR-003",
+      "summary": "Bow/Quiver and Block require existing owner updates after Issue Gate resolution. No duplicate subsystem is required.",
+      "affected_owners": [
+        "studio/equipment/equipment-balance-config.json",
+        "studio/equipment/equipment-generation-rules.json",
+        "studio/equipment/equipment-generator.js",
+        "studio/data-exchange/data-exchange-core.js",
+        "studio/data-exchange/schemas/equipment-dataset.schema.json",
+        "assets/shared/js/formal-contribution-resolver.js",
+        "assets/shared/js/skill-schema.js",
+        "game/assets/js/app-runtime.js",
+        "game/assets/js/battle-control.js",
+        "game/assets/js/tag-skill-runtime.js",
+        "studio/index.html",
+        "assets/shared/js/battle-package-formal-envelope.js"
+      ],
+      "source_file_sha256": {
+        "studio/equipment/equipment-balance-config.json": "d796a295e3019296e168d44dc2a5d3df2699dd27c1b486b6fa7a43cd1209feb3",
+        "studio/equipment/equipment-generation-rules.json": "0122b4f10742ad8b16a160591861a72b36e1b0a5f4ed3f322725e5e940a2b03c",
+        "studio/equipment/equipment-generator.js": "12761778ad7da1b94f4be323af2f71e756717c6a6ef5a086cde4bc722ab312e0",
+        "studio/data-exchange/data-exchange-core.js": "7704d8a4debc57a82a06aab5955768ea51c78f2dba815460d19255118a1bd609",
+        "studio/data-exchange/schemas/equipment-dataset.schema.json": "227de886a475b707324623173a4645eae4893b50d426502913212aed08ec20d6",
+        "assets/shared/js/formal-contribution-resolver.js": "f4b99c349c6261bc86bd89ba4b92ab04e034880f7a15f08747ce7ebe645dd3dc",
+        "assets/shared/js/skill-schema.js": "03fc7fe170025b321ec2e390f47d22050a68eb58c848de8e22766fcad3ae9fb6",
+        "game/assets/js/app-runtime.js": "7ec320114d14c13f4157886ff5be86698c6dcdaeda2436ed8f328441df29eb45",
+        "game/assets/js/battle-control.js": "f611daba0ca918bded54996a3ebd7ea3f4679dd85ab99248b1bb0a801cf68b5c",
+        "game/assets/js/tag-skill-runtime.js": "19cd2a8c82ea1820ecb7851a48dbfd402ab87e6582e119790776a682ce8e9430",
+        "studio/index.html": "04933bb173e566b0198dbc011fd32f258e8ad5e3059cbd90d22b275864753f67",
+        "assets/shared/js/battle-package-formal-envelope.js": "8fa3fde6a6d2848019512731534020f7c4c62856894601fd9aaf4f9e45b1f805"
+      },
+      "source_zip": "guild-adventure-studio-sub(20260825-213025).zip",
+      "source_zip_sha256": "02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728",
+      "studio_build": "GKS-B782",
+      "game_build": "GA-B486.211",
+      "created_at": "2026-08-26T11:45:30+09:00",
+      "updated_at": "2026-08-26T11:45:30+09:00"
     }
   ],
   "architecture_nodes": [
@@ -13055,23 +13111,23 @@
       "id": "TASK-BAL-071-CORR-003",
       "box_id": "BOX-V9-BAL-PLAYER-001",
       "title": "R5-P4 Equipment戦闘Identity / 盾・弓等未確定仕様を完成する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 250,
       "depends_on": [
         "TASK-BAL-071-CORR-002",
         "TASK-BAL-071-FIX-002"
       ],
-      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Equipment Human Decision Gap Auditは完了済み: 追加構造未決=0件。\n- Current AuthorityはSPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 3。\n- 『両手武器カテゴリ』は使用しない。両手持ちは独立装備ルールとして扱う。\n- Bow/Quiverの装備成立、UI、Strike、Contribution、Range owner境界をCurrent Authorityどおり扱う。\n- Blockはblock_rate / block_damage_cut_rateを使用し、Direct Physical/MagicalにHit単位で判定する。\n- Miss/DOTはBlock対象外。Block Damage Cut後にfloorし、その後existing SHIELD(BARRIER)へ渡す。\n- Armor/Accessory/その他Weaponの既存Specification事項を再質問せず、Source Conformanceだけを確認する。\n- GKS-B782との差分はBow/Quiver、Block、両手持ち実装表現を中心にConformance Gapとして確認する。\n- Current Sourceに表現経路がない場合は推測実装せずIssue Gate/承認済みSource scopeに従う。\n- Source Conformance修正完了後にBare Player Reference再Freeze可否を判定し、TASK-BAL-072-CORR-001へ渡す。\n- この管理JSON同期/静的監査自体はSimulation/Package/Source変更の承認ではない。",
+      "acceptance_criteria": "- Human start approval: PASS (2026-08-26T11:32+09:00).\n- Equipment gameplay semantics audit: PASS; additional Equipment gameplay choice=0.\n- GKS-B782 Source owner audit: COMPLETE for Equipment Generator/Data Exchange/Contribution/Game equip+UI/Game Battle/Formal Skill eligibility/Studio Formal Battle/Battle Package envelope.\n- Bow/Quiver Basic Attack/equip/UI conformance: FAIL; implementation paths are missing or conflict with dual_wield handling.\n- Block conformance: FAIL; block_rate / block_damage_cut_rate are not transported or executed.\n- two_hand terminology audit: PASS for current state representation; Source uses it as a loadout/hold state, not as BaseItem category authority.\n- Bow-required Skill action gating: BLOCKED by Formal Skill representation/schema gap. No marker/contract currently identifies which Skill requires Bow.\n- Unknown Formal Skill field must not be invented; Schema/Registry owner decision is required before Source repair.\n- No Simulation/Package/Source/Game Data execution in this Task.\n- Bare Player re-Freeze and TASK-BAL-072-CORR-001 handoff remain blocked until the Issue Gate and subsequent Source conformance task are resolved.",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-26T11:32:00+09:00"
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00",
-      "result_scope": "SPEC SYNC COMPLETE / HUMAN DECISION GAPS=0. SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 3 is the Balance handoff authority synchronized with DEV-V9-REORG-019. Static GKS-B782 audit identifies implementation conformance gaps for Bow/Quiver and Block, plus a two-hand-hold representation check. TASK execution approval remains Pending; no Source/Battle/Game Data change authorized.",
+      "updated_at": "2026-08-26T11:45:30+09:00",
+      "result_scope": "DEVELOPMENT_ONLY STATIC CONFORMANCE AUDIT EXECUTED / ISSUE GATE. Human approved TASK-BAL-071-CORR-003 start at 2026-08-26T11:32+09:00. GKS-B782 was inspected without Source edit, Battle Package generation, Simulation, or Game Data change. Confirmed implementation gaps: (1) Bow/Quiver set equip/action/contribution/UI is not represented by current Game/Studio paths; (2) block_rate / block_damage_cut_rate are absent from Equipment Generator/Data Exchange/Formal Contribution/Game Runtime/Studio Formal Battle/Result trace; (3) internal two_hand is currently a loadout state and is not by itself a forbidden Equipment category. A new blocking specification/schema gap was found: Current Formal Skill schema has no representation that identifies a bow-required Skill, while Current Equipment authority requires such Skills to be unavailable unless Bow+Quiver are both equipped. Per RULE-BAL-ISSUE-GATE-001, no repair was started in this run.",
       "confirmed_spec_refs": [
         "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001"
       ]
@@ -17644,7 +17700,7 @@
       "target_type": "Task",
       "target_id": "TASK-BAL-071-CORR-003",
       "status": "Passed",
-      "result": "PASS / SPEC AUDIT. DEV-V9-REORG-019 Current Equipment/Battle authority and existing Human Approved Balance decisions were cross-checked. Additional Human gameplay-structure questions for Equipment = 0. Remaining items are implementation/source conformance, not specification decisions.",
+      "result": "PASS / EQUIPMENT GAMEPLAY SEMANTICS AUDIT. Existing REORG authority and Human decisions answer the remaining Equipment gameplay-structure questions. Additional Equipment gameplay choice = 0. This does not certify Formal Skill schema/source conformance; representation gaps found by Source audit are separate Issue Gates.",
       "evidence": "Authority sync + static GKS-B782 source audit. No standalone Evidence JSON generated.",
       "checked_by": "AuthoritySyncStaticAudit",
       "checked_at": "2026-08-26T11:28:04+09:00",
@@ -17658,7 +17714,76 @@
       },
       "blocking": false,
       "created_at": "2026-08-26T11:28:04+09:00",
-      "updated_at": "2026-08-26T11:28:04+09:00"
+      "updated_at": "2026-08-26T11:45:30+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-EQUIPMENT-SOURCE-CONFORMANCE-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-003",
+      "status": "Failed",
+      "result": "FAIL / GKS-B782 SOURCE CONFORMANCE. Bow/Quiver set semantics and Block are not implemented through all required owners. Generator/Data Exchange/Formal Contribution/Game Runtime/Studio Formal Battle lack block fields/execution. Game equip logic treats two non-shield weapons as dual_wield, so Bow+Quiver conflicts with the approved dedicated set semantics. No Source change was made.",
+      "evidence": "Static source audit only. Current source ZIP sha256=02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728; Studio GKS-B782 / Game GA-B486.211. No standalone Evidence JSON retained under RULE-BAL-EVIDENCE-RETENTION-001.",
+      "checked_by": "StaticSourceAudit",
+      "checked_at": "2026-08-26T11:45:30+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T11:45:30+09:00",
+      "updated_at": "2026-08-26T11:45:30+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-BOW-SKILL-REQUIREMENT-CONTRACT-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-003",
+      "status": "Failed",
+      "result": "FAIL / BLOCKING SPECIFICATION REPRESENTATION GAP. Equipment authority requires bow-required Skills to be unusable unless Bow+Quiver are both equipped. Current Formal Skill authoring schema contains only schemaVersion/id/name/skillLevel/trigger/conditions/target/effects/resource and explicitly forbids ad-hoc Unknown Fields. Current skill-schema.js likewise has no Equipment/weapon/tag-use requirement field, and actionExecutionEligibility() does not inspect Equipment. Therefore Current Formal data cannot identify which Skill is bow-required without a Schema/Registry decision.",
+      "evidence": "DEV-V9-REORG-019 SPEC-V9-019-EQUIP-001/004 and SPEC-V9-019-SKILL-001/TAG-001/TAG-002; GKS-B782 assets/shared/js/skill-schema.js sha256=03fc7fe170025b321ec2e390f47d22050a68eb58c848de8e22766fcad3ae9fb6; game/assets/js/tag-skill-runtime.js sha256=19cd2a8c82ea1820ecb7851a48dbfd402ab87e6582e119790776a682ce8e9430",
+      "checked_by": "StaticSourceAndSpecificationAudit",
+      "checked_at": "2026-08-26T11:45:30+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T11:45:30+09:00",
+      "updated_at": "2026-08-26T11:45:30+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-TWO-HAND-STATE-CONFORMANCE-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-003",
+      "status": "Passed",
+      "result": "PASS / TERMINOLOGY BOUNDARY. GKS-B782 uses `two_hand` as Character/Formal weapon layout state for the existing two-hand hold rule: one weapon, one strike, STR Requirement relief only. Static audit did not find it used as a BaseItem weapon category or weapon coefficient owner. The internal state label therefore is not itself a Current Specification violation. Legacy same-ID inference remains implementation compatibility behavior and must not be promoted to Equipment category authority.",
+      "evidence": "GKS-B782 game/assets/js/app-runtime.js sha256=7ec320114d14c13f4157886ff5be86698c6dcdaeda2436ed8f328441df29eb45; studio/index.html sha256=04933bb173e566b0198dbc011fd32f258e8ad5e3059cbd90d22b275864753f67",
+      "checked_by": "StaticSourceAudit",
+      "checked_at": "2026-08-26T11:45:30+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "StaticSourceAudit",
+        "resolved_at": "2026-08-26T11:45:30+09:00",
+        "reason": "Current source use is loadout-state representation, not Equipment category authority.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T11:45:30+09:00",
+      "updated_at": "2026-08-26T11:45:30+09:00"
     }
   ],
   "workflow": {
@@ -18720,6 +18845,16 @@
       "at": "2026-08-26T11:28:04+09:00",
       "type": "EquipmentAuthoritySyncAndGapAudit",
       "summary": "DEV-V9-REORG-019 final Equipment/Battle authorityをBalance管理JSONへ同期。Block fieldをblock_rate / block_damage_cut_rateへ統一し、direct Physical/Magical、per-hit、Miss除外、DOT除外、finalDamage→Block→floor→SHIELD(BARRIER)→HPを登録。両手武器カテゴリ不存在と両手持ち装備ルールを分離して訂正。Equipment追加Human構造未決=0件をCHK-BAL-071-EQUIPMENT-HUMAN-GAPS-001で確認。GKS-B782のBow/Quiver・Block等はSource Conformance GapとしてDISC-BAL-071-EQUIPMENT-CONFORMANCE-001へ分離。Source/Battle/Game Data変更なし。"
+    },
+    {
+      "at": "2026-08-26T11:45:30+09:00",
+      "type": "TaskExecutionStarted",
+      "summary": "Human explicitly approved TASK-BAL-071-CORR-003 DEVELOPMENT_ONLY static Source Conformance audit at 2026-08-26T11:32:00+09:00. No Source/Package/Simulation/Game Data execution authorized."
+    },
+    {
+      "at": "2026-08-26T11:45:30+09:00",
+      "type": "EquipmentSourceConformanceIssueGate",
+      "summary": "GKS-B782 static conformance audit completed. Bow/Quiver dedicated set semantics and Block are missing across existing owners. Internal two_hand is confirmed as loadout-state representation, not a BaseItem category violation. New blocking gap: Formal Skill schema cannot represent which Skill is bow-required; SKILL-001 forbids ad-hoc unknown fields. TASK-BAL-071-CORR-003 stopped at Issue Gate with no Source edit."
     }
   ],
   "authority": {
