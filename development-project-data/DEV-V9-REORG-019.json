@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T02:53:07.010Z"
+    "updated_at": "2026-08-26T07:43:27.143Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -1917,7 +1917,7 @@
       "title": "Balance Baseline管理仕様",
       "status": "Draft",
       "summary": "V9具体値を消さず、Current固定値と可変Baselineを区別する。",
-      "body": "# 1. 方針\n\nBalance値は仕様から削除せず、\n`固定構造 / Current active / Human Approved seed / V9 Baseline / Candidate / Deferred`\nの状態を持たせる。\n\n# 2. V9 Baselineの主要値\n\n## Enemy\n- Enemy Budget = EnemyLv（V9 Baseline）\n- Attack 30%\n- Durability 30%\n- Skill 20%\n- Special 10%\n- AI 10%\n- Elite 150%\n- Champion 200%\n- Boss 300%\n- Raid 1000%\n- Mythic 2000%\n\n後発Enemy Budget正式版ではHP / Attack Performance / Defense Performance / Skill / AI / Utilityへ構造が整理され、\n具体配分値はBalance分離されている。\n上記配分率はCurrent固定値ではなくV9 Baselineとして保持する。\n\n## Stack / Resistance\n- 1 Stack = 5%（V9 Baseline）\n- Max 20 Stack（V9 Baseline）\n- 最大100%（V9 Baseline）\n- Status Resistance cap = 75%\n- Element Resistance cap = 75%\n\n## MP / Battle end\n- Active turn MP自然回復 +3（V9 Baseline）\n- Battle終了時HP全回復（V9 Baseline）\n- Battle終了時MPは全回復しない（V9 Baseline）\n\n## Rarity\n具体値は `SPEC-V9-019-RARITY-001` を正本とする。\n\n# 3. 実装\n\nBalance値をRuntimeロジックへ直書きしない。\nConfig/CSV/JSON等で変更可能にする。\nSnapshotが必要なSystemは、Run開始/生成時の値を保存する。\n\n---\n\n## 根拠・統合元\nBOX-R7-003 バランス調整指針 / Human Approved Balance decisions\n\n---\n\n## R25 Player Presentation / UI 可変値境界\n\n以下はCurrent Structureでは固定値にせず、Balance / Presentation Configとして可変管理する。\n\n- Battle Effect duration\n- Screen Shake intensity / duration\n- Camera Zoom量 / Focus時間\n- Flash duration / intensity\n- BGM / SE default volume\n- BGM fade duration\n- Battle playback speed option\n- Skill Loadout slot count\n- UI animation duration\n- 高Rarity売却/破棄警告の対象閾値\n- Responsive breakpoint / spacing等の表示調整値\n\nこれらの具体値をSpecification本文へ固定しない。\n一方、機能の有無、再計算禁止、Playerへ公開する設定項目、対応Device範囲等はCurrent Ruleとして固定する。\n",
+      "body": "# 1. 方針\n\nBalance値は仕様から削除せず、\n`固定構造 / Current active / Human Approved seed / V9 Baseline / Candidate / Deferred`\nの状態を持たせる。\n\n# 2. V9 Baselineの主要値\n\n## Enemy / Monster Budget\n- Enemy Budget = EnemyLv（V9 Baseline）\n- Attack 30%\n- Durability 30%\n- Skill 20%\n- Special 10%\n- AI 10%\n- Elite 150%\n- Champion 200%\n- Boss 300%\n- Raid 1000%\n- Mythic 2000%\n\n上記はHistorical / V9 Balance Baselineとしてのみ保持し、Current Monster Budgetの構造・配分式には使用しない。\n\nCurrent正式契約は `SPEC-V9-019-ENEMY-001` を正本とする。\nCurrentではQuestの `base_enemy_budget` にStoneの `stone_budget_delta` を加算して `effective_enemy_budget` を確定し、\nMonsterの `enemy_budget_cost`、`weight` / `spawn_weight`、Seed / Resolverと組み合わせてFormationを生成する。\nHP / Attack / Defense / Skill / AI / Utilityへの6カテゴリ配分はCurrent Monster Budget仕様として要求しない。\n\n## Stack / Resistance\n- 1 Stack = 5%（V9 Baseline）\n- Max 20 Stack（V9 Baseline）\n- 最大100%（V9 Baseline）\n- Status Resistance cap = 75%\n- Element Resistance cap = 75%\n\n## MP / Battle end\n- Active turn MP自然回復 +3（V9 Baseline）\n- Battle終了時HP全回復（V9 Baseline）\n- Battle終了時MPは全回復しない（V9 Baseline）\n\n## Rarity\n具体値は `SPEC-V9-019-RARITY-001` を正本とする。\n\n# 3. 実装\n\nBalance値をRuntimeロジックへ直書きしない。\nConfig/CSV/JSON等で変更可能にする。\nSnapshotが必要なSystemは、Run開始/生成時の値を保存する。\n\n---\n\n## 根拠・統合元\nBOX-R7-003 バランス調整指針 / Human Approved Balance decisions\n\n---\n\n## R25 Player Presentation / UI 可変値境界\n\n以下はCurrent Structureでは固定値にせず、Balance / Presentation Configとして可変管理する。\n\n- Battle Effect duration\n- Screen Shake intensity / duration\n- Camera Zoom量 / Focus時間\n- Flash duration / intensity\n- BGM / SE default volume\n- BGM fade duration\n- Battle playback speed option\n- Skill Loadout slot count\n- UI animation duration\n- 高Rarity売却/破棄警告の対象閾値\n- Responsive breakpoint / spacing等の表示調整値\n\nこれらの具体値をSpecification本文へ固定しない。\n一方、機能の有無、再計算禁止、Playerへ公開する設定項目、対応Device範囲等はCurrent Ruleとして固定する。\n",
       "decision_refs": [
         "DEC-V9-MOD-002",
         "DEC-V9-MOD-005",
@@ -1936,11 +1936,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T20:54:00+09:00"
+      "updated_at": "2026-08-26T16:41:00+09:00"
     },
     {
       "id": "SPEC-V9-019-CHAR-001",
@@ -2766,15 +2766,15 @@
     },
     {
       "id": "SPEC-V9-019-ENEMY-001",
-      "title": "Enemy Budget Structure / Balance Boundary",
-      "status": "Draft",
-      "summary": "Enemy Budgetの6責務とV9 Baseline。",
-      "body": "# 正式採用\n\n# Enemy Budget設計書（正式版 Version 1.0）\n\n## 1. 目的\nEnemy Budgetは、敵ユニットの総合的な強さを複数の責務へ配分するための共通設計である。\n\n## 2. Budget分類\n- HP Budget\n- Attack Performance Budget\n- Defense Performance Budget\n- Skill Budget\n- AI Budget\n- Utility Budget\n\n## 3. 各Budgetの責務\n\n### HP Budget\n耐久力へ配分する。\n\n### Attack Performance Budget\n攻撃性能へ配分する。\n\n### Defense Performance Budget\n防御性能（軽減・耐性・回避・防御系タグ等）へ配分する。\n\n### Skill Budget\nスキル性能・RANGE・追加効果へ配分する。\n\n### AI Budget\nAIルール構成、条件表現、対象選択、行動選択などへ配分する。\n\n### Utility Budget\n移動、支援、召喚、特殊能力などへ配分する。\n\n## 4. Budget配分フロー\nEnemy総Budget\n↓\nカテゴリ配分\n↓\n各システムへ反映\n↓\n戦闘計算・AI・スキルで利用\n\n## 5. 他システムとの関係\n- 戦闘計算：各Budgetを参照\n- AI：AI Budgetを参照\n- RANGE：Skill Budget内で扱う\n- Studio：Budget編集\n- Game：Budget読込\n\n## 6. 正式保留（バランス）\n- 総Budget\n- 配分率\n- 換算係数\n- 難易度補正\n- レベル補正\n- ランク補正\n\n## Current統合\n\n後発正式構造:\n- HP Budget\n- Attack Performance Budget\n- Defense Performance Budget\n- Skill Budget\n- AI Budget\n- Utility Budget\n\nV9のAttack30/Durability30/Skill20/Special10/AI10やRank倍率は\n`SPEC-V9-019-BAL-001` のV9 Baselineとして保持する。\n\n具体配分率/換算係数/難易度/Level/Rank補正はConfig。\n\n---\n\n## 根拠・統合元\nBOX-R7-026 Enemy Budget正式版 / BOX-R7-027 Enemy Budget DB",
+      "title": "Monster Budget / QuestRun Difficulty Contract",
+      "status": "Approved",
+      "summary": "Questのbase_enemy_budgetとStoneのstone_budget_deltaからeffective_enemy_budgetを確定し、Monster Formation/ScalingとQuestRun Difficulty Snapshotへ接続するCurrent正式契約。",
+      "body": "# 1. 目的\n\nCurrentのMonster / Enemy Budgetは、QuestRunの難易度とMonster Formation生成に使用する数値Budgetである。\n\nQuestは `base_enemy_budget` を所有する。\nQuest難易度は `effective_enemy_budget` の数値そのものとし、Normal / Hard等の難易度ラベルをCurrent正本にしない。\n\n# 2. StoneによるDifficulty変更\n\nStoneは既存QuestへPlayerが任意で追加する開始コスト / Modifierである。\n\n```text\neffective_enemy_budget\n= base_enemy_budget + Σstone_budget_delta\n```\n\n- Stone未使用を許可する。\n- 複数Stoneを使用する場合、`stone_budget_delta` はData-drivenで合計する。\n- StoneはQuestRun開始成立時に消費する。\n- 開始成立後はSuccess / Failure / Abandonのいずれでも返却しない。\n- QuestRun開始自体が成立しなかった場合は消費しない。\n\n# 3. Monster Formationへの使用\n\n通常EncounterではQuest / Map Runtime ContextからMonster候補を作る。\n\nFormation生成では以下を使用する。\n\n- `effective_enemy_budget`\n- Monsterごとの `enemy_budget_cost`\n- Monster候補の `weight` / `spawn_weight`\n- Seed / Resolver\n\n基本処理は、remaining budget以下の `enemy_budget_cost` を持つ候補からSeeded RandomでMonsterを選び、\nCostをremaining budgetから減算し、追加可能なMonsterがなくなるまで繰り返す。\n\n`enemy_budget_cost` はFormationへMonsterを組み込むためのBudget Costであり、\nHP / Attack / Defense等の個別Combat Statへカテゴリ配分するBudgetではない。\n\n`enemy_budget_cost`、`weight`、`spawn_weight` 等の具体値はBalance Dataとして可変とする。\n\n# 4. Fixed Story Encounter\n\nFixed Event PlacementではEncounter Overrideとして以下を使用できる。\n\n- `resolver`\n- `required_monsters`\n- `fixed_formation`\n\n固定Monsterを配置してもStoneによるDifficulty上昇を無効化しない。\n必要なMonster / Formation ScalingはMaster / Balance Dataとして可変にする。\n\n# 5. QuestRun Snapshot\n\nQuestRun成立後はBudget関連結果を保存し、Playback / Returnで再計算・再抽選しない。\n\n最低限保存する対象:\n\n- `effective_enemy_budget` / Difficulty Snapshot\n- Battle Encounter Request / Result\n- candidate IDs\n- selected Formation\n- Formation / Scaling Snapshot\n- Reward Scaling Snapshot\n- Seed / Resolver Version等の再現情報\n\n# 6. Difficultyの接続先\n\nStoneによるDifficulty上昇はCurrent Quest契約に従い次へ接続する。\n\n- Battle: Monster Formation / Scalingによる難易度上昇\n- Exploration: 数量増加ではなく高Rarity OutcomeのWeight上昇\n- Event Reward: 高報酬方向への補正\n\nReward補正係数等の具体値はBalance可変とする。\nStone固有Reward EffectはDifficulty由来補正とは別Modifierとして扱う。\n\n# 7. Balance Boundary\n\n以下の具体値はSystem固定しない。\n\n- `base_enemy_budget`\n- `stone_budget_delta`\n- Monsterごとの `enemy_budget_cost`\n- `weight` / `spawn_weight`\n- Formation / Monster Scaling係数\n- Difficulty由来Reward / Rarity補正係数\n\nConfig / CSV / JSON / Master等の外部Dataから変更可能にする。\nQuestRun再現に必要な値はRunへSnapshotする。\n\n# 8. Current不採用\n\n以下はCurrent Monster Budget仕様として採用しない。\n\n- HP Budget / Attack Performance Budget / Defense Performance Budget / Skill Budget / AI Budget / Utility Budgetへの6カテゴリ配分\n- Enemy Budget 1 point = 対象性能+1%という固定定義\n- Budget pointをHP / Attack / Defense等へ直接変換する固定式\n- 旧V9のAttack 30% / Durability 30%等の配分をCurrent構造として扱うこと\n\n旧値をHistorical / Balance Baselineとして保持する場合でも、Current Monster BudgetのRuntime契約には使用しない。\n\n---\n\n## 根拠・統合元\n\n- `SPEC-V9-019-QUEST-001` Quest / Context / Difficulty / Ownership\n- `SPEC-V9-019-STONE-001` Stone / Quest Difficulty Modifier\n- `SPEC-V9-019-ENCOUNTER-001` Encounter / Formation Generation\n- Human Approved Current Monster Budget correction 2026-08-26\n",
       "decision_refs": [],
       "depends_on": [
         "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- 6 Budget責務へ分配できるData Modelを実装できる。\n- V9配分率をConfig seedとして保持できる。\n- 配分値をSystem固定式にしない。",
+      "acceptance_criteria": "- Questのbase_enemy_budgetとStone deltaからeffective_enemy_budgetを一意に確定できる。\n- effective_enemy_budget、enemy_budget_cost、weight/spawn_weight、Seed/ResolverからFormationを生成できる。\n- Fixed Story EncounterでもStone Difficultyを失わない。\n- QuestRunへDifficulty / Formation / Scaling / Reward ScalingをSnapshotし、Playback/Returnで再計算しない。\n- 旧6カテゴリ配分や1 point=+1%をCurrent Monster Budget仕様として要求しない。",
       "system_node_id": "SYS-V9-ENEMY",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-ENEMY",
@@ -2785,11 +2785,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
-      "approved_by": "",
-      "approved_at": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T16:41:00+09:00",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-26T16:41:00+09:00"
     },
     {
       "id": "SPEC-V9-019-ENCOUNTER-001",
@@ -29243,6 +29243,11 @@
       "at": "2026-08-26T11:51:02+09:00",
       "type": "ConfirmedDecisionMerge",
       "summary": "Human approved generic Formal Skill use requirements. SKILL-001 now owns optional `useRequirements`; Current initial type EQUIPMENT_TAGS uses Tag Registry IDs with allTags/anyTags, is separate from battle conditions/Skill Budget refund, and fails before Target/Cost/CD/Cast/Effect. Bow-required Skills use (WEAPON_BOW OR WEAPON_GREATBOW) AND EQUIP_QUIVER. No Source/Workflow/Task change."
+    },
+    {
+      "at": "2026-08-26T16:41:00+09:00",
+      "type": "ConfirmedDecisionMerge",
+      "summary": "Human確定によりCurrent Monster Budget仕様をQuestRun / Stone / Encounter契約へ修正。旧6カテゴリ配分をCurrentから外し、base_enemy_budget + Σstone_budget_delta = effective_enemy_budget、enemy_budget_cost / weightによるFormation、Fixed StoryでもStone Difficulty維持、QuestRunへのDifficulty / Formation / Scaling / Reward Scaling Snapshotを正式化。SPEC-V9-019-ENEMY-001をApproved revision 1へ更新し、SPEC-V9-019-BAL-001の旧Current説明を整合修正。depends_on配列は変更していない。"
     }
   ],
   "authority": {
