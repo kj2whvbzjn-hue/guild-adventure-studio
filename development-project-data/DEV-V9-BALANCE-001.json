@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T06:47:11.343Z"
+    "updated_at": "2026-08-26T08:44:04.485Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-002凍結 — 人型Monster Core Authority維持 / 獣型Body Type設計は保留",
-    "goal": "Human判断により獣型/非人型のBody Type別装備制約Coreは凍結する。現時点で獣型の盾不可・Block禁止を新仕様化しない。Block自体は矛盾しないため、Current GKS-B783の既存Block trace/logで発生・block_rate・damage cut・適用Damageを確認する。TASK-BAL-072-CORR-001の350行人型Monster Coreを現在の正式数値Authorityとして維持する。TASK-BAL-073/074はこのrunでは開始・変更しない。"
+    "theme": "Current Monster Budget仕様へBalance工程整合完了 — Monster Core基準Skill redo計画待ち",
+    "goal": "Current Monster Budgetはeffective_enemy_budgetとMonster enemy_budget_costによるFormation契約として扱う。旧HP/Attack/Defense Core Enemy Budget Conversionおよび1 point=+1%は実行しない。次はFrozen Humanoid Monster Coreを相手にFormal Skill Balanceをやり直すための比較条件/KPI/試行条件/Freeze基準を提示しHuman承認を得る。Simulation/Testはその承認前に開始しない。"
   },
   "project_rules": [
     {
@@ -264,12 +264,12 @@
     },
     {
       "id": "RULE-BAL-ZEROBASE-R5-001",
-      "text": "2026-08-24 Human承認のZero-base Balance Plan Revision 5をBalance調査の実行正本とする。旧Measurement-first R4の未実行M4〜M24系列およびTASK-BAL-048Bは履歴として保持するが実行しない。新系列は Authority→Character/Job→Equipment requirement/raw→Basic Combat→Bare Player→Monster Core→Core Enemy Budget→Skill→Formula/Equipment実戦値→Passive/MOD/Rarity/Unique→AI/Full Enemy Budget→Full Player/Monster→Formation/Encounter/Quest→Progression/Reward/Economy/Guild/Stone→Mathematical Baseline→Human Experience/Presentation→Holdout/Human Runtime/Promotion readiness の依存順を正本とする。",
+      "text": "2026-08-24 Human承認のZero-base Balance Plan Revision 5を基礎とするが、2026-08-26 Human確定のCurrent Monster Budget仕様でEnemy Budget部分を補正する。現行依存順は Authority→Character/Job→Equipment requirement/raw→Basic Combat→Bare Player→Monster Core→Skill→Formula/Equipment実戦値→Passive/MOD/Rarity/Unique→AI + Monster enemy_budget_cost→Full Player/Monster→Formation/Encounter/Quest→Progression/Reward/Economy/Guild/Stone→Mathematical Baseline→Human Experience/Presentation→Holdout/Human Runtime/Promotion readiness とする。旧Core Enemy Budget(HP/Attack/Defense)およびFull 6-category Enemy Budget ConversionはCurrent実行系列から外す。",
       "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-24 zero-base balance redesign approval",
+      "source_type": "CurrentSpecificationCorrection",
+      "source_id": "Human confirmed Current Monster Budget / QuestRun + Stone contract 2026-08-26",
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-26T16:46:00+09:00"
     },
     {
       "id": "RULE-BAL-CLOSED-LOOP-001",
@@ -282,12 +282,12 @@
     },
     {
       "id": "RULE-BAL-SKILL-AFTER-MONSTER-001",
-      "text": "SkillのBalance値はBare Player、Monster Core、HP/Attack/DefenseのCore Enemy Budgetが成立した後に決める。Formal Skill contract/generator qualificationは先行してよいが、そのDevelopment reference値をSkill Balance authorityへ昇格しない。",
+      "text": "SkillのBalance値はBare PlayerとCurrent仕様に適合したMonster Coreが成立した後に決める。Monster Budgetのenemy_budget_costはFormationへMonsterを組み込むCostであり、HP/Attack/Defense性能を1 point単位へ換算する前提ではないためSkill Balanceの必須前工程にしない。Formal Skill contract/generator qualificationは先行してよいが、そのDevelopment reference値をSkill Balance authorityへ昇格しない。",
       "status": "Active",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-24 monster-before-skill",
+      "source_type": "CurrentSpecificationCorrection",
+      "source_id": "Human confirmed Current Monster Budget / QuestRun + Stone contract 2026-08-26",
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-24T19:13:00+09:00"
+      "updated_at": "2026-08-26T16:46:00+09:00"
     },
     {
       "id": "RULE-BAL-EXPERIENCE-LAST-001",
@@ -309,12 +309,12 @@
     },
     {
       "id": "RULE-BAL-CORE-ENEMY-BUDGET-POINT-001",
-      "text": "TASK-BAL-073で確定したCore Enemy Budget 1 pointはraw stat 1ではなく、Frozen Monster Coreから対象category performanceをlinearに+1%する正規化単位とする。 HPはdurability、Attack Performanceはexpected basic offense、Defense PerformanceはEHPを基準に換算する。 DefenseをResistance/Evasion等へ、Attack PerformanceをAttack/Accuracy/AGI等へ具体配分することは別Balance判断であり、P6の1 point換算から自動推定しない。 Skill/AI/Utility Budgetへこの係数を自動流用しない。",
-      "status": "Active",
-      "source_type": "DevelopmentTaskResult",
-      "source_id": "TASK-BAL-073",
+      "text": "INACTIVE / CURRENT SPEC OBSOLETE. Current Monster BudgetではEnemy BudgetをHP/Attack/Defense等のcategory performanceへ分解せず、1 point=+1%の性能正規化を正式Authorityとして使用しない。以下は旧TASK-BAL-073のHistorical Balance定義としてのみ保持する: Core Enemy Budget 1 pointをFrozen Monster Coreの対象category performance +1%とし、HP=durability、Attack Performance=expected basic offense、Defense Performance=EHPで換算する旧定義。",
+      "status": "Inactive",
+      "source_type": "CurrentSpecificationCorrection",
+      "source_id": "Human confirmed Current Monster Budget / QuestRun + Stone contract 2026-08-26",
       "created_at": "2026-08-24T21:25:00+09:00",
-      "updated_at": "2026-08-24T21:25:00+09:00"
+      "updated_at": "2026-08-26T16:46:00+09:00"
     },
     {
       "id": "RULE-BAL-MONSTER-HP-DPT-001",
@@ -536,6 +536,15 @@
       "updated_at": "2026-08-26T11:28:04+09:00",
       "source_type": "AuthoritySync",
       "source_id": "DEV-V9-REORG-019 + existing DEV-V9-BALANCE-001 Human Approved decisions"
+    },
+    {
+      "id": "RULE-BAL-MONSTER-BUDGET-CURRENT-001",
+      "text": "Current Monster BudgetはQuest/EncounterのFormation Budgetとして扱う。Quest難易度は effective_enemy_budget = base_enemy_budget + Σstone_budget_delta。Monsterごとの enemy_budget_cost はFormationへそのMonsterを組み込むCostであり、HP/Attack/Defense/Skill/AI/Utilityの6 category Budgetや1 point=性能+1%へ分解しない。base_enemy_budget、stone_budget_delta、enemy_budget_cost、weight/spawn_weight、Formation/Monster Scaling等の具体値はBalance Dataとして可変とする。Skill BalanceはMonster Coreを基準に先行でき、enemy_budget_costの具体値はSkill/Passive/MOD/AIを含むMonster実戦性能が揃った後段で決定し、Formation/Encounter/Questで検証する。",
+      "status": "Active",
+      "source_type": "HumanApprovedCurrentSpecification",
+      "source_id": "DEV-V9-REORG-019 Current Monster Budget / QuestRun + Stone contract",
+      "created_at": "2026-08-26T16:46:00+09:00",
+      "updated_at": "2026-08-26T16:46:00+09:00"
     }
   ],
   "source_baseline": {
@@ -7447,7 +7456,7 @@
     {
       "id": "TASK-BAL-073",
       "box_id": "BOX-V9-BAL-WORLD-001",
-      "title": "R5-P6 HP / Attack / Defense Core Enemy Budget Conversionを確定する",
+      "title": "[CURRENT SPEC OBSOLETE・実行禁止] R5-P6 HP / Attack / Defense Core Enemy Budget Conversion",
       "status": "Blocked",
       "execution_order": 252,
       "depends_on": [
@@ -7462,21 +7471,21 @@
         "at": "2026-08-24T21:25:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
-      "result_scope": "UPSTREAM INVALIDATED / REVALIDATION REQUIRED. The abstract 1-point normalized HP/Attack/Defense concept is retained as a candidate normalization definition, but concrete Monster equivalents and downstream authority must be revalidated after TASK-BAL-072-CORR-001 rebuilds Monster Core from Monster Job Equipment Coefficients."
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "result_scope": "OBSOLETE BY CURRENT MONSTER BUDGET SPEC / DO NOT START. Current Monster Budget is effective_enemy_budget for Quest/Encounter difficulty and Monster enemy_budget_cost for Formation composition. There is no Current HP/Attack/Defense category-budget conversion and no Enemy Budget 1 point = +1% performance authority. Historical TASK-BAL-073 calculations/evidence remain history only and are not revalidated or reused as Current numeric authority.",
+      "blocked_reason": "Current Monster Budget正式仕様でDecision Question自体が廃止されたため。再テストせず実行系列から除外する。"
     },
     {
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 266,
       "depends_on": [
-        "TASK-BAL-073",
-        "TASK-BAL-073K",
+        "TASK-BAL-072-CORR-001",
         "TASK-BAL-050"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、Monster Core、Core Enemy Budget、Formal Skill qualification(TASK-BAL-050)。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。\n## TASK-BAL-074 Physical Skill Level allocation formula plan\n- Final Goal: 正式構造 Skill Budget = SLv を入力とし、Physical SkillのDamage / Multi-hit / MP / Cooldown / Cast / Rangeへ総Budgetを振り分ける式を確定する。\n- Budget identity: B_spent = SLv。Physical BudgetをSLvと独立した別スケールとして最終化しない。\n- Allocation framework (DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001):\n  - SLv = M_Range * (ΣC_Damage(Power_i) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)\n  - EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit(H)\n  - 残EffectBudgetをDAMAGE Hitへ配分し、Power = f_Damage(B_Damage)で最終Physical Powerを算出する。\n  - Range/対象範囲はCurrent Budget構造に従う乗算M_Rangeで扱い、加算TargetCostを別途加えて二重課金しない。\n- Test 1 / SLv→Damage conversion:\n  - Isolate: 1Hit / SINGLE / MP0 / CD0 / Cast0 / Physical / Passive-MODなし。\n  - Candidate: Power = round(100 + k × SLv), k={0.5,1,2,4}%/SLv。\n  - Initial screen: Player Lv20、Monster Lv30、high_durability_heavy_armor + high_evasion_light_armor、SLv={1,5,10,20}、SkillなしControl、same seed。\n  - Initial scale: 34 conditions × 100 seeds = 3,400 battles。\n  - KPI: ΔWinRate(pp)、SLv 1増加あたりΔWinRate slope、actual damage/use、Hit率、average ticks、Action数。\n  - Gate: SLv1が丸めで消えない、SLv増加で単調増加、SLv20で即飽和しない、防御型の片側だけに極端偏重しない。上位候補だけTest 2へ進める。\n- Test 2 / level-gap robustness:\n  - Test 1上位2候補のみ。\n  - Player Lv20、Monster Lv25/30/35、high_durability_heavy_armor / high_evasion_light_armor、SLv={1,5,10,20}、same-seed Control。\n  - 目的: SLv→Damage変換がLevel差で崩れないか確認し、C_Damage(Power)と逆関数f_Damage(Budget)のFreeze候補を1本に絞る。\n- Test 3 / Multi-hit cost:\n  - 同一SLvで1/2/3/4 Hitを比較し、single-hit基準と同等の実戦価値となるmulti-hit total Powerを逆算する。\n  - C_MultiHit(H) = DamageBudget(P_single_reference) - DamageBudget(P_multi_equivalent)。\n  - Current formal multi-hitの各DAMAGE effectContract独立Hit semanticsをそのまま使用する。\n- Test 4 / MP refund:\n  - 同一SLvでMP={0,2,4,6,8}を比較し、MP0基準と等価に戻すため必要な追加Damage Budgetを逆算する。\n  - R_MP(M) = DamageBudget(P_equivalent_with_MP) - DamageBudget(P_reference_MP0)。\n  - MP不足/使用回数/Basic Action置換へ実際に影響しないMP条件は係数根拠にしない。非線形ならtable/curveにする。\n- Test 5 / Cooldown refund:\n  - 同一SLvでCD={0,25,50,100}を比較し、CD0基準と等価に戻す追加Damage BudgetからR_CD(CD)を求める。\n  - 再使用機会を制限せずSkill使用頻度が変わらないCDはrefund 0。\n- Test 6 / Cast refund:\n  - 同一SLvでCast={0,2,4,8}を比較し、Cast0基準と等価に戻す追加Damage BudgetからR_Cast(T)を求める。\n  - Cast occupancy、Skill発動回数、interrupt/fizzle、ΔWinRate、actual damageを併記する。\n- Test 7 / Range multiplier:\n  - 1対1では算出しない。複数Monster Formation専用テストを別Human承認後に実施する。\n  - SINGLE / FRONT / RANDOM N / ALLで同一SLvの等価per-target Powerを探索し、M_Rangeを逆算する。\n  - total damage、overkill、kill数、enemy action減少、battle ticks、ΔWinRateを併用する。\n- Test 8 / Skill Level allocation formula validation:\n  - 同一SLvで high-damage/no-cost、multi-hit、MP型、CD型、MP+CD型、multi-target等の異構成Skillをallocation formulaだけで生成する。\n  - SLv={5,10,20}で比較し、同じSLvなら異構成Skillが1 Budget point相当以内の実戦差に収まること、かつSLv5 < SLv10 < SLv20が構成横断で成立することをGateとする。\n  - Gate超過時は試行数だけを増やさず、C_Damage / C_MultiHit / R_MP / R_CD / R_Cast / M_Rangeのどこが乖離原因か特定して該当Testへ戻る。\n- Execution Gate: この登録は計画登録。個別TestのSimulation/Demo/実機依頼/Result評価は、RULE-BAL-TEST-PLAN-APPROVAL-001に従いそのTestの実行承認を別途得るまで開始しない。\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 通常行動とCurrent仕様に適合したMonster Coreを基準にPhysical/Magic/Heal/Status/Utility Skillの相対価値をどう置くか。\n- Required Inputs: Bare Player、TASK-BAL-072-CORR-001 Frozen Humanoid Monster Core、Formal Skill qualification(TASK-BAL-050)。\n- Monster Budgetのenemy_budget_costはFormation Costであり、このSkill Balanceの換算基準・必須前工程として使用しない。\n- Measurements: damage/heal/utility per use/per tick、MP efficiency、Cooldown/Cast occupancy、status action-value、target-count efficiency、basic action marginal gain。\n- Required Numeric Output: Skill Efficiency/Balance Table + Development Candidate set。BAL-M5-REF-*はfixtureとしてのみ使用。\n- Gate: dead option、free dominant、resource/cast無意味化を排除。Baseline→Candidate→再Simulation→Freeze。\n- Downstream: TASK-BAL-075 Formula/Equipment Full Performance。Product Master/Current active変更禁止。\n\n## TASK-BAL-074 Physical redo calibration policy\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。\n- Opponent design: 同Jobミラー固定を禁止し、攻撃側Playerと防御側Monsterを分離する。\n- Level-gap: Player Level Lに対しMonster L+5/L+10/L+15を初期ladderとする。Control勝率が天井/床へ飽和する場合は比較可能帯へLevel差を調整する。\n- Defense coverage: 高耐久・重装型と高回避・軽装型を別系列で必ず比較する。\n- Control: 各条件でSkillなしControlとSkill使用条件を同一Seedで直接比較する。\n- Primary KPI: ΔWinRate(pp)=Skill勝率-Control勝率。\n- Supporting KPI: average ticks、dealt/received damage、Hit率、Action数。\n- Freeze Gate: Skill強度がLevel差とDefense archetypeに与える影響を説明でき、特定の同Job/飽和勝率帯だけに依存しないこと。\n## TASK-BAL-074 Physical Skill Level allocation formula plan\n- Final Goal: 正式構造 Skill Budget = SLv を入力とし、Physical SkillのDamage / Multi-hit / MP / Cooldown / Cast / Rangeへ総Budgetを振り分ける式を確定する。\n- Budget identity: B_spent = SLv。Physical BudgetをSLvと独立した別スケールとして最終化しない。\n- Allocation framework (DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001):\n  - SLv = M_Range * (ΣC_Damage(Power_i) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)\n  - EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit(H)\n  - 残EffectBudgetをDAMAGE Hitへ配分し、Power = f_Damage(B_Damage)で最終Physical Powerを算出する。\n  - Range/対象範囲はCurrent Budget構造に従う乗算M_Rangeで扱い、加算TargetCostを別途加えて二重課金しない。\n- Test 1 / SLv→Damage conversion:\n  - Isolate: 1Hit / SINGLE / MP0 / CD0 / Cast0 / Physical / Passive-MODなし。\n  - Candidate: Power = round(100 + k × SLv), k={0.5,1,2,4}%/SLv。\n  - Initial screen: Player Lv20、Monster Lv30、high_durability_heavy_armor + high_evasion_light_armor、SLv={1,5,10,20}、SkillなしControl、same seed。\n  - Initial scale: 34 conditions × 100 seeds = 3,400 battles。\n  - KPI: ΔWinRate(pp)、SLv 1増加あたりΔWinRate slope、actual damage/use、Hit率、average ticks、Action数。\n  - Gate: SLv1が丸めで消えない、SLv増加で単調増加、SLv20で即飽和しない、防御型の片側だけに極端偏重しない。上位候補だけTest 2へ進める。\n- Test 2 / level-gap robustness:\n  - Test 1上位2候補のみ。\n  - Player Lv20、Monster Lv25/30/35、high_durability_heavy_armor / high_evasion_light_armor、SLv={1,5,10,20}、same-seed Control。\n  - 目的: SLv→Damage変換がLevel差で崩れないか確認し、C_Damage(Power)と逆関数f_Damage(Budget)のFreeze候補を1本に絞る。\n- Test 3 / Multi-hit cost:\n  - 同一SLvで1/2/3/4 Hitを比較し、single-hit基準と同等の実戦価値となるmulti-hit total Powerを逆算する。\n  - C_MultiHit(H) = DamageBudget(P_single_reference) - DamageBudget(P_multi_equivalent)。\n  - Current formal multi-hitの各DAMAGE effectContract独立Hit semanticsをそのまま使用する。\n- Test 4 / MP refund:\n  - 同一SLvでMP={0,2,4,6,8}を比較し、MP0基準と等価に戻すため必要な追加Damage Budgetを逆算する。\n  - R_MP(M) = DamageBudget(P_equivalent_with_MP) - DamageBudget(P_reference_MP0)。\n  - MP不足/使用回数/Basic Action置換へ実際に影響しないMP条件は係数根拠にしない。非線形ならtable/curveにする。\n- Test 5 / Cooldown refund:\n  - 同一SLvでCD={0,25,50,100}を比較し、CD0基準と等価に戻す追加Damage BudgetからR_CD(CD)を求める。\n  - 再使用機会を制限せずSkill使用頻度が変わらないCDはrefund 0。\n- Test 6 / Cast refund:\n  - 同一SLvでCast={0,2,4,8}を比較し、Cast0基準と等価に戻す追加Damage BudgetからR_Cast(T)を求める。\n  - Cast occupancy、Skill発動回数、interrupt/fizzle、ΔWinRate、actual damageを併記する。\n- Test 7 / Range multiplier:\n  - 1対1では算出しない。複数Monster Formation専用テストを別Human承認後に実施する。\n  - SINGLE / FRONT / RANDOM N / ALLで同一SLvの等価per-target Powerを探索し、M_Rangeを逆算する。\n  - total damage、overkill、kill数、enemy action減少、battle ticks、ΔWinRateを併用する。\n- Test 8 / Skill Level allocation formula validation:\n  - 同一SLvで high-damage/no-cost、multi-hit、MP型、CD型、MP+CD型、multi-target等の異構成Skillをallocation formulaだけで生成する。\n  - SLv={5,10,20}で比較し、同じSLvなら異構成Skillが1 Budget point相当以内の実戦差に収まること、かつSLv5 < SLv10 < SLv20が構成横断で成立することをGateとする。\n  - Gate超過時は試行数だけを増やさず、C_Damage / C_MultiHit / R_MP / R_CD / R_Cast / M_Rangeのどこが乖離原因か特定して該当Testへ戻る。\n- Execution Gate: この登録は計画登録。個別TestのSimulation/Demo/実機依頼/Result評価は、RULE-BAL-TEST-PLAN-APPROVAL-001に従いそのTestの実行承認を別途得るまで開始しない。\n- Scope: Physical only。Magic/Heal/Status/Utilityへ進まない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -7485,8 +7494,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
-      "result_scope": "BLOCKED / PHYSICAL REDO NUMERIC AUTHORITY INVALIDATED BY UPSTREAM MODEL CORRECTION. Formal Battle executions and raw measurements from the HNT/THF/SWD test fixtures remain historical diagnostics only. E04/E05/E06/E07/E08-derived Power-response, P_eq, C_eq and K_est must not be used to Freeze Skill Budget because the opponent Monster combat stats were built from Player-equivalent equipment rather than the formal Monster Job Equipment Coefficient layer. The prior K(H_eff) nondecreasing requirement is also retracted independently. No K selection, C_MultiHit Freeze, new Battle, MP/CD/Cast/Range progression, or Skill formula continuation until Equipment and Monster Core are corrected.",
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "result_scope": "READY FOR CORRECTED SKILL REDO PLAN. Obsolete Core Enemy Budget and historical TASK-BAL-073K Player-equivalent Monster fixture dependencies are removed. Current prerequisite is TASK-BAL-072-CORR-001 Frozen Monster Core + TASK-BAL-050 Formal Skill qualification. Prior invalid numeric outputs remain historical diagnostics only. No Simulation/Test was executed; a Human-approved test plan is still required before execution.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12507,7 +12516,8 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         }
       ],
-      "blocked_reason": "Upstream Equipment/Monster authority invalidated: Equipment combat identity is incomplete (shield/bow etc.), and TASK-BAL-073K used Player-equivalent equipment contribution instead of the formal Monster Job Equipment Coefficient layer. TASK-BAL-071-CORR-003 -> TASK-BAL-072-CORR-001 -> TASK-BAL-073 revalidation must complete before Skill calibration restarts."
+      "blocked_reason": "",
+      "historical_monster_budget_block": "BLOCKED / PHYSICAL REDO NUMERIC AUTHORITY INVALIDATED BY UPSTREAM MODEL CORRECTION. Formal Battle executions and raw measurements from the HNT/THF/SWD test fixtures remain historical diagnostics only. E04/E05/E06/E07/E08-derived Power-response, P_eq, C_eq and K_est must not be used to Freeze Skill Budget because the opponent Monster combat stats were built from Player-equivalent equipment rather than the formal Monster Job Equipment Coefficient layer. The prior K(H_eff) nondecreasing requirement is also retracted independently. No K selection, C_MultiHit Freeze, new Battle, MP/CD/Cast/Range progression, or Skill formula continuation until Equipment and Monster Core are corrected."
     },
     {
       "id": "TASK-BAL-075",
@@ -12519,7 +12529,7 @@
         "TASK-BAL-074",
         "TASK-BAL-070"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Skill/Monster確定後、Formula parameterとEquipment Accuracy/Evasion/Critical/Resistance/Magic/MP等が実戦出力へどう寄与するか。\n- Required Inputs: Basic Combat、Frozen Skill Balance、Monster Core/Core Budget、M3-A Raw Equipment、M1/M2。\n- Measurements: Physical/Magic/Heal/Status/Shield/DOT、Hit/Crit/Resistance、MP/CD/Cast、magic_weapon_bonus、Armor EHP等のsensitivityとiLv1..11 adjacent/cumulative gain。\n- Required Numeric Output: Formula Sensitivity Table + Full Equipment Performance Curve。Character growthとEquipment gainを分解する。\n- Gate: Formula expression/order/rounding/topologyは変更しない。MismatchはIssue Gate。Balance可変parameterのみCandidate loopでFreeze。\n- Downstream: TASK-BAL-076 Passive/MOD/Rarity/Unique。Source/Game Data/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Skill/Monster確定後、Formula parameterとEquipment Accuracy/Evasion/Critical/Resistance/Magic/MP等が実戦出力へどう寄与するか。\n- Required Inputs: Basic Combat、Frozen Skill Balance、Current Monster Core、M3-A Raw Equipment、M1/M2。\n- Measurements: Physical/Magic/Heal/Status/Shield/DOT、Hit/Crit/Resistance、MP/CD/Cast、magic_weapon_bonus、Armor EHP等のsensitivityとiLv1..11 adjacent/cumulative gain。\n- Required Numeric Output: Formula Sensitivity Table + Full Equipment Performance Curve。Character growthとEquipment gainを分解する。\n- Gate: Formula expression/order/rounding/topologyは変更しない。MismatchはIssue Gate。Balance可変parameterのみCandidate loopでFreeze。\n- Downstream: TASK-BAL-076 Passive/MOD/Rarity/Unique。Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12528,10 +12538,10 @@
         "at": "2026-08-25T11:55:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
+      "updated_at": "2026-08-26T16:46:00+09:00",
       "result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval.",
       "historical_result_scope": "PASS FINAL P8 BALANCE FREEZE ON GKS-B779. Formula contract 9/9 PASS. Current EQUIPMENT-BASE-V2 v2.1.1 308-row iLv1..11 intrinsic curves are monotone/consistent and C1.00 is frozen as the mathematical Equipment baseline pending later Human Experience tuning. Physical/Magic/Heal/Status/Shield/DOT, Hit/Resistance, MP/CD/Cast/AG, magic_weapon_bonus and Armor EHP/resource sensitivity tables are frozen as P8 evidence. Human approved Base Critical Damage=50% additional (Critical event multiplier 1.5x; at 5% base Crit, expected average multiplier 1.025 / +2.5%). Existing Resistance→Critical→final floor topology/order/range is unchanged. All magic_weapon_bonus routes directly to MAGIC_DAMAGE; MAGIC_SUPPORT remains formally abolished and HEAL does not consume magic_weapon_bonus. Source/Game Data/Current active changes=0. Evidence=DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-FREEZE-EVIDENCE.zip sha256=d55d9efe107a2f6f44ce13ac41c76f0f2b5d2cee77fb6d416b65c6711e22d646. TASK-BAL-076 not started and requires separate Human start approval.",
-      "blocked_reason": "TASK-BAL-071/072 upstream correction and TASK-BAL-074 redo are incomplete."
+      "blocked_reason": "TASK-BAL-074のCurrent Monster Core基準Skill redoが未完了。"
     },
     {
       "id": "TASK-BAL-076",
@@ -12542,7 +12552,7 @@
       "depends_on": [
         "TASK-BAL-075"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 完成したSkill/Monster基準に対してPassive/MOD/Rarity/Uniqueが何%の追加性能/戦略価値を持つか。\n- Required Inputs: Full Equipment Performance、Skill Balance、Monster/Core Budget、P3 contribution infrastructure。\n- Measurements: activation rate、marginal DPS/HPS/EHP/Hit/resource、Tier slope、MOD count interaction、rarity delta、Unique utility。\n- Required Numeric Output: Contribution Table + Candidate tiers。Baseline→Candidate→再Simulation→Freeze。\n- Gate: dead/never condition、strict dominance、runaway stackingを排除。\n- Downstream: TASK-BAL-077 AI/Full Enemy Budget。Product Master/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 完成したSkill/Monster基準に対してPassive/MOD/Rarity/Uniqueが何%の追加性能/戦略価値を持つか。\n- Required Inputs: Full Equipment Performance、Skill Balance、Current Monster Core、P3 contribution infrastructure。\n- Measurements: activation rate、marginal DPS/HPS/EHP/Hit/resource、Tier slope、MOD count interaction、rarity delta、Unique utility。\n- Required Numeric Output: Contribution Table + Candidate tiers。Baseline→Candidate→再Simulation→Freeze。\n- Gate: dead/never condition、strict dominance、runaway stackingを排除。\n- Downstream: TASK-BAL-077 Formal AI Performance / Monster enemy_budget_cost。Product Master/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12551,20 +12561,19 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00",
-      "blocked_reason": "TASK-BAL-071/072 upstream correction and TASK-BAL-074 redo are incomplete."
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "blocked_reason": "TASK-BAL-074 Skill redoおよびTASK-BAL-075 Full Performanceが未完了。"
     },
     {
       "id": "TASK-BAL-077",
       "box_id": "BOX-V9-BAL-BATTLE-001",
-      "title": "R5-P10 Formal AI Performance + Full 6-category Enemy Budgetを確定する",
+      "title": "R5-P10 Formal AI Performance + Monster enemy_budget_costを確定する",
       "status": "Blocked",
       "execution_order": 268,
       "depends_on": [
-        "TASK-BAL-076",
-        "TASK-BAL-073"
+        "TASK-BAL-076"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 確定行動候補をAIがどれだけ引き出し、Skill/AI/Utility Budget 1点をどう換算するか。\n- Required Inputs: Skill/Passive/MOD完成Build、Core Enemy Budget、Formal AI infrastructure。\n- Measurements: valid action、idle/waste、target quality、resource waste、performance extraction、Skill/AI/Utility Budget sensitivity。\n- Required Numeric Output: Reference AI binding + Full 6-category Enemy Budget Conversion Table。\n- Gate: AI差がBuild差を隠す場合はReferenceをFreezeするまで進まない。Budget category runawayを排除。\n- Downstream: TASK-BAL-078 Full Player/Monster。Source/Game Data/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 完成したMonster戦闘構成とFormal AIの実戦性能に対して、Formationへ組み込む `enemy_budget_cost` をどう置くか。\n- Required Inputs: Skill/Passive/MOD完成Build、Current Monster Core、Formal AI infrastructure、Current Monster Budget / Encounter contract。\n- Measurements: valid action、idle/waste、target quality、resource waste、performance extraction、Level/Job/Build間の実戦性能、enemy_budget_cost候補の順序・相対差。\n- Required Numeric Output: Reference AI binding + Monster enemy_budget_cost Candidate/Freeze Table。\n- `enemy_budget_cost` はFormation Costとして扱い、HP/Attack/Defense/Skill/AI/Utilityの6 category Budgetへ分解しない。\n- Enemy Budget 1 point=性能+1%換算を使用しない。\n- Gate: AI差がBuild差を隠す場合はReferenceをFreezeするまで進まない。明確な強さ逆転に対するcost逆転、Level帯での不連続、特定Jobだけのcost暴走を排除する。\n- Downstream: TASK-BAL-078 Full Player/Monster、TASK-BAL-079 Formation/Encounter/Quest。Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12573,7 +12582,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T01:00:00+09:00"
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "blocked_reason": "TASK-BAL-076までのSkill/Equipment/Passive/MOD完成待ち。"
     },
     {
       "id": "TASK-BAL-078",
@@ -12584,7 +12594,7 @@
       "depends_on": [
         "TASK-BAL-077"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Level帯ごとの複数合法Player BuildとFull Budget Monsterの代表集合は何か。\n- Required Inputs: Character/Equipment/Skill/Passive/MOD/AI、Full Enemy Budget。\n- Measurements: DPS/HPS/EHP/Hit/Crit/Evasion/Resistance/resource、build spread、counter relation、monster ratio。\n- Required Numeric Output: Multi-build Player Set + Full Monster Set。単一Buildを唯一の基準にしない。\n- Gate: 不合法装備/未到達Skill、strict dominance、説明不能なLevel逆転を排除。\n- Downstream: TASK-BAL-079 Formation/Encounter/Quest。Source/Game Data/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: Level帯ごとの複数合法Player BuildとFull Monsterの代表集合は何か。\n- Required Inputs: Character/Equipment/Skill/Passive/MOD/AI、Monster enemy_budget_cost。\n- Measurements: DPS/HPS/EHP/Hit/Crit/Evasion/Resistance/resource、build spread、counter relation、monster ratio。\n- Required Numeric Output: Multi-build Player Set + Full Monster Set。単一Buildを唯一の基準にしない。\n- Gate: 不合法装備/未到達Skill、strict dominance、説明不能なLevel逆転を排除。\n- Downstream: TASK-BAL-079 Formation/Encounter/Quest。Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12593,7 +12603,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T01:00:00+09:00"
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "blocked_reason": "TASK-BAL-077 Formal AI Performance / Monster enemy_budget_cost確定待ち。"
     },
     {
       "id": "TASK-BAL-079",
@@ -12604,7 +12615,7 @@
       "depends_on": [
         "TASK-BAL-078"
       ],
-      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 複数敵/Party人数/Formation/effective enemy budget/連戦を数学的にどう接続するか。\n- Required Inputs: Full Player/Monster Set、Current Formation/Encounter/Quest contract。\n- Measurements: budget aggregation、battle count、HP/MP attrition、duration、survivor、formation scaling、counter composition。\n- Required Numeric Output: Encounter/Quest Baseline Table。Baseline→Candidate→再Simulation→Freeze。\n- Gate: formation増加で逆に弱化、budget非単調、連戦不連続を排除。体験Difficulty Targetはまだ最終決定しない。\n- Downstream: TASK-BAL-080 Progression/Acquisition。Source/Game Data/Current active変更禁止。",
+      "acceptance_criteria": "- 開始前にHuman開始承認を得る。\n- Decision Question: 複数敵/Party人数/Formation/effective enemy budget/連戦を数学的にどう接続するか。\n- Required Inputs: Full Player/Monster Set、Monster enemy_budget_cost、Current Formation/Encounter/Quest/Stone contract。\n- Measurements: base_enemy_budget / stone_budget_delta / effective_enemy_budget、enemy_budget_cost aggregation、battle count、HP/MP attrition、duration、survivor、formation scaling、counter composition。\n- Required Numeric Output: Encounter/Quest Baseline Table。Baseline→Candidate→再Simulation→Freeze。\n- Gate: formation増加で逆に弱化、budget非単調、連戦不連続を排除。体験Difficulty Targetはまだ最終決定しない。\n- Downstream: TASK-BAL-080 Progression/Acquisition。Source/Game Data/Current active変更禁止。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -12613,7 +12624,8 @@
         "at": ""
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-25T01:00:00+09:00"
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "blocked_reason": "TASK-BAL-078 Full Player/Monster Set確定待ち。"
     },
     {
       "id": "TASK-BAL-080",
@@ -13478,6 +13490,25 @@
       "created_at": "2026-08-26T15:16:48+09:00",
       "updated_at": "2026-08-26T15:40:00+09:00",
       "result_scope": "FROZEN BY HUMAN. Beast/non-humanoid Body Type specific Monster Core and equipment restriction design is not performed at this stage. Do not introduce a rule that beast-type monsters inherently cannot Block or must have block_rate=0. Block itself is not contradictory for these monsters; occurrence, configured block_rate, damage cut, and resulting damage are covered by the existing Current GKS-B783 Block trace/log. TASK-BAL-072-CORR-001 equipment-capable humanoid Monster Core remains the current frozen numeric authority. This task is non-blocking for the current balance line unless Human explicitly reopens Body Type-specific design. No Simulation/Package/Source/GAME_DATA/Current active change was performed."
+    },
+    {
+      "id": "TASK-BAL-MONSTER-BUDGET-SPEC-CORR-001",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Current Monster Budget仕様へBalance工程を再整合する",
+      "status": "Done",
+      "execution_order": 252,
+      "depends_on": [],
+      "acceptance_criteria": "- HumanがCurrent Monster Budget仕様の取り込み完了後に本修正の開始を明示する。\n- Current正本を effective_enemy_budget = base_enemy_budget + Σstone_budget_delta、Monster enemy_budget_cost=Formation Cost として扱う。\n- 旧6-category Enemy Budget ConversionおよびEnemy Budget 1 point=性能+1%をCurrent実行Authorityから外す。\n- Skill工程から旧Core Enemy Budget/TASK-BAL-073K依存を外し、Current Monster Coreへ直接接続する。\n- 後段AI工程をFull 6-category BudgetではなくMonster enemy_budget_cost決定へ修正する。\n- Historical evidenceは削除せず保持する。\n- Simulation/Test/Source/Game Data/Current activeを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-26T16:46:00+09:00"
+      },
+      "created_at": "2026-08-26T16:46:00+09:00",
+      "updated_at": "2026-08-26T16:46:00+09:00",
+      "result_scope": "DONE. Balance execution plan aligned to Current Monster Budget contract. Old Core Enemy Budget 1-point normalization is inactive; TASK-BAL-073 is do-not-start; TASK-BAL-074 is Todo with current Monster Core + Formal Skill prerequisites; later AI stage owns Monster enemy_budget_cost as Formation Cost. No Simulation/Test, Source, Game Data, Current active, or deletion changes."
     }
   ],
   "checks": [
@@ -18230,6 +18261,29 @@
       "blocking": false,
       "created_at": "2026-08-26T15:40:00+09:00",
       "updated_at": "2026-08-26T15:40:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-MONSTER-BUDGET-SPEC-CORR-001",
+      "title": "Current Monster Budget仕様へのBalance工程整合確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-MONSTER-BUDGET-SPEC-CORR-001",
+      "status": "Passed",
+      "result": "PASS. Old HP/Attack/Defense Core Enemy Budget conversion is not executable. Skill redo depends directly on Current Monster Core + Formal Skill qualification. Later AI stage uses enemy_budget_cost as Formation Cost; six-category and 1-point=+1% definitions are not Current authority.",
+      "evidence": "Human confirmed successful import of Current Monster Budget spec correction into DEV-V9-REORG-019. Balance baseline: Current Source GKS-B783 / GA-B486.211. No Simulation/Test executed.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T16:46:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T16:46:00+09:00",
+        "reason": "Current Monster Budget specification and Balance execution graph aligned.",
+        "mode": "manual"
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T16:46:00+09:00",
+      "updated_at": "2026-08-26T16:46:00+09:00"
     }
   ],
   "workflow": {
@@ -19361,6 +19415,14 @@
       "at": "2026-08-26T15:40:00+09:00",
       "type": "AIStartTaskCompletionReconciliation",
       "summary": "AI_START preflight selected the only executable Task, TASK-BAL-074-INFRA-002 (Doing/Approved). Current user-provided source is GA-B486.211/GKS-B783; authority instance matches the supplied Project. The separate supplied Project JSON was one Human freeze event behind the canonical Project embedded in the same Current Source, so the canonical same-instance Project was used to avoid overwriting the newer TASK-BAL-072-CORR-002 freeze. B783 retains the B781 Formal Monster weapon_layout owner fix; existing Human real-device BEX-1787654991698 validated Knight shield 0 Strike. Current Quick 11/11 PASS. TASK-BAL-074-INFRA-002 marked Done. No new Source/GAME_DATA/Balance/Current active/deletion change. No new Evidence JSON. No next Task auto-started."
+    },
+    {
+      "id": "HIST-BAL-MONSTER-BUDGET-SPEC-CORR-001",
+      "title": "Current Monster Budget仕様へBalance実行系列を再整合",
+      "summary": "HumanがDEV-V9-REORG-019へCurrent Monster Budget正式仕様を取り込み済みと確認し、Balance側を整合修正。旧Core Enemy Budget HP/Attack/Defense 1-point conversionをCurrent Authorityから外し、TASK-BAL-073を実行禁止化。Skill redoはFrozen Monster Coreへ直接接続し、後段AI工程はMonster enemy_budget_costをFormation Costとして決める内容へ変更。旧6-category/1 point=+1%の再テストは行わない。Source/Game Data/Current active/削除変更0。",
+      "task_id": "TASK-BAL-MONSTER-BUDGET-SPEC-CORR-001",
+      "created_at": "2026-08-26T16:46:00+09:00",
+      "updated_at": "2026-08-26T16:46:00+09:00"
     }
   ],
   "authority": {
