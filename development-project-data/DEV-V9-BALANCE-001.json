@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T02:53:37.450Z"
+    "updated_at": "2026-08-26T03:30:21.193Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-CORR-004 Equipment/Bow/Block/Use Requirement Source Conformance — 開始承認待ち",
-    "goal": "Human承認済み汎用Formal Skill useRequirementsを含むCurrent Specificationを正本化済み。次はGKS-B782既存Systemをreuse-firstでBow/Quiver、Block、useRequirementsへ適合させるSOURCE_UPDATE。TASK-BAL-071-CORR-004の明示開始承認まではSource変更・更新ZIP生成・Battle/Simulation実行を行わない。"
+    "theme": "TASK-BAL-071-CORR-004 Issue Gate — Bow/Quiver Formal Tag Master未登録/未確認",
+    "goal": "CORR-004 Source Candidateは一部作成済みだがdeploy/test前に停止。Approved useRequirementsが要求する WEAPON_BOW / WEAPON_GREATBOW / EQUIP_QUIVERのCurrent Tag Master登録がGKS-B782で確認できず、CORR-004はGAME_DATA変更禁止。 次はTASK-BAL-071-CORR-005を別Human開始承認後にGAME_DATAとして実行し、Tag Master登録/確認を完了してからCORR-004へ戻る。"
   },
   "project_rules": [
     {
@@ -1587,6 +1587,22 @@
       "artifact_note": "Specification representation gap only; no implementation performed.",
       "created_at": "2026-08-26T11:45:30+09:00",
       "updated_at": "2026-08-26T11:51:02+09:00"
+    },
+    {
+      "id": "DISC-BAL-071-BOW-QUIVER-TAG-MASTER-GAP-001",
+      "title": "Bow/Quiver Formal Tag Master registration Issue Gate",
+      "status": "Open",
+      "summary": "Approved Bow/Quiver useRequirements requires WEAPON_BOW / WEAPON_GREATBOW / EQUIP_QUIVER as formal Tag Registry IDs. V9 specification catalog has the IDs, but Current GKS-B782 packaged Tag Master registration is absent/unconfirmed. CORR-004 cannot add GAME_DATA.",
+      "body": "## Approved authority\n- Formal Skill `useRequirements` type `EQUIPMENT_TAGS` resolves formal Tag Registry IDs only.\n- Unknown/unregistered Tag IDs fail closed.\n- Bow-required Skill = allTags=[EQUIP_QUIVER], anyTags=[WEAPON_BOW,WEAPON_GREATBOW].\n- REORG TAG specification explicitly says Product Master未登録Tagは正式登録後に使用する。\n\n## Current GKS-B782 observation\n- The three IDs are present in V9 specification/material catalog.\n- Static packaged-source search did not find them registered in active Current Tag Master data.\n- The Current source tree contains Tag Data Exchange schema/registry infrastructure, so this is a content/master registration dependency, not a reason to create a second Tag system.\n\n## Why CORR-004 stops\n- CORR-004 acceptance explicitly forbids GAME_DATA change.\n- Skipping Tag validation, inferring from names, or hard-coding hidden constants would violate the approved fail-closed Tag contract.\n- Adding the records inside CORR-004 would silently broaden an already-started SOURCE_UPDATE scope.\n\n## Recommended resolution\nRun a separate minimal GAME_DATA task that audits the Current Tag Master dataset and registers only the missing approved IDs `WEAPON_BOW`, `WEAPON_GREATBOW`, `EQUIP_QUIVER` through the existing Tag/Data Exchange owner. No gameplay inheritance/effect is added by the tags themselves. After that task is Human-applied/verified, resume CORR-004.",
+      "open_questions": "TASK-BAL-071-CORR-005を開始して、Current Tag Masterへ不足3 IDを正式登録/確認するか。",
+      "conclusion": "Issue Gate open. Recommended next task is minimal GAME_DATA Tag Master registration; CORR-004 remains Blocked.",
+      "related_discussion_ids": [
+        "DISC-BAL-071-EQUIPMENT-CONFORMANCE-001",
+        "DISC-BAL-071-BOW-SKILL-REQUIREMENT-GAP-001"
+      ],
+      "artifact_note": "Management JSON only. No Source update ZIP, no Evidence JSON, no test execution.",
+      "created_at": "2026-08-26T12:28:56+09:00",
+      "updated_at": "2026-08-26T12:28:56+09:00"
     }
   ],
   "decisions": [
@@ -13155,7 +13171,8 @@
       "execution_order": 251,
       "depends_on": [
         "TASK-BAL-071-CORR-003",
-        "TASK-BAL-071-CORR-004"
+        "TASK-BAL-071-CORR-004",
+        "TASK-BAL-071-CORR-005"
       ],
       "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Formal structure: Monster基礎Status = Monster Level × Job補正値。\n- Monster戦闘力/戦闘用StatusはMonster基礎Status × Job別Monster装備係数の正式層から生成する。\n- Player Equipment item/Candidate/ContributionをMonsterへ装着・加算して代用しない。\n- 全JobについてMonster Job Equipment Coefficientの対象Stat/category、係数、Level/Tier依存有無を明示する。\n- Equipment仕様完成後のBare Player Referenceと比較し、HP/Attack/Defense/Hit/Evasion/Critical等のMonster Core Tableを再構築する。\n- Level逆行、Tier由来の意図しない不連続、Job係数暴走をGateする。\n- 完了後にCore Enemy Budget(TASK-BAL-073)を再検証し、その後だけSkill(TASK-BAL-074)へ進む。\n- このTask登録自体はSimulation/Package/Source/Game Data変更の承認ではない。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -13166,14 +13183,14 @@
         "at": ""
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T11:51:02+09:00",
+      "updated_at": "2026-08-26T12:28:56+09:00",
       "result_scope": "PLAN REGISTERED ONLY. Blocked by TASK-BAL-071-CORR-004 Current-Spec Equipment/Skill conformance before Monster reconstruction. No coefficient values, Battle execution, Package, Source, Game Data, or Current active change authorized."
     },
     {
       "id": "TASK-BAL-071-CORR-004",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P4 Equipment/Bow/Block/Skill Use Requirement Current-Spec Conformance SOURCE_UPDATE",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 250,
       "depends_on": [
         "TASK-BAL-071-CORR-003"
@@ -13182,18 +13199,44 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-26T12:28:56+09:00"
       },
       "created_at": "2026-08-26T11:51:02+09:00",
-      "updated_at": "2026-08-26T11:51:02+09:00",
-      "result_scope": "PLAN REGISTERED ONLY. Source conformance repair is not started. No update ZIP, Package execution, Simulation, Game Data, or Current active change authorized.",
+      "updated_at": "2026-08-26T12:28:56+09:00",
+      "result_scope": "ISSUE GATE / PARTIAL SOURCE CANDIDATE ONLY. Human explicitly started TASK-BAL-071-CORR-004 before Source candidate editing. Static re-audit during resume found an unplanned Current Tag Master dependency: approved useRequirements and Bow/Quiver generation require formal Tag IDs WEAPON_BOW / WEAPON_GREATBOW / EQUIP_QUIVER, but these registrations are not present/confirmed in the packaged GKS-B782 Current Tag Master data. CORR-004 explicitly forbids GAME_DATA changes. Existing Source candidate edits are retained only as non-deployable work-in-progress; no further Source edit, Build marker change, test execution, update ZIP, Game Data, or Current active change is authorized until the Tag Master Issue Gate is resolved.",
       "reuse_system": "Current Equipment Generator/Data Exchange/Formal Contribution/Game Runtime/Studio Formal Skill/Studio Formal Battle/AI Battle Package",
       "reuse_entrypoint": "GKS_EQUIPMENT_GENERATION_REQUEST; Current Formal Skill Authoring/Compiler/Registry; Current Game Runtime; Current Studio Formal Battle Package executor",
       "current_gap": "Bow/Quiver dedicated set missing; Block fields/execution missing; Formal Skill useRequirements missing.",
       "required_extension": "Minimal Current-Spec extension to existing owners for Bow/Quiver, Block, and generic Equipment Tag use requirements.",
       "forbidden_duplicate": "No duplicate generator, battle engine, simulator, Skill compiler, Tag registry, or package format."
+    },
+    {
+      "id": "TASK-BAL-071-CORR-005",
+      "box_id": "BOX-V9-BAL-ITEM-001",
+      "title": "R5-P4 Bow/Quiver Formal Tag Master登録・確認",
+      "status": "Todo",
+      "execution_order": 250,
+      "depends_on": [
+        "TASK-BAL-071-CORR-003"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- work_type=GAME_DATA。Source変更・Battle/Simulation実行を行わない。\n- Current Tag Master Datasetを既存Tag/Data Exchange ownerから監査し、WEAPON_BOW / WEAPON_GREATBOW / EQUIP_QUIVERの登録有無を確認する。\n- 既に正式登録済みなら重複追加せず、そのCurrent ID/recordを正本として確認する。\n- 未登録の場合のみ、REORG V9 Content SeedとApproved useRequirementsに基づき同一IDを正式Tag Masterへ追加する。\n- Tag recordの必須field/id/name/category等は既存Tag Schema/Registry規則に従い、未定義gameplay inheritance/effectを追加しない。\n- Tagは識別子だけでCombat Effectを実行しない。\n- WEAPON_BOW / WEAPON_GREATBOW / EQUIP_QUIVER以外のTagを便乗追加しない。別不足を発見した場合はIssue Gate。\n- 保存/再読込後にFormal Tag IDとして解決可能であることをHuman実機/Studio出力で確認する必要がある場合は、実行前に別途そのテスト計画承認を取る。\n- 完了後にCHK-BAL-071-BOW-QUIVER-TAG-MASTER-001をresolveし、TASK-BAL-071-CORR-004を再開可能にする。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-26T12:28:56+09:00",
+      "updated_at": "2026-08-26T12:28:56+09:00",
+      "result_scope": "PLAN REGISTERED ONLY / ISSUE GATE RESOLUTION. No Game Data edit or test has started.",
+      "reuse_system": "Current Tag Master / Tag Data Exchange / Formal Tag Registry",
+      "reuse_entrypoint": "Current Studio Tag Master Dataset and existing Data Exchange Tag route",
+      "current_gap": "Approved Bow/Quiver formal Tag IDs are specified but Current Product Tag Master registration is absent/unconfirmed in GKS-B782 package.",
+      "required_extension": "Register/verify only WEAPON_BOW, WEAPON_GREATBOW, EQUIP_QUIVER through existing Tag Master data path.",
+      "forbidden_duplicate": "No duplicate Tag registry, no Source constants as substitute, no inferred tags by item/skill name."
     }
   ],
   "checks": [
@@ -17826,6 +17869,29 @@
       "blocking": false,
       "created_at": "2026-08-26T11:45:30+09:00",
       "updated_at": "2026-08-26T11:45:30+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-BOW-QUIVER-TAG-MASTER-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-004",
+      "status": "Failed",
+      "result": "FAIL / UNPLANNED GAME_DATA DEPENDENCY. Current Specification requires Formal Skill EQUIPMENT_TAGS useRequirements to resolve formal Tag Registry IDs and states that unregistered Product Master Tags must be formally registered before use. V9 Catalog contains WEAPON_BOW / WEAPON_GREATBOW / EQUIP_QUIVER, but static GKS-B782 packaged-source audit found no active Current Tag Master registration for those three IDs outside specification/material/development records. The partially patched Generator/G07 paths correctly fail closed when required tags are not registered. CORR-004 forbids GAME_DATA changes, so Source repair cannot legally complete this dependency.",
+      "evidence": "Static Current Source inspection only; GKS-B782 / GA-B486.211; source ZIP sha256=02ed19d48b27779818a93938d2400f865340117f4323daefce1003bdd148c728. REORG TAG-001 requires registered formal Tag IDs; TAG-002 lists the IDs as V9 Content Seed, not proof of Current Product Master registration. No standalone Evidence JSON because this is a blocking implementation dependency, not reusable numeric authority.",
+      "checked_by": "StaticSourceAndSpecificationAudit",
+      "checked_at": "2026-08-26T12:28:56+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-26T12:28:56+09:00",
+      "updated_at": "2026-08-26T12:28:56+09:00"
     }
   ],
   "workflow": {
@@ -18902,6 +18968,11 @@
       "at": "2026-08-26T11:51:02+09:00",
       "type": "SpecificationIssueGateResolved",
       "summary": "Human approved generic Formal Skill use requirements. `useRequirements` is separate from conditions/Budget refund; Current EQUIPMENT_TAGS uses SELF/allTags/anyTags formal Tag IDs and fails before Target/Cost/CD/Cast/Effect. Bow-required Skills use allTags=[EQUIP_QUIVER], anyTags=[WEAPON_BOW,WEAPON_GREATBOW]. TASK-BAL-071-CORR-003 marked Done; implementation moved to TASK-BAL-071-CORR-004 Todo/Pending. No Source change."
+    },
+    {
+      "at": "2026-08-26T12:28:56+09:00",
+      "type": "TaskResumeIssueGate",
+      "summary": "TASK-BAL-071-CORR-004 resumed after Human instruction. Before further Source editing/testing, static Current GKS-B782 audit found approved Bow/Quiver formal Tag IDs WEAPON_BOW/WEAPON_GREATBOW/EQUIP_QUIVER are V9 catalog entries but not present/confirmed in active Current Tag Master data. Because CORR-004 forbids GAME_DATA, work stopped under RULE-BAL-ISSUE-GATE-001. Partial Source candidate retained as non-deployable WIP; no tests/update ZIP/Game Data performed. TASK-BAL-071-CORR-005 GAME_DATA plan registered Pending Human start approval."
     }
   ],
   "authority": {
