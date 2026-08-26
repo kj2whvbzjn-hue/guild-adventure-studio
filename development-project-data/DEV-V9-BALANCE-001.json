@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T02:02:10.950Z"
+    "updated_at": "2026-08-26T02:31:32.260Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-071-CORR-003 Equipment仕様整理 — 弓・盾確定 / 残Equipment未決",
-    "goal": "Human確定済みの弓+矢筒Combat Identity、盾Block Identity、two_hand分類撤回を正本として保持し、残Equipment typeの未決仕様を情報源/戦闘ロジックから先に整理してHuman判断事項だけを残す。Source変更/Battle実行はTASK-BAL-071-CORR-003の別開始承認まで行わない。"
+    "theme": "TASK-BAL-071-CORR-003 Equipment仕様同期完了 — Human未決0 / Source Conformance待ち",
+    "goal": "DEV-V9-REORG-019のCurrent Equipment/Battle仕様とHuman確定事項をBalance正本へ同期済み。Equipmentについて追加Human判断が必要な構造未決は0件。次工程はCurrent GKS-B782のBow/Quiver・Block等のSource/Studio/Battle Package Conformance Gapを、別Human開始承認後に既存System reuse-firstで解消する。Simulation/Package実行、Source変更、GAME_DATA変更は未承認のまま行わない。"
   },
   "project_rules": [
     {
@@ -481,35 +481,61 @@
       "approved_by": "Human",
       "approved_at": "2026-08-26T10:38:34+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-26 bow/quiver specification"
+      "updated_at": "2026-08-26T11:28:04+09:00",
+      "source_type": "CurrentSpecificationAuthority",
+      "source_id": "DEV-V9-REORG-019:DEC-REORG-EQUIP-BOW-QUIVER-001"
     },
     {
       "id": "RULE-BAL-EQUIPMENT-NO-TWO-HAND-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Active",
-      "text": "Equipmentの正式分類・Combat Identityとしてtwo_hand/両手武器カテゴリを使用しない。個別武器種のRequirementやattack_countをtwo_handカテゴリから推定しない。既存Source/Taskに残るtwo_hand表現はHistorical implementationであり、Current Equipment Authorityへ使用しない。",
-      "rationale": "Human instruction: 両手武器というものはない。",
+      "text": "Equipmentの正式な武器カテゴリとして「両手武器 / two_hand weapon category」を設けない。一方、既存の「両手持ち」は武器カテゴリではなく独立した装備ルールとして維持する。個別武器種のRequirement、attack_count、Combat Contributionを『両手武器カテゴリ』から推定しない。実装内部で両手持ち状態を識別するlabel/fieldを用いる場合も、それをEquipment category authorityとして扱わない。",
+      "rationale": "DEV-V9-REORG-019: DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001との同期。Human correctionは両手武器カテゴリを否定し、両手持ち装備ルール自体は維持する。",
       "approved_by": "Human",
       "approved_at": "2026-08-26T10:38:34+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00",
-      "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-26 no-two-hand specification"
+      "updated_at": "2026-08-26T11:28:04+09:00",
+      "source_type": "CurrentSpecificationAuthority",
+      "source_id": "DEV-V9-REORG-019:DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001"
     },
     {
       "id": "RULE-BAL-SHIELD-BLOCK-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Active",
-      "text": "盾のBase防御性能はBlockで表現する。初期BalanceはiLv1 Block Rate=20%、Block Rate成長=+2 percentage points / Item Level、Damage Cut Rate=30%。Block成功時はfinalDamageに割合Cutを適用してfloorし、その結果を既存SHIELD/Barrier→HP処理へ渡す。BlockRate(iLv)=20%+2pp×(iLv-1)、BlockedDamage=floor(finalDamage×(1-DamageCutRate))。Block RateとDamage Cut RateはBalance可変値。盾attack_count=0、盾のoffensive contributionは通常攻撃へ加算しない。未指定のCapや追加成長式をAIが推測追加しない。",
-      "rationale": "Human-approved Shield Block combat identity and initial Balance values.",
+      "text": "盾装備のBase防御性能はBlockで表現する。正式field名は `block_rate` と `block_damage_cut_rate`。Current初期Balance seedはiLv1 `block_rate=20%`、Item Levelが1上がるごとに+2 percentage points、`block_damage_cut_rate=30%`。両値ともBalance可変でコード固定しない。`block_rate(iLv)=20%+2pp×(iLv-1)`。Block対象はBasic AttackおよびSkillの直接Damageで、Physical/Magicalの両方。Multi-hitは各Hitごとに独立Block判定し、MissしたHitでは判定しない。DOT等の継続DamageはBlock対象外。Block成功時は `blocked_damage=floor(finalDamage×(1-block_damage_cut_rate))`。処理順は `finalDamage確定 → Block判定 → Block Damage Cut → floor → 既存SHIELD(BARRIER) → HP`。Blockと既存SHIELD(BARRIER)は別概念。未指定のblock_rate上限、block_damage_cut_rateのiLv成長式、追加対象Damage種別をAIが推測追加しない。",
+      "rationale": "Human最終確定: Block専用field名を使用し、Damage Cutは既存SHIELDより前。直接Damage対象、Hit単位判定、Miss非判定、DOT除外を確定。",
       "approved_by": "Human",
       "approved_at": "2026-08-26T11:00:58+09:00",
       "created_at": "2026-08-26T11:00:58+09:00",
-      "updated_at": "2026-08-26T11:00:58+09:00",
+      "updated_at": "2026-08-26T11:28:04+09:00",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-26 shield block specification"
+      "source_id": "conversation:2026-08-26 final block specification"
+    },
+    {
+      "id": "RULE-BAL-SPEC-FIRST-QUESTION-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Active",
+      "text": "Equipment/Battleその他の仕様判断をHumanへ質問する前に、DEV-V9-REORG-019のCurrent Specification、Human Approved Decision、既存Material、および確認目的に限ったCurrent戦闘ロジックを先に照合する。既存Authorityから一意に決まる事項、既決事項、Balance可変値、実装Conformance Gapを仕様未決として再質問しない。Source/Runtimeだけを新Specification authorityへ昇格させず、Sourceとの差はConformance Gapとして分離する。",
+      "rationale": "Human instruction: 情報源に仕様があるものを確認し、無駄な再質問をしない。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:28:04+09:00",
+      "created_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T11:28:04+09:00",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-26 spec-first no redundant questions"
+    },
+    {
+      "id": "RULE-BAL-EQUIPMENT-ACTION-IDENTITY-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Active",
+      "text": "Weapon Basic AttackはCurrent Equipment Combat Identityに従う。single=1 Strike。dual_wield=DUAL_WIELD capability成立時のみ各手独立2 Strike。両手持ち=独立装備ルールとして1武器1 Strike。weapon+shield=攻撃武器1 Strike/盾0 Strike。Bow+Quiver=Bow 1 Strike/Quiver 0 Strike、CriticalはBowのみ、Critical以外のContributionはセット合算。『両手武器カテゴリ』を作らない。",
+      "rationale": "Current Equipment action identityを後工程で再質問・再推定しないための同期Rule。",
+      "approved_by": "CurrentSpecificationAuthority",
+      "approved_at": "2026-08-26T11:28:04+09:00",
+      "created_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T11:28:04+09:00",
+      "source_type": "AuthoritySync",
+      "source_id": "DEV-V9-REORG-019 + existing DEV-V9-BALANCE-001 Human Approved decisions"
     }
   ],
   "source_baseline": {
@@ -1533,6 +1559,19 @@
       "artifact_note": "DEV-V9-BALANCE-001_TASK-BAL-075_FORMULA-EQUIPMENT-PREFREEZE-EVIDENCE.zip",
       "created_at": "2026-08-25T14:05:05+09:00",
       "updated_at": "2026-08-25T14:12:46+09:00"
+    },
+    {
+      "id": "DISC-BAL-071-EQUIPMENT-CONFORMANCE-001",
+      "title": "Equipment Current Specification → GKS-B782 Conformance Gap",
+      "status": "Open",
+      "summary": "Equipment Human仕様未決は0件。静的Source監査ではBow/Quiver専用セット処理とBlock実装がCurrent GKS-B782に未接続。両手持ち内部表現はカテゴリAuthorityと分離してConformance確認が必要。",
+      "body": "## Authority\n- DEV-V9-REORG-019: EQUIP-001/002/003/004, BATTLE-001/003, STATUS-002, RANGE-001, INVENTORY-UI-001\n- DEV-V9-BALANCE-001: SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 3\n\n## Static GKS-B782 observations\n1. Bow/Quiver専用のセット成立・片側Action拒否理由・専用Contribution合算がSource上確認できない。二本の非盾Weaponは既存dual_wield判定へ入る。\n2. Equipment Consumerにblock_rate / block_damage_cut_rateがなく、Basic AttackのfinalDamageは既存SHIELD(BARRIER)へ直接渡される。Formal Skill/Studio Battle Packageを含むBlock接続も未確認。\n3. Source内部にweaponStyle='two_hand'等がある。Current仕様では両手持ちは装備ルールであって『両手武器カテゴリ』ではないため、内部表現がこの境界を破っていないかをConformance Taskで確認する。\n\n## Boundary\nこれは仕様再質問ではなくImplementation Conformance。Source変更・Package生成・Simulationは別Human開始承認まで行わない。",
+      "open_questions": "",
+      "conclusion": "Human gameplay-structure decisionは不要。次の実行対象は既存System reuse-firstのSource/Studio/Battle Package Conformance確認・修正。TASK-BAL-071-CORR-003 approvalはPendingのまま。",
+      "related_discussion_ids": [],
+      "artifact_note": "Management JSON static audit only; no update ZIP / no Evidence JSON.",
+      "created_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T11:28:04+09:00"
     }
   ],
   "decisions": [
@@ -2472,13 +2511,13 @@
       "id": "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Approved",
-      "text": "Equipment仕様に『両手武器』『two_hand weapon style/category』という正式分類は存在しない。大剣等の個別武器種をtwo_handという共通カテゴリへ変換して装備・攻撃・Requirementを決めない。既存の大剣STR×2 Requirement判断自体は本Decisionで数値否定せず、two_handカテゴリ依存ではなく実際の武器種/Requirement ownerへ再表現する必要がある。single/dual_wield/weapon_shield等の既決挙動は、two_hand分類撤回部分を除き別DecisionのAuthorityに従う。",
-      "rationale": "Human instruction: 『両手武器なんてものはない』。",
+      "text": "Equipment仕様に『両手武器 / two_hand weapon category』という正式な武器カテゴリは存在しない。既存の『両手持ち』は独立した装備ルールとして維持する。大剣等の個別武器種をtwo_hand共通カテゴリへ変換してRequirement、攻撃回数、Combat Contributionを決めない。両手持ち時の既存Requirement救済や1武器1Strike等、別Authorityで既決の装備ルールはカテゴリ撤回だけを理由に削除しない。",
+      "rationale": "Human instruction『両手武器なんてものはない』を、REORG Current Authorityの『カテゴリ不存在 / 両手持ちは独立装備ルール』へ同期して再表現。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-26T10:38:34+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T10:38:34+09:00"
+      "updated_at": "2026-08-26T11:28:04+09:00"
     },
     {
       "id": "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
@@ -2496,13 +2535,25 @@
       "id": "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Approved",
-      "text": "盾のBase Combat IdentityとしてBlockを正式採用する。盾はBlock RateとBlock成功時Damage Cut Rateを持つ。初期Balance値はItem Level 1でBlock Rate=20%、Damage Cut Rate=30%。Block RateはItem Levelが1上昇するごとに+2 percentage pointsとし、BlockRate(iLv)=20%+2pp×(iLv-1) を初期Balance式とする。Damage Cut Rateは現時点30%を初期値とし、Item Level成長は指定しない。Block Rate / Damage Cut RateはいずれもBalance調整項目であり、Gameplay topologyとして固定値化しない。Block成功時は既存Damage pipelineで確定したfinalDamageから盾のDamage Cut Rateを割合減算し、BlockedDamage=floor(finalDamage×(1-DamageCutRate)) とする。初期30%ではBlockedDamage=floor(finalDamage×0.70)。その後、既存SHIELD/Barrier吸収処理が存在する場合はBlockedDamageを入力として処理し、残値をHPへ適用する。盾のattack_count=0および通常攻撃へのAttack/Accuracy/Critical非加算は既存Human Approved仕様を維持する。Block Rate上限、Damage Cut RateのItem Level成長、Block対象Damage種別の追加制約は本Decisionでは新設しない。",
-      "rationale": "Human instruction: 盾はブロック率を持つ。成功時は盾設定Damage Cut%をfinalDamageから割合減算。初期Block Rate 20%、Damage Cut 30%、Block RateはItem Levelごと+2pp、軽減後は切り捨て。",
+      "text": "盾装備のBase Combat IdentityとしてBlockを正式採用する。正式fieldは `block_rate` と `block_damage_cut_rate`。Current初期Balance値はItem Level 1で `block_rate=20%`、Item Levelが1上昇するごとに+2 percentage points、`block_damage_cut_rate=30%`。`block_rate(iLv)=20%+2pp×(iLv-1)`。両値はBalance可変であり、30%時の残存倍率を固定値として式へ埋め込まない。Block対象はBasic AttackとSkillの直接DamageでPhysical/Magicalの両方。Multi-hitは各Hitごとに独立判定。MissしたHitではBlock判定せず、DOT等の継続Damageは対象外。通常Damage処理でfinalDamageを確定した後にBlock判定し、成功時は`blocked_damage=floor(finalDamage×(1-block_damage_cut_rate))` とする。その後に既存SHIELD(BARRIER)を処理し、残値をHPへ適用する。盾attack_count=0、通常攻撃へのAttack/Accuracy/Critical非加算を維持する。block_rate上限、block_damage_cut_rateのiLv成長式、追加対象Damage種別は本Decisionで新設しない。",
+      "rationale": "Human最終指示を統合: Block専用命名、可変Damage Cut、切り捨て、SHIELD前適用、direct Physical/Magical、per-hit、Missなし、DOT除外。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-26T11:00:58+09:00",
       "created_at": "2026-08-26T11:00:58+09:00",
-      "updated_at": "2026-08-26T11:00:58+09:00"
+      "updated_at": "2026-08-26T11:28:04+09:00"
+    },
+    {
+      "id": "DEC-BAL-EQUIPMENT-ACTION-IDENTITY-SYNC-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "既存Human Approved/Current Specificationを統合し、Weapon action identityを次として再表現する。通常の単一攻撃武器は1 Actionにつき1 Strike。二刀流はPAS-DUAL-WIELD-001 / DUAL_WIELD成立時のみMain/Off Handの独立2 Strikeで、各手Attack/Accuracy/Criticalを独立判定する。両手持ちは武器カテゴリではなく装備ルールであり、1武器・1 Strike。既存STR Requirement救済はRequirementだけへ作用し、Attack倍化や2 Strikeを発生させない。武器+盾は攻撃武器1 Strike、盾0 Strikeで盾のoffensive Contributionを加算しない。弓は弓+矢筒の専用セット規則を使用し、弓1 Strike/矢筒0 Strike、Criticalは弓のみ、Critical以外はセット合算する。このDecisionは既存Authorityの同期であり、新しい武器カテゴリ、Job制限、数値係数を追加しない。",
+      "rationale": "DEV-V9-REORG-019の両手持ち/弓仕様、既存DEC-BAL-DUAL-WIELD-PASSIVE-001、DEC-BAL-WEAPON-SHIELD-OFFENSE-001および既存Human Approved weapon behaviorを一つのCurrent handoff recordへ再表現。",
+      "source_discussion_ids": [],
+      "approved_by": "CurrentSpecificationAuthority",
+      "approved_at": "2026-08-26T11:28:04+09:00",
+      "created_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T11:28:04+09:00"
     }
   ],
   "specifications": [
@@ -2775,27 +2826,29 @@
     },
     {
       "id": "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001",
-      "title": "Equipment Combat Identity — Bow/Quiver, Shield Block, Weapon Category",
+      "title": "Equipment Combat Identity — Current Authority Sync",
       "status": "Approved",
-      "summary": "弓+矢筒の装備/使用条件、UI警告、attack_count、Contribution合成、Critical owner、射撃属性とRange owner境界、two_handカテゴリ不存在に加え、盾Base防御性能をBlock Rate + Block Damage CutとしてHuman Approved確定。",
-      "body": "# Equipment Combat Identity — Bow / Quiver / Shield Block / Weapon Category\n\n## Scope / status\nHumanが確定したEquipment Combat IdentityをCurrent Authorityとしてまとめる。\nこのRevisionでは弓・矢筒、盾Block、two_hand分類撤回を確定済みとする。\nその他Equipment typeの未決仕様はTASK-BAL-071-CORR-003で継続する。\n\n## Terminology / weapon category\n- 仕様選定中は「弓」と「大弓」を同一条件としてまとめて「弓」と呼ぶ。\n- Product Master上の名称統合・種類削除を意味しない。\n- 「両手武器 / two_hand」というEquipment分類は存在しない。\n- 個別武器種のRequirement/attack_countをtwo_handカテゴリから推定しない。\n\n## Bow / Quiver equip state and combat availability\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 使用可否はCombat側条件であり、片側だけの状態をEquip Validationで不正として排除しない。\n\n## Bow / Quiver UI\n- 弓のみ: 「矢筒が装備されていません」。\n- 矢筒のみ: 「弓が装備されていません」。\n- 片側だけのときは装備画面で不足している側の武器スロットを赤系警告状態等で明示する。\n- UIは「装備不可」と「セット条件未成立」を区別する。\n\n## Bow / Quiver strike and contribution\n- Bow attack_count = 1.\n- Quiver attack_count = 0.\n- Quiverは独立Strike/Critical rollを発生させない。\n- セット成立時、Critical系以外のCombat ContributionはBow + Quiverを合算する。\n- Attack = Bow.Attack + Quiver.Attack.\n- Accuracy = Bow.Accuracy + Quiver.Accuracy.\n- magic_weapon_bonusその他Critical以外のContributionも合算。\n- Critical/base_critical_rateは合算せずBow側だけを使用する。\n\n## Bow Range ownership\n- 弓Equipmentが持つWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達等を決定・補正しない。\n- Range/Targetingは既存Skill/Battle ownerに従う。\n\n## Shield offensive identity\n- Shield attack_count = 0.\n- Shieldは通常攻撃のAttack/Accuracy/CriticalへContributionしない。\n- Shieldは独立Strikeを発生させない。\n\n## Shield defensive identity — Block\n- ShieldはBlock Rateを持つ。\n- ShieldはBlock成功時Damage Cut Rateを持つ。\n- Initial Balance:\n  - Item Level 1 Block Rate = 20%.\n  - Block Rate growth = +2 percentage points / Item Level.\n  - Damage Cut Rate = 30%.\n- Initial Block formula:\n  BlockRate(iLv) = 20% + 2pp × (iLv - 1)\n- Block Rate / Damage Cut RateはいずれもBalance調整項目。\n- Damage Cut RateのItem Level成長は現時点では指定しない。\n- Block Rate上限は現時点では指定しない。\n\n## Shield Block damage processing\n- 既存Damage計算でfinalDamageを確定する。\n- Block判定に成功した場合、盾Damage Cut RateをfinalDamageへ割合適用する。\n- BlockedDamage = floor(finalDamage × (1 - DamageCutRate))\n- 初期30%では BlockedDamage = floor(finalDamage × 0.70)\n- 軽減後の小数は切り捨て。\n- 既存SHIELD/Barrier吸収がある場合はBlockedDamageを入力として処理し、その残値をHPへ適用する。\n- 処理順:\n  finalDamage → Shield Block判定 → 成功時割合Cut → floor → existing SHIELD/Barrier → HP\n\n## Explicit non-inference\n- Block Rate capをAIが追加しない。\n- Damage Cut RateのiLv成長式をAIが追加しない。\n- Block対象Damage種別に追加制約をAIが推測追加しない。\n- Source/Runtimeに本Contractが未実装の場合は、仕様を変更せずConformance Gapとして扱う。\n\n## Remaining Equipment work\n- その他Weapon/Armor typeのdownstream Combat Identity棚卸し。\n- Current Sourceが本Specificationを表現できるかのConformance確認。\n- 未実装の場合のSource変更はTASK-BAL-071-CORR-003のHuman開始承認後、Issue Gate/Source scopeに従う。\n",
+      "summary": "DEV-V9-REORG-019のEquipment/Battle Current AuthorityとHuman確定事項を同期。Weapon action identity、Bow/Quiver、Block、Armor/Accessory owner境界を整理し、追加Human構造未決0件を確認。",
+      "body": "# Equipment Combat Identity — Current Authority Sync\n\n## 1. Authority / audit result\n本SpecificationはDEV-V9-REORG-019のCurrent Equipment/Battle仕様と、DEV-V9-BALANCE-001内のHuman Approved Decisionを同期する。\n仕様質問の前に情報源を確認し、既決事項・Balance可変値・Source Conformance GapをHuman未決として再質問しない。\n\nEquipmentについて追加Human判断が必要な構造未決: **0件**。\n\nこれはCurrent Sourceが実装済みという意味ではない。\nSource/Studio/Battle Packageとの差はConformance Gapとして別管理する。\n\n## 2. Weapon action identity\n- Single: 通常の単一攻撃武器は1 Actionにつき1 Strike。\n- Dual Wield: `PAS-DUAL-WIELD-001 / DUAL_WIELD`成立時のみMain/Off Handの独立2 Strike。Attack/Accuracy/Critical/Hit/Damageを各手独立評価し、Accuracy/Criticalを合算しない。1st StrikeでKOなら残Strikeを実行しない。\n- 両手持ち: 「両手武器 / two_hand weapon category」は存在しない。両手持ちは独立装備ルール。1武器・1 Strike。既存STR Requirement救済はRequirementだけへ作用し、Attack倍化・2 Strikeを発生させない。\n- Weapon + Shield: 攻撃武器1 Strike、盾0 Strike。盾のAttack/Accuracy/base_critical_rateを攻撃武器へ加算しない。\n\n## 3. Bow / Quiver\n仕様選定上、弓と大弓を同条件としてまとめて「弓」と呼ぶ。Product Master上の統合ではない。\n\n### Equip / action\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 片側のみをEquip Validationの不正状態として排除しない。\n\n### UI\n- 弓のみ: `矢筒が装備されていません`\n- 矢筒のみ: `弓が装備されていません`\n- 不足側武器スロットを警告状態で示し、「装備不可」と「セット条件未成立」を区別する。\n\n### Strike / contribution\n- Bow attack_count = 1\n- Quiver attack_count = 0\n- Critical/base_critical_rateはBow側だけを使用し、合算しない。\n- Critical以外のCombat ContributionはBow + Quiverを合算する。\n- attack / accuracy / magic_weapon_bonus等はセット合算。\n- Quiverは独立Strike/Critical rollを発生させない。\n\n### Range\n- 弓EquipmentのWeapon属性は「射撃」。\n- EquipmentはRange、射程、対象範囲、前後列到達、Target Expansionを決定しない。\n- Range/TargetingはRANGE/Skill/Battle Owner。\n\n## 4. Block\n\n### Formal fields\n- `block_rate`\n- `block_damage_cut_rate`\n\nBlockは既存Effect kind `SHIELD` / BARRIERとは別概念。\nBlock用field名に`shield_*`を使用しない。\n\n### Current initial Balance seed\n- iLv1 `block_rate = 20%`\n- Item Level +1ごとに `block_rate +2 percentage points`\n- `block_rate(iLv) = 20% + 2pp × (iLv - 1)`\n- `block_damage_cut_rate = 30%`\n- 両値はBalance可変\n- `block_damage_cut_rate`のiLv成長式は未設定\n- `block_rate`上限は未設定\n\n### Target\n対象:\n- Basic Attackの直接Damage\n- Skillの直接Damage\n- Physical / Magical\n\n非対象:\n- MissしたHit\n- DOT等の継続Damage\n\nMulti-hitは各Hitごとに独立Block判定。\n\n### Damage processing\n`blocked_damage = floor(finalDamage × (1 - block_damage_cut_rate))`\n\n処理順:\n`finalDamage確定 → Block判定 → Block Damage Cut → floor → existing SHIELD(BARRIER) → HP`\n\n固定するのは処理構造とfloor。\nDamage残存倍率を固定値としてロジックへ埋め込まない。\n\n## 5. Re-question禁止範囲\n\n### Weapon BaseItem\nCurrent Equipment Generator/Specificationが所有:\n- required_str / required_dex / required_int\n- attack / accuracy / magic_weapon_bonus / base_critical_rate\n- 13 Weapon type coefficient table\n- 具体係数はBalance可変\nRequirement値をBattle statへ直接加算しない。\n\n### Armor\nCurrent Equipment Specificationが所有:\n- Requirement: required_vit / required_mnd / required_agi\n- Combat Contribution: hp_bonus / mp_bonus / evasion\n- Heavy / Scout(Light) / Robeの既存系統\n- EvasionはHP/MP用slot coefficientを使わず `required_agi × evasionGrowth`\n- hp/mp/evasion Growth具体値はBalance可変\nArmor category/slotの既存役割を再質問しない。\n\n### Accessory\n- 10Slot構造にAmulet / Ring1 / Ring2 / Beltを含む。\n- Amulet / Ring / Beltは初期BaseItem Generator対象。\n- Accessoryへ新しい固有Battle Base Statを追加することを未決質問として扱わない。\n- MOD/Tier/Rarity等の既存Ownerで性能を作る。\n- 新しいAccessory専用Combat Contributionを追加する場合だけ新Specification Decisionが必要。\n\n## 6. Owner boundaries\n- Requirement → Equipability専用。\n- Equipment Contribution → BaseItem PerformanceからBattleへ渡す正式Contribution。\n- MOD → Modified Equipment Contribution。\n- magic_weapon_bonus → MAGIC_DAMAGE。Healへ接続しない。\n- Range/Targeting → Equipment Ownerではない。\n- Block → existing SHIELD(BARRIER)とは別。\n- 具体数値 → 原則Balance可変。\n- Formula topology / processing order / rounding / owner responsibility → Current Specification固定。\n\n## 7. Static GKS-B782 conformance observation\nこの監査はSource変更・Simulation・Battle Package実行ではない。\n\n1. Bow/Quiver:\nCurrent GKS-B782には弓+矢筒の専用セット成立判定、片側理由表示、専用Contribution合算が見当たらない。\n二本の非盾Weaponは既存dual_wield経路へ入るためConformance確認/修正が必要。\n\n2. Block:\nCurrent GKS-B782 Equipment Consumerに`block_rate` / `block_damage_cut_rate`がない。\nBasic Attack/Skill直接DamageはfinalDamage後にexisting SHIELD(BARRIER)へ直接渡され、Block処理がない。\nEquipment Generator / Contribution / Game Runtime / Studio Formal Battle / Battle Packageへの接続確認・修正が必要。\n\n3. 両手持ち表現:\nCurrent Sourceには内部`weaponStyle='two_hand'`等の表現が存在する。\nこれは「両手武器カテゴリ」のAuthorityにはしない。\n両手持ち装備ルールの実装表現としてCurrent Specificationへ適合するかをConformance Taskで確認する。\n\n以上はHuman仕様未決ではなくImplementation Conformance Gap。\n",
       "decision_refs": [
         "DEC-BAL-EQUIPMENT-NO-TWO-HAND-CATEGORY-001",
+        "DEC-BAL-EQUIPMENT-ACTION-IDENTITY-SYNC-001",
         "DEC-BAL-EQUIPMENT-BOW-QUIVER-001",
         "DEC-BAL-WEAPON-SHIELD-OFFENSE-001",
+        "DEC-BAL-DUAL-WIELD-PASSIVE-001",
         "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001"
       ],
       "depends_on": [],
-      "acceptance_criteria": "- 弓/矢筒単体を合法Equip stateとして保持し、Combat availabilityだけをセット条件で制御する。\n- 不足理由メッセージ2種と装備画面警告を保持する。\n- Bow=1 strike / Quiver=0 strike、CriticalはBowのみ、その他Contributionは合算する。\n- EquipmentにRange ownershipを持たせない。\n- Shield=0 strike / offensive contribution非加算を維持する。\n- Shield Block初期値 iLv1=20%、+2pp/iLv、Damage Cut=30% をBalance値として保持する。\n- Block成功時は finalDamage に割合Cut→floor→existing SHIELD/Barrier→HP の順で処理する。\n- 未指定Cap/成長式/対象制約を推測追加しない。\n- two_handカテゴリをCurrent Authorityから除外する。\n- Source/Runtime conformanceは別開始承認後に検証する。",
+      "acceptance_criteria": "- Equipment仕様について追加Human構造未決を0件として区別できる。\n- 両手武器カテゴリを作らず、両手持ち装備ルールを保持する。\n- single / dual_wield / 両手持ち / weapon+shield / Bow+QuiverのStrike/Contribution境界を一意に扱える。\n- Bow/Quiver片側装備を合法Equip stateとして保持し、Action availability/UI警告を分離する。\n- Bow=1 Strike / Quiver=0 Strike、CriticalはBowのみ、Critical以外はセット合算する。\n- block_rate / block_damage_cut_rateをBalance Dataとして保持する。\n- Direct Physical/Magical DamageへHit単位Blockを適用し、Miss/DOTではBlockしない。\n- Block成功時は finalDamage → Block Damage Cut → floor → SHIELD(BARRIER) → HP の順で処理する。\n- Armor/Accessoryの既存Owner事項を未決として再質問しない。\n- Source差分はHuman仕様未決ではなくConformance Gapとして分離する。",
       "system_node_id": "SYS-BAL-GAMEWIDE",
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "Human",
-      "approved_at": "2026-08-26T11:00:58+09:00",
+      "approved_at": "2026-08-26T11:28:04+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T11:00:58+09:00"
+      "updated_at": "2026-08-26T11:28:04+09:00"
     }
   ],
   "specification_candidates": [],
@@ -13008,7 +13061,7 @@
         "TASK-BAL-071-CORR-002",
         "TASK-BAL-071-FIX-002"
       ],
-      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Decision Question: Monster/Skillへ渡す前に、各Equipment typeの戦闘Identity/Contributionは一意に定義されているか。\n- 全Weapon/Shield/Armor typeを棚卸しし、downstream performanceへ影響する未確定/Deferred項目を0件にする。\n- Current Authority: two_hand/両手武器カテゴリは存在しない。旧two_hand表現を新Referenceへ使用しない。\n- Current Authority: 仕様選定中は弓/大弓を同条件の『弓』として扱う。弓+矢筒でのみ弓通常攻撃/弓Skill使用可。\n- 弓/矢筒は単体装備可能。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。不足側武器スロットを警告表示する。\n- Bow attack_count=1 / Quiver attack_count=0。CriticalはBowのみ、Critical以外のCombat ContributionはBow+Quiver合算。\n- 弓EquipmentのWeapon属性は射撃。Range/射程/TargetingをEquipment仕様として設計しない。\n- Current Authority: Shield attack_count=0、通常攻撃へoffensive contribution非加算。\n- Current Authority: Shield Block iLv1=20%、+2pp/iLv、Damage Cut=30%。成功時 finalDamage×(1-cut) をfloorし、existing SHIELD/Barrier→HPへ渡す。\n- Shield Block Rate / Damage Cut RateはBalance可変。未指定のCap、Damage Cut成長式、対象Damage追加制約を推測しない。\n- その他Equipment typeについてRequirement、attack_count、Contribution owner、組合せ条件をEquipment Combat Identity Tableへ整理する。\n- 大剣STR×2等、旧two_handカテゴリに結び付いた個別Requirementは数値を勝手に廃止せず、正式な武器種ownerへ再表現できるか確認する。\n- Current Sourceに本Human Approved仕様の表現経路がない場合は推測実装せずIssue Gateとして記録する。\n- 完了時のみBare Player Referenceを再Freezeし、TASK-BAL-072-CORR-001へ渡す。\n- このTask登録/仕様登録自体はSimulation/Package/Source変更の承認ではない。",
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- Equipment Human Decision Gap Auditは完了済み: 追加構造未決=0件。\n- Current AuthorityはSPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 3。\n- 『両手武器カテゴリ』は使用しない。両手持ちは独立装備ルールとして扱う。\n- Bow/Quiverの装備成立、UI、Strike、Contribution、Range owner境界をCurrent Authorityどおり扱う。\n- Blockはblock_rate / block_damage_cut_rateを使用し、Direct Physical/MagicalにHit単位で判定する。\n- Miss/DOTはBlock対象外。Block Damage Cut後にfloorし、その後existing SHIELD(BARRIER)へ渡す。\n- Armor/Accessory/その他Weaponの既存Specification事項を再質問せず、Source Conformanceだけを確認する。\n- GKS-B782との差分はBow/Quiver、Block、両手持ち実装表現を中心にConformance Gapとして確認する。\n- Current Sourceに表現経路がない場合は推測実装せずIssue Gate/承認済みSource scopeに従う。\n- Source Conformance修正完了後にBare Player Reference再Freeze可否を判定し、TASK-BAL-072-CORR-001へ渡す。\n- この管理JSON同期/静的監査自体はSimulation/Package/Source変更の承認ではない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -13017,8 +13070,8 @@
         "at": ""
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T11:00:58+09:00",
-      "result_scope": "PLAN REGISTERED ONLY / HUMAN SPEC PARTIALLY FIXED. Bow/Quiver and Shield Block combat identities are Human Approved Authority via SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 2. Remaining Equipment type identities and Source/Runtime conformance are still unresolved. Task execution approval remains Pending. No Source/Battle/Game Data change authorized.",
+      "updated_at": "2026-08-26T11:28:04+09:00",
+      "result_scope": "SPEC SYNC COMPLETE / HUMAN DECISION GAPS=0. SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001 revision 3 is the Balance handoff authority synchronized with DEV-V9-REORG-019. Static GKS-B782 audit identifies implementation conformance gaps for Bow/Quiver and Block, plus a two-hand-hold representation check. TASK execution approval remains Pending; no Source/Battle/Game Data change authorized.",
       "confirmed_spec_refs": [
         "SPEC-BAL-EQUIPMENT-COMBAT-IDENTITY-001"
       ]
@@ -17583,6 +17636,29 @@
       "blocking": false,
       "created_at": "2026-08-26T11:00:58+09:00",
       "updated_at": "2026-08-26T11:00:58+09:00"
+    },
+    {
+      "id": "CHK-BAL-071-EQUIPMENT-HUMAN-GAPS-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-071-CORR-003",
+      "status": "Passed",
+      "result": "PASS / SPEC AUDIT. DEV-V9-REORG-019 Current Equipment/Battle authority and existing Human Approved Balance decisions were cross-checked. Additional Human gameplay-structure questions for Equipment = 0. Remaining items are implementation/source conformance, not specification decisions.",
+      "evidence": "Authority sync + static GKS-B782 source audit. No standalone Evidence JSON generated.",
+      "checked_by": "AuthoritySyncStaticAudit",
+      "checked_at": "2026-08-26T11:28:04+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AuthoritySyncStaticAudit",
+        "resolved_at": "2026-08-26T11:28:04+09:00",
+        "reason": "Existing authority answers remaining Equipment design questions; no new Human choice is needed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T11:28:04+09:00",
+      "updated_at": "2026-08-26T11:28:04+09:00"
     }
   ],
   "workflow": {
@@ -18639,6 +18715,11 @@
       "at": "2026-08-26T11:00:58+09:00",
       "type": "ShieldBlockEquipmentSpecificationRegistered",
       "summary": "Human Approved Shield Block仕様を登録。Shield attack_count=0/offensive contribution非加算を維持。iLv1 Block Rate=20%、+2pp/iLv、Damage Cut=30%。Block成功時はfinalDamageへ割合Cut後floorし、existing SHIELD/Barrier→HPの順。Block Rate/Damage CutはBalance可変。TASK-BAL-071-CORR-003は残Equipment整理とSource conformanceが未完のためTodo/Pendingを維持。"
+    },
+    {
+      "at": "2026-08-26T11:28:04+09:00",
+      "type": "EquipmentAuthoritySyncAndGapAudit",
+      "summary": "DEV-V9-REORG-019 final Equipment/Battle authorityをBalance管理JSONへ同期。Block fieldをblock_rate / block_damage_cut_rateへ統一し、direct Physical/Magical、per-hit、Miss除外、DOT除外、finalDamage→Block→floor→SHIELD(BARRIER)→HPを登録。両手武器カテゴリ不存在と両手持ち装備ルールを分離して訂正。Equipment追加Human構造未決=0件をCHK-BAL-071-EQUIPMENT-HUMAN-GAPS-001で確認。GKS-B782のBow/Quiver・Block等はSource Conformance GapとしてDISC-BAL-071-EQUIPMENT-CONFORMANCE-001へ分離。Source/Battle/Game Data変更なし。"
     }
   ],
   "authority": {
