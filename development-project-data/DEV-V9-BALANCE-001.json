@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T00:27:27.514Z"
+    "updated_at": "2026-08-26T00:43:38.015Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 multi-hit composition + single-reference extension awaiting Human approval",
-    "goal": "TotalPower/effective-hit-count static premium modelの構造採否をHuman確認し、承認された場合のみTHF/SWDのP160/P180/P200 single-reference 18条件で既存E06/E07のP_eq上限不足を一括解消する。"
+    "theme": "TASK-BAL-074 SingleRef extension Human real-device Result pending",
+    "goal": "Execute exactly TASK-BAL-074-SingleExt.zip on Human Studio and return Result. Then evaluate P160/P180/P200 monotonicity/bracketing and derive interpolation-only P_eq/K_est; no automatic Freeze or next domain."
   },
   "project_rules": [
     {
@@ -2372,6 +2372,18 @@
       "approved_at": "2026-08-26T09:22:40+09:00",
       "created_at": "2026-08-26T09:22:40+09:00",
       "updated_at": "2026-08-26T09:22:40+09:00"
+    },
+    {
+      "id": "DEC-BAL-TASK074-MULTIHIT-SREF-APPROVAL-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "status": "Approved",
+      "text": "Humanの「進めて」により、selected validation candidate T=ΣPower_i; H_eff=T^2/Σ(Power_i^2); C_Damage_Total=max(0,(T-100)/2); C_MultiHit=(T/100)*K(H_eff) をmulti-hit calibrationの検証構造として承認する。同時にTHF20+SWD20 vs HNT23/24/25、Single P160/P180/P200のみ、18条件/1800戦、seeds 749600000..749600099のexact plan実行を承認する。構造/係数の最終Freeze、K値、MP/CD/Cast/Rangeは承認しない。",
+      "rationale": "直前に提示された唯一の未承認構造候補とexact 18-condition test planに対するHuman進行指示。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T09:31:57+09:00",
+      "created_at": "2026-08-26T09:31:57+09:00",
+      "updated_at": "2026-08-26T09:31:57+09:00"
     }
   ],
   "specifications": [
@@ -7053,8 +7065,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-26T09:22:40+09:00",
-      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. E06/E07 design-only model comparison completed. Runtime Accuracy/Evasion-dependent Skill Cost is rejected because Skill Budget=SLv is static; Accuracy difference is retained as a calibration envelope. Fixed additive H-only C_MultiHit remains rejected. Selected validation candidate: T=ΣPower_i; H_eff=T^2/Σ(Power_i^2); C_Damage_Total=max(0,(T-100)/2); C_MultiHit=(T/100)*K(H_eff); C_Effect=C_Damage_Total+C_MultiHit. K(1)=0, K>=0 and nondecreasing. This composition is NOT adopted/frozen because it changes the previously approved per-hit ΣC_Damage composition. Next proposed calibration bridge is THF20+SWD20 vs HNT23/24/25, Single P160/P180/P200 only, 18 conditions/1800 battles, seeds 749600000..749600099. No Battle Package, no new Evidence, no MP/CD/Cast/Range authorization.",
+      "updated_at": "2026-08-26T09:31:57+09:00",
+      "result_scope": "REDO IN PROGRESS / PHYSICAL ONLY. Human approved the TotalPower/effective-hit-count multi-hit composition for validation only: T=ΣPower_i; H_eff=T^2/Σ(Power_i^2); C_Damage_Total=max(0,(T-100)/2); C_MultiHit=(T/100)*K(H_eff). K remains unset and neither K nor final composition is Frozen. Exact SingleRef extension package prepared: THF20+SWD20 vs HNT23/24/25, Single P160/P180/P200 only, 18 conditions/1800 battles, seeds 749600000..749600099. No Controls or multi-hit rerun. Package preflight: formal manifest PASS, candidate hash/envelope 23/23 PASS, formal roster 18/18 PASS. Human real-device Result pending. No new Evidence; MP/CD/Cast/Range not authorized.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7065,14 +7077,14 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "Multi-hit model-form design completed. Selected validation candidate uses TotalPower + effective hit count and a static K(H_eff); runtime Accuracy is calibration context only. Structural adoption and numeric K are NOT approved/frozen. Exact 18-condition P160/P180/P200 single-reference extension is awaiting Human approval; no package generated.",
+        "current_step": "Human-approved SingleRef extension package prepared. Await Human real-device execution/result only: THF20+SWD20 vs HNT23/24/25, P160/P180/P200, 18 conditions/1800 trials, same seeds. Do not add conditions, rerun Controls/multi-hit, extrapolate, select/freeze K, or start MP/CD/Cast/Range.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
         "spec_numeric_values_role": "temporary_reference_only",
         "approved_execution_scope": "Physical only",
         "physical_then_magic_split_required": true,
-        "next_evidence": "BAL074-E06 + BAL074-E07 remain the current reusable authorities. No new Evidence from design-only work.",
+        "next_evidence": "No new Evidence at package-preparation stage. Retained E05/E06/E07 remain analysis authorities.",
         "invalid_no_equipment_dpt_reference": {
           "status": "Excluded",
           "reason": "No formal Balance specification for no-equipment physical attack baseline; Human rejected it as non-existent gameplay reference.",
@@ -7082,7 +7094,7 @@
           "use_as_comparison": false,
           "recorded_at": "2026-08-25T17:46:30+09:00"
         },
-        "next_evidence_status": "AwaitingHumanStructuralAndSingleReferencePlanApproval",
+        "next_evidence_status": "AwaitingHumanSingleReferenceExtensionResult",
         "source_gap": {
           "id": "GAP-BAL-074-MONSTER-WEAPON-LAYOUT-001",
           "status": "ResolvedInCurrentGKS-B781",
@@ -11487,7 +11499,7 @@
           "evaluated_at": "2026-08-26T08:50:00+09:00"
         },
         "multi_hit_model_form_design": {
-          "status": "DesignExecuted_CandidateSelected_StructuralApprovalPending",
+          "status": "DesignExecuted_StructureApprovedForValidation_CoefficientsUnset",
           "design_execution_decision_id": "DEC-BAL-TASK074-MULTIHIT-MODEL-DESIGN-START-001",
           "inputs": [
             {
@@ -11603,15 +11615,17 @@
             ],
             "coefficient_status": "UNSET",
             "freeze_status": "NOT_FROZEN",
-            "structural_status": "AWAITING_HUMAN_APPROVAL",
-            "reason_structural_approval_required": "Previously approved allocation structure used Σ C_Damage(Power_i). The selected candidate instead prices the DAMAGE group by TotalPower and adds a distribution-aware premium. This resolves the negative per-hit-cost defect but is a composition change and must not be silently adopted."
+            "structural_status": "HUMAN_APPROVED_FOR_VALIDATION_NOT_FROZEN",
+            "reason_structural_approval_required": "Previously approved allocation structure used Σ C_Damage(Power_i). The selected candidate instead prices the DAMAGE group by TotalPower and adds a distribution-aware premium. This resolves the negative per-hit-cost defect but is a composition change and must not be silently adopted.",
+            "approval_decision_id": "DEC-BAL-TASK074-MULTIHIT-SREF-APPROVAL-001",
+            "approved_for_validation_at": "2026-08-26T09:31:57+09:00"
           },
           "design_result": "Accuracy dependency is real, but runtime Accuracy/Evasion is not a valid direct Skill-Budget input. Selected validation candidate is a static TotalPower-scaled, effective-hit-count premium. Numeric K(H_eff) is intentionally not selected from the current truncated P_eq range.",
           "designed_at": "2026-08-26T09:22:40+09:00"
         },
         "multi_hit_single_reference_extension_plan": {
-          "status": "PlanProposed_AwaitingHumanApproval",
-          "execution_authorized": false,
+          "status": "PackagePrepared_AwaitingHumanRealDeviceResult",
+          "execution_authorized": true,
           "decision_question": "Can the retained THF E06 + SWD E07 multi-hit outcomes be fully bracketed by an extended same-runtime single-hit Power curve so equivalent single Power and candidate K(H_eff) can be calculated without extrapolation?",
           "confirmed_inputs": {
             "attackers": [
@@ -11717,10 +11731,22 @@
             "Do not generate a Battle Package until Human explicitly approves this exact 18-condition plan",
             "Do not start MP/CD/Cast/Range"
           ],
-          "battle_package_generated": false,
+          "battle_package_generated": true,
           "standalone_evidence_planned": false,
           "evidence_reason": "This extension is a calibration bridge. Retain new Evidence only if its completed numeric table becomes required as a later Freeze/recomputation authority.",
-          "proposed_at": "2026-08-26T09:22:40+09:00"
+          "proposed_at": "2026-08-26T09:22:40+09:00",
+          "human_real_device_required": true,
+          "result_pending": true,
+          "approved_by": "Human",
+          "approved_at": "2026-08-26T09:31:57+09:00",
+          "approval_decision_id": "DEC-BAL-TASK074-MULTIHIT-SREF-APPROVAL-001",
+          "package_file": "TASK-BAL-074-SingleExt.zip",
+          "package_id": "BVP-BAL074-SINGLE-EXT-B782",
+          "package_sha256": "3ef740680dd04e082d2825582509fa46e92c1da5db5115cb46a445b8d17de8dd",
+          "candidate_hash_validation": "GKS-B782 canonicalStringify + validateCandidateEnvelope: 23/23 PASS",
+          "formal_roster_validation": "GKS-B782 validateFormalRoster: 18/18 PASS",
+          "manifest_formal_validation": "GKS-B782 validateFormalManifest: PASS",
+          "prepared_at": "2026-08-26T09:31:57+09:00"
         }
       },
       "evidence_refs": [
@@ -16955,6 +16981,29 @@
       "blocking": false,
       "created_at": "2026-08-26T09:22:40+09:00",
       "updated_at": "2026-08-26T09:22:40+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-SINGLE-REF-EXT-PACKAGE-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Human-approved SingleRef extension package prepared: 18 jobs / 1800 trials; THF20+SWD20 vs HNT23/24/25; P160/P180/P200 only; seeds 749600000..749600099. GKS-B782 formal manifest PASS, candidate canonical hash/envelope 23/23 PASS, formal roster 18/18 PASS. No Control or multi-hit rerun; no new Evidence; no K/final composition Freeze.",
+      "evidence": "TASK-BAL-074-SingleExt.zip sha256=3ef740680dd04e082d2825582509fa46e92c1da5db5115cb46a445b8d17de8dd",
+      "checked_by": "AI",
+      "checked_at": "2026-08-26T09:31:57+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-26T09:31:57+09:00",
+        "reason": "Exact approved package-preparation gates passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-26T09:31:57+09:00",
+      "updated_at": "2026-08-26T09:31:57+09:00"
     }
   ],
   "workflow": {
@@ -17986,6 +18035,11 @@
       "at": "2026-08-26T09:22:40+09:00",
       "type": "MultiHitModelFormDesignCompleted",
       "summary": "Human承認のdesign-only stepを実施。E06/E07からruntime Accuracy依存Costはstatic Skill Budgetと不整合のため不採用。 Per-hit negative-cost問題と任意Hit配分を同時に扱う候補として T=ΣPower, H_eff=T^2/ΣPower^2, C_MultiHit=(T/100)*K(H_eff)を選定。 構造変更・K係数は未承認/未Freeze。P160/P180/P200 Single extension 18条件/1800戦Planを未承認で登録。"
+    },
+    {
+      "at": "2026-08-26T09:31:57+09:00",
+      "type": "MultiHitSingleReferenceExtensionPackagePrepared",
+      "summary": "Human承認によりmulti-hit TotalPower/effective-hit-count構造をvalidation用に採用し、THF20+SWD20 vs HNT23/24/25のSingle P160/P180/P200拡張Packageを準備。18条件/1800戦、same seeds 749600000..749600099。Control/multi-hit再実行なし。Candidate 23/23 hash+envelope PASS、Roster 18/18 PASS。K/構造最終Freezeなし、新規Evidenceなし。"
     }
   ],
   "authority": {
