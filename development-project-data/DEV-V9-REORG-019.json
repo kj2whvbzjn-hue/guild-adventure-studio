@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-25T04:44:13.518Z"
+    "updated_at": "2026-08-26T02:20:38.792Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -1772,6 +1772,42 @@
       "approved_at": "2026-08-25T12:47:00+09:00",
       "created_at": "2026-08-25T12:47:00+09:00",
       "updated_at": "2026-08-25T13:33:00+09:00"
+    },
+    {
+      "id": "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001",
+      "title": "両手武器カテゴリを設けず両手持ちを装備ルールとして分離する",
+      "status": "Approved",
+      "text": "Equipmentの正式な武器カテゴリとして「両手武器 / two_hand」を設けない。既存の「両手持ち」は武器種カテゴリではなく独立した装備ルールとして扱う。個別武器種のRequirement、攻撃回数、Combat Contributionを「両手武器カテゴリ」から推定しない。大剣等の個別武器種はその武器種自身の仕様として扱う。",
+      "rationale": "Human correction: 「両手武器なんてものはない」。既存Materialの両手持ち装備ルール自体は否定されていないため、武器カテゴリと装備ルールを分離して確定する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:19:10+09:00",
+      "created_at": "2026-08-26T11:19:10+09:00",
+      "updated_at": "2026-08-26T11:19:10+09:00"
+    },
+    {
+      "id": "DEC-REORG-EQUIP-BOW-QUIVER-001",
+      "title": "弓と矢筒の装備成立・戦闘Contributionを確定する",
+      "status": "Approved",
+      "text": "仕様選定上、弓と大弓は同条件としてまとめて「弓」と呼ぶが、Product Master上の種類統合を意味しない。弓単体・矢筒単体はいずれも装備可能な状態とするが、弓の通常攻撃および弓を必要とするSkillは弓+矢筒の両方を装備している場合だけ使用可能。弓のみの場合は「矢筒が装備されていません」、矢筒のみの場合は「弓が装備されていません」と表示し、装備画面では不足側武器スロットを警告状態で示す。弓は1 Strike、矢筒は0 Strike。Critical/base_critical_rateは弓側だけを使用し、Critical以外のCombat Contributionは弓+矢筒を合算する。弓Equipmentの武器属性は「射撃」とするが、Range/射程/TargetingはEquipmentが所有せず、既存RANGE/Target/Battle仕様をOwnerとする。",
+      "rationale": "Humanが弓+矢筒の使用条件、片側装備時UI、攻撃回数、Critical非合算、その他Contribution合算、射撃属性とRange owner境界を確定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:19:10+09:00",
+      "created_at": "2026-08-26T11:19:10+09:00",
+      "updated_at": "2026-08-26T11:19:10+09:00"
+    },
+    {
+      "id": "DEC-REORG-EQUIP-BLOCK-001",
+      "title": "盾装備のBlock判定とBlock Damage Cutを確定する",
+      "status": "Approved",
+      "text": "盾装備はBlock性能として `block_rate` と `block_damage_cut_rate` を持つ。具体数値はBalance可変とし、Current初期値はiLv1のblock_rate=20%、iLvが1上がるごとに+2 percentage points、block_damage_cut_rate=30%とする。初期Balance式は block_rate(iLv)=20%+2pp×(iLv-1)。block_damage_cut_rateのiLv成長式およびblock_rate上限は現時点で追加しない。Block対象はBasic AttackおよびSkillの直接Damageで、Physical/Magicalの両方を対象とする。Multi-hitは各Hitごとに独立Block判定する。MissしたHitではBlock判定しない。DOT等の継続DamageはBlock対象外。Resistance/Critical等を含む通常Damage計算後のfinalDamageに対してBlockを判定し、成功時はblocked_damage=floor(finalDamage×(1-block_damage_cut_rate)) とする。Block Damage Cutは既存SHIELD(BARRIER)吸収より前に適用し、処理順はfinalDamage確定→Block判定→成功時Block Damage Cut→floor→既存SHIELD(BARRIER)→HP。Blockは既存Effect kind `SHIELD` / BARRIERとは別概念であり、Block用field名にshieldを使用しない。",
+      "rationale": "Humanが盾のBlock率、Block Damage Cut、iLv成長、切り捨て、直接Damage対象、Hit単位判定、DOT除外、既存SHIELDより前の適用順を確定したため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-26T11:19:10+09:00",
+      "created_at": "2026-08-26T11:19:10+09:00",
+      "updated_at": "2026-08-26T11:19:10+09:00"
     }
   ],
   "specifications": [
@@ -2018,20 +2054,21 @@
       "title": "Battle: Damage / Resistance / Hit / Critical / Heal",
       "status": "Draft",
       "summary": "Battle計算の数式、補正箱、丸め。",
-      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\nEquipmentの `magic_weapon_bonus` は、MOD適用後のEquipment Contributionから魔法攻撃系の既存 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` はHealへ接続しない。\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = Accuracy / Evasion × 100`\n\n- `Evasion <= 0` の場合は命中率100%として扱う。\n- 旧式 `Accuracy / (Accuracy + Evasion)` は使用しない。\n- Currentでは最低命中率5%を設けない。\n- Currentでは明示的な100%上限Clampを追加しない。\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. Action Gauge\n\n基本増加量は1 Tickあたり:\n\n`AG gain per Tick = (100 + AGI) / 10`\n\n- 旧式 `AG gain = AGI` はCurrent Formulaとして使用しない。\n- Studio Formal Battleでは、この基本値に `agiGaugeCoefficient` と `actionSpeedMultiplier` を後段倍率として適用する。\n- 両倍率のDefaultは1.0。\n- UIはRuntime結果を表示し、別のAction Gauge式を持たない。\n\n---\n\n## 5. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 6. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 7. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n- `magic_weapon_bonus` は回復量へ接続しない。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF / Human Approved Balance Decisions\n\n---\n\n## R25 Equipment Contribution → Battle 正式接続\n\nEquipment由来の戦闘Contributionは以下へ接続する。\n\n- `accuracy` → Battleの命中成立判定\n- `evasion` → Battleの回避成立判定\n- `base_critical_rate` → 武器由来の基礎会心率としてCritical判定\n- `magic_weapon_bonus` → 魔法攻撃系 `MAGIC_DAMAGE` の武器Contribution\n\n既存の\n`BaseItem Performance → Equipment Contribution → Equipment MOD → Modified Equipment Contribution → Runtime`\n境界を維持する。\n\n旧Demo由来の `STR→accuracy`、`LUK→critical` 等へFallbackしない。\n具体的な係数、換算、cap、roundingはBalance可変とし、本仕様では接続先のみ固定する。\n",
+      "body": "## 1. ダメージ基本式\n\n### 物理\n`基礎ダメージ = 攻撃力 × スキル倍率`\n\n### 魔法\n`基礎ダメージ = 魔法上昇率 × スキル攻撃力`\n\nEquipmentの `magic_weapon_bonus` は、MOD適用後のEquipment Contributionから魔法攻撃系の既存 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` はHealへ接続しない。\n\n### 抵抗\n- 抵抗値は百分率の数値として扱う。\n- 抵抗値は属性相性そのものを表す。\n- 抵抗値の下限は0%、上限は75%。\n- 対応する抵抗値で割合軽減する。\n\n`抵抗補正 = 1 - 抵抗値 / 100`\n\n### クリティカル\n- クリティカルは抵抗軽減後に適用する。\n- クリティカル率は0～100%。\n- クリティカルダメージは追加分として0～700%。\n\n`クリティカル時倍率 = 1 + クリティカルダメージ / 100`\n\n### 乱数\n- 乱数補正の枠は用意する。\n- 補正幅は未設定。\n- 未設定時は等倍扱い。\n\n### 丸め・最小値\n- ダメージは最終計算後に小数点以下切り捨て。\n- 最小ダメージは0。\n\n### Block（盾装備）\n\nBlockは既存Effect kind `SHIELD` / BARRIERとは別の防御処理。\n\n対象:\n- Basic Attackの直接Damage\n- Skillの直接Damage\n- Physical / Magicalの両方\n\n非対象:\n- MissしたHit\n- DOT等の継続Damage\n- 上記直接Damage以外を別仕様の明示なしにBlock対象へ自動追加しない\n\n処理:\n1. 命中成立\n2. 通常Damage計算\n3. Resistance\n4. Critical\n5. 通常の丸めを含め `finalDamage` 確定\n6. `block_rate` によるBlock判定\n7. Block成功時:\n   `blocked_damage = floor(finalDamage × (1 - block_damage_cut_rate))`\n8. Block後Damageを既存SHIELD(BARRIER)へ渡す\n9. SHIELD残余をHPへ適用\n\n`block_rate` / `block_damage_cut_rate` の具体値はEquipment/Balance DataをOwnerとする。\nCurrent初期seedは盾iLv1 Block率20%、+2pp/iLv、Block Damage Cut 30%。\n数値をBattleロジックへ固定しない。\n\n---\n\n## 2. 補正の集計\n\n- 同一の補正箱内は加算。\n- 異なる補正箱同士は乗算。\n- 補正箱は内部集計用コンテナとして扱う。\n\n補正箱：\n- パッシブ\n- MOD\n- スキル\n- 装備効果\n- 状態効果\n- システム効果\n- クエスト効果\n\nタグは効果内容や条件判定に使用し、補正箱は発生源別の集計に使用する。\n\n---\n\n## 3. 命中・回避\n\n`命中率 = Accuracy / Evasion × 100`\n\n- `Evasion <= 0` の場合は命中率100%として扱う。\n- 旧式 `Accuracy / (Accuracy + Evasion)` は使用しない。\n- Currentでは最低命中率5%を設けない。\n- Currentでは明示的な100%上限Clampを追加しない。\n- 攻撃が外れた場合、ダメージ・状態異常は発生しない。\n\n---\n\n## 4. Action Gauge\n\n基本増加量は1 Tickあたり:\n\n`AG gain per Tick = (100 + AGI) / 10`\n\n- 旧式 `AG gain = AGI` はCurrent Formulaとして使用しない。\n- Studio Formal Battleでは、この基本値に `agiGaugeCoefficient` と `actionSpeedMultiplier` を後段倍率として適用する。\n- 両倍率のDefaultは1.0。\n- UIはRuntime結果を表示し、別のAction Gauge式を持たない。\n\n---\n\n## 5. 状態異常\n\n- 攻撃命中時、状態異常は確定付与。\n- 状態異常耐性は付与確率ではなく持続時間へ影響。\n- 状態異常耐性は0～75%。\n\n`最終持続時間 = ceil(基礎持続時間 × (1 - 耐性 / 100))`\n\n- 持続時間は切り上げ。\n\n---\n\n## 6. DOT\n\n- DOTは固定ダメージ方式。\n- DOTごとに `DOT_INTERVAL` を持つ。\n- 各スタックは個別Tick管理。\n- DOTダメージは切り捨て。\n\n---\n\n## 7. 回復\n\n`基礎回復量 = 魔法上昇率 × スキル回復力`\n\n- 回復量は切り上げ。\n- `magic_weapon_bonus` は回復量へ接続しない。\n\n---\n\n## Current補足\n\nStatus付与のLifecycle/Resistanceは `SPEC-V9-019-STATUS-001` がOwner。\nEquipmentの `base_critical_rate` はWeapon Contributionから受け取る。\nBattle側でLUK等から5%を勝手に生成しない。\n\nHeal:\n```text\nbase_heal = magic_increase_rate * skill_heal_power\n```\n最終回復量は切り上げ。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2 / BOX-R7-008 戦闘計算IF / Human Approved Balance Decisions\n\n---\n\n## R25 Equipment Contribution → Battle 正式接続\n\nEquipment由来の戦闘Contributionは以下へ接続する。\n\n- `accuracy` → Battleの命中成立判定\n- `evasion` → Battleの回避成立判定\n- `base_critical_rate` → 武器由来の基礎会心率としてCritical判定\n- `magic_weapon_bonus` → 魔法攻撃系 `MAGIC_DAMAGE` の武器Contribution\n\n既存の\n`BaseItem Performance → Equipment Contribution → Equipment MOD → Modified Equipment Contribution → Runtime`\n境界を維持する。\n\n旧Demo由来の `STR→accuracy`、`LUK→critical` 等へFallbackしない。\n具体的な係数、換算、cap、roundingはBalance可変とし、本仕様では接続先のみ固定する。\n",
       "decision_refs": [
         "DEC-REORG-BATTLE-BAL-001",
         "DEC-R24-EQUIP-BATTLE-001",
         "DEC-BAL-AG-FORMULA-ADOPTION-001",
         "DEC-BAL-HIT-RATIO-001",
-        "DEC-REORG-EQUIP-MAGIC-DIRECT-001"
+        "DEC-REORG-EQUIP-MAGIC-DIRECT-001",
+        "DEC-REORG-EQUIP-BLOCK-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-002",
         "SPEC-V9-019-EQUIP-004",
         "SPEC-V9-019-STATUS-001"
       ],
-      "acceptance_criteria": "- Resistance 0〜75%、Hit=Accuracy/Evasion×100（Evasion<=0は100%）、Critical適用順を再現できる。\n- Current Hitに旧5%下限および明示100%上限Clampを追加しない。\n- Action Gauge基本増加式 `(100+AGI)/10` を再現できる。\n- magic_weapon_bonusを武器種別分岐なしでMAGIC_DAMAGEへ接続し、Healへ混入させない。\n- Damageは最終floor、Healはceil。\n- 同一補正箱加算・別箱乗算を再現できる。",
+      "acceptance_criteria": "- Resistance 0〜75%、Hit=Accuracy/Evasion×100（Evasion<=0は100%）、Critical適用順を再現できる。\n- Current Hitに旧5%下限および明示100%上限Clampを追加しない。\n- Action Gauge基本増加式 `(100+AGI)/10` を再現できる。\n- magic_weapon_bonusを武器種別分岐なしでMAGIC_DAMAGEへ接続し、Healへ混入させない。\n- Damageは最終floor、Healはceil。\n- 同一補正箱加算・別箱乗算を再現できる。\n- Direct Physical/Magical DamageでfinalDamage確定後にBlock判定し、成功時はblock_damage_cut_rateを適用してfloorできる。\n- Block Damage Cutを既存SHIELD(BARRIER)より前に適用できる。\n- Miss/DOTでBlock判定を行わない。",
       "system_node_id": "SYS-V9-BATTLE",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-PASSIVE",
@@ -2042,11 +2079,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-25T13:33:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-002",
@@ -2084,27 +2121,28 @@
       "title": "Battle: Multi-hit / Effect順 / Trigger / KO / Revive",
       "status": "Draft",
       "summary": "1Hit完結処理、複合Effect順、Trigger順、戦闘不能、蘇生。",
-      "body": "## 11. 複数Hit\n\n- Hitごとに完全処理。\n- 各Hitごとに命中、ダメージ、抵抗、クリティカル、シールド、HP、吸収、反射、状態異常を処理。\n- 単体スキルは対象を倒した時点で残りHit終了。\n- 範囲・複数対象スキルは一部対象を倒しても他対象への処理を継続。\n- 対象は発動時に固定。\n- 発動後に範囲へ入った対象は追加しない。\n- 途中で無効になった対象は除外する。\n\n---\n\n## 12. 複合効果の処理順\n\n1. 対象確定\n2. 命中判定\n3. ダメージ計算・適用\n4. ダメージ参照効果\n5. 状態異常・BUFF・DEBUFF付与\n6. 回復・MP回復\n7. シールド付与\n8. 位置・行動制御\n9. 召喚・生成\n10. 撃破時・命中時などの誘発効果\n\n- 同じ段階の複数効果は効果データ記載順。\n- 効果単位で成功・失敗を判定。\n- 失敗した効果だけをスキップし、後続効果は継続。\n- ダメージで対象が戦闘不能になった場合、その対象への後続効果は適用しない。\n\n---\n\n## 13. 誘発効果の処理順\n\n1. 命中時\n2. 被弾時\n3. ダメージ確定後\n4. HP減少後\n5. 撃破時\n6. 戦闘不能時\n7. 処理終了時\n\n- 同一段階では付与・登録が古い順。\n\n---\n\n## 14. 戦闘不能\n\n1. HPが0以下になる\n2. 戦闘不能フラグ付与\n3. 撃破時効果\n4. 戦闘不能時効果\n5. ドロップ・経験値・クエスト進行\n6. フィールド・対象リストから除外\n\n---\n\n## 15. 蘇生\n\n1. 蘇生条件成立\n2. 戦闘不能フラグ解除\n3. HP・MPを指定値まで回復\n4. 状態異常・BUFF・DEBUFFをすべて解除\n5. 戦闘対象リストへ復帰\n6. 蘇生時効果を発動\n\n---\n\n## 16. 召喚物\n\n- 召喚者が戦闘不能になると召喚物は即時消滅。\n- 召喚物は自身の能力値を使用。\n- 通常ユニットと同じ戦闘ルールを適用。\n- BUFF、DEBUFF、状態異常、回復、シールド、命中、回避、抵抗、クリティカルなども通常どおり適用。\n\n---\n\n## 17. 対象無効時\n\n- 発動時に対象を固定。\n- 対象無効時に別対象を再取得しない。\n- 効果は不発。\n- AIは再思考へ移行。\n- プレイヤー操作では自動で別対象へ切り替えない。\n\n---\n\n## 蘇生\n\n- 自動蘇生優先。\n- 通常蘇生は次順位。\n- 同種は付与順。\n- 蘇生成功後は他の蘇生は不発。\n- 共通無敵時間なし。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
+      "body": "## 11. 複数Hit\n\n- Hitごとに完全処理。\n- Blockは各Hitごとに独立判定。MissしたHitではBlock判定しない。\n- 各Hitごとに命中、ダメージ、抵抗、クリティカル、finalDamage確定、Block、SHIELD(BARRIER)、HP、吸収、反射、状態異常を処理。\n- 単体スキルは対象を倒した時点で残りHit終了。\n- 範囲・複数対象スキルは一部対象を倒しても他対象への処理を継続。\n- 対象は発動時に固定。\n- 発動後に範囲へ入った対象は追加しない。\n- 途中で無効になった対象は除外する。\n\n---\n\n## 12. 複合効果の処理順\n\n1. 対象確定\n2. 命中判定\n3. ダメージ計算・適用\n4. ダメージ参照効果\n5. 状態異常・BUFF・DEBUFF付与\n6. 回復・MP回復\n7. シールド付与\n8. 位置・行動制御\n9. 召喚・生成\n10. 撃破時・命中時などの誘発効果\n\n- 同じ段階の複数効果は効果データ記載順。\n- 効果単位で成功・失敗を判定。\n- 失敗した効果だけをスキップし、後続効果は継続。\n- ダメージで対象が戦闘不能になった場合、その対象への後続効果は適用しない。\n\n---\n\n## 13. 誘発効果の処理順\n\n1. 命中時\n2. 被弾時\n3. ダメージ確定後\n4. HP減少後\n5. 撃破時\n6. 戦闘不能時\n7. 処理終了時\n\n- 同一段階では付与・登録が古い順。\n\n---\n\n## 14. 戦闘不能\n\n1. HPが0以下になる\n2. 戦闘不能フラグ付与\n3. 撃破時効果\n4. 戦闘不能時効果\n5. ドロップ・経験値・クエスト進行\n6. フィールド・対象リストから除外\n\n---\n\n## 15. 蘇生\n\n1. 蘇生条件成立\n2. 戦闘不能フラグ解除\n3. HP・MPを指定値まで回復\n4. 状態異常・BUFF・DEBUFFをすべて解除\n5. 戦闘対象リストへ復帰\n6. 蘇生時効果を発動\n\n---\n\n## 16. 召喚物\n\n- 召喚者が戦闘不能になると召喚物は即時消滅。\n- 召喚物は自身の能力値を使用。\n- 通常ユニットと同じ戦闘ルールを適用。\n- BUFF、DEBUFF、状態異常、回復、シールド、命中、回避、抵抗、クリティカルなども通常どおり適用。\n\n---\n\n## 17. 対象無効時\n\n- 発動時に対象を固定。\n- 対象無効時に別対象を再取得しない。\n- 効果は不発。\n- AIは再思考へ移行。\n- プレイヤー操作では自動で別対象へ切り替えない。\n\n---\n\n## 蘇生\n\n- 自動蘇生優先。\n- 通常蘇生は次順位。\n- 同種は付与順。\n- 蘇生成功後は他の蘇生は不発。\n- 共通無敵時間なし。\n\n---\n\n## 根拠・統合元\nBOX-R7-007 Battle v2/v3",
       "decision_refs": [
-        "DEC-REORG-BATTLE-BAL-001"
+        "DEC-REORG-BATTLE-BAL-001",
+        "DEC-REORG-EQUIP-BLOCK-001"
       ],
       "depends_on": [
         "SPEC-V9-019-BATTLE-001",
         "SPEC-V9-019-BATTLE-002",
         "SPEC-V9-019-STATUS-001"
       ],
-      "acceptance_criteria": "- Hitごとに命中〜派生処理を完結する。\n- 単体Target死亡で残Hit停止、他Targetは継続。\n- Trigger順序とKO処理順を固定できる。\n- Auto ReviveをNormal Reviveより優先する。",
+      "acceptance_criteria": "- Hitごとに命中〜派生処理を完結する。\n- 単体Target死亡で残Hit停止、他Targetは継続。\n- Trigger順序とKO処理順を固定できる。\n- Auto ReviveをNormal Reviveより優先する。\n- Multi-hitの各HitでBlockを独立判定し、Block→SHIELD(BARRIER)→HPの順を維持する。",
       "system_node_id": "SYS-V9-BATTLE",
       "contract_ids": [
         "CONTRACT-V9-STATUS-TO-BATTLE"
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T16:25:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-BATTLE-004",
@@ -2164,13 +2202,15 @@
       "title": "BUFF / DEBUFF / Shield / Stack",
       "status": "Draft",
       "summary": "同系統HIGHEST、Shield FIFO、汎用Stack Resource。",
-      "body": "# 1. BUFF / DEBUFF\n\nCurrent lifecycle:\n- stackRule = STACK\n- refreshRule = KEEP\n- snapshotPolicy = SNAPSHOT\n- effectiveRule = HIGHEST\n- consumeRule = NONE\n\n同系統の付与はそれぞれ個別Timerを持つ。\n効果量は加算しない。\n最も強いものだけを現在実効値とする。\n最強Effectが終了/解除された場合、残存する次点へ自動的に切り替える。\n弱いEffectを消去せず、それぞれのTimerを進める。\n\nCurrent Registry:\n- ATK_UP\n- DEF_UP\n- ATK_DOWN\n- DEF_DOWN\n\n# 2. Shield\n\nCurrent BARRIER lifecycle:\n- STACK + KEEP\n- effective = SUM\n- consume = FIFO\n- 個別Duration\n- removeOnDeath / removeOnBattleEnd\n- Current removable = false\n\n確定後DamageをShieldへ先に適用し、残余だけHPへ通す。\nShield bypass/ignoreをCurrent共通仕様にしない。\n共通Total capを設けない。\n\n# 3. 汎用Stack Resource\n\nStackはStatus/BUFF/DEBUFFと別の数量Resource。\n最低限:\n- stack_id\n- owner_id\n- source_id\n- current\n- max\n- duration/timer policy\n- gain\n- consume\n- trigger threshold\n- rule_version\n\n操作:\n- create\n- add\n- subtract\n- consume\n- move\n- copy\n- remove\n\n具体的なMAX/GAIN等はStack定義またはBalance Dataへ置く。\nV9の1Stack=5%、Max20はBaselineであって全Stack共通固定式にはしない。\n\n---\n\n## 根拠・統合元\nBOX-R7-016 状態・スタック正式版 / Current Formal Skill Registry",
-      "decision_refs": [],
+      "body": "# 1. BUFF / DEBUFF\n\nCurrent lifecycle:\n- stackRule = STACK\n- refreshRule = KEEP\n- snapshotPolicy = SNAPSHOT\n- effectiveRule = HIGHEST\n- consumeRule = NONE\n\n同系統の付与はそれぞれ個別Timerを持つ。\n効果量は加算しない。\n最も強いものだけを現在実効値とする。\n最強Effectが終了/解除された場合、残存する次点へ自動的に切り替える。\n弱いEffectを消去せず、それぞれのTimerを進める。\n\nCurrent Registry:\n- ATK_UP\n- DEF_UP\n- ATK_DOWN\n- DEF_DOWN\n\n# 2. Shield\n\nCurrent BARRIER lifecycle:\n- STACK + KEEP\n- effective = SUM\n- consume = FIFO\n- 個別Duration\n- removeOnDeath / removeOnBattleEnd\n- Current removable = false\n\n直接DamageがBlock対象である場合はBlock Damage Cut後のDamageをCurrent BARRIER(SHIELD)へ適用し、残余だけHPへ通す。Block非対象Damageは確定後DamageをBARRIERへ適用する。\nShield bypass/ignoreをCurrent共通仕様にしない。\n共通Total capを設けない。\n\nEquipmentのBlockは本SHIELD/BARRIER lifecycleとは別概念であり、`block_rate` / `block_damage_cut_rate` を使用する。Block処理はBARRIER消費より前。\n\n# 3. 汎用Stack Resource\n\nStackはStatus/BUFF/DEBUFFと別の数量Resource。\n最低限:\n- stack_id\n- owner_id\n- source_id\n- current\n- max\n- duration/timer policy\n- gain\n- consume\n- trigger threshold\n- rule_version\n\n操作:\n- create\n- add\n- subtract\n- consume\n- move\n- copy\n- remove\n\n具体的なMAX/GAIN等はStack定義またはBalance Dataへ置く。\nV9の1Stack=5%、Max20はBaselineであって全Stack共通固定式にはしない。\n\n---\n\n## 根拠・統合元\nBOX-R7-016 状態・スタック正式版 / Current Formal Skill Registry",
+      "decision_refs": [
+        "DEC-REORG-EQUIP-BLOCK-001"
+      ],
       "depends_on": [
         "SPEC-V9-019-STATUS-001",
         "SPEC-V9-019-BATTLE-001"
       ],
-      "acceptance_criteria": "- BUFF/DEBUFFが加算されずHIGHESTだけ効く。\n- 最強終了後に次点へ切り替わる。\n- ShieldがFIFO消費される。\n- 汎用Stackを状態異常と分離して保存できる。",
+      "acceptance_criteria": "- BUFF/DEBUFFが加算されずHIGHESTだけ効く。\n- 最強終了後に次点へ切り替わる。\n- ShieldがFIFO消費される。\n- 汎用Stackを状態異常と分離して保存できる。\n- Equipment BlockとSHIELD/BARRIERを別概念として扱い、Block後DamageだけをBARRIERへ渡せる。",
       "system_node_id": "SYS-V9-STATUS",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-STATUS",
@@ -2178,11 +2218,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-STATUS-003",
@@ -2299,15 +2339,16 @@
       "title": "RANGE / Target Expansion",
       "status": "Draft",
       "summary": "base targetからfinal target setを生成する共通Range System。",
-      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n# 2. Current Formal Range\n\n- SINGLE\n- ALL\n- FRONT\n- BACK\n- RANDOM\n- PIERCE\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n# 3. Castとの関係\n\nAI予約時にはTargetを固定しない。\n行動実行開始時の開始時Validation成功後、Cast開始と同じ境界でbase TargetとRANGE展開後のfinal target setを固定する。\nCast完了時は固定Targetだけを再検証する。\n無効・死亡・Range外のTargetはfinal target setから除外する。\n別Targetへの再取得、欠員補充、新規Target追加はしない。\nCast開始後にRangeへ入った対象は追加しない。\n有効Targetが残らない場合は不発とし、Cost/CDを発生させない。\n`castTime=0` でもTarget固定→完了時再検証の境界は省略しない。\n\n# 4. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 5. Future\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n\n---\n\n## 根拠・統合元\nBOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版 / Current Formal Registry",
+      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n# 2. Current Formal Range\n\n- SINGLE\n- ALL\n- FRONT\n- BACK\n- RANDOM\n- PIERCE\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n## 2.1 Equipmentとの境界\n\n弓Equipmentの武器属性「射撃」はEquipment側のCombat Identityであり、\nRange、射程、対象範囲、前後列到達、Target Expansionを決定しない。\nこれらは本RANGE/Target/Battle仕様をOwnerとする。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n# 3. Castとの関係\n\nAI予約時にはTargetを固定しない。\n行動実行開始時の開始時Validation成功後、Cast開始と同じ境界でbase TargetとRANGE展開後のfinal target setを固定する。\nCast完了時は固定Targetだけを再検証する。\n無効・死亡・Range外のTargetはfinal target setから除外する。\n別Targetへの再取得、欠員補充、新規Target追加はしない。\nCast開始後にRangeへ入った対象は追加しない。\n有効Targetが残らない場合は不発とし、Cost/CDを発生させない。\n`castTime=0` でもTarget固定→完了時再検証の境界は省略しない。\n\n# 4. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 5. Future\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n\n---\n\n## 根拠・統合元\nBOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版 / Current Formal Registry",
       "decision_refs": [
-        "DEC-R42-CAST-001"
+        "DEC-R42-CAST-001",
+        "DEC-REORG-EQUIP-BOW-QUIVER-001"
       ],
       "depends_on": [
         "SPEC-V9-019-SKILL-003",
         "SPEC-V9-019-BATTLE-002"
       ],
-      "acceptance_criteria": "- Current 6 Range typeをTarget expansionとして実装できる。\n- AI予約時にはTarget固定せず、行動実行開始時のCast開始境界でbase Target / final target setを固定する。\n- Cast完了時に固定Targetだけを再検証し、無効・死亡・Range外を除外できる。\n- Target再取得・欠員補充・新規追加をしない。\n- 有効Targetなしの不発ではCost/CDを発生させない。\n- 旧Range CostをCurrent Budgetへ二重適用しない。",
+      "acceptance_criteria": "- Current 6 Range typeをTarget expansionとして実装できる。\n- AI予約時にはTarget固定せず、行動実行開始時のCast開始境界でbase Target / final target setを固定する。\n- Cast完了時に固定Targetだけを再検証し、無効・死亡・Range外を除外できる。\n- Target再取得・欠員補充・新規追加をしない。\n- 有効Targetなしの不発ではCost/CDを発生させない。\n- 旧Range CostをCurrent Budgetへ二重適用しない。\n- 弓の射撃属性を理由にEquipment側でRange/Targetingを上書きしない。",
       "system_node_id": "SYS-V9-RANGE",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-RANGE",
@@ -2316,11 +2357,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-23T15:12:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-TAG-001",
@@ -2381,17 +2422,19 @@
       "id": "SPEC-V9-019-EQUIP-001",
       "title": "Equipment Structure / Slots / iLv",
       "status": "Draft",
-      "summary": "Equipment三層、10Slot、iLv命名、BaseItem Rarity。",
-      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1\n\n## 2026-08-20 Human Review\nEquipment Slot数10はシステム固定。それ以外の具体数値はBalance可変。\n",
+      "summary": "Equipment三層、10Slot、iLv命名、BaseItem Rarity、武器装備状態の基本規則。",
+      "body": "# 1. Equipment全体の責務\n\n装備生成は3層に分離する。\n\n```text\n1. BaseItem Generation\n装備種別\n→ iLv\n→ 要求閾値\n→ 基礎性能\n→ BaseItem\n\n2. Item Generation\nBaseItem\n→ レアリティ\n→ MOD数 / MOD枠\n→ MOD抽選\n→ Tier\n→ 完成装備\n\n3. Loot / Drop\nドロップ元\n→ ドロップ判定\n→ 装備カテゴリ等を選択\n→ Item Generation\n→ ドロップ\n```\n\n初期実装の中核はBaseItem Generation。\nMOD・レアリティ・Tier・Drop率は別工程。\n\n---\n\n# 2. 装備スロット\n\nV9正本:\n- 武器1\n- 武器2\n- 頭\n- 鎧\n- 手袋\n- 足\n- アミュレット\n- 指輪1\n- 指輪2\n- ベルト\n\n合計10スロット。\n\n両手持ちは武器種係数とは別の装備ルールとして扱う。\n\n## 2.1 両手持ちと武器カテゴリ\n\n- 「両手武器 / two_hand」という正式な武器カテゴリは設けない。\n- 両手持ちは武器カテゴリではなく独立した装備ルール。\n- Requirement、攻撃回数、Combat Contributionを「両手武器カテゴリ」から推定しない。\n- 大剣等の個別武器種は個別武器種自身の仕様として扱う。\n\n## 2.2 弓 / 矢筒の装備状態\n\n仕様選定上、弓と大弓は同条件としてまとめて「弓」と呼ぶ。\nこれはProduct Master上の種類統合・名称統合を意味しない。\n\n- 弓単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 矢筒単体: 装備可能。ただし弓通常攻撃・弓を必要とするSkillは使用不可。\n- 弓+矢筒: セット成立。弓通常攻撃・弓を必要とするSkillを使用可能。\n- 片側だけの状態はEquip Validation上の不正状態にはしない。\n- Combat Action availabilityで弓+矢筒の成立を確認する。\n\n---\n\n# 3. Item Level\n\nBaseItemは基本 `iLv1〜iLv11`。\n\nV9の共通名称:\n- iLv1 木の\n- iLv2 鉄の\n- iLv3 鋼鉄の\n- iLv4 銀の\n- iLv5 ダイヤの\n- iLv6 ミスリルの\n- iLv7 アダマンタイトの\n- iLv8 オリハルコンの\n- iLv9 巨人の\n- iLv10 竜の\n- iLv11 星鋼の\n\nBaseItemのレアリティはNORMAL固定。\n完成装備のレアリティはItem Generation側。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1\n\n## 2026-08-20 Human Review\nEquipment Slot数10はシステム固定。それ以外の具体数値はBalance可変。\n",
       "decision_refs": [
         "DEC-REORG-EQUIP-009",
         "DEC-V9-EQUIP-001",
-        "DEC-V9-EQUIP-008"
+        "DEC-V9-EQUIP-008",
+        "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001",
+        "DEC-REORG-EQUIP-BOW-QUIVER-001"
       ],
       "depends_on": [
         "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- BaseItem/Item/Lootを分離できる。\n- 10Slotを実装できる。\n- iLv1〜11をBaseItemとして扱える。\n- Accessoryを初期Generator対象に含める。",
+      "acceptance_criteria": "- BaseItem/Item/Lootを分離できる。\n- 10Slotを実装できる。\n- iLv1〜11をBaseItemとして扱える。\n- Accessoryを初期Generator対象に含める。\n- 「両手武器 / two_hand」を武器カテゴリとして要求せず、両手持ち装備ルールと分離できる。\n- 弓単体/矢筒単体を合法Equip stateとして保持し、弓Actionだけを弓+矢筒成立時に許可できる。",
       "system_node_id": "SYS-V9-EQUIP",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-EQUIP",
@@ -2400,55 +2443,57 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T16:25:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-002",
       "title": "Equipment BaseItem Generator / Coefficients",
       "status": "Draft",
-      "summary": "Weapon/Armor要求値、正式Performance field、Growth。",
-      "body": "# 4. 武器BaseItem\n\n## 4.1 要求値\n\n```text\nrequired_str = iLv × STR係数\nrequired_dex = iLv × DEX係数\nrequired_int = iLv × INT係数\n```\n\n要求値は装備可否判定専用。\n\n## 4.2 基礎性能\n\nV9正本の生成思想を継承し、後工程で確定した正式fieldへ接続する。\n\n```text\nattack\n= required_str × attack係数\n\naccuracy\n= required_dex × accuracy係数\n\nmagic_weapon_bonus\n= required_int × magic算出係数\n```\n\nV9初期値:\n- attack係数 = 2\n- accuracy係数 = 2\n- V9の魔法上昇力式 = `INT要求閾値 × STR係数`\n\nただし係数はBalance Configへ分離し、コード固定しない。\n\n正式field名:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n\n基礎クリティカル率5%は**武器側からBattleへ持ち込む正式な戦闘寄与値**として採用する。\n\n```text\nbase_critical_rate = 0.05\n```\n\nこれはBattle側の共通初期Critical 5%ではなく、武器BaseItem由来の値。\nEquipment Contributionを経由してBattleへ渡す。\n\nBattle側でSTR/LUK等から再計算しない。\nCritical Damage倍率とは別概念として扱う。\n\n## 4.3 武器係数\n\n- 片手剣 STR6 / DEX3 / INT1\n- 大剣 STR12 / DEX3 / INT1\n- 短剣 STR3 / DEX6 / INT1\n- 片手斧 STR6 / DEX3 / INT1\n- 大斧 STR12 / DEX3 / INT1\n- 槍 STR6 / DEX3 / INT1\n- 弓 STR3 / DEX6 / INT1\n- 大弓 STR6 / DEX3 / INT1\n- 杖 STR3 / DEX1 / INT6\n- ワンド STR1 / DEX3 / INT6\n- 魔導書 STR1 / DEX3 / INT6\n- 盾 STR6 / DEX3 / INT1\n- 矢筒 STR3 / DEX6 / INT1\n\n杖タグ: `WEAPON_STAFF`\n\n---\n\n# 5. 防具BaseItem\n\n防具要求系統は武器と分離する。\n\n正式要求field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9カテゴリ:\n- 重装: VIT6 / MND3 / AGI1\n- スカウト: AGI6 / VIT3 / MND1\n- ローブ: MND6 / INT3 / VIT1\n\n正式確定:\n防具の要求ステータス系統は **VIT / MND / AGI** とする。\n\n正式field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9ローブに記載されていた `MND6 / INT3 / VIT1` のINT要求は旧仕様として不採用。\n正式Generatorでは防具要求値としてINTを使用しない。\n\n各防具カテゴリ/部位の係数テーブルも、VIT / MND / AGIの3系統へ統一して管理する。\n\n正式BaseItem性能:\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\nEvasionはHP/MP用の防具部位係数を使用しない。\n\n```text\nevasion = required_agi × evasionGrowth\n```\n\nCurrent Balance seedでは `evasionGrowth = 1.0`。\n`evasionGrowth` はBalance Dataとして可変にし、HP/MP用slot coefficientをEvasionへ流用しない。\nBattle RuntimeでVIT/MND/AGIから再計算しない。\n\n---\n\n# 6. 防具iLv追加成長\n\n攻撃Skill等のインフレに追従できるよう、防具性能は要求閾値とは別に追加成長を持てる。\n\nHP/MPはそれぞれの正式Generator係数・Growth設定を使用する。\nEvasionだけはHP/MP用の部位係数を共有せず、`required_agi × evasionGrowth` を正本とする。\n\n防具Growthは初期状態から有効。\n\n個別設定:\n```text\narmor_growth:\n  hp: iLv別設定\n  mp: iLv別設定\n  evasion: iLv別設定\n```\n\n武器側にも同じ拡張点を持てるが初期運用は `1.0` / disabled相当。\n通常UIでは不要な武器Growth設定を露出させない。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
+      "summary": "Weapon/Armor要求値、正式Performance field、Growth、盾Block Base性能。",
+      "body": "# 4. 武器BaseItem\n\n## 4.1 要求値\n\n```text\nrequired_str = iLv × STR係数\nrequired_dex = iLv × DEX係数\nrequired_int = iLv × INT係数\n```\n\n要求値は装備可否判定専用。\n\n## 4.2 基礎性能\n\nV9正本の生成思想を継承し、後工程で確定した正式fieldへ接続する。\n\n```text\nattack\n= required_str × attack係数\n\naccuracy\n= required_dex × accuracy係数\n\nmagic_weapon_bonus\n= required_int × magic算出係数\n```\n\nV9初期値:\n- attack係数 = 2\n- accuracy係数 = 2\n- V9の魔法上昇力式 = `INT要求閾値 × STR係数`\n\nただし係数はBalance Configへ分離し、コード固定しない。\n\n正式field名:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n\n基礎クリティカル率5%は**武器側からBattleへ持ち込む正式な戦闘寄与値**として採用する。\n\n```text\nbase_critical_rate = 0.05\n```\n\nこれはBattle側の共通初期Critical 5%ではなく、武器BaseItem由来の値。\nEquipment Contributionを経由してBattleへ渡す。\n\nBattle側でSTR/LUK等から再計算しない。\nCritical Damage倍率とは別概念として扱う。\n\n## 4.3 武器係数\n\n- 片手剣 STR6 / DEX3 / INT1\n- 大剣 STR12 / DEX3 / INT1\n- 短剣 STR3 / DEX6 / INT1\n- 片手斧 STR6 / DEX3 / INT1\n- 大斧 STR12 / DEX3 / INT1\n- 槍 STR6 / DEX3 / INT1\n- 弓 STR3 / DEX6 / INT1\n- 大弓 STR6 / DEX3 / INT1\n- 杖 STR3 / DEX1 / INT6\n- ワンド STR1 / DEX3 / INT6\n- 魔導書 STR1 / DEX3 / INT6\n- 盾 STR6 / DEX3 / INT1\n- 矢筒 STR3 / DEX6 / INT1\n\n杖タグ: `WEAPON_STAFF`\n\n## 4.4 盾Block Base性能\n\n盾は既存の攻撃Contributionとは別に、Block用の正式Performance fieldを持つ。\n\n- `block_rate`\n- `block_damage_cut_rate`\n\nCurrent初期Balance seed:\n```text\nblock_rate(iLv1) = 20%\nblock_rate growth = +2 percentage points / iLv\nblock_rate(iLv) = 20% + 2pp × (iLv - 1)\nblock_damage_cut_rate = 30%\n```\n\nこれらはBalance Dataであり、ロジックへ固定値として埋め込まない。\n`block_damage_cut_rate` のiLv成長式、および `block_rate` の上限はCurrentでは定義しない。\n既存Effect kind `SHIELD` / BARRIERとは別概念である。\n\n---\n\n# 5. 防具BaseItem\n\n防具要求系統は武器と分離する。\n\n正式要求field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9カテゴリ:\n- 重装: VIT6 / MND3 / AGI1\n- スカウト: AGI6 / VIT3 / MND1\n- ローブ: MND6 / INT3 / VIT1\n\n正式確定:\n防具の要求ステータス系統は **VIT / MND / AGI** とする。\n\n正式field:\n- `required_vit`\n- `required_mnd`\n- `required_agi`\n\nV9ローブに記載されていた `MND6 / INT3 / VIT1` のINT要求は旧仕様として不採用。\n正式Generatorでは防具要求値としてINTを使用しない。\n\n各防具カテゴリ/部位の係数テーブルも、VIT / MND / AGIの3系統へ統一して管理する。\n\n正式BaseItem性能:\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\nEvasionはHP/MP用の防具部位係数を使用しない。\n\n```text\nevasion = required_agi × evasionGrowth\n```\n\nCurrent Balance seedでは `evasionGrowth = 1.0`。\n`evasionGrowth` はBalance Dataとして可変にし、HP/MP用slot coefficientをEvasionへ流用しない。\nBattle RuntimeでVIT/MND/AGIから再計算しない。\n\n---\n\n# 6. 防具iLv追加成長\n\n攻撃Skill等のインフレに追従できるよう、防具性能は要求閾値とは別に追加成長を持てる。\n\nHP/MPはそれぞれの正式Generator係数・Growth設定を使用する。\nEvasionだけはHP/MP用の部位係数を共有せず、`required_agi × evasionGrowth` を正本とする。\n\n防具Growthは初期状態から有効。\n\n個別設定:\n```text\narmor_growth:\n  hp: iLv別設定\n  mp: iLv別設定\n  evasion: iLv別設定\n```\n\n武器側にも同じ拡張点を持てるが初期運用は `1.0` / disabled相当。\n通常UIでは不要な武器Growth設定を露出させない。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-003",
         "DEC-V9-EQUIP-006",
-        "DEC-BAL-EVASION-NO-HP-SLOT-001"
+        "DEC-BAL-EVASION-NO-HP-SLOT-001",
+        "DEC-REORG-EQUIP-BLOCK-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-001",
         "SPEC-V9-019-CHAR-001"
       ],
-      "acceptance_criteria": "- Weapon要求値とattack/accuracy/magic_weapon_bonusをConfig係数で生成できる。\n- Armor要求値をVIT/MND/AGIだけで生成できる。\n- Armor Evasionを `required_agi × evasionGrowth` で生成し、HP/MP用slot coefficientを混入させない。\n- base_critical_rate 0.05をWeapon Contributionとして扱える。",
+      "acceptance_criteria": "- Weapon要求値とattack/accuracy/magic_weapon_bonusをConfig係数で生成できる。\n- Armor要求値をVIT/MND/AGIだけで生成できる。\n- Armor Evasionを `required_agi × evasionGrowth` で生成し、HP/MP用slot coefficientを混入させない。\n- base_critical_rate 0.05をWeapon Contributionとして扱える。\n- 盾BaseItemでblock_rate / block_damage_cut_rateをBalance Dataから生成・保持できる。\n- Current初期seedとしてiLv1=20%、+2pp/iLv、Block Damage Cut=30%を再現でき、値をコード固定しない。",
       "system_node_id": "SYS-V9-EQUIP",
       "contract_ids": [
         "CONTRACT-V9-CHAR-TO-EQUIP"
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-25T13:33:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-003",
       "title": "Equipment Generation Config / Metadata / Validator",
       "status": "Draft",
       "summary": "Generator Rules、Balance Config、再現性Metadata、Validation。",
-      "body": "# 7. Generation Rules / Balance Config\n\nGeneration Rules:\n- 計算順序\n- 入出力\n- 武器/防具分岐\n- 必須データ\n- 検証ルール\n\nBalance Config:\n- 要求閾値係数\n- 武器/防具係数\n- 基礎性能倍率\n- 防具Growth\n- Clamp\n- 丸め\n- 検証閾値\n- 将来のItem Generation用係数\n\n最低metadata:\n- `config_id`\n- `config_version`\n- `status`\n- `created_at`\n- `updated_at`\n\nstatus:\n- draft\n- testing\n- active\n- archived\n\n正規生成は用途ごとに原則1 Active Config。\n\n---\n\n# 8. generation metadata / 再現性\n\n生成物は少なくとも以下を追跡可能にする。\n\n- generator_version\n- generation_rules_version\n- config_id\n- config_version\n- source_spec_version\n- seed\n- base_item_type / base_item_id\n- item_level\n- generated_at\n\n必要に応じて:\n- generation_input\n- calculation_trace\n\n同一入力 + 同一seed + 同一generator_version + 同一Configで同一結果を再現できることを目標とする。\n\nBalance Config更新で既存Equipmentを自動上書きしない。\n\n---\n\n# 9. Generator Validator\n\n```text\nGenerator Validator\n├─ Structural Validation → Error / 停止\n└─ Balance Validation    → 原則Warning\n```\n\nStructural:\n- BaseItem不存在\n- iLv不正\n- Config不存在/status不正\n- Rules/Config互換不一致\n- 係数欠落\n- NaN/Infinity\n- required_* < 0\n- 必須Tag/性能欠落\n- stat/combat parameter混同\n- armor growth設定欠落\n- generation metadata欠落\n\nBalance:\n- attack等の想定レンジ逸脱\n- hp/mp/evasion成長異常候補\n- clamp到達等\n\nBalance閾値はコード固定せずConfig化する。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
+      "body": "# 7. Generation Rules / Balance Config\n\nGeneration Rules:\n- 計算順序\n- 入出力\n- 武器/防具分岐\n- 必須データ\n- 検証ルール\n\nBalance Config:\n- 要求閾値係数\n- 武器/防具係数\n- 基礎性能倍率\n- 防具Growth\n- 盾Block率 / Block Damage Cut\n- Clamp\n- 丸め\n- 検証閾値\n- 将来のItem Generation用係数\n\n最低metadata:\n- `config_id`\n- `config_version`\n- `status`\n- `created_at`\n- `updated_at`\n\nstatus:\n- draft\n- testing\n- active\n- archived\n\n正規生成は用途ごとに原則1 Active Config。\n\n---\n\n# 8. generation metadata / 再現性\n\n生成物は少なくとも以下を追跡可能にする。\n\n- generator_version\n- generation_rules_version\n- config_id\n- config_version\n- source_spec_version\n- seed\n- base_item_type / base_item_id\n- item_level\n- generated_at\n\n必要に応じて:\n- generation_input\n- calculation_trace\n\n同一入力 + 同一seed + 同一generator_version + 同一Configで同一結果を再現できることを目標とする。\n\nBalance Config更新で既存Equipmentを自動上書きしない。\n\n---\n\n# 9. Generator Validator\n\n```text\nGenerator Validator\n├─ Structural Validation → Error / 停止\n└─ Balance Validation    → 原則Warning\n```\n\nStructural:\n- BaseItem不存在\n- iLv不正\n- Config不存在/status不正\n- Rules/Config互換不一致\n- 係数欠落\n- NaN/Infinity\n- required_* < 0\n- 必須Tag/性能欠落\n- 盾でblock_rate / block_damage_cut_rate欠落\n- stat/combat parameter混同\n- armor growth設定欠落\n- generation metadata欠落\n\nBalance:\n- attack等の想定レンジ逸脱\n- hp/mp/evasion成長異常候補\n- clamp到達等\n\nBalance閾値はコード固定せずConfig化する。\n\n---\n\n---\n\n## 根拠・統合元\nBOX-R7-019 Equipment完全統合 v1.1",
       "decision_refs": [
-        "DEC-V9-EQUIP-005"
+        "DEC-V9-EQUIP-005",
+        "DEC-REORG-EQUIP-BLOCK-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-002",
         "SPEC-V9-019-CORE-002"
       ],
-      "acceptance_criteria": "- Active Configを使って生成できる。\n- 同一Input/Seed/Generator/Configで同一結果を再生成できる。\n- Structural ErrorとBalance Warningを分離できる。",
+      "acceptance_criteria": "- Active Configを使って生成できる。\n- 同一Input/Seed/Generator/Configで同一結果を再生成できる。\n- Structural ErrorとBalance Warningを分離できる。\n- 盾のblock_rate / block_damage_cut_rateをActive Balance Configから供給できる。",
       "system_node_id": "SYS-V9-EQUIP",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-EQUIP",
@@ -2456,31 +2501,34 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 0,
+      "revision": 1,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-19T20:26:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-004",
       "title": "Equipment Consumer / Contribution / MOD Boundary",
       "status": "Draft",
       "summary": "Battleへ渡す正式field、旧field廃止、Contribution境界。",
-      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象とし、Modified Equipment ContributionからBattleの魔法攻撃系 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` は回復量へ接続しない。\nこれは新しい計算式ではなく、既存Contributionの接続漏れCorrectionである。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
+      "body": "# 10. Equipment Consumer Contract\n\n要求値は装備可否専用。\n\n戦闘性能:\n- `attack`\n- `accuracy`\n- `magic_weapon_bonus`\n- `base_critical_rate`\n- `hp_bonus`\n- `mp_bonus`\n- `evasion`\n- `block_rate`（盾Block）\n- `block_damage_cut_rate`（Block成功時Damage Cut）\n\n禁止:\n- base_attack\n- base_defense\n- 旧単一 defense\n- Equipment STR/DEX/INT/VIT/MND/AGIの直接戦闘加算\n- 旧equipmentBonus()\n- 旧field fallback\n\n---\n\n# 11. Equipment Contribution / MOD境界\n\nBaseItem保存値はMODで上書きしない。\n\n```text\nBaseItem Performance\n↓\nEquipment Contribution\n↓\nEquipment MOD\n↓\nModified Equipment Contribution\n↓\nRuntime\n```\n\nEquipment性能MODの確定式:\n\n```text\nFinal\n= Base\n+ (Base × Percent合計)\n+ Flat合計\n```\n\n例:\nBase attack 100 / +10% / +5 → 115\n\n対象:\n- attack\n- accuracy\n- magic_weapon_bonus\n- hp_bonus\n- mp_bonus\n- evasion\n\n`base_critical_rate = 5%` は武器由来の正式戦闘寄与値としてContributionを経由する。\n基礎5%自体は武器BaseItemで確定し、Battle側でLUK等から生成しない。\nCritical率へ作用する追加MODの詳細はCritical/MOD正本へ委譲する。\n\nDamage MOD / Defense MODは別Pipelineへ委譲する。\nEquipment仕様からCombat MOD全体を再設計しない。\n\n---\n\n# 12. Battle/Game旧デモ処理\n\n旧デモは互換維持しない。\n\n削除/置換対象:\n- hard-coded EQUIPMENT\n- equipmentBonus()\n- STR→attack\n- VIT→maxHp\n- STR→accuracy\n- LUK→critical\n- Equipment AGI直接加算\n- defense / defenseCoefficient\n- base_attack / base_defense\n- Equipment名ベースlookup\n- 旧Battle sampleの数値解釈\n\n再利用可能:\n- Equipment ID参照構造\n- Master lookup\n- inventory概念\n- 装備枠UI\n- 装備/解除操作\n\n正式参照:\n`equipment_id → Equipment Dataset → Equipment Record`\n\n---\n\n## Current接続\n\n`magic_weapon_bonus` は正式fieldとして生成・保存・MOD対象とし、Modified Equipment ContributionからBattleの魔法攻撃系 `MAGIC_DAMAGE` 入力へ直接渡す。\n武器種別で別Channelへ振り分けず、杖・ワンド・魔導書を含め `magic_weapon_bonus` を持つ武器は同じ接続を使用する。\n`magic_weapon_bonus` は回復量へ接続しない。\nこれは新しい計算式ではなく、既存Contributionの接続漏れCorrectionである。\n\n\n## Bow / Quiver Combat Identity\n\n- 仕様選定上、弓/大弓は同条件の「弓」として扱う。\n- 弓通常攻撃・弓を必要とするSkillは、弓+矢筒の両方を装備している場合だけ使用可能。\n- 弓は1 Strike、矢筒は0 Strike。\n- Bow/QuiverセットのCritical/base_critical_rateは弓側だけを使用し、加算しない。\n- Critical以外の通常Combat Contributionは弓+矢筒を合算する。\n  - attack = Bow.attack + Quiver.attack\n  - accuracy = Bow.accuracy + Quiver.accuracy\n  - magic_weapon_bonus等のCritical以外のContributionも同じ合算規則。\n- 弓EquipmentのWeapon属性は「射撃」。\n- EquipmentはRange/射程/Targetingを決定しない。Range/TargetingはRANGE/Battle Ownerへ委譲する。\n\n## Shield offense / Block output\n\n- 盾は通常攻撃の独立Strikeを発生させない（0 Strike）。\n- 盾のAttack/Accuracy/base_critical_rateを攻撃武器Strikeへ加算しない。\n- 盾は防御用として `block_rate` / `block_damage_cut_rate` をBattleへ渡す。\n- Block用fieldは既存SHIELD(BARRIER)と区別し、`shield_*` 名を使用しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-019 / BOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-08\n\n---\n\n## R25 Battle Consumer 出力契約\n\nEquipment ConsumerはMOD適用後の正式Contributionとして、少なくとも以下をBattleへ渡せる。\n\n- attack\n- accuracy\n- evasion\n- magic_weapon_bonus\n- base_critical_rate\n- hp_bonus\n- mp_bonus\n\n`accuracy / evasion / magic_weapon_bonus / base_critical_rate` を「保存のみ・未接続」の状態に残さない。\nBattle側の正式な意味は `SPEC-V9-019-BATTLE-001` をOwnerとし、本仕様ではEquipment側の出力境界だけを所有する。\n\nBaseItem保存値をMODで破壊的に上書きせず、Modified Equipment Contributionを別段階としてRuntimeへ渡す。\n",
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-004",
         "DEC-V9-EQUIP-006",
         "DEC-V9-EQUIP-007",
         "DEC-R24-EQUIP-BATTLE-001",
-        "DEC-REORG-EQUIP-MAGIC-DIRECT-001"
+        "DEC-REORG-EQUIP-MAGIC-DIRECT-001",
+        "DEC-REORG-EQUIP-BOW-QUIVER-001",
+        "DEC-REORG-EQUIP-BLOCK-001",
+        "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-003",
         "SPEC-V9-019-MOD-001"
       ],
-      "acceptance_criteria": "- 旧base_attack/base_defense/defenseへFallbackしない。\n- Equipment ContributionをMOD処理前後で分離する。\n- magic_weapon_bonusをModified Equipment ContributionからMAGIC_DAMAGEへ直接接続できる。\n- magic_weapon_bonusをHealへ混入させない。",
+      "acceptance_criteria": "- 旧base_attack/base_defense/defenseへFallbackしない。\n- Equipment ContributionをMOD処理前後で分離する。\n- magic_weapon_bonusをModified Equipment ContributionからMAGIC_DAMAGEへ直接接続できる。\n- magic_weapon_bonusをHealへ混入させない。\n- 弓+矢筒を1 Strikeとして扱い、Criticalは弓のみ、Critical以外はセット合算できる。\n- 盾を0 Strikeとして攻撃武器へoffensive Contributionを加算しない。\n- block_rate / block_damage_cut_rateを既存SHIELD(BARRIER)と別のEquipment ContributionとしてBattleへ渡せる。\n- EquipmentからRange/Targetingを決定しない。",
       "system_node_id": "SYS-V9-EQUIP",
       "contract_ids": [
         "CONTRACT-V9-EQUIP-TO-BATTLE",
@@ -2489,11 +2537,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-25T13:33:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-MOD-001",
@@ -3458,14 +3506,15 @@
       "title": "Inventory / Equipment UI",
       "status": "Draft",
       "summary": "InventoryとEquipmentのPlayer閲覧・比較・処理UI。",
-      "body": "# 1. 基本機能\n- 一覧\n- 装備 / 解除\n- 装備前後比較\n- MOD表示\n- 装備不可理由\n- Sort\n- Filter\n\n# 2. 不要品処理\n売却と破棄の両方を正式採用する。\n- 売却: Gold化\n- 破棄: 無償削除\n\n# 3. Safety\n- 装備中Itemは直接売却/破棄不可\n- Locked Itemは売却/破棄不可\n- 高Rarity Itemは確認\n- 一括売却/一括破棄は対象確認後に実行\n\n# 4. Boundary\nUIはInventory/Equipment Runtimeの所有状態・不可理由を表示する。\n装備可否、所有、売却成立等をUI独自で再計算しない。\n\n# 5. Variable\n売却価格式、高Rarity警告閾値、初期Sort等はOwner/Balance側へ分離する。\n",
+      "body": "# 1. 基本機能\n- 一覧\n- 装備 / 解除\n- 装備前後比較\n- MOD表示\n- 装備不可理由\n- Sort\n- Filter\n\n# 2. 不要品処理\n売却と破棄の両方を正式採用する。\n- 売却: Gold化\n- 破棄: 無償削除\n\n# 3. Safety\n- 装備中Itemは直接売却/破棄不可\n- Locked Itemは売却/破棄不可\n- 高Rarity Itemは確認\n- 一括売却/一括破棄は対象確認後に実行\n\n# 4. Boundary\nUIはInventory/Equipment Runtimeの所有状態・不可理由を表示する。\n装備可否、所有、売却成立等をUI独自で再計算しない。\n\n# 4.1 弓 / 矢筒セット警告\n\n弓単体または矢筒単体は装備可能状態として保持し、装備不可扱いにはしない。\nただしセット条件未成立を装備画面で明示する。\n\n- 弓のみ: `矢筒が装備されていません`\n- 矢筒のみ: `弓が装備されていません`\n- 不足している側の武器スロットを赤系等の警告状態で示す。\n- 警告は「装備不正」ではなく「弓Action条件未成立」を示す。\n- 色だけに依存せず理由Textを併記する。\n\n# 5. Variable\n売却価格式、高Rarity警告閾値、初期Sort等はOwner/Balance側へ分離する。\n",
       "decision_refs": [
-        "DEC-R24-INVENTORY-UI-001"
+        "DEC-R24-INVENTORY-UI-001",
+        "DEC-REORG-EQUIP-BOW-QUIVER-001"
       ],
       "depends_on": [
         "SPEC-V9-019-EQUIP-001"
       ],
-      "acceptance_criteria": "- 比較/Sort/Filter/売却/破棄を提供できる。\\n- 装備中/Locked Itemを誤処理しない。",
+      "acceptance_criteria": "- 比較/Sort/Filter/売却/破棄を提供できる。\\n- 装備中/Locked Itemを誤処理しない。\n- 弓/矢筒片側装備を合法状態として表示し、不足理由Textと不足側Slot警告を提示できる。",
       "system_node_id": "SYS-V9-INVENTORY-UI",
       "contract_ids": [
         "CONTRACT-V9-EQUIP-TO-INVENTORY-UI",
@@ -3473,11 +3522,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-20T20:54:00+09:00",
-      "updated_at": "2026-08-20T21:07:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "SPEC-V9-019-SKILL-UI-001",
@@ -4939,9 +4988,9 @@
       "consumer_system_ids": [
         "SYS-V9-BATTLE"
       ],
-      "definition": "既存Specificationのdepends_onをSystem接続として構造化したContract。新しいGameplay仕様・数式は追加しない。明示依存: SPEC-V9-019-BATTLE-001 depends_on SPEC-V9-019-EQUIP-004",
+      "definition": "Equipment→Battleの正式依存Contract。SPEC-V9-019-EQUIP-004のModified Equipment ContributionをSPEC-V9-019-BATTLE-001/003へ渡す。弓+矢筒は弓1 Strike/矢筒0 Strike、Criticalは弓のみ、Critical以外のContributionを合算。盾は0 Strikeでoffensive Contributionを攻撃武器へ加算せず、`block_rate` / `block_damage_cut_rate` をBlock入力として渡す。Blockは直接DamageのfinalDamage確定後、既存SHIELD(BARRIER)消費より前に処理する。EquipmentはRange/Targetingを所有しない。",
       "created_at": "2026-08-20T13:50:00+09:00",
-      "updated_at": "2026-08-20T13:50:00+09:00"
+      "updated_at": "2026-08-26T11:19:10+09:00"
     },
     {
       "id": "CONTRACT-V9-EQUIP-TO-DATA",
@@ -29163,6 +29212,16 @@
       "at": "2026-08-25T13:33:00+09:00",
       "type": "SpecificationIntegration",
       "summary": "Human確定のBalance変更をCurrent Specificationへ同期。Job成長内訳（狩人/魔術師/神官）、Action Gauge=(100+AGI)/10、Hit=Accuracy/Evasion、Armor EvasionのHP/MP slot係数分離、magic_weapon_bonus→既存MAGIC_DAMAGE直接接続を反映。ゲームデータ、Source、Workflow、Task状態は変更していない。"
+    },
+    {
+      "at": "2026-08-26T11:19:10+09:00",
+      "type": "ConfirmedDecisionMerge",
+      "summary": "Human確定のEquipment戦闘仕様を登録。両手武器/two_handを武器カテゴリとして設けず両手持ち装備ルールと分離。弓+矢筒の装備成立/Contribution/射撃属性とRange owner境界、盾Blockのblock_rate/block_damage_cut_rate、直接Damage対象、Hit単位判定、DOT除外、Block→SHIELD(BARRIER)→HP順を確定。"
+    },
+    {
+      "at": "2026-08-26T11:19:10+09:00",
+      "type": "SpecificationIntegration",
+      "summary": "DEC-REORG-EQUIP-NO-TWO-HAND-CATEGORY-001 / DEC-REORG-EQUIP-BOW-QUIVER-001 / DEC-REORG-EQUIP-BLOCK-001をCurrent Specificationへ統合。更新対象: EQUIP-001/002/003/004、BATTLE-001/003、STATUS-002、RANGE-001、INVENTORY-UI-001、CONTRACT-V9-EQUIP-TO-BATTLE。数値20%/+2pp/30%はBalance可変のCurrent初期seedとして保持。Source/Game Data/Workflow/Task状態は変更していない。"
     }
   ],
   "authority": {
