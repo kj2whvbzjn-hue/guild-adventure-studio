@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T14:20:01.793Z"
+    "updated_at": "2026-08-26T22:19:22.918Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -13,9 +13,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
-    "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "GKS-B790を新基準にBow-only Human Runtime再検証開始 — Fresh Template待ち",
-    "goal": "Human指定のGKS-B790 Sourceを新基準としてTASK-BAL-074-INFRA-005を開始承認済み。Bow-only実装とSource Quickを確認済み。次にHuman Studioから同BuildのBattle Verification AI Template v1.4.0を受領し、そのformal.bindingsを変更せずBow+Quiver→Sword+Shield再検証Packageを生成する。Template受領前はBindingを推測せず、Skill Balanceへ進まない。"
+    "work_box_id": "BOX-V9-BAL-WORLD-001",
+    "theme": "Monster装備相当性能の連続生成方針を確定 — 旧Requirement係数直乗算CoreをSupersede",
+    "goal": "Monster基礎Status=Level×Job成長期待値/10、Player初期ALL10なしは維持する。旧TASK-BAL-072-CORR-001のRequirement係数直乗算によるAttack/Accuracy/Magic/HP/MP/Evasion Numeric Authorityは使用停止。次工程ではHuman承認済み共通式に基づき、Current GKS-B790で全Job・全Levelの連続装備相当Coreを再構築する。Stat-linked 6項目を先に再計算し、Critical/Block等の非Stat-linked値は別途算定規則をHuman承認してからFreezeする。新しいSimulation/Test/実機検証は事前Test Plan承認まで開始しない。"
   },
   "project_rules": [
     {
@@ -545,20 +545,26 @@
       "source_id": "DEV-V9-REORG-019 Current Monster Budget / QuestRun + Stone contract",
       "created_at": "2026-08-26T16:46:00+09:00",
       "updated_at": "2026-08-26T16:46:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001",
+      "text": "Monster装備相当性能は、Monster基礎Status M_s=L×G/10、同Job Player参照Status P_s=10+(L-1)×G/10、Current Requirement semanticsから得るfractional Virtual iLv、既存Player Equipment性能式F_Xを用いて生成する。Stat-linked contributionは X_monster=F_X(e,I_e)×M_s/P_s。Equipment requirement coefficientをMonster Statへ直接掛けてCombat値へ変換しない。Virtual iLvを整数化せず装備更新段差を除去する。Player Equipment式および既存multiplier=2は変更しない。Bow+QuiverはBow-only contribution。非Stat-linked Critical/Block系は別Human承認までFreezeしない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-27 monster continuous equipment-equivalent formula",
+      "created_at": "2026-08-27T05:38:30+09:00",
+      "updated_at": "2026-08-27T05:38:30+09:00"
     }
   ],
   "source_baseline": {
     "studio_build": "GKS-B790",
     "game_build": "GA-B486.211",
     "source_label": "guild-adventure-studio-sub(20260826-141020).zip",
-    "source_role": "Human-selected Current baseline for Bow-only Human Runtime revalidation",
+    "source_role": "Human-selected Current baseline for Monster continuous equipment-equivalent formula redesign",
     "recorded_at": "2026-08-26T23:10:30+09:00",
-    "package_manifest_sha256": "fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397",
-    "result_zip_sha256": "a09125b5bc82cfe5c618e20c51dabfcdaa87a0856013f54ee909d2be20ef03b8",
     "source_zip_sha256": "0b73312073ce5f847a8714bf1a241210f9b4759e0f9445ca3482ab8f9805d8e2",
-    "source_tree_sha256": "79ec744e7350189bec7ccbcfb1e28c846eae9b5428788fb37a96a968af6026aa",
-    "prior_formal_result_zip_sha256": "1c34d8388f3cbe6debd7f8ee17f23d3f3be0830226bdffbf601df478d5ca2b9f",
-    "result_zip_note": "Latest Human runtime is forced-Miss branch completion. Combined authority is indexed by development-project_DEV-V9-BALANCE-EVIDENCE-074-BOW-SHIELD.json sha256=36619fea89dacdeb38bba19ed4c4ee5e5b29d621a60a32a31a1303512f618854."
+    "package_manifest_sha256": "fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397",
+    "source_tree_sha256": "79ec744e7350189bec7ccbcfb1e28c846eae9b5428788fb37a96a968af6026aa"
   },
   "lifecycle": {
     "status": "Active",
@@ -2729,14 +2735,14 @@
     {
       "id": "DEC-BAL-MONSTER-EQUIPMENT-MODEL-CORR-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "Monsterの正式Balance構造は、(1) Monster Level × Job補正値でMonster基礎Statusを決定し、(2) Monster Status × Job別Monster装備係数でMonster戦闘力/戦闘用Statusを決定する。MonsterへPlayer用Equipment item/CandidateやPlayer基準Equipment Contributionを装着・加算して正式Monster性能を作らない。Player-equivalent equipmentは比較fixtureとしてのみ使用でき、Monster Balance AuthorityまたはSkill Calibration Authorityへ昇格しない。",
-      "rationale": "Human correction: TASK-BAL-073K以降でPlayer標準装備ContributionをMonster装備層の代用にしたのは本来のMonster設計と異なるため。",
+      "rationale": "2026-08-27 Human correction: Monsterへ実物Player Equipmentを装着しない方針は維持するが、Player Equipment性能式/同Job Player参照値を連続装備相当値の算出根拠として使わない、という旧境界は撤回。DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001へ置換する。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-26T10:10:23+09:00",
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T10:10:23+09:00"
+      "updated_at": "2026-08-27T05:38:30+09:00"
     },
     {
       "id": "DEC-BAL-TASK074-K-MONOTONIC-RETRACTION-001",
@@ -2830,14 +2836,14 @@
     {
       "id": "DEC-BAL-MONSTER-JOB-EQUIPMENT-CORE-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
-      "status": "Approved",
+      "status": "Superseded",
       "text": "装備可能な人型Monster Coreでは、Monster基礎Status=Level×Job補正値とし、既存Equipment requirement coefficientをMonster自身の対応能力値へ直接乗算して戦闘値を作る。Player Equipment/iLvは介在させない。盾のoffensive係数は加算せず、ShieldScale=min(STR/6,DEX/3,INT/1)、BlockRate=20%+2pp×(max(1,ShieldScale)-1)、BlockDamageCutRate=30%、追加capなし。Bow+Quiverは非Critical係数を合算し、CriticalはBowのみ、Bow1 Strike/Quiver0 Strike。この決定は装備可能な人型Monster向けであり、獣型等の装備不可Body Typeへ無条件適用しない。",
-      "rationale": "Human corrections and approvals in TASK-BAL-072-CORR-001: direct Monster Stat×existing equipment coefficient model; Job-dependent shield Block; non-humanoid equipment restrictions deferred.",
+      "rationale": "2026-08-27 Human correction: Monster基礎Status=Level×Job成長期待値および装備更新段差を除去する目的は維持する。一方、Equipment requirement coefficientをMonster基礎Statへ直接乗算してAttack/Accuracy/HP/Evasion等を生成する式は破綻していたため廃止。DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001へ置換する。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-26T15:05:54+09:00",
       "created_at": "2026-08-26T15:16:48+09:00",
-      "updated_at": "2026-08-26T15:16:48+09:00"
+      "updated_at": "2026-08-27T05:38:30+09:00"
     },
     {
       "id": "DEC-BAL-MONSTER-BUDGET-CURRENT-PLAN-CORR-001",
@@ -2850,6 +2856,18 @@
       "approved_at": "2026-08-26T16:43:00+09:00",
       "created_at": "2026-08-26T17:45:00+09:00",
       "updated_at": "2026-08-26T17:45:00+09:00"
+    },
+    {
+      "id": "DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001",
+      "title": "Monster連続装備相当性能の共通生成方針",
+      "status": "Approved",
+      "text": "装備可能な人型Monsterの基礎Statusは旧Monster Coreどおり M_s(L,j)=L×G(j,s)/10 とし、Player初期ALL10を加えない。同Level・同JobのPlayer参照Statusを P_s(L,j)=10+(L-1)×G(j,s)/10 とする。Monsterへ実物Player Equipment item/Candidateを装着せず、各Jobの正式Equipment profileについて、Current Equipment requirement semantics（両手持ちSTR Requirement救済等を含む）で同Job Player参照Statusが満たせる連続値の仮想Item Level I_e を求める。通常Requirement coefficient表現では I_e=Clamp(min_s(P_s/C_eff(e,s)), iLv_min, iLv_max) とし、Monster側ではI_eを整数化せず小数のまま使用する。次にPlayer側の既存Equipment性能生成式 F_X(e,I_e) を同じ係数・同じ意味で評価し、Stat対応が明確なEquipment Combat Contributionは X_monster=F_X(e,I_e)×M_s/P_s で生成する。対応は attack→STR、accuracy→DEX、magic_weapon_bonus→INT、hp→VIT、mp→MND、evasion→AGI とする。Player Equipment側の既存式は変更せず、attack/accuracy等に既存multiplier=2が定義されている場合も維持する。旧Monster Coreの『Monster Stat×Equipment requirement coefficientを直接Combat値にする』式は使用しない。この方式によりPlayerの実物装備更新の段差をMonsterへ持ち込まず、Levelごとに装備相当性能を連続成長させる。同時にMonsterはPlayer初期ALL10を持たないため、特に序盤は同Level・同Job Playerより意図的に弱くなる。これはPlayerがQuestで連戦する前提の設計意図であり、序盤単戦勝率が高くなること自体をFailureとしない。Bow+QuiverはCurrent Bow-only Combat Contributionを維持し、両装備を使用条件として要求するがQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical / Block Rate / Block Damage Cut等、単一の基礎Stat対応が確定していないEquipment由来値もMonster装備相当層の対象には含めるが、M_s/P_sを恣意的に割り当てず、同じVirtual iLvとCurrent Equipment式を基準に別途Human承認で算定規則を確定するまでNumeric Freezeしない。既存Equipment式のround/floor境界は実装確認対象とし、Virtual iLv自体を整数化して装備更新段差を再導入しない。",
+      "rationale": "Human確認により、旧Monster Coreの基礎Status式と『実物装備更新で一気に強くなる段差を除去する』目的は正しかった。破綻箇所はEquipment requirement coefficientをMonster Combat倍率へ直接流用した変換層。Player Lv50付近の高Accuracy約130 / 高Evasion約260前後という既存スケールに対し、旧Monster狩人Accuracy360等が逸脱したため、Player Equipment progressionを連続化しつつPlayer初期ALL10欠落分をStat比で反映する共通生成式へ置換する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T05:38:30+09:00",
+      "created_at": "2026-08-27T05:38:30+09:00",
+      "updated_at": "2026-08-27T05:38:30+09:00"
     }
   ],
   "specifications": [
@@ -19782,6 +19800,12 @@
       "task_id": "TASK-BAL-074-INFRA-005",
       "created_at": "2026-08-26T23:10:30+09:00",
       "updated_at": "2026-08-26T23:10:30+09:00"
+    },
+    {
+      "id": "HIST-BAL-MONSTER-CONTINUOUS-EQUIP-001",
+      "title": "Monster装備相当性能の計算式をRequirement直乗算から連続Player参照式へ補正",
+      "summary": "Human clarification: 旧Monster Coreの基礎Status式 M_s=L×G/10 と、実物装備更新の段差を除去する目的は維持。破綻していたのはEquipment requirement coefficientをMonster Combat倍率として直接使用した層。Player Equipment multiplier=2廃止案は撤回し既存Player式を維持。新Authorityはfractional Virtual iLv + existing Player Equipment formula + Monster/Player corresponding-stat ratio。旧TASK-BAL-072-CORR-001 / DEV-V9-BALANCE-EVIDENCE-072-HUMANOID-COREの直接係数Numeric値はHistorical onlyとし、新Core再構築までBalance/Skill numeric authorityに使用しない。Bow-only runtime package 002.zip sha256=2c42a6e3a171eaf726cc2ea6462bd05ac0ac39e29d84d04fcba1a79f9a032843 と Result BEX-1787768527042 sha256=c83ab9c0928bbf64cc27f0a72c9c03650d2c2a9f6e81c668a1d9772b3e90867b は、旧Monster/Equipment numeric前提を含むためBow-only numeric conformance authorityへ昇格しない。この管理更新ではSource/Game Data/Simulation/Testを実行していない。",
+      "recorded_at": "2026-08-27T05:38:30+09:00"
     }
   ],
   "authority": {
