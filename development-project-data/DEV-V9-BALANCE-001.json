@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T01:49:49.546Z"
+    "updated_at": "2026-08-27T01:58:08.329Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074-INFRA-005 Issue Gate — Studio Formal Skill Shield offensive漏れ",
-    "goal": "GKS-B791 Human RuntimeでBow-only Basic Attack / Sword+Shield BlockはPASS。ただしStudio Formal SkillだけShield offensive contributionを合算するCurrent不一致を解消するまでTASK-BAL-074 Formal Skill Balanceを開始しない。次工程は別Human承認のSOURCE_UPDATE修正。"
+    "theme": "TASK-BAL-074-INFRA-006 GKS-B792 Target完成 — Human Apply/Fresh Source確認待ち",
+    "goal": "TASK-BAL-074-INFRA-006.zipをStudioへ反映し、Fresh SourceでGKS-B792を確認する。Shield offensive 4 fieldがStudio Formal Skill unit-level contributionから除外され、Shield defensive/Block fieldsとBow/Quiver Basic Attack契約が維持されていることをCurrent確認する。確認完了までTASK-BAL-074 Formal Skill Balanceは再開しない。"
   },
   "project_rules": [
     {
@@ -1639,6 +1639,52 @@
       "summary": "Formal Skill characterBattleValues no longer inherits Shield attack/accuracy/magicWeaponBonus/baseCriticalRate. Shield defensive maxHp/maxMp/agi/evasion and blockRate/blockDamageCutRate remain. Basic Attack, Bow+Quiver semantics, Equipment numeric generation and Balance values are unchanged.",
       "created_at": "2026-08-27T09:52:53+09:00",
       "updated_at": "2026-08-27T09:56:06+09:00"
+    },
+    {
+      "id": "IMP-BAL-074-INFRA-SHIELD-FORMAL-B792-001",
+      "title": "Studio Formal Skill Shield offensive contribution consumer correction",
+      "status": "Completed",
+      "task_id": "TASK-BAL-074-INFRA-006",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B792",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-V9-BAL-BATTLE-001"
+      ],
+      "task_ids": [
+        "TASK-BAL-074-INFRA-006"
+      ],
+      "result": "Partial",
+      "evidence": "Target source prepared, not yet Current. Dedicated Shield offensive aggregation behavior PASS; Target Quick PASS; SOURCE_UPDATE applied-state Accept PASS; deletions=0; GAME_DATA changes=0.",
+      "recorded_at": "2026-08-27T10:49:51+09:00",
+      "baseline": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B791",
+        "source_zip": "guild-adventure-studio-sub(20260827-015111).zip",
+        "source_zip_sha256": "16e48d5c33f4698035937d26a3a78f9345d9f2fb800aa544abbb599cfa82d7bf",
+        "package_manifest_sha256": "25cfe61a5ca4c5e4abe5e8abd24e59ffe475da353c7448e6b1418d9b4ccf13a4",
+        "source_tree_sha256": "3843275c521703493a1404eb2fadc453a21362b32ad3cbf366eb7f2cdd6631c4"
+      },
+      "target": {
+        "game_build": "GA-B486.211",
+        "studio_build": "GKS-B792",
+        "package_manifest_sha256": "d91736fa424a72aeb7ea4fee755e94bd866d69e841c690b6e70bb367a17c7558",
+        "source_tree_sha256": "8d8b2b55e9ffc9adbea39775fa33aeab65979082883f0422c9ef87ff76b5c227",
+        "artifact_id": "GKS-B792-8d8b2b55e9ff"
+      },
+      "artifact": {
+        "file": "TASK-BAL-074-INFRA-006.zip",
+        "sha256": "82554f3bb3a6b7f0ccda366c42fd34ed741e78d7825dc4a5a6e263eb8baacfc2",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "summary": "Studio Formal Skill unit-level equipment aggregation now matches Current Shield offensive exclusion. Shield attack/accuracy/magic_weapon_bonus/base_critical_rate are excluded; defensive and Block fields remain. Quiver/Bow Basic Attack semantics and all Balance values are unchanged.",
+      "created_at": "2026-08-27T10:49:51+09:00",
+      "updated_at": "2026-08-27T10:49:51+09:00"
     }
   ],
   "discussions": [
@@ -7708,7 +7754,7 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T10:44:00+09:00",
+      "updated_at": "2026-08-27T10:49:51+09:00",
       "result_scope": "BLOCKED BY NEW CURRENT EQUIPMENT CONTRACT. Physical Skill Screening plan remains approved, but execution is suspended. Monster Core and Shield Block authority are not revoked; only Bow/Quiver contribution-dependent runtime/input assumptions require correction/revalidation.",
       "historical_invalid_completion": {
         "status": "Invalidated",
@@ -12730,7 +12776,7 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
         }
       ],
-      "blocked_reason": "TASK-BAL-074-INFRA-005 Human Basic Attack/Block runtime gate passed, but a blocking Studio Formal Skill Shield-offense aggregation mismatch was discovered. Formal Skill Balance cannot resume until that Current-source conformance issue is corrected and verified."
+      "blocked_reason": "Formal Skill Balance remains blocked until TASK-BAL-074-INFRA-006 GKS-B792 is Human-applied and Fresh Current verification confirms Studio Formal Skill no longer includes Shield offensive contribution."
     },
     {
       "id": "TASK-BAL-075",
@@ -13822,8 +13868,8 @@
         "at": "2026-08-26T23:10:00+09:00"
       },
       "created_at": "2026-08-26T20:08:30+09:00",
-      "updated_at": "2026-08-27T10:44:00+09:00",
-      "blocked_reason": "Human Runtime Basic Attack / Block revalidation passed on GKS-B791, but result review exposed a new Current mismatch: Studio Formal Skill still uses Sword+Shield summed offensive contribution. Per RULE-BAL-ISSUE-GATE-001, stop before TASK-BAL-074 Formal Skill Balance and do not infer/freeze Skill values until a separate SOURCE_UPDATE resolves it.",
+      "updated_at": "2026-08-27T10:49:51+09:00",
+      "blocked_reason": "GKS-B792 correction target is complete but not yet Current. Await Human Studio Apply/Fresh Source verification before closing the Studio Formal Skill Shield-offense issue.",
       "result_scope": "BLOCKED BY NEW ISSUE GATE AFTER HUMAN RUNTIME PASS. Human Result GK_BattleVerification_Result_BVP-BAL074-INFRA005-GKS-B791_BEX-1787795021328.zip execution_id=BEX-1787795021328 completed 130/130, error_count=0, formal_only=true, legacy_fallback_used=false. Approved Bow-only Basic Attack / Sword+Shield Block checks pass: Bow-only contribution, Bow1/Quiver0/Shield0 strike semantics, Block success/non-block, 30% cut, and Miss->no Block. However successful Result inspection plus Current GKS-B791 static audit shows Studio Formal Skill still consumes Sword+Shield summed attack/accuracy/base_critical_rate/magic_weapon_bonus from loadout.totals. This conflicts with Current Authority 'Shield offensive contribution is not added' and the already-fixed Game Runtime. No Balance Numeric Freeze, Evidence JSON, Source/GAME_DATA change, or TASK-BAL-074 execution performed."
     },
     {
@@ -13941,6 +13987,45 @@
           "GAME_DATA balance values",
           "Monster Generation Equipment Profile",
           "Skill numeric data"
+        ]
+      }
+    },
+    {
+      "id": "TASK-BAL-074-INFRA-006",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Studio Formal SkillのShield offensive contribution漏れをCurrent Sourceで修正する",
+      "status": "Done",
+      "execution_order": 265,
+      "depends_on": [
+        "TASK-BAL-074-INFRA-005"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- work_type=SOURCE_UPDATE。\n- 実行基準はHuman提供Fresh Source guild-adventure-studio-sub(20260827-015111).zip、Studio GKS-B791 / Game GA-B486.211。\n- 修正対象はStudio Formal BattleのEquipment集計だけとし、Current Authority『Shield offensive contributionは加算しない』へ合わせる。\n- studio/index.html の formalBattleEffectiveEquipmentTotal / resolveBattleLoadout 経路で、盾の attack / accuracy / magic_weapon_bonus / base_critical_rate をFormal Skill用unit-level contributionから除外する。\n- 盾の hp_bonus / mp_bonus / evasion / block_rate / block_damage_cut_rate は維持する。\n- Bow+QuiverのBow-only contribution除外は維持し、Quiverの既存除外意味を変更しない。\n- Basic AttackのformalBasicAttackProfiles / strike ownershipは変更しない。\n- Game RuntimeのGKS-B791 Shield offensive除外は変更しない。\n- Formal SkillのDamage/Hit/Critical/Magic/Block式、処理順、round/floor、Balance値は変更しない。\n- Player Equipment Generator、GAME_DATA、Monster生成装備Profile、Skill numeric Dataは変更しない。\n- 修正後、Shield offensive fixtureを用いた静的/決定的検証で、Formal Skill用unit attack/accuracy/base_critical_rate/magic_weapon_bonusへShield値が入らず、block_rate/block_damage_cut_rate等の防御値が残ることを確認する。\n- SOURCE_UPDATE integrity gateを通し、Studio Buildは次Buildへ進める。Game Buildは変更しない。\n- Human Studio Apply/Fresh Source確認後にのみCurrent解消扱いとし、TASK-BAL-074-INFRA-005を再評価する。\n- Balance Simulation/Test、Human Runtime再実行、Evidence Freezeは本Taskでは行わない。\n- 予定外の不一致を検出した場合はRULE-BAL-ISSUE-GATE-001で停止し、便乗修正しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-27T10:49:51+09:00"
+      },
+      "created_at": "2026-08-27T10:49:50+09:00",
+      "updated_at": "2026-08-27T10:49:51+09:00",
+      "result_scope": "TARGET_SOURCE_COMPLETE_NOT_YET_CURRENT. Human-approved SOURCE_UPDATE executed on exact Fresh Current guild-adventure-studio-sub(20260827-015111).zip, GKS-B791 / GA-B486.211, source_zip_sha256=16e48d5c33f4698035937d26a3a78f9345d9f2fb800aa544abbb599cfa82d7bf. Target GKS-B792 / GA-B486.211 changes Studio Formal equipment aggregation only: Shield attack/accuracy/magic_weapon_bonus/base_critical_rate are removed from effective unit-level contribution, while Shield hp_bonus/mp_bonus/evasion/block_rate/block_damage_cut_rate remain. Existing Quiver full contribution exclusion and Basic Attack weapon-profile ownership are unchanged. No Formal Skill formula/order/rounding/Balance numeric, Game Runtime, GAME_DATA, Monster Profile, or Skill numeric change. Dedicated deterministic Shield filter PASS; Target Quick PASS; SOURCE_UPDATE applied-state Accept PASS. Artifact=TASK-BAL-074-INFRA-006.zip sha256=82554f3bb3a6b7f0ccda366c42fd34ed741e78d7825dc4a5a6e263eb8baacfc2; target package_manifest=d91736fa424a72aeb7ea4fee755e94bd866d69e841c690b6e70bb367a17c7558; target source_tree=8d8b2b55e9ffc9adbea39775fa33aeab65979082883f0422c9ef87ff76b5c227; artifact_id=GKS-B792-8d8b2b55e9ff. Human Studio Apply and Fresh Source verification are required before Current issue resolution.",
+      "source_update_scope": {
+        "input_archive": "guild-adventure-studio-sub(20260827-015111).zip",
+        "input_archive_sha256": "16e48d5c33f4698035937d26a3a78f9345d9f2fb800aa544abbb599cfa82d7bf",
+        "studio_build": "GKS-B791",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "25cfe61a5ca4c5e4abe5e8abd24e59ffe475da353c7448e6b1418d9b4ccf13a4",
+        "primary_target_files": [
+          "studio/index.html"
+        ],
+        "prohibited_changes": [
+          "GAME_DATA",
+          "Balance numeric values",
+          "Formal Skill formula topology/order/rounding",
+          "Game Runtime semantics",
+          "Monster Generation Equipment Profile",
+          "Bow/Quiver contract"
         ]
       }
     }
@@ -19046,6 +19131,29 @@
       "blocking": true,
       "created_at": "2026-08-27T10:44:00+09:00",
       "updated_at": "2026-08-27T10:44:00+09:00"
+    },
+    {
+      "id": "CHK-BAL-074-INFRA-006-B792-TARGET-001",
+      "title": "GKS-B792 Studio Formal Shield offensive除外Target検証",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074-INFRA-006",
+      "status": "Passed",
+      "result": "PASS. Shield offensive 4 fields are excluded from formalBattleEffectiveEquipmentTotal; Shield defensive/Block fields remain; Quiver exclusion and Basic Attack profile ownership remain unchanged. Dedicated deterministic behavior, Target Quick, and SOURCE_UPDATE applied-state Accept all pass.",
+      "evidence": "TASK-BAL-074-INFRA-006.zip sha256=82554f3bb3a6b7f0ccda366c42fd34ed741e78d7825dc4a5a6e263eb8baacfc2; target package_manifest=d91736fa424a72aeb7ea4fee755e94bd866d69e841c690b6e70bb367a17c7558; target source_tree=8d8b2b55e9ffc9adbea39775fa33aeab65979082883f0422c9ef87ff76b5c227.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T10:49:51+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T10:49:51+09:00",
+      "updated_at": "2026-08-27T10:49:51+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
@@ -20383,6 +20491,22 @@
       "task_id": "TASK-BAL-074-INFRA-005",
       "created_at": "2026-08-27T10:44:00+09:00",
       "updated_at": "2026-08-27T10:44:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-INFRA-006-REGISTER-001",
+      "title": "Studio Formal Skill Shield offensive漏れ修正Taskを登録",
+      "summary": "Human提供Fresh Source guild-adventure-studio-sub(20260827-015111).zipを確認。CurrentはGKS-B791/GA-B486.211で、formalBattleEffectiveEquipmentTotalはQuiverを除外するがShield offensive fieldsを除外せず、Formal Skill unit-level contributionへShield attack/accuracy/base_critical_rate/magic_weapon_bonusが残る。Current Authorityへ合わせるSOURCE_UPDATE TASK-BAL-074-INFRA-006を登録。Human開始承認前のためSource変更なし。",
+      "task_id": "TASK-BAL-074-INFRA-006",
+      "created_at": "2026-08-27T10:49:50+09:00",
+      "updated_at": "2026-08-27T10:49:50+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-INFRA-006-B792-TARGET-001",
+      "title": "GKS-B792 Studio Formal Skill Shield offensive漏れ修正Targetを完成",
+      "summary": "Fresh Current guild-adventure-studio-sub(20260827-015111).zip GKS-B791/GA-B486.211を基準にSOURCE_UPDATEを実行。Studio Formal equipment aggregationからShield attack/accuracy/magic_weapon_bonus/base_critical_rateだけを除外し、hp/mp/evasion/block_rate/block_damage_cut_rateを維持。Quiver/Bow Basic Attack契約とBalance数値は変更なし。Target Quick / applied-state Accept PASS。Artifact=TASK-BAL-074-INFRA-006.zip sha256=82554f3bb3a6b7f0ccda366c42fd34ed741e78d7825dc4a5a6e263eb8baacfc2。Human Apply/Fresh Source確認前のためCurrent Issueは未解消扱い。",
+      "task_id": "TASK-BAL-074-INFRA-006",
+      "created_at": "2026-08-27T10:49:51+09:00",
+      "updated_at": "2026-08-27T10:49:51+09:00"
     }
   ],
   "authority": {
