@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T00:32:02.347Z"
+    "updated_at": "2026-08-27T00:40:40.481Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-005 非Stat-linked Critical・Block算定規則 — Human開始承認待ち",
-    "goal": "Current ProfileのStat-linked 6項目はTASK-BAL-072-CORR-004でFreeze済み。次にbase_critical_rate / block_rate / block_damage_cut_rate等の非Stat-linked Equipment値について、Current GKS-B790の既存生成式・ownership・iLv依存・round/floor境界を静的監査し、M_s/P_sを恣意的に適用しないMonster算定規則をHuman承認へ提示する。現在はTask登録のみ完了し、実行開始前のHuman承認待ち。"
+    "theme": "TASK-BAL-072-CORR-005 Issue Gate — Shield offensive CriticalのBasic Attack / Formal Skill不一致",
+    "goal": "GKS-B790静的監査で、weapon_shield Basic AttackはShield offensive contributionを除外する一方、Formal SkillはcharacterBattleValues経由でShield base_critical_rateを加算し得る不一致を検出。Current Authority『Shield offensive contributionは加算しない』とSource挙動が一致するよう、どちらを修正対象とするかをHuman決定後に別Taskで扱う。Critical/BlockのMonster算定規則・Numeric FreezeはこのIssue解消まで開始しない。"
   },
   "project_rules": [
     {
@@ -13840,7 +13840,7 @@
       "id": "TASK-BAL-072-CORR-005",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "Monster装備相当Coreの非Stat-linked Critical・Block算定規則を確定する",
-      "status": "Todo",
+      "status": "Blocked",
       "execution_order": 254,
       "depends_on": [
         "TASK-BAL-072-CORR-004"
@@ -13849,13 +13849,13 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-27T09:35:24+09:00"
       },
       "created_at": "2026-08-27T09:31:21+09:00",
-      "updated_at": "2026-08-27T09:31:21+09:00",
-      "result_scope": "REGISTERED / NOT STARTED. Stat-linked 6項目Freeze後に残るCritical / Block等の非Stat-linked Equipment由来値について、Current GKS-B790式を静的監査し、Monster適用規則をHuman承認へ出すTask。開始承認前のためSource監査・数値決定・Evidence生成・Simulation/Testは未実施。"
+      "updated_at": "2026-08-27T09:35:24+09:00",
+      "result_scope": "BLOCKED BY ISSUE GATE AFTER STATIC CURRENT AUDIT. GKS-B790 Current Equipment Generator: base_critical_rate=0.05 for weapon records; shield-only block_rate=0.20+0.02*(iLv-1), block_damage_cut_rate=0.30. Runtime Block owner is single shield source; block executes after hit/critical finalDamage and before SHIELD(BARRIER), with blocked damage=floor(finalDamage*(1-block_damage_cut_rate)). Blocking mismatch: weapon_shield Basic Attack profile excludes Shield offensive contribution, but characterBattleValues/equipmentBonusFromRows sums Shield baseCriticalRate (and other offensive fields) for the actor, and Formal Skill critical resolution consumes attacker.baseCriticalRate. Therefore Shield base_critical_rate can affect Formal Skill critical chance despite Current Authority 'Shield offensive contribution is not added'. Per RULE-BAL-ISSUE-GATE-001, Monster non-Stat-linked Critical/Block rule is not finalized or numerically frozen. No Source/GAME_DATA/Simulation/Test/Evidence change."
     }
   ],
   "checks": [
@@ -18773,6 +18773,29 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHK-BAL-072-CORR-005-SHIELD-OFFENSE-RUNTIME-MISMATCH-001",
+      "title": "Shield offensive contribution leaks into Formal Skill critical path",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072-CORR-005",
+      "status": "Failed",
+      "result": "BLOCKING CURRENT SOURCE / AUTHORITY MISMATCH. Current Equipment Generator assigns base_critical_rate=0.05 to generated weapon records including Shield. equipmentBonusFromRows skips Quiver but does not skip Shield and sums baseCriticalRate; characterBattleValues exposes that total. Formal Skill runtime currentBattleCriticalRatePercent(attacker) consumes attacker.baseCriticalRate. By contrast weapon_shield Basic Attack profile explicitly excludes Shield from its offensive strike profile. Approved Authority states Shield offensive contribution is not added. Thus Basic Attack and Formal Skill currently disagree on Shield critical contribution.",
+      "evidence": "Static Current GKS-B790 source audit only: studio/equipment/equipment-balance-config.json; studio/equipment/equipment-generator.js; game/assets/js/app-runtime.js; game/assets/js/tag-skill-runtime.js; game/assets/js/battle-control.js.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T09:35:24+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-08-27T09:35:24+09:00",
+      "updated_at": "2026-08-27T09:35:24+09:00"
     }
   ],
   "workflow": {
@@ -20054,6 +20077,14 @@
       "task_id": "TASK-BAL-072-CORR-005",
       "created_at": "2026-08-27T09:31:21+09:00",
       "updated_at": "2026-08-27T09:31:21+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-005-ISSUE-GATE-001",
+      "title": "Shield offensive CriticalのFormal Skill漏れをIssue Gate登録",
+      "summary": "Human start approval後にTASK-BAL-072-CORR-005のCurrent GKS-B790静的監査を実施。base_critical_rateはEquipment Generatorで0.05固定、Shield Blockはblock_rate=0.20+0.02*(iLv-1)、block_damage_cut_rate=0.30。Block runtimeはhit/critical後のfinalDamageへ適用し、floor後にSHIELD(BARRIER)へ渡す。一方、weapon_shield Basic AttackはShield offensive contributionを除外するが、Formal SkillはcharacterBattleValuesのbaseCriticalRateを使うためShield base_critical_rateが加算され得る。Current Authority『Shield offensive contributionは加算しない』と不一致のためRULE-BAL-ISSUE-GATE-001で停止。Monster非Stat-linked規則のHuman承認候補化・Numeric Freeze・Evidence生成・Simulation/Test・Source/GAME_DATA変更は未実施。",
+      "task_id": "TASK-BAL-072-CORR-005",
+      "created_at": "2026-08-27T09:35:24+09:00",
+      "updated_at": "2026-08-27T09:35:24+09:00"
     }
   ],
   "authority": {
