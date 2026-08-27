@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T03:09:20.234Z"
+    "updated_at": "2026-08-27T03:47:34.856Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Core比較完了 — Player-Monster完全比較Evidence登録待ち",
-    "goal": "新規エビデンス TASK-BAL-074 Evidence・Player-Monster完全比較 をStudioへ登録する。登録確認後、既にHuman承認済みのPhysical Control帯Battle PackageをGKS-B792 Templateから生成する。このrunではBattleを開始しない。"
+    "theme": "TASK-BAL-074 本体Evidence全破棄 — Studio削除待ち",
+    "goal": "TASK-BAL-074本体でFresh Sourceに現存するEvidenceをStudioから全て削除する。新しい数値Evidenceは作成せず、次回はまず使用Authority・全計算式・全計算結果をHumanへ提示する。Human確認前にBattle/Simulationへ進まない。"
   },
   "project_rules": [
     {
@@ -563,6 +563,19 @@
       "source_id": "conversation",
       "created_at": "2026-08-27T08:51:43+09:00",
       "updated_at": "2026-08-27T08:51:43+09:00"
+    },
+    {
+      "id": "RULE-BAL-PRE-EVIDENCE-CALC-REVIEW-001",
+      "title": "Evidence作成前に全計算式・全計算結果をHuman確認する",
+      "status": "Active",
+      "text": "Balance数値Evidenceを新規作成・登録する前に、AIは使用するAuthority、対象全項目の計算式、丸め/Clamp/Owner/例外、およびEvidence化予定の全計算結果をHumanへ先に提示する。計算式Authorityが存在しない項目は推測計算せず『計算式Authorityなし』と報告する。HP/MPその他の項目をAI判断で省略しない。Humanが計算内容を確認・承認するまでEvidence JSON作成、比較Evidence作成、Battle Package生成、Simulation/Test実行へ進まない。",
+      "rationale": "Human instruction: これから作る前に全ての計算式と計算結果を先に報告する。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T12:46:32+09:00",
+      "created_at": "2026-08-27T12:46:32+09:00",
+      "updated_at": "2026-08-27T12:46:32+09:00",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation"
     }
   ],
   "source_baseline": {
@@ -7754,8 +7767,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T12:06:43+09:00",
-      "result_scope": "DOING / CORE COMPARISON COMPLETE. Latest Human Studio baseline and Fresh Source 20260827-030345 confirm Player Complete Core and Monster Complete Core are both registered. Human also confirmed BAL074-E04..E08 deletion; Fresh Source independently shows all five absent. New comparison Evidence `TASK-BAL-074 Evidence・Player-Monster完全比較` prepared with 350 same-Job/same-Level rows. Player expected Stats equal Monster P_s 2450/2450 stat cells; each row contains Player bare combat surface, Monster continuous equipment-equivalent runtime surface, deltas/ratios, virtual iLv context, Critical/Block, Resistance/default and AG comparison. The approved Lv20 vs Monster Lv25/30/35 Control ladder is included only as static input precheck; no Simulation/Battle was executed. Human-approved Control Test is now ready after comparison Evidence registration, but RULE-BAL-ONE-TASK-001 prevents automatic Battle Package generation/execution in this run. No Source/GAME_DATA/Current active change.",
+      "updated_at": "2026-08-27T12:46:32+09:00",
+      "result_scope": "DOING / ALL TASK-BAL-074 MAIN-TASK EVIDENCE DISCARDED BY HUMAN. All Evidence refs under TASK-BAL-074 are disabled as Balance Authority. Evidence projects confirmed present in Fresh Source 20260827-031005 are DiscardRequested and require Human Studio deletion. Already deleted refs remain deleted; unregistered/absent refs and local R2 artifacts are discard-only and must not be registered. Separate TASK-BAL-074-INFRA-* Evidence is outside this discard scope. Before any new Evidence is created, AI must present Authority + all formulas + all calculation results to Human for approval. Battle/Simulation stopped. No Source/GAME_DATA/Current active change.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12792,15 +12805,15 @@
             "Do not add extra Level points in the same run; replan a second batch.",
             "Do not generate a Battle Package or request Human runtime execution until Human explicitly approves this Test Plan."
           ],
-          "execution_authorized": true,
+          "execution_authorized": false,
           "battle_package_generated": false,
           "standalone_evidence_planned": false,
           "evidence_reason": "Control placement is a qualification result. Retain only management conclusion unless later reused as fixed numeric authority.",
           "proposed_at": "2026-08-27T11:01:13+09:00",
           "approved_by": "Human",
           "approved_at": "2026-08-27T12:06:43+09:00",
-          "execution_state": "ReadyAfterCoreComparisonRegistration",
-          "deferred_reason": ""
+          "execution_state": "StoppedUntilNewNumericAuthorityHumanReview",
+          "deferred_reason": "Human discarded all TASK-BAL-074 main-task Evidence. No Battle Package may be generated until new Authority, all formulas, and all calculation results are presented and approved."
         },
         "evidence_discard": {
           "status": "Completed",
@@ -12824,42 +12837,70 @@
           ]
         },
         "core_evidence_sequence": {
-          "status": "Doing",
-          "approved_by": "Human",
-          "order": [
-            "1. Player Complete Core 7Jobs×Lv1-50",
-            "2. Monster Complete Core 7Jobs×Lv1-50",
-            "3. Player↔Monster complete numeric comparison",
-            "4. Physical Control-band Battle"
-          ],
+          "status": "DiscardedByHuman",
           "player_complete_core": {
-            "status": "Registered",
-            "workspace_name": "TASK-BAL-074 Evidence・Player完全Core",
-            "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PLAYER-COMPLETE-CORE",
-            "evidence_id": "EVD-BAL-074-PLAYER-COMPLETE-CORE-001",
-            "records": 350
+            "status": "Discarded"
           },
           "monster_complete_core": {
-            "status": "Registered",
-            "workspace_name": "TASK-BAL-074 Evidence・Monster完全Core",
-            "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MONSTER-COMPLETE-CORE",
-            "evidence_id": "EVD-BAL-074-MONSTER-COMPLETE-CORE-001",
-            "records": 350
+            "status": "Discarded"
           },
           "player_monster_comparison": {
-            "status": "PreparedForRegistration",
-            "workspace_name": "TASK-BAL-074 Evidence・Player-Monster完全比較",
-            "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PLAYER-MONSTER-COMPARE",
-            "evidence_id": "EVD-BAL-074-PLAYER-MONSTER-COMPARE-001",
-            "file": "TASK-BAL-074 Evidence・Player-Monster完全比較.json",
-            "sha256": "d7ceb3abf4e4b1ca8dc49b6659e7d55380212a81cd5c22da8ad4454b0f77433f",
-            "records": 350
+            "status": "Discarded"
           },
           "battle": {
-            "status": "ReadyAfterComparisonRegistration",
-            "reason": "Human-approved Control Test conditions unchanged. Do not auto-start in this run."
+            "status": "Stopped",
+            "battle_package_generated": false,
+            "simulation_executed": false
           },
-          "updated_at": "2026-08-27T12:06:43+09:00"
+          "updated_at": "2026-08-27T12:46:32+09:00"
+        },
+        "all_task074_evidence_discard": {
+          "status": "HumanDeletionRequired",
+          "scope": "All Evidence whose parent Development Task is TASK-BAL-074. Separate TASK-BAL-074-INFRA-* Evidence is not included.",
+          "human_instruction": "エビデンスを全て破棄",
+          "studio_delete_targets": [
+            "TASK-BAL-074 Evidence・Monster完全Core",
+            "TASK-BAL-074 Evidence・Player-Monster完全比較",
+            "TASK-BAL-074 Evidence・Player完全Core",
+            "TASK-BAL-074 Evidence・物理基準期待値ステータス",
+            "TASK-BAL-074 Evidence・装備込みPhysical Basic Attack基準"
+          ],
+          "already_deleted_refs": [
+            "BAL074-E04.json",
+            "BAL074-E05.json",
+            "BAL074-E06.json",
+            "BAL074-E07.json",
+            "BAL074-E08.json"
+          ],
+          "unregistered_or_absent_refs_discarded": [
+            "TASK-BAL-074 Evidence・Player↔Monster物理交換Baseline.json"
+          ],
+          "local_unregistered_r2_discarded_do_not_register": [
+            "TASK-BAL-074 Evidence・Player完全Core再構築",
+            "TASK-BAL-074 Evidence・Monster完全Core再構築",
+            "TASK-BAL-074 Evidence・Player-Monster完全比較再構築"
+          ],
+          "delete_confirmation_received": false,
+          "all_numeric_authority_from_discarded_evidence_disabled": true,
+          "updated_at": "2026-08-27T12:46:32+09:00"
+        },
+        "core_rebuild_sequence": {
+          "status": "DiscardedByHuman",
+          "player_complete_core": {
+            "status": "DiscardedBeforeRegistration"
+          },
+          "monster_complete_core": {
+            "status": "DiscardedBeforeRegistration"
+          },
+          "player_monster_comparison": {
+            "status": "DiscardedBeforeRegistration"
+          },
+          "battle": {
+            "status": "Stopped",
+            "battle_package_generated": false,
+            "simulation_executed": false
+          },
+          "updated_at": "2026-08-27T12:46:32+09:00"
         }
       },
       "evidence_refs": [
@@ -12869,8 +12910,14 @@
           "sha256": "796d09068d60976fdcfdaadcb9abe956db72d75bd136c31f6bafbc030439251c",
           "evidence_id": "EVD-BAL-074-PHYSICAL-BASELINE-EXPECTED-STATS-001",
           "role": "PHYSICAL_BASELINE_EXPECTED_STATS_LEVEL1_50_7JOBS",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-25T16:16:00+09:00"
+          "status": "DiscardRequested",
+          "recorded_at": "2026-08-25T16:16:00+09:00",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "studio_delete_required": true,
+          "registration_confirmed_by": "FreshSource20260827-031005",
+          "registration_confirmed_at": "2026-08-27T12:46:32+09:00"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PHYSICAL-EQUIPPED",
@@ -12878,8 +12925,14 @@
           "sha256": "961801f8a44b9bec5d24a848265940f1c96ec099611b4658eac3ca4b30338909",
           "evidence_id": "EVD-BAL-074-PHYSICAL-EQUIPPED-BASIC-ATTACK-002",
           "role": "PHYSICAL_EQUIPPED_BASIC_ATTACK_BASELINE_CURRENT_RUNTIME_ROUNDING",
-          "status": "PreparedForMerge",
-          "recorded_at": "2026-08-25T18:46:00+09:00"
+          "status": "DiscardRequested",
+          "recorded_at": "2026-08-25T18:46:00+09:00",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "studio_delete_required": true,
+          "registration_confirmed_by": "FreshSource20260827-031005",
+          "registration_confirmed_at": "2026-08-27T12:46:32+09:00"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PHYSICAL-EXCHANGE",
@@ -12887,10 +12940,15 @@
           "sha256": "d14555f5f1c10b720bc0b9619d89e6e01cb0ca016332636a3536fefffe0b7072",
           "evidence_id": "EVD-BAL-074-PHYSICAL-PLAYER-MONSTER-EXCHANGE-001",
           "role": "HISTORICAL_DIAGNOSTIC_ONLY__PHYSICAL_PLAYER_MONSTER_EXCHANGE_BASELINE",
-          "status": "InvalidatedForBalanceAuthority",
+          "status": "DiscardedUnregisteredOrAbsent",
           "recorded_at": "2026-08-25T19:54:55+09:00",
           "invalidated_at": "2026-08-26T10:10:23+09:00",
-          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "studio_delete_required": false,
+          "registration_status": "NotPresentInFreshSource_DoNotRegister"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-HNT-POWER",
@@ -12904,7 +12962,11 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
           "studio_delete_required": false,
           "delete_confirmed_at": "2026-08-27T12:06:43+09:00",
-          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent."
+          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent.",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "discard_completion": "AlreadyDeletedFromStudio"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-DAMAGE-LVGAP",
@@ -12918,7 +12980,11 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
           "studio_delete_required": false,
           "delete_confirmed_at": "2026-08-27T12:06:43+09:00",
-          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent."
+          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent.",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "discard_completion": "AlreadyDeletedFromStudio"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-THF",
@@ -12932,7 +12998,11 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
           "studio_delete_required": false,
           "delete_confirmed_at": "2026-08-27T12:06:43+09:00",
-          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent."
+          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent.",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "discard_completion": "AlreadyDeletedFromStudio"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-SWD",
@@ -12946,7 +13016,11 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
           "studio_delete_required": false,
           "delete_confirmed_at": "2026-08-27T12:06:43+09:00",
-          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent."
+          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent.",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "discard_completion": "AlreadyDeletedFromStudio"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-SINGLE-REF-EXT",
@@ -12960,27 +13034,39 @@
           "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
           "studio_delete_required": false,
           "delete_confirmed_at": "2026-08-27T12:06:43+09:00",
-          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent."
+          "delete_confirmation": "Human confirmed deletion; fresh source 20260827-030345 independently confirms file absent.",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "discard_completion": "AlreadyDeletedFromStudio"
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PLAYER-COMPLETE-CORE",
           "file": "TASK-BAL-074 Evidence・Player完全Core.json",
           "evidence_id": "EVD-BAL-074-PLAYER-COMPLETE-CORE-001",
           "role": "PLAYER_COMPLETE_CORE_LEVEL1_50_7JOBS_BARE_RUNTIME_NUMERIC_AUTHORITY",
-          "status": "Registered",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-27T12:06:43+09:00",
-          "registration_confirmed_by": "Human+FreshSource",
-          "registration_confirmed_at": "2026-08-27T12:06:43+09:00"
+          "registration_confirmed_by": "FreshSource20260827-031005",
+          "registration_confirmed_at": "2026-08-27T12:46:32+09:00",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "studio_delete_required": true
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MONSTER-COMPLETE-CORE",
           "file": "TASK-BAL-074 Evidence・Monster完全Core.json",
           "evidence_id": "EVD-BAL-074-MONSTER-COMPLETE-CORE-001",
           "role": "MONSTER_COMPLETE_CORE_LEVEL1_50_7JOBS_CONTINUOUS_EQUIPMENT_RUNTIME_NUMERIC_AUTHORITY",
-          "status": "Registered",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-27T12:06:43+09:00",
-          "registration_confirmed_by": "Human+FreshSource",
-          "registration_confirmed_at": "2026-08-27T12:06:43+09:00"
+          "registration_confirmed_by": "FreshSource20260827-031005",
+          "registration_confirmed_at": "2026-08-27T12:46:32+09:00",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "studio_delete_required": true
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PLAYER-MONSTER-COMPARE",
@@ -12988,8 +13074,14 @@
           "sha256": "d7ceb3abf4e4b1ca8dc49b6659e7d55380212a81cd5c22da8ad4454b0f77433f",
           "evidence_id": "EVD-BAL-074-PLAYER-MONSTER-COMPARE-001",
           "role": "PLAYER_MONSTER_COMPLETE_STATIC_NUMERIC_COMPARISON_AUTHORITY",
-          "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-27T12:06:43+09:00"
+          "status": "DiscardRequested",
+          "recorded_at": "2026-08-27T12:06:43+09:00",
+          "do_not_use_as_balance_authority": true,
+          "discard_reason": "Human instruction: discard all TASK-BAL-074 main-task Evidence before rebuilding numeric authority.",
+          "discard_requested_at": "2026-08-27T12:46:32+09:00",
+          "studio_delete_required": true,
+          "registration_confirmed_by": "FreshSource20260827-031005",
+          "registration_confirmed_at": "2026-08-27T12:46:32+09:00"
         }
       ],
       "blocked_reason": ""
@@ -19531,6 +19623,29 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHK-BAL-074-DISCARD-ALL-MAIN-EVIDENCE-001",
+      "title": "TASK-BAL-074 本体Evidence全破棄",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "Human ordered all TASK-BAL-074 main-task Evidence discarded. 5 Evidence projects are confirmed present in Fresh Source and require Studio deletion; 5 refs were already deleted; 1 refs are absent/unregistered and must not be registered.",
+      "evidence": "Human instruction + Fresh Source guild-adventure-studio-sub(20260827-031005).zip",
+      "checked_by": "Human+AI",
+      "checked_at": "2026-08-27T12:46:32+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T12:46:32+09:00",
+      "updated_at": "2026-08-27T12:46:32+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
@@ -20916,6 +21031,14 @@
       "task_id": "TASK-BAL-074",
       "created_at": "2026-08-27T12:06:43+09:00",
       "updated_at": "2026-08-27T12:06:43+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-DISCARD-ALL-MAIN-EVIDENCE-001",
+      "title": "TASK-BAL-074本体Evidenceを全破棄",
+      "summary": "Human instructionによりTASK-BAL-074本体のEvidenceを全件Balance Authorityから除外。Fresh Sourceに現存するEvidenceはStudio削除待ち、既削除Evidenceは削除済み維持、未登録/不存在EvidenceとローカルR2は登録禁止。INFRA別Task Evidenceは対象外。今後はEvidence作成前にAuthority・全計算式・全計算結果のHuman確認を必須化。Battle/Simulation停止。",
+      "task_id": "TASK-BAL-074",
+      "created_at": "2026-08-27T12:46:32+09:00",
+      "updated_at": "2026-08-27T12:46:32+09:00"
     }
   ],
   "authority": {
