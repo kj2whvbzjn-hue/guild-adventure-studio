@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T21:08:17.745Z"
+    "updated_at": "2026-08-27T22:09:54.806Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -483,6 +483,21 @@
       "result": "Applied",
       "evidence": "Human-provided Fresh Current Source verified as GKS-B797 / GA-B486.211. Current source ZIP sha256=62f149f4d2d74f86b4f3e73ff033a7010f80e97c71d3d6a2dc369055a40215bc; package-build.json confirms studio_build=GKS-B797 and game_build=GA-B486.211; Current package_manifest.json sha256=0b6e0746e68da7a1a5d4bf7827be552782efea518d579f670e29b4a78d316505. tests/critical-conformance-r19.js sha256=7ecd87980e0d53091e4a49ea5140df3647abfd09077dad8393dd87dc6e86eaac, matching the recorded B797 protected-test candidate. Fresh Current targeted Critical regression PASS: CRITICAL_CONFORMANCE_R19_OK checks=130. The B796 artificial Passive producer/catalog issue and over-broad frozen target set are absent in the B797 Current route: Critical source set is Equipment MOD only and the connected Game contribution target is CRITICAL_RATE only. This record is therefore promoted from pre-approval candidate to Applied Current Source verification. TASK-REORG-CRIT-CONFORMANCE-001 remains Doing only for its explicit post-Apply Fresh-Build small Critical Conformance Battle / Studio-Game trace parity gate; no additional Critical source correction is pending from the former B796 blocking review.",
       "recorded_at": "2026-08-28T06:03:00+09:00"
+    },
+    {
+      "id": "IMPL-REORG-CRIT-B797-POST-APPLY-001",
+      "studio_build": "GKS-B797",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-REORG-CRIT-CONFORMANCE-001"
+      ],
+      "result": "Applied",
+      "evidence": "node tests/critical-conformance-r19.js => CRITICAL_CONFORMANCE_R19_OK checks=130; post-apply runtime calculation artifact sha256=e1d9003aae73b79065c70c458e2fc6f0b4611be8d864d46b38420c58c590a7a2. Cases: weapon=0.05/LUK0 => base=final=0.05; weapon=0.05/LUK20 => base=final=0.06; weapon=0/LUK100 => 0; weapon=0.05/LUK20 + MOD 10% + 20% => base=0.06, contributions=0.006+0.012, final=0.078. Multi-hit Critical rolls by hitIndex=0/1/2: 38.373241503722966%, 45.59526101220399%, 2.816079487092793%; independent=true. Source changes=0; Game Data changes=0.",
+      "recorded_at": "2026-08-28T07:08:30+09:00",
+      "summary": "Post-Apply completion verification only. Fresh Current B797 Critical conformance calculation/trace parity passed; no Source or Game Data changes were made."
     }
   ],
   "discussions": [
@@ -27113,7 +27128,7 @@
       "id": "TASK-REORG-CRIT-CONFORMANCE-001",
       "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Critical Source / Test基盤をCurrent仕様へConformanceする",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 2000,
       "depends_on": [],
       "acceptance_criteria": "- Authorityは `DEC-CRIT-WEAPON-LUK-001` / `DEC-CRIT-MOD-CONTRIBUTION-001` / `DEC-V9-EQUIP-002` / `DEC-R24-EQUIP-BATTLE-001` とし、Current Sourceの旧挙動を仕様根拠へ昇格しない。\n- Equipment BaseItem / Dataset / Generator / Data Exchangeでは武器Critical固有値を `weapon_critical_rate` として生成・保持し、Equipment fieldとしての旧 `base_critical_rate` をHard Cutする。legacy alias / fallback / dual-read / dual-writeを追加しない。\n- `base_critical_rate` の禁止範囲はEquipment境界に限定する。Battle内部では `base_critical_rate = weapon_critical_rate × (1 + LUK / 100)` で算出する正規中間値として保持・検証可能とし、`weapon_critical_rate = 0` の場合はLUKだけでCritical Rateを発生させない。\n- `weapon_critical_rate` 自体へCritical Rate MOD / PASSIVE / SKILL / BUFF / DEBUFFを破壊的に適用しない。Battle算出後の対象BaseStatに対して各Sourceが独立Contributionを生成する。\n- 現在すでにRuntime接続済みのCombat Stat targetについて、各SourceのPercent Contribution=`BaseStat × percent_rate`、Flat Contribution=`flat_value`、Final=`BaseStat + Σ(effective Contributions)`へ統一し、あるSourceの適用済み結果を別SourceのBaseに使用しない。未接続Skill/BUFF/DEBUFF Channelや新しいtarget IDは推測追加しない。\n- Game RuntimeとStudio Formal Battleは物理的な同一Runtime実装の共有を必須としない。両者が同じBase/Contribution/Finalの入力・出力契約と計算順に従い、GameがStudio Runtimeを直接参照する構造、StudioがGame Runtimeを直接参照する構造を新設しない。\n- Studio/Game parity testを必須とし、同一入力に対して `base_critical_rate`、各Source Contribution、`final_critical_rate` および現在接続済み対象Statの最終値が一致することを検証する。\n- Sword+Shield / Bow+Quiver / Dual WieldのCurrent Equipment→Battle契約を維持する。Shield/Quiverの `weapon_critical_rate` その他Combat Contributionを攻撃Strikeへ加算せず、Dual Wieldは各Strikeの武器値から独立してBattle Base Criticalを算出する。\n- Formal Skillの複数DAMAGE HitはCurrent Multi-hit契約どおり各Hit独立Critical判定を維持し、新しいCritical仕様を各Hitへ適用する。\n- Battle Verification Traceで最低限 `source_type / source_id / target_stat / mode / raw_modifier_value / base_value_used / resolved_contribution` を追跡し、Criticalでは加えて `weapon_critical_rate / LUK / base_critical_rate / final_critical_rate / critical_roll / critical_result` を確認可能にする。\n- Critical Rate最終Clampの具体値、Critical Damage Clamp、Tier効果量、Skill固有Critical補正Budget、Critical用BUFF/DEBUFF Registry ID等の未確定Balance/Content事項は本TaskのCompletion対象外とする。既存Clamp値の採否・変更を新Authorityとして確定せず、本Taskで新しい固定値を追加しない。\n- Current Project/ExportにCritical fieldを持つ実Equipment Dataが存在しないことを前提にGAME_DATA migrationは行わず、work_typeはSOURCE_UPDATEとする。実Dataが発見された場合は自動MigrationせずFail Closedして別Task化する。\n- Critical専用回帰テストでは、少なくとも 5%×LUK0=5%、5%×LUK20=6%、weapon0×LUK100=0%、同一Baseに対するPercent/Flat複数Sourceが逐次再基準化されないこと、Equipment境界の旧 `base_critical_rate` rejection、Battle内部 `base_critical_rate` 許可、Sword+Shield / Bow+Quiver / Dual Wield、Multi-hit各Hit独立roll、Studio/Game parityを検証する。\n- `tests/**` / `shared/tests/test-registry.json` 等の保護対象を変更・追加する前に、外部 `TEST_CHANGE_APPROVAL.json` 用の完全な変更path集合を確定し、各pathについて `path / baseline_sha256 / updated_sha256 / reason` を記録する。Human runtime confirmation前に保護Test/Gateを更新しない。承認JSONをSOURCE_UPDATE ZIPへ同梱しない。\n- Build/Integrityの機械同期はCurrent Policyに従い、必要なmanifest size/SHA・Build/cache tokenのみ正規同期する。\n- Source実装後は Targeted Critical regression → Source Quick → Impact/Full → SOURCE_UPDATE Accept → applied-state Full を通す。Fresh SourceへHuman Applyされたことを確認するまで本TaskをDone扱いにしない。\n- Human Apply後のFresh Buildで小規模Critical Conformance Battleを実施し、数式・Trace・Studio/Game結果の一致を確認する。PASS後にだけBalance側 `TASK-BAL-074` Multi-hit計画をFresh Buildへrebindして再開する。\n- `EVD-0007` の Physical Damage Budget→Power `f_Damage(B)=round(100+2B)` はCritical変更を理由に再検証・失効させない。",
@@ -27125,7 +27140,8 @@
         "at": ""
       },
       "created_at": "2026-08-27T20:16:48+09:00",
-      "updated_at": "2026-08-28T04:10:00+09:00"
+      "updated_at": "2026-08-28T07:08:30+09:00",
+      "result_scope": "GKS-B797 Fresh Current Source post-Apply Critical Conformance Battle PASS. Game/Studio Critical base/final parity confirmed for 5%×LUK0=5%, 5%×LUK20=6%, weapon0×LUK100=0%, and same-base MOD +10%/+20% => 7.8%. Multi-hit deterministic Critical rolls are independent by hitIndex. No Source/Game Data changes in this completion verification. Balance TASK-BAL-074 may be separately rebound/resumed; not started in this run."
     },
     {
       "id": "TASK-REORG-PASSIVE-CONNECTION-001",
@@ -28852,6 +28868,29 @@
       "blocking": false,
       "created_at": "2026-08-28T06:03:00+09:00",
       "updated_at": "2026-08-28T06:03:00+09:00"
+    },
+    {
+      "id": "CHK-REORG-CRIT-B797-POST-APPLY-BATTLE-001",
+      "title": "GKS-B797 Post-Apply small Critical Conformance Battle",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-REORG-CRIT-CONFORMANCE-001",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B797 small Critical Conformance Battle PASS. Game/Studio base/final Critical parity, same-base MOD Contribution provenance, zero-weapon/LUK behavior, and multi-hit per-hit Critical roll independence were confirmed. TASK-REORG-CRIT-CONFORMANCE-001 Completion Gate is satisfied.",
+      "evidence": "node tests/critical-conformance-r19.js => CRITICAL_CONFORMANCE_R19_OK checks=130; post-apply runtime calculation artifact sha256=e1d9003aae73b79065c70c458e2fc6f0b4611be8d864d46b38420c58c590a7a2. Cases: weapon=0.05/LUK0 => base=final=0.05; weapon=0.05/LUK20 => base=final=0.06; weapon=0/LUK100 => 0; weapon=0.05/LUK20 + MOD 10% + 20% => base=0.06, contributions=0.006+0.012, final=0.078. Multi-hit Critical rolls by hitIndex=0/1/2: 38.373241503722966%, 45.59526101220399%, 2.816079487092793%; independent=true. Source changes=0; Game Data changes=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-28T07:08:30+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-28T07:08:30+09:00",
+      "updated_at": "2026-08-28T07:08:30+09:00"
     }
   ],
   "workflow": {
@@ -29484,6 +29523,11 @@
       "at": "2026-08-28T06:03:00+09:00",
       "type": "FreshSourceAppliedVerification",
       "summary": "Human指示「反映して解消」に基づき、Human-provided Fresh Current Source GKS-B797 / GA-B486.211を工程管理へ反映。B797 protected Critical test SHA一致とCurrent targeted Critical regression 130/130 PASSを確認し、IMPL-REORG-CRIT-B797-PREAPPROVAL-001をAppliedへ昇格。CHK-REORG-CRIT-B797-FRESH-SOURCE-001をPassedとして追加し、Historical B796 blocking Checkをresolves_check_idsで解決・blocking解除。TASK-REORG-CRIT-CONFORMANCE-001はSource修正待ちではなく、Acceptance Criteriaに残るHuman Apply後Fresh-Build小規模Critical Conformance Battle / Studio-Game Trace parity確認だけを残してDoingを維持する。"
+    },
+    {
+      "at": "2026-08-28T07:08:30+09:00",
+      "type": "TaskCompleted",
+      "summary": "TASK-REORG-CRIT-CONFORMANCE-001 completed after Fresh GKS-B797 Post-Apply small Critical Conformance Battle PASS. Game/Studio formula and contribution parity confirmed; multi-hit Critical rolls confirmed independent by hitIndex. Balance TASK-BAL-074 is now eligible for separate Fresh-Build rebind/resume but was not started in this run."
     }
   ],
   "authority": {
