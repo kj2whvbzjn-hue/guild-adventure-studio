@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T06:18:35.211Z"
+    "updated_at": "2026-08-27T06:39:58.087Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 SLv→Physical Damage Level-gap robustness Human Runtime待ち",
-    "goal": "TASK-BAL-074-SLvDamage-Robust-B792.zipをStudioで実行し、84条件×100試行のResult Packageを返却する。"
+    "theme": "TASK-BAL-074 Physical Skill Budget配分・Multi-hit Cost次工程",
+    "goal": "EVD-0007をDamage Budget→Power Authorityとして登録し、次にC_MultiHit(H)算定Test Planを策定する。Human承認前は次Battle Package/Simulationを実行しない。"
   },
   "project_rules": [
     {
@@ -2994,6 +2994,18 @@
       "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
       "updated_at": "2026-08-27T09:56:06+09:00"
+    },
+    {
+      "id": "DEC-BAL-PHYSICAL-DAMAGE-BUDGET-POWER-001",
+      "title": "Physical Damage Budget→Power換算係数k=2",
+      "status": "Approved",
+      "text": "TASK-BAL-074 Physical Skill Level allocationでは総Skill BudgetをB_spent=SLvとする。その総BudgetをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分けた後、1Hit Physical Damageへ割り当てたBudgetをB_Damageとする。Human real-device screening/Level-gap robustness結果により、Damage成分の換算係数はk=2 power-points per Damage Budget pointを採用し、f_Damage(B_Damage)=round(100+2*B_Damage)を後続配分計算のDamage出力Authorityとする。Calibrationでは1Hit/SINGLE/MP0/CD0/Cast0/Range-neutralだったためB_Damage=SLvとなったが、これはSLvから最終Skill Powerを直接算出する式ではない。C_MultiHit、R_MP、R_CD、R_Cast、M_Rangeは未確定であり別工程で算定する。任意の丸め済みPowerからBudgetを一意に逆算するC_Damage(Power)は本Decisionでは別途Freezeしない。",
+      "rationale": "Human clarified that the target is Skill Level -> total Skill Budget -> allocation to Damage/cost components, not a direct SLv->Power formula, and then explicitly requested corrected management plus sequential Evidence.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T15:38:29+09:00",
+      "created_at": "2026-08-27T15:38:29+09:00",
+      "updated_at": "2026-08-27T15:38:29+09:00"
     }
   ],
   "specifications": [
@@ -7767,8 +7779,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T15:14:25+09:00",
-      "result_scope": "DOING / Human approved revised SLv-Damage Level-gap robustness plan. Screening result carried forward: Formal 68/68, 6800/6800 PASS; k=1/k=2 selected, k not frozen. Approved robustness batches: SWD20-KNT39/40/41, SWD20-THF29/30/31, THF20-KNT34/35/36, THF20-THF26/27/28. THF20-THF was revised from 24/25/26 because Lv25 Control=90% is near upper saturation; Human approved 26/27/28. Package prepared: 12 Level points × (1 Control + 6 Skill candidates) = 84 conditions ×100 = 8400 trials. k={1,2}, SLv={1,10,20}; Basic comparison uses same-Level same-seed Control. Human Studio runtime Result pending. No k/C_Damage freeze. No Source/GAME_DATA/Current active change; no standalone Evidence created.",
+      "updated_at": "2026-08-27T15:38:29+09:00",
+      "result_scope": "DOING / Physical Damage component recalibration completed on GKS-B792. Robustness Human runtime PASS: 84/84 jobs, 8400/8400 trials, error0, formal_only=true, legacy_fallback=false. Human semantic correction applied: the tested k is not a universal SLv->final Power coefficient. Total Skill Budget remains B_spent=SLv; calibration had B_Damage=SLv only because 1Hit/SINGLE/MP0/CD0/Cast0/Range-neutral allocated all Budget to Damage. Approved reusable Damage conversion: k=2, f_Damage(B_Damage)=round(100+2*B_Damage), recorded as EVD-0007. C_MultiHit/R_MP/R_CD/R_Cast/M_Range remain unfrozen. No new Battle Package or Simulation started. No Source/GAME_DATA/Current active change.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12903,7 +12915,7 @@
           "updated_at": "2026-08-27T12:46:32+09:00"
         },
         "new_numeric_authority_sequence": {
-          "status": "EVD0006PreparedForRegistration",
+          "status": "EVD0007PreparedForRegistration",
           "evd_0001": {
             "workspace_name": "EVD-0001 Player全7職・Lv別ステータス期待値",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0001",
@@ -12912,8 +12924,8 @@
             "rows": 350,
             "scope": "Player 7Job x Lv1-50 x STR/VIT/AGI/DEX/INT/MND/LUK expected values only"
           },
-          "next_action": "Human Studio registration of EVD-0006. Subsequent numeric Evidence requires formulas + full results review first.",
-          "updated_at": "2026-08-27T14:01:18+09:00",
+          "next_action": "Human Studio registration of EVD-0007. After registration, the next numeric component is C_MultiHit(H); its Test Plan must be separately proposed/approved before any Battle Package or Simulation.",
+          "updated_at": "2026-08-27T15:38:29+09:00",
           "evd_0002": {
             "workspace_name": "EVD-0002 Player全7職・Lv別適正装備iLv割当",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0002",
@@ -12945,13 +12957,44 @@
             ],
             "row_granularity": "ONE_LEVEL_PER_ROW",
             "scope": "Monster 7Job x Lv1-50 rounded combat values"
+          },
+          "evd_0004": {
+            "workspace_name": "EVD-0004 Monster全7職・Lv別装備係数",
+            "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0004",
+            "evidence_id": "EVD-0004",
+            "sha256": "d55e6cb0c3d6f53b39aa2e7e34198477aaf9d168c0b1d087555a33fb9c362d26",
+            "rows": 350,
+            "scope": "Monster 7Job x Lv1-50 fractional Virtual iLv / equipment performance coefficient layer"
+          },
+          "evd_0005": {
+            "workspace_name": "EVD-0005 Monster全7職・Lv別基礎Status",
+            "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0005",
+            "evidence_id": "EVD-0005",
+            "sha256": "fa7d19c1590c9e1f309a3e547239d861d0744d9f4ec3d5656103027467e2408e",
+            "rows": 350,
+            "scope": "Monster 7Job x Lv1-50 STR/VIT/AGI/DEX/INT/MND/LUK base Status"
+          },
+          "evd_0007": {
+            "workspace_name": "EVD-0007 Physical Damage Budget-Power換算",
+            "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0007",
+            "evidence_id": "EVD-0007",
+            "sha256": "346b3f5e8392a807945a2f47df4a295981cc989b5c1251ae35b0ed989a757e12",
+            "compact_rows": 12,
+            "source_battle_conditions": 84,
+            "input_evidence_ids": [
+              "EVD-0003",
+              "EVD-0006"
+            ],
+            "scope": "Physical 1Hit Damage Budget -> Power conversion authority; k=2",
+            "formula": "f_Damage(B_Damage)=round(100+2*B_Damage)",
+            "not_direct_slv_to_final_power": true
           }
         },
         "evidence_dependency_registry": {
           "id": "REG-BAL-074-EVIDENCE-DEPENDENCY-001",
           "status": "Current",
-          "updated_at": "2026-08-27T15:14:25+09:00",
-          "purpose": "EVD-0001..EVD-0006の直接依存、共有Authority依存、変更伝播、Battle Test入力を一意に復元する。",
+          "updated_at": "2026-08-27T15:38:29+09:00",
+          "purpose": "EVD-0001..EVD-0007の直接依存、共有Authority依存、変更伝播、Battle Test入力を一意に復元する。",
           "evidence": {
             "EVD-0001": {
               "workspace_name": "EVD-0001 Player全7職・Lv別ステータス期待値",
@@ -12995,6 +13038,15 @@
                 "EVD-0005"
               ],
               "role": "Monster final rounded combat-value input for Battle verification"
+            },
+            "EVD-0007": {
+              "workspace_name": "EVD-0007 Physical Damage Budget-Power換算",
+              "sha256": "346b3f5e8392a807945a2f47df4a295981cc989b5c1251ae35b0ed989a757e12",
+              "direct_inputs": [
+                "EVD-0003",
+                "EVD-0006"
+              ],
+              "role": "Physical 1Hit Damage Budget -> Power conversion authority (k=2)"
             }
           },
           "direct_edges": [
@@ -13057,6 +13109,16 @@
               "from": "EVD-0006",
               "to": "TP-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
               "reason": "Direct Monster input for SLv-Damage Level-gap robustness."
+            },
+            {
+              "from": "EVD-0003",
+              "to": "EVD-0007",
+              "reason": "Player combat-value authority used by the screening/robustness Battle results that calibrate Damage Budget conversion."
+            },
+            {
+              "from": "EVD-0006",
+              "to": "EVD-0007",
+              "reason": "Monster combat-value authority used by the screening/robustness Battle results that calibrate Damage Budget conversion."
             }
           ],
           "transitive_test_inputs": [
@@ -13113,6 +13175,9 @@
               ],
               "must_rerun_tests_using": [
                 "EVD-0003"
+              ],
+              "invalidates_evidence": [
+                "EVD-0007"
               ]
             },
             {
@@ -13122,6 +13187,9 @@
               ],
               "must_rerun_tests_using": [
                 "EVD-0003"
+              ],
+              "invalidates_evidence": [
+                "EVD-0007"
               ]
             },
             {
@@ -13129,6 +13197,9 @@
               "must_recalculate": [],
               "must_rerun_tests_using": [
                 "EVD-0003"
+              ],
+              "invalidates_evidence": [
+                "EVD-0007"
               ]
             },
             {
@@ -13138,6 +13209,9 @@
               ],
               "must_rerun_tests_using": [
                 "EVD-0006"
+              ],
+              "invalidates_evidence": [
+                "EVD-0007"
               ]
             },
             {
@@ -13147,6 +13221,9 @@
               ],
               "must_rerun_tests_using": [
                 "EVD-0006"
+              ],
+              "invalidates_evidence": [
+                "EVD-0007"
               ]
             },
             {
@@ -13154,6 +13231,19 @@
               "must_recalculate": [],
               "must_rerun_tests_using": [
                 "EVD-0006"
+              ],
+              "invalidates_evidence": [
+                "EVD-0007"
+              ]
+            },
+            {
+              "changed": "EVD-0007",
+              "must_recalculate": [],
+              "must_rerun_tests_using": [],
+              "invalidates_downstream": [
+                "C_MultiHit(H) calibration",
+                "R_MP/R_CD/R_Cast/M_Range calibration",
+                "same-SLv allocation equivalence"
               ]
             }
           ],
@@ -13236,34 +13326,23 @@
               "EVD-0004",
               "EVD-0005"
             ],
-            "screening_result": "RES-BAL-074-SLV-DAMAGE-B792-001",
-            "selected_k": [
-              1,
-              2
-            ],
-            "level_batches": {
-              "SWD20_KNT": [
-                39,
-                40,
-                41
-              ],
-              "SWD20_THF": [
-                29,
-                30,
-                31
-              ],
-              "THF20_KNT": [
-                34,
-                35,
-                36
-              ],
-              "THF20_THF": [
-                26,
-                27,
-                28
-              ]
-            },
+            "result_id": "RES-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
+            "output_evidence_id": "EVD-0007",
+            "selected_k": 2,
+            "meaning": "Damage Budget -> Power conversion",
             "source": "GKS-B792 / GA-B486.211"
+          },
+          "downstream_budget_allocation": {
+            "total_budget_authority": "B_spent = SLv",
+            "damage_conversion": "EVD-0007",
+            "pending_components": [
+              "C_MultiHit(H)",
+              "R_MP(MP)",
+              "R_CD(CD)",
+              "R_Cast(Cast)",
+              "M_Range"
+            ],
+            "rule": "Do not substitute EVD-0007 k=2 for a universal direct SLv->final Power formula."
           }
         },
         "physical_control_band_b792_result": {
@@ -13652,7 +13731,7 @@
           "id": "TP-BAL-074-SLV-DAMAGE-B792-001",
           "status": "CompletedEvaluated",
           "purpose": "新EVD-0001..0006と確定した非飽和Control配置を使い、1Hit Physical SkillのSLv→Damage変換候補kを比較する。",
-          "decision_question": "k={0.5,1,2,4}のどのSLv→Power変換が、重装高耐久/軽装高回避かつ剣士/盗賊Attack envelopeを横断して、SLv上昇に対する安定した実戦価値増加を作るか。",
+          "decision_question": "k=1とk=2のどちらをPhysical 1Hit Damage Budget→Power換算係数として採用するか。",
           "authority": {
             "allocation_decision": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001",
             "budget_identity": "B_spent = SLv",
@@ -13803,7 +13882,14 @@
           },
           "human_real_device_executed": true,
           "completed_at": "2026-08-27T15:02:00+09:00",
-          "result_id": "RES-BAL-074-SLV-DAMAGE-B792-001"
+          "result_id": "RES-BAL-074-SLV-DAMAGE-B792-001",
+          "semantic_correction": {
+            "status": "Corrected",
+            "corrected_at": "2026-08-27T15:38:29+09:00",
+            "authority": "DEC-BAL-PHYSICAL-DAMAGE-BUDGET-POWER-001",
+            "old_misleading_interpretation": "SLv directly determines final Skill Power.",
+            "correct_interpretation": "The isolated calibration used B_Damage=SLv only because every non-Damage allocation component was neutral/zero. The tested k is Damage Budget -> Power."
+          }
         },
         "physical_slv_damage_b792_result": {
           "id": "RES-BAL-074-SLV-DAMAGE-B792-001",
@@ -14586,13 +14672,17 @@
           },
           "measurement_gate": "PASS_TO_LEVEL_GAP_ROBUSTNESS",
           "standalone_evidence_retained": false,
-          "retention_reason": "k is not frozen yet. Keep this as process screening result until Level-gap robustness determines reusable numeric authority."
+          "retention_reason": "k is not frozen yet. Keep this as process screening result until Level-gap robustness determines reusable numeric authority.",
+          "semantic_correction": {
+            "corrected_at": "2026-08-27T15:38:29+09:00",
+            "interpretation": "k candidates are Damage Budget -> Power candidates. SLv labels in the package equal B_Damage only because this calibration spent all available Budget on one Damage hit."
+          }
         },
         "physical_slv_damage_level_gap_robustness_plan": {
           "id": "TP-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
-          "status": "ApprovedBattlePackagePreparedForHumanRuntime",
+          "status": "CompletedEvaluated",
           "purpose": "screeningで残したk=1/k=2を、非飽和Control近傍のLevel-gap batchで比較し、単一Level点への過適合とceiling saturationを確認する。",
-          "decision_question": "k=1とk=2のどちらをPhysical 1Hit DamageのSLv→Power係数候補として次段Freeze対象に残すか。",
+          "decision_question": "k=1とk=2のどちらをPhysical 1Hit Damage Budget→Power換算係数として採用するか。",
           "approval": {
             "approved_by": "Human",
             "approved_at": "2026-08-27T15:14:25+09:00",
@@ -14622,7 +14712,8 @@
               10,
               20
             ],
-            "formula": "Power = round(100 + k × SLv)"
+            "formula": "Power = round(100 + k * B_Damage)",
+            "calibration_binding": "B_Damage = SLv only inside the isolated 1Hit/SINGLE/MP0/CD0/Cast0/Range-neutral calibration."
           },
           "level_batches": [
             {
@@ -14714,13 +14805,121 @@
             "conditions": 84,
             "trials": 8400,
             "candidate_hash_reference_preflight": "PASS",
-            "human_runtime_executed": false,
-            "result_package_received": false
+            "human_runtime_executed": true,
+            "result_package_received": true,
+            "result_file": "GK_BattleVerification_Result_BVP-BAL074-SLV-DAMAGE-ROBUST-B792-001_BEX-1787811423789.zip",
+            "result_sha256": "47f1f1a2043110622ec2b844aa37c24760947738b3760f7dc2666366e9a780b1"
           },
           "execution_authorized": true,
           "battle_package_generated": true,
           "human_real_device_required": true,
-          "human_real_device_executed": false
+          "human_real_device_executed": true,
+          "semantic_correction": {
+            "status": "Corrected",
+            "corrected_at": "2026-08-27T15:38:29+09:00",
+            "authority": "DEC-BAL-PHYSICAL-DAMAGE-BUDGET-POWER-001",
+            "old_misleading_interpretation": "SLv directly determines final Skill Power.",
+            "correct_interpretation": "The isolated calibration used B_Damage=SLv only because every non-Damage allocation component was neutral/zero. The tested k is Damage Budget -> Power."
+          },
+          "completed_at": "2026-08-27T15:38:29+09:00",
+          "result_id": "RES-BAL-074-SLV-DAMAGE-ROBUST-B792-001"
+        },
+        "physical_slv_damage_level_gap_robustness_result": {
+          "id": "RES-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
+          "status": "PASS_K2_DAMAGE_BUDGET_CONVERSION_APPROVED",
+          "evaluated_at": "2026-08-27T15:38:29+09:00",
+          "test_plan_id": "TP-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
+          "result_file": "GK_BattleVerification_Result_BVP-BAL074-SLV-DAMAGE-ROBUST-B792-001_BEX-1787811423789.zip",
+          "result_sha256": "47f1f1a2043110622ec2b844aa37c24760947738b3760f7dc2666366e9a780b1",
+          "execution_id": "BEX-1787811423789",
+          "formal_gate": {
+            "status": "PASS",
+            "source_binding": "GKS-B792 / GA-B486.211 exact match",
+            "jobs_completed": "84/84",
+            "trials_completed": "8400/8400",
+            "error_count": 0,
+            "formal_only": true,
+            "legacy_fallback_used": false
+          },
+          "control_rows": {
+            "count": 12,
+            "primary_valid_10_90_count": 11,
+            "boundary_count": 1,
+            "boundary": "THF20 × THF28 = 4%"
+          },
+          "selection": {
+            "selected_k": 2,
+            "meaning": "Damage Budget -> Physical Power slope",
+            "selected_mapping": "f_Damage(B_Damage)=round(100+2*B_Damage)",
+            "test_only_identity": "B_Damage=SLv only in the isolated calibration",
+            "not_a_direct_final_skill_formula": true,
+            "aggregate": {
+              "k=1": {
+                "valid_control_level_rows": 11,
+                "candidate_points_on_valid_controls": 33,
+                "monotonic_budget_1_10_20_all_12_level_rows": true,
+                "by_damage_budget": {
+                  "1": {
+                    "valid_control_rows": 11,
+                    "mean_delta_win_rate_pp": 1.09,
+                    "min_delta_win_rate_pp": 0,
+                    "max_delta_win_rate_pp": 4,
+                    "ceiling_ge_95_count": 0,
+                    "ceiling_100_count": 0
+                  },
+                  "10": {
+                    "valid_control_rows": 11,
+                    "mean_delta_win_rate_pp": 22.55,
+                    "min_delta_win_rate_pp": 7,
+                    "max_delta_win_rate_pp": 55,
+                    "ceiling_ge_95_count": 1,
+                    "ceiling_100_count": 0
+                  },
+                  "20": {
+                    "valid_control_rows": 11,
+                    "mean_delta_win_rate_pp": 37.27,
+                    "min_delta_win_rate_pp": 11,
+                    "max_delta_win_rate_pp": 76,
+                    "ceiling_ge_95_count": 1,
+                    "ceiling_100_count": 1
+                  }
+                }
+              },
+              "k=2": {
+                "valid_control_level_rows": 11,
+                "candidate_points_on_valid_controls": 33,
+                "monotonic_budget_1_10_20_all_12_level_rows": true,
+                "by_damage_budget": {
+                  "1": {
+                    "valid_control_rows": 11,
+                    "mean_delta_win_rate_pp": 2.27,
+                    "min_delta_win_rate_pp": 0,
+                    "max_delta_win_rate_pp": 9,
+                    "ceiling_ge_95_count": 0,
+                    "ceiling_100_count": 0
+                  },
+                  "10": {
+                    "valid_control_rows": 11,
+                    "mean_delta_win_rate_pp": 37.27,
+                    "min_delta_win_rate_pp": 11,
+                    "max_delta_win_rate_pp": 76,
+                    "ceiling_ge_95_count": 1,
+                    "ceiling_100_count": 1
+                  },
+                  "20": {
+                    "valid_control_rows": 11,
+                    "mean_delta_win_rate_pp": 50.27,
+                    "min_delta_win_rate_pp": 20,
+                    "max_delta_win_rate_pp": 87,
+                    "ceiling_ge_95_count": 4,
+                    "ceiling_100_count": 3
+                  }
+                }
+              }
+            }
+          },
+          "evidence_id": "EVD-0007",
+          "standalone_evidence_created": true
         }
       },
       "evidence_refs": [
@@ -14939,6 +15138,26 @@
           "row_granularity": "ONE_LEVEL_PER_ROW"
         },
         {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0004",
+          "file": "EVD-0004 Monster全7職・Lv別装備係数.json",
+          "sha256": "d55e6cb0c3d6f53b39aa2e7e34198477aaf9d168c0b1d087555a33fb9c362d26",
+          "role": "MONSTER_7JOB_LEVEL1_50_EQUIPMENT_COEFFICIENT_AUTHORITY",
+          "evidence_id": "EVD-0004",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-27T15:38:29+09:00",
+          "human_reviewed_before_creation": true
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0005",
+          "file": "EVD-0005 Monster全7職・Lv別基礎Status.json",
+          "sha256": "fa7d19c1590c9e1f309a3e547239d861d0744d9f4ec3d5656103027467e2408e",
+          "role": "MONSTER_7JOB_LEVEL1_50_BASE_STATUS_AUTHORITY",
+          "evidence_id": "EVD-0005",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-27T15:38:29+09:00",
+          "human_reviewed_before_creation": true
+        },
+        {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0006",
           "file": "EVD-0006 Monster全7職・Lv別戦闘値.json",
           "sha256": "455fe51ed1aa3bd49422c4d8ab17651215dd247d6684b846ef9d732a96c48798",
@@ -14953,6 +15172,22 @@
           ],
           "row_granularity": "ONE_LEVEL_PER_ROW",
           "rounding_rule": "HALF_UP; nonzero->0 becomes 1; original 0 stays 0"
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0007",
+          "file": "EVD-0007 Physical Damage Budget-Power換算.json",
+          "sha256": "346b3f5e8392a807945a2f47df4a295981cc989b5c1251ae35b0ed989a757e12",
+          "role": "PHYSICAL_DAMAGE_BUDGET_TO_POWER_CONVERSION_AUTHORITY",
+          "evidence_id": "EVD-0007",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-27T15:38:29+09:00",
+          "human_reviewed_before_creation": true,
+          "input_evidence_ids": [
+            "EVD-0003",
+            "EVD-0006"
+          ],
+          "formula": "f_Damage(B_Damage)=round(100+2*B_Damage)",
+          "semantic_note": "Damage Budget conversion only; not direct SLv->final Skill Power."
         }
       ],
       "blocked_reason": ""
@@ -23022,6 +23257,22 @@
       "task_id": "TASK-BAL-074",
       "created_at": "2026-08-27T15:14:25+09:00",
       "updated_at": "2026-08-27T15:14:25+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-SLV-DAMAGE-ROBUST-B792-RESULT-CORRECTED-001",
+      "title": "TASK-BAL-074 Damage Budget→Power robustness Result",
+      "summary": "Human BEX-1787811423789: 84/84, 8400/8400, error0, exact B792 binding PASS. k=1/k=2とも単調。11 valid Control rowでk=2は強い識別力を持ち、Budget20の>=95%は4/11で過半数未満。",
+      "task_id": "TASK-BAL-074",
+      "created_at": "2026-08-27T15:38:29+09:00",
+      "updated_at": "2026-08-27T15:38:29+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-DAMAGE-BUDGET-SEMANTIC-CORRECTION-001",
+      "title": "TASK-BAL-074 SLv直Power解釈をDamage Budget換算へ訂正",
+      "summary": "Human clarificationにより、k=2をSLv→最終Power式として扱う解釈を撤回。B_spent=SLvをDamage/Multi-hit/MP/CD/Cast/Rangeへ配分し、Damageへ割り当てたB_Damageにk=2を適用する。EVD-0007を新規作成。",
+      "task_id": "TASK-BAL-074",
+      "created_at": "2026-08-27T15:38:29+09:00",
+      "updated_at": "2026-08-27T15:38:29+09:00"
     }
   ],
   "authority": {
