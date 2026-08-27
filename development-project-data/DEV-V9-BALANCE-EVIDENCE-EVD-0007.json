@@ -1,0 +1,959 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-feee817c-266b-46b4-b235-db789d0b9012",
+    "canonical_path": "development-project-data/DEV-V9-BALANCE-EVIDENCE-EVD-0007.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-BALANCE-EVIDENCE-EVD-0007",
+    "name": "EVD-0007 Physical Damage Budget-Power換算",
+    "status": "Validating",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-27T15:38:29+09:00"
+  },
+  "project_context": {
+    "purpose": "Physical Skill Level allocation式のDamage成分について、総Skill Budget=SLvとは分離して、割り当て済みDamage Budgetから1Hit Physical Powerへ変換する係数を再利用可能な数値Authorityとして保存する。",
+    "summary": "GKS-B792 Human real-device screening/robustness結果に基づき、Physical 1Hit Damageの換算係数k=2 power-points per Damage Budget pointを採用する。Calibrationでは1Hit/SINGLE/MP0/CD0/Cast0/Range-neutralのため一時的にB_Damage=SLvだったが、これは最終Skill Power=SLv直変換を意味しない。"
+  },
+  "current_focus": {
+    "architecture_id": "",
+    "work_box_id": "",
+    "theme": "EVD-0007 Physical Damage Budget-Power換算",
+    "goal": "後続のMulti-hit/MP/CD/Cast/Range配分計算から、Damageへ割り当てられたBudgetをPhysical Powerへ変換するAuthorityとして使用する。"
+  },
+  "project_rules": [],
+  "source_baseline": {
+    "studio_build": "GKS-B792",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(20260827-015842).zip",
+    "source_role": "Human-provided Fresh Current after TASK-BAL-074-INFRA-006 Studio Formal Shield offensive correction",
+    "recorded_at": "2026-08-27T10:58:09+09:00",
+    "source_zip_sha256": "eece9a0d6acdde9b6a38069474f59aee058c84a7c3b8ccfcc0026844304b5eb4",
+    "package_manifest_sha256": "d91736fa424a72aeb7ea4fee755e94bd866d69e841c690b6e70bb367a17c7558",
+    "source_tree_sha256": "5ca95dfb76f44a7863aa6c0aec204c4aa2a522fc87679c62fcf618f457fa3b69"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-27T15:38:29+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [],
+  "decisions": [],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [],
+  "work_boxes": [],
+  "tasks": [],
+  "checks": [],
+  "workflow": {
+    "stage": "Verifying",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [],
+  "evidence_manifest": {
+    "document_type": "balance_evidence_project",
+    "evidence_id": "EVD-0007",
+    "parent_project_id": "DEV-V9-BALANCE-001",
+    "parent_task_id": "TASK-BAL-074",
+    "created_at": "2026-08-27T15:38:29+09:00",
+    "evidence_storage_policy": "EVIDENCE_ONLY_SEPARATE_DEVELOPMENT_PROJECT",
+    "scope": {
+      "domain": "Physical Skill Damage Budget conversion",
+      "compact_records": 12,
+      "source_battle_conditions_represented": 84,
+      "primary_valid_control_rows": 11,
+      "boundary_control_rows": 1,
+      "stored_primary_metrics": [
+        "win_rate",
+        "delta_win_rate_pp_vs_control"
+      ],
+      "selected_k": 2,
+      "selected_mapping": "Power = round(100 + 2 * B_Damage)",
+      "not_a_final_slv_to_power_formula": true,
+      "source_modified": false,
+      "game_data_modified": false
+    }
+  },
+  "authority_basis": {
+    "parent_allocation_decision": "DEC-BAL-PHYSICAL-SKILLLEVEL-ALLOCATION-001",
+    "total_skill_budget_authority": "B_spent = SLv",
+    "allocation_formula_context": "SLv = M_Range * (sum(C_Damage(Power_i)) + C_MultiHit(H)) - R_MP(MP) - R_CD(CD) - R_Cast(Cast)",
+    "inverse_allocation_context": "EffectBudget = (SLv + R_MP + R_CD + R_Cast) / M_Range - C_MultiHit",
+    "damage_component_variable": "B_Damage = the portion of EffectBudget allocated to one Physical DAMAGE hit",
+    "calibration_identity_only": "For these tests only: 1Hit, SINGLE, MP0, CD0, Cast0, Range-neutral => B_Damage = B_spent = SLv.",
+    "candidate_mapping_tested": "Power = round(100 + k * B_Damage)",
+    "selected_k": 2,
+    "selected_mapping": "f_Damage(B_Damage) = round(100 + 2 * B_Damage)",
+    "tested_integer_budget_points": {
+      "1": 102,
+      "10": 120,
+      "20": 140
+    },
+    "semantic_boundary": {
+      "approved": "k=2 is Damage Budget -> Power conversion.",
+      "rejected_interpretation": "Do not use k=2 as a universal direct SLv -> final Skill Power formula.",
+      "why": "SLv is the total Skill Budget and must first be distributed across Damage/Multi-hit/MP/Cooldown/Cast/Range."
+    },
+    "inverse_cost_boundary": {
+      "C_Damage_for_arbitrary_rounded_power": "Not independently frozen by EVD-0007.",
+      "budget_accounting_rule": "For generated Skills, preserve allocated B_Damage as the Budget authority and derive Power from f_Damage.",
+      "fractional_budget_rounding": "Not expanded by this Evidence beyond the already-approved/tested round notation; tested points are integer and rounding-ambiguous cases were not required."
+    },
+    "pending_functions_not_fixed_here": [
+      "C_MultiHit(H)",
+      "R_MP(MP)",
+      "R_CD(CD)",
+      "R_Cast(Cast)",
+      "M_Range",
+      "same-SLv cross-build equivalence tolerance"
+    ],
+    "selection_basis": [
+      "k=1 and k=2 were monotonic for Budget 1->10->20 across all 12 Level rows.",
+      "On 11 valid Control rows, k=2 produced stronger reproducible differentiation than k=1.",
+      "At Damage Budget 20, k=2 reached >=95% win rate on 4/11 valid Control rows, not a majority.",
+      "The Human-approved robustness selection rule therefore advances k=2."
+    ],
+    "human_review": "All 12 Level rows / 84 win-rate outcomes, aggregate deltas, saturation counts, and k=2 selection were presented before Evidence creation. Human then clarified the intended Skill Budget allocation meaning and explicitly requested the corrected management JSON plus sequential Evidence."
+  },
+  "validation": {
+    "status": "PASS",
+    "formal_binding": "GKS-B792 / GA-B486.211 exact match",
+    "screening": {
+      "package_file": "TASK-BAL-074-SLvDamage-B792.zip",
+      "package_sha256": "52cd9f6b7890b3ead4513d28f8e62d1cc105679f217fa9852b88b679a3cf82d4",
+      "result_file": "GK_BattleVerification_Result_BVP-BAL074-SLV-DAMAGE-B792-001_BEX-1787810380128.zip",
+      "result_sha256": "6c279fad47b5bd63a1832bd2271225247eab46048ac827a2afbd95e466988bf9",
+      "jobs": "68/68",
+      "trials": "6800/6800",
+      "error_count": 0
+    },
+    "robustness": {
+      "package_file": "TASK-BAL-074-SLvDamage-Robust-B792.zip",
+      "package_sha256": "851b20dfb814674812aeab0f17b49d85672145ede81b5451d1c486bd1cc0b16f",
+      "result_file": "GK_BattleVerification_Result_BVP-BAL074-SLV-DAMAGE-ROBUST-B792-001_BEX-1787811423789.zip",
+      "result_sha256": "47f1f1a2043110622ec2b844aa37c24760947738b3760f7dc2666366e9a780b1",
+      "execution_id": "BEX-1787811423789",
+      "jobs": "84/84",
+      "trials": "8400/8400",
+      "error_count": 0,
+      "formal_only": true,
+      "legacy_fallback_used": false,
+      "control_rows": 12,
+      "primary_valid_10_90_rows": 11,
+      "boundary_rows": [
+        {
+          "attacker": "THF Lv20",
+          "monster": "THF Lv28",
+          "control_win_rate": 0.04
+        }
+      ]
+    },
+    "all_84_decision_win_rates_represented": true,
+    "selected_k": 2,
+    "source_modified": false,
+    "game_data_modified": false
+  },
+  "aggregate_results": {
+    "k=1": {
+      "valid_control_level_rows": 11,
+      "candidate_points_on_valid_controls": 33,
+      "monotonic_budget_1_10_20_all_12_level_rows": true,
+      "by_damage_budget": {
+        "1": {
+          "valid_control_rows": 11,
+          "mean_delta_win_rate_pp": 1.09,
+          "min_delta_win_rate_pp": 0,
+          "max_delta_win_rate_pp": 4,
+          "ceiling_ge_95_count": 0,
+          "ceiling_100_count": 0
+        },
+        "10": {
+          "valid_control_rows": 11,
+          "mean_delta_win_rate_pp": 22.55,
+          "min_delta_win_rate_pp": 7,
+          "max_delta_win_rate_pp": 55,
+          "ceiling_ge_95_count": 1,
+          "ceiling_100_count": 0
+        },
+        "20": {
+          "valid_control_rows": 11,
+          "mean_delta_win_rate_pp": 37.27,
+          "min_delta_win_rate_pp": 11,
+          "max_delta_win_rate_pp": 76,
+          "ceiling_ge_95_count": 1,
+          "ceiling_100_count": 1
+        }
+      }
+    },
+    "k=2": {
+      "valid_control_level_rows": 11,
+      "candidate_points_on_valid_controls": 33,
+      "monotonic_budget_1_10_20_all_12_level_rows": true,
+      "by_damage_budget": {
+        "1": {
+          "valid_control_rows": 11,
+          "mean_delta_win_rate_pp": 2.27,
+          "min_delta_win_rate_pp": 0,
+          "max_delta_win_rate_pp": 9,
+          "ceiling_ge_95_count": 0,
+          "ceiling_100_count": 0
+        },
+        "10": {
+          "valid_control_rows": 11,
+          "mean_delta_win_rate_pp": 37.27,
+          "min_delta_win_rate_pp": 11,
+          "max_delta_win_rate_pp": 76,
+          "ceiling_ge_95_count": 1,
+          "ceiling_100_count": 1
+        },
+        "20": {
+          "valid_control_rows": 11,
+          "mean_delta_win_rate_pp": 50.27,
+          "min_delta_win_rate_pp": 20,
+          "max_delta_win_rate_pp": 87,
+          "ceiling_ge_95_count": 4,
+          "ceiling_100_count": 3
+        }
+      }
+    }
+  },
+  "records": [
+    {
+      "attacker_code": "SWD",
+      "attacker_level": 20,
+      "monster_job_code": "KNT",
+      "monster_level": 39,
+      "control": {
+        "win_rate": 0.55,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.59,
+          "delta_win_rate_pp_vs_control": 4
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.95,
+          "delta_win_rate_pp_vs_control": 40
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 1,
+          "delta_win_rate_pp_vs_control": 45
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.64,
+          "delta_win_rate_pp_vs_control": 9
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 1,
+          "delta_win_rate_pp_vs_control": 45
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 1,
+          "delta_win_rate_pp_vs_control": 45
+        }
+      ]
+    },
+    {
+      "attacker_code": "SWD",
+      "attacker_level": 20,
+      "monster_job_code": "KNT",
+      "monster_level": 40,
+      "control": {
+        "win_rate": 0.14,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.18,
+          "delta_win_rate_pp_vs_control": 4
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.69,
+          "delta_win_rate_pp_vs_control": 55
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.9,
+          "delta_win_rate_pp_vs_control": 76
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.19,
+          "delta_win_rate_pp_vs_control": 5
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.9,
+          "delta_win_rate_pp_vs_control": 76
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 1,
+          "delta_win_rate_pp_vs_control": 86
+        }
+      ]
+    },
+    {
+      "attacker_code": "SWD",
+      "attacker_level": 20,
+      "monster_job_code": "KNT",
+      "monster_level": 41,
+      "control": {
+        "win_rate": 0.13,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.14,
+          "delta_win_rate_pp_vs_control": 1
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.67,
+          "delta_win_rate_pp_vs_control": 54
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.88,
+          "delta_win_rate_pp_vs_control": 75
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.18,
+          "delta_win_rate_pp_vs_control": 5
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.88,
+          "delta_win_rate_pp_vs_control": 75
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 1,
+          "delta_win_rate_pp_vs_control": 87
+        }
+      ]
+    },
+    {
+      "attacker_code": "SWD",
+      "attacker_level": 20,
+      "monster_job_code": "THF",
+      "monster_level": 29,
+      "control": {
+        "win_rate": 0.73,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.73,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.82,
+          "delta_win_rate_pp_vs_control": 9
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.84,
+          "delta_win_rate_pp_vs_control": 11
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.75,
+          "delta_win_rate_pp_vs_control": 2
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.84,
+          "delta_win_rate_pp_vs_control": 11
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.93,
+          "delta_win_rate_pp_vs_control": 20
+        }
+      ]
+    },
+    {
+      "attacker_code": "SWD",
+      "attacker_level": 20,
+      "monster_job_code": "THF",
+      "monster_level": 30,
+      "control": {
+        "win_rate": 0.62,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.65,
+          "delta_win_rate_pp_vs_control": 3
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.71,
+          "delta_win_rate_pp_vs_control": 9
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.82,
+          "delta_win_rate_pp_vs_control": 20
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.65,
+          "delta_win_rate_pp_vs_control": 3
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.82,
+          "delta_win_rate_pp_vs_control": 20
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.9,
+          "delta_win_rate_pp_vs_control": 28
+        }
+      ]
+    },
+    {
+      "attacker_code": "SWD",
+      "attacker_level": 20,
+      "monster_job_code": "THF",
+      "monster_level": 31,
+      "control": {
+        "win_rate": 0.51,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.51,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.58,
+          "delta_win_rate_pp_vs_control": 7
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.64,
+          "delta_win_rate_pp_vs_control": 13
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.52,
+          "delta_win_rate_pp_vs_control": 1
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.64,
+          "delta_win_rate_pp_vs_control": 13
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.77,
+          "delta_win_rate_pp_vs_control": 26
+        }
+      ]
+    },
+    {
+      "attacker_code": "THF",
+      "attacker_level": 20,
+      "monster_job_code": "KNT",
+      "monster_level": 34,
+      "control": {
+        "win_rate": 0.44,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.44,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.61,
+          "delta_win_rate_pp_vs_control": 17
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.75,
+          "delta_win_rate_pp_vs_control": 31
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.44,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.75,
+          "delta_win_rate_pp_vs_control": 31
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.94,
+          "delta_win_rate_pp_vs_control": 50
+        }
+      ]
+    },
+    {
+      "attacker_code": "THF",
+      "attacker_level": 20,
+      "monster_job_code": "KNT",
+      "monster_level": 35,
+      "control": {
+        "win_rate": 0.3,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.3,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.38,
+          "delta_win_rate_pp_vs_control": 8
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.6,
+          "delta_win_rate_pp_vs_control": 30
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.3,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.6,
+          "delta_win_rate_pp_vs_control": 30
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.8,
+          "delta_win_rate_pp_vs_control": 50
+        }
+      ]
+    },
+    {
+      "attacker_code": "THF",
+      "attacker_level": 20,
+      "monster_job_code": "KNT",
+      "monster_level": 36,
+      "control": {
+        "win_rate": 0.2,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.2,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.31,
+          "delta_win_rate_pp_vs_control": 11
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.51,
+          "delta_win_rate_pp_vs_control": 31
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.2,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.51,
+          "delta_win_rate_pp_vs_control": 31
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.7,
+          "delta_win_rate_pp_vs_control": 50
+        }
+      ]
+    },
+    {
+      "attacker_code": "THF",
+      "attacker_level": 20,
+      "monster_job_code": "THF",
+      "monster_level": 26,
+      "control": {
+        "win_rate": 0.52,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.52,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.73,
+          "delta_win_rate_pp_vs_control": 21
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.89,
+          "delta_win_rate_pp_vs_control": 37
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.52,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.89,
+          "delta_win_rate_pp_vs_control": 37
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.98,
+          "delta_win_rate_pp_vs_control": 46
+        }
+      ]
+    },
+    {
+      "attacker_code": "THF",
+      "attacker_level": 20,
+      "monster_job_code": "THF",
+      "monster_level": 27,
+      "control": {
+        "win_rate": 0.24,
+        "valid_primary_band_10_90": true
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.24,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.41,
+          "delta_win_rate_pp_vs_control": 17
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.65,
+          "delta_win_rate_pp_vs_control": 41
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.24,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.65,
+          "delta_win_rate_pp_vs_control": 41
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.89,
+          "delta_win_rate_pp_vs_control": 65
+        }
+      ]
+    },
+    {
+      "attacker_code": "THF",
+      "attacker_level": 20,
+      "monster_job_code": "THF",
+      "monster_level": 28,
+      "control": {
+        "win_rate": 0.04,
+        "valid_primary_band_10_90": false
+      },
+      "candidate_results": [
+        {
+          "k": 1,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 101,
+          "win_rate": 0.04,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 110,
+          "win_rate": 0.1,
+          "delta_win_rate_pp_vs_control": 6
+        },
+        {
+          "k": 1,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 120,
+          "win_rate": 0.24,
+          "delta_win_rate_pp_vs_control": 20
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 1,
+          "damage_budget_in_calibration": 1,
+          "power": 102,
+          "win_rate": 0.04,
+          "delta_win_rate_pp_vs_control": 0
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 10,
+          "damage_budget_in_calibration": 10,
+          "power": 120,
+          "win_rate": 0.24,
+          "delta_win_rate_pp_vs_control": 20
+        },
+        {
+          "k": 2,
+          "test_parameter_slv": 20,
+          "damage_budget_in_calibration": 20,
+          "power": 140,
+          "win_rate": 0.47,
+          "delta_win_rate_pp_vs_control": 43
+        }
+      ]
+    }
+  ]
+}
