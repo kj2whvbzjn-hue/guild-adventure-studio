@@ -4,7 +4,7 @@
   if(root)root.GKSFormalContribution=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const EQUIPMENT_FIELDS=Object.freeze(['attack','accuracy','magic_weapon_bonus','base_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion']);
+  const EQUIPMENT_FIELDS=Object.freeze(['attack','accuracy','magic_weapon_bonus','weapon_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion']);
   const BLOCK_FIELDS=Object.freeze(['block_rate','block_damage_cut_rate']);
   const ADDITIVE_EQUIPMENT_FIELDS=Object.freeze(EQUIPMENT_FIELDS.filter(k=>!BLOCK_FIELDS.includes(k)));
   const REQUIREMENT_FIELDS=Object.freeze(['required_str','required_dex','required_int','required_vit','required_mnd','required_agi']);
@@ -13,7 +13,7 @@
   const PASSIVE_COMBAT_CAPABILITIES=Object.freeze(['DUAL_WIELD']);
   const PASSIVE_COMBAT_CAPABILITY_OWNER=Object.freeze({DUAL_WIELD:'PAS-DUAL-WIELD-001'});
   const NUMERIC_OPERATIONS=Object.freeze(['RELATIVE_PERCENT','FLAT_ADD','ADDITIVE_POINT','SUBTRACTIVE_POINT']);
-  const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion',CRITICAL_RATE:'base_critical_rate'});
+  const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion'});
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function object(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
   function req(v,label){const s=String(v??'').trim();if(!s)throw new Error(label+'が必要です。');return s}
@@ -22,6 +22,7 @@
   function containsDeprecatedStatusSuccess(value){return /status[_ -]?success|状態異常成功率/i.test(JSON.stringify(value??{}))}
   function validateFormalEquipment(record){
     if(!object(record))throw new Error('Equipment recordが必要です。');
+    if(Object.prototype.hasOwnProperty.call(record,'base_critical_rate'))throw Object.assign(new Error('Equipment field base_critical_rateはCurrent Contractで廃止されています。weapon_critical_rateを使用してください。'),{code:'FORMAL_EQUIPMENT_BASE_CRITICAL_RATE_FORBIDDEN'});
     const id=req(record.id,'equipment.id');
     const hasFormal=EQUIPMENT_FIELDS.some(k=>Object.prototype.hasOwnProperty.call(record,k));
     if(!hasFormal&&object(record.params?.stats))throw Object.assign(new Error(`Formal Equipment ${id}はlegacy params.statsを使用できません。`),{code:'FORMAL_EQUIPMENT_LEGACY_STATS_FORBIDDEN'});
