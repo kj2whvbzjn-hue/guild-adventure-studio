@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T06:39:58.087Z"
+    "updated_at": "2026-08-27T21:16:35.756Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical Skill Budget配分・Multi-hit Cost次工程",
-    "goal": "EVD-0007をDamage Budget→Power Authorityとして登録し、次にC_MultiHit(H)算定Test Planを策定する。Human承認前は次Battle Package/Simulationを実行しない。"
+    "theme": "TASK-BAL-074 Critical Evidence Authority Correction Gate",
+    "goal": "GKS-B797 Critical contractに合わせてEVD-0003/EVD-0006を修正し、EVD-0007を再検証するまでC_MultiHitへ進まない。"
   },
   "project_rules": [
     {
@@ -164,12 +164,13 @@
     },
     {
       "id": "RULE-BAL-REUSE-003",
-      "text": "Equipment大量生成の正規入口はCurrent StudioのGKS_EQUIPMENT_GENERATION_REQUEST / studio/equipment/equipment-generator.jsとする。AIはkind/type/iLv/seed等の要求を作り、required stats・attack・accuracy・magic_weapon_bonus・base_critical_rate・hp/mp/evasion等の正式数値はStudio Generatorに生成させる。別Equipment Generatorを新設しない。",
+      "text": "Equipment大量生成の正規入口はCurrent StudioのGKS_EQUIPMENT_GENERATION_REQUEST / studio/equipment/equipment-generator.jsとする。AIはkind/type/iLv/seed等の要求を作り、required stats・attack・accuracy・magic_weapon_bonus・weapon_critical_rate・hp/mp/evasion等の正式数値はStudio Generatorに生成させる。別Equipment Generatorを新設しない。",
       "status": "Active",
       "source_type": "SourceAudit",
       "source_id": "GKS-B735:studio/equipment/equipment-generator.js",
       "created_at": "2026-08-22T14:12:00+09:00",
-      "updated_at": "2026-08-22T14:12:00+09:00"
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "authority_sync_note": "Critical field synced to DEV-V9-REORG-019 Current authority: Equipment owns weapon_critical_rate; base_critical_rate is Battle-derived only."
     },
     {
       "id": "RULE-BAL-REUSE-004",
@@ -476,14 +477,15 @@
       "id": "RULE-BAL-BOW-QUIVER-COMBAT-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Active",
-      "text": "弓（仕様選定中は弓/大弓を同条件として一括呼称）と矢筒は個別装備可能だが、弓攻撃/弓Skillの使用には両方の装備を要求する。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。装備画面では不足側スロットを警告色で示す。弓attack_count=1、矢筒attack_count=0。弓通常攻撃および弓を必要とするSkillのEquipment Combat Contributionは弓側だけを使用する。矢筒のattack / accuracy / magic_weapon_bonus / base_critical_rateその他Combat Contributionを弓側へ合算しない。矢筒は弓Action成立条件となる装備/Tag/Slotを提供するが、独立Strike/Critical/Combat Contributionを発生させない。弓EquipmentのWeapon属性は射撃。Range/射程/TargetingはEquipment ownerではない。",
+      "text": "弓（仕様選定中は弓/大弓を同条件として一括呼称）と矢筒は個別装備可能だが、弓攻撃/弓Skillの使用には両方の装備を要求する。弓のみは『矢筒が装備されていません』、矢筒のみは『弓が装備されていません』。装備画面では不足側スロットを警告色で示す。弓attack_count=1、矢筒attack_count=0。弓通常攻撃および弓を必要とするSkillのEquipment Combat Contributionは弓側だけを使用する。矢筒のattack / accuracy / magic_weapon_bonus / weapon_critical_rateその他Combat Contributionを弓側へ合算しない。矢筒は弓Action成立条件となる装備/Tag/Slotを提供するが、独立Strike/Critical/Combat Contributionを発生させない。弓EquipmentのWeapon属性は射撃。Range/射程/TargetingはEquipment ownerではない。",
       "rationale": "Human-approved correction 2026-08-26: Bow+Quiverは使用成立条件として維持するが、Combat Contribution合算を廃止しBow側能力だけを使用する。",
       "approved_by": "Human",
       "approved_at": "2026-08-26T20:02:00+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T20:08:30+09:00",
+      "updated_at": "2026-08-28T06:13:03+09:00",
       "source_type": "CurrentSpecificationAuthority",
-      "source_id": "DEV-V9-REORG-019:DEC-REORG-EQUIP-BOW-QUIVER-001 / Human correction 2026-08-26"
+      "source_id": "DEV-V9-REORG-019:DEC-REORG-EQUIP-BOW-QUIVER-001 / Human correction 2026-08-26",
+      "authority_sync_note": "Critical Equipment field renamed/split by Current authority. Bow-only ownership is weapon_critical_rate; Battle derives base_critical_rate from weapon_critical_rate and LUK."
     },
     {
       "id": "RULE-BAL-EQUIPMENT-NO-TWO-HAND-001",
@@ -548,12 +550,13 @@
     },
     {
       "id": "RULE-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001",
-      "text": "Monster装備相当性能は、Monster基礎Status M_s=L×G/10、同Job Player参照Status P_s=10+(L-1)×G/10、Current Requirement semanticsから得るfractional Virtual iLv、既存Player Equipment性能式F_Xを用いて生成する。Stat-linked contributionは X_monster=F_X(e,I_e)×M_s/P_s。Equipment requirement coefficientをMonster Statへ直接掛けてCombat値へ変換しない。Virtual iLvを整数化せず装備更新段差を除去する。Player Equipment式および既存multiplier=2は変更しない。Bow+QuiverはBow-only contribution。非Stat-linkedは既存正式field `base_critical_rate` / `block_rate` / `block_damage_cut_rate` を再利用し、Monster専用field/Parameterを新設しない。Primary WeaponがCritical、ShieldがBlockのOwner。Current値は初期Balance seedであり数値は可変。Monsterではfractional Virtual iLvを既存Block式のiLv入力に使い、M_s/P_sは適用しない。",
+      "text": "Monster装備相当性能は、Monster基礎Status M_s=L×G/10、同Job Player参照Status P_s=10+(L-1)×G/10、Current Requirement semanticsから得るfractional Virtual iLv、既存Player Equipment性能式F_Xを用いて生成する。Stat-linked contributionは X_monster=F_X(e,I_e)×M_s/P_s。Equipment requirement coefficientをMonster Statへ直接掛けてCombat値へ変換しない。Virtual iLvを整数化せず装備更新段差を除去する。Player Equipment式および既存multiplier=2は変更しない。Bow+QuiverはBow-only contribution。非Stat-linkedは既存正式field `weapon_critical_rate` / `block_rate` / `block_damage_cut_rate` を再利用し、Monster専用field/Parameterを新設しない。Primary Weaponが`weapon_critical_rate`、ShieldがBlockのOwner。Battle `base_critical_rate` はCurrent Battle式 `weapon_critical_rate × (1 + LUK/100)` で算出する。Current値は初期Balance seedであり数値は可変。Monsterではfractional Virtual iLvを既存Block式のiLv入力に使い、M_s/P_sは適用しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-27 monster continuous equipment-equivalent formula",
       "created_at": "2026-08-27T05:38:30+09:00",
-      "updated_at": "2026-08-27T09:56:06+09:00"
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "authority_sync_note": "Non-stat-linked Equipment Critical authority is weapon_critical_rate. Monster LUK participates only at Battle base_critical_rate derivation; M_s/P_s is not applied to weapon_critical_rate."
     },
     {
       "id": "RULE-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
@@ -576,6 +579,19 @@
       "updated_at": "2026-08-27T12:46:32+09:00",
       "source_type": "HumanInstruction",
       "source_id": "conversation"
+    },
+    {
+      "id": "RULE-BAL-CRITICAL-AUTHORITY-SYNC-001",
+      "title": "Critical Current Authorityをweapon_critical_rate→Battle base_critical_rateへ同期する",
+      "status": "Active",
+      "text": "DEV-V9-REORG-019 Current Critical AuthorityをBalance案件でも正本とする。Equipmentが所有・生成・保存・Contribution入力として扱う正式fieldは `weapon_critical_rate`。Equipment fieldとしての `base_critical_rate` は使用しない。Battleは各strikeの攻撃武器 `weapon_critical_rate` とactor LUKから `base_critical_rate = weapon_critical_rate × (1 + LUK/100)` を算出する。Critical chanceへのMOD等ContributionはCurrent Contribution contractに従い同一baseから独立解決し、最終Critical率を得る。過去Build/Evidence内のEquipment `base_critical_rate` / direct `critical_rate` はHistoricalとして保持できるが、Current Numeric AuthorityまたはCurrent Battle入力として再利用しない。Bow+QuiverはBow側weapon_critical_rateのみ、weapon+shieldは攻撃武器側のみ、dual_wieldは各strikeの武器ごとに独立評価する。",
+      "rationale": "HumanがDEV-V9-REORG-019の情報源仕様とCurrent SourceをCritical新契約へ修正済みと確認し、Balance Evidenceへの影響調査・Correctionを承認したため。",
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T06:13:03+09:00",
+      "source_type": "HumanInstruction+CurrentSpecificationAuthority",
+      "source_id": "DEV-V9-REORG-019 Critical Current Authority / Current Source GKS-B797",
+      "created_at": "2026-08-28T06:13:03+09:00",
+      "updated_at": "2026-08-28T06:13:03+09:00"
     }
   ],
   "source_baseline": {
@@ -2409,7 +2425,13 @@
       "approved_by": "Human",
       "approved_at": "2026-08-24T22:08:00+09:00",
       "created_at": "2026-08-24T22:08:00+09:00",
-      "updated_at": "2026-08-24T22:08:00+09:00"
+      "updated_at": "2026-08-24T22:08:00+09:00",
+      "critical_authority_sync": {
+        "status": "CurrentCorrectionApplied",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "note": "Historical approved text is retained. Any Equipment-owned base_critical_rate wording is superseded only for Critical field ownership by Current weapon_critical_rate contract; Base Critical Damage 50% remains unaffected.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     },
     {
       "id": "DEC-BAL-MONSTER-HP-PHYS-REALDEVICE-001",
@@ -2579,7 +2601,13 @@
       "approved_by": "Human",
       "approved_at": "2026-08-25T14:12:46+09:00",
       "created_at": "2026-08-25T14:12:46+09:00",
-      "updated_at": "2026-08-25T14:12:46+09:00"
+      "updated_at": "2026-08-25T14:12:46+09:00",
+      "critical_authority_sync": {
+        "status": "CurrentCorrectionApplied",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "note": "Historical approved text is retained. Any Equipment-owned base_critical_rate wording is superseded only for Critical field ownership by Current weapon_critical_rate contract; Base Critical Damage 50% remains unaffected.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     },
     {
       "id": "DEC-BAL-DEVELOPMENT-MERGE-STALE-GUARD-001",
@@ -2892,7 +2920,13 @@
       "approved_by": "Human",
       "approved_at": "2026-08-26T20:02:00+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T20:08:30+09:00"
+      "updated_at": "2026-08-26T20:08:30+09:00",
+      "critical_authority_sync": {
+        "status": "CurrentCorrectionApplied",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "note": "Historical approved text is retained. Any Equipment-owned base_critical_rate wording is superseded only for Critical field ownership by Current weapon_critical_rate contract; Base Critical Damage 50% remains unaffected.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     },
     {
       "id": "DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001",
@@ -2981,7 +3015,13 @@
       "approved_by": "Human",
       "approved_at": "2026-08-27T05:38:30+09:00",
       "created_at": "2026-08-27T05:38:30+09:00",
-      "updated_at": "2026-08-27T09:56:06+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00",
+      "critical_authority_sync": {
+        "status": "CurrentCorrectionApplied",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "note": "Historical approved text is retained. Any Equipment-owned base_critical_rate wording is superseded only for Critical field ownership by Current weapon_critical_rate contract; Base Critical Damage 50% remains unaffected.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     },
     {
       "id": "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
@@ -2993,7 +3033,13 @@
       "approved_by": "Human",
       "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
-      "updated_at": "2026-08-27T09:56:06+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00",
+      "critical_authority_sync": {
+        "status": "CurrentCorrectionApplied",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "note": "Historical approved text is retained. Any Equipment-owned base_critical_rate wording is superseded only for Critical field ownership by Current weapon_critical_rate contract; Base Critical Damage 50% remains unaffected.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     },
     {
       "id": "DEC-BAL-PHYSICAL-DAMAGE-BUDGET-POWER-001",
@@ -3006,6 +3052,18 @@
       "approved_at": "2026-08-27T15:38:29+09:00",
       "created_at": "2026-08-27T15:38:29+09:00",
       "updated_at": "2026-08-27T15:38:29+09:00"
+    },
+    {
+      "id": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+      "title": "Balance Critical AuthorityをCurrent weapon_critical_rate契約へ同期する",
+      "status": "Approved",
+      "text": "Balanceで再利用するCurrent Critical数値は、Equipment `weapon_critical_rate`、actor LUK、Battle-derived `base_critical_rate`、Contribution provenance、final Critical rateを責務分離して扱う。旧Equipment `base_critical_rate` または直接 `critical_rate` をCurrent入力Authorityとして扱わない。Critical chanceの変更により再計算が必要な既存EvidenceはHistorical本文を改竄せずCurrent Authority利用を停止し、Corrected Evidenceで置換・再検証する。",
+      "rationale": "Current Specification/SourceがGKS-B797 Critical contractへ更新されたため。既存Balance Evidenceの計算入力契約とSource bindingが変わる。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T06:13:03+09:00",
+      "created_at": "2026-08-28T06:13:03+09:00",
+      "updated_at": "2026-08-28T06:13:03+09:00"
     }
   ],
   "specifications": [
@@ -3301,7 +3359,14 @@
       "approved_by": "Human",
       "approved_at": "2026-08-26T11:28:04+09:00",
       "created_at": "2026-08-26T10:38:34+09:00",
-      "updated_at": "2026-08-26T11:51:02+09:00"
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "critical_authority_override": {
+        "status": "Current",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "rule_ref": "RULE-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "text": "Where this Specification body says Equipment `base_critical_rate`, read Current Equipment authority as `weapon_critical_rate`. Battle `base_critical_rate` is derived from weapon_critical_rate and LUK under Current Critical contract. Historical body text is retained for auditability.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     },
     {
       "id": "SPEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
@@ -3323,7 +3388,14 @@
       "approved_by": "Human",
       "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
-      "updated_at": "2026-08-27T09:56:06+09:00"
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "critical_authority_override": {
+        "status": "Current",
+        "decision_ref": "DEC-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "rule_ref": "RULE-BAL-CRITICAL-AUTHORITY-SYNC-001",
+        "text": "Where this Specification body says Equipment `base_critical_rate`, read Current Equipment authority as `weapon_critical_rate`. Battle `base_critical_rate` is derived from weapon_critical_rate and LUK under Current Critical contract. Historical body text is retained for auditability.",
+        "updated_at": "2026-08-28T06:13:03+09:00"
+      }
     }
   ],
   "specification_candidates": [],
@@ -7762,7 +7834,7 @@
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Doing",
+      "status": "Blocked",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-072-CORR-001",
@@ -7779,8 +7851,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T15:38:29+09:00",
-      "result_scope": "DOING / Physical Damage component recalibration completed on GKS-B792. Robustness Human runtime PASS: 84/84 jobs, 8400/8400 trials, error0, formal_only=true, legacy_fallback=false. Human semantic correction applied: the tested k is not a universal SLv->final Power coefficient. Total Skill Budget remains B_spent=SLv; calibration had B_Damage=SLv only because 1Hit/SINGLE/MP0/CD0/Cast0/Range-neutral allocated all Budget to Damage. Approved reusable Damage conversion: k=2, f_Damage(B_Damage)=round(100+2*B_Damage), recorded as EVD-0007. C_MultiHit/R_MP/R_CD/R_Cast/M_Range remain unfrozen. No new Battle Package or Simulation started. No Source/GAME_DATA/Current active change.",
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "result_scope": "BLOCKED BEFORE C_MultiHit. Current Critical authority changed in GKS-B797 after the GKS-B792 Damage calibration. EVD-0003/EVD-0006 Current-authority use is suspended pending correction; EVD-0007 k=2 is Historical/NeedsRevalidation and must not feed downstream allocation until corrected inputs + B797 revalidation. No new Battle Package/Simulation/real-device request executed.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -7791,7 +7863,7 @@
       },
       "redo_scope": {
         "primary_goal": "Skill Budget = SLvを総Budget Authorityとして、Physical Skill LevelをDamage/Multi-hit/MP/Cooldown/Cast/Rangeへ振り分ける式を確定する",
-        "current_step": "TASK RESUMED ON VERIFIED CURRENT GKS-B792. Await Human approval of the registered Physical Control-Band Rebuild Test Plan before any Battle Package generation or Simulation/Test request.",
+        "current_step": "CRITICAL EVIDENCE AUTHORITY CORRECTION GATE. Await corrected EVD-0003/EVD-0006 source Evidence JSONs (or their exact raw calculation inputs) and then Human-approved B797 revalidation plan for EVD-0007. Do not start C_MultiHit.",
         "old_task_074_numeric_results_allowed": false,
         "old_task_074_numeric_results_as_comparison_allowed": false,
         "spec_numeric_values_are_authority": false,
@@ -12915,7 +12987,7 @@
           "updated_at": "2026-08-27T12:46:32+09:00"
         },
         "new_numeric_authority_sequence": {
-          "status": "EVD0007PreparedForRegistration",
+          "status": "CriticalCorrectionRequiredBeforeEVD0007Reuse",
           "evd_0001": {
             "workspace_name": "EVD-0001 Player全7職・Lv別ステータス期待値",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0001",
@@ -12924,7 +12996,7 @@
             "rows": 350,
             "scope": "Player 7Job x Lv1-50 x STR/VIT/AGI/DEX/INT/MND/LUK expected values only"
           },
-          "next_action": "Human Studio registration of EVD-0007. After registration, the next numeric component is C_MultiHit(H); its Test Plan must be separately proposed/approved before any Battle Package or Simulation.",
+          "next_action": "Correct EVD-0003 and EVD-0006 to Current weapon_critical_rate/LUK Critical contract. Then revalidate EVD-0007 on GKS-B797 under a separately Human-approved Test Plan. C_MultiHit remains blocked.",
           "updated_at": "2026-08-27T15:38:29+09:00",
           "evd_0002": {
             "workspace_name": "EVD-0002 Player全7職・Lv別適正装備iLv割当",
@@ -12943,7 +13015,8 @@
             "rows": 350,
             "input_evidence_id": "EVD-0002",
             "row_granularity": "ONE_LEVEL_PER_ROW",
-            "scope": "Player 7Job x Lv1-50 combat values corresponding to EVD-0002"
+            "scope": "Player 7Job x Lv1-50 combat values corresponding to EVD-0002",
+            "current_authority_status": "SuspendedPendingCriticalCorrection"
           },
           "evd_0006": {
             "workspace_name": "EVD-0006 Monster全7職・Lv別戦闘値",
@@ -12956,7 +13029,8 @@
               "EVD-0005"
             ],
             "row_granularity": "ONE_LEVEL_PER_ROW",
-            "scope": "Monster 7Job x Lv1-50 rounded combat values"
+            "scope": "Monster 7Job x Lv1-50 rounded combat values",
+            "current_authority_status": "SuspendedPendingCriticalCorrection"
           },
           "evd_0004": {
             "workspace_name": "EVD-0004 Monster全7職・Lv別装備係数",
@@ -12987,13 +13061,15 @@
             ],
             "scope": "Physical 1Hit Damage Budget -> Power conversion authority; k=2",
             "formula": "f_Damage(B_Damage)=round(100+2*B_Damage)",
-            "not_direct_slv_to_final_power": true
+            "not_direct_slv_to_final_power": true,
+            "current_authority_status": "HistoricalNeedsRevalidation",
+            "invalidated_by": "GKS-B797 Current Critical contract + corrected EVD-0003/EVD-0006 requirement"
           }
         },
         "evidence_dependency_registry": {
           "id": "REG-BAL-074-EVIDENCE-DEPENDENCY-001",
-          "status": "Current",
-          "updated_at": "2026-08-27T15:38:29+09:00",
+          "status": "CriticalCorrectionGate",
+          "updated_at": "2026-08-28T06:13:03+09:00",
           "purpose": "EVD-0001..EVD-0007の直接依存、共有Authority依存、変更伝播、Battle Test入力を一意に復元する。",
           "evidence": {
             "EVD-0001": {
@@ -13016,7 +13092,8 @@
               "direct_inputs": [
                 "EVD-0002"
               ],
-              "role": "Player final combat-value input for Battle verification"
+              "role": "Player final combat-value input for Battle verification",
+              "current_authority_status": "SuspendedPendingCriticalCorrection"
             },
             "EVD-0004": {
               "workspace_name": "EVD-0004 Monster全7職・Lv別装備係数",
@@ -13037,7 +13114,8 @@
                 "EVD-0004",
                 "EVD-0005"
               ],
-              "role": "Monster final rounded combat-value input for Battle verification"
+              "role": "Monster final rounded combat-value input for Battle verification",
+              "current_authority_status": "SuspendedPendingCriticalCorrection"
             },
             "EVD-0007": {
               "workspace_name": "EVD-0007 Physical Damage Budget-Power換算",
@@ -13046,7 +13124,8 @@
                 "EVD-0003",
                 "EVD-0006"
               ],
-              "role": "Physical 1Hit Damage Budget -> Power conversion authority (k=2)"
+              "role": "Physical 1Hit Damage Budget -> Power conversion authority (k=2)",
+              "current_authority_status": "HistoricalNeedsRevalidation"
             }
           },
           "direct_edges": [
@@ -13343,6 +13422,25 @@
               "M_Range"
             ],
             "rule": "Do not substitute EVD-0007 k=2 for a universal direct SLv->final Power formula."
+          },
+          "critical_contract_change": {
+            "current_source": "GKS-B797 / GA-B486.211",
+            "changed_authority": "Equipment base_critical_rate -> weapon_critical_rate; Battle base_critical_rate derives from weapon_critical_rate and LUK",
+            "must_correct": [
+              "EVD-0003",
+              "EVD-0006"
+            ],
+            "invalidates_current_reuse": [
+              "EVD-0007",
+              "B792 control placement freeze",
+              "B792 SLv-Damage results"
+            ],
+            "unaffected": [
+              "EVD-0001",
+              "EVD-0002",
+              "EVD-0004",
+              "EVD-0005"
+            ]
           }
         },
         "physical_control_band_b792_result": {
@@ -13656,7 +13754,7 @@
         },
         "physical_control_band_b792_control_freeze": {
           "id": "FREEZE-BAL-074-PHYSICAL-CONTROL-PLACEMENTS-B792-001",
-          "status": "FrozenForNextSLvDamageTestOnly",
+          "status": "InvalidatedByCriticalContractChange",
           "frozen_at": "2026-08-27T14:47:50+09:00",
           "basis_test_plans": [
             "TP-BAL-074-PHYSICAL-CONTROL-BAND-B792-001",
@@ -13725,7 +13823,9 @@
             "R_Cast",
             "M_Range"
           ],
-          "invalidation_rule": "Any change propagating into EVD-0003 or EVD-0006, or Current Formal Battle source binding, invalidates this Control placement freeze."
+          "invalidation_rule": "Any change propagating into EVD-0003 or EVD-0006, or Current Formal Battle source binding, invalidates this Control placement freeze.",
+          "invalidated_at": "2026-08-28T06:13:03+09:00",
+          "invalidated_by": "GKS-B797 Current Critical contract changed Formal Battle source binding and EVD-0003/EVD-0006 Critical values."
         },
         "physical_slv_damage_b792_test_plan": {
           "id": "TP-BAL-074-SLV-DAMAGE-B792-001",
@@ -14826,7 +14926,7 @@
         },
         "physical_slv_damage_level_gap_robustness_result": {
           "id": "RES-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
-          "status": "PASS_K2_DAMAGE_BUDGET_CONVERSION_APPROVED",
+          "status": "HISTORICAL_PASS_CURRENT_AUTHORITY_SUSPENDED",
           "evaluated_at": "2026-08-27T15:38:29+09:00",
           "test_plan_id": "TP-BAL-074-SLV-DAMAGE-ROBUST-B792-001",
           "result_file": "GK_BattleVerification_Result_BVP-BAL074-SLV-DAMAGE-ROBUST-B792-001_BEX-1787811423789.zip",
@@ -14919,7 +15019,10 @@
             }
           },
           "evidence_id": "EVD-0007",
-          "standalone_evidence_created": true
+          "standalone_evidence_created": true,
+          "current_authority_use": false,
+          "invalidated_for_current_reuse_at": "2026-08-28T06:13:03+09:00",
+          "invalidated_for_current_reuse_reason": "Calibrated on GKS-B792 using EVD-0003/EVD-0006 under the pre-GKS-B797 Critical field/formula contract. Preserve result as Historical; revalidation required before k=2 is reused."
         }
       },
       "evidence_refs": [
@@ -15190,7 +15293,59 @@
           "semantic_note": "Damage Budget conversion only; not direct SLv->final Skill Power."
         }
       ],
-      "blocked_reason": ""
+      "blocked_reason": "Current Critical contract changed at GKS-B797. EVD-0003 Player combat values and EVD-0006 Monster combat values require Critical-field/formula correction; EVD-0007 and B792 control/SLv-Damage results depend on those inputs and Current Formal Battle source binding, so downstream C_MultiHit work is blocked until corrected Evidence is supplied/recalculated and the affected test plan is re-approved.",
+      "critical_authority_correction": {
+        "status": "AuthorityUseSuspendedPendingEvidenceCorrection",
+        "detected_at": "2026-08-28T06:13:03+09:00",
+        "current_source": {
+          "studio_build": "GKS-B797",
+          "game_build": "GA-B486.211",
+          "source_zip": "guild-adventure-studio-sub(20260827-210319).zip",
+          "source_zip_sha256": "62f149f4d2d74f86b4f3e73ff033a7010f80e97c71d3d6a2dc369055a40215bc",
+          "package_manifest_sha256": "0b6e0746e68da7a1a5d4bf7827be552782efea518d579f670e29b4a78d316505"
+        },
+        "current_contract": {
+          "equipment_field": "weapon_critical_rate",
+          "battle_base_formula": "base_critical_rate = weapon_critical_rate * (1 + LUK/100)",
+          "old_equipment_base_critical_rate_current_authority": false,
+          "direct_critical_rate_without_provenance_current_authority": false
+        },
+        "classification": {
+          "must_correct": [
+            "EVD-0003",
+            "EVD-0006"
+          ],
+          "must_revalidate_after_correction": [
+            "EVD-0007"
+          ],
+          "unaffected_numeric_authority": [
+            "EVD-0001",
+            "EVD-0002",
+            "EVD-0004",
+            "EVD-0005",
+            "DEC-BAL-BASE-CRITICAL-DAMAGE-001"
+          ],
+          "historical_only_results": [
+            "GKS-B792 control placement results",
+            "GKS-B792 SLv-Damage screening result",
+            "GKS-B792 SLv-Damage robustness result",
+            "pre-GKS-B797 Battle/Runtime evidence whose Critical input/provenance follows the old field contract"
+          ]
+        },
+        "propagation": {
+          "EVD-0003": "Player Battle input changes because weapon_critical_rate must be combined with Player LUK in Battle base_critical_rate.",
+          "EVD-0006": "Monster Battle input changes because weapon_critical_rate must be combined with Monster LUK in Battle base_critical_rate.",
+          "EVD-0007": "Directly depends on EVD-0003/EVD-0006 and was calibrated on GKS-B792. k=2 is suspended as Current reusable authority until B797+corrected-input revalidation.",
+          "C_MultiHit(H)": "Not started; remains blocked. No invalid numeric result exists yet."
+        },
+        "required_next_inputs": [
+          "EVD-0003 Player全7職・Lv別戦闘値.json",
+          "EVD-0006 Monster全7職・Lv別戦闘値.json",
+          "EVD-0007 Physical Damage Budget-Power換算.json"
+        ],
+        "execution_prohibited_until_corrected": true,
+        "no_simulation_executed": true
+      }
     },
     {
       "id": "TASK-BAL-075",
@@ -16442,6 +16597,25 @@
           "Bow/Quiver contract"
         ]
       }
+    },
+    {
+      "id": "TASK-BAL-CRIT-EVIDENCE-CORR-001",
+      "box_id": "BOX-V9-BAL-BATTLE-001",
+      "title": "Current Critical修正に伴うBalance Evidence Authority影響範囲を確定する",
+      "status": "Done",
+      "execution_order": 265,
+      "depends_on": [],
+      "acceptance_criteria": "- Human開始承認を得る。\\n- Current REORG Critical SpecificationとFresh Current Source GKS-B797を基準にする。\\n- Balance Project内のCritical関連Rule/Decision/Specification/Task/Evidence参照を抽出する。\\n- Evidenceを修正必須・再検証必須・Historical保持・影響なしへ分類する。\\n- Historical Evidence本文を改竄しない。\\n- Current Authorityとして危険な旧Evidenceの再利用を停止する。\\n- Simulation/Battle Package/実機依頼/Source/GAME_DATA変更を行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-28T06:13:03+09:00"
+      },
+      "created_at": "2026-08-28T06:13:03+09:00",
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "result_scope": "DONE. Current Critical impact classified. EVD-0003/EVD-0006 require correction; EVD-0007 and GKS-B792 control/SLv-Damage results require B797 revalidation; EVD-0001/0002/0004/0005 and Base Critical Damage 50% are unaffected. TASK-BAL-074 blocked before C_MultiHit. Historical evidence preserved; no Simulation/Source/GAME_DATA change."
     }
   ],
   "checks": [
@@ -21752,6 +21926,30 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHK-BAL-CRIT-EVIDENCE-IMPACT-001",
+      "title": "GKS-B797 Critical contract Evidence impact classification",
+      "status": "Passed",
+      "task_id": "TASK-BAL-CRIT-EVIDENCE-CORR-001",
+      "evidence": "Current Source GKS-B797 / GA-B486.211; source ZIP sha256=62f149f4d2d74f86b4f3e73ff033a7010f80e97c71d3d6a2dc369055a40215bc; package_manifest sha256=0b6e0746e68da7a1a5d4bf7827be552782efea518d579f670e29b4a78d316505. Project dependency registry shows EVD-0003/EVD-0006 direct Battle inputs and EVD-0007 depends on both. Current-authority use suspended without rewriting historical evidence.",
+      "created_at": "2026-08-28T06:13:03+09:00",
+      "updated_at": "2026-08-28T06:13:03+09:00",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "",
+      "result": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "workflow": {
@@ -23273,6 +23471,13 @@
       "task_id": "TASK-BAL-074",
       "created_at": "2026-08-27T15:38:29+09:00",
       "updated_at": "2026-08-27T15:38:29+09:00"
+    },
+    {
+      "id": "HIST-BAL-CRIT-EVIDENCE-CORR-001",
+      "at": "2026-08-28T06:13:03+09:00",
+      "type": "AuthorityCorrection",
+      "summary": "GKS-B797 Current Critical contractへの変更影響をBalance Evidenceへ伝播。EVD-0003/EVD-0006 Current利用停止、EVD-0007/B792 results再検証要求、EVD-0001/2/4/5およびBase Critical Damage 50%は影響なし。TASK-BAL-074をC_MultiHit前でBlock。",
+      "task_id": "TASK-BAL-CRIT-EVIDENCE-CORR-001"
     }
   ],
   "authority": {
