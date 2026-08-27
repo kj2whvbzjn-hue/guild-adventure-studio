@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-26T23:52:17.931Z"
+    "updated_at": "2026-08-27T00:09:35.527Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "Monster装備相当性能の連続生成方針を確定 — 旧Requirement係数直乗算CoreをSupersede",
-    "goal": "Monster基礎Status=Level×Job成長期待値/10、Player初期ALL10なしは維持する。旧TASK-BAL-072-CORR-001のRequirement係数直乗算によるAttack/Accuracy/Magic/HP/MP/Evasion Numeric Authorityは使用停止。次工程ではHuman承認済み共通式に基づき、Current GKS-B790で全Job・全Levelの連続装備相当Coreを再構築する。Stat-linked 6項目を先に再計算し、Critical/Block等の非Stat-linked値は別途算定規則をHuman承認してからFreezeする。新しいSimulation/Test/実機検証は事前Test Plan承認まで開始しない。"
+    "theme": "TASK-BAL-072-CORR-004 Monster生成装備Profile変更反映 — Human開始承認待ち",
+    "goal": "魔術師=杖両手持ち、神官=魔導書+盾へMonster生成専用Profileを更新済み。旧350-row Continuous Coreは旧Profile snapshotのHistorical Evidenceへ降格。次TaskではCurrent GKS-B790のRequirement/Equipment式を用い、7Job×Lv1..50 Stat-linked 6項目を再計算して統一Authorityを再Freezeする。Player側の装備可否・Job制限には影響しない。"
   },
   "project_rules": [
     {
@@ -2882,13 +2882,13 @@
       "id": "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
       "title": "Monster生成専用装備プロフィールを7Jobへ登録する",
       "status": "Approved",
-      "text": "Monster自動生成で代表装備を決めるため、Player Job装備制限とは独立したMonster Generation Equipment Profile（Monster生成装備プロフィール）を使用する。初期Profileは、剣士=大剣/副装備なし/重装、騎士=片手剣/盾/重装、盗賊=短剣/盾/軽装、狩人=弓/矢筒/軽装、魔術師=ワンド/盾/ローブ、神官=ワンド/盾/ローブ、冒険家=片手剣/盾/重装とする。このProfileはMonster生成時の代表Equipment Type選択にだけ使用し、Playerの装備可能武器・防具を制限しない。Monster Generatorは選択されたEquipment TypeのCurrent Requirement semanticsからrequired_*を取得して参照Statを認識し、Job名からSTR等の固定対応を持たない。内部Equipment Type ID/Tag IDはCurrent Masterから実装時に解決し、存在しないIDを推測登録しない。Bow+Quiverは使用構成としてProfileに保持するが、CurrentのBow-only Monster Combat Contributionを維持してQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical/Block等の非Stat-linked値はDEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001どおり別Human承認までNumeric Freezeしない。",
-      "rationale": "Monster生成器がSTR等の参照Statを自力で認識するには、Jobごとの代表Equipment構成からEquipment Requirementへ辿る必要がある。一方、この情報はMonster生成のためだけのものであり、Player側のJob装備制約として扱うと既存のPlayer Equipment契約を不当に制限するため、名称・Owner・Consumerを明確に分離する。",
+      "text": "Monster自動生成で代表装備を決めるため、Player Job装備制限とは独立したMonster Generation Equipment Profile（Monster生成装備プロフィール）を使用する。Current初期Profileは、剣士=大剣/副装備なし/重装、騎士=片手剣/盾/重装、盗賊=短剣/盾/軽装、狩人=弓/矢筒/軽装、魔術師=杖/副装備なし/ローブ、神官=魔導書/盾/ローブ、冒険家=片手剣/盾/重装とする。魔術師の杖は副装備なしの両手持ち装備構成としてMonster生成時に扱う。このProfileはMonster生成時の代表Equipment Type選択にだけ使用し、Playerの装備可能武器・防具を制限しない。Monster Generatorは選択されたEquipment TypeのCurrent Requirement semanticsからrequired_*を取得して参照Statを認識し、Job名からSTR等の固定対応を持たない。内部Equipment Type ID/Tag IDはCurrent Masterから実装時に解決し、存在しないIDを推測登録しない。Bow+Quiverは使用構成としてProfileに保持するがCurrentのBow-only Combat Contributionを維持してQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical/Block等の非Stat-linked値はDEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001どおり別Human承認までNumeric Freezeしない。",
+      "rationale": "HumanがMonster生成用代表装備を更新。魔術師はワンド+盾ではなく杖の両手持ち、神官はワンド+盾ではなく魔導書+盾を使用する。これはMonster生成専用Profileの変更であり、Player Jobの装備制限には一切接続しない。",
       "source_discussion_ids": [],
       "approved_by": "Human",
-      "approved_at": "2026-08-27T08:51:43+09:00",
+      "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
-      "updated_at": "2026-08-27T08:51:43+09:00"
+      "updated_at": "2026-08-27T09:08:42+09:00"
     }
   ],
   "specifications": [
@@ -3190,8 +3190,8 @@
       "id": "SPEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
       "title": "Monster Generation Equipment Profile",
       "status": "Approved",
-      "summary": "Monster自動生成専用の7Job代表装備Profile。Player Job装備制限とは完全分離し、Equipment Type→Current Requirementから参照Statを認識する。",
-      "body": "# Monster Generation Equipment Profile\n\n## 1. Owner / Consumer\n正式名称: **Monster Generation Equipment Profile**\n日本語名: **Monster生成装備プロフィール**\n\nConsumerは **Monster Generator only**。\nPlayer Jobの装備制限、Player Equipment装備可否、Player Skill使用条件、Player Runtimeの装備選択には接続しない。\n\n## 2. 目的\nMonster.job_idから、そのJobのMonsterを生成するときだけ使う代表Equipment構成を決定する。\nMonster GeneratorはProfileのEquipment TypeをCurrent Equipment Masterへ解決し、そのRequirement定義\n(required_str / required_dex / required_int / required_vit / required_mnd / required_agi等)を読み、\nどのStatを参照するかを機械的に認識する。\n\n禁止:\n- Job名からSTR/DEX/INT等を直接決め打ちする。\n- 実Playerの装備・Save・Runtime Statusを参照する。\n- 本ProfileをPlayer Jobの装備可能カテゴリとして使用する。\n- Current Masterに存在しないEquipment Type ID / Tag IDを推測して作る。\n\n## 3. Initial Profiles\n\n| profile_id | Job | Primary Weapon | Secondary Equipment | Armor Type |\n|---|---|---|---|---|\n| MGEP-SWORDSMAN | 剣士 | 大剣 | なし | 重装 |\n| MGEP-KNIGHT | 騎士 | 片手剣 | 盾 | 重装 |\n| MGEP-THIEF | 盗賊 | 短剣 | 盾 | 軽装 |\n| MGEP-HUNTER | 狩人 | 弓 | 矢筒 | 軽装 |\n| MGEP-MAGE | 魔術師 | ワンド | 盾 | ローブ |\n| MGEP-CLERIC | 神官 | ワンド | 盾 | ローブ |\n| MGEP-ADVENTURER | 冒険家 | 片手剣 | 盾 | 重装 |\n\n## 4. Generator connection\nMonster.job_id\n→ Monster Generation Equipment Profile\n→ Primary/Secondary/Armor Type\n→ Current Equipment Master / Requirement semantics\n→ required_* fieldを認識\n→ 対応するJob growthを使用して装備基準Statを生成\n→ fractional Virtual iLv\n→ Existing Player Equipment performance formula\n→ Monster equipment-equivalent contribution\n\n## 5. Player separation\n本Profileが例えば「剣士=大剣/重装」であっても、Player剣士を大剣/重装へ制限する意味を持たない。\nPlayer EquipmentはCurrentのEquipment Requirementおよび正式装備条件だけをOwnerとする。\n\n## 6. Special identity\n- 狩人Profileは弓+矢筒を使用構成として保持する。\n- Bow+QuiverはCurrentのBow-only Monster Combat Contributionを維持し、Quiver性能を加算しない。\n- Shield offensive contributionは加算しない。\n- Critical / Block Rate / Block Damage Cut等の非Stat-linked値は\n  DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001に従い、別Human承認までNumeric Freezeしない。\n\n## 7. ID policy\n上表のprofile_idはBalance管理上のProfile ID。\n実Equipment Masterの内部Type ID/Tag IDとは別物であり、Current Source/Game Data確認前に内部IDを推測しない。\n",
+      "summary": "Monster自動生成専用の7Job代表装備Profile。Player Job装備制限とは完全分離し、Equipment Type→Current Requirementから参照Statを認識する。Current profileでは魔術師=杖両手持ち、神官=魔導書+盾。",
+      "body": "# Monster Generation Equipment Profile\n\n## 1. Owner / Consumer\n正式名称: **Monster Generation Equipment Profile**\n日本語名: **Monster生成装備プロフィール**\n\nConsumerは **Monster Generator only**。\nPlayer Jobの装備制限、Player Equipment装備可否、Player Skill使用条件、Player Runtimeの装備選択には接続しない。\n\n## 2. 目的\nMonster.job_idから、そのJobのMonsterを生成するときだけ使う代表Equipment構成を決定する。\nMonster GeneratorはProfileのEquipment TypeをCurrent Equipment Masterへ解決し、そのRequirement定義\n(required_str / required_dex / required_int / required_vit / required_mnd / required_agi等)を読み、\nどのStatを参照するかを機械的に認識する。\n\n禁止:\n- Job名からSTR/DEX/INT等を直接決め打ちする。\n- 実Playerの装備・Save・Runtime Statusを参照する。\n- 本ProfileをPlayer Jobの装備可能カテゴリとして使用する。\n- Current Masterに存在しないEquipment Type ID / Tag IDを推測して作る。\n\n## 3. Initial Profiles\n\n| profile_id | Job | Primary Weapon | Secondary Equipment | Armor Type |\n|---|---|---|---|---|\n| MGEP-SWORDSMAN | 剣士 | 大剣 | なし | 重装 |\n| MGEP-KNIGHT | 騎士 | 片手剣 | 盾 | 重装 |\n| MGEP-THIEF | 盗賊 | 短剣 | 盾 | 軽装 |\n| MGEP-HUNTER | 狩人 | 弓 | 矢筒 | 軽装 |\n| MGEP-MAGE | 魔術師 | 杖 | なし（両手持ち） | ローブ |\n| MGEP-CLERIC | 神官 | 魔導書 | 盾 | ローブ |\n| MGEP-ADVENTURER | 冒険家 | 片手剣 | 盾 | 重装 |\n\n## 4. Generator connection\nMonster.job_id\n→ Monster Generation Equipment Profile\n→ Primary/Secondary/Armor Type\n→ Current Equipment Master / Requirement semantics\n→ required_* fieldを認識\n→ 対応するJob growthを使用して装備基準Statを生成\n→ fractional Virtual iLv\n→ Existing Player Equipment performance formula\n→ Monster equipment-equivalent contribution\n\n## 5. Player separation\n本Profileが例えば「剣士=大剣/重装」であっても、Player剣士を大剣/重装へ制限する意味を持たない。\nPlayer EquipmentはCurrentのEquipment Requirementおよび正式装備条件だけをOwnerとする。\n\n## 6. Special identity\n- 魔術師Profileの杖は副装備なしの両手持ち構成として扱い、Currentの両手持ちRequirement semanticsを使用する。\n\n- 狩人Profileは弓+矢筒を使用構成として保持する。\n- Bow+QuiverはCurrentのBow-only Monster Combat Contributionを維持し、Quiver性能を加算しない。\n- Shield offensive contributionは加算しない。\n- Critical / Block Rate / Block Damage Cut等の非Stat-linked値は\n  DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001に従い、別Human承認までNumeric Freezeしない。\n\n## 7. ID policy\n上表のprofile_idはBalance管理上のProfile ID。\n実Equipment Masterの内部Type ID/Tag IDとは別物であり、Current Source/Game Data確認前に内部IDを推測しない。\n",
       "decision_refs": [
         "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
         "DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001"
@@ -3202,11 +3202,11 @@
       "contract_ids": [],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "Human",
-      "approved_at": "2026-08-27T08:51:43+09:00",
+      "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
-      "updated_at": "2026-08-27T08:51:43+09:00"
+      "updated_at": "2026-08-27T09:08:42+09:00"
     }
   ],
   "specification_candidates": [],
@@ -13499,7 +13499,7 @@
         "at": "2026-08-26T15:05:54+09:00"
       },
       "created_at": "2026-08-26T10:10:23+09:00",
-      "updated_at": "2026-08-26T15:20:00+09:00",
+      "updated_at": "2026-08-27T09:08:42+09:00",
       "result_scope": "DONE / FROZEN EQUIPMENT-CAPABLE HUMANOID MONSTER CORE. Current GKS-B783 / GA-B486.211. 7 Jobs x Lv1..50 = 350 rows. Monster base Stats = Level x Human-approved Job expected_gain_per_level; Player initial ALL10 is not added. Existing Equipment requirement coefficients are reused directly as Monster Job Equipment coefficients: Attack=STR*weapon.str, Accuracy=DEX*weapon.dex, Magic=INT*weapon.int, HP=VIT*armor.vit, MP=MND*armor.mnd, Evasion=AGI*armor.agi. No Player Equipment item/Candidate/Contribution or iLv/Tier layer is used. Profiles: SWD Greatsword; KNT One-hand Sword+Shield; THF Dagger+Shield; HNT Bow+Quiver; Mage Wand+Shield; Cleric Wand+Shield; Adventurer One-hand Sword+Shield. Bow+Quiver sums non-critical coefficients to STR6/DEX12/INT2; Bow-only Critical=5%, Bow 1 Strike/Quiver 0 Strike. Shield offensive coefficients are excluded. ShieldScale=min(STR/6,DEX/3,INT); BlockRate=0.20+0.02*(max(1,ShieldScale)-1), BlockDamageCutRate=0.30, no new cap. No direct raw Defense coefficient is invented; defense field=0 and defensive contribution is HP/Evasion/Block for downstream normalization. Gates: 350/350 rows, level regressions=0, tier discontinuities=0, Player equipment usage=0. Scope is equipment-capable humanoid/job-equipment Monster Core only. Beast/non-humanoid monsters that cannot equip shield/weapon/armor are explicitly excluded and deferred to TASK-BAL-072-CORR-002. No Simulation/Package/Source/GAME_DATA/Current active changes. TASK-BAL-073/074 not started.",
       "evidence_refs": [
         {
@@ -13508,10 +13508,13 @@
           "sha256": "7901e978c03a054e8ff57dc06cdd84f0e758d7d87f2798b233bc400b721a299a",
           "evidence_id": "EVD-BAL-072-CORR-001-HUMANOID-MONSTER-CORE-001",
           "role": "FROZEN_EQUIPMENT_CAPABLE_HUMANOID_MONSTER_CORE_7JOBS_LV1_50",
-          "status": "FrozenAuthority",
-          "recorded_at": "2026-08-26T15:05:54+09:00"
+          "status": "HistoricalSuperseded",
+          "recorded_at": "2026-08-26T15:05:54+09:00",
+          "current_authority_note": "Superseded by DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE / EVD-BAL-072-CORR-003-CONTINUOUS-CORE-001."
         }
-      ]
+      ],
+      "current_authority_status": "Historical_SupersededNumericAuthority",
+      "current_authority_note": "Current Stat-linked six Monster equipment-equivalent numeric authority is TASK-BAL-072-CORR-003. Old direct Requirement-coefficient values are history only."
     },
     {
       "id": "TASK-BAL-071-CORR-004",
@@ -13776,6 +13779,62 @@
       "updated_at": "2026-08-26T23:10:30+09:00",
       "blocked_reason": "Human start approval received and GKS-B790 source preflight passed, but the acceptance criteria require a Battle Verification AI Template exported from the same Human Studio environment/build. Formal binding includes the live PRJ-GAS-V4 data snapshot SHA; the source archive's canonical project-data.json snapshot sha256=17e2ef86f6ecf1b8a8d4e5b64b2db68daab55fbe70264072ab7cb77a00679f03 is not the previously observed Human Studio snapshot sha256=d8b94552a77700f738deb198f0f91d0758f31739abc2f7b3df87227abb3f35c9. Do not synthesize or rewrite manifest.formal.bindings. Await a fresh GKS-B790 Battle Verification AI Template ZIP from Human Studio.",
       "result_scope": "STARTED / PREREQUISITE BLOCK. Human instruction approved this unique next task against guild-adventure-studio-sub(20260826-141020).zip. Current build is GKS-B790 / GA-B486.211. source_zip_sha256=0b73312073ce5f847a8714bf1a241210f9b4759e0f9445ca3482ab8f9805d8e2; package_manifest_sha256=fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397; source_tree_sha256=79ec744e7350189bec7ccbcfb1e28c846eae9b5428788fb37a96a968af6026aa. Bow-only consumer implementation remains present: Quiver is removed from effective Formal Equipment contribution, Bow+Quiver pair requirement remains, Bow1/Quiver0 remains. Source Quick 11/11 PASS, warnings=0, timeouts=0. Battle Package generation is not performed because the required same-build Human Studio template is not supplied. No Simulation, Result evaluation, Source edit, GAME_DATA change, Skill Balance execution, or Evidence promotion occurred."
+    },
+    {
+      "id": "TASK-BAL-072-CORR-003",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "R5-P5 Monster連続装備相当CoreをStat-linked 6項目で再構築する",
+      "status": "Done",
+      "execution_order": 252,
+      "depends_on": [
+        "TASK-BAL-071-CORR-006"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- work_type=DEVELOPMENT_ONLY。Current Source / Equipment Master / Equipment Generator / Requirement semanticsはread-onlyで参照する。\n- 基準はGKS-B790 / GA-B486.211、およびDEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001とSPEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001。\n- 対象はMonster生成装備プロフィール7Job × Current Level全域。Player Job装備制限には接続しない。\n- 実Player、Player Save、Player Runtime Statusは参照しない。P_s=10+(L-1)×G/10 はMonster Generator内部の理論的な装備基準Statとしてのみ使用する。\n- 各ProfileのPrimary Weapon / Secondary Equipment / Armor TypeをCurrent Equipment Master/Generation Rulesへ解決し、Requirementのrequired_* fieldから参照Statを機械的に認識する。Job名からSTR/DEX/INT等を固定対応しない。\n- Current Requirement semantics（両手持ちSTR Requirement救済を含む）から各Equipmentのfractional Virtual iLvを求め、Virtual iLv自体を整数化しない。\n- 既存Player Equipment性能式F_X(e,I_e)を変更せず使用し、既存multiplier=2、round/floor境界、ClampをCurrent実装どおり確認する。\n- Stat-linked 6項目のみを今回のNumeric対象とする: attack→STR、accuracy→DEX、magic_weapon_bonus→INT、hp→VIT、mp→MND、evasion→AGI。\n- Monster基礎StatusはM_s=L×G/10。Stat-linked contributionはX_monster=F_X(e,I_e)×M_s/P_sで生成する。\n- Bow+Quiverは使用構成として維持するがBow-only Combat ContributionとしQuiver性能を加算しない。Shield offensive contributionも加算しない。\n- Critical / block_rate / block_damage_cut_rateその他の非Stat-linked値は計算表へAuthority値としてFreezeしない。別Human承認の算定規則へ送る。\n- 旧TASK-BAL-072-CORR-001 / DEV-V9-BALANCE-EVIDENCE-072-HUMANOID-COREのRequirement係数直乗算値を計算入力・比較基準・Skill authorityとして再利用しない。\n- Current Equipment Type/ID/Requirementが一意に解決できない、またはfractional iLv評価でCurrent式の離散round/floorが不明な場合はRULE-BAL-ISSUE-GATE-001で停止し、推測して補完しない。\n- 出力は7Job×全LevelのStat-linked 6項目Core Table、Profile/Requirement/Virtual iLv/式のprovenance、Level逆行・意図しない段差・非有限値Gate結果。\n- Numeric Authorityとして後工程で再利用する完成Core TableだけをRULE-BAL-EVIDENCE-RETENTION-001に従いEvidence専用管理JSONへ保存対象とする。\n- 本TaskではSource変更、GAME_DATA変更、Current active昇格、Battle Package生成、Simulation/Test、Human実機依頼を行わない。\n- 完了後もCritical/Block規則がHuman承認されるまでMonster Core全体Freezeとは扱わず、Stat-linked 6項目Freezeとして次判断へ渡す。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-27T09:03:00+09:00"
+      },
+      "created_at": "2026-08-27T08:54:47+09:00",
+      "updated_at": "2026-08-27T09:08:42+09:00",
+      "result_scope": "DONE / FROZEN STAT-LINKED 6 CONTINUOUS MONSTER EQUIPMENT-EQUIVALENT CORE. Current GKS-B790 / GA-B486.211. 7 Jobs x Lv1..50 = 350 rows. Monster base Status M_s=L*G/10 and theoretical equipment reference P_s=10+(L-1)*G/10. Monster Generation Equipment Profile resolves representative Equipment Type; Current Requirement semantics determine fractional Virtual iLv, and existing Player Equipment formulas are evaluated without changing multiplier/rounding semantics. Stat-linked mapping: attack->STR, accuracy->DEX, magic_weapon_bonus->INT, hp_bonus->VIT, mp_bonus->MND, evasion->AGI. Bow+Quiver remains Bow-only; Shield offensive/stat-linked six contribution excluded. Critical/Block remain non-Stat-linked pending separate Human-approved rule and are not frozen here. Rows=350/350, nonfinite=0, stat-linked level regressions=0, Virtual-iLv regressions=0, integerized Virtual iLv=0. Old TASK-BAL-072-CORR-001 direct Requirement-coefficient numeric values were not used. No Simulation/Test/Source/GAME_DATA/Current active change.",
+      "evidence_refs": [
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE",
+          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE.json",
+          "sha256": "8b603efccd441c175dd03e759274e4ecc8b3d0a9b480f23e43a4c19a9ce3288c",
+          "evidence_id": "EVD-BAL-072-CORR-003-CONTINUOUS-CORE-001",
+          "role": "FROZEN_MONSTER_CONTINUOUS_EQUIPMENT_EQUIVALENT_STAT_LINKED_6_7JOBS_LV1_50",
+          "status": "HistoricalSuperseded",
+          "recorded_at": "2026-08-27T09:05:56+09:00",
+          "current_authority_note": "Superseded by Human Monster Generation Equipment Profile change; mage/cleric profiles require recalculation."
+        }
+      ],
+      "current_authority_status": "Historical_SupersededByMonsterGenerationProfileChange",
+      "current_authority_note": "Human profile change after Freeze: 魔術師=杖/副装備なし（両手持ち）/ローブ、神官=魔導書/盾/ローブ。既存350-row Evidenceは旧Profile（魔術師=ワンド+盾、神官=ワンド+盾）で計算されているためCurrent unified Numeric Authorityとして使用しない。再計算はTASK-BAL-072-CORR-004で行う。"
+    },
+    {
+      "id": "TASK-BAL-072-CORR-004",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Monster生成装備Profile変更を反映して連続装備相当Coreを再計算する",
+      "status": "Todo",
+      "execution_order": 253,
+      "depends_on": [
+        "TASK-BAL-072-CORR-003"
+      ],
+      "acceptance_criteria": "- Human開始承認後にのみ実行する。\n- work_type=DEVELOPMENT_ONLY。GKS-B790 Current Equipment Master/Requirement/Generator式をread-only参照する。\n- Current Monster生成装備Profileを使用する: 魔術師=杖/副装備なし（両手持ち）/ローブ、神官=魔導書/盾/ローブ。\n- Player Job装備制限には接続しない。実Player/Save/Runtime Statusを参照しない。\n- 杖および魔導書はCurrent Equipment Masterの正式Requirement係数を使用し、Profile側へ係数値を複製固定しない。\n- 魔術師の杖はCurrentの両手持ちRequirement semanticsを使用する。\n- 7Job×Lv1..50のStat-linked 6項目を同一Current Profile snapshotで再計算し、統一Evidenceを再Freezeする。\n- Critical/Block等の非Stat-linked値は引き続き別Human承認までFreezeしない。\n- Source/GAME_DATA/Current active変更、Simulation/Test、Human実機依頼は行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-27T09:05:56+09:00",
+      "updated_at": "2026-08-27T09:08:42+09:00",
+      "result_scope": "REGISTERED / NOT STARTED. Human profile change correction. Old TASK-BAL-072-CORR-003 Evidence is Historical Superseded until this task rebuilds a unified 350-row authority."
     }
   ],
   "checks": [
@@ -18504,7 +18563,9 @@
       },
       "blocking": false,
       "created_at": "2026-08-26T15:20:00+09:00",
-      "updated_at": "2026-08-26T15:20:00+09:00"
+      "updated_at": "2026-08-27T09:08:42+09:00",
+      "current_authority_status": "Historical_SupersededNumericAuthority",
+      "current_authority_note": "Pass result remains execution history only. Direct Requirement-coefficient numeric values are superseded by TASK-BAL-072-CORR-003 / DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001."
     },
     {
       "id": "CHK-BAL-074-INFRA-002-B783-CARRYFORWARD-001",
@@ -18643,6 +18704,31 @@
       "blocking": false,
       "created_at": "2026-08-26T23:10:30+09:00",
       "updated_at": "2026-08-26T23:10:30+09:00"
+    },
+    {
+      "id": "CHK-BAL-072-CORR-003-CONTINUOUS-CORE-001",
+      "title": "development-project_DEV-V9-BALANCE-001.json",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072-CORR-003",
+      "status": "Passed",
+      "result": "PASS. Monster continuous equipment-equivalent Stat-linked six frozen: 7 Jobs x Lv1..50=350 rows; nonfinite=0; metric level regressions=0; Virtual iLv regressions=0; Virtual iLv integerization=0; old direct-coefficient numeric use=0.",
+      "evidence": "development-project_DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE.json sha256=8b603efccd441c175dd03e759274e4ecc8b3d0a9b480f23e43a4c19a9ce3288c",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T09:03:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-27T09:03:00+09:00",
+      "updated_at": "2026-08-27T09:08:42+09:00",
+      "current_authority_status": "Historical_SupersededByProfileChange",
+      "current_authority_note": "Historical PASS remains valid for the old profile snapshot only. Not Current authority after mage/cleric profile change.",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
@@ -19855,6 +19941,30 @@
       "title": "Monster生成専用装備プロフィールを管理JSONへ登録",
       "summary": "Human clarificationにより、Jobごとの代表武器/副装備/防具タイプはMonster Generator専用Profileとして登録し、Player Job装備制限とは完全分離した。7Job Profileを登録。Monster GeneratorはProfile→Current Equipment Requirement→required_*の順で参照Statを認識し、Job名からSTR等を固定対応しない。内部Equipment Type/Tag IDはCurrent Master確認前に推測しない。Source/Game Data/Simulation/Testは実行していない。Evidence JSONは生成しない。",
       "recorded_at": "2026-08-27T08:51:43+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-003-REGISTER-001",
+      "title": "Monster連続装備相当Core再構築Taskを登録",
+      "summary": "Monster生成装備プロフィール登録完了を受け、TASK-BAL-072-CORR-003をDEVELOPMENT_ONLYで新規登録。対象は7Job×全LevelのStat-linked 6項目。Current Equipment Requirementから参照Statを認識し、fractional Virtual iLvと既存Player Equipment性能式を使用する。Player側装備制限には接続せず、実Player/Save/Runtime Statusも参照しない。旧TASK-BAL-072-CORR-001 Evidenceは履歴保持のままCurrent Numeric Authorityから明示的に降格。Human開始承認前のためSource監査・数値計算・Evidence生成・Simulation/Test・Source/Game Data変更は実行していない。",
+      "task_id": "TASK-BAL-072-CORR-003",
+      "created_at": "2026-08-27T08:54:47+09:00",
+      "updated_at": "2026-08-27T08:54:47+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-003-COMPLETE-001",
+      "title": "Monster連続装備相当Core Stat-linked 6を再構築・Freeze",
+      "summary": "TASK-BAL-072-CORR-003 completed on Current GKS-B790. 7 Jobs x Lv1..50=350 rows. Monster Generation Equipment Profile→Current Requirement→fractional Virtual iLv→existing Player Equipment formula→M_s/P_sでattack/accuracy/magic_weapon_bonus/hp_bonus/mp_bonus/evasionを再構築した。実Player/Save/Runtime Status依存なし。Virtual iLv整数化なし。旧TASK-BAL-072-CORR-001 direct Requirement coefficient numeric authorityはHistoricalへ降格。Critical/Blockは未Freeze。Simulation/Test/Source/GAME_DATA/Current active変更なし。 Evidence=development-project_DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE.json sha256=8794df0e24d36b7cef88f1f9c1e68ce7c079eb7b388fb86986ba085ca817d4ad.",
+      "task_id": "TASK-BAL-072-CORR-003",
+      "created_at": "2026-08-27T09:03:00+09:00",
+      "updated_at": "2026-08-27T09:03:00+09:00"
+    },
+    {
+      "id": "HIST-BAL-MONSTER-GENERATION-PROFILE-MAGE-CLERIC-CORR-001",
+      "title": "Monster生成装備Profileを魔術師=杖両手持ち・神官=魔導書+盾へ変更",
+      "summary": "Human instruction applied to Monster-generation-only data. Mage profile changed from Wand+Shield to Staff with no secondary equipment (two-hand equipment state); Cleric profile changed from Wand+Shield to Grimoire+Shield. Player equipment restrictions are unchanged. Existing TASK-BAL-072-CORR-003 350-row Evidence was demoted to Historical because mage/cleric rows use the old profile. TASK-BAL-072-CORR-004 registered for unified recalculation; not started.",
+      "task_id": "TASK-BAL-072-CORR-004",
+      "created_at": "2026-08-27T09:05:56+09:00",
+      "updated_at": "2026-08-27T09:05:56+09:00"
     }
   ],
   "authority": {
