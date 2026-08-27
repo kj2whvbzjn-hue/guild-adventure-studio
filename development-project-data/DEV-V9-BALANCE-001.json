@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T00:40:40.481Z"
+    "updated_at": "2026-08-27T00:43:25.963Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-005 Issue Gate — Shield offensive CriticalのBasic Attack / Formal Skill不一致",
-    "goal": "GKS-B790静的監査で、weapon_shield Basic AttackはShield offensive contributionを除外する一方、Formal SkillはcharacterBattleValues経由でShield base_critical_rateを加算し得る不一致を検出。Current Authority『Shield offensive contributionは加算しない』とSource挙動が一致するよう、どちらを修正対象とするかをHuman決定後に別Taskで扱う。Critical/BlockのMonster算定規則・Numeric FreezeはこのIssue解消まで開始しない。"
+    "theme": "TASK-BAL-072-CORR-006 Shield offensive Formal Skill漏れ修正 — Human開始承認待ち",
+    "goal": "Current Authority『Shield offensive contributionは加算しない』を変更せず、GKS-B790のFormal Skill入力でShield attack/accuracy/magicWeaponBonus/baseCriticalRateがcharacterBattleValuesへ加算される不一致をSOURCE_UPDATEで修正する。Shield blockRate/blockDamageCutRateおよびBlock Runtimeは維持する。現在はTask登録のみでSource変更は未開始。"
   },
   "project_rules": [
     {
@@ -13856,6 +13856,47 @@
       "created_at": "2026-08-27T09:31:21+09:00",
       "updated_at": "2026-08-27T09:35:24+09:00",
       "result_scope": "BLOCKED BY ISSUE GATE AFTER STATIC CURRENT AUDIT. GKS-B790 Current Equipment Generator: base_critical_rate=0.05 for weapon records; shield-only block_rate=0.20+0.02*(iLv-1), block_damage_cut_rate=0.30. Runtime Block owner is single shield source; block executes after hit/critical finalDamage and before SHIELD(BARRIER), with blocked damage=floor(finalDamage*(1-block_damage_cut_rate)). Blocking mismatch: weapon_shield Basic Attack profile excludes Shield offensive contribution, but characterBattleValues/equipmentBonusFromRows sums Shield baseCriticalRate (and other offensive fields) for the actor, and Formal Skill critical resolution consumes attacker.baseCriticalRate. Therefore Shield base_critical_rate can affect Formal Skill critical chance despite Current Authority 'Shield offensive contribution is not added'. Per RULE-BAL-ISSUE-GATE-001, Monster non-Stat-linked Critical/Block rule is not finalized or numerically frozen. No Source/GAME_DATA/Simulation/Test/Evidence change."
+    },
+    {
+      "id": "TASK-BAL-072-CORR-006",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Shield offensive contributionのFormal Skill漏れをCurrent Sourceで修正する",
+      "status": "Todo",
+      "execution_order": 255,
+      "depends_on": [
+        "TASK-BAL-072-CORR-005"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- work_type=SOURCE_UPDATE。\n- 実行入力はHuman提供のCurrent source archive guild-adventure-studio-sub(20260827-002036).zip、Studio GKS-B790 / Game GA-B486.211、package_manifest SHA-256 fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397。\n- 修正対象はCurrent Authority『Shield offensive contributionは加算しない』とFormal Skill経路の不一致のみ。\n- game/assets/js/app-runtime.js のEquipment集計で、盾について attack / accuracy / magicWeaponBonus / baseCriticalRate をCharacter Battle offensive contributionへ加算しない。\n- 盾の blockRate / blockDamageCutRate のOwner・集計・Runtime利用は維持する。\n- Shield装備のrequired_*、装備可否、Block性能、Block damage order、SHIELD(BARRIER)順序は変更しない。\n- 非Shield Weaponのattack / accuracy / magicWeaponBonus / baseCriticalRate集計は変更しない。\n- Bow+QuiverのCurrent Bow-only contribution規則は変更しない。Quiverの除外挙動も維持する。\n- Basic Attackのweapon_shield攻撃プロファイルは変更しない。\n- Formal Skill側のcritical計算式自体は変更せず、入力となるcharacterBattleValuesをCurrent Authorityへ一致させる。\n- Player Job装備制限・Monster生成装備Profile・Balance数値式は変更しない。\n- 修正後に静的Source検査で、Shield装備時もFormal SkillへShield baseCriticalRateが加算されないこと、Shield blockRate/blockDamageCutRateは残ることを確認する。\n- package-build / package_manifest / source integrityを更新し、Studio build identifierはSOURCE_UPDATE規則に従い新Buildへ進める。\n- AIはSource ZIPを生成できるが、Studio/Game実機import・run・save/reloadはHuman担当。\n- Balance Simulation/Testは本Taskでは行わない。\n- 予定外の追加不一致を検出した場合はRULE-BAL-ISSUE-GATE-001で停止し、同Task内で追加修正しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-27T09:42:07+09:00",
+      "updated_at": "2026-08-27T09:42:07+09:00",
+      "result_scope": "REGISTERED / NOT STARTED. TASK-BAL-072-CORR-005のIssue Gateで検出したShield offensive Critical漏れをCurrent Source側で修正するTask。Current Authorityを変更せず、Formal Skill入力のEquipment集計だけをBasic Attackと同じShield offensive除外へ揃える。Human開始承認前のためSource変更・ZIP生成・実機依頼は未実施。",
+      "source_update_scope": {
+        "input_archive": "guild-adventure-studio-sub(20260827-002036).zip",
+        "input_archive_sha256": "7a96388290dca25569a3cbdaa2778069c765ce8ee4982d502dd72069feaeee87",
+        "studio_build": "GKS-B790",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397",
+        "primary_target_files": [
+          "game/assets/js/app-runtime.js"
+        ],
+        "read_only_verification_files": [
+          "game/assets/js/tag-skill-runtime.js",
+          "studio/equipment/equipment-generator.js",
+          "game/assets/js/battle-control.js"
+        ],
+        "prohibited_files_unless_integrity_metadata_update": [
+          "GAME_DATA balance values",
+          "Monster Generation Equipment Profile",
+          "Skill numeric data"
+        ]
+      }
     }
   ],
   "checks": [
@@ -20085,6 +20126,14 @@
       "task_id": "TASK-BAL-072-CORR-005",
       "created_at": "2026-08-27T09:35:24+09:00",
       "updated_at": "2026-08-27T09:35:24+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-006-REGISTER-001",
+      "title": "Shield offensive Formal Skill漏れ修正Taskを登録",
+      "summary": "TASK-BAL-072-CORR-005 Issue Gateを受け、Current Authorityを変更せずSource側を修正するTASK-BAL-072-CORR-006をSOURCE_UPDATEで登録。対象はgame/assets/js/app-runtime.jsのEquipment集計。Shieldのattack/accuracy/magicWeaponBonus/baseCriticalRateはBattle offensive contributionから除外し、blockRate/blockDamageCutRateは維持する。実行入力候補=guild-adventure-studio-sub(20260827-002036).zip, SHA-256=7a96388290dca25569a3cbdaa2778069c765ce8ee4982d502dd72069feaeee87, GKS-B790/GA-B486.211。Human開始承認前のためSource変更・ZIP生成・Simulation/Testは未実施。",
+      "task_id": "TASK-BAL-072-CORR-006",
+      "created_at": "2026-08-27T09:42:07+09:00",
+      "updated_at": "2026-08-27T09:42:07+09:00"
     }
   ],
   "authority": {
