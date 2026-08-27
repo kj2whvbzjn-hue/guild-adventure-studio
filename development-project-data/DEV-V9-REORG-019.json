@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T10:17:11.237Z"
+    "updated_at": "2026-08-27T11:25:24.919Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -27066,6 +27066,24 @@
       },
       "created_at": "2026-08-23T15:19:00+09:00",
       "updated_at": "2026-08-23T15:19:00+09:00"
+    },
+    {
+      "id": "TASK-REORG-CRIT-CONFORMANCE-001",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "Critical Source / Test基盤をCurrent仕様へConformanceする",
+      "status": "Todo",
+      "execution_order": 2000,
+      "depends_on": [],
+      "acceptance_criteria": "- Authorityは `DEC-CRIT-WEAPON-LUK-001` / `DEC-CRIT-MOD-CONTRIBUTION-001` / `DEC-V9-EQUIP-002` / `DEC-R24-EQUIP-BATTLE-001` とし、Current Sourceの旧挙動を仕様根拠へ昇格しない。\n- Equipment BaseItem / Dataset / Generator / Data Exchangeでは武器Critical固有値を `weapon_critical_rate` として生成・保持し、Equipment fieldとしての旧 `base_critical_rate` をHard Cutする。legacy alias / fallback / dual-read / dual-writeを追加しない。\n- `base_critical_rate` の禁止範囲はEquipment境界に限定する。Battle内部では `base_critical_rate = weapon_critical_rate × (1 + LUK / 100)` で算出する正規中間値として保持・検証可能とし、`weapon_critical_rate = 0` の場合はLUKだけでCritical Rateを発生させない。\n- `weapon_critical_rate` 自体へCritical Rate MOD / PASSIVE / SKILL / BUFF / DEBUFFを破壊的に適用しない。Battle算出後の対象BaseStatに対して各Sourceが独立Contributionを生成する。\n- 現在すでにRuntime接続済みのCombat Stat targetについて、各SourceのPercent Contribution=`BaseStat × percent_rate`、Flat Contribution=`flat_value`、Final=`BaseStat + Σ(effective Contributions)`へ統一し、あるSourceの適用済み結果を別SourceのBaseに使用しない。未接続Skill/BUFF/DEBUFF Channelや新しいtarget IDは推測追加しない。\n- Game RuntimeとStudio Formal Battleは物理的な同一Runtime実装の共有を必須としない。両者が同じBase/Contribution/Finalの入力・出力契約と計算順に従い、GameがStudio Runtimeを直接参照する構造、StudioがGame Runtimeを直接参照する構造を新設しない。\n- Studio/Game parity testを必須とし、同一入力に対して `base_critical_rate`、各Source Contribution、`final_critical_rate` および現在接続済み対象Statの最終値が一致することを検証する。\n- Sword+Shield / Bow+Quiver / Dual WieldのCurrent Equipment→Battle契約を維持する。Shield/Quiverの `weapon_critical_rate` その他Combat Contributionを攻撃Strikeへ加算せず、Dual Wieldは各Strikeの武器値から独立してBattle Base Criticalを算出する。\n- Formal Skillの複数DAMAGE HitはCurrent Multi-hit契約どおり各Hit独立Critical判定を維持し、新しいCritical仕様を各Hitへ適用する。\n- Battle Verification Traceで最低限 `source_type / source_id / target_stat / mode / raw_modifier_value / base_value_used / resolved_contribution` を追跡し、Criticalでは加えて `weapon_critical_rate / LUK / base_critical_rate / final_critical_rate / critical_roll / critical_result` を確認可能にする。\n- Critical Rate最終Clampの具体値、Critical Damage Clamp、Tier効果量、Skill固有Critical補正Budget、Critical用BUFF/DEBUFF Registry ID等の未確定Balance/Content事項は本TaskのCompletion対象外とする。既存Clamp値の採否・変更を新Authorityとして確定せず、本Taskで新しい固定値を追加しない。\n- Current Project/ExportにCritical fieldを持つ実Equipment Dataが存在しないことを前提にGAME_DATA migrationは行わず、work_typeはSOURCE_UPDATEとする。実Dataが発見された場合は自動MigrationせずFail Closedして別Task化する。\n- Critical専用回帰テストでは、少なくとも 5%×LUK0=5%、5%×LUK20=6%、weapon0×LUK100=0%、同一Baseに対するPercent/Flat複数Sourceが逐次再基準化されないこと、Equipment境界の旧 `base_critical_rate` rejection、Battle内部 `base_critical_rate` 許可、Sword+Shield / Bow+Quiver / Dual Wield、Multi-hit各Hit独立roll、Studio/Game parityを検証する。\n- `tests/**` / `shared/tests/test-registry.json` 等の保護対象を変更・追加する前に、外部 `TEST_CHANGE_APPROVAL.json` 用の完全な変更path集合を確定し、各pathについて `path / baseline_sha256 / updated_sha256 / reason` を記録する。Human runtime confirmation前に保護Test/Gateを更新しない。承認JSONをSOURCE_UPDATE ZIPへ同梱しない。\n- Build/Integrityの機械同期はCurrent Policyに従い、必要なmanifest size/SHA・Build/cache tokenのみ正規同期する。\n- Source実装後は Targeted Critical regression → Source Quick → Impact/Full → SOURCE_UPDATE Accept → applied-state Full を通す。Fresh SourceへHuman Applyされたことを確認するまで本TaskをDone扱いにしない。\n- Human Apply後のFresh Buildで小規模Critical Conformance Battleを実施し、数式・Trace・Studio/Game結果の一致を確認する。PASS後にだけBalance側 `TASK-BAL-074` Multi-hit計画をFresh Buildへrebindして再開する。\n- `EVD-0007` の Physical Damage Budget→Power `f_Damage(B)=round(100+2B)` はCritical変更を理由に再検証・失効させない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-27T20:16:48+09:00",
+      "updated_at": "2026-08-27T20:16:48+09:00"
     }
   ],
   "checks": [
@@ -29315,6 +29333,11 @@
       "at": "2026-08-27T18:52:10+09:00",
       "type": "SourceUpdatePrepared",
       "summary": "GKS-B793でDevelopment JSON統合へ別ファイルの明示Decision削除を実装。通常JSONの欠落は削除扱いにせず、削除JSON Contract検証→update/delete競合検出→構造参照Inbound Guard→指定Decision削除→normalize/Reference検証→Preview→Human確認→Git保存の順とした。新規保護Testは追加せず、既存Test変更はBuild/cache token機械同期のみ。Human Applyは未実施。"
+    },
+    {
+      "at": "2026-08-27T20:16:48+09:00",
+      "type": "ImplementationPlanRevised",
+      "summary": "Human指示によりCritical Source/Test基盤の実装計画をレビュー2件の統合内容で修正。TASK-REORG-CRIT-CONFORMANCE-001をSOURCE_UPDATEとして追加。Game/Studioの物理Runtime共有は強制せず同一計算契約+parity testで保証、Equipment境界だけ旧base_critical_rateをHard CutしBattle中間値としては維持、同一Base独立Contributionを現在接続済みCombat Statへ適用、未接続Channelは追加しない。Critical Clamp具体値はCompletion対象外、Trace項目を固定、保護Test変更は完全path集合とpath/baseline_sha256/updated_sha256/reasonを外部承認対象とする。Source本体/Test本体/Buildは未変更。EVD-0007は維持し、Fresh BuildのCritical Conformance PASS後のみBalance TASK-BAL-074を再開する。"
     }
   ],
   "authority": {
