@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T08:37:23.725Z"
+    "updated_at": "2026-08-27T08:47:50.581Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -1068,13 +1068,13 @@
       "id": "DEC-V9-EQUIP-002",
       "title": "Equipment Consumer Contractを正式fieldへ置換する",
       "status": "Approved",
-      "text": "要求値は装備可否判定専用とする。戦闘寄与fieldは武器 attack / accuracy / magic_weapon_bonus / base_critical_rate、防具 hp_bonus / mp_bonus / evasion とする。旧defense、base_attack/base_defense、装備能力値の直接Battle加算、旧field fallbackを使用しない。",
-      "rationale": "後発Equipment v1.1および実装前仕様確定資料でConsumer Contractが整理・確定されているため。",
+      "text": "要求値は装備可否判定専用とする。戦闘寄与fieldは武器 attack / accuracy / magic_weapon_bonus / weapon_critical_rate、防具 hp_bonus / mp_bonus / evasion とする。`weapon_critical_rate` は武器固有Critical性能としてEquipmentからBattleへ渡し、Battle側の `base_critical_rate` 算出は `DEC-CRIT-WEAPON-LUK-001` を正本とする。旧defense、base_attack/base_defense、装備能力値の直接Battle加算、旧field fallbackを使用しない。",
+      "rationale": "旧Equipment Consumer ContractのうちCritical fieldだけを最新Human Decisionへ置換し、attack / accuracy / magic_weapon_bonus / hp_bonus / mp_bonus / evasion等の既存有効Contractを維持するため。",
       "source_discussion_ids": [],
-      "approved_by": "Post-V9 Equipment v1.1",
-      "approved_at": "2026-08-19T09:46:00+09:00",
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T17:46:12+09:00",
       "created_at": "2026-08-19T09:46:00+09:00",
-      "updated_at": "2026-08-19T09:46:00+09:00"
+      "updated_at": "2026-08-27T17:46:12+09:00"
     },
     {
       "id": "DEC-V9-EQUIP-003",
@@ -1457,15 +1457,15 @@
       "id": "DEC-R24-EQUIP-BATTLE-001",
       "title": "Equipment ContributionのBattle接続先を確定する",
       "status": "Approved",
-      "text": "EquipmentのaccuracyはBattleの命中成立判定へ、evasionは回避成立判定へ、base_critical_rateは武器由来の基礎会心率として会心判定へ、magic_weapon_bonusは魔法攻撃系の効果量計算へ武器Contributionとして接続する。BaseItem→Equipment Contribution→Equipment MOD→Modified Equipment Contribution→Runtimeの既存境界を維持し、旧デモのSTR→命中、LUK→会心等へ戻さない。具体的な係数、換算式、上限、丸めはBalance可変データとして別管理し、構造仕様へ固定しない。",
-      "rationale": "既存Equipment fieldとContribution境界から接続先は一意に整理でき、具体数値は既存方針どおりBalance項目として分離できるため。",
+      "text": "EquipmentのaccuracyはBattleの命中成立判定へ、evasionは回避成立判定へ、magic_weapon_bonusは魔法攻撃系の効果量計算へ武器Contributionとして接続する。`weapon_critical_rate` は武器固有Critical性能としてBattleへ渡し、Battleが `weapon_critical_rate` とLUKから `base_critical_rate` を算出する。Criticalの算出とContribution集計は `DEC-CRIT-WEAPON-LUK-001` / `DEC-CRIT-MOD-CONTRIBUTION-001` を正本とする。BaseItem保存値をMODで破壊的に上書きせずEquipment Contributionを経由してRuntimeへ渡し、Combat Stat MODは独立Contributionとして扱う。旧デモのSTR→命中、LUK単独加算型CriticalへFallbackしない。具体的な係数、換算式、上限、丸めはBalance可変データとして別管理し、構造仕様へ固定しない。",
+      "rationale": "accuracy / evasion / magic_weapon_bonusの既存Battle接続を維持しつつ、Critical接続だけを最新Human Decisionのweapon_critical_rate→Battle base_critical_rate責務へ置換するため。",
       "source_discussion_ids": [
         "DISC-R21-GAME-AUDIT-001"
       ],
-      "approved_by": "Human/AI",
-      "approved_at": "2026-08-20T20:38:00+09:00",
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T17:46:12+09:00",
       "created_at": "2026-08-20T20:38:00+09:00",
-      "updated_at": "2026-08-20T20:38:00+09:00"
+      "updated_at": "2026-08-27T17:46:12+09:00"
     },
     {
       "id": "DEC-R24-QUEST-ABANDON-001",
@@ -1789,13 +1789,13 @@
       "id": "DEC-REORG-EQUIP-BOW-QUIVER-001",
       "title": "弓と矢筒の装備成立・戦闘Contributionを確定する",
       "status": "Approved",
-      "text": "仕様選定上、弓と大弓は同条件としてまとめて「弓」と呼ぶが、Product Master上の種類統合を意味しない。弓単体・矢筒単体はいずれも装備可能な状態とするが、弓の通常攻撃および弓を必要とするSkillは弓+矢筒の両方を装備している場合だけ使用可能。弓のみの場合は「矢筒が装備されていません」、矢筒のみの場合は「弓が装備されていません」と表示し、装備画面では不足側武器スロットを警告状態で示す。弓は1 Strike、矢筒は0 Strike。弓通常攻撃および弓を必要とするSkillのEquipment Combat Contributionは弓側だけを使用する。矢筒のattack / accuracy / magic_weapon_bonus / base_critical_rateその他のCombat Contributionを弓側へ加算しない。矢筒は弓Actionの成立条件となる装備/Tag/Slotを提供するが、独立Strike、Critical判定、Combat Contributionを発生させない。弓Equipmentの武器属性は「射撃」とするが、Range/射程/TargetingはEquipmentが所有せず、既存RANGE/Target/Battle仕様をOwnerとする。",
+      "text": "仕様選定上、弓と大弓は同条件としてまとめて「弓」と呼ぶが、Product Master上の種類統合を意味しない。弓単体・矢筒単体はいずれも装備可能な状態とするが、弓の通常攻撃および弓を必要とするSkillは弓+矢筒の両方を装備している場合だけ使用可能。弓のみの場合は「矢筒が装備されていません」、矢筒のみの場合は「弓が装備されていません」と表示し、装備画面では不足側武器スロットを警告状態で示す。弓は1 Strike、矢筒は0 Strike。弓通常攻撃および弓を必要とするSkillのEquipment Combat Contributionは弓側だけを使用する。矢筒のattack / accuracy / magic_weapon_bonus / weapon_critical_rateその他のCombat Contributionを弓側へ加算しない。矢筒は弓Actionの成立条件となる装備/Tag/Slotを提供するが、独立Strike、Critical判定、Combat Contributionを発生させない。弓Equipmentの武器属性は「射撃」とするが、Range/射程/TargetingはEquipmentが所有せず、既存RANGE/Target/Battle仕様をOwnerとする。",
       "rationale": "Humanが2026-08-26に矢筒性能を修正し、従来の『Critical以外は弓+矢筒合算』を廃止して『弓+矢筒は使用成立条件だが、戦闘能力は弓側だけを使用する』と正式確定したため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
-      "approved_at": "2026-08-26T20:00:00+09:00",
+      "approved_at": "2026-08-27T17:46:12+09:00",
       "created_at": "2026-08-26T11:19:10+09:00",
-      "updated_at": "2026-08-26T20:00:00+09:00"
+      "updated_at": "2026-08-27T17:46:12+09:00"
     },
     {
       "id": "DEC-REORG-EQUIP-BLOCK-001",
@@ -1825,13 +1825,13 @@
       "id": "DEC-CRIT-WEAPON-LUK-001",
       "title": "Weapon CriticalとBattle Base Criticalの責務を分離する",
       "status": "Approved",
-      "text": "武器固有のCritical性能は `weapon_critical_rate` としてEquipment BaseItem / Equipment Datasetが生成・保持し、Equipment Contributionを経由してBattleへ渡す。`base_critical_rate` はEquipment fieldとして生成・保存せず、Battleが `weapon_critical_rate` とLUKから `base_critical_rate = weapon_critical_rate × (1 + LUK / 100)` で算出する。`weapon_critical_rate = 0` の場合、LUKだけでCritical Rateを発生させない。`weapon_critical_rate` の具体値、Critical Rateの上限等のBalance数値は外部Dataで可変とし、本Decisionで新しい固定Balance値を追加しない。旧Decisionのうち、武器Critical fieldを `base_critical_rate` とする記述、およびBattleでLUKをCritical計算へ使用しない記述は本Decisionで置換する。",
+      "text": "武器固有のCritical性能は `weapon_critical_rate` としてEquipment BaseItem / Equipment Datasetが生成・保持し、Equipment Contributionを経由してBattleへ渡す。`base_critical_rate` はEquipment fieldとして生成・保存せず、Battleが `weapon_critical_rate` とLUKから `base_critical_rate = weapon_critical_rate × (1 + LUK / 100)` で算出する。`weapon_critical_rate = 0` の場合、LUKだけでCritical Rateを発生させない。`weapon_critical_rate` の具体値、Critical Rateの上限等のBalance数値は外部Dataで可変とし、本Decisionで新しい固定Balance値を追加しない。Currentの武器Critical fieldは `weapon_critical_rate` を正本とし、Battleの補正前Critical Rateは本Decisionの算出式を正本とする。",
       "rationale": "HumanがWeapon CriticalとBattle Base Criticalの責務分離、および既決のCritical算出式をCurrent仕様へ反映することを承認したため。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-27T17:29:12+09:00",
       "created_at": "2026-08-27T17:29:12+09:00",
-      "updated_at": "2026-08-27T17:29:12+09:00"
+      "updated_at": "2026-08-27T17:46:12+09:00"
     },
     {
       "id": "DEC-CRIT-MOD-CONTRIBUTION-001",
@@ -2504,7 +2504,6 @@
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-003",
-        "DEC-V9-EQUIP-006",
         "DEC-BAL-EVASION-NO-HP-SLOT-001",
         "DEC-REORG-EQUIP-BLOCK-001",
         "DEC-CRIT-WEAPON-LUK-001"
@@ -2520,11 +2519,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 3,
+      "revision": 4,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-27T17:29:12+09:00"
+      "updated_at": "2026-08-27T17:46:12+09:00"
     },
     {
       "id": "SPEC-V9-019-EQUIP-003",
@@ -2563,7 +2562,6 @@
       "decision_refs": [
         "DEC-V9-EQUIP-002",
         "DEC-V9-EQUIP-004",
-        "DEC-V9-EQUIP-006",
         "DEC-V9-EQUIP-007",
         "DEC-R24-EQUIP-BATTLE-001",
         "DEC-REORG-EQUIP-MAGIC-DIRECT-001",
@@ -2587,11 +2585,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 6,
+      "revision": 7,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-27T17:29:12+09:00"
+      "updated_at": "2026-08-27T17:46:12+09:00"
     },
     {
       "id": "SPEC-V9-019-MOD-001",
