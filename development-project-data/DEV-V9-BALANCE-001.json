@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T00:30:11.812Z"
+    "updated_at": "2026-08-27T00:32:02.347Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-004完了 — Current Profile Stat-linked 6 Freeze",
-    "goal": "Current Monster生成装備ProfileによるStat-linked 6項目は新規EvidenceでFreeze済み。Critical / block_rate / block_damage_cut_rate等の非Stat-linked Equipment由来値は未決定。RULE-BAL-ONE-TASK-001により本runでは次Taskを開始しない。"
+    "theme": "TASK-BAL-072-CORR-005 非Stat-linked Critical・Block算定規則 — Human開始承認待ち",
+    "goal": "Current ProfileのStat-linked 6項目はTASK-BAL-072-CORR-004でFreeze済み。次にbase_critical_rate / block_rate / block_damage_cut_rate等の非Stat-linked Equipment値について、Current GKS-B790の既存生成式・ownership・iLv依存・round/floor境界を静的監査し、M_s/P_sを恣意的に適用しないMonster算定規則をHuman承認へ提示する。現在はTask登録のみ完了し、実行開始前のHuman承認待ち。"
   },
   "project_rules": [
     {
@@ -13835,6 +13835,27 @@
           "recorded_at": "2026-08-27T09:25:27+09:00"
         }
       ]
+    },
+    {
+      "id": "TASK-BAL-072-CORR-005",
+      "box_id": "BOX-V9-BAL-WORLD-001",
+      "title": "Monster装備相当Coreの非Stat-linked Critical・Block算定規則を確定する",
+      "status": "Todo",
+      "execution_order": 254,
+      "depends_on": [
+        "TASK-BAL-072-CORR-004"
+      ],
+      "acceptance_criteria": "- 開始前にHumanの当該Task開始承認を得る。\n- work_type=DEVELOPMENT_ONLY。基準はStudio GKS-B790 / Game GA-B486.211。\n- Current Source / Equipment Master / Equipment Generator / RuntimeのCritical・Block関連式をread-onlyで確認する。\n- 対象はMonster生成装備プロフィールから発生する非Stat-linked Equipment値。少なくとも base_critical_rate / block_rate / block_damage_cut_rate を対象とする。\n- Currentのfractional Virtual iLv算定、Equipment Type、両手持ち、Bow+Quiver、Shieldの既存Authority境界を変更しない。\n- base_critical_rate / block_rate / block_damage_cut_rateへ M_s/P_s を恣意的に適用しない。\n- Existing Player Equipment式・Current Configが各値をどのように生成するか、iLv依存、Clamp、round/floor、slot/weapon/shield ownershipを明示する。\n- Monsterへ適用する算定方式はCurrent式を根拠に候補化し、Human承認前にNumeric AuthorityとしてFreezeしない。\n- Shield offensive contributionは引き続き加算しない。Bow+QuiverはBow-only Combat Contributionを維持し、Quiver combat statsは加算しない。\n- Blockの既存Current仕様（Block Rate / Block Damage Cut、damage order、DOT除外等）を変更しない。\n- Player Job装備制限、Player Equipment装備可否、Player Skill使用条件へMonster生成プロフィールを接続しない。\n- 実Player / Player Save / Player Runtime StatusをMonster算定入力として参照しない。\n- 出力は、Current式監査結果、各非Stat-linked fieldのOwner/入力/式/境界、Monster適用候補、Human決定が必要な論点一覧。\n- Humanが算定規則を承認した場合のみ、後続Taskで7Job×全LevelのNumeric再計算・Evidence Freezeへ進める。\n- 本TaskではSource変更、GAME_DATA変更、Current active変更、Battle Package生成、Simulation/Test、Human実機依頼を行わない。\n- 未定義・矛盾・Current Sourceと管理Authorityの不一致を検出した場合はRULE-BAL-ISSUE-GATE-001で停止し、推測補完しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-27T09:31:21+09:00",
+      "updated_at": "2026-08-27T09:31:21+09:00",
+      "result_scope": "REGISTERED / NOT STARTED. Stat-linked 6項目Freeze後に残るCritical / Block等の非Stat-linked Equipment由来値について、Current GKS-B790式を静的監査し、Monster適用規則をHuman承認へ出すTask。開始承認前のためSource監査・数値決定・Evidence生成・Simulation/Testは未実施。"
     }
   ],
   "checks": [
@@ -20025,6 +20046,14 @@
       "summary": "TASK-BAL-072 Evidence・Monster連続装備相当Coreの初回提出JSONは新規Development Project登録に必要なauthority/lifecycle/workflow/required arraysを欠いていたためStudio登録不可だった。Current GKS-B790のnormalizeDevelopmentWorkspace/importProjectFile実装を確認し、新規Evidenceの数値payloadを変更せず正規Development Project構造へ修正。親Task Evidence参照SHAも修正版へ更新。",
       "created_at": "2026-08-27T09:25:27+09:00",
       "updated_at": "2026-08-27T09:25:27+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-005-REGISTER-001",
+      "title": "Monster非Stat-linked Critical・Block算定規則Taskを登録",
+      "summary": "TASK-BAL-072-CORR-004のCurrent Profile Stat-linked 6 Freeze完了を受け、base_critical_rate / block_rate / block_damage_cut_rate等の非Stat-linked Equipment値についてCurrent式を静的監査し、Monster適用規則をHuman決定へ送るTASK-BAL-072-CORR-005を登録。Human開始承認前のためSource監査・Numeric Freeze・Evidence生成・Simulation/Test・Source/GAME_DATA変更は未実施。",
+      "task_id": "TASK-BAL-072-CORR-005",
+      "created_at": "2026-08-27T09:31:21+09:00",
+      "updated_at": "2026-08-27T09:31:21+09:00"
     }
   ],
   "authority": {
