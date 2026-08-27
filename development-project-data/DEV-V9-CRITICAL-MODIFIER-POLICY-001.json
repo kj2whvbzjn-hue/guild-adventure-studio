@@ -1,0 +1,150 @@
+{
+  "schema_version": "2.0",
+  "workspace": {
+    "id": "DEV-V9-CRITICAL-MODIFIER-POLICY-001",
+    "name": "Critical・Modifier仕様変更方針",
+    "status": "Specifying",
+    "ai_attention": "Include",
+    "updated_at": "2026-08-27T07:51:25.572Z"
+  },
+  "project_context": {
+    "purpose": "DEV-V9-REORG-019のCritical / Modifier Specificationを変更する前に、Human確定済みの変更方針だけを独立案件として固定する。",
+    "summary": "Specification本文、Source、GAME_DATA、Simulationはまだ変更しない。武器Criticalの責務をweapon_critical_rateへ分離し、base_critical_rate=weapon_critical_rate×(1+LUK/100)とする。MOD / Passive / Skill / BUFF / DEBUFFは逐次処理せず、同一Base値を基準に各Contributionを独立計算し、最後に共通Contribution Boxへ合算する。"
+  },
+  "current_focus": {
+    "architecture_id": "",
+    "work_box_id": "",
+    "theme": "Critical / Modifier Specification変更前方針",
+    "goal": "Human確定方針を保持し、次工程でDEV-V9-REORG-019の関連Specificationをこの方針に沿って修正する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-CRIT-MOD-POLICY-001",
+      "text": "本案件は仕様変更前の方針固定専用とし、この案件JSONの登録だけではDEV-V9-REORG-019 Specification本文、Source、GAME_DATA、Current activeを変更しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    },
+    {
+      "id": "RULE-CRIT-MOD-CONTRIBUTION-001",
+      "text": "Modifierは逐次適用しない。MOD / Passive / Skill / BUFF / DEBUFFは対象Statの同一Base値を参照して各Contributionを独立算出し、最後に共通Contribution Boxへ合算する。あるSourceの適用結果を別Sourceの計算基準にしてはならない。",
+      "status": "Active",
+      "source_type": "HumanDecision",
+      "source_id": "conversation",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B792",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(20260827-074826).zip",
+    "source_role": "Human-provided Fresh Current used to verify Development Project schema 2.0 registration contract.",
+    "recorded_at": "2026-08-27T16:51:25+09:00",
+    "source_zip_sha256": "9c8aba0a245dc008650f43538405667fa732402b36e398654d0d7930ea3e7f1f"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-27T07:51:25.572Z"
+  },
+  "implementation_records": [],
+  "discussions": [
+    {
+      "id": "DISC-CRIT-MOD-001",
+      "title": "Critical / Modifier共通補正構造",
+      "status": "Resolved",
+      "summary": "Criticalを起点に、MOD・Passive・Skill・BUFF・DEBUFFを逐次処理せずBase対比の独立Contributionとして統合する方針をHuman確定した。",
+      "body": "現行Runtime/Formalでは補正Sourceの保持・接続範囲がStatごとに不均一であり、一部ではMOD→PASSIVE等の逐次適用になる。新方針では各Sourceを独立させる。Percent補正はBaseStat×rate、Flat補正は指定値をContributionとして算出し、増加は正、減少は負で共通箱へ入れ、FinalStat=BaseStat+ΣContributionとする。BUFF/DEBUFFのLifecycle・Stack ruleはSource-local処理として維持し、その結果の有効Contributionだけを共通箱へ渡す。",
+      "open_questions": "Critical Rateの最終Clamp具体値、Critical Rate/Damage MOD Tier具体値、Skill固有Critical補正のSkill Budget Cost、Critical用BUFF/DEBUFF Registry具体ID、各Statで許可するFlat/% mode、FIXED DamageのCritical可否は未確定。",
+      "conclusion": "Base-relative Independent Contribution方式を共通Modifier原則として採用する。",
+      "related_discussion_ids": [],
+      "artifact_note": "Specification change policy only; no Specification/Source/GAME_DATA edit.",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-CRIT-WEAPON-LUK-001",
+      "title": "Weapon CriticalとLUKによるBase Critical Rate",
+      "status": "Approved",
+      "text": "武器固有Critical fieldはweapon_critical_rateとする。Battle補正前のbase_critical_rateは base_critical_rate = weapon_critical_rate × (1 + LUK / 100) で算出する。LUKによる追加分はweapon_critical_rate × (LUK / 100)。weapon_critical_rate=0の場合、LUK単独ではCritical Rateを発生させない。",
+      "rationale": "Human explicit formula decision.",
+      "source_discussion_ids": [
+        "DISC-CRIT-MOD-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T16:51:25+09:00",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    },
+    {
+      "id": "DEC-CRIT-MOD-CONTRIBUTION-001",
+      "title": "Base-relative Independent Contribution",
+      "status": "Approved",
+      "text": "対象StatのBase値を一度確定した後、MOD / Passive / Skill / BUFF / DEBUFFは同じBase値を参照して独立Contributionを計算する。Percent Contribution = BaseStat × percent_rate、Flat Contribution = flat_value。FinalStat = BaseStat + Σ(all effective Contributions)。Source間の逐次乗算・逐次加算による再基準化は禁止する。",
+      "rationale": "Human confirmed that each correction is calculated against Base and placed into a common box only at the end.",
+      "source_discussion_ids": [
+        "DISC-CRIT-MOD-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T16:51:25+09:00",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    },
+    {
+      "id": "DEC-CRIT-DAMAGE-EVD0007-001",
+      "title": "Critical変更によるEVD-0007再検証を行わない",
+      "status": "Approved",
+      "text": "EVD-0007のPhysical Damage Budget→Power Authority f_Damage(B_Damage)=round(100+2×B_Damage) は維持する。Critical RateはMOD等でも変動する戦闘性能レイヤーであるため、Critical仕様変更を理由にDamage Budget換算を再検証しない。",
+      "rationale": "Human explicit instruction.",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-27T16:51:25+09:00",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    }
+  ],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [],
+  "work_boxes": [],
+  "tasks": [],
+  "checks": [],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "id": "HIST-CRIT-MOD-POLICY-001",
+      "title": "Critical・Modifier仕様変更方針を登録準備",
+      "summary": "Human確定事項のみをDevelopment Project schema 2.0へ整理。Specification本文は未変更。",
+      "created_at": "2026-08-27T16:51:25+09:00",
+      "updated_at": "2026-08-27T16:51:25+09:00"
+    }
+  ],
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-27409802-2474-4a29-b2e8-74369e976a74",
+    "canonical_path": "development-project-data/DEV-V9-CRITICAL-MODIFIER-POLICY-001.json"
+  }
+}
