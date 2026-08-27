@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T00:56:05.006Z"
+    "updated_at": "2026-08-27T01:15:07.061Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-006 GKS-B791 Target完成 — Human Apply/Fresh Source確認待ち",
-    "goal": "Shield offensive Formal Skill漏れ修正のGKS-B791 SOURCE_UPDATE targetはGate PASS済み。HumanがStudioへ反映しFresh Sourceを提示するまでCurrent Sourceとして確定しない。その後TASK-BAL-072-CORR-005のIssue解消確認とCritical/Block算定規則監査を再開する。"
+    "theme": "TASK-BAL-072-CORR-005完了 — 非Stat-linkedは既存Equipment正式項目を再利用",
+    "goal": "GKS-B791 Current確認済み。Critical / BlockのMonster算定は既存正式field `base_critical_rate` / `block_rate` / `block_damage_cut_rate` を再利用し、Monster専用の別名Parameterを作らない。数値はBalance可変、Current値は初期seed。RULE-BAL-ONE-TASK-001により次Taskは自動開始しない。"
   },
   "project_rules": [
     {
@@ -548,12 +548,12 @@
     },
     {
       "id": "RULE-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001",
-      "text": "Monster装備相当性能は、Monster基礎Status M_s=L×G/10、同Job Player参照Status P_s=10+(L-1)×G/10、Current Requirement semanticsから得るfractional Virtual iLv、既存Player Equipment性能式F_Xを用いて生成する。Stat-linked contributionは X_monster=F_X(e,I_e)×M_s/P_s。Equipment requirement coefficientをMonster Statへ直接掛けてCombat値へ変換しない。Virtual iLvを整数化せず装備更新段差を除去する。Player Equipment式および既存multiplier=2は変更しない。Bow+QuiverはBow-only contribution。非Stat-linked Critical/Block系は別Human承認までFreezeしない。",
+      "text": "Monster装備相当性能は、Monster基礎Status M_s=L×G/10、同Job Player参照Status P_s=10+(L-1)×G/10、Current Requirement semanticsから得るfractional Virtual iLv、既存Player Equipment性能式F_Xを用いて生成する。Stat-linked contributionは X_monster=F_X(e,I_e)×M_s/P_s。Equipment requirement coefficientをMonster Statへ直接掛けてCombat値へ変換しない。Virtual iLvを整数化せず装備更新段差を除去する。Player Equipment式および既存multiplier=2は変更しない。Bow+QuiverはBow-only contribution。非Stat-linkedは既存正式field `base_critical_rate` / `block_rate` / `block_damage_cut_rate` を再利用し、Monster専用field/Parameterを新設しない。Primary WeaponがCritical、ShieldがBlockのOwner。Current値は初期Balance seedであり数値は可変。Monsterではfractional Virtual iLvを既存Block式のiLv入力に使い、M_s/P_sは適用しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-27 monster continuous equipment-equivalent formula",
       "created_at": "2026-08-27T05:38:30+09:00",
-      "updated_at": "2026-08-27T05:38:30+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00"
     },
     {
       "id": "RULE-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
@@ -566,14 +566,14 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B790",
+    "studio_build": "GKS-B791",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260826-141020).zip",
-    "source_role": "Human-selected Current baseline for Monster continuous equipment-equivalent formula redesign",
-    "recorded_at": "2026-08-26T23:10:30+09:00",
-    "source_zip_sha256": "0b73312073ce5f847a8714bf1a241210f9b4759e0f9445ca3482ab8f9805d8e2",
-    "package_manifest_sha256": "fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397",
-    "source_tree_sha256": "79ec744e7350189bec7ccbcfb1e28c846eae9b5428788fb37a96a968af6026aa"
+    "source_label": "guild-adventure-studio-sub(20260827-005642).zip",
+    "source_role": "Human-provided Fresh Current after TASK-BAL-072-CORR-006 Shield offensive Formal Skill correction",
+    "recorded_at": "2026-08-27T09:56:06+09:00",
+    "source_zip_sha256": "bfd7b41fcd47243b2198795de2083cafeaca1203b2d00a3336bb0f8b958ff2c6",
+    "package_manifest_sha256": "25cfe61a5ca4c5e4abe5e8abd24e59ffe475da353c7448e6b1418d9b4ccf13a4",
+    "source_tree_sha256": "1f0d069d89f72a202171b0882c3af83faa10694041d0eb4808976c6e5501895e"
   },
   "lifecycle": {
     "status": "Active",
@@ -1608,9 +1608,9 @@
       "task_ids": [
         "TASK-BAL-072-CORR-006"
       ],
-      "result": "Partial",
-      "evidence": "Target source prepared, not yet Current. Dedicated behavior PASS; Quick 11/11 PASS; SOURCE_UPDATE applied-state selected Full 26/26 PASS; warnings=0; timeouts=0; deletions=0; Game Data changes=0.",
-      "recorded_at": "2026-08-27T09:52:53+09:00",
+      "result": "Applied",
+      "evidence": "Human-applied Fresh Current verified: guild-adventure-studio-sub(20260827-005642).zip sha256=bfd7b41fcd47243b2198795de2083cafeaca1203b2d00a3336bb0f8b958ff2c6; package_manifest=25cfe61a5ca4c5e4abe5e8abd24e59ffe475da353c7448e6b1418d9b4ccf13a4; Fresh Current Quick 11/11 PASS, warnings=0, timeouts=0.",
+      "recorded_at": "2026-08-27T09:56:06+09:00",
       "baseline": {
         "game_build": "GA-B486.211",
         "studio_build": "GKS-B790",
@@ -1638,7 +1638,7 @@
       },
       "summary": "Formal Skill characterBattleValues no longer inherits Shield attack/accuracy/magicWeaponBonus/baseCriticalRate. Shield defensive maxHp/maxMp/agi/evasion and blockRate/blockDamageCutRate remain. Basic Attack, Bow+Quiver semantics, Equipment numeric generation and Balance values are unchanged.",
       "created_at": "2026-08-27T09:52:53+09:00",
-      "updated_at": "2026-08-27T09:52:53+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00"
     }
   ],
   "discussions": [
@@ -2916,25 +2916,25 @@
       "id": "DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001",
       "title": "Monster連続装備相当性能の共通生成方針",
       "status": "Approved",
-      "text": "装備可能な人型Monsterの基礎Statusは旧Monster Coreどおり M_s(L,j)=L×G(j,s)/10 とし、Player初期ALL10を加えない。同Level・同JobのPlayer参照Statusを P_s(L,j)=10+(L-1)×G(j,s)/10 とする。Monsterへ実物Player Equipment item/Candidateを装着せず、各Jobの正式Equipment profileについて、Current Equipment requirement semantics（両手持ちSTR Requirement救済等を含む）で同Job Player参照Statusが満たせる連続値の仮想Item Level I_e を求める。通常Requirement coefficient表現では I_e=Clamp(min_s(P_s/C_eff(e,s)), iLv_min, iLv_max) とし、Monster側ではI_eを整数化せず小数のまま使用する。次にPlayer側の既存Equipment性能生成式 F_X(e,I_e) を同じ係数・同じ意味で評価し、Stat対応が明確なEquipment Combat Contributionは X_monster=F_X(e,I_e)×M_s/P_s で生成する。対応は attack→STR、accuracy→DEX、magic_weapon_bonus→INT、hp→VIT、mp→MND、evasion→AGI とする。Player Equipment側の既存式は変更せず、attack/accuracy等に既存multiplier=2が定義されている場合も維持する。旧Monster Coreの『Monster Stat×Equipment requirement coefficientを直接Combat値にする』式は使用しない。この方式によりPlayerの実物装備更新の段差をMonsterへ持ち込まず、Levelごとに装備相当性能を連続成長させる。同時にMonsterはPlayer初期ALL10を持たないため、特に序盤は同Level・同Job Playerより意図的に弱くなる。これはPlayerがQuestで連戦する前提の設計意図であり、序盤単戦勝率が高くなること自体をFailureとしない。Bow+QuiverはCurrent Bow-only Combat Contributionを維持し、両装備を使用条件として要求するがQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical / Block Rate / Block Damage Cut等、単一の基礎Stat対応が確定していないEquipment由来値もMonster装備相当層の対象には含めるが、M_s/P_sを恣意的に割り当てず、同じVirtual iLvとCurrent Equipment式を基準に別途Human承認で算定規則を確定するまでNumeric Freezeしない。既存Equipment式のround/floor境界は実装確認対象とし、Virtual iLv自体を整数化して装備更新段差を再導入しない。",
+      "text": "装備可能な人型Monsterの基礎Statusは旧Monster Coreどおり M_s(L,j)=L×G(j,s)/10 とし、Player初期ALL10を加えない。同Level・同JobのPlayer参照Statusを P_s(L,j)=10+(L-1)×G(j,s)/10 とする。Monsterへ実物Player Equipment item/Candidateを装着せず、各Jobの正式Equipment profileについて、Current Equipment requirement semantics（両手持ちSTR Requirement救済等を含む）で同Job Player参照Statusが満たせる連続値の仮想Item Level I_e を求める。通常Requirement coefficient表現では I_e=Clamp(min_s(P_s/C_eff(e,s)), iLv_min, iLv_max) とし、Monster側ではI_eを整数化せず小数のまま使用する。次にPlayer側の既存Equipment性能生成式 F_X(e,I_e) を同じ係数・同じ意味で評価し、Stat対応が明確なEquipment Combat Contributionは X_monster=F_X(e,I_e)×M_s/P_s で生成する。対応は attack→STR、accuracy→DEX、magic_weapon_bonus→INT、hp→VIT、mp→MND、evasion→AGI とする。Player Equipment側の既存式は変更せず、attack/accuracy等に既存multiplier=2が定義されている場合も維持する。旧Monster Coreの『Monster Stat×Equipment requirement coefficientを直接Combat値にする』式は使用しない。この方式によりPlayerの実物装備更新の段差をMonsterへ持ち込まず、Levelごとに装備相当性能を連続成長させる。同時にMonsterはPlayer初期ALL10を持たないため、特に序盤は同Level・同Job Playerより意図的に弱くなる。これはPlayerがQuestで連戦する前提の設計意図であり、序盤単戦勝率が高くなること自体をFailureとしない。Bow+QuiverはCurrent Bow-only Combat Contributionを維持し、両装備を使用条件として要求するがQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical / Block Rate / Block Damage Cut等の非Stat-linked Equipment由来値は、Human承認済みの既存正式field `base_critical_rate` / `block_rate` / `block_damage_cut_rate` をそのまま再利用し、Monster専用の別名Balance Parameterや別fieldを新設しない。`base_critical_rate` はPrimary WeaponだけをOwnerとし、Current初期Balance seed 0.05を使用するが数値はBalance可変。`block_rate` / `block_damage_cut_rate` はShieldだけをOwnerとし、Monsterでは既存fractional Virtual iLv I_shieldをCurrent `block_rate(iLv)=20%+2pp×(iLv-1)` のiLv入力として評価する。Current初期Balance seedはiLv1 block_rate=20%、Item Level +1ごとに+2pp、block_damage_cut_rate=30%で、これらの数値もBalance可変であり固定Numeric Authorityにはしない。非Stat-linked値へM_s/P_sを適用しない。Shield/QuiverからCritical offensive contributionを加算しない。既存Equipment式のround/floor境界は実装確認対象とし、Virtual iLv自体を整数化して装備更新段差を再導入しない。",
       "rationale": "Human確認により、旧Monster Coreの基礎Status式と『実物装備更新で一気に強くなる段差を除去する』目的は正しかった。破綻箇所はEquipment requirement coefficientをMonster Combat倍率へ直接流用した変換層。Player Lv50付近の高Accuracy約130 / 高Evasion約260前後という既存スケールに対し、旧Monster狩人Accuracy360等が逸脱したため、Player Equipment progressionを連続化しつつPlayer初期ALL10欠落分をStat比で反映する共通生成式へ置換する。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-27T05:38:30+09:00",
       "created_at": "2026-08-27T05:38:30+09:00",
-      "updated_at": "2026-08-27T05:38:30+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00"
     },
     {
       "id": "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
       "title": "Monster生成専用装備プロフィールを7Jobへ登録する",
       "status": "Approved",
-      "text": "Monster自動生成で代表装備を決めるため、Player Job装備制限とは独立したMonster Generation Equipment Profile（Monster生成装備プロフィール）を使用する。Current初期Profileは、剣士=大剣/副装備なし/重装、騎士=片手剣/盾/重装、盗賊=短剣/盾/軽装、狩人=弓/矢筒/軽装、魔術師=杖/副装備なし/ローブ、神官=魔導書/盾/ローブ、冒険家=片手剣/盾/重装とする。魔術師の杖は副装備なしの両手持ち装備構成としてMonster生成時に扱う。このProfileはMonster生成時の代表Equipment Type選択にだけ使用し、Playerの装備可能武器・防具を制限しない。Monster Generatorは選択されたEquipment TypeのCurrent Requirement semanticsからrequired_*を取得して参照Statを認識し、Job名からSTR等の固定対応を持たない。内部Equipment Type ID/Tag IDはCurrent Masterから実装時に解決し、存在しないIDを推測登録しない。Bow+Quiverは使用構成としてProfileに保持するがCurrentのBow-only Combat Contributionを維持してQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical/Block等の非Stat-linked値はDEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001どおり別Human承認までNumeric Freezeしない。",
+      "text": "Monster自動生成で代表装備を決めるため、Player Job装備制限とは独立したMonster Generation Equipment Profile（Monster生成装備プロフィール）を使用する。Current初期Profileは、剣士=大剣/副装備なし/重装、騎士=片手剣/盾/重装、盗賊=短剣/盾/軽装、狩人=弓/矢筒/軽装、魔術師=杖/副装備なし/ローブ、神官=魔導書/盾/ローブ、冒険家=片手剣/盾/重装とする。魔術師の杖は副装備なしの両手持ち装備構成としてMonster生成時に扱う。このProfileはMonster生成時の代表Equipment Type選択にだけ使用し、Playerの装備可能武器・防具を制限しない。Monster Generatorは選択されたEquipment TypeのCurrent Requirement semanticsからrequired_*を取得して参照Statを認識し、Job名からSTR等の固定対応を持たない。内部Equipment Type ID/Tag IDはCurrent Masterから実装時に解決し、存在しないIDを推測登録しない。Bow+Quiverは使用構成としてProfileに保持するがCurrentのBow-only Combat Contributionを維持してQuiver性能を加算しない。Shield offensive contributionも加算しない。Critical/Block等の非Stat-linked値はDEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001どおり、既存正式field `base_critical_rate` / `block_rate` / `block_damage_cut_rate` を再利用する。Monster専用の別名Parameterは作らず、Current値は初期Balance seedとして扱い数値はBalance可変とする。",
       "rationale": "HumanがMonster生成用代表装備を更新。魔術師はワンド+盾ではなく杖の両手持ち、神官はワンド+盾ではなく魔導書+盾を使用する。これはMonster生成専用Profileの変更であり、Player Jobの装備制限には一切接続しない。",
       "source_discussion_ids": [],
       "approved_by": "Human",
       "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
-      "updated_at": "2026-08-27T09:08:42+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00"
     }
   ],
   "specifications": [
@@ -3237,7 +3237,7 @@
       "title": "Monster Generation Equipment Profile",
       "status": "Approved",
       "summary": "Monster自動生成専用の7Job代表装備Profile。Player Job装備制限とは完全分離し、Equipment Type→Current Requirementから参照Statを認識する。Current profileでは魔術師=杖両手持ち、神官=魔導書+盾。",
-      "body": "# Monster Generation Equipment Profile\n\n## 1. Owner / Consumer\n正式名称: **Monster Generation Equipment Profile**\n日本語名: **Monster生成装備プロフィール**\n\nConsumerは **Monster Generator only**。\nPlayer Jobの装備制限、Player Equipment装備可否、Player Skill使用条件、Player Runtimeの装備選択には接続しない。\n\n## 2. 目的\nMonster.job_idから、そのJobのMonsterを生成するときだけ使う代表Equipment構成を決定する。\nMonster GeneratorはProfileのEquipment TypeをCurrent Equipment Masterへ解決し、そのRequirement定義\n(required_str / required_dex / required_int / required_vit / required_mnd / required_agi等)を読み、\nどのStatを参照するかを機械的に認識する。\n\n禁止:\n- Job名からSTR/DEX/INT等を直接決め打ちする。\n- 実Playerの装備・Save・Runtime Statusを参照する。\n- 本ProfileをPlayer Jobの装備可能カテゴリとして使用する。\n- Current Masterに存在しないEquipment Type ID / Tag IDを推測して作る。\n\n## 3. Initial Profiles\n\n| profile_id | Job | Primary Weapon | Secondary Equipment | Armor Type |\n|---|---|---|---|---|\n| MGEP-SWORDSMAN | 剣士 | 大剣 | なし | 重装 |\n| MGEP-KNIGHT | 騎士 | 片手剣 | 盾 | 重装 |\n| MGEP-THIEF | 盗賊 | 短剣 | 盾 | 軽装 |\n| MGEP-HUNTER | 狩人 | 弓 | 矢筒 | 軽装 |\n| MGEP-MAGE | 魔術師 | 杖 | なし（両手持ち） | ローブ |\n| MGEP-CLERIC | 神官 | 魔導書 | 盾 | ローブ |\n| MGEP-ADVENTURER | 冒険家 | 片手剣 | 盾 | 重装 |\n\n## 4. Generator connection\nMonster.job_id\n→ Monster Generation Equipment Profile\n→ Primary/Secondary/Armor Type\n→ Current Equipment Master / Requirement semantics\n→ required_* fieldを認識\n→ 対応するJob growthを使用して装備基準Statを生成\n→ fractional Virtual iLv\n→ Existing Player Equipment performance formula\n→ Monster equipment-equivalent contribution\n\n## 5. Player separation\n本Profileが例えば「剣士=大剣/重装」であっても、Player剣士を大剣/重装へ制限する意味を持たない。\nPlayer EquipmentはCurrentのEquipment Requirementおよび正式装備条件だけをOwnerとする。\n\n## 6. Special identity\n- 魔術師Profileの杖は副装備なしの両手持ち構成として扱い、Currentの両手持ちRequirement semanticsを使用する。\n\n- 狩人Profileは弓+矢筒を使用構成として保持する。\n- Bow+QuiverはCurrentのBow-only Monster Combat Contributionを維持し、Quiver性能を加算しない。\n- Shield offensive contributionは加算しない。\n- Critical / Block Rate / Block Damage Cut等の非Stat-linked値は\n  DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001に従い、別Human承認までNumeric Freezeしない。\n\n## 7. ID policy\n上表のprofile_idはBalance管理上のProfile ID。\n実Equipment Masterの内部Type ID/Tag IDとは別物であり、Current Source/Game Data確認前に内部IDを推測しない。\n",
+      "body": "# Monster Generation Equipment Profile\n\n## 1. Owner / Consumer\n正式名称: **Monster Generation Equipment Profile**\n日本語名: **Monster生成装備プロフィール**\n\nConsumerは **Monster Generator only**。\nPlayer Jobの装備制限、Player Equipment装備可否、Player Skill使用条件、Player Runtimeの装備選択には接続しない。\n\n## 2. 目的\nMonster.job_idから、そのJobのMonsterを生成するときだけ使う代表Equipment構成を決定する。\nMonster GeneratorはProfileのEquipment TypeをCurrent Equipment Masterへ解決し、そのRequirement定義\n(required_str / required_dex / required_int / required_vit / required_mnd / required_agi等)を読み、\nどのStatを参照するかを機械的に認識する。\n\n禁止:\n- Job名からSTR/DEX/INT等を直接決め打ちする。\n- 実Playerの装備・Save・Runtime Statusを参照する。\n- 本ProfileをPlayer Jobの装備可能カテゴリとして使用する。\n- Current Masterに存在しないEquipment Type ID / Tag IDを推測して作る。\n\n## 3. Initial Profiles\n\n| profile_id | Job | Primary Weapon | Secondary Equipment | Armor Type |\n|---|---|---|---|---|\n| MGEP-SWORDSMAN | 剣士 | 大剣 | なし | 重装 |\n| MGEP-KNIGHT | 騎士 | 片手剣 | 盾 | 重装 |\n| MGEP-THIEF | 盗賊 | 短剣 | 盾 | 軽装 |\n| MGEP-HUNTER | 狩人 | 弓 | 矢筒 | 軽装 |\n| MGEP-MAGE | 魔術師 | 杖 | なし（両手持ち） | ローブ |\n| MGEP-CLERIC | 神官 | 魔導書 | 盾 | ローブ |\n| MGEP-ADVENTURER | 冒険家 | 片手剣 | 盾 | 重装 |\n\n## 4. Generator connection\nMonster.job_id\n→ Monster Generation Equipment Profile\n→ Primary/Secondary/Armor Type\n→ Current Equipment Master / Requirement semantics\n→ required_* fieldを認識\n→ 対応するJob growthを使用して装備基準Statを生成\n→ fractional Virtual iLv\n→ Existing Player Equipment performance formula\n→ Monster equipment-equivalent contribution\n\n## 5. Player separation\n本Profileが例えば「剣士=大剣/重装」であっても、Player剣士を大剣/重装へ制限する意味を持たない。\nPlayer EquipmentはCurrentのEquipment Requirementおよび正式装備条件だけをOwnerとする。\n\n## 6. Special identity\n- 魔術師Profileの杖は副装備なしの両手持ち構成として扱い、Currentの両手持ちRequirement semanticsを使用する。\n\n- 狩人Profileは弓+矢筒を使用構成として保持する。\n- Bow+QuiverはCurrentのBow-only Monster Combat Contributionを維持し、Quiver性能を加算しない。\n- Shield offensive contributionは加算しない。\n- Critical / Block Rate / Block Damage Cut等の非Stat-linked値は\n  DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001に従い、既存正式field `base_critical_rate` / `block_rate` / `block_damage_cut_rate` を再利用する。\n- Monster専用の別名Balance Parameterは新設しない。Current数値は初期Balance seedであり可変。\n\n## 7. ID policy\n上表のprofile_idはBalance管理上のProfile ID。\n実Equipment Masterの内部Type ID/Tag IDとは別物であり、Current Source/Game Data確認前に内部IDを推測しない。\n",
       "decision_refs": [
         "DEC-BAL-MONSTER-GENERATION-EQUIPMENT-PROFILE-001",
         "DEC-BAL-MONSTER-EQUIPMENT-CONTINUOUS-001"
@@ -3252,7 +3252,7 @@
       "approved_by": "Human",
       "approved_at": "2026-08-27T09:05:56+09:00",
       "created_at": "2026-08-27T08:51:43+09:00",
-      "updated_at": "2026-08-27T09:08:42+09:00"
+      "updated_at": "2026-08-27T09:56:06+09:00"
     }
   ],
   "specification_candidates": [],
@@ -13886,7 +13886,7 @@
       "id": "TASK-BAL-072-CORR-005",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "Monster装備相当Coreの非Stat-linked Critical・Block算定規則を確定する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 254,
       "depends_on": [
         "TASK-BAL-072-CORR-004"
@@ -13900,8 +13900,8 @@
         "at": "2026-08-27T09:35:24+09:00"
       },
       "created_at": "2026-08-27T09:31:21+09:00",
-      "updated_at": "2026-08-27T09:35:24+09:00",
-      "result_scope": "BLOCKED BY ISSUE GATE AFTER STATIC CURRENT AUDIT. GKS-B790 Current Equipment Generator: base_critical_rate=0.05 for weapon records; shield-only block_rate=0.20+0.02*(iLv-1), block_damage_cut_rate=0.30. Runtime Block owner is single shield source; block executes after hit/critical finalDamage and before SHIELD(BARRIER), with blocked damage=floor(finalDamage*(1-block_damage_cut_rate)). Blocking mismatch: weapon_shield Basic Attack profile excludes Shield offensive contribution, but characterBattleValues/equipmentBonusFromRows sums Shield baseCriticalRate (and other offensive fields) for the actor, and Formal Skill critical resolution consumes attacker.baseCriticalRate. Therefore Shield base_critical_rate can affect Formal Skill critical chance despite Current Authority 'Shield offensive contribution is not added'. Per RULE-BAL-ISSUE-GATE-001, Monster non-Stat-linked Critical/Block rule is not finalized or numerically frozen. No Source/GAME_DATA/Simulation/Test/Evidence change."
+      "updated_at": "2026-08-27T09:56:06+09:00",
+      "result_scope": "DONE / HUMAN RULE APPROVED / EXISTING FIELD REUSE. Fresh Current GKS-B791 resolved the prior Shield offensive mismatch. Monster non-Stat-linked Equipment values reuse existing formal fields only: `base_critical_rate` (Primary Weapon owner), `block_rate` and `block_damage_cut_rate` (Shield owner). No Monster-specific parameter aliases or duplicate Balance fields are created. Current values are initial Balance seeds, not fixed Numeric Authority: base_critical_rate=0.05; block_rate(iLv)=0.20+0.02*(iLv-1); block_damage_cut_rate=0.30. Monster supplies fractional I_shield as the existing block_rate formula's iLv input; no M_s/P_s is applied to non-Stat-linked values. Shield/Quiver offensive Critical contribution remains excluded. Runtime Block boundary remains direct Basic/Skill Physical/Magical only, per-hit, Miss/DOT excluded, finalDamage -> Block -> floor -> SHIELD(BARRIER) -> HP. Numeric values remain Balance-variable; no Numeric Evidence Freeze, Simulation/Test, Source/GAME_DATA change in this task."
     },
     {
       "id": "TASK-BAL-072-CORR-006",
@@ -13921,8 +13921,8 @@
         "at": "2026-08-27T09:52:53+09:00"
       },
       "created_at": "2026-08-27T09:42:07+09:00",
-      "updated_at": "2026-08-27T09:52:53+09:00",
-      "result_scope": "TARGET_SOURCE_COMPLETE_NOT_YET_CURRENT. Fresh Human baseline=guild-adventure-studio-sub(20260827-004401).zip, GKS-B790 / GA-B486.211, source_zip_sha256=b2e4a84addc3643f511f3393300b9990dd6d2072cc269dd7d4d1830c2393680f, package_manifest_sha256=fe368f72c38f5b3a42e05501a5e3f70eeca5fa8a0bed0353ed002f865c943397, source_tree_sha256=572fcae7f6c41eec7c1762446016c084ddca4bfb6e191da41a0b1ff8ce74f882. Target GKS-B791 / GA-B486.211. game/assets/js/app-runtime.js equipmentBonusFromRows now excludes Shield attack/accuracy/magicWeaponBonus/baseCriticalRate from character battle offensive aggregation while preserving maxHp/maxMp/agi/evasion and single-owner blockRate/blockDamageCutRate. Quiver exclusion remains unchanged. Dedicated behavior check PASS; Target Quick 11/11 PASS; SOURCE_UPDATE applied-state Accept PASS with selected Full 26/26 PASS, warnings=0, timeouts=0; deletions=0; Export/Game Data changes=0. Artifact=DEV-V9-BALANCE-001_TASK-BAL-072-CORR-006_GKS-B791_STUDIO-UPDATE.zip sha256=e8a003b3fce8051c9384c8473be44336a4d9f7df694fa1adfd6da348ae3f529a; target manifest=25cfe61a5ca4c5e4abe5e8abd24e59ffe475da353c7448e6b1418d9b4ccf13a4; target tree=7a4aa5ab04e2ed490769714118a5da87870341d6945d14ced6c7b9d224274564; artifact_id=GKS-B791-7a4aa5ab04e2. Human Studio Apply/Fresh Source verification pending.",
+      "updated_at": "2026-08-27T09:56:06+09:00",
+      "result_scope": "DONE / CURRENT VERIFIED. Human Fresh Source guild-adventure-studio-sub(20260827-005642).zip is GKS-B791 / GA-B486.211. package_manifest SHA-256 25cfe61a5ca4c5e4abe5e8abd24e59ffe475da353c7448e6b1418d9b4ccf13a4 matches the GKS-B791 target. Current equipmentBonusFromRows excludes Shield attack/accuracy/magicWeaponBonus/baseCriticalRate from offensive characterBattleValues while preserving Shield defensive contribution and blockRate/blockDamageCutRate. Fresh Current Quick 11/11 PASS, warnings=0, timeouts=0. No additional Source/GAME_DATA change in this reconciliation.",
       "source_update_scope": {
         "input_archive": "guild-adventure-studio-sub(20260827-004401).zip",
         "input_archive_sha256": "b2e4a84addc3643f511f3393300b9990dd6d2072cc269dd7d4d1830c2393680f",
@@ -18874,15 +18874,61 @@
       "checked_at": "2026-08-27T09:35:24+09:00",
       "resolves_check_ids": [],
       "resolution": {
+        "status": "Resolved",
+        "resolved_by": "TASK-BAL-072-CORR-006",
+        "resolved_at": "2026-08-27T09:56:06+09:00",
+        "reason": "Fresh Current GKS-B791でShield attack/accuracy/magicWeaponBonus/baseCriticalRateがcharacterBattleValuesへ加算されないことを確認。blockRate/blockDamageCutRateは維持。",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-27T09:35:24+09:00",
+      "updated_at": "2026-08-27T09:56:06+09:00"
+    },
+    {
+      "id": "CHK-BAL-072-CORR-006-FRESH-CURRENT-001",
+      "title": "GKS-B791 Shield offensive Formal Skill correction Fresh Current確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072-CORR-006",
+      "status": "Passed",
+      "result": "PASS. Fresh Current is GKS-B791 / GA-B486.211. Target package_manifest matches. Shield offensive contribution is excluded and Shield Block contribution remains. Quick 11/11 PASS.",
+      "evidence": "Human Fresh Source guild-adventure-studio-sub(20260827-005642).zip sha256=bfd7b41fcd47243b2198795de2083cafeaca1203b2d00a3336bb0f8b958ff2c6.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T09:56:06+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T09:56:06+09:00",
+      "updated_at": "2026-08-27T09:56:06+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
         "status": "Open",
         "resolved_by": "",
         "resolved_at": "",
         "reason": "",
         "mode": ""
-      },
-      "blocking": true,
-      "created_at": "2026-08-27T09:35:24+09:00",
-      "updated_at": "2026-08-27T09:35:24+09:00"
+      }
+    },
+    {
+      "id": "CHK-BAL-072-CORR-005-NONSTAT-RULE-HUMAN-APPROVAL-001",
+      "title": "Monster非Stat-linked既存Equipment項目再利用規則 Human承認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072-CORR-005",
+      "status": "Passed",
+      "result": "PASS. Existing formal fields base_critical_rate / block_rate / block_damage_cut_rate are reused. No duplicate Monster-specific parameter names are introduced. Current numeric values are initial Balance seeds and remain variable.",
+      "evidence": "Human instruction in current conversation; existing DEC-BAL-EQUIPMENT-SHIELD-BLOCK-001 and Equipment authority reused.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T09:56:06+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T09:56:06+09:00",
+      "updated_at": "2026-08-27T09:56:06+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
@@ -20188,6 +20234,22 @@
       "task_id": "TASK-BAL-072-CORR-006",
       "created_at": "2026-08-27T09:52:53+09:00",
       "updated_at": "2026-08-27T09:52:53+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-006-FRESH-CURRENT-001",
+      "title": "GKS-B791 Fresh Current反映確認",
+      "summary": "Human Fresh Source guild-adventure-studio-sub(20260827-005642).zipでGKS-B791 / GA-B486.211を確認。package_manifestはCORR-006 Targetと一致しQuick 11/11 PASS。Shield offensive Formal Skill漏れIssueをResolvedとした。",
+      "task_id": "TASK-BAL-072-CORR-006",
+      "created_at": "2026-08-27T09:56:06+09:00",
+      "updated_at": "2026-08-27T09:56:06+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-005-COMPLETE-EXISTING-FIELDS-001",
+      "title": "Critical・Blockを既存正式Equipment項目のままMonsterへ適用",
+      "summary": "Human決定を反映。Monster用の新規Parameter名は作らず、既存正式field base_critical_rate / block_rate / block_damage_cut_rateを再利用する。Current値0.05 / block_rate iLv1 0.20 +2pp/iLv / block_damage_cut_rate 0.30は初期Balance seedであり可変。fractional I_shieldを既存Block式のiLv入力に使用し、非Stat-linkedへM_s/P_sを適用しない。TASK-BAL-072-CORR-005をDone。Numeric Evidence Freezeなし。",
+      "task_id": "TASK-BAL-072-CORR-005",
+      "created_at": "2026-08-27T09:56:06+09:00",
+      "updated_at": "2026-08-27T09:56:06+09:00"
     }
   ],
   "authority": {
