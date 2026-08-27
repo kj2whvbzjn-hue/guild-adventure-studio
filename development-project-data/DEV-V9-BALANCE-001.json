@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T02:06:23.109Z"
+    "updated_at": "2026-08-27T03:02:58.161Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Physical再開 — GKS-B792 Control帯再構築Test Plan承認待ち",
-    "goal": "正しいMonster連続装備相当モデルでPhysical Skill calibration用Control帯を再構築する。Test Plan TP-BAL-074-PHYSICAL-CONTROL-BAND-B792-001は登録済みだが未承認。Human承認後にのみBattle Packageを生成しHuman Runtimeへ依頼する。Magic/Heal/Status/Utilityには進まない。"
+    "theme": "TASK-BAL-074 Core Evidence再構築 — Monster完全Core作成済み / Studio登録待ち",
+    "goal": "新規エビデンス TASK-BAL-074 Evidence・Monster完全Core をStudioへ登録する。登録確認後、Player完全CoreとMonster完全Coreの350行同軸比較へ進む。Physical Control Battleは比較完了まで実行しない。"
   },
   "project_rules": [
     {
@@ -7754,8 +7754,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T11:01:13+09:00",
-      "result_scope": "DOING / PHYSICAL RESTART / TEST PLAN APPROVAL PENDING. All declared dependencies are Done and Current is verified GKS-B792 / GA-B486.211. Old BAL074-E04..E08 numeric results remain invalid for Balance authority and comparison after the Monster equipment-model correction. Registered post-correction Control-Band Rebuild plan TP-BAL-074-PHYSICAL-CONTROL-BAND-B792-001: Player Lv20 SWD/THF attackers × Knight heavy/Thief evasion defenders × Monster Lv25/30/35, No-Skill Control only, 12 conditions ×100 seeds=1200 battles. Selection is valid 10%-90% Control row closest to 50% per attacker×defense archetype. No Battle Package, Simulation/Test, Result evaluation, Source/GAME_DATA/Product Current change performed in this run.",
+      "updated_at": "2026-08-27T11:56:27+09:00",
+      "result_scope": "DOING / CORE EVIDENCE SEQUENCE. Human confirmed new Evidence `TASK-BAL-074 Evidence・Player完全Core` registered successfully. Step 2 completed as a new prepared Evidence `TASK-BAL-074 Evidence・Monster完全Core`: 7 Jobs × Lv1-50 = 350 rows. It reuses the registered/frozen Monster continuous-equipment stat-linked six authority exactly and adds the Human-approved non-stat-linked Critical/Block rules, complete 7 base Stats, Player-reference Stats, fractional Virtual iLv, Player Equipment formula intermediates, HP/MP/Attack/AGI/Accuracy/Evasion/Magic, Critical Damage, Block, resistance/default fields, Action Gauge, and weapon/strike ownership. Player initial ALL10 and Player Character base HP/Attack formulas are not added to Monster. GKS-B792 Human Battle Template is received and binding-verified. The approved Control-band Battle remains deferred until Player↔Monster complete numeric comparison. Old registered BAL074-E04..E08 remain DiscardRequested; Human Studio deletion confirmation has not been received. No Simulation/Test, Battle Package execution, Source/GAME_DATA, or Current active change in this run.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12699,7 +12699,7 @@
         },
         "physical_restart_control_band_plan": {
           "id": "TP-BAL-074-PHYSICAL-CONTROL-BAND-B792-001",
-          "status": "PendingHumanApproval",
+          "status": "Approved",
           "purpose": "Correct Monster連続装備相当モデル下で、Physical Skill Damage calibrationに使える非飽和No-Skill Control帯を一括選定する。",
           "decision_question": "Player Lv20のPhysical attackerに対し、Current Monster生成式/装備相当を使ったKnight重装型・Thief軽装高回避型のどのLevel差が、Skill候補比較に使える10%-90% Control勝率帯を形成するか。",
           "scope": "Physical only / Control-band qualification only. No Skill coefficient freeze.",
@@ -12796,7 +12796,67 @@
           "battle_package_generated": false,
           "standalone_evidence_planned": false,
           "evidence_reason": "Control placement is a qualification result. Retain only management conclusion unless later reused as fixed numeric authority.",
-          "proposed_at": "2026-08-27T11:01:13+09:00"
+          "proposed_at": "2026-08-27T11:01:13+09:00",
+          "approved_by": "Human",
+          "approved_at": "2026-08-27T11:56:27+09:00",
+          "execution_state": "DeferredByCoreEvidenceSequence",
+          "deferred_reason": "Human changed order after approval: Player Complete Core -> Monster Complete Core -> Player↔Monster complete comparison -> Physical Control Battle."
+        },
+        "evidence_discard": {
+          "status": "HumanDeletionRequired",
+          "confirmed_studio_delete_targets": [
+            "BAL074-E04.json",
+            "BAL074-E05.json",
+            "BAL074-E06.json",
+            "BAL074-E07.json",
+            "BAL074-E08.json"
+          ],
+          "reason": "All five use the superseded Monster equipment model.",
+          "delete_confirmation_received": false,
+          "do_not_delete": [
+            "TASK-BAL-074 Evidence・装備込み Physical Basic Attack基準",
+            "TASK-BAL-074 Evidence・物理基準期待値ステータス",
+            "TASK-BAL-074 Evidence・Player完全Core"
+          ],
+          "updated_at": "2026-08-27T11:56:27+09:00"
+        },
+        "core_evidence_sequence": {
+          "status": "Doing",
+          "approved_by": "Human",
+          "order": [
+            "1. Player Complete Core 7Jobs×Lv1-50",
+            "2. Monster Complete Core 7Jobs×Lv1-50",
+            "3. Player↔Monster complete numeric comparison",
+            "4. Physical Control-band Battle"
+          ],
+          "player_complete_core": {
+            "status": "Registered",
+            "workspace_name": "TASK-BAL-074 Evidence・Player完全Core",
+            "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PLAYER-COMPLETE-CORE",
+            "evidence_id": "EVD-BAL-074-PLAYER-COMPLETE-CORE-001",
+            "file": "TASK-BAL-074 Evidence・Player完全Core.json",
+            "sha256": "d32b5044d2e8605fd8c8f0e2b03b9f1ae315a5de1df7ed1e67b6f018b11f34fc",
+            "records": 350
+          },
+          "monster_complete_core": {
+            "status": "PreparedForRegistration",
+            "workspace_name": "TASK-BAL-074 Evidence・Monster完全Core",
+            "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MONSTER-COMPLETE-CORE",
+            "evidence_id": "EVD-BAL-074-MONSTER-COMPLETE-CORE-001",
+            "file": "TASK-BAL-074 Evidence・Monster完全Core.json",
+            "sha256": "93205ba397f4f4bb725fbff942aabbf133084086c7ec70df9bbabb72f8f8bdb7",
+            "records": 350
+          },
+          "player_monster_comparison": {
+            "status": "NotStarted",
+            "prerequisite": "Monster Complete Core registration confirmation"
+          },
+          "battle": {
+            "status": "Deferred",
+            "template_status": "GKS-B792 same-environment Template verified",
+            "reason": "Do not execute until complete numeric comparison is finished."
+          },
+          "updated_at": "2026-08-27T11:56:27+09:00"
         }
       },
       "evidence_refs": [
@@ -12835,10 +12895,13 @@
           "sha256": "b7b7dc4ae9bdcc80f6eecb9278b4dc67dc24289a3b50a2f8f97c358b82d58813",
           "evidence_id": "EVD-BAL-074-HNT-UNIQUE-POWER-001",
           "role": "HISTORICAL_DIAGNOSTIC_ONLY__HNT_UNIQUE_POWER_NUMERIC_INPUT_FOR_C_DAMAGE_CALIBRATION",
-          "status": "InvalidatedForBalanceAuthority",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-26T07:35:02+09:00",
           "invalidated_at": "2026-08-26T10:10:23+09:00",
-          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
+          "studio_delete_required": true,
+          "discard_requested_at": "2026-08-27T11:56:27+09:00",
+          "discard_reason": "Superseded Player-equivalent Monster equipment model. Must not remain as Balance Authority for the rebuilt Physical calibration."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-DAMAGE-LVGAP",
@@ -12846,10 +12909,13 @@
           "sha256": "45277fd25f6334a2c10aa9dbfe84adebc2f49289f1b404e6b7e81fbd65c956ab",
           "evidence_id": "EVD-BAL-074-DAMAGE-LVGAP-001",
           "role": "HISTORICAL_DIAGNOSTIC_ONLY__HNT_LEVEL_GAP_NUMERIC_AUTHORITY_FOR_SINGLE_HIT_DAMAGE_BUDGET",
-          "status": "InvalidatedForBalanceAuthority",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-26T07:45:02+09:00",
           "invalidated_at": "2026-08-26T10:10:23+09:00",
-          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
+          "studio_delete_required": true,
+          "discard_requested_at": "2026-08-27T11:56:27+09:00",
+          "discard_reason": "Superseded Player-equivalent Monster equipment model. Must not remain as Balance Authority for the rebuilt Physical calibration."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-THF",
@@ -12857,10 +12923,13 @@
           "sha256": "e5ec8be1cf779abcc85dcc83baf62a8a1151b22153c254c88a5e1cd0241416ed",
           "evidence_id": "EVD-BAL-074-MULTIHIT-THF-001",
           "role": "HISTORICAL_DIAGNOSTIC_ONLY__THF_MULTIHIT_NUMERIC_INPUT_FOR_SWD_CROSS_ACCURACY_COMPARISON",
-          "status": "InvalidatedForBalanceAuthority",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-26T08:20:02+09:00",
           "invalidated_at": "2026-08-26T10:10:23+09:00",
-          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
+          "studio_delete_required": true,
+          "discard_requested_at": "2026-08-27T11:56:27+09:00",
+          "discard_reason": "Superseded Player-equivalent Monster equipment model. Must not remain as Balance Authority for the rebuilt Physical calibration."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MULTIHIT-SWD",
@@ -12868,10 +12937,13 @@
           "sha256": "5043300f50d474b86c4d7765f198439f6d92c5fa405449d7ae1755639c08e791",
           "evidence_id": "EVD-BAL-074-MULTIHIT-SWD-001",
           "role": "HISTORICAL_DIAGNOSTIC_ONLY__SWD_LOW_ACCURACY_MULTIHIT_NUMERIC_AUTHORITY_FOR_CROSS_ACCURACY_MODEL_DESIGN",
-          "status": "InvalidatedForBalanceAuthority",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-26T08:50:00+09:00",
           "invalidated_at": "2026-08-26T10:10:23+09:00",
-          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
+          "studio_delete_required": true,
+          "discard_requested_at": "2026-08-27T11:56:27+09:00",
+          "discard_reason": "Superseded Player-equivalent Monster equipment model. Must not remain as Balance Authority for the rebuilt Physical calibration."
         },
         {
           "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-SINGLE-REF-EXT",
@@ -12879,10 +12951,33 @@
           "sha256": "b366766f4cd36377ce11d62d4dfb53a81c9d5c1dfd52080a00b757bbd04ae401",
           "evidence_id": "EVD-BAL-074-SINGLE-REF-EXT-001",
           "role": "HISTORICAL_DIAGNOSTIC_ONLY__SINGLE_REFERENCE_EXTENSION_AND_COMPLETE_MULTIHIT_K_RECOMPUTATION_AUTHORITY",
-          "status": "InvalidatedForBalanceAuthority",
+          "status": "DiscardRequested",
           "recorded_at": "2026-08-26T09:45:04+09:00",
           "invalidated_at": "2026-08-26T10:10:23+09:00",
-          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient."
+          "invalidated_reason": "Opponent Monster used Player-equivalent equipment contribution instead of formal Monster Job Equipment Coefficient.",
+          "studio_delete_required": true,
+          "discard_requested_at": "2026-08-27T11:56:27+09:00",
+          "discard_reason": "Superseded Player-equivalent Monster equipment model. Must not remain as Balance Authority for the rebuilt Physical calibration."
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-PLAYER-COMPLETE-CORE",
+          "file": "TASK-BAL-074 Evidence・Player完全Core.json",
+          "sha256": "d32b5044d2e8605fd8c8f0e2b03b9f1ae315a5de1df7ed1e67b6f018b11f34fc",
+          "evidence_id": "EVD-BAL-074-PLAYER-COMPLETE-CORE-001",
+          "role": "PLAYER_COMPLETE_CORE_LEVEL1_50_7JOBS_BARE_RUNTIME_NUMERIC_AUTHORITY",
+          "status": "Registered",
+          "recorded_at": "2026-08-27T11:56:27+09:00",
+          "registration_confirmed_by": "Human",
+          "registration_confirmed_at": "2026-08-27T11:56:27+09:00"
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-074-MONSTER-COMPLETE-CORE",
+          "file": "TASK-BAL-074 Evidence・Monster完全Core.json",
+          "sha256": "93205ba397f4f4bb725fbff942aabbf133084086c7ec70df9bbabb72f8f8bdb7",
+          "evidence_id": "EVD-BAL-074-MONSTER-COMPLETE-CORE-001",
+          "role": "MONSTER_COMPLETE_CORE_LEVEL1_50_7JOBS_CONTINUOUS_EQUIPMENT_RUNTIME_NUMERIC_AUTHORITY",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-27T11:56:27+09:00"
         }
       ],
       "blocked_reason": ""
@@ -19309,6 +19404,75 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHK-BAL-074-CONTROL-BAND-B792-TEMPLATE-001",
+      "title": "TASK-BAL-074 GKS-B792 Battle Verification AI Template prerequisite",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "PASS. Human Studio Battle Verification AI Template v1.4.0 is bound to GKS-B792 / GA-B486.211 and Current package_manifest exactly. It is retained unchanged for the later Battle stage.",
+      "evidence": "GK_BattleVerification_AI_Template_v1.4.0(2).zip sha256=b74f02c737d886577918f6856bd18bf23081bd6e76c006b654353cc061bac3df",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T11:56:27+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T11:56:27+09:00",
+      "updated_at": "2026-08-27T11:56:27+09:00",
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human GKS-B792 Template",
+        "resolved_at": "2026-08-27T11:56:27+09:00",
+        "reason": "Same-environment formal binding verified.",
+        "mode": ""
+      },
+      "resolves_check_ids": []
+    },
+    {
+      "id": "CHK-BAL-074-PLAYER-COMPLETE-CORE-REGISTERED-001",
+      "title": "TASK-BAL-074 Player完全Core Studio登録確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "PASS. Human confirmed the new Evidence project TASK-BAL-074 Evidence・Player完全Core registered successfully.",
+      "evidence": "TASK-BAL-074 Evidence・Player完全Core.json sha256=d32b5044d2e8605fd8c8f0e2b03b9f1ae315a5de1df7ed1e67b6f018b11f34fc",
+      "checked_by": "Human",
+      "checked_at": "2026-08-27T11:56:27+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T11:56:27+09:00",
+      "updated_at": "2026-08-27T11:56:27+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-BAL-074-MONSTER-COMPLETE-CORE-001",
+      "title": "TASK-BAL-074 Monster完全Core 7Job×Lv1-50 static validation",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-074",
+      "status": "Passed",
+      "result": "PASS. 350/350 rows. Stat-linked six matches TASK-BAL-072 Evidence・Monster連続装備相当Core 350/350. Critical owner=Primary Weapon, Shield-only fractional Block rule applied to 200 Shield rows, Shield/Quiver offensive contribution excluded, nonfinite=0, runtime surface level regressions=0, block regressions=0. No Player base formula or actual Player Equipment used.",
+      "evidence": "TASK-BAL-074 Evidence・Monster完全Core sha256=93205ba397f4f4bb725fbff942aabbf133084086c7ec70df9bbabb72f8f8bdb7",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T11:56:27+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T11:56:27+09:00",
+      "updated_at": "2026-08-27T11:56:27+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
@@ -20678,6 +20842,14 @@
       "task_id": "TASK-BAL-074",
       "created_at": "2026-08-27T11:01:13+09:00",
       "updated_at": "2026-08-27T11:01:13+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-MONSTER-COMPLETE-CORE-001",
+      "title": "Player完全Core登録確認とMonster完全Core 350行作成",
+      "summary": "Human提供の最新Studio工程管理JSONを正本として遅延反映を統合。Player完全CoreはHuman登録成功を記録。Monster完全Coreを7Job×Lv1-50=350行で新規作成し、Current連続装備相当6値、fractional Virtual iLv、Critical/Block、HP/MP、AGI/AG、Resistance/default、Weapon/Strike ownerまで統合。承認済みControl BattleはPlayer↔Monster完全比較までDeferred。GKS-B792 Templateは受領・binding確認済み。BAL074-E04～E08はStudio削除待ちとして継続。",
+      "task_id": "TASK-BAL-074",
+      "created_at": "2026-08-27T11:56:27+09:00",
+      "updated_at": "2026-08-27T11:56:27+09:00"
     }
   ],
   "authority": {
