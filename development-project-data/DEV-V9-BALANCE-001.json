@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T04:06:43.628Z"
+    "updated_at": "2026-08-27T04:35:28.476Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 EVD-0002 Player全7職・Lv別適正装備iLv割当 登録待ち",
-    "goal": "新規エビデンス EVD-0002 Player全7職・Lv別適正装備iLv割当をStudioへ登録する。次の数値Evidenceも全計算式・全計算結果のHuman確認後にのみ作成する。"
+    "theme": "TASK-BAL-074 EVD-0003 Player全7職・Lv別戦闘値 登録待ち",
+    "goal": "新規エビデンス EVD-0003 Player全7職・Lv別戦闘値をStudioへ登録する。Lv範囲圧縮は行わず1Lv=1行を維持する。"
   },
   "project_rules": [
     {
@@ -7767,8 +7767,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T13:05:37+09:00",
-      "result_scope": "DOING / EVD-0002 PREPARED FOR REGISTRATION. EVD-0002 contains Player 7 Jobs x Lv1..50 appropriate Equipment type/iLv assignments = 350 rows. Input authority is EVD-0001 expected Stats. Method B directly applies expected Stats to Current Requirement coefficients and uses the highest integer iLv in 1..11. Human-approved Player profiles: Swordsman Greatsword two-hand/heavy; Knight one-hand sword/shield/heavy; Thief dagger/shield/light; Hunter bow/quiver/light; Mage staff two-hand/robe; Cleric grimoire/shield/robe; Adventurer one-hand sword/shield/heavy. No Equipment performance, HP, MP, Attack, Accuracy, Evasion, Monster, Battle, or Simulation values are included. All formulas and all allocation results were Human-reviewed before Evidence creation. No Source/GAME_DATA/Current active change.",
+      "updated_at": "2026-08-27T13:34:02+09:00",
+      "result_scope": "DOING / EVD-0003 PREPARED FOR REGISTRATION. EVD-0003 contains Player 7 Jobs x Lv1..50 combat values = 350 rows, one level per row without range compression. Input authority is EVD-0002. HP initial=100; MP initial=30. Includes HP, MP, Attack, Accuracy, Magic Weapon Bonus, Evasion, Critical, Block and Block Damage Cut. Shield offensive contribution=0; Quiver combat contribution=0. All formulas and all 350 results were Human-reviewed before Evidence creation. No Source/GAME_DATA/Current active change; no Battle/Simulation execution.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12903,7 +12903,7 @@
           "updated_at": "2026-08-27T12:46:32+09:00"
         },
         "new_numeric_authority_sequence": {
-          "status": "EVD0002PreparedForRegistration",
+          "status": "EVD0003PreparedForRegistration",
           "evd_0001": {
             "workspace_name": "EVD-0001 Player全7職・Lv別ステータス期待値",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0001",
@@ -12912,8 +12912,8 @@
             "rows": 350,
             "scope": "Player 7Job x Lv1-50 x STR/VIT/AGI/DEX/INT/MND/LUK expected values only"
           },
-          "next_action": "Human Studio registration of EVD-0002. Do not create subsequent numeric Evidence until its formulas and full results are presented/reviewed.",
-          "updated_at": "2026-08-27T13:05:37+09:00",
+          "next_action": "Human Studio registration of EVD-0003. Subsequent numeric Evidence requires formulas + full results review first.",
+          "updated_at": "2026-08-27T13:34:02+09:00",
           "evd_0002": {
             "workspace_name": "EVD-0002 Player全7職・Lv別適正装備iLv割当",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0002",
@@ -12922,6 +12922,16 @@
             "rows": 350,
             "input_evidence_id": "EVD-0001",
             "scope": "Player 7Job x Lv1-50 appropriate Equipment type/iLv assignments by Method B"
+          },
+          "evd_0003": {
+            "workspace_name": "EVD-0003 Player全7職・Lv別戦闘値",
+            "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0003",
+            "evidence_id": "EVD-0003",
+            "sha256": "bc476457df723f5056334fa5714f0f2da75aaaae8ea1f25296b7099916a74189",
+            "rows": 350,
+            "input_evidence_id": "EVD-0002",
+            "row_granularity": "ONE_LEVEL_PER_ROW",
+            "scope": "Player 7Job x Lv1-50 combat values corresponding to EVD-0002"
           }
         }
       },
@@ -13127,6 +13137,18 @@
           "human_reviewed_before_creation": true,
           "input_evidence_id": "EVD-0001",
           "contains_only_equipment_assignment_and_expected_stat_input": true
+        },
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0003",
+          "file": "EVD-0003 Player全7職・Lv別戦闘値.json",
+          "sha256": "bc476457df723f5056334fa5714f0f2da75aaaae8ea1f25296b7099916a74189",
+          "evidence_id": "EVD-0003",
+          "role": "PLAYER_7JOB_LEVEL1_50_COMBAT_VALUES_AUTHORITY",
+          "status": "PreparedForRegistration",
+          "recorded_at": "2026-08-27T13:34:02+09:00",
+          "human_reviewed_before_creation": true,
+          "input_evidence_id": "EVD-0002",
+          "row_granularity": "ONE_LEVEL_PER_ROW"
         }
       ],
       "blocked_reason": ""
@@ -21100,6 +21122,14 @@
       "task_id": "TASK-BAL-074",
       "created_at": "2026-08-27T13:05:37+09:00",
       "updated_at": "2026-08-27T13:05:37+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-EVD-0003-PREPARED-001",
+      "title": "EVD-0003 Player全7職・Lv別戦闘値 作成",
+      "summary": "Human確認済みのEVD-0002対応Player戦闘値を7職×Lv1～50=350行、1Lv=1行でEvidence化。HP初期100/MP初期30。Studio登録待ち。",
+      "task_id": "TASK-BAL-074",
+      "created_at": "2026-08-27T13:34:02+09:00",
+      "updated_at": "2026-08-27T13:34:02+09:00"
     }
   ],
   "authority": {
