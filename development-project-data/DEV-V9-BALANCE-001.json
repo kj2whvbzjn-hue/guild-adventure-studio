@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T04:49:41.456Z"
+    "updated_at": "2026-08-27T05:02:47.829Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 EVD-0004 Monster全7職・Lv別装備係数 登録待ち",
-    "goal": "新規エビデンス EVD-0004 Monster全7職・Lv別装備係数をStudioへ登録する。Virtual iLvは小数保持、1Lv=1行を維持する。"
+    "theme": "TASK-BAL-074 EVD-0006 Monster全7職・Lv別戦闘値 登録待ち",
+    "goal": "新規エビデンス EVD-0006 Monster全7職・Lv別戦闘値をStudioへ登録する。1Lv=1行とHuman指定丸め規則を維持する。"
   },
   "project_rules": [
     {
@@ -7767,8 +7767,8 @@
         "at": "2026-08-25T11:18:00+09:00"
       },
       "created_at": "2026-08-24T19:13:00+09:00",
-      "updated_at": "2026-08-27T13:48:25+09:00",
-      "result_scope": "DOING / EVD-0004 PREPARED FOR REGISTRATION. EVD-0004 contains Monster 7 Jobs x Lv1..50 Monster Generation Equipment Profile, fractional Virtual iLv and Equipment performance coefficients = 350 rows, one level per row. Virtual iLv uses P_s=10+(L-1)*G/10 and Current Requirement semantics, preserves fractional values and clamps 1..11. Performance coefficients cover Attack/Accuracy/Magic/HP/MP/Evasion. Shield offensive contribution=0; Quiver combat contribution=0. The downstream M_s/P_s scaling and final Monster combat values are not included. All formulas and all 350 results were Human-reviewed before Evidence creation. No Source/GAME_DATA/Current active change; no Battle/Simulation execution.",
+      "updated_at": "2026-08-27T14:01:18+09:00",
+      "result_scope": "DOING / EVD-0006 PREPARED FOR REGISTRATION. EVD-0006 contains Monster 7 Jobs x Lv1..50 combat values = 350 rows, one level per row. Inputs: EVD-0004 Monster equipment coefficient layer and EVD-0005 Monster base Status. Stat-linked values use X_monster=F_X(e,I_e)*M_s/P_s. Includes HP/MP/Attack/Accuracy/Magic/Evasion/Critical/Block/Block Damage Cut. Human rounding: fractional final values round half-up to integer; nonzero value rounding to 0 becomes 1; original zero remains 0. No Player initial HP/MP is added to Monster. No Source/GAME_DATA/Current active change; no Battle/Simulation execution.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -12903,7 +12903,7 @@
           "updated_at": "2026-08-27T12:46:32+09:00"
         },
         "new_numeric_authority_sequence": {
-          "status": "EVD0004PreparedForRegistration",
+          "status": "EVD0006PreparedForRegistration",
           "evd_0001": {
             "workspace_name": "EVD-0001 Player全7職・Lv別ステータス期待値",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0001",
@@ -12912,8 +12912,8 @@
             "rows": 350,
             "scope": "Player 7Job x Lv1-50 x STR/VIT/AGI/DEX/INT/MND/LUK expected values only"
           },
-          "next_action": "Human Studio registration of EVD-0004. Subsequent numeric Evidence requires formulas + full results review first.",
-          "updated_at": "2026-08-27T13:48:25+09:00",
+          "next_action": "Human Studio registration of EVD-0006. Subsequent numeric Evidence requires formulas + full results review first.",
+          "updated_at": "2026-08-27T14:01:18+09:00",
           "evd_0002": {
             "workspace_name": "EVD-0002 Player全7職・Lv別適正装備iLv割当",
             "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0002",
@@ -12933,15 +12933,18 @@
             "row_granularity": "ONE_LEVEL_PER_ROW",
             "scope": "Player 7Job x Lv1-50 combat values corresponding to EVD-0002"
           },
-          "evd_0004": {
-            "workspace_name": "EVD-0004 Monster全7職・Lv別装備係数",
-            "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0004",
-            "evidence_id": "EVD-0004",
-            "sha256": "d55e6cb0c3d6f53b39aa2e7e34198477aaf9d168c0b1d087555a33fb9c362d26",
+          "evd_0006": {
+            "workspace_name": "EVD-0006 Monster全7職・Lv別戦闘値",
+            "workspace_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0006",
+            "evidence_id": "EVD-0006",
+            "sha256": "455fe51ed1aa3bd49422c4d8ab17651215dd247d6684b846ef9d732a96c48798",
             "rows": 350,
+            "input_evidence_ids": [
+              "EVD-0004",
+              "EVD-0005"
+            ],
             "row_granularity": "ONE_LEVEL_PER_ROW",
-            "fractional_virtual_item_level": true,
-            "scope": "Monster 7Job x Lv1-50 equipment profile / Virtual iLv / performance coefficients; final M_s/P_s-scaled combat values excluded"
+            "scope": "Monster 7Job x Lv1-50 rounded combat values"
           }
         }
       },
@@ -13161,17 +13164,20 @@
           "row_granularity": "ONE_LEVEL_PER_ROW"
         },
         {
-          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0004",
-          "file": "EVD-0004 Monster全7職・Lv別装備係数.json",
-          "sha256": "d55e6cb0c3d6f53b39aa2e7e34198477aaf9d168c0b1d087555a33fb9c362d26",
-          "evidence_id": "EVD-0004",
-          "role": "MONSTER_7JOB_LEVEL1_50_EQUIPMENT_COEFFICIENT_AUTHORITY",
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-EVD-0006",
+          "file": "EVD-0006 Monster全7職・Lv別戦闘値.json",
+          "sha256": "455fe51ed1aa3bd49422c4d8ab17651215dd247d6684b846ef9d732a96c48798",
+          "evidence_id": "EVD-0006",
+          "role": "MONSTER_7JOB_LEVEL1_50_COMBAT_VALUES_AUTHORITY",
           "status": "PreparedForRegistration",
-          "recorded_at": "2026-08-27T13:48:25+09:00",
+          "recorded_at": "2026-08-27T14:01:18+09:00",
           "human_reviewed_before_creation": true,
+          "input_evidence_ids": [
+            "EVD-0004",
+            "EVD-0005"
+          ],
           "row_granularity": "ONE_LEVEL_PER_ROW",
-          "fractional_virtual_item_level": true,
-          "final_monster_combat_values_included": false
+          "rounding_rule": "HALF_UP; nonzero->0 becomes 1; original 0 stays 0"
         }
       ],
       "blocked_reason": ""
@@ -21169,6 +21175,14 @@
       "task_id": "TASK-BAL-074",
       "created_at": "2026-08-27T13:48:25+09:00",
       "updated_at": "2026-08-27T13:48:25+09:00"
+    },
+    {
+      "id": "HIST-BAL-074-EVD-0006-PREPARED-001",
+      "title": "EVD-0006 Monster全7職・Lv別戦闘値 作成",
+      "summary": "Human確認済みのMonster戦闘値を7職×Lv1～50=350行、1Lv=1行でEvidence化。小数は四捨五入、非0→0は1、元0は0。Studio登録待ち。",
+      "task_id": "TASK-BAL-074",
+      "created_at": "2026-08-27T14:01:18+09:00",
+      "updated_at": "2026-08-27T14:01:18+09:00"
     }
   ],
   "authority": {
