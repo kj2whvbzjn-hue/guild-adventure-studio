@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T21:16:35.756Z"
+    "updated_at": "2026-08-27T22:12:13.255Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-BATTLE-001",
-    "theme": "TASK-BAL-074 Critical Evidence Authority Correction Gate",
-    "goal": "GKS-B797 Critical contractに合わせてEVD-0003/EVD-0006を修正し、EVD-0007を再検証するまでC_MultiHitへ進まない。"
+    "theme": "TASK-BAL-074 C_MultiHit Test Plan Gate",
+    "goal": "EVD-0007再検証はHuman指示により省略。Current GKS-B797 + corrected EVD-0003/EVD-0006 + retained EVD-0007(k=2)を入力として、C_MultiHitの新Test PlanをHuman承認後に実行する。"
   },
   "project_rules": [
     {
@@ -595,13 +595,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B792",
+    "studio_build": "GKS-B797",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260827-015842).zip",
-    "source_role": "Human-provided Fresh Current after TASK-BAL-074-INFRA-006 Studio Formal Shield offensive correction",
-    "recorded_at": "2026-08-27T10:58:09+09:00",
-    "source_zip_sha256": "eece9a0d6acdde9b6a38069474f59aee058c84a7c3b8ccfcc0026844304b5eb4",
-    "package_manifest_sha256": "d91736fa424a72aeb7ea4fee755e94bd866d69e841c690b6e70bb367a17c7558",
+    "source_label": "guild-adventure-studio-sub(20260827-220605).zip",
+    "source_role": "Human-provided Fresh Current after Critical Current-conformance completion",
+    "recorded_at": "2026-08-28T07:20:00+09:00",
+    "source_zip_sha256": "18d8834d9c3e5ada3d1763c2e57fdd2678f38abaac2a6d8289d1626915c65484",
+    "package_manifest_sha256": "0b6e0746e68da7a1a5d4bf7827be552782efea518d579f670e29b4a78d316505",
     "source_tree_sha256": "5ca95dfb76f44a7863aa6c0aec204c4aa2a522fc87679c62fcf618f457fa3b69"
   },
   "lifecycle": {
@@ -3064,6 +3064,18 @@
       "approved_at": "2026-08-28T06:13:03+09:00",
       "created_at": "2026-08-28T06:13:03+09:00",
       "updated_at": "2026-08-28T06:13:03+09:00"
+    },
+    {
+      "id": "DEC-BAL-EVD0007-REVALIDATION-WAIVER-001",
+      "title": "EVD-0007のGKS-B797再検証を不要とする",
+      "status": "Approved",
+      "text": "Human指示により、Critical Current契約修正後もEVD-0007 Physical Damage Budget-Power換算の再Simulation/再検証は行わない。EVD-0003/EVD-0006のCritical Authority修正を確認したうえで、EVD-0007の既存k=2換算を後続C_MultiHit設計の入力として継続使用する。旧GKS-B792個別Battle結果そのものをFresh GKS-B797実測へ読み替えない。",
+      "rationale": "Human instruction: 0007の再検証は不要。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T06:33:00+09:00",
+      "created_at": "2026-08-28T07:20:00+09:00",
+      "updated_at": "2026-08-28T07:20:00+09:00"
     }
   ],
   "specifications": [
@@ -7834,7 +7846,7 @@
       "id": "TASK-BAL-074",
       "box_id": "BOX-V9-BAL-BATTLE-001",
       "title": "R5-P7 Monster基準でFormal Skill Balanceを確定する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 266,
       "depends_on": [
         "TASK-BAL-072-CORR-001",
@@ -7852,7 +7864,7 @@
       },
       "created_at": "2026-08-24T19:13:00+09:00",
       "updated_at": "2026-08-28T06:13:03+09:00",
-      "result_scope": "BLOCKED BEFORE C_MultiHit. Current Critical authority changed in GKS-B797 after the GKS-B792 Damage calibration. EVD-0003/EVD-0006 Current-authority use is suspended pending correction; EVD-0007 k=2 is Historical/NeedsRevalidation and must not feed downstream allocation until corrected inputs + B797 revalidation. No new Battle Package/Simulation/real-device request executed.",
+      "result_scope": "Critical Evidence Authority Correction Gate cleared. EVD-0003/EVD-0006 corrected to Current weapon_critical_rate -> Battle LUK-derived base_critical_rate. By Human Decision DEC-BAL-EVD0007-REVALIDATION-WAIVER-001, EVD-0007 k=2 remains the downstream conversion input without rerunning its GKS-B792 calibration. Next executable step is C_MultiHit test-plan approval; no Battle Package/Simulation executed in this management rebind.",
       "historical_invalid_completion": {
         "status": "Invalidated",
         "reason": "旧TASK-BAL-074完了はBudget数式検証の閉ループを満たしていない。",
@@ -13016,7 +13028,7 @@
             "input_evidence_id": "EVD-0002",
             "row_granularity": "ONE_LEVEL_PER_ROW",
             "scope": "Player 7Job x Lv1-50 combat values corresponding to EVD-0002",
-            "current_authority_status": "SuspendedPendingCriticalCorrection"
+            "current_authority_status": "CurrentCorrected"
           },
           "evd_0006": {
             "workspace_name": "EVD-0006 Monster全7職・Lv別戦闘値",
@@ -13030,7 +13042,7 @@
             ],
             "row_granularity": "ONE_LEVEL_PER_ROW",
             "scope": "Monster 7Job x Lv1-50 rounded combat values",
-            "current_authority_status": "SuspendedPendingCriticalCorrection"
+            "current_authority_status": "CurrentCorrected"
           },
           "evd_0004": {
             "workspace_name": "EVD-0004 Monster全7職・Lv別装備係数",
@@ -13062,7 +13074,7 @@
             "scope": "Physical 1Hit Damage Budget -> Power conversion authority; k=2",
             "formula": "f_Damage(B_Damage)=round(100+2*B_Damage)",
             "not_direct_slv_to_final_power": true,
-            "current_authority_status": "HistoricalNeedsRevalidation",
+            "current_authority_status": "CurrentByHumanRevalidationWaiver",
             "invalidated_by": "GKS-B797 Current Critical contract + corrected EVD-0003/EVD-0006 requirement"
           }
         },
@@ -13093,7 +13105,7 @@
                 "EVD-0002"
               ],
               "role": "Player final combat-value input for Battle verification",
-              "current_authority_status": "SuspendedPendingCriticalCorrection"
+              "current_authority_status": "CurrentCorrected"
             },
             "EVD-0004": {
               "workspace_name": "EVD-0004 Monster全7職・Lv別装備係数",
@@ -13115,7 +13127,7 @@
                 "EVD-0005"
               ],
               "role": "Monster final rounded combat-value input for Battle verification",
-              "current_authority_status": "SuspendedPendingCriticalCorrection"
+              "current_authority_status": "CurrentCorrected"
             },
             "EVD-0007": {
               "workspace_name": "EVD-0007 Physical Damage Budget-Power換算",
@@ -13125,7 +13137,7 @@
                 "EVD-0006"
               ],
               "role": "Physical 1Hit Damage Budget -> Power conversion authority (k=2)",
-              "current_authority_status": "HistoricalNeedsRevalidation"
+              "current_authority_status": "CurrentByHumanRevalidationWaiver"
             }
           },
           "direct_edges": [
@@ -15293,15 +15305,15 @@
           "semantic_note": "Damage Budget conversion only; not direct SLv->final Skill Power."
         }
       ],
-      "blocked_reason": "Current Critical contract changed at GKS-B797. EVD-0003 Player combat values and EVD-0006 Monster combat values require Critical-field/formula correction; EVD-0007 and B792 control/SLv-Damage results depend on those inputs and Current Formal Battle source binding, so downstream C_MultiHit work is blocked until corrected Evidence is supplied/recalculated and the affected test plan is re-approved.",
+      "blocked_reason": "C_MultiHit execution is gated by RULE-BAL-TEST-PLAN-APPROVAL-001. EVD-0003/EVD-0006 Critical correction is accepted; Human explicitly waived EVD-0007 revalidation.",
       "critical_authority_correction": {
-        "status": "AuthorityUseSuspendedPendingEvidenceCorrection",
+        "status": "ClearedByCorrectedEvidenceAndHumanWaiver",
         "detected_at": "2026-08-28T06:13:03+09:00",
         "current_source": {
           "studio_build": "GKS-B797",
           "game_build": "GA-B486.211",
-          "source_zip": "guild-adventure-studio-sub(20260827-210319).zip",
-          "source_zip_sha256": "62f149f4d2d74f86b4f3e73ff033a7010f80e97c71d3d6a2dc369055a40215bc",
+          "source_zip": "guild-adventure-studio-sub(20260827-220605).zip",
+          "source_zip_sha256": "18d8834d9c3e5ada3d1763c2e57fdd2678f38abaac2a6d8289d1626915c65484",
           "package_manifest_sha256": "0b6e0746e68da7a1a5d4bf7827be552782efea518d579f670e29b4a78d316505"
         },
         "current_contract": {
@@ -15311,13 +15323,8 @@
           "direct_critical_rate_without_provenance_current_authority": false
         },
         "classification": {
-          "must_correct": [
-            "EVD-0003",
-            "EVD-0006"
-          ],
-          "must_revalidate_after_correction": [
-            "EVD-0007"
-          ],
+          "must_correct": [],
+          "must_revalidate_after_correction": [],
           "unaffected_numeric_authority": [
             "EVD-0001",
             "EVD-0002",
@@ -15330,6 +15337,9 @@
             "GKS-B792 SLv-Damage screening result",
             "GKS-B792 SLv-Damage robustness result",
             "pre-GKS-B797 Battle/Runtime evidence whose Critical input/provenance follows the old field contract"
+          ],
+          "human_waived_revalidation": [
+            "EVD-0007"
           ]
         },
         "propagation": {
@@ -15338,13 +15348,11 @@
           "EVD-0007": "Directly depends on EVD-0003/EVD-0006 and was calibrated on GKS-B792. k=2 is suspended as Current reusable authority until B797+corrected-input revalidation.",
           "C_MultiHit(H)": "Not started; remains blocked. No invalid numeric result exists yet."
         },
-        "required_next_inputs": [
-          "EVD-0003 Player全7職・Lv別戦闘値.json",
-          "EVD-0006 Monster全7職・Lv別戦闘値.json",
-          "EVD-0007 Physical Damage Budget-Power換算.json"
-        ],
-        "execution_prohibited_until_corrected": true,
-        "no_simulation_executed": true
+        "required_next_inputs": [],
+        "execution_prohibited_until_corrected": false,
+        "no_simulation_executed": true,
+        "human_override_decision_id": "DEC-BAL-EVD0007-REVALIDATION-WAIVER-001",
+        "next_gate": "C_MultiHit Test Plan Human approval before any Simulation/Test execution."
       }
     },
     {
@@ -23478,6 +23486,11 @@
       "type": "AuthorityCorrection",
       "summary": "GKS-B797 Current Critical contractへの変更影響をBalance Evidenceへ伝播。EVD-0003/EVD-0006 Current利用停止、EVD-0007/B792 results再検証要求、EVD-0001/2/4/5およびBase Critical Damage 50%は影響なし。TASK-BAL-074をC_MultiHit前でBlock。",
       "task_id": "TASK-BAL-CRIT-EVIDENCE-CORR-001"
+    },
+    {
+      "at": "2026-08-28T07:20:00+09:00",
+      "type": "CriticalEvidenceGateClearedAndBalanceReboundToB797",
+      "summary": "Fresh Current GKS-B797 / GA-B486.211へBalance案件をrebind。EVD-0003/EVD-0006 Critical correctionをCurrent入力として扱い、Human指示によりEVD-0007再検証をWaiveしてk=2を後続入力として継続。TASK-BAL-074をDoingへ戻した。C_MultiHit SimulationはTest Plan承認前のため未実行。"
     }
   ],
   "authority": {
