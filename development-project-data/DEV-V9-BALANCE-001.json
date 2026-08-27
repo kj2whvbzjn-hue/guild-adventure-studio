@@ -5,7 +5,7 @@
     "name": "V9 Balance調整・Baseline確立",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-27T00:09:35.527Z"
+    "updated_at": "2026-08-27T00:19:14.678Z"
   },
   "project_context": {
     "purpose": "DEV-V9-REORG-019の実装ラインとは独立して、Current Structure / Current Contractを変更せず、Balance Baseline・Candidate・Current activeを段階管理し、再現可能なSimulationとRuntime検証でゲーム内数値を調整する。",
@@ -14,8 +14,8 @@
   "current_focus": {
     "architecture_id": "ARCH-V9-BALANCE-DESIGN-001",
     "work_box_id": "BOX-V9-BAL-WORLD-001",
-    "theme": "TASK-BAL-072-CORR-004 Monster生成装備Profile変更反映 — Human開始承認待ち",
-    "goal": "魔術師=杖両手持ち、神官=魔導書+盾へMonster生成専用Profileを更新済み。旧350-row Continuous Coreは旧Profile snapshotのHistorical Evidenceへ降格。次TaskではCurrent GKS-B790のRequirement/Equipment式を用い、7Job×Lv1..50 Stat-linked 6項目を再計算して統一Authorityを再Freezeする。Player側の装備可否・Job制限には影響しない。"
+    "theme": "TASK-BAL-072-CORR-004完了 — Current Profile Stat-linked 6 Freeze",
+    "goal": "Current Monster生成装備ProfileによるStat-linked 6項目は新規EvidenceでFreeze済み。Critical / block_rate / block_damage_cut_rate等の非Stat-linked Equipment由来値は未決定。RULE-BAL-ONE-TASK-001により本runでは次Taskを開始しない。"
   },
   "project_rules": [
     {
@@ -450,12 +450,12 @@
       "id": "RULE-FILE-NAME-TITLE-CONSISTENCY-001",
       "title": "development-project_DEV-V9-BALANCE-001.json",
       "status": "Active",
-      "text": "AIがHumanへ提出する管理JSON/Evidence JSONその他の保存対象ファイルは、Humanへ提示する名称、実際のファイル名、保存後にStudio/UIへ表示されるタイトル名を完全一致させる。JSONではworkspace.nameを実ファイル名と同一文字列にする。別名・省略名・説明用タイトルを提出名として使用しない。",
-      "rationale": "Human instruction: 提示名・ファイル名・保存後タイトル名を一致させる。",
+      "text": "Humanへ提出・報告する開発案件/Evidenceの名称はStudioの開発案件一覧に表示されるworkspace.nameを使用し、既存案件はStudio表示名と完全一致させる。新規Evidenceは『新規エビデンス』と明記した上で、登録後にStudioへ表示させるworkspace.nameを提示する。輸送用JSONの実ファイル名はworkspace.name+'.json'を基本とし、既存Canonical filenameが別に定められている管理JSONはそのCanonical filenameを維持する。内部workspace.idやこちら独自の省略名をHuman向け提出名として使用しない。",
+      "rationale": "Human instruction: 提出名はStudio開発案件一覧の表示名と一致させ、新規Evidenceは新規エビデンスとして識別可能にする。",
       "approved_by": "Human",
-      "approved_at": "2026-08-26T06:10:00+09:00",
+      "approved_at": "2026-08-27T09:17:24+09:00",
       "created_at": "2026-08-26T06:10:00+09:00",
-      "updated_at": "2026-08-26T06:10:00+09:00",
+      "updated_at": "2026-08-27T09:18:46+09:00",
       "source_type": "",
       "source_id": ""
     },
@@ -13798,28 +13798,17 @@
         "at": "2026-08-27T09:03:00+09:00"
       },
       "created_at": "2026-08-27T08:54:47+09:00",
-      "updated_at": "2026-08-27T09:08:42+09:00",
-      "result_scope": "DONE / FROZEN STAT-LINKED 6 CONTINUOUS MONSTER EQUIPMENT-EQUIVALENT CORE. Current GKS-B790 / GA-B486.211. 7 Jobs x Lv1..50 = 350 rows. Monster base Status M_s=L*G/10 and theoretical equipment reference P_s=10+(L-1)*G/10. Monster Generation Equipment Profile resolves representative Equipment Type; Current Requirement semantics determine fractional Virtual iLv, and existing Player Equipment formulas are evaluated without changing multiplier/rounding semantics. Stat-linked mapping: attack->STR, accuracy->DEX, magic_weapon_bonus->INT, hp_bonus->VIT, mp_bonus->MND, evasion->AGI. Bow+Quiver remains Bow-only; Shield offensive/stat-linked six contribution excluded. Critical/Block remain non-Stat-linked pending separate Human-approved rule and are not frozen here. Rows=350/350, nonfinite=0, stat-linked level regressions=0, Virtual-iLv regressions=0, integerized Virtual iLv=0. Old TASK-BAL-072-CORR-001 direct Requirement-coefficient numeric values were not used. No Simulation/Test/Source/GAME_DATA/Current active change.",
-      "evidence_refs": [
-        {
-          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE",
-          "file": "development-project_DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE.json",
-          "sha256": "8b603efccd441c175dd03e759274e4ecc8b3d0a9b480f23e43a4c19a9ce3288c",
-          "evidence_id": "EVD-BAL-072-CORR-003-CONTINUOUS-CORE-001",
-          "role": "FROZEN_MONSTER_CONTINUOUS_EQUIPMENT_EQUIVALENT_STAT_LINKED_6_7JOBS_LV1_50",
-          "status": "HistoricalSuperseded",
-          "recorded_at": "2026-08-27T09:05:56+09:00",
-          "current_authority_note": "Superseded by Human Monster Generation Equipment Profile change; mage/cleric profiles require recalculation."
-        }
-      ],
+      "updated_at": "2026-08-27T09:18:46+09:00",
+      "result_scope": "DONE / HISTORICAL COMPUTATION ONLY. 旧Profile snapshotで7Jobs×Lv1..50=350 rowsを静的計算した実行履歴は保持するが、Humanによる魔術師=杖両手持ち・神官=魔導書+盾へのProfile変更でCurrent Numeric Authorityではなくなった。旧Profile用の未登録Evidence artifactは破棄済み。新Profileの統一AuthorityはTASK-BAL-072-CORR-004で再計算し、その完了時に新規Evidenceとして保存する。Simulation/Test/Source/GAME_DATA変更はなし。",
+      "evidence_refs": [],
       "current_authority_status": "Historical_SupersededByMonsterGenerationProfileChange",
-      "current_authority_note": "Human profile change after Freeze: 魔術師=杖/副装備なし（両手持ち）/ローブ、神官=魔導書/盾/ローブ。既存350-row Evidenceは旧Profile（魔術師=ワンド+盾、神官=ワンド+盾）で計算されているためCurrent unified Numeric Authorityとして使用しない。再計算はTASK-BAL-072-CORR-004で行う。"
+      "current_authority_note": "魔術師/神官のMonster生成装備Profile変更により旧350-row計算はCurrent Authorityではない。旧Profile用に一時生成したCONTINUOUS-CORE Evidence artifactは未登録のため破棄済み。Current統一Numeric AuthorityはTASK-BAL-072-CORR-004完了時に新規Evidenceとして作成する。"
     },
     {
       "id": "TASK-BAL-072-CORR-004",
       "box_id": "BOX-V9-BAL-WORLD-001",
       "title": "Monster生成装備Profile変更を反映して連続装備相当Coreを再計算する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 253,
       "depends_on": [
         "TASK-BAL-072-CORR-003"
@@ -13828,13 +13817,24 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-27T09:15:10+09:00"
       },
       "created_at": "2026-08-27T09:05:56+09:00",
-      "updated_at": "2026-08-27T09:08:42+09:00",
-      "result_scope": "REGISTERED / NOT STARTED. Human profile change correction. Old TASK-BAL-072-CORR-003 Evidence is Historical Superseded until this task rebuilds a unified 350-row authority."
+      "updated_at": "2026-08-27T09:18:46+09:00",
+      "result_scope": "DONE / CURRENT PROFILE STAT-LINKED 6 FROZEN. 魔術師=杖/副装備なし（両手持ち）/ローブ、神官=魔導書/盾/ローブ。7 Jobs x Lv1..50=350 rows。Current GKS-B790 Requirement semantics、fractional Virtual iLv、Existing Player Equipment formula、M_s/P_sを使用。metric level regression=0、Virtual iLv regression=0、nonfinite=0。Critical/Blockは未Freeze。Simulation/Test/Source/GAME_DATA/Current active変更なし。",
+      "evidence_refs": [
+        {
+          "evidence_project_id": "DEV-V9-BALANCE-EVIDENCE-072-CORR-004",
+          "file": "TASK-BAL-072 Evidence・Monster連続装備相当Core.json",
+          "sha256": "b895678fcc67176290a613ad9f6cceffe0bd690d0de03c0fb5ee5ef81e05becc",
+          "evidence_id": "EVD-BAL-072-CORR-004-CONTINUOUS-CORE-001",
+          "role": "CURRENT_MONSTER_CONTINUOUS_EQUIPMENT_EQUIVALENT_STAT_LINKED_6",
+          "status": "FrozenAuthority",
+          "recorded_at": "2026-08-27T09:17:24+09:00"
+        }
+      ]
     }
   ],
   "checks": [
@@ -18713,15 +18713,38 @@
       "target_id": "TASK-BAL-072-CORR-003",
       "status": "Passed",
       "result": "PASS. Monster continuous equipment-equivalent Stat-linked six frozen: 7 Jobs x Lv1..50=350 rows; nonfinite=0; metric level regressions=0; Virtual iLv regressions=0; Virtual iLv integerization=0; old direct-coefficient numeric use=0.",
-      "evidence": "development-project_DEV-V9-BALANCE-EVIDENCE-072-CONTINUOUS-CORE.json sha256=8b603efccd441c175dd03e759274e4ecc8b3d0a9b480f23e43a4c19a9ce3288c",
+      "evidence": "",
       "checked_by": "AI",
       "checked_at": "2026-08-27T09:03:00+09:00",
       "resolves_check_ids": [],
       "blocking": false,
       "created_at": "2026-08-27T09:03:00+09:00",
-      "updated_at": "2026-08-27T09:08:42+09:00",
+      "updated_at": "2026-08-27T09:18:46+09:00",
       "current_authority_status": "Historical_SupersededByProfileChange",
-      "current_authority_note": "Historical PASS remains valid for the old profile snapshot only. Not Current authority after mage/cleric profile change.",
+      "current_authority_note": "旧Profile snapshotに対するHistorical PASS。Current Authorityではない。当時の未登録CONTINUOUS-CORE Evidence artifactはProfile変更後に破棄済み。",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-BAL-072-CORR-004-CONTINUOUS-CORE-001",
+      "title": "TASK-BAL-072 Evidence・Monster連続装備相当Core",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-BAL-072-CORR-004",
+      "status": "Passed",
+      "result": "PASS. Current Monster generation profiles applied. 7 Jobs x Lv1..50=350 rows; nonfinite=0; stat-linked regressions=0; Virtual-iLv regressions=0.",
+      "evidence": "TASK-BAL-072 Evidence・Monster連続装備相当Core.json sha256=b895678fcc67176290a613ad9f6cceffe0bd690d0de03c0fb5ee5ef81e05becc",
+      "checked_by": "AI",
+      "checked_at": "2026-08-27T09:15:10+09:00",
+      "blocking": false,
+      "created_at": "2026-08-27T09:15:10+09:00",
+      "updated_at": "2026-08-27T09:18:46+09:00",
+      "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
         "resolved_by": "",
@@ -19965,6 +19988,36 @@
       "task_id": "TASK-BAL-072-CORR-004",
       "created_at": "2026-08-27T09:05:56+09:00",
       "updated_at": "2026-08-27T09:05:56+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-003-COMPLETE-001",
+      "title": "Monster連続装備相当Core Stat-linked 6を再構築・Freeze",
+      "summary": "TASK-BAL-072-CORR-003で旧Profile snapshotの7Jobs×Lv1..50=350 rowsを静的計算した。その後Humanが魔術師=杖両手持ち・神官=魔導書+盾へMonster生成装備Profileを変更したため、この計算結果はHistorical onlyへ降格。旧Profile用に一時生成したCONTINUOUS-CORE Evidence artifactはStudio未登録のため破棄した。Current統一AuthorityはTASK-BAL-072-CORR-004完了時に新規Evidenceとして作成する。Simulation/Test/Source/GAME_DATA変更なし。",
+      "task_id": "TASK-BAL-072-CORR-003",
+      "created_at": "2026-08-27T09:03:00+09:00",
+      "updated_at": "2026-08-27T09:12:33+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-003-DISCARD-TEMP-EVIDENCE-001",
+      "title": "旧Profile用未登録Evidenceと一時Profile JSONを破棄",
+      "summary": "Human instructionにより、更新・登録対象でないファイルは提出しない運用へ統一。旧Profile用CONTINUOUS-CORE Evidenceの本体と重複コピー、および管理JSON統合済みの一時Monster Generation Equipment Profile単独JSONを破棄した。削除対象Evidenceへの工程管理JSON参照も除去。TASK-BAL-072-CORR-004完了時は旧Evidence上書きではなく新規Evidenceを作成する。",
+      "created_at": "2026-08-27T09:12:33+09:00",
+      "updated_at": "2026-08-27T09:12:33+09:00"
+    },
+    {
+      "id": "HIST-BAL-072-CORR-004-COMPLETE-001",
+      "title": "Current Monster生成装備Profileで連続装備相当Coreを再計算・新規Freeze",
+      "summary": "TASK-BAL-072-CORR-004 completed. Mage=杖両手持ち、Cleric=魔導書+盾。7 Jobs×Lv1..50=350 rowsをCurrent GKS-B790式で再計算し、新規Evidenceを作成。旧未登録Evidenceは更新・再提出していない。Simulation/Test/Source/GAME_DATA変更なし。 新規Evidence Studio表示名=TASK-BAL-072 Evidence・Monster連続装備相当Core。",
+      "task_id": "TASK-BAL-072-CORR-004",
+      "created_at": "2026-08-27T09:15:10+09:00",
+      "updated_at": "2026-08-27T09:17:24+09:00"
+    },
+    {
+      "id": "HIST-BAL-EVIDENCE-NAME-STUDIO-DISPLAY-CORR-001",
+      "title": "Evidence提出名をStudio表示名基準へ修正",
+      "summary": "Human correctionにより、報告名は内部ID/独自filenameではなくStudio開発案件一覧のworkspace.nameを使用する運用へ修正。TASK-BAL-072-CORR-004の新規Evidence表示名を『TASK-BAL-072 Evidence・Monster連続装備相当Core』へ修正した。Balance親案件のworkspace.nameも既存Studio表示名『V9 Balance調整・Baseline確立』へ復元。",
+      "created_at": "2026-08-27T09:17:24+09:00",
+      "updated_at": "2026-08-27T09:17:24+09:00"
     }
   ],
   "authority": {
