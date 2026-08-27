@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B792</title>
+<title>GK Studio GKS-B793</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -471,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B792</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B793</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B792</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B793</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -1822,6 +1822,7 @@ updateDeployDeleteControl();
 
     <div id="developmentMergeSavePanel" class="hidden">
       <div class="field"><label>統合JSON</label><input id="developmentMergeSaveFile" type="file" accept="application/json,.json"></div>
+      <div class="field"><label>削除指示JSON（任意）</label><input id="developmentMergeDeleteFile" type="file" accept="application/json,.json"><div class="small">このファイルで明示したDecisionだけを削除します。統合JSONからRecordが欠けているだけでは削除しません。</div></div>
       <div class="field"><label>Branch</label><input id="developmentMergeSaveBranch" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
       <div class="field"><label>PAT</label><input id="developmentMergeSavePat" type="password" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
       <div id="developmentMergeSaveStatus" class="small"></div>
@@ -2474,11 +2475,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=792"></script>
+<script src="./layer-controller.js?v=793"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B792';
+const DISTRIBUTION_BUILD='GKS-B793';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -3389,7 +3390,7 @@ async function executeDevelopmentEditSave(){
 }
 function openDevelopmentMergeSavePanel(){
  developmentSetWriteInputs('developmentMergeSaveBranch','developmentMergeSavePat');
- const file=document.getElementById('developmentMergeSaveFile'),status=document.getElementById('developmentMergeSaveStatus');if(file)file.value='';if(status)status.textContent='';
+ const file=document.getElementById('developmentMergeSaveFile'),deleteFile=document.getElementById('developmentMergeDeleteFile'),status=document.getElementById('developmentMergeSaveStatus');if(file)file.value='';if(deleteFile)deleteFile.value='';if(status)status.textContent='';
  openStudioInputPanel('developmentMergeSavePanel','JSONを統合して保存',{parentRoute:`development/project/${developmentPane||'home'}`});
 }
 function openDevelopmentDeleteProjectPanel(){
@@ -3825,6 +3826,56 @@ const DEVELOPMENT_WORKSPACE_MERGE_ARRAY_KEYS=Object.freeze([
  'architecture_nodes','work_boxes','tasks','checks'
 ]);
 const DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS=Object.freeze(['project_context','current_focus','source_baseline','lifecycle']);
+const DEVELOPMENT_WORKSPACE_DELETION_SCHEMA_VERSION='1.0';
+const DEVELOPMENT_WORKSPACE_DELETION_COLLECTIONS=Object.freeze(['decisions']);
+function developmentDeletionExactObject(value,label,keys){
+ const obj=developmentRequireObject(value,label),allowed=new Set(keys),unknown=Object.keys(obj).filter(key=>!allowed.has(key)),missing=keys.filter(key=>!Object.prototype.hasOwnProperty.call(obj,key));
+ if(unknown.length)throw new Error(`${label}に未知fieldがあります: ${unknown.join(', ')}`);if(missing.length)throw new Error(`${label}に必須fieldがありません: ${missing.join(', ')}`);return obj;
+}
+function developmentNormalizeDeletionContract(raw,current){
+ if(raw===null||raw===undefined)return {schema_version:DEVELOPMENT_WORKSPACE_DELETION_SCHEMA_VERSION,workspace_id:String(current?.workspace?.id||''),deletions:[]};
+ const root=developmentDeletionExactObject(raw,'削除指示JSON',['schema_version','workspace_id','deletions']);
+ if(typeof root.schema_version!=='string'||root.schema_version!==DEVELOPMENT_WORKSPACE_DELETION_SCHEMA_VERSION)throw new Error(`削除指示JSON schema_version ${DEVELOPMENT_WORKSPACE_DELETION_SCHEMA_VERSION}が必要です: ${root.schema_version??'(missing)'}`);
+ if(typeof root.workspace_id!=='string'||!root.workspace_id.trim())throw new Error('削除指示JSON workspace_idがありません。');const workspaceId=root.workspace_id.trim(),currentId=String(current?.workspace?.id||'');if(workspaceId!==currentId)throw new Error(`削除指示JSONの案件IDが一致しません。現在=${currentId} / Delete=${workspaceId}`);
+ if(!Array.isArray(root.deletions))throw new Error('削除指示JSON deletionsは配列である必要があります。');const seen=new Set(),deletions=[];
+ for(let i=0;i<root.deletions.length;i++){
+  const row=developmentDeletionExactObject(root.deletions[i],`削除指示JSON deletions[${i}]`,['collection','id']);
+  if(typeof row.collection!=='string'||!row.collection.trim())throw new Error(`削除指示JSON deletions[${i}].collectionがありません。`);if(typeof row.id!=='string'||!row.id.trim())throw new Error(`削除指示JSON deletions[${i}].idがありません。`);
+  const collection=row.collection.trim(),id=row.id.trim();if(!DEVELOPMENT_WORKSPACE_DELETION_COLLECTIONS.includes(collection))throw new Error(`削除指示JSONのcollectionは許可されていません: ${collection}`);const key=`${collection}\u0000${id}`;if(seen.has(key))throw new Error(`削除指示JSONで削除対象が重複しています: ${collection}.${id}`);seen.add(key);
+  const rows=Array.isArray(current?.[collection])?current[collection]:[];if(!rows.some(item=>String(item?.id||'')===id))throw new Error(`削除対象がCurrentに存在しません: ${collection}.${id}`);deletions.push({collection,id});
+ }
+ return {schema_version:DEVELOPMENT_WORKSPACE_DELETION_SCHEMA_VERSION,workspace_id:workspaceId,deletions};
+}
+function developmentDeletionUpdateConflicts(current,normalizedIncoming,raw,deletions){
+ if(!deletions.length||!Object.prototype.hasOwnProperty.call(raw,'decisions'))return;const currentById=new Map((current.decisions||[]).map(row=>[String(row?.id||''),row])),incomingById=new Map((normalizedIncoming.decisions||[]).map(row=>[String(row?.id||''),row]));
+ for(const target of deletions){if(target.collection!=='decisions')continue;const before=currentById.get(target.id),incoming=incomingById.get(target.id);if(incoming&&before&&!developmentMergeEqual(before,incoming))throw new Error(`通常統合JSONの更新と削除指示が競合しています: decisions.${target.id}`)}
+}
+function developmentDecisionReferenceField(key){return /(^|_)decision_(id|ids|refs)$/.test(String(key||''))}
+function developmentCollectNamedDecisionReferences(value,decisionId,path,refs){
+ if(Array.isArray(value)){for(let i=0;i<value.length;i++)developmentCollectNamedDecisionReferences(value[i],decisionId,`${path}[${i}]`,refs);return}
+ if(!value||typeof value!=='object')return;
+ for(const [key,child] of Object.entries(value)){
+  const next=path?`${path}.${key}`:key;
+  if(developmentDecisionReferenceField(key)){
+   if(typeof child==='string'&&child===decisionId)refs.push(next);else if(Array.isArray(child))for(let i=0;i<child.length;i++)if(String(child[i]||'')===decisionId)refs.push(`${next}[${i}]`);
+  }
+  if(child&&typeof child==='object')developmentCollectNamedDecisionReferences(child,decisionId,next,refs);
+ }
+}
+function developmentDecisionInboundReferences(workspace,decisionId){
+ const refs=[];developmentCollectNamedDecisionReferences(workspace,decisionId,'',refs);
+ for(let i=0;i<(workspace.project_rules||[]).length;i++){const row=workspace.project_rules[i];if(String(row?.source_id||'')===decisionId)refs.push(`project_rules[${i}].source_id`)}
+ for(let i=0;i<(workspace.system_flags||[]).length;i++){const row=workspace.system_flags[i];if(String(row?.scope_type||'')==='Decision'&&String(row?.scope_id||'')===decisionId)refs.push(`system_flags[${i}].scope_id`)}
+ for(let i=0;i<(workspace.system_events||[]).length;i++){const row=workspace.system_events[i];if(String(row?.target_type||'')==='Decision'&&String(row?.target_id||'')===decisionId)refs.push(`system_events[${i}].target_id`)}
+ for(let i=0;i<(workspace.system_impacts||[]).length;i++){const row=workspace.system_impacts[i];if(String(row?.target_type||'')==='Decision'&&String(row?.target_id||'')===decisionId)refs.push(`system_impacts[${i}].target_id`)}
+ return [...new Set(refs)];
+}
+function developmentAssertDeletionInboundReferences(workspace,deletions){
+ for(const target of deletions){if(target.collection!=='decisions')continue;const refs=developmentDecisionInboundReferences(workspace,target.id);if(refs.length)throw new Error(`削除対象 ${target.collection}.${target.id} は構造参照が残っているため削除できません: ${refs.slice(0,8).join(', ')}${refs.length>8?` 他${refs.length-8}件`:''}`)}
+}
+function developmentApplyExplicitDeletions(workspace,summary,deletions){
+ for(const target of deletions){const rows=workspace[target.collection]||[],before=rows.length;workspace[target.collection]=rows.filter(row=>String(row?.id||'')!==target.id);if(workspace[target.collection].length!==before-1)throw new Error(`削除対象を一意に削除できません: ${target.collection}.${target.id}`);const stat=summary.arrays[target.collection]||{adds:0,updates:0,same:0,deletes:0};stat.deletes=(stat.deletes||0)+1;summary.arrays[target.collection]=stat;summary.total.deletes++;summary.deletions.push({collection:target.collection,id:target.id})}
+}
 function developmentMergeStable(value){if(Array.isArray(value))return value.map(developmentMergeStable);if(value&&typeof value==='object'){const out={};Object.keys(value).sort().forEach(k=>{if(!['created_at','updated_at'].includes(k))out[k]=developmentMergeStable(value[k])});return out}return value}
 function developmentMergeEqual(a,b){return JSON.stringify(developmentMergeStable(a))===JSON.stringify(developmentMergeStable(b))}
 function developmentMergeIncomingIds(rows,key){const seen=new Set(),duplicates=[];for(const row of rows||[]){const id=String(row?.id||'').trim();if(!id)throw new Error(`${key} にIDなしRecordがあります。`);if(seen.has(id))duplicates.push(id);seen.add(id)}if(duplicates.length)throw new Error(`${key} のImport内でIDが重複しています: ${[...new Set(duplicates)].join(', ')}`);return seen}
@@ -3858,7 +3909,7 @@ function developmentMergeRows(currentRows,incomingRows,key){
  return{rows:out,adds,updates,same,deletes:0};
 }
 function developmentMergeHistory(currentRows,incomingRows){const out=(currentRows||[]).map(row=>structuredClone(row)),seen=new Set(out.map(row=>JSON.stringify(developmentMergeStable(row))));let adds=0,same=0;for(const row of incomingRows||[]){const key=JSON.stringify(developmentMergeStable(row));if(seen.has(key)){same++;continue}seen.add(key);out.push(structuredClone(row));adds++}return{rows:out,adds,updates:0,same,deletes:0}}
-function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
+function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw,deletionRaw=null){
  const current=normalizeDevelopmentWorkspace(currentRaw),raw=(incomingRaw&&typeof incomingRaw==='object'&&!Array.isArray(incomingRaw))?structuredClone(incomingRaw):null;if(!raw)throw new Error('Development Project JSONのObjectが必要です。');
  if(raw.format==='gk-development-project-collection')throw new Error('旧全案件JSON形式は廃止されました。');
  const sourceId=String(raw?.workspace?.id||'').trim();if(sourceId!==String(current.workspace.id||''))throw new Error(`案件IDが一致しません。現在=${current.workspace.id} / Import=${sourceId||'(missing)'}`);
@@ -3866,7 +3917,7 @@ function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
  if(Object.prototype.hasOwnProperty.call(raw,'impact_items'))throw new Error('旧impact_itemsは自動migrationしません。');
  const composite=structuredClone(current);for(const key of Object.keys(raw)){if(key==='workspace')composite.workspace={...composite.workspace,...raw.workspace};else if(key!=='authority')composite[key]=structuredClone(raw[key])}
  composite.workspace={...current.workspace,...(raw.workspace||{}),id:current.workspace.id,name:current.workspace.name};composite.authority=structuredClone(current.authority);
- const normalizedIncoming=normalizeDevelopmentWorkspace(composite),merged=structuredClone(current),summary={arrays:{},objects:[],workspace:[],history:{adds:0,updates:0,same:0,deletes:0},total:{adds:0,updates:0,same:0,deletes:0}};
+ const normalizedIncoming=normalizeDevelopmentWorkspace(composite),deletionContract=developmentNormalizeDeletionContract(deletionRaw,current),merged=structuredClone(current),summary={arrays:{},objects:[],workspace:[],history:{adds:0,updates:0,same:0,deletes:0},deletions:[],total:{adds:0,updates:0,same:0,deletes:0}};developmentDeletionUpdateConflicts(current,normalizedIncoming,raw,deletionContract.deletions);
  if(Object.prototype.hasOwnProperty.call(raw,'workflow')&&!developmentMergeEqual(current.workflow,normalizedIncoming.workflow))developmentMergeRequireFreshSnapshot(current.workspace,raw.workspace,'workflow変更');
  developmentValidateWorkflowIncoming(current.workflow,normalizedIncoming.workflow);
  if(Object.prototype.hasOwnProperty.call(raw,'lifecycle')&&!developmentMergeEqual(current.lifecycle,normalizedIncoming.lifecycle))throw new Error('lifecycle変更はDevelopment JSON統合では実行できません。HumanのLifecycle操作を使用してください。');
@@ -3875,18 +3926,19 @@ function prepareDevelopmentWorkspaceMerge(currentRaw,incomingRaw){
  for(const key of DEVELOPMENT_WORKSPACE_MERGE_OBJECT_KEYS){if(key==='lifecycle'||!Object.prototype.hasOwnProperty.call(raw,key))continue;const before=current[key],after=normalizedIncoming[key];if(developmentMergeEqual(before,after)){summary.objects.push({key,changed:false});summary.total.same++}else{developmentMergeRequireFreshSnapshot(current.workspace,raw.workspace,`${key}変更`);merged[key]=structuredClone(after);summary.objects.push({key,changed:true});summary.total.updates++}}
  if(Object.prototype.hasOwnProperty.call(raw,'workflow')){const before=current.workflow,after=normalizedIncoming.workflow;if(developmentMergeEqual(before,after)){summary.objects.push({key:'workflow',changed:false});summary.total.same++}else{merged.workflow=structuredClone(after);summary.objects.push({key:'workflow',changed:true});summary.total.updates++}}
  if(raw.workspace&&typeof raw.workspace==='object'){for(const key of ['status','ai_attention']){if(!Object.prototype.hasOwnProperty.call(raw.workspace,key))continue;const before=current.workspace[key],after=normalizedIncoming.workspace[key];if(before===after){summary.workspace.push({key,changed:false});summary.total.same++}else{developmentMergeRequireFreshSnapshot(current.workspace,raw.workspace,`workspace.${key}変更`);merged.workspace[key]=after;summary.workspace.push({key,changed:true});summary.total.updates++}}}
- merged.workspace.id=current.workspace.id;merged.workspace.name=current.workspace.name;merged.workspace.updated_at=current.workspace.updated_at;merged.authority=structuredClone(current.authority);merged.schema_version=DEVELOPMENT_PROJECT_SCHEMA_VERSION;return{merged:normalizeDevelopmentWorkspace(merged),summary};
+ merged.workspace.id=current.workspace.id;merged.workspace.name=current.workspace.name;merged.workspace.updated_at=current.workspace.updated_at;merged.authority=structuredClone(current.authority);merged.schema_version=DEVELOPMENT_PROJECT_SCHEMA_VERSION;developmentAssertDeletionInboundReferences(merged,deletionContract.deletions);developmentApplyExplicitDeletions(merged,summary,deletionContract.deletions);return{merged:normalizeDevelopmentWorkspace(merged),summary};
 }
-function developmentMergeSummaryText(summary){const rows=[];for(const [key,v] of Object.entries(summary.arrays||{}))rows.push(`${key}: 追加${v.adds} / 更新${v.updates} / 同一${v.same}`);if(summary.history?.adds||summary.history?.same)rows.push(`history: 追加${summary.history.adds} / 同一${summary.history.same}`);for(const x of summary.objects||[])rows.push(`${x.key}: ${x.changed?'更新':'同一'}${x.protected_fields?.length?` / 巻戻し保護 ${x.protected_fields.join(',')}`:''}`);for(const x of summary.workspace||[])rows.push(`workspace.${x.key}: ${x.changed?'更新':'同一'}${x.protected?' / Workflow正本を保持':''}`);return `合計: 追加${summary.total.adds} / 更新${summary.total.updates} / 同一${summary.total.same} / 削除0`+(rows.length?`\n\n${rows.join('\n')}`:'')}
+function developmentMergeSummaryText(summary){const rows=[];for(const [key,v] of Object.entries(summary.arrays||{}))rows.push(`${key}: 追加${v.adds} / 更新${v.updates} / 同一${v.same} / 削除${v.deletes||0}`);if(summary.history?.adds||summary.history?.same)rows.push(`history: 追加${summary.history.adds} / 同一${summary.history.same}`);for(const x of summary.objects||[])rows.push(`${x.key}: ${x.changed?'更新':'同一'}${x.protected_fields?.length?` / 巻戻し保護 ${x.protected_fields.join(',')}`:''}`);for(const x of summary.workspace||[])rows.push(`workspace.${x.key}: ${x.changed?'更新':'同一'}${x.protected?' / Workflow正本を保持':''}`);if(summary.deletions?.length)rows.push(`削除対象: ${summary.deletions.map(x=>`${x.collection}.${x.id}`).join(', ')}`);return `合計: 追加${summary.total.adds} / 更新${summary.total.updates} / 同一${summary.total.same} / 削除${summary.total.deletes||0}`+(rows.length?`\n\n${rows.join('\n')}`:'')}
 async function executeDevelopmentMergeSave(){
- const file=document.getElementById('developmentMergeSaveFile')?.files?.[0],branch=developmentPanelValue('developmentMergeSaveBranch'),token=developmentPanelValue('developmentMergeSavePat'),status=document.getElementById('developmentMergeSaveStatus');
+ const file=document.getElementById('developmentMergeSaveFile')?.files?.[0],deleteFile=document.getElementById('developmentMergeDeleteFile')?.files?.[0],branch=developmentPanelValue('developmentMergeSaveBranch'),token=developmentPanelValue('developmentMergeSavePat'),status=document.getElementById('developmentMergeSaveStatus');
  if(!file)return alert('統合JSONを選択してください。');if(!branch)return alert('Branchを入力してください。');if(!token)return alert('PATを入力してください。');
  try{
   const entry=activeDevelopmentProjectEntry();if(!entry||entry.storage_mode!=='git')throw new Error('Git canonical案件を開いてください。');
-  const raw=JSON.parse(await file.text()),current=loadDevelopmentWorkspace(),plan=prepareDevelopmentWorkspaceMerge(current,raw),summary=developmentMergeSummaryText(plan.summary);
-  if(!plan.summary.total.adds&&!plan.summary.total.updates){if(status)status.textContent='統合対象の変更はありません。';alert(`統合対象の変更はありません。\n\n${summary}`);return}
+  const raw=JSON.parse(await file.text()),deletionRaw=deleteFile?JSON.parse(await deleteFile.text()):null,current=loadDevelopmentWorkspace(),plan=prepareDevelopmentWorkspaceMerge(current,raw,deletionRaw),summary=developmentMergeSummaryText(plan.summary);
+  if(!plan.summary.total.adds&&!plan.summary.total.updates&&!plan.summary.total.deletes){if(status)status.textContent='統合対象の変更はありません。';alert(`統合対象の変更はありません。\n\n${summary}`);return}
+  if(status)status.textContent='統合内容を確認してください。';if(!confirm(`次の統合内容をGitへ保存します。\n\n${summary}\n\n続行しますか？`)){if(status)status.textContent='保存をキャンセルしました。';return}
   if(status)status.textContent='統合内容を検証してGitへ保存しています…';
-  const ok=await window.GKSDevelopmentGitStore?.saveCandidate?.(plan.merged,{branch,token,message:`Development Workspace JSON merged: add=${plan.summary.total.adds} update=${plan.summary.total.updates} delete=0`});
+  const ok=await window.GKSDevelopmentGitStore?.saveCandidate?.(plan.merged,{branch,token,message:`Development Workspace JSON merged: add=${plan.summary.total.adds} update=${plan.summary.total.updates} delete=${plan.summary.total.deletes}`});
   if(!ok){if(status)status.textContent='保存できませんでした。';return}
   closeStudioInputPanel();alert(`JSONを統合してGitへ保存しました。\n${summary}`);
  }catch(e){if(status)status.textContent='統合または保存に失敗しました。';alert('開発管理JSON統合失敗: '+e.message)}
@@ -10114,7 +10166,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','792');
+    url.searchParams.set('appv','793');
     location.replace(url.toString());
    }
  }
@@ -10123,7 +10175,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=792',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=793',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10142,7 +10194,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','792');
+    url.searchParams.set('appv','793');
     location.replace(url.toString());
    }
   });
