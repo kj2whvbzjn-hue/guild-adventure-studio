@@ -1,0 +1,169 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-32ccb8f8-c975-464a-bb69-45c24b5a03a3",
+    "canonical_path": "development-project-data/DEV-V9-BALANCE-SKILL-001.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-BALANCE-SKILL-001",
+    "name": "スキル調整",
+    "status": "Exploring",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-28T12:09:00+09:00"
+  },
+  "project_context": {
+    "purpose": "V9 Balance調整のSkill領域を独立して再設計する。Skill Lv1〜11、3 Stat習得閾値、6:3:1配分、Threshold Budget、対象範囲Cost、消費Costを上流ルールとして整理し、Current Formal Skill Contractを変更せずにSkill効果を仮配置・検証できる状態を作る。",
+    "summary": "既存C_MultiHit等の個別係数先行テストを停止し、Skill Levelと3能力値ThresholdをSkill傾向・効果予算・消費Costの共通入力として再設計する新規Balance案件。具体Power、Range係数、Threshold→Effect換算率、Cost式はCandidateとして扱い、Human確認前にFreezeしない。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-BAL-SKILL-001",
+    "work_box_id": "BOX-BAL-SKILL-001",
+    "theme": "Skill Level / 3 Stat Threshold Budget / Range Cost",
+    "goal": "Skill Lv1〜11と3 Stat 6:3:1 Thresholdから、Skill傾向・Effect Budget・Target Range・Resource Costを一貫して導出する暫定Frameworkを作る。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-BAL-SKILL-001",
+      "text": "本案件はSkill Balance再設計専用とし、DEV-V9-BALANCE-001の既存Task/Workflow/Historyを直接更新しない。必要な既存Authority/Evidenceは参照元として扱う。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 skill balance redesign",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-SKILL-002",
+      "text": "Current Formal Skill Structure/Contractは変更しない。Skillは既存trigger/conditions/useRequirements/target/effects/resource/runtimeContracts内で構成する。Balance都合で新しいSkill fieldやLegacy/Fallback経路を追加しない。",
+      "status": "Active",
+      "source_type": "CurrentSpecificationAuthority",
+      "source_id": "DEV-V9-BALANCE-001 / DEV-V9-REORG-019 Current Formal Skill",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    },
+    {
+      "id": "RULE-BAL-SKILL-003",
+      "text": "具体数値はCandidateとして扱う。Skill Lv別Threshold表、110/130/160%等のPower例、Range Cost係数、Threshold→Effect換算率、Resource Cost式はHuman確認前に正式Freezeしない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 provisional skill values",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B799",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(20260828-030942).zip",
+    "source_role": "current_baseline",
+    "recorded_at": "2026-08-28T12:09:00+09:00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-28T12:09:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [
+    {
+      "id": "DISC-BAL-SKILL-001",
+      "title": "Skill Level・3 Stat Threshold・Budget・Costの再設計",
+      "status": "Resolved",
+      "summary": "Skill Lvと3 Stat Thresholdを上流入力としてSkill傾向・効果Budget・消費Costを決める。",
+      "body": "Human指示で以下を採用する。\n- Skill Levelは1〜11。\n- Skill Lv1はPlayer Lv1相当、Skill Lv11はPlayer Lv50相当。\n- 各Skillは習得に3 Statを必要とする。\n- 3 Stat ThresholdはPrimary:Secondary:Tertiary=6:3:1で配置する。\n- Skill LevelとThresholdの数値によりSkill傾向を決める。\n- Thresholdの数値をEffect Budgetとして威力・Hit構成・Status/DOT/Heal/Barrier・範囲等へ配分する。\n- Threshold総量から基礎消費Costを設定する。\n- Target RangeごとにCost係数を定義し、最終消費Costへ反映する。\n- 同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。\n- 既存Human Approved affinityとしてSTR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを保持する。\n- 具体数値は仮配置から開始し、後続検証で調整する。\n\n暫定Skill Lv→Player Lv対応:\nLv1=1, Lv2=6, Lv3=11, Lv4=16, Lv5=21, Lv6=26, Lv7=30, Lv8=35, Lv9=40, Lv10=45, Lv11=50。\n\n暫定3 Stat Threshold表（Primary/Secondary/Tertiary）:\nLv1=10/10/10, Lv2=18/14/11, Lv3=25/18/12, Lv4=32/21/14, Lv5=40/25/15, Lv6=48/29/16, Lv7=54/32/17, Lv8=61/36/18, Lv9=68/39/20, Lv10=76/43/21, Lv11=84/47/22。\n\n単純上位互換の仮例:\n単発攻撃 Skill Lv1=110%、Lv5=130%、Lv10=160%。これらは仮値であり正式Power Authorityではない。",
+      "open_questions": "VIT/INT/MND/LUKのSkill affinity詳細、Threshold point→各Effect価値の換算率、Target Range Cost係数、Threshold Total→MP/Cooldown/Cast Cost式を今後決定する。",
+      "conclusion": "個別Skill係数を先に測る方式から、Skill Lv + 3 Stat Thresholdを共通Budget入力とする方式へ移行する。",
+      "related_discussion_ids": [],
+      "artifact_note": "Human conversation 2026-08-28",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-BAL-SKILL-001",
+      "title": "Skill Lv・3 Stat 6:3:1 Threshold Budget Frameworkを採用する",
+      "status": "Approved",
+      "text": "Skill Lv1〜11と各Skillに必要な3 Stat ThresholdをSkill Balanceの上流入力とする。Skill Lv1をPlayer Lv1相当、Skill Lv11をPlayer Lv50相当とする。各Skillは3 Stat Requirementを持ち、Primary:Secondary:Tertiary Thresholdを6:3:1で配置する。Skill LvとThreshold配分によりSkill傾向を決め、Threshold数値をEffect Budgetとして威力・範囲等へ使用する。Threshold総量を基礎消費Cost尺度とし、Target Range Cost係数で最終Costを決める。同系統の高Skill Level Skillによる単純上位互換を許可する。具体換算率・Power・Range係数・Cost式は未Freeze Candidateとする。",
+      "rationale": "HumanがSkill Balance全面再設計方針を明示したため。",
+      "source_discussion_ids": [
+        "DISC-BAL-SKILL-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T12:09:00+09:00",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    }
+  ],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-BAL-SKILL-001",
+      "name": "Skill Balance Framework",
+      "parent_id": "",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-BAL-SKILL-001",
+      "node_id": "ARCH-BAL-SKILL-001",
+      "title": "スキル調整",
+      "body": "Skill Lv1〜11、3 Stat 6:3:1 Threshold、Effect Budget、Target Range Cost、Resource Costを設計・仮配置する。",
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-BAL-SKILL-001",
+      "box_id": "BOX-BAL-SKILL-001",
+      "title": "Skill Lv / Threshold Budget / Range Costの暫定表を作成する",
+      "status": "Todo",
+      "execution_order": 1,
+      "depends_on": [],
+      "acceptance_criteria": "- Skill Lv1〜11の想定Player Levelと3 Stat Threshold Candidateを一覧化する。\n- Primary:Secondary:Tertiary=6:3:1を維持する。\n- 7 StatのSkill affinity/Budget用途を整理する。STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitは既存Authorityとして保持する。\n- Threshold Totalと6:3:1内訳からEffect Budgetを導く暫定式を作る。\n- Current target.side/rangeに対するRange Cost係数Candidateを作る。\n- Threshold TotalからMP/Cooldown/Cast等のResource Costへ変換する候補式を作る。\n- 単純上位互換Skill系列を許可し、低LvSkillとの差別化を人工的に強制しない。\n- 110%/130%/160%等のPower例は仮値として扱い、Human確認前にFreezeしない。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-28T12:09:00+09:00",
+      "updated_at": "2026-08-28T12:09:00+09:00"
+    }
+  ],
+  "checks": [],
+  "workflow": {
+    "stage": "Discovery",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-28T12:09:00+09:00",
+      "message": "Development Project created for Skill Balance redesign"
+    },
+    {
+      "at": "2026-08-28T12:09:00+09:00",
+      "message": "Human-approved Skill Lv1〜11 / 3 Stat 6:3:1 Threshold / Threshold Budget / Range Cost framework registered as initial planning data."
+    }
+  ]
+}
