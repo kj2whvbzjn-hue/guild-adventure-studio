@@ -455,8 +455,20 @@ function applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{
 function executeRuntimeDamageRuntime(attacker,target,compiled){
  const resolved=resolveRuntimeDamageContracts(compiled);if(!resolved.formal)return null;
  if(!resolved.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_rejected',{source_id:attacker?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,reason:resolved.reason});return{ok:false,error:true,reason:resolved.reason}}
- const hits=[];let totalDamage=0,anyHit=false;for(let i=0;i<resolved.contracts.length;i++){if(!target?.alive)break;const contract=resolved.contracts[i],baseDamage=calculateCurrentSkillBaseDamage(attacker,contract),result=applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{hitIndex:i});hits.push({...result,effectContract:{...contract}});if(result.ok)anyHit=true;totalDamage+=Number(result.damage)||0;typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,hit_index:i,power:contract.power,damage_type:contract.damageType,base_damage:baseDamage,applied_damage:result.damage,miss:result.miss===true,critical:result.critical===true});}
- const first=hits[0]||{};return{...first,ok:anyHit,miss:!anyHit&&hits.some(x=>x.miss),runtimeContracts:true,effectContracts:resolved.contracts.map(x=>({...x})),hits,totalDamage,damage:totalDamage};
+ const hitApplyContracts=(compiled?.definition?.runtimeContracts?.applyContracts||[]).filter(contract=>['STATUS','DOT','BUFF','DEBUFF'].includes(String(contract?.logic||contract?.kind||'').toUpperCase()));
+ const hits=[],hitApplyResults=[];let totalDamage=0,anyHit=false;
+ for(let i=0;i<resolved.contracts.length;i++){
+  if(!target?.alive)break;
+  const contract=resolved.contracts[i],baseDamage=calculateCurrentSkillBaseDamage(attacker,contract),result=applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{hitIndex:i});
+  const perHitApply=[];
+  if(result.ok&&target?.alive){for(const applyContract of hitApplyContracts){const logic=String(applyContract?.logic||applyContract?.kind||'').toUpperCase(),applied=applyTaggedApplyRuntime(attacker,target,compiled,logic,{attackSucceeded:true,applyContract});perHitApply.push({logic,effectId:applyContract?.effectId||null,contract:applyContract,result:applied});}}
+  hits.push({...result,effectContract:{...contract},applyResults:perHitApply});
+  if(perHitApply.length)hitApplyResults.push({hitIndex:i,results:perHitApply});
+  if(result.ok)anyHit=true;
+  totalDamage+=Number(result.damage)||0;
+  typeof recordValidationEvent==='function'&&recordValidationEvent('skill_damage_executed',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,hit_index:i,power:contract.power,damage_type:contract.damageType,base_damage:baseDamage,applied_damage:result.damage,miss:result.miss===true,critical:result.critical===true});
+ }
+ const first=hits[0]||{};return{...first,ok:anyHit,miss:!anyHit&&hits.some(x=>x.miss),runtimeContracts:true,effectContracts:resolved.contracts.map(x=>({...x})),hits,hitApplyHandled:hitApplyContracts.length>0,hitApplyResults,totalDamage,damage:totalDamage};
 }
 function resolveRuntimeHealContract(compiled){
  const contract=compiled?.definition?.runtimeContracts?.effectContracts?.find(x=>x?.type==='HEAL')||null;
@@ -740,14 +752,14 @@ function processApplyLifecycleDeathCleanup(target,{reason='death',sourceId=null}
  return{ok:true,reason,targetId:target.id,cleared,results};
 }
 
-function resolveRuntimeApplyLifecycle(compiled,logic){
+function resolveRuntimeApplyLifecycle(compiled,logic,applyContract=null){
  const runtime=compiled?.definition?.runtimeContracts;if(!runtime)return{formal:false,ok:true,contract:null,lifecycle:null};
- const contract=runtime.applyContracts?.find(x=>x.logic===logic)||null;
+ const contract=applyContract||runtime.applyContracts?.find(x=>x.logic===logic)||null;
  if(!contract||!contract.lifecycle)return{formal:true,ok:false,reason:'SKILL_RUNTIME_APPLY_CONTRACT_MISSING',contract:null,lifecycle:null};
  return{formal:true,ok:true,contract,lifecycle:contract.lifecycle};
 }
-function resolveRuntimeApplyPolicy(compiled,logic){
- const lifecycleRef=resolveRuntimeApplyLifecycle(compiled,logic);if(!lifecycleRef.ok||!lifecycleRef.formal)return{...lifecycleRef,policy:null};
+function resolveRuntimeApplyPolicy(compiled,logic,applyContract=null){
+ const lifecycleRef=resolveRuntimeApplyLifecycle(compiled,logic,applyContract);if(!lifecycleRef.ok||!lifecycleRef.formal)return{...lifecycleRef,policy:null};
  const lc=lifecycleRef.lifecycle||{},contract=lifecycleRef.contract||{};
  const allowed={stackRule:new Set(['UNIQUE','STACK','REPLACE','IGNORE']),refreshRule:new Set(['REFRESH','EXTEND','KEEP','REPLACE']),snapshotPolicy:new Set(['SNAPSHOT','DYNAMIC']),effectiveRule:new Set(['HIGHEST','SUM','LATEST','NONE']),consumeRule:new Set(['FIFO','LIFO','NONE']),dispelCategory:new Set(['STATUS','DOT','BUFF','DEBUFF','SHIELD','NONE'])};
  for(const [key,set] of Object.entries(allowed)){const value=String(lc[key]??'');if(!set.has(value))return{...lifecycleRef,ok:false,reason:'SKILL_RUNTIME_APPLY_POLICY_UNKNOWN',policy:null,policyField:key,policyValue:value}}
@@ -768,8 +780,8 @@ function resolveRuntimeApplyDefinition(compiled,contract){
  if(numeric.some(x=>!Number.isFinite(x)||x<0))return{ok:false,formalValues:true,reason:'SKILL_RUNTIME_APPLY_VALUES_INVALID',compiled:null};
  return{ok:true,formalValues:true,compiled:{...compiled,definition:{...compiled.definition,parameters:p}}};
 }
-function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=true}={}){
- const lifecycleRef=resolveRuntimeApplyPolicy(compiled,logic);
+function applyTaggedApplyRuntime(source,target,compiled,logic,{attackSucceeded=true,applyContract=null}={}){
+ const lifecycleRef=resolveRuntimeApplyPolicy(compiled,logic,applyContract);
  if(!lifecycleRef.ok){const policyError=String(lifecycleRef.reason||'').startsWith('SKILL_RUNTIME_APPLY_POLICY_');battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] 正式Runtime APPLY ${policyError?'policy':'lifecycle契約'}が不正です`);typeof recordValidationEvent==='function'&&recordValidationEvent(policyError?'runtime_apply_policy_rejected':'runtime_apply_contract_rejected',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,reason:lifecycleRef.reason,field:lifecycleRef.policyField||null,value:lifecycleRef.policyValue||null});return{handled:true,skipped:true,error:true,reason:lifecycleRef.reason,result:null,lifecycle:lifecycleRef.lifecycle||null,policy:null}}
  if(lifecycleRef.formal&&typeof recordValidationEvent==='function'){recordValidationEvent('runtime_apply_contract_resolved',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,registry_phase:(compiled?.definition?.runtimeContracts)?.registryPhase||null,lifecycle:lifecycleRef.lifecycle});recordValidationEvent('runtime_apply_policy_resolved',{source_id:source?.id||null,target_id:target?.id||null,skill_id:compiled?.definition?.id||null,logic,effect_id:lifecycleRef.contract?.effectId||null,registry_phase:(compiled?.definition?.runtimeContracts)?.registryPhase||null,policy:lifecycleRef.policy})}
  const direct=resolveRuntimeApplyDefinition(compiled,lifecycleRef.contract);if(!direct.ok)return{handled:true,skipped:true,error:true,reason:direct.reason,result:null,contract:lifecycleRef.contract};
@@ -819,7 +831,11 @@ function executeSkillRuntime(actor,target,skillSource,{manual=false,isFollowUp=f
    if(logic==='COVER')coverApplyResult=executeRuntimeTargetControlRuntime(actor,originalTarget,compiled)||applyTaggedCover(actor,originalTarget,compiled);
    else if(logic==='ATTACK'){attackResult=executeRuntimeDamageRuntime(actor,actionTarget,compiled)||applyTaggedDamage(actor,actionTarget,calculateTaggedAttackDamage(actor,compiled.definition),compiled.definition);attackSucceeded=!!attackResult?.ok}
    else if(logic==='HEAL')healResult=executeRuntimeHealRuntime(actor,actionTarget,compiled)||applyTaggedHeal(actor,actionTarget,compiled);
-   else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){const applyResult=applyTaggedApplyRuntime(actor,actionTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
+   else if(['SHIELD','STATUS','DOT','BUFF','DEBUFF'].includes(logic)){
+    const damageResult=attackResult||followUpResult,handledPerHit=damageResult?.hitApplyHandled===true&&logic!=='SHIELD';
+    if(handledPerHit){const rows=(damageResult.hitApplyResults||[]).flatMap(x=>x.results||[]).filter(x=>x.logic===logic),last=rows.length?rows[rows.length-1].result:null;if(logic==='STATUS')statusResult=last?.result||null;else if(logic==='DOT')dotResult=last?.result||null;else modifierResult=last?.result||null;}
+    else{const applyResult=applyTaggedApplyRuntime(actor,actionTarget,compiled,logic,{attackSucceeded});if(logic==='SHIELD')shieldResult=applyResult.result;else if(logic==='STATUS')statusResult=applyResult.result;else if(logic==='DOT')dotResult=applyResult.result;else modifierResult=applyResult.result}
+   }
    else if(logic==='CLEANSE')cleanseResult=executeRuntimeRemoveRuntime(actor,actionTarget,compiled)||cleanseStatusEffects(actor,actionTarget,compiled);
    else if(logic==='RESOURCE_CHANGE')executeRuntimeResourceChangeRuntime(actor,actionTarget,compiled);
    else if(logic==='REVIVE')reviveResult=executeRuntimeReviveRuntime(actor,actionTarget,compiled)||reviveTarget(actor,actionTarget,compiled);
