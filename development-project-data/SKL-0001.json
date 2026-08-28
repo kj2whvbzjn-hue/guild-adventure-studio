@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T05:48:57.017Z"
+    "updated_at": "2026-08-28T06:24:33.806Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Effect Value Seeds / Critical / Attribute Attach / Range Cost",
-    "goal": "Human確認済みの暫定Effect数値Seedを基準に、未配置のCritical系・属性付与系・Range Cost/Resource Costを整理し、その後Balance Testへ進む。"
+    "theme": "Attribute Attach / Remaining Ability Seeds / Integrated Balance Test",
+    "goal": "INT換算、Critical、MP、Range Resource Costまでの暫定Seedを基準に、属性付与等の残項目を整理し、全Effect/Range/Costを含む総合Balance Test準備へ進む。"
   },
   "project_rules": [
     {
@@ -85,6 +85,33 @@
       "source_id": "conversation:2026-08-28 provisional effect numeric seeds",
       "created_at": "2026-08-28T14:40:00+09:00",
       "updated_at": "2026-08-28T14:40:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-MAGIC-INT-001",
+      "text": "魔法攻撃のThreshold換算はINT Budget 1 = Magic Fixed Power 1とする。Skill Lv別Magic Fixed Power Seed 16/24/31/39/47/55/62/70/78/85/93は、各Skill Lvで同等基準に到達するINT投入量の目安として扱う。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 INT1 magic fixed power1",
+      "created_at": "2026-08-28T14:55:00+09:00",
+      "updated_at": "2026-08-28T14:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-CRITICAL-SEED-001",
+      "text": "Critical系の暫定Seedは、LUK Budget 1をCritical Rate +0.1 percentage point またはCritical Damage倍率 +2%のどちらか一方へ消費する。同一Skill内で両方へBudget配分することは可能だが、1 Budgetで両方の効果を同時取得してはならない。Critical必中特性を含む妥当性TestはRange/Resource Cost設計後に実施する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 critical provisional seed",
+      "created_at": "2026-08-28T14:55:00+09:00",
+      "updated_at": "2026-08-28T14:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-RANGE-RESOURCE-SEED-001",
+      "text": "Base MP Costの暫定Seedは Skill Lv * 8。Target Rangeによる暫定Resource Costは、SINGLE=MP×1/CD0/Cast0、FRONT=MP×2/CD7/Cast4、BACK=MP×2/CD7/Cast4、RANDOM=2対象固定・MP×2/CD7/Cast4、PIERCE=前後列へのライン攻撃としてMP×2/CD7/Cast4、ALL=MP×4/CD14/Cast7とする。PIERCEは実装可否未確定のためBalance側仮Seedとして扱う。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 MP range cooldown casttime seeds",
+      "created_at": "2026-08-28T14:55:00+09:00",
+      "updated_at": "2026-08-28T14:55:00+09:00"
     }
   ],
   "source_baseline": {
@@ -161,6 +188,22 @@
       "artifact_note": "Human approved provisional seeds 2026-08-28",
       "created_at": "2026-08-28T14:40:00+09:00",
       "updated_at": "2026-08-28T14:40:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-MP-RANGE-CRIT-001",
+      "title": "INT換算・Critical暫定値・MP/Range Resource Cost仮配置",
+      "status": "Resolved",
+      "summary": "Magic Fixed PowerをINT Budgetへ接続し、Critical系暫定単価、Base MP、Range別MP/Cooldown/CastTimeを後続Test用Seedとして仮配置する。",
+      "body": "【Magic / INT換算】\n- INT Budget 1 = Magic Fixed Power 1。\n- Skill Lv別Magic Fixed Power Seed 16/24/31/39/47/55/62/70/78/85/93は、そのPowerへ到達するINT投入量目安として読める。\n\n【Critical】\n- LUK 1 -> Critical Rate +0.1 percentage point。\n- または LUK 1 -> Critical Damage倍率 +2%。\n- 同一Skill内でRateとCritical Damage倍率の両方を購入してよい。\n- ただしLUK Budget 1で両方が同時に付与されるわけではなく、Budgetはどちらか一方へ消費する。\n- Critical必中特性を含むBalance TestはRange/Cost設計後へ延期する。\n\n【Base MP】\n- Base MP Cost = Skill Lv * 8。\n- Lv1〜11 = 8/16/24/32/40/48/56/64/72/80/88。\n\n【Target Range Resource Cost Seed】\n- SINGLE: MP×1 / Cooldown 0 Tick / CastTime 0 Tick。\n- FRONT: MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- BACK: MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- RANDOM: 2対象固定 / MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- PIERCE: 前後列へのライン攻撃 / MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- ALL: MP×4 / Cooldown 14 Tick / CastTime 7 Tick。\n- PIERCEは現時点で実装可否未確定。Balance仮Seedのみ保持する。",
+      "open_questions": "各Range Costの実戦妥当性、PIERCE実装可否、Critical必中を含む期待値、属性付与Access、Status別上限、整数Tick丸め規則を後続Test/設計で確認する。",
+      "conclusion": "Power側とResource側の主要Seedが揃ったため、次工程では属性付与等の残項目整理後、総合Balance Test計画へ進める。",
+      "related_discussion_ids": [
+        "DISC-SKL-EFFECT-VALUE-SEED-001",
+        "DISC-SKL-ABILITY-ACCESS-001"
+      ],
+      "artifact_note": "Human approved provisional seeds 2026-08-28",
+      "created_at": "2026-08-28T14:55:00+09:00",
+      "updated_at": "2026-08-28T14:55:00+09:00"
     }
   ],
   "decisions": [
@@ -219,6 +262,20 @@
       "approved_at": "2026-08-28T14:40:00+09:00",
       "created_at": "2026-08-28T14:40:00+09:00",
       "updated_at": "2026-08-28T14:40:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-MP-RANGE-CRIT-001",
+      "title": "INT換算・Critical暫定値・Range Resource Cost Seedを採用する",
+      "status": "Approved",
+      "text": "INT Budget 1=Magic Fixed Power 1とする。Critical系はLUK Budget 1をCritical Rate +0.1 percentage pointまたはCritical Damage倍率 +2%のどちらか一方へ消費する。同一Skill内で両方への配分は可能だが1 Budgetで両方を同時取得しない。Base MP CostはSkill Lv×8。Range Resource CostはSINGLE=×1/CD0/Cast0、FRONT=×2/CD7/Cast4、BACK=×2/CD7/Cast4、RANDOM=2対象固定・×2/CD7/Cast4、PIERCE=前後列ライン攻撃・×2/CD7/Cast4、ALL=×4/CD14/Cast7を暫定Seedとする。PIERCEは実装可否未確定。",
+      "rationale": "Threshold BudgetからEffect PowerとResource Costを一貫して組み立てられる状態を作り、実装前に総合Balance Test可能な仮基準を揃えるため。",
+      "source_discussion_ids": [
+        "DISC-SKL-MP-RANGE-CRIT-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T14:55:00+09:00",
+      "created_at": "2026-08-28T14:55:00+09:00",
+      "updated_at": "2026-08-28T14:55:00+09:00"
     }
   ],
   "specifications": [],
@@ -256,7 +313,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。\n- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationは1 Budget=0.3 Tickとし、整数Tick丸めとEffect別上限は後続検証で決める。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。\n- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationは1 Budget=0.3 Tickとし、整数Tick丸めとEffect別上限は後続検証で決める。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×4/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -265,7 +322,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-28T14:40:00+09:00"
+      "updated_at": "2026-08-28T14:55:00+09:00"
     }
   ],
   "checks": [],
@@ -306,6 +363,10 @@
     {
       "at": "2026-08-28T14:40:00+09:00",
       "message": "Registered Human-approved provisional effect value seeds: Magic Fixed Power 16/24/31/39/47/55/62/70/78/85/93; Buff/Debuff 0.3 percentage point per Budget with 30% cap; Heal 1% per MND Budget; Barrier 1% per Budget; DOT 1 total completed-stack damage per DEX Budget; Status Duration 0.3 Tick per Budget."
+    },
+    {
+      "at": "2026-08-28T14:55:00+09:00",
+      "message": "Registered provisional INT-to-Magic conversion, Critical Rate/Critical Damage budget choices, Base MP=SkillLv*8, and Target Range MP/Cooldown/CastTime seeds including RANDOM=2 targets and tentative PIERCE line attack."
     }
   ]
 }
