@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T12:49:00+09:00"
+    "updated_at": "2026-08-28T04:24:27.175Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -43,7 +43,7 @@
     },
     {
       "id": "RULE-SKL-003",
-      "text": "各Skillは習得に3 Statを必要とする。旧Primary:Secondary:Tertiary=6:3:1固定配分は使用しない。Skill Lvごとの総Threshold Budgetを3 Statへ配分し、各Stat Threshold値そのものをそのStat系統能力の購入Budgetとして全量使用する。1 Stat Thresholdの最大値は100。",
+      "text": "各Skillは習得に3 Statを必要とする。Skill Lvごとの総Threshold Budgetを3 Statへ配分し、各Stat Threshold値そのものをそのStat系統能力の購入Budgetとして全量使用する。1 Stat Thresholdの最大値は100。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-28 threshold budget redesign",
@@ -58,6 +58,15 @@
       "source_id": "conversation:2026-08-28 provisional values",
       "created_at": "2026-08-28T12:49:00+09:00",
       "updated_at": "2026-08-28T12:49:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-MULTIHIT-001",
+      "text": "基礎攻撃Power=100%。AGI BudgetはDamageを直接購入せずMulti-hit Debt返済にのみ使用する。STR Budgetは直接Damage購入に使用する。Multi-hit成立判定はSTR加算前に行い、AGI返済後の1Hit威力は60%以上を必要とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 multihit debt finalized",
+      "created_at": "2026-08-28T13:23:00+09:00",
+      "updated_at": "2026-08-28T13:23:00+09:00"
     }
   ],
   "source_baseline": {
@@ -79,13 +88,28 @@
       "title": "Skill Level・Threshold Budget・Stat別Ability Budgetの再設計",
       "status": "Resolved",
       "summary": "Skill Lvごとに総Threshold Budgetを定義し、その総量を3 Statへ配分し、各Stat Threshold値そのものを用途制限付きAbility Budgetとして使用する。",
-      "body": "【決定事項】\n- Skill Levelは1〜11。\n- Skill Lv1はPlayer Lv1相当、Skill Lv11はPlayer Lv50相当。\n- 各Skillは習得に3 Statを必要とする。\n- 旧6:3:1固定配分は廃止する。\n- Skill Lv別総Threshold BudgetはLv1=30からSkill Lvごとに+10。\n  Lv1=30, Lv2=40, Lv3=50, Lv4=60, Lv5=70, Lv6=80, Lv7=90, Lv8=100, Lv9=110, Lv10=120, Lv11=130。\n- 総Threshold Budgetを3 StatへSkillごとに配分する。\n- 各Stat Threshold値そのものを、そのStat系統能力を購入するBudgetとして全量使用する。\n- 初期10等を基礎分として差し引かない。\n- 1 Stat Thresholdの最大値は100。\n- 100は1 Statの上限であり、総Threshold上限300とはしない。\n- Skill傾向は3 StatへのBudget配分と各Statの購入可能能力から決まる。\n- Stat Budgetは用途制限を持つ。仮例としてSTR BudgetはDamage Up系にのみ使用可能。\n- 既存Human Approved affinityとしてSTR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを保持する。\n- VIT/INT/MND/LUKの購入可能能力は今後仮配置する。\n- 同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。\n- 各職業の成長期待値は既存Evidenceとして参照し、Threshold配分の実現可能性確認に使用する。\n- Threshold総量を基礎消費Cost尺度とし、Target RangeごとにCost係数を設定する方針を維持する。\n- Current Formal Skill Structure/Contractは変更しない。\n\n【仮値】\n- 単発攻撃 Skill Lv1=110%、Lv5=130%、Lv10=160%。未Freeze。",
+      "body": "【決定事項】\n- Skill Levelは1〜11。\n- Skill Lv1はPlayer Lv1相当、Skill Lv11はPlayer Lv50相当。\n- 各Skillは習得に3 Statを必要とする。\n- - Skill Lv別総Threshold BudgetはLv1=30からSkill Lvごとに+10。\n  Lv1=30, Lv2=40, Lv3=50, Lv4=60, Lv5=70, Lv6=80, Lv7=90, Lv8=100, Lv9=110, Lv10=120, Lv11=130。\n- 総Threshold Budgetを3 StatへSkillごとに配分する。\n- 各Stat Threshold値そのものを、そのStat系統能力を購入するBudgetとして全量使用する。\n- 初期10等を基礎分として差し引かない。\n- 1 Stat Thresholdの最大値は100。\n- 100は1 Statの上限であり、総Threshold上限300とはしない。\n- Skill傾向は3 StatへのBudget配分と各Statの購入可能能力から決まる。\n- Stat Budgetは用途制限を持つ。仮例としてSTR BudgetはDamage Up系にのみ使用可能。\n- 既存Human Approved affinityとしてSTR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを保持する。\n- VIT/INT/MND/LUKの購入可能能力は今後仮配置する。\n- 同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。\n- 各職業の成長期待値は既存Evidenceとして参照し、Threshold配分の実現可能性確認に使用する。\n- Threshold総量を基礎消費Cost尺度とし、Target RangeごとにCost係数を設定する方針を維持する。\n- Current Formal Skill Structure/Contractは変更しない。\n\n【仮値】\n- 単発攻撃 Skill Lv1=110%、Lv5=130%、Lv10=160%。未Freeze。",
       "open_questions": "VIT/INT/MND/LUKのStat別購入可能能力、各Stat Budgetの能力購入価格、Threshold point→Damage/Heal/DOT/Status/Multi-hit等への換算率、Target Range Cost係数、Threshold Total→MP/Cooldown/Cast等のResource Cost式を今後決定する。",
       "conclusion": "Skill Lv別総Threshold Budgetを3 Statへ配分し、各Threshold値を用途制限付きAbility Budgetとして使用する方式を採用する。",
       "related_discussion_ids": [],
       "artifact_note": "Human conversation 2026-08-28",
       "created_at": "2026-08-28T12:49:00+09:00",
       "updated_at": "2026-08-28T12:49:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-MULTIHIT-001",
+      "title": "Multi-hit Damage Debt / AGI返済方式",
+      "status": "Resolved",
+      "summary": "追加Hit分をDamage Debtとし、AGIで返済する。1Hit最低威力60%から必要AGIと成立Hit数を導出する。",
+      "body": "【確定計算式】\nGrossPower = 100 * H\nDebt = 100 * (H - 1)\nAGIRepayment = min(AGI, Debt)\nPreSTRPerHit = (100 + AGIRepayment) / H\n成立条件: PreSTRPerHit >= 60\nMinimumAGI = max(0, 60 * H - 100)\nFinalTotalPower = 100 + AGIRepayment + STR\nFinalPerHitPower = FinalTotalPower / H\n\n【導出】\n2Hit: MinimumAGI=max(0,120-100)=20\n3Hit: MinimumAGI=max(0,180-100)=80\n4Hit: MinimumAGI=max(0,240-100)=140。1 Stat上限100のため成立不可。\n\n【例】\nH=2, AGI=50, STR=30:\nDebt=100, AGIRepayment=50。\nPreSTRPerHit=(100+50)/2=75%で成立。\nFinalTotalPower=100+50+30=180%。\nFinalPerHitPower=180/2=90%。結果=90%×2Hit。",
+      "open_questions": "独立HitによるCritical/Hit/Miss/Block/APPLY等の実戦価値は後続Testで検証する。",
+      "conclusion": "2Hit最低AGI20、3Hit最低AGI80。1 Stat上限100では4Hitに必要なAGI140を満たせないため、現行条件で最大3Hitとなる。",
+      "related_discussion_ids": [
+        "DISC-SKL-001"
+      ],
+      "artifact_note": "Human approved 2026-08-28",
+      "created_at": "2026-08-28T13:23:00+09:00",
+      "updated_at": "2026-08-28T13:23:00+09:00"
     }
   ],
   "decisions": [
@@ -93,7 +117,7 @@
       "id": "DEC-SKL-001",
       "title": "Skill Lv別総Threshold Budget・3 Stat配分・Stat別Ability Budget Frameworkを採用する",
       "status": "Approved",
-      "text": "Skill BalanceはSkill Lv1〜11を使用し、Skill Lvごとに総Threshold Budgetを先に定義する。Skill Lv1をPlayer Lv1相当、Skill Lv11をPlayer Lv50相当とする。各Skillは3 Stat Requirementを持つ。旧6:3:1固定配分は廃止する。Skill Lv別総Threshold BudgetはLv1=30から1 Skill Lvごとに+10とし、Lv1〜11を30/40/50/60/70/80/90/100/110/120/130とする。総Threshold Budgetを3 StatへSkillごとに配分し、各Stat Threshold値そのものをそのStat系統能力の購入Budgetとして全量使用する。1 Stat Thresholdの最大値は100とする。Stat Budgetは用途制限を持ち、仮例としてSTR BudgetはDamage Up系にのみ使用可能とする。同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。具体Power、Stat別購入価格、Range係数、Resource Cost式は未Freeze Candidateとする。",
+      "text": "Skill BalanceはSkill Lv1〜11を使用し、Skill Lvごとに総Threshold Budgetを先に定義する。Skill Lv1をPlayer Lv1相当、Skill Lv11をPlayer Lv50相当とする。各Skillは3 Stat Requirementを持つ。Skill Lv別総Threshold BudgetはLv1=30から1 Skill Lvごとに+10とし、Lv1〜11を30/40/50/60/70/80/90/100/110/120/130とする。総Threshold Budgetを3 StatへSkillごとに配分し、各Stat Threshold値そのものをそのStat系統能力の購入Budgetとして全量使用する。1 Stat Thresholdの最大値は100とする。Stat Budgetは用途制限を持ち、仮例としてSTR BudgetはDamage Up系にのみ使用可能とする。同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。具体Power、Stat別購入価格、Range係数、Resource Cost式は未Freeze Candidateとする。",
       "rationale": "HumanがSkill BalanceのThreshold Budget方式を順次明示したため。",
       "source_discussion_ids": [
         "DISC-SKL-001"
@@ -102,6 +126,20 @@
       "approved_at": "2026-08-28T12:49:00+09:00",
       "created_at": "2026-08-28T12:49:00+09:00",
       "updated_at": "2026-08-28T12:49:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-MULTIHIT-001",
+      "title": "Multi-hit Damage Debt / AGI返済式を採用する",
+      "status": "Approved",
+      "text": "基礎攻撃Power=100%。Hit数HについてGrossPower=100*H、Debt=100*(H-1)、AGIRepayment=min(AGI,Debt)。成立条件はSTR加算前の(100+AGIRepayment)/H>=60。必要AGI=max(0,60*H-100)。成立後にSTRを直接Damageへ加算し、FinalTotalPower=100+AGIRepayment+STR、FinalPerHitPower=FinalTotalPower/Hとする。1 Stat上限100では2Hit最低AGI20、3Hit最低AGI80、4Hitは必要AGI140のため成立不可。",
+      "rationale": "追加Hitによる無償Damage増加をDebt化し、AGIを返済専用BudgetとすることでDamage Budget価値を管理するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-MULTIHIT-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T13:23:00+09:00",
+      "created_at": "2026-08-28T13:23:00+09:00",
+      "updated_at": "2026-08-28T13:23:00+09:00"
     }
   ],
   "specifications": [],
@@ -139,7 +177,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。旧6:3:1固定配分は使用しない。\n- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -173,6 +211,14 @@
     {
       "at": "2026-08-28T12:49:00+09:00",
       "message": "Human-approved current framework registered: Skill Lv1〜11, total Threshold Budget 30〜130 (+10/Lv), 3 Stat allocation, full Threshold value as Stat-specific Ability Budget, per-Stat maximum 100, and fixed 6:3:1 allocation abolished."
+    },
+    {
+      "at": "2026-08-28T12:49:00+09:00",
+      "message": "Human-approved current framework registered: Skill Lv1〜11, total Threshold Budget 30〜130 (+10/Lv), 3 Stat allocation, full Threshold value as Stat-specific Ability Budget, per-Stat maximum 100, "
+    },
+    {
+      "at": "2026-08-28T13:23:00+09:00",
+      "message": "Human-approved Multi-hit Damage Debt / AGI repayment formula integrated into SKL-0001."
     }
   ]
 }
