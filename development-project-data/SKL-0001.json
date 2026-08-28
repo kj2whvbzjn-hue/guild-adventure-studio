@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T08:03:45.748Z"
+    "updated_at": "2026-08-28T08:17:20.152Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "MP / Range Resource Cost Validation",
-    "goal": "採用済みSkill Lv Threshold Budget 10〜110と主要Ability暫定Seedを基準に、Base MP=Skill Lv×8およびRange別MP/CD/CastTimeの実戦妥当性を検証する。"
+    "theme": "Magic Accuracy / Remaining Skill Balance",
+    "goal": "Threshold Budget 10〜110、主要Ability暫定Seed、Base MP=Skill Lv×8、Range Cost(SINGLE×1/列系×2/ALL×3)の暫定PASSを基準に、未決定の魔法命中判定式と残課題を整理する。"
   },
   "project_rules": [
     {
@@ -106,12 +106,12 @@
     },
     {
       "id": "RULE-SKL-RANGE-RESOURCE-SEED-001",
-      "text": "Base MP Costの暫定Seedは Skill Lv * 8。Target Rangeによる暫定Resource Costは、SINGLE=MP×1/CD0/Cast0、FRONT=MP×2/CD7/Cast4、BACK=MP×2/CD7/Cast4、RANDOM=2対象固定・MP×2/CD7/Cast4、PIERCE=前後列へのライン攻撃としてMP×2/CD7/Cast4、ALL=MP×4/CD14/Cast7とする。PIERCEは実装可否未確定のためBalance側仮Seedとして扱う。",
+      "text": "Base MP Costの暫定Seedは Skill Lv * 8。Target Rangeによる暫定Resource Costは、SINGLE=MP×1/CD0/Cast0、FRONT=MP×2/CD7/Cast4、BACK=MP×2/CD7/Cast4、RANDOM=2対象固定・MP×2/CD7/Cast4、PIERCE=前後列へのライン攻撃としてMP×2/CD7/Cast4、ALL=MP×3/CD14/Cast7とする。EVD-0003のPlayer全7職Lv別MPを基準に机上検証し、SINGLE/FRONT/BACK/RANDOM/ALLは現段階の基礎Balanceとして暫定PASSとする。ただし正式Freezeではなく、MOD・装備・MP増減・Cooldown短縮・Cast短縮等を含むBuild総合Testで再検証する。PIERCEは数値Seed自体は同格扱いとするが、実装可否未確定。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-28 MP range cooldown casttime seeds",
       "created_at": "2026-08-28T14:55:00+09:00",
-      "updated_at": "2026-08-28T14:55:00+09:00"
+      "updated_at": "2026-08-28T17:08:00+09:00"
     }
   ],
   "source_baseline": {
@@ -194,16 +194,16 @@
       "title": "INT換算・Critical暫定値・MP/Range Resource Cost仮配置",
       "status": "Resolved",
       "summary": "Magic Fixed PowerをINT Budgetへ接続し、Critical系暫定単価、Base MP、Range別MP/Cooldown/CastTimeを後続Test用Seedとして仮配置する。",
-      "body": "【Magic / INT換算】\n- INT Budget 1 = Magic Fixed Power 1。\n- Skill Lv別Magic Fixed Power Seed 16/24/31/39/47/55/62/70/78/85/93は、そのPowerへ到達するINT投入量目安として読める。\n\n【Critical】\n- LUK 1 -> Critical Rate +0.1 percentage point。\n- または LUK 1 -> Critical Damage倍率 +2%。\n- 同一Skill内でRateとCritical Damage倍率の両方を購入してよい。\n- ただしLUK Budget 1で両方が同時に付与されるわけではなく、Budgetはどちらか一方へ消費する。\n- Critical必中特性を含むBalance TestはRange/Cost設計後へ延期する。\n\n【Base MP】\n- Base MP Cost = Skill Lv * 8。\n- Lv1〜11 = 8/16/24/32/40/48/56/64/72/80/88。\n\n【Target Range Resource Cost Seed】\n- SINGLE: MP×1 / Cooldown 0 Tick / CastTime 0 Tick。\n- FRONT: MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- BACK: MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- RANDOM: 2対象固定 / MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- PIERCE: 前後列へのライン攻撃 / MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- ALL: MP×4 / Cooldown 14 Tick / CastTime 7 Tick。\n- PIERCEは現時点で実装可否未確定。Balance仮Seedのみ保持する。",
-      "open_questions": "各Range Costの実戦妥当性、PIERCE実装可否、Critical必中を含む期待値、属性付与Access、Status別上限、整数Tick丸め規則を後続Test/設計で確認する。",
-      "conclusion": "Power側とResource側の主要Seedが揃ったため、次工程では属性付与等の残項目整理後、総合Balance Test計画へ進める。",
+      "body": "【Magic / INT換算】\n- INT Budget 1 = Magic Fixed Power 1。\n- Skill Lv別Magic Fixed Power Seed 16/24/31/39/47/55/62/70/78/85/93は、そのPowerへ到達するINT投入量目安として読める。\n\n【Critical】\n- LUK 1 -> Critical Rate +0.1 percentage point。\n- または LUK 1 -> Critical Damage倍率 +2%。\n- 同一Skill内でRateとCritical Damage倍率の両方を購入してよい。\n- ただしLUK Budget 1で両方が同時に付与されるわけではなく、Budgetはどちらか一方へ消費する。\n- 現段階では基礎Skill Balanceとして暫定PASS。MOD/装備/Triggerを含むCritical特化Buildで再評価する。\n\n【Base MP】\n- Base MP Cost = Skill Lv * 8。\n- Lv1〜11 = 8/16/24/32/40/48/56/64/72/80/88。\n- EVD-0003 Player全7職Lv別MPと比較し、現段階の基礎Balanceとして暫定PASS。\n\n【Target Range Resource Cost】\n- SINGLE: MP×1 / Cooldown 0 Tick / CastTime 0 Tick。\n- FRONT: MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- BACK: MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- RANDOM: 2対象固定 / MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- PIERCE: 前後列へのライン攻撃 / MP×2 / Cooldown 7 Tick / CastTime 4 Tick。\n- ALL: MP×3 / Cooldown 14 Tick / CastTime 7 Tick。\n- ALLは旧MP×4からMP×3へ変更。EVD-0003基準で低MP職の使用回数を極端に潰さず、CD14/Cast7による時間制約は維持できるため採用。\n- SINGLE/FRONT/BACK/RANDOM/ALLは現段階の基礎Balanceとして暫定PASS。\n- PIERCEは数値上は同格扱いだが、実装可否未確定。",
+      "open_questions": "PIERCE実装可否、魔法命中判定式、MOD/装備/Triggerを含むBuild総合Balance、MP増減・Cooldown短縮・Cast短縮を含むResource最終妥当性を後続Testで確認する。",
+      "conclusion": "EVD-0003 Player MP Evidenceを用いた机上検証により、Base MP=Skill Lv×8、SINGLE×1、FRONT/BACK/RANDOM×2+CD7/Cast4、ALL×3+CD14/Cast7を現段階で暫定PASSとする。正式FreezeではなくBuild総合Testで再検証する。PIERCEは数値Seedを維持するが実装可否未確定。",
       "related_discussion_ids": [
         "DISC-SKL-EFFECT-VALUE-SEED-001",
         "DISC-SKL-ABILITY-ACCESS-001"
       ],
       "artifact_note": "Human approved provisional seeds 2026-08-28",
       "created_at": "2026-08-28T14:55:00+09:00",
-      "updated_at": "2026-08-28T14:55:00+09:00"
+      "updated_at": "2026-08-28T17:08:00+09:00"
     }
   ],
   "decisions": [
@@ -267,15 +267,15 @@
       "id": "DEC-SKL-MP-RANGE-CRIT-001",
       "title": "INT換算・Critical暫定値・Range Resource Cost Seedを採用する",
       "status": "Approved",
-      "text": "INT Budget 1=Magic Fixed Power 1とする。Critical系はLUK Budget 1をCritical Rate +0.1 percentage pointまたはCritical Damage倍率 +2%のどちらか一方へ消費する。同一Skill内で両方への配分は可能だが1 Budgetで両方を同時取得しない。Base MP CostはSkill Lv×8。Range Resource CostはSINGLE=×1/CD0/Cast0、FRONT=×2/CD7/Cast4、BACK=×2/CD7/Cast4、RANDOM=2対象固定・×2/CD7/Cast4、PIERCE=前後列ライン攻撃・×2/CD7/Cast4、ALL=×4/CD14/Cast7を暫定Seedとする。PIERCEは実装可否未確定。",
-      "rationale": "Threshold BudgetからEffect PowerとResource Costを一貫して組み立てられる状態を作り、実装前に総合Balance Test可能な仮基準を揃えるため。",
+      "text": "INT Budget 1=Magic Fixed Power 1とする。Critical系はLUK Budget 1をCritical Rate +0.1 percentage pointまたはCritical Damage倍率 +2%のどちらか一方へ消費する。同一Skill内で両方への配分は可能だが1 Budgetで両方を同時取得しない。Base MP CostはSkill Lv×8。Range Resource CostはSINGLE=×1/CD0/Cast0、FRONT=×2/CD7/Cast4、BACK=×2/CD7/Cast4、RANDOM=2対象固定・×2/CD7/Cast4、PIERCE=前後列ライン攻撃・×2/CD7/Cast4、ALL=×3/CD14/Cast7とする。EVD-0003 Player全7職Lv別MPによる机上検証では、Base MPおよびSINGLE/FRONT/BACK/RANDOM/ALLは現段階の基礎Balanceとして暫定PASS。ただし正式Specification Freezeではなく、MOD・装備・Trigger・MP/CD/Cast変化を含むBuild総合Testで再検証する。PIERCEは実装可否未確定。",
+      "rationale": "EVD-0003のPlayer MP実値でSkill Lv×8を比較した結果、SINGLEは全職で実用回数を確保し、×2 Rangeも明確な負担差を作れた。ALL×4は低MP職で使用回数を強く制限しすぎるため×3へ緩和し、CD14/Cast7の時間制約と合わせて全体攻撃の負担を分散する。現段階では基礎Balanceに明確な破綻はないが、MOD等で評価が大きく変わり得るため暫定PASSとする。",
       "source_discussion_ids": [
         "DISC-SKL-MP-RANGE-CRIT-001"
       ],
       "approved_by": "Human",
       "approved_at": "2026-08-28T14:55:00+09:00",
       "created_at": "2026-08-28T14:55:00+09:00",
-      "updated_at": "2026-08-28T14:55:00+09:00"
+      "updated_at": "2026-08-28T17:08:00+09:00"
     }
   ],
   "specifications": [],
@@ -313,7 +313,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×4/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -322,7 +322,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-28T16:52:00+09:00"
+      "updated_at": "2026-08-28T17:08:00+09:00"
     }
   ],
   "checks": [],
@@ -379,6 +379,10 @@
     {
       "at": "2026-08-28T16:52:00+09:00",
       "message": "Human adopted Skill Lv total Threshold Budget 10..110 (+10 per level), replacing prior 30..130. Reason: Lv1 budget 30 was too high against all-stat initial value 10; 10..110 aligns better with expected stat growth, while lower Skill Lv also reduces MP cost."
+    },
+    {
+      "at": "2026-08-28T17:08:00+09:00",
+      "message": "Human adopted ALL MP multiplier x3 instead of x4. Using EVD-0003 Player MP evidence, Base MP=SkillLv*8 and SINGLE/FRONT/BACK/RANDOM/ALL range costs were judged provisional PASS for current base Skill Balance. Not frozen; re-test with MOD/equipment/Trigger/resource modifiers. PIERCE numeric seed retained but implementation remains undecided."
     }
   ]
 }
