@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T04:44:52.149Z"
+    "updated_at": "2026-08-28T05:48:57.017Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Stat Ability Access / Range Cost / Attribute Attach Access",
-    "goal": "Statごとの大まかなSkill傾向とAbility Accessを整理し、RangeをResource Cost係数へ分離し、属性付与AccessをCurrent仕様準拠の別表として設計する。"
+    "theme": "Effect Value Seeds / Critical / Attribute Attach / Range Cost",
+    "goal": "Human確認済みの暫定Effect数値Seedを基準に、未配置のCritical系・属性付与系・Range Cost/Resource Costを整理し、その後Balance Testへ進む。"
   },
   "project_rules": [
     {
@@ -76,6 +76,15 @@
       "source_id": "conversation:2026-08-28 ability access and range separation",
       "created_at": "2026-08-28T13:34:00+09:00",
       "updated_at": "2026-08-28T13:34:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-EFFECT-VALUE-SEED-001",
+      "text": "Human確認済みの暫定Effect数値Seedとして以下を使用する。Magic Fixed PowerはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93。能力値増加/低下を含むBuff/Debuff POWERは1 Budget=0.3 percentage point、1 Effect上限30%。HealはMND Budget 1=Heal 1%。Barrierも1 Budget=Barrier 1%として等価に扱う。DOTはDEX Budget 1=1 Stack完走総Damage 1。Status Durationは1 Budget=0.3 Tick。これらはBalance検証用の暫定Seedであり、正式Freezeは後続Test後に行う。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 provisional effect numeric seeds",
+      "created_at": "2026-08-28T14:40:00+09:00",
+      "updated_at": "2026-08-28T14:40:00+09:00"
     }
   ],
   "source_baseline": {
@@ -135,6 +144,23 @@
       "artifact_note": "Human conversation 2026-08-28",
       "created_at": "2026-08-28T13:34:00+09:00",
       "updated_at": "2026-08-28T13:34:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-EFFECT-VALUE-SEED-001",
+      "title": "Magic/Heal/Buff/Debuff/Barrier/DOT/Status Durationの暫定数値Seed",
+      "status": "Resolved",
+      "summary": "主要EffectのThreshold Budget換算を、後続Balance Test用のHuman確認済み暫定Seedとして配置する。",
+      "body": "【Magic Fixed Power】\n- Skill Lv1〜11: 16 / 24 / 31 / 39 / 47 / 55 / 62 / 70 / 78 / 85 / 93。\n- Lv1=16、Lv11=93を端点とする11段階の仮配置。\n\n【Buff / Debuff】\n- 対象能力値・Effect種別によらず、同じ増加/低下系POWERの価格は共通。\n- 1 Budget = 0.3 percentage point。\n- 1 EffectのPOWER上限 = 30%。\n- 対象がATK/DEF/Accuracy/AGI等であっても価格体系は同一で、違いはAbility Accessのみ。\n\n【Heal / Barrier】\n- Heal: MND Budget 1 = Heal 1%。\n- Barrier: 1 Budget = Barrier 1%。\n- HealとBarrierはBudget 1あたり1%を基準として等価に扱う。\n\n【DOT】\n- DEX Budget 1 = DOT 1 Stack完走総Damage 1。\n- TickごとのDamageはCurrent仕様上のTick回数へ分配する。\n\n【Status Duration】\n- 秒ではなくTickを購入単位とする。\n- 1 Budget = 0.3 Tick。\n- 1行動≈7 TickというBalance仮定から、約23.3 Budgetで1行動分の拘束価値を目安とする。\n- 整数Tickへの丸め方法とStatus別上限は後続検証で決定する。",
+      "open_questions": "Critical系、属性付与系、Status別Duration上限、Duration丸め規則、Range Cost係数、Resource Cost式、および実戦Testによる各Seedの妥当性検証。",
+      "conclusion": "上記数値をSKL-0001の暫定Balance Seedとして登録し、正式Freezeは後続Test後とする。",
+      "related_discussion_ids": [
+        "DISC-SKL-001",
+        "DISC-SKL-ABILITY-ACCESS-001",
+        "DISC-SKL-MULTIHIT-001"
+      ],
+      "artifact_note": "Human approved provisional seeds 2026-08-28",
+      "created_at": "2026-08-28T14:40:00+09:00",
+      "updated_at": "2026-08-28T14:40:00+09:00"
     }
   ],
   "decisions": [
@@ -179,6 +205,20 @@
       "approved_at": "2026-08-28T13:34:00+09:00",
       "created_at": "2026-08-28T13:34:00+09:00",
       "updated_at": "2026-08-28T13:34:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-EFFECT-VALUE-SEED-001",
+      "title": "主要Effectの暫定数値Seedを採用する",
+      "status": "Approved",
+      "text": "後続Balance Test用の暫定Seedとして、Magic Fixed PowerをSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93とする。Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%。HealはMND Budget 1=1%、Barrierは1 Budget=1%。DOTはDEX Budget 1=1 Stack完走総Damage 1。Status Durationは1 Budget=0.3 Tickとする。これらはHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。",
+      "rationale": "主要Effectを同一Threshold Budget体系で仮配置し、実戦Test前に比較可能な数値基準を作るため。",
+      "source_discussion_ids": [
+        "DISC-SKL-EFFECT-VALUE-SEED-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T14:40:00+09:00",
+      "created_at": "2026-08-28T14:40:00+09:00",
+      "updated_at": "2026-08-28T14:40:00+09:00"
     }
   ],
   "specifications": [],
@@ -216,7 +256,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。\n- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。\n- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationは1 Budget=0.3 Tickとし、整数Tick丸めとEffect別上限は後続検証で決める。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -225,7 +265,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-28T13:34:00+09:00"
+      "updated_at": "2026-08-28T14:40:00+09:00"
     }
   ],
   "checks": [],
@@ -262,6 +302,10 @@
     {
       "at": "2026-08-28T13:34:00+09:00",
       "message": "Registered Stat Ability Access framework: common Effect pricing across Stats, DEX/MND accuracy-up access, DEX accuracy-down access, AGI hand-count/speed role, Target Range separated to Resource Cost coefficient, and attribute attachment managed in a separate Current-spec table."
+    },
+    {
+      "at": "2026-08-28T14:40:00+09:00",
+      "message": "Registered Human-approved provisional effect value seeds: Magic Fixed Power 16/24/31/39/47/55/62/70/78/85/93; Buff/Debuff 0.3 percentage point per Budget with 30% cap; Heal 1% per MND Budget; Barrier 1% per Budget; DOT 1 total completed-stack damage per DEX Budget; Status Duration 0.3 Tick per Budget."
     }
   ]
 }
