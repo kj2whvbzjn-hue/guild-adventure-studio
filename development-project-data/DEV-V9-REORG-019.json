@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T00:58:48.917Z"
+    "updated_at": "2026-08-28T01:49:12.085Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -499,6 +499,20 @@
       "evidence": "node tests/critical-conformance-r19.js => CRITICAL_CONFORMANCE_R19_OK checks=130; post-apply runtime calculation artifact sha256=e1d9003aae73b79065c70c458e2fc6f0b4611be8d864d46b38420c58c590a7a2. Cases: weapon=0.05/LUK0 => base=final=0.05; weapon=0.05/LUK20 => base=final=0.06; weapon=0/LUK100 => 0; weapon=0.05/LUK20 + MOD 10% + 20% => base=0.06, contributions=0.006+0.012, final=0.078. Multi-hit Critical rolls by hitIndex=0/1/2: 38.373241503722966%, 45.59526101220399%, 2.816079487092793%; independent=true. Source changes=0; Game Data changes=0.",
       "recorded_at": "2026-08-28T07:08:30+09:00",
       "summary": "Post-Apply completion verification only. Fresh Current B797 Critical conformance calculation/trace parity passed; no Source or Game Data changes were made."
+    },
+    {
+      "id": "IMPL-REORG-MULTIHIT-HIT-APPLY-B799-001",
+      "studio_build": "GKS-B799",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-R19-DETAILED-SPECS"
+      ],
+      "task_ids": [
+        "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001"
+      ],
+      "result": "Partial",
+      "evidence": "B798 review correction SOURCE_UPDATE prepared from exact Fresh Current GKS-B797 baseline. Successful DAMAGE Hitごとの即時APPLY、KO境界、SHIELD非変更、Human Decision Aの記載順を維持し、Game側だけapplyContract identityをcontract単位で保持するよう修正。same-logic identity parity 3/3、Golden 14/14、existing Game/Studio parity 7/7、Quick 11/11、Full 26/26、Accept 14/14、Release 14/14 PASS。ZIP sha256=4bcd8aa8491d5db1c4f2d3561ea84179b3354a6d4414117c421d264915db209a。Human Apply/Fresh Current verification pending。",
+      "recorded_at": "2026-08-28T10:45:00+09:00"
     }
   ],
   "discussions": [
@@ -27169,7 +27183,6 @@
       "status": "Doing",
       "execution_order": 797100,
       "depends_on": [],
-      "acceptance_criteria": "- Human Authority『命中した各HitごとにStack付与/APPLYが発火する』へGame RuntimeとStudio Formal Battleを一致させる。\n- 同一activation内の複数DAMAGE effectContractを各独立1 Hitとして、DAMAGE→Block→SHIELD(BARRIER)→HP→生存確認→Hit従属APPLYの順で完結させる。\n- KOを発生させたHitではそのHitの後続APPLYを実行せず、残りDAMAGE effectContractを終了する。先行Hitで成立済みAPPLYは保持する。\n- SHIELD付与意味論、C_MultiHit、Damage Budget、EVD-0007、Hit/Critical/Block/Damage式、丸め順、BURN数値、GAME_DATA、Product Master、Skill Schemaへ変更を波及させない。\n- Game/Studioで最終値だけでなくDAMAGE#n→APPLY#nのTrace順まで一致させる。\n- Phase 1〜6を直列実行し、各PhaseのGateを通過するまで次Phaseへ進まない。\n- 停止条件に該当した場合は作業範囲を広げずFail Closedし、Human再レビューへ戻す。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -27178,29 +27191,17 @@
         "at": "2026-08-28T09:50:00+09:00"
       },
       "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00"
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": ""
     },
     {
-      "box_id": "BOX-R19-DETAILED-SPECS",
-      "work_type": "DEVELOPMENT_ONLY",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00",
       "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P1",
+      "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 1 Baseline / Preflightを固定する",
       "status": "Done",
       "execution_order": 797101,
       "depends_on": [],
-      "acceptance_criteria": "- Current baselineをGKS-B797 / GA-B486.211として固定する。\n- Source変更前Quick Gate PASS状態をBaselineとして保持する。\n- Game RuntimeとStudio Formal Battleの現行縮退箇所を特定し、Source未変更で終了する。"
-    },
-    {
-      "box_id": "BOX-R19-DETAILED-SPECS",
-      "work_type": "SOURCE_UPDATE",
+      "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -27208,19 +27209,19 @@
         "at": ""
       },
       "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00",
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": "Current B797 baselineと変更前Gateを固定する。"
+    },
+    {
       "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P2",
+      "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 2 Game RuntimeのHit単位APPLY接続を修正する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 797102,
       "depends_on": [
         "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P1"
       ],
-      "acceptance_criteria": "- Game Runtimeだけを変更し、StudioはこのPhaseで変更しない。\n- 新規hitCount/multiHit fieldやH4専用経路を作らない。\n- 各DAMAGE effectContractを独立1 Hitとして、成功Hitの直後に従属STATUS/DOT/BUFF/DEBUFF APPLYを処理する。\n- Miss HitではAPPLYしない。\n- Block後もHit成立かつ対象生存ならAPPLYする。\n- KO HitではそのHitのAPPLYを行わず、残りHitを終了する。\n- Compatibility/Fallback/Shim/Adapter/Alias/局所catchを新設しない。"
-    },
-    {
-      "box_id": "BOX-R19-DETAILED-SPECS",
-      "work_type": "DEVELOPMENT_ONLY",
+      "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
         "status": "Pending",
@@ -27228,38 +27229,18 @@
         "at": ""
       },
       "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00",
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": "各DAMAGE effectContractを独立Hitとして成功Hit直後に従属APPLYを処理する。"
+    },
+    {
       "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P3",
+      "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 3 Game Runtime Golden Caseを検証する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 797103,
       "depends_on": [
         "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P2"
       ],
-      "acceptance_criteria": "- H1成功/Miss、H4全成功/部分Miss/全Missを検証する。\n- Hit1 Miss→Hit2成功、先行Hit成功→後続Hit KOを検証する。\n- Block、Critical、Stack Cap、DAMAGE+STATUS+DOT、Single-hit regressionを検証する。\n- TraceでDAMAGE#0→APPLY#0→DAMAGE#1→APPLY#1の順序を確認する。\n- Game単体Goldenが全PASSするまでStudio修正へ進まない。"
-    },
-    {
-      "box_id": "BOX-R19-DETAILED-SPECS",
-      "work_type": "SOURCE_UPDATE",
-      "requires_human_approval": false,
-      "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
-      },
-      "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00",
-      "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P4",
-      "title": "Phase 4 Studio Formal BattleをGameと同じHit単位契約へ修正する",
-      "status": "Blocked",
-      "execution_order": 797104,
-      "depends_on": [
-        "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P3"
-      ],
-      "acceptance_criteria": "- Game Phase 3で確定した処理順をStudio Formal Battleへ反映する。\n- Studio独自のMulti-hit意味論を追加しない。\n- 各DAMAGE effectContractごとにDamage lifecycleとHit従属APPLYを完結する。\n- SHIELD付与意味論は変更しない。"
-    },
-    {
-      "box_id": "BOX-R19-DETAILED-SPECS",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -27268,18 +27249,18 @@
         "at": ""
       },
       "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00",
-      "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P5",
-      "title": "Phase 5 Game / Studio Hit Trace parityを検証する",
-      "status": "Blocked",
-      "execution_order": 797105,
-      "depends_on": [
-        "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P4"
-      ],
-      "acceptance_criteria": "- Game/StudioでHit成功数、APPLY回数、Stack結果、KO境界を一致させる。\n- 最終値だけでなくDAMAGE#n→APPLY#nのTrace順序を比較する。\n- Miss、Block、Critical、KO、Stack Capを含む代表ケースでparityを確認する。"
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": "H1/H4/Miss/KO/Block/Critical/Stack/STATUS+DOT/Single-hit/Traceを検証する。"
     },
     {
+      "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P4",
       "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "Phase 4 Studio Formal BattleをGameと同じHit単位契約へ修正する",
+      "status": "Done",
+      "execution_order": 797104,
+      "depends_on": [
+        "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P3"
+      ],
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": false,
       "approval": {
@@ -27288,15 +27269,48 @@
         "at": ""
       },
       "created_at": "2026-08-28T09:50:00+09:00",
-      "updated_at": "2026-08-28T09:50:00+09:00",
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": "Studio Formal BattleをGameと同一のeffectContract単位処理へ統一する。"
+    },
+    {
+      "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P5",
+      "box_id": "BOX-R19-DETAILED-SPECS",
+      "title": "Phase 5 Game / Studio Hit Trace parityを検証する",
+      "status": "Done",
+      "execution_order": 797105,
+      "depends_on": [
+        "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P4"
+      ],
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-28T09:50:00+09:00",
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": "Game/StudioでHit/APPLY/KO/Block/Critical/Stack/Trace順を一致させる。"
+    },
+    {
       "id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P6",
+      "box_id": "BOX-R19-DETAILED-SPECS",
       "title": "Phase 6 Regression / Gate / SOURCE_UPDATE Artifactを完了する",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 797106,
       "depends_on": [
         "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P5"
       ],
-      "acceptance_criteria": "- 既存Hit/Damage/Critical/Block/Status/Multi-hit/Single-hit回帰を確認する。\n- Current手順のQuick / Accept / Full / Release系Gateを通す。\n- Source削除0、GAME_DATA変更0を確認する。\n- Human Apply用SOURCE_UPDATE ZIPと更新工程管理JSONを生成する。\n- Human Apply前にCurrent昇格・完了扱いにしない。"
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-28T09:50:00+09:00",
+      "updated_at": "2026-08-28T10:50:00+09:00",
+      "acceptance_criteria": "既存回帰とQuick/Full/Accept/Releaseを通し、同一logic複数applyContract identity parityを確認する。Human Apply後のFresh Source確認までCurrent完了扱いにしない。"
     }
   ],
   "checks": [
@@ -29074,6 +29088,77 @@
       "blocking": false,
       "created_at": "2026-08-28T09:50:00+09:00",
       "updated_at": "2026-08-28T09:50:00+09:00"
+    },
+    {
+      "id": "CHK-REORG-MULTIHIT-HIT-APPLY-B798-REVIEW-FAIL-001",
+      "title": "GKS-B798 applyContract identity review",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001",
+      "status": "Failed",
+      "result": "B798はapplyContractsをlogic文字列へ縮約した後、logicでfindしていたため、同一logicの複数APPLY contractで常に先頭contractを再取得する。例: STATUS A→STATUS B がGameではSTATUS A→STATUS AとなりStudioと不一致。Human Apply不可として差し戻し。",
+      "evidence": "ゲームソース変更レビュー.txt。B798 game/assets/js/tag-skill-runtime.js: executeRuntimeDamageRuntime()がlogic配列へ縮約し、applyTaggedApplyRuntime()→resolveRuntimeApplyLifecycle()がruntime.applyContracts.find(x=>x.logic===logic)を使用。",
+      "checked_by": "Review",
+      "checked_at": "2026-08-28T10:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-REORG-MULTIHIT-HIT-APPLY-B799-CONTRACT-IDENTITY-001",
+        "resolved_at": "2026-08-28T10:45:00+09:00",
+        "reason": "PASS. GameはruntimeContracts.applyContractsのcontract自体を成功Hitごとに順番に渡して実行し、logic名から再findしない。STATUS A+B、BUFF A+B、DEBUFF A+Bの3ケースでeffectId / values / lifecycle identityとGame/Studio順序を確認。",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-08-28T10:45:00+09:00",
+      "updated_at": "2026-08-28T10:45:00+09:00"
+    },
+    {
+      "id": "CHK-REORG-MULTIHIT-HIT-APPLY-B799-CONTRACT-IDENTITY-001",
+      "title": "GKS-B799 same-logic applyContract identity parity",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001",
+      "status": "Passed",
+      "result": "PASS. GameはruntimeContracts.applyContractsのcontract自体を成功Hitごとに順番に渡して実行し、logic名から再findしない。STATUS A+B、BUFF A+B、DEBUFF A+Bの3ケースでeffectId / values / lifecycle identityとGame/Studio順序を確認。",
+      "evidence": "b799_same_logic_contract_parity.js => B799_SAME_LOGIC_CONTRACT_PARITY_PASS checks=3; STATUS: STUN→ACCURACY_DOWN, BUFF: ATK_UP→DEF_UP, DEBUFF: DEF_DOWN→ATK_DOWN. Existing Golden 14/14 and Game/Studio parity 7/7 also PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-28T10:45:00+09:00",
+      "resolves_check_ids": [
+        "CHK-REORG-MULTIHIT-HIT-APPLY-B798-REVIEW-FAIL-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-28T10:45:00+09:00",
+        "reason": "B799でapplyContract identityを保持したままHit単位APPLYを実行し、同一logic複数contract parityを確認。",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-28T10:45:00+09:00",
+      "updated_at": "2026-08-28T10:45:00+09:00"
+    },
+    {
+      "id": "CHK-REORG-MULTIHIT-HIT-APPLY-B799-ARTIFACT-001",
+      "title": "GKS-B799 review correction SOURCE_UPDATE Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001",
+      "status": "Passed",
+      "result": "PASS. Review correction target Quick 11/11、Full 26/26、SOURCE_UPDATE Accept 14/14、Release 14/14。Golden 14/14、existing parity 7/7、same-logic identity parity 3/3、Status/DOT/Shield regression、Critical 130 checks PASS。Source deletions=0、GAME_DATA changes=0。Human Apply pending。",
+      "evidence": "artifact_id=GKS-B799-85cdf58d6741; update ZIP sha256=4bcd8aa8491d5db1c4f2d3561ea84179b3354a6d4414117c421d264915db209a; target package_manifest sha256=8ded28e7e527541daf4257bf65fab04506a514d33591590b2b86a8ba4d71e9cd; target source tree sha256=85cdf58d6741c9805bfeaa9e5d60219e0b1995eaea342627eafc56b04db3eda2; Quick evidence sha256=408c116359f99b88d07f539265e6d364e51ba8424e39b6d57fdd4cf22a15f345; Full evidence sha256=1e86b2d32ad43f038bb75d22a3a6950fde7ac5c4ba28b65e72c20060d6ed2326; Accept evidence sha256=7f6e3a6173b2b19402ef7c8079cc8d0ae55e17146b7263a1936370a5514291b0; Release evidence sha256=217c3fc7f9f7ba6ee52547c697323b860ae6f0c54dfbe6781f8232d18ad8c704.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-28T10:45:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-28T10:45:00+09:00",
+      "updated_at": "2026-08-28T10:45:00+09:00"
     }
   ],
   "workflow": {
@@ -29716,6 +29801,26 @@
       "at": "2026-08-28T09:50:00+09:00",
       "type": "ImplementationPlanRegistered",
       "summary": "Multi-hit成功Hit単位APPLY Current Conformance修正の実装前管理計画を登録。Phase 1〜6を直列化し、P1はBaseline/Preflight完了、P2はReady、P3〜P6はBlocked。Human承認済み。Source実装はこの管理JSON提出時点では未開始。"
+    },
+    {
+      "at": "2026-08-28T10:45:00+09:00",
+      "type": "MultiHitHitApplyB798ReviewRejected",
+      "summary": "ReviewでB798の同一logic複数applyContract identity消失を検出。B798をHuman Apply不可として記録し、範囲を広げずGame Runtimeのcontract identity保持だけをCorrection。"
+    },
+    {
+      "at": "2026-08-28T10:45:00+09:00",
+      "type": "MultiHitHitApplyB799ReviewCorrectionPrepared",
+      "summary": "B799で同一logic複数APPLYのidentity parity 3/3を追加確認し、全Gate PASSのreview correction SOURCE_UPDATEを生成。P6はHuman Apply待ちのためDoingを維持。"
+    },
+    {
+      "at": "2026-08-28T10:50:00+09:00",
+      "type": "ManagementIntegrationDependencyCorrection",
+      "summary": "B799レビュー修正管理JSONの統合時、P6 depends_on=P5 がpayload内未定義として拒否されたため、P1〜P6の依存Taskを全て同一統合payloadへ再収録。Source実装内容は変更しない。"
+    },
+    {
+      "at": "2026-08-28T10:50:00+09:00",
+      "type": "HumanSourceApplyReported",
+      "summary": "HumanからGKS-B799 SOURCE_UPDATE反映完了の報告を受領。Fresh Current SourceのBuild/hash再検証完了まではP6/Main TaskをDoingとして維持する。"
     }
   ],
   "authority": {
