@@ -10,17 +10,17 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T04:24:27.175Z"
+    "updated_at": "2026-08-28T04:44:52.149Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
-    "summary": "Skill Levelごとに総Threshold Budgetを定義し、その総量を3つの必要Statへ配分する。各Stat Threshold値そのものを用途制限付きAbility Budgetとして使用する。旧6:3:1固定配分は廃止。具体Power、Stat別購入価格、Range係数、Cost式は未Freeze Candidateとする。"
+    "summary": "Skill Levelごとに総Threshold Budgetを定義し、その総量を3つの必要Statへ配分する。各Stat Threshold値そのものを用途制限付きAbility Budgetとして使用する。具体Power、Stat別購入価格、Range係数、Cost式は未Freeze Candidateとする。"
   },
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Skill Level / Threshold Budget / Stat Ability Budget / Range Cost",
-    "goal": "Skill Lv1〜11の総Threshold Budgetを3 Statへ配分し、各Stat Thresholdを用途制限付きAbility BudgetとしてSkill傾向・Effect・Target Range・Resource Costへ変換する暫定Frameworkを作る。"
+    "theme": "Stat Ability Access / Range Cost / Attribute Attach Access",
+    "goal": "Statごとの大まかなSkill傾向とAbility Accessを整理し、RangeをResource Cost係数へ分離し、属性付与AccessをCurrent仕様準拠の別表として設計する。"
   },
   "project_rules": [
     {
@@ -67,6 +67,15 @@
       "source_id": "conversation:2026-08-28 multihit debt finalized",
       "created_at": "2026-08-28T13:23:00+09:00",
       "updated_at": "2026-08-28T13:23:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-ABILITY-ACCESS-001",
+      "text": "同一Effect/Abilityは、どのStat Budgetから購入しても同一価値・同一価格とする。Statごとの差は購入Accessだけで表現し、割引・割増を行わない。Target RangeはAbility購入対象とせず、別のRange係数でResource Cost側へ反映する。属性はCurrent仕様に存在するものだけを使用し、属性付与AccessはStat傾向表とは別表で管理する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-28 ability access and range separation",
+      "created_at": "2026-08-28T13:34:00+09:00",
+      "updated_at": "2026-08-28T13:34:00+09:00"
     }
   ],
   "source_baseline": {
@@ -88,7 +97,7 @@
       "title": "Skill Level・Threshold Budget・Stat別Ability Budgetの再設計",
       "status": "Resolved",
       "summary": "Skill Lvごとに総Threshold Budgetを定義し、その総量を3 Statへ配分し、各Stat Threshold値そのものを用途制限付きAbility Budgetとして使用する。",
-      "body": "【決定事項】\n- Skill Levelは1〜11。\n- Skill Lv1はPlayer Lv1相当、Skill Lv11はPlayer Lv50相当。\n- 各Skillは習得に3 Statを必要とする。\n- - Skill Lv別総Threshold BudgetはLv1=30からSkill Lvごとに+10。\n  Lv1=30, Lv2=40, Lv3=50, Lv4=60, Lv5=70, Lv6=80, Lv7=90, Lv8=100, Lv9=110, Lv10=120, Lv11=130。\n- 総Threshold Budgetを3 StatへSkillごとに配分する。\n- 各Stat Threshold値そのものを、そのStat系統能力を購入するBudgetとして全量使用する。\n- 初期10等を基礎分として差し引かない。\n- 1 Stat Thresholdの最大値は100。\n- 100は1 Statの上限であり、総Threshold上限300とはしない。\n- Skill傾向は3 StatへのBudget配分と各Statの購入可能能力から決まる。\n- Stat Budgetは用途制限を持つ。仮例としてSTR BudgetはDamage Up系にのみ使用可能。\n- 既存Human Approved affinityとしてSTR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを保持する。\n- VIT/INT/MND/LUKの購入可能能力は今後仮配置する。\n- 同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。\n- 各職業の成長期待値は既存Evidenceとして参照し、Threshold配分の実現可能性確認に使用する。\n- Threshold総量を基礎消費Cost尺度とし、Target RangeごとにCost係数を設定する方針を維持する。\n- Current Formal Skill Structure/Contractは変更しない。\n\n【仮値】\n- 単発攻撃 Skill Lv1=110%、Lv5=130%、Lv10=160%。未Freeze。",
+      "body": "【決定事項】\n- Skill Levelは1〜11。\n- Skill Lv1はPlayer Lv1相当、Skill Lv11はPlayer Lv50相当。\n- 各Skillは習得に3 Statを必要とする。\n- Skill Lv別総Threshold BudgetはLv1=30からSkill Lvごとに+10。\n  Lv1=30, Lv2=40, Lv3=50, Lv4=60, Lv5=70, Lv6=80, Lv7=90, Lv8=100, Lv9=110, Lv10=120, Lv11=130。\n- 総Threshold Budgetを3 StatへSkillごとに配分する。\n- 各Stat Threshold値そのものを、そのStat系統能力を購入するBudgetとして全量使用する。\n- 初期10等を基礎分として差し引かない。\n- 1 Stat Thresholdの最大値は100。\n- 100は1 Statの上限であり、総Threshold上限300とはしない。\n- Skill傾向は3 StatへのBudget配分と各Statの購入可能能力から決まる。\n- Stat Budgetは用途制限を持つ。仮例としてSTR BudgetはDamage Up系にのみ使用可能。\n- 既存Human Approved affinityとしてSTR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを保持する。\n- VIT/INT/MND/LUKの購入可能能力は今後仮配置する。\n- 同系統の高Skill Level Skillが低Skill Level Skillの単純上位互換になることを許可する。\n- 各職業の成長期待値は既存Evidenceとして参照し、Threshold配分の実現可能性確認に使用する。\n- Threshold総量を基礎消費Cost尺度とし、Target RangeごとにCost係数を設定する方針を維持する。\n- Current Formal Skill Structure/Contractは変更しない。\n\n【仮値】\n- 単発攻撃 Skill Lv1=110%、Lv5=130%、Lv10=160%。未Freeze。",
       "open_questions": "VIT/INT/MND/LUKのStat別購入可能能力、各Stat Budgetの能力購入価格、Threshold point→Damage/Heal/DOT/Status/Multi-hit等への換算率、Target Range Cost係数、Threshold Total→MP/Cooldown/Cast等のResource Cost式を今後決定する。",
       "conclusion": "Skill Lv別総Threshold Budgetを3 Statへ配分し、各Threshold値を用途制限付きAbility Budgetとして使用する方式を採用する。",
       "related_discussion_ids": [],
@@ -110,6 +119,22 @@
       "artifact_note": "Human approved 2026-08-28",
       "created_at": "2026-08-28T13:23:00+09:00",
       "updated_at": "2026-08-28T13:23:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-ABILITY-ACCESS-001",
+      "title": "Stat別Ability Access・命中系Access・Range/属性付与分離",
+      "status": "Resolved",
+      "summary": "Skill傾向は3 StatへのBudget配分と、各Statが購入可能なAbility Accessで決める。同一Abilityの価格差は設けず、Rangeと属性付与は別管理する。",
+      "body": "【大まかなStat傾向】\n- STR: 直接物理Damage、攻撃強化系。\n- VIT: 防御、耐久、Barrier、Cover等。\n- AGI: Multi-hit Debt返済、AGI増加、速度・手数系。\n- DEX: 付与、Status/Debuff、命中上昇、命中低下等の精密・技巧系。\n- INT: 直接魔法Damage、魔法攻撃系。\n- MND: Heal、Buff、Barrier、命中上昇等の支援系。\n- LUK: Critical、確率・変則系。\n\n【Access原則】\n- 同じEffectを複数Statから購入可能としてよい。\n- 同じEffectは購入Statに関係なく同一価格・同一価値。\n- Statごとの割引・割増は行わない。\n- Stat差は、そのEffectを購入できるかどうかだけで表現する。\n- DEXとMNDは命中上昇へAccessを持つ。\n- DEXは命中低下へもAccessを持つ。\n- AGIは命中上昇Accessを持たず、Multi-hit/AGI増加/速度・手数系を担当する。\n\n【Range】\n- Target RangeはAbility Budgetで購入しない。\n- Range価値は後段のRange係数でResource Costへ反映する。\n- RangeによってAbility価格そのものを変えない。\n\n【属性付与】\n- 属性はCurrent仕様に存在するものだけを使用する。\n- 属性付与はStat傾向表に混在させず、別の属性付与Access表として管理する。\n- 同じ属性付与を複数Statから購入できても価格は同一。\n- 属性付与の具体一覧はCurrent仕様確認後に別表へ登録する。",
+      "open_questions": "VIT/INT/MND/LUKを含む個別Ability Accessの詳細、各Abilityの共通価格、Range Cost係数、Current仕様に基づく属性付与Access表を今後決定する。",
+      "conclusion": "価格検証の前にStatごとの大まかなSkill傾向とAbility Accessだけを定め、属性付与はCurrent仕様準拠の別表へ分離する。",
+      "related_discussion_ids": [
+        "DISC-SKL-001",
+        "DISC-SKL-MULTIHIT-001"
+      ],
+      "artifact_note": "Human conversation 2026-08-28",
+      "created_at": "2026-08-28T13:34:00+09:00",
+      "updated_at": "2026-08-28T13:34:00+09:00"
     }
   ],
   "decisions": [
@@ -140,6 +165,20 @@
       "approved_at": "2026-08-28T13:23:00+09:00",
       "created_at": "2026-08-28T13:23:00+09:00",
       "updated_at": "2026-08-28T13:23:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-ABILITY-ACCESS-001",
+      "title": "Stat差をAbility Accessで表現しRangeと属性付与を分離する",
+      "status": "Approved",
+      "text": "SkillのStat BudgetはStat別Ability Accessに従って使用する。同一Effect/Abilityは購入Statによらず同一価値・同一価格とし、割引・割増を設定しない。STRは直接物理Damage/攻撃強化、VITは防御/耐久、AGIはMulti-hit Debt返済/AGI増加/速度・手数、DEXは付与/Status/Debuff/命中上昇・低下、INTは直接魔法Damage、MNDはHeal/Buff/Barrier/命中上昇、LUKはCritical/確率・変則系を主傾向とする。DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。Target RangeはAbility Budgetで購入せず、別のRange係数でResource Costへ反映する。属性はCurrent仕様に存在するものだけを使用し、属性付与AccessはStat傾向表とは別表で管理する。",
+      "rationale": "同一Effectの価値が購入Statで変化するとBudget比較が崩れるため価格を共通化し、Stat差をAccessだけで表現する。またRangeはCost側で相殺し、属性付与は仕様準拠で別管理するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-ABILITY-ACCESS-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-28T13:34:00+09:00",
+      "created_at": "2026-08-28T13:34:00+09:00",
+      "updated_at": "2026-08-28T13:34:00+09:00"
     }
   ],
   "specifications": [],
@@ -177,7 +216,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを30/40/50/60/70/80/90/100/110/120/130の暫定Seedとして使用する。\n- 各Skillは3 Stat Requirementを持つ。\n- 3 Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -186,7 +225,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-28T12:49:00+09:00"
+      "updated_at": "2026-08-28T13:34:00+09:00"
     }
   ],
   "checks": [],
@@ -219,6 +258,10 @@
     {
       "at": "2026-08-28T13:23:00+09:00",
       "message": "Human-approved Multi-hit Damage Debt / AGI repayment formula integrated into SKL-0001."
+    },
+    {
+      "at": "2026-08-28T13:34:00+09:00",
+      "message": "Registered Stat Ability Access framework: common Effect pricing across Stats, DEX/MND accuracy-up access, DEX accuracy-down access, AGI hand-count/speed role, Target Range separated to Resource Cost coefficient, and attribute attachment managed in a separate Current-spec table."
     }
   ]
 }
