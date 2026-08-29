@@ -23,7 +23,7 @@ Build識別子とそこから機械的に導出されるcache tokenだけが変�
 
 それ以外の**変更・削除・新規追加**は、更新ZIPとは独立した外部`TEST_CHANGE_APPROVAL.json`の完全一致パス、baseline SHA-256、updated SHA-256、理由を要求する。更新ZIP内への承認JSON同梱はFAILとする。参照先ファイル自体が保護対象なら、そのファイルのロジック変更に対する承認要求はhash台帳同期とは独立して残る。
 
-Studio配置でもGitHub HEADからbaseline SHA-256を再計算し、**更新ZIPとは別に選択された承認ファイル**と一致することを確認する。保護変更がある場合は通常の配置確認とは別に、人間が保護テスト/Gate変更を確認する。
+Studio配置でもGitHub HEADからbaseline SHA-256を再計算し、**更新ZIPとは別に選択された承認ファイル**と一致することを確認する。外部人間承認のpath / baseline SHA-256 / updated SHA-256 / reasonが完全一致した場合、その承認を成立済みとして扱う。GitHub書込み開始直前にも同じ外部承認を再機械検証し、不一致ならFail Closedとする。完全一致後に同内容の保護変更専用human confirmを重ねて要求せず、通常の配置確認だけを残す。
 
 ## Stage 2 — Impact
 

@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B800</title>
+<title>GK Studio GKS-B801</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -179,7 +179,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B800 Story nested Data Exchange + scenario export wording */
+/* GKS-B801 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -239,7 +239,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B800: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B801: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -440,7 +440,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B800: Studio home-aware common header / navigation */
+/* GKS-B801: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -471,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B800</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B801</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B800</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B801</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2475,11 +2475,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=800"></script>
+<script src="./layer-controller.js?v=801"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B800';
+const DISTRIBUTION_BUILD='GKS-B801';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -7825,6 +7825,7 @@ let studioDeployTestIntegrityPolicy=null;
 let studioDeployBaselineTestIntegrityPolicy=null;
 let studioDeployTestChangeApproval=null;
 let studioDeployProtectedTestChanges=[];
+let studioDeployProtectedTestApprovalVerified=false;
 let studioDeployCurrentBuild=null;
 let studioDeployArtifactIdentity=null;
 const STUDIO_DEPLOY_HISTORY_KEY='gk_studio_deploy_history_v1';
@@ -8068,6 +8069,7 @@ async function isDeployMachineDerivedHashSync(file,remote,files,deletions){
 }
 async function validateStudioProtectedTestChanges(remote,files){
  const deletions=Array.isArray(arguments[2])?arguments[2]:[];
+ studioDeployProtectedTestApprovalVerified=false;
  const substantive=[];
  const changedFiles=files.filter(x=>(x.status==='MODIFY'||x.status==='ADD')&&isProtectedTestIntegrityPath(x.path));
  for(const file of changedFiles){
@@ -8092,6 +8094,7 @@ async function validateStudioProtectedTestChanges(remote,files){
  const approval=studioDeployTestChangeApproval;
  if(!substantive.length){
   if(approval)throw new Error('外部TEST_CHANGE_APPROVAL.jsonがありますが、保護テスト/Gateの実変更がありません。stale approvalとして停止しました。');
+  studioDeployProtectedTestApprovalVerified=true;
   return;
  }
  if(!approval)throw new Error('保護テスト/Gateが変更されています。更新ZIPとは別のTEST_CHANGE_APPROVAL.jsonと人間確認が必要です: '+substantive.map(x=>x.path).join(', '));
@@ -8104,7 +8107,8 @@ async function validateStudioProtectedTestChanges(remote,files){
   const entry=byPath.get(item.path);
   if(entry?.baseline_sha256!==item.baseline_sha256||entry?.updated_sha256!==item.updated_sha256||!String(entry?.reason||'').trim())throw new Error('外部TEST_CHANGE_APPROVAL.jsonのhash/reasonが一致しません: '+item.path);
  }
- deployLogMessage(`保護テスト/Gate変更 ${substantive.length}件: 外部承認hash一致。配置実行時に別途人間確認が必要です。`);
+ studioDeployProtectedTestApprovalVerified=true;
+ deployLogMessage(`保護テスト/Gate変更 ${substantive.length}件: 外部人間承認を機械検証済み（path / baseline SHA-256 / updated SHA-256 完全一致）。`);
 }
 
 function bytesToBase64(bytes){
@@ -8357,7 +8361,7 @@ async function inspectStudioPackage(){
  }catch(e){
   studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployPackageKind=null;
   studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];
-  studioDeployTestIntegrityPolicy=null;studioDeployBaselineTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;
+  studioDeployTestIntegrityPolicy=null;studioDeployBaselineTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployProtectedTestApprovalVerified=false;studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;
   updateDeployDeleteManifestStatus();updateDeployDeleteControl();setDeployExecuteEnabled(false);
   deployPackageStatus.innerHTML=`<span class="badge err">エラー</span> ${esc(e.message)}`;
   renderDeployPackage();
@@ -8621,7 +8625,7 @@ function renderDeployPackage(){
  }).join('');
 }
 function clearStudioPackage(){
- studioUpdateZip.value='';const testApprovalInput=document.getElementById('deployTestChangeApprovalFile');if(testApprovalInput)testApprovalInput.value='';const testApprovalStatus=document.getElementById('deployTestChangeApprovalStatus');if(testApprovalStatus)testApprovalStatus.textContent='通常更新では不要です。受入テスト・Schema・Gate等を変更する更新だけ、別途受け取った承認JSONを選択してください。更新ZIP内への同梱は拒否します。';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];studioDeployDeletePolicy=null;studioDeployTestIntegrityPolicy=null;studioDeployBaselineTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;updateDeployDeleteManifestStatus();const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;const protectedDeleteBox=document.getElementById('deployAllowProtectedDelete');if(protectedDeleteBox)protectedDeleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
+ studioUpdateZip.value='';const testApprovalInput=document.getElementById('deployTestChangeApprovalFile');if(testApprovalInput)testApprovalInput.value='';const testApprovalStatus=document.getElementById('deployTestChangeApprovalStatus');if(testApprovalStatus)testApprovalStatus.textContent='通常更新では不要です。受入テスト・Schema・Gate等を変更する更新だけ、別途受け取った承認JSONを選択してください。更新ZIP内への同梱は拒否します。';studioDeployFiles=[];studioDeployMeta=null;studioDeployPlan=null;studioDeployLastResult=null;studioDeployPackageKind=null;studioDeployDeleteCandidates=[];studioDeployDeleteBlocked=[];studioDeployDeleteManifestRules=[];studioDeployDeletePolicy=null;studioDeployTestIntegrityPolicy=null;studioDeployBaselineTestIntegrityPolicy=null;studioDeployTestChangeApproval=null;studioDeployProtectedTestChanges=[];studioDeployProtectedTestApprovalVerified=false;studioDeployCurrentBuild=null;studioDeployArtifactIdentity=null;updateDeployDeleteManifestStatus();const deleteBox=document.getElementById('deployAllowDelete');if(deleteBox)deleteBox.checked=false;const protectedDeleteBox=document.getElementById('deployAllowProtectedDelete');if(protectedDeleteBox)protectedDeleteBox.checked=false;updateDeployDeleteControl();setDeployPagesStatus('未確認');
  deployPackageStatus.textContent='更新パッケージ未選択';deployProgressBar.style.width='0%';
  deployProgressText.textContent='待機中';setDeployExecuteEnabled(false);resetDeployLog();renderDeployPackage();
 }
@@ -8663,16 +8667,18 @@ async function deployStudioPackage(){
   alert('差分件数と確認対象の件数が一致しません。安全のため配置を停止します。再確認してください。');
   return;
  }
+ if(studioDeployProtectedTestChanges.length&&!studioDeployProtectedTestApprovalVerified){
+  alert('保護テスト/Gate変更の外部承認検証が完了していません。差分を再解析してTEST_CHANGE_APPROVAL.jsonを完全一致検証してください。');
+  return;
+ }
+ // Re-run exact protected-change verification immediately before the normal deploy confirmation.
+ // This closes the gap between preflight approval verification and the bytes selected for deployment.
  if(studioDeployProtectedTestChanges.length){
-  const approved=confirm(`保護テスト/Gate変更の人間承認
-
-以下 ${studioDeployProtectedTestChanges.length}件は受入基準またはGate本体の変更です。
-通常の成果物修正とは別の承認として確認してください。
-
-${studioDeployProtectedTestChanges.map(x=>'・'+x.path).join('\n')}
-
-TEST_CHANGE_APPROVAL.jsonのhashはGitHub HEADと一致しています。これらの受入基準変更を明示的に承認しますか？`);
-  if(!approved)return;
+  await validateStudioProtectedTestChanges(studioDeployPlan,studioDeployFiles.filter(x=>!x.excluded),[...studioDeployDeleteCandidates,...studioDeployDeleteBlocked]);
+  if(!studioDeployProtectedTestApprovalVerified){
+   alert('配置直前の外部承認再検証に失敗しました。');
+   return;
+  }
  }
  const firstConfirm=`${dry?'テスト実行':'配置実行'}します。\n\nRepository: ${c.owner}/${c.repo}\nBranch: ${c.branch}\nADD: ${add}\nMODIFY: ${modify}\nDELETE: ${deleteCount}（保護領域 ${protectedDeleteItems.length}）\nCommit: ${message}`
   +(add?`\n\n追加対象（最大${previewLimit}件）:\n${addPreview}`:'')
@@ -10172,7 +10178,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','800');
+    url.searchParams.set('appv','801');
     location.replace(url.toString());
    }
  }
@@ -10181,7 +10187,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=800',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=801',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10200,7 +10206,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','800');
+    url.searchParams.set('appv','801');
     location.replace(url.toString());
    }
   });

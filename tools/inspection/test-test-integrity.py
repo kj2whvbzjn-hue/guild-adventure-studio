@@ -56,7 +56,7 @@ def main():
         if r.returncode==0 or 'PROTECTED_TEST_CHANGE_APPROVAL_REQUIRED' not in r.stdout: errors.append('LOGIC_CHANGE_NOT_BLOCKED '+r.stdout+r.stderr)
         approval=t/'external-approval.json'; approval_for(approval,base,applied,['tests/example.js'])
         r=run(base,applied,approval)
-        if r.returncode or 'HUMAN_CONFIRMATION_REQUIRED' not in r.stdout: errors.append('EXACT_APPROVAL_REJECTED '+r.stdout+r.stderr)
+        if r.returncode or 'TEST_INTEGRITY_EXTERNAL_APPROVAL_VERIFIED' not in r.stdout: errors.append('EXACT_APPROVAL_REJECTED '+r.stdout+r.stderr)
         # Approval inside either trusted tree is not independent and must fail.
         packaged=applied/'TEST_CHANGE_APPROVAL.json'; approval_for(packaged,base,applied,['tests/example.js'])
         r=run(base,applied,packaged)
@@ -119,6 +119,6 @@ def main():
         if r.returncode==0 or 'shared/integrity/critical-runtime-manifest.json' not in r.stdout: errors.append('MANIFEST_MEMBERSHIP_CHANGE_NOT_BLOCKED '+r.stdout+r.stderr)
     if errors:
         print('TEST_INTEGRITY_REGRESSION_FAIL');print('\n'.join(errors));return 1
-    print('TEST_INTEGRITY_REGRESSION_OK cases=11 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=required build_token_only=allowed machine_hash_sync=verified_only')
+    print('TEST_INTEGRITY_REGRESSION_OK cases=11 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=verified_no_runtime_reconfirm build_token_only=allowed machine_hash_sync=verified_only')
     return 0
 if __name__=='__main__': raise SystemExit(main())

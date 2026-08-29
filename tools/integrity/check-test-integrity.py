@@ -309,8 +309,10 @@ def main() -> int:
         "build_token_only_paths": build_only,
         "machine_derived_hash_sync_paths": machine_hash_sync,
         "approval_present": bool(approval),
+        "approval_verified": bool(approval and not errors),
         "approval_external_only": bool(policy.get("approval", {}).get("external_only", False)),
-        "runtime_human_confirmation_required": bool(changed and policy.get("approval", {}).get("runtime_human_confirmation_required", True)),
+        "runtime_human_confirmation_required": bool(changed and policy.get("approval", {}).get("runtime_human_confirmation_required", False)),
+        "runtime_reconfirmation_required_after_exact_hash_verification": bool(changed and policy.get("approval", {}).get("runtime_reconfirmation_required_after_exact_hash_verification", False)),
         "errors": errors,
     }
     if args.json_output:
@@ -322,7 +324,10 @@ def main() -> int:
         return 1
     print(f"TEST_INTEGRITY_OK baseline={len(baseline_protected)} applied={len(applied_protected)} changed={len(changed)} added={len(added)} build_only={len(build_only)} machine_hash_sync={len(machine_hash_sync)} approval={'yes' if approval else 'no'} policy={origin}")
     if changed:
-        print("TEST_INTEGRITY_HUMAN_CONFIRMATION_REQUIRED " + ",".join(x["path"] for x in changed))
+        if report["runtime_human_confirmation_required"]:
+            print("TEST_INTEGRITY_HUMAN_CONFIRMATION_REQUIRED " + ",".join(x["path"] for x in changed))
+        else:
+            print("TEST_INTEGRITY_EXTERNAL_APPROVAL_VERIFIED " + ",".join(x["path"] for x in changed))
     return 0
 
 if __name__ == "__main__":
