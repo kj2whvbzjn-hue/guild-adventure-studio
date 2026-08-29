@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T07:47:55.186Z"
+    "updated_at": "2026-08-29T09:06:00.647Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -364,6 +364,51 @@
       "source_id": "conversation:2026-08-29 correct current runtime if hit-before-critical",
       "created_at": "2026-08-29T16:45:00+09:00",
       "updated_at": "2026-08-29T16:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-ACTIVATION-CHANCE-001",
+      "text": "Passive等の確率TriggerはactivationChanceをTrigger固有の可変parameterとして扱う。activationChanceは0以上1以下の有限数とし、具体値はAuthoring/Balance Dataから供給してRuntimeへ直書きしない。Authoring triggerに指定されたactivationChanceはFormal Compilerが検証し、runtimeContracts.triggerContract.activationChanceへ正規化する。未指定時はfieldを生成せずRuntimeで100%相当として扱う。0%/100%時は乱数Rollを消費せず、0<chance<1の場合だけ確率判定する。Trigger Registryへ25/50/75%等の具体値を固定しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive activation chance formalization",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-ACTIVATION-RNG-001",
+      "text": "Game側のPassive activationChance判定は既存currentBattleRoll系の決定的Battle RNGを再利用し、専用RNGを新設しない。purposeはactivation相当の独立用途として区別し、同一Event内の複数候補は再現可能なindexで識別する。Studio Simulationは現行のseeded rnd()経路を維持し、0%/100%では乱数を消費せず0<chance<1の時だけ1回消費する。Game/Studio parityは同じ乱数値そのものではなく、同じ契約・判定順・発動境界を保証する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive activation deterministic rng",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-TRIGGER-GUARD-SPLIT-001",
+      "text": "確率Triggerでは確率失敗をAction Trigger発動回数として消費しない。既存tryActivate()の挙動を壊さず、Trigger Engineへ副作用なしの事前判定canActivate相当と、発動確定時のみactivationCount加算・activeKeys登録・history記録を行うcommitActivation相当を最小追加する。既存Counter/FOLLOW_UPは従来どおりtryActivate()を使用可能とし、tryActivate()は内部的に事前判定→commitを連続実行する既存互換APIとして維持する。確率Triggerは事前Guard→activationChance判定→成功時のみcommit→Effect/Action実行の順とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 trigger guard split for chance",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-HIT-RECEIVED-DISPATCH-001",
+      "text": "被Hit系Passiveでは既存hit_received Event / ON_HIT_RECEIVEDを再利用し、ON_HIT_RECEIVED_EFFECT等の重複Eventを新設しない。Current FormalのRegistry Authorityを維持し、dispatchModeはRegistryが許可範囲を定義する。ON_HIT_RECEIVEDは既存COUNTERをdefault dispatchとして維持しつつ、一般Passive用ACTION dispatchをallowed dispatchとして追加可能にする。Authoring側のdispatchMode指定はRegistryのallowed_dispatch_modesに存在する値だけCompilerが許可し、自由文字列は拒否する。既存Counter専用制約はTrigger名ではなく最終dispatchMode==COUNTERの時だけ適用する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 reuse hit_received registry-driven dispatch",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-ACTION-DISPATCH-001",
+      "text": "Trigger Engineへ一般Passive用ACTION dispatchを追加する場合もEffect処理をTrigger Engineへ実装しない。ACTIONは既存Formal Skill/Effect Runtimeへのdispatch境界としてのみ扱う。Event発生時は有効PassiveのruntimeContracts.triggerContractを候補化し、engineEvent一致→既存Guard→activationChance→dispatchModeに従って既存Formal Runtimeへ渡す。Passive専用Damage/Status/APPLY/Heal Runtime、Legacy/Fallback、Runtime内Tag解釈を追加しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 generic passive action dispatch",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
     }
   ],
   "source_baseline": {
@@ -566,6 +611,22 @@
       "artifact_note": "Human approved critical-before-hit guaranteed-hit rule and correction scope 2026-08-29",
       "created_at": "2026-08-29T16:45:00+09:00",
       "updated_at": "2026-08-29T16:45:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-FORMAL-TRIGGER-001",
+      "title": "Passive activationChance・Trigger Guard・ON_HIT_RECEIVED再利用のFormal最小拡張",
+      "status": "Resolved",
+      "summary": "Passive確率TriggerをCurrent Formal Registry / Compiler / runtimeContracts / Trigger Engineへ最小拡張で統合する。activationChanceは可変Contract、確率失敗は発動回数非消費、被Hit Eventは既存ON_HIT_RECEIVEDを再利用し、一般PassiveはRegistry許可されたACTION dispatchで既存Formal Runtimeへ接続する。",
+      "body": "【activationChance】\n- Trigger Registryへ具体確率を固定しない。\n- Authoring triggerのoptional parameterとしてactivationChanceを持てるようにする。\n- Compilerで0〜1の有限数を検証し、指定時だけruntimeContracts.triggerContract.activationChanceへ出力する。\n- 未指定時はfieldを出力せずRuntimeで100%相当として扱い、既存SkillのCompiled差分を最小化する。\n- 25/50/75%等はBalance/Data値でありRuntimeへ直書きしない。\n\n【乱数】\n- Gameは既存Battle deterministic rollをpurpose=activation相当で再利用する。\n- Passive専用RNGは作らない。\n- 0%/100%ではRollを消費しない。\n- Studioは現行seeded rnd()を維持し、確率判定時だけ消費する。\n- Studio RNG全体のpurpose別再設計は今回のPassive対応へ混ぜない。\n\n【Trigger Guard】\n- Current tryActivate()は呼出時点でactivationCount加算、activeKeys登録、history記録を行う。\n- その後で確率判定すると、不発でも発動回数を消費するため不可。\n- Trigger Engineへ副作用なしのcanActivate相当と、成功時だけ状態更新するcommitActivation相当を追加する。\n- tryActivate()は既存Counter/FOLLOW_UP互換APIとして維持し、内部でcan→commitを行う。\n- 確率Triggerはcan→chance roll→成功時commit→実行とする。\n- 確率失敗はactivationCount/activeKeys/発動historyを消費しない。必要な不発理由はBattle Trace側へ記録する。\n\n【ON_HIT_RECEIVED再利用】\n- hit_received Event自体は既存のため重複Eventを作らない。\n- Current ON_HIT_RECEIVEDはRegistry/Compiler上COUNTER専用に固定されている。\n- Registry Authorityを維持し、ON_HIT_RECEIVEDのdefault dispatchはCOUNTERのままとする。\n- Registryへallowed_dispatch_modesを持たせ、一般Passive用ACTIONを許可する。\n- Authoring dispatchModeはRegistry許可値だけCompilerが受理する。\n- Counter専用のENEMY/SINGLE/DAMAGE制約はtrigger typeではなく最終dispatchMode==COUNTERの時だけ適用する。\n\n【ACTION dispatch】\n- Trigger Engineの許可dispatchへACTIONを最小追加する。\n- ACTIONはEffect処理を持たず、既存Formal Skill/Effect Runtimeをhandlerとして呼ぶだけにする。\n- 被Hit時Damage/Status/APPLY等は既存Runtimeを再利用する。\n\n【下流互換】\n- Data Exchangeはruntime.triggerContractをobjectとして扱うためactivationChance optional fieldを拒否しない。\n- Game Formal Runtime/Trigger Contract validationも既存必須field以外のoptional追加を拒否しない。\n- runtimeContracts.schemaVersionはOptional field追加で既存意味を変えないため現段階では1を維持する。\n- skill-registry.jsonへactivationChanceの具体値は追加しない。\n\n【未確定として残す】\n- Generic Passive Dispatcherが有効Passive一覧をCharacter/Save/Masterのどこから取得するか。\n- passiveSeriesIdの正式Data Contract配置。\n- Passive装備時排他の正規Validation境界。\n- 新規Trigger Event群(ON_HIT_DEALT/ON_CRITICAL/ON_BLOCK/ON_EVADE/ON_BATTLE_START/ON_FATAL_DAMAGE)の個別Registry定義。\n- 周期Lifecycle Contract、Modifier Channel接続の具体実装。",
+      "open_questions": "有効Passive一覧の正規取得元、passiveSeriesIdのFormal Data Contract配置、Passive装備排他Validation境界、新規Trigger Event群と周期Lifecycle/Modifier接続の具体実装を後続議題で確定する。",
+      "conclusion": "Passive確率TriggerはactivationChance optional Contract、既存Battle RNG、can/commit分離Guard、Registry許可dispatch、既存ON_HIT_RECEIVED Event再利用、ACTION dispatchによる既存Formal Runtime接続で実装する。Passive専用Effect Runtimeや重複Eventは作らない。",
+      "related_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-PIPELINE-001",
+        "DISC-SKL-PASSIVE-RUNTIME-GUARD-001"
+      ],
+      "artifact_note": "Human-approved direction accumulated through 2026-08-29 Passive Formal Trigger review",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
     }
   ],
   "decisions": [
@@ -750,6 +811,48 @@
       "approved_at": "2026-08-29T16:45:00+09:00",
       "created_at": "2026-08-29T16:45:00+09:00",
       "updated_at": "2026-08-29T16:45:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-ACTIVATION-CHANCE-001",
+      "title": "activationChanceをFormal Triggerの可変Optional Contractとして採用する",
+      "status": "Approved",
+      "text": "Passive等の確率TriggerはactivationChanceをAuthoring triggerのoptional parameterとして持ち、Formal Compilerが0〜1の有限数を検証してruntimeContracts.triggerContract.activationChanceへ正規化する。未指定時はfieldを生成せずRuntimeで100%相当として扱う。具体確率はBalance/Dataから供給しRegistry/Runtimeへ固定しない。Gameは既存決定的Battle RNGをactivation用途で再利用し、Studioは現行seeded rnd()を維持する。0%/100%では乱数を消費しない。",
+      "rationale": "Trigger Eventの意味と個別Passiveの発動率を分離し、25/50/75%等を可変化したままCurrent Formal Compiler/runtimeContractsへ統合するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-TRIGGER-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T17:20:00+09:00",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-TRIGGER-GUARD-001",
+      "title": "確率Trigger向けにTrigger Guardの事前判定と発動確定を分離する",
+      "status": "Approved",
+      "text": "既存tryActivate()は互換維持しつつ、Trigger Engineへ副作用なしのcanActivate相当と、成功時だけactivationCount/activeKeys/historyを更新するcommitActivation相当を追加する。確率Triggerはcan→activationChance判定→成功時commit→実行とし、確率失敗ではAction Trigger Limitを消費しない。既存Counter/FOLLOW_UPは従来どおりtryActivate()を利用できる。",
+      "rationale": "Current tryActivate()は呼出時点で発動状態を消費するため、確率判定を後置すると不発でもTrigger回数を消費する不整合が生じるため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-TRIGGER-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T17:20:00+09:00",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-HIT-RECEIVED-DISPATCH-001",
+      "title": "ON_HIT_RECEIVEDを再利用しRegistry許可ACTION dispatchで一般Passiveへ拡張する",
+      "status": "Approved",
+      "text": "被Hit系Passiveは既存hit_received Event / ON_HIT_RECEIVEDを再利用し重複Trigger Eventを作らない。Current Formal Registry Authorityを維持し、ON_HIT_RECEIVEDのdefault dispatch=COUNTERを残しつつ、allowed_dispatch_modesに一般Passive用ACTIONを追加する。Authoring dispatchModeはRegistry許可値だけCompilerが受理する。Counter専用制約は最終dispatchMode==COUNTERの場合のみ適用する。ACTION dispatchは既存Formal Skill/Effect Runtimeへのdispatch境界とし、Passive専用Damage/Status/APPLY Runtimeを追加しない。",
+      "rationale": "既存hit_received EventとCounter実装を再利用しつつ、被Hit時一般Effectのために重複Eventや第二Runtimeを作らないため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-TRIGGER-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T17:20:00+09:00",
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
     }
   ],
   "specifications": [],
@@ -815,6 +918,24 @@
       },
       "created_at": "2026-08-29T16:45:00+09:00",
       "updated_at": "2026-08-29T16:45:00+09:00"
+    },
+    {
+      "id": "TASK-SKL-PASSIVE-FORMAL-TRIGGER-001",
+      "box_id": "BOX-SKL-0001",
+      "title": "Passive Formal Trigger拡張の実装境界を確定する",
+      "status": "Todo",
+      "execution_order": 3,
+      "depends_on": [],
+      "acceptance_criteria": "- activationChanceをAuthoring triggerのoptional parameterとして0〜1有限数で定義する。\n- 未指定activationChanceはCompiled fieldを生成せずRuntimeで100%相当とする。\n- 25/50/75%等の具体値をRegistry/Runtimeへ固定しない。\n- Gameは既存決定的Battle RNGをactivation用途で再利用し、Passive専用RNGを作らない。\n- Studio RNG全体の再設計をこのTaskへ混ぜない。\n- 0%/100%では乱数を消費しない。\n- Trigger EngineへcanActivate/commitActivation相当の最小APIを追加する設計とし、既存tryActivate()を壊さない。\n- 確率失敗でactivationCount/activeKeys/発動historyを消費しない。\n- ON_HIT_RECEIVED/hit_received Eventを再利用し、重複被Hit Eventを追加しない。\n- Registryにdefault/allowed dispatchの制約を持たせ、AuthoringのdispatchMode自由入力を許可しない。\n- ON_HIT_RECEIVEDの既存COUNTER挙動をdefaultとして維持する。\n- Counter専用Compiler制約はdispatchMode==COUNTERの時だけ適用する。\n- Trigger EngineへACTION dispatchを追加する場合、既存Formal Skill/Effect Runtimeへのdispatchだけを担当させる。\n- Data Exchange / Game RuntimeのOptional triggerContract field互換を維持し、runtimeContracts.schemaVersionは現段階で変更しない。\n- skill-registry.jsonへactivationChanceの具体値を追加しない。\n- Passive専用Effect Runtime、Legacy/Fallback、Runtime内Tag解釈を追加しない。\n- 有効Passive一覧の取得元、passiveSeriesId配置、装備排他Validation、新規Trigger Event群は別議題として未確定のまま保持する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-29T17:20:00+09:00",
+      "updated_at": "2026-08-29T17:20:00+09:00"
     }
   ],
   "checks": [],
@@ -907,6 +1028,10 @@
     {
       "at": "2026-08-29T16:45:00+09:00",
       "message": "Human adopted Critical-before-Hit battle order. Each Hit/Strike checks Critical first; Critical success guarantees Hit and skips the normal hit roll. Current Hit-before-Critical Battle paths are registered for SOURCE_UPDATE Correction; existing Critical/Hit/Defense formulas and the Current Formal runtime pipeline remain unchanged."
+    },
+    {
+      "at": "2026-08-29T17:20:00+09:00",
+      "message": "Registered the current Passive Formal Trigger correction decisions: activationChance as optional data-driven trigger contract; existing Battle RNG reuse; can/commit trigger-guard split so chance failure consumes no activation; reuse of ON_HIT_RECEIVED/hit_received with Registry-authorized ACTION dispatch while preserving COUNTER as default; no passive-specific effect runtime or duplicate hit-received event."
     }
   ]
 }
