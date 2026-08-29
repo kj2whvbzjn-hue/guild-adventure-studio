@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T09:06:00.647Z"
+    "updated_at": "2026-08-29T09:28:20.482Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -409,6 +409,60 @@
       "source_id": "conversation:2026-08-29 generic passive action dispatch",
       "created_at": "2026-08-29T17:20:00+09:00",
       "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-FORMAL-MASTER-001",
+      "text": "正式Passive Skillは既存Formal Passive Masterを拡張して実装し、Active Skill Masterへ無理に統合しない。有効Passive一覧の正規取得元はcharacter.passiveIdsとする。Passive Authoring/MasterはFormal Validator/Compilerで検証・正規化し、実行時はruntimeContractsを介して既存Formal Runtimeへ合流する。Passive専用Effect Runtime、Legacy/Fallback、Runtime内Master/Tag解釈は追加しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 formal passive master current source reuse",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-SERIES-CONTRACT-001",
+      "text": "正式Passive recordではpassiveSeriesIdをroot metadataとして必須化する。passiveSeriesIdはEffect性能ではなく系列identityでありparamsへ格納しない。Character SaveにはpassiveSeriesIdを複製保存せず、character.passiveIdsからPassive Masterを解決して系列を取得する。同一Characterで同一passiveSeriesIdを持つ複数Passiveは装備状態そのものをInvalidとし、Runtimeで最高Lvのみ採用等の重複解決を行わない。旧デモPassive PAS-DUAL-WIELD-001との互換維持を要件とせず、正式Contractに不都合なら修正・撤去する。互換例外/Fallbackを追加しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive series required no demo compatibility",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-REQUIREMENT-REUSE-001",
+      "text": "Passive習得/有効化Requirementは既存Formal Passiveのparams.ability_conditionsを正規再利用する。STR/VIT/AGI/DEX/INT/MND/LUKとminによる既存Validation/Resolutionを維持し、Passive専用Requirement Runtimeを新設しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 reuse ability_conditions for passive requirement",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-EXECUTION-MODE-001",
+      "text": "Trigger型Passiveの実行単位はACTIONとEFFECTに分離する。ACTIONは参照先Formal Skill全体のruntimeContractsを既存Skill Runtimeで実行する。EFFECTは参照先Active SkillのEffectをCompiler時に解決し、必要なEffect/Apply/Lifecycle ContractだけをPassive runtimeContractsへ埋め込む。EFFECT実行時にGame RuntimeがActive Skill MasterをlookupしてEffectを抜き出してはならない。ACTION/EFFECTどちらもPassive専用Damage/Status/APPLY Runtimeを作らない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive action effect execution split",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-EFFECT-TARGET-001",
+      "text": "EFFECTモードでは参照元Active SkillのTarget/Resource/Triggerを継承しない。参照するのはEffect Contract、Apply Contract、必要なLifecycle情報に限定し、TargetはPassive側で定義してCompilerがPassive runtimeContracts.targetContractへ正規化する。Passive EFFECT targetはEVENT_CONTEXTまたはFORMAL_TARGETの2方式とする。EVENT_CONTEXTはEvent内の具体Combatantを先に解決して既存Effect Runtimeへ渡し、ATTACKER等を既存Skill target.sideへ追加しない。FORMAL_TARGETは既存SELF/ALLY/ENEMY等のFormal Target解決を再利用する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive effect target ownership",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-NO-DEMO-COMPAT-001",
+      "text": "正式Passive実装ではテスト用デモPassiveや旧Save Migrationとの互換性を設計優先条件にしない。PAS-DUAL-WIELD-001、DUAL_WIELD固定所有制約、weaponStyle等からのPassive自動注入が正式Passive Contractと衝突する場合は修正または撤去する。旧形式を維持するための互換Layer、特例Validator、Fallback経路は追加しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 demo passive compatibility not required",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
     }
   ],
   "source_baseline": {
@@ -627,6 +681,22 @@
       "artifact_note": "Human-approved direction accumulated through 2026-08-29 Passive Formal Trigger review",
       "created_at": "2026-08-29T17:20:00+09:00",
       "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
+      "title": "正式Passive Skill Contractと実装計画：Master・Series・Execution・Target",
+      "status": "Resolved",
+      "summary": "Current Sourceで確認できた既存Formal Passive基盤を再利用し、character.passiveIds→Formal Passive Master→Validator/Compiler→runtimeContracts→既存Formal Runtimeを正規経路とする。passiveSeriesIdはroot必須、Requirementはability_conditions再利用、Trigger実行はACTION/EFFECTへ分離し、EFFECT targetはPassive所有とする。",
+      "body": "【正規データ経路】\n- Characterで現在有効なPassive一覧はcharacter.passiveIdsを正本とする。\n- 新しいequippedPassiveIds等の重複Loadout fieldは作らない。\n- passiveIdsからFormal Passive Master recordを解決する。\n- 既存validateFormalPassive()/resolvePassiveContribution()基盤を拡張して使用する。\n- Passive Authoring/MasterはCompilerでruntimeContractsへ正規化する。\n- Game RuntimeはAuthoring/Master/Tagを直接解釈せずruntimeContractsのみ実行する。\n\n【正式Passive record配置】\n- root: id / name / status / tags / passiveSeriesId / runtimeContracts 等のMaster metadata。\n- params.ability_conditions: Requirement。既存Stat+min Contractを再利用。\n- params.mod_ids: 既存Modifier Contribution利用時に再利用。\n- params.effect_ids: 既存Effect参照情報として必要時に再利用。\n- params.combat_capabilities: 既存Combat Capability利用時に再利用。\n- params.trigger: Trigger Authoring Contract。\n- params.execution: ACTION/EFFECT等の実行参照定義。\n- params.target: EFFECTモードのTarget Authoring Contract。\n\n【passiveSeriesId】\n- root必須fieldとする。\n- 名前/Passive ID/Effect内容から系列を推測しない。\n- Saveへseriesを二重保存しない。\n- Character編集/装備確定時に同系列重複を拒否する。\n- Battle Package/Battle開始時にもMaster解決後に再検証しFail Closedとする。\n- 同系列複数装備時に最高Lvだけ有効等のRuntime補正をしない。\n\n【既存デモPassiveの扱い】\n- PAS-DUAL-WIELD-001はテスト時デモ由来であり互換維持を最優先にしない。\n- 正式Contractに合わせられるなら修正し、不要/不都合なら撤去可能。\n- DUAL_WIELD固定所有制約やSave Migrationの自動Passive注入が正式Passive設計を歪める場合は撤去する。\n- 旧形式互換のための例外/Fallbackは作らない。\n\n【Requirement】\n- Passive Requirementは新規Contractを作らずparams.ability_conditionsを正式利用する。\n- 例: Counter STR40 = {stat:STR,min:40}。\n- 既存Formal Passive Validator/Resolverの能力条件判定を再利用する。\n\n【Trigger activationChance/Guard】\n- activationChanceは0〜1のOptional可変値としてCompilerで検証しtriggerContractへ出力する。\n- 未指定はfieldなし/Runtime100%相当。\n- 0%/100%はRollなし、0<chance<1のみ既存Battle RNGを利用する。\n- Gameは既存deterministic battle rollをactivation用途で再利用する。\n- Studioは現行seeded rnd()を維持する。\n- tryActivate()を壊さずcanActivate相当/commitActivation相当を追加し、不発でactivationCountを消費しない。\n\n【被Hit Event/dispatch】\n- hit_received / ON_HIT_RECEIVEDを再利用し重複Eventを作らない。\n- ON_HIT_RECEIVEDはdefault COUNTERを維持し、Registry allowed_dispatch_modesで一般Passive用ACTIONを許可する。\n- Authoring dispatchModeはRegistry許可値のみCompilerが受理する。\n- Counter専用制約は最終dispatchMode==COUNTERの場合だけ適用する。\n\n【Trigger Execution Mode】\n- ACTION: Active Skill全体を参照する。Counter等で使用。参照先Formal Skill runtimeContractsを既存executeSkillRuntime系へ渡す。\n- EFFECT: Active Skill Effectだけを再利用する。Compiler時に参照Skill/Effectを解決し、Effect/Apply/Lifecycle ContractをPassive runtimeContractsへ埋め込む。\n- EFFECT RuntimeがActive Skill MasterをlookupしてEffectを抽出する実装は禁止。\n- referenced Effect Level表現はRuntime概念にせず、Authoring側で参照先Skill/Effect定義を明示しCompilerが最終Contractを生成する。\n\n【EFFECT Target】\n- 参照元Active SkillのTargetをそのまま継承しない。\n- 参照元Active SkillのMP/Cooldown/Cast/TriggerもEFFECTモードへ持ち込まない。\n- Passive自身がTargetを持つ。\n- EVENT_CONTEXT: Event内の具体Combatantを指定。例: SELF/ATTACKER/HIT_TARGET等。\n- FORMAL_TARGET: 既存SELF/ALLY/ENEMY等のFormal Target Resolverを利用して対象集合を解決。\n- ATTACKER等を既存Skill target.sideへ追加せず、Event Contextで具体対象を確定して既存Effect Runtimeへ渡す。\n\n【Source修正候補】\n- Formal Passive Validator: root passiveSeriesId/runtimeContracts、params.trigger/execution/targetの正式Validation追加。\n- Passive Compiler: Passive Authoring→runtimeContracts生成。activationChance、execution mode、Effect参照解決、Target正規化。\n- Studio Passive Master Editor/save/load/import/export: 新field保持。保存時にpassiveSeriesId/runtimeContracts等が欠落しないよう更新。\n- Data Exchange allowlist: 正式root fieldを許可。\n- Trigger Engine: canActivate/commitActivation、ACTION dispatch許可。\n- Character passive装備Validation: passiveIdsをMaster解決して同系列重複拒否。\n- Battle入口Validation: 同系列重複/未解決Passive/Invalid ContractをFail Closed。\n- Generic Passive Trigger Dispatcher: character.passiveIdsから有効Passive runtimeContractsを候補化し、engineEvent→Guard→chance→dispatchを行う。\n- 既存Formal Skill/Effect/Modifier/Status/DOT/Cooldown Runtimeは再利用し、同等処理をPassive専用に複製しない。\n- 旧DUAL_WIELD demo/migration特例は正式Contractと競合する場合に修正/撤去。\n\n【実装順序案】\n1. Formal Passive record Schema/Validatorを確定しpassiveSeriesId等の保存保持を先に成立させる。\n2. Passive Master Editor/Data Exchangeのsave/load/import/exportを新Contractへ同期する。\n3. Passive Compilerを追加しruntimeContractsを生成する。既存Formal Runtimeへ渡せるContractだけを出力する。\n4. Trigger Engineへcan/commit分離とACTION dispatchを最小追加する。\n5. character.passiveIds→Passive Master→Compiled runtimeContractsのGeneric Dispatcherを接続する。\n6. Character編集時/Battle入口のpassiveSeriesId重複Validationを追加する。\n7. ACTION modeをCounter等で接続し既存Skill Runtime再利用を確認する。\n8. EFFECT modeをCompiler解決Effect Contract + Passive Targetで接続し既存Effect/APPLY Lifecycle再利用を確認する。\n9. 旧DUAL_WIELD demo/migration特例を正式Contractに合わせて整理する。\n10. 新Trigger Event群・周期Lifecycle・Modifier Channel接続は、それぞれ個別設計確定後に追加する。\n\n【現時点で未確定】\n- Formal Event Contextが必ず保持するfieldの最終一覧(source/attacker/defender/hitIndex/actionContext等)。\n- ON_HIT_DEALT/ON_CRITICAL/ON_BLOCK/ON_EVADE/ON_BATTLE_START/ON_FATAL_DAMAGE各Registry entryの最終定義。\n- 周期PassiveのperiodicContractの最終Schema。\n- 瀕死強化等のModifier Channel接続詳細。\n- Passive専用Effect価格表。\nこれらは未確定のため本登録で実装済み/仕様Freezeとして扱わない。",
+      "open_questions": "Event Context必須field、各新Trigger Registry定義、周期Lifecycle Contract、Modifier Channel接続、Passive専用Effect価格表を後続で確定する。",
+      "conclusion": "正式Passive Skillはcharacter.passiveIdsと既存Formal Passive Masterを起点に、root passiveSeriesId必須、ability_conditions再利用、ACTION/EFFECT実行分離、Passive所有Target、Compiler生成runtimeContractsを経て既存Formal Runtimeへ接続する。旧デモPassive互換は優先せず、正式Contractを歪める例外/Fallbackを作らない。",
+      "related_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-TRIGGER-001",
+        "DISC-SKL-PASSIVE-FORMAL-PIPELINE-001"
+      ],
+      "artifact_note": "Detailed implementation plan confirmed from Current Source and Human direction through 2026-08-29",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
     }
   ],
   "decisions": [
@@ -853,6 +923,48 @@
       "approved_at": "2026-08-29T17:20:00+09:00",
       "created_at": "2026-08-29T17:20:00+09:00",
       "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-FORMAL-MASTER-001",
+      "title": "既存Formal Passive Masterとcharacter.passiveIdsを正式Passive実装の起点にする",
+      "status": "Approved",
+      "text": "有効Passive一覧はcharacter.passiveIdsを正本とし、Formal Passive Master recordを解決して既存Validator/Resolverを拡張利用する。Passive Authoring/MasterはCompilerでruntimeContractsへ正規化し、実行は既存Formal Runtimeへ合流する。新しいPassive Loadout fieldやPassive専用Effect Runtimeを作らない。",
+      "rationale": "Current SourceにpassiveIdsとFormal Passive validation/resolution基盤が既に存在し、これを再利用するのが最小かつFormal準拠だから。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:25:00+09:00",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-SERIES-CONTRACT-001",
+      "title": "passiveSeriesIdを正式Passive root必須fieldとし装備時/Battle入口で重複拒否する",
+      "status": "Approved",
+      "text": "正式Passive recordはrootにpassiveSeriesIdを必須で持つ。SaveはpassiveIdsのみ保持しseriesはMasterから解決する。Character編集/装備確定時とBattle入口で同一series重複をRejectし、Runtimeで最高Lv選択等の補正を行わない。PAS-DUAL-WIELD-001等の旧デモPassive互換は要件とせず、正式Contractに不都合なら修正または撤去する。",
+      "rationale": "系列排他を名前やEffect内容に依存せず一意に検証し、旧デモ互換のために正式Passive Contractへ例外を持ち込まないため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:25:00+09:00",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-EXECUTION-TARGET-001",
+      "title": "Trigger PassiveをACTION/EFFECTへ分離しEFFECT TargetはPassive側で定義する",
+      "status": "Approved",
+      "text": "Trigger型PassiveはACTIONとEFFECTへ分離する。ACTIONは参照先Formal Skill全体を既存Skill Runtimeで実行する。EFFECTはCompiler時に参照先Active Skill Effectを解決し、Effect/Apply/Lifecycle ContractのみPassive runtimeContractsへ埋め込む。EFFECTは参照元SkillのTarget/Resource/Triggerを継承せずPassive自身のTargetを使用する。TargetはEVENT_CONTEXTまたはFORMAL_TARGETとして表現し、ATTACKER等を既存Skill target.sideへ追加しない。",
+      "rationale": "Current Runtimeの正式実行単位はSkill runtimeContractsでありEffect単体Master lookup Runtimeは存在しないため。CounterとEffect付与を同一方式へ無理に統合せず、既存Skill/Effect Runtimeをそれぞれ再利用するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:25:00+09:00",
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
     }
   ],
   "specifications": [],
@@ -936,6 +1048,24 @@
       },
       "created_at": "2026-08-29T17:20:00+09:00",
       "updated_at": "2026-08-29T17:20:00+09:00"
+    },
+    {
+      "id": "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
+      "box_id": "BOX-SKL-0001",
+      "title": "Formal Passive Contractを実装し既存Formal Runtimeへ接続する",
+      "status": "Todo",
+      "execution_order": 4,
+      "depends_on": [],
+      "acceptance_criteria": "- 実装着手時は既登録TASK-SKL-PASSIVE-FORMAL-TRIGGER-001で確定したFormal Trigger方針を前提として扱う。ただし統合JSONのdepends_on参照には使用しない。\n- character.passiveIdsを有効Passive一覧の唯一のCharacter側正本として使用する。\n- Formal Passive Masterを拡張し、Active Skill MasterへPassiveを無理に統合しない。\n- root passiveSeriesIdを正式Passiveで必須化する。\n- Character SaveへpassiveSeriesIdを複製保存しない。\n- params.ability_conditionsをPassive Requirementとして再利用する。\n- params.mod_ids/effect_ids/combat_capabilitiesの既存Contribution経路を必要に応じて再利用する。\n- Passive Authoring/MasterからruntimeContractsを生成するFormal Passive Compilerを設ける。\n- Game RuntimeはPassive Authoring/Master/Tagを直接解釈しない。\n- activationChanceは0〜1のOptional可変値としてCompiler検証し、未指定はRuntime100%相当、0%/100%はRollなしとする。\n- Game activation RNGは既存Battle deterministic RNGを再利用しPassive専用RNGを作らない。\n- Trigger EngineへcanActivate/commitActivation相当を追加し、確率不発でactivationCountを消費しない。\n- 既存tryActivate()のCounter/FOLLOW_UP互換を維持する。\n- ON_HIT_RECEIVED/hit_receivedを再利用し重複Eventを作らない。\n- Registry Authorityを維持し、allowed_dispatch_modesでACTION等の許可値を制約する。\n- Counter制約は最終dispatchMode==COUNTERの時だけ適用する。\n- Trigger execution modeをACTION/EFFECTに分ける。\n- ACTIONは参照先Formal Skill全体を既存Skill Runtimeで実行する。\n- EFFECTはCompiler時に参照Effectを解決してEffect/Apply/Lifecycle ContractだけをPassive runtimeContractsへ埋め込む。\n- EFFECT RuntimeでActive Skill MasterをlookupしてEffect抽出しない。\n- EFFECTは参照元SkillのMP/Cooldown/Cast/Trigger/Targetを継承しない。\n- EFFECT targetはPassive側で定義し、EVENT_CONTEXTまたはFORMAL_TARGETへcompileする。\n- ATTACKER等を既存Skill target.sideへ追加せずEvent Contextから具体Combatantを解決する。\n- Character装備確定時に同一passiveSeriesId重複を拒否する。\n- Battle入口でPassive Master解決後に同一series重複/未解決/Invalid ContractをFail Closedする。\n- Runtimeで同系列最高Lv自動選択等のFallbackを実装しない。\n- Studio Passive Master editor/save/load/import/exportがpassiveSeriesId/runtimeContracts/trigger/execution/targetを失わず保持する。\n- Data Exchange allowlistを正式Passive root fieldへ同期する。\n- PAS-DUAL-WIELD-001、DUAL_WIELD固定所有制約、旧Save Migration自動注入は正式Contractと競合する場合に修正または撤去する。\n- 旧デモPassive互換のための例外Layer/Fallbackを追加しない。\n- Passive専用Damage/Status/APPLY/Heal/Modifier Runtimeを新設せず既存Formal Runtimeを再利用する。\n- Event Context必須field、新規Trigger Event群、周期Lifecycle、Modifier Channel詳細、Passive専用Effect価格表は別議題で確定するまで先行実装しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-29T18:25:00+09:00",
+      "updated_at": "2026-08-29T18:25:00+09:00"
     }
   ],
   "checks": [],
@@ -1032,6 +1162,14 @@
     {
       "at": "2026-08-29T17:20:00+09:00",
       "message": "Registered the current Passive Formal Trigger correction decisions: activationChance as optional data-driven trigger contract; existing Battle RNG reuse; can/commit trigger-guard split so chance failure consumes no activation; reuse of ON_HIT_RECEIVED/hit_received with Registry-authorized ACTION dispatch while preserving COUNTER as default; no passive-specific effect runtime or duplicate hit-received event."
+    },
+    {
+      "at": "2026-08-29T18:25:00+09:00",
+      "message": "Registered detailed Formal Passive implementation plan confirmed from Current Source: character.passiveIds as active-passive source; existing Formal Passive Master/ability_conditions reuse; root-required passiveSeriesId with equip and battle-entry rejection; no compatibility requirement for PAS-DUAL-WIELD-001 demo/migration; ACTION/EFFECT execution split; EFFECT references compiled at authoring time and owns its target via EVENT_CONTEXT or FORMAL_TARGET; runtime consumes compiled contracts only."
+    },
+    {
+      "at": "2026-08-29T18:30:00+09:00",
+      "message": "Merge compatibility correction: TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001 depends_on was changed to an empty array because the Development JSON merge validator rejects a dependency reference to an existing task outside the incoming task set. The implementation sequencing relationship to TASK-SKL-PASSIVE-FORMAL-TRIGGER-001 remains documented in the task acceptance criteria and discussion."
     }
   ]
 }
