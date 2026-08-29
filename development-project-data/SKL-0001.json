@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T11:32:49.730Z"
+    "updated_at": "2026-08-29T11:40:24.583Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Passive Skill Implementation Plan",
-    "goal": "Passive Skillのゲーム仕様・Formal Contract上の主要議題は決定済み。後続Approved Decision / Active RuleをCurrent Authorityとし、旧候補・旧未決・Superseded記述を再度Open扱いしない。GKS-B800 Current Sourceを基準に、Critical判定順Correction後、Formal Passive Master/Compiler/Validation、直接補正/Resource/致死耐え、Trigger/Reactive/Active Skill参照/周期Lifecycle、瀕死Contribution、Game/Studio統合検証の順でreuse-first実装する。Passive専用Generic Runtime、Legacy/Fallback、Runtime内Tag/Master解釈は作らない。"
+    "theme": "Passive Skill Implementation Plan / Review Corrected",
+    "goal": "実装計画レビューの3指摘を反映済み。Critical Taskは既適合Current Formal経路を変更せず残存Hit-before-Critical経路の監査と必要箇所だけのCorrectionへ縮小。ON_FATAL_DAMAGE/ACTION/Trigger Registry/Event Context/activationChance/canActivate-commit等のTrigger基礎ContractをFormal基盤Taskへ前倒しし、Direct Runtimeの致死耐えが先行契約へ依存できる順序へ修正。瀕死時強化はHP閾値判定・発動時点・20Tick Lifecycle・Cooldown開始/再発動禁止を明示し、Trigger/Lifecycle実装後に接続する。"
   },
   "project_rules": [
     {
@@ -558,10 +558,10 @@
   "source_baseline": {
     "studio_build": "GKS-B800",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260829-112741).zip",
-    "source_role": "current_baseline_for_passive_implementation_plan",
-    "recorded_at": "2026-08-29T20:28:00+09:00",
-    "source_zip_sha256": "5cc36b5d7baf91c00595a62431e5e2cba6a649069baf34759134f768bbfbc84e"
+    "source_label": "guild-adventure-studio-sub(20260829-113331).zip",
+    "source_role": "Current Source baseline for reviewed Passive implementation plan",
+    "recorded_at": "2026-08-29T20:35:00+09:00",
+    "source_zip_sha256": "d645290e6f2e02cde1b7cb0fc8248a4000ef1d755320e179a49f611f11d404ff"
   },
   "lifecycle": {
     "status": "Active",
@@ -1236,11 +1236,11 @@
     {
       "id": "TASK-SKL-CRITICAL-HIT-ORDER-001",
       "box_id": "BOX-SKL-0001",
-      "title": "Critical先行・Critical必中へCurrent Battle RuntimeをCorrectionする",
+      "title": "Critical先行・必中の残存経路を監査し必要箇所だけCorrectionする",
       "status": "Todo",
       "execution_order": 2,
       "depends_on": [],
-      "acceptance_criteria": "- Source実装前に通常攻撃・Formal Skill DAMAGE・Studio Simulation・Trace/Testの具体修正箇所を再確認する。\n- 各Hit/StrikeでCritical判定を命中判定より先に行う。\n- Critical成立時は命中判定を実施せずHit確定とする。\n- Critical不成立時のみ物理/魔法の通常命中判定を行う。\n- Critical成立HitとEvadeが同一Hitで共存しない。\n- Multi-hit / Dual Wieldは各Hit/Strikeごとに独立してCritical→必要時Hit判定を行う。\n- 通常攻撃、Formal Skill DAMAGE、Studio Simulationを同じ順序へ揃える。\n- Critical Rate/Damage、Accuracy/Evasion、Magic Accuracy/Magic Resistance、Defense/Resistance/Block/Shieldの既存式を不要に変更しない。\n- Passive専用Runtime、Legacy/Fallback、Runtime内Tag解釈を追加しない。\n- Critical成立時にHit Roll未実施であることをTrace/Evidenceで識別可能にする。\n- Critical成立かつ低命中率ケース、Critical不成立Hit/Miss、Multi-hit、Dual Wield、Game/Studio parityを回帰確認する。\n- 保護Test変更が必要な場合はCurrent Workflowの保護Test変更手順に従う。",
+      "acceptance_criteria": "- Current Formal Game通常攻撃 / Formal Skill DAMAGE / Studio Formal BattleがCritical先行・Critical成立時Hit Roll省略に既に適合していることを再確認し、適合経路は変更しない。\n- Current Sourceに残るHit-before-Critical経路を棚卸しする。\n- 残存経路がCurrent実行経路ならCritical→必要時Hitの順へ最小Correctionする。\n- 残存経路が非Formal/旧検証/非Current経路ならCurrent Runtimeへ混入しないことを確認し、不要なCurrent Formal経路の編集を行わない。\n- Critical成立HitとEvadeが同一Hitで共存しない。\n- Multi-hit / Dual Wieldは各Hit/Strikeごとに独立してCritical→必要時Hit判定を維持する。\n- Critical Rate/Damage、Accuracy/Evasion、Magic Accuracy/Magic Resistance、Defense/Resistance/Block/Shieldの既存式を不要に変更しない。\n- Critical成立時にHit Roll未実施であることをTrace/Evidenceで識別できることを確認する。\n- Game/Studio Current Formal parityを回帰確認する。\n- 保護Test変更が必要な場合はCurrent Workflowの保護Test変更手順に従う。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1249,7 +1249,7 @@
         "at": ""
       },
       "created_at": "2026-08-29T16:45:00+09:00",
-      "updated_at": "2026-08-29T16:45:00+09:00"
+      "updated_at": "2026-08-29T20:35:00+09:00"
     },
     {
       "id": "TASK-SKL-PASSIVE-FORMAL-TRIGGER-001",
@@ -1272,13 +1272,13 @@
     {
       "id": "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
       "box_id": "BOX-SKL-0001",
-      "title": "Formal Passive Master / Compiler / Validation基盤を実装する",
+      "title": "Formal Passive Master / Compiler / Validation / Trigger基礎Contractを実装する",
       "status": "Todo",
       "execution_order": 3,
       "depends_on": [
         "TASK-SKL-CRITICAL-HIT-ORDER-001"
       ],
-      "acceptance_criteria": "- GKS-B800を実装baselineとする。\n- character.passiveIdsを唯一のCharacter側有効Passive ID正本として維持する。\n- Formal Passive Masterを正式Authoring/Data Exchange対象として拡張し、Active Skill Masterへ統合しない。\n- root passiveSeriesIdを必須化しCharacter Saveへ複製保存しない。\n- params.ability_conditionsをRequirementとして再利用する。\n- Trigger条件Thresholdと参照Active Skill Requirementを全て消費量として加算し、同一Thresholdを再利用しない。\n- 総Threshold消費110超過をCompiler/Validatorで拒否する。\n- 参照Active Skill RequirementをPassive側へ数値複製せずActive Skill MasterをCompiler時正本として照合する。\n- Passive側最終ability_conditionsが算出Stat別Requirementと一致しない場合はFail Closedする。\n- Passive Authoring/MasterからruntimeContractsを生成するFormal Compiler経路を実装する。\n- activationChance、ACTION dispatch、Event Context/Target、Active Skill参照をruntimeContractsへ正規化する。\n- Game RuntimeはPassive Authoring/Master/Tagを実行時解釈・再Compilerしない。\n- Studio Passive Master editor/save/load/import/exportとData Exchange allowlistを正式Passive fieldへ同期する。\n- 同一passiveSeriesId複数装備を装備確定時およびBattle入口でInvalidとして拒否する。\n- GKS-B800に残るPAS-DUAL-WIELD-001固定所有表とweaponStyle由来Passive自動注入は正式Contractと競合するため撤去または正式Master解決へ置換する。\n- Passive専用Damage/Status/APPLY/Heal/Modifier Runtime、Generic Runtime、Legacy/Fallbackを追加しない。",
+      "acceptance_criteria": "- GKS-B800を実装baselineとする。\n- character.passiveIdsをCharacter側の唯一の有効Passive ID正本として維持する。\n- Formal Passive Masterを正式Authoring/Data Exchange対象として拡張し、Active Skill Masterへ統合しない。\n- root passiveSeriesIdを必須化しCharacter Saveへ複製保存しない。\n- params.ability_conditionsをRequirementとして再利用する。\n- Trigger条件Thresholdと参照Active Skill Requirementを全て消費量として加算し、同一Thresholdを再利用しない。\n- 総Threshold消費110超過をCompiler/Validatorで拒否する。\n- 参照Active Skill RequirementをPassive側へ数値複製せずActive Skill MasterをCompiler時正本として照合する。\n- Passive側最終ability_conditionsが算出Stat別Requirementと一致しない場合はFail Closedする。\n- Passive Authoring/MasterからruntimeContractsを生成するFormal Compiler経路を実装する。\n- Trigger RegistryへON_CRITICAL / ON_HIT_DEALT / ON_EVADE / ON_BLOCK / ON_BATTLE_START / ON_FATAL_DAMAGEの基礎定義を追加する。\n- ON_HIT_RECEIVEDは既存COUNTER defaultを維持し、ACTIONをallowed dispatchへ追加する。\n- ACTION dispatchのContractを追加し、既存Formal Skill/Effect Runtimeへ渡す境界だけを定義する。Effect処理そのものはTrigger Engineへ実装しない。\n- activationChanceを0〜1 Optional値としてCompiler検証し、未指定=100%、0%/100%はRNG非消費とする。\n- Trigger Engineへ副作用なしcanActivate相当と成功時commitActivation相当を追加し、既存tryActivate()互換を維持する。\n- Event Context schemaをsourceId/actionSourceId/targetId/skillId/hitIndex/actionContextの最小fieldで定義する。\n- REACTIVE / INTERRUPT phaseとACTION dispatchをCompiler/Engineが受理・検証できる基礎状態まで成立させる。ただしBattle event hook / Safe Point / pendingReactive実行は後続Taskで実装する。\n- Active Skill参照Passiveは参照Skill登録済み効果をCompiler時にruntimeContractsへ正規化し、Passive側でPower/Duration/Tick/Stackを重複定義しない。\n- 参照Active SkillのMP/Cooldown/Cast/Range CostをPassive発動Costへ持ち込まない。\n- Studio Passive Master editor/save/load/import/exportとData Exchange allowlistを正式Passive fieldへ同期する。\n- 同一passiveSeriesId複数装備を装備確定時およびBattle入口でInvalidとして拒否する。\n- GKS-B800に残るPAS-DUAL-WIELD-001固定所有表とweaponStyle由来Passive自動注入は正式Contractと競合するため撤去または正式Master解決へ置換する。\n- Passive専用Damage/Status/APPLY/Heal/Modifier Runtime、Generic Runtime、Legacy/Fallbackを追加しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1287,19 +1287,19 @@
         "at": ""
       },
       "created_at": "2026-08-29T18:25:00+09:00",
-      "updated_at": "2026-08-29T20:28:00+09:00"
+      "updated_at": "2026-08-29T20:35:00+09:00"
     },
     {
       "id": "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
       "box_id": "BOX-SKL-0001",
-      "title": "Passive Trigger / Reactive / Active Skill参照 / 周期Lifecycleを実装する",
+      "title": "Passive Trigger Runtime Hook / Reactive Safe Point / 周期Lifecycleを実装する",
       "status": "Todo",
       "execution_order": 5,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
         "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001"
       ],
-      "acceptance_criteria": "- Event ContextをsourceId/actionSourceId/targetId/skillId/hitIndex/actionContextの最小構成で使用する。\n- ON_CRITICAL/ON_HIT_DEALT/ON_EVADE/ON_BLOCK/ON_BATTLE_STARTをREACTIVE、ON_FATAL_DAMAGEをINTERRUPTとしてRegistryへ追加する。\n- ON_HIT_RECEIVEDは既存COUNTER default維持＋ACTION allowedとする。\n- ACTION dispatchは既存Formal Skill/Effect Runtimeへの境界のみとする。\n- activationChanceは0%/100%でRNG非消費、0<chance<1だけ既存Battle deterministic RNGを1回使用する。\n- 確率失敗ではactivationCount/activeKeys/historyを消費しない。\n- 通常REACTIVEは元Hit確定後Safe Pointで処理し、ON_FATAL_DAMAGEだけHP commit前Interruptとする。\n- actionContextへpendingReactiveを保持しBattle-wide専用Queueを作らない。\n- Multi-hitは各Hit確定後にそのHit分だけflushする。\n- 各Hit Safe Pointでは既存COUNTER/FOLLOW_UPを先に完了し、その後新Passiveをflushする。\n- 派生処理は同じactionContextを継承し別種Trigger連鎖を許可するが実行中の同一Passive自己再入は禁止する。\n- Active Skill参照Passiveは参照Skill登録済み効果を使用し、参照SkillのMP/Cooldown/Cast/Range Costを消費しない。\n- 周期Passiveは既存Battle Tick Lifecycleへ接続し専用Tickerを作らない。\n- 初回は1 interval後、死亡中は不発・繰越なし、蘇生リセットなし、Battle終了時破棄とする。\n- 周期HP/MP回復は発動時Current Maxを参照しmax(1,floor(CurrentMax*recoveryRate))とする。",
+      "acceptance_criteria": "- 前工程で定義済みのTrigger Registry / ACTION / Event Context / activationChance / canActivate-commit基礎Contractを使用し、Battle実イベントへ接続する。\n- ON_CRITICALはCritical成立直後、ON_EVADEは非Critical Hit Roll失敗確定後、ON_HIT_DEALTはHit成立後、ON_BLOCKはBlock成立後、ON_BATTLE_STARTはBattle Validation完了後に候補化する。\n- ON_FATAL_DAMAGEはShield等適用後のprojectedHp<=0検出時かつHP commit前に即時INTERRUPTとしてdispatchする。\n- 通常REACTIVEは元Hit確定後Safe Pointで実行する。\n- actionContextへpendingReactiveを保持しBattle-wide専用Queueを作らない。\n- Multi-hitは各Hit確定後にそのHit分だけflushする。\n- flush順はEvent成立順→同一Event内priority降順→sequence順→canActivate→chance→commit→実行とする。\n- 確率失敗ではactivationCount/activeKeys/historyを消費しない。\n- 各Hit Safe Pointでは既存COUNTER/FOLLOW_UPを先に完了し、その後新Passiveをflushする。\n- 派生処理は同じactionContextを継承し、別種Trigger連鎖を許可するが実行中の同一Passive自己再入は禁止する。\n- Active Skill参照Passiveは前工程でcompile済みruntimeContractsを既存Formal Skill/Effect Runtimeへdispatchし、参照SkillのMP/Cooldown/Cast/Range Costを消費しない。\n- 周期Passiveは既存Battle Tick Lifecycleへ接続し専用Tickerを作らない。\n- intervalTicks/initialDelayTicks/recoveryRateをDataとして使用し、初回は1 interval後とする。\n- 死亡中周期到達は不発、繰越なし、蘇生でリセットなし、Battle終了時破棄とする。\n- 周期HP/MP回復は発動時Current Maxを参照しmax(1,floor(CurrentMax*recoveryRate))で既存Resource処理へ接続する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1308,19 +1308,20 @@
         "at": ""
       },
       "created_at": "2026-08-29T18:55:00+09:00",
-      "updated_at": "2026-08-29T20:28:00+09:00"
+      "updated_at": "2026-08-29T20:35:00+09:00"
     },
     {
       "id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
       "box_id": "BOX-SKL-0001",
-      "title": "瀕死時強化を既存Modifier Contribution経路へ接続する",
+      "title": "瀕死時強化の発動LifecycleとContributionを既存経路へ接続する",
       "status": "Todo",
       "execution_order": 6,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
-        "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001"
+        "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+        "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001"
       ],
-      "acceptance_criteria": "- 瀕死時強化専用の倍化Runtime/Stack計算を新設しない。\n- Current MOD/Passive/Skill/Buff/Debuffと同じContribution集約経路へ接続する。\n- 瀕死効果自体をrelative +100% Contributionとして表現する。\n- 既存relative補正とtarget/operation単位で加算する。\n- Base=10、既存relative=+10%、瀕死relative=+100%でFinal=21となることを確認する。\n- 既存relative=+20%の場合は総relative=+120%となり、瀕死値自体を+120%として扱わない。\n- 対象ChannelはPHYSICAL_DAMAGE/MAGIC_DAMAGE/ACCURACY/MAGIC_ACCURACY/EVASION/BLOCK_RATE/BLOCK_PERFORMANCE/CRITICAL_RATE/CRITICAL_DAMAGE/ACTION_GAUGE_GAINだけとする。\n- MAX_HP/MAX_MP/MAGIC_RESISTANCE/ELEMENT_RESISTANCE/STATUS_RESISTANCE/CRITICAL_BONUS_DAMAGE_REDUCTION/MP_COST_REDUCTION/COOLDOWN_REDUCTION/CAST_TIME_REDUCTIONを対象外とする。\n- STR/VIT/AGI/DEX/INT/MND/LUKのBase Statを変更しない。\n- ACTION_GAUGE_GAINも既存Contribution経路へrelative +100%を追加し、瀕死専用Final×2を作らない。\n- Current Action Gauge基礎式を変更しない。\n- 瀕死PassiveのRequirement/HP閾値/持続/Cooldown等の既決値はこのTaskで変更しない。\n- 旧『補正量×2』『Action Gauge×2』記述を実装根拠に使用せず、本Decisionを優先する。\n- Passive専用Legacy/Fallback/parallel modifier calculatorを追加しない。",
+      "acceptance_criteria": "- HP変更処理が確定した後にCurrent HP率を評価し、各Passiveの5% / 10% / 15%以下閾値へ到達している場合に発動判定する。\n- HP commit前の途中値では発動させず、元のDamage/Heal/HP変更が確定した後のCurrent HPを使用する。\n- 発動可能かは既存Cooldown Lifecycleで判定し、Cooldown中は再発動しない。\n- 発動成立時に20 Tickの瀕死強化Lifecycleを開始し、同時にCooldown999999 Tickを開始する。\n- 20 Tick有効中は対象10 Channelへrelative +100% Contributionを追加する。\n- Base Stat、既存補正量、Final値を直接×2しない。\n- 対象外Channelへ補正を追加しない。\n- 効果期間終了時は当該Contributionだけを除去する。\n- Battle終了時は効果状態とCooldown状態を破棄する。Battle中の死亡/蘇生では既存Cooldown Lifecycleに従いCooldownを保持する。\n- 瀕死強化用の独立Final multiplier engineや専用Modifier Runtimeを作らず、既存Contribution集約経路へ接続する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1329,7 +1330,7 @@
         "at": ""
       },
       "created_at": "2026-08-29T19:10:00+09:00",
-      "updated_at": "2026-08-29T20:28:00+09:00"
+      "updated_at": "2026-08-29T20:35:00+09:00"
     },
     {
       "id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
@@ -1340,7 +1341,7 @@
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
       ],
-      "acceptance_criteria": "- 最大HP/最大MP、属性/状態異常耐性、Block、Critical、被Critical Damage軽減を既存Contribution/Battle経路へ接続する。\n- MP Cost Reduction、Cooldown Reduction、CastTime Reductionを既存計算値へ接続し既決のceil規則を維持する。\n- 致死耐えはON_FATAL_DAMAGE INTERRUPTでHP commit前にHP1生存へ介入する。\n- Cooldown999999はBattle終了時破棄、Battle中死亡/蘇生では保持する。\n- Damage以外の即死Effect、HP Cost、Script強制戦闘不能へ致死耐えを適用しない。\n- Multi-hitでは発動Hitのみ耐え残りHitを継続する。\n- Passive Barrierおよび周期以外のPassive Healを追加しない。",
+      "acceptance_criteria": "- 最大HP/最大MP、属性/状態異常耐性、Block、Critical、被Critical Damage軽減を既存Contribution/Battle経路へ接続する。\n- MP Cost Reduction、Cooldown Reduction、CastTime Reductionを既存計算値へ接続し既決のceil規則を維持する。\n- 前工程で成立したON_FATAL_DAMAGE / INTERRUPT / ACTION基礎Contractを使用して、致死耐えをHP commit前にHP1生存へ介入させる。\n- Cooldown999999は既存Cooldown Lifecycleへ接続し、Battle終了時破棄、Battle中死亡/蘇生では保持する。\n- Damage以外の即死Effect、HP Cost、Script強制戦闘不能へ致死耐えを適用しない。\n- Multi-hitでは発動Hitのみ耐え、残りHit処理を継続する。\n- Passive Barrierおよび周期以外のPassive Healを追加しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1349,7 +1350,7 @@
         "at": ""
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-29T20:28:00+09:00"
+      "updated_at": "2026-08-29T20:35:00+09:00"
     },
     {
       "id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
@@ -1363,7 +1364,7 @@
         "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
         "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001"
       ],
-      "acceptance_criteria": "- Formal Passive Master→Compiler→runtimeContracts→Game Runtimeの正規経路だけで全Passiveが実行されることを確認する。\n- passiveSeriesId重複、未解決Passive ID、Requirement不一致、Threshold総量110超過、参照Skill不正をFail Closedできることを確認する。\n- 最大HP/MP、耐性、Block、Critical、Critical防御、MP Cost、Cooldown、CastTime、周期HP/MP回復、Counter、各Reactive Trigger、Battle Start、致死耐え、瀕死時強化を確認する。\n- Active Skill参照Passiveで参照SkillのMP/Cooldown/Cast/Range Costが消費されないことを確認する。\n- Critical成立時は必中でEvade Eventを発生させずMulti-hit/Dual Wieldの各Hit独立順を維持する。\n- activationChance、自己再入禁止、別種Trigger連鎖、COUNTER/FOLLOW_UP先行、周期死亡/蘇生Lifecycleを確認する。\n- 瀕死時強化は対象10 Channelへrelative +100% Contributionとして加算されBase Statや対象外Channelを変更しないことを確認する。\n- StudioとGameで同一Contract/判定順/発動境界を確認する。",
+      "acceptance_criteria": "- Formal Passive Master→Compiler→runtimeContracts→Game Runtimeの正規経路だけで全Passiveが実行されることを確認する。\n- Critical Current Formal経路は既適合部分を変更せず、残存Current経路だけが必要時Correctionされていることを確認する。\n- passiveSeriesId重複、未解決Passive ID、Requirement不一致、Threshold総量110超過、参照Skill不正をFail Closedできることを確認する。\n- Trigger Registry/ACTION/Event Context/activationChance/canActivate-commit基礎ContractがRuntime Hookより先に成立していることを確認する。\n- 最大HP/MP、耐性、Block、Critical、Critical防御、MP Cost、Cooldown、CastTime、周期HP/MP回復、Counter、各Reactive Trigger、Battle Start、致死耐え、瀕死時強化を確認する。\n- Active Skill参照Passiveで参照SkillのMP/Cooldown/Cast/Range Costが消費されないことを確認する。\n- Critical成立時は必中でEvade Eventを発生させずMulti-hit/Dual Wieldの各Hit独立順を維持する。\n- activationChance、自己再入禁止、別種Trigger連鎖、COUNTER/FOLLOW_UP先行、周期死亡/蘇生Lifecycleを確認する。\n- 瀕死時強化はHP変更確定後に閾値判定し、20 Tick有効・Cooldown999999・再発動禁止・対象10 Channel relative +100% Contributionとして動作することを確認する。\n- StudioとGameで同一Contract/判定順/発動境界を確認する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1372,7 +1373,7 @@
         "at": ""
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-29T20:28:00+09:00"
+      "updated_at": "2026-08-29T20:35:00+09:00"
     }
   ],
   "checks": [],
@@ -1497,6 +1498,10 @@
     {
       "at": "2026-08-29T20:28:00+09:00",
       "message": "StudioのDevelopment Workspace mergeコードを確認し、全体SnapshotではなくID単位差分統合用JSONとしてPassive実装計画を再作成。旧Generic Runtime、Hit時回復、Trigger/Effect Threshold非加算、Passive専用Effect価格表、未決扱いのTrigger/Series/Event Context記述をCurrent判断から除外し、GKS-B800をCurrent Source baselineとして実装Taskを再構成した。"
+    },
+    {
+      "at": "2026-08-29T20:35:00+09:00",
+      "message": "Implementation plan review applied. Critical task narrowed to audit remaining Hit-before-Critical paths and only correct Current paths; Trigger foundation contract (Registry 6 events, ON_HIT_RECEIVED ACTION allowed, ACTION dispatch, activationChance, canActivate/commit, Event Context, REACTIVE/INTERRUPT acceptance) moved from Trigger runtime task into Formal implementation task so Fatal Survive no longer depends on a later task; Low-HP passive task now includes post-HP-change threshold evaluation, activation point, 20 Tick lifecycle, cooldown start/retrigger prohibition, and explicit dependency on Trigger runtime lifecycle."
     }
   ]
 }
