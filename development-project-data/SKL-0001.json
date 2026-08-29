@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T02:36:06.286Z"
+    "updated_at": "2026-08-29T03:52:12.468Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -20,7 +20,7 @@
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
     "theme": "Passive Skill Design",
-    "goal": "採用済みPassive FrameworkとCounter/Block/回復/MP軽減/CD・Cast短縮を基準に、未確定のRequirement Stat割当、MP Cost整数化、被Hit時回復、特殊Trigger系Passiveを詰める。"
+    "goal": "Passive拡張仕様と同一系列排他を基準に、被Hit時回復の採否、Trigger型の参照Effect一覧、Passive/MOD Stack順序、passiveSeriesIdのData Contract実装位置を詰める。"
   },
   "project_rules": [
     {
@@ -169,12 +169,12 @@
     },
     {
       "id": "RULE-SKL-PASSIVE-COUNTER-001",
-      "text": "Counter Passiveは3段階とし、Requirement値は20/40/60、発動率は25%/50%/75%とする。Triggerは被攻撃Hit時。Counter自身に独自Damage倍率を持たせず、Damage倍率100%の通常攻撃Active Skillを参照して実行する。処理は被攻撃Hit成立後にCounter発動判定を行い、成功時にReferenced Active Skillとして通常攻撃100%を実行する。CounterのRequirement Stat割当は現時点では未確定とする。",
+      "text": "Counter Passiveは3段階とし、RequirementはSTR 20/40/60、発動率は25%/50%/75%とする。Triggerは被攻撃Hit時。Counter自身に独自Damage倍率を持たせず、Damage倍率100%の通常攻撃Active Skillを参照して実行する。処理は被攻撃Hit成立後にCounter発動判定を行い、成功時にReferenced Active Skillとして通常攻撃100%を実行する。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-29 counter passive",
+      "source_id": "conversation:2026-08-29 counter STR finalized",
       "created_at": "2026-08-29T11:36:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
     },
     {
       "id": "RULE-SKL-PASSIVE-BLOCK-001",
@@ -187,39 +187,102 @@
     },
     {
       "id": "RULE-SKL-PASSIVE-REGEN-001",
-      "text": "戦闘中自動回復Passiveは3段階とする。Requirementは20/40/60。HP自動回復は20 Tickごとに最大HPの1%/2%/3%を回復する。MP自動回復は20 Tickごとに最大MPの0.5%/1.0%/1.5%を回復する。Requirement Stat割当は現時点では未確定とする。",
+      "text": "戦闘中自動回復Passiveは3段階とする。HP自動回復はVIT Requirement 20/40/60で、20 Tickごとに最大HPの1%/2%/3%を回復する。MP自動回復はMND Requirement 20/40/60で、20 Tickごとに最大MPの0.5%/1.0%/1.5%を回復する。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-29 passive auto regen",
+      "source_id": "conversation:2026-08-29 passive auto regen stat assignment",
       "created_at": "2026-08-29T11:36:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
     },
     {
       "id": "RULE-SKL-PASSIVE-HIT-REGEN-001",
-      "text": "Hit時回復Passiveは3段階とする。Requirementは20/40/60。攻撃Hit時HP回復は成立したHitごとに最大HPの0.5%/1.0%/1.5%を回復する。攻撃Hit時MP回復は成立したHitごとに最大MPの0.25%/0.5%/0.75%を回復する。1 Actionあたり最大1回等の発動回数制限は設けない。Multi-hitや複数対象攻撃では成立Hit数ぶん発動可能。MissしたHitでは発動しない。Requirement Stat割当は現時点では未確定とする。",
+      "text": "攻撃Hit時回復Passiveは3段階とする。RequirementはDEX 20/40/60。攻撃Hit時HP回復は成立したHitごとに最大HPの0.5%/1.0%/1.5%を回復する。攻撃Hit時MP回復は成立したHitごとに最大MPの0.25%/0.5%/0.75%を回復する。1 Actionあたり最大1回等の発動回数制限は設けない。Multi-hitや複数対象攻撃では成立Hit数ぶん発動可能。MissしたHitでは発動しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-29 passive hit regen",
+      "source_id": "conversation:2026-08-29 passive hit regen DEX finalized",
       "created_at": "2026-08-29T11:36:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
     },
     {
       "id": "RULE-SKL-PASSIVE-MP-COST-001",
-      "text": "MP消費軽減Passiveは3段階とする。Requirementは20/40/60、軽減率は5%/10%/15%。Range補正等を適用したCalculated MP Costに対して割合軽減する。Final MP Cost = Calculated MP Cost * (1 - Passive Reduction)。Requirement Stat割当およびMP Cost整数化規則は現時点では未確定とする。",
+      "text": "MP消費軽減Passiveは3段階とする。RequirementはMND 20/40/60、軽減率は5%/10%/15%。Range補正等を適用したCalculated MP Costに対して割合軽減する。Final MP Cost = ceil(Calculated MP Cost * (1 - Passive Reduction)) とし、小数Costは切り上げる。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-29 passive mp cost reduction",
+      "source_id": "conversation:2026-08-29 passive mp cost MND ceil",
       "created_at": "2026-08-29T11:36:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
     },
     {
       "id": "RULE-SKL-PASSIVE-TIME-REDUCTION-001",
-      "text": "Cooldown短縮PassiveとCastTime短縮Passiveはそれぞれ3段階とする。Requirementは20/40/60、短縮率は5%/10%/15%。割合短縮後のTickは切り上げる。Final Cooldown Tick = ceil(Calculated Cooldown * (1 - Reduction))。Final CastTime Tick = ceil(Calculated CastTime * (1 - Reduction))。Requirement Stat割当は現時点では未確定とする。",
+      "text": "Cooldown短縮PassiveはAGI Requirement 20/40/60、CastTime短縮PassiveはINT Requirement 20/40/60とし、各3段階で短縮率5%/10%/15%。割合短縮後のTickは切り上げる。Final Cooldown Tick = ceil(Calculated Cooldown * (1 - Reduction))。Final CastTime Tick = ceil(Calculated CastTime * (1 - Reduction))。",
       "status": "Active",
       "source_type": "HumanInstruction",
-      "source_id": "conversation:2026-08-29 passive cooldown cast reduction",
+      "source_id": "conversation:2026-08-29 passive cooldown cast stat assignment",
       "created_at": "2026-08-29T11:36:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-CRITICAL-001",
+      "text": "Critical Rate上昇PassiveとCritical Damage上昇Passiveは各5段階、LUK Requirement 20/30/40/50/60。補正は基礎値への割合乗算で、Lv1〜5を×1.05/×1.10/×1.15/×1.20/×1.25とする。Critical時Active Effect Passiveは3段階、LUK Requirement 20/40/60で、Critical成立時にActive Effect Lv1/Lv2/Lv3を参照実行する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 critical passive adopted",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-CRITICAL-DEFENSE-001",
+      "text": "被Critical Damage軽減Passiveは5段階、LUK Requirement 20/30/40/50/60。通常Damage部分は軽減せず、Criticalによる増加分のみを5%/10%/15%/20%/25%軽減する。Final Critical Bonus = Base Critical Bonus * (1 - Reduction)。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 critical defense passive",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-LUCK-TRIGGER-001",
+      "text": "LUK系の確率Trigger Passiveは3段階、LUK Requirement 20/40/60、発動率25%/50%/75%。指定Trigger成立後に確率判定し、成功時にReferenced Active Effect Lv1/Lv2/Lv3を実行する。回避時・Block時・被Critical時などへ再利用可能とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 luck trigger passive",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-TRIGGER-EFFECT-001",
+      "text": "Active Effect参照型Trigger Passiveとして、Battle Start Effect: 3段階Req20/40/60、戦闘開始時にActive Effect Lv1/Lv2/Lv3を1回参照実行。回避時Effect: AGI 20/40/60、回避成功時にActive Effect Lv1/Lv2/Lv3を参照実行。Block時Effect: VIT 20/40/60、Block成功時にActive Effect Lv1/Lv2/Lv3を参照実行。被Hit時Effect: Effect対応Stat 20/40/60、被Hitごとに25%/50%/75%でActive Effect Lv1/Lv2/Lv3を参照実行。攻撃Hit時Effect: Effect対応Stat 20/40/60、成立Hitごとに25%/50%/75%でActive Effect Lv1/Lv2/Lv3を参照実行。Passive側にDamage/Duration等の独自性能を重複定義しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 trigger active effect passives",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-FATAL-SURVIVE-001",
+      "text": "致死耐えPassiveは単段階、RequirementはVIT 40。TriggerはDamage適用によりHPが0以下になる直前。EffectはHP1で生存。Cooldownは999999 Tick。専用の戦闘中1回フラグは作らず既存Cooldownを使用する。物理/魔法/DOT等Damage処理は対象とし、Damageではない即死Effect・HP Cost・Script強制戦闘不能は対象外。Multi-hitでは発動した1Hitのみ耐え、残りHitは通常処理を継続する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 fatal survive VIT40",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-LOWHP-BURST-001",
+      "text": "瀕死時強化Passiveは例外的な複合Passiveとして3段階とする。RequirementはVIT 20/40/60。発動条件はLv1=HP5%以下、Lv2=HP10%以下、Lv3=HP15%以下。発動時、すべての既存補正値を+100%増加し、Action Gauge増加量も+100%とする。持続時間は20 Tick、Cooldownは999999 Tick。基礎Statそのものを2倍にするのではなく、既存の戦闘補正量を2倍化する。Action Gauge Gainは×2.0。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 low hp burst passive",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-SERIES-001",
+      "text": "Passive Skillには同一系統判定用のpassiveSeriesIdを持たせる。同一Characterが同じpassiveSeriesIdを持つPassiveを複数同時装備することを禁止する。Skill名やSkill ID、Effect内容の推測ではなくpassiveSeriesIdのみで重複判定する。例: 最大HP Lv1〜3はMAX_HP、Counter Lv1〜3はCOUNTER、FIRE耐性 Lv1〜5はFIRE_RESIST。同一系列の上位Lvへは差し替えで対応し、Runtimeで最高Lvだけ有効という重複解決は行わない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive series exclusivity",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
     }
   ],
   "source_baseline": {
@@ -360,6 +423,21 @@
       "artifact_note": "Human approved passive framework 2026-08-29",
       "created_at": "2026-08-29T10:35:00+09:00",
       "updated_at": "2026-08-29T11:36:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-EXTENDED-001",
+      "title": "Passive Skill拡張仕様：Requirement Stat・Critical・Trigger・特殊Passive・同一系統排他",
+      "status": "Resolved",
+      "summary": "Passive Framework上で未確定だったStat割当、Critical系、Trigger系、致死耐え、瀕死時強化、同一系列排他を確定した。",
+      "body": "【Requirement Stat確定】\n- Counter: STR 20/40/60。\n- HP自動回復: VIT 20/40/60。\n- MP自動回復: MND 20/40/60。\n- 攻撃Hit時HP/MP回復: DEX 20/40/60。\n- MP消費軽減: MND 20/40/60。\n- Cooldown短縮: AGI 20/40/60。\n- CastTime短縮: INT 20/40/60。\n\n【Critical系】\n- Critical Rate: LUK20/30/40/50/60、基礎値×1.05/1.10/1.15/1.20/1.25。\n- Critical Damage: 同上。\n- Critical時Active Effect: LUK20/40/60、Critical成立時にActive Effect Lv1/Lv2/Lv3参照。\n- 被Critical Damage軽減: LUK20/30/40/50/60、Critical増加分のみ5/10/15/20/25%軽減。\n- LUK確率Trigger: LUK20/40/60、25/50/75%でActive Effect Lv1/Lv2/Lv3参照。\n\n【その他Trigger系】\n- Battle Start Effect: Req20/40/60、戦闘開始時Active Effect Lv1/Lv2/Lv3を1回参照。\n- 回避時Effect: AGI20/40/60、回避成功時Active Effect参照。\n- Block時Effect: VIT20/40/60、Block成功時Active Effect参照。\n- 被Hit時Effect: Effect対応Stat20/40/60、被Hitごと25/50/75%でActive Effect参照。\n- 攻撃Hit時Effect: Effect対応Stat20/40/60、成立Hitごと25/50/75%でActive Effect参照。\n\n【MP Cost整数化】\n- Final MP Cost = ceil(Calculated MP Cost * (1 - Reduction))。\n- 小数Costは切り上げ。\n\n【致死耐え】\n- 単段階、VIT40。\n- DamageでHP0以下になる直前にHP1で生存。\n- Cooldown 999999 Tick。\n- 専用戦闘中1回Stateは作らない。\n- 物理/魔法/DOT等Damageは対象。非Damage即死/HP Cost/Script強制戦闘不能は対象外。\n- Multi-hitでは発動Hitのみ耐え、残りHit継続。\n\n【瀕死時強化】\n- 3段階、VIT20/40/60。\n- 発動HP閾値: 5% / 10% / 15%以下。\n- 発動時すべての既存補正値+100%、Action Gauge増加量+100%。\n- 持続20 Tick、Cooldown999999 Tick。\n- 基礎Statそのものは2倍にしない。\n\n【同一系列排他】\n- passiveSeriesIdを追加。\n- 同じpassiveSeriesIdを複数同時装備禁止。\n- 名前/Skill ID/Effect内容推測では判定しない。\n- 上位Lvは同系列Skillとの差し替えで装備する。",
+      "open_questions": "被Hit時HP/MP回復を別途採用するか、Battle Start/被Hit/攻撃Hit Effectの具体参照Effect一覧、PassiveとMODのStack順序、passiveSeriesIdの正式Data Contract実装位置を後続で確認する。",
+      "conclusion": "Passive拡張仕様としてRequirement Stat割当、Critical/Trigger系、MP Cost切り上げ、VIT40致死耐え、3段階瀕死時複合強化、passiveSeriesIdによる同一系列重複禁止を採用する。",
+      "related_discussion_ids": [
+        "DISC-SKL-PASSIVE-001"
+      ],
+      "artifact_note": "Human approved extended passive design 2026-08-29",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
     }
   ],
   "decisions": [
@@ -479,7 +557,7 @@
       "id": "DEC-SKL-PASSIVE-TRIGGER-RESOURCE-001",
       "title": "Counter・Block・回復・Resource/時間短縮Passiveを採用する",
       "status": "Approved",
-      "text": "Counterは3段階Req20/40/60、発動率25/50/75%、被攻撃Hit時Triggerとし、Damage倍率100%の通常攻撃Active Skillを参照して反撃する。Block率上昇/Block性能上昇は各5段階VIT20/30/40/50/60、基礎値に+5/10/15/20/25%を割合乗算する。HP自動回復は20Tickごとに最大HP1/2/3%、MP自動回復は20Tickごとに最大MP0.5/1.0/1.5%、各Req20/40/60。攻撃Hit時HP回復はHitごとに最大HP0.5/1.0/1.5%、MP回復はHitごとに最大MP0.25/0.5/0.75%、各Req20/40/60。Hit時回復に1Action最大1回制限は設けない。撃破時回復は不採用。MP消費軽減はReq20/40/60で5/10/15%、Range等計算後MP Costへ割合適用する。Cooldown/CastTime短縮は各Req20/40/60で5/10/15%、短縮後Tickはceilで切り上げる。未確定のRequirement Statは後続で決定する。",
+      "text": "Counterは3段階STR20/40/60、発動率25/50/75%、被攻撃Hit時Triggerとし、Damage倍率100%の通常攻撃Active Skillを参照して反撃する。Block率上昇/Block性能上昇は各5段階VIT20/30/40/50/60、基礎値に+5/10/15/20/25%を割合乗算する。HP自動回復はVIT20/40/60で20Tickごと最大HP1/2/3%、MP自動回復はMND20/40/60で最大MP0.5/1.0/1.5%。攻撃Hit時HP/MP回復はDEX20/40/60でHitごとに最大HP0.5/1.0/1.5%、最大MP0.25/0.5/0.75%。Hit時回復に1Action最大1回制限は設けない。撃破時回復は不採用。MP消費軽減はMND20/40/60で5/10/15%、Range等計算後MP Costへ適用しceil切り上げ。Cooldown短縮はAGI20/40/60、CastTime短縮はINT20/40/60で各5/10/15%、短縮後Tickはceil切り上げる。",
       "rationale": "Passiveごとの役割を単一効果として維持しつつ、Trigger/Resource/時間系をActive Skillの数値定義と分離して再利用可能にするため。Hit時回復はMulti-hit/複数対象とのシナジーを意図的に許容し、Counterは通常攻撃Active Skill参照でDamage定義の重複を避ける。",
       "source_discussion_ids": [
         "DISC-SKL-PASSIVE-001"
@@ -487,7 +565,21 @@
       "approved_by": "Human",
       "approved_at": "2026-08-29T11:36:00+09:00",
       "created_at": "2026-08-29T11:36:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-EXTENDED-001",
+      "title": "Passive拡張仕様と同一系列重複禁止を採用する",
+      "status": "Approved",
+      "text": "Counter=STR20/40/60、HP自動回復=VIT20/40/60、MP自動回復=MND20/40/60、攻撃Hit時HP/MP回復=DEX20/40/60、MP消費軽減=MND20/40/60、Cooldown短縮=AGI20/40/60、CastTime短縮=INT20/40/60とする。MP Costは軽減後ceil切り上げ。Critical Rate/DamageはLUK20/30/40/50/60で基礎値×1.05〜×1.25、Critical時Active EffectはLUK20/40/60、被Critical増加Damage軽減は5〜25%。Battle Start/回避時/Block時/被Hit時/攻撃Hit時のActive Effect参照型Trigger Passiveを採用する。致死耐えはVIT40、HP1生存、CD999999 Tick。瀕死時強化はVIT20/40/60、HP5/10/15%以下で全補正+100%・Action Gauge増加量+100%、20Tick持続、CD999999 Tick。PassiveにはpassiveSeriesIdを持たせ、同一Characterで同一passiveSeriesIdの複数同時装備を禁止する。",
+      "rationale": "各StatにPassive役割を分散し、Active Effect参照による再利用性を保ちつつ、強力な特殊Passiveは巨大Cooldownで既存Runtime機構へ寄せるため。同一系列の低Lv/高Lvを重複装備して効果を積み上げることを防ぐため、系列IDによる装備時排他を採用する。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-EXTENDED-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T12:45:00+09:00",
+      "created_at": "2026-08-29T12:45:00+09:00",
+      "updated_at": "2026-08-29T12:45:00+09:00"
     }
   ],
   "specifications": [],
@@ -525,7 +617,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。\n- Passive SkillはActive Skillと別構造とし、基本1 Skill=1 Effectとする。\n- Passive ThresholdはEffect購入Budgetではなく習得Requirementとしてのみ使用する。\n- Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。\n- 最大HP PassiveはVIT Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 最大MP PassiveはMND Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 耐性PassiveはReq20/30/40/50/60、効果+5/+10/+15/+20/+25%の5段階とする。\n- 属性耐性PassiveはMND Requirementを使用する。\n- 状態異常耐性は継続Damage系をVIT Requirement、行動不能・行動阻害系をMND Requirementとする。\n- 付与系Passiveは3段階Req20/40/60とし、指定Trigger成立時に参照先Active Skill Effectを追加適用する。\n- 付与系PassiveはPassive独自のDamage/Duration/Tick値を持たず、段階ごとに参照Active Effect LevelをLv1/Lv2/Lv3へ上げる。\n- 付与系PassiveのTriggerは通常攻撃に限定しない。\n- STR/VIT/AGI/DEX/INT/MND/LUK直接上昇Passiveは現段階では作成しない。\n- Counter PassiveはReq20/40/60、発動率25/50/75%、被攻撃Hit時に通常攻撃Active Skill(100%)を参照実行する。\n- Block率上昇/Block性能上昇は各VIT Req20/30/40/50/60の5段階、基礎値へ+5/+10/+15/+20/+25%の割合乗算とする。\n- HP自動回復はReq20/40/60で最大HP1/2/3%を20Tickごとに回復する。\n- MP自動回復はReq20/40/60で最大MP0.5/1.0/1.5%を20Tickごとに回復する。\n- 攻撃Hit時HP回復はReq20/40/60で成立Hitごとに最大HP0.5/1.0/1.5%回復する。\n- 攻撃Hit時MP回復はReq20/40/60で成立Hitごとに最大MP0.25/0.5/0.75%回復する。\n- Hit時回復は1Action最大1回制限を設けず、成立Hit数ぶん発動可能とする。\n- 撃破時HP/MP回復Passiveは採用しない。\n- MP消費軽減PassiveはReq20/40/60で5/10/15%、Calculated MP Costへ割合適用する。\n- Cooldown短縮/CastTime短縮Passiveは各Req20/40/60で5/10/15%とする。\n- Cooldown/CastTime短縮後のTickはceilで切り上げる。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。\n- Passive SkillはActive Skillと別構造とし、基本1 Skill=1 Effectとする。\n- Passive ThresholdはEffect購入Budgetではなく習得Requirementとしてのみ使用する。\n- Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。\n- 最大HP PassiveはVIT Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 最大MP PassiveはMND Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 耐性PassiveはReq20/30/40/50/60、効果+5/+10/+15/+20/+25%の5段階とする。\n- 属性耐性PassiveはMND Requirementを使用する。\n- 状態異常耐性は継続Damage系をVIT Requirement、行動不能・行動阻害系をMND Requirementとする。\n- 付与系Passiveは3段階Req20/40/60とし、指定Trigger成立時に参照先Active Skill Effectを追加適用する。\n- 付与系PassiveはPassive独自のDamage/Duration/Tick値を持たず、段階ごとに参照Active Effect LevelをLv1/Lv2/Lv3へ上げる。\n- 付与系PassiveのTriggerは通常攻撃に限定しない。\n- STR/VIT/AGI/DEX/INT/MND/LUK直接上昇Passiveは現段階では作成しない。\n- Counter PassiveはReq20/40/60、発動率25/50/75%、被攻撃Hit時に通常攻撃Active Skill(100%)を参照実行する。\n- Block率上昇/Block性能上昇は各VIT Req20/30/40/50/60の5段階、基礎値へ+5/+10/+15/+20/+25%の割合乗算とする。\n- HP自動回復はReq20/40/60で最大HP1/2/3%を20Tickごとに回復する。\n- MP自動回復はReq20/40/60で最大MP0.5/1.0/1.5%を20Tickごとに回復する。\n- 攻撃Hit時HP回復はReq20/40/60で成立Hitごとに最大HP0.5/1.0/1.5%回復する。\n- 攻撃Hit時MP回復はReq20/40/60で成立Hitごとに最大MP0.25/0.5/0.75%回復する。\n- Hit時回復は1Action最大1回制限を設けず、成立Hit数ぶん発動可能とする。\n- 撃破時HP/MP回復Passiveは採用しない。\n- MP消費軽減PassiveはReq20/40/60で5/10/15%、Calculated MP Costへ割合適用する。\n- Cooldown短縮/CastTime短縮Passiveは各Req20/40/60で5/10/15%とする。\n- Cooldown/CastTime短縮後のTickはceilで切り上げる。\n- Counter PassiveのRequirement StatはSTRとし、STR20/40/60で発動率25/50/75%とする。\n- HP自動回復はVIT20/40/60、MP自動回復はMND20/40/60とする。\n- 攻撃Hit時HP/MP回復はDEX20/40/60とする。\n- MP消費軽減はMND20/40/60とし、Final MP Costはceilで切り上げる。\n- Cooldown短縮はAGI20/40/60、CastTime短縮はINT20/40/60とする。\n- Critical Rate/Critical Damage PassiveはLUK20/30/40/50/60の5段階で基礎値×1.05/1.10/1.15/1.20/1.25とする。\n- Critical時Active Effect PassiveはLUK20/40/60の3段階とする。\n- 被Critical Damage軽減はCritical増加分のみ5/10/15/20/25%軽減する。\n- Battle Start/回避時/Block時/被Hit時/攻撃Hit時のActive Effect参照型Trigger Passiveを採用する。\n- 致死耐えPassiveはVIT40、Damageによる致死直前にHP1で生存、Cooldown999999 Tickとする。\n- 瀕死時強化PassiveはVIT20/40/60、HP5/10/15%以下で全補正+100%およびAction Gauge増加量+100%、20Tick持続、Cooldown999999 Tickとする。\n- Passive SkillにpassiveSeriesIdを持たせ、同一Characterで同一passiveSeriesIdを複数同時装備することを禁止する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -534,7 +626,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-29T11:36:00+09:00"
+      "updated_at": "2026-08-29T12:45:00+09:00"
     }
   ],
   "checks": [],
@@ -611,6 +703,10 @@
     {
       "at": "2026-08-29T11:36:00+09:00",
       "message": "Human adopted additional Passive rules: Counter Req20/40/60 with 25/50/75% proc referencing 100% normal-attack Active Skill; Block rate/performance each 5 tiers VIT20..60 using multiplicative +5..25% of base value; auto HP regen 1/2/3% and MP regen 0.5/1/1.5% every 20 ticks; hit-based HP regen 0.5/1/1.5% and MP regen 0.25/0.5/0.75% per successful hit with no per-action cap; kill-based regen rejected; MP cost reduction 5/10/15%; cooldown/cast reduction 5/10/15% with ceil tick rounding."
+    },
+    {
+      "at": "2026-08-29T12:45:00+09:00",
+      "message": "Human adopted extended Passive design: Counter STR; auto HP/VIT, auto MP/MND, hit regen/DEX, MP cost/MND with ceil, cooldown/AGI, cast/INT; Critical passives on LUK; trigger Active-Effect passives; fatal-survive VIT40 CD999999; low-HP burst VIT20/40/60 at 5/10/15% HP with +100% all modifiers and action-gauge gain for 20 ticks, CD999999; passiveSeriesId introduced and duplicate series equip prohibited."
     }
   ]
 }
