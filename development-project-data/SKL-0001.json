@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T09:28:20.482Z"
+    "updated_at": "2026-08-29T09:45:57.127Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -463,6 +463,87 @@
       "source_id": "conversation:2026-08-29 demo passive compatibility not required",
       "created_at": "2026-08-29T18:25:00+09:00",
       "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-EVENT-CONTEXT-001",
+      "text": "Trigger型Passiveの共通Event Contextは最小共通fieldとしてsourceId / actionSourceId / targetId / skillId / hitIndex / actionContextを持つ。sourceIdはPassive所有者、actionSourceIdは元Action実行者、targetIdは元Action/Hit対象、skillIdは元Formal Skill ID、hitIndexはHit識別、actionContextは既存Trigger再帰/activation上限Guard共有用とする。Battle Start等で意味を持たないfieldはnullを許可する。ATTACKER/SELF/HIT_TARGET等のContext TargetはこのEvent Contextから解決し、attackerId/defenderId等の重複fieldを増やさない。Dual Wieldのstrike識別もPassive Contract側ではhitIndex相当に正規化し、別fieldを増やさない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive trigger event context",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-TRIGGER-REGISTRY-001",
+      "text": "Formal Passive Trigger RegistryへON_CRITICAL / ON_HIT_DEALT / ON_EVADE / ON_BLOCK / ON_BATTLE_START / ON_FATAL_DAMAGEを追加する。engine_eventはcritical / hit_dealt / evade / block / battle_start / fatal_damage。ON_CRITICAL/ON_HIT_DEALT/ON_EVADE/ON_BLOCK/ON_BATTLE_STARTはphase=REACTIVE、ON_FATAL_DAMAGEはphase=INTERRUPTとする。新6 Triggerのdefault/allowed dispatchはACTIONを基本とする。ON_HIT_RECEIVEDは既存COUNTERをdefaultのまま維持しallowed_dispatch_modesへACTIONを追加する。engineEvent/phase/default dispatch/allowed dispatchはRegistry AuthorityとしAuthoringが自由変更してはならない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive trigger registry six events",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-TRIGGER-DISPATCH-POINT-001",
+      "text": "Trigger dispatch位置はBattle判定結果の確定点に固定する。ON_CRITICALはCritical成立直後、ON_EVADEは非Criticalの命中失敗確定後、ON_HIT_DEALTはHit成立確定後、ON_BLOCKはBlock成立確定後、ON_BATTLE_STARTはBattle Unit/Passive解決とValidation完了後かつ通常進行前にdispatchする。ON_FATAL_DAMAGEのみHP commit前のprojectedHp<=0検出時にINTERRUPTとして即時dispatchし、介入結果確定後にHP commit/death判定へ進む。Critical必中時はEvade Eventを発生させない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive trigger battle dispatch points",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-REACTIVE-SAFEPOINT-001",
+      "text": "通常REACTIVE Triggerは元HitのDamage計算途中へ割り込まず、Event成立時に候補化し、Shield/Fatal処理/HP commit/Death判定まで元Hitを確定してからSafe Pointで実行する。ON_EVADEはMiss確定で元Hit終了後に実行、ON_BATTLE_STARTはBattle Start Safe Pointで実行する。ACTION/EFFECTとも通常REACTIVEでは同じSafe Pointから実行し、現在処理中の元Hitへ後付けで影響させない。唯一ON_FATAL_DAMAGEだけはINTERRUPTとしてHP commit前に即時処理する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 reactive safe point atomic hit",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-PENDING-REACTIVE-001",
+      "text": "通常Passive REACTIVE候補は既存actionContextへpendingReactive配列相当を追加して保持する。Battle-wide専用Queueは新設しない。候補化時点ではactivationCount/activeKeys/historyを消費せず、各Hit確定後にそのHit分だけflushする。flush時にEvent成立順→同一Event内priority降順→sequence順で処理し、canActivate→activationChance→成功時commitActivation→ACTION/EFFECT実行とする。実行中はactiveKeyを保持しfinally相当でreleaseし、同一Passive自己再入を防止するが、完了後の後続Hitでは再発動可能とする。派生ACTION/EFFECTは同じactionContextを継承する。ON_FATAL_DAMAGEはpendingReactiveへ入れない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 pending reactive action context queue",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-REACTIVE-ORDER-001",
+      "text": "既存COUNTER/FOLLOW_UPの相対順序とCurrent orderSimultaneousCandidates相当の挙動は変更しない。各Hit Safe Pointでは既存COUNTER/FOLLOW_UP処理を先に完了し、その後に新Passive pendingReactiveをflushする。同一hit_received Eventで既存COUNTERと一般Passive ACTION/EFFECTが成立する場合もCOUNTER既存経路を先に処理する。新PassiveをCOUNTER/FOLLOW_UP family sorterへ混在させず、新Passive同士のみEvent成立順→priority→sequenceで処理する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 preserve counter followup order",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-PERIODIC-CONTRACT-001",
+      "text": "HP/MP自動回復等の周期PassiveはTrigger Queueではなく既存Battle Tick Lifecycleへ接続し、Passive専用Tickerを新設しない。周期ContractはintervalTicksを可変Dataとして持ち、初回発動はBattle開始直後ではなく最初のintervalTicks経過後とする。基本initialDelayTicksはintervalTicksと同値とし、以降もintervalTicksごとに処理する。20 Tick等の具体値をRuntimeへ固定しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 periodic passive first interval",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-PERIODIC-DEATH-001",
+      "text": "周期PassiveはBattle全体のTick基準を維持し、死亡しても周期カウント自体を停止またはリセットしない。死亡中に周期到達した場合はEffect不発とし、不発分の繰越・まとめ発動を行わない。蘇生時にも周期をリセットしない。Battle終了時に周期状態を破棄し次戦へ持ち越さない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 periodic passive death revive lifecycle",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-PERIODIC-RECOVERY-001",
+      "text": "周期HP/MP回復量は発動時点の現在の最大HP/最大MPを毎回参照して算出する。Battle開始時最大値をsnapshot固定しない。回復量はmax(1, floor(CurrentMax * recoveryRate))とし、Current HP/MPは現在の最大HP/MPを超えない。recoveryRateはPassive Dataの可変値とし、HP/MP変更処理は既存Formal/Resource処理を再利用する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 periodic recovery current max floor min1",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
     }
   ],
   "source_baseline": {
@@ -697,6 +778,22 @@
       "artifact_note": "Detailed implementation plan confirmed from Current Source and Human direction through 2026-08-29",
       "created_at": "2026-08-29T18:25:00+09:00",
       "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-TRIGGER-PERIODIC-RUNTIME-001",
+      "title": "Passive Event Context・Trigger dispatch・Reactive Safe Point・周期Lifecycle",
+      "status": "Resolved",
+      "summary": "Trigger型PassiveのEvent Context、6新TriggerのRegistry/dispatch位置、通常ReactiveのSafe PointとpendingReactive、既存COUNTER/FOLLOW_UPとの順序、HP/MP自動回復の周期Lifecycleと回復算出規則を確定した。",
+      "body": "【Event Context】\n- 共通field: sourceId / actionSourceId / targetId / skillId / hitIndex / actionContext。\n- sourceId=Passive所有者、actionSourceId=元Action実行者、targetId=元Action/Hit対象。\n- skillId=元Formal Skill ID、hitIndex=Hit識別、actionContext=再帰/activation Guard共有。\n- Battle Start等で不要fieldはnull可。\n- SELF=sourceId、ATTACKER=actionSourceId、HIT_TARGET=targetId等としてContext Targetを解決する。\n- attackerId/defenderId等の重複fieldを増やさない。\n\n【Formal Trigger Registry追加】\n- ON_CRITICAL -> engine_event=critical, phase=REACTIVE, ACTION。\n- ON_HIT_DEALT -> hit_dealt, REACTIVE, ACTION。\n- ON_EVADE -> evade, REACTIVE, ACTION。\n- ON_BLOCK -> block, REACTIVE, ACTION。\n- ON_BATTLE_START -> battle_start, REACTIVE, ACTION。\n- ON_FATAL_DAMAGE -> fatal_damage, INTERRUPT, ACTION。\n- ON_HIT_RECEIVEDは既存COUNTERをdefaultとして維持しACTIONをallowed dispatchに追加。\n- engine_event/phase/dispatch許可はRegistry Authority。Authoringで自由変更不可。\n\n【Battle dispatch位置】\n- ON_CRITICAL: Critical成立直後。Critical成立時は必中なのでEvadeへ進まない。\n- ON_EVADE: 非CriticalのHit Roll失敗確定直後、Miss終了前。\n- ON_HIT_DEALT: Critical必中または通常Hit成功確定後。\n- ON_BLOCK: Block成立確定後。\n- ON_BATTLE_START: Battle Unit/Passive解決とValidation完了後、通常進行前。\n- ON_FATAL_DAMAGE: Shield等適用後のprojectedHp<=0検出時、HP commit前。\n\n【Reactive Safe Point】\n- ON_CRITICAL/ON_HIT_DEALT/ON_BLOCKは成立時に候補化のみ行う。\n- 元HitのShield/Fatal/HP commit/Deathまで確定後に実行する。\n- ON_EVADEはMissで元Hit終了後に実行。\n- ON_BATTLE_STARTはBattle Start Safe Pointで実行。\n- ACTION/EFFECTとも通常Reactiveでは同じSafe Pointから実行し、現在処理中Hitを途中から書き換えない。\n- ON_FATAL_DAMAGEだけはHP commit前に即時Interruptする。\n\n【pendingReactive】\n- 新Battle-wide Queueは作らず既存actionContextにpendingReactive相当を追加する。\n- Queue entryはeventType/eventSequence/priority/passiveId/triggerContract/eventContext等の最小情報を持つ。\n- 候補化時はactivationCountを消費しない。\n- Multi-hitは全Hit後ではなく各Hit確定後にそのHit分だけflushする。\n- flush: Event成立順 -> 同一Event内priority降順 -> sequence順 -> canActivate -> chance -> commit -> 実行。\n- 派生Actionも同一actionContextを継承する。\n- activeKeyは実行中だけ保持し完了時release。後続Hitでは再度候補になれる。\n- ON_FATAL_DAMAGEはQueue対象外。\n\n【既存COUNTER/FOLLOW_UPとの順序】\n- 既存COUNTER/FOLLOW_UPのCurrent相対順序を維持する。\n- 各Hit確定後、既存COUNTER/FOLLOW_UP処理を先に完了し、その後新Passive pendingReactiveをflushする。\n- 新Passiveを既存family sorterへ混在させない。\n- hit_receivedでCOUNTERと一般Passive ACTION/EFFECTが同時成立しても既存COUNTERを先に処理する。\n\n【周期Passive Contract】\n- 周期PassiveはBattle Tick Lifecycleへ接続し専用Tickerを作らない。\n- intervalTicksは可変Data。\n- Battle Start直後には発動せず、最初のintervalTicks経過後に初回発動。\n- initialDelayTicksは基本intervalTicksと同値。\n- 以後intervalTicksごとに処理。\n- 20 Tick等のSeed値をRuntimeへ固定しない。\n\n【死亡・蘇生】\n- Battle全体Tickは継続。\n- 死亡中の周期到達は不発。\n- 不発分の繰越/後払い/まとめ発動なし。\n- 蘇生時に周期をリセットしない。\n- Battle終了時に周期状態を破棄。\n\n【周期回復量】\n- 発動時点の現在最大HP/MPを毎回参照。\n- Battle開始時最大値を固定snapshotしない。\n- recovery = max(1, floor(CurrentMax * recoveryRate))。\n- 最大HP/MPを超えて回復しない。\n- recoveryRateは可変Data。\n- HP/MP変更そのものは既存処理を再利用する。\n\n【実装上の未確定】\n- 瀕死時強化のModifier Channel対象表。\n- Passive専用Effect価格表。\n- 各Triggerに対する具体Passive一覧/参照Effect Data。\nこれらは今回の登録では確定扱いにしない。",
+      "open_questions": "瀕死時強化のModifier Channel対象表、Passive専用Effect価格表、具体Passive Data配置を後続で確定する。",
+      "conclusion": "Trigger型Passiveは共通Event ContextとRegistry Authorityに基づいてEvent確定点から候補化し、通常Reactiveは各Hit Safe Pointで実行、FatalのみInterruptする。周期Passiveは既存Battle Tickを利用し、初回は1 interval後、死亡中は不発、発動時CurrentMax基準でfloor+最低1回復とする。",
+      "related_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
+        "DISC-SKL-PASSIVE-FORMAL-TRIGGER-001"
+      ],
+      "artifact_note": "Human-confirmed Passive trigger/periodic runtime design through 2026-08-29",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
     }
   ],
   "decisions": [
@@ -965,6 +1062,62 @@
       "approved_at": "2026-08-29T18:25:00+09:00",
       "created_at": "2026-08-29T18:25:00+09:00",
       "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-EVENT-REACTIVE-001",
+      "title": "Passive Trigger Event ContextとReactive Safe Point規則を採用する",
+      "status": "Approved",
+      "text": "Trigger Event ContextはsourceId/actionSourceId/targetId/skillId/hitIndex/actionContextの最小構成とする。通常Reactive Triggerは元Hit途中へ割り込まず候補化し、元Hit確定後のSafe Pointで実行する。pendingReactiveはactionContextへ持たせ各Hit単位でflushする。派生Actionは同じactionContextを継承する。ON_FATAL_DAMAGEのみHP commit前のINTERRUPTとして即時処理する。",
+      "rationale": "元HitのAtomic性と既存Trigger Guardを維持し、Passive由来ActionがDamage計算途中へネストしてBattle順序を不安定化させないため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-TRIGGER-PERIODIC-RUNTIME-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:55:00+09:00",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-TRIGGER-REGISTRY-001",
+      "title": "Passive用6 TriggerとReactive/Interrupt phaseをFormal Registryへ追加する",
+      "status": "Approved",
+      "text": "ON_CRITICAL/ON_HIT_DEALT/ON_EVADE/ON_BLOCK/ON_BATTLE_STARTをREACTIVE、ON_FATAL_DAMAGEをINTERRUPTとしてFormal Registryへ追加する。新6 Triggerのdefault/allowed dispatchはACTIONを基本とし、ON_HIT_RECEIVEDは既存COUNTER defaultを維持しACTIONを追加許可する。engineEvent/phase/dispatch許可はRegistry AuthorityからCompilerへ渡し、Authoringの自由変更を禁止する。",
+      "rationale": "既存Battle判定結果を重複実装せずEvent化し、Fatalだけを明確なHP commit前Interruptとして区別するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-TRIGGER-PERIODIC-RUNTIME-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:55:00+09:00",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-REACTIVE-ORDER-001",
+      "title": "既存COUNTER/FOLLOW_UPを先行維持し新Passive Reactiveを後段flushする",
+      "status": "Approved",
+      "text": "各Hit Safe PointではCurrent COUNTER/FOLLOW_UP処理の相対順序を変更せず先に完了し、その後に新Passive pendingReactiveをflushする。新Passiveを既存family sorterへ混ぜず、新Passive同士はEvent成立順→priority→sequenceで処理する。",
+      "rationale": "既存Counter/FOLLOW_UP挙動をPassive追加によって変化させず、新仕様の影響範囲を限定するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-TRIGGER-PERIODIC-RUNTIME-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:55:00+09:00",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-PERIODIC-001",
+      "title": "周期Passiveを既存Battle Tick Lifecycleへ統合する",
+      "status": "Approved",
+      "text": "HP/MP自動回復等の周期Passiveは既存Battle Tick Lifecycleへ接続し専用Tickerを作らない。intervalTicksは可変Dataで、初回発動はBattle開始直後ではなく最初のintervalTicks経過後。死亡中の周期到達は不発、繰越なし、蘇生でリセットなし、Battle終了時に状態破棄。回復量は発動時CurrentMaxを参照しmax(1,floor(CurrentMax*recoveryRate))で算出する。",
+      "rationale": "既存Battle Tick基準を再利用し、20Tick固定やPassive専用Timerを作らず、最大値Modifierや死亡/蘇生とも一貫した周期処理にするため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-TRIGGER-PERIODIC-RUNTIME-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T18:55:00+09:00",
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
     }
   ],
   "specifications": [],
@@ -1066,6 +1219,24 @@
       },
       "created_at": "2026-08-29T18:25:00+09:00",
       "updated_at": "2026-08-29T18:25:00+09:00"
+    },
+    {
+      "id": "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
+      "box_id": "BOX-SKL-0001",
+      "title": "Passive Trigger Event・Reactive Queue・周期Lifecycleを実装する",
+      "status": "Todo",
+      "execution_order": 5,
+      "depends_on": [],
+      "acceptance_criteria": "- Event ContextをsourceId/actionSourceId/targetId/skillId/hitIndex/actionContextの最小構成で定義する。\n- Battle Start等で不要fieldはnullを許可し、重複role fieldを増やさない。\n- ON_CRITICAL/ON_HIT_DEALT/ON_EVADE/ON_BLOCK/ON_BATTLE_STARTをREACTIVEとしてRegistryへ追加する。\n- ON_FATAL_DAMAGEをINTERRUPTとしてRegistryへ追加する。\n- 新6 TriggerはACTION dispatchを基本とし、ON_HIT_RECEIVEDはCOUNTER default維持＋ACTION許可とする。\n- Trigger phase/engineEvent/dispatch許可はRegistry AuthorityからCompilerへ正規化しAuthoring自由変更を許可しない。\n- ON_CRITICALはCritical成立直後、ON_EVADEは非Critical Miss確定後、ON_HIT_DEALTはHit成立後、ON_BLOCKはBlock成立後、ON_BATTLE_STARTはBattle Validation完了後に候補化する。\n- ON_FATAL_DAMAGEはprojectedHp<=0検出後かつHP commit前に即時Interruptする。\n- 通常Reactive ACTION/EFFECTは元Hit処理途中に実行せずHit確定後Safe Pointで実行する。\n- actionContextへpendingReactive相当を追加しBattle-wide専用Queueを作らない。\n- 候補化時点でactivationCount/activeKeys/historyを消費しない。\n- Multi-hitは各Hit確定後にそのHit分だけflushする。\n- flush順はEvent成立順→同一Event内priority降順→sequence順とする。\n- flush時にcanActivate→activationChance→成功時commit→実行とする。\n- 派生ACTION/EFFECTは同じactionContextを継承する。\n- activeKeyは実行中のみ保持し完了時releaseし、後続Hitで再発動可能にする。\n- ON_FATAL_DAMAGEはpendingReactiveへ入れない。\n- 既存COUNTER/FOLLOW_UPの順序を変更せず先に処理し、その後新Passive Reactiveをflushする。\n- 周期Passiveは既存Battle Tick Lifecycleへ接続し専用Tickerを作らない。\n- intervalTicks/initialDelayTicks/recoveryRateは可変Dataとし20等をRuntimeへ固定しない。\n- 初回発動は1 interval経過後とする。\n- 死亡中周期到達は不発、繰越なし、蘇生で周期リセットなしとする。\n- Battle終了時に周期状態を破棄する。\n- 周期HP/MP回復は発動時Current Maxを参照しmax(1,floor(CurrentMax*recoveryRate))で整数化する。\n- HP/MPは現在の最大値を超えず既存Resource/Heal処理を再利用する。\n- Passive専用Battle Scheduler/Timer/Heal Runtime/Resource Runtimeを追加しない。\n- 瀕死時強化Modifier ChannelとPassive専用Effect価格表は別議題として先行実装しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-29T18:55:00+09:00",
+      "updated_at": "2026-08-29T18:55:00+09:00"
     }
   ],
   "checks": [],
@@ -1170,6 +1341,10 @@
     {
       "at": "2026-08-29T18:30:00+09:00",
       "message": "Merge compatibility correction: TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001 depends_on was changed to an empty array because the Development JSON merge validator rejects a dependency reference to an existing task outside the incoming task set. The implementation sequencing relationship to TASK-SKL-PASSIVE-FORMAL-TRIGGER-001 remains documented in the task acceptance criteria and discussion."
+    },
+    {
+      "at": "2026-08-29T18:55:00+09:00",
+      "message": "Registered confirmed Passive trigger/periodic runtime design: minimal Event Context; six Formal Trigger Registry additions with REACTIVE/INTERRUPT phases; atomic Hit Safe Point and actionContext.pendingReactive; preservation of existing COUNTER/FOLLOW_UP ordering; and periodic HP/MP passive lifecycle using existing Battle Tick with first activation after one interval, no death catch-up/reset, and current-max floor/minimum-one recovery."
     }
   ]
 }
