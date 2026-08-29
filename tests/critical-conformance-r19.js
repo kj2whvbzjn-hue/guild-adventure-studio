@@ -175,6 +175,67 @@ ok(studio.includes("formalBattleEquipmentRowCombatContribution(hand,'weapon_crit
 ok(game.includes("currentBattleRoll(attacker,target,compiled?.definition?.id,'critical',hitIndex)"),'Game Skill critical roll is not per hitIndex');
 ok(game.includes('for(let i=0;i<resolved.contracts.length;i++)'),'Game Formal DAMAGE contracts are not independent hits');
 
+// Critical-before-hit guaranteed-hit correction contract.
+const gameBasicStart=battleControl.indexOf('function performBasicAttack('),gameBasicEnd=battleControl.indexOf('\nfunction commitActivatedAction',gameBasicStart),gameBasicAttackFn=battleControl.slice(gameBasicStart,gameBasicEnd);
+const gameFormalStart=game.indexOf('function applyCurrentFormalDamage('),gameFormalEnd=game.indexOf('\nfunction executeRuntimeDamageRuntime',gameFormalStart),gameFormalDamageFn=game.slice(gameFormalStart,gameFormalEnd);
+const studioBasicAttackFn=extractFunction(studio,'performFormalBasicAttack');
+const studioFormalDamageFn=extractFunction(studio,'formalBattleApplyDamage');
+for(const [label,fn] of [['Game basic',gameBasicAttackFn],['Game formal',gameFormalDamageFn],['Studio basic',studioBasicAttackFn],['Studio formal',studioFormalDamageFn]]){
+ ok(fn.indexOf('criticalRoll')<fn.indexOf('hitRoll'),`${label} must resolve Critical before Hit`);
+ ok(fn.includes('CRITICAL_GUARANTEED_HIT'),`${label} must trace Critical guaranteed-hit bypass`);
+ ok(fn.includes('critical?null'),`${label} must skip normal hit data on Critical`);
+}
+
+// Game Formal DAMAGE: Critical success must bypass hit-rate calculation and hit roll entirely.
+const guaranteedGameCalls=[];
+const guaranteedGameCtx={
+ currentBattleCriticalResolution:()=>({weapon_critical_rate:1,LUK:0,base_critical_rate:1,final_critical_rate:1,contributions:[]}),
+ currentBattleRoll:(a,t,id,purpose,idx)=>{guaranteedGameCalls.push(purpose);return 0},
+ currentBattleHitRatePercent:()=>{throw new Error('hit rate must not be evaluated for Critical guaranteed hit')},
+ effectiveDamageResist:()=>0,currentBattleCriticalDamagePercent:()=>0,
+ resolveCurrentBlockDamage:(t,d)=>({blocked:false,blockRate:0,blockRoll:null,blockDamageCutRate:0,damage:d}),
+ consumeShieldDamage:(t,d)=>({absorbed:0,hpDamage:d}),queueSceneEvent:()=>{},recordValidationEvent:()=>{},
+ recordModifierSourceDefeated:()=>{},resetCombatantOnDeath:()=>{},finishIfNeeded:()=>{},
+ currentBattleAccuracy:()=>0,currentBattleEvasion:()=>999,
+ battle:{tick:1,log:[]},Math
+};
+vm.createContext(guaranteedGameCtx);vm.runInContext(gameFormalDamageFn,guaranteedGameCtx);
+const guaranteedAttacker={id:'A',name:'A',side:'ally',damageDealt:0},guaranteedTarget={id:'T',name:'T',side:'enemy',alive:true,hp:100,damageTaken:0,blockRate:0};
+const guaranteedCompiled={definition:{id:'S',name:'S'}};
+const guaranteedGame=guaranteedGameCtx.applyCurrentFormalDamage(guaranteedAttacker,guaranteedTarget,10,guaranteedCompiled,{damageType:'PHYSICAL',power:100},{hitIndex:0});
+ok(guaranteedGame.ok===true&&guaranteedGame.critical===true,'Game Critical guaranteed hit must succeed');
+ok(guaranteedGame.hitBypass==='CRITICAL_GUARANTEED_HIT','Game Critical guaranteed hit bypass trace mismatch');
+ok(guaranteedGame.hitRate===null&&guaranteedGame.hitRoll===null,'Game Critical guaranteed hit must not expose normal hit roll');
+ok(guaranteedGameCalls.length===1&&guaranteedGameCalls[0]==='critical','Game Critical guaranteed hit must not consume hit roll');
+
+// Game Formal DAMAGE: non-Critical path must perform the normal hit roll after Critical.
+const missGameCalls=[];
+const missGameCtx={...guaranteedGameCtx,
+ currentBattleCriticalResolution:()=>({weapon_critical_rate:0,LUK:0,base_critical_rate:0,final_critical_rate:0,contributions:[]}),
+ currentBattleRoll:(a,t,id,purpose,idx)=>{missGameCalls.push(purpose);return purpose==='critical'?0.5:0.5},
+ currentBattleHitRatePercent:()=>0,
+ battle:{tick:1,log:[]}
+};
+vm.createContext(missGameCtx);vm.runInContext(gameFormalDamageFn,missGameCtx);
+const missGame=missGameCtx.applyCurrentFormalDamage({id:'A',name:'A',side:'ally',damageDealt:0},{id:'T',name:'T',side:'enemy',alive:true,hp:100,damageTaken:0},10,guaranteedCompiled,{damageType:'PHYSICAL',power:100},{hitIndex:0});
+ok(missGame.miss===true&&missGame.critical===false,'Game non-Critical miss contract changed');
+ok(missGameCalls.join(',')==='critical,hit','Game non-Critical path must roll Critical then Hit');
+
+// Studio Formal DAMAGE: Critical guaranteed hit consumes one RNG value; non-Critical consumes Critical then Hit.
+function makeStudioDamageCtx(){return{
+ formalBattleCriticalResolution:()=>({weapon_critical_rate:1,LUK:0,base_critical_rate:1,final_critical_rate:1,contributions:[]}),
+ formalBattleHitRatePercent:()=>{throw new Error('Studio hit rate must not be evaluated for Critical guaranteed hit')},
+ formalBattleDamageBase:()=>10,formalBattleResolveBlock:(t,d)=>({blocked:false,blockRate:0,blockRoll:null,blockDamageCutRate:0,damage:d}),
+ formalBattleConsumeShield:(t,d)=>({absorbed:0,hpDamage:d}),formalBattleDeathCleanup:()=>{},tracePush:()=>{},battleTraceOptions:{damage:false},battleLogPush:()=>{},structuredClone:global.structuredClone,Math
+}}
+const studioGuaranteedCtx=makeStudioDamageCtx();vm.createContext(studioGuaranteedCtx);vm.runInContext(studioFormalDamageFn,studioGuaranteedCtx);let studioRngCalls=0;
+const studioGuaranteed=studioGuaranteedCtx.formalBattleApplyDamage({id:'A',name:'A',criticalDamage:0,damageDealt:0,hits:0,crits:0},{id:'T',name:'T',alive:true,hp:100,damageResist:0,damageTaken:0},{id:'S',name:'S'},{damageType:'PHYSICAL',power:100},0,1,()=>{studioRngCalls++;return 0},[],100,[]);
+ok(studioGuaranteed.ok===true&&studioGuaranteed.critical===true,'Studio Critical guaranteed hit must succeed');
+ok(studioGuaranteed.hitBypass==='CRITICAL_GUARANTEED_HIT'&&studioGuaranteed.hitRate===null&&studioGuaranteed.hitRoll===null,'Studio Critical bypass trace mismatch');
+ok(studioRngCalls===1,'Studio Critical guaranteed hit must not consume hit RNG');
+const studioMissCtx=makeStudioDamageCtx();studioMissCtx.formalBattleCriticalResolution=()=>({weapon_critical_rate:0,LUK:0,base_critical_rate:0,final_critical_rate:0,contributions:[]});studioMissCtx.formalBattleHitRatePercent=()=>0;vm.createContext(studioMissCtx);vm.runInContext(studioFormalDamageFn,studioMissCtx);const studioRolls=[0.5,0.5],studioMiss=studioMissCtx.formalBattleApplyDamage({id:'A',name:'A',criticalDamage:0,damageDealt:0,hits:0,misses:0,crits:0},{id:'T',name:'T',alive:true,hp:100,damageResist:0,damageTaken:0},{id:'S',name:'S'},{damageType:'PHYSICAL',power:100},0,1,()=>studioRolls.shift(),[],100,[]);
+ok(studioMiss.miss===true&&studioRolls.length===0,'Studio non-Critical path must consume Critical then Hit RNG');
+
 // Critical verification trace fields in both runtimes.
 for(const src of [studio,game,battleControl])for(const key of ['weapon_critical_rate','LUK','base_critical_rate','final_critical_rate','critical_roll','result'])ok(src.includes(key),`Critical verification trace missing ${key}`);
 console.log(`CRITICAL_CONFORMANCE_R19_OK checks=${passed}`);
