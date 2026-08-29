@@ -108,7 +108,10 @@ def main():
         bad_manifest['files'][0]['sha256']='0'*64
         write_json(applied/'shared/integrity/critical-runtime-manifest.json',bad_manifest)
         r=run(base,applied)
-        if r.returncode==0 or 'shared/integrity/critical-runtime-manifest.json' not in r.stdout: errors.append('FABRICATED_HASH_SYNC_NOT_BLOCKED '+r.stdout+r.stderr)
+        if r.returncode==0 or 'MACHINE_DERIVED_HASH_SYNC_INTEGRITY_FAIL' not in r.stdout: errors.append('FABRICATED_HASH_SYNC_NOT_HARD_FAILED '+r.stdout+r.stderr)
+        fabricated_approval=t/'fabricated-hash-approval.json'; approval_for(fabricated_approval,base,applied,['shared/integrity/critical-runtime-manifest.json'])
+        r=run(base,applied,fabricated_approval)
+        if r.returncode==0 or 'MACHINE_DERIVED_HASH_SYNC_INTEGRITY_FAIL' not in r.stdout: errors.append('FABRICATED_HASH_SYNC_APPROVAL_BYPASS '+r.stdout+r.stderr)
         # Entry membership/path changes are semantic manifest changes and still require approval.
         write_critical_manifest(applied,'game/runtime.js')
         extra=applied/'game/runtime-extra.js'; extra.write_text('const extra=1;\n',encoding='utf-8')
@@ -119,6 +122,6 @@ def main():
         if r.returncode==0 or 'shared/integrity/critical-runtime-manifest.json' not in r.stdout: errors.append('MANIFEST_MEMBERSHIP_CHANGE_NOT_BLOCKED '+r.stdout+r.stderr)
     if errors:
         print('TEST_INTEGRITY_REGRESSION_FAIL');print('\n'.join(errors));return 1
-    print('TEST_INTEGRITY_REGRESSION_OK cases=11 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=verified_no_runtime_reconfirm build_token_only=allowed machine_hash_sync=verified_only')
+    print('TEST_INTEGRITY_REGRESSION_OK cases=12 silent_weakening=blocked protected_add=blocked scope_expansion=protected external_exact_human_approval=verified_no_runtime_reconfirm build_token_only=allowed machine_hash_sync=verified_only invalid_derived_sync=hard_fail_no_approval_bypass')
     return 0
 if __name__=='__main__': raise SystemExit(main())

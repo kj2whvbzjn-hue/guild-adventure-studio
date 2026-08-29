@@ -43,69 +43,74 @@ def file_facts(path: Path) -> dict | None:
     return {"size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
 
 
-def machine_derived_hash_sync_equal(rel: str, old: Path, new: Path, baseline: Path, applied: Path, policy: dict) -> bool:
-    """Return True only for a mechanically provable derived size/hash manifest sync.
+def evaluate_machine_derived_hash_sync(rel: str, old: Path, new: Path, baseline: Path, applied: Path, policy: dict) -> tuple[str, str, str | None]:
+    """Classify an allow-listed derived hash manifest change.
 
-    This exemption is intentionally narrow: the manifest path must be explicitly
-    allow-listed by the authoritative baseline policy; entry membership/order/path
-    and every non-derived field must remain unchanged; and both the baseline and
-    applied size/SHA-256 values must exactly match the referenced files.
+    Returns (kind, reason, reference), where kind is one of:
+    NOT_APPLICABLE, VERIFIED, INVALID_DERIVED_SYNC, SUBSTANTIVE_CHANGE.
+    A structurally derived-only change whose values do not match the baseline/
+    applied trees is an integrity failure and must never fall back to approval.
     """
     cfg = policy.get("machine_derived_hash_sync", {})
     if not cfg.get("allowed_without_approval", False) or not old.is_file() or not new.is_file():
-        return False
+        return "NOT_APPLICABLE", "", None
     specs = {str(x.get("path") or ""): x for x in cfg.get("manifests", []) if isinstance(x, dict)}
     spec = specs.get(rel)
     if not spec:
-        return False
+        return "NOT_APPLICABLE", "", None
     try:
-        before = load_json(old)
-        after = load_json(new)
+        before = load_json(old); after = load_json(new)
     except Exception:
-        return False
+        return "SUBSTANTIVE_CHANGE", "manifest_json_invalid", None
     entries_field = str(spec.get("entries_field") or "files")
     path_field = str(spec.get("path_field") or "path")
     derived_fields = tuple(str(x) for x in spec.get("derived_fields", ["size", "sha256"]))
     if not derived_fields or any(not x for x in derived_fields):
-        return False
+        return "SUBSTANTIVE_CHANGE", "derived_field_spec_invalid", None
     if set(before) != set(after):
-        return False
+        return "SUBSTANTIVE_CHANGE", "manifest_top_level_fields_changed", None
     for key in before:
         if key != entries_field and before.get(key) != after.get(key):
-            return False
-    before_entries = before.get(entries_field)
-    after_entries = after.get(entries_field)
+            return "SUBSTANTIVE_CHANGE", "manifest_non_derived_top_level_changed", None
+    before_entries = before.get(entries_field); after_entries = after.get(entries_field)
     if not isinstance(before_entries, list) or not isinstance(after_entries, list) or len(before_entries) != len(after_entries):
-        return False
+        return "SUBSTANTIVE_CHANGE", "manifest_membership_changed", None
     changed_derived = False
     for old_entry, new_entry in zip(before_entries, after_entries):
         if not isinstance(old_entry, dict) or not isinstance(new_entry, dict):
-            return False
+            return "SUBSTANTIVE_CHANGE", "manifest_entry_shape_changed", None
         if set(old_entry) != set(new_entry):
-            return False
+            return "SUBSTANTIVE_CHANGE", "manifest_entry_fields_changed", None
         ref = str(old_entry.get(path_field) or "")
         if not ref or str(new_entry.get(path_field) or "") != ref:
-            return False
-        # Exact order/path membership is preserved by pairwise comparison above.
+            return "SUBSTANTIVE_CHANGE", "manifest_entry_path_changed", ref or None
         for key in old_entry:
             if key not in derived_fields and old_entry.get(key) != new_entry.get(key):
-                return False
-        base_ref = (baseline / ref).resolve()
-        applied_ref = (applied / ref).resolve()
+                return "SUBSTANTIVE_CHANGE", "manifest_non_derived_entry_changed", ref
+        changed = any(old_entry.get(field) != new_entry.get(field) for field in derived_fields)
+        if not changed:
+            continue
+        changed_derived = True
+        base_ref = (baseline / ref).resolve(); applied_ref = (applied / ref).resolve()
         if not is_inside(base_ref, baseline) or not is_inside(applied_ref, applied):
-            return False
-        base_facts = file_facts(base_ref)
-        applied_facts = file_facts(applied_ref)
-        if base_facts is None or applied_facts is None:
-            return False
+            return "INVALID_DERIVED_SYNC", "reference_outside_tree", ref
+        base_facts = file_facts(base_ref); applied_facts = file_facts(applied_ref)
+        if base_facts is None:
+            return "INVALID_DERIVED_SYNC", "baseline_reference_missing", ref
+        if applied_facts is None:
+            return "INVALID_DERIVED_SYNC", "applied_reference_missing", ref
         for field in derived_fields:
             if field not in base_facts:
-                return False
-            if old_entry.get(field) != base_facts[field] or new_entry.get(field) != applied_facts[field]:
-                return False
-            if old_entry.get(field) != new_entry.get(field):
-                changed_derived = True
-    return changed_derived
+                return "INVALID_DERIVED_SYNC", "unsupported_derived_field", ref
+            if old_entry.get(field) != base_facts[field]:
+                return "INVALID_DERIVED_SYNC", f"baseline_{field}_mismatch", ref
+            if new_entry.get(field) != applied_facts[field]:
+                return "INVALID_DERIVED_SYNC", f"applied_{field}_mismatch", ref
+    return ("VERIFIED", "", None) if changed_derived else ("SUBSTANTIVE_CHANGE", "no_derived_change", None)
+
+
+def machine_derived_hash_sync_equal(rel: str, old: Path, new: Path, baseline: Path, applied: Path, policy: dict) -> bool:
+    return evaluate_machine_derived_hash_sync(rel, old, new, baseline, applied, policy)[0] == "VERIFIED"
 
 def build_tokens(root: Path) -> set[str]:
     try:
@@ -275,9 +280,15 @@ def main() -> int:
         if new_hash is not None and policy.get("build_token_only_change", {}).get("allowed_without_approval") and build_only_equal(old, new, token_union):
             build_only.append(rel)
             continue
-        if new_hash is not None and machine_derived_hash_sync_equal(rel, old, new, baseline, applied, policy):
-            machine_hash_sync.append(rel)
-            continue
+        if new_hash is not None:
+            derived_kind, derived_reason, derived_ref = evaluate_machine_derived_hash_sync(rel, old, new, baseline, applied, policy)
+            if derived_kind == "VERIFIED":
+                machine_hash_sync.append(rel)
+                continue
+            if derived_kind == "INVALID_DERIVED_SYNC":
+                ref_text = f" reference={derived_ref}" if derived_ref else ""
+                errors.append(f"MACHINE_DERIVED_HASH_SYNC_INTEGRITY_FAIL path={rel}{ref_text} reason={derived_reason}")
+                continue
         changed.append({
             "path": rel,
             "change_kind": "delete" if new_hash is None else "modify",

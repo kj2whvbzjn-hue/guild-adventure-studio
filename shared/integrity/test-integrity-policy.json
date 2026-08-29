@@ -42,7 +42,7 @@
   "protection_scope_description": "Baseline approval semantics remain authoritative, while protected path matching uses the union of baseline and applied protected_patterns so a policy expansion cannot modify newly protected files in the same update without approval.",
   "machine_derived_hash_sync": {
     "allowed_without_approval": true,
-    "description": "Allow only mechanically verifiable size/SHA-256 synchronization in explicitly listed protected manifests. Paths, membership, ordering, schema, purpose, and non-derived fields must remain byte-semantically unchanged; baseline and applied derived values must match the referenced files exactly.",
+    "description": "Allow only mechanically verifiable size/SHA-256 synchronization in explicitly listed protected manifests. Paths, membership, ordering, schema, purpose, and non-derived fields must remain byte-semantically unchanged; baseline and final applied-tree derived values must match the referenced files exactly. A structurally derived-only sync with missing/stale/fabricated reference facts is an integrity failure and must not fall back to human approval.",
     "manifests": [
       {
         "path": "shared/integrity/critical-runtime-manifest.json",
@@ -57,6 +57,8 @@
         "verify_baseline_references": true,
         "verify_applied_references": true
       }
-    ]
+    ],
+    "invalid_derived_sync_fail_closed": true,
+    "invalid_derived_sync_approval_fallback_forbidden": true
   }
 }

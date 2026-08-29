@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B801</title>
+<title>GK Studio GKS-B802</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -179,7 +179,7 @@ pre{white-space:pre-wrap;word-break:break-word;background:#111827;color:#e5e7eb;
 body.rule-picker-open{overflow:hidden}
 
 
-/* GKS-B801 Story nested Data Exchange + scenario export wording */
+/* GKS-B802 Story nested Data Exchange + scenario export wording */
 .dx-picker{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.52);display:flex;align-items:stretch;justify-content:center;padding:0}
 .dx-picker.hidden{display:none}.dx-picker-sheet{width:min(780px,100%);height:100%;background:#fff;display:flex;flex-direction:column;overflow:hidden}
 .dx-picker-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top)) 14px 10px;box-shadow:0 2px 10px rgba(15,23,42,.08)}
@@ -239,7 +239,7 @@ body.studio-layer-open{overflow:hidden}
  .studio-input-overlay input:not([type="hidden"]),.studio-input-overlay select,.studio-input-overlay textarea{font-size:16px;touch-action:manipulation}
 }
 
-/* P2 Quest Box editor / GKS-B801: child screen inside the Quest Studio input surface */
+/* P2 Quest Box editor / GKS-B802: child screen inside the Quest Studio input surface */
 .quest-box-section{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
 .quest-box-section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .quest-box-section-head h3{margin:0 0 4px;font-size:18px}
@@ -440,7 +440,7 @@ body.benchmark-workflow-open{overflow:hidden}
 }
 
 
-/* GKS-B801: Studio home-aware common header / navigation */
+/* GKS-B802: Studio home-aware common header / navigation */
 .studio-common-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .view>.studio-common-header{margin:0 0 14px;padding:0 0 10px;border-bottom:1px solid var(--border,#d7dde5)}
 .rule-tag-picker-head>.studio-common-header,.dx-picker-head>.studio-common-header,.master-skill-picker-head>.studio-common-header{margin-bottom:10px}
@@ -471,13 +471,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B801</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B802</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B801</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B802</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2475,11 +2475,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=801"></script>
+<script src="./layer-controller.js?v=802"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B801';
+const DISTRIBUTION_BUILD='GKS-B802';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -8025,47 +8025,53 @@ async function getDeployAppliedBytes(remote,base,rel,files,deletions){
  if(local?.bytes)return local.bytes;
  return await getDeployBaselineBytes(remote,base,normalized);
 }
-async function isDeployMachineDerivedHashSync(file,remote,files,deletions){
- if(file?.status!=='MODIFY'||!file?.remoteSha||!file?.bytes)return false;
+async function evaluateDeployMachineDerivedHashSync(file,remote,files,deletions){
+ const result={kind:'NOT_APPLICABLE',reason:'',reference:null};
+ if(file?.status!=='MODIFY'||!file?.remoteSha||!file?.bytes)return result;
  const spec=deployMachineDerivedHashSyncSpec(file.path);
- if(!spec)return false;
+ if(!spec)return result;
  let beforeBytes,before,after;
  try{
   beforeBytes=await fetchGitBlobBytes(remote.repo,file.remoteSha);
   before=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(beforeBytes));
   after=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(file.bytes));
- }catch(_e){return false}
+ }catch(_e){return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_json_invalid',reference:null}}
  const entriesField=String(spec.entries_field||'files');
  const pathField=String(spec.path_field||'path');
  const derivedFields=(Array.isArray(spec.derived_fields)&&spec.derived_fields.length?spec.derived_fields:['size','sha256']).map(String);
- if(stableDeployJson(Object.fromEntries(Object.entries(before).filter(([k])=>k!==entriesField)))!==stableDeployJson(Object.fromEntries(Object.entries(after).filter(([k])=>k!==entriesField))))return false;
+ if(stableDeployJson(Object.fromEntries(Object.entries(before).filter(([k])=>k!==entriesField)))!==stableDeployJson(Object.fromEntries(Object.entries(after).filter(([k])=>k!==entriesField))))return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_non_derived_top_level_changed',reference:null};
  const beforeEntries=before?.[entriesField],afterEntries=after?.[entriesField];
- if(!Array.isArray(beforeEntries)||!Array.isArray(afterEntries)||beforeEntries.length!==afterEntries.length)return false;
+ if(!Array.isArray(beforeEntries)||!Array.isArray(afterEntries)||beforeEntries.length!==afterEntries.length)return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_membership_changed',reference:null};
  const base=normalizeDeployPath(deployBasePath.value);
  let changedDerived=false;
  for(let i=0;i<beforeEntries.length;i++){
   const oldEntry=beforeEntries[i],newEntry=afterEntries[i];
-  if(!oldEntry||!newEntry||typeof oldEntry!=='object'||typeof newEntry!=='object'||Array.isArray(oldEntry)||Array.isArray(newEntry))return false;
+  if(!oldEntry||!newEntry||typeof oldEntry!=='object'||typeof newEntry!=='object'||Array.isArray(oldEntry)||Array.isArray(newEntry))return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_entry_shape_changed',reference:null};
   const oldKeys=Object.keys(oldEntry).sort(),newKeys=Object.keys(newEntry).sort();
-  if(stableDeployJson(oldKeys)!==stableDeployJson(newKeys))return false;
+  if(stableDeployJson(oldKeys)!==stableDeployJson(newKeys))return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_entry_fields_changed',reference:null};
   const rel=normalizeDeployPath(oldEntry[pathField]);
-  if(!rel||normalizeDeployPath(newEntry[pathField])!==rel)return false;
+  if(!rel||normalizeDeployPath(newEntry[pathField])!==rel)return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_entry_path_changed',reference:rel||null};
   for(const key of oldKeys){
-   if(!derivedFields.includes(key)&&stableDeployJson(oldEntry[key])!==stableDeployJson(newEntry[key]))return false;
+   if(!derivedFields.includes(key)&&stableDeployJson(oldEntry[key])!==stableDeployJson(newEntry[key]))return {kind:'SUBSTANTIVE_CHANGE',reason:'manifest_non_derived_entry_changed',reference:rel};
   }
   const changed=derivedFields.some(key=>stableDeployJson(oldEntry[key])!==stableDeployJson(newEntry[key]));
   if(!changed)continue;
   changedDerived=true;
   const baselineRef=await getDeployBaselineBytes(remote,base,rel);
   const appliedRef=await getDeployAppliedBytes(remote,base,rel,files,deletions);
-  if(!baselineRef||!appliedRef)return false;
+  if(!baselineRef||!appliedRef)return {kind:'INVALID_DERIVED_SYNC',reason:!baselineRef?'baseline_reference_missing':'applied_reference_missing',reference:rel};
   const baselineFacts={size:baselineRef.length,sha256:await sha256BytesHex(baselineRef)};
   const appliedFacts={size:appliedRef.length,sha256:await sha256BytesHex(appliedRef)};
   for(const key of derivedFields){
-   if(!(key in baselineFacts)||oldEntry[key]!==baselineFacts[key]||newEntry[key]!==appliedFacts[key])return false;
+   if(!(key in baselineFacts))return {kind:'INVALID_DERIVED_SYNC',reason:'unsupported_derived_field',reference:rel};
+   if(oldEntry[key]!==baselineFacts[key])return {kind:'INVALID_DERIVED_SYNC',reason:`baseline_${key}_mismatch`,reference:rel};
+   if(newEntry[key]!==appliedFacts[key])return {kind:'INVALID_DERIVED_SYNC',reason:`applied_${key}_mismatch`,reference:rel};
   }
  }
- return changedDerived;
+ return changedDerived?{kind:'VERIFIED',reason:'',reference:null}:{kind:'SUBSTANTIVE_CHANGE',reason:'no_derived_change',reference:null};
+}
+async function isDeployMachineDerivedHashSync(file,remote,files,deletions){
+ return (await evaluateDeployMachineDerivedHashSync(file,remote,files,deletions)).kind==='VERIFIED';
 }
 async function validateStudioProtectedTestChanges(remote,files){
  const deletions=Array.isArray(arguments[2])?arguments[2]:[];
@@ -8074,7 +8080,15 @@ async function validateStudioProtectedTestChanges(remote,files){
  const changedFiles=files.filter(x=>(x.status==='MODIFY'||x.status==='ADD')&&isProtectedTestIntegrityPath(x.path));
  for(const file of changedFiles){
   if(file.status==='MODIFY'&&await isDeployBuildTokenOnlyChange(file,remote)){file.testIntegrity='BUILD_TOKEN_ONLY';continue}
-  if(file.status==='MODIFY'&&await isDeployMachineDerivedHashSync(file,remote,files,deletions)){file.testIntegrity='MACHINE_DERIVED_HASH_SYNC';deployLogMessage(`Test Integrity自動検証: ${file.path} は実ファイルと一致するsize/SHA-256同期のみ`);continue}
+  if(file.status==='MODIFY'){
+   const derived=await evaluateDeployMachineDerivedHashSync(file,remote,files,deletions);
+   if(derived.kind==='VERIFIED'){file.testIntegrity='MACHINE_DERIVED_HASH_SYNC';deployLogMessage(`Test Integrity自動検証: ${file.path} は最終配置Treeの実ファイルと一致するsize/SHA-256同期のみ`);continue}
+   if(derived.kind==='INVALID_DERIVED_SYNC'){
+    file.testIntegrity='INTEGRITY_FAIL';
+    const ref=derived.reference?` 参照=${derived.reference}`:'';
+    throw new Error(`Critical Runtime Integrityエラー: ${file.path}${ref} reason=${derived.reason}。機械生成hash台帳が最終配置Treeと一致しません。この不整合は人間承認では解除できません。`);
+   }
+  }
   let baselineSha256=null;
   if(file.status==='MODIFY'){
    const remoteBytes=await fetchGitBlobBytes(remote.repo,file.remoteSha);
@@ -8634,16 +8648,17 @@ async function createGitBlob(repo,file){
 }
 async function deployStudioPackage(){
  if(studioDeployBusy||ghBusy)return;
- if(!studioDeployPlan)return alert('先にZIPを選択し、GitHub差分解析を完了してください。');
- const changes=studioDeployPlan.changes||[];
+ const deployPlan=studioDeployPlan;
+ if(!deployPlan)return alert('先にZIPを選択し、GitHub差分解析を完了してください。');
+ const changes=deployPlan.changes||[];
  if(!changes.length)return alert('配置する差分はありません。');
  const boundaryViolations=changes.filter(x=>{
-  const relative=remotePathInsideDeployBase(x.target,studioDeployPlan.base||'');
+  const relative=remotePathInsideDeployBase(x.target,deployPlan.base||'');
   return relative!==null&&isStudioDeployGameDataPath(relative);
  });
  if(boundaryViolations.length)return alert('安全停止: Studio更新ではExport/を配置・削除できません。Gameデータ配置を使用してください。');
  const c=getGhConfig();
- if(c.owner!==studioDeployPlan.owner||c.repo!==studioDeployPlan.repoName||c.branch!==studioDeployPlan.branch)return alert('接続先が差分解析時から変更されています。再解析してください。');
+ if(c.owner!==deployPlan.owner||c.repo!==deployPlan.repoName||c.branch!==deployPlan.branch)return alert('接続先が差分解析時から変更されています。再解析してください。');
  const message=(deployCommitMessage.value.trim()||'Deploy Guild Adventure Studio update')+(studioDeployMeta?.version?` ${studioDeployMeta.version}`:'');
  const dry=deployDryRun.checked;
  const add=changes.filter(x=>x.status==='ADD').length;
@@ -8691,7 +8706,7 @@ async function deployStudioPackage(){
   studioDeployBusy=true;setGhBusy(true);setDeployExecuteEnabled(false);resetDeployLog();
   deployLogMessage(`${dry?'テスト':'単一Commit配置'}開始: ${c.owner}/${c.repo}@${c.branch}`);
   const current=await getGitHead(c);
-  if(current.headSha!==studioDeployPlan.headSha)throw new Error('差分解析後にBranchが更新されました。競合防止のため停止しました。再解析してください。');
+  if(current.headSha!==deployPlan.headSha)throw new Error('差分解析後にBranchが更新されました。競合防止のため停止しました。再解析してください。');
   if(dry){
    deployProgressBar.style.width='100%';deployProgressText.textContent=`テスト完了 ${changes.length}件`;
    deployLogMessage(`テスト完了: ref更新なし / ADD ${add} / MODIFY ${modify} / DELETE ${deleteCount}`);
@@ -8709,23 +8724,23 @@ async function deployStudioPackage(){
     continue;
    }
    deployProgressText.textContent=`Blob作成 ${i+1}/${changes.length} ${file.target}`;
-   const blob=await createGitBlob(studioDeployPlan.repo,file);
+   const blob=await createGitBlob(deployPlan.repo,file);
    treeEntries.push({path:file.target,mode:'100644',type:'blob',sha:blob.sha});
    deployLogMessage(`Blob: ${file.status} ${file.target}`);
   }
   deployProgressText.textContent='Tree作成';
-  const tree=await ghRequest(`${studioDeployPlan.repo}/git/trees`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:studioDeployPlan.baseTreeSha,tree:treeEntries})});
+  const tree=await ghRequest(`${deployPlan.repo}/git/trees`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:deployPlan.baseTreeSha,tree:treeEntries})});
   deployProgressBar.style.width='85%';deployProgressText.textContent='Commit作成';
-  const commit=await ghRequest(`${studioDeployPlan.repo}/git/commits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,tree:tree.sha,parents:[studioDeployPlan.headSha]})});
+  const commit=await ghRequest(`${deployPlan.repo}/git/commits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,tree:tree.sha,parents:[deployPlan.headSha]})});
   deployProgressBar.style.width='95%';deployProgressText.textContent='Branch参照更新';
-  await ghRequest(`${studioDeployPlan.repo}/git/refs/heads/${c.branch.split('/').map(encodeURIComponent).join('/')}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:commit.sha,force:false})});
+  await ghRequest(`${deployPlan.repo}/git/refs/heads/${c.branch.split('/').map(encodeURIComponent).join('/')}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:commit.sha,force:false})});
   deployProgressBar.style.width='100%';deployProgressText.textContent=`完了 ${changes.length}件 / 1 Commit`;
-  deployLogMessage(`配置完了: old=${studioDeployPlan.headSha} new=${commit.sha}`);
+  deployLogMessage(`配置完了: old=${deployPlan.headSha} new=${commit.sha}`);
   studioDeployLastResult={
    status:'COMMIT_SUCCEEDED_PAGES_PENDING',
-   owner:c.owner,repo:c.repo,branch:c.branch,base:studioDeployPlan.base,
-   oldCommitSha:studioDeployPlan.headSha,newCommitSha:commit.sha,treeSha:tree.sha,
-   commitMessage:message,preparedAt:studioDeployPlan.preparedAt,committedAt:new Date().toISOString(),
+   owner:c.owner,repo:c.repo,branch:c.branch,base:deployPlan.base,
+   oldCommitSha:deployPlan.headSha,newCommitSha:commit.sha,treeSha:tree.sha,
+   commitMessage:message,preparedAt:deployPlan.preparedAt,committedAt:new Date().toISOString(),
    packageVersion:studioDeployMeta?.display_version||studioDeployMeta?.version||null,
    cacheQuery:studioDeployMeta?.cache_query||null,
    changes:changes.map(f=>({path:f.target,status:f.status,size:f.size||0,sha256:f.sha256||null,gitBlobSha:f.gitSha||null}))
@@ -10178,7 +10193,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','801');
+    url.searchParams.set('appv','802');
     location.replace(url.toString());
    }
  }
@@ -10187,7 +10202,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=801',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=802',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10206,7 +10221,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','801');
+    url.searchParams.set('appv','802');
     location.replace(url.toString());
    }
   });
