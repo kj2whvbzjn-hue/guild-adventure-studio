@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T08:17:20.152Z"
+    "updated_at": "2026-08-29T00:40:39.687Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Magic Accuracy / Remaining Skill Balance",
-    "goal": "Threshold Budget 10〜110、主要Ability暫定Seed、Base MP=Skill Lv×8、Range Cost(SINGLE×1/列系×2/ALL×3)の暫定PASSを基準に、未決定の魔法命中判定式と残課題を整理する。"
+    "theme": "Magic Damage / Build-wide Revalidation",
+    "goal": "採用済みMagic Accuracy/Magic Resistance装備Requirement係数式と、Threshold Budget 10〜110、Base MP=Skill Lv×8、Range Cost(SINGLE×1/列系×2/ALL×3)の暫定PASSを基準に、魔法Damage・属性・MOD・装備特化を含む残課題を検証する。"
   },
   "project_rules": [
     {
@@ -112,6 +112,15 @@
       "source_id": "conversation:2026-08-28 MP range cooldown casttime seeds",
       "created_at": "2026-08-28T14:55:00+09:00",
       "updated_at": "2026-08-28T17:08:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-MAGIC-HIT-001",
+      "text": "魔法命中は物理命中と同じ考え方で装備Requirement係数から戦闘値を生成する。Magic Accuracy = weapon_iLv * (INT_requirement_coefficient + DEX_requirement_coefficient) * 2。Magic Resistance = armor_iLv * (AGI_requirement_coefficient + MND_requirement_coefficient) * 4。Magic Hit Rate = min(100%, Magic Accuracy / Magic Resistance * 100) とする。武器側はINT+DEX、防具側はAGI+MNDを参照し、Character Statの直接比ではなく装備Requirement係数を使用する。この式を以後の魔法命中Balance Test基準とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 magic hit formula adopted",
+      "created_at": "2026-08-29T09:39:00+09:00",
+      "updated_at": "2026-08-29T09:39:00+09:00"
     }
   ],
   "source_baseline": {
@@ -204,6 +213,22 @@
       "artifact_note": "Human approved provisional seeds 2026-08-28",
       "created_at": "2026-08-28T14:55:00+09:00",
       "updated_at": "2026-08-28T17:08:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-MAGIC-HIT-001",
+      "title": "魔法命中 / 魔法抵抗の装備Requirement係数式",
+      "status": "Resolved",
+      "summary": "魔法命中・魔法抵抗を物理と同様に装備Requirement係数から生成し、INT+DEX対AGI+MNDで判定する式を採用する。",
+      "body": "【採用式】\n- Magic Accuracy = weapon_iLv * (INT requirement coeff + DEX requirement coeff) * 2。\n- Magic Resistance = armor_iLv * (AGI requirement coeff + MND requirement coeff) * 4。\n- Magic Hit Rate = min(100%, Magic Accuracy / Magic Resistance * 100)。\n\n【設計意図】\n- Character Statを直接割らず、物理命中と同じ考え方で装備Requirement係数から戦闘値を生成する。\n- 武器側はINT+DEXを魔法命中側へ使用する。\n- 防具側はAGI+MNDを魔法抵抗側へ使用する。\n- 杖/魔導書、防具種別ごとのRequirement差を魔法命中特性へ反映する。\n\n【再計算で確認した例】\n- Lv50魔術師(杖): Magic Accuracy = 11*(6+1)*2 = 154。\n- Lv50神官(魔導書): Magic Accuracy = 11*(6+3)*2 = 198。\n- Lv50ローブ: Magic Resistance = 11*(3+6)*4 = 396。\n- 魔術師→ローブ約38.9%、神官→ローブ50%。\n- 神官が魔術師より高命中になるケースは、魔導書のDEX Requirement係数が高い装備特性として許容する。",
+      "open_questions": "MOD、装備特化、魔法命中/抵抗補正、全体魔法を含むBuild総合Testで最終Balanceを再確認する。",
+      "conclusion": "装備Requirement係数ベースのMagic Accuracy / Magic Resistance式をHuman採用し、以後の魔法命中Test基準とする。",
+      "related_discussion_ids": [
+        "DISC-SKL-ABILITY-ACCESS-001",
+        "DISC-SKL-MP-RANGE-CRIT-001"
+      ],
+      "artifact_note": "Human approved 2026-08-29",
+      "created_at": "2026-08-29T09:39:00+09:00",
+      "updated_at": "2026-08-29T09:39:00+09:00"
     }
   ],
   "decisions": [
@@ -276,6 +301,20 @@
       "approved_at": "2026-08-28T14:55:00+09:00",
       "created_at": "2026-08-28T14:55:00+09:00",
       "updated_at": "2026-08-28T17:08:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-MAGIC-HIT-001",
+      "title": "魔法命中 / 魔法抵抗を装備Requirement係数ベースで算出する",
+      "status": "Approved",
+      "text": "魔法命中はMagic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2、魔法抵抗はMagic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4とする。最終命中率はMagic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100)。武器側はINT+DEX、防具側はAGI+MNDを参照し、Character Statの直接比ではなく装備Requirement係数から生成する。この式を以後の魔法命中Balance Test基準とする。",
+      "rationale": "Character Statを直接使用すると装備差が反映されず、既存物理命中設計とも整合しないため。装備Requirement係数を用いることで杖/魔導書や防具種別の特性を一貫して魔法命中・抵抗へ反映できる。再計算ではローブ後衛への命中率が過度に高くならず、全体魔法による後衛崩壊リスクの抑制にも寄与した。",
+      "source_discussion_ids": [
+        "DISC-SKL-MAGIC-HIT-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T09:39:00+09:00",
+      "created_at": "2026-08-29T09:39:00+09:00",
+      "updated_at": "2026-08-29T09:39:00+09:00"
     }
   ],
   "specifications": [],
@@ -313,7 +352,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -322,7 +361,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-28T17:08:00+09:00"
+      "updated_at": "2026-08-29T09:39:00+09:00"
     }
   ],
   "checks": [],
@@ -383,6 +422,10 @@
     {
       "at": "2026-08-28T17:08:00+09:00",
       "message": "Human adopted ALL MP multiplier x3 instead of x4. Using EVD-0003 Player MP evidence, Base MP=SkillLv*8 and SINGLE/FRONT/BACK/RANDOM/ALL range costs were judged provisional PASS for current base Skill Balance. Not frozen; re-test with MOD/equipment/Trigger/resource modifiers. PIERCE numeric seed retained but implementation remains undecided."
+    },
+    {
+      "at": "2026-08-29T09:39:00+09:00",
+      "message": "Human adopted equipment-requirement-based magic hit formula on top of current SKL-0001 baseline: Magic Accuracy=weapon_iLv*(INT coeff+DEX coeff)*2; Magic Resistance=armor_iLv*(AGI coeff+MND coeff)*4; Magic Hit Rate=min(100%, Accuracy/Resistance*100)."
     }
   ]
 }
