@@ -27,21 +27,19 @@ function resolveLifecycle(def,registry,errors,path){
  return {...lifecycle};
 }
 function buildTriggerContract(skill,def){
- return{
-  type:String(skill?.trigger?.type||'ON_USE').toUpperCase(),
-  scope:String(skill?.trigger?.scope||'SELF').toUpperCase(),
-  engineEvent:String(def?.engine_event||''),
-  dispatchMode:String(def?.dispatch_mode||'RESOLVE_ONLY'),
-  priority:Number.isInteger(skill?.trigger?.priority)?skill.trigger.priority:0
- };
+ const defaultDispatch=String(def?.dispatch_mode||'RESOLVE_ONLY').toUpperCase(),dispatchMode=String(skill?.trigger?.dispatchMode||defaultDispatch).toUpperCase();
+ return{type:String(skill?.trigger?.type||'ON_USE').toUpperCase(),scope:String(skill?.trigger?.scope||'SELF').toUpperCase(),engineEvent:String(def?.engine_event||''),dispatchMode,priority:Number.isInteger(skill?.trigger?.priority)?skill.trigger.priority:0,...(def?.phase?{phase:String(def.phase).toUpperCase()}:{}),...(Object.prototype.hasOwnProperty.call(skill?.trigger||{},'activationChance')?{activationChance:skill.trigger.activationChance}:{})};
 }
 function validateTrigger(skill,def,errors){
  const trigger=String(skill?.trigger?.type||'').toUpperCase(),contract=def?.runtime_contract||{};
  if(!def)return;
  if(def.enabled===false)error(errors,'TRIGGER_DISABLED','trigger.type',`無効Trigger: ${trigger}`);
  const allowed=def.allowed_scopes||[];
+ const defaultDispatch=String(def.dispatch_mode||'RESOLVE_ONLY').toUpperCase(),allowedDispatch=(Array.isArray(def.allowed_dispatch_modes)?def.allowed_dispatch_modes:[defaultDispatch]).map(x=>String(x).toUpperCase()),dispatchMode=String(skill?.trigger?.dispatchMode||defaultDispatch).toUpperCase();
+ if(!allowedDispatch.includes(dispatchMode))error(errors,'TRIGGER_DISPATCH_MODE_UNSUPPORTED','trigger.dispatchMode',`${trigger}のdispatchModeはRegistryで許可されていません: ${dispatchMode}`);
+ if(Object.prototype.hasOwnProperty.call(skill?.trigger||{},'activationChance')&&(!num(skill.trigger.activationChance)||skill.trigger.activationChance<0||skill.trigger.activationChance>1))error(errors,'TRIGGER_ACTIVATION_CHANCE_INVALID','trigger.activationChance','activationChanceは0以上1以下の有限数が必要です');
  if(allowed.length&&!allowed.includes(String(skill?.trigger?.scope||'SELF').toUpperCase()))error(errors,'TRIGGER_SCOPE_UNSUPPORTED','trigger.scope',`${trigger}のscopeが未対応です`);
- if(trigger==='ON_HIT_RECEIVED'){
+ if(trigger==='ON_HIT_RECEIVED'&&dispatchMode==='COUNTER'){
   if(skill.target?.side!==contract.target_side)error(errors,'COUNTER_TARGET_SIDE_REQUIRED','target.side',`COUNTERは${contract.target_side}対象が必要です`);
   if(skill.target?.range!==contract.target_range)error(errors,'COUNTER_TARGET_RANGE_REQUIRED','target.range',`COUNTERは${contract.target_range}範囲が必要です`);
   if(!(skill.effects||[]).some(e=>String(e?.type||'').toUpperCase()===String(contract.requires_effect||'DAMAGE').toUpperCase()))error(errors,'COUNTER_DAMAGE_EFFECT_REQUIRED','effects','ON_HIT_RECEIVEDにはDAMAGE Effectが必要です');
@@ -181,6 +179,7 @@ function compileSkill(skill,registry){
   if(!allTags.length&&!anyTags.length)error(errors,'USE_REQUIREMENT_TAGS_REQUIRED',path,'allTagsまたはanyTagsを1件以上指定してください');
   useRequirementContracts.push({type:'EQUIPMENT_TAGS',scope:'SELF',allTags,anyTags});
  }
+ const abilityConditions=[];if(skill.abilityConditions!=null){if(!Array.isArray(skill.abilityConditions))error(errors,'ABILITY_CONDITIONS_ARRAY_REQUIRED','abilityConditions','abilityConditionsは配列が必要です');else for(const [i,c] of skill.abilityConditions.entries()){const stat=String(c?.stat||'').toUpperCase(),min=c?.min;if(!['STR','VIT','AGI','DEX','INT','MND','LUK'].includes(stat))error(errors,'ABILITY_CONDITION_STAT_INVALID',`abilityConditions[${i}].stat`,`能力条件statが不正です: ${stat||'(なし)'}`);else if(!num(min)||min<0)error(errors,'ABILITY_CONDITION_MIN_INVALID',`abilityConditions[${i}].min`,'minは0以上の有限数が必要です');else abilityConditions.push({stat,min})}}
  for(const [i,c] of (Array.isArray(skill.conditions)?skill.conditions:[]).entries()){
   const path=`conditions[${i}]`,def=registry.conditions?.[c?.property];
   if(!def){error(errors,'UNKNOWN_CONDITION',`${path}.property`,`未定義Condition: ${c?.property||'(なし)'}`);continue}
@@ -220,7 +219,7 @@ function compileSkill(skill,registry){
    conditionContracts:[...conditionContracts],...(skill?.useRequirements!=null?{useRequirementContracts:useRequirementContracts.map(x=>({...x,allTags:[...x.allTags],anyTags:[...x.anyTags]}))}:{}),effectContracts:[...effectContracts],applyContracts:applyContracts.map(c=>({...c,lifecycle:c.lifecycle?{...c.lifecycle}:null})),auraEffectContract:auraEffectContract?{...auraEffectContract}:null,
    resourceContract:{mpCost:skill?.resource?.mpCost??0,cooldown:skill?.resource?.cooldown??0,activationPriority:skill?.resource?.activationPriority??0,...(own(skill?.resource,'castTime')?{castTime:skill.resource.castTime}:{})}
   };
-  const compiledSkill={schemaVersion:SUPPORTED_SCHEMA,id:String(skill?.id||''),name:String(skill?.name||''),skillLevel:skill?.skillLevel??null,trigger:skill?.trigger?{...skill.trigger}:null,conditions:Array.isArray(skill?.conditions)?skill.conditions.map(x=>({...x})):[],...(skill?.useRequirements!=null?{useRequirements:Array.isArray(skill.useRequirements)?skill.useRequirements.map(x=>({...x,allTags:Array.isArray(x?.allTags)?[...x.allTags]:x?.allTags,anyTags:Array.isArray(x?.anyTags)?[...x.anyTags]:x?.anyTags})):skill.useRequirements}:{}),target:skill?.target?{...skill.target}:null,effects:Array.isArray(skill?.effects)?skill.effects.map(x=>({...x})):[],resource:skill?.resource?{...skill.resource}:{},runtimeContracts};
+  const compiledSkill={schemaVersion:SUPPORTED_SCHEMA,id:String(skill?.id||''),name:String(skill?.name||''),skillLevel:skill?.skillLevel??null,...(skill?.abilityConditions!=null?{abilityConditions:abilityConditions.map(x=>({...x}))}:{}),trigger:skill?.trigger?{...skill.trigger}:null,conditions:Array.isArray(skill?.conditions)?skill.conditions.map(x=>({...x})):[],...(skill?.useRequirements!=null?{useRequirements:Array.isArray(skill.useRequirements)?skill.useRequirements.map(x=>({...x,allTags:Array.isArray(x?.allTags)?[...x.allTags]:x?.allTags,anyTags:Array.isArray(x?.anyTags)?[...x.anyTags]:x?.anyTags})):skill.useRequirements}:{}),target:skill?.target?{...skill.target}:null,effects:Array.isArray(skill?.effects)?skill.effects.map(x=>({...x})):[],resource:skill?.resource?{...skill.resource}:{},runtimeContracts};
   return{ok:errors.length===0,version:VERSION,errors,warnings,compiledSkill};
  }
 }

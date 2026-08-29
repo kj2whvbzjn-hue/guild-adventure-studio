@@ -13,7 +13,7 @@
   const VERSION='R04-E3';
   const DEFAULT_ACTION_TRIGGER_LIMIT=16;
   const SUPPORTED=Object.freeze([
-    'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT',
+    'ON_USE','ON_HIT_RECEIVED','ON_ALLY_ATTACK','ON_DAMAGE_DEALT','ON_CRITICAL','ON_HIT_DEALT','ON_EVADE','ON_BLOCK','ON_BATTLE_START','ON_FATAL_DAMAGE',
     'ON_TURN_START','ON_TURN_END','ON_DEATH','ON_STATUS_APPLIED','WHILE_SOURCE_ALIVE'
   ]);
   const BOUNDARY=Object.freeze({
@@ -79,7 +79,7 @@
     const actual=String(eventType||'').trim();
     if(!expected)return failure('TRIGGER_ENGINE_EVENT_REQUIRED',type);
     if(actual!==expected)return failure('TRIGGER_ENGINE_EVENT_MISMATCH',type,{expected_event:expected,actual_event:actual});
-    if(contract.dispatchMode&&!['RESOLVE_ONLY','COUNTER','FOLLOW_UP','AURA'].includes(contract.dispatchMode))return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
+    if(contract.dispatchMode&&!['RESOLVE_ONLY','COUNTER','FOLLOW_UP','AURA','ACTION'].includes(contract.dispatchMode))return failure('TRIGGER_DISPATCH_MODE_UNSUPPORTED',type,{dispatch_mode:contract.dispatchMode});
     return{ok:true,type,contract:{...contract,type}};
   }
   function createActionContext(options={}){
@@ -87,21 +87,11 @@
     const maxActivations=Number.isInteger(raw)&&raw>0?raw:DEFAULT_ACTION_TRIGGER_LIMIT;
     return{actionId:String(options.actionId||''),maxActivations,activationCount:0,activeKeys:new Set(),history:[]};
   }
-  function tryActivate(context,key,meta={}){
-    if(!context||typeof context!=='object')return failure('TRIGGER_ACTION_CONTEXT_REQUIRED','');
-    const normalizedKey=String(key||'').trim();
-    if(!normalizedKey)return failure('TRIGGER_ACTIVATION_KEY_REQUIRED','');
-    if(!(context.activeKeys instanceof Set))context.activeKeys=new Set();
-    if(!Array.isArray(context.history))context.history=[];
-    const max=Number.isInteger(context.maxActivations)&&context.maxActivations>0?context.maxActivations:DEFAULT_ACTION_TRIGGER_LIMIT;
-    const count=Math.max(0,Number(context.activationCount)||0);
-    if(count>=max)return failure('TRIGGER_ACTION_LIMIT_REACHED','',{key:normalizedKey,activation_count:count,max_activations:max});
-    if(context.activeKeys.has(normalizedKey))return failure('TRIGGER_REENTRY_BLOCKED','',{key:normalizedKey,activation_count:count,max_activations:max});
-    context.activationCount=count+1;context.activeKeys.add(normalizedKey);
-    const entry=Object.freeze({key:normalizedKey,index:context.activationCount,meta:meta&&typeof meta==='object'?{...meta}:{}});context.history.push(entry);
-    let released=false;
-    return{ok:true,key:normalizedKey,index:context.activationCount,max_activations:max,release(){if(released)return false;released=true;context.activeKeys.delete(normalizedKey);return true}};
+  function canActivate(context,key){
+    if(!context||typeof context!=='object')return failure('TRIGGER_ACTION_CONTEXT_REQUIRED','');const normalizedKey=String(key||'').trim();if(!normalizedKey)return failure('TRIGGER_ACTIVATION_KEY_REQUIRED','');if(!(context.activeKeys instanceof Set))context.activeKeys=new Set();if(!Array.isArray(context.history))context.history=[];const max=Number.isInteger(context.maxActivations)&&context.maxActivations>0?context.maxActivations:DEFAULT_ACTION_TRIGGER_LIMIT,count=Math.max(0,Number(context.activationCount)||0);if(count>=max)return failure('TRIGGER_ACTION_LIMIT_REACHED','',{key:normalizedKey,activation_count:count,max_activations:max});if(context.activeKeys.has(normalizedKey))return failure('TRIGGER_REENTRY_BLOCKED','',{key:normalizedKey,activation_count:count,max_activations:max});return{ok:true,key:normalizedKey,index:count+1,max_activations:max};
   }
+  function commitActivation(context,key,meta={}){const pre=canActivate(context,key);if(!pre.ok)return pre;context.activationCount=Math.max(0,Number(context.activationCount)||0)+1;context.activeKeys.add(pre.key);const entry=Object.freeze({key:pre.key,index:context.activationCount,meta:meta&&typeof meta==='object'?{...meta}:{}});context.history.push(entry);let released=false;return{ok:true,key:pre.key,index:context.activationCount,max_activations:pre.max_activations,release(){if(released)return false;released=true;context.activeKeys.delete(pre.key);return true}}}
+  function tryActivate(context,key,meta={}){return commitActivation(context,key,meta)}
 
   const REACTIVE_FAMILY_ORDER=Object.freeze({COUNTER:0,FOLLOW_UP:1});
   function normalizeReactiveCandidate(candidate,index){
@@ -127,5 +117,5 @@
       return failure('TRIGGER_DISPATCH_HANDLER_ERROR',checked.type,{message:String(error&&error.message||error)});
     }
   }
-  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,REACTIVE_FAMILY_ORDER,create,createActionContext,tryActivate,orderSimultaneousCandidates,validateCompiledContract,dispatchCompiled});
+  return Object.freeze({VERSION,SUPPORTED,BOUNDARY,DEFAULT_ACTION_TRIGGER_LIMIT,REACTIVE_FAMILY_ORDER,create,createActionContext,canActivate,commitActivation,tryActivate,orderSimultaneousCandidates,validateCompiledContract,dispatchCompiled});
 });

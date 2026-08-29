@@ -108,7 +108,7 @@ ok(!app.includes('formalModifierContributions:[]'),'Game direct battle/snapshot 
 
 // Production Game loader route: mocked Export responses -> loader -> Equipment MOD catalog -> Character -> Snapshot -> Battle Critical.
 ok(app.includes("FORMAL_MOD_EXPORT_URL=window.GA_PROJECT_CONFIG?.equipmentModExportUrl||'../Export/equipment/mods.json'"),'Game does not load the current Equipment MOD export');
-ok(!app.includes('formalPassiveCatalog'),'Game Critical correction must not invent a Passive catalog without a Current source');
+ok(app.includes('formalPassiveCatalog'),'Game must expose the Current Formal Passive Master catalog for character.passiveIds resolution');
 ok(app.includes('formalModifierContributions:characterFormalModifierContributions(c)'),'Game snapshot/unit path does not generate contributions from Character sources');
 const producerEquipmentRaw={id:'EQP-REAL',name:'Real Route Weapon',kind:'weapon',slot:'weapon',attack:10,accuracy:10,magic_weapon_bonus:0,weapon_critical_rate:0.05,hp_bonus:0,mp_bonus:0,evasion:0,block_rate:0,block_damage_cut_rate:0,mod_ids:['MOD-REAL-10','MOD-REAL-20']};
 const producerMod10={definition:{id:'MOD-REAL-10',category:'damage',tags:[],effect_type:'numeric_modifier',target:'CRITICAL_RATE',operation:'RELATIVE_PERCENT',balance_key:'crit10',enabled:true,schema_version:'1.0',parameters:{}},balance:{balance_key:'crit10',value:0.10,version:'test'}};
@@ -235,6 +235,17 @@ ok(studioGuaranteed.hitBypass==='CRITICAL_GUARANTEED_HIT'&&studioGuaranteed.hitR
 ok(studioRngCalls===1,'Studio Critical guaranteed hit must not consume hit RNG');
 const studioMissCtx=makeStudioDamageCtx();studioMissCtx.formalBattleCriticalResolution=()=>({weapon_critical_rate:0,LUK:0,base_critical_rate:0,final_critical_rate:0,contributions:[]});studioMissCtx.formalBattleHitRatePercent=()=>0;vm.createContext(studioMissCtx);vm.runInContext(studioFormalDamageFn,studioMissCtx);const studioRolls=[0.5,0.5],studioMiss=studioMissCtx.formalBattleApplyDamage({id:'A',name:'A',criticalDamage:0,damageDealt:0,hits:0,misses:0,crits:0},{id:'T',name:'T',alive:true,hp:100,damageResist:0,damageTaken:0},{id:'S',name:'S'},{damageType:'PHYSICAL',power:100},0,1,()=>studioRolls.shift(),[],100,[]);
 ok(studioMiss.miss===true&&studioRolls.length===0,'Studio non-Critical path must consume Critical then Hit RNG');
+
+
+// Formal Passive Product Master and Game capability path must be data-driven, not fixed passive-ID authority.
+const product=JSON.parse(text('project-data.json'));
+const dualPassive=(product?.masters?.passives||[]).find(x=>x?.id==='PAS-DUAL-WIELD-001');
+ok(!!dualPassive,'Product Formal Passive PAS-DUAL-WIELD-001 missing');
+ok(String(dualPassive.passiveSeriesId||'').length>0,'Formal Passive passiveSeriesId missing');
+ok(Array.isArray(dualPassive.params?.ability_conditions),'Formal Passive ability_conditions missing');
+ok((dualPassive.runtimeContracts?.modifierRefs?.combatCapabilities||[]).includes('DUAL_WIELD'),'Formal Passive DUAL_WIELD runtime contract missing');
+ok(!app.includes("const DUAL_WIELD_PASSIVE_ID='PAS-DUAL-WIELD-001'"),'Game must not restore fixed DUAL_WIELD passive ID authority');
+ok(app.includes('characterFormalPassiveSelection'),'Game must resolve character.passiveIds through Formal Passive Master selection');
 
 // Critical verification trace fields in both runtimes.
 for(const src of [studio,game,battleControl])for(const key of ['weapon_critical_rate','LUK','base_critical_rate','final_critical_rate','critical_roll','result'])ok(src.includes(key),`Critical verification trace missing ${key}`);

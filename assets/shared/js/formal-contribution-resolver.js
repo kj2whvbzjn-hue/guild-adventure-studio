@@ -11,7 +11,6 @@
   const MOD_FIELDS=Object.freeze(['id','category','tags','effect_type','target','operation','parameters','balance_key','enabled','schema_version']);
   const PASSIVE_STATS=Object.freeze(['STR','VIT','AGI','DEX','INT','MND','LUK']);
   const PASSIVE_COMBAT_CAPABILITIES=Object.freeze(['DUAL_WIELD']);
-  const PASSIVE_COMBAT_CAPABILITY_OWNER=Object.freeze({DUAL_WIELD:'PAS-DUAL-WIELD-001'});
   const NUMERIC_OPERATIONS=Object.freeze(['RELATIVE_PERCENT','FLAT_ADD','ADDITIVE_POINT','SUBTRACTIVE_POINT']);
   const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion'});
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
@@ -104,21 +103,28 @@
     const rawConditions=rawParams.ability_conditions==null?[]:rawParams.ability_conditions;
     if(!Array.isArray(rawConditions))throw new Error(`Passive ${req(record.id,'passive.id')}.params.ability_conditionsは配列にしてください。`);
     const checkedConditions=rawConditions.map((c,i)=>{if(!object(c))throw new Error(`Passive ${req(record.id,'passive.id')}.ability_conditions[${i}]が不正です。`);const stat=req(c.stat,`passive.ability_conditions[${i}].stat`).toUpperCase();if(!PASSIVE_STATS.includes(stat))throw new Error(`Passive ${req(record.id,'passive.id')}の能力条件statが不正です: ${stat}`);return {stat,min:finite(c.min,`passive.ability_conditions[${i}].min`)};});
-    const out=clone(record);out.id=req(out.id,'passive.id');out.name=req(out.name,'passive.name');out.tags=strings(out.tags,'passive.tags');
+    const out=clone(record);out.id=req(out.id,'passive.id');out.name=req(out.name,'passive.name');out.tags=strings(out.tags,'passive.tags');out.passiveSeriesId=req(out.passiveSeriesId,'passive.passiveSeriesId');
     out.params=object(out.params)?out.params:{};
     if(containsDeprecatedStatusSuccess(record))throw Object.assign(new Error(`Passive ${out.id}はCurrent非採用の状態異常成功率上昇を使用できません。`),{code:'FORMAL_PASSIVE_STATUS_SUCCESS_FORBIDDEN'});
     for(const key of ['level','passive_level','plv','exp','experience'])if(Object.prototype.hasOwnProperty.call(rawParams,key))throw new Error(`Passive ${out.id}は自身の成長fieldを持てません: params.${key}`);
     out.params.ability_conditions=checkedConditions;
     out.params.mod_ids=strings(out.params.mod_ids,'passive.params.mod_ids');out.params.effect_ids=strings(out.params.effect_ids,'passive.params.effect_ids');
     out.params.combat_capabilities=strings(out.params.combat_capabilities,'passive.params.combat_capabilities').map(x=>x.toUpperCase());
-    for(const capability of out.params.combat_capabilities){if(!PASSIVE_COMBAT_CAPABILITIES.includes(capability))throw new Error(`Passive ${out.id}のcombat capabilityはCurrent未対応です: ${capability}`);const owner=PASSIVE_COMBAT_CAPABILITY_OWNER[capability];if(owner&&out.id!==owner)throw new Error(`Combat capability ${capability}は${owner}だけが所有できます: ${out.id}`);}
+    for(const capability of out.params.combat_capabilities)if(!PASSIVE_COMBAT_CAPABILITIES.includes(capability))throw new Error(`Passive ${out.id}のcombat capabilityはCurrent未対応です: ${capability}`);
+    if(options.requireRuntimeContracts===true&&(!object(out.runtimeContracts)||Number(out.runtimeContracts.schemaVersion)!==1||String(out.runtimeContracts.passiveSeriesId||'')!==out.passiveSeriesId))throw Object.assign(new Error(`Passive ${out.id}に有効なruntimeContractsがありません。`),{code:'FORMAL_PASSIVE_RUNTIME_CONTRACT_REQUIRED',passive_id:out.id});
     const tagIds=options.tagIds instanceof Set?options.tagIds:null;if(tagIds)for(const tag of out.tags)if(!tagIds.has(tag))throw new Error(`Passive ${out.id}が未登録Tagを参照しています: ${tag}`);
     return out;
   }
   function resolvePassiveContribution(record,modCandidatesById={}){
     const checked=validateFormalPassive(record),modifiers=checked.params.mod_ids.map(id=>{const data=modCandidatesById instanceof Map?modCandidatesById.get(id):modCandidatesById[id];if(!data)throw new Error(`Passive ${checked.id}が参照するMOD Candidateがありません: ${id}`);return validateModCandidate(data)});
-    return {passive_id:checked.id,tags:checked.tags.slice(),ability_conditions:clone(checked.params.ability_conditions),modifier_ids:checked.params.mod_ids.slice(),modifiers,effect_ids:checked.params.effect_ids.slice(),combat_capabilities:checked.params.combat_capabilities.slice()};
+    const caps=Array.isArray(checked.runtimeContracts?.modifierRefs?.combatCapabilities)?checked.runtimeContracts.modifierRefs.combatCapabilities:checked.params.combat_capabilities;
+    return {passive_id:checked.id,passiveSeriesId:checked.passiveSeriesId,tags:checked.tags.slice(),ability_conditions:clone(checked.params.ability_conditions),modifier_ids:checked.params.mod_ids.slice(),modifiers,effect_ids:checked.params.effect_ids.slice(),combat_capabilities:[...caps],runtimeContracts:clone(checked.runtimeContracts||null)};
+  }
+  function passiveRequirementsMet(record,abilityStats={}){const checked=validateFormalPassive(record);for(const row of checked.params.ability_conditions||[]){if((Number(abilityStats?.[row.stat])||0)<Number(row.min))return false}return true}
+  function validatePassiveSelection(masterRows,passiveIds,abilityStats=null,options={}){
+    const rows=Array.isArray(masterRows)?masterRows:[],ids=Array.isArray(passiveIds)?passiveIds:[];if(new Set(ids.map(String)).size!==ids.length)throw Object.assign(new Error('character.passiveIdsに重複があります。'),{code:'FORMAL_PASSIVE_ID_DUPLICATE'});
+    const map=new Map(rows.map(row=>[String(row?.id||''),row])),selected=[],series=new Set();for(const rawId of ids){const id=String(rawId||'').trim(),raw=map.get(id);if(!raw)throw Object.assign(new Error(`未解決Passive IDです: ${id}`),{code:'FORMAL_PASSIVE_ID_UNRESOLVED',passive_id:id});const checked=validateFormalPassive(raw,{...options,requireRuntimeContracts:options.requireRuntimeContracts===true});if(series.has(checked.passiveSeriesId))throw Object.assign(new Error(`同一passiveSeriesIdを複数装備できません: ${checked.passiveSeriesId}`),{code:'FORMAL_PASSIVE_SERIES_DUPLICATE',passive_series_id:checked.passiveSeriesId});series.add(checked.passiveSeriesId);selected.push(checked)}const active=abilityStats==null?selected:selected.filter(row=>passiveRequirementsMet(row,abilityStats));return{ok:true,passives:selected,activePassives:active,passiveSeriesIds:[...series]};
   }
   function sumEquipmentContributions(rows){const total=Object.fromEntries(EQUIPMENT_FIELDS.map(k=>[k,0])),blockOwners=[];for(const row of rows||[]){for(const k of ADDITIVE_EQUIPMENT_FIELDS)total[k]+=Number(row?.modified?.[k])||0;if(BLOCK_FIELDS.some(k=>(Number(row?.modified?.[k])||0)>0))blockOwners.push(row);}if(blockOwners.length>1)throw Object.assign(new Error('Block性能を持つEquipmentを複数合算できません。'),{code:'FORMAL_EQUIPMENT_MULTI_BLOCK_SOURCE_FORBIDDEN',count:blockOwners.length});if(blockOwners.length===1)for(const k of BLOCK_FIELDS)total[k]=Number(blockOwners[0]?.modified?.[k])||0;return total}
-  return Object.freeze({EQUIPMENT_FIELDS,BLOCK_FIELDS,ADDITIVE_EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,PASSIVE_COMBAT_CAPABILITY_OWNER,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,sumEquipmentContributions});
+  return Object.freeze({EQUIPMENT_FIELDS,BLOCK_FIELDS,ADDITIVE_EQUIPMENT_FIELDS,REQUIREMENT_FIELDS,MOD_FIELDS,PASSIVE_STATS,PASSIVE_COMBAT_CAPABILITIES,NUMERIC_OPERATIONS,TARGET_TO_FIELD,validateFormalEquipment,baseEquipmentContribution,validateModDefinition,validateModCandidate,applyEquipmentMods,resolveEquipmentContribution,validateFormalPassive,resolvePassiveContribution,passiveRequirementsMet,validatePassiveSelection,sumEquipmentContributions});
 });
