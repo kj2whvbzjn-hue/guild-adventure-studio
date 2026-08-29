@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T06:37:26.335Z"
+    "updated_at": "2026-08-29T07:12:18.049Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -20,7 +20,7 @@
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
     "theme": "Passive Skill Design",
-    "goal": "Passive Runtime Guardを基準に、Trigger Event一覧、Trigger連鎖許可範囲、瀕死時強化のModifier Channel対象表、passiveSeriesIdのFormal Data Contract位置、Passive専用Effect価格表を詰める。"
+    "goal": "Passiveを既存Formal Skill方式へ統合する。Passive Authoring Data / Formal RegistryをFormal Compilerで検証・正規化し、runtimeContractsのみをGame Runtimeへ渡す。この前提でTrigger Contract、Trigger連鎖許可範囲、瀕死時強化のModifier Channel対象表、passiveSeriesIdのFormal Data Contract位置、Passive専用Effect価格表を詰める。"
   },
   "project_rules": [
     {
@@ -286,12 +286,12 @@
     },
     {
       "id": "RULE-SKL-PASSIVE-IMPLEMENTATION-GUARD-001",
-      "text": "Passiveは未実装であり、今後Generic Passive Runtimeとして実装する。個別Passiveごとに専用システムを増殖させず、Requirement/Trigger/ActivationChance/Cooldown/Duration/Effect/Modifier/passiveSeriesIdを共通契約として扱う。Passive仕様の設計時は既存Battle/Skill/Modifier/Status/DOT/Cooldown等のFormal処理と整合させ、専用Legacy/Fallback経路を追加しない。Trigger型Passiveは共通Event Dispatchを利用し、ON_HIT_DEALT/ON_HIT_RECEIVED/ON_CRITICAL/ON_BLOCK/ON_EVADE/ON_BATTLE_START/ON_FATAL_DAMAGE等のイベント種別を共通化して扱う方向とする。",
+      "text": "Passiveは未実装であり、Passive専用の独立Generic Runtimeを新設しない。Passive Authoring Data / Formal Registryを既存Formal Skill思想に合わせてCompilerで検証・正規化し、最終実行契約はruntimeContractsとしてGame Runtimeへ渡す。Game RuntimeはAuthoring Tag/Registryを直接解釈せず、runtimeContractsのみを実行する。Requirement/Trigger/ActivationChance/Cooldown/Duration/Effect/Modifier/passiveSeriesIdはAuthoring/Compiler側の共通契約として扱い、既存Battle/Skill/Modifier/Status/DOT/Cooldown処理へ接続する。個別Passive専用Runtime、Legacy/Fallback、Runtime内Tag Compilerを追加しない。",
       "status": "Active",
       "source_type": "HumanInstruction",
       "source_id": "conversation:2026-08-29 passive runtime feasibility guard",
       "created_at": "2026-08-29T15:25:00+09:00",
-      "updated_at": "2026-08-29T15:25:00+09:00"
+      "updated_at": "2026-08-29T16:02:00+09:00"
     },
     {
       "id": "RULE-SKL-PASSIVE-TRIGGER-RECURSION-GUARD-001",
@@ -337,6 +337,15 @@
       "source_id": "conversation:2026-08-29 passive heal barrier restriction",
       "created_at": "2026-08-29T15:25:00+09:00",
       "updated_at": "2026-08-29T15:25:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-FORMAL-PIPELINE-001",
+      "text": "Passiveの正規実行経路は Passive Authoring Data / Formal Registry → Formal Compiler → runtimeContracts → Current Formal Runtime とする。Tag/RegistryはAuthoring/Compiler側の定義源であり、Game RuntimeがTagを直接解釈してはならない。既存Formal Skillと同様にruntimeContractsを唯一の最終実行契約とし、Passive専用genericRuntime、compileTaggedPassive、Legacy/Fallback経路を作らない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive formal pipeline correction",
+      "created_at": "2026-08-29T16:02:00+09:00",
+      "updated_at": "2026-08-29T16:02:00+09:00"
     }
   ],
   "source_baseline": {
@@ -508,6 +517,21 @@
       "artifact_note": "Human requested runtime feasibility guard notes 2026-08-29",
       "created_at": "2026-08-29T15:25:00+09:00",
       "updated_at": "2026-08-29T15:25:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-FORMAL-PIPELINE-001",
+      "title": "PassiveをCurrent Formal Registry / Compiler / runtimeContracts経路へ統合する",
+      "status": "Resolved",
+      "summary": "従来の『Generic Passive Runtimeを新設する』表現を修正し、PassiveもCurrent Formal Skillと同じRegistry/Compiler/runtimeContracts原則へ統合する。",
+      "body": "【修正理由】\n- Current Formal SkillはTag/RegistryをRuntimeで直接解釈せず、CompilerがruntimeContractsへ正規化し、Game RuntimeはruntimeContractsのみを実行する。\n- Passiveだけ独立Generic Runtimeへ分岐すると、Formal Skill経路と並行した第二Runtimeになり得る。\n\n【修正後の正規経路】\n- Passive Authoring Data / Formal Registry\n- → Formal CompilerでSchema/Registry検証・正規化\n- → Passiveを表現するruntimeContracts生成\n- → Current Formal Runtime / Battle / Modifier / Status / DOT / Cooldownへ接続\n\n【禁止】\n- Game RuntimeによるAuthoring Tag/Registryの直接解釈\n- Passive専用genericRuntime\n- compileTaggedPassive等のRuntime内Compiler\n- Legacy/Fallback/二重経路\n\n【Passive固有項目の扱い】\n- passiveSeriesId、Requirement、ActivationChance等は必要に応じてAuthoring/Compiler Contractへ追加する。\n- Active Skill Schemaへ無理に押し込むこと自体を目的にしない。\n- ただし最終実行境界はruntimeContractsへ統一する。\n\n【Trigger議題への影響】\n- ON_HIT_DEALT等のEvent名をRuntimeへ直接追加するだけでは確定しない。\n- 各Passive TriggerをFormal Registryでどう定義し、CompilerがどのtriggerContractへ変換するかを正式設計対象とする。",
+      "open_questions": "Passive Triggerを既存Formal Trigger Registryへ追加するか、Passive専用Authoring Registryから同一runtime triggerContract形式へcompileするか。passiveSeriesIdをSkill Master直下かruntimeContracts外のMaster metadataへ置くか。",
+      "conclusion": "Passive専用Generic Runtime案を採用せず、Current Formal Registry / Compiler / runtimeContracts方式へ統合する。",
+      "related_discussion_ids": [
+        "DISC-SKL-PASSIVE-RUNTIME-GUARD-001"
+      ],
+      "artifact_note": "Human correction 2026-08-29",
+      "created_at": "2026-08-29T16:02:00+09:00",
+      "updated_at": "2026-08-29T16:02:00+09:00"
     }
   ],
   "decisions": [
@@ -655,7 +679,7 @@
       "id": "DEC-SKL-PASSIVE-RUNTIME-GUARD-001",
       "title": "Passive Runtime実装Guardと回復/Barrier制限を採用する",
       "status": "Approved",
-      "text": "Passiveは未実装であり、今後Generic Passive Runtimeとして実装する。Trigger再帰・無限連鎖を防止し、同一Passive/同一Triggerの自己再帰を禁止する。瀕死時強化の『全補正+100%』はBase Stat自体ではなく明示したModifier Channelの補正量のみを対象とする。CD999999を実質1戦闘1回用途に使う場合はBattle終了時にPassive Cooldown Stateを次戦へ持ち越さないことを保証する。Trigger Thresholdは発動資格専用、Effect側Stat ThresholdのみをPassive専用Budgetとして使用し、Active Skill価格は参照しない。Passive回復は20Tick周期HP自動回復/MP自動回復のみ許可し、それ以外のPassive回復およびPassive Barrierは廃止する。",
+      "text": "Passiveは未実装であり、今後Generic Passive Runtimeとして実装する。Trigger再帰・無限連鎖を防止し、同一Passive/同一Triggerの自己再帰を禁止する。瀕死時強化の『全補正+100%』はBase Stat自体ではなく明示したModifier Channelの補正量のみを対象とする。CD999999を実質1戦闘1回用途に使う場合はBattle終了時にPassive Cooldown Stateを次戦へ持ち越さないことを保証する。Trigger Thresholdは発動資格専用、Effect側Stat ThresholdのみをPassive専用Budgetとして使用し、Active Skill価格は参照しない。Passive回復は20Tick周期HP自動回復/MP自動回復のみ許可し、それ以外のPassive回復およびPassive Barrierは廃止する。 後続Human決定 DEC-SKL-PASSIVE-FORMAL-PIPELINE-001 により、『Generic Passive Runtimeとして実装する』部分はSuperseded。以後はFormal Registry/Compiler→runtimeContracts→Current Formal Runtime経路を正本とする。",
       "rationale": "Passive構想自体は現実的に実装可能だが、共通Runtime化しないと個別システムが増殖し、Trigger再帰・巨大Cooldown持越し・曖昧な全補正判定・Active/Passive価格混同による破綻が起きるため。",
       "source_discussion_ids": [
         "DISC-SKL-PASSIVE-RUNTIME-GUARD-001"
@@ -663,7 +687,21 @@
       "approved_by": "Human",
       "approved_at": "2026-08-29T15:25:00+09:00",
       "created_at": "2026-08-29T15:25:00+09:00",
-      "updated_at": "2026-08-29T15:25:00+09:00"
+      "updated_at": "2026-08-29T16:02:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-FORMAL-PIPELINE-001",
+      "title": "PassiveをCurrent Formal Registry / Compiler / runtimeContracts方式へ統合する",
+      "status": "Approved",
+      "text": "Passiveは独立Generic Passive Runtimeを新設せず、Passive Authoring Data / Formal RegistryをFormal Compilerで検証・正規化し、runtimeContractsを唯一の最終実行契約としてCurrent Formal Runtimeへ渡す。Game RuntimeはTag/Registryを直接解釈しない。Passive固有のpassiveSeriesId、Requirement、ActivationChance等はAuthoring/Compiler Contractとして定義可能だが、個別Passive専用Runtime、genericRuntime、compileTaggedPassive、Legacy/Fallback経路は追加しない。",
+      "rationale": "Current Formal Skillの正規経路がRegistry/Compiler→runtimeContracts→Runtimeであり、Passiveだけ別Runtimeにすると二重実行系と将来の仕様分岐を作るため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-FORMAL-PIPELINE-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T16:02:00+09:00",
+      "created_at": "2026-08-29T16:02:00+09:00",
+      "updated_at": "2026-08-29T16:02:00+09:00"
     }
   ],
   "specifications": [],
@@ -701,7 +739,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。\n- Passive SkillはActive Skillと別構造とし、基本1 Skill=1 Effectとする。\n- Passive ThresholdはEffect購入Budgetではなく習得Requirementとしてのみ使用する。\n- Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。\n- 最大HP PassiveはVIT Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 最大MP PassiveはMND Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 耐性PassiveはReq20/30/40/50/60、効果+5/+10/+15/+20/+25%の5段階とする。\n- 属性耐性PassiveはMND Requirementを使用する。\n- 状態異常耐性は継続Damage系をVIT Requirement、行動不能・行動阻害系をMND Requirementとする。\n- 付与系Passiveは3段階Req20/40/60とし、指定Trigger成立時に参照先Active Skill Effectを追加適用する。\n- 付与系PassiveはPassive独自のDamage/Duration/Tick値を持たず、段階ごとに参照Active Effect LevelをLv1/Lv2/Lv3へ上げる。\n- 付与系PassiveのTriggerは通常攻撃に限定しない。\n- STR/VIT/AGI/DEX/INT/MND/LUK直接上昇Passiveは現段階では作成しない。\n- Counter PassiveはReq20/40/60、発動率25/50/75%、被攻撃Hit時に通常攻撃Active Skill(100%)を参照実行する。\n- Block率上昇/Block性能上昇は各VIT Req20/30/40/50/60の5段階、基礎値へ+5/+10/+15/+20/+25%の割合乗算とする。\n- HP自動回復はReq20/40/60で最大HP1/2/3%を20Tickごとに回復する。\n- MP自動回復はReq20/40/60で最大MP0.5/1.0/1.5%を20Tickごとに回復する。\n- 攻撃Hit時HP回復はReq20/40/60で成立Hitごとに最大HP0.5/1.0/1.5%回復する。\n- 攻撃Hit時MP回復はReq20/40/60で成立Hitごとに最大MP0.25/0.5/0.75%回復する。\n- Hit時回復は1Action最大1回制限を設けず、成立Hit数ぶん発動可能とする。\n- 撃破時HP/MP回復Passiveは採用しない。\n- MP消費軽減PassiveはReq20/40/60で5/10/15%、Calculated MP Costへ割合適用する。\n- Cooldown短縮/CastTime短縮Passiveは各Req20/40/60で5/10/15%とする。\n- Cooldown/CastTime短縮後のTickはceilで切り上げる。\n- Counter PassiveのRequirement StatはSTRとし、STR20/40/60で発動率25/50/75%とする。\n- HP自動回復はVIT20/40/60、MP自動回復はMND20/40/60とする。\n- 攻撃Hit時HP/MP回復はDEX20/40/60とする。\n- MP消費軽減はMND20/40/60とし、Final MP Costはceilで切り上げる。\n- Cooldown短縮はAGI20/40/60、CastTime短縮はINT20/40/60とする。\n- Critical Rate/Critical Damage PassiveはLUK20/30/40/50/60の5段階で基礎値×1.05/1.10/1.15/1.20/1.25とする。\n- Critical時Active Effect PassiveはLUK20/40/60の3段階とする。\n- 被Critical Damage軽減はCritical増加分のみ5/10/15/20/25%軽減する。\n- Battle Start/回避時/Block時/被Hit時/攻撃Hit時のActive Effect参照型Trigger Passiveを採用する。\n- 致死耐えPassiveはVIT40、Damageによる致死直前にHP1で生存、Cooldown999999 Tickとする。\n- 瀕死時強化PassiveはVIT20/40/60、HP5/10/15%以下で全補正+100%およびAction Gauge増加量+100%、20Tick持続、Cooldown999999 Tickとする。\n- Passive SkillにpassiveSeriesIdを持たせ、同一Characterで同一passiveSeriesIdを複数同時装備することを禁止する。\n- PassiveはGeneric Passive Runtimeとして実装し、個別Passive専用Runtimeの増殖を避ける。\n- Trigger型Passiveは同一Passive/同一Triggerの自己再帰を禁止し、無限連鎖を防止する。\n- 瀕死時強化の『全補正+100%』はBase Stat自体ではなく明示したModifier Channelの補正量のみを対象にする。\n- CD999999を実質1戦闘1回に使う場合、Battle終了時にPassive Cooldown Stateを次戦へ持ち越さない。\n- Trigger Thresholdは発動資格専用でEffect Budgetへ加算しない。\n- Trigger型PassiveのEffect性能は別Stat Thresholdを1〜3個持たせ、そのThresholdのみをPassive専用Budgetとして使用する。\n- Passive Effect価格はActive Skill価格と分離し、Active価格表を参照しない。\n- Passive回復は20Tick周期HP自動回復と20Tick周期MP自動回復のみ許可する。\n- 攻撃Hit時/被Hit時/Critical時/Block時/回避時/Battle Start時等のPassive回復は廃止する。\n- Passive Barrier Effectは廃止する。Active SkillのHeal/Barrierには影響しない。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。\n- Passive SkillはActive Skillと別構造とし、基本1 Skill=1 Effectとする。\n- Passive ThresholdはEffect購入Budgetではなく習得Requirementとしてのみ使用する。\n- Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。\n- 最大HP PassiveはVIT Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 最大MP PassiveはMND Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 耐性PassiveはReq20/30/40/50/60、効果+5/+10/+15/+20/+25%の5段階とする。\n- 属性耐性PassiveはMND Requirementを使用する。\n- 状態異常耐性は継続Damage系をVIT Requirement、行動不能・行動阻害系をMND Requirementとする。\n- 付与系Passiveは3段階Req20/40/60とし、指定Trigger成立時に参照先Active Skill Effectを追加適用する。\n- 付与系PassiveはPassive独自のDamage/Duration/Tick値を持たず、段階ごとに参照Active Effect LevelをLv1/Lv2/Lv3へ上げる。\n- 付与系PassiveのTriggerは通常攻撃に限定しない。\n- STR/VIT/AGI/DEX/INT/MND/LUK直接上昇Passiveは現段階では作成しない。\n- Counter PassiveはReq20/40/60、発動率25/50/75%、被攻撃Hit時に通常攻撃Active Skill(100%)を参照実行する。\n- Block率上昇/Block性能上昇は各VIT Req20/30/40/50/60の5段階、基礎値へ+5/+10/+15/+20/+25%の割合乗算とする。\n- HP自動回復はReq20/40/60で最大HP1/2/3%を20Tickごとに回復する。\n- MP自動回復はReq20/40/60で最大MP0.5/1.0/1.5%を20Tickごとに回復する。\n- 攻撃Hit時HP回復はReq20/40/60で成立Hitごとに最大HP0.5/1.0/1.5%回復する。\n- 攻撃Hit時MP回復はReq20/40/60で成立Hitごとに最大MP0.25/0.5/0.75%回復する。\n- Hit時回復は1Action最大1回制限を設けず、成立Hit数ぶん発動可能とする。\n- 撃破時HP/MP回復Passiveは採用しない。\n- MP消費軽減PassiveはReq20/40/60で5/10/15%、Calculated MP Costへ割合適用する。\n- Cooldown短縮/CastTime短縮Passiveは各Req20/40/60で5/10/15%とする。\n- Cooldown/CastTime短縮後のTickはceilで切り上げる。\n- Counter PassiveのRequirement StatはSTRとし、STR20/40/60で発動率25/50/75%とする。\n- HP自動回復はVIT20/40/60、MP自動回復はMND20/40/60とする。\n- 攻撃Hit時HP/MP回復はDEX20/40/60とする。\n- MP消費軽減はMND20/40/60とし、Final MP Costはceilで切り上げる。\n- Cooldown短縮はAGI20/40/60、CastTime短縮はINT20/40/60とする。\n- Critical Rate/Critical Damage PassiveはLUK20/30/40/50/60の5段階で基礎値×1.05/1.10/1.15/1.20/1.25とする。\n- Critical時Active Effect PassiveはLUK20/40/60の3段階とする。\n- 被Critical Damage軽減はCritical増加分のみ5/10/15/20/25%軽減する。\n- Battle Start/回避時/Block時/被Hit時/攻撃Hit時のActive Effect参照型Trigger Passiveを採用する。\n- 致死耐えPassiveはVIT40、Damageによる致死直前にHP1で生存、Cooldown999999 Tickとする。\n- 瀕死時強化PassiveはVIT20/40/60、HP5/10/15%以下で全補正+100%およびAction Gauge増加量+100%、20Tick持続、Cooldown999999 Tickとする。\n- Passive SkillにpassiveSeriesIdを持たせ、同一Characterで同一passiveSeriesIdを複数同時装備することを禁止する。\n- PassiveはCurrent Formal Registry / Compiler / runtimeContracts方式へ統合し、個別Passive専用Runtime・genericRuntime・Legacy/Fallback経路を作らない。\n- Trigger型Passiveは同一Passive/同一Triggerの自己再帰を禁止し、無限連鎖を防止する。\n- 瀕死時強化の『全補正+100%』はBase Stat自体ではなく明示したModifier Channelの補正量のみを対象にする。\n- CD999999を実質1戦闘1回に使う場合、Battle終了時にPassive Cooldown Stateを次戦へ持ち越さない。\n- Trigger Thresholdは発動資格専用でEffect Budgetへ加算しない。\n- Trigger型PassiveのEffect性能は別Stat Thresholdを1〜3個持たせ、そのThresholdのみをPassive専用Budgetとして使用する。\n- Passive Effect価格はActive Skill価格と分離し、Active価格表を参照しない。\n- Passive回復は20Tick周期HP自動回復と20Tick周期MP自動回復のみ許可する。\n- 攻撃Hit時/被Hit時/Critical時/Block時/回避時/Battle Start時等のPassive回復は廃止する。\n- Passive Barrier Effectは廃止する。Active SkillのHeal/Barrierには影響しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -710,7 +748,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-29T15:25:00+09:00"
+      "updated_at": "2026-08-29T16:02:00+09:00"
     }
   ],
   "checks": [],
@@ -795,6 +833,10 @@
     {
       "at": "2026-08-29T15:25:00+09:00",
       "message": "Registered Passive runtime implementation guards: Generic Passive Runtime, trigger recursion prevention, explicit modifier-channel scope for low-HP burst, battle-end reset requirement for CD999999 passives, trigger-threshold/effect-budget separation with Passive-only pricing, and restriction of Passive healing to 20-tick HP/MP auto regeneration only; all other Passive healing and Passive barriers are rejected."
+    },
+    {
+      "at": "2026-08-29T16:02:00+09:00",
+      "message": "Human correction: Passive implementation direction changed from a standalone Generic Passive Runtime concept to the Current Formal Registry / Compiler -> runtimeContracts -> Formal Runtime pipeline. Runtime-side Tag interpretation, passive genericRuntime, compileTaggedPassive, Legacy/Fallback paths are prohibited."
     }
   ]
 }
