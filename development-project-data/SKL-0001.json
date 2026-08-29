@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T07:12:18.049Z"
+    "updated_at": "2026-08-29T07:47:55.186Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -346,6 +346,24 @@
       "source_id": "conversation:2026-08-29 passive formal pipeline correction",
       "created_at": "2026-08-29T16:02:00+09:00",
       "updated_at": "2026-08-29T16:02:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-CRITICAL-HIT-ORDER-001",
+      "text": "Battleの各Hit/StrikeではCritical判定を命中判定より先に行う。Critical成立時は必中とし、Accuracy/EvasionまたはMagic Accuracy/Magic Resistanceによる命中判定そのものを実施しない。Critical不成立時のみ通常の命中判定を行う。Multi-hitおよびDual Wieldは各Hit/Strikeごとに独立してCritical判定→必要時のみ命中判定を行う。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 critical before hit guaranteed-hit",
+      "created_at": "2026-08-29T16:45:00+09:00",
+      "updated_at": "2026-08-29T16:45:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-CRITICAL-HIT-CORRECTION-001",
+      "text": "Current Battle Runtimeが命中判定→Critical判定の順である場合は仕様不整合として正規RuntimeをCorrectionする。Passive側の迂回処理で吸収せず、通常攻撃・Formal Skill DAMAGE・Studio Simulationを同一のCritical先行順へ揃える。Critical Rate/Damage生成式、物理/魔法命中式、Defense/Resistance/Block/Shieldの既存計算式、Multi-hit/Dual Wieldの独立Hit構造はこのCorrectionで不要に再開発しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 correct current runtime if hit-before-critical",
+      "created_at": "2026-08-29T16:45:00+09:00",
+      "updated_at": "2026-08-29T16:45:00+09:00"
     }
   ],
   "source_baseline": {
@@ -532,6 +550,22 @@
       "artifact_note": "Human correction 2026-08-29",
       "created_at": "2026-08-29T16:02:00+09:00",
       "updated_at": "2026-08-29T16:02:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-CRITICAL-HIT-ORDER-001",
+      "title": "Critical先行判定・Critical必中・Current Runtime修正影響範囲",
+      "status": "Resolved",
+      "summary": "Critical判定を命中判定より先に行い、Critical成立時は命中判定を省略して必中とする。Current Runtimeが命中→Critical順の場合はBattle正規経路の仕様不整合として修正対象とする。",
+      "body": "【確定処理順】\n- 各Hit/Strike単位でCritical判定を先に行う。\n- Critical成立時は必中。命中率100%としてRollするのではなく、命中判定自体を実施しない。\n- Critical不成立時のみ通常命中判定を行う。\n- Multi-hit / Dual Wieldは各Hit / Strikeごとに独立判定する。\n\n【Critical成立時】\nCritical判定 → Critical成立 → Hit確定 → 既存Damage後段処理へ進む。\nCritical成立HitではAccuracy/EvasionおよびMagic Accuracy/Magic Resistanceを参照しない。\n\n【Critical不成立時】\nCritical判定 → Critical不成立 → 通常命中判定 → Hit / Miss。\nMissならそのHitのDamage/APPLY等の後続処理へ進まない。\n\n【Current Runtime Correction対象】\n- 通常攻撃のHit/Strike判定順。\n- Formal Skill DAMAGEのHit判定順。\n- Studio Simulationの通常攻撃/Formal Skill判定順。\n- Critical必中時にHit Roll未実施を識別できるTrace/Evidence。\n- Critical先行を保証する回帰Test。\n\n【変更しない領域】\n- Critical Rate生成式およびCRITICAL_RATE Formal Contribution。\n- Critical Damage生成式。\n- Accuracy / Evasion計算式。\n- Magic Accuracy / Magic Resistance計算式。\n- Defense / Resistance / Block / Shieldの既存計算式。\n- Multi-hit / Dual Wieldの各Hit/Strike独立構造。\n- Status / APPLY Lifecycle。\n\n【影響範囲】\n- Critical RateはDamage期待値だけでなく実質Hit率にも影響する。\n- Critical成立Hitは通常どおりHit成立後のAPPLY/Status等へ進む。\n- CriticalとEvadeは同一Hitでは共存しない。\n- Passive TriggerはCritical成立EventとHit成立Eventを正しいBattle順序に接続する。\n- Studio Simulationは乱数消費順が変わる可能性があるため固定Seed結果/Evidenceを再検証する。\n\n【実装Guard】\n- Passive専用Runtime、Legacy/Fallback、Runtime内Tag解釈を追加しない。\n- Current Formal Registry / Compiler → runtimeContracts → Current Formal Runtimeの正規経路を維持する。\n- 判定順修正のために既存計算式を不要に再設計しない。",
+      "open_questions": "Critical必中時のTrace field名/nullable表現、保護対象Critical Testの更新範囲はSOURCE_UPDATE実装前のSource確認で確定する。",
+      "conclusion": "Critical先行・Critical必中をBattle正規仕様として採用する。Current Runtimeが命中→Critical順の場合は仕様不整合として通常攻撃・Formal Skill DAMAGE・Studio Simulationを同一順序へCorrectionする。",
+      "related_discussion_ids": [
+        "DISC-SKL-MP-RANGE-CRIT-001",
+        "DISC-SKL-PASSIVE-FORMAL-PIPELINE-001"
+      ],
+      "artifact_note": "Human approved critical-before-hit guaranteed-hit rule and correction scope 2026-08-29",
+      "created_at": "2026-08-29T16:45:00+09:00",
+      "updated_at": "2026-08-29T16:45:00+09:00"
     }
   ],
   "decisions": [
@@ -702,6 +736,20 @@
       "approved_at": "2026-08-29T16:02:00+09:00",
       "created_at": "2026-08-29T16:02:00+09:00",
       "updated_at": "2026-08-29T16:02:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-CRITICAL-HIT-ORDER-001",
+      "title": "Critical判定を命中判定より先に行いCritical成立時は必中とする",
+      "status": "Approved",
+      "text": "Battleの各Hit/StrikeではCritical判定を命中判定より先に行う。Critical成立時は必中とし、Accuracy/EvasionまたはMagic Accuracy/Magic Resistanceによる命中判定を実施しない。Critical不成立時のみ通常の命中判定を行う。Multi-hit/Dual Wieldは各Hit/Strikeで独立判定する。Current Runtimeが命中→Critical順の場合は仕様不整合としてCorrection対象とし、通常攻撃・Formal Skill DAMAGE・Studio Simulationを同じ正規順序へ揃える。Passive側の迂回処理、専用Runtime、Legacy/Fallbackは追加しない。Critical Rate/Damage式、命中式、Defense/Resistance/Block/Shield式は変更しない。",
+      "rationale": "Critical成立時は必中とするHuman決定をBattle全経路で一貫させ、Passive Triggerや魔法命中を含む後続仕様がCurrent Runtimeの誤った判定順へ依存しないようにするため。",
+      "source_discussion_ids": [
+        "DISC-SKL-CRITICAL-HIT-ORDER-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T16:45:00+09:00",
+      "created_at": "2026-08-29T16:45:00+09:00",
+      "updated_at": "2026-08-29T16:45:00+09:00"
     }
   ],
   "specifications": [],
@@ -749,6 +797,24 @@
       },
       "created_at": "2026-08-28T12:49:00+09:00",
       "updated_at": "2026-08-29T16:02:00+09:00"
+    },
+    {
+      "id": "TASK-SKL-CRITICAL-HIT-ORDER-001",
+      "box_id": "BOX-SKL-0001",
+      "title": "Critical先行・Critical必中へCurrent Battle RuntimeをCorrectionする",
+      "status": "Todo",
+      "execution_order": 2,
+      "depends_on": [],
+      "acceptance_criteria": "- Source実装前に通常攻撃・Formal Skill DAMAGE・Studio Simulation・Trace/Testの具体修正箇所を再確認する。\n- 各Hit/StrikeでCritical判定を命中判定より先に行う。\n- Critical成立時は命中判定を実施せずHit確定とする。\n- Critical不成立時のみ物理/魔法の通常命中判定を行う。\n- Critical成立HitとEvadeが同一Hitで共存しない。\n- Multi-hit / Dual Wieldは各Hit/Strikeごとに独立してCritical→必要時Hit判定を行う。\n- 通常攻撃、Formal Skill DAMAGE、Studio Simulationを同じ順序へ揃える。\n- Critical Rate/Damage、Accuracy/Evasion、Magic Accuracy/Magic Resistance、Defense/Resistance/Block/Shieldの既存式を不要に変更しない。\n- Passive専用Runtime、Legacy/Fallback、Runtime内Tag解釈を追加しない。\n- Critical成立時にHit Roll未実施であることをTrace/Evidenceで識別可能にする。\n- Critical成立かつ低命中率ケース、Critical不成立Hit/Miss、Multi-hit、Dual Wield、Game/Studio parityを回帰確認する。\n- 保護Test変更が必要な場合はCurrent Workflowの保護Test変更手順に従う。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-29T16:45:00+09:00",
+      "updated_at": "2026-08-29T16:45:00+09:00"
     }
   ],
   "checks": [],
@@ -837,6 +903,10 @@
     {
       "at": "2026-08-29T16:02:00+09:00",
       "message": "Human correction: Passive implementation direction changed from a standalone Generic Passive Runtime concept to the Current Formal Registry / Compiler -> runtimeContracts -> Formal Runtime pipeline. Runtime-side Tag interpretation, passive genericRuntime, compileTaggedPassive, Legacy/Fallback paths are prohibited."
+    },
+    {
+      "at": "2026-08-29T16:45:00+09:00",
+      "message": "Human adopted Critical-before-Hit battle order. Each Hit/Strike checks Critical first; Critical success guarantees Hit and skips the normal hit roll. Current Hit-before-Critical Battle paths are registered for SOURCE_UPDATE Correction; existing Critical/Hit/Defense formulas and the Current Formal runtime pipeline remain unchanged."
     }
   ]
 }
