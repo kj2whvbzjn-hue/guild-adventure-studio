@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T00:40:39.687Z"
+    "updated_at": "2026-08-29T00:51:58.064Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -20,7 +20,7 @@
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
     "theme": "Magic Damage / Build-wide Revalidation",
-    "goal": "採用済みMagic Accuracy/Magic Resistance装備Requirement係数式と、Threshold Budget 10〜110、Base MP=Skill Lv×8、Range Cost(SINGLE×1/列系×2/ALL×3)の暫定PASSを基準に、魔法Damage・属性・MOD・装備特化を含む残課題を検証する。"
+    "goal": "採用済みMagic Accuracy/Magic Resistance装備Requirement係数式と、Magic Defense=armor_iLv*MND coeff*K（現行K=1）の割合軽減式を基準に、魔法Damage・属性・MOD・装備特化を含む残課題を検証する。"
   },
   "project_rules": [
     {
@@ -121,6 +121,15 @@
       "source_id": "conversation:2026-08-29 magic hit formula adopted",
       "created_at": "2026-08-29T09:39:00+09:00",
       "updated_at": "2026-08-29T09:39:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-MAGIC-DEFENSE-001",
+      "text": "魔法Damage軽減は防具のMND Requirement係数からMagic Defenseを生成する。Magic Defense = armor_iLv * MND_requirement_coefficient * K。Magic Damage Reduction = Magic Defense / (Magic Defense + 100)。Final Magic Damage = Base Magic Damage * (1 - Magic Damage Reduction) とする。KはBalance調整用の可変係数として式に保持し、現行Balance SeedはK=1を採用する。Character MNDを直接使用せず、防具Requirement係数を参照する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 magic defense K=1 adopted",
+      "created_at": "2026-08-29T10:00:00+09:00",
+      "updated_at": "2026-08-29T10:00:00+09:00"
     }
   ],
   "source_baseline": {
@@ -229,6 +238,22 @@
       "artifact_note": "Human approved 2026-08-29",
       "created_at": "2026-08-29T09:39:00+09:00",
       "updated_at": "2026-08-29T09:39:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-MAGIC-DEFENSE-001",
+      "title": "MND Requirement係数による魔法Damage軽減式",
+      "status": "Resolved",
+      "summary": "防具MND Requirement係数からMagic Defenseを生成し、可変係数Kを持つ割合軽減式を採用する。現行SeedはK=1。",
+      "body": "【採用式】\n- Magic Defense = armor_iLv * MND requirement coeff * K。\n- Magic Damage Reduction = Magic Defense / (Magic Defense + 100)。\n- Final Magic Damage = Base Magic Damage * (1 - Magic Damage Reduction)。\n\n【係数】\n- KはBalance調整用の可変係数として式に残す。\n- 現行Balance SeedはK=1。\n\n【設計意図】\n- Character MNDを直接使用せず、防具のMND Requirement係数から魔法防御性能を生成する。\n- 命中/抵抗と同様に装備特性を反映する。\n- 将来MOD・装備特化・高Lv Buildで再検証した際、式を変更せずKのみで全体強度を調整可能にする。\n\n【K=1試算傾向】\n- Lv50ローブは約39.8%軽減。\n- Lv50重装は約24.9%軽減。\n- Lv50軽装は約8〜10%軽減。\n- Lv50魔術師の素Damage277に対し、ローブへの命中時Damageは約167（HP650に対し約25.7%）となる。",
+      "open_questions": "MOD、装備特化、属性、Critical、Range、魔法命中を含むBuild総合TestでK=1の最終妥当性を再確認する。",
+      "conclusion": "可変係数Kを持つMND Requirementベースの魔法Damage軽減式を採用し、現行SeedをK=1とする。",
+      "related_discussion_ids": [
+        "DISC-SKL-MAGIC-HIT-001",
+        "DISC-SKL-EFFECT-VALUE-SEED-001"
+      ],
+      "artifact_note": "Human approved K=1 2026-08-29",
+      "created_at": "2026-08-29T10:00:00+09:00",
+      "updated_at": "2026-08-29T10:00:00+09:00"
     }
   ],
   "decisions": [
@@ -315,6 +340,20 @@
       "approved_at": "2026-08-29T09:39:00+09:00",
       "created_at": "2026-08-29T09:39:00+09:00",
       "updated_at": "2026-08-29T09:39:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-MAGIC-DEFENSE-001",
+      "title": "MND Requirementベース魔法Damage軽減式とK=1を採用する",
+      "status": "Approved",
+      "text": "Magic Defense = armor_iLv*MND_requirement_coefficient*K、Magic Damage Reduction = Magic Defense/(Magic Defense+100)、Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。Kは可変Balance係数として式に保持し、現行Balance SeedはK=1を採用する。Character MNDの直接値ではなく防具MND Requirement係数を使用する。",
+      "rationale": "装備種別のMND特性を魔法Damage耐性へ直接反映しつつ、固定減算ではなく割合軽減でLv帯を跨いだ調整を行うため。Kを独立可変係数として残すことで、MOD・装備特化等を含む後続検証で式自体を変更せず強度調整できる。K=1試算ではローブ約40%、重装約25%、軽装約8〜10%のLv50軽減となり、現段階の基礎Balanceとして採用した。",
+      "source_discussion_ids": [
+        "DISC-SKL-MAGIC-DEFENSE-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T10:00:00+09:00",
+      "created_at": "2026-08-29T10:00:00+09:00",
+      "updated_at": "2026-08-29T10:00:00+09:00"
     }
   ],
   "specifications": [],
@@ -352,7 +391,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -361,7 +400,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-29T09:39:00+09:00"
+      "updated_at": "2026-08-29T10:00:00+09:00"
     }
   ],
   "checks": [],
@@ -426,6 +465,10 @@
     {
       "at": "2026-08-29T09:39:00+09:00",
       "message": "Human adopted equipment-requirement-based magic hit formula on top of current SKL-0001 baseline: Magic Accuracy=weapon_iLv*(INT coeff+DEX coeff)*2; Magic Resistance=armor_iLv*(AGI coeff+MND coeff)*4; Magic Hit Rate=min(100%, Accuracy/Resistance*100)."
+    },
+    {
+      "at": "2026-08-29T10:00:00+09:00",
+      "message": "Human adopted MND-requirement-based magic damage reduction formula: Magic Defense=armor_iLv*MND coeff*K; Reduction=Magic Defense/(Magic Defense+100); Final Magic Damage=Base Magic Damage*(1-Reduction). K remains variable; current balance seed K=1."
     }
   ]
 }
