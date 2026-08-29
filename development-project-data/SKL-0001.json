@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T00:51:58.064Z"
+    "updated_at": "2026-08-29T02:02:50.308Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Magic Damage / Build-wide Revalidation",
-    "goal": "採用済みMagic Accuracy/Magic Resistance装備Requirement係数式と、Magic Defense=armor_iLv*MND coeff*K（現行K=1）の割合軽減式を基準に、魔法Damage・属性・MOD・装備特化を含む残課題を検証する。"
+    "theme": "Passive Skill Design",
+    "goal": "採用済みPassive初期Framework（1 Skill=1 Effect、HP/MP 3段階、耐性5段階、付与系Active Effect参照型）を基準に、Counter/Block/回復/Resource/時間短縮/特殊Trigger系Passiveを設計する。"
   },
   "project_rules": [
     {
@@ -130,6 +130,42 @@
       "source_id": "conversation:2026-08-29 magic defense K=1 adopted",
       "created_at": "2026-08-29T10:00:00+09:00",
       "updated_at": "2026-08-29T10:00:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-FRAMEWORK-001",
+      "text": "Passive SkillはActive Skillと異なる構造として扱う。基本は1 Skill = 1 Passive Effectとし、ThresholdはEffect購入Budgetへ変換せず習得Requirementとしてのみ使用する。Passiveは原則としてMP/Cooldown/CastTime/Target Range Costを持たない。同一Passive系列は必要な段階数だけ個別Skillとして作成し、Active Skill Lv1〜11をそのまま複製しない。能力値STR/VIT/AGI/DEX/INT/MND/LUKを直接上昇させるPassiveは現段階では作成対象外とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive framework",
+      "created_at": "2026-08-29T10:35:00+09:00",
+      "updated_at": "2026-08-29T10:35:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-HPMP-001",
+      "text": "最大HP/最大MP Passiveは3段階とする。RequirementはLv1=20、Lv2=40、Lv3=60。最大HP PassiveはVIT Requirementを使用し、効果は+5%/+10%/+15%。最大MP PassiveはMND Requirementを使用し、効果は+5%/+10%/+15%。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive hp mp",
+      "created_at": "2026-08-29T10:35:00+09:00",
+      "updated_at": "2026-08-29T10:35:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-RESIST-001",
+      "text": "耐性Passiveは5段階とする。各段階のRequirement/効果はLv1=20/+5%、Lv2=30/+10%、Lv3=40/+15%、Lv4=50/+20%、Lv5=60/+25%。属性耐性PassiveはMND Requirementを使用する。状態異常耐性は性質でRequirement Statを分け、継続Damage系はVIT、行動不能・行動阻害系はMNDとする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive resistance tiers",
+      "created_at": "2026-08-29T10:35:00+09:00",
+      "updated_at": "2026-08-29T10:35:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-APPLY-001",
+      "text": "付与系Passiveは3段階とし、Requirementは20/40/60を基本とする。Passive側でDamage/Duration/Tick等の性能値を独自定義せず、指定Trigger成立時に参照先Active Skill Effectを追加適用する。段階ごとに参照するActive Effect LevelをLv1/Lv2/Lv3として上げる。Triggerは通常攻撃に限定せず、攻撃命中時・Critical時・被弾時・回避時・特定Skill命中時などPassiveごとに定義可能とする。Passive側の基本構造はTrigger + Referenced Active Effect + Referenced Effect Levelとする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-29 passive apply active-effect reference",
+      "created_at": "2026-08-29T10:35:00+09:00",
+      "updated_at": "2026-08-29T10:35:00+09:00"
     }
   ],
   "source_baseline": {
@@ -254,6 +290,22 @@
       "artifact_note": "Human approved K=1 2026-08-29",
       "created_at": "2026-08-29T10:00:00+09:00",
       "updated_at": "2026-08-29T10:00:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-001",
+      "title": "Passive Skill Framework・段階Requirement・Effect再利用方針",
+      "status": "Resolved",
+      "summary": "PassiveはActiveとは別構造とし、基本1 Skill=1 Effect。Thresholdは習得Requirement専用。HP/MP、耐性、付与系の初期段階と数値を決定した。",
+      "body": "【基本構造】\n- Passive SkillはActive Skillと構造を分ける。\n- 基本は1 Skill = 1 Passive Effect。\n- ActiveのようにThresholdをAbility Budgetへ変換して複数Effectを購入しない。\n- ThresholdはPassive Skillの習得Requirementとしてのみ使用する。\n- Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。\n- 同一系統をActive同様11段階で量産せず、必要な段階数だけ作る。\n- 能力値STR/VIT/AGI/DEX/INT/MND/LUKの直接上昇Passiveは現段階では作成しない。\n\n【最大HP / 最大MP Passive】\n- 3段階。\n- Requirement: 20 / 40 / 60。\n- 最大HP: VIT Requirement。効果 +5% / +10% / +15%。\n- 最大MP: MND Requirement。効果 +5% / +10% / +15%。\n\n【耐性Passive】\n- 5段階。\n- Lv1: Req20 / +5%。\n- Lv2: Req30 / +10%。\n- Lv3: Req40 / +15%。\n- Lv4: Req50 / +20%。\n- Lv5: Req60 / +25%。\n- 属性耐性: MND Requirement。\n- 状態異常耐性: 継続Damage系はVIT Requirement、行動不能/行動阻害系はMND Requirement。\n\n【付与系Passive】\n- 3段階。\n- Requirement: 20 / 40 / 60。\n- Passive独自のDamage/Duration/Tick値は持たない。\n- 指定Trigger成立時に、参照先Active Skill Effectを追加適用する。\n- Lv1/Lv2/Lv3で参照Active Effect Levelを上げる。\n- Triggerは通常攻撃に限定しない。\n- Trigger例: 攻撃命中時、Critical時、被弾時、回避時、特定Skill命中時等。\n- 基本データ項目: Trigger / Referenced Active Effect / Referenced Effect Level。\n\n【現時点の候補分類】\n- 最大値系: 最大HP、最大MP。\n- 耐性系: FIRE/ICE/LIGHTNING/WIND耐性、各Status耐性。\n- 付与系: Poison等のActive Effect参照型。\n- 後続設計候補: Counter、Block系、HP/MP回復系、Resource軽減、Cooldown/Cast短縮、特殊Trigger系。",
+      "open_questions": "Counter/Block/HP-MP回復/Resource軽減/時間短縮/特殊Trigger系の段階数・Requirement・効果値、付与系の各Trigger別採用可否、Active Effect Level参照の実装表現を後続で決定する。",
+      "conclusion": "Passive初期Frameworkとして、1 Skill=1 Effect、Requirement専用Threshold、HP/MP 3段階(20/40/60・5/10/15%)、耐性5段階(20〜60・5〜25%)、付与系3段階(20/40/60・Active Effect参照型)を採用する。",
+      "related_discussion_ids": [
+        "DISC-SKL-001",
+        "DISC-SKL-EFFECT-VALUE-SEED-001"
+      ],
+      "artifact_note": "Human approved passive framework 2026-08-29",
+      "created_at": "2026-08-29T10:35:00+09:00",
+      "updated_at": "2026-08-29T10:35:00+09:00"
     }
   ],
   "decisions": [
@@ -354,6 +406,20 @@
       "approved_at": "2026-08-29T10:00:00+09:00",
       "created_at": "2026-08-29T10:00:00+09:00",
       "updated_at": "2026-08-29T10:00:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-001",
+      "title": "Passive Skill初期FrameworkとHP/MP・耐性・付与系段階を採用する",
+      "status": "Approved",
+      "text": "Passive SkillはActive Skillと異なる構造として扱い、基本1 Skill=1 Passive Effectとする。ThresholdはEffect購入Budgetへ変換せず習得Requirementとしてのみ使用し、Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。最大HPはVIT Requirement 20/40/60で+5/+10/+15%、最大MPはMND Requirement 20/40/60で+5/+10/+15%。耐性Passiveは5段階でReq20/30/40/50/60、効果+5/+10/+15/+20/+25%。属性耐性はMND、状態異常耐性は継続Damage系をVIT、行動不能・行動阻害系をMND Requirementとする。付与系Passiveは3段階Req20/40/60とし、Passive独自性能ではなく指定Trigger成立時に参照先Active Skill Effectを追加適用する。段階ごとに参照Active Effect LevelをLv1/Lv2/Lv3へ上げ、Triggerは通常攻撃に限定しない。能力値直接上昇Passiveは現段階では作成しない。",
+      "rationale": "Passiveは常時効果・Trigger効果が中心で、ActiveのThreshold Budget購入方式をそのまま適用すると構造が不自然になるため。段階数を必要最小限にし、Requirementで取得難度を調整しつつ、付与性能はActive Effectへ依存させることで重複定義を避ける。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T10:35:00+09:00",
+      "created_at": "2026-08-29T10:35:00+09:00",
+      "updated_at": "2026-08-29T10:35:00+09:00"
     }
   ],
   "specifications": [],
@@ -391,7 +457,7 @@
       "status": "Todo",
       "execution_order": 1,
       "depends_on": [],
-      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。",
+      "acceptance_criteria": "- Skill Lv1〜11の総Threshold Budgetを10/20/30/40/50/60/70/80/90/100/110として使用する。\n- 各Skillは1〜3 Stat Requirementを持てる。\n- 使用Statへの配分合計は当該Skill Lvの総Threshold Budgetと一致させる。\n- 各Stat Threshold値はそのままAbility購入Budgetとして全量使用する。\n- 1 Stat Threshold最大値は100。\n- 各職業のLv別成長期待値Evidenceを参照してThreshold配分の実現可能性を確認する。\n- STR=直接威力、DEX=付与/Status/DOT、AGI=Multi-hitを既存Authorityとして保持する。\n- Stat Budgetの別用途への自由転用を原則禁止する。仮例: STR BudgetはDamage Up系のみ。\n- VIT/INT/MND/LUKの購入可能能力と価格をCandidateとして設計し、Human確認前にFreezeしない。\n- 単純上位互換Skill系列を許可する。\n- 単発攻撃Lv1=110%、Lv5=130%、Lv10=160%は仮例であり正式Power Authorityにはしない。\n- Threshold Totalから基礎Resource Costを導く候補式を作り、Target Range Cost係数Candidateを定義する。\n- Current Formal Skill Contractを変更しない。\n- Simulation/Testは別途Test PlanをHuman承認するまで実行しない。\n- 同一Effect/Abilityの価格は購入Statによらず同一とし、Statごとの割引・割増を行わない。\n- DEXとMNDは命中上昇Accessを持ち、DEXは命中低下Accessも持つ。\n- AGIはMulti-hit Debt返済、AGI増加、速度・手数系Accessを担当する。\n- Target RangeはAbility購入対象から除外し、Range係数でResource Cost側へ反映する。\n- 属性はCurrent仕様に存在するものだけを使用し、属性付与Accessは別表で管理する。\n- Magic Fixed Powerの暫定SeedはSkill Lv1〜11で16/24/31/39/47/55/62/70/78/85/93を使用する。\n- Buff/Debuffを含む能力値増加/低下系POWERは1 Budget=0.3 percentage point、1 Effect上限30%とする。\n- HealはMND Budget 1=1%、Barrierは1 Budget=1%の暫定Seedとする。\n- DOTはDEX Budget 1=1 Stack完走総Damage 1とする。\n- Status Durationはfloor(Budget/5) Tick（1 Budget=0.2 Tick相当、切り捨て）とする。Status別個別上限は現時点では設けない。\n- 上記数値はHuman確認済みの暫定Balance Seedであり、正式Specification Freezeではない。\n- INT Budget 1=Magic Fixed Power 1とする。\n- Critical RateはLUK 1=+0.1 percentage point、Critical Damage倍率はLUK 1=+2%の暫定Seedとする。\n- Critical系は同一Skill内で両方購入可能だが、LUK Budget 1で両方を同時取得してはならない。\n- Base MP CostはSkill Lv×8とする。\n- Range暫定CostはSINGLE×1/CD0/Cast0、FRONT/BACK×2/CD7/Cast4、RANDOM=2対象固定×2/CD7/Cast4、PIERCE=前後列ライン攻撃×2/CD7/Cast4、ALL×3/CD14/Cast7とする。\n- PIERCEは実装可否未確定のBalance仮Seedとする。\n- Skill Lv10までは1 Stat構成を許可する。\n- Skill Lv11は総Threshold Budgetが110のため2 Stat以上を必要とする。\n- 単純Heal/Barrier/純魔法など、Skill内容上不要なStat Requirementを強制しない。\n- 属性付与は1属性=10 Budgetとする。\n- 属性AccessはSTR=FIRE、AGI=LIGHTNING、DEX=WIND、MND=ICE、INT=FIRE/ICE/LIGHTNING/WIND、VIT/LUK=なしとする。\n- CLEANSEはCLEANSE_ALLのみ使用し、MND専用Accessで50 Budgetとする。\n- REVIVEはMND専用Accessで50 Budgetとし、復帰HP分のHealを別途必須とする。\n- CoverはVIT Accessで30 Budgetとする。対象範囲の差はRange Resource Cost側で処理する。\n- EVD-0003 Player全7職Lv別MPを使ってBase MP=Skill Lv×8とRange Costを机上検証する。\n- Base MP、SINGLE、FRONT/BACK、RANDOM、ALLは現段階の基礎Balanceとして暫定PASSとする。\n- 暫定PASSは正式Freezeではなく、MOD/装備/Trigger/MP増減/CD短縮/Cast短縮を含むBuild総合Testで再検証する。\n- Magic Accuracy = weapon_iLv*(INT_requirement_coefficient+DEX_requirement_coefficient)*2 とする。\n- Magic Resistance = armor_iLv*(AGI_requirement_coefficient+MND_requirement_coefficient)*4 とする。\n- Magic Hit Rate = min(100%, Magic Accuracy/Magic Resistance*100) とする。\n- 魔法命中はCharacter Statの直接比ではなく、装備Requirement係数から算出する。\n- Magic Defense = armor_iLv*MND_requirement_coefficient*K とする。\n- Magic Damage Reduction = Magic Defense/(Magic Defense+100) とする。\n- Final Magic Damage = Base Magic Damage*(1-Magic Damage Reduction) とする。\n- Kは可変Balance係数として式に保持し、現行SeedはK=1とする。\n- 魔法Damage軽減はCharacter MNDの直接値ではなく、防具MND Requirement係数から算出する。\n- Passive SkillはActive Skillと別構造とし、基本1 Skill=1 Effectとする。\n- Passive ThresholdはEffect購入Budgetではなく習得Requirementとしてのみ使用する。\n- Passiveは原則MP/Cooldown/CastTime/Target Range Costを持たない。\n- 最大HP PassiveはVIT Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 最大MP PassiveはMND Requirement 20/40/60、効果+5/+10/+15%の3段階とする。\n- 耐性PassiveはReq20/30/40/50/60、効果+5/+10/+15/+20/+25%の5段階とする。\n- 属性耐性PassiveはMND Requirementを使用する。\n- 状態異常耐性は継続Damage系をVIT Requirement、行動不能・行動阻害系をMND Requirementとする。\n- 付与系Passiveは3段階Req20/40/60とし、指定Trigger成立時に参照先Active Skill Effectを追加適用する。\n- 付与系PassiveはPassive独自のDamage/Duration/Tick値を持たず、段階ごとに参照Active Effect LevelをLv1/Lv2/Lv3へ上げる。\n- 付与系PassiveのTriggerは通常攻撃に限定しない。\n- STR/VIT/AGI/DEX/INT/MND/LUK直接上昇Passiveは現段階では作成しない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -400,7 +466,7 @@
         "at": ""
       },
       "created_at": "2026-08-28T12:49:00+09:00",
-      "updated_at": "2026-08-29T10:00:00+09:00"
+      "updated_at": "2026-08-29T10:35:00+09:00"
     }
   ],
   "checks": [],
@@ -469,6 +535,10 @@
     {
       "at": "2026-08-29T10:00:00+09:00",
       "message": "Human adopted MND-requirement-based magic damage reduction formula: Magic Defense=armor_iLv*MND coeff*K; Reduction=Magic Defense/(Magic Defense+100); Final Magic Damage=Base Magic Damage*(1-Reduction). K remains variable; current balance seed K=1."
+    },
+    {
+      "at": "2026-08-29T10:35:00+09:00",
+      "message": "Human adopted initial Passive Skill framework: Passive differs from Active and is basically one effect per skill; thresholds are acquisition requirements, not effect budgets. HP/MP passives use 3 tiers Req20/40/60 with +5/+10/+15%. Resistance passives use 5 tiers Req20/30/40/50/60 with +5/+10/+15/+20/+25%; elemental resistance uses MND, damage-over-time status resistance uses VIT, incapacitation/action-hindrance resistance uses MND. Apply passives use 3 tiers Req20/40/60 and reference Active Skill Effects on configurable triggers; not limited to normal attacks. Direct base-stat increase passives are excluded for now."
     }
   ]
 }
