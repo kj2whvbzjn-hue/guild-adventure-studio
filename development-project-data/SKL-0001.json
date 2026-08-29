@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-29T09:45:57.127Z"
+    "updated_at": "2026-08-29T10:02:22.689Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -544,6 +544,15 @@
       "source_id": "conversation:2026-08-29 periodic recovery current max floor min1",
       "created_at": "2026-08-29T18:55:00+09:00",
       "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "text": "瀕死時強化Passiveは既存MOD/Passive/Skill/Buff/Debuffと同じFormal Contribution集約方式を使用し、専用の倍化計算・別Runtime・別Stack順を作らない。瀕死効果そのものは対象Channelへrelative +100% Contributionを1件追加する。既存relative補正とはtarget/operation単位で加算合成する。例: Base=10、既存relative=+10%、瀕死relative=+100%なら Final=10 + 10*0.10 + 10*1.00 = 21。『既存補正を2倍化する』『最終値へ×2する』『既存補正+120%を別途加える』とは解釈しない。対象は戦闘に直接用いる基礎能力Channelに限定し、PHYSICAL_DAMAGE / MAGIC_DAMAGE / ACCURACY / MAGIC_ACCURACY / EVASION / BLOCK_RATE / BLOCK_PERFORMANCE / CRITICAL_RATE / CRITICAL_DAMAGE / ACTION_GAUGE_GAIN とする。MAX_HP / MAX_MP / MAGIC_RESISTANCE / ELEMENT_RESISTANCE:<ELEMENT> / STATUS_RESISTANCE:<STATUS> / CRITICAL_BONUS_DAMAGE_REDUCTION / MP_COST_REDUCTION / COOLDOWN_REDUCTION / CAST_TIME_REDUCTION は対象外。STR/VIT/AGI/DEX/INT/MND/LUK等のBase Stat自体も変更しない。ACTION_GAUGE_GAINも瀕死専用の最終×2処理を作らず、既存Action Gauge補正経路へrelative +100% Contributionとして接続する。",
+      "status": "Active",
+      "source_type": "HumanInstruction+CurrentSpecificationAuthority",
+      "source_id": "conversation:2026-08-29 lowhp additive contribution correction + DEV-V9-REORG-019 MOD/Contribution current specification + EVD-0008",
+      "created_at": "2026-08-29T19:10:00+09:00",
+      "updated_at": "2026-08-29T19:10:00+09:00"
     }
   ],
   "source_baseline": {
@@ -794,6 +803,22 @@
       "artifact_note": "Human-confirmed Passive trigger/periodic runtime design through 2026-08-29",
       "created_at": "2026-08-29T18:55:00+09:00",
       "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "DISC-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "title": "瀕死時強化PassiveのCurrent MOD/Skill Contribution準拠整理",
+      "status": "Resolved",
+      "summary": "情報源のMOD/Skill/Contribution仕様を再確認し、瀕死時強化を専用倍化処理ではなく既存relative Contributionへの+100%加算として確定した。対象は戦闘基礎能力10 Channelのみとし、HP/MP、抵抗・耐性、被Critical軽減、Resource短縮類を除外する。",
+      "body": "【確認したCurrent処理原則】\n- MODの責務は既存仕様への補正/効果接続であり、Battle等を再定義しない。\n- 数値MODはtarget/operation単位で先に合算し、保存順・装備順で結果を変えない。\n- relative補正を持つ数値系はBaseへ対して合算し、Equipment系のCurrent集約は Base + Base×RelativeTotal + FlatTotal。\n- Critical Rate等もMOD/PASSIVE/SKILL/BUFF/DEBUFF Contributionが共通Baseへ独立Contributionし、共通集約する。\n- Formal Skill/PassiveはCompiler→runtimeContracts→Current Formal Runtimeを使用し、Runtime内で独自解釈しない。\n\n【瀕死時強化の正しい意味】\n- 瀕死効果自体 = relative +100% Contribution。\n- 既存補正と加算合成する。\n- Base=10、既存+10%、瀕死+100%の場合: 10 + 1 + 10 = 21。\n- 既存+20%なら総relativeは+120%となるが、瀕死効果自体が+120%なのではない。\n- 既存補正を2倍にする処理ではない。\n- Final値を後段で×2する処理でもない。\n- 瀕死Passive専用Stack計算を作らない。\n\n【対象Channel】\n- PHYSICAL_DAMAGE\n- MAGIC_DAMAGE\n- ACCURACY\n- MAGIC_ACCURACY\n- EVASION\n- BLOCK_RATE\n- BLOCK_PERFORMANCE\n- CRITICAL_RATE\n- CRITICAL_DAMAGE\n- ACTION_GAUGE_GAIN\n\n【対象外Channel】\n- MAX_HP\n- MAX_MP\n- MAGIC_RESISTANCE\n- ELEMENT_RESISTANCE:<ELEMENT>\n- STATUS_RESISTANCE:<STATUS>\n- CRITICAL_BONUS_DAMAGE_REDUCTION\n- MP_COST_REDUCTION\n- COOLDOWN_REDUCTION\n- CAST_TIME_REDUCTION\n- Base STR/VIT/AGI/DEX/INT/MND/LUK\n\n【Action Gauge】\n- Current Action Gauge基礎式そのものは変更しない。\n- 瀕死時強化だけ最終AG Gainを×2する専用処理は作らない。\n- ACTION_GAUGE_GAINの既存補正Channelへrelative +100%を追加し、他Contributionと同じ規則で合算する。\n\n【既存SKL記述の訂正】\n- RULE-SKL-PASSIVE-LOWHP-BURST-001にある『既存の戦闘補正量を2倍化』『Action Gauge Gainは×2.0』という説明は計算手段としては不正確。\n- RULE-SKL-PASSIVE-LOWHP-MODIFIER-SCOPE-001にある『対象Channelの補正量のみを×2.0相当へ増幅』『Action Gauge増加量は別指定で×2.0』も同様に訂正対象。\n- 効果量の意図(+100%)は維持するが、処理方式はCurrent Contributionのrelative +100%加算へ統一する。\n- HP閾値、Requirement、持続20Tick、Cooldown999999等の既決値は今回変更しない。",
+      "open_questions": "瀕死時強化の対象Channel/合算方式については解消。Passive専用Effect価格表など他の未確定議題は別途継続する。",
+      "conclusion": "瀕死時強化は戦闘基礎能力10 Channelへrelative +100% Contributionを追加し、既存MOD/Passive/Skill/Buff/Debuffと同じ集約処理で加算する。専用倍化処理、HP/MP・抵抗/耐性・Resource類への適用、Base Stat変更は行わない。",
+      "related_discussion_ids": [
+        "DISC-SKL-PASSIVE-RUNTIME-GUARD-001",
+        "DISC-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
+      ],
+      "artifact_note": "Current MOD/Skill contribution specification reconciled with Human low-HP passive correction",
+      "created_at": "2026-08-29T19:10:00+09:00",
+      "updated_at": "2026-08-29T19:10:00+09:00"
     }
   ],
   "decisions": [
@@ -1118,6 +1143,20 @@
       "approved_at": "2026-08-29T18:55:00+09:00",
       "created_at": "2026-08-29T18:55:00+09:00",
       "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "title": "瀕死時強化を既存Contributionへのrelative +100%加算として実装する",
+      "status": "Approved",
+      "text": "瀕死時強化Passiveは既存MOD/Passive/Skill/Buff/Debuffと同じContribution集約経路を使用する。対象Channelへrelative +100% Contributionを追加し、既存relative補正と加算合成する。Base=10・既存+10%なら瀕死時Final=21。対象はPHYSICAL_DAMAGE/MAGIC_DAMAGE/ACCURACY/MAGIC_ACCURACY/EVASION/BLOCK_RATE/BLOCK_PERFORMANCE/CRITICAL_RATE/CRITICAL_DAMAGE/ACTION_GAUGE_GAIN。MAX_HP/MAX_MP、MAGIC_RESISTANCE、属性/Status耐性、被Critical増加分軽減、MP Cost/Cooldown/Cast短縮、Base Statは対象外。瀕死専用の補正倍化、Final×2、Action Gauge専用×2処理は作らない。",
+      "rationale": "Current MOD仕様がtarget/operation単位のContribution合算を正規方式としており、Critical等もMOD/PASSIVE/SKILL/BUFF/DEBUFFで共通BaseへContributionするため。瀕死時強化だけ別の倍化規則を作ると既存Stack仕様と矛盾するため。",
+      "source_discussion_ids": [
+        "DISC-SKL-PASSIVE-LOWHP-CONTRIBUTION-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-29T19:10:00+09:00",
+      "created_at": "2026-08-29T19:10:00+09:00",
+      "updated_at": "2026-08-29T19:10:00+09:00"
     }
   ],
   "specifications": [],
@@ -1237,6 +1276,24 @@
       },
       "created_at": "2026-08-29T18:55:00+09:00",
       "updated_at": "2026-08-29T18:55:00+09:00"
+    },
+    {
+      "id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "box_id": "BOX-SKL-0001",
+      "title": "瀕死時強化を既存Modifier Contribution経路へ接続する",
+      "status": "Todo",
+      "execution_order": 6,
+      "depends_on": [],
+      "acceptance_criteria": "- 瀕死時強化専用の倍化Runtime/Stack計算を新設しない。\n- Current MOD/Passive/Skill/Buff/Debuffと同じContribution集約経路へ接続する。\n- 瀕死効果自体をrelative +100% Contributionとして表現する。\n- 既存relative補正とtarget/operation単位で加算する。\n- Base=10、既存relative=+10%、瀕死relative=+100%でFinal=21となることを確認する。\n- 既存relative=+20%の場合は総relative=+120%となり、瀕死値自体を+120%として扱わない。\n- 対象ChannelはPHYSICAL_DAMAGE/MAGIC_DAMAGE/ACCURACY/MAGIC_ACCURACY/EVASION/BLOCK_RATE/BLOCK_PERFORMANCE/CRITICAL_RATE/CRITICAL_DAMAGE/ACTION_GAUGE_GAINだけとする。\n- MAX_HP/MAX_MP/MAGIC_RESISTANCE/ELEMENT_RESISTANCE/STATUS_RESISTANCE/CRITICAL_BONUS_DAMAGE_REDUCTION/MP_COST_REDUCTION/COOLDOWN_REDUCTION/CAST_TIME_REDUCTIONを対象外とする。\n- STR/VIT/AGI/DEX/INT/MND/LUKのBase Statを変更しない。\n- ACTION_GAUGE_GAINも既存Contribution経路へrelative +100%を追加し、瀕死専用Final×2を作らない。\n- Current Action Gauge基礎式を変更しない。\n- 瀕死PassiveのRequirement/HP閾値/持続/Cooldown等の既決値はこのTaskで変更しない。\n- 旧『補正量×2』『Action Gauge×2』記述を実装根拠に使用せず、本Decisionを優先する。\n- Passive専用Legacy/Fallback/parallel modifier calculatorを追加しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-29T19:10:00+09:00",
+      "updated_at": "2026-08-29T19:10:00+09:00"
     }
   ],
   "checks": [],
@@ -1345,6 +1402,10 @@
     {
       "at": "2026-08-29T18:55:00+09:00",
       "message": "Registered confirmed Passive trigger/periodic runtime design: minimal Event Context; six Formal Trigger Registry additions with REACTIVE/INTERRUPT phases; atomic Hit Safe Point and actionContext.pendingReactive; preservation of existing COUNTER/FOLLOW_UP ordering; and periodic HP/MP passive lifecycle using existing Battle Tick with first activation after one interval, no death catch-up/reset, and current-max floor/minimum-one recovery."
+    },
+    {
+      "at": "2026-08-29T19:10:00+09:00",
+      "message": "Corrected Low-HP Burst semantics after Current MOD/Skill/Contribution authority review. Low-HP Burst now adds relative +100% as a normal Contribution on combat-base channels only; existing relative contributions add normally (Base10 + existing10% + lowHP100% = 21). HP/MP, resistance, critical-bonus-damage reduction, MP/CD/Cast efficiency and Base Stats are excluded. ACTION_GAUGE_GAIN uses the same contribution rule; no dedicated x2 path."
     }
   ]
 }
