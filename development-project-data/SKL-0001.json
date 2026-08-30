@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T00:51:30.916Z"
+    "updated_at": "2026-08-30T01:18:07.318Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -649,6 +649,67 @@
       "recorded_at": "2026-08-30T09:50:31+09:00",
       "created_at": "2026-08-30T09:50:31+09:00",
       "updated_at": "2026-08-30T09:50:31+09:00"
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-PHASE4A-B805-001",
+      "title": "Task 4A Direct Modifier / Resource Runtime Connection",
+      "status": "Prepared",
+      "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B805",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "artifact": {
+        "file": "SKL-0001_TASK4A_GKS-B805_STUDIO-UPDATE.zip",
+        "sha256": "6d6a56ba97ddda50c7826c2b1f329b9070bf5665f65bc2459720adb0cca16745",
+        "artifact_id": "GKS-B805-8f51903026c6",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "baseline": {
+        "studio_build": "GKS-B804",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "5dcc1e7d8fc163a2f021685f467dde6302b03402a55348845b8d596074a31dce",
+        "source_tree_sha256": "55b24070068ec591d9c7ed3f4eda6220af28c7e51b7fe967b30e037131db26cd"
+      },
+      "target": {
+        "studio_build": "GKS-B805",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "6d6ebc00df77a71b2c8e5e2a24ddaad1180587a345ea3ec36d6756b2c97444ad",
+        "source_tree_sha256": "8f51903026c682ffea5a9b2ce31d86bebd18d195096d7b84648055fcee460f6d"
+      },
+      "scope": {
+        "implemented": [
+          "Passive runtimeContracts.modifierRefs.modIds -> existing Formal MOD Candidate/Contribution transport",
+          "MAX_HP",
+          "MAX_MP",
+          "BLOCK_RATE",
+          "BLOCK_PERFORMANCE",
+          "CRITICAL_DAMAGE",
+          "CRITICAL_BONUS_DAMAGE_REDUCTION",
+          "STATUS_RESISTANCE:<STATUS>",
+          "MP_COST_REDUCTION",
+          "COOLDOWN_REDUCTION",
+          "CAST_TIME_REDUCTION"
+        ],
+        "deferred": [
+          "ON_FATAL_DAMAGE fatal-survive HP1 interrupt",
+          "ELEMENT_RESISTANCE:<ELEMENT> consumer until formal damage-element authority is confirmed",
+          "MAGIC_RESISTANCE consumer until an authoritative existing consumer is confirmed",
+          "Task5 periodic/reactive hooks",
+          "Task6 low-HP contribution lifecycle"
+        ]
+      },
+      "recorded_at": "2026-08-30T10:15:03+09:00",
+      "created_at": "2026-08-30T10:15:03+09:00",
+      "updated_at": "2026-08-30T10:15:03+09:00",
+      "work_box_ids": [],
+      "task_ids": [],
+      "evidence": ""
     }
   ],
   "discussions": [
@@ -1420,7 +1481,7 @@
       "id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
       "box_id": "BOX-SKL-0001",
       "title": "直接補正・Resource・致死耐えPassiveを既存Runtimeへ接続する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 4,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
@@ -1429,12 +1490,13 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T10:15:03+09:00"
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-29T20:35:00+09:00"
+      "updated_at": "2026-08-30T10:15:03+09:00",
+      "result_scope": "Phase 4A prepared on exact GKS-B804 baseline: Formal Passive modIds are joined into the existing MOD Contribution transport; MAX_HP/MAX_MP, Block Rate/Performance, Critical Damage, Critical bonus-only damage reduction, STATUS_RESISTANCE:<STATUS>, MP Cost/Cooldown/CastTime reduction are connected in Game/Studio using existing contribution semantics and ceil rules. Task remains Doing. ON_FATAL_DAMAGE fatal-survive and ELEMENT_RESISTANCE formal damage-element dependency are intentionally deferred; MAGIC_RESISTANCE is not claimed connected without an authoritative consumer."
     },
     {
       "id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
@@ -1568,6 +1630,121 @@
       "blocking": false,
       "created_at": "2026-08-30T09:50:31+09:00",
       "updated_at": "2026-08-30T09:50:31+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-PHASE4A-TARGETED-001",
+      "title": "Task4A direct/runtime targeted verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Passed",
+      "result": "23 targeted assertions PASS: Passive MOD source join; MAX_HP/MAX_MP; Block; Critical Damage; critical bonus-only defense; status resistance; MP/CD/Cast ceil; Game/Studio parity; unresolved Element/Magic channels not silently connected.",
+      "evidence": "/mnt/data/test-task4a-direct-runtime.js => TASK4A_DIRECT_RUNTIME_OK checks=23",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T10:15:03+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T10:15:03+09:00",
+      "updated_at": "2026-08-30T10:15:03+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-PHASE4A-REGRESSION-001",
+      "title": "Task4A Critical/Trigger/Cost/Cooldown regressions",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Passed",
+      "result": "Critical 159, Trigger Engine, existing Cost/Cooldown runtime and formal regressions PASS. Protected Critical target freeze remained unchanged; new channels use a separate direct consumer path.",
+      "evidence": "CRITICAL_CONFORMANCE_R19_OK checks=159; GENERIC_TRIGGER_ENGINE_R04_A_PASS; COST_RUNTIME_GA_B486_45_OK; COST_FORMAL_REGRESSION_GA_B486_46_OK; COOLDOWN_RUNTIME_GA_B486_42_OK; COOLDOWN_FORMAL_REGRESSION_GA_B486_43_OK",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T10:15:03+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T10:15:03+09:00",
+      "updated_at": "2026-08-30T10:15:03+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-PHASE4A-QUICK-001",
+      "title": "GKS-B805 Task4A Quick Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Passed",
+      "result": "Direct SOURCE_UPDATE Quick 13/13 PASS including applied-state Quick 11/11.",
+      "evidence": "EVIDENCE_SHA256=282c6732257c9f57c80d7314467945e221d9ca11c47202364044bd282776c924",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T10:15:03+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T10:15:03+09:00",
+      "updated_at": "2026-08-30T10:15:03+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-PHASE4A-ACCEPT-001",
+      "title": "GKS-B805 Task4A Accept / Applied Full Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Passed",
+      "result": "Accept 13/13 PASS; applied-state selected Full and passed 26/26; copied=649, deleted=0.",
+      "evidence": "EVIDENCE_SHA256=16be68cd3f0ad8d4f157a151caba8a82a9f4a3a994cca557ba2fc0a0edb301ca; applied_tree_sha256=8f51903026c682ffea5a9b2ce31d86bebd18d195096d7b84648055fcee460f6d",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T10:15:03+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T10:15:03+09:00",
+      "updated_at": "2026-08-30T10:15:03+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-PHASE4A-REMAINING-001",
+      "title": "Task4 remaining dependency boundary",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Pending",
+      "result": "Task4 is not complete. Fatal Survive must be implemented using existing ON_FATAL_DAMAGE/INTERRUPT foundation. ELEMENT_RESISTANCE cannot be connected without first confirming the current Formal Damage element/attribute contract; current Formal Skill DAMAGE evidence exposes PHYSICAL/MAGICAL/FIXED damageType but no element field. No inferred field was added. MAGIC_RESISTANCE is likewise not claimed without an authoritative consumer.",
+      "evidence": "Current source/spec dependency audit before Phase4A implementation",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T10:15:03+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T10:15:03+09:00",
+      "updated_at": "2026-08-30T10:15:03+09:00",
       "resolution": {
         "status": "Open",
         "resolved_by": "",
