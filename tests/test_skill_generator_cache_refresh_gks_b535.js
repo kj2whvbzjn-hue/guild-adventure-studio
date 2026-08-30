@@ -7,7 +7,7 @@ const html=fs.readFileSync('studio/index.html','utf8');
 const sw=fs.readFileSync('studio/sw.js','utf8');
 const skg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 assert.ok(html.includes(`navigator.serviceWorker.register('./sw.js?v=${buildNo}'`),'Studio SW registration cache key must follow current Studio build');
-assert.ok(html.includes('./skill/skill-generator.js?v=33'),'Skill Generator cache key must advance after bootstrap hotfix');
+assert.ok(html.includes('./skill/skill-generator.js?v=34'),'Skill Generator cache key must advance after bootstrap hotfix');
 assert.ok(html.includes(`url.searchParams.set('appv','${buildNo}')`),'Studio reload appv must follow current Studio build');
 assert.ok(sw.includes(`const CACHE_NAME="gks-studio-b${buildNo}"`),'Studio SW cache namespace must follow current Studio build');
 assert.ok(sw.includes(`./index.html?appv=${buildNo}`),'Studio offline shell must use the current appv');
