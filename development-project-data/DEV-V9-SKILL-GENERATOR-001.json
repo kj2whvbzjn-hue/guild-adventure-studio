@@ -10,7 +10,7 @@
     "name": "Skill Generator Active/Passive統合改修",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T12:33:28.770Z"
+    "updated_at": "2026-08-30T14:38:21.166Z"
   },
   "project_context": {
     "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
@@ -18,9 +18,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-SGEN-001",
-    "work_box_id": "BOX-SGEN-ACTIVE-001",
-    "theme": "TASK-SGEN-003B Active Formal Effect/Runtime binding",
-    "goal": "TASK-SGEN-006完了。次はTASK-SGEN-003Bを進め、Active側の未接続Formal bindingを既存Registry/Runtimeへ接続する。数値はシステム固定必須値以外すべて可変設定/入力として扱う。"
+    "work_box_id": "BOX-SGEN-INTEGRATION-001",
+    "theme": "TASK-SGEN-007 Active/Passive shared Validation/Compiler/Data Exchange/Export integration",
+    "goal": "TASK-SGEN-003B Source実装完了。HEAL/BARRIER/Accuracy/Action Gauge/Critical/REVIVE/Statusの既決bindingをCurrent Registry/Runtimeへ接続。Source UpdateはGKS-B827としてHuman Apply待ち。旧絶対値HEAL/BARRIER SkillのGame Data削除はHuman側で別実施する。Apply確認後にTASK-SGEN-007へ進む。"
   },
   "project_rules": [
     {
@@ -79,20 +79,20 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B825",
+    "studio_build": "GKS-B827",
     "game_build": "GA-B486.211",
-    "source_label": "SKL-GEN_TASK-SGEN-006_GKS-B825_STUDIO-UPDATE.zip",
-    "source_role": "TASK-SGEN-006 accepted target; becomes Fresh Current after Studio update is applied",
-    "recorded_at": "2026-08-30T21:15:00+09:00",
-    "source_update_zip_sha256": "2a65f87ddfb6cc99466aee405b89e0e7384bef908ddccf4a8746c563491ff0b6",
-    "package_manifest_sha256": "bf1a6ec30d902b2ab5e464ab72acba80c8ce494588275af4cf87381bca2343c9",
-    "source_tree_sha256": "5f47ab0fe8fdf9985a9c706e32d94606d3a97354ac9e330adb2cbaec979edff4",
-    "artifact_id": "GKS-B825-5f47ab0fe8fd",
+    "source_label": "SKL-GEN_TASK-SGEN-003B-R2_GKS-B827_DIRECT-STUDIO-UPDATE_FIXED.zip",
+    "source_role": "TASK-SGEN-003B corrected Source Update target; ready for Human Studio Apply. Game Data deletion of legacy absolute HEAL/BARRIER skills is handled separately by Human.",
+    "recorded_at": "2026-08-30T23:22:00+09:00",
+    "source_update_zip_sha256": "ec2262948c8b3bc28afde839cd5a3fda86908d64ab43988f92fd507a58d40d6b",
+    "package_manifest_sha256": "dc270fdf1e3bf7135d50141c2f26af70a0a00d7165a95e168e67895a8e1ffbc9",
+    "source_tree_sha256": "7905260fd13f4d0b6be1c762213ad7537b7eccd1d52dabc2fcce32fe9a515069",
+    "artifact_id": "GKS-B827-7905260fd13f",
     "baseline": {
       "game_build": "GA-B486.211",
-      "studio_build": "GKS-B824",
-      "package_manifest_sha256": "68c3790bfd6b2ff9a582166d35972d89617e66d66b0a1ec06d735c83349d0b44",
-      "source_tree_sha256": "fc84780cc030495d6cba88aa96d6d8057d4f09cef9070dfa4a2e395818de8b2b"
+      "studio_build": "GKS-B826",
+      "package_manifest_sha256": "c080a28a0664a0b37f8c09c00a69e6e7db8f4fd0ec0568bcef3c8193e737dd20",
+      "source_tree_sha256": "4a5b2d229bdc038366b714760cae782bd220a9528c83e330a8cecb70cdb6ed65"
     },
     "reference_hashes": {
       "DEV-V9-BALANCE-001": "2c2c490805dcdc7bf798c4e45671f1408c041a6654af8a43e8fa55e67e1466f8",
@@ -326,6 +326,44 @@
       "created_at": "2026-08-30T21:15:00+09:00",
       "updated_at": "2026-08-30T21:15:00+09:00",
       "evidence": ""
+    },
+    {
+      "id": "IMPL-SGEN-003B-R2",
+      "task_id": "TASK-SGEN-003B",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Reopened TASK-SGEN-003B and corrected the prior false-completion boundary. Connected HEAL/BARRIER/Accuracy Up/Down/AGI->ACTION_GAUGE_GAIN/Critical Rate/Critical Damage/REVIVE/Status through existing Formal Registry/Compiler/Runtime owners. HEAL and BARRIER power semantics are target MaxHP percentage at apply time; no absolute-value compatibility path remains. Status base cost=10 and duration cost=5 Budget/Tick are variable config values. Barrier strength and duration split the same Ability Budget. Legacy absolute HEAL/BARRIER Game Data deletion is excluded from this Source Update and will be performed separately by Human.",
+      "studio_build": "GKS-B827",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-ACTIVE-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-003B"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-30T23:22:00+09:00",
+      "test_change_approval": {
+        "approved_by": "Human",
+        "approval_sha256": "c2b07d6b4d90de905b42a468d3ab31e52c7957b571df6aa7cf4bff16a73d33f9",
+        "protected_test_count": 5,
+        "approval_verified": true
+      },
+      "gate": {
+        "status": "pass",
+        "profile": "source_update_applied_full",
+        "passed": 26,
+        "failed": 0,
+        "warnings": 0,
+        "timeouts": 0,
+        "critical_conformance_checks": 159,
+        "package_manifest_sha256": "dc270fdf1e3bf7135d50141c2f26af70a0a00d7165a95e168e67895a8e1ffbc9",
+        "source_tree_sha256": "7905260fd13f4d0b6be1c762213ad7537b7eccd1d52dabc2fcce32fe9a515069",
+        "artifact_id": "GKS-B827-7905260fd13f"
+      },
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
+      "evidence": ""
     }
   ],
   "discussions": [],
@@ -369,6 +407,81 @@
       "source_id": "implementation-plan-review:2026-08-30",
       "created_at": "2026-08-30T19:30:00+09:00",
       "updated_at": "2026-08-30T19:30:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-003B-R2-001",
+      "title": "Active AGI effect binding",
+      "status": "Approved",
+      "body": "Active SkillのAGI系BuffはBase AGIを変更せず、既存ACTION_GAUGE_GAIN補正Channelへ接続する。",
+      "source_type": "HumanDecision",
+      "source_id": "conversation:2026-08-30 TASK-SGEN-003B reopen",
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-003B-R2-002",
+      "title": "HEAL/BARRIER percentage semantics",
+      "status": "Approved",
+      "body": "HEAL.powerとBARRIER.powerは対象MaxHPに対する割合として扱い、適用時に対象MaxHPから実回復量/Barrier吸収量へ解決する。旧絶対値解釈の互換経路は残さない。",
+      "source_type": "HumanDecision",
+      "source_id": "conversation:2026-08-30 TASK-SGEN-003B reopen",
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-003B-R2-003",
+      "title": "Barrier budget split",
+      "status": "Approved",
+      "body": "Barrier強度とDurationは同一Ability Budgetを分配する。Barrier強度は1 Budget=MaxHP 1%、Durationは5 Budget=1 Tick。durationBudgetは明示入力とし数値はConfig可変。",
+      "source_type": "HumanDecision",
+      "source_id": "conversation:2026-08-30 TASK-SGEN-003B reopen",
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-003B-R2-004",
+      "title": "Status provisional base cost",
+      "status": "Approved",
+      "body": "Status付与本体の暫定価格は10 Budget、Durationは5 Budget=1 Tick。両値ともBalance可変Configとして実装する。具体StatusはCurrent Registry許可Effect IDを明示bindingする。",
+      "source_type": "HumanDecision",
+      "source_id": "conversation:2026-08-30 TASK-SGEN-003B reopen",
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-003B-R2-005",
+      "title": "Legacy absolute heal/barrier removal",
+      "status": "Approved",
+      "body": "互換性を残さない方針により、Current Masterの旧絶対値HEAL/BARRIER Skill 30件を削除する。",
+      "source_type": "HumanDecision",
+      "source_id": "conversation:2026-08-30 TASK-SGEN-003B reopen",
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
       "text": "",
       "rationale": "",
       "source_discussion_ids": [],
@@ -697,7 +810,7 @@
       "id": "TASK-SGEN-007",
       "box_id": "BOX-SGEN-INTEGRATION-001",
       "title": "共通Validation/Compiler/Data Exchange/ExportをActive・Passive両modeへ統合する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 50,
       "depends_on": [
         "TASK-SGEN-004",
@@ -713,7 +826,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T20:45:00+09:00"
+      "updated_at": "2026-08-30T23:22:00+09:00"
     },
     {
       "id": "TASK-SGEN-008",
@@ -820,7 +933,7 @@
       "id": "TASK-SGEN-003B",
       "box_id": "BOX-SGEN-ACTIVE-001",
       "title": "Active Formal Effect/Runtime bindingを既存Registryへ接続する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 35,
       "depends_on": [
         "TASK-SGEN-003"
@@ -829,12 +942,12 @@
       "requires_human_approval": true,
       "acceptance_criteria": "- EVD-0009で `NEEDS_CURRENT_EFFECT_BINDING` / `NEEDS_CURRENT_TARGET_EFFECT_BINDING`、およびCore生成時に `ACTIVE_BINDING_REQUIRED` となるAbilityを対象にする。\n- 新しいGenerator/Compiler/Storeを作らず、既存 skill-registry / Formal Compiler / Active Runtimeへ必要なbindingだけを追加する。\n- Current Formal Skill Contractのeffect type topologyは変更しない。原則既存 DAMAGE/HEAL/APPLY/REMOVE/REVIVE/TARGET_CONTROL へ写像する。\n- Accuracy Up、AGI/Defense等Buff、Critical Rate/Damage、Barrier、DOT、Cleanse、Revive、Coverについて、Current仕様から一意に決まるbindingのみ実装する。\n- duration / revive hp or hpRate / Cover lifetime / Generic Buff target等、Current Authorityで一意に決まらない値は推測せずOpen SpecとしてFail Closedする。\n- Registry ID追加時は既存Effect Lifecycle/Runtime ownerを再利用し、parallel modifier engineを追加しない。\n- このTask完了後、TASK-SGEN-003でFail Closedした対象を再生成し、Formal Compilerまで通る対象範囲をEvidence化する。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T23:22:00+09:00"
       },
       "created_at": "2026-08-30T20:45:00+09:00",
-      "updated_at": "2026-08-30T20:45:00+09:00"
+      "updated_at": "2026-08-30T23:22:00+09:00"
     }
   ],
   "checks": [
@@ -987,6 +1100,31 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHK-SGEN-003B-R2",
+      "task_id": "TASK-SGEN-003B",
+      "title": "Corrected Active binding completion gate",
+      "status": "Passed",
+      "details": "Task-specific Active binding test PASS; protected test updates approved; full update test registry 141 PASS / 15 SKIP / 0 FAIL. No HEAL/BARRIER absolute compatibility path retained.",
+      "created_at": "2026-08-30T23:22:00+09:00",
+      "updated_at": "2026-08-30T23:22:00+09:00",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "workflow": {
@@ -1038,6 +1176,14 @@
     {
       "at": "2026-08-30T21:15:00+09:00",
       "message": "Human approved TASK-SGEN-006 protected G05 test update. External approval exact hashes verified. GKS-B825 Full Gate passed 26/26. TASK-SGEN-006 marked Done. Human Workflow remains Discovery/Exploring."
+    },
+    {
+      "at": "2026-08-30T23:22:00+09:00",
+      "message": "TASK-SGEN-003B was reopened after the B826 false-completion judgment. Human resolved remaining semantics: AGI->ACTION_GAUGE_GAIN, Barrier duration 5 Budget/Tick with shared strength/duration budget, Status base cost 10 variable, HEAL/BARRIER target-MaxHP percentage semantics, and no legacy compatibility. GKS-B827 implementation completed; 30 legacy absolute HEAL/BARRIER skills removed; protected test update approved; full update gate passed 141/141 executed tests with 15 skips."
+    },
+    {
+      "at": "2026-08-30T23:30:00+09:00",
+      "message": "TASK-SGEN-003B-R2 Source Update packaging corrected after Studio diagnostic. Direct SOURCE_UPDATE now has studio-update.json at ZIP root, excludes Export/development-project-data, binds exact GKS-B826 baseline to GKS-B827 target, and passes applied Full Gate 26/26 with external Human approval for 5 protected test changes. Legacy absolute HEAL/BARRIER Skill deletion is not included; Human will handle Game Data deletion separately."
     }
   ],
   "plan_metadata": {
