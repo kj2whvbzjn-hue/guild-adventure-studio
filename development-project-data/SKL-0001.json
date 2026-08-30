@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T03:29:49.272Z"
+    "updated_at": "2026-08-30T03:48:10.370Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Passive Skill Task 6 - Low HP Contribution Dependency Audit",
-    "goal": "Fresh Current GKS-B810でTask5B反映を確認してTask5を完了し、Task6瀕死時強化のHP確定後発動・20Tick Lifecycle・Cooldown999999・対象10 Channel relative +100% ContributionをCurrent Sourceへ接続する前に、全10 Channelの既存Authority/Consumerを監査する。MAGIC_ACCURACYのCurrent consumer不在を解消せず部分実装しない。"
+    "theme": "Passive Skill Task 6A - Magic Accuracy / Magic Resistance Formal Battle Connection",
+    "goal": "Fresh Current GKS-B810をexact baselineに、既決RULE-SKL-MAGIC-HIT-001のMagic Accuracy / Magic Resistance式をCurrent Game/Studio Formal Battleへ接続し、Task6瀕死時強化のMAGIC_ACCURACY対象Channelを正式consumerへ接続可能な状態にする。Task6 LowHP 10 Channel Contribution本体はHuman Apply/Fresh Current確認後のPhase6Bへ分離する。"
   },
   "project_rules": [
     {
@@ -567,11 +567,12 @@
   "source_baseline": {
     "studio_build": "GKS-B810",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260830-031657).zip",
-    "source_role": "Human-provided Fresh Current after Task5B apply",
-    "recorded_at": "2026-08-30T12:17:00+09:00",
-    "source_zip_sha256": "88c4d43fe55cd709ecb34ea4df29fa4b7653ca995f752945b40d7e098ed584b4",
-    "package_manifest_sha256": "883715483a361fd63c7c91cabc09d9ed0929897ba5e447adc3b1b3dd087cfbb2"
+    "source_label": "guild-adventure-studio-sub(20260830-033055).zip",
+    "source_role": "Human-provided Fresh Current used as exact Task6A baseline",
+    "recorded_at": "2026-08-30T12:30:00+09:00",
+    "source_zip_sha256": "76c6100b15052905e04a5223ccb178ccda02fded060bfababbb7af3259dbb863",
+    "package_manifest_sha256": "883715483a361fd63c7c91cabc09d9ed0929897ba5e447adc3b1b3dd087cfbb2",
+    "source_tree_sha256": "42c8b9a56d83fe5a36b88087f41afaeddbcf8f2bf5cba6ff84e6a36c264c7b78"
   },
   "lifecycle": {
     "status": "Active",
@@ -1141,6 +1142,71 @@
       ],
       "task_ids": [
         "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001"
+      ]
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-LOWHP-6A-MAGIC-HIT-B811-001",
+      "title": "Task 6A Magic Accuracy / Magic Resistance Formal Battle Connection",
+      "status": "Prepared",
+      "task_id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B811",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "baseline": {
+        "studio_build": "GKS-B810",
+        "game_build": "GA-B486.211",
+        "source_zip": "guild-adventure-studio-sub(20260830-033055).zip",
+        "source_zip_sha256": "76c6100b15052905e04a5223ccb178ccda02fded060bfababbb7af3259dbb863",
+        "package_manifest_sha256": "883715483a361fd63c7c91cabc09d9ed0929897ba5e447adc3b1b3dd087cfbb2",
+        "source_tree_sha256": "42c8b9a56d83fe5a36b88087f41afaeddbcf8f2bf5cba6ff84e6a36c264c7b78"
+      },
+      "target": {
+        "studio_build": "GKS-B811",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "00a0e0ad20cd2065e10bdfb268f7a5f915fb0a9ad9334bf61dadb5acb4e4cfa5",
+        "source_tree_sha256": "5c7aa7bd4da1e72d9fc277152d88725092092d8b34313aaff466800143c699e6",
+        "artifact_id": "GKS-B811-5c7aa7bd4da1"
+      },
+      "artifact": {
+        "file": "SKL-0001_TASK6A_GKS-B811_STUDIO-UPDATE.zip",
+        "sha256": "98693853a2252ae7d4d3c9fe2555277dd6a0b88eadba4d51bb6ba5d532e302c5",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "contains_development_project_data": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "scope": {
+        "implemented": [
+          "Magic Accuracy = aggregate eligible weapon Requirement contributions using (required_int + required_dex) * 2",
+          "Magic Resistance = aggregate armor Requirement contributions using (required_agi + required_mnd) * 4",
+          "MAGICAL Formal DAMAGE uses Magic Accuracy / Magic Resistance hit-rate path",
+          "Critical-established MAGICAL hit remains guaranteed and skips hit roll",
+          "MAGIC_ACCURACY added to existing direct Formal modifier target consumer",
+          "Game battle-value transport carries magic_accuracy / magic_resistance",
+          "Studio Formal Battle mirrors the same equipment-derived authority and MAGICAL hit path"
+        ],
+        "preserved": [
+          "PHYSICAL/FIXED existing hit path",
+          "Critical-before-hit ordering",
+          "Character Stat values are not used directly for Magic Accuracy / Magic Resistance",
+          "No parallel Passive-specific hit formula",
+          "Task5 Reactive/Periodic behavior",
+          "Task6 LowHP lifecycle and 10-channel temporary contribution remain unimplemented until Phase6B"
+        ]
+      },
+      "evidence": "Fresh GKS-B810 exact baseline. Target Critical 159 PASS; Trigger Engine/Action Guard/Simultaneous Order/Closure PASS; Source Quick 13/13 PASS; direct update Accept 13/13 PASS including applied-state source gate.",
+      "recorded_at": "2026-08-30T12:30:00+09:00",
+      "created_at": "2026-08-30T12:30:00+09:00",
+      "updated_at": "2026-08-30T12:30:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001"
       ]
     }
   ],
@@ -1920,8 +1986,8 @@
         "at": "2026-08-30T12:17:00+09:00"
       },
       "created_at": "2026-08-29T19:10:00+09:00",
-      "updated_at": "2026-08-30T12:17:00+09:00",
-      "result_scope": "Task6 dependency audit started from Fresh Current GKS-B810. Approved target10 channels remain PHYSICAL_DAMAGE/MAGIC_DAMAGE/ACCURACY/MAGIC_ACCURACY/EVASION/BLOCK_RATE/BLOCK_PERFORMANCE/CRITICAL_RATE/CRITICAL_DAMAGE/ACTION_GAUGE_GAIN. Current Source has no MAGIC_ACCURACY/magic hit runtime consumer or battle value transport, while RULE-SKL-MAGIC-HIT-001 defines its authoritative formula. Source update is intentionally not prepared until this dependency is resolved without inventing a parallel formula or partial low-HP effect."
+      "updated_at": "2026-08-30T12:30:00+09:00",
+      "result_scope": "Phase6A GKS-B811 Prepared from exact Fresh Current GKS-B810: approved RULE-SKL-MAGIC-HIT-001 is connected to Game/Studio Formal Battle, and MAGIC_ACCURACY now has an existing Formal modifier consumer. The prior dependency check remains historically Failed/Open until B811 Human Apply/Fresh Current verification. Phase6B will implement the approved LowHP threshold/duration/cooldown lifecycle and all 10 relative +100% Contribution channels together; no partial 9-channel implementation is accepted."
     },
     {
       "id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
@@ -2452,6 +2518,29 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-LOWHP-6A-B811-SOURCE-001",
+      "title": "Task 6A Magic Accuracy source/update gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "status": "Passed",
+      "result": "GKS-B811 target connects the approved Magic Accuracy / Magic Resistance authority and passes direct SOURCE_UPDATE/applied-state gates. Human Apply/Fresh Current verification is still pending.",
+      "evidence": "Target package_manifest SHA-256=00a0e0ad20cd2065e10bdfb268f7a5f915fb0a9ad9334bf61dadb5acb4e4cfa5; Source Quick 13/13 PASS; Accept 13/13 PASS; Critical 159 PASS; Trigger Engine/Action Guard/Simultaneous Order/Closure PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T12:30:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T12:30:00+09:00",
+      "updated_at": "2026-08-30T12:30:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
@@ -2603,6 +2692,10 @@
     {
       "at": "2026-08-30T12:17:00+09:00",
       "message": "Fresh Current GKS-B810 verified after Task5B apply; Task5 marked Done. Task6 started by Human instruction. Dependency audit found that approved low-HP target set includes MAGIC_ACCURACY, but Current GKS-B810 has no MAGIC_ACCURACY runtime consumer/transport. No partial Task6 SOURCE_UPDATE was generated; next implementation must first connect the already-approved RULE-SKL-MAGIC-HIT-001 authority or otherwise resolve this dependency."
+    },
+    {
+      "at": "2026-08-30T12:30:00+09:00",
+      "message": "Task6 Phase6A prepared as GKS-B811 from Fresh Current GKS-B810. Approved equipment-Requirement Magic Accuracy / Magic Resistance formula is connected to Game/Studio Formal Battle; MAGIC_ACCURACY now has a Formal modifier consumer. LowHP 10-channel contribution itself remains deferred to Phase6B after B811 Human Apply/Fresh Current verification."
     }
   ]
 }
