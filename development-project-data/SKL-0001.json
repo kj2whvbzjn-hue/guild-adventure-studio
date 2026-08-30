@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T01:47:57.094Z"
+    "updated_at": "2026-08-30T02:22:18.855Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Passive Skill Task 4 - Direct Runtime / Fatal Survive",
-    "goal": "GKS-B805 Phase4AのFresh Current確認済み。B806はFormal Passive runtimeContracts transport、B807はON_FATAL_DAMAGE致死耐えInterruptを段階実装。Task 4は属性耐性/Magic Resistanceの正式consumer確認が残るためDoing維持。"
+    "theme": "Passive Skill Task 4D - Formal Damage Element Distribution / Element Resistance",
+    "goal": "Fresh Current GKS-B807をbaselineに、Human確定の属性Damage配分規則をFormal DAMAGE Contractへ接続したGKS-B808を準備。Human Apply後のFresh Current確認でTask 4完了判定を行う。"
   },
   "project_rules": [
     {
@@ -553,16 +553,25 @@
       "source_id": "conversation:2026-08-29 lowhp additive contribution correction + DEV-V9-REORG-019 MOD/Contribution current specification + EVD-0008",
       "created_at": "2026-08-29T19:10:00+09:00",
       "updated_at": "2026-08-29T19:10:00+09:00"
+    },
+    {
+      "id": "RULE-SKL-DAMAGE-ELEMENT-DISTRIBUTION-001",
+      "text": "複数属性Damageは元Damage総量を増やさず属性成分へ分割する。属性ごとの配分指定がない場合は残りDamageを未指定属性へ均等分配する。配分指定がある属性は総Damageに対する指定割合分をその属性Damageとする。例: FIRE+ICE・指定なし・総Damage100ならFIRE50/ICE50。FIRE30%指定・ICE未指定ならFIRE30/ICE70。各属性成分は対応する属性耐性を個別適用した後に合算する。全属性に配分指定がある場合は合計100%を必須とし、100%超過または全指定で100%未満はInvalidとしてFail Closedする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-30 elemental damage split",
+      "created_at": "2026-08-30T11:15:00+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B805",
+    "studio_build": "GKS-B807",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260830-011835).zip",
-    "source_role": "Human-provided Fresh Current after Task4A apply",
-    "recorded_at": "2026-08-30T10:18:35+09:00",
-    "source_zip_sha256": "e68d769b1e47db60de6ccd08d34801ebff9cf8221333d7e4fb0b895618c5289c",
-    "package_manifest_sha256": "6d6ebc00df77a71b2c8e5e2a24ddaad1180587a345ea3ec36d6756b2c97444ad"
+    "source_label": "guild-adventure-studio-sub(20260830-014829).zip",
+    "source_role": "Human-provided Fresh Current after Task4C apply",
+    "recorded_at": "2026-08-30T10:49:00+09:00",
+    "source_zip_sha256": "2abb7c7faa2a16f7e134f155de65c9f02c16f0d1490e3feeaab2e19c07130a8e",
+    "package_manifest_sha256": "63cde4856ac060aa8937e4fe5e72314402df386892526a5d46993417d4dc3621"
   },
   "lifecycle": {
     "status": "Active",
@@ -735,7 +744,7 @@
     {
       "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-4B-001",
       "title": "Task 4B Formal Passive Runtime Contract Transport",
-      "status": "Prepared",
+      "status": "Completed",
       "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
       "work_type": "SOURCE_UPDATE",
       "studio_build": "GKS-B806",
@@ -767,7 +776,7 @@
       "summary": "Validated Formal Passive runtimeContracts are carried into standalone/adventure Battle units. No Battle-side Master/Tag interpretation and no fatal intervention yet.",
       "recorded_at": "2026-08-30T10:25:49+09:00",
       "created_at": "2026-08-30T10:25:49+09:00",
-      "updated_at": "2026-08-30T10:25:49+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00",
       "work_box_ids": [],
       "task_ids": [],
       "evidence": ""
@@ -775,7 +784,7 @@
     {
       "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-4C-B807-001",
       "title": "Task 4C ON_FATAL_DAMAGE Fatal Survive Interrupt",
-      "status": "Prepared",
+      "status": "Completed",
       "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
       "work_type": "SOURCE_UPDATE",
       "studio_build": "GKS-B807",
@@ -832,9 +841,100 @@
       "evidence": "Targeted TASK4C_FATAL_CONTRACT_OK checks=11; Critical 159 PASS; Trigger regression PASS; Source Quick 11/11 PASS; update Quick 13/13 PASS; Accept 13/13 PASS; applied-state selected Full 26/26 PASS.",
       "recorded_at": "2026-08-30T10:30:00+09:00",
       "created_at": "2026-08-30T10:30:00+09:00",
-      "updated_at": "2026-08-30T10:30:00+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00",
       "work_box_ids": [],
       "task_ids": []
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-B807-FRESH-VERIFY-001",
+      "title": "Task 4C Fresh Current Verification",
+      "status": "Completed",
+      "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "work_type": "VERIFICATION",
+      "studio_build": "GKS-B807",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "source": {
+        "file": "guild-adventure-studio-sub(20260830-014829).zip",
+        "sha256": "2abb7c7faa2a16f7e134f155de65c9f02c16f0d1490e3feeaab2e19c07130a8e",
+        "package_manifest_sha256": "63cde4856ac060aa8937e4fe5e72314402df386892526a5d46993417d4dc3621"
+      },
+      "evidence": "Fresh Current GKS-B807 / GA-B486.211 verified. package_manifest matches B807 target. Critical conformance 159 PASS and Formal Trigger Engine regression PASS.",
+      "recorded_at": "2026-08-30T10:49:00+09:00",
+      "created_at": "2026-08-30T10:49:00+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-4D-B808-001",
+      "title": "Task 4D Formal Damage Element Distribution / Element Resistance",
+      "status": "Prepared",
+      "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B808",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "baseline": {
+        "studio_build": "GKS-B807",
+        "game_build": "GA-B486.211",
+        "source_zip": "guild-adventure-studio-sub(20260830-014829).zip",
+        "source_zip_sha256": "2abb7c7faa2a16f7e134f155de65c9f02c16f0d1490e3feeaab2e19c07130a8e",
+        "package_manifest_sha256": "63cde4856ac060aa8937e4fe5e72314402df386892526a5d46993417d4dc3621",
+        "source_tree_sha256": "4846444871d746ee5949951b4db9dc3bc4f6b3dacc9c3c86487b882014a32cc1"
+      },
+      "target": {
+        "studio_build": "GKS-B808",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "7084f692245ce90eb99da7d53c73fb486c123dad9ed00de740bbc7efd5bcf32f",
+        "source_tree_sha256": "8721f10a30a3576a4072678e9ccc1503911258d1eb37e65ee4d45731e543f04e",
+        "artifact_id": "GKS-B808-8721f10a30a3"
+      },
+      "artifact": {
+        "file": "SKL-0001_TASK4D_GKS-B808_STUDIO-UPDATE.zip",
+        "sha256": "497bce73d8ef7bb0a4892cdc0f7f2577af51086e1ca788e2b6ee80a614f0fecd",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "scope": {
+        "implemented": [
+          "Formal DAMAGE authoring elements[] -> runtimeContracts.effectContracts[].elementComponents",
+          "FIRE/ICE/LIGHTNING/WIND Formal Registry authority",
+          "Unspecified shares distribute remaining damage equally",
+          "Specified sharePercent preserves the specified portion of total damage",
+          "All-specified shares require exactly 100%; overflow/underfill fail closed",
+          "Game Formal Runtime per-element resistance resolution with ELEMENT_RESISTANCE:<ELEMENT>",
+          "Studio Formal Battle parity for per-element damage/resistance",
+          "Element Resistance cap 75%",
+          "Studio Skill Generator JSON authoring field for damage elements",
+          "AI generation transport preserves elements"
+        ],
+        "not_changed": [
+          "damageType PHYSICAL/MAGICAL/FIXED semantics",
+          "Total damage amount before elemental split",
+          "Critical-before-hit order",
+          "Task5 Reactive/Periodic hooks",
+          "Task6 LowHP lifecycle"
+        ]
+      },
+      "evidence": "Compiler probe: FIRE+ICE unspecified => 0.5/0.5; FIRE30 + ICE unspecified => 0.3/0.7; all-specified 30+30 => Fail Closed. Critical 159 PASS; Trigger Engine PASS; source Quick 11/11 PASS; update Accept 14/14 PASS.",
+      "recorded_at": "2026-08-30T11:15:00+09:00",
+      "created_at": "2026-08-30T11:15:00+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001"
+      ]
     }
   ],
   "discussions": [
@@ -1453,6 +1553,18 @@
       "approved_at": "2026-08-29T19:24:00+09:00",
       "created_at": "2026-08-29T19:24:00+09:00",
       "updated_at": "2026-08-29T19:24:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-DAMAGE-ELEMENT-DISTRIBUTION-001",
+      "title": "複数属性Damageを属性成分へ分割し各属性耐性を個別適用する",
+      "status": "Approved",
+      "text": "Formal DAMAGEの元Damage総量は属性数によって増加させない。各属性は総Damageに対するshareとして保持する。share未指定属性は、指定済みshareを差し引いた残量を未指定属性数で均等分配する。各属性Damage = 元Damage * share。各属性Damageへ対応するELEMENT_RESISTANCE:<ELEMENT>を個別適用し、軽減後の属性Damageを合算して後段Damage処理へ渡す。全属性share指定時は合計100%を必須とする。",
+      "rationale": "FIRE+ICE等の複数属性でDamage総量を二重化せず、各属性耐性をそれぞれ正しく作用させるため。Human例の総Damage100・FIRE30%ではFIRE30、残りICE70と解釈する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-30T11:15:00+09:00",
+      "created_at": "2026-08-30T11:15:00+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00"
     }
   ],
   "specifications": [],
@@ -1620,8 +1732,8 @@
         "at": "2026-08-30T10:15:03+09:00"
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-30T10:30:00+09:00",
-      "result_scope": "Phase4A is Applied/Fresh-Current verified on GKS-B805. Phase4B GKS-B806 prepares validated Formal Passive runtimeContracts transport into Battle units. Phase4C GKS-B807 prepares data-driven trigger cooldownTicks and ON_FATAL_DAMAGE fatal-survive interrupt at projectedHp<=0 before HP commit for Formal Skill DAMAGE/Basic Attack/Multi-hit and DOT, using existing cooldown/actionContext/RNG foundations. Task remains Doing because ELEMENT_RESISTANCE:<ELEMENT> and MAGIC_RESISTANCE consumers are not connected without authoritative existing consumers."
+      "updated_at": "2026-08-30T11:15:00+09:00",
+      "result_scope": "Task4A applied: direct modifiers/resource reductions. Task4B applied: Formal Passive runtimeContracts transport. Task4C applied and Fresh Current GKS-B807 verified: ON_FATAL_DAMAGE HP1 fatal-survive. Task4D GKS-B808 prepared: Formal DAMAGE elemental split contract and ELEMENT_RESISTANCE:<ELEMENT> Game/Studio consumers. MAGIC_RESISTANCE is not a Task4 Passive acceptance item and is removed from remaining scope. Task remains Doing until B808 Human Apply/Fresh Current verification."
     },
     {
       "id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
@@ -1962,6 +2074,29 @@
       "blocking": false,
       "created_at": "2026-08-30T10:30:00+09:00",
       "updated_at": "2026-08-30T10:30:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-4D-B808-001",
+      "title": "Task 4D Formal Damage element distribution / resistance verification",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Passed",
+      "result": "GKS-B808 target compiles and validates Human-approved elemental split semantics. Update artifact passes direct SOURCE_UPDATE accept gate.",
+      "evidence": "Compiler probe equal=FIRE0.5/ICE0.5; specified=FIRE0.3/ICE0.7; invalid all-specified 30+30 rejected. CRITICAL_CONFORMANCE_R19_OK checks=159; GENERIC_TRIGGER_ENGINE_R04_A_PASS; Quick 11/11 PASS; Accept 14/14 PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T11:15:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T11:15:00+09:00",
+      "updated_at": "2026-08-30T11:15:00+09:00",
       "resolution": {
         "status": "Open",
         "resolved_by": "",
