@@ -2,7 +2,7 @@
 'use strict';
 const bootDiag=message=>{try{global.GKSSkillGeneratorBootDiagnostic?.mark?.(message);}catch{}};
 bootDiag('BOOT-3: module entered');
-const VERSION='1.10.0';
+const VERSION='1.11.0';
 let skillRegistry=null,skillUiDefinition=null,budgetRules=null,aiGenerationRules=null,aiBatchPreview=null,lastFormalSkillBatch=null;
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
 const stamp=()=>new Date().toISOString();
@@ -11,6 +11,7 @@ const skillAuthoringRegistryApi=()=>global.GKSSkillAuthoringRegistry;
 const skillBudgetEngineApi=()=>global.GKSSkillBudgetEngine;
 const skillAiBatchEngineApi=()=>global.GKSSkillAiBatchEngine;
 const skillCompileServiceApi=()=>global.GKSSkillCompileService?.compileSkill?global.GKSSkillCompileService:null;
+const formalPassiveCompilerApi=()=>global.GKSFormalPassiveCompiler;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DEPENDENCY_TIMEOUT_MS=12000;
 async function fetchJsonDependency(url,label,{timeoutMs=DEPENDENCY_TIMEOUT_MS}={}){
@@ -35,7 +36,7 @@ async function loadBudgetRules({force=false}={}){if(force||!budgetRules)budgetRu
 function calculateSkillBudget(draft,options={}){if(!budgetRules)throw new Error('Skill Budget Rulesを先に読み込んでください');return skillBudgetEngineApi().calculate(draft,budgetRules,skillRegistry,options);}
 async function loadAiGenerationRules({force=false}={}){if(force||!aiGenerationRules)aiGenerationRules=await fetchJsonDependency('../assets/shared/config/skill-ai-generation-rules.json','AI Rules');return clone(aiGenerationRules);}
 function aiRequestTemplate(){return{schema:'GKS_SKILL_AI_BATCH_REQUEST',version:'1.0.0',mode:'ACTIVE',requests:[{skillLevel:4,intent:'STR40物理単発',statThresholds:{STR:40},abilityKind:'PHYSICAL_DAMAGE',target:'ENEMY',range:'SINGLE',trigger:{type:'ON_USE',scope:'SELF'},conditions:[],resource:{mpCost:0,cooldown:0,activationPriority:0,castTime:0},searchMetadata:{tags:['SKL','物理']}},{skillLevel:4,intent:'INT40魔法単発',statThresholds:{INT:40},abilityKind:'MAGIC_DAMAGE',target:'ENEMY',range:'SINGLE',trigger:{type:'ON_USE',scope:'SELF'},conditions:[],resource:{mpCost:0,cooldown:0,activationPriority:0,castTime:0},searchMetadata:{tags:['SKL','魔法']}}]};}
-async function generateSkillAiBatch(payload){if(!skillAiBatchEngineApi()?.generateBatch)throw new Error('G05 AI Batch Engineが読み込まれていません');if(!aiGenerationRules)await loadAiGenerationRules();aiBatchPreview=await skillAiBatchEngineApi().generateBatch(payload,{registry:skillRegistry,budgetRules,rules:aiGenerationRules,idPrefix:'G05-AI',validateFinal:false});lastFormalSkillBatch=buildFormalSkillBatch(aiBatchPreview);return clone(aiBatchPreview);}
+async function generateSkillAiBatch(payload){if(!skillAiBatchEngineApi()?.generateBatch)throw new Error('G05 AI Batch Engineが読み込まれていません');if(!aiGenerationRules)await loadAiGenerationRules();const mode=String(payload?.mode||'').trim().toUpperCase();aiBatchPreview=await skillAiBatchEngineApi().generateBatch(payload,{registry:skillRegistry,budgetRules,rules:aiGenerationRules,idPrefix:'G05-AI',passiveIdPrefix:'G05-PAS',compilePassive:formalPassiveCompilerApi()?.compilePassive,passiveSkills:hostData()?.masters?.skills||[],validateFinal:false});if(mode==='ACTIVE')lastFormalSkillBatch=buildFormalSkillBatch(aiBatchPreview);else lastFormalSkillBatch=null;return clone(aiBatchPreview);}
 const SKILL_BATCH_VERSION='1.0.0';
 function exportAiRequest(payload){const src=payload==null?aiRequestTemplate():clone(payload);assertJsonObjectSchema(src,'GKS_SKILL_AI_BATCH_REQUEST');return clone(src);}
 function buildFormalSkillBatch(result=aiBatchPreview){const entries=Array.isArray(result?.entries)?result.entries:[],accepted=entries.filter(x=>x?.status==='ACCEPT'&&x?.skill).map(x=>({index:x.index,skill:clone(x.skill),generation:clone(x.generation||{}),validation:{budgetResult:clone(x.validation?.budgetResult||null),compilerWarnings:clone(x.validation?.compilerWarnings||[])}}));if(!accepted.length)throw Object.assign(new Error('Formal Batch対象のACCEPT Skillがありません'),{code:'FORMAL_SKILL_BATCH_EMPTY'});return{schema:'GKS_SKILL_BATCH',version:SKILL_BATCH_VERSION,sourceSchema:result?.schema||'GKS_SKILL_AI_BATCH_RESULT',aiGenerationRuleVersion:result?.aiGenerationRuleVersion||'',budgetRuleVersion:result?.budgetRuleVersion||'',skills:accepted};}
