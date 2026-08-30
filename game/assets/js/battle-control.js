@@ -174,12 +174,13 @@ async function completeBattleEnding(){
 function clearBattleEndDotStacks(){for(const u of battle.units){if(Array.isArray(u.dotStacks)&&u.dotStacks.length){const count=u.dotStacks.length;u.dotStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stacks_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
 function clearBattleEndModifierStacks(){for(const u of battle.units){if(Array.isArray(u.modifierStacks)&&u.modifierStacks.length){const count=u.modifierStacks.length;u.modifierStacks=[];typeof recordValidationEvent==='function'&&recordValidationEvent('modifier_stacks_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
 function clearBattleEndCooldowns(){for(const u of battle.units){const count=u.cooldowns&&typeof u.cooldowns==='object'&&!Array.isArray(u.cooldowns)?Object.keys(u.cooldowns).length:0;if(count){u.cooldowns={};typeof recordValidationEvent==='function'&&recordValidationEvent('cooldowns_cleared',{target_id:u.id,count,reason:'battle_end'})}}}
+function clearBattleEndLowHpPassiveStates(){for(const u of battle.units){const states=u.lowHpPassiveStates&&typeof u.lowHpPassiveStates==='object'&&!Array.isArray(u.lowHpPassiveStates)?u.lowHpPassiveStates:null;if(!states)continue;let stateCount=0,removed=0;for(const state of Object.values(states)){stateCount++;if(typeof removeLowHpPassiveContributions==='function')removed+=removeLowHpPassiveContributions(u,state)}u.lowHpPassiveStates={};if(stateCount&&typeof recordValidationEvent==='function')recordValidationEvent('lowhp_passive_states_cleared',{target_id:u.id,count:stateCount,removed_contributions:removed,reason:'battle_end'})}}
 function finishIfNeeded(){
  const allyAlive=battle.units.some(u=>u.alive&&u.side==='味方'),enemyAlive=battle.units.some(u=>u.alive&&u.side==='敵');
  if(allyAlive&&enemyAlive)return false;
  if(battle.pendingResult||battle.result)return true;
  const resolved=allyAlive?'味方勝利':enemyAlive?'敵勝利':'引き分け';
- battle.units.forEach(u=>{u.reservedAction=null;u.castingAction=null});processApplyLifecycleCleanup('battle_end');clearAllCoverEffects('battle_end');clearBattleEndCooldowns();
+ battle.units.forEach(u=>{u.reservedAction=null;u.castingAction=null});processApplyLifecycleCleanup('battle_end');clearAllCoverEffects('battle_end');clearBattleEndLowHpPassiveStates();clearBattleEndCooldowns();
  if(formalAdventureSimulationDepth>0){
   battle.result=resolved;battle.pendingResult=null;battle.running=false;
   battle.log.push(`[Tick ${battle.tick}] 戦闘終了 — ${battle.result}`);recordValidationEvent('battle_finished',{result:battle.result});return true;
