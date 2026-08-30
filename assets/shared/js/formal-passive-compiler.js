@@ -54,6 +54,19 @@
       if(Object.prototype.hasOwnProperty.call(triggerRaw,'activationChance')){const chance=triggerRaw.activationChance;if(typeof chance!=='number'||!Number.isFinite(chance)||chance<0||chance>1)throw new Error(`Passive ${checked.id}のactivationChanceは0以上1以下の有限numberが必要です。`);triggerContract.activationChance=chance;}
       if(Object.prototype.hasOwnProperty.call(triggerRaw,'cooldownTicks')){const cooldownTicks=triggerRaw.cooldownTicks;if(!Number.isInteger(cooldownTicks)||cooldownTicks<0)throw new Error(`Passive ${checked.id}のcooldownTicksは0以上の整数が必要です。`);triggerContract.cooldownTicks=cooldownTicks;}
     }
+    let periodicContract=null;
+    if(params.periodic!=null){
+      if(!object(params.periodic))throw new Error('passive.params.periodicはobjectで指定してください。');
+      const resource=req(params.periodic.resource,'passive.params.periodic.resource').toUpperCase();
+      if(!['HP','MP'].includes(resource))throw new Error(`Passive ${checked.id}のperiodic.resourceはHP/MPだけを使用できます: ${resource}`);
+      const intervalTicks=params.periodic.intervalTicks;
+      if(!Number.isInteger(intervalTicks)||intervalTicks<1)throw new Error(`Passive ${checked.id}のperiodic.intervalTicksは1以上の整数が必要です。`);
+      const initialDelayTicks=Object.prototype.hasOwnProperty.call(params.periodic,'initialDelayTicks')?params.periodic.initialDelayTicks:intervalTicks;
+      if(!Number.isInteger(initialDelayTicks)||initialDelayTicks<1)throw new Error(`Passive ${checked.id}のperiodic.initialDelayTicksは1以上の整数が必要です。`);
+      const recoveryRate=params.periodic.recoveryRate;
+      if(typeof recoveryRate!=='number'||!Number.isFinite(recoveryRate)||recoveryRate<=0||recoveryRate>1)throw new Error(`Passive ${checked.id}のperiodic.recoveryRateは0より大きく1以下の有限numberが必要です。`);
+      periodicContract={resource,intervalTicks,initialDelayTicks,recoveryRate};
+    }
     let executionContract=null,skillRequirements=[];
     if(params.execution!=null){
       if(!object(params.execution))throw new Error('passive.params.executionはobjectで指定してください。');
@@ -70,7 +83,7 @@
     const consumed=derivedSources.length?aggregateRequirements(derivedSources):aggregateRequirements(finalRequirement);
     if(derivedSources.length&&!sameRequirements(finalRequirement,consumed))throw new Error(`Passive ${checked.id}のability_conditionsがTrigger+Referenced Skill Requirement合計と一致しません。`);
     const total=consumed.reduce((sum,row)=>sum+row.min,0);if(total>110)throw new Error(`Passive ${checked.id}の総Threshold消費${total}は上限110を超えています。`);
-    const runtimeContracts={schemaVersion:1,registryPhase:String(registry?.phase||''),passiveSeriesId:checked.passiveSeriesId,abilityRequirementContracts:clone(finalRequirement),thresholdConsumption:{byStat:clone(consumed),total},triggerContract,targetContract:compileTarget(params.target),executionContract,modifierRefs:{modIds:[...(params.mod_ids||[])],effectIds:[...(params.effect_ids||[])],combatCapabilities:[...(params.combat_capabilities||[])]}};
+    const runtimeContracts={schemaVersion:1,registryPhase:String(registry?.phase||''),passiveSeriesId:checked.passiveSeriesId,abilityRequirementContracts:clone(finalRequirement),thresholdConsumption:{byStat:clone(consumed),total},triggerContract,targetContract:compileTarget(params.target),executionContract,periodicContract,modifierRefs:{modIds:[...(params.mod_ids||[])],effectIds:[...(params.effect_ids||[])],combatCapabilities:[...(params.combat_capabilities||[])]}};
     return{ok:true,version:VERSION,compiledPassive:{...clone(checked),runtimeContracts}};
   }
   return Object.freeze({VERSION,STATS,DISPATCH,TARGET_MODES,normalizeRequirements,aggregateRequirements,compilePassive});

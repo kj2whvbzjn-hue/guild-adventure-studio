@@ -264,7 +264,7 @@ function evaluateCrossedAiThresholds(actor,previousGauge,currentGauge){
 }
 function processTicks(count){
  for(let n=0;n<count&&!battle.result&&!battle.pendingResult;n++){
-  battle.tick++;processApplyLifecycleExpirations();processCooldowns();processCoverEffects();processCastingActions();if(battle.result||battle.pendingResult)break;if(battle.validationMode)continue;
+  battle.tick++;processApplyLifecycleExpirations();processCooldowns();processPeriodicPassives();processCoverEffects();processCastingActions();if(battle.result||battle.pendingResult)break;if(battle.validationMode)continue;
   const max=battleGaugeMax();GAUGE_MAX=max;
   for(const u of battle.units.filter(u=>u.alive&&!u.castingAction)){const before=Math.max(0,Math.min(max,Number(u.gauge)||0)),after=Math.max(0,Math.min(max,before+battleAgGainPerTick(u.agi)));u.gauge=after;evaluateCrossedAiThresholds(u,before,after);}
   const dueBase=battle.units.filter(u=>u.alive&&!u.castingAction&&u.reservedAction&&u.gauge+1e-9>=max);
