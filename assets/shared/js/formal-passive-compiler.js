@@ -67,6 +67,18 @@
       if(typeof recoveryRate!=='number'||!Number.isFinite(recoveryRate)||recoveryRate<=0||recoveryRate>1)throw new Error(`Passive ${checked.id}のperiodic.recoveryRateは0より大きく1以下の有限numberが必要です。`);
       periodicContract={resource,intervalTicks,initialDelayTicks,recoveryRate};
     }
+    let lowHpContract=null;
+    if(params.lowHp!=null){
+      if(!object(params.lowHp))throw new Error('passive.params.lowHpはobjectで指定してください。');
+      const hpThresholdRate=params.lowHp.hpThresholdRate;
+      if(typeof hpThresholdRate!=='number'||!Number.isFinite(hpThresholdRate)||hpThresholdRate<=0||hpThresholdRate>1)throw new Error(`Passive ${checked.id}のlowHp.hpThresholdRateは0より大きく1以下の有限numberが必要です。`);
+      const durationTicks=params.lowHp.durationTicks;
+      if(!Number.isInteger(durationTicks)||durationTicks<1)throw new Error(`Passive ${checked.id}のlowHp.durationTicksは1以上の整数が必要です。`);
+      const cooldownTicks=params.lowHp.cooldownTicks;
+      if(!Number.isInteger(cooldownTicks)||cooldownTicks<0)throw new Error(`Passive ${checked.id}のlowHp.cooldownTicksは0以上の整数が必要です。`);
+      const contributionTargets=Object.freeze(['PHYSICAL_DAMAGE','MAGIC_DAMAGE','ACCURACY','MAGIC_ACCURACY','EVASION','BLOCK_RATE','BLOCK_PERFORMANCE','CRITICAL_RATE','CRITICAL_DAMAGE','ACTION_GAUGE_GAIN']);
+      lowHpContract={hpThresholdRate,durationTicks,cooldownTicks,relativeBonus:1,contributionTargets:[...contributionTargets]};
+    }
     let executionContract=null,skillRequirements=[];
     if(params.execution!=null){
       if(!object(params.execution))throw new Error('passive.params.executionはobjectで指定してください。');
@@ -83,7 +95,7 @@
     const consumed=derivedSources.length?aggregateRequirements(derivedSources):aggregateRequirements(finalRequirement);
     if(derivedSources.length&&!sameRequirements(finalRequirement,consumed))throw new Error(`Passive ${checked.id}のability_conditionsがTrigger+Referenced Skill Requirement合計と一致しません。`);
     const total=consumed.reduce((sum,row)=>sum+row.min,0);if(total>110)throw new Error(`Passive ${checked.id}の総Threshold消費${total}は上限110を超えています。`);
-    const runtimeContracts={schemaVersion:1,registryPhase:String(registry?.phase||''),passiveSeriesId:checked.passiveSeriesId,abilityRequirementContracts:clone(finalRequirement),thresholdConsumption:{byStat:clone(consumed),total},triggerContract,targetContract:compileTarget(params.target),executionContract,periodicContract,modifierRefs:{modIds:[...(params.mod_ids||[])],effectIds:[...(params.effect_ids||[])],combatCapabilities:[...(params.combat_capabilities||[])]}};
+    const runtimeContracts={schemaVersion:1,registryPhase:String(registry?.phase||''),passiveSeriesId:checked.passiveSeriesId,abilityRequirementContracts:clone(finalRequirement),thresholdConsumption:{byStat:clone(consumed),total},triggerContract,targetContract:compileTarget(params.target),executionContract,periodicContract,lowHpContract,modifierRefs:{modIds:[...(params.mod_ids||[])],effectIds:[...(params.effect_ids||[])],combatCapabilities:[...(params.combat_capabilities||[])]}};
     return{ok:true,version:VERSION,compiledPassive:{...clone(checked),runtimeContracts}};
   }
   return Object.freeze({VERSION,STATS,DISPATCH,TARGET_MODES,normalizeRequirements,aggregateRequirements,compilePassive});
