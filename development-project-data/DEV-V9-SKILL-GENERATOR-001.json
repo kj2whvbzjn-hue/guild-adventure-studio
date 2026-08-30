@@ -1,0 +1,709 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-cf845713-e75a-4340-9207-8fa300e0415f",
+    "canonical_path": "development-project-data/DEV-V9-SKILL-GENERATOR-001.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-SKILL-GENERATOR-001",
+    "name": "Skill Generator Active/Passive統合改修",
+    "status": "Exploring",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-30T19:30:00+09:00"
+  },
+  "project_context": {
+    "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
+    "summary": "新規独立Generatorは作らない。GKS_SKILL_AI_BATCH_REQUESTを共通入口として維持し、ActiveはSKL-0001 Threshold/Ability/Range/Resource方式、PassiveはEVD-0008/SKL-0001 Passive Requirement/Series/Modifier/Trigger方式で別Builder化する。G07/Compiler/runtimeContracts/既存Passive master/data-exchange/runtimeを再利用し、EVD-0009 80件とEVD-0012 68件をAcceptance Fixtureとして段階検証する。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-SGEN-001",
+    "work_box_id": "BOX-SGEN-FOUNDATION-001",
+    "theme": "Skill Generator統合改修 Plan Gate",
+    "goal": "TASK-SGEN-001でFresh CurrentのSource baseline、責務別owner、変更許可file/read-only dependency、Current regression inventoryを固定し、Human承認後に分割Source Updateへ進む。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-SGEN-001",
+      "text": "新規独立Skill Generator / Passive Generatorを作らず、既存GKS_SKILL_AI_BATCH_REQUESTとCurrent Studio/Compiler/Registry/Data Exchangeをreuse-firstで拡張する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-30",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "RULE-SGEN-002",
+      "text": "生成UI/Batch入口は1つ、内部生成ロジックはActive/Passiveで分離する。共有できるのはtransport/provenance/validation orchestration/save/export等に限定する。",
+      "status": "Active",
+      "source_type": "HumanDecision",
+      "source_id": "conversation:2026-08-30 Active Passive generator architecture",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "RULE-SGEN-003",
+      "text": "Current Formal Skill/Passive ContractをBalance都合で変更しない。必要なfield/registry接続がCurrent Contract内で表現できない場合はFail Closedして仕様判断へ戻す。",
+      "status": "Active",
+      "source_type": "Authority",
+      "source_id": "SKL-0001:RULE-SKL-002 / DEV-V9-REORG-019:SPEC-V9-019-SKILL-001",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "RULE-SGEN-004",
+      "text": "EVD-0009/EVD-0012はAcceptance FixtureでありProduct Masterへの自動昇格を意味しない。未確定Template/Deferred項目を推測具体化しない。",
+      "status": "Active",
+      "source_type": "EvidenceBoundary",
+      "source_id": "EVD-0009,EVD-0012",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "RULE-SGEN-005",
+      "text": "EVD-0012 concrete 68件はRequirementが具体化されたGenerator入力Candidateであり、全件がそのままFormal Passive生成可能とは限らない。`<ELEMENT>` / `<STATUS>` 等のParameterized Channelは具体binding入力がない限りFormal確定生成せずFail Closedし、Current Registry許可値のみbinding可能とする。",
+      "status": "Active",
+      "source_type": "ReviewCorrection",
+      "source_id": "implementation-plan-review:2026-08-30",
+      "created_at": "2026-08-30T19:30:00+09:00",
+      "updated_at": "2026-08-30T19:30:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B820",
+    "game_build": "GA-B486.211",
+    "source_label": "SKL-0001 Current completion snapshot; source artifact itself must be re-confirmed at TASK-SGEN-001 before Source Update",
+    "source_role": "planning authority baseline",
+    "recorded_at": "2026-08-30T19:05:00+09:00",
+    "reference_hashes": {
+      "DEV-V9-BALANCE-001": "2c2c490805dcdc7bf798c4e45671f1408c041a6654af8a43e8fa55e67e1466f8",
+      "DEV-V9-REORG-019": "92ba7b4c924608d5cf8c1b5373fe5cfd1308dec76c0699448cb5e279245eb4d3",
+      "SKL-0001": "4f2549143576d8afb5434293a4ca1822e9af4d3588db86e2f60a128851e433b7",
+      "EVD-0009": "978a17b1c374f5f3a153ef6d551df7541d3a38890ba0cb2c3443c1caba3ddce4",
+      "EVD-0012": "9ea344b15bb540eb305b60cce61e4958fe2869bb5be03bf90422321746aeba13",
+      "EVD-0010": "35ee69aa19b7432ebf5405782a657940d738fae6da5759faf2b0d42650695dec",
+      "EVD-0011": "b8b41ea0e902326ade78c5d5d90f0b2762ce9bfb0ad5e5d0cf6d5357126f4301",
+      "EVD-0013": "999c3832f60943be8084d2eef343b40d780a776529c3309173e347a3b10fcf86",
+      "EVD-0014": "920a7bc215ed48bb110f8d98b98804d6cab6e066de43a7b50131ae077a5d10a8"
+    }
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-30T19:05:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [],
+  "decisions": [
+    {
+      "id": "DEC-SGEN-001",
+      "title": "Single Entry / Dual Builder architecture",
+      "status": "Approved",
+      "conclusion": "Skill生成機能は1つの共通入口を維持し、内部生成ロジックはActive BuilderとPassive Builderへ分離する。Validation/Compiler/Data Exchange/Exportは既存ownerを共有する。",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-30",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-002",
+      "title": "Reuse-first / No duplicate generator",
+      "status": "Approved",
+      "conclusion": "GKS_SKILL_AI_BATCH_REQUEST、G05/G07、Formal Compiler/runtimeContracts、既存Passive master/data-exchange/runtimeを再利用し、独立Generator/Store/Compiler/Export経路は新設しない。",
+      "source_type": "HumanInstruction+ExistingProjectRule",
+      "source_id": "conversation + DEV-V9-BALANCE-001:RULE-BAL-REUSE-001/002",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    },
+    {
+      "id": "DEC-SGEN-003",
+      "title": "Parameterized Passive Candidate boundary",
+      "status": "Approved",
+      "conclusion": "EVD-0012 concrete 68 means Requirement/equipability-ready, not necessarily Formal-output-ready. 15 parameterized channel records require explicit Current-Registry-valid binding before Formal generation; otherwise Fail Closed.",
+      "source_type": "PlanReview",
+      "source_id": "implementation-plan-review:2026-08-30",
+      "created_at": "2026-08-30T19:30:00+09:00",
+      "updated_at": "2026-08-30T19:30:00+09:00",
+      "text": "",
+      "rationale": "",
+      "source_discussion_ids": [],
+      "approved_by": "",
+      "approved_at": ""
+    }
+  ],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [
+    {
+      "id": "SYS-SGEN-ENTRY",
+      "name": "Shared Skill Batch Entry",
+      "status": "Planned",
+      "owner": "existing GKS_SKILL_AI_BATCH_REQUEST / studio/skill/skill-generator.js",
+      "description": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "SYS-SGEN-ACTIVE",
+      "name": "Active Skill Builder",
+      "status": "Planned",
+      "owner": "existing skill generation core",
+      "description": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "SYS-SGEN-PASSIVE",
+      "name": "Passive Skill Builder",
+      "status": "Planned",
+      "owner": "existing Studio passive authoring/data-exchange architecture",
+      "description": "",
+      "created_at": "",
+      "updated_at": ""
+    },
+    {
+      "id": "SYS-SGEN-VALIDATE",
+      "name": "Shared Validation/Compile/Export",
+      "status": "Planned",
+      "owner": "G07 / Formal Compiler / existing Passive validators",
+      "description": "",
+      "created_at": "",
+      "updated_at": ""
+    }
+  ],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [
+    {
+      "id": "IMP-SGEN-001",
+      "title": "Shared request/transport",
+      "status": "Open",
+      "severity": "High",
+      "target": "GKS_SKILL_AI_BATCH_REQUEST / studio/skill/skill-generator.js / skill-ai-batch-engine.js",
+      "impact": "mode dispatch、input schema、provenance、batch result。既存Active transport回帰に注意。",
+      "task_ids": [
+        "TASK-SGEN-001",
+        "TASK-SGEN-002"
+      ]
+    },
+    {
+      "id": "IMP-SGEN-002",
+      "title": "Active numeric generation",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "G05/G04-era numeric rules / skill-ai-generation-rules / skill-budget-rules",
+      "impact": "旧Budget semanticsをCurrent SKL Threshold/Ability/Range/Resourceへ置換。G07/Compiler契約は維持。",
+      "task_ids": [
+        "TASK-SGEN-003",
+        "TASK-SGEN-004"
+      ]
+    },
+    {
+      "id": "IMP-SGEN-003",
+      "title": "Passive authoring generation",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "existing Passive master/data-exchange/runtime contracts",
+      "impact": "Requirement/series/stage/channel/trigger/periodic/specialを生成可能にする。Active Budgetを流用しない。",
+      "task_ids": [
+        "TASK-SGEN-005",
+        "TASK-SGEN-006"
+      ]
+    },
+    {
+      "id": "IMP-SGEN-004",
+      "title": "Validation/Compiler/Registry",
+      "status": "Open",
+      "severity": "High",
+      "target": "G07 / skill-compile-service.js / skill-compiler.js / Formal registries / Passive validators",
+      "impact": "mode別fail-closed、unknown binding rejection、runtimeContracts出力の非回帰。",
+      "task_ids": [
+        "TASK-SGEN-007",
+        "TASK-SGEN-010"
+      ]
+    },
+    {
+      "id": "IMP-SGEN-005",
+      "title": "Studio Data Exchange / Export / UI",
+      "status": "Open",
+      "severity": "High",
+      "target": "existing Studio master/data-exchange/export owner",
+      "impact": "1入口2mode UI、Candidate保存/再読込/Export。parallel store禁止。",
+      "task_ids": [
+        "TASK-SGEN-007",
+        "TASK-SGEN-011"
+      ]
+    },
+    {
+      "id": "IMP-SGEN-006",
+      "title": "Acceptance Evidence dependencies",
+      "status": "Open",
+      "severity": "High",
+      "target": "EVD-0009/0010/0011/0012/0013/0014",
+      "impact": "Requirement/effect/resource差分が装備可能Evidenceを無効化しないことを確認。",
+      "task_ids": [
+        "TASK-SGEN-008",
+        "TASK-SGEN-009",
+        "TASK-SGEN-012"
+      ]
+    },
+    {
+      "id": "IMP-SGEN-007",
+      "title": "Passive Parameterized Channel binding",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "ELEMENT_RESISTANCE:<ELEMENT> / STATUS_RESISTANCE:<STATUS> and Current registries",
+      "impact": "EVD-0012 concrete 68件のうちParameterized Channelを持つCandidateはRequirement具体化済みでもFormal effect binding未確定。明示bindingなしでFormal生成してはならない。",
+      "task_ids": [
+        "TASK-SGEN-005",
+        "TASK-SGEN-006",
+        "TASK-SGEN-009"
+      ]
+    }
+  ],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-SGEN-001",
+      "title": "Single Entry / Dual Builder Skill Generation",
+      "body": "Shared Batch/UI Entry -> mode dispatch -> Active Builder or Passive Builder -> existing validation/compiler/data-exchange owners -> Candidate output. No duplicate generator/store/compiler/export.",
+      "name": "",
+      "parent_id": "",
+      "created_at": "",
+      "updated_at": ""
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-SGEN-FOUNDATION-001",
+      "node_id": "ARCH-SGEN-001",
+      "title": "Phase 1: Contract/Entry Foundation",
+      "body": "Current owner/contractを固定し、共通Batch入口へActive/Passive modeを追加する。",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "BOX-SGEN-ACTIVE-001",
+      "node_id": "ARCH-SGEN-001",
+      "title": "Phase 2A: Active Builder",
+      "body": "SKL-0001 Threshold/Ability/Range/Resource方式へ既存Active生成コアを置換する。",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "BOX-SGEN-PASSIVE-001",
+      "node_id": "ARCH-SGEN-001",
+      "title": "Phase 2B: Passive Builder",
+      "body": "既存Passive authoring/runtimeへRequirement/Series/Modifier/Trigger生成を接続する。Phase2Aと並行可能。",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "BOX-SGEN-INTEGRATION-001",
+      "node_id": "ARCH-SGEN-001",
+      "title": "Phase 3: Shared Integration/UI",
+      "body": "Validation/Compiler/Data Exchange/Export/UIを1入口2modeへ統合する。",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "BOX-SGEN-VERIFY-001",
+      "node_id": "ARCH-SGEN-001",
+      "title": "Phase 4: Acceptance/Regression",
+      "body": "EVD fixtureと既存回帰でActive/Passive両modeを検証しFresh Current Evidenceを確定する。",
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-SGEN-001",
+      "box_id": "BOX-SGEN-FOUNDATION-001",
+      "title": "Current Skill生成経路・契約・影響範囲を固定する",
+      "status": "Todo",
+      "execution_order": 10,
+      "depends_on": [],
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "acceptance_criteria": "- Current正規入口を `GKS_SKILL_AI_BATCH_REQUEST` / `studio/skill/skill-generator.js` / `assets/shared/js/skill-ai-batch-engine.js` として再確認する。\n- G05/G07/Compiler/runtimeContracts/Skill Master、および既存Passive authoring/data-exchange/runtime経路の実Source ownerを列挙する。\n- 各ownerを Builder owner / Compiler owner / Registry owner / Store owner / Runtime owner に責務分離して固定する。\n- 各後続Taskについて、変更を許可する実Source file一覧とread-only dependency一覧を固定する。\n- Active/Passiveで共有可能な処理と分離必須の処理を一覧化する。\n- Fresh Current ZIPについてbuild番号だけでなく source ZIP SHA-256 / package manifest SHA-256 / source tree SHA-256 をCurrent baselineとして固定する。\n- Fresh Current上のG05/G07およびPassive関連registered regression suiteを再inventoryし、suite名・test file・実件数をEvidence化する。過去Snapshotの件数をCurrent Authorityとして固定しない。\n- 新規独立Skill Generator / Passive Generator / duplicate store / duplicate compilerを作らない。\n- Current Formal Skill Contract自体の変更が必要と判明した場合は実装せずFail ClosedしてHuman Gateへ戻す。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-002",
+      "box_id": "BOX-SGEN-FOUNDATION-001",
+      "title": "共通Batch RequestへActive/Passive modeを追加する",
+      "status": "Blocked",
+      "execution_order": 20,
+      "depends_on": [
+        "TASK-SGEN-001"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- 既存 `GKS_SKILL_AI_BATCH_REQUEST` を唯一の大量生成入口として維持する。\n- Requestへ明示的な生成種別 `ACTIVE` / `PASSIVE` を追加し、曖昧入力はFail Closedする。\n- 共通fieldはID/Name/metadata/provenance/batch/seed等に限定し、Active専用Budget/Range/ResourceとPassive専用Series/Stage/Modifier/Triggerを混在させない。\n- 既存Active Request互換を無条件Fallbackで残さない。必要な移行は明示変換またはHuman承認Migrationに限定する。\n- このTaskでは数値生成ロジックを変更しない。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-003",
+      "box_id": "BOX-SGEN-ACTIVE-001",
+      "title": "Active Skill生成コアをCurrent SKL Threshold/Ability方式へ置換する",
+      "status": "Blocked",
+      "execution_order": 30,
+      "depends_on": [
+        "TASK-SGEN-002"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- ActiveはSkill Lv総Threshold Budget=10..110、1〜3 Stat、各Stat最大100、Threshold合計=総Budgetを検証する。\n- Stat Thresholdを用途制限付きAbility Budgetとして処理し、旧G04の `base40 + SkillLv*6` / Range Effect multiplier / MP-CD refundをCurrent Active生成の数値Authorityに使用しない。\n- Physical/Multi-hit/Magic/DOT/Buff/Debuff/Heal/Barrier/Critical/Attribute/CLEANSE_ALL/REVIVE/CoverをSKL-0001のCurrent seed/Access規則から生成できる構造にする。\n- `abilityConditions` またはCurrent習得Requirement正式fieldへEVD-0009のstat_thresholdsを損失なく出力する。\n- G07/Compilerを最終Gateとして維持する。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-004",
+      "box_id": "BOX-SGEN-ACTIVE-001",
+      "title": "Active Target/Resource生成をCurrent Range seedへ接続する",
+      "status": "Blocked",
+      "execution_order": 40,
+      "depends_on": [
+        "TASK-SGEN-003"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- Base MP=`SkillLv*8`、SINGLE/FRONT/BACK/RANDOM/ALLのMP倍率/CD/CastをSKL-0001 seedから生成する。\n- RANDOMはCurrent G07要求fieldを欠落させない。\n- RangeはAbility Budgetを消費しない。\n- PIERCEは実装可否未確定のため自動生成対象に昇格させず、明示Deferred/Rejectを維持する。\n- Existing compiler/runtimeContracts出力形を変更しない。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-005",
+      "box_id": "BOX-SGEN-PASSIVE-001",
+      "title": "Passive Skill生成コアを既存共通入口へ接続する",
+      "status": "Blocked",
+      "execution_order": 30,
+      "depends_on": [
+        "TASK-SGEN-002"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- PassiveはActiveとは別Builderで処理し、基本1 Skill=1 Passive Effectとする。\n- Thresholdは習得Requirementのみで、Active Ability Budgetへ変換しない。\n- 原則MP/CD/Cast/Target Range Costを生成しない。\n- passiveSeriesId/stage/series exclusivity、Modifier Channel、Periodic、Trigger Action、Special Trigger、Composite SpecialをCurrent Passive Contractへ写像する。\n- EVD-0012 concrete 68件をGenerator入力Candidateとして受理する。\n- `ELEMENT_RESISTANCE:<ELEMENT>` / `STATUS_RESISTANCE:<STATUS>` 等のParameterized Channelは、具体bindingが入力されない限りFormal Passiveへ確定生成せずFail Closedする。\n- Parameterized ChannelのbindingはCurrent Registryから許可された具体値のみ受理し、Generatorが値を推測・自動選択しない。\n- EVD-0012 framework_templates 24件はRequirement未確定のため推測生成せずFail Closedする。\n- 独立Passive Generator/Store/Export Pipelineを新設しない。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-006",
+      "box_id": "BOX-SGEN-PASSIVE-001",
+      "title": "Passive Modifier/Trigger/Periodic/Special bindingを既存Registryへ接続する",
+      "status": "Blocked",
+      "execution_order": 40,
+      "depends_on": [
+        "TASK-SGEN-005"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- EVD-0008の19 Modifier Channelと既存Passive runtimeContracts/Trigger Engine/Modifier consumerを再利用する。\n- MAX_HP/MAX_MP/Block/Critical/Resistance/MP Cost/CD/Cast/Action Gauge等をduplicate semanticsなしで既存ChannelへBindingする。\n- 20Tick HP/MP周期回復、Counter、致死耐え、瀕死時強化を既存Passive Runtimeへ接続する。\n- Rejected Passive healing/Barrierを再導入しない。\n- activationChance等の既存Formal Passive Trigger拡張を再利用し、別RNG/別Trigger Engineを作らない。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-007",
+      "box_id": "BOX-SGEN-INTEGRATION-001",
+      "title": "共通Validation/Compiler/Data Exchange/ExportをActive・Passive両modeへ統合する",
+      "status": "Blocked",
+      "execution_order": 50,
+      "depends_on": [
+        "TASK-SGEN-004",
+        "TASK-SGEN-006"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- ActiveはG07→Formal Compiler→runtimeContracts→Skill Masterの正規経路を維持する。\n- Passiveは既存Studio master/data-exchange/export ownerへ統合し、既存Passive Formal Contract/Runtimeへ出力する。\n- mode違いのfield混在、unknown effect/channel/trigger、未解決Registry参照をFail Closedする。\n- Product Master登録とBalance Candidate生成を分離する。\n- 既存Data Exchangeの保存/読込/Exportに新しいparallel storeを追加しない。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-008",
+      "box_id": "BOX-SGEN-VERIFY-001",
+      "title": "Active EVD-0009 Acceptance Fixtureを実行する",
+      "status": "Blocked",
+      "execution_order": 60,
+      "depends_on": [
+        "TASK-SGEN-007"
+      ],
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "acceptance_criteria": "- EVD-0009全80件を入力Fixtureとして使用する。\n- Current仕様から生成可能な75件は生成→G07→Compiler/runtimeContractsまで検証する。\n- Status base effect未定義4件とPIERCE 1件は、仕様未解決のままなら明示Fail Closed/Deferredとして分類し、勝手に補完しない。\n- 生成値/shape/Requirement/Range/Resource/EffectがEVD-0009 candidateと一致するか差分Evidenceを残す。\n- EVD-0010/EVD-0011のPlayer/Monster装備可能判定を壊すRequirement差分を検出したらFailする。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-009",
+      "box_id": "BOX-SGEN-VERIFY-001",
+      "title": "Passive EVD-0012 Acceptance Fixtureを実行する",
+      "status": "Blocked",
+      "execution_order": 60,
+      "depends_on": [
+        "TASK-SGEN-007"
+      ],
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "acceptance_criteria": "- EVD-0012 concrete_passive_records 68件すべてについてGenerator受理・分類を実行する。\n- 完全具体化済みレコードはFormal生成・Validationまで実施する。\n- `<ELEMENT>` / `<STATUS>` 等のParameterized Channelを含むレコードは、binding未指定時に正しくFail ClosedすることをAcceptanceとする。\n- Parameterized ChannelへCurrent Registryで許可された具体bindingをFixture入力として与えた場合のみFormal生成・Validationまで検証する。\n- framework_templates 24件はRequirement未確定のため自動具体化せずReject/Deferredを確認する。\n- passiveSeriesId/stage/Requirement/effect/channelがEVD-0012および明示binding入力と一致する。\n- EVD-0013/EVD-0014のPlayer/Monster装備可能判定を壊すRequirement差分を検出したらFailする。\n- Rejected/Superseded系列を生成していないことを確認する。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-010",
+      "box_id": "BOX-SGEN-VERIFY-001",
+      "title": "既存Skill/Passive回帰テストを実行する",
+      "status": "Blocked",
+      "execution_order": 70,
+      "depends_on": [
+        "TASK-SGEN-008",
+        "TASK-SGEN-009"
+      ],
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "acceptance_criteria": "- TASK-SGEN-001でFresh Current上に再inventoryしたCurrent registered G05/G07 regression suiteを全件PASSする。\n- 過去Snapshotの `330 core matrix` は期待値/参考値としてのみ扱い、Current suiteへのtest追加・正当な構成変更を件数不一致だけでFailureにしない。\n- Current Passive Formal/Direct Runtime/Reactive/Periodic/LowHP/Counter/Element Resistance等のTASK-SGEN-001で固定した既存テストを全件再実行する。\n- Current Formal Skill Compiler/runtimeContracts/Skill Master exportとPassive exportの既存schemaを壊さない。\n- Legacy fallback/parallel implementationの新設がないことをSource auditする。\n- FailureはActive/Passive/Sharedのownerへ一意に切り分ける。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-011",
+      "box_id": "BOX-SGEN-INTEGRATION-001",
+      "title": "Studio Skill生成UI/Batch運用を1入口2modeとして完成させる",
+      "status": "Blocked",
+      "execution_order": 80,
+      "depends_on": [
+        "TASK-SGEN-010"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- Studio上の生成機能は1つのSkill生成入口として提示し、Active/Passive modeを明示選択できる。\n- Active専用入力とPassive専用入力を同時表示/同時送信しない。\n- Batch input/resultにmode/provenance/authority/evidence referenceを保持する。\n- 80 Active/68 PassiveのCandidate batchをProduct登録せず生成・保存・再読込できる。\n- 新しい独立Generator画面/Store/Export経路を作らない。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-012",
+      "box_id": "BOX-SGEN-VERIFY-001",
+      "title": "統合Acceptance・Fresh Current確認・引継ぎEvidenceを確定する",
+      "status": "Blocked",
+      "execution_order": 90,
+      "depends_on": [
+        "TASK-SGEN-011"
+      ],
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- Fresh Current上でActive/Passive両modeの生成→Validation→保存/Exportを再確認する。\n- EVD-0009/EVD-0012のAcceptance結果、既存回帰、Source tree/package manifest hashを記録する。\n- 生成器改修によるGameplay Specification変更がないことを確認する。\n- 未解決はStatus base effect 4件/PIERCE等を明示Open事項として残し、成功扱いに混ぜない。\n- Human Completion Gate後にのみ本工程をDoneとする。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T19:05:00+09:00",
+      "updated_at": "2026-08-30T19:05:00+09:00"
+    }
+  ],
+  "checks": [],
+  "workflow": {
+    "stage": "Discovery",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-30T19:05:00+09:00",
+      "message": "Created split implementation plan for reuse-first Skill Generator modification: single shared entry, separate Active/Passive builders, shared validation/integration, Evidence-based acceptance. No Source/Game Data modification performed."
+    },
+    {
+      "at": "2026-08-30T19:30:00+09:00",
+      "message": "Plan review corrections applied: Passive 68 Candidate/Formal boundary fixed for 15 parameterized channel records; TASK-SGEN-001 expanded to freeze responsibility-separated source owners, writable/read-only file scopes, Fresh Current hashes and regression inventory; TASK-SGEN-010 changed from historical fixed 330-count authority to Current registered suite all-pass."
+    },
+    {
+      "at": "2026-08-30T19:35:00+09:00",
+      "message": "Registration compatibility correction: authority.version restored from 2 to Studio Current fixed value 1. Review revision is tracked in plan_metadata.plan_revision instead of authority.version."
+    }
+  ],
+  "plan_metadata": {
+    "execution_waves": [
+      {
+        "wave": 1,
+        "tasks": [
+          "TASK-SGEN-001"
+        ],
+        "parallel": false,
+        "purpose": "Current owner/impact freeze"
+      },
+      {
+        "wave": 2,
+        "tasks": [
+          "TASK-SGEN-002"
+        ],
+        "parallel": false,
+        "purpose": "Shared mode-aware entry"
+      },
+      {
+        "wave": 3,
+        "tasks": [
+          "TASK-SGEN-003",
+          "TASK-SGEN-005"
+        ],
+        "parallel": true,
+        "purpose": "Active and Passive core builders can be implemented independently"
+      },
+      {
+        "wave": 4,
+        "tasks": [
+          "TASK-SGEN-004",
+          "TASK-SGEN-006"
+        ],
+        "parallel": true,
+        "purpose": "Active resource/range and Passive runtime binding"
+      },
+      {
+        "wave": 5,
+        "tasks": [
+          "TASK-SGEN-007"
+        ],
+        "parallel": false,
+        "purpose": "Shared integration"
+      },
+      {
+        "wave": 6,
+        "tasks": [
+          "TASK-SGEN-008",
+          "TASK-SGEN-009"
+        ],
+        "parallel": true,
+        "purpose": "Active/Passive fixture acceptance"
+      },
+      {
+        "wave": 7,
+        "tasks": [
+          "TASK-SGEN-010"
+        ],
+        "parallel": false,
+        "purpose": "Cross-system regression"
+      },
+      {
+        "wave": 8,
+        "tasks": [
+          "TASK-SGEN-011"
+        ],
+        "parallel": false,
+        "purpose": "Studio operational UI/batch completion"
+      },
+      {
+        "wave": 9,
+        "tasks": [
+          "TASK-SGEN-012"
+        ],
+        "parallel": false,
+        "purpose": "Fresh Current final gate"
+      }
+    ],
+    "open_spec_items": [
+      {
+        "id": "OPEN-SGEN-STATUS-001",
+        "scope": "Active Status Template 4 records",
+        "rule": "Status Duration price exists, but base status application effect/price is not fixed by EVD-0009/SKL-0001. Keep fail-closed until separate specification resolves."
+      },
+      {
+        "id": "OPEN-SGEN-PIERCE-001",
+        "scope": "Active PIERCE template 1 record",
+        "rule": "PIERCE numeric seed exists but implementation feasibility is unresolved. Do not make it generator-ready in this project without separate decision."
+      }
+    ],
+    "acceptance_fixture_summary": {
+      "active_total": 80,
+      "active_expected_generator_addressable": 75,
+      "active_explicit_blocked_or_deferred": 5,
+      "passive_input_candidates": 68,
+      "passive_parameterized_channel_candidates": 15,
+      "passive_parameterized_groups": {
+        "ELEMENT_RESISTANCE:<ELEMENT>": 5,
+        "STATUS_RESISTANCE:<STATUS>_damage": 5,
+        "STATUS_RESISTANCE:<STATUS>_control": 5
+      },
+      "passive_framework_templates_not_generator_ready": 24,
+      "passive_acceptance_rule": "All 68 must be accepted/classified; Formal generation requires all parameterized bindings to be explicit and Registry-valid."
+    },
+    "fresh_current_baseline_policy": {
+      "rule": "TASK-SGEN-001 must replace planning snapshot assumptions with hashes/inventory from the Human-provided Fresh Current source artifact before any Source Update.",
+      "regression_count_policy": "Current registered suite all-pass is authoritative; historical fixed counts such as 330 are reference values only."
+    },
+    "plan_revision": "REVIEW-FIXED-R2"
+  }
+}
