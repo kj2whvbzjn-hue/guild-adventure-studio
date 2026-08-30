@@ -10,6 +10,31 @@ const OPS=new Set(['=','!=','>','>=','<','<=']);
 const own=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
 const num=v=>typeof v==='number'&&Number.isFinite(v);
 const error=(errors,code,path,message)=>errors.push({code,path,message});
+function compileDamageElementComponents(effect,registry,errors,path){
+ if(!own(effect,'elements'))return null;
+ const rows=effect.elements;
+ if(!Array.isArray(rows)||rows.length<1){error(errors,'DAMAGE_ELEMENTS_INVALID',path,'elementsは1件以上の配列が必要です');return null}
+ const allowed=registry?.damage_elements||{},seen=new Set(),normalized=[];let specifiedTotal=0,unspecified=0;
+ for(let i=0;i<rows.length;i++){
+  const row=rows[i],rowPath=`${path}[${i}]`;
+  if(!row||typeof row!=='object'||Array.isArray(row)){error(errors,'DAMAGE_ELEMENT_ENTRY_INVALID',rowPath,'属性配分はobjectが必要です');continue}
+  const element=String(row.element||'').toUpperCase();
+  if(!element||!allowed[element]){error(errors,'DAMAGE_ELEMENT_UNKNOWN',`${rowPath}.element`,`未定義属性: ${element||'(なし)'}`);continue}
+  if(seen.has(element)){error(errors,'DAMAGE_ELEMENT_DUPLICATE',`${rowPath}.element`,`属性${element}が重複しています`);continue}
+  seen.add(element);
+  const hasShare=own(row,'sharePercent');let sharePercent=null;
+  if(hasShare){sharePercent=row.sharePercent;if(!num(sharePercent)||sharePercent<0||sharePercent>100){error(errors,'DAMAGE_ELEMENT_SHARE_INVALID',`${rowPath}.sharePercent`,'sharePercentは0以上100以下の有限数が必要です');continue}specifiedTotal+=sharePercent}else unspecified++;
+  normalized.push({element,sharePercent});
+ }
+ if(normalized.length!==rows.length)return null;
+ if(specifiedTotal>100+1e-9){error(errors,'DAMAGE_ELEMENT_SHARE_TOTAL_EXCEEDED',path,'指定済みsharePercent合計は100以下が必要です');return null}
+ if(unspecified===0&&Math.abs(specifiedTotal-100)>1e-9){error(errors,'DAMAGE_ELEMENT_SHARE_TOTAL_REQUIRED',path,'全属性へsharePercentを指定する場合は合計100が必要です');return null}
+ const remaining=Math.max(0,100-specifiedTotal),defaultShare=unspecified?remaining/unspecified:0;
+ const components=normalized.map(row=>({element:row.element,share:(row.sharePercent==null?defaultShare:row.sharePercent)/100}));
+ const sum=components.reduce((a,row)=>a+row.share,0);
+ if(Math.abs(sum-1)>1e-9){error(errors,'DAMAGE_ELEMENT_SHARE_NORMALIZATION_FAILED',path,'属性配分合計を100%へ正規化できません');return null}
+ return components;
+}
 function validateConditionValue(def,value,errors,path){
  if(!num(value)){error(errors,'INVALID_CONDITION_VALUE',path,'条件値は有限数が必要です');return}
  if(def?.value_type==='rate'&&(value<0||value>1))error(errors,'INVALID_CONDITION_RATE',path,'割合条件は0以上1以下が必要です');
@@ -118,7 +143,8 @@ function compileEffect(effect,index,skill,registry,errors){
  if(type==='DAMAGE'){
   if(!num(effect.power))error(errors,'DAMAGE_POWER_REQUIRED',`${path}.power`,'DAMAGE powerは有限数が必要です');
   if(effect.damageType&&!registry.damage_types?.[effect.damageType])error(errors,'UNKNOWN_DAMAGE_TYPE',`${path}.damageType`,`未定義damageType: ${effect.damageType}`);
-  return{type,power:effect.power,damageType:effect.damageType||null};
+  const elementComponents=compileDamageElementComponents(effect,registry,errors,`${path}.elements`);
+  return{type,power:effect.power,damageType:effect.damageType||null,...(elementComponents?{elementComponents}:{})};
  }
  if(type==='HEAL'){if(!num(effect.power))error(errors,'HEAL_POWER_REQUIRED',`${path}.power`,'HEAL powerは有限数が必要です');return{type,power:effect.power}}
  if(type==='REVIVE'){
