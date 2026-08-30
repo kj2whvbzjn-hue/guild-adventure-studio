@@ -10,7 +10,7 @@
     "name": "Skill Generator Active/Passive統合改修",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T14:38:21.166Z"
+    "updated_at": "2026-08-30T22:01:20.474Z"
   },
   "project_context": {
     "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SGEN-001",
     "work_box_id": "BOX-SGEN-INTEGRATION-001",
-    "theme": "TASK-SGEN-007 Active/Passive shared Validation/Compiler/Data Exchange/Export integration",
-    "goal": "TASK-SGEN-003B Source実装完了。HEAL/BARRIER/Accuracy/Action Gauge/Critical/REVIVE/Statusの既決bindingをCurrent Registry/Runtimeへ接続。Source UpdateはGKS-B827としてHuman Apply待ち。旧絶対値HEAL/BARRIER SkillのGame Data削除はHuman側で別実施する。Apply確認後にTASK-SGEN-007へ進む。"
+    "theme": "TASK-SGEN-007 GKS-B828 Studio Apply confirmation",
+    "goal": "TASK-SGEN-007 Source UpdateはFull Gate 26/26 PASS。HumanがGKS-B828をStudioへ適用しFresh Current確認後、TASK-SGEN-008/009 Acceptance Fixturesへ進む。"
   },
   "project_rules": [
     {
@@ -79,15 +79,15 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B827",
+    "studio_build": "GKS-B828",
     "game_build": "GA-B486.211",
-    "source_label": "SKL-GEN_TASK-SGEN-003B-R2_GKS-B827_DIRECT-STUDIO-UPDATE_FIXED.zip",
-    "source_role": "TASK-SGEN-003B corrected Source Update target; ready for Human Studio Apply. Game Data deletion of legacy absolute HEAL/BARRIER skills is handled separately by Human.",
-    "recorded_at": "2026-08-30T23:22:00+09:00",
-    "source_update_zip_sha256": "ec2262948c8b3bc28afde839cd5a3fda86908d64ab43988f92fd507a58d40d6b",
-    "package_manifest_sha256": "dc270fdf1e3bf7135d50141c2f26af70a0a00d7165a95e168e67895a8e1ffbc9",
-    "source_tree_sha256": "7905260fd13f4d0b6be1c762213ad7537b7eccd1d52dabc2fcce32fe9a515069",
-    "artifact_id": "GKS-B827-7905260fd13f",
+    "source_label": "SKL-GEN_TASK-SGEN-007_GKS-B828_DIRECT-STUDIO-UPDATE.zip",
+    "source_role": "TASK-SGEN-007 Gate-passed target; becomes Fresh Current after Human Studio apply confirmation",
+    "recorded_at": "2026-08-31T06:48:00+09:00",
+    "source_update_zip_sha256": "60097919a1184c2939e163f6cf36f39f25a9cf0978af26208f5c3bdf6f90bf28",
+    "package_manifest_sha256": "c5227f707e05a26b1a76b4d034fbe2f27a3c184634aa83845d0dc32f983893d4",
+    "source_tree_sha256": "eec040688a1883ed7b8bac447e4961fb9361a68af4b35b2854f1c4a89108635d",
+    "artifact_id": "GKS-B828-eec040688a18",
     "baseline": {
       "game_build": "GA-B486.211",
       "studio_build": "GKS-B826",
@@ -363,6 +363,24 @@
       },
       "created_at": "2026-08-30T23:22:00+09:00",
       "updated_at": "2026-08-30T23:22:00+09:00",
+      "evidence": ""
+    },
+    {
+      "id": "IMPL-SGEN-007",
+      "task_id": "TASK-SGEN-007",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Active G07 canonical path preserved. PASSIVE generation now hands GKS_PASSIVE_BATCH into the same G07 registration surface, allocates PAS/MOD IDs, compiles Formal Passive runtimeContracts, validates MOD then Passive through existing Data Exchange, and commits both atomically with one backup/persist. Balance Candidate values remain separate from Product Master. dataset-registry now declares passives. Applied-state simulation Full Gate 26/26 PASS; Human Studio apply confirmation pending.",
+      "studio_build": "GKS-B828",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-INTEGRATION-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-007"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-31T06:48:00+09:00",
       "evidence": ""
     }
   ],
@@ -810,7 +828,7 @@
       "id": "TASK-SGEN-007",
       "box_id": "BOX-SGEN-INTEGRATION-001",
       "title": "共通Validation/Compiler/Data Exchange/ExportをActive・Passive両modeへ統合する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 50,
       "depends_on": [
         "TASK-SGEN-004",
@@ -821,12 +839,12 @@
       "requires_human_approval": true,
       "acceptance_criteria": "- ActiveはG07→Formal Compiler→runtimeContracts→Skill Masterの正規経路を維持する。\n- Passiveは既存Studio master/data-exchange/export ownerへ統合し、既存Passive Formal Contract/Runtimeへ出力する。\n- mode違いのfield混在、unknown effect/channel/trigger、未解決Registry参照をFail Closedする。\n- Product Master登録とBalance Candidate生成を分離する。\n- 既存Data Exchangeの保存/読込/Exportに新しいparallel storeを追加しない。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-31T06:48:00+09:00"
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T23:22:00+09:00"
+      "updated_at": "2026-08-31T06:48:00+09:00"
     },
     {
       "id": "TASK-SGEN-008",
@@ -1184,6 +1202,10 @@
     {
       "at": "2026-08-30T23:30:00+09:00",
       "message": "TASK-SGEN-003B-R2 Source Update packaging corrected after Studio diagnostic. Direct SOURCE_UPDATE now has studio-update.json at ZIP root, excludes Export/development-project-data, binds exact GKS-B826 baseline to GKS-B827 target, and passes applied Full Gate 26/26 with external Human approval for 5 protected test changes. Legacy absolute HEAL/BARRIER Skill deletion is not included; Human will handle Game Data deletion separately."
+    },
+    {
+      "at": "2026-08-31T06:48:00+09:00",
+      "message": "TASK-SGEN-007 GKS-B828 Source Update prepared. Active G07 path preserved; Passive G07/Data Exchange integration added with atomic MOD+Passive commit and Balance Candidate separation. Applied-state simulation Full Gate 26/26 PASS; Human Studio apply confirmation pending."
     }
   ],
   "plan_metadata": {
