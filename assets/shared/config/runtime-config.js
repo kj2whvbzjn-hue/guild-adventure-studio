@@ -1,13 +1,13 @@
-/* Shared runtime/data configuration — GA-B486.211 / GKS-B828 */
+/* Shared runtime/data configuration — GA-B486.211 / GKS-B829 */
 window.GA_PROJECT_CONFIG = Object.freeze({
   gameBuild: "GA-B486.211",
-  studioBuild: "GKS-B828",
-  skillExportUrl: '../Export/skill/skills.json?v=486211b828',
-  equipmentExportUrl: '../Export/equipment/equipment.json?v=486211b828',
-  jobExportUrl: '../Export/master/jobs.json?v=486211b828',
-  adventureSettingsExportUrl: '../Export/system/adventure_settings.json?v=486211b828',
-  aiNodeExportUrl: '../Export/ai/ai_nodes.json?v=486211b828',
-  aiTemplateExportUrl: '../Export/ai/ai_templates.json?v=486211b828',
+  studioBuild: "GKS-B829",
+  skillExportUrl: '../Export/skill/skills.json?v=486211b829',
+  equipmentExportUrl: '../Export/equipment/equipment.json?v=486211b829',
+  jobExportUrl: '../Export/master/jobs.json?v=486211b829',
+  adventureSettingsExportUrl: '../Export/system/adventure_settings.json?v=486211b829',
+  aiNodeExportUrl: '../Export/ai/ai_nodes.json?v=486211b829',
+  aiTemplateExportUrl: '../Export/ai/ai_templates.json?v=486211b829',
   productionEnvironment: 'production',
   validationEnvironment: 'validation'
 });
