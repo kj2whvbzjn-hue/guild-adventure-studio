@@ -53,6 +53,7 @@
       triggerContract={type,scope,engineEvent:req(def.engine_event,`registry.triggers.${type}.engine_event`),dispatchMode,priority:Number.isInteger(triggerRaw.priority)?triggerRaw.priority:0,...(def.phase?{phase:String(def.phase).toUpperCase()}:{}),thresholdRequirements:clone(triggerRequirements)};
       if(Object.prototype.hasOwnProperty.call(triggerRaw,'activationChance')){const chance=triggerRaw.activationChance;if(typeof chance!=='number'||!Number.isFinite(chance)||chance<0||chance>1)throw new Error(`Passive ${checked.id}のactivationChanceは0以上1以下の有限numberが必要です。`);triggerContract.activationChance=chance;}
       if(Object.prototype.hasOwnProperty.call(triggerRaw,'cooldownTicks')){const cooldownTicks=triggerRaw.cooldownTicks;if(!Number.isInteger(cooldownTicks)||cooldownTicks<0)throw new Error(`Passive ${checked.id}のcooldownTicksは0以上の整数が必要です。`);triggerContract.cooldownTicks=cooldownTicks;}
+      if(Object.prototype.hasOwnProperty.call(triggerRaw,'surviveHp')){const surviveHp=triggerRaw.surviveHp;if(!Number.isInteger(surviveHp)||surviveHp<1)throw new Error(`Passive ${checked.id}のsurviveHpは1以上の整数が必要です。`);if(type!=='ON_FATAL_DAMAGE')throw new Error(`Passive ${checked.id}のsurviveHpはON_FATAL_DAMAGEだけで使用できます。`);triggerContract.surviveHp=surviveHp;}
     }
     let periodicContract=null;
     if(params.periodic!=null){
@@ -76,8 +77,10 @@
       if(!Number.isInteger(durationTicks)||durationTicks<1)throw new Error(`Passive ${checked.id}のlowHp.durationTicksは1以上の整数が必要です。`);
       const cooldownTicks=params.lowHp.cooldownTicks;
       if(!Number.isInteger(cooldownTicks)||cooldownTicks<0)throw new Error(`Passive ${checked.id}のlowHp.cooldownTicksは0以上の整数が必要です。`);
+      const relativeBonus=params.lowHp.relativeBonus;
+      if(typeof relativeBonus!=='number'||!Number.isFinite(relativeBonus)||relativeBonus<=0)throw new Error(`Passive ${checked.id}のlowHp.relativeBonusは0より大きい有限numberが必要です。`);
       const contributionTargets=Object.freeze(['PHYSICAL_DAMAGE','MAGIC_DAMAGE','ACCURACY','MAGIC_ACCURACY','EVASION','BLOCK_RATE','BLOCK_PERFORMANCE','CRITICAL_RATE','CRITICAL_DAMAGE','ACTION_GAUGE_GAIN']);
-      lowHpContract={hpThresholdRate,durationTicks,cooldownTicks,relativeBonus:1,contributionTargets:[...contributionTargets]};
+      lowHpContract={hpThresholdRate,durationTicks,cooldownTicks,relativeBonus,contributionTargets:[...contributionTargets]};
     }
     let executionContract=null,skillRequirements=[];
     if(params.execution!=null){
