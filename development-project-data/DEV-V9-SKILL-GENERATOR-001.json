@@ -10,7 +10,7 @@
     "name": "Skill Generator Active/Passive統合改修",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T10:24:47.784Z"
+    "updated_at": "2026-08-30T11:04:55.134Z"
   },
   "project_context": {
     "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SGEN-001",
     "work_box_id": "BOX-SGEN-ACTIVE-001",
-    "theme": "Wave 3: TASK-SGEN-003 / TASK-SGEN-005 implementation gates",
-    "goal": "TASK-SGEN-002 complete. Active Builder core (TASK-SGEN-003) and Passive Builder core (TASK-SGEN-005) are now dependency-unblocked and can be implemented independently after their respective Human Source Update approvals."
+    "theme": "Post TASK-SGEN-003: Active Binding/Range + Passive Builder gates",
+    "goal": "TASK-SGEN-003完了。TASK-SGEN-003B、TASK-SGEN-004、TASK-SGEN-005が実装可能。各SOURCE_UPDATEはHuman承認後に開始する。"
   },
   "project_rules": [
     {
@@ -70,20 +70,20 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B821",
+    "studio_build": "GKS-B822",
     "game_build": "GA-B486.211",
-    "source_label": "SKL-GEN_TASK-SGEN-002_GKS-B821_STUDIO-UPDATE.zip",
-    "source_role": "TASK-SGEN-002 accepted target; becomes Fresh Current after Studio update is applied",
-    "recorded_at": "2026-08-30T20:18:00+09:00",
-    "source_update_zip_sha256": "48666393cef6e1ff5cd74c02130e489bbbfabbe381f870d8dd8ad6b32651e567",
-    "package_manifest_sha256": "2faeb44f116cfa3dc3d10aa3e4dc9c14554fd9de3c5fa49168a249fdb4fc4258",
-    "source_tree_sha256": "5d25f1a40cfd160ba5aed38c32aca1e4242c1cad07b80a55151e9f51ab9a7b8a",
-    "artifact_id": "GKS-B821-5d25f1a40cfd",
+    "source_label": "SKL-GEN_TASK-SGEN-003_GKS-B822_STUDIO-UPDATE.zip",
+    "source_role": "TASK-SGEN-003 accepted target; becomes Fresh Current after Studio update is applied",
+    "recorded_at": "2026-08-30T20:45:00+09:00",
+    "source_update_zip_sha256": "0cb274bc0664cce1f60cc60f59742ebfd5f03ab1aec605f2b99c3c8fd3c0622e",
+    "package_manifest_sha256": "5aae806ccc84de551758d4783dcfd4922e5c01fbce650fdc9a998a2a04d66bef",
+    "source_tree_sha256": "47ad5a0f0ef27e8847132bb2a35d87d67d72e1a2d71a92b9c12bf571ededd7d4",
+    "artifact_id": "GKS-B822-47ad5a0f0ef2",
     "baseline": {
-      "studio_build": "GKS-B820",
+      "studio_build": "GKS-B821",
       "game_build": "GA-B486.211",
-      "package_manifest_sha256": "ce70313adf88d8be7dee10514e4cd06bf73557d843eb99be98d32c5af93f881a",
-      "source_tree_sha256": "2d119226721dc68dcaa7dbb52d03e3430d3f9791207b1c31845535dec8f64d2d"
+      "package_manifest_sha256": "2faeb44f116cfa3dc3d10aa3e4dc9c14554fd9de3c5fa49168a249fdb4fc4258",
+      "source_tree_sha256": "e07b1967ae92bf085a5274823a8933cd45262b347c29e822bbca59bdcf6424c2"
     },
     "reference_hashes": {
       "DEV-V9-BALANCE-001": "2c2c490805dcdc7bf798c4e45671f1408c041a6654af8a43e8fa55e67e1466f8",
@@ -153,6 +153,63 @@
       },
       "created_at": "2026-08-30T20:18:00+09:00",
       "updated_at": "2026-08-30T20:18:00+09:00",
+      "evidence": ""
+    },
+    {
+      "id": "IMPL-SGEN-003-PREIMPL-AUDIT",
+      "task_id": "TASK-SGEN-003",
+      "type": "DEVELOPMENT_ONLY_AUDIT",
+      "status": "Completed",
+      "summary": "Fresh Current GKS-B821 pre-implementation audit found an out-of-scope Active Registry/Runtime binding dependency; Source was not modified until the task split was defined.",
+      "evidence": "DEV-V9-SKILL-GENERATOR-001_TASK-SGEN-003_PREIMPL-GAP.json",
+      "studio_build": "GKS-B821",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-ACTIVE-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-003",
+        "TASK-SGEN-003B"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-30T20:45:00+09:00",
+      "created_at": "2026-08-30T20:45:00+09:00",
+      "updated_at": "2026-08-30T20:45:00+09:00"
+    },
+    {
+      "id": "IMPL-SGEN-003",
+      "task_id": "TASK-SGEN-003",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Active generation core replaced with Current SKL statThresholds/abilityKind semantics. statThresholds are emitted as abilityConditions and used as Ability Budget. Directly representable Active cores generate Formal drafts; unresolved Registry/Runtime bindings fail closed as ACTIVE_BINDING_REQUIRED.",
+      "studio_build": "GKS-B822",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-ACTIVE-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-003"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-30T20:45:00+09:00",
+      "test_change_approval": {
+        "approved_by": "Human",
+        "approval_sha256": "ceed9fcd47675367575a1e97029bf572f14792ad725ed321a11804eef9fa93d5",
+        "protected_test_count": 13,
+        "approval_verified": true
+      },
+      "gate": {
+        "status": "pass",
+        "selected_final_gate": "full",
+        "final_gate_returncode": 0,
+        "passed": 26,
+        "failed": 0,
+        "warnings": 0,
+        "timeouts": 0,
+        "applied_tree_sha256": "47ad5a0f0ef27e8847132bb2a35d87d67d72e1a2d71a92b9c12bf571ededd7d4"
+      },
+      "created_at": "2026-08-30T20:45:00+09:00",
+      "updated_at": "2026-08-30T20:45:00+09:00",
       "evidence": ""
     }
   ],
@@ -334,6 +391,19 @@
         "TASK-SGEN-006",
         "TASK-SGEN-009"
       ]
+    },
+    {
+      "id": "IMP-SGEN-008",
+      "title": "Active Formal binding dependency split",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "skill-registry.json / Active APPLY modifier runtime / Formal structural bindings",
+      "impact": "TASK-SGEN-003 Core aloneではCurrent-binding-needed Activeを完成できないため、Registry/Runtime bindingをTASK-SGEN-003Bへ分離する。",
+      "task_ids": [
+        "TASK-SGEN-003",
+        "TASK-SGEN-003B",
+        "TASK-SGEN-007"
+      ]
     }
   ],
   "architecture_nodes": [
@@ -432,27 +502,27 @@
       "id": "TASK-SGEN-003",
       "box_id": "BOX-SGEN-ACTIVE-001",
       "title": "Active Skill生成コアをCurrent SKL Threshold/Ability方式へ置換する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 30,
       "depends_on": [
         "TASK-SGEN-002"
       ],
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
-      "acceptance_criteria": "- ActiveはSkill Lv総Threshold Budget=10..110、1〜3 Stat、各Stat最大100、Threshold合計=総Budgetを検証する。\n- Stat Thresholdを用途制限付きAbility Budgetとして処理し、旧G04の `base40 + SkillLv*6` / Range Effect multiplier / MP-CD refundをCurrent Active生成の数値Authorityに使用しない。\n- Physical/Multi-hit/Magic/DOT/Buff/Debuff/Heal/Barrier/Critical/Attribute/CLEANSE_ALL/REVIVE/CoverをSKL-0001のCurrent seed/Access規則から生成できる構造にする。\n- `abilityConditions` またはCurrent習得Requirement正式fieldへEVD-0009のstat_thresholdsを損失なく出力する。\n- G07/Compilerを最終Gateとして維持する。",
+      "acceptance_criteria": "- ActiveはSkill Lv総Threshold Budget=10..110、1〜3 Stat、各Stat最大100、Threshold合計=総Budgetを検証する。\n- Stat Thresholdを用途制限付きAbility Budgetとして処理し、旧G04の `base40 + SkillLv*6` / Range Effect multiplier / MP-CD refundをCurrent Active生成の数値Authorityに使用しない。\n- Current Formal Contractだけで直接表現できるActiveについて、abilityConditionsを含むFormal Draftを生成する。\n- Physical single/multi-hit/mixed、Magic direct、Heal、Damage属性付与のCore変換を実装対象とする。ただしCurrent Binding不足は推測補完しない。\n- Formal bindingがCurrent Registry/Runtimeへ未接続のAbilityは `ACTIVE_BINDING_REQUIRED` でFail Closedする。\n- `abilityConditions` へEVD-0009のstat_thresholdsを損失なく出力する。\n- このTaskでは `skill-registry.json`、Compiler、Runtimeへ変更を加えない。\n- G07/Compilerを最終Gateとして維持する。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T20:45:00+09:00"
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T20:18:00+09:00"
+      "updated_at": "2026-08-30T20:45:00+09:00"
     },
     {
       "id": "TASK-SGEN-004",
       "box_id": "BOX-SGEN-ACTIVE-001",
       "title": "Active Target/Resource生成をCurrent Range seedへ接続する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 40,
       "depends_on": [
         "TASK-SGEN-003"
@@ -466,7 +536,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-30T20:45:00+09:00"
     },
     {
       "id": "TASK-SGEN-005",
@@ -516,6 +586,7 @@
       "execution_order": 50,
       "depends_on": [
         "TASK-SGEN-004",
+        "TASK-SGEN-003B",
         "TASK-SGEN-006"
       ],
       "work_type": "SOURCE_UPDATE",
@@ -527,7 +598,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-30T20:45:00+09:00"
     },
     {
       "id": "TASK-SGEN-008",
@@ -629,6 +700,26 @@
       },
       "created_at": "2026-08-30T19:05:00+09:00",
       "updated_at": "2026-08-30T19:05:00+09:00"
+    },
+    {
+      "id": "TASK-SGEN-003B",
+      "box_id": "BOX-SGEN-ACTIVE-001",
+      "title": "Active Formal Effect/Runtime bindingを既存Registryへ接続する",
+      "status": "Todo",
+      "execution_order": 35,
+      "depends_on": [
+        "TASK-SGEN-003"
+      ],
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "acceptance_criteria": "- EVD-0009で `NEEDS_CURRENT_EFFECT_BINDING` / `NEEDS_CURRENT_TARGET_EFFECT_BINDING`、およびCore生成時に `ACTIVE_BINDING_REQUIRED` となるAbilityを対象にする。\n- 新しいGenerator/Compiler/Storeを作らず、既存 skill-registry / Formal Compiler / Active Runtimeへ必要なbindingだけを追加する。\n- Current Formal Skill Contractのeffect type topologyは変更しない。原則既存 DAMAGE/HEAL/APPLY/REMOVE/REVIVE/TARGET_CONTROL へ写像する。\n- Accuracy Up、AGI/Defense等Buff、Critical Rate/Damage、Barrier、DOT、Cleanse、Revive、Coverについて、Current仕様から一意に決まるbindingのみ実装する。\n- duration / revive hp or hpRate / Cover lifetime / Generic Buff target等、Current Authorityで一意に決まらない値は推測せずOpen SpecとしてFail Closedする。\n- Registry ID追加時は既存Effect Lifecycle/Runtime ownerを再利用し、parallel modifier engineを追加しない。\n- このTask完了後、TASK-SGEN-003でFail Closedした対象を再生成し、Formal Compilerまで通る対象範囲をEvidence化する。",
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-30T20:45:00+09:00",
+      "updated_at": "2026-08-30T20:45:00+09:00"
     }
   ],
   "checks": [
@@ -681,6 +772,31 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHK-SGEN-003",
+      "task_id": "TASK-SGEN-003",
+      "title": "TASK-SGEN-003 protected-test approval and full source-update gate",
+      "status": "Passed",
+      "details": "Human approval matched all 13 protected test changes. Build cache namespaces were synchronized to GKS-B822, critical-runtime machine-derived hashes were refreshed, and Full Gate passed 26/26 with 0 failures/warnings/timeouts.",
+      "resolves_check_ids": [],
+      "created_at": "2026-08-30T20:45:00+09:00",
+      "updated_at": "2026-08-30T20:45:00+09:00",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-003",
+      "result": "PASS",
+      "evidence": "TASK-SGEN-003_ACCEPT_GATE_FINAL.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T20:45:00+09:00",
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human approval + Full Gate",
+        "resolved_at": "2026-08-30T20:45:00+09:00",
+        "reason": "All protected test hashes verified; source-update gate passed.",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "workflow": {
@@ -716,6 +832,10 @@
     {
       "at": "2026-08-30T20:18:00+09:00",
       "message": "Human approved TASK-SGEN-002 protected test change. External approval exact hashes verified. Source Update target GKS-B821 passed Full Gate 26/26. TASK-SGEN-002 marked Done; TASK-SGEN-003 and TASK-SGEN-005 unblocked to Todo. Human Workflow state remains Discovery/Exploring in merge JSON."
+    },
+    {
+      "at": "2026-08-30T20:45:00+09:00",
+      "message": "Human approved the final 13-file protected-test change set for TASK-SGEN-003. Cache namespaces and critical-runtime derived hashes were synchronized to GKS-B822. Full Gate passed 26/26. The previously failed management split correction was merged into this registered-current base: TASK-SGEN-003 Done, TASK-SGEN-003B added, TASK-SGEN-004 unblocked. Human Workflow remains Discovery/Exploring."
     }
   ],
   "plan_metadata": {
