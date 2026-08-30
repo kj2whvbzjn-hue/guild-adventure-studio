@@ -237,14 +237,16 @@ const studioMissCtx=makeStudioDamageCtx();studioMissCtx.formalBattleCriticalReso
 ok(studioMiss.miss===true&&studioRolls.length===0,'Studio non-Critical path must consume Critical then Hit RNG');
 
 
-// Formal Passive Product Master and Game capability path must be data-driven, not fixed passive-ID authority.
-const product=JSON.parse(text('project-data.json'));
-const dualPassive=(product?.masters?.passives||[]).find(x=>x?.id==='PAS-DUAL-WIELD-001');
-ok(!!dualPassive,'Product Formal Passive PAS-DUAL-WIELD-001 missing');
+// Formal Passive public Product Master and Game capability path must be data-driven, not fixed passive-ID authority.
+const passiveExport=JSON.parse(text('Export/master/passives.json'));
+const dualPassives=(Array.isArray(passiveExport?.data)?passiveExport.data:[]).filter(x=>(x?.runtimeContracts?.modifierRefs?.combatCapabilities||[]).includes('DUAL_WIELD'));
+ok(dualPassives.length===1,'Product Formal Passive DUAL_WIELD capability owner must resolve to exactly one exported Master');
+const dualPassive=dualPassives[0];
+ok(String(dualPassive?.id||'').length>0,'Formal Passive id missing');
 ok(String(dualPassive.passiveSeriesId||'').length>0,'Formal Passive passiveSeriesId missing');
 ok(Array.isArray(dualPassive.params?.ability_conditions),'Formal Passive ability_conditions missing');
 ok((dualPassive.runtimeContracts?.modifierRefs?.combatCapabilities||[]).includes('DUAL_WIELD'),'Formal Passive DUAL_WIELD runtime contract missing');
-ok(!app.includes("const DUAL_WIELD_PASSIVE_ID='PAS-DUAL-WIELD-001'"),'Game must not restore fixed DUAL_WIELD passive ID authority');
+ok(!/DUAL_WIELD_PASSIVE_ID\s*=/.test(app),'Game must not restore fixed DUAL_WIELD passive ID authority');
 ok(app.includes('characterFormalPassiveSelection'),'Game must resolve character.passiveIds through Formal Passive Master selection');
 
 // Critical verification trace fields in both runtimes.
