@@ -85,7 +85,7 @@
   function createActionContext(options={}){
     const raw=Number(options.maxActivations);
     const maxActivations=Number.isInteger(raw)&&raw>0?raw:DEFAULT_ACTION_TRIGGER_LIMIT;
-    return{actionId:String(options.actionId||''),maxActivations,activationCount:0,activeKeys:new Set(),history:[]};
+    return{actionId:String(options.actionId||''),maxActivations,activationCount:0,activeKeys:new Set(),history:[],pendingReactive:[],reactiveEventSequence:0,reactiveSequence:0};
   }
   function canActivate(context,key){
     if(!context||typeof context!=='object')return failure('TRIGGER_ACTION_CONTEXT_REQUIRED','');const normalizedKey=String(key||'').trim();if(!normalizedKey)return failure('TRIGGER_ACTIVATION_KEY_REQUIRED','');if(!(context.activeKeys instanceof Set))context.activeKeys=new Set();if(!Array.isArray(context.history))context.history=[];const max=Number.isInteger(context.maxActivations)&&context.maxActivations>0?context.maxActivations:DEFAULT_ACTION_TRIGGER_LIMIT,count=Math.max(0,Number(context.activationCount)||0);if(count>=max)return failure('TRIGGER_ACTION_LIMIT_REACHED','',{key:normalizedKey,activation_count:count,max_activations:max});if(context.activeKeys.has(normalizedKey))return failure('TRIGGER_REENTRY_BLOCKED','',{key:normalizedKey,activation_count:count,max_activations:max});return{ok:true,key:normalizedKey,index:count+1,max_activations:max};
