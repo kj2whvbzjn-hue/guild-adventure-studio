@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T06:13:06.244Z"
+    "updated_at": "2026-08-30T08:10:22.891Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Passive Task 7E review correction - Dynamic Counter Regression pending",
-    "goal": "GKS-B818のFormal Passive COUNTER実装自体はReview PASS。Task7最終Done根拠として不足しているGame/Studio Dynamic Counter RegressionをProtected Testとして追加し、activationChance 0/1、実行順、Referenced Active Skill no-cost、self re-entry guard、multi-hit hit-safe-pointを実行証跡で固定する。Protected Test変更は外部TEST_CHANGE_APPROVALのexact hash承認後にSOURCE_UPDATEへ反映する。"
+    "theme": "Passive Task 7E Dynamic Counter Regression - exact-hash approved, SOURCE_UPDATE integration pending",
+    "goal": "GKS-B818 Formal Passive COUNTER implementation/order remains Review PASS. Dedicated Game/Studio Dynamic Formal Passive Counter regression and test-registry changes now have a Human exact-hash approval that matches the intended files. The protected test change has not yet been integrated into Current Source; next step is SOURCE_UPDATE integration, then Fresh Current execution of the dynamic regression and existing release gates. Task7 remains Doing until that integration and Fresh Current verification are complete."
   },
   "project_rules": [
     {
@@ -1806,12 +1806,24 @@
           "Task4 Done result_scope no longer says Human Apply pending",
           "Completed Formal Trigger design task no longer carries Pending approval",
           "Task7 reopened from Done to Doing until the dedicated dynamic regression is protected and passing"
+        ],
+        "approval_correction": [
+          "Human exact-hash approval is now corrected for the final Dynamic Counter test SHA fac76e3d...",
+          "Test Registry approved transition is ae7438b... -> 2d51b628...",
+          "Old 76408f... test candidate is superseded and must not be used as approval authority"
+        ],
+        "remaining_before_completion": [
+          "Integrate the approved protected test and registry change into Current Source through SOURCE_UPDATE",
+          "Obtain Fresh Current after integration",
+          "Run the dedicated Dynamic Formal Passive Counter regression on Fresh Current",
+          "Run existing Critical/Trigger/Counter/Follow-Up/Adventure Battle/Battle End release gates",
+          "Only then return Task7 to Done"
         ]
       },
-      "evidence": "Source review: GKS-B818 implementation/order/hashes PASS. Missing direct execution regression for Formal Passive dispatchMode=COUNTER is the only Task7 completion blocker.",
+      "evidence": "GKS-B818 source implementation/order review PASS. Corrected Human approval exists for test sha256=fac76e3dfde2a52b95c233ebb9ef5dd24fa1e69ba7667185b6b1e78c7f219220 and registry updated sha256=2d51b628d203d1691e2850b379b617789a113260311fb87d71170dc83bf934bf. Human explicitly states SOURCE_UPDATE integration has not yet been performed. Therefore the review blocker is narrowed from approval/hash mismatch to Current Source integration + Fresh Current verification.",
       "recorded_at": "2026-08-30T15:05:00+09:00",
       "created_at": "2026-08-30T15:05:00+09:00",
-      "updated_at": "2026-08-30T15:05:00+09:00",
+      "updated_at": "2026-08-30T16:49:00+09:00",
       "work_box_ids": [
         "BOX-SKL-0001"
       ],
@@ -2448,6 +2460,18 @@
       "approved_at": "2026-08-30T11:15:00+09:00",
       "created_at": "2026-08-30T11:15:00+09:00",
       "updated_at": "2026-08-30T11:15:00+09:00"
+    },
+    {
+      "id": "DEC-SKL-TASK7E-DYNAMIC-TEST-APPROVAL-FIXED-001",
+      "title": "Task7E Dynamic Counter Protected Test exact-hash approval correction",
+      "status": "Approved",
+      "text": "Task7E Dynamic Formal Passive Counter regressionのProtected Test変更について、Human exact-hash approvalの正本をTEST_CHANGE_APPROVAL_TASK7E_DYNAMIC_FIXED.jsonとする。tests/task7e-formal-passive-counter-dynamic.js updated_sha256=fac76e3dfde2a52b95c233ebb9ef5dd24fa1e69ba7667185b6b1e78c7f219220、shared/tests/test-registry.json baseline_sha256=ae7438b4377301a01ccef389ee5352123f08eef96499ec23c7f36f898563b264、updated_sha256=2d51b628d203d1691e2850b379b617789a113260311fb87d71170dc83bf934bf。旧candidate SHA 76408f098eee904adab87a4fd43fe4e3dc244101a9e781ae3b3af43bfca8db5a は、ゲート不具合修正前の候補であり、Current approval authorityには使用しない。ただし、このApproval成立はSOURCE_UPDATE統合完了を意味しない。",
+      "rationale": "Human確認により、テスト更新時のゲート不具合修正でTest SHAが変化した。修正版Approvalは最終Test/Registry SHAと一致しているため、Protected Testの承認不一致は解消。一方でHumanはまだCurrent Sourceへ統合していないため、Task7完了条件とは分離して管理する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-30T16:49:00+09:00",
+      "created_at": "2026-08-30T16:49:00+09:00",
+      "updated_at": "2026-08-30T16:49:00+09:00"
     }
   ],
   "specifications": [],
@@ -2634,7 +2658,7 @@
         "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
         "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001"
       ],
-      "acceptance_criteria": "- Formal Passive Master→Compiler→runtimeContracts→Game Runtimeの正規経路だけで全Passiveが実行されることを確認する。\n- Critical Current Formal経路は既適合部分を変更せず、残存Current経路だけが必要時Correctionされていることを確認する。\n- passiveSeriesId重複、未解決Passive ID、Requirement不一致、Threshold総量110超過、参照Skill不正をFail Closedできることを確認する。\n- Trigger Registry/ACTION/Event Context/activationChance/canActivate-commit基礎ContractがRuntime Hookより先に成立していることを確認する。\n- 最大HP/MP、耐性、Block、Critical、Critical防御、MP Cost、Cooldown、CastTime、周期HP/MP回復、Counter、各Reactive Trigger、Battle Start、致死耐え、瀕死時強化を確認する。\n- Active Skill参照Passiveで参照SkillのMP/Cooldown/Cast/Range Costが消費されないことを確認する。\n- Critical成立時は必中でEvade Eventを発生させずMulti-hit/Dual Wieldの各Hit独立順を維持する。\n- activationChance、自己再入禁止、別種Trigger連鎖、COUNTER/FOLLOW_UP先行、周期死亡/蘇生Lifecycleを確認する。\n- 瀕死時強化はHP変更確定後に閾値判定し、20 Tick有効・Cooldown999999・再発動禁止・対象10 Channel relative +100% Contributionとして動作することを確認する。\n- StudioとGameで同一Contract/判定順/発動境界を確認する。",
+      "acceptance_criteria": "- Formal Passive Master→Compiler→runtimeContracts→Game Runtimeの正規経路だけで全Passiveが実行されることを確認する。\n- Critical Current Formal経路は既適合部分を変更せず、残存Current経路だけが必要時Correctionされていることを確認する。\n- passiveSeriesId重複、未解決Passive ID、Requirement不一致、Threshold総量110超過、参照Skill不正をFail Closedできることを確認する。\n- Trigger Registry/ACTION/Event Context/activationChance/canActivate-commit基礎ContractがRuntime Hookより先に成立していることを確認する。\n- 最大HP/MP、耐性、Block、Critical、Critical防御、MP Cost、Cooldown、CastTime、周期HP/MP回復、Counter、各Reactive Trigger、Battle Start、致死耐え、瀕死時強化を確認する。\n- Active Skill参照Passiveで参照SkillのMP/Cooldown/Cast/Range Costが消費されないことを確認する。\n- Critical成立時は必中でEvade Eventを発生させずMulti-hit/Dual Wieldの各Hit独立順を維持する。\n- activationChance、自己再入禁止、別種Trigger連鎖、COUNTER/FOLLOW_UP先行、周期死亡/蘇生Lifecycleを確認する。\n- 瀕死時強化はHP変更確定後に閾値判定し、20 Tick有効・Cooldown999999・再発動禁止・対象10 Channel relative +100% Contributionとして動作することを確認する。\n- StudioとGameで同一Contract/判定順/発動境界を確認する。\n- Formal Passive dispatchMode=COUNTERはGame / Studio双方の専用Dynamic Regressionで直接実行確認する。activationChance=1実行、activationChance=0非実行かつRNG非消費、Referenced Active Skill実行、MP/Cooldown/Cast/Range Cost非消費、legacy COUNTER→FOLLOW_UP→Formal Passive COUNTER→pendingReactive順序、同一Passive自己再入防止、Multi-hit Hit単位Safe Pointを確認する。\n- Protected Test変更はHuman exact-hash approvalと実ファイルSHAが一致した状態でのみSOURCE_UPDATEへ統合する。Approval成立だけではDoneにせず、統合後のFresh Currentで専用Dynamic Regressionおよび既存Release GateがPASSした場合のみTask7をDoneとする。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -2643,9 +2667,9 @@
         "at": "2026-08-30T13:19:00+09:00"
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-30T15:05:00+09:00",
-      "result_scope": "B814-B818 implementation chain is Human-applied and Fresh Current verified. Review confirms GKS-B818 Formal Passive COUNTER implementation/order is correct, but existing regressions do not directly execute the new Formal Passive dispatchMode=COUNTER consumer. Final Task7 Done is therefore reopened only for a dedicated protected Dynamic Counter regression covering activationChance=1 execution, activationChance=0 RNG non-consumption, legacy COUNTER -> FOLLOW_UP -> Formal Passive COUNTER -> ACTION ordering, referenced Active Skill MP/CD/Cast/Range no-cost semantics, same-Passive self re-entry prevention, and multi-hit per-Hit Safe Point behavior.",
-      "result": "GKS-B818 source implementation and Counter ordering review PASS; final Done is held until dedicated Game/Studio Dynamic Formal Passive Counter regression is added and passes."
+      "updated_at": "2026-08-30T16:49:00+09:00",
+      "result_scope": "B814-B818 implementation chain is Human-applied and Fresh Current verified. GKS-B818 Formal Passive COUNTER implementation/order review is PASS. The dedicated Dynamic Counter protected-test change now has corrected Human exact-hash approval: test sha256=fac76e3dfde2a52b95c233ebb9ef5dd24fa1e69ba7667185b6b1e78c7f219220; registry baseline=ae7438b4377301a01ccef389ee5352123f08eef96499ec23c7f36f898563b264; registry updated=2d51b628d203d1691e2850b379b617789a113260311fb87d71170dc83bf934bf. This resolves the approval/hash mismatch only. The protected test has NOT yet been integrated into Current Source, so Task7 remains Doing until SOURCE_UPDATE integration and Fresh Current dynamic/regression verification complete.",
+      "result": "GKS-B818 source implementation/order PASS. Protected Test exact-hash approval PASS. SOURCE_UPDATE integration and Fresh Current verification are still pending; Task7 is not Done yet."
     }
   ],
   "checks": [
@@ -3471,15 +3495,38 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
-      "status": "Failed",
-      "result": "Dedicated protected dynamic regression is not yet part of Current Source. Candidate standalone probe passes, but it is not release-gating evidence until exact-hash TEST_CHANGE_APPROVAL is supplied and SOURCE_UPDATE is applied.",
-      "evidence": "Review requires direct Game/Studio execution coverage for Formal Passive Counter; protected test policy requires external exact-hash approval for tests/** and shared/tests/test-registry.json.",
+      "status": "Pending",
+      "result": "Human exact-hash approval is now valid and matches the final protected-test hashes, but the approved Dynamic Counter test/registry change has not yet been integrated into Current Source. Fresh Current execution evidence is therefore still pending.",
+      "evidence": "Approval integrity PASS: test updated_sha256=fac76e3dfde2a52b95c233ebb9ef5dd24fa1e69ba7667185b6b1e78c7f219220; registry ae7438b... -> 2d51b628.... Current source_baseline remains GKS-B818; Human states SOURCE_UPDATE integration has not yet been performed.",
       "checked_by": "AI",
       "checked_at": "2026-08-30T15:05:00+09:00",
       "resolves_check_ids": [],
-      "blocking": true,
+      "blocking": false,
       "created_at": "2026-08-30T15:05:00+09:00",
-      "updated_at": "2026-08-30T15:05:00+09:00",
+      "updated_at": "2026-08-30T16:49:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-INTEGRATION-7E-DYNAMIC-APPROVAL-FIXED-001",
+      "title": "Task 7E Dynamic Counter protected-test exact-hash approval integrity",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
+      "status": "Passed",
+      "result": "Corrected Human TEST_CHANGE_APPROVAL now matches the intended final Dynamic Counter test and Test Registry hashes. Approval/hash mismatch is resolved. This check does not claim Current Source integration.",
+      "evidence": "TEST_CHANGE_APPROVAL_TASK7E_DYNAMIC_FIXED.json: tests/task7e-formal-passive-counter-dynamic.js updated_sha256=fac76e3dfde2a52b95c233ebb9ef5dd24fa1e69ba7667185b6b1e78c7f219220; shared/tests/test-registry.json baseline_sha256=ae7438b4377301a01ccef389ee5352123f08eef96499ec23c7f36f898563b264; updated_sha256=2d51b628d203d1691e2850b379b617789a113260311fb87d71170dc83bf934bf.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T16:49:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T16:49:00+09:00",
+      "updated_at": "2026-08-30T16:49:00+09:00",
       "resolution": {
         "status": "Open",
         "resolved_by": "",
@@ -3670,6 +3717,10 @@
     {
       "at": "2026-08-30T15:05:00+09:00",
       "message": "Information-source review incorporated. GKS-B818 source/Counter ordering remains PASS, but Task7 Done was reopened because no dedicated dynamic Formal Passive COUNTER execution regression exists. Task4 stale result_scope and completed Formal Trigger approval-state inconsistency were corrected. Protected test candidate is prepared separately; B819 packaging waits for exact-hash external TEST_CHANGE_APPROVAL."
+    },
+    {
+      "at": "2026-08-30T16:49:00+09:00",
+      "message": "Task7E management corrected to reflect the actual pre-integration state. Corrected Human TEST_CHANGE_APPROVAL is authoritative and matches Dynamic Counter test SHA fac76e3d... and Test Registry transition ae7438b... -> 2d51b628.... The old 76408f... candidate SHA is superseded. However, no SOURCE_UPDATE integration is claimed: source_baseline remains Fresh Current GKS-B818, Task7 remains Doing, and the Dynamic Regression check is Pending until integration + Fresh Current regression gates pass."
     }
   ]
 }
