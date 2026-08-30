@@ -23,7 +23,7 @@ assert.ok(!sw.includes('./skill/runtime-requirements.json'),'retired Runtime Req
 assert.ok(skg.includes('registry:skillRegistry'),'Skill compile must reuse the already-loaded registry instead of refetching it');
 assert.ok(skg.includes("setBootStatus('初期化停止: '+message,'error')"),'timeout/fetch failure must be visible in-view');
 assert.ok(html.includes(`Game ${build.game_build} / Studio ${build.studio_build}`),'Studio header build must follow package-build.json');
-assert.ok(html.includes('./skill/skill-generator.js?v=35'),'Skill Generator cache key must advance');
+assert.ok(html.includes('./skill/skill-generator.js?v=36'),'Skill Generator cache key must advance');
 assert.ok(html.includes(`navigator.serviceWorker.register('./sw.js?v=${buildNo}'`),'Studio service worker URL must advance');
 assert.ok(html.includes(`url.searchParams.set('appv','${buildNo}')`),'Studio reload appv must advance');
 assert.ok(sw.includes(`const CACHE_NAME="gks-studio-b${buildNo}"`),'Studio cache namespace must advance');

@@ -8,7 +8,7 @@ const sw=fs.readFileSync('studio/sw.js','utf8');
 
 assert.ok(html.includes('<section id="view-skill-generator" class="view hidden" data-skg-shell="loading">'),'Skill Generator bootstrap shell must exist in initial Studio HTML');
 assert.ok(html.includes('id="skgBootStatus"'),'bootstrap shell must expose dependency status');
-assert.ok(html.indexOf('id="view-skill-generator"') < html.indexOf('./skill/skill-generator.js?v=35'),'bootstrap shell must exist before dynamic script load');
+assert.ok(html.indexOf('id="view-skill-generator"') < html.indexOf('./skill/skill-generator.js?v=36'),'bootstrap shell must exist before dynamic script load');
 assert.ok(skg.includes("if(s&&s.dataset.skgShell!=='loading')return"),'renderPanel must reuse bootstrap shell instead of abandoning it');
 assert.ok(skg.includes("s.className=shellVisible?'view':'view hidden'"),'full panel must preserve an already-open shell');
 assert.ok(skg.includes('Promise.allSettled'),'dependency boot must settle independently');

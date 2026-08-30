@@ -1,13 +1,13 @@
 'use strict';
 const assert=require('assert');const fs=require('fs');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.studio_build,'GKS-B827');
+assert.strictEqual(build.studio_build,'GKS-B828');
 const html=fs.readFileSync('studio/index.html','utf8');
 const skg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 assert.ok(html.includes('id="skgBootDiagnosticsLog"'),'diagnostic log shell missing');
 assert.ok(html.includes('BOOT-1: skill-generator.js request start'),'script request diagnostic missing');
 assert.ok(html.includes('BOOT-X: external script load ERROR'),'script error diagnostic missing');
-assert.ok(html.includes('skill-generator.js?v=35'),'cache key must advance for diagnostic build');
+assert.ok(html.includes('skill-generator.js?v=36'),'cache key must advance for diagnostic build');
 for(const marker of ['BOOT-3: module entered','BOOT-4: boot entered','DEP-START: ${label}','DEP-OK: ${label}','DEP-FAIL: ${label}','BOOT-5: dependencies complete','BOOT-6: panel rendered']) assert.ok(skg.includes(marker),marker+' missing');
 assert.ok(skg.includes('BOOT-3B: waiting DOMContentLoaded'),'DOMContentLoaded wait diagnostic missing');
 console.log('PASS GKS-B538 Skill Generator device boot diagnostics regression');

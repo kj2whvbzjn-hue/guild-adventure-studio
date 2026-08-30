@@ -1,10 +1,13 @@
 const fs=require('fs'),assert=require('assert');
 const src=fs.readFileSync('studio/skill/skill-generator.js','utf8');
-assert.ok(src.includes('lastFormalSkillBatch=buildFormalSkillBatch(aiBatchPreview)'),'AI generation must retain Formal Batch directly');
+assert.ok(src.includes('lastFormalSkillBatch=buildFormalSkillBatch(aiBatchPreview)'),'ACTIVE generation must retain Formal Batch directly');
+assert.ok(src.includes("lastFormalSkillBatch=buildFormalPassiveBatch(aiBatchPreview)"),'PASSIVE generation must retain Formal Passive Batch directly');
 assert.ok(src.includes("let payload=lastFormalSkillBatch?clone(lastFormalSkillBatch):buildFormalSkillBatch()"),'G07 button must use direct Formal Batch handoff');
 assert.ok(!src.includes('lastG06SkillBatch'),'legacy G06 retained batch must be removed');
 assert.ok(!src.includes("skgG06SkillJson"),'legacy G06 textarea fallback must be removed');
 assert.ok(!src.includes('g06RevalidateSkillBatch'),'legacy G06 revalidation must be removed');
-assert.ok(src.includes("直近のAI一括生成結果を正式GKS_SKILL_BATCHとしてG07登録欄へセットしました。"));
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=35'));
+assert.ok(src.includes('GKS_PASSIVE_BATCH'),'Passive Batch must share the G07 handoff surface');
+assert.ok(src.includes('g07DryRunRegistration(payload)'),'G07 Dry Run must dispatch ACTIVE/PASSIVE by batch schema');
+assert.ok(src.includes('g07SafeApplyBatch(payload)'),'G07 Safe Apply must dispatch ACTIVE/PASSIVE by batch schema');
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=36'));
 console.log('PASS GKS-B573 AI->G07 Formal Batch direct handoff');
