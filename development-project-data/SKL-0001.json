@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T04:18:30.176Z"
+    "updated_at": "2026-08-30T04:23:53.424Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Passive Skill Task 6C - LowHP Battle-End Lifecycle Completion",
-    "goal": "Fresh Current GKS-B812でTask6B反映を確認。Task6 Acceptance再監査でBattle終了時LowHP一時Contribution/stateの明示破棄不足を検出したため、既存Battle End lifecycleへ最小接続するGKS-B813をHuman Apply待ちとして管理する。Task7統合検証はTask6完了後に開始する。"
+    "theme": "Passive Skill Task 7 - Full Game / Studio Integration Validation",
+    "goal": "Fresh Current GKS-B813でTask6C Battle End LowHP cleanup反映を確認しTask6を完了。Task7の全Acceptance CriteriaをCurrent Source/既存回帰/追加統合監査で検証し、仕様不整合があれば最小Correction、なければ統合検証完了判定を行う。"
   },
   "project_rules": [
     {
@@ -565,14 +565,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B812",
+    "studio_build": "GKS-B813",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260830-040629).zip",
-    "source_role": "Human-provided Fresh Current after Task6B apply; exact Task6C baseline",
-    "recorded_at": "2026-08-30T13:06:00+09:00",
-    "source_zip_sha256": "dccffc78041907e70379a798884223bb54cf95d74096755273f5c987901bb7d8",
-    "package_manifest_sha256": "83c8f85c3ae7328dd074f38ba41bd9d835c7d1b39ffed80d2eb8fd594284bd4f",
-    "source_tree_sha256": "775fac76b7a29944ead3d1d865a6c92e14b60b5920090b775f57db4520bbfbf7"
+    "source_label": "guild-adventure-studio-sub(20260830-041933).zip",
+    "source_role": "Human-provided Fresh Current after Task6C apply; Task7 integration-validation baseline",
+    "recorded_at": "2026-08-30T13:19:00+09:00",
+    "source_zip_sha256": "4f302c468a0ae04fbbf436a23ef657c1ac8fa60780e35d6734010bf93337da49",
+    "package_manifest_sha256": "1c808952d4cdfd062a68b97db7b6fc8e3a29365f6258468462ea65e9532ecfcc"
   },
   "lifecycle": {
     "status": "Active",
@@ -1326,7 +1325,7 @@
     {
       "id": "IMP-SKL-PASSIVE-LOWHP-6C-B813-001",
       "title": "Task 6C LowHP Battle-End Lifecycle Completion",
-      "status": "Prepared",
+      "status": "Completed",
       "task_id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
       "work_type": "SOURCE_UPDATE",
       "studio_build": "GKS-B813",
@@ -1372,15 +1371,79 @@
           "Task7 integration validation"
         ]
       },
-      "evidence": "Fresh B812 acceptance re-audit detected missing explicit Battle End LowHP state/contribution cleanup. GKS-B813 source Quick 11/11 PASS; update Quick 13/13 PASS; Accept 13/13 PASS with exact B812 baseline; Critical 159 and Trigger regressions PASS.",
+      "evidence": "Fresh B812 acceptance re-audit detected missing explicit Battle End LowHP state/contribution cleanup. GKS-B813 source Quick 11/11 PASS; update Quick 13/13 PASS; Accept 13/13 PASS with exact B812 baseline; Critical 159 and Trigger regressions PASS. Fresh Current GKS-B813 verified: package_manifest SHA-256=1c808952d4cdfd062a68b97db7b6fc8e3a29365f6258468462ea65e9532ecfcc; battle-control.js calls clearBattleEndLowHpPassiveStates before clearBattleEndCooldowns; targeted regressions PASS.",
       "recorded_at": "2026-08-30T13:06:00+09:00",
       "created_at": "2026-08-30T13:06:00+09:00",
-      "updated_at": "2026-08-30T13:06:00+09:00",
+      "updated_at": "2026-08-30T13:19:00+09:00",
       "work_box_ids": [
         "BOX-SKL-0001"
       ],
       "task_ids": [
         "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001"
+      ]
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-LOWHP-6C-B813-FRESH-VERIFY-001",
+      "title": "Task 6C Fresh Current Verification",
+      "status": "Completed",
+      "task_id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "work_type": "VERIFICATION",
+      "studio_build": "GKS-B813",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "source": {
+        "file": "guild-adventure-studio-sub(20260830-041933).zip",
+        "sha256": "4f302c468a0ae04fbbf436a23ef657c1ac8fa60780e35d6734010bf93337da49",
+        "package_manifest_sha256": "1c808952d4cdfd062a68b97db7b6fc8e3a29365f6258468462ea65e9532ecfcc"
+      },
+      "evidence": "Fresh Current GKS-B813 verified. LowHP Battle End cleanup exists and is called in finishIfNeeded. CRITICAL_CONFORMANCE_R19_OK checks=159; GENERIC_TRIGGER_ENGINE_R04_A_PASS; ACTION_GUARD/SIMULTANEOUS_ORDER/CLOSURE PASS; adventure-battle-core/runtime PASS; BATTLE_END_EFFECT_CLEAR PASS.",
+      "recorded_at": "2026-08-30T13:19:00+09:00",
+      "created_at": "2026-08-30T13:19:00+09:00",
+      "updated_at": "2026-08-30T13:19:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001"
+      ]
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-INTEGRATION-VALIDATION-7A-B813-001",
+      "title": "Task 7A Full Passive Integration Audit Start",
+      "status": "Doing",
+      "task_id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
+      "work_type": "VERIFICATION",
+      "studio_build": "GKS-B813",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "scope": {
+        "baseline_verified": [
+          "Formal Passive validator/compiler/runtimeContracts pipeline exists",
+          "passiveSeriesId and unresolved Passive ID fail-closed path exists",
+          "Threshold total >110 and referenced Active Skill validation exist in compiler",
+          "Critical-before-hit conformance regression passes 159 checks",
+          "Trigger Engine can/commit/action-guard/simultaneous-order/closure regressions pass",
+          "Adventure Battle core/runtime regressions pass",
+          "LowHP Battle End state/contribution cleanup applied"
+        ],
+        "remaining_validation": [
+          "all direct Passive channel families Game/Studio parity matrix",
+          "periodic death/revive exact lifecycle evidence",
+          "referenced Active Skill MP/CD/Cast/Range non-consumption evidence",
+          "all Reactive trigger dispatch boundaries and COUNTER/FOLLOW_UP-first evidence",
+          "LowHP activation/20Tick/cooldown999999/re-entry/10-channel runtime evidence",
+          "Studio and Game same Contract/order/boundary integration evidence"
+        ]
+      },
+      "evidence": "Task7 acceptance audit initialized from exact Fresh Current GKS-B813; no runtime correction claimed yet.",
+      "recorded_at": "2026-08-30T13:19:00+09:00",
+      "created_at": "2026-08-30T13:19:00+09:00",
+      "updated_at": "2026-08-30T13:19:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001"
       ]
     }
   ],
@@ -2144,7 +2207,7 @@
       "id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
       "box_id": "BOX-SKL-0001",
       "title": "瀕死時強化の発動LifecycleとContributionを既存経路へ接続する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 6,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
@@ -2160,8 +2223,9 @@
         "at": "2026-08-30T12:17:00+09:00"
       },
       "created_at": "2026-08-29T19:10:00+09:00",
-      "updated_at": "2026-08-30T13:06:00+09:00",
-      "result_scope": "Phase6A GKS-B811 Applied/Fresh verified. Phase6B GKS-B812 Applied/Fresh verified for LowHP contract, HP-finalized threshold, 20 Tick, cooldown999999 and 10 relative +100% channels. Acceptance re-audit found Battle End explicit LowHP state/contribution cleanup missing. Phase6C GKS-B813 Prepared to close that lifecycle gap. Task6 remains Doing until B813 Human Apply/Fresh Current verification."
+      "updated_at": "2026-08-30T13:19:00+09:00",
+      "result_scope": "Task6A GKS-B811 Magic Accuracy/Magic Resistance Applied; Task6B GKS-B812 LowHP threshold/20Tick/cooldown999999/10 relative +100% channels Applied; Task6C GKS-B813 Battle End LowHP-owned contribution/state cleanup Applied and Fresh Current verified.",
+      "result": "Task6 completed through GKS-B813 Fresh Current verification."
     },
     {
       "id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
@@ -2189,7 +2253,7 @@
       "id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
       "box_id": "BOX-SKL-0001",
       "title": "正式Passive全系統のGame / Studio統合検証を行う",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 7,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
@@ -2201,12 +2265,13 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T13:19:00+09:00"
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-29T20:35:00+09:00"
+      "updated_at": "2026-08-30T13:19:00+09:00",
+      "result_scope": "Task7 integration validation started from Fresh Current GKS-B813. Baseline pipeline/fail-closed/Critical/Trigger/Battle-End regressions are passing. Full family-by-family Game/Studio parity and lifecycle evidence remains under audit before Done."
     }
   ],
   "checks": [
@@ -2768,21 +2833,21 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
-      "status": "Failed",
-      "result": "Fresh GKS-B812 has correct LowHP activation/expiration and cooldown behavior, but finishIfNeeded clears cooldowns without explicitly removing active LowHP formal contributions or lowHpPassiveStates. This fails the acceptance clause requiring effect state and cooldown state to be discarded at Battle End.",
+      "status": "Passed",
+      "result": "Resolved by applied/fresh-verified GKS-B813: Battle End explicitly removes LowHP-owned formal contributions and lowHpPassiveStates before existing cooldown clear.",
       "evidence": "Fresh GKS-B812 game/assets/js/battle-control.js finishIfNeeded calls processApplyLifecycleCleanup, clearAllCoverEffects, clearBattleEndCooldowns; no LowHP state/contribution cleanup exists. GKS-B813 adds explicit cleanup using each state's modifierIds.",
       "checked_by": "AI",
       "checked_at": "2026-08-30T13:06:00+09:00",
       "resolves_check_ids": [],
       "blocking": false,
       "created_at": "2026-08-30T13:06:00+09:00",
-      "updated_at": "2026-08-30T13:06:00+09:00",
+      "updated_at": "2026-08-30T13:19:00+09:00",
       "resolution": {
         "status": "Resolved",
-        "resolved_by": "CHK-SKL-PASSIVE-LOWHP-6C-B813-001",
-        "resolved_at": "2026-08-30T13:06:00+09:00",
-        "reason": "GKS-B813 target explicitly removes active LowHP-owned contributions and state at Battle End, then preserves existing cooldown clear. Direct SOURCE_UPDATE/applied-state gates pass.",
-        "mode": "automatic"
+        "resolved_by": "AI",
+        "resolved_at": "2026-08-30T13:19:00+09:00",
+        "reason": "GKS-B813 Fresh Current verified.",
+        "mode": ""
       }
     },
     {
@@ -2802,6 +2867,54 @@
       "blocking": false,
       "created_at": "2026-08-30T13:06:00+09:00",
       "updated_at": "2026-08-30T13:06:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-LOWHP-B813-FRESH-001",
+      "title": "Task 6C Fresh Current / Task 6 completion gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B813 matches Task6C target; explicit LowHP Battle End cleanup and targeted regressions pass. Task6 completion conditions satisfied.",
+      "evidence": "package_manifest SHA-256=1c808952d4cdfd062a68b97db7b6fc8e3a29365f6258468462ea65e9532ecfcc; battle-control finishIfNeeded invokes clearBattleEndLowHpPassiveStates then clearBattleEndCooldowns; Critical159/Trigger/Adventure Battle/Battle End tests PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T13:19:00+09:00",
+      "resolves_check_ids": [
+        "CHK-SKL-PASSIVE-LOWHP-BATTLE-END-CLEANUP-001"
+      ],
+      "blocking": false,
+      "created_at": "2026-08-30T13:19:00+09:00",
+      "updated_at": "2026-08-30T13:19:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-INTEGRATION-7A-BASELINE-001",
+      "title": "Task 7A baseline integration regression gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
+      "status": "Passed",
+      "result": "Fresh GKS-B813 baseline passes existing Critical/Trigger/Battle core/runtime/Battle End regression suite and exposes the expected Formal Passive compiler/validator fail-closed mechanisms.",
+      "evidence": "Critical 159 PASS; Trigger Engine/Action Guard/Simultaneous Order/Closure PASS; Adventure Battle Core/Runtime PASS; Battle End Effect Clear PASS. Source audit confirms validatePassiveSelection, compilePassive total>110, referencedSkillId resolution and runtimeContracts requirements.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T13:19:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T13:19:00+09:00",
+      "updated_at": "2026-08-30T13:19:00+09:00",
       "resolution": {
         "status": "Open",
         "resolved_by": "",
@@ -2972,6 +3085,10 @@
     {
       "at": "2026-08-30T13:06:00+09:00",
       "message": "Fresh Current GKS-B812 verified after Task6B apply. Task6 acceptance re-audit found one lifecycle gap: Battle End clears cooldowns but did not explicitly remove active LowHP-owned formal contributions/lowHpPassiveStates. Task6C GKS-B813 prepared as a minimal correction; Task6 remains Doing and Task7 remains Todo until B813 Fresh Current verification."
+    },
+    {
+      "at": "2026-08-30T13:19:00+09:00",
+      "message": "Fresh Current GKS-B813 verified after Task6C apply. LowHP Battle End state/contribution cleanup and existing cooldown clear are both present; targeted regressions pass. Task6 marked Done. Task7 full Game/Studio Passive integration validation started from exact GKS-B813 baseline; no new runtime correction is claimed until the remaining family/parity/lifecycle matrix is completed."
     }
   ]
 }
