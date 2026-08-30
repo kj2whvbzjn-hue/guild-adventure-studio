@@ -52,6 +52,7 @@
       triggerRequirements=normalizeRequirements(triggerRaw.thresholdRequirements,'passive.params.trigger.thresholdRequirements');
       triggerContract={type,scope,engineEvent:req(def.engine_event,`registry.triggers.${type}.engine_event`),dispatchMode,priority:Number.isInteger(triggerRaw.priority)?triggerRaw.priority:0,...(def.phase?{phase:String(def.phase).toUpperCase()}:{}),thresholdRequirements:clone(triggerRequirements)};
       if(Object.prototype.hasOwnProperty.call(triggerRaw,'activationChance')){const chance=triggerRaw.activationChance;if(typeof chance!=='number'||!Number.isFinite(chance)||chance<0||chance>1)throw new Error(`Passive ${checked.id}のactivationChanceは0以上1以下の有限numberが必要です。`);triggerContract.activationChance=chance;}
+      if(Object.prototype.hasOwnProperty.call(triggerRaw,'cooldownTicks')){const cooldownTicks=triggerRaw.cooldownTicks;if(!Number.isInteger(cooldownTicks)||cooldownTicks<0)throw new Error(`Passive ${checked.id}のcooldownTicksは0以上の整数が必要です。`);triggerContract.cooldownTicks=cooldownTicks;}
     }
     let executionContract=null,skillRequirements=[];
     if(params.execution!=null){
