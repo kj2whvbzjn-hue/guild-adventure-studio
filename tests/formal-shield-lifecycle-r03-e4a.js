@@ -15,7 +15,7 @@ const out=compiler.compileSkill(skill,registry);ok(out.ok,`Formal compile failed
 const compiled=ctx.compileSkillForRuntime(out.compiledSkill);ok(compiled.ok,`Formal runtime compile failed ${JSON.stringify(compiled.errors)}`);
 ok(compiled.definition?.runtimeContracts?.applyContracts?.[0]?.logic==='SHIELD','Formal SHIELD apply contract missing');
 const source={id:'SRC',name:'Source',alive:true};
-const helperTarget={id:'H',name:'Helper',alive:true,shieldEffects:[]};
+const helperTarget={id:'H',name:'Helper',alive:true,maxHp:100,shieldEffects:[]};
 const h1=ctx.applyShieldStackLifecycle(helperTarget,{source,compiled,amount:100,duration:300},lifecycle);
 const h2=ctx.applyShieldStackLifecycle(helperTarget,{source,compiled,amount:100,duration:300},lifecycle);
 ok(h1.ok&&h2.ok&&helperTarget.shieldEffects.length===2,'helper did not retain independent shield layers');
@@ -24,7 +24,7 @@ ok(helperTarget.shieldEffects[0].expiresAt===325&&helperTarget.shieldEffects[1].
 ok(helperTarget.shieldEffects.every(x=>x.amount===100&&x.remaining===100),'helper snapshot amount changed');
 ok(new Set(helperTarget.shieldEffects.map(x=>x.id)).size===2,'helper shield IDs not independent');
 // Production Formal route must delegate to the same registry lifecycle policy.
-const runtimeTarget={id:'R',name:'Runtime',alive:true,shieldEffects:[]};
+const runtimeTarget={id:'R',name:'Runtime',alive:true,maxHp:100,shieldEffects:[]};
 const r1=ctx.applyTaggedApplyRuntime(source,runtimeTarget,compiled,'SHIELD');
 const r2=ctx.applyTaggedApplyRuntime(source,runtimeTarget,compiled,'SHIELD');
 ok(r1?.result?.ok&&r2?.result?.ok&&runtimeTarget.shieldEffects.length===2,'Formal runtime SHIELD layer count mismatch');

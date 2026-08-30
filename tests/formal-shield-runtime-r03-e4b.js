@@ -12,7 +12,7 @@ const compiled=ctx.compileSkillForRuntime(out.compiledSkill);ok(compiled.ok,`For
 const contract=compiled.definition?.runtimeContracts?.applyContracts?.[0];
 ok(contract?.logic==='SHIELD'&&contract?.effectId==='BARRIER','Formal SHIELD contract missing');
 ok(contract?.values?.power===100&&contract?.values?.duration===300,'Formal SHIELD values mismatch');
-const source={id:'SRC',name:'Source',alive:true},target={id:'TGT',name:'Target',alive:true,shieldEffects:[]};
+const source={id:'SRC',name:'Source',alive:true},target={id:'TGT',name:'Target',alive:true,maxHp:100,shieldEffects:[]};
 const a=ctx.applyTaggedApplyRuntime(source,target,compiled,'SHIELD');
 ok(a?.result?.ok,'Formal SHIELD first apply failed');
 ok(a.result.policy?.stackRule==='STACK'&&a.result.policy?.effectiveRule==='SUM'&&a.result.policy?.consumeRule==='FIFO','Formal lifecycle policy not delegated');

@@ -11,7 +11,7 @@ ok(typeof ctx.consumeShieldLayersLifecycle==='function','common shield consume h
 const invalid=ctx.resolveShieldConsumeLifecyclePolicy({consumeRule:'LIFO'});ok(!invalid.ok&&invalid.field==='consumeRule','unsupported LIFO accepted');
 const compile=(id,power)=>{const out=compiler.compileSkill(makeSkill(id,power),registry);ok(out.ok,`${id}: Formal compile failed ${JSON.stringify(out.errors)}`);const c=ctx.compileSkillForRuntime(out.compiledSkill);ok(c.ok,`${id}: Formal runtime compile failed ${JSON.stringify(c.errors)}`);return c};
 const c100=compile('E4C-F100',100),c40=compile('E4C-F40',40);
-const source={id:'SRC',name:'Source',alive:true},target={id:'TGT',name:'Target',alive:true,shieldEffects:[]};
+const source={id:'SRC',name:'Source',alive:true},target={id:'TGT',name:'Target',alive:true,maxHp:100,shieldEffects:[]};
 ok(ctx.applyTaggedApplyRuntime(source,target,c100,'SHIELD').result.ok,'first Formal shield failed');
 ok(ctx.applyTaggedApplyRuntime(source,target,c40,'SHIELD').result.ok,'second Formal shield failed');
 ok(target.shieldEffects.length===2&&target.shieldEffects.every(x=>x.lifecyclePolicy?.consumeRule==='FIFO'),'Formal layers did not retain FIFO lifecycle contract');
