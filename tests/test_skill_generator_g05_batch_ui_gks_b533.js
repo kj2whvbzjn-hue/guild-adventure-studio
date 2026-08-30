@@ -11,7 +11,7 @@ const aiRules=JSON.parse(fs.readFileSync('assets/shared/config/skill-ai-generati
 const ctx={console};ctx.globalThis=ctx;vm.createContext(ctx);
 for(const f of ['assets/shared/js/skill-budget-engine.js','assets/shared/js/skill-compiler.js','assets/shared/js/skill-ai-batch-engine.js'])vm.runInContext(fs.readFileSync(f,'utf8'),ctx,{filename:f});
 (async()=>{
- const out=await ctx.GKSSkillAiBatchEngine.generateBatch({requests:[
+ const out=await ctx.GKSSkillAiBatchEngine.generateBatch({schema:'GKS_SKILL_AI_BATCH_REQUEST',version:'1.0.0',mode:'ACTIVE',requests:[
   {skillLevel:8,intent:'表示確認用攻撃',effects:[{type:'DAMAGE',damageType:'PHYSICAL'}],target:'ENEMY',range:'SINGLE',desiredStrength:'MEDIUM',searchMetadata:{}},
   {skillLevel:8,intent:'表示確認用不正入力',effects:[{type:'DAMAGE',power:999}],target:'ENEMY',range:'SINGLE',desiredStrength:'HIGH',searchMetadata:{}}
  ]},{registry,budgetRules,rules:aiRules,budgetEngine:ctx.GKSSkillBudgetEngine,compile:skill=>Promise.resolve(ctx.GKSSkillCompiler.compileSkill(skill,registry)),idPrefix:'G05-UI'});
@@ -19,6 +19,9 @@ for(const f of ['assets/shared/js/skill-budget-engine.js','assets/shared/js/skil
  assert.strictEqual(out.entries[0].status,'ACCEPT');
  assert.strictEqual(out.entries[0].validation.registry,true);assert.strictEqual(out.entries[0].validation.budget,true);assert.strictEqual(out.entries[0].validation.compiler,true);
  assert.strictEqual(out.entries[1].status,'REJECT');assert.ok(out.entries[1].validation.issues.some(x=>x.code==='AI_FINAL_BATTLE_VALUE_FORBIDDEN'&&x.path==='effects[0].power'));
+ assert.strictEqual(out.mode,'ACTIVE');
+ assert.throws(()=>ctx.GKSSkillAiBatchEngine.assertEnvelopeMode({schema:'GKS_SKILL_AI_BATCH_REQUEST',version:'1.0.0',requests:[]}),e=>e?.code==='AI_MODE_REQUIRED');
+ await assert.rejects(()=>ctx.GKSSkillAiBatchEngine.generateBatch({schema:'GKS_SKILL_AI_BATCH_REQUEST',version:'1.0.0',mode:'PASSIVE',requests:[]},{registry,budgetRules,rules:aiRules,budgetEngine:ctx.GKSSkillBudgetEngine,compile:skill=>Promise.resolve(ctx.GKSSkillCompiler.compileSkill(skill,registry)),idPrefix:'G05-UI'}),e=>e?.code==='AI_PASSIVE_BUILDER_NOT_CONNECTED');
  const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
  for(const marker of ['data-ai-batch-filter="ALL"','data-ai-batch-filter="ACCEPT"','data-ai-batch-filter="REJECT"','data-ai-batch-status','Registry','Budget','Compiler','Studio生成数値 / Budget trace','x.code||\'REJECT\'','x.path'])assert.ok(sg.includes(marker),`G05 stage2 UI marker missing: ${marker}`);
  const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-compiler.js?v=486180'));assert.ok(html.includes('skill-budget-engine.js?v=2'));assert.ok(html.includes('skill-ai-batch-engine.js?v=2'));assert.ok(html.includes('skill-generator.js?v=33'));assert.ok(!html.includes('generic-skill-compiler.js'));
