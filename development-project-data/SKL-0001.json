@@ -10,7 +10,7 @@
     "name": "スキル調整",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T02:22:18.855Z"
+    "updated_at": "2026-08-30T02:56:29.414Z"
   },
   "project_context": {
     "purpose": "V9ゲームのSkill Balanceを独立案件として再設計する。Skill Lv1〜11、Skill Lv別総Threshold Budget、1〜3 Stat習得閾値配分、Stat別Ability Budget、Target Range Cost、Resource Costを整理し、Current Formal Skill Contractを変更せずSkill効果を仮配置・検証できる状態を作る。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-SKL-0001",
     "work_box_id": "BOX-SKL-0001",
-    "theme": "Passive Skill Task 4D - Formal Damage Element Distribution / Element Resistance",
-    "goal": "Fresh Current GKS-B807をbaselineに、Human確定の属性Damage配分規則をFormal DAMAGE Contractへ接続したGKS-B808を準備。Human Apply後のFresh Current確認でTask 4完了判定を行う。"
+    "theme": "Passive Skill Task 5A - Periodic HP/MP Recovery Lifecycle",
+    "goal": "GKS-B808 Task4DのHuman Apply/Fresh Current確認を反映しTask 4を完了。Task 5を5A周期Lifecycleと5B Reactive Safe Pointへ分割し、GKS-B809 Phase5AをHuman Apply待ちとして管理する。"
   },
   "project_rules": [
     {
@@ -565,13 +565,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B807",
+    "studio_build": "GKS-B808",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260830-014829).zip",
-    "source_role": "Human-provided Fresh Current after Task4C apply",
-    "recorded_at": "2026-08-30T10:49:00+09:00",
-    "source_zip_sha256": "2abb7c7faa2a16f7e134f155de65c9f02c16f0d1490e3feeaab2e19c07130a8e",
-    "package_manifest_sha256": "63cde4856ac060aa8937e4fe5e72314402df386892526a5d46993417d4dc3621"
+    "source_label": "guild-adventure-studio-sub(20260830-022303).zip",
+    "source_role": "Human-provided Fresh Current after Task4D apply",
+    "recorded_at": "2026-08-30T11:23:00+09:00",
+    "source_zip_sha256": "0853ac8a83dd8c3788cdd8e6889a6a50c982900844cb4417e986e73d20402284",
+    "package_manifest_sha256": "7084f692245ce90eb99da7d53c73fb486c123dad9ed00de740bbc7efd5bcf32f"
   },
   "lifecycle": {
     "status": "Active",
@@ -873,7 +873,7 @@
     {
       "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-4D-B808-001",
       "title": "Task 4D Formal Damage Element Distribution / Element Resistance",
-      "status": "Prepared",
+      "status": "Completed",
       "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
       "work_type": "SOURCE_UPDATE",
       "studio_build": "GKS-B808",
@@ -925,15 +925,101 @@
           "Task6 LowHP lifecycle"
         ]
       },
-      "evidence": "Compiler probe: FIRE+ICE unspecified => 0.5/0.5; FIRE30 + ICE unspecified => 0.3/0.7; all-specified 30+30 => Fail Closed. Critical 159 PASS; Trigger Engine PASS; source Quick 11/11 PASS; update Accept 14/14 PASS.",
+      "evidence": "Compiler probe: FIRE+ICE unspecified => 0.5/0.5; FIRE30 + ICE unspecified => 0.3/0.7; all-specified 30+30 => Fail Closed. Critical 159 PASS; Trigger Engine PASS; source Quick 11/11 PASS; update Accept 14/14 PASS. Fresh Current GKS-B808 verified: package_manifest SHA-256=7084f692245ce90eb99da7d53c73fb486c123dad9ed00de740bbc7efd5bcf32f; Critical 159 PASS; Trigger Engine PASS.",
       "recorded_at": "2026-08-30T11:15:00+09:00",
       "created_at": "2026-08-30T11:15:00+09:00",
-      "updated_at": "2026-08-30T11:15:00+09:00",
+      "updated_at": "2026-08-30T11:47:00+09:00",
       "work_box_ids": [
         "BOX-SKL-0001"
       ],
       "task_ids": [
         "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-DIRECT-RUNTIME-B808-FRESH-VERIFY-001",
+      "title": "Task 4D Fresh Current Verification",
+      "status": "Completed",
+      "task_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "work_type": "VERIFICATION",
+      "studio_build": "GKS-B808",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "source": {
+        "file": "guild-adventure-studio-sub(20260830-022303).zip",
+        "sha256": "0853ac8a83dd8c3788cdd8e6889a6a50c982900844cb4417e986e73d20402284",
+        "package_manifest_sha256": "7084f692245ce90eb99da7d53c73fb486c123dad9ed00de740bbc7efd5bcf32f"
+      },
+      "evidence": "Fresh Current GKS-B808 / GA-B486.211 verified. Package Manifest PASS; Critical conformance 159 PASS; Formal Trigger Engine regression PASS.",
+      "recorded_at": "2026-08-30T11:23:00+09:00",
+      "created_at": "2026-08-30T11:23:00+09:00",
+      "updated_at": "2026-08-30T11:47:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001"
+      ]
+    },
+    {
+      "id": "IMP-SKL-PASSIVE-TRIGGER-PERIODIC-5A-B809-001",
+      "title": "Task 5A Periodic HP/MP Recovery Lifecycle",
+      "status": "Prepared",
+      "task_id": "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
+      "work_type": "SOURCE_UPDATE",
+      "studio_build": "GKS-B809",
+      "game_build": "GA-B486.211",
+      "result": "Applied",
+      "baseline": {
+        "studio_build": "GKS-B808",
+        "game_build": "GA-B486.211",
+        "source_zip": "guild-adventure-studio-sub(20260830-022303).zip",
+        "source_zip_sha256": "0853ac8a83dd8c3788cdd8e6889a6a50c982900844cb4417e986e73d20402284",
+        "package_manifest_sha256": "7084f692245ce90eb99da7d53c73fb486c123dad9ed00de740bbc7efd5bcf32f"
+      },
+      "target": {
+        "studio_build": "GKS-B809",
+        "game_build": "GA-B486.211",
+        "package_manifest_sha256": "96adbeafe4fe4d2ac5470db32e1ee03db60d3b65a76a2e3264a62a8cb81a5da2",
+        "source_tree_sha256": "dab988aeb7a834c68a09299a3b8e4e7b437187f1e73b5adc21900b259ea20a31",
+        "artifact_id": "GKS-B809-dab988aeb7a8"
+      },
+      "artifact": {
+        "file": "SKL-0001_TASK5A_GKS-B809_STUDIO-UPDATE.zip",
+        "sha256": "7bab6908928a68c7aa23edaa54cb5f34199f7f0e07106b38c8088270200b6f80",
+        "route": "Studio > 更新ZIP",
+        "direct_update_zip": true,
+        "contains_studio_update_json": true,
+        "contains_export": false,
+        "deletions": 0,
+        "game_data_changes": 0
+      },
+      "scope": {
+        "implemented": [
+          "passive.params.periodic -> runtimeContracts.periodicContract",
+          "HP/MP resource selection",
+          "intervalTicks / initialDelayTicks / recoveryRate validation",
+          "existing Battle Tick lifecycle processing",
+          "first activation after initialDelayTicks",
+          "dead-unit due tick skips without carryover",
+          "revive does not reset the absolute battle-tick schedule",
+          "CurrentMax based max(1,floor(CurrentMax*recoveryRate)) recovery capped by CurrentMax"
+        ],
+        "deferred": [
+          "Reactive Safe Point",
+          "pendingReactive",
+          "ON_CRITICAL / ON_HIT_DEALT / ON_EVADE / ON_BLOCK / ON_BATTLE_START execution hooks"
+        ]
+      },
+      "evidence": "TASK5A_PERIODIC_COMPILER_OK; Critical 159 PASS; Trigger Engine PASS; Source Quick 11/11 PASS; direct update Accept 14/14 PASS including applied-state Full.",
+      "recorded_at": "2026-08-30T11:23:00+09:00",
+      "created_at": "2026-08-30T11:23:00+09:00",
+      "updated_at": "2026-08-30T11:47:00+09:00",
+      "work_box_ids": [
+        "BOX-SKL-0001"
+      ],
+      "task_ids": [
+        "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001"
       ]
     }
   ],
@@ -1675,7 +1761,7 @@
       "id": "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
       "box_id": "BOX-SKL-0001",
       "title": "Passive Trigger Runtime Hook / Reactive Safe Point / 周期Lifecycleを実装する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 5,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001",
@@ -1690,7 +1776,8 @@
         "at": ""
       },
       "created_at": "2026-08-29T18:55:00+09:00",
-      "updated_at": "2026-08-29T20:35:00+09:00"
+      "updated_at": "2026-08-30T11:47:00+09:00",
+      "result_scope": "Phase5A GKS-B809 Prepared: periodicContract and existing Battle Tick HP/MP periodic recovery lifecycle. Human Apply/Fresh Current verification pending. Reactive Safe Point/event hooks remain for Phase5B."
     },
     {
       "id": "TASK-SKL-PASSIVE-LOWHP-CONTRIBUTION-001",
@@ -1718,7 +1805,7 @@
       "id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
       "box_id": "BOX-SKL-0001",
       "title": "直接補正・Resource・致死耐えPassiveを既存Runtimeへ接続する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 4,
       "depends_on": [
         "TASK-SKL-PASSIVE-FORMAL-IMPLEMENTATION-001"
@@ -1732,8 +1819,9 @@
         "at": "2026-08-30T10:15:03+09:00"
       },
       "created_at": "2026-08-29T20:28:00+09:00",
-      "updated_at": "2026-08-30T11:15:00+09:00",
-      "result_scope": "Task4A applied: direct modifiers/resource reductions. Task4B applied: Formal Passive runtimeContracts transport. Task4C applied and Fresh Current GKS-B807 verified: ON_FATAL_DAMAGE HP1 fatal-survive. Task4D GKS-B808 prepared: Formal DAMAGE elemental split contract and ELEMENT_RESISTANCE:<ELEMENT> Game/Studio consumers. MAGIC_RESISTANCE is not a Task4 Passive acceptance item and is removed from remaining scope. Task remains Doing until B808 Human Apply/Fresh Current verification."
+      "updated_at": "2026-08-30T11:47:00+09:00",
+      "result_scope": "Task4A applied: direct modifiers/resource reductions. Task4B applied: Formal Passive runtimeContracts transport. Task4C applied and Fresh Current GKS-B807 verified: ON_FATAL_DAMAGE HP1 fatal-survive. Task4D GKS-B808 prepared: Formal DAMAGE elemental split contract and ELEMENT_RESISTANCE:<ELEMENT> Game/Studio consumers. MAGIC_RESISTANCE is not a Task4 Passive acceptance item and is removed from remaining scope. Task remains Doing until B808 Human Apply/Fresh Current verification.",
+      "result": "Task4A-4D Applied. Fresh Current GKS-B808 verified. Direct modifiers/resource reductions, Formal Passive runtimeContracts transport, ON_FATAL_DAMAGE fatal-survive, Formal DAMAGE element distribution and ELEMENT_RESISTANCE consumer are connected."
     },
     {
       "id": "TASK-SKL-PASSIVE-INTEGRATION-VALIDATION-001",
@@ -2097,6 +2185,52 @@
       "blocking": false,
       "created_at": "2026-08-30T11:15:00+09:00",
       "updated_at": "2026-08-30T11:15:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-DIRECT-B808-FRESH-001",
+      "title": "Task 4D Fresh Current / Task 4 completion gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-DIRECT-RUNTIME-001",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B808 matches Task4D target and regression checks pass. Task4 completion conditions satisfied.",
+      "evidence": "package_manifest SHA-256=7084f692245ce90eb99da7d53c73fb486c123dad9ed00de740bbc7efd5bcf32f; Critical 159 PASS; Trigger Engine PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T11:23:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T11:23:00+09:00",
+      "updated_at": "2026-08-30T11:47:00+09:00",
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
+    },
+    {
+      "id": "CHK-SKL-PASSIVE-PERIODIC-5A-B809-001",
+      "title": "Task 5A periodic lifecycle source/update gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-SKL-PASSIVE-TRIGGER-PERIODIC-001",
+      "status": "Passed",
+      "result": "GKS-B809 target validates periodic contract and direct SOURCE_UPDATE artifact passes pre-apply gates.",
+      "evidence": "TASK5A_PERIODIC_COMPILER_OK; Quick 11/11 PASS; Accept 14/14 PASS; Critical 159 PASS; Trigger Engine PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T11:23:00+09:00",
+      "resolves_check_ids": [],
+      "blocking": false,
+      "created_at": "2026-08-30T11:23:00+09:00",
+      "updated_at": "2026-08-30T11:47:00+09:00",
       "resolution": {
         "status": "Open",
         "resolved_by": "",
