@@ -10,7 +10,7 @@
     "name": "Skill Generator Active/Passive統合改修",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T11:04:55.134Z"
+    "updated_at": "2026-08-30T12:05:00.870Z"
   },
   "project_context": {
     "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
@@ -18,9 +18,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-SGEN-001",
-    "work_box_id": "BOX-SGEN-ACTIVE-001",
-    "theme": "Post TASK-SGEN-003: Active Binding/Range + Passive Builder gates",
-    "goal": "TASK-SGEN-003完了。TASK-SGEN-003B、TASK-SGEN-004、TASK-SGEN-005が実装可能。各SOURCE_UPDATEはHuman承認後に開始する。"
+    "work_box_id": "BOX-SGEN-PASSIVE-001",
+    "theme": "TASK-SGEN-006 Passive Modifier/Trigger/Periodic/Special binding",
+    "goal": "TASK-SGEN-005完了。次はTASK-SGEN-006で既存Passive Registry/Runtime bindingを接続する。Active TASK-SGEN-003Bは並行可能。数値はシステム固定必須値以外すべて可変設定/入力として扱う。"
   },
   "project_rules": [
     {
@@ -67,23 +67,32 @@
       "source_id": "implementation-plan-review:2026-08-30",
       "created_at": "2026-08-30T19:30:00+09:00",
       "updated_at": "2026-08-30T19:30:00+09:00"
+    },
+    {
+      "id": "RULE-SGEN-006",
+      "text": "今後実装する数値は、schema/version/enum等のシステム契約上固定必須な定数を除き、すべて可変設定または明示入力として実装する。ゲームバランス数値をコードへ固定せず、設定欠落時に固定Fallbackを置かずFail Closedする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-08-30 variable numeric policy",
+      "created_at": "2026-08-30T21:05:00+09:00",
+      "updated_at": "2026-08-30T21:05:00+09:00"
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B822",
+    "studio_build": "GKS-B824",
     "game_build": "GA-B486.211",
-    "source_label": "SKL-GEN_TASK-SGEN-003_GKS-B822_STUDIO-UPDATE.zip",
-    "source_role": "TASK-SGEN-003 accepted target; becomes Fresh Current after Studio update is applied",
-    "recorded_at": "2026-08-30T20:45:00+09:00",
-    "source_update_zip_sha256": "0cb274bc0664cce1f60cc60f59742ebfd5f03ab1aec605f2b99c3c8fd3c0622e",
-    "package_manifest_sha256": "5aae806ccc84de551758d4783dcfd4922e5c01fbce650fdc9a998a2a04d66bef",
-    "source_tree_sha256": "47ad5a0f0ef27e8847132bb2a35d87d67d72e1a2d71a92b9c12bf571ededd7d4",
-    "artifact_id": "GKS-B822-47ad5a0f0ef2",
+    "source_label": "SKL-GEN_TASK-SGEN-005_GKS-B824_STUDIO-UPDATE.zip",
+    "source_role": "TASK-SGEN-005 accepted target; becomes Fresh Current after Studio update is applied",
+    "recorded_at": "2026-08-30T21:05:00+09:00",
+    "source_update_zip_sha256": "a6b0570e24ce6fbbe64633e6dc51520d90b58783eb1504eb37fcacae9bede483",
+    "package_manifest_sha256": "68c3790bfd6b2ff9a582166d35972d89617e66d66b0a1ec06d735c83349d0b44",
+    "source_tree_sha256": "b9bfc8960183b1ab279f1132c690dd38cccba12c6059dc0dea1fb77c21c553a4",
+    "artifact_id": "GKS-B824-b9bfc8960183",
     "baseline": {
-      "studio_build": "GKS-B821",
+      "studio_build": "GKS-B823",
       "game_build": "GA-B486.211",
-      "package_manifest_sha256": "2faeb44f116cfa3dc3d10aa3e4dc9c14554fd9de3c5fa49168a249fdb4fc4258",
-      "source_tree_sha256": "e07b1967ae92bf085a5274823a8933cd45262b347c29e822bbca59bdcf6424c2"
+      "package_manifest_sha256": "ba625711c0517b0af3bb4601732965e3898fc92f7c03f46d32f77f4be026e7dd",
+      "source_tree_sha256": "9e4e6a795baf82eb013a17c320d1fd308f3ee30a3bda40e9fc2e65e87cc27205"
     },
     "reference_hashes": {
       "DEV-V9-BALANCE-001": "2c2c490805dcdc7bf798c4e45671f1408c041a6654af8a43e8fa55e67e1466f8",
@@ -210,6 +219,76 @@
       },
       "created_at": "2026-08-30T20:45:00+09:00",
       "updated_at": "2026-08-30T20:45:00+09:00",
+      "evidence": ""
+    },
+    {
+      "id": "IMPL-SGEN-004",
+      "task_id": "TASK-SGEN-004",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Fixed-value TASK-SGEN-004 implementation was discarded. Rebuilt from Fresh GKS-B822 so all balance-affecting Active resource numbers are configuration-driven via skill-ai-generation-rules.json. Builder contains no balance numeric fallback; missing/invalid config fails closed.",
+      "studio_build": "GKS-B823",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-ACTIVE-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-004"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-30T20:34:00+09:00",
+      "test_change_approval": {
+        "approved_by": "Human",
+        "approval_sha256": "9fb56bb054cb64bce902556a11fda1893ec3f423ca2f4bccc9121ef0b2363260",
+        "protected_test_count": 1
+      },
+      "gate": {
+        "status": "pass",
+        "accept_gate_passed": 13,
+        "accept_gate_failed": 0,
+        "applied_full_gate": "26/26 PASS",
+        "target_package_manifest_sha256": "ba625711c0517b0af3bb4601732965e3898fc92f7c03f46d32f77f4be026e7dd",
+        "target_source_tree_sha256": "9e4e6a795baf82eb013a17c320d1fd308f3ee30a3bda40e9fc2e65e87cc27205"
+      },
+      "source_update_zip_sha256": "5e19c6a2d9a9d5320b050cbdbab9371141f07c693ef2cac94ebe594b307d2327",
+      "created_at": "2026-08-30T21:05:00+09:00",
+      "updated_at": "2026-08-30T21:05:00+09:00",
+      "evidence": ""
+    },
+    {
+      "id": "IMPL-SGEN-005",
+      "task_id": "TASK-SGEN-005",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Connected PASSIVE mode to the existing shared Skill AI Batch entry using a separate Passive Builder. Passive Requirement/series/stage are kept distinct from Active Ability Budget. Existing Formal Passive Compiler is reused. Unresolved Modifier/Trigger/Special bindings and parameterized channels fail closed; no duplicate generator/store/compiler introduced.",
+      "studio_build": "GKS-B824",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-PASSIVE-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-005"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-30T21:05:00+09:00",
+      "test_change_approval": {
+        "approved_by": "Human",
+        "approval_sha256": "deef4eaa6c45c01fb350b509cfeed0a6bc99acd228ed8c172f7d8e24f3df7e33",
+        "protected_test_count": 13,
+        "approval_verified": true
+      },
+      "gate": {
+        "status": "pass",
+        "selected_final_gate": "full",
+        "final_gate_returncode": 0,
+        "passed": 26,
+        "failed": 0,
+        "warnings": 0,
+        "timeouts": 0,
+        "applied_tree_sha256": "b9bfc8960183b1ab279f1132c690dd38cccba12c6059dc0dea1fb77c21c553a4"
+      },
+      "created_at": "2026-08-30T21:05:00+09:00",
+      "updated_at": "2026-08-30T21:05:00+09:00",
       "evidence": ""
     }
   ],
@@ -522,27 +601,27 @@
       "id": "TASK-SGEN-004",
       "box_id": "BOX-SGEN-ACTIVE-001",
       "title": "Active Target/Resource生成をCurrent Range seedへ接続する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 40,
       "depends_on": [
         "TASK-SGEN-003"
       ],
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
-      "acceptance_criteria": "- Base MP=`SkillLv*8`、SINGLE/FRONT/BACK/RANDOM/ALLのMP倍率/CD/CastをSKL-0001 seedから生成する。\n- RANDOMはCurrent G07要求fieldを欠落させない。\n- RangeはAbility Budgetを消費しない。\n- PIERCEは実装可否未確定のため自動生成対象に昇格させず、明示Deferred/Rejectを維持する。\n- Existing compiler/runtimeContracts出力形を変更しない。",
+      "acceptance_criteria": "- Active ResourceはCurrent設定から生成し、ゲームバランス数値をBuilderコードへ固定しない。\n- Base MP係数、SINGLE/FRONT/BACK/RANDOM/ALLのMP倍率/CD/Cast、RANDOM対象数、Activation Priority等は `skill-ai-generation-rules.json` の可変設定から読む。\n- 設定値を変更すればコード変更なしで生成結果が変化することを検証する。\n- 設定欠落・型不正・範囲不正は固定FallbackせずFail Closedする。\n- RangeはAbility Budgetを消費しない。\n- PIERCEは実装可否未確定のため自動生成対象に昇格させず明示Deferred/Rejectを維持する。\n- Existing compiler/runtimeContracts出力形を変更しない。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T20:34:00+09:00"
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T20:45:00+09:00"
+      "updated_at": "2026-08-30T21:05:00+09:00"
     },
     {
       "id": "TASK-SGEN-005",
       "box_id": "BOX-SGEN-PASSIVE-001",
       "title": "Passive Skill生成コアを既存共通入口へ接続する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 30,
       "depends_on": [
         "TASK-SGEN-002"
@@ -551,18 +630,18 @@
       "requires_human_approval": true,
       "acceptance_criteria": "- PassiveはActiveとは別Builderで処理し、基本1 Skill=1 Passive Effectとする。\n- Thresholdは習得Requirementのみで、Active Ability Budgetへ変換しない。\n- 原則MP/CD/Cast/Target Range Costを生成しない。\n- passiveSeriesId/stage/series exclusivity、Modifier Channel、Periodic、Trigger Action、Special Trigger、Composite SpecialをCurrent Passive Contractへ写像する。\n- EVD-0012 concrete 68件をGenerator入力Candidateとして受理する。\n- `ELEMENT_RESISTANCE:<ELEMENT>` / `STATUS_RESISTANCE:<STATUS>` 等のParameterized Channelは、具体bindingが入力されない限りFormal Passiveへ確定生成せずFail Closedする。\n- Parameterized ChannelのbindingはCurrent Registryから許可された具体値のみ受理し、Generatorが値を推測・自動選択しない。\n- EVD-0012 framework_templates 24件はRequirement未確定のため推測生成せずFail Closedする。\n- 独立Passive Generator/Store/Export Pipelineを新設しない。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T21:05:00+09:00"
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T20:18:00+09:00"
+      "updated_at": "2026-08-30T21:05:00+09:00"
     },
     {
       "id": "TASK-SGEN-006",
       "box_id": "BOX-SGEN-PASSIVE-001",
       "title": "Passive Modifier/Trigger/Periodic/Special bindingを既存Registryへ接続する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 40,
       "depends_on": [
         "TASK-SGEN-005"
@@ -576,7 +655,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-30T21:05:00+09:00"
     },
     {
       "id": "TASK-SGEN-007",
@@ -797,6 +876,56 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHK-SGEN-004",
+      "task_id": "TASK-SGEN-004",
+      "title": "TASK-SGEN-004 variable-policy rebuild acceptance",
+      "status": "Passed",
+      "details": "Discarded the fixed-value implementation. Config-driven resource policy verified: changing config changes generated MP/CD/Cast/RANDOM target count; missing/invalid config fails closed. Accept Gate passed 13/13 and applied Full Gate passed 26/26.",
+      "resolves_check_ids": [],
+      "created_at": "2026-08-30T21:05:00+09:00",
+      "updated_at": "2026-08-30T21:05:00+09:00",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-004",
+      "result": "PASS",
+      "evidence": "TASK-SGEN-004_VARIABLE_ACCEPT_GATE_FINAL.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T21:05:00+09:00",
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human approval + Full Gate",
+        "resolved_at": "2026-08-30T21:05:00+09:00",
+        "reason": "Variable implementation accepted; fixed-value implementation discarded.",
+        "mode": ""
+      },
+      "blocking": false
+    },
+    {
+      "id": "CHK-SGEN-005",
+      "task_id": "TASK-SGEN-005",
+      "title": "TASK-SGEN-005 Passive Builder protected-test approval and Full Gate",
+      "status": "Passed",
+      "details": "Human approval matched all 13 protected test changes. One Active->G07 regression initially failed because a ternary assignment obscured the established direct Formal Batch handoff pattern; source was corrected without weakening the test. Final applied Full Gate passed 26/26.",
+      "resolves_check_ids": [],
+      "created_at": "2026-08-30T21:05:00+09:00",
+      "updated_at": "2026-08-30T21:05:00+09:00",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-005",
+      "result": "PASS",
+      "evidence": "TASK-SGEN-005_ACCEPT_GATE_FINAL.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T21:05:00+09:00",
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human approval + source correction + Full Gate",
+        "resolved_at": "2026-08-30T21:05:00+09:00",
+        "reason": "Protected changes verified and established Active G07 handoff preserved.",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "workflow": {
@@ -836,6 +965,14 @@
     {
       "at": "2026-08-30T20:45:00+09:00",
       "message": "Human approved the final 13-file protected-test change set for TASK-SGEN-003. Cache namespaces and critical-runtime derived hashes were synchronized to GKS-B822. Full Gate passed 26/26. The previously failed management split correction was merged into this registered-current base: TASK-SGEN-003 Done, TASK-SGEN-003B added, TASK-SGEN-004 unblocked. Human Workflow remains Discovery/Exploring."
+    },
+    {
+      "at": "2026-08-30T20:34:00+09:00",
+      "message": "Previous fixed-value TASK-SGEN-004 implementation was discarded. TASK-SGEN-004 was rebuilt from Fresh GKS-B822 with all balance-affecting resource values configuration-driven; no fixed fallback. Rebuilt GKS-B823 passed acceptance/full regression."
+    },
+    {
+      "at": "2026-08-30T21:05:00+09:00",
+      "message": "Human approved TASK-SGEN-005 protected test changes. PASSIVE mode is now connected to the shared generator through a separate Passive Builder; Active Formal Batch direct handoff was preserved after a source-only correction. Final GKS-B824 Full Gate passed 26/26. TASK-SGEN-005 Done; TASK-SGEN-006 unblocked. Human Workflow remains Discovery/Exploring."
     }
   ],
   "plan_metadata": {
