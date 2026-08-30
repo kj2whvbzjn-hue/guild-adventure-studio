@@ -10,7 +10,7 @@
     "name": "Skill Generator Active/Passive統合改修",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T10:06:01.102Z"
+    "updated_at": "2026-08-30T10:24:47.784Z"
   },
   "project_context": {
     "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
@@ -18,9 +18,9 @@
   },
   "current_focus": {
     "architecture_id": "ARCH-SGEN-001",
-    "work_box_id": "BOX-SGEN-FOUNDATION-001",
-    "theme": "TASK-SGEN-002 Shared Batch Request Active/Passive mode Plan Gate",
-    "goal": "TASK-SGEN-001監査完了。現在のHuman Workflow状態はDiscoveryのまま維持する。次はStudio Workflowで実装準備/承認を進めた後、TASK-SGEN-002 Source Updateへ着手する。"
+    "work_box_id": "BOX-SGEN-ACTIVE-001",
+    "theme": "Wave 3: TASK-SGEN-003 / TASK-SGEN-005 implementation gates",
+    "goal": "TASK-SGEN-002 complete. Active Builder core (TASK-SGEN-003) and Passive Builder core (TASK-SGEN-005) are now dependency-unblocked and can be implemented independently after their respective Human Source Update approvals."
   },
   "project_rules": [
     {
@@ -70,14 +70,21 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B820",
+    "studio_build": "GKS-B821",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260830-095234).zip",
-    "source_role": "Fresh Current fixed by TASK-SGEN-001",
-    "recorded_at": "2026-08-30T20:04:00+09:00",
-    "source_zip_sha256": "60838027532c2904accf9ea2cdec06e368ddc2dcd3ca5fd0aad9b4ea2a1b424d",
-    "package_manifest_sha256": "ce70313adf88d8be7dee10514e4cd06bf73557d843eb99be98d32c5af93f881a",
-    "source_tree_sha256": "b31c85aa9878f0091d56a6c4ba741d10b9f5ba1240514e9f5a2c54600866d1a2",
+    "source_label": "SKL-GEN_TASK-SGEN-002_GKS-B821_STUDIO-UPDATE.zip",
+    "source_role": "TASK-SGEN-002 accepted target; becomes Fresh Current after Studio update is applied",
+    "recorded_at": "2026-08-30T20:18:00+09:00",
+    "source_update_zip_sha256": "48666393cef6e1ff5cd74c02130e489bbbfabbe381f870d8dd8ad6b32651e567",
+    "package_manifest_sha256": "2faeb44f116cfa3dc3d10aa3e4dc9c14554fd9de3c5fa49168a249fdb4fc4258",
+    "source_tree_sha256": "5d25f1a40cfd160ba5aed38c32aca1e4242c1cad07b80a55151e9f51ab9a7b8a",
+    "artifact_id": "GKS-B821-5d25f1a40cfd",
+    "baseline": {
+      "studio_build": "GKS-B820",
+      "game_build": "GA-B486.211",
+      "package_manifest_sha256": "ce70313adf88d8be7dee10514e4cd06bf73557d843eb99be98d32c5af93f881a",
+      "source_tree_sha256": "2d119226721dc68dcaa7dbb52d03e3430d3f9791207b1c31845535dec8f64d2d"
+    },
     "reference_hashes": {
       "DEV-V9-BALANCE-001": "2c2c490805dcdc7bf798c4e45671f1408c041a6654af8a43e8fa55e67e1466f8",
       "DEV-V9-REORG-019": "92ba7b4c924608d5cf8c1b5373fe5cfd1308dec76c0699448cb5e279245eb4d3",
@@ -111,6 +118,42 @@
       "task_ids": [],
       "result": "Applied",
       "recorded_at": ""
+    },
+    {
+      "id": "IMPL-SGEN-002",
+      "task_id": "TASK-SGEN-002",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Existing GKS_SKILL_AI_BATCH_REQUEST now requires explicit mode ACTIVE/PASSIVE. Missing/unknown mode fails closed; PASSIVE dispatch remains explicitly unavailable until TASK-SGEN-005. No Active numeric-generation logic changed.",
+      "studio_build": "GKS-B821",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-FOUNDATION-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-002"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-30T20:18:00+09:00",
+      "test_change_approval": {
+        "approved_by": "Human",
+        "approval_sha256": "23adee07a5e05bbe2a615411cf47a5a9109e87fb8877023b3606e5bf06fe3fe5",
+        "protected_test": "tests/test_skill_generator_g05_batch_ui_gks_b533.js",
+        "approval_verified": true
+      },
+      "gate": {
+        "status": "pass",
+        "selected_final_gate": "full",
+        "final_gate_returncode": 0,
+        "passed": 26,
+        "failed": 0,
+        "warnings": 0,
+        "timeouts": 0,
+        "applied_tree_sha256": "5d25f1a40cfd160ba5aed38c32aca1e4242c1cad07b80a55151e9f51ab9a7b8a"
+      },
+      "created_at": "2026-08-30T20:18:00+09:00",
+      "updated_at": "2026-08-30T20:18:00+09:00",
+      "evidence": ""
     }
   ],
   "discussions": [],
@@ -369,7 +412,7 @@
       "id": "TASK-SGEN-002",
       "box_id": "BOX-SGEN-FOUNDATION-001",
       "title": "共通Batch RequestへActive/Passive modeを追加する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 20,
       "depends_on": [
         "TASK-SGEN-001"
@@ -378,18 +421,18 @@
       "requires_human_approval": true,
       "acceptance_criteria": "- 既存 `GKS_SKILL_AI_BATCH_REQUEST` を唯一の大量生成入口として維持する。\n- Requestへ明示的な生成種別 `ACTIVE` / `PASSIVE` を追加し、曖昧入力はFail Closedする。\n- 共通fieldはID/Name/metadata/provenance/batch/seed等に限定し、Active専用Budget/Range/ResourceとPassive専用Series/Stage/Modifier/Triggerを混在させない。\n- 既存Active Request互換を無条件Fallbackで残さない。必要な移行は明示変換またはHuman承認Migrationに限定する。\n- このTaskでは数値生成ロジックを変更しない。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-30T20:18:00+09:00"
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T20:04:00+09:00"
+      "updated_at": "2026-08-30T20:18:00+09:00"
     },
     {
       "id": "TASK-SGEN-003",
       "box_id": "BOX-SGEN-ACTIVE-001",
       "title": "Active Skill生成コアをCurrent SKL Threshold/Ability方式へ置換する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 30,
       "depends_on": [
         "TASK-SGEN-002"
@@ -403,7 +446,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-30T20:18:00+09:00"
     },
     {
       "id": "TASK-SGEN-004",
@@ -429,7 +472,7 @@
       "id": "TASK-SGEN-005",
       "box_id": "BOX-SGEN-PASSIVE-001",
       "title": "Passive Skill生成コアを既存共通入口へ接続する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 30,
       "depends_on": [
         "TASK-SGEN-002"
@@ -443,7 +486,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-30T20:18:00+09:00"
     },
     {
       "id": "TASK-SGEN-006",
@@ -613,6 +656,31 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "id": "CHK-SGEN-002",
+      "task_id": "TASK-SGEN-002",
+      "title": "TASK-SGEN-002 protected-test approval and full source-update gate",
+      "status": "Passed",
+      "details": "External Human approval matched the protected G05 test baseline/updated SHA-256 exactly. Source update application passed; Full Gate passed 26/26 with 0 failures, warnings, or timeouts.",
+      "resolves_check_ids": [],
+      "created_at": "2026-08-30T20:18:00+09:00",
+      "updated_at": "2026-08-30T20:18:00+09:00",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-002",
+      "result": "PASS",
+      "evidence": "TASK-SGEN-002_ACCEPT_GATE.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-30T20:18:00+09:00",
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human approval + Full Gate",
+        "resolved_at": "2026-08-30T20:18:00+09:00",
+        "reason": "Protected test change approved and exact hashes verified.",
+        "mode": ""
+      },
+      "blocking": false
     }
   ],
   "workflow": {
@@ -644,6 +712,10 @@
     {
       "at": "2026-08-30T20:04:00+09:00",
       "message": "TASK-SGEN-001 audit result merged without advancing Human Workflow. Current registered workflow remains Discovery and workspace.status remains Exploring, as required by Studio DEVELOPMENT_WORKFLOW_STATUS_BY_STAGE. TASK-SGEN-001 is Done; TASK-SGEN-002 is Todo."
+    },
+    {
+      "at": "2026-08-30T20:18:00+09:00",
+      "message": "Human approved TASK-SGEN-002 protected test change. External approval exact hashes verified. Source Update target GKS-B821 passed Full Gate 26/26. TASK-SGEN-002 marked Done; TASK-SGEN-003 and TASK-SGEN-005 unblocked to Todo. Human Workflow state remains Discovery/Exploring in merge JSON."
     }
   ],
   "plan_metadata": {
