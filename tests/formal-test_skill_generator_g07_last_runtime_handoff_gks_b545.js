@@ -9,5 +9,5 @@ assert.ok(!src.includes('g06RevalidateSkillBatch'),'legacy G06 revalidation must
 assert.ok(src.includes('GKS_PASSIVE_BATCH'),'Passive Batch must share the G07 handoff surface');
 assert.ok(src.includes('g07DryRunRegistration(payload)'),'G07 Dry Run must dispatch ACTIVE/PASSIVE by batch schema');
 assert.ok(src.includes('g07SafeApplyBatch(payload)'),'G07 Safe Apply must dispatch ACTIVE/PASSIVE by batch schema');
-const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=36'));
+const html=fs.readFileSync('studio/index.html','utf8');assert.ok(html.includes('skill-generator.js?v=37'));
 console.log('PASS GKS-B573 AI->G07 Formal Batch direct handoff');
