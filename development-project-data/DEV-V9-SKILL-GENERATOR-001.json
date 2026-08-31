@@ -10,17 +10,17 @@
     "name": "Skill Generator Active/Passive統合改修",
     "status": "Exploring",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-30T22:01:20.474Z"
+    "updated_at": "2026-08-31T00:38:50.968Z"
   },
   "project_context": {
     "purpose": "既存Skill生成基盤を再利用し、1つのBatch/Studio入口からActive SkillとPassive Skillを生成できるようにする。外側の共通経路は共有し、Active/Passiveの生成ロジックは内部で分離する。",
-    "summary": "新規独立Generatorは作らない。GKS_SKILL_AI_BATCH_REQUESTを共通入口として維持し、ActiveはSKL-0001 Threshold/Ability/Range/Resource方式、PassiveはEVD-0008/SKL-0001 Passive Requirement/Series/Modifier/Trigger方式で別Builder化する。G07/Compiler/runtimeContracts/既存Passive master/data-exchange/runtimeを再利用し、EVD-0009 80件とEVD-0012 68件をAcceptance Fixtureとして段階検証する。"
+    "summary": "Single-entry Active/Passive generator integration implemented through GKS-B830. TASK-SGEN-008/009 Acceptance and TASK-SGEN-010 full regression completed; Studio UI now exposes explicit ACTIVE/PASSIVE mode with Candidate save/reload. Next is TASK-SGEN-012 Fresh Current integrated acceptance and Human Completion Gate."
   },
   "current_focus": {
     "architecture_id": "ARCH-SGEN-001",
-    "work_box_id": "BOX-SGEN-INTEGRATION-001",
-    "theme": "TASK-SGEN-007 GKS-B828 Studio Apply confirmation",
-    "goal": "TASK-SGEN-007 Source UpdateはFull Gate 26/26 PASS。HumanがGKS-B828をStudioへ適用しFresh Current確認後、TASK-SGEN-008/009 Acceptance Fixturesへ進む。"
+    "work_box_id": "BOX-SGEN-VERIFY-001",
+    "theme": "TASK-SGEN-012 Integrated Acceptance / Fresh Current final gate",
+    "goal": "Fresh Current GKS-B830を基準にActive/Passive両modeの生成→Validation→Candidate保存/再読込/Exportを最終確認し、Human Completion Gate用Evidenceを確定する。"
   },
   "project_rules": [
     {
@@ -79,20 +79,20 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B828",
+    "studio_build": "GKS-B830",
     "game_build": "GA-B486.211",
-    "source_label": "SKL-GEN_TASK-SGEN-007_GKS-B828_DIRECT-STUDIO-UPDATE.zip",
-    "source_role": "TASK-SGEN-007 Gate-passed target; becomes Fresh Current after Human Studio apply confirmation",
-    "recorded_at": "2026-08-31T06:48:00+09:00",
-    "source_update_zip_sha256": "60097919a1184c2939e163f6cf36f39f25a9cf0978af26208f5c3bdf6f90bf28",
-    "package_manifest_sha256": "c5227f707e05a26b1a76b4d034fbe2f27a3c184634aa83845d0dc32f983893d4",
-    "source_tree_sha256": "eec040688a1883ed7b8bac447e4961fb9361a68af4b35b2854f1c4a89108635d",
-    "artifact_id": "GKS-B828-eec040688a18",
+    "source_label": "guild-adventure-studio-sub(20260831-003339).zip",
+    "source_role": "Human-provided Fresh Current after TASK-SGEN-011 Studio apply confirmation",
+    "recorded_at": "2026-08-31T09:33:00+09:00",
+    "source_update_zip_sha256": "b39babf26d5d65bd75073964d894305dfe8c4391db07fd09e7359166af7ed536",
+    "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00",
+    "source_tree_sha256": "84b1cebf8971eb63b717e61ee7ff4567f7d314869ebddfbb7527efaf9bc7696b",
+    "artifact_id": "GKS-B830-84b1cebf8971",
     "baseline": {
       "game_build": "GA-B486.211",
-      "studio_build": "GKS-B826",
-      "package_manifest_sha256": "c080a28a0664a0b37f8c09c00a69e6e7db8f4fd0ec0568bcef3c8193e737dd20",
-      "source_tree_sha256": "4a5b2d229bdc038366b714760cae782bd220a9528c83e330a8cecb70cdb6ed65"
+      "studio_build": "GKS-B829",
+      "package_manifest_sha256": "1121755012ddf71fd41de9b96f77627e70d8629c4734977eda790df323d55378",
+      "source_tree_sha256": "8e72bd58610c6fe517e9ad3469a525cc25637c302efb4dcc93476bebfa83ca3c"
     },
     "reference_hashes": {
       "DEV-V9-BALANCE-001": "2c2c490805dcdc7bf798c4e45671f1408c041a6654af8a43e8fa55e67e1466f8",
@@ -104,7 +104,8 @@
       "EVD-0011": "b8b41ea0e902326ade78c5d5d90f0b2762ce9bfb0ad5e5d0cf6d5357126f4301",
       "EVD-0013": "999c3832f60943be8084d2eef343b40d780a776529c3309173e347a3b10fcf86",
       "EVD-0014": "920a7bc215ed48bb110f8d98b98804d6cab6e066de43a7b50131ae077a5d10a8"
-    }
+    },
+    "source_zip_sha256": "11ea838cf6e3d06208fc936f0856dfecc36db732d430abc8c30bba943963c030"
   },
   "lifecycle": {
     "status": "Active",
@@ -382,6 +383,81 @@
       "result": "Applied",
       "recorded_at": "2026-08-31T06:48:00+09:00",
       "evidence": ""
+    },
+    {
+      "id": "IMPL-SGEN-008-009-B829",
+      "task_id": "TASK-SGEN-008/TASK-SGEN-009",
+      "status": "Implemented",
+      "build": "GKS-B829",
+      "at": "2026-08-31T08:55:00+09:00",
+      "summary": "Active/Passive Acceptance Fixture phase completed. DOT timing is fully config-driven: completed_damage_per_budget, duration_budget_per_tick and interval_ticks are Balance Config values; legacy Registry interval=100 default removed. Attribute DOT uses existing element resistance path. Active 80 records classify as 77 generated, 2 intentional Fail Closed, 1 PIERCE Deferred. Passive concrete 68 pass; 15 parameterized channels fail closed without binding and pass with explicit binding; 24 framework templates reject auto-concretization. Protected G05 expectation updated with Human approval. Quick 11/11, Full 26/26 and SOURCE_UPDATE Accept 14/14 PASS.",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [],
+      "task_ids": [],
+      "result": "Applied",
+      "evidence": "",
+      "recorded_at": ""
+    },
+    {
+      "id": "IMPL-SGEN-010",
+      "task_id": "TASK-SGEN-010",
+      "type": "DEVELOPMENT_ONLY_AUDIT",
+      "status": "Completed",
+      "summary": "Fresh Current GKS-B829 registered Skill/Passive regression suite executed: 156/156 PASS, 0 skip, 0 timeout. Existing Skill/Passive compiler, runtimeContracts, Data Exchange and export paths remain canonical; no new legacy/fallback/parallel generator/store/compiler path detected.",
+      "studio_build": "GKS-B829",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-VERIFY-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-010"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-31T09:15:00+09:00",
+      "evidence": "task_sgen_010_full_registry.json",
+      "created_at": "2026-08-31T09:15:00+09:00",
+      "updated_at": "2026-08-31T09:15:00+09:00"
+    },
+    {
+      "id": "IMPL-SGEN-011",
+      "task_id": "TASK-SGEN-011",
+      "type": "SOURCE_UPDATE",
+      "status": "Completed",
+      "summary": "Studio Skill Generator UI completed as one entry with explicit ACTIVE/PASSIVE selection. Selected mode must match request mode or submission fails closed. Candidate result JSON export/reload preserves mode/provenance/authority/evidence references and does not auto-register Product Master. Existing G07/Data Exchange paths are reused. B830 Full Gate 26/26 PASS and SOURCE_UPDATE Accept 14/14 PASS.",
+      "studio_build": "GKS-B830",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-SGEN-INTEGRATION-001"
+      ],
+      "task_ids": [
+        "TASK-SGEN-011"
+      ],
+      "result": "Applied",
+      "recorded_at": "2026-08-31T09:15:00+09:00",
+      "test_change_approval": {
+        "approved_by": "Human",
+        "protected_test_count": 9,
+        "human_approved_scope_count": 17,
+        "approval_verified": true,
+        "note": "Gate classified 9 files as protected approval-required; remaining 8 approved files were build/cache mechanical synchronization."
+      },
+      "gate": {
+        "status": "pass",
+        "quick": "11/11 PASS",
+        "full": "26/26 PASS",
+        "source_update_accept": "14/14 PASS",
+        "failed": 0,
+        "warnings": 0,
+        "timeouts": 0,
+        "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00",
+        "source_tree_sha256": "712414eabc8ba89adcda7785c686c621cd40762254513d79166a4e526025e72b",
+        "artifact_id": "GKS-B830-712414eabc8b"
+      },
+      "source_update_zip_sha256": "b39babf26d5d65bd75073964d894305dfe8c4391db07fd09e7359166af7ed536",
+      "evidence": "sg011_b830_full_after_approval.json;sg011_b830_accept.json",
+      "created_at": "2026-08-31T09:15:00+09:00",
+      "updated_at": "2026-08-31T09:15:00+09:00"
     }
   ],
   "discussions": [],
@@ -850,7 +926,7 @@
       "id": "TASK-SGEN-008",
       "box_id": "BOX-SGEN-VERIFY-001",
       "title": "Active EVD-0009 Acceptance Fixtureを実行する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 60,
       "depends_on": [
         "TASK-SGEN-007"
@@ -864,13 +940,13 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-31T09:15:00+09:00"
     },
     {
       "id": "TASK-SGEN-009",
       "box_id": "BOX-SGEN-VERIFY-001",
       "title": "Passive EVD-0012 Acceptance Fixtureを実行する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 60,
       "depends_on": [
         "TASK-SGEN-007"
@@ -884,13 +960,13 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-31T09:15:00+09:00"
     },
     {
       "id": "TASK-SGEN-010",
       "box_id": "BOX-SGEN-VERIFY-001",
       "title": "既存Skill/Passive回帰テストを実行する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 70,
       "depends_on": [
         "TASK-SGEN-008",
@@ -905,13 +981,13 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-31T09:15:00+09:00"
     },
     {
       "id": "TASK-SGEN-011",
       "box_id": "BOX-SGEN-INTEGRATION-001",
       "title": "Studio Skill生成UI/Batch運用を1入口2modeとして完成させる",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 80,
       "depends_on": [
         "TASK-SGEN-010"
@@ -920,18 +996,18 @@
       "requires_human_approval": true,
       "acceptance_criteria": "- Studio上の生成機能は1つのSkill生成入口として提示し、Active/Passive modeを明示選択できる。\n- Active専用入力とPassive専用入力を同時表示/同時送信しない。\n- Batch input/resultにmode/provenance/authority/evidence referenceを保持する。\n- 80 Active/68 PassiveのCandidate batchをProduct登録せず生成・保存・再読込できる。\n- 新しい独立Generator画面/Store/Export経路を作らない。",
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-31T09:15:00+09:00"
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-31T09:15:00+09:00"
     },
     {
       "id": "TASK-SGEN-012",
       "box_id": "BOX-SGEN-VERIFY-001",
       "title": "統合Acceptance・Fresh Current確認・引継ぎEvidenceを確定する",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 90,
       "depends_on": [
         "TASK-SGEN-011"
@@ -945,7 +1021,7 @@
         "at": ""
       },
       "created_at": "2026-08-30T19:05:00+09:00",
-      "updated_at": "2026-08-30T19:05:00+09:00"
+      "updated_at": "2026-08-31T09:15:00+09:00"
     },
     {
       "id": "TASK-SGEN-003B",
@@ -1143,6 +1219,106 @@
         "mode": ""
       },
       "blocking": false
+    },
+    {
+      "status": "Passed",
+      "gate": "General",
+      "result": "PASS",
+      "evidence": "TASK-SGEN-008-009_ACCEPTANCE_EVIDENCE_GKS-B829.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T09:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Acceptance Fixture",
+        "resolved_at": "2026-08-31T09:15:00+09:00",
+        "reason": "Expected generation/fail-closed/deferred classifications matched current rules.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T09:15:00+09:00",
+      "updated_at": "2026-08-31T09:15:00+09:00",
+      "id": "CHK-SGEN-008",
+      "task_id": "TASK-SGEN-008",
+      "title": "Active EVD-0009 Acceptance Fixture",
+      "details": "Active 80/80 classified: 77 generated; BUFF-REP-MND-GENERIC_BUFF and ATTR-MND-ICE-40 intentionally Fail Closed; PIERCE-TEMPLATE-40 Deferred. DOT damage/duration/interval remain config-driven; Requirement/Range/Resource compatibility preserved.",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-008"
+    },
+    {
+      "status": "Passed",
+      "gate": "General",
+      "result": "PASS",
+      "evidence": "TASK-SGEN-008-009_ACCEPTANCE_EVIDENCE_GKS-B829.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T09:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Acceptance Fixture",
+        "resolved_at": "2026-08-31T09:15:00+09:00",
+        "reason": "Expected generation/fail-closed/deferred classifications matched current rules.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T09:15:00+09:00",
+      "updated_at": "2026-08-31T09:15:00+09:00",
+      "id": "CHK-SGEN-009",
+      "task_id": "TASK-SGEN-009",
+      "title": "Passive EVD-0012 Acceptance Fixture",
+      "details": "Passive concrete 68 classified/generated as applicable; parameterized 15 fail closed without explicit Registry-valid binding and pass with explicit binding; framework templates 24 reject auto-concretization; Requirement compatibility preserved.",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-009"
+    },
+    {
+      "id": "CHK-SGEN-010",
+      "task_id": "TASK-SGEN-010",
+      "title": "Current registered Skill/Passive full regression",
+      "status": "Passed",
+      "details": "Fresh Current GKS-B829 registered regression suite 156/156 PASS; 0 skip; 0 timeout. Canonical compiler/runtime/data-exchange/export paths retained; no new legacy/fallback/parallel implementation found.",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-010",
+      "result": "PASS",
+      "evidence": "task_sgen_010_full_registry.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T09:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Full registry regression + source audit",
+        "resolved_at": "2026-08-31T09:15:00+09:00",
+        "reason": "All current registered tests passed and architecture boundary preserved.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T09:15:00+09:00",
+      "updated_at": "2026-08-31T09:15:00+09:00"
+    },
+    {
+      "id": "CHK-SGEN-011",
+      "task_id": "TASK-SGEN-011",
+      "title": "One-entry two-mode Studio UI source update gate",
+      "status": "Passed",
+      "details": "Human approved 17 listed test updates; Gate required exact protected approval for 9 files, with 8 remaining changes classified as build/cache mechanical synchronization. Quick 11/11, Full 26/26, SOURCE_UPDATE Accept 14/14 PASS.",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-SGEN-011",
+      "result": "PASS",
+      "evidence": "sg011_b830_full_after_approval.json;sg011_b830_accept.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T09:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human approval + Full/Accept Gate",
+        "resolved_at": "2026-08-31T09:15:00+09:00",
+        "reason": "UI mode separation, provenance retention, candidate reload and canonical G07 handoff verified.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T09:15:00+09:00",
+      "updated_at": "2026-08-31T09:15:00+09:00"
     }
   ],
   "workflow": {
@@ -1206,6 +1382,26 @@
     {
       "at": "2026-08-31T06:48:00+09:00",
       "message": "TASK-SGEN-007 GKS-B828 Source Update prepared. Active G07 path preserved; Passive G07/Data Exchange integration added with atomic MOD+Passive commit and Balance Candidate separation. Applied-state simulation Full Gate 26/26 PASS; Human Studio apply confirmation pending."
+    },
+    {
+      "at": "2026-08-31T08:55:00+09:00",
+      "message": "Recovered previously failed management-JSON integration for TASK-SGEN-008/009. Acceptance completed on B829: Active 80 classified as 77 generated / 2 intentional Fail Closed / 1 PIERCE Deferred; Passive 68 pass with parameterized/framework fail-closed boundaries preserved. DOT completed damage, duration price and interval are config-driven; old Registry interval=100 default removed."
+    },
+    {
+      "at": "2026-08-31T09:15:00+09:00",
+      "message": "TASK-SGEN-010 completed on Fresh Current GKS-B829 with registered regression 156/156 PASS, 0 skip, 0 timeout. No duplicate/legacy/fallback generator/store/compiler path found."
+    },
+    {
+      "at": "2026-08-31T09:15:00+09:00",
+      "message": "TASK-SGEN-011 GKS-B830 completed. Studio Skill Generator is one entry with explicit ACTIVE/PASSIVE mode, mismatch fail-closed, Candidate JSON save/reload and provenance retention. Human approved 17 listed test updates; current Gate required exact protected approval for 9 and treated 8 as mechanical build/cache synchronization. Quick 11/11, Full 26/26, SOURCE_UPDATE Accept 14/14 PASS."
+    },
+    {
+      "at": "2026-08-31T09:15:00+09:00",
+      "message": "Management JSON integration recovery completed: TASK-SGEN-008/009/010/011 statuses merged together. Legacy absolute HEAL/BARRIER Game Data deletion remains Human-side and is not claimed by Source Update."
+    },
+    {
+      "at": "2026-08-31T09:33:00+09:00",
+      "message": "Fresh Current GKS-B830 confirmed from Human-provided source ZIP. Previous integrated management JSON merge failed because CHK-SGEN-008-009 used composite Task target_id TASK-SGEN-008/TASK-SGEN-009, which violates Studio reference validation requiring a single existing Task ID. Rebuilt by splitting into CHK-SGEN-008 and CHK-SGEN-009 with exact Task targets. Source baseline hashes updated from Fresh Current."
     }
   ],
   "plan_metadata": {
