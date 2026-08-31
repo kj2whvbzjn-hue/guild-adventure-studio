@@ -1,0 +1,751 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-6997ff8b-d0ba-4a7d-9caf-67f931dc4c22",
+    "canonical_path": "development-project-data/DEV-V9-FORMATION-RANGE-001.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-FORMATION-RANGE-001",
+    "name": "V9 戦闘隊列・Range・Target統合",
+    "status": "Specifying",
+    "ai_attention": "Auto",
+    "updated_at": "2026-08-31T15:01:00+09:00"
+  },
+  "project_context": {
+    "purpose": "前衛/後衛の戦闘隊列、Skill Target Range、Target選択、隊列Damage補正、Cover連携を一つのCurrent仕様として確定し、Game Runtime・Studio模擬戦・Formal AI・Skill Generatorで同じ意味を表現できる状態へ統合する。",
+    "summary": "6v6実戦模擬戦の事前点検で、Skill Range定義と実ゲーム/Studio Runtime、隊列概念が一致していないことを確認。Human DecisionによりFF5型の前衛/後衛を基礎とした隊列、SINGLE/FRONT/BACK/RANDOM/ALLの意味、PIERCE廃止、後衛攻撃減衰、前衛全滅時の強制前進、拠点隊列編集、味方支援Target、Cover境界を確定。実装テストは停止し、仕様統合→実装計画→Game/Studio同時整合→再検証の順で進める。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-FRM-001",
+    "work_box_id": "BOX-FRM-001",
+    "theme": "Human決定済み隊列・Range・Target仕様のCurrent Specification化",
+    "goal": "未決3点を明示した上で統合仕様をHuman承認可能な形にし、Game/Studio/AI/Generator改修の実装Gateへ接続する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-FRM-001",
+      "text": "Current Source / Runtime / Export / TestはSpecification確定根拠に使用せず、Human Decisionと既存Current Specificationを仕様Authorityとし、Sourceは仕様確定後のImplementation Verificationに使用する。",
+      "status": "Active",
+      "source_type": "InheritedProjectRule",
+      "source_id": "DEV-V9-REORG-019:RULE-REORG-006",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "RULE-FRM-002",
+      "text": "配置位置は前衛/後衛と表記する。「前列」はRange FRONT専用語とし、「後列」は仕様用語として使用しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "RULE-FRM-003",
+      "text": "未決事項を推測でCurrent仕様化しない。実装時に未決が残る場合はFail ClosedしHuman Decisionへ戻す。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation + DEV-V9-REORG-019 policy",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "RULE-FRM-004",
+      "text": "PIERCEは廃止済みとして扱い、新規実装・新規Skill生成へ持ち込まない。既存残存箇所のみMigration対象とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "RULE-FRM-005",
+      "text": "Balance可変値とシステム構造を分離する。今回Human確定した50%隊列Damage補正は現仕様値として保持するが、実装は外部Config化可能な構造を優先する。",
+      "status": "Active",
+      "source_type": "InheritedProjectRule+HumanDecision",
+      "source_id": "DEV-V9-REORG-019:RULE-REORG-007 + conversation",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B830",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(20260831-060155).zip",
+    "source_role": "Human-provided Fresh Current used only for registration-contract and later implementation verification",
+    "recorded_at": "2026-08-31T15:01:00+09:00",
+    "source_zip_sha256": "1928638615909d595a1a9711b783bed30dddbb1a9e8c300b6f907cad23af776f",
+    "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-08-31T15:01:00+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [
+    {
+      "id": "DISC-FRM-001",
+      "title": "戦闘中の任意隊列移動",
+      "status": "Open",
+      "summary": "拠点で初期隊列を編集し、前衛全滅時は後衛が強制前進することは確定。任意行動やSkillによる前衛⇔後衛移動は未決。",
+      "body": "Current仕様へ含める場合は、行動Cost・Target・AI利用・強制前進との優先順位まで定義が必要。",
+      "open_questions": "戦闘中の任意移動を採用するか。採用しない場合は拠点設定＋前衛全滅時強制移動のみとする。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DISC-FRM-002",
+      "title": "Monster初期隊列の決定Authority",
+      "status": "Open",
+      "summary": "Player側は拠点で隊列編集することが確定したが、Monster側の前衛/後衛初期配置決定元は未決。",
+      "body": "Monster Master、Encounter/Formation、AI Profile、Quest Override等のどこがAuthorityかを決める必要がある。",
+      "open_questions": "Monster初期隊列は何が決めるか。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DISC-FRM-003",
+      "title": "RANDOM複数抽選とCover判定",
+      "status": "Open",
+      "summary": "RANDOMは範囲制限なし・重複抽選可能と確定。単体攻撃は後衛TargetでもCover可能と確定している。",
+      "body": "RANDOMの複数抽選を各抽選ごとの単体HitとしてCover判定するか、RANDOM Skill全体を範囲扱いとしてCover対象外にするかが未決。",
+      "open_questions": "RANDOM複数抽選の各TargetにCoverを適用するか。",
+      "conclusion": "",
+      "related_discussion_ids": [],
+      "artifact_note": "",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-FRM-001",
+      "title": "隊列用語を前衛・後衛へ統一",
+      "status": "Approved",
+      "text": "Unitの配置位置は「前衛」「後衛」と呼ぶ。「前列」はRange FRONTの自然言語名としてのみ使用し、配置位置の意味では使わない。「後列」は仕様用語として使用しない。「全体」はRange ALLを指す。",
+      "rationale": "配置位置とRange名の自然言語混同を防ぐため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-002",
+      "title": "隊列は拠点で事前編集する",
+      "status": "Approved",
+      "text": "各Unitの初期配置は前衛または後衛とし、拠点の隊列編集で設定する。前衛/後衛の人数配分は自由とする。",
+      "rationale": "装備UI・AI編集UIとは分離し、隊列を拠点の事前編成情報として扱う。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-003",
+      "title": "前衛全滅時の後衛強制前進",
+      "status": "Approved",
+      "text": "戦闘中に前衛の生存Unitが0になった時点で、生存している後衛Unitは全員、自動かつ強制的に前衛へ移動する。",
+      "rationale": "前衛消失後も通常Target選択を成立させるため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-004",
+      "title": "Range SINGLE / FRONT / BACK / ALL のTarget意味",
+      "status": "Approved",
+      "text": "SINGLEは敵前衛から単体選択し、後衛を選択できない。FRONT（前列）は敵前衛を対象とする範囲。BACKは敵前衛・後衛のどちらからも1体を選択可能な単体Range。ALL（全体）は前衛・後衛を含む全有効対象を対象とする。",
+      "rationale": "FF5型の前衛/後衛を基礎にしつつ、後衛へ届く単体RangeをBACKとして明確化する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-005",
+      "title": "Range RANDOM の抽選仕様",
+      "status": "Approved",
+      "text": "RANDOMは前衛/後衛というRange制限を除外し、有効Target母集団からランダム抽選する。複数抽選時は同一Unitの重複抽選を許可する。",
+      "rationale": "RANDOMを列Rangeではなく独立したTarget抽選方式として扱うため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-006",
+      "title": "PIERCE Rangeを廃止",
+      "status": "Approved",
+      "text": "PIERCEはRange体系から廃止する。新規Skill生成・新規仕様・Runtime実装対象にしない。既存残存定義は移行/削除対象とする。",
+      "rationale": "現行ゲームで採用しないRangeを未解決状態のまま残さないため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-007",
+      "title": "後衛攻撃者のDamage減衰とRange例外",
+      "status": "Approved",
+      "text": "後衛にいる攻撃者がSINGLE / FRONT / RANDOMでDamageを与える場合、隊列補正としてDamageを50%へ減衰する。BACK / ALLでは攻撃者・Targetの配置に関係なく隊列Damage減衰判定そのものを行わず100%とする。防御側の後衛Damage減衰は最終仕様では使用しない。",
+      "rationale": "BACK/ALLを後衛戦闘の減衰解除Rangeとし、RANDOMは後衛Target抽選時も防御側減衰を持たせないことで判定を単純化する。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-008",
+      "title": "味方支援Targetは隊列制限を受けない",
+      "status": "Approved",
+      "text": "Heal、Barrier等の味方単体Targetは、対象Unitが前衛か後衛かに関係なく自由に選択可能とする。",
+      "rationale": "敵対Targetの射程制限と味方支援のTarget選択を分離するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-009",
+      "title": "Coverは後衛Targetへの単体攻撃も保護可能",
+      "status": "Approved",
+      "text": "元Targetが後衛であっても、攻撃が単体であればCover可能とする。BACKは単体RangeなのでCover対象に含む。",
+      "rationale": "Cover可否をTargetの配置ではなく単体攻撃かどうかで判定するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:01:00+09:00",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "specifications": [
+    {
+      "id": "SPEC-FRM-001",
+      "title": "戦闘隊列・Target Range・Target選択仕様",
+      "status": "Review",
+      "summary": "前衛/後衛配置、拠点編集、Range意味、PIERCE廃止、後衛Damage減衰、強制前進、味方Target、Coverを統合した仕様。",
+      "body": "# 隊列\n- Unitの配置位置は前衛 / 後衛。\n- 初期隊列は拠点で編集する。\n- 前衛/後衛の人数配分は自由。\n- 前衛の生存Unitが0になった時点で、生存後衛は全員強制的に前衛へ移動する。\n- 「前列」はRange FRONT名としてのみ使用し、配置位置には使用しない。「後列」は仕様用語として使用しない。\n\n# Target Range\n- SINGLE: 敵前衛の生存Unitから1体。後衛は選択不可。\n- FRONT（前列）: 敵前衛を対象とする範囲。\n- BACK: 敵前衛・後衛の生存Unitから1体を選択可能。単体Range。\n- RANDOM: 前衛/後衛のRange制限を除外した有効Target母集団から抽選。複数抽選は同一Unitの重複を許可。\n- ALL（全体）: 前衛・後衛を含む全有効対象。\n- PIERCE: 廃止。\n\n# 隊列Damage\n- 後衛攻撃者がSINGLE / FRONT / RANDOMでDamageを与える場合は50%へ減衰。\n- BACK / ALLは隊列Damage減衰判定を行わず100%。\n- SINGLE / FRONTは後衛をTargetできない。\n- RANDOMで後衛が抽選されても防御側減衰は行わない。\n- 防御側の後衛常時50%減衰という独立ルールは採用しない。\n\n# 味方Target\n- Heal / Barrier等は前衛・後衛を問わず対象選択可能。\n\n# Cover\n- 単体攻撃なら元Targetが後衛でもCover可能。\n- BACKは単体なのでCover可能。\n- FRONT / ALL等の範囲攻撃はCover対象外。\n- RANDOM複数抽選時の各Hit/抽選とCoverの詳細判定は未決事項として別途確定する。\n",
+      "decision_refs": [
+        "DEC-FRM-001",
+        "DEC-FRM-002",
+        "DEC-FRM-003",
+        "DEC-FRM-004",
+        "DEC-FRM-005",
+        "DEC-FRM-006",
+        "DEC-FRM-007",
+        "DEC-FRM-008",
+        "DEC-FRM-009"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "Human決定9件が欠落なく統合され、前衛/後衛と前列の用語が混在せず、PIERCEがCurrent対象から除外され、SINGLE/FRONT/BACK/RANDOM/ALLのTargetとDamage判定が一意であること。未決3点はCurrent確定事項へ混入しないこと。",
+      "system_node_id": "SYS-FRM-TARGET",
+      "contract_ids": [
+        "CTR-FRM-POSITION",
+        "CTR-FRM-RANGE",
+        "CTR-FRM-DAMAGE",
+        "CTR-FRM-COVER"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "specification_candidates": [],
+  "system_nodes": [
+    {
+      "id": "SYS-FRM-BASE",
+      "name": "拠点隊列編集",
+      "description": "拠点でPlayer Unitの初期前衛/後衛を編集・保存するSystem。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "SYS-FRM-BATTLE",
+      "name": "Battle隊列状態",
+      "description": "戦闘Unitの前衛/後衛状態と前衛全滅時の強制前進を所有する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "SYS-FRM-TARGET",
+      "name": "Range / Target Resolver",
+      "description": "SINGLE/FRONT/BACK/RANDOM/ALLのTarget母集団・選択を解決する。PIERCEは対象外。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "SYS-FRM-DAMAGE",
+      "name": "隊列Damage Resolver",
+      "description": "攻撃者の隊列とRangeに基づく50%減衰または減衰なしを適用する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "SYS-FRM-COVER",
+      "name": "Cover連携",
+      "description": "単体TargetへのCover可否をRange/Target結果と接続する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "SYS-FRM-AI",
+      "name": "Formal AI隊列Target",
+      "description": "隊列を考慮したTarget選択をAIで表現する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "SYS-FRM-VERIFY",
+      "name": "Studio Battle Verification",
+      "description": "Gameと同一の隊列・Range・Damage・Cover意味で模擬戦を再現する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "system_contracts": [
+    {
+      "id": "CTR-FRM-POSITION",
+      "name": "Battle Formation Position Contract",
+      "producer_system_id": "SYS-FRM-BASE",
+      "consumer_system_ids": [
+        "SYS-FRM-BATTLE",
+        "SYS-FRM-TARGET",
+        "SYS-FRM-DAMAGE",
+        "SYS-FRM-AI",
+        "SYS-FRM-VERIFY"
+      ],
+      "definition": "Unitは初期配置として前衛/後衛を持つ。Player初期配置Authorityは拠点。前衛生存0で生存後衛全員を前衛へ強制移動。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CTR-FRM-RANGE",
+      "name": "Target Range Contract",
+      "producer_system_id": "SYS-FRM-TARGET",
+      "consumer_system_ids": [
+        "SYS-FRM-BATTLE",
+        "SYS-FRM-DAMAGE",
+        "SYS-FRM-COVER",
+        "SYS-FRM-AI",
+        "SYS-FRM-VERIFY"
+      ],
+      "definition": "SINGLE=前衛単体、FRONT=前衛範囲、BACK=前衛/後衛選択可能単体、RANDOM=隊列範囲制限なしランダム・重複可、ALL=全体、PIERCE=廃止。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CTR-FRM-DAMAGE",
+      "name": "Formation Damage Contract",
+      "producer_system_id": "SYS-FRM-DAMAGE",
+      "consumer_system_ids": [
+        "SYS-FRM-BATTLE",
+        "SYS-FRM-VERIFY"
+      ],
+      "definition": "後衛攻撃者のSINGLE/FRONT/RANDOM Damageは50%。BACK/ALLは隊列減衰判定なし100%。防御側後衛減衰は行わない。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CTR-FRM-COVER",
+      "name": "Cover Target Contract",
+      "producer_system_id": "SYS-FRM-COVER",
+      "consumer_system_ids": [
+        "SYS-FRM-BATTLE",
+        "SYS-FRM-VERIFY"
+      ],
+      "definition": "単体攻撃は元Targetが後衛でもCover可能。BACKはCover対象。FRONT/ALL等の範囲はCover対象外。RANDOM複数抽選との詳細は未決。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "system_connections": [
+    {
+      "id": "CONN-FRM-001",
+      "from_system_id": "SYS-FRM-BASE",
+      "to_system_id": "SYS-FRM-BATTLE",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-FRM-POSITION",
+      "purpose": "拠点設定を戦闘初期隊列へ渡す。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CONN-FRM-002",
+      "from_system_id": "SYS-FRM-BATTLE",
+      "to_system_id": "SYS-FRM-TARGET",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-FRM-POSITION",
+      "purpose": "現在の前衛/後衛状態をTarget解決へ渡す。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CONN-FRM-003",
+      "from_system_id": "SYS-FRM-TARGET",
+      "to_system_id": "SYS-FRM-DAMAGE",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-FRM-RANGE",
+      "purpose": "解決済みRange/TargetをDamage判定へ渡す。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CONN-FRM-004",
+      "from_system_id": "SYS-FRM-TARGET",
+      "to_system_id": "SYS-FRM-COVER",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-FRM-RANGE",
+      "purpose": "単体/範囲区分と元TargetをCover判定へ渡す。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CONN-FRM-005",
+      "from_system_id": "SYS-FRM-AI",
+      "to_system_id": "SYS-FRM-TARGET",
+      "relation": "REQUIRES",
+      "contract_id": "CTR-FRM-RANGE",
+      "purpose": "AIがCurrent Range意味でTarget選択する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CONN-FRM-006",
+      "from_system_id": "SYS-FRM-VERIFY",
+      "to_system_id": "SYS-FRM-TARGET",
+      "relation": "REQUIRES",
+      "contract_id": "CTR-FRM-RANGE",
+      "purpose": "Studio模擬戦がGameと同じTarget意味を使用する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CONN-FRM-007",
+      "from_system_id": "SYS-FRM-VERIFY",
+      "to_system_id": "SYS-FRM-DAMAGE",
+      "relation": "REQUIRES",
+      "contract_id": "CTR-FRM-DAMAGE",
+      "purpose": "Studio模擬戦がGameと同じ隊列Damage補正を使用する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-FRM-001",
+      "name": "戦闘隊列・Range・Target統合",
+      "parent_id": "",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "ARCH-FRM-SPEC",
+      "name": "仕様統合",
+      "parent_id": "ARCH-FRM-001",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "ARCH-FRM-IMPL",
+      "name": "Game / Studio 実装整合",
+      "parent_id": "ARCH-FRM-001",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "ARCH-FRM-VERIFY",
+      "name": "模擬戦・実ゲーム検証",
+      "parent_id": "ARCH-FRM-001",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-FRM-001",
+      "node_id": "ARCH-FRM-SPEC",
+      "title": "隊列・Range・Target Current仕様化",
+      "body": "Human決定済み事項を仕様本文へ統合し、未決3点をCurrent確定事項へ混ぜずに解決/保留境界を確定する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "BOX-FRM-002",
+      "node_id": "ARCH-FRM-IMPL",
+      "title": "Game / Studio / AI / Generator 一斉整合",
+      "body": "仕様承認後、Battle Unit隊列、拠点UI、Target Resolver、Damage Resolver、Cover、AI、Skill Range、Studio Battle Packageを同一Contractへ接続する。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "BOX-FRM-003",
+      "node_id": "ARCH-FRM-VERIFY",
+      "title": "隊列統合後の実戦再検証",
+      "body": "単体・前列・BACK・RANDOM・全体、Cover、強制前進、後衛Damage減衰を個別Test後、Lv50 6v6模擬戦へ戻る。",
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-FRM-001",
+      "box_id": "BOX-FRM-001",
+      "title": "Human決定済み隊列・Range仕様を管理案件へ登録",
+      "status": "Done",
+      "execution_order": 1,
+      "depends_on": [],
+      "acceptance_criteria": "Human決定9件、未決3件、System Contract、実装影響範囲が新規案件JSONへ欠落なく登録されていること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-002",
+      "box_id": "BOX-FRM-001",
+      "title": "未決3点を解決して統合Specificationを承認",
+      "status": "Todo",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-FRM-001"
+      ],
+      "acceptance_criteria": "戦闘中任意移動、Monster初期隊列Authority、RANDOM複数抽選とCoverの3点がHuman Decisionまたは明示Deferredとなり、SPEC-FRM-001がApprovedへ進めること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-003",
+      "box_id": "BOX-FRM-002",
+      "title": "Current Source影響箇所を仕様Contractへマッピング",
+      "status": "Blocked",
+      "execution_order": 3,
+      "depends_on": [
+        "TASK-FRM-002"
+      ],
+      "acceptance_criteria": "拠点UI、保存Data、Battle Unit、Range/Target、Damage、Cover、AI、Skill Generator、Studio Verificationの変更Ownerと依存順が一意になっていること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-004",
+      "box_id": "BOX-FRM-002",
+      "title": "Game側 隊列・Range・Damage・Coverを実装",
+      "status": "Blocked",
+      "execution_order": 4,
+      "depends_on": [
+        "TASK-FRM-003"
+      ],
+      "acceptance_criteria": "Game RuntimeがSPEC-FRM-001の前衛/後衛、SINGLE/FRONT/BACK/RANDOM/ALL、PIERCE廃止、50%減衰、強制前進、Coverを一意に実行できること。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-005",
+      "box_id": "BOX-FRM-002",
+      "title": "Studio模擬戦・Formal AI・Skill GeneratorをGame仕様へ整合",
+      "status": "Blocked",
+      "execution_order": 5,
+      "depends_on": [
+        "TASK-FRM-004"
+      ],
+      "acceptance_criteria": "Studio Battle Package、Formal AI、Skill GeneratorがGameと同じRange/Target/隊列Contractを使用し、FRONT/BACK/RANDOM/Coverを意味差なく表現でき、PIERCEを生成しないこと。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-006",
+      "box_id": "BOX-FRM-003",
+      "title": "Range・隊列・Cover個別検証",
+      "status": "Blocked",
+      "execution_order": 6,
+      "depends_on": [
+        "TASK-FRM-005"
+      ],
+      "acceptance_criteria": "SINGLE/FRONT/BACK/RANDOM/ALL、後衛50%減衰、前衛全滅強制前進、味方Target自由、CoverについてGame/Studio同値の再現TestがPASSすること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-007",
+      "box_id": "BOX-FRM-003",
+      "title": "Lv50 6v6 Active5 Passive5模擬戦を再開",
+      "status": "Blocked",
+      "execution_order": 7,
+      "depends_on": [
+        "TASK-FRM-006"
+      ],
+      "acceptance_criteria": "両陣営6Unitの隊列・職別AI・Active/PassiveをCurrent仕様で実行し、7TickごとのHP/与Damage/Heal/被Damageを再現可能なTraceとして取得できること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-FRM-001",
+      "title": "Human決定事項登録完全性",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-FRM-001",
+      "status": "Passed",
+      "result": "9 Approved Decisions + 3 Open Discussionsを登録。",
+      "evidence": "current conversation",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T15:01:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CHK-FRM-002",
+      "title": "統合Specification Human Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-FRM-002",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CHK-FRM-003",
+      "title": "Game / Studio Range意味一致",
+      "gate": "Completion",
+      "target_type": "Project",
+      "target_id": "DEV-V9-FORMATION-RANGE-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T15:01:00+09:00",
+      "updated_at": "2026-08-31T15:01:00+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-08-31T15:01:00+09:00",
+      "message": "Human指示により、6v6模擬戦を停止し、Skill/Range/Target/隊列がGame環境とStudio模擬戦で同一表現できるかの一斉点検へ移行。"
+    },
+    {
+      "at": "2026-08-31T15:01:00+09:00",
+      "message": "Human Decisionとして前衛/後衛、拠点隊列編集、前衛全滅時強制前進、SINGLE/FRONT/BACK/RANDOM/ALL、PIERCE廃止、後衛攻撃Damage減衰、味方Target自由、Cover境界を整理。"
+    },
+    {
+      "at": "2026-08-31T15:01:00+09:00",
+      "message": "新規Development Project登録データ DEV-V9-FORMATION-RANGE-001 をschema 2.0 / authority.version 1で作成。Fresh Source GKS-B830 / GA-B486.211の新規案件JSON登録Contractへ合わせた。"
+    }
+  ]
+}
