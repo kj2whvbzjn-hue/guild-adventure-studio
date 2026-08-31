@@ -190,7 +190,7 @@ function compileSkill(skill,registry){
  const trigger=String(skill.trigger?.type||'').toUpperCase(),triggerDef=registry.triggers?.[trigger];
  if(!triggerDef)error(errors,'UNKNOWN_TRIGGER','trigger.type',`未定義Trigger: ${trigger||'(なし)'}`);else validateTrigger(skill,triggerDef,errors);
  if(!registry.targets?.sides?.[skill.target?.side])error(errors,'UNKNOWN_TARGET_SIDE','target.side',`未定義対象: ${skill.target?.side||'(なし)'}`);
- if(!registry.targets?.ranges?.[skill.target?.range])error(errors,'UNKNOWN_TARGET_RANGE','target.range',`未定義範囲: ${skill.target?.range||'(なし)'}`);
+ if(skill.target?.range==='PIERCE')error(errors,'PIERCE_RANGE_ABOLISHED','target.range','PIERCEは廃止済みです。SINGLE/FRONT/BACK/RANDOM/ALLのいずれかを明示してください。');else if(!registry.targets?.ranges?.[skill.target?.range])error(errors,'UNKNOWN_TARGET_RANGE','target.range',`未定義範囲: ${skill.target?.range||'(なし)'}`);
  if(skill.target?.range==='RANDOM'&&(!Number.isInteger(skill.target?.randomCount)||skill.target.randomCount<1))error(errors,'RANDOM_COUNT_REQUIRED','target.randomCount','RANDOMには1以上のrandomCountが必要です');
  const useRequirements=skill.useRequirements==null?[]:skill.useRequirements;
  if(!Array.isArray(useRequirements))error(errors,'USE_REQUIREMENTS_ARRAY_REQUIRED','useRequirements','useRequirementsは配列が必要です');

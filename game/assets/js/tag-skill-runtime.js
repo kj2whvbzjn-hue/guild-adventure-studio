@@ -133,7 +133,7 @@ function compileSkillRuntime(skill){
  return{
   ok:errors.length===0,errors,warnings,
   definition:{
-   id:String(skill?.id||''),name:String(skill?.name||''),target:{side:targetSide,range},
+   id:String(skill?.id||''),name:String(skill?.name||''),target:Object.assign({side:targetSide,range},range==='random'?{randomCount:targetSource.randomCount??null}:{}),
    logicOrder:ordered,costs,parameters,useRequirementContracts:Array.isArray(useRequirementContracts)?useRequirementContracts.map(x=>({...x,allTags:[...(x.allTags||[])],anyTags:[...(x.anyTags||[])]})):[],runtimeContracts:runtime,sourceTags:[]
   },
   parsed:{generalTags:new Set(),numericTags:{},errors:[]}
@@ -174,6 +174,7 @@ function formatCompileResult(result){
 }
 function resolveTaggedTargets(actor,target,definition){
  if(!actor||!actor.alive)return{ok:false,reason:'使用者が無効です',targets:[]};
+ if(typeof ensureBattleFormationSafePoint==='function')ensureBattleFormationSafePoint('before_skill_target_resolution');
  const side=definition.target.side,range=definition.target.range,isRevive=definition.logicOrder.includes('REVIVE');
  let candidates=[];
  if(isRevive){
@@ -183,14 +184,35 @@ function resolveTaggedTargets(actor,target,definition){
  else if(side==='ally')candidates=battle.units.filter(x=>x.alive&&x.side===actor.side);
  else if(side==='enemy')candidates=battle.units.filter(x=>x.alive&&x.side!==actor.side);
  else return{ok:false,reason:'対象陣営タグがありません',targets:[]};
+ const isEnemy=side==='enemy',isAlly=side==='ally';
+ const frontCandidates=()=>candidates.filter(x=>String(x.formationPosition||'FRONTLINE')==='FRONTLINE');
  if(range==='single'){
   if(!target)return{ok:false,reason:'対象が無効です',targets:[]};
   if(isRevive&&target.alive)return{ok:false,reason:'INVALID_TARGET: 生存対象は蘇生できません',targets:[]};
   if(isRevive&&target.hp>0)return{ok:false,reason:'INVALID_TARGET: HPが残っている対象は蘇生できません',targets:[]};
   if(!isRevive&&!target.alive)return{ok:false,reason:'対象が無効です',targets:[]};
   if(!candidates.some(x=>x.id===target.id))return{ok:false,reason:'対象陣営タグと選択対象が一致しません',targets:[]};
+  if(isEnemy&&String(target.formationPosition||'FRONTLINE')!=='FRONTLINE')return{ok:false,reason:'SINGLEは敵後衛を対象にできません',targets:[]};
   candidates=[target];
- }else if(range!=='all')return{ok:false,reason:`範囲 ${range} は未対応です`,targets:[]};
+ }else if(range==='front'){
+  candidates=frontCandidates();
+ }else if(range==='back'){
+  if(!target)return{ok:false,reason:'対象が無効です',targets:[]};
+  if(!target.alive&&!isRevive)return{ok:false,reason:'対象が無効です',targets:[]};
+  if(!candidates.some(x=>x.id===target.id))return{ok:false,reason:'対象陣営タグと選択対象が一致しません',targets:[]};
+  candidates=[target];
+ }else if(range==='random'){
+  if(isRevive)return{ok:false,reason:'REVIVEでRANDOMは未採用です',targets:[]};
+  const count=Number(definition.target.randomCount);if(!Number.isInteger(count)||count<1)return{ok:false,reason:'RANDOMには1以上のrandomCountが必要です',targets:[]};
+  if(!candidates.length)return{ok:false,reason:'有効な対象がありません',targets:[]};
+  const pool=[...candidates],draws=[];
+  for(let i=0;i<count;i++){
+   const anchor=pool[0]||null,roll=currentBattleRoll(actor,anchor,definition.id||'RANDOM_TARGET','random_target',i),index=Math.min(pool.length-1,Math.floor(roll*pool.length));draws.push(pool[index]);
+  }
+  candidates=draws;
+ }else if(range==='all'){
+  // all valid targets; formation does not restrict target inclusion.
+ }else return{ok:false,reason:`範囲 ${range} は未対応です`,targets:[]};
  if(!candidates.length&&!isRevive)return{ok:false,reason:'有効な対象がありません',targets:[]};
  return{ok:true,targets:candidates};
 }
@@ -536,7 +558,7 @@ function currentBattlePassiveActionTargets(owner,runtimeContracts,eventContext){
  const tc=runtimeContracts?.targetContract;if(!tc||typeof tc!=='object'||Array.isArray(tc))throw Object.assign(new Error('Reactive Passive targetContractがありません。'),{code:'PASSIVE_REACTIVE_TARGET_CONTRACT_REQUIRED'});
  const mode=String(tc.mode||'').toUpperCase();if(mode==='EVENT_CONTEXT')return currentBattlePassiveEventTargets(tc,eventContext,owner);
  if(mode!=='FORMAL_TARGET')throw Object.assign(new Error(`Reactive Passive target.modeは未対応です: ${mode||'(empty)'}`),{code:'PASSIVE_REACTIVE_TARGET_MODE_UNSUPPORTED',mode});
- const definition={target:{side:String(tc.side||'').toLowerCase(),range:String(tc.range||'').toLowerCase()},logicOrder:[]},hint=battle.units.find(x=>String(x.id)===String(eventContext?.targetId??''))||null,resolved=resolveTaggedTargets(owner,hint,definition);
+ const definition={target:{side:String(tc.side||'').toLowerCase(),range:String(tc.range||'').toLowerCase(),randomCount:tc.randomCount??null},logicOrder:[]},hint=battle.units.find(x=>String(x.id)===String(eventContext?.targetId??''))||null,resolved=resolveTaggedTargets(owner,hint,definition);
  if(!resolved.ok)throw Object.assign(new Error(`Reactive Passive FORMAL_TARGETを解決できません: ${resolved.reason}`),{code:'PASSIVE_REACTIVE_FORMAL_TARGET_RESOLUTION_FAILED',reason:resolved.reason});return resolved.targets;
 }
 function currentBattlePassiveExecutionView(entry){
@@ -589,6 +611,12 @@ function resolveRuntimeDamageContracts(compiled){
  for(const contract of contracts){const damageType=contract.damageType==null?null:String(contract.damageType).toUpperCase();if(!Number.isFinite(contract.power)||contract.power<0)return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_POWER_INVALID',contract};if(damageType!=null&&!['PHYSICAL','MAGICAL','FIXED'].includes(damageType))return{formal:true,ok:false,reason:'SKILL_RUNTIME_DAMAGE_TYPE_INVALID',contract};const elementCheck=normalizeRuntimeElementComponents(contract.elementComponents);if(!elementCheck.ok)return{formal:true,ok:false,reason:elementCheck.reason,contract};checked.push({type:'DAMAGE',power:contract.power,damageType:damageType||'PHYSICAL',...(elementCheck.components?{elementComponents:elementCheck.components}:{})});}
  return{formal:true,ok:true,contracts:checked};
 }
+function currentBattleFormationDamageMultiplier(attacker,range){
+ const normalized=String(range||'').toLowerCase();
+ if(['back','all'].includes(normalized))return 1;
+ if(String(attacker?.formationPosition||'FRONTLINE')==='BACKLINE'&&['single','front','random'].includes(normalized))return 0.5;
+ return 1;
+}
 function calculateCurrentSkillBaseDamage(attacker,contract){
  if(contract.damageType==='FIXED')return Math.max(0,contract.power);
  if(contract.damageType==='MAGICAL'){const base=Math.max(0,currentBattleMagicIncreaseRate(attacker)*contract.power*(1+currentBattleMagicWeaponBonus(attacker)/100));return Math.max(0,currentBattleResolveDirectModifierTarget(base,'MAGIC_DAMAGE',attacker).final_value)}
@@ -600,11 +628,11 @@ function applyCurrentFormalDamage(attacker,target,baseDamage,compiled,contract,{
  const reactiveEventContext={actionSourceId:attacker.id,targetId:target.id,skillId:compiled?.definition?.id||null,hitIndex,actionContext};if(actionContext&&critical)queueCurrentBattlePassiveReactive(attacker,'critical',reactiveEventContext);
  if(!critical&&hitRoll>=hitRate){if(actionContext)queueCurrentBattlePassiveReactive(target,'evade',reactiveEventContext);queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:true,damage:0});typeof recordValidationEvent==='function'&&recordValidationEvent('attack_missed',{source_id:attacker.id,target_id:target.id,skill_id:compiled?.definition?.id||null,hit_index:hitIndex,accuracy:currentBattleAccuracy(attacker),evasion:currentBattleEvasion(target),magic_accuracy:magical?currentBattleMagicAccuracy(attacker):null,magic_resistance:magical?currentBattleMagicResistance(target):null,critical_rate:criticalRate,critical_roll:criticalRoll,critical:false,hit_bypass:null,hit_rate:hitRate,hit_roll:hitRoll});battle.log.push(`[Tick ${battle.tick}] [TAG][MISS] ${attacker.name}の${compiled.definition.name} → ${target.name}（命中率${hitRate.toFixed(2)}%）`);return{ok:false,miss:true,damage:0,baseDamage,hitIndex,critical:false,criticalRate,criticalRoll,hitBypass:null,hitRate,hitRoll}}
  if(actionContext)queueCurrentBattlePassiveReactive(attacker,'hit_dealt',reactiveEventContext);
- const resistance=effectiveDamageResist(target),postResistance=Math.max(0,baseDamage*(1-resistance/100)),criticalDamage=currentBattleCriticalDamagePercent(attacker),criticalBonusReduction=typeof currentBattleCriticalBonusDamageReduction==='function'?currentBattleCriticalBonusDamageReduction(target):0,criticalBonus=critical?(criticalDamage/100)*(1-criticalBonusReduction):0,criticalMultiplier=1+criticalBonus,preElementDamage=Math.max(0,postResistance*criticalMultiplier),elementDamage=Array.isArray(contract.elementComponents)&&contract.elementComponents.length?currentBattleResolveElementDamage(target,preElementDamage,contract.elementComponents):{elemental:false,totalDamage:preElementDamage,components:[]},finalDamage=Math.max(0,Math.floor(elementDamage.totalDamage));
+ const resistance=effectiveDamageResist(target),postResistance=Math.max(0,baseDamage*(1-resistance/100)),criticalDamage=currentBattleCriticalDamagePercent(attacker),criticalBonusReduction=typeof currentBattleCriticalBonusDamageReduction==='function'?currentBattleCriticalBonusDamageReduction(target):0,criticalBonus=critical?(criticalDamage/100)*(1-criticalBonusReduction):0,criticalMultiplier=1+criticalBonus,preElementDamage=Math.max(0,postResistance*criticalMultiplier),elementDamage=Array.isArray(contract.elementComponents)&&contract.elementComponents.length?currentBattleResolveElementDamage(target,preElementDamage,contract.elementComponents):{elemental:false,totalDamage:preElementDamage,components:[]},formationMultiplier=(()=>{const r=String(compiled?.definition?.target?.range||'').toLowerCase(),pos=String(attacker?.formationPosition||attacker?.formation_position||'FRONTLINE').toUpperCase();return pos==='BACKLINE'&&!['back','all'].includes(r)?0.5:1})(),finalDamage=Math.max(0,Math.floor(elementDamage.totalDamage*formationMultiplier));
  const blockRate=Math.max(0,Math.min(1,typeof currentBattleResolveDirectModifierTarget==='function'?currentBattleResolveDirectModifierTarget(Number(target?.blockRate??target?.block_rate)||0,'BLOCK_RATE',target).final_value:(Number(target?.blockRate??target?.block_rate)||0))),blockRoll=blockRate>0?currentBattleRoll(attacker,target,compiled?.definition?.id,'block',hitIndex):null,block=resolveCurrentBlockDamage(target,finalDamage,blockRoll);if(actionContext&&block.blocked)queueCurrentBattlePassiveReactive(target,'block',reactiveEventContext);const before=target.hp,shield=consumeShieldDamage(target,block.damage,{sourceId:attacker.id,skillId:compiled.definition.id,damageType:'formal_skill'}),projectedHp=before-shield.hpDamage,fatalInterrupt=projectedHp<=0?resolveFatalDamageInterrupt(target,{actionSourceId:attacker.id,skillId:compiled.definition.id,hitIndex,projectedHp,actionContext,damageKind:'FORMAL_SKILL_DAMAGE'}):{triggered:false,projectedHp};target.hp=fatalInterrupt.triggered?fatalInterrupt.resolvedHp:Math.max(0,projectedHp);typeof evaluateLowHpPassivesAfterHpCommit==='function'&&evaluateLowHpPassivesAfterHpCommit(target,{reason:'FORMAL_SKILL_DAMAGE',sourceId:attacker.id,skillId:compiled.definition.id});const applied=before-target.hp;if(actionContext)queueCurrentBattlePassiveReactive(target,'hit_received',reactiveEventContext);queueSceneEvent({attackerId:attacker.id,targetId:target.id,attackerName:attacker.name,attackerSide:attacker.side,miss:false,damage:applied});attacker.damageDealt+=applied;target.damageTaken+=applied;
  battle.log.push(`[Tick ${battle.tick}] [TAG][ATTACK] ${attacker.name}の${compiled.definition.name} Hit${hitIndex+1} → ${target.name}に${applied}HPダメージ（基礎${baseDamage}、耐性${resistance}%、Crit${critical?'ON':'OFF'}、シールド吸収${shield.absorbed}、残HP ${target.hp}/${target.maxHp}）`);
- typeof recordValidationEvent==='function'&&recordValidationEvent('formal_attack',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,hit_index:hitIndex,damage_type:contract.damageType,power:contract.power,element_components:contract.elementComponents||null,element_damage:elementDamage.components,accuracy:currentBattleAccuracy(attacker),evasion:currentBattleEvasion(target),magic_accuracy:magical?currentBattleMagicAccuracy(attacker):null,magic_resistance:magical?currentBattleMagicResistance(target):null,hit_bypass:hitBypass,hit_rate:hitRate,hit_roll:hitRoll,base_damage:baseDamage,resistance,post_resistance_damage:postResistance,weapon_critical_rate:criticalResolution.weapon_critical_rate,LUK:criticalResolution.LUK,base_critical_rate:criticalResolution.base_critical_rate,final_critical_rate:criticalResolution.final_critical_rate,critical_rate:criticalRate,critical_roll:criticalRoll,result:critical,critical,critical_contributions:criticalResolution.contributions,critical_damage:criticalDamage,critical_multiplier:criticalMultiplier,final_damage:finalDamage,block_rate:block.blockRate,block_roll:block.blockRoll,blocked:block.blocked,block_damage_cut_rate:block.blockDamageCutRate,blocked_damage:block.damage,shield_absorbed:shield.absorbed,fatal_interrupt:!!fatalInterrupt.triggered,fatal_passive_id:fatalInterrupt.passiveId||null,damage:applied,hp_before:before,hp_after:target.hp});
- if(target.hp<=0){resetCombatantOnDeath(target,{reason:'formal_skill_damage',sourceId:attacker.id});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}finishIfNeeded();return{ok:true,miss:false,damage:applied,baseDamage,resistance,postResistanceDamage:postResistance,critical,criticalRate,criticalRoll,criticalDamage,finalDamage,elementDamage,blocked:block.blocked,blockRate:block.blockRate,blockRoll:block.blockRoll,blockDamageCutRate:block.blockDamageCutRate,blockedDamage:block.damage,shieldAbsorbed:shield.absorbed,beforeHp:before,afterHp:target.hp,hitIndex,hitBypass,hitRate,hitRoll};
+ typeof recordValidationEvent==='function'&&recordValidationEvent('formal_attack',{source_id:attacker.id,target_id:target.id,skill_id:compiled.definition.id,hit_index:hitIndex,damage_type:contract.damageType,power:contract.power,element_components:contract.elementComponents||null,element_damage:elementDamage.components,accuracy:currentBattleAccuracy(attacker),evasion:currentBattleEvasion(target),magic_accuracy:magical?currentBattleMagicAccuracy(attacker):null,magic_resistance:magical?currentBattleMagicResistance(target):null,hit_bypass:hitBypass,hit_rate:hitRate,hit_roll:hitRoll,base_damage:baseDamage,resistance,post_resistance_damage:postResistance,weapon_critical_rate:criticalResolution.weapon_critical_rate,LUK:criticalResolution.LUK,base_critical_rate:criticalResolution.base_critical_rate,final_critical_rate:criticalResolution.final_critical_rate,critical_rate:criticalRate,critical_roll:criticalRoll,result:critical,critical,critical_contributions:criticalResolution.contributions,critical_damage:criticalDamage,critical_multiplier:criticalMultiplier,formation_position:String(attacker?.formationPosition||'FRONTLINE'),formation_multiplier:formationMultiplier,final_damage:finalDamage,block_rate:block.blockRate,block_roll:block.blockRoll,blocked:block.blocked,block_damage_cut_rate:block.blockDamageCutRate,blocked_damage:block.damage,shield_absorbed:shield.absorbed,fatal_interrupt:!!fatalInterrupt.triggered,fatal_passive_id:fatalInterrupt.passiveId||null,damage:applied,hp_before:before,hp_after:target.hp});
+ if(target.hp<=0){resetCombatantOnDeath(target,{reason:'formal_skill_damage',sourceId:attacker.id});recordModifierSourceDefeated(target);battle.log.push(`[Tick ${battle.tick}] ${target.name}は戦闘不能`)}finishIfNeeded();return{ok:true,miss:false,damage:applied,baseDamage,resistance,postResistanceDamage:postResistance,critical,criticalRate,criticalRoll,criticalDamage,formationMultiplier,finalDamage,elementDamage,blocked:block.blocked,blockRate:block.blockRate,blockRoll:block.blockRoll,blockDamageCutRate:block.blockDamageCutRate,blockedDamage:block.damage,shieldAbsorbed:shield.absorbed,beforeHp:before,afterHp:target.hp,hitIndex,hitBypass,hitRate,hitRoll};
 }
 function executeRuntimeDamageRuntime(attacker,target,compiled,{triggerActionContext=null,onHitSafePoint=null}={}){
  const resolved=resolveRuntimeDamageContracts(compiled);if(!resolved.formal)return null;
@@ -770,8 +798,8 @@ function clearAllCoverEffects(reason='battle_end'){for(const target of battle.un
 function resolveCoverIntervention(attacker,originalTarget,incomingCompiled,context={}){
  const origin=context.origin||'base',direct=!!incomingCompiled?.definition?.logicOrder?.some(x=>x==='ATTACK'||x==='FOLLOW_UP');
  if(!direct||!['base','counter','follow_up'].includes(origin))return{target:originalTarget,covered:false,effect:null};
- // 正式仕様: COVERは単体直接攻撃にのみ反応する。全体/列/ランダム等の範囲攻撃には一切介入しない。
- if(incomingCompiled?.definition?.target?.range!=='single'){
+ // 正式仕様: COVERは解決済み単体Target eventに反応する。SINGLE/BACK/RANDOM各抽選は対象、FRONT/ALLは対象外。
+ if(!['single','back','random'].includes(incomingCompiled?.definition?.target?.range)){
   typeof recordValidationEvent==='function'&&recordValidationEvent('cover_skipped',{original_target_id:originalTarget?.id||null,incoming_source_id:attacker?.id||null,incoming_skill_id:incomingCompiled?.definition?.id||null,origin,derived_generation:Number(context.derivedGeneration)||0,reason:'AREA_ATTACK'});
   return{target:originalTarget,covered:false,effect:null};
  }
