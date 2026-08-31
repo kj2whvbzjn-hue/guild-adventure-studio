@@ -10,7 +10,7 @@
     "name": "V9 戦闘隊列・Range・Target統合",
     "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-31T11:41:20.450Z"
+    "updated_at": "2026-08-31T12:25:10.263Z"
   },
   "project_context": {
     "purpose": "前衛/後衛の戦闘隊列、Skill Target Range、Target選択、隊列Damage補正、Cover連携を一つのCurrent仕様として確定し、Game Runtime・Studio模擬戦・Formal AI・Skill Generatorで同じ意味を表現できる状態へ統合する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-FRM-VERIFY",
     "work_box_id": "BOX-FRM-003",
-    "theme": "Formation/Range統合 完了確認",
-    "goal": "TASK-FRM-007 Lv50 6v6 Active5/Passive5模擬戦と7Tick再現TraceがPASS。全実装・個別同値・実戦再開Gate完了のため、Human Completion Gate確認待ち。"
+    "theme": "Formation/Range 実機E2E完了確認",
+    "goal": "GKS-B834でBattle Package executor admission修正を反映し、同一Formation/Range E2E Package 8 Jobを実機実行。8/8完了・0 error・Formal Binding一致を確認済み。工程管理統合後、Studio WorkflowのHuman Completion Gateから最終完了承認する。"
   },
   "project_rules": [
     {
@@ -78,13 +78,13 @@
     "source_zip_sha256": "1928638615909d595a1a9711b783bed30dddbb1a9e8c300b6f907cad23af776f",
     "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00",
     "verification_current": {
-      "studio_build": "GKS-B833",
+      "studio_build": "GKS-B834",
       "game_build": "GA-B486.211",
-      "source_label": "guild-adventure-studio-sub(20260831-112904).zip",
-      "source_role": "TASK-FRM-007 completion-verified Fresh Current",
-      "recorded_at": "2026-08-31T20:40:00+09:00",
-      "source_zip_sha256": "f6e308382dd294a4ff1c564796f362a638f88181689529b07699a923473b4998",
-      "package_manifest_sha256": "bfda7c5f0983230a712759862734f090236082b7cf59796384ae76a1db37b161"
+      "source_label": "guild-adventure-studio-sub(20260831-122056).zip",
+      "source_role": "Human-applied TASK-FRM-008 correction and real-device E2E verified Fresh Current",
+      "recorded_at": "2026-08-31T21:22:00+09:00",
+      "source_zip_sha256": "80ba3d72d73bb9b21f01107110c585bfad51ff8a0a62f56103171681a3829864",
+      "package_manifest_sha256": "9588e4447d3dbc49e776dc15181cf0311d67cf988fa49c55caeba6ff72247e07"
     }
   },
   "lifecycle": {
@@ -187,6 +187,36 @@
       "evidence": "TASK-FRM-007-GKS-B833-LV50-6V6-TRACE-001",
       "recorded_at": "2026-08-31T20:40:00+09:00",
       "summary": "DEVELOPMENT_ONLY。Lv50 6v6、3前衛+3後衛、職別Formal AI、Active5/Passive5でCurrent Studio Formal Battle Runtimeを実行。7TickごとのHP/与Damage/Heal/被Damage Traceを20境界取得。同一Seed 2回がbyte-identical。Source/Game Data/Product Master変更なし。"
+    },
+    {
+      "id": "IMPL-FRM-008-CORR-GKS-B834-001",
+      "studio_build": "GKS-B834",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-FRM-003"
+      ],
+      "task_ids": [
+        "TASK-FRM-008-CORR-001"
+      ],
+      "result": "Applied",
+      "evidence": "Human-applied GKS-B834 Fresh Current; package_manifest=9588e4447d3dbc49e776dc15181cf0311d67cf988fa49c55caeba6ff72247e07",
+      "recorded_at": "2026-08-31T21:22:00+09:00",
+      "summary": "Battle Package実機E2Eで露出したadmission whitelist更新漏れを修正。FRONT/BACKとTARGET_CONTROLをformalBattleSkillExecutionViewで許可し、既存shared resolver/Cover executorへ接続。Compatibility fallbackなし。"
+    },
+    {
+      "id": "IMPL-FRM-008-E2E-GKS-B834-001",
+      "studio_build": "GKS-B834",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-FRM-003"
+      ],
+      "task_ids": [
+        "TASK-FRM-008"
+      ],
+      "result": "Applied",
+      "evidence": "GK_BattleVerification_Result_BVP-FRM-E2E-001_BEX-1788178679356.zip sha256=145955beb886c546092b24dfd8fa81950c324b2b87dee8d7241f58caff0fadd5",
+      "recorded_at": "2026-08-31T21:22:00+09:00",
+      "summary": "実機Battle Verification完了。Formal Binding expected/actual一致、8 Job planned/requested/completed=8、failed=0、8 trials completed、error_count=0、partial=false。"
     }
   ],
   "discussions": [
@@ -901,6 +931,46 @@
       },
       "created_at": "2026-08-31T15:01:00+09:00",
       "updated_at": "2026-08-31T20:40:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-008-CORR-001",
+      "box_id": "BOX-FRM-003",
+      "title": "Battle Package execution admission修正",
+      "status": "Done",
+      "execution_order": 8,
+      "depends_on": [
+        "TASK-FRM-007"
+      ],
+      "acceptance_criteria": "formalBattleSkillExecutionViewがFRONT/BACKを受理し、TARGET_CONTROLを既存COVER/DIRECT_ATTACK executorへ通す。Fresh Current GKS-B834で反映確認できること。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-31T21:08:00+09:00"
+      },
+      "created_at": "2026-08-31T21:08:00+09:00",
+      "updated_at": "2026-08-31T21:22:00+09:00"
+    },
+    {
+      "id": "TASK-FRM-008",
+      "box_id": "BOX-FRM-003",
+      "title": "実機E2E Formation/Range確認",
+      "status": "Done",
+      "execution_order": 9,
+      "depends_on": [
+        "TASK-FRM-008-CORR-001"
+      ],
+      "acceptance_criteria": "Battle Verification実機でSINGLE/FRONT/BACK/RANDOM/ALL、味方Target、Cover、forced advanceの8 Jobが完了し、execution error=0。Formal BindingがCurrent Build/Data/Formula/Rules/Configと一致すること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-08-31T21:08:00+09:00",
+      "updated_at": "2026-08-31T21:22:00+09:00"
     }
   ],
   "checks": [
@@ -1041,6 +1111,29 @@
         "reason": "",
         "mode": ""
       }
+    },
+    {
+      "id": "CHK-FRM-007",
+      "title": "Formation/Range 実機E2E Gate",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-FRM-008",
+      "status": "Passed",
+      "result": "GKS-B834実機Battle Verificationで8 Jobすべて完了。jobs_failed=0、trials_completed=8、error_count=0、partial=false。Formal BindingのGame/Studio/Manifest/Data/Formula/Rules Config expected/actual一致。",
+      "evidence": "GK_BattleVerification_Result_BVP-FRM-E2E-001_BEX-1788178679356.zip sha256=145955beb886c546092b24dfd8fa81950c324b2b87dee8d7241f58caff0fadd5",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T21:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-31T21:22:00+09:00",
+        "reason": "Human実機実行結果を確認し、8/8 completed・0 errorを確認。",
+        "mode": "manual"
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T21:22:00+09:00",
+      "updated_at": "2026-08-31T21:22:00+09:00"
     }
   ],
   "workflow": {
@@ -1120,6 +1213,18 @@
     {
       "at": "2026-08-31T20:40:00+09:00",
       "message": "TASK-FRM-007をDone、CHK-FRM-006をPassedへ更新。Formation/Range案件は全実装・同値検証・6v6再開Gateを完了し、workflow.stage=Verifying / Human Completion Gate待ちへ遷移。"
+    },
+    {
+      "at": "2026-08-31T21:22:00+09:00",
+      "message": "Fresh Current GKS-B834 / GA-B486.211を確認。Battle Package executor admission correctionが反映済み。package_manifest SHA-256=9588e4447d3dbc49e776dc15181cf0311d67cf988fa49c55caeba6ff72247e07。"
+    },
+    {
+      "at": "2026-08-31T21:22:00+09:00",
+      "message": "GKS-B834 bindingのFormation/Range実機E2E Packageを再実行。8 Job completed / failed 0、8 trials completed、error_count 0、partial=false、Formal Binding expected/actual一致。TASK-FRM-008-CORR-001 / TASK-FRM-008をDone、CHK-FRM-007をPassedとして記録。"
+    },
+    {
+      "at": "2026-08-31T21:22:00+09:00",
+      "message": "Development JSON merge policyに従い、workflowはCurrentのVerifying / completion Pending、workspace.status=Validating、lifecycle=Activeを維持。JSON統合後にStudio Development WorkflowのHuman Completion Gate操作でCompletedへ進める。"
     }
   ]
 }
