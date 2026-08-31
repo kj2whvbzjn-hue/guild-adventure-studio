@@ -8,9 +8,9 @@
   "workspace": {
     "id": "DEV-V9-FORMATION-RANGE-001",
     "name": "V9 戦闘隊列・Range・Target統合",
-    "status": "Specifying",
+    "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-31T06:34:47.251Z"
+    "updated_at": "2026-08-31T10:17:37.975Z"
   },
   "project_context": {
     "purpose": "前衛/後衛の戦闘隊列、Skill Target Range、Target選択、隊列Damage補正、Cover連携を一つのCurrent仕様として確定し、Game Runtime・Studio模擬戦・Formal AI・Skill Generatorで同じ意味を表現できる状態へ統合する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-FRM-IMPL",
     "work_box_id": "BOX-FRM-002",
-    "theme": "Game側 隊列・Range・Damage・Cover 実装Gate",
-    "goal": "TASK-FRM-004のHuman実装承認後、Player/Monster隊列Data→Battle Unit→Target Resolver→Damage→Coverの依存順でGame Current Sourceを実装する。"
+    "theme": "Studio模擬戦・Formal AI・Skill Generator 整合Gate",
+    "goal": "TASK-FRM-004完了Evidenceを基準に、TASK-FRM-005でSkill Generator→Formal AI→Studio Battle Package→Game/Studio equivalence verificationの順に整合し、TASK-FRM-004で確定したGame側semanticsを非回帰で維持する。"
   },
   "project_rules": [
     {
@@ -76,7 +76,14 @@
     "source_role": "Human-provided Fresh Current used only for registration-contract and later implementation verification",
     "recorded_at": "2026-08-31T15:01:00+09:00",
     "source_zip_sha256": "1928638615909d595a1a9711b783bed30dddbb1a9e8c300b6f907cad23af776f",
-    "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00"
+    "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00",
+    "verification_current": {
+      "studio_build": "GKS-B832",
+      "game_build": "GA-B486.211",
+      "source_label": "guild-adventure-studio-sub(20260831-100515).zip",
+      "source_role": "TASK-FRM-004 completion verified Fresh Current; TASK-FRM-005 implementation baseline",
+      "recorded_at": "2026-08-31T19:11:00+09:00"
+    }
   },
   "lifecycle": {
     "status": "Active",
@@ -100,6 +107,27 @@
       "result": "Applied",
       "evidence": "",
       "recorded_at": ""
+    },
+    {
+      "id": "IMPL-FRM-004-GKS-B831-001",
+      "task_id": "TASK-FRM-004",
+      "status": "Completed",
+      "summary": "Game側のPlayer/Monster隊列、Encounter override、Battle Unit位置、強制前進、SINGLE/FRONT/BACK/RANDOM/ALL Target解決、PIERCE廃止、後衛攻撃者Damage係数、Cover連携を実装しFresh Currentで完了確認。",
+      "files_changed": [],
+      "verification": "TASK-FRM-004_GKS-B831_COMPLETION-EVIDENCE-001.json",
+      "created_at": "2026-08-31T19:11:00+09:00",
+      "updated_at": "2026-08-31T19:11:00+09:00",
+      "studio_build": "GKS-B832",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-FRM-002"
+      ],
+      "task_ids": [
+        "TASK-FRM-004"
+      ],
+      "result": "Applied",
+      "evidence": "TASK-FRM-004-GKS-B831-COMPLETION-EVIDENCE-001",
+      "recorded_at": "2026-08-31T19:11:00+09:00"
     }
   ],
   "discussions": [
@@ -301,7 +329,7 @@
       "title": "戦闘隊列・Target Range・Target選択仕様",
       "status": "Approved",
       "summary": "前衛/後衛配置、拠点編集、Range意味、PIERCE廃止、後衛Damage減衰、強制前進、味方Target、Coverを統合した仕様。",
-      "body": "# 隊列\n- Unitの配置位置は前衛 / 後衛。\n- 初期隊列は拠点で編集する。\n- 前衛/後衛の人数配分は自由。\n- 前衛の生存Unitが0になった時点で、生存後衛は全員強制的に前衛へ移動する。\n- 「前列」はRange FRONT名としてのみ使用し、配置位置には使用しない。「後列」は仕様用語として使用しない。\n\n# Target Range\n- SINGLE: 敵前衛の生存Unitから1体。後衛は選択不可。\n- FRONT（前列）: 敵前衛を対象とする範囲。\n- BACK: 敵前衛・後衛の生存Unitから1体を選択可能。単体Range。\n- RANDOM: 前衛/後衛のRange制限を除外した有効Target母集団から抽選。複数抽選は同一Unitの重複を許可。\n- ALL（全体）: 前衛・後衛を含む全有効対象。\n- PIERCE: 廃止。\n\n# 隊列Damage\n- 後衛攻撃者がSINGLE / FRONT / RANDOMでDamageを与える場合は50%へ減衰。\n- BACK / ALLは隊列Damage減衰判定を行わず100%。\n- SINGLE / FRONTは後衛をTargetできない。\n- RANDOMで後衛が抽選されても防御側減衰は行わない。\n- 防御側の後衛常時50%減衰という独立ルールは採用しない。\n\n# 味方Target\n- Heal / Barrier等は前衛・後衛を問わず対象選択可能。\n\n# Cover\n- 単体攻撃なら元Targetが後衛でもCover可能。\n- BACKは単体なのでCover可能。\n- FRONT / ALL等の範囲攻撃はCover対象外。\n- RANDOM複数抽選時の各Hit/抽選とCoverの詳細判定は未決事項として別途確定する。\n\n# 戦闘中の隊列移動\n- 任意操作または通常Skillによる前衛⇔後衛の自由移動は採用しない。\n- 戦闘中の隊列変更は前衛全滅時の強制前進のみ。\n\n# Monster初期隊列\n- Monsterは標準の前衛/後衛初期配置を持つ。\n- Encounterは必要に応じてMonster標準配置を上書きできる。\n- Encounter指定がある場合はEncounterを優先し、指定がない場合はMonster標準配置を使用する。\n\n# RANDOMとCover\n- RANDOM複数抽選は各抽選を単体Target判定として処理する。\n- 各抽選ごとにCover判定を行う。\n- 同一Unitの重複抽選時も抽選ごとに独立判定する。\n",
+      "body": "# 隊列\n- Unitの配置位置は前衛 / 後衛。\n- 初期隊列は拠点で編集する。\n- 前衛/後衛の人数配分は自由。\n- 前衛の生存Unitが0になった時点で、生存後衛は全員強制的に前衛へ移動する。\n- 「前列」はRange FRONT名としてのみ使用し、配置位置には使用しない。「後列」は仕様用語として使用しない。\n\n# Target Range\n- SINGLE: 敵前衛の生存Unitから1体。後衛は選択不可。\n- FRONT（前列）: 敵前衛を対象とする範囲。\n- BACK: 敵前衛・後衛の生存Unitから1体を選択可能。単体Range。\n- RANDOM: 前衛/後衛のRange制限を除外した有効Target母集団から抽選。複数抽選は同一Unitの重複を許可。\n- ALL（全体）: 前衛・後衛を含む全有効対象。\n- PIERCE: 廃止。\n\n# 隊列Damage\n- 後衛攻撃者がSINGLE / FRONT / RANDOMでDamageを与える場合は50%へ減衰。\n- BACK / ALLは隊列Damage減衰判定を行わず100%。\n- SINGLE / FRONTは後衛をTargetできない。\n- RANDOMで後衛が抽選されても防御側減衰は行わない。\n- 防御側の後衛常時50%減衰という独立ルールは採用しない。\n\n# 味方Target\n- Heal / Barrier等は前衛・後衛を問わず対象選択可能。\n\n# Cover\n- 単体攻撃なら元Targetが後衛でもCover可能。\n- BACKは単体なのでCover可能。\n- FRONT / ALL等の範囲攻撃はCover対象外。\n- RANDOM複数抽選は各抽選を単体Target判定として処理し、各抽選ごとに独立してCover判定する。\n\n# 戦闘中の隊列移動\n- 任意操作または通常Skillによる前衛⇔後衛の自由移動は採用しない。\n- 戦闘中の隊列変更は前衛全滅時の強制前進のみ。\n\n# Monster初期隊列\n- Monsterは標準の前衛/後衛初期配置を持つ。\n- Encounterは必要に応じてMonster標準配置を上書きできる。\n- Encounter指定がある場合はEncounterを優先し、指定がない場合はMonster標準配置を使用する。\n\n# RANDOMとCover\n- RANDOM複数抽選は各抽選を単体Target判定として処理する。\n- 各抽選ごとにCover判定を行う。\n- 同一Unitの重複抽選時も抽選ごとに独立判定する。\n",
       "decision_refs": [
         "DEC-FRM-001",
         "DEC-FRM-002",
@@ -331,7 +359,7 @@
       "approved_by": "Human",
       "approved_at": "2026-08-31T15:23:00+09:00",
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:23:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -437,9 +465,9 @@
         "SYS-FRM-BATTLE",
         "SYS-FRM-VERIFY"
       ],
-      "definition": "単体攻撃は元Targetが後衛でもCover可能。BACKはCover対象。FRONT/ALL等の範囲はCover対象外。RANDOM複数抽選との詳細は未決。",
+      "definition": "単体攻撃は元Targetが後衛でもCover可能。BACKはCover対象。FRONT/ALLはCover対象外。RANDOM複数抽選は各抽選を単体Targetとして扱い、抽選ごとに独立してCover判定する。",
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     }
   ],
   "system_connections": [
@@ -521,67 +549,67 @@
       "id": "IMP-FRM-001",
       "title": "拠点UI/Save",
       "system_node_id": "SYS-FRM-BASE",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Player隊列の編集・永続化がCurrentに存在しない。game/index.html / app-runtime.js / save-domain-bridge.jsへ影響。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-002",
       "title": "Monster/Encounter配置Authority",
       "system_node_id": "SYS-FRM-BATTLE",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Monster標準配置fieldとEncounter override fieldがCurrentにない。Monster Export/SchemaとEncounter Resolverへ影響。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-003",
       "title": "Battle Unit Position",
       "system_node_id": "SYS-FRM-BATTLE",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Combatantが隊列状態を持たず、前衛全滅強制前進処理もない。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-004",
       "title": "Game Target Resolver",
       "system_node_id": "SYS-FRM-TARGET",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Runtime Target resolverが実行上single/allのみ。FRONT/BACK/RANDOMをApproved semanticsで追加しPIERCEを除去する必要。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-005",
       "title": "隊列Damage",
       "system_node_id": "SYS-FRM-DAMAGE",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Range×攻撃者隊列による0.5/1.0係数の実行Ownerが未接続。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-006",
       "title": "Cover",
       "system_node_id": "SYS-FRM-COVER",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Game Coverは存在するが、新Range semanticsとRANDOM抽選単位Coverへ接続が必要。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-007",
@@ -599,11 +627,11 @@
       "title": "Skill Formal/Generator",
       "system_node_id": "SYS-FRM-TARGET",
       "status": "Open",
-      "summary": "Compiler/GeneratorにPIERCE旧定義が残存。Approved Range集合へmigrationが必要。",
+      "summary": "Game Formal側のPIERCE admission cleanupはTASK-FRM-004で完了。Skill Generator側のPIERCE生成停止とApproved Range semantics整合はTASK-FRM-005で継続。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "IMP-FRM-009",
@@ -736,7 +764,7 @@
       "id": "TASK-FRM-004",
       "box_id": "BOX-FRM-002",
       "title": "Game側 隊列・Range・Damage・Coverを実装",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 4,
       "depends_on": [
         "TASK-FRM-003"
@@ -745,18 +773,18 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-31T19:11:00+09:00"
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "TASK-FRM-005",
       "box_id": "BOX-FRM-002",
       "title": "Studio模擬戦・Formal AI・Skill GeneratorをGame仕様へ整合",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 5,
       "depends_on": [
         "TASK-FRM-004"
@@ -770,7 +798,7 @@
         "at": ""
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T19:11:00+09:00"
     },
     {
       "id": "TASK-FRM-006",
@@ -882,14 +910,37 @@
       "blocking": false,
       "created_at": "2026-08-31T15:01:00+09:00",
       "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "CHK-FRM-004",
+      "title": "TASK-FRM-004 Game側実装完了Gate",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-FRM-004",
+      "status": "Passed",
+      "result": "Fresh CurrentでMonster Data反映、PIERCE schema cleanup、Protected Test integrity、formation/range conformance、Battle/Cover/Data Exchange回帰、RANDOM/Damage/Cover/forced advance動的確認がPASS。",
+      "evidence": "TASK-FRM-004_GKS-B831_COMPLETION-EVIDENCE-001.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T19:11:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-31T19:11:00+09:00",
+        "reason": "User instruction to proceed after PASS review; TASK-FRM-004 completion accepted for workflow progression.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T19:11:00+09:00",
+      "updated_at": "2026-08-31T19:11:00+09:00"
     }
   ],
   "workflow": {
-    "stage": "Planning",
+    "stage": "Implementing",
     "implementation_approval": {
-      "status": "Pending",
-      "by": "",
-      "at": ""
+      "status": "Approved",
+      "by": "Human",
+      "at": "2026-08-31T19:11:00+09:00"
     },
     "completion_approval": {
       "status": "Pending",
@@ -917,6 +968,14 @@
     {
       "at": "2026-08-31T15:31:00+09:00",
       "message": "TASK-FRM-003 Fresh Current Source影響マッピング完了。13 domainのOwnerと依存順を確定し、System Impact IMP-FRM-001〜009をOpen登録。Source変更なし。TASK-FRM-003をDone、TASK-FRM-004をTodoへ開放。"
+    },
+    {
+      "at": "2026-08-31T19:11:00+09:00",
+      "message": "TASK-FRM-004をFresh Current guild-adventure-studio-sub(20260831-100515).zipで完了確認。Monster default formation反映、PIERCE schema cleanup、Protected Test 10/10 integrity、conformance/regression/dynamic verificationをPASSとして完了Evidenceを登録。"
+    },
+    {
+      "at": "2026-08-31T19:11:00+09:00",
+      "message": "TASK-FRM-004をDoneへ更新し、IMP-FRM-001〜006をResolved。TASK-FRM-005をBlockedからTodoへ開放。次工程はSkill Generator→Formal AI→Studio Battle Package→Game/Studio equivalence verification。"
     }
   ]
 }
