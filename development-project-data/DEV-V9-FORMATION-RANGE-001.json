@@ -10,17 +10,17 @@
     "name": "V9 戦闘隊列・Range・Target統合",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-31T15:01:00+09:00"
+    "updated_at": "2026-08-31T06:25:45.721Z"
   },
   "project_context": {
     "purpose": "前衛/後衛の戦闘隊列、Skill Target Range、Target選択、隊列Damage補正、Cover連携を一つのCurrent仕様として確定し、Game Runtime・Studio模擬戦・Formal AI・Skill Generatorで同じ意味を表現できる状態へ統合する。",
     "summary": "6v6実戦模擬戦の事前点検で、Skill Range定義と実ゲーム/Studio Runtime、隊列概念が一致していないことを確認。Human DecisionによりFF5型の前衛/後衛を基礎とした隊列、SINGLE/FRONT/BACK/RANDOM/ALLの意味、PIERCE廃止、後衛攻撃減衰、前衛全滅時の強制前進、拠点隊列編集、味方支援Target、Cover境界を確定。実装テストは停止し、仕様統合→実装計画→Game/Studio同時整合→再検証の順で進める。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-FRM-001",
-    "work_box_id": "BOX-FRM-001",
-    "theme": "Human決定済み隊列・Range・Target仕様のCurrent Specification化",
-    "goal": "未決3点を明示した上で統合仕様をHuman承認可能な形にし、Game/Studio/AI/Generator改修の実装Gateへ接続する。"
+    "architecture_id": "ARCH-FRM-IMPL",
+    "work_box_id": "BOX-FRM-002",
+    "theme": "Current Source影響箇所の仕様Contractマッピング",
+    "goal": "拠点UI、保存Data、Monster/Encounter配置Authority、Battle Unit、Target/Range、Damage、Cover、Formal AI、Skill Generator、Studio Verificationの変更Ownerと依存順をFresh Current Sourceから確定する。"
   },
   "project_rules": [
     {
@@ -92,11 +92,11 @@
       "summary": "拠点で初期隊列を編集し、前衛全滅時は後衛が強制前進することは確定。任意行動やSkillによる前衛⇔後衛移動は未決。",
       "body": "Current仕様へ含める場合は、行動Cost・Target・AI利用・強制前進との優先順位まで定義が必要。",
       "open_questions": "戦闘中の任意移動を採用するか。採用しない場合は拠点設定＋前衛全滅時強制移動のみとする。",
-      "conclusion": "",
+      "conclusion": "戦闘中の任意隊列移動は採用しない。隊列変更は拠点設定と前衛全滅時の強制前進のみ。",
       "related_discussion_ids": [],
       "artifact_note": "",
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     },
     {
       "id": "DISC-FRM-002",
@@ -105,11 +105,11 @@
       "summary": "Player側は拠点で隊列編集することが確定したが、Monster側の前衛/後衛初期配置決定元は未決。",
       "body": "Monster Master、Encounter/Formation、AI Profile、Quest Override等のどこがAuthorityかを決める必要がある。",
       "open_questions": "Monster初期隊列は何が決めるか。",
-      "conclusion": "",
+      "conclusion": "Monster標準配置を正規既定値とし、Encounterが必要時に上書きする。",
       "related_discussion_ids": [],
       "artifact_note": "",
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     },
     {
       "id": "DISC-FRM-003",
@@ -118,11 +118,11 @@
       "summary": "RANDOMは範囲制限なし・重複抽選可能と確定。単体攻撃は後衛TargetでもCover可能と確定している。",
       "body": "RANDOMの複数抽選を各抽選ごとの単体HitとしてCover判定するか、RANDOM Skill全体を範囲扱いとしてCover対象外にするかが未決。",
       "open_questions": "RANDOM複数抽選の各TargetにCoverを適用するか。",
-      "conclusion": "",
+      "conclusion": "RANDOM複数抽選は各抽選を単体Targetとして扱い、各抽選ごとにCover判定する。",
       "related_discussion_ids": [],
       "artifact_note": "",
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     }
   ],
   "decisions": [
@@ -233,15 +233,57 @@
       "approved_at": "2026-08-31T15:01:00+09:00",
       "created_at": "2026-08-31T15:01:00+09:00",
       "updated_at": "2026-08-31T15:01:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-010",
+      "title": "戦闘中の任意隊列移動は採用しない",
+      "status": "Approved",
+      "text": "戦闘中の任意操作または通常Skill効果による前衛⇔後衛の自由移動は採用しない。隊列変更は拠点での初期設定と、前衛全滅時の生存後衛全員の強制前進のみとする。",
+      "rationale": "隊列を事前編成要素として明確化し、戦闘中の追加行動系を導入しないため。",
+      "source_discussion_ids": [
+        "DISC-FRM-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:23:00+09:00",
+      "created_at": "2026-08-31T15:23:00+09:00",
+      "updated_at": "2026-08-31T15:23:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-011",
+      "title": "Monster初期隊列は標準配置＋Encounter上書き",
+      "status": "Approved",
+      "text": "MonsterはMonster側に標準の前衛/後衛初期配置を持つ。Encounterは必要に応じてその初期配置を上書きできる。通常生成はMonster標準配置を使用し、Boss戦・特殊Encounter等ではEncounter側指定を優先する。",
+      "rationale": "通常Monsterの職/役割に応じた既定配置と、個別Encounter演出・攻略設計の両方を成立させるため。",
+      "source_discussion_ids": [
+        "DISC-FRM-002"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:23:00+09:00",
+      "created_at": "2026-08-31T15:23:00+09:00",
+      "updated_at": "2026-08-31T15:23:00+09:00"
+    },
+    {
+      "id": "DEC-FRM-012",
+      "title": "RANDOMは抽選単位でCover判定する",
+      "status": "Approved",
+      "text": "RANDOMの複数抽選は、各抽選を単体Target判定として処理する。各抽選TargetがCover条件を満たす場合は抽選ごとにCover判定を行う。同一Unitが重複抽選された場合も各抽選ごとに独立してCover判定する。",
+      "rationale": "RANDOMを範囲攻撃ではなく、範囲制限を除外した単体Target抽選の反復として扱い、単体攻撃なら後衛TargetでもCover可能という既存決定と整合させるため。",
+      "source_discussion_ids": [
+        "DISC-FRM-003"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:23:00+09:00",
+      "created_at": "2026-08-31T15:23:00+09:00",
+      "updated_at": "2026-08-31T15:23:00+09:00"
     }
   ],
   "specifications": [
     {
       "id": "SPEC-FRM-001",
       "title": "戦闘隊列・Target Range・Target選択仕様",
-      "status": "Review",
+      "status": "Approved",
       "summary": "前衛/後衛配置、拠点編集、Range意味、PIERCE廃止、後衛Damage減衰、強制前進、味方Target、Coverを統合した仕様。",
-      "body": "# 隊列\n- Unitの配置位置は前衛 / 後衛。\n- 初期隊列は拠点で編集する。\n- 前衛/後衛の人数配分は自由。\n- 前衛の生存Unitが0になった時点で、生存後衛は全員強制的に前衛へ移動する。\n- 「前列」はRange FRONT名としてのみ使用し、配置位置には使用しない。「後列」は仕様用語として使用しない。\n\n# Target Range\n- SINGLE: 敵前衛の生存Unitから1体。後衛は選択不可。\n- FRONT（前列）: 敵前衛を対象とする範囲。\n- BACK: 敵前衛・後衛の生存Unitから1体を選択可能。単体Range。\n- RANDOM: 前衛/後衛のRange制限を除外した有効Target母集団から抽選。複数抽選は同一Unitの重複を許可。\n- ALL（全体）: 前衛・後衛を含む全有効対象。\n- PIERCE: 廃止。\n\n# 隊列Damage\n- 後衛攻撃者がSINGLE / FRONT / RANDOMでDamageを与える場合は50%へ減衰。\n- BACK / ALLは隊列Damage減衰判定を行わず100%。\n- SINGLE / FRONTは後衛をTargetできない。\n- RANDOMで後衛が抽選されても防御側減衰は行わない。\n- 防御側の後衛常時50%減衰という独立ルールは採用しない。\n\n# 味方Target\n- Heal / Barrier等は前衛・後衛を問わず対象選択可能。\n\n# Cover\n- 単体攻撃なら元Targetが後衛でもCover可能。\n- BACKは単体なのでCover可能。\n- FRONT / ALL等の範囲攻撃はCover対象外。\n- RANDOM複数抽選時の各Hit/抽選とCoverの詳細判定は未決事項として別途確定する。\n",
+      "body": "# 隊列\n- Unitの配置位置は前衛 / 後衛。\n- 初期隊列は拠点で編集する。\n- 前衛/後衛の人数配分は自由。\n- 前衛の生存Unitが0になった時点で、生存後衛は全員強制的に前衛へ移動する。\n- 「前列」はRange FRONT名としてのみ使用し、配置位置には使用しない。「後列」は仕様用語として使用しない。\n\n# Target Range\n- SINGLE: 敵前衛の生存Unitから1体。後衛は選択不可。\n- FRONT（前列）: 敵前衛を対象とする範囲。\n- BACK: 敵前衛・後衛の生存Unitから1体を選択可能。単体Range。\n- RANDOM: 前衛/後衛のRange制限を除外した有効Target母集団から抽選。複数抽選は同一Unitの重複を許可。\n- ALL（全体）: 前衛・後衛を含む全有効対象。\n- PIERCE: 廃止。\n\n# 隊列Damage\n- 後衛攻撃者がSINGLE / FRONT / RANDOMでDamageを与える場合は50%へ減衰。\n- BACK / ALLは隊列Damage減衰判定を行わず100%。\n- SINGLE / FRONTは後衛をTargetできない。\n- RANDOMで後衛が抽選されても防御側減衰は行わない。\n- 防御側の後衛常時50%減衰という独立ルールは採用しない。\n\n# 味方Target\n- Heal / Barrier等は前衛・後衛を問わず対象選択可能。\n\n# Cover\n- 単体攻撃なら元Targetが後衛でもCover可能。\n- BACKは単体なのでCover可能。\n- FRONT / ALL等の範囲攻撃はCover対象外。\n- RANDOM複数抽選時の各Hit/抽選とCoverの詳細判定は未決事項として別途確定する。\n\n# 戦闘中の隊列移動\n- 任意操作または通常Skillによる前衛⇔後衛の自由移動は採用しない。\n- 戦闘中の隊列変更は前衛全滅時の強制前進のみ。\n\n# Monster初期隊列\n- Monsterは標準の前衛/後衛初期配置を持つ。\n- Encounterは必要に応じてMonster標準配置を上書きできる。\n- Encounter指定がある場合はEncounterを優先し、指定がない場合はMonster標準配置を使用する。\n\n# RANDOMとCover\n- RANDOM複数抽選は各抽選を単体Target判定として処理する。\n- 各抽選ごとにCover判定を行う。\n- 同一Unitの重複抽選時も抽選ごとに独立判定する。\n",
       "decision_refs": [
         "DEC-FRM-001",
         "DEC-FRM-002",
@@ -251,10 +293,13 @@
         "DEC-FRM-006",
         "DEC-FRM-007",
         "DEC-FRM-008",
-        "DEC-FRM-009"
+        "DEC-FRM-009",
+        "DEC-FRM-010",
+        "DEC-FRM-011",
+        "DEC-FRM-012"
       ],
       "depends_on": [],
-      "acceptance_criteria": "Human決定9件が欠落なく統合され、前衛/後衛と前列の用語が混在せず、PIERCEがCurrent対象から除外され、SINGLE/FRONT/BACK/RANDOM/ALLのTargetとDamage判定が一意であること。未決3点はCurrent確定事項へ混入しないこと。",
+      "acceptance_criteria": "Human決定12件が欠落なく統合され、前衛/後衛と前列の用語が混在せず、PIERCEがCurrent対象から除外され、SINGLE/FRONT/BACK/RANDOM/ALLのTarget・Damage・Cover判定、拠点隊列編集、前衛全滅時強制前進、Monster標準配置＋Encounter上書き、戦闘中任意移動なしが一意であること。",
       "system_node_id": "SYS-FRM-TARGET",
       "contract_ids": [
         "CTR-FRM-POSITION",
@@ -264,11 +309,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
-      "approved_by": "",
-      "approved_at": "",
+      "revision": 2,
+      "approved_by": "Human",
+      "approved_at": "2026-08-31T15:23:00+09:00",
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -533,7 +578,7 @@
       "id": "TASK-FRM-002",
       "box_id": "BOX-FRM-001",
       "title": "未決3点を解決して統合Specificationを承認",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 2,
       "depends_on": [
         "TASK-FRM-001"
@@ -542,18 +587,18 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-31T15:23:00+09:00"
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     },
     {
       "id": "TASK-FRM-003",
       "box_id": "BOX-FRM-002",
       "title": "Current Source影響箇所を仕様Contractへマッピング",
-      "status": "Blocked",
+      "status": "Todo",
       "execution_order": 3,
       "depends_on": [
         "TASK-FRM-002"
@@ -567,7 +612,7 @@
         "at": ""
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     },
     {
       "id": "TASK-FRM-004",
@@ -680,11 +725,11 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-FRM-002",
-      "status": "Pending",
-      "result": "",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "未決3点をHuman承認で解決し、SPEC-FRM-001 Revision 2をApprovedへ更新。TASK-FRM-002をDone、TASK-FRM-003を開放。",
+      "evidence": "Human approval in conversation 2026-08-31T15:23:00+09:00",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T15:23:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -695,7 +740,7 @@
       },
       "blocking": false,
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T15:23:00+09:00"
     },
     {
       "id": "CHK-FRM-003",
@@ -746,6 +791,10 @@
     {
       "at": "2026-08-31T15:01:00+09:00",
       "message": "新規Development Project登録データ DEV-V9-FORMATION-RANGE-001 をschema 2.0 / authority.version 1で作成。Fresh Source GKS-B830 / GA-B486.211の新規案件JSON登録Contractへ合わせた。"
+    },
+    {
+      "at": "2026-08-31T15:23:00+09:00",
+      "message": "Humanが未決3案をすべて承認。DEC-FRM-010〜012をApproved登録し、DISC-FRM-001〜003をConcluded。SPEC-FRM-001 Revision 2をApproved、TASK-FRM-002をDone、TASK-FRM-003をTodoへ遷移。"
     }
   ]
 }
