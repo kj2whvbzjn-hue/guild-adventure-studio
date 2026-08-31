@@ -15,7 +15,7 @@
   }
   function seeded(seed){let x=(Number(seed)||1)>>>0;return()=>{x=(x+0x6D2B79F5)|0;let t=Math.imul(x^x>>>15,1|x);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
   function skillDefinition(ctx,skillId){const self=ctx.units.find(row=>row.id===ctx.actor_id);return self?.skills?.find(row=>String(typeof row==='string'?row:row.id)===String(skillId))||null;}
-  function selectedTargetContract(ctx){const action=String(ctx.selected_action_id||'');if(!action.startsWith('skill:'))return null;const skill=skillDefinition(ctx,action.slice(6));if(!skill||typeof skill==='string')throw Object.assign(new Error(`Selected Skill definition is required for target resolution: ${action}`),{code:'AI_SELECTED_SKILL_DEFINITION_REQUIRED',action_id:action});return skill.runtimeContracts?.targetContract||skill.target||null;}
+  function selectedTargetContract(ctx){const action=String(ctx.selected_action_id||'');if(action==='attack')return{side:'ENEMY',range:'SINGLE'};if(!action.startsWith('skill:'))return null;const skill=skillDefinition(ctx,action.slice(6));if(!skill||typeof skill==='string')throw Object.assign(new Error(`Selected Skill definition is required for target resolution: ${action}`),{code:'AI_SELECTED_SKILL_DEFINITION_REQUIRED',action_id:action});return skill.runtimeContracts?.targetContract||skill.target||null;}
   function createHandlers(){
     let random=null,randomSeed;
     const unit=(ctx,id)=>ctx.units.find((row)=>row.id===id),actor=(ctx)=>unit(ctx,ctx.actor_id),allies=(ctx)=>ctx.units.filter((row)=>row.alive&&row.side===actor(ctx)?.side),enemies=(ctx)=>ctx.units.filter((row)=>row.alive&&row.side!==actor(ctx)?.side);
@@ -28,7 +28,7 @@
   }
   function decide(runtime,battleInput,handlers){
     const context=snapshot(battleInput),firstHandlers=handlers||createHandlers(),preliminary=Engine.execute(runtime,context,firstHandlers),actionId=String(preliminary.outcome.action_id||'');
-    if(!actionId.startsWith('skill:'))return {proposal:{status:preliminary.outcome.status,action_id:preliminary.outcome.action_id,target_id:preliminary.outcome.target_id,reason:preliminary.outcome.reason},trace:preliminary};
+    if(actionId!=='attack'&&!actionId.startsWith('skill:'))return {proposal:{status:preliminary.outcome.status,action_id:preliminary.outcome.action_id,target_id:preliminary.outcome.target_id,reason:preliminary.outcome.reason},trace:preliminary};
     const finalContext=snapshot({...battleInput,selected_action_id:actionId}),finalTrace=Engine.execute(runtime,finalContext,handlers||createHandlers());
     if(String(finalTrace.outcome.action_id||'')!==actionId)return {proposal:{status:'failed',action_id:null,target_id:null,reason:'action_changed_after_target_contract_binding'},trace:finalTrace};
     return {proposal:{status:finalTrace.outcome.status,action_id:finalTrace.outcome.action_id,target_id:finalTrace.outcome.target_id,reason:finalTrace.outcome.reason},trace:finalTrace};

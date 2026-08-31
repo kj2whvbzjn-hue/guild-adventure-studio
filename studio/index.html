@@ -20,7 +20,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GA Studio">
-<title>GK Studio GKS-B834</title>
+<title>GK Studio GKS-B835</title>
 <style>
 :root{
   --bg:#f3f4f6;--panel:#fff;--line:#dfe3e8;--text:#1f2937;--muted:#6b7280;
@@ -472,13 +472,13 @@ updateDeployDeleteControl();
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B834</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/">ゲーム</a><a href="../studio/" aria-current="page">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B835</span></nav>
 
 <div class="app">
 <header>
   <div>
     <div class="brand">ギルド冒険物語 開発スタジオ</div>
-    <div class="version">Game GA-B486.211 / Studio GKS-B834</div>
+    <div class="version">Game GA-B486.211 / Studio GKS-B835</div>
   </div>
   <div class="spacer"></div>
   <div class="mobile-header-actions" aria-label="Studio操作">
@@ -2478,11 +2478,11 @@ updateDeployDeleteControl();
 <script src="./ai-production/ai-simulation-runner.js?v=1"></script>
 <script src="./ai-production/ai-export-adapter.js?v=1"></script>
 <script src="./ai-production/ai-production-ui.js?v=1"></script>
-<script src="./layer-controller.js?v=834"></script>
+<script src="./layer-controller.js?v=835"></script>
 
 <script>
 const APP_VERSION='1.43.0';
-const DISTRIBUTION_BUILD='GKS-B834';
+const DISTRIBUTION_BUILD='GKS-B835';
 const DISTRIBUTION_GAME_BUILD='GA-B486.211';
 const LEGACY_KEY='gas_v4_project_v030';
 const REGISTRY_KEY='gas_v4_project_registry_v060';
@@ -6584,6 +6584,9 @@ function formalBattleLegalCandidates(skill,u,units){
  const target=skill?.runtimeContracts?.targetContract||skill?.target||{};
  return window.GKSFormationTargetResolver.resolveLegalTargetCandidates({actor:u,units,targetContract:target});
 }
+function formalBattleBasicAttackLegalCandidates(u,units){return window.GKSFormationTargetResolver.resolveLegalTargetCandidates({actor:u,units,targetContract:{side:'ENEMY',range:'SINGLE'}});}
+function formalBattleBasicAttackTargets(selector,u,units,rnd){const pool=formalBattleBasicAttackLegalCandidates(u,units);if(!pool.length)return[];const requested=String(selector||'').trim();if(requested){const selected=battleTargets(requested,u,units,rnd).filter(x=>pool.some(p=>String(p.id)===String(x.id)));if(selected.length)return[selected[0]];}return[pool[Math.floor(rnd()*pool.length)]];}
+function formalBattleBasicAttackTargetFromAiDecision(targetId,u,units){const id=String(targetId||'').trim(),pool=formalBattleBasicAttackLegalCandidates(u,units);if(!id)throw Object.assign(new Error('Formal AI通常攻撃のtarget_idがありません。'),{code:'BATTLE_FORMAL_AI_BASIC_TARGET_REQUIRED'});const selected=pool.find(x=>String(x.id)===id);if(!selected)throw Object.assign(new Error(`Formal AI通常攻撃target_id=${id}は合法Target集合に含まれません。`),{code:'BATTLE_FORMAL_AI_BASIC_TARGET_CONTRACT_MISMATCH',target_id:id});return selected;}
 function formalBattleTargets(skill,selector,u,units,rnd){
  const target=skill?.runtimeContracts?.targetContract||skill?.target||{},range=String(target.range||'').toUpperCase(),pool=formalBattleLegalCandidates(skill,u,units);
  if(!pool.length)return[];
@@ -6747,7 +6750,7 @@ function runBattleSimulation(input={},options={}){
           else if(proposal.status==='selected'){
             const action=String(proposal.action_id||'');
             if(action==='attack'){
-              const target=units.find(x=>String(x.id)===String(proposal.target_id||''));if(!target)throw Object.assign(new Error(`Formal AI通常攻撃のtarget_idが見つかりません: ${proposal.target_id||''}`),{code:'BATTLE_FORMAL_AI_TARGET_MISSING',target_id:String(proposal.target_id||'')});performFormalBasicAttack(u,target,tick,rnd,logs,logLimit,trace);acted=true;
+              const target=formalBattleBasicAttackTargetFromAiDecision(proposal.target_id,u,units);performFormalBasicAttack(u,target,tick,rnd,logs,logLimit,trace);acted=true;
             }else if(action.startsWith('skill:')){
               const skillId=action.slice(6);if(!u.formalAiSkillLoadoutIds.includes(skillId))throw Object.assign(new Error(`Formal AIがSkill Loadout外を選択しました: ${skillId}`),{code:'BATTLE_FORMAL_AI_LOADOUT_RUNTIME_VIOLATION',skill_id:skillId});const skill=u.skills.find(x=>String(x.id)===skillId);if(!skill?.__formal_runtime)throw Object.assign(new Error(`Formal AIがG07正式Skill以外を選択しました: ${skillId}`),{code:'BATTLE_FORMAL_AI_SKILL_RUNTIME_MISSING',skill_id:skillId});const targets=formalBattleTargetsFromAiDecision(skill,proposal.target_id,u,units,rnd),started=formalBattleStartSkill(u,skill,targets,tick,units,rnd,logs,logLimit,trace);if(!started.ok){if(battleTraceOptions.ai)battleLogPush(logs,logLimit,`  FORMAL AI skill blocked ${started.reason||'unavailable'}`);}acted=true;
             }else throw Object.assign(new Error(`Formal AI action_idはBattle Package adapterで未対応です: ${action||'(empty)'}`),{code:'BATTLE_FORMAL_AI_ACTION_UNSUPPORTED',action_id:action});
@@ -6757,7 +6760,7 @@ function runBattleSimulation(input={},options={}){
             const rule=u.ai[ri],ok=battleConditionOk(rule,u,units);
             if(battleTraceOptions.ai)battleLogPush(logs,logLimit,`[${tick}] ${u.formalMonsterOwner?'MONSTER OWNER AI':'AI'} ${u.name} node#${ri+1} condition=${rule.condition||'always'} => ${ok?'TRUE':'FALSE'}`);
             if(!ok)continue;
-            const action=String(rule.action||'attack'),skillId=action.startsWith('skill:')?action.slice(6):'',skill=u.skills.find(x=>x.id===skillId),targetKind=skill?.__formal_runtime?'formal:'+String(skill.runtimeContracts?.targetContract?.side||'')+'/'+String(skill.runtimeContracts?.targetContract?.range||''):(rule.target||(skill&&skill.target)||'enemy_random'),targets=skill?.__formal_runtime?formalBattleTargets(skill,rule.target,u,units,rnd):battleTargets(targetKind,u,units,rnd);
+            const action=String(rule.action||'attack'),skillId=action.startsWith('skill:')?action.slice(6):'',skill=u.skills.find(x=>x.id===skillId),targetKind=skill?.__formal_runtime?'formal:'+String(skill.runtimeContracts?.targetContract?.side||'')+'/'+String(skill.runtimeContracts?.targetContract?.range||''):(rule.target||(skill&&skill.target)||'enemy_random'),targets=skill?.__formal_runtime?formalBattleTargets(skill,rule.target,u,units,rnd):(u.formalMode&&!skillId?formalBattleBasicAttackTargets(rule.target,u,units,rnd):battleTargets(targetKind,u,units,rnd));
             if(battleTraceOptions.ai)battleLogPush(logs,logLimit,`  ACTION ${action} / target=${targetKind} / candidates=${targets.map(x=>x.name).join(',')||'none'}`);
             if(!targets.length)continue;
             if(skillId){
@@ -10366,7 +10369,7 @@ function applyAppUpdate(){
  }else{
   {
     const url=new URL(location.href);
-    url.searchParams.set('appv','834');
+    url.searchParams.set('appv','835');
     location.replace(url.toString());
    }
  }
@@ -10375,7 +10378,7 @@ function applyAppUpdate(){
 async function registerAppServiceWorker(){
  if(!('serviceWorker' in navigator))return;
  try{
-  const registration=await navigator.serviceWorker.register('./sw.js?v=834',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=835',{updateViaCache:'none'});
 
   if(registration.waiting){
    showAppUpdate(registration.waiting);
@@ -10394,7 +10397,7 @@ async function registerAppServiceWorker(){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
    {
     const url=new URL(location.href);
-    url.searchParams.set('appv','834');
+    url.searchParams.set('appv','835');
     location.replace(url.toString());
    }
   });
