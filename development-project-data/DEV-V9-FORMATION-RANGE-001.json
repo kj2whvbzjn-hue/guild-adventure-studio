@@ -10,17 +10,17 @@
     "name": "V9 戦闘隊列・Range・Target統合",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-31T10:17:37.975Z"
+    "updated_at": "2026-08-31T11:15:12.640Z"
   },
   "project_context": {
     "purpose": "前衛/後衛の戦闘隊列、Skill Target Range、Target選択、隊列Damage補正、Cover連携を一つのCurrent仕様として確定し、Game Runtime・Studio模擬戦・Formal AI・Skill Generatorで同じ意味を表現できる状態へ統合する。",
     "summary": "6v6実戦模擬戦の事前点検で、Skill Range定義と実ゲーム/Studio Runtime、隊列概念が一致していないことを確認。Human DecisionによりFF5型の前衛/後衛を基礎とした隊列、SINGLE/FRONT/BACK/RANDOM/ALLの意味、PIERCE廃止、後衛攻撃減衰、前衛全滅時の強制前進、拠点隊列編集、味方支援Target、Cover境界を確定。実装テストは停止し、仕様統合→実装計画→Game/Studio同時整合→再検証の順で進める。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-FRM-IMPL",
-    "work_box_id": "BOX-FRM-002",
-    "theme": "Studio模擬戦・Formal AI・Skill Generator 整合Gate",
-    "goal": "TASK-FRM-004完了Evidenceを基準に、TASK-FRM-005でSkill Generator→Formal AI→Studio Battle Package→Game/Studio equivalence verificationの順に整合し、TASK-FRM-004で確定したGame側semanticsを非回帰で維持する。"
+    "architecture_id": "ARCH-FRM-VERIFY",
+    "work_box_id": "BOX-FRM-003",
+    "theme": "Range・隊列・Cover個別検証",
+    "goal": "Fresh Current GKS-B833でTASK-FRM-005反映を確認済み。TASK-FRM-006としてSINGLE/FRONT/BACK/RANDOM/ALL、後衛Damage減衰、強制前進、味方Target自由、CoverのGame/Studio同値を個別fixtureで確定し、PASS後にTASK-FRM-007 Lv50 6v6再開へ接続する。"
   },
   "project_rules": [
     {
@@ -78,11 +78,13 @@
     "source_zip_sha256": "1928638615909d595a1a9711b783bed30dddbb1a9e8c300b6f907cad23af776f",
     "package_manifest_sha256": "2c9e6870908f6c86a9662c8df20ae41cad32907c2e80d44a72984371e639ad00",
     "verification_current": {
-      "studio_build": "GKS-B832",
+      "studio_build": "GKS-B833",
       "game_build": "GA-B486.211",
-      "source_label": "guild-adventure-studio-sub(20260831-100515).zip",
-      "source_role": "TASK-FRM-004 completion verified Fresh Current; TASK-FRM-005 implementation baseline",
-      "recorded_at": "2026-08-31T19:11:00+09:00"
+      "source_label": "guild-adventure-studio-sub(20260831-110413).zip",
+      "source_role": "Human-applied TASK-FRM-005 Fresh Current; reflection verified and TASK-FRM-006 baseline",
+      "recorded_at": "2026-08-31T20:04:00+09:00",
+      "source_zip_sha256": "5252ff7aeb74d9a0089817ee527b95ec1b427a674a1945b80c275d4d2b5f40b7",
+      "package_manifest_sha256": "bfda7c5f0983230a712759862734f090236082b7cf59796384ae76a1db37b161"
     }
   },
   "lifecycle": {
@@ -128,6 +130,27 @@
       "result": "Applied",
       "evidence": "TASK-FRM-004-GKS-B831-COMPLETION-EVIDENCE-001",
       "recorded_at": "2026-08-31T19:11:00+09:00"
+    },
+    {
+      "id": "IMPL-FRM-005-GKS-B833-001",
+      "task_id": "TASK-FRM-005",
+      "status": "Completed",
+      "summary": "Human-applied GKS-B833 Fresh CurrentでTASK-FRM-005を反映確認。shared Formation/Target resolver、Formal AI selected Skill targetContract伝播、PIERCE Current生成経路除去、Studio FRONT/BACK/RANDOM/後衛Damage/Cover/forced advance接続を確認。",
+      "files_changed": [],
+      "verification": "TASK-FRM-005_GKS-B833_POST-APPLY-REFLECTION-EVIDENCE-001.json",
+      "created_at": "2026-08-31T20:04:00+09:00",
+      "updated_at": "2026-08-31T20:04:00+09:00",
+      "studio_build": "GKS-B833",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-FRM-002"
+      ],
+      "task_ids": [
+        "TASK-FRM-005"
+      ],
+      "result": "Applied",
+      "evidence": "TASK-FRM-005-GKS-B833-POST-APPLY-REFLECTION-EVIDENCE-001",
+      "recorded_at": "2026-08-31T20:04:00+09:00"
     }
   ],
   "discussions": [
@@ -615,34 +638,37 @@
       "id": "IMP-FRM-007",
       "title": "Formal AI",
       "system_node_id": "SYS-FRM-AI",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "AI Target選択を隊列/Rangeの合法Target集合へ制約する接続が必要。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T20:04:00+09:00",
+      "resolution": "GKS-B833 Fresh CurrentでTASK-FRM-005実装反映を確認。Formal AI Range制約、Generator PIERCE hard cut、Studio shared Target resolver/FRONT/BACK/RANDOM/Cover接続をconformance + Quick/Full inspectionで再検証。"
     },
     {
       "id": "IMP-FRM-008",
       "title": "Skill Formal/Generator",
       "system_node_id": "SYS-FRM-TARGET",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Game Formal側のPIERCE admission cleanupはTASK-FRM-004で完了。Skill Generator側のPIERCE生成停止とApproved Range semantics整合はTASK-FRM-005で継続。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T19:11:00+09:00"
+      "updated_at": "2026-08-31T20:04:00+09:00",
+      "resolution": "GKS-B833 Fresh CurrentでTASK-FRM-005実装反映を確認。Formal AI Range制約、Generator PIERCE hard cut、Studio shared Target resolver/FRONT/BACK/RANDOM/Cover接続をconformance + Quick/Full inspectionで再検証。"
     },
     {
       "id": "IMP-FRM-009",
       "title": "Studio Verification",
       "system_node_id": "SYS-FRM-VERIFY",
-      "status": "Open",
+      "status": "Resolved",
       "summary": "Battle Package executorがGameと別Target解決。Gameと同一ContractでFRONT/BACK/RANDOM/COVERを再現する必要。",
       "source_type": "FreshCurrentSourceAudit",
       "source_id": "guild-adventure-studio-sub(20260831-062615).zip",
       "created_at": "2026-08-31T15:31:00+09:00",
-      "updated_at": "2026-08-31T15:31:00+09:00"
+      "updated_at": "2026-08-31T20:04:00+09:00",
+      "resolution": "GKS-B833 Fresh CurrentでTASK-FRM-005実装反映を確認。Formal AI Range制約、Generator PIERCE hard cut、Studio shared Target resolver/FRONT/BACK/RANDOM/Cover接続をconformance + Quick/Full inspectionで再検証。"
     }
   ],
   "architecture_nodes": [
@@ -784,7 +810,7 @@
       "id": "TASK-FRM-005",
       "box_id": "BOX-FRM-002",
       "title": "Studio模擬戦・Formal AI・Skill GeneratorをGame仕様へ整合",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 5,
       "depends_on": [
         "TASK-FRM-004"
@@ -793,18 +819,18 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-08-31T20:04:00+09:00"
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T19:11:00+09:00"
+      "updated_at": "2026-08-31T20:04:00+09:00"
     },
     {
       "id": "TASK-FRM-006",
       "box_id": "BOX-FRM-003",
       "title": "Range・隊列・Cover個別検証",
-      "status": "Blocked",
+      "status": "Doing",
       "execution_order": 6,
       "depends_on": [
         "TASK-FRM-005"
@@ -818,7 +844,7 @@
         "at": ""
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T15:01:00+09:00"
+      "updated_at": "2026-08-31T20:04:00+09:00"
     },
     {
       "id": "TASK-FRM-007",
@@ -933,6 +959,29 @@
       "blocking": false,
       "created_at": "2026-08-31T19:11:00+09:00",
       "updated_at": "2026-08-31T19:11:00+09:00"
+    },
+    {
+      "id": "CHK-FRM-005",
+      "title": "TASK-FRM-005 Studio/AI/Generator反映完了Gate",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-FRM-005",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B833を再監査。TASK-FRM-005 conformance PASS、TASK-FRM-004 regression PASS、Quick 11/11 PASS、Full 26/26 PASS。Human指示『反映確認して問題無ければ再開』に基づきTASK-FRM-005を完了しTASK-FRM-006を開始。",
+      "evidence": "TASK-FRM-005_GKS-B833_POST-APPLY-REFLECTION-EVIDENCE-001.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T20:04:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human",
+        "resolved_at": "2026-08-31T20:04:00+09:00",
+        "reason": "Human instructed resume if post-apply reflection has no problem; all reflection gates passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-08-31T20:04:00+09:00",
+      "updated_at": "2026-08-31T20:04:00+09:00"
     }
   ],
   "workflow": {
@@ -976,6 +1025,18 @@
     {
       "at": "2026-08-31T19:11:00+09:00",
       "message": "TASK-FRM-004をDoneへ更新し、IMP-FRM-001〜006をResolved。TASK-FRM-005をBlockedからTodoへ開放。次工程はSkill Generator→Formal AI→Studio Battle Package→Game/Studio equivalence verification。"
+    },
+    {
+      "at": "2026-08-31T20:04:00+09:00",
+      "message": "Human-applied Fresh Current guild-adventure-studio-sub(20260831-110413).zipを確認。package-build.json=GKS-B833 / GA-B486.211、TASK-FRM-005 conformance PASS、TASK-FRM-004回帰PASS、Quick 11/11 PASS、Full 26/26 PASS。"
+    },
+    {
+      "at": "2026-08-31T20:04:00+09:00",
+      "message": "TASK-FRM-005をDoneへ更新し、IMP-FRM-007〜009をResolved。Human指示『問題無ければ再開』に従いTASK-FRM-006をDoingへ遷移。"
+    },
+    {
+      "at": "2026-08-31T20:04:00+09:00",
+      "message": "次回開始点をBOX-FRM-003 / TASK-FRM-006へ固定。個別Range・Damage・forced advance・味方Target・Cover同値fixture完了後にTASK-FRM-007 Lv50 6v6を開放する。"
     }
   ]
 }
