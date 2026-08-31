@@ -8,9 +8,9 @@
   "workspace": {
     "id": "DEV-V9-FORMATION-RANGE-001",
     "name": "V9 戦闘隊列・Range・Target統合",
-    "status": "Implementing",
+    "status": "Validating",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-31T11:28:23.701Z"
+    "updated_at": "2026-08-31T11:41:20.450Z"
   },
   "project_context": {
     "purpose": "前衛/後衛の戦闘隊列、Skill Target Range、Target選択、隊列Damage補正、Cover連携を一つのCurrent仕様として確定し、Game Runtime・Studio模擬戦・Formal AI・Skill Generatorで同じ意味を表現できる状態へ統合する。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-FRM-VERIFY",
     "work_box_id": "BOX-FRM-003",
-    "theme": "Lv50 6v6 Active5 Passive5模擬戦再開",
-    "goal": "TASK-FRM-006 Game/Studio個別同値検証PASS。TASK-FRM-007でLv50 6v6をDEVELOPMENT_ONLY fixtureとして再開し、両陣営6Unitの隊列・職別AI・Active5/Passive5をCurrent Runtimeへ投入して7Tick Traceを取得する。Product Masterへ検証fixtureを昇格しない。"
+    "theme": "Formation/Range統合 完了確認",
+    "goal": "TASK-FRM-007 Lv50 6v6 Active5/Passive5模擬戦と7Tick再現TraceがPASS。全実装・個別同値・実戦再開Gate完了のため、Human Completion Gate確認待ち。"
   },
   "project_rules": [
     {
@@ -80,10 +80,10 @@
     "verification_current": {
       "studio_build": "GKS-B833",
       "game_build": "GA-B486.211",
-      "source_label": "guild-adventure-studio-sub(20260831-111558).zip",
-      "source_role": "TASK-FRM-006 equivalence-verified Fresh Current; TASK-FRM-007 simulation baseline",
-      "recorded_at": "2026-08-31T20:20:00+09:00",
-      "source_zip_sha256": "3ed19d6acadfdece722c5fe1ef7d1a5911c337c80dbe2f6df999aeb8c78d1f9d",
+      "source_label": "guild-adventure-studio-sub(20260831-112904).zip",
+      "source_role": "TASK-FRM-007 completion-verified Fresh Current",
+      "recorded_at": "2026-08-31T20:40:00+09:00",
+      "source_zip_sha256": "f6e308382dd294a4ff1c564796f362a638f88181689529b07699a923473b4998",
       "package_manifest_sha256": "bfda7c5f0983230a712759862734f090236082b7cf59796384ae76a1db37b161"
     }
   },
@@ -172,6 +172,21 @@
       "result": "Applied",
       "evidence": "TASK-FRM-006-GKS-B833-GAME-STUDIO-EQUIVALENCE-001",
       "recorded_at": "2026-08-31T20:20:00+09:00"
+    },
+    {
+      "id": "IMPL-FRM-007-GKS-B833-001",
+      "studio_build": "GKS-B833",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-FRM-003"
+      ],
+      "task_ids": [
+        "TASK-FRM-007"
+      ],
+      "result": "Applied",
+      "evidence": "TASK-FRM-007-GKS-B833-LV50-6V6-TRACE-001",
+      "recorded_at": "2026-08-31T20:40:00+09:00",
+      "summary": "DEVELOPMENT_ONLY。Lv50 6v6、3前衛+3後衛、職別Formal AI、Active5/Passive5でCurrent Studio Formal Battle Runtimeを実行。7TickごとのHP/与Damage/Heal/被Damage Traceを20境界取得。同一Seed 2回がbyte-identical。Source/Game Data/Product Master変更なし。"
     }
   ],
   "discussions": [
@@ -871,7 +886,7 @@
       "id": "TASK-FRM-007",
       "box_id": "BOX-FRM-003",
       "title": "Lv50 6v6 Active5 Passive5模擬戦を再開",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 7,
       "depends_on": [
         "TASK-FRM-006"
@@ -885,7 +900,7 @@
         "at": "2026-08-31T20:20:00+09:00"
       },
       "created_at": "2026-08-31T15:01:00+09:00",
-      "updated_at": "2026-08-31T20:20:00+09:00"
+      "updated_at": "2026-08-31T20:40:00+09:00"
     }
   ],
   "checks": [
@@ -1003,10 +1018,33 @@
       "blocking": false,
       "created_at": "2026-08-31T20:04:00+09:00",
       "updated_at": "2026-08-31T20:04:00+09:00"
+    },
+    {
+      "id": "CHK-FRM-006",
+      "title": "Lv50 6v6 Formation実戦再開Gate",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-FRM-007",
+      "status": "Passed",
+      "result": "GKS-B833で両陣営6Unit、3 FRONTLINE + 3 BACKLINE、職別Formal AI、Active5/Passive5を実行。7Tick Trace 20境界、Formal AI decision 252、Skill activation 252、Periodic Passive event 420。同一Seed 2回byte-identical。",
+      "evidence": "TASK-FRM-007_GKS-B833_LV50-6V6-TRACE-EVIDENCE-001.json",
+      "checked_by": "AI",
+      "checked_at": "2026-08-31T20:40:00+09:00",
+      "blocking": false,
+      "created_at": "2026-08-31T20:40:00+09:00",
+      "updated_at": "2026-08-31T20:40:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      }
     }
   ],
   "workflow": {
-    "stage": "Implementing",
+    "stage": "Verifying",
     "implementation_approval": {
       "status": "Approved",
       "by": "Human",
@@ -1070,6 +1108,18 @@
     {
       "at": "2026-08-31T20:20:00+09:00",
       "message": "TASK-FRM-007 preflightでCurrent Export/master/passives.jsonはactive Passive 1件のみを確認。Product Masterを捏造・昇格せず、EVD-0009/0010/0011およびEVD-0012/0013/0014のprovisional EvidenceをDEVELOPMENT_ONLY fixtureとして使用する方針で継続する。"
+    },
+    {
+      "at": "2026-08-31T20:40:00+09:00",
+      "message": "TASK-FRM-007をGKS-B833 Fresh Currentで完了。Lv50 6v6、職別Formal AI、Active5/Passive5、3前衛+3後衛をCurrent Studio Formal Battle Runtimeで実行し、7TickごとのHP/与Damage/Heal/被Damage Traceを20境界取得。"
+    },
+    {
+      "at": "2026-08-31T20:40:00+09:00",
+      "message": "固定Seed 7007で同一fixtureを2回実行し、結果JSON SHA-256が一致。Formal AI decision=252、Skill activation=252、Periodic Passive event=420。Source/Game Data/Product Master変更なし。"
+    },
+    {
+      "at": "2026-08-31T20:40:00+09:00",
+      "message": "TASK-FRM-007をDone、CHK-FRM-006をPassedへ更新。Formation/Range案件は全実装・同値検証・6v6再開Gateを完了し、workflow.stage=Verifying / Human Completion Gate待ちへ遷移。"
     }
   ]
 }
