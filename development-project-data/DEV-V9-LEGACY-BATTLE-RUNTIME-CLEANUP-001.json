@@ -10,7 +10,7 @@
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T07:32:26.279Z"
+    "updated_at": "2026-09-01T07:54:26.839Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-LBRC-004",
     "work_box_id": "BOX-LBRC-004",
-    "theme": "TASK-LBRC-007 Runtime Evidence / Game-Studio combat value parity",
-    "goal": "Human Approved DEC-LBRC-003に従い、Balance期待値BaselineとProduction実Character整数値を分離。seed固定Lv50実CharacterをEvidence化し、同一入力でGame/Studio combat valuesを照合する。"
+    "theme": "TASK-LBRC-007A Game Data Human Import Gate",
+    "goal": "EVD-0001 Authority同期済みPRJ-GAS-V4をHuman Importし、Fresh Exportで7職×7Stat mismatch=0、Current growth key 3/4/7/8/10/13/15完備、JOB-0004=狩人を再確認する。"
   },
   "project_rules": [
     {
@@ -333,6 +333,43 @@
       "result": "Applied",
       "evidence": "TASK-LBRC-007_COMBAT-VALUE-PARITY_AUDIT_GKS-B841.json: EVD expected input alignment 350/350; fractional expected stats conflict with Production integer Character Save contract; regression tests PASS; source/game data unchanged.",
       "recorded_at": "2026-09-01T16:24:00+09:00"
+    },
+    {
+      "id": "IMPL-LBRC-007A-GAMEDATA",
+      "task_id": "TASK-LBRC-007A",
+      "status": "ReadyForHumanApply",
+      "work_type": "GAME_DATA_UPDATE",
+      "summary": "Canonical Studio Project JSONをEVD-0001 Current Job Growthへ同期。7職aptitudes、JOB-0004名称、Current使用growth outcomesを更新。",
+      "artifacts": [
+        {
+          "path": "PRJ-GAS-V4_TASK-LBRC-007A_JOB-GROWTH-CURRENT.json",
+          "sha256": "dee657954c75fe1741d74ffaf64298156d9abe308f5d14f5ac54b708dfb08889"
+        },
+        {
+          "path": "TASK-LBRC-007A_GAMEDATA-VERIFY.json",
+          "sha256": "bc30b1e7fbb73459d30110d44efcfbe09d99469005ab08554d7151e5e2183d66"
+        }
+      ],
+      "verification": [
+        "JOB_GROWTH_49_FIELDS_MISMATCH_0",
+        "JOB_0004_NAME_HUNTER_PASS",
+        "GROWTH_KEYS_3_4_7_8_10_13_15_COMPLETE",
+        "GROWTH_FORMULA_ROWS_MATCH_PASS",
+        "EXPORT_SNAPSHOT_DIRECT_EDIT_0",
+        "SOURCE_CHANGE_0"
+      ],
+      "implemented_at": "2026-09-01T16:52:00+09:00",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [
+        "BOX-LBRC-004"
+      ],
+      "task_ids": [
+        "TASK-LBRC-007A"
+      ],
+      "result": "Partial",
+      "evidence": "Human Import / Fresh Export verification pending.",
+      "recorded_at": "2026-09-01T16:52:00+09:00"
     }
   ],
   "discussions": [
@@ -806,10 +843,11 @@
       "id": "TASK-LBRC-007",
       "box_id": "BOX-LBRC-004",
       "title": "Game/Studio combat value parityを検証する",
-      "status": "Doing",
-      "execution_order": 8,
+      "status": "Blocked",
+      "execution_order": 9,
       "depends_on": [
-        "TASK-LBRC-006"
+        "TASK-LBRC-006",
+        "TASK-LBRC-007A"
       ],
       "acceptance_criteria": "EVD-0001/EVD-0003はBalance期待値Baselineとして維持し、Production Characterの整数Stat契約を変更しない。seed固定で各Player職のLv50実Characterを生成してRuntime Evidence化し、job/level/実Stat/HP/MP/Attack/AGI/Accuracy/Magic Weapon Bonus/Evasion/Crit/Blockを復元可能に記録する。期待値Baselineと実Character成長結果の関係を別Gateで確認したうえで、同一の実Character入力に対するGame characterBattleValues / Game basic attack profile / Studio Formal Battleのcombat value parityを確認する。Monster EVD-0004/0005/0006経路は非回帰であること。TASK-LBRC-007 PASS前にseed7007 6v6再Evidenceを実行しない。",
       "work_type": "DEVELOPMENT_ONLY",
@@ -820,16 +858,16 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T16:30:00+09:00",
+      "updated_at": "2026-09-01T16:36:00+09:00",
       "blocking_reason": "EVD-0001/0003は小数の期待値Baseline（rounding NONE）だが、Production Game Character Saveは全STATS整数必須。Exact parityの比較対象semanticが未確定。",
-      "blocked_reason": ""
+      "blocked_reason": "Production Job Master / growth tableがEVD-0001 Authorityと不一致。TASK-LBRC-007A完了待ち。"
     },
     {
       "id": "TASK-LBRC-008",
       "box_id": "BOX-LBRC-004",
       "title": "Lv50 6v6をseed7007で再Evidence化する",
       "status": "Blocked",
-      "execution_order": 9,
+      "execution_order": 10,
       "depends_on": [
         "TASK-LBRC-007"
       ],
@@ -841,9 +879,9 @@
         "by": "",
         "at": ""
       },
-      "blocking_reason": "TASK-LBRC-007 Runtime Evidence / Game-Studio parity完了前は6v6再戦禁止。",
+      "blocking_reason": "TASK-LBRC-007 parity PASS前はseed7007 6v6再Evidence禁止。",
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T16:30:00+09:00"
+      "updated_at": "2026-09-01T16:36:00+09:00"
     },
     {
       "id": "TASK-LBRC-004B",
@@ -924,6 +962,28 @@
       },
       "created_at": "2026-09-01T13:02:00+09:00",
       "updated_at": "2026-09-01T13:05:00+09:00"
+    },
+    {
+      "id": "TASK-LBRC-007A",
+      "box_id": "BOX-LBRC-004",
+      "title": "Production Job Growth Game DataをEVD-0001 Authorityへ同期する",
+      "status": "Doing",
+      "execution_order": 8,
+      "depends_on": [
+        "TASK-LBRC-006"
+      ],
+      "acceptance_criteria": "Studio正規Game Dataの7職Job aptitudesをEVD-0001 Human-approved Job growthと一致させる。game_runtime.growth.outcomes_by_aptitudeはDEC-REORG-CHAR-002の一般成長式を表現し、EVD-0001で必要な適性3/4/15を含む全使用値を処理可能にする。正式Export後にExport/master/jobs.jsonとExport/system/adventure_settings.jsonを再検証し、7職×7Stat mismatch=0、missing growth key=0を確認する。Source変更を混在させない。",
+      "work_type": "",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T16:44:00+09:00"
+      },
+      "blocking_reason": "",
+      "created_at": "2026-09-01T16:36:00+09:00",
+      "updated_at": "2026-09-01T16:52:00+09:00",
+      "result_scope": "GAME_DATA_READY / AWAITING_HUMAN_IMPORT_AND_FRESH_EXPORT_VERIFICATION"
     }
   ],
   "checks": [
@@ -1229,6 +1289,29 @@
       "blocking": false,
       "created_at": "2026-09-01T16:05:00+09:00",
       "updated_at": "2026-09-01T16:05:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-007-JOB-GROWTH-AUTHORITY-001",
+      "title": "Production Job Growth / EVD-0001 Authority一致Gate",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-007",
+      "status": "Failed",
+      "result": "FAIL_CLOSED",
+      "evidence": "GKS-B841 Fresh Current: 7/7 Production Job Masters differ from EVD-0001 Job growth; Production growth table keys=7..13 while Authority requires values including 3,4,15. See EVD-LBRC-007A.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T16:36:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": true,
+      "created_at": "2026-09-01T16:36:00+09:00",
+      "updated_at": "2026-09-01T16:36:00+09:00"
     }
   ],
   "workflow": {
@@ -1324,6 +1407,18 @@
     {
       "at": "2026-09-01T16:30:00+09:00",
       "message": "Human approved DEC-LBRC-003. TASK-LBRC-007 Fail Closed issue is resolved by separating EVD Balance expectation values from seed-fixed Production integer Character values. TASK-LBRC-007 reopened as Doing without Source change; TASK-LBRC-008 remains Blocked until parity PASS."
+    },
+    {
+      "at": "2026-09-01T16:36:00+09:00",
+      "message": "TASK-LBRC-007 Runtime Evidence preflight found Production Game Data authority drift. All 7 Job Masters differ from EVD-0001 Human-approved Job growth, and Current growth table lacks aptitude values 3/4/15 required by the authority. Failed closed before seed-fixed Character generation. Added GAME_DATA_UPDATE TASK-LBRC-007A pending Human Approval; TASK-LBRC-007/008 remain Blocked."
+    },
+    {
+      "at": "2026-09-01T16:44:00+09:00",
+      "message": "Fresh Current GKS-B841 verified SPEC-V9-019-JOB-001 revision=2 and legacy Job growth wording=0. Human approved TASK-LBRC-007A. Execution failed closed before Game Data modification because the Fresh Current source ZIP contains only exported jobs/adventure_settings snapshots, not the canonical Studio Project Game Data. Export snapshots will not be reverse-edited. Awaiting Current Studio Project JSON authority."
+    },
+    {
+      "at": "2026-09-01T16:52:00+09:00",
+      "message": "TASK-LBRC-007A canonical Game Data correction prepared from Human-provided PRJ-GAS-V4. 7 jobs / 49 aptitude fields now match EVD-0001, JOB-0004 name is 狩人, and growth outcomes were regenerated from the approved general formula for Current-used aptitude values 3/4/7/8/10/13/15. rank_by_aptitude was intentionally left unchanged because no Current Authority defines ranks for 3/4/15. Awaiting Human import and Fresh Export verification."
     }
   ]
 }
