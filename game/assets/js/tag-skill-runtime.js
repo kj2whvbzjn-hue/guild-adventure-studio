@@ -24,7 +24,7 @@ function compileSkillRuntime(skill){
 
  const targetSource=runtime.targetContract||skill.target||{};
  const sideMap={SELF:'self',ALLY:'ally',ENEMY:'enemy',CORPSE:'corpse',POINT:'point'};
- const rangeMap={SINGLE:'single',ALL:'all',FRONT:'front',BACK:'back',RANDOM:'random',PIERCE:'pierce'};
+ const rangeMap={SINGLE:'single',ALL:'all',FRONT:'front',BACK:'back',RANDOM:'random'};
  const targetSide=sideMap[String(targetSource.side||'').toUpperCase()]||null;
  const range=rangeMap[String(targetSource.range||'').toUpperCase()]||null;
  if(!targetSide)errors.push(`runtimeContracts target.sideが無効です: ${targetSource.side||'(なし)'}`);
