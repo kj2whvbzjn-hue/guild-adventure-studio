@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-08-28T02:06:06.309Z"
+    "updated_at": "2026-09-01T06:43:07.513Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -2454,8 +2454,8 @@
       "id": "SPEC-V9-019-RANGE-001",
       "title": "RANGE / Target Expansion",
       "status": "Draft",
-      "summary": "base targetからfinal target setを生成する共通Range System。",
-      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n# 2. Current Formal Range\n\n- SINGLE\n- ALL\n- FRONT\n- BACK\n- RANDOM\n- PIERCE\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n## 2.1 Equipmentとの境界\n\n弓Equipmentの武器属性「射撃」はEquipment側のCombat Identityであり、\nRange、射程、対象範囲、前後列到達、Target Expansionを決定しない。\nこれらは本RANGE/Target/Battle仕様をOwnerとする。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n# 3. Castとの関係\n\nAI予約時にはTargetを固定しない。\n行動実行開始時の開始時Validation成功後、Cast開始と同じ境界でbase TargetとRANGE展開後のfinal target setを固定する。\nCast完了時は固定Targetだけを再検証する。\n無効・死亡・Range外のTargetはfinal target setから除外する。\n別Targetへの再取得、欠員補充、新規Target追加はしない。\nCast開始後にRangeへ入った対象は追加しない。\n有効Targetが残らない場合は不発とし、Cost/CDを発生させない。\n`castTime=0` でもTarget固定→完了時再検証の境界は省略しない。\n\n# 4. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 5. Future\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n\n---\n\n## 根拠・統合元\nBOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版 / Current Formal Registry",
+      "summary": "前衛/後衛隊列とSINGLE/FRONT/BACK/RANDOM/ALLの5 Range、Target Expansion、隊列Damage、Cover、強制前進をCurrent仕様として統合する。PIERCEは廃止。",
+      "body": "# 1. Owner\n\nRANGEは基準Targetから最終Target群を生成する。\nBattle数式やAI判断をRANGE内へ重複実装しない。\n\n```text\nbase target\n→ target eligibility\n→ RANGE expansion\n→ exclusion\n→ final target set\n→ Battle\n```\n\n配置位置は「前衛 / 後衛」とする。\n「前列」はRange FRONTの自然言語名としてのみ使用し、配置位置の意味では使用しない。\n「後列」はCurrent仕様用語として使用しない。\n\n# 2. Current Formal Range\n\nCurrent Rangeは次の5種だけとする。\n\n- SINGLE: 敵前衛の生存Unitから1体。後衛は選択不可。\n- FRONT（前列）: 敵前衛を対象とする範囲。\n- BACK: 敵前衛・後衛の生存Unitから1体を選択可能な単体Range。\n- RANDOM: 前衛/後衛のRange制限を除外した有効Target母集団から抽選する。複数抽選では同一Unitの重複を許可する。\n- ALL（全体）: 前衛・後衛を含む全有効対象。\n\nPIERCEは廃止する。\n新規Skill生成、新規仕様、Current Runtime入力として受理しない。\n\nTarget side:\nSELF / ALLY / ENEMY / CORPSE / POINT。\n\n`randomCount` / `excludeSelf` をAuthoring TargetのOptional fieldとして扱える。\n\n## 2.1 味方Target\n\nHeal / Barrier等の味方Targetは前衛・後衛を問わず選択可能とする。\n\n## 2.2 Equipmentとの境界\n\n弓Equipmentの武器属性「射撃」はEquipment側のCombat Identityであり、\nRange、射程、対象範囲、前後衛到達、Target Expansionを決定しない。\nこれらは本RANGE/Target/Battle仕様をOwnerとする。\n\n# 3. 隊列\n\n- 初期隊列は拠点で編集する。\n- 前衛/後衛の人数配分は自由とする。\n- 前衛の生存Unitが0になった時点で、生存後衛は全員、自動かつ強制的に前衛へ移動する。\n- 戦闘中の任意操作または通常Skillによる前衛⇔後衛の自由移動は採用しない。\n- 戦闘中の隊列変更は前衛全滅時の強制前進のみとする。\n\nMonsterは標準の前衛/後衛初期配置を持つ。\nEncounter指定がある場合はEncounterを優先し、指定がない場合はMonster標準配置を使用する。\n\n# 4. 隊列Damage\n\n後衛にいる攻撃者がDamageを与える場合、Rangeごとの隊列補正は次のとおり。\n\n- SINGLE: 50%\n- FRONT: 50%\n- RANDOM: 50%\n- BACK: 100%\n- ALL: 100%\n\nBACK / ALLでは隊列Damage減衰判定そのものを行わない。\nSINGLE / FRONTは後衛をTargetできない。\nRANDOMで後衛が抽選されても防御側の後衛減衰は行わない。\n防御側の後衛を常時50%減衰する独立ルールは採用しない。\n\n# 5. Cover\n\n- 単体攻撃は元Targetが後衛でもCover可能。\n- SINGLE / BACKはCover対象。\n- FRONT / ALL等の範囲攻撃はCover対象外。\n- RANDOM複数抽選は各抽選を単体Target判定として扱い、各抽選ごとに独立してCover判定する。\n- 同一Unitが重複抽選された場合も、抽選ごとに独立判定する。\n\n# 6. Castとの関係\n\nAI予約時にはTargetを固定しない。\n行動実行開始時の開始時Validation成功後、Cast開始と同じ境界でbase TargetとRANGE展開後のfinal target setを固定する。\n\nCast完了時は固定Targetだけを再検証する。\n無効・死亡・Range外のTargetはfinal target setから除外する。\n別Targetへの再取得、欠員補充、新規Target追加はしない。\nCast開始後にRangeへ入った対象は追加しない。\n有効Targetが残らない場合は不発とし、Cost/CDを発生させない。\n`castTime=0` でもTarget固定→完了時再検証の境界は省略しない。\n\n# 7. V9 Range Budget\n\nV9資料のSelf/Single/Front/Back/Row/Area/All等のRange Costは、\n旧Skill Budget系のBalance Baselineとして保持する。\n\nCurrent Formal SkillのBudget計算はCurrent `skill-budget-rules` を優先し、\n旧Range Budgetを二重加算しない。\n\n# 8. Future / 非Current\n\nLOS/遮蔽物はCurrent不採用。\nSUMMON/movement/knockback等をRange機能として混ぜない。\n廃止済みPIERCEをCurrent Rangeへ戻さない。\n\n---\n\n## 根拠・統合元\n\n- 後発Human Approved `SPEC-FRM-001` Rev2 の隊列・Range・Damage・Cover semantics\n- `DEC-R42-CAST-001`\n- `DEC-REORG-EQUIP-BOW-QUIVER-001`\n- BOX-R7-009 RANGE Budget / BOX-R7-010 RANGE正式版\n",
       "decision_refs": [
         "DEC-R42-CAST-001",
         "DEC-REORG-EQUIP-BOW-QUIVER-001"
@@ -2464,7 +2464,7 @@
         "SPEC-V9-019-SKILL-003",
         "SPEC-V9-019-BATTLE-002"
       ],
-      "acceptance_criteria": "- Current 6 Range typeをTarget expansionとして実装できる。\n- AI予約時にはTarget固定せず、行動実行開始時のCast開始境界でbase Target / final target setを固定する。\n- Cast完了時に固定Targetだけを再検証し、無効・死亡・Range外を除外できる。\n- Target再取得・欠員補充・新規追加をしない。\n- 有効Targetなしの不発ではCost/CDを発生させない。\n- 旧Range CostをCurrent Budgetへ二重適用しない。\n- 弓の射撃属性を理由にEquipment側でRange/Targetingを上書きしない。",
+      "acceptance_criteria": "- Current RangeはSINGLE / FRONT / BACK / RANDOM / ALLの5種のみで、PIERCEをCurrent入力として受理しない。\n- SINGLE/FRONT/BACK/RANDOM/ALLのTarget意味が一意である。\n- 後衛攻撃者のDamage減衰はSINGLE/FRONT/RANDOM=50%、BACK/ALL=100%である。\n- 前衛全滅時に生存後衛が全員強制前進し、戦闘中の任意隊列移動を採用しない。\n- 味方Targetは前衛/後衛を問わず選択可能である。\n- CoverはSINGLE/BACKおよびRANDOM各抽選へ適用し、FRONT/ALLには適用しない。\n- RANDOM複数抽選は同一Unitの重複を許可し、各抽選ごとに独立してCover判定できる。\n- Monster標準配置を既定値とし、Encounter指定がある場合だけ上書きする。\n- AI予約時にはTarget固定せず、行動実行開始時のCast開始境界でbase Target / final target setを固定する。\n- Cast完了時に固定Targetだけを再検証し、Target再取得・欠員補充・新規追加をしない。\n- 旧Range CostをCurrent Budgetへ二重適用しない。\n- 弓の射撃属性を理由にEquipment側でRange/Targetingを上書きしない。",
       "system_node_id": "SYS-V9-RANGE",
       "contract_ids": [
         "CONTRACT-V9-BATTLE-TO-RANGE",
@@ -2473,11 +2473,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 2,
+      "revision": 3,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-26T11:19:10+09:00"
+      "updated_at": "2026-09-01T15:40:00+09:00"
     },
     {
       "id": "SPEC-V9-019-TAG-001",
@@ -29849,6 +29849,10 @@
       "at": "2026-08-28T11:04:00+09:00",
       "type": "MultiHitHitApplyB799FreshCurrentCompleted",
       "summary": "Human Apply後Fresh Current GKS-B799を確認。package_manifest一致、Quick 11/11、Full 26/26、Critical 130 checks PASS。TASK-REORG-MULTIHIT-HIT-APPLY-CONFORMANCE-001-P6および親TaskをDoneへ更新。"
+    },
+    {
+      "at": "2026-09-01T15:40:00+09:00",
+      "message": "TASK-LBRC-005 Range Specification synchronization rebuilt from Human-provided current DEV-V9-REORG-019 baseline. SPEC-V9-019-RANGE-001 synchronized to later Human Approved SPEC-FRM-001 semantics: Current 5 Range, PIERCE abolished, formation/damage/cover/forced-advance semantics integrated. DEC-FRM-* were intentionally not added to decision_refs because their Decision records are not registered in this REORG workspace; existing local Decision refs remain valid."
     }
   ],
   "authority": {
