@@ -10,7 +10,7 @@
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T05:21:21.584Z"
+    "updated_at": "2026-09-01T06:01:56.781Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-LBRC-002",
     "work_box_id": "BOX-LBRC-002",
-    "theme": "TASK-LBRC-004 Human Approval Gate",
-    "goal": "TASK-LBRC-003 GKS-B838完了後、Historical簡易BattleのProduction残存削除TASK-LBRC-004のHuman Approval待ち。"
+    "theme": "TASK-LBRC-004 GKS-B839 Human Apply Gate",
+    "goal": "TASK-LBRC-004 Source修正と更新ZIP GateはPASS。GKS-B838→GKS-B839直接更新ZIPをHuman Applyし、Fresh Current GKS-B839確認後にTaskをDoneへ確定する。非Formal monster fallbackのProduction到達性はTASK-LBRC-006でFail Closed監査する。"
   },
   "project_rules": [
     {
@@ -209,6 +209,66 @@
       "result": "Applied",
       "evidence": "Formal Combat fixed-value fallback cleanup completed. Formal generated Monster path is strict; MP=0 is preserved and missing required combat values fail closed. Fixed Demo Monster behavior remains isolated and is not used as Formal Authority. Validation: JavaScript syntax 306/306 PASS; protected active tests PASS without modification; Studio update Accept 14/14 PASS. Artifact: GKS-B838_LBRC-TASK003_STUDIO-UPDATE_FIXED.zip sha256=809047caf476c130e6ef874ce97f67e01b9c97e0421622387df70ce46f6490dd.",
       "recorded_at": "2026-09-01T14:32:00+09:00"
+    },
+    {
+      "id": "IMPL-LBRC-004",
+      "task_id": "TASK-LBRC-004",
+      "status": "ReadyForHumanApply",
+      "work_type": "SOURCE_UPDATE",
+      "summary": "Production adventure-battle-core.jsからHistorical simulateBasicBattle / normalizePartySnapshot / seededRandomを削除し、Production exportから旧簡易Battle契約を撤去。必要なHistorical simulationはtests/helpers/historical-basic-battle.jsへ隔離。monsterStats→expandFormation Production経路は変更なし。",
+      "artifacts": [
+        {
+          "path": "assets/shared/js/adventure-battle-core.js",
+          "sha256": "23aa1b2f129f725ecda4476acea71c73f40f8de3c5c3e3729f738a4aec9e2e34"
+        },
+        {
+          "path": "tests/helpers/historical-basic-battle.js",
+          "sha256": "cf95545dd84acda82769f086a1cddc8baec14f10b28073e97252df1d91cbaa0b"
+        },
+        {
+          "path": "tests/adventure-battle-core.js",
+          "sha256": "19fcd603c79a58f4be08533e3f4e4eb32a2e07258d29cf0f04ad1bf38cdaf3d0"
+        },
+        {
+          "path": "tests/adventure-live-ops-monster-random-event-e2e-ga-b486-185-gks-b593.js",
+          "sha256": "2e2aa2f967a0da6596e7d0b694ceb1c50f7829d4e0be947507ffff0573c62691"
+        },
+        {
+          "path": "guild-adventure-studio-sub_LBRC-TASK004_GKS-B839_DIRECT-UPDATE.zip",
+          "sha256": "ac4725604934c2c733c9a085694b096968e0b9533fcc27dfec168af659c256ea"
+        },
+        {
+          "path": "TEST_CHANGE_APPROVAL_TASK-LBRC-004_GKS-B839.json",
+          "sha256": "5b6be90c03ae5fc451a9d5b62cb73ec0a9240f9b09d65fe336837be4396dc17c"
+        }
+      ],
+      "verification": [
+        "PRODUCTION_HISTORICAL_SYMBOL_SCAN_PASS",
+        "adventure-battle-core PASS",
+        "adventure-live-ops-monster-random-event-e2e PASS",
+        "adventure-battle-runtime-integration PASS",
+        "TASK_FRM_004_FORMATION_RANGE_CONFORMANCE_PASS",
+        "JAVASCRIPT_SYNTAX_OK files=287",
+        "Production monster callers preserved: app-runtime expandFormation / battle-control expandFormation / Studio monsterStats",
+        "GKS-B838->GKS-B839 forward build",
+        "SOURCE QUICK 11/11 PASS",
+        "SOURCE_UPDATE_APPLIED_STATE_OK copied=27 deleted=0",
+        "studio-update.json root present",
+        "Export/development-project-data excluded from update ZIP",
+        "artifact_id=GKS-B839-90df1e629cff"
+      ],
+      "implemented_at": "2026-09-01T14:33:29+09:00",
+      "studio_build": "GKS-B839",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-LBRC-002"
+      ],
+      "task_ids": [
+        "TASK-LBRC-004"
+      ],
+      "result": "Applied",
+      "evidence": "Production caller=0をgrepで機械確認後にHistorical symbolsをProductionから物理削除。compat wrapperなし。Historical test-only helperへ隔離。",
+      "recorded_at": "2026-09-01T14:33:29+09:00"
     }
   ],
   "discussions": [
@@ -253,6 +313,19 @@
       ],
       "created_at": "2026-09-01T13:02:00+09:00",
       "updated_at": "2026-09-01T13:05:00+09:00",
+      "artifact_note": ""
+    },
+    {
+      "id": "DISC-LBRC-TASK004-REVIEW-002",
+      "title": "TASK-004途中レビュー反映",
+      "status": "Resolved",
+      "summary": "Historical削除方向はPASS。非Formal monster 100/10/10 fallbackはProduction到達性未証明のためTASK-LBRC-006へ明示Gate化。TASK-004はHuman Apply/Fresh Current確認前にDoneとしない。",
+      "body": "レビューでは simulateBasicBattle / normalizePartySnapshot削除、monsterStats→expandFormation維持、Formal Monster Fail Closedは妥当とされた。残論点は非Formal monster fallbackのProduction到達性。推測削除せずTASK-LBRC-006で機械監査する。更新ZIPはStudio直接更新契約に従いroot studio-update.json、GKS-B838→B839、Export/development-project-data非同梱へ修正。",
+      "created_at": "2026-09-01T14:40:00+09:00",
+      "updated_at": "2026-09-01T14:40:00+09:00",
+      "open_questions": "",
+      "conclusion": "",
+      "related_discussion_ids": [],
       "artifact_note": ""
     }
   ],
@@ -550,21 +623,23 @@
       "id": "TASK-LBRC-004",
       "box_id": "BOX-LBRC-002",
       "title": "Historical簡易BattleのProduction残存を削除する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 4,
       "depends_on": [
         "TASK-LBRC-001"
       ],
-      "acceptance_criteria": "simulateBasicBattle / normalizePartySnapshot等のHistorical簡易Battle系のみを対象にProduction caller=0を機械確認し、本番Runtimeから削除する。Production使用中のmonsterStats→expandFormationは本Taskで削除しない。必要なHistorical testはtestsへ隔離しcompat wrapperを残さない。",
+      "acceptance_criteria": "simulateBasicBattle / normalizePartySnapshot等のHistorical簡易Battle系のみを対象にProduction caller=0を機械確認し、本番Runtimeから削除する。Production使用中のmonsterStats→expandFormationは本Taskで削除しない。必要なHistorical testはtestsへ隔離しcompat wrapperを残さない。 Human Apply後のFresh CurrentでGKS-B839およびHistorical symbol Production 0件を再確認するまではDoneにしない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T14:33:29+09:00"
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:43:00+09:00"
+      "updated_at": "2026-09-01T14:40:00+09:00",
+      "result_scope": "SOURCE_READY / AWAITING_HUMAN_APPLY_AND_FRESH_SOURCE_VERIFICATION",
+      "blocked_reason": ""
     },
     {
       "id": "TASK-LBRC-005",
@@ -599,7 +674,7 @@
         "TASK-LBRC-004B",
         "TASK-LBRC-005"
       ],
-      "acceptance_criteria": "旧Actor式、Production Combat固定fallback、Current PIERCE受理、legacy/compat/fallback/shim/adapter延命を検出する静的Gateを追加する。加えてmissing/0実行Gateを追加し、0合法fieldが固定fallbackへ変化しないこと、必須欠損がAuthorityどおりFail Closedすることを確認する。欠損時仕様未決のfieldがあればGate FAILで停止・報告する。",
+      "acceptance_criteria": "旧Actor式、Production Combat固定fallback、Current PIERCE受理、legacy/compat/fallback/shim/adapter延命を検出する静的Gateを追加する。加えてmissing/0実行Gateを追加し、0合法fieldが固定fallbackへ変化しないこと、必須欠損がAuthorityどおりFail Closedすることを確認する。欠損時仕様未決のfieldがあればGate FAILで停止・報告する。 monsterStats()非Formal分岐の maxHp||100 / attack||10 / agi||10 についてProduction到達性を機械確認し、到達可能なら削除・Fail Closed化、Development-only到達不能ならその証拠を残す。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -964,6 +1039,54 @@
       "blocking": false,
       "created_at": "2026-09-01T14:32:00+09:00",
       "updated_at": "2026-09-01T14:32:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-HIST-001",
+      "title": "Historical簡易Battle Production残存0 Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-004",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "assets/game/studio全域で simulateBasicBattle / normalizePartySnapshot のProduction参照0件。Production adventure-battle-core exportから両symbolと専用seededRandomを削除。必要な旧E2Eだけtests/helpersへ隔離。monsterStats/expandFormationのProduction callersは維持。",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T14:33:29+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T14:33:29+09:00",
+      "updated_at": "2026-09-01T14:40:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-004-APPLY-001",
+      "title": "TASK-LBRC-004 GKS-B839 Human Apply / Fresh Current Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-004",
+      "status": "Pending",
+      "result": "",
+      "evidence": "Direct update artifact GKS-B839 prepared and preflight PASS. Human Apply後にFresh Current GKS-B839とProduction Historical symbol 0件を再確認する。",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [
+        "CHK-LBRC-HIST-001"
+      ],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T14:40:00+09:00",
+      "updated_at": "2026-09-01T14:40:00+09:00"
     }
   ],
   "workflow": {
@@ -1035,6 +1158,14 @@
     {
       "at": "2026-09-01T14:32:00+09:00",
       "message": "TASK-LBRC-003 completed on GKS-B838. Human excluded fixed Demo Monster from the correction scope. Formal generated Monster/player/studio combat ingestion now removes fixed-value missing fallbacks while preserving legal zero values. Protected tests were not modified; Studio update Accept passed 14/14."
+    },
+    {
+      "at": "2026-09-01T14:33:29+09:00",
+      "message": "TASK-LBRC-004 completed by Human instruction. Production caller=0 confirmed for simulateBasicBattle/normalizePartySnapshot; Historical basic battle code removed from Production adventure-battle-core and isolated under tests/helpers. Production monsterStats→expandFormation preserved. Relevant runtime/integration tests and JS syntax checks PASS."
+    },
+    {
+      "at": "2026-09-01T14:40:00+09:00",
+      "message": "TASK-LBRC-004途中レビューとStudio反映エラーを反映。Task DoneをHuman Apply待ちDoingへ戻し、GKS-B838→GKS-B839直接SOURCE_UPDATEを再構成。root studio-update.json、target/baseline hash binding、外部TEST_CHANGE_APPROVAL、Export/development-project-data非同梱。Source Quick 11/11 PASS、Applied-state Gate PASS。非Formal monster fallback到達性はTASK-LBRC-006へ明示。"
     }
   ]
 }
