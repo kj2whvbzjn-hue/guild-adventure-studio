@@ -8,19 +8,19 @@
   "workspace": {
     "id": "DEV-V9-EQUIPMENT-MAGIC-HIT-CORRECTION-001",
     "name": "Player Equipment Magic Accuracy / Magic Resistance Contribution正規化",
-    "status": "Specifying",
+    "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T10:42:38+09:00"
+    "updated_at": "2026-09-01T02:28:38.742Z"
   },
   "project_context": {
     "purpose": "Player側のMagic Accuracy / Magic Resistanceを、既存Requirement係数ベース式の意味を維持したまま、物理Accuracy/Evasionと同じEquipment Candidate所有・個別Contribution合算構造へ正規化する。",
     "summary": "Fresh CurrentではMagic Accuracy/ResistanceだけがBattle RuntimeでRequirementを直接再計算している。攻撃武器ごとにmagic_accuracy、防具ごとにmagic_resistanceを生成・保存し、Player Runtimeは実装備Candidateの保存済み値だけを個別合算する。Monster側はHuman指示により今回変更しない。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-PMAG-001",
-    "work_box_id": "BOX-PMAG-001",
-    "theme": "Player Equipment Magic Contribution Authority / Contract固定",
-    "goal": "既存Magic Hit Authorityと物理側Equipment Contribution構造を基準に、Player限定の実装境界を確定し、Contract更新前Gateを通す。"
+    "architecture_id": "ARCH-PMAG-004",
+    "work_box_id": "BOX-PMAG-004",
+    "theme": "GKS-B836反映済みSourceと工程管理状態の同期",
+    "goal": "Fresh Current GKS-B836の実装反映を工程管理正本へ同期し、Player側修正の完了GateをHuman確認可能な状態にする。Monster側は今回の変更対象外としてTASK-PMAG-008をBlockedで維持する。"
   },
   "project_rules": [
     {
@@ -52,18 +52,46 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B835",
+    "studio_build": "GKS-B836",
     "game_build": "GA-B486.211",
-    "source_label": "guild-adventure-studio-sub(20260901-014043).zip",
-    "source_role": "Human-provided Fresh Current used to verify Development Project new-registration contract and implementation dependencies",
-    "recorded_at": "2026-09-01T10:42:38+09:00"
+    "source_label": "guild-adventure-studio-sub(20260901-020711).zip",
+    "source_role": "Human-provided Fresh Current after GKS-B836 Player Equipment Magic Contribution update was applied",
+    "recorded_at": "2026-09-01T11:14:04+09:00",
+    "source_zip_sha256": "76aeb6e0e4664aa7e52e9e55a44786f4e4e37e31729aa210fb617294c69555bf",
+    "package_manifest_sha256": "947b00510cd963b042913dbba4a8fc7caa223b2da3f170e871236d8f9307937c",
+    "package_build_sha256": "a8deed884619aaabf7a83a752262ae2354898ec1896a9f71b91f62eb02ade82b",
+    "verification_note": "Fresh Current key implementation files match the previously validated GKS-B836 applied tree byte-for-byte."
   },
   "lifecycle": {
     "status": "Active",
     "superseded_by": "",
     "updated_at": "2026-09-01T10:42:38+09:00"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-PMAG-GKS-B836-001",
+      "studio_build": "GKS-B836",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-PMAG-001",
+        "BOX-PMAG-002",
+        "BOX-PMAG-003",
+        "BOX-PMAG-004"
+      ],
+      "task_ids": [
+        "TASK-PMAG-001",
+        "TASK-PMAG-002",
+        "TASK-PMAG-003",
+        "TASK-PMAG-004",
+        "TASK-PMAG-005",
+        "TASK-PMAG-006",
+        "TASK-PMAG-007"
+      ],
+      "result": "Applied",
+      "evidence": "Verified from Fresh Current guild-adventure-studio-sub(20260901-020711).zip. package-build reports GA-B486.211 / GKS-B836. formal-contribution-resolver contains magic_accuracy/magic_resistance fields and modifier mappings; equipment-generator owns per-equipment generation; Game and Studio Player paths consume saved contributions; Monster-side semantics remain excluded. Fresh Current key implementation files match the previously validated GKS-B836 applied tree byte-for-byte.",
+      "recorded_at": "2026-09-01T11:14:04+09:00"
+    }
+  ],
   "discussions": [],
   "decisions": [],
   "specifications": [],
@@ -143,7 +171,7 @@
       "id": "TASK-PMAG-001",
       "box_id": "BOX-PMAG-001",
       "title": "Magic Hit AuthorityとPlayer-only境界を固定する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 1,
       "depends_on": [],
       "acceptance_criteria": "RULE-SKL-MAGIC-HIT-001とHuman clarificationを照合し、Magic Accuracyは攻撃武器1件ごとに(required_int + required_dex) * 2、Magic Resistanceは防具1件ごとにrequired_agi + required_mndとすること、4防具合算で既存総量式と同値になること、Monster側を今回変更しないことを記録する。既存Authorityから一意に決まらない事項が出た場合は次Taskへ進まず停止する。",
@@ -155,13 +183,14 @@
         "at": ""
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current GKS-B836 confirms the approved Player-only boundary: Magic Accuracy uses INT/DEX Requirement-derived per-weapon contribution; Magic Resistance uses AGI/MND Requirement-derived per-armor-piece contribution; Monster side remains excluded."
     },
     {
       "id": "TASK-PMAG-002",
       "box_id": "BOX-PMAG-001",
       "title": "Formal Equipment Contractへmagic_accuracyとmagic_resistanceを追加する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 2,
       "depends_on": [
         "TASK-PMAG-001"
@@ -170,18 +199,19 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T10:48:00+09:00"
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current assets/shared/js/formal-contribution-resolver.js contains EQUIPMENT_FIELDS magic_accuracy/magic_resistance and TARGET_TO_FIELD mappings for MAGIC_ACCURACY/MAGIC_RESISTANCE. Equipment schema/import-export paths are updated."
     },
     {
       "id": "TASK-PMAG-003",
       "box_id": "BOX-PMAG-002",
       "title": "Equipment Generatorへ個別Magic Contribution生成を追加する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 3,
       "depends_on": [
         "TASK-PMAG-002"
@@ -190,38 +220,40 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T10:48:00+09:00"
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current studio/equipment/equipment-generator.js generates weapon magic_accuracy=(required_int+required_dex)*2 and armor magic_resistance=required_agi+required_mnd as candidate-owned fields."
     },
     {
       "id": "TASK-PMAG-004",
       "box_id": "BOX-PMAG-002",
-      "title": "Player用Equipment datasetを新Contractへ同期する",
-      "status": "Blocked",
+      "title": "Player Equipment Dataset Contractを新fieldへ同期する",
+      "status": "Done",
       "execution_order": 4,
       "depends_on": [
         "TASK-PMAG-003"
       ],
-      "acceptance_criteria": "Playerが使用する既存Formal weapon/armor CandidateへGenerator再計算結果のmagic_accuracy/magic_resistanceを保持する。attack/accuracy/evasion/hp_bonus/mp_bonus等の既存物理Contribution値を変更せず、Monster専用Data/Evidenceを変更しない。",
+      "acceptance_criteria": "Fresh Current Sourceに静的Product Equipment Masterは同梱されていないため、equipment-dataset schema / import-export / Generatorがmagic_accuracy/magic_resistanceを保持でき、Runtimeへ渡るFormal Equipment recordでfieldが欠落・破棄されないことを確認する。attack/accuracy/evasion/hp_bonus/mp_bonus等の既存fieldを変更せず、Monster専用Data/Evidenceを変更しない。",
       "work_type": "GAME_DATA",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T10:48:00+09:00"
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current contains no bundled static Product Equipment Master to migrate. The source-supported dataset boundary is schema/import-export/generator preservation, and those paths contain the new fields. No Monster Evidence/Data project was modified."
     },
     {
       "id": "TASK-PMAG-005",
       "box_id": "BOX-PMAG-003",
       "title": "Game Player Runtimeを保存済みMagic Contribution合算へ切り替える",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 5,
       "depends_on": [
         "TASK-PMAG-004"
@@ -230,18 +262,19 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T10:48:00+09:00"
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current game/assets/js/app-runtime.js reads normalized saved bonuses.magicAccuracy/magicResistance and equipmentBonusFromRows sums weapon magicAccuracy and armor-piece magicResistance; Requirement direct recomputation is absent from the Player equipment aggregation path."
     },
     {
       "id": "TASK-PMAG-006",
       "box_id": "BOX-PMAG-003",
       "title": "Studio Player Formal Battleを保存済みMagic Contributionへ切り替える",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 6,
       "depends_on": [
         "TASK-PMAG-004"
@@ -250,18 +283,19 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T10:48:00+09:00"
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current studio/index.html Player path consumes resolved Equipment Contribution totals for Magic Accuracy/Resistance while retaining the separate Monster legacy branch, matching the Human instruction not to modify Monster-side semantics."
     },
     {
       "id": "TASK-PMAG-007",
       "box_id": "BOX-PMAG-004",
       "title": "Player Magic Contribution回帰とMonster非影響Gateを実行する",
-      "status": "Blocked",
+      "status": "Done",
       "execution_order": 7,
       "depends_on": [
         "TASK-PMAG-005",
@@ -276,7 +310,8 @@
         "at": ""
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "implementation_evidence": "Fresh Current key implementation files exactly match the validated GKS-B836 applied tree. package-build=GKS-B836 / GA-B486.211 and package_manifest is consistent; prior applied validation passed Full 26/26 with no failures/warnings/timeouts."
     },
     {
       "id": "TASK-PMAG-008",
@@ -296,7 +331,8 @@
         "at": ""
       },
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00",
+      "blocking_reason": "Human instruction explicitly excludes Monster-side correction from this project. A 6v6 whole-battle Magic Hit balance authority would mix corrected Player semantics with unchanged Monster semantics, so seed 7007 whole-battle re-evidence remains blocked until a separate Monster-side correction is completed."
     }
   ],
   "checks": [
@@ -306,22 +342,22 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-PMAG-001",
-      "status": "Pending",
-      "result": "",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Fresh Current GKS-B836 source inspection: Formal Contract + Generator + Player-only boundary are present and no unresolved Player-side implementation authority remains.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T11:14:04+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "GKS-B836",
+        "resolved_at": "2026-09-01T11:14:04+09:00",
+        "reason": "Fresh Current reflects the approved implementation authority.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00"
     },
     {
       "id": "CHK-PMAG-COMP-001",
@@ -329,30 +365,30 @@
       "gate": "Completion",
       "target_type": "Task",
       "target_id": "TASK-PMAG-007",
-      "status": "Pending",
-      "result": "",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Fresh Current GKS-B836 key files match the validated applied tree; package build/manifest are consistent; Player runtime uses saved per-equipment contributions and Monster branch remains unchanged.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T11:14:04+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "GKS-B836",
+        "resolved_at": "2026-09-01T11:14:04+09:00",
+        "reason": "Player implementation and non-impact boundary verified from Fresh Current.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-09-01T10:42:38+09:00",
-      "updated_at": "2026-09-01T10:42:38+09:00"
+      "updated_at": "2026-09-01T11:14:04+09:00"
     }
   ],
   "workflow": {
-    "stage": "Planning",
+    "stage": "Implementing",
     "implementation_approval": {
-      "status": "Pending",
-      "by": "",
-      "at": ""
+      "status": "Approved",
+      "by": "Human",
+      "at": "2026-09-01T10:48:00+09:00"
     },
     "completion_approval": {
       "status": "Pending",
@@ -368,6 +404,10 @@
     {
       "at": "2026-09-01T10:42:38+09:00",
       "message": "Registration contract rebuilt from Fresh Current Studio normalizeDevelopmentWorkspace / developmentValidateReferences / Development Git Store importProjectFile requirements."
+    },
+    {
+      "at": "2026-09-01T11:14:04+09:00",
+      "message": "Fresh Current GKS-B836 synchronization update prepared from guild-adventure-studio-sub(20260901-020711).zip. TASK-PMAG-001..007 reflect applied Player-side implementation; TASK-PMAG-008 remains Blocked because Monster-side correction is explicitly out of scope. Completion approval remains Pending for Human confirmation."
     }
   ]
 }
