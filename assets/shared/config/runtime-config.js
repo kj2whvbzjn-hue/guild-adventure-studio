@@ -1,7 +1,7 @@
-/* Shared runtime/data configuration — GA-B486.211 / GKS-B841 */
+/* Shared runtime/data configuration — GA-B486.211 / GKS-B842 */
 window.GA_PROJECT_CONFIG = Object.freeze({
   gameBuild: "GA-B486.211",
-  studioBuild: "GKS-B841",
+  studioBuild: "GKS-B842",
   skillExportUrl: '../Export/skill/skills.json?v=486211b841',
   equipmentExportUrl: '../Export/equipment/equipment.json?v=486211b841',
   jobExportUrl: '../Export/master/jobs.json?v=486211b841',
