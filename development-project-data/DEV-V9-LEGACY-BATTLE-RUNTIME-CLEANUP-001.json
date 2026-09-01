@@ -10,7 +10,7 @@
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T06:55:58.133Z"
+    "updated_at": "2026-09-01T07:17:08.405Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-LBRC-004",
     "work_box_id": "BOX-LBRC-004",
-    "theme": "TASK-LBRC-006 Legacy Zero静的/実行Gate",
-    "goal": "Fresh Current GKS-B840でTASK-LBRC-004/005反映を確認済み。次は旧Actor式、Production Combat固定fallback、Current PIERCE受理、legacy/compat/fallback/shim/adapter延命を検出する静的Gateとmissing/0実行Gateを追加し、monsterStats非Formal fallbackのProduction到達性を機械確認する。"
+    "theme": "TASK-LBRC-006 GKS-B841 Human Apply Gate",
+    "goal": "Legacy Zero static/runtime GateとProduction-reachable non-Formal Monster fallback Fail Closed修正はGKS-B841候補でFull 26/26 PASS。Human Apply後のFresh Current GKS-B841でGate/Sourceを再確認してTASK-LBRC-006をDoneへ確定する。"
   },
   "project_rules": [
     {
@@ -305,6 +305,20 @@
       "result": "Applied",
       "evidence": "Fresh Current B840 verified: game/assets/js/tag-skill-runtime.js has no PIERCE mapping; DEV-V9-REORG-019 SPEC-V9-019-RANGE-001 revision=3 is synchronized to Current 5 Range / PIERCE abolished. Prior invalid DEC-FRM-* decision_refs are absent; local valid refs only.",
       "recorded_at": "2026-09-01T15:44:00+09:00"
+    },
+    {
+      "id": "IMPL-LBRC-006-B841",
+      "studio_build": "GKS-B841",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-LBRC-004"
+      ],
+      "task_ids": [
+        "TASK-LBRC-006"
+      ],
+      "result": "Partial",
+      "evidence": "SOURCE_UPDATE candidate prepared. Production-reachable non-Formal Monster fixed fallback removed from adventure-battle-core; Formal Adventure Battle non-Formal/maxMp=100 fallback removed from battle-control; required Legacy Zero regression Gate registered. Historical basic battle fallback behavior remains tests-only. Protected test change external approval prepared. Applied-state Full 26/26 PASS. Human Apply verification pending.",
+      "recorded_at": "2026-09-01T16:05:00+09:00"
     }
   ],
   "discussions": [
@@ -702,7 +716,7 @@
       "id": "TASK-LBRC-006",
       "box_id": "BOX-LBRC-004",
       "title": "Legacy Zero静的Gateを追加する",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 7,
       "depends_on": [
         "TASK-LBRC-002",
@@ -715,13 +729,14 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T15:57:00+09:00"
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T15:44:00+09:00",
-      "blocked_reason": ""
+      "updated_at": "2026-09-01T16:05:00+09:00",
+      "blocked_reason": "",
+      "result_scope": "SOURCE_READY / AWAITING_HUMAN_APPLY_AND_FRESH_SOURCE_VERIFICATION"
     },
     {
       "id": "TASK-LBRC-007",
@@ -877,7 +892,7 @@
       "target_id": "TASK-LBRC-006",
       "status": "Pending",
       "result": "",
-      "evidence": "",
+      "evidence": "GKS-B841 candidate preflight PASS. Human Apply後のFresh CurrentでLegacy Zero Gateを再実行して確定する。",
       "checked_by": "",
       "checked_at": "",
       "resolves_check_ids": [],
@@ -890,7 +905,7 @@
       },
       "blocking": false,
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T16:05:00+09:00"
     },
     {
       "id": "CHK-LBRC-SPEC-001",
@@ -1125,6 +1140,29 @@
       "blocking": false,
       "created_at": "2026-09-01T14:40:00+09:00",
       "updated_at": "2026-09-01T15:44:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-006-PREFLIGHT-001",
+      "title": "TASK-LBRC-006 Legacy Zero Gate Source Preflight",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-006",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "GKS-B841 candidate: LBRC_LEGACY_ZERO_GATE_OK checks=14; adventure-battle-core PASS; historical headless PASS; live-ops monster random event E2E PASS; adventure-battle-runtime-integration PASS; TASK_FRM_004_FORMATION_RANGE_CONFORMANCE_PASS; SOURCE_UPDATE_APPLIED_STATE_OK; applied Full 26/26 PASS. Production-reachable non-Formal monsterStats 100/10/10 fallback removed and fails closed; Formal Adventure Battle maxMp=100 fallback removed.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T16:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-09-01T16:05:00+09:00",
+        "reason": "Candidate source and applied-state validation passed.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T16:05:00+09:00",
+      "updated_at": "2026-09-01T16:05:00+09:00"
     }
   ],
   "workflow": {
@@ -1208,6 +1246,10 @@
     {
       "at": "2026-09-01T15:44:00+09:00",
       "message": "Human Apply verification completed from Fresh Current GKS-B840 / GA-B486.211. TASK-LBRC-004 is promoted to Done. TASK-LBRC-005 is promoted to Done after verifying tag-skill-runtime PIERCE mapping=0 and merged REORG-019 SPEC-V9-019-RANGE-001 revision=3 with valid local decision_refs. CHK-LBRC-SPEC-001 and CHK-LBRC-004-APPLY-001 PASS. Current focus advances to TASK-LBRC-006 Legacy Zero static/runtime Gate."
+    },
+    {
+      "at": "2026-09-01T16:05:00+09:00",
+      "message": "Human instructed resume after Fresh Current GKS-B840 verification; treated as TASK-LBRC-006 execution approval. Production reachability audit proved monsterStats non-Formal 100/10/10 fallback was reachable through expandFormation, so it was removed and replaced with Fail Closed. Formal Adventure Battle row.formalGenerated?maxMp:100 fallback was also removed. Historical simulation behavior was isolated fully under tests. New required Legacy Zero static/runtime Gate passes 14 checks; relevant regressions and applied-state Full 26/26 PASS. GKS-B841 direct update is Source Ready; Task remains Doing until Human Apply/Fresh Current verification."
     }
   ]
 }
