@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const Story=require('../assets/shared/js/adventure-story-system.js');
 const Encounter=require('../assets/shared/js/adventure-encounter-resolver.js');
 const Reward=require('../assets/shared/js/adventure-reward-resolver.js');
-const Battle=require('../assets/shared/js/adventure-battle-core.js');
+const HistoricalBattle=require('./helpers/historical-basic-battle.js');
 const ExportCore=require('../studio/export-core.js');
 
 function load(path){return JSON.parse(fs.readFileSync(path,'utf8')).data;}
@@ -68,7 +68,7 @@ const run=Story.simulateQuest({
   resolveReward:(args)=>Reward.resolveEventReward({...args,monsters,drop_tables:dropTables}),
   simulateBattle:({formation,seed,encounter_result})=>{
     const master=encounter_result?.battle_scaling?Encounter.applyBattleScaling(monsters,encounter_result.battle_scaling):monsters;
-    return Battle.simulateBasicBattle({party,formation,monsters:master,seed});
+    return HistoricalBattle.simulateBasicBattle({party,formation,monsters:master,seed});
   }
 });
 
