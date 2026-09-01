@@ -10,11 +10,11 @@ const monstersPayload=JSON.parse(fs.readFileSync(path.join(ROOT,'Export/monster/
 const monsters=Array.isArray(monstersPayload)?monstersPayload:monstersPayload.data;
 
 assert.deepStrictEqual(core.normalizeFormation([{monster_id:'M',count:2,formation_position:'BACKLINE'}]),[{monster_id:'M',count:2,formation_position:'BACKLINE'}]);
-assert.strictEqual(core.monsterStats({id:'M',params:{}}).defaultFormationPosition,'FRONTLINE');
-assert.strictEqual(core.monsterStats({id:'M',default_formation_position:'BACKLINE',params:{}}).defaultFormationPosition,'BACKLINE');
-let expanded=core.expandFormation([{monster_id:'M',count:1}], [{id:'M',default_formation_position:'BACKLINE',params:{}}]);
+assert.strictEqual(core.monsterStats({id:'M',params:{job_code:'SWD',level:1,maxHp:1,maxMp:0,attack:0,agi:0}}).defaultFormationPosition,'FRONTLINE');
+assert.strictEqual(core.monsterStats({id:'M',default_formation_position:'BACKLINE',params:{job_code:'SWD',level:1,maxHp:1,maxMp:0,attack:0,agi:0}}).defaultFormationPosition,'BACKLINE');
+let expanded=core.expandFormation([{monster_id:'M',count:1}], [{id:'M',default_formation_position:'BACKLINE',params:{job_code:'SWD',level:1,maxHp:1,maxMp:0,attack:0,agi:0}}]);
 assert.strictEqual(expanded[0].formationPosition,'BACKLINE');
-expanded=core.expandFormation([{monster_id:'M',count:1,formation_position:'FRONTLINE'}], [{id:'M',default_formation_position:'BACKLINE',params:{}}]);
+expanded=core.expandFormation([{monster_id:'M',count:1,formation_position:'FRONTLINE'}], [{id:'M',default_formation_position:'BACKLINE',params:{job_code:'SWD',level:1,maxHp:1,maxMp:0,attack:0,agi:0}}]);
 assert.strictEqual(expanded[0].formationPosition,'FRONTLINE');
 const merged=encounter.mergeFormation([{monster_id:'M',count:1,formation_position:'BACKLINE'}],[{monster_id:'M',count:2}]);
 assert.strictEqual(merged.length,2,'Encounter override row must not bleed into generated default-position rows');
