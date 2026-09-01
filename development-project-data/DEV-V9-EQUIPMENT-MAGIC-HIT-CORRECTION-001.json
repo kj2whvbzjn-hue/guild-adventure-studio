@@ -1,0 +1,373 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-dde91e4b-ec7a-4e47-9a52-837e2c6fff7c",
+    "canonical_path": "development-project-data/DEV-V9-EQUIPMENT-MAGIC-HIT-CORRECTION-001.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-EQUIPMENT-MAGIC-HIT-CORRECTION-001",
+    "name": "Player Equipment Magic Accuracy / Magic Resistance Contribution正規化",
+    "status": "Specifying",
+    "ai_attention": "Auto",
+    "updated_at": "2026-09-01T10:42:38+09:00"
+  },
+  "project_context": {
+    "purpose": "Player側のMagic Accuracy / Magic Resistanceを、既存Requirement係数ベース式の意味を維持したまま、物理Accuracy/Evasionと同じEquipment Candidate所有・個別Contribution合算構造へ正規化する。",
+    "summary": "Fresh CurrentではMagic Accuracy/ResistanceだけがBattle RuntimeでRequirementを直接再計算している。攻撃武器ごとにmagic_accuracy、防具ごとにmagic_resistanceを生成・保存し、Player Runtimeは実装備Candidateの保存済み値だけを個別合算する。Monster側はHuman指示により今回変更しない。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-PMAG-001",
+    "work_box_id": "BOX-PMAG-001",
+    "theme": "Player Equipment Magic Contribution Authority / Contract固定",
+    "goal": "既存Magic Hit Authorityと物理側Equipment Contribution構造を基準に、Player限定の実装境界を確定し、Contract更新前Gateを通す。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-PMAG-001",
+      "text": "Magic AccuracyはINT/DEX、Magic ResistanceはAGI/MNDのEquipment Requirement閾値からGenerator段階でPerformance Contributionを生成し、Battle RuntimeではRequirementから再計算しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-09-01",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "RULE-PMAG-002",
+      "text": "Magic Resistanceの4部位総量は各防具Candidateの個別Contribution合算で表現し、1防具row内へ部位数を意味する固定x4を持ち込まない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-09-01",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "RULE-PMAG-003",
+      "text": "Monster側のGeneration、連続装備相当式、Runtime、Balance Evidenceは今回変更しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-09-01",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B835",
+    "game_build": "GA-B486.211",
+    "source_label": "guild-adventure-studio-sub(20260901-014043).zip",
+    "source_role": "Human-provided Fresh Current used to verify Development Project new-registration contract and implementation dependencies",
+    "recorded_at": "2026-09-01T10:42:38+09:00"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-09-01T10:42:38+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [],
+  "decisions": [],
+  "specifications": [],
+  "specification_candidates": [],
+  "system_nodes": [],
+  "system_contracts": [],
+  "system_connections": [],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-PMAG-001",
+      "name": "Authority / Formal Contract",
+      "parent_id": "",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "ARCH-PMAG-002",
+      "name": "Equipment Generator / Player Data",
+      "parent_id": "ARCH-PMAG-001",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "ARCH-PMAG-003",
+      "name": "Player Game / Studio Runtime",
+      "parent_id": "ARCH-PMAG-001",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "ARCH-PMAG-004",
+      "name": "Regression / Non-impact Gate",
+      "parent_id": "ARCH-PMAG-001",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-PMAG-001",
+      "node_id": "ARCH-PMAG-001",
+      "title": "Authority / Contract",
+      "body": "既存Magic Hit式、Player-only scope、Formal Equipment field追加境界を確定する。",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "BOX-PMAG-002",
+      "node_id": "ARCH-PMAG-002",
+      "title": "Generator / Player Equipment Data",
+      "body": "各Equipment CandidateへMagic Contributionを生成・保存し、Player用Dataを新Contractへ同期する。",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "BOX-PMAG-003",
+      "node_id": "ARCH-PMAG-003",
+      "title": "Player Game / Studio Runtime",
+      "body": "Player RuntimeのRequirement直接計算を廃止し、保存済み個別Contribution合算へ切り替える。Monster側は変更しない。",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "BOX-PMAG-004",
+      "node_id": "ARCH-PMAG-004",
+      "title": "Regression / Monster Non-impact",
+      "body": "Player数値同値・Game/Studio parity・物理非回帰・Monster非変更を検証する。",
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-PMAG-001",
+      "box_id": "BOX-PMAG-001",
+      "title": "Magic Hit AuthorityとPlayer-only境界を固定する",
+      "status": "Todo",
+      "execution_order": 1,
+      "depends_on": [],
+      "acceptance_criteria": "RULE-SKL-MAGIC-HIT-001とHuman clarificationを照合し、Magic Accuracyは攻撃武器1件ごとに(required_int + required_dex) * 2、Magic Resistanceは防具1件ごとにrequired_agi + required_mndとすること、4防具合算で既存総量式と同値になること、Monster側を今回変更しないことを記録する。既存Authorityから一意に決まらない事項が出た場合は次Taskへ進まず停止する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-002",
+      "box_id": "BOX-PMAG-001",
+      "title": "Formal Equipment Contractへmagic_accuracyとmagic_resistanceを追加する",
+      "status": "Blocked",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-PMAG-001"
+      ],
+      "acceptance_criteria": "Formal Equipment Contract、validator、schema、import/export allowlist、formal-contribution-resolverへmagic_accuracy/magic_resistanceをPerformance Contribution fieldとして追加する。MAGIC_ACCURACY/MAGIC_RESISTANCE Modifier targetを正規fieldへ接続し、Requirement fallbackを追加しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-003",
+      "box_id": "BOX-PMAG-002",
+      "title": "Equipment Generatorへ個別Magic Contribution生成を追加する",
+      "status": "Blocked",
+      "execution_order": 3,
+      "depends_on": [
+        "TASK-PMAG-002"
+      ],
+      "acceptance_criteria": "攻撃武器Candidateへmagic_accuracy=(required_int+required_dex)*2、防具Candidateへmagic_resistance=required_agi+required_mndを生成・保存する。盾/矢筒の攻撃Contribution semanticsはCurrentを維持する。新しいmagic専用Balance係数は追加せず、既存Requirement閾値から生成する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-004",
+      "box_id": "BOX-PMAG-002",
+      "title": "Player用Equipment datasetを新Contractへ同期する",
+      "status": "Blocked",
+      "execution_order": 4,
+      "depends_on": [
+        "TASK-PMAG-003"
+      ],
+      "acceptance_criteria": "Playerが使用する既存Formal weapon/armor CandidateへGenerator再計算結果のmagic_accuracy/magic_resistanceを保持する。attack/accuracy/evasion/hp_bonus/mp_bonus等の既存物理Contribution値を変更せず、Monster専用Data/Evidenceを変更しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-005",
+      "box_id": "BOX-PMAG-003",
+      "title": "Game Player Runtimeを保存済みMagic Contribution合算へ切り替える",
+      "status": "Blocked",
+      "execution_order": 5,
+      "depends_on": [
+        "TASK-PMAG-004"
+      ],
+      "acceptance_criteria": "Game Player RuntimeでRequirementのINT/DEX/AGI/MNDからMagic Accuracy/Resistanceを直接再計算する処理を削除し、実装備rowの保存済みmagic_accuracy/magic_resistanceを個別加算する。4防具合計に固定x4 hard-codeを残さず、Monster生成・Monster戦闘値導出は変更しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-006",
+      "box_id": "BOX-PMAG-003",
+      "title": "Studio Player Formal Battleを保存済みMagic Contributionへ切り替える",
+      "status": "Blocked",
+      "execution_order": 6,
+      "depends_on": [
+        "TASK-PMAG-004"
+      ],
+      "acceptance_criteria": "Studio Player Formal BattleのRequirement直接reduce式を削除し、resolved Equipment Contribution totalsからMagic Accuracy/Resistanceを取得する。Modifier適用順を維持し、Monster Formal owner/loadout経路のCurrent挙動は変更しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-007",
+      "box_id": "BOX-PMAG-004",
+      "title": "Player Magic Contribution回帰とMonster非影響Gateを実行する",
+      "status": "Blocked",
+      "execution_order": 7,
+      "depends_on": [
+        "TASK-PMAG-005",
+        "TASK-PMAG-006"
+      ],
+      "acceptance_criteria": "既存総量式との数値同値、4部位個別合算、1部位差分、1部位解除、Magic Accuracy武器差分、Game/Studio Player parity、physical accuracy/evasion/hp/mp non-regression、Monster対象Source/Data非変更を確認し全件PASSする。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "TASK-PMAG-008",
+      "box_id": "BOX-PMAG-004",
+      "title": "Lv50 6v6全体Balance再評価をMonster修正完了まで保留する",
+      "status": "Blocked",
+      "execution_order": 8,
+      "depends_on": [
+        "TASK-PMAG-007"
+      ],
+      "acceptance_criteria": "Player側修正後にMonster側が旧Magic Resistance構造のままである限り、Monsterを含むLv50 6v6のMagic Hit結果をBalance Authorityとして確定しない。Monster側が別案件で正規化された後にseed 7007再Evidenceへ進む。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-PMAG-IMPL-001",
+      "title": "Player-only scopeと既存Authorityの未確定事項がない",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-PMAG-001",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    },
+    {
+      "id": "CHK-PMAG-COMP-001",
+      "title": "Player回帰とMonster非影響GateがPASSしている",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-PMAG-007",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T10:42:38+09:00",
+      "updated_at": "2026-09-01T10:42:38+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-09-01T10:42:38+09:00",
+      "message": "Created as Studio Development Project schema v2.0 for Player Equipment Magic Accuracy / Magic Resistance correction planning."
+    },
+    {
+      "at": "2026-09-01T10:42:38+09:00",
+      "message": "Registration contract rebuilt from Fresh Current Studio normalizeDevelopmentWorkspace / developmentValidateReferences / Development Git Store importProjectFile requirements."
+    }
+  ]
+}
