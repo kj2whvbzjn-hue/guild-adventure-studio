@@ -10,17 +10,17 @@
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T12:19:00+09:00"
+    "updated_at": "2026-09-01T03:48:38.963Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
-    "summary": "Fresh Current GKS-B836監査でGameのbattle_actor旧式、app-runtime再評価、Studio || default、adventure-battle-core簡易Battle、tag-skill-runtime PIERCE mappingをCorrection対象として確定。仕様監査ではSPEC-V9-019-RANGE-001のPIERCE 6種記載が後発Approved SPEC-FRM-001と矛盾。Correction Evidence EVD-LBRC-001とAcceptance Gateを登録し、実装開始はHuman Approval待ち。"
+    "summary": "Fresh Current GKS-B836監査でGameのbattle_actor旧式、app-runtime再評価、Studio || default、adventure-battle-core簡易Battle、tag-skill-runtime PIERCE mappingをCorrection対象として確定。レビュー反映としてHistorical簡易BattleとProduction monsterStats→expandFormationを分離し、Game/Studio Formal Combat fallback監査へ拡張。Human DecisionによりPlayer初期HP=100/MP=30はgame_runtime.character.initial_hp / initial_mpを正規ownerとして新設し、Character生成時から保持する方針を採用。Source実装開始は案件全体のImplementation Approval待ち。"
   },
   "current_focus": {
     "architecture_id": "ARCH-LBRC-001",
     "work_box_id": "BOX-LBRC-001",
-    "theme": "Correction Evidence / Legacy Zero削除計画",
-    "goal": "削除対象Source・矛盾Specification・Acceptance Gateを固定し、Human承認後にSource Correctionへ進める。"
+    "theme": "Character初期HP/MP owner確定後のLegacy Battle Runtime削除計画",
+    "goal": "Human ApprovedのCharacter初期HP/MP owner方針を反映し、旧battle_actor式削除・Game/Studio fallback除去・Historical簡易Battle分離・PIERCE残骸削除・Runtime parity検証を一意な工程として実行可能にする。"
   },
   "project_rules": [
     {
@@ -58,6 +58,33 @@
       "source_id": "conversation:2026-09-01",
       "created_at": "2026-09-01T12:19:00+09:00",
       "updated_at": "2026-09-01T12:19:00+09:00"
+    },
+    {
+      "id": "RULE-LBRC-005",
+      "text": "Player初期HP=100、初期MP=30はCurrent仕様として保持する。旧battle_actorのHP=100+VIT×20+Level×10、MP=100等の旧Demo派生式のみ削除対象とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-09-01 initial HP/MP confirmed",
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "RULE-LBRC-006",
+      "text": "Player初期HP/MPの正規ownerはgame_runtime.character.initial_hp / initial_mpとし、Character生成時からHP100/MP30を保持する。Battle Runtimeで0→固定値fallbackする方式、app-runtime.jsへのmagic number直書き、旧battle_actor Formula containerの温存は禁止する。",
+      "status": "Active",
+      "source_type": "HumanDecision",
+      "source_id": "DEC-LBRC-001",
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "RULE-LBRC-007",
+      "text": "本Correctionで仕様・設定owner・丸め・欠損時挙動がAuthorityから一意に確定しない場合は推測実装せずFail Closedで停止し、未決事項としてHumanへ報告する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation:2026-09-01 stop on unresolved",
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
     }
   ],
   "source_baseline": {
@@ -89,17 +116,37 @@
       "id": "DISC-LBRC-EVD-001",
       "title": "EVD-LBRC-001 Legacy Battle Runtime Correction Evidence",
       "status": "Resolved",
-      "summary": "Fresh Current GKS-B836から削除対象Source、矛盾Specification、Legacy Zero Acceptance Gateを確定した監査Evidence。",
-      "body": "# Correction Evidence EVD-LBRC-001\n\n## 判定\nFresh Current GKS-B836 / GA-B486.211 を監査した結果、Game/Studioに旧Demo由来のPlayer戦闘値生成・default fallback・旧Range残骸が残存している。\nこれは Current の唯一の正規経路へ収束し compatibility/fallback を残さない Legacy Zero 方針と競合するため、削除・正規経路統一対象として扱う。\n\n## 正規Authority\n- EVD-0003: Player最終戦闘値。Attackは primary_weapon_attack only。HP/MPはPlayer初期値 + Equipment Contribution。\n- SPEC-V9-019-CORE-002 Approved: Current Sourceに存在するPlayer Actor HP/MP/Attack/AGI式をCurrent仕様として補完しない。\n- SPEC-V9-019-EQUIP-004 Draft: base_attack/base_defense、旧equipmentBonus、旧field fallback、STR→attack、VIT→maxHp等を禁止対象として列挙。\n- SPEC-FRM-001 Approved Rev2: Current Rangeは SINGLE/FRONT/BACK/RANDOM/ALL。PIERCEは廃止。\n\n## 削除・置換対象Source\n1. Export/system/adventure_settings.json\n   - params.game_runtime.battle_actor.max_hp\n     base=100 / VIT coefficient=20 / level coefficient=10\n   - params.game_runtime.battle_actor.max_mp\n     base=100\n   - params.game_runtime.battle_actor.attack\n     base=10 / STR coefficient=3 / level coefficient=2\n   - params.game_runtime.battle_actor.agi\n     Formula containerとして保持せず、正規AGI inputへ置換する。\n   判定: 旧Demo Actor派生式をCurrent Runtime設定として保持しているため削除/置換。\n\n2. game/assets/js/app-runtime.js\n   - normalizeRuntimeFormula()\n   - normalizeFormalRuntimeSettingsRecord() の game_runtime.battle_actor 読込\n   - evaluateRuntimeFormula()\n   - characterBattleValues() の max_hp/max_mp/attack/agi 派生式加算\n   - characterBasicAttackProfiles() の cfg.attack 再評価\n   判定: 装備正式Contributionへ旧Character基礎式を上乗せし、Game側Lv50剣士Attack 624等を生成する直接原因。\n   修正後、Attack/Accuracy/Magic/Evasion/Block等はFormal Contribution、HP/MPは正規Baseline+Formal Contribution、AGIは正規Character Stat/Action Gauge ownerから取得する。\n\n3. studio/index.html\n   - Formal Battle Unit生成の Number(u.attack)||10\n   - Number(u.hp)||100\n   - Number(u.agi)||10\n   - basic attack profileの baseAttack=Number(u.attack)||10\n   判定: 0を欠損扱いするDemo fallbackにより、Equipment Attack 264へ+10が混入する。\n   修正後は0を正当値として保持し、欠損はFail Closedまたは正規default ownerから明示供給する。\n\n4. assets/shared/js/adventure-battle-core.js\n   - monsterStats() の HP=100 / Attack=10 / AGI=10 fallback\n   - normalizePartySnapshot() の HP=100 / Attack=10 / AGI=10 fallback\n   - simulateBasicBattle() の damage=floor(actor.attack) 簡易Battle\n   判定: Fresh Current production callerを再監査し、production caller 0をGateで確認後、本番Runtimeから物理削除する。\n   Historical testが必要なら tests fixtureへ隔離し、production compatibility wrapperを残さない。\n\n5. game/assets/js/tag-skill-runtime.js\n   - rangeMap の PIERCE:'pierce'\n   判定: shared formation resolver / skill compilerでは PIERCE_RANGE_ABOLISHED でReject済みなのにGame runtime validatorだけ受理可能な残骸。削除対象。\n\n## 矛盾Specification一覧\n### Confirmed stale contradiction\n- SPEC-V9-019-RANGE-001 / status=Draft / revision=2\n  - 「Current Formal Range」に PIERCE を含む。\n  - acceptance_criteria が「Current 6 Range type」。\n- 後発Authority:\n  - SPEC-FRM-001 / status=Approved / revision=2\n  - PIERCE廃止、Currentは SINGLE/FRONT/BACK/RANDOM/ALL の5種。\n判定: SPEC-V9-019-RANGE-001はCurrentへ戻す危険があるため、後発Approved仕様へ同期するCorrection対象。\n\n## 再監査で「矛盾ではない」と分類した記載\n- SPEC-V9-019-PASSIVE-001 の PIERCE は物理属性Tag「刺突」でありRange PIERCEではない。\n- EVD-0009/0010/0011 の PIERCE-TEMPLATE は Deferred/Historical candidateであり、Current有効Rangeの復活根拠ではない。\n- SPEC-V9-019-BAL-001等のV9 Baseline数値はBaseline/Historyとして明示され、Current Runtimeへ戻すAuthorityではない。\n- Approved SPEC-V9-019-CORE-002 はむしろCurrent SourceのPlayer Actor派生式を仕様化しないよう明記している。\n監査時点で、旧Demoの STR×3+Level×2 / VIT×20+Level×10 / MP100 をCurrentへ戻すことを命じるApproved Specificationは確認されなかった。\n\n## Legacy Zero Acceptance Gate\nA. Source static gate\n- Production Source/Current Configに旧Actor式\n  - attack base 10 + STR×3 + Level×2\n  - HP base 100 + VIT×20 + Level×10\n  - MP base 100\n  をPlayer Battle値生成として残さない。\n- `Number(x)||10`, `Number(x)||100` 等、0を欠損扱いするCombat defaultを正規Battle経路に残さない。\n- PIERCEをCurrent Rangeとして受理するGame runtime mappingを残さない。\n- legacy/compat/fallback/shim/adapterによる旧経路延命を新設しない。\n\nB. Runtime parity gate\nLv50剣士・適正装備・Passive/MODなし:\n- EVD-0003 Attack = 264\n- Equipment resolver = 264\n- Game characterBattleValues = 264\n- Game basic attack profile = 264\n- Studio Formal Battle = 264\n全経路一致。\n\nC. Player full-field gate\n全Player職についてHP/MP/Attack/Accuracy/Evasion/Magic Weapon Bonus/Critical/BlockをEVD-0003または後続Human-approved Authorityと照合し、Game/Studio同値。\n\nD. Monster non-regression gate\n今回のPlayer Legacy Actor式削除によってEVD-0004/0005/0006のMonster生成・戦闘値経路を変更しない。\nMonster側に別問題がある場合は別Correctionへ分離。\n\nE. Call graph gate\nadventure-battle-core.js の簡易Battleを削除する前にProduction caller=0を機械確認。\ntestsのみの依存はHistorical fixtureへ移し、production runtimeへ残さない。\n\nF. Specification consistency gate\n- SPEC-V9-019-RANGE-001を後発SPEC-FRM-001へ同期。\n- Currentを名乗る仕様/AcceptanceにPIERCE Range 6種記載を残さない。\n- 旧Actor派生式をCurrentとして要求するSpecificationが0件であることを再検索。\n\nG. Re-test gate\n上記PASS後にのみseed 7007 Lv50 6v6を再実行し、旧RunのDamage/HP推移をBalance Authorityとして再利用しない。\n",
-      "open_questions": "",
-      "conclusion": "旧Demo Player Battle Actor式とfallbackをProductionから除去しFormal Authorityへ単一収束する。PIERCE Rangeのstale仕様/Runtime mappingも後発Approved仕様へ同期する。実装開始はHuman Approval後。",
+      "summary": "レビュー指摘を反映し、Player初期HP=100/MP=30の正規ownerをHuman Decision DEC-LBRC-001で確定。Historical簡易BattleとProduction Monster formation経路を分離し、Game/Studio Formal Combat fallback監査を含む計画へ更新。",
+      "body": "# Correction Evidence EVD-LBRC-001\n\n## 判定\nFresh Current GKS-B836 / GA-B486.211 を監査した結果、Game/Studioに旧Demo由来のPlayer戦闘値生成・default fallback・旧Range残骸が残存している。\nこれは Current の唯一の正規経路へ収束し compatibility/fallback を残さない Legacy Zero 方針と競合するため、削除・正規経路統一対象として扱う。\n\n## 正規Authority\n- EVD-0003: Player最終戦闘値。Attackは primary_weapon_attack only。HP/MPはPlayer初期値 + Equipment Contribution。\n- SPEC-V9-019-CORE-002 Approved: Current Sourceに存在するPlayer Actor HP/MP/Attack/AGI式をCurrent仕様として補完しない。\n- SPEC-V9-019-EQUIP-004 Draft: base_attack/base_defense、旧equipmentBonus、旧field fallback、STR→attack、VIT→maxHp等を禁止対象として列挙。\n- SPEC-FRM-001 Approved Rev2: Current Rangeは SINGLE/FRONT/BACK/RANDOM/ALL。PIERCEは廃止。\n\n## 削除・置換対象Source\n1. Export/system/adventure_settings.json\n   - params.game_runtime.battle_actor.max_hp\n     base=100 / VIT coefficient=20 / level coefficient=10\n   - params.game_runtime.battle_actor.max_mp\n     base=100\n   - params.game_runtime.battle_actor.attack\n     base=10 / STR coefficient=3 / level coefficient=2\n   - params.game_runtime.battle_actor.agi\n     Formula containerとして保持せず、正規AGI inputへ置換する。\n   判定: 旧Demo Actor派生式をCurrent Runtime設定として保持しているため削除/置換。\n\n2. game/assets/js/app-runtime.js\n   - normalizeRuntimeFormula()\n   - normalizeFormalRuntimeSettingsRecord() の game_runtime.battle_actor 読込\n   - evaluateRuntimeFormula()\n   - characterBattleValues() の max_hp/max_mp/attack/agi 派生式加算\n   - characterBasicAttackProfiles() の cfg.attack 再評価\n   判定: 装備正式Contributionへ旧Character基礎式を上乗せし、Game側Lv50剣士Attack 624等を生成する直接原因。\n   修正後、Attack/Accuracy/Magic/Evasion/Block等はFormal Contribution、HP/MPは正規Baseline+Formal Contribution、AGIは正規Character Stat/Action Gauge ownerから取得する。\n\n3. studio/index.html\n   - Formal Battle Unit生成の Number(u.attack)||10\n   - Number(u.hp)||100\n   - Number(u.agi)||10\n   - basic attack profileの baseAttack=Number(u.attack)||10\n   判定: 0を欠損扱いするDemo fallbackにより、Equipment Attack 264へ+10が混入する。\n   修正後は0を正当値として保持し、欠損はFail Closedまたは正規default ownerから明示供給する。\n\n4. assets/shared/js/adventure-battle-core.js\n   - monsterStats() の HP=100 / Attack=10 / AGI=10 fallback\n   - normalizePartySnapshot() の HP=100 / Attack=10 / AGI=10 fallback\n   - simulateBasicBattle() の damage=floor(actor.attack) 簡易Battle\n   判定: Fresh Current production callerを再監査し、production caller 0をGateで確認後、本番Runtimeから物理削除する。\n   Historical testが必要なら tests fixtureへ隔離し、production compatibility wrapperを残さない。\n\n5. game/assets/js/tag-skill-runtime.js\n   - rangeMap の PIERCE:'pierce'\n   判定: shared formation resolver / skill compilerでは PIERCE_RANGE_ABOLISHED でReject済みなのにGame runtime validatorだけ受理可能な残骸。削除対象。\n\n## 矛盾Specification一覧\n### Confirmed stale contradiction\n- SPEC-V9-019-RANGE-001 / status=Draft / revision=2\n  - 「Current Formal Range」に PIERCE を含む。\n  - acceptance_criteria が「Current 6 Range type」。\n- 後発Authority:\n  - SPEC-FRM-001 / status=Approved / revision=2\n  - PIERCE廃止、Currentは SINGLE/FRONT/BACK/RANDOM/ALL の5種。\n判定: SPEC-V9-019-RANGE-001はCurrentへ戻す危険があるため、後発Approved仕様へ同期するCorrection対象。\n\n## 再監査で「矛盾ではない」と分類した記載\n- SPEC-V9-019-PASSIVE-001 の PIERCE は物理属性Tag「刺突」でありRange PIERCEではない。\n- EVD-0009/0010/0011 の PIERCE-TEMPLATE は Deferred/Historical candidateであり、Current有効Rangeの復活根拠ではない。\n- SPEC-V9-019-BAL-001等のV9 Baseline数値はBaseline/Historyとして明示され、Current Runtimeへ戻すAuthorityではない。\n- Approved SPEC-V9-019-CORE-002 はむしろCurrent SourceのPlayer Actor派生式を仕様化しないよう明記している。\n監査時点で、旧Demoの STR×3+Level×2 / VIT×20+Level×10 / MP100 をCurrentへ戻すことを命じるApproved Specificationは確認されなかった。\n\n## Legacy Zero Acceptance Gate\nA. Source static gate\n- Production Source/Current Configに旧Actor式\n  - attack base 10 + STR×3 + Level×2\n  - HP base 100 + VIT×20 + Level×10\n  - MP base 100\n  をPlayer Battle値生成として残さない。\n- `Number(x)||10`, `Number(x)||100` 等、0を欠損扱いするCombat defaultを正規Battle経路に残さない。\n- PIERCEをCurrent Rangeとして受理するGame runtime mappingを残さない。\n- legacy/compat/fallback/shim/adapterによる旧経路延命を新設しない。\n\nB. Runtime parity gate\nLv50剣士・適正装備・Passive/MODなし:\n- EVD-0003 Attack = 264\n- Equipment resolver = 264\n- Game characterBattleValues = 264\n- Game basic attack profile = 264\n- Studio Formal Battle = 264\n全経路一致。\n\nC. Player full-field gate\n全Player職についてHP/MP/Attack/Accuracy/Evasion/Magic Weapon Bonus/Critical/BlockをEVD-0003または後続Human-approved Authorityと照合し、Game/Studio同値。\n\nD. Monster non-regression gate\n今回のPlayer Legacy Actor式削除によってEVD-0004/0005/0006のMonster生成・戦闘値経路を変更しない。\nMonster側に別問題がある場合は別Correctionへ分離。\n\nE. Call graph gate\nadventure-battle-core.js の簡易Battleを削除する前にProduction caller=0を機械確認。\ntestsのみの依存はHistorical fixtureへ移し、production runtimeへ残さない。\n\nF. Specification consistency gate\n- SPEC-V9-019-RANGE-001を後発SPEC-FRM-001へ同期。\n- Currentを名乗る仕様/AcceptanceにPIERCE Range 6種記載を残さない。\n- 旧Actor派生式をCurrentとして要求するSpecificationが0件であることを再検索。\n\nG. Re-test gate\n上記PASS後にのみseed 7007 Lv50 6v6を再実行し、旧RunのDamage/HP推移をBalance Authorityとして再利用しない。\n\n\n## Revision: Human Decision DEC-LBRC-001\n- Player initial HP=100 / MP=30 はCurrent仕様として維持。\n- 正規ownerを game_runtime.character.initial_hp / initial_mp として新設する。\n- Character生成時から初期HP/MPを保持し、Battle Runtimeのfallbackで生成しない。\n- 旧battle_actorのHP/MP/Attack/AGI Formula containerは削除対象。\n- app-runtime.js等へのmagic number直書き、compat/fallbackによる旧経路温存は禁止。\n",
+      "open_questions": "Monster Production経路 monsterStats→expandFormation のmissing-input semanticsは、EVD-0004/0005/0006とFresh Current sourceから一意に確認できない場合は別Correctionとして停止・報告する。",
+      "conclusion": "Player HP/MP owner未決は解消。Source実装は案件全体のImplementation Approval後に開始し、Monster missing-input semantics等の未決は推測せずFail Closedで停止する。",
       "related_discussion_ids": [],
       "artifact_note": "Correction Evidence ID: EVD-LBRC-001 / source baseline GKS-B836 / GA-B486.211",
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T12:43:00+09:00"
     }
   ],
-  "decisions": [],
+  "decisions": [
+    {
+      "id": "DEC-LBRC-001",
+      "title": "Player初期HP/MPのCharacter ownerを新設する",
+      "status": "Approved",
+      "decision": "Player初期HP=100 / MP=30を game_runtime.character.initial_hp / initial_mp として正規設定owner化し、Character生成時から保持する。Battle開始時のfallbackでは生成しない。",
+      "rationale": "Character作成時点でHP/MPが0になることを防ぎ、EVD-0003のHP=100+armor_hp_bonus / MP=30+armor_mp_bonusと一致させつつ、旧battle_actor Demo式を完全削除するため。",
+      "constraints": [
+        "app-runtime.js等への100/30 magic number直書きを禁止する。",
+        "旧game_runtime.battle_actorを初期値保持目的で残さない。",
+        "Character生成後のBattle RuntimeはCharacter初期値+Formal Equipment Contributionを使用する。",
+        "Player AttackにはCharacter intrinsic base attackを新設せず、Primary Weapon Contributionのみとする。"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-09-01T12:43:00+09:00",
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00",
+      "text": "",
+      "source_discussion_ids": []
+    }
+  ],
   "specifications": [],
   "specification_candidates": [],
   "system_nodes": [],
@@ -164,12 +211,12 @@
       "id": "IMPACT-LBRC-SRC-004",
       "category": "SOURCE_DELETE_AFTER_CALLER_AUDIT",
       "severity": "Medium",
-      "target": "assets/shared/js/adventure-battle-core.js",
-      "finding": "HP/Attack/AGI defaultとsimulateBasicBattle簡易Damage経路がProduction shared sourceに残存。",
-      "required_action": "Production caller=0をGateで確認後、本番Runtimeから削除。必要なHistorical testはtests fixtureへ隔離。",
+      "target": "assets/shared/js/adventure-battle-core.js : Historical簡易Battle系",
+      "finding": "simulateBasicBattle / normalizePartySnapshot等のHistorical簡易Battle系をProduction caller監査後に削除対象とする。Production使用中のmonsterStats→expandFormationは本Impactに含めない。",
+      "required_action": "Historical簡易Battle系のみProduction caller=0を確認後に本番Runtimeから削除。monsterStats→expandFormationはEVD-0004/0005/0006非回帰Gateで別監査する。",
       "evidence_id": "EVD-LBRC-001",
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T12:43:00+09:00"
     },
     {
       "id": "IMPACT-LBRC-SRC-005",
@@ -192,6 +239,28 @@
       "evidence_id": "EVD-LBRC-001",
       "created_at": "2026-09-01T12:19:00+09:00",
       "updated_at": "2026-09-01T12:19:00+09:00"
+    },
+    {
+      "id": "IMPACT-LBRC-SRC-006",
+      "category": "CONFIG_SCHEMA_UPDATE",
+      "severity": "High",
+      "target": "Export/system/adventure_settings.json : params.game_runtime.character",
+      "finding": "Current Character設定ownerにPlayer初期HP/MP fieldが存在せず、旧battle_actor削除だけではCharacter作成時HP/MP ownerが失われる。",
+      "required_action": "game_runtime.character.initial_hp=100 / initial_mp=30 を正規fieldとして追加し、Character生成時から保持する。旧battle_actorをfallbackとして残さない。",
+      "evidence_id": "EVD-LBRC-001 / DEC-LBRC-001",
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "IMPACT-LBRC-SRC-007",
+      "category": "SOURCE_AUDIT_ONLY",
+      "severity": "High",
+      "target": "assets/shared/js/adventure-battle-core.js : monsterStats -> expandFormation",
+      "finding": "Production戦闘で使用中のMonster経路。Historical簡易Battleと同一削除対象にできない。",
+      "required_action": "経路自体は維持し、EVD-0004/0005/0006と照合。missing fallbackの正規挙動が一意でなければSource変更せず停止・別Correction報告。",
+      "evidence_id": "EVD-LBRC-001",
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
     }
   ],
   "architecture_nodes": [
@@ -280,13 +349,13 @@
     {
       "id": "TASK-LBRC-002",
       "box_id": "BOX-LBRC-002",
-      "title": "Game battle_actor旧Demo派生式を削除する",
+      "title": "Character初期HP/MP owner新設とGame battle_actor旧Demo派生式削除",
       "status": "Todo",
       "execution_order": 2,
       "depends_on": [
         "TASK-LBRC-001"
       ],
-      "acceptance_criteria": "adventure_settingsのPlayer battle_actor max_hp/max_mp/attack旧式を削除し、app-runtimeのparser/evaluator/characterBattleValues/basicAttackProfilesが旧式を参照しない。AGIは正規Character Stat/Action Gauge ownerから供給する。",
+      "acceptance_criteria": "game_runtime.character.initial_hp=100 / initial_mp=30を正規設定fieldとして追加し、Character生成時から保持する。adventure_settingsの旧Player battle_actor max_hp/max_mp/attack/agi Formula containerを削除し、app-runtimeのparser/evaluator/characterBattleValues/basicAttackProfilesが旧式を参照しない。HP/MPはCharacter initial値+Formal Equipment Contribution、AttackはPrimary Weapon Contributionのみ、AGIはCurrent Character AGI statを使用する。100/30のSource直書きやcompat fallbackを新設しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -295,18 +364,18 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T12:43:00+09:00"
     },
     {
       "id": "TASK-LBRC-003",
       "box_id": "BOX-LBRC-002",
-      "title": "Studio Formal BattleのCombat default fallbackを除去する",
+      "title": "Game/Studio Formal Combat ingestion fallbackを除去する",
       "status": "Todo",
       "execution_order": 3,
       "depends_on": [
         "TASK-LBRC-002"
       ],
-      "acceptance_criteria": "attack||10、hp||100、agi||10等の0を欠損扱いするProduction Combat fallbackを除去し、Formal input 0を保持する。互換fallbackを新設しない。",
+      "acceptance_criteria": "Studioのattack||10/hp||100/agi||10だけでなくGame Formal Battle ingestionの固定値fallbackも全件棚卸しする。0が合法なfieldは0を保持し、必須field欠損は既存Authorityに従いFail Closed。欠損時挙動が一意に確認できないfieldは修正せず停止・Humanへ報告する。Development-only fixture fallbackはProduction pathと区別する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -315,18 +384,18 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T12:43:00+09:00"
     },
     {
       "id": "TASK-LBRC-004",
       "box_id": "BOX-LBRC-002",
-      "title": "shared簡易BattleのProduction残存を削除する",
+      "title": "Historical簡易BattleのProduction残存を削除する",
       "status": "Todo",
       "execution_order": 4,
       "depends_on": [
         "TASK-LBRC-001"
       ],
-      "acceptance_criteria": "adventure-battle-core.jsのsimulateBasicBattle/HP100/Attack10/AGI10 fallbackについてProduction caller=0を機械確認し、本番Runtimeから削除する。必要なHistorical testはtestsへ隔離しcompat wrapperを残さない。",
+      "acceptance_criteria": "simulateBasicBattle / normalizePartySnapshot等のHistorical簡易Battle系のみを対象にProduction caller=0を機械確認し、本番Runtimeから削除する。Production使用中のmonsterStats→expandFormationは本Taskで削除しない。必要なHistorical testはtestsへ隔離しcompat wrapperを残さない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -335,14 +404,14 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T12:43:00+09:00"
     },
     {
       "id": "TASK-LBRC-005",
       "box_id": "BOX-LBRC-003",
       "title": "PIERCE runtime residueとstale Range仕様を同期する",
       "status": "Todo",
-      "execution_order": 5,
+      "execution_order": 6,
       "depends_on": [
         "TASK-LBRC-001"
       ],
@@ -362,14 +431,15 @@
       "box_id": "BOX-LBRC-004",
       "title": "Legacy Zero静的Gateを追加する",
       "status": "Todo",
-      "execution_order": 6,
+      "execution_order": 7,
       "depends_on": [
         "TASK-LBRC-002",
         "TASK-LBRC-003",
         "TASK-LBRC-004",
+        "TASK-LBRC-004B",
         "TASK-LBRC-005"
       ],
-      "acceptance_criteria": "旧Actor式、Combat || default、Current PIERCE受理、legacy/compat/fallback/shim/adapter延命がProduction Source/Current Configに存在したらFailする静的Gateを追加する。",
+      "acceptance_criteria": "旧Actor式、Production Combat固定fallback、Current PIERCE受理、legacy/compat/fallback/shim/adapter延命を検出する静的Gateを追加する。加えてmissing/0実行Gateを追加し、0合法fieldが固定fallbackへ変化しないこと、必須欠損がAuthorityどおりFail Closedすることを確認する。欠損時仕様未決のfieldがあればGate FAILで停止・報告する。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -385,11 +455,11 @@
       "box_id": "BOX-LBRC-004",
       "title": "Game/Studio combat value parityを検証する",
       "status": "Todo",
-      "execution_order": 7,
+      "execution_order": 8,
       "depends_on": [
         "TASK-LBRC-006"
       ],
-      "acceptance_criteria": "Lv50剣士でEVD-0003/Equipment resolver/Game characterBattleValues/Game basic attack profile/Studio Formal BattleのAttackが全て264。全Player職のHP/MP/Attack/Accuracy/Evasion/Magic/Crit/BlockもCurrent Authorityと一致し、Monster EVD-0004/0005/0006経路に非回帰であること。",
+      "acceptance_criteria": "Lv50剣士・適正装備・Passive/MODなしで、HP/MP/Attack/AGI/Accuracy/Magic Weapon Bonus/Evasion/Crit/BlockをEVD-0001/0003と照合する。HPはinitial100+armor contribution、MPはinitial30+armor contribution、Attack=264、AGIはEVD-0001 Current statを使用する。Game characterBattleValues / Game basic attack profile / Studio Formal Battleで一致。全Player職もCurrent Authorityと一致し、Monster EVD-0004/0005/0006経路に非回帰であること。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
@@ -405,7 +475,7 @@
       "box_id": "BOX-LBRC-004",
       "title": "Lv50 6v6をseed7007で再Evidence化する",
       "status": "Blocked",
-      "execution_order": 8,
+      "execution_order": 9,
       "depends_on": [
         "TASK-LBRC-007"
       ],
@@ -420,6 +490,26 @@
       "blocking_reason": "TASK-LBRC-007 Runtime parity完了前は再戦禁止。",
       "created_at": "2026-09-01T12:19:00+09:00",
       "updated_at": "2026-09-01T12:19:00+09:00"
+    },
+    {
+      "id": "TASK-LBRC-004B",
+      "box_id": "BOX-LBRC-002",
+      "title": "Production Monster formation fallbackをAuthority照合する",
+      "status": "Todo",
+      "execution_order": 5,
+      "depends_on": [
+        "TASK-LBRC-001"
+      ],
+      "acceptance_criteria": "monsterStats→expandFormationのProduction経路をEVD-0004/0005/0006と照合する。経路自体は削除しない。missing fallbackについて必須入力・欠損時挙動がAuthorityから一意に確認できる場合のみCorrection対象を確定する。不明点が残ればSource変更せず別Correction候補として停止・報告する。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
     }
   ],
   "checks": [
@@ -537,6 +627,52 @@
       "blocking": false,
       "created_at": "2026-09-01T12:19:00+09:00",
       "updated_at": "2026-09-01T12:19:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-OWNER-001",
+      "title": "Player HP100/MP30 正規設定owner確定Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-002",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Human Decision DEC-LBRC-001: game_runtime.character.initial_hp=100 / initial_mp=30を正規ownerとして採用。",
+      "checked_by": "Human",
+      "checked_at": "2026-09-01T12:43:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "DEC-LBRC-001",
+        "resolved_at": "2026-09-01T12:43:00+09:00",
+        "reason": "Character初期値ownerをHuman承認で確定。",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-MONSTER-PATH-001",
+      "title": "Monster Production owner/fallback Authority Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-004B",
+      "status": "Pending",
+      "result": "",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T12:43:00+09:00",
+      "updated_at": "2026-09-01T12:43:00+09:00"
     }
   ],
   "workflow": {
@@ -564,6 +700,14 @@
     {
       "at": "2026-09-01T12:19:00+09:00",
       "message": "EVD-LBRC-001 records source deletion targets, stale Specification contradiction, non-contradictory historical references, and Acceptance Gates. No Source/Game Data modification performed."
+    },
+    {
+      "at": "2026-09-01T12:43:00+09:00",
+      "message": "Human approved DEC-LBRC-001: Player initial HP=100 / MP=30 will be owned by new game_runtime.character.initial_hp / initial_mp fields and retained from Character creation. Old battle_actor formulas remain deletion targets; magic-number/fallback retention is prohibited."
+    },
+    {
+      "at": "2026-09-01T12:43:00+09:00",
+      "message": "Plan updated from registered project baseline: Game/Studio Formal Combat fallback audit expanded, Historical basic battle separated from production monsterStats->expandFormation, and dedicated Monster authority audit task TASK-LBRC-004B added."
     }
   ]
 }
