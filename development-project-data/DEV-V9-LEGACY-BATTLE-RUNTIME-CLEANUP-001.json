@@ -10,17 +10,17 @@
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T06:01:56.781Z"
+    "updated_at": "2026-09-01T06:55:58.133Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
     "summary": "Fresh Current GKS-B836監査でGameのbattle_actor旧式、app-runtime再評価、Studio || default、adventure-battle-core簡易Battle、tag-skill-runtime PIERCE mappingをCorrection対象として確定。レビュー反映としてHistorical簡易BattleとProduction monsterStats→expandFormationを分離し、Game/Studio Formal Combat fallback監査へ拡張。Human DecisionによりPlayer初期HP=100/MP=30はgame_runtime.character.initial_hp / initial_mpを正規ownerとして新設し、Character生成時から保持する方針を採用。Source実装開始は案件全体のImplementation Approval待ち。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-LBRC-002",
-    "work_box_id": "BOX-LBRC-002",
-    "theme": "TASK-LBRC-004 GKS-B839 Human Apply Gate",
-    "goal": "TASK-LBRC-004 Source修正と更新ZIP GateはPASS。GKS-B838→GKS-B839直接更新ZIPをHuman Applyし、Fresh Current GKS-B839確認後にTaskをDoneへ確定する。非Formal monster fallbackのProduction到達性はTASK-LBRC-006でFail Closed監査する。"
+    "architecture_id": "ARCH-LBRC-004",
+    "work_box_id": "BOX-LBRC-004",
+    "theme": "TASK-LBRC-006 Legacy Zero静的/実行Gate",
+    "goal": "Fresh Current GKS-B840でTASK-LBRC-004/005反映を確認済み。次は旧Actor式、Production Combat固定fallback、Current PIERCE受理、legacy/compat/fallback/shim/adapter延命を検出する静的Gateとmissing/0実行Gateを追加し、monsterStats非Formal fallbackのProduction到達性を機械確認する。"
   },
   "project_rules": [
     {
@@ -103,6 +103,14 @@
       "studio/index.html": "756451662aa7f3754e2ce8a660eaf8f835cb079d3904e0187cb37652aab43413",
       "DEV-V9-REORG-019.json": "9123d1220d7337598b9f840fbd019e1effef67790b10dde480010baf6d4e2001",
       "DEV-V9-FORMATION-RANGE-001.json": "423f469c89316558ac3913dd18bc8dfa5d62c973fd482ae9393870a35d32359a"
+    },
+    "verification_current": {
+      "studio_build": "GKS-B840",
+      "game_build": "GA-B486.211",
+      "source_label": "guild-adventure-studio-sub(20260901-064407).zip",
+      "source_role": "Human-provided Fresh Current after TASK-LBRC-005 GKS-B840 apply and REORG-019 Range Specification merge",
+      "recorded_at": "2026-09-01T15:44:00+09:00",
+      "source_zip_sha256": "c8bf6ea8f33c126857cffa95e72a5869d42171e1497d4ad84d8e96d283745994"
     }
   },
   "lifecycle": {
@@ -269,6 +277,34 @@
       "result": "Applied",
       "evidence": "Production caller=0をgrepで機械確認後にHistorical symbolsをProductionから物理削除。compat wrapperなし。Historical test-only helperへ隔離。",
       "recorded_at": "2026-09-01T14:33:29+09:00"
+    },
+    {
+      "id": "IMPL-LBRC-004-APPLY-VERIFY-B840",
+      "studio_build": "GKS-B840",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-LBRC-002"
+      ],
+      "task_ids": [
+        "TASK-LBRC-004"
+      ],
+      "result": "Applied",
+      "evidence": "Fresh Current B840 carries forward TASK-LBRC-004 B839 Historical Runtime removal. Fresh source ZIP sha256=c8bf6ea8f33c126857cffa95e72a5869d42171e1497d4ad84d8e96d283745994.",
+      "recorded_at": "2026-09-01T15:44:00+09:00"
+    },
+    {
+      "id": "IMPL-LBRC-005-B840",
+      "studio_build": "GKS-B840",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-LBRC-003"
+      ],
+      "task_ids": [
+        "TASK-LBRC-005"
+      ],
+      "result": "Applied",
+      "evidence": "Fresh Current B840 verified: game/assets/js/tag-skill-runtime.js has no PIERCE mapping; DEV-V9-REORG-019 SPEC-V9-019-RANGE-001 revision=3 is synchronized to Current 5 Range / PIERCE abolished. Prior invalid DEC-FRM-* decision_refs are absent; local valid refs only.",
+      "recorded_at": "2026-09-01T15:44:00+09:00"
     }
   ],
   "discussions": [
@@ -398,11 +434,11 @@
     {
       "id": "FLAG-LBRC-RANGE-001",
       "title": "PIERCE Range stale acceptance残存",
-      "status": "Open",
+      "status": "Resolved",
       "severity": "High",
       "source": "game/assets/js/tag-skill-runtime.js + SPEC-V9-019-RANGE-001",
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T15:44:00+09:00"
     }
   ],
   "system_events": [],
@@ -623,7 +659,7 @@
       "id": "TASK-LBRC-004",
       "box_id": "BOX-LBRC-002",
       "title": "Historical簡易BattleのProduction残存を削除する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 4,
       "depends_on": [
         "TASK-LBRC-001"
@@ -637,15 +673,15 @@
         "at": "2026-09-01T14:33:29+09:00"
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T14:40:00+09:00",
-      "result_scope": "SOURCE_READY / AWAITING_HUMAN_APPLY_AND_FRESH_SOURCE_VERIFICATION",
+      "updated_at": "2026-09-01T15:44:00+09:00",
+      "result_scope": "HUMAN_APPLIED / FRESH_CURRENT_VERIFIED",
       "blocked_reason": ""
     },
     {
       "id": "TASK-LBRC-005",
       "box_id": "BOX-LBRC-003",
       "title": "PIERCE runtime residueとstale Range仕様を同期する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 6,
       "depends_on": [
         "TASK-LBRC-001"
@@ -654,12 +690,13 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T15:37:00+09:00"
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T15:44:00+09:00",
+      "result_scope": "HUMAN_APPLIED / SOURCE_AND_SPEC_SYNC_VERIFIED"
     },
     {
       "id": "TASK-LBRC-006",
@@ -683,7 +720,8 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T15:44:00+09:00",
+      "blocked_reason": ""
     },
     {
       "id": "TASK-LBRC-007",
@@ -860,22 +898,22 @@
       "gate": "Completion",
       "target_type": "Task",
       "target_id": "TASK-LBRC-005",
-      "status": "Pending",
-      "result": "",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Fresh Current development-project-data/DEV-V9-REORG-019.json confirms SPEC-V9-019-RANGE-001 revision=3, Current 5 Range, PIERCE abolished; decision_refs contain only REORG-local valid Decision IDs. Fresh Current game/assets/js/tag-skill-runtime.js has PIERCE count=0.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T15:44:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human+AI",
+        "resolved_at": "2026-09-01T15:44:00+09:00",
+        "reason": "Source apply and Specification merge both verified.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:19:00+09:00"
+      "updated_at": "2026-09-01T15:44:00+09:00"
     },
     {
       "id": "CHK-LBRC-PARITY-001",
@@ -1053,15 +1091,15 @@
       "checked_at": "2026-09-01T14:33:29+09:00",
       "resolves_check_ids": [],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
-        "mode": ""
+        "status": "Resolved",
+        "resolved_by": "CHK-LBRC-004-APPLY-001",
+        "resolved_at": "2026-09-01T15:44:00+09:00",
+        "reason": "Fresh Current carry-forward verified.",
+        "mode": "automatic"
       },
       "blocking": false,
       "created_at": "2026-09-01T14:33:29+09:00",
-      "updated_at": "2026-09-01T14:40:00+09:00"
+      "updated_at": "2026-09-01T15:44:00+09:00"
     },
     {
       "id": "CHK-LBRC-004-APPLY-001",
@@ -1069,24 +1107,24 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-LBRC-004",
-      "status": "Pending",
-      "result": "",
-      "evidence": "Direct update artifact GKS-B839 prepared and preflight PASS. Human Apply後にFresh Current GKS-B839とProduction Historical symbol 0件を再確認する。",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Fresh Current GKS-B840/GA-B486.211 verified from guild-adventure-studio-sub(20260901-064407).zip; TASK-LBRC-004 Historical Production symbols remain removed and B839 changes are carried forward in B840.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T15:44:00+09:00",
       "resolves_check_ids": [
         "CHK-LBRC-HIST-001"
       ],
       "resolution": {
-        "status": "Open",
-        "resolved_by": "",
-        "resolved_at": "",
-        "reason": "",
+        "status": "Resolved",
+        "resolved_by": "Human+AI",
+        "resolved_at": "2026-09-01T15:44:00+09:00",
+        "reason": "Human Apply verified in Fresh Current.",
         "mode": ""
       },
       "blocking": false,
       "created_at": "2026-09-01T14:40:00+09:00",
-      "updated_at": "2026-09-01T14:40:00+09:00"
+      "updated_at": "2026-09-01T15:44:00+09:00"
     }
   ],
   "workflow": {
@@ -1166,6 +1204,10 @@
     {
       "at": "2026-09-01T14:40:00+09:00",
       "message": "TASK-LBRC-004途中レビューとStudio反映エラーを反映。Task DoneをHuman Apply待ちDoingへ戻し、GKS-B838→GKS-B839直接SOURCE_UPDATEを再構成。root studio-update.json、target/baseline hash binding、外部TEST_CHANGE_APPROVAL、Export/development-project-data非同梱。Source Quick 11/11 PASS、Applied-state Gate PASS。非Formal monster fallback到達性はTASK-LBRC-006へ明示。"
+    },
+    {
+      "at": "2026-09-01T15:44:00+09:00",
+      "message": "Human Apply verification completed from Fresh Current GKS-B840 / GA-B486.211. TASK-LBRC-004 is promoted to Done. TASK-LBRC-005 is promoted to Done after verifying tag-skill-runtime PIERCE mapping=0 and merged REORG-019 SPEC-V9-019-RANGE-001 revision=3 with valid local decision_refs. CHK-LBRC-SPEC-001 and CHK-LBRC-004-APPLY-001 PASS. Current focus advances to TASK-LBRC-006 Legacy Zero static/runtime Gate."
     }
   ]
 }
