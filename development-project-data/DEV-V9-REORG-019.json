@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T06:43:07.513Z"
+    "updated_at": "2026-09-01T07:43:02.721Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -2072,8 +2072,8 @@
       "id": "SPEC-V9-019-JOB-001",
       "title": "Job成長率・Human Approved適性値",
       "status": "Draft",
-      "summary": "7Job正式名称、一般成長式、Human Approved Balance seed。",
-      "body": "# 1. Current基本7Job\n\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\n旧「弓兵」はCurrentでは「狩人」。\n\n# 2. 一般成長式\n\n各能力値の成長値 `growth` に対して:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\nfinal_gain = guaranteed + (extra_roll_success ? 1 : 0)\n```\n\n内部成長蓄積は行わない。\n\n例:\n- growth 7 → 70%で+1\n- growth 10 → +1確定\n- growth 13 → +1確定、30%で追加+1\n- growth 15 → +1確定、50%で追加+1\n\n# 3. Human Approved Current Balance seed\n\n| Job | STR | VIT | AGI | DEX | INT | MND | LUK | Total |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| 剣士 | 15 | 13 | 4 | 10 | 7 | 8 | 3 | 60 |\n| 騎士 | 10 | 15 | 3 | 7 | 8 | 13 | 4 | 60 |\n| 盗賊 | 7 | 8 | 15 | 13 | 3 | 4 | 10 | 60 |\n| 狩人 | 8 | 7 | 10 | 15 | 4 | 3 | 13 | 60 |\n| 魔術師 | 4 | 3 | 8 | 10 | 15 | 13 | 7 | 60 |\n| 神官 | 3 | 4 | 10 | 7 | 13 | 15 | 8 | 60 |\n| 冒険家 | 13 | 10 | 8 | 3 | 4 | 7 | 15 | 60 |\n\n2026-08-25補正では合計60を維持したまま、狩人・魔術師・神官の内訳を更新した。\n総計だけで新旧を判定せず、各能力値の内訳を正本として扱う。\nこの表はBalance Dataであり、構造へ固定せずDataとして差し替え可能にする。\n\n旧V9 Job成長率表（各職合計70）および補正前の旧60点内訳はHistorical BaselineとしてMaterialに残すが、Currentの具体初期値には上表を使う。\n\n# 4. Jobの意味\n\nJobは能力値そのものではなく、以後のLevel Up時の成長方向を定義する。\n現在statsをJob Masterから再計算しない。\n\n---\n\n## 根拠・統合元\nBOX-R7-004 ジョブ成長率設計書 / BOX-R12-RECOVER-CHAR-SEED / Human Decisions\n",
+      "summary": "7Job正式名称、一般成長式、Human Approved Current Balance seed。",
+      "body": "# 1. Current基本7Job\n\n- 剣士\n- 騎士\n- 盗賊\n- 狩人\n- 魔術師\n- 神官\n- 冒険家\n\n正式名称は「狩人」とする。\n\n# 2. 一般成長式\n\n各能力値の成長値 `growth` に対して:\n\n```text\nguaranteed = floor(growth / 10)\nextra_rate = (growth % 10) * 10%\nfinal_gain = guaranteed + (extra_roll_success ? 1 : 0)\n```\n\n内部成長蓄積は行わない。\n\nこの式はDataから与えられる任意の非負整数growthへ適用する。\n具体的なJob別growth値はBalance Dataとして管理し、式そのものへ固定しない。\n\n# 3. Human Approved Current Balance seed\n\n| Job | STR | VIT | AGI | DEX | INT | MND | LUK | Total |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n| 剣士 | 15 | 13 | 4 | 10 | 7 | 8 | 3 | 60 |\n| 騎士 | 10 | 15 | 3 | 7 | 8 | 13 | 4 | 60 |\n| 盗賊 | 7 | 8 | 15 | 13 | 3 | 4 | 10 | 60 |\n| 狩人 | 8 | 7 | 10 | 15 | 4 | 3 | 13 | 60 |\n| 魔術師 | 4 | 3 | 8 | 10 | 15 | 13 | 7 | 60 |\n| 神官 | 3 | 4 | 10 | 7 | 13 | 15 | 8 | 60 |\n| 冒険家 | 13 | 10 | 8 | 3 | 4 | 7 | 15 | 60 |\n\nCurrentの具体初期値はこのHuman Approved seedを使用する。\nこの表はBalance Dataであり、構造へ固定せずDataとして差し替え可能にする。\nCurrent Specification内には、Currentで使用しない過去のJob growth数値・旧表・旧内訳を保持しない。\n\n# 4. Jobの意味\n\nJobは能力値そのものではなく、以後のLevel Up時の成長方向を定義する。\n現在statsをJob Masterから再計算しない。\n\n---\n\n## 根拠・統合元\n\n- DEC-REORG-CHAR-002: 一般成長式\n- DEC-V9-CHAR-001 / DEC-REORG-CHAR-001: 正式Job名称\n- DEC-BAL-JOB-GROWTH-CORR-002: Current Job growth補正\n- Human Approved Current Balance seed\n",
       "decision_refs": [
         "DEC-REORG-BAL-002",
         "DEC-REORG-CHAR-001",
@@ -2085,7 +2085,7 @@
       "depends_on": [
         "SPEC-V9-019-CORE-001"
       ],
-      "acceptance_criteria": "- 7Jobを正式名称で扱える。\n- 7〜15等の任意growth値へ一般式を適用できる。\n- Human Approved Current seedをDataとして読み込める。\n- 狩人=STR8/VIT7/AGI10/DEX15/INT4/MND3/LUK13、魔術師=STR4/VIT3/AGI8/DEX10/INT15/MND13/LUK7、神官=STR3/VIT4/AGI10/DEX7/INT13/MND15/LUK8を再現できる。\n- 旧弓兵名/旧70点表および補正前の旧60点内訳をCurrent初期値へ誤採用しない。",
+      "acceptance_criteria": "- 7Jobを正式名称で扱える。\n- Dataから与えられる任意の非負整数growthへ一般成長式を適用できる。\n- Human Approved Current Balance seedをDataとして読み込める。\n- 7職×7能力値がCurrent Human Approved seedと一致する。\n- Current Specification内に、Currentで使用しない過去のJob growth具体値・旧表・旧内訳を残さない。\n- Job growth具体値をSource/Runtime/Exportの偶然の値からSpecificationへ逆輸入しない。",
       "system_node_id": "SYS-V9-JOB",
       "contract_ids": [
         "CONTRACT-V9-CORE-TO-JOB",
@@ -2095,11 +2095,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-25T13:33:00+09:00"
+      "updated_at": "2026-09-01T16:40:00+09:00"
     },
     {
       "id": "SPEC-V9-019-JOB-002",
@@ -29853,6 +29853,10 @@
     {
       "at": "2026-09-01T15:40:00+09:00",
       "message": "TASK-LBRC-005 Range Specification synchronization rebuilt from Human-provided current DEV-V9-REORG-019 baseline. SPEC-V9-019-RANGE-001 synchronized to later Human Approved SPEC-FRM-001 semantics: Current 5 Range, PIERCE abolished, formation/damage/cover/forced-advance semantics integrated. DEC-FRM-* were intentionally not added to decision_refs because their Decision records are not registered in this REORG workspace; existing local Decision refs remain valid."
+    },
+    {
+      "at": "2026-09-01T16:40:00+09:00",
+      "message": "Human instructed removal of legacy Job growth values from Current Specification before Production Game Data correction. SPEC-V9-019-JOB-001 was revised to retain only the generic growth formula and Human Approved Current Balance seed. Historical/old Job growth table/value references were removed from the Specification body and acceptance criteria; Material/Decision/Evidence history was not deleted."
     }
   ],
   "authority": {
