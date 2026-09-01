@@ -4,7 +4,7 @@
   if(root)root.GKSFormalContribution=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const EQUIPMENT_FIELDS=Object.freeze(['attack','accuracy','magic_weapon_bonus','weapon_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion']);
+  const EQUIPMENT_FIELDS=Object.freeze(['attack','accuracy','magic_accuracy','magic_resistance','magic_weapon_bonus','weapon_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion']);
   const BLOCK_FIELDS=Object.freeze(['block_rate','block_damage_cut_rate']);
   const ADDITIVE_EQUIPMENT_FIELDS=Object.freeze(EQUIPMENT_FIELDS.filter(k=>!BLOCK_FIELDS.includes(k)));
   const REQUIREMENT_FIELDS=Object.freeze(['required_str','required_dex','required_int','required_vit','required_mnd','required_agi']);
@@ -12,7 +12,7 @@
   const PASSIVE_STATS=Object.freeze(['STR','VIT','AGI','DEX','INT','MND','LUK']);
   const PASSIVE_COMBAT_CAPABILITIES=Object.freeze(['DUAL_WIELD']);
   const NUMERIC_OPERATIONS=Object.freeze(['RELATIVE_PERCENT','FLAT_ADD','ADDITIVE_POINT','SUBTRACTIVE_POINT']);
-  const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion'});
+  const TARGET_TO_FIELD=Object.freeze({ATTACK:'attack',ACCURACY:'accuracy',MAGIC_ACCURACY:'magic_accuracy',MAGIC_RESISTANCE:'magic_resistance',MAGIC_WEAPON_BONUS:'magic_weapon_bonus',HP_BONUS:'hp_bonus',MP_BONUS:'mp_bonus',EVASION:'evasion'});
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
   function object(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
   function req(v,label){const s=String(v??'').trim();if(!s)throw new Error(label+'が必要です。');return s}
