@@ -10,7 +10,7 @@
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T04:24:55.978Z"
+    "updated_at": "2026-09-01T05:21:21.584Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-LBRC-002",
     "work_box_id": "BOX-LBRC-002",
-    "theme": "TASK-LBRC-003 Human Approval Gate",
-    "goal": "TASK-LBRC-002A/B/C完了後、Game/Studio Formal Combat ingestion fallback除去のHuman Approval待ち。承認前はTASK-LBRC-003 Source変更を開始しない。"
+    "theme": "TASK-LBRC-004 Human Approval Gate",
+    "goal": "TASK-LBRC-003 GKS-B838完了後、Historical簡易BattleのProduction残存削除TASK-LBRC-004のHuman Approval待ち。"
   },
   "project_rules": [
     {
@@ -195,6 +195,20 @@
       "result": "Applied",
       "evidence": "",
       "recorded_at": ""
+    },
+    {
+      "id": "IMPL-LBRC-003-B838",
+      "studio_build": "GKS-B838",
+      "game_build": "GA-B486.211",
+      "work_box_ids": [
+        "BOX-LBRC-002"
+      ],
+      "task_ids": [
+        "TASK-LBRC-003"
+      ],
+      "result": "Applied",
+      "evidence": "Formal Combat fixed-value fallback cleanup completed. Formal generated Monster path is strict; MP=0 is preserved and missing required combat values fail closed. Fixed Demo Monster behavior remains isolated and is not used as Formal Authority. Validation: JavaScript syntax 306/306 PASS; protected active tests PASS without modification; Studio update Accept 14/14 PASS. Artifact: GKS-B838_LBRC-TASK003_STUDIO-UPDATE_FIXED.zip sha256=809047caf476c130e6ef874ce97f67e01b9c97e0421622387df70ce46f6490dd.",
+      "recorded_at": "2026-09-01T14:32:00+09:00"
     }
   ],
   "discussions": [
@@ -279,6 +293,18 @@
       "updated_at": "2026-09-01T13:05:00+09:00",
       "text": "",
       "source_discussion_ids": []
+    },
+    {
+      "id": "DEC-LBRC-DEMO-EXCLUDE-001",
+      "title": "固定Demo MonsterをLegacy Runtime Correctionの正式Monster非回帰対象から除外",
+      "status": "Approved",
+      "text": "固定Demo Monsterは今回のLegacy Runtime Correctionの正式Monster非回帰対象外とする。Formal生成Monsterは権威あるjob+levelに基づく明示戦闘値を使用し、MPを含む必須値欠損はFail Closedする。Demo挙動をFormal共通fallbackへ戻してはならない。",
+      "rationale": "Humanが「デモモンスターはどうでもいい」と明示。EVD-0006をFormal Monster全能力の数値Authorityとして使用するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-01T14:20:00+09:00",
+      "created_at": "2026-09-01T14:20:00+09:00",
+      "updated_at": "2026-09-01T14:32:00+09:00"
     }
   ],
   "specifications": [],
@@ -504,21 +530,21 @@
       "id": "TASK-LBRC-003",
       "box_id": "BOX-LBRC-002",
       "title": "Game/Studio Formal Combat ingestion fallbackを除去する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 3,
       "depends_on": [
         "TASK-LBRC-002C"
       ],
-      "acceptance_criteria": "Studioのattack||10/hp||100/agi||10だけでなくGame Formal Battle ingestionの固定値fallbackも全件棚卸しする。0が合法なfieldは0を保持し、必須field欠損は既存Authorityに従いFail Closed。欠損時挙動が一意に確認できないfieldは修正せず停止・Humanへ報告する。Development-only fixture fallbackはProduction pathと区別する。",
+      "acceptance_criteria": "Studioのattack||10/hp||100/agi||10だけでなくGame Formal Battle ingestionの固定値fallbackも全件棚卸しする。0が合法なfieldは0を保持し、必須field欠損は既存Authorityに従いFail Closed。欠損時挙動が一意に確認できないfieldは修正せず停止・Humanへ報告する。Development-only fixture fallbackはProduction pathと区別する。 Human decision: fixed Demo Monster compatibility is out of scope; Formal generated Monster path must be strict while demo-only behavior may remain isolated.",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T13:26:00+09:00"
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T13:05:00+09:00"
+      "updated_at": "2026-09-01T14:32:00+09:00"
     },
     {
       "id": "TASK-LBRC-004",
@@ -629,7 +655,7 @@
       "id": "TASK-LBRC-004B",
       "box_id": "BOX-LBRC-002",
       "title": "Production Monster formation fallbackをAuthority照合する",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 5,
       "depends_on": [
         "TASK-LBRC-001"
@@ -643,7 +669,7 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:43:00+09:00",
-      "updated_at": "2026-09-01T12:43:00+09:00"
+      "updated_at": "2026-09-01T14:32:00+09:00"
     },
     {
       "id": "TASK-LBRC-002A",
@@ -915,6 +941,29 @@
       "blocking": false,
       "created_at": "2026-09-01T13:05:00+09:00",
       "updated_at": "2026-09-01T13:05:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-003-FORMAL-ZERO-001",
+      "title": "Formal Combat fixed fallback removal Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-003",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "GKS-B838: Formal generated Monster maxMp=0 is preserved; missing maxMp fails closed. Game Player Formal ingestion requires explicit AGI/Attack/maxHp/maxMp/mp; Studio Formal ingestion requires explicit hp/mp/agi/attack. Fixed Demo Monster behavior is isolated. Full JavaScript syntax PASS (306 files), protected active tests unchanged and PASS, Studio update Accept 14/14 PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T14:32:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human+AI",
+        "resolved_at": "2026-09-01T14:32:00+09:00",
+        "reason": "Formal generated path verified strict under Human-approved Demo exclusion scope. No prior Current Failed Check exists to resolve.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T14:32:00+09:00",
+      "updated_at": "2026-09-01T14:32:00+09:00"
     }
   ],
   "workflow": {
@@ -982,6 +1031,10 @@
     {
       "at": "2026-09-01T13:05:00+09:00",
       "message": "TASK-LBRC-003 not started. It requires explicit Human Approval and remains Pending."
+    },
+    {
+      "at": "2026-09-01T14:32:00+09:00",
+      "message": "TASK-LBRC-003 completed on GKS-B838. Human excluded fixed Demo Monster from the correction scope. Formal generated Monster/player/studio combat ingestion now removes fixed-value missing fallbacks while preserving legal zero values. Protected tests were not modified; Studio update Accept passed 14/14."
     }
   ]
 }
