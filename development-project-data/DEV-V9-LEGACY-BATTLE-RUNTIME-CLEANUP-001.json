@@ -8,19 +8,19 @@
   "workspace": {
     "id": "DEV-V9-LEGACY-BATTLE-RUNTIME-CLEANUP-001",
     "name": "V9 Legacy Battle Runtime削除・正規戦闘値経路統一",
-    "status": "Specifying",
+    "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-01T03:48:38.963Z"
+    "updated_at": "2026-09-01T04:24:55.978Z"
   },
   "project_context": {
     "purpose": "Game/Studioに残存する旧Demo由来Player戦闘値式・default fallback・廃止Range残骸をLegacy Zero方針で削除し、Formal Equipment/Current Battle Authorityへ単一収束させる。",
     "summary": "Fresh Current GKS-B836監査でGameのbattle_actor旧式、app-runtime再評価、Studio || default、adventure-battle-core簡易Battle、tag-skill-runtime PIERCE mappingをCorrection対象として確定。レビュー反映としてHistorical簡易BattleとProduction monsterStats→expandFormationを分離し、Game/Studio Formal Combat fallback監査へ拡張。Human DecisionによりPlayer初期HP=100/MP=30はgame_runtime.character.initial_hp / initial_mpを正規ownerとして新設し、Character生成時から保持する方針を採用。Source実装開始は案件全体のImplementation Approval待ち。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-LBRC-001",
-    "work_box_id": "BOX-LBRC-001",
-    "theme": "Character初期HP/MP owner確定後のLegacy Battle Runtime削除計画",
-    "goal": "Human ApprovedのCharacter初期HP/MP owner方針を反映し、旧battle_actor式削除・Game/Studio fallback除去・Historical簡易Battle分離・PIERCE残骸削除・Runtime parity検証を一意な工程として実行可能にする。"
+    "architecture_id": "ARCH-LBRC-002",
+    "work_box_id": "BOX-LBRC-002",
+    "theme": "TASK-LBRC-003 Human Approval Gate",
+    "goal": "TASK-LBRC-002A/B/C完了後、Game/Studio Formal Combat ingestion fallback除去のHuman Approval待ち。承認前はTASK-LBRC-003 Source変更を開始しない。"
   },
   "project_rules": [
     {
@@ -110,7 +110,93 @@
     "superseded_by": "",
     "updated_at": "2026-09-01T12:19:00+09:00"
   },
-  "implementation_records": [],
+  "implementation_records": [
+    {
+      "id": "IMPL-LBRC-002A",
+      "task_id": "TASK-LBRC-002A",
+      "status": "Completed",
+      "work_type": "GAME_DATA_UPDATE",
+      "summary": "ADV-0001 game_runtime.characterへ initial_hp=100 / initial_mp=30を追加。旧battle_actorはSource cutoverまで保持。",
+      "artifacts": [
+        {
+          "path": "PRJ-GAS-V4_LBRC-GAMEDATA-A.json",
+          "sha256": "not-recomputed-in-record"
+        }
+      ],
+      "implemented_at": "2026-09-01T13:02:00+09:00",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [],
+      "task_ids": [],
+      "result": "Applied",
+      "evidence": "",
+      "recorded_at": ""
+    },
+    {
+      "id": "IMPL-LBRC-002B",
+      "task_id": "TASK-LBRC-002B",
+      "status": "Completed",
+      "work_type": "SOURCE_UPDATE",
+      "summary": "app-runtime.jsからbattle_actor parser/evaluatorを完全除去。base_hp/base_mp persistence、Primary Weapon attack、Character AGIへ切替。旧Save compat fallbackなし。",
+      "artifacts": [
+        {
+          "path": "game/assets/js/app-runtime.js",
+          "sha256": "3d5dbba4cd6fe31d825816074d19ac05375a8d22c3d3d7f3f860d153bd979ea0"
+        },
+        {
+          "path": "guild-adventure-studio-sub_LBRC-TASK002B_SOURCE.zip",
+          "sha256": "963a4f1bdde6e273335189b5b6f22a06d5076ba806decb712bc964f05dbd6a44"
+        }
+      ],
+      "verification": [
+        "TASK_LBRC_002B_RUNTIME_SEMANTICS_PASS",
+        "JAVASCRIPT_SYNTAX_OK files=306",
+        "TASK_LBRC_002B_STATIC_PASS"
+      ],
+      "implemented_at": "2026-09-01T13:05:00+09:00",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [],
+      "task_ids": [],
+      "result": "Applied",
+      "evidence": "",
+      "recorded_at": ""
+    },
+    {
+      "id": "IMPL-LBRC-002C",
+      "task_id": "TASK-LBRC-002C",
+      "status": "Completed",
+      "work_type": "GAME_DATA_UPDATE",
+      "summary": "ADV-0001 game_runtime.battle_actorを削除し、initial_hp=100 / initial_mp=30を維持。export-core.buildPackage正式経路でbattle_actor残存0を確認。",
+      "artifacts": [
+        {
+          "path": "PRJ-GAS-V4_LBRC-GAMEDATA-C.json",
+          "sha256": "6ad0883bc22ddde3298374bcf895d277dbf3a38703464862db29b169f816f779"
+        },
+        {
+          "path": "PRJ-GAS-V4_LBRC-TASK002C_Export.zip",
+          "sha256": "29a1025c4b49bf94c0f39a2bf3712e31bdff2abcf234749f28c417d4e36effa2"
+        },
+        {
+          "path": "Export/system/adventure_settings.json",
+          "sha256": "2ffdd84977ab654a68c34fc552b1236ed5057b51b983e7f2b2810abf10e25863"
+        }
+      ],
+      "verification": [
+        "export-core.buildPackage files=29",
+        "generated adventure_settings initial_hp=100 initial_mp=30",
+        "generated adventure_settings battle_actor=0"
+      ],
+      "implemented_at": "2026-09-01T13:05:00+09:00",
+      "studio_build": "",
+      "game_build": "",
+      "work_box_ids": [],
+      "task_ids": [],
+      "result": "Applied",
+      "evidence": "",
+      "recorded_at": ""
+    }
+  ],
   "discussions": [
     {
       "id": "DISC-LBRC-EVD-001",
@@ -124,6 +210,36 @@
       "artifact_note": "Correction Evidence ID: EVD-LBRC-001 / source baseline GKS-B836 / GA-B486.211",
       "created_at": "2026-09-01T12:19:00+09:00",
       "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "DISC-LBRC-IMPL-STOP-001",
+      "title": "TASK-LBRC-002 work_type混在による実装開始停止",
+      "status": "Resolved",
+      "summary": "Humanが3段階Task分割を承認。Game Data正本 PRJ-GAS-V4 を受領し、GAME_DATA Task Aを実行可能と確認。",
+      "body": "# 実装開始Gate結果\n\n## Human承認\n2026-09-01T12:58:00+09:00 に案件Implementation ApprovalおよびTASK-LBRC-002の作業開始をHumanが承認。\n\n## 検出した工程衝突\n- TASK-LBRC-002.work_type = SOURCE_UPDATE。\n- Acceptance Criteriaは `Export/system/adventure_settings.json` の `game_runtime.character.initial_hp / initial_mp` 追加と `battle_actor` 削除を要求する。\n- 同時に `game/assets/js/app-runtime.js` のparser/evaluator/characterBattleValues/basicAttackProfiles修正を要求する。\n- `shared/integrity/ai-operating-policy.json` はSOURCE_UPDATE成果物に `Export/**` を含めることを禁止する。\n- `DEVELOPMENT_PROJECT_AI_PROTOCOL` は1 Taskへ複数work_typeを混在させることを禁止し、必要時は停止してTask分割案を統合JSONへ記録するよう要求する。\n- `Export/system/adventure_settings.json` はExportであり、Game Data正本として直接編集・配布できない。\n\n## 安全な分割案\n1. GAME_DATA Task A: Studio正規Game Dataで `game_runtime.character.initial_hp=100 / initial_mp=30` を追加する。旧battle_actorはこの段階では残し、旧Source Runtimeを壊さない。\n2. SOURCE_UPDATE Task B: `app-runtime.js` を新character ownerへ切替え、battle_actor parser/evaluator依存を完全削除する。HP/MPはCharacter保持値+Formal Equipment Contribution、AttackはPrimary Weapon Contributionのみ、AGIはCharacter AGI statを使用する。\n3. GAME_DATA Task C: Source切替確認後、Studio正規Game Dataから旧 `game_runtime.battle_actor` containerを削除し、Exportを正式再生成する。\n\nこの3段階は成果物経路を分離し、Sourceへのmagic number/compat fallbackを追加しない。各段階は独立Gateを持たせる。",
+      "open_questions": "Humanが上記3Task分割を承認するか。またGAME_DATA Taskで使用するADV-0001のStudio正規Game Data入力/取込経路をどのCurrent artifactで与えるか。今回Fresh Current ZIP内のExport/system/adventure_settings.jsonはExport snapshotであり正本入力として直接編集できない。",
+      "conclusion": "未決の工程分割とGame Data正本入力が確定するまでTASK-LBRC-002はBlocked。Source/Game Dataとも未変更。",
+      "related_discussion_ids": [
+        "DISC-LBRC-EVD-001"
+      ],
+      "artifact_note": "No source/game-data artifact generated. Development Project integration only.",
+      "created_at": "2026-09-01T12:58:00+09:00",
+      "updated_at": "2026-09-01T13:02:00+09:00"
+    },
+    {
+      "id": "DISC-LBRC-CHAR-PERSIST-001",
+      "title": "SOURCE_UPDATE Task B Character HP/MP保持field未決",
+      "status": "Resolved",
+      "summary": "HumanがCharacter永続fieldを base_hp / base_mp と確定し、TASK-LBRC-002Bを再開・完了。Compatibility fallbackは新設せず欠損SaveはFail Closed。",
+      "body": "# 停止理由\n- GAME_DATA Task Aで `game_runtime.character.initial_hp=100 / initial_mp=30` は正規ownerとして追加済み。\n- Fresh Current `makeCharacterCore()` は Character recordへ id/name/level/job/stats/jobHistory/growthHistory/createdAt/formation_position のみを生成し、HP/MP永続fieldを持たない。\n- `characterBattleValues()` は現在battle_actor式から毎回maxHp/maxMpを派生しており、旧式削除後にCharacter recordへどのfield名・semanticで初期HP/MPを保持するかはApproved Authorityに明記されていない。\n- `hp/mp`, `max_hp/max_mp`, `base_hp/base_mp`, `initial_hp/initial_mp` 等をAIが選ぶことはSchema推測になる。\n\n# Gate\nCharacter recordの保存field名と意味がHuman/Approved Specificationで確定するまでTASK-LBRC-002Bは変更しない。既存Save migration/compat fallbackはCompatibility Budget 0により新設しない。\n\n# Resolution\n2026-09-01T13:05:00+09:00 Humanが `base_hp / base_mp` を正式Character persistence fieldとして承認。SourceはCharacter生成時にconfig ownerからこのfieldへ保存し、Current Save normalizationで必須fieldとしてFail Closed検証する。",
+      "open_questions": "",
+      "conclusion": "Resolved by Human Decision DEC-LBRC-002. TASK-LBRC-002B completed.",
+      "related_discussion_ids": [
+        "DISC-LBRC-IMPL-STOP-001"
+      ],
+      "created_at": "2026-09-01T13:02:00+09:00",
+      "updated_at": "2026-09-01T13:05:00+09:00",
+      "artifact_note": ""
     }
   ],
   "decisions": [
@@ -143,6 +259,24 @@
       "approved_at": "2026-09-01T12:43:00+09:00",
       "created_at": "2026-09-01T12:43:00+09:00",
       "updated_at": "2026-09-01T12:43:00+09:00",
+      "text": "",
+      "source_discussion_ids": []
+    },
+    {
+      "id": "DEC-LBRC-002",
+      "title": "Character HP/MP persistence fieldをbase_hp/base_mpへ確定",
+      "status": "Approved",
+      "decision": "Character recordはPlayer初期HP/MPを base_hp / base_mp として永続保持する。生成時に game_runtime.character.initial_hp / initial_mp からコピーし、Battle maxHp/maxMpは base_hp/base_mp + Formal Equipment Contribution を基礎に構築する。",
+      "rationale": "Battle中current hp/mpや算出後maxHp/maxMpと混同せず、旧battle_actor Formulaを復活させずにCharacter生成時から正規baselineを保持するため。",
+      "constraints": [
+        "既存Save欠損を100/30やconfig値で自動補完するcompat fallbackを新設しない。",
+        "base_hpは1以上整数、base_mpは0以上整数としてCurrent Saveで必須。",
+        "Battle Runtimeへの100/30 magic number直書きを禁止する。"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-09-01T13:05:00+09:00",
+      "created_at": "2026-09-01T13:05:00+09:00",
+      "updated_at": "2026-09-01T13:05:00+09:00",
       "text": "",
       "source_discussion_ids": []
     }
@@ -349,22 +483,22 @@
     {
       "id": "TASK-LBRC-002",
       "box_id": "BOX-LBRC-002",
-      "title": "Character初期HP/MP owner新設とGame battle_actor旧Demo派生式削除",
-      "status": "Todo",
+      "title": "Character初期HP/MP owner切替（分割親Task）",
+      "status": "Done",
       "execution_order": 2,
       "depends_on": [
         "TASK-LBRC-001"
       ],
-      "acceptance_criteria": "game_runtime.character.initial_hp=100 / initial_mp=30を正規設定fieldとして追加し、Character生成時から保持する。adventure_settingsの旧Player battle_actor max_hp/max_mp/attack/agi Formula containerを削除し、app-runtimeのparser/evaluator/characterBattleValues/basicAttackProfilesが旧式を参照しない。HP/MPはCharacter initial値+Formal Equipment Contribution、AttackはPrimary Weapon Contributionのみ、AGIはCurrent Character AGI statを使用する。100/30のSource直書きやcompat fallbackを新設しない。",
-      "work_type": "SOURCE_UPDATE",
+      "acceptance_criteria": "Human承認済み分割により TASK-LBRC-002A → TASK-LBRC-002B → TASK-LBRC-002C の3 Taskで完了する。",
+      "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T13:00:00+09:00"
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:43:00+09:00"
+      "updated_at": "2026-09-01T13:05:00+09:00"
     },
     {
       "id": "TASK-LBRC-003",
@@ -373,7 +507,7 @@
       "status": "Todo",
       "execution_order": 3,
       "depends_on": [
-        "TASK-LBRC-002"
+        "TASK-LBRC-002C"
       ],
       "acceptance_criteria": "Studioのattack||10/hp||100/agi||10だけでなくGame Formal Battle ingestionの固定値fallbackも全件棚卸しする。0が合法なfieldは0を保持し、必須field欠損は既存Authorityに従いFail Closed。欠損時挙動が一意に確認できないfieldは修正せず停止・Humanへ報告する。Development-only fixture fallbackはProduction pathと区別する。",
       "work_type": "SOURCE_UPDATE",
@@ -384,7 +518,7 @@
         "at": ""
       },
       "created_at": "2026-09-01T12:19:00+09:00",
-      "updated_at": "2026-09-01T12:43:00+09:00"
+      "updated_at": "2026-09-01T13:05:00+09:00"
     },
     {
       "id": "TASK-LBRC-004",
@@ -510,6 +644,66 @@
       },
       "created_at": "2026-09-01T12:43:00+09:00",
       "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "TASK-LBRC-002A",
+      "box_id": "BOX-LBRC-002",
+      "title": "Character初期HP/MP ownerをGame Dataへ追加",
+      "status": "Done",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-LBRC-001"
+      ],
+      "acceptance_criteria": "Studio正規Project JSONのADV-0001 params.game_runtime.characterへ initial_hp=100 / initial_mp=30を追加する。旧game_runtime.battle_actorはSource切替前のため保持し、その他Game Data semanticsを変更しない。",
+      "work_type": "",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T13:00:00+09:00"
+      },
+      "created_at": "2026-09-01T13:02:00+09:00",
+      "updated_at": "2026-09-01T13:05:00+09:00"
+    },
+    {
+      "id": "TASK-LBRC-002B",
+      "box_id": "BOX-LBRC-002",
+      "title": "Game RuntimeをCharacter HP/MP ownerへ切替",
+      "status": "Done",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-LBRC-002A"
+      ],
+      "acceptance_criteria": "app-runtime.jsが旧battle_actor parser/evaluatorを参照せず、Character生成時にbase_hp/base_mpへinitial_hp/initial_mpを保存する。HP/MPはbase_hp/base_mp+Formal Equipment Contribution、AttackはPrimary Weapon Contributionのみ、AGIはCurrent Character AGI statを使用する。100/30 magic number、legacy/compat fallbackを新設しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T13:00:00+09:00"
+      },
+      "created_at": "2026-09-01T13:02:00+09:00",
+      "updated_at": "2026-09-01T13:05:00+09:00"
+    },
+    {
+      "id": "TASK-LBRC-002C",
+      "box_id": "BOX-LBRC-002",
+      "title": "旧game_runtime.battle_actorをGame Dataから削除",
+      "status": "Done",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-LBRC-002B"
+      ],
+      "acceptance_criteria": "TASK-LBRC-002BのSource切替と検証PASS後、Studio正規Project JSONからgame_runtime.battle_actor Formula containerを削除し、正式Exportで残存0を確認する。",
+      "work_type": "",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-01T13:00:00+09:00"
+      },
+      "created_at": "2026-09-01T13:02:00+09:00",
+      "updated_at": "2026-09-01T13:05:00+09:00"
     }
   ],
   "checks": [
@@ -673,14 +867,62 @@
       "blocking": false,
       "created_at": "2026-09-01T12:43:00+09:00",
       "updated_at": "2026-09-01T12:43:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-CHAR-PERSIST-001",
+      "title": "Character HP/MP persistence schema Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-002B",
+      "status": "Failed",
+      "result": "FAIL_CLOSED",
+      "evidence": "Fresh Current makeCharacterCore()にHP/MP永続fieldなし。DEC-LBRC-001はconfig ownerを確定するがCharacter record field名/semanticは未定義。",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T13:02:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-LBRC-CHAR-PERSIST-002",
+        "resolved_at": "2026-09-01T13:05:00+09:00",
+        "reason": "PASS",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T13:02:00+09:00",
+      "updated_at": "2026-09-01T13:02:00+09:00"
+    },
+    {
+      "id": "CHK-LBRC-CHAR-PERSIST-002",
+      "title": "Character HP/MP persistence schema Resolution Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-LBRC-002B",
+      "status": "Passed",
+      "result": "PASS",
+      "evidence": "Human approved base_hp/base_mp. app-runtime makeCharacterCore copies config initial_hp/initial_mp; normalize requires base_hp/base_mp; characterBattleValues uses base_hp/base_mp + equipment, Primary Weapon attack, Character AGI. Runtime semantics test and full JS syntax PASS.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-01T13:05:00+09:00",
+      "resolves_check_ids": [
+        "CHK-LBRC-CHAR-PERSIST-001"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "Human+AI",
+        "resolved_at": "2026-09-01T13:05:00+09:00",
+        "reason": "Human fixed field names/semantics; implementation verified.",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-01T13:05:00+09:00",
+      "updated_at": "2026-09-01T13:05:00+09:00"
     }
   ],
   "workflow": {
-    "stage": "Planning",
+    "stage": "Implementing",
     "implementation_approval": {
-      "status": "Pending",
-      "by": "",
-      "at": ""
+      "status": "Approved",
+      "by": "Human",
+      "at": "2026-09-01T12:58:00+09:00"
     },
     "completion_approval": {
       "status": "Pending",
@@ -708,6 +950,38 @@
     {
       "at": "2026-09-01T12:43:00+09:00",
       "message": "Plan updated from registered project baseline: Game/Studio Formal Combat fallback audit expanded, Historical basic battle separated from production monsterStats->expandFormation, and dedicated Monster authority audit task TASK-LBRC-004B added."
+    },
+    {
+      "at": "2026-09-01T12:58:00+09:00",
+      "message": "Human approved project Implementation Approval and TASK-LBRC-002 start. Execution immediately hit a work-type boundary: TASK-LBRC-002 mixes SOURCE_UPDATE app-runtime changes with Export/** Game Data changes, which policy forbids in one Development Task. Failed closed before any Source/Game Data modification; recorded DISC-LBRC-IMPL-STOP-001 with a 3-task split proposal."
+    },
+    {
+      "at": "2026-09-01T13:02:00+09:00",
+      "message": "Human approved TASK-LBRC-002 split into GAME_DATA 002A -> SOURCE_UPDATE 002B -> GAME_DATA 002C."
+    },
+    {
+      "at": "2026-09-01T13:02:00+09:00",
+      "message": "Received PRJ-GAS-V4 Game Data authority. TASK-LBRC-002A completed by adding ADV-0001 game_runtime.character.initial_hp=100 / initial_mp=30 only; legacy battle_actor retained until Source cutover."
+    },
+    {
+      "at": "2026-09-01T13:02:00+09:00",
+      "message": "TASK-LBRC-002B Fail Closed: approved authority does not define Character record persistence field names/semantics for HP/MP. No Source modification performed."
+    },
+    {
+      "at": "2026-09-01T13:05:00+09:00",
+      "message": "Human approved Character persistence field names base_hp / base_mp (DEC-LBRC-002). CHK-LBRC-CHAR-PERSIST-001 remains historical Failed; new CHK-LBRC-CHAR-PERSIST-002 Passed resolves it."
+    },
+    {
+      "at": "2026-09-01T13:05:00+09:00",
+      "message": "TASK-LBRC-002B completed: app-runtime.js no longer reads/evaluates game_runtime.battle_actor; Character creation persists base_hp/base_mp; Player HP/MP/Attack/AGI path aligned to approved owner. Full JavaScript syntax and targeted runtime semantics tests PASS."
+    },
+    {
+      "at": "2026-09-01T13:05:00+09:00",
+      "message": "TASK-LBRC-002C completed: final Game Data removes game_runtime.battle_actor and retains character initial_hp=100 / initial_mp=30. Official export-core build generated 29 files and confirmed adventure_settings has no battle_actor."
+    },
+    {
+      "at": "2026-09-01T13:05:00+09:00",
+      "message": "TASK-LBRC-003 not started. It requires explicit Human Approval and remains Pending."
     }
   ]
 }
