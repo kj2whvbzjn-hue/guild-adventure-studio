@@ -5,7 +5,7 @@
     "name": "V9ゲーム再実装・System Structure再整理",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-02T03:08:45.878Z"
+    "updated_at": "2026-09-02T05:59:55.828Z"
   },
   "project_context": {
     "purpose": "既存Material・Decision・51 Current SpecificationをSystem Node / Contract / Connectionへ再編し、Flag / Event / Impact / Specification Candidateで再整理工程を実データ管理する。",
@@ -623,7 +623,7 @@
     {
       "id": "DISC-R9-GAP-10",
       "title": "Monster / Enemy Budget 再実装不足",
-      "status": "Resolved",
+      "status": "Open",
       "summary": "判定: FalsePositiveGap_CurrentMonsterPathExists",
       "body": "最終照合で、Monster→Formal AI BindingをCurrent必須要件としたこと自体が過剰だったと判定。\n\n根拠:\n- Current Formal AI Save/BridgeはCharacter `formalAiBinding` を明示的に対象とする。\n- Current BattleはMonster/non-character actorに別経路を持つ。\n- Monster current contractは `aiPolicy` / `defaultSkillId` をBattleへ渡し、Adventure formal simulationではenemy basic attack経路を使う。\n- Human Approved `DEC-V9-AI-008` は旧AI **Save** fallbackをLegacy zeroにする決定で、Monster MasterへCharacter bindingを強制する決定ではない。\n- 旧案件の『Monster→Formal AI Binding』はReview候補/Blocked taskで、Human Approved仕様ではない。\n\nCharacter用bindingをMonsterへ推測流用せず、Current Monster AI経路をそのまま仕様化する。",
       "open_questions": "",
@@ -631,7 +631,10 @@
       "related_discussion_ids": [],
       "artifact_note": "DEV-V9-REORG-009_reimplementation-audit.md",
       "created_at": "2026-08-19T17:12:00+09:00",
-      "updated_at": "2026-08-19T18:33:00+09:00"
+      "updated_at": "2026-09-02T14:15:52+09:00",
+      "superseded_by_decision_id": "DEC-V9-AI-009",
+      "superseded_at": "2026-09-02T14:15:52+09:00",
+      "supersession_note": "Human Decision DEC-V9-AI-009によりMonster Formal AIをCurrent実装範囲へ移したため、本Discussionの『Formal AIへの将来統合は別仕様』結論はHistoricalとして保持しCurrent Authorityから除外する。"
     },
     {
       "id": "DISC-R9-GAP-11",
@@ -1916,6 +1919,20 @@
       "approved_at": "2026-08-27T17:29:12+09:00",
       "created_at": "2026-08-27T17:29:12+09:00",
       "updated_at": "2026-08-27T17:29:12+09:00"
+    },
+    {
+      "id": "DEC-V9-AI-009",
+      "title": "MonsterをCurrent Formal AI V2へ統合する",
+      "status": "Approved",
+      "text": "Monsterも今回の新AIへ移す。MonsterはCharacterと同じShared Formal AI Program V2 schema / Validator / Compiler / Decision Engine / Traceを使用する。Monsterが使用するAI Programは開発者作成AIプログラムとし、DeveloperがStudioの「制作 > AI制作」で明示作成する。MonsterのPersistent formalAiBindingはMonster Master/GameData側が正本を持ち、{program_id, layout_id} を保持する。master_snapshot_idはPersistentへ保存せず、Compile/Battle Packageで解決したResolved bindingだけに保持する。既存aiPolicy/defaultSkillId/chooseTarget等から新Programを推測生成・自動割当しない。意味保存を一意に証明できないMonsterはDEVELOPER_PROGRAM_AUTHORING_REQUIREDとし、全対象Monsterに有効なFormal bindingが成立するまで旧Current Monster AI経路を削除しない。全対象Monsterのbinding成立後に旧経路をLegacy Zeroとする。これによりSPEC-V9-019-MONSTER-001 #4 AI/該当AcceptanceおよびDISC-R9-GAP-10の『Monster Formal AIはFuture分離』判断を明示的にsupersedeする。",
+      "rationale": "HumanがP0で『Monsterも今回の新AIへ移す』と確定したため。R10の推測変換禁止・Compatibility Budget 0・DEP-024 Persistent/Resolved分離を維持する。",
+      "source_discussion_ids": [
+        "DISC-R9-GAP-10"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-09-02T14:15:52+09:00",
+      "created_at": "2026-09-02T14:15:52+09:00",
+      "updated_at": "2026-09-02T14:15:52+09:00"
     }
   ],
   "specifications": [
@@ -2810,35 +2827,38 @@
       "id": "SPEC-V9-019-MONSTER-001",
       "title": "Monster Master / Runtime Data Contract",
       "status": "Approved",
-      "summary": "Monster ID参照、spawn/drop/budget field、Demo分離。",
-      "body": "# 1. Monster Master\n\n最低限:\n- id\n- name\n\nCurrent/後発参照で扱う主な情報:\n- status / enabled\n- tags[]\n- params\n- drop_table_id / drop_table_ids\n- Job参照\n- Skill参照\n- Equipment / MOD参照\n- Spawn条件\n- Enemy Budget関連\n- Runtime combat stats（Product正式生成後）\n\n## Monster Level × Job\n\n- Monsterの基礎能力値は「Monster Level × Jobごとの係数」を基礎として生成する。\n- JobはMonsterのCombat Stats生成へ影響する。\n- Job係数の具体値はBalance調整項目とし、外部データから変更可能にする。\n- 生成された基礎能力値をもとに、そのMonsterが使用可能なSkill候補を選ぶ。\n- Skill選択の能力値条件・閾値・具体値もBalance調整項目として外部データから変更可能にする。\n- 根拠のない係数や閾値を推測して固定しない。\n\n# 2. 参照\n\nJob / Skill / Equipment / MOD / Drop Tableは正式ID参照。\n名前文字列からIDを推測しない。\n\n# 3. Demo/Test Data\n\n実機検証用MonsterをProduct Monster Masterへ無条件採用しない。\n\n# 4. AI\n\nCharacter用Formal AI bindingをMonsterへ自動流用しない。\nMonster Formal AI統合はFutureとして分離する。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-10 / DEC-REORG-MONSTER-005 / DEC-REORG-MONSTER-006",
+      "summary": "Monster ID参照、spawn/drop/budget field、Demo分離、Current Formal AI V2 binding。",
+      "body": "# 1. Monster Master\n\n最低限:\n- id\n- name\n\nCurrent/後発参照で扱う主な情報:\n- status / enabled\n- tags[]\n- params\n- drop_table_id / drop_table_ids\n- Job参照\n- Skill参照\n- Equipment / MOD参照\n- Spawn条件\n- Enemy Budget関連\n- Runtime combat stats（Product正式生成後）\n\n## Monster Level × Job\n\n- Monsterの基礎能力値は「Monster Level × Jobごとの係数」を基礎として生成する。\n- JobはMonsterのCombat Stats生成へ影響する。\n- Job係数の具体値はBalance調整項目とし、外部データから変更可能にする。\n- 生成された基礎能力値をもとに、そのMonsterが使用可能なSkill候補を選ぶ。\n- Skill選択の能力値条件・閾値・具体値もBalance調整項目として外部データから変更可能にする。\n- 根拠のない係数や閾値を推測して固定しない。\n\n# 2. 参照\n\nJob / Skill / Equipment / MOD / Drop Tableは正式ID参照。\n名前文字列からIDを推測しない。\n\n# 3. Demo/Test Data\n\n実機検証用MonsterをProduct Monster Masterへ無条件採用しない。\n\n# 4. AI\n\n- MonsterもCurrent Formal AI V2を使用する。\n- CharacterとMonsterはShared Formal AI Program V2 schema / Validator / Compiler / Decision Engine / Traceを共用する。\n- Monsterが使用するAI Programは開発者作成AIプログラムとし、DeveloperがStudioの「制作 > AI制作」で明示作成する。\n- Monster Master/GameDataのPersistent `formalAiBinding` は `{program_id, layout_id}` を正本とする。\n- `master_snapshot_id` はPersistent bindingへ保存せず、Compile/Battle Packageで解決したResolved bindingだけに保持する。\n- 旧 `aiPolicy` / `defaultSkillId` / `chooseTarget` 等からFormal AI Programを推測生成・自動割当しない。\n- 意味保存を一意に証明できないMonsterは `DEVELOPER_PROGRAM_AUTHORING_REQUIRED` とし、明示Programを作成してbindingする。\n- 全対象Monsterに有効なFormal bindingが成立するまで旧Current Monster AI経路を削除しない。\n- 全対象MonsterのFormal binding成立後、旧Current Monster AI経路をLegacy Zeroとする。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-IMPL-EVIDENCE / DISC-R9-GAP-10 / DEC-REORG-MONSTER-005 / DEC-REORG-MONSTER-006",
       "decision_refs": [
         "DEC-V9-MONSTER-004",
         "DEC-V9-AI-008",
         "DEC-REORG-MONSTER-005",
         "DEC-REORG-MONSTER-006",
-        "DEC-REORG-BAL-001"
+        "DEC-REORG-BAL-001",
+        "DEC-V9-AI-009"
       ],
       "depends_on": [
         "SPEC-V9-019-SKILL-001",
         "SPEC-V9-019-EQUIP-001",
-        "SPEC-V9-019-ENEMY-001"
+        "SPEC-V9-019-ENEMY-001",
+        "SPEC-V9-019-AI-003"
       ],
-      "acceptance_criteria": "- Monsterの正式ID参照をValidationできる。\n- Monster LevelとJob係数から基礎能力値を生成する構造を持つ。\n- 生成された基礎能力値から使用可能Skill候補を選べる。\n- Job係数・Skill選択閾値はBalance調整項目として外部化できる。\n- Demo/Test MonsterをProduct Dataと分離できる。\n- Character Formal AI bindingをMonsterへ自動追加しない。",
+      "acceptance_criteria": "- Monsterの正式ID参照をValidationできる。\n- Monster LevelとJob係数から基礎能力値を生成する構造を持つ。\n- 生成された基礎能力値から使用可能Skill候補を選べる。\n- Job係数・Skill選択閾値はBalance調整項目として外部化できる。\n- Demo/Test MonsterをProduct Dataと分離できる。\n- Current Battleへ投入するMonsterは開発者作成AIプログラムの有効なFormal bindingを解決できる。\n- Monster Persistent bindingへmaster_snapshot_idを保存しない。\n- 旧Monster AIからFormal AI Programを名前・Job・既定値で推測割当しない。\n- 全対象MonsterのFormal binding成立前に旧Current Monster AI経路を削除しない。",
       "system_node_id": "SYS-V9-MONSTER",
       "contract_ids": [
         "CONTRACT-V9-ENEMY-TO-MONSTER",
         "CONTRACT-V9-EQUIP-TO-MONSTER",
         "CONTRACT-V9-MONSTER-TO-ENCOUNTER",
-        "CONTRACT-V9-SKILL-TO-MONSTER"
+        "CONTRACT-V9-SKILL-TO-MONSTER",
+        "CONTRACT-V9-AI-TO-MONSTER"
       ],
       "source_candidate_id": "SPEC-CAND-R20-MONSTER-001",
       "material_snapshot_hash": "8190c45bc3f4f9b85a5d498b020e4110d015f7a1cf4d655432f4bf8afd50b074",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "Human",
-      "approved_at": "2026-08-20T15:09:00+09:00",
+      "approved_at": "2026-09-02T14:15:52+09:00",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T15:09:00+09:00"
+      "updated_at": "2026-09-02T14:15:52+09:00"
     },
     {
       "id": "SPEC-V9-019-MONSTER-002",
@@ -3294,18 +3314,19 @@
       "title": "Formal AI Runtime / Decision / Trace / Character Binding",
       "status": "Draft",
       "summary": "AI判断、Trace、Character Save、Battle境界、Legacy Zero。",
-      "body": "# 1. AI責務\n\n```text\nGame AI UI\n→ Formal Program\n→ Validator\n→ Compiler\n→ Decision Engine\n→ action_id + target_id\n→ Battle\n```\n\nAIは判断まで。\nBattle Action reservation、実行直前Validation、Skill Runtime、Combat計算を再定義しない。\n\n# 2. Decision\n\nAIはCurrent情報を評価する。\n前回のTarget/Skill選択をHidden memoryとして保持しない。\n未来のRandom結果/次行動予定を参照しない。\n同点候補はRandom。\n\nBattle側の再評価タイミング:\n- AG最大値の10%ごと\n- 行動直前に最終再検証\n\n# 3. Trace\n\nTrace Required:\n[\"schema_version\", \"data_version\", \"battle_id\", \"program_id\", \"program_version\", \"actor_id\", \"seed\", \"events\", \"outcome\"]\n\nEvent phase:\n- reservation\n- execution\n- rethink\n\nEvent type:\n- condition\n- target\n- action\n- branch\n- call\n- wait\n- end\n- error\n\n# 4. Character Binding\n\nCharacter Saveは `formalAiBinding` でProgram/Layoutを参照する。\nProgram/Layout/Compiled RuntimeのVersion整合を確認する。\n\n# 5. Shared Core\n\nGame/Studioで共有:\n- Program Model\n- Master Adapter\n- Validator\n- Compiler\n- Decision Engine\n- Trace\n\nGame Bridgeだけが:\n- Save\n- Character binding\n- Battle Unit Snapshot\n- reserveAction\nを担当する。\n\n# 6. Legacy Zero\n\nFormal AI未設定時に旧AIへFallbackしない。\nCharacter Saveへ:\n- aiGraph\n- aiPolicy\n- defaultSkillId\n等を互換目的で残さない。\n旧Saveを自動意味変換しない。\n\n# 7. Monster\n\nCharacter `formalAiBinding` をMonsterへ推測流用しない。\nMonster側はCurrent別Battle path。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / Battle v3 / Human Decisions\n\n---\n\n## R25 Player Skill Loadout Binding\n\nPlayer CharacterのAI RuntimeがSkill行動候補を評価する際、習得済みSkill全体ではなく、現在のSkill Loadoutへ登録されたSkillだけを使用候補とする。\n\nAIの責務は判断であり、Loadout自体の編集・保存責務はPlayer Skill UI / Save側に置く。\nLoadout外SkillをAI Nodeが参照した場合は有効な使用候補として扱わない。\n\nPassiveはSkill Loadoutへ含めない。\nPassiveは既存仕様どおり常時効果として別Runtime経路で評価する。\n\nLoadout slot数はBalance可変であり、本Runtime仕様へ固定しない。\n",
+      "body": "# 1. AI責務\n\n```text\nGame AI UI\n→ Formal Program\n→ Validator\n→ Compiler\n→ Decision Engine\n→ action_id + target_id\n→ Battle\n```\n\nAIは判断まで。\nBattle Action reservation、実行直前Validation、Skill Runtime、Combat計算を再定義しない。\n\n# 2. Decision\n\nAIはCurrent情報を評価する。\n前回のTarget/Skill選択をHidden memoryとして保持しない。\n未来のRandom結果/次行動予定を参照しない。\n同点候補はRandom。\n\nBattle側の再評価タイミング:\n- AG最大値の10%ごと\n- 行動直前に最終再検証\n\n# 3. Trace\n\nTrace Required:\n[\"schema_version\", \"data_version\", \"battle_id\", \"program_id\", \"program_version\", \"actor_id\", \"seed\", \"events\", \"outcome\"]\n\nEvent phase:\n- reservation\n- execution\n- rethink\n\nEvent type:\n- condition\n- target\n- action\n- branch\n- call\n- wait\n- end\n- error\n\n# 4. Character Binding\n\nCharacter Saveは `formalAiBinding` でProgram/Layoutを参照する。\nProgram/Layout/Compiled RuntimeのVersion整合を確認する。\n\n# 5. Shared Core\n\nGame/Studioで共有:\n- Program Model\n- Master Adapter\n- Validator\n- Compiler\n- Decision Engine\n- Trace\n\nGame Bridgeだけが:\n- Save\n- Character binding\n- Battle Unit Snapshot\n- reserveAction\nを担当する。\n\n# 6. Legacy Zero\n\nFormal AI未設定時に旧AIへFallbackしない。\nCharacter Saveへ:\n- aiGraph\n- aiPolicy\n- defaultSkillId\n等を互換目的で残さない。\n旧Saveを自動意味変換しない。\n\n# 7. Monster\n\n- MonsterもShared Formal AI Program V2 runtimeを使用する。\n- MonsterのAI Programは開発者作成AIプログラムであり、Studio「制作 > AI制作」でDeveloperがAuthoringする。\n- Monster Master/GameDataがPersistent `formalAiBinding={program_id, layout_id}` を保持する。\n- `master_snapshot_id` はCompile/Battle時Resolved bindingだけに存在し、Persistent Monster Masterへ保存しない。\n- 旧Monster AI経路からProgramを推測生成しない。\n- Dedicated Migrationで全対象MonsterのFormal binding validを確認してから旧経路をLegacy Zero化する。\n\n---\n\n## 根拠・統合元\nBOX-R12-CURRENT-FORMAL-AI / Battle v3 / Human Decisions\n\n---\n\n## R25 Player Skill Loadout Binding\n\nPlayer CharacterのAI RuntimeがSkill行動候補を評価する際、習得済みSkill全体ではなく、現在のSkill Loadoutへ登録されたSkillだけを使用候補とする。\n\nAIの責務は判断であり、Loadout自体の編集・保存責務はPlayer Skill UI / Save側に置く。\nLoadout外SkillをAI Nodeが参照した場合は有効な使用候補として扱わない。\n\nPassiveはSkill Loadoutへ含めない。\nPassiveは既存仕様どおり常時効果として別Runtime経路で評価する。\n\nLoadout slot数はBalance可変であり、本Runtime仕様へ固定しない。\n",
       "decision_refs": [
         "DEC-V9-AI-005",
         "DEC-V9-AI-006",
         "DEC-V9-AI-008",
-        "DEC-R24-SKILL-UI-001"
+        "DEC-R24-SKILL-UI-001",
+        "DEC-V9-AI-009"
       ],
       "depends_on": [
         "SPEC-V9-019-AI-002",
         "SPEC-V9-019-BATTLE-004"
       ],
-      "acceptance_criteria": "- Programからaction_id+target_idを決定できる。\n- Traceを保存できる。\n- Character bindingをVersion検証できる。\n- Legacy AIへFallbackしない。",
+      "acceptance_criteria": "- Programからaction_id+target_idを決定できる。\n- Traceを保存できる。\n- Character bindingをVersion検証できる。\n- Monster bindingをDeveloper-authored ProgramとしてVersion検証できる。\n- Persistent bindingにmaster_snapshot_idを保存しない。\n- Legacy AIへFallbackしない。",
       "system_node_id": "SYS-V9-AI",
       "contract_ids": [
         "CONTRACT-V9-AI-TO-BATTLE",
@@ -3314,11 +3335,11 @@
       ],
       "source_candidate_id": "",
       "material_snapshot_hash": "",
-      "revision": 1,
+      "revision": 2,
       "approved_by": "",
       "approved_at": "",
       "created_at": "2026-08-19T20:26:00+09:00",
-      "updated_at": "2026-08-20T20:54:00+09:00"
+      "updated_at": "2026-09-02T14:15:52+09:00"
     },
     {
       "id": "SPEC-V9-019-DATA-001",
@@ -6290,6 +6311,17 @@
       "definition": "4施設の解放状態・利用可能状態・Owner Runtime理由をGuild UIへ提供する。",
       "created_at": "2026-08-20T21:21:00+09:00",
       "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONTRACT-V9-AI-TO-MONSTER",
+      "name": "Formal AI → Monster Dependency Contract",
+      "producer_system_id": "SYS-V9-AI",
+      "consumer_system_ids": [
+        "SYS-V9-MONSTER"
+      ],
+      "definition": "DEC-V9-AI-009 / SPEC-V9-019-MONSTER-001に基づき、Current Monsterは開発者作成AIプログラムのFormal bindingを使用する。Persistent binding={program_id,layout_id}、master_snapshot_idはResolvedのみ。旧Monster AIからProgramを推測割当しない。",
+      "created_at": "2026-09-02T14:15:52+09:00",
+      "updated_at": "2026-09-02T14:15:52+09:00"
     }
   ],
   "system_connections": [
@@ -7632,6 +7664,16 @@
       "purpose": "既存System NodeのOwner Specification未登録を解消し、R24-R27で確定済みの責務境界へ接続する。",
       "created_at": "2026-08-20T21:21:00+09:00",
       "updated_at": "2026-08-20T21:21:00+09:00"
+    },
+    {
+      "id": "CONN-V9-AI-TO-MONSTER",
+      "from_system_id": "SYS-V9-AI",
+      "to_system_id": "SYS-V9-MONSTER",
+      "relation": "PROVIDES",
+      "contract_id": "CONTRACT-V9-AI-TO-MONSTER",
+      "purpose": "DEC-V9-AI-009でCurrent化したMonster Formal AI binding依存をSystem接続として明示する。",
+      "created_at": "2026-09-02T14:15:52+09:00",
+      "updated_at": "2026-09-02T14:15:52+09:00"
     }
   ],
   "system_flags": [
@@ -20275,6 +20317,31 @@
       },
       "actor": "AI/HumanInstruction",
       "created_at": "2026-08-23T15:19:00+09:00"
+    },
+    {
+      "id": "EVT-AI-P0-DEP018-SUPERSESSION-001",
+      "type": "HUMAN_DECISION_SPECIFICATION_SUPERSESSION_REGISTERED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "payload": {
+        "decision_id": "DEC-V9-AI-009",
+        "updated_specification_ids": [
+          "SPEC-V9-019-MONSTER-001",
+          "SPEC-V9-019-AI-003"
+        ],
+        "superseded_discussion_ids": [
+          "DISC-R9-GAP-10"
+        ],
+        "added_contract_ids": [
+          "CONTRACT-V9-AI-TO-MONSTER"
+        ],
+        "added_connection_ids": [
+          "CONN-V9-AI-TO-MONSTER"
+        ],
+        "p0_dependency": "DEP-018"
+      },
+      "actor": "AI/Human",
+      "created_at": "2026-09-02T14:15:52+09:00"
     }
   ],
   "system_impacts": [
@@ -29182,6 +29249,29 @@
       "blocking": false,
       "created_at": "2026-08-28T11:04:00+09:00",
       "updated_at": "2026-08-28T11:04:00+09:00"
+    },
+    {
+      "id": "CHK-AI-P0-DEP018-REORG-SUPERSESSION-001",
+      "title": "P0 DEP-018 Monster Formal AI REORG Authority Supersession",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-REORG-019",
+      "status": "Passed",
+      "result": "Human Decision DEC-V9-AI-009を登録し、SPEC-V9-019-MONSTER-001 #4 AI/Acceptance、SPEC-V9-019-AI-003 Monster節、DISC-R9-GAP-10、AI→Monster Contract/ConnectionをCurrent Authorityへ整合。",
+      "evidence": "Human: Monsterも今回の新AIへ移す。P0 R10: 推測割当禁止 / Persistent-Resolved binding分離 / 全Monster binding成立前の旧経路削除禁止。 Check targetはStudio Development Workflowの対応target_typeに合わせProject=DEV-V9-REORG-019へ修正。 対象Specificationはresult/evidence内のSPEC-V9-019-MONSTER-001として追跡する。",
+      "checked_by": "AI",
+      "checked_at": "2026-09-02T14:15:52+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-02T14:15:52+09:00",
+      "updated_at": "2026-09-02T14:15:52+09:00"
     }
   ],
   "workflow": {
@@ -29857,6 +29947,14 @@
     {
       "at": "2026-09-01T16:40:00+09:00",
       "message": "Human instructed removal of legacy Job growth values from Current Specification before Production Game Data correction. SPEC-V9-019-JOB-001 was revised to retain only the generic growth formula and Human Approved Current Balance seed. Historical/old Job growth table/value references were removed from the Specification body and acceptance criteria; Material/Decision/Evidence history was not deleted."
+    },
+    {
+      "at": "2026-09-02T14:15:52+09:00",
+      "message": "P0 DEP-018 Human Decision applied: Monsterも今回の新AIへ移行。DEC-V9-AI-009登録、SPEC-V9-019-MONSTER-001/AI-003更新、DISC-R9-GAP-10をSuperseded、AI→Monster Contract/Connection追加。Production Source/GameData変更なし。"
+    },
+    {
+      "at": "2026-09-02T14:47:31+09:00",
+      "message": "P0 DEP-018 integration import correction: CHK-AI-P0-DEP018-REORG-SUPERSESSION-001 target_type=Specification はStudio Development Workflow非対応のため、target_type=Project / target_id=DEV-V9-REORG-019へ修正。仕様対象はCheck result/evidenceで追跡。"
     }
   ],
   "authority": {
