@@ -20,8 +20,8 @@
   const OPPOSITE = Object.freeze({north: 'south', east: 'west', south: 'north', west: 'east'});
   const SEVERITY_RANK = Object.freeze({ERROR: 0, WARNING: 1, INFO: 2});
   const BASE_PORT_SIDES = Object.freeze({
+    search: Object.freeze({in: 'west', found: 'east', not_found: 'south'}),
     condition: Object.freeze({in: 'west', true: 'east', false: 'south'}),
-    target: Object.freeze({in: 'west', next: 'east'}),
     action: Object.freeze({in: 'west'})
   });
 
@@ -63,7 +63,7 @@
 
   function definitionFor(node, projectData) {
     if (!node) return null;
-    const typeToCategory = {condition: 'ai_conditions', target: 'ai_targets', action: 'ai_actions'};
+    const typeToCategory = {search: 'ai_searches', condition: 'ai_conditions', action: 'ai_actions'};
     const category = typeToCategory[node.node_type];
     if (!category) return null;
     const master = (projectData?.masters?.[category] || []).find((row) => String(row?.id || '') === String(node.master_node_id || ''));
@@ -169,6 +169,7 @@
           const edge = {
             edge_id: '',
             from: {node_id: sourceInfo.node.instance_id, port_id: sourcePort.port_id},
+            transition_kind: 'NODE',
             to: {node_id: targetId, port_id: input.port_id}
           };
           resolved.push(edge);

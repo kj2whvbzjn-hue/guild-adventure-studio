@@ -32,14 +32,14 @@ no(/PIERCE\s*:\s*['"]pierce['"]/i,tagRuntime,'PIERCE runtime mapping must be abs
 // monsterStats is Production-reachable through expandFormation, therefore non-Formal fallback must fail closed.
 no(/\|\|\s*100|\|\|\s*10/,adventureCore.match(/function monsterStats[\s\S]*?function expandFormation/)?.[0]||'','monsterStats fixed 100/10 fallback must be absent');
 assert.throws(
-  ()=>core.monsterStats({id:'LEGACY-DEMO',params:{maxHp:0,attack:0,agi:0}}),
+  ()=>core.monsterStats({id:'LEGACY-DEMO',formalAiBinding:{program_id:'AIP-0001',layout_id:'AIL-0001'},params:{maxHp:0,attack:0,agi:0}}),
   e=>e&&e.code==='NON_FORMAL_MONSTER_NOT_ALLOWED',
   'non-Formal Monster must fail closed'
 ); checks++;
 
 // Legal zero values are preserved for Formal Monster fields where zero is valid.
 const zero=core.monsterStats({
-  id:'FORMAL-ZERO', params:{job_code:'SWD',level:1,maxHp:1,maxMp:0,attack:0,agi:0}
+  id:'FORMAL-ZERO', formalAiBinding:{program_id:'AIP-0001',layout_id:'AIL-0001'}, params:{job_code:'SWD',level:1,maxHp:1,maxMp:0,attack:0,agi:0}
 });
 assert.strictEqual(zero.maxMp,0); checks++;
 assert.strictEqual(zero.attack,0); checks++;
@@ -48,7 +48,7 @@ assert.strictEqual(zero.formalGenerated,true); checks++;
 
 // Missing required Formal values fail closed rather than selecting a fixed fallback.
 assert.throws(
-  ()=>core.monsterStats({id:'FORMAL-MISSING',params:{job_code:'SWD',level:1,maxHp:1,attack:0,agi:0}}),
+  ()=>core.monsterStats({id:'FORMAL-MISSING',formalAiBinding:{program_id:'AIP-0001',layout_id:'AIL-0001'},params:{job_code:'SWD',level:1,maxHp:1,attack:0,agi:0}}),
   /不正です/,
   'missing Formal maxMp must fail closed'
 ); checks++;

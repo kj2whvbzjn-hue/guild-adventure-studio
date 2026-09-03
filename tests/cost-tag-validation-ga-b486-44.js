@@ -7,7 +7,9 @@ for(const [id,value,omit,cooldown,expected] of [['FORMAL',20,false,0,20],['ZERO'
 const negative=compiler.compileSkill(skill('NEGATIVE',-1),registry);assert.strictEqual(negative.ok,false,'negative mpCost accepted');assert(negative.errors.some(x=>x.code==='INVALID_MP_COST'),JSON.stringify(negative.errors));
 const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
 const manifest=JSON.parse(fs.readFileSync('Export/manifest.json','utf8'));
+const project=JSON.parse(fs.readFileSync('project-data.json','utf8'));
 assert.strictEqual(data.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
-assert(Array.isArray(data.data)&&data.data.length>0,'Skill Export is empty');
+assert(Array.isArray(data.data),'Skill Export data must be an array');
+assert.deepStrictEqual(data.data.map(x=>x.id).sort(),(project.masters?.skills||[]).map(x=>x.id).sort(),'Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
 assert(data.data.every(x=>x.runtimeContracts?.registryPhase===registry.phase),'Skill Export contains non-Formal runtimeContracts');
 console.log('COST_FORMAL_VALIDATION_GA_B486_44_OK');

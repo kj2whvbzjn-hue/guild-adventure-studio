@@ -1,9 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "schemas/ai/ai-node.schema.json",
-  "title": "Studio AI master node contract",
+  "title": "Formal AI V2 node master",
   "type": "object",
   "required": [
+    "schema_version",
     "id",
     "name",
     "node_type",
@@ -14,25 +15,25 @@
     "parameter_schema"
   ],
   "properties": {
+    "schema_version": {
+      "const": "2.0.0"
+    },
     "id": {
       "type": "string",
-      "minLength": 1,
-      "pattern": "^(AIC|AIT|AIA)-[A-Za-z0-9_.-]+$"
+      "pattern": "^(AIS|AIC|AIA)-[A-Za-z0-9_.-]+$"
     },
     "name": {
       "type": "string",
       "minLength": 1
     },
     "node_type": {
-      "type": "string",
       "enum": [
+        "search",
         "condition",
-        "target",
         "action"
       ]
     },
     "status": {
-      "type": "string",
       "enum": [
         "draft",
         "active",
@@ -112,8 +113,73 @@
     },
     "unlock": {
       "type": "object"
+    },
+    "supported_subject_kind": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "UNIT",
+          "SELF",
+          "BATTLE"
+        ]
+      },
+      "uniqueItems": true
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "search"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "id": {
+            "pattern": "^AIS-[A-Za-z0-9_.-]+$"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "condition"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "id": {
+            "pattern": "^AIC-[A-Za-z0-9_.-]+$"
+          }
+        },
+        "required": [
+          "supported_subject_kind"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "action"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "id": {
+            "pattern": "^AIA-[A-Za-z0-9_.-]+$"
+          }
+        }
+      }
+    }
+  ],
   "additionalProperties": false,
   "$defs": {
     "port": {
@@ -129,14 +195,12 @@
           "minLength": 1
         },
         "kind": {
-          "type": "string",
           "enum": [
             "flow",
             "value"
           ]
         },
         "data_type": {
-          "type": "string",
           "enum": [
             "flow",
             "boolean",
@@ -153,142 +217,5 @@
       },
       "additionalProperties": false
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "node_type": {
-            "const": "condition"
-          }
-        },
-        "required": [
-          "node_type"
-        ]
-      },
-      "then": {
-        "properties": {
-          "ports": {
-            "properties": {
-              "inputs": {
-                "minItems": 1,
-                "maxItems": 1,
-                "prefixItems": [
-                  {
-                    "properties": {
-                      "id": {
-                        "const": "in"
-                      }
-                    }
-                  }
-                ]
-              },
-              "outputs": {
-                "minItems": 2,
-                "maxItems": 2,
-                "prefixItems": [
-                  {
-                    "properties": {
-                      "id": {
-                        "const": "true"
-                      }
-                    }
-                  },
-                  {
-                    "properties": {
-                      "id": {
-                        "const": "false"
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "node_type": {
-            "const": "target"
-          }
-        },
-        "required": [
-          "node_type"
-        ]
-      },
-      "then": {
-        "properties": {
-          "ports": {
-            "properties": {
-              "inputs": {
-                "minItems": 1,
-                "maxItems": 1,
-                "prefixItems": [
-                  {
-                    "properties": {
-                      "id": {
-                        "const": "in"
-                      }
-                    }
-                  }
-                ]
-              },
-              "outputs": {
-                "minItems": 1,
-                "maxItems": 1,
-                "prefixItems": [
-                  {
-                    "properties": {
-                      "id": {
-                        "const": "next"
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "node_type": {
-            "const": "action"
-          }
-        },
-        "required": [
-          "node_type"
-        ]
-      },
-      "then": {
-        "properties": {
-          "ports": {
-            "properties": {
-              "inputs": {
-                "minItems": 1,
-                "maxItems": 1,
-                "prefixItems": [
-                  {
-                    "properties": {
-                      "id": {
-                        "const": "in"
-                      }
-                    }
-                  }
-                ]
-              },
-              "outputs": {
-                "maxItems": 0
-              }
-            }
-          }
-        }
-      }
-    }
-  ]
+  }
 }

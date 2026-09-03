@@ -3,9 +3,11 @@ const formalCompiler=require('../assets/shared/js/skill-compiler.js');
 const registry=require('../assets/shared/config/skill-registry.json');
 const payload=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
 const rows=Array.isArray(payload)?payload:payload.data;
+const project=JSON.parse(fs.readFileSync('project-data.json','utf8'));
+assert.ok(Array.isArray(rows),'Formal Skill Export data must be an array');
+assert.deepStrictEqual(rows.map(x=>x.id).sort(),(project.masters?.skills||[]).map(x=>x.id).sort(),'Formal Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
 const currentCover=rows.find(x=>x.schemaVersion===1&&x.runtimeContracts?.effectContracts?.some(e=>e.type==='TARGET_CONTROL'&&e.mode==='COVER'));
-assert.ok(currentCover,'current Formal COVER row missing');
-assert.ok(!Array.isArray(currentCover.tags),'current Formal COVER row must not depend on legacy tag_v1');
+if(currentCover)assert.ok(!Array.isArray(currentCover.tags),'current Formal COVER row must not depend on legacy tag_v1');
 const source={
  schemaVersion:1,id:'COVER-VALIDATION-MIXED-ATTACK',name:'COVER mixed positive validation',skillLevel:1,
  trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ALLY',range:'SINGLE'},

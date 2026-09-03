@@ -29,8 +29,17 @@ final class GameMasterRepository
         'events' => 'event/events.json',
         'flags' => 'event/flags.json',
         'ai_nodes' => 'ai/ai_nodes.json',
-        'ai_templates' => 'ai/ai_templates.json',
+        'ai_target_selectors' => 'ai/ai_target_selectors.json',
+        'ai_programs' => 'ai/ai_programs.json',
+        'ai_program_layouts' => 'ai/ai_program_layouts.json',
+        'ai_program_runtime' => 'ai/ai_program_runtime.json',
         'drop_tables' => 'system/drop_tables.json',
+    ];
+
+    /** @var array<string,string> */
+    private const COLLECTION_ID_FIELDS = [
+        'ai_program_layouts' => 'layout_id',
+        'ai_program_runtime' => 'program_id',
     ];
 
     /** @var array<string,RecordCollection> */
@@ -39,7 +48,7 @@ final class GameMasterRepository
     public function __construct(private readonly ExportPackage $package)
     {
         foreach (self::COLLECTION_PATHS as $name => $path) {
-            $this->collections[$name] = new RecordCollection($path, $package->data($path));
+            $this->collections[$name] = new RecordCollection($path, $package->data($path), self::COLLECTION_ID_FIELDS[$name] ?? 'id');
         }
     }
 

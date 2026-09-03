@@ -25,13 +25,14 @@ function baseProject(){
       jobs:[{id:'JOB-0001',name:'Warrior',status:'draft',tags:['TAG-0004'],params:{},description:'',str:10,vit:8,updated_at:'TAG-0001'}],
       mods:[{id:'MOD-0001',name:'Fire MOD',status:'draft',tags:['TAG-0001'],params:{power:5},description:'',updated_at:'TAG-0001'}],
       equipment:[{id:'EQP-0001',name:'Sword',status:'draft',tags:['TAG-0004'],mod_ids:['MOD-0001'],params:{},description:'',item_level:1,mod_budget:1,updated_at:'TAG-0001'}],
-      ai_conditions:[{id:'AIC-0001',name:'Has Fire',node_type:'condition',status:'draft',tags:['TAG-0001'],description:'',data_version:'1.0.0',evaluator:'condition.has_tag',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}],
-      ai_targets:[{id:'AIT-0001',name:'Enemy',node_type:'target',status:'draft',tags:['TAG-0004'],description:'',data_version:'1.0.0',evaluator:'target.enemy',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}],
-      ai_actions:[{id:'AIA-0001',name:'Attack',node_type:'action',status:'draft',tags:['TAG-0001'],description:'',data_version:'1.0.0',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'next',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}]
+      ai_searches:[{schema_version:'2.0.0',id:'AIS-0001',name:'Enemy exists',node_type:'search',status:'draft',tags:['TAG-0004'],description:'',data_version:'0.1.0-draft',evaluator:'search.exists',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'found',kind:'flow',data_type:'flow'},{id:'not_found',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}],
+      ai_conditions:[{schema_version:'2.0.0',id:'AIC-0001',name:'Has Fire',node_type:'condition',status:'draft',tags:['TAG-0001'],description:'',data_version:'0.1.0-draft',evaluator:'condition.has_tag',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},supported_subject_kind:['UNIT'],updated_at:'TAG-0001'}],
+      ai_target_selectors:[],
+      ai_actions:[{schema_version:'2.0.0',id:'AIA-0001',name:'Attack',node_type:'action',status:'draft',tags:['TAG-0001'],description:'',data_version:'0.1.0-draft',evaluator:'action.attack',ports:{inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:[]},parameter_schema:{type:'object',properties:{},required:[],additionalProperties:false},unlock:{},updated_at:'TAG-0001'}]
     },history:[]
   };
 }
-const SOURCE_IDS={jobs:'JOB-0001',equipment:'EQP-0001',mods:'MOD-0001',ai_conditions:'AIC-0001',ai_targets:'AIT-0001',ai_actions:'AIA-0001'};
+const SOURCE_IDS={jobs:'JOB-0001',equipment:'EQP-0001',mods:'MOD-0001',ai_searches:'AIS-0001',ai_conditions:'AIC-0001',ai_actions:'AIA-0001'};
 async function makeAddEnvelope(base,dataset,id,mutate){
   const env=await dx.buildEnvelope({rootData:base,dataset,ids:[SOURCE_IDS[dataset]],dependencyMode:'recursive',studioVersion:'TEST-DE19'});
   const out=clone(env),row=out.datasets[dataset][0];row.id=id;if(mutate)mutate(row,out);
@@ -54,8 +55,8 @@ async function applyAndUndo(base,envelope,dataset,filename){
 async function main(){
   const base=baseProject();
   const studioHtml=fs.readFileSync(path.resolve(__dirname,'../../index.html'),'utf8');
-  assert(studioHtml.includes('data-exchange-core.js?v=18'),'Studio must load DE-19 core with refreshed cache key');
-  for(const f of ['job-dataset.schema.json','equipment-dataset.schema.json','mod-dataset.schema.json','ai_condition-dataset.schema.json','ai_target-dataset.schema.json','ai_action-dataset.schema.json']){
+  assert(studioHtml.includes('data-exchange-core.js?v=19'),'Studio must load DE-19 core with refreshed cache key');
+  for(const f of ['job-dataset.schema.json','equipment-dataset.schema.json','mod-dataset.schema.json','ai_search-dataset.schema.json','ai_condition-dataset.schema.json','ai_target_selector-dataset.schema.json','ai_action-dataset.schema.json']){
     assert(fs.existsSync(path.resolve(__dirname,'../schemas',f)),`missing schema ${f}`);
   }
 
@@ -72,7 +73,7 @@ async function main(){
   assert.equal(equipmentExport.datasets.tags.length,2,'recursive equipment dependency must include equipment + MOD tags');
 
   // 2. New records safely pass Dry Run -> Transaction -> Audit -> Undo for every DE-19 dataset.
-  const addIds={jobs:'JOB-0002',equipment:'EQP-0002',mods:'MOD-0002',ai_conditions:'AIC-0002',ai_targets:'AIT-0002',ai_actions:'AIA-0002'};
+  const addIds={jobs:'JOB-0002',equipment:'EQP-0002',mods:'MOD-0002',ai_searches:'AIS-0002',ai_conditions:'AIC-0002',ai_actions:'AIA-0002'};
   for(const ds of Object.keys(SOURCE_IDS)){
     const env=await makeAddEnvelope(base,ds,addIds[ds],row=>{row.name='DE19 '+ds;row.description='DE-19 vertical test';});
     await applyAndUndo(base,env,ds,`DE19_${ds}.json`);
@@ -110,7 +111,7 @@ async function main(){
   }
 
   // 7. AI Master is Formal-only: generic params are not an accepted AI master field.
-  for(const ds of ['ai_conditions','ai_targets','ai_actions']){
+  for(const ds of ['ai_searches','ai_conditions','ai_actions']){
     const generic=await makeAddEnvelope(base,ds,addIds[ds].replace(/0002$/,'0004'),row=>{row.params={kind:'generic'};});
     const dry=await dx.dryRunImport({rootData:base,envelope:generic});
     const plan=await dx.createApplyPlan({rootData:base,envelope:generic,dryRun:dry});

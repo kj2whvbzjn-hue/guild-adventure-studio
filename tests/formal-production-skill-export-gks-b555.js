@@ -5,9 +5,11 @@ const compiler=require('../assets/shared/js/skill-compiler.js');
 const registry=require('../assets/shared/config/skill-registry.json');
 const envelope=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'Export/manifest.json'),'utf8'));
+const project=JSON.parse(fs.readFileSync(path.join(root,'project-data.json'),'utf8'));
 assert.strictEqual(envelope.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
-const production=(envelope.data||[]).filter(x=>(x.environment||'production')==='production');
-assert(production.length>0,'formal production skill export is empty');
+assert(Array.isArray(envelope.data),'formal production skill export data must be an array');
+assert.deepStrictEqual(envelope.data.map(x=>x.id).sort(),(project.masters?.skills||[]).map(x=>x.id).sort(),'Formal Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
+const production=envelope.data.filter(x=>(x.environment||'production')==='production');
 for(const skill of production){
  assert.strictEqual(skill.schemaVersion,1,`${skill.id}: schemaVersion`);
  assert(skill.runtimeContracts&&typeof skill.runtimeContracts==='object',`${skill.id}: runtimeContracts missing`);
@@ -17,6 +19,9 @@ for(const skill of production){
  assert(c.ok,`${skill.id}: ${JSON.stringify(c.errors)}`);
  assert.deepStrictEqual(c.compiledSkill.runtimeContracts,skill.runtimeContracts,`${skill.id}: runtimeContracts mismatch`);
 }
+const fixture=compiler.compileSkill({schemaVersion:1,id:'SKL-RELEASE-FORMAL-FIXTURE',name:'Release Formal Fixture',skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0,activationPriority:0}},registry);
+assert.strictEqual(fixture.ok,true,JSON.stringify(fixture.errors));
+assert.strictEqual(fixture.compiledSkill.runtimeContracts.registryPhase,registry.phase,'formal compiler fixture registryPhase');
 const runtimeSrc=fs.readFileSync(path.join(root,'game/assets/js/tag-skill-runtime.js'),'utf8');
 assert(runtimeSrc.includes("Skillは正式runtimeContractsが必要です"),'runtimeContracts-only fallback guard missing');
 assert(!runtimeSrc.includes('GKSValidationTagCompiler'),'Production runtime must not delegate to legacy validation compiler');

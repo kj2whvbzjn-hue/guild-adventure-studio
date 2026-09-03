@@ -1,12 +1,13 @@
 const fs=require('fs'),vm=require('vm');
 const compiler=require('../assets/shared/js/skill-compiler.js');
+const formation=require('../assets/shared/js/formation-target-resolver.js');
 const registry=JSON.parse(fs.readFileSync('assets/shared/config/skill-registry.json','utf8'));
 const assert=(v,m)=>{if(!v)throw new Error(m)};
-const context={console,Math,Number,String,Array,Object,Set,Map,JSON,Date,Intl,
+const context={console,Math,Number,String,Array,Object,Set,Map,JSON,Date,Intl,GKSFormationTargetResolver:formation,
   battle:null,queueSceneEvent:()=>{},recordValidationEvent:()=>{},renderBattle:()=>{},finishIfNeeded:()=>false};
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('game/assets/js/tag-skill-runtime.js','utf8'),context);
-const unit=(id,side,hp=100)=>({id,name:id,side,hp,maxHp:hp,alive:true,attack:100,gauge:0,reservedAction:null,damageDealt:0,damageTaken:0,dotStacks:[],shieldEffects:[]});
+const unit=(id,side,hp=100)=>({id,name:id,side,hp,maxHp:hp,alive:true,formationPosition:'FRONTLINE',attack:100,gauge:0,reservedAction:null,damageDealt:0,damageTaken:0,dotStacks:[],shieldEffects:[]});
 const reset=()=>{const a=unit('A','味方'),t=unit('T','味方'),e=unit('E','敵');context.battle={tick:0,units:[a,t,e],log:[],validationEvents:[]};return{a,t,e}};
 const shieldDraft=(value=100,duration=500,id='S')=>({schemaVersion:1,id,name:id,skillLevel:20,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ALLY',range:'SINGLE'},effects:[{type:'APPLY',effectId:'BARRIER',power:value,duration}],resource:{mpCost:0,cooldown:0,activationPriority:0}});
 const shield=(value=100,duration=500,id='S')=>{const out=compiler.compileSkill(shieldDraft(value,duration,id),registry);assert(out.ok,`Formal SHIELD compile failed: ${JSON.stringify(out.errors)}`);return out.compiledSkill};

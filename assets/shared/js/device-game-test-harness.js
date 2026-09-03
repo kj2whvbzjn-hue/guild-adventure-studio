@@ -57,7 +57,6 @@ async function runChecks(){
  await probeFetch('build-fetch','Build正本取得','../package-build.json');
  await probeFetch('skill-fetch','Studio正式skillデータ取得','../Export/skill/skills.json',true);
  try{const r=await fetch(`../Export/ai/ai_nodes.json?device_test=${Date.now()}`,{cache:'no-store'}),doc=await r.json(),rows=Array.isArray(doc?.data)?doc.data:[];addCheck('ai-master-fetch','Formal AI Master取得',r.ok&&rows.length>0,`HTTP ${r.status} / ${rows.length}件`);}catch(e){addCheck('ai-master-fetch','Formal AI Master取得',false,e.message||e)}
- try{const r=await fetch(`../Export/ai/ai_templates.json?device_test=${Date.now()}`,{cache:'no-store'}),doc=await r.json(),rows=Array.isArray(doc?.data)?doc.data:[];addCheck('ai-template-fetch','公式AI Preset取得',r.ok,`HTTP ${r.status} / ${rows.length}件${rows.length===0?'（公式Preset未投入。自作Presetのみ手動確認）':''}`,true);}catch(e){addCheck('ai-template-fetch','公式AI Preset取得',false,e.message||e,true)}
  if(navigator.storage?.estimate){try{const est=await navigator.storage.estimate();addCheck('storage-estimate','保存容量',true,`usage=${est.usage||0} / quota=${est.quota||0}`,true)}catch(e){addCheck('storage-estimate','保存容量',false,e.message||e,true)}}
  state.lastRun=nowIso(); render(); return getReport();
 }

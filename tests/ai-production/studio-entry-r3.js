@@ -31,7 +31,7 @@ assert(html.includes("if(name==='ai-production')window.GKSAIProductionUI?.render
 const rootElement = {innerHTML: ''};
 const fakeDocument = {getElementById: (id) => id === 'aiProductionRoot' ? rootElement : null};
 assert.strictEqual(UI.render(fakeDocument), true);
-assert(rootElement.innerHTML.includes('AI部品パレット'));
+assert(rootElement.innerHTML.includes('使用可能部品'));
 assert(rootElement.innerHTML.includes('一致するAI部品がありません'));
 assert.strictEqual(UI.render({getElementById: () => null}), false);
 

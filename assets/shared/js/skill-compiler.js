@@ -82,8 +82,15 @@ function validateTrigger(skill,def,errors){
   if(skill.conditions?.length)error(errors,'AURA_CONDITION_UNSUPPORTED','conditions','AURA Conditionは正式契約未定義です');
  }
 }
-function compileApply(effect,path,registry,errors){
- const def=registry.effects?.[effect.effectId];
+function compileEffectTags(effect,path,errors){
+ const raw=effect?.tags;if(raw==null)return[];
+ if(!Array.isArray(raw)){error(errors,'EFFECT_TAGS_ARRAY_REQUIRED',`${path}.tags`,'Effect tagsはCommon Tag ID配列が必要です');return[]}
+ const out=[];
+ for(const [index,value] of raw.entries()){const id=String(value||'').trim();if(!/^TAG-\d{4}$/.test(id))error(errors,'EFFECT_TAG_ID_INVALID',`${path}.tags[${index}]`,`Formal Tag ID(TAG-####)が必要です: ${id||'(なし)'}`);else if(!out.includes(id))out.push(id)}
+ return out;
+}
+function compileApply(effect,index,path,registry,errors){
+ const tags=compileEffectTags(effect,path,errors),def=registry.effects?.[effect.effectId];
  if(!def){error(errors,'UNKNOWN_EFFECT_ID',`${path}.effectId`,`未定義Effect ID: ${effect.effectId||'(なし)'}`);return null}
  const kind=String(def.kind||''),runtime=def.runtime||{},defaults=def.defaults||{},lifecycle=resolveLifecycle(def,registry,errors,`${path}.effectId.lifecycle`);
  const power=own(effect,'power')?effect.power:null,duration=own(effect,'duration')?effect.duration:null;
@@ -106,7 +113,7 @@ function compileApply(effect,path,registry,errors){
   if(!num(duration))error(errors,'APPLY_DURATION_REQUIRED',`${path}.duration`,'SHIELD durationは有限数が必要です');
  }
  return{
-  effectId:String(effect.effectId),kind,logic:String(runtime.logic||kind),
+  effectId:String(effect.effectId),kind,logic:String(runtime.logic||kind),origin_effect_index:index,effect_tag_ids:[...tags],
   values:{power,duration,interval,stackGain,statusId:String(runtime.statusId||effect.effectId),modifierStat:runtime.modifierStat||null,statusPayload:{...(runtime.statusPayload||{})}},
   lifecycle:lifecycle?{...lifecycle}:null
  };
@@ -137,7 +144,7 @@ function compileAuraEffect(effect,path,skill,registry,errors){
 function compileEffect(effect,index,skill,registry,errors){
  const path=`effects[${index}]`;
  if(!effect||typeof effect!=='object'){error(errors,'INVALID_EFFECT',path,'Effect objectが必要です');return null}
- const type=String(effect.type||'').toUpperCase();
+ const type=String(effect.type||'').toUpperCase(),tags=compileEffectTags(effect,path,errors);
  if(!registry.runtime?.effects?.includes(type)){error(errors,'UNKNOWN_EFFECT_TYPE',`${path}.type`,`未定義Effect type: ${type||'(なし)'}`);return null}
  if(type==='SPECIAL'){error(errors,'SPECIAL_NOT_EXECUTABLE',`${path}.type`,'SPECIALは正式Runtime契約未定義です');return null}
  if(type==='DAMAGE'){
@@ -174,7 +181,7 @@ function compileEffect(effect,index,skill,registry,errors){
   const uses=lifetime==='USES'?effect.uses:null,duration=lifetime==='DURATION'?effect.duration:null;
   if(lifetime==='USES'&&(!Number.isInteger(uses)||uses<1))error(errors,'TARGET_CONTROL_USES_INVALID',`${path}.uses`,'USESには1以上の整数usesが必要です');
   if(lifetime==='DURATION'&&(!Number.isInteger(duration)||duration<1))error(errors,'TARGET_CONTROL_DURATION_INVALID',`${path}.duration`,'DURATIONには1以上の整数durationが必要です');
-  return{type,mode,trigger,priority:effect.priority??0,removable:effect.removable,lifetime,uses,duration};
+  return{type,mode,trigger,priority:effect.priority??0,removable:effect.removable,lifetime,uses,duration,origin_effect_index:index,effect_tag_ids:[...tags]};
  }
  if(type==='APPLY')return null;
  return null;
@@ -228,7 +235,7 @@ function compileSkill(skill,registry){
   if(effects.length!==1)error(errors,'AURA_SINGLE_EFFECT_REQUIRED','effects','WHILE_SOURCE_ALIVEはAPPLY Effectを1件だけ指定してください');
   if(effects[0])auraEffectContract=compileAuraEffect(effects[0],'effects[0]',skill,registry,errors);
  }else for(const [i,effect] of effects.entries()){
-  if(String(effect?.type||'').toUpperCase()==='APPLY'){const c=compileApply(effect,`effects[${i}]`,registry,errors);if(c)applyContracts.push(c)}
+  if(String(effect?.type||'').toUpperCase()==='APPLY'){const c=compileApply(effect,i,`effects[${i}]`,registry,errors);if(c)applyContracts.push(c)}
   else{const c=compileEffect(effect,i,skill,registry,errors);if(c)effectContracts.push(c)}
  }
  if(applyContracts.filter(c=>String(c?.kind||'').toUpperCase()==='DOT').length>1)error(errors,'DOT_LOGIC_DUPLICATE','effects','1つのSkillに複数のDOTロジックを同時指定できません');

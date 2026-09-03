@@ -157,6 +157,16 @@ function compileSkillForRuntime(skill){
  if(skill?.runtimeContracts)return compileSkillRuntime(skill);
  return{ok:false,errors:['Skillは正式runtimeContractsが必要です'],warnings:[],definition:null,parsed:null};
 }
+function activeEffectProvenance(compiled,kind){
+ const runtime=compiled?.definition?.runtimeContracts,normalized=String(kind||'').toUpperCase();if(!runtime||typeof runtime!=='object')return null;
+ let contract=null;
+ if(normalized==='COVER')contract=(runtime.effectContracts||[]).find(x=>String(x?.type||'').toUpperCase()==='TARGET_CONTROL'&&String(x?.mode||'').toUpperCase()==='COVER')||null;
+ else contract=(runtime.applyContracts||[]).find(x=>String(x?.logic||x?.kind||'').toUpperCase()===normalized)||null;
+ const index=Number(contract?.origin_effect_index),tags=Array.isArray(contract?.effect_tag_ids)?contract.effect_tag_ids.map(x=>String(x||'')):null;
+ if(!Number.isInteger(index)||index<0||!tags||tags.some(id=>!/^TAG-\d{4}$/.test(id)))return null;
+ return{source_skill_id:String(compiled?.definition?.id||''),source_effect_index:index,effect_tag_ids:[...tags],...(String(contract?.effectId||'').trim()?{source_effect_id:String(contract.effectId)}:{})};
+}
+function requireActiveEffectProvenance(compiled,kind){const row=activeEffectProvenance(compiled,kind);if(row&&row.source_skill_id)return row;return null;}
 function formatCompileResult(result){
  const d=result.definition,p=result.parsed;
  return [
@@ -175,47 +185,30 @@ function formatCompileResult(result){
 function resolveTaggedTargets(actor,target,definition){
  if(!actor||!actor.alive)return{ok:false,reason:'使用者が無効です',targets:[]};
  if(typeof ensureBattleFormationSafePoint==='function')ensureBattleFormationSafePoint('before_skill_target_resolution');
- const side=definition.target.side,range=definition.target.range,isRevive=definition.logicOrder.includes('REVIVE');
- let candidates=[];
- if(isRevive){
-  if(!['ally','corpse'].includes(side))return{ok:false,reason:'REVIVEの対象陣営が無効です',targets:[]};
-  candidates=battle.units.filter(x=>!x.alive&&x.hp<=0&&x.side===actor.side);
- }else if(side==='self')candidates=[actor];
- else if(side==='ally')candidates=battle.units.filter(x=>x.alive&&x.side===actor.side);
- else if(side==='enemy')candidates=battle.units.filter(x=>x.alive&&x.side!==actor.side);
- else return{ok:false,reason:'対象陣営タグがありません',targets:[]};
- const isEnemy=side==='enemy',isAlly=side==='ally';
- const frontCandidates=()=>candidates.filter(x=>String(x.formationPosition||'FRONTLINE')==='FRONTLINE');
- if(range==='single'){
-  if(!target)return{ok:false,reason:'対象が無効です',targets:[]};
-  if(isRevive&&target.alive)return{ok:false,reason:'INVALID_TARGET: 生存対象は蘇生できません',targets:[]};
-  if(isRevive&&target.hp>0)return{ok:false,reason:'INVALID_TARGET: HPが残っている対象は蘇生できません',targets:[]};
-  if(!isRevive&&!target.alive)return{ok:false,reason:'対象が無効です',targets:[]};
-  if(!candidates.some(x=>x.id===target.id))return{ok:false,reason:'対象陣営タグと選択対象が一致しません',targets:[]};
-  if(isEnemy&&String(target.formationPosition||'FRONTLINE')!=='FRONTLINE')return{ok:false,reason:'SINGLEは敵後衛を対象にできません',targets:[]};
-  candidates=[target];
- }else if(range==='front'){
-  candidates=frontCandidates();
- }else if(range==='back'){
-  if(!target)return{ok:false,reason:'対象が無効です',targets:[]};
-  if(!target.alive&&!isRevive)return{ok:false,reason:'対象が無効です',targets:[]};
-  if(!candidates.some(x=>x.id===target.id))return{ok:false,reason:'対象陣営タグと選択対象が一致しません',targets:[]};
-  candidates=[target];
- }else if(range==='random'){
+ const resolver=globalThis.GKSFormationTargetResolver;if(!resolver)return{ok:false,reason:'Formation Target Resolverが利用できません',targets:[]};
+ const side=String(definition?.target?.side||'').toUpperCase(),range=String(definition?.target?.range||'').toUpperCase(),isRevive=definition.logicOrder.includes('REVIVE');
+ if(isRevive&&range==='RANDOM')return{ok:false,reason:'REVIVEでRANDOMは未採用です',targets:[]};
+ const targetContract={side:isRevive?'CORPSE':side,range,...(definition?.target?.excludeSelf===true?{excludeSelf:true}:{})};
+ let candidates=[];try{candidates=resolver.resolveLegalTargetCandidates({actor,units:battle.units,targetContract});}catch(error){return{ok:false,reason:String(error?.message||error),targets:[]};}
+ if(isRevive&&!['ALLY','CORPSE'].includes(side))return{ok:false,reason:'REVIVEの対象陣営が無効です',targets:[]};
+ if(isRevive&&range==='FRONT')candidates=candidates.filter(x=>String(x.formationPosition||'FRONTLINE')==='FRONTLINE');
+ if(range==='SINGLE'||range==='BACK'){
+  const fixed=side==='SELF'&&!isRevive?(target||actor):target;
+  if(!fixed)return{ok:false,reason:'対象が無効です',targets:[]};
+  if(isRevive&&(fixed.alive||Number(fixed.hp)>0))return{ok:false,reason:'INVALID_TARGET: 生存対象は蘇生できません',targets:[]};
+  if(!candidates.some(x=>String(x.id)===String(fixed.id)))return{ok:false,reason:'対象契約と選択対象が一致しません',targets:[]};
+  candidates=[fixed];
+ }else if(range==='RANDOM'){
   if(isRevive)return{ok:false,reason:'REVIVEでRANDOMは未採用です',targets:[]};
   const count=Number(definition.target.randomCount);if(!Number.isInteger(count)||count<1)return{ok:false,reason:'RANDOMには1以上のrandomCountが必要です',targets:[]};
   if(!candidates.length)return{ok:false,reason:'有効な対象がありません',targets:[]};
-  const pool=[...candidates],draws=[];
-  for(let i=0;i<count;i++){
-   const anchor=pool[0]||null,roll=currentBattleRoll(actor,anchor,definition.id||'RANDOM_TARGET','random_target',i),index=Math.min(pool.length-1,Math.floor(roll*pool.length));draws.push(pool[index]);
-  }
-  candidates=draws;
- }else if(range==='all'){
-  // all valid targets; formation does not restrict target inclusion.
- }else return{ok:false,reason:`範囲 ${range} は未対応です`,targets:[]};
+  let drawIndex=0;const rng=()=>{const index=drawIndex++,anchor=candidates[0]||null,roll=currentBattleRoll(actor,anchor,definition.id||'RANDOM_TARGET','range_random',index);if(typeof recordValidationEvent==='function')recordValidationEvent('range_random_rng_consumed',{source_id:actor.id,skill_id:definition.id||null,rng_stream:'BATTLE_EXECUTION',draw_index:index,roll});return roll;};
+  candidates=resolver.sampleTargetsWithReplacement(candidates,count,rng);
+ }else if(range!=='FRONT'&&range!=='ALL')return{ok:false,reason:`範囲 ${range||'(missing)'} は未対応です`,targets:[]};
  if(!candidates.length&&!isRevive)return{ok:false,reason:'有効な対象がありません',targets:[]};
  return{ok:true,targets:candidates};
 }
+globalThis.GKSFormalSkillTargetRuntime=Object.freeze({resolveTaggedTargets});
 let modifierStackSequence=0;
 function ensureModifierStackList(target){if(!Array.isArray(target.modifierStacks))target.modifierStacks=[];return target.modifierStacks}
 function modifierGroupKey(kind,stat){return `${kind}:${stat}`}
@@ -263,8 +256,9 @@ function resolveModifierEffectiveValue(stacks,policy=null){
 function applyModifierStackLifecycle(source,target,compiled,logic,policy){
  const checked=resolveModifierStackLifecyclePolicy(policy);if(!checked.ok)return{ok:false,reason:'MODIFIER_LIFECYCLE_POLICY_MISMATCH',policyError:checked};
  const stat=compiled.definition.parameters.modifierStat,power=Math.max(0,Number(compiled.definition.parameters.modifierPower)||0),duration=Math.max(1,Math.floor(compiled.definition.parameters.modifierDuration)),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
+ const provenance=requireActiveEffectProvenance(compiled,logic);if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};
  const list=ensureModifierStackList(target),added=[];
- for(let i=0;i<gain;i++){const stack={id:`MOD-${++modifierStackSequence}`,kind:logic,stat,power,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};list.push(stack);added.push(stack)}
+ for(let i=0;i<gain;i++){const stack={id:`MOD-${++modifierStackSequence}`,kind:logic,stat,power,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,...provenance,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};list.push(stack);added.push(stack)}
  return{ok:true,added,power,duration,stat,policy:checked};
 }
 function effectiveModifierPower(target,kind,stat){if(!target?.alive)return 0;const active=ensureModifierStackList(target).filter(x=>x.kind===kind&&x.stat===stat&&x.expiresAt>battle.tick),normalResult=resolveModifierEffectiveValue(active),normal=normalResult.ok?normalResult.power:0,aura=effectiveAuraPower(target,kind,stat);return Math.max(normal,aura)}
@@ -274,7 +268,7 @@ function applyDefenseResistance(unit,damage){const raw=Math.max(0,Math.floor(Num
 function recordEffectiveModifierChange(target,kind,stat,before,after,reason){if(before===after)return;battle.log.push(`[Tick ${battle.tick}] [TAG][${kind}] ${target.name}の${stat}実効値 ${before}% → ${after}%（${reason}）`);recordValidationEvent('modifier_effective_changed',{target_id:target.id,kind,stat,before,after,reason})}
 function applyTaggedModifier(source,target,compiled,logic,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'効果対象が無効です'};
- const stat=compiled.definition.parameters.modifierStat,power=Math.max(0,Number(compiled.definition.parameters.modifierPower)||0),duration=Math.max(1,Math.floor(compiled.definition.parameters.modifierDuration)),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
+ const stat=compiled.definition.parameters.modifierStat,power=Math.max(0,Number(compiled.definition.parameters.modifierPower)||0),duration=Math.max(1,Math.floor(compiled.definition.parameters.modifierDuration)),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain)),provenance=requireActiveEffectProvenance(compiled,logic);if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};
  const before=effectiveModifierPower(target,logic,stat),added=[];
  if(lifecyclePolicy){
   const lifecycleResult=getTaggedApplyLifecycleEngine().apply(logic,{source,target,compiled,logic,lifecycle:lifecyclePolicy});
@@ -282,7 +276,7 @@ function applyTaggedModifier(source,target,compiled,logic,lifecyclePolicy=null){
   added.push(...lifecycleResult.added);
  }else{
   const list=ensureModifierStackList(target);
-  for(let i=0;i<gain;i++){const stack={id:`MOD-${++modifierStackSequence}`,kind:logic,stat,power,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};list.push(stack);added.push(stack)}
+  for(let i=0;i<gain;i++){const stack={id:`MOD-${++modifierStackSequence}`,kind:logic,stat,power,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,...provenance,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};list.push(stack);added.push(stack)}
  }
  const after=effectiveModifierPower(target,logic,stat);
  battle.log.push(`[Tick ${battle.tick}] [TAG][${logic}] ${source.name}の${compiled.definition.name} → ${target.name}へ${stat} ${power}%を${added.length}スタック付与（実効${after}%、終了Tick ${battle.tick+duration}）`);
@@ -327,8 +321,8 @@ function resolveShieldStackLifecyclePolicy(lifecycle){
 }
 function applyShieldStackLifecycle(target,{source,compiled,amount,duration}={},lifecycle){
  const resolved=resolveShieldStackLifecyclePolicy(lifecycle);if(!resolved.ok)return{ok:false,reason:resolved.reason,field:resolved.field,expected:resolved.expected,actual:resolved.actual};
- if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};amount=Math.max(0,Math.floor(Number(amount)||0));duration=Math.max(0,Math.floor(Number(duration)||0));if(amount<=0||duration<=0)return{ok:false,reason:'シールド値または持続時間が無効です'};
- const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration,lifecyclePolicy:{...resolved}};
+ if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};const provenance=requireActiveEffectProvenance(compiled,'SHIELD');if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};amount=Math.max(0,Math.floor(Number(amount)||0));duration=Math.max(0,Math.floor(Number(duration)||0));if(amount<=0||duration<=0)return{ok:false,reason:'シールド値または持続時間が無効です'};
+ const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,...provenance,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration,lifecyclePolicy:{...resolved}};
  ensureShieldEffects(target).push(effect);return{ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect,policy:resolved};
 }
 function resolveShieldConsumeLifecyclePolicy(lifecycle){
@@ -352,9 +346,10 @@ function consumeShieldLayersLifecycle(target,rawDamage,lifecycle=null){
 }
 function applyTaggedShield(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'シールド対象が無効です'};
+ const provenance=requireActiveEffectProvenance(compiled,'SHIELD');if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};
  const powerPercent=Math.max(0,Number(compiled.definition.parameters.shield)||0),amount=Math.max(0,Math.floor(Math.max(0,Number(target?.maxHp)||0)*(powerPercent/100))),duration=Math.max(0,Math.floor(Number(compiled.definition.parameters.shieldDuration)||0));
  if(amount<=0||duration<=0)return{ok:false,reason:'シールド値または持続時間が無効です'};
- let result;if(lifecyclePolicy){result=getTaggedApplyLifecycleEngine().apply('SHIELD',{target,input:{source,compiled,amount,duration},lifecycle:lifecyclePolicy});if(!result.ok)return result}else{const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};ensureShieldEffects(target).push(effect);result={ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect}}
+ let result;if(lifecyclePolicy){result=getTaggedApplyLifecycleEngine().apply('SHIELD',{target,input:{source,compiled,amount,duration},lifecycle:lifecyclePolicy});if(!result.ok)return result}else{const sequence=++shieldEffectSequence,effect={id:`SHIELD-${sequence}`,sequence,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,...provenance,amount,remaining:amount,appliedAt:battle.tick,expiresAt:battle.tick+duration,duration};ensureShieldEffects(target).push(effect);result={ok:true,shieldId:effect.id,amount,duration,expiresAt:effect.expiresAt,totalShield:shieldTotal(target),effect}}
  battle.log.push(`[Tick ${battle.tick}] [TAG][SHIELD] ${source.name}の${compiled.definition.name} → ${target.name}へシールド${amount}付与（持続${duration}、総残量${shieldTotal(target)}）`);
  typeof recordValidationEvent==='function'&&recordValidationEvent('shield_added',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,shield_id:result.effect.id,amount,duration,expires_at:result.effect.expiresAt,total_shield:shieldTotal(target),lifecycle_policy:lifecyclePolicy?result.policy:null});
  return result;
@@ -394,11 +389,12 @@ function applyStatusUniqueRefreshLifecycle(list,{statusId,newEffect,refreshPatch
 }
 function applyTaggedStatus(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'状態異常対象が無効です'};
+ const provenance=requireActiveEffectProvenance(compiled,'STATUS');if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};
  const p=compiled.definition.parameters,statusId=p.statusId,baseDuration=Math.floor(Number(p.statusDuration)||0),resistance=statusResistance(target,statusId),duration=effectiveStatusDuration(baseDuration,resistance);
  const list=ensureStatusEffects(target),policy=p.statusStackPolicy||'refresh';
  if(lifecyclePolicy){
-  const refreshPatch={sourceId:source.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,payload:p.statusPayload||{}};
-  const createEffect=()=>{const seq=++statusEffectSequence;return{instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true}};
+  const refreshPatch={sourceId:source.id,skillId:compiled.definition.id,...provenance,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,payload:p.statusPayload||{}};
+  const createEffect=()=>{const seq=++statusEffectSequence;return{instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,...provenance,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true}};
   const applied=getTaggedApplyLifecycleEngine().apply('STATUS',{list,input:{statusId,newEffect:createEffect,refreshPatch},lifecycle:lifecyclePolicy});
   if(!applied.ok){typeof recordValidationEvent==='function'&&recordValidationEvent('status_lifecycle_rejected',{status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:applied.reason||'STATUS_LIFECYCLE_REJECTED',field:applied.field||null,value:applied.value||null});return{ok:false,reason:applied.reason||'STATUS_LIFECYCLE_REJECTED',lifecyclePolicy}}
   const effect=applied.effect;
@@ -406,8 +402,8 @@ function applyTaggedStatus(source,target,compiled,lifecyclePolicy=null){
   typeof recordValidationEvent==='function'&&recordValidationEvent('status_applied',{instance_id:effect.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:effect.expiresTick});return{ok:true,refreshed:false,effect,lifecyclePolicy};
  }
  const existing=list.find(x=>x.statusId===statusId);
- if(policy==='refresh'&&existing){existing.sourceId=source.id;existing.skillId=compiled.definition.id;existing.appliedTick=battle.tick;existing.baseDurationTick=baseDuration;existing.effectiveDurationTick=duration;existing.expiresTick=battle.tick+duration;existing.targetResistance=resistance;existing.payload=p.statusPayload||{};typeof recordValidationEvent==='function'&&recordValidationEvent('status_refreshed',{instance_id:existing.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:existing.expiresTick});return{ok:true,refreshed:true,effect:existing}}
- const seq=++statusEffectSequence,effect={instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true};
+ if(policy==='refresh'&&existing){existing.sourceId=source.id;existing.skillId=compiled.definition.id;Object.assign(existing,provenance);existing.appliedTick=battle.tick;existing.baseDurationTick=baseDuration;existing.effectiveDurationTick=duration;existing.expiresTick=battle.tick+duration;existing.targetResistance=resistance;existing.payload=p.statusPayload||{};typeof recordValidationEvent==='function'&&recordValidationEvent('status_refreshed',{instance_id:existing.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:existing.expiresTick});return{ok:true,refreshed:true,effect:existing}}
+ const seq=++statusEffectSequence,effect={instanceId:`STATUS-I-${seq}`,sequence:seq,statusId,sourceId:source.id,targetId:target.id,skillId:compiled.definition.id,...provenance,appliedTick:battle.tick,baseDurationTick:baseDuration,effectiveDurationTick:duration,expiresTick:battle.tick+duration,targetResistance:resistance,stackPolicy:policy,payload:p.statusPayload||{},removeOnDeath:true,removeOnBattleEnd:true};
  list.push(effect);typeof recordValidationEvent==='function'&&recordValidationEvent('status_applied',{instance_id:effect.instanceId,status_id:statusId,source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,base_duration_tick:baseDuration,effective_duration_tick:duration,target_resistance:resistance,expires_tick:effect.expiresTick});return{ok:true,refreshed:false,effect};
 }
 function removeStatus(target,selector={},reason='scripted',tick=battle.tick){
@@ -709,9 +705,10 @@ function applyDotStackLifecycle(list,{identityKey,gain,newStack}={},lifecycle){
 }
 function applyTaggedDot(source,target,compiled,lifecyclePolicy=null){
  if(!target?.alive)return{ok:false,reason:'DOT付与対象が無効です'};
+ const provenance=requireActiveEffectProvenance(compiled,'DOT');if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};
  const type=resolveDotType(compiled),list=ensureDotStackList(target),gain=Math.max(1,Math.floor(compiled.definition.parameters.stackGain));
  const power=Math.max(0,Math.floor(compiled.definition.parameters.dotPower)),duration=Math.max(1,Math.floor(compiled.definition.parameters.dotDuration)),interval=Math.max(1,Math.floor(compiled.definition.parameters.dotInterval));
- const createStack=()=>({id:`DOT-${++dotStackSequence}`,typeId:type.id,label:type.label,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,power,appliedAt:battle.tick,expiresAt:battle.tick+duration,nextTick:battle.tick+interval,interval,duration});
+ const createStack=()=>({id:`DOT-${++dotStackSequence}`,typeId:type.id,label:type.label,sourceId:source.id,sourceName:source.name,skillId:compiled.definition.id,skillName:compiled.definition.name,...provenance,power,appliedAt:battle.tick,expiresAt:battle.tick+duration,nextTick:battle.tick+interval,interval,duration});
  if(lifecyclePolicy){
   const applied=getTaggedApplyLifecycleEngine().apply('DOT',{list,input:{identityKey:type.id,gain,newStack:createStack},lifecycle:lifecyclePolicy});
   if(!applied.ok){if(applied.reason==='MAX_STACK'){battle.log.push(`[Tick ${battle.tick}] [TAG][DOT] ${target.name}の${type.label}は最大${applied.maxStack}スタックのため付与失敗`);typeof recordValidationEvent==='function'&&recordValidationEvent('dot_stack_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:'MAX_STACK',current:applied.current,max_stack:applied.maxStack});return{ok:false,reason:'MAX_STACK',added:0,current:applied.current,maxStack:applied.maxStack,lifecyclePolicy}}typeof recordValidationEvent==='function'&&recordValidationEvent('dot_lifecycle_rejected',{source_id:source.id,target_id:target.id,skill_id:compiled.definition.id,reason:applied.reason||'DOT_LIFECYCLE_REJECTED',field:applied.field||null,value:applied.value||null});return{ok:false,reason:applied.reason||'DOT_LIFECYCLE_REJECTED',lifecyclePolicy}}
@@ -782,8 +779,9 @@ function removeCoverEffect(target,effect,reason='scripted'){
 function removeCoverEffects(target,{sourceId=null,reason='manual_dispel',removableOnly=false}={}){const list=[...ensureCoverEffects(target)],selected=list.filter(x=>(!sourceId||x.sourceId===sourceId)&&(!removableOnly||x.removable));let count=0;for(const x of selected)if(removeCoverEffect(target,x,reason))count++;return count}
 function applyCoverControl(source,target,compiled,control=null){
  if(!source?.alive||!target?.alive||source.side!==target.side||source.id===target.id)return{ok:false,reason:'COVER対象が無効です'};
+ const provenance=requireActiveEffectProvenance(compiled,'COVER');if(!provenance)return{ok:false,reason:'ACTIVE_EFFECT_PROVENANCE_REQUIRED'};
  const p=compiled.definition.parameters,lifetime=control?String(control.lifetime||'').toLowerCase():p.coverLifetime,uses=lifetime==='uses'?Number(control?control.uses:p.coverUses):null,duration=lifetime==='duration'?Number(control?control.duration:p.coverDuration):null,priority=control?Number(control.priority):Number(p.coverPriority)||0,removable=control?control.removable===true:p.coverRemovable==='true';
- const effect={id:`COVER-${++coverEffectSequence}`,sequence:coverEffectSequence,sourceId:source.id,sourceName:source.name,targetId:target.id,skillId:compiled.definition.id,skillName:compiled.definition.name,priority,removable,lifetime,remainingUses:lifetime==='uses'?uses:null,appliedAt:battle.tick,expiresAt:lifetime==='duration'?battle.tick+duration:null};
+ const effect={id:`COVER-${++coverEffectSequence}`,sequence:coverEffectSequence,sourceId:source.id,sourceName:source.name,targetId:target.id,skillId:compiled.definition.id,skillName:compiled.definition.name,...provenance,priority,removable,lifetime,remainingUses:lifetime==='uses'?uses:null,appliedAt:battle.tick,expiresAt:lifetime==='duration'?battle.tick+duration:null};
  ensureCoverEffects(target).push(effect);battle.log.push(`[Tick ${battle.tick}] [TAG][COVER] ${source.name}が${target.name}をかばう（${lifetime}${lifetime==='uses'?` / 残${uses}回`:lifetime==='duration'?` / Tick ${effect.expiresAt}まで`:''}）`);
  typeof recordValidationEvent==='function'&&recordValidationEvent('cover_added',{cover_id:effect.id,source_id:source.id,target_id:target.id,skill_id:effect.skillId,priority:effect.priority,removable:effect.removable,lifetime,remaining_uses:effect.remainingUses,expires_at:effect.expiresAt});return{ok:true,effect};
 }

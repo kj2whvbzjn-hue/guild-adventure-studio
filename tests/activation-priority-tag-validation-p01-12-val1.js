@@ -12,7 +12,9 @@ const omitted=compiler.compileSkill(skill('OMITTED',0,true),registry);assert.str
 const decimal=compiler.compileSkill(skill('DECIMAL',1.5),registry);assert.strictEqual(decimal.ok,false,'decimal accepted');assert(decimal.errors.some(x=>x.code==='INVALID_ACTIVATION_PRIORITY'),'decimal must fail with INVALID_ACTIVATION_PRIORITY');
 const data=JSON.parse(fs.readFileSync('Export/skill/skills.json','utf8'));
 const manifest=JSON.parse(fs.readFileSync('Export/manifest.json','utf8'));
+const project=JSON.parse(fs.readFileSync('project-data.json','utf8'));
 assert.strictEqual(data.data_version,manifest.data_version,'Skill Export data_version must match Export manifest generation');
-assert(Array.isArray(data.data)&&data.data.length>0,'Skill Export is empty');
+assert(Array.isArray(data.data),'Skill Export data must be an array');
+assert.deepStrictEqual(data.data.map(x=>x.id).sort(),(project.masters?.skills||[]).map(x=>x.id).sort(),'Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
 assert(data.data.every(x=>x.runtimeContracts?.registryPhase===registry.phase),'Skill Export contains non-Formal runtimeContracts');
 console.log('ACTIVATION_PRIORITY_FORMAL_COMPILER_GA_B486_PASS');

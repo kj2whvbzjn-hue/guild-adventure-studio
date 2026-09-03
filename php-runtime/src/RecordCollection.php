@@ -12,7 +12,7 @@ final class RecordCollection
     private array $byId = [];
 
     /** @param mixed $data */
-    public function __construct(public readonly string $path, mixed $data)
+    public function __construct(public readonly string $path, mixed $data, public readonly string $idField = 'id')
     {
         if (!is_array($data) || !array_is_list($data)) {
             throw new ExportLoadException('REPOSITORY_DATA_INVALID', "Repository data must be a list: {$path}", ['path' => $path]);
@@ -22,9 +22,9 @@ final class RecordCollection
             if (!is_array($record)) {
                 throw new ExportLoadException('REPOSITORY_RECORD_INVALID', "Repository record must be an object: {$path}", ['path' => $path, 'record' => $index]);
             }
-            $id = $record['id'] ?? null;
+            $id = $record[$this->idField] ?? null;
             if (!is_string($id) || $id === '') {
-                throw new ExportLoadException('REPOSITORY_ID_INVALID', "Repository record id is invalid: {$path}", ['path' => $path, 'record' => $index]);
+                throw new ExportLoadException('REPOSITORY_ID_INVALID', "Repository record {$this->idField} is invalid: {$path}", ['path' => $path, 'record' => $index]);
             }
             if (isset($this->byId[$id])) {
                 throw new ExportLoadException('REPOSITORY_DUPLICATE_ID', "Duplicate repository id: {$id}", ['path' => $path, 'id' => $id]);

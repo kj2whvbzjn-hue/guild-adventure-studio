@@ -1,0 +1,78 @@
+{
+  "schema_version": "2.0.0",
+  "data_version": "0.1.0-draft",
+  "program_id": "AIP-P1-SAMPLE",
+  "program_version": 1,
+  "compiler_version": "2.0.0",
+  "entry_instruction": "I-0001",
+  "instructions": [
+    {
+      "instruction_id": "I-0001",
+      "op": "SEARCH",
+      "origin_part_id": "node-search",
+      "source_node_id": "node-search",
+      "master_node_id": "AIS-0001",
+      "evaluator": "search.exists",
+      "params": {"scope": "ENEMY"},
+      "on_found": "I-0002",
+      "on_not_found": "I-0005"
+    },
+    {
+      "instruction_id": "I-0002",
+      "op": "CALL",
+      "origin_part_id": "edge-call",
+      "source_node_id": "node-search",
+      "params": {},
+      "subroutine_id": "SUB-1",
+      "entry_instruction": "I-0003",
+      "return_instruction_id": "I-0004"
+    },
+    {
+      "instruction_id": "I-0003",
+      "op": "CONDITION",
+      "origin_part_id": "node-state",
+      "source_node_id": "node-state",
+      "master_node_id": "AIC-0002",
+      "evaluator": "condition.hp_ratio_compare",
+      "params": {},
+      "on_true": "I-0006",
+      "on_false": "I-0006"
+    },
+    {
+      "instruction_id": "I-0006",
+      "op": "RETURN",
+      "origin_part_id": "edge-return-yes",
+      "source_node_id": "node-state",
+      "params": {}
+    },
+    {
+      "instruction_id": "I-0004",
+      "op": "ACTION",
+      "origin_part_id": "node-action",
+      "source_node_id": "node-action",
+      "master_node_id": "AIA-0002",
+      "evaluator": "action.skill",
+      "params": {"skill_id": "SKL-0001"},
+      "target_selector": {"selector_id": "ATS-0001", "params": {}}
+    },
+    {
+      "instruction_id": "I-0005",
+      "op": "ACTION",
+      "origin_part_id": "node-wait",
+      "source_node_id": "node-wait",
+      "master_node_id": "AIA-0003",
+      "evaluator": "action.wait",
+      "params": {}
+    }
+  ],
+  "source_map": {
+    "I-0001": {"origin_part_id": "node-search", "source_node_id": "node-search"},
+    "I-0002": {"origin_part_id": "edge-call", "source_node_id": "node-search"},
+    "I-0003": {"origin_part_id": "node-state", "source_node_id": "node-state"},
+    "I-0006": {"origin_part_id": "edge-return-yes", "source_node_id": "node-state"},
+    "I-0004": {"origin_part_id": "node-action", "source_node_id": "node-action"},
+    "I-0005": {"origin_part_id": "node-wait", "source_node_id": "node-wait"}
+  },
+  "limits": {"max_steps": 6, "max_subroutine_depth": 1},
+  "content_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+}

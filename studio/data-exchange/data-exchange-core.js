@@ -9,7 +9,7 @@
   const VERSION='1.0.0-draft';
   const VOLATILE_DEFAULT=['updated_at','created_at','generated_at'];
   const ID_PREFIXES=Object.freeze({
-    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',passives:'PAS',mods:'MOD',ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',ai_programs:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
+    monsters:'MON',tags:'TAG',skills:'SKL',stats:'STA',status_effects:'STS',tablets:'TBL',maps:'MAP',exploration_outcomes:'EXP',adventure_settings:'ADV',jobs:'JOB',equipment:'EQP',passives:'PAS',mods:'MOD',ai_searches:'AIS',ai_conditions:'AIC',ai_target_selectors:'ATS',ai_actions:'AIA',ai_programs:'AIP',ai_program_layouts:'AIL',ai_program_runtime:'AIP',chapters:'CHP',story_sections:'SEC',story_scenes:'SCN',story_dialogues:'DLG'
   });
   const ID_RULES=Object.fromEntries(Object.entries(ID_PREFIXES).map(([dataset,prefix])=>[dataset,{prefix,pattern:new RegExp('^'+prefix+'-\\d{4}$'),example:prefix+'-0001'}]));
 
@@ -19,10 +19,7 @@
       {dataset:'skills',paths:['params.skill_ids','params.candidate_skill_ids']},
       {dataset:'jobs',paths:['params.job_id']},
       {dataset:'equipment',paths:['params.equipment_ids']},
-      {dataset:'mods',paths:['params.mod_ids']},
-      {dataset:'ai_conditions',paths:['params.ai.condition_id']},
-      {dataset:'ai_targets',paths:['params.ai.target_id']},
-      {dataset:'ai_actions',paths:['params.ai.action_id']}
+      {dataset:'mods',paths:['params.mod_ids']}
     ]},
     tags:{path:['tags'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['aliases'],dependencies:[]},
     skills:{path:['masters','skills'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.required_tags','useRequirements[].allTags','useRequirements[].anyTags'],dependencies:[{dataset:'tags',paths:['tags','params.required_tags','useRequirements[].allTags','useRequirements[].anyTags']}]},
@@ -36,16 +33,21 @@
     equipment:{path:['masters','equipment'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','mod_ids','params.mod_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['mod_ids','params.mod_ids']}]},
     passives:{path:['masters','passives'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','params.mod_ids','params.effect_ids'],dependencies:[{dataset:'tags',paths:['tags']},{dataset:'mods',paths:['params.mod_ids']}]},
     mods:{path:['masters','mods'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
-    ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
-    ai_targets:{path:['masters','ai_targets'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    ai_searches:{path:['masters','ai_searches'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    ai_conditions:{path:['masters','ai_conditions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags','supported_subject_kind'],dependencies:[{dataset:'tags',paths:['tags']}]},
+    ai_target_selectors:{path:['masters','ai_target_selectors'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_programs:{path:['ai_programs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[
       {dataset:'tags',paths:['tags']},
       {dataset:'skills',paths:['nodes[].parameters.skill_id']},
+      {dataset:'ai_searches',nodeType:'search',paths:['nodes[].master_node_id']},
       {dataset:'ai_conditions',nodeType:'condition',paths:['nodes[].master_node_id']},
-      {dataset:'ai_targets',nodeType:'target',paths:['nodes[].master_node_id']},
+      {dataset:'ai_conditions',paths:['nodes[].parameters.predicate.clauses[].predicate_master_id']},
+      {dataset:'ai_target_selectors',paths:['nodes[].target_selector.selector_id']},
       {dataset:'ai_actions',nodeType:'action',paths:['nodes[].master_node_id']}
     ]},
+    ai_program_layouts:{path:['ai_program_layouts'],idField:'layout_id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[{dataset:'ai_programs',paths:['program_id']}]},
+    ai_program_runtime:{path:['ai_program_runtime'],idField:'program_id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[{dataset:'ai_programs',paths:['program_id']}]},
     chapters:{path:['chapters'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[]},
     story_sections:{virtual:'story_sections',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id']},
     story_scenes:{virtual:'story_scenes',idField:'id',volatile:VOLATILE_DEFAULT,unordered:[],dependencies:[],contextFields:['chapter_id','section_id']},
@@ -53,6 +55,7 @@
   };
 
   function clone(value){return value==null?value:JSON.parse(JSON.stringify(value));}
+  function rowId(dataset,row){const def=REGISTRY[dataset];return String(row?.[def?.idField||'id']??'').trim();}
   function getAt(obj,path){return String(path||'').split('.').filter(Boolean).reduce((v,k)=>v==null?undefined:v[k],obj);}
   function pathValues(value,path){
     const parts=String(path||'').split('.').filter(Boolean);
@@ -144,7 +147,7 @@
   function resolveDependencies(rootData,primaryDataset,primaryRows,mode='none'){
     if(mode==='none')return {};
     const result={}; const queue=[]; const visited=new Set();
-    const add=(dataset,id)=>{if(!id)return;const key=dataset+'::'+id;if(visited.has(key))return;visited.add(key);const row=records(rootData,dataset).find(x=>String(x?.id||'')===String(id));if(!row)return;(result[dataset]||(result[dataset]=[])).push(clone(row));if(mode==='recursive')queue.push({dataset,row});};
+    const add=(dataset,id)=>{if(!id)return;const key=dataset+'::'+id;if(visited.has(key))return;visited.add(key);const row=records(rootData,dataset).find(x=>rowId(dataset,x)===String(id));if(!row)return;(result[dataset]||(result[dataset]=[])).push(clone(row));if(mode==='recursive')queue.push({dataset,row});};
     const scan=(dataset,row)=>{const def=REGISTRY[dataset];(def?.dependencies||[]).forEach(dep=>dependencyIds(row,dep).forEach(id=>add(dep.dataset,id)));};
     primaryRows.forEach(row=>scan(primaryDataset,row));
     while(queue.length){const item=queue.shift();scan(item.dataset,item.row);}
@@ -155,15 +158,15 @@
     const rootData=options.rootData||{}; const dataset=options.dataset; const ids=uniqueStrings(options.ids||[]); const mode=options.dependencyMode||'none';
     if(!REGISTRY[dataset])throw new Error('未対応Dataset: '+dataset);
     if(!ids.length)throw new Error('出力対象を1件以上選択してください。');
-    const idSet=new Set(ids); const primary=records(rootData,dataset).filter(row=>idSet.has(String(row?.id||'')));
-    if(primary.length!==idSet.size){const found=new Set(primary.map(x=>String(x.id)));const missing=ids.filter(id=>!found.has(id));throw new Error('対象IDが見つかりません: '+missing.join(', '));}
+    const idSet=new Set(ids); const primary=records(rootData,dataset).filter(row=>idSet.has(rowId(dataset,row)));
+    if(primary.length!==idSet.size){const found=new Set(primary.map(x=>rowId(dataset,x)));const missing=ids.filter(id=>!found.has(id));throw new Error('対象IDが見つかりません: '+missing.join(', '));}
     const dependencies=resolveDependencies(rootData,dataset,primary,mode);
     const datasets={[dataset]:primary.map(clone)};
     Object.entries(dependencies).forEach(([key,value])=>{if(key!==dataset)datasets[key]=value;});
     const canonicalForBase={dataset,records:canonicalRecords(dataset,primary)};
     const baseHash=await sha256Hex(stableStringify(canonicalForBase));
     const recordHashes={};
-    for(const row of primary)recordHashes[String(row.id)]=await recordHash(dataset,row);
+    for(const row of primary)recordHashes[rowId(dataset,row)]=await recordHash(dataset,row);
     const envelope={
       format:FORMAT,version:VERSION,project_id:String(rootData.project?.id||''),mode:'partial',
       permissions:{writable:[dataset],read_only:Object.keys(datasets).filter(k=>k!==dataset).sort()},
@@ -357,8 +360,8 @@
     if(result.summary.invalid)return result;
     result.package_hash=await verifyPackageHash(envelope);
     if(result.package_hash.checked&&!result.package_hash.ok){result.summary.invalid++;result.errors.push('package_hashが一致しません。ファイル内容がExport後に変更されています。');return result;}
-    const incomingIndex={};datasetNames.forEach(ds=>{incomingIndex[ds]=new Map((envelope.datasets[ds]||[]).map(row=>[String(row.id),row]));});
-    const localIndex={};Object.keys(REGISTRY).forEach(ds=>{localIndex[ds]=new Map(records(rootData,ds).map(row=>[String(row.id),row]));});
+    const incomingIndex={};datasetNames.forEach(ds=>{incomingIndex[ds]=new Map((envelope.datasets[ds]||[]).map(row=>[rowId(ds,row),row]));});
+    const localIndex={};Object.keys(REGISTRY).forEach(ds=>{localIndex[ds]=new Map(records(rootData,ds).map(row=>[rowId(ds,row),row]));});
     const primary=writeDatasets[0],baseHash=String(envelope.metadata?.base_hash||'').trim();
     const exportedRevision=String(envelope.metadata?.base_project_revision||'').trim();
     const currentRevision=String(rootData.project?.updated_at||'').trim();
@@ -368,7 +371,7 @@
     let usedRecordHashes=false;
     if(sourceHashes&&typeof sourceHashes==='object'&&!Array.isArray(sourceHashes)){
       for(const row of envelope.datasets[primary]||[]){
-        const id=String(row.id),expected=String(sourceHashes[id]||'').trim(),local=localIndex[primary].get(id);
+        const id=rowId(primary,row),expected=String(sourceHashes[id]||'').trim(),local=localIndex[primary].get(id);
         if(!expected||!local)continue;
         usedRecordHashes=true;
         const actual=await recordHash(primary,local);
@@ -377,7 +380,7 @@
     }
     for(const ds of datasetNames){
       for(const row of envelope.datasets[ds]){
-        const id=String(row.id),local=localIndex[ds].get(id);
+        const id=rowId(ds,row),local=localIndex[ds].get(id);
         const same=!!local&&stableStringify(canonicalizeRecord(ds,local))===stableStringify(canonicalizeRecord(ds,row));
         if(readOnly.has(ds)){
           if(!result.integrity&&!local||(!result.integrity&&local&&!same)){result.items.push({dataset:ds,id,status:'readonly_modified',detail:!local?'read_only参照が現在のProjectに存在しません。':'read_only参照が現在値と異なります。'});result.summary.readonly_modified++;}
@@ -401,7 +404,7 @@
       result.warnings.push('Project revisionはExport後に更新されていますが、選択対象レコードのhashは一致しています。');
     }
     if(!usedRecordHashes&&baseHash){
-      const incomingIds=(envelope.datasets[primary]||[]).map(r=>String(r.id));
+      const incomingIds=(envelope.datasets[primary]||[]).map(r=>rowId(primary,r));
       const localRows=incomingIds.map(id=>localIndex[primary].get(id)).filter(Boolean);
       if(localRows.length===incomingIds.length){
         const actual=await sha256Hex(stableStringify({dataset:primary,records:canonicalRecords(primary,localRows)}));
@@ -471,9 +474,10 @@
     'status','description','created_at','updated_at'
   ]);
   const FORMAL_AI_MASTER_FIELDS=Object.freeze([
-    'id','name','node_type','status','tags','description','data_version','evaluator','ports','parameter_schema','unlock',
+    'schema_version','id','name','node_type','status','tags','description','data_version','evaluator','ports','parameter_schema','unlock','supported_subject_kind',
     'created_at','updated_at'
   ]);
+  const FORMAL_AI_SELECTOR_FIELDS=Object.freeze(['schema_version','id','name','evaluator','parameter_schema','tags','enabled','created_at','updated_at']);
   function skillMasterContractDiagnostic(){
     const shared=global.GKSSkillSchema?.masterAllowed?.();
     if(!Array.isArray(shared))return{shared_schema_loaded:false,shared_matches:false,missing:[...FORMAL_SKILL_MASTER_FIELDS],extra:[]};
@@ -493,10 +497,13 @@
     equipment:new Set(['id','name','status','tags','params','description','created_at','updated_at','mod_ids','item_level','mod_budget','mod_count','required_str','required_dex','required_int','required_vit','required_mnd','required_agi','attack','accuracy','magic_accuracy','magic_resistance','magic_weapon_bonus','weapon_critical_rate','block_rate','block_damage_cut_rate','hp_bonus','mp_bonus','evasion','armor_category','armor_slot','generation']),
     passives:new Set(['id','name','status','tags','passiveSeriesId','params','runtimeContracts','description','created_at','updated_at']),
     mods:new Set(['id','name','status','tags','params','description','created_at','updated_at','category','effect_type','target','operation','parameters','balance_key','enabled','schema_version']),
+    ai_searches:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_conditions:new Set(FORMAL_AI_MASTER_FIELDS),
-    ai_targets:new Set(FORMAL_AI_MASTER_FIELDS),
+    ai_target_selectors:new Set(FORMAL_AI_SELECTOR_FIELDS),
     ai_actions:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','compiled','created_at','updated_at']),
+    ai_program_layouts:new Set(['schema_version','data_version','layout_id','program_id','width','height','chips','extensions','created_at','updated_at']),
+    ai_program_runtime:new Set(['schema_version','data_version','program_id','program_version','compiler_version','entry_instruction','instructions','source_map','limits','content_hash','created_at','updated_at']),
     chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
     story_sections:new Set(['id','chapter_id','no','title','summary','purpose','start_state','end_state','key_points','status','design','candidate_revisions','export_control','created_at','updated_at']),
     story_scenes:new Set(['id','chapter_id','section_id','no','title','summary','purpose','status','design','candidate_revisions','export_control','created_at','updated_at']),
@@ -506,7 +513,7 @@
     const hardCut=dataset==='equipment'&&Object.prototype.hasOwnProperty.call(incomingRow||{},'base_critical_rate')?['base_critical_rate']:[];
     const allowed=SAFE_TOP_LEVEL_FIELDS[dataset];
     if(!allowed||!incomingRow||typeof incomingRow!=='object')return [];
-    const formalAI=['ai_conditions','ai_targets','ai_actions'].includes(dataset);
+    const formalAI=['ai_searches','ai_conditions','ai_target_selectors','ai_actions','ai_programs','ai_program_layouts','ai_program_runtime'].includes(dataset);
     const localKeys=formalAI?new Set():new Set(Object.keys(localRow||{}));
     return [...new Set([...hardCut,...Object.keys(incomingRow).filter(key=>!allowed.has(key)&&!localKeys.has(key))])];
   }
@@ -660,5 +667,5 @@
     }
     return out;
   }
-  return {FORMAT,VERSION,REGISTRY,ID_PREFIXES,ID_RULES,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildFormalCandidateBatch,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
+  return {FORMAT,VERSION,REGISTRY,ID_PREFIXES,ID_RULES,rowId,FORMAL_SKILL_MASTER_FIELDS,FORMAL_AI_MASTER_FIELDS,FORMAL_AI_SELECTOR_FIELDS,skillMasterContractDiagnostic,records,setDatasetRecords,canonicalizeRecord,stableStringify,sha256Hex,recordHash,recordFieldDiff,buildImpactPreview,buildImpactExportPayload,unknownIncomingFields,mergeRecordPreservingCurrent,resolveDependencies,buildFormalCandidateBatch,buildEnvelope,validateEnvelopeShape,verifyPackageHash,dryRunImport,createApplyPlan,applySafeMerge};
 });

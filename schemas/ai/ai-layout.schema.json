@@ -1,47 +1,124 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "schemas/ai/ai-layout.schema.json",
-  "title": "Player-authored AI board layout",
+  "title": "Formal AI V2 authoring layout",
   "type": "object",
-  "required": ["layout_version", "layout_id", "program_id", "width", "height", "chips", "extensions"],
+  "required": [
+    "schema_version",
+    "data_version",
+    "layout_id",
+    "program_id",
+    "width",
+    "height",
+    "chips",
+    "extensions"
+  ],
   "properties": {
-    "layout_version": {"const": 1},
-    "layout_id": {"type": "string", "minLength": 1, "pattern": "^AIL-[0-9]+$"},
-    "program_id": {"type": "string", "minLength": 1},
-    "width": {"type": "integer", "minimum": 1},
-    "height": {"type": "integer", "minimum": 1},
+    "schema_version": {
+      "const": "2.0.0"
+    },
+    "data_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "layout_id": {
+      "type": "string",
+      "pattern": "^AIL-[0-9]+$"
+    },
+    "program_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1
+    },
     "chips": {
       "type": "array",
-      "items": {"$ref": "#/$defs/chip"}
+      "items": {
+        "$ref": "#/$defs/chip"
+      }
     },
     "extensions": {
       "type": "array",
-      "items": {"$ref": "#/$defs/extension"}
+      "items": {
+        "$ref": "#/$defs/extension"
+      }
     }
   },
   "additionalProperties": false,
   "$defs": {
-    "rotation": {"type": "integer", "enum": [0, 90, 180, 270]},
+    "rotation": {
+      "type": "integer",
+      "enum": [
+        0,
+        90,
+        180,
+        270
+      ]
+    },
     "chip": {
       "type": "object",
-      "required": ["instance_id", "x", "y", "rotation"],
+      "required": [
+        "instance_id",
+        "x",
+        "y",
+        "rotation"
+      ],
       "properties": {
-        "instance_id": {"type": "string", "minLength": 1},
-        "x": {"type": "integer", "minimum": 0},
-        "y": {"type": "integer", "minimum": 0},
-        "rotation": {"$ref": "#/$defs/rotation"}
+        "instance_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rotation": {
+          "$ref": "#/$defs/rotation"
+        }
       },
       "additionalProperties": false
     },
     "extension": {
       "type": "object",
-      "required": ["id", "x", "y", "shape", "rotation"],
+      "required": [
+        "id",
+        "x",
+        "y",
+        "shape",
+        "rotation"
+      ],
       "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "x": {"type": "integer", "minimum": 0},
-        "y": {"type": "integer", "minimum": 0},
-        "shape": {"type": "string", "enum": ["straight", "corner"]},
-        "rotation": {"$ref": "#/$defs/rotation"}
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shape": {
+          "enum": [
+            "straight",
+            "corner"
+          ]
+        },
+        "rotation": {
+          "$ref": "#/$defs/rotation"
+        }
       },
       "additionalProperties": false
     }

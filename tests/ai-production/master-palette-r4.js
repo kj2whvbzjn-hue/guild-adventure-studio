@@ -9,7 +9,7 @@ const Adapter = require('../../shared/ai/ai-master-adapter.js');
 const root = path.resolve(__dirname, '../..');
 const master = {
   id: 'AIC-HP-BELOW', name: 'HP低下', status: 'active', tags: ['TAG-HP'], description: 'HP割合を検査',
-  data_version: '1.0.0', evaluator: 'condition.hp_below',
+  data_version: '1.0.0', evaluator: 'condition.hp_below', supported_subject_kind: ['UNIT','SELF'],
   ports: {inputs: [{id:'in',kind:'flow',data_type:'flow'}], outputs: [{id:'true',kind:'flow',data_type:'flow'},{id:'false',kind:'flow',data_type:'flow'}]},
   parameter_schema: {type:'object', required:['threshold','tag_id','skill_id','mode'], properties: {
     threshold: {type:'number', minimum:0, maximum:1},
@@ -18,7 +18,8 @@ const master = {
     mode: {type:'string', enum:['self','target']}
   }, additionalProperties:false}, unlock: {required_ids:['UNLOCK-AI']}, params: {}
 };
-const masters = {ai_conditions:[master], ai_targets:[{id:'AIT-SELF',name:'自分',status:'disabled'}], ai_actions:[]};
+const selector={schema_version:'2.0.0',id:'ATS-SELF',name:'自分',evaluator:'selector.self',parameter_schema:{type:'object',properties:{}},tags:[],enabled:false};
+const masters = {ai_searches:[],ai_conditions:[master],ai_target_selectors:[selector],ai_actions:[]};
 const refs = {tags:[{id:'TAG-HP',name:'HP'}], skills:[{id:'SKL-HEAL',name:'回復'}]};
 const node = Adapter.toNode(master, 'ai_conditions');
 assert.strictEqual(node.node_type, 'condition');
@@ -31,7 +32,8 @@ assert.strictEqual(Adapter.isAvailable(node, {data_version:'2.0.0',unlocked_ids:
 const palette = Adapter.palette(masters, 'hp', {data_version:'1.0.0',unlocked_ids:['UNLOCK-AI']});
 assert.strictEqual(palette.length, 1);
 assert.strictEqual(palette[0].available, true);
-assert.strictEqual(Adapter.palette(masters, '', {data_version:'1.0.0',unlocked_ids:['UNLOCK-AI']}).find(x=>x.id==='AIT-SELF').available, false);
+assert.strictEqual(Adapter.palette(masters, '', {data_version:'1.0.0',unlocked_ids:['UNLOCK-AI']}).some(x=>x.id==='ATS-SELF'), false, 'ATS must not be a node palette item');
+assert.strictEqual(Adapter.targetSelectorPalette(masters,'').find(x=>x.id==='ATS-SELF').available,false,'disabled ATS must be unavailable');
 
 const descriptors = Adapter.inputDescriptors(node, refs);
 assert.strictEqual(descriptors.find(x=>x.name==='threshold').type, 'number');
@@ -42,7 +44,7 @@ const invalid = Adapter.validateParameters(node, {threshold:2,tag_id:'MISSING',s
 assert(invalid.some(x=>x.includes('最大値')));
 assert(invalid.filter(x=>x.includes('存在しません')).length === 3);
 
-const genericParamsOnly = Adapter.toNode({id:'AIA-WAIT',name:'待機',status:'active',params:{definition:{evaluator:'action.wait'}}}, 'ai_actions');
+const genericParamsOnly = Adapter.toNode({id:'AIA-WAIT',name:'待機',status:'active',data_version:'1.0.0',params:{definition:{evaluator:'action.wait'}}}, 'ai_actions');
 assert.strictEqual(genericParamsOnly.evaluator, 'action.unconfigured', 'AI Master must read only Formal top-level fields');
 assert.deepStrictEqual(genericParamsOnly.ports.outputs, [], 'ACTION default ports must be terminal');
 assert.deepStrictEqual(Adapter.definitionErrors(genericParamsOnly), []);
@@ -56,6 +58,7 @@ assert(!html.includes('params.ai_definition'), 'AI Master must not mirror Formal
 assert(html.includes('node_type:node.node_type'), 'AI Master save must persist Formal node_type');
 assert(html.includes("masterParamsField')?.classList.toggle('hidden',isAI)"), 'generic params editor must be hidden for AI Master');
 assert(html.includes('window.GKSAIProductionHost={getData:()=>data,'), 'evolved host must retain read-only master access while adding project persistence');
-assert(html.includes('../shared/ai/ai-master-adapter.js?v=1'));
+assert(html.includes('../shared/ai/ai-master-adapter.js?v=2'));
+assert(html.includes('id="aiMasterSupportedSubjects"'),'AIC supported subject authoring field missing');
 
-console.log('AI_MASTER_PALETTE_R4_OK palette=1 status=1 unlock=1 version=1 types=1 refs=1 formal_only=1 action_terminal=1');
+console.log('AI_MASTER_PALETTE_R10_P2_OK palette=1 ats_non_node=1 status=1 unlock=1 version=1 subjects=1 refs=1 formal_only=1 action_terminal=1');

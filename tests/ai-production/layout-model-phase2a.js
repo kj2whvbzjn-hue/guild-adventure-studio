@@ -4,15 +4,16 @@
 const assert = require('assert');
 const Layout = require('../../shared/ai/ai-layout-model.js');
 
-assert.strictEqual(Layout.LAYOUT_VERSION, 1);
+assert.strictEqual(Layout.SCHEMA_VERSION, '2.0.0');
 assert.strictEqual(Layout.DEFAULT_WIDTH, 8);
 assert.strictEqual(Layout.DEFAULT_HEIGHT, 8);
 assert.strictEqual(Layout.nextLayoutId([]), 'AIL-0001');
 assert.strictEqual(Layout.nextLayoutId([{layout_id:'AIL-0001'},{layout_id:'AIL-0010'}]), 'AIL-0011');
 
-let layout = Layout.createLayout('AIL-0001', 'AIP-0001');
+let layout = Layout.createLayout('AIL-0001', 'AIP-0001', 'DV-P8');
 assert.deepStrictEqual(layout, {
-  layout_version: 1,
+  schema_version: '2.0.0',
+  data_version: 'DV-P8',
   layout_id: 'AIL-0001',
   program_id: 'AIP-0001',
   width: 8,
@@ -53,4 +54,4 @@ assert.strictEqual(layout.chips.length, 1);
 const invalidRotation = Object.assign({}, layout, {chips:[{instance_id:'AIN-0002',x:1,y:1,rotation:45}]});
 assert(Layout.validateLayout(invalidRotation).some(x=>x.includes('rotation')));
 
-console.log('AI_LAYOUT_MODEL_PHASE2A_OK layout_version=1 default=8x8 separate_edges=1 collision_guard=1 roundtrip=1');
+console.log('AI_LAYOUT_MODEL_PHASE2A_OK schema_version=2.0.0 default=8x8 separate_edges=1 collision_guard=1 roundtrip=1');

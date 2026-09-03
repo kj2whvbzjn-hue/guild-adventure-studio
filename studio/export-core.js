@@ -5,8 +5,10 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
   const SCHEMA_VERSION='1.0.0';
+  const AI_SCHEMA_VERSION='2.0.0';
+  const AI_V2_EXPORT_PATHS=new Set(['ai/ai_nodes.json','ai/ai_target_selectors.json','ai/ai_programs.json','ai/ai_program_layouts.json','ai/ai_program_runtime.json']);
   const EXPORT_PATHS=[
-    'ai/ai_nodes.json','ai/ai_templates.json','ai/ai_programs.json','ai/ai_runtimes.json',
+    'ai/ai_nodes.json','ai/ai_target_selectors.json','ai/ai_programs.json','ai/ai_program_layouts.json','ai/ai_program_runtime.json',
     'equipment/equipment.json','equipment/mods.json',
     'event/events.json','event/flags.json',
     'master/jobs.json','master/statuses.json','master/passives.json',
@@ -284,7 +286,7 @@
     if(summary.ready_count===0)issues.push({level:'WARNING',code:'FORMAL_QUEST_ZERO',message:'Quest.boxesを正とするP4正式Questが0件です。Exportは可能ですが、新Quest契約として実行対象はありません。'});
     return {summary,issues};
   }
-  function collectAIExportIssues(data){const adapter=aiExportAdapter();return adapter?adapter.collectIssues(data):[{level:'ERROR',code:'AI_EXPORT_ADAPTER_MISSING',message:'AI Export Adapterを読み込めません。'}];}
+  function collectAIExportIssues(data,rootDataVersion){const adapter=aiExportAdapter(),issues=adapter?adapter.collectIssues(data,rootDataVersion):[{level:'ERROR',code:'AI_EXPORT_ADAPTER_MISSING',message:'AI Export Adapterを読み込めません。'}];for(const [category,prefix] of [['ai_searches','AIS-'],['ai_conditions','AIC-'],['ai_actions','AIA-']])for(const row of (data?.masters?.[category]||[])){const id=String(row?.id||'');if(!id.startsWith(prefix))issues.push({level:'ERROR',code:'AI_EXPORT_NODE_PREFIX',target:id,message:`AI Node Master ID prefixが不正です: ${id}`});if(String(row?.data_version||'')!==String(rootDataVersion||''))issues.push({level:'ERROR',code:'AI_EXPORT_NODE_ROOT_DATA_VERSION_MISMATCH',target:id,message:`AI Node Master data_versionがFormal Export rootと一致しません: ${id}`});}for(const row of (data?.masters?.ai_target_selectors||[])){const id=String(row?.id||'');if(!id.startsWith('ATS-'))issues.push({level:'ERROR',code:'AI_EXPORT_SELECTOR_PREFIX',target:id,message:`Target Selector ID prefixが不正です: ${id}`});}return issues;}
   function buildData(data){
     const chapters=[],sections=[],scenes=[];
     (data.chapters||[]).forEach(chapter=>{
@@ -294,11 +296,11 @@
         (section.scenes||[]).forEach(scene=>scenes.push(clean({...scene,chapter_id:chapter.id,section_id:section.id})));
       });
     });
-    const masters=data.masters||{}, quests=data.quests||[], mods=masters.mods||[], ai=aiExportAdapter()?.build(data)||{programs:[],runtimes:[]};
+    const masters=data.masters||{}, quests=data.quests||[], mods=masters.mods||[], ai=aiExportAdapter()?.build(data)||{programs:[],layouts:[],runtimes:[]};
     return {
-      'ai/ai_nodes.json':[...(masters.ai_conditions||[]).map(x=>({...clean(x),node_type:'condition'})),...(masters.ai_targets||[]).map(x=>({...clean(x),node_type:'target'})),...(masters.ai_actions||[]).map(x=>({...clean(x),node_type:'action'}))],
-      'ai/ai_templates.json':clean(data.ai_templates||[]),
-      'ai/ai_programs.json':clean(ai.programs),'ai/ai_runtimes.json':clean(ai.runtimes),
+      'ai/ai_nodes.json':[...(masters.ai_searches||[]).map(x=>({...clean(x),schema_version:'2.0.0',node_type:'search'})),...(masters.ai_conditions||[]).map(x=>({...clean(x),schema_version:'2.0.0',node_type:'condition'})),...(masters.ai_actions||[]).map(x=>({...clean(x),schema_version:'2.0.0',node_type:'action'}))],
+      'ai/ai_target_selectors.json':(masters.ai_target_selectors||[]).map(x=>({...clean(x),schema_version:'2.0.0'})),
+      'ai/ai_programs.json':clean(ai.programs),'ai/ai_program_layouts.json':clean(ai.layouts),'ai/ai_program_runtime.json':clean(ai.runtimes),
       'equipment/equipment.json':clean(masters.equipment||[]),
       'equipment/mods.json':clean(mods.filter(x=>!recordsByTag([x],['monster','stone','tablet','石板']).length)),
       'event/events.json':clean(data.events||[]),'event/flags.json':clean(data.flags||[]),
@@ -311,9 +313,9 @@
       'system/balance.json':clean(data.balance||{}),'system/drop_tables.json':clean(masters.reward_tables||[]),'system/game_settings.json':clean(data.game_settings||{}),'system/adventure_settings.json':clean(masters.adventure_settings||[])
     };
   }
-  function envelope(payload,dataVersion,generatedAt,appVersion){return {schema_version:SCHEMA_VERSION,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,data:payload};}
+  function envelope(payload,dataVersion,generatedAt,appVersion,schemaVersion=SCHEMA_VERSION){return {schema_version:schemaVersion,data_version:dataVersion,generated_at:generatedAt,generated_by:'GK Studio v'+appVersion,data:payload};}
   function envelopeForPath(path,payload,data,dataVersion,generatedAt,appVersion){
-    const doc=envelope(payload,dataVersion,generatedAt,appVersion);
+    const doc=envelope(payload,dataVersion,generatedAt,appVersion,AI_V2_EXPORT_PATHS.has(path)?AI_SCHEMA_VERSION:SCHEMA_VERSION);
     if(path==='ai/ai_nodes.json')doc.refs={tags:clean(data?.tags||[]),tag_categories:clean(data?.tag_categories||[])};
     return doc;
   }
@@ -322,7 +324,7 @@
     const crypto=require('node:crypto'); return crypto.createHash('sha256').update(text,'utf8').digest('hex');
   }
   async function buildPackage(data,{dataVersion,generatedAt,appVersion}){
-    const aiIssues=collectAIExportIssues(data);if(aiIssues.some(row=>row.level==='ERROR')){const error=new Error('AI export validation failed');error.issues=aiIssues;throw error;}
+    const aiIssues=collectAIExportIssues(data,dataVersion);if(aiIssues.some(row=>row.level==='ERROR')){const error=new Error('AI export validation failed');error.issues=aiIssues;throw error;}
     const contractIssues=[...collectQuestEventContractIssues(data),...collectFormalQuestExportIssues(data).issues];
     if(contractIssues.some(row=>row.level==='ERROR')){const error=new Error('Quest/Event export validation failed');error.issues=contractIssues;throw error;}
     const payloads=buildData(data), files={}, manifestFiles=[];
@@ -331,5 +333,5 @@
     files['manifest.json']=JSON.stringify(manifest,null,2)+'\n';
     return {payloads,files,manifest};
   }
-  return {SCHEMA_VERSION,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectFormalStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
+  return {SCHEMA_VERSION,AI_SCHEMA_VERSION,AI_V2_EXPORT_PATHS,EXPORT_PATHS,QUEST_BOX_ZONE_KEYS,clean,scenarioTextHash,collectScenarioExportIssues,collectQuestContractIssues,collectEventContractIssues,collectQuestEventContractIssues,collectFormalStoryModelIssues,p5StoryQuestRuntimeAssessment,p6StoryQuestRuntimeAssessment,p7StoryQuestRuntimeAssessment,formalStoryQuestAssessment,summarizeFormalStoryQuests,collectFormalQuestExportIssues,collectAIExportIssues,buildData,envelope,sha256Hex,buildPackage};
 });

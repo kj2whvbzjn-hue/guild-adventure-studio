@@ -1,23 +1,476 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "schemas/exports/ai-ai_programs.schema.json",
-  "title": "ai/ai_programs.json",
+  "title": "ai/ai_programs.json data",
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["schema_version", "data_version", "id", "name", "version", "status", "entry_node_id", "nodes", "edges", "subroutines"],
+    "required": [
+      "schema_version",
+      "data_version",
+      "id",
+      "name",
+      "version",
+      "status",
+      "entry_node_id",
+      "nodes",
+      "edges",
+      "subroutines"
+    ],
     "properties": {
-      "schema_version": {"type": "string", "minLength": 1},
-      "data_version": {"type": "string", "minLength": 1},
-      "id": {"type": "string", "minLength": 1},
-      "name": {"type": "string", "minLength": 1},
-      "version": {"type": "integer", "minimum": 1},
-      "status": {"type": "string", "enum": ["valid"]},
-      "entry_node_id": {"type": "string", "minLength": 1},
-      "nodes": {"type": "array"},
-      "edges": {"type": "array"},
-      "subroutines": {"type": "array"}
+      "schema_version": {
+        "const": "2.0.0"
+      },
+      "data_version": {
+        "type": "string",
+        "minLength": 1
+      },
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^AIP-[A-Za-z0-9_.-]+$"
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "version": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "status": {
+        "enum": [
+          "draft",
+          "valid",
+          "invalid",
+          "archived"
+        ]
+      },
+      "entry_node_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "nodes": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "$ref": "#/items/$defs/node"
+        }
+      },
+      "edges": {
+        "type": "array",
+        "items": {
+          "$ref": "#/items/$defs/edge"
+        }
+      },
+      "subroutines": {
+        "type": "array",
+        "items": {
+          "$ref": "#/items/$defs/subroutine"
+        }
+      },
+      "tags": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uniqueItems": true
+      },
+      "description": {
+        "type": "string"
+      },
+      "updated_at": {
+        "type": "string",
+        "minLength": 1
+      },
+      "compiled": {
+        "type": [
+          "object",
+          "null"
+        ]
+      }
     },
-    "additionalProperties": true
+    "additionalProperties": false,
+    "$defs": {
+      "position": {
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": false
+      },
+      "endpoint": {
+        "type": "object",
+        "required": [
+          "node_id",
+          "port_id"
+        ],
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "port_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "target_selector": {
+        "type": "object",
+        "required": [
+          "selector_id",
+          "params"
+        ],
+        "properties": {
+          "selector_id": {
+            "type": "string",
+            "pattern": "^ATS-[A-Za-z0-9_.-]+$"
+          },
+          "params": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "predicate_clause": {
+        "type": "object",
+        "required": [
+          "predicate_master_id",
+          "params",
+          "negate"
+        ],
+        "properties": {
+          "predicate_master_id": {
+            "type": "string",
+            "pattern": "^AIC-[A-Za-z0-9_.-]+$"
+          },
+          "params": {
+            "type": "object"
+          },
+          "negate": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "predicate_expression": {
+        "type": "object",
+        "required": [
+          "logic",
+          "clauses"
+        ],
+        "properties": {
+          "logic": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "ANY"
+            ]
+          },
+          "clauses": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/items/$defs/predicate_clause"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "node": {
+        "type": "object",
+        "required": [
+          "instance_id",
+          "master_node_id",
+          "node_type",
+          "position",
+          "parameters"
+        ],
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "master_node_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(AIS|AIC|AIA)-[A-Za-z0-9_.-]+$"
+          },
+          "master_data_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "node_type": {
+            "type": "string",
+            "enum": [
+              "search",
+              "condition",
+              "action"
+            ]
+          },
+          "position": {
+            "$ref": "#/items/$defs/position"
+          },
+          "parameters": {
+            "type": "object"
+          },
+          "target_selector": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/items/$defs/target_selector"
+              }
+            ]
+          },
+          "comment": {
+            "type": "string"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "node_type": {
+                  "const": "search"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "master_node_id": {
+                  "pattern": "^AIS-[A-Za-z0-9_.-]+$"
+                },
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "scope",
+                    "predicate"
+                  ],
+                  "properties": {
+                    "scope": {
+                      "enum": [
+                        "SELF",
+                        "ALLY",
+                        "ENEMY",
+                        "ANY"
+                      ]
+                    },
+                    "predicate": {
+                      "$ref": "#/items/$defs/predicate_expression"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "target_selector": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "node_type": {
+                  "const": "condition"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "master_node_id": {
+                  "pattern": "^AIC-[A-Za-z0-9_.-]+$"
+                },
+                "parameters": {
+                  "type": "object",
+                  "required": [
+                    "subject_scope",
+                    "predicate"
+                  ],
+                  "properties": {
+                    "subject_scope": {
+                      "enum": [
+                        "SELF",
+                        "BATTLE"
+                      ]
+                    },
+                    "predicate": {
+                      "$ref": "#/items/$defs/predicate_expression"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "target_selector": {
+                  "type": "null"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "node_type": {
+                  "const": "action"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "master_node_id": {
+                  "pattern": "^AIA-[A-Za-z0-9_.-]+$"
+                }
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      },
+      "edge": {
+        "type": "object",
+        "required": [
+          "edge_id",
+          "from",
+          "transition_kind"
+        ],
+        "properties": {
+          "edge_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from": {
+            "$ref": "#/items/$defs/endpoint"
+          },
+          "transition_kind": {
+            "enum": [
+              "NODE",
+              "CALL",
+              "RETURN"
+            ]
+          },
+          "to": {
+            "$ref": "#/items/$defs/endpoint"
+          },
+          "subroutine_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "return_to": {
+            "$ref": "#/items/$defs/endpoint"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "transition_kind": {
+                  "const": "NODE"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "to"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "subroutine_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "return_to"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "transition_kind": {
+                  "const": "CALL"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "subroutine_id",
+                "return_to"
+              ],
+              "not": {
+                "required": [
+                  "to"
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "transition_kind": {
+                  "const": "RETURN"
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "to"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "subroutine_id"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "return_to"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      },
+      "subroutine": {
+        "type": "object",
+        "required": [
+          "id",
+          "entry_node_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entry_node_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
   }
 }

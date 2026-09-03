@@ -5,7 +5,7 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
 
-  const CHARACTER_STATE_KEYS=Object.freeze(['id','name','level','job','stats','jobHistory','growthHistory','createdAt','formation_position']);
+  const CHARACTER_STATE_KEYS=Object.freeze(['id','name','level','job','base_hp','base_mp','stats','jobHistory','growthHistory','createdAt','formation_position']);
   const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
   const isObject=value=>value&&typeof value==='object'&&!Array.isArray(value);
   const own=(value,key)=>Object.prototype.hasOwnProperty.call(value,key);

@@ -116,7 +116,7 @@ try {
         $doc['data'] = [['id' => 'CH001', 'name' => '平原の章']];
     });
     rewriteJsonAndManifest($repositoryFixture, 'monster/monsters.json', function(array &$doc): void {
-        $doc['data'] = [['id' => 'MON001', 'name' => 'スライム']];
+        $doc['data'] = [['id' => 'MON001', 'name' => 'スライム', 'formalAiBinding' => ['program_id' => 'AIP-0001', 'layout_id' => 'AIL-0001']]];
     });
     rewriteJsonAndManifest($repositoryFixture, 'system/game_settings.json', function(array &$doc): void {
         $doc['data'] = ['party_size' => 6];
@@ -127,7 +127,7 @@ try {
 
     $pkg = (new ExportLoader(['1.0.0']))->load($repositoryFixture);
     $repo = new GameMasterRepository($pkg);
-    report('repository exposes all record collections', count(GameMasterRepository::COLLECTION_PATHS) === 20);
+    report('repository exposes all record collections', count(GameMasterRepository::COLLECTION_PATHS) === 23);
     report('repository finds generated chapter by id', ($repo->chapters()->require('CH001')['name'] ?? '') === '平原の章');
     report('repository finds generated monster by id', ($repo->monsters()->find('MON001')['name'] ?? '') === 'スライム');
     report('repository exposes object settings', ($repo->gameSettings()['party_size'] ?? null) === 6 && ($repo->balance()['agi_threshold'] ?? null) === 100);

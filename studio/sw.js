@@ -1,9 +1,9 @@
-const CACHE_NAME="gks-studio-b841";
+const CACHE_NAME="gks-studio-b862";
 const CACHE_PREFIX="gks-studio-";
-const OFFLINE_URL='./index.html?appv=841';
+const OFFLINE_URL='./index.html?appv=862';
 const APP_SHELL=[
   "./",
-  "./index.html?appv=841",
+  "./index.html?appv=862",
   "./manifest.webmanifest?v=583",
   "./icon-192.png?v=550",
   "./icon-512.png?v=550",
@@ -30,7 +30,7 @@ const APP_SHELL=[
   "./development-system-structure/development-system-structure.js?v=2",
   "../shared/ai/ai-program-model.js?v=1",
   "../shared/ai/ai-layout-model.js?v=1",
-  "../shared/ai/ai-master-adapter.js?v=1",
+  "../shared/ai/ai-master-adapter.js?v=2",
   "../shared/ai/ai-connection-resolver.js?v=1",
   "../shared/ai/ai-program-validator.js?v=1",
   "../shared/ai/ai-program-compiler.js?v=1",
@@ -41,16 +41,22 @@ const APP_SHELL=[
   "./ai-production/ai-program-editor.js?v=1",
   "./ai-production/ai-battle-adapter.js?v=1",
   "./ai-production/ai-simulation-runner.js?v=1",
-  "./ai-production/ai-export-adapter.js?v=1",
+  "./ai-production/ai-export-adapter.js?v=2",
   "./ai-production/ai-production-ui.js?v=1",
-  "./layer-controller.js?v=841",
+  "./layer-controller.js?v=862",
+  "./data-exchange/schemas/ai_search-dataset.schema.json",
+  "./data-exchange/schemas/ai_condition-dataset.schema.json",
+  "./data-exchange/schemas/ai_target_selector-dataset.schema.json",
+  "./data-exchange/schemas/ai_action-dataset.schema.json",
   "./data-exchange/schemas/ai_program-dataset.schema.json",
-  "./data-exchange/full-import-gate.js?v=1",
+  "./data-exchange/schemas/ai_program_layout-dataset.schema.json",
+  "./data-exchange/schemas/ai_program_runtime-dataset.schema.json",
+  "./data-exchange/full-import-gate.js?v=2",
   "./data-exchange/data-exchange-integrity-validator.js?v=4",
-  "./data-exchange/data-exchange-core.js?v=18",
+  "./data-exchange/data-exchange-core.js?v=19",
   "./data-exchange/data-exchange-transaction.js?v=3",
   "./data-exchange/data-exchange-audit.js?v=5",
-  "./data-exchange/data-exchange-ui.js?v=24",
+  "./data-exchange/data-exchange-ui.js?v=25",
   "../assets/shared/js/adventure-story-system.js?v=11",
   "./adventure-entity-json-import.js?v=583"
 ];

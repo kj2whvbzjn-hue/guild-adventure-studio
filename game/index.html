@@ -4,9 +4,9 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ギルド冒険物語 V9 正式版 GA-B486.211</title>
 
-<script src="../assets/shared/config/runtime-config.js?v=486211b841"></script>
+<script src="../assets/shared/config/runtime-config.js?v=486211b862"></script>
 <script src="../assets/shared/js/formal-contribution-resolver.js?v=1"></script>
-<script src="../assets/shared/js/combat-capability-runtime.js?v=486211b841"></script>
+<script src="../assets/shared/js/combat-capability-runtime.js?v=486211b862"></script>
 <script src="../assets/shared/js/game-shell-common.js?v=486211"></script>
 <script src="../assets/shared/js/apply-lifecycle-engine.js?v=486211"></script>
 <script src="../assets/shared/js/trigger-engine.js?v=486211"></script>
@@ -542,7 +542,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 .ga-project-nav .build{margin-left:auto;opacity:.8}
 @media(max-width:640px){.ga-project-nav .build{width:100%;margin-left:0}}
 </style>
-<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/" aria-current="page">ゲーム</a><a href="../studio/">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B842</span></nav>
+<nav class="ga-project-nav" aria-label="プロジェクト共通ナビ"><a href="../">入口</a><a href="../game/" aria-current="page">ゲーム</a><a href="../studio/">Studio</a><a href="../docs/">資料</a><span class="build">GA-B486.211 / GKS-B862</span></nav>
 
 <div class="ai-editor-overlay" id="aiEditor" aria-hidden="true">
  <div class="ai-editor-head"><button id="aiEditorClose" type="button">戻る</button><strong id="aiEditorTitle">AIチップ編集</strong><button id="aiEditorSave" class="primary" type="button" disabled>保存</button></div>
@@ -552,6 +552,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
   <div class="ai-board-wrap"><div class="ai-board" id="aiBoard" aria-label="AIチップ盤面"></div></div>
   <div class="ai-move-preview hidden" id="aiMovePreview"><div id="aiMovePreviewText"></div><div class="ai-move-preview-actions"><button id="aiMoveCancel" type="button">移動をやめる</button><button id="aiMoveCommit" class="primary" type="button" disabled>この位置へ移動</button></div></div>
   <div class="ai-formal-tools"><button id="aiUndo" type="button">Undo</button><button id="aiRedo" type="button">Redo</button><button id="aiIssueJump" type="button" disabled>問題なし</button><button id="aiPresetOpen" type="button">プリセット</button><button id="aiClear" class="danger" type="button">全消去</button></div>
+  <div class="ai-player-graph-tools" id="aiGraphTools"><div class="small"><b>接続 / サブルーチン</b> — PlayerがConnectionを明示編集します。Searchで見つけたcandidateは後続ActionのTargetへ引き継ぎません。</div><div class="row"><label>接続元<select id="aiEdgeFrom"><option value="">出力を選択</option></select></label><label>種類<select id="aiEdgeKind"><option value="NODE">NODE</option><option value="CALL">CALL</option><option value="RETURN">RETURN</option></select></label><label>接続先<select id="aiEdgeTo"><option value="">入力を選択</option></select></label><label>CALL先<select id="aiEdgeSubroutine"><option value="">Subroutine</option></select></label><label>RETURN先<select id="aiEdgeReturnTo"><option value="">入力を選択</option></select></label><button id="aiEdgeApply" type="button">接続を追加</button><button id="aiEdgeCancelEdit" class="hidden" type="button">変更をやめる</button></div><div id="aiEdgeList" class="small"></div><div class="row"><label>Subroutine開始<select id="aiSubroutineEntry"><option value="">部品を選択</option></select></label><button id="aiSubroutineAdd" type="button">Subroutine追加</button></div><div id="aiSubroutineList" class="small"></div></div>
  </div>
  <section class="ai-editor-screen" id="aiPresetScreen" aria-label="AIプリセット">
   <div class="ai-editor-screen-head"><button id="aiPresetBack" type="button">戻る</button><h3>プリセット</h3><span></span></div>
@@ -595,7 +596,7 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
 <section class="card base-view-card" data-base-view="character-skills"><div class="base-view-heading">スキル装着</div><button type="button" data-open-base-view="adventurer">← 冒険者詳細へ戻る</button><h2 id="characterSkillTitle">冒険者のスキル</h2><div id="characterSkillCurrent" class="skill-loadout-summary"></div><h3>所持スキル</h3><div id="characterSkillList"></div><div id="skillAssignmentDeveloper" class="developer-only hidden"><h3>Phase 2 開発：正式Skill永続割当</h3><div id="characterSkillCatalog"></div></div></section>
 <section class="card base-view-card" data-base-view="character-equipment"><div class="base-view-heading">装備変更</div><button type="button" data-open-base-view="adventurer">← 冒険者詳細へ戻る</button><h2 id="characterEquipmentTitle">冒険者の装備</h2><div id="characterEquipmentCurrent"></div><h3>所持装備</h3><div id="characterEquipmentList" class="grid"></div></section>
 <section class="card base-view-card" data-base-view="facility"><div class="base-view-heading" id="facilityHeading">施設</div><div id="facilityContent"></div></section>
-<section id="detailCard" class="card base-view-card hidden" data-base-view="adventurer"><h2>選択中の冒険者</h2><div id="detail"></div><div class="ai-character-action"><button class="primary" id="openAiEditor">AIチップ編集</button><button id="openSkillPlaceholder">スキル</button><button id="openEquipView">装備</button></div><div class="row" style="margin-top:12px"><button class="good demo-only" id="levelBtn">1レベル上げる（デモ）</button><button id="openJobChange">転職</button><button class="danger" id="deleteBtn">削除する</button></div><p class="small demo-only">デモ版では成長確認のため、手動レベルアップを利用できます。</p></section>
+<section id="detailCard" class="card base-view-card hidden" data-base-view="adventurer"><h2>選択中の冒険者</h2><div id="detail"></div><div id="characterAiBindingPanel" class="item" aria-label="AIプログラム装着"></div><div class="ai-character-action"><button class="primary" id="openAiEditor">プレイヤーAI編集</button><button id="openSkillPlaceholder">スキル</button><button id="openEquipView">装備</button></div><div class="row" style="margin-top:12px"><button class="good demo-only" id="levelBtn">1レベル上げる（デモ）</button><button id="openJobChange">転職</button><button class="danger" id="deleteBtn">削除する</button></div><p class="small demo-only">デモ版では成長確認のため、手動レベルアップを利用できます。</p></section>
 
 
 <section class="card base-view-card" data-base-view="guild"><div class="base-view-heading">ギルド管理</div><h2>セーブ</h2><p>プレイヤーデータは1スロットのオートセーブです。</p><p class="small">永続状態の変更が正常に確定した直後に自動保存します。手動セーブ、別スロット、JSON Import/Exportは正式セーブ経路として使用しません。</p><h3>ゲームメニュー</h3><div class="row"><button id="guildToTitle">タイトルへ戻る</button></div></section>
@@ -686,32 +687,34 @@ body:not(.dev-enabled) #phase-battle #sceneAuto{min-height:58px;font-size:18px;f
  <button class="mobile-auto-start" id="mobileAutoStart" type="button">▶ オート開始</button>
 </div>
 <div id="canvasScaleBadge" aria-hidden="true">1600×900 / 100%</div>
-<script src="./assets/js/tag-skill-runtime.js?v=486211b841"></script>
-<script src="./assets/js/studio-skill-bridge.js?v=486211b841"></script>
+<script src="../assets/shared/js/formation-target-resolver.js?v=486211b862"></script>
+<script src="./assets/js/tag-skill-runtime.js?v=486211b862"></script>
+<script src="./assets/js/studio-skill-bridge.js?v=486211b862"></script>
 <script src="../assets/shared/js/adventure-story-system.js?v=11"></script>
 <script src="../assets/shared/js/adventure-encounter-resolver.js?v=3"></script>
 <script src="../assets/shared/js/adventure-reward-resolver.js?v=1"></script>
 <script src="../assets/shared/js/adventure-battle-core.js?v=5"></script>
-<script src="../shared/ai/ai-program-model.js?v=486211b841"></script>
-<script src="../shared/ai/ai-layout-model.js?v=486211b841"></script>
-<script src="../shared/ai/ai-master-adapter.js?v=486211b841"></script>
-<script src="../shared/ai/ai-connection-resolver.js?v=486211b841"></script>
-<script src="../shared/ai/ai-program-validator.js?v=486211b841"></script>
-<script src="../shared/ai/ai-program-compiler.js?v=486211b841"></script>
-<script src="../shared/ai/ai-program-trace.js?v=486211b841"></script>
-<script src="../shared/ai/ai-decision-engine.js?v=486211b841"></script>
-<script src="./assets/js/ai-catalog-loader.js?v=486211b841"></script>
-<script src="./assets/js/ai-save-bridge.js?v=486211b841"></script>
-<script src="./assets/js/ai-battle-bridge.js?v=486211b841"></script>
-<script src="./assets/js/ai-editor-ui.js?v=486211b841"></script>
-<script src="./assets/js/skill-loadout-runtime.js?v=486211b841"></script>
-<script src="./assets/js/save-domain-bridge.js?v=486211b841"></script>
-<script src="./assets/js/inventory-equipment-save-bridge.js?v=486211b841"></script>
-<script src="./assets/js/skill-passive-ai-save-bridge.js?v=486211b841"></script>
-<script src="./assets/js/settings-tutorial-save-bridge.js?v=486211b841"></script>
-<script src="./assets/js/quest-run-save-bridge.js?v=486211b841"></script>
-<script src="./assets/js/app-runtime.js?v=486211b841"></script>
-<script src="./assets/js/battle-control.js?v=486211b841"></script>
+<script src="../shared/ai/ai-program-model.js?v=486211b862"></script>
+<script src="../shared/ai/ai-layout-model.js?v=486211b862"></script>
+<script src="../shared/ai/ai-master-adapter.js?v=486211b862"></script>
+<script src="../shared/ai/ai-connection-resolver.js?v=486211b862"></script>
+<script src="../shared/ai/ai-program-validator.js?v=486211b862"></script>
+<script src="../shared/ai/ai-program-compiler.js?v=486211b862"></script>
+<script src="../shared/ai/ai-program-trace.js?v=486211b862"></script>
+<script src="../shared/ai/ai-decision-engine.js?v=486211b862"></script>
+<script src="../shared/ai/ai-battle-runtime-context.js?v=486211b862"></script>
+<script src="./assets/js/ai-catalog-loader.js?v=486211b862"></script>
+<script src="./assets/js/ai-save-bridge.js?v=486211b862"></script>
+<script src="./assets/js/ai-battle-bridge.js?v=486211b862"></script>
+<script src="./assets/js/ai-editor-ui.js?v=486211b862"></script>
+<script src="./assets/js/skill-loadout-runtime.js?v=486211b862"></script>
+<script src="./assets/js/save-domain-bridge.js?v=486211b862"></script>
+<script src="./assets/js/inventory-equipment-save-bridge.js?v=486211b862"></script>
+<script src="./assets/js/skill-passive-ai-save-bridge.js?v=486211b862"></script>
+<script src="./assets/js/settings-tutorial-save-bridge.js?v=486211b862"></script>
+<script src="./assets/js/quest-run-save-bridge.js?v=486211b862"></script>
+<script src="./assets/js/app-runtime.js?v=486211b862"></script>
+<script src="./assets/js/battle-control.js?v=486211b862"></script>
 <script src="./assets/js/ui-bootstrap.js?v=486211"></script>
 <script src="../assets/shared/js/device-game-test-harness.js?v=486211"></script>
 

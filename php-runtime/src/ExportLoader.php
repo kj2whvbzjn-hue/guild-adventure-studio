@@ -12,6 +12,8 @@ final class ExportLoader
     private const HASH_PATTERN = '/^[a-f0-9]{64}$/';
     private const VERSION_PATTERN = '/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:[-+][0-9A-Za-z.-]+)?$/';
     private const AI_NODE_PATH = 'ai/ai_nodes.json';
+    private const AI_SCHEMA_VERSION = '2.0.0';
+    private const AI_V2_PATHS = ['ai/ai_nodes.json','ai/ai_target_selectors.json','ai/ai_programs.json','ai/ai_program_layouts.json','ai/ai_program_runtime.json'];
     private const AUXILIARY_EXPORT_PREFIXES = ['cpf/'];
     public const DEFAULT_MANIFEST_MAX_BYTES = 1_048_576;
     public const DEFAULT_FILE_MAX_BYTES = 16_777_216;
@@ -120,7 +122,7 @@ final class ExportLoader
             $document = $this->readJsonObject($absolute, $path);
             $this->validateEnvelope($document, $path);
             $this->assertMetadataMatchesManifest($manifest, $document, $path);
-            $this->assertSupportedSchema((string)$document['schema_version'], $path);
+            $this->assertDocumentSchemaVersion($manifestSchema, $document, $path);
             $this->validateDataSchema($document['data'], $path);
             $documents[$path] = $document;
         }
@@ -138,7 +140,6 @@ final class ExportLoader
     private function assertMetadataMatchesManifest(array $manifest, array $document, string $path): void
     {
         $checks = [
-            'schema_version' => 'SCHEMA_VERSION_MISMATCH',
             'data_version' => 'DATA_VERSION_MISMATCH',
             'generated_at' => 'GENERATED_AT_MISMATCH',
             'generated_by' => 'GENERATED_BY_MISMATCH',
@@ -155,6 +156,21 @@ final class ExportLoader
                     'document_value' => $documentValue,
                 ]);
             }
+        }
+    }
+
+
+    /** @param array<string,mixed> $document */
+    private function assertDocumentSchemaVersion(string $manifestSchema, array $document, string $path): void
+    {
+        $actual = (string)$document['schema_version'];
+        $expected = in_array($path, self::AI_V2_PATHS, true) ? self::AI_SCHEMA_VERSION : $manifestSchema;
+        if ($actual !== $expected) {
+            throw new ExportLoadException('SCHEMA_VERSION_MISMATCH', "schema_version differs from the dataset contract: {$path}", [
+                'path' => $path,
+                'expected' => $expected,
+                'actual' => $actual,
+            ]);
         }
     }
 

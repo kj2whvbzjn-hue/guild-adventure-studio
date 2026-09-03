@@ -2,11 +2,16 @@ const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
 const runtime=fs.readFileSync(path.join(root,'game/assets/js/app-runtime.js'),'utf8');
+const compiler=require('../assets/shared/js/skill-compiler.js');
+const registry=require('../assets/shared/config/skill-registry.json');
 const exportPayload=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
+const project=JSON.parse(fs.readFileSync(path.join(root,'project-data.json'),'utf8'));
 const rows=Array.isArray(exportPayload)?exportPayload:(exportPayload.data||[]);
 function assert(cond,msg){if(!cond){throw new Error(msg)}}
-const productionSample=rows.find(x=>x.runtimeContracts&&x.schemaVersion===1&&!Array.isArray(x.tags)&&(x.environment||'production')==='production');
-assert(productionSample,'formal production sample missing');
+assert(JSON.stringify(rows.map(x=>x.id).sort())===JSON.stringify((project.masters?.skills||[]).map(x=>x.id).sort()),'Formal Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
+const compiledFixture=compiler.compileSkill({schemaVersion:1,id:'SKL-TITLE-TAGS-FIXTURE',name:'Title Tags Fixture',skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0,activationPriority:0}},registry);
+assert(compiledFixture.ok,`formal fixture compile failed: ${JSON.stringify(compiledFixture.errors)}`);
+const productionSample=compiledFixture.compiledSkill;
 assert(productionSample.runtimeContracts.registryPhase==='FORMAL-SKILL-1','fixture must use Formal runtimeContracts');
 assert(!Array.isArray(productionSample.tags),'fixture must represent production formal skill without legacy tags');
 assert(runtime.includes('function skillDisplayTags(skill,compiled)'), 'skillDisplayTags helper missing');

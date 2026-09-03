@@ -67,26 +67,55 @@
     }
     return mismatches;
   }
+  function validatePersistentAiBinding(binding,label='formalAiBinding'){
+    if(!binding||typeof binding!=='object'||Array.isArray(binding))throw new Error(label+'はオブジェクトが必要です。');
+    const keys=Object.keys(binding).sort();
+    if(keys.length!==2||keys[0]!=='layout_id'||keys[1]!=='program_id')throw new Error(label+'はprogram_id/layout_idだけを持つPersistent bindingが必要です。');
+    return {program_id:requiredString(binding.program_id,label+'.program_id'),layout_id:requiredString(binding.layout_id,label+'.layout_id')};
+  }
+  function validateResolvedAiBinding(binding,label='formalAiBinding'){
+    if(!binding||typeof binding!=='object'||Array.isArray(binding))throw new Error(label+'はオブジェクトが必要です。');
+    const keys=Object.keys(binding).sort();
+    if(keys.length!==3||keys[0]!=='layout_id'||keys[1]!=='master_snapshot_id'||keys[2]!=='program_id')throw new Error(label+'はprogram_id/layout_id/master_snapshot_idを持つResolved bindingが必要です。');
+    return {program_id:requiredString(binding.program_id,label+'.program_id'),layout_id:requiredString(binding.layout_id,label+'.layout_id'),master_snapshot_id:requiredString(binding.master_snapshot_id,label+'.master_snapshot_id')};
+  }
   function validateAiMasterSnapshotData(data){
     if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('ai_master_snapshot dataはオブジェクトが必要です。');
+    if(String(data.schema_version||'')!=='2.0.0')throw new Error('ai_master_snapshot.data.schema_versionは2.0.0が必要です。');
     requiredString(data.id,'ai_master_snapshot.data.id');
     requiredString(data.version,'ai_master_snapshot.data.version');
     requiredString(data.data_version,'ai_master_snapshot.data.data_version');
-    if(!Array.isArray(data.nodes)||data.nodes.length===0)throw new Error('ai_master_snapshot.data.nodesは1件以上必要です。');
-    const seen=new Set(),allowedTypes=new Set(['condition','target','action']);
+    if(!Array.isArray(data.nodes))throw new Error('ai_master_snapshot.data.nodesは配列が必要です。');
+    if(!Array.isArray(data.target_selectors))throw new Error('ai_master_snapshot.data.target_selectorsは配列が必要です。');
+    const seen=new Set(),allowedTypes=new Set(['search','condition','action']);
     data.nodes.forEach((node,index)=>{
       if(!node||typeof node!=='object'||Array.isArray(node))throw new Error(`ai_master_snapshot.data.nodes[${index}]が不正です。`);
+      if(String(node.schema_version||'')!=='2.0.0')throw new Error(`ai_master_snapshot.data.nodes[${index}].schema_versionは2.0.0が必要です。`);
       const id=requiredString(node.id,`ai_master_snapshot.data.nodes[${index}].id`);
       if(seen.has(id))throw new Error(`ai_master_snapshot.data.nodes.idが重複しています: ${id}`);
       seen.add(id);
       const type=requiredString(node.node_type,`ai_master_snapshot.data.nodes[${index}].node_type`);
       if(!allowedTypes.has(type))throw new Error(`ai_master_snapshot.data.nodes[${index}].node_typeが未対応です: ${type}`);
+      const prefix=type==='search'?'AIS-':type==='condition'?'AIC-':'AIA-';
+      if(!id.startsWith(prefix))throw new Error(`ai_master_snapshot.data.nodes[${index}].id prefixがnode_typeと一致しません: ${id}`);
       requiredString(node.name,`ai_master_snapshot.data.nodes[${index}].name`);
       requiredString(node.status,`ai_master_snapshot.data.nodes[${index}].status`);
       requiredString(node.data_version,`ai_master_snapshot.data.nodes[${index}].data_version`);
       requiredString(node.evaluator,`ai_master_snapshot.data.nodes[${index}].evaluator`);
       if(!node.ports||typeof node.ports!=='object'||Array.isArray(node.ports))throw new Error(`ai_master_snapshot.data.nodes[${index}].portsが必要です。`);
       if(!node.parameter_schema||typeof node.parameter_schema!=='object'||Array.isArray(node.parameter_schema)||node.parameter_schema.type!=='object')throw new Error(`ai_master_snapshot.data.nodes[${index}].parameter_schemaはobject Schemaが必要です。`);
+    });
+    const selectorSeen=new Set();
+    data.target_selectors.forEach((selector,index)=>{
+      if(!selector||typeof selector!=='object'||Array.isArray(selector))throw new Error(`ai_master_snapshot.data.target_selectors[${index}]が不正です。`);
+      if(String(selector.schema_version||'')!=='2.0.0')throw new Error(`ai_master_snapshot.data.target_selectors[${index}].schema_versionは2.0.0が必要です。`);
+      const id=requiredString(selector.id,`ai_master_snapshot.data.target_selectors[${index}].id`);
+      if(!id.startsWith('ATS-'))throw new Error(`ai_master_snapshot.data.target_selectors[${index}].idはATS-*が必要です: ${id}`);
+      if(selectorSeen.has(id)||seen.has(id))throw new Error(`ai_master_snapshot内IDが重複しています: ${id}`);
+      selectorSeen.add(id);
+      requiredString(selector.name,`ai_master_snapshot.data.target_selectors[${index}].name`);
+      requiredString(selector.evaluator,`ai_master_snapshot.data.target_selectors[${index}].evaluator`);
+      if(!selector.parameter_schema||typeof selector.parameter_schema!=='object'||Array.isArray(selector.parameter_schema)||selector.parameter_schema.type!=='object')throw new Error(`ai_master_snapshot.data.target_selectors[${index}].parameter_schemaはobject Schemaが必要です。`);
     });
     return clone(data);
   }
@@ -139,5 +168,5 @@
     }
     return clone(payload);
   }
-  return Object.freeze({CANDIDATE_TYPES,canonicalize,canonicalStringify,isFormalManifest,validateFormalManifest,compareBindings,validateAiMasterSnapshotData,candidateReferenceId,validateCandidateReferenceIdentity,validateCandidateEnvelope,validateFormalRoster});
+  return Object.freeze({CANDIDATE_TYPES,canonicalize,canonicalStringify,isFormalManifest,validateFormalManifest,compareBindings,validatePersistentAiBinding,validateResolvedAiBinding,validateAiMasterSnapshotData,candidateReferenceId,validateCandidateReferenceIdentity,validateCandidateEnvelope,validateFormalRoster});
 });

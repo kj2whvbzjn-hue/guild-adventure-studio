@@ -6,29 +6,123 @@
   "items": {
     "type": "object",
     "required": [
+      "schema_version",
       "id",
-      "name"
+      "name",
+      "node_type",
+      "status",
+      "data_version",
+      "evaluator",
+      "ports",
+      "parameter_schema"
     ],
     "properties": {
+      "schema_version": {
+        "const": "2.0.0"
+      },
       "id": {
+        "type": "string",
+        "pattern": "^AIA-[A-Za-z0-9_.-]+$"
+      },
+      "name": {
         "type": "string",
         "minLength": 1
       },
-      "name": {},
+      "node_type": {
+        "const": "action"
+      },
       "status": {
+        "enum": [
+          "draft",
+          "active",
+          "deprecated",
+          "disabled"
+        ]
+      },
+      "data_version": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": {
         "type": "string"
       },
       "tags": {
         "type": "array",
         "items": {
-          "type": "string"
-        }
+          "type": "string",
+          "minLength": 1
+        },
+        "uniqueItems": true
       },
-      "params": {
+      "evaluator": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+      },
+      "ports": {
+        "type": "object",
+        "required": [
+          "inputs",
+          "outputs"
+        ],
+        "properties": {
+          "inputs": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {
+              "$ref": "#/items/$defs/port"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/items/$defs/port"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "parameter_schema": {
+        "type": "object",
+        "required": [
+          "type",
+          "properties"
+        ],
+        "properties": {
+          "type": {
+            "const": "object"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      },
+      "unlock": {
         "type": "object"
       },
-      "description": {
-        "type": "string"
+      "supported_subject_kind": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "enum": [
+            "UNIT",
+            "SELF",
+            "BATTLE"
+          ]
+        },
+        "uniqueItems": true
       },
       "created_at": {
         "type": "string"
@@ -37,6 +131,96 @@
         "type": "string"
       }
     },
-    "additionalProperties": true
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "node_type": {
+              "const": "search"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "id": {
+              "pattern": "^AIS-[A-Za-z0-9_.-]+$"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "node_type": {
+              "const": "condition"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "id": {
+              "pattern": "^AIC-[A-Za-z0-9_.-]+$"
+            }
+          },
+          "required": [
+            "supported_subject_kind"
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "node_type": {
+              "const": "action"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "id": {
+              "pattern": "^AIA-[A-Za-z0-9_.-]+$"
+            }
+          }
+        }
+      }
+    ],
+    "additionalProperties": false,
+    "$defs": {
+      "port": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "data_type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "flow",
+              "value"
+            ]
+          },
+          "data_type": {
+            "enum": [
+              "flow",
+              "boolean",
+              "number",
+              "string",
+              "tag",
+              "target",
+              "action"
+            ]
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
   }
 }

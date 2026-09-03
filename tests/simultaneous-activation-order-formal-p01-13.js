@@ -8,11 +8,14 @@ const spec=JSON.parse(fs.readFileSync(path.join(root,'docs/design/P01-13_SIMULTA
 const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 const exp=JSON.parse(fs.readFileSync(path.join(root,'Export/skill/skills.json'),'utf8'));
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'Export/manifest.json'),'utf8'));
+const project=JSON.parse(fs.readFileSync(path.join(root,'project-data.json'),'utf8'));
 const must=(ok,msg)=>{if(!ok){console.error('FAIL',msg);process.exit(1)}};
 must(/^GA-B\d+(?:\.\d+)+$/.test(build.game_build||''),'build');
 must(spec.formal_candidate==='P01-13-FORMAL-1'&&spec.formal_runtime_change===true,'formal spec');
 must(exp.data_version===manifest.data_version,'Skill Export generation mismatch');
-must(Array.isArray(exp.data)&&exp.data.length>0&&exp.data.every(x=>x.runtimeContracts?.registryPhase==='FORMAL-SKILL-1'),'Formal Skill Export contracts');
+must(Array.isArray(exp.data),'Formal Skill Export data must be an array');
+must(JSON.stringify(exp.data.map(x=>x.id).sort())===JSON.stringify((project.masters?.skills||[]).map(x=>x.id).sort()),'Formal Skill Export must mirror Current Product Skill Master, including valid zero-inventory');
+must(exp.data.every(x=>x.runtimeContracts?.registryPhase==='FORMAL-SKILL-1'),'Formal Skill Export contracts');
 must(battle.includes('function createBattleTieSeed()'),'seed generator');
 must(battle.includes('function initializeBattleTieRolls(seed=createBattleTieSeed())'),'battle init');
 must(battle.includes('initializeBattleTieRolls();renderBattle()'),'reset assigns rolls');

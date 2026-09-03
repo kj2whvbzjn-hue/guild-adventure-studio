@@ -11,9 +11,9 @@ const appRuntimeSource=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
 assert(appRuntimeSource.includes("p.skill_name||p.skill||''"),'Playback UI must prefer the formal skill name over the skill ID');
 
 assert.deepEqual(B.normalizeFormation([{monster_id:'M1',count:2.8},{monster_id:'',count:1}]),[{monster_id:'M1',count:2}]);
-const expanded=B.expandFormation([{monster_id:'M1',count:2}],[{id:'M1',name:'Slime',params:{job_code:'SWD',level:1,maxHp:120,maxMp:0,attack:14,agi:7}}]);
+const expanded=B.expandFormation([{monster_id:'M1',count:2}],[{id:'M1',name:'Slime',formalAiBinding:{program_id:'AIP-0001',layout_id:'AIL-0001'},params:{job_code:'SWD',level:1,maxHp:120,maxMp:0,attack:14,agi:7}}]);
 assert.equal(expanded.length,2);
-assert.deepEqual(expanded[0],{monster_id:'M1',instance_index:1,name:'Slime',defaultFormationPosition:'FRONTLINE',maxHp:120,maxMp:0,attack:14,agi:7,aiPolicy:'lowestHp',defaultSkillId:'SKL-TEST-ATTACK',formalGenerated:true,formationPosition:'FRONTLINE'});
+assert.deepEqual(expanded[0],{monster_id:'M1',instance_index:1,name:'Slime',defaultFormationPosition:'FRONTLINE',maxHp:120,maxMp:0,attack:14,agi:7,formalAiBinding:{program_id:'AIP-0001',layout_id:'AIL-0001'},formalGenerated:true,formationPosition:'FRONTLINE'});
 
 const playback=B.validationEventsToPlaybackEvents([
  {tick:0,type:'battle_started',seed:123},

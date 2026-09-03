@@ -41,4 +41,14 @@ $('resultToEvent').onclick=launchStandaloneBattle;
 $('resultToBase').onclick=()=>{setPhase('base',{keepBattle:true});setBaseView('home',{instant:true})};
 document.querySelectorAll('#phaseDevNav [data-phase]').forEach(btn=>btn.onclick=()=>{if(btn.dataset.phase==='battle'){launchStandaloneBattle();return}setPhase(btn.dataset.phase,{keepBattle:true})});
 
-try{if(window.GKGameSaveCore.hasSave()){data=window.GKGameSaveCore.load();selectedId=data.characters[0]?.id||null}}catch(e){notify(`自動読込失敗: ${e.message}`,'bad')}render();resetBattle();setPhase('title',{keepBattle:true});if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();
+async function bootstrapGameUI(){
+ try{
+  await formalDefinitionsReady;
+  try{if(window.GKGameSaveCore.hasSave()){data=window.GKGameSaveCore.load();selectedId=data.characters[0]?.id||null}}catch(e){notify(`自動読込失敗: ${e.message}`,'bad')}
+  render();setPhase('title',{keepBattle:true});if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();
+ }catch(e){
+  console.error('[Game Bootstrap]',e);
+  notify(`起動初期化失敗: ${e.message}`,'bad');
+ }
+}
+bootstrapGameUI();

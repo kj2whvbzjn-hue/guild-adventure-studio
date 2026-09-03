@@ -45,7 +45,7 @@ try{if(localStorage.getItem('ga_developer_mode')==='1')document.documentElement.
 (function(){
   function normalizeMobile(){
     document.documentElement.classList.remove('dev-mode-boot','dev-portrait-boot');
-    document.body.classList.remove('dev-portrait');
+    document.body&&document.body.classList.remove('dev-portrait');
     document.querySelectorAll('.global-orientation,.orientation-guide').forEach(function(el){el.remove();});
     document.documentElement.style.removeProperty('--game-scale');
   }

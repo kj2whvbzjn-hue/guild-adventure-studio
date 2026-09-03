@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const LAYOUT_VERSION = 1;
+  const SCHEMA_VERSION = '2.0.0';
   const DEFAULT_WIDTH = 8;
   const DEFAULT_HEIGHT = 8;
   const LAYOUT_ID_PATTERN = /^AIL-([0-9]+)$/;
@@ -14,14 +14,17 @@
 
   const clone = (value) => value == null ? value : JSON.parse(JSON.stringify(value));
   const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
-  const isNonEmptyString = (value) => typeof value === 'string' && value.length > 0;
+  const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
   const isGridInt = (value) => Number.isInteger(value) && value >= 0;
   const cellKey = (x, y) => `${x},${y}`;
 
   function validateLayout(value) {
     const errors = [];
     if (!isObject(value)) return ['layout must be an object'];
-    if (value.layout_version !== LAYOUT_VERSION) errors.push(`layout_version must be ${LAYOUT_VERSION}`);
+    const allowed = new Set(['schema_version','data_version','layout_id','program_id','width','height','chips','extensions']);
+    for (const key of Object.keys(value)) if (!allowed.has(key)) errors.push(`${key} is not allowed`);
+    if (value.schema_version !== SCHEMA_VERSION) errors.push(`schema_version must be ${SCHEMA_VERSION}`);
+    if (!isNonEmptyString(value.data_version)) errors.push('data_version is required');
     if (!isNonEmptyString(value.layout_id) || !LAYOUT_ID_PATTERN.test(value.layout_id)) errors.push('layout_id must match AIL-0001');
     if (!isNonEmptyString(value.program_id)) errors.push('program_id is required');
     if (!Number.isInteger(value.width) || value.width < 1) errors.push('width must be a positive integer');
@@ -38,6 +41,7 @@
       const chip = value.chips[index];
       const at = `chips[${index}]`;
       if (!isObject(chip)) { errors.push(`${at} must be an object`); continue; }
+      const keys = Object.keys(chip); if (keys.some((key)=>!['instance_id','x','y','rotation'].includes(key))) errors.push(`${at} contains an unsupported field`);
       if (!isNonEmptyString(chip.instance_id)) errors.push(`${at}.instance_id is required`);
       else if (chipIds.has(chip.instance_id)) errors.push(`${at}.instance_id is duplicated: ${chip.instance_id}`);
       else chipIds.add(chip.instance_id);
@@ -56,6 +60,7 @@
       const extension = value.extensions[index];
       const at = `extensions[${index}]`;
       if (!isObject(extension)) { errors.push(`${at} must be an object`); continue; }
+      const keys = Object.keys(extension); if (keys.some((key)=>!['id','x','y','shape','rotation'].includes(key))) errors.push(`${at} contains an unsupported field`);
       if (!isNonEmptyString(extension.id)) errors.push(`${at}.id is required`);
       else if (extensionIds.has(extension.id)) errors.push(`${at}.id is duplicated: ${extension.id}`);
       else extensionIds.add(extension.id);
@@ -86,8 +91,9 @@
 
   function normalizeLayout(value) {
     const source = isObject(value) ? clone(value) : {};
-    const normalized = {
-      layout_version: source.layout_version === LAYOUT_VERSION ? LAYOUT_VERSION : LAYOUT_VERSION,
+    return {
+      schema_version: typeof source.schema_version === 'string' ? source.schema_version : SCHEMA_VERSION,
+      data_version: typeof source.data_version === 'string' ? source.data_version : '',
       layout_id: typeof source.layout_id === 'string' ? source.layout_id : '',
       program_id: typeof source.program_id === 'string' ? source.program_id : '',
       width: Number.isInteger(source.width) && source.width > 0 ? source.width : DEFAULT_WIDTH,
@@ -106,12 +112,12 @@
         rotation: Number.isInteger(extension?.rotation) ? extension.rotation : 0
       })) : []
     };
-    return normalized;
   }
 
-  function createLayout(layoutId, programId, width, height) {
+  function createLayout(layoutId, programId, dataVersion, width, height) {
     const layout = {
-      layout_version: LAYOUT_VERSION,
+      schema_version: SCHEMA_VERSION,
+      data_version: String(dataVersion || ''),
       layout_id: String(layoutId || ''),
       program_id: String(programId || ''),
       width: Number.isInteger(width) && width > 0 ? width : DEFAULT_WIDTH,
@@ -132,78 +138,27 @@
     }
     let number = max + 1;
     let candidate = `AIL-${String(number).padStart(4, '0')}`;
-    while (used.has(candidate)) {
-      number += 1;
-      candidate = `AIL-${String(number).padStart(4, '0')}`;
-    }
+    while (used.has(candidate)) { number += 1; candidate = `AIL-${String(number).padStart(4, '0')}`; }
     return candidate;
   }
 
   function replaceAtCell(layout, itemType, item) {
     const next = normalizeLayout(assertValidLayout(normalizeLayout(layout)));
     if (itemType === 'chip') {
-      const candidate = {
-        instance_id: String(item?.instance_id || ''),
-        x: item?.x,
-        y: item?.y,
-        rotation: item?.rotation
-      };
-      next.chips = next.chips.filter((chip) => chip.instance_id !== candidate.instance_id);
-      next.chips.push(candidate);
+      const candidate = {instance_id:String(item?.instance_id || ''),x:item?.x,y:item?.y,rotation:item?.rotation};
+      next.chips = next.chips.filter((chip) => chip.instance_id !== candidate.instance_id); next.chips.push(candidate);
     } else if (itemType === 'extension') {
-      const candidate = {
-        id: String(item?.id || ''),
-        x: item?.x,
-        y: item?.y,
-        shape: String(item?.shape || ''),
-        rotation: item?.rotation
-      };
-      next.extensions = next.extensions.filter((extension) => extension.id !== candidate.id);
-      next.extensions.push(candidate);
-    } else {
-      throw new Error(`Unsupported layout item type: ${itemType}`);
-    }
+      const candidate = {id:String(item?.id || ''),x:item?.x,y:item?.y,shape:String(item?.shape || ''),rotation:item?.rotation};
+      next.extensions = next.extensions.filter((extension) => extension.id !== candidate.id); next.extensions.push(candidate);
+    } else throw new Error(`Unsupported layout item type: ${itemType}`);
     return clone(assertValidLayout(next));
   }
 
   function upsertChip(layout, chip) { return replaceAtCell(layout, 'chip', chip); }
   function upsertExtension(layout, extension) { return replaceAtCell(layout, 'extension', extension); }
+  function removeChip(layout, instanceId) { const next=normalizeLayout(assertValidLayout(normalizeLayout(layout))); next.chips=next.chips.filter((chip)=>chip.instance_id!==String(instanceId||'')); return clone(assertValidLayout(next)); }
+  function removeExtension(layout, extensionId) { const next=normalizeLayout(assertValidLayout(normalizeLayout(layout))); next.extensions=next.extensions.filter((extension)=>extension.id!==String(extensionId||'')); return clone(assertValidLayout(next)); }
+  function resize(layout, width, height) { const next=normalizeLayout(assertValidLayout(normalizeLayout(layout))); next.width=width;next.height=height;return clone(assertValidLayout(next)); }
 
-  function removeChip(layout, instanceId) {
-    const next = normalizeLayout(assertValidLayout(normalizeLayout(layout)));
-    next.chips = next.chips.filter((chip) => chip.instance_id !== String(instanceId || ''));
-    return clone(assertValidLayout(next));
-  }
-
-  function removeExtension(layout, extensionId) {
-    const next = normalizeLayout(assertValidLayout(normalizeLayout(layout)));
-    next.extensions = next.extensions.filter((extension) => extension.id !== String(extensionId || ''));
-    return clone(assertValidLayout(next));
-  }
-
-  function resize(layout, width, height) {
-    const next = normalizeLayout(assertValidLayout(normalizeLayout(layout)));
-    next.width = width;
-    next.height = height;
-    return clone(assertValidLayout(next));
-  }
-
-  return Object.freeze({
-    LAYOUT_VERSION,
-    DEFAULT_WIDTH,
-    DEFAULT_HEIGHT,
-    ROTATIONS: Object.freeze(Array.from(ROTATIONS)),
-    EXTENSION_SHAPES: Object.freeze(Array.from(EXTENSION_SHAPES)),
-    normalizeLayout,
-    validateLayout,
-    assertValidLayout,
-    createLayout,
-    nextLayoutId,
-    upsertChip,
-    removeChip,
-    upsertExtension,
-    removeExtension,
-    resize,
-    cellKey
-  });
+  return Object.freeze({SCHEMA_VERSION,DEFAULT_WIDTH,DEFAULT_HEIGHT,ROTATIONS:Object.freeze(Array.from(ROTATIONS)),EXTENSION_SHAPES:Object.freeze(Array.from(EXTENSION_SHAPES)),normalizeLayout,validateLayout,assertValidLayout,createLayout,nextLayoutId,upsertChip,removeChip,upsertExtension,removeExtension,resize,cellKey});
 });

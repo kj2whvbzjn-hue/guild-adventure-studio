@@ -8,10 +8,10 @@
   const VERSION='1.0.0';
   const MASTER_PREFIXES=Object.freeze({
     tags:'TAG',stats:'STA',jobs:'JOB',skills:'SKL',equipment:'EQP',mods:'MOD',monsters:'MON',status_effects:'STS',tablets:'TBL',
-    ai_conditions:'AIC',ai_targets:'AIT',ai_actions:'AIA',maps:'MAP',exploration_outcomes:'EXP',reward_tables:'RWD',adventure_settings:'ADV'
+    ai_searches:'AIS',ai_conditions:'AIC',ai_target_selectors:'ATS',ai_actions:'AIA',maps:'MAP',exploration_outcomes:'EXP',reward_tables:'RWD',adventure_settings:'ADV'
   });
   const GAME_PREFIXES=Object.freeze({chapter:'CHP',section:'SEC',scene:'SCN',dialogue:'DLG',quest:'QST',event:'EVT',flag:'FLG'});
-  const OPTIONAL_ARRAY_FIELDS=Object.freeze(['chapters','characters','organizations','terms','relationships','timeline','quests','events','flags','battle_tests','battle_snapshots','entities','decisions','tags','tag_categories','ai_programs','history']);
+  const OPTIONAL_ARRAY_FIELDS=Object.freeze(['chapters','characters','organizations','terms','relationships','timeline','quests','events','flags','battle_tests','battle_snapshots','entities','decisions','tags','tag_categories','ai_programs','ai_program_layouts','ai_program_runtime','history']);
   const REQUIRED_ROOT_OBJECTS=Object.freeze(['project','masters']);
 
   function clone(v){return v==null?v:JSON.parse(JSON.stringify(v));}
@@ -31,6 +31,15 @@
     for(const key of OPTIONAL_ARRAY_FIELDS){
       if(rootData[key]!==undefined&&!Array.isArray(rootData[key]))out.push(issue('invalid_type',key,`${key} は配列である必要があります。`));
     }
+    if(isObject(rootData.masters)&&Array.isArray(rootData.masters.ai_targets)&&rootData.masters.ai_targets.length)out.push(issue('legacy_ai_targets_forbidden','masters.ai_targets','Current V2 Full Importでは非空のmasters.ai_targetsを受理しません。Dedicated Migrationを使用してください。'));
+    if(Array.isArray(rootData.ai_runtimes)&&rootData.ai_runtimes.length)out.push(issue('legacy_ai_runtimes_forbidden','ai_runtimes','Current V2 Full Importでは非空のai_runtimesを受理しません。Dedicated Migrationを使用してください。'));
+    const aiPrograms=Array.isArray(rootData.ai_programs)?rootData.ai_programs:[],aiLayouts=Array.isArray(rootData.ai_program_layouts)?rootData.ai_program_layouts:[],aiRuntime=Array.isArray(rootData.ai_program_runtime)?rootData.ai_program_runtime:[];
+    const programIds=new Set();
+    aiPrograms.forEach((row,index)=>{const path=`ai_programs[${index}]`;if(!isObject(row)){out.push(issue('invalid_record',path,`${path} はオブジェクトである必要があります。`));return;}const id=String(row.id||'');if(!/^AIP-\d{4}$/.test(id))out.push(issue('invalid_id',`${path}.id`,`${path}: ${id||'(ID未設定)'} はAIP-0001形式である必要があります。`));if(programIds.has(id))out.push(issue('duplicate_id',`${path}.id`,`AI Program IDが重複しています: ${id}`));programIds.add(id);if(row.schema_version!=='2.0.0')out.push(issue('ai_schema_version',`${path}.schema_version`,`${path} schema_versionは2.0.0固定です。`));if(!String(row.data_version||''))out.push(issue('required',`${path}.data_version`,`${path} data_versionがありません。`));});
+    const layoutIds=new Set();
+    aiLayouts.forEach((row,index)=>{const path=`ai_program_layouts[${index}]`;if(!isObject(row)){out.push(issue('invalid_record',path,`${path} はオブジェクトである必要があります。`));return;}const id=String(row.layout_id||''),programId=String(row.program_id||'');if(!/^AIL-\d{4}$/.test(id))out.push(issue('invalid_id',`${path}.layout_id`,`${path}: ${id||'(ID未設定)'} はAIL-0001形式である必要があります。`));if(layoutIds.has(id))out.push(issue('duplicate_id',`${path}.layout_id`,`AI Layout IDが重複しています: ${id}`));layoutIds.add(id);if(!/^AIP-\d{4}$/.test(programId)||!programIds.has(programId))out.push(issue('broken_reference',`${path}.program_id`,`${path} のProgram参照が不正です: ${programId||'-'}`));if(row.schema_version!=='2.0.0')out.push(issue('ai_schema_version',`${path}.schema_version`,`${path} schema_versionは2.0.0固定です。`));if(!String(row.data_version||''))out.push(issue('required',`${path}.data_version`,`${path} data_versionがありません。`));});
+    const runtimePrograms=new Set();
+    aiRuntime.forEach((row,index)=>{const path=`ai_program_runtime[${index}]`;if(!isObject(row)){out.push(issue('invalid_record',path,`${path} はオブジェクトである必要があります。`));return;}const programId=String(row.program_id||'');if(!/^AIP-\d{4}$/.test(programId)||!programIds.has(programId))out.push(issue('broken_reference',`${path}.program_id`,`${path} のProgram参照が不正です: ${programId||'-'}`));if(runtimePrograms.has(programId))out.push(issue('duplicate_id',`${path}.program_id`,`AI RuntimeがProgram単位で重複しています: ${programId}`));runtimePrograms.add(programId);if(row.schema_version!=='2.0.0')out.push(issue('ai_schema_version',`${path}.schema_version`,`${path} schema_versionは2.0.0固定です。`));if(!String(row.data_version||''))out.push(issue('required',`${path}.data_version`,`${path} data_versionがありません。`));});
     if(Array.isArray(rootData.chapters))rootData.chapters.forEach((chapter,ci)=>{
       if(!isObject(chapter)){out.push(issue('invalid_record',`chapters[${ci}]`,`chapters[${ci}] はオブジェクトである必要があります。`));return;}
       if(chapter.sections!==undefined&&!Array.isArray(chapter.sections))out.push(issue('invalid_type',`chapters[${ci}].sections`,`chapters[${ci}].sections は配列である必要があります。`));
