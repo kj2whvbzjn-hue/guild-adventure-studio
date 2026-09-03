@@ -1,14 +1,58 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "2.0.0",
   "data_version": "0.1.0-draft",
-  "generated_at": "2026-09-01T08:55:08.072Z",
-  "generated_by": "GK Studio vGKS-B841",
+  "generated_at": "2026-09-03T07:21:20.527Z",
+  "generated_by": "GK Studio vGKS-B861",
   "data": [
     {
+      "schema_version": "2.0.0",
+      "id": "AIS-0001",
+      "name": "探索",
+      "node_type": "search",
+      "status": "active",
+      "data_version": "0.1.0-draft",
+      "description": "",
+      "tags": [],
+      "evaluator": "search.exists",
+      "ports": {
+        "inputs": [
+          {
+            "id": "in",
+            "kind": "flow",
+            "data_type": "flow",
+            "label": "入口"
+          }
+        ],
+        "outputs": [
+          {
+            "id": "found",
+            "kind": "flow",
+            "data_type": "flow",
+            "label": "発見"
+          },
+          {
+            "id": "not_found",
+            "kind": "flow",
+            "data_type": "flow",
+            "label": "未発見"
+          }
+        ]
+      },
+      "parameter_schema": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "unlock": {}
+    },
+    {
+      "schema_version": "2.0.0",
       "id": "AIC-0001",
       "name": "常に成立",
+      "node_type": "condition",
       "status": "active",
-      "data_version": "1.0.0",
+      "data_version": "0.1.0-draft",
       "description": "常にTRUEへ進む最小条件チップ。",
       "tags": [],
       "evaluator": "condition.always",
@@ -26,13 +70,13 @@
             "id": "true",
             "kind": "flow",
             "data_type": "flow",
-            "label": "TRUE"
+            "label": "YES"
           },
           {
             "id": "false",
             "kind": "flow",
             "data_type": "flow",
-            "label": "FALSE"
+            "label": "NO"
           }
         ]
       },
@@ -43,17 +87,22 @@
         "additionalProperties": false
       },
       "unlock": {},
-      "params": {},
-      "node_type": "condition"
+      "supported_subject_kind": [
+        "UNIT",
+        "SELF",
+        "BATTLE"
+      ]
     },
     {
+      "schema_version": "2.0.0",
       "id": "AIC-0002",
-      "name": "自分HPが指定割合未満",
+      "name": "HP割合比較",
+      "node_type": "condition",
       "status": "active",
-      "data_version": "1.0.0",
+      "data_version": "0.1.0-draft",
       "description": "自分の現在HP割合が指定値未満ならTRUE。",
       "tags": [],
-      "evaluator": "condition.hp_below",
+      "evaluator": "condition.hp_ratio_compare",
       "ports": {
         "inputs": [
           {
@@ -68,40 +117,54 @@
             "id": "true",
             "kind": "flow",
             "data_type": "flow",
-            "label": "TRUE"
+            "label": "YES"
           },
           {
             "id": "false",
             "kind": "flow",
             "data_type": "flow",
-            "label": "FALSE"
+            "label": "NO"
           }
         ]
       },
       "parameter_schema": {
         "type": "object",
         "properties": {
-          "threshold": {
+          "operator": {
+            "type": "string",
+            "enum": [
+              "<",
+              "<=",
+              ">",
+              ">=",
+              "="
+            ]
+          },
+          "value": {
             "type": "number",
-            "title": "HP割合",
             "minimum": 0,
             "maximum": 1
           }
         },
         "required": [
-          "threshold"
+          "operator",
+          "value"
         ],
         "additionalProperties": false
       },
       "unlock": {},
-      "params": {},
-      "node_type": "condition"
+      "supported_subject_kind": [
+        "UNIT",
+        "SELF"
+      ]
     },
     {
+      "schema_version": "2.0.0",
       "id": "AIC-0003",
       "name": "自分MPが指定値以上",
+      "node_type": "condition",
       "status": "active",
-      "data_version": "1.0.0",
+      "data_version": "0.1.0-draft",
       "description": "自分の現在MPが指定値以上ならTRUE。",
       "tags": [],
       "evaluator": "condition.mp_at_least",
@@ -119,13 +182,13 @@
             "id": "true",
             "kind": "flow",
             "data_type": "flow",
-            "label": "TRUE"
+            "label": "YES"
           },
           {
             "id": "false",
             "kind": "flow",
             "data_type": "flow",
-            "label": "FALSE"
+            "label": "NO"
           }
         ]
       },
@@ -144,122 +207,17 @@
         "additionalProperties": false
       },
       "unlock": {},
-      "params": {},
-      "node_type": "condition"
+      "supported_subject_kind": [
+        "SELF"
+      ]
     },
     {
-      "id": "AIT-0001",
-      "name": "自分",
-      "status": "active",
-      "data_version": "1.0.0",
-      "description": "自分自身を基準対象として選択する。",
-      "tags": [],
-      "evaluator": "target.self",
-      "ports": {
-        "inputs": [
-          {
-            "id": "in",
-            "kind": "flow",
-            "data_type": "flow",
-            "label": "入口"
-          }
-        ],
-        "outputs": [
-          {
-            "id": "next",
-            "kind": "flow",
-            "data_type": "flow",
-            "label": "出口"
-          }
-        ]
-      },
-      "parameter_schema": {
-        "type": "object",
-        "properties": {},
-        "required": [],
-        "additionalProperties": false
-      },
-      "unlock": {},
-      "params": {},
-      "node_type": "target"
-    },
-    {
-      "id": "AIT-0002",
-      "name": "HPが最も低い味方",
-      "status": "active",
-      "data_version": "1.0.0",
-      "description": "生存中の味方からHP割合が最も低い対象を選択する。",
-      "tags": [],
-      "evaluator": "target.ally_lowest",
-      "ports": {
-        "inputs": [
-          {
-            "id": "in",
-            "kind": "flow",
-            "data_type": "flow",
-            "label": "入口"
-          }
-        ],
-        "outputs": [
-          {
-            "id": "next",
-            "kind": "flow",
-            "data_type": "flow",
-            "label": "出口"
-          }
-        ]
-      },
-      "parameter_schema": {
-        "type": "object",
-        "properties": {},
-        "required": [],
-        "additionalProperties": false
-      },
-      "unlock": {},
-      "params": {},
-      "node_type": "target"
-    },
-    {
-      "id": "AIT-0003",
-      "name": "HPが最も低い敵",
-      "status": "active",
-      "data_version": "1.0.0",
-      "description": "生存中の敵からHP割合が最も低い対象を選択する。",
-      "tags": [],
-      "evaluator": "target.enemy_lowest",
-      "ports": {
-        "inputs": [
-          {
-            "id": "in",
-            "kind": "flow",
-            "data_type": "flow",
-            "label": "入口"
-          }
-        ],
-        "outputs": [
-          {
-            "id": "next",
-            "kind": "flow",
-            "data_type": "flow",
-            "label": "出口"
-          }
-        ]
-      },
-      "parameter_schema": {
-        "type": "object",
-        "properties": {},
-        "required": [],
-        "additionalProperties": false
-      },
-      "unlock": {},
-      "params": {},
-      "node_type": "target"
-    },
-    {
+      "schema_version": "2.0.0",
       "id": "AIA-0001",
       "name": "通常攻撃",
+      "node_type": "action",
       "status": "active",
-      "data_version": "1.0.0",
+      "data_version": "0.1.0-draft",
       "description": "通常攻撃を予約する終端チップ。",
       "tags": [],
       "evaluator": "action.attack",
@@ -280,15 +238,15 @@
         "required": [],
         "additionalProperties": false
       },
-      "unlock": {},
-      "params": {},
-      "node_type": "action"
+      "unlock": {}
     },
     {
+      "schema_version": "2.0.0",
       "id": "AIA-0002",
       "name": "スキル使用",
+      "node_type": "action",
       "status": "active",
-      "data_version": "1.0.0",
+      "data_version": "0.1.0-draft",
       "description": "指定した既存Skillを使用する終端チップ。",
       "tags": [],
       "evaluator": "action.skill",
@@ -317,15 +275,15 @@
         ],
         "additionalProperties": false
       },
-      "unlock": {},
-      "params": {},
-      "node_type": "action"
+      "unlock": {}
     },
     {
+      "schema_version": "2.0.0",
       "id": "AIA-0003",
       "name": "待機",
+      "node_type": "action",
       "status": "active",
-      "data_version": "1.0.0",
+      "data_version": "0.1.0-draft",
       "description": "今回の判断を待機として確定する終端チップ。",
       "tags": [],
       "evaluator": "action.wait",
@@ -346,9 +304,32 @@
         "required": [],
         "additionalProperties": false
       },
-      "unlock": {},
-      "params": {},
-      "node_type": "action"
+      "unlock": {}
     }
-  ]
+  ],
+  "refs": {
+    "tags": [
+      {
+        "id": "TAG-0001",
+        "name": "TAG-0001"
+      },
+      {
+        "id": "TAG-0002",
+        "name": "TAG-0002"
+      },
+      {
+        "id": "TAG-0003",
+        "name": "TAG-0003"
+      },
+      {
+        "id": "TAG-0004",
+        "name": "TAG-0004"
+      },
+      {
+        "id": "TAG-0005",
+        "name": "TAG-0005"
+      }
+    ],
+    "tag_categories": []
+  }
 }
