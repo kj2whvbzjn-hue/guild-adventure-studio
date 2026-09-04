@@ -21,12 +21,20 @@ const nodes=[
 ];
 const selectors=[{id:'ATS-0001',name:'低HP',evaluator:'selector.lowest_hp_ratio',parameter_schema:emptySchema,tags:[],enabled:true}];
 const skills=[{id:'SKL-P8',name:'P8 Skill',runtimeContracts:{targetContract:{side:'ENEMY',range:'SINGLE'}}}];
-function saveBase(){return{saveVersion:4,schemaRevision:'1.7.0',gameVersion:'GA-B486.211',createdAt:'2026-09-03T00:00:00Z',updatedAt:'2026-09-03T00:00:00Z',characters:[{id:'C-1',name:'冒険者',level:1,job:'剣士',base_hp:100,base_mp:30,stats:{HP:100,MP:30,STR:10,VIT:10,INT:10,MND:10,AGI:10,DEX:10,LUK:10},skills:['SKL-P8'],equippedSkillId:'SKL-P8',formalAiBinding:null,equipment:{weapon:null,armor:null,accessory:null},weaponStyle:'single',jobHistory:[],growthHistory:[],createdAt:'2026-09-03T00:00:00Z',formation_position:'FRONTLINE'}],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:['C-1'],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};}
+const targetCategories=[{id:'TGC-TARGET',name:'対象'}];
+const targetTags=[
+ {id:'TAG-TGT-SELF',name:'自分',category_id:'TGC-TARGET',runtime_semantic:'SELF'},
+ {id:'TAG-TGT-ALLY',name:'味方',category_id:'TGC-TARGET',runtime_semantic:'ALLY'},
+ {id:'TAG-TGT-OTHER-ALLY',name:'自分以外の味方',category_id:'TGC-TARGET',runtime_semantic:'OTHER_ALLY'},
+ {id:'TAG-TGT-ENEMY',name:'敵',category_id:'TGC-TARGET',runtime_semantic:'ENEMY'}
+];
+
+function saveBase(){return{saveVersion:4,schemaRevision:'1.7.0',gameVersion:'GA-B486.212',createdAt:'2026-09-03T00:00:00Z',updatedAt:'2026-09-03T00:00:00Z',characters:[{id:'C-1',name:'冒険者',level:1,job:'剣士',base_hp:100,base_mp:30,stats:{HP:100,MP:30,STR:10,VIT:10,INT:10,MND:10,AGI:10,DEX:10,LUK:10},skills:['SKL-P8'],equippedSkillId:'SKL-P8',formalAiBinding:null,equipment:{weapon:null,armor:null,accessory:null},weaponStyle:'single',jobHistory:[],growthHistory:[],createdAt:'2026-09-03T00:00:00Z',formation_position:'FRONTLINE'}],aiPrograms:[],aiLayouts:[],aiPresets:[],partyIds:['C-1'],selectedQuestId:'',inventory:[],guild:{gold:0,victories:0,defeats:0,lastBattle:null},flags:{},quest_progress:{completed_quest_ids:[],unlocked_quest_ids:[]},quest_resources:{},adventure:{quest_runs:[],active_quest_run_id:'',history_limit:20,stone_selection_by_quest:{}},gameSettings:{},tutorialProgress:{}};}
 (async()=>{
- const baseCatalog={...Loader.normalize(nodes,selectors,skills,[],[],[],[],[],[]),schema_version:'2.0.0',data_version:dv,warnings:[]};
+ const baseCatalog={...Loader.normalize(nodes,selectors,skills,targetTags,targetCategories,[],[],[],[]),schema_version:'2.0.0',data_version:dv,warnings:[]};
  const session=UI.createSession(baseCatalog,{program_id:'AIP-DRAFT',layout_id:'AIL-0001',data_version:dv,now:'2026-09-03T00:00:00Z'});
  assert.strictEqual(UI.definitions(baseCatalog).some(row=>row.node_type==='target'),false,'Target box must not be authorable');
- const search=session.add('AIS-0001',{scope:'ENEMY',predicate:{logic:'ANY',clauses:[{predicate_master_id:'AIC-0001',params:{operator:'<',value:.5},negate:false}]}},0,0);
+ const search=session.add('AIS-0001',{target_tag_id:'TAG-TGT-ENEMY',predicate:{logic:'ANY',clauses:[{predicate_master_id:'AIC-0001',params:{operator:'<',value:.5},negate:false}]}},0,0);
  const skill=session.add('AIA-0001',{skill_id:'SKL-P8'},2,0);session.updateTargetSelector(skill.instance_id,{selector_id:'ATS-0001',params:{}});
  const state=session.add('AIC-0001',{subject_scope:'SELF',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-0001',params:{operator:'<',value:.25},negate:true}]}},0,2);
  const wait=session.add('AIA-0002',{},2,2);

@@ -124,7 +124,9 @@
         params: {}
       };
       if (node.node_type === 'search') {
-        base.params = canonical({scope: node.parameters.scope, predicate: compilePredicate(node.parameters.predicate, predicateById)});
+        const target = Validator.resolveSearchTargetTag(node.parameters.target_tag_id, data);
+        if (!target.ok) throw new CompilerError(`Search target tag cannot be resolved: ${String(node.parameters.target_tag_id || '')}`, []);
+        base.params = canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById)});
         base.on_found = targetInstruction(outgoing.get(String(node.instance_id)).get('found'));
         base.on_not_found = targetInstruction(outgoing.get(String(node.instance_id)).get('not_found'));
       } else if (node.node_type === 'condition') {

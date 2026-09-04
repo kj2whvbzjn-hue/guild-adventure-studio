@@ -34,6 +34,7 @@
     const actorSide = String(actor.side || '');
     if (scope === 'SELF') return [actor];
     if (scope === 'ALLY') return units.filter((row) => String(row?.side || '') === actorSide);
+    if (scope === 'OTHER_ALLY') return units.filter((row) => String(row?.side || '') === actorSide && String(row?.id || '') !== String(actor?.id || ''));
     if (scope === 'ENEMY') return units.filter((row) => String(row?.side || '') !== actorSide);
     if (scope === 'ANY') return units.slice();
     return [];

@@ -15,7 +15,7 @@ const dv='DV-P7';
 const ports=(outputs)=>({inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:outputs.map((id)=>({id,kind:'flow',data_type:'flow'}))});
 const emptySchema={type:'object',properties:{},required:[],additionalProperties:false};
 const project={
-  project:{id:'PRJ-P7',data_version:dv}, data_version:dv, tags:[{id:'TAG-P7',name:'P7'}],
+  project:{id:'PRJ-P7',data_version:dv}, data_version:dv, tag_categories:[{id:'TGC-TARGET',name:'対象'}], tags:[{id:'TAG-P7',name:'P7'},{id:'TAG-TGT-ENEMY',name:'敵',category_id:'TGC-TARGET',runtime_semantic:'ENEMY'}],
   ai_programs:[],ai_program_layouts:[],ai_program_runtime:[],
   masters:{
     ai_searches:[{id:'AIS-EXISTS',name:'探索',status:'active',data_version:dv,evaluator:'search.exists',ports:ports(['found','not_found']),parameter_schema:emptySchema}],
@@ -34,7 +34,7 @@ const program=Model.createProgram('AIP-0001','2026-09-03T00:00:00Z',dv);
 program.name='P7 Developer Program';
 const session=Editor.create(program);
 assert.throws(()=>session.addNode({id:'AIT-OLD',node_type:'target',data_version:dv}),/Valid AI V2 master definition/,'Target box must not be authorable');
-const search=session.addNode(byId('AIS-EXISTS'),{scope:'ENEMY',predicate:{logic:'ANY',clauses:[{predicate_master_id:'AIC-HP',params:{operator:'<',value:.5},negate:false}]}},{x:0,y:0});
+const search=session.addNode(byId('AIS-EXISTS'),{target_tag_id:'TAG-TGT-ENEMY',predicate:{logic:'ANY',clauses:[{predicate_master_id:'AIC-HP',params:{operator:'<',value:.5},negate:false}]}},{x:0,y:0});
 const skill=session.addNode(byId('AIA-SKILL'),{skill_id:'SKL-P7'},{x:3,y:0});
 session.updateNode(skill.instance_id,{target_selector:{selector_id:'ATS-LOW',params:{}}});
 const condition=session.addNode(byId('AIC-HP'),{subject_scope:'SELF',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-HP',params:{operator:'<',value:.25},negate:true}]}},{x:1,y:3});

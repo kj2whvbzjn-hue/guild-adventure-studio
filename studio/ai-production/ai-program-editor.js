@@ -18,7 +18,7 @@
     return `${prefix}-${String(max + 1).padStart(4, '0')}`;
   }
   function defaultParameters(nodeType) {
-    if (nodeType === 'search') return {scope: '', predicate: {logic: 'ALL', clauses: []}};
+    if (nodeType === 'search') return {target_tag_id: '', predicate: {logic: 'ALL', clauses: []}};
     if (nodeType === 'condition') return {subject_scope: '', predicate: {logic: 'ALL', clauses: []}};
     return {};
   }

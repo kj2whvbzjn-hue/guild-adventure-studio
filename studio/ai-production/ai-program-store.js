@@ -21,7 +21,6 @@
   const CHIP_KEYS = new Set(['instance_id','x','y','rotation']);
   const STATUS = new Set(['draft','valid','invalid','archived']);
   const NODE_TYPES = new Set(['search','condition','action']);
-  const SEARCH_SCOPES = new Set(['SELF','ALLY','ENEMY','ANY']);
   const STATE_CHECK_SUBJECTS = new Set(['SELF','BATTLE']);
   const TRANSITIONS = new Set(['NODE','CALL','RETURN']);
   const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -61,7 +60,7 @@
     if(!own(node.position,'x')||!own(node.position,'y')||typeof node.position.x!=='number'||typeof node.position.y!=='number'||!Number.isFinite(node.position.x)||!Number.isFinite(node.position.y))throw new Error(`${nat}.position is invalid`);
     if(!isObject(node.parameters))throw new Error(`${nat}.parameters must be an object`);
     if(node.node_type==='search'){
-      assertAllowedKeys(node.parameters,new Set(['scope','predicate']),`${nat}.parameters`); if(!SEARCH_SCOPES.has(node.parameters.scope))throw new Error(`${nat}.parameters.scope is invalid`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
+      assertAllowedKeys(node.parameters,new Set(['target_tag_id','predicate']),`${nat}.parameters`); assertPattern(node.parameters.target_tag_id,/^TAG-[A-Za-z0-9_.-]+$/,`${nat}.parameters.target_tag_id`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
       if(own(node,'target_selector')&&node.target_selector!==null)throw new Error(`${nat}.target_selector is forbidden for search`);
     }else if(node.node_type==='condition'){
       assertAllowedKeys(node.parameters,new Set(['subject_scope','predicate']),`${nat}.parameters`); if(!STATE_CHECK_SUBJECTS.has(node.parameters.subject_scope))throw new Error(`${nat}.parameters.subject_scope is invalid`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);

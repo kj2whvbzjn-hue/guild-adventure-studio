@@ -32,7 +32,7 @@ const masters={
     {id:'SKL-SELF',name:'Self',runtimeContracts:{targetContract:{side:'SELF',range:'SINGLE'}}}
   ]
 };
-const project={tags:[],masters};
+const project={tag_categories:[{id:'TGC-TARGET',name:'対象'}],tags:[{id:'TAG-TGT-SELF',name:'自分',category_id:'TGC-TARGET',runtime_semantic:'SELF'},{id:'TAG-TGT-ALLY',name:'味方',category_id:'TGC-TARGET',runtime_semantic:'ALLY'},{id:'TAG-TGT-OTHER-ALLY',name:'自分以外の味方',category_id:'TGC-TARGET',runtime_semantic:'OTHER_ALLY'},{id:'TAG-TGT-ENEMY',name:'敵',category_id:'TGC-TARGET',runtime_semantic:'ENEMY'}],masters};
 const clause=(id,params={})=>({predicate_master_id:id,params,negate:false});
 const pred=(logic,clauses)=>({logic,clauses});
 const node=(id,master,type,parameters,target_selector)=>({instance_id:id,master_node_id:master,master_data_version:dv,node_type:type,position:{x:0,y:0},parameters,...(target_selector!==undefined?{target_selector}:{})});
@@ -60,16 +60,17 @@ function predicateHandler(ev,p,subject,kind,ctx){
 
   const p=baseProgram();
   p.nodes=[
-    node('N1','AIS-EXISTS','search',{scope:'ENEMY',predicate:pred('ANY',[clause('AIC-DEAD'),clause('AIC-HP',{operator:'<',value:.25})])}),
+    node('N1','AIS-EXISTS','search',{target_tag_id:'TAG-TGT-ENEMY',predicate:pred('ANY',[clause('AIC-DEAD'),clause('AIC-HP',{operator:'<',value:.25})])}),
     node('N2','AIA-SKILL','action',{skill_id:'SKL-BACK'},{selector_id:'ATS-LOW',params:{}}),
     node('N3','AIA-WAIT','action',{})
   ];
   p.edges=[edge('E1','N1','found','N2'),edge('E2','N1','not_found','N3')];
   const vr=V.validate(p,project);assert(vr.valid,JSON.stringify(vr.issues));
-  const runtime=await C.compile(p,project);assert.strictEqual(runtime.schema_version,'2.0.0');assert.strictEqual(runtime.instructions.some((row)=>row.op==='TARGET'),false);assert.strictEqual(runtime.instructions[0].op,'SEARCH');
+  const runtime=await C.compile(p,project);assert.strictEqual(runtime.schema_version,'2.0.0');assert.strictEqual(runtime.instructions[0].params.scope,'ENEMY');assert.strictEqual(runtime.instructions.some((row)=>row.op==='TARGET'),false);assert.strictEqual(runtime.instructions[0].op,'SEARCH');
   await assert.rejects(()=>C.compile(p,project,{max_steps:128}),error=>error.name==='AIProgramCompilerError');
   let rngCalls=0;
   const context={battle_id:'B1',actor_id:'U1',seed:7,units:[{id:'U1',side:'A',alive:true,hp:100,max_hp:100},{id:'U2',side:'B',alive:false,hp:0,max_hp:100},{id:'U3',side:'B',alive:true,hp:20,max_hp:100},{id:'U4',side:'B',alive:true,hp:20,max_hp:100}],target_selectors:masters.ai_target_selectors};
+  assert.deepStrictEqual(E.searchPopulation({actor_id:'U1',units:[...context.units,{id:'U5',side:'A',alive:true,hp:50,max_hp:100}]},'OTHER_ALLY').map(row=>row.id),['U5']);
   const before=structuredClone(context);
   const tr=E.execute(runtime,context,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'skill:SKL-BACK',target_contract:{side:'ENEMY',range:'BACK'},legal_candidates:ctx.units.filter((row)=>row.side==='B'&&row.alive!==false)}),ai_decision_rng:()=>{rngCalls+=1;return .5;}});
   assert.deepStrictEqual(context,before,'decision input must remain immutable');
@@ -95,11 +96,11 @@ function predicateHandler(ev,p,subject,kind,ctx){
   const sr=await C.compile(ps,project);const stateContext={...context,units:structuredClone(context.units)};stateContext.units[0].hp=40;let stateRng=0;
   const stateTrace=E.execute(sr,stateContext,{predicate:predicateHandler,action:()=>({wait:true}),ai_decision_rng:()=>{stateRng+=1;return 0;}});assert.strictEqual(stateTrace.outcome.status,'wait');assert.strictEqual(stateRng,0);assert.strictEqual(stateTrace.events.filter((row)=>row.event_type==='condition').length,2);
 
-  const merge=baseProgram();merge.id='AIP-MERGE';merge.nodes=[node('N1','AIS-EXISTS','search',{scope:'SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),node('N2','AIA-WAIT','action',{})];merge.edges=[edge('EM1','N1','found','N2'),edge('EM2','N1','not_found','N2')];
+  const merge=baseProgram();merge.id='AIP-MERGE';merge.nodes=[node('N1','AIS-EXISTS','search',{target_tag_id:'TAG-TGT-SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),node('N2','AIA-WAIT','action',{})];merge.edges=[edge('EM1','N1','found','N2'),edge('EM2','N1','not_found','N2')];
   assert.strictEqual(V.validate(merge,project).valid,true,'multiple incoming transitions may converge on the same input; only output ambiguity is forbidden');
 
   const sub=baseProgram();sub.id='AIP-SUB';sub.entry_node_id='Q1';sub.nodes=[
-    node('Q1','AIS-EXISTS','search',{scope:'SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),
+    node('Q1','AIS-EXISTS','search',{target_tag_id:'TAG-TGT-SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),
     node('Q2','AIC-HP','condition',{subject_scope:'SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:1})])}),
     node('Q3','AIA-WAIT','action',{}),node('Q4','AIA-WAIT','action',{})
   ];

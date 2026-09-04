@@ -9,7 +9,8 @@
 
   const SCHEMA_VERSION = '2.0.0';
   const rank = Object.freeze({ERROR: 0, WARNING: 1, INFO: 2});
-  const SEARCH_SCOPES = new Set(['SELF', 'ALLY', 'ENEMY', 'ANY']);
+  const SEARCH_SCOPES = new Set(['SELF', 'ALLY', 'OTHER_ALLY', 'ENEMY', 'ANY']);
+  const AUTHORABLE_SEARCH_TARGET_SEMANTICS = new Set(['SELF', 'ALLY', 'OTHER_ALLY', 'ENEMY']);
   const STATE_SUBJECTS = new Set(['SELF', 'BATTLE']);
   const EDGE_KINDS = new Set(['NODE', 'CALL', 'RETURN']);
   const SELECTOR_REQUIRED_RANGES = new Set(['SINGLE', 'BACK']);
@@ -54,6 +55,29 @@
       return {resolved: true, wait: false, target_contract: targetContract, skill_id: skillId};
     }
     return {resolved: false, reason: 'action_target_contract_unresolved', evaluator};
+  }
+  function resolveSearchTargetTag(targetTagId, data) {
+    const id = String(targetTagId || '').trim();
+    if (!id) return {ok: false, reason: 'target_tag_required', tag: null, category: null, scope: ''};
+    const tags = Array.isArray(data?.tags) ? data.tags : [];
+    const categories = Array.isArray(data?.tag_categories) ? data.tag_categories : [];
+    const tag = tags.find((row) => String(row?.id || '') === id) || null;
+    if (!tag) return {ok: false, reason: 'target_tag_not_found', tag: null, category: null, scope: ''};
+    const categoryId = String(tag?.category_id || '').trim();
+    const category = categories.find((row) => String(row?.id || '') === categoryId) || null;
+    if (!categoryId || !category) return {ok: false, reason: 'target_tag_category_invalid', tag, category: null, scope: ''};
+    const scope = String(tag?.runtime_semantic || '').trim().toUpperCase();
+    if (!AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(scope)) return {ok: false, reason: 'target_tag_semantic_invalid', tag, category, scope};
+    return {ok: true, reason: '', tag, category, scope};
+  }
+  function searchTargetTags(data) {
+    return (Array.isArray(data?.tags) ? data.tags : []).map((tag) => resolveSearchTargetTag(tag?.id, data)).filter((row) => row.ok).map((row) => ({
+      id: String(row.tag.id || ''),
+      name: String(row.tag.name || row.tag.id || ''),
+      category_id: String(row.category.id || ''),
+      category_name: String(row.category.name || row.category.id || ''),
+      runtime_semantic: row.scope
+    }));
   }
   function nodeDefinitions(data) {
     const rows = Adapter.palette(data?.masters || {}, '', {});
@@ -182,8 +206,17 @@
       if (node.master_data_version && node.master_data_version !== definition.data_version) issues.push(issue('WARNING', 'AI_MASTER_VERSION_STALE', `参照マスター版が更新されています: ${node.master_data_version} → ${definition.data_version}`, {node_id: id}));
 
       if (node.node_type === 'search') {
-        const scope = String(node.parameters?.scope || '');
-        if (!SEARCH_SCOPES.has(scope)) issues.push(issue('ERROR', 'AI_SEARCH_SCOPE_INVALID', `Search scopeが不正です: ${scope || '未設定'}`, {node_id: id}));
+        const targetTagId = String(node.parameters?.target_tag_id || '');
+        const target = resolveSearchTargetTag(targetTagId, data);
+        if (!target.ok) {
+          const messages = {
+            target_tag_required: '探索対象Tagを指定してください。',
+            target_tag_not_found: `探索対象Tagが存在しません: ${targetTagId || '未設定'}`,
+            target_tag_category_invalid: `探索対象Tagのカテゴリ参照が不正です: ${targetTagId || '未設定'}`,
+            target_tag_semantic_invalid: `探索対象Tagのruntime_semanticが不正です: ${targetTagId || '未設定'}`
+          };
+          issues.push(issue('ERROR', 'AI_SEARCH_TARGET_TAG_INVALID', messages[target.reason] || '探索対象Tagが不正です。', {node_id: id, target_tag_id: targetTagId}));
+        }
         validatePredicateExpression(node.parameters?.predicate, 'UNIT', data, refs, id, issues);
         if (node.target_selector != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'Searchはtarget_selectorを持てません。', {node_id: id}));
       } else if (node.node_type === 'condition') {
@@ -306,5 +339,5 @@
     return Object.freeze({valid: summary.ERROR === 0, issues: Object.freeze(issues), summary: Object.freeze(summary)});
   }
 
-  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, STATE_SUBJECTS, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
+  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, resolveSearchTargetTag, searchTargetTags, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
 });

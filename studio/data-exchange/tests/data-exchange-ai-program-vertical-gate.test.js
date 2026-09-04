@@ -11,7 +11,8 @@ const parameter_schema={type:'object',properties:{},required:[],additionalProper
 function node(id,name,node_type,evaluator,outputs,extra={}){return {schema_version:'2.0.0',id,name,node_type,status:'active',tags:[],description:'',data_version:dv,evaluator,ports:{inputs:inPort,outputs},parameter_schema,unlock:{},...extra};}
 function project(){return {
   schema_version:'4.0.0-draft',project:{id:'PRJ-R10P2',updated_at:'R1'},history:[],
-  tags:[{id:'TAG-0003',name:'AI',aliases:[]}],
+  tag_categories:[{id:'TGC-0001',name:'対象'}],
+  tags:[{id:'TAG-0003',name:'AI',aliases:[]},{id:'TAG-0023',name:'敵',category_id:'TGC-0001',runtime_semantic:'ENEMY'}],
   masters:{monsters:[],stats:[],status_effects:[],tablets:[],jobs:[],equipment:[],mods:[],
     skills:[{id:'SKL-0001',name:'Skill A',tags:[],params:{}}],
     ai_searches:[node('AIS-0001','Enemy exists','search','search.exists',searchPorts)],
@@ -19,7 +20,7 @@ function project(){return {
     ai_target_selectors:[{schema_version:'2.0.0',id:'ATS-0001',name:'Lowest HP',evaluator:'selector.lowest_hp_ratio',parameter_schema,tags:[],enabled:true}],
     ai_actions:[node('AIA-0001','Use Skill','action','action.skill',[])]},
   ai_programs:[{id:'AIP-0001',name:'Base AI',status:'valid',tags:['TAG-0003'],description:'',version:1,schema_version:'2.0.0',data_version:dv,entry_node_id:'N1',nodes:[
-    {instance_id:'N1',master_node_id:'AIS-0001',node_type:'search',position:{x:0,y:0},parameters:{scope:'ENEMY',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-0001',params:{},negate:false}]}}},
+    {instance_id:'N1',master_node_id:'AIS-0001',node_type:'search',position:{x:0,y:0},parameters:{target_tag_id:'TAG-0023',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-0001',params:{},negate:false}]}}},
     {instance_id:'N2',master_node_id:'AIC-0002',node_type:'condition',position:{x:1,y:0},parameters:{subject_scope:'SELF',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-0002',params:{},negate:false}]}}},
     {instance_id:'N3',master_node_id:'AIA-0001',node_type:'action',position:{x:2,y:0},parameters:{skill_id:'SKL-0001'},target_selector:{selector_id:'ATS-0001',params:{}}}
   ],edges:[],subroutines:[],compiled:null,updated_at:'TAG-0001'}],ai_program_layouts:[],ai_program_runtime:[]
@@ -33,7 +34,7 @@ async function main(){
   const exported=await dx.buildEnvelope({rootData:base,dataset:'ai_programs',ids:['AIP-0001'],dependencyMode:'recursive',studioVersion:'R10-P2'});
   assert.deepEqual(exported.permissions.writable,['ai_programs']);
   for(const name of ['tags','skills','ai_searches','ai_conditions','ai_target_selectors','ai_actions'])assert(exported.permissions.read_only.includes(name),name+' dependency');
-  assert.equal(exported.datasets.ai_target_selectors[0].id,'ATS-0001');assert.equal(exported.datasets.ai_searches[0].id,'AIS-0001');
+  assert.equal(exported.datasets.ai_target_selectors[0].id,'ATS-0001');assert.equal(exported.datasets.ai_searches[0].id,'AIS-0001');assert(exported.datasets.tags.some(x=>x.id==='TAG-0023'));
 
   const env=await addEnvelope(base),dry=await dx.dryRunImport({rootData:base,envelope:env});
   assert.equal(dry.summary.add,1);assert.equal(dry.can_apply,true);
@@ -48,6 +49,7 @@ async function main(){
   const cases=[
     b=>{b.datasets.ai_programs[0].nodes.find(x=>x.node_type==='action').parameters.skill_id='SKL-9999'},
     b=>{b.datasets.ai_programs[0].nodes.find(x=>x.node_type==='search').master_node_id='AIS-9999'},
+    b=>{b.datasets.ai_programs[0].nodes.find(x=>x.node_type==='search').parameters.target_tag_id='TAG-9999'},
     b=>{b.datasets.ai_programs[0].nodes.find(x=>x.node_type==='search').parameters.predicate.clauses[0].predicate_master_id='AIC-9999'},
     b=>{b.datasets.ai_programs[0].nodes.find(x=>x.node_type==='action').target_selector.selector_id='ATS-9999'},
     b=>{b.datasets.ai_programs[0].nodes.find(x=>x.node_type==='action').master_node_id='AIA-9999'}

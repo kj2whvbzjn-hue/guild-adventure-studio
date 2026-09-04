@@ -19,7 +19,7 @@ assert(html.includes('id="view-ai-production" class="view hidden"'), 'AI product
 assert(html.includes('id="aiProductionRoot"'), 'AI production view must expose its module root');
 assert(html.includes("'ai-production':'ai-production'"), 'launcher action must route directly to AI production');
 assert(html.includes('./ai-production/ai-production.css?v=1'));
-assert(html.includes('./ai-production/ai-production-ui.js?v=1'));
+assert(html.includes('./ai-production/ai-production-ui.js?v=2'));
 assert(html.includes('../shared/ai/ai-layout-model.js?v=1'), 'Studio must load AI layout model before production UI');
 
 const showViewStart = html.indexOf('function showView(name){');
@@ -43,7 +43,7 @@ assert.strictEqual(manifest.entrypoints.ui, 'ai-production-ui.js');
 assert(manifest.public_globals.includes('GKSAIProductionUI'));
 assert.strictEqual(manifest.shared_canonical.layout_model, 'shared/ai/ai-layout-model.js');
 assert(manifest.public_globals.includes('GKSAILayoutModel'));
-assert(sw.includes('./ai-production/ai-production-ui.js?v=1'), 'PWA shell must include the AI production UI');
+assert(sw.includes('./ai-production/ai-production-ui.js?v=2'), 'PWA shell must include the AI production UI');
 assert(sw.includes('../shared/ai/ai-layout-model.js?v=1'), 'PWA shell must include the AI layout model');
 assert(sw.includes('./ai-production/ai-production.css?v=1'), 'PWA shell must include the AI production CSS');
 

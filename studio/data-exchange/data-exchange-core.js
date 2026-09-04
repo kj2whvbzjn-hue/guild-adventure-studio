@@ -38,7 +38,7 @@
     ai_target_selectors:{path:['masters','ai_target_selectors'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_actions:{path:['masters','ai_actions'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[{dataset:'tags',paths:['tags']}]},
     ai_programs:{path:['ai_programs'],idField:'id',volatile:VOLATILE_DEFAULT,unordered:['tags'],dependencies:[
-      {dataset:'tags',paths:['tags']},
+      {dataset:'tags',paths:['tags','nodes[].parameters.target_tag_id']},
       {dataset:'skills',paths:['nodes[].parameters.skill_id']},
       {dataset:'ai_searches',nodeType:'search',paths:['nodes[].master_node_id']},
       {dataset:'ai_conditions',nodeType:'condition',paths:['nodes[].master_node_id']},
