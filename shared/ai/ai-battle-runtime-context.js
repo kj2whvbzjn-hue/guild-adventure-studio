@@ -41,6 +41,20 @@
   function predicate(evaluator,params,subject,subjectKind){
     const name=String(evaluator||'');if(name==='condition.always')return true;
     if(name==='condition.hp_ratio_compare'){if(subjectKind==='BATTLE')return false;const ratio=Number(subject?.hp||0)/Math.max(1,Number(subject?.max_hp??subject?.maxHp)||1);return compareNumber(ratio,String(params?.operator||''),Number(params?.value));}
+    if(name==='condition.state_compare'){
+      if(subjectKind==='BATTLE')return false;
+      const semantic=String(params?.state_semantic||'').trim().toUpperCase();
+      if(semantic==='ALIVE')return subject?.alive===true;
+      if(semantic==='DEAD')return subject?.alive===false;
+      if(semantic!=='HP'&&semantic!=='MP')return false;
+      const current=Number(semantic==='HP'?subject?.hp:subject?.mp),maximum=Number(semantic==='HP'?(subject?.max_hp??subject?.maxHp):(subject?.max_mp??subject?.maxMp));
+      if(!Number.isFinite(current))return false;
+      const mode=String(params?.value_mode||'').trim().toUpperCase();let actual;
+      if(mode==='CURRENT')actual=current;
+      else if(mode==='RATIO'){if(!Number.isFinite(maximum)||maximum<0)return false;actual=maximum>0?current/maximum:0;}
+      else return false;
+      return compareNumber(actual,String(params?.operator||''),Number(params?.value));
+    }
     if(name==='condition.skill_ready'||name==='condition.skill_usable'){if(subjectKind==='BATTLE')return false;const state=subject?.skill_states?.[String(params?.skill_id||'')];return name==='condition.skill_ready'?state?.ready===true:state?.usable===true;}
     if(name==='condition.active_effect_has_tag'){if(subjectKind==='BATTLE')return false;const tagId=String(params?.tag_id||'');if(!/^TAG-\d{4}$/.test(tagId))return false;return effectRows(subject,params?.effect_scope).some(row=>Array.isArray(row?.effect_tag_ids)&&row.effect_tag_ids.includes(tagId));}
     return false;

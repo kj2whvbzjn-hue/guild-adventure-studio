@@ -28,15 +28,27 @@
     const bytes = new TextEncoder().encode(text), digest = await cryptoApi.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
-  function compilePredicate(expression, predicateById) {
+  function compilePredicate(expression, predicateById, data) {
     return {
       logic: expression.logic,
       clauses: expression.clauses.map((clause) => {
         const definition = predicateById.get(clause.predicate_master_id);
+        let params = canonical(clause.params || {});
+        if (String(definition?.evaluator || '') === 'condition.state_compare') {
+          const state = Validator.resolveStateTag(clause.params?.state_tag_id, definition, data || {});
+          if (!state.ok) throw new CompilerError(`State tag cannot be resolved: ${String(clause.params?.state_tag_id || '')}`, []);
+          params = {state_semantic: state.semantic};
+          if (Validator.stateSemanticNeedsComparison(state.semantic)) params = canonical({
+            state_semantic: state.semantic,
+            value_mode: String(clause.params?.value_mode || '').trim().toUpperCase(),
+            operator: String(clause.params?.operator || '').trim(),
+            value: Number(clause.params?.value)
+          });
+        }
         return {
           predicate_master_id: clause.predicate_master_id,
           evaluator: definition.evaluator,
-          params: canonical(clause.params || {}),
+          params,
           negate: clause.negate === true
         };
       })
@@ -126,11 +138,11 @@
       if (node.node_type === 'search') {
         const target = Validator.resolveSearchTargetTag(node.parameters.target_tag_id, data);
         if (!target.ok) throw new CompilerError(`Search target tag cannot be resolved: ${String(node.parameters.target_tag_id || '')}`, []);
-        base.params = canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById)});
+        base.params = canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data)});
         base.on_found = targetInstruction(outgoing.get(String(node.instance_id)).get('found'));
         base.on_not_found = targetInstruction(outgoing.get(String(node.instance_id)).get('not_found'));
       } else if (node.node_type === 'condition') {
-        base.params = canonical({subject_scope: node.parameters.subject_scope, predicate: compilePredicate(node.parameters.predicate, predicateById)});
+        base.params = canonical({subject_scope: node.parameters.subject_scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data)});
         base.on_true = targetInstruction(outgoing.get(String(node.instance_id)).get('true'));
         base.on_false = targetInstruction(outgoing.get(String(node.instance_id)).get('false'));
       } else {

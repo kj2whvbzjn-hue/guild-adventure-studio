@@ -119,8 +119,10 @@
     const required = new Set(node.parameter_schema?.required || []), properties = node.parameter_schema?.properties || {};
     return Object.entries(properties).map(([name, schema]) => {
       const refKind = schema.ref_kind || schema['x-ref-kind'] || '';
-      const options = refKind === 'tag' ? (refs?.tags || []) : refKind === 'skill' ? (refs?.skills || []) : refKind === 'ai_target_selector' ? (refs?.ai_target_selectors || []) : (schema.enum || []);
-      return {name, label: schema.title || name, type: schema.type || 'string', required: required.has(name), minimum: schema.minimum, maximum: schema.maximum, ref_kind: refKind, options: options.map((item) => typeof item === 'string' ? {id: item, name: item} : {id: item.id, name: item.name || item.id})};
+      const refCategoryId = String(schema.ref_category_id || schema['x-ref-category-id'] || '').trim();
+      let options = refKind === 'tag' ? (refs?.tags || []) : refKind === 'skill' ? (refs?.skills || []) : refKind === 'ai_target_selector' ? (refs?.ai_target_selectors || []) : (schema.enum || []);
+      if (refKind === 'tag' && refCategoryId) options = options.filter((item) => String(item?.category_id || '') === refCategoryId);
+      return {name, label: schema.title || name, type: schema.type || 'string', required: required.has(name), minimum: schema.minimum, maximum: schema.maximum, ref_kind: refKind, ref_category_id: refCategoryId, options: options.map((item) => typeof item === 'string' ? {id: item, name: item} : {id: item.id, name: item.name || item.id})};
     });
   }
   function validateParameters(node, values, refs) {
