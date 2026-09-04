@@ -341,8 +341,8 @@ async function beginNewGame(){
  try{
   const overwrite=requestNewGameOverwriteConfirmation();if(!overwrite.approved){notify('新規ゲームをキャンセルしました。');return false}
   await formalDefinitionsReady;if(formalGameBridge.status!=='loaded')throw new Error(formalGameBridge.errors.join(' / ')||'Formal Game Runtime未読込');const prepared=prepareNewGameSnapshot();
-  try{commitPreparedNewGame(prepared)}catch(error){showSaveRecovery('save',error,{retry:()=>{commitPreparedNewGame(prepared);resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true}});return false}
-  hideSaveRecovery();resetBattle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true
+  try{commitPreparedNewGame(prepared)}catch(error){showSaveRecovery('save',error,{retry:()=>{commitPreparedNewGame(prepared);resetBattleSessionToIdle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true}});return false}
+  hideSaveRecovery();resetBattleSessionToIdle();render();if(typeof setupR06GameE2EUI==='function')setupR06GameE2EUI();setPhase('base');return true
  }catch(error){notify(`新規ゲームを開始できません: ${error.message}`,'bad');return false}
  finally{setSaveLoadOperationBusy(false)}
 }
