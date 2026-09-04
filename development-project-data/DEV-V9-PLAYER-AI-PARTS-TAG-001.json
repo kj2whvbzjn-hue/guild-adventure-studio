@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T19:15:00+09:00"
+    "updated_at": "2026-09-04T11:12:34.328Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-CONNECTION",
     "work_box_id": "BOX-AITAG-002",
-    "theme": "探索対象Tag接続のGame Data E2E確認",
-    "goal": "Current Studio Project DataでTAG-0020～TAG-0023のruntime_semanticを確認し、Game Data Deploy後のai/ai_nodes.jsonにrefs.tags / refs.tag_categories / runtime_semanticが保持されることを確認して、探索対象Phaseを完了する。"
+    "theme": "探索対象Tag接続: Game Data Deploy実行・配置後確認",
+    "goal": "Game Data Deployのplanned artifactは承認済み期待ExportとSHA-256完全一致でPASS。StudioでGitHub配置を実行し、commit成功後のExport/ai/ai_nodes.jsonを確認してTASK-AITAG-005を完了する。"
   },
   "project_rules": [
     {
@@ -743,11 +743,11 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-AITAG-005",
-      "status": "Pending",
-      "result": "",
-      "evidence": "Need Current Studio Project confirmation for TAG-0020 SELF / TAG-0021 ALLY / TAG-0022 OTHER_ALLY / TAG-0023 ENEMY.",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "Current Studio Game Data Deploy planから生成されたai_nodesが承認済みProjectのruntime_semanticを含む期待Exportと完全一致するため、Current Studio側に対象Tag runtime_semanticが反映されていることを確認。",
+      "evidence": "EVD-AITAG-005_GAME-DEPLOY-PLAN-VERIFIED.json / exact ai_nodes SHA-256 match ef1054f489e3c803a2381ee13f6952f064e49ed3135d8587fde7ae1a098a3514",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T20:05:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -758,7 +758,7 @@
       },
       "blocking": false,
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-04T20:05:00+09:00"
     },
     {
       "id": "CHK-AITAG-005",
@@ -767,8 +767,8 @@
       "target_type": "Task",
       "target_id": "TASK-AITAG-005",
       "status": "Pending",
-      "result": "",
-      "evidence": "Need deployed ai/ai_nodes.json evidence for refs.tags / refs.tag_categories / runtime_semantic.",
+      "result": "Game Data Deploy『差分取得』段階のplanned ai_nodesは期待Exportと完全一致。GitHub配置完了後の実物確認が残る。",
+      "evidence": "EVD-AITAG-005_GAME-DEPLOY-PLAN-VERIFIED.json / planned artifact exact match; deployment commit still pending",
       "checked_by": "",
       "checked_at": "",
       "resolves_check_ids": [],
@@ -781,7 +781,76 @@
       },
       "blocking": false,
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-04T20:05:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-006",
+      "title": "承認済みProject JSON Full Import Preflight",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-005",
+      "status": "Passed",
+      "result": "PRJ-GAS-V4_AI-TARGET-RUNTIME(20260904).json はCurrent Full Import Gateで errors=0 / warnings=0。TGC-0005とTAG-0020～0023のruntime_semanticを保持。",
+      "evidence": "EVD-AITAG-005_LOCAL-PREFLIGHT_GKS-B866.json / Project SHA-256 20ef54fff2ece31dddf25083ab3bcf9484fe170834b0a16e4c2f75bbfbaf0aab",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T19:59:43+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:59:43+09:00",
+      "updated_at": "2026-09-04T19:59:43+09:00"
+    },
+    {
+      "id": "CHK-AITAG-007",
+      "title": "GKS-B866 Formal Export Local E2E",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-005",
+      "status": "Passed",
+      "result": "GKS-B866 export-coreで承認済みProject JSONから29-file Formal Exportを生成し、ai/ai_nodes.json refsにTGC-0005、TAG-0020～0023、SELF/ALLY/OTHER_ALLY/ENEMYが保持されることを確認。",
+      "evidence": "EVD-AITAG-005_LOCAL-PREFLIGHT_GKS-B866.json / ai_nodes SHA-256 2d584a5d98114b3615425753f5f3aefc6d6ea737ee68c1d49ec575225e4c78f9",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T19:59:43+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:59:43+09:00",
+      "updated_at": "2026-09-04T19:59:43+09:00"
+    },
+    {
+      "id": "CHK-AITAG-008",
+      "title": "Game Data Deploy Plan exact artifact照合",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-005",
+      "status": "Passed",
+      "result": "Deploy DiffのExport/ai/ai_nodes.json SHA-256を、承認済みProject + GKS-B866 Formal Exportの期待内容からartifact generated_atまで再構築して照合し完全一致。",
+      "evidence": "EVD-AITAG-005_GAME-DEPLOY-PLAN-VERIFIED.json / ef1054f489e3c803a2381ee13f6952f064e49ed3135d8587fde7ae1a098a3514",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T20:05:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T20:05:00+09:00",
+      "updated_at": "2026-09-04T20:05:00+09:00"
     }
   ],
   "workflow": {
@@ -821,6 +890,14 @@
     {
       "at": "2026-09-04T19:15:00+09:00",
       "message": "次工程はCurrent Studio Project Dataのruntime_semanticとGame Data Deploy後Formal Exportの確認。これが完了するまで状態確認Phase 1のGame Data作成へ進まない。"
+    },
+    {
+      "at": "2026-09-04T19:59:43+09:00",
+      "message": "TASK-AITAG-005 Local Preflight: 承認済みPRJ-GAS-V4_AI-TARGET-RUNTIME Full Import Gate PASS。GKS-B866 Formal Exportをローカル生成し、ai_nodes refsへTGC-0005 / TAG-0020～0023 / runtime_semanticが保持されることを確認。Current Studio実機ImportとGame Data Deploy後実物確認は未完了のためTaskはDoingを維持。"
+    },
+    {
+      "at": "2026-09-04T20:05:00+09:00",
+      "message": "TASK-AITAG-005 Deploy Plan Verification PASS。Diff内ai_nodes SHA-256 ef1054f489e3c803a2381ee13f6952f064e49ed3135d8587fde7ae1a098a3514 を承認済みProject + GKS-B866 Formal Exportから再構築し完全一致。TGC-0005 / TAG-0020～0023 / SELF・ALLY・OTHER_ALLY・ENEMYを含む予定成果物は正しい。Diffはpre-commit planのためGitHub配置完了確認まではTask Doingを維持。"
     }
   ]
 }
