@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T15:31:06.413Z"
+    "updated_at": "2026-09-04T21:49:24.897Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-STATE",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "状態管理 Phase 1完了 / 旧Condition Master整理Human Gate",
-    "goal": "AIC-0004 active後E2Eは完了。Currentに残るAIC-0001～0003のPlayer必要性・重複・Runtime不整合とPredicate availability検証範囲を整理し、Hard Cut対象とSource修正方針をHuman承認する。承認前にGame Data/Sourceは変更しない。"
+    "theme": "Legacy Condition Hard Cut: Predicate availability Source Update適用",
+    "goal": "GKS-B868 / GA-B486.214 Source UpdateをHuman Applyし、Fresh Currentでdeprecated AIC参照がValidatorによりAI_PREDICATE_MASTER_UNAVAILABLEでFail Closedされることを確認してTASK-AITAG-016を完了する。"
   },
   "project_rules": [
     {
@@ -108,10 +108,10 @@
   "source_baseline": {
     "studio_build": "GKS-B867",
     "game_build": "GA-B486.213",
-    "source_label": "guild-adventure-studio-sub(20260904-151929).zip",
-    "source_role": "Human-provided Fresh Current after AIC-0004 activation deployment; current implementation and Game Data baseline",
-    "recorded_at": "2026-09-05T00:24:00+09:00",
-    "source_zip_sha256": "cef433e176c0c812065b7a48a50a09ff5580f3e9e2bc43fceba76d85c4b7668e",
+    "source_label": "guild-adventure-studio-sub(20260904-153938).zip",
+    "source_role": "Human-provided Fresh Current with legacy Condition Game Data deprecation applied; baseline for GKS-B868 Predicate availability Source Update",
+    "recorded_at": "2026-09-05T00:52:00+09:00",
+    "source_zip_sha256": "4731ea097597d6d6cdbbe05312e1ac6f53a6773e8c2c821a9ed0a36506d24fcb",
     "package_manifest_sha256": "3010bca5ee6b1ef117deed0bf7b935f539533543e86f90d9bfcf9a3c6eac7c7d"
   },
   "lifecycle": {
@@ -148,6 +148,20 @@
       "result": "Applied",
       "evidence": "AIC-0004 condition.state_compareをPlayer UI / Validator / Compiler / Battle Runtimeへデータ駆動で接続。ALIVE/DEAD/HP/MP、CURRENT/RATIO、比較演算子をRuntime system semanticとして実装し、具体的TAG-0024～0027/TGC-0006はProduction意味分岐へ固定しない。GKS-B867 / GA-B486.213 Source Update Accept Gate 14/14 PASS、適用後Full Inspection 26/26 PASS、Fresh Current関連AIテスト・PHP Export Schema Gate・package manifest 679・Critical Runtime 52 PASS。",
       "recorded_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "IMPL-AITAG-PREDICATE-GKS-B868-001",
+      "studio_build": "GKS-B868",
+      "game_build": "GA-B486.214",
+      "work_box_ids": [
+        "BOX-AITAG-003"
+      ],
+      "task_ids": [
+        "TASK-AITAG-016"
+      ],
+      "result": "Applied",
+      "evidence": "全Predicate Master availability Fail Closed Source Update。shared/ai/ai-program-validator.jsでAdapter.isAvailable()を全Predicateに一般化。Quick 11/11、Accept 13/13、Applied Full 26/26、Test Integrity protected change 0。Human Apply後のFresh Current確認待ち。",
+      "recorded_at": "2026-09-05T00:52:00+09:00"
     }
   ],
   "discussions": [],
@@ -283,6 +297,30 @@
       "approved_at": "2026-09-05T00:10:00+09:00",
       "created_at": "2026-09-05T00:10:00+09:00",
       "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-012",
+      "title": "旧Condition 3件をAIC-0004へHard Cutする",
+      "status": "Approved",
+      "text": "AIC-0001 / 常に成立、AIC-0002 / HP割合比較、AIC-0003 / 自分MPが指定値以上をPlayer利用対象から外しdeprecated化する。AIC-0002はAIC-0004 HP/RATIO、AIC-0003はAIC-0004 MP/CURRENT>=へ統合する。AIC-0001はPlayer必要性基準で不採用とする。旧Evaluator互換・alias・fallbackは追加しない。",
+      "rationale": "Player必要性基準と単一の状態管理Condition契約へ収束させ、重複MasterとRuntime未実装Masterを残さないため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:34:00+09:00",
+      "created_at": "2026-09-05T00:34:00+09:00",
+      "updated_at": "2026-09-05T00:34:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-013",
+      "title": "全Predicate Master availabilityをValidatorでFail Closedする",
+      "status": "Approved",
+      "text": "Predicate clauseが参照する全Condition MasterについてAdapter.isAvailable()を検証し、非active Master参照はAI_PREDICATE_MASTER_UNAVAILABLEで拒否する。condition.state_compareだけの特例検証を一般化する。Compatibility fallbackは追加しない。",
+      "rationale": "deprecated/disabled MasterをPlayer paletteから隠すだけでなく、保存済みProgramからの参照もFormal ValidatorでHard Cutするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:34:00+09:00",
+      "created_at": "2026-09-05T00:34:00+09:00",
+      "updated_at": "2026-09-05T00:34:00+09:00"
     }
   ],
   "specifications": [
@@ -463,6 +501,30 @@
       "approved_at": "2026-09-05T00:10:00+09:00",
       "created_at": "2026-09-05T00:10:00+09:00",
       "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-008",
+      "title": "Legacy Condition Hard Cut Contract",
+      "status": "Approved",
+      "summary": "AIC-0001～0003をdeprecated化し、AIC-0004へ状態判定を集約する。",
+      "body": "# Game Data\n- AIC-0001 active → deprecated\n- AIC-0002 active → deprecated\n- AIC-0003 active → deprecated\n- AIC-0004 activeを維持\n\n# Source\n- 全Predicate Master参照でAdapter.isAvailable()を検証する。\n- 非active参照はAI_PREDICATE_MASTER_UNAVAILABLEでFail Closed。\n- 旧Evaluator fallback / alias / compatibility layerは追加しない。",
+      "decision_refs": [
+        "DEC-AITAG-012",
+        "DEC-AITAG-013"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-007"
+      ],
+      "acceptance_criteria": "Game Data差分がAIC-0001～0003.statusのみで、deprecated後Player paletteから除外されること。次Source Taskで保存済みProgramからの非active参照もValidatorが拒否すること。",
+      "system_node_id": "SYS-AITAG-AUTHORING",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:34:00+09:00",
+      "created_at": "2026-09-05T00:34:00+09:00",
+      "updated_at": "2026-09-05T00:34:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -896,7 +958,7 @@
       "id": "TASK-AITAG-014",
       "box_id": "BOX-AITAG-003",
       "title": "旧Condition Master整理・Hard Cut方針をHuman承認する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 14,
       "depends_on": [
         "TASK-AITAG-013"
@@ -905,18 +967,18 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:34:00+09:00"
       },
       "created_at": "2026-09-05T00:24:00+09:00",
-      "updated_at": "2026-09-05T00:24:00+09:00"
+      "updated_at": "2026-09-05T00:34:00+09:00"
     },
     {
       "id": "TASK-AITAG-015",
       "box_id": "BOX-AITAG-003",
       "title": "承認済み旧Condition MasterをPlayer利用対象から除外",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 15,
       "depends_on": [
         "TASK-AITAG-014"
@@ -925,18 +987,18 @@
       "work_type": "GAME_DATA",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:34:00+09:00"
       },
       "created_at": "2026-09-05T00:24:00+09:00",
-      "updated_at": "2026-09-05T00:24:00+09:00"
+      "updated_at": "2026-09-05T00:52:00+09:00"
     },
     {
       "id": "TASK-AITAG-016",
       "box_id": "BOX-AITAG-003",
       "title": "Predicate Master availabilityを全ConditionでFail Closed化",
-      "status": "Todo",
+      "status": "Doing",
       "execution_order": 16,
       "depends_on": [
         "TASK-AITAG-014"
@@ -945,12 +1007,12 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:34:00+09:00"
       },
       "created_at": "2026-09-05T00:24:00+09:00",
-      "updated_at": "2026-09-05T00:24:00+09:00"
+      "updated_at": "2026-09-05T00:52:00+09:00"
     }
   ],
   "checks": [
@@ -1344,6 +1406,75 @@
       "blocking": false,
       "created_at": "2026-09-05T00:24:00+09:00",
       "updated_at": "2026-09-05T00:24:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-018",
+      "title": "Legacy Condition deprecated化 最小差分Preflight",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-015",
+      "status": "Passed",
+      "result": "AIC-0001～0003.status active→deprecatedの3項目だけを変更。AIC-0004 active維持。Current GKS-B867 Full Import Gate errors=0/warnings=0、Formal Export 29 files PASS、candidate paletteで旧3件available=false / AIC-0004 available=true。",
+      "evidence": "PRJ-GAS-V4_AI-LEGACY-CONDITIONS-DEPRECATED(20260905).json / SHA-256 97af7991849537b037b7ee4b5ecb67068f76be79249281a9bf290aeffadeba45 / ai_nodes SHA-256 cf7a4852709d99dc09fae0810b424eabbf4fe740760eee92f675cc89bd07da58",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T00:34:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:34:00+09:00",
+      "updated_at": "2026-09-05T00:34:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-019",
+      "title": "Legacy Condition deprecated化 Fresh Current実物確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-015",
+      "status": "Passed",
+      "result": "Fresh Current Export/ai/ai_nodes.jsonでAIC-0001～0003=deprecated、AIC-0004=activeを確認。",
+      "evidence": "EVD-AITAG-016_PREDICATE-FAIL-CLOSED-SOURCE-UPDATE-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T00:52:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:52:00+09:00",
+      "updated_at": "2026-09-05T00:52:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-020",
+      "title": "全Predicate availability Fail Closed Source Update Pre-Apply Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-016",
+      "status": "Passed",
+      "result": "Baselineではdeprecated Predicate参照がvalidだったがCandidateではAI_PREDICATE_MASTER_UNAVAILABLEでFail Closed。Quick 11/11、Accept 13/13、GKS-B867へoverlayしたFull 26/26、Test Integrity PASS。",
+      "evidence": "EVD-AITAG-016_PREDICATE-FAIL-CLOSED-SOURCE-UPDATE-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T00:52:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:52:00+09:00",
+      "updated_at": "2026-09-05T00:52:00+09:00"
     }
   ],
   "workflow": {
@@ -1431,6 +1562,18 @@
     {
       "at": "2026-09-05T00:24:00+09:00",
       "message": "次Human GateとしてLegacy Condition監査を登録。AIC-0001はPlayer必要性基準で不採用だがactive、AIC-0002はAIC-0004 HP/RATIOと重複、AIC-0003はAIC-0004 MP/CURRENT>=と重複かつFormal Runtime handlerなし。全Predicateのavailability fail-closed化も承認候補。変更は未実施。"
+    },
+    {
+      "at": "2026-09-05T00:34:00+09:00",
+      "message": "HumanがLegacy Condition Hard Cut方針を承認。TASK-AITAG-014 Done。AIC-0001～0003 active→deprecatedだけのGame Data完全JSONを作成し、差分3項目、Full Import Gate errors=0/warnings=0、Formal Export 29 files、旧3件palette unavailable / AIC-0004 availableを確認。TASK-AITAG-015 Doing。全Predicate availability Fail ClosedのTASK-AITAG-016もHuman Approvedだが、異なるwork_typeのため次Taskとして待機。"
+    },
+    {
+      "at": "2026-09-05T00:52:00+09:00",
+      "message": "Fresh Current GKS-B867 / GA-B486.213の実物ExportでAIC-0001～0003 deprecated / AIC-0004 activeを確認しTASK-AITAG-015 Done。"
+    },
+    {
+      "at": "2026-09-05T00:52:00+09:00",
+      "message": "TASK-AITAG-016 Source UpdateをGKS-B868 / GA-B486.214として作成。Validatorのavailability確認をcondition.state_compare特例から全Predicateへ一般化し、deprecated参照をAI_PREDICATE_MASTER_UNAVAILABLEでFail Closed化。Quick 11/11、Accept 13/13、適用後Full 26/26、Test Integrity protected change 0 PASS。Human Apply前のためTaskはDoingを維持。"
     }
   ]
 }
