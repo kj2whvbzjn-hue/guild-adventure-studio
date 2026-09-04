@@ -10,17 +10,17 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T12:13:47.166Z"
+    "updated_at": "2026-09-04T15:16:55.265Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
-    "summary": "AI全体を一括改修しない。探索、状態確認、行動、対象選択等を機能群ごとに分割し、必要なら同一機能群の内部もさらにPhase分割する。各PhaseはPlayerがゲームで必要かだけを基準に必要語彙を棚卸しし、Game Data作成前に必ずチャットでHuman Approvalを取得する。承認済みデータをCurrentへ組み込み、接続できない箇所だけSource改修する。最初のPhaseとして探索対象の「対象」Categoryと「自分 / 味方 / 自分以外の味方 / 敵」を登録し、GKS-B866 / GA-B486.212でTag ID→runtime_semantic→Search Runtime接続を実装済み。現在はCurrent Studio Project Dataのruntime_semanticおよびGame Data Deploy後ExportのE2E確認が残っている。"
+    "summary": "探索対象PhaseはTGC-0005 / TAG-0020～0023をTag ID→runtime_semantic→Search Runtimeへ接続しE2E完了。状態管理Phase 1ではTGC-0006 / 状態管理、TAG-0024 生存、TAG-0025 死亡、TAG-0026 HP、TAG-0027 MPをHuman承認・登録し、ALIVE / DEAD / HP / MP runtime_semanticとAIC-0004 / 状態管理 evaluator=condition.state_compareの汎用Condition契約を確定した。Source Runtime接続はGKS-B867 / GA-B486.213へ反映され、Accept Gate 14/14、適用後Full Inspection 26/26、Fresh Current検証PASS。現在はHuman承認済みのAIC-0004 status draft→activeだけをGame Dataへ反映し、Player AI Editor / Formal Export / Runtimeのactive後E2Eを確認する工程。"
   },
   "current_focus": {
     "architecture_id": "ARCH-AITAG-STATE",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "状態管理 Phase 1: 接続仕様Human Approval",
-    "goal": "監査で判明したCurrent Source不足を基に、状態管理Tagを個別実装せず汎用Condition契約でPlayer UI→Program→Compiler→Runtimeへ接続する設計候補をチャットへ提示しHuman Approvalを得る。承認前にCondition DataやSourceを変更しない。"
+    "theme": "状態管理 Phase 1: AIC-0004 active化 Game Data反映",
+    "goal": "Human承認済みのAIC-0004 status draft→activeだけをCurrent Studio Projectへ反映・Game Data Deployし、Player AI Editorで状態管理Conditionが利用可能になることとFormal Export / Runtime E2Eを確認する。"
   },
   "project_rules": [
     {
@@ -106,13 +106,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B866",
-    "game_build": "GA-B486.212",
-    "source_label": "guild-adventure-studio-sub(20260904-104252).zip",
-    "source_role": "Human-provided Fresh Current after AI target Tag Source update; registration baseline and continued implementation authority",
-    "recorded_at": "2026-09-04T19:15:00+09:00",
-    "source_zip_sha256": "a50a8cf6ada52d295535d711452c84b86c3edc2994b1e88ab0ec119f919f94f2",
-    "package_manifest_sha256": "b4aef5885c59393f27c3f013e30ded55260e9f429d9782aadc49ff9f76578542"
+    "studio_build": "GKS-B867",
+    "game_build": "GA-B486.213",
+    "source_label": "guild-adventure-studio-sub(20260904-140610).zip",
+    "source_role": "Human-provided Fresh Current after state-management condition Runtime Source update; current implementation baseline",
+    "recorded_at": "2026-09-05T00:10:00+09:00",
+    "source_zip_sha256": "251ae91b5d2edabd338b58ed20e58a2a4538817e199d77772409108d72d103a2",
+    "package_manifest_sha256": "3010bca5ee6b1ef117deed0bf7b935f539533543e86f90d9bfcf9a3c6eac7c7d"
   },
   "lifecycle": {
     "status": "Active",
@@ -134,6 +134,20 @@
       "result": "Applied",
       "evidence": "Human-applied Fresh Current guild-adventure-studio-sub(20260904-104252).zip. Player Search target selection migrated from fixed UI scope to Tag Master target_tag_id; Validator/Compiler resolve runtime_semantic; OTHER_ALLY added; Game Data Deploy uses Formal Export path preserving refs.tags / refs.tag_categories. Protected changes 14件 were Human-approved with the additional rule that hardcoding is prohibited except system-required runtime semantic identifiers.",
       "recorded_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "IMPL-AITAG-STATE-GKS-B867-001",
+      "studio_build": "GKS-B867",
+      "game_build": "GA-B486.213",
+      "work_box_ids": [
+        "BOX-AITAG-003"
+      ],
+      "task_ids": [
+        "TASK-AITAG-011"
+      ],
+      "result": "Applied",
+      "evidence": "AIC-0004 condition.state_compareをPlayer UI / Validator / Compiler / Battle Runtimeへデータ駆動で接続。ALIVE/DEAD/HP/MP、CURRENT/RATIO、比較演算子をRuntime system semanticとして実装し、具体的TAG-0024～0027/TGC-0006はProduction意味分岐へ固定しない。GKS-B867 / GA-B486.213 Source Update Accept Gate 14/14 PASS、適用後Full Inspection 26/26 PASS、Fresh Current関連AIテスト・PHP Export Schema Gate・package manifest 679・Critical Runtime 52 PASS。",
+      "recorded_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "discussions": [],
@@ -245,6 +259,30 @@
       "approved_at": "2026-09-04T20:36:00+09:00",
       "created_at": "2026-09-04T20:36:00+09:00",
       "updated_at": "2026-09-04T20:36:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-010",
+      "title": "状態管理Tagを汎用Condition 1系統で接続する",
+      "status": "Approved",
+      "text": "状態管理Tagは個別AICを量産せずAIC-0004 / 状態管理の1系統でPlayer UI→AI Program→Compiler→Runtimeへ接続する。Tag runtime_semanticはALIVE / DEAD / HP / MP。HP/MPはCURRENT / RATIO、比較演算子、値をParameterとして扱い、生存/死亡は比較値不要とする。Production Sourceへ具体的TAG/TGC IDを意味分岐として固定しない。",
+      "rationale": "条件値や割合ごとのAIC/Tag増殖を防ぎ、Player向け語彙をData-drivenに維持し、既存HP/MP条件の不整合を単一Formal Contractへ統合するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:10:00+09:00",
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-011",
+      "title": "AIC-0004をRuntime接続完了後にactive化する",
+      "status": "Approved",
+      "text": "GKS-B867 / GA-B486.213で状態管理Runtime接続のFresh Current検証がPASSしたため、Game Data変更はAIC-0004.statusをdraftからactiveへ変更する1項目だけとする。",
+      "rationale": "Runtime未接続状態でPlayerへ公開しない安全Gateを維持し、Source接続完了後に最小Game Data差分で正式利用可能にするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:10:00+09:00",
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "specifications": [
@@ -376,6 +414,55 @@
       "approved_at": "2026-09-04T20:36:00+09:00",
       "created_at": "2026-09-04T20:36:00+09:00",
       "updated_at": "2026-09-04T20:36:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-006",
+      "title": "状態管理 Generic Condition Runtime Contract",
+      "status": "Verified",
+      "summary": "状態管理4TagをAIC-0004 / condition.state_compareの1系統でAuthoringからBattle Runtimeへ接続する。",
+      "body": "# Tag runtime_semantic\n- 生存 → ALIVE\n- 死亡 → DEAD\n- HP → HP\n- MP → MP\n\n# Generic Condition\n- AIC-0004 / 状態管理\n- evaluator: condition.state_compare\n- supported_subject_kind: UNIT, SELF\n- Programはstate_tag_idを保持し、CompilerがFormal Tagのruntime_semanticを解決する。\n\n# HP / MP\n- value_mode: CURRENT / RATIO\n- operator: < / <= / > / >= / =\n- value: number\n- RATIOはRuntimeで0..1として検証する。\n\n# 生存 / 死亡\n- 比較値不要。Battle Runtimeの動的alive状態から判定する。\n\n# Hardcode Rule\n- 具体的TAG/TGC IDをProduction意味分岐に固定しない。",
+      "decision_refs": [
+        "DEC-AITAG-007",
+        "DEC-AITAG-009",
+        "DEC-AITAG-010"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-005"
+      ],
+      "acceptance_criteria": "GKS-B867 Fresh CurrentでAIC-0004のValidator/Compiler/Runtime接続、ALIVE/DEAD/HP/MP、CURRENT/RATIO、Authoring回帰がPASSし、具体Tag IDハードコードがないこと。",
+      "system_node_id": "SYS-AITAG-COMPILER",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:10:00+09:00",
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-007",
+      "title": "AIC-0004 Activation Contract",
+      "status": "Approved",
+      "summary": "Runtime接続検証後、AIC-0004をdraftからactiveへ最小Game Data差分で公開する。",
+      "body": "- 変更対象はAIC-0004.statusのみ。\n- draft → active。\n- evaluator / parameter_schema / Tag / Category / runtime_semantic / Sourceは変更しない。\n- active反映後、Player AI Editor表示、保存、Formal Export、Battle RuntimeをE2E確認する。",
+      "decision_refs": [
+        "DEC-AITAG-010",
+        "DEC-AITAG-011"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-006"
+      ],
+      "acceptance_criteria": "Project Data差分がAIC-0004.statusの1項目のみで、Full Import GateとFormal ExportがPASSし、実機反映後にPlayer AI Editorから状態管理Conditionを利用できること。",
+      "system_node_id": "SYS-AITAG-AUTHORING",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T00:10:00+09:00",
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -514,10 +601,10 @@
     },
     {
       "id": "ARCH-AITAG-STATE",
-      "name": "状態確認語彙",
+      "name": "状態管理語彙・Condition接続",
       "parent_id": "ARCH-AITAG-ROOT",
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "work_boxes": [
@@ -540,10 +627,10 @@
     {
       "id": "BOX-AITAG-003",
       "node_id": "ARCH-AITAG-STATE",
-      "title": "状態確認 Phase 1",
-      "body": "状態確認を一括設計しない。最初の最小単位だけをPlayer必要性で棚卸しし、チャットでHuman Approvalを得た後にGame Data化する。現時点の次候補は生死だが、Category/Tag IDを含め未承認のため正式データ化しない。",
+      "title": "状態管理 Phase 1",
+      "body": "Player必要性を基準に状態管理語彙を段階設計する。Phase 1は生存・死亡・HP・MP。TagをUnitへ固定状態として貼らず、Formal Tag runtime_semanticからBattle Runtimeの動的状態へ接続する。HP/MPのCURRENT/RATIO・比較演算子・値はAIC-0004汎用ConditionのParameterとして扱う。Source接続完了後、AIC-0004を別Game Data工程でactive化しE2E確認する。",
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "tasks": [
@@ -709,7 +796,7 @@
       "id": "TASK-AITAG-009",
       "box_id": "BOX-AITAG-003",
       "title": "状態管理Phase 1 接続仕様をHuman承認する",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 9,
       "depends_on": [
         "TASK-AITAG-008"
@@ -718,18 +805,18 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:10:00+09:00"
       },
       "created_at": "2026-09-04T20:42:00+09:00",
-      "updated_at": "2026-09-04T20:42:00+09:00"
+      "updated_at": "2026-09-05T00:10:00+09:00"
     },
     {
       "id": "TASK-AITAG-010",
       "box_id": "BOX-AITAG-003",
       "title": "承認済み状態管理Condition Dataを登録",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 10,
       "depends_on": [
         "TASK-AITAG-009"
@@ -738,18 +825,18 @@
       "work_type": "GAME_DATA",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:10:00+09:00"
       },
       "created_at": "2026-09-04T20:42:00+09:00",
-      "updated_at": "2026-09-04T20:42:00+09:00"
+      "updated_at": "2026-09-05T00:10:00+09:00"
     },
     {
       "id": "TASK-AITAG-011",
       "box_id": "BOX-AITAG-003",
       "title": "承認済み状態管理ContractをRuntimeへ接続",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 11,
       "depends_on": [
         "TASK-AITAG-010"
@@ -758,12 +845,52 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:10:00+09:00"
+      },
+      "created_at": "2026-09-04T20:42:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-012",
+      "box_id": "BOX-AITAG-003",
+      "title": "AIC-0004をactive化してCurrent Game Dataへ反映",
+      "status": "Doing",
+      "execution_order": 12,
+      "depends_on": [
+        "TASK-AITAG-011"
+      ],
+      "acceptance_criteria": "Human承認済みProject JSONをCurrent Studioへ反映し、変更がAIC-0004.status draft→activeの1項目だけであること。Game Data Deploy後Formal ExportでもAIC-0004 activeを保持すること。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T00:10:00+09:00"
+      },
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-013",
+      "box_id": "BOX-AITAG-003",
+      "title": "AIC-0004 active後Player AI E2E確認",
+      "status": "Todo",
+      "execution_order": 13,
+      "depends_on": [
+        "TASK-AITAG-012"
+      ],
+      "acceptance_criteria": "Player AI Editorで状態管理Conditionが選択可能で、生存/死亡では比較値不要、HP/MPではCURRENT/RATIO・比較・値を設定保存でき、Compiler/RuntimeまでE2E成立すること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
         "status": "Pending",
         "by": "",
         "at": ""
       },
-      "created_at": "2026-09-04T20:42:00+09:00",
-      "updated_at": "2026-09-04T20:42:00+09:00"
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "checks": [
@@ -1019,6 +1146,98 @@
       "blocking": false,
       "created_at": "2026-09-04T20:42:00+09:00",
       "updated_at": "2026-09-04T20:42:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-012",
+      "title": "状態管理Generic Condition Data反映確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-010",
+      "status": "Passed",
+      "result": "Current Game Data/ExportでTAG-0024～0027のALIVE/DEAD/HP/MP runtime_semanticとAIC-0004 draft / condition.state_compareが反映済み。",
+      "evidence": "EVD-AITAG-010_STATE-CONDITION-DATA.json + Fresh Current before Runtime activation",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T00:10:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-013",
+      "title": "状態管理Runtime Source Update Fresh Current確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-011",
+      "status": "Passed",
+      "result": "GKS-B867 / GA-B486.213 Fresh Currentで関連AIテスト、PHP Export Schema Gate、package manifest 679、Critical Runtime 52がPASS。AIC-0004はdraftのまま安全にRuntime接続済み。",
+      "evidence": "EVD-AITAG-011_STATE-CONDITION-RUNTIME-SOURCE-UPDATE-PASS.json + EVD-AITAG-011_FRESH-CURRENT-GKS-B867-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T00:10:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-014",
+      "title": "AIC-0004 active化Game Data最小差分Preflight",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-012",
+      "status": "Passed",
+      "result": "Project Data差分は $.masters.ai_conditions[3].status のdraft→activeのみ。Current GKS-B867 Full Import Base Gate errors=0/warnings=0、Formal Export 29 files PASS。",
+      "evidence": "PRJ-GAS-V4_AI-STATE-CONDITION-ACTIVE(20260905).json / SHA-256 fb229e9bd90f8bb51a397d301097335af9173edbade7f3892149cb7bc8ba3000 / ai_nodes SHA-256 dc910ecfd52f4a340b31be4cda6320fe551b463fb3d9c825f0b5875841b57727",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T00:10:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-015",
+      "title": "AIC-0004 active実機反映・Player E2E",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-013",
+      "status": "Pending",
+      "result": "",
+      "evidence": "Awaiting Current Studio Full Import / Game Data Deploy and Player AI Editor E2E evidence.",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T00:10:00+09:00",
+      "updated_at": "2026-09-05T00:10:00+09:00"
     }
   ],
   "workflow": {
@@ -1078,6 +1297,22 @@
     {
       "at": "2026-09-04T20:42:00+09:00",
       "message": "TASK-AITAG-008 Source Audit DONE。Snapshotにはalive/hp/max_hp/mp/max_mpがある一方、状態管理TagをPredicateへ接続する経路は未実装。condition.hp_ratio_compareのみFormal Runtime実装済み、condition.mp_at_leastはMaster存在だがRuntime handlerなし、alive/dead handlerなし。TASK-AITAG-009 接続仕様Human ApprovalをDoingへ移行し、Data/Source変更は停止。"
+    },
+    {
+      "at": "2026-09-05T00:10:00+09:00",
+      "message": "工程管理AuthorityをHuman提供 development-project_DEV-V9-PLAYER-AI-PARTS-TAG-001(1).json に固定し、以前のLATEST派生JSONを基準から除外した。"
+    },
+    {
+      "at": "2026-09-05T00:10:00+09:00",
+      "message": "未反映実績を統合: 状態管理Generic Condition契約をHuman承認し、TAG-0024～0027 runtime_semantic ALIVE/DEAD/HP/MPとAIC-0004 draft / condition.state_compareをGame Dataへ反映。"
+    },
+    {
+      "at": "2026-09-05T00:10:00+09:00",
+      "message": "GKS-B867 / GA-B486.213へ状態管理Runtime Source接続を反映。Source Update Accept Gate 14/14 PASS、適用後Full Inspection 26/26 PASS、Fresh Current検証PASS。TASK-AITAG-009～011をDoneへ更新。"
+    },
+    {
+      "at": "2026-09-05T00:10:00+09:00",
+      "message": "HumanがAIC-0004 status draft→activeのみのGame Data変更を承認。完全Project JSONを生成し、差分1項目、Full Import Gate errors=0/warnings=0、Formal Export 29 files PASSを確認。TASK-AITAG-012をDoing、TASK-AITAG-013をTodoとして登録。"
     }
   ]
 }
