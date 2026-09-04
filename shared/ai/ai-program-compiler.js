@@ -138,7 +138,7 @@
       if (node.node_type === 'search') {
         const target = Validator.resolveSearchTargetTag(node.parameters.target_tag_id, data);
         if (!target.ok) throw new CompilerError(`Search target tag cannot be resolved: ${String(node.parameters.target_tag_id || '')}`, []);
-        base.params = canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data)});
+        base.params = canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data), ...(String(node.parameters?.result_slot_id || '').trim() ? {result_slot_id: String(node.parameters.result_slot_id).trim()} : {})});
         base.on_found = targetInstruction(outgoing.get(String(node.instance_id)).get('found'));
         base.on_not_found = targetInstruction(outgoing.get(String(node.instance_id)).get('not_found'));
       } else if (node.node_type === 'condition') {
@@ -147,6 +147,7 @@
         base.on_false = targetInstruction(outgoing.get(String(node.instance_id)).get('false'));
       } else {
         base.params = canonical(node.parameters || {});
+        if (node.target_source != null) base.target_source = canonical(node.target_source);
         if (node.target_selector != null) base.target_selector = canonical(node.target_selector);
       }
       instructions.push(base);

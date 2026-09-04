@@ -8,8 +8,8 @@
   if (!Model) throw new Error('GKSAIProgramModel is required');
 
   const SCHEMA_VERSION = '2.0.0';
-  const PROGRAM_KEYS = new Set(['schema_version','data_version','id','name','version','status','entry_node_id','nodes','edges','subroutines','tags','description','updated_at','compiled']);
-  const NODE_KEYS = new Set(['instance_id','master_node_id','master_data_version','node_type','position','parameters','target_selector','comment']);
+  const PROGRAM_KEYS = new Set(['schema_version','data_version','id','name','version','status','entry_node_id','nodes','edges','subroutines','result_slots','tags','description','updated_at','compiled']);
+  const NODE_KEYS = new Set(['instance_id','master_node_id','master_data_version','node_type','position','parameters','target_selector','target_source','comment']);
   const POSITION_KEYS = new Set(['x','y']);
   const EDGE_KEYS = new Set(['edge_id','from','transition_kind','to','subroutine_id','return_to']);
   const ENDPOINT_KEYS = new Set(['node_id','port_id']);
@@ -17,6 +17,8 @@
   const PREDICATE_KEYS = new Set(['logic','clauses']);
   const CLAUSE_KEYS = new Set(['predicate_master_id','params','negate']);
   const SELECTOR_KEYS = new Set(['selector_id','params']);
+  const RESULT_SLOT_KEYS = new Set(['slot_id','name','value_type']);
+  const TARGET_SOURCE_KEYS = new Set(['kind','result_slot_id']);
   const LAYOUT_KEYS = new Set(['schema_version','data_version','layout_id','program_id','width','height','chips','extensions']);
   const CHIP_KEYS = new Set(['instance_id','x','y','rotation']);
   const STATUS = new Set(['draft','valid','invalid','archived']);
@@ -50,6 +52,16 @@
     for(const key of ['selector_id','params'])if(!own(value,key))throw new Error(`${at}.${key} is required`);
     assertPattern(value.selector_id,/^ATS-[A-Za-z0-9_.-]+$/,`${at}.selector_id`); if(!isObject(value.params))throw new Error(`${at}.params must be an object`);
   }
+  function assertTargetSource(value, at) {
+    if(value===null)return; if(!isObject(value))throw new Error(`${at} must be null or an object`); assertAllowedKeys(value,TARGET_SOURCE_KEYS,at);
+    for(const key of ['kind','result_slot_id'])if(!own(value,key))throw new Error(`${at}.${key} is required`);
+    if(value.kind!=='SEARCH_RESULT')throw new Error(`${at}.kind must be SEARCH_RESULT`); assertPattern(value.result_slot_id,/^ARS-[A-Za-z0-9_.-]+$/,`${at}.result_slot_id`);
+  }
+  function assertResultSlot(value, at) {
+    if(!isObject(value))throw new Error(`${at} must be an object`); assertAllowedKeys(value,RESULT_SLOT_KEYS,at);
+    for(const key of ['slot_id','name','value_type'])if(!own(value,key))throw new Error(`${at}.${key} is required`);
+    assertPattern(value.slot_id,/^ARS-[A-Za-z0-9_.-]+$/,`${at}.slot_id`); assertString(value.name,`${at}.name`); if(value.value_type!=='UNIT_SET')throw new Error(`${at}.value_type must be UNIT_SET`);
+  }
   function assertNode(node, nat) {
     if(!isObject(node))throw new Error(`${nat} must be an object`); assertAllowedKeys(node,NODE_KEYS,nat);
     for(const key of ['instance_id','master_node_id','node_type','position','parameters'])if(!own(node,key))throw new Error(`${nat}.${key} is required`);
@@ -60,12 +72,13 @@
     if(!own(node.position,'x')||!own(node.position,'y')||typeof node.position.x!=='number'||typeof node.position.y!=='number'||!Number.isFinite(node.position.x)||!Number.isFinite(node.position.y))throw new Error(`${nat}.position is invalid`);
     if(!isObject(node.parameters))throw new Error(`${nat}.parameters must be an object`);
     if(node.node_type==='search'){
-      assertAllowedKeys(node.parameters,new Set(['target_tag_id','predicate']),`${nat}.parameters`); assertPattern(node.parameters.target_tag_id,/^TAG-[A-Za-z0-9_.-]+$/,`${nat}.parameters.target_tag_id`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
+      assertAllowedKeys(node.parameters,new Set(['target_tag_id','predicate','result_slot_id']),`${nat}.parameters`); assertPattern(node.parameters.target_tag_id,/^TAG-[A-Za-z0-9_.-]+$/,`${nat}.parameters.target_tag_id`); if(own(node.parameters,'result_slot_id')&&node.parameters.result_slot_id!=='')assertPattern(node.parameters.result_slot_id,/^ARS-[A-Za-z0-9_.-]+$/,`${nat}.parameters.result_slot_id`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
       if(own(node,'target_selector')&&node.target_selector!==null)throw new Error(`${nat}.target_selector is forbidden for search`);
     }else if(node.node_type==='condition'){
       assertAllowedKeys(node.parameters,new Set(['subject_scope','predicate']),`${nat}.parameters`); if(!STATE_CHECK_SUBJECTS.has(node.parameters.subject_scope))throw new Error(`${nat}.parameters.subject_scope is invalid`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
       if(own(node,'target_selector')&&node.target_selector!==null)throw new Error(`${nat}.target_selector is forbidden for condition`);
     }else if(own(node,'target_selector')) assertTargetSelector(node.target_selector,`${nat}.target_selector`);
+    if(own(node,'target_source')){if(node.node_type!=='action'&&node.target_source!==null)throw new Error(`${nat}.target_source is forbidden for ${node.node_type}`);if(node.node_type==='action')assertTargetSource(node.target_source,`${nat}.target_source`);}
     if(own(node,'comment')&&typeof node.comment!=='string')throw new Error(`${nat}.comment must be a string`);
   }
   function assertEdge(edge, eat) {
@@ -85,6 +98,7 @@
     if (program.schema_version !== SCHEMA_VERSION) throw new Error(`${at}.schema_version must be ${SCHEMA_VERSION}`); assertString(program.data_version, `${at}.data_version`); assertPattern(program.id,/^AIP-[A-Za-z0-9_.-]+$/,`${at}.id`); assertString(program.name, `${at}.name`);
     if (!Number.isInteger(program.version) || program.version < 1) throw new Error(`${at}.version must be a positive integer`); if (!STATUS.has(program.status)) throw new Error(`${at}.status is invalid`);
     assertString(program.entry_node_id, `${at}.entry_node_id`, program.status === 'draft'); if (!Array.isArray(program.nodes) || !Array.isArray(program.edges) || !Array.isArray(program.subroutines)) throw new Error(`${at} graph collections must be arrays`);
+    if(own(program,'result_slots')){if(!Array.isArray(program.result_slots))throw new Error(`${at}.result_slots must be an array`);const ids=new Set();program.result_slots.forEach((slot,index)=>{assertResultSlot(slot,`${at}.result_slots[${index}]`);if(ids.has(slot.slot_id))throw new Error(`${at}.result_slots has duplicate slot_id: ${slot.slot_id}`);ids.add(slot.slot_id);});}
     if(program.status!=='draft'&&program.nodes.length<1)throw new Error(`${at}.nodes must contain at least one node`); if (own(program,'tags') && (!Array.isArray(program.tags) || program.tags.some(x=>typeof x!=='string'||!x))) throw new Error(`${at}.tags must be an array of strings`);
     if (own(program,'description') && typeof program.description !== 'string') throw new Error(`${at}.description must be a string`); if (own(program,'updated_at') && typeof program.updated_at !== 'string') throw new Error(`${at}.updated_at must be a string`); if (own(program,'compiled') && program.compiled !== null && !isObject(program.compiled)) throw new Error(`${at}.compiled must be an object or null`);
     program.nodes.forEach((node,nodeIndex)=>assertNode(node,`${at}.nodes[${nodeIndex}]`)); program.edges.forEach((edge,edgeIndex)=>assertEdge(edge,`${at}.edges[${edgeIndex}]`));

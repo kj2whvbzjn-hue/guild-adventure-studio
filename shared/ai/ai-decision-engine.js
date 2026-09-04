@@ -120,6 +120,7 @@
     const trace = Trace.create({data_version: runtime?.data_version, battle_id: ctx.battle_id, program_id: runtime?.program_id, program_version: runtime?.program_version, actor_id: ctx.actor_id, seed: ctx.seed});
     let current = runtime?.entry_instruction, step = 0;
     const stack = [];
+    const resultSlots = new Map();
     const maxSteps = Math.max(1, Number(runtime?.limits?.max_steps) || 1);
     const maxDepth = Math.max(0, Number(runtime?.limits?.max_subroutine_depth) || 0);
 
@@ -144,7 +145,9 @@
           return finishFailure(trace, predicateError, null);
         }
         const found = matched.length > 0;
-        Trace.event(trace, {...baseEvent, event_type: 'search', result: found ? 'found' : 'not_found', details: {scope: instruction.params?.scope, candidate_ids: matched}});
+        const resultSlotId = String(instruction.params?.result_slot_id || '').trim();
+        if (resultSlotId) resultSlots.set(resultSlotId, matched.slice());
+        Trace.event(trace, {...baseEvent, event_type: 'search', result: found ? 'found' : 'not_found', details: {scope: instruction.params?.scope, candidate_ids: matched, ...(resultSlotId ? {result_slot_id: resultSlotId} : {})}});
         current = found ? instruction.on_found : instruction.on_not_found;
         continue;
       }
@@ -178,8 +181,9 @@
         const targetContract = selected?.target_contract || null;
         const requirement = Validator.selectorRequirement({actionEvaluator: instruction.evaluator, targetContract, wait});
         const binding = instruction.target_selector || null;
-        if (requirement === 'UNRESOLVED' || (requirement === 'REQUIRED' && !binding) || (requirement === 'FORBIDDEN' && binding)) {
-          const reason = requirement === 'UNRESOLVED' ? 'selector_applicability_unresolved' : requirement === 'REQUIRED' ? 'target_selector_required' : 'target_selector_forbidden';
+        const targetSource = instruction.target_source || null;
+        if (requirement === 'UNRESOLVED' || (requirement === 'REQUIRED' && !binding) || (requirement === 'FORBIDDEN' && binding) || (targetSource && requirement !== 'REQUIRED')) {
+          const reason = requirement === 'UNRESOLVED' ? 'selector_applicability_unresolved' : requirement === 'REQUIRED' && !binding ? 'target_selector_required' : targetSource && requirement !== 'REQUIRED' ? 'target_source_forbidden' : 'target_selector_forbidden';
           Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason}});
           return finishFailure(trace, reason, null);
         }
@@ -197,9 +201,32 @@
         if (requirement === 'REQUIRED') {
           let legalCandidates = Array.isArray(selected?.legal_candidates) ? selected.legal_candidates : null;
           if (!legalCandidates && typeof handlers?.legal_candidates === 'function') legalCandidates = handlers.legal_candidates(selected, ctx);
-          const selection = selectTarget(binding, legalCandidates || [], ctx, handlers);
+          legalCandidates = Array.isArray(legalCandidates) ? legalCandidates : [];
+          let sourceDetails = null;
+          if (targetSource) {
+            const kind = String(targetSource?.kind || ''), resultSlotId = String(targetSource?.result_slot_id || '').trim();
+            if (kind !== 'SEARCH_RESULT' || !resultSlotId) {
+              const reason = 'target_source_invalid';
+              Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason}});
+              return finishFailure(trace, reason, null);
+            }
+            if (!resultSlots.has(resultSlotId)) {
+              const reason = 'target_source_uninitialized';
+              Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason, result_slot_id: resultSlotId}});
+              return finishFailure(trace, reason, null);
+            }
+            const storedIds = resultSlots.get(resultSlotId) || [], allowed = new Set(storedIds.map((id) => String(id || '')));
+            legalCandidates = legalCandidates.filter((row) => allowed.has(candidateId(row)));
+            sourceDetails = {kind, result_slot_id: resultSlotId, stored_candidate_ids: storedIds.slice(), legal_candidate_ids: legalCandidates.map(candidateId)};
+            if (!legalCandidates.length) {
+              const reason = 'target_source_no_legal_candidates';
+              Trace.event(trace, {...baseEvent, event_type: 'selector', result: 'failed', details: {selector_id: binding.selector_id, evaluator: selectorMaster(binding, ctx, handlers)?.evaluator || null, target_id: null, reason, target_source: sourceDetails}});
+              return finishFailure(trace, reason, null);
+            }
+          }
+          const selection = selectTarget(binding, legalCandidates, ctx, handlers);
           if (selection.evaluator === 'selector.random' && selection.rng != null) Trace.event(trace, {...baseEvent, event_type: 'rng', result: 'completed', rng_stream: 'AI_DECISION', details: {selector_id: binding.selector_id, roll: selection.rng}});
-          Trace.event(trace, {...baseEvent, event_type: 'selector', result: selection.target_id ? 'selected' : 'failed', details: {selector_id: binding.selector_id, evaluator: selection.evaluator, target_id: selection.target_id, reason: selection.reason}});
+          Trace.event(trace, {...baseEvent, event_type: 'selector', result: selection.target_id ? 'selected' : 'failed', details: {selector_id: binding.selector_id, evaluator: selection.evaluator, target_id: selection.target_id, reason: selection.reason, ...(sourceDetails ? {target_source: sourceDetails} : {})}});
           if (!selection.target_id) return finishFailure(trace, selection.reason || 'target_not_found', null);
           targetId = selection.target_id;
         }

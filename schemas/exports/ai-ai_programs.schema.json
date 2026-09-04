@@ -89,6 +89,12 @@
           "object",
           "null"
         ]
+      },
+      "result_slots": {
+        "type": "array",
+        "items": {
+          "$ref": "#/items/$defs/result_slot"
+        }
       }
     },
     "additionalProperties": false,
@@ -238,6 +244,16 @@
           },
           "comment": {
             "type": "string"
+          },
+          "target_source": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/items/$defs/target_source"
+              }
+            ]
           }
         },
         "allOf": [
@@ -267,11 +283,18 @@
                     },
                     "predicate": {
                       "$ref": "#/items/$defs/predicate_expression"
+                    },
+                    "result_slot_id": {
+                      "type": "string",
+                      "pattern": "^ARS-[A-Za-z0-9_.-]+$"
                     }
                   },
                   "additionalProperties": false
                 },
                 "target_selector": {
+                  "type": "null"
+                },
+                "target_source": {
                   "type": "null"
                 }
               }
@@ -310,6 +333,9 @@
                   "additionalProperties": false
                 },
                 "target_selector": {
+                  "type": "null"
+                },
+                "target_source": {
                   "type": "null"
                 }
               }
@@ -463,6 +489,45 @@
           "entry_node_id": {
             "type": "string",
             "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "result_slot": {
+        "type": "object",
+        "required": [
+          "slot_id",
+          "name",
+          "value_type"
+        ],
+        "properties": {
+          "slot_id": {
+            "type": "string",
+            "pattern": "^ARS-[A-Za-z0-9_.-]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value_type": {
+            "const": "UNIT_SET"
+          }
+        },
+        "additionalProperties": false
+      },
+      "target_source": {
+        "type": "object",
+        "required": [
+          "kind",
+          "result_slot_id"
+        ],
+        "properties": {
+          "kind": {
+            "const": "SEARCH_RESULT"
+          },
+          "result_slot_id": {
+            "type": "string",
+            "pattern": "^ARS-[A-Za-z0-9_.-]+$"
           }
         },
         "additionalProperties": false

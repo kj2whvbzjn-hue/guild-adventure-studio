@@ -19,6 +19,9 @@
   const EDGE_KINDS = new Set(['NODE', 'CALL', 'RETURN']);
   const SELECTOR_REQUIRED_RANGES = new Set(['SINGLE', 'BACK']);
   const SELECTOR_FORBIDDEN_RANGES = new Set(['FRONT', 'ALL', 'RANDOM']);
+  const RESULT_SLOT_ID_PATTERN = /^ARS-[A-Za-z0-9_.-]+$/;
+  const RESULT_SLOT_VALUE_TYPES = new Set(['UNIT_SET']);
+  const TARGET_SOURCE_KINDS = new Set(['SEARCH_RESULT']);
 
   function issue(severity, code, message, location) { return {severity, code, message, ...(location || {})}; }
   function duplicates(rows, key) {
@@ -227,12 +230,68 @@
     }
     return membership;
   }
+  function resultSlotRows(program) {
+    return Array.isArray(program?.result_slots) ? program.result_slots : [];
+  }
+  function resultSlotById(program) {
+    return new Map(resultSlotRows(program).map((row) => [String(row?.slot_id || ''), row]));
+  }
+  function validateResultSlotFlow(source, nodes, edges, subroutines, issues) {
+    const nodeById = new Map(nodes.map((node) => [String(node?.instance_id || ''), node]));
+    const subById = new Map(subroutines.map((sub) => [String(sub?.id || ''), sub]));
+    const outgoing = new Map();
+    for (const edge of edges) {
+      const key = String(edge?.from?.node_id || '');
+      if (!outgoing.has(key)) outgoing.set(key, []);
+      outgoing.get(key).push(edge);
+    }
+    const start = String(source?.entry_node_id || '');
+    if (!nodeById.has(start)) return;
+    const seen = new Set(), emitted = new Set(), queue = [{node_id: start, stack: [], initialized: []}];
+    while (queue.length) {
+      const state = queue.shift(), node = nodeById.get(state.node_id);
+      if (!node) continue;
+      const initialized = new Set(state.initialized);
+      if (node.node_type === 'search') {
+        const slotId = String(node.parameters?.result_slot_id || '').trim();
+        if (slotId) initialized.add(slotId);
+      }
+      if (node.node_type === 'action' && node.target_source?.kind === 'SEARCH_RESULT') {
+        const slotId = String(node.target_source?.result_slot_id || '').trim();
+        if (slotId && !initialized.has(slotId)) {
+          const key = `${node.instance_id}|${slotId}`;
+          if (!emitted.has(key)) {
+            emitted.add(key);
+            issues.push(issue('ERROR', 'AI_TARGET_SOURCE_SLOT_UNINITIALIZED_PATH', `Actionへ到達する経路の一部で検索結果の箱が未設定です: ${slotId}`, {node_id: String(node.instance_id || ''), result_slot_id: slotId}));
+          }
+        }
+      }
+      const stateKey = `${state.node_id}|${state.stack.join('>')}|${[...initialized].sort().join(',')}`;
+      if (seen.has(stateKey)) continue;
+      seen.add(stateKey);
+      for (const edge of outgoing.get(state.node_id) || []) {
+        const kind = String(edge?.transition_kind || '');
+        if (kind === 'NODE') {
+          const next = String(edge?.to?.node_id || '');
+          if (nodeById.has(next)) queue.push({node_id: next, stack: state.stack.slice(), initialized: [...initialized]});
+        } else if (kind === 'CALL') {
+          const sub = subById.get(String(edge?.subroutine_id || ''));
+          const entry = String(sub?.entry_node_id || ''), ret = String(edge?.return_to?.node_id || '');
+          if (nodeById.has(entry) && nodeById.has(ret)) queue.push({node_id: entry, stack: [...state.stack, ret], initialized: [...initialized]});
+        } else if (kind === 'RETURN' && state.stack.length) {
+          const next = state.stack[state.stack.length - 1];
+          if (nodeById.has(next)) queue.push({node_id: next, stack: state.stack.slice(0, -1), initialized: [...initialized]});
+        }
+      }
+    }
+  }
   function validate(program, projectData) {
     const source = program && typeof program === 'object' ? program : {};
     const data = projectData || {};
     const nodes = Array.isArray(source.nodes) ? source.nodes : [];
     const edges = Array.isArray(source.edges) ? source.edges : [];
     const subroutines = Array.isArray(source.subroutines) ? source.subroutines : [];
+    const resultSlots = resultSlotRows(source);
     const issues = [];
     const refs = {tags: data.tags || [], skills: data.masters?.skills || [], ai_target_selectors: data.masters?.ai_target_selectors || []};
 
@@ -241,6 +300,15 @@
     if (!String(source.id || '').trim()) issues.push(issue('ERROR', 'AI_PROGRAM_ID_REQUIRED', 'AIプログラムIDが必要です。'));
     if (!String(source.name || '').trim()) issues.push(issue('ERROR', 'AI_PROGRAM_NAME_REQUIRED', 'AIプログラム名が必要です。'));
     if (!nodes.length) issues.push(issue('ERROR', 'AI_NODE_REQUIRED', 'AI部品を1件以上配置してください。'));
+
+    const resultSlotMap = resultSlotById(source), resultSlotWriters = new Map(), targetSourceRefs = [];
+    for (const row of resultSlots) {
+      const slotId = String(row?.slot_id || '').trim(), name = String(row?.name || '').trim(), valueType = String(row?.value_type || '').trim();
+      if (!RESULT_SLOT_ID_PATTERN.test(slotId)) issues.push(issue('ERROR', 'AI_RESULT_SLOT_ID_INVALID', `検索結果の箱IDが不正です: ${slotId || '未設定'}`, {result_slot_id: slotId}));
+      if (!name) issues.push(issue('ERROR', 'AI_RESULT_SLOT_NAME_REQUIRED', `検索結果の箱名が必要です: ${slotId || '未設定'}`, {result_slot_id: slotId}));
+      if (!RESULT_SLOT_VALUE_TYPES.has(valueType)) issues.push(issue('ERROR', 'AI_RESULT_SLOT_VALUE_TYPE_INVALID', `検索結果の箱value_typeはUNIT_SET固定です: ${slotId || '未設定'}`, {result_slot_id: slotId}));
+    }
+    duplicates(resultSlots, 'slot_id').forEach((id) => issues.push(issue('ERROR', 'AI_RESULT_SLOT_DUPLICATE', `検索結果の箱IDが重複しています: ${id}`, {result_slot_id: id})));
 
     const nodeIds = new Set(nodes.map((node) => String(node?.instance_id || '')).filter(Boolean));
     const nodeById = new Map(nodes.map((node) => [String(node?.instance_id || ''), node]));
@@ -273,11 +341,18 @@
           issues.push(issue('ERROR', 'AI_SEARCH_TARGET_TAG_INVALID', messages[target.reason] || '探索対象Tagが不正です。', {node_id: id, target_tag_id: targetTagId}));
         }
         validatePredicateExpression(node.parameters?.predicate, 'UNIT', data, refs, id, issues);
+        const resultSlotId = String(node.parameters?.result_slot_id || '').trim();
+        if (resultSlotId) {
+          if (!RESULT_SLOT_ID_PATTERN.test(resultSlotId) || !resultSlotMap.has(resultSlotId)) issues.push(issue('ERROR', 'AI_SEARCH_RESULT_SLOT_NOT_FOUND', `Searchの検索結果格納先が存在しません: ${resultSlotId}`, {node_id: id, result_slot_id: resultSlotId}));
+          const writers = resultSlotWriters.get(resultSlotId) || []; writers.push(id); resultSlotWriters.set(resultSlotId, writers);
+        }
+        if (node.target_source != null) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_FORBIDDEN', 'Searchはtarget_sourceを持てません。', {node_id: id}));
         if (node.target_selector != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'Searchはtarget_selectorを持てません。', {node_id: id}));
       } else if (node.node_type === 'condition') {
         const subject = String(node.parameters?.subject_scope || '');
         if (!STATE_SUBJECTS.has(subject)) issues.push(issue('ERROR', 'AI_STATE_SUBJECT_INVALID', `StateCheck subject_scopeが不正です: ${subject || '未設定'}`, {node_id: id}));
         if (STATE_SUBJECTS.has(subject)) validatePredicateExpression(node.parameters?.predicate, subject, data, refs, id, issues);
+        if (node.target_source != null) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_FORBIDDEN', 'StateCheckはtarget_sourceを持てません。', {node_id: id}));
         if (node.target_selector != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'StateCheckはtarget_selectorを持てません。', {node_id: id}));
       } else if (node.node_type === 'action') {
         Adapter.validateParameters(definition, node.parameters || {}, refs).forEach((message) => issues.push(issue('ERROR', 'AI_PARAMETER_INVALID', message, {node_id: id})));
@@ -286,6 +361,16 @@
           issues.push(issue('ERROR', 'AI_ACTION_TARGET_CONTRACT_UNRESOLVED', `Action targetContractを解決できません: ${resolved.reason}`, {node_id: id}));
         } else {
           const requirement = selectorRequirement({actionEvaluator: definition.evaluator, targetContract: resolved.target_contract, wait: resolved.wait});
+          const targetSource = node.target_source;
+          if (targetSource != null) {
+            const kind = String(targetSource?.kind || ''), resultSlotId = String(targetSource?.result_slot_id || '').trim();
+            if (!targetSource || typeof targetSource !== 'object' || Array.isArray(targetSource) || !TARGET_SOURCE_KINDS.has(kind) || !RESULT_SLOT_ID_PATTERN.test(resultSlotId)) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_INVALID', 'Action target_sourceはSEARCH_RESULT + result_slot_id形式で指定してください。', {node_id: id}));
+            else {
+              if (!resultSlotMap.has(resultSlotId)) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_SLOT_NOT_FOUND', `Action参照先の検索結果箱が存在しません: ${resultSlotId}`, {node_id: id, result_slot_id: resultSlotId}));
+              targetSourceRefs.push({node_id: id, result_slot_id: resultSlotId});
+            }
+            if (requirement !== 'REQUIRED') issues.push(issue('ERROR', 'AI_TARGET_SOURCE_FORBIDDEN', '検索結果の箱は単体Target Selectorが必要なActionだけで参照できます。', {node_id: id}));
+          }
           const binding = node.target_selector;
           if (requirement === 'REQUIRED' && (!binding || typeof binding !== 'object')) issues.push(issue('ERROR', 'AI_SELECTOR_REQUIRED', 'このActionにはTarget Selectorが必要です。', {node_id: id}));
           if (requirement === 'FORBIDDEN' && binding != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'このActionではTarget Selectorは禁止です。', {node_id: id}));
@@ -301,6 +386,12 @@
           }
         }
       }
+    }
+
+    for (const [slotId, writers] of resultSlotWriters) if (writers.length > 1) issues.push(issue('ERROR', 'AI_RESULT_SLOT_MULTIPLE_WRITERS', `同じ検索結果の箱へ複数Searchが書き込んでいます: ${slotId}`, {node_id: writers.slice().sort()[0], result_slot_id: slotId}));
+    for (const ref of targetSourceRefs) {
+      const writers = resultSlotWriters.get(ref.result_slot_id) || [];
+      if (writers.length === 0) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_SLOT_UNWRITTEN', `Action参照先の検索結果箱へ書き込むSearchがありません: ${ref.result_slot_id}`, {node_id: ref.node_id, result_slot_id: ref.result_slot_id}));
     }
 
     const subById = new Map(subroutines.map((sub) => [String(sub?.id || ''), sub]));
@@ -360,6 +451,7 @@
       }
     }
     callGraphCycles(callGraph).forEach((path) => issues.push(issue('ERROR', 'AI_SUBROUTINE_CALL_CYCLE', `Subroutine call graphに循環があります: ${path}`)));
+    validateResultSlotFlow(source, nodes, edges, subroutines, issues);
 
     const combinedReachable = new Set(), queue = nodeIds.has(String(source.entry_node_id || '')) ? [String(source.entry_node_id)] : [];
     while (queue.length) {
@@ -394,5 +486,5 @@
     return Object.freeze({valid: summary.ERROR === 0, issues: Object.freeze(issues), summary: Object.freeze(summary)});
   }
 
-  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, STATE_RUNTIME_SEMANTICS, STATE_NUMERIC_SEMANTICS, STATE_VALUE_MODES, STATE_COMPARE_OPERATORS, resolveSearchTargetTag, searchTargetTags, resolveStateTag, stateSemanticNeedsComparison, statePredicateParameterIssues, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
+  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, STATE_RUNTIME_SEMANTICS, STATE_NUMERIC_SEMANTICS, STATE_VALUE_MODES, STATE_COMPARE_OPERATORS, RESULT_SLOT_ID_PATTERN, RESULT_SLOT_VALUE_TYPES, TARGET_SOURCE_KINDS, resultSlotRows, resultSlotById, resolveSearchTargetTag, searchTargetTags, resolveStateTag, stateSemanticNeedsComparison, statePredicateParameterIssues, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
 });

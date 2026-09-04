@@ -22,6 +22,7 @@
       nodes: Array.isArray(source.nodes) ? source.nodes : [],
       edges: Array.isArray(source.edges) ? source.edges : [],
       subroutines: Array.isArray(source.subroutines) ? source.subroutines : [],
+      result_slots: Array.isArray(source.result_slots) ? source.result_slots : [],
       tags: Array.isArray(source.tags) ? source.tags : [],
       description: typeof source.description === 'string' ? source.description : ''
     });
@@ -54,7 +55,7 @@
   function createProgram(id, now, dataVersion) {
     return normalizeProgram({
       id: String(id || ''), data_version: String(dataVersion || DATA_VERSION), name: '新しいAIプログラム', updated_at: String(now || ''),
-      status: 'draft', entry_node_id: '', nodes: [], edges: [], subroutines: [], tags: [], description: ''
+      status: 'draft', entry_node_id: '', nodes: [], edges: [], subroutines: [], result_slots: [], tags: [], description: ''
     });
   }
   function duplicateProgram(value, id, now) {

@@ -17,6 +17,7 @@
     }
     return `${prefix}-${String(max + 1).padStart(4, '0')}`;
   }
+  function nextResultSlotId(rows) { return nextId(Array.isArray(rows)?rows:[], 'ARS', 'slot_id'); }
   function defaultParameters(nodeType) {
     if (nodeType === 'search') return {target_tag_id: '', predicate: {logic: 'ALL', clauses: []}};
     if (nodeType === 'condition') return {subject_scope: '', predicate: {logic: 'ALL', clauses: []}};
@@ -56,7 +57,7 @@
           master_data_version: String(definition.data_version || program.data_version || Model.DATA_VERSION), node_type: definition.node_type,
           position: {x:Number.isFinite(Number(position?.x))?Number(position.x):0, y:Number.isFinite(Number(position?.y))?Number(position.y):0}, parameters: params, comment: ''
         };
-        if (definition.node_type !== 'action') created.target_selector = null;
+        if (definition.node_type !== 'action') created.target_selector = null; else created.target_source = null;
         program.nodes.push(created);
         if (!program.entry_node_id) program.entry_node_id = created.instance_id;
       });
@@ -72,6 +73,7 @@
           x: Number.isFinite(Number(position?.x)) ? Number(position.x) : Number(source.position?.x || 0) + 1,
           y: Number.isFinite(Number(position?.y)) ? Number(position.y) : Number(source.position?.y || 0) + 1
         };
+        if(created.node_type==='search'&&created.parameters)delete created.parameters.result_slot_id;
         program.nodes.push(created);
       });
       return clone(created);
@@ -83,6 +85,7 @@
         if (patch.parameters) node.parameters = clone(patch.parameters);
         if (patch.comment !== undefined) node.comment = String(patch.comment || '');
         if (own(patch, 'target_selector')) node.target_selector = patch.target_selector == null ? null : clone(patch.target_selector);
+        if (own(patch, 'target_source')) node.target_source = patch.target_source == null ? null : clone(patch.target_source);
       });
     }
     function removeNode(instanceId) {
@@ -179,6 +182,11 @@
         program.edges = program.edges.filter((edge) => !(edge.transition_kind === 'CALL' && edge.subroutine_id === id));
       });
     }
+    function addResultSlot(name, requestedId) {
+      let created; commit((program)=>{const id=String(requestedId||nextResultSlotId(program.result_slots));if(!/^ARS-[A-Za-z0-9_.-]+$/.test(id))throw new Error(`Invalid result slot id: ${id}`);if(program.result_slots.some(row=>row.slot_id===id))throw new Error(`Result slot already exists: ${id}`);created={slot_id:id,name:String(name||`検索結果${program.result_slots.length+1}`).trim()||`検索結果${program.result_slots.length+1}`,value_type:'UNIT_SET'};program.result_slots.push(created);});return clone(created);
+    }
+    function renameResultSlot(slotId,name){commit((program)=>{const row=program.result_slots.find(item=>item.slot_id===String(slotId||''));if(!row)throw new Error(`Result slot not found: ${slotId}`);const nextName=String(name||'').trim();if(!nextName)throw new Error('Result slot name is required');row.name=nextName;});}
+    function removeResultSlot(slotId){commit((program)=>{const id=String(slotId||'');const writer=program.nodes.find(node=>node.node_type==='search'&&String(node.parameters?.result_slot_id||'')===id);const reader=program.nodes.find(node=>node.node_type==='action'&&String(node.target_source?.result_slot_id||'')===id);if(writer||reader)throw new Error(`Result slot is referenced: ${id}`);const before=program.result_slots.length;program.result_slots=program.result_slots.filter(row=>row.slot_id!==id);if(program.result_slots.length===before)throw new Error(`Result slot not found: ${id}`);});}
     function undo() { if (!undoStack.length) return false; redoStack.push(clone(current)); current = undoStack.pop(); return true; }
     function redo() { if (!redoStack.length) return false; undoStack.push(clone(current)); current = redoStack.pop(); return true; }
     function replace(value) { current = Model.normalizeProgram(value); undoStack = []; redoStack = []; }
@@ -186,6 +194,7 @@
       program:()=>clone(current), addNode, duplicateNode, updateNode, removeNode, setEntryNode,
       connect, connectCall, connectReturn, removeEdge, replaceEdge,
       addSubroutine, updateSubroutine, removeSubroutine,
+      addResultSlot, renameResultSlot, removeResultSlot,
       undo, redo, replace, canUndo:()=>undoStack.length>0, canRedo:()=>redoStack.length>0
     });
   }

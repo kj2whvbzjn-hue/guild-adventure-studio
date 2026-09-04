@@ -15,12 +15,14 @@
   const SAVE_REQUIRED=Object.freeze(['saveVersion','schemaRevision','gameVersion','createdAt','updatedAt','characters','aiPrograms','aiLayouts','aiPresets','partyIds','selectedQuestId','inventory','guild','flags','quest_progress','quest_resources','adventure']);
   const CHARACTER_KEYS=new Set(['id','name','level','job','base_hp','base_mp','stats','skills','equippedSkillId','passiveIds','skillLoadoutIds','formalAiBinding','equipment','weaponStyle','jobHistory','growthHistory','createdAt','formation_position']);
   const CHARACTER_REQUIRED=Object.freeze(['id','name','level','job','base_hp','base_mp','stats','skills','equippedSkillId','formalAiBinding','equipment','weaponStyle','jobHistory','growthHistory','createdAt','formation_position']);
-  const PROGRAM_KEYS=new Set(['schema_version','data_version','id','name','version','status','entry_node_id','nodes','edges','subroutines','tags','description','updated_at','compiled']);
-  const NODE_KEYS=new Set(['instance_id','master_node_id','master_data_version','node_type','position','parameters','target_selector','comment']);
+  const PROGRAM_KEYS=new Set(['schema_version','data_version','id','name','version','status','entry_node_id','nodes','edges','subroutines','result_slots','tags','description','updated_at','compiled']);
+  const NODE_KEYS=new Set(['instance_id','master_node_id','master_data_version','node_type','position','parameters','target_selector','target_source','comment']);
   const POSITION_KEYS=new Set(['x','y']);
   const EDGE_KEYS=new Set(['edge_id','from','transition_kind','to','subroutine_id','return_to']);
   const ENDPOINT_KEYS=new Set(['node_id','port_id']);
   const SUBROUTINE_KEYS=new Set(['id','entry_node_id']);
+  const RESULT_SLOT_KEYS=new Set(['slot_id','name','value_type']);
+  const TARGET_SOURCE_KEYS=new Set(['kind','result_slot_id']);
   const LAYOUT_KEYS=new Set(['schema_version','data_version','layout_id','program_id','width','height','chips','extensions']);
   const CHIP_KEYS=new Set(['instance_id','x','y','rotation']);
   const EXTENSION_KEYS=new Set(['id','x','y','shape','rotation']);
@@ -44,6 +46,7 @@
     if(!nonEmptyString(program.data_version))schemaError(errors,`${at}.data_version`,'non-empty string required');if(!nonEmptyString(program.id))schemaError(errors,`${at}.id`,'non-empty string required');if(!nonEmptyString(program.name))schemaError(errors,`${at}.name`,'non-empty string required');
     if(!Number.isInteger(program.version)||program.version<1)schemaError(errors,`${at}.version`,'positive integer required');if(!['draft','valid','invalid','archived'].includes(program.status))schemaError(errors,`${at}.status`,'invalid value');if(typeof program.entry_node_id!=='string')schemaError(errors,`${at}.entry_node_id`,'string required');
     if(!Array.isArray(program.nodes))schemaError(errors,`${at}.nodes`,'array required');if(!Array.isArray(program.edges))schemaError(errors,`${at}.edges`,'array required');if(!Array.isArray(program.subroutines))schemaError(errors,`${at}.subroutines`,'array required');
+    if(own(program,'result_slots')){if(!Array.isArray(program.result_slots))schemaError(errors,`${at}.result_slots`,'array required');else{const seenSlots=new Set();for(const [index,slot] of program.result_slots.entries()){const sat=`${at}.result_slots[${index}]`;if(!allowedKeys(errors,slot,RESULT_SLOT_KEYS,sat))continue;requiredKeys(errors,slot,['slot_id','name','value_type'],sat);if(!nonEmptyString(slot.slot_id)||!/^ARS-[A-Za-z0-9_.-]+$/.test(slot.slot_id))schemaError(errors,`${sat}.slot_id`,'ARS identifier required');else if(seenSlots.has(slot.slot_id))schemaError(errors,`${sat}.slot_id`,'duplicate result slot');else seenSlots.add(slot.slot_id);if(!nonEmptyString(slot.name))schemaError(errors,`${sat}.name`,'non-empty string required');if(slot.value_type!=='UNIT_SET')schemaError(errors,`${sat}.value_type`,'must be UNIT_SET');}}}
     if(own(program,'tags')&&(!Array.isArray(program.tags)||program.tags.some(x=>!nonEmptyString(x))))schemaError(errors,`${at}.tags`,'array of non-empty strings required');if(own(program,'description')&&typeof program.description!=='string')schemaError(errors,`${at}.description`,'string required');if(own(program,'updated_at')&&typeof program.updated_at!=='string')schemaError(errors,`${at}.updated_at`,'string required');if(own(program,'compiled')&&program.compiled!==null&&!isObject(program.compiled))schemaError(errors,`${at}.compiled`,'object or null required');
     const nodeIds=new Set();
     for(const [index,node] of (program.nodes||[]).entries()){
@@ -54,6 +57,7 @@
       if(allowedKeys(errors,node.position,POSITION_KEYS,`${nat}.position`)){requiredKeys(errors,node.position,['x','y'],`${nat}.position`);if(typeof node.position.x!=='number'||typeof node.position.y!=='number')schemaError(errors,`${nat}.position`,'numeric x/y required');}
       if(!isObject(node.parameters))schemaError(errors,`${nat}.parameters`,'object required');
       if(own(node,'target_selector')){const b=node.target_selector;if(b!==null&&(!isObject(b)||Object.keys(b).some(k=>!['selector_id','params'].includes(k))||!nonEmptyString(b.selector_id)||!/^ATS-/.test(b.selector_id)||!isObject(b.params)))schemaError(errors,`${nat}.target_selector`,'ATS structured binding or null required');if(node.node_type!=='action'&&b!==null)schemaError(errors,`${nat}.target_selector`,'only action may have target_selector');}
+      if(own(node,'target_source')){const source=node.target_source;if(source!==null){if(!isObject(source)||!allowedKeys(errors,source,TARGET_SOURCE_KEYS,`${nat}.target_source`))schemaError(errors,`${nat}.target_source`,'SEARCH_RESULT binding or null required');else{requiredKeys(errors,source,['kind','result_slot_id'],`${nat}.target_source`);if(source.kind!=='SEARCH_RESULT')schemaError(errors,`${nat}.target_source.kind`,'must be SEARCH_RESULT');if(!nonEmptyString(source.result_slot_id)||!/^ARS-[A-Za-z0-9_.-]+$/.test(source.result_slot_id))schemaError(errors,`${nat}.target_source.result_slot_id`,'ARS identifier required');}if(node.node_type!=='action')schemaError(errors,`${nat}.target_source`,'only action may have target_source');}}
     }
     for(const [index,edge] of (program.edges||[]).entries()){
       const eat=`${at}.edges[${index}]`;if(!allowedKeys(errors,edge,EDGE_KEYS,eat))continue;requiredKeys(errors,edge,['edge_id','from','transition_kind'],eat);if(!nonEmptyString(edge.edge_id))schemaError(errors,`${eat}.edge_id`,'non-empty string required');

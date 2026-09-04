@@ -34,9 +34,10 @@ const program=Model.createProgram('AIP-0001','2026-09-03T00:00:00Z',dv);
 program.name='P7 Developer Program';
 const session=Editor.create(program);
 assert.throws(()=>session.addNode({id:'AIT-OLD',node_type:'target',data_version:dv}),/Valid AI V2 master definition/,'Target box must not be authorable');
-const search=session.addNode(byId('AIS-EXISTS'),{target_tag_id:'TAG-TGT-ENEMY',predicate:{logic:'ANY',clauses:[{predicate_master_id:'AIC-HP',params:{operator:'<',value:.5},negate:false}]}},{x:0,y:0});
+const resultSlot=session.addResultSlot('低HPの敵');assert.strictEqual(resultSlot.slot_id,'ARS-0001');
+const search=session.addNode(byId('AIS-EXISTS'),{target_tag_id:'TAG-TGT-ENEMY',result_slot_id:resultSlot.slot_id,predicate:{logic:'ANY',clauses:[{predicate_master_id:'AIC-HP',params:{operator:'<',value:.5},negate:false}]}},{x:0,y:0});
 const skill=session.addNode(byId('AIA-SKILL'),{skill_id:'SKL-P7'},{x:3,y:0});
-session.updateNode(skill.instance_id,{target_selector:{selector_id:'ATS-LOW',params:{}}});
+session.updateNode(skill.instance_id,{target_selector:{selector_id:'ATS-LOW',params:{}},target_source:{kind:'SEARCH_RESULT',result_slot_id:resultSlot.slot_id}});
 const condition=session.addNode(byId('AIC-HP'),{subject_scope:'SELF',predicate:{logic:'ALL',clauses:[{predicate_master_id:'AIC-HP',params:{operator:'<',value:.25},negate:true}]}},{x:1,y:3});
 const wait=session.addNode(byId('AIA-WAIT'),{},{x:4,y:3});
 session.setEntryNode(search.instance_id);
@@ -48,7 +49,7 @@ const eTrue=session.connectReturn({node_id:condition.instance_id,port_id:'true'}
 const eFalse=session.connectReturn({node_id:condition.instance_id,port_id:'false'});
 assert.strictEqual(eFound.transition_kind,'NODE');assert.strictEqual(eCall.transition_kind,'CALL');assert.strictEqual(eTrue.transition_kind,'RETURN');assert.strictEqual(eFalse.transition_kind,'RETURN');
 assert.throws(()=>session.connect({node_id:search.instance_id,port_id:'found'},{node_id:wait.instance_id,port_id:'in'}),/Output already has a transition/);
-let authored=session.program(); authored.status='valid'; authored.updated_at='2026-09-03T00:01:00Z';
+let authored=session.program();assert.deepStrictEqual(authored.result_slots,[{slot_id:'ARS-0001',name:'低HPの敵',value_type:'UNIT_SET'}]); authored.status='valid'; authored.updated_at='2026-09-03T00:01:00Z';
 const vr=Validator.validate(authored,project);assert(vr.valid,JSON.stringify(vr.issues));
 (async()=>{
   const runtime=await Compiler.compile(authored,project);
@@ -56,6 +57,8 @@ const vr=Validator.validate(authored,project);assert(vr.valid,JSON.stringify(vr.
   assert.strictEqual(runtime.data_version,dv);
   assert(runtime.instructions.some((row)=>row.op==='CALL'));
   assert(runtime.instructions.some((row)=>row.op==='RETURN'));
+  assert(runtime.instructions.some((row)=>row.op==='SEARCH'&&row.params.result_slot_id==='ARS-0001'));
+  assert(runtime.instructions.some((row)=>row.op==='ACTION'&&row.target_source?.result_slot_id==='ARS-0001'));
   assert.strictEqual(runtime.instructions.some((row)=>row.op==='TARGET'),false);
   const callInstruction=runtime.instructions.find((row)=>row.op==='CALL');
   assert.strictEqual(callInstruction.origin_part_id,eCall.edge_id);
@@ -66,7 +69,7 @@ const vr=Validator.validate(authored,project);assert(vr.valid,JSON.stringify(vr.
   assert.strictEqual(project.ai_programs.length,1);assert.strictEqual(project.ai_program_layouts.length,1);assert.strictEqual(project.ai_program_runtime.length,1);
   assert.strictEqual(saved.program.compiled,null,'compiled runtime must not be embedded in canonical Program');
   const reopened=Store.bundle(project,'AIP-0001');
-  assert.deepStrictEqual(reopened.layout,layout);assert.deepStrictEqual(reopened.runtime,runtime);
+  assert.deepStrictEqual(reopened.layout,layout);assert.deepStrictEqual(reopened.runtime,runtime);assert.deepStrictEqual(reopened.program.result_slots,authored.result_slots);
   const exported=ExportAdapter.build(project);assert.strictEqual(exported.programs.length,1);assert.strictEqual(exported.layouts.length,1);assert.strictEqual(exported.runtimes.length,1);
   assert.deepStrictEqual(ExportAdapter.collectIssues(project,dv),[]);
   const duplicate=Store.duplicateBundle(project,'AIP-0001','2026-09-03T00:02:00Z');
@@ -76,7 +79,7 @@ const vr=Validator.validate(authored,project);assert(vr.valid,JSON.stringify(vr.
   const ui=fs.readFileSync(path.join(root,'studio/ai-production/ai-production-ui.js'),'utf8');
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'studio/ai-production/manifest.json'),'utf8'));
   const html=fs.readFileSync(path.join(root,'studio/index.html'),'utf8');
-  for(const text of ['使用可能部品','開発者作成AIプログラム本体','選択部品のパラメータ設定と検証結果','candidate','暗黙']) assert(ui.includes(text),`P7 UI contract missing: ${text}`);
+  for(const text of ['使用可能部品','開発者作成AIプログラム本体','選択部品のパラメータ設定と検証結果','検索結果の箱','対象候補の参照先']) assert(ui.includes(text),`P7 UI contract missing: ${text}`);
   assert(ui.includes("transition_kind"));assert(ui.includes('origin_part_id'));assert(ui.includes('Formal Export'));
   assert(!ui.includes('localStorage'));
   assert.strictEqual(manifest.authoring_authority.program_type,'開発者作成AIプログラム');
@@ -86,5 +89,5 @@ const vr=Validator.validate(authored,project);assert(vr.valid,JSON.stringify(vr.
   assert(html.includes('R10 P7 Developer Authoring'));
   assert(html.includes('getDataVersion:()=>'));
   assert(html.includes('exportFormal:()=>exportPhpPackage()'));
-  console.log('AI_V2_STUDIO_DEVELOPER_AUTHORING_R10_P7_OK developer_only=1 regions=3 boxes=search_condition_action predicate=1 ats=1 subroutine=1 bundle_roundtrip=1 trace_origin=1 formal_export=1 player_studio_authoring=0');
+  console.log('AI_V2_STUDIO_DEVELOPER_AUTHORING_R10_P7_OK developer_only=1 regions=3 boxes=search_condition_action predicate=1 result_slot=1 target_source=1 ats=1 subroutine=1 bundle_roundtrip=1 trace_origin=1 formal_export=1 player_studio_authoring=0');
 })().catch((error)=>{console.error(error);process.exit(1);});

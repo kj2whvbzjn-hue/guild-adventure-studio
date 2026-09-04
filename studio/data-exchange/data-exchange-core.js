@@ -501,7 +501,7 @@
     ai_conditions:new Set(FORMAL_AI_MASTER_FIELDS),
     ai_target_selectors:new Set(FORMAL_AI_SELECTOR_FIELDS),
     ai_actions:new Set(FORMAL_AI_MASTER_FIELDS),
-    ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','compiled','created_at','updated_at']),
+    ai_programs:new Set(['id','name','status','tags','description','version','schema_version','data_version','entry_node_id','nodes','edges','subroutines','result_slots','compiled','created_at','updated_at']),
     ai_program_layouts:new Set(['schema_version','data_version','layout_id','program_id','width','height','chips','extensions','created_at','updated_at']),
     ai_program_runtime:new Set(['schema_version','data_version','program_id','program_version','compiler_version','entry_instruction','instructions','source_map','limits','content_hash','created_at','updated_at']),
     chapters:new Set(['id','no','title','theme','summary','purpose','status','design','sections','candidate_revisions','export_control','created_at','updated_at']),
