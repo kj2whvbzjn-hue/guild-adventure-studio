@@ -10,17 +10,17 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T21:49:24.897Z"
+    "updated_at": "2026-09-04T23:08:00.907Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
     "summary": "探索対象PhaseはTGC-0005 / TAG-0020～0023をTag ID→runtime_semantic→Search Runtimeへ接続しE2E完了。状態管理Phase 1ではTGC-0006 / 状態管理、TAG-0024 生存、TAG-0025 死亡、TAG-0026 HP、TAG-0027 MPをHuman承認・登録し、ALIVE / DEAD / HP / MP runtime_semanticとAIC-0004 / 状態管理 evaluator=condition.state_compareの汎用Condition契約を確定した。Source Runtime接続はGKS-B867 / GA-B486.213へ反映され、Accept Gate 14/14、適用後Full Inspection 26/26、Fresh Current検証PASS。現在はHuman承認済みのAIC-0004 status draft→activeだけをGame Dataへ反映し、Player AI Editor / Formal Export / Runtimeのactive後E2Eを確認する工程。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-AITAG-STATE",
+    "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Legacy Condition Hard Cut: Predicate availability Source Update適用",
-    "goal": "GKS-B868 / GA-B486.214 Source UpdateをHuman Applyし、Fresh Currentでdeprecated AIC参照がValidatorによりAI_PREDICATE_MASTER_UNAVAILABLEでFail Closedされることを確認してTASK-AITAG-016を完了する。"
+    "theme": "Search Result Slot Source接続: Protected Exact-Hash Human Gate",
+    "goal": "Human承認済みのSearch結果箱方式をGKS-B869 / GA-B486.215候補へ実装済み。Protected Schema/Test 7件のexact hash変更をHuman承認後、Test IntegrityとAccept Gateを完了してSource Update化する。Game Dataは変更しない。"
   },
   "project_rules": [
     {
@@ -106,13 +106,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B867",
-    "game_build": "GA-B486.213",
-    "source_label": "guild-adventure-studio-sub(20260904-153938).zip",
-    "source_role": "Human-provided Fresh Current with legacy Condition Game Data deprecation applied; baseline for GKS-B868 Predicate availability Source Update",
-    "recorded_at": "2026-09-05T00:52:00+09:00",
-    "source_zip_sha256": "4731ea097597d6d6cdbbe05312e1ac6f53a6773e8c2c821a9ed0a36506d24fcb",
-    "package_manifest_sha256": "3010bca5ee6b1ef117deed0bf7b935f539533543e86f90d9bfcf9a3c6eac7c7d"
+    "studio_build": "GKS-B868",
+    "game_build": "GA-B486.214",
+    "source_label": "guild-adventure-studio-sub(20260904-214956).zip",
+    "source_role": "Human-provided Fresh Current after Predicate Master availability Fail Closed Source update; current source and implementation baseline",
+    "recorded_at": "2026-09-05T06:55:00+09:00",
+    "source_zip_sha256": "f95319c650940a26eacf1ca7505b57aeeda4a1057656badbb22766038c5d3f19",
+    "package_manifest_sha256": "b7e0566c6a21a0f47742f2accdd4f4b4959293735852c03245c58a8bfe615c72"
   },
   "lifecycle": {
     "status": "Active",
@@ -321,6 +321,18 @@
       "approved_at": "2026-09-05T00:34:00+09:00",
       "created_at": "2026-09-05T00:34:00+09:00",
       "updated_at": "2026-09-05T00:34:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-014",
+      "title": "Search結果を名前付き結果箱へ格納し後続Actionが明示参照する",
+      "status": "Approved",
+      "text": "Searchの一致Unit集合をAI Program内の名前付き一時結果箱へ格納し、後続Actionは参照先としてその箱を明示選択する。直前Searchなどの暗黙参照は使わない。Actionでは箱のUnit集合と実行時targetContractの合法候補を交差し、その後Target Selectorで単体選択する。箱は1回のDecision実行中だけ生存し、永続Battle/Unit Dataには保存しない。",
+      "rationale": "Searchで見つけた対象とAction対象を一致させつつ、Search・targetContract・Target Selectorの責務を分離し、複数Search/複数Actionでも参照関係を明示できるため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T07:52:24+09:00",
+      "created_at": "2026-09-05T07:52:24+09:00",
+      "updated_at": "2026-09-05T07:52:24+09:00"
     }
   ],
   "specifications": [
@@ -525,6 +537,29 @@
       "approved_at": "2026-09-05T00:34:00+09:00",
       "created_at": "2026-09-05T00:34:00+09:00",
       "updated_at": "2026-09-05T00:34:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-009",
+      "title": "Search Result Slot Binding Contract",
+      "status": "Approved",
+      "summary": "Search一致Unit集合をProgram result_slotsへ格納し、Action target_sourceから明示参照する。",
+      "body": "# Program\n- result_slots[]: slot_id / name / value_type=UNIT_SET。\n- slot_idはARS-*形式。\n- Search.parameters.result_slot_idで書込先を指定。\n- Action.target_source.kind=SEARCH_RESULT / result_slot_idで読込元を指定。\n\n# Validation\n- slot_id一意、参照先存在、1 slotにつきSearch writerは最大1。\n- 書込されないslot参照、到達経路上で未初期化のslot参照をFail Closed。\n- target_sourceはTarget Selector requirement=REQUIREDのActionだけ許可。\n\n# Runtime\n- result slotはDecisionEngine.execute() 1回だけの一時Map。\n- Searchは一致Unit ID集合（0件を含む）をslotへ格納。\n- Action候補 = slot集合 ∩ 実行時targetContract合法候補。\n- 交差後にTarget Selectorを適用。合法候補0件はFail Closed。\n\n# Scope\n- Tag / Tag Category / Action Master / Target Selector Master / Game Dataは変更しない。\n- ATS-0001のdraft availability不整合は別工程とし、このSource Updateへ混ぜない。",
+      "decision_refs": [
+        "DEC-AITAG-014"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-008"
+      ],
+      "acceptance_criteria": "Player/Studio Authoringで結果箱を作成しSearch書込先とAction参照先を保存でき、Validator/Compiler/RuntimeでUNIT_SET binding・targetContract交差・Selector適用・Fail ClosedがE2E成立する。具体Tag IDをSourceへ固定しない。",
+      "system_node_id": "SYS-AITAG-COMPILER",
+      "contract_ids": [],
+      "source_candidate_id": "GKS-B869 / GA-B486.215",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T07:52:24+09:00",
+      "created_at": "2026-09-05T07:52:24+09:00",
+      "updated_at": "2026-09-05T07:52:24+09:00"
     }
   ],
   "specification_candidates": [],
@@ -998,7 +1033,7 @@
       "id": "TASK-AITAG-016",
       "box_id": "BOX-AITAG-003",
       "title": "Predicate Master availabilityを全ConditionでFail Closed化",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 16,
       "depends_on": [
         "TASK-AITAG-014"
@@ -1012,7 +1047,87 @@
         "at": "2026-09-05T00:34:00+09:00"
       },
       "created_at": "2026-09-05T00:24:00+09:00",
-      "updated_at": "2026-09-05T00:52:00+09:00"
+      "updated_at": "2026-09-05T06:55:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-017",
+      "box_id": "BOX-AITAG-003",
+      "title": "行動Phase 1のPlayer必要行動を棚卸し",
+      "status": "Done",
+      "execution_order": 17,
+      "depends_on": [
+        "TASK-AITAG-016"
+      ],
+      "acceptance_criteria": "Current Action Master / Runtimeを監査し、Playerが必要な行動候補とTag/Data追加要否をチャットへ提示する。Human Approval前にGame DataやSourceを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-05T07:03:00+09:00",
+      "updated_at": "2026-09-05T07:21:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-018",
+      "box_id": "BOX-AITAG-003",
+      "title": "Target Selector Phase 1を棚卸し",
+      "status": "Done",
+      "execution_order": 18,
+      "depends_on": [
+        "TASK-AITAG-017"
+      ],
+      "acceptance_criteria": "Current Target Selector Master / Player palette / Validator / Decision Engine / Formation target contractを監査し、Player必要候補、不要な重複概念、Search→Action target binding gapを特定する。Game Data/Sourceを変更しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-05T07:21:00+09:00",
+      "updated_at": "2026-09-05T07:21:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-019",
+      "box_id": "BOX-AITAG-003",
+      "title": "Target Selector Phase 1正式契約をHuman承認する",
+      "status": "Done",
+      "execution_order": 19,
+      "depends_on": [
+        "TASK-AITAG-018"
+      ],
+      "acceptance_criteria": "ATS-0001 lifecycle扱い、ランダム対象Master追加要否、Search結果をActionへ引き継ぐ構造契約をチャットで提示しHuman Approvalを得る。承認前に新規ATS/Game Data/Sourceを作成しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T07:52:24+09:00"
+      },
+      "created_at": "2026-09-05T07:21:00+09:00",
+      "updated_at": "2026-09-05T07:52:24+09:00"
+    },
+    {
+      "id": "TASK-AITAG-020",
+      "box_id": "BOX-AITAG-003",
+      "title": "Search Result SlotをAuthoring→Validator→Compiler→Runtimeへ接続",
+      "status": "Doing",
+      "execution_order": 20,
+      "depends_on": [
+        "TASK-AITAG-019"
+      ],
+      "acceptance_criteria": "GKS-B869 / GA-B486.215候補でresult_slots、Search result_slot_id、Action target_sourceを正式Schema/Player/Studio/Validator/Compiler/Runtimeへ接続し、Quick Gate・関連回帰・新規E2EをPASS。Protected 7変更はHuman exact-hash approval後にTest Integrity/Accept Gateを完了し、Source Updateを作成する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-05T07:52:24+09:00",
+      "updated_at": "2026-09-05T07:52:24+09:00"
     }
   ],
   "checks": [
@@ -1475,6 +1590,98 @@
       "blocking": false,
       "created_at": "2026-09-05T00:52:00+09:00",
       "updated_at": "2026-09-05T00:52:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-021",
+      "title": "全Predicate availability Fail Closed Fresh Current実物確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-016",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B868 / GA-B486.214でSource Update対象persistent filesが提出Updateと全件一致。AIC-0001～0003 deprecated参照はAI_PREDICATE_MASTER_UNAVAILABLEでFail Closed、AIC-0004 active参照は有効。Source Quick 12/12、package manifest 679、Critical Runtime 52、Critical Conformance 159、PHP Current Export Schema Gate PASS。",
+      "evidence": "EVD-AITAG-016_FRESH-CURRENT-GKS-B868-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T06:55:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T06:55:00+09:00",
+      "updated_at": "2026-09-05T06:55:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-022",
+      "title": "行動Phase 1 Current Action Contract監査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-017",
+      "status": "Passed",
+      "result": "Current Formal ActionはAIA-0001 通常攻撃 / AIA-0002 スキル使用 / AIA-0003 待機の3件がactiveで、action.attack / action.skill / action.wait Runtime handlerが存在。Action Master自体がPlayer語彙であり、同義Tag追加は重複と判断。Formal action.guard等は存在しない。",
+      "evidence": "EVD-AITAG-017_ACTION-PHASE1-AUDIT.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T07:03:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T07:03:00+09:00",
+      "updated_at": "2026-09-05T07:03:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-023",
+      "title": "Target Selector Current契約・Player必要性監査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-018",
+      "status": "Passed",
+      "result": "Current ATSはATS-0001 / HP割合が最も低い対象のみ。Runtimeはlowest_hp_ratio/highest_hp_ratio/randomを実装。Target Selectorはlegal candidate pool内の単体選択で、side/rangeはtargetContractの責務。Search matched candidate_idsは後続Actionへbindingされない構造Gapを確認。",
+      "evidence": "EVD-AITAG-018_TARGET-SELECTOR-PHASE1-AUDIT.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T07:21:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T07:21:00+09:00",
+      "updated_at": "2026-09-05T07:21:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-024",
+      "title": "Search Result Slot Source Candidate Pre-Approval Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-020",
+      "status": "Passed",
+      "result": "GKS-B869 / GA-B486.215 candidateでResult SlotのProgram/Save/Player/Studio/Validator/Compiler/Decision Engine接続を実装。新規slot binding E2Eと既存Validator/Compiler/Runtime/Authoring/Formal Export/Schema回帰PASS。Quick Inspection 11/11 PASS。Protected semantic変更7件のみHuman exact-hash approval待ち。",
+      "evidence": "EVD-AITAG-019_SEARCH-RESULT-SLOT-PROTECTED-CHANGE-PROPOSAL.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T07:52:24+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T07:52:24+09:00",
+      "updated_at": "2026-09-05T07:52:24+09:00"
     }
   ],
   "workflow": {
@@ -1574,6 +1781,30 @@
     {
       "at": "2026-09-05T00:52:00+09:00",
       "message": "TASK-AITAG-016 Source UpdateをGKS-B868 / GA-B486.214として作成。Validatorのavailability確認をcondition.state_compare特例から全Predicateへ一般化し、deprecated参照をAI_PREDICATE_MASTER_UNAVAILABLEでFail Closed化。Quick 11/11、Accept 13/13、適用後Full 26/26、Test Integrity protected change 0 PASS。Human Apply前のためTaskはDoingを維持。"
+    },
+    {
+      "at": "2026-09-05T06:55:00+09:00",
+      "message": "Human-provided Fresh Current guild-adventure-studio-sub(20260904-214956).zipを確認。GKS-B868 / GA-B486.214、Source Update対象persistent files全件一致、Source Quick 12/12、package manifest 679、Critical Runtime 52、Critical Conformance 159、PHP Export Schema Gate PASS。AIC-0001～0003参照はAI_PREDICATE_MASTER_UNAVAILABLEでFail Closed、AIC-0004はvalidを確認しTASK-AITAG-016 Done。状態管理Phase 1 / Legacy Condition Hard Cutを完了。"
+    },
+    {
+      "at": "2026-09-05T07:03:00+09:00",
+      "message": "状態管理/Legacy Condition Hard Cut完了後、次Phaseとして行動棚卸しを開始。Current AIA-0001 通常攻撃、AIA-0002 スキル使用、AIA-0003 待機はactiveかつFormal Runtime実装済み。Action Master自体がPlayer向け意味Authorityのため、同義の行動Tag追加は不要という候補設計をHuman Gateへ提示。Game Data/Source変更は未実施。"
+    },
+    {
+      "at": "2026-09-05T07:21:00+09:00",
+      "message": "行動Phase 1棚卸しを完了しTASK-AITAG-017 Done。Action Master自体をPlayer行動語彙とし、同義Action Tagは作らない候補を維持。"
+    },
+    {
+      "at": "2026-09-05T07:21:00+09:00",
+      "message": "Target Selector Phase 1棚卸し完了。Current ATS-0001はstatus=draft/enabled=trueだがPlayer availabilityはenabledのみでtrue。Runtimeはlowest_hp_ratio/highest_hp_ratio/randomを実装。side/rangeはtargetContract責務で重複Selector不要。Search matched candidate_idsが後続ActionにbindingされないPlayer AI構造Gapを確認。TASK-AITAG-018 Done、TASK-AITAG-019 Human Gateへ移行。Game Data/Source変更なし。"
+    },
+    {
+      "at": "2026-09-05T07:52:24+09:00",
+      "message": "HumanがSearch結果を名前付き一時箱へ格納し、後続Actionが箱を参照する方式で進行を指示。TASK-AITAG-019 Done、DEC-AITAG-014 / SPEC-AITAG-009をApprovedとして登録。"
+    },
+    {
+      "at": "2026-09-05T07:52:24+09:00",
+      "message": "GKS-B869 / GA-B486.215 Source candidateへresult_slots、Search result_slot_id、Action target_sourceをPlayer/Studio/Save/Schema/Validator/Compiler/Decision Engineまで接続。Action候補はslot集合∩targetContract合法候補としてSelectorへ渡す。Quick Inspection 11/11と関連E2E/回帰PASS。Protected semantic変更7件のexact-hash Human Gateで停止。Game Data変更なし。"
     }
   ]
 }
