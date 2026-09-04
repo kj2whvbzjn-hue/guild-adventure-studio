@@ -164,8 +164,8 @@
       const kinds = new Set(Array.isArray(definition.supported_subject_kind) ? definition.supported_subject_kind : []);
       if (!kinds.has(subjectKind)) issues.push(issue('ERROR', 'AI_PREDICATE_SUBJECT_UNSUPPORTED', `Predicate ${predicateId} は ${subjectKind} subjectをサポートしていません。`, location));
       Adapter.validateParameters(definition, clause.params || {}, refs).forEach((message) => issues.push(issue('ERROR', 'AI_PREDICATE_PARAMETER_INVALID', message, location)));
+      if (!Adapter.isAvailable(definition, {unlocked_ids: Array.isArray(data?.ai_unlocks) ? data.ai_unlocks : []})) issues.push(issue('ERROR', 'AI_PREDICATE_MASTER_UNAVAILABLE', `Predicate ${predicateId} は利用可能状態ではありません。`, location));
       if (String(definition.evaluator || '') === 'condition.state_compare') {
-        if (!Adapter.isAvailable(definition, {unlocked_ids: Array.isArray(data?.ai_unlocks) ? data.ai_unlocks : []})) issues.push(issue('ERROR', 'AI_PREDICATE_MASTER_UNAVAILABLE', `Predicate ${predicateId} は利用可能状態ではありません。`, location));
         statePredicateParameterIssues(definition, clause.params || {}, data).errors.forEach((message) => issues.push(issue('ERROR', 'AI_STATE_COMPARE_PARAMETER_INVALID', message, location)));
       }
       if (typeof clause.negate !== 'boolean') issues.push(issue('ERROR', 'AI_PREDICATE_NEGATE_INVALID', 'Predicate negateはboolean必須です。', location));
