@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T23:08:00.907Z"
+    "updated_at": "2026-09-04T23:53:43.397Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Search Result Slot Source接続: Protected Exact-Hash Human Gate",
-    "goal": "Human承認済みのSearch結果箱方式をGKS-B869 / GA-B486.215候補へ実装済み。Protected Schema/Test 7件のexact hash変更をHuman承認後、Test IntegrityとAccept Gateを完了してSource Update化する。Game Dataは変更しない。"
+    "theme": "Search Result Slot接続完了 / Target Selector残課題整理",
+    "goal": "Search→名前付きUNIT_SET結果箱→Action明示参照はFresh Currentで完了。次はTarget Selector Phase 1監査で残ったATS-0001 lifecycle不整合（status=draftでもenabled=trueでPlayer利用可能）と、selector.random Formal Master追加要否をPlayer必要性基準で別工程として整理する。"
   },
   "project_rules": [
     {
@@ -106,13 +106,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B868",
-    "game_build": "GA-B486.214",
-    "source_label": "guild-adventure-studio-sub(20260904-214956).zip",
-    "source_role": "Human-provided Fresh Current after Predicate Master availability Fail Closed Source update; current source and implementation baseline",
-    "recorded_at": "2026-09-05T06:55:00+09:00",
-    "source_zip_sha256": "f95319c650940a26eacf1ca7505b57aeeda4a1057656badbb22766038c5d3f19",
-    "package_manifest_sha256": "b7e0566c6a21a0f47742f2accdd4f4b4959293735852c03245c58a8bfe615c72"
+    "studio_build": "GKS-B869",
+    "game_build": "GA-B486.215",
+    "source_label": "guild-adventure-studio-sub(20260904-234238).zip",
+    "source_role": "Human-provided Fresh Current after Search Result Slot Source Update; current source and implementation baseline",
+    "recorded_at": "2026-09-05T08:45:40+09:00",
+    "source_zip_sha256": "8bad108adfade617cc09d911ec231ef79488a4cab12aff5c7df99e9445c832bf",
+    "package_manifest_sha256": "2f3e9f6c3b76402684d37a506b98b2afefa4be5324e31116cfff3b851fdbabf5"
   },
   "lifecycle": {
     "status": "Active",
@@ -162,6 +162,20 @@
       "result": "Applied",
       "evidence": "全Predicate Master availability Fail Closed Source Update。shared/ai/ai-program-validator.jsでAdapter.isAvailable()を全Predicateに一般化。Quick 11/11、Accept 13/13、Applied Full 26/26、Test Integrity protected change 0。Human Apply後のFresh Current確認待ち。",
       "recorded_at": "2026-09-05T00:52:00+09:00"
+    },
+    {
+      "id": "IMPL-AITAG-SEARCH-SLOT-GKS-B869-001",
+      "studio_build": "GKS-B869",
+      "game_build": "GA-B486.215",
+      "work_box_ids": [
+        "BOX-AITAG-003"
+      ],
+      "task_ids": [
+        "TASK-AITAG-020"
+      ],
+      "result": "Applied",
+      "evidence": "Search Result Slot Source Update。AI Program result_slots[] / UNIT_SET、Search.parameters.result_slot_id、Action.parameters.target_source(kind=SEARCH_RESULT/result_slot_id)をPlayer/Studio Authoring、Validator、Compiler、Decision Engineへ接続。RuntimeはSearch一致集合と実行時targetContract合法候補を交差してからTarget Selectorを適用。Human承認Protected 7件はFresh Currentでexact SHA-256一致。提出Source Update persistent 681 filesと実物が全件一致。Targeted Search Result Slot E2E、Player/Studio Authoring、Validator、Compiler、Shared Runtime PASS。Fresh Current Source Quick 11/11、Full 26/26、package manifest 680、Critical Runtime 52 PASS。",
+      "recorded_at": "2026-09-05T08:45:40+09:00"
     }
   ],
   "discussions": [],
@@ -1113,7 +1127,7 @@
       "id": "TASK-AITAG-020",
       "box_id": "BOX-AITAG-003",
       "title": "Search Result SlotをAuthoring→Validator→Compiler→Runtimeへ接続",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 20,
       "depends_on": [
         "TASK-AITAG-019"
@@ -1122,12 +1136,12 @@
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T08:09:00+09:00"
       },
       "created_at": "2026-09-05T07:52:24+09:00",
-      "updated_at": "2026-09-05T07:52:24+09:00"
+      "updated_at": "2026-09-05T08:45:40+09:00"
     }
   ],
   "checks": [
@@ -1682,6 +1696,52 @@
       "blocking": false,
       "created_at": "2026-09-05T07:52:24+09:00",
       "updated_at": "2026-09-05T07:52:24+09:00"
+    },
+    {
+      "id": "CHK-AITAG-025",
+      "title": "Search Result Slot Protected Exact-Hash承認・Source Update Final Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-020",
+      "status": "Passed",
+      "result": "Human承認済みProtected Schema/Test 7件のupdated SHA-256がFresh Currentで全件完全一致。Source Update作成時Quick 13/13、Accept 13/13、Applied Full 26/26 PASS。Build cache追随漏れによる初回Accept FailはSource側修正後に再実行して解決済み。",
+      "evidence": "EVD-AITAG-020_SEARCH-RESULT-SLOT-SOURCE-UPDATE-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T08:45:40+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T08:45:40+09:00",
+      "updated_at": "2026-09-05T08:45:40+09:00"
+    },
+    {
+      "id": "CHK-AITAG-026",
+      "title": "Search Result Slot Fresh Current実物E2E",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-020",
+      "status": "Passed",
+      "result": "Fresh Current GKS-B869 / GA-B486.215のsource tree/package manifestが提出Update target bindingと一致し、persistent 681 filesも全件一致。Search Result Slot E2E、Player Authoring、Studio Authoring、Validator、Compiler、Shared Runtimeを再実行してPASS。Source Quick 11/11、Full 26/26、package manifest 680、Critical Runtime 52 PASS。",
+      "evidence": "EVD-AITAG-020_FRESH-CURRENT-GKS-B869-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T08:45:40+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T08:45:40+09:00",
+      "updated_at": "2026-09-05T08:45:40+09:00"
     }
   ],
   "workflow": {
@@ -1805,6 +1865,10 @@
     {
       "at": "2026-09-05T07:52:24+09:00",
       "message": "GKS-B869 / GA-B486.215 Source candidateへresult_slots、Search result_slot_id、Action target_sourceをPlayer/Studio/Save/Schema/Validator/Compiler/Decision Engineまで接続。Action候補はslot集合∩targetContract合法候補としてSelectorへ渡す。Quick Inspection 11/11と関連E2E/回帰PASS。Protected semantic変更7件のexact-hash Human Gateで停止。Game Data変更なし。"
+    },
+    {
+      "at": "2026-09-05T08:45:40+09:00",
+      "message": "Human-provided Fresh Current guild-adventure-studio-sub(20260904-234238).zipを確認。GKS-B869 / GA-B486.215、target source_tree/package_manifest binding一致、提出Update persistent 681 files全件一致、Human承認Protected 7件exact SHA-256一致。Search Result Slot E2Eと関連Authoring/Validator/Compiler/Runtime回帰PASS、Source Quick 11/11、Full 26/26、package manifest 680、Critical Runtime 52 PASS。TASK-AITAG-020 Done。"
     }
   ]
 }
