@@ -1,0 +1,826 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-43b0a439-ff9c-4df2-ba11-e2ba0ae654c9",
+    "canonical_path": "development-project-data/DEV-V9-PLAYER-AI-PARTS-TAG-001.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-PLAYER-AI-PARTS-TAG-001",
+    "name": "Player AI パーツTag基盤・段階接続",
+    "status": "Implementing",
+    "ai_attention": "Auto",
+    "updated_at": "2026-09-04T19:15:00+09:00"
+  },
+  "project_context": {
+    "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
+    "summary": "AI全体を一括改修しない。探索、状態確認、行動、対象選択等を機能群ごとに分割し、必要なら同一機能群の内部もさらにPhase分割する。各PhaseはPlayerがゲームで必要かだけを基準に必要語彙を棚卸しし、Game Data作成前に必ずチャットでHuman Approvalを取得する。承認済みデータをCurrentへ組み込み、接続できない箇所だけSource改修する。最初のPhaseとして探索対象の「対象」Categoryと「自分 / 味方 / 自分以外の味方 / 敵」を登録し、GKS-B866 / GA-B486.212でTag ID→runtime_semantic→Search Runtime接続を実装済み。現在はCurrent Studio Project Dataのruntime_semanticおよびGame Data Deploy後ExportのE2E確認が残っている。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-AITAG-CONNECTION",
+    "work_box_id": "BOX-AITAG-002",
+    "theme": "探索対象Tag接続のGame Data E2E確認",
+    "goal": "Current Studio Project DataでTAG-0020～TAG-0023のruntime_semanticを確認し、Game Data Deploy後のai/ai_nodes.jsonにrefs.tags / refs.tag_categories / runtime_semanticが保持されることを確認して、探索対象Phaseを完了する。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-AITAG-001",
+      "text": "AIパーツ・Tag・Categoryを追加する唯一の採用基準は「Playerがゲーム内AIを組むために必要か」とする。Test都合、内部都合、将来ありそうという理由だけでは追加しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-002",
+      "text": "AI全体を一括設計・一括実装しない。探索、状態確認等を別工程とし、同一機能群でも依存関係や確認点が分かれる場合はその都度さらにPhase分割する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-003",
+      "text": "Data Firstとする。Source全面改修を先に行わず、Playerに必要なデータを先に決め、Currentへ実際に組み込めるか確認した結果をSource改修範囲の根拠とする。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-004",
+      "text": "Game Dataを作成する前に、登録候補のCategory / Tag / 意味契約をチャットへ提示し、Human Approvalを取得する。未承認データを推測作成・登録しない。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-005",
+      "text": "ハードコードは原則禁止とする。Tag ID、Category ID、Player向け名称、データ間対応はProduction Sourceへ固定せず、Master Data / Project Data / 設定から可変にする。Engineが処理分岐するためシステム上固定が必須なRuntime semantic等のみ例外として固定を許可する。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-006",
+      "text": "Source更新とStudio Project / Game Data更新は別Authority・別成果物・別工程として扱う。Source ZIP内のproject-data.jsonや既存ExportをCurrent Studio Project Dataの正本として扱わない。",
+      "status": "Active",
+      "source_type": "CurrentOperatingPolicy",
+      "source_id": "AI_START.md / AI operating policy",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-007",
+      "text": "Compatibility Budget 0を維持する。旧方式を残すfallback、shim、alias、dual-read等で新方式を成立させない。必要な移行は正式Contractを更新してCurrentへ切り替える。",
+      "status": "Active",
+      "source_type": "ProjectPolicy",
+      "source_id": "Current V9 development policy",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-008",
+      "text": "生存・死亡等の動的戦闘状態をUnitへ固定Tagとして貼る方式にしない。Player AI語彙としてTagを利用する場合も、実判定はCurrent Runtime状態から動的に解決する。",
+      "status": "Active",
+      "source_type": "DesignPrinciple",
+      "source_id": "approved conversation design",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "RULE-AITAG-009",
+      "text": "各Phaseの結果を確認するまで次Phaseを自動着手・自動確定しない。接続問題が見つかった場合はその問題だけを独立作業として切り出し、完了後に次へ進む。",
+      "status": "Active",
+      "source_type": "HumanInstruction",
+      "source_id": "conversation",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B866",
+    "game_build": "GA-B486.212",
+    "source_label": "guild-adventure-studio-sub(20260904-104252).zip",
+    "source_role": "Human-provided Fresh Current after AI target Tag Source update; registration baseline and continued implementation authority",
+    "recorded_at": "2026-09-04T19:15:00+09:00",
+    "source_zip_sha256": "a50a8cf6ada52d295535d711452c84b86c3edc2994b1e88ab0ec119f919f94f2",
+    "package_manifest_sha256": "b4aef5885c59393f27c3f013e30ded55260e9f429d9782aadc49ff9f76578542"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-09-04T19:15:00+09:00"
+  },
+  "implementation_records": [
+    {
+      "id": "IMPL-AITAG-TARGET-GKS-B866-001",
+      "studio_build": "GKS-B866",
+      "game_build": "GA-B486.212",
+      "work_box_ids": [
+        "BOX-AITAG-002"
+      ],
+      "task_ids": [
+        "TASK-AITAG-003",
+        "TASK-AITAG-004"
+      ],
+      "result": "Applied",
+      "evidence": "Human-applied Fresh Current guild-adventure-studio-sub(20260904-104252).zip. Player Search target selection migrated from fixed UI scope to Tag Master target_tag_id; Validator/Compiler resolve runtime_semantic; OTHER_ALLY added; Game Data Deploy uses Formal Export path preserving refs.tags / refs.tag_categories. Protected changes 14件 were Human-approved with the additional rule that hardcoding is prohibited except system-required runtime semantic identifiers.",
+      "recorded_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "discussions": [],
+  "decisions": [
+    {
+      "id": "DEC-AITAG-001",
+      "title": "Player必要性を唯一の採用基準とする",
+      "status": "Approved",
+      "text": "AIパーツ・Tag・CategoryはPlayerがゲーム内で必要かだけを採用判断基準とする。内部Test用の「常に成立」等をPlayer向け必要パーツとして採用しない。",
+      "rationale": "内部実装都合ではなくPlayerが組める戦闘AIを仕様Authorityとするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-002",
+      "title": "AIパーツを機能群ごとに段階実装する",
+      "status": "Approved",
+      "text": "探索、状態確認等を別工程にし、一括実装しない。同一機能群でも依存関係や確認点が分かれる場合はさらに工程分割する。",
+      "rationale": "必要データと改修原因を混在させず、各段階で成立性を確認するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-003",
+      "title": "Data FirstでSource改修範囲を決定する",
+      "status": "Approved",
+      "text": "Playerが必要なデータを先に設計・登録し、それをCurrent Sourceへ実際に組み込めるかを判断材料としてPlayer AI Editor / Runtime等の改修範囲を決定する。",
+      "rationale": "UI全面改修を目的化せず、必要パーツ成立のための最小構造改修にするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-004",
+      "title": "探索対象Categoryを「対象」とする",
+      "status": "Approved",
+      "text": "探索対象語彙のCategoryとして TGC-0005 / 対象 を採用する。",
+      "rationale": "探索専用名称に閉じず、AI内で誰を対象にするかを表す共通概念とするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-005",
+      "title": "探索対象4Tagを採用する",
+      "status": "Approved",
+      "text": "TAG-0020 / 自分、TAG-0021 / 味方、TAG-0022 / 自分以外の味方、TAG-0023 / 敵 をPlayerに必要な探索対象語彙として採用する。",
+      "rationale": "自己処理、味方支援、自分除外支援、敵対行動をPlayer AIで表現するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-006",
+      "title": "AI ProgramはTag IDを正本として保存する",
+      "status": "Approved",
+      "text": "Player AI ProgramのSearch対象は内部Runtime値ではなく target_tag_id = TAG-xxxx を保存し、CompilerがTag Masterのruntime_semanticを参照してRuntime scopeへ変換する。",
+      "rationale": "Player向け意味データとEngine内部意味を分離し、Tag/Categoryをデータ駆動で可変にするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-007",
+      "title": "ハードコード原則禁止",
+      "status": "Approved",
+      "text": "Production Sourceでは具体的なTAG ID、TGC ID、Player名称や対応関係を意味判定に使用しない。Runtime処理上固定が必須なSELF / ALLY / OTHER_ALLY / ENEMY等のsystem semanticのみ固定可能とする。",
+      "rationale": "Game Design DataをSource固定値へ逆流させず、Studioから可変にするため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-008",
+      "title": "Game Data作成前Human Approvalを必須とする",
+      "status": "Approved",
+      "text": "各AIパーツPhaseでTag / Category / 意味契約等の登録データを生成する前にチャット上で候補を提示し、Human Approvalを得る。",
+      "rationale": "未決仕様の推測登録と不要AIパーツの先行追加を防ぐため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "specifications": [
+    {
+      "id": "SPEC-AITAG-001",
+      "title": "探索対象Data Contract",
+      "status": "Implemented",
+      "summary": "Player Search対象をTag Masterの正式語彙として管理する。",
+      "body": "# Category\n- TGC-0005 / 対象\n\n# Tags\n- TAG-0020 / 自分\n- TAG-0021 / 味方\n- TAG-0022 / 自分以外の味方\n- TAG-0023 / 敵\n\n# Player表示\n- PlayerにはTag名称を表示する。\n- TAG ID / TGC IDを意味ラベルとして直接表示・ハードコードしない。",
+      "decision_refs": [
+        "DEC-AITAG-004",
+        "DEC-AITAG-005",
+        "DEC-AITAG-007"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "Current Studio Project DataでTGC-0005とTAG-0020～0023が登録され、Player向け名称とCategory所属が一意であること。",
+      "system_node_id": "SYS-AITAG-DATA",
+      "contract_ids": [
+        "CTR-AITAG-TARGET-TAG"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-002",
+      "title": "探索対象Runtime Semantic Contract",
+      "status": "Implemented",
+      "summary": "Tag IDをAI Program正本とし、Compilerでruntime_semanticへ解決してSearch Runtimeへ渡す。",
+      "body": "# Runtime semantic mapping\n- 自分 → SELF\n- 味方 → ALLY\n- 自分以外の味方 → OTHER_ALLY\n- 敵 → ENEMY\n\n# Program\n- Searchは target_tag_id = TAG-xxxx を保存する。\n\n# Compiler\n- Tag Masterを参照しruntime_semanticを解決する。\n- Runtimeへはscope semanticを渡す。\n\n# Runtime\n- Runtimeは具体的TAG IDやTGC IDを知らない。\n- OTHER_ALLYは同陣営かつactor自身を除外する。",
+      "decision_refs": [
+        "DEC-AITAG-006",
+        "DEC-AITAG-007"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-001"
+      ],
+      "acceptance_criteria": "Production Sourceへ具体的TAG/TGC IDを固定せず、target_tag_id→Tag Master→runtime_semantic→Compiled scope→Search populationが成立すること。Current Studio Project Dataのruntime_semanticとDeploy後Exportは別途E2E確認する。",
+      "system_node_id": "SYS-AITAG-COMPILER",
+      "contract_ids": [
+        "CTR-AITAG-RUNTIME-SEMANTIC",
+        "CTR-AITAG-COMPILED-SCOPE"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-003",
+      "title": "Player AI Data-driven Authoring Contract",
+      "status": "Implemented",
+      "summary": "Player AI Editorは固定scope選択肢を所有せず、Formal Tag Masterから対象候補を構築する。",
+      "body": "- Player AI EditorでSELF / ALLY / ENEMY等をPlayer選択肢としてハードコードしない。\n- Tag Master / Category Masterを読み、Playerには名称で表示する。\n- Programへ保存する値はtarget_tag_id。\n- 具体的Tag ID、Category ID、名称の組合せはProject Dataで可変とする。\n- Engineが処理するruntime semanticの語彙だけをsystem contractとして固定可能とする。",
+      "decision_refs": [
+        "DEC-AITAG-006",
+        "DEC-AITAG-007"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-001"
+      ],
+      "acceptance_criteria": "Player UIの対象候補がFormal Dataから構築され、Programへtarget_tag_idだけが保存され、具体的TAG/TGC IDのProductionハードコードがないこと。",
+      "system_node_id": "SYS-AITAG-AUTHORING",
+      "contract_ids": [
+        "CTR-AITAG-TARGET-TAG"
+      ],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-004",
+      "title": "AIパーツ段階実行Contract",
+      "status": "Approved",
+      "summary": "各AIパーツPhaseをData First / Human Gate / Integration Auditの順で進める。",
+      "body": "各Phaseは次の順序を必須とする。\n1. Player必要性だけを基準に必要パーツ・語彙を棚卸しする。\n2. 登録候補をチャットへ提示する。\n3. Human Approvalを取得する。\n4. 承認済みGame Dataだけを作成・登録する。\n5. Current Sourceへ実際に組み込めるか監査する。\n6. 不足がある場合だけ不足箇所をSOURCE_UPDATE案件として切り出す。\n7. Source/Game Dataをそれぞれの正式経路で反映する。\n8. E2E確認後に当該Phaseを完了する。\n9. 次Phaseへ自動着手せず、必要ならさらに分割する。",
+      "decision_refs": [
+        "DEC-AITAG-001",
+        "DEC-AITAG-002",
+        "DEC-AITAG-003",
+        "DEC-AITAG-008"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "未承認Game Dataや未監査Source変更が作成されず、各Phaseが独立したHuman GateとE2E確認を持つこと。",
+      "system_node_id": "",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T19:15:00+09:00",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "specification_candidates": [],
+  "system_nodes": [
+    {
+      "id": "SYS-AITAG-DATA",
+      "name": "AI語彙Master Data",
+      "description": "Tag Category / Tag / runtime_semantic等、Player AIが参照する意味データのAuthority。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SYS-AITAG-AUTHORING",
+      "name": "Player AI Authoring",
+      "description": "Formal AI Master / Tag Dataを表示し、Player操作をAI Programへ保存するEditor層。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SYS-AITAG-COMPILER",
+      "name": "AI Validator / Compiler",
+      "description": "Programのtarget_tag_idをFormal Tag Masterで検証し、runtime_semanticをCompiled Runtime意味へ変換する。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SYS-AITAG-RUNTIME",
+      "name": "Battle Search Runtime",
+      "description": "Compiled scope semanticからBattle Unit populationを解決するRuntime。具体的TAG/TGC IDは参照しない。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "system_contracts": [
+    {
+      "id": "CTR-AITAG-TARGET-TAG",
+      "name": "Search target_tag_id Contract",
+      "producer_system_id": "SYS-AITAG-DATA",
+      "consumer_system_ids": [
+        "SYS-AITAG-AUTHORING",
+        "SYS-AITAG-COMPILER"
+      ],
+      "definition": "Search対象のPlayer意味はFormal Tag MasterのTag IDを正本とし、AI Programはtarget_tag_idとして保存する。具体的Tag ID/Category IDはSourceへ固定しない。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CTR-AITAG-RUNTIME-SEMANTIC",
+      "name": "Tag runtime_semantic Contract",
+      "producer_system_id": "SYS-AITAG-DATA",
+      "consumer_system_ids": [
+        "SYS-AITAG-COMPILER"
+      ],
+      "definition": "Target Tagはruntime_semanticを持ち、CompilerがTag IDからEngineのsystem semanticへ解決する。system semantic語彙はRuntime処理に必須な固定契約とし、Tag IDとの対応はData側で可変にする。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CTR-AITAG-COMPILED-SCOPE",
+      "name": "Compiled Search Scope Contract",
+      "producer_system_id": "SYS-AITAG-COMPILER",
+      "consumer_system_ids": [
+        "SYS-AITAG-RUNTIME"
+      ],
+      "definition": "Compilerは検証済みruntime_semanticをCompiled Search scopeとしてRuntimeへ渡す。Runtimeはscope semanticだけを処理し、Tag Masterの具体IDを直接判定しない。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "system_connections": [
+    {
+      "id": "CONN-AITAG-001",
+      "from_system_id": "SYS-AITAG-DATA",
+      "to_system_id": "SYS-AITAG-AUTHORING",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-AITAG-TARGET-TAG",
+      "purpose": "Player AI Editorへ対象Category/Tag候補を供給する。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CONN-AITAG-002",
+      "from_system_id": "SYS-AITAG-AUTHORING",
+      "to_system_id": "SYS-AITAG-COMPILER",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-AITAG-TARGET-TAG",
+      "purpose": "Playerが選択したtarget_tag_idをAI ProgramとしてValidator/Compilerへ渡す。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CONN-AITAG-003",
+      "from_system_id": "SYS-AITAG-DATA",
+      "to_system_id": "SYS-AITAG-COMPILER",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-AITAG-RUNTIME-SEMANTIC",
+      "purpose": "Tag Masterのruntime_semanticをCompiler解決へ提供する。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CONN-AITAG-004",
+      "from_system_id": "SYS-AITAG-COMPILER",
+      "to_system_id": "SYS-AITAG-RUNTIME",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-AITAG-COMPILED-SCOPE",
+      "purpose": "Compiled scopeをBattle Search Runtimeへ渡す。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "system_flags": [],
+  "system_events": [],
+  "system_impacts": [],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-AITAG-ROOT",
+      "name": "Player AI パーツTag基盤",
+      "parent_id": "",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "ARCH-AITAG-TARGET",
+      "name": "探索・対象語彙",
+      "parent_id": "ARCH-AITAG-ROOT",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "ARCH-AITAG-CONNECTION",
+      "name": "Data → Authoring → Compiler → Runtime接続",
+      "parent_id": "ARCH-AITAG-ROOT",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "ARCH-AITAG-STATE",
+      "name": "状態確認語彙",
+      "parent_id": "ARCH-AITAG-ROOT",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-AITAG-001",
+      "node_id": "ARCH-AITAG-TARGET",
+      "title": "探索対象Tag設計・登録",
+      "body": "Playerが探索で必要な対象語彙だけをHuman承認し、TGC-0005 / TAG-0020～0023としてCurrent Studio Project Dataへ登録する。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "BOX-AITAG-002",
+      "node_id": "ARCH-AITAG-CONNECTION",
+      "title": "探索対象Tag Runtime接続",
+      "body": "Tag Master → Player AI Editor → target_tag_id → Validator / Compiler → runtime_semantic → Search Runtimeを接続する。SourceとGame Dataは別成果物として反映し、Deploy後ExportまでE2E確認する。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "BOX-AITAG-003",
+      "node_id": "ARCH-AITAG-STATE",
+      "title": "状態確認 Phase 1",
+      "body": "状態確認を一括設計しない。最初の最小単位だけをPlayer必要性で棚卸しし、チャットでHuman Approvalを得た後にGame Data化する。現時点の次候補は生死だが、Category/Tag IDを含め未承認のため正式データ化しない。",
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-AITAG-001",
+      "box_id": "BOX-AITAG-001",
+      "title": "新規案件へ目的・ゴール・設計思想・既決定事項を登録",
+      "status": "Done",
+      "execution_order": 1,
+      "depends_on": [],
+      "acceptance_criteria": "schema 2.0 / authority.version 1の新規案件JSONに、Player基準、段階作業、Data First、Human Gate、ハードコード禁止、Source/Game Data分離、Current Baseline、既承認Decisionが欠落なく登録されること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-04T19:15:00+09:00"
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-002",
+      "box_id": "BOX-AITAG-001",
+      "title": "探索対象Category / TagをCurrent Project Dataへ登録",
+      "status": "Done",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-AITAG-001"
+      ],
+      "acceptance_criteria": "TGC-0005 / 対象、TAG-0020 / 自分、TAG-0021 / 味方、TAG-0022 / 自分以外の味方、TAG-0023 / 敵がHuman承認済みGame DataとしてCurrent Studio Projectに存在すること。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-04T19:15:00+09:00"
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-003",
+      "box_id": "BOX-AITAG-002",
+      "title": "探索対象TagをPlayer Authoring / Compiler / Runtimeへ接続",
+      "status": "Done",
+      "execution_order": 3,
+      "depends_on": [
+        "TASK-AITAG-002"
+      ],
+      "acceptance_criteria": "AI Programがtarget_tag_idを保存し、Validator/CompilerがFormal Tagのruntime_semanticを解決し、RuntimeがSELF / ALLY / OTHER_ALLY / ENEMYを処理すること。Production Sourceへ具体的TAG/TGC IDを固定しないこと。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-04T19:15:00+09:00"
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-004",
+      "box_id": "BOX-AITAG-002",
+      "title": "Human反映後Fresh Current Sourceを再確認",
+      "status": "Done",
+      "execution_order": 4,
+      "depends_on": [
+        "TASK-AITAG-003"
+      ],
+      "acceptance_criteria": "Fresh CurrentがGKS-B866 / GA-B486.212で、package manifest / protected change approval / Target Tagハードコード方針に問題がないこと。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-005",
+      "box_id": "BOX-AITAG-002",
+      "title": "Current Project runtime_semantic確認とGame Data Deploy E2E",
+      "status": "Doing",
+      "execution_order": 5,
+      "depends_on": [
+        "TASK-AITAG-004"
+      ],
+      "acceptance_criteria": "Current Studio Project Dataで4 Target Tagのruntime_semanticがSELF / ALLY / OTHER_ALLY / ENEMYとして確認され、Game Data Deploy後のai/ai_nodes.jsonにrefs.tags / refs.tag_categoriesとruntime_semanticが保持されること。Source ZIP内の古いproject-data.json / ExportをAuthorityとして代用しないこと。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-04T19:15:00+09:00"
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-006",
+      "box_id": "BOX-AITAG-003",
+      "title": "状態確認Phase 1の必要語彙をPlayer基準で棚卸し",
+      "status": "Todo",
+      "execution_order": 6,
+      "depends_on": [
+        "TASK-AITAG-005"
+      ],
+      "acceptance_criteria": "状態確認の最初の最小単位について、Playerがゲーム内AIで必要な語彙だけを候補化し、Category/Tag/意味契約をデータ作成前にチャットへ提示すること。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-007",
+      "box_id": "BOX-AITAG-003",
+      "title": "Human承認後に状態確認Phase 1 Game Dataを登録",
+      "status": "Todo",
+      "execution_order": 7,
+      "depends_on": [
+        "TASK-AITAG-006"
+      ],
+      "acceptance_criteria": "TASK-AITAG-006でチャット提示された候補がHuman Approvedとなった場合のみ、承認内容そのものをGame Dataとして作成・登録する。未承認IDや語彙を推測しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-008",
+      "box_id": "BOX-AITAG-003",
+      "title": "状態確認Phase 1データのCurrent Source組み込み可否を監査",
+      "status": "Todo",
+      "execution_order": 8,
+      "depends_on": [
+        "TASK-AITAG-007"
+      ],
+      "acceptance_criteria": "承認・登録済み状態確認データについてCurrent Editor / Validator / Compiler / Runtime / Exportの接続可否を調査し、不足箇所があればその不足だけを次の独立SOURCE_UPDATE作業候補として報告する。監査前にSource改修を開始しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-AITAG-001",
+      "title": "Current Source Baseline確認",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-PLAYER-AI-PARTS-TAG-001",
+      "status": "Passed",
+      "result": "Fresh Current package-build.json = Studio GKS-B866 / Game GA-B486.212。",
+      "evidence": "guild-adventure-studio-sub(20260904-104252).zip SHA-256 a50a8cf6ada52d295535d711452c84b86c3edc2994b1e88ab0ec119f919f94f2",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T19:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-002",
+      "title": "package_manifest Current integrity",
+      "gate": "General",
+      "target_type": "Project",
+      "target_id": "DEV-V9-PLAYER-AI-PARTS-TAG-001",
+      "status": "Passed",
+      "result": "Fresh Current package_manifest.jsonをSource Baselineへ記録。",
+      "evidence": "package_manifest.json SHA-256 b4aef5885c59393f27c3f013e30ded55260e9f429d9782aadc49ff9f76578542",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T19:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-003",
+      "title": "Production Source Target Tag hardcode監査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-004",
+      "status": "Passed",
+      "result": "Production意味判定にTGC-0005 / TAG-0020～0023の具体ID固定を使用しない構造を確認。固定値はEngineに必須のruntime semantic契約へ限定。",
+      "evidence": "GKS-B866 post-apply source inspection; concrete target IDs may appear in test fixtures but are not Production semantic dispatch constants.",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T19:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-004",
+      "title": "Current Studio Project Data runtime_semantic確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-005",
+      "status": "Pending",
+      "result": "",
+      "evidence": "Need Current Studio Project confirmation for TAG-0020 SELF / TAG-0021 ALLY / TAG-0022 OTHER_ALLY / TAG-0023 ENEMY.",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-005",
+      "title": "Game Data Deploy後Formal Export確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-005",
+      "status": "Pending",
+      "result": "",
+      "evidence": "Need deployed ai/ai_nodes.json evidence for refs.tags / refs.tag_categories / runtime_semantic.",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T19:15:00+09:00",
+      "updated_at": "2026-09-04T19:15:00+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Implementing",
+    "implementation_approval": {
+      "status": "Approved",
+      "by": "Human",
+      "at": "2026-09-04T19:15:00+09:00"
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-09-04T19:15:00+09:00",
+      "message": "Human承認により新規Development Project DEV-V9-PLAYER-AI-PARTS-TAG-001 をschema 2.0 / authority.version 1で登録する。"
+    },
+    {
+      "at": "2026-09-04T19:15:00+09:00",
+      "message": "作業目的を、Playerに必要なAIパーツ語彙をData Firstで段階設計し、Currentへ実装可能かを判断材料として必要箇所だけ改修すること、と確定。"
+    },
+    {
+      "at": "2026-09-04T19:15:00+09:00",
+      "message": "探索対象としてTGC-0005 / 対象、TAG-0020 / 自分、TAG-0021 / 味方、TAG-0022 / 自分以外の味方、TAG-0023 / 敵をHuman承認済みDataとして記録。"
+    },
+    {
+      "at": "2026-09-04T19:15:00+09:00",
+      "message": "GKS-B866 / GA-B486.212でtarget_tag_id→Tag runtime_semantic→Compiled Search scope→Battle Search Runtime接続をHuman反映済みFresh Currentとして記録。"
+    },
+    {
+      "at": "2026-09-04T19:15:00+09:00",
+      "message": "Protected changes 14件をHuman承認。追加原則としてハードコードは原則禁止、システム上固定が必須なRuntime semantic等を除きData-drivenで可変にする方針を確定。"
+    },
+    {
+      "at": "2026-09-04T19:15:00+09:00",
+      "message": "次工程はCurrent Studio Project Dataのruntime_semanticとGame Data Deploy後Formal Exportの確認。これが完了するまで状態確認Phase 1のGame Data作成へ進まない。"
+    }
+  ]
+}
