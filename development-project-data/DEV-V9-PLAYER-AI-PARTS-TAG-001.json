@@ -10,17 +10,17 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T11:12:34.328Z"
+    "updated_at": "2026-09-04T12:13:47.166Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
     "summary": "AI全体を一括改修しない。探索、状態確認、行動、対象選択等を機能群ごとに分割し、必要なら同一機能群の内部もさらにPhase分割する。各PhaseはPlayerがゲームで必要かだけを基準に必要語彙を棚卸しし、Game Data作成前に必ずチャットでHuman Approvalを取得する。承認済みデータをCurrentへ組み込み、接続できない箇所だけSource改修する。最初のPhaseとして探索対象の「対象」Categoryと「自分 / 味方 / 自分以外の味方 / 敵」を登録し、GKS-B866 / GA-B486.212でTag ID→runtime_semantic→Search Runtime接続を実装済み。現在はCurrent Studio Project Dataのruntime_semanticおよびGame Data Deploy後ExportのE2E確認が残っている。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-AITAG-CONNECTION",
-    "work_box_id": "BOX-AITAG-002",
-    "theme": "探索対象Tag接続: Game Data Deploy実行・配置後確認",
-    "goal": "Game Data Deployのplanned artifactは承認済み期待ExportとSHA-256完全一致でPASS。StudioでGitHub配置を実行し、commit成功後のExport/ai/ai_nodes.jsonを確認してTASK-AITAG-005を完了する。"
+    "architecture_id": "ARCH-AITAG-STATE",
+    "work_box_id": "BOX-AITAG-003",
+    "theme": "状態管理 Phase 1: 接続仕様Human Approval",
+    "goal": "監査で判明したCurrent Source不足を基に、状態管理Tagを個別実装せず汎用Condition契約でPlayer UI→Program→Compiler→Runtimeへ接続する設計候補をチャットへ提示しHuman Approvalを得る。承認前にCondition DataやSourceを変更しない。"
   },
   "project_rules": [
     {
@@ -233,6 +233,18 @@
       "approved_at": "2026-09-04T19:15:00+09:00",
       "created_at": "2026-09-04T19:15:00+09:00",
       "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "DEC-AITAG-009",
+      "title": "状態管理Phase 1のCategory / Tagを採用する",
+      "status": "Approved",
+      "text": "状態確認の上位Categoryを TGC-0006 / 状態管理 とし、Phase 1のPlayer向け語彙として TAG-0024 / 生存、TAG-0025 / 死亡、TAG-0026 / HP、TAG-0027 / MP を採用する。HP割合/MP割合は独立Tagにせず、HP/MPの比較方法・Parameterとして扱う方針とする。",
+      "rationale": "生死だけでなく残りHP/MPまで同じ大枠で扱い、条件値や割合ごとのTag増殖を避けてPlayerが必要な状態判断を可変Parameterで表現するため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T20:36:00+09:00",
+      "created_at": "2026-09-04T20:36:00+09:00",
+      "updated_at": "2026-09-04T20:36:00+09:00"
     }
   ],
   "specifications": [
@@ -337,6 +349,33 @@
       "approved_at": "2026-09-04T19:15:00+09:00",
       "created_at": "2026-09-04T19:15:00+09:00",
       "updated_at": "2026-09-04T19:15:00+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-005",
+      "title": "状態管理Phase 1 Data Contract",
+      "status": "Implemented",
+      "summary": "Playerが状態確認で使用するPhase 1語彙を状態管理Category配下の4Tagとして管理する。",
+      "body": "# Category\n- TGC-0006 / 状態管理\n\n# Tags\n- TAG-0024 / 生存\n- TAG-0025 / 死亡\n- TAG-0026 / HP\n- TAG-0027 / MP\n\n# Parameter方針\n- HP割合は独立Tagにしない。\n- MP割合は独立Tagにしない。\n- HP/MPの現在値・割合・比較演算子・比較値は後続のAI条件接続設計でParameterとして扱う。\n\n# Dynamic state rule\n- 生存/死亡/HP/MPをUnitへ固定属性Tagとして貼らない。\n- AI語彙TagからCurrent Battle Runtimeの動的状態へ接続する。",
+      "decision_refs": [
+        "DEC-AITAG-001",
+        "DEC-AITAG-002",
+        "DEC-AITAG-003",
+        "DEC-AITAG-008",
+        "DEC-AITAG-009"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-004"
+      ],
+      "acceptance_criteria": "Current Studio Project DataへTGC-0006とTAG-0024～0027だけが追加され、既存Project Data semanticsを変更しないこと。Runtime接続方法は登録後のCurrent Source監査で決定する。",
+      "system_node_id": "SYS-AITAG-DATA",
+      "contract_ids": [],
+      "source_candidate_id": "",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-04T20:36:00+09:00",
+      "created_at": "2026-09-04T20:36:00+09:00",
+      "updated_at": "2026-09-04T20:36:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -590,7 +629,7 @@
       "id": "TASK-AITAG-005",
       "box_id": "BOX-AITAG-002",
       "title": "Current Project runtime_semantic確認とGame Data Deploy E2E",
-      "status": "Doing",
+      "status": "Done",
       "execution_order": 5,
       "depends_on": [
         "TASK-AITAG-004"
@@ -604,13 +643,13 @@
         "at": "2026-09-04T19:15:00+09:00"
       },
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-04T20:18:00+09:00"
     },
     {
       "id": "TASK-AITAG-006",
       "box_id": "BOX-AITAG-003",
       "title": "状態確認Phase 1の必要語彙をPlayer基準で棚卸し",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 6,
       "depends_on": [
         "TASK-AITAG-005"
@@ -619,18 +658,18 @@
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": false,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-04T20:36:00+09:00"
       },
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-04T20:36:00+09:00"
     },
     {
       "id": "TASK-AITAG-007",
       "box_id": "BOX-AITAG-003",
       "title": "Human承認後に状態確認Phase 1 Game Dataを登録",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 7,
       "depends_on": [
         "TASK-AITAG-006"
@@ -639,18 +678,18 @@
       "work_type": "GAME_DATA",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-04T20:36:00+09:00"
       },
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-04T20:36:00+09:00"
     },
     {
       "id": "TASK-AITAG-008",
       "box_id": "BOX-AITAG-003",
       "title": "状態確認Phase 1データのCurrent Source組み込み可否を監査",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 8,
       "depends_on": [
         "TASK-AITAG-007"
@@ -664,7 +703,67 @@
         "at": ""
       },
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T19:15:00+09:00"
+      "updated_at": "2026-09-04T20:42:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-009",
+      "box_id": "BOX-AITAG-003",
+      "title": "状態管理Phase 1 接続仕様をHuman承認する",
+      "status": "Doing",
+      "execution_order": 9,
+      "depends_on": [
+        "TASK-AITAG-008"
+      ],
+      "acceptance_criteria": "状態管理TagをPlayer AI Predicateへ接続するFormal Condition契約、Tag→Runtime意味解決、HP/MP Parameter形式、Source/Game Dataの責務分担をチャットへ提示しHuman Approvalを得る。承認前にAI Condition Master追加やSource変更を行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T20:42:00+09:00",
+      "updated_at": "2026-09-04T20:42:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-010",
+      "box_id": "BOX-AITAG-003",
+      "title": "承認済み状態管理Condition Dataを登録",
+      "status": "Todo",
+      "execution_order": 10,
+      "depends_on": [
+        "TASK-AITAG-009"
+      ],
+      "acceptance_criteria": "TASK-AITAG-009でHuman承認されたFormal AI Condition Master/Data契約だけをCurrent Projectへ追加する。未承認Evaluator、ID、Parameterを推測しない。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T20:42:00+09:00",
+      "updated_at": "2026-09-04T20:42:00+09:00"
+    },
+    {
+      "id": "TASK-AITAG-011",
+      "box_id": "BOX-AITAG-003",
+      "title": "承認済み状態管理ContractをRuntimeへ接続",
+      "status": "Todo",
+      "execution_order": 11,
+      "depends_on": [
+        "TASK-AITAG-010"
+      ],
+      "acceptance_criteria": "承認済み状態管理DataをPlayer UI / Validator / Compiler / Battle Runtimeへデータ駆動で接続する。具体的TAG/TGC IDをProduction Sourceへ固定しない。既存HP/MP Runtime不整合も正式Contractへ統合する。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-04T20:42:00+09:00",
+      "updated_at": "2026-09-04T20:42:00+09:00"
     }
   ],
   "checks": [
@@ -766,11 +865,11 @@
       "gate": "Implementation",
       "target_type": "Task",
       "target_id": "TASK-AITAG-005",
-      "status": "Pending",
-      "result": "Game Data Deploy『差分取得』段階のplanned ai_nodesは期待Exportと完全一致。GitHub配置完了後の実物確認が残る。",
-      "evidence": "EVD-AITAG-005_GAME-DEPLOY-PLAN-VERIFIED.json / planned artifact exact match; deployment commit still pending",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "Human-provided Fresh Current ZIPの実物Export/ai/ai_nodes.jsonでTGC-0005、TAG-0020～0023、SELF/ALLY/OTHER_ALLY/ENEMY、refs.tags、refs.tag_categoriesを確認。Export manifest SHAとも一致。",
+      "evidence": "EVD-AITAG-005_FRESH-CURRENT-DEPLOY-PASS.json / ai_nodes SHA-256 faf9e2be8e2b306804bd64548e776c5607389f5d791ecaeead46e2041c1ac308",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T20:18:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -781,7 +880,7 @@
       },
       "blocking": false,
       "created_at": "2026-09-04T19:15:00+09:00",
-      "updated_at": "2026-09-04T20:05:00+09:00"
+      "updated_at": "2026-09-04T20:18:00+09:00"
     },
     {
       "id": "CHK-AITAG-006",
@@ -851,6 +950,75 @@
       "blocking": false,
       "created_at": "2026-09-04T20:05:00+09:00",
       "updated_at": "2026-09-04T20:05:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-009",
+      "title": "Fresh Current Game Data Deploy実物確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-005",
+      "status": "Passed",
+      "result": "GKS-B866 / GA-B486.212 Fresh Currentの実物Exportと関連3テストを確認し、探索対象Tag接続PhaseのE2E完了条件を満たした。",
+      "evidence": "EVD-AITAG-005_FRESH-CURRENT-DEPLOY-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T20:18:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T20:18:00+09:00",
+      "updated_at": "2026-09-04T20:18:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-010",
+      "title": "状態管理Phase 1 Game Data最小差分確認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-007",
+      "status": "Passed",
+      "result": "承認済みCurrent Projectを基準にTGC-0006 / 状態管理とTAG-0024～0027だけを追加。変更トップレベルはtag_categoriesとtagsのみで、既存レコード変更・削除なし。",
+      "evidence": "PRJ-GAS-V4_AI-STATE-MANAGEMENT-PHASE1(20260904).json / SHA-256 2c6003a3bcf2ed1547dac37f16861c5e8644de6d9b09aa6cdaa01ac537d9e575",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T20:36:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T20:36:00+09:00",
+      "updated_at": "2026-09-04T20:36:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-011",
+      "title": "状態管理Phase 1 Current Source組み込み可否監査",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-008",
+      "status": "Passed",
+      "result": "Battle snapshotにalive/hp/max_hp/mp/max_mpは存在するが、状態管理Tag→Predicate接続がなく、alive/dead handlerは未実装、AIC-0003 mp_at_leastはMaster存在に対しFormal Battle Runtime handlerがないことを確認。Source改修前Human Gateへ移行。",
+      "evidence": "EVD-AITAG-008_STATE-MANAGEMENT-SOURCE-AUDIT.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-04T20:42:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-04T20:42:00+09:00",
+      "updated_at": "2026-09-04T20:42:00+09:00"
     }
   ],
   "workflow": {
@@ -898,6 +1066,18 @@
     {
       "at": "2026-09-04T20:05:00+09:00",
       "message": "TASK-AITAG-005 Deploy Plan Verification PASS。Diff内ai_nodes SHA-256 ef1054f489e3c803a2381ee13f6952f064e49ed3135d8587fde7ae1a098a3514 を承認済みProject + GKS-B866 Formal Exportから再構築し完全一致。TGC-0005 / TAG-0020～0023 / SELF・ALLY・OTHER_ALLY・ENEMYを含む予定成果物は正しい。Diffはpre-commit planのためGitHub配置完了確認まではTask Doingを維持。"
+    },
+    {
+      "at": "2026-09-04T20:18:00+09:00",
+      "message": "TASK-AITAG-005 DONE。Human-provided Fresh Current GKS-B866 / GA-B486.212の実物Export/ai/ai_nodes.jsonでTGC-0005 / TAG-0020～0023 / runtime_semantic / refsを確認し、関連3テストもPASS。TASK-AITAG-006 状態確認Phase 1棚卸しをDoingへ移行。"
+    },
+    {
+      "at": "2026-09-04T20:36:00+09:00",
+      "message": "Human承認により状態管理Phase 1 Dataを確定。TGC-0006 / 状態管理、TAG-0024 / 生存、TAG-0025 / 死亡、TAG-0026 / HP、TAG-0027 / MPを追加した完全Project JSONを生成。HP割合/MP割合は独立Tagにせず後続Parameter設計へ送る。変更はtag_categories/tagsのみ。TASK-AITAG-006/007をDone、TASK-AITAG-008をDoingへ移行。"
+    },
+    {
+      "at": "2026-09-04T20:42:00+09:00",
+      "message": "TASK-AITAG-008 Source Audit DONE。Snapshotにはalive/hp/max_hp/mp/max_mpがある一方、状態管理TagをPredicateへ接続する経路は未実装。condition.hp_ratio_compareのみFormal Runtime実装済み、condition.mp_at_leastはMaster存在だがRuntime handlerなし、alive/dead handlerなし。TASK-AITAG-009 接続仕様Human ApprovalをDoingへ移行し、Data/Source変更は停止。"
     }
   ]
 }
