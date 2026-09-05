@@ -10,7 +10,8 @@ if(!bridge.includes("'SKL-COOLDOWN-ATTACK-300'"))errors.push('formal required co
 if(!bridge.includes("cooldown_runtime=typeof runCooldownRuntimeRegression"))errors.push('formal cooldown runtime integration missing');
 if(!bridge.includes('cooldown_runtime_passed_count'))errors.push('formal cooldown summary missing');
 if(!bridge.includes("schema_version:'1.9.0'"))errors.push('formal schema version mismatch');
-if(!bridge.includes(`tag-formal-runtime-regression-${build.game_build}-`))errors.push('formal filename build mismatch');
+if(!bridge.includes('const STUDIO_SKILL_BRIDGE_GAME_BUILD=String(window.GA_PROJECT_CONFIG?.gameBuild||\'\').trim();'))errors.push('formal build must come from runtime config');
+if(!bridge.includes('tag-formal-runtime-regression-${STUDIO_SKILL_BRIDGE_GAME_BUILD}-'))errors.push('formal filename must use runtime-config build');
 if(!app.includes('function runCooldownRuntimeRegression()'))errors.push('cooldown reusable regression runner missing');
 for(const id of ['COOLDOWN-RUNTIME-START','COOLDOWN-RUNTIME-BLOCK','COOLDOWN-RUNTIME-EXPIRE-REUSE','COOLDOWN-RUNTIME-ZERO','COOLDOWN-RUNTIME-RESERVATION-NO-START','COOLDOWN-RUNTIME-ACTION-DISABLED-NO-START','COOLDOWN-RUNTIME-INVALID-TARGET-NO-START'])if(!app.includes(id))errors.push(`runtime case missing ${id}`);
 if(!index.includes('P01-10 COOLDOWN Runtime v1の7ケース'))errors.push('formal regression UI description missing');

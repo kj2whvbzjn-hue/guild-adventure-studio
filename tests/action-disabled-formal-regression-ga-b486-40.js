@@ -10,7 +10,8 @@ if(!bridge.includes("'SKL-STATUS-ACTION-DISABLED-400'"))errors.push('formal requ
 if(!bridge.includes("action_disabled_runtime=typeof runActionDisabledRuntimeRegression"))errors.push('formal action-disabled runtime integration missing');
 if(!bridge.includes('action_disabled_runtime_passed_count'))errors.push('formal action-disabled summary missing');
 if(!bridge.includes("schema_version:'1.9.0'"))errors.push('formal schema version mismatch');
-if(!bridge.includes(`tag-formal-runtime-regression-${build.game_build}-`))errors.push('formal filename build mismatch');
+if(!bridge.includes('const STUDIO_SKILL_BRIDGE_GAME_BUILD=String(window.GA_PROJECT_CONFIG?.gameBuild||\'\').trim();'))errors.push('formal build must come from runtime config');
+if(!bridge.includes('tag-formal-runtime-regression-${STUDIO_SKILL_BRIDGE_GAME_BUILD}-'))errors.push('formal filename must use runtime-config build');
 if(!app.includes('function runActionDisabledRuntimeRegression()'))errors.push('action-disabled reusable regression runner missing');
 for(const id of ['ACTION-DISABLED-RUNTIME-SKILL-BLOCK','ACTION-DISABLED-RUNTIME-NORMAL-BLOCK','ACTION-DISABLED-RUNTIME-EXPIRE-RESTORE','ACTION-DISABLED-RUNTIME-RESERVATION-PRESENTATION','ACTION-DISABLED-RUNTIME-COUNTER-BLOCK','ACTION-DISABLED-RUNTIME-FOLLOW-UP-BLOCK','ACTION-DISABLED-RUNTIME-DOT-CONTINUES','ACTION-DISABLED-RUNTIME-SHIELD-CONTINUES','ACTION-DISABLED-RUNTIME-AURA-CONTINUES','ACTION-DISABLED-RUNTIME-COVER-CONTINUES'])if(!app.includes(id))errors.push(`runtime case missing ${id}`);
 if(!index.includes('P01-09 ACTION_DISABLED Runtime v1の10ケース'))errors.push('formal regression UI description missing');

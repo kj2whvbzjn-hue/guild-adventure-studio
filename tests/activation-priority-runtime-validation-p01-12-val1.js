@@ -13,7 +13,8 @@ for(const x of ['ACTIVATION-PRIORITY-FORMAL-SAME-TICK-HIGH-FIRST','ACTIVATION-PR
 if(!app.includes("if(!battle.validationMode&&battle.validationCaptureEvents!==true)return;"))errors.push('formal evidence capture gate');
 if(!app.includes("formal_candidate:'P01-12-FORMAL-1'"))errors.push('formal candidate id');
 if(!ctl.includes('function activationPriorityFeatureEnabled(){return true}'))errors.push('formal priority feature not enabled');
-if(!app.includes(`${build.game_build}-P01-12-FORMAL1-`))errors.push('device report filename must identify formal build');
+if(!app.includes('const APP_RUNTIME_GAME_BUILD=String(window.GA_PROJECT_CONFIG?.gameBuild||\'\').trim();'))errors.push('app build must come from runtime config');
+if(!app.includes('${APP_RUNTIME_GAME_BUILD}-P01-12-FORMAL1-'))errors.push('device report filename must use runtime-config build');
 const invalid={schemaVersion:1,id:'SKL-AP-INVALID',name:'invalid priority',skillLevel:1,trigger:{type:'ON_USE',scope:'SELF'},conditions:[],target:{side:'ENEMY',range:'SINGLE'},effects:[{type:'DAMAGE',power:10,damageType:'PHYSICAL'}],resource:{mpCost:0,cooldown:0,activationPriority:1.5}};
 const invalidResult=compiler.compileSkill(invalid,registry);if(invalidResult.ok||!invalidResult.errors.some(x=>x.code==='INVALID_ACTIVATION_PRIORITY'))errors.push('formal compiler activationPriority rule');
 if(rt.includes('function compileTaggedSkill('))errors.push('production runtime still contains Tag compiler');

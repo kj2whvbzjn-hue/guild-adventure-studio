@@ -12,5 +12,6 @@ assert(app.includes('br.playback_events'),'Battle detail must use stored playbac
 assert(app.includes('const result=commitAdventureQuestRun(current.quest_run_id)'),'return must commit stored QuestRun');
 assert(app.includes('setInterval(()=>{if(currentAdventureQuestRun())'),'start-time catch-up ticker missing');
 assert(app.includes("openAdventurePlayback(result.run)"),'new and resumed Adventure must enter Playback UI');
-assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.217';"),'current game build missing');
+assert(app.includes("const APP_RUNTIME_GAME_BUILD=String(window.GA_PROJECT_CONFIG?.gameBuild||'').trim();"),'current game build must come from runtime config');
+assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion=APP_RUNTIME_GAME_BUILD;"),'save migration must use runtime-config build');
 console.log('adventure-playback-runtime-integration PASS');

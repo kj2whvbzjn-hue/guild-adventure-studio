@@ -8,7 +8,8 @@ if(!/^GA-B\d+(?:\.\d+)+$/.test(build.game_build||''))errors.push(`build=${build.
 for(const id of ['SKL-COUNTER-ATTACK-100','SKL-COUNTER-TEST-INCOMING-ALL-60','SKL-COUNTER-TEST-ATTACK-STATUS-100'])if(!bridge.includes(id))errors.push(`formal required missing ${id}`);
 if(!bridge.includes('counter_runtime=typeof runCounterRuntimeRegression'))errors.push('formal counter runtime integration missing');
 if(!bridge.includes('counter_runtime_passed_count'))errors.push('formal counter summary missing');
-if(!bridge.includes(`tag-formal-runtime-regression-${build.game_build}-`))errors.push('formal filename build mismatch');
+if(!bridge.includes('const STUDIO_SKILL_BRIDGE_GAME_BUILD=String(window.GA_PROJECT_CONFIG?.gameBuild||\'\').trim();'))errors.push('formal build must come from runtime config');
+if(!bridge.includes('tag-formal-runtime-regression-${STUDIO_SKILL_BRIDGE_GAME_BUILD}-'))errors.push('formal filename must use runtime-config build');
 if(!app.includes('function runCounterRuntimeRegression()'))errors.push('counter reusable regression runner missing');
 if(!app.includes("reason==='BATTLE_END'"))errors.push('BATTLE_END verification missing');
 if(!app.includes('COUNTER-RUNTIME-ATTACHED-STATUS'))errors.push('attached status regression missing');

@@ -10,6 +10,7 @@ const Engine=require('../../shared/ai/ai-decision-engine.js');
 const ExportCore=require('../../studio/export-core.js');
 const root=path.resolve(__dirname,'../..');
 const dv='0.1.0-draft';
+const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
 const ports=(outputs)=>({inputs:[{id:'in',kind:'flow',data_type:'flow'}],outputs:outputs.map(id=>({id,kind:'flow',data_type:'flow'}))});
 const empty={type:'object',properties:{},required:[],additionalProperties:false};
 const project={
@@ -65,14 +66,15 @@ const program={schema_version:'2.0.0',data_version:dv,id:'AIP-TEST',name:'Target
   assert(studioHtml.includes('AI対象Runtime意味（任意）'));
   const start=studioHtml.indexOf('function phpExportEnvelope('),end=studioHtml.indexOf('\nfunction validateExportIds',start);
   assert(start>=0&&end>start,'phpExportEnvelope extraction failed');
-  const context={GKExportCore:ExportCore,data:project,DISTRIBUTION_BUILD:'GKS-B871'};
+  const context={GKExportCore:ExportCore,data:project,DISTRIBUTION_BUILD:build.studio_build};
   vm.createContext(context);vm.runInContext(studioHtml.slice(start,end),context);
   const env=context.phpExportEnvelope('ai/ai_nodes.json',project.masters.ai_searches,dv,'2026-09-04T00:00:00Z');
   assert.strictEqual(env.schema_version,'2.0.0');
   assert.strictEqual(env.refs.tag_categories[0].id,'TGC-0005');
   assert.strictEqual(env.refs.tags.find(x=>x.id==='TAG-0023').runtime_semantic,'ENEMY');
 
-  const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
-  assert.strictEqual(build.studio_build,'GKS-B871');assert.strictEqual(build.game_build,'GA-B486.217');
+  assert(/^GKS-B\d+$/.test(build.studio_build),'studio build must come from package-build.json');
+  assert(/^GA-B\d+\.\d+$/.test(build.game_build),'game build must come from package-build.json');
+  assert(env.generated_by.endsWith(build.studio_build),'AI export envelope must use current Studio build from package-build.json');
   console.log('AI_TARGET_TAG_SEARCH_CONNECTION_OK tag_authoring=1 compiler_semantic=1 other_ally_runtime=1 player_ui_data_driven=1 deploy_refs=1 ai_schema=2.0.0');
 })().catch(error=>{console.error(error);process.exit(1)});

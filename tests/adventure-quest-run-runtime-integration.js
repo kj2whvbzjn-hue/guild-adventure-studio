@@ -7,5 +7,6 @@ assert(app.includes('function resumeAdventurePlayback('),'QuestRun resume entry 
 assert(app.includes('GKAdventureStorySystem.resumeQuestRun(data,nowMs)'),'QuestRun catch-up is not connected');
 assert(app.includes('function commitAdventureQuestRun('),'QuestRun return commit entry is missing');
 assert(app.includes('GKAdventureStorySystem.commitStoredQuestRun(data,runId'),'QuestRun one-shot commit is not connected');
-assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion='GA-B486.217';"),'save schema/build was not advanced');
+assert(app.includes("const APP_RUNTIME_GAME_BUILD=String(window.GA_PROJECT_CONFIG?.gameBuild||'').trim();"),'current game build must come from runtime config');
+assert(app.includes("raw.schemaRevision='1.6.0';raw.gameVersion=APP_RUNTIME_GAME_BUILD;"),'save migration must use runtime-config build');
 console.log('adventure-quest-run-runtime-integration PASS');
