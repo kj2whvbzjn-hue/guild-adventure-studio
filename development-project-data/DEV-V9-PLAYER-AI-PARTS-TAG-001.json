@@ -10,7 +10,7 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-04T23:53:43.397Z"
+    "updated_at": "2026-09-05T01:25:09.321Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
@@ -19,8 +19,8 @@
   "current_focus": {
     "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Search Result Slot接続完了 / Target Selector残課題整理",
-    "goal": "Search→名前付きUNIT_SET結果箱→Action明示参照はFresh Currentで完了。次はTarget Selector Phase 1監査で残ったATS-0001 lifecycle不整合（status=draftでもenabled=trueでPlayer利用可能）と、selector.random Formal Master追加要否をPlayer必要性基準で別工程として整理する。"
+    "theme": "Player AI Editor内部概念非表示 / Source Update Human Apply待ち",
+    "goal": "GKS-B870 / GA-B486.216 Source UpdateはProtected exact-hash approval、Quick 13/13、Accept 13/13、Applied Full 26/26まで完了。Human Apply後のFresh CurrentでPredicate/Result Slot非表示、Search slot自動管理、状態確認直下UIを再検証してTASK-AITAG-021をDoneにする。"
   },
   "project_rules": [
     {
@@ -1142,6 +1142,26 @@
       },
       "created_at": "2026-09-05T07:52:24+09:00",
       "updated_at": "2026-09-05T08:45:40+09:00"
+    },
+    {
+      "id": "TASK-AITAG-021",
+      "box_id": "BOX-AITAG-003",
+      "title": "Player AI Editorの内部概念露出を解消",
+      "status": "Doing",
+      "execution_order": 21,
+      "depends_on": [
+        "TASK-AITAG-020"
+      ],
+      "acceptance_criteria": "Player画面からPredicate Master選択とSearch結果格納先指定を除去し、状態確認タブ直下で確認対象→状態条件を直接設定できること。Search結果箱は自動生成・自動掃除し、Action側も内部slot ID/箱用語を露出しない。Runtime/Program契約とStudio Developer Editorは変更しない。関連Player Authoring/Search Slot/Validator/Compiler/Runtime回帰がPASSすること。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-05T09:25:00+09:00"
+      },
+      "created_at": "2026-09-05T09:25:00+09:00",
+      "updated_at": "2026-09-05T09:39:03+09:00"
     }
   ],
   "checks": [
@@ -1742,6 +1762,77 @@
       "blocking": false,
       "created_at": "2026-09-05T08:45:40+09:00",
       "updated_at": "2026-09-05T08:45:40+09:00"
+    },
+    {
+      "id": "CHK-AITAG-027",
+      "title": "Player AI Editor内部概念非表示 Candidate検証",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Passed",
+      "result": "GKS-B870 / GA-B486.216 CandidateでPlayer UIから検索結果の格納先・新規箱作成・Predicate Master選択を除去。Search追加時にUNIT_SET result slotを自動生成し、Search削除時はslotとAction参照を自動掃除。状態確認タブは状態管理カードを挟まずタブ直下に確認対象/状態条件UIを描画。関連AIテスト6系統PASS、Source Quick 11/11 PASS。",
+      "evidence": "EVD-AITAG-021_PLAYER-AI-UI-ABSTRACTION-PROTECTED-PROPOSAL.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T09:25:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T09:25:00+09:00",
+      "updated_at": "2026-09-05T09:25:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-028",
+      "title": "Player AI UI Source Update 初回Accept Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Failed",
+      "result": "初回AcceptはApplied Fullのactive_test_gateでFAIL。原因はgame/index.htmlとgame/sw.jsのBuild cache/harness参照がGA-B486.215/GKS-B869のまま残っていたため。Player UI機能・Protected Testの期待値を緩和していない。",
+      "evidence": "B870_UI_ACCEPT.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T09:39:03+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-AITAG-029",
+        "resolved_at": "2026-09-05T09:39:03+09:00",
+        "reason": "Source側cache/harness参照3箇所をGKS-B870 / GA-B486.216へ追随。Protected Player Authoring test updated hashは承認値acb835d5...944f95d4のまま不変。Test Integrity external approval PASS、Quick 13/13、Accept 13/13、Applied Full 26/26、package manifest 680、Critical Runtime 52 PASS。",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T09:39:03+09:00",
+      "updated_at": "2026-09-05T09:39:03+09:00"
+    },
+    {
+      "id": "CHK-AITAG-029",
+      "title": "Player AI UI Source Update Final Accept / Protected exact-hash",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Passed",
+      "result": "Source側cache/harness参照3箇所をGKS-B870 / GA-B486.216へ追随。Protected Player Authoring test updated hashは承認値acb835d5...944f95d4のまま不変。Test Integrity external approval PASS、Quick 13/13、Accept 13/13、Applied Full 26/26、package manifest 680、Critical Runtime 52 PASS。",
+      "evidence": "EVD-AITAG-021_PLAYER-AI-UI-ABSTRACTION-SOURCE-UPDATE-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T09:39:03+09:00",
+      "resolves_check_ids": [
+        "CHK-AITAG-028"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-09-05T09:39:03+09:00",
+        "reason": "Build cache/harness参照をProduction Source側で現行Buildへ同期し、同一Protected approval hashのまま全Gateを再実行してPASS。",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T09:39:03+09:00",
+      "updated_at": "2026-09-05T09:39:03+09:00"
     }
   ],
   "workflow": {
@@ -1869,6 +1960,14 @@
     {
       "at": "2026-09-05T08:45:40+09:00",
       "message": "Human-provided Fresh Current guild-adventure-studio-sub(20260904-234238).zipを確認。GKS-B869 / GA-B486.215、target source_tree/package_manifest binding一致、提出Update persistent 681 files全件一致、Human承認Protected 7件exact SHA-256一致。Search Result Slot E2Eと関連Authoring/Validator/Compiler/Runtime回帰PASS、Source Quick 11/11、Full 26/26、package manifest 680、Critical Runtime 52 PASS。TASK-AITAG-020 Done。"
+    },
+    {
+      "at": "2026-09-05T09:25:00+09:00",
+      "message": "Human指示によりPlayer AI Editor UI修正を開始。Phase 1はPlayer側のみ。Predicate Master選択・Search結果格納先指定を非表示化し、Search slotを自動管理、状態確認タブ直下へ確認対象/状態条件UIを配置するGKS-B870 / GA-B486.216 Candidateを作成。関連6テストとQuick 11/11 PASS。Protected意味変更はgame player authoring test 1件のみでexact-hash承認待ち。"
+    },
+    {
+      "at": "2026-09-05T09:39:03+09:00",
+      "message": "HumanがPlayer Authoring protected test 1件のexact hash変更を承認。外部Approval JSONでTest Integrityを通過。初回AcceptはGame側Build cache/harness参照追随漏れでFailed。Protected Testを変更せずgame/index.html / game/sw.jsのSource cache参照のみGKS-B870 / GA-B486.216へ同期し、再実行Quick 13/13、Accept 13/13、Applied Full 26/26 PASS。TASK-AITAG-021はHuman Apply/Fresh Current確認待ちのためDoingを維持。"
     }
   ]
 }
