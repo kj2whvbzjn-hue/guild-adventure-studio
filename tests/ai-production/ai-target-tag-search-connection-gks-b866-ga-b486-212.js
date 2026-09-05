@@ -65,7 +65,7 @@ const program={schema_version:'2.0.0',data_version:dv,id:'AIP-TEST',name:'Target
   assert(studioHtml.includes('AI対象Runtime意味（任意）'));
   const start=studioHtml.indexOf('function phpExportEnvelope('),end=studioHtml.indexOf('\nfunction validateExportIds',start);
   assert(start>=0&&end>start,'phpExportEnvelope extraction failed');
-  const context={GKExportCore:ExportCore,data:project,DISTRIBUTION_BUILD:'GKS-B869'};
+  const context={GKExportCore:ExportCore,data:project,DISTRIBUTION_BUILD:'GKS-B870'};
   vm.createContext(context);vm.runInContext(studioHtml.slice(start,end),context);
   const env=context.phpExportEnvelope('ai/ai_nodes.json',project.masters.ai_searches,dv,'2026-09-04T00:00:00Z');
   assert.strictEqual(env.schema_version,'2.0.0');
@@ -73,6 +73,6 @@ const program={schema_version:'2.0.0',data_version:dv,id:'AIP-TEST',name:'Target
   assert.strictEqual(env.refs.tags.find(x=>x.id==='TAG-0023').runtime_semantic,'ENEMY');
 
   const build=JSON.parse(fs.readFileSync(path.join(root,'package-build.json'),'utf8'));
-  assert.strictEqual(build.studio_build,'GKS-B869');assert.strictEqual(build.game_build,'GA-B486.215');
+  assert.strictEqual(build.studio_build,'GKS-B870');assert.strictEqual(build.game_build,'GA-B486.216');
   console.log('AI_TARGET_TAG_SEARCH_CONNECTION_OK tag_authoring=1 compiler_semantic=1 other_ally_runtime=1 player_ui_data_driven=1 deploy_refs=1 ai_schema=2.0.0');
 })().catch(error=>{console.error(error);process.exit(1)});

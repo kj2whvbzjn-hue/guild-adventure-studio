@@ -1,6 +1,6 @@
 const assert=require('assert'),fs=require('fs');
 const build=require('../package-build.json');
-assert.strictEqual(build.studio_build,'GKS-B869');
+assert.strictEqual(build.studio_build,'GKS-B870');
 const sg=fs.readFileSync('studio/skill/skill-generator.js','utf8');
 const ui=fs.readFileSync('studio/data-exchange/data-exchange-ui.js','utf8');
 const html=fs.readFileSync('studio/index.html','utf8');
