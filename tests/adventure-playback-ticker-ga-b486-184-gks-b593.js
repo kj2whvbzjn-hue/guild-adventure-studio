@@ -1,8 +1,8 @@
 const fs=require('fs'),assert=require('assert');
 const app=fs.readFileSync('game/assets/js/app-runtime.js','utf8');
 const build=JSON.parse(fs.readFileSync('package-build.json','utf8'));
-assert.strictEqual(build.game_build,'GA-B486.219');
-assert.strictEqual(build.studio_build,'GKS-B873');
+assert.strictEqual(build.game_build,'GA-B486.221');
+assert.strictEqual(build.studio_build,'GKS-B875');
 assert(app.includes("function openAdventurePlayback(run,{history=false}={}"),'Playback entry missing');
 assert(app.includes("setPhase('event');ensureAdventurePlaybackTicker();renderAdventurePlayback();"),'Playback entry must guarantee the 1-second ticker before first render');
 assert(app.includes("function ensureAdventurePlaybackTicker(){if(adventurePlaybackTimer)return;adventurePlaybackTimer=setInterval"),'idempotent Playback ticker missing');
