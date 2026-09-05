@@ -10,17 +10,17 @@
     "name": "Player AI パーツTag基盤・段階接続",
     "status": "Implementing",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-05T01:25:09.321Z"
+    "updated_at": "2026-09-05T05:21:02.835Z"
   },
   "project_context": {
     "purpose": "Playerがゲーム内で実際に使用するPlayer AIパーツについて、必要な意味語彙をTag Masterとして段階的に設計・登録し、そのデータをCurrent AI Editor / Validator / Compiler / Runtime / Formal Export / Game Dataへ実際に接続できるか検証する。接続不能・責務不整合・ハードコード依存が判明した箇所だけを根拠付きで改修し、最終的なPlayer AI全面改修を、先に決めたUI都合ではなく実際に必要なAIパーツを成立させるための構造改修として行う。",
-    "summary": "探索対象PhaseはTGC-0005 / TAG-0020～0023をTag ID→runtime_semantic→Search Runtimeへ接続しE2E完了。状態管理Phase 1ではTGC-0006 / 状態管理、TAG-0024 生存、TAG-0025 死亡、TAG-0026 HP、TAG-0027 MPをHuman承認・登録し、ALIVE / DEAD / HP / MP runtime_semanticとAIC-0004 / 状態管理 evaluator=condition.state_compareの汎用Condition契約を確定した。Source Runtime接続はGKS-B867 / GA-B486.213へ反映され、Accept Gate 14/14、適用後Full Inspection 26/26、Fresh Current検証PASS。現在はHuman承認済みのAIC-0004 status draft→activeだけをGame Dataへ反映し、Player AI Editor / Formal Export / Runtimeのactive後E2Eを確認する工程。"
+    "summary": "探索対象Tag・状態管理・Search Result Slotの基盤はGKS-B869 / GA-B486.215までE2E完了。Human提供Fresh Current GKS-B870 / GA-B486.216を正本baselineとしてPlayer探索UIを再設計し、探索タブ→直接設定→対象→絞り込みCategory→候補1件→必要時HP/MP比較、単一条件固定、内部Predicate/Result Slot非表示をGKS-B871 / GA-B486.217へリベースした。Protected Player Authoring Test 1件はHuman exact-hash承認済み。Test Integrity、Quick 13/13、Accept 13/13、Applied Full 26/26、package manifest 680、Critical Runtime 52 PASS。Source Updateは作成済みで、Human Apply後のFresh Current再検証待ち。"
   },
   "current_focus": {
     "architecture_id": "ARCH-AITAG-ROOT",
     "work_box_id": "BOX-AITAG-003",
-    "theme": "Player AI Editor内部概念非表示 / Source Update Human Apply待ち",
-    "goal": "GKS-B870 / GA-B486.216 Source UpdateはProtected exact-hash approval、Quick 13/13、Accept 13/13、Applied Full 26/26まで完了。Human Apply後のFresh CurrentでPredicate/Result Slot非表示、Search slot自動管理、状態確認直下UIを再検証してTASK-AITAG-021をDoneにする。"
+    "theme": "Player探索UI再設計 / GKS-B871 Source Update Human Apply待ち",
+    "goal": "GKS-B870 / GA-B486.216をexact baselineとするGKS-B871 / GA-B486.217 Source UpdateはProtected exact-hash approval、Test Integrity、Quick 13/13、Accept 13/13、Applied Full 26/26まで完了。Human Apply後Fresh Currentで探索タブ直接設定、Category→候補1件、HP/MP百分率UI、単一条件、内部概念非表示、Result Slot自動管理を再検証しTASK-AITAG-021をDoneにする。"
   },
   "project_rules": [
     {
@@ -106,13 +106,13 @@
     }
   ],
   "source_baseline": {
-    "studio_build": "GKS-B869",
-    "game_build": "GA-B486.215",
-    "source_label": "guild-adventure-studio-sub(20260904-234238).zip",
-    "source_role": "Human-provided Fresh Current after Search Result Slot Source Update; current source and implementation baseline",
-    "recorded_at": "2026-09-05T08:45:40+09:00",
-    "source_zip_sha256": "8bad108adfade617cc09d911ec231ef79488a4cab12aff5c7df99e9445c832bf",
-    "package_manifest_sha256": "2f3e9f6c3b76402684d37a506b98b2afefa4be5324e31116cfff3b851fdbabf5"
+    "studio_build": "GKS-B870",
+    "game_build": "GA-B486.216",
+    "source_label": "guild-adventure-studio-sub(20260905-022235).zip",
+    "source_role": "Human-provided Fresh Current; previous GKS-B870 / GA-B486.216 Player AI UI update already applied; authoritative baseline for Player Search UI redesign rebase",
+    "recorded_at": "2026-09-05T11:22:00+09:00",
+    "source_zip_sha256": "b6bf73894736a9a136bca50724ed4606570ee31b7f93f94c59154c91a2a7c4a9",
+    "package_manifest_sha256": "16eb8504c9576a4e41628092b621a3fb721340e7e69963b23795aab29eb9d700"
   },
   "lifecycle": {
     "status": "Active",
@@ -176,6 +176,20 @@
       "result": "Applied",
       "evidence": "Search Result Slot Source Update。AI Program result_slots[] / UNIT_SET、Search.parameters.result_slot_id、Action.parameters.target_source(kind=SEARCH_RESULT/result_slot_id)をPlayer/Studio Authoring、Validator、Compiler、Decision Engineへ接続。RuntimeはSearch一致集合と実行時targetContract合法候補を交差してからTarget Selectorを適用。Human承認Protected 7件はFresh Currentでexact SHA-256一致。提出Source Update persistent 681 filesと実物が全件一致。Targeted Search Result Slot E2E、Player/Studio Authoring、Validator、Compiler、Shared Runtime PASS。Fresh Current Source Quick 11/11、Full 26/26、package manifest 680、Critical Runtime 52 PASS。",
       "recorded_at": "2026-09-05T08:45:40+09:00"
+    },
+    {
+      "id": "IMPL-AITAG-PLAYER-SEARCH-GKS-B871-001",
+      "studio_build": "GKS-B871",
+      "game_build": "GA-B486.217",
+      "work_box_ids": [
+        "BOX-AITAG-003"
+      ],
+      "task_ids": [
+        "TASK-AITAG-021"
+      ],
+      "result": "Partial",
+      "evidence": "Player Search direct-entry/category→single-tag/HP-MP percent UI Source Update prepared against exact Fresh Current B870 baseline. Human exact-hash protected approval verified. Quick 13/13, Accept 13/13, Applied Full 26/26, package manifest 680, Critical Runtime 52 PASS. Artifact GKS-B871-2755b42e2ef4. Human Apply/Fresh Current verification pending.",
+      "recorded_at": "2026-09-05T12:15:00+09:00"
     }
   ],
   "discussions": [],
@@ -347,6 +361,18 @@
       "approved_at": "2026-09-05T07:52:24+09:00",
       "created_at": "2026-09-05T07:52:24+09:00",
       "updated_at": "2026-09-05T07:52:24+09:00"
+    },
+    {
+      "id": "DEC-AITAG-015",
+      "title": "Player探索は単一条件・Category→候補1件の直接設定UIとする",
+      "status": "Approved",
+      "text": "Player探索は探索タブ押下後に探索Masterカードを再選択させず直接設定へ進む。対象を選んだ後、状態を強制せず、Formal Categoryから絞り込みCategoryを1つ選択し、そのCategory所属候補Tagを1件だけ選択する。複数条件は禁止。HP/MPは候補名の直下に割合/現在値、比較、値を並べ、割合は0～100%表示入力からRuntime比率0～1へ変換する。Predicate、ALL/ANY、NOT、Result Slot格納先等の内部概念はPlayerへ表示しない。",
+      "rationale": "Playerがゲーム上の意味だけを操作し、内部Program構造や二重選択、状態管理の強制をPlayer UIへ露出させないため。",
+      "source_discussion_ids": [],
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T11:22:00+09:00",
+      "created_at": "2026-09-05T11:22:00+09:00",
+      "updated_at": "2026-09-05T11:22:00+09:00"
     }
   ],
   "specifications": [
@@ -574,6 +600,29 @@
       "approved_at": "2026-09-05T07:52:24+09:00",
       "created_at": "2026-09-05T07:52:24+09:00",
       "updated_at": "2026-09-05T07:52:24+09:00"
+    },
+    {
+      "id": "SPEC-AITAG-010",
+      "title": "Player Search Single-Condition Authoring Contract",
+      "status": "Approved",
+      "summary": "Player探索UIをCategory→候補1件の単一条件Authoringへ固定し、内部Predicate/Result Slotを非表示化する。",
+      "body": "# Entry\n- 探索タブ押下後、Search Masterが一意なら直接探索設定を開く。\n\n# Player入力\n1. 対象Tagを1件選択。\n2. 絞り込みCategoryを1件選択。\n3. そのCategory所属Tag候補を1件選択。\n4. HP/MP等、選択Tagの契約が要求する場合だけ追加Parameterを表示。\n\n# 単一条件\n- Player Searchはpredicate.logic=ALL固定。\n- clauses.length=1固定。\n- ANY / NOT / 条件追加・並び替えはPlayerで禁止。\n\n# HP/MP\n- UI: HP/MP [割合|現在値] [比較] [値] [% when ratio]。\n- RATIOはPlayer 0～100%入力を内部0～1へ変換。例 30% → 0.3。\n\n# Internal\n- Predicate Master、result_slot_id、検索結果格納先はPlayerへ表示しない。\n- Result SlotはSearch配置/削除に合わせてSystemが自動管理する。\n- Runtime/Compilerの既存意味契約は変更しない。",
+      "decision_refs": [
+        "DEC-AITAG-015"
+      ],
+      "depends_on": [
+        "SPEC-AITAG-009"
+      ],
+      "acceptance_criteria": "GKS-B871候補で探索タブ→直接設定、Formal Category→Tag候補1件、単一Clause固定、HP/MP百分率UI、Result Slot自動管理が成立し、Player向け内部用語を表示しない。関連Authoring/Search Slot/Validator/Compiler/Runtime回帰とSource GateをPASSする。",
+      "system_node_id": "SYS-AITAG-AUTHORING",
+      "contract_ids": [],
+      "source_candidate_id": "GKS-B871 / GA-B486.217",
+      "material_snapshot_hash": "",
+      "revision": 1,
+      "approved_by": "Human",
+      "approved_at": "2026-09-05T11:22:00+09:00",
+      "created_at": "2026-09-05T11:22:00+09:00",
+      "updated_at": "2026-09-05T11:22:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -1146,13 +1195,13 @@
     {
       "id": "TASK-AITAG-021",
       "box_id": "BOX-AITAG-003",
-      "title": "Player AI Editorの内部概念露出を解消",
+      "title": "Player探索UIの内部概念露出・操作フローを修正",
       "status": "Doing",
       "execution_order": 21,
       "depends_on": [
         "TASK-AITAG-020"
       ],
-      "acceptance_criteria": "Player画面からPredicate Master選択とSearch結果格納先指定を除去し、状態確認タブ直下で確認対象→状態条件を直接設定できること。Search結果箱は自動生成・自動掃除し、Action側も内部slot ID/箱用語を露出しない。Runtime/Program契約とStudio Developer Editorは変更しない。関連Player Authoring/Search Slot/Validator/Compiler/Runtime回帰がPASSすること。",
+      "acceptance_criteria": "Player探索は「探索タブ→直接設定→対象→絞り込みCategory→候補1件→必要な追加値」とする。探索Masterカードを再クリックさせない。絞り込みCategoryはFormal Condition Masterのref_category_idからデータ駆動で候補化し、選択Category配下のTagを1件だけ選択する。複数条件、ALL/ANY、NOT、Predicate Master選択、検索結果格納先をPlayerへ表示しない。HP/MPは「HP/MP [割合|現在値] [比較] [値] [%]」形式で、割合30%を内部value=0.3へ変換する。Result Slotは自動生成・自動掃除。Runtime/Program意味契約とStudio Developer Editorは変更しない。",
       "work_type": "SOURCE_UPDATE",
       "requires_human_approval": true,
       "approval": {
@@ -1161,7 +1210,7 @@
         "at": "2026-09-05T09:25:00+09:00"
       },
       "created_at": "2026-09-05T09:25:00+09:00",
-      "updated_at": "2026-09-05T09:39:03+09:00"
+      "updated_at": "2026-09-05T12:15:00+09:00"
     }
   ],
   "checks": [
@@ -1833,6 +1882,100 @@
       "blocking": false,
       "created_at": "2026-09-05T09:39:03+09:00",
       "updated_at": "2026-09-05T09:39:03+09:00"
+    },
+    {
+      "id": "CHK-AITAG-030",
+      "title": "旧Player探索UI Source Update baseline binding",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Failed",
+      "result": "Studio Deploy Gateで旧提出ZIPを拒否。ZIP baseline=GA-B486.215/GKS-B869に対してGitHub HEAD=GA-B486.216/GKS-B870。UI変更内容ではなくexact baseline不一致が原因。",
+      "evidence": "GK_Studio_Gate_Diagnostic_GKS-B870_2026-09-05T02-21-59-600Z.json / SHA-256 07aba56ddec3540780c465d2b6965ed821928685c8d9cc709169c81c820b577e",
+      "checked_by": "Studio Deploy Gate",
+      "checked_at": "2026-09-05T11:22:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "CHK-AITAG-031",
+        "resolved_at": "2026-09-05T11:22:00+09:00",
+        "reason": "Human提供Fresh Current GKS-B870 / GA-B486.216を新baselineとして探索UI差分をリベースし、Target GKS-B871 / GA-B486.217 Candidateを作成。Targeted 7/7、Quick 11/11、package manifest 680、Critical Runtime 52 PASS。旧B869 baseline bindingは再利用しない。Protected Player Authoring Test 1件だけ新baseline exact-hash承認待ち。",
+        "mode": "automatic"
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T11:22:00+09:00",
+      "updated_at": "2026-09-05T11:22:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-031",
+      "title": "Player探索UI B870 Fresh Current rebase Candidate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Passed",
+      "result": "Human提供Fresh Current GKS-B870 / GA-B486.216を新baselineとして探索UI差分をリベースし、Target GKS-B871 / GA-B486.217 Candidateを作成。Targeted 7/7、Quick 11/11、package manifest 680、Critical Runtime 52 PASS。旧B869 baseline bindingは再利用しない。Protected Player Authoring Test 1件だけ新baseline exact-hash承認待ち。",
+      "evidence": "EVD-AITAG-021_PLAYER-SEARCH-UI-B871-REBASE-PROTECTED-PROPOSAL.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T11:22:00+09:00",
+      "resolves_check_ids": [
+        "CHK-AITAG-030"
+      ],
+      "resolution": {
+        "status": "Resolved",
+        "resolved_by": "AI",
+        "resolved_at": "2026-09-05T11:22:00+09:00",
+        "reason": "Fresh Current B870をbaselineに再作成し、旧B869 baseline依存を除去。",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T11:22:00+09:00",
+      "updated_at": "2026-09-05T11:22:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-032",
+      "title": "B871 Player Authoring Protected Test exact-hash承認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Passed",
+      "result": "HumanがB870 baseline acb835d5575ea4e5575ef222638f538260481e48999e9689d770d720944f95d4 → B871 updated d0973acdfdb863f91e613082f1217081b8e2c52a36506c8edb44fea72f6235ce をexact hashで承認。外部Approval JSONによるTest Integrityはapproval_verified=trueでPASS。",
+      "evidence": "TEST_CHANGE_APPROVAL_GKS-B871_GA-B486.217_PLAYER-SEARCH-UI-REDESIGN.json / SHA-256 38f5c37019f6c74c617ded1a427cb1c5519757c6dff13114cc8bb226da847bd3",
+      "checked_by": "Human",
+      "checked_at": "2026-09-05T12:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T12:15:00+09:00",
+      "updated_at": "2026-09-05T12:15:00+09:00"
+    },
+    {
+      "id": "CHK-AITAG-033",
+      "title": "B871 Player探索UI Source Update Final Gate",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-AITAG-021",
+      "status": "Passed",
+      "result": "GKS-B870 / GA-B486.216 exact baselineへGKS-B871 / GA-B486.217 updateをoverlay検証。Test Integrity external approval PASS、Quick 13/13、Accept 13/13、Applied Full 26/26、package manifest 680、Critical Runtime 52、warnings=0、timeouts=0。Source Update artifact_id=GKS-B871-2755b42e2ef4。Human Apply/Fresh Current確認前のためTaskはDoingを維持。",
+      "evidence": "EVD-AITAG-021_PLAYER-SEARCH-UI-GKS-B871-SOURCE-UPDATE-PASS.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-05T12:15:00+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-05T12:15:00+09:00",
+      "updated_at": "2026-09-05T12:15:00+09:00"
     }
   ],
   "workflow": {
@@ -1968,6 +2111,14 @@
     {
       "at": "2026-09-05T09:39:03+09:00",
       "message": "HumanがPlayer Authoring protected test 1件のexact hash変更を承認。外部Approval JSONでTest Integrityを通過。初回AcceptはGame側Build cache/harness参照追随漏れでFailed。Protected Testを変更せずgame/index.html / game/sw.jsのSource cache参照のみGKS-B870 / GA-B486.216へ同期し、再実行Quick 13/13、Accept 13/13、Applied Full 26/26 PASS。TASK-AITAG-021はHuman Apply/Fresh Current確認待ちのためDoingを維持。"
+    },
+    {
+      "at": "2026-09-05T11:22:00+09:00",
+      "message": "Studio Deploy Gate診断で旧Player探索UI Source Updateはbaseline B869/B215に対してGitHub HEAD B870/B216のため停止。Human提供Fresh Current GKS-B870 / GA-B486.216を新Authority baselineとして採用し、同一探索UI仕様をGKS-B871 / GA-B486.217へリベース。Targeted 7/7、Quick 11/11、package manifest 680、Critical Runtime 52 PASS。旧approvalはbaseline hash不一致のため流用せず新exact-hash Human Gateへ移行。"
+    },
+    {
+      "at": "2026-09-05T12:15:00+09:00",
+      "message": "HumanがB871 Player Authoring protected test 1件をbaseline acb835d5...944f95d4 → updated d0973acd...f6235ceのexact hashで承認。外部Approval JSONでTest Integrity PASS。GKS-B870 exact baselineへのSource Update overlayをQuick 13/13、Accept 13/13、Applied Full 26/26で検証し、GKS-B871 / GA-B486.217 artifact GKS-B871-2755b42e2ef4を作成。Human Apply/Fresh Current確認待ちのためTASK-AITAG-021はDoingを維持。"
     }
   ]
 }
