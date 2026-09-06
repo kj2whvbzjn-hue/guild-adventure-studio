@@ -10,17 +10,17 @@
     "name": "Game Data Authority Git分離・Studio正本同期",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-06T13:23:54.004Z"
+    "updated_at": "2026-09-06T14:39:37.053Z"
   },
   "project_context": {
     "purpose": "Sourceコードとゲームデータ正本を分離し、AIによるSource修正がGame Data Authorityを直接変更できない構造へ移行する。Game Dataの正式正本はGitHub上の専用Authority領域に置き、Studioは正本からの取得・作業コピー・検証済み保存を担当する。Public Gameが読むFormal ExportはProject Data Authorityとは別責務のまま維持する。 また、AIが作成した部分JSONはAuthorityへ直接書き込まず、StudioのAI Import Merge Gateを通してWorking Copyへ安全に統合し、その後に通常のAuthority Push Gateを通す。",
     "summary": "Current GKS-B878 / GA-B486.224を監査。root project-data.jsonはSource ZIP内に存在しStudio初回起動時のZIP正本候補だが、内容はproject.updated_at=2026-07-26でtags/tag_categories/AI Masterが0件の古い小規模snapshot。一方Game Runtimeはroot project-data.jsonを直接参照せずExport/**を使用する。現在のGitHub pullFromGitHub()は簡易shape確認だけでFull Import Pre-flightを通さず、pushToGitHub()も保存前Formal Gate/差分承認/堅牢なlast-pull競合管理が不足。Game Data配置とStudio更新はGitHub owner/repo/branch設定を既存GitHub同期と相互共有するため、Game Data専用Repositoryへ切り替える前に接続設定分離が必要。実装は未着手で、現在は監査完了・設計/移行計画を仕様化する段階。 追加方針として、AI生成Game Dataはproject-data.json全件置換ではなく部分Import artifactとしてStudioへ渡し、Dry Run/ID・参照・差分/Human承認後にWorking Copyへ原子的に統合し、Authorityへは既存Push Gate経由でのみ反映する。"
   },
   "current_focus": {
-    "architecture_id": "ARCH-GDA-AUTHORITY",
-    "work_box_id": "BOX-GDA-002",
-    "theme": "Game Data Authority境界・Git正本化・移行契約の仕様化",
-    "goal": "実装に入る前に、正本/作業コピー/Public Exportの責務、Game Data専用Git接続、Pull/Push Gate、root project-data.jsonの移行方法、manifest/Gateway/Test影響をexact pathで確定しHuman承認を得る。"
+    "architecture_id": "ARCH-GDA-STUDIO",
+    "work_box_id": "BOX-GDA-003",
+    "theme": "Authority接続契約承認済み・Source変更前exact path / Pull / Push Gate具体設計",
+    "goal": "承認済みAuthority接続方式を前提に、Current Sourceのexact path変更範囲、Pull Gate、Push Gate、root project-data migration、AI Import Merge詳細を確定する。Source実装はimplementation approvalまで開始しない。"
   },
   "project_rules": [
     {
@@ -97,12 +97,12 @@
     },
     {
       "id": "RULE-GDA-009",
-      "text": "Game Data専用Repositoryのowner/repository/branch/path、credential/PAT scopeはHuman設定事項。工程管理上で具体値を推測・固定しない。",
+      "text": "Game Data Authorityのowner/repository/branch/path/tokenの具体値は実運用時にHumanがStudioへ入力する。実装前に実値を決定・Sourceへ固定しない。Owner/RepositoryはAuthority専用設定としてStudioが記憶してよい。Branch/TokenはStudio localStorageへ保存せず、ブラウザ/Password Managerへ登録可能な入力属性を付与する。Authority入力値をGame Data Deploy/Studio Deploy/旧GitHub同期へ相互コピーしない。",
       "status": "Active",
-      "source_type": "HumanBoundary",
-      "source_id": "audit 2026-09-06",
+      "source_type": "HumanDecision",
+      "source_id": "conversation 2026-09-06 Authority connection retention approval",
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "RULE-GDA-010",
@@ -220,18 +220,18 @@
     {
       "id": "DISC-GDA-006",
       "title": "Game Data Authority credential境界",
-      "status": "Open",
-      "summary": "AI Source作業からGame Data Authorityへの無制限書込を防ぐにはRepository分離だけでなくcredential運用が必要。",
-      "body": "Source作業環境がGame Data Authority write credentialを常時保持すると、論理分離しても誤書込余地が残る。StudioのHuman操作時のみ必要なwrite credentialを入力し、Source Update/Gate作業ではAuthority書込を要求しない構造が望ましい。",
-      "open_questions": "PAT/credentialをどのUIで入力するか、保存するか否か、read/write scopeを分けるか、組織/branch protectionを使うか。具体設定はHuman環境依存のため本監査では確定しない。",
-      "conclusion": "未決。Repository設定TaskでHuman確認する。",
+      "status": "Resolved",
+      "summary": "Game Data Authority接続情報の入力・保持契約をHuman承認。具体remote/token値は運用時入力であり実装前ブロッカーではない。",
+      "body": "Authority接続はCurrent Gateと同じHuman入力方式を採用する。Owner/Repository/Branch/Path/TokenをStudio UIから入力し、接続確認→Pre-flight/Validation→差分確認→Human承認→実行の順で扱う。Owner/RepositoryはAuthority専用設定としてStudioが記憶してよい。BranchとTokenはStudio localStorageへ保存しない。Branchは通常text入力のままPassword Managerへ登録可能なusername相当属性、Tokenはpassword入力かつcurrent-password相当属性を持たせる。Authority値は既存Game Data Deploy/Studio Deploy/旧GitHub同期のgh*値と共有・相互コピーしない。具体owner/repository/branch/path/token値は操作時にHumanが入力するため、実装前の固定値決定を要求しない。",
+      "open_questions": "",
+      "conclusion": "Authority接続の入力・保持方式はHuman Approved。具体接続値は運用時入力。Source/Public Deployとのconnection scope分離は実装要件として維持する。",
       "related_discussion_ids": [
         "DISC-GDA-004",
         "DISC-GDA-005"
       ],
-      "artifact_note": "Security/operations design item; no credential values stored in project JSON",
+      "artifact_note": "Human approved 2026-09-06; implementation not started",
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "DISC-GDA-007",
@@ -282,16 +282,16 @@
     {
       "id": "DEC-GDA-003",
       "title": "Game Data Authority Git接続をSource/Public Deploy接続から分離する",
-      "status": "Proposed",
-      "text": "StudioにGame Data Authority専用のowner/repository/branch/path設定を持たせ、既存GitHub同期/Game Data Deploy/Studio Updateの共有設定から分離する。",
-      "rationale": "CurrentはGH_SETTINGS_KEYとghOwner/ghRepo/ghBranchを複数機能が共有しており、専用Repository導入時に誤配置を招く。具体UI/保存keyはSource impact確認後に確定する。",
+      "status": "Approved",
+      "text": "StudioにGame Data Authority専用のOwner/Repository/Branch/Project Data Path/Token入力を設け、既存GitHub同期/Game Data Deploy/Studio Deployの接続設定から分離する。Owner/RepositoryはAuthority専用設定としてStudioが記憶してよい。Branch/TokenはStudio localStorageへ保存せず、ブラウザ/Password Managerへ登録可能な入力属性を付与する。Authority値と既存gh*値の相互コピーは禁止する。具体接続値は運用時にHumanが入力し、Sourceへハードコードしない。",
+      "rationale": "Current Gateと同じHuman入力→接続確認→Pre-flight/Validation→差分確認→Human承認→実行方式を採用することで、新たな固定Repository/Credential管理を導入せず既存運用に揃えられる。一方、CurrentのGH_SETTINGS_KEY共有はAuthority分離目的に反するため、Authority connection scopeだけは完全に独立させる。",
       "source_discussion_ids": [
         "DISC-GDA-004"
       ],
-      "approved_by": "",
-      "approved_at": "",
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T22:49:00+09:00",
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "DEC-GDA-004",
@@ -340,7 +340,7 @@
     {
       "id": "SPEC-GDA-001",
       "title": "Game Data Single Authority / Working Copy境界",
-      "status": "Review",
+      "status": "Approved",
       "summary": "GitHub Game Data Authorityを唯一の正式Project Data正本とし、localStorageはworking copy、Source rootは非Authority、Export/**はPublic配布データとする。",
       "body": "## Authority\n- GitHub Game Data Authorityのproject-data.jsonが正式正本。\n- owner/repository/branch/pathはHuman設定でありSourceへ固定しない。\n\n## Working Copy\n- Studio localStorageは編集・backup・validation用working copy。\n- AuthorityからPull Gateを通して作成し、AuthorityへのPush Gate成功時にのみ正本更新。\n\n## Source\n- Source Repository/ZIPはGame Data正本を所有しない。root project-data.jsonの物理扱いはmigration specで決めるが、少なくともAuthorityではない。\n\n## Public Game\n- Formal Export / Export/**はGame Runtime用配布物。Authorityの代替正本ではない。",
       "decision_refs": [
@@ -358,10 +358,10 @@
       "source_candidate_id": "GKS-B878 / GA-B486.224 audit",
       "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
       "revision": 1,
-      "approved_by": "",
-      "approved_at": "",
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T22:49:00+09:00",
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "SPEC-GDA-002",
@@ -416,27 +416,27 @@
     {
       "id": "SPEC-GDA-004",
       "title": "Game Data Authority専用Git Connection Scope",
-      "status": "Draft",
-      "summary": "Authority用owner/repo/branch/pathをPublic Export配置およびSource更新のGit設定から分離する。",
-      "body": "Current GH_SETTINGS_KEY/ghOwner/ghRepo/ghBranchを複数用途で共有する構造をAuthority導入前に解消する。Game Data Authority専用設定はStudioのAuthority Pull/Pushだけが利用し、Game Data Deploy(Formal Export)とStudio Updateは既存/別deployment設定を使用する。PATは既存方針どおり可能な限り非保存とし、具体scopeはHuman運用決定。",
+      "status": "Approved",
+      "summary": "Authority用Git Connectionを既存Source/Public Deploy接続から完全分離し、Current Gateと同じHuman入力方式で扱う。",
+      "body": "## 接続scope\n- Game Data Authority専用のOwner / Repository / Branch / Project Data Path / Token入力を持つ。\n- Authority入力値を既存ghOwner/ghRepo/ghBranch/ghPath/ghTokenへコピーしない。\n- Game Data Deploy / Studio Deploy / 旧GitHub同期からAuthority入力へもコピーしない。\n\n## Human入力方式\n- Current Gateと同じく、操作時にHumanが接続情報を入力する。\n- 接続確認 → Pre-flight/Validation → 差分確認 → Human承認 → 実行の順序を基本とする。\n- 具体Owner/Repository/Branch/Path/Token値は実装前に固定せず、運用時入力とする。\n\n## 記憶契約\n- Owner: Authority専用設定としてStudioが記憶してよい。\n- Repository: Authority専用設定としてStudioが記憶してよい。\n- Branch: Studio localStorageへ保存しない。通常text入力のままブラウザ/Password Managerへ登録可能なusername相当autocomplete属性を付ける。\n- Token: Studio localStorageへ保存しない。password入力とし、ブラウザ/Password Managerへ登録可能なcurrent-password相当autocomplete属性を付ける。\n- Project Data Path: 操作時入力。保持の詳細はCurrent Gateとの整合をSource実装時に確認し、Authority以外へ共有しない。\n\n## セキュリティ/境界\n- Token実値をSource、Project Data、工程管理JSON、Authority revision metadataへ保存しない。\n- Authority接続はexplicit configで使用し、表示中View等から暗黙的に既存gh* credentialを拾わない。",
       "decision_refs": [
         "DEC-GDA-003"
       ],
       "depends_on": [
         "SPEC-GDA-001"
       ],
-      "acceptance_criteria": "Authority repo設定を変更してもFormal Export配置先/Studio Source更新先が変化しない。逆方向も同様。各UIに接続先用途が明示される。",
+      "acceptance_criteria": "Authority Owner/RepositoryをStudioがAuthority専用設定として記憶できる。Branch/TokenはStudio localStorageに保存されず、ブラウザ/Password Managerへ登録可能な属性を持つ。Authority入力値を変更してもGame Data Deploy/Studio Deploy/旧GitHub同期の接続値が変化せず、逆方向も変化しない。具体remote/token値をSourceへハードコードしない。",
       "system_node_id": "SYS-GDA-STUDIO",
       "contract_ids": [
         "CTR-GDA-006"
       ],
       "source_candidate_id": "studio/index.html GH_SETTINGS_KEY + deployment sync",
       "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
-      "revision": 1,
-      "approved_by": "",
-      "approved_at": "",
+      "revision": 2,
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T22:49:00+09:00",
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "SPEC-GDA-005",
@@ -659,9 +659,9 @@
         "SYS-GDA-EXPORT",
         "SYS-GDA-SOURCE"
       ],
-      "definition": "Game Data Authority接続とPublic Export/Source Update接続は別設定scopeとして扱う。1つのowner/repo/branch設定変更が他用途へ暗黙伝播しない。",
+      "definition": "Game Data Authority接続とPublic Export/Source Update接続は別設定scopeとして扱い、値を相互コピーしない。AuthorityはHumanが操作時にOwner/Repository/Branch/Project Data Path/Tokenを入力する。Owner/RepositoryはAuthority専用設定としてStudioが記憶してよい。Branch/TokenはStudio localStorageへ保存せず、ブラウザ/Password Manager登録可能な入力属性を持つ。Token実値をSource/Project Data/工程管理/Revision metadataへ保存しない。",
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "CTR-GDA-007",
@@ -826,6 +826,32 @@
       },
       "actor": "Human",
       "created_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "EVT-GDA-004",
+      "type": "HUMAN_AUTHORITY_CONNECTION_CONTRACT_APPROVED",
+      "target_type": "Decision",
+      "target_id": "DEC-GDA-003",
+      "payload": {
+        "input_mode": "Current Gate style Human input",
+        "remember_in_studio": [
+          "owner",
+          "repository"
+        ],
+        "not_persist_in_studio_localStorage": [
+          "branch",
+          "token"
+        ],
+        "password_manager_attributes": [
+          "branch",
+          "token"
+        ],
+        "token_input_type": "password",
+        "cross_copy_with_legacy_deploy_connections": false,
+        "concrete_remote_values_required_before_implementation": false
+      },
+      "actor": "Human",
+      "created_at": "2026-09-06T22:49:00+09:00"
     }
   ],
   "system_impacts": [
@@ -1068,41 +1094,41 @@
       "id": "TASK-GDA-002",
       "box_id": "BOX-GDA-002",
       "title": "Single Authority / Working Copy / Export境界仕様をHumanレビュー",
-      "status": "Todo",
+      "status": "Done",
       "execution_order": 2,
       "depends_on": [
         "TASK-GDA-001"
       ],
-      "acceptance_criteria": "SPEC-GDA-001を基準に、GitHub Authorityのみを正式Project Data正本、localStorageをworking copy、Source rootを非Authority、Export/**をPublic配布物とする責務境界をHuman承認する。未承認事項を確定扱いしない。",
+      "acceptance_criteria": "Human承認済み。GitHub Authorityのみを正式Project Data正本、localStorageをWorking Copy、Source rootを非Authority、Export/**をPublic Game Runtime向けFormal公開物として責務分離する。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T22:49:00+09:00"
       },
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "TASK-GDA-003",
       "box_id": "BOX-GDA-002",
-      "title": "Game Data Authority Remote / Credential運用をHuman決定",
-      "status": "Todo",
+      "title": "Game Data Authority接続情報の入力・保持契約をHuman確定",
+      "status": "Done",
       "execution_order": 3,
       "depends_on": [
         "TASK-GDA-002"
       ],
-      "acceptance_criteria": "owner/repository/branch/path、PAT/credentialの入力・保存・scope、必要ならbranch protectionをHumanが決定。値をSource/工程管理で推測しない。Source/Public Deploy remoteとは別scopeであることを確認。",
+      "acceptance_criteria": "Human承認済み。Authority接続はCurrent Gateと同じ操作時Human入力方式。Owner/RepositoryはStudioがAuthority専用設定として記憶可。Branch/TokenはStudio localStorageへ保存せずPassword Manager登録可能属性を付与。Tokenはpassword入力。Authority値とGame Data Deploy/Studio Deploy/旧GitHub同期の相互コピー禁止。具体remote/token値は運用時入力であり実装前ブロッカーではない。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
-        "status": "Pending",
-        "by": "",
-        "at": ""
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T22:49:00+09:00"
       },
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "TASK-GDA-004",
@@ -1588,11 +1614,11 @@
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-GDA-002",
-      "status": "Pending",
-      "result": "SPEC-GDA-001の詳細責務境界はHuman review待ち。Human承認済みなのはGitHub Authority + Studio経由へ変更する方向であり、細部を実装済み扱いしない。",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "Authority基本境界をHuman承認。GitHub Authority=正式Project Data正本、localStorage=Working Copy、Source=非Authority、Export/**=Game Runtime向けFormal公開物。",
+      "evidence": "Human approval in conversation 2026-09-06",
+      "checked_by": "Human",
+      "checked_at": "2026-09-06T22:49:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -1603,19 +1629,19 @@
       },
       "blocking": false,
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "CHK-GDA-009",
-      "title": "Game Data Authority remote/credential Human決定",
+      "title": "Game Data Authority connection入力・保持契約Human承認",
       "gate": "General",
       "target_type": "Task",
       "target_id": "TASK-GDA-003",
-      "status": "Pending",
-      "result": "owner/repository/branch/path/PAT scope未決。具体値を推測しない。",
-      "evidence": "",
-      "checked_by": "",
-      "checked_at": "",
+      "status": "Passed",
+      "result": "Current Gate同様の操作時Human入力方式を承認。Owner/RepositoryはStudio記憶可。Branch/TokenはStudio localStorage非保存かつPassword Manager登録可能属性。Tokenはpassword入力。Authority connectionは既存Deploy/旧GitHub同期と分離し相互コピー禁止。具体値は運用時入力。",
+      "evidence": "Human approval in conversation 2026-09-06",
+      "checked_by": "Human",
+      "checked_at": "2026-09-06T22:49:00+09:00",
       "resolves_check_ids": [],
       "resolution": {
         "status": "Open",
@@ -1626,7 +1652,7 @@
       },
       "blocking": false,
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T22:49:00+09:00"
     },
     {
       "id": "CHK-GDA-010",
@@ -1804,6 +1830,10 @@
     {
       "at": "2026-09-06T21:52:00+09:00",
       "message": "Human指示によりAI Game Data作成経路を追加。AIはAuthorityを直接編集せず部分Import JSONを提出し、Studio Merge GateでDry Run/Project ID/Schema/ID/参照/差分/Human承認後にWorking Copyへ統合し、その後通常Authority Push Gateを通す。通常AI Importの全件置換/DELETE混在は禁止方向。Source実装は未着手。"
+    },
+    {
+      "at": "2026-09-06T22:49:00+09:00",
+      "message": "HumanがGame Data Authority接続方式を承認。Current Gate同様に操作時Human入力→接続確認→Pre-flight/Validation→差分確認→Human承認→実行とする。Owner/RepositoryはAuthority専用設定としてStudioが記憶可。Branch/TokenはStudio localStorageへ保存せずPassword Manager登録可能属性を付与し、Tokenはpassword入力。Authority値はGame Data Deploy/Studio Deploy/旧GitHub同期と共有・相互コピーしない。具体remote/token値は運用時入力のため実装前ブロッカーから除外。Source実装は未着手。"
     }
   ]
 }
