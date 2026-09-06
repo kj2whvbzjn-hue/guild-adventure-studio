@@ -1,0 +1,1534 @@
+{
+  "schema_version": "2.0",
+  "authority": {
+    "version": 1,
+    "instance_id": "DPI-2656d291-c12f-461d-9c25-3af789b63d05",
+    "canonical_path": "development-project-data/DEV-V9-GAME-DATA-AUTHORITY-001.json"
+  },
+  "workspace": {
+    "id": "DEV-V9-GAME-DATA-AUTHORITY-001",
+    "name": "Game Data Authority Git分離・Studio正本同期",
+    "status": "Specifying",
+    "ai_attention": "Auto",
+    "updated_at": "2026-09-06T20:18:17+09:00"
+  },
+  "project_context": {
+    "purpose": "Sourceコードとゲームデータ正本を分離し、AIによるSource修正がGame Data Authorityを直接変更できない構造へ移行する。Game Dataの正式正本はGitHub上の専用Authority領域に置き、Studioは正本からの取得・作業コピー・検証済み保存を担当する。Public Gameが読むFormal ExportはProject Data Authorityとは別責務のまま維持する。",
+    "summary": "Current GKS-B878 / GA-B486.224を監査。root project-data.jsonはSource ZIP内に存在しStudio初回起動時のZIP正本候補だが、内容はproject.updated_at=2026-07-26でtags/tag_categories/AI Masterが0件の古い小規模snapshot。一方Game Runtimeはroot project-data.jsonを直接参照せずExport/**を使用する。現在のGitHub pullFromGitHub()は簡易shape確認だけでFull Import Pre-flightを通さず、pushToGitHub()も保存前Formal Gate/差分承認/堅牢なlast-pull競合管理が不足。Game Data配置とStudio更新はGitHub owner/repo/branch設定を既存GitHub同期と相互共有するため、Game Data専用Repositoryへ切り替える前に接続設定分離が必要。実装は未着手で、現在は監査完了・設計/移行計画を仕様化する段階。"
+  },
+  "current_focus": {
+    "architecture_id": "ARCH-GDA-AUTHORITY",
+    "work_box_id": "BOX-GDA-002",
+    "theme": "Game Data Authority境界・Git正本化・移行契約の仕様化",
+    "goal": "実装に入る前に、正本/作業コピー/Public Exportの責務、Game Data専用Git接続、Pull/Push Gate、root project-data.jsonの移行方法、manifest/Gateway/Test影響をexact pathで確定しHuman承認を得る。"
+  },
+  "project_rules": [
+    {
+      "id": "RULE-GDA-001",
+      "text": "Human承認済みの方向は「SourceとGame Data正本を分離し、Game DataをGitHub Authorityに置き、Studioから取得・保存する」。ただしSource実装・Game Data移行はまだ未承認・未着手として扱う。",
+      "status": "Active",
+      "source_type": "HumanDecision",
+      "source_id": "conversation 2026-09-06",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-002",
+      "text": "Game Data AuthorityとStudio作業コピーを同一視しない。GitHub上の正式project-data.jsonをAuthority、localStorageは作業コピー/キャッシュとして扱う。",
+      "status": "Active",
+      "source_type": "ArchitectureDirection",
+      "source_id": "DEC-GDA-001",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-003",
+      "text": "通常のSource Update成果物がGame Data Authorityを書き換える経路を持たないこと。Source作業にGame Data正本の書込credentialを要求しない。",
+      "status": "Active",
+      "source_type": "ArchitectureDirection",
+      "source_id": "DEC-GDA-001",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-004",
+      "text": "Game Dataを利用するためにフルSourceをGitから取得する運用にはしない。StudioがGame Data Authorityのproject-data.jsonだけを正式経路で取得・保存できる構造を基本とする。",
+      "status": "Active",
+      "source_type": "HumanDecision",
+      "source_id": "DEC-GDA-002",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-005",
+      "text": "GitHubからGame Dataを取得してStudio作業コピーへ反映する前に、少なくとも既存Full Import Pre-flight相当のProject ID/Schema/Master参照/Game Data参照/Studio Validationを通し、ERROR 0とHuman確認を要求する。",
+      "status": "Active",
+      "source_type": "SafetyRequirement",
+      "source_id": "audit 2026-09-06",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-006",
+      "text": "StudioからGame Data Authorityへ保存する前に、保存候補のValidation、Authorityとの差分確認、remote SHA/Commitによる競合防止、Human承認を行い、無検証の直接PUTを正式経路にしない。",
+      "status": "Active",
+      "source_type": "SafetyRequirement",
+      "source_id": "audit 2026-09-06",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-007",
+      "text": "Game Data Authority用Git接続設定と、Public Export配置/Studio Source更新用Git接続設定を分離する。現在のGH_SETTINGS_KEY共有状態のままGame Data専用Repositoryへ切り替えない。",
+      "status": "Active",
+      "source_type": "AuditFinding",
+      "source_id": "studio/index.html",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-008",
+      "text": "Formal Export / Export/** はPublic Game Runtimeが読む配布データであり、Game Data Authorityのproject-data.jsonとは別契約として維持する。Exportを逆輸入してProject Data正本の代替にしない。",
+      "status": "Active",
+      "source_type": "ArchitectureBoundary",
+      "source_id": "audit 2026-09-06",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-009",
+      "text": "Game Data専用Repositoryのowner/repository/branch/path、credential/PAT scopeはHuman設定事項。工程管理上で具体値を推測・固定しない。",
+      "status": "Active",
+      "source_type": "HumanBoundary",
+      "source_id": "audit 2026-09-06",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-010",
+      "text": "Source変更前にexact path impactを提示し、Protected/Integrity/Gateway/Test契約を含む変更範囲をHuman確認する。監査段階の事実と、後続の設計候補・実装結果を混同しない。",
+      "status": "Active",
+      "source_type": "ProjectPolicy",
+      "source_id": "current development workflow",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "source_baseline": {
+    "studio_build": "GKS-B878",
+    "game_build": "GA-B486.224",
+    "source_label": "guild-adventure-studio-sub(20260906-111027).zip",
+    "source_role": "Human-provided Fresh Current used to verify development-project registration schema and reconfirm Game Data separation audit facts; no Source/Game Data modifications performed",
+    "recorded_at": "2026-09-06T20:18:17+09:00",
+    "source_zip_sha256": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+    "package_manifest_sha256": "2be0e526a620ba7cdd6e9238f7bff6bc7dba4cc21c5c8e6bd47f4387ed1f4e74",
+    "quick_gate_report": "gda_quick_latest.json",
+    "quick_gate_report_sha256": "2321ab36953795601cd5101394ab177d1aadf56ef98b9e447ce3ca790037def0",
+    "quick_gate_result": "PASS 11/11, failed=0, warnings=0, timeouts=0"
+  },
+  "lifecycle": {
+    "status": "Active",
+    "superseded_by": "",
+    "updated_at": "2026-09-06T20:18:17+09:00"
+  },
+  "implementation_records": [],
+  "discussions": [
+    {
+      "id": "DISC-GDA-001",
+      "title": "Current Game Data Authority候補が複数存在する",
+      "status": "Resolved",
+      "summary": "Source root project-data.json、browser localStorage、GitHub同期先project-data.jsonが同時に存在し、どれを正本とみなすかの境界が弱い。",
+      "body": "Current StudioはCANONICAL_PROJECT_URL=../project-data.jsonを持ち、初回localStorageが無い場合にSource ZIP同梱project-data.jsonを自動読込する。一方通常作業はlocalStorage上dataで進み、GitHub同期では任意owner/repo/branch/pathのproject-data.jsonをPull/Pushできる。Authorityが複数候補に見えるため、Source修正とGame Data正本を安全に分離できない。",
+      "open_questions": "",
+      "conclusion": "HumanはSourceとGame Dataを分離し、Game DataをGitHub Authority、Studioを正式I/O経路とする方向を選択。詳細移行契約は後続仕様化する。",
+      "related_discussion_ids": [],
+      "artifact_note": "studio/index.html: CANONICAL_PROJECT_URL / initializeCanonicalProjectData / pullFromGitHub / pushToGitHub",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DISC-GDA-002",
+      "title": "Source root project-data.jsonの最終扱い",
+      "status": "Open",
+      "summary": "root project-data.jsonは現在Source integrity/package/Gateway/Testに組み込まれているが、内容はCurrent Game Dataと一致していない。",
+      "body": "Current root project-data.jsonは約4.6KB、project.updated_at=2026-07-26T01:01:29.341Z、tags=0、tag_categories=0、ai_conditions/actions/searches=0。Source側ではtools/inspection required path、critical-runtime-manifest、root-surface-manifest、github-pages-package、component-map、impact/delete policy、AI Gateway、一部Testsが参照する。Game Runtimeから直接参照する実装は確認されない。",
+      "open_questions": "Cutover時にroot project-data.jsonを完全削除するか、非Authorityのgenerated mirror/fixtureとして一時残すか。残す場合は誰が生成し、Source Updateで変更可能か、Authorityとの一致をどう保証するかをHuman決定する必要がある。",
+      "conclusion": "未決。Sourceから正本責務を外すことは必要だが、物理削除の時期と互換移行方式は後続設計で決定する。",
+      "related_discussion_ids": [
+        "DISC-GDA-001"
+      ],
+      "artifact_note": "project-data.json; shared/integrity/*; shared/release/github-pages-package.json; ai-gateway-*; tests/*",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DISC-GDA-003",
+      "title": "Current GitHub Pull/PushはGame Data Authority Gateとして不足",
+      "status": "Resolved",
+      "summary": "既存同期は輸送機能として利用できるがAuthority read/writeとしては検証と競合契約が不足。",
+      "body": "pullFromGitHub()はGitHub contentをJSON parseしproject/decisions/entitiesの簡易shape確認後、Human confirm、backup、data置換、persistを行う。既存Full Import Pre-flightのMaster参照/Game Data参照/Project ID/Studio Validationを通さない。pushToGitHub()はcurrent dataを直接PUTし、remote SHAは使うが保存候補Formal Gateと差分承認がない。またpush開始時にdata.sync_metaを再作成するためpulled_atベース競合判定を正しく保持できない構造がある。",
+      "open_questions": "",
+      "conclusion": "Git transport helper自体は再利用候補だが、Authority用Pull/Pushは専用Gateを通す別契約として再設計する。",
+      "related_discussion_ids": [
+        "DISC-GDA-001"
+      ],
+      "artifact_note": "studio/index.html: pushToGitHub(), pullFromGitHub(), getRemoteFile(), Full Import Pre-flight functions",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DISC-GDA-004",
+      "title": "GitHub接続設定がGame Data配置/Studio更新と共有されている",
+      "status": "Resolved",
+      "summary": "Game Data専用Repositoryを導入する前にconnection scope分離が必要。",
+      "body": "Current ghOwner/ghRepo/ghBranch/GH_SETTINGS_KEYをGitHub project-data同期が使用し、Gameデータ配置画面syncGameDeployGitHubSettings()は同じ値を相互コピーする。Studio更新配置も同じ基礎設定を参照する箇所がある。Game Data Authorityのrepoを変更するとPublic Export配置やSource更新先まで巻き込む危険がある。",
+      "open_questions": "",
+      "conclusion": "Authority connection設定とSource/Public deployment connection設定を明示的に分離することを移行前提とする。",
+      "related_discussion_ids": [
+        "DISC-GDA-003"
+      ],
+      "artifact_note": "studio/index.html: GH_SETTINGS_KEY, syncGameDeployGitHubSettings(), saveGameDeployConnectionSettingsSilent()",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DISC-GDA-005",
+      "title": "Authority Cutoverと初期データ投入手順",
+      "status": "Open",
+      "summary": "GitHub Authorityを作成する際、現在のどのStudio作業データを初回正本として採用するかを誤ると古いroot snapshotを正本化する危険がある。",
+      "body": "Source root project-data.jsonはCurrent作業データではないため、そのまま新Authorityへ初回Pushしてはいけない。Cutover時はHumanが「現在正式と認めるStudio Project Data」を明示し、Full Pre-flight/Validation/Diff/Backupを通した上で初回commitする必要がある。",
+      "open_questions": "初回Authorityへ登録するProject Dataの取得元、初回commitのHuman承認方法、cutover前後の旧Git同期先をいつread-only/disabledにするか。",
+      "conclusion": "未決。Migration Plan GateでHuman承認を取る。",
+      "related_discussion_ids": [
+        "DISC-GDA-001",
+        "DISC-GDA-002",
+        "DISC-GDA-003"
+      ],
+      "artifact_note": "Migration planning required before GAME_DATA task",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DISC-GDA-006",
+      "title": "Game Data Authority credential境界",
+      "status": "Open",
+      "summary": "AI Source作業からGame Data Authorityへの無制限書込を防ぐにはRepository分離だけでなくcredential運用が必要。",
+      "body": "Source作業環境がGame Data Authority write credentialを常時保持すると、論理分離しても誤書込余地が残る。StudioのHuman操作時のみ必要なwrite credentialを入力し、Source Update/Gate作業ではAuthority書込を要求しない構造が望ましい。",
+      "open_questions": "PAT/credentialをどのUIで入力するか、保存するか否か、read/write scopeを分けるか、組織/branch protectionを使うか。具体設定はHuman環境依存のため本監査では確定しない。",
+      "conclusion": "未決。Repository設定TaskでHuman確認する。",
+      "related_discussion_ids": [
+        "DISC-GDA-004",
+        "DISC-GDA-005"
+      ],
+      "artifact_note": "Security/operations design item; no credential values stored in project JSON",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-GDA-001",
+      "title": "SourceとGame Data Authorityを分離する",
+      "status": "Approved",
+      "text": "Game Dataの正式正本をSource ZIP/Source treeから分離してGitHub上のGame Data Authorityに置き、StudioはAuthorityから取得した作業コピーを編集し、Gate/Human承認を経てAuthorityへ保存する方式へ変更する。Source修正AIが通常のSource作業だけでGame Data Authorityを直接変更できない境界を作る。",
+      "rationale": "Humanが監査前の方式説明を確認し「この方式に変更したい」と明示。Current監査でもSource root project-data.jsonが古いsnapshotでGame Runtimeの直接依存がなく、分離の技術的余地が確認された。",
+      "source_discussion_ids": [
+        "DISC-GDA-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T20:18:17+09:00",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DEC-GDA-002",
+      "title": "Game Data取得にフルSource取得を要求しない",
+      "status": "Approved",
+      "text": "Game Dataの通常取得・保存はStudioからGame Data Authorityのproject-data.json単体を扱う。Game Dataを出すためにGitからフルSourceコードを取得する運用にはしない。",
+      "rationale": "Humanが「どうやってgitからゲームデータを出すのか、フルソースかStudio経由か」を確認後、Studio経由でGame Data Authorityを扱う方式を採用する意思を示した。",
+      "source_discussion_ids": [
+        "DISC-GDA-001"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T20:18:17+09:00",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DEC-GDA-003",
+      "title": "Game Data Authority Git接続をSource/Public Deploy接続から分離する",
+      "status": "Proposed",
+      "text": "StudioにGame Data Authority専用のowner/repository/branch/path設定を持たせ、既存GitHub同期/Game Data Deploy/Studio Updateの共有設定から分離する。",
+      "rationale": "CurrentはGH_SETTINGS_KEYとghOwner/ghRepo/ghBranchを複数機能が共有しており、専用Repository導入時に誤配置を招く。具体UI/保存keyはSource impact確認後に確定する。",
+      "source_discussion_ids": [
+        "DISC-GDA-004"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DEC-GDA-004",
+      "title": "Authority PullはFull Import Pre-flight相当Gateを必須にする",
+      "status": "Proposed",
+      "text": "GitHubから取得したGame DataをlocalStorageへ置換する前に、Project ID、Schema、Master参照、Game Data参照、Studio Validation、ERROR 0、Backup、Human確認を必須化する。",
+      "rationale": "Current pullFromGitHub()は簡易shape確認だけでFull Import Gateを迂回する。Authority化後は破損データを正本として取り込む危険を許容できない。",
+      "source_discussion_ids": [
+        "DISC-GDA-003"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DEC-GDA-005",
+      "title": "Authority PushはValidation/Diff/SHA競合/Human承認を必須にする",
+      "status": "Proposed",
+      "text": "Studio作業コピーをAuthorityへ保存する前に候補Validation、Authorityとの差分表示、remote SHA/commit整合確認、Human承認を行い、成功時のみproject-data.jsonをcommitする。",
+      "rationale": "Current pushToGitHub()はtransportとしてはremote SHAを使うがFormal Gateと差分承認がなく、pulled_at管理にも構造的問題がある。",
+      "source_discussion_ids": [
+        "DISC-GDA-003"
+      ],
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "specifications": [
+    {
+      "id": "SPEC-GDA-001",
+      "title": "Game Data Single Authority / Working Copy境界",
+      "status": "Review",
+      "summary": "GitHub Game Data Authorityを唯一の正式Project Data正本とし、localStorageはworking copy、Source rootは非Authority、Export/**はPublic配布データとする。",
+      "body": "## Authority\n- GitHub Game Data Authorityのproject-data.jsonが正式正本。\n- owner/repository/branch/pathはHuman設定でありSourceへ固定しない。\n\n## Working Copy\n- Studio localStorageは編集・backup・validation用working copy。\n- AuthorityからPull Gateを通して作成し、AuthorityへのPush Gate成功時にのみ正本更新。\n\n## Source\n- Source Repository/ZIPはGame Data正本を所有しない。root project-data.jsonの物理扱いはmigration specで決めるが、少なくともAuthorityではない。\n\n## Public Game\n- Formal Export / Export/**はGame Runtime用配布物。Authorityの代替正本ではない。",
+      "decision_refs": [
+        "DEC-GDA-001",
+        "DEC-GDA-002"
+      ],
+      "depends_on": [],
+      "acceptance_criteria": "Authority/working copy/Source/Exportの4責務が一意に定義され、同じproject-data.jsonを複数Authorityとして扱わない。具体Git remote値をSourceへハードコードしない。",
+      "system_node_id": "SYS-GDA-AUTHORITY",
+      "contract_ids": [
+        "CTR-GDA-001",
+        "CTR-GDA-004",
+        "CTR-GDA-005"
+      ],
+      "source_candidate_id": "GKS-B878 / GA-B486.224 audit",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SPEC-GDA-002",
+      "title": "Studio Game Data Authority Pull Gate",
+      "status": "Draft",
+      "summary": "GitHub Authorityから取得したJSONを直接working copyへ代入せず、既存Full Import Pre-flight相当の検証・Backup・Human確認を通す。",
+      "body": "取得時にremote file contentとSHA/commitを取得。JSON parse後、Project ID/Schema/required shape、Master参照audit、Game Data参照audit、Studio Validationを実行。ERRORが1件でもあれば反映禁止。Current working copyをbackupし、Human確認後にのみlocalStorageへ置換。成功時はsource repository/branch/path/remote SHA/commit/pulled_atを同期metadataとして保持する。Project ID不一致はfail closed。",
+      "decision_refs": [
+        "DEC-GDA-004"
+      ],
+      "depends_on": [
+        "SPEC-GDA-001"
+      ],
+      "acceptance_criteria": "GitHub PullでFull Import Pre-flight相当ERROR 0が必須。失敗時working copy不変。成功時backupとremote SHA/commit metadataが残り、Human確認なしで置換されない。",
+      "system_node_id": "SYS-GDA-GATE",
+      "contract_ids": [
+        "CTR-GDA-002"
+      ],
+      "source_candidate_id": "studio/index.html pullFromGitHub + existing full import gate",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SPEC-GDA-003",
+      "title": "Studio Game Data Authority Push Gate",
+      "status": "Draft",
+      "summary": "working copyをAuthorityへ保存する前にValidation、remote SHA/commit競合確認、diff、Human承認を必須化する。",
+      "body": "Push開始時にworking copyの候補snapshotを固定し、そのsnapshotをFull Validationする。Authorityのcurrent content/SHAを取得し、最後にPull/Pushしたbase SHAと一致しなければ競合としてfail closed。Authorityとの差分をHumanへ表示し承認後のみPUT/commitする。成功後にnew SHA/commitをworking sync metadataへ記録する。push処理中にpulled_atを消失させる現行sync_meta再作成方式は廃止対象。",
+      "decision_refs": [
+        "DEC-GDA-005"
+      ],
+      "depends_on": [
+        "SPEC-GDA-001"
+      ],
+      "acceptance_criteria": "Validation ERROR/Project ID不一致/remote競合/Human未承認のいずれでもAuthorityを書き換えない。承認したdiffと実commit candidate bytesが一致し、成功後new SHA/commitが記録される。",
+      "system_node_id": "SYS-GDA-GATE",
+      "contract_ids": [
+        "CTR-GDA-003"
+      ],
+      "source_candidate_id": "studio/index.html pushToGitHub",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SPEC-GDA-004",
+      "title": "Game Data Authority専用Git Connection Scope",
+      "status": "Draft",
+      "summary": "Authority用owner/repo/branch/pathをPublic Export配置およびSource更新のGit設定から分離する。",
+      "body": "Current GH_SETTINGS_KEY/ghOwner/ghRepo/ghBranchを複数用途で共有する構造をAuthority導入前に解消する。Game Data Authority専用設定はStudioのAuthority Pull/Pushだけが利用し、Game Data Deploy(Formal Export)とStudio Updateは既存/別deployment設定を使用する。PATは既存方針どおり可能な限り非保存とし、具体scopeはHuman運用決定。",
+      "decision_refs": [
+        "DEC-GDA-003"
+      ],
+      "depends_on": [
+        "SPEC-GDA-001"
+      ],
+      "acceptance_criteria": "Authority repo設定を変更してもFormal Export配置先/Studio Source更新先が変化しない。逆方向も同様。各UIに接続先用途が明示される。",
+      "system_node_id": "SYS-GDA-STUDIO",
+      "contract_ids": [
+        "CTR-GDA-006"
+      ],
+      "source_candidate_id": "studio/index.html GH_SETTINGS_KEY + deployment sync",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SPEC-GDA-005",
+      "title": "Source root project-data.json De-authority / Migration",
+      "status": "Draft",
+      "summary": "Source root project-data.jsonをGame Data正本扱いから外し、Studio boot/Integrity/Release/Gateway/Test依存を安全に移行する。",
+      "body": "Current root fileは古いsnapshotのためAuthority初期値に使用禁止。initializeCanonicalProjectData/fetchCanonicalProjectData/reloadCanonicalProjectDataのZIP正本契約をAuthority Pullへ置換する。tools/inspection required path、critical-runtime-manifest、root-surface-manifest、github-pages-package、component-map、impact/delete policy、AI Gateway、8 direct-read testsを棚卸しし、物理削除または明示的non-authoritative fixture/mirrorへ変更する。どちらを採るかはHuman承認後にSource Updateする。",
+      "decision_refs": [
+        "DEC-GDA-001"
+      ],
+      "depends_on": [
+        "SPEC-GDA-001",
+        "SPEC-GDA-004"
+      ],
+      "acceptance_criteria": "Studio起動/通常操作がSource root project-dataを正本として自動採用しない。Source Gate/Release/Gateway/Testが新Authority境界と矛盾しない。Game RuntimeのExport/**利用を維持する。",
+      "system_node_id": "SYS-GDA-INTEGRITY",
+      "contract_ids": [
+        "CTR-GDA-004",
+        "CTR-GDA-005"
+      ],
+      "source_candidate_id": "Current root project-data and manifests audit",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SPEC-GDA-006",
+      "title": "Game Data Authority Cutover / Rollback / E2E",
+      "status": "Draft",
+      "summary": "初回Authority登録から旧Authority候補の閉鎖までを段階化し、誤った古いsnapshotの正本化を防ぐ。",
+      "body": "1) HumanがCurrent正式Studio Project Dataを指定。2) backup/exportを保存。3) Full Pre-flight/Validation。4) 新Game Data Authorityへ初回commit。5) Studio fresh sessionでAuthority Pull。6) no-op diff確認。7)小さな承認済みGame Data変更でPush/Pull往復。8) Formal Export→Game Data Deploy→Game Runtime確認。9) Source Update Gate/Full Gate確認。10) Human Cutover承認後に旧ZIP正本/旧同期経路を無効化または非Authority表示へ変更。Rollbackは初回Authority commit SHAとbackupから可能にする。",
+      "decision_refs": [
+        "DEC-GDA-001",
+        "DEC-GDA-002"
+      ],
+      "depends_on": [
+        "SPEC-GDA-002",
+        "SPEC-GDA-003",
+        "SPEC-GDA-004",
+        "SPEC-GDA-005"
+      ],
+      "acceptance_criteria": "古いroot snapshotを初回Authorityへ投入しない。Fresh StudioでAuthority取得可能。Push/Pull round-trip、Formal Export/Game Deploy、Source GateがPASS。Rollback pointが明示され、Human Cutover承認前に旧経路を破壊しない。",
+      "system_node_id": "SYS-GDA-STUDIO",
+      "contract_ids": [
+        "CTR-GDA-001",
+        "CTR-GDA-002",
+        "CTR-GDA-003",
+        "CTR-GDA-005"
+      ],
+      "source_candidate_id": "Audit migration requirements",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "specification_candidates": [],
+  "system_nodes": [
+    {
+      "id": "SYS-GDA-SOURCE",
+      "name": "Source Repository / Source Tree",
+      "description": "Studio/Game/shared/tests/tools等のSourceを保持しAI Source Updateの主対象となる領域。Game Data Authorityを正本として内包しないことを目標とする。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-AUTHORITY",
+      "name": "Game Data Git Authority",
+      "description": "正式project-data.jsonを保持するGitHub上のAuthority領域。具体owner/repository/branch/pathはHuman設定とし、本案件JSONでは固定しない。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-STUDIO",
+      "name": "Studio Game Data I/O",
+      "description": "AuthorityからGame Dataを取得し、検証後に作業コピーへ反映し、編集候補をGate経由でAuthorityへ保存するHuman操作面。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-GATE",
+      "name": "Game Data Authority Gate",
+      "description": "Pull/Push双方でProject ID/Schema/参照整合/Studio Validation/Diff/SHA/Approval等を強制する境界。既存Full Import Pre-flightを再利用候補とする。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-WORKCOPY",
+      "name": "Studio Local Working Copy",
+      "description": "Browser localStorage上のProject Data。編集・バックアップ・検証の作業領域でありAuthorityではない。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-EXPORT",
+      "name": "Formal Export / Public Game Data",
+      "description": "Studio Project Dataから生成されExport/**としてPublic Game Runtimeへ配置される配布データ。Project Data Authorityとは別契約。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-INTEGRITY",
+      "name": "Source Integrity / Package / AI Gateway",
+      "description": "project-data.jsonをrequired/protected/critical/package/Gateway対象としている現在のSource契約群。Authority分離時に責務更新が必要。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "system_contracts": [
+    {
+      "id": "CTR-GDA-001",
+      "name": "Game Data Single Authority Contract",
+      "producer_system_id": "SYS-GDA-AUTHORITY",
+      "consumer_system_ids": [
+        "SYS-GDA-STUDIO",
+        "SYS-GDA-GATE"
+      ],
+      "definition": "正式Project DataのAuthorityはGitHub上のGame Data Authorityにあるproject-data.json。Source ZIP rootやlocalStorageを同格の正本として扱わない。具体remote値はHuman設定から取得する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CTR-GDA-002",
+      "name": "Authority Pull Gate Contract",
+      "producer_system_id": "SYS-GDA-AUTHORITY",
+      "consumer_system_ids": [
+        "SYS-GDA-GATE",
+        "SYS-GDA-WORKCOPY"
+      ],
+      "definition": "Authorityから取得したJSONは直接dataへ代入せず、Project ID/Schema/Master参照/Game Data参照/Studio Validationを実施しERROR 0、Backup、Human確認後にのみworking copyへ反映する。取得時remote SHA/commitを同期metadataとして保持する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CTR-GDA-003",
+      "name": "Authority Push Gate Contract",
+      "producer_system_id": "SYS-GDA-WORKCOPY",
+      "consumer_system_ids": [
+        "SYS-GDA-GATE",
+        "SYS-GDA-AUTHORITY"
+      ],
+      "definition": "Working CopyからAuthorityへ保存する際は候補Validation、remote current SHA/commit照合、Authorityとの差分、Human承認を必須とする。競合・Validation ERROR・Project ID不一致時はfail closedし、正本を上書きしない。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CTR-GDA-004",
+      "name": "Source Protection Boundary Contract",
+      "producer_system_id": "SYS-GDA-SOURCE",
+      "consumer_system_ids": [
+        "SYS-GDA-INTEGRITY"
+      ],
+      "definition": "SOURCE_UPDATEはGame Data Authorityを書き換えない。root project-data.jsonを残す移行期間がある場合もAuthorityではないことを明示し、Source Gate/manifest上の役割を再定義する。最終削除/生成mirror化はHuman承認されたmigration specに従う。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CTR-GDA-005",
+      "name": "Formal Export Separation Contract",
+      "producer_system_id": "SYS-GDA-STUDIO",
+      "consumer_system_ids": [
+        "SYS-GDA-EXPORT"
+      ],
+      "definition": "Public Game向けExport/**はStudio working copyからFormal Exportで生成・配置する。Export/**はGame Data Authorityの代替正本ではなく、Authorityへ逆流させない。Game Runtimeはこの配布契約を維持する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CTR-GDA-006",
+      "name": "Git Connection Scope Separation Contract",
+      "producer_system_id": "SYS-GDA-STUDIO",
+      "consumer_system_ids": [
+        "SYS-GDA-AUTHORITY",
+        "SYS-GDA-EXPORT",
+        "SYS-GDA-SOURCE"
+      ],
+      "definition": "Game Data Authority接続とPublic Export/Source Update接続は別設定scopeとして扱う。1つのowner/repo/branch設定変更が他用途へ暗黙伝播しない。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "system_connections": [
+    {
+      "id": "CONN-GDA-001",
+      "from_system_id": "SYS-GDA-AUTHORITY",
+      "to_system_id": "SYS-GDA-GATE",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-002",
+      "purpose": "Authority JSONとremote SHA/commitをPull検証へ渡す。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-002",
+      "from_system_id": "SYS-GDA-GATE",
+      "to_system_id": "SYS-GDA-WORKCOPY",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-002",
+      "purpose": "検証済み候補だけをStudio working copyへ反映する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-003",
+      "from_system_id": "SYS-GDA-WORKCOPY",
+      "to_system_id": "SYS-GDA-GATE",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-003",
+      "purpose": "Studio編集済み候補をAuthority Push検証へ渡す。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-004",
+      "from_system_id": "SYS-GDA-GATE",
+      "to_system_id": "SYS-GDA-AUTHORITY",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-003",
+      "purpose": "Validation/Diff/SHA/Human承認済み候補だけをAuthorityへcommitする。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-005",
+      "from_system_id": "SYS-GDA-SOURCE",
+      "to_system_id": "SYS-GDA-INTEGRITY",
+      "relation": "REQUIRES",
+      "contract_id": "CTR-GDA-004",
+      "purpose": "Source package/GateからGame Data正本責務を分離し、root project-data legacy依存を明示的に移行する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-006",
+      "from_system_id": "SYS-GDA-STUDIO",
+      "to_system_id": "SYS-GDA-EXPORT",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-005",
+      "purpose": "Working Project DataからFormal Exportを生成してPublic Gameへ配布する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-007",
+      "from_system_id": "SYS-GDA-STUDIO",
+      "to_system_id": "SYS-GDA-AUTHORITY",
+      "relation": "REQUIRES",
+      "contract_id": "CTR-GDA-006",
+      "purpose": "Authority専用Git connection scopeを使用する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-008",
+      "from_system_id": "SYS-GDA-STUDIO",
+      "to_system_id": "SYS-GDA-SOURCE",
+      "relation": "AFFECTS",
+      "contract_id": "CTR-GDA-006",
+      "purpose": "Source/Public deployment側のGit接続設定とAuthority接続を相互上書きしない。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "system_flags": [],
+  "system_events": [
+    {
+      "id": "EVT-GDA-001",
+      "type": "AUDIT_COMPLETED",
+      "target_type": "Project",
+      "target_id": "DEV-V9-GAME-DATA-AUTHORITY-001",
+      "payload": {
+        "studio_build": "GKS-B878",
+        "game_build": "GA-B486.224",
+        "source_zip_sha256": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+        "quick_gate": "PASS 11/11",
+        "implementation_performed": false
+      },
+      "actor": "AI",
+      "created_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "EVT-GDA-002",
+      "type": "HUMAN_ARCHITECTURE_DIRECTION_APPROVED",
+      "target_type": "Decision",
+      "target_id": "DEC-GDA-001",
+      "payload": {
+        "direction": "separate source and game data authority; GitHub canonical; Studio pull/push"
+      },
+      "actor": "Human",
+      "created_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "system_impacts": [
+    {
+      "id": "IMP-GDA-001",
+      "title": "Source root project-data.json authority removal",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "project-data.json / Studio canonical boot",
+      "impact": "ZIP正本としての責務を外す必要がある。物理削除か非Authority mirror化かは未決で、誤って古いsnapshotをAuthorityへ初期投入しないこと。",
+      "task_ids": [
+        "TASK-GDA-007",
+        "TASK-GDA-011",
+        "TASK-GDA-012"
+      ]
+    },
+    {
+      "id": "IMP-GDA-002",
+      "title": "Studio GitHub project-data Pull/Push",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "studio/index.html pullFromGitHub()/pushToGitHub()",
+      "impact": "PullはFull Pre-flightを通さず、PushはValidation/Diff/堅牢な競合metadataが不足。Authority read/writeの中核として再設計が必要。",
+      "task_ids": [
+        "TASK-GDA-005",
+        "TASK-GDA-006",
+        "TASK-GDA-009",
+        "TASK-GDA-010"
+      ]
+    },
+    {
+      "id": "IMP-GDA-003",
+      "title": "Git connection scope coupling",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "GH_SETTINGS_KEY / ghOwner / ghRepo / ghBranch / Game Data Deploy / Studio Update",
+      "impact": "Authority用repoを設定するとPublic Export配置やSource更新先へ値が伝播する危険。Authority専用connection設定を導入するまでCutover禁止。",
+      "task_ids": [
+        "TASK-GDA-003",
+        "TASK-GDA-004",
+        "TASK-GDA-008"
+      ]
+    },
+    {
+      "id": "IMP-GDA-004",
+      "title": "Source integrity/package manifests",
+      "status": "Open",
+      "severity": "High",
+      "target": "tools/inspection/run.py; shared/integrity/*; shared/release/github-pages-package.json; shared/dependencies/component-map.json",
+      "impact": "project-data.jsonをrequired/critical/root surface/package componentとして扱う現契約をAuthority分離後の役割へ更新する必要がある。無計画な削除はQuick/Full Gateを破壊する。",
+      "task_ids": [
+        "TASK-GDA-004",
+        "TASK-GDA-012"
+      ]
+    },
+    {
+      "id": "IMP-GDA-005",
+      "title": "AI Gateway project context",
+      "status": "Open",
+      "severity": "High",
+      "target": "ai-gateway-manifest.json / ai-gateway-server/router.php",
+      "impact": "AI Gatewayがroot project-data.jsonをproject context fallbackとして読む。Authority分離後にSource rootを正本扱いしない経路へ変更する必要がある。",
+      "task_ids": [
+        "TASK-GDA-004",
+        "TASK-GDA-012"
+      ]
+    },
+    {
+      "id": "IMP-GDA-006",
+      "title": "Tests directly reading root project-data.json",
+      "status": "Open",
+      "severity": "High",
+      "target": "8 current tests reading project-data.json directly",
+      "impact": "root fileの削除/非Authority化に合わせてfixture/正式Game Data供給方法を再定義する。単にテストを削除・期待値固定で通さない。",
+      "task_ids": [
+        "TASK-GDA-004",
+        "TASK-GDA-012",
+        "TASK-GDA-014"
+      ]
+    },
+    {
+      "id": "IMP-GDA-007",
+      "title": "Public Game Runtime",
+      "status": "Observed",
+      "severity": "Low",
+      "target": "game/** / Export/**",
+      "impact": "Current監査ではGame Runtimeからroot project-data.jsonの直接参照なし。Formal Export経路を維持すればAuthority分離の直接Runtime影響は低い。ただしE2Eで再確認必須。",
+      "task_ids": [
+        "TASK-GDA-014"
+      ]
+    },
+    {
+      "id": "IMP-GDA-008",
+      "title": "Initial authority migration data selection",
+      "status": "Open",
+      "severity": "Blocker",
+      "target": "first GitHub Game Data Authority commit",
+      "impact": "Current root project-data.jsonは古いため初期正本候補に使用しない。Humanが現在正式と認めるStudio Project Dataを選び、Backup/Pre-flight/Diff/Approval後に初回commitする。",
+      "task_ids": [
+        "TASK-GDA-007",
+        "TASK-GDA-013",
+        "TASK-GDA-015"
+      ]
+    }
+  ],
+  "architecture_nodes": [
+    {
+      "id": "ARCH-GDA-ROOT",
+      "name": "Game Data Authority Git分離",
+      "parent_id": "",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "ARCH-GDA-AUDIT",
+      "name": "Current Authority / Gate監査",
+      "parent_id": "ARCH-GDA-ROOT",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "ARCH-GDA-AUTHORITY",
+      "name": "Git Game Data Authority契約",
+      "parent_id": "ARCH-GDA-ROOT",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "ARCH-GDA-STUDIO",
+      "name": "Studio Pull / Push Gate",
+      "parent_id": "ARCH-GDA-ROOT",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "ARCH-GDA-SOURCE",
+      "name": "Source / Integrity責務分離",
+      "parent_id": "ARCH-GDA-ROOT",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "ARCH-GDA-MIGRATION",
+      "name": "Migration / Cutover / Verification",
+      "parent_id": "ARCH-GDA-ROOT",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "work_boxes": [
+    {
+      "id": "BOX-GDA-001",
+      "node_id": "ARCH-GDA-AUDIT",
+      "title": "Current Source監査・Game Data経路棚卸し",
+      "body": "GKS-B878 / GA-B486.224をSource変更なしで監査し、root project-data.json、localStorage、GitHub project-data同期、Formal Export/Game Data Deploy、Studio Update、Integrity/Gateway/Test依存を棚卸しする。監査事実と設計候補を分離して記録する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "BOX-GDA-002",
+      "node_id": "ARCH-GDA-AUTHORITY",
+      "title": "Game Data Authority境界・Repository契約を確定",
+      "body": "GitHub上のGame Data Authority、Studio working copy、Source Repository、Formal Export/Public Gameの責務を確定する。具体Repository設定やcredential境界、root project-dataの移行方式はHuman決定を含めて仕様化する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "BOX-GDA-003",
+      "node_id": "ARCH-GDA-STUDIO",
+      "title": "Studio Authority Git接続・Pull/Push Gate設計",
+      "body": "既存GH_SETTINGS_KEY共有を分離し、Authority専用Git connection scopeを設計する。PullはFull Import Pre-flight相当、PushはValidation/Diff/SHA競合/Human承認を必須化する。Source変更前にexact pathを確定する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "BOX-GDA-004",
+      "node_id": "ARCH-GDA-SOURCE",
+      "title": "Source root project-data / Integrity / Gateway移行",
+      "body": "root project-data.jsonからAuthority責務を外し、Studio canonical boot、inspection required path、critical/root/package/component policies、AI Gateway、direct-read testsの役割を更新する。削除かmirror化かは承認済みmigration specに従う。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "BOX-GDA-005",
+      "node_id": "ARCH-GDA-MIGRATION",
+      "title": "Authority初期投入・Cutover・E2E検証",
+      "body": "正式Studio Project Dataを初回Authorityへ登録し、Pull→編集→Diff→Push→再Pull→Formal Export→Game Data DeployまでE2E検証する。旧Authority候補を閉じる前にRollback/BackupとHuman Cutover承認を取得する。",
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-GDA-001",
+      "box_id": "BOX-GDA-001",
+      "title": "Current SourceのGame Data Authority/Gate/依存を監査",
+      "status": "Done",
+      "execution_order": 1,
+      "depends_on": [],
+      "acceptance_criteria": "GKS-B878 / GA-B486.224を無変更で監査。root project-data、Studio canonical boot、GitHub Pull/Push、Game Data Deploy、Source Update、Integrity/Release/Gateway/Test参照を棚卸し。Source ZIP SHA=8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306、Quick Gate 11/11 PASS。監査中のSource/Game Data変更0。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": false,
+      "approval": {
+        "status": "Approved",
+        "by": "Human",
+        "at": "2026-09-06T20:18:17+09:00"
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-002",
+      "box_id": "BOX-GDA-002",
+      "title": "Single Authority / Working Copy / Export境界仕様をHumanレビュー",
+      "status": "Todo",
+      "execution_order": 2,
+      "depends_on": [
+        "TASK-GDA-001"
+      ],
+      "acceptance_criteria": "SPEC-GDA-001を基準に、GitHub Authorityのみを正式Project Data正本、localStorageをworking copy、Source rootを非Authority、Export/**をPublic配布物とする責務境界をHuman承認する。未承認事項を確定扱いしない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-003",
+      "box_id": "BOX-GDA-002",
+      "title": "Game Data Authority Remote / Credential運用をHuman決定",
+      "status": "Todo",
+      "execution_order": 3,
+      "depends_on": [
+        "TASK-GDA-002"
+      ],
+      "acceptance_criteria": "owner/repository/branch/path、PAT/credentialの入力・保存・scope、必要ならbranch protectionをHumanが決定。値をSource/工程管理で推測しない。Source/Public Deploy remoteとは別scopeであることを確認。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-004",
+      "box_id": "BOX-GDA-003",
+      "title": "Source変更前exact path impactを確定",
+      "status": "Todo",
+      "execution_order": 4,
+      "depends_on": [
+        "TASK-GDA-002",
+        "TASK-GDA-003"
+      ],
+      "acceptance_criteria": "studio/index.htmlのGH sync/canonical boot/Game Deploy/Studio Update、tools/inspection、shared integrity/release/dependencies、AI Gateway、direct-read testsをexact pathで列挙し、変更/非変更理由とProtected影響を報告。実装はまだ行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-005",
+      "box_id": "BOX-GDA-003",
+      "title": "Authority Pull Gate仕様を確定",
+      "status": "Todo",
+      "execution_order": 5,
+      "depends_on": [
+        "TASK-GDA-004"
+      ],
+      "acceptance_criteria": "SPEC-GDA-002をCurrent Full Import Pre-flight実装へ1:1対応付けし、remote SHA/commit metadata、Project ID mismatch、backup、Human confirm、fail-closed条件を確定。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-006",
+      "box_id": "BOX-GDA-003",
+      "title": "Authority Push Gate仕様を確定",
+      "status": "Todo",
+      "execution_order": 6,
+      "depends_on": [
+        "TASK-GDA-004"
+      ],
+      "acceptance_criteria": "SPEC-GDA-003をCurrent GitHub transportへ1:1対応付けし、candidate snapshot固定、Validation、diff、base SHA/remote conflict、Human approval、post-commit metadataを確定。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-007",
+      "box_id": "BOX-GDA-004",
+      "title": "root project-data De-authority/Migration方式をHuman決定",
+      "status": "Todo",
+      "execution_order": 7,
+      "depends_on": [
+        "TASK-GDA-004"
+      ],
+      "acceptance_criteria": "SPEC-GDA-005に基づき、root project-data.jsonを完全削除するかnon-authoritative generated mirror/fixtureとして一時保持するかをHuman承認。Studio boot、manifest、AI Gateway、testsの移行完了条件も同時確定。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-008",
+      "box_id": "BOX-GDA-003",
+      "title": "Authority専用Git connection scopeをSource実装",
+      "status": "Blocked",
+      "execution_order": 8,
+      "depends_on": [
+        "TASK-GDA-003",
+        "TASK-GDA-004",
+        "TASK-GDA-005",
+        "TASK-GDA-006"
+      ],
+      "acceptance_criteria": "Human承認済みexact path setのみ変更。Authority用owner/repo/branch/pathとSource/Public Deploy設定を分離し、相互コピー/同一storage keyによる誤伝播を禁止。既存Git transportの再利用可否をテストで証明。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-009",
+      "box_id": "BOX-GDA-003",
+      "title": "Studio Authority Pull GateをSource実装",
+      "status": "Blocked",
+      "execution_order": 9,
+      "depends_on": [
+        "TASK-GDA-005",
+        "TASK-GDA-008"
+      ],
+      "acceptance_criteria": "GitHub Authority取得→Full Pre-flight相当→backup→Human確認→working copy反映を実装。ERROR/Project mismatch/通信不整合時はworking copyを変更しない。remote SHA/commitを保存。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-010",
+      "box_id": "BOX-GDA-003",
+      "title": "Studio Authority Push GateをSource実装",
+      "status": "Blocked",
+      "execution_order": 10,
+      "depends_on": [
+        "TASK-GDA-006",
+        "TASK-GDA-008"
+      ],
+      "acceptance_criteria": "candidate固定→Validation→remote SHA/commit照合→diff→Human承認→commitを実装。競合時上書き禁止。現行sync_meta.pulled_at消失問題を解消し、承認candidateとcommit bytesの一致を検証。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-011",
+      "box_id": "BOX-GDA-004",
+      "title": "Source root project-dataの正本責務を除去",
+      "status": "Blocked",
+      "execution_order": 11,
+      "depends_on": [
+        "TASK-GDA-007",
+        "TASK-GDA-009",
+        "TASK-GDA-010"
+      ],
+      "acceptance_criteria": "承認済みmigration方式に従い、ZIP正本自動読込/表示/再読込をAuthority Pull契約へ切替。root fileを残す場合もAuthorityとして読まない。古いroot snapshotを新Authorityへ自動Pushする処理を作らない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-012",
+      "box_id": "BOX-GDA-004",
+      "title": "Integrity/Release/AI Gateway/direct-read Testsを新Authority境界へ更新",
+      "status": "Blocked",
+      "execution_order": 12,
+      "depends_on": [
+        "TASK-GDA-011"
+      ],
+      "acceptance_criteria": "tools/inspection required path、critical/root/package/component/impact/delete policies、github-pages package、AI Gateway、8 direct-read testsを承認済み役割へ更新。テスト削除やCurrent値ハードコードでGateを通さない。Quick/Fullの新期待を根拠付きで確認。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-013",
+      "box_id": "BOX-GDA-005",
+      "title": "正式Current Game Dataを新Authorityへ初回登録",
+      "status": "Blocked",
+      "execution_order": 13,
+      "depends_on": [
+        "TASK-GDA-009",
+        "TASK-GDA-010",
+        "TASK-GDA-011",
+        "TASK-GDA-012"
+      ],
+      "acceptance_criteria": "Humanが正式と指定したStudio Project Dataだけをbackup/Full Pre-flight/Validation/Diff後に初回commit。Source root project-data.jsonを初期Authorityとして使用しない。初回commit SHAをRollback pointとして記録。",
+      "work_type": "GAME_DATA",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-014",
+      "box_id": "BOX-GDA-005",
+      "title": "Fresh StudioでAuthority Pull/Push/Export/Game E2Eを検証",
+      "status": "Blocked",
+      "execution_order": 14,
+      "depends_on": [
+        "TASK-GDA-013"
+      ],
+      "acceptance_criteria": "Fresh sessionでAuthority Pull→no-op diff→承認済み小変更→Push→再Pull→Formal Export→Game Data Deploy→Game Runtimeまで確認。Source Quick/Full、Project ID、Master/Game Data参照、remote SHA、Public Exportを検証しwarnings/timeoutsも記録。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "TASK-GDA-015",
+      "box_id": "BOX-GDA-005",
+      "title": "Human Cutover承認後に旧Authority候補を閉鎖",
+      "status": "Blocked",
+      "execution_order": 15,
+      "depends_on": [
+        "TASK-GDA-014"
+      ],
+      "acceptance_criteria": "E2E EvidenceとRollback pointをHumanへ提示しCutover承認後のみ、旧ZIP正本表示/旧Git project-data同期/旧root authority扱いを無効化または非Authority表示へ確定。completion approval前に閉鎖しない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-GDA-001",
+      "title": "Current Source baseline/build/hash確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "package-build.json: GKS-B878 / GA-B486.224。Source ZIP SHA-256 8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306。package_manifest SHA-256 2be0e526a620ba7cdd6e9238f7bff6bc7dba4cc21c5c8e6bd47f4387ed1f4e74。",
+      "evidence": "guild-adventure-studio-sub(20260906-111027).zip",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-002",
+      "title": "Source context Quick Gate",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "tools/inspection/run.py quick: passed=11, failed=0, warnings=0, timeouts=0。監査前提Source自体のQuick Gateは正常。",
+      "evidence": "gda_quick_latest.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-003",
+      "title": "root project-data Current整合性棚卸し",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "root project-data.jsonはproject.updated_at=2026-07-26T01:01:29.341Z、約4.6KB、tags=0、tag_categories=0、ai_conditions/actions/searches=0。Current Source Buildとは別時点のsnapshotであり、Authority初期値として無条件採用不可。",
+      "evidence": "project-data.json",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-004",
+      "title": "Game Runtime root project-data直接依存確認",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "game/**からproject-data.json/CANONICAL_PROJECT_URLの直接参照はgrep監査で確認されず、Public Game DataはExport/**経路が存在。Authority分離の直接Runtime blockerは現時点で未確認。",
+      "evidence": "game/** audit",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-005",
+      "title": "Current GitHub Pull Gate棚卸し",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "pullFromGitHub()はJSON parse + project/decisions/entities簡易shape + Human confirm + backup + data置換。Full Import Pre-flightのMaster/Game Data参照/Studio Validationは未接続。",
+      "evidence": "studio/index.html pullFromGitHub()",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-006",
+      "title": "Current GitHub Push Gate棚卸し",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "pushToGitHub()はremote SHA付きPUTを使用するが、保存候補Full Validation/Diff Human承認がなく、sync_meta再作成によりpulled_at競合基準を保持できない構造を確認。",
+      "evidence": "studio/index.html pushToGitHub()",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-007",
+      "title": "Git connection設定共有棚卸し",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-001",
+      "status": "Passed",
+      "result": "GH_SETTINGS_KEY/ghOwner/ghRepo/ghBranchがproject-data同期で使われ、syncGameDeployGitHubSettings()がGame Data Deploy設定と相互コピーする。専用Authority repo導入前にscope分離が必要。",
+      "evidence": "studio/index.html GH_SETTINGS_KEY / syncGameDeployGitHubSettings()",
+      "checked_by": "AI",
+      "checked_at": "2026-09-06T20:18:17+09:00",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-008",
+      "title": "Authority境界仕様Human Review",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-002",
+      "status": "Pending",
+      "result": "SPEC-GDA-001の詳細責務境界はHuman review待ち。Human承認済みなのはGitHub Authority + Studio経由へ変更する方向であり、細部を実装済み扱いしない。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-009",
+      "title": "Game Data Authority remote/credential Human決定",
+      "gate": "General",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-003",
+      "status": "Pending",
+      "result": "owner/repository/branch/path/PAT scope未決。具体値を推測しない。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-010",
+      "title": "Source exact path set承認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-004",
+      "status": "Pending",
+      "result": "Source Update開始前に変更対象/Protected/manifest/test影響のexact pathをHuman承認する。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-011",
+      "title": "Migration Plan / initial authority data承認",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-007",
+      "status": "Pending",
+      "result": "root file扱い、初回Authority投入元、backup/rollback、旧経路閉鎖時期をHuman承認する。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-012",
+      "title": "Authority E2E verification",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-014",
+      "status": "Pending",
+      "result": "Fresh Pull/Push/Export/Game Runtime/Source GateをすべてEvidence付きで確認する。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-013",
+      "title": "Final Human Cutover approval",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-015",
+      "status": "Pending",
+      "result": "旧Authority候補を閉鎖する前にE2E/rollbackをHuman承認する。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T20:18:17+09:00",
+      "updated_at": "2026-09-06T20:18:17+09:00"
+    }
+  ],
+  "workflow": {
+    "stage": "Planning",
+    "implementation_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    },
+    "completion_approval": {
+      "status": "Pending",
+      "by": "",
+      "at": ""
+    }
+  },
+  "history": [
+    {
+      "at": "2026-09-06T20:18:17+09:00",
+      "message": "HumanがSourceとGame Dataを分離し、GitHub Game Data AuthorityをStudioから取得/保存する方式への変更方針を承認。実装はまだ行わず、先に監査・棚卸しを行うよう指示。"
+    },
+    {
+      "at": "2026-09-06T20:18:17+09:00",
+      "message": "Current GKS-B878 / GA-B486.224を監査。root project-data.jsonはSource内に存在しStudio初回ZIP正本候補だが、project.updated_at=2026-07-26、tags/tag_categories/AI Master=0の古いsnapshot。Game Runtimeのroot project-data直接参照は確認されず、Export/**経路が別に存在。"
+    },
+    {
+      "at": "2026-09-06T20:18:17+09:00",
+      "message": "Current GitHub同期監査: pullFromGitHubは簡易shape確認のみでFull Import Pre-flightを通らず、pushToGitHubはFormal Gate/Diff承認が不足。GH_SETTINGS_KEY/ghOwner/ghRepo/ghBranchはGame Data Deploy等と共有されるため、専用Authority repo導入前にconnection scope分離が必要。"
+    },
+    {
+      "at": "2026-09-06T20:18:17+09:00",
+      "message": "最新Human提供Source ZIP SHA-256 8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306、package_manifest SHA-256 2be0e526a620ba7cdd6e9238f7bff6bc7dba4cc21c5c8e6bd47f4387ed1f4e74。Source context Quick Gate 11/11 PASS、failed=0、warnings=0、timeouts=0。監査中のSource/Game Data変更なし。"
+    },
+    {
+      "at": "2026-09-06T20:18:17+09:00",
+      "message": "本案件JSONは監査結果を後続工程へ引き継ぐため新規作成。workflow=Planning / implementation_approval=Pending。SOURCE_UPDATE/GAME_DATA Taskは設計・Human承認前に開始しない。"
+    }
+  ]
+}
