@@ -296,13 +296,15 @@
                 "parameters": {
                   "type": "object",
                   "required": [
-                    "target_tag_id",
-                    "predicate"
+                    "target_tag_id"
                   ],
                   "properties": {
                     "target_tag_id": {
                       "type": "string",
                       "pattern": "^TAG-[A-Za-z0-9_.-]+$"
+                    },
+                    "tag_condition": {
+                      "$ref": "#/items/$defs/tag_condition"
                     },
                     "predicate": {
                       "$ref": "#/items/$defs/predicate_expression"
@@ -312,6 +314,28 @@
                       "pattern": "^ARS-[A-Za-z0-9_.-]+$"
                     }
                   },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "tag_condition"
+                      ],
+                      "not": {
+                        "required": [
+                          "predicate"
+                        ]
+                      }
+                    },
+                    {
+                      "required": [
+                        "predicate"
+                      ],
+                      "not": {
+                        "required": [
+                          "tag_condition"
+                        ]
+                      }
+                    }
+                  ],
                   "additionalProperties": false
                 },
                 "target_selector": {
@@ -344,11 +368,10 @@
                 },
                 "parameters": {
                   "type": "object",
-                  "required": [
-                    "subject_scope",
-                    "predicate"
-                  ],
                   "properties": {
+                    "tag_condition": {
+                      "$ref": "#/items/$defs/tag_condition"
+                    },
                     "subject_scope": {
                       "enum": [
                         "SELF",
@@ -359,6 +382,38 @@
                       "$ref": "#/items/$defs/predicate_expression"
                     }
                   },
+                  "oneOf": [
+                    {
+                      "required": [
+                        "tag_condition"
+                      ],
+                      "not": {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "subject_scope"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "predicate"
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "required": [
+                        "subject_scope",
+                        "predicate"
+                      ],
+                      "not": {
+                        "required": [
+                          "tag_condition"
+                        ]
+                      }
+                    }
+                  ],
                   "additionalProperties": false
                 },
                 "target_selector": {
@@ -568,6 +623,23 @@
         "additionalProperties": false
       },
       "action_target_condition": {
+        "type": "object",
+        "required": [
+          "tag_id",
+          "params"
+        ],
+        "properties": {
+          "tag_id": {
+            "type": "string",
+            "pattern": "^TAG-[A-Za-z0-9_.-]+$"
+          },
+          "params": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "tag_condition": {
         "type": "object",
         "required": [
           "tag_id",

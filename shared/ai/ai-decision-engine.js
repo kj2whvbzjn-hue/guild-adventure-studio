@@ -113,6 +113,12 @@
     const allowed = new Set((Array.isArray(right) ? right : []).map(candidateId));
     return (Array.isArray(left) ? left : []).filter((row) => allowed.has(candidateId(row)));
   }
+  function evaluateCompiledTagCondition(binding, subject, subjectKind, ctx, handlers) {
+    if (!binding || typeof binding !== 'object') return {passed: false, reason: 'tag_condition_invalid'};
+    if (String(binding.kind || '') !== 'PREDICATE') return {passed: false, reason: 'tag_condition_kind_unsupported'};
+    try { return {passed: handlers?.predicate?.(String(binding.evaluator || ''), clone(binding.params || {}), subject, subjectKind, ctx) === true, reason: null}; }
+    catch (error) { return {passed: false, reason: `tag_condition_error:${String(error?.code || error?.message || 'error')}`}; }
+  }
   function applyActionTargetCondition(binding, candidates, ctx, handlers) {
     const rows = (Array.isArray(candidates) ? candidates : []).filter((row) => candidateId(row));
     if (!binding) return {rows, reason: null};
@@ -177,7 +183,9 @@
         const matched = [];
         let predicateError = null;
         for (const subject of population) {
-          const result = evaluatePredicateExpression(instruction.params?.predicate, subject, 'UNIT', ctx, handlers);
+          const result = instruction.params?.tag_condition != null
+            ? evaluateCompiledTagCondition(instruction.params.tag_condition, subject, 'UNIT', ctx, handlers)
+            : evaluatePredicateExpression(instruction.params?.predicate, subject, 'UNIT', ctx, handlers);
           if (result.reason) { predicateError = result.reason; break; }
           if (result.passed) matched.push(candidateId(subject));
         }
@@ -199,7 +207,9 @@
           Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason: 'condition_subject_unavailable', subject_scope: subjectScope}});
           return finishFailure(trace, 'condition_subject_unavailable', null);
         }
-        const result = evaluatePredicateExpression(instruction.params?.predicate, subject, subjectScope, ctx, handlers);
+        const result = instruction.params?.tag_condition != null
+          ? evaluateCompiledTagCondition(instruction.params.tag_condition, subject, subjectScope, ctx, handlers)
+          : evaluatePredicateExpression(instruction.params?.predicate, subject, subjectScope, ctx, handlers);
         if (result.reason) {
           Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason: result.reason}});
           return finishFailure(trace, result.reason, null);

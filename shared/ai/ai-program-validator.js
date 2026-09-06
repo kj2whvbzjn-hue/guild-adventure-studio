@@ -67,22 +67,43 @@
     }
     return {resolved: false, reason: 'action_target_contract_unresolved', evaluator};
   }
+  function targetTagAuthority(data) {
+    const tags = Array.isArray(data?.tags) ? data.tags : [];
+    const categories = Array.isArray(data?.tag_categories) ? data.tag_categories : [];
+    const categoryById = new Map(categories.map((row) => [String(row?.id || ''), row]));
+    const rows = [];
+    for (const tag of tags) {
+      const scope = String(tag?.runtime_semantic || '').trim().toUpperCase();
+      if (!AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(scope)) continue;
+      const categoryId = String(tag?.category_id || '').trim(), category = categoryById.get(categoryId) || null;
+      if (!categoryId || !category) return {ok: false, reason: 'target_tag_category_invalid', category: null, rows: []};
+      rows.push({tag, category, scope});
+    }
+    const categoryIds = [...new Set(rows.map((row) => String(row.category.id || '')).filter(Boolean))];
+    if (categoryIds.length !== 1) return {ok: false, reason: categoryIds.length ? 'target_tag_category_ambiguous' : 'target_tag_category_missing', category: null, rows: []};
+    const category = categoryById.get(categoryIds[0]) || null;
+    return {ok: !!category, reason: category ? '' : 'target_tag_category_missing', category, rows: rows.filter((row) => String(row.category.id || '') === categoryIds[0])};
+  }
   function resolveSearchTargetTag(targetTagId, data) {
     const id = String(targetTagId || '').trim();
     if (!id) return {ok: false, reason: 'target_tag_required', tag: null, category: null, scope: ''};
     const tags = Array.isArray(data?.tags) ? data.tags : [];
-    const categories = Array.isArray(data?.tag_categories) ? data.tag_categories : [];
     const tag = tags.find((row) => String(row?.id || '') === id) || null;
     if (!tag) return {ok: false, reason: 'target_tag_not_found', tag: null, category: null, scope: ''};
-    const categoryId = String(tag?.category_id || '').trim();
-    const category = categories.find((row) => String(row?.id || '') === categoryId) || null;
-    if (!categoryId || !category) return {ok: false, reason: 'target_tag_category_invalid', tag, category: null, scope: ''};
-    const scope = String(tag?.runtime_semantic || '').trim().toUpperCase();
-    if (!AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(scope)) return {ok: false, reason: 'target_tag_semantic_invalid', tag, category, scope};
-    return {ok: true, reason: '', tag, category, scope};
+    const authority = targetTagAuthority(data);
+    if (!authority.ok) return {ok: false, reason: authority.reason, tag, category: authority.category, scope: String(tag?.runtime_semantic || '').trim().toUpperCase()};
+    const row = authority.rows.find((item) => String(item.tag?.id || '') === id) || null;
+    if (!row) {
+      const categoryId = String(tag?.category_id || '').trim();
+      const scope = String(tag?.runtime_semantic || '').trim().toUpperCase();
+      return {ok: false, reason: AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(scope) && categoryId ? 'target_tag_category_mismatch' : 'target_tag_semantic_invalid', tag, category: authority.category, scope};
+    }
+    return {ok: true, reason: '', tag: row.tag, category: row.category, scope: row.scope};
   }
   function searchTargetTags(data) {
-    return (Array.isArray(data?.tags) ? data.tags : []).map((tag) => resolveSearchTargetTag(tag?.id, data)).filter((row) => row.ok).map((row) => ({
+    const authority = targetTagAuthority(data);
+    if (!authority.ok) return [];
+    return authority.rows.map((row) => ({
       id: String(row.tag.id || ''),
       name: String(row.tag.name || row.tag.id || ''),
       category_id: String(row.category.id || ''),
@@ -109,7 +130,7 @@
     return {ok: true, reason: '', tag, category, semantic};
   }
   function stateSemanticNeedsComparison(semantic) { return STATE_NUMERIC_SEMANTICS.has(String(semantic || '').trim().toUpperCase()); }
-  function resolveActionConditionTag(tagId, data) {
+  function resolvePlayerConditionTag(tagId, data) {
     const id = String(tagId || '').trim();
     if (!id) return {ok: false, reason: 'condition_tag_required', tag: null, category: null, kind: '', semantic: ''};
     const tags = Array.isArray(data?.tags) ? data.tags : [], categories = Array.isArray(data?.tag_categories) ? data.tag_categories : [];
@@ -119,15 +140,40 @@
     if (!categoryId || !category) return {ok: false, reason: 'condition_tag_category_invalid', tag, category: null, kind: '', semantic: ''};
     const semantic = String(tag?.runtime_semantic || '').trim().toUpperCase();
     if (AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(semantic)) return {ok: false, reason: 'condition_tag_is_target', tag, category, kind: '', semantic};
-    if (ACTION_CONDITION_EXTREME_SEMANTICS.has(semantic)) return {ok: true, reason: '', tag, category, kind: 'STATE_EXTREME', semantic};
+    if (ACTION_CONDITION_EXTREME_SEMANTICS.has(semantic)) return {ok: true, reason: '', tag, category, kind: 'STATE_NUMERIC', semantic};
     if (ACTION_CONDITION_BOOLEAN_SEMANTICS.has(semantic)) return {ok: true, reason: '', tag, category, kind: 'STATE_BOOLEAN', semantic};
     if (!semantic) return {ok: true, reason: '', tag, category, kind: 'ACTIVE_EFFECT_TAG', semantic: ''};
     return {ok: false, reason: 'condition_tag_semantic_unsupported', tag, category, kind: '', semantic};
   }
-  function actionConditionTags(data) {
-    return (Array.isArray(data?.tags) ? data.tags : []).map((tag) => resolveActionConditionTag(tag?.id, data)).filter((row) => row.ok).map((row) => ({
+  function playerConditionTags(data) {
+    return (Array.isArray(data?.tags) ? data.tags : []).map((tag) => resolvePlayerConditionTag(tag?.id, data)).filter((row) => row.ok).map((row) => ({
       id: String(row.tag.id || ''), name: String(row.tag.name || row.tag.id || ''), category_id: String(row.category.id || ''), category_name: String(row.category.name || row.category.id || ''), kind: row.kind, runtime_semantic: row.semantic
     }));
+  }
+  function resolveActionConditionTag(tagId, data) {
+    const row = resolvePlayerConditionTag(tagId, data);
+    return row.ok && row.kind === 'STATE_NUMERIC' ? {...row, kind: 'STATE_EXTREME'} : row;
+  }
+  function actionConditionTags(data) {
+    return playerConditionTags(data).map((row) => row.kind === 'STATE_NUMERIC' ? {...row, kind: 'STATE_EXTREME'} : row);
+  }
+  function playerTagConditionIssues(binding, data) {
+    const errors = [];
+    if (!binding || typeof binding !== 'object' || Array.isArray(binding)) return ['条件の候補を選択してください。'];
+    const allowed = new Set(['tag_id', 'params']);
+    if (Object.keys(binding).some((key) => !allowed.has(key))) errors.push('条件に未対応の項目があります。');
+    const resolved = resolvePlayerConditionTag(binding.tag_id, data);
+    if (!resolved.ok) { errors.push('条件の候補を選択してください。'); return errors; }
+    const params = binding.params && typeof binding.params === 'object' && !Array.isArray(binding.params) ? binding.params : {};
+    if (resolved.kind === 'STATE_NUMERIC') {
+      const mode = String(params.value_mode || '').trim().toUpperCase(), operator = String(params.operator || '').trim(), value = Number(params.value);
+      if (!STATE_VALUE_MODES.has(mode)) errors.push('割合または現在値を選択してください。');
+      if (!STATE_COMPARE_OPERATORS.has(operator)) errors.push('比較を選択してください。');
+      if (params.value === '' || params.value == null || !Number.isFinite(value) || value < 0) errors.push('値は0以上の数値で指定してください。');
+      else if (mode === 'RATIO' && value > 1) errors.push('割合は0%以上100%以下で指定してください。');
+      if (Object.keys(params).some((key) => !['value_mode', 'operator', 'value'].includes(key))) errors.push('条件Parameterが不正です。');
+    } else if (Object.keys(params).length) errors.push('この条件には追加Parameterを指定できません。');
+    return errors;
   }
   function actionTargetConditionIssues(binding, data) {
     if (binding == null) return [];
@@ -377,11 +423,15 @@
             target_tag_required: '探索対象Tagを指定してください。',
             target_tag_not_found: `探索対象Tagが存在しません: ${targetTagId || '未設定'}`,
             target_tag_category_invalid: `探索対象Tagのカテゴリ参照が不正です: ${targetTagId || '未設定'}`,
+            target_tag_category_missing: '対象TagのFormal Categoryを一意に解決できません。',
+            target_tag_category_ambiguous: '対象Tagが複数のFormal Categoryに分散しています。',
+            target_tag_category_mismatch: `探索対象Tagが正式な対象Categoryに属していません: ${targetTagId || '未設定'}`,
             target_tag_semantic_invalid: `探索対象Tagのruntime_semanticが不正です: ${targetTagId || '未設定'}`
           };
           issues.push(issue('ERROR', 'AI_SEARCH_TARGET_TAG_INVALID', messages[target.reason] || '探索対象Tagが不正です。', {node_id: id, target_tag_id: targetTagId}));
         }
-        validatePredicateExpression(node.parameters?.predicate, 'UNIT', data, refs, id, issues);
+        if (node.parameters?.tag_condition != null) playerTagConditionIssues(node.parameters.tag_condition, data).forEach((message) => issues.push(issue('ERROR', 'AI_SEARCH_TAG_CONDITION_INVALID', message, {node_id: id})));
+        else validatePredicateExpression(node.parameters?.predicate, 'UNIT', data, refs, id, issues);
         const resultSlotId = String(node.parameters?.result_slot_id || '').trim();
         if (resultSlotId) {
           if (!RESULT_SLOT_ID_PATTERN.test(resultSlotId) || !resultSlotMap.has(resultSlotId)) issues.push(issue('ERROR', 'AI_SEARCH_RESULT_SLOT_NOT_FOUND', `Searchの検索結果格納先が存在しません: ${resultSlotId}`, {node_id: id, result_slot_id: resultSlotId}));
@@ -390,9 +440,12 @@
         if (node.target_source != null) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_FORBIDDEN', 'Searchはtarget_sourceを持てません。', {node_id: id}));
         if (node.target_selector != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'Searchはtarget_selectorを持てません。', {node_id: id}));
       } else if (node.node_type === 'condition') {
-        const subject = String(node.parameters?.subject_scope || '');
-        if (!STATE_SUBJECTS.has(subject)) issues.push(issue('ERROR', 'AI_STATE_SUBJECT_INVALID', `StateCheck subject_scopeが不正です: ${subject || '未設定'}`, {node_id: id}));
-        if (STATE_SUBJECTS.has(subject)) validatePredicateExpression(node.parameters?.predicate, subject, data, refs, id, issues);
+        if (node.parameters?.tag_condition != null) playerTagConditionIssues(node.parameters.tag_condition, data).forEach((message) => issues.push(issue('ERROR', 'AI_STATE_TAG_CONDITION_INVALID', message, {node_id: id})));
+        else {
+          const subject = String(node.parameters?.subject_scope || '');
+          if (!STATE_SUBJECTS.has(subject)) issues.push(issue('ERROR', 'AI_STATE_SUBJECT_INVALID', `StateCheck subject_scopeが不正です: ${subject || '未設定'}`, {node_id: id}));
+          if (STATE_SUBJECTS.has(subject)) validatePredicateExpression(node.parameters?.predicate, subject, data, refs, id, issues);
+        }
         if (node.target_source != null) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_FORBIDDEN', 'StateCheckはtarget_sourceを持てません。', {node_id: id}));
         if (node.target_selector != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'StateCheckはtarget_selectorを持てません。', {node_id: id}));
       } else if (node.node_type === 'action') {
@@ -533,5 +586,5 @@
     return Object.freeze({valid: summary.ERROR === 0, issues: Object.freeze(issues), summary: Object.freeze(summary)});
   }
 
-  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, STATE_RUNTIME_SEMANTICS, STATE_NUMERIC_SEMANTICS, STATE_VALUE_MODES, STATE_COMPARE_OPERATORS, RESULT_SLOT_ID_PATTERN, RESULT_SLOT_VALUE_TYPES, TARGET_SOURCE_KINDS, resultSlotRows, resultSlotById, resolveSearchTargetTag, searchTargetTags, resolveStateTag, stateSemanticNeedsComparison, statePredicateParameterIssues, resolveActionConditionTag, actionConditionTags, actionTargetConditionIssues, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
+  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, STATE_RUNTIME_SEMANTICS, STATE_NUMERIC_SEMANTICS, STATE_VALUE_MODES, STATE_COMPARE_OPERATORS, RESULT_SLOT_ID_PATTERN, RESULT_SLOT_VALUE_TYPES, TARGET_SOURCE_KINDS, resultSlotRows, resultSlotById, targetTagAuthority, resolveSearchTargetTag, searchTargetTags, resolveStateTag, stateSemanticNeedsComparison, statePredicateParameterIssues, resolvePlayerConditionTag, playerConditionTags, playerTagConditionIssues, resolveActionConditionTag, actionConditionTags, actionTargetConditionIssues, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
 });

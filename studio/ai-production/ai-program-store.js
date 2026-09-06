@@ -57,6 +57,11 @@
     for(const key of ['kind','result_slot_id'])if(!own(value,key))throw new Error(`${at}.${key} is required`);
     if(value.kind!=='SEARCH_RESULT')throw new Error(`${at}.kind must be SEARCH_RESULT`); assertPattern(value.result_slot_id,/^ARS-[A-Za-z0-9_.-]+$/,`${at}.result_slot_id`);
   }
+  function assertTagCondition(value, at) {
+    if(!isObject(value))throw new Error(`${at} must be an object`); assertAllowedKeys(value,new Set(['tag_id','params']),at);
+    for(const key of ['tag_id','params'])if(!own(value,key))throw new Error(`${at}.${key} is required`);
+    assertPattern(value.tag_id,/^TAG-[A-Za-z0-9_.-]+$/,`${at}.tag_id`); if(!isObject(value.params))throw new Error(`${at}.params must be an object`);
+  }
   function assertResultSlot(value, at) {
     if(!isObject(value))throw new Error(`${at} must be an object`); assertAllowedKeys(value,RESULT_SLOT_KEYS,at);
     for(const key of ['slot_id','name','value_type'])if(!own(value,key))throw new Error(`${at}.${key} is required`);
@@ -72,10 +77,11 @@
     if(!own(node.position,'x')||!own(node.position,'y')||typeof node.position.x!=='number'||typeof node.position.y!=='number'||!Number.isFinite(node.position.x)||!Number.isFinite(node.position.y))throw new Error(`${nat}.position is invalid`);
     if(!isObject(node.parameters))throw new Error(`${nat}.parameters must be an object`);
     if(node.node_type==='search'){
-      assertAllowedKeys(node.parameters,new Set(['target_tag_id','predicate','result_slot_id']),`${nat}.parameters`); assertPattern(node.parameters.target_tag_id,/^TAG-[A-Za-z0-9_.-]+$/,`${nat}.parameters.target_tag_id`); if(own(node.parameters,'result_slot_id')&&node.parameters.result_slot_id!=='')assertPattern(node.parameters.result_slot_id,/^ARS-[A-Za-z0-9_.-]+$/,`${nat}.parameters.result_slot_id`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
+      assertAllowedKeys(node.parameters,new Set(['target_tag_id','tag_condition','predicate','result_slot_id']),`${nat}.parameters`); assertPattern(node.parameters.target_tag_id,/^TAG-[A-Za-z0-9_.-]+$/,`${nat}.parameters.target_tag_id`); if(own(node.parameters,'result_slot_id')&&node.parameters.result_slot_id!=='')assertPattern(node.parameters.result_slot_id,/^ARS-[A-Za-z0-9_.-]+$/,`${nat}.parameters.result_slot_id`);
+      const player=own(node.parameters,'tag_condition'),developer=own(node.parameters,'predicate'); if(player===developer)throw new Error(`${nat}.parameters must contain exactly one of tag_condition or predicate`); if(player)assertTagCondition(node.parameters.tag_condition,`${nat}.parameters.tag_condition`); else assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
       if(own(node,'target_selector')&&node.target_selector!==null)throw new Error(`${nat}.target_selector is forbidden for search`);
     }else if(node.node_type==='condition'){
-      assertAllowedKeys(node.parameters,new Set(['subject_scope','predicate']),`${nat}.parameters`); if(!STATE_CHECK_SUBJECTS.has(node.parameters.subject_scope))throw new Error(`${nat}.parameters.subject_scope is invalid`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);
+      assertAllowedKeys(node.parameters,new Set(['tag_condition','subject_scope','predicate']),`${nat}.parameters`); const player=own(node.parameters,'tag_condition'),developer=own(node.parameters,'predicate')||own(node.parameters,'subject_scope'); if(player===developer)throw new Error(`${nat}.parameters must contain player tag_condition or developer subject_scope+predicate`); if(player)assertTagCondition(node.parameters.tag_condition,`${nat}.parameters.tag_condition`); else {if(!STATE_CHECK_SUBJECTS.has(node.parameters.subject_scope))throw new Error(`${nat}.parameters.subject_scope is invalid`); assertPredicate(node.parameters.predicate,`${nat}.parameters.predicate`);}
       if(own(node,'target_selector')&&node.target_selector!==null)throw new Error(`${nat}.target_selector is forbidden for condition`);
     }else if(own(node,'target_selector')) assertTargetSelector(node.target_selector,`${nat}.target_selector`);
     if(own(node,'target_source')){if(node.node_type!=='action'&&node.target_source!==null)throw new Error(`${nat}.target_source is forbidden for ${node.node_type}`);if(node.node_type==='action')assertTargetSource(node.target_source,`${nat}.target_source`);}

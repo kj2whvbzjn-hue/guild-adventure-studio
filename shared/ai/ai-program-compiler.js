@@ -54,6 +54,15 @@
       })
     };
   }
+  function compilePlayerTagCondition(binding, data) {
+    const resolved = Validator.resolvePlayerConditionTag(binding?.tag_id, data || {});
+    if (!resolved.ok) throw new CompilerError(`Player condition tag cannot be resolved: ${String(binding?.tag_id || '')}`, []);
+    const params = binding?.params && typeof binding.params === 'object' && !Array.isArray(binding.params) ? binding.params : {};
+    if (resolved.kind === 'ACTIVE_EFFECT_TAG') return canonical({kind: 'PREDICATE', evaluator: 'condition.active_effect_has_tag', params: {tag_id: String(resolved.tag.id || ''), effect_scope: 'ANY_ACTIVE_EFFECT'}});
+    if (resolved.kind === 'STATE_BOOLEAN') return canonical({kind: 'PREDICATE', evaluator: 'condition.state_compare', params: {state_semantic: resolved.semantic}});
+    if (resolved.kind === 'STATE_NUMERIC') return canonical({kind: 'PREDICATE', evaluator: 'condition.state_compare', params: {state_semantic: resolved.semantic, value_mode: String(params.value_mode || '').trim().toUpperCase(), operator: String(params.operator || '').trim(), value: Number(params.value)}});
+    throw new CompilerError(`Player condition kind cannot be compiled: ${resolved.kind}`, []);
+  }
   function compileActionTargetCondition(binding, data) {
     if (binding == null) return null;
     const resolved = Validator.resolveActionConditionTag(binding.tag_id, data || {});
@@ -148,11 +157,15 @@
       if (node.node_type === 'search') {
         const target = Validator.resolveSearchTargetTag(node.parameters.target_tag_id, data);
         if (!target.ok) throw new CompilerError(`Search target tag cannot be resolved: ${String(node.parameters.target_tag_id || '')}`, []);
-        base.params = canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data), ...(String(node.parameters?.result_slot_id || '').trim() ? {result_slot_id: String(node.parameters.result_slot_id).trim()} : {})});
+        base.params = node.parameters?.tag_condition != null
+          ? canonical({scope: target.scope, tag_condition: compilePlayerTagCondition(node.parameters.tag_condition, data), ...(String(node.parameters?.result_slot_id || '').trim() ? {result_slot_id: String(node.parameters.result_slot_id).trim()} : {})})
+          : canonical({scope: target.scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data), ...(String(node.parameters?.result_slot_id || '').trim() ? {result_slot_id: String(node.parameters.result_slot_id).trim()} : {})});
         base.on_found = targetInstruction(outgoing.get(String(node.instance_id)).get('found'));
         base.on_not_found = targetInstruction(outgoing.get(String(node.instance_id)).get('not_found'));
       } else if (node.node_type === 'condition') {
-        base.params = canonical({subject_scope: node.parameters.subject_scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data)});
+        base.params = node.parameters?.tag_condition != null
+          ? canonical({subject_scope: 'SELF', tag_condition: compilePlayerTagCondition(node.parameters.tag_condition, data)})
+          : canonical({subject_scope: node.parameters.subject_scope, predicate: compilePredicate(node.parameters.predicate, predicateById, data)});
         base.on_true = targetInstruction(outgoing.get(String(node.instance_id)).get('true'));
         base.on_false = targetInstruction(outgoing.get(String(node.instance_id)).get('false'));
       } else {
