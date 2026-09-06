@@ -10,11 +10,11 @@
     "name": "Game Data Authority Git分離・Studio正本同期",
     "status": "Specifying",
     "ai_attention": "Auto",
-    "updated_at": "2026-09-06T20:18:17+09:00"
+    "updated_at": "2026-09-06T13:23:54.004Z"
   },
   "project_context": {
-    "purpose": "Sourceコードとゲームデータ正本を分離し、AIによるSource修正がGame Data Authorityを直接変更できない構造へ移行する。Game Dataの正式正本はGitHub上の専用Authority領域に置き、Studioは正本からの取得・作業コピー・検証済み保存を担当する。Public Gameが読むFormal ExportはProject Data Authorityとは別責務のまま維持する。",
-    "summary": "Current GKS-B878 / GA-B486.224を監査。root project-data.jsonはSource ZIP内に存在しStudio初回起動時のZIP正本候補だが、内容はproject.updated_at=2026-07-26でtags/tag_categories/AI Masterが0件の古い小規模snapshot。一方Game Runtimeはroot project-data.jsonを直接参照せずExport/**を使用する。現在のGitHub pullFromGitHub()は簡易shape確認だけでFull Import Pre-flightを通さず、pushToGitHub()も保存前Formal Gate/差分承認/堅牢なlast-pull競合管理が不足。Game Data配置とStudio更新はGitHub owner/repo/branch設定を既存GitHub同期と相互共有するため、Game Data専用Repositoryへ切り替える前に接続設定分離が必要。実装は未着手で、現在は監査完了・設計/移行計画を仕様化する段階。"
+    "purpose": "Sourceコードとゲームデータ正本を分離し、AIによるSource修正がGame Data Authorityを直接変更できない構造へ移行する。Game Dataの正式正本はGitHub上の専用Authority領域に置き、Studioは正本からの取得・作業コピー・検証済み保存を担当する。Public Gameが読むFormal ExportはProject Data Authorityとは別責務のまま維持する。 また、AIが作成した部分JSONはAuthorityへ直接書き込まず、StudioのAI Import Merge Gateを通してWorking Copyへ安全に統合し、その後に通常のAuthority Push Gateを通す。",
+    "summary": "Current GKS-B878 / GA-B486.224を監査。root project-data.jsonはSource ZIP内に存在しStudio初回起動時のZIP正本候補だが、内容はproject.updated_at=2026-07-26でtags/tag_categories/AI Masterが0件の古い小規模snapshot。一方Game Runtimeはroot project-data.jsonを直接参照せずExport/**を使用する。現在のGitHub pullFromGitHub()は簡易shape確認だけでFull Import Pre-flightを通さず、pushToGitHub()も保存前Formal Gate/差分承認/堅牢なlast-pull競合管理が不足。Game Data配置とStudio更新はGitHub owner/repo/branch設定を既存GitHub同期と相互共有するため、Game Data専用Repositoryへ切り替える前に接続設定分離が必要。実装は未着手で、現在は監査完了・設計/移行計画を仕様化する段階。 追加方針として、AI生成Game Dataはproject-data.json全件置換ではなく部分Import artifactとしてStudioへ渡し、Dry Run/ID・参照・差分/Human承認後にWorking Copyへ原子的に統合し、Authorityへは既存Push Gate経由でのみ反映する。"
   },
   "current_focus": {
     "architecture_id": "ARCH-GDA-AUTHORITY",
@@ -112,6 +112,15 @@
       "source_id": "current development workflow",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "RULE-GDA-011",
+      "text": "AIが作成するGame DataはGame Data Authorityを直接編集・Pushしない。AIは部分Import JSONを提出し、StudioのAI Import Merge GateでDry Run、Schema/ID/参照整合、CREATE/UPDATE競合、差分、Human確認を通した後にのみWorking Copyへ統合する。通常AI Importでproject-data全件置換を行わず、DELETEは別の保護された削除契約へ分離する。",
+      "status": "Active",
+      "source_type": "HumanDecision",
+      "source_id": "conversation 2026-09-06 AI Import Merge追加承認",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "source_baseline": {
@@ -223,6 +232,22 @@
       "artifact_note": "Security/operations design item; no credential values stored in project JSON",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DISC-GDA-007",
+      "title": "AI生成部分JSONをStudio Working Copyへ安全に統合する経路",
+      "status": "Resolved",
+      "summary": "AIが新Skill/Tag/AI/Story等を別JSONで提出する運用では、Authority全件JSONをAIに再生成させず、部分変更artifactをStudioで検証・統合する専用Merge Gateが必要。",
+      "body": "AIが同一Project内の新規Skill等を作成する際、AIへGitHub Authorityの直接書込権限を与えない。AI成果物はCREATE/UPDATE対象だけを含む部分Import JSONとし、Studioの現在Working Copyに対してDry Runする。新規ID衝突、UPDATE対象不存在、Schema不正、Master/Game Data参照不整合、Project ID不一致をfail closedする。Humanには追加/変更差分を提示し、承認後だけWorking Copyへ原子的に反映する。DELETEは通常Importへ混在させずProtected Delete契約へ分離する。統合後のAuthority反映は通常Authority Push Gateを経由する。",
+      "open_questions": "AI Import artifactのexact JSON envelope/operation schema、base revision/fingerprintを必須にするか、UPDATEで許可するfield粒度、Studio既存部分Import機構の再利用範囲をSource調査後に確定する。",
+      "conclusion": "AI Import JSON→Studio Merge Gate→Working Copy→Authority Push Gateの経路を正式な追加要件とする。AIからAuthorityへの直接Pushおよび通常AI Importによる全件置換は禁止する。",
+      "related_discussion_ids": [
+        "DISC-GDA-001",
+        "DISC-GDA-003"
+      ],
+      "artifact_note": "Human approved addition 2026-09-06; implementation not started",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "decisions": [
@@ -295,6 +320,20 @@
       "approved_at": "",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "DEC-GDA-006",
+      "title": "AI Game Dataは部分Import JSONとしてStudio Merge Gate経由で統合する",
+      "status": "Approved",
+      "text": "AIが同一Project内の新Skill等のGame Dataを作成・修正する場合、AIはGame Data Authorityを直接編集せず、部分Import JSONを提出する。Studioは現在Working Copyに対してDry Run/Schema/ID/参照/差分/Human確認を行い、承認後だけ統合する。統合後の正本更新は通常Authority Push Gateを通す。通常AI Importでproject-data全件置換を行わず、DELETEは別保護契約とする。",
+      "rationale": "HumanがAI作成データは別JSONで提出される運用を確認し、Studio同期済みWorking Copyとの安全な統合経路を工程管理へ追加するよう明示した。AuthorityへAIが直接触れないという本案件目的とも一致する。",
+      "source_discussion_ids": [
+        "DISC-GDA-007"
+      ],
+      "approved_by": "Human",
+      "approved_at": "2026-09-06T21:52:00+09:00",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "specifications": [
@@ -457,6 +496,33 @@
       "approved_at": "",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SPEC-GDA-007",
+      "title": "AI Partial Import JSON / Studio Working Copy Merge Gate",
+      "status": "Review",
+      "summary": "AI生成Game Dataを部分Import artifactとして受け取り、AuthorityではなくStudio Working Copyへ安全に統合する。",
+      "body": "## Authority境界\n- AIはGitHub Game Data Authorityへ直接read/writeする正式経路を持たない。\n- AI成果物はAuthority project-data.json全体ではなく部分Import JSONを基本とする。\n- 統合後の正本更新はSPEC-GDA-003 Authority Push Gateだけを通す。\n\n## Artifact責務\n- Project IDを明示し、どのProjectへの変更提案かを曖昧にしない。\n- 通常operationはCREATE / UPDATE。\n- CREATEは新規IDのみ。既存IDと衝突したら自動上書き禁止。\n- UPDATEは既存IDが存在することを要求し、変更前/変更後差分をHumanへ提示する。\n- DELETEは通常AI Importに混在させず、既存Protected Delete/Human approval契約へ分離する。\n- project-data全件置換を通常AI Importの意味にしない。\n\n## Studio Merge Gate\n1) 現在Working Copyが存在することを確認。\n2) Import artifactをparseしてProject IDをWorking Copyと照合。\n3) Dry Run candidateをWorking Copyのclone上にだけ生成。\n4) Schema/required ID/重複/UPDATE target存在を検査。\n5) Master参照/Game Data参照/Studio Validationを候補全体に対して実施。\n6) CREATE/UPDATEの差分をHumanへ表示。\n7) ERROR 0かつHuman承認時のみWorking Copyへ原子的に反映。\n8) 失敗時はWorking Copyを一切変更しない。\n9) Working Copyへ反映しただけではAuthorityは変更しない。後続Pushは通常Authority Push Gateを使用。\n\n## 実装前に確定する項目\n- exact import envelope/schema\n- base Authority revision / Working Copy fingerprintをartifactへ持たせるか\n- 既存部分Import/Dry Run機構の再利用範囲\n- UPDATEのfield-level conflict表示\n- backup/historyの記録方法",
+      "decision_refs": [
+        "DEC-GDA-006"
+      ],
+      "depends_on": [
+        "SPEC-GDA-001",
+        "SPEC-GDA-003"
+      ],
+      "acceptance_criteria": "AI部分JSONがAuthorityへ直接書き込めず、Working Copyに対してDry Runされる。Project ID不一致、CREATE ID衝突、UPDATE対象不存在、Schema/参照/Studio Validation ERROR、Human未承認のいずれでもWorking Copy不変。承認後は指定CREATE/UPDATEだけが反映され、既存無関係データを消さない。Authority更新は別途通常Push Gateを必須とする。",
+      "system_node_id": "SYS-GDA-AIMERGE",
+      "contract_ids": [
+        "CTR-GDA-007",
+        "CTR-GDA-008"
+      ],
+      "source_candidate_id": "Current Studio partial import / dry-run mechanisms to be audited before implementation",
+      "material_snapshot_hash": "8fab018d71d77f2bf5359bf1148af5c75ae141cb73f6f28a4bc53431659cb306",
+      "revision": 1,
+      "approved_by": "",
+      "approved_at": "",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "specification_candidates": [],
@@ -509,6 +575,20 @@
       "description": "project-data.jsonをrequired/protected/critical/package/Gateway対象としている現在のSource契約群。Authority分離時に責務更新が必要。",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "SYS-GDA-AIIMPORT",
+      "name": "AI Game Data Partial Import Artifact",
+      "description": "AIが同一Project内の新規/更新Game Dataを提出するための部分JSON成果物。Authority正本ではなくStudio Merge Gateへの入力。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "SYS-GDA-AIMERGE",
+      "name": "Studio AI Import Merge Gate",
+      "description": "AI部分JSONを現在Working Copyへ適用する前にDry Run、Project ID、Schema/ID、参照整合、差分、Human確認を行い、承認済みCREATE/UPDATEだけを原子的に統合する境界。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "system_contracts": [
@@ -582,6 +662,28 @@
       "definition": "Game Data Authority接続とPublic Export/Source Update接続は別設定scopeとして扱う。1つのowner/repo/branch設定変更が他用途へ暗黙伝播しない。",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CTR-GDA-007",
+      "name": "AI Partial Import Artifact Contract",
+      "producer_system_id": "SYS-GDA-AIIMPORT",
+      "consumer_system_ids": [
+        "SYS-GDA-AIMERGE"
+      ],
+      "definition": "AI生成Game DataはAuthority全件JSONではなく部分Import artifactとしてStudioへ渡す。Project IDを明示し、通常operationはCREATE/UPDATE。CREATEの既存ID上書き、UPDATE対象不存在、通常ImportへのDELETE混在、Authorityへの直接Pushを許可しない。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "CTR-GDA-008",
+      "name": "AI Import Working Copy Merge Gate Contract",
+      "producer_system_id": "SYS-GDA-AIMERGE",
+      "consumer_system_ids": [
+        "SYS-GDA-WORKCOPY"
+      ],
+      "definition": "AI ImportはWorking Copy clone上でDry Runし、Project ID/Schema/ID衝突/参照整合/Studio Validation/差分/Human承認を通した後だけ原子的に反映する。失敗時Working Copy不変。反映後のAuthority更新はCTR-GDA-003 Push Gate経由に限定する。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "system_connections": [
@@ -664,6 +766,26 @@
       "purpose": "Source/Public deployment側のGit接続設定とAuthority接続を相互上書きしない。",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CONN-GDA-009",
+      "from_system_id": "SYS-GDA-AIIMPORT",
+      "to_system_id": "SYS-GDA-AIMERGE",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-007",
+      "purpose": "AIが作成した部分Game Data JSONをAuthorityではなくStudio Merge Gateへ提出する。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "CONN-GDA-010",
+      "from_system_id": "SYS-GDA-AIMERGE",
+      "to_system_id": "SYS-GDA-WORKCOPY",
+      "relation": "PROVIDES",
+      "contract_id": "CTR-GDA-008",
+      "purpose": "Dry Run/Validation/Diff/Human承認済みCREATE/UPDATEだけをWorking Copyへ統合する。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "system_flags": [],
@@ -693,6 +815,17 @@
       },
       "actor": "Human",
       "created_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "EVT-GDA-003",
+      "type": "HUMAN_AI_IMPORT_MERGE_DIRECTION_APPROVED",
+      "target_type": "Decision",
+      "target_id": "DEC-GDA-006",
+      "payload": {
+        "direction": "AI partial JSON -> Studio Merge Gate -> Working Copy -> Authority Push Gate; no direct Authority write"
+      },
+      "actor": "Human",
+      "created_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "system_impacts": [
@@ -796,6 +929,19 @@
         "TASK-GDA-013",
         "TASK-GDA-015"
       ]
+    },
+    {
+      "id": "IMP-GDA-009",
+      "title": "AI-generated partial Game Data merge into Studio Working Copy",
+      "status": "Open",
+      "severity": "High",
+      "target": "AI Import JSON / Studio partial import / Working Copy merge",
+      "impact": "AIが作成した新Skill等を別JSONで取り込む正式経路が必要。全件project-data置換ではなく部分CREATE/UPDATEとしてDry Runし、ID衝突・UPDATE対象不存在・参照不整合・差分をHuman確認後にだけWorking Copyへ統合する。Authorityへは直接反映しない。",
+      "task_ids": [
+        "TASK-GDA-016",
+        "TASK-GDA-017",
+        "TASK-GDA-018"
+      ]
     }
   ],
   "architecture_nodes": [
@@ -840,6 +986,13 @@
       "parent_id": "ARCH-GDA-ROOT",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "ARCH-GDA-AIIMPORT",
+      "name": "AI Partial Import / Working Copy Merge",
+      "parent_id": "ARCH-GDA-ROOT",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "work_boxes": [
@@ -882,6 +1035,14 @@
       "body": "正式Studio Project Dataを初回Authorityへ登録し、Pull→編集→Diff→Push→再Pull→Formal Export→Game Data DeployまでE2E検証する。旧Authority候補を閉じる前にRollback/BackupとHuman Cutover承認を取得する。",
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "BOX-GDA-006",
+      "node_id": "ARCH-GDA-AIIMPORT",
+      "title": "AI生成部分JSONの安全なWorking Copy統合",
+      "body": "AIが同一Project内の新Skill/Tag/AI/Story等を別JSONで提出する運用を正式化する。AI成果物はAuthorityへ直接書かず、Studio Merge GateでDry Run、Project ID、Schema/ID、参照整合、CREATE/UPDATE差分、Human承認を通し、Working Copyへ原子的に統合する。DELETEは別Protected契約とし、統合後の正本更新は通常Authority Push Gateを使う。",
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "tasks": [
@@ -1181,9 +1342,10 @@
       "status": "Blocked",
       "execution_order": 15,
       "depends_on": [
-        "TASK-GDA-014"
+        "TASK-GDA-014",
+        "TASK-GDA-018"
       ],
-      "acceptance_criteria": "E2E EvidenceとRollback pointをHumanへ提示しCutover承認後のみ、旧ZIP正本表示/旧Git project-data同期/旧root authority扱いを無効化または非Authority表示へ確定。completion approval前に閉鎖しない。",
+      "acceptance_criteria": "E2E EvidenceとRollback pointをHumanへ提示しCutover承認後のみ、旧ZIP正本表示/旧Git project-data同期/旧root authority扱いを無効化または非Authority表示へ確定。completion approval前に閉鎖しない。 AI Import→Working Copy→Authority Push E2EもPASS済みであること。",
       "work_type": "DEVELOPMENT_ONLY",
       "requires_human_approval": true,
       "approval": {
@@ -1192,7 +1354,70 @@
         "at": ""
       },
       "created_at": "2026-09-06T20:18:17+09:00",
-      "updated_at": "2026-09-06T20:18:17+09:00"
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "TASK-GDA-016",
+      "box_id": "BOX-GDA-006",
+      "title": "AI Partial Import / Working Copy Merge仕様をHumanレビュー",
+      "status": "Todo",
+      "execution_order": 16,
+      "depends_on": [
+        "TASK-GDA-002",
+        "TASK-GDA-004"
+      ],
+      "acceptance_criteria": "SPEC-GDA-007をCurrent Studioの既存部分Import/Dry Run/Validation機構へexact pathで対応付ける。AI artifact envelope、CREATE/UPDATE、ID衝突、UPDATE対象不存在、Project ID、参照整合、Human diff、atomic apply、DELETE分離、Authority直接書込禁止をHuman承認する。実装はまだ行わない。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "TASK-GDA-017",
+      "box_id": "BOX-GDA-006",
+      "title": "Studio AI Import Merge GateをSource実装",
+      "status": "Blocked",
+      "execution_order": 17,
+      "depends_on": [
+        "TASK-GDA-016"
+      ],
+      "acceptance_criteria": "Human承認済みexact path/specだけを実装。AI部分JSONをWorking Copy cloneへDry Runし、Project ID/Schema/ID/参照/Studio Validation ERROR 0とHuman承認後だけCREATE/UPDATEを原子的に反映する。失敗時Working Copy不変。通常ImportでDELETE/全件置換/Authority direct writeを許可しない。",
+      "work_type": "SOURCE_UPDATE",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "TASK-GDA-018",
+      "box_id": "BOX-GDA-006",
+      "title": "AI Import→Working Copy→Authority Push連携E2Eを検証",
+      "status": "Blocked",
+      "execution_order": 18,
+      "depends_on": [
+        "TASK-GDA-013",
+        "TASK-GDA-017",
+        "TASK-GDA-010"
+      ],
+      "acceptance_criteria": "Authorityから同期したWorking CopyへAI作成の新規Skill等の部分JSONをImportし、Dry Run/差分/Human承認後に統合。既存無関係データ不変を確認し、その後通常Authority Push Gateで差分承認・commit・再Pullして結果一致を確認。ID衝突/不正参照/Human未承認/DELETE混在はfail closed Evidenceを残す。",
+      "work_type": "DEVELOPMENT_ONLY",
+      "requires_human_approval": true,
+      "approval": {
+        "status": "Pending",
+        "by": "",
+        "at": ""
+      },
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "checks": [
@@ -1494,6 +1719,52 @@
       "blocking": false,
       "created_at": "2026-09-06T20:18:17+09:00",
       "updated_at": "2026-09-06T20:18:17+09:00"
+    },
+    {
+      "id": "CHK-GDA-014",
+      "title": "AI Partial Import Merge契約Human Review",
+      "gate": "Implementation",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-016",
+      "status": "Pending",
+      "result": "AI部分JSONのoperation/schema、Dry Run、ID/参照競合、Human差分承認、atomic Working Copy反映、DELETE分離、Authority direct write禁止をHuman承認する。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
+    },
+    {
+      "id": "CHK-GDA-015",
+      "title": "AI Import→Authority round-trip E2E",
+      "gate": "Completion",
+      "target_type": "Task",
+      "target_id": "TASK-GDA-018",
+      "status": "Pending",
+      "result": "AI部分JSON→Studio Dry Run/Merge→Working Copy→Authority Push→Fresh再PullをEvidence付きで確認し、失敗ケースがWorking Copy/Authority双方を変更しないことを確認する。",
+      "evidence": "",
+      "checked_by": "",
+      "checked_at": "",
+      "resolves_check_ids": [],
+      "resolution": {
+        "status": "Open",
+        "resolved_by": "",
+        "resolved_at": "",
+        "reason": "",
+        "mode": ""
+      },
+      "blocking": false,
+      "created_at": "2026-09-06T21:52:00+09:00",
+      "updated_at": "2026-09-06T21:52:00+09:00"
     }
   ],
   "workflow": {
@@ -1529,6 +1800,10 @@
     {
       "at": "2026-09-06T20:18:17+09:00",
       "message": "本案件JSONは監査結果を後続工程へ引き継ぐため新規作成。workflow=Planning / implementation_approval=Pending。SOURCE_UPDATE/GAME_DATA Taskは設計・Human承認前に開始しない。"
+    },
+    {
+      "at": "2026-09-06T21:52:00+09:00",
+      "message": "Human指示によりAI Game Data作成経路を追加。AIはAuthorityを直接編集せず部分Import JSONを提出し、Studio Merge GateでDry Run/Project ID/Schema/ID/参照/差分/Human承認後にWorking Copyへ統合し、その後通常Authority Push Gateを通す。通常AI Importの全件置換/DELETE混在は禁止方向。Source実装は未着手。"
     }
   ]
 }
