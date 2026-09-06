@@ -32,7 +32,7 @@ const masters={
     {id:'SKL-SELF',name:'Self',runtimeContracts:{targetContract:{side:'SELF',range:'SINGLE'}}}
   ]
 };
-const project={tag_categories:[{id:'TGC-TARGET',name:'対象'}],tags:[{id:'TAG-TGT-SELF',name:'自分',category_id:'TGC-TARGET',runtime_semantic:'SELF'},{id:'TAG-TGT-ALLY',name:'味方',category_id:'TGC-TARGET',runtime_semantic:'ALLY'},{id:'TAG-TGT-OTHER-ALLY',name:'自分以外の味方',category_id:'TGC-TARGET',runtime_semantic:'OTHER_ALLY'},{id:'TAG-TGT-ENEMY',name:'敵',category_id:'TGC-TARGET',runtime_semantic:'ENEMY'}],masters};
+const project={tag_categories:[{id:'TGC-TARGET',name:'対象'},{id:'TGC-EFFECT',name:'状態異常'},{id:'TGC-STATE',name:'状態管理'}],tags:[{id:'TAG-TGT-SELF',name:'自分',category_id:'TGC-TARGET',runtime_semantic:'SELF'},{id:'TAG-TGT-ALLY',name:'味方',category_id:'TGC-TARGET',runtime_semantic:'ALLY'},{id:'TAG-TGT-OTHER-ALLY',name:'自分以外の味方',category_id:'TGC-TARGET',runtime_semantic:'OTHER_ALLY'},{id:'TAG-TGT-ENEMY',name:'敵',category_id:'TGC-TARGET',runtime_semantic:'ENEMY'},{id:'TAG-POISON',name:'毒',category_id:'TGC-EFFECT'},{id:'TAG-HP',name:'HP',category_id:'TGC-STATE',runtime_semantic:'HP'}],masters};
 const clause=(id,params={})=>({predicate_master_id:id,params,negate:false});
 const pred=(logic,clauses)=>({logic,clauses});
 const node=(id,master,type,parameters,target_selector)=>({instance_id:id,master_node_id:master,master_data_version:dv,node_type:type,position:{x:0,y:0},parameters,...(target_selector!==undefined?{target_selector}:{})});
@@ -42,6 +42,8 @@ function predicateHandler(ev,p,subject,kind,ctx){
   if(ev==='condition.hp_ratio_compare') return subject.hp/subject.max_hp < p.value;
   if(ev==='condition.dead') return subject.alive===false;
   if(ev==='condition.enemy_count_at_most') {const actor=ctx.units.find((row)=>row.id===ctx.actor_id);return ctx.units.filter((row)=>row.side!==actor.side).length<=p.count;}
+  if(ev==='condition.active_effect_has_tag') return Array.isArray(subject.effect_tag_ids)&&subject.effect_tag_ids.includes(p.tag_id);
+  if(ev==='condition.state_compare'){if(p.state_semantic==='ALIVE')return subject.alive===true;if(p.state_semantic==='DEAD')return subject.alive===false;}
   return false;
 }
 (async()=>{
@@ -86,6 +88,8 @@ function predicateHandler(ev,p,subject,kind,ctx){
   const forbidden=baseProgram();forbidden.id='AIP-F';forbidden.entry_node_id='A';forbidden.nodes=[node('A','AIA-SKILL','action',{skill_id:'SKL-RANDOM'},{selector_id:'ATS-RANDOM',params:{}})];
   const fv=V.validate(forbidden,project);assert.strictEqual(fv.valid,false);assert(fv.issues.some((row)=>row.code==='AI_SELECTOR_FORBIDDEN'));
 
+  const pa=baseProgram();pa.id='AIP-PLAYER-ACTION';pa.entry_node_id='A';pa.nodes=[{...node('A','AIA-ATTACK','action',{}),target_tag_id:'TAG-TGT-ENEMY',target_condition:{tag_id:'TAG-HP',params:{value_mode:'CURRENT',order:'MIN'}},target_selector:null,target_source:null}];const pav=V.validate(pa,project);assert(pav.valid,JSON.stringify(pav.issues));const par=await C.compile(pa,project);assert.strictEqual(par.instructions[0].target_scope,'ENEMY');assert.deepStrictEqual(par.instructions[0].target_condition,{kind:'STATE_EXTREME',order:'MIN',state_semantic:'HP',value_mode:'CURRENT'});let playerRng=0;const playerContext={battle_id:'BP',actor_id:'U1',units:[{id:'U1',side:'A',alive:true,hp:100,max_hp:100},{id:'U2',side:'B',alive:true,hp:60,max_hp:100},{id:'U3',side:'B',alive:true,hp:20,max_hp:100},{id:'U4',side:'B',alive:true,hp:20,max_hp:100}]};const playerTrace=E.execute(par,playerContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>{playerRng+=1;return .75;}});assert.strictEqual(playerTrace.outcome.target_id,'U4');assert.strictEqual(playerRng,1);assert(playerTrace.events.some(row=>row.event_type==='rng'&&row.rng_stream==='AI_DECISION'));const effectProgram=structuredClone(pa);effectProgram.id='AIP-PLAYER-EFFECT';effectProgram.nodes[0].target_condition={tag_id:'TAG-POISON',params:{}};const effectRuntime=await C.compile(effectProgram,project);const effectContext=structuredClone(playerContext);effectContext.units[2].effect_tag_ids=['TAG-POISON'];let effectRng=0;const effectTrace=E.execute(effectRuntime,effectContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>{effectRng+=1;return .5;}});assert.strictEqual(effectTrace.outcome.target_id,'U3');assert.strictEqual(effectRng,0,'one remaining candidate must not consume RNG');const noneContext=structuredClone(effectContext);noneContext.units[2].effect_tag_ids=[];const noneTrace=E.execute(effectRuntime,noneContext,{predicate:predicateHandler,action:(ev,pa,ctx)=>({action_id:'attack',target_contract:{side:'ENEMY',range:'SINGLE'},legal_candidates:ctx.units.filter(row=>row.side==='B')}),ai_decision_rng:()=>0});assert.strictEqual(noneTrace.outcome.status,'failed');assert.strictEqual(noneTrace.outcome.reason,'legal_target_not_found');
+
   const ps=baseProgram();ps.id='AIP-STATE';ps.entry_node_id='S1';ps.nodes=[
     node('S1','AIC-HP','condition',{subject_scope:'SELF',predicate:pred('ALL',[clause('AIC-HP',{operator:'<',value:.5})])}),
     node('S2','AIC-BATTLE','condition',{subject_scope:'BATTLE',predicate:pred('ALL',[clause('AIC-BATTLE',{count:3})])}),
@@ -115,5 +119,5 @@ function predicateHandler(ev,p,subject,kind,ctx){
   const subTrace=E.execute(subRuntime,{...context,units:[{id:'U1',side:'A',alive:true,hp:1,max_hp:2}],target_selectors:[]},{predicate:predicateHandler,action:()=>({wait:true})});
   assert(subTrace.events.some((row)=>row.event_type==='call'&&row.result==='entered'&&row.origin_part_id==='ECALL'));assert(subTrace.events.some((row)=>row.event_type==='call'&&row.result==='returned'&&['ER1','ER2'].includes(row.origin_part_id)));
 
-  console.log('AI_V2_R10_P3_SHARED_RUNTIME_OK search=1 predicate_all_any=1 state_self_battle=1 selector_matrix=1 selector_rng=AI_DECISION tie_break=unit_id candidate_trace_only=1 readonly=1 call_return=1 compiler_limits=derived target_op=0 multi_inbound=1');
+  console.log('AI_V2_R10_P3_SHARED_RUNTIME_OK search=1 predicate_all_any=1 state_self_battle=1 selector_matrix=1 selector_rng=AI_DECISION tie_break=unit_id candidate_trace_only=1 readonly=1 call_return=1 compiler_limits=derived target_op=0 multi_inbound=1 player_action_target_condition_action=1 random_if_multiple=AI_DECISION');
 })().catch((error)=>{console.error(error);process.exit(1);});

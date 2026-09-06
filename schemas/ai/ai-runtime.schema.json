@@ -208,6 +208,30 @@
               "$ref": "#/$defs/target_source"
             }
           ]
+        },
+        "target_scope": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "SELF",
+            "ALLY",
+            "OTHER_ALLY",
+            "ENEMY",
+            "ANY",
+            null
+          ]
+        },
+        "target_condition": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/action_target_condition"
+            }
+          ]
         }
       },
       "additionalProperties": false
@@ -245,6 +269,64 @@
         }
       },
       "additionalProperties": false
+    },
+    "action_target_condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "evaluator",
+            "params"
+          ],
+          "properties": {
+            "kind": {
+              "const": "PREDICATE"
+            },
+            "evaluator": {
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "state_semantic",
+            "value_mode",
+            "order"
+          ],
+          "properties": {
+            "kind": {
+              "const": "STATE_EXTREME"
+            },
+            "state_semantic": {
+              "enum": [
+                "HP",
+                "MP"
+              ]
+            },
+            "value_mode": {
+              "enum": [
+                "CURRENT",
+                "RATIO"
+              ]
+            },
+            "order": {
+              "enum": [
+                "MIN",
+                "MAX"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }

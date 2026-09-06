@@ -22,6 +22,10 @@
   const RESULT_SLOT_ID_PATTERN = /^ARS-[A-Za-z0-9_.-]+$/;
   const RESULT_SLOT_VALUE_TYPES = new Set(['UNIT_SET']);
   const TARGET_SOURCE_KINDS = new Set(['SEARCH_RESULT']);
+  const ACTION_CONDITION_EXTREME_SEMANTICS = new Set(['HP', 'MP']);
+  const ACTION_CONDITION_BOOLEAN_SEMANTICS = new Set(['ALIVE', 'DEAD']);
+  const ACTION_CONDITION_VALUE_MODES = new Set(['CURRENT', 'RATIO']);
+  const ACTION_CONDITION_ORDERS = new Set(['MIN', 'MAX']);
 
   function issue(severity, code, message, location) { return {severity, code, message, ...(location || {})}; }
   function duplicates(rows, key) {
@@ -105,6 +109,43 @@
     return {ok: true, reason: '', tag, category, semantic};
   }
   function stateSemanticNeedsComparison(semantic) { return STATE_NUMERIC_SEMANTICS.has(String(semantic || '').trim().toUpperCase()); }
+  function resolveActionConditionTag(tagId, data) {
+    const id = String(tagId || '').trim();
+    if (!id) return {ok: false, reason: 'condition_tag_required', tag: null, category: null, kind: '', semantic: ''};
+    const tags = Array.isArray(data?.tags) ? data.tags : [], categories = Array.isArray(data?.tag_categories) ? data.tag_categories : [];
+    const tag = tags.find((row) => String(row?.id || '') === id) || null;
+    if (!tag) return {ok: false, reason: 'condition_tag_not_found', tag: null, category: null, kind: '', semantic: ''};
+    const categoryId = String(tag?.category_id || '').trim(), category = categories.find((row) => String(row?.id || '') === categoryId) || null;
+    if (!categoryId || !category) return {ok: false, reason: 'condition_tag_category_invalid', tag, category: null, kind: '', semantic: ''};
+    const semantic = String(tag?.runtime_semantic || '').trim().toUpperCase();
+    if (AUTHORABLE_SEARCH_TARGET_SEMANTICS.has(semantic)) return {ok: false, reason: 'condition_tag_is_target', tag, category, kind: '', semantic};
+    if (ACTION_CONDITION_EXTREME_SEMANTICS.has(semantic)) return {ok: true, reason: '', tag, category, kind: 'STATE_EXTREME', semantic};
+    if (ACTION_CONDITION_BOOLEAN_SEMANTICS.has(semantic)) return {ok: true, reason: '', tag, category, kind: 'STATE_BOOLEAN', semantic};
+    if (!semantic) return {ok: true, reason: '', tag, category, kind: 'ACTIVE_EFFECT_TAG', semantic: ''};
+    return {ok: false, reason: 'condition_tag_semantic_unsupported', tag, category, kind: '', semantic};
+  }
+  function actionConditionTags(data) {
+    return (Array.isArray(data?.tags) ? data.tags : []).map((tag) => resolveActionConditionTag(tag?.id, data)).filter((row) => row.ok).map((row) => ({
+      id: String(row.tag.id || ''), name: String(row.tag.name || row.tag.id || ''), category_id: String(row.category.id || ''), category_name: String(row.category.name || row.category.id || ''), kind: row.kind, runtime_semantic: row.semantic
+    }));
+  }
+  function actionTargetConditionIssues(binding, data) {
+    if (binding == null) return [];
+    const errors = [];
+    if (!binding || typeof binding !== 'object' || Array.isArray(binding)) return ['行動条件が不正です。'];
+    const allowed = new Set(['tag_id', 'params']);
+    if (Object.keys(binding).some((key) => !allowed.has(key))) errors.push('行動条件に未対応の項目があります。');
+    const resolved = resolveActionConditionTag(binding.tag_id, data);
+    if (!resolved.ok) { errors.push('行動条件の候補を選択してください。'); return errors; }
+    const params = binding.params && typeof binding.params === 'object' && !Array.isArray(binding.params) ? binding.params : {};
+    if (resolved.kind === 'STATE_EXTREME') {
+      const mode = String(params.value_mode || '').trim().toUpperCase(), order = String(params.order || '').trim().toUpperCase();
+      if (!ACTION_CONDITION_VALUE_MODES.has(mode)) errors.push('行動条件の値の種類を選択してください。');
+      if (!ACTION_CONDITION_ORDERS.has(order)) errors.push('行動条件の高低を選択してください。');
+      if (Object.keys(params).some((key) => !['value_mode', 'order'].includes(key))) errors.push('行動条件Parameterが不正です。');
+    } else if (Object.keys(params).length) errors.push('この行動条件には追加Parameterを指定できません。');
+    return errors;
+  }
   function statePredicateParameterIssues(definition, params, data) {
     const input = params && typeof params === 'object' && !Array.isArray(params) ? params : {};
     const resolved = resolveStateTag(input.state_tag_id, definition, data), errors = [];
@@ -359,6 +400,12 @@
         const resolved = resolveActionTargetContract(definition, node, data);
         if (!resolved.resolved) {
           issues.push(issue('ERROR', 'AI_ACTION_TARGET_CONTRACT_UNRESOLVED', `Action targetContractを解決できません: ${resolved.reason}`, {node_id: id}));
+        } else if (node.target_tag_id != null) {
+          const target = resolveSearchTargetTag(node.target_tag_id, data);
+          if (!target.ok) issues.push(issue('ERROR', 'AI_ACTION_TARGET_TAG_INVALID', '行動対象を選択してください。', {node_id: id, target_tag_id: String(node.target_tag_id || '')}));
+          actionTargetConditionIssues(node.target_condition, data).forEach((message) => issues.push(issue('ERROR', 'AI_ACTION_TARGET_CONDITION_INVALID', message, {node_id: id})));
+          if (node.target_source != null) issues.push(issue('ERROR', 'AI_TARGET_SOURCE_FORBIDDEN', 'Player行動では検索結果箱を対象指定に使用しません。', {node_id: id}));
+          if (node.target_selector != null) issues.push(issue('ERROR', 'AI_SELECTOR_FORBIDDEN', 'Player行動ではTarget Selectorを使用しません。', {node_id: id}));
         } else {
           const requirement = selectorRequirement({actionEvaluator: definition.evaluator, targetContract: resolved.target_contract, wait: resolved.wait});
           const targetSource = node.target_source;
@@ -486,5 +533,5 @@
     return Object.freeze({valid: summary.ERROR === 0, issues: Object.freeze(issues), summary: Object.freeze(summary)});
   }
 
-  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, STATE_RUNTIME_SEMANTICS, STATE_NUMERIC_SEMANTICS, STATE_VALUE_MODES, STATE_COMPARE_OPERATORS, RESULT_SLOT_ID_PATTERN, RESULT_SLOT_VALUE_TYPES, TARGET_SOURCE_KINDS, resultSlotRows, resultSlotById, resolveSearchTargetTag, searchTargetTags, resolveStateTag, stateSemanticNeedsComparison, statePredicateParameterIssues, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
+  return Object.freeze({SCHEMA_VERSION, SEARCH_SCOPES, AUTHORABLE_SEARCH_TARGET_SEMANTICS, STATE_SUBJECTS, STATE_RUNTIME_SEMANTICS, STATE_NUMERIC_SEMANTICS, STATE_VALUE_MODES, STATE_COMPARE_OPERATORS, RESULT_SLOT_ID_PATTERN, RESULT_SLOT_VALUE_TYPES, TARGET_SOURCE_KINDS, resultSlotRows, resultSlotById, resolveSearchTargetTag, searchTargetTags, resolveStateTag, stateSemanticNeedsComparison, statePredicateParameterIssues, resolveActionConditionTag, actionConditionTags, actionTargetConditionIssues, selectorRequirement, resolveActionTargetContract, validatePredicateExpression, validate});
 });

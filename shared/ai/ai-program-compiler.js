@@ -54,6 +54,16 @@
       })
     };
   }
+  function compileActionTargetCondition(binding, data) {
+    if (binding == null) return null;
+    const resolved = Validator.resolveActionConditionTag(binding.tag_id, data || {});
+    if (!resolved.ok) throw new CompilerError(`Action condition tag cannot be resolved: ${String(binding?.tag_id || '')}`, []);
+    const params = binding?.params && typeof binding.params === 'object' && !Array.isArray(binding.params) ? binding.params : {};
+    if (resolved.kind === 'ACTIVE_EFFECT_TAG') return canonical({kind: 'PREDICATE', evaluator: 'condition.active_effect_has_tag', params: {tag_id: String(resolved.tag.id || ''), effect_scope: 'ANY_ACTIVE_EFFECT'}});
+    if (resolved.kind === 'STATE_BOOLEAN') return canonical({kind: 'PREDICATE', evaluator: 'condition.state_compare', params: {state_semantic: resolved.semantic}});
+    if (resolved.kind === 'STATE_EXTREME') return canonical({kind: 'STATE_EXTREME', state_semantic: resolved.semantic, value_mode: String(params.value_mode || '').trim().toUpperCase(), order: String(params.order || '').trim().toUpperCase()});
+    throw new CompilerError(`Action condition kind cannot be compiled: ${resolved.kind}`, []);
+  }
   function instructionSuccessors(instruction, stack) {
     if (!instruction) return [];
     if (instruction.op === 'SEARCH') return [instruction.on_found, instruction.on_not_found].filter(Boolean).map((next) => ({next, stack}));
@@ -147,8 +157,15 @@
         base.on_false = targetInstruction(outgoing.get(String(node.instance_id)).get('false'));
       } else {
         base.params = canonical(node.parameters || {});
-        if (node.target_source != null) base.target_source = canonical(node.target_source);
-        if (node.target_selector != null) base.target_selector = canonical(node.target_selector);
+        if (node.target_tag_id != null) {
+          const target = Validator.resolveSearchTargetTag(node.target_tag_id, data);
+          if (!target.ok) throw new CompilerError(`Action target tag cannot be resolved: ${String(node.target_tag_id || '')}`, []);
+          base.target_scope = target.scope;
+          if (node.target_condition != null) base.target_condition = compileActionTargetCondition(node.target_condition, data);
+        } else {
+          if (node.target_source != null) base.target_source = canonical(node.target_source);
+          if (node.target_selector != null) base.target_selector = canonical(node.target_selector);
+        }
       }
       instructions.push(base);
       sourceMap[instructionId] = {origin_part_id: String(node.instance_id), source_node_id: String(node.instance_id)};

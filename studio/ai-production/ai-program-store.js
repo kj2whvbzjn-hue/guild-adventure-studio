@@ -9,7 +9,7 @@
 
   const SCHEMA_VERSION = '2.0.0';
   const PROGRAM_KEYS = new Set(['schema_version','data_version','id','name','version','status','entry_node_id','nodes','edges','subroutines','result_slots','tags','description','updated_at','compiled']);
-  const NODE_KEYS = new Set(['instance_id','master_node_id','master_data_version','node_type','position','parameters','target_selector','target_source','comment']);
+  const NODE_KEYS = new Set(['instance_id','master_node_id','master_data_version','node_type','position','parameters','target_selector','target_source','target_tag_id','target_condition','comment']);
   const POSITION_KEYS = new Set(['x','y']);
   const EDGE_KEYS = new Set(['edge_id','from','transition_kind','to','subroutine_id','return_to']);
   const ENDPOINT_KEYS = new Set(['node_id','port_id']);
@@ -79,6 +79,8 @@
       if(own(node,'target_selector')&&node.target_selector!==null)throw new Error(`${nat}.target_selector is forbidden for condition`);
     }else if(own(node,'target_selector')) assertTargetSelector(node.target_selector,`${nat}.target_selector`);
     if(own(node,'target_source')){if(node.node_type!=='action'&&node.target_source!==null)throw new Error(`${nat}.target_source is forbidden for ${node.node_type}`);if(node.node_type==='action')assertTargetSource(node.target_source,`${nat}.target_source`);}
+    if(own(node,'target_tag_id')){if(node.node_type!=='action'&&node.target_tag_id!==null)throw new Error(`${nat}.target_tag_id is forbidden for ${node.node_type}`);if(node.target_tag_id!==null&&(!nonEmptyString(node.target_tag_id)||!/^TAG-[A-Za-z0-9_.-]+$/.test(node.target_tag_id)))throw new Error(`${nat}.target_tag_id must be TAG identifier or null`);}
+    if(own(node,'target_condition')){if(node.node_type!=='action'&&node.target_condition!==null)throw new Error(`${nat}.target_condition is forbidden for ${node.node_type}`);if(node.target_condition!==null){if(!isObject(node.target_condition))throw new Error(`${nat}.target_condition must be an object or null`);assertAllowedKeys(node.target_condition,new Set(['tag_id','params']),`${nat}.target_condition`);if(!nonEmptyString(node.target_condition.tag_id)||!/^TAG-[A-Za-z0-9_.-]+$/.test(node.target_condition.tag_id))throw new Error(`${nat}.target_condition.tag_id must be TAG identifier`);if(!isObject(node.target_condition.params))throw new Error(`${nat}.target_condition.params must be an object`);}}
     if(own(node,'comment')&&typeof node.comment!=='string')throw new Error(`${nat}.comment must be a string`);
   }
   function assertEdge(edge, eat) {

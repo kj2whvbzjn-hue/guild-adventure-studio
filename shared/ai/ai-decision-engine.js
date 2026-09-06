@@ -109,6 +109,47 @@
     }
     return {target_id: null, reason: 'selector_evaluator_unsupported', evaluator, rng: null};
   }
+  function intersectCandidates(left, right) {
+    const allowed = new Set((Array.isArray(right) ? right : []).map(candidateId));
+    return (Array.isArray(left) ? left : []).filter((row) => allowed.has(candidateId(row)));
+  }
+  function applyActionTargetCondition(binding, candidates, ctx, handlers) {
+    const rows = (Array.isArray(candidates) ? candidates : []).filter((row) => candidateId(row));
+    if (!binding) return {rows, reason: null};
+    const kind = String(binding.kind || '');
+    if (kind === 'PREDICATE') {
+      const kept = [];
+      for (const subject of rows) {
+        try { if (handlers?.predicate?.(String(binding.evaluator || ''), clone(binding.params || {}), subject, 'UNIT', ctx) === true) kept.push(subject); }
+        catch (error) { return {rows: [], reason: `action_condition_error:${String(error?.code || error?.message || 'error')}`}; }
+      }
+      return {rows: kept, reason: null};
+    }
+    if (kind === 'STATE_EXTREME') {
+      const semantic = String(binding.state_semantic || '').toUpperCase(), mode = String(binding.value_mode || '').toUpperCase(), order = String(binding.order || '').toUpperCase();
+      if (!['HP','MP'].includes(semantic) || !['CURRENT','RATIO'].includes(mode) || !['MIN','MAX'].includes(order)) return {rows: [], reason: 'action_condition_invalid'};
+      const scored = rows.map((row) => {
+        const current = Number(semantic === 'HP' ? row?.hp : row?.mp), maximum = Number(semantic === 'HP' ? (row?.max_hp ?? row?.maxHp) : (row?.max_mp ?? row?.maxMp));
+        if (!Number.isFinite(current)) return null;
+        const value = mode === 'CURRENT' ? current : Number.isFinite(maximum) && maximum > 0 ? current / maximum : 0;
+        return {row, value};
+      }).filter(Boolean);
+      if (!scored.length) return {rows: [], reason: null};
+      const extreme = order === 'MIN' ? Math.min(...scored.map((x) => x.value)) : Math.max(...scored.map((x) => x.value));
+      return {rows: scored.filter((x) => x.value === extreme).map((x) => x.row), reason: null};
+    }
+    return {rows: [], reason: 'action_condition_kind_unsupported'};
+  }
+  function randomActionTarget(candidates, handlers) {
+    const rows = (Array.isArray(candidates) ? candidates : []).filter((row) => candidateId(row)).slice().sort((a, b) => candidateId(a).localeCompare(candidateId(b)));
+    if (!rows.length) return {target_id: null, rng: null, reason: 'legal_target_not_found'};
+    if (rows.length === 1) return {target_id: candidateId(rows[0]), rng: null, reason: null};
+    const rng = handlers?.ai_decision_rng;
+    if (typeof rng !== 'function') return {target_id: null, rng: null, reason: 'ai_decision_rng_required'};
+    const roll = Number(rng());
+    if (!Number.isFinite(roll) || roll < 0 || roll >= 1) return {target_id: null, rng: roll, reason: 'ai_decision_rng_invalid'};
+    return {target_id: candidateId(rows[Math.floor(roll * rows.length)]), rng: roll, reason: null};
+  }
   function finishFailure(trace, reason, targetId) {
     return Trace.finish(trace, {status: 'failed', action_id: null, target_id: targetId ?? null, reason});
   }
@@ -182,7 +223,7 @@
         const requirement = Validator.selectorRequirement({actionEvaluator: instruction.evaluator, targetContract, wait});
         const binding = instruction.target_selector || null;
         const targetSource = instruction.target_source || null;
-        if (requirement === 'UNRESOLVED' || (requirement === 'REQUIRED' && !binding) || (requirement === 'FORBIDDEN' && binding) || (targetSource && requirement !== 'REQUIRED')) {
+        if (!instruction.target_scope && (requirement === 'UNRESOLVED' || (requirement === 'REQUIRED' && !binding) || (requirement === 'FORBIDDEN' && binding) || (targetSource && requirement !== 'REQUIRED'))) {
           const reason = requirement === 'UNRESOLVED' ? 'selector_applicability_unresolved' : requirement === 'REQUIRED' && !binding ? 'target_selector_required' : targetSource && requirement !== 'REQUIRED' ? 'target_source_forbidden' : 'target_selector_forbidden';
           Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason}});
           return finishFailure(trace, reason, null);
@@ -198,7 +239,23 @@
         }
 
         let targetId = null;
-        if (requirement === 'REQUIRED') {
+        if (instruction.target_scope) {
+          let legalCandidates = Array.isArray(selected?.legal_candidates) ? selected.legal_candidates : null;
+          if (!legalCandidates && typeof handlers?.legal_candidates === 'function') legalCandidates = handlers.legal_candidates(selected, ctx);
+          legalCandidates = Array.isArray(legalCandidates) ? legalCandidates : [];
+          const population = searchPopulation(ctx, String(instruction.target_scope || '')).slice().sort((a, b) => candidateId(a).localeCompare(candidateId(b)));
+          const initial = intersectCandidates(population, legalCandidates);
+          const conditioned = applyActionTargetCondition(instruction.target_condition || null, initial, ctx, handlers);
+          if (conditioned.reason) {
+            Trace.event(trace, {...baseEvent, event_type: 'error', result: 'failed', details: {reason: conditioned.reason}});
+            return finishFailure(trace, conditioned.reason, null);
+          }
+          const selection = randomActionTarget(conditioned.rows, handlers);
+          if (selection.rng != null) Trace.event(trace, {...baseEvent, event_type: 'rng', result: 'completed', rng_stream: 'AI_DECISION', details: {roll: selection.rng}});
+          Trace.event(trace, {...baseEvent, event_type: 'selector', result: selection.target_id ? 'selected' : 'failed', details: {selector_id: null, evaluator: 'system.random_if_multiple', target_id: selection.target_id, reason: selection.reason, candidate_ids: conditioned.rows.map(candidateId)}});
+          if (!selection.target_id) return finishFailure(trace, selection.reason || 'target_not_found', null);
+          targetId = selection.target_id;
+        } else if (requirement === 'REQUIRED') {
           let legalCandidates = Array.isArray(selected?.legal_candidates) ? selected.legal_candidates : null;
           if (!legalCandidates && typeof handlers?.legal_candidates === 'function') legalCandidates = handlers.legal_candidates(selected, ctx);
           legalCandidates = Array.isArray(legalCandidates) ? legalCandidates : [];
